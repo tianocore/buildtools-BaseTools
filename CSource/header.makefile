@@ -9,28 +9,18 @@ CYGWIN:=$(findstring CYGWIN, $(shell uname -s))
 LINUX:=$(findstring Linux, $(shell uname -s))
 DARWIN:=$(findstring Darwin, $(shell uname -s))
 
-# Root directory where uefi lib and header files will be installed
-INSTALLROOT = /usr/local
-# Relative to INSTALL_ROOT
-UEFI_HDR = include/uefi
-
-ifeq ($(ARCH), IA32)
 CC = gcc
 CXX = g++
 AS = gcc
 AR = ar
 LD = ld
 LINKER ?= $(CC)
+ifeq ($(ARCH), IA32)
 ARCH_INCLUDE = -I $(MAKEROOT)/Include/Ia32/
-ASFLAGS = 
 endif
 
 ifeq ($(ARCH), X64)
-CC = gcc
-AS = gcc
-AR = ar
-LD = ld
-ARCH_INCLUDE = -I $(MAKEROOT)/Include/x64/
+ARCH_INCLUDE = -I $(MAKEROOT)/Include/X64/
 endif
 
 INCLUDE =  -I $(MAKEROOT) -I $(MAKEROOT)/Include/Common -I $(MAKEROOT)/Include/ -I $(MAKEROOT)/Include/IndustryStandard -I $(MAKEROOT)/Common/ -I .. -I . $(ARCH_INCLUDE) 
