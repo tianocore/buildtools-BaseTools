@@ -5,6 +5,10 @@
 #
 ARCH ?= IA32
 
+CYGWIN:=$(findstring CYGWIN, $(shell uname -s))
+LINUX:=$(findstring Linux, $(shell uname -s))
+DARWIN:=$(findstring Darwin, $(shell uname -s))
+
 # Root directory where uefi lib and header files will be installed
 INSTALLROOT = /usr/local
 # Relative to INSTALL_ROOT
@@ -12,9 +16,11 @@ UEFI_HDR = include/uefi
 
 ifeq ($(ARCH), IA32)
 CC = gcc
+CXX = g++
 AS = gcc
 AR = ar
 LD = ld
+LINKER ?= $(CC)
 ARCH_INCLUDE = -I $(MAKEROOT)/Include/Ia32/
 ASFLAGS = 
 endif
@@ -29,7 +35,7 @@ endif
 
 INCLUDE =  -I $(MAKEROOT) -I $(MAKEROOT)/Include/Common -I $(MAKEROOT)/Include/ -I $(MAKEROOT)/Include/IndustryStandard -I $(MAKEROOT)/Common/ -I .. -I . $(ARCH_INCLUDE) 
 CPPFLAGS = $(INCLUDE)
-CFLAGS = -MD -fshort-wchar -fno-strict-aliasing -fno-merge-constants -nostdlib -Wall -c -shared
+CFLAGS = -MD -fshort-wchar -fno-strict-aliasing -fno-merge-constants -nostdlib -Wall -c 
 
 .PHONY: all
 .PHONY: install

@@ -1,11 +1,13 @@
 ARCH ?= IA32
 MAKEROOT ?= ..
 
+LINKER=$(CXX)
+
 VPATH = $(MAKEROOT)/Pccts/h
 
 APPNAME = VfrCompile
 
-LIBS = -lCommon -lString -lstdc++
+LIBS = -lCommon -lString # -lstdc++
 
 OBJECTS = AParser.o  ATokenBuffer.o  DLGLexer.o  DLexerBase.o  EfiVfrParser.o  VfrCompile.o  VfrServices.o
 

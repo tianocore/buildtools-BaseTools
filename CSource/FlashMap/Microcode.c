@@ -227,7 +227,7 @@ Returns:
   //
   // Allocate a buffer for the data
   //
-  Buffer = (char *) _malloc (Size);
+  Buffer = (char *) malloc (Size);
   if (Buffer == NULL) {
     Error (NULL, 0, 0, "memory allocation failure", NULL);
     goto Done;

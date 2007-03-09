@@ -205,7 +205,7 @@ Done:
   //
   while (mGlobals.MCIFileNames != NULL) {
     mGlobals.LastMCIFileNames = mGlobals.MCIFileNames->Next;
-    _free (mGlobals.MCIFileNames);
+    free (mGlobals.MCIFileNames);
     mGlobals.MCIFileNames = mGlobals.LastMCIFileNames;
   }
   return GetUtilityStatus ();
@@ -274,7 +274,7 @@ Returns:
     FileSize = ftell (InFptr);
     fseek (InFptr, 0, SEEK_SET);
     if (FileSize != 0) {
-      Buffer = (char *) _malloc (FileSize);
+      Buffer = (char *) malloc (FileSize);
       if (Buffer == NULL) {
         Error (NULL, 0, 0, "memory allocation failure", NULL);
         goto Done;
@@ -300,7 +300,7 @@ Returns:
         Error (NULL, 0, 0, OutFileName, "failed to write to output file");
         goto Done;
       }
-      _free (Buffer);
+      free (Buffer);
       Buffer = NULL;
     } else {
       Warning (NULL, 0, 0, FileNames->Str, "0-size file encountered");
@@ -316,7 +316,7 @@ Done:
     fclose (InFptr);
   }
   if (Buffer != NULL) {
-    _free (Buffer);
+    free (Buffer);
   }
   if (Status == STATUS_ERROR) {
     remove (OutFileName);
@@ -603,7 +603,7 @@ Returns:
       //
       ThingsToDo++;
       while ((argc > 1) && (argv[1][0] != '-')) {
-        Str = (STRING_LIST *) _malloc (sizeof (STRING_LIST));
+        Str = (STRING_LIST *) malloc (sizeof (STRING_LIST));
         if (Str == NULL) {
           Error (NULL, 0, 0, "memory allocation failure", NULL);
           return STATUS_ERROR;

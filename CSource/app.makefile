@@ -8,6 +8,6 @@ APPLOCATION = $(MAKEROOT)/bin/$(APPNAME)
 all: $(MAKEROOT)/bin $(APPLOCATION) 
 
 $(APPLOCATION): $(OBJECTS) 
-	$(CC) -static -o $(APPLOCATION) $(OBJECTS) -L $(MAKEROOT)/libs -Wl,--start-group $(LIBS) -Wl,--end-group
+	$(LINKER) -o $(APPLOCATION) $(OBJECTS) -L$(MAKEROOT)/libs $(LIBS)
 
 include $(MAKEROOT)/footer.makefile

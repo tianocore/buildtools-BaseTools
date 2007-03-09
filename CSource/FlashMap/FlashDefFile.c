@@ -231,7 +231,7 @@ Returns:
     //
     while (mFlashDevices->PBlocks != NULL) {
       FBNext = mFlashDevices->PBlocks->Next;
-      _free (mFlashDevices->PBlocks);
+      free (mFlashDevices->PBlocks);
       mFlashDevices->PBlocks = FBNext;
     }
     //
@@ -244,16 +244,16 @@ Returns:
       //
       while (mFlashDevices->Regions->Subregions != NULL) {
         SubNext = mFlashDevices->Regions->Subregions->Next;
-        _free (mFlashDevices->Regions->Subregions);
+        free (mFlashDevices->Regions->Subregions);
         mFlashDevices->Regions->Subregions = SubNext;
       }
 
-      _free (mFlashDevices->Regions);
+      free (mFlashDevices->Regions);
       mFlashDevices->Regions = FBNext;
     }
 
     FDNext = mFlashDevices->Next;
-    _free (mFlashDevices);
+    free (mFlashDevices);
     mFlashDevices = FDNext;
   }
   //
@@ -266,15 +266,15 @@ Returns:
     while (mImageDefinitions->Entries != NULL) {
       IDENext = mImageDefinitions->Entries->Next;
       if (mImageDefinitions->Entries->RawData != NULL) {
-        _free (mImageDefinitions->Entries->RawData);
+        free (mImageDefinitions->Entries->RawData);
       }
 
-      _free (mImageDefinitions->Entries);
+      free (mImageDefinitions->Entries);
       mImageDefinitions->Entries = IDENext;
     }
 
     IDNext = mImageDefinitions->Next;
-    _free (mImageDefinitions);
+    free (mImageDefinitions);
     mImageDefinitions = IDNext;
   }
 }
@@ -351,7 +351,7 @@ Returns:
     //
     // Allocate memory for new flash device description block
     //
-    FDDesc = (FLASH_DEVICE_DESCRIPTION *) _malloc (sizeof (FLASH_DEVICE_DESCRIPTION));
+    FDDesc = (FLASH_DEVICE_DESCRIPTION *) malloc (sizeof (FLASH_DEVICE_DESCRIPTION));
     if (FDDesc == NULL) {
       Error (__FILE__, __LINE__, 0, "memory allocation failure", NULL);
       ErrorCount++;
@@ -481,7 +481,7 @@ Returns:
       //
       // Allocate memory for a new physical block descriptor
       //
-      FBlockDesc = (FLASH_BLOCK_DESCRIPTION *) _malloc (sizeof (FLASH_BLOCK_DESCRIPTION));
+      FBlockDesc = (FLASH_BLOCK_DESCRIPTION *) malloc (sizeof (FLASH_BLOCK_DESCRIPTION));
       if (FBlockDesc == NULL) {
         Error (__FILE__, __LINE__, 0, "memory allocation failure", NULL);
         ErrorCount++;
@@ -625,7 +625,7 @@ Returns:
       //
       // Allocate memory for a new physical block descriptor
       //
-      FBlockDesc = (FLASH_BLOCK_DESCRIPTION *) _malloc (sizeof (FLASH_BLOCK_DESCRIPTION));
+      FBlockDesc = (FLASH_BLOCK_DESCRIPTION *) malloc (sizeof (FLASH_BLOCK_DESCRIPTION));
       if (FBlockDesc == NULL) {
         Error (__FILE__, __LINE__, 0, "memory allocation failure", NULL);
         ErrorCount++;
@@ -926,7 +926,7 @@ Returns:
     //
     // Allocate memory for a new FD image definition
     //
-    ImageDef = (IMAGE_DEFINITION *) _malloc (sizeof (IMAGE_DEFINITION));
+    ImageDef = (IMAGE_DEFINITION *) malloc (sizeof (IMAGE_DEFINITION));
     if (ImageDef == NULL) {
       Error (__FILE__, __LINE__, 0, "memory allocation failure", NULL);
       ErrorCount++;
@@ -971,7 +971,7 @@ Returns:
       // Parse: File { Name = "FV\FvOem.fv", Region = "REGION_OEM", Optional = TRUE }
       //
       if (SFPIsKeyword ("File")) {
-        ImageDefEntry = (IMAGE_DEFINITION_ENTRY *) _malloc (sizeof (IMAGE_DEFINITION_ENTRY));
+        ImageDefEntry = (IMAGE_DEFINITION_ENTRY *) malloc (sizeof (IMAGE_DEFINITION_ENTRY));
         if (ImageDefEntry == NULL) {
           Error (__FILE__, __LINE__, 0, "memory allocation failure", NULL);
           ErrorCount++;
@@ -1122,7 +1122,7 @@ Returns:
         //
         // Parse: RawData { Name = "PadBytes", Region = "REGION_1", Data = { 0x78, 0x56, 0x34, 0x12 }}
         //
-        ImageDefEntry = (IMAGE_DEFINITION_ENTRY *) _malloc (sizeof (IMAGE_DEFINITION_ENTRY));
+        ImageDefEntry = (IMAGE_DEFINITION_ENTRY *) malloc (sizeof (IMAGE_DEFINITION_ENTRY));
         if (ImageDefEntry == NULL) {
           Error (__FILE__, __LINE__, 0, "memory allocation failure", NULL);
           ErrorCount++;
@@ -1394,7 +1394,7 @@ Arguments:
   //
   ErrorCount    = 0;
   WarningCount  = 0;
-  Subregion     = (FLASH_SUBREGION_DESCRIPTION *) _malloc (sizeof (FLASH_SUBREGION_DESCRIPTION));
+  Subregion     = (FLASH_SUBREGION_DESCRIPTION *) malloc (sizeof (FLASH_SUBREGION_DESCRIPTION));
   if (Subregion == NULL) {
     Error (__FILE__, __LINE__, 0, "memory allocation failure", NULL);
     ErrorCount++;
@@ -1670,7 +1670,7 @@ Done:
   // If any errors were encountered, then delete the subregion definition
   //
   if (ErrorCount != 0) {
-    _free (Subregion);
+    free (Subregion);
     Subregion = NULL;
   }
 
@@ -2288,7 +2288,7 @@ Returns:
   //
   // Allocate a buffer to copy the input data to
   //
-  Buffer = (char *) _malloc (FDev->Size);
+  Buffer = (char *) malloc (FDev->Size);
   if (Buffer == NULL) {
     Error (NULL, 0, 0, (INT8 *) "failed to allocate memory", NULL);
     goto Done;
@@ -2477,7 +2477,7 @@ Done:
   }
 
   if (Buffer != NULL) {
-    _free (Buffer);
+    free (Buffer);
   }
 
   if (OutFptr != NULL) {
@@ -2654,16 +2654,16 @@ Returns:
 --*/
 {
   BUFFER_DATA *BD;
-  BD = (BUFFER_DATA *) _malloc (sizeof (BUFFER_DATA));
+  BD = (BUFFER_DATA *) malloc (sizeof (BUFFER_DATA));
   if (BD == NULL) {
     Error (__FILE__, __LINE__, 0, "memory allocation failure", NULL);
     return NULL;
   }
 
   memset (BD, 0, sizeof (BUFFER_DATA));
-  BD->BufferStart = (char *) _malloc (BUFFER_SIZE);
+  BD->BufferStart = (char *) malloc (BUFFER_SIZE);
   if (BD->BufferStart == NULL) {
-    _free (BD);
+    free (BD);
     Error (__FILE__, __LINE__, 0, "memory allocation failure", NULL);
     return NULL;
   }
@@ -2704,14 +2704,14 @@ Returns:
   //
   if (Buffer->BufferPos >= Buffer->BufferEnd) {
     Size      = (int) Buffer->BufferEnd - (int) Buffer->BufferStart;
-    NewBuffer = (char *) _malloc (Size + BUFFER_SIZE);
+    NewBuffer = (char *) malloc (Size + BUFFER_SIZE);
     if (NewBuffer == NULL) {
       Error (__FILE__, __LINE__, 0, "memory allocation failure", NULL);
       return FALSE;
     }
 
     memcpy (NewBuffer, Buffer->BufferStart, Size);
-    _free (Buffer->BufferStart);
+    free (Buffer->BufferStart);
     Buffer->BufferStart = NewBuffer;
     Buffer->BufferPos   = Buffer->BufferStart + Size;
     Buffer->BufferEnd   = Buffer->BufferStart + Size + BUFFER_SIZE;
@@ -2748,10 +2748,10 @@ Returns:
 {
   if (Buffer != NULL) {
     if (FreeData && (Buffer->BufferStart != NULL)) {
-      _free (Buffer->BufferStart);
+      free (Buffer->BufferStart);
     }
 
-    _free (Buffer);
+    free (Buffer);
   }
 }
 

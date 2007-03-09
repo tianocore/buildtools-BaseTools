@@ -260,8 +260,8 @@ Notes:
     // Check for symbol name match
     //
     if (stricmp (Name, Symbol->Name) == 0) {
-      _free (Symbol->Value);
-      Symbol->Value = (char *) _malloc (strlen (Value) + 1);
+      free (Symbol->Value);
+      Symbol->Value = (char *) malloc (strlen (Value) + 1);
       if (Symbol->Value == NULL) {
         Error (NULL, 0, 0, NULL, "failed to allocate memory");
         return -1;
@@ -283,25 +283,25 @@ Notes:
   //
   // Does not exist, create a new one
   //
-  NewSymbol = (SYMBOL *) _malloc (sizeof (SYMBOL));
+  NewSymbol = (SYMBOL *) malloc (sizeof (SYMBOL));
   if (NewSymbol == NULL) {
     Error (NULL, 0, 0, NULL, "memory allocation failure");
     return -1;
   }
 
   memset ((char *) NewSymbol, 0, sizeof (SYMBOL));
-  NewSymbol->Name = (char *) _malloc (strlen (Name) + 1);
+  NewSymbol->Name = (char *) malloc (strlen (Name) + 1);
   if (NewSymbol->Name == NULL) {
     Error (NULL, 0, 0, NULL, "memory allocation failure");
-    _free (NewSymbol);
+    free (NewSymbol);
     return -1;
   }
 
-  NewSymbol->Value = (char *) _malloc (strlen (Value) + 1);
+  NewSymbol->Value = (char *) malloc (strlen (Value) + 1);
   if (NewSymbol->Value == NULL) {
     Error (NULL, 0, 0, NULL, "memory allocation failure");
-    _free (NewSymbol->Name);
-    _free (NewSymbol);
+    free (NewSymbol->Name);
+    free (NewSymbol);
     return -1;
   }
 
@@ -336,9 +336,9 @@ Notes:
   if (SaveCptr != NULL) {
     *SaveCptr = CSave;
   }
-  _free (NewSymbol->Value);
-  _free (NewSymbol->Name);
-  _free (NewSymbol);
+  free (NewSymbol->Value);
+  free (NewSymbol->Name);
+  free (NewSymbol);
   return Len;
 }
 
@@ -384,10 +384,10 @@ Returns:
       // Then free the memory allocated for the symbols string name.
       //
       if (Symbol->Value) {
-        _free (Symbol->Value);
+        free (Symbol->Value);
       }
 
-      _free (Symbol->Name);
+      free (Symbol->Name);
       //
       // Link the previous symbol to the next symbol to effectively
       // remove this symbol from the linked list.
@@ -398,7 +398,7 @@ Returns:
         mSymbolTable = Symbol->Next;
       }
 
-      _free (Symbol);
+      free (Symbol);
       return STATUS_SUCCESS;
     }
 
@@ -433,15 +433,15 @@ Returns:
   SYMBOL  *Next;
   while (Syms) {
     if (Syms->Name != NULL) {
-      _free (Syms->Name);
+      free (Syms->Name);
     }
 
     if (Syms->Value != NULL) {
-      _free (Syms->Value);
+      free (Syms->Value);
     }
 
     Next = Syms->Next;
-    _free (Syms);
+    free (Syms);
     Syms = Next;
   }
 
@@ -490,7 +490,7 @@ Returns:
 
   NestDepth++;
   Status        = STATUS_SUCCESS;
-  LocalDestLine = (char *) _malloc (LineLen);
+  LocalDestLine = (char *) malloc (LineLen);
   if (LocalDestLine == NULL) {
     Error (__FILE__, __LINE__, 0, "memory allocation failed", NULL);
     return STATUS_ERROR;
@@ -565,7 +565,7 @@ Returns:
   //
   if ((ExpandedCount != 0) && (Status == STATUS_SUCCESS) && (NestDepth < 10)) {
     Status = ExpandMacros (LocalDestLine, DestLine, LineLen);
-    _free (LocalDestLine);
+    free (LocalDestLine);
     NestDepth = 0;
     return Status;
   }
@@ -576,7 +576,7 @@ Done:
   }
 
   NestDepth = 0;
-  _free (LocalDestLine);
+  free (LocalDestLine);
   return Status;
 }
 
