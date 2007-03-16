@@ -49,6 +49,29 @@ PeCoffLoaderImageAddress (
   IN     UINTN                         Address
   );
 
+RETURN_STATUS
+PeCoffLoaderRelocateIa32Image (
+  IN UINT16      *Reloc,
+  IN OUT CHAR8   *Fixup,
+  IN OUT CHAR8   **FixupData,
+  IN UINT64      Adjust
+  );
+
+RETURN_STATUS
+PeCoffLoaderRelocateX64Image (
+  IN UINT16      *Reloc,
+  IN OUT CHAR8   *Fixup,
+  IN OUT CHAR8   **FixupData,
+  IN UINT64      Adjust
+  );
+
+RETURN_STATUS
+PeCoffLoaderRelocateIpfImage (
+  IN UINT16      *Reloc,
+  IN OUT CHAR8   *Fixup,
+  IN OUT CHAR8   **FixupData,
+  IN UINT64      Adjust
+  );
 
 STATIC
 RETURN_STATUS
@@ -522,11 +545,11 @@ Returns:
 
 --*/
 {
-  RETURN_STATUS                Status;
+  RETURN_STATUS             Status;
   EFI_IMAGE_NT_HEADERS      *PeHdr;
   EFI_TE_IMAGE_HEADER       *TeHdr;
   EFI_IMAGE_DATA_DIRECTORY  *RelocDir;
-  UINT64                    Adjust;
+  UINT64                     Adjust;
   EFI_IMAGE_BASE_RELOCATION *RelocBase;
   EFI_IMAGE_BASE_RELOCATION *RelocBaseEnd;
   UINT16                    *Reloc;
@@ -536,7 +559,8 @@ Returns:
   UINT16                    *F16;
   UINT32                    *F32;
   CHAR8                     *FixupData;
-  PHYSICAL_ADDRESS      BaseAddress;
+  PHYSICAL_ADDRESS          BaseAddress;
+  UINT16                    MachineType;
 
   PeHdr = NULL;
   TeHdr = NULL;
@@ -567,7 +591,7 @@ Returns:
                                             ImageContext->PeCoffHeaderOffset);
     Adjust = (UINT64) BaseAddress - PeHdr->OptionalHeader.ImageBase;
     PeHdr->OptionalHeader.ImageBase = (UINTN) BaseAddress;
-
+    MachineType = PeHdr->FileHeader.Machine;
     //
     // Find the relocation block
     //
@@ -592,7 +616,8 @@ Returns:
     TeHdr             = (EFI_TE_IMAGE_HEADER *) (UINTN) (ImageContext->ImageAddress);
     Adjust            = (UINT64) (BaseAddress - TeHdr->ImageBase);
     TeHdr->ImageBase  = (UINT64) (BaseAddress);
-
+    MachineType = TeHdr->Machine;
+    
     //
     // Find the relocation block
     //
@@ -679,7 +704,20 @@ Returns:
         return RETURN_UNSUPPORTED;
 
       default:
-        Status = PeCoffLoaderRelocateImageEx (Reloc, Fixup, &FixupData, Adjust);
+        switch (MachineType) {
+        case EFI_IMAGE_FILE_MACHINE_I386:
+          Status = PeCoffLoaderRelocateIa32Image (Reloc, Fixup, &FixupData, Adjust);
+          break;
+        case EFI_IMAGE_FILE_MACHINE_X64:
+          Status = PeCoffLoaderRelocateX64Image (Reloc, Fixup, &FixupData, Adjust);
+          break;
+        case EFI_IMAGE_FILE_MACHINE_IA64:
+          Status = PeCoffLoaderRelocateIpfImage (Reloc, Fixup, &FixupData, Adjust);
+          break;
+        default:
+          Status = RETURN_UNSUPPORTED;
+          break;
+        }
         if (RETURN_ERROR (Status)) {
           ImageContext->ImageError = IMAGE_ERROR_FAILED_RELOCATION;
           return Status;

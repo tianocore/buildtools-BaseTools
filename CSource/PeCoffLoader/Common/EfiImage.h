@@ -118,6 +118,9 @@ typedef struct {
 #define EFI_IMAGE_FILE_MACHINE_ALPHA        0x184   // Alpha_AXP*
 #define EFI_IMAGE_FILE_MACHINE_POWERPC      0x1F0   // IBM* PowerPC Little-Endian
 #define EFI_IMAGE_FILE_MACHINE_TAHOE        0x7cc   // Intel EM machine
+#define EFI_IMAGE_FILE_MACHINE_X64          0x8664  // Intel X64.
+#define EFI_IMAGE_FILE_MACHINE_IA64         0x200   // Intel IPF
+
 //
 // * Other names and brands may be claimed as the property of others.
 //

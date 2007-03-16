@@ -15,8 +15,7 @@ Module Name:
 
 Abstract:
 
-    Fixes Intel Itanium(TM) specific relocation types
-
+    IA32, X64 and IPF Specific relocation fixups
 
 Revision History
 
@@ -25,10 +24,6 @@ Revision History
 #include <Common/UefiBaseTypes.h>
 #include <Common/EfiImage.h>
 #include <Library/PeCoffLib.h>
-
-
-
-
 
 #define EXT_IMM64(Value, Address, Size, InstPos, ValPos)  \
     Value |= (((UINT64)((*(Address) >> InstPos) & (((UINT64)1 << Size) - 1))) << ValPos)
@@ -78,7 +73,39 @@ Revision History
 #define IMM64_SIGN_VAL_POS_X            63  
 
 RETURN_STATUS
-PeCoffLoaderRelocateImageEx (
+PeCoffLoaderRelocateIa32Image (
+  IN UINT16      *Reloc,
+  IN OUT CHAR8   *Fixup,
+  IN OUT CHAR8   **FixupData,
+  IN UINT64      Adjust
+  )
+/*++
+
+Routine Description:
+
+  Performs an IA-32 specific relocation fixup
+
+Arguments:
+
+  Reloc      - Pointer to the relocation record
+
+  Fixup      - Pointer to the address to fix up
+
+  FixupData  - Pointer to a buffer to log the fixups
+
+  Adjust     - The offset to adjust the fixup
+
+Returns:
+
+  EFI_UNSUPPORTED   - Unsupported now
+
+--*/
+{
+  return RETURN_UNSUPPORTED;
+}
+
+RETURN_STATUS
+PeCoffLoaderRelocateIpfImage (
   IN UINT16      *Reloc,
   IN OUT CHAR8   *Fixup, 
   IN OUT CHAR8   **FixupData,
@@ -247,3 +274,44 @@ Returns:
 
   return RETURN_SUCCESS;
 }
+
+RETURN_STATUS
+PeCoffLoaderRelocateX64Image (
+  IN     UINT16       *Reloc,
+  IN OUT CHAR8        *Fixup, 
+  IN OUT CHAR8        **FixupData,
+  IN     UINT64       Adjust
+  )
+/**
+  Performs an x64 specific relocation fixup
+
+  @param Reloc        Pointer to the relocation record
+  @param Fixup        Pointer to the address to fix up
+  @param FixupData    Pointer to a buffer to log the fixups
+  @param Adjust       The offset to adjust the fixup
+  
+  @retval RETURN_SUCCESS      Success to perform relocation
+  @retval RETURN_UNSUPPORTED  Unsupported.
+**/
+{
+  UINT64      *F64;
+
+  switch ((*Reloc) >> 12) {
+
+    case EFI_IMAGE_REL_BASED_DIR64:
+      F64 = (UINT64 *) Fixup;
+      *F64 = *F64 + (UINT64) Adjust;
+      if (*FixupData != NULL) {
+        *FixupData = ALIGN_POINTER(*FixupData, sizeof(UINT64));
+        *(UINT64 *)(*FixupData) = *F64;
+        *FixupData = *FixupData + sizeof(UINT64);
+      }
+      break;
+
+    default:
+      return RETURN_UNSUPPORTED;
+  }
+
+  return RETURN_SUCCESS;
+}
+
