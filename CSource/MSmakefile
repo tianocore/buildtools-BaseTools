@@ -14,11 +14,11 @@ APPLICATIONS = Pccts CreateMtFile EfiCompress EfiRom FlashMap FwImage GenAcpiTab
 all: libs apps install
 
 libs: $(LIBRARIES)
-	@if not exit $(LIB_PATH) mkdir $(LIB_PATH)
+	@if not exist $(LIB_PATH) mkdir $(LIB_PATH)
 	@for %%i in ($**) do $(MAKE) -f %%i\MSmakefile
 
 apps: libs $(APPLICATIONS)
-	@if not exit $(BIN_PATH) mkdir $(BIN_PATH)
+	@if not exist $(BIN_PATH) mkdir $(BIN_PATH)
 	@for %%i in ($**) do $(MAKE) -f %%i\MSmakefile
 
 install: $(LIB_PATH) $(BIN_PATH)

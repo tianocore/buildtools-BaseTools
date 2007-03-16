@@ -1,11 +1,12 @@
 !INCLUDE MSmakefile.common
 
-APPLICATION = $(BIN_PATH)/$(APPNAME).exe
+APPLICATION = $(BIN_PATH)\$(APPNAME).exe
 
 .PHONY:all
-all: $(MAKEROOT)/bin $(APPLOCATION) 
+all: $(APPLOCATION) 
 
 $(APPLICATION): $(OBJECTS) 
+	-@if not exist $(BIN_PATH) mkdir $(BIN_PATH)
 	$(LINKER) /nologo /debug /incremental:no /out:$(APPLICATION) /libpath:$(LIB_PATH) $(LIBS) $(OBJECTS)
 
 !INCLUDE MSmakefile.rule

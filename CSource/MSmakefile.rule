@@ -7,6 +7,7 @@
 	$(AS) -c $(ASFLAGS) $< -o $@
 
 $(LIBRARY) : $(OBJECTS)
+	-@if not exist $(LIB_PATH) mkdir $(LIB_PATH)
 	$(AR) /nologo /out:$@ $?
 
 #-include $(DEPFILES)
