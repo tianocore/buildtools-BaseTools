@@ -1,0 +1,35 @@
+ARCH = IA32
+
+!INCLUDE MS.header.makefile
+
+LIBRARIES = Common CustomizedCompress String PeCoffLoader
+APPLICATIONS = Pccts CreateMtFile EfiCompress EfiRom FlashMap FwImage GenAcpiTable GenBsfFixup GenBsfImage GenCRC32Section GenDepex GenFvImage GenFvMap GenSection GenTEImage MakeDeps ModifyInf SecApResetVectorFixup SecFixup SetStamp SplitFile StrGather Strip VfrCompile ZeroDebugData
+
+.PHONY: all
+.PHONY: libs
+.PHONY: apps
+.PHONY: install
+.PHONY: clean
+
+all: libs apps install
+
+libs: $(LIBRARIES)
+	@if not exit $(LIB_PATH) mkdir $(LIB_PATH)
+	@for %%i in ($**) do $(MAKE) -f %%i\MSmakefile
+
+apps: libs $(APPLICATIONS)
+	@if not exit $(BIN_PATH) mkdir $(BIN_PATH)
+	@for %%i in ($**) do $(MAKE) -f %%i\MSmakefile
+
+install: $(LIB_PATH) $(BIN_PATH)
+	@xcopy $(LIB_PATH) $(SYS_LIB_PATH) /I /D /E /F
+	@xcopy $(BIN_PATH) $(SYS_BIN_PATH) /I /D /E /F
+
+clean:
+	for %%i in ($(SUBDIRS)) do $(MAKE) -f %%i\MSmakefile clean
+
+test:$(LIBRARIES)
+	for %%i in ($**) do $(MAKE) -f %%i\MSmakefile
+
+!INCLUDE MSmakefile.rule
+

@@ -1,0 +1,13 @@
+#DEPFILES = $(OBJECTS:%.o=%.d)
+
+%.obj : %.c
+	$(CC) -c $(CFLAGS) $< -o $@
+
+%.obj : %.S
+	$(AS) -c $(ASFLAGS) $< -o $@
+
+$(LIBRARY) : $(OBJECTS)
+	$(AR) /nologo /out:$@ $?
+
+#-include $(DEPFILES)
+

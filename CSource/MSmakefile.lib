@@ -1,0 +1,9 @@
+!INCLUDE MSmakefile.common
+
+LIBRARY = $(LIB_PATH)/$(LIBNAME).lib
+
+.PHONY:all
+all: $(LIB_PATH) $(LIBRARY)
+
+!INCLUDE MSmakefile.rule
+
