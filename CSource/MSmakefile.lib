@@ -2,12 +2,19 @@
 
 LIBRARY = $(LIB_PATH)\$(LIBNAME).lib
 
-.PHONY:all
 all: $(LIBRARY)
 
 $(LIBRARY) : $(OBJECTS)
 	-@if not exist $(LIB_PATH) mkdir $(LIB_PATH)
 	$(AR) /nologo /out:$@ $?
+
+.PHONY:clean
+clean:
+	del /f /q $(OBJECTS) > nul
+
+.PHONY:cleanall
+cleanall:
+	del /f /q $(OBJECTS) $(LIBRARY) > nul
 
 !INCLUDE MSmakefile.rule
 

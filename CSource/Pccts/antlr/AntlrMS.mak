@@ -28,8 +28,7 @@ SUPPORT_OBJS = set.obj
 
 $(BIN_DIR)\antlr.exe: $(ANTLR_OBJS) $(SUPPORT_OBJS)
     $(CC) $(CFLAGS) -o antlr.exe $(ANTLR_OBJS) $(SUPPORT_OBJS)
-    del *.obj
-		move antlr.exe $(BIN_DIR)
+		move /y antlr.exe $(BIN_DIR)
 
 
 antlr.obj: $(ANTLR_SRC)\antlr.c \
@@ -226,8 +225,8 @@ set.obj: $(SET)\set.c \
     $(CC) -c $(CFLAGS) $(SET)\set.c
 
 clean:	
-    del *.obj
+    del /f /q *.obj
 
 distclean:
-    del *.obj
-    del $(BIN_DIR)\antlr.exe
+    del /f /q *.obj
+    del /f /q $(BIN_DIR)\antlr.exe

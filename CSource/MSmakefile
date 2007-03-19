@@ -3,33 +3,34 @@ ARCH = IA32
 !INCLUDE MSmakefile.common
 
 LIBRARIES = Common CustomizedCompress String PeCoffLoader
-APPLICATIONS = Pccts CreateMtFile EfiCompress EfiRom FlashMap FwImage GenAcpiTable GenBsfFixup GenBsfImage GenCRC32Section GenDepex GenFvImage GenFvMap GenSection GenTEImage MakeDeps ModifyInf SecApResetVectorFixup SecFixup SetStamp SplitFile StrGather Strip VfrCompile ZeroDebugData
-
-.PHONY: all
-.PHONY: libs
-.PHONY: apps
-.PHONY: install
-.PHONY: clean
+APPLICATIONS = CreateMtFile EfiCompress EfiRom FlashMap FwImage GenAcpiTable \
+               GenBsfFixup GenBsfImage GenCapsuleHdr GenCRC32Section GenDepex \
+               GenFfsFile GenFvImage GenFvMap GenSection GenTEImage GuidChk \
+               MakeDeps ModifyInf PeiRebase SecApResetVectorFixup SecFixup \
+               SetStamp SplitFile StrGather Strip Pccts VfrCompile ZeroDebugData
 
 all: libs apps install
 
 libs: $(LIBRARIES)
 	@if not exist $(LIB_PATH) mkdir $(LIB_PATH)
-	@for %%i in ($**) do cd %%i & $(MAKE) -f MSmakefile
+	@for %%i in ($**) do @pushd . & cd %%i & $(MAKE) -f MSmakefile & popd
 
-apps: libs $(APPLICATIONS)
+apps: $(APPLICATIONS)
 	@if not exist $(BIN_PATH) mkdir $(BIN_PATH)
-	@for %%i in ($**) do $(MAKE) -f %%i\MSmakefile
+	@for %%i in ($**) do @pushd . & cd %%i & $(MAKE) -f MSmakefile & popd
 
 install: $(LIB_PATH) $(BIN_PATH)
-	@xcopy $(LIB_PATH) $(SYS_LIB_PATH) /I /D /E /F
-	@xcopy $(BIN_PATH) $(SYS_BIN_PATH) /I /D /E /F
+	@xcopy $(LIB_PATH) $(SYS_LIB_PATH) /I /D /E /F /Y
+	@xcopy $(BIN_PATH) $(SYS_BIN_PATH) /I /D /E /F /Y
 
+.PHONY: clean
 clean:
-	for %%i in ($(SUBDIRS)) do $(MAKE) -f %%i\MSmakefile clean
+	@for %%i in ($(LIBRARIES) $(APPLICATIONS)) do @pushd . & cd %%i & $(MAKE) -f MSmakefile clean & popd
 
-test:$(LIBRARIES)
-	for %%i in ($**) do $(MAKE) -f %%i\MSmakefile
+.PHONY: cleanall
+cleanall:
+	@for %%i in ($(LIBRARIES) $(APPLICATIONS)) do @pushd . & cd %%i & $(MAKE) -f MSmakefile cleanall & popd
+        @del /f /q $(BIN_PATH)\*.pdb
 
 !INCLUDE MSmakefile.rule
 

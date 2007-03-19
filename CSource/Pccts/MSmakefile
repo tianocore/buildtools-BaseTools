@@ -1,7 +1,16 @@
+!MESSAGE "Building ... pccts"
 !INCLUDE ..\MSmakefile.common
 ARCH = IA32
 
 all:
 	$(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f antlr\AntlrMs.mak
 	$(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f dlg\DlgMs.mak
+
+clean:
+	$(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f antlr\AntlrMs.mak clean
+	$(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f dlg\DlgMs.mak clean
+
+cleanall:
+	$(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f antlr\AntlrMs.mak distclean
+	$(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f dlg\DlgMs.mak distclean
 

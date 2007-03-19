@@ -27,10 +27,7 @@ SUPPORT_OBJS = set.obj
 
 dlg.exe: $(DLG_OBJS) $(SUPPORT_OBJS)
     $(CC) $(CFLAGS) -o dlg.exe $(DLG_OBJS) $(SUPPORT_OBJS)
-    del *.obj
-    del *.ilk
-    del *.pdb
-		move dlg.exe $(BIN_DIR)
+		move /y dlg.exe $(BIN_DIR)
 
 dlg_p.obj: $(DLG_SRC)\dlg_p.c \
 					$(PCCTS_H)\antlr.h \
@@ -114,8 +111,8 @@ set.obj: $(SET)\set.c \
     $(CC) -c $(CFLAGS) $(SET)\set.c
 
 clean:	
-    del *.obj
+    del /f /q *.obj
 
 distclean:
-    del *.obj
-    del $(BIN_DIR)\dlg.exe
+    del /f /q *.obj
+    del /f /q $(BIN_DIR)\dlg.exe

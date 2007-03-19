@@ -7,6 +7,8 @@ ARCH = IA32
 !ERROR "Please run tool_setup.bat at first!"
 !ENDIF
 
+MAKE        = nmake -nologo
+
 SOURCE_PATH = $(BASE_TOOLS_PATH)\CSource
 BIN_PATH    = $(BASE_TOOLS_PATH)\Bin
 LIB_PATH    = $(BASE_TOOLS_PATH)\Lib
