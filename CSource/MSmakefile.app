@@ -3,11 +3,11 @@
 APPLICATION = $(BIN_PATH)\$(APPNAME).exe
 
 .PHONY:all
-all: $(APPLOCATION) 
+all: $(APPLICATION) 
 
-$(APPLICATION): $(OBJECTS) 
+$(APPLICATION) : $(OBJECTS) 
 	-@if not exist $(BIN_PATH) mkdir $(BIN_PATH)
-	$(LINKER) /nologo /debug /incremental:no /out:$(APPLICATION) /libpath:$(LIB_PATH) $(LIBS) $(OBJECTS)
+	$(LD) /nologo /debug /incremental:no /out:$@ /libpath:$(LIB_PATH) $(LIBS) $?
 
 !INCLUDE MSmakefile.rule
 

@@ -5,5 +5,9 @@ LIBRARY = $(LIB_PATH)\$(LIBNAME).lib
 .PHONY:all
 all: $(LIBRARY)
 
+$(LIBRARY) : $(OBJECTS)
+	-@if not exist $(LIB_PATH) mkdir $(LIB_PATH)
+	$(AR) /nologo /out:$@ $?
+
 !INCLUDE MSmakefile.rule
 

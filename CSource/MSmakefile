@@ -1,6 +1,6 @@
 ARCH = IA32
 
-!INCLUDE MS.header.makefile
+!INCLUDE MSmakefile.common
 
 LIBRARIES = Common CustomizedCompress String PeCoffLoader
 APPLICATIONS = Pccts CreateMtFile EfiCompress EfiRom FlashMap FwImage GenAcpiTable GenBsfFixup GenBsfImage GenCRC32Section GenDepex GenFvImage GenFvMap GenSection GenTEImage MakeDeps ModifyInf SecApResetVectorFixup SecFixup SetStamp SplitFile StrGather Strip VfrCompile ZeroDebugData
@@ -15,7 +15,7 @@ all: libs apps install
 
 libs: $(LIBRARIES)
 	@if not exist $(LIB_PATH) mkdir $(LIB_PATH)
-	@for %%i in ($**) do $(MAKE) -f %%i\MSmakefile
+	@for %%i in ($**) do cd %%i & $(MAKE) -f MSmakefile
 
 apps: libs $(APPLICATIONS)
 	@if not exist $(BIN_PATH) mkdir $(BIN_PATH)
