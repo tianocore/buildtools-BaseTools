@@ -2,8 +2,6 @@
 
 ARCH = IA32
 
-VPATH = $(MAKEROOT)/Pccts/h
-
 APPNAME = VfrCompile
 
 LIBS = Common.lib String.lib
