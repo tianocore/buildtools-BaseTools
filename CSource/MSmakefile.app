@@ -15,7 +15,7 @@ clean:
 	del /f /q $(OBJECTS) > nul
 
 cleanall:
-	del /f /q $(OBJECTS) $(APPLICATION) > nul
+	del /f /q $(OBJECTS) $(APPLICATION) *.pdb $(BIN_PATH)\*.pdb > nul
 
 !INCLUDE MSmakefile.rule
 

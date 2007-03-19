@@ -27,8 +27,7 @@ SUPPORT_OBJS = set.obj
 # Dependencies
 
 $(BIN_DIR)\antlr.exe: $(ANTLR_OBJS) $(SUPPORT_OBJS)
-    $(CC) $(CFLAGS) -o antlr.exe $(ANTLR_OBJS) $(SUPPORT_OBJS)
-		move /y antlr.exe $(BIN_DIR)
+    $(CC) $(CFLAGS) -o $(BIN_DIR)\antlr.exe $(ANTLR_OBJS) $(SUPPORT_OBJS)
 
 
 antlr.obj: $(ANTLR_SRC)\antlr.c \
@@ -225,8 +224,8 @@ set.obj: $(SET)\set.c \
     $(CC) -c $(CFLAGS) $(SET)\set.c
 
 clean:	
-    del /f /q *.obj
+    del /f /q *.obj *.ilk
 
 distclean:
-    del /f /q *.obj
+    del /f /q *.obj *.ilk *.pdb
     del /f /q $(BIN_DIR)\antlr.exe

@@ -1,16 +1,15 @@
-!MESSAGE "Building ... pccts"
 !INCLUDE ..\MSmakefile.common
 ARCH = IA32
 
 all:
-	$(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f antlr\AntlrMs.mak
-	$(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f dlg\DlgMs.mak
+	@pushd . & cd antlr & $(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f AntlrMs.mak & popd
+	@pushd . & cd dlg   & $(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f DlgMs.mak   & popd
 
 clean:
-	$(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f antlr\AntlrMs.mak clean
-	$(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f dlg\DlgMs.mak clean
+	@pushd . & cd antlr & $(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f AntlrMs.mak clean & popd
+	@pushd . & cd dlg   & $(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f DlgMs.mak clean   & popd
 
 cleanall:
-	$(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f antlr\AntlrMs.mak distclean
-	$(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f dlg\DlgMs.mak distclean
+	@pushd . & cd antlr & $(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f AntlrMs.mak distclean & popd
+	@pushd . & cd dlg   & $(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f DlgMs.mak distclean   & popd
 

@@ -14,7 +14,7 @@ clean:
 
 .PHONY:cleanall
 cleanall:
-	del /f /q $(OBJECTS) $(LIBRARY) > nul
+	del /f /q $(OBJECTS) $(LIBRARY) *.pdb > nul
 
 !INCLUDE MSmakefile.rule
 
