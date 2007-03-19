@@ -4,7 +4,7 @@
 # LIB="C:/Program Files/Microsoft Visual Studio .NET 2003/Vc7/lib;c:/Microsoft Visual Studio .NET 2003/Vc7/PlatformSDK/Lib"
 
 # PCCTS_HOME=<your PCCTS_HOME>
-PCCTS_HOME=$(WORKSPACE)\Tools\CCode\Source\Pccts
+PCCTS_HOME=$(SOURCE_DIR)\Pccts
 ANTLR_SRC=$(PCCTS_HOME)\antlr
 PCCTS_H=$(PCCTS_HOME)\h
 
@@ -26,10 +26,10 @@ SUPPORT_OBJS = set.obj
 
 # Dependencies
 
-$(WORKSPACE)\Tools\bin\antlr.exe: $(ANTLR_OBJS) $(SUPPORT_OBJS)
+$(BIN_DIR)\antlr.exe: $(ANTLR_OBJS) $(SUPPORT_OBJS)
     $(CC) $(CFLAGS) -o antlr.exe $(ANTLR_OBJS) $(SUPPORT_OBJS)
     del *.obj
-		move antlr.exe $(WORKSPACE)\Tools\bin
+		move antlr.exe $(BIN_DIR)
 
 
 antlr.obj: $(ANTLR_SRC)\antlr.c \
@@ -230,4 +230,4 @@ clean:
 
 distclean:
     del *.obj
-    del $(WORKSPACE)\Tools\bin\antlr.exe
+    del $(BIN_DIR)\antlr.exe

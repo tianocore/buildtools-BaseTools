@@ -1,9 +1,7 @@
-ARCH ?= IA32
-MAKEROOT ?= ..
+!INCLUDE ..\MSmakefile.common
+ARCH = IA32
 
-all: $(MAKEROOT)/bin
-	$(MAKE) BIN_DIR=../../bin -C antlr -f makefile
-	$(MAKE) BIN_DIR=../../bin -C dlg -f makefile
+all:
+	$(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f antlr\AntlrMs.mak
+	$(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f dlg\DlgMs.mak
 
-$(MAKEROOT)/bin:
-	mkdir $(MAKEROOT)/bin

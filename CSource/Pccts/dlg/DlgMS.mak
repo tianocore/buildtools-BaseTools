@@ -4,7 +4,7 @@
 # LIB="C:/Program Files/Microsoft Visual Studio .NET 2003/Vc7/lib;c:/Microsoft Visual Studio .NET 2003/Vc7/PlatformSDK/Lib"
 
 # PCCTS_HOME=<your PCCTS_HOME>
-PCCTS_HOME=$(WORKSPACE)\Tools\CCode\Source\Pccts
+PCCTS_HOME=$(SOURCE_DIR)\Pccts
 DLG_SRC=$(PCCTS_HOME)\dlg
 PCCTS_H=$(PCCTS_HOME)\h
 
@@ -30,7 +30,7 @@ dlg.exe: $(DLG_OBJS) $(SUPPORT_OBJS)
     del *.obj
     del *.ilk
     del *.pdb
-		move dlg.exe $(WORKSPACE)\Tools\bin\.
+		move dlg.exe $(BIN_DIR)
 
 dlg_p.obj: $(DLG_SRC)\dlg_p.c \
 					$(PCCTS_H)\antlr.h \
@@ -118,4 +118,4 @@ clean:
 
 distclean:
     del *.obj
-    del $(WORKSPACE)\Tools\bin\dlg.exe
+    del $(BIN_DIR)\dlg.exe
