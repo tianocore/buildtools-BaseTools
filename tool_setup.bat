@@ -23,7 +23,10 @@ if not defined EDK_TOOLS_PATH goto no_tools_path
 if not exist %EDK_TOOLS_PATH% goto no_tools_path
 
 :path_ok
-set TOOLS_INSTALL_PATH=%~f0
+pushd .
+cd %~dp0
+set BASE_TOOLS_PATH=%CD%
+popd
 
 if /I "%1"=="-h" goto Usage
 if /I "%1"=="-help" goto Usage
@@ -34,6 +37,8 @@ if /I "%1"=="/help" goto Usage
 if /I "%1"=="build" goto build
 if /I "%1"=="rebuild" goto rebuild
 if NOT "%1"=="" goto Usage
+
+set PATH=%BASE_TOOLS_PATH%\Bin;%BASE_TOOLS_PATH%\Bin\Win32;%PATH%
 
 IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\antlr.exe" goto build
 IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\CompressDll.dll" goto build
@@ -73,7 +78,10 @@ IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\ZeroDebugData.exe" goto build
 goto end
 
 :rebuild
-call nmake -f %TOOLS_INSTALL_PATH%\MsMakefile cleanall
+pushd .
+cd %BASE_TOOLS_PATH%\CSource
+call nmake cleanall
+popd
 
 :build
 REM
@@ -84,7 +92,10 @@ echo.
 echo Building the Framework Tools
 echo.
 
-call nmake -f %TOOLS_INSTALL_PATH%\MsMakefile
+pushd .
+cd %BASE_TOOLS_PATH%\CSource
+call nmake
+popd
 
 @REM
 @REM Done!!!
