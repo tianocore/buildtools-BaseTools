@@ -201,10 +201,12 @@ Returns:
     ImageContext->Machine = TeHdr->Machine;
   }
 
+  /*
   if (!(EFI_IMAGE_MACHINE_TYPE_SUPPORTED (ImageContext->Machine))) {
     ImageContext->ImageError = IMAGE_ERROR_INVALID_MACHINE_TYPE;
     return RETURN_UNSUPPORTED;
   }
+  */
 
   //
   // See if the image type is supported.  We support EFI Applications,

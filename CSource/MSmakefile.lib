@@ -6,7 +6,7 @@ all: $(LIBRARY)
 
 $(LIBRARY) : $(OBJECTS)
 	-@if not exist $(LIB_PATH) mkdir $(LIB_PATH)
-	$(AR) /nologo /out:$@ $?
+	$(AR) /nologo /out:$@ $**
 
 .PHONY:clean
 clean:
