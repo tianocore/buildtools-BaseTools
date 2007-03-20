@@ -1,5 +1,4 @@
 !INCLUDE ..\MSmakefile.common
-ARCH = IA32
 
 all:
 	@pushd . & cd antlr & $(MAKE) BIN_DIR=$(BIN_PATH) SOURCE_DIR=$(SOURCE_PATH) -f AntlrMs.mak & popd

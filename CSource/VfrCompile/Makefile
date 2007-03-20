@@ -1,7 +1,5 @@
 !INCLUDE ..\MSmakefile.common
 
-ARCH = IA32
-
 APPNAME = VfrCompile
 
 LIBS = Common.lib String.lib

@@ -17,7 +17,7 @@ libs: $(LIBRARIES)
 	@echo # Build libraries
 	@echo ######################
 	@if not exist $(LIB_PATH) mkdir $(LIB_PATH)
-	@for %%i in ($**) do @pushd . & cd %%i & $(MAKE) -f MSmakefile & popd
+	@for %%i in ($**) do @pushd . & cd %%i & $(MAKE) & popd
 
 apps: $(APPLICATIONS)
 	@echo.
@@ -25,7 +25,7 @@ apps: $(APPLICATIONS)
 	@echo # Build executables
 	@echo ######################
 	@if not exist $(BIN_PATH) mkdir $(BIN_PATH)
-	@for %%i in ($**) do @pushd . & cd %%i & $(MAKE) -f MSmakefile & popd
+	@for %%i in ($**) do @pushd . & cd %%i & $(MAKE) & popd
 
 install: $(LIB_PATH) $(BIN_PATH)
 	@echo.
@@ -37,11 +37,11 @@ install: $(LIB_PATH) $(BIN_PATH)
 
 .PHONY: clean
 clean:
-	@for %%i in ($(LIBRARIES) $(APPLICATIONS)) do @pushd . & cd %%i & $(MAKE) -f MSmakefile clean & popd
+	@for %%i in ($(LIBRARIES) $(APPLICATIONS)) do @pushd . & cd %%i & $(MAKE) clean & popd
 
 .PHONY: cleanall
 cleanall:
-	@for %%i in ($(LIBRARIES) $(APPLICATIONS)) do @pushd . & cd %%i & $(MAKE) -f MSmakefile cleanall & popd
+	@for %%i in ($(LIBRARIES) $(APPLICATIONS)) do @pushd . & cd %%i & $(MAKE) cleanall & popd
         @del /f /q $(BIN_PATH)\*.pdb $(BIN_PATH)\*.ilk
 
 !INCLUDE MSmakefile.rule

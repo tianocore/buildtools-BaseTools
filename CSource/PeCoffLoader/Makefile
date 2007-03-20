@@ -1,5 +1,3 @@
-ARCH = IA32
-
 !INCLUDE ..\MSmakefile.common
 
 LIBNAME = PeCoffLoader

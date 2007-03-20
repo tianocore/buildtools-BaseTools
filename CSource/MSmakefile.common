@@ -1,10 +1,13 @@
-ARCH = IA32
 !IFNDEF EDK_TOOLS_PATH
 !ERROR "Please set your EDK_TOOLS_PATH!"
 !ENDIF
 
 !IFNDEF BASE_TOOLS_PATH
 !ERROR "Please run tool_setup.bat at first!"
+!ENDIF
+
+!IFNDEF ARCH
+ARCH = IA32
 !ENDIF
 
 MAKE        = nmake -nologo

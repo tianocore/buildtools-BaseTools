@@ -7,7 +7,7 @@
 	$(AS) -c $(ASFLAGS) $< -o $@
 
 %.obj : %.cpp
-	$(CC) -c $(CPPFLAGS) $< -o $@
+	$(CXX) -c $(CPPFLAGS) $< -o $@
 
 #-include $(DEPFILES)
 

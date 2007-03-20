@@ -1,9 +1,5 @@
 !INCLUDE ..\MSmakefile.common
 
-ARCH = IA32
-
-# VPATH = ..
-
 APPNAME = GenCapsuleHdr
 
 LIBS = Common.lib String.lib ole32.lib

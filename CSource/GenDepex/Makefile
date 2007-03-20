@@ -1,9 +1,5 @@
 !INCLUDE ..\MSmakefile.common
 
-ARCH = IA32
-
-# VPATH = ..
-
 APPNAME = GenDepex
 
 LIBS = Common.lib String.lib
