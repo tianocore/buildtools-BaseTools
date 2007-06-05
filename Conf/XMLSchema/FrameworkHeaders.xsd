@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" targetNamespace="http://www.TianoCore.org/2006/Edk2.0" xmlns="http://www.TianoCore.org/2006/Edk2.0">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" targetNamespace="http://www.TianoCore.org/2007/Edk2.1" xmlns="http://www.TianoCore.org/2007/Edk2.1">
   <!--
     Filename: FrameworkHeaders.xsd
     
-    Copyright (c) 2006, Intel Corp.
+    Copyright (c) 2007, Intel Corp.
 
     All rights reserved. This program and the accompanying materials
     are licensed and made available under the terms and conditions of the BSD License
@@ -12,7 +12,7 @@
     THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
     WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
     
-    APPROVED: 14-Jun-2006
+    APPROVED: 05-Jun-2007
   -->
   <xs:include schemaLocation="FrameworkDataElements.xsd"/>
   <xs:element name="FdbHeader">
@@ -24,13 +24,13 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element minOccurs="1" maxOccurs="1" name="DatabaseName" type="UiNameType" fixed="FrameworkDatabase"/>
-        <xs:element minOccurs="1" maxOccurs="1" name="GuidValue" type="GuidType"/>
+        <xs:element minOccurs="1" maxOccurs="1" name="GuidValue" type="GuidType" default="DD6913E0-3E4E-4B83-8838-57EE7FB71DD1"/>
         <xs:element minOccurs="1" maxOccurs="1" ref="Version"/>
         <xs:element minOccurs="1" maxOccurs="1" ref="Abstract"/>
         <xs:element minOccurs="1" maxOccurs="1" ref="Description"/>
         <xs:element minOccurs="1" maxOccurs="1" ref="Copyright"/>
         <xs:element minOccurs="1" maxOccurs="1" ref="License"/>
-        <xs:element minOccurs="1" maxOccurs="1" name="Specification" type="Sentence" default="FRAMEWORK_BUILD_PACKAGING_SPECIFICATION   0x00000052"/>
+        <xs:element minOccurs="1" maxOccurs="1" name="Specification" type="Sentence" default="FRAMEWORK_PACKAGING_SPECIFICATION   0x00090000"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
@@ -47,7 +47,7 @@
         <xs:element minOccurs="1" maxOccurs="1" ref="Description"/>
         <xs:element minOccurs="1" maxOccurs="1" ref="Copyright"/>
         <xs:element minOccurs="1" maxOccurs="1" ref="License"/>
-        <xs:element minOccurs="1" maxOccurs="1" name="Specification" type="Sentence" default="FRAMEWORK_BUILD_PACKAGING_SPECIFICATION   0x00000052"/>
+        <xs:element minOccurs="1" maxOccurs="1" name="Specification" type="Sentence" default="FRAMEWORK_PACKAGING_SPECIFICATION   0x00090000"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
@@ -67,26 +67,7 @@
         <xs:element minOccurs="1" maxOccurs="1" ref="Description"/>
         <xs:element minOccurs="1" maxOccurs="1" ref="Copyright"/>
         <xs:element minOccurs="1" maxOccurs="1" ref="License"/>
-        <xs:element minOccurs="1" maxOccurs="1" name="Specification" type="Sentence" default="FRAMEWORK_BUILD_PACKAGING_SPECIFICATION   0x00000052"/>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="PlatformHeader">
-    <xs:annotation>
-      <xs:documentation xml:lang="en">This header is for the Framework Platform Description (FPD) files.</xs:documentation>
-      <xs:documentation xml:lang="en">The Guid MUST change if the FPD changes break backward compatibility.</xs:documentation>
-      <xs:documentation xml:lang="en">The Version MUST change if the FPD changes, however, backward compatiblity is maintained.</xs:documentation>
-    </xs:annotation>
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element minOccurs="1" maxOccurs="1" name="PlatformName" type="UiNameType"/>
-        <xs:element minOccurs="1" maxOccurs="1" name="GuidValue" type="GuidType"/>
-        <xs:element minOccurs="1" maxOccurs="1" ref="Version"/>
-        <xs:element minOccurs="1" maxOccurs="1" ref="Abstract"/>
-        <xs:element minOccurs="1" maxOccurs="1" ref="Description"/>
-        <xs:element minOccurs="1" maxOccurs="1" ref="Copyright"/>
-        <xs:element minOccurs="1" maxOccurs="1" ref="License"/>
-        <xs:element minOccurs="1" maxOccurs="1" name="Specification" type="Sentence" default="FRAMEWORK_BUILD_PACKAGING_SPECIFICATION   0x00000052"/>
+        <xs:element minOccurs="1" maxOccurs="1" name="Specification" type="Sentence" default="FRAMEWORK_PACKAGING_SPECIFICATION   0x00090000"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
@@ -105,7 +86,7 @@
         <xs:element minOccurs="1" maxOccurs="1" ref="Description"/>
         <xs:element minOccurs="1" maxOccurs="1" ref="Copyright"/>
         <xs:element minOccurs="1" maxOccurs="1" ref="License"/>
-        <xs:element minOccurs="1" maxOccurs="1" name="Specification" type="Sentence" default="FRAMEWORK_BUILD_PACKAGING_SPECIFICATION   0x00000052"/>
+        <xs:element minOccurs="1" maxOccurs="1" name="Specification" type="Sentence" default="FRAMEWORK_PACKAGING_SPECIFICATION   0x00090000"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>

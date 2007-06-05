@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" xmlns="http://www.TianoCore.org/2006/Edk2.0" targetNamespace="http://www.TianoCore.org/2006/Edk2.0">
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" xmlns="http://www.TianoCore.org/2007/Edk2.1" targetNamespace="http://www.TianoCore.org/2007/Edk2.1">
   <!--
     Filename: FrameworkDataTypes.xsd
     
-    Copyright (c) 2006, Intel Corp.
+    Copyright (c) 2007, Intel Corp.
     All rights reserved. This program and the accompanying materials
     are licensed and made available under the terms and conditions of the BSD License
     which may be found at http://opensource.org/licenses/bsd-license.php
@@ -22,6 +22,26 @@
   <xs:simpleType name="ArchListType">
     <xs:restriction base="PrimaryArchListType">
       <xs:minLength value="1"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="BinFileType">
+    <xs:restriction base="xs:NCName">
+      <xs:enumeration value="LIB"/>
+      <xs:enumeration value="UNI_UI"/>
+      <xs:enumeration value="UNI_VER"/>
+      <xs:enumeration value="PE32"/>
+      <xs:enumeration value="FW"/>
+      <xs:enumeration value="GUID"/>
+      <xs:enumeration value="FREEFORM"/>
+      <xs:enumeration value="UEFI_APP"/>
+      <xs:enumeration value="PIC"/>
+      <xs:enumeration value="PEI_DEPEX"/>
+      <xs:enumeration value="DXE_DEPEX"/>
+      <xs:enumeration value="TE"/>
+      <xs:enumeration value="VER"/>
+      <xs:enumeration value="UI"/>
+      <xs:enumeration value="BIN"/>
+      <xs:enumeration value="FV"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="BlockNameType">
