@@ -1,4 +1,5 @@
 import Fd
+import Region
 
 #define T_CHAR_SPACE                ' '
 #define T_CHAR_NULL                 '\0'
@@ -48,6 +49,7 @@ class FdfParser :
         self.CurrentLineNumber = 1
         self.CurrentOffsetWithinLine = 0
         self.__Token = ""
+        self.__ParserBreak = False
 
     """Whether char at current FileBufferPos is whitespace,"""
     def __IsWhiteSpace(self, char):
@@ -59,12 +61,12 @@ class FdfParser :
     """Skip white spaces from current char, return number of chars skipped"""
     def __SkipWhiteSpace(self):
         Count = 0
-        while not EndOfFile(self):
+        while not self.__EndOfFile(self):
             Count += 1
             CurrentLineLen = len(self.profile.FileLinesList[self.CurrentLineNumber-1])
-            if CurrentChar(self) in (T_CHAR_NULL, T_CHAR_CR, T_CHAR_SPACE, T_CHAR_TAB):
-                GetOneChar(self)
-            if CurrentChar(self) == T_CHAR_LF:
+            if self.__CurrentChar(self) in (T_CHAR_NULL, T_CHAR_CR, T_CHAR_SPACE, T_CHAR_TAB):
+                self.__GetOneChar(self)
+            if self.__CurrentChar(self) == T_CHAR_LF:
                 self.CurrentLineNumber += 1
                 self.CurrentOffsetWithinLine = 0
             else:
@@ -91,6 +93,18 @@ class FdfParser :
     def Rewind(self):
         self.CurrentLineNumber = 1
         self.CurrentOffsetWithinLine = 0
+        
+    def __UndoOneChar(self):
+        
+        if self.CurrentLineNumber == 1 and self.CurrentOffsetWithinLine == 0:
+            return False
+        elif self.CurrentOffsetWithinLine == 0:
+            self.CurrentLineNumber -= 1
+            self.CurrentOffsetWithinLine = len(self.__CurrentLine(self)) - 1
+        else:
+            self.CurrentLineNumber -= 1
+            self.CurrentOffsetWithinLine -= 1
+        return True
         
     """Forward one char"""
     def __GetOneChar(self):
@@ -129,10 +143,10 @@ class FdfParser :
         DoubleSlashComment = False
         HashComment = False
 
-        while not EndOfFile(self):
+        while not self.__EndOfFile(self):
             
             # meet new line, then no longer in a comment for // and '#'
-            if CurrentChar(self) == T_CHAR_LF:
+            if self.__CurrentChar(self) == T_CHAR_LF:
                 self.CurrentLineNumber += 1
                 self.CurrentOffsetWithinLine = 0
                 if InComment and DoubleSlashComment:
@@ -142,33 +156,33 @@ class FdfParser :
                     InComment = False
                     HashComment = False
             # check for */ comment end
-            elif InComment and not DoubleSlashComment and not HashComment and CurrentChar(self) == T_CHAR_STAR and NextChar(self) == T_CHAR_SLASH:
-                SetCurrentCharValue(self, T_CHAR_SPACE)
-                GetOneChar(self)
-                SetCurrentCharValue(self, T_CHAR_SPACE)
-                GetOneChar(self)
+            elif InComment and not DoubleSlashComment and not HashComment and self.__CurrentChar(self) == T_CHAR_STAR and self.__NextChar(self) == T_CHAR_SLASH:
+                self.__SetCurrentCharValue(self, T_CHAR_SPACE)
+                self.__GetOneChar(self)
+                self.__SetCurrentCharValue(self, T_CHAR_SPACE)
+                self.__GetOneChar(self)
                 InComment = False
             # set comments to spaces
             elif InComment:
-                SetCurrentCharValue(self, T_CHAR_SPACE)
-                GetOneChar(self)
+                self.__SetCurrentCharValue(self, T_CHAR_SPACE)
+                self.__GetOneChar(self)
             # check for // comment
-            elif CurrentChar(self) == T_CHAR_SLASH and NextChar(self) == T_CHAR_SLASH and not EndOfLine(self):
+            elif self.__CurrentChar(self) == T_CHAR_SLASH and self.__NextChar(self) == T_CHAR_SLASH and not self.__EndOfLine(self):
                 InComment = True
                 DoubleSlashComment = True
             # check for '#' comment
-            elif CurrentChar(self) == T_CHAR_HASH and not EndOfLine(self):
+            elif self.__CurrentChar(self) == T_CHAR_HASH and not self.__EndOfLine(self):
                 InComment = True
                 HashComment = True
             # check for /* comment start
-            elif CurrentChar(self) == T_CHAR_SLASH and NextChar(self) == T_CHAR_STAR:
-                SetCurrentCharValue(self, T_CHAR_SPACE)
-                GetOneChar(self)
-                SetCurrentCharValue(self, T_CHAR_SPACE)
-                GetOneChar(self)
+            elif self.__CurrentChar(self) == T_CHAR_SLASH and self.__NextChar(self) == T_CHAR_STAR:
+                self.__SetCurrentCharValue(self, T_CHAR_SPACE)
+                self.__GetOneChar(self)
+                self.__SetCurrentCharValue(self, T_CHAR_SPACE)
+                self.__GetOneChar(self)
                 InComment = True
             else:
-                GetOneChar(self)
+                self.__GetOneChar(self)
 
         # restore from ListOfList to ListOfString
         self.profile.FileLinesList = ["".join(list) for list in self.profile.FileLinesList]
@@ -176,11 +190,11 @@ class FdfParser :
 
     """check whether input string is found from current char position along"""
     def __IsToken(self, string):
-        SkipWhiteSpace(self)
-        if EndOfFile(self):
+        self.__SkipWhiteSpace(self)
+        if self.__EndOfFile(self):
             return False
         # Only consider the same line, no multi-line token allowed
-        index = CurrentLine(self)[self.CurrentOffsetWithinLine, -1].find(string)
+        index = self.__CurrentLine(self)[self.CurrentOffsetWithinLine, -1].find(string)
         if index == 0:
             self.CurrentOffsetWithinLine += len(string)
             return True
@@ -188,14 +202,14 @@ class FdfParser :
 
     """check whether input keyword is found from current char position along, whole word only!"""
     def __IsKeyword(self, keyword):
-        SkipWhiteSpace(self)
-        if EndOfFile(self):
+        self.__SkipWhiteSpace(self)
+        if self.__EndOfFile(self):
             return False
         # Only consider the same line, no multi-line token allowed
-        index = CurrentLine(self)[self.CurrentOffsetWithinLine, -1].find(keyword)
+        index = self.__CurrentLine(self)[self.CurrentOffsetWithinLine, -1].find(keyword)
         if index == 0:
-            if not str(CurrentLine(self)[self.CurrentOffsetWithinLine + len(keyword)]).isspace() and \
-            CurrentLine(self)[self.CurrentOffsetWithinLine + len(keyword)] != '=':
+            if not str(self.__CurrentLine(self)[self.CurrentOffsetWithinLine + len(keyword)]).isspace() and \
+            self.__CurrentLine(self)[self.CurrentOffsetWithinLine + len(keyword)] != '=':
                 return False
             self.CurrentOffsetWithinLine += len(keyword)
             return True
@@ -203,24 +217,24 @@ class FdfParser :
 
     """get next C name from file lines"""
     def __GetNextWord(self):
-        SkipWhiteSpace(self)
-        if EndOfFile(self):
+        self.__SkipWhiteSpace(self)
+        if self.__EndOfFile(self):
             return False
         
-        TempChar = CurrentChar(self)
+        TempChar = self.__CurrentChar(self)
         StartPos = self.CurrentOffsetWithinLine
         if (TempChar >= 'a' and TempChar <= 'z') or (TempChar >= 'A' and TempChar <= 'Z') or TempChar == '_':
-            GetOneChar(self)
-            while not EndOfFile(self):
-                TempChar = CurrentChar(self)
+            self.__GetOneChar(self)
+            while not self.__EndOfFile(self):
+                TempChar = self.__CurrentChar(self)
                 if (TempChar >= 'a' and TempChar <= 'z') or (TempChar >= 'A' and TempChar <= 'Z') \
                 or (TempChar >= '0' and TempChar <= '9') or TempChar == '_' or TempChar == '-':
-                    GetOneChar(self)
+                    self.__GetOneChar(self)
                     
                 else:
                     break
 
-            self.Token = CurrentLine[StartPos, self.CurrentOffsetWithinLine]
+            self.Token = self.__CurrentLine[StartPos, self.CurrentOffsetWithinLine]
             return True
         #elif ...:
             # other conditions
@@ -229,24 +243,24 @@ class FdfParser :
         return False
     
     def __GetNextToken(self):
-        SkipWhiteSpace(self)
-        if EndOfFile(self):
+        self.__SkipWhiteSpace(self)
+        if self.__EndOfFile(self):
             return False
 
-        while not EndOfFile(self):
-                TempChar = CurrentChar(self)
+        while not self.__EndOfFile(self):
+                TempChar = self.__CurrentChar(self)
                 if not str(TempChar).isspace():
-                    GetOneChar(self)
+                    self.__GetOneChar(self)
                 else:
                     break
         else:
             return False
         
-        self.Token = CurrentLine[StartPos, self.CurrentOffsetWithinLine]
+        self.Token = self.__CurrentLine[StartPos, self.CurrentOffsetWithinLine]
         return True
 
     def __UndoToken(self):
-        while UndoOneChar(self) and not str(CurrentChar(self)).isspace():
+        while self.__UndoOneChar(self) and not str(self.__CurrentChar(self)).isspace():
             pass
     
     def __HexDigit(self, TempChar):
@@ -257,20 +271,20 @@ class FdfParser :
             return False
         
     def __GetHexNumber(self):
-        if not GetNextToken(self):
+        if not self.__GetNextToken(self):
             return False
         if not self.Token.startswith("0x"):
             return False
         if len(self.Token) <= 2:
             return False
-        charList = [c for c in self.Token[2, -1] if not HexDigit(self, c)]
+        charList = [c for c in self.Token[2, -1] if not self.__HexDigit(self, c)]
         if len(charList) == 0:
             return True
         else:
             return False
         
     def __GetDecimalNumber(self):
-        if not GetNextToken(self):
+        if not self.__GetNextToken(self):
             return False
         if self.Token.isdigit():
             return True
@@ -279,16 +293,16 @@ class FdfParser :
         
     """Skip to the occurrence of string in file lines buffer"""
     def __SkipToToken(self, string):
-        StartPos = GetFileBufferPos(self)
-        SkipWhiteSpace(self)
-        while not EndOfFile(self):
-            if CurrentLine(self)[self.CurrentOffsetWithinLine , -1].find(string) == 0:
+        StartPos = self.__GetFileBufferPos(self)
+        self.__SkipWhiteSpace(self)
+        while not self.__EndOfFile(self):
+            if self.__CurrentLine(self)[self.CurrentOffsetWithinLine , -1].find(string) == 0:
                 self.CurrentOffsetWithinLine += len(string)
                 return True
-            GetOneChar(self)
-            SkipWhiteSpace(self)
+            self.__GetOneChar(self)
+            self.__SkipWhiteSpace(self)
 
-        SetFileBufferPos(self, StartPos)
+        self.__SetFileBufferPos(self, StartPos)
         return False
 
     """Return the tuple of current line and offset within the line"""
@@ -327,57 +341,59 @@ class FdfParser :
             return
 
     def __GetFd(self):
-        if not IsToken(self, "[FD."):
+        if not self.__IsToken(self, "[FD."):
             Warning("expected [FD.] At Line %d" % self.CurrentLineNumber)
             return False
-        fdName = GetFdUiName(self)
-        Status = GetCreateFile(self, fdName)
+        fdName = self.__GetFdUiName(self)
+        Status = self.__GetCreateFile(self, fdName)
         if not Status:
             Warning("FD name error At Line %d" % self.CurrentLineNumber)
             return False
         
-        if not GetTokenStatements(self, fdName):
+        if not self.__GetTokenStatements(self, fdName):
             return False
         
-        Status = GetDefineStatements(self, fdName)
-        if not Status:
+        self.__GetDefineStatements(self, fdName)
+        if self.__ParserBreak:
+            self.__ParserBreak = False
             Warning("DEFINE statement error At Line %d" % self.CurrentLineNumber)
             return False
             
-        Status = GetSetStatements(self, fdName)
-        if not Status:
+        self.__GetSetStatements(self, fdName)
+        if self.__ParserBreak:
+            self.__ParserBreak = False
             Warning("SET statement error At Line %d" % self.CurrentLineNumber)
             return False
         
-        if not GetRegionLayout(self, fdName):
+        if not self.__GetRegionLayout(self, fdName):
             Warning("expected region layout At Line %d" % self.CurrentLineNumber)
             return False
-        while GetRegionLayout(self, fdName):
+        while self.__GetRegionLayout(self, fdName):
             pass
         return True
     
     def __GetFdUiName(self):
         fdName = ""
-        if GetNextWord(self):
+        if self.__GetNextWord(self):
             fd = Fd.FD()
             fdName = fd.FdUiName = self.Token
             self.profile.FdDict[self.Token] = fd
-        if not IsToken(self, "]"):
+        if not self.__IsToken(self, "]"):
             Warning("expected ']' At Line %d" % self.CurrentLineNumber)
             pass
         return fdName
 
     def __GetCreateFile(self, fdName):
 
-        if IsKeyWord(self, "CREATE_FILE"):
-            if not IsToken(self, "="):
+        if self.__IsKeyword(self, "CREATE_FILE"):
+            if not self.__IsToken(self, "="):
                 Warning("expected '=' At Line %d" % self.CurrentLineNumber)
                 return False
-            if not GetNextWord(self):
+            if not self.__GetNextWord(self):
                 Warning("expected file name At Line %d" % self.CurrentLineNumber)
                 return False
             fileName = self.Token
-            if not IsToken(self, ".fd"):
+            if not self.__IsToken(self, ".fd"):
                 Warning("expected '.fd' end At Line %d" % self.CurrentLineNumber)
                 return False
             fileName += ".fd"
@@ -387,51 +403,51 @@ class FdfParser :
         return True
 
     def __GetTokenStatements(self, fdName):
-        if not IsKeyword(self, "BaseAddress"):
+        if not self.__IsKeyword(self, "BaseAddress"):
             Warning("BaseAddress missing At Line %d" % self.CurrentLineNumber)
             return False
-        if not IsToken(self, "="):
+        if not self.__IsToken(self, "="):
             Warning("expected '=' At Line %d" % self.CurrentLineNumber)
             return False
-        if not GetHexNumber(self):
+        if not self.__GetHexNumber(self):
             Warning("expected Hex base address At Line %d" % self.CurrentLineNumber)
             return False
         fd = self.profile.FdDict[fdName]
         fd.BaseAddress = self.Token
         
-        if IsToken(self, "|"):
-            if GetNextWord(self):
+        if self.__IsToken(self, "|"):
+            if self.__GetNextWord(self):
                 fd.BaseAddressPcd = self.Token
             else:
                 Warning("expected PcdCName At Line %d" % self.CurrentLineNumber)
                 return False
 
-        if not IsKeyword(self, "Size"):
+        if not self.__IsKeyword(self, "Size"):
             Warning("Size missing At Line %d" % self.CurrentLineNumber)
             return False
-        if not IsToken(self, "="):
+        if not self.__IsToken(self, "="):
             Warning("expected '=' At Line %d" % self.CurrentLineNumber)
             return False
-        if not GetHexNumber(self):
+        if not self.__GetHexNumber(self):
             Warning("expected Hex size At Line %d" % self.CurrentLineNumber)
             return False
       
         fd.Size = self.Token
 
-        if IsToken(self, "|"):
-            if GetNextWord(self):
+        if self.__IsToken(self, "|"):
+            if self.__GetNextWord(self):
                 fd.SizePcd = self.Token
             else:
                 Warning("expected PcdCName At Line %d" % self.CurrentLineNumber)
                 return False
         
-        if not IsKeyword(self, "ErasePolarity"):
+        if not self.__IsKeyword(self, "ErasePolarity"):
             Warning("ErasePolarity missing At Line %d" % self.CurrentLineNumber)
             return False
-        if not IsToken(self, "="):
+        if not self.__IsToken(self, "="):
             Warning("expected '=' At Line %d" % self.CurrentLineNumber)
             return False
-        if not GetNextToken(self):
+        if not self.__GetNextToken(self):
             Warning("expected Erase Polarity At Line %d" % self.CurrentLineNumber)
             return False
         if self.Token != "1" and self.Token != 0:
@@ -452,31 +468,31 @@ class FdfParser :
         return True
     
     def __GetBlockStatement(self, fdName):
-        if not IsKeyword(self, "BlockSize"):
+        if not self.__IsKeyword(self, "BlockSize"):
             Warning("Block size missing At Line %d" % self.CurrentLineNumber)
             return False
-        if not IsToken(self, "="):
+        if not self.__IsToken(self, "="):
             Warning("expected '=' At Line %d" % self.CurrentLineNumber)
             return False
-        if not GetHexNumber(self):
+        if not self.__GetHexNumber(self):
             Warning("expected Hex block size At Line %d" % self.CurrentLineNumber)
             return False
 
         BlockSize = self.Token
         BlockSizePcd = None
-        if IsToken(self, "|"):
-            if GetNextWord(self):
+        if self.__IsToken(self, "|"):
+            if self.__GetNextWord(self):
                 BlockSizePcd = self.Token
             else:
                 Warning("expected PcdCName At Line %d" % self.CurrentLineNumber)
                 return False
 
         BlockNumber = "1"
-        if IsKeyword(self, "NumBlocks"):
-            if not IsToken(self, "="):
+        if self.__IsKeyword(self, "NumBlocks"):
+            if not self.__IsToken(self, "="):
                 Warning("expected '=' At Line %d" % self.CurrentLineNumber)
                 return False
-            if not GetDecimalNumber(self):
+            if not self.__GetDecimalNumber(self):
                 Warning("expected block numbers At Line %d" % self.CurrentLineNumber)
                 return False
             BlockNumber = self.Token
@@ -490,18 +506,53 @@ class FdfParser :
             pass
 
     def __GetDefineStatement(self, fdName):
-        if IsKeyword("DEFINE"):
-            GetNextToken(self)
+        if self.__IsKeyword("DEFINE"):
+            self.__GetNextToken(self)
             macro = self.Token
-            if not IsToken(self, "="):
+            if not self.__IsToken(self, "="):
+                self.__ParserBreak = True
                 Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+                return False
+            if not self.__GetNextToken(self):
+                self.__ParserBreak = True
+                Warning("expected value At Line %d" % self.CurrentLineNumber)
+                return False
+            value = self.Token
+            fd = self.profile.FdDict[fdName]
+            fd.DefineVarDict[macro] = value
+            return True
+        
+        return False
 
         
     def __GetSetStatements(self, fdName):
         while GetSetStatement(self, fdName):
             pass
         
+    def __GetSetStatement(self, fdName):
+        if self.__IsKeyword("SET"):
+            if not self.__GetNextWord(self):
+                self.__ParserBreak = True
+                Warning("expected PCD CName At Line %d" % self.CurrentLineNumber)
+                return False
+            macro = self.Token
+            if not self.__IsToken(self, "="):
+                self.__ParserBreak = True
+                Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+                return False
+            if not self.__GetNextToken(self):
+                self.__ParserBreak = True
+                Warning("expected value At Line %d" % self.CurrentLineNumber)
+                return False
+            value = self.Token
+            fd = self.profile.FdDict[fdName]
+            fd.SetVarDict[macro] = value
+            return True
+
+        return False
+
     def __GetRegionLayout(self, fdName):
+        pass
         
     #CreateProfile()
 
