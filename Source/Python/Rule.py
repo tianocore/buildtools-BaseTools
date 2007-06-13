@@ -1,3 +1,5 @@
+import RuleSimpleFile
+import RuleCompilexFile
 class Rule:
     def __init__(self):
         self.Arch = None
@@ -6,3 +8,4 @@ class Rule:
         self.NameGuid = None
         self.SimpleFile = None
         self.ComplexFile = None
+        

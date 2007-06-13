@@ -9,3 +9,18 @@ class region:
         self.RegionType = None
         self.RegionData = None
         
+        
+        
+##
+#  Add RegionData to Fd file
+##
+    def AddToBuffer(Buffer, BlockSize):
+        if self.RegionType == 'Fv':
+            fv = GenFds.FdfParse.FvDirc(self.RegionData)
+            fv.InitialInf (BlockSize, self.Offset, self.Size)
+            fv.AddToBuffer(Buffer)
+        if self.RegionType == 'File':
+            BinFile = open (self.RegionData, mode='r')
+            Buffer.write(BinFile.read)
+        if self.RegionType == 'Data' :
+            Buffer.write(self.RegionData)
