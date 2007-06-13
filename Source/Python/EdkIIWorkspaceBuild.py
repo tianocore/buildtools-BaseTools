@@ -319,10 +319,10 @@ class WorkspaceBuild(object):
           elif len(l) == 1:
             pb.LibraryClass = LibraryClassObject(l[0], DataType.SUP_MODULE_LIST_STRING)
 
-        pb.ModuleEntryPointList = (infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_ENTRY_POINT])
-        pb.ModuleUnloadImageList = (infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_UNLOAD_IMAGE])
-        pb.ConstructorList = (infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_CONSTRUCTOR])
-        pb.DestructorList = (infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_DESTRUCTOR])
+        pb.ModuleEntryPointList.extend(infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_ENTRY_POINT])
+        pb.ModuleUnloadImageList.extend(infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_UNLOAD_IMAGE])
+        pb.ConstructorList.extend(infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_CONSTRUCTOR])
+        pb.DestructorList.extend(infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_DESTRUCTOR])
 
         #Sources
         for index in range(len(infObj.Contents[key].Sources)):
@@ -500,11 +500,11 @@ if __name__ == '__main__':
 #  print ewb.DecDatabase
   
   #
-  for key in DataType.ARCH_LIST:
-    print key
+  for arch in DataType.ARCH_LIST:
+    print arch
     print 'Platform'
-    for platform in ewb.Build[key].PlatformDatabase.keys():
-      p = ewb.Build[key].PlatformDatabase[platform]
+    for platform in ewb.Build[arch].PlatformDatabase.keys():
+      p = ewb.Build[arch].PlatformDatabase[platform]
       print p.DescFilePath   
       print p.PlatformName   
       print p.Guid           
@@ -517,8 +517,8 @@ if __name__ == '__main__':
     #End of Platform
   
     print 'package'
-    for package in ewb.Build[key].PackageDatabase.keys():
-      p = ewb.Build[key].PackageDatabase[package]
+    for package in ewb.Build[arch].PackageDatabase.keys():
+      p = ewb.Build[arch].PackageDatabase[package]
       print p.DescFilePath  
       print p.PackageName   
       print p.Guid          
@@ -532,8 +532,8 @@ if __name__ == '__main__':
     #End of Package
     
     print 'module'
-    for module in ewb.Build[key].ModuleDatabase.keys():
-      p = ewb.Build[key].ModuleDatabase[module]
+    for module in ewb.Build[arch].ModuleDatabase.keys():
+      p = ewb.Build[arch].ModuleDatabase[module]
       print p.DescFilePath          
       print p.BaseName             
       print p.ModuleType           
