@@ -1,14 +1,16 @@
 class FV:
     def __init__(self):
         self.UiFvName = None
-        self.CreateFile = None
-        self.DefineStatementList = None
-        self.SetstatementList = None
+        self.CreateFileName = None
+        # DefineVarDict[var] = value
+        self.DefineVarDict = None
+        # SetVarDict[var] = value
+        self.SetVarDict = None
         self.FvAttributeList = None
         self.FvAttributeset = None
         self.FvAttributeClear = None
         self.AprioriSection = None
-        self.FFsList = None
+        self.FfsList = None
         
         self.FvInfFile = None
         
