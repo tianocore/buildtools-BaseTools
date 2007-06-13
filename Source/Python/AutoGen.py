@@ -5,8 +5,6 @@ import EdkLogger
 from EdkIIWorkspaceBuild import *
 from GenMake import *
 from DataType import *
-from AutoGenRoutines import *
-from PcdDatabaseAutoGen import *
 from GenC import *
 
 #
@@ -17,8 +15,8 @@ from GenC import *
 
 class AutoGen(object):
 
-    PcdTokenNumber = {}     # (TokenSpaceGuidCName, TokenCName) : GeneratedTokenNumber
-    DynamicPcdList = []     # [(TokenSpaceGuidCName1, TokenCName1), (TokenSpaceGuidCName2, TokenCName2), ...]
+    PcdTokenNumber = {}     # (TokenCName, TokenSpaceGuidCName) : GeneratedTokenNumber
+    DynamicPcdList = []     # [(TokenCName1, TokenSpaceGuidCName1), (TokenCName2, TokenSpaceGuidCName2), ...]
     _TokenNumber = 1
 
     ModuleDatabase = None
@@ -67,7 +65,7 @@ class AutoGen(object):
                     libraryConsumerList.append(libm)
                     libraryList.append(libm)
 
-                if libm.ConstructorList != [] and libm.ConstructorList[0] != [] and libm not in constructor:
+                if libm.ConstructorList != [] and libm not in constructor:
                     constructor.append(libm)
                     
                 if libm not in consumedByList:
@@ -185,7 +183,7 @@ class AutoGen(object):
            pcd.TokenValue == None or pcd.TokenValue == "":
             for pkg in self.PackageDatabase:
                 package = self.PackageDatabase[pkg]
-                key = (pcd.TokenSpaceGuidCName, pcd.TokenCName)
+                key = (pcd.TokenCName, pcd.TokenSpaceGuidCName)
                 if key in package.Pcds:
                     pcd.DatumType = package.Pcds[key].DatumType
                     pcd.TokenValue = package.Pcds[key].TokenValue
@@ -198,15 +196,15 @@ class AutoGen(object):
         pcdList = []
         for m in self.LibraryList + [self.Module]:
             # EdkLogger.info("  " + m.BaseName)
-            modulePcds = m.Pcds
-            for key in modulePcds:
-                if key not in platformPcds:
-                    EdkLogger.error("No matching PCD in platform: %s %s" % key)
-                    continue
-                pcd = platformPcds[key]
-                self.PreprocessPcd(pcd)
-                EdkLogger.info("    %s %s %s (%s)" % (pcd.TokenSpaceGuidCName, pcd.TokenCName, pcd.Type, pcd.DatumType))
-                pcdList.append(pcd)
+            pcdList.extend(m.Pcds.values())
+##            for key in modulePcds:
+##                if key not in platformPcds:
+##                    EdkLogger.error("No matching PCD in platform: %s %s" % key)
+##                    continue
+##                pcd = platformPcds[key]
+##                #self.PreprocessPcd(pcd)
+##                #EdkLogger.info("    %s %s %s (%s)" % (pcd.TokenSpaceGuidCName, pcd.TokenCName, pcd.Type, pcd.DatumType))
+##                pcdList.append(pcd)
         return pcdList
 
     def CreateModulePcdCode(self, pcd):
@@ -220,13 +218,13 @@ class AutoGen(object):
         if pcd.Type == TAB_PCDS_DYNAMIC_EX:
             tokenNumber = pcd.TokenValue
         else:
-            tokenNumber = self.PcdTokenNumber[pcd.TokenSpaceGuidCName, pcd.TokenCName]
+            tokenNumber = self.PcdTokenNumber[pcd.TokenCName, pcd.TokenSpaceGuidCName]
         self.AutoGenH.Append('#define %s  %d\n' % (pcdTokenName, tokenNumber))
 
-        datumSize = self.DatumSizeStringDatabase[pcd.DatumType]
-        datumSizeLib = self.DatumSizeStringDatabaseLib[pcd.DatumType]
-        getModeName = '_PCD_GET_MODE_' + self.DatumSizeStringDatabaseH[pcd.DatumType] + '_' + pcd.TokenCName
-        setModeName = '_PCD_SET_MODE_' + self.DatumSizeStringDatabaseH[pcd.DatumType] + '_' + pcd.TokenCName
+        datumSize = DatumSizeStringDatabase[pcd.DatumType]
+        datumSizeLib = DatumSizeStringDatabaseLib[pcd.DatumType]
+        getModeName = '_PCD_GET_MODE_' + DatumSizeStringDatabaseH[pcd.DatumType] + '_' + pcd.TokenCName
+        setModeName = '_PCD_SET_MODE_' + DatumSizeStringDatabaseH[pcd.DatumType] + '_' + pcd.TokenCName
 
         if pcd.Type == TAB_PCDS_DYNAMIC_EX:
             self.AutoGenH.Append('#define %s  LibPcdGetEx%s(&%s, %s)\n' % (getModeName, datumSizeLib, pcd.TokenSpaceGuidCName, pcdTokenName))
@@ -241,13 +239,13 @@ class AutoGen(object):
             else:
                 self.AutoGenH.Append('#define %s(Value)  LibPcdSet%s(%s, (Value))\n' % (setModeName, datumSizeLib, pcdTokenName))
         else:
-            PcdVariableName = '_gPcd_' + self.ItemTypeStringDatabase[pcd.Type] + '_' + pcd.TokenCName
+            PcdVariableName = '_gPcd_' + ItemTypeStringDatabase[pcd.Type] + '_' + pcd.TokenCName
             Const = 'const'
             if pcd.Type == TAB_PCDS_PATCHABLE_IN_MODULE:
                 Const = ''
             Type = ''
             Array = ''
-            Value = pcd.Value
+            Value = pcd.DefaultValue
             if pcd.DatumType == 'UINT64':
                 Value += 'ULL'
             if pcd.DatumType == 'VOID*':
@@ -298,7 +296,7 @@ class AutoGen(object):
     def CreateLibraryPcdCode(self, pcd):
         tokenSpaceGuidCName = pcd.TokenSpaceGuidCName
         tokenCName  = pcd.TokenCName
-        tokenNumber = self.PcdTokenNumber[tokenSpaceGuidCName, tokenCName]
+        tokenNumber = self.PcdTokenNumber[tokenCName, tokenSpaceGuidCName]
         datumType   = pcd.DatumType
         datumSize   = DatumSizeStringDatabaseH[datumType]
         datumSizeLib= DatumSizeStringDatabaseLib[datumType]
@@ -669,24 +667,25 @@ class AutoGen(object):
         for lib in self.LibraryList:
             if len(lib.ConstructorList) <= 0:
                 continue
-            ConstructorList.extend(lib.ConstructorList)
-            
+            #print lib.ConstructorList
+            ConstructorList.append(lib.ConstructorList)
+
         Dict = {'Type':'Constructor', 'Function':ConstructorList}
         if self.Module.ModuleType == 'BASE':
             if len(ConstructorList) == 0:
-                AutoGenC.Append(LibraryString[0], Dict)
+                self.AutoGenC.Append(LibraryString[0], Dict)
             else:
-                AutoGenC.Append(LibraryString[3], Dict)
+                self.AutoGenC.Append(LibraryString[3], Dict)
         elif self.Module.ModuleType in ['PEI_CORE','PEIM']:
             if len(ConstructorList) == 0:
-                AutoGenC.Append(LibraryString[1], Dict)
+                self.AutoGenC.Append(LibraryString[1], Dict)
             else:
-                AutoGenC.Append(LibraryString[4], Dict)
+                self.AutoGenC.Append(LibraryString[4], Dict)
         elif self.Module.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER','DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
             if len(ConstructorList) == 0:
-                AutoGenC.Append(LibraryString[2], Dict)
+                self.AutoGenC.Append(LibraryString[2], Dict)
             else:
-                AutoGenC.Append(LibraryString[5], Dict)
+                self.AutoGenC.Append(LibraryString[5], Dict)
 
     def CreateLibraryDestructorCode(self):
         #
@@ -696,14 +695,14 @@ class AutoGen(object):
         for lib in self.LibraryList:
             if len(lib.DestructorList) <= 0:
                 continue
-            DestructorList.extend(lib.DestructorList)
+            DestructorList.append(lib.DestructorList)
 
         DestructorList.reverse()
         if self.Module.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER','DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
             if len(DestructorList) == 0:
-                AutoGenC.Append(LibraryString[2], {'Type':'Destructor','Function':DestructorList})
+                self.AutoGenC.Append(LibraryString[2], {'Type':'Destructor','Function':DestructorList})
             else:
-                AutoGenC.Append(LibraryString[5], {'Type':'Destructor','Function':DestructorList})
+                self.AutoGenC.Append(LibraryString[5], {'Type':'Destructor','Function':DestructorList})
 
 
     def CreateModuleEntryPointCode(self):
@@ -792,26 +791,35 @@ class AutoGen(object):
         
     def CreatePcdCode(self):
         if self.IsLibrary:
-            self.CreateLibraryPcdCode()
+            for key in self.Module.Pcds:
+                self.CreateLibraryPcdCode(self.Module.Pcds[key])
         else:
-            self.CreateModulePcdCode()
+            for pcd in self.GetPcdList():
+                self.CreateModulePcdCode(pcd)
 
     def CreateHeaderCode(self):
-        AutoGenC.Append(AutoGenHeaderString, {'FileName':'AutoGen.c'})
-        
-        AutoGenH.Append(AutoGenHeaderString,   {'FileName':'AutoGen.h'})
-        AutoGenH.Append(AutoGenHPrologueString,{'Guid':self.Module.Guid.replace('-','_')})
+        # file header
+        self.AutoGenH.Append(AutoGenHeaderString,   {'FileName':'AutoGen.h'})
+        # header file Prologue
+        self.AutoGenH.Append(AutoGenHPrologueString,{'Guid':self.Module.Guid.replace('-','_')})
+        # header files includes
+        self.AutoGenH.Append("#include <%s>\n" % BasicHeaderFile)
 
+        # C file header
+        self.AutoGenC.Append(AutoGenHeaderString, {'FileName':'AutoGen.c'})
+        # C file header files includes
+        self.AutoGenC.Append("#include <%s>\n" % ModuleTypeHeaderFile[self.Module.ModuleType])
+        
         #
         # Publish the CallerId Guid
         #
         if self.Module.ModuleType == 'BASE':
-            AutoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED GUID  gEfiCallerIdGuid = %s;\n' % GuidStringToGuidStructureString(self.Module.Guid))
+            self.AutoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED GUID  gEfiCallerIdGuid = %s;\n' % GuidStringToGuidStructureString(self.Module.Guid))
         else:
-            AutoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  gEfiCallerIdGuid = %s;\n' % GuidStringToGuidStructureString(self.Module.Guid))
+            self.AutoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  gEfiCallerIdGuid = %s;\n' % GuidStringToGuidStructureString(self.Module.Guid))
 
     def CreateFooterCode(self):
-        AutoGenH.Append(AutoGenHEpilogueString)
+        self.AutoGenH.Append(AutoGenHEpilogueString)
 
     def CreateCode(self, filePath):
         self.CreateHeaderCode()
@@ -834,6 +842,9 @@ class AutoGen(object):
         if not self.IsLibrary:
             autoGenC = open(os.path.join(filePath, "AutoGen.c"), "w")
             autoGenC.write(self.AutoGenC.String)
+
+    def CreateMakefile(self, filePath):
+        pass
 
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
@@ -876,9 +887,11 @@ if __name__ == '__main__':
         ag = AutoGen(myModule, myPlatform, myWorkspace, myArch)
         print myModule.BaseName,"(%s)" % myModule
         for lm in ag.LibraryList:
-            if lm.ConstructorList[0] != []:
-                print "  %-40s:%40s" % (lm.BaseName, lm.ConstructorList[0])
+            if lm.ConstructorList != []:
+                print "  %-40s:%40s" % (lm.BaseName, lm.ConstructorList)
             else:
                 print "  %s:" % lm.BaseName
+            lmag = AutoGen(lm, myPlatform, myWorkspace, myArch)
+            lmag.CreateCode(os.path.join("tmp", lm.BaseName))
                 
         ag.CreateCode(os.path.join("tmp", myModule.BaseName))
