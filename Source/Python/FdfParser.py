@@ -17,8 +17,9 @@ import Region
 T_CHAR_BACKSLASH, T_CHAR_DOUBLE_QUOTE, T_CHAR_SINGLE_QUOTE, T_CHAR_STAR, T_CHAR_HASH) = \
 (' ', '\0', '\r', '\t', '\n', '/', '\\', '\"', '\'', '*', '#')
 
-def Warning(s):
-    print s + '\n'
+class Warning:
+    def __init__(self, s):
+        self.message = s
 
 class FileProfile :
     """File image in memory and information retrieved from it"""
@@ -35,10 +36,6 @@ class FileProfile :
             print "Error when opening file."
             return
         
-        #FileBufferPos = [CurrentLineNumber - 1, CurrentOffsetWithinLine]
-
-        #self.DictVarNameValue = {}
-        #self.DictPcdNameValue = {}
         self.FdDict = {}
         
 class FdfParser :
@@ -49,7 +46,6 @@ class FdfParser :
         self.CurrentLineNumber = 1
         self.CurrentOffsetWithinLine = 0
         self.__Token = ""
-        self.__ParserBreak = False
 
     """Whether char at current FileBufferPos is whitespace,"""
     def __IsWhiteSpace(self, char):
@@ -225,7 +221,7 @@ class FdfParser :
         StartPos = self.CurrentOffsetWithinLine
         if (TempChar >= 'a' and TempChar <= 'z') or (TempChar >= 'A' and TempChar <= 'Z') or TempChar == '_':
             self.__GetOneChar(self)
-            while not self.__EndOfFile(self):
+            while not self.__EndOfLine(self):
                 TempChar = self.__CurrentChar(self)
                 if (TempChar >= 'a' and TempChar <= 'z') or (TempChar >= 'A' and TempChar <= 'Z') \
                 or (TempChar >= '0' and TempChar <= '9') or TempChar == '_' or TempChar == '-':
@@ -247,7 +243,8 @@ class FdfParser :
         if self.__EndOfFile(self):
             return False
 
-        while not self.__EndOfFile(self):
+        StartPos = self.CurrentOffsetWithinLine
+        while not self.__EndOfLine(self):
                 TempChar = self.__CurrentChar(self)
                 if not str(TempChar).isspace():
                     self.__GetOneChar(self)
@@ -315,59 +312,62 @@ class FdfParser :
             
     """Parse the file profile buffer to extract fd, fv ... information"""
     def ParseFile(self):
-        while GetFd(self):
-            pass
-        else:
-            return
-        
-        while GetFv(self):
-            pass
-        else:
-            return
-        
-        while GetCapsule(self):
-            pass
-        else:
-            return
-        
-        while GetVtf(self):
-            pass
-        else:
-            return
-        
-        while GetRule(self):
-            pass
-        else:
-            return
 
+        try:
+            while GetFd(self):
+                pass
+
+            while GetFv(self):
+                pass
+
+            while GetCapsule(self):
+                pass
+
+            while GetVtf(self):
+                pass
+
+            while GetRule(self):
+                pass
+            
+        except Warning, X:
+            print X.message + '\n'
+            return
+        
     def __GetFd(self):
-        if not self.__IsToken(self, "[FD."):
-            Warning("expected [FD.] At Line %d" % self.CurrentLineNumber)
+
+        if not self.__GetNextToken(self):
             return False
+        
+        if self.__Token.startswith("[") and not self.__Token.startswith("[FD."):
+            self.__UndoToken(self)
+            return False
+        
+        if not self.__Token.startswith("[FD."):
+            raise Warning("expected [FD.] At Line %d" % self.CurrentLineNumber)
+        
         fdName = self.__GetFdUiName(self)
         Status = self.__GetCreateFile(self, fdName)
         if not Status:
-            Warning("FD name error At Line %d" % self.CurrentLineNumber)
-            return False
+            raise Warning("FD name error At Line %d" % self.CurrentLineNumber)
         
         if not self.__GetTokenStatements(self, fdName):
             return False
         
         self.__GetDefineStatements(self, fdName)
-        if self.__ParserBreak:
-            self.__ParserBreak = False
-            Warning("DEFINE statement error At Line %d" % self.CurrentLineNumber)
-            return False
+##        if self.__ParserBreak:
+##            self.__ParserBreak = False
+##            Warning("DEFINE statement error At Line %d" % self.CurrentLineNumber)
+##            return False
             
         self.__GetSetStatements(self, fdName)
-        if self.__ParserBreak:
-            self.__ParserBreak = False
-            Warning("SET statement error At Line %d" % self.CurrentLineNumber)
-            return False
+##        if self.__ParserBreak:
+##            self.__ParserBreak = False
+##            Warning("SET statement error At Line %d" % self.CurrentLineNumber)
+##            return False
         
         if not self.__GetRegionLayout(self, fdName):
-            Warning("expected region layout At Line %d" % self.CurrentLineNumber)
-            return False
+            raise Warning("expected region layout At Line %d" % self.CurrentLineNumber)
+            
         while self.__GetRegionLayout(self, fdName):
             pass
         return True
@@ -379,23 +379,23 @@ class FdfParser :
             fdName = fd.FdUiName = self.Token
             self.profile.FdDict[self.Token] = fd
         if not self.__IsToken(self, "]"):
-            Warning("expected ']' At Line %d" % self.CurrentLineNumber)
-            pass
+            raise Warning("expected ']' At Line %d" % self.CurrentLineNumber)
+            
         return fdName
 
     def __GetCreateFile(self, fdName):
 
         if self.__IsKeyword(self, "CREATE_FILE"):
             if not self.__IsToken(self, "="):
-                Warning("expected '=' At Line %d" % self.CurrentLineNumber)
-                return False
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+                
             if not self.__GetNextWord(self):
-                Warning("expected file name At Line %d" % self.CurrentLineNumber)
-                return False
+                raise Warning("expected file name At Line %d" % self.CurrentLineNumber)
+                
             fileName = self.Token
             if not self.__IsToken(self, ".fd"):
-                Warning("expected '.fd' end At Line %d" % self.CurrentLineNumber)
-                return False
+                raise Warning("expected '.fd' end At Line %d" % self.CurrentLineNumber)
+                
             fileName += ".fd"
             fd = self.profile.FdDict[fdName]
             fd.CreateFileName = fileName
@@ -404,14 +404,14 @@ class FdfParser :
 
     def __GetTokenStatements(self, fdName):
         if not self.__IsKeyword(self, "BaseAddress"):
-            Warning("BaseAddress missing At Line %d" % self.CurrentLineNumber)
-            return False
+            raise Warning("BaseAddress missing At Line %d" % self.CurrentLineNumber)
+           
         if not self.__IsToken(self, "="):
-            Warning("expected '=' At Line %d" % self.CurrentLineNumber)
-            return False
+            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            
         if not self.__GetHexNumber(self):
-            Warning("expected Hex base address At Line %d" % self.CurrentLineNumber)
-            return False
+            raise Warning("expected Hex base address At Line %d" % self.CurrentLineNumber)
+            
         fd = self.profile.FdDict[fdName]
         fd.BaseAddress = self.Token
         
@@ -419,18 +419,17 @@ class FdfParser :
             if self.__GetNextWord(self):
                 fd.BaseAddressPcd = self.Token
             else:
-                Warning("expected PcdCName At Line %d" % self.CurrentLineNumber)
-                return False
+                raise Warning("expected PcdCName At Line %d" % self.CurrentLineNumber)
 
         if not self.__IsKeyword(self, "Size"):
-            Warning("Size missing At Line %d" % self.CurrentLineNumber)
-            return False
+            raise Warning("Size missing At Line %d" % self.CurrentLineNumber)
+            
         if not self.__IsToken(self, "="):
-            Warning("expected '=' At Line %d" % self.CurrentLineNumber)
-            return False
+            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            
         if not self.__GetHexNumber(self):
-            Warning("expected Hex size At Line %d" % self.CurrentLineNumber)
-            return False
+            raise Warning("expected Hex size At Line %d" % self.CurrentLineNumber)
+            
       
         fd.Size = self.Token
 
@@ -438,21 +437,21 @@ class FdfParser :
             if self.__GetNextWord(self):
                 fd.SizePcd = self.Token
             else:
-                Warning("expected PcdCName At Line %d" % self.CurrentLineNumber)
-                return False
+                raise Warning("expected PcdCName At Line %d" % self.CurrentLineNumber)
+                
         
         if not self.__IsKeyword(self, "ErasePolarity"):
-            Warning("ErasePolarity missing At Line %d" % self.CurrentLineNumber)
-            return False
+            raise Warning("ErasePolarity missing At Line %d" % self.CurrentLineNumber)
+           
         if not self.__IsToken(self, "="):
-            Warning("expected '=' At Line %d" % self.CurrentLineNumber)
-            return False
+            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            
         if not self.__GetNextToken(self):
-            Warning("expected Erase Polarity At Line %d" % self.CurrentLineNumber)
-            return False
+            raise Warning("expected Erase Polarity At Line %d" % self.CurrentLineNumber)
+            
         if self.Token != "1" and self.Token != 0:
-            Warning("expected 1 or 0 Erase Polarity At Line %d" % self.CurrentLineNumber)
-            return False
+            raise Warning("expected 1 or 0 Erase Polarity At Line %d" % self.CurrentLineNumber)
+            
         fd.ErasePolarity = self.Token
 
         Status = GetBlockStatements(self, fdName)
@@ -461,22 +460,22 @@ class FdfParser :
     def __GetBlockStatements(self, fdName):
         
         if not GetBlockStatement(self, fdName):
-            Warning("expected block statement At Line %d" % self.CurrentLineNumber)
-            return False
+            raise Warning("expected block statement At Line %d" % self.CurrentLineNumber)
+            
         while GetBlockStatement(self, fdName):
             pass
         return True
     
     def __GetBlockStatement(self, fdName):
         if not self.__IsKeyword(self, "BlockSize"):
-            Warning("Block size missing At Line %d" % self.CurrentLineNumber)
+##            raise Warning("Block size missing At Line %d" % self.CurrentLineNumber)
             return False
+        
         if not self.__IsToken(self, "="):
-            Warning("expected '=' At Line %d" % self.CurrentLineNumber)
-            return False
+            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            
         if not self.__GetHexNumber(self):
-            Warning("expected Hex block size At Line %d" % self.CurrentLineNumber)
-            return False
+            raise Warning("expected Hex block size At Line %d" % self.CurrentLineNumber)
 
         BlockSize = self.Token
         BlockSizePcd = None
@@ -484,17 +483,16 @@ class FdfParser :
             if self.__GetNextWord(self):
                 BlockSizePcd = self.Token
             else:
-                Warning("expected PcdCName At Line %d" % self.CurrentLineNumber)
-                return False
+                raise Warning("expected PcdCName At Line %d" % self.CurrentLineNumber)
 
         BlockNumber = "1"
         if self.__IsKeyword(self, "NumBlocks"):
             if not self.__IsToken(self, "="):
-                Warning("expected '=' At Line %d" % self.CurrentLineNumber)
-                return False
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+                
             if not self.__GetDecimalNumber(self):
-                Warning("expected block numbers At Line %d" % self.CurrentLineNumber)
-                return False
+                raise Warning("expected block numbers At Line %d" % self.CurrentLineNumber)
+                
             BlockNumber = self.Token
         
         fd = self.profile.FdDict[fdName]
@@ -504,60 +502,160 @@ class FdfParser :
     def __GetDefineStatements(self, fdName):
         while GetDefineStatement(self, fdName):
             pass
-
+    
     def __GetDefineStatement(self, fdName):
         if self.__IsKeyword("DEFINE"):
             self.__GetNextToken(self)
             macro = self.Token
             if not self.__IsToken(self, "="):
-                self.__ParserBreak = True
-                Warning("expected '=' At Line %d" % self.CurrentLineNumber)
-                return False
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+                
             if not self.__GetNextToken(self):
-                self.__ParserBreak = True
-                Warning("expected value At Line %d" % self.CurrentLineNumber)
-                return False
+                raise Warning("expected value At Line %d" % self.CurrentLineNumber)
+
             value = self.Token
             fd = self.profile.FdDict[fdName]
             fd.DefineVarDict[macro] = value
             return True
         
         return False
-
-        
-    def __GetSetStatements(self, fdName):
-        while GetSetStatement(self, fdName):
+    
+    
+    def __GetSetStatements(self, fdName, region=None):
+        while GetSetStatement(self, fdName, region):
             pass
-        
-    def __GetSetStatement(self, fdName):
+
+    def __GetSetStatement(self, fdName, region):
         if self.__IsKeyword("SET"):
             if not self.__GetNextWord(self):
-                self.__ParserBreak = True
-                Warning("expected PCD CName At Line %d" % self.CurrentLineNumber)
-                return False
+                raise Warning("expected PCD CName At Line %d" % self.CurrentLineNumber)
+                
             macro = self.Token
             if not self.__IsToken(self, "="):
-                self.__ParserBreak = True
-                Warning("expected '=' At Line %d" % self.CurrentLineNumber)
-                return False
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+                
             if not self.__GetNextToken(self):
-                self.__ParserBreak = True
-                Warning("expected value At Line %d" % self.CurrentLineNumber)
-                return False
+                raise Warning("expected value At Line %d" % self.CurrentLineNumber)
+                
             value = self.Token
-            fd = self.profile.FdDict[fdName]
-            fd.SetVarDict[macro] = value
+            if region != None:
+                fd = self.profile.FdDict[fdName]
+                fd.SetVarDict[macro] = value
+            else:
+                region.SetVarDict[macro] = value
             return True
 
         return False
 
     def __GetRegionLayout(self, fdName):
-        pass
+        if not self.__GetHexNumber(self):
+            raise Warning("expected Region Offset At Line %d" % self.CurrentLineNumber)
         
-    #CreateProfile()
+        region = Region.region()
+        region.Offset = self.__Token
+        
+        if not self.__IsToken(self, "|"):
+            raise Warning("expected '|' At Line %d" % self.CurrentLineNumber)
+        
+        if not self.__GetHexNumber(self):
+            raise Warning("expected Region Size At Line %d" % self.CurrentLineNumber)
+        region.Size = self.__Token
+        
+        if not self.__GetNextWord(self):
+            return False
+        
+        if not self.__Token in ("SET", "FV", "FILE", "DATA"):
+            region.PcdOffset = self.__Token
+            if not self.__IsToken(self, "|"):
+                raise Warning("expected '|' At Line %d" % self.CurrentLineNumber)
+            if not self.__GetNextWord(self):
+                raise Warning("expected Region PCD Size At Line %d" % self.CurrentLineNumber)
+            region.PcdSize = self.__Token
+            
+            if not self.__GetNextWord(self):
+                return False
 
-    #GetCurrentLineNumber()
-    
+        if self.__Token == "SET":
+            self.__GetSetStatements(self, fdName, region)
+            if not self.__GetNextWord(self):
+                return False
+            
+        if self.__Token == "FV":
+            self.__UndoToken(self)
+            self.__GetRegionFvType(self, region)
+        elif self.__Token == "FILE":
+            self.__UndoToken(self)
+            self.__GetRegionFileType(self, region)
+        else:
+            self.__UndoToken(self)
+            self.__GetRegionDataType(self, region)
+            
+        fd = self.profile.FdDict[fdName]
+        fd.RegionList.append(region)
+
+        return True
+            
+    def __GetRegionFvType(self, region):
+
+        if not self.__IsKeyword(self, "FV"):
+            raise Warning("expected Keyword 'FV' At Line %d" % self.CurrentLineNumber)
+        
+        if not self.__IsToken(self, "="):
+            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+        
+        if not self.__GetNextToken(self):
+            raise Warning("expected FV name At Line %d" % self.CurrentLineNumber)
+        
+        region.RegionType = "FV"
+        region.RegionData = self.__Token
+        
+    def __GetRegionFileType(self, region):
+
+        if not self.__IsKeyword(self, "FILE"):
+            raise Warning("expected Keyword 'FILE' At Line %d" % self.CurrentLineNumber)
+
+        if not self.__IsToken(self, "="):
+            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+
+        if not self.__GetNextToken(self):
+            raise Warning("expected File name At Line %d" % self.CurrentLineNumber)
+
+        region.RegionType = "FILE"
+        region.RegionData = self.__Token
+
+    def __GetRegionDataType(self, region):
+        
+        if not self.__IsKeyword(self, "DATA"):
+            raise Warning("expected Keyword 'DATA' At Line %d" % self.CurrentLineNumber)
+
+        if not self.__IsToken(self, "="):
+            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+        
+        if not self.__IsToken(self, "{"):
+            raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
+        
+        if not self.__GetHexNumber(self):
+            raise Warning("expected Hex byte At Line %d" % self.CurrentLineNumber)
+        
+        if len(self.__Token) > 4:
+            raise Warning("Hex byte(must be 2 digits) too long At Line %d" % self.CurrentLineNumber)
+        
+        DataString = self.__Token
+        DataString += ","
+        
+        while self.__GetHexNumber(self):
+            if len(self.__Token) > 4:
+                raise Warning("Hex byte(must be 2 digits) too long At Line %d" % self.CurrentLineNumber)
+            DataString += self.__Token
+            DataString += ","
+            
+        if not self.__IsToken(self, "}"):
+            raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
+        
+        DataString = DataString.rstrip(",")
+        region.RegionType = "DATA"
+        region.RegionData = DataString
+        
     """
     IsFdTag()
     IsFvTag()
@@ -580,7 +678,7 @@ class FdfParser :
     GetInfOptions()
     ...
     
-    GetBlockStatements()
+    
     GetFvAttributes()
     GetAprioriSection()
     GetFileStatements()
