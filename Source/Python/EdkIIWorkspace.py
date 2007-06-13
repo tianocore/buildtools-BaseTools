@@ -12,7 +12,6 @@
 #
 
 import os, sys, time
-from XmlRoutines import *
 from DataType import *
 
 class EdkIIWorkspace:

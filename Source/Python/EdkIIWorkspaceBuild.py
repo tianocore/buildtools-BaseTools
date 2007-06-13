@@ -72,7 +72,16 @@ class ModuleBuildClassObject(object):
     self.Packages              = []        #[ DecFileName, ... ]
     self.Pcds                  = {}        #{ [(PcdCName, PcdGuidCName)] : PcdClassObject}
     self.BuildOptions          = {}        #{ [BuildOptionKey] : BuildOptionValue}
-    
+
+  def __str__(self):
+    return self.DescFilePath
+
+  def __eq__(self, other):
+    return self.DescFilePath == other.DescFilePath
+
+  def __hash__(self):
+    return hash(self.DescFilePath)
+
 class PackageBuildClassObject(object):
   def __init__(self):
     self.DescFilePath          = ''
@@ -87,6 +96,15 @@ class PackageBuildClassObject(object):
     self.LibraryClasses        = {}        #{ [LibraryClassName] : LibraryClassInfFile }
     self.Pcds                  = {}        #{ [(PcdCName, PcdGuidCName)] : PcdClassObject}
     
+  def __str__(self):
+    return self.DescFilePath
+
+  def __eq__(self, other):
+    return self.DescFilePath == other.DescFilePath
+
+  def __hash__(self):
+    return hash(self.DescFilePath)
+
 class PlatformBuildClassObject(object):
   def __init__(self):
     self.DescFilePath          = ''
@@ -99,6 +117,15 @@ class PlatformBuildClassObject(object):
     self.LibraryClasses        = {}        #{ (LibraryClassName, ModuleType) : LibraryClassInfFile }
     self.Pcds                  = {}        #{ [(PcdCName, PcdGuidCName)] : PcdClassObject }
     self.BuildOptions          = {}        #{ [BuildOptionKey] : BuildOptionValue }  
+
+  def __str__(self):
+    return self.DescFilePath
+
+  def __eq__(self, other):
+    return self.DescFilePath == other.DescFilePath
+
+  def __hash__(self):
+    return hash(self.DescFilePath)
 
 class ItemBuild(object):
   def __init__(self, arch, platform = None, package = None, module = None):
@@ -186,19 +213,19 @@ class WorkspaceBuild(object):
         #Pcds
         for index in range(len(dscObj.Contents[key].PcdsFixedAtBuild)):
           pcd = dscObj.Contents[key].PcdsFixedAtBuild[index].split(DataType.TAB_VALUE_SPLIT)
-          pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_FIXED_AT_BUILD, None, None, pcd[2], None)
+          pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_FIXED_AT_BUILD, None, pcd[2], None, None)
         for index in range(len(dscObj.Contents[key].PcdsPatchableInModule)):
           pcd = dscObj.Contents[key].PcdsPatchableInModule[index].split(DataType.TAB_VALUE_SPLIT)
-          pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_PATCHABLE_IN_MODULE, None, None, pcd[2], None)
+          pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_PATCHABLE_IN_MODULE, None, pcd[2], None, None)
         for index in range(len(dscObj.Contents[key].PcdsFeatureFlag)):
           pcd = dscObj.Contents[key].PcdsFeatureFlag[index].split(DataType.TAB_VALUE_SPLIT)
-          pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_FEATURE_FLAG, None, None, pcd[2], None)
+          pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_FEATURE_FLAG, None, pcd[2], None, None)
         for index in range(len(dscObj.Contents[key].PcdsDynamic)):
           pcd = dscObj.Contents[key].PcdsDynamic[index].split(DataType.TAB_VALUE_SPLIT)
-          pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC, None, None, pcd[2], None)
+          pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC, None, pcd[2], None, None)
         for index in range(len(dscObj.Contents[key].PcdsDynamicEx)):
           pcd = dscObj.Contents[key].PcdsDynamicEx[index].split(DataType.TAB_VALUE_SPLIT)
-          pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_EX, None, None, pcd[2], None)
+          pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_EX, None, pcd[2], None, None)
         
         self.Build[key].PlatformDatabase[dsc] = pb
         pb = None  

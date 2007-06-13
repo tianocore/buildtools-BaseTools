@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import string
 import EdkLogger
+from DataType import *
 
 ItemTypeStringDatabase  = {
     TAB_PCDS_FEATURE_FLAG:'FixedAtBuild',
@@ -9,6 +10,7 @@ ItemTypeStringDatabase  = {
     TAB_PCDS_DYNAMIC:'',
     TAB_PCDS_DYNAMIC_EX:''
 }
+
 DatumSizeStringDatabase = {'UINT8':'8','UINT16':'16','UINT32':'32','UINT64':'64','BOOLEAN':'BOOLEAN','VOID*':'8'}
 DatumSizeStringDatabaseH = {'UINT8':'8','UINT16':'16','UINT32':'32','UINT64':'64','BOOLEAN':'BOOL','VOID*':'PTR'}
 DatumSizeStringDatabaseLib = {'UINT8':'8','UINT16':'16','UINT32':'32','UINT64':'64','BOOLEAN':'Bool','VOID*':'Ptr'}
@@ -727,6 +729,22 @@ ${BEGIN}
 #define ${Specification}
 ${END}
 """
+
+BasicHeaderFile = "Base.h"
+
+ModuleTypeHeaderFile = {
+    "BASE"              :   BasicHeaderFile,
+    "SEC"               :   "PiPei.h",
+    "PEI_CORE"          :   "PiPei.h",
+    "PEIM"              :   "PiPei.h",
+    "DXE_CORE"          :   "PiDxe.h",
+    "DXE_DRIVER"        :   "PiDxe.h",
+    "DXE_SMM_DRIVER"    :   "PiDxe.h",
+    "DXE_RUNTIME_DRIVER":   "PiDxe.h",
+    "DXE_SAL_DRIVER"    :   "PiDxe.h",
+    "UEFI_DRIVER"       :   "Uefi.h",
+    "UEFI_APPLICATION"  :   "Uefi.h"
+}
 
 def GuidStringToGuidStructureString(Guid):
   GuidList = Guid.split('-')
