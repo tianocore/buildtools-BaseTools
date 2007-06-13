@@ -1,11 +1,22 @@
 import Rule
+import os
+import GenFdsGlobalVariable
 class FfsInfStatement :
     def __init__(self):
         self.Rule = None
         self.ver = None
         self.Ui = None
         self.InfFileName = None
-        
+        self.__infParse__(self.InfFileName)
+
+    def __infParse__(InfFile):
+        Inf = open (InfFile, mode = 'r')
+        self.Version = None
+        self.Guid = None
+        self.Name = None
+        self.ModuleType = None
+
+
     def GenFfs():
         Rule = FdsParse.RuleDict(Self.Rule)
         FileType = Ffs.ModuleTypeToFileType(self.Rule.ModuleType)
@@ -48,11 +59,24 @@ class FfsInfStatement :
             FfsOutput = '-o ' + OutputPath + Rule.NameGuid + '.ffs'
             InputSection = ' -i ' + OutputPath + OutputFile
             GenFfsCmd = 'GenFfs ' + FileType + Fixed + CheckSum + Alignment + \
-                         FfsOutput + InputSection
+                         FfsOutput +  ' -g ' + self.Guid + InputSection
             #
             # Call GenSection
             #
-            popen (genSectionCmd, mod= 'r')
+            popen (GenFfsCmd, mod= 'r')
             
             return OutputPaht + Rule.NameGuid + '.ffs'
+        #
+        # For Rule has ComplexFile
+        #
+        else:
+            OutPutPath = os.path.join(OutputDir, os.path.dirname(self.InfFileName), 'OUTPUT')
+            for Sect in self.Rule.CompliexFile.SectionList:
+                SectFiles = ' -i ' + Sect.GenSection(OutputPath, self.Guid)
+                
+            FfsOutput = OutputPath + self.Guid + '.ffs'
+            GenFfsCmd = 'GenFfs ' + '-t ' + FFs.ModuleTypeToFileType(self.ModuleType) \
+                         + ' -g ' + self.Guid + SectionFiles
+                
+
         
