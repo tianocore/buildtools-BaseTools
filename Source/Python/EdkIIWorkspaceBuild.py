@@ -170,7 +170,12 @@ class WorkspaceBuild(object):
                     self.AddToInfDatabase(dscObj.Contents[key].LibraryClasses[index][0].split(DataType.TAB_VALUE_SPLIT, 1)[1])
                 for index in range(len(dscObj.Contents[key].Components)):
                     self.AddToInfDatabase(dscObj.Contents[key].Components[index][0])
-                
+                    if len(dscObj.Contents[key].Components[index][1]) > 0:
+                        LibList = dscObj.Contents[key].Components[index][1]
+                        for indexOfLib in range(len(LibList)):
+                            Lib = LibList[indexOfLib]
+                            if len(Lib.split(DataType.TAB_VALUE_SPLIT)) == 2:
+                                self.AddToInfDatabase(CleanString(Lib.split(DataType.TAB_VALUE_SPLIT)[1]))
         #End For of Dsc
         
         #parse module to get package
@@ -313,13 +318,14 @@ class WorkspaceBuild(object):
                     pb.Specification[TAB_INF_DEFINES_EDK_RELEASE_VERSION] = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_EDK_RELEASE_VERSION][0]
                 if infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION][0] != '':
                     pb.Specification[TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION] = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION][0]                
+                
                 LibraryClass = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_LIBRARY_CLASS][0]
                 if LibraryClass != '':
-                    l = LibraryClass.split(DataType.TAB_VALUE_SPLIT)
-                    if len(l) == 2:
-                        pb.LibraryClass = LibraryClassObject(l[0], l[1])
-                    elif len(l) == 1:
+                    l = LibraryClass.split(DataType.TAB_VALUE_SPLIT, 1)
+                    if len(l) == 1:
                         pb.LibraryClass = LibraryClassObject(l[0], DataType.SUP_MODULE_LIST_STRING)
+                    else:
+                        pb.LibraryClass = LibraryClassObject(l[0], l[1])
 
                 pb.ModuleEntryPointList.extend(infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_ENTRY_POINT])
                 pb.ModuleUnloadImageList.extend(infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_UNLOAD_IMAGE])
@@ -507,58 +513,61 @@ if __name__ == '__main__':
         print 'Platform'
         for platform in ewb.Build[arch].PlatformDatabase.keys():
             p = ewb.Build[arch].PlatformDatabase[platform]
-            print p.DescFilePath     
-            print p.PlatformName     
-            print p.Guid                     
-            print p.Version
-            print p.OutputDirectory                
-            print p.Modules                
-            print p.LibraryClasses 
-            print p.Pcds                     
-            print p.BuildOptions     
+            print 'DescFilePath = ', p.DescFilePath     
+            print 'PlatformName = ', p.PlatformName     
+            print 'Guid = ', p.Guid                     
+            print 'Version = ', p.Version
+            print 'OutputDirectory = ', p.OutputDirectory                
+            print 'Modules = ', p.Modules                
+            print 'LibraryClasses = ', p.LibraryClasses 
+            print 'Pcds = ', p.Pcds                     
+            print 'BuildOptions = ', p.BuildOptions
+            print ''   
         #End of Platform
     
         print 'package'
         for package in ewb.Build[arch].PackageDatabase.keys():
             p = ewb.Build[arch].PackageDatabase[package]
-            print p.DescFilePath    
-            print p.PackageName     
-            print p.Guid                    
-            print p.Version             
-            print p.Protocols         
-            print p.Ppis                    
-            print p.Guids                 
-            print p.Includes            
-            print p.LibraryClasses
-            print p.Pcds                    
+            print 'DescFilePath = ', p.DescFilePath    
+            print 'PackageName = ', p.PackageName     
+            print 'Guid = ', p.Guid                    
+            print 'Version = ', p.Version             
+            print 'Protocols = ', p.Protocols         
+            print 'Ppis = ', p.Ppis                    
+            print 'Guids = ', p.Guids                 
+            print 'Includes = ', p.Includes            
+            print 'LibraryClasses = ', p.LibraryClasses
+            print 'Pcds = ', p.Pcds
+            print ''                    
         #End of Package
         
         print 'module'
         for module in ewb.Build[arch].ModuleDatabase.keys():
             p = ewb.Build[arch].ModuleDatabase[module]
-            print p.DescFilePath                    
-            print p.BaseName                         
-            print p.ModuleType                     
-            print p.Guid                                 
-            print p.Version
-            print p.Specification
+            print 'DescFilePath = ', p.DescFilePath                    
+            print 'BaseName = ', p.BaseName                         
+            print 'ModuleType = ', p.ModuleType                     
+            print 'Guid = ', p.Guid                                 
+            print 'Version = ', p.Version
+            print 'Specification = ', p.Specification
             if p.LibraryClass != None:
-                print p.LibraryClass.LibraryClass
-                print p.LibraryClass.SupModList
-            print p.ModuleEntryPointList 
-            print p.ModuleUnloadImageList
-            print p.ConstructorList            
-            print p.DestructorList             
+                print 'LibraryClass = ', p.LibraryClass.LibraryClass
+                print 'SupModList = ', p.LibraryClass.SupModList
+            print 'ModuleEntryPointList = ', p.ModuleEntryPointList 
+            print 'ModuleUnloadImageList = ', p.ModuleUnloadImageList
+            print 'ConstructorList = ', p.ConstructorList            
+            print 'DestructorList = ', p.DestructorList             
                                                                      
-            print p.Sources                            
-            print p.LibraryClasses             
-            print p.Protocols                        
-            print p.Ppis                                 
-            print p.Guids                                
-            print p.Includes                         
-            print p.Packages                         
-            print p.Pcds                                 
-            print p.BuildOptions
+            print 'Sources = ', p.Sources                            
+            print 'LibraryClasses = ', p.LibraryClasses             
+            print 'Protocols = ', p.Protocols                        
+            print 'Ppis = ', p.Ppis                                 
+            print 'Guids = ', p.Guids                                
+            print 'Includes = ', p.Includes                         
+            print 'Packages = ', p.Packages                         
+            print 'Pcds = ', p.Pcds                                 
+            print 'BuildOptions = ', p.BuildOptions
+            print ''
         #End of Module    
             
     #End of Arch List

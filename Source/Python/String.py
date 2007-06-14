@@ -215,10 +215,10 @@ def GetSingleValueOfKeyFromLines(Lines, Dictionary, CommentCharacter, KeySplitCh
                     Value = CleanString(LineList[1], CommentCharacter)
                 
                 if Key[0] not in Keys:
-                    Dictionary[Key[0]] = Value.split()
+                    Dictionary[Key[0]] = Value.splitlines()
                     Keys.append(Key[0])
                 else:
-                    Dictionary[Key[0]].extend(Value.split())                
+                    Dictionary[Key[0]].extend(Value.splitlines())                
     return True
 
 
