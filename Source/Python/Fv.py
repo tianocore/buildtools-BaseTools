@@ -4,13 +4,17 @@ class FV:
     def __init__(self):
         self.UiFvName = None
         self.CreateFileName = None
+        # 3-tuple list (blockSize, numBlocks, pcd)
+        self.BlockSizeList = None
         # DefineVarDict[var] = value
         self.DefineVarDict = None
         # SetVarDict[var] = value
         self.SetVarDict = None
-        self.FvAttributeList = None
-        self.FvAttributeset = None
-        self.FvAttributeClear = None
+        self.FvAlignment = None
+        # FvAttributeDict[attribute] = TRUE/FALSE (1/0)
+        self.FvAttributeDict = None
+##        self.FvAttributeset = None
+##        self.FvAttributeClear = None
         self.AprioriSection = None
         self.FfsList = None
         

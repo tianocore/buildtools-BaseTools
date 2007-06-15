@@ -1,6 +1,7 @@
 import Fd
 import Region
 import Fv
+import AprioriSection
 
 #define T_CHAR_SPACE                ' '
 #define T_CHAR_NULL                 '\0'
@@ -48,6 +49,7 @@ class FdfParser :
         self.CurrentLineNumber = 1
         self.CurrentOffsetWithinLine = 0
         self.__Token = ""
+        self.__SkippedChars = ""
 
     """Whether char at current FileBufferPos is whitespace,"""
     def __IsWhiteSpace(self, char):
@@ -294,14 +296,18 @@ class FdfParser :
     def __SkipToToken(self, string):
         StartPos = self.__GetFileBufferPos(self)
         self.__SkipWhiteSpace(self)
+        self.__SkippedChars = str(self.__CurrentChar(self))
         while not self.__EndOfFile(self):
             if self.__CurrentLine(self)[self.CurrentOffsetWithinLine , -1].find(string) == 0:
                 self.CurrentOffsetWithinLine += len(string)
+                self.__SkippedChars += string
                 return True
             self.__GetOneChar(self)
+            self.__SkippedChars += str(self.__CurrentChar(self))
             self.__SkipWhiteSpace(self)
 
         self.__SetFileBufferPos(self, StartPos)
+        self.__SkippedChars = ""
         return False
 
     """Return the tuple of current line and offset within the line"""
@@ -537,6 +543,12 @@ class FdfParser :
                 raise Warning("expected value At Line %d" % self.CurrentLineNumber)
                 
             value = self.Token
+            if value.startswith("{"):
+                # deal with value with {}
+                if not self.__SkipToToken(self, "}"):
+                    raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
+                value += self.__SkippedChars
+                
             obj.SetVarDict[macro] = value
             return True
 
@@ -672,29 +684,88 @@ class FdfParser :
 
         self.__GetDefineStatements(self, fv)
 
+        self.__GetBlockStatement(self, fv)
+
         self.__GetSetStatements(self, fv)
 
+        self.__GetFvAlignment(self, fv)
 
-##        if not self.__GetRegionLayout(self, fdName):
-##            raise Warning("expected region layout At Line %d" % self.CurrentLineNumber)
-##
-##        while self.__GetRegionLayout(self, fdName):
-##            pass
-##        return True
+        self.__GetAprioriSection(self, fv)
+        
+        while GetInfStatement(self, fv):
+            pass
+
+        while GetFileStatement(self, fv):
+            pass
+        
+        return True
+
+
+    def __GetFvAlignment(self, fv):
+        
+        if not self.__IsKeyword(self, "FvAlignment"):
+            return False
+        
+        if not self.__IsToken(self, "="):
+            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+        
+        if not self.__GetNextWord(self):
+            raise Warning("expected alignment value At Line %d" % self.CurrentLineNumber)
+        
+        fv.FvAlignment = self.__Token
+        return True
+    
+    def __GetFvAttributes(self, fv):
+        
+        while self.__GetNextWord(self):
+            name = self.__Token
+            if name == "APRIORI":
+                self.__UndoToken(self)
+                return
+
+            if not self.__IsToken(self, "="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            
+            if not self.__GetNextToken(self) or self.__Token not in (TRUE, FALSE, 1, 0):
+                raise Warning("expected TRUE/FALSE (1/0) At Line %d" % self.CurrentLineNumber)
+            
+            fv.FvAttributeDict[name] = self.__Token
+
+        return
+
+    def __GetAprioriSection(self, fv):
+        
+        if not self.__IsKeyword(self, "APRIORI"):
+            return False
+        
+        if not self.__IsToken(self, "{"):
+            raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
+        
+        aprSection = AprioriSection.AprioriSection()
+        while GetInfStatement(self, aprSection):
+            pass
+        
+        while GetFileStatement(self, aprSection):
+            pass
+        
+        if not self.__IsToken(self, "}"):
+            raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
+
+        fv.AprioriSection = aprSection
+        return True
+
+    def __GetInfStatement(self, section):
+
+
+    def __GetFileStatement(self, section):
+        pass
 
     """
     GetNextGuid()
-    GetPcdCName()
-    GetFileName()
-    GetInfFile()
-    GetInfOptions()
+
     ...
     
-    
-    GetFvAttributes()
-    GetAprioriSection()
-    GetFileStatements()
-    GetProcessFormat()
+   GetProcessFormat()
     GetComponentStatements()
     ...
     
