@@ -18,9 +18,9 @@ class VerSection (Section.Section):
         else :
             BuidNum = None
         GenSectionCmd = 'GenSection -o ' + OutputFile + ' -s EFI_SECTION_VERSION ' \
-                         + '-n ' + '\"' + self.StringData + '\"' + BuildNum
-        #
-        # Call GenSection
+                          + '-n ' + '\"' + self.StringData + '\"' + BuildNum
+        #GenSectionCmd = "GenSection -o aa.ver -s EFI_SECTION_VERSION -v \"0.01\""
+                         
         #
         # Call GenSection
         #

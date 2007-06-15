@@ -1,6 +1,7 @@
 import Ffs
 import AprioriSection
 from GenFdsGlobalVariable import GenFdsGlobalVariable
+import os
 class FV:
     def __init__(self):
         self.UiFvName = None
@@ -46,8 +47,10 @@ class FV:
         #
         # Call GenFv tool
         #
-        cmd = 'GenFv -i ' + self.FvInfFile.filename() + ' -o ' + self.UiFvName
-        popen(cmd, mod ='r')
+        
+        cmd = 'GenFv -i ' + GenFdsGlobalVariable.FvDir + self.UiFvName + '.inf'\
+               + ' -o ' + self.UiFvName
+        os.popen(cmd, 'r')
         
         #
         # Write the Fv contents to Buffer
@@ -61,7 +64,7 @@ class FV:
         #
         # Add [Options]
         #
-        self.FvInfFile.writelines("[Options]")
+        self.FvInfFile.writelines("[Options]" )
         self.FvInfFile.writelines("EFI_BASE_ADDRESS = " + Offset )
         self.FvInfFile.writelines("EFI_BLOCK_SIZE   = " + '%x' %BlockSize)
         #self.FvInfFile.writelines("EFI_NUM_BLOCKS   = " + '%x' %(Size/BlockSize))
@@ -70,8 +73,8 @@ class FV:
         # Add attribute
         #
         self.FvInfFile.writelines("[Attribute]")
-        if not (self.FvAttributeList == None):
-            for FvAttribute in self.FvAttributeList :
+        if not (self.FvAttributeDict == None):
+            for FvAttribute in self.FvAttributeDict :
                 self.FvInfFile.writelines(FvAttribute.Name + '=' + FvAttribute.Value)
             
         #

@@ -11,6 +11,18 @@ class Ffs:
         'UEFI_DRIVER'       : 'EFI_FV_FILETYPE_DRIVER',
         'UEFI_APPLICATION'  : 'EFI_FV_FILETYPE_APPLICATION'
     }
+    FvTypeToFileType = {
+        'SEC'               : 'EFI_FV_FILETYPE_SECURITY_CORE',
+        'PEI_CORE'          : 'EFI_FV_FILETYPE_PEI_CORE',
+        'PEIM'              : 'EFI_FV_FILETYPE_PEIM',
+        'DXE_CORE'          : 'EFI_FV_FILETYPE_DXE_CORE',
+        'FREEEFORM'         : 'EFI_FV_FILETYPE_FREEFORM',
+        'DRIVER'            : 'EFI_FV_FILETYPE_DRIVER',
+        'APPLICATION'       : 'EFI_FV_FILETYPE_APPLICATION',
+        'FV_IMAGE'          : 'EFI_FV_FILETYPE_FIRMWARE_VOLUME_IMAGE',
+        'RAW'               : 'EFI_FV_FILETYPE_RAW',
+        'PEI_DXE_COMBO'     : 'EFI_FV_FILETYPE_COMBINED_PEIM_DRIVER'
+    }
     SectionSuffix = {
         'PE32'                 : '.pe32',
         'PIC'                  : '.pic',
@@ -27,10 +39,10 @@ class Ffs:
     }
     
     def __init__(self):
-        self.NameGuid = None
+        self.NameGuid = ''
         self.Fixed = False
         self.CheckSum = False
-        self.Alignment = None
+        self.Alignment = ''
         self.SectionLsit = None
         
     def GenFfs():
