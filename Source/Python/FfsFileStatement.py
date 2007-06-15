@@ -1,4 +1,6 @@
 import Ffs
+import Rule
+from GenFdsGlobalVariable import GenFdsGlobalVariable
 class FileStatements (Ffs.Ffs) :
     def __init__(self):
         Ffs.Ffs.CheckSum = ''
@@ -9,9 +11,10 @@ class FileStatements (Ffs.Ffs) :
         self.FvType = None
         self.FilePath = None
         
-    def GenFfs():
+    def GenFfs(self):
         for section in self.SectionList :
-            SectionFiles = ' -i ' + section.GenSection()
+            SectionFiles = ' -i ' + section.GenSection(GenFdsGlobalVariable.\
+                           OuputDir, self.NameGuid)
         #
         # Prepare the parameter
         #
@@ -23,12 +26,12 @@ class FileStatements (Ffs.Ffs) :
                 CheckSum = ' -s '
         else :
                 CheckSume = ''
-        if not (self.Alignemnt == None):
-                Alignment = ' -a ' + self.Alignment
+        if not (self.Alignment == None):
+                Alignment = ' -a ' + '%d' %self.Alignment
         else :
                 Alignment = ''
                 
-        FileType = ' - t ' + Ffs.ModuleTypeToFileType(Rule.ModuleType)
+        FileType = ' - t ' + Ffs.Ffs.ModuleTypeToFileType(Rule.ModuleType)
         FfsOutput = OutputPath + Rule.NameGuid + '.ffs'
         InputSection = ' -i ' + OutputPath + OutputFile
         GenFfsCmd = 'GenFfs ' + FileType + Fixed + CheckSum + Alignment + \
@@ -36,7 +39,8 @@ class FileStatements (Ffs.Ffs) :
         #
         # Call GenSection
         #
-        popen (genSectionCmd, mod= 'r')
+        print GenFfsCmd
+        popen (genSectionCmd, 'r')
         
         return FfsOutput
         

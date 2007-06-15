@@ -4,7 +4,7 @@ class DataSection :
         self.SecType = None
         self.SectFileName = None
         
-    def GenSection(OutputPath, ModuleName):
+    def GenSection(self, OutputPath, ModuleName):
         #
         # Prepare the parameter of GenSection
         #

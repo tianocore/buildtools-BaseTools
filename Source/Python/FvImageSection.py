@@ -4,7 +4,7 @@ class FvImageSection(Section.Section):
         self.Aligenment = None
         self.Fv = None
         
-    def GenSection(OutputPath, ModuleName):
+    def GenSection(self, OutputPath, ModuleName):
         buffer = StringIo(mode='a+')
         self.Fv.AddToBuffer(buffer)
         FvFileName = OutputPath + ModuleName + '.fv'

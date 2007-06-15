@@ -12,7 +12,7 @@ class CompressSection (Section.Sction) :
         self.SectList = None
         
 
-    def GenSection(OutputPath, ModuleName):
+    def GenSection(self, OutputPath, ModuleName):
         #
         # Generate all section
         #

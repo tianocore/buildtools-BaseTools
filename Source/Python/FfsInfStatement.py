@@ -18,7 +18,7 @@ class FfsInfStatement(Ffs.Ffs):
         self.ModuleType = None
 
 
-    def GenFfs():
+    def GenFfs(self):
         Rule = FdsParse.RuleDict(Self.Rule)
         FileType = Ffs.ModuleTypeToFileType(self.Rule.ModuleType)
         #

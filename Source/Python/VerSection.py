@@ -1,4 +1,6 @@
+from Ffs import Ffs
 import Section
+import os
 class VerSection (Section.Section):
     def __init__(self):
         self.Alignment = None
@@ -6,13 +8,13 @@ class VerSection (Section.Section):
         self.StringData = None
         self.FileName = None
         
-    def GenSection(OutputPath, ModuleName):
+    def GenSection(self,OutputPath, ModuleName):
         #
         # Prepare the parameter of GenSection
         #
-        OutputFile = OutputPath + ModuleName + Ffs.SectionSuffix('VERSION')
+        OutputFile = OutputPath + ModuleName + Ffs.SectionSuffix.get('VERSION')
         if not (self.BuildNum == None) :
-            BuildNum = '-j ' + self.BuildNum;
+            BuildNum = ' -j ' + '%f' %self.BuildNum;
         else :
             BuidNum = None
         GenSectionCmd = 'GenSection -o ' + OutputFile + ' -s EFI_SECTION_VERSION ' \
@@ -20,6 +22,9 @@ class VerSection (Section.Section):
         #
         # Call GenSection
         #
-        popen(GenSectionCmd, mod = 'r')
+        # Call GenSection
+        #
+        print GenSectionCmd
+        os.popen(GenSectionCmd,'r')
         
         return OutputFile

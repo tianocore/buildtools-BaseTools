@@ -1,7 +1,8 @@
 import Fd
 import Region
 import Fv
-
+import os
+import StringIO
 class FD:
     def __init__(self):
         self.FdUiName = None
@@ -23,13 +24,13 @@ class FD:
 ##
 #  Create Fd file
 ##
-    def GenFd (FdPath):
-        FdBuffer = StringIO(mode="a+b", bufsize="1024");
-        for Regions in RegionList :
+    def GenFd (self, FdPath):
+        FdBuffer = StringIO.StringIO('');
+        for Regions in self.RegionList :
             #
             # Call each region's AddToBuffer function 
             #
-            Regions.AddToBuffer (fd, self.BlockSizeList)
+            Regions.AddToBuffer (FdBuffer, self.BlockSizeList[0])
         #
         # Create a empty Fd file
         #

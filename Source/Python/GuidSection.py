@@ -5,7 +5,7 @@ class GuidSection(Section.Section) :
         self.NameGuid = None
         self.SectList = None
         
-    def GenSection(OutputPath, ModuleName):
+    def GenSection(self, OutputPath, ModuleName):
         #
         # Generate all section
         #

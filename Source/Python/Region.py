@@ -1,3 +1,6 @@
+import GenFds
+from GenFdsGlobalVariable import GenFdsGlobalVariable
+import FdfParser
 class region:
     def __init__(self):
         self.Offset = None
@@ -14,9 +17,9 @@ class region:
 ##
 #  Add RegionData to Fd file
 ##
-    def AddToBuffer(Buffer, BlockSize):
+    def AddToBuffer(self, Buffer, BlockSize):
         if self.RegionType == 'Fv':
-            fv = GenFds.FdfParse.FvDirc(self.RegionData)
+            fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(self.RegionData)
             fv.InitialInf (BlockSize, self.Offset, self.Size)
             fv.AddToBuffer(Buffer)
         if self.RegionType == 'File':

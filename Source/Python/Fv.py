@@ -1,5 +1,6 @@
 import Ffs
 import AprioriSection
+from GenFdsGlobalVariable import GenFdsGlobalVariable
 class FV:
     def __init__(self):
         self.UiFvName = None
@@ -23,21 +24,22 @@ class FV:
     #
     #  Generate Fv and add it to the Buffer
     #
-    def AddToBuffer (Buffer) :
+    def AddToBuffer (self, Buffer) :
         #
         # First Process the Apriori section
         #
-        FileNameList = self.AprioriSection.GenFfsFile ()
-        #
-        # Add Apriori section included Ffs file name to Inf file
-        #
-        for Ffs in FileNameList :
-            self.FvInfFile.writelines("EFI_FILE_NAME = " + Ffs)
+        if not (self.AprioriSection == None):
+            FileNameList = self.AprioriSection.GenFfsFile ()
+            #
+            # Add Apriori section included Ffs file name to Inf file
+            #
+            for Ffs in FileNameList :
+                self.FvInfFile.writelines("EFI_FILE_NAME = " + Ffs)
         #
         # Process Modules in FfsList
         #
-        for Ffs in self.FFsList :
-            FileName = Ffs.GenFfsFile ()
+        for FfsFile in self.FfsList :
+            FileName = FfsFile.GenFfs()
             self.FvInfFile.writelines("EFI_FILE_NAME = " + FileName)
             
         self.FvInfFile.close()
@@ -54,22 +56,23 @@ class FV:
         Buffer.write(fv.Read)
         fv.close
     
-    def InitialInf (BlockSize, Offset, Size) :
-        self.FvInfFile = open (GenFdsGlobalVariable.FvDir + self.UiFvname + '.inf', mode='a+')
+    def InitialInf (self, BlockSize, Offset, Size) :
+        self.FvInfFile = open (GenFdsGlobalVariable.FvDir + self.UiFvName + '.inf', 'a+')
         #
         # Add [Options]
         #
         self.FvInfFile.writelines("[Options]")
         self.FvInfFile.writelines("EFI_BASE_ADDRESS = " + Offset )
-        self.FvInfFile.writelines("EFI_BLOCK_SIZE   = " + BlockSize)
-        self.FvInfFile.writelines("EFI_NUM_BLOCKS   = " + Size/BlockSize)
+        self.FvInfFile.writelines("EFI_BLOCK_SIZE   = " + '%x' %BlockSize)
+        #self.FvInfFile.writelines("EFI_NUM_BLOCKS   = " + '%x' %(Size/BlockSize))
         
         #
         # Add attribute
         #
         self.FvInfFile.writelines("[Attribute]")
-        for FvAttribute in self.FvAttributeList :
-            self.FvInfFile.writelines(FvAttribute.Name + '=' + FvAttribute.Value)
+        if not (self.FvAttributeList == None):
+            for FvAttribute in self.FvAttributeList :
+                self.FvInfFile.writelines(FvAttribute.Name + '=' + FvAttribute.Value)
             
         #
         # Add [Files]

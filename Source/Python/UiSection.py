@@ -1,4 +1,5 @@
 import Section
+from Ffs import Ffs
 class UiSection (Section.Section):
     def __init__(self):
         self.Alignment = None
@@ -6,7 +7,7 @@ class UiSection (Section.Section):
         self.FileName = None
 
 
-    def GenSection(OutputPath, ModuleName):
+    def GenSection(self, OutputPath, ModuleName):
         #
         # Prepare the parameter of GenSection
         #
