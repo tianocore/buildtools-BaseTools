@@ -9,14 +9,14 @@ class CompressSection (Section.Sction) :
     def __init__(self):
         self.Alignment = None
         self.CompType = None
-        self.SectList = None
+        self.SectionList = None
         
 
     def GenSection(self, OutputPath, ModuleName):
         #
         # Generate all section
         #
-        for Sect in self.SectList:
+        for Sect in self.SectionList:
             SectFile = ' ' + Sect.GenSection(OutputPath, ModuleName)
 
         OutputFile = OutputPath + ModuleName + FFs.SectionSuffix ('COMPRESS')

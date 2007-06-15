@@ -4,6 +4,10 @@ import Fv
 import AprioriSection
 import FfsInfStatement
 import FfsFileStatement
+import VerSection
+import UiSection
+import FvImageSection
+import DataSection
 
 
 import re
@@ -688,12 +692,14 @@ class FdfParser :
 
         self.__GetFvAlignment(self, fv)
 
+        self.__GetFvAttributes(self, fv)
+        
         self.__GetAprioriSection(self, fv)
         
-        while GetInfStatement(self, fv):
+        while self.__GetInfStatement(self, fv):
             pass
 
-        while GetFileStatement(self, fv):
+        while self.__GetFileStatement(self, fv):
             pass
         
         return True
@@ -752,7 +758,7 @@ class FdfParser :
         fv.AprioriSection = aprSection
         return True
 
-    def __GetInfStatement(self, section):
+    def __GetInfStatement(self, obj):
 
         if not self.__IsKeyword(self, "INF"):
             return False
@@ -764,7 +770,7 @@ class FdfParser :
             raise Warning("expected INF file path At Line %d" % self.CurrentLineNumber)
         ffsInf.InfFileName = self.__Token
         
-        section.FfsList.append(ffsInf)
+        obj.FfsList.append(ffsInf)
         return True
     
     def __GetInfOptions(self, ffsInf):
@@ -793,7 +799,7 @@ class FdfParser :
         # GetUseLoc not implemented yet.
 
 
-    def __GetFileStatement(self, section):
+    def __GetFileStatement(self, obj):
 
         if not self.__IsKeyword(self, "FILE"):
             return False
@@ -811,8 +817,9 @@ class FdfParser :
             raise Warning("expected File GUID At Line %d" % self.CurrentLineNumber)
         ffsFile.NameGuid = self.__Token
     
-        return self.__GetFilePart(self, ffsFile)
-    
+        self.__GetFilePart(self, ffsFile)
+        obj.FfsList.append(ffsFile)
+        return True
         
     def __GetNextGuid(self):
         
@@ -833,10 +840,10 @@ class FdfParser :
         
         if self.__IsToken(self, "{"):
             self.__UndoToken(self)
-            return self.__GetSectionData(self, ffsFile)
+            self.__GetSectionData(self, ffsFile)
         else:
             ffsFile.FilePath = self.__Token
-        return True
+        
     
     def __GetFileOpts(self, ffsFile):
 
@@ -846,13 +853,138 @@ class FdfParser :
         if self.__IsKeyword(self, "CHECKSUM"):
             ffsFile.CheckSum = True
             
+        if self.__GetAlignment(self):
+            ffsFile.Alignment = self.__Token
+    
+    def __GetAlignment(self):
         if self.__IsKeyword(self, "Align"):
             if not self.__IsToken(self, "="):
                 raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
             
             if not self.__GetNextToken(self):
                 raise Warning("expected alignment value At Line %d" % self.CurrentLineNumber)
-            ffsFile.Alignment = self.__Token
+            
+        return False
+    
+    def __GetSectionData(self, ffsFile):
+        
+        if self.__GetNextToken(self, "{"):
+            while self.__GetLeafSection(self, ffsFile):
+                pass
+            while self.__GetEncapsulationSec(self, ffsFile):
+                pass
+            
+            if not self.__IsToken(self, "}"):
+                raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
+    
+    def __GetLeafSection(self, obj):
+        
+        if not self.__IsKeyword(self, "SECTION"):
+            return False
+        
+        alignment = None
+        if self.__GetAlignment(self):
+            alignment = self.__Token
+            
+        buildNum = None
+        if self.__IsKeyword(self, "BUILD_NUM"):
+            if not self.__IsToken(self, "="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            
+            if not self.__GetNextToken(self):
+                raise Warning("expected Build number value At Line %d" % self.CurrentLineNumber)
+            
+            buildNum = self.__Token
+            
+        if self.__IsKeyword(self, "VERSION"):
+            if not self.__IsToken(self, "="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            if not self.__GetNextToken(self):
+                raise Warning("expected version At Line %d" % self.CurrentLineNumber)
+            section = VerSection.VerSection()
+            section.Alignment = alignment
+            section.BuildNum = buildNum
+            if self.__Token.startswith("\""):
+                section.StringData = self.__Token
+            else:
+                section.FileName = self.__Token
+            obj.SectionList.append(section)
+
+        elif self.__IsKeyword(self, "UI"):
+            if not self.__IsToken(self, "="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            if not self.__GetNextToken(self):
+                raise Warning("expected UI At Line %d" % self.CurrentLineNumber)
+            section = UiSection.UiSection()
+            section.Alignment = alignment
+            if self.__Token.startswith("\""):
+                section.StringData = self.__Token
+            else:
+                section.FileName = self.__Token
+            obj.SectionList.append(section)
+            
+        elif self.__IsKeyword(self, "FV_IMAGE"):
+            if not self.__IsToken(self, "="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            if not self.__GetNextWord(self):
+                raise Warning("expected FV name At Line %d" % self.CurrentLineNumber)
+            
+            fv = Fv.FV()
+            fv.UiFvName = self.__Token
+            
+            if not self.__IsToken(self, "{"):
+                raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
+
+            self.__GetFvAttributes(self, fv)
+
+            self.__GetAprioriSection(self, fv)
+
+            while self.__GetInfStatement(self, fv):
+                pass
+
+            while self.__GetFileStatement(self, fv):
+                pass
+
+            if not self.__IsToken(self, "}"):
+                raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
+            
+            section = FvImageSection.FvImageSection()
+            section.Alignment = alignment
+            section.Fv = fv
+            obj.SectionList.append(section)
+            
+        else:
+            # DataSection
+            section = DataSection.DataSection()
+            section.Alignment = alignment
+            
+            if not self.__GetNextWord(self):
+                raise Warning("expected section type At Line %d" % self.CurrentLineNumber)
+            section.SecType = self.__Token
+            
+            if self.__IsToken(self, "="):
+                if not self.__GetNextToken(self):
+                    raise Warning("expected section file path At Line %d" % self.CurrentLineNumber)
+                section.SectFilename = self.__Token
+            else:
+                return self.__GetCglSection(self, section)
+            
+        return True
+            
+    def __GetCglSection(self, section):
+        
+        pass
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
     
     
     
