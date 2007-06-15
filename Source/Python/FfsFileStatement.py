@@ -8,8 +8,9 @@ class FileStatements (Ffs.Ffs) :
         Ffs.Ffs.Fixed = ''
         Ffs.Ffs.NameGuid = ''
         Ffs.Ffs.Alignment = ''
-        Ffs.Ffs.SectionLsit = ''
-        self.FvType = ''
+        Ffs.Ffs.SectionList = ''
+        self.FvType = None
+        self.FilePath = None
         
     def GenFfs(self):
         for section in self.SectionList :
