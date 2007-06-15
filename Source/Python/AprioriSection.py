@@ -1,7 +1,7 @@
 class AprioriSection :
     def __init__(self):
-        self.DefineStatementList = None
-        self.SetStatementList = None
+##        self.DefineStatementList = None
+##        self.SetStatementList = None
         self.FfsList = None
         
     def GenFfs ():

@@ -2,6 +2,11 @@ import Fd
 import Region
 import Fv
 import AprioriSection
+import FfsInfStatement
+import FfsFileStatement
+
+
+import re
 
 #define T_CHAR_SPACE                ' '
 #define T_CHAR_NULL                 '\0'
@@ -275,6 +280,7 @@ class FdfParser :
         if not self.__GetNextToken(self):
             return False
         if not self.Token.startswith("0x"):
+            self.__UndoToken(self)
             return False
         if len(self.Token) <= 2:
             return False
@@ -365,17 +371,9 @@ class FdfParser :
             return False
         
         self.__GetDefineStatements(self, fd)
-##        if self.__ParserBreak:
-##            self.__ParserBreak = False
-##            Warning("DEFINE statement error At Line %d" % self.CurrentLineNumber)
-##            return False
-            
+
         self.__GetSetStatements(self, fd)
-##        if self.__ParserBreak:
-##            self.__ParserBreak = False
-##            Warning("SET statement error At Line %d" % self.CurrentLineNumber)
-##            return False
-        
+
         if not self.__GetRegionLayout(self, fd):
             raise Warning("expected region layout At Line %d" % self.CurrentLineNumber)
             
@@ -588,11 +586,11 @@ class FdfParser :
                 return False
             
         if self.__Token == "FV":
-            self.__UndoToken(self)
             self.__GetRegionFvType(self, region)
-        elif self.__Token == "FILE":
-            self.__UndoToken(self)
+
+        elif self.__Token == "FILE":     
             self.__GetRegionFileType(self, region)
+
         else:
             self.__UndoToken(self)
             self.__GetRegionDataType(self, region)
@@ -756,20 +754,105 @@ class FdfParser :
 
     def __GetInfStatement(self, section):
 
+        if not self.__IsKeyword(self, "INF"):
+            return False
+        
+        ffsInf = FfsInfStatement.FfsInfStatement()
+        self.__GetInfOptions(self, ffsInf)
+        
+        if not self.__GetNextToken(self):
+            raise Warning("expected INF file path At Line %d" % self.CurrentLineNumber)
+        ffsInf.InfFileName = self.__Token
+        
+        section.FfsList.append(ffsInf)
+        return True
+    
+    def __GetInfOptions(self, ffsInf):
+        
+        if self.__IsKeyword(self, "RuleOverride"):
+            if not self.__IsToken(self, "="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            if not self.__GetNextWord(self):
+                raise Warning("expected Rule name At Line %d" % self.CurrentLineNumber)
+            ffsInf.Rule = self.__Token
+            
+        if self.__IsKeyword(self, "VERSION"):
+            if not self.__IsToken(self, "="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            if not self.__GetNextToken(self):
+                raise Warning("expected Version At Line %d" % self.CurrentLineNumber)
+            ffsInf.ver = self.__Token
+        
+        if self.__IsKeyword(self, "UI"):
+            if not self.__IsToken(self, "="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            if not self.__GetNextToken(self):
+                raise Warning("expected UI name At Line %d" % self.CurrentLineNumber)
+            ffsInf.Ui = self.__Token
+
+        # GetUseLoc not implemented yet.
+
 
     def __GetFileStatement(self, section):
-        pass
 
-    """
-    GetNextGuid()
+        if not self.__IsKeyword(self, "FILE"):
+            return False
+        
+        ffsFile = FfsFileStatement.FileStatements()
+        
+        if not self.__GetNextWord(self):
+            raise Warning("expected FFS type At Line %d" % self.CurrentLineNumber)
+        ffsFile.FvType = self.__Token
+        
+        if not self.__IsToken(self, "="):
+            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
 
-    ...
+        if not self.__GetNextGuid(self):
+            raise Warning("expected File GUID At Line %d" % self.CurrentLineNumber)
+        ffsFile.NameGuid = self.__Token
     
-   GetProcessFormat()
-    GetComponentStatements()
-    ...
+        return self.__GetFilePart(self, ffsFile)
     
-    """
+        
+    def __GetNextGuid(self):
+        
+        if not self.__GetNextToken(self):
+            return False
+        p = re.compile('[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}')
+        if p.match(self.__Token) != None:
+            return True
+        else:
+            return False
+        
+    def __GetFilePart(self, ffsFile):
+        
+        self.__GetFileOpts(self, ffsFile)
+        
+        if not self.__GetNextToken(self):
+            raise Warning("expected File name or section data At Line %d" % self.CurrentLineNumber)
+        
+        if self.__IsToken(self, "{"):
+            self.__UndoToken(self)
+            return self.__GetSectionData(self, ffsFile)
+        else:
+            ffsFile.FilePath = self.__Token
+        return True
+    
+    def __GetFileOpts(self, ffsFile):
+
+        if self.__IsKeyword(self, "FIXED"):
+            ffsFile.Fixed = True
+            
+        if self.__IsKeyword(self, "CHECKSUM"):
+            ffsFile.CheckSum = True
+            
+        if self.__IsKeyword(self, "Align"):
+            if not self.__IsToken(self, "="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            
+            if not self.__GetNextToken(self):
+                raise Warning("expected alignment value At Line %d" % self.CurrentLineNumber)
+            ffsFile.Alignment = self.__Token
     
     
     

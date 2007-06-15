@@ -5,8 +5,9 @@ class FileStatements (Ffs.Ffs) :
         Ffs.Ffs.Fixed = ''
         Ffs.Ffs.NameGuid = ''
         Ffs.Ffs.Alignment = ''
-        Ffs.Ffs.SectionLsit = ''
+        Ffs.Ffs.SectionList = ''
         self.FvType = None
+        self.FilePath = None
         
     def GenFfs():
         for section in self.SectionList :
