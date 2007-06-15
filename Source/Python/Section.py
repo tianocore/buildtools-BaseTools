@@ -1,5 +1,5 @@
 class Section :
-    self.SectionType = {
+    SectionType = {
         'RAW'       : 'EFI_SECTION_RAW',
         'FREEFORM'  : 'EFI_SECTION_FREEFORM_SUBTYPE_GUID',
         'PE32'      : 'EFI_SECTION_PE32',
@@ -11,7 +11,7 @@ class Section :
         'GUIDED'    : 'EFI_SECTION_GUID_DEFINED',
         'COMPRESS'  : 'EFI_SECTION_COMPRESSION'
     }
-    self.ToolGuild = {
+    ToolGuild = {
         '  '   :    'TianoCompress',
         '  '   :    'Laz7Compress',
         '  '   :    'CustomerCompress'
@@ -20,3 +20,4 @@ class Section :
         self.Alignment = None
         
     def GenSection():
+        pass

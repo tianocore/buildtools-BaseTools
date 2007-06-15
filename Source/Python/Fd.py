@@ -1,4 +1,8 @@
-class FD(object):
+import Fd
+import Region
+import Fv
+
+class FD:
     def __init__(self):
         self.FdUiName = None
         self.CreateFileName = None
@@ -45,3 +49,4 @@ class FD(object):
 # Create Flash Map file
 ##
     def GenFlashMap ():
+        pass

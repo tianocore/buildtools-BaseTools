@@ -1,5 +1,6 @@
-import FFs
-class CompressSection :
+import Ffs
+import Section
+class CompressSection (Section.Sction) :
     self.CompTypeDict = {
         'PI_STD'     : ' -c ',
         'NON_PI_STD' : ''

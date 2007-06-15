@@ -1,4 +1,5 @@
-class UiSection ("parent = Section"):
+import Section
+class UiSection (Section.Section):
     def __init__(self):
         self.Alignment = None
         self.StringData = None

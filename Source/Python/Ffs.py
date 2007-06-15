@@ -1,5 +1,5 @@
-class FFs:
-    self.ModuleTypeToFileType = {
+class Ffs:
+    ModuleTypeToFileType = {
         'SEC'               : 'EFI_FV_FILETYPE_SECURITY_CORE',
         'PEI_CORE'          : 'EFI_FV_FILETYPE_PEI_CORE',
         'PEIM'              : 'EFI_FV_FILETYPE_PEIM',
@@ -11,7 +11,7 @@ class FFs:
         'UEFI_DRIVER'       : 'EFI_FV_FILETYPE_DRIVER',
         'UEFI_APPLICATION'  : 'EFI_FV_FILETYPE_APPLICATION'
     }
-    self.SectionSuffix = {
+    SectionSuffix = {
         'PE32'                 : '.pe32',
         'PIC'                  : '.pic',
         'TE'                   : '.te',
@@ -30,13 +30,8 @@ class FFs:
         self.NameGuid = None
         self.Fixed = False
         self.CheckSum = False
-        self. Alignment = None
+        self.Alignment = None
         self.SectionLsit = None
         
     def GenFfs():
-        return ''
-        
-        
-
-
-        
+        pass

@@ -1,4 +1,5 @@
-class GuidSection :
+import Section
+class GuidSection(Section.Section) :
     def __init__(self):
         self.Alignment = None
         self.NameGuid = None

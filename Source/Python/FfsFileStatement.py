@@ -1,10 +1,12 @@
-class FileStatements ("parent: Ffs") :
+import Ffs
+class FileStatements (Ffs.Ffs) :
     def __init__(self):
+        Ffs.Ffs.CheckSum = ''
+        Ffs.Ffs.Fixed = ''
+        Ffs.Ffs.NameGuid = ''
+        Ffs.Ffs.Alignment = ''
+        Ffs.Ffs.SectionLsit = ''
         self.FvType = None
-        self.NameGuild = None
-        self.Fixed = None
-        self.Alignment = None
-        self.SectionList = None
         
     def GenFfs():
         for section in self.SectionList :

@@ -1,4 +1,5 @@
-class FvImageSection (self):
+import Section
+class FvImageSection(Section.Section):
     def __init__(self):
         self.Aligenment = None
         self.Fv = None

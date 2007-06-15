@@ -1,4 +1,5 @@
-class VerSection ("parent = Section"):
+import Section
+class VerSection (Section.Section):
     def __init__(self):
         self.Alignment = None
         self.BuildNum = None

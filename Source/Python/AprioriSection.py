@@ -1,4 +1,4 @@
-class ApriroriSection :
+class AprioriSection :
     def __init__(self):
         self.DefineStatementList = None
         self.SetStatementList = None

@@ -1,3 +1,5 @@
+import Ffs
+import AprioriSection
 class FV:
     def __init__(self):
         self.UiFvName = None
@@ -63,7 +65,7 @@ class FV:
         #
         self.FvInfFile.writelines("[Attribute]")
         for FvAttribute in self.FvAttributeList :
-            self.FvInfFile.writelines(FvAttribute.Name = FvAttribute.Value)
+            self.FvInfFile.writelines(FvAttribute.Name + '=' + FvAttribute.Value)
             
         #
         # Add [Files]

@@ -1,7 +1,8 @@
 import Rule
 import os
 import GenFdsGlobalVariable
-class FfsInfStatement :
+import Ffs
+class FfsInfStatement(Ffs.Ffs):
     def __init__(self):
         self.Rule = None
         self.ver = None

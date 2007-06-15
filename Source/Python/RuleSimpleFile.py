@@ -1,4 +1,5 @@
-class RuleSimpleFile :
+import Rule
+class RuleSimpleFile (Rule.Rule) :
     def __init__(self):
         self.Fixed = None
         self.CheckSum = None
