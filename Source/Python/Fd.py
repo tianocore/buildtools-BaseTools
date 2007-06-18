@@ -3,9 +3,11 @@ import Region
 import Fv
 import os
 import StringIO
+import sys
+from GenFdsGlobalVariable import GenFdsGlobalVariable
 class FD:
     def __init__(self):
-        self.FdUiName = None
+        self.FdUiName = ''
         self.CreateFileName = None
         self.BaseAddress = None
         self.BaseAddressPcd = None
@@ -24,7 +26,7 @@ class FD:
 ##
 #  Create Fd file
 ##
-    def GenFd (self, FdPath):
+    def GenFd (self):
         FdBuffer = StringIO.StringIO('');
         for Regions in self.RegionList :
             #
@@ -34,17 +36,14 @@ class FD:
         #
         # Create a empty Fd file
         #
-        if  not (FdPath.endswith ('/', start=0, end = sys.maxint)) or \
-            not (FdPath.endswith ('\\', start=0, end = sys.maxint)) :
-            fd = open(FdPath + Os.sep + file.self.FdUiName, mode='w+b')
-        else :
-            fd = open(FdPath + file.self.FdUiName, mode='w+b')
+        fd = open(GenFdsGlobalVariable.FvDir + self.FdUiName + '.fd', 'w+b')
+       
         #
         # Write the buffer contents to Fd file
         #
-        fd.write(FdBuffer);
-        FdBuffer.close;
+        fd.write(FdBuffer.getvalue());
         fd.close;
+        FdBuffer.close;
         
 ##
 # Create Flash Map file

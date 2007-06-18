@@ -1,4 +1,6 @@
 import Section
+import subprocess
+from Ffs import Ffs
 class GuidSection(Section.Section) :
     def __init__(self):
         self.Alignment = None
@@ -9,33 +11,52 @@ class GuidSection(Section.Section) :
         #
         # Generate all section
         #
+        SectFile = ''
         for Sect in self.SectionList:
-            SectFile = ' ' + Sect.GenSection(OutputPath, ModuleName)
+            SectFile = SectFile + \
+                       '  '     + \
+                       Sect.GenSection(OutputPath, ModuleName)
 
-        OutputFile = OutputPath + ModuleName + FFs.SectionSuffix ('GUIDED')
-        GenSectionCmd = 'GenSection -o ' + OutputFile + ' -s ' + \
-                        self.CompTypeDict(self.CompType) + SectFile
+        OutputFile = OutputPath + \
+                     ModuleName + \
+                     FFs.SectionSuffix.get('GUIDED')
+                     
+        GenSectionCmd = 'GenSection -o '                  + \
+                         OutputFile                       + \
+                         ' -s '                           + \
+                         self.CompTypeDict(self.CompType) + \
+                         SectFile
         #
         # Call GenSection
         #
-        popen (GenSectionCmd, mod = 'r')
+        subprocess.Popen (GenSectionCmd).communicate()
         
         #
         # Use external tool process the Output
         #
         InputFile = OutputFile
-        TempFile = OutputPath + ModuleName + '.tmp'
-        ExternalToolCmd = Section.ToolGuid(self.NameGuid) + ' -o ' + TempFile \
-                          + InputFile
+        TempFile = OutputPath + \
+                   ModuleName + \
+                   '.tmp'
+                   
+        ExternalToolCmd = Section.ToolGuid(self.NameGuid) + \
+                          ' -o ' +                          \
+                          TempFile +                        \
+                          InputFile
 
         #
         # Call external tool
         #
-        popen (GenSectnionCmd, mod = 'r')
+        subprocess.Popen (GenSectnionCmd).communicate()
         #
         # Call Gensection Add Secntion Header
         #
-        GenSectionCmd = 'GenSection -o ' + OutputFile + ' -s ' + \
-                        Section.SectionType('GUIDED') + ' ' + TempFile
+        GenSectionCmd = 'GenSection -o '                + \
+                         OutputFile                     + \
+                         ' -s '                         + \
+                         Section.SectionType('GUIDED')  + \
+                         ' '                            + \
+                         TempFile
                         
+        subprocess.Popen(GenSectionCmd).communicate()
         return OutputFile

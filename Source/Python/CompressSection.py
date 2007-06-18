@@ -1,5 +1,7 @@
 import Ffs
 import Section
+import subprocess
+
 class CompressSection (Section.Section) :
     self.CompTypeDict = {
         'PI_STD'     : ' -c ',
@@ -19,14 +21,20 @@ class CompressSection (Section.Section) :
         for Sect in self.SectionList:
             SectFile = ' ' + Sect.GenSection(OutputPath, ModuleName)
 
-        OutputFile = OutputPath + ModuleName + FFs.SectionSuffix ('COMPRESS')
-        GenSectionCmd = 'GenSection -o ' + OutputFile + ' -s ' + \
-                        Section.SectionType('COMPRESS') + \
-                        self.CompTypeDict(self.CompType) + SectFile
+        OutputFile = OutputPath + \
+                     ModuleName + \
+                     FFs.SectionSuffix ('COMPRESS')
+                     
+        GenSectionCmd = 'GenSection -o '                  + \
+                         OutputFile                       + \
+                         ' -s '                           + \
+                         Section.SectionType('COMPRESS')  + \
+                         self.CompTypeDict(self.CompType) + \
+                         SectFile
         #
         # Call GenSection
         #
-        popen (GenSectionCmd, mod = 'r')
+        subprocess.Popen (GenSectionCmd).communicate()
         
         return OutputFile
 

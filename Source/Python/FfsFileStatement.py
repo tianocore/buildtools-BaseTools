@@ -2,6 +2,7 @@ import Ffs
 import Rule
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import os
+import subprocess
 class FileStatements (Ffs.Ffs) :
     def __init__(self):
         Ffs.Ffs.CheckSum = ''
@@ -9,12 +10,16 @@ class FileStatements (Ffs.Ffs) :
         Ffs.Ffs.NameGuid = ''
         Ffs.Ffs.Alignment = ''
         Ffs.Ffs.SectionList = []
-        self.FvType = None
+        self.FvType = ''
         self.FilePath = None
         
     def GenFfs(self):
+        SectionFiles = ''
+        
         for section in self.SectionList :
-            SectionFiles = ' -i ' + section.GenSection(GenFdsGlobalVariable.\
+            SectionFiles = SectionFiles                          + \
+                           ' -i '                                + \
+                           section.GenSection(GenFdsGlobalVariable.\
                            OuputDir, self.NameGuid)
         #
         # Prepare the parameter
@@ -38,17 +43,32 @@ class FileStatements (Ffs.Ffs) :
         else:
             FileType = ''
 
-        FfsOutput = GenFdsGlobalVariable.OuputDir + self.NameGuid + '.ffs'
-        InputSection = ' -i ' + GenFdsGlobalVariable.OuputDir + FfsOutput
+        FfsOutput = GenFdsGlobalVariable.OuputDir + \
+                    self.NameGuid                 + \
+                    '.ffs'
+                    
+        InputSection = ' -i '                         + \
+                        GenFdsGlobalVariable.OuputDir + \
+                        FfsOutput
   
-        GenFfsCmd = 'GenFfs ' + FileType + Fixed + CheckSum + Alignment + \
-                    ' -o ' + FfsOutput + ' -g ' + self.NameGuid + SectionFiles
+        GenFfsCmd = 'GenFfsFile' +  \
+                     FileType +     \
+                     Fixed +        \
+                     CheckSum +     \
+                     Alignment +    \
+                     ' -o ' +       \
+                     FfsOutput +    \
+                     ' -g ' +       \
+                     self.NameGuid +\
+                     SectionFiles
+        #GenFfsCmd = "GenFfsFile -p1 Ffs.inf"
         #
         # Call GenSection
         #
         print GenFfsCmd
-        os.popen (GenFfsCmd, 'r')
-        
+        #subprocess.Popen (GenFfsCmd).communicate()
+        FfsOutput = GenFdsGlobalVariable.OuputDir + \
+                   "1BCAB7B3-8D0A-4740-B021-A42945A229F9-PeiIOMMIORegisterLibBbTest.PEI"
         return FfsOutput
         
 

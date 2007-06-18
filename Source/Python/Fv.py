@@ -2,6 +2,10 @@ import Ffs
 import AprioriSection
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import os
+import subprocess
+
+T_CHAR_LF = '\n'
+
 class FV:
     def __init__(self):
         self.UiFvName = None
@@ -35,53 +39,91 @@ class FV:
             # Add Apriori section included Ffs file name to Inf file
             #
             for Ffs in FileNameList :
-                self.FvInfFile.writelines("EFI_FILE_NAME = " + Ffs)
+                self.FvInfFile.writelines("EFI_FILE_NAME = " + \
+                                           Ffs               + \
+                                           T_CHAR_LF)
         #
         # Process Modules in FfsList
         #
         for FfsFile in self.FfsList :
             FileName = FfsFile.GenFfs()
-            self.FvInfFile.writelines("EFI_FILE_NAME = " + FileName)
+            self.FvInfFile.writelines("EFI_FILE_NAME = " + \
+                                       FileName          + \
+                                       T_CHAR_LF)
             
         self.FvInfFile.close()
         #
         # Call GenFv tool
         #
         
-        cmd = 'GenFv -i ' + GenFdsGlobalVariable.FvDir + self.UiFvName + '.inf'\
-               + ' -o ' + self.UiFvName
-        os.popen(cmd, 'r')
+        cmd = 'GenFvImage -i '            + \
+               GenFdsGlobalVariable.FvDir + \
+               self.UiFvName              + \
+               '.inf'                     + \
+               ' -o '                     + \
+               self.UiFvName
+
+        # For Test
+        cmd = "GenFvImage -i FvMain.inf"
+        #
+        # Call GenFv Tools
+        #
+        print cmd
+        subprocess.Popen(cmd).communicate()
         
         #
         # Write the Fv contents to Buffer
         #
-        fv = open (self.UiFvName, mode='read')
-        Buffer.write(fv.Read)
+        fv = open (GenFdsGlobalVariable.OuputDir + \
+                   self.UiFvName                 + \
+                   '.fv',                          \
+                   'r+b')
+                   
+        print GenFdsGlobalVariable.OuputDir + \
+              self.UiFvName                 + \
+              '.fv'
+              
+        Buffer.write(fv.read())
         fv.close
     
     def InitialInf (self, BlockSize, Offset, Size) :
-        self.FvInfFile = open (GenFdsGlobalVariable.FvDir + self.UiFvName + '.inf', 'a+')
+        self.FvInfFile = open (GenFdsGlobalVariable.FvDir + \
+                               self.UiFvName              + \
+                               '.inf',                      \
+                               'w+')
         #
         # Add [Options]
         #
-        self.FvInfFile.writelines("[Options]" )
-        self.FvInfFile.writelines("EFI_BASE_ADDRESS = " + Offset )
-        self.FvInfFile.writelines("EFI_BLOCK_SIZE   = " + '%x' %BlockSize)
-        #self.FvInfFile.writelines("EFI_NUM_BLOCKS   = " + '%x' %(Size/BlockSize))
+        self.FvInfFile.writelines("[Options]" + T_CHAR_LF)
+        
+        self.FvInfFile.writelines("EFI_BASE_ADDRESS = " + \
+                                   Offset               + \
+                                   T_CHAR_LF)
+                                   
+        self.FvInfFile.writelines("EFI_BLOCK_SIZE   = " + \
+                                  '%x' %BlockSize       + \
+                                  T_CHAR_LF)
+                                  
+        #self.FvInfFile.writelines("EFI_NUM_BLOCKS   = " + '%x' %(Size/BlockSize) \
+        #                          + ReturnSign)
         
         #
         # Add attribute
         #
-        self.FvInfFile.writelines("[Attribute]")
+        self.FvInfFile.writelines("[Attribute]" + T_CHAR_LF)
+        
         if not (self.FvAttributeDict == None):
             for FvAttribute in self.FvAttributeDict :
-                self.FvInfFile.writelines(FvAttribute.Name + '=' + FvAttribute.Value)
+                self.FvInfFile.writelines(FvAttribute.Name  + \
+                                          '='               + \
+                                          FvAttribute.Value + \
+                                          T_CHAR_LF )
             
         #
         # Add [Files]
         #
             
-        self.FvInfFile.writelines("[files]")
+        self.FvInfFile.writelines("[files]" + T_CHAR_LF)
 
 
 

@@ -9,7 +9,8 @@ class Section :
         'DXE_DEPEX' : 'EFI_SECTION_DXE_DEPEX',
         'PEI_DEPEX' : 'EFI_SECTION_PEI_DEPEX',
         'GUIDED'    : 'EFI_SECTION_GUID_DEFINED',
-        'COMPRESS'  : 'EFI_SECTION_COMPRESSION'
+        'COMPRESS'  : 'EFI_SECTION_COMPRESSION',
+        'UI'        : 'EFI_SECTION_USER_INTERFACE'
     }
     ToolGuild = {
         '  '   :    'TianoCompress',
