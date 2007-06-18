@@ -43,7 +43,7 @@ class Ffs:
         self.Fixed = False
         self.CheckSum = False
         self.Alignment = ''
-        self.SectionList = None
+        self.SectionList = []
         
     def GenFfs():
         pass

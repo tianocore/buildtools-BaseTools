@@ -5,4 +5,4 @@ class RuleSimpleFile (Rule.Rule) :
         self.CheckSum = None
         self.Alignment = None
         self.FileName = None
-        self.SectionType = None
+        self.FileModType = None

@@ -7,18 +7,18 @@ class FV:
         self.UiFvName = None
         self.CreateFileName = None
         # 3-tuple list (blockSize, numBlocks, pcd)
-        self.BlockSizeList = None
+        self.BlockSizeList = []
         # DefineVarDict[var] = value
-        self.DefineVarDict = None
+        self.DefineVarDict = {}
         # SetVarDict[var] = value
-        self.SetVarDict = None
+        self.SetVarDict = {}
         self.FvAlignment = None
         # FvAttributeDict[attribute] = TRUE/FALSE (1/0)
-        self.FvAttributeDict = None
+        self.FvAttributeDict = {}
 ##        self.FvAttributeset = None
 ##        self.FvAttributeClear = None
         self.AprioriSection = None
-        self.FfsList = None
+        self.FfsList = []
         
         self.FvInfFile = None
         

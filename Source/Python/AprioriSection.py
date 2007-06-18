@@ -2,7 +2,7 @@ class AprioriSection :
     def __init__(self):
 ##        self.DefineStatementList = None
 ##        self.SetStatementList = None
-        self.FfsList = None
+        self.FfsList = []
         
     def GenFfs ():
         for Ffs in self.FfsList :

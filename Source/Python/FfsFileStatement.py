@@ -8,7 +8,7 @@ class FileStatements (Ffs.Ffs) :
         Ffs.Ffs.Fixed = ''
         Ffs.Ffs.NameGuid = ''
         Ffs.Ffs.Alignment = ''
-        Ffs.Ffs.SectionList = ''
+        Ffs.Ffs.SectionList = []
         self.FvType = None
         self.FilePath = None
         

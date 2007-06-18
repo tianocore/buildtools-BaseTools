@@ -13,12 +13,12 @@ class FD:
         self.SizePcd = None
         self.ErasePolarity = False
         # 3-tuple list (blockSize, numBlocks, pcd)
-        self.BlockSizeList = None
+        self.BlockSizeList = []
         # DefineVarDict[var] = value
-        self.DefineVarDict = None
+        self.DefineVarDict = {}
         # SetVarDict[var] = value
-        self.SetVarDict = None
-        self.RegionList = None
+        self.SetVarDict = {}
+        self.RegionList = []
         
         
 ##

@@ -9,7 +9,7 @@ class CompressSection (Section.Section) :
     def __init__(self):
         self.Alignment = None
         self.CompType = None
-        self.SectionList = None
+        self.SectionList = []
         
 
     def GenSection(self, OutputPath, ModuleName):

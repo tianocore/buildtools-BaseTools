@@ -7,10 +7,10 @@ class Capsule :
 #        self.DefineStatementList = None
 #        self.SetSatementList = None
         # DefineVarDict[var] = value
-        self.DefineVarDict = None
+        self.DefineVarDict = {}
         # SetVarDict[var] = value
-        self.SetVarDict = None
+        self.SetVarDict = {}
         # TokensDict[var] = value
-        self.TokensDict = None
+        self.TokensDict = {}
         self.CapsuleData = None
         

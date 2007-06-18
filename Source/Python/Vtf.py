@@ -3,6 +3,7 @@ class Vtf:
         self.KeyArch = None
         self.ArchList = None
         self.UiName = None
-        self.OptionStatement = None
-        self.ComponentStatementList = None
+##        self.OptionStatement = None
+        self.ResetBin = None
+        self.ComponentStatementList = []
         

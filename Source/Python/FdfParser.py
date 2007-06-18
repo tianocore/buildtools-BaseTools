@@ -15,6 +15,9 @@ import CapsuleData
 import Rule
 import RuleComplexFile
 import RuleSimpleFile
+import EfiSection
+import Vtf
+import ComponentStatement
 
 import re
 
@@ -153,6 +156,8 @@ class FdfParser :
         return self.profile.FileLinesList[self.CurrentLineNumber - 1]
         
     """Replace comments with spaces"""
+    ### BUGBUG: No !include statement processing contained in this procedure
+    ### !include statement should be expanded at the same FileLinesList[CurrentLineNumber - 1]
     def PreprocessFile(self):
         # change string to list of chars, as string can NOT be modified
         self.profile.FileLinesList = [list(s) for s in self.profile.FileLinesList]
@@ -287,6 +292,7 @@ class FdfParser :
         if p.match(self.__Token) != None:
             return True
         else:
+            self.__UndoToken()
             return False
 
     def __UndoToken(self):
@@ -307,11 +313,13 @@ class FdfParser :
             self.__UndoToken()
             return False
         if len(self.__Token) <= 2:
+            self.__UndoToken()
             return False
         charList = [c for c in self.__Token[2, -1] if not self.__HexDigit( c)]
         if len(charList) == 0:
             return True
         else:
+            self.__UndoToken()
             return False
         
     def __GetDecimalNumber(self):
@@ -320,6 +328,7 @@ class FdfParser :
         if self.__Token.isdigit():
             return True
         else:
+            self.__UndoToken()
             return False
         
     """Skip to the occurrence of string in file lines buffer"""
@@ -352,6 +361,7 @@ class FdfParser :
     def ParseFile(self):
 
         try:
+            self.PreprocessFile()
             while GetFd():
                 pass
 
@@ -1009,7 +1019,7 @@ class FdfParser :
                 section = CompressSection.CompressSection()
                 section.Alignment = alignment
                 # Recursive sections...
-                GetLeafSection(section)
+                self.__GetLeafSection(section)
                 
                 if not self.__IsToken( "}"):
                     raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
@@ -1025,10 +1035,11 @@ class FdfParser :
                 guid = self.__Token
                 if not self.__IsToken("{"):
                     raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
-                section = CompressSection.CompressSection()
+                section = GuidSection.GuidSection()
                 section.Alignment = alignment
+                section.NameGuid = guid
                 # Recursive sections...
-                GetLeafSection(section)
+                self.__GetLeafSection(section)
                 
                 if not self.__IsToken( "}"):
                     raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
@@ -1169,6 +1180,8 @@ class FdfParser :
         if arch not in ("IA32", "X64", "IPF", "EBC", "Common"):
             raise Warning("Unknown Arch At line %d" % self.CurrentLineNumber)
         
+        moduleType = self.__GetModuleType()
+        
         if self.__IsToken("."):
             if not self.__GetNextWord():
                 raise Warning("expected template name At Line %d" % self.CurrentLineNumber)
@@ -1179,7 +1192,7 @@ class FdfParser :
         
         rule = self.__GetProcessFormat()
         rule.Arch = arch
-        rule.ModuleType = self.__GetModuleType()
+        rule.ModuleType = moduleType
         self.profile.RuleList.append(rule)
         return True
     
@@ -1228,9 +1241,276 @@ class FdfParser :
                 raise Warning("Incorrect alignment At Line %d" % self.CurrentLineNumber)
             alignment = self.__Token
 
+        if fixed or checksum or alignment != "":
+            # Simple file rule expected
+            if not self.__GetNextToken():
+                raise Warning("expected File name At Line %d" % self.CurrentLineNumber)
+            
+            rule = RuleSimpleFile.RuleSimpleFile()
+            rule.NameGuid = guid
+            rule.FileModType = type
+            rule.Alignment = alignment
+            rule.CheckSum = checksum
+            rule.Fixed = fixed
+            rule.FileName = self.__Token
+            return rule
+        
+        if self.__IsToken("{"):
+            # Complex file rule expected
+            rule = RuleComplexFile.RuleCompilexFile()
+            rule.NameGuid = guid
+            while self.__GetEfiSection(rule):
+                pass
+
+            self.__GetRuleEncapsulationSection(rule)
+            
+            while self.__GetEfiSection(rule, True):
+                pass
+            
+            return rule
+        
+        return Rule.Rule()
+        
+    def __GetEfiSection(self, obj, checkLeafArgs = False):
+        
+        if not self.__GetNextWord():
+            raise Warning("expected EFI section name At Line %d" % self.CurrentLineNumber)
+        sectionName = self.__Token
+        
+        if sectionName not in ("PE32", "PIC", "TE", "DXE_DEPEX", "VERSION", "UI", "COMPAT16", "FV_IMAGE", \
+                                "FREEFORM_SUBTYPE_GUID", "RAW", "PEI_DEPEX"):
+                                    self.__UndoToken()
+                                    return False
+
+        section = EfiSection.EfiSection()
+        section.SectionName = sectionName
+        
+        if self.__IsKeyword("Optional"):
+            section.Optional = True
+
+        if checkLeafArgs:
+            if self.__IsKeyword("BUILD_NUM"):
+                if not self.__IsToken("="):
+                    raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+                if not self.__GetNextToken():
+                    raise Warning("expected Build number At Line %d" % self.CurrentLineNumber)
+                section.BuildNum = self.__Token
+                
+            if self.__GetAlignment():
+                section.Alignment = self.__Token
+                
+        if not self.__GetNextToken():
+            raise Warning("expected EFI section File At Line %d" % self.CurrentLineNumber)
+        section.Filename = self.__Token
+        obj.SectionList.append(section)
+        
+        return True
         
         
+    def __GetRuleEncapsulationSection(self, rule):
+
+        if self.__IsKeyword( "COMPRESS"):
+            if self.__IsKeyword("PI_STD") or self.__IsKeyword("PI_NONE"):
+                type = self.__Token
+                if not self.__IsToken("{"):
+                    raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
+                section = CompressSection.CompressSection()
+                
+                # Efi sections...
+                self.__GetEfiSection(section)
+
+                if not self.__IsToken( "}"):
+                    raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
+                rule.SectionList.append(section)
+
+            else:
+               raise Warning("Compress type not known At Line %d" % self.CurrentLineNumber)
+
+            return True
+        
+        elif self.__IsKeyword( "GUIDED"):
+            if self.GetNextGuid():
+                guid = self.__Token
+                if not self.__IsToken("{"):
+                    raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
+                section = GuidSection.GuidSection()
+                
+                # Efi sections...
+                self.__GetEfiSection(section)
+
+                if not self.__IsToken( "}"):
+                    raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
+                rule.SectionList.append(section)
+
+            else:
+               raise Warning("expected GUID At Line %d" % self.CurrentLineNumber)
+
+            return True
+
+        return False
+        
+    def __GetVtf(self):
+        
+        if not self.__GetNextToken():
+            return False
+
+        if self.__Token.startswith("[") and not self.__Token.startswith("[VTF."):
+            self.__UndoToken()
+            return False
+
+        self.UndoToken()
+        if not self.__IsToken("[VTF."):
+            raise Warning("expected [VTF.] At Line %d" % self.CurrentLineNumber)
+
+        if not self.__SkipToToken("."):
+            raise Warning("expected '.' At Line %d" % self.CurrentLineNumber)
+
+        arch = self.__SkippedChars.rstrip(".")
+        if arch not in ("IA32", "X64", "IPF"):
+            raise Warning("Unknown Arch At line %d" % self.CurrentLineNumber)
+
+        if not self.__GetNextWord():
+            raise Warning("expected VTF name At Line %d" % self.CurrentLineNumber)
+        name = self.__Token
+
+        vtf = Vtf.Vtf()
+        vtf.UiName = name
+        vtf.KeyArch = arch
+        
+        if self.__IsToken(","):
+            if not self.__GetNextWord():
+                raise Warning("expected Arch list At Line %d" % self.CurrentLineNumber)
+            if self.__Token not in ("IA32", "X64", "IPF"):
+                raise Warning("Unknown Arch At line %d" % self.CurrentLineNumber)
+            vtf.ArchList = self.__Token
+
+        if not self.__IsToken( "]"):
+            raise Warning("expected ']' At Line %d" % self.CurrentLineNumber)
+        
+        if self.__IsKeyword("IA32_RST_BIN"):
+            if not self.__IsToken("="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+
+            if not self.__GetNextToken():
+                raise Warning("expected Reset file At Line %d" % self.CurrentLineNumber)
+
+            vtf.ResetBin = self.__Token
+            
+        while self.__GetComponentStatement(vtf):
+            pass
+        
+        self.profile.VtfList.append(vtf)
+        return True
+        
+    def __GetComponentStatement(self, vtf):
+        
+                if not self.__IsKeyword("COMP_NAME"):
+            return False
+        
+        if not self.__IsToken("="):
+            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+
+        if not self.__GetNextWord():
+            raise Warning("expected Component Name At Line %d" % self.CurrentLineNumber)
+
+        compStatement = ComponentStatement.ComponentStatement()
+        compStatement.CompName = self.__Token
+        
+        if not self.__IsKeyword("COMP_LOC"):
+            raise Warning("expected COMP_LOC At Line %d" % self.CurrentLineNumber)
+
+        if not self.__IsToken("="):
+            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+
+        if not self.__GetNextWord():
+            raise Warning("expected Component location At Line %d" % self.CurrentLineNumber)
+        if self.__Token not in ("F", "N", "S", "H", "L", "PH", "PL"):
+            raise Warning("Unknown location type At line %d" % self.CurrentLineNumber)
+        compStatement.CompLoc = self.__Token
+        
+        if not self.__IsKeyword("COMP_TYPE"):
+            raise Warning("expected COMP_TYPE At Line %d" % self.CurrentLineNumber)
+
+        if not self.__IsToken("="):
+            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+
+        if not self.__GetNextToken():
+            raise Warning("expected Component type At Line %d" % self.CurrentLineNumber)
+        if self.__Token not in ("FIT", "PAL_B", "PAL_A", "OEM"):
+            if not self.__Token.startswith("0x") or len(self.__Token) < 3 or len(self.__Token) > 4 or \
+                not self.__HexDigit(self.__Token[2]) or not self.__HexDigit(self.__Token[-1]):
+                raise Warning("Unknown location type At line %d" % self.CurrentLineNumber)
+        compStatement.CompType = self.__Token
+        
+        if not self.__IsKeyword("COMP_VER"):
+            raise Warning("expected COMP_VER At Line %d" % self.CurrentLineNumber)
+
+        if not self.__IsToken("="):
+            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+
+        if not self.__GetNextToken():
+            raise Warning("expected Component version At Line %d" % self.CurrentLineNumber)
+
+        p = re.compile('-$|[0-9]{0,1}[0-9]{1}\.[0-9]{0,1}[0-9]{1}')
+        if p.match(self.__Token) == None:
+            raise Warning("Unknown version format At line %d" % self.CurrentLineNumber)
+        compStatement.CompVer = self.__Token
+        
+        if not self.__IsKeyword("COMP_CS"):
+            raise Warning("expected COMP_CS At Line %d" % self.CurrentLineNumber)
+
+        if not self.__IsToken("="):
+            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+
+        if not self.__GetNextToken():
+            raise Warning("expected Component CS At Line %d" % self.CurrentLineNumber)
+        if self.__Token not in ("1", "0"):
+            raise Warning("Unknown  Component CS At line %d" % self.CurrentLineNumber)
+        compStatement.CompCs = self.__Token
         
         
+        if not self.__IsKeyword("COMP_BIN"):
+            raise Warning("expected COMP_BIN At Line %d" % self.CurrentLineNumber)
+
+        if not self.__IsToken("="):
+            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+
+        if not self.__GetNextToken():
+            raise Warning("expected Component file At Line %d" % self.CurrentLineNumber)
+
+        p = re.compile('-$|\.bin$')
+        if p.match(self.__Token) == None:
+            raise Warning("Unknown file name At line %d" % self.CurrentLineNumber)
+        compStatement.CompBin = self.__Token
         
+        if not self.__IsKeyword("COMP_SYM"):
+            raise Warning("expected COMP_SYM At Line %d" % self.CurrentLineNumber)
+
+        if not self.__IsToken("="):
+            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+
+        if not self.__GetNextToken():
+            raise Warning("expected Component symbol file At Line %d" % self.CurrentLineNumber)
+
+        p = re.compile('-$|\.sym$')
+        if p.match(self.__Token) == None:
+            raise Warning("Unknown file name At line %d" % self.CurrentLineNumber)
+        compStatement.CompSym = self.__Token
+    
+        if not self.__IsKeyword("COMP_SIZE"):
+            raise Warning("expected COMP_SIZE At Line %d" % self.CurrentLineNumber)
+
+        if not self.__IsToken("="):
+            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+
+        if self.__IsToken("-"):
+            compStatement.CompSize = self.__Token
+        elif self.__GetDecimalNumber():
+            compStatement.CompSize = self.__Token
+        elif self.__GetHexNumber():
+            compStatement.CompSize = self.__Token
+        else:
+            raise Warning("Unknown size At line %d" % self.CurrentLineNumber)
         
+        vtf.ComponentStatementList.append(compStatement)
+        return True

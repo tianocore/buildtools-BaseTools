@@ -8,7 +8,7 @@ class region:
         self.PcdOffset = None
         self.PcdSize = None
         self.RegionSize = None
-        self.SetVarDict = None
+        self.SetVarDict = {}
         self.RegionType = None
         self.RegionData = None
         

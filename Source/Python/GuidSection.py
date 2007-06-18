@@ -3,7 +3,7 @@ class GuidSection(Section.Section) :
     def __init__(self):
         self.Alignment = None
         self.NameGuid = None
-        self.SectionList = None
+        self.SectionList = []
         
     def GenSection(self, OutputPath, ModuleName):
         #
