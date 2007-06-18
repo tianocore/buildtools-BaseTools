@@ -3,6 +3,7 @@ class DataSection :
         self.Alignemnt = None
         self.SecType = None
         self.SectFileName = None
+        self.SectionList = None
         
     def GenSection(self, OutputPath, ModuleName):
         #

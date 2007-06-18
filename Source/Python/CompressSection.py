@@ -1,6 +1,6 @@
 import Ffs
 import Section
-class CompressSection (Section.Sction) :
+class CompressSection (Section.Section) :
     self.CompTypeDict = {
         'PI_STD'     : ' -c ',
         'NON_PI_STD' : ''
