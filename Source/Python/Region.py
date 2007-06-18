@@ -1,6 +1,6 @@
 import GenFds
 from GenFdsGlobalVariable import GenFdsGlobalVariable
-import FdfParser
+
 class region:
     def __init__(self):
         self.Offset = None

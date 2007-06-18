@@ -1404,7 +1404,7 @@ class FdfParser :
         
     def __GetComponentStatement(self, vtf):
         
-                if not self.__IsKeyword("COMP_NAME"):
+        if not self.__IsKeyword("COMP_NAME"):
             return False
         
         if not self.__IsToken("="):

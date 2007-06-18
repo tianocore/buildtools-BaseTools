@@ -3,7 +3,7 @@ import Section
 import subprocess
 
 class CompressSection (Section.Section) :
-    self.CompTypeDict = {
+    CompTypeDict = {
         'PI_STD'     : ' -c ',
         'NON_PI_STD' : ''
     }
