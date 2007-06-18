@@ -7,8 +7,7 @@ import os.path as path
 from SequentialDict import *
 from EdkIIWorkspaceBuild import *
 from EdkIIWorkspace import *
-
-Rule = None
+from BuildInfo import *
 
 MakefileHeader = '''#
 # DO NOT EDIT
@@ -210,38 +209,15 @@ class MakefileContent(object):
         return "#\n# %s\n#\n" % s
 
 class Makefile(object):
-    def __init__(self, module, package, platform, workspace, tag, bt, arch, opt, mtype=MakeType):
+    def __init__(self, info, opt, mtype=MakeType):
         self.ContentList = []
 
-        self.Workspace = workspace
-        self.BuildModule = module
-        self.Package = package
-        self.Platform = platform
-        
-        self.ToolchainTag = tag
-        self.BuildTarget = bt
-        self.Arch = arch
-
-        self.ToolDef = self.Workspace.ToolDef.ToolsDefTxtDictionary
-        self.ToolType = self.Workspace.ToolDef.ToolsDefTxtDatabase["COMMAND_TYPE"]
-        #self.ToolchainFamily = self.ToolDef.ToolsDefTxtDatabase["TOOLCHAIN_FAMILY"]
-
-        self.WorkspaceDir = self.Workspace.Workspace.WorkspaceDir
-        self.PackageDir = path.join(self.WorkspaceDir, path.dirname(self.Package.DescFilePath))
-
-        self.PlatformDir = path.join(self.WorkspaceDir, path.dirname(self.Platform.DescFilePath))
-        self.PlatformBuildDir = self.Platform.OutputDirectory
-        if not path.isabs(self.PlatformBuildDir):
-            self.PlatformBuildDir = path.join(self.WorkspaceDir, self.PlatformBuildDir)
-
-        moduleRelativeDir = path.dirname(self.BuildModule.DescFilePath)
-        self.ModuleDir = path.join(self.WorkspaceDir, moduleRelativeDir)
-        self.ModuleFileBase, ext = path.splitext(path.basename(self.BuildModule.DescFilePath))
-        self.ModuleBuildDir = path.join(self.PlatformBuildDir, "%s_%s" % (self.BuildTarget, self.ToolchainTag),
-                                        self.Arch, moduleRelativeDir, self.ModuleFileBase)
+        self.ModuleInfo = info
+        self.PlatformInfo = info.PlatformInfo
+        self.PackageInfo = info.PackageInfo
 
         self.BuildType = "mbuild"
-        if self.BuildModule.LibraryClass != None and self.BuildModule.LibraryClass != "":
+        if self.ModuleInfo.IsLibrary:
             self.BuildType = "lbuild"
             
         self.ProcessSourceFileList()
@@ -266,11 +242,11 @@ class Makefile(object):
                 MakefileMacro,    # type
                 "PlatformMacro",
                 (
-                    ("PLATFORM_NAME"        ,   self.Platform.PlatformName),
-                    ("PLATFORM_GUID"        ,   self.Platform.Guid),
-                    ("PLATFORM_VERSION"     ,   self.Platform.Version),
-                    ("PLATFORM_DIR"         ,   self.PlatformDir),
-                    ("PLATFORM_OUTPUT_DIR"  ,   self.Platform.OutputDirectory),
+                    ("PLATFORM_NAME"        ,   self.PlatformInfo.Name),
+                    ("PLATFORM_GUID"        ,   self.PlatformInfo.Guid),
+                    ("PLATFORM_VERSION"     ,   self.PlatformInfo.Version),
+                    ("PLATFORM_DIR"         ,   path.join("$(WORKSPACE_DIR)", self.PlatformInfo.SourceDir)),
+                    ("PLATFORM_OUTPUT_DIR"  ,   self.PlatformInfo.OutputDir),
                 ),
                 None
             ),
@@ -278,10 +254,10 @@ class Makefile(object):
                 MakefileMacro,    # type
                 "PackageMacro",
                 (
-                    ("PACKAGE_NAME"          ,   self.Package.PackageName),
-                    ("PACKAGE_GUID"          ,   self.Package.Guid),
-                    ("PACKAGE_VERSION"       ,   self.Package.Version),
-                    ("PACKAGE_DIR"           ,   self.PackageDir),
+                    ("PACKAGE_NAME"          ,   self.PackageInfo.Name),
+                    ("PACKAGE_GUID"          ,   self.PackageInfo.Guid),
+                    ("PACKAGE_VERSION"       ,   self.PackageInfo.Version),
+                    ("PACKAGE_DIR"           ,   path.join("$(WORKSPACE_DIR)", self.PackageInfo.SourceDir)),
                 ),
                 None
             ),
@@ -289,13 +265,14 @@ class Makefile(object):
                 MakefileMacro,    # type
                 "ModuleMacro",
                 (
-                    ("MODULE_NAME"          ,   self.BuildModule.BaseName),
-                    ("MODULE_GUID"          ,   self.BuildModule.Guid),
-                    ("MODULE_VERSION"       ,   self.BuildModule.Version),
-                    ("MODULE_DIR"           ,   self.ModuleDir),
-                    ("MODULE_TYPE"          ,   self.BuildModule.ModuleType),
-                    ("MODULE_FILE_BASE_NAME",   self.ModuleFileBase),
+                    ("MODULE_NAME"          ,   self.ModuleInfo.Name),
+                    ("MODULE_GUID"          ,   self.ModuleInfo.Guid),
+                    ("MODULE_VERSION"       ,   self.ModuleInfo.Version),
+                    ("MODULE_TYPE"          ,   self.ModuleInfo.ModuleType),
+                    ("MODULE_FILE_BASE_NAME",   self.ModuleInfo.FileBase),
                     ("BASE_NAME"            ,   "$(MODULE_NAME)"),
+                    ("MODULE_RELATIVE_DIR"  ,   self.ModuleInfo.SourceDir),
+                    ("MODULE_DIR"           ,   path.join("$(WORKSPACE_DIR)", self.ModuleInfo.SourceDir)),
                 ),
                 None
             ),
@@ -303,9 +280,9 @@ class Makefile(object):
                 MakefileMacro,    # type
                 "BuildConfigMacro",
                 (
-                    ("ARCH"                 ,   "IA32"),
-                    ("TOOLCHAIN_TAG"        ,   "MYTOOLS"),
-                    ("TARGET"               ,   "DEBUG"),
+                    ("ARCH"                 ,   self.ModuleInfo.Arch),
+                    ("TOOLCHAIN_TAG"        ,   self.ModuleInfo.ToolChain),
+                    ("TARGET"               ,   self.ModuleInfo.BuildTarget),
                 ),
                 None
             ),
@@ -313,11 +290,11 @@ class Makefile(object):
                 MakefileMacro,    # type
                 "BuildDirMacro",
                 (
-                    ("PLATFORM_BUILD_DIR"   ,   self.PlatformBuildDir),
-                    ("BUILD_DIR"            ,   "$(PLATFORM_BUILD_DIR)"),
-                    ("BIN_DIR"              ,   path.join("$(BUILD_DIR)", "$(TARGET)_$(TOOLCHAIN_TAG)", "$(ARCH)")),
+                    ("PLATFORM_BUILD_DIR"   ,   path.join("$(WORKSPACE_DIR)", self.PlatformInfo.OutputDir)),
+                    ("BUILD_DIR"            ,   path.join("$(PLATFORM_BUILD_DIR)", "$(TARGET)_$(TOOLCHAIN_TAG)", "$(ARCH)")),
+                    ("BIN_DIR"              ,   "$(BUILD_DIR)"),
                     ("LIB_DIR"              ,   "$(BIN_DIR)"),
-                    ("MODULE_BUILD_DIR"     ,   self.ModuleBuildDir),
+                    ("MODULE_BUILD_DIR"     ,   path.join("$(BUILD_DIR)", "$(MODULE_RELATIVE_DIR)", "$(MODULE_FILE_BASE_NAME)")),
                     ("OUTPUT_DIR"           ,   path.join("$(MODULE_BUILD_DIR)", "OUTPUT")),
                     ("DEBUG_DIR"            ,   path.join("$(MODULE_BUILD_DIR)", "DEBUG")),
                     ("DEST_DIR_OUTPUT"      ,   "$(OUTPUT_DIR)"),
@@ -450,7 +427,7 @@ class Makefile(object):
                 {
                     "NAME" : "init",
                     "DEPS" : [],
-                    "CMDS" : ["@echo $(MODULE_NAME)-$(MODULE_VERSION) [$(ARCH)] from package $(PACKAGE)-$(PACKAGE_VERSION) $(MODULE_DIR)"]
+                    "CMDS" : ["@echo $(MODULE_NAME)-$(MODULE_VERSION) [$(ARCH)] from package $(PACKAGE_NAME)-$(PACKAGE_VERSION) $(MODULE_DIR)"]
                 },
                 None
             ),
@@ -674,16 +651,16 @@ class Makefile(object):
         )
 
     def PrepareDirectory(self):
-        CreateDirectory(self.PlatformBuildDir)
-        CreateDirectory(self.ModuleBuildDir)
-        CreateDirectory(path.join(self.ModuleBuildDir, "OUTPUT"))
-        CreateDirectory(path.join(self.ModuleBuildDir, "DEBUG"))
+        CreateDirectory(path.join(self.ModuleInfo.WorkspaceDir, self.PlatformInfo.BuildDir))
+        CreateDirectory(path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.BuildDir))
+        CreateDirectory(path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.OutputDir))
+        CreateDirectory(path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.DebugDir))
 
     def Generate(self, file=None):
         self.PrepareDirectory()
         filePath = ""
         if file == None:
-            filePath = path.join(self.ModuleBuildDir, "makefile")
+            filePath = path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.MakefileDir, "makefile")
         else:
             filePath = file
             
@@ -702,85 +679,44 @@ class Makefile(object):
         for item in self.MakefileTemplate:
             self.ContentList.extend(MakefileContent(item).Generate())
 
-
     def GetDefaultToolFlagList(self):
         toolFlag = []
-        arch = self.Arch.upper()
-        for tool in self.ToolType:
-            defkey = "%s_%s_%s_%s_FLAGS" % (self.BuildTarget, self.ToolchainTag,
-                                            arch, tool)
-            if defkey in self.ToolDef:
-                defValue = self.ToolDef[defkey]
-            else:
-                defValue = ""
-            toolFlag.append(("DEFAULT_%s_FLAGS" % tool, defValue))
+        for tool in self.PlatformInfo.DefaultToolOption:
+            toolFlag.append(("DEFAULT_%s_FLAGS" % tool, self.PlatformInfo.DefaultToolOption[tool]))
         return toolFlag
 
     def GetPlatformToolFlagList(self):
-        buildopt = self.Platform.BuildOptionDatabase
+        buildOption = self.PlatformInfo.BuildOption
         toolFlag = []
-        for key in buildopt:
-            target, tag, arch, tool, flags = key.split("_")
-            if arch != self.Arch or target != self.BuildTarget or tag != self.ToolchainTag:
-                continue
-            toolFlag.append(("PLATFORM_%s_FLAGS" % tool, buildopt[key]))
-
+        for tool in buildOption:
+            toolFlag.append(("PLATFORM_%s_FLAGS" % tool, buildOption[tool]))
+        return toolFlag
         
-
     def GetModuleToolFlagList(self):
-        buildopt = self.BuildModule.BuildOptions
+        buildOption = self.ModuleInfo.BuildOption
         toolFlag = []
-        for key in buildopt:
-            target, tag, arch, tool, flags = key.split("_")
-            if arch != self.Arch.upper() or target != self.BuildTarget or tag != self.ToolchainTag:
-                flag = ""
-            else:
-                flag = buildopt[key]
-            toolFlag.append(("MODULE_%s_FLAGS" % tool, flag))
+        for tool in buildOption:
+            toolFlag.append(("MODULE_%s_FLAGS" % tool, buildOption[tool]))
+        return toolFlag
 
     def GetToolFlagList(self):
         toolFlag = []
-        for tool in self.ToolType:
+        for tool in self.PlatformInfo.DefaultToolOption:
             toolFlag.append(("%s_FLAGS" % tool,
-                            "$(DEFAULT_%s_FLAGS) $(MODULE_%s_FLAGS)" % (tool, tool)))
+                            "$(DEFAULT_%s_FLAGS) $(PLATFORM_%s_FLAGS) $(MODULE_%s_FLAGS)" % (tool, tool, tool)))
         return toolFlag
 
     def GetSysLibList(self):
         libPath = []
-        for tool in self.ToolType:
-            pathkey = "%s_%s_%s_%s_SPATH" % (self.BuildTarget, self.ToolchainTag,
-                                             self.Arch, tool)
-
-            spath = ""
-            if pathkey in td:
-                spath = self.ToolDef[pathkey]
-
-            libPath.append(("%s_SPATH" % tool, spath))
+        for tool in self.PlatformInfo.ToolStaticLib:
+            libPath.append(("%s_SPATH" % tool, self.ToolStaticLib[tool]))
 
         return libPath
 
     def GetToolPathList(self):
         toolPathList = []
-        arch = self.Arch.upper()
-        for tool in self.ToolType:
-            pathkey = "%s_%s_%s_%s_PATH" % (self.BuildTarget, self.ToolchainTag,
-                                            arch, tool)
-            toolkey = "%s_%s_%s_%s_NAME" % (self.BuildTarget, self.ToolchainTag,
-                                            arch, tool)
-
-            #print pathkey
-            #print toolkey
-            toolpath = ""
-            if pathkey in self.ToolDef:
-                toolpath = self.ToolDef[pathkey]
-                
-            if toolkey not in self.ToolDef:
-                continue
-            toolName = self.ToolDef[toolkey]
-            if toolName == None or toolName == "":
-                continue
-        
-            toolPathList.append((tool, path.join(toolpath, toolName)))
+        for tool in self.PlatformInfo.ToolPath:
+            toolPathList.append((tool, self.PlatformInfo.ToolPath[tool]))
 
         return toolPathList
 
@@ -788,20 +724,15 @@ class Makefile(object):
         self.SourceFilePathList = []
         self.ObjectFilePathList = []
         self.ObjectTargetList = []
-        if self.BuildModule.LibraryClass == None or self.BuildModule.LibraryClass == "":
-            self.SourceFilePathList.append("$(DEBUG_DIR)\\.\\AutoGen.c")
-            self.ObjectFilePathList.append("$(OUTPUT_DIR)\\.\\AutoGen.obj")
+        if not self.ModuleInfo.IsLibrary:
+            self.SourceFilePathList.append(path.join("$(DEBUG_DIR)", "AutoGen.c"))
+            self.ObjectFilePathList.append(path.join("$(OUTPUT_DIR)", "AutoGen.obj"))
             ftype = "AutoGen-Code"
-            self.ObjectTargetList.append(Rule.Makefile[MakeType][ftype] % {
+            self.ObjectTargetList.append(self.PlatformInfo.BuildRule.Makefile[MakeType][ftype] % {
                                          "fdir":".", "fbase":"AutoGen", "fext":".c", "fname":"AutoGen.c"
                                          })
-        fileList = self.BuildModule.Sources
+        fileList = self.ModuleInfo.SourceFileList
         for f in fileList:
-            if f.TagName != "" and f.TagName != self.ToolchainTag: continue
-            if f.ToolCode != "" and f.ToolCode not in self.ToolType: continue
-            if f.ToolChainFamily != "" and f.ToolChainFamily not in self.ToolChainFamily:
-                continue
-            f = path.normpath(f.SourceFile)
             name = path.basename(f)
             base, ext = path.splitext(name)
             basedir = path.dirname(f)
@@ -809,19 +740,17 @@ class Makefile(object):
                 basedir = "."
             if base.endswith("Gcc"):
                 continue
-            if ext not in Rule.FileTypeMapping:
-                continue
-            ftype = Rule.FileTypeMapping[ext]
-            if ftype not in Rule.Makefile[MakeType]:
+            ftype = self.PlatformInfo.BuildRule.FileTypeMapping[ext]
+            if ftype not in self.PlatformInfo.BuildRule.Makefile[MakeType]:
                 continue
 
             src = path.join("$(MODULE_DIR)", f)
             self.SourceFilePathList.append(src)
             objPath = path.join("$(OUTPUT_DIR)", basedir)
-            CreateDirectory(path.join(self.ModuleBuildDir, "OUTPUT", basedir))
+            CreateDirectory(path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.OutputDir, basedir))
             obj = path.join("$(OUTPUT_DIR)", basedir, base + ".obj")
             self.ObjectFilePathList.append(obj)
-            self.ObjectTargetList.append(Rule.Makefile[MakeType][ftype] % {
+            self.ObjectTargetList.append(self.PlatformInfo.BuildRule.Makefile[MakeType][ftype] % {
                                          "fdir":basedir, "fbase":base, "fext":ext, "fname":name
                                          })
 
@@ -830,17 +759,9 @@ class Makefile(object):
     
     def GetIncludePathList(self):
         includePathList = ["-I$(MODULE_DIR)", "-I$(WORKSPACE_DIR)"]
-        for inc in self.BuildModule.Includes:
+        for inc in self.ModuleInfo.InclduePathList:
             #print "$$$",inc
-            includePathList.append("-I" + path.normpath(path.join("$(WORKSPACE_DIR)", inc)))
-        for inc in self.Package.Includes:
-            #print "###",inc
-            includePathList.append("-I" + path.normpath(path.join("$(PACKAGE_DIR)", inc)))
-        for pkgfile in self.BuildModule.Packages:
-            pkg = self.Workspace.Build[self.Arch].PackageDatabase[pkgfile]
-            pkgdir = path.dirname(pkg.DescFilePath)
-            includePathList.append("-I" + path.join("$(WORKSPACE_DIR)", pkgdir, "Include"))
-            includePathList.append("-I" + path.join("$(WORKSPACE_DIR)", pkgdir, "Include", self.Arch))
+            includePathList.append("-I" + path.join("$(WORKSPACE_DIR)", inc))
         return includePathList
 
     def GetObjectFileList(self):
@@ -848,24 +769,9 @@ class Makefile(object):
 
     def GetLibraryFileList(self):
         libFileList = []
-        libModuleList = [self.BuildModule]
-        moduleType = self.BuildModule.ModuleType
-        while len(libModuleList) > 0:
-            module = libModuleList.pop()
-            for libc, libf in module.LibraryClasses.iteritems():
-                #print libc
-                if libf == None or libf == "" or moduleType not in libc:
-                    #print "No instance for", libc
-                    continue
-                
-                libm = self.Workspace.Build[self.Arch].ModuleDatabase[libf]
-                libFilePath = path.join("$(LIB_DIR)", libm.BaseName + ".lib")
-                if libFilePath in libFileList:
-                    continue
-                
-                libFileList.append(libFilePath)
-                libModuleList.append(libm)
-            
+        for libm in self.ModuleInfo.DependentLibraryList:
+            libFilePath = path.join("$(LIB_DIR)", libm.BaseName + ".lib")
+            libFileList.append(libFilePath)
         return libFileList
 
     def GetDependentLibraryList(self, module):
@@ -882,28 +788,13 @@ class Makefile(object):
 
     def GetLibraryBuildCmdList(self):
         libMakefileList = []
-        libModuleList = [self.BuildModule]
-        moduleType = self.BuildModule.ModuleType
-        #print "###",
-        while len(libModuleList) > 0:
-            module = libModuleList.pop()
-            #print " Module", module.BaseName,"type", module.ModuleType
-            for libc, libf in module.LibraryClasses.iteritems():
-                #print "   ",libc
-                if libf == None or libf == "" or moduleType not in libc:
-                    #print "    $$$",libc[0],"doesn't support",moduleType
-                    continue
-                libm = self.Workspace.Build[self.Arch].ModuleDatabase[libf]
-                #print "        ",libm.BaseName
-                libp = path.dirname(libf)
-                base = path.basename(libf).split(".")[0]
-                makefilePath = path.join("$(BIN_DIR)", libp, base, "Makefile")
-                #makefilePath = path.normpath(makefilePath)
-                makeCmd = "$(MAKE) $(MAKE_FLAGS) -f %s" % makefilePath
-                if makeCmd in libMakefileList:
-                    continue
-                libMakefileList.append(makeCmd)
-                libModuleList.append(libm)
+        for libm in self.ModuleInfo.DependentLibraryList:
+            libf = str(libm)
+            libp = path.dirname(libf)
+            base = path.basename(libf).split(".")[0]
+            makefilePath = path.join("$(BIN_DIR)", libp, base, "Makefile")
+            makeCmd = "$(MAKE) $(MAKE_FLAGS) -f %s" % makefilePath
+            libMakefileList.append(makeCmd)
 
         return libMakefileList
 
@@ -922,19 +813,6 @@ class Makefile(object):
 ##            self.ObjectTargetList.append(MakefileTarget(target=obj, prerequisite=[src], command=[cmd]))
         return self.ObjectTargetList
 
-def FindModuleOwner(module, pkgdb):
-    for pkg in pkgdb:
-        pkgDir = path.dirname(pkg)
-        if module.find(pkgDir) == 0:
-            return pkgdb[pkg]
-    return None
-
-
-def LoadBuildRule(RuleFile):
-    '''load build rule from specified file which is written in Python code format'''
-    global Rule
-    Rule = imp.load_source("BuildRule", RuleFile)
-    
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
 if __name__ == '__main__':

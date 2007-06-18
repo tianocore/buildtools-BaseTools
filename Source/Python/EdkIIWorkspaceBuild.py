@@ -77,7 +77,7 @@ class ModuleBuildClassObject(object):
         return self.DescFilePath
 
     def __eq__(self, other):
-        return self.DescFilePath == other.DescFilePath
+        return self.DescFilePath == str(other)
 
     def __hash__(self):
         return hash(self.DescFilePath)
@@ -100,7 +100,7 @@ class PackageBuildClassObject(object):
         return self.DescFilePath
 
     def __eq__(self, other):
-        return self.DescFilePath == other.DescFilePath
+        return self.DescFilePath == str(other)
 
     def __hash__(self):
         return hash(self.DescFilePath)
@@ -122,7 +122,7 @@ class PlatformBuildClassObject(object):
         return self.DescFilePath
 
     def __eq__(self, other):
-        return self.DescFilePath == other.DescFilePath
+        return self.DescFilePath == str(other)
 
     def __hash__(self):
         return hash(self.DescFilePath)

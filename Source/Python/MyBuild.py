@@ -20,7 +20,7 @@ import EdkLogger
 from SequentialDict import *
 from EdkIIWorkspaceBuild import *
 from EdkIIWorkspace import *
-from GenMake import *
+from AutoGen import *
 
 from optparse import OptionParser
 from subprocess import *
@@ -142,8 +142,6 @@ if __name__ == '__main__':
     apf = ewb.TargetTxt.TargetTxtDictionary["ACTIVE_PLATFORM"][0]
     myPlatform = myBuild.PlatformDatabase[os.path.normpath(apf)]
 
-    LoadBuildRule(myWorkspace.Workspace.WorkspaceFile('Tools/Conf/build.rule'))
-
     import glob
     buildmf = ""
     makefile = ""
@@ -153,6 +151,17 @@ if __name__ == '__main__':
         buildmf = filesInCurrentDir[0][len(myWorkspace.Workspace.WorkspaceDir)+1:]
         print buildmf
 
+    myToolchain = ewb.TargetTxt.TargetTxtDictionary["TOOL_CHAIN_TAG"][0]
+    #print myToolchain
+
+    myBuildTarget = ewb.TargetTxt.TargetTxtDictionary["TARGET"][0]
+    #print myBuildTarget
+
+    myBuildOption = {
+        "ENABLE_PCH"        :   False,
+        "ENABLE_LOCAL_LIB"  :   True,
+    }
+
     for mf in myBuild.ModuleDatabase:
         #mf = "MdePkg\\Library\\BaseLib\\BaseLib.inf"
         #if mf in myPlatform.Modules and mf in myBuild.ModuleDatabase:
@@ -160,25 +169,17 @@ if __name__ == '__main__':
 
         myModule = myBuild.ModuleDatabase[mf]
 
-        myPackage = FindModuleOwner(myModule.DescFilePath, myBuild.PackageDatabase)
-
-        myToolchain = ewb.TargetTxt.TargetTxtDictionary["TOOL_CHAIN_TAG"][0]
-        #print myToolchain
-
-        myBuildTarget = ewb.TargetTxt.TargetTxtDictionary["TARGET"][0]
-        #print myBuildTarget
-
-        myBuildOption = {
-            "ENABLE_PCH"        :   False,
-            "ENABLE_LOCAL_LIB"  :   True,
-        }
-
-        myMakefile = Makefile(myModule, myPackage, myPlatform, myWorkspace, myToolchain, myBuildTarget,
-                              myArch, myBuildOption, "nmake")
-        if buildmf == myModule.DescFilePath:
-            makefile = myMakefile.Generate()
+        ag = AutoGen(myModule, myPlatform, myWorkspace, myArch, myToolchain, myBuildTarget)
+        ag.CreateAutoGenCode()
+        if buildmf == str(myModule):
+            makefile = ag.CreateMakefile()
         else:
-            myMakefile.Generate()
+            ag.CreateMakefile()
+
+        for lib in ag.ModuleBuildInfo.DependentLibraryList:
+            ag = AutoGen(lib, myPlatform, myWorkspace, myArch, myToolchain, myBuildTarget)
+            ag.CreateAutoGenCode()
+            ag.CreateMakefile()
 
     if makefile != "":
         p = Popen(["nmake", "-f", makefile], env=os.environ).communicate()

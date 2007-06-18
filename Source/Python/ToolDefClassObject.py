@@ -28,7 +28,7 @@ class ToolDefClassObject(object):
       self.LoadToolDefFile(filename)
 
   def LoadToolDefFile(self, filename):
-    EdkLogger.info('LoadToolDefFile() Start')
+    #EdkLogger.info('LoadToolDefFile() Start')
     if filename != None:
       ConvertTextFileToDictionary(filename, self.ToolsDefTxtDictionary, '#', '=', False, None)
 
@@ -78,7 +78,7 @@ class ToolDefClassObject(object):
         elif List[Index] not in self.ToolsDefTxtDatabase[KeyList[Index]]:
           del self.ToolsDefTxtDictionary[Key]
     
-    EdkLogger.info('LoadToolDefFile() End')
+    #EdkLogger.info('LoadToolDefFile() End')
     
 if __name__ == '__main__':
   td = ToolDefClassObject('tool_def.txt')

@@ -9,13 +9,14 @@ def TrimPreprocessedFile (source, target, ConvertHex):
   f = open (source,'r')
   lines = f.readlines()
   f.close()
-  for index in range (1,len(lines)):
-    if lines[0] == lines[index]:
+  for index in range (len(lines) - 1, -1, -1):
+    if lines[index].strip().find('#line') >= 0:
+      index += 1
       break
   else:
     index = 0
   f = open (target,'w')
-  for index in range (index + 1, len(lines)):
+  for index in range (index, len(lines)):
     if ConvertHex:
       while lines[index].lower().find('0x') >= 0:
         foo=lines[index].lower().find('0x')
@@ -26,8 +27,7 @@ def TrimPreprocessedFile (source, target, ConvertHex):
           lines[index] = lines[index][0:foo] + '0' + lines[index][foo+2:bar] + 'h' + lines[index][bar:]
         else:
           lines[index] = lines[index][0:foo] + lines[index][foo+2:bar] + 'h' + lines[index][bar:]
-    if lines[index].strip().find('#line') != 0:
-      f.write(lines[index])
+    f.write(lines[index])
   f.close()
 
 if __name__ == '__main__':
@@ -36,4 +36,3 @@ if __name__ == '__main__':
       TrimPreprocessedFile(arg, os.path.splitext(arg)[0] + '.iii', True)
     else:
       TrimPreprocessedFile(arg, os.path.splitext(arg)[0] + '.iii', False)
- 

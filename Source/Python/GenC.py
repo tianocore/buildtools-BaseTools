@@ -2,6 +2,8 @@
 import string
 import EdkLogger
 from DataType import *
+from EdkIIWorkspace import *
+from BuildInfo import *
 
 ItemTypeStringDatabase  = {
     TAB_PCDS_FEATURE_FLAG:'FixedAtBuild',
@@ -734,16 +736,16 @@ BasicHeaderFile = "Base.h"
 
 ModuleTypeHeaderFile = {
     "BASE"              :   BasicHeaderFile,
-    "SEC"               :   "PiPei.h",
-    "PEI_CORE"          :   "PiPei.h",
-    "PEIM"              :   "PiPei.h",
-    "DXE_CORE"          :   "PiDxe.h",
-    "DXE_DRIVER"        :   "PiDxe.h",
-    "DXE_SMM_DRIVER"    :   "PiDxe.h",
-    "DXE_RUNTIME_DRIVER":   "PiDxe.h",
-    "DXE_SAL_DRIVER"    :   "PiDxe.h",
-    "UEFI_DRIVER"       :   "Uefi.h",
-    "UEFI_APPLICATION"  :   "Uefi.h"
+    "SEC"               :   ["Peim.h", "DebugLib.h", ],         # "PiPei.h",
+    "PEI_CORE"          :   ["PeiCore.h", "DebugLib.h"],        # "PiPei.h",
+    "PEIM"              :   ["Peim.h", "DebugLib"],             # PiPei.h",
+    "DXE_CORE"          :   ["DxeCore.h", "DebugLib.h"],        # PiDxe.h",
+    "DXE_DRIVER"        :   ["Dxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
+    "DXE_SMM_DRIVER"    :   ["Dxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
+    "DXE_RUNTIME_DRIVER":   ["Dxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
+    "DXE_SAL_DRIVER"    :   ["Dxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
+    "UEFI_DRIVER"       :   ["Uefi.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],
+    "UEFI_APPLICATION"  :   ["Uefi.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"]
 }
 
 def GuidStringToGuidStructureString(Guid):
@@ -816,3 +818,660 @@ class AutoGenString(object):
         if type(Dictionary[Key]) == type([]) and len(Dictionary[Key]) > 0:
           NewDict[Key] = Dictionary[Key][0]
       self.String += string.Template(AppendString).safe_substitute(NewDict)
+
+def CreateModulePcdCode(info, autoGenC, autoGenH, pcd):
+    pcdTokenNumber = info.PlatformInfo.PcdTokenNumber
+    #
+    # Write PCDs
+    #
+    #for TokenSpaceGuidCName in self.Module.Pcds: # Platform.PcdDatabase[ModuleSA]:
+    #    for C_Name in Platform.PcdDatabase[ModuleSA][TokenSpaceGuidCName]:
+    #      Pcd = Platform.PcdDatabase[ModuleSA][TokenSpaceGuidCName][C_Name]
+    pcdTokenName = '_PCD_TOKEN_' + pcd.TokenCName
+    if pcd.Type == TAB_PCDS_DYNAMIC_EX:
+        tokenNumber = pcd.TokenValue
+    else:
+        tokenNumber = pcdTokenNumber[pcd.TokenCName, pcd.TokenSpaceGuidCName]
+    autoGenH.Append('#define %s  %d\n' % (pcdTokenName, tokenNumber))
+
+    datumSize = DatumSizeStringDatabase[pcd.DatumType]
+    datumSizeLib = DatumSizeStringDatabaseLib[pcd.DatumType]
+    getModeName = '_PCD_GET_MODE_' + DatumSizeStringDatabaseH[pcd.DatumType] + '_' + pcd.TokenCName
+    setModeName = '_PCD_SET_MODE_' + DatumSizeStringDatabaseH[pcd.DatumType] + '_' + pcd.TokenCName
+
+    if pcd.Type == TAB_PCDS_DYNAMIC_EX:
+        autoGenH.Append('#define %s  LibPcdGetEx%s(&%s, %s)\n' % (getModeName, datumSizeLib, pcd.TokenSpaceGuidCName, pcdTokenName))
+        if DatumType == 'VOID*':
+            autoGenH.Append('#define %s(SizeOfBuffer, Buffer)  LibPcdSetEx%s(&%s, %s, (SizeOfBuffer), (Buffer))\n' % (setModeName, datumSizeLib, pcd.TokenSpaceGuidCName, pcdTokenName))
+        else:
+            autoGenH.Append('#define %s(Value)  LibPcdSetEx%s(&%s, %s, (Value))\n' % (setModeName, datumSizeLib, pcd.TokenSpaceGuidCName, pcdTokenName))
+    elif pcd.Type == TAB_PCDS_DYNAMIC:
+        autoGenH.Append('#define %s  LibPcdGet%s(%s)\n' % (getModeName, datumSizeLib, pcdTokenName))
+        if pcd.DatumType == 'VOID*':
+            autoGenH.Append('#define %s(SizeOfBuffer, Buffer)  LibPcdSet%s(%s, (SizeOfBuffer), (Buffer))\n' %(setModeName, datumSizeLib, pcdTokenName))
+        else:
+            autoGenH.Append('#define %s(Value)  LibPcdSet%s(%s, (Value))\n' % (setModeName, datumSizeLib, pcdTokenName))
+    else:
+        PcdVariableName = '_gPcd_' + ItemTypeStringDatabase[pcd.Type] + '_' + pcd.TokenCName
+        Const = 'const'
+        if pcd.Type == TAB_PCDS_PATCHABLE_IN_MODULE:
+            Const = ''
+        Type = ''
+        Array = ''
+        Value = pcd.DefaultValue
+        if pcd.DatumType == 'UINT64':
+            Value += 'ULL'
+        if pcd.DatumType == 'VOID*':
+            ArraySize = int(pcd.MaxDatumSize)
+            if Value[0] == '{':
+                Type = '(VOID *)'
+            else:
+                Unicode = False
+                if Value[0] == 'L':
+                    Unicode = True
+                Value = Value.lstrip('L').strip('"')
+                NewValue = '{'
+                for Index in range(0,len(Value)):
+                    NewValue = NewValue + str(ord(Value[Index]) % 0x100) + ', '
+                    if Unicode:
+                        NewValue = NewValue + str(ord(Value[Index]) / 0x100) + ', '
+                if Unicode:
+                    if ArraySize < (len(Value)*2 + 2):
+                        ArraySize = len(Value)*2 + 2
+                    NewValue = NewValue + '0, '
+                else:
+                    if ArraySize < (len(Value) + 1):
+                        ArraySize = len(Value) + 1
+                Value = NewValue + '0 }'
+            Array = '[%d]' % ArraySize
+
+        PcdValueName = '_PCD_VALUE_' + pcd.TokenCName
+        if pcd.DatumType == 'VOID*' and Value[0] == '{':
+            autoGenH.Append('#define _PCD_PATCHABLE_%s_SIZE %s\n' % (pcd.TokenCName, pcd.MaxDatumSize))
+            autoGenH.Append('#define %s  %s%s\n' %(PcdValueName, Type, PcdVariableName))
+            autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED %s UINT8 %s%s = %s;\n' % (Const, PcdVariableName, Array, Value))
+            autoGenH.Append('extern %s UINT8 %s%s;\n' %(Const, PcdVariableName, Array))
+            autoGenH.Append('#define %s  %s%s\n' %(getModeName, Type, PcdVariableName))
+        else:
+            autoGenH.Append('#define %s  %s\n' %(PcdValueName, Value))
+            autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED %s %s %s = %s;\n' %(Const, pcd.DatumType, PcdVariableName, PcdValueName))
+            autoGenH.Append('extern %s  %s  %s%s;\n' % (Const, pcd.DatumType, PcdVariableName, Array))
+            autoGenH.Append('#define %s  %s%s\n' % (getModeName, Type, PcdVariableName))
+
+        if pcd.Type == 'PATCHABLE_IN_MODULE':
+            if pcd.DatumType == 'VOID*':
+                autoGenH.Append('#define %s(SizeOfBuffer, Buffer)  LibPatchPcdSetPtr(_gPcd_BinaryPatch_%s, (UINTN)_PCD_PATCHABLE_%s_SIZE, (SizeOfBuffer), (Buffer))\n' % (setModeName, pcd.TokenCName, pcd.TokenCName))
+            else:
+                autoGenH.Append('#define %s(Value)  (%s = (Value))\n' % (setModeName, PcdVariableName))
+        else:
+            autoGenH.Append('//#define %s  ASSERT(FALSE)  // It is not allowed to set value for a FIXED_AT_BUILD PCD\n' % setModeName)
+
+def CreateLibraryPcdCode(info, autoGenC, autoGenH, pcd):
+    pcdTokenNumber = info.PlatformInfo.PcdTokenNumber
+    tokenSpaceGuidCName = pcd.TokenSpaceGuidCName
+    tokenCName  = pcd.TokenCName
+    tokenNumber = pcdTokenNumber[tokenCName, tokenSpaceGuidCName]
+    datumType   = pcd.DatumType
+    datumSize   = DatumSizeStringDatabaseH[datumType]
+    datumSizeLib= DatumSizeStringDatabaseLib[datumType]
+    getModeName = '_PCD_GET_MODE_' + datumSize + '_' + tokenCName
+    setModeName = '_PCD_SET_MODE_' + datumSize + '_' + tokenCName
+
+    type = ''
+    array = ''
+    if pcd.DatumType == 'VOID*':
+        type = '(VOID *)'
+        array = '[]'
+
+    autoGenH.Append('#define _PCD_TOKEN_%s  %d\n' % (tokenCName, tokenNumber))
+
+    pcdItemType = pcd.Type
+    if pcdItemType == TAB_PCDS_DYNAMIC:
+        pcdItemType = TAB_PCDS_FIXED_AT_BUILD
+        if (tokenCName, tokenSpaceGuidCName) in info.PlatformInfo.Platform.Pcds:
+            pcdItemType  = info.PlatformInfo.Platform.Pcds[tokenCName, tokenSpaceGuidCName].Type
+    if pcdItemType == TAB_PCDS_DYNAMIC_EX:
+        pcdTokenName = '_PCD_TOKEN_' + tokenCName
+        autoGenH.Append('#define %s  LibPcdGetEx%s(&%s, %s)\n' % (getModeName, datumSizeLib, tokenSpaceGuidCName, pcdTokenName))
+        if DatumType == 'VOID*':
+            autoGenH.Append('#define %s(SizeOfBuffer, Buffer)  LibPcdSetEx%s(&%s, %s, (SizeOfBuffer), (Buffer))\n' % (setModeName,datumSizeLib, tokenSpaceGuidCName, pcdTokenName))
+        else:
+            autoGenH.Append('#define %s(Value)  LibPcdSetEx%s(&%s, %s, (Value))\n' % (setModeName, datumSizeLib, tokenSpaceGuidCName, pcdTokenName))
+    if pcdItemType == TAB_PCDS_DYNAMIC:
+        pcdTokenName = '_PCD_TOKEN_' + tokenCName
+        autoGenH.Append('#define %s  LibPcdGet%s(%s)\n' % (getModeName, datumSizeLib, pcdTokenName))
+        if datumType == 'VOID*':
+            autoGenH.Append('#define %s(SizeOfBuffer, Buffer)  LibPcdSet%s(%s, (SizeOfBuffer), (Buffer))\n' %(setModeName, datumSizeLib, pcdTokenName))
+        else:
+            autoGenH.Append('#define %s(Value)  LibPcdSet%s(%s, (Value))\n' % (setModeName, datumSizeLib, pcdTokenName))
+    if pcdItemType == TAB_PCDS_PATCHABLE_IN_MODULE:
+        pcdVariableName = '_gPcd_' + ItemTypeStringDatabase[TAB_PCDS_PATCHABLE_IN_MODULE] + '_' + tokenCName
+        autoGenH.Append('extern %s _gPcd_BinaryPatch_%s%s;\n' %(datumType, tokenCName, array) )
+        autoGenH.Append('#define %s  %s_gPcd_BinaryPatch_%s\n' %(getModeName, type, tokenCName))
+        autoGenH.Append('#define %s(Value)  (%s = (Value))\n' % (setModeName, pcdVariableName))
+    if pcdItemType == TAB_PCDS_FIXED_AT_BUILD or pcdItemType == TAB_PCDS_FEATURE_FLAG:
+        autoGenH.Append('extern const %s _gPcd_FixedAtBuild_%s%s;\n' %(datumType, tokenCName, array))
+        autoGenH.Append('#define %s  %s_gPcd_FixedAtBuild_%s\n' %(getModeName, type, tokenCName))
+        autoGenH.Append('//#define %s  ASSERT(FALSE)  // It is not allowed to set value for a FIXED_AT_BUILD PCD\n' % setModeName)
+
+def GetGuidValue(self, guidCName):
+    for Package in gPackageDatabase.values():
+        if guidCName in Package.Guids:
+            return Package.Guids[guidCName]
+    return None
+
+def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
+  AutoGenC = AutoGenString()
+  AutoGenH = AutoGenString()
+
+  Dict = {
+    'PHASE'                         : Phase,
+    'GUID_TABLE_SIZE'               : '1',
+    'STRING_TABLE_SIZE'             : '1',
+    'SKUID_TABLE_SIZE'              : '1',
+    'LOCAL_TOKEN_NUMBER_TABLE_SIZE' : '1',
+    'LOCAL_TOKEN_NUMBER'            : '0',
+    'EXMAPPING_TABLE_SIZE'          : '1',
+    'EX_TOKEN_NUMBER'               : '0',
+    'SIZE_TABLE_SIZE'               : '2',
+    'GUID_TABLE_EMPTY'              : 'TRUE',
+    'STRING_TABLE_EMPTY'            : 'TRUE',
+    'SKUID_TABLE_EMPTY'             : 'TRUE',
+    'DATABASE_EMPTY'                : 'TRUE',
+    'EXMAP_TABLE_EMPTY'             : 'TRUE',
+    'PCD_DATABASE_UNINIT_EMPTY'     : '  UINT8  dummy; /* PCD_DATABASE_UNINIT is emptry */',
+    'SYSTEM_SKU_ID'                 : '  SKU_ID             SystemSkuId;',
+    'SYSTEM_SKU_ID_VALUE'           : '0'
+  }
+
+  for DatumType in ['UINT64','UINT32','UINT16','UINT8','BOOLEAN']:
+    Dict['VARDEF_CNAME_'+DatumType] = []
+    Dict['VARDEF_GUID_'+DatumType]  = []
+    Dict['VARDEF_SKUID_'+DatumType] = []
+    Dict['VARDEF_VALUE_'+DatumType] = []
+    for Init in ['INIT','UNINIT']:
+      Dict[Init+'_CNAME_DECL_'+DatumType]   = []
+      Dict[Init+'_GUID_DECL_'+DatumType]    = []
+      Dict[Init+'_NUMSKUS_DECL_'+DatumType] = []
+      Dict[Init+'_VALUE_'+DatumType]        = []
+
+  for Type in ['STRING_HEAD','VPD_HEAD','VARIABLE_HEAD']:
+    Dict[Type+'_CNAME_DECL']   = []
+    Dict[Type+'_GUID_DECL']    = []
+    Dict[Type+'_NUMSKUS_DECL'] = []
+    Dict[Type+'_VALUE'] = []
+
+  Dict['STRING_TABLE_INDEX'] = []
+  Dict['STRING_TABLE_LENGTH']  = []
+  Dict['STRING_TABLE_CNAME'] = []
+  Dict['STRING_TABLE_GUID']  = []
+  Dict['STRING_TABLE_VALUE'] = []
+
+  Dict['SIZE_TABLE_CNAME'] = []
+  Dict['SIZE_TABLE_GUID']  = []
+  Dict['SIZE_TABLE_CURRENT_LENGTH']  = []
+  Dict['SIZE_TABLE_MAXIMUM_LENGTH']  = []
+
+  Dict['EXMAPPING_TABLE_EXTOKEN'] = []
+  Dict['EXMAPPING_TABLE_LOCAL_TOKEN'] = []
+  Dict['EXMAPPING_TABLE_GUID_INDEX'] = []
+
+  Dict['GUID_STRUCTURE'] = []
+
+  Dict['SKUID_VALUE'] = []
+
+  if Phase == 'DXE':
+    Dict['SYSTEM_SKU_ID'] = ''
+    Dict['SYSTEM_SKU_ID_VALUE'] = ''
+
+  StringTableIndex = 0
+  StringTableSize = 0
+  NumberOfLocalTokens = 0
+  NumberOfPeiLocalTokens = 0
+  NumberOfDxeLocalTokens = 0
+  NumberOfExTokens = 0
+  NumberOfSizeItems = 0
+  GuidList = []
+
+  platformPcds = self.Platform.Pcds
+  for TokenSpaceGuidCName, CName in self.DynamicPcdList:
+      Pcd = platformPcds[TokenSpaceGuidCName, CName]
+      if Pcd.Phase == 'PEI':
+        NumberOfPeiLocalTokens += 1
+      if Pcd.Phase == 'DXE':
+        NumberOfDxeLocalTokens += 1
+      if Pcd.Phase != Phase:
+        continue
+
+
+      TokenSpaceGuid = self.GetGuidValue(TokenSpaceGuidCName)
+      if Pcd.Type == 'DYNAMIC_EX':
+        if TokenSpaceGuid not in GuidList:
+          GuidList += [TokenSpaceGuid]
+          Dict['GUID_STRUCTURE'].append(TokenSpaceGuid)
+        NumberOfExTokens += 1
+
+      ValueList = []
+      StringHeadOffsetList = []
+      VpdHeadOffsetList = []
+      VariableHeadValueList = []
+      Pcd.InitString = 'UNINIT'
+      if Pcd.DatumType == 'VOID*':
+        Pcd.TokenTypeList = ['PCD_DATUM_TYPE_POINTER']
+      elif Pcd.DatumType == 'BOOLEAN':
+        Pcd.TokenTypeList = ['PCD_DATUM_TYPE_UINT8']
+      else:
+        Pcd.TokenTypeList = ['PCD_DATUM_TYPE_'+Pcd.DatumType]
+      if len(Pcd.SkuInfo) > 1:
+        Pcd.TokenTypeList += ['PCD_TYPE_SKU_ENABLED']
+
+      for SkuId in Pcd.SkuInfo:
+        if SkuId == '':
+          continue
+        if SkuId not in Dict['SKUID_VALUE']:
+          Dict['SKUID_VALUE'].append(SkuId)
+
+        SkuIdIndex =   Dict['SKUID_VALUE'].index(SkuId)
+        Sku = Pcd.SkuInfo[SkuId]
+        if len(Sku.VariableName) > 0:
+          Pcd.TokenTypeList += ['PCD_TYPE_HII']
+          Pcd.InitString = 'INIT'
+          VariableNameStructure = '{' + ', '.join(Sku.VariableName) + ', 0x0000}'
+          if VariableNameStructure not in Dict['STRING_TABLE_VALUE']:
+            Dict['STRING_TABLE_CNAME'].append(CName)
+            Dict['STRING_TABLE_GUID'].append(TokenSpaceGuid.replace('-','_'))
+            if StringTableIndex == 0:
+              Dict['STRING_TABLE_INDEX'].append('')
+            else:
+              Dict['STRING_TABLE_INDEX'].append('_%d' % StringTableIndex)
+
+            Dict['STRING_TABLE_LENGTH'].append(len(Sku.VariableName) + 1)
+            Dict['STRING_TABLE_VALUE'].append(VariableNameStructure)
+            StringTableIndex += 1
+            StringTableSize += len(Sku.VariableName) + 1
+
+          VariableHeadStringIndex = 0
+          for Index in range(Dict['STRING_TABLE_VALUE'].index(VariableNameStructure)):
+            VariableHeadStringIndex += Dict['STRING_TABLE_LENGTH'][Index]
+
+          VariableGuid = self.GetGuidValue(Sku.VariableGuid)
+          if VariableGuid not in GuidList:
+            GuidList += [VariableGuid]
+            Dict['GUID_STRUCTURE'].append(VariableGuid)
+          VariableHeadGuidIndex = GuidList.index(VariableGuid)
+
+          VariableHeadValueList.append('%d, %d, %s, offsetof(${PHASE}_PCD_DATABASE, Init.%s_%s_VariableDefault_%s)' %
+            (VariableHeadGuidIndex, VariableHeadStringIndex, Sku.VariableOffset, CName, TokenSpaceGuid.replace('-','_'), SkuIdIndex))
+          Dict['VARDEF_CNAME_'+Pcd.DatumType].append(CName)
+          Dict['VARDEF_GUID_'+Pcd.DatumType].append(TokenSpaceGuid.replace('-','_'))
+          Dict['VARDEF_SKUID_'+Pcd.DatumType].append(SkuIdIndex)
+          Dict['VARDEF_VALUE_'+Pcd.DatumType].append(Sku.HiiDefaultValue)
+        elif Sku.VpdOffset != '':
+          Pcd.TokenTypeList += ['PCD_TYPE_VPD']
+          Pcd.InitString = 'INIT'
+          VpdHeadOffsetList.append(Sku.VpdOffset)
+        else:
+          if Pcd.DatumType == 'VOID*':
+            Pcd.TokenTypeList += ['PCD_TYPE_STRING']
+            Pcd.InitString = 'INIT'
+            if Sku.Value != '':
+              NumberOfSizeItems += 1
+              Dict['STRING_TABLE_CNAME'].append(CName)
+              Dict['STRING_TABLE_GUID'].append(TokenSpaceGuid.replace('-','_'))
+              if StringTableIndex == 0:
+                Dict['STRING_TABLE_INDEX'].append('')
+              else:
+                Dict['STRING_TABLE_INDEX'].append('_%d' % StringTableIndex)
+              if Sku.Value[0] == 'L':
+                Size = len(Sku.Value) - 3
+                Dict['STRING_TABLE_VALUE'].append(Sku.Value)
+              elif Sku.Value[0] == '"':
+                Size = len(Sku.Value) - 2
+                Dict['STRING_TABLE_VALUE'].append(Sku.Value)
+              elif Sku.Value[0] == '{':
+                Size = len(Sku.Value.replace(',',' ').split())
+                Dict['STRING_TABLE_VALUE'].append('{' + Sku.Value + '}')
+              StringHeadOffsetList.append(str(StringTableSize))
+              Dict['SIZE_TABLE_CNAME'].append(CName)
+              Dict['SIZE_TABLE_GUID'].append(TokenSpaceGuid.replace('-','_'))
+              Dict['SIZE_TABLE_CURRENT_LENGTH'].append(Size)
+              Dict['SIZE_TABLE_MAXIMUM_LENGTH'].append(Pcd.MaxDatumSize)
+              if Pcd.MaxDatumSize != '' and Pcd.MaxDatumSize > Size:
+                Size = int(Pcd.MaxDatumSize)
+              Dict['STRING_TABLE_LENGTH'].append(Size)
+              StringTableIndex += 1
+              StringTableSize += Size
+          else:
+            Pcd.TokenTypeList += ['PCD_TYPE_DATA']
+            if Sku.Value == 'TRUE':
+              Pcd.InitString = 'INIT'
+            elif Sku.Value.find('0x') == 0:
+              if int(Sku.Value,16) != 0:
+                Pcd.InitString = 'INIT'
+            elif Sku.Value[0].isdigit():
+              if int(Sku.Value) != 0:
+                Pcd.InitString = 'INIT'
+            ValueList.append(Sku.Value)
+      Pcd.TokenTypeList =list(set(Pcd.TokenTypeList))
+      if 'PCD_TYPE_HII' in Pcd.TokenTypeList:
+        Dict['VARIABLE_HEAD_CNAME_DECL'].append(CName)
+        Dict['VARIABLE_HEAD_GUID_DECL'].append(TokenSpaceGuid.replace('-','_'))
+        Dict['VARIABLE_HEAD_NUMSKUS_DECL'].append(len(Pcd.SkuInfo))
+        Dict['VARIABLE_HEAD_VALUE'].append('{ %s }\n' % ' },\n    { '.join(VariableHeadValueList))
+      if 'PCD_TYPE_VPD' in Pcd.TokenTypeList:
+        Dict['VPD_HEAD_CNAME_DECL'].append(CName)
+        Dict['VPD_HEAD_GUID_DECL'].append(TokenSpaceGuid.replace('-','_'))
+        Dict['VPD_HEAD_NUMSKUS_DECL'].append(len(Pcd.SkuInfo))
+        Dict['VPD_HEAD_VALUE'].append('{ %s }' % ' }, { '.join(VpdHeadOffsetList))
+      if 'PCD_TYPE_STRING' in Pcd.TokenTypeList:
+        Dict['STRING_HEAD_CNAME_DECL'].append(CName)
+        Dict['STRING_HEAD_GUID_DECL'].append(TokenSpaceGuid.replace('-','_'))
+        Dict['STRING_HEAD_NUMSKUS_DECL'].append(len(Pcd.SkuInfo))
+        Dict['STRING_HEAD_VALUE'].append(', '.join(StringHeadOffsetList))
+      if 'PCD_TYPE_DATA' in Pcd.TokenTypeList:
+        Dict[Pcd.InitString+'_CNAME_DECL_'+Pcd.DatumType].append(CName)
+        Dict[Pcd.InitString+'_GUID_DECL_'+Pcd.DatumType].append(TokenSpaceGuid.replace('-','_'))
+        Dict[Pcd.InitString+'_NUMSKUS_DECL_'+Pcd.DatumType].append(len(Pcd.SkuInfo))
+        if Pcd.InitString == 'UNINIT':
+          Dict['PCD_DATABASE_UNINIT_EMPTY'] = ''
+        else:
+          Dict[Pcd.InitString+'_VALUE_'+Pcd.DatumType].append(', '.join(ValueList))
+
+  if Phase == 'PEI':
+    NumberOfLocalTokens = NumberOfPeiLocalTokens
+  if Phase == 'DXE':
+    NumberOfLocalTokens = NumberOfDxeLocalTokens
+
+  Dict['TOKEN_INIT']       = ['' for x in range(NumberOfLocalTokens)]
+  Dict['TOKEN_CNAME']      = ['' for x in range(NumberOfLocalTokens)]
+  Dict['TOKEN_GUID']       = ['' for x in range(NumberOfLocalTokens)]
+  Dict['TOKEN_TYPE']       = ['' for x in range(NumberOfLocalTokens)]
+
+  for TokenSpaceGuidCName in Platform.DynamicPcdBuildDefinitions:
+    for CName in Platform.DynamicPcdBuildDefinitions[TokenSpaceGuidCName]:
+      Pcd = Platform.DynamicPcdBuildDefinitions[TokenSpaceGuidCName][CName]
+      if Pcd.Phase != Phase:
+        continue
+      for Package in Platform.PackageList:
+        if TokenSpaceGuidCName in Package.GuidDatabase:
+          TokenSpaceGuid = Package.GuidDatabase[TokenSpaceGuidCName].Guid.lower()
+          break
+      GeneratedTokenNumber = Pcd.GeneratedTokenNumber - 1
+      if Phase == 'DXE':
+        GeneratedTokenNumber -= NumberOfPeiLocalTokens
+      Dict['TOKEN_INIT'][GeneratedTokenNumber] = 'Init'
+      if Pcd.InitString == 'UNINIT':
+        Dict['TOKEN_INIT'][GeneratedTokenNumber] = 'Uninit'
+      Dict['TOKEN_CNAME'][GeneratedTokenNumber] = CName
+      Dict['TOKEN_GUID'][GeneratedTokenNumber] = TokenSpaceGuid.replace('-','_')
+      Dict['TOKEN_TYPE'][GeneratedTokenNumber] = ' | '.join(Pcd.TokenTypeList)
+      if Pcd.ItemType == 'DYNAMIC_EX':
+        Dict['EXMAPPING_TABLE_EXTOKEN'].append(Pcd.Token)
+        Dict['EXMAPPING_TABLE_LOCAL_TOKEN'].append(GeneratedTokenNumber)
+        Dict['EXMAPPING_TABLE_GUID_INDEX'].append(GuidList.index(TokenSpaceGuid))
+
+  if GuidList != []:
+    Dict['GUID_TABLE_EMPTY'] = 'FALSE'
+    Dict['GUID_TABLE_SIZE'] = len(GuidList)
+  else:
+    Dict['GUID_STRUCTURE'] = [GuidStringToGuidStructureString('00000000-0000-0000-0000-000000000000')]
+  if StringTableIndex == 0:
+    Dict['STRING_TABLE_INDEX'].append('')
+    Dict['STRING_TABLE_LENGTH'].append(1)
+    Dict['STRING_TABLE_CNAME'].append('')
+    Dict['STRING_TABLE_GUID'].append('')
+    Dict['STRING_TABLE_VALUE'].append('{ 0 }')
+  else:
+    Dict['STRING_TABLE_EMPTY'] = 'FALSE'
+    Dict['STRING_TABLE_SIZE'] = StringTableSize
+  if Dict['SIZE_TABLE_CNAME'] == []:
+    Dict['SIZE_TABLE_CNAME'].append('')
+    Dict['SIZE_TABLE_GUID'].append('')
+    Dict['SIZE_TABLE_CURRENT_LENGTH'].append(0)
+    Dict['SIZE_TABLE_MAXIMUM_LENGTH'].append(0)
+  if NumberOfLocalTokens != 0:
+    Dict['DATABASE_EMPTY']                = 'FALSE'
+    Dict['LOCAL_TOKEN_NUMBER_TABLE_SIZE'] = NumberOfLocalTokens
+    Dict['LOCAL_TOKEN_NUMBER']            = NumberOfLocalTokens
+  if NumberOfExTokens != 0:
+    Dict['EXMAP_TABLE_EMPTY']    = 'FALSE'
+    Dict['EXMAPPING_TABLE_SIZE'] = NumberOfExTokens
+    Dict['EX_TOKEN_NUMBER']      = NumberOfExTokens
+  else:
+    Dict['EXMAPPING_TABLE_EXTOKEN'].append(0)
+    Dict['EXMAPPING_TABLE_LOCAL_TOKEN'].append(0)
+    Dict['EXMAPPING_TABLE_GUID_INDEX'].append(0)
+
+  if NumberOfSizeItems != 0:
+    Dict['SIZE_TABLE_SIZE'] = NumberOfSizeItems * 2
+  AutoGenH.Append(PcdDatabaseAutoGenH, Dict)
+
+  if NumberOfLocalTokens == 0:
+    AutoGenC.Append(EmptyPcdDatabaseAutoGenC, Dict)
+  else:
+    AutoGenC.Append(PcdDatabaseAutoGenC, Dict)
+
+  return AutoGenH, AutoGenC
+
+def CreatePcdDatabaseCode (Platform, Phase):
+    AutoGenC = AutoGenString()
+    AutoGenH = AutoGenString()
+    AutoGenH.Append(PcdDatabaseCommonAutoGenH)
+    AdditionalAutoGenH, AdditionalAutoGenC = CreatePcdDatabasePhaseSpecificAutoGen (Platform, 'PEI')
+    AutoGenH.Append(AdditionalAutoGenH.String)
+    if Phase == 'PEI':
+        AutoGenC.Append(AdditionalAutoGenC.String)
+    if Phase == 'DXE':
+        AdditionalAutoGenH, AdditionalAutoGenC = CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase)
+        AutoGenH.Append(AdditionalAutoGenH.String)
+        AutoGenC.Append(AdditionalAutoGenC.String)
+        AutoGenH.Append(PcdDatabaseEpilogueAutoGenH)
+    return AutoGenH, AutoGenC
+
+def CreateLibraryConstructorCode(info, autoGenC, autoGenH):
+    if info.IsLibrary:
+        return
+    #
+    # Library Constructors
+    #
+    ConstructorList = []
+    for lib in info.DependentLibraryList:
+        if len(lib.ConstructorList) <= 0:
+            continue
+        #print "######",lib.ConstructorList
+        ConstructorList.extend(lib.ConstructorList)
+
+    Dict = {'Type':'Constructor', 'Function':ConstructorList}
+    if info.ModuleType == 'BASE':
+        if len(ConstructorList) == 0:
+            autoGenC.Append(LibraryString[0], Dict)
+        else:
+            autoGenC.Append(LibraryString[3], Dict)
+    elif info.ModuleType in ['PEI_CORE','PEIM']:
+        if len(ConstructorList) == 0:
+            autoGenC.Append(LibraryString[1], Dict)
+        else:
+            autoGenC.Append(LibraryString[4], Dict)
+    elif info.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER','DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
+        if len(ConstructorList) == 0:
+            autoGenC.Append(LibraryString[2], Dict)
+        else:
+            autoGenC.Append(LibraryString[5], Dict)
+
+def CreateLibraryDestructorCode(info, autoGenC, autoGenH):
+    if info.IsLibrary:
+        return
+    #
+    # Library Destructors
+    #
+    DestructorList = []
+    for lib in info.DependentLibraryList:
+        if len(lib.DestructorList) <= 0:
+            continue
+        DestructorList.extend(lib.DestructorList)
+
+    DestructorList.reverse()
+    if info.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER','DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
+        if len(DestructorList) == 0:
+            autoGenC.Append(LibraryString[2], {'Type':'Destructor','Function':DestructorList})
+        else:
+            autoGenC.Append(LibraryString[5], {'Type':'Destructor','Function':DestructorList})
+
+
+def CreateModuleEntryPointCode(info, autoGenC, autoGenH):
+    if info.IsLibrary:
+        return
+    #
+    # Module Entry Points
+    #
+    NumEntryPoints = len(info.Module.ModuleEntryPointList)
+    Dict = {'Function':info.Module.ModuleEntryPointList}
+
+    if info.ModuleType in ['PEI_CORE', 'DXE_CORE']:
+        if NumEntryPoints != 1:
+            EdkLogger.error('ERROR: %s must have exactly one entry point' % info.ModuleType)
+            print "???",info.Module.ModuleEntryPointList
+    if info.ModuleType == 'PEI_CORE':
+        autoGenC.Append(PeiCoreEntryPointString, Dict)
+    elif info.ModuleType == 'DXE_CORE':
+        autoGenC.Append(DxeCoreEntryPointString, Dict)
+    elif info.ModuleType == 'PEIM':
+        if NumEntryPoints < 2:
+            autoGenC.Append(PeimEntryPointString[NumEntryPoints], Dict)
+        else:
+            autoGenC.Append(PeimEntryPointString[2], Dict)
+    elif info.ModuleType in ['DXE_RUNTIME_DRIVER','DXE_DRIVER','DXE_SMM_DRIVER', 'DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
+        if info.ModuleType == 'DXE_SMM_DRIVER':
+            if NumEntryPoints == 0:
+                autoGenC.Append(DxeSmmEntryPointString[0], Dict)
+            else:
+                autoGenC.Append(DxeSmmEntryPointString[1], Dict)
+        else:
+            if NumEntryPoints < 2:
+                autoGenC.Append(UefiEntryPointString[NumEntryPoints], Dict)
+            else:
+                autoGenC.Append(UefiEntryPointString[2], Dict)
+
+def CreateModuleUnloadImageCode(info, autoGenC, autoGenH):
+    if info.IsLibrary:
+        return
+    #
+    # Unload Image Handlers
+    #
+    NumUnloadImage = len(info.Module.ModuleUnloadImageList)
+    Dict = {'Count':NumUnloadImage, 'Function':info.Module.ModuleUnloadImageList}
+    if NumUnloadImage < 2:
+        autoGenC.Append(UefiUnloadImageString[NumUnloadImage], Dict)
+    else:
+        autoGenC.Append(UefiUnloadImageString[2], Dict)
+
+def CreateGuidDefinitionCode(info, autoGenC, autoGenH):
+    if info.IsLibrary:
+        return
+    #
+    # GUIDs
+    #
+    for Key in info.GuidList:
+        for p in info.DependentPackageList:
+            if Key in p.Package.Guids:
+                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Package.Guids[Key]))
+                break
+        else:
+            EdkLogger.error('ERROR: GUID %s not found in dependent packages of module %s' % (Key, info.Name))
+
+def CreateProtocolDefinitionCode(info, autoGenC, autoGenH):
+    if info.IsLibrary:
+        return
+    #
+    # Protocol GUIDs
+    #
+    for Key in info.ProtocolList:
+        for p in info.DependentPackageList:
+            if Key in p.Package.Protocols:
+                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Package.Protocols[Key]))
+                break
+        else:
+            EdkLogger.error('ERROR: Protocol %s not found in dependent packages of module %s' % (Key, info.Name))
+
+def CreatePpiDefinitionCode(info, autoGenC, autoGenH):
+    if info.IsLibrary:
+        return
+    #
+    # PPI GUIDs
+    #
+    for Key in info.PpiList:
+        for p in info.DependentPackageList:
+            if Key in p.Package.Ppis:
+                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Package.Ppis[Key]))
+                break
+        else:
+            EdkLogger.error('ERROR: PPI %s not found in dependent packages of module %s' % (Key, info.Name))
+
+def CreatePcdCode(info, autoGenC, autoGenH):
+    if info.IsLibrary:
+        for pcd in info.PcdList:
+            CreateLibraryPcdCode(info, autoGenC, autoGenH, pcd)
+    else:
+        for pcd in info.PcdList:
+            CreateModulePcdCode(info, autoGenC, autoGenH, pcd)
+
+def CreateHeaderCode(info, autoGenC, autoGenH):
+    # file header
+    autoGenH.Append(AutoGenHeaderString,   {'FileName':'AutoGen.h'})
+    # header file Prologue
+    autoGenH.Append(AutoGenHPrologueString,{'Guid':info.Guid.replace('-','_')})
+    # specification macros
+    autoGenH.Append(SpecificationString,   {'Specification':info.MacroList})
+    # header files includes
+    autoGenH.Append("#include <%s>\n" % BasicHeaderFile)
+
+    if info.IsLibrary:
+        return
+
+    # C file header
+    autoGenC.Append(AutoGenHeaderString, {'FileName':'AutoGen.c'})
+    # C file header files includes
+    for inc in ModuleTypeHeaderFile[info.ModuleType]:
+        autoGenC.Append("#include <%s>\n" % inc)
+
+    #
+    # Publish the CallerId Guid
+    #
+    if info.ModuleType == 'BASE':
+        autoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED GUID  gEfiCallerIdGuid = %s;\n' % GuidStringToGuidStructureString(info.Guid))
+    else:
+        autoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  gEfiCallerIdGuid = %s;\n' % GuidStringToGuidStructureString(info.Guid))
+
+def CreateFooterCode(info, autoGenC, autoGenH):
+    autoGenH.Append(AutoGenHEpilogueString)
+
+def CreateCode(info, autoGenC, autoGenH):
+    CreateHeaderCode(info, autoGenC, autoGenH)
+
+    CreateLibraryConstructorCode(info, autoGenC, autoGenH)
+    CreateLibraryDestructorCode(info, autoGenC, autoGenH)
+    CreateModuleEntryPointCode(info, autoGenC, autoGenH)
+    CreateModuleUnloadImageCode(info, autoGenC, autoGenH)
+    CreateGuidDefinitionCode(info, autoGenC, autoGenH)
+    CreateProtocolDefinitionCode(info, autoGenC, autoGenH)
+    CreatePpiDefinitionCode(info, autoGenC, autoGenH)
+    CreatePcdCode(info, autoGenC, autoGenH)
+
+    CreateFooterCode(info, autoGenC, autoGenH)
+
+    filePath = os.path.join(info.WorkspaceDir, info.DebugDir)
+    CreateDirectory(filePath)
+    
+    autoGenFileList = []
+    
+    headerFile = open(os.path.join(filePath, "AutoGen.h"), "w")
+    headerFile.write(autoGenH.String)
+    autoGenFileList.append("AutoGen.h")
+
+    if not info.IsLibrary:
+        cFile = open(os.path.join(filePath, "AutoGen.c"), "w")
+        cFile.write(autoGenC.String)
+        autoGenFileList.append("AutoGen.c")
+
+    return autoGenFileList
+

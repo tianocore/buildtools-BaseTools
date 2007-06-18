@@ -31,7 +31,7 @@ class TargetTxtClassObject(object):
       self.LoadTargetTxtFile(filename)
 
   def LoadTargetTxtFile(self, filename):
-    EdkLogger.info('LoadTargetTxtFile() Start')
+    #EdkLogger.info('LoadTargetTxtFile() Start')
     if filename != None:
       ConvertTextFileToDictionary(filename, self.TargetTxtDictionary, '#', '=', True, None)
       if self.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM] == []:
@@ -54,7 +54,7 @@ class TargetTxtClassObject(object):
       self.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG].sort()
       self.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET_ARCH].sort()
       
-      EdkLogger.info('LoadTargetTxtFile() End')
+      #EdkLogger.info('LoadTargetTxtFile() End')
     else:
       EdkLogger.error('LoadTargetTxtFile() : No Target.txt file exist')
 
