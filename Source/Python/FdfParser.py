@@ -49,6 +49,7 @@ class FileProfile :
             try:
                 self.FileLinesList = []
                 self.FileLinesList = fsock.readlines()
+                self.FileLinesList = [list(s) for s in self.FileLinesList]
             finally:
                 fsock.close()
 
@@ -62,7 +63,7 @@ class FileProfile :
         self.RuleList = []
         self.VtfList = []
         
-class FdfParser :
+class FdfParser:
     
 
     def __init__(self, filename):
@@ -84,20 +85,19 @@ class FdfParser :
         Count = 0
         while not self.__EndOfFile():
             Count += 1
-            CurrentLineLen = len(self.profile.FileLinesList[self.CurrentLineNumber-1])
-            if self.__CurrentChar() in (T_CHAR_NULL, T_CHAR_CR, T_CHAR_SPACE, T_CHAR_TAB):
+            if self.__CurrentChar() in (T_CHAR_NULL, T_CHAR_CR, T_CHAR_LF, T_CHAR_SPACE, T_CHAR_TAB):
                 self.__SkippedChars += str(self.__CurrentChar())
                 self.__GetOneChar()
-            if self.__CurrentChar() == T_CHAR_LF:
-                self.CurrentLineNumber += 1
-                self.CurrentOffsetWithinLine = 0
+##            elif self.__CurrentChar() == T_CHAR_LF:
+##                self.CurrentLineNumber += 1
+##                self.CurrentOffsetWithinLine = 0
             else:
                 return Count - 1
 
     """Judge current buffer pos is at file end"""
     def __EndOfFile(self):
-        NumberOfLines = len(profile.FileLinesList)
-        SizeOfLastLine = len(profile.FileLinesList[-1])
+        NumberOfLines = len(self.profile.FileLinesList)
+        SizeOfLastLine = len(self.profile.FileLinesList[-1])
         if self.CurrentLineNumber == NumberOfLines and self.CurrentOffsetWithinLine >= SizeOfLastLine - 1:
             return True
         else:
@@ -105,7 +105,7 @@ class FdfParser :
 
     """Judge current char is at line end"""
     def __EndOfLine(self):
-        SizeOfCurrentLine = len(profile.FileLinesList[self.CurrentLineNumber - 1])
+        SizeOfCurrentLine = len(self.profile.FileLinesList[self.CurrentLineNumber - 1])
         if self.CurrentOffsetWithinLine >= SizeOfCurrentLine - 1:
             return True
         else:
@@ -124,7 +124,6 @@ class FdfParser :
             self.CurrentLineNumber -= 1
             self.CurrentOffsetWithinLine = len(self.__CurrentLine()) - 1
         else:
-            self.CurrentLineNumber -= 1
             self.CurrentOffsetWithinLine -= 1
         return True
         
@@ -160,9 +159,9 @@ class FdfParser :
     ### !include statement should be expanded at the same FileLinesList[CurrentLineNumber - 1]
     def PreprocessFile(self):
         # change string to list of chars, as string can NOT be modified
-        self.profile.FileLinesList = [list(s) for s in self.profile.FileLinesList]
+        
 
-        Rewind()
+        self.Rewind()
         InComment = False
         DoubleSlashComment = False
         HashComment = False
@@ -210,7 +209,7 @@ class FdfParser :
 
         # restore from ListOfList to ListOfString
         self.profile.FileLinesList = ["".join(list) for list in self.profile.FileLinesList]
-        Rewind()
+        self.Rewind()
 
     """check whether input string is found from current char position along"""
     def __IsToken(self, string):
@@ -218,7 +217,7 @@ class FdfParser :
         if self.__EndOfFile():
             return False
         # Only consider the same line, no multi-line token allowed
-        index = self.__CurrentLine()[self.CurrentOffsetWithinLine, -1].find(string)
+        index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].find(string)
         if index == 0:
             self.CurrentOffsetWithinLine += len(string)
             return True
@@ -230,10 +229,10 @@ class FdfParser :
         if self.__EndOfFile():
             return False
         # Only consider the same line, no multi-line token allowed
-        index = self.__CurrentLine()[self.CurrentOffsetWithinLine, -1].find(keyword)
+        index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].find(keyword)
         if index == 0:
-            if not str(self.__CurrentLine()[self.CurrentOffsetWithinLine + len(keyword)]).isspace() and \
-            self.__CurrentLine()[self.CurrentOffsetWithinLine + len(keyword)] != '=':
+            followingChar = self.__CurrentLine()[self.CurrentOffsetWithinLine + len(keyword)]
+            if not str(followingChar).isspace() and followingChar not in ('=', '|'):
                 return False
             self.CurrentOffsetWithinLine += len(keyword)
             return True
@@ -258,7 +257,7 @@ class FdfParser :
                 else:
                     break
 
-            self.__Token = self.__CurrentLine[StartPos, self.CurrentOffsetWithinLine]
+            self.__Token = self.__CurrentLine()[StartPos : self.CurrentOffsetWithinLine]
             return True
         #elif ...:
             # other conditions
@@ -274,14 +273,14 @@ class FdfParser :
         StartPos = self.CurrentOffsetWithinLine
         while not self.__EndOfLine():
                 TempChar = self.__CurrentChar()
-                if not str(TempChar).isspace():
+                if not str(TempChar).isspace() and TempChar not in ('=', '|', ','):
                     self.__GetOneChar()
                 else:
                     break
         else:
             return False
         
-        self.__Token = self.__CurrentLine[StartPos, self.CurrentOffsetWithinLine]
+        self.__Token = self.__CurrentLine()[StartPos : self.CurrentOffsetWithinLine]
         return True
 
     def __GetNextGuid(self):
@@ -315,7 +314,7 @@ class FdfParser :
         if len(self.__Token) <= 2:
             self.__UndoToken()
             return False
-        charList = [c for c in self.__Token[2, -1] if not self.__HexDigit( c)]
+        charList = [c for c in self.__Token[2 : -1] if not self.__HexDigit( c)]
         if len(charList) == 0:
             return True
         else:
@@ -362,19 +361,19 @@ class FdfParser :
 
         try:
             self.PreprocessFile()
-            while GetFd():
+            while self.__GetFd():
                 pass
 
-            while GetFv():
+            while self.__GetFv():
                 pass
 
-            while GetCapsule():
+            while self.__GetCapsule():
                 pass
 
-            while GetVtf():
+            while self.__GetVtf():
                 pass
 
-            while GetRule():
+            while self.__GetRule():
                 pass
             
         except Warning, X:
@@ -394,7 +393,7 @@ class FdfParser :
         if not self.__IsToken("[FD."):
             raise Warning("expected [FD.] At Line %d" % self.CurrentLineNumber)
         
-        fdName = self.__GetFdName()
+        fdName = self.__GetUiName()
         
         if not self.__IsToken( "]"):
             raise Warning("expected ']' At Line %d" % self.CurrentLineNumber)
@@ -496,15 +495,15 @@ class FdfParser :
             
         fd.ErasePolarity = self.__Token
 
-        Status = GetBlockStatements( fd)
+        Status = self.__GetBlockStatements(fd)
         return Status
     
     def __GetBlockStatements(self, obj):
         
-        if not GetBlockStatement(obj):
+        if not self.__GetBlockStatement(obj):
             raise Warning("expected block statement At Line %d" % self.CurrentLineNumber)
             
-        while GetBlockStatement(obj):
+        while self.__GetBlockStatement(obj):
             pass
         return True
     
@@ -537,11 +536,11 @@ class FdfParser :
                 
             BlockNumber = self.__Token
         
-        fd.BlockSizeList.append((BlockSize, BlockNumber, BlockSizePcd))
+        obj.BlockSizeList.append((BlockSize, BlockNumber, BlockSizePcd))
         return True
 
     def __GetDefineStatements(self, obj):
-        while GetDefineStatement( obj):
+        while self.__GetDefineStatement( obj):
             pass
     
     def __GetDefineStatement(self, obj):
@@ -562,7 +561,7 @@ class FdfParser :
     
     
     def __GetSetStatements(self, obj):
-        while GetSetStatement(obj):
+        while self.__GetSetStatement(obj):
             pass
 
     def __GetSetStatement(self, obj):
@@ -618,14 +617,17 @@ class FdfParser :
                 return False
 
         if self.__Token == "SET":
+            self.__UndoToken()
             self.__GetSetStatements( region)
             if not self.__GetNextWord():
                 return False
             
         if self.__Token == "FV":
+            self.__UndoToken()
             self.__GetRegionFvType( region)
 
-        elif self.__Token == "FILE":     
+        elif self.__Token == "FILE":
+            self.__UndoToken()
             self.__GetRegionFileType( region)
 
         else:
@@ -684,7 +686,8 @@ class FdfParser :
         DataString = self.__Token
         DataString += ","
         
-        while self.__GetHexNumber():
+        while self.__IsToken(","):
+            self.__GetHexNumber()
             if len(self.__Token) > 4:
                 raise Warning("Hex byte(must be 2 digits) too long At Line %d" % self.CurrentLineNumber)
             DataString += self.__Token
@@ -1270,7 +1273,7 @@ class FdfParser :
             return rule
         
         return Rule.Rule()
-        
+
     def __GetEfiSection(self, obj, checkLeafArgs = False):
         
         if not self.__GetNextWord():
@@ -1327,7 +1330,7 @@ class FdfParser :
                raise Warning("Compress type not known At Line %d" % self.CurrentLineNumber)
 
             return True
-        
+
         elif self.__IsKeyword( "GUIDED"):
             if self.GetNextGuid():
                 guid = self.__Token
@@ -1401,7 +1404,7 @@ class FdfParser :
         
         self.profile.VtfList.append(vtf)
         return True
-        
+    
     def __GetComponentStatement(self, vtf):
         
         if not self.__IsKeyword("COMP_NAME"):
@@ -1514,3 +1517,10 @@ class FdfParser :
         
         vtf.ComponentStatementList.append(compStatement)
         return True
+    
+if __name__ == "__main__":
+    parser = FdfParser("test.fdf")
+    parser.ParseFile()
+    print parser.profile.FdDict
+    print parser.profile.FvDict
+    print parser.profile.RuleList
