@@ -18,7 +18,7 @@ class VerSection (Section.Section):
                      Ffs.SectionSuffix.get('VERSION')
                      
         if not (self.BuildNum == None) :
-            BuildNum = ' -j ' + '%f' %self.BuildNum;
+            BuildNum = ' -j ' + '%d' %self.BuildNum;
         else :
             BuidNum = None
 
@@ -39,10 +39,6 @@ class VerSection (Section.Section):
                          StringData                 + \
                          '\"'                       + \
                          BuildNum
-                         
-        # For Test
-        GenSectionCmd = "GenSection -o 001-001-001-009-008-007-008.ver \
-                         -s EFI_SECTION_VERSION -v \"0.01\""
                          
         #
         # Call GenSection

@@ -1,11 +1,11 @@
-import Ffs
+from Ffs import Ffs
 import Section
 import subprocess
 
 class CompressSection (Section.Section) :
     CompTypeDict = {
-        'PI_STD'     : ' -c ',
-        'NON_PI_STD' : ''
+        'PI_STD'     : ' -c PI_STD ',
+        'NON_PI_STD' : ' -c NON_PI_STD '
     }
     
     def __init__(self):
@@ -18,22 +18,26 @@ class CompressSection (Section.Section) :
         #
         # Generate all section
         #
+        SectFiles = ''
         for Sect in self.SectionList:
-            SectFile = ' ' + Sect.GenSection(OutputPath, ModuleName)
+            SectFiles = SectFiles + \
+                        ' '       + \
+                        Sect.GenSection(OutputPath, ModuleName)
 
         OutputFile = OutputPath + \
                      ModuleName + \
-                     FFs.SectionSuffix ('COMPRESS')
+                     Ffs.SectionSuffix['COMPRESS']
                      
-        GenSectionCmd = 'GenSection -o '                  + \
-                         OutputFile                       + \
-                         ' -s '                           + \
-                         Section.SectionType('COMPRESS')  + \
-                         self.CompTypeDict(self.CompType) + \
-                         SectFile
+        GenSectionCmd = 'GenSection -o '                              + \
+                         OutputFile                                   + \
+                         ' -s '                                       + \
+                         Section.Section.SectionType['COMPRESS']      + \
+                         self.CompTypeDict[self.CompType]             + \
+                         SectFiles
         #
         # Call GenSection
         #
+        print GenSectionCmd
         subprocess.Popen (GenSectionCmd).communicate()
         
         return OutputFile

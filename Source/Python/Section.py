@@ -13,9 +13,8 @@ class Section :
         'UI'        : 'EFI_SECTION_USER_INTERFACE'
     }
     ToolGuild = {
-        '  '   :    'TianoCompress',
-        '  '   :    'Laz7Compress',
-        '  '   :    'CustomerCompress'
+        '0xa31280ad-0x481e-0x41b6-0x95e8-0x127f-0x4c984779' : 'TianoCompress',
+        '0xee4e5898-0x3914-0x4259-0x9d6e-0xdc7b-0xd79403cf' : 'LzmaCompress'
     }
     def __init__(self):
         self.Alignment = None
