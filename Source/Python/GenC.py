@@ -738,7 +738,7 @@ ModuleTypeHeaderFile = {
     "BASE"              :   BasicHeaderFile,
     "SEC"               :   ["Peim.h", "DebugLib.h", ],         # "PiPei.h",
     "PEI_CORE"          :   ["PeiCore.h", "DebugLib.h"],        # "PiPei.h",
-    "PEIM"              :   ["Peim.h", "DebugLib"],             # PiPei.h",
+    "PEIM"              :   ["Peim.h", "DebugLib.h"],             # PiPei.h",
     "DXE_CORE"          :   ["DxeCore.h", "DebugLib.h"],        # PiDxe.h",
     "DXE_DRIVER"        :   ["Dxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
     "DXE_SMM_DRIVER"    :   ["Dxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
@@ -1330,7 +1330,6 @@ def CreateModuleEntryPointCode(info, autoGenC, autoGenH):
     if info.ModuleType in ['PEI_CORE', 'DXE_CORE']:
         if NumEntryPoints != 1:
             EdkLogger.error('ERROR: %s must have exactly one entry point' % info.ModuleType)
-            print "???",info.Module.ModuleEntryPointList
     if info.ModuleType == 'PEI_CORE':
         autoGenC.Append(PeiCoreEntryPointString, Dict)
     elif info.ModuleType == 'DXE_CORE':
