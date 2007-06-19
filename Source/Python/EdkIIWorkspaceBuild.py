@@ -476,6 +476,7 @@ class WorkspaceBuild(object):
             platform = self.Build[arch].PlatformDatabase[dsc]
             pcds = platform.Pcds
             if (CName, GuidCName) in pcds:
+                Type = pcds[(CName, GuidCName)].Type
                 DatumType = pcds[(CName, GuidCName)].DatumType
                 DefaultValue = pcds[(CName, GuidCName)].DefaultValue
                 TokenValue = pcds[(CName, GuidCName)].TokenValue
