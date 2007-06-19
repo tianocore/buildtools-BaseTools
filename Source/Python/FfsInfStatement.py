@@ -9,14 +9,14 @@ class FfsInfStatement(Ffs.Ffs):
         self.ver = None
         self.Ui = None
         self.InfFileName = None
-        self.__infParse__(self.InfFileName)
+        #self.__infParse__(self.InfFileName)
 
-    def __infParse__(InfFile):
+    def __infParse__(self, InfFile):
         Inf = open (InfFile, mode = 'r')
-        self.Version = None
-        self.Guid = None
-        self.Name = None
-        self.ModuleType = None
+        self.Version = ''
+        self.Guid = ''
+        self.Name = ''
+        self.ModuleType = ''
 
 
     def GenFfs(self):
