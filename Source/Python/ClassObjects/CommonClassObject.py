@@ -14,7 +14,7 @@
 class CommonClassObject(object):
   def __init__(self):
     self.Usage = []                          #ALWAYS_CONSUMED | SOMETIMES_CONSUMED | ALWAYS_PRODUCED | SOMETIMES_PRODUCED | TO_START | BY_START | PRIVATE
-    self.FetureFlag = ''
+    self.FeatureFlag = ''
     self.SupArchList = []                    #EBC | IA32 | X64 | IPF | ARM | PPC
     self.HelpText = ''
     

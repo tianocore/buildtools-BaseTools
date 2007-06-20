@@ -106,7 +106,8 @@ class ModuleClassObject(object):
   def __init__(self):
     self.Header = ModuleHeaderClassObject()
     self.LibraryClasses = []                           #[ LibraryClassClassObject, ...]
-    self.Sources = []                                  #[ ModuleSourceFileClassObject, ...]
+    self.Sources = []                                  #[ ModuleSourceFilesClassObject, ...]
+    self.BinaryFiles = []                              #[ ModuleBinaryFilesClassObject, ...]
     self.NonProcessedFiles = []                        #[ '', '', ...]
     self.PackageDependencies = []                      #[ PackageDependencyClassObject, ...]
     self.Protocols = []                                #[ ProtocolClassObject, ...]
