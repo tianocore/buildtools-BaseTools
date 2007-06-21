@@ -5,6 +5,7 @@ import os
 import subprocess
 class FileStatements (Ffs.Ffs) :
     def __init__(self):
+        Ffs.Ffs.__init__(self)
         Ffs.Ffs.CheckSum = ''
         Ffs.Ffs.Fixed = ''
         Ffs.Ffs.NameGuid = ''

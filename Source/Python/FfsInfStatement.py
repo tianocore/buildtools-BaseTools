@@ -5,6 +5,7 @@ import Ffs
 import subprocess
 class FfsInfStatement(Ffs.Ffs):
     def __init__(self):
+        Ffs.Ffs.__init__(self)
         self.Rule = None
         self.ver = None
         self.Ui = None
