@@ -2,7 +2,7 @@ class Capsule :
     def __init__(self):
         self.SpecName = None
         self.UiCapsuleName = None
-        self.CreatFile = None
+        self.CreateFile = None
         self.GroupIdNumber = None
 #        self.DefineStatementList = None
 #        self.SetSatementList = None

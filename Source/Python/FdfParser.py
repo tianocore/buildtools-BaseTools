@@ -1216,10 +1216,11 @@ class FdfParser:
         
         moduleType = self.__GetModuleType()
         
+        templateName = ""
         if self.__IsToken("."):
             if not self.__GetNextWord():
                 raise Warning("expected template name At Line %d" % self.CurrentLineNumber)
-            rule.TemplateName = self.__Token
+            templateName = self.__Token
             
         if not self.__IsToken( "]"):
             raise Warning("expected ']' At Line %d" % self.CurrentLineNumber)
@@ -1227,6 +1228,7 @@ class FdfParser:
         rule = self.__GetProcessFormat()
         rule.Arch = arch
         rule.ModuleType = moduleType
+        rule.TemplateName = templateName
         self.profile.RuleList.append(rule)
         return True
     
@@ -1253,9 +1255,9 @@ class FdfParser:
         if not self.__IsToken("="):
             raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
         
-        if not self.__GetNextGuid():
-            raise Warning("expected GUID At Line %d" % self.CurrentLineNumber)
-        guid = self.__Token
+        if not self.__IsKeyword("$(NAMED_GUID)"):
+            raise Warning("expected $(NAMED_GUID) At Line %d" % self.CurrentLineNumber)
+#        guid = self.__Token
         
         fixed = False
         if self.__IsKeyword("Fixed"):
@@ -1281,7 +1283,7 @@ class FdfParser:
                 raise Warning("expected File name At Line %d" % self.CurrentLineNumber)
             
             rule = RuleSimpleFile.RuleSimpleFile()
-            rule.NameGuid = guid
+#            rule.NameGuid = guid
             rule.FileModType = type
             rule.Alignment = alignment
             rule.CheckSum = checksum
@@ -1292,7 +1294,7 @@ class FdfParser:
         if self.__IsToken("{"):
             # Complex file rule expected
             rule = RuleComplexFile.RuleCompilexFile()
-            rule.NameGuid = guid
+#            rule.NameGuid = guid
             while self.__GetEfiSection(rule):
                 pass
 
@@ -1301,14 +1303,19 @@ class FdfParser:
             while self.__GetEfiSection(rule, True):
                 pass
             
+            if not self.__IsToken("}"):
+                raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
+            
             return rule
         
         return Rule.Rule()
 
     def __GetEfiSection(self, obj, checkLeafArgs = False):
         
+        oldPos = self.GetFileBufferPos()
         if not self.__GetNextWord():
-            raise Warning("expected EFI section name At Line %d" % self.CurrentLineNumber)
+#            raise Warning("expected EFI section name At Line %d" % self.CurrentLineNumber)
+            return False
         sectionName = self.__Token
         
         if sectionName not in ("PE32", "PIC", "TE", "DXE_DEPEX", "VERSION", "UI", "COMPAT16", "FV_IMAGE", \
@@ -1333,6 +1340,11 @@ class FdfParser:
             if self.__GetAlignment():
                 section.Alignment = self.__Token
                 
+        #        Leaf section encountered, restore to the beginning of section.
+        if self.__IsKeyword("BUILD_NUM") or self.__IsKeyword("Align"):
+            self.SetFileBufferPos(oldPos)
+            return False
+        
         if not self.__GetNextToken():
             raise Warning("expected EFI section File At Line %d" % self.CurrentLineNumber)
         section.Filename = self.__Token
@@ -1344,22 +1356,29 @@ class FdfParser:
     def __GetRuleEncapsulationSection(self, rule):
 
         if self.__IsKeyword( "COMPRESS"):
+            type = "PI_STD"
             if self.__IsKeyword("PI_STD") or self.__IsKeyword("PI_NONE"):
                 type = self.__Token
-                if not self.__IsToken("{"):
-                    raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
-                section = CompressSection.CompressSection()
                 
-                # Efi sections...
-                self.__GetEfiSection(section)
+            if not self.__IsToken("{"):
+                raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
 
-                if not self.__IsToken( "}"):
-                    raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
-                rule.SectionList.append(section)
-
-            else:
-               raise Warning("Compress type not known At Line %d" % self.CurrentLineNumber)
-
+            section = CompressSection.CompressSection()
+            
+            section.CompType = type
+            # Recursive sections...
+            while self.__GetEfiSection(section):
+                pass
+            while self.__GetEfiSection(section, True):
+                pass
+            
+            if not self.__IsToken( "}"):
+                raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
+            rule.SectionList.append(section)
+                
+#            else:
+#               raise Warning("Compress type not known At Line %d" % self.CurrentLineNumber) 
+           
             return True
 
         elif self.__IsKeyword( "GUIDED"):
@@ -1370,8 +1389,11 @@ class FdfParser:
                 section = GuidSection.GuidSection()
                 
                 # Efi sections...
-                self.__GetEfiSection(section)
-
+                while self.__GetEfiSection(section):
+                    pass
+                while self.__GetEfiSection(section, True):
+                    pass
+                
                 if not self.__IsToken( "}"):
                     raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
                 rule.SectionList.append(section)
