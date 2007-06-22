@@ -19,13 +19,21 @@ class region:
 #  Add RegionData to Fd file
 ##
     def AddToBuffer(self, Buffer, BlockSize):
-        if self.RegionType == 'Fv':
+        if self.RegionType == 'FV':
             fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(self.RegionData)
             fv.AddToBuffer(Buffer, self.Offset)
-        if self.RegionType == 'File':
+        if self.RegionType == 'FILE':
             BinFile = open (self.RegionData, 'r')
             Buffer.write(BinFile.read())
-        if self.RegionType == 'Data' :
+        if self.RegionType == 'DATA' :
             Data = self.RegionData.split(',')
             for item in Data :
                 Buffer.write(pack('B', int(item, 16)))
+        if self.RegionType == None:
+            BegionRegion = int (self.Offset, 16)
+            EndRegion = int(self.Size, 16)
+            Size = EndRegion - BegionRegion
+            print Size
+            for i in range(0, Size) :
+                Buffer.write(pack('B', int('0xFF', 16)))
+                

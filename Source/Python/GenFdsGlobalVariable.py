@@ -9,6 +9,7 @@ class GenFdsGlobalVariable:
     WorkSpace = None
     WorkSpaceDir = ''
     RuleDict = {}
+    DefaultRule = None
     
     def ExtendMarco (String):
         return String
@@ -25,6 +26,10 @@ class GenFdsGlobalVariable:
         GenFdsGlobalVariable.WorkSpace.Workspace.WorkspaceDir + \
         os.sep
         
+    def SetDefaultRule () :
+        GenFdsGlobalVariable.DefaultRule = None
+
     SetDir = staticmethod(SetDir)
         
     ExtendMarco = staticmethod(ExtendMarco)
+    SetDefaultRule = staticmethod(SetDefaultRule)

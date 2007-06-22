@@ -1230,6 +1230,20 @@ class FdfParser:
         rule.Arch = arch
         rule.ModuleType = moduleType
         rule.TemplateName = templateName
+        if templateName == '' :
+            self.profile.RuleDict['RULE'             + \
+                              '.'                    + \
+                              arch.upper()           + \
+                              '.'                    + \
+                              moduleType.upper()     ] = rule
+        else :
+            self.profile.RuleDict['RULE'             + \
+                              '.'                    + \
+                              arch.upper()           + \
+                              '.'                    + \
+                              moduleType.upper()     + \
+                              '.'                    + \
+                              templateName.upper() ] = rule
         self.profile.RuleList.append(rule)
         return True
     

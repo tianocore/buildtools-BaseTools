@@ -1,9 +1,6 @@
 import Rule
 class RuleSimpleFile (Rule.Rule) :
     def __init__(self):
-        self.Fixed = None
-        self.CheckSum = None
-        self.Alignment = None
+        Rule.Rule.__init__()
         self.FileName = None
-        self.FileModType = None
         self.SectionType = ''

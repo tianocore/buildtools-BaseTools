@@ -51,11 +51,7 @@ class FfsInfStatement(Ffs.Ffs):
         #
         # Get the rule of how to generate Ffs file
         #
-        Rule = GenFdsGlobalVariable.FdfParser.profile.RuleDict['Rule' + \
-                                                       '.' + \
-                                                       'IA32' + \
-                                                       '.' + \
-                                                       self.ModuleType]
+        Rule = self.__GetRule__()
                                                        
         FileType = Ffs.Ffs.ModuleTypeToFileType[Rule.ModuleType]
         #
@@ -176,5 +172,26 @@ class FfsInfStatement(Ffs.Ffs):
                 String = String.replace (Marco, MarcoDict[Marco])
         return String
 
+    def __GetRule__ (self) :
+        currentArch = 'IA32'
         
-        
+        RuleName = 'RULE'      + \
+                   '.'         + \
+                   currentArch + \
+                   '.'         + \
+                   self.ModuleType.upper()
+        print "Want To Find Rule Name is : " + RuleName
+
+        Rule = GenFdsGlobalVariable.FdfParser.profile.RuleDict.get(RuleName)
+        if Rule == None :
+            RuleName = 'RULE'      + \
+                       '.'         + \
+                       'COMMON'    + \
+                       '.'         + \
+                       self.ModuleType.upper()
+            Rule = GenFdsGlobalVariable.FdfParser.profile.RuleDict.get(RuleName)
+            if Rule == None :
+                print 'Dont Find Related Rule, Using Default Rule !!!'
+                return GenFdsGlobalVariable.DefaultRule
+            
+        return Rule
