@@ -65,7 +65,7 @@ Returns:
 
 --*/
 {
-  printf ("%s v%d.%d -Tiano Firmware Volume Generation Utility.\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
+  printf ("%s v%d.%d - EDKII Firmware Volume Generation Utility.\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
   printf ("Copyright (c) 2007 Intel Corporation. All rights reserved.\n");
 }
  
@@ -137,7 +137,7 @@ Returns:
   UINTN       InfFileSize;
   CHAR8       *FvFileName;
   EFI_PHYSICAL_ADDRESS XipBase;
-  
+
   InfFileName   = NULL;
   InfFileImage  = NULL;
   FvFileName    = NULL;
@@ -170,6 +170,9 @@ Returns:
   while (argc > 0) {
     if ((stricmp (argv[0], "-i") == 0) || (stricmp (argv[0], "--inputfile") == 0)) {
       InfFileName = argv[1];
+      if (InfFileName == NULL) {
+        Warning (NULL, 0, 0, NULL, "No input file specified.");
+      }
       argc -= 2;
       argv += 2;
       continue; 
@@ -177,6 +180,9 @@ Returns:
 
     if ((stricmp (argv[0], "-o") == 0) || (stricmp (argv[0], "--outputfile") == 0)) {
       FvFileName = argv[1];
+      if (FvFileName == NULL) {
+        Warning (NULL, 0, 0, NULL, "No output file specified.");
+      }
       argc -= 2;
       argv += 2;
       continue; 
@@ -192,6 +198,12 @@ Returns:
       argv += 2;
       continue; 
     }
+    
+    //
+    // Don't recognize the paramter.
+    //
+    Error (NULL, 0, 0, NULL, "%s is invaild paramter!", argv[0]);
+    return STATUS_ERROR;
   }
 
   //
@@ -203,7 +215,7 @@ Returns:
   }
 
   //
-  // Call the GenFvImage lib to generate Fv Image
+  // Call the GenFvImageFunction to generate Fv Image
   //
   Status = GenerateFvImage (
             InfFileImage,

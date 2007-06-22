@@ -2,7 +2,7 @@
 
 APPNAME = GenFv
 
-LIBS = Common.lib RpcRT4.lib
+LIBS = Common.lib PeCoffLoader.lib RpcRT4.lib
 
 OBJECTS = GenFv.obj GenFvInternalLib.obj
 

@@ -2,8 +2,8 @@ ARCH = IA32
 
 !INCLUDE MSmakefile.common
 
-LIBRARIES = Common
-APPLICATIONS = GenFw GenSec GenFv
+LIBRARIES = Common PeCoffLoader
+APPLICATIONS = GenFw GenSec GenFv GenFfs
 
 all: libs apps install
 

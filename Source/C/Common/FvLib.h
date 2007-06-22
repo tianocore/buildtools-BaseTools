@@ -28,7 +28,6 @@ Abstract:
 #include <string.h>
 
 #include <Common/UefiBaseTypes.h>
-#include <Common/EfiImage.h>
 #include <Common/FirmwareVolumeImageFormat.h>
 #include <Common/PiFirmwareFileSystem.h>
 #include <Common/PiFirmwareVolumeHeader.h>

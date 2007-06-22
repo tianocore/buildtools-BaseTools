@@ -34,20 +34,58 @@ Abstract:
 #include <assert.h>
 
 #include <Common/UefiBaseTypes.h>
-#include <Common/Variable.h>
-#include <Common/WorkingBlockHeader.h>
-
 #include "GenFvInternalLib.h"
 #include "CommonLib.h"
-#include "Crc32.h"
 #include "EfiUtilityMsgs.h"
-#include "Compress.h"
 #include "WinNtInclude.h"
 
 EFI_STATUS
 CalculateFvSize (
   FV_INFO *FvInfoPtr
   );
+/*++
+Routine Description:
+  Calculate the FV size and Update Fv Size based on the actual FFS files.
+  And Update FvInfo data.
+
+Arguments:
+  FvInfoPtr     - The pointer to FV_INFO structure.
+
+Returns:
+  EFI_ABORTED   - Ffs Image Error
+  EFI_SUCCESS   - Successfully update FvSize
+--*/
+
+EFI_STATUS
+FfsRebase ( 
+  IN OUT  FV_INFO               *FvInfo, 
+  IN      CHAR8                 *FileName,           
+  IN OUT  EFI_FFS_FILE_HEADER   *FfsFile,
+  IN      UINTN                 XipOffset
+  );
+/*++
+
+Routine Description:
+
+  This function determines if a file is XIP and should be rebased.  It will
+  rebase any PE32 sections found in the file using the base address.
+
+Arguments:
+  
+  FvInfo            A pointer to FV_INFO struture.
+  FileName          Ffs file Name
+  FfsFile           A pointer to Ffs file image.
+  XipOffset         The offset address to use for rebasing the XIP file image.
+
+Returns:
+
+  EFI_SUCCESS             The image was properly rebased.
+  EFI_INVALID_PARAMETER   An input parameter is invalid.
+  EFI_ABORTED             An error occurred while rebasing the input file image.
+  EFI_OUT_OF_RESOURCES    Could not allocate a required resource.
+  EFI_NOT_FOUND           No compressed sections could be found.
+
+--*/
 
 static UINT32 MaxFfsAlignment = 0;
 
@@ -730,7 +768,7 @@ Returns:
   // Done with the file, from this point on we will just use the buffer read.
   //
   fclose (NewFile);
-
+  
   //
   // Verify read successful
   //
@@ -738,6 +776,16 @@ Returns:
     free (FileBuffer);
     Error (NULL, 0, 0, FvInfo->FvFiles[Index], "failed to read input file contents");
     return EFI_ABORTED;
+  }
+  
+  //
+  // Verify Ffs file
+  //
+  Status = VerifyFfsFile (FileBuffer);
+  if (EFI_ERROR (Status)) {
+    Error (NULL, 0, 0, FvInfo->FvFiles[Index], "the invalid FFS file");
+    free (FileBuffer);
+    return EFI_INVALID_PARAMETER;
   }
 
   //
@@ -768,7 +816,7 @@ Returns:
   if (CurrentFileAlignment > MaxFfsAlignment) {
     MaxFfsAlignment = CurrentFileAlignment;
   }
-
+  _asm int 3;
   //
   // If we have a VTF file, add it at the top.
   //
@@ -781,13 +829,16 @@ Returns:
       //
       // Sanity check. The file MUST align appropriately
       //
-      
       if (((UINTN) *VtfFileImage + sizeof (EFI_FFS_FILE_HEADER) - (UINTN) FvImage->FileImage) % (1 << CurrentFileAlignment)) {
         Error (NULL, 0, 0, NULL, "VTF file does not align on %d-byte boundary", 1 << CurrentFileAlignment);
         free (FileBuffer);
         return EFI_ABORTED;
       }
-
+      //
+      // Rebase the PE or TE image in FileBuffer of FFS file for XIP 
+      // Rebase for the debug genfvmap tool
+      //
+      FfsRebase (FvInfo, FvInfo->FvFiles[Index], (EFI_FFS_FILE_HEADER *) FileBuffer, (UINTN) *VtfFileImage - (UINTN) FvImage->FileImage);
       //
       // copy VTF File
       //
@@ -818,16 +869,14 @@ Returns:
   //
   if ((FvImage->CurrentFilePointer + FileSize) < FvImage->Eof) {
     //
+    // Rebase the PE or TE image in FileBuffer of FFS file for XIP. 
+    // Rebase Bs and Rt drivers for the debug genfvmap tool.
+    //
+    FfsRebase (FvInfo, FvInfo->FvFiles[Index], (EFI_FFS_FILE_HEADER *) FileBuffer, (UINTN) FvImage->CurrentFilePointer - (UINTN) FvImage->FileImage);
+    //
     // Copy the file
     //
     memcpy (FvImage->CurrentFilePointer, FileBuffer, FileSize);
-
-    //
-    // If the file is XIP, rebase To do
-    //
-    // CurrentFileBaseAddress = FvInfo->BaseAddress + ((UINTN) FvImage->CurrentFilePointer - (UINTN) FvImage->FileImage);
-    //
-
     FvImage->CurrentFilePointer += FileSize;
   } else {
     Error (NULL, 0, 0, NULL, "ERROR: The firmware volume is out of space, could not add file %s.\n", FvInfo->FvFiles[Index]);
@@ -840,6 +889,7 @@ Returns:
   while (((UINTN) FvImage->CurrentFilePointer & (EFI_FFS_FILE_HEADER_ALIGNMENT - 1)) != 0) {
     FvImage->CurrentFilePointer++;
   }
+
   //
   // Free allocated memory.
   //
@@ -882,9 +932,10 @@ Returns:
   // pad file, then there's nothing to do
   //
   if ((UINTN) VtfFileImage == (UINTN) FvImage->Eof || \
-      ((UINTN) FvImage->CurrentFilePointer - (UINTN) VtfFileImage) <= sizeof (EFI_FFS_FILE_HEADER)) {
+      ((UINTN) VtfFileImage == (UINTN) FvImage->CurrentFilePointer)) {
     return EFI_SUCCESS;
   }
+
   //
   // Pad file starts at beginning of free space
   //
@@ -1346,6 +1397,8 @@ Returns:
   UINTN                       FvImageSize;
   FILE                        *FvFile;
 
+  FvBufferHeader = NULL;
+  FvFile         = NULL;
   //
   // Check for invalid parameter
   //
@@ -1366,18 +1419,18 @@ Returns:
   Status = ParseFvInf (&InfMemoryFile, &FvInfo);
   if (EFI_ERROR (Status)) {
     Error (NULL, 0, 0, NULL, "ERROR: Could not parse the input INF file.");
-    return EFI_ABORTED;
+    return Status;
   }
 
   //
   // Update the file name return values
   //
-  if (FvFileName == NULL && FvInfo.FvName != NULL) {
+  if (FvFileName == NULL && FvInfo.FvName[0] != '\0') {
     FvFileName = FvInfo.FvName;
   }
   
   //
-  // Update FvImage Base Address
+  // Update FvImage Base Address, XipBase not same to BtBase, RtBase address.
   //
   if (XipBaseAddress != -1) {
     FvInfo.BaseAddress = XipBaseAddress;
@@ -1389,7 +1442,7 @@ Returns:
   //
   Status = CalculateFvSize (&FvInfo);
   if (EFI_ERROR (Status)) {
-    return EFI_ABORTED;    
+    return Status;    
   }
   
   //
@@ -1400,7 +1453,7 @@ Returns:
   //
   // Allocate the FV, assure FvImage Header 8 byte alignment
   //
-  FvBufferHeader = malloc (FvInfo.Size + 8);
+  FvBufferHeader = malloc (FvImageSize + 8);
   if (FvBufferHeader == NULL) {
     return EFI_OUT_OF_RESOURCES;
   }
@@ -1440,7 +1493,7 @@ Returns:
   //
   // Copy firmware block map
   //
-  for (Index = 0; FvInfo.FvBlocks[Index].NumBlocks != 0; Index++) {
+  for (Index = 0; FvInfo.FvBlocks[Index].Length != 0; Index++) {
     FvHeader->BlockMap[Index].NumBlocks   = FvInfo.FvBlocks[Index].NumBlocks;
     FvHeader->BlockMap[Index].Length      = FvInfo.FvBlocks[Index].Length;
   }
@@ -1475,7 +1528,7 @@ Returns:
   //
   // Initialize the FV library.
   //
-  InitializeFvLib (FvImageMemoryFile.FileImage, FvInfo.Size);
+  InitializeFvLib (FvImageMemoryFile.FileImage, FvImageSize);
 
   //
   // Initialize the VTF file address.
@@ -1496,8 +1549,7 @@ Returns:
     //
     if (EFI_ERROR (Status)) {
       Error (NULL, 0, 0, NULL, "ERROR: Could not add file %s.", FvInfo.FvFiles[Index]);
-      free (FvBufferHeader);
-      return EFI_ABORTED;
+      goto Finish;
     }
   }
 
@@ -1507,12 +1559,12 @@ Returns:
   if ((UINTN) VtfFileImage != (UINTN) FvImageMemoryFile.Eof) {
     //
     // Pad from the end of the last file to the beginning of the VTF file.
+    // If the left space is less than sizeof (EFI_FFS_FILE_HEADER)?
     //
     Status = PadFvImage (&FvImageMemoryFile, VtfFileImage);
     if (EFI_ERROR (Status)) {
       Error (NULL, 0, 0, NULL, "ERROR: Could not create the pad file between the last file and the VTF file.");
-      free (FvBufferHeader);
-      return EFI_ABORTED;
+      goto Finish;
     }
     //
     // Update reset vector (SALE_ENTRY for IPF)
@@ -1524,9 +1576,8 @@ Returns:
     if ((FvInfo.BaseAddress + FvInfo.Size) == FV_IMAGES_TOP_ADDRESS) {       
       Status = UpdateResetVector (&FvImageMemoryFile, &FvInfo, VtfFileImage);
       if (EFI_ERROR(Status)) {                                               
-        Error (NULL, 0, 0, NULL, "ERROR: Could not update the reset vector.");              
-        free (FvBufferHeader);                                                     
-        return EFI_ABORTED;                                                  
+        Error (NULL, 0, 0, NULL, "ERROR: Could not update the reset vector.");
+        goto Finish;                                              
       }
     }
   } 
@@ -1543,12 +1594,6 @@ Returns:
     FvHeader->Checksum      = CalculateChecksum16 ((UINT16 *) FvHeader, FvHeader->HeaderLength / sizeof (UINT16));
   }
 
-  if (XipBaseAddress != -1) {
-    //
-    // Rebase Fv Image
-    //
-  }
-
 WriteFile: 
   //
   // Write fv file
@@ -1561,21 +1606,26 @@ WriteFile:
 
   if (FvFile == NULL) {
     Error (NULL, 0, 0, FvFileName, "could not open output file");
-    free (FvBufferHeader);
-    return EFI_ABORTED;
+    Status = EFI_ABORTED;
+    goto Finish;
   }
 
   if (fwrite (FvImage, 1, FvImageSize, FvFile) != FvImageSize) {
     Error (NULL, 0, 0, FvFileName, "failed to write to output file");
-    free (FvBufferHeader);
-    fclose (FvFile);
-    return EFI_ABORTED;
+    Status = EFI_ABORTED;
+    goto Finish;
   }
 
-  free (FvBufferHeader);
-  fclose (FvFile);
+Finish:
+  if (FvBufferHeader != NULL) {
+    free (FvBufferHeader);
+  }
+  
+  if (FvFile != NULL) {
+    fclose (FvFile);
+  }
 
-  return EFI_SUCCESS;
+  return Status;
 }
 
 EFI_STATUS
@@ -1652,6 +1702,18 @@ EFI_STATUS
 CalculateFvSize (
   FV_INFO *FvInfoPtr
   )
+/*++
+Routine Description:
+  Calculate the FV size and Update Fv Size based on the actual FFS files.
+  And Update FvInfo data.
+
+Arguments:
+  FvInfoPtr     - The pointer to FV_INFO structure.
+
+Returns:
+  EFI_ABORTED   - Ffs Image Error
+  EFI_SUCCESS   - Successfully update FvSize
+--*/
 {
   UINTN               CurrentOffset;
   UINTN               Index;
@@ -1710,6 +1772,11 @@ CalculateFvSize (
         return EFI_ABORTED;
       }
       VtfFileFlag = TRUE;
+      //
+      // The space between Vft File and the latest file must be able to contain 
+      // one ffs file header in order to add one pad file.
+      //
+      CurrentOffset += sizeof (EFI_FFS_FILE_HEADER);
     }
     //
     // Get the alignment of FFS file 
@@ -1744,4 +1811,350 @@ CalculateFvSize (
   }
 
   return EFI_SUCCESS;
-}    
+}
+
+EFI_STATUS
+FfsRebaseImageRead (
+  IN     VOID    *FileHandle,
+  IN     UINTN   FileOffset,
+  IN OUT UINT32  *ReadSize,
+  OUT    VOID    *Buffer
+  )
+/*++
+
+Routine Description:
+
+  Support routine for the PE/COFF Loader that reads a buffer from a PE/COFF file
+
+Arguments:
+
+  FileHandle - The handle to the PE/COFF file
+
+  FileOffset - The offset, in bytes, into the file to read
+
+  ReadSize   - The number of bytes to read from the file starting at FileOffset
+
+  Buffer     - A pointer to the buffer to read the data into.
+
+Returns:
+
+  EFI_SUCCESS - ReadSize bytes of data were read into Buffer from the PE/COFF file starting at FileOffset
+
+--*/
+{
+  CHAR8   *Destination8;
+  CHAR8   *Source8;
+  UINT32  Length;
+
+  Destination8  = Buffer;
+  Source8       = (CHAR8 *) ((UINTN) FileHandle + FileOffset);
+  Length        = *ReadSize;
+  while (Length--) {
+    *(Destination8++) = *(Source8++);
+  }
+
+  return EFI_SUCCESS;
+}
+
+EFI_STATUS
+FfsRebase ( 
+  IN OUT  FV_INFO               *FvInfo, 
+  IN      CHAR8                 *FileName,           
+  IN OUT  EFI_FFS_FILE_HEADER   *FfsFile,
+  IN      UINTN                 XipOffset
+  )
+/*++
+
+Routine Description:
+
+  This function determines if a file is XIP and should be rebased.  It will
+  rebase any PE32 sections found in the file using the base address.
+
+Arguments:
+  
+  FvInfo            A pointer to FV_INFO struture.
+  FfsFile           A pointer to Ffs file image.
+  XipOffset         The offset address to use for rebasing the XIP file image.
+
+Returns:
+
+  EFI_SUCCESS             The image was properly rebased.
+  EFI_INVALID_PARAMETER   An input parameter is invalid.
+  EFI_ABORTED             An error occurred while rebasing the input file image.
+  EFI_OUT_OF_RESOURCES    Could not allocate a required resource.
+  EFI_NOT_FOUND           No compressed sections could be found.
+
+--*/
+{
+  EFI_STATUS                            Status;
+  PE_COFF_LOADER_IMAGE_CONTEXT          ImageContext;
+  EFI_PHYSICAL_ADDRESS                  XipBase;
+  EFI_PHYSICAL_ADDRESS                  NewPe32BaseAddress;
+  EFI_PHYSICAL_ADDRESS                  *BaseToUpdate;
+  UINTN                                 Index;
+  EFI_FILE_SECTION_POINTER              CurrentPe32Section;
+  EFI_FFS_FILE_STATE                    SavedState;
+  EFI_IMAGE_NT_HEADERS32                *PeHdr;
+  EFI_TE_IMAGE_HEADER                   *TEImageHeader;
+  UINT8                                 Flags;
+  
+  //
+  // Check XipAddress, BootAddress and RuntimeAddress
+  //
+  Flags = 0;
+  if (FvInfo->BaseAddress != -1) {
+    Flags  |= REBASE_XIP_FILE;
+    XipBase = FvInfo->BaseAddress + XipOffset;
+  }
+  if (FvInfo->BootBaseAddress != 0) {
+    Flags  |= REBASE_BOOTTIME_FILE;
+  }
+  if (FvInfo->RuntimeBaseAddress != 0) {
+    Flags  |= REBASE_RUNTIME_FILE;
+  }
+  //
+  // Don't Rebase this FFS.
+  //
+  if (Flags == 0) {
+    return EFI_SUCCESS;
+  }
+
+  //
+  // We only process files potentially containing PE32 sections.
+  //
+  switch (FfsFile->Type) {
+    case EFI_FV_FILETYPE_SECURITY_CORE:
+    case EFI_FV_FILETYPE_PEI_CORE:
+    case EFI_FV_FILETYPE_PEIM:
+    case EFI_FV_FILETYPE_COMBINED_PEIM_DRIVER:
+    case EFI_FV_FILETYPE_DRIVER:
+    case EFI_FV_FILETYPE_DXE_CORE:
+      break;
+    default:
+      return EFI_SUCCESS;
+  }
+
+  //
+  // Rebase each PE32 section
+  //
+  Status      = EFI_SUCCESS;
+  for (Index = 1;; Index++) {
+    Status = GetSectionByType (FfsFile, EFI_SECTION_PE32, Index, &CurrentPe32Section);
+    if (EFI_ERROR (Status)) {
+      break;
+    }
+
+    //
+    // Initialize context
+    //
+    memset (&ImageContext, 0, sizeof (ImageContext));
+    ImageContext.Handle     = (VOID *) ((UINTN) CurrentPe32Section.Pe32Section + sizeof (EFI_PE32_SECTION));
+    ImageContext.ImageRead  = (PE_COFF_LOADER_READ_FILE) FfsRebaseImageRead;
+    Status                  = PeCoffLoaderGetImageInfo (&ImageContext);
+    if (EFI_ERROR (Status)) {
+      Error (NULL, 0, 0, "GetImageInfo() call failed on rebase", FileName);
+      return Status;
+    }
+
+    //
+    // Don't Load PeImage, only to relocate current image.
+    //
+    ImageContext.ImageAddress = (UINTN) CurrentPe32Section.Pe32Section + sizeof (EFI_PE32_SECTION);
+
+    //
+    // Check if section-alignment and file-alignment match or not
+    //
+    PeHdr = (EFI_IMAGE_NT_HEADERS *)((UINTN)ImageContext.ImageAddress + ImageContext.PeCoffHeaderOffset);
+    if ((PeHdr->OptionalHeader.SectionAlignment != PeHdr->OptionalHeader.FileAlignment)) {
+      //
+      // Nor XIP module can be ignored. Todo
+      //
+      if ((Flags & REBASE_XIP_FILE) == 0) {
+        continue;
+      }
+      Error (NULL, 0, 0, "Section-Alignment and File-Alignment does not match", FileName);
+      return EFI_ABORTED;
+    }
+
+    //
+    // Calculate the PE32 base address, based on file type
+    //
+    switch (FfsFile->Type) {
+      case EFI_FV_FILETYPE_SECURITY_CORE:
+      case EFI_FV_FILETYPE_PEI_CORE:
+      case EFI_FV_FILETYPE_PEIM:
+      case EFI_FV_FILETYPE_COMBINED_PEIM_DRIVER:
+        if ((Flags & REBASE_XIP_FILE) == 0) {
+          //
+          // We aren't relocating XIP code, so skip it.
+          //
+          return EFI_SUCCESS;
+        }
+
+        NewPe32BaseAddress =
+          XipBase + (UINTN)ImageContext.ImageAddress - (UINTN)FfsFile;
+        BaseToUpdate = &XipBase;
+        break;
+
+      case EFI_FV_FILETYPE_DRIVER:
+        PeHdr = (EFI_IMAGE_NT_HEADERS32*)(ImageContext.ImageAddress + ImageContext.PeCoffHeaderOffset);
+        switch (PeHdr->OptionalHeader.Subsystem) {
+          case EFI_IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER:
+            if ((Flags & REBASE_RUNTIME_FILE) == 0) {
+              //
+              // RT drivers aren't supposed to be relocated
+              //
+              continue;
+            }
+
+            NewPe32BaseAddress = FvInfo->RuntimeBaseAddress;
+            BaseToUpdate = &(FvInfo->RuntimeBaseAddress);
+            break;
+
+          default:
+            //
+            // We treat all other subsystems the same as BS_DRIVER
+            //
+            if ((Flags & REBASE_BOOTTIME_FILE) == 0) {
+              //
+              // Skip all BS_DRIVER's
+              //
+              continue;
+            }
+
+            NewPe32BaseAddress = FvInfo->BootBaseAddress;
+            BaseToUpdate = &(FvInfo->BootBaseAddress);
+            break;
+        }
+        break;
+
+      case EFI_FV_FILETYPE_DXE_CORE:
+        if ((Flags & REBASE_BOOTTIME_FILE) == 0) {
+          //
+          // Skip DXE core, DxeCore only contain one PE image.
+          //
+          return EFI_SUCCESS;
+        }
+
+        NewPe32BaseAddress = FvInfo->BootBaseAddress;
+        BaseToUpdate = &(FvInfo->BootBaseAddress);
+        break;
+
+      default:
+        //
+        // Not supported file type
+        //
+        return EFI_SUCCESS;
+    }
+
+    ImageContext.DestinationAddress = NewPe32BaseAddress;
+    Status                          = PeCoffLoaderRelocateImage (&ImageContext);
+    if (EFI_ERROR (Status)) {
+      Error (NULL, 0, 0, "RelocateImage() call failed on rebase", FileName);
+      return Status;
+    }
+
+    //
+    // Update BASE address
+    //
+    *BaseToUpdate += EFI_SIZE_TO_PAGES (ImageContext.ImageSize) * EFI_PAGE_SIZE;
+
+    //
+    // Now update file checksum
+    //
+    if (FfsFile->Attributes & FFS_ATTRIB_CHECKSUM) {
+      SavedState  = FfsFile->State;
+      FfsFile->IntegrityCheck.Checksum.File = 0;
+      FfsFile->State                        = 0;
+      if (FfsFile->Attributes & FFS_ATTRIB_CHECKSUM) {
+        FfsFile->IntegrityCheck.Checksum.File = CalculateChecksum8 (
+                                                  (UINT8 *) FfsFile,
+                                                  GetLength (FfsFile->Size)
+                                                  );
+      } else {
+        FfsFile->IntegrityCheck.Checksum.File = FFS_FIXED_CHECKSUM;
+      }
+
+      FfsFile->State = SavedState;
+    }
+  }
+
+  if ((Flags & 1) == 0 || (
+      FfsFile->Type != EFI_FV_FILETYPE_SECURITY_CORE &&
+      FfsFile->Type != EFI_FV_FILETYPE_PEI_CORE &&
+
+      FfsFile->Type != EFI_FV_FILETYPE_PEIM &&
+      FfsFile->Type != EFI_FV_FILETYPE_COMBINED_PEIM_DRIVER
+      )) {
+    //
+    // Only XIP code may have a TE section
+    //
+    return EFI_SUCCESS;
+  }
+  
+  //
+  // Now process TE sections
+  //
+  for (Index = 1;; Index++) {
+    Status = GetSectionByType (FfsFile, EFI_SECTION_TE, Index, &CurrentPe32Section);
+    if (EFI_ERROR (Status)) {
+      break;
+    }
+
+    //
+    // Calculate the TE base address, the FFS file base plus the offset of the TE section less the size stripped off
+    // by GenTEImage
+    //
+    TEImageHeader = (EFI_TE_IMAGE_HEADER *) ((UINT8 *) CurrentPe32Section.Pe32Section + sizeof (EFI_COMMON_SECTION_HEADER));
+
+    //
+    // Initialize context, load image info.
+    //
+    memset (&ImageContext, 0, sizeof (ImageContext));
+    ImageContext.Handle     = (VOID *) TEImageHeader;
+    ImageContext.ImageRead  = (PE_COFF_LOADER_READ_FILE) FfsRebaseImageRead;
+
+    Status                  = PeCoffLoaderGetImageInfo (&ImageContext);
+
+    if (EFI_ERROR (Status)) {
+      Error (NULL, 0, 0, "GetImageInfo() call failed on rebase of TE image", FileName);
+      return Status;
+    }
+    //
+    // Don't reload TeImage
+    //
+    ImageContext.ImageAddress = (UINTN) TEImageHeader;
+
+    //
+    // Reloacate TeImage
+    // 
+    ImageContext.DestinationAddress = XipBase + (UINTN) TEImageHeader + sizeof (EFI_TE_IMAGE_HEADER) \
+                                      - TEImageHeader->StrippedSize - (UINTN) FfsFile;
+    Status                          = PeCoffLoaderRelocateImage (&ImageContext);
+    if (EFI_ERROR (Status)) {
+      Error (NULL, 0, 0, "RelocateImage() call failed on rebase of TE image", FileName);
+      return Status;
+    }
+
+    //
+    // Now update file checksum
+    //
+    if (FfsFile->Attributes & FFS_ATTRIB_CHECKSUM) {
+      SavedState  = FfsFile->State;
+      FfsFile->IntegrityCheck.Checksum.File = 0;
+      FfsFile->State                        = 0;
+      if (FfsFile->Attributes & FFS_ATTRIB_CHECKSUM) {
+        FfsFile->IntegrityCheck.Checksum.File = CalculateChecksum8 (
+                                                  (UINT8 *) FfsFile,
+                                                  GetLength (FfsFile->Size)
+                                                  );
+      } else {
+        FfsFile->IntegrityCheck.Checksum.File = FFS_FIXED_CHECKSUM;
+      }
+
+      FfsFile->State = SavedState;
+    }
+  }
+ 
+  return EFI_SUCCESS;
+}

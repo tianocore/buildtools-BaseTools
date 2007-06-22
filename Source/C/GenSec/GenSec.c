@@ -108,7 +108,7 @@ Returns:
   
 --*/ 
 {
-  printf ("%s v%d.%d -Utility to create output file with formed section per the PI spec.\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
+  printf ("%s v%d.%d - EDKII Utility to create output file with formed section per the PI spec.\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
   printf ("Copyright (c) 2007 Intel Corporation. All rights reserved.\n");
 }
 

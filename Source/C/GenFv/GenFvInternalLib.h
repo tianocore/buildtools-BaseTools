@@ -37,6 +37,7 @@ Abstract:
 #include <Guid/PiFirmwareFileSystem.h>
 
 #include <Common/EfiImage.h>
+#include <Library/PeCoffLib.h>
 
 #include "CommonLib.h"
 #include "ParseInf.h"
@@ -193,6 +194,13 @@ Abstract:
 #define CHECKSUM_BIT_MASK     0x80
 
 //
+// Rebase File type
+//
+#define REBASE_XIP_FILE       0x1
+#define REBASE_BOOTTIME_FILE  0x2
+#define REBASE_RUNTIME_FILE   0x4
+
+//
 // Private data types
 //
 //
@@ -208,6 +216,8 @@ typedef struct {
 //
 typedef struct {
   EFI_PHYSICAL_ADDRESS    BaseAddress;
+  EFI_PHYSICAL_ADDRESS    BootBaseAddress;
+  EFI_PHYSICAL_ADDRESS    RuntimeBaseAddress;  
   EFI_GUID                FvGuid;
   UINTN                   Size;
   CHAR8                   FvName[_MAX_PATH];
