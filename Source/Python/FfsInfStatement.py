@@ -19,6 +19,7 @@ class FfsInfStatement(Ffs.Ffs):
         #
         # Get the InfClass object
         #
+        InfFile = os.path.normpath (InfFile)
         Inf = GenFdsGlobalVariable.WorkSpace.InfDatabase[InfFile]
         #
         # Set Ffs BaseName, MdouleGuid, ModuleType, Version, OutputPath

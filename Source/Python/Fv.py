@@ -36,7 +36,7 @@ class FV:
         # First Process the Apriori section
         #
         if not (self.AprioriSection == None):
-            FileNameList = self.AprioriSection.GenFfsFile ()
+            FileNameList = self.AprioriSection.GenFfs ()
             #
             # Add Apriori section included Ffs file name to Inf file
             #

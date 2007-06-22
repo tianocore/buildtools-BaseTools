@@ -3,14 +3,11 @@ from GenFdsGlobalVariable import GenFdsGlobalVariable
 class GenFds :
     FdfParsef = None
     
-    def GenFds(FvDir, BinDir, LibDir, FdfParser, WorkSpace):
-        GenFdsGlobalVariable.FvDir = FvDir
-        GenFdsGlobalVariable.BinDir = BinDir
-        GenFdsGlobalVariable.LibDir = LibDir
-        GenFdsGlobalVariable.FdfParser = FdfParser
-        GenFdsGlobalVariable.WorkSpace = WorkSpace
-        GenFdsGlobalVariable.SetFfsDir
-
-        for fd in GenFdsGlobalVariable.FdfParser.FdDict:
-            fd.GenFds()
+    def GenFd (FvDir, BinDir, LibDir, FdfParser, WorkSpace):
+        GenFdsGlobalVariable.SetDir (FvDir, BinDir, LibDir, FdfParser, WorkSpace)
         
+        print '######set set ####'
+        for item in GenFdsGlobalVariable.FdfParser.profile.FdDict.keys():
+            fd = GenFdsGlobalVariable.FdfParser.profile.FdDict[item]
+            fd.GenFd()
+    GenFd = staticmethod(GenFd)

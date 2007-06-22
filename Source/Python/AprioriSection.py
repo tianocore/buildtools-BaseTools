@@ -4,7 +4,7 @@ class AprioriSection :
 ##        self.SetStatementList = None
         self.FfsList = []
         
-    def GenFfs ():
+    def GenFfs (self):
         for Ffs in self.FfsList :
             ffsFileName = Ffs.GenFfs ()
             FfsFileList.add(ffsFileName)

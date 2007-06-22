@@ -62,6 +62,7 @@ class FileProfile :
         self.CapsuleList = []
         self.RuleList = []
         self.VtfList = []
+        self.RuleDict = {}
         
 class FdfParser:
     
