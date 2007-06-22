@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-import sys, os
+import sys
+import os
+import re
 import EdkLogger
 import os.path as path
 import imp
@@ -110,14 +112,14 @@ class AutoGen(object):
         info.PpiList = self.GetPpiGuidList()
         info.MacroList = self.GetMacroList()
         
-        info.InclduePathList = self.GetIncludePathList()
+        info.IncludePathList = self.GetIncludePathList()
 
         #GenC.CreateCode(info, self.AutoGenC, self.AutoGenH)
         
         info.AutoGenFileList = self.GetAutoGenFileList()
         info.SourceFileList = self.GetBuildFileList()
+        #info.FileDependency = self.GetFileDependency()
         # info.ObjectFileList = []
-        # info.DependentFileList = self.GetFileDependency()
 
     def InitPackageBuildInfo(self, info):
         info.SourceDir = path.dirname(info.Package.DescFilePath)
@@ -200,6 +202,9 @@ class AutoGen(object):
                 if tag == "*" or tag == self.ToolChain:
                     if arch == "*" or arch == self.Arch:
                         info.BuildOption[tool] = self.Platform.BuildOptions[key]
+        for tool in info.DefaultToolOption:
+            if tool not in info.BuildOption:
+                info.BuildOption[tool] = ""
 
     def GetModuleBuildOption(self):
         buildOption = self.Module.BuildOptions
@@ -211,6 +216,9 @@ class AutoGen(object):
                 if tag == "*" or tag == self.ToolChain:
                     if arch == "*" or arch == self.Arch:
                         optionList[tool] = buildOption[key]
+        for tool in self.ModuleBuildInfo.PlatformInfo.DefaultToolOption:
+            if tool not in optionList:
+                optionList[tool] = ""
         return optionList
     
     def GetBuildFileList(self):
@@ -231,10 +239,10 @@ class AutoGen(object):
                 continue
             
             # skip file which needs a tool having no matching toolchain family
+            fileType = buildRule.FileTypeMapping[ext]
             if f.ToolCode != "":
                 toolCode = f.ToolCode
             else:
-                fileType = buildRule.FileTypeMapping[ext]
                 toolCode = buildRule.ToolCodeMapping[fileType]
             # get the toolchain family from tools definition
             if f.ToolChainFamily != "" and f.ToolChainFamily != platformInfo.ToolChainFamily[toolcode]:
@@ -264,11 +272,13 @@ class AutoGen(object):
         return packageList
 
     def GetAutoGenFileList(self):
+        GenC.CreateCode(self.ModuleBuildInfo, self.AutoGenC, self.AutoGenH)
         fileList = []
         if self.AutoGenC.String != "":
             fileList.append("AutoGen.c")
         if self.AutoGenH.String != "":
             fileList.append("AutoGen.h")
+            #print self.AutoGenH.String
         return fileList
     
     def GetSortedLibraryList(self):
@@ -428,6 +438,7 @@ class AutoGen(object):
         pcdList = []
         for m in self.ModuleBuildInfo.DependentLibraryList + [self.Module]:
             # EdkLogger.info("  " + m.BaseName)
+            #print "@@@@@@",[pcd.TokenCName for pcd in m.Pcds.values()]
             pcdList.extend(m.Pcds.values())
 ##            for key in modulePcds:
 ##                if key not in platformPcds:
@@ -458,14 +469,13 @@ class AutoGen(object):
         return guidList
 
     def GetIncludePathList(self):
-        includePathList = self.Module.Includes
+        includePathList = [self.ModuleBuildInfo.SourceDir]
+        includePathList.extend(self.Module.Includes)
         if self.ModuleBuildInfo.PackageInfo not in self.ModuleBuildInfo.DependentPackageList:
             includePathList.extend(self.ModuleBuildInfo.PackageInfo.IncludePathList)
             
         for packageInfo in self.ModuleBuildInfo.DependentPackageList:
-            #print "%%%%%%%%%%",str(packageInfo)
             includePathList.extend(packageInfo.IncludePathList)
-        #print "@@@@@@", includePathList
         return includePathList
 
     def CreateMakefile(self, filePath=None):
@@ -476,8 +486,9 @@ class AutoGen(object):
         makefile = GenMake.Makefile(self.ModuleBuildInfo, myBuildOption)
         return makefile.Generate()
 
-    def CreateAutoGenCode(self, filePath=None):
-        return GenC.CreateCode(self.ModuleBuildInfo, self.AutoGenC, self.AutoGenH)
+    def CreateAutoGenFile(self, filePath=None):
+        return GenC.Generate(os.path.join(self.ModuleBuildInfo.WorkspaceDir, self.ModuleBuildInfo.DebugDir),
+                             self.AutoGenC, self.AutoGenH)
 
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
@@ -530,6 +541,7 @@ if __name__ == '__main__':
         print " GuidList:","\n   ","\n    ".join(bi.GuidList)
         print " ProtocolList:","\n   ","\n    ".join(bi.ProtocolList)
         print " PpiList:","\n   ","\n    ".join(bi.PpiList)
+        print " LibraryList:","\n   ","\n    ".join([str(l) for l in bi.DependentLibraryList])
 
         print
 
@@ -557,18 +569,16 @@ if __name__ == '__main__':
         #if mf in myPlatform.Modules and mf in myBuild.ModuleDatabase:
         #print mf
         myModule = myBuild.ModuleDatabase[mf]
-        if myModule.LibraryClass != None and myModule.LibraryClass != "":
-            continue    # skip library instance
+##        if myModule.LibraryClass != None and myModule.LibraryClass != "":
+##            continue    # skip library instance
 
         ag = AutoGen(myModule, myPlatform, myWorkspace, myArch, myToolchain, myBuildTarget)
-        ag.CreateAutoGenCode()
+        ag.CreateAutoGenFile()
         ag.CreateMakefile()
         
-        PrintAutoGen(ag)
-        for lib in ag.ModuleBuildInfo.DependentLibraryList:
-            ag = AutoGen(lib, myPlatform, myWorkspace, myArch, myToolchain, myBuildTarget)
-            ag.CreateAutoGenCode()
-            ag.CreateMakefile()
-            PrintAutoGen(ag)
-
-
+        #PrintAutoGen(ag)
+##        for lib in ag.ModuleBuildInfo.DependentLibraryList:
+##            ag = AutoGen(lib, myPlatform, myWorkspace, myArch, myToolchain, myBuildTarget)
+##            ag.CreateAutoGenFile()
+##            ag.CreateMakefile()
+##            #PrintAutoGen(ag)

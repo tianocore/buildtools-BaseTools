@@ -41,15 +41,15 @@ class ModuleBuildInfo(BuildInfo):
         self.DebugDir = ""
         self.MakefileDir = ""
 
-        self.InclduePathList = []
+        self.IncludePathList = []
         self.AutoGenFileList = []
         self.SourceFileList = []
         self.ObjectFileList = []
 
         self.DependentPackageList = []
-        self.DependentFileList = []
         self.DependentLibraryList = []
 
+        self.FileDependency = {}
         self.BuildOption = {}
 
         self.PcdList = []

@@ -2,12 +2,64 @@
 
 """Create GNU Makefiles for the Libraries of the MdePkg."""
 
-import os, sys, imp, getopt, string, xml.dom.minidom, shutil
+import os, sys, string, re
 import os.path as path
+
 from SequentialDict import *
 from EdkIIWorkspaceBuild import *
 from EdkIIWorkspace import *
 from BuildInfo import *
+
+gDependencyDatabase = {}    # file path : [dependent files list]
+gIncludePattern = re.compile("^[ \t#]*include[ \t]+[\"<]*([^\"<>]+)[>\" \t\n\r]*", re.MULTILINE | re.UNICODE)
+
+class AutoGenString(object):
+    def __init__(self):
+        self.String = ''
+
+    def __str__(self):
+        return self.String
+
+    def Append(self, AppendString, Dictionary=None):
+        if Dictionary == None:
+            self.String += AppendString
+        else:
+            while AppendString.find('${BEGIN}') >= 0:
+                Start = AppendString.find('${BEGIN}')
+                End   = AppendString.find('${END}')
+                SubString = AppendString[AppendString.find('${BEGIN}'):AppendString.find('${END}')+6]
+                
+                RepeatTime = -1
+                NewDict = {"BEGIN":"", "END":""}
+                for Key in Dictionary:
+                    if SubString.find('$' + Key) >= 0 or SubString.find('${' + Key + '}') >= 0:
+                        Value = Dictionary[Key]
+                        if type(Value) != type([]):
+                            NewDict[Key] = Value
+                            continue
+                        if RepeatTime < 0:
+                            RepeatTime = len(Value)
+                        elif RepeatTime != len(Value):
+                            raise Exception(Key + " has different repeat time from others!")
+                        NewDict[Key] = ""
+
+                NewString = ''
+                for Index in range(0, RepeatTime):
+                    for Key in NewDict:
+                        if Key == "BEGIN" or Key == "END" or type(Dictionary[Key]) != type([]):
+                            continue
+                        #print "###",Key
+                        NewDict[Key] = Dictionary[Key][Index]
+                    NewString += string.Template(SubString).safe_substitute(NewDict)
+                AppendString = AppendString[0:Start] + NewString + AppendString[End + 6:]
+
+            NewDict = {}
+            for Key in Dictionary:
+                if type(Dictionary[Key]) == type([]):
+                    continue
+                NewDict[Key] = Dictionary[Key]
+            self.String += string.Template(AppendString).safe_substitute(NewDict)
+
 
 MakefileHeader = '''#
 # DO NOT EDIT
@@ -23,13 +75,19 @@ MakefileHeader = '''#
 #
 '''
 
-MakeType = ""
-if sys.platform == "win32":
-    MakeType = "nmake"
-else:
-    MakeType = "gmake"
+LibraryMakeCommand = '''cd %(makedir)s
+\t$(MAKE) $(MAKE_FLAGS) -f %(makefile)s %(target)s
+\tcd $(MODULE_BUILD_DIR)'''
 
-MakefileName = {"nmake" : "makefile", "gmake" : "GNUmakefile"}
+gMakeType = ""
+if sys.platform == "win32":
+    gMakeType = "nmake"
+else:
+    gMakeType = "gmake"
+
+gMakefileName = {"nmake" : "makefile", "gmake" : "GNUmakefile"}
+
+gDirectorySeparator = {"nmake" : "\\", "gmake" : "/"}
 
 OutputFlag = {
     ("MSFT", "CC", "OUTPUT")      :   "/Fo",
@@ -59,159 +117,308 @@ OutputFlag = {
 
 IncludeFlag = {"MSFT" : "/I", "GCC" : "-I"}
 
-class MakefileMacro(SequentialDict):
-    def __init__(self, _template_=None):
-        SequentialDict.__init__(self)
-        if _template_ != None:
-            # print "###",_template_
-            for item in _template_:
-                self[item[0]] = item[1]
+gModuleMakefileTemplate = '''
+#
+# Workspace related macro definition
+#
+WORKSPACE_DIR = $(WORKSPACE)
+EDK_SOURCE = $(WORKSPACE)
 
-    def __str__(self):
-        s = ""
-        for name,value in self.iteritems():
-            if type(value) == type(""):
-                s += "%s = %s\n" % (name, value)
-            else:
-                s += "%s = %s\n" % (name, " ".join(value))
-        return s
+#
+# Platform Macro Definition
+#
+PLATFORM_NAME = ${platform_name}
+PLATFORM_GUID = ${platform_guid}
+PLATFORM_VERSION = ${platform_version}
+PLATFORM_RELATIVE_DIR = ${platform_relative_directory}
+PLATFORM_DIR = $(WORKSPACE_DIR)${separator}$(PLATFORM_RELATIVE_DIR)
+PLATFORM_OUTPUT_DIR = ${platform_output_directory}
+
+#
+# Package Macro Definition
+#
+PACKAGE_NAME = ${package_name}
+PACKAGE_GUID = ${package_guid}
+PACKAGE_VERSION = ${package_version}
+PACKAGE_RELATIVE_DIR = ${package_relative_directory}
+PACKAGE_DIR = $(WORKSPACE)${separator}$(PACKAGE_RELATIVE_DIR)
+
+#
+# Module Macro Definition
+#
+MODULE_NAME = ${module_name}
+MODULE_GUID = ${module_guid}
+MODULE_VERSION = ${module_version}
+MODULE_TYPE = ${module_type}
+MODULE_FILE_BASE_NAME = ${module_file_base_name}
+BASE_NAME = $(MODULE_NAME)
+MODULE_RELATIVE_DIR = ${module_relative_directory}
+MODULE_DIR = $(WORKSPACE_DIR)${separator}$(MODULE_RELATIVE_DIR)
+
+#
+# Build Configuration Macro Definition
+#
+ARCH = ${architecture}
+TOOLCHAIN_TAG = ${toolchain_tag}
+TARGET = ${build_target}
+
+#
+# Build Directory Macro Definition
+#
+PLATFORM_BUILD_DIR = ${platform_build_directory}
+BUILD_DIR = $(PLATFORM_BUILD_DIR)${separator}$(TARGET)_$(TOOLCHAIN_TAG)${separator}$(ARCH)
+BIN_DIR = $(BUILD_DIR)
+LIB_DIR = $(BIN_DIR)
+MODULE_BUILD_DIR = $(BUILD_DIR)${separator}$(MODULE_RELATIVE_DIR)${separator}$(MODULE_FILE_BASE_NAME)
+OUTPUT_DIR = $(MODULE_BUILD_DIR)${separator}OUTPUT
+DEBUG_DIR = $(MODULE_BUILD_DIR)${separator}DEBUG
+DEST_DIR_OUTPUT = $(OUTPUT_DIR)
+DEST_DIR_DEBUG = $(DEBUG_DIR)
+
+#
+# Default Tools Flags Macro Definition (from tools_def.txt by default)
+#
+${BEGIN}DEFAULT_${tool_code}_FLAGS = ${default_tool_flags}
+${END}
+
+#
+# Platform Tools Flags Macro Definition (from platform description file)
+#
+${BEGIN}PLATFORM_${tool_code}_FLAGS = ${platform_tool_flags}
+${END}
+
+#
+# Platform Tools Flags Macro Definition (from platform description file)
+#
+${BEGIN}MODULE_${tool_code}_FLAGS = ${module_tool_flags}
+${END}
+
+#
+# ToolsFlagMacro
+#
+${BEGIN}${tool_code}_FLAGS = $(DEFAULT_${tool_code}_FLAGS) $(PLATFORM_${tool_code}_FLAGS) $(MODULE_${tool_code}_FLAGS)
+${END}
+
+#
+# ToolsPathMacro
+#
+${BEGIN}${tool_code} = ${tool_path}
+${END}
+
+#
+# BuildMacro
+#
+SOURCE_FILES = ${BEGIN}$(MODULE_DIR)${separator}${source_file} \\
+               ${END}${BEGIN}$(DEBUG_DIR)${separator}${auto_generated_file}
+               ${END}
+
+INC = ${BEGIN}${include_path_prefix}$(WORKSPACE_DIR)${separator}${include_path} \\
+      ${END}
+
+OBJECTS = ${BEGIN}$(OUTPUT_DIR)${separator}${object_file} \\
+          ${END}
+
+LIBS = ${BEGIN}$(LIB_DIR)${separator}${library_file} \\
+       ${END}
+
+ENTRYPOINT = _ModuleEntryPoint
+
+#
+# Target File Macro Definitions
+#
+PCH_FILE = $(OUTPUT_DIR)\$(MODULE_NAME).pch
+LIB_FILE = $(LIB_DIR)\$(MODULE_NAME).lib
+LLIB_FILE = $(OUTPUT_DIR)\$(MODULE_NAME)Local.lib
+DLL_FILE = $(DEBUG_DIR)\$(MODULE_NAME).dll
+EFI_FILE = $(OUTPUT_DIR)\$(MODULE_NAME).efi
+
+#
+# Overridable Target Macro Definitions
+#
+INIT_TARGET = init
+PCH_TARGET =
+LLIB_TARGET = $(LLIB_FILE)
+
+#
+# Default target, which will build dependent libraries in addition to source files
+#
+
+all: ${build_type}
 
 
-# all targets
-##ALL       Build everything for either the platform or module, based on tools_def.txt and possible restricted by target.txt
-##GenC      Auto-generate all C files for either the platform or module (see below).
-##GenMake   Generate the Makefiles ? if auto-generated files are missing, then auto-generate all C files first for either the platform or module (see below).
-##BOM       Calls the MkBOM program for the platform
-##PCH       Generate Pre-compiled Headers
-##VFR       Generate IFR C files from VFR file
-##Code      Nmake call on appropriate Makefile for either the platform or module (see below). (???)
-##Fds       Create the FD Image files
-##Libs      Build all EDK Libraries and EDK II Library Instances
-##Modules   Build all EDK components and EDK II modules
-##ROM       Build an OptionROM, not a bootable image
-##App       Build an UEFI application, not a bootable image (?????)
-##Clean     Remove intermediate files generated by the NMAKE command (leaving the auto-generated C format, FD image files, PE32 output files, PCH files and LIB files)
-##CleanAll  Remove all intermmediate, auto-generated, FV and FD image files ? state of the tree should be exactly as if a fresh checkout or install has occurred
-##CleanPch  Remove intermediate files generated by the NMAKE command AND PCH files (leaving the auto-generated, FV and FD image files, PE32 output files and LIB files)
-##CleanLib  Remove intermediate files generated by the NMAKE command AND LIB files (leaving the auto-generated, FV and FD image files, PE32 output files and PCH files)
-##CleanMod  Remove intermediate files generated by the NMAKE command and PE32 output files (leaving the auto-generated, FV and FD image files, PCH files and LIB files)
-##CleanFd   Remove all FD image files
+#
+# Target used when called from platform makefile, which will bypass the build of dependent libraries
+#
 
-class MakefileTarget(object):
-##    _Setter = {
-##        "NAME"  :   MakefileTarget.SetTargetName,
-##        "DEPS"  :   MakefileTarget.AddPrerequisite,
-##        "CMDS"  :   MakefileTarget.AddCommand
-##    }
-##
-##    _Getter = {
-##        "NAME"  :   MakefileTarget.GetTarget,
-##        "DEPS"  :   MakefileTarget.GetPrerequisite,
-##        "CMDS"  :   MakefileTarget.GetCommand
-##    }
-
-    def __init__(self, _template=None, target=None, prerequisite=None, command=None):
-        self.target = ""
-        self.prerequisite = []
-        self.command = []
-        
-        self._Setter = {
-            "NAME"  :   MakefileTarget.SetTargetName,
-            "DEPS"  :   MakefileTarget.AddPrerequisite,
-            "CMDS"  :   MakefileTarget.AddCommand
-        }
-
-        self._Getter = {
-            "NAME"  :   MakefileTarget.GetTarget,
-            "DEPS"  :   MakefileTarget.GetPrerequisite,
-            "CMDS"  :   MakefileTarget.GetCommand
-        }
-
-        if _template != None:
-            for k in _template.keys():
-                self._Setter[k](self, _template[k])
-        else:
-            if target != None: self.target = target
-            if prerequisite != None: self.prerequisite = prerequisite
-            if command != None: self.command = command
-            
-    def __str__(self):
-        if self.target == None or self.target == "": return ""
-        return "%s: %s\n\t%s\n" % (self.target, " ".join(self.prerequisite), "\n\t".join(self.command))
-
-    def SetTargetName(self, name):
-        self.target = name
-
-    def AddPrerequisite(self, dep):
-        if type(dep) == type(""):
-            self.prerequisite.append(dep)
-        else:
-            self.prerequisite.extend(dep)
-
-    def AddCommand(self, cmd):
-        if type(cmd) == type(""):
-            self.command.append(cmd)
-        else:
-            self.command.extend(cmd)
-
-    def GetPrerequisite(self):
-        return self.prerequisite
-
-    def GetCommand(self):
-        return self.command
-
-    def GetTarget(self):
-        return self.target
+pbuild: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(DLL_FILE) $(EFI_FILE)
 
 
-class MakefileContent(object):
-    CONTENT_TYPE       = 0
-    CONTENT_COMMENT    = 1
-    CONTENT_TEMPLATE   = 2
-    CONTENT_GENERATOR  = 3
-    def __init__(self, templateList):
-        if len(templateList) != 4:
-            raise Except("Incorrect makefile template")
-        self.Type = templateList[self.CONTENT_TYPE]
-        self.Comment = templateList[self.CONTENT_COMMENT]
-        self.Template = templateList[self.CONTENT_TEMPLATE]
-        self.Generator = templateList[self.CONTENT_GENERATOR]
+#
+# Target used for library build, which will bypass the build of dependent libraries
+#
 
-    def DefaultGenerator(self, template):
-        return [self.Type(template)]
+lbuild: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(LIB_FILE)
 
-    def GenMakefileMacro(self, template):
-        macro = MakefileMacro()
-        for item in template:
-            macro[item[0]] = item[1]
-        return [macro]
 
-    def GenMakefileTarget(self, template):
-        target = MakefileTarget()
-        for key in template:
-            target[key] = template[key]
-        return [target]
-    
-    def Generate(self):
-        #print self.Template
-        clist = []
-        if self.Comment != None and self.Comment != "":
-            clist.append(self.GenComment(self.Comment))
-            
-        if self.Generator == None or self.Generator == "":
-            clist.extend(self.DefaultGenerator(self.Template))
-        else:
-            clist.extend(self.Generator(self.Template))
-            
-        return clist
+#
+# ModuleTarget
+#
 
-    def GenComment(self, s):
-        return "#\n# %s\n#\n" % s
+mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(DLL_FILE) $(EFI_FILE)
+
+
+#
+# Initialization target: print build information and create necessary directories
+#
+init:
+	-@echo Building ... $(MODULE_NAME)-$(MODULE_VERSION) [$(ARCH)] in package $(PACKAGE_NAME)-$(PACKAGE_VERSION)
+	${create_directory_command} $(DEBUG_DIR) > NUL 2>&1
+	${create_directory_command} $(OUTPUT_DIR) > NUL 2>&1
+	${BEGIN}${create_directory_command} $(OUTPUT_DIR)${separator}${directory_to_be_created} > NUL 2>&1
+	${END}
+
+#
+# PCH Target
+#
+pch: $(PCH_FILE)
+
+
+#
+# Libs Target
+#
+libs: gen_libs
+
+
+#
+# Vfr Target
+#
+vfr: gen_vfr
+
+
+#
+# Obj Target
+#
+obj: $(PCH_TARGET) gen_obj
+
+
+#
+# LocalLib Target
+#
+locallib: $(PCH_TARGET) gen_obj $(LLIB_FILE)
+
+
+#
+# Dll Target
+#
+dll: gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(DLL_FILE)
+
+
+#
+# Efi Target
+#
+efi: gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(DLL_FILE) $(EFI_FILE)
+
+
+#
+# GenLibsTarget
+#
+gen_libs:
+	${BEGIN}cd $(BUILD_DIR)${separator}${dependent_library_build_directory}
+	$(MAKE) $(MAKE_FLAGS)
+	${END}cd $(MODULE_BUILD_DIR)
+
+#
+# GenVfrTarget
+#
+
+gen_vfr:
+	@echo placeholder: processing vfr files
+
+#
+# Phony targets for objects
+#
+
+gen_obj: $(PCH_TARGET) $(OBJECTS)
+
+
+#
+# PCH file build target
+#
+
+$(PCH_FILE): $(DEP_FILES)
+	$(PCH) $(CC_FLAGS) $(PCH_FLAGS) $(DEP_FILES)
+
+#
+# Local Lib file build target
+#
+
+$(LLIB_FILE): $(OBJECTS)
+	"$(SLINK)" /OUT:$(LLIB_FILE) $(SLINK_FLAGS) $(OBJECTS)
+
+#
+# Library file build target
+#
+
+$(LIB_FILE): $(OBJECTS)
+	"$(SLINK)" /OUT:$(LIB_FILE) $(SLINK_FLAGS) $(OBJECTS)
+
+#
+# DLL file build target
+#
+
+$(DLL_FILE): $(LIBS) $(LLIB_FILE)
+	"$(DLINK)" /OUT:$(DLL_FILE) $(DLINK_FLAGS) $(LIBS) $(LLIB_FILE)
+
+#
+# EFI file build target
+#
+
+$(EFI_FILE): $(DLL_FILE)
+	echo $(GENFW) $(GENFW_FLAGS) -o $(EFI_FILE) $(DLL_FILE)
+
+#
+# Individual Object Build Targets
+#
+${BEGIN}${object_build_target}
+${END}
+
+
+#
+# clean all intermediate files
+#
+
+clean:
+	- @rmdir /s /q $(OUTPUT_DIR) > NUL 2>&1
+
+#
+# clean all generated files
+#
+
+cleanall:
+	- @rmdir /s /q $(OUTPUT_DIR) $(DEBUG_DIR) > NUL 2>&1
+	- @del /f /q *.pdb *.idb > NUL 2>&1
+
+#
+# clean pre-compiled header files
+#
+
+cleanpch:
+	- @del /f /q $(OUTPUT_DIR)\*.pch > NUL 2>&1
+
+#
+# clean all dependent libraries built
+#
+
+cleanlib:
+	@echo clean all dependent libraries built
+
+'''
+
+gPlatformMakefileTemplate = '''
+'''
 
 class Makefile(object):
-    def __init__(self, info, opt, mtype=MakeType):
-        self.ContentList = []
-
+    def __init__(self, info, opt):
         self.ModuleInfo = info
         self.PlatformInfo = info.PlatformInfo
         self.PackageInfo = info.PackageInfo
@@ -220,517 +427,140 @@ class Makefile(object):
         if self.ModuleInfo.IsLibrary:
             self.BuildType = "lbuild"
             
-        self.ProcessSourceFileList()
-        self.IncludePathList = self.GetIncludePathList()
-
         self.Opt = opt
         self.BuildWithPch = opt["ENABLE_PCH"]
         self.BuildWithLocalLib = opt["ENABLE_LOCAL_LIB"]
 
-        self.MakefileTemplate = (
-            (
-                MakefileMacro, # type
-                "Workspace related macro definition", # comment
-                (# content
-                    ("WORKSPACE_DIR"        , "$(WORKSPACE)"),
-                    ("EDK_SOURCE"           , "$(WORKSPACE)")
-                ),
-                # generator
-                None
-            ),
-            (
-                MakefileMacro,    # type
-                "PlatformMacro",
-                (
-                    ("PLATFORM_NAME"        ,   self.PlatformInfo.Name),
-                    ("PLATFORM_GUID"        ,   self.PlatformInfo.Guid),
-                    ("PLATFORM_VERSION"     ,   self.PlatformInfo.Version),
-                    ("PLATFORM_DIR"         ,   path.join("$(WORKSPACE_DIR)", self.PlatformInfo.SourceDir)),
-                    ("PLATFORM_OUTPUT_DIR"  ,   self.PlatformInfo.OutputDir),
-                ),
-                None
-            ),
-            (
-                MakefileMacro,    # type
-                "PackageMacro",
-                (
-                    ("PACKAGE_NAME"          ,   self.PackageInfo.Name),
-                    ("PACKAGE_GUID"          ,   self.PackageInfo.Guid),
-                    ("PACKAGE_VERSION"       ,   self.PackageInfo.Version),
-                    ("PACKAGE_DIR"           ,   path.join("$(WORKSPACE_DIR)", self.PackageInfo.SourceDir)),
-                ),
-                None
-            ),
-            (
-                MakefileMacro,    # type
-                "ModuleMacro",
-                (
-                    ("MODULE_NAME"          ,   self.ModuleInfo.Name),
-                    ("MODULE_GUID"          ,   self.ModuleInfo.Guid),
-                    ("MODULE_VERSION"       ,   self.ModuleInfo.Version),
-                    ("MODULE_TYPE"          ,   self.ModuleInfo.ModuleType),
-                    ("MODULE_FILE_BASE_NAME",   self.ModuleInfo.FileBase),
-                    ("BASE_NAME"            ,   "$(MODULE_NAME)"),
-                    ("MODULE_RELATIVE_DIR"  ,   self.ModuleInfo.SourceDir),
-                    ("MODULE_DIR"           ,   path.join("$(WORKSPACE_DIR)", self.ModuleInfo.SourceDir)),
-                ),
-                None
-            ),
-            (
-                MakefileMacro,    # type
-                "BuildConfigMacro",
-                (
-                    ("ARCH"                 ,   self.ModuleInfo.Arch),
-                    ("TOOLCHAIN_TAG"        ,   self.ModuleInfo.ToolChain),
-                    ("TARGET"               ,   self.ModuleInfo.BuildTarget),
-                ),
-                None
-            ),
-            (
-                MakefileMacro,    # type
-                "BuildDirMacro",
-                (
-                    ("PLATFORM_BUILD_DIR"   ,   path.join("$(WORKSPACE_DIR)", self.PlatformInfo.OutputDir)),
-                    ("BUILD_DIR"            ,   path.join("$(PLATFORM_BUILD_DIR)", "$(TARGET)_$(TOOLCHAIN_TAG)", "$(ARCH)")),
-                    ("BIN_DIR"              ,   "$(BUILD_DIR)"),
-                    ("LIB_DIR"              ,   "$(BIN_DIR)"),
-                    ("MODULE_BUILD_DIR"     ,   path.join("$(BUILD_DIR)", "$(MODULE_RELATIVE_DIR)", "$(MODULE_FILE_BASE_NAME)")),
-                    ("OUTPUT_DIR"           ,   path.join("$(MODULE_BUILD_DIR)", "OUTPUT")),
-                    ("DEBUG_DIR"            ,   path.join("$(MODULE_BUILD_DIR)", "DEBUG")),
-                    ("DEST_DIR_OUTPUT"      ,   "$(OUTPUT_DIR)"),
-                    ("DEST_DIR_DEBUG"       ,   "$(DEBUG_DIR)")
-                ),
-                None
-            ),
+        self.LibraryBuildCommandList = []
+        self.LibraryFileList = []
+        self.LibraryMakefileList = []
+        self.LibraryBuildDirectoryList = []
+        self.BuildFileList = []
+        self.ObjectFileList = []
+        self.ObjectBuildTargetList = []
 
-            (
-                MakefileMacro,    # type
-                "DefaultToolsFlagMacro",
-                (
-                    self.GetDefaultToolFlagList()
-                ),
-                None
-            ),
-##            (
-##                MakefileMacro,    # type
-##                "PlatformToolsFlagMacro",
-##                (
-##                    self.GetPlatformToolFlagList()
-##                ),
-##                None
-##            ),
-            (
-                MakefileMacro,    # type
-                "ModuleToolsFlagMacro",
-                (
-                    self.GetModuleToolFlagList()
-                ),
-                None
-            ),
-            (
-                MakefileMacro,    # type
-                "ToolsFlagMacro",
-                (
-                    self.GetToolFlagList()
-                ),
-                None
-            ),
-            (
-                MakefileMacro,    # type
-                "ToolsPathMacro",
-                (
-                    self.GetToolPathList()
-                ),
-                None
-            ),
-
-            (
-                MakefileMacro,    # type
-                "BuildMacro",
-                (
-                    ("SOURCE_FILES", self.SourceFilePathList),
-                    ("INC", self.IncludePathList),
-                    ("OBJECTS", self.GetObjectFileList()),
-                    ("LIBS", self.GetLibraryFileList()),
-                    ("ENTRYPOINT", "_ModuleEntryPoint")
-                ),
-                None
-            ),
-            (
-                MakefileMacro,    # type
-                "BuildFileMacro",
-                (
-                    ("PCH_FILE", "$(OUTPUT_DIR)\\$(MODULE_NAME).pch"),
-                    ("LIB_FILE", "$(LIB_DIR)\$(MODULE_NAME).lib"),
-                    ("LLIB_FILE", "$(OUTPUT_DIR)\$(MODULE_NAME)Local.lib"),
-                    ("DLL_FILE", path.join("$(DEBUG_DIR)", "$(MODULE_NAME).dll")),
-                    ("EFI_FILE", path.join("$(OUTPUT_DIR)", "$(MODULE_NAME).efi"))
-                ),
-                None
-            ),
-
-            (
-                MakefileMacro,    # type
-                "BuildTargetMacro",
-                (
-                    ("INIT_TARGET", "init"),
-                    ("PCH_TARGET", self.GetPchTarget()),
-                    ("LLIB_TARGET", self.GetLocalLibTarget()),
-                ),
-                None
-            ),
-
-            (
-                MakefileTarget,   # type
-                "Default target, which will build dependent libraries in addition to source files",
-                {
-                    "NAME" : "all",
-                    "DEPS" : [self.BuildType],
-                    "CMDS" : []
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "Target used when called from platform makefile, which will bypass the build of dependent libraries",
-                {
-                    "NAME" : "pbuild",
-                    "DEPS" : ["$(INIT_TARGET)", "$(PCH_TARGET)", "gen_obj", "$(LLIB_TARGET)", "$(DLL_FILE)", "$(EFI_FILE)"],
-                    "CMDS" : []
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "Target used for library build, which will bypass the build of dependent libraries",
-                {
-                    "NAME" : "lbuild",
-                    "DEPS" : ["$(INIT_TARGET)", "$(PCH_TARGET)", "gen_obj", "$(LIB_FILE)"],
-                    "CMDS" : []
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "ModuleTarget",
-                {
-                    "NAME" : "mbuild",
-                    "DEPS" : ["$(INIT_TARGET)", "gen_libs", "$(PCH_TARGET)", "gen_obj", "$(LLIB_TARGET)", "$(DLL_FILE)", "$(EFI_FILE)"],
-                    "CMDS" : []
-                },
-                None
-            ),
-
-            (
-                MakefileTarget,   # type
-                "BuildInfoTarget",
-                {
-                    "NAME" : "init",
-                    "DEPS" : [],
-                    "CMDS" : ["@echo $(MODULE_NAME)-$(MODULE_VERSION) [$(ARCH)] from package $(PACKAGE_NAME)-$(PACKAGE_VERSION) $(MODULE_DIR)"]
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "PchTarget",
-                {
-                    "NAME" : "pch",
-                    "DEPS" : ["$(PCH_FILE)"],
-                    "CMDS" : []
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "LibsTarget",
-                {
-                    "NAME" : "libs",
-                    "DEPS" : ["gen_libs"],
-                    "CMDS" : []
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "VfrTarget",
-                {
-                    "NAME" : "vfr",
-                    "DEPS" : ["gen_vfr"],
-                    "CMDS" : []
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "ObjTarget",
-                {
-                    "NAME" : "obj",
-                    "DEPS" : ["$(PCH_TARGET)", "gen_obj"],
-                    "CMDS" : []
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "LocalLibTarget",
-                {
-                    "NAME" : "locallib",
-                    "DEPS" : ["$(PCH_TARGET)", "gen_obj", "$(LIB_FILE)"],
-                    "CMDS" : []
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "DllTarget",
-                {
-                    "NAME" : "dll",
-                    "DEPS" : ["gen_libs", "$(PCH_TARGET)", "gen_obj", "$(LLIB_TARGET)", "$(DLL_FILE)"],
-                    "CMDS" : []
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "EfiTarget",
-                {
-                    "NAME" : "efi",
-                    "DEPS" : ["gen_libs", "$(PCH_TARGET)", "gen_obj", "$(LLIB_TARGET)", "$(DLL_FILE)", "$(EFI_FILE)"],
-                    "CMDS" : []
-                },
-                None
-            ),
-
-            (
-                MakefileTarget,   # type
-                "GenLibsTarget",
-                {
-                    "NAME" : "gen_libs",
-                    "DEPS" : [],
-                    "CMDS" : self.GetLibraryBuildCmdList() # ["$(MAKE) $(MAKE_FLAGS) -f %(LIB_MAKEFILE)s"]
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "GenVfrTarget",
-                {
-                    "NAME" : "gen_vfr",
-                    "DEPS" : [],
-                    "CMDS" : ["@echo placeholder: processing vfr files"]
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "Phony targets for objects",
-                {
-                    "NAME" : "gen_obj",
-                    "DEPS" : ["$(PCH_TARGET)", "$(OBJECTS)"],
-                    "CMDS" : [""]
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "PCH file build target",
-                {
-                    "NAME" : "$(PCH_FILE)",
-                    "DEPS" : ["$(DEP_FILES)"],
-                    "CMDS" : ["$(PCH) $(CC_FLAGS) $(PCH_FLAGS) $(DEP_FILES)"]
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "Local Lib file build target",
-                {
-                    "NAME" : "$(LLIB_FILE)",
-                    "DEPS" : ["$(OBJECTS)"],
-                    "CMDS" : ["\"$(SLINK)\" %(OUTPUT_FLAG)s$(LIB_FILE) $(SLINK_FLAGS) $(OBJECTS)" % {"OUTPUT_FLAG":OutputFlag["MSFT", "SLINK", "OUTPUT"]}]
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "Library file build target",
-                {
-                    "NAME" : "$(LIB_FILE)",
-                    "DEPS" : ["$(OBJECTS)"],
-                    "CMDS" : ["\"$(SLINK)\" %(OUTPUT_FLAG)s$(LIB_FILE) $(SLINK_FLAGS) $(OBJECTS)" % {"OUTPUT_FLAG":OutputFlag["MSFT", "SLINK", "OUTPUT"]}]
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "DLL file build target",
-                {
-                    "NAME" : "$(DLL_FILE)",
-                    "DEPS" : ["$(LIBS)", "$(LIB_FILE)"],
-                    "CMDS" : ["\"$(DLINK)\" %(OUTPUT_FLAG)s$(DLL_FILE) $(DLINK_FLAGS) $(LIBS) $(LIB_FILE)" % {"OUTPUT_FLAG":OutputFlag["MSFT", "DLINK", "OUTPUT"]}]
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "EFI file build target",
-                {
-                    "NAME" : "$(EFI_FILE)",
-                    "DEPS" : ["$(DLL_FILE)"],
-                    "CMDS" : ["echo $(GENFW) $(GENFW_FLAGS) -o $(EFI_FILE) $(DLL_FILE)"]
-                },
-                None
-            ),
-            (
-##                type(MakefileMacro),            # type
-##                "dependent files macro for the target",
-##                (
-##                    self.GetObjectDeps()
-##                ),
-##                None,
-##\tcd $(@D)
-##\t$(APP) $(APP_FLAGS) $(INC) $<
-##\tTrim -CONVERT $(@D).i
-##\t$(ASM) $(ASM_FLAGS) $(INC) /Fo$@ $(@D).iii
-
-                MakefileTarget,   # type
-                "Individual Object Build Targets",
-                {
-                    ".C" : "\"$(CC)\" %(OUTPUT_FLAG)s%(OUTPUT_FILE)s $(CC_FLAGS) $(INC) %(INPUT_FLAG)s%(INPUT_FILE)s",
-                    ".ASM" : "cd $(@D)\n\t\"$(PP)\" $(PP_FLAGS) $(INC) $? > $@.i\n\tTrim -CONVERT $@.i\n\t\"$(ASM)\" $(ASM_FLAGS) %(OUTPUT_FLAG)s%(OUTPUT_FILE)s $@.iii",
-                    #".S" : "$(ASM) $(ASM_FLAGS) %(OUTPUT_FLAG)s%(OUTPUT_FILE)s %(INPUT_FLAG)s%(INPUT_FILE)s"
-                },
-##                {
-##                    "NAME" : "%(OBJECT)s",
-##                    "DEPS" : ["$(DEP_FILES)"],
-##                    "CMDS" : ["$(CC) %(OUTPUT_FLAG)s%(OBJECT)s $(CC_FLAGS) $(INC) %(SOURCE_FILE)s"]
-##                },
-                self.GetObjectTargetList
-            ),
-            (
-                MakefileTarget,   # type
-                "clean all intermediate files",
-                {
-                    "NAME" : "clean",
-                    "DEPS" : [],
-                    "CMDS" : ["@echo clean all intermediate files"]
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "clean all generated files",
-                {
-                    "NAME" : "cleanall",
-                    "DEPS" : [],
-                    "CMDS" : ["@echo clean all generated files"]
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "clean pre-compiled header files",
-                {
-                    "NAME" : "cleanpch",
-                    "DEPS" : [],
-                    "CMDS" : ["@echo clean pre-compiled header files"]
-                },
-                None
-            ),
-            (
-                MakefileTarget,   # type
-                "clean all dependent libraries built",
-                {
-                    "NAME" : "cleanlib",
-                    "DEPS" : [],
-                    "CMDS" : ["@echo clean all dependent libraries built"]
-                },
-                None
-            ),
-        )
+        self.FileDependency = []
+        self.IntermediateDirectoryList = []
 
     def PrepareDirectory(self):
         CreateDirectory(path.join(self.ModuleInfo.WorkspaceDir, self.PlatformInfo.BuildDir))
         CreateDirectory(path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.BuildDir))
-        CreateDirectory(path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.OutputDir))
         CreateDirectory(path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.DebugDir))
 
-    def Generate(self, file=None):
+    def Generate(self, file=None, makeType=gMakeType):
+        separator = gDirectorySeparator[makeType]
+        
+        if os.path.isabs(self.PlatformInfo.OutputDir):
+            self.PlatformBuildDirectory = self.PlatformInfo.OutputDir
+        else:
+            self.PlatformBuildDirectory = "$(WORKSPACE_DIR)" + separator + self.PlatformInfo.OutputDir
+
+        self.ProcessSourceFileList(makeType)
+        self.ProcessDependentLibrary(makeType)
+        
+        makefileName = gMakefileName[makeType]
+        makefileTemplateDict = {
+            "platform_name"             : self.PlatformInfo.Name,
+            "platform_guid"             : self.PlatformInfo.Guid,
+            "platform_version"          : self.PlatformInfo.Version,
+            "platform_relative_directory": self.PlatformInfo.SourceDir,
+            "platform_output_directory" : self.PlatformInfo.OutputDir,
+
+            "package_name"              : self.PackageInfo.Name,
+            "package_guid"              : self.PackageInfo.Guid,
+            "package_version"           : self.PackageInfo.Version,
+            "package_relative_directory": self.PackageInfo.SourceDir,
+
+            "module_name"               : self.ModuleInfo.Name,
+            "module_guid"               : self.ModuleInfo.Guid,
+            "module_version"            : self.ModuleInfo.Version,
+            "module_type"               : self.ModuleInfo.ModuleType,
+            "module_file_base_name"     : self.ModuleInfo.FileBase,
+            "module_relative_directory" : self.ModuleInfo.SourceDir,
+
+            "architecture"              : self.ModuleInfo.Arch,
+            "toolchain_tag"             : self.ModuleInfo.ToolChain,
+            "build_target"              : self.ModuleInfo.BuildTarget,
+
+            "platform_build_directory"  : self.PlatformBuildDirectory,
+
+            "separator"                 : separator,
+            "default_tool_flags"        : self.PlatformInfo.DefaultToolOption.values(),
+            "platform_tool_flags"       : self.PlatformInfo.BuildOption.values(),
+            "module_tool_flags"         : self.ModuleInfo.BuildOption.values(),
+
+            "tool_code"                 : self.PlatformInfo.ToolPath.keys(),
+            "tool_path"                 : self.PlatformInfo.ToolPath.values(),
+
+            "source_file"               : self.BuildFileList,
+            "auto_generated_file"       : self.AutoGenBuildFileList,
+            "include_path_prefix"       : "-I",
+            "include_path"              : self.ModuleInfo.IncludePathList,
+            "object_file"               : self.ObjectFileList,
+            "library_file"              : self.LibraryFileList,
+            "create_directory_command"  : "-@mkdir",
+            "directory_to_be_created"   : self.IntermediateDirectoryList,
+            "dependent_library_build_directory" : self.LibraryBuildDirectoryList,
+            #"dependent_library_makefile"        : [path.join(bdir, makefileName) for bdir in self.LibraryBuildDirectoryList],
+            "object_build_target"               : self.ObjectBuildTargetList,
+            "build_type"                        : self.BuildType,
+        }
+        
         self.PrepareDirectory()
+        
+        autoGenMakefile = AutoGenString()
+        autoGenMakefile.Append(gModuleMakefileTemplate, makefileTemplateDict)
+        #print autoGenMakefile.String
+        
         filePath = ""
         if file == None:
-            filePath = path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.MakefileDir, "makefile")
+            filePath = path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.MakefileDir, makefileName)
         else:
             filePath = file
-            
-        try:
-            f = open(filePath, "w")
-        except:
-            return ""
-        
-        self.Instantiate()
-        for c in self.ContentList:
-            f.write("%s\n" % c)
-        f.close()
+
+        self.SaveFile(filePath, str(autoGenMakefile))
         return filePath
-            
-    def Instantiate(self):
-        for item in self.MakefileTemplate:
-            self.ContentList.extend(MakefileContent(item).Generate())
 
-    def GetDefaultToolFlagList(self):
-        toolFlag = []
-        for tool in self.PlatformInfo.DefaultToolOption:
-            toolFlag.append(("DEFAULT_%s_FLAGS" % tool, self.PlatformInfo.DefaultToolOption[tool]))
-        return toolFlag
+    def SaveFile(self, file, content):
+        f = None
+        if os.path.exists(file):
+            f = open(file, 'r')
+            if content == f.read():
+                f.close()
+                return
+            f.close()
+        f = open(file, "w")
+        f.write(content)
+        f.close()
 
-    def GetPlatformToolFlagList(self):
-        buildOption = self.PlatformInfo.BuildOption
-        toolFlag = []
-        for tool in buildOption:
-            toolFlag.append(("PLATFORM_%s_FLAGS" % tool, buildOption[tool]))
-        return toolFlag
-        
-    def GetModuleToolFlagList(self):
-        buildOption = self.ModuleInfo.BuildOption
-        toolFlag = []
-        for tool in buildOption:
-            toolFlag.append(("MODULE_%s_FLAGS" % tool, buildOption[tool]))
-        return toolFlag
+    def ProcessSourceFileList(self, makeType=gMakeType):
+        rule = self.PlatformInfo.BuildRule
 
-    def GetToolFlagList(self):
-        toolFlag = []
-        for tool in self.PlatformInfo.DefaultToolOption:
-            toolFlag.append(("%s_FLAGS" % tool,
-                            "$(DEFAULT_%s_FLAGS) $(PLATFORM_%s_FLAGS) $(MODULE_%s_FLAGS)" % (tool, tool, tool)))
-        return toolFlag
+        self.BuildFileList = []
+        self.ObjectFileList = []
+        self.ObjectBuildTargetList = []
+        self.AutoGenBuildFileList = []
+        self.IntermediateDirectoryList = []
 
-    def GetSysLibList(self):
-        libPath = []
-        for tool in self.PlatformInfo.ToolStaticLib:
-            libPath.append(("%s_SPATH" % tool, self.ToolStaticLib[tool]))
+        for f in self.ModuleInfo.AutoGenFileList:
+            name = path.basename(f)
+            base, ext = path.splitext(name)
 
-        return libPath
+            ftype = rule.FileTypeMapping[ext]
+            if ftype not in rule.Makefile[makeType]:
+                continue
 
-    def GetToolPathList(self):
-        toolPathList = []
-        for tool in self.PlatformInfo.ToolPath:
-            toolPathList.append((tool, self.PlatformInfo.ToolPath[tool]))
-
-        return toolPathList
-
-    def ProcessSourceFileList(self):
-        self.SourceFilePathList = []
-        self.ObjectFilePathList = []
-        self.ObjectTargetList = []
-        if not self.ModuleInfo.IsLibrary:
-            self.SourceFilePathList.append(path.join("$(DEBUG_DIR)", "AutoGen.c"))
-            self.ObjectFilePathList.append(path.join("$(OUTPUT_DIR)", "AutoGen.obj"))
             ftype = "AutoGen-Code"
-            self.ObjectTargetList.append(self.PlatformInfo.BuildRule.Makefile[MakeType][ftype] % {
-                                         "fdir":".", "fbase":"AutoGen", "fext":".c", "fname":"AutoGen.c"
-                                         })
+            self.AutoGenBuildFileList.append(f)
+            #self.BuildFileList.append(name)
+            self.ObjectFileList.append(base + ".obj")
+            
+            autoGen = AutoGenString()
+            autoGen.Append(rule.Makefile[makeType][ftype],
+                           {"fdir":".", "fbase":base, "fext":ext, "fname":name, "sep":os.path.sep,
+                            "dep":self.GetDependencyList(os.path.join(self.ModuleInfo.DebugDir, f), self.ModuleInfo.IncludePathList)})
+            self.ObjectBuildTargetList.append(autoGen.String)
+
         fileList = self.ModuleInfo.SourceFileList
         for f in fileList:
             name = path.basename(f)
@@ -738,80 +568,104 @@ class Makefile(object):
             basedir = path.dirname(f)
             if basedir == "":
                 basedir = "."
+            elif basedir not in self.IntermediateDirectoryList:
+                self.IntermediateDirectoryList.append(basedir)
             if base.endswith("Gcc"):
                 continue
-            ftype = self.PlatformInfo.BuildRule.FileTypeMapping[ext]
-            if ftype not in self.PlatformInfo.BuildRule.Makefile[MakeType]:
+            
+            ftype = rule.FileTypeMapping[ext]
+            if ftype not in rule.Makefile[makeType]:
                 continue
 
-            src = path.join("$(MODULE_DIR)", f)
-            self.SourceFilePathList.append(src)
-            objPath = path.join("$(OUTPUT_DIR)", basedir)
-            CreateDirectory(path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.OutputDir, basedir))
-            obj = path.join("$(OUTPUT_DIR)", basedir, base + ".obj")
-            self.ObjectFilePathList.append(obj)
-            self.ObjectTargetList.append(self.PlatformInfo.BuildRule.Makefile[MakeType][ftype] % {
-                                         "fdir":basedir, "fbase":base, "fext":ext, "fname":name
-                                         })
+            self.BuildFileList.append(f)
+            # CreateDirectory(path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.OutputDir, basedir))
+            self.ObjectFileList.append(basedir + gDirectorySeparator[makeType] + base + ".obj")
+            
+            autoGen = AutoGenString()
+            autoGen.Append(rule.Makefile[makeType][ftype],
+                           {"fdir":basedir, "fbase":base, "fext":ext, "fname":name, "sep":gDirectorySeparator[makeType],
+                           "dep":self.GetDependencyList(os.path.join(self.ModuleInfo.SourceDir, f), self.ModuleInfo.IncludePathList)
+                           })
+            self.ObjectBuildTargetList.append(autoGen.String)
 
-    def GetSourceFileList(self):
-        return self.SourceFilePathList
-    
-    def GetIncludePathList(self):
-        includePathList = ["-I$(MODULE_DIR)", "-I$(WORKSPACE_DIR)"]
-        for inc in self.ModuleInfo.InclduePathList:
-            #print "$$$",inc
-            includePathList.append("-I" + path.join("$(WORKSPACE_DIR)", inc))
-        return includePathList
+        self.FileDependency = self.GetFileDependency()
 
-    def GetObjectFileList(self):
-        return self.ObjectFilePathList
-
-    def GetLibraryFileList(self):
-        libFileList = []
-        for libm in self.ModuleInfo.DependentLibraryList:
-            libFilePath = path.join("$(LIB_DIR)", libm.BaseName + ".lib")
-            libFileList.append(libFilePath)
-        return libFileList
-
-    def GetDependentLibraryList(self, module):
-        pass
-    
-    def GetPchTarget(self):
-        if not self.BuildWithPch: return ""
-        return "$(PCH_FILE)"
-
-    def GetLocalLibTarget(self):
-        if self.BuildWithLocalLib: 
-            return "$(LLIB_FILE)"
-        return ""
-
-    def GetLibraryBuildCmdList(self):
-        libMakefileList = []
+    def ProcessDependentLibrary(self, makeType=gMakeType):
         for libm in self.ModuleInfo.DependentLibraryList:
             libf = str(libm)
             libp = path.dirname(libf)
             base = path.basename(libf).split(".")[0]
-            makefilePath = path.join("$(BIN_DIR)", libp, base, "Makefile")
-            makeCmd = "$(MAKE) $(MAKE_FLAGS) -f %s" % makefilePath
-            libMakefileList.append(makeCmd)
+            self.LibraryBuildDirectoryList.append(libp + gDirectorySeparator[makeType] + base)
+            self.LibraryFileList.append(libm.BaseName + ".lib")
 
-        return libMakefileList
+    def GetPlatformBuildDirectory(self):
+        if os.path.isabs(self.PlatformInfo.OutputDir):
+            return self.PlatformInfo.OutputDir
+        else:
+            return os.path.join("$(WORKSPACE_DIR)", self.PlatformInfo.OutputDir)
 
-    def GetObjectDepList(self):
-        pass
+    def GetAutoGeneratedFileList(self):
+        if self.ModuleInfo.IsLibrary:
+            return ""
+        else:
+            return "AutoGen.c"
 
-    def GetObjectTargetList(self, template):
-##        for i in range(0, len(self.SourceFilePathList)):
-##            src = self.SourceFilePathList[i]
-##            obj = self.ObjectFilePathList[i]
-##            base, ext = path.splitext(src)
-##            ext = ext.upper()
-##            if ext not in template: continue
-##            cmd = template[ext] % {"OUTPUT_FLAG":"/Fo", "OUTPUT_FILE":obj,
-##                                   "INPUT_FLAG":"", "INPUT_FILE":src}
-##            self.ObjectTargetList.append(MakefileTarget(target=obj, prerequisite=[src], command=[cmd]))
-        return self.ObjectTargetList
+    def GetFileDependency(self):
+        cwd = os.getcwd()
+        os.chdir(self.ModuleInfo.WorkspaceDir)
+        dependency = {}
+        for f in self.BuildFileList:
+            f = os.path.join(self.ModuleInfo.SourceDir, f)
+            dependency[f] = self.GetDependencyList(f, self.ModuleInfo.IncludePathList)
+        os.chdir(cwd)
+        return dependency
+
+    def GetDependencyList(self, file, searchPathList):
+        cwd = os.getcwd()
+        os.chdir(self.ModuleInfo.WorkspaceDir)
+
+        fileStack = [file]
+        dependencyList = []
+        while len(fileStack) > 0:
+            f = fileStack.pop()
+
+            currentFileDependencyList = []
+            if f in gDependencyDatabase:
+                currentFileDependencyList = gDependencyDatabase[f]
+                #print "@@@@@@",f,"is in dependency database"
+                for dep in currentFileDependencyList:
+                    if dep not in fileStack:
+                        fileStack.append(dep)
+            else:
+                fd = open(f, 'r')
+                fileContent = fd.read()
+                fd.close()
+                if fileContent[0] == 0xff or fileContent[0] == 0xfe:
+                    fileContent = unicode(fileContent, "utf-16")
+                includedFileList = gIncludePattern.findall(fileContent)
+
+                currentFilePath = os.path.dirname(f)
+                for inc in includedFileList:
+                    inc = os.path.normpath(inc)
+                    for searchPath in [currentFilePath] + searchPathList:
+                        filePath = os.path.join(searchPath, inc)
+                        #print "   @@@",filePath
+                        if not os.path.exists(filePath) or filePath in currentFileDependencyList:
+                            continue
+                        currentFileDependencyList.append(filePath)
+                        if filePath not in fileStack:
+                            fileStack.append(filePath)
+                        break
+                    #else:
+                    #    print "###", inc, "was not found in any given path:",f,"\n   ", "\n    ".join(searchPathList)
+                gDependencyDatabase[f] = currentFileDependencyList
+            dependencyList.extend(currentFileDependencyList)
+        dependencyList = list(set(dependencyList))  # remove duplicate ones
+
+        os.chdir(cwd)
+        dependencyList.append(file)
+        return dependencyList
+
 
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
@@ -829,8 +683,6 @@ if __name__ == '__main__':
     apf = ewb.TargetTxt.TargetTxtDictionary["ACTIVE_PLATFORM"][0]
     myPlatform = myBuild.PlatformDatabase[os.path.normpath(apf)]
 
-    LoadBuildRule(myWorkspace.Workspace.WorkspaceFile('Tools/Conf/build.rule'))
-    #mf = "EdkModulePkg/Application/HelloWorld/HelloWorld.inf"
     for mf in myBuild.ModuleDatabase:
         #mf = "MdePkg\\Library\\BaseLib\\BaseLib.inf"
         #if mf in myPlatform.Modules and mf in myBuild.ModuleDatabase:
@@ -854,4 +706,4 @@ if __name__ == '__main__':
         myMakefile = Makefile(myModule, myPackage, myPlatform, myWorkspace, myToolchain, myBuildTarget,
                               myArch, myBuildOption, "nmake")
 
-        myMakefile.Generate()
+        myMakefile.NewGenerate()

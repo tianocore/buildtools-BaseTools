@@ -736,17 +736,31 @@ BasicHeaderFile = "Base.h"
 
 ModuleTypeHeaderFile = {
     "BASE"              :   BasicHeaderFile,
-    "SEC"               :   ["Peim.h", "DebugLib.h", ],         # "PiPei.h",
-    "PEI_CORE"          :   ["PeiCore.h", "DebugLib.h"],        # "PiPei.h",
-    "PEIM"              :   ["Peim.h", "DebugLib.h"],             # PiPei.h",
-    "DXE_CORE"          :   ["DxeCore.h", "DebugLib.h"],        # PiDxe.h",
-    "DXE_DRIVER"        :   ["Dxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
-    "DXE_SMM_DRIVER"    :   ["Dxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
-    "DXE_RUNTIME_DRIVER":   ["Dxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
-    "DXE_SAL_DRIVER"    :   ["Dxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
+    "SEC"               :   ["PiPei.h", "DebugLib.h", ],         # "PiPei.h",
+    "PEI_CORE"          :   ["PiPei.h", "DebugLib.h"],        # "PiPei.h",
+    "PEIM"              :   ["PiPei.h", "DebugLib.h"],             # PiPei.h",
+    "DXE_CORE"          :   ["PiDxe.h", "DebugLib.h"],        # PiDxe.h",
+    "DXE_DRIVER"        :   ["PiDxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
+    "DXE_SMM_DRIVER"    :   ["PiDxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
+    "DXE_RUNTIME_DRIVER":   ["PiDxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
+    "DXE_SAL_DRIVER"    :   ["PiDxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
     "UEFI_DRIVER"       :   ["Uefi.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],
     "UEFI_APPLICATION"  :   ["Uefi.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"]
 }
+
+##ModuleTypeHeaderFile = {
+##    "BASE"              :   BasicHeaderFile,
+##    "SEC"               :   ["Peim.h", "DebugLib.h", ],         # "PiPei.h",
+##    "PEI_CORE"          :   ["PeiCore.h", "DebugLib.h"],        # "PiPei.h",
+##    "PEIM"              :   ["Peim.h", "DebugLib.h"],           # PiPei.h",
+##    "DXE_CORE"          :   ["DxeCore.h", "DebugLib.h"],        # PiDxe.h",
+##    "DXE_DRIVER"        :   ["Dxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
+##    "DXE_SMM_DRIVER"    :   ["Dxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
+##    "DXE_RUNTIME_DRIVER":   ["Dxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
+##    "DXE_SAL_DRIVER"    :   ["Dxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
+##    "UEFI_DRIVER"       :   ["Uefi.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],
+##    "UEFI_APPLICATION"  :   ["Uefi.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"]
+##}
 
 def GuidStringToGuidStructureString(Guid):
   GuidList = Guid.split('-')
@@ -1458,19 +1472,27 @@ def CreateCode(info, autoGenC, autoGenH):
 
     CreateFooterCode(info, autoGenC, autoGenH)
 
-    filePath = os.path.join(info.WorkspaceDir, info.DebugDir)
+def Generate(filePath, autoGenC, autoGenH):
     CreateDirectory(filePath)
-    
+
     autoGenFileList = []
-    
-    headerFile = open(os.path.join(filePath, "AutoGen.h"), "w")
-    headerFile.write(autoGenH.String)
+    SaveFile(os.path.join(filePath, "AutoGen.h"), autoGenH.String)
     autoGenFileList.append("AutoGen.h")
 
-    if not info.IsLibrary:
-        cFile = open(os.path.join(filePath, "AutoGen.c"), "w")
-        cFile.write(autoGenC.String)
+    if autoGenC.String != "":
+        SaveFile(os.path.join(filePath, "AutoGen.c"), autoGenC.String)
         autoGenFileList.append("AutoGen.c")
 
     return autoGenFileList
 
+def SaveFile(file, content):
+    f = None
+    if os.path.exists(file):
+        f = open(file, "r")
+        if content == f.read():
+            f.close()
+            return
+        f.close()
+    f = open(file, "w")
+    f.write(content)
+    f.close()

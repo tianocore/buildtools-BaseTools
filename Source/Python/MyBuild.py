@@ -162,6 +162,7 @@ if __name__ == '__main__':
         "ENABLE_LOCAL_LIB"  :   True,
     }
 
+    buildAg = None
     for mf in myBuild.ModuleDatabase:
         #mf = "MdePkg\\Library\\BaseLib\\BaseLib.inf"
         #if mf in myPlatform.Modules and mf in myBuild.ModuleDatabase:
@@ -170,17 +171,18 @@ if __name__ == '__main__':
         myModule = myBuild.ModuleDatabase[mf]
 
         ag = AutoGen(myModule, myPlatform, myWorkspace, myArch, myToolchain, myBuildTarget)
-        ag.CreateAutoGenCode()
+        ag.CreateAutoGenFile()
         if buildmf == str(myModule):
             makefile = ag.CreateMakefile()
+            buildAg = ag
         else:
             ag.CreateMakefile()
 
-        for lib in ag.ModuleBuildInfo.DependentLibraryList:
-            ag = AutoGen(lib, myPlatform, myWorkspace, myArch, myToolchain, myBuildTarget)
-            ag.CreateAutoGenCode()
-            ag.CreateMakefile()
+##        for lib in ag.ModuleBuildInfo.DependentLibraryList:
+##            ag = AutoGen(lib, myPlatform, myWorkspace, myArch, myToolchain, myBuildTarget)
+##            ag.CreateAutoGenFile()
+##            ag.CreateMakefile()
 
     if makefile != "":
-        p = Popen(["nmake", "-f", makefile], env=os.environ).communicate()
+        p = Popen(["nmake", "-f", makefile], env=os.environ, cwd=os.path.dirname(makefile)).communicate()
     #sts = os.waitpid(p.pid, 0)
