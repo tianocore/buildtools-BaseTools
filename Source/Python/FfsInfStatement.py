@@ -57,13 +57,13 @@ class FfsInfStatement(Ffs.Ffs):
         #
         # For the rule only has simpleFile
         #
-        if (Rule.SimpleFile != None) :
+        if isinstance (Rule, RuleSimpleFile.RuleSimpleFile) :
             #
             # Prepare the parameter of GenSection
             #
-            GenSecInputFile = self.__ExtendMarco__(Rule.SimpleFile.FileName)
+            GenSecInputFile = self.__ExtendMarco__(Rule.FileName)
             
-            SectionType     = Rule.SimpleFile.SectionType
+            SectionType     = Rule.SectionType
 
             GenSecOutputFile= self.__ExtendMarco__(Rule.NameGuid) + \
                               Ffs.Ffs.SectionSuffix[SectionType]
@@ -133,7 +133,7 @@ class FfsInfStatement(Ffs.Ffs):
         #
         # For Rule has ComplexFile
         #
-        else:
+        elif isinstance(Rule, RuleComplexFile.RuleCompilexFile):
             SectFiles = ''
             for Sect in Rule.ComplexFile.SectionList:
                 SectFiles = SectFiles    + \
