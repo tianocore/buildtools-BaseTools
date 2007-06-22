@@ -198,6 +198,7 @@ ${END}
 #
 ${BEGIN}${tool_code}_FLAGS = $(DEFAULT_${tool_code}_FLAGS) $(PLATFORM_${tool_code}_FLAGS) $(MODULE_${tool_code}_FLAGS)
 ${END}
+MAKE_FLAGS = /nologo
 
 #
 # ToolsPathMacro

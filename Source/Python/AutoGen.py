@@ -128,7 +128,7 @@ class AutoGen(object):
             info.IncludePathList.append(os.path.join(info.SourceDir, inc))
 
     def InitPlatformBuildInfo(self, info):
-        ruleFile = self.Workspace.Workspace.WorkspaceFile('Tools/Conf/build.rule')
+        ruleFile = os.path.join(os.environ["EDK_TOOLS_PATH"], r'Conf\build_rule.txt')
         info.BuildRule = imp.load_source("BuildRule", ruleFile)
 
         info.SourceDir = path.dirname(self.Platform.DescFilePath)
