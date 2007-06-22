@@ -179,8 +179,8 @@ def CleanString(Line, CommentCharacter = DataType.TAB_COMMENT_SPLIT):
     Line = Line.replace(DataType.TAB_WORKSPACE1, '')
     Line = Line.replace(DataType.TAB_WORKSPACE2, '')
     #remove '/' at the beginning
-    if Line.startswith('/'):
-        Line = Line.replace('/', '')
+#    if Line.startswith('/'):
+#        Line = Line.replace('/', '')
     #Change path
     #Line = os.path.normpath(Line)
     
