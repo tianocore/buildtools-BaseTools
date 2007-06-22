@@ -141,6 +141,8 @@ class WorkspaceBuild(object):
         self.PlatformBuild           = True
         self.TargetTxt               = TargetTxtClassObject()
         self.ToolDef                 = ToolDefClassObject()
+        self.SupArchList             = []        #[ 'IA32', 'X64', ...]
+        self.BuildTarget             = []        #[ 'RELEASE', 'DEBUG']
         self.InfDatabase             = {}        #{ [InfFileName] : InfClassObject}        
         self.DecDatabase             = {}        #{ [DecFileName] : DecClassObject}
         self.DscDatabase             = {}        #{ [DscFileName] : DscClassObject}
@@ -164,6 +166,8 @@ class WorkspaceBuild(object):
         #parse platform to get module
         for dsc in self.DscDatabase.keys():
             dscObj = self.DscDatabase[dsc]
+            self.SupArchList = dscObj.Defines.DefinesDictionary[TAB_DSC_DEFINES_SUPPORTED_ARCHITECTURES]
+            self.BuildTarget = dscObj.Defines.DefinesDictionary[TAB_DSC_DEFINES_BUILD_TARGETS]
             #Get all inf
             for key in DataType.ARCH_LIST:
                 for index in range(len(dscObj.Contents[key].LibraryClasses)):
@@ -507,6 +511,8 @@ if __name__ == '__main__':
 #    print ewb.DscDatabase
 #    print ewb.InfDatabase
 #    print ewb.DecDatabase
+    print 'SupArchList', ewb.SupArchList
+    print 'BuildTarget', ewb.BuildTarget
     
     #
     for arch in DataType.ARCH_LIST:

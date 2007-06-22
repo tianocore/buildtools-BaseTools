@@ -208,17 +208,15 @@ def GetSingleValueOfKeyFromLines(Lines, Dictionary, CommentCharacter, KeySplitCh
                 #Remove comments and white spaces
                 LineList[1] = CleanString(LineList[1], CommentCharacter)
                 if ValueSplitFlag:
-                    ValueList = LineList[1].replace('\\','/').split(ValueSplitCharacter)
-                    if len(ValueList) == 1:
-                        Value = ValueList[0]
+                    Value = LineList[1].replace('\\','/').split(ValueSplitCharacter)
                 else:
-                    Value = CleanString(LineList[1], CommentCharacter)
+                    Value = CleanString(LineList[1], CommentCharacter).splitlines()
                 
                 if Key[0] not in Keys:
-                    Dictionary[Key[0]] = Value.splitlines()
+                    Dictionary[Key[0]] = Value
                     Keys.append(Key[0])
                 else:
-                    Dictionary[Key[0]].extend(Value.splitlines())                
+                    Dictionary[Key[0]].extend(Value)                
     return True
 
 

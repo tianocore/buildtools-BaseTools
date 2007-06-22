@@ -48,7 +48,7 @@ def UniToHexList(Uni):
     return List
 
 class StringDefinitionClassObject(object):
-    def __init__(self, Name = None, Language = None, Value = None):
+    def __init__(self, Name = None, Language = None, Value = None, Token = None):
         self.StringName = ''
         self.StringNameByteList = []
         self.StringValue = {}                        #{ u'Language' : u'Value' }
@@ -61,6 +61,8 @@ class StringDefinitionClassObject(object):
             self.StringNameByteList = UniToHexList(Name)
         if Value != None and Language != None:
             self.StringValue[Language] = UniToHexList(Value)
+        if Token != None:
+            self.Token = Token
         
     def Update(self, Name = None, Language = None, Value = None):
         if Name != None:
@@ -71,17 +73,28 @@ class StringDefinitionClassObject(object):
             self.StringValue[Language] = UniToHexList(Value)
         
     def __str__(self):
-        return repr(self.StringName) + ' ' + repr(self.StringValue)
+        return repr(self.StringName) + ' ' + \
+               repr(self.Token) + ' ' + \
+               repr(self.Referenced) + ' ' + \
+               repr(self.StringValue)
 
 class UniFileClassObject(object):
     def __init__(self, FileList = []):
         self.FileList = FileList
+        self.Token = 2
         self.LanguageDef = {}                   #{ 'LanguageIdentifier' : [PrintableName] }
         self.StringList = {}                    #{ 'StringName' : StringDefinitionClassObject }
         
         if len(self.FileList) > 0:
             self.LoadUniFiles(FileList)
-    
+        
+        #
+        # Add default string
+        #
+        for Language in self.LanguageDef.keys():
+            self.AddStringToList(u'$LANGUAGE_NAME', Language, '', 0)
+            self.AddStringToList(u'$PRINTABLE_LANGUAGE_NAME', Language, '', 1)
+                
     def GetLangDef(self, Line):
         LangName = Line[Line.find(u'#langdef ') + len(u'#langdef ') : Line.find(u' ', len(u'#langdef '))]
         LangPrintName = Line[Line.find(u'\"') + len(u'\"') : Line.rfind(u'\"')]
@@ -204,12 +217,46 @@ class UniFileClassObject(object):
             for File in FileList:
                 self.LoadUniFile(File)
                 
-    def AddStringToList(self, Name, Language, Value):
+    def AddStringToList(self, Name, Language, Value, Token = None):
         if Name in self.StringList.keys():
             self.StringList[UniToStr(Name)].Update(Name, Language, Value)
         else:
-            self.StringList[UniToStr(Name)] = StringDefinitionClassObject(Name, Language, Value)
-
+            if Token != None:
+                self.StringList[UniToStr(Name)] = StringDefinitionClassObject(Name, Language, Value, Token)
+            else:
+                self.StringList[UniToStr(Name)] = StringDefinitionClassObject(Name, Language, Value, self.Token)
+                self.Token = self.Token + 1
+            
+    def FindStringObjectNameByToken(self, Token):
+        for Item in self.StringList:
+            if self.StringList[Item].Token == Token:
+                return Item
+        return None
+    
+    def SetStringReferenced(self, Name):
+        if Name in self.StringList.keys():
+            self.StringList[Name].Referenced = True
+            
+    def ReToken(self):
+        Token = 2
+        FalseCount = 1
+        Length = len(self.StringList)
+        for Index in range(2, Length):
+            Name = self.FindStringObjectNameByToken(Index)
+            if Name != None:
+                if self.StringList[Name].Referenced == True:
+                    self.StringList[Name].Token = Token
+                    Token = Token + 1
+                else:
+                    self.StringList[Name].Token = Length + FalseCount
+                    FalseCount = FalseCount + 1
+                
+        for Index in range(2, Length + FalseCount):
+            Name = self.FindStringObjectNameByToken(Index)
+            if Name != None and self.StringList[Name].Referenced == False:
+                self.StringList[Name].Token = Token
+                Token = Token + 1
+            
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
 if __name__ == '__main__':
