@@ -6,3 +6,4 @@ class RuleSimpleFile (Rule.Rule) :
         self.Alignment = None
         self.FileName = None
         self.FileModType = None
+        self.SectionType = ''

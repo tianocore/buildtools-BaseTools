@@ -1,8 +1,11 @@
 import Rule
 import os
-import GenFdsGlobalVariable
+from GenFdsGlobalVariable import GenFdsGlobalVariable
 import Ffs
 import subprocess
+import sys
+import Section
+
 class FfsInfStatement(Ffs.Ffs):
     def __init__(self):
         Ffs.Ffs.__init__(self)
@@ -10,74 +13,109 @@ class FfsInfStatement(Ffs.Ffs):
         self.ver = None
         self.Ui = None
         self.InfFileName = None
-        #self.__infParse__(self.InfFileName)
+        self.BuildNum = ''
 
     def __infParse__(self, InfFile):
-        Inf = open (InfFile, mode = 'r')
-        self.Version = ''
-        self.Guid = ''
-        self.Name = ''
-        self.ModuleType = ''
+        #
+        # Get the InfClass object
+        #
+        Inf = GenFdsGlobalVariable.WorkSpace.InfDatabase[InfFile]
+        #
+        # Set Ffs BaseName, MdouleGuid, ModuleType, Version, OutputPath
+        #
+        self.BaseName = Inf.Defines.DefinesDictionary['BASE_NAME'][0]
+        self.ModuleGuid = Inf.Defines.DefinesDictionary['FILE_GUID'][0]
+        self.ModuleType = Inf.Defines.DefinesDictionary['MODULE_TYPE'][0]
+        self.VersionString = Inf.Defines.DefinesDictionary['VERSION_STRING'][0]
 
+        #
+        # Set OutputPath = ${WorkSpace}\Build\Fv\Ffs\${ModuleGuid}+ ${MdouleName}\
+        #
+
+        self.OutputPath = GenFdsGlobalVariable.FfsDir + \
+                          os.sep                      + \
+                          self.ModuleGuid         + \
+                          self.BaseName
+                                  
+        self.OutputPath = os.path.normpath(self.OutputPath)
+        self.OutputPath = self.OutputPath + os.sep
+        if not os.path.exists(self.OutputPath) :
+            os.makedirs(self.OutputPath)
 
     def GenFfs(self):
-        Rule = FdsParse.RuleDict(Self.Rule)
-        FileType = Ffs.ModuleTypeToFileType(self.Rule.ModuleType)
+        #
+        # Parse Inf file get Module related information
+        #
+        self.__infParse__(self.InfFileName)
+        #
+        # Get the rule of how to generate Ffs file
+        #
+        Rule = GenFdsGlobalVariable.FdfParser.profile.RuleDict['Rule' + \
+                                                       '.' + \
+                                                       'IA32' + \
+                                                       '.' + \
+                                                       self.ModuleType]
+                                                       
+        FileType = Ffs.Ffs.ModuleTypeToFileType[Rule.ModuleType]
         #
         # For the rule only has simpleFile
         #
-        if not (Rule.SimpleFile == None) :
+        if (Rule.SimpleFile != None) :
             #
             # Prepare the parameter of GenSection
             #
-            InputFile     = GenFdsGlobbalVariable.ExtendMarco(Rule.SimpleFile.FileName)
-            SectionType   = Rule.SimpleFile.SectionType
+            GenSecInputFile = self.__ExtendMarco__(Rule.SimpleFile.FileName)
             
-            OutPutPath    = GenFdsGlobalVariable.FfsDir + \
-                            os.sep                      + \
-                            Rule.NameGuid               + \
-                            os.sep
+            SectionType     = Rule.SimpleFile.SectionType
+
+            GenSecOutputFile= self.__ExtendMarco__(Rule.NameGuid) + \
+                              Ffs.Ffs.SectionSuffix[SectionType]
                             
-            OutputFile    = Rule.NameGuid + \
-                            Ffs.SectionSuffix(SectionType)
-                            
-            genSectionCmd = 'GenSect -o ' + \
-                             OutputPath   + \
-                             OutputFile   + \
-                             ' -s '       + \
-                             SectionType  + \
-                             ' '          + \
-                             InputFile
+            genSectionCmd = 'GenSection -o '                               + \
+                             self.OutputPath                               + \
+                             os.sep                                        + \
+                             GenSecOutputFile                              + \
+                             ' -s '                                        + \
+                             Section.Section.SectionType[SectionType]      + \
+                             ' '                                           + \
+                             GenSecInputFile
             #
             # Call GenSection
             #
+            print genSectionCmd
             subprocess.Popen (genSectionCmd).communicate()
             
             #
             # Prepare the parameter of GenFfs
             #
-            FileType = ' - t ' + Ffs.ModuleTypeToFileType(Rule.ModuleType)
-            if not (Rule.SimpleFile.Fixed == None):
+            FileType = ' - t ' + \
+                       Ffs.Ffs.ModuleTypeToFileType[Rule.ModuleType]
+                       
+            if not (Rule.Fixed == None):
                 Fixed = ' -x '
             else :
                 Fixed = ''
-            if not (Rule.SimpleFile.CheckSum == None):
+            if not (Rule.CheckSum == None):
                 CheckSum = ' -s '
             else :
                 CheckSume = ''
-            if not (Rule.SimpleFile.Alignemnt == None):
-                Alignment = ' -a ' + Rule.SimpleFile.Alignment
+            if not (Rule.Alignment == None):
+                Alignment = ' -a %d' %Rule.Alignment
             else :
                 Alignment = ''
                 
-            FfsOutput = OutputPath    + \
-                        Rule.NameGuid + \
+            FfsOutput = self.OutputPath                     + \
+                        os.sep                              + \
+                        self.__ExtendMarco__(Rule.NameGuid) + \
                         '.ffs'
-            
+                        
+            print self.__ExtendMarco__(Rule.NameGuid)
             InputSection = ' -i '     + \
-                           OutputPath + \
-                           OutputFile
-                           
+                           self.OutputPath + \
+                           os.sep          + \
+                           GenSecOutputFile
+
+           
             GenFfsCmd = 'GenFfs '  + \
                          FileType  + \
                          Fixed     + \
@@ -86,11 +124,12 @@ class FfsInfStatement(Ffs.Ffs):
                          ' -o '    + \
                          FfsOutput + \
                          ' -g '    + \
-                         self.Guid + \
+                         self.NameGuid + \
                          InputSection
             #
             # Call GenSection
             #
+            print GenFfsCmd
             subprocess.Popen (GenFfsCmd).communicate()
             
             return FfsOutput
@@ -98,23 +137,43 @@ class FfsInfStatement(Ffs.Ffs):
         # For Rule has ComplexFile
         #
         else:
-            OutPutPath = os.path.join(OutputDir, os.path.dirname(self.InfFileName), 'OUTPUT')
-            for Sect in self.Rule.CompliexFile.SectionList:
-                SectFiles = ' -i ' + Sect.GenSection(OutputPath, self.Guid)
+            SectFiles = ''
+            for Sect in Rule.ComplexFile.SectionList:
+                SectFiles = SectFiles    + \
+                            ' -i '       + \
+                            Sect.GenSection(self.OutputPath , self.ModuleGuid)
                 
-            FfsOutput = OutputPath + \
-                        self.Guid +  \
+            FfsOutput = self.OutputPath + \
+                        self.ModuleGuid + \
                         '.ffs'
                         
-            GenFfsCmd = 'GenFfs '                                + \
-                        '-t '                                    + \
-                        FFs.ModuleTypeToFileType(self.ModuleType)+ \
-                        ' -g '                                   + \
-                        self.Guid                                + \
-                        SectionFiles
+            print "###ComplexFile RUle"
+            GenFfsCmd = 'GenFfs '                                    + \
+                        '-t '                                        + \
+                        Ffs.Ffs.ModuleTypeToFileType[Rule.ModuleType]+ \
+                        ' -g '                                       + \
+                        ' -o '                                       + \
+                        FfsOutput                                    + \
+                        self.NameGuid                                + \
+                        SectFiles
                         
+            print GenFfsCmd
             subprocess.Popen(GenFfsCmd).communicate()
             return FfsOutput
                 
+    def __ExtendMarco__ (self, String):
+        MarcoDict = {
+            '$(INF_OUTPUT)'  : self.OutputPath,
+            '$(MODULE_NAME)' : self.BaseName,
+            '$(BUILD_NUMBER)': self.BuildNum,
+            '$(INF_VERSION)' : self.VersionString,
+            '$(NAME_GUID)'   : self.ModuleGuid
+        }
+        
+        for Marco in MarcoDict.keys():
+            if String.find(Marco) >= 0 :
+                String = String.replace (Marco, MarcoDict[Marco])
+        return String
 
+        
         

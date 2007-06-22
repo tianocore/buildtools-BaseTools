@@ -25,11 +25,13 @@ class FV:
         self.FfsList = []
         
         self.FvInfFile = None
+        self.BaseAddress = None
         
     #
     #  Generate Fv and add it to the Buffer
     #
-    def AddToBuffer (self, Buffer) :
+    def AddToBuffer (self, Buffer, BaseAddress) :
+        self.__InitialInf__(BaseAddress)
         #
         # First Process the Apriori section
         #
@@ -47,6 +49,8 @@ class FV:
         #
         for FfsFile in self.FfsList :
             FileName = FfsFile.GenFfs()
+            print #####
+            print FileName
             self.FvInfFile.writelines("EFI_FILE_NAME = " + \
                                        FileName          + \
                                        T_CHAR_LF)
@@ -56,15 +60,12 @@ class FV:
         # Call GenFv tool
         #
         
-        cmd = 'GenFvImage -i '            + \
+        cmd = 'GenFv -i '                 + \
                GenFdsGlobalVariable.FvDir + \
                self.UiFvName              + \
                '.inf'                     + \
                ' -o '                     + \
                self.UiFvName
-
-        # For Test
-        cmd = "GenFvImage -i FvMain.inf"
         #
         # Call GenFv Tools
         #
@@ -86,7 +87,7 @@ class FV:
         Buffer.write(fv.read())
         fv.close
     
-    def InitialInf (self, BlockSize, Offset, Size) :
+    def __InitialInf__ (self, BaseAddress) :
         self.FvInfFile = open (GenFdsGlobalVariable.FvDir + \
                                self.UiFvName              + \
                                '.inf',                      \
@@ -94,29 +95,32 @@ class FV:
         #
         # Add [Options]
         #
-        self.FvInfFile.writelines("[Options]" + T_CHAR_LF)
+        self.FvInfFile.writelines("[options]" + T_CHAR_LF)
         
         self.FvInfFile.writelines("EFI_BASE_ADDRESS = " + \
-                                   Offset               + \
+                                   BaseAddress          + \
                                    T_CHAR_LF)
                                    
-        self.FvInfFile.writelines("EFI_BLOCK_SIZE   = " + \
-                                  '%x' %BlockSize       + \
-                                  T_CHAR_LF)
+        for BlockSize in self.BlockSizeList :
+            self.FvInfFile.writelines("EFI_BLOCK_SIZE   = " + \
+                                      '0x'                  + \
+                                      '%x' %BlockSize[0]    + \
+                                      T_CHAR_LF)
                                   
-        #self.FvInfFile.writelines("EFI_NUM_BLOCKS   = " + '%x' %(Size/BlockSize) \
-        #                          + ReturnSign)
+            self.FvInfFile.writelines("EFI_NUM_BLOCKS   = "  + \
+                                      ' %d' %BlockSize[1]    + \
+                                      T_CHAR_LF)
         
         #
         # Add attribute
         #
-        self.FvInfFile.writelines("[Attribute]" + T_CHAR_LF)
+        self.FvInfFile.writelines("[attribute]" + T_CHAR_LF)
         
         if not (self.FvAttributeDict == None):
-            for FvAttribute in self.FvAttributeDict :
-                self.FvInfFile.writelines(FvAttribute.Name  + \
+            for FvAttribute in self.FvAttributeDict.keys() :
+                self.FvInfFile.writelines(FvAttribute       + \
                                           '='               + \
-                                          FvAttribute.Value + \
+                                          self.FvAttributeDict[FvAttribute] + \
                                           T_CHAR_LF )
             
         #

@@ -13,13 +13,13 @@ class FvImageSection(Section.Section):
         #
         # Generate Fv
         #
-        self.Fv.AddToBuffer(Buffer)
+        self.Fv.AddToBuffer(Buffer, '')
         
         FvFileName = OutputPath + \
                      ModuleName + \
                      '.fv'
         FvFile = open ( FvFileName, 'w+')
-        FvFile.write(buffer)
+        FvFile.write(Buffer.getvalue())
         FvFile.close()
         #
         # Prepare the parameter of GenSection
@@ -34,6 +34,6 @@ class FvImageSection(Section.Section):
                          'EFI_SECTION_FIRMWARE_VOLUME_IMAGE ' + \
                          FvFileName
                          
-        subprocess.Popen (GenSectionCmd).communicate
+        subprocess.Popen (GenSectionCmd).communicate()
         
         return OutputFile

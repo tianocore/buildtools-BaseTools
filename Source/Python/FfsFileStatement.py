@@ -68,8 +68,9 @@ class FileStatements (Ffs.Ffs) :
         #
         print GenFfsCmd
         #subprocess.Popen (GenFfsCmd).communicate()
-        FfsOutput = GenFdsGlobalVariable.OuputDir + \
-                   "1BCAB7B3-8D0A-4740-B021-A42945A229F9-PeiIOMMIORegisterLibBbTest.PEI"
+        #FfsOutput = GenFdsGlobalVariable.OuputDir + \
+        #           "1BCAB7B3-8D0A-4740-B021-A42945A229F9-PeiIOMMIORegisterLibBbTest.PEI"
+        
         return FfsOutput
         
 

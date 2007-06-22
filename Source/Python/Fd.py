@@ -3,6 +3,7 @@ import Fv
 import os
 import StringIO
 import sys
+from struct import *
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 class FD:
     def __init__(self):

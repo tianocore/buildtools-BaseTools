@@ -6,4 +6,7 @@ class Rule:
         self.NameGuid = None
         self.SimpleFile = None
         self.ComplexFile = None
+        self.Fixed = None
+        self.Alignment = None
+        self.CheckSum = None
         

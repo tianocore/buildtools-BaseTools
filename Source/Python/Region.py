@@ -1,4 +1,5 @@
 import GenFds
+from struct import *
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 
 class region:
@@ -20,10 +21,11 @@ class region:
     def AddToBuffer(self, Buffer, BlockSize):
         if self.RegionType == 'Fv':
             fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(self.RegionData)
-            fv.InitialInf (BlockSize, self.Offset, self.Size)
-            fv.AddToBuffer(Buffer)
+            fv.AddToBuffer(Buffer, self.Offset)
         if self.RegionType == 'File':
             BinFile = open (self.RegionData, 'r')
             Buffer.write(BinFile.read())
         if self.RegionType == 'Data' :
-            Buffer.write(self.RegionData)
+            Data = self.RegionData.split(',')
+            for item in Data :
+                Buffer.write(pack('B', int(item, 16)))
