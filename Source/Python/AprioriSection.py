@@ -1,7 +1,7 @@
 class AprioriSection :
     def __init__(self):
-##        self.DefineStatementList = None
-##        self.SetStatementList = None
+        # DefineVarDict[var] = value
+        self.DefineVarDict = {}
         self.FfsList = []
         
     def GenFfs (self):

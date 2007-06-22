@@ -60,7 +60,7 @@ class FileProfile :
         self.FdDict = {}
         self.FvDict = {}
         self.CapsuleList = []
-        self.RuleList = []
+#        self.RuleList = []
         self.VtfList = []
         self.RuleDict = {}
         
@@ -213,11 +213,15 @@ class FdfParser:
         self.Rewind()
 
     """check whether input string is found from current char position along"""
-    def __IsToken(self, string):
+    def __IsToken(self, string, ignoreCase = False):
         self.__SkipWhiteSpace()
         if self.__EndOfFile():
             return False
         # Only consider the same line, no multi-line token allowed
+        index = -1
+        if ignoreCase:
+            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].upper().find(string.upper()) 
+        else:
         index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].find(string)
         if index == 0:
             self.CurrentOffsetWithinLine += len(string)
@@ -225,11 +229,15 @@ class FdfParser:
         return False
 
     """check whether input keyword is found from current char position along, whole word only!"""
-    def __IsKeyword(self, keyword):
+    def __IsKeyword(self, keyword, ignoreCase = False):
         self.__SkipWhiteSpace()
         if self.__EndOfFile():
             return False
         # Only consider the same line, no multi-line token allowed
+        index = -1
+        if ignoreCase:
+            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].upper().find(keyword.upper()) 
+        else:
         index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].find(keyword)
         if index == 0:
             followingChar = self.__CurrentLine()[self.CurrentOffsetWithinLine + len(keyword)]
@@ -332,12 +340,17 @@ class FdfParser:
             return False
         
     """Skip to the occurrence of string in file lines buffer"""
-    def __SkipToToken(self, string):
+    def __SkipToToken(self, string, ignoreCase = False):
         StartPos = self.GetFileBufferPos()
         self.__SkipWhiteSpace()
         self.__SkippedChars = ""
         while not self.__EndOfFile():
-            if self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].find(string) == 0:
+            index = -1
+            if ignoreCase:
+                index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].upper().find(string.upper()) 
+            else:
+                index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].find(string)
+            if index == 0:
                 self.CurrentOffsetWithinLine += len(string)
                 self.__SkippedChars += string
                 return True
@@ -386,15 +399,16 @@ class FdfParser:
         if not self.__GetNextToken():
             return False
         
-        if self.__Token.startswith("[") and not self.__Token.startswith("[FD."):
-            if not self.__Token.startswith("[FV.") and not self.__Token.startswith("[Capsule.") \
-                and not self.__Token.startswith("[VTF.") and not self.__Token.startswith("[Rule."):
+        S = self.__Token.upper()
+        if S.startswith("[") and not S.startswith("[FD."):
+            if not S.startswith("[FV.") and not S.startswith("[CAPSULE.") \
+                and not S.startswith("[VTF.") and not S.startswith("[RULE."):
                 raise Warning("Unknown section At Line %d" % self.CurrentLineNumber)
             self.__UndoToken()
             return False
         
         self.__UndoToken()
-        if not self.__IsToken("[FD."):
+        if not self.__IsToken("[FD.", True):
             raise Warning("expected [FD.] At Line %d" % self.CurrentLineNumber)
         
         fdName = self.__GetUiName()
@@ -403,8 +417,8 @@ class FdfParser:
             raise Warning("expected ']' At Line %d" % self.CurrentLineNumber)
         
         fd = Fd.FD()
-        fd.FdUiName = fdName
-        self.profile.FdDict[fdName] = fd
+        fd.FdUiName = fdName.upper()
+        self.profile.FdDict[fdName.upper()] = fd
         Status = self.__GetCreateFile( fd)
         if not Status:
             raise Warning("FD name error At Line %d" % self.CurrentLineNumber)
@@ -708,16 +722,17 @@ class FdfParser:
         if not self.__GetNextToken():
             return False
 
-        if self.__Token.startswith("[") and not self.__Token.startswith("[FV."):
-            if not self.__Token.startswith("[Capsule.") \
-                and not self.__Token.startswith("[VTF.") and not self.__Token.startswith("[Rule."):
+        S = self.__Token.upper()
+        if S.startswith("[") and not S.startswith("[FV."):
+            if not S.startswith("[CAPSULE.") \
+                and not S.startswith("[VTF.") and not S.startswith("[RULE."):
                 raise Warning("Unknown section or section appear sequence error At Line %d.\n \
                             The correct sequence should be [FD.], [FV.], [Capsule.], [VTF.], [Rule.]" % self.CurrentLineNumber)
             self.__UndoToken()
             return False
 
         self.__UndoToken()
-        if not self.__IsToken("[FV."):
+        if not self.__IsToken("[FV.", True):
 ##            raise Warning("expected [FV.] At Line %d" % self.CurrentLineNumber)
             raise Warning("Unknown Keyword At Line %d" % self.CurrentLineNumber)
         
@@ -726,8 +741,8 @@ class FdfParser:
             raise Warning("expected ']' At Line %d" % self.CurrentLineNumber)
         
         fv = Fv.FV()
-        fv.UiFvName = fvName
-        self.profile.FvDict[fvName] = fv
+        fv.UiFvName = fvName.upper()
+        self.profile.FvDict[fvName.upper()] = fv
         
         Status = self.__GetCreateFile( fv)
         if not Status:
@@ -800,6 +815,7 @@ class FdfParser:
             raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
         
         aprSection = AprioriSection.AprioriSection()
+        self.__GetDefineStatements(aprSection)
         while self.__GetInfStatement( aprSection):
             pass
         
@@ -984,9 +1000,9 @@ class FdfParser:
             if not self.__IsToken( "{"):
                 raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
 
+            self.__GetAprioriSection( fv)
             self.__GetFvAttributes( fv)
 
-            self.__GetAprioriSection( fv)
 
             while self.__GetInfStatement( fv):
                 pass
@@ -1097,15 +1113,16 @@ class FdfParser:
         if not self.__GetNextToken():
             return False
 
-        if self.__Token.startswith("[") and not self.__Token.startswith("[Capsule."):
-            if not self.__Token.startswith("[VTF.") and not self.__Token.startswith("[Rule."):
+        S = self.__Token.upper()
+        if S.startswith("[") and not S.startswith("[CAPSULE."):
+            if not S.startswith("[VTF.") and not S.startswith("[RULE."):
                 raise Warning("Unknown section or section appear sequence error At Line %d.\n \
                             The correct sequence should be [FD.], [FV.], [Capsule.], [VTF.], [Rule.]" % self.CurrentLineNumber)
             self.__UndoToken()
             return False
 
         self.__UndoToken()
-        if not self.__IsToken("[Capsule."):
+        if not self.__IsToken("[CAPSULE.", True):
             raise Warning("expected [Capsule.] At Line %d" % self.CurrentLineNumber)        
             
 #        if not self.__IsToken("."):
@@ -1124,7 +1141,7 @@ class FdfParser:
         if not capsuleName:
             raise Warning("expected capsule name At line %d" % self.CurrentLineNumber)
         
-        capsule.UiCapsuleName = capsuleName
+        capsule.UiCapsuleName = capsuleName.upper()
         
         if not self.__IsToken( "]"):
             raise Warning("expected ']' At Line %d" % self.CurrentLineNumber)
@@ -1198,14 +1215,15 @@ class FdfParser:
         if not self.__GetNextToken():
             return False
 
-        if self.__Token.startswith("[") and not self.__Token.startswith("[Rule."):
+        S = self.__Token.upper()
+        if S.startswith("[") and not S.startswith("[RULE."):
             raise Warning("Unknown section or section appear sequence error At Line %d.\n \
                             The correct sequence should be [FD.], [FV.], [Capsule.], [VTF.], [Rule.]" % self.CurrentLineNumber)
 #            self.__UndoToken()
 #            return False
 
         self.__UndoToken()
-        if not self.__IsToken("[Rule."):
+        if not self.__IsToken("[Rule.", True):
             raise Warning("expected [Rule.] At Line %d" % self.CurrentLineNumber)
 
         if not self.__SkipToToken("."):
@@ -1244,7 +1262,7 @@ class FdfParser:
                               moduleType.upper()     + \
                               '.'                    + \
                               templateName.upper() ] = rule
-        self.profile.RuleList.append(rule)
+#        self.profile.RuleList.append(rule)
         return True
     
     def __GetModuleType(self):
@@ -1292,24 +1310,13 @@ class FdfParser:
                 raise Warning("Incorrect alignment At Line %d" % self.CurrentLineNumber)
             alignment = self.__Token
 
-        if fixed or checksum or alignment != "":
-            # Simple file rule expected
-            if not self.__GetNextToken():
-                raise Warning("expected File name At Line %d" % self.CurrentLineNumber)
-            
-            rule = RuleSimpleFile.RuleSimpleFile()
-#            rule.NameGuid = guid
-            rule.FileModType = type
-            rule.Alignment = alignment
-            rule.CheckSum = checksum
-            rule.Fixed = fixed
-            rule.FileName = self.__Token
-            return rule
-        
         if self.__IsToken("{"):
             # Complex file rule expected
             rule = RuleComplexFile.RuleCompilexFile()
-#            rule.NameGuid = guid
+            rule.FvType = type
+            rule.Alignment = alignment
+            rule.CheckSum = checksum
+            rule.Fixed = fixed
             while self.__GetEfiSection(rule):
                 pass
 
@@ -1321,6 +1328,20 @@ class FdfParser:
             if not self.__IsToken("}"):
                 raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
             
+            return rule
+        
+        else:
+            # Simple file rule expected
+            if not self.__GetNextToken():
+                raise Warning("expected File name At Line %d" % self.CurrentLineNumber)
+            
+            rule = RuleSimpleFile.RuleSimpleFile()
+#            rule.NameGuid = guid
+            rule.FvType = type
+            rule.Alignment = alignment
+            rule.CheckSum = checksum
+            rule.Fixed = fixed
+            rule.FileName = self.__Token
             return rule
         
         return Rule.Rule()
@@ -1425,27 +1446,28 @@ class FdfParser:
         if not self.__GetNextToken():
             return False
 
-        if self.__Token.startswith("[") and not self.__Token.startswith("[VTF."):
-            if not self.__Token.startswith("[Rule."):
+        S = self.__Token.upper()
+        if S.startswith("[") and not S.startswith("[VTF."):
+            if not S.startswith("[RULE."):
                 raise Warning("Unknown section or section appear sequence error At Line %d.\n \
                             The correct sequence should be [FD.], [FV.], [Capsule.], [VTF.], [Rule.]" % self.CurrentLineNumber)
             self.__UndoToken()
             return False
 
         self.__UndoToken()
-        if not self.__IsToken("[VTF."):
+        if not self.__IsToken("[VTF.", True):
             raise Warning("expected [VTF.] At Line %d" % self.CurrentLineNumber)
 
         if not self.__SkipToToken("."):
             raise Warning("expected '.' At Line %d" % self.CurrentLineNumber)
 
-        arch = self.__SkippedChars.rstrip(".")
+        arch = self.__SkippedChars.rstrip(".").upper()
         if arch not in ("IA32", "X64", "IPF"):
             raise Warning("Unknown Arch At line %d" % self.CurrentLineNumber)
 
         if not self.__GetNextWord():
             raise Warning("expected VTF name At Line %d" % self.CurrentLineNumber)
-        name = self.__Token
+        name = self.__Token.upper()
 
         vtf = Vtf.Vtf()
         vtf.UiName = name
@@ -1454,9 +1476,9 @@ class FdfParser:
         if self.__IsToken(","):
             if not self.__GetNextWord():
                 raise Warning("expected Arch list At Line %d" % self.CurrentLineNumber)
-            if self.__Token not in ("IA32", "X64", "IPF"):
+            if self.__Token.upper() not in ("IA32", "X64", "IPF"):
                 raise Warning("Unknown Arch At line %d" % self.CurrentLineNumber)
-            vtf.ArchList = self.__Token
+            vtf.ArchList = self.__Token.upper()
 
         if not self.__IsToken( "]"):
             raise Warning("expected ']' At Line %d" % self.CurrentLineNumber)
@@ -1592,6 +1614,5 @@ class FdfParser:
 if __name__ == "__main__":
     parser = FdfParser("test.fdf")
     parser.ParseFile()
-    print parser.profile.FdDict
-    print parser.profile.FvDict
-    print parser.profile.RuleList
+    print "Success!"
+
