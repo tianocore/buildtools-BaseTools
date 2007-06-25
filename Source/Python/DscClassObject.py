@@ -32,7 +32,10 @@ class DscDefines(DscObject):
             TAB_DSC_DEFINES_OUTPUT_DIRECTORY                      : [''],
             TAB_DSC_DEFINES_SUPPORTED_ARCHITECTURES               : [''],
             TAB_DSC_DEFINES_BUILD_TARGETS                         : [''],
-            TAB_DSC_DEFINES_SKUID_IDENTIFIER                      : ['']
+            TAB_DSC_DEFINES_SKUID_IDENTIFIER                      : [''],
+            TAB_DSC_DEFINES_FLASH_DEFINITION                      : [''],
+            TAB_DSC_DEFINES_BUILD_NUMBER                          : [''],
+            TAB_DSC_DEFINES_MAKEFILE_NAME                         : ['']                        
         }
 
 class DscSkuId(DscObject):

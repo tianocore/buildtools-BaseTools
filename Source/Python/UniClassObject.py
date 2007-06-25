@@ -27,24 +27,8 @@ def UniToStr(Uni):
 
 def UniToHexList(Uni):
     List = []
-    HexNullStr = '0x00'
     for Item in Uni:
-        DecNum = ord(Item)
-        if DecNum < 16:
-            HexStr = '0x0' + hex(DecNum)[2:].upper()
-            List.append(HexStr)
-            List.append(HexNullStr)
-        elif DecNum < 256:
-            HexStr = hex(DecNum).upper().replace('X' ,'x')
-            List.append(HexStr)
-            List.append(HexNullStr)
-        elif DecNum < 4096:
-            HexStr = hex(ord(Item))[2:].upper()
-            List.append('0x'.join(HexStr[1:]))
-            List.append('0x0'.join(HexStr[0:1]))
-        else:
-            HexStr = hex(DecNum).upper().replace('X' ,'x')
-            List.append(HexStr)
+        List.append('0x%02X' % ord(Item))
     return List
 
 class StringDefinitionClassObject(object):
@@ -93,6 +77,12 @@ class UniFileClassObject(object):
         LangName = Line[Line.find(u'#langdef ') + len(u'#langdef ') : Line.find(u' ', len(u'#langdef '))]
         LangPrintName = Line[Line.find(u'\"') + len(u'\"') : Line.rfind(u'\"')]
         self.LanguageDef[LangName] = UniToHexList(LangPrintName)
+        
+        #
+        # Add default string
+        #
+        self.AddStringToList(u'$LANGUAGE_NAME', LangName, LangName, 0)
+        self.AddStringToList(u'$PRINTABLE_LANGUAGE_NAME', LangPrintName, LangPrintName, 1)  
 
         return True
         
@@ -204,14 +194,7 @@ class UniFileClassObject(object):
                                 StringItem = StringItem + Lines[IndexJ]
                             elif Lines[IndexJ].find(u'\"') >= 2:
                                 StringItem = StringItem[ : StringItem.rfind(u'\"')] + Lines[IndexJ][Lines[IndexJ].find(u'\"') + len(u'\"') : ]
-                        self.GetStringObject(StringItem)
-                
-                #
-                # Add default string
-                #
-                for Language in self.LanguageDef.keys():
-                    self.AddStringToList(u'$LANGUAGE_NAME', Language, Language, 0)
-                    self.AddStringToList(u'$PRINTABLE_LANGUAGE_NAME', Language, self.LanguageDef[Language], 1)                
+                        self.GetStringObject(StringItem)              
 
     def LoadUniFiles(self, FileList = []):
         if len(FileList) > 0:
