@@ -26,11 +26,22 @@ from DscClassObject import *
 from String import *
 
 class ModuleSourceFilesClassObject(object):
-    def __init__(self, Item):
-        self.SourceFile         = Item
-        self.TagName            = ''
-        self.ToolCode           = ''
-        self.ToolChainFamily    = ''
+    def __init__(self, SourceFile = '', PcdFeatureFlag = '', TagName = '', ToolCode = '', ToolChainFamily = '', String = ''):
+        self.SourceFile         = SourceFile
+        self.TagName            = TagName
+        self.ToolCode           = ToolCode
+        self.ToolChainFamily    = ToolChainFamily
+        self.String             = String
+        self.PcdFeatureFlag     = PcdFeatureFlag
+    
+    def __str__(self):
+        rtn = self.SourceFile + DataType.TAB_VALUE_SPLIT + \
+              self.PcdFeatureFlag + DataType.TAB_VALUE_SPLIT + \
+              self.ToolChainFamily +  DataType.TAB_VALUE_SPLIT + \
+              self.TagName + DataType.TAB_VALUE_SPLIT + \
+              self.ToolCode + DataType.TAB_VALUE_SPLIT + \
+              self.String
+        return rtn
         
 class PcdClassObject(object):
     def __init__(self, Name = None, Guid = None, Type = None, DatumType = None, Value = None, Token = None, MaxDatumSize = None):
@@ -143,7 +154,7 @@ class WorkspaceBuild(object):
         self.ToolDef                 = ToolDefClassObject()
         self.SupArchList             = []        #[ 'IA32', 'X64', ...]
         self.BuildTarget             = []        #[ 'RELEASE', 'DEBUG']
-        self.InfDatabase             = {}        #{ [InfFileName] : InfClassObject}        
+        self.InfDatabase             = {}        #{ [InfFileName] : InfClassObject}
         self.DecDatabase             = {}        #{ [DecFileName] : DecClassObject}
         self.DscDatabase             = {}        #{ [DscFileName] : DscClassObject}
         
@@ -338,7 +349,19 @@ class WorkspaceBuild(object):
 
                 #Sources
                 for index in range(len(infObj.Contents[key].Sources)):
-                    pb.Sources.append(ModuleSourceFilesClassObject(NormPath(infObj.Contents[key].Sources[index])))
+                    SourceFile = infObj.Contents[key].Sources[index].split(DataType.TAB_VALUE_SPLIT)
+                    if len(SourceFile) == 6:
+                        FileName = NormPath(SourceFile[0])
+                        PcdFeatureFlag = SourceFile[1]
+                        TagName = SourceFile[3]
+                        ToolCode = SourceFile[4]
+                        ToolChainFamily = SourceFile[2]
+                        String = SourceFile[5]
+                        pb.Sources.append(ModuleSourceFilesClassObject(FileName, PcdFeatureFlag, TagName, ToolCode, ToolChainFamily, String))
+                    elif len(SourceFile) == 1:
+                        pb.Sources.append(ModuleSourceFilesClassObject(NormPath(infObj.Contents[key].Sources[index])))
+                    else:
+                        EdkLogger.error("Inconsistent '|' value defined in SourceFiles." + key + " section in file " + inf)
 
                 #Protocols
                 for index in range(len(infObj.Contents[key].Protocols)):
@@ -565,7 +588,9 @@ if __name__ == '__main__':
             print 'ConstructorList = ', p.ConstructorList            
             print 'DestructorList = ', p.DestructorList             
                                                                      
-            print 'Sources = ', p.Sources                            
+            print 'Sources = '
+            for item in p.Sources:
+                print str(item)
             print 'LibraryClasses = ', p.LibraryClasses             
             print 'Protocols = ', p.Protocols                        
             print 'Ppis = ', p.Ppis                                 

@@ -82,18 +82,12 @@ class UniFileClassObject(object):
     def __init__(self, FileList = []):
         self.FileList = FileList
         self.Token = 2
-        self.LanguageDef = {}                   #{ 'LanguageIdentifier' : [PrintableName] }
+        self.LanguageDef = {}                   #{ u'LanguageIdentifier' : [PrintableName] }
         self.StringList = {}                    #{ 'StringName' : StringDefinitionClassObject }
+        self.OrderedStringList = []               #[ StringDefinitionClassObject ] 
         
         if len(self.FileList) > 0:
             self.LoadUniFiles(FileList)
-        
-        #
-        # Add default string
-        #
-        for Language in self.LanguageDef.keys():
-            self.AddStringToList(u'$LANGUAGE_NAME', Language, '', 0)
-            self.AddStringToList(u'$PRINTABLE_LANGUAGE_NAME', Language, '', 1)
                 
     def GetLangDef(self, Line):
         LangName = Line[Line.find(u'#langdef ') + len(u'#langdef ') : Line.find(u' ', len(u'#langdef '))]
@@ -211,6 +205,13 @@ class UniFileClassObject(object):
                             elif Lines[IndexJ].find(u'\"') >= 2:
                                 StringItem = StringItem[ : StringItem.rfind(u'\"')] + Lines[IndexJ][Lines[IndexJ].find(u'\"') + len(u'\"') : ]
                         self.GetStringObject(StringItem)
+                
+                #
+                # Add default string
+                #
+                for Language in self.LanguageDef.keys():
+                    self.AddStringToList(u'$LANGUAGE_NAME', Language, Language, 0)
+                    self.AddStringToList(u'$PRINTABLE_LANGUAGE_NAME', Language, self.LanguageDef[Language], 1)                
 
     def LoadUniFiles(self, FileList = []):
         if len(FileList) > 0:
@@ -237,6 +238,10 @@ class UniFileClassObject(object):
         if Name in self.StringList.keys():
             self.StringList[Name].Referenced = True
             
+    
+    def CreateOrderedStringList(self):
+        pass
+    
     def ReToken(self):
         Token = 2
         FalseCount = 1
