@@ -98,6 +98,7 @@ class PcdClassObject(CommonClassObject):
     self.MaxDatumSize = ''
     self.DefaultValue = ''
     self.ItemType = ''                                  #FEATURE_FLAG | FIXED_AT_BUILD | PATCHABLE_IN_MODULE | DYNAMIC | DYNAMIC_EX
+    self.ValidUsage = []                                #FEATURE_FLAG | FIXED_AT_BUILD | PATCHABLE_IN_MODULE | DYNAMIC | DYNAMIC_EX
     self.SkuInfoList = {}                               #{ [SkuId] : SkuInfoClassObject } 
     self.SupModuleList = []                             #BASE | SEC | PEI_CORE | PEIM | DXE_CORE | DXE_DRIVER | DXE_RUNTIME_DRIVER | DXE_SAL_DRIVER | DXE_SMM_DRIVER | UEFI_DRIVER | UEFI_APPLICATION | USER_DEFINED
     CommonClassObject.__init__(self)

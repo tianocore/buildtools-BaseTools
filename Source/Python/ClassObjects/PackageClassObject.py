@@ -21,13 +21,13 @@ class PackageHeaderClassObject(IdentificationClassObject, CommonHeaderClassObjec
     self.RePackage = False
     self.ClonedFrom = []                               #[ ClonedRecordClassObject, ...]
     
-class PackageIndustryStdHeader(CommonClassObject):
+class PackageIndustryStdHeaderClassObject(CommonClassObject):
   def __init__(self):
     self.Name = ''
     self.IncludeHeader = ''
     CommonClassObject.__init__(self)
     
-class PackageIncludePkgHeader(object):
+class PackageIncludePkgHeaderClassObject(object):
   def __init__(self):
     self.IncludeHeader = ''
     self.ModuleType = []                               #BASE | SEC | PEI_CORE | PEIM | DXE_CORE | DXE_DRIVER | DXE_RUNTIME_DRIVER | DXE_SAL_DRIVER | DXE_SMM_DRIVER | TOOL | UEFI_DRIVER | UEFI_APPLICATION | USER_DEFINED
