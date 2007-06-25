@@ -5,7 +5,8 @@ import Ffs
 import subprocess
 import sys
 import Section
-
+import RuleSimpleFile
+import RuleComplexFile
 class FfsInfStatement(Ffs.Ffs):
     def __init__(self):
         Ffs.Ffs.__init__(self)
@@ -133,12 +134,12 @@ class FfsInfStatement(Ffs.Ffs):
         #
         # For Rule has ComplexFile
         #
-        elif isinstance(Rule, RuleComplexFile.RuleCompilexFile):
+        elif isinstance(Rule, RuleComplexFile.RuleComplexFile):
             SectFiles = ''
-            for Sect in Rule.ComplexFile.SectionList:
+            for Sect in Rule.SectionList:
                 SectFiles = SectFiles    + \
                             ' -i '       + \
-                            Sect.GenSection(self.OutputPath , self.ModuleGuid)
+                            Sect.GenSection(self.OutputPath , self.ModuleGuid, self)
                 
             FfsOutput = self.OutputPath + \
                         self.ModuleGuid + \
@@ -166,7 +167,8 @@ class FfsInfStatement(Ffs.Ffs):
             '$(INF_VERSION)' : self.VersionString,
             '$(NAME_GUID)'   : self.ModuleGuid
         }
-        
+        if String == None :
+            return None
         for Marco in MarcoDict.keys():
             if String.find(Marco) >= 0 :
                 String = String.replace (Marco, MarcoDict[Marco])
@@ -174,13 +176,14 @@ class FfsInfStatement(Ffs.Ffs):
 
     def __GetRule__ (self) :
         currentArch = 'IA32'
-        
+        #for item in GenFdsGlobalVariable.FdfParser.profile.RuleDict :
+        #    print item
         RuleName = 'RULE'      + \
                    '.'         + \
                    currentArch + \
                    '.'         + \
                    self.ModuleType.upper()
-        print "Want To Find Rule Name is : " + RuleName
+        
 
         Rule = GenFdsGlobalVariable.FdfParser.profile.RuleDict.get(RuleName)
         if Rule == None :
@@ -189,9 +192,10 @@ class FfsInfStatement(Ffs.Ffs):
                        'COMMON'    + \
                        '.'         + \
                        self.ModuleType.upper()
+                       
             Rule = GenFdsGlobalVariable.FdfParser.profile.RuleDict.get(RuleName)
             if Rule == None :
                 print 'Dont Find Related Rule, Using Default Rule !!!'
                 return GenFdsGlobalVariable.DefaultRule
-            
+        print "Want To Find Rule Name is : " + RuleName
         return Rule

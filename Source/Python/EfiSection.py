@@ -14,10 +14,18 @@ class EfiSection (Section.Section):
         self.BuildNum = None
         self.VersionNum = None
 
-    def GenSection(self, OutputPath, ModuleName):
+    def GenSection(self, OutputPath, ModuleName, FfsInf = None):
         #
         # Prepare the parameter of GenSection
         #
+        if FfsInf != None :
+            self.SectionType = FfsInf.__ExtendMarco__(self.SectionType)
+            self.Filename = FfsInf.__ExtendMarco__(self.Filename)
+            self.BuildNum = FfsInf.__ExtendMarco__(self.BuildNum)
+            self.VersionNum = FfsInf.__ExtendMarco__(self.VersionNum)
+            
+        print '### EfiSection  Line 21##'
+        print self.SectionType
         OutputFile = OutputPath + \
                      ModuleName + \
                      Ffs.SectionSuffix.get(self.SectionType)
@@ -66,9 +74,9 @@ class EfiSection (Section.Section):
              GenSectionCmd = 'GenSection -o '                                 + \
                               OutputFile                                      + \
                               ' -s '                                          + \
-                              Section.Section.SectionType.get (self.SecType)  + \
+                              Section.Section.SectionType.get (self.SectionType)  + \
                               ' '                                             + \
-                              GenFdsGlobalVariable.ExtendMarco(self.SectFileName)
+                              GenFdsGlobalVariable.ExtendMarco(self.Filename)
         #
         # Call GenSection
         #

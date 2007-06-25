@@ -5,7 +5,7 @@ class GenFds :
     
     def GenFd (FvDir, BinDir, LibDir, FdfParser, WorkSpace):
         GenFdsGlobalVariable.SetDir (FvDir, BinDir, LibDir, FdfParser, WorkSpace)
-        GenFdsGlobalVariable.SetDefaultRule()
+        #GenFdsGlobalVariable.SetDefaultRule(None)
         
         for item in GenFdsGlobalVariable.FdfParser.profile.FdDict.keys():
             fd = GenFdsGlobalVariable.FdfParser.profile.FdDict[item]

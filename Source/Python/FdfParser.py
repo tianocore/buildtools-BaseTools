@@ -222,7 +222,7 @@ class FdfParser:
         if ignoreCase:
             index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].upper().find(string.upper()) 
         else:
-        index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].find(string)
+            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].find(string)
         if index == 0:
             self.CurrentOffsetWithinLine += len(string)
             return True
@@ -238,7 +238,7 @@ class FdfParser:
         if ignoreCase:
             index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].upper().find(keyword.upper()) 
         else:
-        index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].find(keyword)
+            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].find(keyword)
         if index == 0:
             followingChar = self.__CurrentLine()[self.CurrentOffsetWithinLine + len(keyword)]
             if not str(followingChar).isspace() and followingChar not in ('=', '|'):
@@ -1312,7 +1312,7 @@ class FdfParser:
 
         if self.__IsToken("{"):
             # Complex file rule expected
-            rule = RuleComplexFile.RuleCompilexFile()
+            rule = RuleComplexFile.RuleComplexFile()
             rule.FvType = type
             rule.Alignment = alignment
             rule.CheckSum = checksum
@@ -1360,7 +1360,7 @@ class FdfParser:
                                     return False
 
         section = EfiSection.EfiSection()
-        section.SectionName = sectionName
+        section.SectionType = sectionName
         
         if self.__IsKeyword("Optional"):
             section.Optional = True

@@ -20,7 +20,7 @@ class region:
 ##
     def AddToBuffer(self, Buffer, BlockSize):
         if self.RegionType == 'FV':
-            fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(self.RegionData)
+            fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(self.RegionData.upper())
             fv.AddToBuffer(Buffer, self.Offset)
         if self.RegionType == 'FILE':
             BinFile = open (self.RegionData, 'r')

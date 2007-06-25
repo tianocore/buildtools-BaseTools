@@ -7,16 +7,22 @@ class GuidSection(Section.Section) :
         self.Alignment = None
         self.NameGuid = None
         self.SectionList = []
+        self.SectionType = None
         
-    def GenSection(self, OutputPath, ModuleName):
+    def GenSection(self, OutputPath, ModuleName, FfsInf = None):
         #
         # Generate all section
         #
+        if FfsInf != None:
+            self.Alignment = FfsInf.__ExtendMarco__(self.Alignment)
+            self.NameGuid = FfsInf.__ExtendMarco__(self.NameGuid)
+            self.SectionType = FfsInf.__ExtendMarco__(self.SectionType)
+            
         SectFile = ''
         for Sect in self.SectionList:
             SectFile = SectFile + \
                        '  '     + \
-                       Sect.GenSection(OutputPath, ModuleName)
+                       Sect.GenSection(OutputPath, ModuleName, FfsInf)
 
         OutputFile = OutputPath + \
                      ModuleName + \

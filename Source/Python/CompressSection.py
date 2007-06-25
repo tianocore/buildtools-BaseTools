@@ -14,10 +14,14 @@ class CompressSection (Section.Section) :
         self.SectionList = []
         
 
-    def GenSection(self, OutputPath, ModuleName):
+    def GenSection(self, OutputPath, ModuleName, FfsInf = None):
         #
         # Generate all section
         #
+        if FfsInf != None:
+            self.CompType = FfsInf.__ExtendMarco__(self.CompType)
+            self.Alignment = FfsInf.__ExtendMarco__(self.Alignment)
+            
         SectFiles = ''
         for Sect in self.SectionList:
             SectFiles = SectFiles + \

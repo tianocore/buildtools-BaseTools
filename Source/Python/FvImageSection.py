@@ -8,7 +8,7 @@ class FvImageSection(Section.Section):
         self.Aligenment = None
         self.Fv = None
         
-    def GenSection(self, OutputPath, ModuleName):
+    def GenSection(self, OutputPath, ModuleName, FfsInf = None):
         Buffer = StringIO.StringIO('')
         #
         # Generate Fv

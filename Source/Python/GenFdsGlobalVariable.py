@@ -1,4 +1,5 @@
 import os
+
 class GenFdsGlobalVariable:
     FvDir = ''
     OuputDir = ''
@@ -26,8 +27,8 @@ class GenFdsGlobalVariable:
         GenFdsGlobalVariable.WorkSpace.Workspace.WorkspaceDir + \
         os.sep
         
-    def SetDefaultRule () :
-        GenFdsGlobalVariable.DefaultRule = None
+    def SetDefaultRule (Rule) :
+        GenFdsGlobalVariable.DefaultRule = Rule
 
     SetDir = staticmethod(SetDir)
         

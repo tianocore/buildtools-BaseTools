@@ -9,10 +9,16 @@ class VerSection (Section.Section):
         self.StringData = None
         self.FileName = None
         
-    def GenSection(self,OutputPath, ModuleName):
+    def GenSection(self,OutputPath, ModuleName, FfsInf = None):
         #
         # Prepare the parameter of GenSection
         #
+        if FfsInf != None:
+            self.Alignment = FfsInf.__ExtendMarco__(self.Alignment)
+            self.BuildNum = FfsInf.__ExtendMarco__(self.BuildNum)
+            self.StringData = FfsInf.__ExtendMarco__(self.StringData)
+            self.FileName = FfsInf.__ExtendMarco__(self.FileName)
+            
         OutputFile = OutputPath + \
                      ModuleName + \
                      Ffs.SectionSuffix.get('VERSION')

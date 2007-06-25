@@ -35,7 +35,8 @@ class Ffs:
         'FREEFORM_SUBTYPE_GUID': '.guid',
         'FV_IMAGE'             : 'fv.sec',
         'COMPRESS'             : '.com',
-        'GUIDED'               : '.guided'
+        'GUIDED'               : '.guided',
+        'PEI_DEPEX'            : '.dpx'
     }
     
     def __init__(self):
