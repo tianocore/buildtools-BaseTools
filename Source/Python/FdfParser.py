@@ -215,8 +215,8 @@ class FdfParser:
     """check whether input string is found from current char position along"""
     def __IsToken(self, string, ignoreCase = False):
         self.__SkipWhiteSpace()
-        if self.__EndOfFile():
-            return False
+##        if self.__EndOfFile():
+##            return False
         # Only consider the same line, no multi-line token allowed
         index = -1
         if ignoreCase:
@@ -231,8 +231,8 @@ class FdfParser:
     """check whether input keyword is found from current char position along, whole word only!"""
     def __IsKeyword(self, keyword, ignoreCase = False):
         self.__SkipWhiteSpace()
-        if self.__EndOfFile():
-            return False
+##        if self.__EndOfFile():
+##            return False
         # Only consider the same line, no multi-line token allowed
         index = -1
         if ignoreCase:
