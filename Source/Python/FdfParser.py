@@ -1269,10 +1269,10 @@ class FdfParser:
         
         if not self.__GetNextWord():
             raise Warning("expected Module type At Line %d" % self.CurrentLineNumber)
-        if self.__Token not in ("SEC", "PEI_CORE", "PEIM", "DXE_CORE", \
+        if self.__Token.upper() not in ("SEC", "PEI_CORE", "PEIM", "DXE_CORE", \
                              "DXE_DRIVER", "DXE_SAL_DRIVER" \
                              "DXE_SMM_DRIVER", "DXE_RUNTIME_DRIVER" \
-                             "UEFI_DRIVER", "UEFI_APPLICATION", "USER"):
+                             "UEFI_DRIVER", "UEFI_APPLICATION", "USER", "DEFAULT"):
             raise Warning("Unknown Module type At line %d" % self.CurrentLineNumber)
         return self.__Token
         
@@ -1418,24 +1418,24 @@ class FdfParser:
             return True
 
         elif self.__IsKeyword( "GUIDED"):
-            if self.GetNextGuid():
+            guid = None
+            if self.__GetNextGuid():
                 guid = self.__Token
-                if not self.__IsToken("{"):
-                    raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
-                section = GuidSection.GuidSection()
-                
-                # Efi sections...
-                while self.__GetEfiSection(section):
-                    pass
-                while self.__GetEfiSection(section, True):
-                    pass
-                
-                if not self.__IsToken( "}"):
-                    raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
-                rule.SectionList.append(section)
 
-            else:
-               raise Warning("expected GUID At Line %d" % self.CurrentLineNumber)
+            if not self.__IsToken("{"):
+                raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
+            section = GuidSection.GuidSection()
+            section.NameGuid = guid
+            
+            # Efi sections...
+            while self.__GetEfiSection(section):
+                pass
+            while self.__GetEfiSection(section, True):
+                pass
+            
+            if not self.__IsToken( "}"):
+                raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
+            rule.SectionList.append(section)
 
             return True
 
