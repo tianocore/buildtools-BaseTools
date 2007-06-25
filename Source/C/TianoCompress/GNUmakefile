@@ -1,0 +1,10 @@
+ARCH ?= IA32
+MAKEROOT ?= ..
+
+APPNAME = TianoCompress
+
+LIBS = -lCommon -lString
+
+OBJECTS = TianoCompress.o
+
+include $(MAKEROOT)/app.makefile
