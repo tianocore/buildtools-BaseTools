@@ -881,8 +881,19 @@ class FdfParser:
 
         if self.__GetNextWord():
             p = re.compile(r'(([a-fA-F0-9]+)|\*)_(([a-fA-F0-9]+)|\*)_(([a-fA-F0-9]+)|\*)')
-            while p.match(self.__Token):
+            if p.match(self.__Token):
                 ffsInf.KeyStringList.append(self.__Token)
+                if not self.__IsToken(","):
+                    return
+            else:
+                self.__UndoToken()
+                return
+                
+            while self.__GetNextWord:
+                if not p.match(self.__Token):
+                    raise Warning("expected KeyString \"Target_Tag_Arch\" At Line %d" % self.CurrentLineNumber)
+                ffsInf.KeyStringList.append(self.__Token)
+
                 if not self.__IsToken(","):
                     break
                 
