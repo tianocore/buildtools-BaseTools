@@ -28,8 +28,8 @@ install: $(LIB_PATH) $(BIN_PATH)
 	@echo ######################
 	@echo # Install to $(SYS_LIB_PATH)
 	@echo ######################
-	@xcopy $(LIB_PATH) $(SYS_LIB_PATH) /I /D /E /F /Y
-	@xcopy $(BIN_PATH) $(SYS_BIN_PATH) /I /D /E /F /Y
+	@xcopy $(LIB_PATH)\*.lib $(SYS_LIB_PATH) /I /D /E /F /Y
+	@xcopy $(BIN_PATH)\*.exe $(SYS_BIN_PATH) /I /D /E /F /Y
 
 .PHONY: clean
 clean:

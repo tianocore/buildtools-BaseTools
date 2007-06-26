@@ -257,7 +257,7 @@ Returns:
     }
     
     //
-    // make sure section data meet its alignment requirement.
+    // make sure section data meet its alignment requirement by adding one raw pad section.
     // But the different sections have the different section header. Necessary or not?
     // Based on section type to adjust offset? Todo
     //
@@ -354,7 +354,7 @@ Returns:
   Index          = 0;
   FfsAttrib      = 0;  
   FfsAlign       = 0;
-  FfsFiletype    = 0;
+  FfsFiletype    = EFI_FV_FILETYPE_ALL;
   OutputFileName = NULL;
   InputFileNum   = 0;
   InputFileName  = NULL;
@@ -391,10 +391,6 @@ Returns:
   while (argc > 0) {
     if ((stricmp (argv[0], "-t") == 0) || (stricmp (argv[0], "--filetype") == 0)) {
       FfsFiletype = StringToType (argv[1]);
-      if (FfsFiletype == EFI_FV_FILETYPE_ALL) {
-        Error (NULL, 0, 0, NULL, "ERROR: %s is one invalid fv file type", argv[1]);
-        goto Finish;      
-      }
       argc -= 2;
       argv += 2;
       continue; 
@@ -529,6 +525,14 @@ Returns:
     
     Error (NULL, 0, 0, NULL, "%s is invaild paramter!", argv[0]);
     goto Finish;
+  }
+  
+  //
+  // Check the complete input paramters.
+  //
+  if (FfsFiletype == EFI_FV_FILETYPE_ALL) {
+    Error (NULL, 0, 0, NULL, "ERROR: File Type is not specified or File Type is not one valid type");
+    goto Finish;      
   }
 
   if (CompareGuid (&FileGuid, &mZeroGuid) == 0) {

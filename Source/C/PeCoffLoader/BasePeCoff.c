@@ -21,17 +21,22 @@ Revision History
 
 --*/
 
-
 #include <Common/UefiBaseTypes.h>
 #include <Common/EfiImage.h>
 #include <Library/PeCoffLib.h>
+
+typedef union {
+  VOID                         *Header; 
+  EFI_IMAGE_OPTIONAL_HEADER32  *Optional32;
+  EFI_IMAGE_OPTIONAL_HEADER64  *Optional64;
+} EFI_IMAGE_OPTIONAL_HEADER_POINTER;
 
 STATIC
 RETURN_STATUS
 PeCoffLoaderGetPeHeader (
   IN OUT PE_COFF_LOADER_IMAGE_CONTEXT  *ImageContext,
-  OUT    EFI_IMAGE_NT_HEADERS          *PeHdr,
-  OUT    EFI_TE_IMAGE_HEADER           *TeHdr
+  OUT    EFI_IMAGE_NT_HEADERS          **PeHdr,
+  OUT    EFI_TE_IMAGE_HEADER           **TeHdr
   );
 
 STATIC
@@ -43,7 +48,7 @@ PeCoffLoaderCheckImageType (
   );
 
 STATIC
-VOID                            *
+void *
 PeCoffLoaderImageAddress (
   IN OUT PE_COFF_LOADER_IMAGE_CONTEXT  *ImageContext,
   IN     UINTN                         Address
@@ -77,8 +82,8 @@ STATIC
 RETURN_STATUS
 PeCoffLoaderGetPeHeader (
   IN OUT PE_COFF_LOADER_IMAGE_CONTEXT  *ImageContext,
-  OUT    EFI_IMAGE_NT_HEADERS          *PeHdr,
-  OUT    EFI_TE_IMAGE_HEADER           *TeHdr
+  OUT    EFI_IMAGE_NT_HEADERS          **PeHdr,
+  OUT    EFI_TE_IMAGE_HEADER           **TeHdr
   )
 /*++
 
@@ -101,7 +106,7 @@ Returns:
 
 --*/
 {
-  RETURN_STATUS            Status;
+  RETURN_STATUS         Status;
   EFI_IMAGE_DOS_HEADER  DosHdr;
   UINTN                 Size;
 
@@ -129,34 +134,17 @@ Returns:
     ImageContext->PeCoffHeaderOffset = DosHdr.e_lfanew;
   }
   //
-  // Read the PE/COFF Header
+  // Get the PE/COFF Header pointer
   //
-  Size = sizeof (EFI_IMAGE_NT_HEADERS);
-  Status = ImageContext->ImageRead (
-                          ImageContext->Handle,
-                          ImageContext->PeCoffHeaderOffset,
-                          &Size,
-                          PeHdr
-                          );
-  if (RETURN_ERROR (Status)) {
-    ImageContext->ImageError = IMAGE_ERROR_IMAGE_READ;
-    return Status;
-  }
-  //
-  // Check the PE/COFF Header Signature. If not, then try to read a TE header
-  //
-  if (PeHdr->Signature != EFI_IMAGE_NT_SIGNATURE) {
-    Size = sizeof (EFI_TE_IMAGE_HEADER);
-    Status = ImageContext->ImageRead (
-                            ImageContext->Handle,
-                            0,
-                            &Size,
-                            TeHdr
-                            );
-    if (TeHdr->Signature != EFI_TE_IMAGE_HEADER_SIGNATURE) {
+  *PeHdr = (EFI_IMAGE_NT_HEADERS *) ((UINTN)ImageContext->Handle + ImageContext->PeCoffHeaderOffset);
+  if ((*PeHdr)->Signature != EFI_IMAGE_NT_SIGNATURE) {
+    //
+    // Check the PE/COFF Header Signature. If not, then try to get a TE header
+    //
+    *TeHdr = (EFI_TE_IMAGE_HEADER *)*PeHdr; 
+    if ((*TeHdr)->Signature != EFI_TE_IMAGE_HEADER_SIGNATURE) {
       return RETURN_UNSUPPORTED;
     }
-
     ImageContext->IsTeImage = TRUE;
   }
 
@@ -192,25 +180,27 @@ Returns:
 --*/
 {
   //
-  // See if the machine type is supported.  We support a native machine type (IA-32/Itanium-based)
-  // and the machine type for the Virtual Machine.
+  // See if the machine type is supported. 
+  // We support a native machine type (IA-32/Itanium-based)
   //
   if (ImageContext->IsTeImage == FALSE) {
     ImageContext->Machine = PeHdr->FileHeader.Machine;
   } else {
     ImageContext->Machine = TeHdr->Machine;
   }
-
-  /*
-  if (!(EFI_IMAGE_MACHINE_TYPE_SUPPORTED (ImageContext->Machine))) {
-    ImageContext->ImageError = IMAGE_ERROR_INVALID_MACHINE_TYPE;
+  
+  if (ImageContext->Machine != EFI_IMAGE_MACHINE_IA32 && \
+      ImageContext->Machine != EFI_IMAGE_MACHINE_IA64 && \
+      ImageContext->Machine != EFI_IMAGE_MACHINE_X64) {
+    //
+    // upsupported PeImage machine type 
+    // 
     return RETURN_UNSUPPORTED;
   }
-  */
 
   //
   // See if the image type is supported.  We support EFI Applications,
-  // EFI Boot Service Drivers, and EFI Runtime Drivers.
+  // EFI Boot Service Drivers, EFI Runtime Drivers and EFI SAL Drivers.
   //
   if (ImageContext->IsTeImage == FALSE) {
     ImageContext->ImageType = PeHdr->OptionalHeader.Subsystem;
@@ -218,6 +208,15 @@ Returns:
     ImageContext->ImageType = (UINT16) (TeHdr->Subsystem);
   }
 
+  if (ImageContext->ImageType != EFI_IMAGE_SUBSYSTEM_EFI_APPLICATION && \
+      ImageContext->ImageType != EFI_IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER && \
+      ImageContext->ImageType != EFI_IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER && \
+      ImageContext->ImageType != EFI_IMAGE_SUBSYSTEM_SAL_RUNTIME_DRIVER) {
+    //
+    // upsupported PeImage subsystem type 
+    // 
+    return RETURN_UNSUPPORTED;
+  }
 
   return RETURN_SUCCESS;
 }
@@ -249,8 +248,8 @@ Returns:
 --*/
 {
   RETURN_STATUS                   Status;
-  EFI_IMAGE_NT_HEADERS            PeHdr;
-  EFI_TE_IMAGE_HEADER             TeHdr;
+  EFI_IMAGE_NT_HEADERS            *PeHdr;
+  EFI_TE_IMAGE_HEADER             *TeHdr;
   EFI_IMAGE_DATA_DIRECTORY        *DebugDirectoryEntry;
   UINTN                           Size;
   UINTN                           Index;
@@ -259,6 +258,11 @@ Returns:
   UINTN                           SectionHeaderOffset;
   EFI_IMAGE_SECTION_HEADER        SectionHeader;
   EFI_IMAGE_DEBUG_DIRECTORY_ENTRY DebugEntry;
+  EFI_IMAGE_OPTIONAL_HEADER_POINTER OptionHeader;
+
+  PeHdr = NULL;
+  TeHdr = NULL;
+  DebugDirectoryEntryRva = 0;
 
   if (NULL == ImageContext) {
     return RETURN_INVALID_PARAMETER;
@@ -272,20 +276,27 @@ Returns:
   if (RETURN_ERROR (Status)) {
     return Status;
   }
+
   //
   // Verify machine type
   //
-  Status = PeCoffLoaderCheckImageType (ImageContext, &PeHdr, &TeHdr);
+  Status = PeCoffLoaderCheckImageType (ImageContext, PeHdr, TeHdr);
   if (RETURN_ERROR (Status)) {
     return Status;
   }
+  OptionHeader.Header = (VOID *) &(PeHdr->OptionalHeader);
+
   //
   // Retrieve the base address of the image
   //
   if (!(ImageContext->IsTeImage)) {
-    ImageContext->ImageAddress = PeHdr.OptionalHeader.ImageBase;
+    if (ImageContext->Machine == EFI_IMAGE_MACHINE_IA32) {
+      ImageContext->ImageAddress = (PHYSICAL_ADDRESS) OptionHeader.Optional32->ImageBase;
+    } else {
+      ImageContext->ImageAddress = (PHYSICAL_ADDRESS) OptionHeader.Optional64->ImageBase;
+    }
   } else {
-    ImageContext->ImageAddress = (PHYSICAL_ADDRESS) (TeHdr.ImageBase + TeHdr.StrippedSize - sizeof (EFI_TE_IMAGE_HEADER));
+    ImageContext->ImageAddress = (PHYSICAL_ADDRESS) (TeHdr->ImageBase + TeHdr->StrippedSize - sizeof (EFI_TE_IMAGE_HEADER));
   }
   //
   // Initialize the alternate destination address to 0 indicating that it
@@ -310,26 +321,43 @@ Returns:
   // Look at the file header to determine if relocations have been stripped, and
   // save this info in the image context for later use.
   //
-  if ((!(ImageContext->IsTeImage)) && ((PeHdr.FileHeader.Characteristics & EFI_IMAGE_FILE_RELOCS_STRIPPED) != 0)) {
+  if ((!(ImageContext->IsTeImage)) && ((PeHdr->FileHeader.Characteristics & EFI_IMAGE_FILE_RELOCS_STRIPPED) != 0)) {
     ImageContext->RelocationsStripped = TRUE;
   } else {
     ImageContext->RelocationsStripped = FALSE;
   }
 
   if (!(ImageContext->IsTeImage)) {
-    ImageContext->ImageSize         = (UINT64) PeHdr.OptionalHeader.SizeOfImage;
-    ImageContext->SectionAlignment  = PeHdr.OptionalHeader.SectionAlignment;
-    ImageContext->SizeOfHeaders     = PeHdr.OptionalHeader.SizeOfHeaders;
 
-    //
-    // Modify ImageSize to contain .PDB file name if required and initialize
-    // PdbRVA field...
-    //
-    if (PeHdr.OptionalHeader.NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_DEBUG) {
-      DebugDirectoryEntry = (EFI_IMAGE_DATA_DIRECTORY *) &(PeHdr.OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG]);
-
-      DebugDirectoryEntryRva = DebugDirectoryEntry->VirtualAddress;
-
+    if (ImageContext->Machine == EFI_IMAGE_MACHINE_IA32) {
+      ImageContext->ImageSize         = (UINT64) OptionHeader.Optional32->SizeOfImage;
+      ImageContext->SectionAlignment  = OptionHeader.Optional32->SectionAlignment;
+      ImageContext->SizeOfHeaders     = OptionHeader.Optional32->SizeOfHeaders;
+  
+      //
+      // Modify ImageSize to contain .PDB file name if required and initialize
+      // PdbRVA field...
+      //
+      if (OptionHeader.Optional32->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_DEBUG) {
+        DebugDirectoryEntry = (EFI_IMAGE_DATA_DIRECTORY *) &(OptionHeader.Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG]);
+        DebugDirectoryEntryRva = DebugDirectoryEntry->VirtualAddress;
+      }
+    } else {
+      ImageContext->ImageSize         = (UINT64) OptionHeader.Optional64->SizeOfImage;
+      ImageContext->SectionAlignment  = OptionHeader.Optional64->SectionAlignment;
+      ImageContext->SizeOfHeaders     = OptionHeader.Optional64->SizeOfHeaders;
+  
+      //
+      // Modify ImageSize to contain .PDB file name if required and initialize
+      // PdbRVA field...
+      //
+      if (OptionHeader.Optional64->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_DEBUG) {
+        DebugDirectoryEntry = (EFI_IMAGE_DATA_DIRECTORY *) &(OptionHeader.Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG]);
+        DebugDirectoryEntryRva = DebugDirectoryEntry->VirtualAddress;
+      }
+    }
+    
+    if (DebugDirectoryEntryRva != 0) {
       //
       // Determine the file offset of the debug directory...  This means we walk
       // the sections to find which section contains the RVA of the debug
@@ -341,10 +369,10 @@ Returns:
                                ImageContext->PeCoffHeaderOffset +
                                sizeof (UINT32) + 
                                sizeof (EFI_IMAGE_FILE_HEADER) + 
-                               PeHdr.FileHeader.SizeOfOptionalHeader
+                               PeHdr->FileHeader.SizeOfOptionalHeader
                                );
 
-      for (Index = 0; Index < PeHdr.FileHeader.NumberOfSections; Index++) {
+      for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index++) {
         //
         // Read section header from file
         //
@@ -401,15 +429,15 @@ Returns:
   } else {
     ImageContext->ImageSize         = 0;
     ImageContext->SectionAlignment  = 4096;
-    ImageContext->SizeOfHeaders     = sizeof (EFI_TE_IMAGE_HEADER) + (UINTN) TeHdr.BaseOfCode - (UINTN) TeHdr.StrippedSize;
+    ImageContext->SizeOfHeaders     = sizeof (EFI_TE_IMAGE_HEADER) + (UINTN) TeHdr->BaseOfCode - (UINTN) TeHdr->StrippedSize;
 
-    DebugDirectoryEntry             = &TeHdr.DataDirectory[1];
+    DebugDirectoryEntry             = &TeHdr->DataDirectory[1];
     DebugDirectoryEntryRva          = DebugDirectoryEntry->VirtualAddress;
     SectionHeaderOffset             = (UINTN) (sizeof (EFI_TE_IMAGE_HEADER));
 
     DebugDirectoryEntryFileOffset   = 0;
 
-    for (Index = 0; Index < TeHdr.NumberOfSections;) {
+    for (Index = 0; Index < TeHdr->NumberOfSections;) {
       //
       // Read section header from file
       //
@@ -431,15 +459,15 @@ Returns:
           SectionHeader.VirtualAddress +
           SectionHeader.PointerToRawData +
           sizeof (EFI_TE_IMAGE_HEADER) -
-          TeHdr.StrippedSize;
+          TeHdr->StrippedSize;
 
         //
         // File offset of the debug directory was found, if this is not the last
         // section, then skip to the last section for calculating the image size.
         //
-        if (Index < (UINTN) TeHdr.NumberOfSections - 1) {
-          SectionHeaderOffset += (TeHdr.NumberOfSections - 1 - Index) * sizeof (EFI_IMAGE_SECTION_HEADER);
-          Index = TeHdr.NumberOfSections - 1;
+        if (Index < (UINTN) TeHdr->NumberOfSections - 1) {
+          SectionHeaderOffset += (TeHdr->NumberOfSections - 1 - Index) * sizeof (EFI_IMAGE_SECTION_HEADER);
+          Index = TeHdr->NumberOfSections - 1;
           continue;
         }
       }
@@ -454,7 +482,7 @@ Returns:
       // by the RVA and the VirtualSize of the last section header in the
       // Section Table.
       //
-      if ((++Index) == (UINTN) TeHdr.NumberOfSections) {
+      if ((++Index) == (UINTN) TeHdr->NumberOfSections) {
         ImageContext->ImageSize = (SectionHeader.VirtualAddress + SectionHeader.Misc.VirtualSize +
                                    ImageContext->SectionAlignment - 1) & ~(ImageContext->SectionAlignment - 1);
       }
@@ -519,7 +547,7 @@ Returns:
     return NULL;
   }
 
-  return (CHAR8 *) ((UINTN) ImageContext->ImageAddress + Address);
+  return (UINT8 *) ((UINTN) ImageContext->ImageAddress + Address);
 }
 
 RETURN_STATUS
@@ -563,6 +591,7 @@ Returns:
   CHAR8                     *FixupData;
   PHYSICAL_ADDRESS          BaseAddress;
   UINT16                    MachineType;
+  EFI_IMAGE_OPTIONAL_HEADER_POINTER     OptionHeader;
 
   PeHdr = NULL;
   TeHdr = NULL;
@@ -591,28 +620,55 @@ Returns:
   if (!(ImageContext->IsTeImage)) {
     PeHdr = (EFI_IMAGE_NT_HEADERS *)((UINTN)ImageContext->ImageAddress + 
                                             ImageContext->PeCoffHeaderOffset);
-    Adjust = (UINT64) BaseAddress - PeHdr->OptionalHeader.ImageBase;
-    PeHdr->OptionalHeader.ImageBase = (UINTN) BaseAddress;
-    MachineType = PeHdr->FileHeader.Machine;
-    //
-    // Find the relocation block
-    //
-    // Per the PE/COFF spec, you can't assume that a given data directory
-    // is present in the image. You have to check the NumberOfRvaAndSizes in
-    // the optional header to verify a desired directory entry is there.
-    //
-    if (PeHdr->OptionalHeader.NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
-      RelocDir  = &PeHdr->OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC];
-      RelocBase = PeCoffLoaderImageAddress (ImageContext, RelocDir->VirtualAddress);
-      RelocBaseEnd = PeCoffLoaderImageAddress (
-                      ImageContext,
-                      RelocDir->VirtualAddress + RelocDir->Size - 1
-                      );
+    OptionHeader.Header = (VOID *) &(PeHdr->OptionalHeader);
+    if (ImageContext->Machine == EFI_IMAGE_MACHINE_IA32) {
+      Adjust = (UINT64) BaseAddress - OptionHeader.Optional32->ImageBase;
+      OptionHeader.Optional32->ImageBase = (UINT32) BaseAddress;
+      MachineType = ImageContext->Machine;
+      //
+      // Find the relocation block
+      //
+      // Per the PE/COFF spec, you can't assume that a given data directory
+      // is present in the image. You have to check the NumberOfRvaAndSizes in
+      // the optional header to verify a desired directory entry is there.
+      //
+      if (OptionHeader.Optional32->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
+        RelocDir  = &OptionHeader.Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC];
+        RelocBase = PeCoffLoaderImageAddress (ImageContext, RelocDir->VirtualAddress);
+        RelocBaseEnd = PeCoffLoaderImageAddress (
+                        ImageContext,
+                        RelocDir->VirtualAddress + RelocDir->Size - 1
+                        );
+      } else {
+        //
+        // Set base and end to bypass processing below.
+        //
+        RelocBase = RelocBaseEnd = 0;
+      }
     } else {
+      Adjust = (UINT64) BaseAddress - OptionHeader.Optional64->ImageBase;
+      OptionHeader.Optional64->ImageBase = BaseAddress;
+      MachineType = ImageContext->Machine;
       //
-      // Set base and end to bypass processing below.
+      // Find the relocation block
       //
-      RelocBase = RelocBaseEnd = 0;
+      // Per the PE/COFF spec, you can't assume that a given data directory
+      // is present in the image. You have to check the NumberOfRvaAndSizes in
+      // the optional header to verify a desired directory entry is there.
+      //
+      if (OptionHeader.Optional64->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
+        RelocDir  = &OptionHeader.Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC];
+        RelocBase = PeCoffLoaderImageAddress (ImageContext, RelocDir->VirtualAddress);
+        RelocBaseEnd = PeCoffLoaderImageAddress (
+                        ImageContext,
+                        RelocDir->VirtualAddress + RelocDir->Size - 1
+                        );
+      } else {
+        //
+        // Set base and end to bypass processing below.
+        //
+        RelocBase = RelocBaseEnd = 0;
+      }
     }
   } else {
     TeHdr             = (EFI_TE_IMAGE_HEADER *) (UINTN) (ImageContext->ImageAddress);
@@ -767,10 +823,10 @@ Returns:
 
 --*/
 {
-  RETURN_STATUS                            Status;
+  RETURN_STATUS                         Status;
   EFI_IMAGE_NT_HEADERS                  *PeHdr;
   EFI_TE_IMAGE_HEADER                   *TeHdr;
-  PE_COFF_LOADER_IMAGE_CONTEXT  CheckContext;
+  PE_COFF_LOADER_IMAGE_CONTEXT          CheckContext;
   EFI_IMAGE_SECTION_HEADER              *FirstSection;
   EFI_IMAGE_SECTION_HEADER              *Section;
   UINTN                                 NumberOfSections;
@@ -782,6 +838,7 @@ Returns:
   EFI_IMAGE_DEBUG_DIRECTORY_ENTRY       *DebugEntry;
   UINTN                                 Size;
   UINT32                                TempDebugEntryRva;
+  EFI_IMAGE_OPTIONAL_HEADER_POINTER     OptionHeader;
 
   PeHdr = NULL;
   TeHdr = NULL;
@@ -855,6 +912,8 @@ Returns:
     PeHdr = (EFI_IMAGE_NT_HEADERS *)
       ((UINTN)ImageContext->ImageAddress + ImageContext->PeCoffHeaderOffset);
 
+    OptionHeader.Header = (VOID *) &(PeHdr->OptionalHeader);
+    
     FirstSection = (EFI_IMAGE_SECTION_HEADER *) (
                       (UINTN)ImageContext->ImageAddress +
                       ImageContext->PeCoffHeaderOffset +
@@ -986,12 +1045,22 @@ Returns:
   // the optional header to verify a desired directory entry is there.
   //
   if (!(ImageContext->IsTeImage)) {
-    if (PeHdr->OptionalHeader.NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
-      DirectoryEntry = (EFI_IMAGE_DATA_DIRECTORY *)
-        &PeHdr->OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC];
-      ImageContext->FixupDataSize = DirectoryEntry->Size / sizeof (UINT16) * sizeof (UINTN);
+    if (ImageContext->Machine == EFI_IMAGE_MACHINE_IA32) {
+      if (OptionHeader.Optional32->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
+        DirectoryEntry = (EFI_IMAGE_DATA_DIRECTORY *)
+          &OptionHeader.Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC];
+        ImageContext->FixupDataSize = DirectoryEntry->Size / sizeof (UINT16) * sizeof (UINTN);
+      } else {
+        ImageContext->FixupDataSize = 0;
+      }
     } else {
-      ImageContext->FixupDataSize = 0;
+      if (OptionHeader.Optional64->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
+        DirectoryEntry = (EFI_IMAGE_DATA_DIRECTORY *)
+          &OptionHeader.Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC];
+        ImageContext->FixupDataSize = DirectoryEntry->Size / sizeof (UINT16) * sizeof (UINTN);
+      } else {
+        ImageContext->FixupDataSize = 0;
+      }
     }
   } else {
     DirectoryEntry              = &TeHdr->DataDirectory[0];

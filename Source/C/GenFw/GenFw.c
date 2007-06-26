@@ -939,6 +939,8 @@ Returns:
   Type              = 0;
   Status            = STATUS_SUCCESS;
   FileBuffer        = NULL;
+  fpIn              = NULL;
+  fpOut             = NULL;
 
   if (argc == 1) {
     Usage();
@@ -1002,42 +1004,6 @@ Returns:
   }
 
   //
-  // get InImageName from stdin
-  //
-  if (InImageName == NULL) {
-    fscanf (stdin, "%s", FileName);
-    InImageName = (UINT8 *) FileName;
-  }
-
-  //
-  // Open input file
-  //
-  fpIn = fopen (InImageName, "rb");
-  if (!fpIn) {
-    Error (NULL, 0, 0, InImageName, "failed to open input file for reading");
-    return STATUS_ERROR;
-  }
-
-  FReadFile (fpIn, (VOID **)&FileBuffer, &FileLength);
-  fclose (fpIn);
-
-  //
-  // Open output file and Write image into the output file.
-  // if OutImageName == NULL, output data to stdout.
-  //
-  if (OutImageName == NULL) {
-    fpOut = stdout; // binary stream can't be output to string strem stdout
-                    // because 0x0A can be auto converted to 0x0D 0x0A.
-  } else {
-    fpOut = fopen (OutImageName, "w+b");
-  }
-  if (!fpOut) {
-    Error (NULL, 0, 0, OutImageName, "could not open output file for writing");
-    Status = STATUS_ERROR;
-    goto Finish;
-  }
-
-  //
   // Following code to convert dll to efi image or te image.
   // Get new image type
   //
@@ -1045,7 +1011,6 @@ Returns:
     if (ModuleType == NULL) {
       Error (NULL, 0, 0, NULL, "No ModuleType specified, such as PEIM, DXE_DRIVER\n");
       Usage ();
-      Status = STATUS_ERROR;
       goto Finish;
     }
     
@@ -1079,9 +1044,43 @@ Returns:
     } else {
       Error (NULL, 0, 0, ModuleType, "%s is not one valid Module type.\n");
       Usage ();
-      Status = STATUS_ERROR;
       goto Finish;
     }
+  }
+
+  //
+  // get InImageName from stdin
+  //
+  if (InImageName == NULL) {
+    fscanf (stdin, "%s", FileName);
+    InImageName = (UINT8 *) FileName;
+  }
+
+  //
+  // Open input file
+  //
+  fpIn = fopen (InImageName, "rb");
+  if (!fpIn) {
+    Error (NULL, 0, 0, InImageName, "failed to open input file for reading");
+    goto Finish;
+  }
+
+  FReadFile (fpIn, (VOID **)&FileBuffer, &FileLength);
+  fclose (fpIn);
+
+  //
+  // Open output file and Write image into the output file.
+  // if OutImageName == NULL, output data to stdout.
+  //
+  if (OutImageName == NULL) {
+    fpOut = stdout; // binary stream can't be output to string strem stdout
+                    // because 0x0A can be auto converted to 0x0D 0x0A.
+  } else {
+    fpOut = fopen (OutImageName, "w+b");
+  }
+  if (!fpOut) {
+    Error (NULL, 0, 0, OutImageName, "could not open output file for writing");
+    goto Finish;
   }
 
   //
@@ -1099,14 +1098,12 @@ Returns:
   DosHdr = (EFI_IMAGE_DOS_HEADER *)FileBuffer;
   if (DosHdr->e_magic != EFI_IMAGE_DOS_SIGNATURE) {
     Error (NULL, 0, 0, InImageName, "DOS header signature not found in source image");
-    Status = STATUS_ERROR;
     goto Finish;
   }
 
   PeHdr = (EFI_IMAGE_NT_HEADERS *)(FileBuffer + DosHdr->e_lfanew);
   if (PeHdr->Signature != EFI_IMAGE_NT_SIGNATURE) {
     Error (NULL, 0, 0, InImageName, "PE header signature not found in source image");
-    Status = STATUS_ERROR;
     goto Finish;
   }
   
@@ -1125,7 +1122,6 @@ Returns:
 
         if (CheckAcpiTable (FileBuffer + SectionHeader->PointerToRawData, FileLength) != STATUS_SUCCESS) {
           Error (NULL, 0, 0, InImageName, "failed to check ACPI table");
-          Status = STATUS_ERROR;
           goto Finish;
         }
         
@@ -1139,7 +1135,6 @@ Returns:
       }
     }
     Error (NULL, 0, 0, InImageName, "failed to get ACPI table");
-    Status = STATUS_ERROR;
     goto Finish;
   }
   //
@@ -1342,7 +1337,14 @@ Returns:
       // Pack the subsystem and NumberOfSections into 1 byte. Make sure they fit both.
       //
       Error (NULL, 0, 0, InImageName, "image subsystem or NumberOfSections cannot be packed into 1 byte");
-      Status = STATUS_ERROR;
+      goto Finish;
+    }
+
+    if ((PeHdr->OptionalHeader.SectionAlignment != PeHdr->OptionalHeader.FileAlignment)) {
+      //
+      // TeImage has the same section alignment and file alignment.
+      //
+      Error (NULL, 0, 0, InImageName, "Section-Alignment and File-Alignment does not match for TeImage");
       goto Finish;
     }
 
@@ -1369,5 +1371,5 @@ Finish:
     fclose (fpOut);
   }
   
-  return Status;
+  return GetUtilityStatus ();
 }

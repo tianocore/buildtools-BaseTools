@@ -74,7 +74,7 @@ CHAR8      *SectionTypeName[] = {
 };
 
 CHAR8      *CompressionTypeName[]    = { "PI_NONE", "PI_STD" };
-CHAR8      *GUIDedSectionAttribue[]  = { NULL, "PROCESSING", "AUTHENTIC", "BOTH" };
+CHAR8      *GUIDedSectionAttribue[]  = { NULL, "PROCESSING_REQUIRED", "AUTH_STATUS_VALID"};
 
 //
 // Crc32 GUID section related definitions.
@@ -137,7 +137,7 @@ Usage (
                           EFI_SECTION_PEI_DEPEX>\n\
         -c, --compress <PI_NONE|PI_STD>\n\
         -g, --vendorguid [GuidValue (########-####-####-####-############)]\n\
-        -r, --attributes <PROCESSING|AUTHENTIC|BOTH>\n\
+        -r, --attributes <PROCESSING_REQUIRED|AUTH_STATUS_VALID>\n\
         -n, --name \"string\"\n\
         -j, --buildnumber #### (0000~9999)\n\
         -h, --help\n\
@@ -623,6 +623,9 @@ Returns:
   // Now data is in FileBuffer
   //
   if (CompareGuid (VendorGuid, &gEfiCrc32SectionGuid) == 0) {
+    //
+    // Default Guid section is CRC32.
+    //
     Crc32Checksum = 0;
     CalculateCrc32 (FileBuffer, InputLength, &Crc32Checksum);
 
@@ -698,7 +701,6 @@ Returns:
   CHAR8                     *OutputFileName;
   CHAR8                     *SectionName;
   CHAR8                     *CompressionName;
-  CHAR8                     *VendorGuidDataAttribute;
   CHAR8                     *StringBuffer;
   EFI_GUID                  VendorGuid = gZeroGuid;
   INT32                     VersionNumber;
@@ -715,7 +717,6 @@ Returns:
   OutputFileName        = NULL;
   SectionName           = NULL;
   CompressionName       = NULL;
-  VendorGuidDataAttribute = NULL;
   StringBuffer          = "";
 
   InFile                = NULL;
@@ -783,8 +784,16 @@ Returns:
       continue;
     }
 
-    if ((stricmp (argv[0], "-r") == 0) || (stricmp (argv[0], "--attribute") == 0)) {
-      VendorGuidDataAttribute = argv[1];
+    if ((stricmp (argv[0], "-r") == 0) || (stricmp (argv[0], "--attributes") == 0)) {
+      if (stricmp (argv[1], GUIDedSectionAttribue[EFI_GUIDED_SECTION_PROCESSING_REQUIRED]) == 0) {
+        SectGuidAttribute |= EFI_GUIDED_SECTION_PROCESSING_REQUIRED;
+      } else if (stricmp (argv[1], GUIDedSectionAttribue[EFI_GUIDED_SECTION_AUTH_STATUS_VALID]) == 0) {
+        SectGuidAttribute |= EFI_GUIDED_SECTION_AUTH_STATUS_VALID;
+      } else {
+        Error (NULL, 0, 0, argv[1], "unknown Guid Section Attribute");
+        Usage ();
+        goto Finish;
+      }
       argc -= 2;
       argv += 2;
       continue;
@@ -878,20 +887,10 @@ Returns:
     if (CompareGuid (&VendorGuid, &gZeroGuid) == 0) {
       memcpy (&VendorGuid, &gEfiCrc32SectionGuid, sizeof (EFI_GUID));
     }
-
-    if ((VendorGuidDataAttribute == NULL) || \
-        ((stricmp (VendorGuidDataAttribute, GUIDedSectionAttribue[EFI_GUIDED_SECTION_PROCESSING_REQUIRED]) == 0))) {
+    
+    if (SectGuidAttribute == 0) {
       SectGuidAttribute = EFI_GUIDED_SECTION_PROCESSING_REQUIRED;
-    } else if (stricmp (VendorGuidDataAttribute, GUIDedSectionAttribue[EFI_GUIDED_SECTION_AUTH_STATUS_VALID]) == 0) {
-      SectGuidAttribute = EFI_GUIDED_SECTION_AUTH_STATUS_VALID;
-    } else if (stricmp (VendorGuidDataAttribute, GUIDedSectionAttribue[EFI_GUIDED_SECTION_PROCESSING_REQUIRED|EFI_GUIDED_SECTION_AUTH_STATUS_VALID]) == 0) {
-      SectGuidAttribute = EFI_GUIDED_SECTION_PROCESSING_REQUIRED | EFI_GUIDED_SECTION_AUTH_STATUS_VALID;
-    } else {
-      Error (NULL, 0, 0, VendorGuidDataAttribute, "unknown Guid Section Attribute");
-      Usage ();
-      goto Finish;
     }
-
   } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_PE32]) == 0) {
     SectType = EFI_SECTION_PE32;
   } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_PIC]) == 0) {

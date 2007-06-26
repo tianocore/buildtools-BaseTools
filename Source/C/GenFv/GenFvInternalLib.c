@@ -1,5 +1,4 @@
 /*++
-i
 
 Copyright (c) 2004, Intel Corporation                                                         
 All rights reserved. This program and the accompanying materials                          
@@ -816,7 +815,6 @@ Returns:
   if (CurrentFileAlignment > MaxFfsAlignment) {
     MaxFfsAlignment = CurrentFileAlignment;
   }
-  _asm int 3;
   //
   // If we have a VTF file, add it at the top.
   //
@@ -1894,10 +1892,23 @@ Returns:
   UINTN                                 Index;
   EFI_FILE_SECTION_POINTER              CurrentPe32Section;
   EFI_FFS_FILE_STATE                    SavedState;
-  EFI_IMAGE_NT_HEADERS32                *PeHdr;
+  EFI_IMAGE_NT_HEADERS                  *PeHdr;
+  EFI_IMAGE_OPTIONAL_HEADER32           *Optional32;
+  EFI_IMAGE_OPTIONAL_HEADER64           *Optional64;
   EFI_TE_IMAGE_HEADER                   *TEImageHeader;
   UINT8                                 Flags;
-  
+  UINT8                                 *MemoryImagePointer;
+  EFI_IMAGE_SECTION_HEADER              *SectionHeader;
+
+  Index              = 0;  
+  MemoryImagePointer = NULL;
+  BaseToUpdate       = NULL;
+  TEImageHeader      = NULL;
+  PeHdr              = NULL;
+  Optional32         = NULL;
+  Optional64         = NULL;
+  MemoryImagePointer = NULL;
+  SectionHeader      = NULL;
   //
   // Check XipAddress, BootAddress and RuntimeAddress
   //
@@ -1962,19 +1973,9 @@ Returns:
     ImageContext.ImageAddress = (UINTN) CurrentPe32Section.Pe32Section + sizeof (EFI_PE32_SECTION);
 
     //
-    // Check if section-alignment and file-alignment match or not
+    // Get PeHeader pointer
     //
     PeHdr = (EFI_IMAGE_NT_HEADERS *)((UINTN)ImageContext.ImageAddress + ImageContext.PeCoffHeaderOffset);
-    if ((PeHdr->OptionalHeader.SectionAlignment != PeHdr->OptionalHeader.FileAlignment)) {
-      //
-      // Nor XIP module can be ignored. Todo
-      //
-      if ((Flags & REBASE_XIP_FILE) == 0) {
-        continue;
-      }
-      Error (NULL, 0, 0, "Section-Alignment and File-Alignment does not match", FileName);
-      return EFI_ABORTED;
-    }
 
     //
     // Calculate the PE32 base address, based on file type
@@ -1990,6 +1991,17 @@ Returns:
           //
           return EFI_SUCCESS;
         }
+        
+        //
+        // Check if section-alignment and file-alignment match or not
+        //
+        if ((PeHdr->OptionalHeader.SectionAlignment != PeHdr->OptionalHeader.FileAlignment)) {
+          //
+          // Xip module has the same section alignment and file alignment.
+          //
+          Error (NULL, 0, 0, "Section-Alignment and File-Alignment does not match", FileName);
+          return EFI_ABORTED;
+        }
 
         NewPe32BaseAddress =
           XipBase + (UINTN)ImageContext.ImageAddress - (UINTN)FfsFile;
@@ -1997,7 +2009,6 @@ Returns:
         break;
 
       case EFI_FV_FILETYPE_DRIVER:
-        PeHdr = (EFI_IMAGE_NT_HEADERS32*)(ImageContext.ImageAddress + ImageContext.PeCoffHeaderOffset);
         switch (PeHdr->OptionalHeader.Subsystem) {
           case EFI_IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER:
             if ((Flags & REBASE_RUNTIME_FILE) == 0) {
@@ -2047,12 +2058,73 @@ Returns:
         return EFI_SUCCESS;
     }
 
+    //
+    // Load and Relocate Image Data
+    //
+    MemoryImagePointer = (UINT8 *) malloc ((UINTN) ImageContext.ImageSize + ImageContext.SectionAlignment);
+    if (MemoryImagePointer == NULL) {
+      Error (NULL, 0, 0, "Can't allocate enough memory on rebase", FileName);
+      return EFI_OUT_OF_RESOURCES;
+    }
+    memset ((VOID *) MemoryImagePointer, 0, (UINTN) ImageContext.ImageSize + ImageContext.SectionAlignment);
+    ImageContext.ImageAddress = ((UINTN) MemoryImagePointer + ImageContext.SectionAlignment - 1) & (~(ImageContext.SectionAlignment - 1));
+    
+    Status =  PeCoffLoaderLoadImage (&ImageContext);
+    if (EFI_ERROR (Status)) {
+      Error (NULL, 0, 0, "LocateImage() call failed on rebase", FileName);
+      free ((VOID *) MemoryImagePointer);
+      return Status;
+    }
+         
     ImageContext.DestinationAddress = NewPe32BaseAddress;
     Status                          = PeCoffLoaderRelocateImage (&ImageContext);
     if (EFI_ERROR (Status)) {
       Error (NULL, 0, 0, "RelocateImage() call failed on rebase", FileName);
+      free ((VOID *) MemoryImagePointer);
       return Status;
     }
+
+    //
+    // Copy Relocated data to raw image file.
+    //
+    if (PeHdr->FileHeader.Machine == EFI_IMAGE_MACHINE_IA32) {
+      Optional32 = (EFI_IMAGE_OPTIONAL_HEADER32 *) &(PeHdr->OptionalHeader);
+      Optional32->ImageBase     = (UINT32) NewPe32BaseAddress;
+    } else if (PeHdr->FileHeader.Machine == EFI_IMAGE_MACHINE_IA64 || 
+               PeHdr->FileHeader.Machine == EFI_IMAGE_MACHINE_X64) {
+      Optional64 = (EFI_IMAGE_OPTIONAL_HEADER64 *) &(PeHdr->OptionalHeader);
+      Optional64->ImageBase     = NewPe32BaseAddress;
+    } else {
+      Error (
+        NULL,
+        0,
+        0,
+        "unknown machine type in PE32 image",
+        "machine type=0x%X, file=%s",
+        (UINT32) PeHdr->FileHeader.Machine,
+        FileName
+        );
+      free ((VOID *) MemoryImagePointer);
+      return EFI_ABORTED;
+    }
+
+    SectionHeader = (EFI_IMAGE_SECTION_HEADER *) (
+                       (UINTN) ImageContext.ImageAddress +
+                       ImageContext.PeCoffHeaderOffset +
+                       sizeof (UINT32) + 
+                       sizeof (EFI_IMAGE_FILE_HEADER) +  
+                       PeHdr->FileHeader.SizeOfOptionalHeader
+                       );
+    
+    for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index ++, SectionHeader ++) {
+      CopyMem (
+        (UINT8 *) ImageContext.Handle + SectionHeader->PointerToRawData, 
+        (VOID*) (UINTN) (ImageContext.ImageAddress + SectionHeader->VirtualAddress), 
+        SectionHeader->SizeOfRawData
+        );
+    }
+
+    free ((VOID *) MemoryImagePointer);
 
     //
     // Update BASE address

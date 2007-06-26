@@ -66,7 +66,6 @@ Abstract:
 // The maximum number of files in the FV supported by the library
 //
 #define MAX_NUMBER_OF_FILES_IN_FV       1000
-#define MAX_NUMBER_OF_COMPONENTS_IN_FV  10
 #define EFI_FFS_FILE_HEADER_ALIGNMENT   8
 
 //
@@ -75,14 +74,12 @@ Abstract:
 #define OPTIONS_SECTION_STRING            "[options]"
 #define ATTRIBUTES_SECTION_STRING         "[attributes]"
 #define FILES_SECTION_STRING              "[files]"
-#define COMPONENT_SECTION_STRING          "[components]"
 
 //
 // Options section
 //
 #define EFI_FV_BASE_ADDRESS_STRING        "EFI_BASE_ADDRESS"
 #define EFI_FV_FILE_NAME_STRING           "EFI_FILE_NAME"
-#define EFI_SYM_FILE_NAME_STRING          "EFI_SYM_FILE_NAME"
 #define EFI_NUM_BLOCKS_STRING             "EFI_NUM_BLOCKS"
 #define EFI_BLOCK_SIZE_STRING             "EFI_BLOCK_SIZE"
 #define EFI_FV_GUID_STRING                "EFI_FV_GUID"
@@ -142,14 +139,6 @@ Abstract:
 #define EFI_FVB2_ALIGNMENT_512M_STRING    "EFI_FVB2_ALIGNMENT_512M"
 #define EFI_FVB2_ALIGNMENT_1G_STRING      "EFI_FVB2_ALIGNMENT_1G"  
 #define EFI_FVB2_ALIGNMENT_2G_STRING      "EFI_FVB2_ALIGNMENT_2G"  
-
-//
-// Component sections
-//
-#define EFI_NV_VARIABLE_STRING    "EFI_NV_VARIABLE"
-#define EFI_NV_EVENT_LOG_STRING   "EFI_NV_EVENT_LOG"
-#define EFI_NV_FTW_WORKING_STRING "EFI_NV_FTW_WORKING"
-#define EFI_NV_FTW_SPARE_STRING   "EFI_NV_FTW_SPARE"
 
 //
 // File sections
