@@ -549,7 +549,7 @@ class FdfParser:
             if not self.__IsToken( "="):
                 raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
                 
-            if not self.__GetDecimalNumber():
+            if not self.__GetDecimalNumber() and not self.__GetHexNumber():
                 raise Warning("expected block numbers At Line %d" % self.CurrentLineNumber)
                 
             BlockNumber = self.__Token
@@ -780,6 +780,11 @@ class FdfParser:
         if not self.__GetNextWord():
             raise Warning("expected alignment value At Line %d" % self.CurrentLineNumber)
         
+        if self.__Token.upper() not in ("1", "2", "4", "8", "16", "32", "64", "128", "256", "512", \
+                                        "1K", "2K", "4K", "8K", "16K", "32K", "64K", "128K", "256K", "512K", \
+                                        "1M", "2M", "4M", "8M", "16M", "32M", "64M", "128M", "256M", "512M", \
+                                        "1G", "2G"):
+            raise Warning("Unknown alignment value At Line %d" % self.CurrentLineNumber)
         fv.FvAlignment = self.__Token
         return True
     
@@ -848,7 +853,7 @@ class FdfParser:
         if self.__IsKeyword( "RuleOverride"):
             if not self.__IsToken( "="):
                 raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
-            if not self.__GetNextWord():
+            if not self.__GetNextToken():
                 raise Warning("expected Rule name At Line %d" % self.CurrentLineNumber)
             ffsInf.Rule = self.__Token
             
@@ -866,7 +871,13 @@ class FdfParser:
                 raise Warning("expected UI name At Line %d" % self.CurrentLineNumber)
             ffsInf.Ui = self.__Token
 
-        # GetUseLoc not implemented yet.
+        if self.__GetNextWord():
+            p = re.compile(r'(([a-fA-F0-9]+)|\*)_(([a-fA-F0-9]+)|\*)_(([a-fA-F0-9]+)|\*)')
+            while p.match(self.__Token):
+                ffsInf.KeyStringList.append(self.__Token)
+                if not self.__IsToken(","):
+                    break
+                
 
 
     def __GetFileStatement(self, obj):
@@ -1426,6 +1437,7 @@ class FdfParser:
                 raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
             section = GuidSection.GuidSection()
             section.NameGuid = guid
+            section.SectionType = "GUIDED"
             
             # Efi sections...
             while self.__GetEfiSection(section):
