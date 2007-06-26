@@ -13,6 +13,7 @@
 
 import DataType
 import os.path
+import string
 
 def MergeModulePcds(pcds, pcdsFixedAtBuild, pcdsPatchableInModule, pcdsFeatureFlag, pcdsDynamic):
     #[ ['PcdName|PcdGuid|PcdType', 'IA32|X64|IPF|EBC'], ...]
@@ -208,7 +209,7 @@ def GetSingleValueOfKeyFromLines(Lines, Dictionary, CommentCharacter, KeySplitCh
                 #Remove comments and white spaces
                 LineList[1] = CleanString(LineList[1], CommentCharacter)
                 if ValueSplitFlag:
-                    Value = LineList[1].replace('\\','/').split(ValueSplitCharacter)
+                    Value = map(string.strip, LineList[1].replace('\\','/').split(ValueSplitCharacter))
                 else:
                     Value = CleanString(LineList[1], CommentCharacter).splitlines()
                 
