@@ -9,6 +9,8 @@ class GuidSection(Section.Section) :
         self.NameGuid = None
         self.SectionList = []
         self.SectionType = None
+        self.ProcessRequired = False
+        self.AuthStatusValid = False
         
     def GenSection(self, OutputPath, ModuleName, FfsInf = None):
         #

@@ -218,6 +218,7 @@ class FdfParser:
 ##        if self.__EndOfFile():
 ##            return False
         # Only consider the same line, no multi-line token allowed
+        StartPos = self.CurrentOffsetWithinLine
         index = -1
         if ignoreCase:
             index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].upper().find(string.upper()) 
@@ -225,6 +226,7 @@ class FdfParser:
             index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].find(string)
         if index == 0:
             self.CurrentOffsetWithinLine += len(string)
+            self.__Token = self.__CurrentLine()[StartPos : self.CurrentOffsetWithinLine]
             return True
         return False
 
@@ -234,6 +236,7 @@ class FdfParser:
 ##        if self.__EndOfFile():
 ##            return False
         # Only consider the same line, no multi-line token allowed
+        StartPos = self.CurrentOffsetWithinLine
         index = -1
         if ignoreCase:
             index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].upper().find(keyword.upper()) 
@@ -244,6 +247,7 @@ class FdfParser:
             if not str(followingChar).isspace() and followingChar not in ('=', '|'):
                 return False
             self.CurrentOffsetWithinLine += len(keyword)
+            self.__Token = self.__CurrentLine()[StartPos : self.CurrentOffsetWithinLine]
             return True
         return False
 
@@ -289,8 +293,11 @@ class FdfParser:
         else:
             return False
         
-        self.__Token = self.__CurrentLine()[StartPos : self.CurrentOffsetWithinLine]
-        return True
+        if StartPos != self.CurrentOffsetWithinLine:
+            self.__Token = self.__CurrentLine()[StartPos : self.CurrentOffsetWithinLine]
+            return True
+        else:
+            return False
 
     def __GetNextGuid(self):
         
@@ -304,8 +311,9 @@ class FdfParser:
             return False
 
     def __UndoToken(self):
-        while self.__UndoOneChar() and not str(self.__CurrentChar()).isspace():
+        while self.__UndoOneChar() and not str(self.__CurrentChar()).isspace() and self.__CurrentChar() not in ('=', '|', ','):
             pass
+        self.__GetOneChar()
     
     def __HexDigit(self, TempChar):
         if (TempChar >= 'a' and TempChar <= 'f') or (TempChar >= 'A' and TempChar <= 'F') \
@@ -317,7 +325,7 @@ class FdfParser:
     def __GetHexNumber(self):
         if not self.__GetNextToken():
             return False
-        if not self.__Token.startswith("0x"):
+        if not self.__Token.upper().startswith("0X"):
             self.__UndoToken()
             return False
         if len(self.__Token) <= 2:
@@ -777,7 +785,7 @@ class FdfParser:
         if not self.__IsToken( "="):
             raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
         
-        if not self.__GetNextWord():
+        if not self.__GetNextToken():
             raise Warning("expected alignment value At Line %d" % self.CurrentLineNumber)
         
         if self.__Token.upper() not in ("1", "2", "4", "8", "16", "32", "64", "128", "256", "512", \
@@ -804,7 +812,7 @@ class FdfParser:
             if not self.__IsToken( "="):
                 raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
             
-            if not self.__GetNextToken() or self.__Token not in (TRUE, FALSE, 1, 0):
+            if not self.__GetNextToken() or self.__Token.upper() not in ("TRUE", "FALSE", "1", "0"):
                 raise Warning("expected TRUE/FALSE (1/0) At Line %d" % self.CurrentLineNumber)
             
             fv.FvAttributeDict[name] = self.__Token
@@ -980,7 +988,7 @@ class FdfParser:
             section = VerSection.VerSection()
             section.Alignment = alignment
             section.BuildNum = buildNum
-            if self.__Token.startswith("\""):
+            if self.__Token.startswith("\"") or self.__Token.startswith("L\""):
                 section.StringData = self.__Token
             else:
                 section.FileName = self.__Token
@@ -993,7 +1001,7 @@ class FdfParser:
                 raise Warning("expected UI At Line %d" % self.CurrentLineNumber)
             section = UiSection.UiSection()
             section.Alignment = alignment
-            if self.__Token.startswith("\""):
+            if self.__Token.startswith("\"") or self.__Token.startswith("L\""):
                 section.StringData = self.__Token
             else:
                 section.FileName = self.__Token
@@ -1085,12 +1093,15 @@ class FdfParser:
         elif self.__IsKeyword( "GUIDED"):
             if self.__GetNextGuid():
                 guid = self.__Token
+                attribDict = self.__GetGuidAttrib()
                 if not self.__IsToken("{"):
                     raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
                 section = GuidSection.GuidSection()
                 section.Alignment = alignment
                 section.NameGuid = guid
-                section.SectionType = 'GUIDED'
+                section.SectionType = "GUIDED"
+                section.ProcessRequired = attribDict["PROCESSING_REQUIRED"]
+                section.AuthStatusValid = attribDict["AUTH_STATUS_VALID"]
                 # Recursive sections...
                 while self.__GetLeafSection(section):
                     pass
@@ -1105,6 +1116,31 @@ class FdfParser:
             return True
         
         return False
+
+    def __GetGuidAttrib(self):
+        
+        attribDict = {}
+        if self.__IsKeyword("PROCESSING_REQUIRED") or self.__IsKeyword("AUTH_STATUS_VALID"):
+            attrib = self.__Token
+
+            if not self.__IsToken("="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            
+            if not self.__GetNextToken() or self.__Token.upper() not in ("TRUE", "FALSE", "1", "0"):
+                raise Warning("expected TRUE/FALSE (1/0) At Line %d" % self.CurrentLineNumber)
+            attribDict[attrib] = self.__Token
+            
+        if self.__IsKeyword("PROCESSING_REQUIRED") or self.__IsKeyword("AUTH_STATUS_VALID"):
+            attrib = self.__Token
+
+            if not self.__IsToken("="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+
+            if not self.__GetNextToken() or self.__Token.upper() not in ("TRUE", "FALSE", "1", "0"):
+                raise Warning("expected TRUE/FALSE (1/0) At Line %d" % self.CurrentLineNumber)
+            attribDict[attrib] = self.__Token
+            
+        return attribDict
             
     def __GetEncapsulationSec(self, ffsFile):        
         
@@ -1242,7 +1278,7 @@ class FdfParser:
             raise Warning("expected '.' At Line %d" % self.CurrentLineNumber)
         
         arch = self.__SkippedChars.rstrip(".")
-        if arch not in ("IA32", "X64", "IPF", "EBC", "Common"):
+        if arch.upper() not in ("IA32", "X64", "IPF", "EBC", "COMMON"):
             raise Warning("Unknown Arch At line %d" % self.CurrentLineNumber)
         
         moduleType = self.__GetModuleType()
@@ -1257,7 +1293,7 @@ class FdfParser:
             raise Warning("expected ']' At Line %d" % self.CurrentLineNumber)
         
         rule = self.__GetProcessFormat()
-        rule.Arch = arch
+        rule.Arch = arch.upper()
         rule.ModuleType = moduleType
         rule.TemplateName = templateName
         if templateName == '' :
@@ -1282,8 +1318,8 @@ class FdfParser:
         if not self.__GetNextWord():
             raise Warning("expected Module type At Line %d" % self.CurrentLineNumber)
         if self.__Token.upper() not in ("SEC", "PEI_CORE", "PEIM", "DXE_CORE", \
-                             "DXE_DRIVER", "DXE_SAL_DRIVER" \
-                             "DXE_SMM_DRIVER", "DXE_RUNTIME_DRIVER" \
+                             "DXE_DRIVER", "DXE_SAL_DRIVER", \
+                             "DXE_SMM_DRIVER", "DXE_RUNTIME_DRIVER", \
                              "UEFI_DRIVER", "UEFI_APPLICATION", "USER", "DEFAULT"):
             raise Warning("Unknown Module type At line %d" % self.CurrentLineNumber)
         return self.__Token
@@ -1293,10 +1329,16 @@ class FdfParser:
         if not self.__IsKeyword("FILE"):
             raise Warning("expected FILE At Line %d" % self.CurrentLineNumber)
         
-        type = self.__GetModuleType()
-#        if rule.ModuleType != self.__GetModuleType():
-#            raise Warning("Module type mis-match with rule At line %d" % self.CurrentLineNumber)
+        if not self.__GetNextWord():
+            raise Warning("expected FV type At Line %d" % self.CurrentLineNumber)
         
+        if self.__Token.strip().upper() not in ("SEC", "RAW", "FREEFORM", "DXE_CORE", \
+                             "PEI_DXE_COMBO", "FV_IMAGE", \
+                             "DRIVER", "APPLICATION", "PEI_CORE", "PEIM"):
+            raise Warning("Unknown FV type At line %d" % self.CurrentLineNumber)
+        
+        type = self.__Token.strip().upper()
+
         if not self.__IsToken("="):
             raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
         
@@ -1433,12 +1475,15 @@ class FdfParser:
             guid = None
             if self.__GetNextGuid():
                 guid = self.__Token
-
+            attribDict = self.__GetGuidAttrib()
+            
             if not self.__IsToken("{"):
                 raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
             section = GuidSection.GuidSection()
             section.NameGuid = guid
             section.SectionType = "GUIDED"
+            section.ProcessRequired = attribDict["PROCESSING_REQUIRED"]
+            section.AuthStatusValid = attribDict["AUTH_STATUS_VALID"]
             
             # Efi sections...
             while self.__GetEfiSection(section):
