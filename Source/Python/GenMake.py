@@ -221,6 +221,9 @@ OBJECTS = ${BEGIN}$(OUTPUT_DIR)${separator}${object_file} \\
 LIBS = ${BEGIN}$(LIB_DIR)${separator}${library_file} \\
        ${END}
 
+COMMON_DEPS = ${BEGIN}$(WORKSPACE)${separator}${common_dependency_file} \\
+              ${END}
+
 ENTRYPOINT = _ModuleEntryPoint
 
 #
@@ -669,11 +672,12 @@ class Makefile(object):
             "tool_path"                 : self.PlatformInfo.ToolPath.values(),
 
             "source_file"               : self.BuildFileList,
-            "auto_generated_file"       : self.AutoGenBuildFileList,
+            #"auto_generated_file"       : self.AutoGenBuildFileList,
             "include_path_prefix"       : "-I",
             "include_path"              : self.ModuleInfo.IncludePathList,
             "object_file"               : self.ObjectFileList,
             "library_file"              : self.LibraryFileList,
+            "common_dependency_file"    : self.CommonFileDependency,
             "create_directory_command"  : "-@mkdir",
             "directory_to_be_created"   : self.IntermediateDirectoryList,
             "dependent_library_build_directory" : self.LibraryBuildDirectoryList,
@@ -711,6 +715,7 @@ class Makefile(object):
 
     def ProcessSourceFileList(self, makeType=gMakeType):
         rule = self.PlatformInfo.BuildRule
+        separator = gDirectorySeparator[makeType]
 
         self.BuildFileList = []
         self.ObjectFileList = []
@@ -718,53 +723,106 @@ class Makefile(object):
         self.AutoGenBuildFileList = []
         self.IntermediateDirectoryList = []
 
-        for f in self.ModuleInfo.AutoGenFileList:
-            name = path.basename(f)
-            base, ext = path.splitext(name)
+        fileBuildTemplatetList = []
+        forceIncludedFile = []
 
-            ftype = rule.FileTypeMapping[ext]
+        for f in self.ModuleInfo.AutoGenFileList:
+            fpath = path.join(self.ModuleInfo.DebugDir, f)
+            fdir = path.dirname(f)
+            if fdir == "":
+                fdir = "."
+            fname = path.basename(f)
+            fbase, fext = path.splitext(fname)
+
+            ftype = rule.FileTypeMapping[fext]
+            if ftype == "C-Header":
+                forceIncludedFile.append(fpath)
             if ftype not in rule.Makefile[makeType]:
                 continue
 
-            ftype = "AutoGen-Code"
-            self.AutoGenBuildFileList.append(f)
-            #self.BuildFileList.append(name)
-            self.ObjectFileList.append(base + ".obj")
-            
-            autoGen = AutoGenString()
-            autoGen.Append(rule.Makefile[makeType][ftype],
-                           {"fdir":".", "fbase":base, "fext":ext, "fname":name, "sep":os.path.sep,
-                            "dep":self.GetDependencyList(os.path.join(self.ModuleInfo.DebugDir, f), self.ModuleInfo.IncludePathList)})
-            self.ObjectBuildTargetList.append(autoGen.String)
+            #ftype = "AutoGen-Code"
+            #self.AutoGenBuildFileList.append(f)
+            self.BuildFileList.append(fpath)
+            self.ObjectFileList.append(fdir + separator + fbase + ".obj")
+
+            fileBuildTemplatetList.append({
+                                   "string" : rule.Makefile[makeType][ftype],
+                                   "ftype"  : ftype,
+                                   "fpath"  : fpath,
+                                   "fdir"   : fdir,
+                                   "fname"  : fname,
+                                   "fbase"  : fbase,
+                                   "fext"   : fext,
+                                   "fdep"   : "",
+                                   "sep"    : separator,
+                                   })
+##            autoGen = AutoGenString()
+##            autoGen.Append(rule.Makefile[makeType][ftype],
+##                           {"fdir":".", "fbase":base, "fext":ext, "fname":name, "sep":os.path.sep,
+##                            "fdep":self.GetDependencyList(os.path.join(self.ModuleInfo.DebugDir, f), self.ModuleInfo.IncludePathList)})
+##            self.ObjectBuildTargetList.append(autoGen.String)
 
         fileList = self.ModuleInfo.SourceFileList
         for f in fileList:
-            name = path.basename(f)
-            base, ext = path.splitext(name)
-            basedir = path.dirname(f)
-            if basedir == "":
-                basedir = "."
-            elif basedir not in self.IntermediateDirectoryList:
-                self.IntermediateDirectoryList.append(basedir)
-            if base.endswith("Gcc"):
+            fpath = os.path.join(self.ModuleInfo.SourceDir, f)
+            fname = path.basename(f)
+            fbase, fext = path.splitext(fname)
+            fdir = path.dirname(f)
+            
+            if fdir == "":
+                fdir = "."
+            elif fdir not in self.IntermediateDirectoryList:
+                self.IntermediateDirectoryList.append(fdir)
+                
+            if fbase.endswith("Gcc"):
                 continue
             
-            ftype = rule.FileTypeMapping[ext]
+            ftype = rule.FileTypeMapping[fext]
             if ftype not in rule.Makefile[makeType]:
                 continue
 
-            self.BuildFileList.append(f)
-            # CreateDirectory(path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.OutputDir, basedir))
-            self.ObjectFileList.append(basedir + gDirectorySeparator[makeType] + base + ".obj")
+            self.BuildFileList.append(fpath)
+            self.ObjectFileList.append(fdir + separator + fbase + ".obj")
             
-            autoGen = AutoGenString()
-            autoGen.Append(rule.Makefile[makeType][ftype],
-                           {"fdir":basedir, "fbase":base, "fext":ext, "fname":name, "sep":gDirectorySeparator[makeType],
-                           "dep":self.GetDependencyList(os.path.join(self.ModuleInfo.SourceDir, f), self.ModuleInfo.IncludePathList)
-                           })
-            self.ObjectBuildTargetList.append(autoGen.String)
+            fileBuildTemplatetList.append({
+                                   "string" : rule.Makefile[makeType][ftype],
+                                   "ftype"  : ftype,
+                                   "fpath"  : fpath,
+                                   "fdir"   : fdir,
+                                   "fname"  : fname,
+                                   "fbase"  : fbase,
+                                   "fext"   : fext,
+                                   "fdep"   : "",
+                                   "sep"    : separator,
+                                   })
+##            autoGen = AutoGenString()
+##            autoGen.Append(rule.Makefile[makeType][ftype],
+##                           {"fdir":basedir, "fbase":base, "fext":ext, "fname":name, "sep":gDirectorySeparator[makeType],
+##                           "dep":self.GetDependencyList(os.path.join(self.ModuleInfo.SourceDir, f), self.ModuleInfo.IncludePathList)
+##                           })
+##            self.ObjectBuildTargetList.append(autoGen.String)
 
-        self.FileDependency = self.GetFileDependency()
+        #
+        # Search dependency file list for each source file
+        #
+        self.FileDependency = self.GetFileDependency(forceIncludedFile)
+        depSet = set(self.FileDependency.values()[0])
+        for dep in self.FileDependency.values():
+            depSet &= set(dep)
+        #
+        # Exact comman files list in the dependency files
+        #
+        self.CommonFileDependency = forceIncludedFile + list(depSet)
+        for f in self.FileDependency:
+            newDepSet = set(self.FileDependency[f])
+            newDepSet -= depSet
+            self.FileDependency[f] = list(newDepSet)
+
+        for template in fileBuildTemplatetList:
+            makefileString = AutoGenString()
+            template["fdep"] = self.FileDependency[template["fpath"]]
+            makefileString.Append(template["string"], template)
+            self.ObjectBuildTargetList.append(makefileString)
 
     def ProcessDependentLibrary(self, makeType=gMakeType):
         for libm in self.ModuleInfo.DependentLibraryList:
@@ -786,21 +844,24 @@ class Makefile(object):
         else:
             return "AutoGen.c"
 
-    def GetFileDependency(self):
+    def GetFileDependency(self, forceList):
         cwd = os.getcwd()
         os.chdir(self.ModuleInfo.WorkspaceDir)
         dependency = {}
         for f in self.BuildFileList:
-            f = os.path.join(self.ModuleInfo.SourceDir, f)
-            dependency[f] = self.GetDependencyList(f, self.ModuleInfo.IncludePathList)
+            #f = os.path.join(self.ModuleInfo.SourceDir, f)
+            dependency[f] = self.GetDependencyList(f, forceList, self.ModuleInfo.IncludePathList)
+##        for f in  self.AutoGenBuildFileList:
+##            f = os.path.join(self.ModuleInfo.DebugDir, f)
+##            dependency[f] = self.GetDependencyList(f, self.ModuleInfo.IncludePathList)
         os.chdir(cwd)
         return dependency
 
-    def GetDependencyList(self, file, searchPathList):
+    def GetDependencyList(self, file, forceList, searchPathList):
         cwd = os.getcwd()
         os.chdir(self.ModuleInfo.WorkspaceDir)
 
-        fileStack = [file]
+        fileStack = [file] + forceList
         dependencyList = []
         while len(fileStack) > 0:
             f = fileStack.pop()
@@ -808,7 +869,6 @@ class Makefile(object):
             currentFileDependencyList = []
             if f in gDependencyDatabase:
                 currentFileDependencyList = gDependencyDatabase[f]
-                #print "@@@@@@",f,"is in dependency database"
                 for dep in currentFileDependencyList:
                     if dep not in fileStack:
                         fileStack.append(dep)
@@ -825,7 +885,6 @@ class Makefile(object):
                     inc = os.path.normpath(inc)
                     for searchPath in [currentFilePath] + searchPathList:
                         filePath = os.path.join(searchPath, inc)
-                        #print "   @@@",filePath
                         if not os.path.exists(filePath) or filePath in currentFileDependencyList:
                             continue
                         currentFileDependencyList.append(filePath)

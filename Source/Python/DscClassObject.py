@@ -91,7 +91,7 @@ class Dsc(DscObject):
                 eval(Command)
             
     def LoadDscFile(self, filename):
-        EdkLogger.info('Open Dsc File:' + filename)
+        EdkLogger.verbose('Open Dsc File:' + filename)
         f = open(filename, 'r').read()
         sects = f.split('[')
         for sect in sects:

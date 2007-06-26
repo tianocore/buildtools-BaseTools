@@ -148,7 +148,9 @@ class AutoGen(object):
         info.PpiList = self.GetPpiGuidList(info.DependentLibraryList)
         info.MacroList = self.GetMacroList()
         
-        info.IncludePathList = self.GetIncludePathList(info.SourceDir, info.DependentPackageList)
+        info.IncludePathList = [info.SourceDir, info.DebugDir]
+        info.IncludePathList.extend(self.GetIncludePathList(info.DependentPackageList))
+
         info.SourceFileList = self.GetBuildFileList(info.PlatformInfo)
         info.AutoGenFileList = self.GetAutoGenFileList(info)
         return info
@@ -481,8 +483,8 @@ class AutoGen(object):
             guidList |= set(lib.Ppis)
         return guidList
 
-    def GetIncludePathList(self, modulrDir, dependentPackageList):
-        includePathList = [modulrDir]
+    def GetIncludePathList(self, dependentPackageList):
+        includePathList = []
         for inc in self.Module.Includes:
             includePathList.append(inc)
             
