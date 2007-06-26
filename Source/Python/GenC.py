@@ -1386,8 +1386,8 @@ def CreateGuidDefinitionCode(info, autoGenC, autoGenH):
     #
     for Key in info.GuidList:
         for p in info.DependentPackageList:
-            if Key in p.Package.Guids:
-                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Package.Guids[Key]))
+            if Key in p.Guids:
+                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Guids[Key]))
                 break
         else:
             EdkLogger.error('ERROR: GUID %s not found in dependent packages of module %s' % (Key, info.Name))
@@ -1400,8 +1400,8 @@ def CreateProtocolDefinitionCode(info, autoGenC, autoGenH):
     #
     for Key in info.ProtocolList:
         for p in info.DependentPackageList:
-            if Key in p.Package.Protocols:
-                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Package.Protocols[Key]))
+            if Key in p.Protocols:
+                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Protocols[Key]))
                 break
         else:
             EdkLogger.error('ERROR: Protocol %s not found in dependent packages of module %s' % (Key, info.Name))
@@ -1414,8 +1414,8 @@ def CreatePpiDefinitionCode(info, autoGenC, autoGenH):
     #
     for Key in info.PpiList:
         for p in info.DependentPackageList:
-            if Key in p.Package.Ppis:
-                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Package.Ppis[Key]))
+            if Key in p.Ppis:
+                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Ppis[Key]))
                 break
         else:
             EdkLogger.error('ERROR: PPI %s not found in dependent packages of module %s' % (Key, info.Name))

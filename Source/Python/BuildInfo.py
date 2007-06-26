@@ -48,6 +48,7 @@ class ModuleBuildInfo(BuildInfo):
 
         self.DependentPackageList = []
         self.DependentLibraryList = []
+        self.LibraryAutoGenList = []
 
         self.FileDependency = {}
         self.BuildOption = {}
@@ -78,8 +79,12 @@ class PlatformBuildInfo(BuildInfo):
         self.Guid       = platform.Guid
         self.Version    = platform.Version
 
+        self.ArchList = []
+        self.ToolChain = ""
+        self.BuildTarget = ""
         self.BuildRule = ""
 
+        self.WorkspaceDir = ""
         self.SourceDir = ""
         self.BuildDir = ""
         self.OutputDir = ""
@@ -88,6 +93,9 @@ class PlatformBuildInfo(BuildInfo):
         self.FvDir = ""
         self.MakefileDir = ""
 
+        self.ModuleAutoGenList = []
+        self.LibraryAutoGenList = []
+        
         self.PcdTokenNumber = {}    # (TokenCName, TokenSpaceGuidCName) : GeneratedTokenNumber
         self.DynamicPcdList = []    # [(TokenCName1, TokenSpaceGuidCName1), (TokenCName2, TokenSpaceGuidCName2), ...]
 

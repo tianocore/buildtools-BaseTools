@@ -18,10 +18,12 @@ from BuildInfo import *
 # generate makefile
 #
 
-gPlatformDatabase = {}
-gModuleDatabase = {}
-gPackageDatabase = {}
-gBuildInfoDatabase = {}     # (module/package/platform obj, BuildTarget, ToolChain, Arch) : build info
+gPlatformDatabase = {}      # {arch : {dsc file path : PlatformBuildClassObject}}
+gModuleDatabase = {}        # {arch : {inf file path : ModuleBuildClassObject}}
+gPackageDatabase = {}       # {arch : {dec file path : PackageBuildClassObject}}
+gAutoGenDatabase = {}       # (module/package/platform obj, BuildTarget, ToolChain, Arch) : build info
+gWorkspace = None
+gWorkspaceDir = ""
 
 def FindModuleOwnerPackage(module, pkgdb):
     for pkg in pkgdb:
@@ -32,54 +34,87 @@ def FindModuleOwnerPackage(module, pkgdb):
 
 class AutoGen(object):
 
-    def __init__(self, module, platform, workspace, arch, toolchain, target):
-        self.Module = module
-        self.Platform = platform
-        self.Workspace = workspace
-        self.Arch = arch
+    def __init__(self, moduleFile, platformFile, workspace, target, toolchain, arch):
+        global gModuleDatabase, gPackageDatabase, gPlatformDatabase, gAutoGenDatabase, gWorkspace, gWorkspaceDir
+
+        if gWorkspace == None:
+            gWorkspace = workspace
+        if gWorkspaceDir == "":
+            gWorkspaceDir = workspace.Workspace.WorkspaceDir
+
+        if gModuleDatabase == {}:
+            for a in workspace.Build:
+                gModuleDatabase[a] = gWorkspace.Build[a].ModuleDatabase
+        if gPackageDatabase == {}:
+            for a in workspace.Build:
+                gPackageDatabase[a] = gWorkspace.Build[a].PackageDatabase
+        if gPlatformDatabase == {}:
+            for a in workspace.Build:
+                gPlatformDatabase[a] = gWorkspace.Build[a].PlatformDatabase
+
         self.ToolChain = toolchain
         self.BuildTarget = target
-        self.WorkspaceDir = workspace.Workspace.WorkspaceDir
-        
-        global gModuleDatabase, gPackageDatabase, gPlatformDatabase, gBuildInfoDatabase
-        if gModuleDatabase == {}:
-            gModuleDatabase = self.Workspace.Build[arch].ModuleDatabase
-        if gPackageDatabase == {}:
-            gPackageDatabase = self.Workspace.Build[arch].PackageDatabase
-        if gPlatformDatabase == {}:
-            gPlatformDatabase = self.Workspace.Build[arch].PlatformDatabase
 
-        self.Package = FindModuleOwnerPackage(self.Module, gPackageDatabase)
+        if moduleFile == None:
+            #
+            # autogen for platform
+            #
+            self.PlatformBuildInfo = {}     # arch : PlatformBuildInfo Object
+            self.Platform = {}
+            self.IsPlatformAutoGen = True
+            if type(arch) == type([]):
+                self.Arch = arch
+            else:
+                self.Arch = [arch]
+                
+            self.Platform = {}
+            self.BuildInfo = {}
+            for a in self.Arch:
+                p = gPlatformDatabase[a][str(platformFile)]
+                self.Platform[a] = p
+                self.BuildInfo[a] = self.GetPlatformBuildInfo(p, self.BuildTarget, self.ToolChain, a)
+            gAutoGenDatabase[self.BuildTarget, self.ToolChain, str(platformFile)] = self
+            return
+
+        #
+        # autogen for module
+        #
+        self.IsPlatformAutoGen = False
+        if type(arch) == type([]):
+            if len(arch) > 1:
+                raise Exception("Cannot AutoGen a module for more than one platform objects at the same time!")
+            self.Arch = arch[0]
+        else:
+            self.Arch = arch
+
+        self.Module = gModuleDatabase[self.Arch][moduleFile]
+        self.Platform = gPlatformDatabase[arch][str(platformFile)]
+
+        self.Package = FindModuleOwnerPackage(self.Module, gPackageDatabase[arch])
         self.AutoGenC = GenC.AutoGenString()
         self.AutoGenH = GenC.AutoGenString()
 
-        key = (module, target, toolchain, arch)
-        if key not in gBuildInfoDatabase:
-            self.ModuleBuildInfo = ModuleBuildInfo(module)
-            self.InitModuleBuildInfo(self.ModuleBuildInfo)
-            gBuildInfoDatabase[key] = self.ModuleBuildInfo
-        else:
-            self.ModuleBuildInfo = gBuildInfoDatabase[key]
+        self.BuildInfo = self.GetModuleBuildInfo()
+        gAutoGenDatabase[self.BuildTarget, self.ToolChain, self.Arch, self.Module] = self
 
-    def InitModuleBuildInfo(self, info):
-        key = (self.Platform, self.BuildTarget, self.ToolChain, self.Arch)
-        if key in gBuildInfoDatabase:
-            info.PlatformInfo = gBuildInfoDatabase[key]
-        else:
-            info.PlatformInfo = PlatformBuildInfo(self.Platform)
-            self.InitPlatformBuildInfo(info.PlatformInfo)
-            gBuildInfoDatabase[key] = info.PlatformInfo
+    def GetModuleBuildInfo(self):
+        key = (self.BuildTarget, self.ToolChain, self.Arch, self.Module)
+        if key in gAutoGenDatabase:
+            return gAutoGenDatabase[key].BuildInfo
+        
+        info = ModuleBuildInfo(self.Module)
+        info.PlatformInfo = self.GetPlatformBuildInfo(self.Platform, self.BuildTarget, self.ToolChain, self.Arch)
 
         key = (self.Package, self.BuildTarget, self.ToolChain, self.Arch)
-        if key in gBuildInfoDatabase:
-            info.PackageInfo = gBuildInfoDatabase[key]
+        if key in gAutoGenDatabase:
+            info.PackageInfo = gAutoGenDatabase[key]
         else:
             info.PackageInfo = PackageBuildInfo(self.Package)
             self.InitPackageBuildInfo(info.PackageInfo)
-            gBuildInfoDatabase[key] = info.PackageInfo
+            gAutoGenDatabase[key] = info.PackageInfo
 
         # basic information
-        info.WorkspaceDir = self.WorkspaceDir
+        info.WorkspaceDir = gWorkspaceDir
         info.BuildTarget = self.BuildTarget
         info.ToolChain = self.ToolChain
         info.Arch = self.Arch
@@ -88,6 +123,7 @@ class AutoGen(object):
         info.FileBase, info.FileExt = path.splitext(path.basename(self.Module.DescFilePath))
         info.SourceDir = path.dirname(self.Module.DescFilePath)
         info.BuildDir = os.path.join(info.PlatformInfo.BuildDir,
+                                     info.Arch,
                                      info.SourceDir,
                                      info.FileBase)
         info.OutputDir = os.path.join(info.BuildDir, "OUTPUT")
@@ -104,22 +140,18 @@ class AutoGen(object):
         info.DependentPackageList = self.GetDependentPackageList()
 
 
-        info.BuildOption = self.GetModuleBuildOption()
+        info.BuildOption = self.GetModuleBuildOption(info.PlatformInfo)
 
-        info.PcdList = self.GetPcdList()
-        info.GuidList = self.GetGuidList()
-        info.ProtocolList = self.GetProtocolGuidList()
-        info.PpiList = self.GetPpiGuidList()
+        info.PcdList = self.GetPcdList(info.DependentLibraryList)
+        info.GuidList = self.GetGuidList(info.DependentLibraryList)
+        info.ProtocolList = self.GetProtocolGuidList(info.DependentLibraryList)
+        info.PpiList = self.GetPpiGuidList(info.DependentLibraryList)
         info.MacroList = self.GetMacroList()
         
-        info.IncludePathList = self.GetIncludePathList()
-
-        #GenC.CreateCode(info, self.AutoGenC, self.AutoGenH)
-        
-        info.AutoGenFileList = self.GetAutoGenFileList()
-        info.SourceFileList = self.GetBuildFileList()
-        #info.FileDependency = self.GetFileDependency()
-        # info.ObjectFileList = []
+        info.IncludePathList = self.GetIncludePathList(info.SourceDir, info.DependentPackageList)
+        info.SourceFileList = self.GetBuildFileList(info.PlatformInfo)
+        info.AutoGenFileList = self.GetAutoGenFileList(info)
+        return info
 
     def InitPackageBuildInfo(self, info):
         info.SourceDir = path.dirname(info.Package.DescFilePath)
@@ -127,31 +159,41 @@ class AutoGen(object):
         for inc in info.Package.Includes:
             info.IncludePathList.append(os.path.join(info.SourceDir, inc))
 
-    def InitPlatformBuildInfo(self, info):
-        ruleFile = os.path.join(os.environ["EDK_TOOLS_PATH"], r'Conf\build_rule.txt')
+    def GetPlatformBuildInfo(self, platform, target, toolchain, arch):
+        key = target, toolchain, platform
+        if key in gAutoGenDatabase and arch in gAutoGenDatabase[key].BuildInfo:
+            return gAutoGenDatabase[key].BuildInfo[arch]
+            
+        info = PlatformBuildInfo(platform)
+
+        ruleFile = gWorkspace.Workspace.WorkspaceFile(r'Conf\build_rule.txt')
         info.BuildRule = imp.load_source("BuildRule", ruleFile)
 
-        info.SourceDir = path.dirname(self.Platform.DescFilePath)
-        info.OutputDir = self.Platform.OutputDirectory
-        info.BuildDir = path.join(info.OutputDir, self.BuildTarget + "_" + self.ToolChain, self.Arch)
-        info.DebugDir = path.join(info.BuildDir, "DEBUG")
-        info.LibraryDir = info.BuildDir
-        info.FvDir = path.join(info.BuildDir, "FV")
+        info.Arch = arch
+        info.ToolChain = self.ToolChain
+        info.BuildTarget = self.BuildTarget
+
+        info.WorkspaceDir = gWorkspace.Workspace.WorkspaceDir
+        info.SourceDir = path.dirname(platform.DescFilePath)
+        info.OutputDir = platform.OutputDirectory
+        info.BuildDir = path.join(info.OutputDir, self.BuildTarget + "_" + self.ToolChain)
         info.MakefileDir = info.BuildDir
 
-        info.PcdTokenNumber = self.GeneratePcdTokenNumber()
-        info.DynamicPcdList = self.GetDynamicPcdList()
+        info.DynamicPcdList = self.GetDynamicPcdList(platform)
+        info.PcdTokenNumber = self.GeneratePcdTokenNumber(platform, info.DynamicPcdList)
 
         self.ProcessToolDefinition(info)
+
+        return info
 
     def GetMacroList(self):
         return ["%s %s" % (name, self.Module.Specification[name]) for name in self.Module.Specification]
     
     def ProcessToolDefinition(self, info):
-        toolDefinition = self.Workspace.ToolDef.ToolsDefTxtDictionary
-        toolCodeList = self.Workspace.ToolDef.ToolsDefTxtDatabase["COMMAND_TYPE"]
+        toolDefinition = gWorkspace.ToolDef.ToolsDefTxtDictionary
+        toolCodeList = gWorkspace.ToolDef.ToolsDefTxtDatabase["COMMAND_TYPE"]
         for tool in toolCodeList:
-            keyBaseString = "%s_%s_%s_%s" % (self.BuildTarget, self.ToolChain, self.Arch, tool)
+            keyBaseString = "%s_%s_%s_%s" % (info.BuildTarget, info.ToolChain, info.Arch, tool)
             key = "%s_NAME" % keyBaseString
             if key not in toolDefinition:
                 continue
@@ -193,22 +235,24 @@ class AutoGen(object):
             info.ToolChainFamily[tool] = family
             info.DefaultToolOption[tool] = option
 
-        #print "$$$$$$$",self.Platform.BuildOptions
-        for key in self.Platform.BuildOptions:
+        if self.IsPlatformAutoGen:
+            buildOptions = self.Platform[info.Arch].BuildOptions
+        else:
+            buildOptions = self.Platform.BuildOptions
+        for key in buildOptions:
             target, tag, arch, tool, attr = key.split("_")
             if tool not in info.ToolPath:
                 continue
-            if target == "*" or target == self.BuildTarget:
-                if tag == "*" or tag == self.ToolChain:
-                    if arch == "*" or arch == self.Arch:
-                        info.BuildOption[tool] = self.Platform.BuildOptions[key]
+            if target == "*" or target == info.BuildTarget:
+                if tag == "*" or tag == info.ToolChain:
+                    if arch == "*" or arch == info.Arch:
+                        info.BuildOption[tool] = buildOptions
         for tool in info.DefaultToolOption:
             if tool not in info.BuildOption:
                 info.BuildOption[tool] = ""
 
-    def GetModuleBuildOption(self):
+    def GetModuleBuildOption(self, platformInfo):
         buildOption = self.Module.BuildOptions
-        #print "#########",buildOption
         optionList = {}
         for key in buildOption:
             target, tag, arch, tool, attr = key.split("_")
@@ -216,13 +260,12 @@ class AutoGen(object):
                 if tag == "*" or tag == self.ToolChain:
                     if arch == "*" or arch == self.Arch:
                         optionList[tool] = buildOption[key]
-        for tool in self.ModuleBuildInfo.PlatformInfo.DefaultToolOption:
+        for tool in platformInfo.DefaultToolOption:
             if tool not in optionList:
                 optionList[tool] = ""
         return optionList
     
-    def GetBuildFileList(self):
-        platformInfo = self.ModuleBuildInfo.PlatformInfo
+    def GetBuildFileList(self, platformInfo):
         buildRule = platformInfo.BuildRule
         buildFileList = []
         fileList = self.Module.Sources
@@ -257,22 +300,13 @@ class AutoGen(object):
             
         packageList = []
         for pf in self.Module.Packages:
-            package = gPackageDatabase[pf]
             if pf in packageList:
                 continue
-            key = (package, self.BuildTarget, self.ToolChain, self.Arch)
-            if key in gBuildInfoDatabase:
-                packageList.append(gBuildInfoDatabase[key])
-            else:
-                packageBuildInfo = PackageBuildInfo(package)
-                self.InitPackageBuildInfo(packageBuildInfo)
-                packageList.append(packageBuildInfo)
-                gBuildInfoDatabase[key] = packageBuildInfo
-        #print "$$$$$$$", [str(p) for p in packageList]
+            packageList.append(gPackageDatabase[self.Arch][pf])
         return packageList
 
-    def GetAutoGenFileList(self):
-        GenC.CreateCode(self.ModuleBuildInfo, self.AutoGenC, self.AutoGenH)
+    def GetAutoGenFileList(self, buildInfo):
+        GenC.CreateCode(buildInfo, self.AutoGenC, self.AutoGenH)
         fileList = []
         if self.AutoGenC.String != "":
             fileList.append("AutoGen.c")
@@ -296,7 +330,7 @@ class AutoGen(object):
                 if moduleType not in libc or libf == None or libf == "":
                     continue
                 
-                libm = gModuleDatabase[libf]
+                libm = gModuleDatabase[self.Arch][libf]
                 if libm not in libraryList and libc not in libraryClassList:
                     libraryConsumerList.append(libm)
                     libraryList.append(libm)
@@ -396,23 +430,22 @@ class AutoGen(object):
         SortedLibraryList.reverse()
         return SortedLibraryList
 
-    def GetDynamicPcdList(self):
+    def GetDynamicPcdList(self, platform):
         pcdList = []
-        for key in self.Platform.Pcds:
-            pcd = self.Platform.Pcds[key]
+        for key in platform.Pcds:
+            pcd = platform.Pcds[key]
             if pcd.Type == TAB_PCDS_DYNAMIC:
                 pcdList.append(key)
         return pcdList
 
-    def GeneratePcdTokenNumber(self):
+    def GeneratePcdTokenNumber(self, platform, dynamicPcdList):
         pcdTokenNumber = {}
         tokenNumber = 1
-        platformInfo = self.ModuleBuildInfo.PlatformInfo
-        for pcd in platformInfo.DynamicPcdList:
+        for pcd in dynamicPcdList:
             pcdTokenNumber[PCD] = tokenNumber
             tokenNumber += 1
 
-        platformPcds = self.Platform.Pcds
+        platformPcds = platform.Pcds
         for key in platformPcds:
             pcd = platformPcds[key]
             if key not in pcdTokenNumber:
@@ -420,62 +453,46 @@ class AutoGen(object):
                 tokenNumber += 1
         return pcdTokenNumber
 
-    def PreprocessPcd(self, pcd):
-        if pcd.DatumType == None or pcd.DatumType == "" or\
-           pcd.TokenValue == None or pcd.TokenValue == "":
-            for pkg in gPackageDatabase:
-                package = gPackageDatabase[pkg]
-                key = (pcd.TokenCName, pcd.TokenSpaceGuidCName)
-                if key in package.Pcds:
-                    pcd.DatumType = package.Pcds[key].DatumType
-                    pcd.TokenValue = package.Pcds[key].TokenValue
-                    break
-        
-    def GetPcdList(self):
+    def GetPcdList(self, dependentLibraryList):
         platformPcds = self.Platform.Pcds
         #EdkLogger.info(self.Module.BaseName + " PCD settings")
 
         pcdList = []
-        for m in self.ModuleBuildInfo.DependentLibraryList + [self.Module]:
+        for m in dependentLibraryList + [self.Module]:
             # EdkLogger.info("  " + m.BaseName)
-            #print "@@@@@@",[pcd.TokenCName for pcd in m.Pcds.values()]
             pcdList.extend(m.Pcds.values())
-##            for key in modulePcds:
-##                if key not in platformPcds:
-##                    EdkLogger.error("No matching PCD in platform: %s %s" % key)
-##                    continue
-##                pcd = platformPcds[key]
-##                #self.PreprocessPcd(pcd)
-##                #EdkLogger.info("    %s %s %s (%s)" % (pcd.TokenSpaceGuidCName, pcd.TokenCName, pcd.Type, pcd.DatumType))
-##                pcdList.append(pcd)
         return pcdList
 
-    def GetGuidList(self):
+    def GetGuidList(self, dependentLibraryList):
         guidList = set(self.Module.Guids)
-        for lib in self.ModuleBuildInfo.DependentLibraryList:
+        for lib in dependentLibraryList:
             guidList |= set(lib.Guids)
         return list(guidList)
 
-    def GetProtocolGuidList(self):
+    def GetProtocolGuidList(self, dependentLibraryList):
         guidList = set(self.Module.Protocols)
-        for lib in self.ModuleBuildInfo.DependentLibraryList:
+        for lib in dependentLibraryList:
             guidList |= set(lib.Protocols)
         return list(guidList)
 
-    def GetPpiGuidList(self):
+    def GetPpiGuidList(self, dependentLibraryList):
         guidList = set(self.Module.Ppis)
-        for lib in self.ModuleBuildInfo.DependentLibraryList:
+        for lib in dependentLibraryList:
             guidList |= set(lib.Ppis)
         return guidList
 
-    def GetIncludePathList(self):
-        includePathList = [self.ModuleBuildInfo.SourceDir]
-        includePathList.extend(self.Module.Includes)
-        if self.ModuleBuildInfo.PackageInfo not in self.ModuleBuildInfo.DependentPackageList:
-            includePathList.extend(self.ModuleBuildInfo.PackageInfo.IncludePathList)
+    def GetIncludePathList(self, modulrDir, dependentPackageList):
+        includePathList = [modulrDir]
+        for inc in self.Module.Includes:
+            includePathList.append(inc)
             
-        for packageInfo in self.ModuleBuildInfo.DependentPackageList:
-            includePathList.extend(packageInfo.IncludePathList)
+        for package in dependentPackageList:
+            packageDir = path.dirname(package.DescFilePath)
+            includePathList.append(packageDir)
+            for inc in package.Includes:
+                inc = os.path.join(packageDir, inc)
+                if inc not in includePathList:
+                    includePathList.append(inc)
         return includePathList
 
     def CreateMakefile(self, filePath=None):
@@ -483,12 +500,96 @@ class AutoGen(object):
             "ENABLE_PCH"        :   False,
             "ENABLE_LOCAL_LIB"  :   True,
         }
-        makefile = GenMake.Makefile(self.ModuleBuildInfo, myBuildOption)
+
+        if self.IsPlatformAutoGen:
+            for arch in self.BuildInfo:
+                info = self.BuildInfo[arch]
+                for moduleFile in info.Platform.Modules:
+                    key = (info.BuildTarget, info.ToolChain, arch, moduleFile)
+                    moduleAutoGen = None
+                    if key not in gAutoGenDatabase:
+                        moduleAutoGen = AutoGen(moduleFile, info.Platform, gWorkspace,
+                                                info.BuildTarget, info.ToolChain, info.Arch)
+                    else:
+                        moduleAutoGen = gAutoGenDatabase[key]
+                    if not moduleAutoGen.BuildInfo.IsLibrary and moduleAutoGen not in info.ModuleAutoGenList:
+                        info.ModuleAutoGenList.append(moduleAutoGen)
+                    elif moduleAutoGen.BuildInfo.IsLibrary and moduleAutoGen not in info.LibraryAutoGenList:
+                        info.LibraryAutoGenList.append(moduleAutoGen)
+                    moduleAutoGen.CreateMakefile()
+
+                    for lib in moduleAutoGen.BuildInfo.DependentLibraryList:
+                        key = (info.BuildTarget, info.ToolChain, arch, lib)
+                        libraryAutoGen = None
+                        if key not in gAutoGenDatabase:
+                            libraryAutoGen = AutoGen(lib, info.Platform, gWorkspace,
+                                                    info.BuildTarget, info.ToolChain, info.Arch)
+                        else:
+                            libraryAutoGen = gAutoGenDatabase[key]
+                        if libraryAutoGen not in info.LibraryAutoGenList:
+                            info.LibraryAutoGenList.append(libraryAutoGen)
+                        libraryAutoGen.CreateMakefile()
+        else:
+            for lib in self.BuildInfo.DependentLibraryList:
+                key = (self.BuildTarget, self.ToolChain, self.Arch, lib)
+                libraryAutoGen = None
+                if key not in gAutoGenDatabase:
+                    libraryAutoGen = AutoGen(lib, self.Platform, gWorkspace,
+                                             self.BuildTarget, self.ToolChain, self.Arch)
+                else:
+                    libraryAutoGen = gAutoGenDatabase[key]
+                if libraryAutoGen not in self.BuildInfo.LibraryAutoGenList:
+                    self.BuildInfo.LibraryAutoGenList.append(libraryAutoGen)
+                libraryAutoGen.CreateMakefile()
+
+        makefile = GenMake.Makefile(self.BuildInfo, myBuildOption)
         return makefile.Generate()
 
     def CreateAutoGenFile(self, filePath=None):
-        return GenC.Generate(os.path.join(self.ModuleBuildInfo.WorkspaceDir, self.ModuleBuildInfo.DebugDir),
-                             self.AutoGenC, self.AutoGenH)
+        if self.IsPlatformAutoGen:
+            for arch in self.BuildInfo:
+                info = self.BuildInfo[arch]
+                for moduleFile in info.Platform.Modules:
+                    key = (info.BuildTarget, info.ToolChain, arch, moduleFile)
+                    moduleAutoGen = None
+                    if key not in gAutoGenDatabase:
+                        moduleAutoGen = AutoGen(moduleFile, info.Platform, gWorkspace,
+                                                info.BuildTarget, info.ToolChain, info.Arch)
+                    else:
+                        moduleAutoGen = gAutoGenDatabase[key]
+
+                    if not moduleAutoGen.BuildInfo.IsLibrary and moduleAutoGen not in info.ModuleAutoGenList:
+                        info.ModuleAutoGenList.append(moduleAutoGen)
+                    elif moduleAutoGen.BuildInfo.IsLibrary and moduleAutoGen not in info.LibraryAutoGenList:
+                        info.LibraryAutoGenList.append(moduleAutoGen)
+                    moduleAutoGen.CreateAutoGenFile()
+
+                    for lib in moduleAutoGen.BuildInfo.DependentLibraryList:
+                        key = (info.BuildTarget, info.ToolChain, arch, lib)
+                        libraryAutoGen = None
+                        if key not in gAutoGenDatabase:
+                            libraryAutoGen = AutoGen(lib, info.Platform, gWorkspace,
+                                                    info.BuildTarget, info.ToolChain, info.Arch)
+                        else:
+                            libraryAutoGen = gAutoGenDatabase[key]
+                        if libraryAutoGen not in info.LibraryAutoGenList:
+                            info.LibraryAutoGenList.append(libraryAutoGen)
+                        libraryAutoGen.CreateAutoGenFile()
+        else:
+            for lib in self.BuildInfo.DependentLibraryList:
+                key = (self.BuildTarget, self.ToolChain, self.Arch, lib)
+                libraryAutoGen = None
+                if key not in gAutoGenDatabase:
+                    libraryAutoGen = AutoGen(lib, self.Platform, gWorkspace,
+                                             self.BuildTarget, self.ToolChain, self.Arch)
+                else:
+                    libraryAutoGen = gAutoGenDatabase[key]
+                if libraryAutoGen not in self.BuildInfo.LibraryAutoGenList:
+                    self.BuildInfo.LibraryAutoGenList.append(libraryAutoGen)
+                libraryAutoGen.CreateAutoGenFile()
+            return GenC.Generate(os.path.join(self.BuildInfo.WorkspaceDir,
+                                              self.BuildInfo.DebugDir),
+                                 self.AutoGenC, self.AutoGenH)
 
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
@@ -503,7 +604,7 @@ if __name__ == '__main__':
     myBuild = ewb.Build["IA32"]
 
     myWorkspace = ewb
-    apf = ewb.TargetTxt.TargetTxtDictionary["ACTIVE_PLATFORM"][0]
+    apf = os.path.normpath(ewb.TargetTxt.TargetTxtDictionary["ACTIVE_PLATFORM"][0])
     myPlatform = myBuild.PlatformDatabase[os.path.normpath(apf)]
 
     #LoadBuildRule(myWorkspace.Workspace.WorkspaceFile('Tools/Conf/build.rule'))
@@ -545,9 +646,9 @@ if __name__ == '__main__':
 
         print
 
-##        for key in gBuildInfoDatabase:
+##        for key in gAutoGenDatabase:
 ##            if str(myPlatform) == str(key[0]):
-##                pi = gBuildInfoDatabase[key]
+##                pi = gAutoGenDatabase[key]
 ##                print " BuildDir =",pi.BuildDir
 ##                print " OutputDir =",pi.OutputDir
 ##                print " DebugDir =",pi.DebugDir
@@ -569,16 +670,16 @@ if __name__ == '__main__':
         #if mf in myPlatform.Modules and mf in myBuild.ModuleDatabase:
         #print mf
         myModule = myBuild.ModuleDatabase[mf]
-##        if myModule.LibraryClass != None and myModule.LibraryClass != "":
-##            continue    # skip library instance
-
-        ag = AutoGen(myModule, myPlatform, myWorkspace, myArch, myToolchain, myBuildTarget)
+        ag = AutoGen(myModule, myPlatform, myWorkspace, myBuildTarget, myToolchain, myArch)
         ag.CreateAutoGenFile()
         ag.CreateMakefile()
-        
+
         #PrintAutoGen(ag)
 ##        for lib in ag.ModuleBuildInfo.DependentLibraryList:
 ##            ag = AutoGen(lib, myPlatform, myWorkspace, myArch, myToolchain, myBuildTarget)
 ##            ag.CreateAutoGenFile()
 ##            ag.CreateMakefile()
 ##            #PrintAutoGen(ag)
+    platformAutoGen = AutoGen(None, apf, myWorkspace, myBuildTarget, myToolchain, myWorkspace.SupArchList)
+    platformAutoGen.CreateAutoGenFile()
+    platformAutoGen.CreateMakefile()

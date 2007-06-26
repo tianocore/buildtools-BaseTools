@@ -162,8 +162,8 @@ class WorkspaceBuild(object):
         for key in DataType.ARCH_LIST:
             self.Build[key] = ItemBuild(key)
         
-        self.TargetTxt.LoadTargetTxtFile(os.path.join(os.environ["EDK_TOOLS_PATH"], 'Conf/target.txt'))
-        self.ToolDef.LoadToolDefFile(os.path.join(os.environ["EDK_TOOLS_PATH"], 'Conf/tools_def.txt'))
+        self.TargetTxt.LoadTargetTxtFile(self.Workspace.WorkspaceFile('Conf/target.txt'))
+        self.ToolDef.LoadToolDefFile(self.Workspace.WorkspaceFile('Conf/tools_def.txt'))
         
         #get active platform
         dscFileName = NormPath(self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM][0])

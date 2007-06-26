@@ -38,53 +38,72 @@ if __name__ == '__main__':
     apf = ewb.TargetTxt.TargetTxtDictionary["ACTIVE_PLATFORM"][0]
     print "Active Platform is",apf
 
-    myToolchain = ewb.TargetTxt.TargetTxtDictionary["TOOL_CHAIN_TAG"][0]
-    print "First valid tool chain is", myToolchain
+    myToolchainList = ewb.TargetTxt.TargetTxtDictionary["TOOL_CHAIN_TAG"]
+    print "Valid tool chain(s) is", " ".join(myToolchainList)
     #print myToolchain
 
-    myBuildTarget = ewb.TargetTxt.TargetTxtDictionary["TARGET"][0]
-    print "First build target is",myBuildTarget
+    buildTargetList = ewb.TargetTxt.TargetTxtDictionary["TARGET"]
+    if len(buildTargetList) == 0:
+        myBuildTargetList = ewb.BuildTarget
+    else:
+        myBuildTargetList = set(buildTargetList) & set(ewb.BuildTarget)
+
+    print "Valid build target(s) is", " ".join(myBuildTargetList)
     #print myBuildTarget
+
+    targetArchList = ewb.TargetTxt.TargetTxtDictionary["TARGET_ARCH"]
+    if len(targetArchList) == 0:
+        myArchList = ewb.SupArchList
+    else:
+        myArchList = set(ewb.SupArchList) & set(targetArchList)
+    print "Valid target architecture(s) is", " ".join(myArchList)
 
     import glob
     buildmf = ""
+    buildpf = ""
     makefile = ""
     filesInCurrentDir = glob.glob(os.getcwd() + '\\*.inf')
     if len(filesInCurrentDir) > 0:
         buildmf = filesInCurrentDir[0][len(myWorkspace.Workspace.WorkspaceDir)+1:]
         print "Module build:",buildmf
+        buildpf = os.path.normpath(apf)
+    elif apf == "":
+        filesInCurrentDir = glob.glob(os.getcwd() + '\\*.dsc')
+        if len(filesInCurrentDir) > 0:
+            buildpf = filesInCurrentDir[0][len(myWorkspace.Workspace.WorkspaceDir)+1:]
+            print "Platform build:",buildpf
+    else:
+        buildpf = os.path.normpath(apf)
+        print "Platform build:",buildpf
 
+    print "############################################################\n"
+    
     myBuildOption = {
         "ENABLE_PCH"        :   False,
         "ENABLE_LOCAL_LIB"  :   True,
     }
 
-    for arch in ewb.Build:
-        if not arch.upper() == "IA32":
-            continue
-        myArch = ewb.Build[arch].Arch
-        print "Current target architecture is",myArch
+    t = ""
+    if len(sys.argv) > 1:
+        t = sys.argv[1]
+    for target in myBuildTargetList:
+        for toolchain in myToolchainList:
+            if buildmf == "" and buildpf != "":
+                platformAutoGen = AutoGen(None, buildpf, myWorkspace, target, toolchain, list(myArchList))
+                platformAutoGen.CreateAutoGenFile()
+                makefile = platformAutoGen.CreateMakefile()
+                if makefile != "":
+                    p = Popen(["nmake", "/nologo", "-f", makefile, t], env=os.environ, cwd=os.path.dirname(makefile)).communicate()
+            elif buildmf != "" and buildpf != "":
+                for arch in myArchList:
+                    ag = AutoGen(buildmf, buildpf, myWorkspace, target, toolchain, arch)
+                    ag.CreateAutoGenFile()
+                    makefile = ag.CreateMakefile()
 
-        myBuild = ewb.Build[arch]
-        myPlatform = myBuild.PlatformDatabase[os.path.normpath(apf)]
-
-        buildAg = None
-        for mf in myBuild.ModuleDatabase:
-            myModule = myBuild.ModuleDatabase[mf]
-
-            ag = AutoGen(myModule, myPlatform, myWorkspace, myArch, myToolchain, myBuildTarget)
-            ag.CreateAutoGenFile()
-            if buildmf == str(myModule):
-                makefile = ag.CreateMakefile()
-                buildAg = ag
+                    if makefile != "":
+                        p = Popen(["nmake", "/nologo", "-f", makefile, t], env=os.environ, cwd=os.path.dirname(makefile)).communicate()
             else:
-                ag.CreateMakefile()
+                print "Nothing to be built"
+                break
 
-        print "############################################################\n"
-        t = ""
-        if len(sys.argv) > 1:
-            t = sys.argv[1]
-        if makefile != "":
-            p = Popen(["nmake", "/nologo", "-f", makefile, t], env=os.environ, cwd=os.path.dirname(makefile)).communicate()
-
-    print "\n[Finished in %s]" % (time.strftime("%M:%S", time.gmtime(int(time.clock() - startTime))))
+    print "\n[Finished in %s]" % (time.strftime("%M:%S", time.gmtime(int(round(time.clock() - startTime)))))
