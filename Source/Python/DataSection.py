@@ -2,6 +2,7 @@ import Section
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import subprocess
 from Ffs import Ffs
+import os
 
 class DataSection (Section.Section):
     def __init__(self):
@@ -20,9 +21,11 @@ class DataSection (Section.Section):
             self.SectFileName = FfsInf.__ExtendMarco__(self.SectFileName)
 
         OutputFile = OutputPath + \
+                     os.sep     + \
                      ModuleName + \
                      Ffs.SectionSuffix.get(self.SecType)
-                     
+        OutputFile = os.path.normpath(OutputFile)
+        
         GenSectionCmd = 'GenSection -o '                                 + \
                          OutputFile                                      + \
                          ' -s '                                          + \

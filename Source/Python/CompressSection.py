@@ -1,6 +1,7 @@
 from Ffs import Ffs
 import Section
 import subprocess
+import os
 
 class CompressSection (Section.Section) :
     CompTypeDict = {
@@ -29,9 +30,11 @@ class CompressSection (Section.Section) :
                         Sect.GenSection(OutputPath, ModuleName)
 
         OutputFile = OutputPath + \
+                     os.sep     + \
                      ModuleName + \
                      Ffs.SectionSuffix['COMPRESS']
-                     
+        OutputFile = os.path.normpath(OutputFile)
+        
         GenSectionCmd = 'GenSection -o '                              + \
                          OutputFile                                   + \
                          ' -s '                                       + \

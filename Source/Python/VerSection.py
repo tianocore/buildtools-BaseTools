@@ -20,9 +20,11 @@ class VerSection (Section.Section):
             self.FileName = FfsInf.__ExtendMarco__(self.FileName)
             
         OutputFile = OutputPath + \
+                     os.sep     + \
                      ModuleName + \
                      Ffs.SectionSuffix.get('VERSION')
-                     
+        OutputFile = os.path.normpath(OutputFile)
+        
         if not (self.BuildNum == None) :
             BuildNum = ' -j ' + '%d' %self.BuildNum;
         else :

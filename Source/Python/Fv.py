@@ -118,11 +118,15 @@ class FV:
         
         if not (self.FvAttributeDict == None):
             for FvAttribute in self.FvAttributeDict.keys() :
-                self.FvInfFile.writelines(FvAttribute       + \
+                self.FvInfFile.writelines("EFI_"            + \
+                                          FvAttribute       + \
                                           '='               + \
                                           self.FvAttributeDict[FvAttribute] + \
                                           T_CHAR_LF )
-            
+        if self.FvAlignment != None:
+            self.FvInfFile.writelines("FVB2_ALIGNMENT_"         + \
+                                       self.FvAlignment.strip() + \
+                                       "= TRUE")
         #
         # Add [Files]
         #

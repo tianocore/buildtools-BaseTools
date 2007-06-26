@@ -1090,6 +1090,7 @@ class FdfParser:
                 section = GuidSection.GuidSection()
                 section.Alignment = alignment
                 section.NameGuid = guid
+                section.SectionType = 'GUIDED'
                 # Recursive sections...
                 while self.__GetLeafSection(section):
                     pass

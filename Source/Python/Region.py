@@ -1,6 +1,7 @@
 import GenFds
 from struct import *
 from GenFdsGlobalVariable import GenFdsGlobalVariable
+import StringIO
 
 class region:
     def __init__(self):
@@ -19,9 +20,20 @@ class region:
 #  Add RegionData to Fd file
 ##
     def AddToBuffer(self, Buffer, BlockSize):
+        Size = int (self.Offset, 16) - int (self.Size, 16)
         if self.RegionType == 'FV':
+            print "Find Region = %s in FvDict !!" %self.RegionData
             fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(self.RegionData.upper())
-            fv.AddToBuffer(Buffer, self.Offset)
+            FvBuffer = StringIO.StringIO('')
+            if fv != None :
+                print "Gen Fv"
+                fv.AddToBuffer(FvBuffer, self.Offset)
+                if FvBuffer.len() < Size :
+                    Buffer.write(FvBuffer.getvalue())
+                    index = 0
+                    for index in range(Size - FvBuffer.len()):
+                        Buffer.write(pack('B', int('0xFF', 16)))
+            FvBuffer.close()
         if self.RegionType == 'FILE':
             BinFile = open (self.RegionData, 'r')
             Buffer.write(BinFile.read())

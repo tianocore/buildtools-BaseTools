@@ -27,7 +27,14 @@ class FD:
 #  Create Fd file
 ##
     def GenFd (self):
-        FdBuffer = StringIO.StringIO('');
+        #
+        # Print Information
+        #
+        print 'Following Region will be add to Fd !!!'
+        for item in GenFdsGlobalVariable.FdfParser.profile.FvDict:
+            print item
+            
+        FdBuffer = StringIO.StringIO('')
         for Regions in self.RegionList :
             #
             # Call each region's AddToBuffer function 

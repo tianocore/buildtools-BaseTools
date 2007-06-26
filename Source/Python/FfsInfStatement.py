@@ -30,7 +30,10 @@ class FfsInfStatement(Ffs.Ffs):
         self.ModuleGuid = Inf.Defines.DefinesDictionary['FILE_GUID'][0]
         self.ModuleType = Inf.Defines.DefinesDictionary['MODULE_TYPE'][0]
         self.VersionString = Inf.Defines.DefinesDictionary['VERSION_STRING'][0]
-
+        print "BaseName : %s" %self.BaseName
+        print "ModuleGuid : %s" %self.ModuleGuid
+        print "ModuleType : %s" %self.ModuleType
+        print "VersionString : %s" %self.VersionString
         #
         # Set OutputPath = ${WorkSpace}\Build\Fv\Ffs\${ModuleGuid}+ ${MdouleName}\
         #
@@ -41,7 +44,6 @@ class FfsInfStatement(Ffs.Ffs):
                           self.BaseName
                                   
         self.OutputPath = os.path.normpath(self.OutputPath)
-        self.OutputPath = self.OutputPath + os.sep
         if not os.path.exists(self.OutputPath) :
             os.makedirs(self.OutputPath)
 
@@ -49,6 +51,7 @@ class FfsInfStatement(Ffs.Ffs):
         #
         # Parse Inf file get Module related information
         #
+        print " Begion parsing INf file : %s" %self.InfFileName
         self.__infParse__(self.InfFileName)
         #
         # Get the rule of how to generate Ffs file
@@ -138,6 +141,7 @@ class FfsInfStatement(Ffs.Ffs):
         elif isinstance(Rule, RuleComplexFile.RuleComplexFile):
             SectFiles = ''
             for Sect in Rule.SectionList:
+                print 'GenSection: %s %s :' %(self.OutputPath ,self.ModuleGuid)
                 SectFiles = SectFiles    + \
                             ' -i '       + \
                             Sect.GenSection(self.OutputPath , self.ModuleGuid, self)
@@ -151,6 +155,7 @@ class FfsInfStatement(Ffs.Ffs):
                         '-t '                                        + \
                         Ffs.Ffs.ModuleTypeToFileType[Rule.ModuleType]+ \
                         ' -g '                                       + \
+                        self.ModuleGuid                              + \
                         ' -o '                                       + \
                         FfsOutput                                    + \
                         self.NameGuid                                + \
