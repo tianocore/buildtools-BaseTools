@@ -125,6 +125,7 @@ class PlatformBuildClassObject(object):
         self.Guid                    = ''
         self.Version                 = ''
         self.OutputDirectory         = ''
+        self.FlashDefinition         = ''
         
         self.Modules                 = []       #[ InfFileName, ... ]
         self.LibraryClasses          = {}       #{ (LibraryClassName, ModuleType) : LibraryClassInfFile }
@@ -218,6 +219,7 @@ class WorkspaceBuild(object):
                 pb.Guid = dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_PLATFORM_GUID][0]
                 pb.Version = dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_PLATFORM_VERSION][0]
                 pb.OutputDirectory = NormPath(dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_OUTPUT_DIRECTORY][0])
+                pb.FlashDefinition = NormPath(dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_FLASH_DEFINITION][0])
             
                 #Module
                 for index in range(len(dscObj.Contents[key].Components)):
@@ -566,6 +568,7 @@ if __name__ == '__main__':
             print 'Guid = ', p.Guid                     
             print 'Version = ', p.Version
             print 'OutputDirectory = ', p.OutputDirectory                
+            print 'FlashDefinition = ', p.FlashDefinition
             print 'Modules = ', p.Modules                
             print 'LibraryClasses = ', p.LibraryClasses 
             print 'Pcds = ', p.Pcds                     
