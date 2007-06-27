@@ -185,6 +185,9 @@ def CleanString(Line, CommentCharacter = DataType.TAB_COMMENT_SPLIT):
     #Change path
     #Line = os.path.normpath(Line)
     
+    #remove whitespace again
+    Line = Line.strip();
+    
     return Line
 
 def GetMultipleValuesOfKeyFromLines(Lines, Key, KeyValues, CommentCharacter):
