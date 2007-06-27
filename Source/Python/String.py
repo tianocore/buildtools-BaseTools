@@ -169,10 +169,10 @@ def NormPath(path):
         return path
 
 def CleanString(Line, CommentCharacter = DataType.TAB_COMMENT_SPLIT):
-    #remove comments
-    Line = Line.split(CommentCharacter, 1)[0];
     #remove whitespace
     Line = Line.strip();
+    #remove comments
+    Line = Line.split(CommentCharacter, 1)[0];
     #replace '\\', '\' with '/'
     Line = Line.replace('\\', '/')
     Line = Line.replace('//', '/')

@@ -43,8 +43,8 @@ def DecToHexStr(Dec):
     return '0x%04X' % int(Dec)
 
 def DecToHexList(Dec):
-    Hex = "%04X" % int(Dec)
-    List = [HexHeader + Hex[2:4], HexHeader + Hex[0:2]]
+    Hex = "%08X" % int(Dec)
+    List = [HexHeader + Hex[6:8], HexHeader + Hex[4:6], HexHeader + Hex[2:4], HexHeader + Hex[0:2]]
     return List
 
 def CreateHFileHeader(BaseName):
@@ -89,7 +89,7 @@ def CreateArrayItem(Value):
     Line = '  '
     ArrayItem = ''
     
-    Value = Value + UniToHexList(u'\x00')
+    #Value = Value + UniToHexList(u'\x00')
     for Item in Value:
         if Index < MaxLength:
             Line = Line + Item + ', '
@@ -117,7 +117,7 @@ def CreateCFileStringDef(Name, Offset, Token):
     
 def CreateCFileStringValue(Name, Language, Value, Offset):
     Str = WriteLine('  ', COMMENT + STRING + ' ' + Name + ' ' + OFFSET + ' ' + str(Offset))
-    Str = WriteLine(Str, CreateArrayItem(Value))
+    Str = WriteLine(Str, CreateArrayItem(Value + UniToHexList(u'\x00')))
     
     return Str
 
@@ -241,6 +241,7 @@ def WriteLine(Target, Item):
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
 if __name__ == '__main__':
+    print 'start'
     UniFileList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\inventorystrings.uni', 'C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\VfrStrings.uni']
     IncludeList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample']
     SkipList = ['.inf', '.uni']
@@ -252,3 +253,4 @@ if __name__ == '__main__':
     cfile.write(c)
     #print h
     #print c
+    print 'end'

@@ -67,6 +67,7 @@ class ModuleBuildClassObject(object):
         self.ModuleType              = ''
         self.Guid                    = ''
         self.Version                 = ''
+        self.CustomMakefile          = {}
         self.Specification           = {}
         self.LibraryClass            = None      # LibraryClassObject
         self.ModuleEntryPointList    = []
@@ -83,6 +84,7 @@ class ModuleBuildClassObject(object):
         self.Packages                = []        #[ DecFileName, ... ]
         self.Pcds                    = {}        #{ [(PcdCName, PcdGuidCName)] : PcdClassObject}
         self.BuildOptions            = {}        #{ [BuildOptionKey] : BuildOptionValue}
+        self.Depex                   = ''
 
     def __str__(self):
         return self.DescFilePath
@@ -332,6 +334,16 @@ class WorkspaceBuild(object):
                 pb.Guid = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_FILE_GUID][0]
                 pb.Version = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_STRING][0]
                 pb.ModuleType = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_MODULE_TYPE][0]
+                
+                for Index in range(len(infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_CUSTOM_MAKEFILE])):
+                    Makefile = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_CUSTOM_MAKEFILE][Index]
+                    if Makefile != '':
+                        MakefileList = Makefile.split(DataType.TAB_VALUE_SPLIT)
+                        if len(MakefileList) == 2:
+                            pb.CustomMakefile[CleanString(MakefileList[0])] = CleanString(MakefileList[1])
+                        else:
+                            EdkLogger.error('Wrong custom makefile defined in file ' + inf + ', correct format is CUSTOM_MAKEFILE = Family|Filename')
+                
                 if infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_EDK_RELEASE_VERSION][0] != '':
                     pb.Specification[TAB_INF_DEFINES_EDK_RELEASE_VERSION] = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_EDK_RELEASE_VERSION][0]
                 if infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION][0] != '':
@@ -391,6 +403,9 @@ class WorkspaceBuild(object):
                     b = infObj.Contents[key].BuildOptions[index]
                     pb.BuildOptions[CleanString(b.split(DataType.TAB_EQUAL_SPLIT)[0])] = CleanString(b.split(DataType.TAB_EQUAL_SPLIT)[1])
                 self.FindBuildOptions(key, inf, pb.BuildOptions)
+                
+                #Depex
+                pb.Depex = ' '.join(infObj.Contents[key].Depex)
                 
                 #LibraryClasses
                 for index in range(len(infObj.Contents[key].LibraryClasses)):
@@ -582,6 +597,7 @@ if __name__ == '__main__':
             print 'ModuleType = ', p.ModuleType                     
             print 'Guid = ', p.Guid                                 
             print 'Version = ', p.Version
+            print 'CustomMakefile = ', p.CustomMakefile
             print 'Specification = ', p.Specification
             if p.LibraryClass != None:
                 print 'LibraryClass = ', p.LibraryClass.LibraryClass
@@ -602,6 +618,7 @@ if __name__ == '__main__':
             print 'Packages = ', p.Packages                         
             print 'Pcds = ', p.Pcds                                 
             print 'BuildOptions = ', p.BuildOptions
+            print 'Depex = ', p.Depex
             print ''
         #End of Module    
             

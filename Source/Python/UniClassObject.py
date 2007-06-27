@@ -28,7 +28,9 @@ def UniToStr(Uni):
 def UniToHexList(Uni):
     List = []
     for Item in Uni:
-        List.append('0x%02X' % ord(Item))
+        Temp = '%04X' % ord(Item)
+        List.append('0x' + Temp[2:4])
+        List.append('0x' + Temp[0:2])
     return List
 
 class StringDefinitionClassObject(object):
