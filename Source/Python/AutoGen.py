@@ -444,7 +444,7 @@ class AutoGen(object):
         pcdTokenNumber = {}
         tokenNumber = 1
         for pcd in dynamicPcdList:
-            pcdTokenNumber[PCD] = tokenNumber
+            pcdTokenNumber[pcd] = tokenNumber
             tokenNumber += 1
 
         platformPcds = platform.Pcds
