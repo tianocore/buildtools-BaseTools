@@ -146,7 +146,7 @@ class ItemBuild(object):
         self.ModuleDatabase          = {}        #{ [InfFileName] : ModuleBuildClassObject, ...}
         
 class WorkspaceBuild(object):
-    def __init__(self):
+    def __init__(self, ActivePlatform = None):
         self.Workspace               = EdkIIWorkspace()
         self.PrintRunTime            = True
         self.PlatformBuild           = True
@@ -164,6 +164,9 @@ class WorkspaceBuild(object):
         
         self.TargetTxt.LoadTargetTxtFile(self.Workspace.WorkspaceFile('Conf/target.txt'))
         self.ToolDef.LoadToolDefFile(self.Workspace.WorkspaceFile('Conf/tools_def.txt'))
+        
+        if ActivePlatform != None:
+            self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM][0] = ActivePlatform
         
         #get active platform
         dscFileName = NormPath(self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM][0])
