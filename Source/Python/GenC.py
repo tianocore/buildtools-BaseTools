@@ -736,16 +736,16 @@ BasicHeaderFile = "Base.h"
 
 ModuleTypeHeaderFile = {
     "BASE"              :   BasicHeaderFile,
-    "SEC"               :   ["PiPei.h", "DebugLib.h", ],         # "PiPei.h",
-    "PEI_CORE"          :   ["PiPei.h", "DebugLib.h"],        # "PiPei.h",
-    "PEIM"              :   ["PiPei.h", "DebugLib.h"],             # PiPei.h",
-    "DXE_CORE"          :   ["PiDxe.h", "DebugLib.h"],        # PiDxe.h",
-    "DXE_DRIVER"        :   ["PiDxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
-    "DXE_SMM_DRIVER"    :   ["PiDxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
-    "DXE_RUNTIME_DRIVER":   ["PiDxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
-    "DXE_SAL_DRIVER"    :   ["PiDxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
-    "UEFI_DRIVER"       :   ["Uefi.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],
-    "UEFI_APPLICATION"  :   ["Uefi.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"]
+    "SEC"               :   ["PiPei.h", "Library/DebugLib.h"],
+    "PEI_CORE"          :   ["PiPei.h", "Library/DebugLib.h"],  
+    "PEIM"              :   ["PiPei.h", "Library/DebugLib.h"],  
+    "DXE_CORE"          :   ["PiDxe.h", "Library/DebugLib.h"],  
+    "DXE_DRIVER"        :   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"], 
+    "DXE_SMM_DRIVER"    :   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"], 
+    "DXE_RUNTIME_DRIVER":   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"], 
+    "DXE_SAL_DRIVER"    :   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"], 
+    "UEFI_DRIVER"       :   ["Uefi.h",  "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"],
+    "UEFI_APPLICATION"  :   ["Uefi.h",  "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"]
 }
 
 ##ModuleTypeHeaderFile = {
