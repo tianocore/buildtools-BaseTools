@@ -39,15 +39,20 @@ class GuidSection(Section.Section) :
         # GENCRC32 section
         #
         if self.NameGuid == None or ExternalTool == None :
+            print "Use GenSection function Generate CRC32 Section"
             GenSectionCmd = 'GenSection -o '                               + \
                              OutputFile                                    + \
                              ' -s '                                        + \
                              Section.Section.SectionType[self.SectionType] + \
                              SectFile
+            PopenObject = subprocess.Popen(GenSectionCmd)
+            PopenObject.communicate()
+            if PopenObject.returncode != 0:
+                raise Exception("GenSection Failed!")
             return OutputFile
         else:
             #
-            # Call GenSection
+            # Call GenSection with DUMMY section type.
             #
             GenSectionCmd = 'GenSection -o '                               + \
                              OutputFile                                    + \
@@ -55,8 +60,10 @@ class GuidSection(Section.Section) :
                              SectFile
         
             print GenSectionCmd
-            subprocess.Popen (GenSectionCmd).communicate()
-        
+            PopenObject = subprocess.Popen (GenSectionCmd)
+            PopenObject.communicate()
+            if PopenObject.returncode != 0:
+                raise Exception ("GenSection Failed!")
             #
             # Use external tool process the Output
             #
@@ -81,13 +88,30 @@ class GuidSection(Section.Section) :
             #
             # Call Gensection Add Secntion Header
             #
+            PROCSSING_REQUIRED = ''
+            AUTH_STATUS_VALID = ''
+            if self.ProcessRequired == True:
+                PROCSSING_REQUIRED = "PROCSSING_REQUIRED"
+            if self.AuthStatusValid == True:
+                AUTH_STATUS_VALID = "AUTH_STATUS_VALID"
+            if PROCSSING_REQUIRED != '' or AUTH_STATUS_VALID != '':
+                attribute = ' -a '              + \
+                             PROCSSING_REQUIRED + \
+                             AUTH_STATUS_VALID
+                             
             GenSectionCmd = 'GenSection -o '                        + \
                              OutputFile                             + \
                              ' -s '                                 + \
                              Section.Section.SectionType['GUIDED']  + \
+                             ' -g '                                 + \
+                             self.NameGuid                          + \
+                             attribute                              + \
                              ' '                                    + \
                              TempFile
                         
             print GenSectionCmd
-            subprocess.Popen(GenSectionCmd).communicate()
+            PopenObject = subprocess.Popen(GenSectionCmd)
+            PopenObject.communicate()
+            if PopenObject.returncode != 0:
+                raise Exception ("GenSection Failed!")
             return OutputFile

@@ -25,11 +25,13 @@ class VerSection (Section.Section):
                      Ffs.SectionSuffix.get('VERSION')
         OutputFile = os.path.normpath(OutputFile)
         
+        """Get Build Num """
+        BuildNum = ''
         if not (self.BuildNum == None) :
             BuildNum = ' -j ' + '%d' %self.BuildNum;
-        else :
-            BuidNum = None
-
+ 
+        """Get String Data"""
+        StringData = ''
         if self.StringData != None:
              StringData = self.StringData
         elif self.FileName != None:
