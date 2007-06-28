@@ -1091,6 +1091,7 @@ class FdfParser:
             # Recursive sections...
             while self.__GetLeafSection(section):
                 pass
+            self.__GetEncapsulationSec(section)
             
             if not self.__IsToken( "}"):
                 raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
@@ -1116,6 +1117,7 @@ class FdfParser:
                 # Recursive sections...
                 while self.__GetLeafSection(section):
                     pass
+                self.__GetEncapsulationSec(section)
                 
                 if not self.__IsToken( "}"):
                     raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
@@ -1131,6 +1133,8 @@ class FdfParser:
     def __GetGuidAttrib(self):
         
         attribDict = {}
+        attribDict["PROCESSING_REQUIRED"] = False
+        attribDict["AUTH_STATUS_VALID"] = False
         if self.__IsKeyword("PROCESSING_REQUIRED") or self.__IsKeyword("AUTH_STATUS_VALID"):
             attrib = self.__Token
 
@@ -1472,6 +1476,7 @@ class FdfParser:
                 pass
             while self.__GetEfiSection(section, True):
                 pass
+            self.__GetRuleEncapsulationSection(section)
             
             if not self.__IsToken( "}"):
                 raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
@@ -1501,6 +1506,7 @@ class FdfParser:
                 pass
             while self.__GetEfiSection(section, True):
                 pass
+            self.__GetRuleEncapsulationSection(section)
             
             if not self.__IsToken( "}"):
                 raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
