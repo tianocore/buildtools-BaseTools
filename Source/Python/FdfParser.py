@@ -221,9 +221,9 @@ class FdfParser:
         StartPos = self.CurrentOffsetWithinLine
         index = -1
         if ignoreCase:
-            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].upper().find(string.upper()) 
+            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].upper().find(string.upper()) 
         else:
-            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].find(string)
+            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].find(string)
         if index == 0:
             self.CurrentOffsetWithinLine += len(string)
             self.__Token = self.__CurrentLine()[StartPos : self.CurrentOffsetWithinLine]
@@ -239,9 +239,9 @@ class FdfParser:
         StartPos = self.CurrentOffsetWithinLine
         index = -1
         if ignoreCase:
-            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].upper().find(keyword.upper()) 
+            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].upper().find(keyword.upper()) 
         else:
-            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].find(keyword)
+            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].find(keyword)
         if index == 0:
             followingChar = self.__CurrentLine()[self.CurrentOffsetWithinLine + len(keyword)]
             if not str(followingChar).isspace() and followingChar not in ('=', '|'):
@@ -286,7 +286,7 @@ class FdfParser:
         StartPos = self.CurrentOffsetWithinLine
         while not self.__EndOfLine():
                 TempChar = self.__CurrentChar()
-                if not str(TempChar).isspace() and TempChar not in ('=', '|', ','):
+                if not str(TempChar).isspace() and TempChar not in ('=', '|', ',', '}'):
                     self.__GetOneChar()
                 else:
                     break
@@ -331,7 +331,7 @@ class FdfParser:
         if len(self.__Token) <= 2:
             self.__UndoToken()
             return False
-        charList = [c for c in self.__Token[2 : -1] if not self.__HexDigit( c)]
+        charList = [c for c in self.__Token[2 : ] if not self.__HexDigit( c)]
         if len(charList) == 0:
             return True
         else:
@@ -355,9 +355,9 @@ class FdfParser:
         while not self.__EndOfFile():
             index = -1
             if ignoreCase:
-                index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].upper().find(string.upper()) 
+                index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].upper().find(string.upper()) 
             else:
-                index = self.__CurrentLine()[self.CurrentOffsetWithinLine : -1].find(string)
+                index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].find(string)
             if index == 0:
                 self.CurrentOffsetWithinLine += len(string)
                 self.__SkippedChars += string
