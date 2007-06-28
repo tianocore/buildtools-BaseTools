@@ -49,8 +49,6 @@ class FV:
         #
         for FfsFile in self.FfsList :
             FileName = FfsFile.GenFfs()
-            print #####
-            print FileName
             self.FvInfFile.writelines("EFI_FILE_NAME = " + \
                                        FileName          + \
                                        T_CHAR_LF)
@@ -60,29 +58,29 @@ class FV:
         # Call GenFv tool
         #
         
+        FvOutputFile = os.path.join(GenFdsGlobalVariable.FvDir, self.UiFvName)
+        FvOutputFile = FvOutputFile + '.Fv'
         cmd = 'GenFv -i '                 + \
                GenFdsGlobalVariable.FvDir + \
                self.UiFvName              + \
                '.inf'                     + \
                ' -o '                     + \
-               self.UiFvName
+               FvOutputFile
         #
         # Call GenFv Tools
         #
         print cmd
-        subprocess.Popen(cmd).communicate()
+        PopenObject = subprocess.Popen(cmd)
+        PopenObject.communicate()
+        if PopenObject.returncode != 0 :
+            raise Exception ("GenFv Failed!")
         
         #
         # Write the Fv contents to Buffer
         #
-        fv = open (GenFdsGlobalVariable.OuputDir + \
-                   self.UiFvName                 + \
-                   '.fv',                          \
-                   'r+b')
+        fv = open ( FvOutputFile,'r+b')
                    
-        print GenFdsGlobalVariable.OuputDir + \
-              self.UiFvName                 + \
-              '.fv'
+        print "Write the Fv contents to buffer"
               
         Buffer.write(fv.read())
         fv.close
@@ -103,12 +101,11 @@ class FV:
                                    
         for BlockSize in self.BlockSizeList :
             self.FvInfFile.writelines("EFI_BLOCK_SIZE   = " + \
-                                      '0x'                  + \
-                                      '%x' %BlockSize[0]    + \
+                                      '%s' %BlockSize[0]    + \
                                       T_CHAR_LF)
                                   
             self.FvInfFile.writelines("EFI_NUM_BLOCKS   = "  + \
-                                      ' %d' %BlockSize[1]    + \
+                                      ' %s' %BlockSize[1]    + \
                                       T_CHAR_LF)
         
         #
@@ -126,7 +123,8 @@ class FV:
         if self.FvAlignment != None:
             self.FvInfFile.writelines("FVB2_ALIGNMENT_"         + \
                                        self.FvAlignment.strip() + \
-                                       "= TRUE")
+                                       "= TRUE"                 + \
+                                       T_CHAR_LF)
         #
         # Add [Files]
         #

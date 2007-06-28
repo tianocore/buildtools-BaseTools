@@ -25,6 +25,8 @@ class DataSection (Section.Section):
                      ModuleName + \
                      Ffs.SectionSuffix.get(self.SecType)
         OutputFile = os.path.normpath(OutputFile)
+        print "DataSection SectionType: %s" %self.SecType
+        print "DataSection SectFileName: %s" %self.SectFileName
         
         GenSectionCmd = 'GenSection -o '                                 + \
                          OutputFile                                      + \
@@ -38,6 +40,9 @@ class DataSection (Section.Section):
         #
         
         print GenSectionCmd
-        subprocess.Popen (GenSectionCmd).communicate()
+        PopenObject = subprocess.Popen (GenSectionCmd)
+        PopenObject.communicate()
+        if PopenObject.returncode != 0:
+            raise Exception("GenSection Failed!")
         
         return OutputFile

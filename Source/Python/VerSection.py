@@ -52,6 +52,9 @@ class VerSection (Section.Section):
         # Call GenSection
         #
         print GenSectionCmd
-        subprocess.Popen(GenSectionCmd).communicate()
+        PopenObject = subprocess.Popen(GenSectionCmd)
+        PopenObject.communicate()
+        if PopenObject.returncode != 0:
+            raise Exception("Gensection Failed!")
 
         return OutputFile

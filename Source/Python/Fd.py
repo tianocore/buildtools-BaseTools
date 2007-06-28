@@ -43,7 +43,9 @@ class FD:
         #
         # Create a empty Fd file
         #
-        fd = open(GenFdsGlobalVariable.FvDir + self.FdUiName + '.fd', 'w+b')
+        FdFileName = os.path.join(GenFdsGlobalVariable.FvDir,
+                                  self.FdUiName + '.fd')
+        fd = open(FdFileName, 'w+b')
        
         #
         # Write the buffer contents to Fd file

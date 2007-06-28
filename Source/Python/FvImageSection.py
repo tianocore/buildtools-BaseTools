@@ -34,6 +34,9 @@ class FvImageSection(Section.Section):
                          'EFI_SECTION_FIRMWARE_VOLUME_IMAGE ' + \
                          FvFileName
                          
-        subprocess.Popen (GenSectionCmd).communicate()
+        PopenObject = subprocess.Popen (GenSectionCmd)
+        PopenObject.communicate()
+        if PopenObject.returncode != 0:
+            raise Exception ("GenSection Failed!")
         
         return OutputFile

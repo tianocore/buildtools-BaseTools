@@ -43,6 +43,9 @@ class UiSection (Section.Section):
         # Call GenSection
         #
         print GenSectionCmd
-        subprocess.Popen(GenSectionCmd).communicate()
+        PopenObject = subprocess.Popen(GenSectionCmd)
+        PopenObject.communicate()
+        if PopenObject.returncode != 0:
+            raise Exception("GenSection Failed!")
 
         return OutputFile

@@ -27,7 +27,7 @@ class CompressSection (Section.Section) :
         for Sect in self.SectionList:
             SectFiles = SectFiles + \
                         ' '       + \
-                        Sect.GenSection(OutputPath, ModuleName)
+                        Sect.GenSection(OutputPath, ModuleName,FfsInf)
 
         OutputFile = OutputPath + \
                      os.sep     + \
@@ -45,7 +45,10 @@ class CompressSection (Section.Section) :
         # Call GenSection
         #
         print GenSectionCmd
-        subprocess.Popen (GenSectionCmd).communicate()
+        PopenObject = subprocess.Popen (GenSectionCmd)
+        PopenObject.communicate()
+        if PopenObject.returncode != 0 :
+            raise Exception("GenSection Failed!")
         
         return OutputFile
 

@@ -15,17 +15,14 @@ class GenFdsGlobalVariable:
     def ExtendMarco (String):
         return String
     
-    def SetDir (FvDir, BinDir, LibDir, FdfParser, WorkSpace):
-        GenFdsGlobalVariable.FvDir = FvDir
-        GenFdsGlobalVariable.BinDir = BinDir
-        GenFdsGlobalVariable.LibDir = LibDir
+    def SetDir (OutputDir, FdfParser, WorkSpace):
+        print "GenFdsGlobalVariable.OuputDir :%s" %OutputDir
+        GenFdsGlobalVariable.OuputDir = os.path.normpath(OutputDir)
         GenFdsGlobalVariable.FdfParser = FdfParser
         GenFdsGlobalVariable.WorkSpace = WorkSpace
-        GenFdsGlobalVariable.FfsDir = GenFdsGlobalVariable.FvDir + os.sep + 'Ffs'
-        GenFdsGlobalVariable.FfsDir = os.path.normpath(GenFdsGlobalVariable.FfsDir)
-        GenFdsGlobalVariable.WorkSpaceDir = \
-        GenFdsGlobalVariable.WorkSpace.Workspace.WorkspaceDir + \
-        os.sep
+        GenFdsGlobalVariable.FvDir = os.path.join(GenFdsGlobalVariable.OuputDir, 'Fv')
+        GenFdsGlobalVariable.FfsDir = os.path.join(GenFdsGlobalVariable.FvDir, 'Ffs')
+        GenFdsGlobalVariable.WorkSpaceDir = GenFdsGlobalVariable.WorkSpace.Workspace.WorkspaceDir
         
     def SetDefaultRule (Rule) :
         GenFdsGlobalVariable.DefaultRule = Rule

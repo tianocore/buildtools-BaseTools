@@ -5,9 +5,10 @@ class AprioriSection :
         self.FfsList = []
         
     def GenFfs (self):
+        FfsFileList = []
         for Ffs in self.FfsList :
             ffsFileName = Ffs.GenFfs ()
-            FfsFileList.add(ffsFileName)
+            FfsFileList.append(ffsFileName)
         return FfsFileList
             
             

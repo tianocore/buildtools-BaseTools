@@ -2,6 +2,7 @@ import Section
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import subprocess
 from Ffs import Ffs
+import os
 
 class EfiSection (Section.Section):
     
@@ -33,9 +34,7 @@ class EfiSection (Section.Section):
             
         print '### EfiSection  Line 21##'
         print self.SectionType
-        OutputFile = OutputPath + \
-                     ModuleName + \
-                     Ffs.SectionSuffix.get(self.SectionType)
+        OutputFile = os.path.join( OutputPath, ModuleName + Ffs.SectionSuffix.get(self.SectionType))
         #
         #  If Section type is 'VERSION'
         #
@@ -93,6 +92,9 @@ class EfiSection (Section.Section):
         # Call GenSection
         #
         print GenSectionCmd
-        subprocess.Popen (GenSectionCmd).communicate()
+        PopenObject = subprocess.Popen (GenSectionCmd)
+        PopenObject.communicate()
+        if PopenObject.returncode != 0:
+            raise Exception ("GenSection Failed !")
 
         return OutputFile
