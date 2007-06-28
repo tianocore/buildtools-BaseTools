@@ -11,16 +11,23 @@
 #This file is used to collect all defined strings in multiple uni files 
 #
 
-import codecs
-import binascii
-import os
+import os, codecs
 import EdkLogger
 
-def StrToUnix(Str):
-    return unicode(Str)
+UNICODE_WIDE_CHAR = u'\\wide'
+UNICODE_NARROW_CHAR = u'\\narrow'
+UNICODE_NON_BREAKING_CHAR = u'\\nbr'
+UNICODE_UNICODE_CR = '\r'
+UNICODE_UNICODE_LF = '\n'
 
-def HexListToUni(List):
-    pass
+NARROW_CHAR = u'\uFFF0'
+WIDE_CHAR = u'\uFFF1'
+NON_BREAKING_CHAR = u'\uFFF2'
+CR = u'\u000D'
+LF = u'\u000A'
+NULL = u'\u0000'
+TAB = u'\t'
+BACK_SPLASH = u'\\'
 
 def UniToStr(Uni):
     return repr(Uni)[2:-1]
@@ -33,31 +40,27 @@ def UniToHexList(Uni):
         List.append('0x' + Temp[0:2])
     return List
 
-class StringDefinitionClassObject(object):
-    def __init__(self, Name = None, Language = None, Value = None, Token = None):
+class StringDefClassObject(object):
+    def __init__(self, Name = None, Value = None, Referenced = False, Token = None, UseOtherLangDef = ''):
         self.StringName = ''
         self.StringNameByteList = []
-        self.StringValue = {}                        #{ u'Language' : u'Value' }
-        self.Referenced = False
-        self.Offset = ''
-        self.Token = ''
+        self.StringValue = ''
+        self.StringValueByteList = ''
+        self.Token = 0
+        self.Referenced = Referenced
+        self.UseOtherLangDef = UseOtherLangDef
+        self.Length = 0
         
         if Name != None:
             self.StringName = Name
             self.StringNameByteList = UniToHexList(Name)
-        if Value != None and Language != None:
-            self.StringValue[Language] = UniToHexList(Value)
+        if Value != None:
+            self.StringValue = Value + u'\x00'        # Add a NULL at string tail
+            self.StringValueByteList = UniToHexList(self.StringValue)
+            self.Length = len(self.StringValueByteList)
         if Token != None:
             self.Token = Token
-        
-    def Update(self, Name = None, Language = None, Value = None):
-        if Name != None:
-            self.StringName = Name
-            self.StringNameByteList = UniToHexList(Name)
-            
-        if Value != None and Language != None:
-            self.StringValue[Language] = UniToHexList(Value)
-        
+
     def __str__(self):
         return repr(self.StringName) + ' ' + \
                repr(self.Token) + ' ' + \
@@ -68,23 +71,24 @@ class UniFileClassObject(object):
     def __init__(self, FileList = []):
         self.FileList = FileList
         self.Token = 2
-        self.LanguageDef = {}                   #{ u'LanguageIdentifier' : [PrintableName] }
-        self.StringList = {}                    #{ 'StringName' : StringDefinitionClassObject }
-        self.OrderedStringList = []               #[ StringDefinitionClassObject ] 
+        self.LanguageDef = []                   #[ [u'LanguageIdentifier', u'PrintableName'], ... ]
+        self.OrderedStringList = {}             #{ u'LanguageIdentifier' : [StringDefClassObject]  }
         
         if len(self.FileList) > 0:
             self.LoadUniFiles(FileList)
-                
+
     def GetLangDef(self, Line):
         LangName = Line[Line.find(u'#langdef ') + len(u'#langdef ') : Line.find(u' ', len(u'#langdef '))]
         LangPrintName = Line[Line.find(u'\"') + len(u'\"') : Line.rfind(u'\"')]
-        self.LanguageDef[LangName] = UniToHexList(LangPrintName)
+
+        if [LangName, LangPrintName] not in self.LanguageDef:
+            self.LanguageDef.append([LangName, LangPrintName])
         
         #
-        # Add default string
+        # Add language string
         #
-        self.AddStringToList(u'$LANGUAGE_NAME', LangName, LangName, 0)
-        self.AddStringToList(u'$PRINTABLE_LANGUAGE_NAME', LangPrintName, LangPrintName, 1)  
+        self.AddStringToList(u'$LANGUAGE_NAME', LangName, LangName, 0, True)
+        self.AddStringToList(u'$PRINTABLE_LANGUAGE_NAME', LangName, LangPrintName, 1, True)
 
         return True
         
@@ -103,22 +107,45 @@ class UniFileClassObject(object):
                 Value = LanguageList[IndexI][LanguageList[IndexI].find(u'\"') + len(u'\"') : LanguageList[IndexI].rfind(u'\"')].replace(u'\r\n', u'')
                 self.AddStringToList(Name, Language, Value)
     
+    def PreProcess(self, FileIn):
+        Lines = []
+        #
+        # Use unique identifier
+        #
+        for Index in range(len(FileIn)):
+            if FileIn[Index].startswith(u'//') or FileIn[Index] == u'\r\n':
+                continue
+            FileIn[Index] = FileIn[Index].replace(u'/langdef', u'#langdef')
+            FileIn[Index] = FileIn[Index].replace(u'/string', u'#string')
+            FileIn[Index] = FileIn[Index].replace(u'/language', u'#language')
+            
+            FileIn[Index] = FileIn[Index].replace(UNICODE_WIDE_CHAR, WIDE_CHAR)
+            FileIn[Index] = FileIn[Index].replace(UNICODE_NARROW_CHAR, NARROW_CHAR)
+            FileIn[Index] = FileIn[Index].replace(UNICODE_NON_BREAKING_CHAR, NON_BREAKING_CHAR)
+            FileIn[Index] = FileIn[Index].replace(u'\\r\\n', CR + LF)
+            FileIn[Index] = FileIn[Index].replace(u'\\n', CR + LF)
+            FileIn[Index] = FileIn[Index].replace(u'\\r', CR)
+            FileIn[Index] = FileIn[Index].replace(u'\\t', u'\t')
+            FileIn[Index] = FileIn[Index].replace(u'\\\\', u'\\')
+            FileIn[Index] = FileIn[Index].replace(u'''\"''', u'''"''')
+            FileIn[Index] = FileIn[Index].replace(u'\t', u' ')
+#           if FileIn[Index].find(u'\\x'):
+#               hex = FileIn[Index][FileIn[Index].find(u'\\x') + 2 : FileIn[Index].find(u'\\x') + 6]
+#               hex = "u'\\u" + hex + "'"
+                        
+            Lines.append(FileIn[Index])
+        
+        return Lines
+    
     def LoadUniFile(self, File = None):
         if File != None:
             if os.path.exists(File) and os.path.isfile(File):
                 FileIn = codecs.open(File, mode='rb', encoding='utf-16').readlines()             
-                Lines = []
+                
                 #
-                # Use unique identifier
+                # Process special char in file
                 #
-                for Index in range(len(FileIn)):
-                    if FileIn[Index].startswith(u'//') or FileIn[Index] == u'\r\n':
-                        continue
-                    FileIn[Index] = FileIn[Index].replace(u'/langdef', u'#langdef')
-                    FileIn[Index] = FileIn[Index].replace(u'/string', u'#string')
-                    FileIn[Index] = FileIn[Index].replace(u'/language', u'#language')
-                    FileIn[Index] = FileIn[Index].replace(u'\t', u' ')
-                    Lines.append(FileIn[Index])
+                Lines = self.PreProcess(FileIn)
                 
                 #
                 # Get Unicode Information
@@ -197,62 +224,86 @@ class UniFileClassObject(object):
                             elif Lines[IndexJ].find(u'\"') >= 2:
                                 StringItem = StringItem[ : StringItem.rfind(u'\"')] + Lines[IndexJ][Lines[IndexJ].find(u'\"') + len(u'\"') : ]
                         self.GetStringObject(StringItem)              
-
+            else:
+                EdkLogger.error(File + ' is not a valid file')
+    
     def LoadUniFiles(self, FileList = []):
         if len(FileList) > 0:
             for File in FileList:
                 self.LoadUniFile(File)
                 
-    def AddStringToList(self, Name, Language, Value, Token = None):
-        if Name in self.StringList.keys():
-            self.StringList[UniToStr(Name)].Update(Name, Language, Value)
-        else:
-            if Token != None:
-                self.StringList[UniToStr(Name)] = StringDefinitionClassObject(Name, Language, Value, Token)
-            else:
-                self.StringList[UniToStr(Name)] = StringDefinitionClassObject(Name, Language, Value, self.Token)
-                self.Token = self.Token + 1
-            
-    def FindStringObjectNameByToken(self, Token):
-        for Item in self.StringList:
-            if self.StringList[Item].Token == Token:
-                return Item
-        return None
+    def AddStringToList(self, Name, Language, Value, Token = None, Referenced = False, UseOtherLangDef = ''):
+        if Language not in self.OrderedStringList:
+            self.OrderedStringList[Language] = []
+        
+        IsAdded = False
+        for Item in self.OrderedStringList[Language]:
+            if Name == Item.StringName:
+                IsAdded = True
+                break
+        if not IsAdded:
+            Token = len(self.OrderedStringList[Language])
+            self.OrderedStringList[Language].append(StringDefClassObject(Name, Value, Referenced, Token, UseOtherLangDef))
     
     def SetStringReferenced(self, Name):
-        if Name in self.StringList.keys():
-            self.StringList[Name].Referenced = True
-            
+        for Lang in self.OrderedStringList:
+            for Item in self.OrderedStringList[Lang]:
+                if Name == Item.StringName:
+                    Item.Referenced = True
+                    break
     
-    def CreateOrderedStringList(self):
-        pass
+    def FindStringValue(self, Name, Lang):
+        for Item in self.OrderedStringList[Lang]:
+            if Item.StringName == Name:
+                return Item
+        
+        return None
     
     def ReToken(self):
-        Token = 2
-        FalseCount = 1
-        Length = len(self.StringList)
-        for Index in range(2, Length):
-            Name = self.FindStringObjectNameByToken(Index)
-            if Name != None:
-                if self.StringList[Name].Referenced == True:
-                    self.StringList[Name].Token = Token
+        #
+        # Search each string to find if it is defined for each language
+        # Use secondary language value to replace if missing in any one language
+        #           
+        for IndexI in range(0, len(self.LanguageDef)):
+            LangKey = self.LanguageDef[IndexI][0]
+            for Item in self.OrderedStringList[LangKey]:
+                Name = Item.StringName
+                Value = Item.StringValue[0:-1]
+                Referenced = Item.Referenced
+                for IndexJ in range(0, len(self.LanguageDef)):
+                    LangFind = self.LanguageDef[IndexJ][0]
+                    if self.FindStringValue(Name, LangFind) == None:
+                        Token = len(self.OrderedStringList[LangFind])
+                        self.AddStringToList(Name, LangFind, Value, Token, Referenced, LangKey)
+        
+        #
+        # Retoken
+        #
+        for Lang in self.LanguageDef:
+            LangName = Lang[0]
+            ReferencedStringList = []
+            NotReferencedStringList = []
+            Token = 0
+            for Item in self.OrderedStringList[LangName]:
+                if Item.Referenced == True:
+                    Item.Token = Token
+                    ReferencedStringList.append(Item)
                     Token = Token + 1
                 else:
-                    self.StringList[Name].Token = Length + FalseCount
-                    FalseCount = FalseCount + 1
-                
-        for Index in range(2, Length + FalseCount):
-            Name = self.FindStringObjectNameByToken(Index)
-            if Name != None and self.StringList[Name].Referenced == False:
-                self.StringList[Name].Token = Token
-                Token = Token + 1
+                    NotReferencedStringList.append(Item)
+            self.OrderedStringList[LangName] = ReferencedStringList
+            for Index in range(len(NotReferencedStringList)):
+                NotReferencedStringList[Index].Token = Token + Index
+                self.OrderedStringList[LangName].append(NotReferencedStringList[Index])
             
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
 if __name__ == '__main__':
-    a = UniFileClassObject(['C:\\Documents and Settings\\hchen30\\Desktop\\inventorystrings.uni'])
-    for i in a.LanguageDef:
-        print i, a.LanguageDef[i]
-    for i in a.StringList:
-        print i, str(a.StringList[i])
+    a = UniFileClassObject(['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\inventorystrings.uni', 'C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\VfrStrings.uni'])
+    print a.LanguageDef
+    print a.OrderedStringList
+    for i in a.OrderedStringList:
+        print i
+        for m in a.OrderedStringList[i]:
+            print str(m)
     

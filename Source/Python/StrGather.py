@@ -39,8 +39,8 @@ H_C_FILE_HEADER = ['//', \
 LANGUAGE_NAME_STRING_NAME = '$LANGUAGE_NAME'
 PRINTABLE_LANGUAGE_NAME_STRING_NAME = '$PRINTABLE_LANGUAGE_NAME'
 
-def DecToHexStr(Dec):
-    return '0x%04X' % int(Dec)
+def DecToHexStr(Dec, Digit):
+    return eval("'0x%0" + str(Digit) + "X' % int(Dec)")
 
 def DecToHexList(Dec):
     Hex = "%08X" % int(Dec)
@@ -58,15 +58,21 @@ def CreateHFileHeader(BaseName):
 def CreateHFileContent(UniObjectClass):
     Str = ''
     ValueStartPtr = 60
-    for Index in range(len(UniObjectClass.StringList)):
-        Name = UniObjectClass.FindStringObjectNameByToken(Index)
+    Line = COMMENT_DEFINE_STR + ' ' + LANGUAGE_NAME_STRING_NAME + ' ' * (ValueStartPtr - len(DEFINE_STR + LANGUAGE_NAME_STRING_NAME)) + DecToHexStr(0, 4) + COMMENT_NOT_REFERENCED
+    Str = WriteLine(Str, Line)
+    Line = COMMENT_DEFINE_STR + ' ' + PRINTABLE_LANGUAGE_NAME_STRING_NAME + ' ' * (ValueStartPtr - len(DEFINE_STR + PRINTABLE_LANGUAGE_NAME_STRING_NAME)) + DecToHexStr(1, 4) + COMMENT_NOT_REFERENCED
+    Str = WriteLine(Str, Line)
+    for Index in range(2, len(UniObjectClass.OrderedStringList[UniObjectClass.LanguageDef[0][0]])):
+        StringItem = UniObjectClass.OrderedStringList[UniObjectClass.LanguageDef[0][0]][Index]
+        Name = StringItem.StringName
+        Token = StringItem.Token
+        Referenced = StringItem.Referenced
         if Name != None:
-            StringItem = UniObjectClass.StringList[Name]
             Line = ''
-            if StringItem.Referenced == True:
-                Line = DEFINE_STR + ' ' + Name + ' ' * (ValueStartPtr - len(DEFINE_STR + Name)) + DecToHexStr(StringItem.Token)
+            if Referenced == True:
+                Line = DEFINE_STR + ' ' + Name + ' ' * (ValueStartPtr - len(DEFINE_STR + Name)) + DecToHexStr(Token, 4)
             else:
-                Line = COMMENT_DEFINE_STR + ' ' + Name + ' ' * (ValueStartPtr - len(DEFINE_STR + Name)) + DecToHexStr(StringItem.Token) + COMMENT_NOT_REFERENCED
+                Line = COMMENT_DEFINE_STR + ' ' + Name + ' ' * (ValueStartPtr - len(DEFINE_STR + Name)) + DecToHexStr(Token, 4) + COMMENT_NOT_REFERENCED
             Str = WriteLine(Str, Line)
     return Str
 
@@ -83,13 +89,12 @@ def CreateCFileHeader():
     
     return Str
   
-def CreateArrayItem(Value):
-    MaxLength = 16
+def CreateArrayItem(Value, Width = 16):
+    MaxLength = Width
     Index = 0
     Line = '  '
     ArrayItem = ''
     
-    #Value = Value + UniToHexList(u'\x00')
     for Item in Value:
         if Index < MaxLength:
             Line = Line + Item + ', '
@@ -98,60 +103,77 @@ def CreateArrayItem(Value):
             ArrayItem = WriteLine(ArrayItem, Line)
             Line = '  ' + Item +  ', '
             Index = 1
-    ArrayItem = Write(ArrayItem, Line)
+    ArrayItem = Write(ArrayItem, Line.rstrip())
     
     return ArrayItem
 
-def CreateCFileLanguageHeader(Name, PrintableName, Offset):
-    Str = WriteLine('  ', COMMENT + STRING + ' ' + LANGUAGE_NAME_STRING_NAME + ' ' + OFFSET + ' ' + Offset)
-    Str = WriteLine(Str, CreateArrayItem(UniToHexList(Name + u'\x00')))
-    Str = WriteLine(Str, '  ' + COMMENT + STRING + ' ' + PRINTABLE_LANGUAGE_NAME_STRING_NAME + ' ' + OFFSET + ' ' + Offset)
-    Str = WriteLine(Str, CreateArrayItem(PrintableName + UniToHexList(u'\x00')))
-    
-    return Str
-
-def CreateCFileStringDef(Name, Offset, Token):
-    Str = Write('  ', CreateArrayItem(DecToHexList(Offset)) + COMMENT + ' offset to string ' + Name + ' (' + DecToHexStr(Token) + ')')
+def CreateCFileStringDef(Name, Offset, Token, UseOtherLangDef = ''):
+    Comment = ''
+    if UseOtherLangDef != '':
+        Comment = ' - not defined for this language -- using secondary language ' + UniToStr(UseOtherLangDef) + ' definition'
+    Str = Write('', CreateArrayItem(DecToHexList(Offset)) + '  ' + COMMENT + 'offset to string ' + Name + ' (' + DecToHexStr(Token, 4) + ')' + Comment)
 
     return Str
     
-def CreateCFileStringValue(Name, Language, Value, Offset):
-    Str = WriteLine('  ', COMMENT + STRING + ' ' + Name + ' ' + OFFSET + ' ' + str(Offset))
-    Str = WriteLine(Str, CreateArrayItem(Value + UniToHexList(u'\x00')))
+def CreateCFileStringValue(Name, Language, Value, Offset):    
+    Str = WriteLine('  ', COMMENT + STRING + ' ' + Name + ' ' + OFFSET + ' ' + DecToHexStr(Offset, 8))
+    Str = WriteLine(Str, CreateArrayItem(Value))
     
     return Str
 
 def CreateCFileContent(BaseName, UniObjectClass):
     Str = ''
-    StrStringDef = ''
-    StrStringValue = ''
-    Offset = 428
-    Str = WriteLine(Str, CHAR_ARRAY_DEFIN + BaseName + COMMON_FILE_NAME + '[] = {\n' )
-    for Language in UniObjectClass.LanguageDef:        
+
+    Str = WriteLine(Str, CHAR_ARRAY_DEFIN + ' ' + BaseName + '[] = {\n' )
+    for IndexI in range(len(UniObjectClass.LanguageDef)):
+        Language = UniObjectClass.LanguageDef[IndexI][0]
+        LangPrintName = UniObjectClass.LanguageDef[IndexI][1]
+        Length = 0
+        NameLength = 0
+        Count = 0
+        for Item in UniObjectClass.OrderedStringList[Language]:
+            if Item.Referenced:
+                Length = Length + Item.Length
+                Count = Count + 1
+
         Str = WriteLine(Str, '//******************************************************************************')
-        Str = WriteLine(Str, COMMENT + 'Start of string definitions for ' + Language + '/' + '')
-        Str = Write(Str, CreateCFileLanguageHeader(Language, UniObjectClass.LanguageDef[Language], '0x00001'))
-        for Index in range(2, len(UniObjectClass.StringList)):
-            Name = UniObjectClass.FindStringObjectNameByToken(Index)
-            if Name != None:
-                UniString = UniObjectClass.StringList[Name]
-                #print Language
-                #print Name
-                #print UniObjectClass.StringList[Name].StringValue
-                if UniString.Referenced:
-                    if Language in UniString.StringValue.keys():
-                        StrStringDef = WriteLine(StrStringDef, CreateCFileStringDef(Name, Offset, UniString.Token))
-                        StrStringValue = Write(StrStringValue, CreateCFileStringValue(Name, Language, UniString.StringValue[Language], Offset))
-                        Offset = Offset + len(UniString.StringValue[Language])
-    Str = WriteLine(Str, StrStringDef)
-    Str = WriteLine(Str, StrStringValue)
+        Str = WriteLine(Str, COMMENT + 'Start of string definitions for ' + Language + '/' + LangPrintName)
+        
+        #
+        # EFI_HII_STRING_PACK_HEADER
+        #
+        Offset = LENGTH_EFI_HII_STRING_PACK_HEADER + LENGTH_STRING_OFFSET * Count
+        Length = Offset + Length
+        List = DecToHexList(Length) + DecToHexList(2)[0:2] + DecToHexList(Offset) + DecToHexList(Offset + len(UniToHexList(Language)) + 2) + DecToHexList(Count) + DecToHexList(0)
+        Str = WriteLine(Str, CreateArrayItem(List, 8))
+        
+        Str = WriteLine(Str, '  // offset 0x16')
+        StrStringDef = ''
+        StrStringValue = ''
+        for Item in UniObjectClass.OrderedStringList[Language]:
+            Name = Item.StringName
+            Value = Item.StringValueByteList
+            Referenced = Item.Referenced
+            Token = Item.Token
+            Length = Item.Length
+            UseOtherLangDef = Item.UseOtherLangDef
+             
+            if Referenced:
+                StrStringDef = WriteLine(StrStringDef, CreateCFileStringDef(Name, Offset, Token, UseOtherLangDef))
+                StrStringValue = Write(StrStringValue, CreateCFileStringValue(Name, Language, Value, Offset))
+                Offset = Offset + Length
+            else:
+                StrStringDef = WriteLine(StrStringDef, '  ' + COMMENT + Name + ' ' + NOT_REFERENCED)
+
+        Str = WriteLine(Str, StrStringDef)
+        Str = WriteLine(Str, StrStringValue)
     return Str
 
 def CreateCFileEnd():
     Str = WriteLine('  ', '// strings terminator pack')
     Str = WriteLine(Str, '  ' + '0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, ')
     Str = WriteLine(Str, '  ' + '0x00, 0x00, 0x00, 0x00, 0x00, 0x00, ')
-    Str = Write(Str, '  ' + '};')
+    Str = Write(Str, '};')
     return Str
 
 def CreateCFile(BaseName, UniObjectClass):
@@ -162,7 +184,7 @@ def CreateCFile(BaseName, UniObjectClass):
 
 def GetFileList(IncludeList, SkipList):
     if IncludeList == None:
-        return None
+        EdkLogger.error("Include path is not defined")
     
     FileList = []
     if SkipList == None:
@@ -203,11 +225,7 @@ def SearchString(UniObjectClass, FileList):
                     UniObjectClass.SetStringReferenced(StrName)
      
     UniObjectClass.ReToken()
-#    for index in range(len(UniObjectClass.StringList)):
-#        name = UniObjectClass.FindStringObjectNameByToken(index)
-#        if name != None:
-#            #print index, str(UniObjectClass.StringList[name])
-#            pass
+
     return UniObjectClass
 
 def GetStringFiles(UniFilList, IncludeList, SkipList, BaseName):
@@ -217,20 +235,16 @@ def GetStringFiles(UniFilList, IncludeList, SkipList, BaseName):
     if len(UniFilList) > 0:
         Uni = UniFileClassObject(UniFilList)
     else:
-        Status = False
-        ErrorMessage = 'No Unicode Files Found'
+        EdkLogger.error('No Unicode Files Found')
     
     FileList = GetFileList(IncludeList, SkipList)
     
     Uni = SearchString(Uni, FileList)
     
-    if len(Uni.StringList) > 0:
-        pass
-    
     HFile = CreateHFile(BaseName, Uni)
     CFile = CreateCFile(BaseName, Uni)
 
-    return Status, ErrorMessage, HFile, CFile
+    return HFile, CFile
 
 def Write(Target, Item):
     return Target + Item
@@ -245,8 +259,8 @@ if __name__ == '__main__':
     UniFileList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\inventorystrings.uni', 'C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\VfrStrings.uni']
     IncludeList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample']
     SkipList = ['.inf', '.uni']
-    BaseName = 'DriverSample'
-    (s, e, h, c) = GetStringFiles(UniFileList, IncludeList, SkipList, BaseName)
+    BaseName = 'DriverSampleStrings'
+    (h, c) = GetStringFiles(UniFileList, IncludeList, SkipList, BaseName)
     hfile = open('C:\string.h', 'w')
     cfile = open('C:\string.c', 'w')
     hfile.write(h)
