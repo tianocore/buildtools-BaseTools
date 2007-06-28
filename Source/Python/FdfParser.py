@@ -1103,29 +1103,28 @@ class FdfParser:
             return True
         
         elif self.__IsKeyword( "GUIDED"):
+            guid = None
             if self.__GetNextGuid():
                 guid = self.__Token
-                attribDict = self.__GetGuidAttrib()
-                if not self.__IsToken("{"):
-                    raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
-                section = GuidSection.GuidSection()
-                section.Alignment = alignment
-                section.NameGuid = guid
-                section.SectionType = "GUIDED"
-                section.ProcessRequired = attribDict["PROCESSING_REQUIRED"]
-                section.AuthStatusValid = attribDict["AUTH_STATUS_VALID"]
-                # Recursive sections...
-                while self.__GetLeafSection(section):
-                    pass
-                self.__GetEncapsulationSec(section)
-                
-                if not self.__IsToken( "}"):
-                    raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
-                obj.SectionList.append(section)
-                
-            else:
-               raise Warning("expected GUID At Line %d" % self.CurrentLineNumber)
+
+            attribDict = self.__GetGuidAttrib()
+            if not self.__IsToken("{"):
+                raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
+            section = GuidSection.GuidSection()
+            section.Alignment = alignment
+            section.NameGuid = guid
+            section.SectionType = "GUIDED"
+            section.ProcessRequired = attribDict["PROCESSING_REQUIRED"]
+            section.AuthStatusValid = attribDict["AUTH_STATUS_VALID"]
+            # Recursive sections...
+            while self.__GetLeafSection(section):
+                pass
+            self.__GetEncapsulationSec(section)
             
+            if not self.__IsToken( "}"):
+                raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
+            obj.SectionList.append(section)
+                
             return True
         
         return False
@@ -1687,7 +1686,7 @@ class FdfParser:
         return True
     
 if __name__ == "__main__":
-    parser = FdfParser("test.fdf")
+    parser = FdfParser("Nt32.fdf")
     parser.ParseFile()
     print "Success!"
 
