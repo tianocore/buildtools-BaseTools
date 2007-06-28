@@ -1066,7 +1066,7 @@ class FdfParser:
             if self.__IsToken("="):
                 if not self.__GetNextToken():
                     raise Warning("expected section file path At Line %d" % self.CurrentLineNumber)
-                section.SectFilename = self.__Token
+                section.SectFileName = self.__Token
             else:
                 if not self.__GetCglSection(section):
                     return False
