@@ -1453,8 +1453,9 @@ def CreateUnicodeStringCode(info, autoGenC, autoGenH):
 
     cwd = os.getcwd()
     os.chdir(info.WorkspaceDir)
-    
-    hCode, cCode = GetStringFiles(info.UnicodeFileList, info.IncludePathList, [], info.Name)
+
+    incList = [os.path.join(info.WorkspaceDir, inc) for inc in info.IncludePathList]
+    hCode, cCode = GetStringFiles(info.UnicodeFileList, incList, [], info.Name)
     autoGenC.Append("\n//\n//Unicode String Pack Definition\n//\n")
     autoGenC.Append(cCode)
     autoGenC.Append("\n")

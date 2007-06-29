@@ -10,6 +10,7 @@ import GenMake
 import GenDepex
 
 from EdkIIWorkspaceBuild import *
+from EdkIIWorkspace import *
 from DataType import *
 from BuildInfo import *
 from StrGather import *
@@ -137,6 +138,12 @@ class AutoGen(object):
         info.OutputDir = os.path.join(info.BuildDir, "OUTPUT")
         info.DebugDir = os.path.join(info.BuildDir, "DEBUG")
         info.MakefileDir = info.BuildDir
+        if os.path.isabs(info.BuildDir):
+            CreateDirectory(info.OutputDir)
+            CreateDirectory(info.DebugDir)
+        else:
+            CreateDirectory(os.path.join(gWorkspaceDir, info.OutputDir))
+            CreateDirectory(os.path.join(gWorkspaceDir, info.DebugDir))
 
         if self.Module.LibraryClass != None and self.Module.LibraryClass != "":
             info.IsLibrary = True
