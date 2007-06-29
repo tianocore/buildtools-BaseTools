@@ -77,9 +77,9 @@ def CreateHFileContent(UniObjectClass):
     return Str
 
 def CreateHFile(BaseName, UniObjectClass):
-    HFile = WriteLine('', CreateHFileHeader(BaseName))
-    HFile = WriteLine(HFile, CreateHFileContent(UniObjectClass))
-    HFile = WriteLine(HFile, '#endif')
+    #HFile = WriteLine('', CreateHFileHeader(BaseName))
+    HFile = WriteLine('', CreateHFileContent(UniObjectClass))
+    #HFile = WriteLine(HFile, '#endif')
     return HFile
 
 def CreateCFileHeader():
@@ -177,8 +177,8 @@ def CreateCFileEnd():
     return Str
 
 def CreateCFile(BaseName, UniObjectClass):
-    CFile = WriteLine('', CreateCFileHeader())
-    CFile = WriteLine(CFile, CreateCFileContent(BaseName, UniObjectClass))
+    #CFile = WriteLine('', CreateCFileHeader())
+    CFile = WriteLine('', CreateCFileContent(BaseName, UniObjectClass))
     CFile = WriteLine(CFile, CreateCFileEnd())
     return CFile
 
