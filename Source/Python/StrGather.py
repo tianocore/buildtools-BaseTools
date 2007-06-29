@@ -124,7 +124,7 @@ def CreateCFileStringValue(Name, Language, Value, Offset):
 def CreateCFileContent(BaseName, UniObjectClass):
     Str = ''
 
-    Str = WriteLine(Str, CHAR_ARRAY_DEFIN + ' ' + BaseName + '[] = {\n' )
+    Str = WriteLine(Str, CHAR_ARRAY_DEFIN + ' ' + BaseName + COMMON_FILE_NAME + '[] = {\n' )
     for IndexI in range(len(UniObjectClass.LanguageDef)):
         Language = UniObjectClass.LanguageDef[IndexI][0]
         LangPrintName = UniObjectClass.LanguageDef[IndexI][1]
@@ -259,7 +259,7 @@ if __name__ == '__main__':
     UniFileList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\inventorystrings.uni', 'C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\VfrStrings.uni']
     IncludeList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample']
     SkipList = ['.inf', '.uni']
-    BaseName = 'DriverSampleStrings'
+    BaseName = 'DriverSample'
     (h, c) = GetStringFiles(UniFileList, IncludeList, SkipList, BaseName)
     hfile = open('C:\string.h', 'w')
     cfile = open('C:\string.c', 'w')
