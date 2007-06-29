@@ -1448,9 +1448,20 @@ def CreatePcdCode(info, autoGenC, autoGenH):
             CreateModulePcdCode(info, autoGenC, autoGenH, pcd)
 
 def CreateUnicodeStringCode(info, autoGenC, autoGenH):
+    if len(info.UnicodeFileList) == 0:
+        return
+
+    cwd = os.getcwd()
+    os.chdir(info.WorkspaceDir)
+    
     hCode, cCode = GetStringFiles(info.UnicodeFileList, info.IncludePathList, [], info.Name)
+    autoGenC.Append("\n//\n//Unicode String Pack Definition\n//\n")
     autoGenC.Append(cCode)
+    autoGenC.Append("\n")
+    autoGenH.Append("\n//\n//Unicode String ID\n//\n")
     autoGenH.Append(hCode)
+    autoGenH.Append("\n#define STRING_ARRAY_NAME %sStrings\n" % info.Name)
+    os.chdir(cwd)
 
 def CreateHeaderCode(info, autoGenC, autoGenH):
     # file header
@@ -1493,7 +1504,7 @@ def CreateCode(info, autoGenC, autoGenH):
     CreateProtocolDefinitionCode(info, autoGenC, autoGenH)
     CreatePpiDefinitionCode(info, autoGenC, autoGenH)
     CreatePcdCode(info, autoGenC, autoGenH)
-    #CreateUnicodeStringCode(info, autoGenC, autoGenH)
+    CreateUnicodeStringCode(info, autoGenC, autoGenH)
 
     CreateFooterCode(info, autoGenC, autoGenH)
 

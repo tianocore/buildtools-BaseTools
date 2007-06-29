@@ -340,7 +340,7 @@ class AutoGen(object):
             if f.ToolChainFamily != "" and f.ToolChainFamily != platformInfo.ToolChainFamily[toolCode]:
                 continue
             if fileType == "Unicode-Text":
-                self.BuildInfo.UnicodeFileList.append(f.SourceFile)
+                self.BuildInfo.UnicodeFileList.append(os.path.join(gWorkspaceDir, self.BuildInfo.SourceDir, f.SourceFile))
             buildFileList.append(f.SourceFile)
         return buildFileList
 

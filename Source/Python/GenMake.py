@@ -811,7 +811,7 @@ class Makefile(object):
         for dep in self.FileDependency.values():
             depSet &= set(dep)
         #
-        # Exact comman files list in the dependency files
+        # Extract comman files list in the dependency files
         #
         self.CommonFileDependency = forceIncludedFile + list(depSet)
         for f in self.FileDependency:
