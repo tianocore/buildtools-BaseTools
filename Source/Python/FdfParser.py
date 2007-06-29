@@ -311,8 +311,11 @@ class FdfParser:
             return False
 
     def __UndoToken(self):
-        while self.__UndoOneChar() and not str(self.__CurrentChar()).isspace() and self.__CurrentChar() not in ('=', '|', ','):
-            pass
+        self.__UndoOneChar()
+        while self.__CurrentChar().isspace():
+            self.__UndoOneChar()
+        while not str(self.__CurrentChar()).isspace() and self.__CurrentChar() not in ('=', '|', ','):
+            self.__UndoOneChar()
         self.__GetOneChar()
     
     def __HexDigit(self, TempChar):
@@ -399,7 +402,11 @@ class FdfParser:
                 pass
             
         except Warning, X:
-            print X.message + '\n'
+            self.__UndoToken()
+            print 'Got Token: %s' % self.__Token
+            print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
+                    % (self.profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
+            print X.message
             return
         
     def __GetFd(self):
@@ -768,11 +775,11 @@ class FdfParser:
         
         self.__GetAprioriSection( fv)
         
-        while self.__GetInfStatement( fv):
-            pass
-
-        while self.__GetFileStatement( fv):
-            pass
+        while True:
+            isInf = self.__GetInfStatement( fv)
+            isFile = self.__GetFileStatement( fv)
+            if not isInf and not isFile:
+                break
         
         return True
 
@@ -937,17 +944,17 @@ class FdfParser:
     
     def __GetFileOpts(self, ffsFile):
 
-        if self.__IsKeyword( "FIXED"):
+        if self.__IsKeyword( "FIXED", True):
             ffsFile.Fixed = True
             
-        if self.__IsKeyword( "CHECKSUM"):
+        if self.__IsKeyword( "CHECKSUM", True):
             ffsFile.CheckSum = True
             
         if self.__GetAlignment():
             ffsFile.Alignment = self.__Token
     
     def __GetAlignment(self):
-        if self.__IsKeyword( "Align"):
+        if self.__IsKeyword( "Align", True):
             if not self.__IsToken( "="):
                 raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
             
@@ -1361,15 +1368,15 @@ class FdfParser:
 #        guid = self.__Token
         
         fixed = False
-        if self.__IsKeyword("Fixed"):
+        if self.__IsKeyword("Fixed", True):
             fixed = True
             
         checksum = False
-        if self.__IsKeyword("CheckSum"):
+        if self.__IsKeyword("CheckSum", True):
             checksum = True
             
         alignment = ""
-        if self.__IsKeyword("Align"):
+        if self.__IsKeyword("Align", True):
             if not self.__IsToken("="):
                 raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
             if not self.__GetNextToken():
