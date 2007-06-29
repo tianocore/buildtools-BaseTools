@@ -16,6 +16,8 @@ import os
 import re
 from StringIO import StringIO
 from struct import pack
+from EdkIIWorkspace import CreateDirectory
+#from AutoGen import gModuleDatabase
 
 gType2Phase = {
     "BASE"              :   None,
@@ -30,7 +32,6 @@ gType2Phase = {
     "UEFI_DRIVER"       :   "DXE",
     "UEFI_APPLICATION"  :   "DXE",
 }
-
 
 class DependencyExpression:
 
@@ -68,6 +69,8 @@ class DependencyExpression:
         }
     }
 
+    SupportedOpcode = ["BEFORE", "AFTER", "PUSH", "AND", "OR", "NOT", "TRUE", "FALSE", "END", "SOR"]
+    
     NonEndingOpcode = ["AND", "OR"]
 
     ExclusiveOpcode = ["BEFORE", "AFTER"]
@@ -79,14 +82,18 @@ class DependencyExpression:
     #
     TokenPattern = re.compile("(\(|\)|\{[^{}]+\{[^{}]+\}[ ]*\}|\w+)")
     
-    def __init__(self, expression, type):
-        self.Phase = gType2Phase[type]
-        self.ExpressionString = expression
-        self.TokenList = []
+    def __init__(self, expression, mtype):
+        self.Phase = gType2Phase[mtype]
+        if type(expression) == type([]):
+            self.ExpressionString = " ".join(expression)
+            self.TokenList = expression
+        else:
+            self.ExpressionString = expression
+            self.GetExpressionTokenList()
+
         self.PostfixNotation = []
         self.OpcodeList = []
 
-        self.GetExpressionTokenList()
         self.GetPostfixNotation()
         self.ValidateOpcode()
 
@@ -129,6 +136,7 @@ class DependencyExpression:
         for op in self.ExclusiveOpcode:
             if op in self.OpcodeList and len(self.OpcodeList) > 1:
                 raise Exception("Opcode=%s should be only opcode in expression", op)
+        # print "######", self.ExpressionString
         if self.TokenList[-1] in self.NonEndingOpcode:
             raise Exception("Extra %s at the end of dependency expression" % self.TokenList[-1])
 
@@ -137,17 +145,39 @@ class DependencyExpression:
         guidValueList = guidValueString.split(",")
         if len(guidValueList) != 11:
             raise Exception("Invalid GUID value string or opcode: %s" % guid)
-        return pack("IHH8B", *(int(value, 16) for value in guidValueList))
+        return pack("1I2H8B", *(int(value, 16) for value in guidValueList))
 
-    def GenerateDepexFile(self, fd):
+    def SaveFile(self, file, content):
+        CreateDirectory(os.path.dirname(file))
+        f = None
+        if os.path.exists(file):
+            f = open(file, 'rb')
+            if content == f.read():
+                f.close()
+                return
+            f.close()
+        f = open(file, "wb")
+        f.write(content)
+        f.close()
+
+    def Generate(self, file=None):
         buffer = StringIO()
         for item in self.PostfixNotation:
             if item in self.Opcode[self.Phase]:
                 buffer.write(pack("B", self.Opcode[self.Phase][item]))
             else:
                 buffer.write(self.GetGuidValue(item))
-        fd.write(buffer.getvalue())
+
+        filePath = ""
+        if file == None:
+            sys.stdout.write(buffer.getvalue())
+            filePath = "STDOUT"
+        else:
+            self.SaveFile(file, buffer.getvalue())
+            filePath = file
+
         buffer.close()
+        return filePath
 
 versionNumber = "0.01"
 __version__ = "%prog Version " + versionNumber
@@ -195,12 +225,10 @@ def Main():
         dpx = DependencyExpression(dxsString, option.ModuleType)
 
         if option.OutputFile != None:
-            fd = open(option.OutputFile, "wb")
-            dpx.GenerateDepexFile(fd)
-            fd.close()
+            dpx.Generate(option.OutputFile)
         else:
-            dpx.GenerateDepexFile(sys.stdout)
-    except:
+            dpx.Generate()
+    except Exception, e:
         return -1
 
     return 0

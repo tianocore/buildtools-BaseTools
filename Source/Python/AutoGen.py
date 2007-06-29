@@ -7,10 +7,12 @@ import os.path as path
 import imp
 import GenC
 import GenMake
+import GenDepex
 
 from EdkIIWorkspaceBuild import *
 from DataType import *
 from BuildInfo import *
+from StrGather import *
 
 #
 # generate AutoGen.c, AutoGen.h
@@ -24,6 +26,7 @@ gPackageDatabase = {}       # {arch : {dec file path : PackageBuildClassObject}}
 gAutoGenDatabase = {}       # (module/package/platform obj, BuildTarget, ToolChain, Arch) : build info
 gWorkspace = None
 gWorkspaceDir = ""
+gDepexTokenPattern = re.compile("(\(|\)|\w+| \S+\.inf)")
 
 def FindModuleOwnerPackage(module, pkgdb):
     for pkg in pkgdb:
@@ -54,6 +57,8 @@ class AutoGen(object):
 
         self.ToolChain = toolchain
         self.BuildTarget = target
+        self.IsMakefileCreated = False
+        self.IsAutoGenCodeCreated = False
 
         if moduleFile == None:
             #
@@ -76,6 +81,7 @@ class AutoGen(object):
             gAutoGenDatabase[self.BuildTarget, self.ToolChain, str(platformFile)] = self
             return
 
+        #print "-------------",moduleFile,"----------------"
         #
         # autogen for module
         #
@@ -94,7 +100,8 @@ class AutoGen(object):
         self.AutoGenC = GenC.AutoGenString()
         self.AutoGenH = GenC.AutoGenString()
 
-        self.BuildInfo = self.GetModuleBuildInfo()
+        self.BuildInfo = None
+        self.GetModuleBuildInfo()
         gAutoGenDatabase[self.BuildTarget, self.ToolChain, self.Arch, self.Module] = self
 
     def GetModuleBuildInfo(self):
@@ -103,6 +110,7 @@ class AutoGen(object):
             return gAutoGenDatabase[key].BuildInfo
         
         info = ModuleBuildInfo(self.Module)
+        self.BuildInfo = info
         info.PlatformInfo = self.GetPlatformBuildInfo(self.Platform, self.BuildTarget, self.ToolChain, self.Arch)
 
         key = (self.Package, self.BuildTarget, self.ToolChain, self.Arch)
@@ -147,6 +155,7 @@ class AutoGen(object):
         info.ProtocolList = self.GetProtocolGuidList(info.DependentLibraryList)
         info.PpiList = self.GetPpiGuidList(info.DependentLibraryList)
         info.MacroList = self.GetMacroList()
+        info.DepexList = self.GetDepexTokenList(info)
         
         info.IncludePathList = [info.SourceDir, info.DebugDir]
         info.IncludePathList.extend(self.GetIncludePathList(info.DependentPackageList))
@@ -187,6 +196,43 @@ class AutoGen(object):
         self.ProcessToolDefinition(info)
 
         return info
+
+    def GetDepexTokenList(self, info):
+        dxs = self.Module.Depex
+        #
+        # Append depex from dependent libraries
+        #
+        for lib in info.DependentLibraryList:
+            if lib.Depex != "":
+                dxs += " AND " + lib.Depex
+        if dxs == "":
+            return []
+
+        tokenList = gDepexTokenPattern.findall(self.Module.Depex)
+        for i in range(0, len(tokenList)):
+            token = tokenList[i].strip()
+            if token.endswith(".inf"):  # module file name
+                moduleFile = os.path.normpath(token)
+                token = gModuleDatabase[moduleFile].Guid
+            elif token.upper() in GenDepex.DependencyExpression.SupportedOpcode: # Opcode name
+                token = token.upper()
+            else:   # GUID C Name
+                guidCName = token
+                for p in info.DependentPackageList:
+                    if guidCName in p.Protocols:
+                        token = p.Protocols[guidCName]
+                        break
+                    elif guidCName in p.Ppis:
+                        token = p.Ppis[guidCName]
+                        break
+                    elif guidCName in p.Guids:
+                        token = p.Guids[guidCName]
+                        break
+                else:
+                    raise Exception("%s used in module %s cannot be found in any package!" % (guidCName, info.Name))
+            tokenList[i] = token
+        # print "   ","\n    ".join(tokenList)
+        return tokenList
 
     def GetMacroList(self):
         return ["%s %s" % (name, self.Module.Specification[name]) for name in self.Module.Specification]
@@ -272,6 +318,7 @@ class AutoGen(object):
         buildFileList = []
         fileList = self.Module.Sources
         for f in fileList:
+            #print "###",str(f)
             if f.TagName != "" and f.TagName != self.ToolChain:
                 continue
             if f.ToolCode != "" and f.ToolCode not in platformInfo.ToolPath:
@@ -280,7 +327,7 @@ class AutoGen(object):
             # skip unknown file
             base, ext = path.splitext(f.SourceFile)
             if ext not in buildRule.FileTypeMapping:
-                EdkLogger.info("Don't know how to process file %s" % f.SourceFile)
+                EdkLogger.verbose("Don't know how to process file %s (%s)" % (f.SourceFile, ext))
                 continue
             
             # skip file which needs a tool having no matching toolchain family
@@ -290,9 +337,10 @@ class AutoGen(object):
             else:
                 toolCode = buildRule.ToolCodeMapping[fileType]
             # get the toolchain family from tools definition
-            if f.ToolChainFamily != "" and f.ToolChainFamily != platformInfo.ToolChainFamily[toolcode]:
+            if f.ToolChainFamily != "" and f.ToolChainFamily != platformInfo.ToolChainFamily[toolCode]:
                 continue
-
+            if fileType == "Unicode-Text":
+                self.BuildInfo.UnicodeFileList.append(f.SourceFile)
             buildFileList.append(f.SourceFile)
         return buildFileList
 
@@ -502,6 +550,8 @@ class AutoGen(object):
             "ENABLE_PCH"        :   False,
             "ENABLE_LOCAL_LIB"  :   True,
         }
+        if self.IsMakefileCreated:
+            return
 
         if self.IsPlatformAutoGen:
             for arch in self.BuildInfo:
@@ -544,10 +594,14 @@ class AutoGen(object):
                     self.BuildInfo.LibraryAutoGenList.append(libraryAutoGen)
                 libraryAutoGen.CreateMakefile()
 
+        self.IsMakefileCreated = True
         makefile = GenMake.Makefile(self.BuildInfo, myBuildOption)
         return makefile.Generate()
 
     def CreateAutoGenFile(self, filePath=None):
+        if self.IsAutoGenCodeCreated:
+            return
+        
         if self.IsPlatformAutoGen:
             for arch in self.BuildInfo:
                 info = self.BuildInfo[arch]
@@ -565,6 +619,9 @@ class AutoGen(object):
                     elif moduleAutoGen.BuildInfo.IsLibrary and moduleAutoGen not in info.LibraryAutoGenList:
                         info.LibraryAutoGenList.append(moduleAutoGen)
                     moduleAutoGen.CreateAutoGenFile()
+                    if moduleAutoGen.BuildInfo.DepexList != []:
+                        dpx = GenDepex.DependencyExpression(moduleAutoGen.BuildInfo.DepexList, moduleAutoGen.BuildInfo.ModuleType)
+                        dpx.Generate(os.path.join(gWorkspaceDir, moduleAutoGen.BuildInfo.OutputDir, moduleAutoGen.BuildInfo.Name + ".depex"))
 
                     for lib in moduleAutoGen.BuildInfo.DependentLibraryList:
                         key = (info.BuildTarget, info.ToolChain, arch, lib)
@@ -589,9 +646,16 @@ class AutoGen(object):
                 if libraryAutoGen not in self.BuildInfo.LibraryAutoGenList:
                     self.BuildInfo.LibraryAutoGenList.append(libraryAutoGen)
                 libraryAutoGen.CreateAutoGenFile()
-            return GenC.Generate(os.path.join(self.BuildInfo.WorkspaceDir,
-                                              self.BuildInfo.DebugDir),
-                                 self.AutoGenC, self.AutoGenH)
+
+            autoGenList = GenC.Generate(os.path.join(self.BuildInfo.WorkspaceDir, self.BuildInfo.DebugDir),
+                                        self.AutoGenC, self.AutoGenH)
+                          
+            if self.BuildInfo.DepexList != []:
+                dpx = GenDepex.DependencyExpression(self.BuildInfo.DepexList, self.BuildInfo.ModuleType)
+                dpx.Generate(os.path.join(gWorkspaceDir, self.BuildInfo.OutputDir, self.BuildInfo.Name + ".depex"))
+
+            self.IsAutoGenCodeCreated = True
+            return autoGenList
 
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.

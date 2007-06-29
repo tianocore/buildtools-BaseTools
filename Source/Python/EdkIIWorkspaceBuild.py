@@ -368,12 +368,12 @@ class WorkspaceBuild(object):
                 for index in range(len(infObj.Contents[key].Sources)):
                     SourceFile = infObj.Contents[key].Sources[index].split(DataType.TAB_VALUE_SPLIT)
                     if len(SourceFile) == 6:
-                        FileName = NormPath(SourceFile[0])
-                        PcdFeatureFlag = SourceFile[1]
-                        TagName = SourceFile[3]
-                        ToolCode = SourceFile[4]
-                        ToolChainFamily = SourceFile[2]
-                        String = SourceFile[5]
+                        FileName = NormPath(SourceFile[0].strip())
+                        PcdFeatureFlag = SourceFile[1].strip()
+                        TagName = SourceFile[3].strip()
+                        ToolCode = SourceFile[4].strip()
+                        ToolChainFamily = SourceFile[2].strip()
+                        String = SourceFile[5].strip()
                         pb.Sources.append(ModuleSourceFilesClassObject(FileName, PcdFeatureFlag, TagName, ToolCode, ToolChainFamily, String))
                     elif len(SourceFile) == 1:
                         pb.Sources.append(ModuleSourceFilesClassObject(NormPath(infObj.Contents[key].Sources[index])))

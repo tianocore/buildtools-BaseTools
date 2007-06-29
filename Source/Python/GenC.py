@@ -4,6 +4,7 @@ import EdkLogger
 from DataType import *
 from EdkIIWorkspace import *
 from BuildInfo import *
+from StrGather import *
 
 ItemTypeStringDatabase  = {
     TAB_PCDS_FEATURE_FLAG:'FixedAtBuild',
@@ -1389,6 +1390,12 @@ def CreateGuidDefinitionCode(info, autoGenC, autoGenH):
             if Key in p.Guids:
                 autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Guids[Key]))
                 break
+            if Key in p.Protocols:
+                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Protocols[Key]))
+                break
+            if Key in p.Ppis:
+                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Ppis[Key]))
+                break
         else:
             EdkLogger.error('ERROR: GUID %s not found in dependent packages of module %s' % (Key, info.Name))
 
@@ -1403,6 +1410,12 @@ def CreateProtocolDefinitionCode(info, autoGenC, autoGenH):
             if Key in p.Protocols:
                 autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Protocols[Key]))
                 break
+            if Key in p.Guids:
+                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Guids[Key]))
+                break
+            if Key in p.Ppis:
+                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Ppis[Key]))
+                break
         else:
             EdkLogger.error('ERROR: Protocol %s not found in dependent packages of module %s' % (Key, info.Name))
 
@@ -1414,6 +1427,12 @@ def CreatePpiDefinitionCode(info, autoGenC, autoGenH):
     #
     for Key in info.PpiList:
         for p in info.DependentPackageList:
+            if Key in p.Protocols:
+                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Protocols[Key]))
+                break
+            if Key in p.Guids:
+                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Guids[Key]))
+                break
             if Key in p.Ppis:
                 autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Ppis[Key]))
                 break
@@ -1427,6 +1446,11 @@ def CreatePcdCode(info, autoGenC, autoGenH):
     else:
         for pcd in info.PcdList:
             CreateModulePcdCode(info, autoGenC, autoGenH, pcd)
+
+def CreateUnicodeStringCode(info, autoGenC, autoGenH):
+    hCode, cCode = GetStringFiles(info.UnicodeFileList, info.IncludePathList, [], info.Name)
+    autoGenC.Append(cCode)
+    autoGenH.Append(hCode)
 
 def CreateHeaderCode(info, autoGenC, autoGenH):
     # file header
@@ -1469,6 +1493,7 @@ def CreateCode(info, autoGenC, autoGenH):
     CreateProtocolDefinitionCode(info, autoGenC, autoGenH)
     CreatePpiDefinitionCode(info, autoGenC, autoGenH)
     CreatePcdCode(info, autoGenC, autoGenH)
+    #CreateUnicodeStringCode(info, autoGenC, autoGenH)
 
     CreateFooterCode(info, autoGenC, autoGenH)
 

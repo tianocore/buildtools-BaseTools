@@ -43,6 +43,7 @@ class ModuleBuildInfo(BuildInfo):
 
         self.IncludePathList = []
         self.AutoGenFileList = []
+        self.UnicodeFileList = []
         self.SourceFileList = []
         self.ObjectFileList = []
 
@@ -59,6 +60,7 @@ class ModuleBuildInfo(BuildInfo):
         self.PpiList = []
 
         self.MacroList = []
+        self.DepexList = []
 
 class PackageBuildInfo(BuildInfo):
     def __init__(self, package):
