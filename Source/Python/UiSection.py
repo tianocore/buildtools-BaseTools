@@ -1,7 +1,7 @@
 import Section
 from Ffs import Ffs
 import subprocess
-
+import os
 class UiSection (Section.Section):
     def __init__(self):
         self.Alignment = None
@@ -18,9 +18,7 @@ class UiSection (Section.Section):
             self.StringData = FfsInf.__ExtendMarco__(self.StringData)
             self.FileName = FfsInf.__ExtendMarco__(self.FileName)
             
-        OutputFile = OutputPath + \
-                     ModuleName + \
-                     Ffs.SectionSuffix.get('UI')
+        OutputFile = os.path.join(OutputPath, ModuleName + Ffs.SectionSuffix.get('UI'))
                      
         if self.StringData != None :
             NameString = self.StringData

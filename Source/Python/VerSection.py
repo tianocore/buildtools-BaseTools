@@ -19,10 +19,8 @@ class VerSection (Section.Section):
             self.StringData = FfsInf.__ExtendMarco__(self.StringData)
             self.FileName = FfsInf.__ExtendMarco__(self.FileName)
             
-        OutputFile = OutputPath + \
-                     os.sep     + \
-                     ModuleName + \
-                     Ffs.SectionSuffix.get('VERSION')
+        OutputFile = os.path.join(OutputPath,
+                                  ModuleName+Ffs.SectionSuffix.get('VERSION'))
         OutputFile = os.path.normpath(OutputFile)
         
         """Get Build Num """

@@ -50,6 +50,7 @@ class FD:
         #
         # Write the buffer contents to Fd file
         #
+        print "Fd File Name:%s" %FdFileName
         fd.write(FdBuffer.getvalue());
         fd.close;
         FdBuffer.close;

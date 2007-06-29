@@ -58,13 +58,13 @@ class region:
             
         if self.RegionType == 'DATA' :
             Data = self.RegionData.split(',')
-            if Data.len > Size:
+            if len(Data) > Size:
                raise Exception ("Size of DATA large than Region Size ")
-            elif Data.len <= Size:
+            elif len(Data) <= Size:
                 for item in Data :
                     Buffer.write(pack('B', int(item, 16)))
-                for index in range(0, (Size - Data.len)):
-                    Buffer.write(pack('B'), int('0xFF', 16))
+                for index in range(0, (Size - len(Data))):
+                    Buffer.write(pack('B', int('0xFF', 16)))
                 
         if self.RegionType == None:
             for i in range(0, Size) :

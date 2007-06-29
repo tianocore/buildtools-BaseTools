@@ -6,71 +6,71 @@ import subprocess
 class FileStatements (Ffs.Ffs) :
     def __init__(self):
         Ffs.Ffs.__init__(self)
-        Ffs.Ffs.CheckSum = ''
-        Ffs.Ffs.Fixed = ''
-        Ffs.Ffs.NameGuid = ''
-        Ffs.Ffs.Alignment = ''
+##        Ffs.Ffs.CheckSum = False
+##        Ffs.Ffs.Fixed = False
+##        Ffs.Ffs.NameGuid = None
+##        Ffs.Ffs.Alignment = None
         Ffs.Ffs.SectionList = []
-        self.FvType = ''
+        self.FvType = None
         self.FilePath = None
         
     def GenFfs(self):
+        OutputDir = os.path.join(GenFdsGlobalVariable.FfsDir, self.NameGuid)
+        if not os.path.exists(OutputDir):
+             os.makedirs(OutputDir)
+            
         SectionFiles = ''
         
         for section in self.SectionList :
             SectionFiles = SectionFiles                          + \
                            ' -i '                                + \
-                           section.GenSection(GenFdsGlobalVariable.\
-                           OuputDir, self.NameGuid)
+                           section.GenSection(OutputDir, self.NameGuid)
         #
         # Prepare the parameter
         #
-        if not (self.Fixed == None):
+        print "Fixe = ", self.Fixed
+        if self.Fixed != False:
                 Fixed = ' -x '
         else :
                 Fixed = ''
-        if not (self.CheckSum == None):
+        print "CheckSum=", self.CheckSum
+        if self.CheckSum != False :
                 CheckSum = ' -s '
         else :
                 CheckSume = ''
-        if not (self.Alignment == None):
-                Alignment = ' -a ' + '%d' %self.Alignment
+                
+        if self.Alignment != None and self.Alignment !='':
+                Alignment = ' -a ' + '%s' %self.Alignment
         else :
                 Alignment = ''
                 
-        FileType = Ffs.Ffs.FvTypeToFileType.get(self.FvType)
-        if not (FileType == None):
-            FileType = ' - t ' + FileType
+        if not (self.FvType == None):
+            FileType = ' -t ' + Ffs.Ffs.FvTypeToFileType.get(self.FvType)
         else:
             FileType = ''
 
-        FfsOutput = GenFdsGlobalVariable.OuputDir + \
-                    self.NameGuid                 + \
-                    '.ffs'
+        FfsFileOutput = os.path.join(OutputDir, self.NameGuid + '.ffs')
                     
         InputSection = ' -i '                         + \
-                        GenFdsGlobalVariable.OuputDir + \
-                        FfsOutput
+                        FfsFileOutput
   
-        GenFfsCmd = 'GenFfsFile' +  \
+        GenFfsCmd = 'GenFfs' +  \
                      FileType +     \
                      Fixed +        \
                      CheckSum +     \
                      Alignment +    \
                      ' -o ' +       \
-                     FfsOutput +    \
+                     FfsFileOutput +    \
                      ' -g ' +       \
                      self.NameGuid +\
                      SectionFiles
-        #GenFfsCmd = "GenFfsFile -p1 Ffs.inf"
-        #
-        # Call GenSection
-        #
+     
         print GenFfsCmd
-        #subprocess.Popen (GenFfsCmd).communicate()
-        #FfsOutput = GenFdsGlobalVariable.OuputDir + \
-        #           "1BCAB7B3-8D0A-4740-B021-A42945A229F9-PeiIOMMIORegisterLibBbTest.PEI"
+        PopenObject = subprocess.Popen (GenFfsCmd)
+        PopenObject.communicate()
+        if PopenObject.returncode != 0:
+            raise Exception("GenFfs Failed !")
         
-        return FfsOutput
+        return FfsFileOutput
         
 

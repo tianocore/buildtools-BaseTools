@@ -16,7 +16,7 @@ class Ffs:
         'PEI_CORE'          : 'EFI_FV_FILETYPE_PEI_CORE',
         'PEIM'              : 'EFI_FV_FILETYPE_PEIM',
         'DXE_CORE'          : 'EFI_FV_FILETYPE_DXE_CORE',
-        'FREEEFORM'         : 'EFI_FV_FILETYPE_FREEFORM',
+        'FREEFORM'          : 'EFI_FV_FILETYPE_FREEFORM',
         'DRIVER'            : 'EFI_FV_FILETYPE_DRIVER',
         'APPLICATION'       : 'EFI_FV_FILETYPE_APPLICATION',
         'FV_IMAGE'          : 'EFI_FV_FILETYPE_FIRMWARE_VOLUME_IMAGE',
@@ -40,10 +40,10 @@ class Ffs:
     }
     
     def __init__(self):
-        self.NameGuid = ''
+        self.NameGuid = None
         self.Fixed = False
         self.CheckSum = False
-        self.Alignment = ''
+        self.Alignment = None
         self.SectionList = []
         
     def GenFfs():

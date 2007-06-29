@@ -4,8 +4,8 @@ class Rule:
         self.ModuleType = None    # For Module Type
         self.TemplateName = None
         self.NameGuid = None
-        self.Fixed = None
+        self.Fixed = False
         self.Alignment = None
-        self.CheckSum = None
+        self.CheckSum = False
         self.FvType = None       # for Ffs File Type
         

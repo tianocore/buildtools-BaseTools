@@ -17,12 +17,15 @@ class FfsInfStatement(Ffs.Ffs):
         self.BuildNum = ''
         self.KeyStringList = []
 
-    def __infParse__(self, InfFile):
+    def __infParse__(self):
         #
         # Get the InfClass object
         #
-        InfFile = os.path.normpath (InfFile)
-        Inf = GenFdsGlobalVariable.WorkSpace.InfDatabase[InfFile]
+##        for item in GenFdsGlobalVariable.WorkSpace.InfDatabase:
+##            print item
+            
+        self.InfFileName = os.path.normpath (self.InfFileName)
+        Inf = GenFdsGlobalVariable.WorkSpace.InfDatabase[self.InfFileName]
         #
         # Set Ffs BaseName, MdouleGuid, ModuleType, Version, OutputPath
         #
@@ -44,14 +47,17 @@ class FfsInfStatement(Ffs.Ffs):
         if not os.path.exists(self.OutputPath) :
             os.makedirs(self.OutputPath)
             
-        self.InfOutputPath = self.__GetEFIOutPutPaht__()
+        self.InfOutputPath = self.__GetEFIOutPutPath__()
                              
     def GenFfs(self):
         #
         # Parse Inf file get Module related information
         #
         print " Begion parsing INf file : %s" %self.InfFileName
-        self.__infParse__(self.InfFileName)
+        
+        """ Replace $(WORKSPACE) to None!"""
+        self.InfFileName = self.InfFileName.replace('$(WORKSPACE)\\', '')
+        self.__infParse__()
         #
         # Get the rule of how to generate Ffs file
         #
@@ -81,7 +87,8 @@ class FfsInfStatement(Ffs.Ffs):
             '$(MODULE_NAME)' : self.BaseName,
             '$(BUILD_NUMBER)': self.BuildNum,
             '$(INF_VERSION)' : self.VersionString,
-            '$(NAME_GUID)'   : self.ModuleGuid
+            '$(NAMED_GUID)'  : self.ModuleGuid,
+            '$(WORKSPACE)'   : GenFdsGlobalVariable.WorkSpaceDir
         }
         if String == None :
             return None
@@ -118,7 +125,7 @@ class FfsInfStatement(Ffs.Ffs):
         print "Want To Find Rule Name is : " + RuleName
         return Rule
     
-    def __GetEFIOutPutPaht__(self):
+    def __GetEFIOutPutPath__(self):
         Flag = False
         Arch = ''
         OutputPath = ''
@@ -193,22 +200,8 @@ class FfsInfStatement(Ffs.Ffs):
         #
         # Prepare the parameter of GenFfs
         #
-        FileType = ' - t ' + \
-                   Ffs.Ffs.ModuleTypeToFileType[Rule.ModuleType]
-
-        if not (Rule.Fixed == None):
-            Fixed = ' -x '
-        else :
-            Fixed = ''
-        if not (Rule.CheckSum == None):
-            CheckSum = ' -s '
-        else :
-            CheckSume = ''
-        if not (Rule.Alignment == None):
-            Alignment = ' -a %d' %Rule.Alignment
-        else :
-            Alignment = ''
-
+        (FileType,Fixed, CheckSum, Alignment) = self.__GetGenFfsComParamter__(Rule)
+        
         FfsOutput = self.OutputPath                     + \
                     os.sep                              + \
                     self.__ExtendMarco__(Rule.NameGuid) + \
@@ -244,22 +237,29 @@ class FfsInfStatement(Ffs.Ffs):
         SectFiles = ''
         for Sect in Rule.SectionList:
            print 'GenSection: %s %s :' %(self.OutputPath ,self.ModuleGuid)
-           SectFiles = SectFiles    + \
-                       ' -i '       + \
-                       Sect.GenSection(self.OutputPath , self.ModuleGuid, self)
+           secName = ''
+           secName = Sect.GenSection(self.OutputPath , self.ModuleGuid, self)
+           if secName != '':
+               SectFiles = SectFiles    + \
+                           ' -i '       + \
+                           secName
                        
         return SectFiles
 
     def __GenComplexFileFfs__(self, Rule, InputFile):
+        
+        (FileType,Fixed, CheckSum, Alignment) = self.__GetGenFfsComParamter__(Rule)
+        
         FfsOutput = os.path.join( self.OutputPath, self.ModuleGuid + '.ffs')
         GenFfsCmd = 'GenFfs '                                     + \
-                     '-t '                                        + \
-                     Ffs.Ffs.ModuleTypeToFileType[Rule.ModuleType]+ \
+                     Fixed                                        + \
+                     CheckSum                                     + \
+                     Alignment                                    + \
+                     FileType                                     + \
                      ' -g '                                       + \
                      self.ModuleGuid                              + \
                      ' -o '                                       + \
                      FfsOutput                                    + \
-                     self.NameGuid                                + \
                      InputFile
                      
         print GenFfsCmd
@@ -269,3 +269,23 @@ class FfsInfStatement(Ffs.Ffs):
             raise Exception("GenFfs Failed !")
         
         return FfsOutput
+
+    def __GetGenFfsComParamter__(self, Rule):
+        FileType = ' -t ' + \
+                   Ffs.Ffs.ModuleTypeToFileType[Rule.ModuleType]
+        print "Rule.Fixed = ", Rule.Fixed
+        if Rule.Fixed != False:
+            Fixed = ' -x '
+        else :
+            Fixed = ''
+        if Rule.CheckSum != False:
+            CheckSum = ' -s '
+        else :
+            CheckSume = ''
+            
+        if Rule.Alignment != None and Rule.Alignment != '':
+            Alignment = ' -a %s' %Rule.Alignment
+        else :
+            Alignment = ''
+            
+        return FileType, Fixed, CheckSum, Alignment

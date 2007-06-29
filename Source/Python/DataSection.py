@@ -19,6 +19,11 @@ class DataSection (Section.Section):
             self.Alignment = FfsInf.__ExtendMarco__(self.Alignemnt)
             self.SecType = FfsInf.__ExtendMarco__(self.SecType)
             self.SectFileName = FfsInf.__ExtendMarco__(self.SectFileName)
+            
+        """Check Section file exist or not !"""
+        if not os.path.exists(self.SectFileName):
+            self.SectFileName = os.path.join (GenFdsGlobalVariable.WorkSpaceDir,
+                                              self.SectFileName)
 
         OutputFile = OutputPath + \
                      os.sep     + \

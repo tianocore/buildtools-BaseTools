@@ -32,7 +32,13 @@ class EfiSection (Section.Section):
             self.VersionNum = FfsInf.__ExtendMarco__(self.VersionNum)
             print 'After extend Version Num: %s' %self.VersionNum
             
-        print '### EfiSection  Line 21##'
+        if self.Optional == True :
+            if self.Filename == None or self.Filename =='':
+                print "Optional Section don't exist!S"
+                return ''
+ 
+        print OutputPath
+        print ModuleName
         print self.SectionType
         OutputFile = os.path.join( OutputPath, ModuleName + Ffs.SectionSuffix.get(self.SectionType))
         #
@@ -52,7 +58,12 @@ class EfiSection (Section.Section):
                                  self.BuildNum
             else :
                 BuildNumString = ''
-                                 
+            if VerString == '' and BuildNumString == '':
+                if self.Optional == True :
+                    print "Optional Section don't exist!"
+                    return ''
+                else:
+                    raise Exception ("Version Section dosen't give info")
             GenSectionCmd = 'GenSection -o '            + \
                              OutputFile                 + \
                              ' -s EFI_SECTION_VERSION'  + \
@@ -77,11 +88,26 @@ class EfiSection (Section.Section):
                            '\"'
             else:
                 UiString = ''
+
+            if UiString == '':
+                if self.Optional == True :
+                    print "Optional Section don't exist!"
+                    return ''
+                else:
+                    raise Exception ("UI Section dosen't give info")
+                
             GenSectionCmd = 'GenSection -o '                   + \
                              OutputFile                        + \
                              ' -s EFI_SECTION_USER_INTERFACE'  + \
                              UiString
         else:
+             if self.Filename == None or not os.path.exists(self.Filename) :
+                 if self.Optional == True:
+                     print "Optional Section don't exist!"
+                     return ''
+                 else:
+                     raise Exception("Section doesn't give info")
+                 
              GenSectionCmd = 'GenSection -o '                                 + \
                               OutputFile                                      + \
                               ' -s '                                          + \

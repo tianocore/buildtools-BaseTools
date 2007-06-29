@@ -45,6 +45,8 @@ class GuidSection(Section.Section) :
                              ' -s '                                        + \
                              Section.Section.SectionType[self.SectionType] + \
                              SectFile
+                             
+            print GenSectionCmd
             PopenObject = subprocess.Popen(GenSectionCmd)
             PopenObject.communicate()
             if PopenObject.returncode != 0:
