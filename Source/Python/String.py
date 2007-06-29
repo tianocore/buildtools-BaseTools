@@ -144,7 +144,7 @@ def GetLibraryClassesWithModuleType(Lines, Key, KeyValues, CommentCharacter):
     Lines = Lines.split(DataType.TAB_SECTION_END, 1)[1]
     LineList = Lines.splitlines()
     for Line in LineList:
-        Line = CleanString(Line)
+        Line = CleanString(Line, CommentCharacter)
         if Line != '' and Line[0] != CommentCharacter:
             KeyValues.append([CleanString(Line, CommentCharacter), newKey[1]])
 
