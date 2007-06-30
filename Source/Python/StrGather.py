@@ -137,7 +137,7 @@ def CreateCFileContent(BaseName, UniObjectClass):
                 Count = Count + 1
 
         Str = WriteLine(Str, '//******************************************************************************')
-        Str = WriteLine(Str, COMMENT + 'Start of string definitions for ' + Language + '/' + LangPrintName)
+        Str = WriteLine(Str, COMMENT + 'Start of string definitions for ' + Language)
         
         #
         # EFI_HII_STRING_PACK_HEADER
@@ -243,7 +243,7 @@ def GetStringFiles(UniFilList, IncludeList, SkipList, BaseName):
     
     HFile = CreateHFile(BaseName, Uni)
     CFile = CreateCFile(BaseName, Uni)
-
+    
     return HFile, CFile
 
 def Write(Target, Item):
@@ -256,15 +256,17 @@ def WriteLine(Target, Item):
 # script.
 if __name__ == '__main__':
     print 'start'
-    UniFileList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\inventorystrings.uni', 'C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\VfrStrings.uni']
-    IncludeList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample']
+    
+    #UniFileList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\inventorystrings.uni', 'C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\VfrStrings.uni']
+    #IncludeList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample']
+    UniFileList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\SetupBrowserStr.uni']
+    IncludeList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe']
     SkipList = ['.inf', '.uni']
-    BaseName = 'DriverSample'
+    BaseName = 'SetupBrowser'
     (h, c) = GetStringFiles(UniFileList, IncludeList, SkipList, BaseName)
     hfile = open('C:\string.h', 'w')
     cfile = open('C:\string.c', 'w')
     hfile.write(h)
     cfile.write(c)
-    #print h
-    #print c
+    
     print 'end'
