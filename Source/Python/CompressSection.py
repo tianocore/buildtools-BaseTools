@@ -35,7 +35,7 @@ class CompressSection (Section.Section) :
                      Ffs.SectionSuffix['COMPRESS']
         OutputFile = os.path.normpath(OutputFile)
         
-        GenSectionCmd = 'GenSection -o '                              + \
+        GenSectionCmd = 'GenSec -o '                                  + \
                          OutputFile                                   + \
                          ' -s '                                       + \
                          Section.Section.SectionType['COMPRESS']      + \

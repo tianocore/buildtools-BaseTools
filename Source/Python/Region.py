@@ -5,8 +5,8 @@ import StringIO
 
 class region:
     def __init__(self):
-        self.Offset = None
-        self.Size = None
+        self.Offset = None       # The begin position of the Region
+        self.Size = None         # The Size of the Region
         self.PcdOffset = None
         self.PcdSize = None
         self.RegionSize = None
@@ -19,7 +19,7 @@ class region:
 ##
 #  Add RegionData to Fd file
 ##
-    def AddToBuffer(self, Buffer, BlockSize):
+    def AddToBuffer(self, Buffer, BlockSizeList, ErasePolarity):
         Size = int (self.Size, 16)
         print "Fv Size = %d" %Size
         
@@ -38,9 +38,12 @@ class region:
                 #
                 # Call GenFv tool
                 #
-                fv.AddToBuffer(Buffer, self.Offset)
+                BlockSize = self.__BlockSizeOfRegion__(BlockSizeList)
+                BlockNum = self.__BlockNumOfRegion__(BlockSize)
+                
+                fv.AddToBuffer(Buffer, self.Offset, BlockSize, BlockNum, ErasePolarity)
                
-            
+
         if self.RegionType == 'FILE':
             BinFile = open (self.RegionData, 'r+b')
             FvBuffer = StringIO.StringIO('')
@@ -52,7 +55,10 @@ class region:
             #
             elif FvBuffer.len < Size:
                 for index in range(0, (Size-FvBuffer.len)):
-                    FvBuffer.write(Pack('B', int('0xFF', 16)))
+                    if (ErasePolarity == 1):
+                        FvBuffer.write(Pack('B', int('0xFF', 16)))
+                    else:
+                        FvBuffer.write(Pack('B', int('0x00', 16)))
             Buffer.write(FvBuffer)
             FvBuffer.close()
             
@@ -64,9 +70,32 @@ class region:
                 for item in Data :
                     Buffer.write(pack('B', int(item, 16)))
                 for index in range(0, (Size - len(Data))):
-                    Buffer.write(pack('B', int('0xFF', 16)))
+                    if (ErasePolarity == 1):
+                        Buffer.write(pack('B', int('0xFF', 16)))
+                    else:
+                        Buffer.write(pack('B', int('0x00', 16)))
                 
         if self.RegionType == None:
             for i in range(0, Size) :
-                Buffer.write(pack('B', int('0xFF', 16)))
+                if (ErasePolarity == 1) :
+                    Buffer.write(pack('B', int('0xFF', 16)))
+                else :
+                    Buffer.write(pack('B', int('0x00', 16)))
+
+    def __BlockSizeOfRegion__(self, BlockSizeList):
+        Offset = 0x00
+        BlockSize = 0
+        for item in BlockSizeList:
+            Offset = Offset + int (item[0], 16)  * int (item[1], 10)
+            print "Offset = %d" %Offset
+            print "self.Offset %s" %self.Offset
+            if int(self.Offset, 16) < Offset :
+                BlockSize = item[0]
+                #print "BlockSize = %s" %BlockSize
+                return BlockSize
+
+    def __BlockNumOfRegion__ (self, BlockSize):
+        BlockNum = int(self.Size, 16) / int(BlockSize, 16)
+        #print "BlockNum = %x" %BlockNum
+        return BlockNum
                 
