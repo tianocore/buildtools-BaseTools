@@ -7,6 +7,8 @@ import sys
 import Section
 import RuleSimpleFile
 import RuleComplexFile
+from String import *
+
 class FfsInfStatement(Ffs.Ffs):
     def __init__(self):
         Ffs.Ffs.__init__(self)
@@ -23,8 +25,7 @@ class FfsInfStatement(Ffs.Ffs):
         #
 ##        for item in GenFdsGlobalVariable.WorkSpace.InfDatabase:
 ##            print item
-            
-        self.InfFileName = os.path.normpath (self.InfFileName)
+        self.InfFileName = os.path.normpath(self.InfFileName)
         Inf = GenFdsGlobalVariable.WorkSpace.InfDatabase[self.InfFileName]
         #
         # Set Ffs BaseName, MdouleGuid, ModuleType, Version, OutputPath
@@ -37,6 +38,7 @@ class FfsInfStatement(Ffs.Ffs):
         print "ModuleGuid : %s" %self.ModuleGuid
         print "ModuleType : %s" %self.ModuleType
         print "VersionString : %s" %self.VersionString
+        print "InfFileName :" , self.InfFileName
         #
         # Set OutputPath = ${WorkSpace}\Build\Fv\Ffs\${ModuleGuid}+ ${MdouleName}\
         #
@@ -48,6 +50,7 @@ class FfsInfStatement(Ffs.Ffs):
             os.makedirs(self.OutputPath)
             
         self.InfOutputPath = self.__GetEFIOutPutPath__()
+        print "ModuelEFIPath: " ,self.InfOutputPath
                              
     def GenFfs(self):
         #
@@ -56,7 +59,11 @@ class FfsInfStatement(Ffs.Ffs):
         print " Begion parsing INf file : %s" %self.InfFileName
         
         """ Replace $(WORKSPACE) to None!"""
-        self.InfFileName = self.InfFileName.replace('$(WORKSPACE)\\', '')
+        self.InfFileName = self.InfFileName.replace('$(WORKSPACE)', '')
+        if self.InfFileName[0] == '\\' or self.InfFileName[0] == '/' :
+            self.InfFileName = self.InfFileName[1:]
+        
+ 
         self.__infParse__()
         #
         # Get the rule of how to generate Ffs file
@@ -179,7 +186,7 @@ class FfsInfStatement(Ffs.Ffs):
                               
         OutputFile = os.path.join(self.OutputPath, GenSecOutputFile)
         
-        genSectionCmd = 'GenSection -o '                               + \
+        genSectionCmd = 'GenSec -o '                                   + \
                          OutputFile                                    + \
                          ' -s '                                        + \
                          Section.Section.SectionType[SectionType]      + \

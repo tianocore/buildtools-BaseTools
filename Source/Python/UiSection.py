@@ -30,8 +30,8 @@ class UiSection (Section.Section):
             NameString = ''
             
             
-        GenSectionCmd = 'GenSection -o ' +                   \
-                         OutputFile +                        \
+        GenSectionCmd = 'GenSec -o '                       + \
+                         OutputFile                        + \
                          ' -s EFI_SECTION_USER_INTERFACE ' + \
                          '-n '                             + \
                           '\"'                             + \

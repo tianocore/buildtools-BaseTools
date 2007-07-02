@@ -40,7 +40,7 @@ class GuidSection(Section.Section) :
         #
         if self.NameGuid == None or ExternalTool == None :
             print "Use GenSection function Generate CRC32 Section"
-            GenSectionCmd = 'GenSection -o '                               + \
+            GenSectionCmd = 'GenSec -o '                                   + \
                              OutputFile                                    + \
                              ' -s '                                        + \
                              Section.Section.SectionType[self.SectionType] + \
@@ -56,7 +56,7 @@ class GuidSection(Section.Section) :
             #
             # Call GenSection with DUMMY section type.
             #
-            GenSectionCmd = 'GenSection -o '                               + \
+            GenSectionCmd = 'GenSec -o '                                   + \
                              OutputFile                                    + \
                              ' -s '                                        + \
                              SectFile
@@ -101,7 +101,7 @@ class GuidSection(Section.Section) :
                              PROCSSING_REQUIRED + \
                              AUTH_STATUS_VALID
                              
-            GenSectionCmd = 'GenSection -o '                        + \
+            GenSectionCmd = 'GenSec -o '                            + \
                              OutputFile                             + \
                              ' -s '                                 + \
                              Section.Section.SectionType['GUIDED']  + \

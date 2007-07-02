@@ -39,8 +39,8 @@ class VerSection (Section.Section):
         else:
             StringData = ''
             
-        GenSectionCmd = 'GenSection -o ' +            \
-                         OutputFile +                 \
+        GenSectionCmd = 'GenSec -o '                + \
+                         OutputFile                 + \
                          ' -s EFI_SECTION_VERSION ' + \
                          '-n '                      + \
                          '\"'                       + \

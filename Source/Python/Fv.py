@@ -97,7 +97,7 @@ class FV:
                                    T_CHAR_LF)
                                    
         for BlockSize in self.BlockSizeList :
-            self.FvInfFile.writelines("EFI_BLOCK_SIZE  = " + \
+            self.FvInfFile.writelines("EFI_BLOCK_SIZE  = "  + \
                                       '%s' %BlockSize[0]    + \
                                       T_CHAR_LF)
                                   
@@ -108,19 +108,19 @@ class FV:
         #
         # Add attribute
         #
-        self.FvInfFile.writelines("[attribute]" + T_CHAR_LF)
+        self.FvInfFile.writelines("[attributes]" + T_CHAR_LF)
         
         if not (self.FvAttributeDict == None):
             for FvAttribute in self.FvAttributeDict.keys() :
                 self.FvInfFile.writelines("EFI_"            + \
                                           FvAttribute       + \
-                                          ' = '               + \
+                                          ' = '             + \
                                           self.FvAttributeDict[FvAttribute] + \
                                           T_CHAR_LF )
         if self.FvAlignment != None:
-            self.FvInfFile.writelines("FVB2_ALIGNMENT_"         + \
+            self.FvInfFile.writelines("EFI_FVB2_ALIGNMENT_"     + \
                                        self.FvAlignment.strip() + \
-                                       " = TRUE"                 + \
+                                       " = TRUE"                + \
                                        T_CHAR_LF)
         #
         # Add [Files]

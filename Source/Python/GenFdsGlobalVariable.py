@@ -27,7 +27,11 @@ class GenFdsGlobalVariable:
     def SetDefaultRule (Rule) :
         GenFdsGlobalVariable.DefaultRule = Rule
 
+    def ReplaceWorkspaceMarco(String):
+        Str = String.replace('$(WORKSPACE)', GenFdsGlobalVariable.WorkSpaceDir)
+        return Str
+    
     SetDir = staticmethod(SetDir)
-        
     ExtendMarco = staticmethod(ExtendMarco)
     SetDefaultRule = staticmethod(SetDefaultRule)
+    ReplaceWorkspaceMarco = staticmethod(ReplaceWorkspaceMarco)

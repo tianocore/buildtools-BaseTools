@@ -21,41 +21,45 @@ class EfiSection (Section.Section):
         # Prepare the parameter of GenSection
         #
         if FfsInf != None :
-            self.SectionType = FfsInf.__ExtendMarco__(self.SectionType)
-            print 'File Name : %s' %self.Filename
-            self.Filename = FfsInf.__ExtendMarco__(self.Filename)
-            print 'After Extend File Name: %s' %self.Filename
-            print 'Buile Num: %s' %self.BuildNum
-            self.BuildNum = FfsInf.__ExtendMarco__(self.BuildNum)
-            print 'After extend Build Num: %s' %self.BuildNum
-            print 'version Num: %s' %self.VersionNum
-            self.VersionNum = FfsInf.__ExtendMarco__(self.VersionNum)
-            print 'After extend Version Num: %s' %self.VersionNum
+            InfFileName = FfsInf.InfFileName
+            SectionType = FfsInf.__ExtendMarco__(self.SectionType)
+            #print 'File Name : %s' %self.Filename
+            Filename = FfsInf.__ExtendMarco__(self.Filename)
+            #print 'After Extend File Name: %s' %self.Filename
+            #print 'Buile Num: %s' %self.BuildNum
+            BuildNum = FfsInf.__ExtendMarco__(self.BuildNum)
+            #print 'After extend Build Num: %s' %self.BuildNum
+            #print 'version Num: %s' %self.VersionNum
+            VersionNum = FfsInf.__ExtendMarco__(self.VersionNum)
+            #print 'After extend Version Num: %s' %self.VersionNum
+        else:
+            SectionType = self.SectionType
+            Filename = self.Filename
+            BuildNum = self.BuildNum
+            VerstionNum = self.VersionNum
+            InfFileName = ''
             
         if self.Optional == True :
-            if self.Filename == None or self.Filename =='':
-                print "Optional Section don't exist!S"
+            if Filename == None or Filename =='':
+                print "Optional Section don't exist!"
                 return ''
  
-        print OutputPath
-        print ModuleName
-        print self.SectionType
-        OutputFile = os.path.join( OutputPath, ModuleName + Ffs.SectionSuffix.get(self.SectionType))
+        OutputFile = os.path.join( OutputPath, ModuleName + Ffs.SectionSuffix.get(SectionType))
         #
         #  If Section type is 'VERSION'
         #
-        if self.SectionType == 'VERSION':
-            if self.Filename != None:
+        if SectionType == 'VERSION':
+            if Filename != None:
                 VerString = ' -n '           + \
                              ' \"'           + \
-                             self.Filename   + \
+                             Filename        + \
                              ' \"'
             else:
                 VerString = ''
                              
-            if self.BuildNum != None and self.BuildNum != '':
+            if BuildNum != None and BuildNum != '':
                 BuildNumString = ' -j ' + \
-                                 self.BuildNum
+                                 BuildNum
             else :
                 BuildNumString = ''
             if VerString == '' and BuildNumString == '':
@@ -63,8 +67,8 @@ class EfiSection (Section.Section):
                     print "Optional Section don't exist!"
                     return ''
                 else:
-                    raise Exception ("Version Section dosen't give info")
-            GenSectionCmd = 'GenSection -o '            + \
+                    raise Exception ("File: %s Version Section dosen't give info" %InfFileName)
+            GenSectionCmd = 'GenSec -o '                + \
                              OutputFile                 + \
                              ' -s EFI_SECTION_VERSION'  + \
                              VerString                  + \
@@ -72,7 +76,7 @@ class EfiSection (Section.Section):
         #
         # If Section Type is 'UI'
         #
-        elif self.SectionType == 'UI':
+        elif SectionType == 'UI':
             #if self.Filename != None :
             #    f = open (self.Filename, 'r')
             #    UiString = f.read ()
@@ -81,10 +85,10 @@ class EfiSection (Section.Section):
             #                '\"'     + \
             #                UiString + \
             #                '\"'
-            if self.Filename != None:
+            if Filename != None:
                 UiString = ' -n '        + \
                            '\"'          + \
-                           self.Filename + \
+                           Filename      + \
                            '\"'
             else:
                 UiString = ''
@@ -94,26 +98,26 @@ class EfiSection (Section.Section):
                     print "Optional Section don't exist!"
                     return ''
                 else:
-                    raise Exception ("UI Section dosen't give info")
+                    raise Exception ("File: %s UI Section dosen't give info" %InfFileName)
                 
-            GenSectionCmd = 'GenSection -o '                   + \
+            GenSectionCmd = 'GenSec -o '                       + \
                              OutputFile                        + \
                              ' -s EFI_SECTION_USER_INTERFACE'  + \
                              UiString
         else:
-             if self.Filename == None or not os.path.exists(self.Filename) :
+             if Filename == None or not os.path.exists(Filename) :
                  if self.Optional == True:
                      print "Optional Section don't exist!"
                      return ''
                  else:
-                     raise Exception("Section doesn't give info")
+                     raise Exception("File: %s Data Section doesn't give info" %InfFileName)
                  
-             GenSectionCmd = 'GenSection -o '                                 + \
+             GenSectionCmd = 'GenSec -o '                                     + \
                               OutputFile                                      + \
                               ' -s '                                          + \
-                              Section.Section.SectionType.get (self.SectionType)  + \
+                              Section.Section.SectionType.get (SectionType)  + \
                               ' '                                             + \
-                              GenFdsGlobalVariable.ExtendMarco(self.Filename)
+                              GenFdsGlobalVariable.ExtendMarco(Filename)
         #
         # Call GenSection
         #
