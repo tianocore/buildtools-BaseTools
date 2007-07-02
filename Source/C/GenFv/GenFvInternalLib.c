@@ -422,7 +422,8 @@ Returns:
 --*/
 {
   if (FvHeader->Attributes & EFI_FVB2_ERASE_POLARITY) {
-    FfsFile->State |= ~(UINT8) EFI_FILE_ALL_STATE_BITS;
+    FfsFile->State = (UINT8)~(FfsFile->State);
+    // FfsFile->State |= ~(UINT8) EFI_FILE_ALL_STATE_BITS;
   }
 }
 
@@ -1913,6 +1914,7 @@ Returns:
   // Check XipAddress, BootAddress and RuntimeAddress
   //
   Flags = 0;
+
   if (FvInfo->BaseAddress != -1) {
     Flags  |= REBASE_XIP_FILE;
     XipBase = FvInfo->BaseAddress + XipOffset;
@@ -1999,7 +2001,7 @@ Returns:
           //
           // Xip module has the same section alignment and file alignment.
           //
-          Error (NULL, 0, 0, "Section-Alignment and File-Alignment does not match", FileName);
+          Warning (NULL, 0, 0, "Section-Alignment and File-Alignment does not match", FileName);
           return EFI_ABORTED;
         }
 
