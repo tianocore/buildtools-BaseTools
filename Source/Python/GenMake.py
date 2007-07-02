@@ -117,6 +117,129 @@ OutputFlag = {
 
 IncludeFlag = {"MSFT" : "/I", "GCC" : "-I"}
 
+gCustomMakefileTemplate = '''
+#
+# Workspace related macro definition
+#
+EDK_SOURCE = $(WORKSPACE)
+
+#
+# Platform Macro Definition
+#
+PLATFORM_NAME = ${platform_name}
+PLATFORM_GUID = ${platform_guid}
+PLATFORM_VERSION = ${platform_version}
+PLATFORM_RELATIVE_DIR = ${platform_relative_directory}
+PLATFORM_DIR = $(WORKSPACE)${separator}${platform_relative_directory}
+PLATFORM_OUTPUT_DIR = ${platform_output_directory}
+
+#
+# Package Macro Definition
+#
+PACKAGE_NAME = ${package_name}
+PACKAGE_GUID = ${package_guid}
+PACKAGE_VERSION = ${package_version}
+PACKAGE_RELATIVE_DIR = ${package_relative_directory}
+PACKAGE_DIR = $(WORKSPACE)${separator}${package_relative_directory}
+
+#
+# Module Macro Definition
+#
+MODULE_NAME = ${module_name}
+MODULE_GUID = ${module_guid}
+MODULE_VERSION = ${module_version}
+MODULE_TYPE = ${module_type}
+MODULE_FILE_BASE_NAME = ${module_file_base_name}
+BASE_NAME = $(MODULE_NAME)
+MODULE_RELATIVE_DIR = ${module_relative_directory}
+MODULE_DIR = $(WORKSPACE)${separator}${module_relative_directory}
+
+#
+# Build Configuration Macro Definition
+#
+ARCH = ${architecture}
+TOOLCHAIN_TAG = ${toolchain_tag}
+TARGET = ${build_target}
+
+#
+# Build Directory Macro Definition
+#
+PLATFORM_BUILD_DIR = ${platform_build_directory}
+BUILD_DIR = ${platform_build_directory}${separator}${build_target}_${toolchain_tag}
+BIN_DIR = $(BUILD_DIR)${separator}${architecture}
+LIB_DIR = $(BIN_DIR)
+MODULE_BUILD_DIR = $(BUILD_DIR)${separator}${architecture}${separator}${module_relative_directory}${separator}${module_file_base_name}
+OUTPUT_DIR = $(MODULE_BUILD_DIR)${separator}OUTPUT
+DEBUG_DIR = $(MODULE_BUILD_DIR)${separator}DEBUG
+DEST_DIR_OUTPUT = $(OUTPUT_DIR)
+DEST_DIR_DEBUG = $(DEBUG_DIR)
+
+#
+# Default Tools Flags Macro Definition (from tools_def.txt by default)
+#
+${BEGIN}DEFAULT_${tool_code}_FLAGS = ${default_tool_flags}
+${END}
+
+#
+# Platform Tools Flags Macro Definition (from platform description file)
+#
+${BEGIN}PLATFORM_${tool_code}_FLAGS = ${platform_tool_flags}
+${END}
+
+#
+# Platform Tools Flags Macro Definition (from platform description file)
+#
+${BEGIN}MODULE_${tool_code}_FLAGS = ${module_tool_flags}
+${END}
+
+#
+# ToolsFlagMacro
+#
+${BEGIN}${tool_code}_FLAGS = $(DEFAULT_${tool_code}_FLAGS) $(PLATFORM_${tool_code}_FLAGS) $(MODULE_${tool_code}_FLAGS)
+${END}
+MAKE_FLAGS = /nologo
+
+#
+# ToolsPathMacro
+#
+${BEGIN}${tool_code} = ${tool_path}
+${END}
+
+${custom_makefile_content}
+
+#
+# Target used when called from platform makefile, which will bypass the build of dependent libraries
+#
+
+pbuild: init all
+
+
+#
+# Target used for library build, which will bypass the build of dependent libraries
+#
+
+lbuild: init all
+
+
+#
+# ModuleTarget
+#
+
+mbuild: init all
+
+
+#
+# Initialization target: print build information and create necessary directories
+#
+init:
+\t-@echo Building ... $(MODULE_NAME)-$(MODULE_VERSION) [$(ARCH)] in package $(PACKAGE_NAME)-$(PACKAGE_VERSION)
+\t${create_directory_command} $(DEBUG_DIR) > NUL 2>&1
+\t${create_directory_command} $(OUTPUT_DIR) > NUL 2>&1
+\t${BEGIN}${create_directory_command} $(OUTPUT_DIR)${separator}${directory_to_be_created} > NUL 2>&1
+\t${END}
+
+'''
+
 gModuleMakefileTemplate = '''
 #
 # Workspace related macro definition
@@ -130,7 +253,7 @@ PLATFORM_NAME = ${platform_name}
 PLATFORM_GUID = ${platform_guid}
 PLATFORM_VERSION = ${platform_version}
 PLATFORM_RELATIVE_DIR = ${platform_relative_directory}
-PLATFORM_DIR = $(WORKSPACE)${separator}$(PLATFORM_RELATIVE_DIR)
+PLATFORM_DIR = $(WORKSPACE)${separator}${platform_relative_directory}
 PLATFORM_OUTPUT_DIR = ${platform_output_directory}
 
 #
@@ -627,8 +750,11 @@ class Makefile(object):
         return filePath
 
     def GenerateModuleMakefile(self, file=None, makeType=gMakeType):
+        if makeType in self.ModuleInfo.CustomMakefile and self.ModuleInfo.CustomMakefile[makeType] != "":
+            return self.GenerateCustomBuildMakefile(file, makeType)
+
         separator = gDirectorySeparator[makeType]
-        
+
         if os.path.isabs(self.PlatformInfo.OutputDir):
             self.PlatformBuildDirectory = self.PlatformInfo.OutputDir
         else:
@@ -692,6 +818,71 @@ class Makefile(object):
         autoGenMakefile.Append(gModuleMakefileTemplate, makefileTemplateDict)
         #print autoGenMakefile.String
         
+        filePath = ""
+        if file == None:
+            filePath = path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.MakefileDir, makefileName)
+        else:
+            filePath = file
+
+        self.SaveFile(filePath, str(autoGenMakefile))
+        return filePath
+
+    def GenerateCustomBuildMakefile(self, file=None, makeType=gMakeType):
+        separator = gDirectorySeparator[makeType]
+
+        if os.path.isabs(self.PlatformInfo.OutputDir):
+            self.PlatformBuildDirectory = self.PlatformInfo.OutputDir
+        else:
+            self.PlatformBuildDirectory = "$(WORKSPACE)" + separator + self.PlatformInfo.OutputDir
+
+        customMakefile = open(os.path.join(self.ModuleInfo.WorkspaceDir, self .ModuleInfo.CustomMakefile[makeType]), 'r').read()
+        
+        makefileName = gMakefileName[makeType]
+        makefileTemplateDict = {
+            "platform_name"             : self.PlatformInfo.Name,
+            "platform_guid"             : self.PlatformInfo.Guid,
+            "platform_version"          : self.PlatformInfo.Version,
+            "platform_relative_directory": self.PlatformInfo.SourceDir,
+            "platform_output_directory" : self.PlatformInfo.OutputDir,
+
+            "package_name"              : self.PackageInfo.Name,
+            "package_guid"              : self.PackageInfo.Guid,
+            "package_version"           : self.PackageInfo.Version,
+            "package_relative_directory": self.PackageInfo.SourceDir,
+
+            "module_name"               : self.ModuleInfo.Name,
+            "module_guid"               : self.ModuleInfo.Guid,
+            "module_version"            : self.ModuleInfo.Version,
+            "module_type"               : self.ModuleInfo.ModuleType,
+            "module_file_base_name"     : self.ModuleInfo.FileBase,
+            "module_relative_directory" : self.ModuleInfo.SourceDir,
+
+            "architecture"              : self.ModuleInfo.Arch,
+            "toolchain_tag"             : self.ModuleInfo.ToolChain,
+            "build_target"              : self.ModuleInfo.BuildTarget,
+
+            "platform_build_directory"  : self.PlatformBuildDirectory,
+
+            "separator"                 : separator,
+            "default_tool_flags"        : self.PlatformInfo.DefaultToolOption.values(),
+            "platform_tool_flags"       : self.PlatformInfo.BuildOption.values(),
+            "module_tool_flags"         : self.ModuleInfo.BuildOption.values(),
+
+            "tool_code"                 : self.PlatformInfo.ToolPath.keys(),
+            "tool_path"                 : self.PlatformInfo.ToolPath.values(),
+
+            "create_directory_command"  : "-@mkdir",
+            "directory_to_be_created"   : self.IntermediateDirectoryList,
+            "dependent_library_build_directory" : self.LibraryBuildDirectoryList,
+            "custom_makefile_content"   : customMakefile
+        }
+
+        self.PrepareDirectory()
+
+        autoGenMakefile = AutoGenString()
+        autoGenMakefile.Append(gCustomMakefileTemplate, makefileTemplateDict)
+        #print autoGenMakefile.String
+
         filePath = ""
         if file == None:
             filePath = path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.MakefileDir, makefileName)

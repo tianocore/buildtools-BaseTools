@@ -40,6 +40,7 @@ class ModuleBuildInfo(BuildInfo):
         self.OutputDir = ""
         self.DebugDir = ""
         self.MakefileDir = ""
+        self.CustomMakefile = {}
 
         self.IncludePathList = []
         self.AutoGenFileList = []

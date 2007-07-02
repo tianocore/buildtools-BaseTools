@@ -28,6 +28,7 @@ gAutoGenDatabase = {}       # (module/package/platform obj, BuildTarget, ToolCha
 gWorkspace = None
 gWorkspaceDir = ""
 gDepexTokenPattern = re.compile("(\(|\)|\w+| \S+\.inf)")
+gMakeTypeMap = {"MSFT":"nmake", "GCC":"gmake"}
 
 def FindModuleOwnerPackage(module, pkgdb):
     for pkg in pkgdb:
@@ -144,6 +145,10 @@ class AutoGen(object):
         else:
             CreateDirectory(os.path.join(gWorkspaceDir, info.OutputDir))
             CreateDirectory(os.path.join(gWorkspaceDir, info.DebugDir))
+
+        for type in self.Module.CustomMakefile:
+            makeType = gMakeTypeMap[type]
+            info.CustomMakefile[makeType] = os.path.join(info.SourceDir, self.Module.CustomMakefile[type])
 
         if self.Module.LibraryClass != None and self.Module.LibraryClass != "":
             info.IsLibrary = True
