@@ -871,7 +871,7 @@ class Makefile(object):
             if f in gDependencyDatabase:
                 currentFileDependencyList = gDependencyDatabase[f]
                 for dep in currentFileDependencyList:
-                    if dep not in fileStack:
+                    if dep not in fileStack and dep not in dependencyList:
                         fileStack.append(dep)
             else:
                 fd = open(f, 'r')
@@ -889,7 +889,7 @@ class Makefile(object):
                         if not os.path.exists(filePath) or filePath in currentFileDependencyList:
                             continue
                         currentFileDependencyList.append(filePath)
-                        if filePath not in fileStack:
+                        if filePath not in fileStack and filePath not in dependencyList:
                             fileStack.append(filePath)
                         break
                     #else:

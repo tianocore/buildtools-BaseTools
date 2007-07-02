@@ -976,297 +976,299 @@ def GetGuidValue(self, guidCName):
     return None
 
 def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
-  AutoGenC = AutoGenString()
-  AutoGenH = AutoGenString()
+    AutoGenC = AutoGenString()
+    AutoGenH = AutoGenString()
 
-  Dict = {
-    'PHASE'                         : Phase,
-    'GUID_TABLE_SIZE'               : '1',
-    'STRING_TABLE_SIZE'             : '1',
-    'SKUID_TABLE_SIZE'              : '1',
-    'LOCAL_TOKEN_NUMBER_TABLE_SIZE' : '1',
-    'LOCAL_TOKEN_NUMBER'            : '0',
-    'EXMAPPING_TABLE_SIZE'          : '1',
-    'EX_TOKEN_NUMBER'               : '0',
-    'SIZE_TABLE_SIZE'               : '2',
-    'GUID_TABLE_EMPTY'              : 'TRUE',
-    'STRING_TABLE_EMPTY'            : 'TRUE',
-    'SKUID_TABLE_EMPTY'             : 'TRUE',
-    'DATABASE_EMPTY'                : 'TRUE',
-    'EXMAP_TABLE_EMPTY'             : 'TRUE',
-    'PCD_DATABASE_UNINIT_EMPTY'     : '  UINT8  dummy; /* PCD_DATABASE_UNINIT is emptry */',
-    'SYSTEM_SKU_ID'                 : '  SKU_ID             SystemSkuId;',
-    'SYSTEM_SKU_ID_VALUE'           : '0'
-  }
+    Dict = {
+        'PHASE'                         : Phase,
+        'GUID_TABLE_SIZE'               : '1',
+        'STRING_TABLE_SIZE'             : '1',
+        'SKUID_TABLE_SIZE'              : '1',
+        'LOCAL_TOKEN_NUMBER_TABLE_SIZE' : '1',
+        'LOCAL_TOKEN_NUMBER'            : '0',
+        'EXMAPPING_TABLE_SIZE'          : '1',
+        'EX_TOKEN_NUMBER'               : '0',
+        'SIZE_TABLE_SIZE'               : '2',
+        'GUID_TABLE_EMPTY'              : 'TRUE',
+        'STRING_TABLE_EMPTY'            : 'TRUE',
+        'SKUID_TABLE_EMPTY'             : 'TRUE',
+        'DATABASE_EMPTY'                : 'TRUE',
+        'EXMAP_TABLE_EMPTY'             : 'TRUE',
+        'PCD_DATABASE_UNINIT_EMPTY'     : '  UINT8  dummy; /* PCD_DATABASE_UNINIT is emptry */',
+        'SYSTEM_SKU_ID'                 : '  SKU_ID             SystemSkuId;',
+        'SYSTEM_SKU_ID_VALUE'           : '0'
+    }
 
-  for DatumType in ['UINT64','UINT32','UINT16','UINT8','BOOLEAN']:
-    Dict['VARDEF_CNAME_'+DatumType] = []
-    Dict['VARDEF_GUID_'+DatumType]  = []
-    Dict['VARDEF_SKUID_'+DatumType] = []
-    Dict['VARDEF_VALUE_'+DatumType] = []
-    for Init in ['INIT','UNINIT']:
-      Dict[Init+'_CNAME_DECL_'+DatumType]   = []
-      Dict[Init+'_GUID_DECL_'+DatumType]    = []
-      Dict[Init+'_NUMSKUS_DECL_'+DatumType] = []
-      Dict[Init+'_VALUE_'+DatumType]        = []
+    for DatumType in ['UINT64','UINT32','UINT16','UINT8','BOOLEAN']:
+        Dict['VARDEF_CNAME_'+DatumType] = []
+        Dict['VARDEF_GUID_'+DatumType]  = []
+        Dict['VARDEF_SKUID_'+DatumType] = []
+        Dict['VARDEF_VALUE_'+DatumType] = []
+        for Init in ['INIT','UNINIT']:
+            Dict[Init+'_CNAME_DECL_'+DatumType]   = []
+            Dict[Init+'_GUID_DECL_'+DatumType]    = []
+            Dict[Init+'_NUMSKUS_DECL_'+DatumType] = []
+            Dict[Init+'_VALUE_'+DatumType]        = []
 
-  for Type in ['STRING_HEAD','VPD_HEAD','VARIABLE_HEAD']:
-    Dict[Type+'_CNAME_DECL']   = []
-    Dict[Type+'_GUID_DECL']    = []
-    Dict[Type+'_NUMSKUS_DECL'] = []
-    Dict[Type+'_VALUE'] = []
+    for Type in ['STRING_HEAD','VPD_HEAD','VARIABLE_HEAD']:
+        Dict[Type+'_CNAME_DECL']   = []
+        Dict[Type+'_GUID_DECL']    = []
+        Dict[Type+'_NUMSKUS_DECL'] = []
+        Dict[Type+'_VALUE'] = []
 
-  Dict['STRING_TABLE_INDEX'] = []
-  Dict['STRING_TABLE_LENGTH']  = []
-  Dict['STRING_TABLE_CNAME'] = []
-  Dict['STRING_TABLE_GUID']  = []
-  Dict['STRING_TABLE_VALUE'] = []
+    Dict['STRING_TABLE_INDEX'] = []
+    Dict['STRING_TABLE_LENGTH']  = []
+    Dict['STRING_TABLE_CNAME'] = []
+    Dict['STRING_TABLE_GUID']  = []
+    Dict['STRING_TABLE_VALUE'] = []
 
-  Dict['SIZE_TABLE_CNAME'] = []
-  Dict['SIZE_TABLE_GUID']  = []
-  Dict['SIZE_TABLE_CURRENT_LENGTH']  = []
-  Dict['SIZE_TABLE_MAXIMUM_LENGTH']  = []
+    Dict['SIZE_TABLE_CNAME'] = []
+    Dict['SIZE_TABLE_GUID']  = []
+    Dict['SIZE_TABLE_CURRENT_LENGTH']  = []
+    Dict['SIZE_TABLE_MAXIMUM_LENGTH']  = []
 
-  Dict['EXMAPPING_TABLE_EXTOKEN'] = []
-  Dict['EXMAPPING_TABLE_LOCAL_TOKEN'] = []
-  Dict['EXMAPPING_TABLE_GUID_INDEX'] = []
+    Dict['EXMAPPING_TABLE_EXTOKEN'] = []
+    Dict['EXMAPPING_TABLE_LOCAL_TOKEN'] = []
+    Dict['EXMAPPING_TABLE_GUID_INDEX'] = []
 
-  Dict['GUID_STRUCTURE'] = []
+    Dict['GUID_STRUCTURE'] = []
 
-  Dict['SKUID_VALUE'] = []
+    Dict['SKUID_VALUE'] = []
 
-  if Phase == 'DXE':
-    Dict['SYSTEM_SKU_ID'] = ''
-    Dict['SYSTEM_SKU_ID_VALUE'] = ''
+    if Phase == 'DXE':
+        Dict['SYSTEM_SKU_ID'] = ''
+        Dict['SYSTEM_SKU_ID_VALUE'] = ''
 
-  StringTableIndex = 0
-  StringTableSize = 0
-  NumberOfLocalTokens = 0
-  NumberOfPeiLocalTokens = 0
-  NumberOfDxeLocalTokens = 0
-  NumberOfExTokens = 0
-  NumberOfSizeItems = 0
-  GuidList = []
+    StringTableIndex = 0
+    StringTableSize = 0
+    NumberOfLocalTokens = 0
+    NumberOfPeiLocalTokens = 0
+    NumberOfDxeLocalTokens = 0
+    NumberOfExTokens = 0
+    NumberOfSizeItems = 0
+    GuidList = []
 
-  platformPcds = self.Platform.Pcds
-  for TokenSpaceGuidCName, CName in self.DynamicPcdList:
-      Pcd = platformPcds[TokenSpaceGuidCName, CName]
-      if Pcd.Phase == 'PEI':
-        NumberOfPeiLocalTokens += 1
-      if Pcd.Phase == 'DXE':
-        NumberOfDxeLocalTokens += 1
-      if Pcd.Phase != Phase:
-        continue
+    platformPcds = self.Platform.Pcds
+    for TokenSpaceGuidCName, CName in self.DynamicPcdList:
+        Pcd = platformPcds[TokenSpaceGuidCName, CName]
+        if Pcd.Phase == 'PEI':
+            NumberOfPeiLocalTokens += 1
+        if Pcd.Phase == 'DXE':
+            NumberOfDxeLocalTokens += 1
+        if Pcd.Phase != Phase:
+            continue
 
 
-      TokenSpaceGuid = self.GetGuidValue(TokenSpaceGuidCName)
-      if Pcd.Type == 'DYNAMIC_EX':
-        if TokenSpaceGuid not in GuidList:
-          GuidList += [TokenSpaceGuid]
-          Dict['GUID_STRUCTURE'].append(TokenSpaceGuid)
-        NumberOfExTokens += 1
+        TokenSpaceGuid = self.GetGuidValue(TokenSpaceGuidCName)
+        if Pcd.Type == 'DYNAMIC_EX':
+            if TokenSpaceGuid not in GuidList:
+                GuidList += [TokenSpaceGuid]
+                Dict['GUID_STRUCTURE'].append(TokenSpaceGuid)
+            NumberOfExTokens += 1
 
-      ValueList = []
-      StringHeadOffsetList = []
-      VpdHeadOffsetList = []
-      VariableHeadValueList = []
-      Pcd.InitString = 'UNINIT'
-      if Pcd.DatumType == 'VOID*':
-        Pcd.TokenTypeList = ['PCD_DATUM_TYPE_POINTER']
-      elif Pcd.DatumType == 'BOOLEAN':
-        Pcd.TokenTypeList = ['PCD_DATUM_TYPE_UINT8']
-      else:
-        Pcd.TokenTypeList = ['PCD_DATUM_TYPE_'+Pcd.DatumType]
-      if len(Pcd.SkuInfo) > 1:
-        Pcd.TokenTypeList += ['PCD_TYPE_SKU_ENABLED']
+        ValueList = []
+        StringHeadOffsetList = []
+        VpdHeadOffsetList = []
+        VariableHeadValueList = []
+        Pcd.InitString = 'UNINIT'
+        if Pcd.DatumType == 'VOID*':
+            Pcd.TokenTypeList = ['PCD_DATUM_TYPE_POINTER']
+        elif Pcd.DatumType == 'BOOLEAN':
+            Pcd.TokenTypeList = ['PCD_DATUM_TYPE_UINT8']
+        else:
+            Pcd.TokenTypeList = ['PCD_DATUM_TYPE_'+Pcd.DatumType]
+        if len(Pcd.SkuInfo) > 1:
+            Pcd.TokenTypeList += ['PCD_TYPE_SKU_ENABLED']
 
-      for SkuId in Pcd.SkuInfo:
-        if SkuId == '':
-          continue
-        if SkuId not in Dict['SKUID_VALUE']:
-          Dict['SKUID_VALUE'].append(SkuId)
+        for SkuId in Pcd.SkuInfo:
+            if SkuId == '':
+                continue
+            if SkuId not in Dict['SKUID_VALUE']:
+                Dict['SKUID_VALUE'].append(SkuId)
 
-        SkuIdIndex =   Dict['SKUID_VALUE'].index(SkuId)
-        Sku = Pcd.SkuInfo[SkuId]
-        if len(Sku.VariableName) > 0:
-          Pcd.TokenTypeList += ['PCD_TYPE_HII']
-          Pcd.InitString = 'INIT'
-          VariableNameStructure = '{' + ', '.join(Sku.VariableName) + ', 0x0000}'
-          if VariableNameStructure not in Dict['STRING_TABLE_VALUE']:
-            Dict['STRING_TABLE_CNAME'].append(CName)
-            Dict['STRING_TABLE_GUID'].append(TokenSpaceGuid.replace('-','_'))
-            if StringTableIndex == 0:
-              Dict['STRING_TABLE_INDEX'].append('')
+            SkuIdIndex =   Dict['SKUID_VALUE'].index(SkuId)
+            Sku = Pcd.SkuInfo[SkuId]
+            if len(Sku.VariableName) > 0:
+                Pcd.TokenTypeList += ['PCD_TYPE_HII']
+                Pcd.InitString = 'INIT'
+                VariableNameStructure = '{' + ', '.join(Sku.VariableName) + ', 0x0000}'
+                if VariableNameStructure not in Dict['STRING_TABLE_VALUE']:
+                    Dict['STRING_TABLE_CNAME'].append(CName)
+                    Dict['STRING_TABLE_GUID'].append(TokenSpaceGuid.replace('-','_'))
+                    if StringTableIndex == 0:
+                        Dict['STRING_TABLE_INDEX'].append('')
+                    else:
+                        Dict['STRING_TABLE_INDEX'].append('_%d' % StringTableIndex)
+
+                    Dict['STRING_TABLE_LENGTH'].append(len(Sku.VariableName) + 1)
+                    Dict['STRING_TABLE_VALUE'].append(VariableNameStructure)
+                    StringTableIndex += 1
+                    StringTableSize += len(Sku.VariableName) + 1
+
+                VariableHeadStringIndex = 0
+                for Index in range(Dict['STRING_TABLE_VALUE'].index(VariableNameStructure)):
+                    VariableHeadStringIndex += Dict['STRING_TABLE_LENGTH'][Index]
+
+                VariableGuid = self.GetGuidValue(Sku.VariableGuid)
+                if VariableGuid not in GuidList:
+                    GuidList += [VariableGuid]
+                    Dict['GUID_STRUCTURE'].append(VariableGuid)
+                VariableHeadGuidIndex = GuidList.index(VariableGuid)
+
+                VariableHeadValueList.append('%d, %d, %s, offsetof(${PHASE}_PCD_DATABASE, Init.%s_%s_VariableDefault_%s)' %
+                                             (VariableHeadGuidIndex, VariableHeadStringIndex, Sku.VariableOffset, CName, TokenSpaceGuid.replace('-','_'), SkuIdIndex))
+                Dict['VARDEF_CNAME_'+Pcd.DatumType].append(CName)
+                Dict['VARDEF_GUID_'+Pcd.DatumType].append(TokenSpaceGuid.replace('-','_'))
+                Dict['VARDEF_SKUID_'+Pcd.DatumType].append(SkuIdIndex)
+                Dict['VARDEF_VALUE_'+Pcd.DatumType].append(Sku.HiiDefaultValue)
+            elif Sku.VpdOffset != '':
+                Pcd.TokenTypeList += ['PCD_TYPE_VPD']
+                Pcd.InitString = 'INIT'
+                VpdHeadOffsetList.append(Sku.VpdOffset)
             else:
-              Dict['STRING_TABLE_INDEX'].append('_%d' % StringTableIndex)
+                if Pcd.DatumType == 'VOID*':
+                    Pcd.TokenTypeList += ['PCD_TYPE_STRING']
+                    Pcd.InitString = 'INIT'
+                    if Sku.Value != '':
+                        NumberOfSizeItems += 1
+                        Dict['STRING_TABLE_CNAME'].append(CName)
+                        Dict['STRING_TABLE_GUID'].append(TokenSpaceGuid.replace('-','_'))
 
-            Dict['STRING_TABLE_LENGTH'].append(len(Sku.VariableName) + 1)
-            Dict['STRING_TABLE_VALUE'].append(VariableNameStructure)
-            StringTableIndex += 1
-            StringTableSize += len(Sku.VariableName) + 1
+                        if StringTableIndex == 0:
+                            Dict['STRING_TABLE_INDEX'].append('')
+                        else:
+                            Dict['STRING_TABLE_INDEX'].append('_%d' % StringTableIndex)
+                        if Sku.Value[0] == 'L':
+                            Size = len(Sku.Value) - 3
+                            Dict['STRING_TABLE_VALUE'].append(Sku.Value)
+                        elif Sku.Value[0] == '"':
+                            Size = len(Sku.Value) - 2
+                            Dict['STRING_TABLE_VALUE'].append(Sku.Value)
+                        elif Sku.Value[0] == '{':
+                            Size = len(Sku.Value.replace(',',' ').split())
+                            Dict['STRING_TABLE_VALUE'].append('{' + Sku.Value + '}')
 
-          VariableHeadStringIndex = 0
-          for Index in range(Dict['STRING_TABLE_VALUE'].index(VariableNameStructure)):
-            VariableHeadStringIndex += Dict['STRING_TABLE_LENGTH'][Index]
-
-          VariableGuid = self.GetGuidValue(Sku.VariableGuid)
-          if VariableGuid not in GuidList:
-            GuidList += [VariableGuid]
-            Dict['GUID_STRUCTURE'].append(VariableGuid)
-          VariableHeadGuidIndex = GuidList.index(VariableGuid)
-
-          VariableHeadValueList.append('%d, %d, %s, offsetof(${PHASE}_PCD_DATABASE, Init.%s_%s_VariableDefault_%s)' %
-            (VariableHeadGuidIndex, VariableHeadStringIndex, Sku.VariableOffset, CName, TokenSpaceGuid.replace('-','_'), SkuIdIndex))
-          Dict['VARDEF_CNAME_'+Pcd.DatumType].append(CName)
-          Dict['VARDEF_GUID_'+Pcd.DatumType].append(TokenSpaceGuid.replace('-','_'))
-          Dict['VARDEF_SKUID_'+Pcd.DatumType].append(SkuIdIndex)
-          Dict['VARDEF_VALUE_'+Pcd.DatumType].append(Sku.HiiDefaultValue)
-        elif Sku.VpdOffset != '':
-          Pcd.TokenTypeList += ['PCD_TYPE_VPD']
-          Pcd.InitString = 'INIT'
-          VpdHeadOffsetList.append(Sku.VpdOffset)
-        else:
-          if Pcd.DatumType == 'VOID*':
-            Pcd.TokenTypeList += ['PCD_TYPE_STRING']
-            Pcd.InitString = 'INIT'
-            if Sku.Value != '':
-              NumberOfSizeItems += 1
-              Dict['STRING_TABLE_CNAME'].append(CName)
-              Dict['STRING_TABLE_GUID'].append(TokenSpaceGuid.replace('-','_'))
-              if StringTableIndex == 0:
-                Dict['STRING_TABLE_INDEX'].append('')
-              else:
-                Dict['STRING_TABLE_INDEX'].append('_%d' % StringTableIndex)
-              if Sku.Value[0] == 'L':
-                Size = len(Sku.Value) - 3
-                Dict['STRING_TABLE_VALUE'].append(Sku.Value)
-              elif Sku.Value[0] == '"':
-                Size = len(Sku.Value) - 2
-                Dict['STRING_TABLE_VALUE'].append(Sku.Value)
-              elif Sku.Value[0] == '{':
-                Size = len(Sku.Value.replace(',',' ').split())
-                Dict['STRING_TABLE_VALUE'].append('{' + Sku.Value + '}')
-              StringHeadOffsetList.append(str(StringTableSize))
-              Dict['SIZE_TABLE_CNAME'].append(CName)
-              Dict['SIZE_TABLE_GUID'].append(TokenSpaceGuid.replace('-','_'))
-              Dict['SIZE_TABLE_CURRENT_LENGTH'].append(Size)
-              Dict['SIZE_TABLE_MAXIMUM_LENGTH'].append(Pcd.MaxDatumSize)
-              if Pcd.MaxDatumSize != '' and Pcd.MaxDatumSize > Size:
-                Size = int(Pcd.MaxDatumSize)
-              Dict['STRING_TABLE_LENGTH'].append(Size)
-              StringTableIndex += 1
-              StringTableSize += Size
+                        StringHeadOffsetList.append(str(StringTableSize))
+                        Dict['SIZE_TABLE_CNAME'].append(CName)
+                        Dict['SIZE_TABLE_GUID'].append(TokenSpaceGuid.replace('-','_'))
+                        Dict['SIZE_TABLE_CURRENT_LENGTH'].append(Size)
+                        Dict['SIZE_TABLE_MAXIMUM_LENGTH'].append(Pcd.MaxDatumSize)
+                        if Pcd.MaxDatumSize != '' and Pcd.MaxDatumSize > Size:
+                            Size = int(Pcd.MaxDatumSize)
+                        Dict['STRING_TABLE_LENGTH'].append(Size)
+                        StringTableIndex += 1
+                        StringTableSize += Size
+                else:
+                    Pcd.TokenTypeList += ['PCD_TYPE_DATA']
+                    if Sku.Value == 'TRUE':
+                        Pcd.InitString = 'INIT'
+                    elif Sku.Value.find('0x') == 0:
+                        if int(Sku.Value,16) != 0:
+                            Pcd.InitString = 'INIT'
+                    elif Sku.Value[0].isdigit():
+                        if int(Sku.Value) != 0:
+                            Pcd.InitString = 'INIT'
+                    ValueList.append(Sku.Value)
+        Pcd.TokenTypeList =list(set(Pcd.TokenTypeList))
+        if 'PCD_TYPE_HII' in Pcd.TokenTypeList:
+          Dict['VARIABLE_HEAD_CNAME_DECL'].append(CName)
+          Dict['VARIABLE_HEAD_GUID_DECL'].append(TokenSpaceGuid.replace('-','_'))
+          Dict['VARIABLE_HEAD_NUMSKUS_DECL'].append(len(Pcd.SkuInfo))
+          Dict['VARIABLE_HEAD_VALUE'].append('{ %s }\n' % ' },\n    { '.join(VariableHeadValueList))
+        if 'PCD_TYPE_VPD' in Pcd.TokenTypeList:
+          Dict['VPD_HEAD_CNAME_DECL'].append(CName)
+          Dict['VPD_HEAD_GUID_DECL'].append(TokenSpaceGuid.replace('-','_'))
+          Dict['VPD_HEAD_NUMSKUS_DECL'].append(len(Pcd.SkuInfo))
+          Dict['VPD_HEAD_VALUE'].append('{ %s }' % ' }, { '.join(VpdHeadOffsetList))
+        if 'PCD_TYPE_STRING' in Pcd.TokenTypeList:
+          Dict['STRING_HEAD_CNAME_DECL'].append(CName)
+          Dict['STRING_HEAD_GUID_DECL'].append(TokenSpaceGuid.replace('-','_'))
+          Dict['STRING_HEAD_NUMSKUS_DECL'].append(len(Pcd.SkuInfo))
+          Dict['STRING_HEAD_VALUE'].append(', '.join(StringHeadOffsetList))
+        if 'PCD_TYPE_DATA' in Pcd.TokenTypeList:
+          Dict[Pcd.InitString+'_CNAME_DECL_'+Pcd.DatumType].append(CName)
+          Dict[Pcd.InitString+'_GUID_DECL_'+Pcd.DatumType].append(TokenSpaceGuid.replace('-','_'))
+          Dict[Pcd.InitString+'_NUMSKUS_DECL_'+Pcd.DatumType].append(len(Pcd.SkuInfo))
+          if Pcd.InitString == 'UNINIT':
+            Dict['PCD_DATABASE_UNINIT_EMPTY'] = ''
           else:
-            Pcd.TokenTypeList += ['PCD_TYPE_DATA']
-            if Sku.Value == 'TRUE':
-              Pcd.InitString = 'INIT'
-            elif Sku.Value.find('0x') == 0:
-              if int(Sku.Value,16) != 0:
-                Pcd.InitString = 'INIT'
-            elif Sku.Value[0].isdigit():
-              if int(Sku.Value) != 0:
-                Pcd.InitString = 'INIT'
-            ValueList.append(Sku.Value)
-      Pcd.TokenTypeList =list(set(Pcd.TokenTypeList))
-      if 'PCD_TYPE_HII' in Pcd.TokenTypeList:
-        Dict['VARIABLE_HEAD_CNAME_DECL'].append(CName)
-        Dict['VARIABLE_HEAD_GUID_DECL'].append(TokenSpaceGuid.replace('-','_'))
-        Dict['VARIABLE_HEAD_NUMSKUS_DECL'].append(len(Pcd.SkuInfo))
-        Dict['VARIABLE_HEAD_VALUE'].append('{ %s }\n' % ' },\n    { '.join(VariableHeadValueList))
-      if 'PCD_TYPE_VPD' in Pcd.TokenTypeList:
-        Dict['VPD_HEAD_CNAME_DECL'].append(CName)
-        Dict['VPD_HEAD_GUID_DECL'].append(TokenSpaceGuid.replace('-','_'))
-        Dict['VPD_HEAD_NUMSKUS_DECL'].append(len(Pcd.SkuInfo))
-        Dict['VPD_HEAD_VALUE'].append('{ %s }' % ' }, { '.join(VpdHeadOffsetList))
-      if 'PCD_TYPE_STRING' in Pcd.TokenTypeList:
-        Dict['STRING_HEAD_CNAME_DECL'].append(CName)
-        Dict['STRING_HEAD_GUID_DECL'].append(TokenSpaceGuid.replace('-','_'))
-        Dict['STRING_HEAD_NUMSKUS_DECL'].append(len(Pcd.SkuInfo))
-        Dict['STRING_HEAD_VALUE'].append(', '.join(StringHeadOffsetList))
-      if 'PCD_TYPE_DATA' in Pcd.TokenTypeList:
-        Dict[Pcd.InitString+'_CNAME_DECL_'+Pcd.DatumType].append(CName)
-        Dict[Pcd.InitString+'_GUID_DECL_'+Pcd.DatumType].append(TokenSpaceGuid.replace('-','_'))
-        Dict[Pcd.InitString+'_NUMSKUS_DECL_'+Pcd.DatumType].append(len(Pcd.SkuInfo))
+            Dict[Pcd.InitString+'_VALUE_'+Pcd.DatumType].append(', '.join(ValueList))
+
+    if Phase == 'PEI':
+      NumberOfLocalTokens = NumberOfPeiLocalTokens
+    if Phase == 'DXE':
+      NumberOfLocalTokens = NumberOfDxeLocalTokens
+
+    Dict['TOKEN_INIT']       = ['' for x in range(NumberOfLocalTokens)]
+    Dict['TOKEN_CNAME']      = ['' for x in range(NumberOfLocalTokens)]
+    Dict['TOKEN_GUID']       = ['' for x in range(NumberOfLocalTokens)]
+    Dict['TOKEN_TYPE']       = ['' for x in range(NumberOfLocalTokens)]
+
+    for TokenSpaceGuidCName in Platform.DynamicPcdBuildDefinitions:
+      for CName in Platform.DynamicPcdBuildDefinitions[TokenSpaceGuidCName]:
+        Pcd = Platform.DynamicPcdBuildDefinitions[TokenSpaceGuidCName][CName]
+        if Pcd.Phase != Phase:
+          continue
+        for Package in Platform.PackageList:
+          if TokenSpaceGuidCName in Package.GuidDatabase:
+            TokenSpaceGuid = Package.GuidDatabase[TokenSpaceGuidCName].Guid.lower()
+            break
+        GeneratedTokenNumber = Pcd.GeneratedTokenNumber - 1
+        if Phase == 'DXE':
+          GeneratedTokenNumber -= NumberOfPeiLocalTokens
+        Dict['TOKEN_INIT'][GeneratedTokenNumber] = 'Init'
         if Pcd.InitString == 'UNINIT':
-          Dict['PCD_DATABASE_UNINIT_EMPTY'] = ''
-        else:
-          Dict[Pcd.InitString+'_VALUE_'+Pcd.DatumType].append(', '.join(ValueList))
+          Dict['TOKEN_INIT'][GeneratedTokenNumber] = 'Uninit'
+        Dict['TOKEN_CNAME'][GeneratedTokenNumber] = CName
+        Dict['TOKEN_GUID'][GeneratedTokenNumber] = TokenSpaceGuid.replace('-','_')
+        Dict['TOKEN_TYPE'][GeneratedTokenNumber] = ' | '.join(Pcd.TokenTypeList)
+        if Pcd.ItemType == 'DYNAMIC_EX':
+          Dict['EXMAPPING_TABLE_EXTOKEN'].append(Pcd.Token)
+          Dict['EXMAPPING_TABLE_LOCAL_TOKEN'].append(GeneratedTokenNumber)
+          Dict['EXMAPPING_TABLE_GUID_INDEX'].append(GuidList.index(TokenSpaceGuid))
 
-  if Phase == 'PEI':
-    NumberOfLocalTokens = NumberOfPeiLocalTokens
-  if Phase == 'DXE':
-    NumberOfLocalTokens = NumberOfDxeLocalTokens
+    if GuidList != []:
+      Dict['GUID_TABLE_EMPTY'] = 'FALSE'
+      Dict['GUID_TABLE_SIZE'] = len(GuidList)
+    else:
+      Dict['GUID_STRUCTURE'] = [GuidStringToGuidStructureString('00000000-0000-0000-0000-000000000000')]
+    if StringTableIndex == 0:
+      Dict['STRING_TABLE_INDEX'].append('')
+      Dict['STRING_TABLE_LENGTH'].append(1)
+      Dict['STRING_TABLE_CNAME'].append('')
+      Dict['STRING_TABLE_GUID'].append('')
+      Dict['STRING_TABLE_VALUE'].append('{ 0 }')
+    else:
+      Dict['STRING_TABLE_EMPTY'] = 'FALSE'
+      Dict['STRING_TABLE_SIZE'] = StringTableSize
+    if Dict['SIZE_TABLE_CNAME'] == []:
+      Dict['SIZE_TABLE_CNAME'].append('')
+      Dict['SIZE_TABLE_GUID'].append('')
+      Dict['SIZE_TABLE_CURRENT_LENGTH'].append(0)
+      Dict['SIZE_TABLE_MAXIMUM_LENGTH'].append(0)
+    if NumberOfLocalTokens != 0:
+      Dict['DATABASE_EMPTY']                = 'FALSE'
+      Dict['LOCAL_TOKEN_NUMBER_TABLE_SIZE'] = NumberOfLocalTokens
+      Dict['LOCAL_TOKEN_NUMBER']            = NumberOfLocalTokens
+    if NumberOfExTokens != 0:
+      Dict['EXMAP_TABLE_EMPTY']    = 'FALSE'
+      Dict['EXMAPPING_TABLE_SIZE'] = NumberOfExTokens
+      Dict['EX_TOKEN_NUMBER']      = NumberOfExTokens
+    else:
+      Dict['EXMAPPING_TABLE_EXTOKEN'].append(0)
+      Dict['EXMAPPING_TABLE_LOCAL_TOKEN'].append(0)
+      Dict['EXMAPPING_TABLE_GUID_INDEX'].append(0)
 
-  Dict['TOKEN_INIT']       = ['' for x in range(NumberOfLocalTokens)]
-  Dict['TOKEN_CNAME']      = ['' for x in range(NumberOfLocalTokens)]
-  Dict['TOKEN_GUID']       = ['' for x in range(NumberOfLocalTokens)]
-  Dict['TOKEN_TYPE']       = ['' for x in range(NumberOfLocalTokens)]
+    if NumberOfSizeItems != 0:
+      Dict['SIZE_TABLE_SIZE'] = NumberOfSizeItems * 2
+    AutoGenH.Append(PcdDatabaseAutoGenH, Dict)
 
-  for TokenSpaceGuidCName in Platform.DynamicPcdBuildDefinitions:
-    for CName in Platform.DynamicPcdBuildDefinitions[TokenSpaceGuidCName]:
-      Pcd = Platform.DynamicPcdBuildDefinitions[TokenSpaceGuidCName][CName]
-      if Pcd.Phase != Phase:
-        continue
-      for Package in Platform.PackageList:
-        if TokenSpaceGuidCName in Package.GuidDatabase:
-          TokenSpaceGuid = Package.GuidDatabase[TokenSpaceGuidCName].Guid.lower()
-          break
-      GeneratedTokenNumber = Pcd.GeneratedTokenNumber - 1
-      if Phase == 'DXE':
-        GeneratedTokenNumber -= NumberOfPeiLocalTokens
-      Dict['TOKEN_INIT'][GeneratedTokenNumber] = 'Init'
-      if Pcd.InitString == 'UNINIT':
-        Dict['TOKEN_INIT'][GeneratedTokenNumber] = 'Uninit'
-      Dict['TOKEN_CNAME'][GeneratedTokenNumber] = CName
-      Dict['TOKEN_GUID'][GeneratedTokenNumber] = TokenSpaceGuid.replace('-','_')
-      Dict['TOKEN_TYPE'][GeneratedTokenNumber] = ' | '.join(Pcd.TokenTypeList)
-      if Pcd.ItemType == 'DYNAMIC_EX':
-        Dict['EXMAPPING_TABLE_EXTOKEN'].append(Pcd.Token)
-        Dict['EXMAPPING_TABLE_LOCAL_TOKEN'].append(GeneratedTokenNumber)
-        Dict['EXMAPPING_TABLE_GUID_INDEX'].append(GuidList.index(TokenSpaceGuid))
+    if NumberOfLocalTokens == 0:
+      AutoGenC.Append(EmptyPcdDatabaseAutoGenC, Dict)
+    else:
+      AutoGenC.Append(PcdDatabaseAutoGenC, Dict)
 
-  if GuidList != []:
-    Dict['GUID_TABLE_EMPTY'] = 'FALSE'
-    Dict['GUID_TABLE_SIZE'] = len(GuidList)
-  else:
-    Dict['GUID_STRUCTURE'] = [GuidStringToGuidStructureString('00000000-0000-0000-0000-000000000000')]
-  if StringTableIndex == 0:
-    Dict['STRING_TABLE_INDEX'].append('')
-    Dict['STRING_TABLE_LENGTH'].append(1)
-    Dict['STRING_TABLE_CNAME'].append('')
-    Dict['STRING_TABLE_GUID'].append('')
-    Dict['STRING_TABLE_VALUE'].append('{ 0 }')
-  else:
-    Dict['STRING_TABLE_EMPTY'] = 'FALSE'
-    Dict['STRING_TABLE_SIZE'] = StringTableSize
-  if Dict['SIZE_TABLE_CNAME'] == []:
-    Dict['SIZE_TABLE_CNAME'].append('')
-    Dict['SIZE_TABLE_GUID'].append('')
-    Dict['SIZE_TABLE_CURRENT_LENGTH'].append(0)
-    Dict['SIZE_TABLE_MAXIMUM_LENGTH'].append(0)
-  if NumberOfLocalTokens != 0:
-    Dict['DATABASE_EMPTY']                = 'FALSE'
-    Dict['LOCAL_TOKEN_NUMBER_TABLE_SIZE'] = NumberOfLocalTokens
-    Dict['LOCAL_TOKEN_NUMBER']            = NumberOfLocalTokens
-  if NumberOfExTokens != 0:
-    Dict['EXMAP_TABLE_EMPTY']    = 'FALSE'
-    Dict['EXMAPPING_TABLE_SIZE'] = NumberOfExTokens
-    Dict['EX_TOKEN_NUMBER']      = NumberOfExTokens
-  else:
-    Dict['EXMAPPING_TABLE_EXTOKEN'].append(0)
-    Dict['EXMAPPING_TABLE_LOCAL_TOKEN'].append(0)
-    Dict['EXMAPPING_TABLE_GUID_INDEX'].append(0)
-
-  if NumberOfSizeItems != 0:
-    Dict['SIZE_TABLE_SIZE'] = NumberOfSizeItems * 2
-  AutoGenH.Append(PcdDatabaseAutoGenH, Dict)
-
-  if NumberOfLocalTokens == 0:
-    AutoGenC.Append(EmptyPcdDatabaseAutoGenC, Dict)
-  else:
-    AutoGenC.Append(PcdDatabaseAutoGenC, Dict)
-
-  return AutoGenH, AutoGenC
+    return AutoGenH, AutoGenC
 
 def CreatePcdDatabaseCode (Platform, Phase):
     AutoGenC = AutoGenString()
@@ -1386,18 +1388,7 @@ def CreateGuidDefinitionCode(info, autoGenC, autoGenH):
     # GUIDs
     #
     for Key in info.GuidList:
-        for p in info.DependentPackageList:
-            if Key in p.Guids:
-                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Guids[Key]))
-                break
-            if Key in p.Protocols:
-                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Protocols[Key]))
-                break
-            if Key in p.Ppis:
-                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Ppis[Key]))
-                break
-        else:
-            EdkLogger.error('ERROR: GUID %s not found in dependent packages of module %s' % (Key, info.Name))
+        autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, info.GuidList[Key]))
 
 def CreateProtocolDefinitionCode(info, autoGenC, autoGenH):
     if info.IsLibrary:
@@ -1406,18 +1397,7 @@ def CreateProtocolDefinitionCode(info, autoGenC, autoGenH):
     # Protocol GUIDs
     #
     for Key in info.ProtocolList:
-        for p in info.DependentPackageList:
-            if Key in p.Protocols:
-                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Protocols[Key]))
-                break
-            if Key in p.Guids:
-                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Guids[Key]))
-                break
-            if Key in p.Ppis:
-                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Ppis[Key]))
-                break
-        else:
-            EdkLogger.error('ERROR: Protocol %s not found in dependent packages of module %s' % (Key, info.Name))
+        autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, info.ProtocolList[Key]))
 
 def CreatePpiDefinitionCode(info, autoGenC, autoGenH):
     if info.IsLibrary:
@@ -1426,18 +1406,7 @@ def CreatePpiDefinitionCode(info, autoGenC, autoGenH):
     # PPI GUIDs
     #
     for Key in info.PpiList:
-        for p in info.DependentPackageList:
-            if Key in p.Protocols:
-                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Protocols[Key]))
-                break
-            if Key in p.Guids:
-                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Guids[Key]))
-                break
-            if Key in p.Ppis:
-                autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, p.Ppis[Key]))
-                break
-        else:
-            EdkLogger.error('ERROR: PPI %s not found in dependent packages of module %s' % (Key, info.Name))
+        autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, info.PpiList[Key]))
 
 def CreatePcdCode(info, autoGenC, autoGenH):
     if info.IsLibrary:

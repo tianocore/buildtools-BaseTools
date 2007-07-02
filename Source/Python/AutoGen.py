@@ -521,22 +521,116 @@ class AutoGen(object):
         return pcdList
 
     def GetGuidList(self, dependentLibraryList):
-        guidList = set(self.Module.Guids)
+        guid = {}
+        Key = ""
+        for Key in self.Module.Guids:
+            for p in self.BuildInfo.DependentPackageList:
+                if Key in p.Guids:
+                    guid[Key] = p.Guids[Key]
+                    break
+                if Key in p.Protocols:
+                    guid[Key] = p.Protocols[Key]
+                    break
+                if Key in p.Ppis:
+                    guid[Key] = p.Ppis[Key]
+                    break
+            else:
+                EdkLogger.error('ERROR: GUID %s not found in dependent packages of module %s' % (Key, self.BuildInfo.Name))
+
         for lib in dependentLibraryList:
-            guidList |= set(lib.Guids)
-        return list(guidList)
+            if lib.Guids == []:
+                continue
+
+            for Key in lib.Guids:
+                for p in lib.Packages:
+                    # print gPackageDatabase
+                    p = gPackageDatabase[self.Arch][p]
+                    if Key in p.Guids:
+                        guid[Key] = p.Guids[Key]
+                        break
+                    if Key in p.Protocols:
+                        guid[Key] = p.Protocols[Key]
+                        break
+                    if Key in p.Ppis:
+                        guid[Key] = p.Ppis[Key]
+                        break
+                else:
+                    EdkLogger.error('ERROR: GUID %s not found in dependent packages of library %s' % (Key, lib.BaseName))
+
+        return guid
 
     def GetProtocolGuidList(self, dependentLibraryList):
-        guidList = set(self.Module.Protocols)
+        guid = {}
+        Key = ""
+        for Key in self.Module.Protocols:
+            for p in self.BuildInfo.DependentPackageList:
+                    if Key in p.Guids:
+                        guid[Key] = p.Guids[Key]
+                        break
+                    if Key in p.Protocols:
+                        guid[Key] = p.Protocols[Key]
+                        break
+                    if Key in p.Ppis:
+                        guid[Key] = p.Ppis[Key]
+                        break
+            else:
+                EdkLogger.error('ERROR: GUID %s not found in dependent packages of module %s' % (Key, self.BuildInfo.Name))
+
         for lib in dependentLibraryList:
-            guidList |= set(lib.Protocols)
-        return list(guidList)
+            if lib.Protocols == []:
+                continue
+            for Key in lib.Protocols:
+                for p in lib.Packages:
+                    p = gPackageDatabase[self.Arch][p]
+                    if Key in p.Guids:
+                        guid[Key] = p.Guids[Key]
+                        break
+                    if Key in p.Protocols:
+                        guid[Key] = p.Protocols[Key]
+                        break
+                    if Key in p.Ppis:
+                        guid[Key] = p.Ppis[Key]
+                        break
+                else:
+                    EdkLogger.error('ERROR: GUID %s not found in dependent packages of library %s' % (Key, lib.BaseName))
+
+        return guid
 
     def GetPpiGuidList(self, dependentLibraryList):
-        guidList = set(self.Module.Ppis)
+        guid = {}
+        Key = ""
+        for Key in self.Module.Ppis:
+            for p in self.BuildInfo.DependentPackageList:
+                if Key in p.Guids:
+                    guid[Key] = p.Guids[Key]
+                    break
+                if Key in p.Protocols:
+                    guid[Key] = p.Protocols[Key]
+                    break
+                if Key in p.Ppis:
+                    guid[Key] = p.Ppis[Key]
+                    break
+            else:
+                EdkLogger.error('ERROR: GUID %s not found in dependent packages of module %s' % (Key, self.BuildInfo.Name))
+
         for lib in dependentLibraryList:
-            guidList |= set(lib.Ppis)
-        return guidList
+            if lib.Ppis == []:
+                continue
+            for Key in lib.Ppis:
+                for p in lib.Packages:
+                    p = gPackageDatabase[self.Arch][p]
+                    if Key in p.Guids:
+                        guid[Key] = p.Guids[Key]
+                        break
+                    if Key in p.Protocols:
+                        guid[Key] = p.Protocols[Key]
+                        break
+                    if Key in p.Ppis:
+                        guid[Key] = p.Ppis[Key]
+                        break
+                else:
+                    EdkLogger.error('ERROR: GUID %s not found in dependent packages of library %s' % (Key, lib.BaseName))
+        return guid
 
     def GetIncludePathList(self, dependentPackageList):
         includePathList = []
