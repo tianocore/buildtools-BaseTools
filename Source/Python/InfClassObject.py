@@ -26,25 +26,33 @@ class InfDefines(InfObject):
     def __init__(self):
         self.DefinesDictionary = {
             #Required
-            TAB_INF_DEFINES_BASE_NAME                                        : [''],
-            TAB_INF_DEFINES_EDK_RELEASE_VERSION                              : [''],
-            TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION                        : [''],
-            #Optional
-            TAB_INF_DEFINES_FILE_GUID                                        : [''],
-            TAB_INF_DEFINES_MODULE_TYPE                                      : [''],
-            TAB_INF_DEFINES_BINARY_MODULE                                    : [''],
-            TAB_INF_DEFINES_MAKEFILE_NAME                                    : [''],
-            TAB_INF_DEFINES_VERSION_STRING                                   : [''],
-            TAB_INF_DEFINES_VERSION                                          : [''],
-            TAB_INF_DEFINES_LIBRARY_CLASS                                    : [''],
-            TAB_INF_DEFINES_PCD_DRIVER                                       : [''],
-            TAB_INF_DEFINES_ENTRY_POINT                                      : [''],
-            TAB_INF_DEFINES_UNLOAD_IMAGE                                     : [''],
-            TAB_INF_DEFINES_CONSTRUCTOR                                      : [''],
-            TAB_INF_DEFINES_DESTRUCTOR                                       : [''],
-            TAB_INF_DEFINES_DEFINE                                           : [''],
-            TAB_INF_DEFINES_CUSTOM_MAKEFILE                                  : [''],
-            TAB_INF_DEFINES_INF_VERSION                                      : ['']
+            TAB_INF_DEFINES_BASE_NAME                               : [''],
+            TAB_INF_DEFINES_FILE_GUID                               : [''],
+            TAB_INF_DEFINES_MODULE_TYPE                             : [''],
+            TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION               : [''],
+            TAB_INF_DEFINES_EDK_RELEASE_VERSION                     : [''],
+            
+            #Optional            
+            TAB_INF_DEFINES_INF_VERSION                             : [''],
+            TAB_INF_DEFINES_BINARY_MODULE                           : [''],
+            TAB_INF_DEFINES_LIBRARY_CLASS                           : [''],
+            TAB_INF_DEFINES_COMPONENT_TYPE                          : [''],
+            TAB_INF_DEFINES_MAKEFILE_NAME                           : [''],
+            TAB_INF_DEFINES_BUILD_NUMBER                            : [''],
+            TAB_INF_DEFINES_BUILD_TYPE                              : [''],
+            TAB_INF_DEFINES_FFS_EXT                                 : [''],
+            TAB_INF_DEFINES_FV_EXT                                  : [''],
+            TAB_INF_DEFINES_SOURCE_FV                               : [''],
+            TAB_INF_DEFINES_VERSION_NUMBER                          : [''],
+            TAB_INF_DEFINES_VERSION_STRING                          : [''],
+            TAB_INF_DEFINES_PCD_IS_DRIVER                           : [''],
+            TAB_INF_DEFINES_TIANO_R8_FLASHMAP_H                     : [''],
+            TAB_INF_DEFINES_ENTRY_POINT                             : [''],
+            TAB_INF_DEFINES_UNLOAD_IMAGE                            : [''],
+            TAB_INF_DEFINES_CONSTRUCTOR                             : [''],
+            TAB_INF_DEFINES_DESTRUCTOR                              : [''],
+            TAB_INF_DEFINES_DEFINE                                  : [''],
+            TAB_INF_DEFINES_CUSTOM_MAKEFILE                         : ['']
         }
         self.ToolFlags = []     #'${FAMILY}:${TARGET}_${TAGNAME}_${ARCH}_${TOOLCODE}_FLAGS'
         self.MacroName = '$(MACRO_NAME)'

@@ -67,6 +67,7 @@ class ModuleBuildClassObject(object):
         self.ModuleType              = ''
         self.Guid                    = ''
         self.Version                 = ''
+        self.PcdIsDriver             = ''
         self.CustomMakefile          = {}
         self.Specification           = {}
         self.LibraryClass            = None      # LibraryClassObject
@@ -336,6 +337,7 @@ class WorkspaceBuild(object):
                 pb.Guid = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_FILE_GUID][0]
                 pb.Version = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_STRING][0]
                 pb.ModuleType = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_MODULE_TYPE][0]
+                pb.PcdIsDriver = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_PCD_IS_DRIVER][0]
                 
                 for Index in range(len(infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_CUSTOM_MAKEFILE])):
                     Makefile = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_CUSTOM_MAKEFILE][Index]
@@ -602,6 +604,7 @@ if __name__ == '__main__':
             print 'Version = ', p.Version
             print 'CustomMakefile = ', p.CustomMakefile
             print 'Specification = ', p.Specification
+            print 'PcdIsDriver = ', p.PcdIsDriver
             if p.LibraryClass != None:
                 print 'LibraryClass = ', p.LibraryClass.LibraryClass
                 print 'SupModList = ', p.LibraryClass.SupModList
