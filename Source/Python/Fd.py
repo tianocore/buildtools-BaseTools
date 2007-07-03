@@ -13,7 +13,7 @@ class FD:
         self.BaseAddressPcd = None
         self.Size = None
         self.SizePcd = None
-        self.ErasePolarity = False
+        self.ErasePolarity = "1"
         # 3-tuple list (blockSize, numBlocks, pcd)
         self.BlockSizeList = []
         # DefineVarDict[var] = value

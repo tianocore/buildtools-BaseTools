@@ -1032,23 +1032,23 @@ class FdfParser:
                 raise Warning("expected FV name At Line %d" % self.CurrentLineNumber)
             
             fv = Fv.FV()
-            fv.UiFvName = self.__Token
+            fv.UiFvName = self.__Token.upper()
             
-            if not self.__IsToken( "{"):
-                raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
-
-            self.__GetAprioriSection( fv)
-            self.__GetFvAttributes( fv)
-
-
-            while self.__GetInfStatement( fv):
-                pass
-
-            while self.__GetFileStatement( fv):
-                pass
-
-            if not self.__IsToken( "}"):
-                raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
+#            if not self.__IsToken( "{"):
+#                raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
+            if self.__IsToken( "{"):
+                self.__GetAprioriSection( fv)
+                self.__GetFvAttributes( fv)
+    
+    
+                while self.__GetInfStatement( fv):
+                    pass
+    
+                while self.__GetFileStatement( fv):
+                    pass
+    
+                if not self.__IsToken( "}"):
+                    raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
             
             section = FvImageSection.FvImageSection()
             section.Alignment = alignment
