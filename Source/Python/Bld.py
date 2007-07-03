@@ -100,12 +100,12 @@ def CheckEnvVariable():
     else:
         PATH = os.environ["PATH"]
         if sys.platform == "win32":
-            print EDK_TOOLS_PATH + "\Bin\Win32"
+            #print EDK_TOOLS_PATH + "\Bin\Win32"
             if str(PATH).find(EDK_TOOLS_PATH + "\Bin\Win32") == -1:
                 print "Please execute %s\Bin\Win32\edksetup.bat to set %s\Bin\Win32 in environment variable: PATH!\n" % (EDK_TOOLS_PATH, EDK_TOOLS_PATH)
                 exit()
         if sys.platform == "win64":
-            print EDK_TOOLS_PATH + "\Bin\Win64"
+            #print EDK_TOOLS_PATH + "\Bin\Win64"
             if str(PATH).find(EDK_TOOLS_PATH + "\Bin\Win64") == -1:
                 print "Please execute %s\Bin\Win32\edksetup.bat to set %s\Bin\Win64 in environment variable: PATH!\n" % (EDK_TOOLS_PATH, EDK_TOOLS_PATH)
                 exit()
@@ -142,7 +142,7 @@ if __name__ == '__main__':
 #
 #    os.chdir("C:\Work\EDK2\MdeModulePkg\Application\HelloWorld")
 #    os.chdir("C:\Work\EDK2\MdeModulePkg")
-#    os.chdir("C:\Work\edk2\MdePkg")
+    os.chdir("C:\Work\edk2\MdePkg")
 
 #
 # Record Start Time
@@ -164,7 +164,6 @@ if __name__ == '__main__':
     GenC = set(['GenC']) & set(args)
     GenMake = set(['GenMake']) & set(args)
     t = str(' '.join(args))
-    print t
 
 #
 # Call Parser
@@ -213,22 +212,19 @@ if __name__ == '__main__':
         opt.FDFFILE = ewb.DscDatabase[os.path.normpath(opt.DSCFILE)].Defines.DefinesDictionary[TAB_DSC_DEFINES_FLASH_DEFINITION][0]
         if opt.FDFFILE == '':
             pass
-    print "FDFFILE is", " ".join(str(opt.FDFFILE))
+    print "FDF FILE is", " ".join(str(opt.FDFFILE))
 
     
 #
 # Platform Build or Module Build
 #
-    print "Enter Platform Build or Module Build"
-
     CurWorkDir = os.getcwd()
-    print CurWorkDir
     
-    FileList = glob.glob(os.getcwd() + '\\*.inf')
-    print len(FileList)
+    FileList = glob.glob(CurWorkDir + '\\*.inf')
+    FileNum = len(FileList)
     if len(FileList) > 0:
         if len(FileList) >= 2:
-            print "There are too many INF filss in %s.\n" % CurWorkDir
+            print "There are %d INF filss in %s.\n" % (FileNum, CurWorkDir)
             exit()
         if opt.DSCFILE:
             ModuleFile = FileList[0][len(ewb.Workspace.WorkspaceDir)+1:]
@@ -276,10 +272,11 @@ if __name__ == '__main__':
                             else:
                                 print "Can find Makefile.\n"
     else:
-        FileList = glob.glob(os.getcwd() + '\\*.dsc')
+        FileList = glob.glob(CurWorkDir + '\\*.dsc')
+        FileNum = len(FileList)
         if len(FileList) > 0:
             if len(FileList) >= 2:
-                print "There are too many DSC files in %s.\n" % CurWorkDir
+                print "There are %d DSC files in %s.\n" % (FileNum, CurWorkDir)
                 exit()
             PlatformFile = FileList[0][len(ewb.Workspace.WorkspaceDir)+1:]
             print "Platform build:", PlatformFile
@@ -312,16 +309,26 @@ if __name__ == '__main__':
 #
 # Record Build Process Time
 #
-    print time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.localtime())
+    print time.strftime("Current time is %a, %d %b %Y %H:%M:%S +0000", time.localtime())
+    Hour = 0
+    Min = 0
     Sec = int(time.time() - StartTime)
-    if Sec < 60:
-        print "Total Run Time is %d Seconds." % Sec
-    elif Sec < 3600:
-        Min = Sec/60
-        Sec = Sec%60
-        print "Totol Run Time is %d Minutes %d Seconds." % (Min, Sec)
-    else:
-        Hour = Sec/3600
-        Min = (Sec%3600)/60
-        Sec = (Sec%3600)%60
-        print "Totol Run Time is %d Hours %d Minutes %d Seconds." % (Hour, Min, Sec)
+    Hour = Sec/3600
+    Min = (Sec%3600)/60
+    Sec = (Sec%3600)%60
+    if Hour < 10 and Min < 10 and Sec < 10:
+        print "Totol Run Time is 0%d:0%d:0%d" %(Hour, Min, Sec)
+    elif Hour < 10 and Min < 10 and Sec > 10:
+        print "Totol Run Time is 0%d:0%d:%2d" %(Hour, Min, Sec)
+    elif Hour < 10 and Min > 10 and Sec < 10:
+        print "Totol Run Time is 0%d:%2d:0%d" %(Hour, Min, Sec)
+    elif Hour < 10 and Min > 10 and Sec > 10:
+        print "Totol Run Time is 0%d:%2d:%2d" %(Hour, Min, Sec)
+    elif Hour > 10 and Min < 10 and Sec < 10:
+        print "Totol Run Time is %2d:0%d:0%d" %(Hour, Min, Sec)
+    elif Hour > 10 and Min < 10 and Sec > 10:
+        print "Totol Run Time is %2d:0%d:%2d" %(Hour, Min, Sec)
+    elif Hour > 10 and Min > 10 and Sec < 10:
+        print "Totol Run Time is %2d:%2d:0%d" %(Hour, Min, Sec)
+    elif Hour > 10 and Min < 10 and Sec > 10:
+        print "Totol Run Time is %2d:%2d:0%d" %(Hour, Min, Sec)
