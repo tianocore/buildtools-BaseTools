@@ -78,8 +78,12 @@ class UniFileClassObject(object):
             self.LoadUniFiles(FileList)
 
     def GetLangDef(self, Line):
-        LangName = Line[Line.find(u'#langdef ') + len(u'#langdef ') : Line.find(u' ', len(u'#langdef '))]
-        LangPrintName = Line[Line.find(u'\"') + len(u'\"') : Line.rfind(u'\"')]
+        Lang = Line.split()
+        if len(Lang) != 3:
+            EdkLogger.error("""Wrong language definition '""" + Line + """' which should be '#langdef eng "English"'""")
+        else:
+            LangName = Lang[1]
+            LangPrintName = Lang[2][1:-1]
 
         if [LangName, LangPrintName] not in self.LanguageDef:
             self.LanguageDef.append([LangName, LangPrintName])
@@ -97,15 +101,19 @@ class UniFileClassObject(object):
         Language = ''
         Value = ''
         
-        Name = Item[Item.find(u'#string ') + len(u'#string ') :Item.find(u' ', len(u'#string '))]
+        Name = Item.split()[1]
         LanguageList = Item.split(u'#language ')
         for IndexI in range(len(LanguageList)):
             if IndexI == 0:
                 continue
             else:
-                Language = LanguageList[IndexI][ : LanguageList[IndexI].find(u' ')]
+                Language = LanguageList[IndexI].split()[0]
                 Value = LanguageList[IndexI][LanguageList[IndexI].find(u'\"') + len(u'\"') : LanguageList[IndexI].rfind(u'\"')].replace(u'\r\n', u'')
                 self.AddStringToList(Name, Language, Value)
+    
+    def GetIncludeFile(self, Item, Dir):
+        FileName = Item[Item.find(u'#include ') + len(u'#include ') :Item.find(u' ', len(u'#include '))][1:-1]
+        self.LoadUniFile(FileName)
     
     def PreProcess(self, FileIn):
         Lines = []
@@ -118,7 +126,8 @@ class UniFileClassObject(object):
             FileIn[Index] = FileIn[Index].replace(u'/langdef', u'#langdef')
             FileIn[Index] = FileIn[Index].replace(u'/string', u'#string')
             FileIn[Index] = FileIn[Index].replace(u'/language', u'#language')
-            
+            FileIn[Index] = FileIn[Index].replace(u'/include', u'#include')
+                        
             FileIn[Index] = FileIn[Index].replace(UNICODE_WIDE_CHAR, WIDE_CHAR)
             FileIn[Index] = FileIn[Index].replace(UNICODE_NARROW_CHAR, NARROW_CHAR)
             FileIn[Index] = FileIn[Index].replace(UNICODE_NON_BREAKING_CHAR, NON_BREAKING_CHAR)
@@ -140,6 +149,7 @@ class UniFileClassObject(object):
     def LoadUniFile(self, File = None):
         if File != None:
             if os.path.exists(File) and os.path.isfile(File):
+                Dir = File.rsplit('\\', 1)[0]
                 FileIn = codecs.open(File, mode='rb', encoding='utf-16').readlines()             
                 
                 #
@@ -170,10 +180,13 @@ class UniFileClassObject(object):
                         self.GetLangDef(Line)
                         continue
                     
+#                    if Line.find(u'#include ') >= 0:
+#                        self.GetIncludeFile(Line, Dir)
+#                        continue
+                    
                     Name = ''
                     Language = ''
                     Value = ''
-                    
                     #
                     # Get string def information format 1 as below
                     #

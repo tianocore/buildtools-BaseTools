@@ -257,10 +257,20 @@ def WriteLine(Target, Item):
 if __name__ == '__main__':
     print 'start'
     
-    #UniFileList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\inventorystrings.uni', 'C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\VfrStrings.uni']
-    #IncludeList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample']
-    UniFileList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\SetupBrowserStr.uni']
-    IncludeList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe']
+    UniFileList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\inventorystrings.uni', 'C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\VfrStrings.uni']
+    IncludeList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample']
+#    UniFileList = (['C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\PlatformBds\\DeviceMngr\\DeviceManagerStrings.uni'])
+#    UniFileList.append('C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\PlatformBds\\BootMngr\\BootManagerStrings.uni')
+#    UniFileList.append('C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\PlatformBds\\Strings.uni')
+#    UniFileList.append('C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\PlatformBds\\FrontPageStrings.uni')
+#
+#    IncludeList = ['C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\']
+#    IncludeList.append('C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\PlatformBds\\BootMngr\\')
+#    IncludeList.append('C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\')
+#    IncludeList.append('C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\PlatformBds\\')
+#    IncludeList.append('C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\PlatformBds\\DeviceMngr\\')
+   
+    
     SkipList = ['.inf', '.uni']
     BaseName = 'SetupBrowser'
     (h, c) = GetStringFiles(UniFileList, IncludeList, SkipList, BaseName)
