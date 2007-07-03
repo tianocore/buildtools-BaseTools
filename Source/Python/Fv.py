@@ -30,7 +30,7 @@ class FV:
     #
     #  Generate Fv and add it to the Buffer
     #
-    def AddToBuffer (self, Buffer, BaseAddress, BlockSize= None, BlockNum=None, ErasePloarity='1') :
+    def AddToBuffer (self, Buffer, BaseAddress= None, BlockSize= None, BlockNum=None, ErasePloarity='1') :
         self.__InitialInf__(BaseAddress, BlockSize, BlockNum)
         #
         # First Process the Apriori section
@@ -82,8 +82,9 @@ class FV:
               
         Buffer.write(fv.read())
         fv.close
+        return FvOutputFile
     
-    def __InitialInf__ (self, BaseAddress, BlockSize= None, BlockNum = None, ErasePloarity='1') :
+    def __InitialInf__ (self, BaseAddress = None, BlockSize= None, BlockNum = None, ErasePloarity='1') :
         self.InfFileName = os.path.join(GenFdsGlobalVariable.FvDir,
                                    self.UiFvName + '.inf')
         self.FvInfFile = open (self.InfFileName, 'w+')
@@ -91,25 +92,26 @@ class FV:
         # Add [Options]
         #
         self.FvInfFile.writelines("[options]" + T_CHAR_LF)
-        
-        self.FvInfFile.writelines("EFI_BASE_ADDRESS = " + \
-                                   BaseAddress          + \
-                                   T_CHAR_LF)
+        if BaseAddress != None :
+            self.FvInfFile.writelines("EFI_BASE_ADDRESS = " + \
+                                       BaseAddress          + \
+                                       T_CHAR_LF)
+                                       
         if BlockSize != None and BlockNum != None:
             self.FvInfFile.writelines("EFI_BLOCK_SIZE = " + \
-                                      '%s' %BlockSize    + \
+                                      '0x%x' %BlockSize    + \
                                       T_CHAR_LF)
             self.FvInfFile.writelines("EFI_NUM_BLOCKS   = "  + \
-                                      ' %x' %BlockNum    + \
+                                      ' 0x%x' %BlockNum    + \
                                       T_CHAR_LF)
         else:
             for BlockSize in self.BlockSizeList :
                 self.FvInfFile.writelines("EFI_BLOCK_SIZE  = "  + \
-                                          '%s' %BlockSize[0]    + \
+                                          '0x%x' %BlockSize[0]    + \
                                           T_CHAR_LF)
                                   
                 self.FvInfFile.writelines("EFI_NUM_BLOCKS   = "  + \
-                                          ' %s' %BlockSize[1]    + \
+                                          ' 0x%x' %BlockSize[1]    + \
                                           T_CHAR_LF)
                                           
         

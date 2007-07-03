@@ -6,6 +6,7 @@ from GenFdsGlobalVariable import GenFdsGlobalVariable
 import EdkIIWorkspaceBuild
 import RuleComplexFile
 from EfiSection import EfiSection
+import StringIO
 
 versionNumber = "1.0"
 __version__ = "%prog Version " + versionNumber
@@ -17,6 +18,7 @@ def main():
     options = myOptionParser()
     global workspace
     workspace = ""
+    ArchList = None
     
     if (options.workspace == None):
         print "ERROR: E0000: WORKSPACE not defined.\n  Please set the WORKSPACE environment variable to the location of the EDK II install directory."
@@ -42,6 +44,11 @@ def main():
         print "ERROR: E0001 - You must specify an Output directory"
         sys.exit(1)
         
+    if (options.archList) :
+        ArchList = options.archList.split(',')
+    else:
+        ArchList = None
+        
     """ Parse Fdf file """
     fdfParser = FdfParser.FdfParser(fdfFilename)
     fdfParser.ParseFile()
@@ -51,13 +58,13 @@ def main():
     WorkSpace = EdkIIWorkspaceBuild.WorkspaceBuild()
     
     """Call GenFds"""
-    GenFds.GenFd(outputDir, fdfParser, WorkSpace)
+    GenFds.GenFd(outputDir, fdfParser, WorkSpace, ArchList)
     
 def myOptionParser():
     usage = "%prog [options] -f input_file"
     parser = OptionParser(usage=usage,description=__copyright__,version="%prog " + str(versionNumber))
     parser.add_option("-f", "--file", dest="filename", help="Name of FDF file to convert")
-    parser.add_option("-a", "--auto", action="store_true", dest="autowrite", default=False, help="Automatically create output files and write the DSC file")
+    parser.add_option("-a", "--arch", dest="archList", help="comma separated list containing one or more of: IA32, X64, IPF or EBC which should be built, overrides target.txt?s TARGET_ARCH")
     parser.add_option("-i", "--interactive", action="store_true", dest="interactive", default=False, help="Set Interactive mode, user must approve each change.")
     parser.add_option("-q", "--quiet", action="store_const", const=0, dest="verbose", help="Do not print any messages, just return either 0 for succes or 1 for failure")
     parser.add_option("-v", "--verbose", action="count", dest="verbose", default=0, help="Do not print any messages, just return either 0 for succes or 1 for failure")
@@ -71,9 +78,9 @@ def myOptionParser():
 
 class GenFds :
     FdfParsef = None
-    
-    def GenFd (OutputDir, FdfParser, WorkSpace):
-        GenFdsGlobalVariable.SetDir (OutputDir, FdfParser, WorkSpace)
+    FvBinDict = {}      # FvName in Fdf, FvBinFile
+    def GenFd (OutputDir, FdfParser, WorkSpace, ArchList):
+        GenFdsGlobalVariable.SetDir (OutputDir, FdfParser, WorkSpace, ArchList)
         """Set Default Rule! Hard code here will be move"""
         verSection1 = EfiSection()
         verSection1.BuildNum = "$(BUILD_NUMBER)"
@@ -104,7 +111,14 @@ class GenFds :
         
         for item in GenFdsGlobalVariable.FdfParser.profile.FdDict.keys():
             fd = GenFdsGlobalVariable.FdfParser.profile.FdDict[item]
-            fd.GenFd()
+            fd.GenFd(GenFds.FvBinDict)
+        for FvName in GenFdsGlobalVariable.FdfParser.profile.FvDict.keys():
+            if not FvName in GenFds.FvBinDict.keys():
+                Buffer = StringIO.StringIO()
+                fv = GenFdsGlobalVariable.FdfParser.profile.FvDict[FvName]
+                fv.AddToBuffer(Buffer)
+                Buffer.close()
+            
     GenFd = staticmethod(GenFd)
 
 if __name__ == '__main__':

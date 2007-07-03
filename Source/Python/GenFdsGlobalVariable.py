@@ -11,11 +11,12 @@ class GenFdsGlobalVariable:
     WorkSpaceDir = ''
     RuleDict = {}
     DefaultRule = None
+    ArchList = None
     
     def ExtendMarco (String):
         return String
     
-    def SetDir (OutputDir, FdfParser, WorkSpace):
+    def SetDir (OutputDir, FdfParser, WorkSpace, ArchList):
         print "GenFdsGlobalVariable.OuputDir :%s" %OutputDir
         GenFdsGlobalVariable.OuputDir = os.path.normpath(OutputDir)
         GenFdsGlobalVariable.FdfParser = FdfParser
@@ -23,6 +24,8 @@ class GenFdsGlobalVariable:
         GenFdsGlobalVariable.FvDir = os.path.join(GenFdsGlobalVariable.OuputDir, 'Fv')
         GenFdsGlobalVariable.FfsDir = os.path.join(GenFdsGlobalVariable.FvDir, 'Ffs')
         GenFdsGlobalVariable.WorkSpaceDir = GenFdsGlobalVariable.WorkSpace.Workspace.WorkspaceDir
+        if ArchList != None:
+            GenFdsGlobalVariable.ArchList = ArchList
         
     def SetDefaultRule (Rule) :
         GenFdsGlobalVariable.DefaultRule = Rule

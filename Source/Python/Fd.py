@@ -13,7 +13,7 @@ class FD:
         self.BaseAddressPcd = None
         self.Size = None
         self.SizePcd = None
-        self.ErasePolarity = "1"
+        self.ErasePolarity = '1'
         # 3-tuple list (blockSize, numBlocks, pcd)
         self.BlockSizeList = []
         # DefineVarDict[var] = value
@@ -26,7 +26,7 @@ class FD:
 ##
 #  Create Fd file
 ##
-    def GenFd (self):
+    def GenFd (self, FvBinDict):
         #
         # Print Information
         #
@@ -39,7 +39,7 @@ class FD:
             #
             # Call each region's AddToBuffer function 
             #
-            Regions.AddToBuffer (FdBuffer, self.BlockSizeList, self.ErasePolarity)
+            Regions.AddToBuffer (FdBuffer, self.BlockSizeList, self.ErasePolarity, FvBinDict)
         #
         # Create a empty Fd file
         #

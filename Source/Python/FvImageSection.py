@@ -7,13 +7,13 @@ class FvImageSection(Section.Section):
     def __init__(self):
         self.Aligenment = None
         self.Fv = None
-        
+        self.FvName = None
     def GenSection(self, OutputPath, ModuleName, FfsInf = None):
         Buffer = StringIO.StringIO('')
         #
         # Generate Fv
         #
-        self.Fv.AddToBuffer(Buffer, '')
+        self.Fv.AddToBuffer(Buffer)
         
         FvFileName = OutputPath + \
                      ModuleName + \
