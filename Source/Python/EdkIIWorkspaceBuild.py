@@ -52,7 +52,17 @@ class PcdClassObject(object):
         self.DefaultValue = Value
         self.TokenValue = Token
         self.MaxDatumSize = MaxDatumSize
-
+        
+    def __str__(self):
+        rtn = str(self.TokenCName) + DataType.TAB_VALUE_SPLIT + \
+              str(self.TokenSpaceGuidCName) + DataType.TAB_VALUE_SPLIT + \
+              str(self.Type) + DataType.TAB_VALUE_SPLIT + \
+              str(self.DatumType) + DataType.TAB_VALUE_SPLIT + \
+              str(self.DefaultValue) + DataType.TAB_VALUE_SPLIT + \
+              str(self.TokenValue) + DataType.TAB_VALUE_SPLIT + \
+              str(self.MaxDatumSize)
+        return rtn
+              
 class LibraryClassObject(object):
     def __init__(self, Name = None, Type = None):
         self.LibraryClass = Name
@@ -241,19 +251,24 @@ class WorkspaceBuild(object):
                 #Pcds
                 for index in range(len(dscObj.Contents[key].PcdsFixedAtBuild)):
                     pcd = dscObj.Contents[key].PcdsFixedAtBuild[index].split(DataType.TAB_VALUE_SPLIT)
-                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_FIXED_AT_BUILD, None, pcd[2], None, None)
+                    pcd.append(None)
+                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_FIXED_AT_BUILD, None, pcd[2], None, pcd[3])
                 for index in range(len(dscObj.Contents[key].PcdsPatchableInModule)):
                     pcd = dscObj.Contents[key].PcdsPatchableInModule[index].split(DataType.TAB_VALUE_SPLIT)
-                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_PATCHABLE_IN_MODULE, None, pcd[2], None, None)
+                    pcd.append(None)
+                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_PATCHABLE_IN_MODULE, None, pcd[2], None, pcd[3])
                 for index in range(len(dscObj.Contents[key].PcdsFeatureFlag)):
                     pcd = dscObj.Contents[key].PcdsFeatureFlag[index].split(DataType.TAB_VALUE_SPLIT)
-                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_FEATURE_FLAG, None, pcd[2], None, None)
+                    pcd.append(None)                    
+                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_FEATURE_FLAG, None, pcd[2], None, pcd[3])
                 for index in range(len(dscObj.Contents[key].PcdsDynamic)):
                     pcd = dscObj.Contents[key].PcdsDynamic[index].split(DataType.TAB_VALUE_SPLIT)
-                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC, None, pcd[2], None, None)
+                    pcd.append(None)
+                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC, None, pcd[2], None, pcd[3])
                 for index in range(len(dscObj.Contents[key].PcdsDynamicEx)):
                     pcd = dscObj.Contents[key].PcdsDynamicEx[index].split(DataType.TAB_VALUE_SPLIT)
-                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_EX, None, pcd[2], None, None)
+                    pcd.append(None)                    
+                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_EX, None, pcd[2], None, pcd[3])
                 
                 self.Build[key].PlatformDatabase[dsc] = pb
                 pb = None    
@@ -571,9 +586,11 @@ if __name__ == '__main__':
             print 'Version = ', p.Version
             print 'OutputDirectory = ', p.OutputDirectory                
             print 'FlashDefinition = ', p.FlashDefinition
-            print 'Modules = ', p.Modules                
+            print 'Modules = ', p.Modules
             print 'LibraryClasses = ', p.LibraryClasses 
-            print 'Pcds = ', p.Pcds                     
+            print 'Pcds = ', p.Pcds
+            for item in p.Pcds.keys():
+                print p.Pcds[item]
             print 'BuildOptions = ', p.BuildOptions
             print ''   
         #End of Platform
@@ -622,7 +639,7 @@ if __name__ == '__main__':
             print 'Guids = ', p.Guids                                
             print 'Includes = ', p.Includes                         
             print 'Packages = ', p.Packages                         
-            print 'Pcds = ', p.Pcds                                 
+            print 'Pcds = ', p.Pcds
             print 'BuildOptions = ', p.BuildOptions
             print 'Depex = ', p.Depex
             print ''
