@@ -505,7 +505,7 @@ class FdfParser:
             raise Warning("expected Hex size At Line %d" % self.CurrentLineNumber)
             
       
-        fd.Size = self.__Token
+        fd.Size = long(self.__Token, 0)
 
         if self.__IsToken( "|"):
             if self.__GetNextWord():
@@ -523,7 +523,7 @@ class FdfParser:
         if not self.__GetNextToken():
             raise Warning("expected Erase Polarity At Line %d" % self.CurrentLineNumber)
             
-        if self.__Token != "1" and self.__Token != 0:
+        if self.__Token != "1" and self.__Token != "0":
             raise Warning("expected 1 or 0 Erase Polarity At Line %d" % self.CurrentLineNumber)
             
         fd.ErasePolarity = self.__Token
@@ -548,10 +548,10 @@ class FdfParser:
         if not self.__IsToken( "="):
             raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
             
-        if not self.__GetHexNumber():
+        if not self.__GetHexNumber() and not self.__GetDecimalNumber():
             raise Warning("expected Hex block size At Line %d" % self.CurrentLineNumber)
 
-        BlockSize = self.__Token
+        BlockSize = long(self.__Token, 0)
         BlockSizePcd = None
         if self.__IsToken( "|"):
             if self.__GetNextWord():
@@ -559,7 +559,7 @@ class FdfParser:
             else:
                 raise Warning("expected PcdCName At Line %d" % self.CurrentLineNumber)
 
-        BlockNumber = "1"
+        BlockNumber = 0x1
         if self.__IsKeyword( "NumBlocks"):
             if not self.__IsToken( "="):
                 raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
@@ -567,7 +567,7 @@ class FdfParser:
             if not self.__GetDecimalNumber() and not self.__GetHexNumber():
                 raise Warning("expected block numbers At Line %d" % self.CurrentLineNumber)
                 
-            BlockNumber = self.__Token
+            BlockNumber = long(self.__Token, 0)
         
         obj.BlockSizeList.append((BlockSize, BlockNumber, BlockSizePcd))
         return True
@@ -627,7 +627,7 @@ class FdfParser:
             return False
         
         region = Region.region()
-        region.Offset = self.__Token
+        region.Offset = long(self.__Token, 0)
         fd.RegionList.append(region)
         
         if not self.__IsToken( "|"):
@@ -635,7 +635,7 @@ class FdfParser:
         
         if not self.__GetHexNumber():
             raise Warning("expected Region Size At Line %d" % self.CurrentLineNumber)
-        region.Size = self.__Token
+        region.Size = long(self.__Token, 0)
         
         if not self.__GetNextWord():
             return True
