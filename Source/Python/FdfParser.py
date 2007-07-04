@@ -1039,6 +1039,9 @@ class FdfParser:
             if self.__IsToken( "{"):
                 fv = Fv.FV()
                 fv.UiFvName = fvName
+                self.__GetDefineStatements( fv)
+                self.__GetBlockStatement( fv)
+                self.__GetSetStatements( fv)
                 self.__GetFvAlignment( fv)
                 self.__GetFvAttributes( fv)
                 self.__GetAprioriSection( fv)
