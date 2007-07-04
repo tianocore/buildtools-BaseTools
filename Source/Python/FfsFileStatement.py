@@ -37,7 +37,7 @@ class FileStatements (Ffs.Ffs) :
         if self.CheckSum != False :
                 CheckSum = ' -s '
         else :
-                CheckSume = ''
+                CheckSum = ''
                 
         if self.Alignment != None and self.Alignment !='':
                 Alignment = ' -a ' + '%s' %self.Alignment

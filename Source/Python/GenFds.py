@@ -38,6 +38,11 @@ def main():
         print "ERROR: E1000: File %s not found" % (filename)
         sys.exit(1)
 
+    if (options.activePlatform):
+        activePlatform = options.activePlatform
+    else :
+        activePlatform = None
+        
     if (options.outputDir):
         outputDir = options.outputDir
     else:
@@ -45,9 +50,9 @@ def main():
         sys.exit(1)
         
     if (options.archList) :
-        ArchList = options.archList.split(',')
+        archList = options.archList.split(',')
     else:
-        ArchList = None
+        archList = None
         
     """ Parse Fdf file """
     fdfParser = FdfParser.FdfParser(fdfFilename)
@@ -55,10 +60,10 @@ def main():
     
     """call workspace build create database"""
     os.environ["WORKSPACE"] = workspace
-    WorkSpace = EdkIIWorkspaceBuild.WorkspaceBuild()
+    buildWorkSpace = EdkIIWorkspaceBuild.WorkspaceBuild(activePlatform)
     
     """Call GenFds"""
-    GenFds.GenFd(outputDir, fdfParser, WorkSpace, ArchList)
+    GenFds.GenFd(outputDir, fdfParser, buildWorkSpace, archList)
     
 def myOptionParser():
     usage = "%prog [options] -f input_file"
@@ -69,7 +74,7 @@ def myOptionParser():
     parser.add_option("-q", "--quiet", action="store_const", const=0, dest="verbose", help="Do not print any messages, just return either 0 for succes or 1 for failure")
     parser.add_option("-v", "--verbose", action="count", dest="verbose", default=0, help="Do not print any messages, just return either 0 for succes or 1 for failure")
     parser.add_option("-d", "--debug", action="store_true", dest="debug", default=False, help="Enable printing of debug messages.")
-    parser.add_option("-s", "--skus", action="store_true", dest="keep_sku_data", default=False, help="Use all skus defined in SkuID section of FPD")
+    parser.add_option("-p", "--platform", dest="activePlatform", help="Set the Active platform")
     parser.add_option("-w", "--workspace", dest="workspace", default=str(os.environ.get('WORKSPACE')), help="Enable printing of debug messages.")
     parser.add_option("-o", "--outputDir", dest="outputDir", help="Name of Output directory")
     (options, args) = parser.parse_args()

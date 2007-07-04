@@ -2,6 +2,7 @@ import Section
 import StringIO
 from Ffs import Ffs
 import subprocess
+from GenFdsGlobalVariable import GenFdsGlobalVariable
 
 class FvImageSection(Section.Section):
     def __init__(self):
@@ -13,6 +14,15 @@ class FvImageSection(Section.Section):
         #
         # Generate Fv
         #
+        if self.FvName != None:
+            Fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(self.FvName)
+            if self.Fv == None:
+                self.Fv = Fv
+            else:
+                raise Exception("FvImageSection Failed! Can't describe the \
+                                 FvImageSection both in FvUiName and \
+                                 FvImageArg!")
+                                 
         self.Fv.AddToBuffer(Buffer)
         
         FvFileName = OutputPath + \
