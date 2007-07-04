@@ -407,7 +407,7 @@ class FdfParser:
             print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
                     % (self.profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
             print X.message
-            return
+            raise
         
     def __GetFd(self):
 
@@ -1031,12 +1031,13 @@ class FdfParser:
             if not self.__GetNextWord():
                 raise Warning("expected FV name At Line %d" % self.CurrentLineNumber)
             
-            fv = Fv.FV()
-            fv.UiFvName = self.__Token.upper()
-            
+            fvName = self.__Token.upper()
+            fv = None
 #            if not self.__IsToken( "{"):
 #                raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
             if self.__IsToken( "{"):
+                fv = Fv.FV()
+                fv.UiFvName = fvName
                 self.__GetAprioriSection( fv)
                 self.__GetFvAttributes( fv)
     
@@ -1052,7 +1053,12 @@ class FdfParser:
             
             section = FvImageSection.FvImageSection()
             section.Alignment = alignment
+            if fv != None:
             section.Fv = fv
+                section.FvName = None
+            else:
+                section.FvName = fvName
+                
             obj.SectionList.append(section) 
            
         else:
