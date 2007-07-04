@@ -52,6 +52,8 @@ class PcdClassObject(object):
         self.DefaultValue = Value
         self.TokenValue = Token
         self.MaxDatumSize = MaxDatumSize
+        self.Phase = "DXE"
+        self.SkuInfo = []
         
     def __str__(self):
         rtn = str(self.TokenCName) + DataType.TAB_VALUE_SPLIT + \
@@ -62,7 +64,13 @@ class PcdClassObject(object):
               str(self.TokenValue) + DataType.TAB_VALUE_SPLIT + \
               str(self.MaxDatumSize)
         return rtn
-              
+
+    def __eq__(self, other):
+        return self.TokenCName == other.TokenCName and self.TokenSpaceGuidCName == other.TokenSpaceGuidCName
+
+    def __hash__(self):
+        return hash((self.TokenCName, self.TokenSpaceGuidCName))
+
 class LibraryClassObject(object):
     def __init__(self, Name = None, Type = None):
         self.LibraryClass = Name

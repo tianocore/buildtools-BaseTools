@@ -26,7 +26,9 @@ class ModuleBuildInfo(BuildInfo):
         self.Arch = ""
         self.ToolChain = ""
         self.BuildTarget = ""
-        
+        self.Phase = "DXE"
+        self.PcdIsDriver = ""
+
         self.IsLibrary = False
         self.IsBinary = False
 
@@ -98,6 +100,7 @@ class PlatformBuildInfo(BuildInfo):
 
         self.ModuleAutoGenList = []
         self.LibraryAutoGenList = []
+        self.PackageList = []
         
         self.PcdTokenNumber = {}    # (TokenCName, TokenSpaceGuidCName) : GeneratedTokenNumber
         self.DynamicPcdList = []    # [(TokenCName1, TokenSpaceGuidCName1), (TokenCName2, TokenSpaceGuidCName2), ...]

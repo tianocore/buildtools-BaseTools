@@ -479,28 +479,28 @@ $(PCH_FILE): $(DEP_FILES)
 #
 
 $(LLIB_FILE): $(OBJECTS)
-\t"$(SLINK)" /OUT:$(LLIB_FILE) $(SLINK_FLAGS) $(OBJECTS)
+\t"$(SLINK)" $(SLINK_FLAGS) /OUT:$(LLIB_FILE) $(OBJECTS)
 
 #
 # Library file build target
 #
 
 $(LIB_FILE): $(OBJECTS)
-\t"$(SLINK)" /OUT:$(LIB_FILE) $(SLINK_FLAGS) $(OBJECTS)
+\t"$(SLINK)" $(SLINK_FLAGS) /OUT:$(LIB_FILE) $(OBJECTS)
 
 #
 # DLL file build target
 #
 
 $(DLL_FILE): $(LIBS) $(LLIB_FILE)
-\t"$(DLINK)" /OUT:$(DLL_FILE) $(DLINK_FLAGS) $(LIBS) $(LLIB_FILE)
+\t"$(DLINK)" $(DLINK_FLAGS) /OUT:$(DLL_FILE) $(DLINK_SPATH) $(LIBS) $(LLIB_FILE)
 
 #
 # EFI file build target
 #
 
 $(EFI_FILE): $(LIBS) $(LLIB_FILE)
-\t"$(DLINK)" /OUT:$(EFI_FILE) $(DLINK_FLAGS) $(LIBS) $(LLIB_FILE)
+\t"$(DLINK)" $(DLINK_FLAGS) /OUT:$(EFI_FILE) $(DLINK_SPATH) $(LIBS) $(LLIB_FILE)
 \tGenFw -e ${module_type} -o $(EFI_FILE) $(EFI_FILE)
 \tcopy /y $(EFI_FILE) $(BIN_DIR)
 

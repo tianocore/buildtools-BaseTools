@@ -162,6 +162,9 @@ class AutoGen(object):
 
         info.BuildOption = self.GetModuleBuildOption(info.PlatformInfo)
 
+        info.PcdIsDriver = self.Module.PcdIsDriver
+        if self.Module.ModuleType in ["PEIM", "PEI_CORE"]:
+            info.Phase = "PEI"
         info.PcdList = self.GetPcdList(info.DependentLibraryList)
         info.GuidList = self.GetGuidList(info.DependentLibraryList)
         info.ProtocolList = self.GetProtocolGuidList(info.DependentLibraryList)
@@ -174,6 +177,7 @@ class AutoGen(object):
 
         info.SourceFileList = self.GetBuildFileList(info.PlatformInfo)
         info.AutoGenFileList = self.GetAutoGenFileList(info)
+
         return info
 
     def InitPackageBuildInfo(self, info):
@@ -202,8 +206,9 @@ class AutoGen(object):
         info.BuildDir = path.join(info.OutputDir, self.BuildTarget + "_" + self.ToolChain)
         info.MakefileDir = info.BuildDir
 
-        info.DynamicPcdList = self.GetDynamicPcdList(platform)
+        info.DynamicPcdList = self.GetDynamicPcdList(platform, arch)
         info.PcdTokenNumber = self.GeneratePcdTokenNumber(platform, info.DynamicPcdList)
+        info.PackageList = gPackageDatabase[arch].values()
 
         self.ProcessToolDefinition(info)
 
@@ -335,6 +340,12 @@ class AutoGen(object):
                 continue
             if f.ToolCode != "" and f.ToolCode not in platformInfo.ToolPath:
                 continue
+
+            dir = path.dirname(f.SourceFile)
+            if dir != "":
+                dir = path.join(self.BuildInfo.SourceDir, dir)
+                if dir not in self.BuildInfo.IncludePathList:
+                    self.BuildInfo.IncludePathList.insert(0, dir)
 
             # skip unknown file
             base, ext = path.splitext(f.SourceFile)
@@ -492,24 +503,32 @@ class AutoGen(object):
         SortedLibraryList.reverse()
         return SortedLibraryList
 
-    def GetDynamicPcdList(self, platform):
+    def GetDynamicPcdList(self, platform, arch):
         pcdList = []
-        for key in platform.Pcds:
-            pcd = platform.Pcds[key]
-            if pcd.Type == TAB_PCDS_DYNAMIC:
-                pcdList.append(key)
+##        for key in platform.Pcds:
+##            pcd = platform.Pcds[key]
+##            if pcd.Type == TAB_PCDS_DYNAMIC:
+##                pcdList.append(key)
+        for f in gModuleDatabase[arch]:
+            m = gModuleDatabase[arch][f]
+            for key in m.Pcds:
+                pcd = m.Pcds[key]
+                if pcd.Type == TAB_PCDS_DYNAMIC and pcd not in pcdList:
+                    pcdList.append(pcd)
         return pcdList
 
     def GeneratePcdTokenNumber(self, platform, dynamicPcdList):
         pcdTokenNumber = {}
         tokenNumber = 1
         for pcd in dynamicPcdList:
-            pcdTokenNumber[pcd] = tokenNumber
+            #print "@@@",tokenNumber,"=",pcd.TokenCName, pcd.TokenSpaceGuidCName, pcd.DatumType
+            pcdTokenNumber[pcd.TokenCName, pcd.TokenSpaceGuidCName] = tokenNumber
             tokenNumber += 1
 
         platformPcds = platform.Pcds
         for key in platformPcds:
             pcd = platformPcds[key]
+            #print "###",key
             if key not in pcdTokenNumber:
                 pcdTokenNumber[key] = tokenNumber
                 tokenNumber += 1
@@ -522,7 +541,12 @@ class AutoGen(object):
         pcdList = []
         for m in dependentLibraryList + [self.Module]:
             # EdkLogger.info("  " + m.BaseName)
-            pcdList.extend(m.Pcds.values())
+            for pcdKey in m.Pcds:
+                pcd = m.Pcds[pcdKey]
+                if pcd.Type in [TAB_PCDS_DYNAMIC, TAB_PCDS_DYNAMIC_EX] and self.Module.ModuleType in ["PEIM", "PEI_CORE"]:
+                    platformPcds[pcdKey].Phase = "PEI"
+                if pcd not in pcdList:
+                    pcdList.append(pcd)
         return pcdList
 
     def GetGuidList(self, dependentLibraryList):

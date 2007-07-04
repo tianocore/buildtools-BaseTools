@@ -33,6 +33,8 @@ def TrimPreprocessedFile (source, target, Convert, Vfr=False):
 def TrimVfr(lines, start, end):
     foundTypedef = False
     brace = 0
+    typedefStart = 0
+    typedefEnd = 0
     for index in range (start, end):
         if lines[index].strip().find('#line') == 0:
             continue
@@ -43,6 +45,7 @@ def TrimVfr(lines, start, end):
             continue
         elif foundTypedef == False:
             foundTypedef = True
+            typedefStart = index
 
         if lines[index].find("{") >= 0:
             brace += 1
@@ -50,9 +53,12 @@ def TrimVfr(lines, start, end):
             brace -= 1
 
         if brace == 0 and lines[index].find(";") >= 0:
-##            if lines[index].find("typedef") >= 0:
-##                lines[index] = "\n"
             foundTypedef = False
+            typedefEnd = index
+            if lines[index].strip("} ;\r\n") == "GUID":
+                print lines[index]
+                for i in range(typedefStart, typedefEnd+1):
+                    lines[i] = "\n"
 
 def ConvertHex(lines, start, end):
     for index in range (start, end):
