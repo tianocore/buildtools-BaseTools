@@ -205,7 +205,8 @@ class AutoGen(object):
         info.OutputDir = platform.OutputDirectory
         info.BuildDir = path.join(info.OutputDir, self.BuildTarget + "_" + self.ToolChain)
         info.MakefileDir = info.BuildDir
-        info.FdfFile = path.join(gWorkspaceDir, platform.FlashDefinition)
+        if platform.FlashDefinition != "":
+            info.FdfFileList.append(path.join(gWorkspaceDir, platform.FlashDefinition))
 
         info.DynamicPcdList = self.GetDynamicPcdList(platform, arch)
         info.PcdTokenNumber = self.GeneratePcdTokenNumber(platform, info.DynamicPcdList)

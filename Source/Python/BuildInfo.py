@@ -97,7 +97,7 @@ class PlatformBuildInfo(BuildInfo):
         self.LibraryDir = ""
         self.FvDir = ""
         self.MakefileDir = ""
-        self.FdfFile = ""
+        self.FdfFileList = []
 
         self.ModuleAutoGenList = []
         self.LibraryAutoGenList = []

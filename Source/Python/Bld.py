@@ -142,7 +142,7 @@ if __name__ == '__main__':
 #
 #    os.chdir("C:\Work\EDK2\MdeModulePkg\Application\HelloWorld")
 #    os.chdir("C:\Work\EDK2\MdeModulePkg")
-    os.chdir("C:\Work\edk2\MdePkg")
+#    os.chdir("C:\Work\edk2\MdePkg")
 
 #
 # Record Start Time
