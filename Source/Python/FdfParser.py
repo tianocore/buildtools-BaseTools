@@ -966,10 +966,11 @@ class FdfParser:
     def __GetSectionData(self, ffsFile):
         
         if self.__IsToken( "{"):
-            while self.__GetLeafSection( ffsFile):
-                pass
-            while self.__GetEncapsulationSec( ffsFile):
-                pass
+            while True:
+                isLeafSection = self.__GetLeafSection(ffsFile)
+                isEncapSection = self.__GetEncapsulationSec(ffsFile)
+                if not isLeafSection and not isEncapSection:
+                    break
 
             if not self.__IsToken( "}"):
                 raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
@@ -1038,15 +1039,15 @@ class FdfParser:
             if self.__IsToken( "{"):
                 fv = Fv.FV()
                 fv.UiFvName = fvName
-                self.__GetAprioriSection( fv)
+                self.__GetFvAlignment( fv)
                 self.__GetFvAttributes( fv)
+                self.__GetAprioriSection( fv)
     
-    
-                while self.__GetInfStatement( fv):
-                    pass
-    
-                while self.__GetFileStatement( fv):
-                    pass
+                while True:
+                    isInf = self.__GetInfStatement( fv)
+                    isFile = self.__GetFileStatement( fv)
+                    if not isInf and not isFile:
+                        break
     
                 if not self.__IsToken( "}"):
                     raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
@@ -1054,7 +1055,7 @@ class FdfParser:
             section = FvImageSection.FvImageSection()
             section.Alignment = alignment
             if fv != None:
-            section.Fv = fv
+                section.Fv = fv
                 section.FvName = None
             else:
                 section.FvName = fvName
@@ -1102,9 +1103,12 @@ class FdfParser:
             section.Alignment = alignment
             section.CompType = type
             # Recursive sections...
-            while self.__GetLeafSection(section):
-                pass
-            self.__GetEncapsulationSec(section)
+            while True:
+                isLeafSection = self.__GetLeafSection(section)
+                isEncapSection = self.__GetEncapsulationSec(section)
+                if not isLeafSection and not isEncapSection:
+                    break
+            
             
             if not self.__IsToken( "}"):
                 raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
@@ -1130,9 +1134,11 @@ class FdfParser:
             section.ProcessRequired = attribDict["PROCESSING_REQUIRED"]
             section.AuthStatusValid = attribDict["AUTH_STATUS_VALID"]
             # Recursive sections...
-            while self.__GetLeafSection(section):
-                pass
-            self.__GetEncapsulationSec(section)
+            while True:
+                isLeafSection = self.__GetLeafSection(section)
+                isEncapSection = self.__GetEncapsulationSec(section)
+                if not isLeafSection and not isEncapSection:
+                    break
             
             if not self.__IsToken( "}"):
                 raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
