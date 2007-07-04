@@ -623,7 +623,7 @@ build_modules:
 #
 build_fds:
 \t-@echo Generating Flash Image ...
-\t-@echo GenFds platform.fdf
+\tGenFds -f ${fdf_file} -o $(BUILD_DIR)
 
 #
 # Clean intermediate files
@@ -732,6 +732,7 @@ class Makefile(object):
             "directory_to_be_created"   : self.IntermediateDirectoryList,
             "library_build_directory"   : self.LibraryBuildDirectoryList,
             "module_build_directory"    : self.ModuleBuildDirectoryList,
+            "fdf_file"                  : self.PlatformInfo.values()[0].FdfFile
         }
 
         self.PrepareDirectory()
