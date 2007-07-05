@@ -17,7 +17,7 @@ import re
 from StringIO import StringIO
 from struct import pack
 from EdkIIWorkspace import CreateDirectory
-#from AutoGen import gModuleDatabase
+from BuildToolError import *
 
 gType2Phase = {
     "BASE"              :   None,
@@ -132,19 +132,19 @@ class DependencyExpression:
     def ValidateOpcode(self):
         for op in self.AboveAllOpcode:
             if op in self.OpcodeList and op != self.OpcodeList[0]:
-                raise Exception("Opcode=%s should be the first one in expression", op)
+                raise AutoGenError("Opcode=%s should be the first one in expression", op)
         for op in self.ExclusiveOpcode:
             if op in self.OpcodeList and len(self.OpcodeList) > 1:
-                raise Exception("Opcode=%s should be only opcode in expression", op)
+                raise AutoGenError("Opcode=%s should be only opcode in expression", op)
         # print "######", self.ExpressionString
         if self.TokenList[-1] in self.NonEndingOpcode:
-            raise Exception("Extra %s at the end of dependency expression" % self.TokenList[-1])
+            raise AutoGenError("Extra %s at the end of dependency expression" % self.TokenList[-1])
 
     def GetGuidValue(self, guid):
         guidValueString = guid.replace("{", "").replace("}", "").replace(" ", "")
         guidValueList = guidValueString.split(",")
         if len(guidValueList) != 11:
-            raise Exception("Invalid GUID value string or opcode: %s" % guid)
+            raise AutoGenError("Invalid GUID value string or opcode: %s" % guid)
         return pack("1I2H8B", *(int(value, 16) for value in guidValueList))
 
     def SaveFile(self, file, content):

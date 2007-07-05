@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import string
 import EdkLogger
+
+from BuildToolError import *
 from DataType import *
 from EdkIIWorkspace import *
 from BuildInfo import *
@@ -783,8 +785,7 @@ def GuidStructureStringToGuidString(GuidValue):
     guidValueString = GuidValue.lower().replace("{", "").replace("}", "").replace(" ", "")
     guidValueList = guidValueString.split(",")
     if len(guidValueList) != 11:
-        EdkLogger.error("Invalid GUID value string %s" % GuidValue)
-        return None
+        raise AutoGenError("Invalid GUID value string %s" % GuidValue)
     return "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x" % (
             int(guidValueList[0], 16),
             int(guidValueList[1], 16),
@@ -803,7 +804,7 @@ def GuidStructureStringToGuidValueName(GuidValue):
     guidValueString = GuidValue.lower().replace("{", "").replace("}", "").replace(" ", "")
     guidValueList = guidValueString.split(",")
     if len(guidValueList) != 11:
-        raise Exception("Invalid GUID value string %s" % GuidValue)
+        raise AutoGenError("Invalid GUID value string %s" % GuidValue)
     return "%08x_%04x_%04x_%02x%02x_%02x%02x%02x%02x%02x%02x" % (
             int(guidValueList[0], 16),
             int(guidValueList[1], 16),
@@ -874,9 +875,6 @@ def CreateModulePcdCode(info, autoGenC, autoGenH, pcd):
     #
     # Write PCDs
     #
-    #for TokenSpaceGuidCName in self.Module.Pcds: # Platform.PcdDatabase[ModuleSA]:
-    #    for C_Name in Platform.PcdDatabase[ModuleSA][TokenSpaceGuidCName]:
-    #      Pcd = Platform.PcdDatabase[ModuleSA][TokenSpaceGuidCName][C_Name]
     pcdTokenName = '_PCD_TOKEN_' + pcd.TokenCName
     if pcd.Type == TAB_PCDS_DYNAMIC_EX:
         tokenNumber = pcd.TokenValue
@@ -884,8 +882,6 @@ def CreateModulePcdCode(info, autoGenC, autoGenH, pcd):
         tokenNumber = pcdTokenNumber[pcd.TokenCName, pcd.TokenSpaceGuidCName]
     autoGenH.Append('#define %s  %d\n' % (pcdTokenName, tokenNumber))
 
-    #print "$$$",pcd.TokenCName, pcd.TokenSpaceGuidCName
-    #print "$$$ DatumType =",pcd.DatumType
     datumSize = DatumSizeStringDatabase[pcd.DatumType]
     datumSizeLib = DatumSizeStringDatabaseLib[pcd.DatumType]
     getModeName = '_PCD_GET_MODE_' + DatumSizeStringDatabaseH[pcd.DatumType] + '_' + pcd.TokenCName

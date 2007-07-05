@@ -623,7 +623,7 @@ build_modules:
 #
 build_fds:
 \t-@echo Generating flash image, if any ...
-${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR)${END}
+${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -p ${active_platform}${END}
 
 #
 # Clean intermediate files
@@ -707,7 +707,10 @@ class Makefile(object):
     def GeneratePlatformMakefile(self, file=None, makeType=gMakeType):
         separator = gDirectorySeparator[makeType]
 
-        outputDir = self.PlatformInfo.values()[0].OutputDir
+        activePlatform = self.PlatformInfo.values()[0].Platform
+        platformInfo = self.PlatformInfo.values()[0]
+        
+        outputDir = platformInfo.OutputDir
         if os.path.isabs(outputDir):
             self.PlatformBuildDirectory = outputDir
         else:
@@ -716,15 +719,15 @@ class Makefile(object):
         makefileName = gMakefileName[makeType]
         makefileTemplateDict = {
             "makefile_header"           : MakefileHeader,
-            "platform_name"             : self.PlatformInfo.values()[0].Name,
-            "platform_guid"             : self.PlatformInfo.values()[0].Guid,
-            "platform_version"          : self.PlatformInfo.values()[0].Version,
-            "platform_relative_directory": self.PlatformInfo.values()[0].SourceDir,
-            "platform_output_directory" : self.PlatformInfo.values()[0].OutputDir,
+            "platform_name"             : platformInfo.Name,
+            "platform_guid"             : platformInfo.Guid,
+            "platform_version"          : platformInfo.Version,
+            "platform_relative_directory": platformInfo.SourceDir,
+            "platform_output_directory" : platformInfo.OutputDir,
             "platform_build_directory"  : self.PlatformBuildDirectory,
 
-            "toolchain_tag"             : self.PlatformInfo.values()[0].ToolChain,
-            "build_target"              : self.PlatformInfo.values()[0].BuildTarget,
+            "toolchain_tag"             : platformInfo.ToolChain,
+            "build_target"              : platformInfo.BuildTarget,
             "build_architecture_list"   : " ".join(self.PlatformInfo.keys()),
             "architecture"              : self.PlatformInfo.keys(),
             "separator"                 : separator,
@@ -732,7 +735,8 @@ class Makefile(object):
             "directory_to_be_created"   : self.IntermediateDirectoryList,
             "library_build_directory"   : self.LibraryBuildDirectoryList,
             "module_build_directory"    : self.ModuleBuildDirectoryList,
-            "fdf_file"                  : self.PlatformInfo.values()[0].FdfFileList
+            "fdf_file"                  : platformInfo.FdfFileList,
+            "active_platform"           : activePlatform.DescFilePath
         }
 
         self.PrepareDirectory()
@@ -743,7 +747,7 @@ class Makefile(object):
 
         filePath = ""
         if file == None:
-            filePath = path.join(self.PlatformInfo.values()[0].WorkspaceDir, self.PlatformInfo.values()[0].MakefileDir, makefileName)
+            filePath = path.join(platformInfo.WorkspaceDir, platformInfo.MakefileDir, makefileName)
         else:
             filePath = file
 
