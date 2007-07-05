@@ -376,7 +376,7 @@ all: ${build_type}
 # Target used when called from platform makefile, which will bypass the build of dependent libraries
 #
 
-pbuild: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(EFI_FILE)
+pbuild: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(EFI_FILE) $(DLL_FILE)
 
 
 #
@@ -390,7 +390,7 @@ lbuild: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(LIB_FILE)
 # ModuleTarget
 #
 
-mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(EFI_FILE)
+mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(EFI_FILE) $(DLL_FILE)
 
 
 #
