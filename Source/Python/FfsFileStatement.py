@@ -13,6 +13,7 @@ class FileStatements (Ffs.Ffs) :
         Ffs.Ffs.SectionList = []
         self.FvType = None
         self.FilePath = None
+        self.KeyStringList = []
         
     def GenFfs(self):
         OutputDir = os.path.join(GenFdsGlobalVariable.FfsDir, self.NameGuid)

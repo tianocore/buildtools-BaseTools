@@ -886,8 +886,8 @@ class FdfParser:
                 raise Warning("expected UI name At Line %d" % self.CurrentLineNumber)
             ffsInf.Ui = self.__Token
 
-        if self.__GetNextWord():
-            p = re.compile(r'(([a-fA-F0-9]+)|\*)_(([a-fA-F0-9]+)|\*)_(([a-fA-F0-9]+)|\*)')
+        if self.__GetNextToken():
+            p = re.compile(r'([a-zA-Z0-9]+|\*)_([a-zA-Z0-9]+|\*)_([a-zA-Z0-9]+|\*)')
             if p.match(self.__Token):
                 ffsInf.KeyStringList.append(self.__Token)
                 if not self.__IsToken(","):
@@ -896,7 +896,7 @@ class FdfParser:
                 self.__UndoToken()
                 return
                 
-            while self.__GetNextWord:
+            while self.__GetNextToken():
                 if not p.match(self.__Token):
                     raise Warning("expected KeyString \"Target_Tag_Arch\" At Line %d" % self.CurrentLineNumber)
                 ffsInf.KeyStringList.append(self.__Token)
@@ -943,6 +943,22 @@ class FdfParser:
         
     
     def __GetFileOpts(self, ffsFile):
+
+        if self.__GetNextToken():
+            p = re.compile(r'([a-zA-Z0-9]+|\*)_([a-zA-Z0-9]+|\*)_([a-zA-Z0-9]+|\*)')
+            if p.match(self.__Token):
+                ffsFile.KeyStringList.append(self.__Token)
+                if self.__IsToken(","):
+                    while self.__GetNextToken():
+                        if not p.match(self.__Token):
+                            raise Warning("expected KeyString \"Target_Tag_Arch\" At Line %d" % self.CurrentLineNumber)
+                        ffsFile.KeyStringList.append(self.__Token)
+
+                        if not self.__IsToken(","):
+                            break
+                    
+            else:
+                self.__UndoToken()
 
         if self.__IsKeyword( "FIXED", True):
             ffsFile.Fixed = True
