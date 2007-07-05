@@ -88,6 +88,16 @@ class SkuInfoClassObject(object):
     
     #Used by Default
     self.DefaultValue = ''
+    
+  def __str__(self):
+    rtn = rtn = str(self.SkuId) + "," + \
+          str(self.VariableName) + "," + \
+          str(self.VariableGuid) + "," + \
+          str(self.VariableOffset) + "," + \
+          str(self.HiiDefaultValue) + "," + \
+          str(self.VpdOffset) + "," + \
+          str(self.DefaultValue) + ","
+    return rtn
 
 class PcdClassObject(CommonClassObject):
   def __init__(self):

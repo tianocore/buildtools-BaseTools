@@ -16,6 +16,7 @@ from String import *
 from DataType import *
 from Identification import *
 from Dictionary import *
+from ClassObjects.PlatformClassObject import *
 
 class DscObject(object):
     def __init__(self):
@@ -44,14 +45,19 @@ class DscSkuId(DscObject):
 
 class DscContents(DscObject):
     def __init__(self):
+        self.SkuIds = []
         self.Libraries = []
         self.Components = []                #[['component name', [lib1, lib2, lib3], [bo1, bo2, bo3]], ...]
         self.LibraryClasses = []
         self.PcdsFixedAtBuild = []
         self.PcdsPatchableInModule = []
         self.PcdsFeatureFlag = []
-        self.PcdsDynamic = []
-        self.PcdsDynamicEx = []
+        self.PcdsDynamicDefault = []
+        self.PcdsDynamicVpd = []
+        self.PcdsDynamicHii = []       
+        self.PcdsDynamicExDefault = []
+        self.PcdsDynamicExVpd = []
+        self.PcdsDynamicExHii = []                
         self.BuildOptions = []
 
 class Dsc(DscObject):
@@ -64,9 +70,11 @@ class Dsc(DscObject):
             self.Contents[key] = DscContents()
         
         self.KeyList = [
-            TAB_LIBRARIES, TAB_LIBRARY_CLASSES, TAB_BUILD_OPTIONS, TAB_PCDS_FIXED_AT_BUILD_NULL, \
+            TAB_SKUIDS, TAB_LIBRARIES, TAB_LIBRARY_CLASSES, TAB_BUILD_OPTIONS, TAB_PCDS_FIXED_AT_BUILD_NULL, \
             TAB_PCDS_PATCHABLE_IN_MODULE_NULL, TAB_PCDS_FEATURE_FLAG_NULL, \
-            TAB_PCDS_DYNAMIC_NULL, TAB_PCDS_DYNAMIC_EX_NULL, TAB_COMPONENTS, TAB_BUILD_OPTIONS
+            TAB_PCDS_DYNAMIC_DEFAULT_NULL, TAB_PCDS_DYNAMIC_HII_NULL, TAB_PCDS_DYNAMIC_VPD_NULL, \
+            TAB_PCDS_DYNAMIC_EX_DEFAULT_NULL, TAB_PCDS_DYNAMIC_EX_HII_NULL, TAB_PCDS_DYNAMIC_EX_VPD_NULL, \
+            TAB_COMPONENTS, TAB_BUILD_OPTIONS
         ]
         
         if filename != None:
@@ -81,6 +89,8 @@ class Dsc(DscObject):
             GetLibraryClassesWithModuleType(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
         elif newKey[0].find(TAB_COMPONENTS.upper()) != -1:
             GetComponents(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
+        elif newKey[0].find(TAB_PCDS_DYNAMIC.upper()) != -1:
+            GetDynamics(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
         else:
             GetMultipleValuesOfKeyFromLines(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
     

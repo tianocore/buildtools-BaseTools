@@ -24,6 +24,7 @@ from InfClassObject import *
 from DecClassObject import *
 from DscClassObject import *
 from String import *
+from ClassObjects.CommonClassObject import *
 
 class ModuleSourceFilesClassObject(object):
     def __init__(self, SourceFile = '', PcdFeatureFlag = '', TagName = '', ToolCode = '', ToolChainFamily = '', String = ''):
@@ -42,9 +43,23 @@ class ModuleSourceFilesClassObject(object):
               self.ToolCode + DataType.TAB_VALUE_SPLIT + \
               self.String
         return rtn
+
+class ModuleBinaryFilesClassObject(object):
+    def __init__(self, BinaryFile = '', FileType = '', Target = '', PcdFeatureFlag = ''):
+        self.BinaryFile = BinaryFile
+        self.FileType =FileType
+        self.Target = Target
+        self.PcdFeatureFlag = PcdFeatureFlag
+    
+    def __str__(self):
+        rtn = self.BinaryFile + DataType.TAB_VALUE_SPLIT + \
+              self.FileType + DataType.TAB_VALUE_SPLIT + \
+              self.Target +  DataType.TAB_VALUE_SPLIT + \
+              self.PcdFeatureFlag
+        return rtn
         
 class PcdClassObject(object):
-    def __init__(self, Name = None, Guid = None, Type = None, DatumType = None, Value = None, Token = None, MaxDatumSize = None):
+    def __init__(self, Name = None, Guid = None, Type = None, DatumType = None, Value = None, Token = None, MaxDatumSize = None, SkuInfoList = []):
         self.TokenCName = Name
         self.TokenSpaceGuidCName = Guid
         self.Type = Type
@@ -52,8 +67,7 @@ class PcdClassObject(object):
         self.DefaultValue = Value
         self.TokenValue = Token
         self.MaxDatumSize = MaxDatumSize
-        self.Phase = "DXE"
-        self.SkuInfo = []
+        self.SkuInfoList = SkuInfoList
         
     def __str__(self):
         rtn = str(self.TokenCName) + DataType.TAB_VALUE_SPLIT + \
@@ -62,15 +76,11 @@ class PcdClassObject(object):
               str(self.DatumType) + DataType.TAB_VALUE_SPLIT + \
               str(self.DefaultValue) + DataType.TAB_VALUE_SPLIT + \
               str(self.TokenValue) + DataType.TAB_VALUE_SPLIT + \
-              str(self.MaxDatumSize)
+              str(self.MaxDatumSize) + DataType.TAB_VALUE_SPLIT
+        for Item in self.SkuInfoList:
+            rtn = rtn + str(Item)
         return rtn
-
-    def __eq__(self, other):
-        return self.TokenCName == other.TokenCName and self.TokenSpaceGuidCName == other.TokenSpaceGuidCName
-
-    def __hash__(self):
-        return hash((self.TokenCName, self.TokenSpaceGuidCName))
-
+              
 class LibraryClassObject(object):
     def __init__(self, Name = None, Type = None):
         self.LibraryClass = Name
@@ -86,6 +96,7 @@ class ModuleBuildClassObject(object):
         self.Guid                    = ''
         self.Version                 = ''
         self.PcdIsDriver             = ''
+        self.BinaryModule            = ''
         self.CustomMakefile          = {}
         self.Specification           = {}
         self.LibraryClass            = None      # LibraryClassObject
@@ -94,7 +105,8 @@ class ModuleBuildClassObject(object):
         self.ConstructorList         = []
         self.DestructorList          = []
         
-        self.Sources                 = []        #[ SourcesClassObject, ... ]
+        self.Binaries                = []        #[ ModuleBinaryClassObject, ...]
+        self.Sources                 = []        #[ ModuleSourceFilesClassObject, ... ]
         self.LibraryClasses          = {}        #{ [LibraryClassName, ModuleType] : LibraryClassInfFile }
         self.Protocols               = []        #[ ProtocolName, ... ]
         self.Ppis                    = []        #[ PpiName, ... ]
@@ -143,9 +155,13 @@ class PlatformBuildClassObject(object):
         self.PlatformName            = ''
         self.Guid                    = ''
         self.Version                 = ''
+        self.DscSpecification        = ''
         self.OutputDirectory         = ''
         self.FlashDefinition         = ''
-        
+        self.BuildNumber             = ''
+        self.MakefileName            = ''
+                
+        self.SkuIds                  = {}       #{ 'SkuName' : SkuId, '!include' : includefilename, ...}
         self.Modules                 = []       #[ InfFileName, ... ]
         self.LibraryClasses          = {}       #{ (LibraryClassName, ModuleType) : LibraryClassInfFile }
         self.Pcds                    = {}       #{ [(PcdCName, PcdGuidCName)] : PcdClassObject }
@@ -174,8 +190,11 @@ class WorkspaceBuild(object):
         self.PlatformBuild           = True
         self.TargetTxt               = TargetTxtClassObject()
         self.ToolDef                 = ToolDefClassObject()
+
         self.SupArchList             = []        #[ 'IA32', 'X64', ...]
         self.BuildTarget             = []        #[ 'RELEASE', 'DEBUG']
+        self.SkuId                   = ''
+        
         self.InfDatabase             = {}        #{ [InfFileName] : InfClassObject}
         self.DecDatabase             = {}        #{ [DecFileName] : DecClassObject}
         self.DscDatabase             = {}        #{ [DscFileName] : DscClassObject}
@@ -202,8 +221,14 @@ class WorkspaceBuild(object):
         #parse platform to get module
         for dsc in self.DscDatabase.keys():
             dscObj = self.DscDatabase[dsc]
+            
+            #
+            # Get global information
+            #
             self.SupArchList = dscObj.Defines.DefinesDictionary[TAB_DSC_DEFINES_SUPPORTED_ARCHITECTURES]
             self.BuildTarget = dscObj.Defines.DefinesDictionary[TAB_DSC_DEFINES_BUILD_TARGETS]
+            self.SkuId = dscObj.Defines.DefinesDictionary[TAB_DSC_DEFINES_SKUID_IDENTIFIER][0]
+            
             #Get all inf
             for key in DataType.ARCH_LIST:
                 for index in range(len(dscObj.Contents[key].LibraryClasses)):
@@ -237,17 +262,44 @@ class WorkspaceBuild(object):
                 pb.PlatformName = dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_PLATFORM_NAME][0]
                 pb.Guid = dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_PLATFORM_GUID][0]
                 pb.Version = dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_PLATFORM_VERSION][0]
+                pb.DscSpecification = dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_DSC_SPECIFICATION][0]
                 pb.OutputDirectory = NormPath(dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_OUTPUT_DIRECTORY][0])
                 pb.FlashDefinition = NormPath(dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_FLASH_DEFINITION][0])
-            
+                pb.BuildNumber = dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_BUILD_NUMBER][0]
+                pb.MakefileName = NormPath(dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_MAKEFILE_NAME][0])
+        
+                #SkuId
+                for index in range(len(dscObj.Contents[key].SkuIds)):
+                    SkuInfo = dscObj.Contents[key].SkuIds[index]
+                    SkuName = ''
+                    SkuId = ''
+                    if SkuInfo.find('!include') > -1:
+                        SkuName = '!include'
+                        SkuId = NormPath(CleanString(SkuInfo[SkuInfo.find('!include') + len('!include'):]))
+                    elif len(SkuInfo.split(DataType.TAB_VALUE_SPLIT)) == 2:
+                        SkuName = CleanString(SkuInfo.split(DataType.TAB_VALUE_SPLIT)[1])
+                        SkuId = CleanString(SkuInfo.split(DataType.TAB_VALUE_SPLIT)[0])
+                    else:
+                        EdkLogger.error('Wrong defintion for SkuId')
+                    pb.SkuIds[SkuName] = SkuId
+                
                 #Module
                 for index in range(len(dscObj.Contents[key].Components)):
                     pb.Modules.append(NormPath(dscObj.Contents[key].Components[index][0]))
                 
                 #BuildOptions
                 for index in range(len(dscObj.Contents[key].BuildOptions)):
-                    b = desObj.Contents[key].BuildOptions[index]
-                    pb.BuildOptions[CleanString(b.split(DataType.TAB_EQUAL_SPLIT)[0])] = CleanString(b.split(DataType.TAB_EQUAL_SPLIT)[1])
+                    b = dscObj.Contents[key].BuildOptions[index].split(DataType.TAB_EQUAL_SPLIT, 1)
+                    Family = ''
+                    ToolChain = ''
+                    Flag = ''
+                    if b[0].find(':') > -1:
+                        Family = CleanString(b[0][ : b[0].find(':')])
+                        ToolChain = CleanString(b[0][b[0].find(':') + 1 : ])
+                    else:
+                        ToolChain = CleanString(b[0])
+                    Flag = CleanString(b[1])
+                    pb.BuildOptions[(Family, ToolChain)] = Flag
                     
                 #LibraryClass
                 for index in range(len(dscObj.Contents[key].LibraryClasses)):
@@ -269,15 +321,103 @@ class WorkspaceBuild(object):
                     pcd = dscObj.Contents[key].PcdsFeatureFlag[index].split(DataType.TAB_VALUE_SPLIT)
                     pcd.append(None)                    
                     pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_FEATURE_FLAG, None, pcd[2], None, pcd[3])
-                for index in range(len(dscObj.Contents[key].PcdsDynamic)):
-                    pcd = dscObj.Contents[key].PcdsDynamic[index].split(DataType.TAB_VALUE_SPLIT)
+                #
+                # PcdsDynamic
+                #
+                for index in range(len(dscObj.Contents[key].PcdsDynamicDefault)):
+                    pcd = dscObj.Contents[key].PcdsDynamicDefault[index][0].split(DataType.TAB_VALUE_SPLIT)
                     pcd.append(None)
-                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC, None, pcd[2], None, pcd[3])
-                for index in range(len(dscObj.Contents[key].PcdsDynamicEx)):
-                    pcd = dscObj.Contents[key].PcdsDynamicEx[index].split(DataType.TAB_VALUE_SPLIT)
-                    pcd.append(None)                    
-                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_EX, None, pcd[2], None, pcd[3])
-                
+                    SkuId = dscObj.Contents[key].PcdsDynamicDefault[index][1]
+                    SkuInfoList = []
+                    if SkuId == None:
+                        SkuId = 'DEFAULT'
+                    SkuIdList = map(lambda l: l.strip(), SkuId.split(DataType.TAB_VALUE_SPLIT))
+                    for Item in SkuIdList:
+                        SkuInfo = SkuInfoClassObject()
+                        SkuInfo.SkuId = Item
+                        SkuInfo.DefaultValue = pcd[2]
+                        SkuInfoList.append(SkuInfo)
+                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_DEFAULT, None, None, None, pcd[3], SkuInfoList)
+                for index in range(len(dscObj.Contents[key].PcdsDynamicVpd)):
+                    pcd = dscObj.Contents[key].PcdsDynamicVpd[index][0].split(DataType.TAB_VALUE_SPLIT)
+                    pcd.append(None)
+                    SkuId = dscObj.Contents[key].PcdsDynamicVpd[index][1]
+                    SkuInfoList = []
+                    if SkuId == None:
+                        SkuId = 'DEFAULT'
+                    SkuIdList = map(lambda l: l.strip(), SkuId.split(DataType.TAB_VALUE_SPLIT))
+                    for Item in SkuIdList:
+                        SkuInfo = SkuInfoClassObject()
+                        SkuInfo.SkuId = Item
+                        SkuInfo.VpdOffset = pcd[2]
+                        SkuInfoList.append(SkuInfo)
+                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_VPD, None, None, None, pcd[3], SkuInfoList)
+                for index in range(len(dscObj.Contents[key].PcdsDynamicHii)):
+                    pcd = dscObj.Contents[key].PcdsDynamicHii[index][0].split(DataType.TAB_VALUE_SPLIT)
+                    pcd.append(None)
+                    SkuId = dscObj.Contents[key].PcdsDynamicHii[index][1]
+                    SkuInfoList = []
+                    if SkuId == None:
+                        SkuId = 'DEFAULT'
+                    SkuIdList = map(lambda l: l.strip(), SkuId.split(DataType.TAB_VALUE_SPLIT))
+                    for Item in SkuIdList:
+                        SkuInfo = SkuInfoClassObject()
+                        SkuInfo.SkuId = Item
+                        SkuInfo.VariableName = pcd[2]
+                        SkuInfo.VariableGuid = pcd[3]
+                        SkuInfo.VariableOffset = pcd[4]
+                        SkuInfo.HiiDefaultValue = pcd[5]                                                
+                        SkuInfoList.append(SkuInfo)
+                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_HII, None, None, None, pcd[6], SkuInfoList)
+                #
+                # PcdsDynamicEx
+                #
+                for index in range(len(dscObj.Contents[key].PcdsDynamicExDefault)):
+                    pcd = dscObj.Contents[key].PcdsDynamicExDefault[index][0].split(DataType.TAB_VALUE_SPLIT)
+                    pcd.append(None)
+                    SkuId = dscObj.Contents[key].PcdsDynamicExDefault[index][1]
+                    SkuInfoList = []
+                    if SkuId == None:
+                        SkuId = 'DEFAULT'
+                    SkuIdList = map(lambda l: l.strip(), SkuId.split(DataType.TAB_VALUE_SPLIT))
+                    for Item in SkuIdList:
+                        SkuInfo = SkuInfoClassObject()
+                        SkuInfo.SkuId = Item
+                        SkuInfo.DefaultValue = pcd[2]
+                        SkuInfoList.append(SkuInfo)
+                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_EX_DEFAULT, None, None, None, pcd[3], SkuInfoList)
+                for index in range(len(dscObj.Contents[key].PcdsDynamicExVpd)):
+                    pcd = dscObj.Contents[key].PcdsDynamicExVpd[index][0].split(DataType.TAB_VALUE_SPLIT)
+                    pcd.append(None)
+                    SkuId = dscObj.Contents[key].PcdsDynamicExVpd[index][1]
+                    SkuInfoList = []
+                    if SkuId == None:
+                        SkuId = 'DEFAULT'
+                    SkuIdList = map(lambda l: l.strip(), SkuId.split(DataType.TAB_VALUE_SPLIT))
+                    for Item in SkuIdList:
+                        SkuInfo = SkuInfoClassObject()
+                        SkuInfo.SkuId = Item
+                        SkuInfo.VpdOffset = pcd[2]
+                        SkuInfoList.append(SkuInfo)
+                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_EX_VPD, None, None, None, pcd[3], SkuInfoList)
+                for index in range(len(dscObj.Contents[key].PcdsDynamicExHii)):
+                    pcd = dscObj.Contents[key].PcdsDynamicExHii[index][0].split(DataType.TAB_VALUE_SPLIT)
+                    pcd.append(None)
+                    SkuId = dscObj.Contents[key].PcdsDynamicExHii[index][1]
+                    SkuInfoList = []
+                    if SkuId == None:
+                        SkuId = 'DEFAULT'
+                    SkuIdList = map(lambda l: l.strip(), SkuId.split(DataType.TAB_VALUE_SPLIT))
+                    for Item in SkuIdList:
+                        SkuInfo = SkuInfoClassObject()
+                        SkuInfo.SkuId = Item
+                        SkuInfo.VariableName = pcd[2]
+                        SkuInfo.VariableGuid = pcd[3]
+                        SkuInfo.VariableOffset = pcd[4]
+                        SkuInfo.HiiDefaultValue = pcd[5]                                                
+                        SkuInfoList.append(SkuInfo)
+                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_EX_HII, None, None, None, pcd[6], SkuInfoList)
+              
                 self.Build[key].PlatformDatabase[dsc] = pb
                 pb = None    
             #End of Arch List Go Through    
@@ -361,6 +501,7 @@ class WorkspaceBuild(object):
                 pb.Version = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_STRING][0]
                 pb.ModuleType = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_MODULE_TYPE][0]
                 pb.PcdIsDriver = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_PCD_IS_DRIVER][0]
+                pb.BinaryModule = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_BINARY_MODULE][0]
                 
                 for Index in range(len(infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_CUSTOM_MAKEFILE])):
                     Makefile = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_CUSTOM_MAKEFILE][Index]
@@ -389,6 +530,16 @@ class WorkspaceBuild(object):
                 pb.ConstructorList.extend(infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_CONSTRUCTOR])
                 pb.DestructorList.extend(infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_DESTRUCTOR])
 
+                #Binaries
+                for index in range(len(infObj.Contents[key].Binaries)):
+                    BinaryFile = infObj.Contents[key].Binaries[index].split(DataType.TAB_VALUE_SPLIT)
+                    BinaryFile.append('')
+                    FileType = BinaryFile[0].strip()
+                    Target = BinaryFile[1].strip()
+                    FileName = NormPath(BinaryFile[2].strip())
+                    PcdFeatureFlag = BinaryFile[3].strip()
+                    pb.Binaries.append(ModuleBinaryFilesClassObject(FileName, FileType, Target, PcdFeatureFlag))
+                    
                 #Sources
                 for index in range(len(infObj.Contents[key].Sources)):
                     SourceFile = infObj.Contents[key].Sources[index].split(DataType.TAB_VALUE_SPLIT)
@@ -427,8 +578,17 @@ class WorkspaceBuild(object):
                     
                 #BuildOptions
                 for index in range(len(infObj.Contents[key].BuildOptions)):
-                    b = infObj.Contents[key].BuildOptions[index]
-                    pb.BuildOptions[CleanString(b.split(DataType.TAB_EQUAL_SPLIT)[0])] = CleanString(b.split(DataType.TAB_EQUAL_SPLIT)[1])
+                    b = infObj.Contents[key].BuildOptions[index].split(DataType.TAB_EQUAL_SPLIT, 1)
+                    Family = ''
+                    ToolChain = ''
+                    Flag = ''
+                    if b[0].find(':') > -1:
+                        Family = CleanString(b[0][ : b[0].find(':')])
+                        ToolChain = CleanString(b[0][b[0].find(':') + 1 : ])
+                    else:
+                        ToolChain = CleanString(b[0])
+                    Flag = CleanString(b[1])
+                    pb.BuildOptions[(Family, ToolChain)] = Flag
                 self.FindBuildOptions(key, inf, pb.BuildOptions)
                 
                 #Depex
@@ -537,13 +697,24 @@ class WorkspaceBuild(object):
                 if NormPath(dscObj.Contents[arch].Components[index][0]) == moduleName and len(dscObj.Contents[arch].Components[index][2]) > 0:
                     list = dscObj.Contents[arch].Components[index][2]
                     for l in list:
-                        BuildOptions[CleanString(l.split(DataType.TAB_EQUAL_SPLIT)[0])] = CleanString(l.split(DataType.TAB_EQUAL_SPLIT)[1])
+                        b = l.split(DataType.TAB_EQUAL_SPLIT, 1)
+                        Family = ''
+                        ToolChain = ''
+                        Flag = ''
+                        if b[0].find(':') > -1:
+                            Family = CleanString(b[0][ : b[0].find(':')])
+                            ToolChain = CleanString(b[0][b[0].find(':') + 1 : ])
+                        else:
+                            ToolChain = CleanString(b[0])
+                        Flag = CleanString(b[1])
+                        BuildOptions[(Family, ToolChain)] = Flag
                         
     def FindPcd(self, arch, CName, GuidCName, Type):
         DatumType = ''
         DefaultValue = ''
         TokenValue = ''
         MaxDatumSize = ''
+        SkuInfoList = None
         for dsc in self.Build[arch].PlatformDatabase.keys():
             platform = self.Build[arch].PlatformDatabase[dsc]
             pcds = platform.Pcds
@@ -553,6 +724,7 @@ class WorkspaceBuild(object):
                 DefaultValue = pcds[(CName, GuidCName)].DefaultValue
                 TokenValue = pcds[(CName, GuidCName)].TokenValue
                 MaxDatumSize = pcds[(CName, GuidCName)].MaxDatumSize
+                SkuInfoList =  pcds[(CName, GuidCName)].SkuInfoList
                 break
 
         for dec in self.Build[arch].PackageDatabase.keys():
@@ -565,7 +737,7 @@ class WorkspaceBuild(object):
                 #MaxDatumSize = pcds[(CName, GuidCName)].MaxDatumSize
                 break
         
-        return PcdClassObject(CName, GuidCName, Type, DatumType, DefaultValue, TokenValue, MaxDatumSize)
+        return PcdClassObject(CName, GuidCName, Type, DatumType, DefaultValue, TokenValue, MaxDatumSize, SkuInfoList)
                 
                 
 # This acts like the main() function for the script, unless it is 'import'ed into another
@@ -581,6 +753,7 @@ if __name__ == '__main__':
 #    print ewb.DecDatabase
     print 'SupArchList', ewb.SupArchList
     print 'BuildTarget', ewb.BuildTarget
+    print 'SkuId', ewb.SkuId
     
     #
     for arch in DataType.ARCH_LIST:
@@ -594,6 +767,7 @@ if __name__ == '__main__':
             print 'Version = ', p.Version
             print 'OutputDirectory = ', p.OutputDirectory                
             print 'FlashDefinition = ', p.FlashDefinition
+            print 'SkuIds = ', p.SkuIds
             print 'Modules = ', p.Modules
             print 'LibraryClasses = ', p.LibraryClasses 
             print 'Pcds = ', p.Pcds
@@ -638,6 +812,9 @@ if __name__ == '__main__':
             print 'ConstructorList = ', p.ConstructorList            
             print 'DestructorList = ', p.DestructorList             
                                                                      
+            print 'Binaries = '
+            for item in p.Binaries:
+                print str(item)
             print 'Sources = '
             for item in p.Sources:
                 print str(item)

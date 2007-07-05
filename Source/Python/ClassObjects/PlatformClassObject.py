@@ -130,12 +130,13 @@ class PlatformModuleClassObject(object):
 class PlatformClassObject(object):
   def __init__(self):
     self.Header = PlatformHeaderClassObject()
-    self.SkuInfoList = {}                              #[ PlatformSkuInfoClassObject ]
+    self.SkuInfoList = []                              #[ PlatformSkuInfoClassObject ]
     self.FlashDefinitionFile = None                    #PlatformFlashDefinitionFileClassObject()
     self.FvImages = []                                 #[ PlatformFvImagesClassObject, ...]
     self.Modules = []                                  #[ PlatformModuleClassObject, ...]
     self.BuildOptions = []                             #[ PlatformBuildOptionClassObject, ...]
     self.DynamicPcdBuildDefinitions = []               #[ PcdClassObject, ...] 
+    self.Fdf = FdfClassObject()
     self.UserExtensions = []                           #[ UserExtensionsClassObject, ...]
 
 if __name__ == '__main__':
