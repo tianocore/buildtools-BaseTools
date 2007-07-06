@@ -752,7 +752,7 @@ class AutoGen(object):
                 if libraryAutoGen not in self.BuildInfo.LibraryAutoGenList:
                     self.BuildInfo.LibraryAutoGenList.append(libraryAutoGen)
                 libraryAutoGen.CreateMakefile()
-
+            print "\rGenerating makefiles for module", self.BuildInfo.Name, "                                 ",
         self.IsMakefileCreated = True
         makefile = GenMake.Makefile(self.BuildInfo, myBuildOption)
         return makefile.Generate()
@@ -793,6 +793,7 @@ class AutoGen(object):
                         if libraryAutoGen not in info.LibraryAutoGenList:
                             info.LibraryAutoGenList.append(libraryAutoGen)
                         libraryAutoGen.CreateAutoGenFile()
+            print
         else:
             for lib in self.BuildInfo.DependentLibraryList:
                 key = (self.BuildTarget, self.ToolChain, self.Arch, lib)
@@ -806,6 +807,7 @@ class AutoGen(object):
                     self.BuildInfo.LibraryAutoGenList.append(libraryAutoGen)
                 libraryAutoGen.CreateAutoGenFile()
 
+            print "\rGenerating AutoGen files for module", self.BuildInfo.Name, "                                 ",
             autoGenList = GenC.Generate(os.path.join(self.BuildInfo.WorkspaceDir, self.BuildInfo.DebugDir),
                                         self.AutoGenC, self.AutoGenH)
                           
