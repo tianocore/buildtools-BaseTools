@@ -950,7 +950,7 @@ class FdfParser:
             self.__UndoToken()
             self.__GetSectionData( ffsFile)
         else:
-            ffsFile.FilePath = self.__Token
+            ffsFile.FileName = self.__Token
         
     
     def __GetFileOpts(self, ffsFile):

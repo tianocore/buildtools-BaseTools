@@ -12,7 +12,7 @@ class FileStatements (Ffs.Ffs) :
 ##        Ffs.Ffs.Alignment = None
         Ffs.Ffs.SectionList = []
         self.FvType = None
-        self.FilePath = None
+        self.FileName = None
         self.KeyStringList = []
         
     def GenFfs(self):
