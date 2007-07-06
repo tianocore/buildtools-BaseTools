@@ -67,7 +67,7 @@ MakefileHeader = '''#
 #
 # Module Name:
 #
-#   %(MAKEFILE_NAME)s
+#   %s
 #
 # Abstract:
 #
@@ -85,7 +85,7 @@ if sys.platform == "win32":
 else:
     gMakeType = "gmake"
 
-gMakefileName = {"nmake" : "makefile", "gmake" : "GNUmakefile"}
+gMakefileName = {"nmake" : "Makefile", "gmake" : "GNUmakefile"}
 
 gDirectorySeparator = {"nmake" : "\\", "gmake" : "/"}
 
@@ -118,10 +118,7 @@ OutputFlag = {
 IncludeFlag = {"MSFT" : "/I", "GCC" : "-I"}
 
 gCustomMakefileTemplate = '''
-#
-# Workspace related macro definition
-#
-EDK_SOURCE = $(WORKSPACE)
+${makefile_header}
 
 #
 # Platform Macro Definition
@@ -241,10 +238,7 @@ init:
 '''
 
 gModuleMakefileTemplate = '''
-#
-# Workspace related macro definition
-#
-EDK_SOURCE = $(WORKSPACE)
+${makefile_header}
 
 #
 # Platform Macro Definition
@@ -310,26 +304,26 @@ ${BEGIN}PLATFORM_${tool_code}_FLAGS = ${platform_tool_flags}
 ${END}
 
 #
-# Platform Tools Flags Macro Definition (from platform description file)
+# Module Tools Flags Macro Definition (from platform/module description file)
 #
 ${BEGIN}MODULE_${tool_code}_FLAGS = ${module_tool_flags}
 ${END}
 
 #
-# ToolsFlagMacro
+# Tools Flag Macro
 #
 ${BEGIN}${tool_code}_FLAGS = $(DEFAULT_${tool_code}_FLAGS) $(PLATFORM_${tool_code}_FLAGS) $(MODULE_${tool_code}_FLAGS)
 ${END}
 MAKE_FLAGS = /nologo
 
 #
-# ToolsPathMacro
+# Tools Path Macro
 #
 ${BEGIN}${tool_code} = ${tool_path}
 ${END}
 
 #
-# BuildMacro
+# Build Macro
 #
 SOURCE_FILES = ${BEGIN}$(MODULE_DIR)${separator}${source_file} \\
                ${END}${BEGIN}$(DEBUG_DIR)${separator}${auto_generated_file}
@@ -347,7 +341,7 @@ LIBS = ${BEGIN}$(LIB_DIR)${separator}${library_file} \\
 COMMON_DEPS = ${BEGIN}$(WORKSPACE)${separator}${common_dependency_file} \\
               ${END}
 
-ENTRYPOINT = _ModuleEntryPoint
+ENTRYPOINT = ${module_entry_point}
 
 #
 # Target File Macro Definitions
@@ -546,11 +540,6 @@ gPlatformMakefileTemplate = '''
 ${makefile_header}
 
 #
-# Workspace related macro definition
-#
-EDK_SOURCE = $(WORKSPACE)
-
-#
 # Platform Macro Definition
 #
 PLATFORM_NAME = ${platform_name}
@@ -718,7 +707,7 @@ class Makefile(object):
 
         makefileName = gMakefileName[makeType]
         makefileTemplateDict = {
-            "makefile_header"           : MakefileHeader,
+            "makefile_header"           : MakefileHeader % makefileName,
             "platform_name"             : platformInfo.Name,
             "platform_guid"             : platformInfo.Guid,
             "platform_version"          : platformInfo.Version,
@@ -767,9 +756,14 @@ class Makefile(object):
 
         self.ProcessSourceFileList(makeType)
         self.ProcessDependentLibrary(makeType)
-        
+
+        entryPoint = "_ModuleEntryPoint"
+        if self.ModuleInfo.Arch == "EBC":
+            entryPoint = "EfiStart"
+
         makefileName = gMakefileName[makeType]
         makefileTemplateDict = {
+            "makefile_header"           : MakefileHeader % makefileName,
             "platform_name"             : self.PlatformInfo.Name,
             "platform_guid"             : self.PlatformInfo.Guid,
             "platform_version"          : self.PlatformInfo.Version,
@@ -802,6 +796,7 @@ class Makefile(object):
             "tool_code"                 : self.PlatformInfo.ToolPath.keys(),
             "tool_path"                 : self.PlatformInfo.ToolPath.values(),
 
+            "module_entry_point"        : entryPoint,
             "source_file"               : self.BuildFileList,
             #"auto_generated_file"       : self.AutoGenBuildFileList,
             "include_path_prefix"       : "-I",
@@ -844,6 +839,7 @@ class Makefile(object):
         
         makefileName = gMakefileName[makeType]
         makefileTemplateDict = {
+            "makefile_header"           : MakefileHeader % makefileName,
             "platform_name"             : self.PlatformInfo.Name,
             "platform_guid"             : self.PlatformInfo.Guid,
             "platform_version"          : self.PlatformInfo.Version,

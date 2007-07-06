@@ -101,7 +101,7 @@ class AutoGen(object):
         if self.Arch not in gPlatformDatabase or str(platformFile) not in gPlatformDatabase[arch]:
             raise AutoGenError("[%s] is not active platform!" % platformFile)
         if self.Arch not in gModuleDatabase or str(moduleFile) not in gModuleDatabase[self.Arch]:
-            raise AutoGenError("[%s] for %s is not found in active platform [%s]!" (moduleFile, self.Arch, platformFile))
+            raise AutoGenError("[%s] for %s is not found in active platform [%s]!" % (moduleFile, self.Arch, platformFile))
         self.Module = gModuleDatabase[self.Arch][str(moduleFile)]
         self.Platform = gPlatformDatabase[arch][str(platformFile)]
 
@@ -316,14 +316,18 @@ class AutoGen(object):
             buildOptions = self.Platform[info.Arch].BuildOptions
         else:
             buildOptions = self.Platform.BuildOptions
+
         for key in buildOptions:
-            target, tag, arch, tool, attr = key.split("_")
+            family = key[0]
+            target, tag, arch, tool, attr = key[1].split("_")
             if tool not in info.ToolPath:
+                continue
+            if family != None and family != "" and family != info.ToolChainFamily[tool]:
                 continue
             if target == "*" or target == info.BuildTarget:
                 if tag == "*" or tag == info.ToolChain:
                     if arch == "*" or arch == info.Arch:
-                        info.BuildOption[tool] = buildOptions
+                        info.BuildOption[tool] = buildOptions[key]
         for tool in info.DefaultToolOption:
             if tool not in info.BuildOption:
                 info.BuildOption[tool] = ""
@@ -332,7 +336,12 @@ class AutoGen(object):
         buildOption = self.Module.BuildOptions
         optionList = {}
         for key in buildOption:
-            target, tag, arch, tool, attr = key.split("_")
+            family = key[0]
+            target, tag, arch, tool, attr = key[1].split("_")
+            if tool not in platformInfo.ToolPath:
+                continue
+            if family != None and family != "" and family != platformInfo.ToolChainFamily[tool]:
+                continue
             if target == "*" or target == self.BuildTarget:
                 if tag == "*" or tag == self.ToolChain:
                     if arch == "*" or arch == self.Arch:

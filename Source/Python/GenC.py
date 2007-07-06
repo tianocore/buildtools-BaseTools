@@ -13,8 +13,17 @@ ItemTypeStringDatabase  = {
     TAB_PCDS_FIXED_AT_BUILD:'FixedAtBuild',
     TAB_PCDS_PATCHABLE_IN_MODULE:'BinaryPatch',
     TAB_PCDS_DYNAMIC:'',
-    TAB_PCDS_DYNAMIC_EX:''
+    TAB_PCDS_DYNAMIC+"Default":'',
+    TAB_PCDS_DYNAMIC+"Vpd":'',
+    TAB_PCDS_DYNAMIC+"Hii":'',
+    TAB_PCDS_DYNAMIC_EX:'',
+    TAB_PCDS_DYNAMIC_EX+"Default":'',
+    TAB_PCDS_DYNAMIC_EX+"Vpd":'',
+    TAB_PCDS_DYNAMIC_EX+"Hii":'',
 }
+
+gDynamicPcd = [TAB_PCDS_DYNAMIC, TAB_PCDS_DYNAMIC+"Default", TAB_PCDS_DYNAMIC+"Vpd", TAB_PCDS_DYNAMIC+"Hii"]
+gDynamicExPcd = [TAB_PCDS_DYNAMIC_EX, TAB_PCDS_DYNAMIC_EX+"Default", TAB_PCDS_DYNAMIC_EX+"Vpd", TAB_PCDS_DYNAMIC_EX+"Hii"]
 
 DatumSizeStringDatabase = {'UINT8':'8','UINT16':'16','UINT32':'32','UINT64':'64','BOOLEAN':'BOOLEAN','VOID*':'8'}
 DatumSizeStringDatabaseH = {'UINT8':'8','UINT16':'16','UINT32':'32','UINT64':'64','BOOLEAN':'BOOL','VOID*':'PTR'}
@@ -876,24 +885,25 @@ def CreateModulePcdCode(info, autoGenC, autoGenH, pcd):
     # Write PCDs
     #
     pcdTokenName = '_PCD_TOKEN_' + pcd.TokenCName
-    if pcd.Type == TAB_PCDS_DYNAMIC_EX:
+    if pcd.Type in gDynamicExPcd:
         tokenNumber = pcd.TokenValue
     else:
         tokenNumber = pcdTokenNumber[pcd.TokenCName, pcd.TokenSpaceGuidCName]
     autoGenH.Append('#define %s  %d\n' % (pcdTokenName, tokenNumber))
 
+    print "###",pcd.TokenCName, pcd.TokenSpaceGuidCName, pcd.DatumType
     datumSize = DatumSizeStringDatabase[pcd.DatumType]
     datumSizeLib = DatumSizeStringDatabaseLib[pcd.DatumType]
     getModeName = '_PCD_GET_MODE_' + DatumSizeStringDatabaseH[pcd.DatumType] + '_' + pcd.TokenCName
     setModeName = '_PCD_SET_MODE_' + DatumSizeStringDatabaseH[pcd.DatumType] + '_' + pcd.TokenCName
 
-    if pcd.Type == TAB_PCDS_DYNAMIC_EX:
+    if pcd.Type in gDynamicExPcd:
         autoGenH.Append('#define %s  LibPcdGetEx%s(&%s, %s)\n' % (getModeName, datumSizeLib, pcd.TokenSpaceGuidCName, pcdTokenName))
         if DatumType == 'VOID*':
             autoGenH.Append('#define %s(SizeOfBuffer, Buffer)  LibPcdSetEx%s(&%s, %s, (SizeOfBuffer), (Buffer))\n' % (setModeName, datumSizeLib, pcd.TokenSpaceGuidCName, pcdTokenName))
         else:
             autoGenH.Append('#define %s(Value)  LibPcdSetEx%s(&%s, %s, (Value))\n' % (setModeName, datumSizeLib, pcd.TokenSpaceGuidCName, pcdTokenName))
-    elif pcd.Type == TAB_PCDS_DYNAMIC:
+    elif pcd.Type in gDynamicPcd:
         autoGenH.Append('#define %s  LibPcdGet%s(%s)\n' % (getModeName, datumSizeLib, pcdTokenName))
         if pcd.DatumType == 'VOID*':
             autoGenH.Append('#define %s(SizeOfBuffer, Buffer)  LibPcdSet%s(%s, (SizeOfBuffer), (Buffer))\n' %(setModeName, datumSizeLib, pcdTokenName))
@@ -974,18 +984,18 @@ def CreateLibraryPcdCode(info, autoGenC, autoGenH, pcd):
     autoGenH.Append('#define _PCD_TOKEN_%s  %d\n' % (tokenCName, tokenNumber))
 
     pcdItemType = pcd.Type
-    if pcdItemType == TAB_PCDS_DYNAMIC:
+    if pcdItemType in gDynamicPcd:
         pcdItemType = TAB_PCDS_FIXED_AT_BUILD
         if (tokenCName, tokenSpaceGuidCName) in info.PlatformInfo.Platform.Pcds:
             pcdItemType  = info.PlatformInfo.Platform.Pcds[tokenCName, tokenSpaceGuidCName].Type
-    if pcdItemType == TAB_PCDS_DYNAMIC_EX:
+    if pcdItemType in gDynamicExPcd:
         pcdTokenName = '_PCD_TOKEN_' + tokenCName
         autoGenH.Append('#define %s  LibPcdGetEx%s(&%s, %s)\n' % (getModeName, datumSizeLib, tokenSpaceGuidCName, pcdTokenName))
         if DatumType == 'VOID*':
             autoGenH.Append('#define %s(SizeOfBuffer, Buffer)  LibPcdSetEx%s(&%s, %s, (SizeOfBuffer), (Buffer))\n' % (setModeName,datumSizeLib, tokenSpaceGuidCName, pcdTokenName))
         else:
             autoGenH.Append('#define %s(Value)  LibPcdSetEx%s(&%s, %s, (Value))\n' % (setModeName, datumSizeLib, tokenSpaceGuidCName, pcdTokenName))
-    if pcdItemType == TAB_PCDS_DYNAMIC:
+    if pcdItemType in gDynamicPcd:
         pcdTokenName = '_PCD_TOKEN_' + tokenCName
         autoGenH.Append('#define %s  LibPcdGet%s(%s)\n' % (getModeName, datumSizeLib, pcdTokenName))
         if datumType == 'VOID*':
@@ -1116,18 +1126,18 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
         else:
             Pcd.TokenTypeList = ['PCD_DATUM_TYPE_' + Pcd.DatumType]
 
-        if len(Pcd.SkuInfo) > 1:
+        if len(Pcd.SkuInfoList) > 1:
             Pcd.TokenTypeList += ['PCD_TYPE_SKU_ENABLED']
 
-        for SkuId in Pcd.SkuInfo:
-            if SkuId == '':
+        for Sku in Pcd.SkuInfoList:
+            SkuId = Sku.SkuId
+            if SkuId == None or SkuId == '':
                 continue
 
             if SkuId not in Dict['SKUID_VALUE']:
                 Dict['SKUID_VALUE'].append(SkuId)
 
             SkuIdIndex =   Dict['SKUID_VALUE'].index(SkuId)
-            Sku = Pcd.SkuInfo[SkuId]
             if len(Sku.VariableName) > 0:
                 Pcd.TokenTypeList += ['PCD_TYPE_HII']
                 Pcd.InitString = 'INIT'
@@ -1214,22 +1224,22 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
         if 'PCD_TYPE_HII' in Pcd.TokenTypeList:
             Dict['VARIABLE_HEAD_CNAME_DECL'].append(CName)
             Dict['VARIABLE_HEAD_GUID_DECL'].append(TokenSpaceGuid.replace('-','_'))
-            Dict['VARIABLE_HEAD_NUMSKUS_DECL'].append(len(Pcd.SkuInfo))
+            Dict['VARIABLE_HEAD_NUMSKUS_DECL'].append(len(Pcd.SkuInfoList))
             Dict['VARIABLE_HEAD_VALUE'].append('{ %s }\n' % ' },\n    { '.join(VariableHeadValueList))
         if 'PCD_TYPE_VPD' in Pcd.TokenTypeList:
             Dict['VPD_HEAD_CNAME_DECL'].append(CName)
             Dict['VPD_HEAD_GUID_DECL'].append(TokenSpaceGuid.replace('-','_'))
-            Dict['VPD_HEAD_NUMSKUS_DECL'].append(len(Pcd.SkuInfo))
+            Dict['VPD_HEAD_NUMSKUS_DECL'].append(len(Pcd.SkuInfoList))
             Dict['VPD_HEAD_VALUE'].append('{ %s }' % ' }, { '.join(VpdHeadOffsetList))
         if 'PCD_TYPE_STRING' in Pcd.TokenTypeList:
             Dict['STRING_HEAD_CNAME_DECL'].append(CName)
             Dict['STRING_HEAD_GUID_DECL'].append(TokenSpaceGuid.replace('-','_'))
-            Dict['STRING_HEAD_NUMSKUS_DECL'].append(len(Pcd.SkuInfo))
+            Dict['STRING_HEAD_NUMSKUS_DECL'].append(len(Pcd.SkuInfoList))
             Dict['STRING_HEAD_VALUE'].append(', '.join(StringHeadOffsetList))
         if 'PCD_TYPE_DATA' in Pcd.TokenTypeList:
             Dict[Pcd.InitString+'_CNAME_DECL_'+Pcd.DatumType].append(CName)
             Dict[Pcd.InitString+'_GUID_DECL_'+Pcd.DatumType].append(TokenSpaceGuid.replace('-','_'))
-            Dict[Pcd.InitString+'_NUMSKUS_DECL_'+Pcd.DatumType].append(len(Pcd.SkuInfo))
+            Dict[Pcd.InitString+'_NUMSKUS_DECL_'+Pcd.DatumType].append(len(Pcd.SkuInfoList))
             if Pcd.InitString == 'UNINIT':
                 Dict['PCD_DATABASE_UNINIT_EMPTY'] = ''
             else:
