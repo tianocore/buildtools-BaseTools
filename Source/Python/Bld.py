@@ -340,4 +340,4 @@ if __name__ == '__main__':
     CalculateTime(StartTime)
 
 # To Do: add a judgement for return code
-    exit(StatusCode)
+    sys.exit(StatusCode)
