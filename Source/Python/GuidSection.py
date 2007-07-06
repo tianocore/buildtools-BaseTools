@@ -61,7 +61,6 @@ class GuidSection(Section.Section) :
             #
             GenSectionCmd = 'GenSec -o '                                   + \
                              OutputFile                                    + \
-                             ' -s '                                        + \
                              SectFile
         
             print GenSectionCmd
@@ -79,7 +78,8 @@ class GuidSection(Section.Section) :
                        '.tmp'
             TempFile = os.path.normpath(TempFile)
             
-            ExternalToolCmd = Section.Section.ToolGuild[self.NameGuid] + \
+            ExternalToolCmd = ExternalTool                             + \
+                              ' -e '                                   + \
                               ' -o '                                   + \
                               TempFile                                 + \
                               ' '                                      + \
@@ -103,7 +103,8 @@ class GuidSection(Section.Section) :
                 attribute = ' -a '              + \
                              PROCSSING_REQUIRED + \
                              AUTH_STATUS_VALID
-                             
+            else :
+                attribute = ''
             GenSectionCmd = 'GenSec -o '                            + \
                              OutputFile                             + \
                              ' -s '                                 + \
@@ -123,18 +124,18 @@ class GuidSection(Section.Section) :
         
     def __FindExtendTool__(self):
         tool = None
-        if self.keyStringList == None:
+        if self.keyStringList == None or self.keyStringList == []:
             return tool
         toolDefinition = GenFdsGlobalVariable.WorkSpace.ToolDef.ToolsDefTxtDictionary
-        for toolDef in toolDefinition:
+        for toolDef in toolDefinition.items():
             if self.NameGuid == toolDef[1]:
-                keyList = toolDef.key().split('_')
+                keyList = toolDef[0].split('_')
                 key = keyList[0] + \
                       '_'        + \
                       keyList[1] + \
                       '_'        + \
                       keyList[2]
-                if Key in slef.KeyStringList and keyList[4] == 'GUID':
+                if key in self.keyStringList and keyList[4] == 'GUID':
                     toolMaro = keyList[3]
                     toolName = toolDefinition.get( key        + \
                                                    '_'        + \
@@ -147,6 +148,7 @@ class GuidSection(Section.Section) :
                                                    '_'        + \
                                                    'PATH')
                     tool = os.path.join (toolPath, toolName)
+                    return tool
         return tool
 
 
