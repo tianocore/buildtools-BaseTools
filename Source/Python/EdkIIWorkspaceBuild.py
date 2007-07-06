@@ -68,6 +68,7 @@ class PcdClassObject(object):
         self.TokenValue = Token
         self.MaxDatumSize = MaxDatumSize
         self.SkuInfoList = SkuInfoList
+        self.Phase = "DXE"
         
     def __str__(self):
         rtn = str(self.TokenCName) + DataType.TAB_VALUE_SPLIT + \
@@ -80,7 +81,13 @@ class PcdClassObject(object):
         for Item in self.SkuInfoList:
             rtn = rtn + str(Item)
         return rtn
-              
+
+    def __eq__(self, other):
+        return self.TokenCName == other.TokenCName and self.TokenSpaceGuidCName == other.TokenSpaceGuidCName
+
+    def __hash__(self):
+        return hash((self.TokenCName, self.TokenSpaceGuidCName))
+
 class LibraryClassObject(object):
     def __init__(self, Name = None, Type = None):
         self.LibraryClass = Name
@@ -327,14 +334,14 @@ class WorkspaceBuild(object):
                 for index in range(len(dscObj.Contents[key].PcdsDynamicDefault)):
                     pcd = dscObj.Contents[key].PcdsDynamicDefault[index][0].split(DataType.TAB_VALUE_SPLIT)
                     pcd.append(None)
-                    SkuId = dscObj.Contents[key].PcdsDynamicDefault[index][1]
+                    SkuName = dscObj.Contents[key].PcdsDynamicDefault[index][1]
                     SkuInfoList = []
-                    if SkuId == None:
-                        SkuId = 'DEFAULT'
-                    SkuIdList = map(lambda l: l.strip(), SkuId.split(DataType.TAB_VALUE_SPLIT))
-                    for Item in SkuIdList:
+                    if SkuName == None:
+                        SkuName = 'DEFAULT'
+                    SkuNameList = map(lambda l: l.strip(), SkuName.split(DataType.TAB_VALUE_SPLIT))
+                    for Item in SkuNameList:
                         SkuInfo = SkuInfoClassObject()
-                        SkuInfo.SkuId = Item
+                        SkuInfo.SkuId = pb.SkuIds[Item]
                         SkuInfo.DefaultValue = pcd[2]
                         SkuInfoList.append(SkuInfo)
                     pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_DEFAULT, None, None, None, pcd[3], SkuInfoList)

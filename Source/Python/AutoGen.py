@@ -63,6 +63,7 @@ class AutoGen(object):
         self.IsMakefileCreated = False
         self.IsAutoGenCodeCreated = False
 
+        key = (self.BuildTarget, self.ToolChain, str(platformFile))
         if moduleFile == None:
             #
             # autogen for platform
@@ -83,8 +84,10 @@ class AutoGen(object):
                 p = gPlatformDatabase[a][str(platformFile)]
                 self.Platform[a] = p
                 self.BuildInfo[a] = self.GetPlatformBuildInfo(p, self.BuildTarget, self.ToolChain, a)
-            gAutoGenDatabase[self.BuildTarget, self.ToolChain, str(platformFile)] = self
+            gAutoGenDatabase[key] = self
             return
+        elif key not in gAutoGenDatabase:
+            gAutoGenDatabase[key] = AutoGen(None, platformFile, workspace, target, toolchain, arch)
 
         #print "-------------",moduleFile,"----------------"
         #
@@ -169,12 +172,9 @@ class AutoGen(object):
 
         info.DependentPackageList = self.GetDependentPackageList()
 
-
         info.BuildOption = self.GetModuleBuildOption(info.PlatformInfo)
 
         info.PcdIsDriver = self.Module.PcdIsDriver
-        if self.Module.ModuleType in ["PEIM", "PEI_CORE"]:
-            info.Phase = "PEI"
         info.PcdList = self.GetPcdList(info.DependentLibraryList)
         info.GuidList = self.GetGuidList()
         info.ProtocolList = self.GetProtocolGuidList()
@@ -198,9 +198,12 @@ class AutoGen(object):
 
     def GetPlatformBuildInfo(self, platform, target, toolchain, arch):
         key = target, toolchain, platform
-        if key in gAutoGenDatabase and arch in gAutoGenDatabase[key].BuildInfo:
-            return gAutoGenDatabase[key].BuildInfo[arch]
-            
+        platformAutoGen = None
+        if key in gAutoGenDatabase:
+            platformAutoGen = gAutoGenDatabase[key]
+            if arch in platformAutoGen.BuildInfo:
+                return platformAutoGen.BuildInfo[arch]
+
         info = PlatformBuildInfo(platform)
 
         ruleFile = gWorkspace.Workspace.WorkspaceFile(r'Conf\build_rule.txt')
@@ -224,6 +227,8 @@ class AutoGen(object):
 
         self.ProcessToolDefinition(info)
 
+        if platformAutoGen != None:
+            platformAutoGen.BuildInfo = info
         return info
 
     def GetDepexTokenList(self, info):
@@ -356,7 +361,6 @@ class AutoGen(object):
         buildFileList = []
         fileList = self.Module.Sources
         for f in fileList:
-            #print "###",str(f)
             if f.TagName != "" and f.TagName != self.ToolChain:
                 continue
             if f.ToolCode != "" and f.ToolCode not in platformInfo.ToolPath:
@@ -532,15 +536,13 @@ class AutoGen(object):
 
     def GetDynamicPcdList(self, platform, arch):
         pcdList = []
-##        for key in platform.Pcds:
-##            pcd = platform.Pcds[key]
-##            if pcd.Type == TAB_PCDS_DYNAMIC:
-##                pcdList.append(key)
         for f in gModuleDatabase[arch]:
             m = gModuleDatabase[arch][f]
             for key in m.Pcds:
                 pcd = m.Pcds[key]
-                if pcd.Type == TAB_PCDS_DYNAMIC and pcd not in pcdList:
+                if (pcd.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd) and pcd not in pcdList:
+                    if m.ModuleType in ["PEIM", "PEI_CORE"]:
+                        pcd.Phase = "PEI"
                     pcdList.append(pcd)
         return pcdList
 
@@ -570,8 +572,9 @@ class AutoGen(object):
             # EdkLogger.info("  " + m.BaseName)
             for pcdKey in m.Pcds:
                 pcd = m.Pcds[pcdKey]
-                if pcd.Type in [TAB_PCDS_DYNAMIC, TAB_PCDS_DYNAMIC_EX] and self.Module.ModuleType in ["PEIM", "PEI_CORE"]:
-                    platformPcds[pcdKey].Phase = "PEI"
+                if (pcd.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd) and self.Module.ModuleType in ["PEIM", "PEI_CORE"]:
+                    #platformPcds[pcdKey].Phase = "PEI"
+                    pcd.Phase = "PEI"
                 if pcd not in pcdList:
                     pcdList.append(pcd)
         return pcdList
@@ -740,6 +743,7 @@ class AutoGen(object):
                         if libraryAutoGen not in info.LibraryAutoGenList:
                             info.LibraryAutoGenList.append(libraryAutoGen)
                         libraryAutoGen.CreateMakefile()
+            print
         else:
             for lib in self.BuildInfo.DependentLibraryList:
                 key = (self.BuildTarget, self.ToolChain, self.Arch, lib)

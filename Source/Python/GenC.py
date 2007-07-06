@@ -240,7 +240,7 @@ ${END}
 ${BEGIN}    ${GUID_STRUCTURE},
 ${END}
   },
-${BEGIN}  { ${STRING_HEAD_VALUE} }, /* ${STRING_HEAD_CNAME}_${STRING_HEAD_GUID}[${STRING_HEAD_NUMSKUS_DECL}] */
+${BEGIN}  { ${STRING_HEAD_VALUE} }, /* ${STRING_HEAD_CNAME_DECL}_${STRING_HEAD_GUID_DECL}[${STRING_HEAD_NUMSKUS_DECL}] */
 ${END}
 ${BEGIN}  /* ${VARIABLE_HEAD_CNAME_DECL}_${VARIABLE_HEAD_GUID_DECL}[${VARIABLE_HEAD_NUMSKUS_DECL}] */
   {
@@ -269,7 +269,7 @@ ${BEGIN}  ${VARDEF_VALUE_BOOLEAN}, /* ${VARDEF_CNAME_BOOLEAN}_${VARDEF_GUID_BOOL
 ${END}
   /* SkuIdTable */
   { ${BEGIN}${SKUID_VALUE}, ${END} },
-${SYSTEM_SKU_ID_VALUE}
+  ${SYSTEM_SKU_ID_VALUE}
 };
 """
 
@@ -837,7 +837,7 @@ def GetGuidValue(packages, cname):
         if cname in p.Ppis:
             return p.Ppis[cname]
     else:
-        raise Exception("Cannot find GUID value for %s in any package" % name)
+        raise Exception("Cannot find GUID value for %s in any package" % cname)
 
 class AutoGenString(object):
   def __init__(self):
@@ -1144,7 +1144,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
                 VariableNameStructure = '{' + ', '.join(Sku.VariableName) + ', 0x0000}'
                 if VariableNameStructure not in Dict['STRING_TABLE_VALUE']:
                     Dict['STRING_TABLE_CNAME'].append(CName)
-                    Dict['STRING_TABLE_GUID'].append(TokenSpaceGuid.replace('-','_'))
+                    Dict['STRING_TABLE_GUID'].append(TokenSpaceGuid)
                     if StringTableIndex == 0:
                         Dict['STRING_TABLE_INDEX'].append('')
                     else:
@@ -1166,9 +1166,9 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
                 VariableHeadGuidIndex = GuidList.index(VariableGuid)
 
                 VariableHeadValueList.append('%d, %d, %s, offsetof(${PHASE}_PCD_DATABASE, Init.%s_%s_VariableDefault_%s)' %
-                                             (VariableHeadGuidIndex, VariableHeadStringIndex, Sku.VariableOffset, CName, TokenSpaceGuid.replace('-','_'), SkuIdIndex))
+                                             (VariableHeadGuidIndex, VariableHeadStringIndex, Sku.VariableOffset, CName, TokenSpaceGuid, SkuIdIndex))
                 Dict['VARDEF_CNAME_'+Pcd.DatumType].append(CName)
-                Dict['VARDEF_GUID_'+Pcd.DatumType].append(TokenSpaceGuid.replace('-','_'))
+                Dict['VARDEF_GUID_'+Pcd.DatumType].append(TokenSpaceGuid)
                 Dict['VARDEF_SKUID_'+Pcd.DatumType].append(SkuIdIndex)
                 Dict['VARDEF_VALUE_'+Pcd.DatumType].append(Sku.HiiDefaultValue)
             elif Sku.VpdOffset != '':
@@ -1179,28 +1179,28 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
                 if Pcd.DatumType == 'VOID*':
                     Pcd.TokenTypeList += ['PCD_TYPE_STRING']
                     Pcd.InitString = 'INIT'
-                    if Sku.Value != '':
+                    if Sku.DefaultValue != '':
                         NumberOfSizeItems += 1
                         Dict['STRING_TABLE_CNAME'].append(CName)
-                        Dict['STRING_TABLE_GUID'].append(TokenSpaceGuid.replace('-','_'))
+                        Dict['STRING_TABLE_GUID'].append(TokenSpaceGuid)
 
                         if StringTableIndex == 0:
                             Dict['STRING_TABLE_INDEX'].append('')
                         else:
                             Dict['STRING_TABLE_INDEX'].append('_%d' % StringTableIndex)
-                        if Sku.Value[0] == 'L':
-                            Size = len(Sku.Value) - 3
-                            Dict['STRING_TABLE_VALUE'].append(Sku.Value)
-                        elif Sku.Value[0] == '"':
-                            Size = len(Sku.Value) - 2
-                            Dict['STRING_TABLE_VALUE'].append(Sku.Value)
-                        elif Sku.Value[0] == '{':
-                            Size = len(Sku.Value.replace(',',' ').split())
-                            Dict['STRING_TABLE_VALUE'].append('{' + Sku.Value + '}')
+                        if Sku.DefaultValue[0] == 'L':
+                            Size = len(Sku.DefaultValue) - 3
+                            Dict['STRING_TABLE_VALUE'].append(Sku.DefaultValue)
+                        elif Sku.DefaultValue[0] == '"':
+                            Size = len(Sku.DefaultValue) - 2
+                            Dict['STRING_TABLE_VALUE'].append(Sku.DefaultValue)
+                        elif Sku.DefaultValue[0] == '{':
+                            Size = len(Sku.DefaultValue.replace(',',' ').split())
+                            Dict['STRING_TABLE_VALUE'].append('{' + Sku.DefaultValue + '}')
 
                         StringHeadOffsetList.append(str(StringTableSize))
                         Dict['SIZE_TABLE_CNAME'].append(CName)
-                        Dict['SIZE_TABLE_GUID'].append(TokenSpaceGuid.replace('-','_'))
+                        Dict['SIZE_TABLE_GUID'].append(TokenSpaceGuid)
                         Dict['SIZE_TABLE_CURRENT_LENGTH'].append(Size)
                         Dict['SIZE_TABLE_MAXIMUM_LENGTH'].append(Pcd.MaxDatumSize)
                         if Pcd.MaxDatumSize != '' and Pcd.MaxDatumSize > Size:
@@ -1210,35 +1210,35 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
                         StringTableSize += Size
                 else:
                     Pcd.TokenTypeList += ['PCD_TYPE_DATA']
-                    if Sku.Value == 'TRUE':
+                    if Sku.DefaultValue == 'TRUE':
                         Pcd.InitString = 'INIT'
-                    elif Sku.Value.find('0x') == 0:
-                        if int(Sku.Value,16) != 0:
+                    elif Sku.DefaultValue.find('0x') == 0:
+                        if int(Sku.DefaultValue,16) != 0:
                             Pcd.InitString = 'INIT'
-                    elif Sku.Value[0].isdigit():
-                        if int(Sku.Value) != 0:
+                    elif Sku.DefaultValue[0].isdigit():
+                        if int(Sku.DefaultValue) != 0:
                             Pcd.InitString = 'INIT'
-                    ValueList.append(Sku.Value)
+                    ValueList.append(Sku.DefaultValue)
 
         Pcd.TokenTypeList = list(set(Pcd.TokenTypeList))
         if 'PCD_TYPE_HII' in Pcd.TokenTypeList:
             Dict['VARIABLE_HEAD_CNAME_DECL'].append(CName)
-            Dict['VARIABLE_HEAD_GUID_DECL'].append(TokenSpaceGuid.replace('-','_'))
+            Dict['VARIABLE_HEAD_GUID_DECL'].append(TokenSpaceGuid)
             Dict['VARIABLE_HEAD_NUMSKUS_DECL'].append(len(Pcd.SkuInfoList))
             Dict['VARIABLE_HEAD_VALUE'].append('{ %s }\n' % ' },\n    { '.join(VariableHeadValueList))
         if 'PCD_TYPE_VPD' in Pcd.TokenTypeList:
             Dict['VPD_HEAD_CNAME_DECL'].append(CName)
-            Dict['VPD_HEAD_GUID_DECL'].append(TokenSpaceGuid.replace('-','_'))
+            Dict['VPD_HEAD_GUID_DECL'].append(TokenSpaceGuid)
             Dict['VPD_HEAD_NUMSKUS_DECL'].append(len(Pcd.SkuInfoList))
             Dict['VPD_HEAD_VALUE'].append('{ %s }' % ' }, { '.join(VpdHeadOffsetList))
         if 'PCD_TYPE_STRING' in Pcd.TokenTypeList:
             Dict['STRING_HEAD_CNAME_DECL'].append(CName)
-            Dict['STRING_HEAD_GUID_DECL'].append(TokenSpaceGuid.replace('-','_'))
+            Dict['STRING_HEAD_GUID_DECL'].append(TokenSpaceGuid)
             Dict['STRING_HEAD_NUMSKUS_DECL'].append(len(Pcd.SkuInfoList))
             Dict['STRING_HEAD_VALUE'].append(', '.join(StringHeadOffsetList))
         if 'PCD_TYPE_DATA' in Pcd.TokenTypeList:
             Dict[Pcd.InitString+'_CNAME_DECL_'+Pcd.DatumType].append(CName)
-            Dict[Pcd.InitString+'_GUID_DECL_'+Pcd.DatumType].append(TokenSpaceGuid.replace('-','_'))
+            Dict[Pcd.InitString+'_GUID_DECL_'+Pcd.DatumType].append(TokenSpaceGuid)
             Dict[Pcd.InitString+'_NUMSKUS_DECL_'+Pcd.DatumType].append(len(Pcd.SkuInfoList))
             if Pcd.InitString == 'UNINIT':
                 Dict['PCD_DATABASE_UNINIT_EMPTY'] = ''
@@ -1269,14 +1269,13 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
 ##                    break
 
         GeneratedTokenNumber = platform.PcdTokenNumber[CName, TokenSpaceGuidCName] - 1
-        #print "GeneratedTokenNumber =",GeneratedTokenNumber
         if phase == 'DXE':
             GeneratedTokenNumber -= NumberOfPeiLocalTokens
         Dict['TOKEN_INIT'][GeneratedTokenNumber] = 'Init'
         if Pcd.InitString == 'UNINIT':
             Dict['TOKEN_INIT'][GeneratedTokenNumber] = 'Uninit'
         Dict['TOKEN_CNAME'][GeneratedTokenNumber] = CName
-        Dict['TOKEN_GUID'][GeneratedTokenNumber] = TokenSpaceGuid.replace('-','_')
+        Dict['TOKEN_GUID'][GeneratedTokenNumber] = TokenSpaceGuid
         Dict['TOKEN_TYPE'][GeneratedTokenNumber] = ' | '.join(Pcd.TokenTypeList)
         if Pcd.Type == 'DYNAMIC_EX':
             Dict['EXMAPPING_TABLE_EXTOKEN'].append(Pcd.Token)
@@ -1328,11 +1327,6 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
     else:
         AutoGenC.Append(PcdDatabaseAutoGenC, Dict)
 
-    #print Dict['TOKEN_CNAME']
-##    for n in range(0, len(Dict['TOKEN_CNAME'])):
-##        print "###",n,"=",Dict['TOKEN_CNAME'][n]
-        #print "###",CName, TokenSpaceGuidCName
-
     return AutoGenH, AutoGenC
 
 def CreatePcdDatabaseCode (info, autoGenC, autoGenH):
@@ -1362,7 +1356,6 @@ def CreateLibraryConstructorCode(info, autoGenC, autoGenH):
     for lib in info.DependentLibraryList:
         if len(lib.ConstructorList) <= 0:
             continue
-        #print "######",lib.ConstructorList
         ConstructorList.extend(lib.ConstructorList)
 
     Dict = {'Type':'Constructor', 'Function':ConstructorList}

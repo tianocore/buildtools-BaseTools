@@ -26,7 +26,6 @@ class ModuleBuildInfo(BuildInfo):
         self.Arch = ""
         self.ToolChain = ""
         self.BuildTarget = ""
-        self.Phase = "DXE"
         self.PcdIsDriver = ""
 
         self.IsLibrary = False
