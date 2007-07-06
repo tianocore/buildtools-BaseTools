@@ -25,7 +25,7 @@ class FileStatements (Ffs.Ffs) :
         for section in self.SectionList :
             SectionFiles = SectionFiles                          + \
                            ' -i '                                + \
-                           section.GenSection(OutputDir, self.NameGuid)
+                           section.GenSection(OutputDir, self.NameGuid, self.KeyStringList)
         #
         # Prepare the parameter
         #

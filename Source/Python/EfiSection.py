@@ -16,7 +16,7 @@ class EfiSection (Section.Section):
         self.BuildNum = None
         self.VersionNum = None
 
-    def GenSection(self, OutputPath, ModuleName, FfsInf = None):
+    def GenSection(self, OutputPath, ModuleName, KeyStringList, FfsInf = None) :
         #
         # Prepare the parameter of GenSection
         #
@@ -43,7 +43,7 @@ class EfiSection (Section.Section):
             if Filename == None or Filename =='':
                 print "Optional Section don't exist!"
                 return ''
- 
+            
         OutputFile = os.path.join( OutputPath, ModuleName + Ffs.SectionSuffix.get(SectionType))
         #
         #  If Section type is 'VERSION'

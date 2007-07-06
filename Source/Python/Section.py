@@ -19,5 +19,5 @@ class Section :
     def __init__(self):
         self.Alignment = None
         
-    def GenSection(self, OutputPath, GuidName, FfsInf = None):
+    def GenSection(self, OutputPath, GuidName, keyStringList, FfsInf = None):
         pass

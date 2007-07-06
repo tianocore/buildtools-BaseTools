@@ -2,6 +2,7 @@ import Section
 import subprocess
 from Ffs import Ffs
 import os
+from GenFdsGlobalVariable import GenFdsGlobalVariable
 class GuidSection(Section.Section) :
     
     def __init__(self):
@@ -12,10 +13,12 @@ class GuidSection(Section.Section) :
         self.ProcessRequired = False
         self.AuthStatusValid = False
         
-    def GenSection(self, OutputPath, ModuleName, FfsInf = None):
+    def GenSection(self, OutputPath, ModuleName , KeyStringList, FfsInf = None):
         #
         # Generate all section
         #
+        self.keyStringList = KeyStringList
+        
         if FfsInf != None:
             self.Alignment = FfsInf.__ExtendMarco__(self.Alignment)
             self.NameGuid = FfsInf.__ExtendMarco__(self.NameGuid)
@@ -25,7 +28,7 @@ class GuidSection(Section.Section) :
         for Sect in self.SectionList:
             SectFile = SectFile + \
                        '  '     + \
-                       Sect.GenSection(OutputPath, ModuleName, FfsInf)
+                       Sect.GenSection(OutputPath, ModuleName, KeyStringList,FfsInf)
 
         OutputFile = OutputPath + \
                      os.sep     + \
@@ -33,7 +36,7 @@ class GuidSection(Section.Section) :
                      Ffs.SectionSuffix['GUIDED']
         OutputFile = os.path.normpath(OutputFile)
         
-        ExternalTool = Section.Section.ToolGuild.get(self.NameGuid)
+        ExternalTool = self.__FindExtendTool__()
         #
         # If not have GUID or GUID not in External Tool List, call default
         # GENCRC32 section
@@ -117,3 +120,34 @@ class GuidSection(Section.Section) :
             if PopenObject.returncode != 0:
                 raise Exception ("GenSection Failed!")
             return OutputFile
+        
+    def __FindExtendTool__(self):
+        tool = None
+        if self.keyStringList == None:
+            return tool
+        toolDefinition = GenFdsGlobalVariable.WorkSpace.ToolDef.ToolsDefTxtDictionary
+        for toolDef in toolDefinition:
+            if self.NameGuid == toolDef[1]:
+                keyList = toolDef.key().split('_')
+                key = keyList[0] + \
+                      '_'        + \
+                      keyList[1] + \
+                      '_'        + \
+                      keyList[2]
+                if Key in slef.KeyStringList and keyList[4] == 'GUID':
+                    toolMaro = keyList[3]
+                    toolName = toolDefinition.get( key        + \
+                                                   '_'        + \
+                                                   keyList[3] + \
+                                                   '_'        + \
+                                                   'NAME')
+                    toolPath = toolDefinition.get( key        + \
+                                                   '_'        + \
+                                                   keyList[3] + \
+                                                   '_'        + \
+                                                   'PATH')
+                    tool = os.path.join (toolPath, toolName)
+        return tool
+
+
+                

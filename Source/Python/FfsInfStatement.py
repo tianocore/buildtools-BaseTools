@@ -245,7 +245,7 @@ class FfsInfStatement(Ffs.Ffs):
         for Sect in Rule.SectionList:
            print 'GenSection: %s %s :' %(self.OutputPath ,self.ModuleGuid)
            secName = ''
-           secName = Sect.GenSection(self.OutputPath , self.ModuleGuid, self)
+           secName = Sect.GenSection(self.OutputPath , self.ModuleGuid, self.KeyStringList, self)
            if secName != '':
                SectFiles = SectFiles    + \
                            ' -i '       + \

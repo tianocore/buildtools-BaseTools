@@ -9,7 +9,7 @@ class FvImageSection(Section.Section):
         self.Aligenment = None
         self.Fv = None
         self.FvName = None
-    def GenSection(self, OutputPath, ModuleName, FfsInf = None):
+    def GenSection(self, OutputPath, ModuleName, KeyStringList, FfsInf = None):
         Buffer = StringIO.StringIO('')
         #
         # Generate Fv
@@ -38,12 +38,13 @@ class FvImageSection(Section.Section):
                      ModuleName + \
                      Ffs.SectionSuffix.get("FV_IMAGE")
                      
-        GenSectionCmd = 'GenSection -o '                      + \
+        GenSectionCmd = 'GenSec -o '                      + \
                          OutputFile                           + \
                          ' -s '                               + \
                          'EFI_SECTION_FIRMWARE_VOLUME_IMAGE ' + \
                          FvFileName
                          
+        print GenSectionCmd
         PopenObject = subprocess.Popen (GenSectionCmd)
         PopenObject.communicate()
         if PopenObject.returncode != 0:

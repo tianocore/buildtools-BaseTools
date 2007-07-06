@@ -11,7 +11,7 @@ class DataSection (Section.Section):
         self.SectFileName = None
         self.SectionList = []
         
-    def GenSection(self, OutputPath, ModuleName, FfsInf = None):
+    def GenSection(self, OutputPath, ModuleName, keyStringList, FfsInf = None):
         #
         # Prepare the parameter of GenSection
         #

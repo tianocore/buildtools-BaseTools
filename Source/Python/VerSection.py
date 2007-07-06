@@ -9,7 +9,7 @@ class VerSection (Section.Section):
         self.StringData = None
         self.FileName = None
         
-    def GenSection(self,OutputPath, ModuleName, FfsInf = None):
+    def GenSection(self,OutputPath, ModuleName, KeyStringList, FfsInf = None):
         #
         # Prepare the parameter of GenSection
         #
