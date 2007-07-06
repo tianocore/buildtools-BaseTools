@@ -848,7 +848,7 @@ class FdfParser:
         fv.AprioriSection = aprSection
         return True
 
-    def __GetInfStatement(self, obj):
+    def __GetInfStatement(self, obj, ForCapsule = False):
 
         if not self.__IsKeyword( "INF"):
             return False
@@ -860,7 +860,12 @@ class FdfParser:
             raise Warning("expected INF file path At Line %d" % self.CurrentLineNumber)
         ffsInf.InfFileName = self.__Token
         
-        obj.FfsList.append(ffsInf)
+        if ForCapsule:
+            capsuleFfs = CapsuleData.CapsuleFfs()
+            capsuleFfs.Ffs = ffsInf
+            obj.CapsuleDataList.append(capsuleFfs)
+        else:
+            obj.FfsList.append(ffsInf)
         return True
     
     def __GetInfOptions(self, ffsInf):
@@ -900,13 +905,13 @@ class FdfParser:
                 if not p.match(self.__Token):
                     raise Warning("expected KeyString \"Target_Tag_Arch\" At Line %d" % self.CurrentLineNumber)
                 ffsInf.KeyStringList.append(self.__Token)
-
+    
                 if not self.__IsToken(","):
                     break
                 
 
 
-    def __GetFileStatement(self, obj):
+    def __GetFileStatement(self, obj, ForCapsule = False):
 
         if not self.__IsKeyword( "FILE"):
             return False
@@ -925,7 +930,13 @@ class FdfParser:
         ffsFile.NameGuid = self.__Token
     
         self.__GetFilePart( ffsFile)
-        obj.FfsList.append(ffsFile)
+        
+        if ForCapsule:
+            capsuleFfs = CapsuleData.CapsuleFfs()
+            capsuleFfs.Ffs = ffsFile
+            obj.CapsuleDataList.append(capsuleFfs)
+        else:
+            obj.FfsList.append(ffsFile)
         return True
         
     def __GetFilePart(self, ffsFile):
@@ -943,7 +954,7 @@ class FdfParser:
         
     
     def __GetFileOpts(self, ffsFile):
-
+        
         if self.__GetNextToken():
             p = re.compile(r'([a-zA-Z0-9]+|\*)_([a-zA-Z0-9]+|\*)_([a-zA-Z0-9]+|\*)')
             if p.match(self.__Token):
@@ -1273,8 +1284,8 @@ class FdfParser:
         self.__GetSetStatements(capsule)
         
         self.__GetTokens(capsule)
-        capsuleData = CapsuleData.CapsuleData()
-        capsule.CapsuleData = capsuleData
+#        capsuleData = CapsuleData.CapsuleData()
+#        capsule.CapsuleData = capsuleData
         self.__GetCapsuleData(capsule)
                 
     def __GetTokens(self, capsule):
@@ -1287,14 +1298,12 @@ class FdfParser:
     
     def __GetCapsuleData(self, capsule):
         
-        while self.__GetInfStatement(capsule.CapsuleData):
-            pass
-
-        while self.__GetFileStatement(capsule.CapsuleData):
-            pass
-        
-        while self.__GetFvStatement(capsule):
-            pass
+        while True:
+            isInf = self.__GetInfStatement(capsule, True)
+            isFile = self.__GetFileStatement(capsule, True)
+            isFv = self.__GetFvStatement(capsule)
+            if not isInf and not isFile and not isFv:
+                break
     
     def __GetFvStatement(self, capsule):
         
@@ -1307,7 +1316,9 @@ class FdfParser:
         if not self.__GetNextToken():
             raise Warning("expected FV name At Line %d" % self.CurrentLineNumber)
         
-        capsule.CapsuleData.FvStatementList.append(self.__Token)
+        capsuleFv = CapsuleData.CapsuleFv()
+        capsuleFv.FvName = self.__Token
+        capsule.CapsuleDataList.append(capsuleFv)
         return True
     
     def __GetRule(self):
