@@ -1,6 +1,6 @@
 import Ffs
 from GenFdsGlobalVariable import GenFdsGlobalVariable
-
+import StringIO
 class CapsuleData:
     def __init__(self):
        # self.FfsList = []
@@ -26,3 +26,10 @@ class CapsuleFv (CapsuleData):
         if self.FvName.find('.fv') != -1:
             if self.FvName in GenFdsGlobalVariable.FdfParser.profile.FvDict.keys():
                 fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(self.FvName)
+                FdBuffer = StringIO.StringIO('')
+                FvFile = fv.AddToBuffer(FdBuffer)
+                return FvFile
+            
+        else:
+            FvFile = GenFdsGlobalVariable.ReplaceWorkspaceMarco(self.FvName)
+            return FvFile

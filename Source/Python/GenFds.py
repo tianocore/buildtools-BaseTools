@@ -84,6 +84,7 @@ def myOptionParser():
 class GenFds :
     FdfParsef = None
     FvBinDict = {}      # FvName in Fdf, FvBinFile
+    
     def GenFd (OutputDir, FdfParser, WorkSpace, ArchList):
         GenFdsGlobalVariable.SetDir (OutputDir, FdfParser, WorkSpace, ArchList)
         """Set Default Rule! Hard code here will be move"""
@@ -123,7 +124,17 @@ class GenFds :
                 fv = GenFdsGlobalVariable.FdfParser.profile.FvDict[FvName]
                 fv.AddToBuffer(Buffer)
                 Buffer.close()
+        for capsule in GenFdsGlobalVariable.FdfParser.profile.CapsuleList:
+            capsule.GenCapsule()
+
+        for vtf in GenFdsGlobalVariable.FdfParser.profile.VtfList:
+            vtf.GenVtf()
+
+    #Finish GenFd()
             
+    #
+    # Define GenFd as static function
+    #
     GenFd = staticmethod(GenFd)
 
 if __name__ == '__main__':
