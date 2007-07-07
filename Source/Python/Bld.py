@@ -140,6 +140,7 @@ def MyOptionParser():
 def Process(ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch, args):
     GenC = set(['GenC']) & set(args)
     GenMake = set(['GenMake']) & set(args)
+    CleanAll = set(['CleanAll']) & set(args)
     t = str(' '.join(args))
 
     for a in Target:
@@ -163,6 +164,26 @@ def Process(ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch, args):
                     except Exception, e:
                         print e
                         return 1
+                elif CleanAll != set([]):
+                    if ModuleFile != None:
+                        for d in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
+                            DestDir = os.path.dirname(os.environ["WORKSPACE"] + '\\' + d.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + ModuleFile)
+                            DestDir = DestDir + '\\' + ewb.InfDatabase[ModuleFile].Defines.DefinesDictionary['BASE_NAME'][0]
+                    else:
+                        for d in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
+                            DestDir = os.environ["WORKSPACE"] + '\\' + d.replace('/','\\') + '\\' + a + '_' + b
+                        
+                    FileList = glob.glob(DestDir + '\\makefile')
+                    FileNum = len(FileList)
+                    if FileNum > 0:
+                        if FileNum >= 2:
+                            print "There are %d makefilss in %s.\n" % (FileNum, DestDir)
+                            return 1
+                        p = Popen(["nmake", "/nologo", "-f", FileList[0], t], env=os.environ, cwd=os.path.dirname(FileList[0]))
+                        p.communicate()
+                        if p.returncode != None:
+                            return p.returncode
+                    return 1
                 else:
                     try:
                         ModuleAutoGen.CreateAutoGenFile()
@@ -217,7 +238,7 @@ if __name__ == '__main__':
     StatusCode = CheckEnvVariable()
     if StatusCode != 0:
         CalculateTime(StartTime)
-        exit(StatusCode)
+        sys.exit(StatusCode)
 
 # be compatibile with Ant build.bat ???
 
@@ -228,7 +249,7 @@ if __name__ == '__main__':
         (opt, args) = MyOptionParser()
     except:
         CalculateTime(StartTime)
-        exit(1)
+        sys.exit(1)
 #
 # Call Parser
 #
@@ -236,7 +257,7 @@ if __name__ == '__main__':
         ewb = WorkspaceBuild(opt.DSCFILE)  #opt.DSCFILE is relative path plus filename
     except:
         CalculateTime(StartTime)
-        exit(1)
+        sys.exit(1)
 #
 # Merge the Build Options with Parser's Result
 #
@@ -245,7 +266,7 @@ if __name__ == '__main__':
         if opt.TARGET_ARCH == ['']:
             print "TARGET_ARCH is None. Don't What to Build.\n"
             CalculateTime(StartTime)
-            exit(1)
+            sys.exit(1)
     print "TARGET_ARCH is", " ".join(opt.TARGET_ARCH)
             
     if opt.DSCFILE == None:
@@ -260,7 +281,7 @@ if __name__ == '__main__':
         if opt.TARGET == ['']:
             print "TARGET is None. Don't What to Build.\n"
             CalculateTime(StartTime)
-            exit(1)
+            sys.exit(1)
     print "TARGET is", " ".join(opt.TARGET)
 
     if opt.TOOL_CHAIN_TAG == None:
@@ -268,7 +289,7 @@ if __name__ == '__main__':
         if opt.TOOL_CHAIN_TAG == ['']:
             print "TOOL_CHAIN_TAG is None. Don't What to Build.\n"
             CalculateTime(StartTime)
-            exit(1)
+            sys.exit(1)
     print "TOOL_CHAIN_TAG is", " ".join(opt.TOOL_CHAIN_TAG)
 
     if opt.NUM == None:
@@ -302,7 +323,7 @@ if __name__ == '__main__':
         FileNum = len(FileList)
         if FileNum >= 2:
             print "There are %d INF filss in %s.\n" % (FileNum, CurWorkDir)
-            exit()
+            sys.exit(1)
         if opt.DSCFILE:
             ModuleFile = FileList[0][len(ewb.Workspace.WorkspaceDir)+1:]
             print "Module build:", ModuleFile
@@ -322,7 +343,7 @@ if __name__ == '__main__':
         if FileNum > 0:
             if FileNum >= 2:
                 print "There are %d DSC files in %s.\n" % (FileNum, CurWorkDir)
-                exit()
+                sys.exit(1)
             PlatformFile = FileList[0][len(ewb.Workspace.WorkspaceDir)+1:]
             print "Platform build:", PlatformFile
             #
