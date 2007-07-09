@@ -89,6 +89,10 @@ gMakefileName = {"nmake" : "Makefile", "gmake" : "GNUmakefile"}
 
 gDirectorySeparator = {"nmake" : "\\", "gmake" : "/"}
 
+gCreateDirectoryCommand = {"nmake" : "mkdir", "gmake" : "mkdir -p"}
+gRemoveDirectoryCommand = {"nmake" : "rmdir /s /q", "gmake" : "rm -r -f"}
+gRemoveFileCommand = {"nmake" : "del /f /q", "gmake" : "rm -f"}
+
 OutputFlag = {
     ("MSFT", "CC", "OUTPUT")      :   "/Fo",
     ("MSFT", "SLINK", "OUTPUT")   :   "/OUT:",
@@ -230,9 +234,9 @@ mbuild: init all
 #
 init:
 \t-@echo Building ... $(MODULE_NAME)-$(MODULE_VERSION) [$(ARCH)] in package $(PACKAGE_NAME)-$(PACKAGE_VERSION)
-\t${create_directory_command} $(DEBUG_DIR) > NUL 2>&1
-\t${create_directory_command} $(OUTPUT_DIR) > NUL 2>&1
-\t${BEGIN}${create_directory_command} $(OUTPUT_DIR)${separator}${directory_to_be_created} > NUL 2>&1
+\t-${create_directory_command} $(DEBUG_DIR) > NUL 2>&1
+\t-${create_directory_command} $(OUTPUT_DIR) > NUL 2>&1
+\t${BEGIN}-${create_directory_command} $(OUTPUT_DIR)${separator}${directory_to_be_created} > NUL 2>&1
 \t${END}
 
 '''
@@ -392,9 +396,9 @@ mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(EFI_FILE)
 #
 init:
 \t-@echo Building ... $(MODULE_NAME)-$(MODULE_VERSION) [$(ARCH)] in package $(PACKAGE_NAME)-$(PACKAGE_VERSION)
-\t${create_directory_command} $(DEBUG_DIR) > NUL 2>&1
-\t${create_directory_command} $(OUTPUT_DIR) > NUL 2>&1
-\t${BEGIN}${create_directory_command} $(OUTPUT_DIR)${separator}${directory_to_be_created} > NUL 2>&1
+\t-${create_directory_command} $(DEBUG_DIR) > NUL 2>&1
+\t-${create_directory_command} $(OUTPUT_DIR) > NUL 2>&1
+\t${BEGIN}-${create_directory_command} $(OUTPUT_DIR)${separator}${directory_to_be_created} > NUL 2>&1
 \t${END}
 
 #
@@ -517,8 +521,8 @@ clean:
 #
 
 cleanall:
-\t-rmdir /s /q $(OUTPUT_DIR) $(DEBUG_DIR) > NUL 2>&1
-\t-del /f /q *.pdb *.idb > NUL 2>&1
+\t-${remove_directory_command} $(OUTPUT_DIR) $(DEBUG_DIR) > NUL 2>&1
+\t-${remove_file_command} *.pdb *.idb > NUL 2>&1
 
 #
 # clean pre-compiled header files
@@ -532,7 +536,9 @@ cleanpch:
 #
 
 cleanlib:
-\t@echo clean all dependent libraries built
+\t${BEGIN}cd $(BUILD_DIR)${separator}$(ARCH)${separator}${dependent_library_build_directory}
+\t$(MAKE) $(MAKE_FLAGS) cleanall
+\t${END}cd $(MODULE_BUILD_DIR)
 
 '''
 
@@ -571,10 +577,10 @@ all: init build_libraries build_modules build_fds
 #
 init:
 \t-@echo Building ... $(PLATFORM_NAME)-$(PLATFORM_VERSION) [${build_architecture_list}]
-\t${create_directory_command} $(FV_DIR) > NUL 2>&1
-\t${BEGIN}${create_directory_command} $(BUILD_DIR)${separator}${architecture} > NUL 2>&1
+\t-${create_directory_command} $(FV_DIR) > NUL 2>&1
+\t${BEGIN}-${create_directory_command} $(BUILD_DIR)${separator}${architecture} > NUL 2>&1
 \t${END}
-\t${BEGIN}${create_directory_command} $(BUILD_DIR)${separator}${directory_to_be_created} > NUL 2>&1
+\t${BEGIN}-${create_directory_command} $(BUILD_DIR)${separator}${directory_to_be_created} > NUL 2>&1
 \t${END}
 #
 # library build target
@@ -628,18 +634,16 @@ clean:
 # Clean all generated files except to makefile
 #
 cleanall:
-\t${BEGIN}cd $(WORKSPACE)${separator}${library_build_directory}
-\t$(MAKE) $(MAKE_FLAGS) cleanall
-\t${END}${BEGIN}cd $(WORKSPACE)${separator}${module_build_directory}
-\t$(MAKE) $(MAKE_FLAGS) cleanall
-\t${END}cd $(BUILD_DIR)
+\t-${remove_directory_command} $(FV_DIR) > NUL 2>&1
+\t${BEGIN}-${remove_directory_command} $(BUILD_DIR)${separator}${architecture} > NUL 2>&1
+\t${END}
 
 #
 # Clean all library files
 #
 cleanlib:
 \t${BEGIN}cd $(WORKSPACE)${separator}${library_build_directory}
-\t$(MAKE) $(MAKE_FLAGS) cleanlib
+\t$(MAKE) $(MAKE_FLAGS) cleanall
 \t${END}cd $(BUILD_DIR)
 
 '''
@@ -720,7 +724,9 @@ class Makefile(object):
             "build_architecture_list"   : " ".join(self.PlatformInfo.keys()),
             "architecture"              : self.PlatformInfo.keys(),
             "separator"                 : separator,
-            "create_directory_command"  : "-@mkdir",
+            "create_directory_command"  : gCreateDirectoryCommand[makeType],
+            "remove_directory_command"  : gRemoveDirectoryCommand[makeType],
+            "remove_file_command"       : gRemoveFileCommand[makeType],
             "directory_to_be_created"   : self.IntermediateDirectoryList,
             "library_build_directory"   : self.LibraryBuildDirectoryList,
             "module_build_directory"    : self.ModuleBuildDirectoryList,
@@ -804,7 +810,9 @@ class Makefile(object):
             "object_file"               : self.ObjectFileList,
             "library_file"              : self.LibraryFileList,
             "common_dependency_file"    : self.CommonFileDependency,
-            "create_directory_command"  : "-@mkdir",
+            "create_directory_command"  : gCreateDirectoryCommand[makeType],
+            "remove_directory_command"  : gRemoveDirectoryCommand[makeType],
+            "remove_file_command"       : gRemoveFileCommand[makeType],
             "directory_to_be_created"   : self.IntermediateDirectoryList,
             "dependent_library_build_directory" : self.LibraryBuildDirectoryList,
             #"dependent_library_makefile"        : [path.join(bdir, makefileName) for bdir in self.LibraryBuildDirectoryList],
