@@ -891,7 +891,7 @@ def CreateModulePcdCode(info, autoGenC, autoGenH, pcd):
         tokenNumber = pcdTokenNumber[pcd.TokenCName, pcd.TokenSpaceGuidCName]
     autoGenH.Append('#define %s  %d\n' % (pcdTokenName, tokenNumber))
 
-    EdkLogger.verbose("Creating code for " + str(pcd))
+    EdkLogger.debug(EdkLogger.DEBUG_7, "Creating code for " + pcd.TokenCName + "/" + pcd.TokenSpaceGuidCName)
     datumSize = DatumSizeStringDatabase[pcd.DatumType]
     datumSizeLib = DatumSizeStringDatabaseLib[pcd.DatumType]
     getModeName = '_PCD_GET_MODE_' + DatumSizeStringDatabaseH[pcd.DatumType] + '_' + pcd.TokenCName

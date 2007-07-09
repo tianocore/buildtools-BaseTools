@@ -510,22 +510,22 @@ ${END}
 #
 
 clean:
-\t- @rmdir /s /q $(OUTPUT_DIR) > NUL 2>&1
+\t-rmdir /s /q $(OUTPUT_DIR) > NUL 2>&1
 
 #
 # clean all generated files
 #
 
 cleanall:
-\t- @rmdir /s /q $(OUTPUT_DIR) $(DEBUG_DIR) > NUL 2>&1
-\t- @del /f /q *.pdb *.idb > NUL 2>&1
+\t-rmdir /s /q $(OUTPUT_DIR) $(DEBUG_DIR) > NUL 2>&1
+\t-del /f /q *.pdb *.idb > NUL 2>&1
 
 #
 # clean pre-compiled header files
 #
 
 cleanpch:
-\t- @del /f /q $(OUTPUT_DIR)\*.pch > NUL 2>&1
+\t-del /f /q $(OUTPUT_DIR)\*.pch > NUL 2>&1
 
 #
 # clean all dependent libraries built

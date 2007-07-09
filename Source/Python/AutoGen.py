@@ -428,6 +428,8 @@ class AutoGen(object):
         consumedByList      = {}
         libraryClassList    = []
 
+        EdkLogger.verbose("")
+        EdkLogger.verbose("Library instances of module [%s]:" % str(self.Module))
         while len(libraryConsumerList) > 0:
             module = libraryConsumerList.pop()
             for libc, libf in module.LibraryClasses.iteritems():
@@ -439,6 +441,7 @@ class AutoGen(object):
                     libraryConsumerList.append(libm)
                     libraryList.append(libm)
                     libraryClassList.append(libc)
+                    EdkLogger.verbose("\t" + str(libm))
 
                 if libm.ConstructorList != [] and libm not in constructor:
                     constructor.append(libm)
@@ -523,7 +526,9 @@ class AutoGen(object):
         #
         for m in libraryList:
             if consumedByList[m] != [] and m in constructor:
-                raise AutoGenError('Module libraries with constructors have a cycle: %s' % str(m))
+                errorMessage = 'Module library [%s] with constructors have a cycle:\n\t' % str(m)
+                errorMessage += "\n\tconsumed by ".join([str(l) for l in consumedByList[m]])
+                raise AutoGenError(errorMessage)
             if m not in SortedLibraryList:
                 SortedLibraryList.append(m)
 
@@ -726,26 +731,17 @@ class AutoGen(object):
                                                 info.BuildTarget, info.ToolChain, info.Arch)
                     else:
                         moduleAutoGen = gAutoGenDatabase[key]
-                    if not moduleAutoGen.BuildInfo.IsLibrary and moduleAutoGen not in info.ModuleAutoGenList:
-                        info.ModuleAutoGenList.append(moduleAutoGen)
-                    elif moduleAutoGen.BuildInfo.IsLibrary and moduleAutoGen not in info.LibraryAutoGenList:
-                        info.LibraryAutoGenList.append(moduleAutoGen)
                     moduleAutoGen.CreateMakefile()
-
-                    for lib in moduleAutoGen.BuildInfo.DependentLibraryList:
-                        key = (info.BuildTarget, info.ToolChain, arch, lib)
-                        libraryAutoGen = None
-                        if key not in gAutoGenDatabase:
-                            libraryAutoGen = AutoGen(lib, info.Platform, gWorkspace,
-                                                    info.BuildTarget, info.ToolChain, info.Arch)
-                        else:
-                            libraryAutoGen = gAutoGenDatabase[key]
-                        if libraryAutoGen not in info.LibraryAutoGenList:
-                            info.LibraryAutoGenList.append(libraryAutoGen)
-                        libraryAutoGen.CreateMakefile()
-            print
         else:
+            platformInfo = self.BuildInfo.PlatformInfo
+            if not self.BuildInfo.IsLibrary:
+                if self not in platformInfo.ModuleAutoGenList:
+                    platformInfo.ModuleAutoGenList.append(self)
+            elif self not in platformInfo.LibraryAutoGenList:
+                platformInfo.LibraryAutoGenList.append(self)
+
             for lib in self.BuildInfo.DependentLibraryList:
+                EdkLogger.debug(EdkLogger.DEBUG_2, "###" + str(lib))
                 key = (self.BuildTarget, self.ToolChain, self.Arch, lib)
                 libraryAutoGen = None
                 if key not in gAutoGenDatabase:
@@ -756,10 +752,19 @@ class AutoGen(object):
                 if libraryAutoGen not in self.BuildInfo.LibraryAutoGenList:
                     self.BuildInfo.LibraryAutoGenList.append(libraryAutoGen)
                 libraryAutoGen.CreateMakefile()
-            print "\rGenerating makefiles for module", self.BuildInfo.Name, "                                 ",
-        self.IsMakefileCreated = True
+
+            makefile = GenMake.Makefile(self.BuildInfo, myBuildOption)
+            f = makefile.Generate()
+            self.IsMakefileCreated = True
+            EdkLogger.info("Generated [%s] for module %s" % (path.basename(f), self.BuildInfo.Name))
+            return f
+
         makefile = GenMake.Makefile(self.BuildInfo, myBuildOption)
-        return makefile.Generate()
+        f = makefile.Generate()
+        self.IsMakefileCreated = True
+        EdkLogger.info("Generated [%s] for platform %s" % (path.basename(f), self.BuildInfo[self.Arch[0]].Name))
+
+        return f
 
     def CreateAutoGenFile(self, filePath=None):
         if self.IsAutoGenCodeCreated:
@@ -776,29 +781,15 @@ class AutoGen(object):
                                                 info.BuildTarget, info.ToolChain, info.Arch)
                     else:
                         moduleAutoGen = gAutoGenDatabase[key]
-
-                    if not moduleAutoGen.BuildInfo.IsLibrary and moduleAutoGen not in info.ModuleAutoGenList:
-                        info.ModuleAutoGenList.append(moduleAutoGen)
-                    elif moduleAutoGen.BuildInfo.IsLibrary and moduleAutoGen not in info.LibraryAutoGenList:
-                        info.LibraryAutoGenList.append(moduleAutoGen)
                     moduleAutoGen.CreateAutoGenFile()
-                    if moduleAutoGen.BuildInfo.DepexList != []:
-                        dpx = GenDepex.DependencyExpression(moduleAutoGen.BuildInfo.DepexList, moduleAutoGen.BuildInfo.ModuleType)
-                        dpx.Generate(os.path.join(gWorkspaceDir, moduleAutoGen.BuildInfo.OutputDir, moduleAutoGen.BuildInfo.Name + ".depex"))
-
-                    for lib in moduleAutoGen.BuildInfo.DependentLibraryList:
-                        key = (info.BuildTarget, info.ToolChain, arch, lib)
-                        libraryAutoGen = None
-                        if key not in gAutoGenDatabase:
-                            libraryAutoGen = AutoGen(lib, info.Platform, gWorkspace,
-                                                    info.BuildTarget, info.ToolChain, info.Arch)
-                        else:
-                            libraryAutoGen = gAutoGenDatabase[key]
-                        if libraryAutoGen not in info.LibraryAutoGenList:
-                            info.LibraryAutoGenList.append(libraryAutoGen)
-                        libraryAutoGen.CreateAutoGenFile()
             print
         else:
+            platformInfo = self.BuildInfo.PlatformInfo
+            if not self.BuildInfo.IsLibrary and self not in platformInfo.ModuleAutoGenList:
+                platformInfo.ModuleAutoGenList.append(self)
+            elif self.BuildInfo.IsLibrary and self not in platformInfo.LibraryAutoGenList:
+                platformInfo.LibraryAutoGenList.append(self)
+
             for lib in self.BuildInfo.DependentLibraryList:
                 key = (self.BuildTarget, self.ToolChain, self.Arch, lib)
                 libraryAutoGen = None
@@ -811,15 +802,17 @@ class AutoGen(object):
                     self.BuildInfo.LibraryAutoGenList.append(libraryAutoGen)
                 libraryAutoGen.CreateAutoGenFile()
 
-            print "\rGenerating AutoGen files for module", self.BuildInfo.Name, "                                 ",
             autoGenList = GenC.Generate(os.path.join(self.BuildInfo.WorkspaceDir, self.BuildInfo.DebugDir),
                                         self.AutoGenC, self.AutoGenH)
                           
             if self.BuildInfo.DepexList != []:
                 dpx = GenDepex.DependencyExpression(self.BuildInfo.DepexList, self.BuildInfo.ModuleType)
-                dpx.Generate(os.path.join(gWorkspaceDir, self.BuildInfo.OutputDir, self.BuildInfo.Name + ".depex"))
+                dpxFile = dpx.Generate(os.path.join(gWorkspaceDir, self.BuildInfo.OutputDir, self.BuildInfo.Name + ".depex"))
+                autoGenList.append(dpxFile)
 
             self.IsAutoGenCodeCreated = True
+            EdkLogger.info("Generated [%s] files for module %s" % (" ".join([path.basename(f) for f in autoGenList]), self.BuildInfo.Name))
+
             return autoGenList
 
 # This acts like the main() function for the script, unless it is 'import'ed into another
