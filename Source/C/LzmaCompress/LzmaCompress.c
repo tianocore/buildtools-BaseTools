@@ -114,8 +114,6 @@ Returns:
   //
   // Copy the file contents to the output buffer.
   //
-//  for (Index = 0; Index < InputFileNum; Index++) {
-//    InFile = fopen (InputFileName[Index], "rb");
     InFile = fopen (InputFileName, "rb");
     if (InFile == NULL) {
       printf ("%s failed to open input file\n", InputFileName);
@@ -138,17 +136,7 @@ Returns:
 
     fclose (InFile);
     Size += (UINTN) FileSize;
-    //
-    // make sure section ends on a DWORD boundary
-    //
-//    while ((Size & 0x03) != 0) {
-//      if (FileBuffer != NULL) {
-//        FileBuffer[Size] = 0;
-//      }
-//      Size++;
-//    }
-//  }
-  
+
   *BufferLength = Size;
   
   if (FileBuffer != NULL) {
@@ -168,7 +156,7 @@ GenCompressionFile (
 {
   UINT8                   *FileBuffer;
   UINTN                   InputLength;
-  UINTN                   CompressedLength;      
+  UINTN                   CompressedLength;
   UINT8                   *OutputBuffer;
   EFI_STATUS              Status;  
   
@@ -212,7 +200,7 @@ GenCompressionFile (
   printf("\n Start to compress!\n");
   assert(FileBuffer);
   assert(InputLength);
-  printf("\n%i InputLength",InputLength);
+//  printf("\n%i InputLength",InputLength);
 //  assert(OutputBuffer);
   Status = CustomizedCompress (FileBuffer, InputLength, OutputBuffer, &CompressedLength);
   if (Status == EFI_BUFFER_TOO_SMALL) {
@@ -237,6 +225,7 @@ GenCompressionFile (
   }
   
   fwrite (FileBuffer, CompressedLength, 1, OutFile);
+  
   free (FileBuffer);
   
   return EFI_SUCCESS;
@@ -431,18 +420,13 @@ Returns:
   //
   // Compress the input file
   //
-//  printf("\nwe go here!\n");
   if (OutputFileName == NULL) {
   printf("\n no output file name\n");
   Status = GenCompressionFile(InputFileName, 1, stdout);
   }
   else
   Status = GenCompressionFile(InputFileName, 1, OutFile);
-//  Status = GenCompressionFile(InputFileName, OutFile);
-  
-  if (InputFileName != NULL) {
-    free(InputFileName);
-  }
+
   if (OutputFileName != NULL) {
   fclose(OutFile);
   }
