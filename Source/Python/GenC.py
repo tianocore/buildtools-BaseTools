@@ -752,7 +752,7 @@ ${END}
 BasicHeaderFile = "Base.h"
 
 ModuleTypeHeaderFile = {
-    "BASE"              :   BasicHeaderFile,
+    "BASE"              :   [BasicHeaderFile],
     "SEC"               :   ["PiPei.h", "Library/DebugLib.h"],
     "PEI_CORE"          :   ["PiPei.h", "Library/DebugLib.h"],  
     "PEIM"              :   ["PiPei.h", "Library/DebugLib.h"],  
@@ -762,7 +762,8 @@ ModuleTypeHeaderFile = {
     "DXE_RUNTIME_DRIVER":   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"], 
     "DXE_SAL_DRIVER"    :   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"], 
     "UEFI_DRIVER"       :   ["Uefi.h",  "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"],
-    "UEFI_APPLICATION"  :   ["Uefi.h",  "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"]
+    "UEFI_APPLICATION"  :   ["Uefi.h",  "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"],
+    "USER_DEFINED"      :   [BasicHeaderFile]
 }
 
 ##ModuleTypeHeaderFile = {
@@ -892,6 +893,11 @@ def CreateModulePcdCode(info, autoGenC, autoGenH, pcd):
     autoGenH.Append('#define %s  %d\n' % (pcdTokenName, tokenNumber))
 
     EdkLogger.debug(EdkLogger.DEBUG_7, "Creating code for " + pcd.TokenCName + "/" + pcd.TokenSpaceGuidCName)
+    if pcd.Type not in ItemTypeStringDatabase:
+        raise AutoGenError("Unknown PCD type [%s] of PCD %s/%s" % (pcd.Type, pcd.TokenCName, pcd.TokenSpaceGuidCName))
+    if pcd.DatumType not in DatumSizeStringDatabase:
+        raise AutoGenError("Unknown datum type [%s] of PCD %s/%s" % (pcd.DatumType, pcd.TokenCName, pcd.TokenSpaceGuidCName))
+
     datumSize = DatumSizeStringDatabase[pcd.DatumType]
     datumSizeLib = DatumSizeStringDatabaseLib[pcd.DatumType]
     getModeName = '_PCD_GET_MODE_' + DatumSizeStringDatabaseH[pcd.DatumType] + '_' + pcd.TokenCName

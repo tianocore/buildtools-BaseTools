@@ -767,6 +767,10 @@ class Makefile(object):
         if self.ModuleInfo.Arch == "EBC":
             entryPoint = "EfiStart"
 
+        defaultToolFlag = self.PlatformInfo.DefaultToolOption.values()
+        if self.ModuleInfo.ModuleType == "USER_DEFINED":
+            defaultToolFlag = ["" for p in defaultToolFlag]
+            
         makefileName = gMakefileName[makeType]
         makefileTemplateDict = {
             "makefile_header"           : MakefileHeader % makefileName,
@@ -795,7 +799,7 @@ class Makefile(object):
             "platform_build_directory"  : self.PlatformBuildDirectory,
 
             "separator"                 : separator,
-            "default_tool_flags"        : self.PlatformInfo.DefaultToolOption.values(),
+            "default_tool_flags"        : defaultToolFlag,
             "platform_tool_flags"       : self.PlatformInfo.BuildOption.values(),
             "module_tool_flags"         : self.ModuleInfo.BuildOption.values(),
 
@@ -1062,9 +1066,12 @@ class Makefile(object):
         cwd = os.getcwd()
         os.chdir(self.ModuleInfo.WorkspaceDir)
 
+        EdkLogger.debug(EdkLogger.DEBUG_3, "Get dependency files for %s" % file)
+        EdkLogger.debug(EdkLogger.DEBUG_2, "Including %s" % " ".join(forceList))
         fileStack = [file] + forceList
         dependencyList = []
         while len(fileStack) > 0:
+            EdkLogger.debug(EdkLogger.DEBUG_2, "Stack %s" % "\n\t".join(fileStack))
             f = fileStack.pop()
 
             currentFileDependencyList = []

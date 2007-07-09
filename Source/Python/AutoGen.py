@@ -122,6 +122,9 @@ class AutoGen(object):
     def GetModuleBuildInfo(self):
         key = (self.BuildTarget, self.ToolChain, self.Arch, self.Module)
         if key in gAutoGenDatabase:
+            self.BuildInfo = gAutoGenDatabase[key].BuildInfo
+            self.IsAutoGenCodeCreated = gAutoGenDatabase[key].IsAutoGenCodeCreated
+            self.IsMakefileCreated = gAutoGenDatabase[key].IsMakefileCreated
             return gAutoGenDatabase[key].BuildInfo
         
         info = ModuleBuildInfo(self.Module)
