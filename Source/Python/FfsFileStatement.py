@@ -19,13 +19,16 @@ class FileStatements (Ffs.Ffs) :
         OutputDir = os.path.join(GenFdsGlobalVariable.FfsDir, self.NameGuid)
         if not os.path.exists(OutputDir):
              os.makedirs(OutputDir)
-            
-        SectionFiles = ''
-        
-        for section in self.SectionList :
-            SectionFiles = SectionFiles                          + \
-                           ' -i '                                + \
-                           section.GenSection(OutputDir, self.NameGuid, self.KeyStringList)
+
+        if self.FileName != None :
+            SectionFiles = ' -i ' + \
+                          GenFdsGlobalVariable.ReplaceWorkspaceMarco(self.FileName)
+        else:
+            SectionFiles = ''
+            for section in self.SectionList :
+                SectionFiles = SectionFiles                          + \
+                               ' -i '                                + \
+                               section.GenSection(OutputDir, self.NameGuid, self.KeyStringList)
         #
         # Prepare the parameter
         #
@@ -52,8 +55,6 @@ class FileStatements (Ffs.Ffs) :
 
         FfsFileOutput = os.path.join(OutputDir, self.NameGuid + '.ffs')
                     
-        InputSection = ' -i '                         + \
-                        FfsFileOutput
   
         GenFfsCmd = 'GenFfs' +  \
                      FileType +     \

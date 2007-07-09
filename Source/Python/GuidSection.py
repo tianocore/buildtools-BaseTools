@@ -79,7 +79,6 @@ class GuidSection(Section.Section) :
             TempFile = os.path.normpath(TempFile)
             
             ExternalToolCmd = ExternalTool                             + \
-                              ' -e '                                   + \
                               ' -o '                                   + \
                               TempFile                                 + \
                               ' '                                      + \
