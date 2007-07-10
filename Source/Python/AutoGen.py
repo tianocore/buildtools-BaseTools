@@ -268,7 +268,6 @@ class AutoGen(object):
                 else:
                     raise Exception("%s used in module %s cannot be found in any package!" % (guidCName, info.Name))
             tokenList[i] = token
-        # print "   ","\n    ".join(tokenList)
         return tokenList
 
     def GetMacroList(self):
@@ -389,6 +388,7 @@ class AutoGen(object):
                 toolCode = buildRule.ToolCodeMapping[fileType]
             # get the toolchain family from tools definition
             if f.ToolChainFamily != "" and f.ToolChainFamily != platformInfo.ToolChainFamily[toolCode]:
+                EdkLogger.verbose("File %s for toolchain family %s is not supported" % (f.SourceFile, f.ToolChainFamily))
                 continue
             if fileType == "Unicode-Text":
                 self.BuildInfo.UnicodeFileList.append(os.path.join(gWorkspaceDir, self.BuildInfo.SourceDir, f.SourceFile))
@@ -408,7 +408,7 @@ class AutoGen(object):
             if pf in packageList:
                 continue
             if pf not in packageDatabase:
-                raise AutoGenError("[%s] is not found!" % pf)
+                raise AutoGenError("[%s] is not found or parsed!" % pf)
             packageList.append(packageDatabase[pf])
         return packageList
 
@@ -573,15 +573,16 @@ class AutoGen(object):
 
     def GetPcdList(self, dependentLibraryList):
         platformPcds = self.Platform.Pcds
-        #EdkLogger.info(self.Module.BaseName + " PCD settings")
+        #EdkLogger.info("###" + self.Module.BaseName + " PCD settings")
 
         pcdList = []
         for m in dependentLibraryList + [self.Module]:
-            # EdkLogger.info("  " + m.BaseName)
             for pcdKey in m.Pcds:
                 pcd = m.Pcds[pcdKey]
+                #EdkLogger.info("###  " + str(pcd))
                 if (pcd.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd) and self.Module.ModuleType in ["PEIM", "PEI_CORE"]:
                     #platformPcds[pcdKey].Phase = "PEI"
+                    #EdkLogger.info("### PEI")
                     pcd.Phase = "PEI"
                 if pcd not in pcdList:
                     pcdList.append(pcd)

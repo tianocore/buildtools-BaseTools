@@ -9,7 +9,7 @@ def ConvertTextFileToDictionary(FileName, Dictionary, CommentCharacter, KeySplit
   try:
     f = open(FileName,'r')
   except:
-    EdkLogger.error('Open file failed')
+    EdkLogger.info('Open file failed')
     return False
   Keys = []
   for Line in f:

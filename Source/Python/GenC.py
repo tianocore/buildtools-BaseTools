@@ -975,6 +975,12 @@ def CreateLibraryPcdCode(info, autoGenC, autoGenH, pcd):
     tokenSpaceGuidCName = pcd.TokenSpaceGuidCName
     tokenCName  = pcd.TokenCName
     tokenNumber = pcdTokenNumber[tokenCName, tokenSpaceGuidCName]
+    
+    if pcd.Type not in ItemTypeStringDatabase:
+        raise AutoGenError("Unknown PCD type [%s] of PCD %s/%s" % (pcd.Type, pcd.TokenCName, pcd.TokenSpaceGuidCName))
+    if pcd.DatumType not in DatumSizeStringDatabase:
+        raise AutoGenError("Unknown datum type [%s] of PCD %s/%s" % (pcd.DatumType, pcd.TokenCName, pcd.TokenSpaceGuidCName))
+
     datumType   = pcd.DatumType
     datumSize   = DatumSizeStringDatabaseH[datumType]
     datumSizeLib= DatumSizeStringDatabaseLib[datumType]
@@ -1017,12 +1023,6 @@ def CreateLibraryPcdCode(info, autoGenC, autoGenH, pcd):
         autoGenH.Append('extern const %s _gPcd_FixedAtBuild_%s%s;\n' %(datumType, tokenCName, array))
         autoGenH.Append('#define %s  %s_gPcd_FixedAtBuild_%s\n' %(getModeName, type, tokenCName))
         autoGenH.Append('//#define %s  ASSERT(FALSE)  // It is not allowed to set value for a FIXED_AT_BUILD PCD\n' % setModeName)
-
-##def GetGuidValue(self, guidCName):
-##    for Package in gPackageDatabase.values():
-##        if guidCName in Package.Guids:
-##            return Package.Guids[guidCName]
-##    return None
 
 def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
     AutoGenC = AutoGenString()
@@ -1269,11 +1269,6 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
             continue
 
         TokenSpaceGuid = GuidStructureStringToGuidValueName(GetGuidValue(platform.PackageList, TokenSpaceGuidCName))
-##            for Package in Platform.PackageList:
-##                if TokenSpaceGuidCName in Package.GuidDatabase:
-##                    TokenSpaceGuid = Package.GuidDatabase[TokenSpaceGuidCName].Guid.lower()
-##                    break
-
         GeneratedTokenNumber = platform.PcdTokenNumber[CName, TokenSpaceGuidCName] - 1
         if phase == 'DXE':
             GeneratedTokenNumber -= NumberOfPeiLocalTokens
@@ -1412,7 +1407,7 @@ def CreateModuleEntryPointCode(info, autoGenC, autoGenH):
 
     if info.ModuleType in ['PEI_CORE', 'DXE_CORE']:
         if NumEntryPoints != 1:
-            EdkLogger.error('ERROR: %s must have exactly one entry point' % info.ModuleType)
+            raise AutoGenError('%s must have exactly one entry point' % info.ModuleType)
     if info.ModuleType == 'PEI_CORE':
         autoGenC.Append(PeiCoreEntryPointString, Dict)
     elif info.ModuleType == 'DXE_CORE':

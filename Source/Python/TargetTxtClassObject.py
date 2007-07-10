@@ -14,6 +14,7 @@ import os
 import EdkLogger
 import DataType
 from Dictionary import *
+from BuildToolError import *
 
 
 class TargetTxtClassObject(object):
@@ -57,7 +58,7 @@ class TargetTxtClassObject(object):
             
             #EdkLogger.info('LoadTargetTxtFile() End')
         else:
-            EdkLogger.error('LoadTargetTxtFile() : No Target.txt file exist')
+            raise ParseError('LoadTargetTxtFile() : No Target.txt file exist')
 
 if __name__ == '__main__':
     pass

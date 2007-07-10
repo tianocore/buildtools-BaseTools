@@ -13,6 +13,7 @@
 
 import EdkLogger
 from UniClassObject import *
+from BuildToolError import *
 
 HexHeader = '0x'
 
@@ -184,7 +185,7 @@ def CreateCFile(BaseName, UniObjectClass):
 
 def GetFileList(IncludeList, SkipList):
     if IncludeList == None:
-        EdkLogger.error("Include path is not defined")
+        raise AutoGenError("Include path for unicode file is not defined")
     
     FileList = []
     if SkipList == None:
@@ -235,7 +236,7 @@ def GetStringFiles(UniFilList, IncludeList, SkipList, BaseName):
     if len(UniFilList) > 0:
         Uni = UniFileClassObject(UniFilList)
     else:
-        EdkLogger.error('No Unicode Files Found')
+        raise AutoGenError('No unicode files given')
     
     FileList = GetFileList(IncludeList, SkipList)
     

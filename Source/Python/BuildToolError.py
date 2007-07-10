@@ -12,6 +12,13 @@ class AutoGenError(BuildToolError):
     def __str__(self):
         return "\nAutoGen: %s" % BuildToolError.__str__(self)
 
+class ParseError(BuildToolError):
+    def __init__(self, message):
+        BuildToolError.__init__(self, message)
+
+    def __str__(self):
+        return "\nParser: %s" % BuildToolError.__str__(self)
+
 class GenFdsError(BuildToolError):
     def __init__(self, message):
         BuildToolError.__init__(self, message)

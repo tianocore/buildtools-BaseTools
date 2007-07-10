@@ -25,6 +25,7 @@ from DecClassObject import *
 from DscClassObject import *
 from String import *
 from ClassObjects.CommonClassObject import *
+from BuildToolError import *
 
 class ModuleSourceFilesClassObject(object):
     def __init__(self, SourceFile = '', PcdFeatureFlag = '', TagName = '', ToolCode = '', ToolChainFamily = '', String = ''):
@@ -222,7 +223,7 @@ class WorkspaceBuild(object):
         if os.path.exists(file) and os.path.isfile(file):
             self.DscDatabase[dscFileName] = Dsc(file, True)
         else:
-            EdkLogger.error('No Active Platform')
+            EdkLogger.verbose('No Active Platform')
             return
         
         #parse platform to get module
@@ -287,7 +288,7 @@ class WorkspaceBuild(object):
                         SkuName = CleanString(SkuInfo.split(DataType.TAB_VALUE_SPLIT)[1])
                         SkuId = CleanString(SkuInfo.split(DataType.TAB_VALUE_SPLIT)[0])
                     else:
-                        EdkLogger.error('Wrong defintion for SkuId')
+                        raise ParseError('Wrong defintion for SkuId: %s' % SkuInfo)
                     pb.SkuIds[SkuName] = SkuId
                 
                 #Module
@@ -517,7 +518,7 @@ class WorkspaceBuild(object):
                         if len(MakefileList) == 2:
                             pb.CustomMakefile[CleanString(MakefileList[0])] = CleanString(MakefileList[1])
                         else:
-                            EdkLogger.error('Wrong custom makefile defined in file ' + inf + ', correct format is CUSTOM_MAKEFILE = Family|Filename')
+                            raise ParseError('Wrong custom makefile defined in file ' + inf + ', correct format is CUSTOM_MAKEFILE = Family|Filename')
                 
                 if infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_EDK_RELEASE_VERSION][0] != '':
                     pb.Specification[TAB_INF_DEFINES_EDK_RELEASE_VERSION] = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_EDK_RELEASE_VERSION][0]
@@ -561,7 +562,7 @@ class WorkspaceBuild(object):
                     elif len(SourceFile) == 1:
                         pb.Sources.append(ModuleSourceFilesClassObject(NormPath(infObj.Contents[key].Sources[index])))
                     else:
-                        EdkLogger.error("Inconsistent '|' value defined in SourceFiles." + key + " section in file " + inf)
+                        raise ParseError("Inconsistent '|' value defined in SourceFiles." + key + " section in file " + inf)
 
                 #Protocols
                 for index in range(len(infObj.Contents[key].Protocols)):

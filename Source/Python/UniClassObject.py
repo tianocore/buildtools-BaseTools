@@ -13,6 +13,7 @@
 
 import os, codecs
 import EdkLogger
+from BuildToolError import *
 
 UNICODE_WIDE_CHAR = u'\\wide'
 UNICODE_NARROW_CHAR = u'\\narrow'
@@ -80,7 +81,7 @@ class UniFileClassObject(object):
     def GetLangDef(self, Line):
         Lang = Line.split()
         if len(Lang) != 3:
-            EdkLogger.error("""Wrong language definition '""" + Line + """' which should be '#langdef eng "English"'""")
+            raise ParseError("""Wrong language definition '""" + Line + """' which should be '#langdef eng "English"'""")
         else:
             LangName = Lang[1]
             LangPrintName = Lang[2][1:-1]
@@ -238,7 +239,7 @@ class UniFileClassObject(object):
                                 StringItem = StringItem[ : StringItem.rfind(u'\"')] + Lines[IndexJ][Lines[IndexJ].find(u'\"') + len(u'\"') : ]
                         self.GetStringObject(StringItem)              
             else:
-                EdkLogger.error(File + ' is not a valid file')
+                raise ParseError(File + ' is not a valid file')
     
     def LoadUniFiles(self, FileList = []):
         if len(FileList) > 0:
@@ -319,4 +320,3 @@ if __name__ == '__main__':
         print i
         for m in a.OrderedStringList[i]:
             print str(m)
-    
