@@ -36,6 +36,13 @@ Abstract:
 EFI_GUID      Vtf1NameGuid = EFI_IPF_VTF1_GUID
 EFI_GUID      Vtf2NameGuid = EFI_IPF_VTF2_GUID
 
+//CHAR8       OutFileName1[FILE_NAME_SIZE];
+//CHAR8       OutFileName2[FILE_NAME_SIZE];
+
+BOOLEAN     VTF_OUTPUT = FALSE;
+CHAR8       *OutFileName1;
+CHAR8       *OutFileName2;
+
 CHAR8           **TokenStr;
 CHAR8           **OrgStrTokPtr;
 
@@ -1095,7 +1102,7 @@ Returns:
     printf ("\nERROR: Error in opening file");
     return EFI_INVALID_PARAMETER;
   }
-
+  printf("\n we handle PEI CORE here!");
   while (fgets (Buff, sizeof (Buff), Fp) != NULL) {
     fscanf (
       Fp,
@@ -1164,6 +1171,7 @@ Returns:
   BOOLEAN     Aligncheck;
 
   if (VtfInfo->LocationType == NONE) {
+    printf("\n start to call UpdateFitEntryForNonVTFComp");
     UpdateFitEntryForNonVTFComp (VtfInfo);
     return EFI_SUCCESS;
   }
@@ -1250,6 +1258,7 @@ Returns:
 //    printf("\nWe start to Update the second VtfBuffer!");
     Vtf2LastStartAddress = CompStartAddress;
     Vtf2TotalSize += (UINT32) (FileSize + NumAdjustByte);
+    printf("\n CompStartAddress is %d", CompStartAddress);
     Status = UpdateVtfBuffer (CompStartAddress, Buffer, FileSize, SECOND_VTF);
   } else if (VtfInfo->LocationType == FIRST_VTF) {
 //    printf("\nWe start to Update the first VtfBuffer!");
@@ -1300,7 +1309,9 @@ Returns:
   // VTF till we work out how to determine the SALE_ENTRY through it. We will need
   // to clarify so many related questions
   // !!!!!!!!!!!!!!!!!!!!!!!
+
   if (VtfInfo->CompType == COMP_TYPE_FIT_PEICORE) {
+    printf("\n we Start to  UpdateEntryPoint here!");
     Status = UpdateEntryPoint (VtfInfo, &CompStartAddress);
   }
 
@@ -1595,7 +1606,7 @@ Arguments:
                   to be updated.
   Buffer         - Buffer pointer from data will be copied to memory mapped buffer.
   DataSize       - Size of the data needed to be copied.
-  LocType        - The type of the VTF
+  LocType        - The type of the VTF: First or Second
 
 Returns:
   
@@ -1627,7 +1638,8 @@ Returns:
     LocalBufferPtrToWrite -= (Fv2EndAddress - StartAddress);
 //    printf("\n %d", LocalBufferPtrToWrite);
   }
-
+  
+  printf("\n Buffer is %d", *Buffer);
   memcpy (LocalBufferPtrToWrite, Buffer, (UINTN) DataSize);
 
   return EFI_SUCCESS;
@@ -1698,7 +1710,10 @@ Returns:
   FileHeader->IntegrityCheck.Checksum.File    = 0;
   FileHeader->State                           = 0;
   FileHeader->IntegrityCheck.Checksum.Header  = CalculateChecksum8 ((UINT8 *) FileHeader, sizeof (EFI_FFS_FILE_HEADER));
+  printf("\nDone for udpate header checksum");
+  printf("\nTotalVtfSize is %d", TotalVtfSize);
   FileHeader->IntegrityCheck.Checksum.File    = CalculateChecksum8 ((UINT8 *) FileHeader, TotalVtfSize);
+  printf("\nDone for udpate File checksum");
   FileHeader->State                           = EFI_FILE_HEADER_CONSTRUCTION | EFI_FILE_HEADER_VALID | EFI_FILE_DATA_VALID;
 
   return EFI_SUCCESS;
@@ -1876,7 +1891,8 @@ Returns:
     // COMP_TYPE_FIT_HEADER is a special case, hence handle it here
     //
     case COMP_TYPE_FIT_HEADER:
-//      printf("\nStart to call CreateFitTableAndInitialize!");
+      //COMP_TYPE_FIT_HEADER          0x00
+      printf("\nStart to call CreateFitTableAndInitialize!");
       Status = CreateFitTableAndInitialize (ParsedInfoPtr);
       break;
 
@@ -1884,7 +1900,8 @@ Returns:
     // COMP_TYPE_FIT_PAL_A is a special case, hence handle it here
     //
     case COMP_TYPE_FIT_PAL_A:
-//      printf("\nStart to call CreateAndUpdatePAL_A!");
+      //COMP_TYPE_FIT_PAL_A           0x0F
+      printf("\nStart to call CreateAndUpdatePAL_A!");
       Status = CreateAndUpdatePAL_A (ParsedInfoPtr);
 
       //
@@ -1899,7 +1916,8 @@ Returns:
       break;
 
     case COMP_TYPE_FIT_FV_BOOT:
-//      printf("\nStart to call COMP_TYPE_FIT_FV_BOOT!");
+      //COMP_TYPE_FIT_FV_BOOT         0x7E
+      printf("\nStart to call COMP_TYPE_FIT_FV_BOOT!");
       //
       // Since FIT entry for Firmware Volume has been created and it is
       // located at (PAL_A start - 16 byte). So we will not process any
@@ -1909,7 +1927,7 @@ Returns:
       break;
 
     default:
-//      printf("\nDefault is to CreateAndUpdateComponent!");
+      printf("\nDefault is to CreateAndUpdateComponent!");
       //
       // Any other component type should be handled here. This will create the
       // image in specified VTF and create appropriate entry about this
@@ -1948,6 +1966,7 @@ Arguments:
   Size1          - The size of the first VTF
   StartAddress2  - The start address of the second VTF      
   Size2          - The size of the second VTF
+  fp             - The pointer to BSF inf file
 
 Returns:
  
@@ -1963,8 +1982,8 @@ Returns:
 --*/
 {
   EFI_STATUS  Status;
-  CHAR8       OutFileName1[FILE_NAME_SIZE];
-  CHAR8       OutFileName2[FILE_NAME_SIZE];
+//  CHAR8       OutFileName1[FILE_NAME_SIZE];
+//  CHAR8       OutFileName2[FILE_NAME_SIZE];
 //  BOOLEAN     SecondVTF;
   FILE        *VtfFP;
 
@@ -1982,12 +2001,14 @@ Returns:
   Fv1BaseAddress        = StartAddress1;
   Fv1EndAddress         = Fv1BaseAddress + Size1;
   
-  memset (OutFileName1, 0, FILE_NAME_SIZE);
+//  memset (OutFileName1, 0, FILE_NAME_SIZE);
   //
   // if output file name specified
   //
   if (VTF_OUTPUT) {
-    sprintf(OutFileName1, "%s", VTF_OUTPUT_FILE);
+    //sprintf(OutFileName1, "%s", VTF_OUTPUT_FILE);
+    printf("\nThe first VTF output file is %s", OutFileName1);
+    printf("\nThe second VTF output file is %s", OutFileName2);
   }
   //
   // else if output file name not specified, then use the default one
@@ -2028,7 +2049,8 @@ Returns:
     Fv2BaseAddress        = StartAddress2;
     Fv2EndAddress         = Fv2BaseAddress + Size2;
     
-    memset (OutFileName2, 0, FILE_NAME_SIZE);
+//    memset (OutFileName2, 0, FILE_NAME_SIZE);
+/*
     sprintf (
       OutFileName2,
       "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x-%s",
@@ -2045,7 +2067,7 @@ Returns:
       Vtf2NameGuid.Data4[7],
       VTF_OUTPUT_FILE
       );
-    
+*/    
     //
     // The image buffer for the second VTF
     //
@@ -2075,7 +2097,8 @@ Returns:
     CleanUpMemory ();
     return Status;
   }
-
+  
+  printf("\n Done for ProcessAndCreateVtf");
   Status = UpdateIA32ResetVector (IA32BinFile, Vtf1TotalSize);
   if (Status != EFI_SUCCESS) {
     CleanUpMemory ();
@@ -2093,12 +2116,13 @@ Returns:
   // if yes, then it will perform the checksum otherwise not.
   //
   CalculateFitTableChecksum ();
-
+  printf("\n Done for CalculateFitTableChecksum");
   //
   // Write the FFS header
   //
   Vtf1TotalSize += sizeof (EFI_FFS_FILE_HEADER);
   Vtf1LastStartAddress -= sizeof (EFI_FFS_FILE_HEADER);
+  printf("\nVtf1TotalSize before call UpdateFfsHeader is %d", Vtf1TotalSize);
   Status = UpdateFfsHeader (Vtf1TotalSize, FIRST_VTF);
   if (Status != EFI_SUCCESS) {
     CleanUpMemory ();
@@ -2110,6 +2134,7 @@ Returns:
   Status  = WriteVtfBinary (OutFileName1, Vtf1TotalSize, FIRST_VTF);
 
   if (SecondVTF) {
+    printf("\n Start to write second vtf");
     Vtf2TotalSize += sizeof (EFI_FFS_FILE_HEADER);
     Vtf2LastStartAddress -= sizeof (EFI_FFS_FILE_HEADER);
     Status = UpdateFfsHeader (Vtf2TotalSize, SECOND_VTF);
@@ -2157,7 +2182,7 @@ Returns:
   UINT64      *StartAddressPtr;
   UINTN       FirstFwVSize;
   UINTN       NumByte;
-  CHAR8       OutFileName1[FILE_NAME_SIZE];
+//  CHAR8       OutFileName1[FILE_NAME_SIZE];
 
   StartAddressPtr   = malloc (sizeof (UINT64));
   if (StartAddressPtr == NULL) {
@@ -2165,7 +2190,7 @@ Returns:
   }
   *StartAddressPtr = StartAddress;
 
-  memset (OutFileName1, 0, FILE_NAME_SIZE);
+//  memset (OutFileName1, 0, FILE_NAME_SIZE);
 
   sprintf (
     OutFileName1,
@@ -2466,7 +2491,7 @@ Returns:
     UTILITY_NAME
     );
   printf (
-    "\nUsage: %s [-o OutPutFile -f FileName -r FirstVTFBaseAddress -s FirstVTFFwVolumeSize -r SecondVTFBaseAddress -s SecondVTFFwVolumeSize]\n",
+    "\nUsage: %s [-o OutPutFile1 -o OutPutFile2 -f FileName -r FirstVTFBaseAddress -s FirstVTFFwVolumeSize -r SecondVTFBaseAddress -s SecondVTFFwVolumeSize]\n",
     UTILITY_NAME
     );  
   printf ("  Where:\n");
@@ -2519,6 +2544,7 @@ Returns:
   UINT64      StartAddress2;
   UINT64      FwVolSize1;
   UINT64      FwVolSize2;
+  BOOLEAN     FirstRoundO;
   BOOLEAN     FirstRoundB;
   BOOLEAN     FirstRoundS;
   EFI_STATUS  Status;
@@ -2662,7 +2688,12 @@ Returns:
   FwVolSize2    = 0;
   FirstRoundB   = TRUE;
   FirstRoundS   = TRUE;
-
+  FirstRoundO   = TRUE;
+  OutFileName1  = NULL;
+  OutFileName2  = NULL;
+  
+//  memset (OutFileName1, 0, FILE_NAME_SIZE);
+//  memset (OutFileName2, 0, FILE_NAME_SIZE);
   //
   // Parse the command line arguments
   //
@@ -2696,8 +2727,24 @@ Returns:
     //
     // Get the output file name
     //
-    OutputFileName = (CHAR8 *)argv[Index+1];
-
+    VTF_OUTPUT = TRUE;
+    if (FirstRoundO) {
+    //
+    // It's the first output file name
+    //
+    //strncpy(OutFileName1, argv[Index+1], FILE_NAME_SIZE);
+    OutFileName1 = (CHAR8 *)argv[Index+1];
+    printf("\nOutFileName1 is %s", OutFileName1);
+    FirstRoundO = FALSE;
+    }
+    else {
+    //
+    //
+    //
+    //strncpy(OutFileName2, argv[Index+1], FILE_NAME_SIZE);
+    OutFileName2 = (CHAR8 *)argv[Index+1];
+    printf("\nOutFileName2 is %s", OutFileName2);
+    }
     break;
     
     case 'F':
@@ -2707,6 +2754,7 @@ Returns:
     // 
 //    printf("\ninput file name specified!\n");    
     VtfFileName = argv[Index+1];
+    printf("\nBSF inf file is %s", VtfFileName);
     VtfFP = fopen(VtfFileName, "rb");
     if (VtfFP == NULL) {
       printf("\nERROR to open VTF inf file!");
@@ -2765,9 +2813,9 @@ Returns:
   //
 //  printf("\nStart to GenerateVtfImage!");
 //  printf("\nStartAddress1 is %d", StartAddress1);
-//  printf("\nFwVolSize1 is %d", FwVolSize1);
+  printf("\nFwVolSize1 is %d", FwVolSize1);
 //  printf("\nStartAddress2 is %d", StartAddress2);
-//  printf("\nFwVolSize2 is %d", FwVolSize2);
+  printf("\nFwVolSize2 is %d", FwVolSize2);
   Status = GenerateVtfImage (StartAddress1, FwVolSize1, StartAddress2, FwVolSize2, VtfFP);
 
   if (EFI_ERROR (Status)) {

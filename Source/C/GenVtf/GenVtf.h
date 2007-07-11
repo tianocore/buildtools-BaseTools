@@ -66,7 +66,7 @@ Abstract:
 #define   VTF_OUTPUT_FILE         "Vtf.RAW"
 #define   VTF_SYM_FILE            "Vtf.SYM"
 #define   FIT_SIGNATURE           "_FIT_   "
-#define   VTF_OUTPUT               1
+//#define   VTF_OUTPUT               1
 
 //
 // This is IA32 seccore
@@ -138,7 +138,7 @@ Abstract:
 #define ONE_VTF_ARGS  7
 #define TWO_VTF_ARGS  9
 #define THREE_VTF_ARGS 11
-#define FOUR_VTF_ARGS  13
+#define FOUR_VTF_ARGS  15
 
 //
 // The number of IA32 vtf arguments accepted from the command line.
