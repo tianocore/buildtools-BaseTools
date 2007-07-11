@@ -547,11 +547,16 @@ class AutoGen(object):
         for f in gModuleDatabase[arch]:
             m = gModuleDatabase[arch][f]
             for key in m.Pcds:
-                pcd = m.Pcds[key]
-                if (pcd.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd) and pcd not in pcdList:
+                if key not in platform.Pcds:
+                    raise AutoGenError("PCD [%s %s] not found in platform" % key)
+                mPcd = m.Pcds[key]
+                pPcd = platform.Pcds[key]
+                if pPcd.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd:
                     if m.ModuleType in ["PEIM", "PEI_CORE"]:
-                        pcd.Phase = "PEI"
-                    pcdList.append(pcd)
+                        pPcd.Phase = "PEI"
+                    if pPcd not in pcdList:
+                        pPcd.DatumType = mPcd.DatumType
+                        pcdList.append(pPcd)
         return pcdList
 
     def GeneratePcdTokenNumber(self, platform, dynamicPcdList):
@@ -573,16 +578,13 @@ class AutoGen(object):
 
     def GetPcdList(self, dependentLibraryList):
         platformPcds = self.Platform.Pcds
-        #EdkLogger.info("###" + self.Module.BaseName + " PCD settings")
 
         pcdList = []
         for m in dependentLibraryList + [self.Module]:
             for pcdKey in m.Pcds:
                 pcd = m.Pcds[pcdKey]
-                #EdkLogger.info("###  " + str(pcd))
                 if (pcd.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd) and self.Module.ModuleType in ["PEIM", "PEI_CORE"]:
                     #platformPcds[pcdKey].Phase = "PEI"
-                    #EdkLogger.info("### PEI")
                     pcd.Phase = "PEI"
                 if pcd not in pcdList:
                     pcdList.append(pcd)

@@ -1097,11 +1097,11 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
     NumberOfSizeItems = 0
     GuidList = []
 
-    platformPcds = platform.Platform.Pcds
     for Pcd in platform.DynamicPcdList:
-        #Pcd = platformPcds[CName, TokenSpaceGuidCName]
         CName = Pcd.TokenCName
         TokenSpaceGuidCName = Pcd.TokenSpaceGuidCName
+        EdkLogger.debug(EdkLogger.DEBUG_5, "PCD: %s %s (%s : %s)" % (CName, TokenSpaceGuidCName, Pcd.Phase, phase))
+
         if Pcd.Phase == 'PEI':
             NumberOfPeiLocalTokens += 1
         if Pcd.Phase == 'DXE':
@@ -1262,7 +1262,6 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
     Dict['TOKEN_TYPE']       = ['' for x in range(NumberOfLocalTokens)]
 
     for Pcd in platform.DynamicPcdList:
-        #Pcd = platformPcds[CName, TokenSpaceGuidCName]
         CName = Pcd.TokenCName
         TokenSpaceGuidCName = Pcd.TokenSpaceGuidCName
         if Pcd.Phase != phase:
