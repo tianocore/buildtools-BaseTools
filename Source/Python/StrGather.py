@@ -56,7 +56,7 @@ def CreateHFileHeader(BaseName):
     Str = WriteLine(Str, '#define _' + BaseName.upper() + '_STRINGS_DEFINE_H_')
     return Str
 
-def CreateHFileContent(UniObjectClass):
+def CreateHFileContent(BaseName, UniObjectClass):
     Str = ''
     ValueStartPtr = 60
     Line = COMMENT_DEFINE_STR + ' ' + LANGUAGE_NAME_STRING_NAME + ' ' * (ValueStartPtr - len(DEFINE_STR + LANGUAGE_NAME_STRING_NAME)) + DecToHexStr(0, 4) + COMMENT_NOT_REFERENCED
@@ -75,11 +75,14 @@ def CreateHFileContent(UniObjectClass):
             else:
                 Line = COMMENT_DEFINE_STR + ' ' + Name + ' ' * (ValueStartPtr - len(DEFINE_STR + Name)) + DecToHexStr(Token, 4) + COMMENT_NOT_REFERENCED
             Str = WriteLine(Str, Line)
+    
+    Str =  WriteLine(Str, '')
+    Str = WriteLine(Str, 'extern unsigned char ' + BaseName + 'Strings;')
     return Str
 
 def CreateHFile(BaseName, UniObjectClass):
     #HFile = WriteLine('', CreateHFileHeader(BaseName))
-    HFile = WriteLine('', CreateHFileContent(UniObjectClass))
+    HFile = WriteLine('', CreateHFileContent(BaseName, UniObjectClass))
     #HFile = WriteLine(HFile, '#endif')
     return HFile
 
