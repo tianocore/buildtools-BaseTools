@@ -5,7 +5,7 @@
 #
 import os, sys, re
 
-cTypedefPattern = re.compile("^\s*typedef\s+struct\s+\{", re.MULTILINE)
+cTypedefPattern = re.compile("^\s*typedef\s+struct\s+[{]*$", re.MULTILINE)
 cPragmaPattern = re.compile("^\s*#pragma\s+pack", re.MULTILINE)
 
 def TrimPreprocessedFile (source, target, Convert, Vfr=False):
@@ -36,7 +36,7 @@ def TrimVfr(lines, start, end):
     typedefStart = 0
     typedefEnd = 0
     for index in range (start, end):
-        if lines[index].strip().find('#line') == 0:
+        if foundTypedef == False and lines[index].strip().find('#line') == 0:
             continue
 
         if foundTypedef == False and cTypedefPattern.search(lines[index]) == None:
@@ -56,7 +56,7 @@ def TrimVfr(lines, start, end):
             foundTypedef = False
             typedefEnd = index
             if lines[index].strip("} ;\r\n") == "GUID":
-                print lines[index]
+                #print lines[index]
                 for i in range(typedefStart, typedefEnd+1):
                     lines[i] = "\n"
 
