@@ -77,7 +77,7 @@ def CreateHFileContent(BaseName, UniObjectClass):
             Str = WriteLine(Str, Line)
     
     Str =  WriteLine(Str, '')
-    Str = WriteLine(Str, 'extern unsigned char ' + BaseName + 'Strings;')
+    Str = WriteLine(Str, 'extern unsigned char ' + BaseName + 'Strings[];')
     return Str
 
 def CreateHFile(BaseName, UniObjectClass):
@@ -224,9 +224,13 @@ def SearchString(UniObjectClass, FileList):
         if os.path.isfile(File):
             Lines = open(File, 'r')
             for Line in Lines:
-                if Line.find(STRING_TOKEN) >= 0:
-                    StrName = Line[Line.find('(', Line.find(STRING_TOKEN)) + len('(') : Line.find(')', Line.find(STRING_TOKEN))].strip()
-                    UniObjectClass.SetStringReferenced(StrName)
+                if Line.find(STRING_TOKEN) > 0:
+                    Line = Line[Line.find(STRING_TOKEN) : ]
+                    StringList = Line.split(STRING_TOKEN)
+                    for Line in StringList:
+                        Line = Line.strip()
+                        StrName = Line[Line.find('(') + len('(') : Line.find(')')].strip()
+                        UniObjectClass.SetStringReferenced(StrName)
      
     UniObjectClass.ReToken()
 
@@ -259,7 +263,7 @@ def WriteLine(Target, Item):
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
 if __name__ == '__main__':
-    print 'start'
+    EdkLogger.info('start')
     
     UniFileList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\inventorystrings.uni', 'C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\VfrStrings.uni']
     IncludeList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample']
@@ -283,4 +287,4 @@ if __name__ == '__main__':
     hfile.write(h)
     cfile.write(c)
     
-    print 'end'
+    EdkLogger.info('end')
