@@ -25,7 +25,9 @@ from DecClassObject import *
 from DscClassObject import *
 from String import *
 from ClassObjects.CommonClassObject import *
+from FdfParser import *
 from BuildToolError import *
+from Region import *
 
 class ModuleSourceFilesClassObject(object):
     def __init__(self, SourceFile = '', PcdFeatureFlag = '', TagName = '', ToolCode = '', ToolChainFamily = '', String = ''):
@@ -242,13 +244,14 @@ class WorkspaceBuild(object):
                 for index in range(len(dscObj.Contents[key].LibraryClasses)):
                     self.AddToInfDatabase(dscObj.Contents[key].LibraryClasses[index][0].split(DataType.TAB_VALUE_SPLIT, 1)[1])
                 for index in range(len(dscObj.Contents[key].Components)):
-                    self.AddToInfDatabase(dscObj.Contents[key].Components[index][0])
-                    if len(dscObj.Contents[key].Components[index][1]) > 0:
-                        LibList = dscObj.Contents[key].Components[index][1]
-                        for indexOfLib in range(len(LibList)):
-                            Lib = LibList[indexOfLib]
-                            if len(Lib.split(DataType.TAB_VALUE_SPLIT)) == 2:
-                                self.AddToInfDatabase(CleanString(Lib.split(DataType.TAB_VALUE_SPLIT)[1]))
+                    Module = dscObj.Contents[key].Components[index][0]
+                    LibList = dscObj.Contents[key].Components[index][1]
+                    self.AddToInfDatabase(Module)
+                    for indexOfLib in range(len(LibList)):
+                        Lib = LibList[indexOfLib]
+                        if len(Lib.split(DataType.TAB_VALUE_SPLIT)) == 2:
+                            self.AddToInfDatabase(CleanString(Lib.split(DataType.TAB_VALUE_SPLIT)[1]))
+                            self.UpdateInfDatabase(Module, CleanString(Lib.split(DataType.TAB_VALUE_SPLIT)[0]), key)
         #End For of Dsc
         
         #parse module to get package
@@ -657,6 +660,18 @@ class WorkspaceBuild(object):
     
     #End of self.Init
     
+    def UpdateInfDatabase(self, infFileName, LibraryClass, Arch):
+        infFileName = NormPath(infFileName)
+        LibList = self.InfDatabase[infFileName].Contents[Arch].LibraryClasses
+        NotFound = True
+        for Item in LibList:
+            LibName = Item.split(DataType.TAB_VALUE_SPLIT)[0].strip()
+            if LibName == LibraryClass:
+                return
+        
+        if NotFound:
+            self.InfDatabase[infFileName].Contents[Arch].LibraryClasses.extend([LibraryClass])
+    
     def AddToInfDatabase(self, infFileName):
         infFileName = NormPath(infFileName)
         file = self.Workspace.WorkspaceFile(infFileName)
@@ -680,8 +695,8 @@ class WorkspaceBuild(object):
                     #Search each library class
                     LibList = dscObj.Contents[arch].Components[index][1]
                     for indexOfLib in range(len(LibList)):
-                        if LibList[indexOfLib].split(DataType.TAB_VALUE_SPLIT)[0] == lib:
-                            return LibList[indexOfLib].split(DataType.TAB_VALUE_SPLIT)[1]
+                        if LibList[indexOfLib].split(DataType.TAB_VALUE_SPLIT)[0].strip() == lib:
+                            return LibList[indexOfLib].split(DataType.TAB_VALUE_SPLIT)[1].strip()
             
             #Second find if exist in <LibraryClass> of <LibraryClasses> from dsc file            
             if (lib, moduleType) in self.Build[arch].PlatformDatabase[dsc].LibraryClasses:
@@ -746,7 +761,9 @@ class WorkspaceBuild(object):
                 break
         
         return PcdClassObject(CName, GuidCName, Type, DatumType, DefaultValue, TokenValue, MaxDatumSize, SkuInfoList)
-                
+    
+    def ReloadPcd(self, FvDict):
+        pass
                 
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
