@@ -795,7 +795,7 @@ def GuidStructureStringToGuidString(GuidValue):
     guidValueString = GuidValue.lower().replace("{", "").replace("}", "").replace(" ", "")
     guidValueList = guidValueString.split(",")
     if len(guidValueList) != 11:
-        raise AutoGenError("Invalid GUID value string %s" % GuidValue)
+        raise AutoGenError(msg="Invalid GUID value string %s" % GuidValue)
     return "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x" % (
             int(guidValueList[0], 16),
             int(guidValueList[1], 16),
@@ -814,7 +814,7 @@ def GuidStructureStringToGuidValueName(GuidValue):
     guidValueString = GuidValue.lower().replace("{", "").replace("}", "").replace(" ", "")
     guidValueList = guidValueString.split(",")
     if len(guidValueList) != 11:
-        raise AutoGenError("Invalid GUID value string %s" % GuidValue)
+        raise AutoGenError(msg="Invalid GUID value string %s" % GuidValue)
     return "%08x_%04x_%04x_%02x%02x_%02x%02x%02x%02x%02x%02x" % (
             int(guidValueList[0], 16),
             int(guidValueList[1], 16),
@@ -838,7 +838,7 @@ def GetGuidValue(packages, cname):
         if cname in p.Ppis:
             return p.Ppis[cname]
     else:
-        raise Exception("Cannot find GUID value for %s in any package" % cname)
+        raise AutoGenError(msg="Cannot find GUID value for %s in any package" % cname)
 
 class AutoGenString(object):
   def __init__(self):
@@ -894,9 +894,9 @@ def CreateModulePcdCode(info, autoGenC, autoGenH, pcd):
 
     EdkLogger.debug(EdkLogger.DEBUG_7, "Creating code for " + pcd.TokenCName + "/" + pcd.TokenSpaceGuidCName)
     if pcd.Type not in ItemTypeStringDatabase:
-        raise AutoGenError("Unknown PCD type [%s] of PCD %s/%s" % (pcd.Type, pcd.TokenCName, pcd.TokenSpaceGuidCName))
+        raise AutoGenError(msg="Unknown PCD type [%s] of PCD %s/%s" % (pcd.Type, pcd.TokenCName, pcd.TokenSpaceGuidCName))
     if pcd.DatumType not in DatumSizeStringDatabase:
-        raise AutoGenError("Unknown datum type [%s] of PCD %s/%s" % (pcd.DatumType, pcd.TokenCName, pcd.TokenSpaceGuidCName))
+        raise AutoGenError(msg="Unknown datum type [%s] of PCD %s/%s" % (pcd.DatumType, pcd.TokenCName, pcd.TokenSpaceGuidCName))
 
     datumSize = DatumSizeStringDatabase[pcd.DatumType]
     datumSizeLib = DatumSizeStringDatabaseLib[pcd.DatumType]
@@ -977,9 +977,9 @@ def CreateLibraryPcdCode(info, autoGenC, autoGenH, pcd):
     tokenNumber = pcdTokenNumber[tokenCName, tokenSpaceGuidCName]
     
     if pcd.Type not in ItemTypeStringDatabase:
-        raise AutoGenError("Unknown PCD type [%s] of PCD %s/%s" % (pcd.Type, pcd.TokenCName, pcd.TokenSpaceGuidCName))
+        raise AutoGenError(msg="Unknown PCD type [%s] of PCD %s/%s" % (pcd.Type, pcd.TokenCName, pcd.TokenSpaceGuidCName))
     if pcd.DatumType not in DatumSizeStringDatabase:
-        raise AutoGenError("Unknown datum type [%s] of PCD %s/%s" % (pcd.DatumType, pcd.TokenCName, pcd.TokenSpaceGuidCName))
+        raise AutoGenError(msg="Unknown datum type [%s] of PCD %s/%s" % (pcd.DatumType, pcd.TokenCName, pcd.TokenSpaceGuidCName))
 
     datumType   = pcd.DatumType
     datumSize   = DatumSizeStringDatabaseH[datumType]
@@ -1406,7 +1406,7 @@ def CreateModuleEntryPointCode(info, autoGenC, autoGenH):
 
     if info.ModuleType in ['PEI_CORE', 'DXE_CORE']:
         if NumEntryPoints != 1:
-            raise AutoGenError('%s must have exactly one entry point' % info.ModuleType)
+            raise AutoGenError(msg='%s must have exactly one entry point' % info.ModuleType)
     if info.ModuleType == 'PEI_CORE':
         autoGenC.Append(PeiCoreEntryPointString, Dict)
     elif info.ModuleType == 'DXE_CORE':

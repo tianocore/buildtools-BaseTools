@@ -80,7 +80,7 @@ class AutoGen(object):
             self.BuildInfo = {}
             for a in self.Arch:
                 if a not in gPlatformDatabase or str(platformFile) not in gPlatformDatabase[a]:
-                    raise AutoGenError("[%s] is not active platform, or %s is not supported!" % (platformFile, a))
+                    raise AutoGenError(msg="[%s] is not active platform, or %s is not supported!" % (platformFile, a))
                 p = gPlatformDatabase[a][str(platformFile)]
                 self.Platform[a] = p
                 self.BuildInfo[a] = self.GetPlatformBuildInfo(p, self.BuildTarget, self.ToolChain, a)
@@ -96,21 +96,21 @@ class AutoGen(object):
         self.IsPlatformAutoGen = False
         if type(arch) == type([]):
             if len(arch) > 1:
-                raise AutoGenError("Cannot AutoGen a module for more than one platform objects at the same time!")
+                raise AutoGenError(msg="Cannot AutoGen a module for more than one platform objects at the same time!")
             self.Arch = arch[0]
         else:
             self.Arch = arch
 
         if self.Arch not in gPlatformDatabase or str(platformFile) not in gPlatformDatabase[arch]:
-            raise AutoGenError("[%s] is not active platform!" % platformFile)
+            raise AutoGenError(msg="[%s] is not active platform, or %s is not supported!" % (platformFile, self.Arch))
         if self.Arch not in gModuleDatabase or str(moduleFile) not in gModuleDatabase[self.Arch]:
-            raise AutoGenError("[%s] for %s is not found in active platform [%s]!" % (moduleFile, self.Arch, platformFile))
+            raise AutoGenError(msg="[%s] for %s is not found in active platform [%s]!" % (moduleFile, self.Arch, platformFile))
         self.Module = gModuleDatabase[self.Arch][str(moduleFile)]
         self.Platform = gPlatformDatabase[arch][str(platformFile)]
 
         self.Package = FindModuleOwnerPackage(self.Module, gPackageDatabase[arch])
         if self.Package == None:
-            raise AutoGenError("Cannot find owner package for [%s]!" % (moduleFile))
+            raise AutoGenError(msg="Cannot find owner package for [%s]!" % (moduleFile))
 
         self.AutoGenC = GenC.AutoGenString()
         self.AutoGenH = GenC.AutoGenString()
@@ -266,7 +266,7 @@ class AutoGen(object):
                         token = p.Guids[guidCName]
                         break
                 else:
-                    raise Exception("%s used in module %s cannot be found in any package!" % (guidCName, info.Name))
+                    raise AutoGenError(msg="%s used in module %s cannot be found in any package!" % (guidCName, info.Name))
             tokenList[i] = token
         return tokenList
 
@@ -400,7 +400,7 @@ class AutoGen(object):
             self.Module.Packages.insert(0, str(self.Package))
 
         if self.Arch not in gPackageDatabase:
-            raise AutoGenError("[%s] is not supported!")
+            raise AutoGenError(msg="[%s] is not supported!")
         packageDatabase = gPackageDatabase[self.Arch]
 
         packageList = []
@@ -408,7 +408,7 @@ class AutoGen(object):
             if pf in packageList:
                 continue
             if pf not in packageDatabase:
-                raise AutoGenError("[%s] is not found or parsed!" % pf)
+                raise AutoGenError(FILE_NOT_FOUND, name=pf)
             packageList.append(packageDatabase[pf])
         return packageList
 
@@ -436,7 +436,11 @@ class AutoGen(object):
         while len(libraryConsumerList) > 0:
             module = libraryConsumerList.pop()
             for libc, libf in module.LibraryClasses.iteritems():
-                if moduleType not in libc or libf == None or libf == "":
+                if moduleType not in libc:
+                    EdkLogger.debug(EdkLogger.DEBUG_5, "\t%s for module type %s is not supported" % libc)
+                    continue
+                if libf == None or libf == "":
+                    EdkLogger.info("\tLibrary instance of library class %s is not found" % libc[0])
                     continue
                 
                 libm = gModuleDatabase[self.Arch][libf]
@@ -444,7 +448,7 @@ class AutoGen(object):
                     libraryConsumerList.append(libm)
                     libraryList.append(libm)
                     libraryClassList.append(libc)
-                    EdkLogger.verbose("\t" + str(libm))
+                    EdkLogger.verbose("\t" + libc[0] + " : " + str(libm))
 
                 if libm.ConstructorList != [] and libm not in constructor:
                     constructor.append(libm)
@@ -531,7 +535,7 @@ class AutoGen(object):
             if consumedByList[m] != [] and m in constructor:
                 errorMessage = 'Module library [%s] with constructors have a cycle:\n\t' % str(m)
                 errorMessage += "\n\tconsumed by ".join([str(l) for l in consumedByList[m]])
-                raise AutoGenError(errorMessage)
+                raise AutoGenError(msg=errorMessage)
             if m not in SortedLibraryList:
                 SortedLibraryList.append(m)
 
@@ -548,7 +552,7 @@ class AutoGen(object):
             m = gModuleDatabase[arch][f]
             for key in m.Pcds:
                 if key not in platform.Pcds:
-                    raise AutoGenError("PCD [%s %s] not found in platform" % key)
+                    raise AutoGenError(msg="PCD [%s %s] not found in platform" % key)
                 mPcd = m.Pcds[key]
                 pPcd = platform.Pcds[key]
                 if pPcd.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd:
@@ -591,7 +595,7 @@ class AutoGen(object):
         return pcdList
 
     def GetGuidList(self):
-        packageListString = "\n    ".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
+        packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
         guid = {}
         Key = ""
         for Key in self.Module.Guids:
@@ -606,7 +610,7 @@ class AutoGen(object):
                     guid[Key] = p.Ppis[Key]
                     break
             else:
-                raise AutoGenError('GUID [%s] used by [%s] cannot be found in dependent packages:\n    %s' % (Key, self.BuildInfo.Name, packageListString))
+                raise AutoGenError(msg='GUID [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.BuildInfo.Name, packageListString))
 
         for lib in self.BuildInfo.DependentLibraryList:
             if lib.Guids == []:
@@ -626,11 +630,11 @@ class AutoGen(object):
                         guid[Key] = p.Ppis[Key]
                         break
                 else:
-                    raise AutoGenError('GUID [%s] used by [%s] cannot be found in dependent packages:\n    %s' % (Key, lib.BaseName, packageListString))
+                    raise AutoGenError(msg='GUID [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, lib.BaseName, packageListString))
         return guid
 
     def GetProtocolGuidList(self):
-        packageListString = "\n    ".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
+        packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
         guid = {}
         Key = ""
         for Key in self.Module.Protocols:
@@ -645,7 +649,7 @@ class AutoGen(object):
                         guid[Key] = p.Ppis[Key]
                         break
             else:
-                raise AutoGenError('Protocol [%s] used by [%s] cannot be found in dependent packages:\n    %s' % (Key, self.BuildInfo.Name, packageListString))
+                raise AutoGenError(msg='Protocol [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.BuildInfo.Name, packageListString))
 
         for lib in self.BuildInfo.DependentLibraryList:
             if lib.Protocols == []:
@@ -663,12 +667,12 @@ class AutoGen(object):
                         guid[Key] = p.Ppis[Key]
                         break
                 else:
-                    raise AutoGenError('Protocol [%s] used by [%s] cannot be found in dependent packages:\n    %s' % (Key, lib.BaseName, packageListString))
+                    raise AutoGenError(msg='Protocol [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, lib.BaseName, packageListString))
 
         return guid
 
     def GetPpiGuidList(self):
-        packageListString = "\n    ".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
+        packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
         guid = {}
         Key = ""
         for Key in self.Module.Ppis:
@@ -683,7 +687,7 @@ class AutoGen(object):
                     guid[Key] = p.Ppis[Key]
                     break
             else:
-                raise AutoGenError('PPI [%s] used by [%s] cannot be found in dependent packages:\n    %s' % (Key, self.BuildInfo.Name, packageListString))
+                raise AutoGenError(msg='PPI [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.BuildInfo.Name, packageListString))
 
         for lib in self.BuildInfo.DependentLibraryList:
             if lib.Ppis == []:
@@ -701,7 +705,7 @@ class AutoGen(object):
                         guid[Key] = p.Ppis[Key]
                         break
                 else:
-                    raise AutoGenError('PPI [%s] used by [%s] cannot be found in dependent packages:\n    %s' % (Key, lib.BaseName, packageListString))
+                    raise AutoGenError(msg='PPI [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, lib.BaseName, packageListString))
         return guid
 
     def GetIncludePathList(self, dependentPackageList):

@@ -41,7 +41,7 @@ class AutoGenString(object):
                         if RepeatTime < 0:
                             RepeatTime = len(Value)
                         elif RepeatTime != len(Value):
-                            raise Exception(Key + " has different repeat time from others!")
+                            raise AutoGenError(msg=Key + " has different repeat time from others!")
                         NewDict[Key] = ""
 
                 NewString = ''
@@ -687,7 +687,7 @@ class Makefile(object):
             self.ModuleBuildDirectoryList = self.GetModuleBuildDirectoryList()
             self.LibraryBuildDirectoryList = self.GetLibraryBuildDirectoryList()
         else:
-            raise Exception("Non-buildable item!")
+            raise AutoGenError(msg="Non-buildable item:%s" % str(info))
 
         self.Opt = opt
         self.BuildWithPch = opt["ENABLE_PCH"]
