@@ -809,8 +809,8 @@ class Makefile(object):
 
             "separator"                 : separator,
             "default_tool_flags"        : defaultToolFlag,
-            "platform_tool_flags"       : self.PlatformInfo.BuildOption.values(),
-            "module_tool_flags"         : self.ModuleInfo.BuildOption.values(),
+            "platform_tool_flags"       : [self.PlatformInfo.BuildOption[tool] for tool in self.PlatformInfo.ToolPath],
+            "module_tool_flags"         : [self.ModuleInfo.BuildOption[tool] for tool in self.PlatformInfo.ToolPath],
 
             "tool_code"                 : self.PlatformInfo.ToolPath.keys(),
             "tool_path"                 : self.PlatformInfo.ToolPath.values(),
@@ -981,9 +981,6 @@ class Makefile(object):
             elif fdir not in self.IntermediateDirectoryList:
                 self.IntermediateDirectoryList.append(fdir)
                 
-##            if fbase.endswith("Gcc"):
-##                continue
-
             ftype = rule.FileTypeMapping[fext]
             if ftype not in rule.Makefile[makeType]:
                 continue
@@ -1073,6 +1070,9 @@ class Makefile(object):
                 fd = open(f, 'r')
                 fileContent = fd.read()
                 fd.close()
+                if len(fileContent) == 0:
+                    continue
+
                 if fileContent[0] == 0xff or fileContent[0] == 0xfe:
                     fileContent = unicode(fileContent, "utf-16")
                 includedFileList = gIncludePattern.findall(fileContent)
