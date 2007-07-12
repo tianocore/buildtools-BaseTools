@@ -30,6 +30,7 @@ Abstract:
 
 #include <Common/UefiBaseTypes.h>
 #include <Common/MultiPhase.h>
+#include <Common/UefiCapsule.h>
 
 #include <Common/FirmwareVolumeImageFormat.h>
 #include <Common/PiFirmwareVolumeHeader.h>
@@ -66,6 +67,7 @@ Abstract:
 // The maximum number of files in the FV supported by the library
 //
 #define MAX_NUMBER_OF_FILES_IN_FV       1000
+#define MAX_NUMBER_OF_FILES_IN_CAP      1000
 #define EFI_FFS_FILE_HEADER_ALIGNMENT   8
 
 //
@@ -83,6 +85,10 @@ Abstract:
 #define EFI_NUM_BLOCKS_STRING             "EFI_NUM_BLOCKS"
 #define EFI_BLOCK_SIZE_STRING             "EFI_BLOCK_SIZE"
 #define EFI_FV_GUID_STRING                "EFI_FV_GUID"
+#define EFI_CAPSULE_GUID_STRING           "EFI_CAPSULE_GUID"
+#define EFI_CAPSULE_HEADER_SIZE_STRING    "EFI_CAPSULE_HEADER_SIZE"
+#define EFI_CAPSULE_FLAGS_STRING          "EFI_CAPSULE_FLAGS"
+#define EFI_CAPSULE_VERSION_STRING        "EFI_CAPSULE_VERSION"
 
 //
 // Attributes section
@@ -157,6 +163,11 @@ Abstract:
 #define IA32_PEI_CORE_ENTRY_OFFSET    0x20
 
 //
+// Defines to calculate the offset for IA32 SEC CORE entry point
+//
+#define IA32_SEC_CORE_ENTRY_OFFSET     0xD
+
+//
 // Defines to calculate the FIT table
 //
 #define IPF_FIT_ADDRESS_OFFSET        0x20
@@ -214,6 +225,14 @@ typedef struct {
   EFI_FVB_ATTRIBUTES      FvAttributes;
   CHAR8                   FvFiles[MAX_NUMBER_OF_FILES_IN_FV][_MAX_PATH];
 } FV_INFO;
+
+typedef struct {
+  EFI_GUID                CapGuid;
+  UINT32                  HeaderSize;
+  UINT32                  Flags;
+  UINT32                  Version;
+  CHAR8                   CapFiles[MAX_NUMBER_OF_FILES_IN_CAP][_MAX_PATH];
+} CAP_INFO;
 
 #pragma pack(1)
 

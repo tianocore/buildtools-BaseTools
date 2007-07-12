@@ -262,6 +262,7 @@ Returns:
 
   PeHdr = NULL;
   TeHdr = NULL;
+  DebugDirectoryEntry    = NULL;
   DebugDirectoryEntryRva = 0;
 
   if (NULL == ImageContext) {
@@ -406,7 +407,7 @@ Returns:
           Size = sizeof (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY);    
           Status = ImageContext->ImageRead (
                                    ImageContext->Handle,
-                                   DebugDirectoryEntryFileOffset,
+                                   DebugDirectoryEntryFileOffset + Index,
                                    &Size,
                                    &DebugEntry
                                    );

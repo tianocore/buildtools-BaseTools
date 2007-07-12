@@ -66,14 +66,34 @@ Abstract:
 
 UINT8 *InImageName;
 
-#define FW_DUMMY_IMAGE   0
-#define FW_EFI_IMAGE     1
-#define FW_TE_IMAGE      2
-#define FW_ACPI_IMAGE    3
+#define FW_DUMMY_IMAGE       0
+#define FW_EFI_IMAGE         1
+#define FW_TE_IMAGE          2
+#define FW_ACPI_IMAGE        3
+#define FW_BIN_IMAGE         4
+#define FW_ZERO_DEBUG_IMAGE  5
+#define FW_SET_STAMP_IMAGE   6
 
+#define DUMP_TE_HEADER       0x11
+#define FW_REPLACE_IMAGE     0x100
+
+ 
 #define MAX_STRING_LENGTH 100
 
 STATIC
+EFI_STATUS
+ZeroDebugData (
+  IN OUT UINT8   *FileBuffer
+  );
+
+STATIC 
+EFI_STATUS
+SetStamp (
+  IN OUT UINT8  *FileBuffer, 
+  IN     CHAR8  *TimeStamp
+  );
+
+static
 VOID
 Version (
   VOID
@@ -99,6 +119,11 @@ Usage (
                         BS_DRIVER|RT_DRIVER|SAL_RT_DRIVER|APPLICATION>\n\
         -c, --acpi\n\
         -t, --terse\n\
+        -u, --dump\n\
+        -z, --zero\n\
+        -b, --exe2bin\n\
+        -r, --replace\n\
+        -s, --stamp [time-data] <NOW|\"####-##-## ##:##:##\">\n\
         -h, --help\n\
         -V, --version\n");
 }
@@ -279,40 +304,6 @@ FCopyFile (
     return STATUS_ERROR;
   }
 
-  return STATUS_SUCCESS;
-}
-
-static
-STATUS
-FReadFile (
-  FILE    *in,
-  VOID    **Buffer,
-  UINTN   *Length
-  )
-{
-  fseek (in, 0, SEEK_END);
-  *Length = ftell (in);
-  *Buffer = malloc (*Length);
-  fseek (in, 0, SEEK_SET);
-  fread (*Buffer, *Length, 1, in);
-  return STATUS_SUCCESS;
-}
-
-static
-STATUS
-FWriteFile (
-  FILE    *out,
-  VOID    *Buffer,
-  UINTN   Length
-  )
-{
-  fseek (out, 0, SEEK_SET);
-  fwrite (Buffer, Length, 1, out);
-  if ((UINT32 ) ftell (out) != Length) {
-    Error (NULL, 0, 0, "write error", NULL);
-    return STATUS_ERROR;
-  }
-  free (Buffer);
   return STATUS_SUCCESS;
 }
 
@@ -903,11 +894,12 @@ Returns:
   UINT32            Type;
   UINT8             *OutImageName;
   UINT8             *ModuleType;
+  CHAR8             *TimeStamp;
   CHAR8             FileName[MAX_STRING_LENGTH];
-  UINT8             OutImageType;
+  UINT32            OutImageType;
   FILE              *fpIn;
   FILE              *fpOut;
-  VOID              *ZeroBuffer;
+  FILE              *fpInOut;
   UINT32            Index;
   UINT32            Index1;
   UINT32            Index2;
@@ -941,6 +933,8 @@ Returns:
   FileBuffer        = NULL;
   fpIn              = NULL;
   fpOut             = NULL;
+  fpInOut           = NULL;
+  TimeStamp         = NULL;
 
   if (argc == 1) {
     Usage();
@@ -992,6 +986,42 @@ Returns:
       continue;
     }
 
+    if ((stricmp (argv[0], "-u") == 0) || (stricmp (argv[0], "--dump") == 0)) {
+      OutImageType = DUMP_TE_HEADER;
+      argc --;
+      argv ++;
+      continue;
+    }
+
+    if ((stricmp (argv[0], "-b") == 0) || (stricmp (argv[0], "--exe2bin") == 0)) {
+      OutImageType = FW_BIN_IMAGE;
+      argc --;
+      argv ++;
+      continue;
+    }
+
+    if ((stricmp (argv[0], "-z") == 0) || (stricmp (argv[0], "--zero") == 0)) {
+      OutImageType = FW_ZERO_DEBUG_IMAGE;
+      argc --;
+      argv ++;
+      continue;
+    }
+
+    if ((stricmp (argv[0], "-s") == 0) || (stricmp (argv[0], "--stamp") == 0)) {
+      OutImageType = FW_SET_STAMP_IMAGE;
+      TimeStamp    = argv[1];
+      argc -= 2;
+      argv += 2;
+      continue;
+    }
+
+    if ((stricmp (argv[0], "-r") == 0) || (stricmp (argv[0], "--replace") == 0)) {
+      OutImageType |= FW_REPLACE_IMAGE;
+      argc --;
+      argv ++;
+      continue;
+    }
+
     InImageName = argv[0];
     argc --;
     argv ++;
@@ -1001,6 +1031,68 @@ Returns:
     Error (NULL, 0, 0, NULL, "No action specified, such as -e, -c or -t\n");
     Usage ();
     return STATUS_ERROR;    
+  }
+
+
+  //
+  // get InImageName from stdin
+  //
+  if (InImageName == NULL) {
+    fscanf (stdin, "%s", FileName);
+    InImageName = (UINT8 *) FileName;
+  }
+
+  //
+  // Open input file and read file data into file buffer.
+  //
+  fpIn = fopen (InImageName, "rb");
+  if (!fpIn) {
+    Error (NULL, 0, 0, InImageName, "failed to open input file for reading");
+    goto Finish;
+  }
+
+  FileLength = _filelength (fileno (fpIn));
+  FileBuffer = malloc (FileLength);
+  if (FileBuffer == NULL) {
+    Error (NULL, 0, 0, NULL, "can't allocate enough memory space");
+    fclose (fpIn);
+    goto Finish;
+  }
+  
+  fread (FileBuffer, 1, FileLength, fpIn);
+  fclose (fpIn);
+
+  //
+  // Open output file and Write image into the output file.
+  // if OutImageName == NULL, output data to stdout.
+  //
+  if (OutImageName == NULL) {
+    if ((OutImageType & FW_REPLACE_IMAGE) != 0) {
+      fpOut = fopen (InImageName, "wb");
+      if (!fpOut) {
+        Error (NULL, 0, 0, InImageName, "could not open input file for modify");
+        goto Finish;
+      }
+      OutImageType = OutImageType & ~FW_REPLACE_IMAGE;
+    } else {
+      // binary stream can't be output to string strem stdout
+      // because 0x0A can be auto converted to 0x0D 0x0A.
+      fpOut = stdout;
+    } 
+  } else {
+    fpOut = fopen (OutImageName, "wb");
+    if (!fpOut) {
+      Error (NULL, 0, 0, OutImageName, "could not open output file for writing");
+      goto Finish;
+    }
+    if ((OutImageType & FW_REPLACE_IMAGE) != 0) {
+      fpInOut = fopen (InImageName, "wb");
+      if (!fpInOut) {
+        Error (NULL, 0, 0, InImageName, "could not open input file for modify");
+        goto Finish;
+      }
+      OutImageType = OutImageType & ~FW_REPLACE_IMAGE;
+    }
   }
 
   //
@@ -1047,39 +1139,27 @@ Returns:
       goto Finish;
     }
   }
-
+ 
   //
-  // get InImageName from stdin
+  // Dump TeImage Header into output file.
   //
-  if (InImageName == NULL) {
-    fscanf (stdin, "%s", FileName);
-    InImageName = (UINT8 *) FileName;
-  }
-
-  //
-  // Open input file
-  //
-  fpIn = fopen (InImageName, "rb");
-  if (!fpIn) {
-    Error (NULL, 0, 0, InImageName, "failed to open input file for reading");
-    goto Finish;
-  }
-
-  FReadFile (fpIn, (VOID **)&FileBuffer, &FileLength);
-  fclose (fpIn);
-
-  //
-  // Open output file and Write image into the output file.
-  // if OutImageName == NULL, output data to stdout.
-  //
-  if (OutImageName == NULL) {
-    fpOut = stdout; // binary stream can't be output to string strem stdout
-                    // because 0x0A can be auto converted to 0x0D 0x0A.
-  } else {
-    fpOut = fopen (OutImageName, "w+b");
-  }
-  if (!fpOut) {
-    Error (NULL, 0, 0, OutImageName, "could not open output file for writing");
+  if (OutImageType == DUMP_TE_HEADER) {
+    memcpy (&TEImageHeader, FileBuffer, sizeof (TEImageHeader));
+    if (TEImageHeader.Signature != EFI_TE_IMAGE_HEADER_SIGNATURE) {
+      Error (NULL, 0, 0, InImageName, "TE header signature is not correct");
+      goto Finish;      
+    }
+    fprintf (fpOut, "Dump of file %s\n\n", InImageName);
+    fprintf (fpOut, "TE IMAGE HEADER VALUES\n");
+    fprintf (fpOut, "%17X machine\n", TEImageHeader.Machine);
+    fprintf (fpOut, "%17X number of sections\n", TEImageHeader.NumberOfSections);
+    fprintf (fpOut, "%17X subsystems\n", TEImageHeader.Subsystem);
+    fprintf (fpOut, "%17X stripped size\n", TEImageHeader.StrippedSize);
+    fprintf (fpOut, "%17X entry point\n", TEImageHeader.AddressOfEntryPoint);
+    fprintf (fpOut, "%17X base of code\n", TEImageHeader.BaseOfCode);
+    fprintf (fpOut, "%17X image base\n", TEImageHeader.ImageBase);
+    fprintf (fpOut, "%17X [%8X] RVA [size] of Base Relocation Directory\n", TEImageHeader.DataDirectory[0].VirtualAddress, TEImageHeader.DataDirectory[0].Size);
+    fprintf (fpOut, "%17X [%8X] RVA [size] of Debug Directory\n", TEImageHeader.DataDirectory[1].VirtualAddress, TEImageHeader.DataDirectory[1].Size);
     goto Finish;
   }
 
@@ -1107,6 +1187,59 @@ Returns:
     goto Finish;
   }
   
+  //
+  // Extract bin data from Pe image.
+  //
+  if (OutImageType == FW_BIN_IMAGE) {
+    if (FileLength < PeHdr->OptionalHeader.SizeOfHeaders) {
+      Error (NULL, 0, 0, InImageName, "FileSize is not a legal size.");
+      goto Finish;
+    }
+    //
+    // Output bin data from exe file
+    //
+    fwrite (FileBuffer + PeHdr->OptionalHeader.SizeOfHeaders, 1, FileLength - PeHdr->OptionalHeader.SizeOfHeaders, fpOut);
+    if (fpInOut != NULL) {
+      fwrite (FileBuffer + PeHdr->OptionalHeader.SizeOfHeaders, 1, FileLength - PeHdr->OptionalHeader.SizeOfHeaders, fpInOut);
+    }
+    goto Finish;
+  }
+
+  //
+  // Zero Debug Information of Pe Image
+  //
+  if (OutImageType == FW_ZERO_DEBUG_IMAGE) {
+    Status = ZeroDebugData (FileBuffer);
+    if (EFI_ERROR (Status)) {
+      goto Finish;
+    }
+
+    fwrite (FileBuffer, 1, FileLength, fpOut);
+    if (fpInOut != NULL) {
+      fwrite (FileBuffer, 1, FileLength, fpInOut);
+    }
+    goto Finish; 
+  }
+
+  //
+  // Set Time Stamp of Pe Image
+  //
+  if (OutImageType == FW_SET_STAMP_IMAGE) {
+    Status = SetStamp (FileBuffer, TimeStamp);
+    if (EFI_ERROR (Status)) {
+      goto Finish;
+    }
+
+    fwrite (FileBuffer, 1, FileLength, fpOut);
+    if (fpInOut != NULL) {
+      fwrite (FileBuffer, 1, FileLength, fpInOut);
+    }
+    goto Finish;
+  }
+
+  //
+  // Extract acpi data from pe image.
+  //
   if (OutImageType == FW_ACPI_IMAGE) {
     SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->OptionalHeader) + PeHdr->FileHeader.SizeOfOptionalHeader); 
     for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index ++, SectionHeader ++) {
@@ -1128,10 +1261,11 @@ Returns:
         //
         // Output Apci data to file
         //
-        memcpy (FileBuffer, FileBuffer + SectionHeader->PointerToRawData, FileLength);
-        FWriteFile (fpOut, FileBuffer, FileLength);
-        fclose (fpOut);
-        return STATUS_SUCCESS;
+        fwrite (FileBuffer + SectionHeader->PointerToRawData, 1, FileLength, fpOut);
+        if (fpInOut != NULL) {
+          fwrite (FileBuffer + SectionHeader->PointerToRawData, 1, FileLength, fpInOut);
+        }
+        goto Finish;
       }
     }
     Error (NULL, 0, 0, InImageName, "failed to get ACPI table");
@@ -1351,13 +1485,22 @@ Returns:
     //
     // Update Image to TeImage
     //
-    FileLength = FileLength - TEImageHeader.StrippedSize;
-    memcpy (FileBuffer + sizeof (EFI_TE_IMAGE_HEADER), FileBuffer + TEImageHeader.StrippedSize, FileLength);
-    memcpy (FileBuffer, &TEImageHeader, sizeof (EFI_TE_IMAGE_HEADER));
+    fwrite (&TEImageHeader, 1, sizeof (EFI_TE_IMAGE_HEADER), fpOut);
+    fwrite (FileBuffer + TEImageHeader.StrippedSize, 1, FileLength - TEImageHeader.StrippedSize, fpOut);
+    if (fpInOut != NULL) {
+      fwrite (&TEImageHeader, 1, sizeof (EFI_TE_IMAGE_HEADER), fpOut);
+      fwrite (FileBuffer + TEImageHeader.StrippedSize, 1, FileLength - TEImageHeader.StrippedSize, fpOut);
+    }
+    goto Finish;
   }
-
-  FWriteFile (fpOut, FileBuffer, FileLength);
-  FileBuffer = NULL;
+  
+  //
+  // Update Image to EfiImage
+  //
+  fwrite (FileBuffer, 1, FileLength, fpOut);
+  if (fpInOut != NULL) {
+    fwrite (FileBuffer, 1, FileLength, fpInOut);
+  }
 
 Finish:
   if (FileBuffer != NULL) {
@@ -1370,6 +1513,264 @@ Finish:
     //
     fclose (fpOut);
   }
-  
+
+  if (fpInOut != NULL) {
+    //
+    // Write converted data into fpInOut file and close input file.
+    //
+    fclose (fpInOut);
+  }
+
   return GetUtilityStatus ();
+}
+
+STATIC
+EFI_STATUS
+ZeroDebugData (
+  IN OUT UINT8   *FileBuffer
+  )
+{
+  UINTN                           Index;
+  UINTN                           DebugDirectoryEntryRva;
+  UINTN                           DebugDirectoryEntryFileOffset;
+  EFI_IMAGE_DOS_HEADER            *DosHdr;
+  EFI_IMAGE_FILE_HEADER           *FileHdr;
+  EFI_IMAGE_OPTIONAL_HEADER32     *Optional32Hdr;
+  EFI_IMAGE_OPTIONAL_HEADER64     *Optional64Hdr;
+  EFI_IMAGE_SECTION_HEADER        *SectionHeader;
+  EFI_IMAGE_DEBUG_DIRECTORY_ENTRY *DebugEntry;
+   
+  DosHdr   = (EFI_IMAGE_DOS_HEADER *)  FileBuffer;
+  FileHdr  = (EFI_IMAGE_FILE_HEADER *) (FileBuffer + DosHdr->e_lfanew + sizeof (UINT32));
+  DebugDirectoryEntryRva = 0;
+
+  //
+  // Get DebugEntryTable RVA address.
+  //
+  if (FileHdr->Machine == EFI_IMAGE_MACHINE_IA32) {
+    Optional32Hdr = (EFI_IMAGE_OPTIONAL_HEADER32 *) ((UINT8*) FileHdr + sizeof (EFI_IMAGE_FILE_HEADER));
+    SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) Optional32Hdr +  FileHdr->SizeOfOptionalHeader);
+    if (Optional32Hdr->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_DEBUG && \
+        Optional32Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].Size != 0) {
+      DebugDirectoryEntryRva = Optional32Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress;
+    } else {
+      //
+      // No Debug Data, nothing to do.
+      //
+      return EFI_SUCCESS;
+    }
+  } else {
+    Optional64Hdr = (EFI_IMAGE_OPTIONAL_HEADER64 *) ((UINT8*) FileHdr + sizeof (EFI_IMAGE_FILE_HEADER));
+    SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) Optional64Hdr +  FileHdr->SizeOfOptionalHeader);
+    if (Optional64Hdr->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_DEBUG && \
+        Optional64Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].Size != 0) {
+      DebugDirectoryEntryRva = Optional64Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress;
+    } else {
+      //
+      // No Debug Data, nothing to do.
+      //
+      return EFI_SUCCESS;
+    }
+  }
+  
+  //
+  // Get DebugEntryTable file offset.
+  //
+  for (Index = 0; Index < FileHdr->NumberOfSections; Index ++, SectionHeader ++) {
+    if (DebugDirectoryEntryRva >= SectionHeader->VirtualAddress &&
+        DebugDirectoryEntryRva < SectionHeader->VirtualAddress + SectionHeader->Misc.VirtualSize) {
+        DebugDirectoryEntryFileOffset =
+        DebugDirectoryEntryRva - SectionHeader->VirtualAddress + SectionHeader->PointerToRawData;
+      break;
+    }
+  }
+  
+  if (Index >= FileHdr->NumberOfSections) {
+    Error (NULL, 0, 0, NULL, "Invalid PeImage.");
+    return EFI_ABORTED;
+  }
+  
+  //
+  // Zero Debug Data and TimeStamp
+  //
+  DebugEntry = (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY *) (FileBuffer + DebugDirectoryEntryFileOffset);
+  DebugEntry->TimeDateStamp = 0;
+  memset (FileBuffer + DebugEntry->FileOffset, 0, DebugEntry->SizeOfData);
+  
+  return EFI_SUCCESS;
+}
+
+STATIC 
+EFI_STATUS
+SetStamp (
+  IN OUT UINT8  *FileBuffer, 
+  IN     CHAR8  *TimeStamp
+  )
+{
+  struct tm stime;
+  time_t    newtime;
+  UINTN                           Index;
+  UINTN                           DebugDirectoryEntryRva;
+  UINTN                           DebugDirectoryEntryFileOffset;
+  UINTN                           ExportDirectoryEntryRva;
+  UINTN                           ExportDirectoryEntryFileOffset;
+  UINTN                           ResourceDirectoryEntryRva;
+  UINTN                           ResourceDirectoryEntryFileOffset;
+  EFI_IMAGE_DOS_HEADER            *DosHdr;
+  EFI_IMAGE_FILE_HEADER           *FileHdr;
+  EFI_IMAGE_OPTIONAL_HEADER32     *Optional32Hdr;
+  EFI_IMAGE_OPTIONAL_HEADER64     *Optional64Hdr;
+  EFI_IMAGE_SECTION_HEADER        *SectionHeader;
+  UINT32                          *NewTimeStamp;
+  
+  //
+  // Init variable.
+  //  
+  DebugDirectoryEntryRva    = 0;
+  ExportDirectoryEntryRva   = 0;
+  ResourceDirectoryEntryRva = 0;
+
+  //
+  // Get time and date that will be set.
+  //
+  
+  //
+  // compare the value with "NOW", if yes, current system time is set.
+  //
+  if (stricmp (TimeStamp, "NOW") == 0) {
+    //
+    // get system current time and date
+    //
+    time (&newtime);
+  } else {
+    //
+    // get the date and time from TimeStamp
+    //
+    if (sscanf (TimeStamp, "%d-%d-%d %d:%d:%d",
+            &stime.tm_year,
+            &stime.tm_mon,
+            &stime.tm_mday,
+            &stime.tm_hour,
+            &stime.tm_min,
+            &stime.tm_sec
+            ) != 6) {
+      Error (NULL, 0, 0, TimeStamp, "Invaild date or time!");
+      return EFI_INVALID_PARAMETER;
+    }
+
+    //
+    // in struct, Month (0 - 11; Jan = 0). So decrease 1 from it
+    //
+    stime.tm_mon -= 1;
+  
+    //
+    // in struct, Year (current year minus 1900)
+    // and only the dates can be handled from Jan 1, 1970 to Jan 18, 2038
+    //
+    //
+    // convert 0 -> 100 (2000), 1 -> 101 (2001), ..., 38 -> 138 (2038)
+    //
+    if (stime.tm_year <= 38) {
+      stime.tm_year += 100;
+    } else if (stime.tm_year >= 1970) {
+      //
+      // convert 1970 -> 70, 2000 -> 100, ...
+      //
+      stime.tm_year -= 1900;
+    }
+
+    //
+    // convert the date and time to time_t format
+    //
+    newtime = mktime (&stime);
+    if (newtime == (time_t) - 1) {
+      Error (NULL, 0, 0, TimeStamp, "Invaild date or time!");
+      return EFI_INVALID_PARAMETER;
+    }
+  }
+  
+  //
+  // Set new time and data into PeImage.
+  //
+  DosHdr   = (EFI_IMAGE_DOS_HEADER *)  FileBuffer;
+  FileHdr  = (EFI_IMAGE_FILE_HEADER *) (FileBuffer + DosHdr->e_lfanew + sizeof (UINT32));
+  
+  //
+  // Get Debug, Export and Resource EntryTable RVA address.
+  // Resource Directory entry need to review.
+  //
+  if (FileHdr->Machine == EFI_IMAGE_MACHINE_IA32) {
+    Optional32Hdr = (EFI_IMAGE_OPTIONAL_HEADER32 *) ((UINT8*) FileHdr + sizeof (EFI_IMAGE_FILE_HEADER));
+    SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) Optional32Hdr +  FileHdr->SizeOfOptionalHeader);
+    if (Optional32Hdr->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_EXPORT && \
+        Optional32Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXPORT].Size != 0) {
+      ExportDirectoryEntryRva = Optional32Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
+    }
+    if (Optional32Hdr->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE && \
+        Optional32Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE].Size != 0) {
+      ResourceDirectoryEntryRva = Optional32Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress;
+    }
+    if (Optional32Hdr->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_DEBUG && \
+        Optional32Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].Size != 0) {
+      DebugDirectoryEntryRva = Optional32Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress;
+    }
+  } else {
+    Optional64Hdr = (EFI_IMAGE_OPTIONAL_HEADER64 *) ((UINT8*) FileHdr + sizeof (EFI_IMAGE_FILE_HEADER));
+    SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) Optional64Hdr +  FileHdr->SizeOfOptionalHeader);
+    if (Optional64Hdr->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_EXPORT && \
+        Optional64Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXPORT].Size != 0) {
+      ExportDirectoryEntryRva = Optional64Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
+    }
+    if (Optional64Hdr->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE && \
+        Optional64Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE].Size != 0) {
+      ResourceDirectoryEntryRva = Optional64Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress;
+    }
+    if (Optional64Hdr->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_DEBUG && \
+        Optional64Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].Size != 0) {
+      DebugDirectoryEntryRva = Optional64Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress;
+    }
+  }
+
+  //
+  // Get DirectoryEntryTable file offset.
+  //
+  for (Index = 0; Index < FileHdr->NumberOfSections; Index ++, SectionHeader ++) {
+    if (DebugDirectoryEntryRva >= SectionHeader->VirtualAddress &&
+        DebugDirectoryEntryRva < SectionHeader->VirtualAddress + SectionHeader->Misc.VirtualSize) {
+        DebugDirectoryEntryFileOffset =
+        DebugDirectoryEntryRva - SectionHeader->VirtualAddress + SectionHeader->PointerToRawData;
+    }
+    if (ExportDirectoryEntryRva >= SectionHeader->VirtualAddress &&
+        ExportDirectoryEntryRva < SectionHeader->VirtualAddress + SectionHeader->Misc.VirtualSize) {
+        ExportDirectoryEntryFileOffset =
+        ExportDirectoryEntryRva - SectionHeader->VirtualAddress + SectionHeader->PointerToRawData;
+    }
+    if (ResourceDirectoryEntryRva >= SectionHeader->VirtualAddress &&
+        ResourceDirectoryEntryRva < SectionHeader->VirtualAddress + SectionHeader->Misc.VirtualSize) {
+        ResourceDirectoryEntryFileOffset =
+        ResourceDirectoryEntryRva - SectionHeader->VirtualAddress + SectionHeader->PointerToRawData;
+    }
+  }
+  
+  //
+  // Set new stamp
+  //
+  FileHdr->TimeDateStamp = (UINT32) newtime;
+
+  if (ExportDirectoryEntryRva != 0) {
+    NewTimeStamp  = (UINT32 *) (FileBuffer + ExportDirectoryEntryFileOffset + sizeof (UINT32));
+    *NewTimeStamp = (UINT32) newtime;
+  }
+
+  if (ResourceDirectoryEntryRva != 0) {
+    NewTimeStamp  = (UINT32 *) (FileBuffer + ResourceDirectoryEntryFileOffset + sizeof (UINT32));
+    *NewTimeStamp = (UINT32) newtime;
+  }
+
+  if (DebugDirectoryEntryRva != 0) {
+    NewTimeStamp  = (UINT32 *) (FileBuffer + DebugDirectoryEntryFileOffset + sizeof (UINT32));
+    *NewTimeStamp = (UINT32) newtime;
+  }
+  
+  return EFI_SUCCESS;
 }

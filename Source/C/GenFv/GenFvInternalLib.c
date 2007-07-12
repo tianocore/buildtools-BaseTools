@@ -39,6 +39,12 @@ Abstract:
 #include "WinNtInclude.h"
 
 EFI_STATUS
+FindApResetVectorPosition (
+  IN  MEMORY_FILE  *FvImage,
+  OUT UINT8        **Pointer
+  ); 
+
+EFI_STATUS
 CalculateFvSize (
   FV_INFO *FvInfoPtr
   );
@@ -620,7 +626,7 @@ Returns:
   // Subtract the starting offset to get size
   //
   PadFileSize -= (UINTN) FvImage->CurrentFilePointer - (UINTN) FvImage->FileImage;
-
+  
   //
   // Write pad file size (calculated size minus next file header size)
   //
@@ -1031,6 +1037,7 @@ Returns:
   EFI_PHYSICAL_ADDRESS      PeiCorePhysicalAddress;
   EFI_PHYSICAL_ADDRESS      SecCorePhysicalAddress;
   EFI_PHYSICAL_ADDRESS      *SecCoreEntryAddressPtr;
+  INT32                     Ia32SecEntryOffset;
   UINT32                    *Ia32ResetAddressPtr;
   UINT8                     *BytePointer;
   UINT8                     *BytePointer2;
@@ -1040,6 +1047,7 @@ Returns:
   EFI_FFS_FILE_STATE        SavedState;
   UINT64                    FitAddress;
   FIT_TABLE                 *FitTablePtr;
+  UINT32                    IpiVector;
 
   //
   // Verify input parameters
@@ -1059,6 +1067,46 @@ Returns:
   if (EFI_ERROR (Status)) {
     return EFI_INVALID_PARAMETER;
   }
+
+  //
+  // Find the Sec Core
+  //
+  Status = GetFileByType (EFI_FV_FILETYPE_SECURITY_CORE, 1, &SecCoreFile);
+  if (EFI_ERROR (Status) || SecCoreFile == NULL) {
+    Error (NULL, 0, 0, "could not find the Sec core in the FV", NULL);
+    return EFI_ABORTED;
+  }
+  //
+  // Sec Core found, now find PE32 section
+  //
+  Status = GetSectionByType (SecCoreFile, EFI_SECTION_PE32, 1, &Pe32Section);
+  if (Status == EFI_NOT_FOUND) {
+    Status = GetSectionByType (SecCoreFile, EFI_SECTION_TE, 1, &Pe32Section);
+  }
+
+  if (EFI_ERROR (Status)) {
+    Error (NULL, 0, 0, "could not find PE32 section in SEC core file", NULL);
+    return EFI_ABORTED;
+  }
+
+  Status = GetPe32Info (
+            (VOID *) ((UINTN) Pe32Section.Pe32Section + sizeof (EFI_SECTION_PE32)),
+            &EntryPoint,
+            &BaseOfCode,
+            &MachineType
+            );
+
+  if (EFI_ERROR (Status)) {
+    Error (NULL, 0, 0, "could not get PE32 entry point for SEC core", NULL);
+    return EFI_ABORTED;
+  }
+  //
+  // Physical address is FV base + offset of PE32 + offset of the entry point
+  //
+  SecCorePhysicalAddress = FvInfo->BaseAddress;
+  SecCorePhysicalAddress += (UINTN) Pe32Section.Pe32Section + sizeof (EFI_SECTION_PE32) - (UINTN) FvImage->FileImage;
+  SecCorePhysicalAddress += EntryPoint;
+
   //
   // Find the PEI Core
   //
@@ -1067,7 +1115,6 @@ Returns:
     Error (NULL, 0, 0, "could not find the PEI core in the FV", NULL);
     return EFI_ABORTED;
   }
-
   //
   // PEI Core found, now find PE32 or TE section
   //
@@ -1130,39 +1177,6 @@ Returns:
     if (!EFI_ERROR (Status)) {
       UpdateFitCheckSum (FitTablePtr);
     }
-    //
-    // Find the Sec Core
-    //
-    Status = GetFileByType (EFI_FV_FILETYPE_SECURITY_CORE, 1, &SecCoreFile);
-    if (EFI_ERROR (Status) || SecCoreFile == NULL) {
-      Error (NULL, 0, 0, "could not find the Sec core in the FV", NULL);
-      return EFI_ABORTED;
-    }
-    //
-    // Sec Core found, now find PE32 section
-    //
-    Status = GetSectionByType (SecCoreFile, EFI_SECTION_PE32, 1, &Pe32Section);
-    if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0, "could not find PE32 section in SEC core file", NULL);
-      return EFI_ABORTED;
-    }
-
-    Status = GetPe32Info (
-              (VOID *) ((UINTN) Pe32Section.Pe32Section + sizeof (EFI_SECTION_PE32)),
-              &EntryPoint,
-              &BaseOfCode,
-              &MachineType
-              );
-    if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0, "could not get PE32 entry point for SEC core", NULL);
-      return EFI_ABORTED;
-    }
-    //
-    // Physical address is FV base + offset of PE32 + offset of the entry point
-    //
-    SecCorePhysicalAddress = FvInfo->BaseAddress;
-    SecCorePhysicalAddress += (UINTN) Pe32Section.Pe32Section + sizeof (EFI_SECTION_PE32) - (UINTN) FvImage->FileImage;
-    SecCorePhysicalAddress += EntryPoint;
 
     //
     // Update SEC_CORE address
@@ -1191,12 +1205,25 @@ Returns:
     //
     // Get the location to update
     //
-    Ia32ResetAddressPtr = (UINT32 *) ((UINTN) FvImage->Eof - IA32_PEI_CORE_ENTRY_OFFSET);
+    Ia32ResetAddressPtr  = (UINT32 *) ((UINTN) FvImage->Eof - IA32_PEI_CORE_ENTRY_OFFSET);
 
     //
-    // Write lower 32 bits of physical address
+    // Write lower 32 bits of physical address for Pei Core entry
     //
     *Ia32ResetAddressPtr = (UINT32) PeiCorePhysicalAddress;
+    
+    //
+    // Write SecCore Entry point relative address into the jmp instruction in reset vector.
+    // 
+    Ia32ResetAddressPtr  = (UINT32 *) ((UINTN) FvImage->Eof - IA32_SEC_CORE_ENTRY_OFFSET);
+    
+    Ia32SecEntryOffset   = SecCorePhysicalAddress - (FV_IMAGES_TOP_ADDRESS - IA32_SEC_CORE_ENTRY_OFFSET + 2);
+    if (Ia32SecEntryOffset <= -65536) {
+      Error (NULL, 0, 0, NULL, "The SEC EXE file size is too big");
+      return STATUS_ERROR;
+    }
+    
+    *(UINT16 *) Ia32ResetAddressPtr = (UINT16) Ia32SecEntryOffset;
 
     //
     // Update the BFV base address
@@ -1204,20 +1231,37 @@ Returns:
     Ia32ResetAddressPtr   = (UINT32 *) ((UINTN) FvImage->Eof - 4);
     *Ia32ResetAddressPtr  = (UINT32) (FvInfo->BaseAddress);
 
-    CheckSum              = 0x0000;
-
     //
     // Update the Startup AP in the FVH header block ZeroVector region.
     //
     BytePointer   = (UINT8 *) ((UINTN) FvImage->FileImage);
-    BytePointer2  = (FvInfo->Size == 0x10000) ? m64kRecoveryStartupApDataArray : m128kRecoveryStartupApDataArray;
+    if (FvInfo->Size == 0x10000) {
+      BytePointer2 = m64kRecoveryStartupApDataArray;
+    } else if (FvInfo->Size == 0x20000) {
+      BytePointer2 = m128kRecoveryStartupApDataArray;
+    } else if (FvInfo->Size > 0x20000) {
+      BytePointer2 = m128kRecoveryStartupApDataArray;
+      //
+      // Find the position to place Ap reset vector, the offset
+      // between the position and the end of Fvrecovery.fv file
+      // should not exceed 128kB to prevent Ap reset vector from
+      // outside legacy E and F segment
+      //
+      Status = FindApResetVectorPosition (FvImage, &BytePointer);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 0, NULL, "Can't find the appropriate space in FvImage to add Ap reset vector!");
+        return EFI_ABORTED;
+      }
+    }
+
     for (Index = 0; Index < SIZEOF_STARTUP_DATA_ARRAY; Index++) {
-      *BytePointer++ = *BytePointer2++;
+      BytePointer[Index] = BytePointer2[Index];
     }
     //
     // Calculate the checksum
     //
-    WordPointer = (UINT16 *) ((UINTN) FvImage->FileImage);
+    CheckSum              = 0x0000;
+    WordPointer = (UINT16 *) (BytePointer);
     for (Index = 0; Index < SIZEOF_STARTUP_DATA_ARRAY / 2; Index++) {
       CheckSum = (UINT16) (CheckSum + ((UINT16) *WordPointer));
       WordPointer++;
@@ -1225,10 +1269,21 @@ Returns:
     //
     // Update the checksum field
     //
-    BytePointer = (UINT8 *) ((UINTN) FvImage->FileImage);
-    BytePointer += (SIZEOF_STARTUP_DATA_ARRAY - 2);
-    WordPointer   = (UINT16 *) BytePointer;
+    WordPointer   = (UINT16 *) (BytePointer + SIZEOF_STARTUP_DATA_ARRAY - 2);
     *WordPointer  = (UINT16) (0x10000 - (UINT32) CheckSum);
+    
+    //
+    // IpiVector at the 4k aligned address in the top 2 blocks in the PEI FV. 
+    //
+    IpiVector  = FV_IMAGES_TOP_ADDRESS - ((UINTN) FvImage->Eof - (UINTN) BytePointer);
+    IpiVector  = IpiVector >> 12;
+    IpiVector  = IpiVector & 0xFF;
+
+    //
+    // Write IPI Vector at Offset FvrecoveryFileSize - 8
+    //
+    Ia32ResetAddressPtr   = (UINT32 *) ((UINTN) FvImage->Eof - 8);
+    *Ia32ResetAddressPtr  = IpiVector;
   } else {
     Error (NULL, 0, 0, "invalid machine type in PEI core", "machine type=0x%X", (UINT32) MachineType);
     return EFI_ABORTED;
@@ -2001,7 +2056,7 @@ Returns:
           //
           // Xip module has the same section alignment and file alignment.
           //
-          Warning (NULL, 0, 0, "Section-Alignment and File-Alignment does not match", FileName);
+          printf("Section-Alignment and File-Alignment does not match : %s\n", FileName);
           return EFI_ABORTED;
         }
 
@@ -2232,3 +2287,66 @@ Returns:
  
   return EFI_SUCCESS;
 }
+
+EFI_STATUS
+FindApResetVectorPosition (
+  IN  MEMORY_FILE  *FvImage,
+  OUT UINT8        **Pointer
+  )
+{
+  EFI_FFS_FILE_HEADER   *PadFile;
+  UINT32                Index;
+  EFI_STATUS            Status;
+  UINT8                 *FixPoint;
+  UINT32                FileLength;
+
+  for (Index = 1; ;Index ++) {
+    //
+    // Find Pad File to add ApResetVector info
+    //
+    Status = GetFileByType (EFI_FV_FILETYPE_FFS_PAD, Index, &PadFile);
+    if (EFI_ERROR (Status) || (PadFile == NULL)) {
+      //
+      // No Pad file to be found.
+      //
+      break;
+    }
+    //
+    // Get Pad file size.
+    //
+    FileLength = (*(UINT32 *)(PadFile->Size)) & 0x00FFFFFF;
+    FileLength = (FileLength + EFI_FFS_FILE_HEADER_ALIGNMENT - 1) & ~(EFI_FFS_FILE_HEADER_ALIGNMENT - 1); 
+    //
+    // FixPoint must be align on 0x1000 relative to FvImage Header
+    //
+    FixPoint = (UINT8*) PadFile + sizeof (EFI_FFS_FILE_HEADER);
+    FixPoint = FixPoint + 0x1000 - (((UINTN) FixPoint - (UINTN) FvImage->FileImage) & 0xFFF);
+    //
+    // FixPoint be larger at the last place of one fv image.
+    //
+    while (((UINTN) FixPoint + SIZEOF_STARTUP_DATA_ARRAY - (UINTN) PadFile) <= FileLength) {
+      FixPoint += 0x1000;
+    }
+    FixPoint -= 0x1000;
+    
+    if ((UINTN) FixPoint < ((UINTN) PadFile + sizeof (EFI_FFS_FILE_HEADER))) {
+      //
+      // No alignment FixPoint in this Pad File.
+      //
+      continue;
+    }
+
+    if ((UINTN) FvImage->Eof - (UINTN)FixPoint <= 0x20000) {    
+      //
+      // Find the position to place ApResetVector
+      //
+      *Pointer = FixPoint;
+      return EFI_SUCCESS;
+    }
+  }
+  
+  return EFI_NOT_FOUND;
+}
+  
+  
+  
