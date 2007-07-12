@@ -24,19 +24,16 @@ Abstract:
 --*/
 
 #include "Compress.h"
+#include "TianoCompress.h"
 #include <stdio.h>
 #include "assert.h"
 
 //
 // Macro Definitions
 //
-#define UTILITY_NAME  "TianoCompress"
-#define UTILITY_MAJOR_VERSION   0
-#define UTILITY_MINOR_VERSION   1
-#define ONE_TIANOCOMPRESS_ARGS  2
-#define TWO_TIANOCOMPRESS_ARGS  4
+#define ONE_TIANOCOMPRESS_ARGS  3
+#define TWO_TIANOCOMPRESS_ARGS  5
 
-typedef INT32 NODE;
 #define UINT8_MAX     0xff
 #define UINT8_BIT     8
 #define THRESHOLD     3
@@ -56,215 +53,25 @@ typedef INT32 NODE;
 //
 // C: the Char&Len Set; P: the Position Set; T: the exTra Set
 //
-#define NC    (UINT8_MAX + MAXMATCH + 2 - THRESHOLD)
+//#define NC    (UINT8_MAX + MAXMATCH + 2 - THRESHOLD)
 #define CBIT  9
 #define NP    (WNDBIT + 1)
 #define PBIT  5
-#define NT    (CODE_BIT + 3)
-#define TBIT  5
-#if NT > NP
-#define NPT NT
-#else
-#define NPT NP
-#endif
+//#define NT    (CODE_BIT + 3)
+//#define TBIT  5
+//#if NT > NP
+//#define NPT NT
+//#else
+//#define NPT NP
+//#endif
+
 //
-// Function Prototypes
+// global variable
 //
+STATIC BOOLEAN ENCODE = FALSE;
+STATIC BOOLEAN DECODE = FALSE;
 
-EFI_STATUS
-GetFileContents (
-  IN char    *InputFileName,
-  OUT UINT8   *FileBuffer,
-  OUT UINT32  *BufferLength
-  );
-  
-STATIC
-VOID
-PutDword(
-  IN UINT32 Data
-  );
 
-STATIC
-EFI_STATUS
-AllocateMemory (
-  VOID
-  );
-
-STATIC
-VOID
-FreeMemory (
-  VOID
-  );
-
-STATIC
-VOID
-InitSlide (
-  VOID
-  );
-
-STATIC
-NODE
-Child (
-  IN NODE   NodeQ,
-  IN UINT8  CharC
-  );
-
-STATIC
-VOID
-MakeChild (
-  IN NODE  NodeQ,
-  IN UINT8 CharC,
-  IN NODE  NodeR
-  );
-
-STATIC
-VOID
-Split (
-  IN NODE Old
-  );
-
-STATIC
-VOID
-InsertNode (
-  VOID
-  );
-
-STATIC
-VOID
-DeleteNode (
-  VOID
-  );
-
-STATIC
-VOID
-GetNextMatch (
-  VOID
-  );
-
-STATIC
-EFI_STATUS
-Encode (
-  VOID
-  );
-
-STATIC
-VOID
-CountTFreq (
-  VOID
-  );
-
-STATIC
-VOID
-WritePTLen (
-  IN INT32 Number,
-  IN INT32 nbit,
-  IN INT32 Special
-  );
-
-STATIC
-VOID
-WriteCLen (
-  VOID
-  );
-
-STATIC
-VOID
-EncodeC (
-  IN INT32 Value
-  );
-
-STATIC
-VOID
-EncodeP (
-  IN UINT32 Value
-  );
-
-STATIC
-VOID
-SendBlock (
-  VOID
-  );
-
-STATIC
-VOID
-Output (
-  IN UINT32 c,
-  IN UINT32 p
-  );
-
-STATIC
-VOID
-HufEncodeStart (
-  VOID
-  );
-
-STATIC
-VOID
-HufEncodeEnd (
-  VOID
-  );
-
-STATIC
-VOID
-MakeCrcTable (
-  VOID
-  );
-
-  
-STATIC
-VOID
-PutBits (
-  IN INT32  Number,
-  IN UINT32 Value
-  );
-
-STATIC
-INT32
-FreadCrc (
-  OUT UINT8 *Pointer,
-  IN  INT32 Number
-  );
-
-STATIC
-VOID
-InitPutBits (
-  VOID
-  );
-
-STATIC
-VOID
-CountLen (
-  IN INT32 Index
-  );
-
-STATIC
-VOID
-MakeLen (
-  IN INT32 Root
-  );
-
-STATIC
-VOID
-DownHeap (
-  IN INT32 Index
-  );
-
-STATIC
-VOID
-MakeCode (
-  IN  INT32       Number,
-  IN  UINT8 Len[  ],
-  OUT UINT16 Code[]
-  );
-
-STATIC
-INT32
-MakeTree (
-  IN  INT32            NParm,
-  IN  UINT16  FreqParm[],
-  OUT UINT8   LenParm[ ],
-  OUT UINT16  CodeParm[]
-  );
 
 //
 //  Global Variables
@@ -1896,7 +1703,8 @@ Returns:
 
 --*/
 {
-  printf ("Usage: "UTILITY_NAME "  [-o OutputFile -h Help]  RawDataFileName\n\n");
+  printf ("Usage: "UTILITY_NAME "  -e|-d [-o OutputFile]  input_file\n or \n");
+  printf ("Usage: "UTILITY_NAME "  -e|-d input_file [-o OutputFile]\n");
 }
 
 
@@ -1933,9 +1741,13 @@ Returns:
   UINT8      *OutBuffer;
   UINT32     InputLength;
   UINT32     DstSize;
-
+  SCRATCH_DATA      *Scratch;
+  UINT8      *Src;
+  UINT32     OrigSize;
   
   FileBuffer = NULL;
+  Src = NULL;
+  OrigSize = 0;
   InputLength = 0;
   DstSize=0;
   MySize= 0;  
@@ -1954,12 +1766,40 @@ Returns:
     return 1;
   }
   
-  if ((strcmp(argv[1], "-V") == 0) || (strcmp(argv[1], "--version") == 0)) {
+  if ((strcmp(argv[1], "-v") == 0) || (strcmp(argv[1], "--version") == 0)) {
     Version();
+    return 1;
+  }
+
+
+  if (argc != ONE_TIANOCOMPRESS_ARGS && argc != TWO_TIANOCOMPRESS_ARGS) {
+    Usage ();
     return 1;
   }
   
   Index = 1;
+  if (strcmp(argv[Index],"-e") == 0) {
+  //
+  // encode the input file
+  //
+  Index++;
+  ENCODE = TRUE;
+  }
+  else if (strcmp(argv[Index], "-d") == 0) {
+  //
+  // decode the input file
+  //
+  Index++;
+  DECODE = TRUE;
+  }
+  else {
+  //
+  // Error command line
+  //
+  Usage();
+  return 1;
+  }
+  
   if ((strcmp(argv[Index], "-O") == 0) || (strcmp(argv[Index], "-o") == 0)) {
     Index++;
     if (Index < argc) {
@@ -1977,7 +1817,7 @@ Returns:
       return 1;       
     }
   }
-  else if (argv[Index][0]!='-') {
+  else if (argv[Index][0]!='-' && ((Index+1) == argc)) {
     //
     // Input file name specified here
     //
@@ -1985,20 +1825,29 @@ Returns:
     OutputFileName = NULL;
     OutputFile = stdout;
   }
+  else if (argv[Index][0]!='-' && ((Index+1) < argc)) {
+  //
+  //
+  //
+  InputFileName = argv[Index];
+  OutputFileName = argv[Index+2];
+  }
   else {
-    printf("please input output filename or RawDataFileName!\n");
+    printf("please input output filename or InputFileName!\n");
     Usage();
     return 1;
   }
 
+
 //
-// Parameters parsed now
+// All Parameters has been parsed
 // 
-  if (argc != ONE_TIANOCOMPRESS_ARGS && argc != TWO_TIANOCOMPRESS_ARGS) {
-    Usage ();
+  Scratch = (SCRATCH_DATA *)malloc(sizeof(SCRATCH_DATA));
+  if (Scratch == NULL) {
+    fprintf (stdout, "ERROR: Memory allocation failed\n");
     return 1;
   }
-
+    
   InputFile = fopen (InputFileName, "rb");
   if (InputFile == NULL) {
     printf ("%s failed to open input file\n", InputFileName);
@@ -2041,19 +1890,734 @@ Returns:
       }
     }
     
+  if (ENCODE) {
   OutBuffer = (UINT8 *) malloc (InputLength);
   if (OutBuffer == NULL) {
       printf ("application error", "failed to allocate memory\n");
       return EFI_OUT_OF_RESOURCES;
     }
- 
+    
   Status = TianoCompress ((UINT8 *)FileBuffer, InputLength, OutBuffer, &DstSize);
+  if (Status != EFI_SUCCESS) {
+    printf("\nError in Compress the input file!\n");
+    return 1;
+  }
   fwrite(OutBuffer,(size_t)DstSize, 1, OutputFile);
   free(FileBuffer);
   free(OutBuffer);
+  return 0;  
+  }
+  else if (DECODE) {
+  //
+  // Get Compressed file original size
+  // 
+  Src     = (UINT8 *)FileBuffer;                     
+  OrigSize  = Src[4] + (Src[5] << 8) + (Src[6] << 16) + (Src[7] << 24);  
+  
+  //
+  // Allocate OutputBuffer
+  //
+  OutBuffer = (UINT8 *)malloc(OrigSize);
+  if (OutBuffer == NULL) {
+    printf("\n No enough memory to allocate!");
+    return 1;
+  }  
+
+  Status = Decompress((VOID *)FileBuffer, (VOID *)OutBuffer, (VOID *)Scratch, 2);
   if (Status != EFI_SUCCESS) {
-    printf("\nERROREND!\n");
+    printf("\nError in Decompress the input file !\n");
     return 1;
   }
+
+  fwrite(OutBuffer, (size_t)(Scratch->mOrigSize), 1, OutputFile);
+  free(Scratch);
+  free(FileBuffer);
+  free(OutBuffer);  
+  return 0;
+  }
+  
   return 0;
 }
+
+VOID
+FillBuf (
+  IN  SCRATCH_DATA  *Sd,
+  IN  UINT16        NumOfBits
+  )
+/*++
+
+Routine Description:
+
+  Shift mBitBuf NumOfBits left. Read in NumOfBits of bits from source.
+
+Arguments:
+
+  Sd        - The global scratch data
+  NumOfBits  - The number of bits to shift and read.
+
+Returns: (VOID)
+
+--*/
+{
+  Sd->mBitBuf = (UINT32) (Sd->mBitBuf << NumOfBits);
+
+  while (NumOfBits > Sd->mBitCount) {
+
+    Sd->mBitBuf |= (UINT32) (Sd->mSubBitBuf << (NumOfBits = (UINT16) (NumOfBits - Sd->mBitCount)));
+
+    if (Sd->mCompSize > 0) {
+      //
+      // Get 1 byte into SubBitBuf
+      //
+      Sd->mCompSize--;
+      Sd->mSubBitBuf  = 0;
+      Sd->mSubBitBuf  = Sd->mSrcBase[Sd->mInBuf++];
+      Sd->mBitCount   = 8;
+
+    } else {
+      //
+      // No more bits from the source, just pad zero bit.
+      //
+      Sd->mSubBitBuf  = 0;
+      Sd->mBitCount   = 8;
+
+    }
+  }
+
+  Sd->mBitCount = (UINT16) (Sd->mBitCount - NumOfBits);
+  Sd->mBitBuf |= Sd->mSubBitBuf >> Sd->mBitCount;
+}
+
+UINT32
+GetBits (
+  IN  SCRATCH_DATA  *Sd,
+  IN  UINT16        NumOfBits
+  )
+/*++
+
+Routine Description:
+
+  Get NumOfBits of bits out from mBitBuf. Fill mBitBuf with subsequent 
+  NumOfBits of bits from source. Returns NumOfBits of bits that are 
+  popped out.
+
+Arguments:
+
+  Sd            - The global scratch data.
+  NumOfBits     - The number of bits to pop and read.
+
+Returns:
+
+  The bits that are popped out.
+
+--*/
+{
+  UINT32  OutBits;
+
+  OutBits = (UINT32) (Sd->mBitBuf >> (BITBUFSIZ - NumOfBits));
+
+  FillBuf (Sd, NumOfBits);
+
+  return OutBits;
+}
+
+UINT16
+MakeTable (
+  IN  SCRATCH_DATA  *Sd,
+  IN  UINT16        NumOfChar,
+  IN  UINT8         *BitLen,
+  IN  UINT16        TableBits,
+  OUT UINT16        *Table
+  )
+/*++
+
+Routine Description:
+
+  Creates Huffman Code mapping table according to code length array.
+
+Arguments:
+
+  Sd        - The global scratch data
+  NumOfChar - Number of symbols in the symbol set
+  BitLen    - Code length array
+  TableBits - The width of the mapping table
+  Table     - The table
+  
+Returns:
+  
+  0         - OK.
+  BAD_TABLE - The table is corrupted.
+
+--*/
+{
+  UINT16  Count[17];
+  UINT16  Weight[17];
+  UINT16  Start[18];
+  UINT16  *Pointer;
+  UINT16  Index3;
+  volatile UINT16  Index;
+  UINT16  Len;
+  UINT16  Char;
+  UINT16  JuBits;
+  UINT16  Avail;
+  UINT16  NextCode;
+  UINT16  Mask;
+  UINT16  WordOfStart;
+  UINT16  WordOfCount;
+
+  for (Index = 1; Index <= 16; Index++) {
+    Count[Index] = 0;
+  }
+
+  for (Index = 0; Index < NumOfChar; Index++) {
+    Count[BitLen[Index]]++;
+  }
+
+  Start[1] = 0;
+
+  for (Index = 1; Index <= 16; Index++) {
+    WordOfStart = Start[Index];
+    WordOfCount = Count[Index];
+    Start[Index + 1] = (UINT16) (WordOfStart + (WordOfCount << (16 - Index)));
+  }
+
+  if (Start[17] != 0) {
+    /*(1U << 16)*/
+    return (UINT16) BAD_TABLE;
+  }
+
+  JuBits = (UINT16) (16 - TableBits);
+
+  for (Index = 1; Index <= TableBits; Index++) {
+    Start[Index] >>= JuBits;
+    Weight[Index] = (UINT16) (1U << (TableBits - Index));
+  }
+
+  while (Index <= 16) {
+    Weight[Index] = (UINT16) (1U << (16 - Index));
+    Index++;
+  }
+
+  Index = (UINT16) (Start[TableBits + 1] >> JuBits);
+
+  if (Index != 0) {
+    Index3 = (UINT16) (1U << TableBits);
+    while (Index != Index3) {
+      Table[Index++] = 0;
+    }
+  }
+
+  Avail = NumOfChar;
+  Mask  = (UINT16) (1U << (15 - TableBits));
+
+  for (Char = 0; Char < NumOfChar; Char++) {
+
+    Len = BitLen[Char];
+    if (Len == 0) {
+      continue;
+    }
+
+    NextCode = (UINT16) (Start[Len] + Weight[Len]);
+
+    if (Len <= TableBits) {
+
+      for (Index = Start[Len]; Index < NextCode; Index++) {
+        Table[Index] = Char;
+      }
+
+    } else {
+
+      Index3  = Start[Len];
+      Pointer = &Table[Index3 >> JuBits];
+      Index   = (UINT16) (Len - TableBits);
+
+      while (Index != 0) {
+        if (*Pointer == 0) {
+          Sd->mRight[Avail]                     = Sd->mLeft[Avail] = 0;
+          *Pointer = Avail++;
+        }
+
+        if (Index3 & Mask) {
+          Pointer = &Sd->mRight[*Pointer];
+        } else {
+          Pointer = &Sd->mLeft[*Pointer];
+        }
+
+        Index3 <<= 1;
+        Index--;
+      }
+
+      *Pointer = Char;
+
+    }
+
+    Start[Len] = NextCode;
+  }
+  //
+  // Succeeds
+  //
+  return 0;
+}
+
+UINT32
+DecodeP (
+  IN  SCRATCH_DATA  *Sd
+  )
+/*++
+
+Routine Description:
+
+  Decodes a position value.
+
+Arguments:
+
+  Sd      - the global scratch data
+
+Returns:
+
+  The position value decoded.
+
+--*/
+{
+  UINT16  Val;
+  UINT32  Mask;
+  UINT32  Pos;
+
+  Val = Sd->mPTTable[Sd->mBitBuf >> (BITBUFSIZ - 8)];
+
+  if (Val >= MAXNP) {
+    Mask = 1U << (BITBUFSIZ - 1 - 8);
+
+    do {
+
+      if (Sd->mBitBuf & Mask) {
+        Val = Sd->mRight[Val];
+      } else {
+        Val = Sd->mLeft[Val];
+      }
+
+      Mask >>= 1;
+    } while (Val >= MAXNP);
+  }
+  //
+  // Advance what we have read
+  //
+  FillBuf (Sd, Sd->mPTLen[Val]);
+
+  Pos = Val;
+  if (Val > 1) {
+    Pos = (UINT32) ((1U << (Val - 1)) + GetBits (Sd, (UINT16) (Val - 1)));
+  }
+
+  return Pos;
+}
+
+UINT16
+ReadPTLen (
+  IN  SCRATCH_DATA  *Sd,
+  IN  UINT16        nn,
+  IN  UINT16        nbit,
+  IN  UINT16        Special
+  )
+/*++
+
+Routine Description:
+
+  Reads code lengths for the Extra Set or the Position Set
+
+Arguments:
+
+  Sd        - The global scratch data
+  nn        - Number of symbols
+  nbit      - Number of bits needed to represent nn
+  Special   - The special symbol that needs to be taken care of 
+
+Returns:
+
+  0         - OK.
+  BAD_TABLE - Table is corrupted.
+
+--*/
+{
+  UINT16  Number;
+  UINT16  CharC;
+  volatile UINT16  Index;
+  UINT32  Mask;
+
+  Number = (UINT16) GetBits (Sd, nbit);
+
+  if (Number == 0) {
+    CharC = (UINT16) GetBits (Sd, nbit);
+
+    for (Index = 0; Index < 256; Index++) {
+      Sd->mPTTable[Index] = CharC;
+    }
+
+    for (Index = 0; Index < nn; Index++) {
+      Sd->mPTLen[Index] = 0;
+    }
+
+    return 0;
+  }
+
+  Index = 0;
+
+  while (Index < Number) {
+
+    CharC = (UINT16) (Sd->mBitBuf >> (BITBUFSIZ - 3));
+
+    if (CharC == 7) {
+      Mask = 1U << (BITBUFSIZ - 1 - 3);
+      while (Mask & Sd->mBitBuf) {
+        Mask >>= 1;
+        CharC += 1;
+      }
+    }
+
+    FillBuf (Sd, (UINT16) ((CharC < 7) ? 3 : CharC - 3));
+
+    Sd->mPTLen[Index++] = (UINT8) CharC;
+
+    if (Index == Special) {
+      CharC = (UINT16) GetBits (Sd, 2);
+      while ((INT16) (--CharC) >= 0) {
+        Sd->mPTLen[Index++] = 0;
+      }
+    }
+  }
+
+  while (Index < nn) {
+    Sd->mPTLen[Index++] = 0;
+  }
+
+  return MakeTable (Sd, nn, Sd->mPTLen, 8, Sd->mPTTable);
+}
+
+VOID
+ReadCLen (
+  SCRATCH_DATA  *Sd
+  )
+/*++
+
+Routine Description:
+
+  Reads code lengths for Char&Len Set.
+
+Arguments:
+
+  Sd    - the global scratch data
+
+Returns: (VOID)
+
+--*/
+{
+  UINT16  Number;
+  UINT16  CharC;
+  volatile UINT16  Index;
+  UINT32  Mask;
+
+  Number = (UINT16) GetBits (Sd, CBIT);
+
+  if (Number == 0) {
+    CharC = (UINT16) GetBits (Sd, CBIT);
+
+    for (Index = 0; Index < NC; Index++) {
+      Sd->mCLen[Index] = 0;
+    }
+
+    for (Index = 0; Index < 4096; Index++) {
+      Sd->mCTable[Index] = CharC;
+    }
+
+    return ;
+  }
+
+  Index = 0;
+  while (Index < Number) {
+
+    CharC = Sd->mPTTable[Sd->mBitBuf >> (BITBUFSIZ - 8)];
+    if (CharC >= NT) {
+      Mask = 1U << (BITBUFSIZ - 1 - 8);
+
+      do {
+
+        if (Mask & Sd->mBitBuf) {
+          CharC = Sd->mRight[CharC];
+        } else {
+          CharC = Sd->mLeft[CharC];
+        }
+
+        Mask >>= 1;
+
+      } while (CharC >= NT);
+    }
+    //
+    // Advance what we have read
+    //
+    FillBuf (Sd, Sd->mPTLen[CharC]);
+
+    if (CharC <= 2) {
+
+      if (CharC == 0) {
+        CharC = 1;
+      } else if (CharC == 1) {
+        CharC = (UINT16) (GetBits (Sd, 4) + 3);
+      } else if (CharC == 2) {
+        CharC = (UINT16) (GetBits (Sd, CBIT) + 20);
+      }
+
+      while ((INT16) (--CharC) >= 0) {
+        Sd->mCLen[Index++] = 0;
+      }
+
+    } else {
+
+      Sd->mCLen[Index++] = (UINT8) (CharC - 2);
+
+    }
+  }
+
+  while (Index < NC) {
+    Sd->mCLen[Index++] = 0;
+  }
+
+  MakeTable (Sd, NC, Sd->mCLen, 12, Sd->mCTable);
+
+  return ;
+}
+
+UINT16
+DecodeC (
+  SCRATCH_DATA  *Sd
+  )
+/*++
+
+Routine Description:
+
+  Decode a character/length value.
+
+Arguments:
+
+  Sd    - The global scratch data.
+
+Returns:
+
+  The value decoded.
+
+--*/
+{
+  UINT16  Index2;
+  UINT32  Mask;
+
+  if (Sd->mBlockSize == 0) {
+    //
+    // Starting a new block
+    //
+    Sd->mBlockSize    = (UINT16) GetBits (Sd, 16);
+    Sd->mBadTableFlag = ReadPTLen (Sd, NT, TBIT, 3);
+    if (Sd->mBadTableFlag != 0) {
+      return 0;
+    }
+
+    ReadCLen (Sd);
+
+    Sd->mBadTableFlag = ReadPTLen (Sd, MAXNP, Sd->mPBit, (UINT16) (-1));
+    if (Sd->mBadTableFlag != 0) {
+      return 0;
+    }
+  }
+
+  Sd->mBlockSize--;
+  Index2 = Sd->mCTable[Sd->mBitBuf >> (BITBUFSIZ - 12)];
+
+  if (Index2 >= NC) {
+    Mask = 1U << (BITBUFSIZ - 1 - 12);
+
+    do {
+      if (Sd->mBitBuf & Mask) {
+        Index2 = Sd->mRight[Index2];
+      } else {
+        Index2 = Sd->mLeft[Index2];
+      }
+
+      Mask >>= 1;
+    } while (Index2 >= NC);
+  }
+  //
+  // Advance what we have read
+  //
+  FillBuf (Sd, Sd->mCLen[Index2]);
+
+  return Index2;
+}
+
+VOID
+Decode (
+  SCRATCH_DATA  *Sd
+  )
+/*++
+
+Routine Description:
+
+  Decode the source data and put the resulting data into the destination buffer.
+
+Arguments:
+
+  Sd            - The global scratch data
+
+Returns: (VOID)
+
+ --*/
+{
+  UINT16  BytesRemain;
+  UINT32  DataIdx;
+  UINT16  CharC;
+
+  BytesRemain = (UINT16) (-1);
+
+  DataIdx     = 0;
+
+  for (;;) {
+    CharC = DecodeC (Sd);
+    if (Sd->mBadTableFlag != 0) {
+      goto Done ;
+    }
+
+    if (CharC < 256) {
+      //
+      // Process an Original character
+      //
+      if (Sd->mOutBuf >= Sd->mOrigSize) {
+        goto Done ;
+      } else {
+        Sd->mDstBase[Sd->mOutBuf++] = (UINT8) CharC;
+      }
+
+    } else {
+      //
+      // Process a Pointer
+      //
+      CharC       = (UINT16) (CharC - (UINT8_MAX + 1 - THRESHOLD));
+
+      BytesRemain = CharC;
+
+      DataIdx     = Sd->mOutBuf - DecodeP (Sd) - 1;
+
+      BytesRemain--;
+      while ((INT16) (BytesRemain) >= 0) {
+        Sd->mDstBase[Sd->mOutBuf++] = Sd->mDstBase[DataIdx++];
+        if (Sd->mOutBuf >= Sd->mOrigSize) {
+          goto Done ;
+        }
+
+        BytesRemain--;
+      }
+    }
+  }
+
+Done:
+  return ;
+}
+
+RETURN_STATUS
+EFIAPI
+Decompress (
+  IN VOID  *Source,
+  IN OUT VOID    *Destination,
+  IN OUT VOID    *Scratch,
+  IN UINT32      Version
+  )
+/*++
+
+Routine Description:
+
+  The internal implementation of Decompress().
+
+Arguments:
+
+  Source          - The source buffer containing the compressed data.
+  Destination     - The destination buffer to store the decompressed data
+  Scratch         - The buffer used internally by the decompress routine. This  buffer is needed to store intermediate data.
+  Version         - 1 for EFI1.1 Decompress algoruthm, 2 for Tiano Decompress algorithm
+
+Returns:
+
+  RETURN_SUCCESS           - Decompression is successfull
+  RETURN_INVALID_PARAMETER - The source data is corrupted
+
+--*/
+{
+  volatile UINT32  Index;
+  UINT32           CompSize;
+  UINT32           OrigSize;
+  SCRATCH_DATA     *Sd;
+  CONST UINT8      *Src;
+  UINT8            *Dst;
+
+  //
+  // Verify input is not NULL
+  //
+  assert(Source);
+//  assert(Destination);
+  assert(Scratch);
+  
+  Src     = (UINT8 *)Source;
+  Dst     = (UINT8 *)Destination;
+
+  Sd      = (SCRATCH_DATA *) Scratch;
+  CompSize  = Src[0] + (Src[1] << 8) + (Src[2] << 16) + (Src[3] << 24);
+  OrigSize  = Src[4] + (Src[5] << 8) + (Src[6] << 16) + (Src[7] << 24);
+  
+  //
+  // If compressed file size is 0, return
+  //
+  if (OrigSize == 0) {
+    return RETURN_SUCCESS;
+  }
+
+  Src = Src + 8;
+
+  for (Index = 0; Index < sizeof (SCRATCH_DATA); Index++) {
+    ((UINT8 *) Sd)[Index] = 0;
+  }
+  //
+  // The length of the field 'Position Set Code Length Array Size' in Block Header.
+  // For EFI 1.1 de/compression algorithm(Version 1), mPBit = 4
+  // For Tiano de/compression algorithm(Version 2), mPBit = 5
+  //
+  switch (Version) {
+    case 1 :
+      Sd->mPBit = 4;
+      break;
+    case 2 :
+      Sd->mPBit = 5;
+      break;
+    default:
+      assert(FALSE);
+  }
+  Sd->mSrcBase  = (UINT8 *)Src;
+  Sd->mDstBase  = Dst;
+  Sd->mCompSize = CompSize;
+  Sd->mOrigSize = OrigSize;
+
+  //
+  // Fill the first BITBUFSIZ bits
+  //
+  FillBuf (Sd, BITBUFSIZ);
+
+  //
+  // Decompress it
+  //
+  
+  Decode (Sd);
+  
+  if (Sd->mBadTableFlag != 0) {
+    //
+    // Something wrong with the source
+    //
+    return RETURN_INVALID_PARAMETER;
+  }
+
+  return RETURN_SUCCESS;
+}
+
