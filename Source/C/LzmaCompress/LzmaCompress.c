@@ -30,8 +30,41 @@ Abstract:
 #include <string.h>
 #include <assert.h>
 
+#include "LzmaDecode.h"
 #include <Common/UefiBaseTypes.h>
 #include <Common/FirmwareVolumeImageFormat.h>
+
+#pragma warning(disable : 4100)
+
+#define UTILITY_NAME            "LzmaCompress"
+#define UTILITY_MAJOR_VERSION  0
+#define UTILITY_MINOR_VERSION  1
+
+#define PARAMETER_NOT_SPECIFIED "Parameter not specified"
+#define MAXIMUM_INPUT_FILE_NUM  10
+#define ONE_TIANOCOMPRESS_ARGS  3
+#define TWO_TIANOCOMPRESS_ARGS  5
+
+typedef struct {
+  UINT32  Lc;
+  UINT32  Lp;
+  UINT32  Pb;
+  UINT32  DictionarySize;
+  UINT32  InternalSize;
+  UINT8   Properties[5];
+} LZMAPARAMETER;
+
+//
+// global variable
+//
+STATIC UINT32 mSourceBufferSize = 0;
+STATIC BOOLEAN ENCODE = FALSE;
+STATIC BOOLEAN DECODE = FALSE;
+UINT8                   *FileBuffer;
+UINTN                   InputLength;
+UINT8                   *OutputBuffer;
+FILE                    *InFile;
+UINT32                  FileSize = 0;
 
 extern
 EFI_STATUS
@@ -43,12 +76,13 @@ CustomizedCompress (
   )
 ;
 
-#define UTILITY_NAME            "LzmaCompress"
-#define UTILITY_MAJOR_VERSION  0
-#define UTILITY_MINOR_VERSION  1
-
-#define PARAMETER_NOT_SPECIFIED "Parameter not specified"
-#define MAXIMUM_INPUT_FILE_NUM  10
+EFI_STATUS
+CustomDecompress (
+  IN CONST VOID  *Source,
+  IN OUT VOID    *Destination,
+  IN OUT VOID    *Scratch
+  );
+  
 
 EFI_STATUS
 GetFileContents (
@@ -109,9 +143,6 @@ Returns:
 
   Size = 0;
   //
-  // Go through our array of file names and copy their contents
-  // to the output buffer.
-  //
   // Copy the file contents to the output buffer.
   //
     InFile = fopen (InputFileName, "rb");
@@ -154,10 +185,10 @@ GenCompressionFile (
   IN FILE *OutFile
   )
 {
-  UINT8                   *FileBuffer;
-  UINTN                   InputLength;
-  UINTN                   CompressedLength;
-  UINT8                   *OutputBuffer;
+//  UINT8                   *FileBuffer;
+//  UINTN                   InputLength;
+  UINTN                   CompressedLength;      
+//  UINT8                   *OutputBuffer;
   EFI_STATUS              Status;  
   
   InputLength       = 0;
@@ -197,7 +228,7 @@ GenCompressionFile (
   //
   // Start to compress
   //
-  printf("\n Start to compress!\n");
+//  printf("\n Start to compress!\n");
   assert(FileBuffer);
   assert(InputLength);
 //  printf("\n%i InputLength",InputLength);
@@ -225,7 +256,6 @@ GenCompressionFile (
   }
   
   fwrite (FileBuffer, CompressedLength, 1, OutFile);
-  
   free (FileBuffer);
   
   return EFI_SUCCESS;
@@ -279,8 +309,8 @@ Returns:
 
 --*/
 {
-//  printf ("Usage: "UTILITY_NAME "  [-o OutputFile --version -v Verbose -q Quiet -d DebugLevel -h Help] CompressedFileName\n\n");
-  printf ("Usage: "UTILITY_NAME "  [-o OutputFile -h Help] CompressedFileName\n\n");
+  printf ("Usage: "UTILITY_NAME "  -e|-d [-o OutputFile] input_file\n or \n");
+  printf ("Usage: "UTILITY_NAME "  -e|-d input_file  [-o OutputFile]\n");
 }
 
 int
@@ -313,6 +343,16 @@ Returns:
   char                      *InputFileName;
   char                      *OutputFileName;
   EFI_STATUS                Status;
+  UINT32                    DstSize, ScratchSize;
+  VOID                      *Scratch;
+//
+// Initilize variables
+//
+//UINT8                   *FileBuffer;
+//UINTN                   InputLength;
+//UINT8                   *OutputBuffer;
+//FILE                    *InFile;
+//UINT32                  FileSize = 0;
 
   InputFileName         = NULL;
   OutputFileName        = NULL;
@@ -321,6 +361,14 @@ Returns:
   OutFile               = NULL;
   InputFileNum          = 0;
   Status                = EFI_SUCCESS;
+  DstSize               = 0;
+  ScratchSize           = 0;
+  FileBuffer            = NULL;
+  InputLength           = 0;
+  OutputBuffer          = NULL;
+
+  
+
 
   if (argc == 1) {
     Usage();
@@ -340,18 +388,53 @@ Returns:
     return 1;
   }
 
+  if (argc != ONE_TIANOCOMPRESS_ARGS && argc != TWO_TIANOCOMPRESS_ARGS) {
+    Usage ();
+    return 1;
+  }
+  
   Index = 1;
+  if (strcmp(argv[Index],"-e") == 0) {
+  //
+  // encode the input file
+  //
+  Index++;
+  ENCODE = TRUE;
+  }
+  else if (strcmp(argv[Index], "-d") == 0) {
+  //
+  // decode the input file
+  //
+  Index++;
+  DECODE = TRUE;
+  }
+  else {
+  //
+  // Error command line
+  //
+  Usage();
+  return 1;
+  }
+  
   while (Index < argc) {
-    if ((argv[Index][0] != '-')) {
+    if ((argv[Index][0] != '-') && ((Index+1) == argc)) {
       //
       // Input file name and no output file name specified, So output to stdout
       //
       InputFileName = argv[Index];
-      printf("\n%s is input file name\n", InputFileName);
+//      printf("\n%s is input file name\n", InputFileName);
       Index+=1;      
       if (Index == argc)
       OutputFileName = NULL;
       OutFile = stdout;
+      break;
+    }
+    else if ((argv[Index][0] != '-') && ((Index+1) < argc)) {
+    //
+    //
+    //
+      InputFileName = argv[Index];
+      OutputFileName = argv[Index+2];
       break;
     }
     else if (strcmpi (argv[Index], "-o") == 0) {
@@ -365,7 +448,7 @@ Returns:
       // Output File specified
       //
       OutputFileName = argv[Index];
-      printf("\n%s is output file name\n", OutputFileName);
+//      printf("\n%s is output file name\n", OutputFileName);
       
       Index++;
       if (Index == argc) {
@@ -417,19 +500,455 @@ Returns:
   // files, so let's go and do what we've been asked to do...
   //
 
+  if (ENCODE) {
   //
   // Compress the input file
   //
+
   if (OutputFileName == NULL) {
   printf("\n no output file name\n");
   Status = GenCompressionFile(InputFileName, 1, stdout);
   }
   else
   Status = GenCompressionFile(InputFileName, 1, OutFile);
-
+  
   if (OutputFileName != NULL) {
   fclose(OutFile);
   }
+  }
+  else if (DECODE) {
+  //
+  // Decompress the input file
+  //
+//  printf("\n we come to decode!");
+  InFile = fopen(InputFileName, "rb");
+  if (InFile == NULL) {
+    printf("\nError- Fail to open input file!");
+    return 1;
+  }
+  Status = GetFileContents(
+            InputFileName,
+            1,
+            FileBuffer,
+            &InputLength);
 
+  if (Status == EFI_BUFFER_TOO_SMALL) {
+    FileBuffer = (UINT8 *) malloc (InputLength);
+    if (FileBuffer == NULL) {
+      printf ("application error", "failed to allocate memory\n");
+      return EFI_OUT_OF_RESOURCES;
+    }
+
+    Status = GetFileContents (
+              InputFileName,
+              1,
+              FileBuffer,
+              &InputLength
+              );
+  }
+  
+  if (FileBuffer == NULL) {
+    printf("\nError to allocate buffer for inputfile");
+    if (InFile!=NULL)
+      free(InFile);
+    return 1;
+  }
+//  printf("\n input FileSize is %d", InputLength);
+  Status = CustomDecompressGetInfo(FileBuffer, InputLength, &DstSize, &ScratchSize);
+  if (Status != RETURN_SUCCESS) {
+    printf("\nERROR in CustomDecompressGetInfo!\n");
+  }
+  Scratch = (VOID *)malloc(ScratchSize);
+  if (Scratch == NULL) {
+    printf("\nNo enough memory to allocate!\n");
+    if (FileBuffer != NULL) {
+      free(FileBuffer);
+    }
+    return 1;
+  }
+  
+  OutputBuffer = (UINT8 *)malloc(DstSize);
+  if (OutputBuffer == NULL) {
+    printf("\nNo enough memory to allocate!");
+    if (FileBuffer != NULL) {
+      free(FileBuffer);
+    }    
+    if (Scratch != NULL) {
+      free(Scratch);
+    }
+    return 1;
+  }
+  Status = CustomDecompress(FileBuffer, (VOID *)OutputBuffer, Scratch);
+  if (Status != EFI_SUCCESS) {
+    printf("\n ERROR in CustomDecompress");
+    if (FileBuffer != NULL) {
+      free(FileBuffer);
+    }    
+    if (Scratch != NULL) {
+      free(Scratch);
+    }
+    if (OutputBuffer != NULL) {
+      free(OutputBuffer);
+    }
+    return 1;
+  }
+//  printf("\nStart to write file!\n");
+  fwrite(OutputBuffer, DstSize, 1, OutFile);
+  free(FileBuffer);
+  free(Scratch);
+  free(OutputBuffer);      
   return 0;
+  }
+  return 0;
+}
+
+RETURN_STATUS
+ParseLzma (
+  IN CONST VOID         *Source,
+  IN      UINT32        SrcSize,
+  OUT     UINT32        *DstSize,
+  OUT     UINT32        *ScratchSize,
+  OUT     LZMAPARAMETER *Param
+  )
+/*++
+
+Routine Description:
+
+  The implementation of LZMA header parsing.
+
+Arguments:
+
+  Source      - The source buffer containing the compressed data.
+  SrcSize     - The size of source buffer
+  DstSize     - The size of destination buffer.
+  ScratchSize - The size of scratch buffer.
+  Param       - The parameter used by LZMA.
+
+Returns:
+
+  RETURN_SUCCESS           - The size of destination buffer and the size of scratch buffer are successull retrieved.
+  RETURN_INVALID_PARAMETER - The source data is corrupted
+
+--*/
+{
+  UINT8   Prop0;
+  UINT32  Lc;
+  UINT32  Lp;
+  UINT32  Pb;
+  UINT8   *SrcPtr;
+  UINTN   Index;
+  UINT32  OutSize;
+  UINT32  InternalSize;
+  UINT32  DictionarySize;
+  
+  if (Source == NULL || DstSize == NULL || ScratchSize == NULL) {
+    return RETURN_INVALID_PARAMETER;
+  }
+
+  if (SrcSize < 13) {
+    return RETURN_INVALID_PARAMETER;
+  }
+  
+  SrcPtr          = (UINT8 *) Source;
+
+  Prop0           = *SrcPtr;
+  DictionarySize  = 0;
+
+  if (Param != NULL) {
+    for (Index = 0; Index < 5; Index++) {
+      Param->Properties[Index] = *SrcPtr++;
+    }
+  } else {
+    SrcPtr += 5;
+  }
+
+  OutSize = 0;
+  for (Index = 0; Index < 4; Index++) {
+    OutSize+= ((UINT32) (*SrcPtr++) << (Index * 8));
+  }
+
+  if (OutSize == 0xFFFFFFFF) {
+    return RETURN_INVALID_PARAMETER;
+  }
+  
+  for (Index = 0; Index < 4; Index++) {
+    if ((*SrcPtr++) != 0) {
+      return RETURN_INVALID_PARAMETER;
+    }
+  }
+
+  if (Prop0 >= (9 * 5 * 5)) {
+    return RETURN_INVALID_PARAMETER;
+  }
+
+  for (Pb = 0; Prop0 >= (9 * 5); Pb++, Prop0 -= (9 * 5))
+    ;
+  for (Lp = 0; Prop0 >= 9; Lp++, Prop0 -= 9)
+    ;
+  Lc            = Prop0;
+
+  InternalSize  = (LZMA_BASE_SIZE + (LZMA_LIT_SIZE << (Lc + Lp))) * sizeof (CProb);
+
+#ifdef _LZMA_OUT_READ
+  InternalSize += 100;
+#endif
+
+  if (Param != NULL) {
+    Param->Lc             = Lc;
+    Param->Lp             = Lp;
+    Param->Pb             = Pb;
+
+    Param->DictionarySize = 0;
+    Param->InternalSize   = InternalSize;
+
+#ifdef _LZMA_OUT_READ
+    for (Index = 0; Index < 4; Index++) {
+      Param->DictionarySize = (UInt32) (Param.Properties[1 + Index]) << (Index * 8);
+    }
+  }
+
+  DictionarySize = Param->DictionarySize;
+#endif
+}
+*DstSize = OutSize;
+
+//
+// Request longer space to allow align
+//
+*ScratchSize = InternalSize + DictionarySize + 13;
+
+return RETURN_SUCCESS;
+}
+
+RETURN_STATUS
+EFIAPI
+CustomDecompressGetInfo (
+  IN  CONST VOID  *Source,
+  IN  UINT32      SourceSize,
+  OUT UINT32      *DestinationSize,
+  OUT UINT32      *ScratchSize
+  )
+/*++
+
+Routine Description:
+
+  The implementation of LZMA GetInfo().
+
+Arguments:
+
+  Source      - The source buffer containing the compressed data.
+  SrcSize     - The size of source buffer
+  DstSize     - The size of destination buffer.
+  ScratchSize - The size of scratch buffer.
+
+Returns:
+
+  RETURN_SUCCESS           - The size of destination buffer and the size of scratch buffer are successull retrieved.
+  RETURN_INVALID_PARAMETER - The source data is corrupted
+
+--*/
+{
+  mSourceBufferSize = SourceSize;
+
+  return ParseLzma (
+          Source,
+          SourceSize,
+          DestinationSize,
+          ScratchSize,
+          NULL
+          );
+}
+
+#ifdef _LZMA_IN_CB
+typedef struct _CBuffer {
+  ILzmaInCallback InCallback;
+  UINT8           *Buffer;
+  UINT32          Size;
+} CBuffer;
+
+INT32
+LzmaReadCompressed (
+  VOID   *Object,
+  UINT8  **Buffer,
+  UINT32 *Size
+  )
+/*++
+
+Routine Description:
+
+  GC_TODO: Add function description
+
+Arguments:
+
+  Object  - GC_TODO: add argument description
+  Buffer  - GC_TODO: add argument description
+  Size    - GC_TODO: add argument description
+
+Returns:
+
+  GC_TODO: add return values
+
+--*/
+
+{
+  CBUFFER *Bo;
+  Bo      = (CBuffer *) Object;
+  *Size   = Bo->Size; // You can specify any available size here
+  *Buffer = Bo->Buffer;
+  Bo->Buffer += *Size;
+  Bo->Size -= *Size;
+  return LZMA_RESULT_OK;
+}
+#endif
+
+RETURN_STATUS
+EFIAPI
+CustomDecompress (
+  IN CONST VOID  *Source,
+  IN OUT VOID    *Destination,
+  IN OUT VOID    *Scratch
+  )
+/*++
+
+Routine Description:
+
+  The implementation of LZMA Decompress().
+
+Arguments:
+
+  Source      - The source buffer containing the compressed data.
+  Destination - The destination buffer to store the decompressed data
+  Scratch     - The buffer used internally by the decompress routine. This  buffer is needed to store intermediate data.
+
+Returns:
+
+  RETURN_SUCCESS           - Decompression is successfull
+  RETURN_INVALID_PARAMETER - The source data is corrupted
+
+--*/
+{
+#ifdef _LZMA_IN_CB
+  CBuffer       Bo;
+#endif
+  RETURN_STATUS Status;
+  INT32         LzmaStatus;
+  LZMAPARAMETER Param;
+  UINT8         *SrcPtr;
+  UINT32        CompressedSize;
+  UINT32        OutSize;
+  UINT32        RequiredScratchSize;
+  UINT32        OutSizeProcessed;
+  UINT32        SrcSize; 
+  
+  if (mSourceBufferSize == 0) {
+    return RETURN_INVALID_PARAMETER;
+  }
+  
+  SrcSize = mSourceBufferSize;
+  mSourceBufferSize = 0;
+
+  Status = ParseLzma (
+            Source,
+            SrcSize,
+            &OutSize,
+            &RequiredScratchSize,
+            &Param
+            );
+  if (RETURN_ERROR (Status)) {
+    return RETURN_INVALID_PARAMETER;
+  }
+
+  //
+  // Skip the LZMA param field
+  //
+  CompressedSize  = SrcSize - 13;
+  SrcPtr          = (UINT8 *) Source + 13;
+
+#ifdef _LZMA_IN_CB
+  Bo.InCallback.Read  = LzmaReadCompressed;
+  Bo.Buffer           = (unsigned char *) SrcPtr;
+  Bo.Size             = CompressedSize;
+#endif
+
+#ifdef _LZMA_OUT_READ
+  {
+    UINT32  NowPos;
+    UINT8   *Dictionary;
+    UINT32  DictionarySize;
+    UINTN   Index;
+
+    Dictionary = ((Param->InternalSize + (UINT8 *) Scratch) + 16) -
+      ((Param->InternalSize + (UINT8 *) Scratch) & 0x0F)
+
+      LzmaDecoderInit (
+                                                        (UINT8 *) Scratch,
+                                                        Param->InternalSize,
+                                                        Param->Lc,
+                                                        Param->Lp,
+                                                        Param->Pb,
+                                                        Dictionary,
+                                                        Param->DictionarySize,
+#ifdef _LZMA_IN_CB
+                                                        & Bo.InCallback
+#else
+                                                        (UINT8 *) SrcPtr,
+                                                        CompressedSize
+#endif
+                                                        );
+    for (NowPos = 0; NowPos < OutSize;) {
+      UINT32  BlockSize;
+      UINT32  KBlockSize;
+
+      KBlockSize  = 0x10000;
+      BlockSize   = OutSize - NowPos;
+      if (BlockSize > KBlockSize) {
+        BlockSize = KBlockSize;
+      }
+
+      LzmaStatus = LzmaDecode (
+                    (UINT8 *) Scratch,
+                    ((UINT8 *) Destination) + NowPos,
+                    BlockSize,
+                    &OutSizeProcessed
+                    );
+      if (LzmaStatus != 0) {
+        return RETURN_INVALID_PARAMETER;
+      }
+
+      if (OutSizeProcessed == 0) {
+        OutSize = NowPos;
+        break;
+      }
+
+      NowPos += OutSizeProcessed;
+    }
+  }
+
+#else
+
+  LzmaStatus = LzmaDecode (
+                (UINT8 *) Scratch,
+                RequiredScratchSize,
+                Param.Lc,
+                Param.Lp,
+                Param.Pb,
+#ifdef _LZMA_IN_CB
+                & Bo.InCallback,
+#else
+                (UINT8 *) SrcPtr,
+                CompressedSize,
+#endif
+                (UINT8 *) Destination,
+                OutSize,
+                &OutSizeProcessed
+                );
+
+  OutSize = OutSizeProcessed;
+#endif
+
+  if (LzmaStatus != 0) {
+    return RETURN_INVALID_PARAMETER;
+  }
+
+  return RETURN_SUCCESS;
 }

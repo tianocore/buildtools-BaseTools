@@ -40,7 +40,7 @@ OBJS = LzmaMain.obj BufferStream.obj OutBuffer.obj InBuffer.obj FileStreams.obj 
 
 LIBS = Common.lib String.lib
   
-OBJECTS = LzmaCompress.obj $(TARGET_LIB)
+OBJECTS = LzmaCompress.obj LzmaDecode.obj $(TARGET_LIB)
 #OBJECTS = LzmaCompress.obj
 
 !INCLUDE ..\MSmakefile.app
