@@ -8,4 +8,5 @@ class Rule:
         self.Alignment = None
         self.CheckSum = False
         self.FvType = None       # for Ffs File Type
+        self.KeyStringList = []
         
