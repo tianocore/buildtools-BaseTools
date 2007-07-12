@@ -104,7 +104,7 @@ class GenFds :
         dataSection.Filename = "$(INF_OUTPUT)/$(MODULE_NAME).efi"
 
         ruleComplexFile1 = RuleComplexFile.RuleComplexFile()
-        ruleComplexFile1.Alignment = 32
+        ruleComplexFile1.Alignment = 16
         ruleComplexFile1.Arch = 'COMMON'
         ruleComplexFile1.CheckSum = True
         ruleComplexFile1.Fixed = True

@@ -30,10 +30,7 @@ class Vtf:
                BaseAddArg
                
         print cmd
-        PopenObject = subprocess.Popen(cmd)
-        PopenObject.communicate()
-        if PopenObject.returncode != 0 :
-            raise Exception ("GenFv Failed!")
+        GenFdsGlobalVariable.CallExternalTool(cmd, "GenFv -Vtf Failed!")
         
         
     def GenBsfInf (self):

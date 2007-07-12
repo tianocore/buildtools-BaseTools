@@ -26,9 +26,16 @@ class FileStatements (Ffs.Ffs) :
         else:
             SectionFiles = ''
             for section in self.SectionList :
-                SectionFiles = SectionFiles                          + \
-                               ' -i '                                + \
-                               section.GenSection(OutputDir, self.NameGuid, self.KeyStringList)
+                sect, align = section.GenSection(OutputDir, self.NameGuid, self.KeyStringList)
+                if sect != None:
+                    SectionFiles = SectionFiles  + \
+                                   ' -i '        + \
+                                   sect
+                    if align != None:
+                        SectionFiles = SectionFiles  + \
+                                       ' -o '        + \
+                                       align
+                               
         #
         # Prepare the parameter
         #
@@ -68,11 +75,7 @@ class FileStatements (Ffs.Ffs) :
                      SectionFiles
      
         print GenFfsCmd
-        PopenObject = subprocess.Popen (GenFfsCmd)
-        PopenObject.communicate()
-        if PopenObject.returncode != 0:
-            raise Exception("GenFfs Failed !")
-        
+        GenFdsGlobalVariable.CallExternalTool(GenFfsCmd,"GenFfs Failed !")
         return FfsFileOutput
         
 

@@ -47,9 +47,5 @@ class DataSection (Section.Section):
         #
         
         print GenSectionCmd
-        PopenObject = subprocess.Popen (GenSectionCmd)
-        PopenObject.communicate()
-        if PopenObject.returncode != 0:
-            raise Exception("GenSection Failed!")
-        
-        return OutputFile
+        GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
+        return OutputFile, self.Alignemnt

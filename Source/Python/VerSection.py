@@ -2,6 +2,7 @@ from Ffs import Ffs
 import Section
 import os
 import subprocess
+from GenFdsGlobalVariable import GenFdsGlobalVariable
 class VerSection (Section.Section):
     def __init__(self):
         self.Alignment = None
@@ -46,15 +47,11 @@ class VerSection (Section.Section):
                          '\"'                       + \
                          StringData                 + \
                          '\"'                       + \
-                         BuildNum
+                         BuildNum                   
                          
         #
         # Call GenSection
         #
         print GenSectionCmd
-        PopenObject = subprocess.Popen(GenSectionCmd)
-        PopenObject.communicate()
-        if PopenObject.returncode != 0:
-            raise Exception("Gensection Failed!")
-
-        return OutputFile
+        GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "Gensection Failed!")
+        return OutputFile, self.Alignment

@@ -2,6 +2,7 @@ import Section
 from Ffs import Ffs
 import subprocess
 import os
+from GenFdsGlobalVariable import GenFdsGlobalVariable
 class UiSection (Section.Section):
     def __init__(self):
         self.Alignment = None
@@ -41,9 +42,5 @@ class UiSection (Section.Section):
         # Call GenSection
         #
         print GenSectionCmd
-        PopenObject = subprocess.Popen(GenSectionCmd)
-        PopenObject.communicate()
-        if PopenObject.returncode != 0:
-            raise Exception("GenSection Failed!")
-
-        return OutputFile
+        GenFdsGlobalVariable.CallExternalTool(GenSectionCmd,"GenSection Failed!")
+        return OutputFile, self.Alignment

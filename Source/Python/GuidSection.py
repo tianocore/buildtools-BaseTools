@@ -26,9 +26,12 @@ class GuidSection(Section.Section) :
             
         SectFile = ''
         for Sect in self.SectionList:
-            SectFile = SectFile + \
-                       '  '     + \
-                       Sect.GenSection(OutputPath, ModuleName, KeyStringList,FfsInf)
+            sect, align = Sect.GenSection(OutputPath, ModuleName, KeyStringList,FfsInf)
+            if sect != None:
+                SectFile = SectFile + \
+                           '  '     + \
+                           sect
+                       
 
         OutputFile = OutputPath + \
                      os.sep     + \
@@ -50,11 +53,8 @@ class GuidSection(Section.Section) :
                              SectFile
                              
             print GenSectionCmd
-            PopenObject = subprocess.Popen(GenSectionCmd)
-            PopenObject.communicate()
-            if PopenObject.returncode != 0:
-                raise Exception("GenSection Failed!")
-            return OutputFile
+            GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
+            return OutputFile, self.Alignment
         else:
             #
             # Call GenSection with DUMMY section type.
@@ -64,10 +64,7 @@ class GuidSection(Section.Section) :
                              SectFile
         
             print GenSectionCmd
-            PopenObject = subprocess.Popen (GenSectionCmd)
-            PopenObject.communicate()
-            if PopenObject.returncode != 0:
-                raise Exception ("GenSection Failed!")
+            GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
             #
             # Use external tool process the Output
             #
@@ -88,7 +85,7 @@ class GuidSection(Section.Section) :
             # Call external tool
             #
             print ExternalToolCmd
-            subprocess.Popen (ExternalToolCmd).communicate()
+            GenFdsGlobalVariable.CallExternalTool(ExternalToolCmd, "Gensec Failed!")
             #
             # Call Gensection Add Secntion Header
             #
@@ -115,11 +112,9 @@ class GuidSection(Section.Section) :
                              TempFile
                         
             print GenSectionCmd
-            PopenObject = subprocess.Popen(GenSectionCmd)
-            PopenObject.communicate()
-            if PopenObject.returncode != 0:
-                raise Exception ("GenSection Failed!")
-            return OutputFile
+            GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
+            
+            return OutputFile, self.Alignment
         
     def __FindExtendTool__(self):
         tool = None

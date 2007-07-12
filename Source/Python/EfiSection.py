@@ -7,7 +7,7 @@ import os
 class EfiSection (Section.Section):
     
     def __init__(self):
-        
+        self.Alignment = None
         self.SectionType = None
         self.Optional = False
         # store file name composed of MACROs
@@ -42,7 +42,7 @@ class EfiSection (Section.Section):
         if self.Optional == True :
             if Filename == None or Filename =='':
                 print "Optional Section don't exist!"
-                return ''
+                return '', None
             
         OutputFile = os.path.join( OutputPath, ModuleName + Ffs.SectionSuffix.get(SectionType))
         #
@@ -65,9 +65,9 @@ class EfiSection (Section.Section):
             if VerString == '' and BuildNumString == '':
                 if self.Optional == True :
                     print "Optional Section don't exist!"
-                    return ''
+                    return '', None
                 else:
-                    raise Exception ("File: %s Version Section dosen't give info" %InfFileName)
+                    raise Exception ("File: %s miss Version Section value" %InfFileName)
             GenSectionCmd = 'GenSec -o '                + \
                              OutputFile                 + \
                              ' -s EFI_SECTION_VERSION'  + \
@@ -96,9 +96,9 @@ class EfiSection (Section.Section):
             if UiString == '':
                 if self.Optional == True :
                     print "Optional Section don't exist!"
-                    return ''
+                    return '', None
                 else:
-                    raise Exception ("File: %s UI Section dosen't give info" %InfFileName)
+                    raise Exception ("File: %s miss UI Section value" %InfFileName)
                 
             GenSectionCmd = 'GenSec -o '                       + \
                              OutputFile                        + \
@@ -108,23 +108,24 @@ class EfiSection (Section.Section):
              if Filename == None or not os.path.exists(Filename) :
                  if self.Optional == True:
                      print "Optional Section don't exist!"
-                     return ''
+                     return '', None
                  else:
-                     raise Exception("File: %s Data Section doesn't give info" %InfFileName)
+                     raise Exception(" %s does't exist" %Filename)
                  
              GenSectionCmd = 'GenSec -o '                                     + \
                               OutputFile                                      + \
                               ' -s '                                          + \
-                              Section.Section.SectionType.get (SectionType)  + \
+                              Section.Section.SectionType.get (SectionType)   + \
                               ' '                                             + \
                               GenFdsGlobalVariable.ExtendMarco(Filename)
         #
         # Call GenSection
         #
         print GenSectionCmd
-        PopenObject = subprocess.Popen (GenSectionCmd)
-        PopenObject.communicate()
-        if PopenObject.returncode != 0:
-            raise Exception ("GenSection Failed !")
-
-        return OutputFile
+        GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed !")
+##        if self.Alignment == None:
+##             print "#####################################"
+##             print "Align is none"
+        
+        
+        return OutputFile , self.Alignment

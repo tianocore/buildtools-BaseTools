@@ -43,10 +43,7 @@ class Capsule :
                CapOutputFile       + \
                ' -c '
         print cmd
-        PopenObject = subprocess.Popen(cmd)
-        PopenObject.communicate()
-        if PopenObject.returncode != 0:
-            raise Excetpion ("GefFv GenCapsule Failed!")
+        GenFdsGlobalVariable.CallExternalTool(cmd, "GefFv GenCapsule Failed!")
 
 ##
 ##    def GenFvInf():

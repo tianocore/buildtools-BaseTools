@@ -39,7 +39,7 @@ class FD:
             #
             # Call each region's AddToBuffer function 
             #
-            Regions.AddToBuffer (FdBuffer, self.BlockSizeList, self.ErasePolarity, FvBinDict)
+            Regions.AddToBuffer (FdBuffer, self.BaseAddress, self.BlockSizeList, self.ErasePolarity, FvBinDict)
         #
         # Create a empty Fd file
         #

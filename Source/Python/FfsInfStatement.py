@@ -140,36 +140,30 @@ class FfsInfStatement(Ffs.Ffs):
         index = fileName.find('.')
         fileName = fileName[0:index]
         Platform = os.path.normpath(GenFdsGlobalVariable.WorkSpace.TargetTxt.TargetTxtDictionary["ACTIVE_PLATFORM"][0])
-        
-        if self.InfFileName in GenFdsGlobalVariable.WorkSpace.Build.get('IA32').PlatformDatabase.get(Platform).Modules:
-            Arch = 'IA32'
-            Flag = True
+        targetArchList = GenFdsGlobalVariable.WorkSpace.TargetTxt.TargetTxtDictionary["TARGET_ARCH"]
+        if len(targetArchList) == 0:
+            myArchList = GenFdsGlobalVariable.WorkSpace.SupArchList
+        else:
+            myArchList = set(GenFdsGlobalVariable.WorkSpace.SupArchList) & set(targetArchList)
+            print "Valid target architecture(s) is", " ".join(myArchList)
 
-        if self.InfFileName in GenFdsGlobalVariable.WorkSpace.Build.get('X64').PlatformDatabase.get(Platform).Modules:
-            if Flag == True:
-                raise Warning ("Module %s in IA32 and X64 both, need give \
-                  exactly Arch" %self.InfFileName)
-                return OutputPath
-            else:
-                Flag = True
-                Arch = 'X64'
-
-        if self.InfFileName in GenFdsGlobalVariable.WorkSpace.Build.get('IPF').PlatformDatabase.get(Platform).Modules:
-            if Flag == True:
-                raise Warning ("Module %s in %s and IPF both, need give \
-                  exactly Arch" %(Arch, self.InfFileName))
-                return OutputPath
-            else:
-                Flag = True
-                Arch = 'IPF'
-                
-        if Flag == True and Arch != '':
-            OutputPath = os.path.join(GenFdsGlobalVariable.OuputDir,
-                                      Arch ,
-                                      ModulePath,
-                                      fileName,
-                                      'OUTPUT'
-                                      )
+        if len(myArchList) > 1 :
+            for Key in self.KeyStringList:
+                Target, Tag, Arch = Key.split('_')
+                ArchList = set (ArchList) & Arch
+                if ArchList == 1:
+                    Arch = ArchList[0]
+                else:
+                    raise Exception("Module %s has too many bulid Arch !" %self.InfFileNames)
+        elif len(myArchList) == 1 :
+            Arch = myArchList.pop()
+            
+        OutputPath = os.path.join(GenFdsGlobalVariable.OuputDir,
+                                  Arch ,
+                                  ModulePath,
+                                  fileName,
+                                  'OUTPUT'
+                                  )
         OutputPath = os.path.normcase(OutputPath)
         return OutputPath
         
@@ -196,11 +190,7 @@ class FfsInfStatement(Ffs.Ffs):
         # Call GenSection
         #
         print genSectionCmd
-        PopenObject = subprocess.Popen (genSectionCmd)
-        PopenObject.communicate()
-        if PopenObject.returncode != 0:
-            raise Exception("Gensection Failed!")
-        
+        GenFdsGlobalVariable.CallExternalTool(genSectionCmd, "Gensection Failed!")
         return OutputFile
     
     def __GenSimpleFileFfs__(self, Rule, InputFile):
@@ -233,11 +223,7 @@ class FfsInfStatement(Ffs.Ffs):
         # Call GenSection
         #
         print GenFfsCmd
-        PopenObject = subprocess.Popen (GenFfsCmd)
-        PopenObject.communicate()
-        if PopenObject.returncode != 0:
-           raise Exception("GenFfs Failed!")
-       
+        GenFdsGlobalVariable.CallExternalTool(GenFfsCmd, "GenFfs Failed!")
         return FfsOutput
     
     def __GenComplexFileSection__(self, Rule):
@@ -245,12 +231,15 @@ class FfsInfStatement(Ffs.Ffs):
         for Sect in Rule.SectionList:
            print 'GenSection: %s %s :' %(self.OutputPath ,self.ModuleGuid)
            secName = ''
-           secName = Sect.GenSection(self.OutputPath , self.ModuleGuid, self.KeyStringList, self)
+           secName, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, self.KeyStringList, self)
            if secName != '':
                SectFiles = SectFiles    + \
                            ' -i '       + \
                            secName
-                       
+               if Align != None:
+                   SectFiles = SectFiles + \
+                               ' -n '    + \
+                               Align
         return SectFiles
 
     def __GenComplexFileFfs__(self, Rule, InputFile):
@@ -270,11 +259,7 @@ class FfsInfStatement(Ffs.Ffs):
                      InputFile
                      
         print GenFfsCmd
-        PopenObject = subprocess.Popen(GenFfsCmd)
-        PopenObject.communicate()
-        if PopenObject.returncode != 0:
-            raise Exception("GenFfs Failed !")
-        
+        GenFdsGlobalVariable.CallExternalTool(GenFfsCmd, "GenFfs Failed !")
         return FfsOutput
 
     def __GetGenFfsComParamter__(self, Rule):

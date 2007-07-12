@@ -68,11 +68,7 @@ class FV:
         # Call GenFv Tools
         #
         print cmd
-        PopenObject = subprocess.Popen(cmd)
-        PopenObject.communicate()
-        if PopenObject.returncode != 0 :
-            raise Exception ("GenFv Failed!")
-        
+        GenFdsGlobalVariable.CallExternalTool(cmd, "GenFv Failed!")
         #
         # Write the Fv contents to Buffer
         #

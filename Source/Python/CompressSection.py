@@ -2,7 +2,7 @@ from Ffs import Ffs
 import Section
 import subprocess
 import os
-
+from GenFdsGlobalVariable import GenFdsGlobalVariable
 class CompressSection (Section.Section) :
     CompTypeDict = {
         'PI_STD'     : ' -c PI_STD ',
@@ -25,9 +25,12 @@ class CompressSection (Section.Section) :
             
         SectFiles = ''
         for Sect in self.SectionList:
-            SectFiles = SectFiles + \
-                        ' '       + \
-                        Sect.GenSection(OutputPath, ModuleName, KeyStringList, FfsInf)
+            sect, align = Sect.GenSection(OutputPath, ModuleName, KeyStringList, FfsInf)
+            if sect != None:
+                SectFiles = SectFiles + \
+                            ' '       + \
+                            sect
+                        
 
         OutputFile = OutputPath + \
                      os.sep     + \
@@ -45,11 +48,8 @@ class CompressSection (Section.Section) :
         # Call GenSection
         #
         print GenSectionCmd
-        PopenObject = subprocess.Popen (GenSectionCmd)
-        PopenObject.communicate()
-        if PopenObject.returncode != 0 :
-            raise Exception("GenSection Failed!")
+        GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
         
-        return OutputFile
+        return OutputFile, self.Alignment
 
         

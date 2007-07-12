@@ -1,5 +1,5 @@
 import os
-
+import subprocess
 class GenFdsGlobalVariable:
     FvDir = ''
     OuputDir = ''
@@ -34,7 +34,16 @@ class GenFdsGlobalVariable:
         Str = String.replace('$(WORKSPACE)', GenFdsGlobalVariable.WorkSpaceDir)
         return Str
     
+    def CallExternalTool (cmd, errorMess):
+        PopenObject = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr= subprocess.PIPE)
+        (out, error) = PopenObject.communicate()
+        if PopenObject.returncode != 0:
+            print out
+            print error
+            raise Exception(errorMess)
+        
     SetDir = staticmethod(SetDir)
     ExtendMarco = staticmethod(ExtendMarco)
     SetDefaultRule = staticmethod(SetDefaultRule)
     ReplaceWorkspaceMarco = staticmethod(ReplaceWorkspaceMarco)
+    CallExternalTool = staticmethod(CallExternalTool)
