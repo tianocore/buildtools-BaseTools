@@ -2005,6 +2005,7 @@ Returns:
     } else if (SecondVTF != TRUE) {
     printf("\n BaseAddress + FwVolumeSize must equal 0x100000000!");
     }
+    Usage();
     return 1;
   }  
 //  memset (OutFileName1, 0, FILE_NAME_SIZE);
@@ -2063,6 +2064,7 @@ Returns:
         printf("\nFirstBaseAddress + FirstFwVolumeSize must equal 0x100000000!");
         printf("\nSecondBaseAddress + SecondFwVolumeSize must equal FirstBaseAddress");
       }
+      Usage();
       return 1;
     }    
 //    memset (OutFileName2, 0, FILE_NAME_SIZE);
@@ -2473,7 +2475,7 @@ Returns:
 --*/
 {
   printf (
-    "%s, EFI 2.0 BootStrap File Generation Utility. Version %i.%i.\n",
+    "\n%s, EFI 2.0 BootStrap File Generation Utility. Version %i.%i.\n",
     UTILITY_NAME,
     UTILITY_MAJOR_VERSION,
     UTILITY_MINOR_VERSION
@@ -2695,7 +2697,7 @@ Returns:
     return 1;
   }
  
-  if (argc != ONE_VTF_ARGS && argc != TWO_VTF_ARGS && argc != THREE_VTF_ARGS && argc != FOUR_VTF_ARGS) {
+  if (argc != ONE_VTF_ARGS && argc != TWO_VTF_ARGS && argc != THREE_VTF_ARGS) {
     Usage ();
     return 1;
   }

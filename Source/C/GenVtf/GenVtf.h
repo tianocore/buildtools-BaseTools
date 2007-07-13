@@ -135,15 +135,15 @@ Abstract:
 //
 // The maximum number of arguments accepted from the command line.
 //
-#define ONE_VTF_ARGS  7
-#define TWO_VTF_ARGS  9
-#define THREE_VTF_ARGS 11
-#define FOUR_VTF_ARGS  15
+#define ONE_VTF_ARGS  9
+#define TWO_VTF_ARGS  11
+#define THREE_VTF_ARGS  15
+
 
 //
 // The number of IA32 vtf arguments accepted from the command line.
 //
-#define IA32_ARGS  4
+#define IA32_ARGS  20
 
 #define IA32_SOFT_FIT "IA32VtfAddress.inf"
 
@@ -633,4 +633,24 @@ Returns:
 --*/
 ;
 
+VOID
+Usage (
+  VOID
+  )
+/*++
+
+Routine Description:
+
+  Displays the utility usage syntax to STDOUT
+
+Arguments:
+
+  None
+
+Returns:
+
+  None
+
+--*/
+;
 #endif
