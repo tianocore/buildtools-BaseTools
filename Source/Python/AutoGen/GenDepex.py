@@ -16,8 +16,8 @@ import os
 import re
 from StringIO import StringIO
 from struct import pack
-from EdkIIWorkspace import CreateDirectory
-from BuildToolError import *
+from Common.EdkIIWorkspace import CreateDirectory
+from Common.BuildToolError import *
 
 gType2Phase = {
     "BASE"              :   None,

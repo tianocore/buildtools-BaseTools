@@ -11,9 +11,9 @@
 #This file is used to parse a strings file and create or add to a string database file.
 #
 
-import EdkLogger
+import Common.EdkLogger
+from Common.BuildToolError import *
 from UniClassObject import *
-from BuildToolError import *
 
 HexHeader = '0x'
 

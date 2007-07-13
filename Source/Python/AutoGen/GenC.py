@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 import string
-import EdkLogger
 
-from BuildToolError import *
-from DataType import *
-from EdkIIWorkspace import *
+import Common.EdkLogger
+
+from Common.BuildToolError import *
+from Common.DataType import *
+from Common.EdkIIWorkspace import *
 from BuildInfo import *
 from StrGather import *
 

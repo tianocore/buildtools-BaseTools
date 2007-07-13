@@ -25,9 +25,9 @@ from DecClassObject import *
 from DscClassObject import *
 from String import *
 from ClassObjects.CommonClassObject import *
-from FdfParser import *
+from GenFds.FdfParser import *
 from BuildToolError import *
-from Region import *
+from GenFds.Region import *
 
 class ModuleSourceFilesClassObject(object):
     def __init__(self, SourceFile = '', PcdFeatureFlag = '', TagName = '', ToolCode = '', ToolChainFamily = '', String = ''):

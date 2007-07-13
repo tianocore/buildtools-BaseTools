@@ -2,14 +2,16 @@
 
 """Create makefile for MS nmake and GNU make"""
 
-import os, sys, string, re
+import os
+import sys
+import string
+import re
 import os.path as path
 
-from SequentialDict import *
-from EdkIIWorkspaceBuild import *
-from EdkIIWorkspace import *
+from Common.EdkIIWorkspaceBuild import *
+from Common.EdkIIWorkspace import *
+from Common.BuildToolError import *
 from BuildInfo import *
-from BuildToolError import *
 
 gDependencyDatabase = {}    # file path : [dependent files list]
 gIncludePattern = re.compile("^[ \t#]*include[ \t]+[\"<]*([^\"<>]+)[>\" \t\n\r]*", re.MULTILINE | re.UNICODE)

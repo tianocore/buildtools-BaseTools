@@ -7,7 +7,7 @@ import sys
 import Section
 import RuleSimpleFile
 import RuleComplexFile
-from String import *
+from Common.String import *
 
 class FfsInfStatement(Ffs.Ffs):
     def __init__(self):

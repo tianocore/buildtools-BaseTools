@@ -3,7 +3,7 @@ import sys
 import os
 import FdfParser
 from GenFdsGlobalVariable import GenFdsGlobalVariable
-import EdkIIWorkspaceBuild
+import Common.EdkIIWorkspaceBuild
 import RuleComplexFile
 from EfiSection import EfiSection
 import StringIO

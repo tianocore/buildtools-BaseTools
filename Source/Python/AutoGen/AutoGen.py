@@ -2,19 +2,20 @@
 import sys
 import os
 import re
-import EdkLogger
 import os.path as path
 import imp
+
+import Common.EdkLogger
 import GenC
 import GenMake
 import GenDepex
 
-from EdkIIWorkspaceBuild import *
-from EdkIIWorkspace import *
-from DataType import *
 from BuildInfo import *
 from StrGather import *
-from BuildToolError import *
+from Common.BuildToolError import *
+from Common.EdkIIWorkspaceBuild import *
+from Common.EdkIIWorkspace import *
+from Common.DataType import *
 
 #
 # generate AutoGen.c, AutoGen.h

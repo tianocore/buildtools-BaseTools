@@ -12,8 +12,8 @@
 #
 
 import os, codecs
-import EdkLogger
-from BuildToolError import *
+import Common.EdkLogger
+from Common.BuildToolError import *
 
 UNICODE_WIDE_CHAR = u'\\wide'
 UNICODE_NARROW_CHAR = u'\\narrow'
