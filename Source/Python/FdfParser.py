@@ -1712,8 +1712,8 @@ class FdfParser:
 
         if not self.__GetNextWord():
             raise Warning("expected Component location At Line %d" % self.CurrentLineNumber)
-        if self.__Token not in ("F", "N", "S", "H", "L", "PH", "PL"):
-            raise Warning("Unknown location type At line %d" % self.CurrentLineNumber)
+#        if self.__Token not in ("F", "N", "S", "H", "L", "PH", "PL"):
+#            raise Warning("Unknown location type At line %d" % self.CurrentLineNumber)
         compStatement.CompLoc = self.__Token
         
         if not self.__IsKeyword("COMP_TYPE"):
