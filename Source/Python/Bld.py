@@ -213,7 +213,8 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                         #GenFds -f C:\Work\Temp\T1\Nt32Pkg\Nt32Pkg.fdf -o $(BUILD_DIR) -p Nt32Pkg\Nt32Pkg.dsc
                         if opt.FDFFILE != '':
                             opt.FDFFILE =  os.environ["WORKSPACE"] + '\\' + opt.FDFFILE.replace('/','\\')
-                            p = Popen(["GenFds", "-f", opt.FDFFILE, "-o", f.replace('/', '\\'), "-p", opt.DSCFILE], env=os.environ, cwd=os.path.dirname(opt.FDFFILE))
+                            f = os.environ["WORKSPACE"] + '\\' + f.replace('/', '\\')
+                            p = Popen(["GenFds", "-f", opt.FDFFILE, "-o", f, "-p", opt.DSCFILE], env=os.environ, cwd=os.path.dirname(opt.FDFFILE))
                             p.communicate()
                             if p.returncode != 0:
                                 return p.returncode
