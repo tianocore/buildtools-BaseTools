@@ -232,7 +232,6 @@ Returns:
   non-zero      otherwise
 
 --*/
-// GC_TODO:    ] - add argument and description to function comment
 {
   INT8      *Ext;
   FILE      *FptrOut;
@@ -833,24 +832,6 @@ CheckPE32File (
 /*++
 
 Routine Description:
-
-  GC_TODO: Add function description
-
-Arguments:
-
-  Fptr        - GC_TODO: add argument description
-  MachineType - GC_TODO: add argument description
-  SubSystem   - GC_TODO: add argument description
-
-Returns:
-
-  GC_TODO: add return values
-
---*/
-{
-  /*++
-
-Routine Description:
   
   Given a file pointer to a supposed PE32 image file, verify that it is indeed a
   PE32 image file, and then return the machine type in the supplied pointer.
@@ -867,6 +848,7 @@ Returns:
   non-zero      otherwise
 
 --*/
+{
   EFI_IMAGE_DOS_HEADER      DosHeader;
   EFI_IMAGE_FILE_HEADER     FileHdr;
   EFI_IMAGE_OPTIONAL_HEADER OptionalHdr;
@@ -961,7 +943,6 @@ Returns:
   non-zero          otherwise
 
 --*/
-//
 {
   FILE_LIST *FileList;
 

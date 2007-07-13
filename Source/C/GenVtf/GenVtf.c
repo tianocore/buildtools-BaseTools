@@ -36,6 +36,9 @@ Abstract:
 EFI_GUID      Vtf1NameGuid = EFI_IPF_VTF1_GUID
 EFI_GUID      Vtf2NameGuid = EFI_IPF_VTF2_GUID
 
+  UINTN SectionOptionFlag = 0;
+  UINTN SectionCompFlag = 0;
+
 //CHAR8       OutFileName1[FILE_NAME_SIZE];
 //CHAR8       OutFileName2[FILE_NAME_SIZE];
 
@@ -443,8 +446,8 @@ Returns:
 
 --*/
 {
-  UINTN SectionOptionFlag;
-  UINTN SectionCompFlag;
+//  UINTN SectionOptionFlag;
+//  UINTN SectionCompFlag;
 
   SectionOptionFlag = 0;
   SectionCompFlag   = 0;
@@ -505,7 +508,6 @@ Returns:
 
     TokenStr++;
   }
-//  printf("\nWe are done here, InitializeInFileInfo!");
 }
 
 EFI_STATUS
@@ -768,7 +770,7 @@ Returns:
   // Buffer.
   //
   GetRelativeAddressInVtfBuffer (FitTableAdd, &RelativeAddress, FIRST_VTF);
-
+  
   *FitTable = (FIT_TABLE *) RelativeAddress;
 
   return EFI_SUCCESS;
@@ -906,10 +908,8 @@ Returns:
     if ((TmpFitPtr->CvAndType & FIT_TYPE_MASK) != COMP_TYPE_FIT_UNUSED) {
       NumFitComponents += 1;
     }
-
     TmpFitPtr++;
   }
-
   qsort ((VOID *) FitTable, NumFitComponents, sizeof (FIT_TABLE), CompareItems);
 }
 
@@ -1311,7 +1311,6 @@ Returns:
   // !!!!!!!!!!!!!!!!!!!!!!!
 
   if (VtfInfo->CompType == COMP_TYPE_FIT_PEICORE) {
-    printf("\n we Start to  UpdateEntryPoint here!");
     Status = UpdateEntryPoint (VtfInfo, &CompStartAddress);
   }
 
@@ -1997,10 +1996,17 @@ Returns:
     SecondVTF = TRUE;
   }
   
-//  printf("\nSecondVTF is %d", SecondVTF);
   Fv1BaseAddress        = StartAddress1;
   Fv1EndAddress         = Fv1BaseAddress + Size1;
-  
+  if (Fv1EndAddress != 0x100000000 || Size1 < 0x100000) {
+    printf("\n Error BaseAddress and Size parameters");
+    if (Size1 < 0x100000) {
+      printf("\n The FwVolumeSize must be larger than 1M");
+    } else if (SecondVTF != TRUE) {
+    printf("\n BaseAddress + FwVolumeSize must equal 0x100000000!");
+    }
+    return 1;
+  }  
 //  memset (OutFileName1, 0, FILE_NAME_SIZE);
   //
   // if output file name specified
@@ -2014,6 +2020,8 @@ Returns:
   // else if output file name not specified, then use the default one
   //
   else {
+  printf("\nno output file specified, output to stdout!");
+/*
   sprintf (
     OutFileName1,
     "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x-%s",
@@ -2030,6 +2038,7 @@ Returns:
     Vtf1NameGuid.Data4[7],
     VTF_OUTPUT_FILE
     );
+*/
     }
   //
   // The image buffer for the First VTF
@@ -2048,7 +2057,14 @@ Returns:
   if (SecondVTF) {
     Fv2BaseAddress        = StartAddress2;
     Fv2EndAddress         = Fv2BaseAddress + Size2;
-    
+    if (Fv2EndAddress != StartAddress1) {
+      printf("\n Error BaseAddress and Size parameters");
+      if (SecondVTF == TRUE) {
+        printf("\nFirstBaseAddress + FirstFwVolumeSize must equal 0x100000000!");
+        printf("\nSecondBaseAddress + SecondFwVolumeSize must equal FirstBaseAddress");
+      }
+      return 1;
+    }    
 //    memset (OutFileName2, 0, FILE_NAME_SIZE);
 /*
     sprintf (
@@ -2099,22 +2115,27 @@ Returns:
   }
   
   printf("\n Done for ProcessAndCreateVtf");
+  if (SectionOptionFlag) {
   Status = UpdateIA32ResetVector (IA32BinFile, Vtf1TotalSize);
   if (Status != EFI_SUCCESS) {
     CleanUpMemory ();
     return Status;
   }
+  }
 
   //
   // Re arrange the FIT Table for Ascending order of their FIT Type..
   //
+  printf("\n start to call SortFitTable");
   SortFitTable ();
-
+  printf("\n Done for call SortFitTable");
+  
   //
   // All components have been updated in FIT table. Now perform the FIT table
   // checksum. The following function will check if Checksum is required,
   // if yes, then it will perform the checksum otherwise not.
   //
+  printf("\n Start to call CalculateFitTableChecksum");
   CalculateFitTableChecksum ();
   printf("\n Done for CalculateFitTableChecksum");
   //
@@ -2764,17 +2785,10 @@ Returns:
     
     case 'R':
     case 'r':
-//    printf("\nBase address specified!\n");
       if (FirstRoundB) {
-//        printf("\nthe first round!\n");
-//	      printf("\n%i, Index is\n", Index);
         Status      = AsciiStringToUint64 (argv[Index + 1], FALSE, &StartAddress1);
-//	      printf("\n%i, StartAddress1 is\n", StartAddress1);
         FirstRoundB = FALSE;
-//	      printf("\n we get to here!\n");
-//	      printf("\nStatus is %i\n", Status);
       } else {
-//        printf("\nthe second round\n");
         Status = AsciiStringToUint64 (argv[Index + 1], FALSE, &StartAddress2);
       }
       if (Status = 0) {
@@ -2785,10 +2799,8 @@ Returns:
 
     case 'S':
     case 's':
-//    printf("\nSize specified!\n");
       if (FirstRoundS) {
         Status      = AsciiStringToUint64 (argv[Index + 1], FALSE, &FwVolSize1);
-//	      printf("\n %i, FwVolSize1 is\n",  FwVolSize1);
         FirstRoundS = FALSE;
       } else {
         Status = AsciiStringToUint64 (argv[Index + 1], FALSE, &FwVolSize2);
@@ -2822,7 +2834,6 @@ Returns:
     switch (Status) {
 
     case EFI_INVALID_PARAMETER:
-      printf("\nWe come here!");
       printf ("\nERROR: Invalid parameter passed to GenVtfImage function .\n");
       break;
 
@@ -3477,8 +3488,8 @@ Returns:
 
 --*/
 {
-  UINTN   SectionOptionFlag;
-  UINTN   SectionCompFlag;
+//  UINTN   SectionOptionFlag;
+//  UINTN   SectionCompFlag;
 
   SectionOptionFlag =0 ;
   SectionCompFlag = 0;  
