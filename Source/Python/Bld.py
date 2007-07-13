@@ -386,7 +386,8 @@ if __name__ == '__main__':
 #
     try:
         (opt, args) = MyOptionParser()
-    except:
+    except Exception, e:
+        print e
         CalculateTime(StartTime)
         sys.exit(1)
 #
@@ -394,7 +395,8 @@ if __name__ == '__main__':
 #
     try:
         ewb = WorkspaceBuild(opt.DSCFILE)  #opt.DSCFILE is relative path plus filename
-    except:
+    except Exception, e:
+        print e
         CalculateTime(StartTime)
         sys.exit(1)
 #
