@@ -30,8 +30,8 @@ class FV:
     #
     #  Generate Fv and add it to the Buffer
     #
-    def AddToBuffer (self, Buffer, BaseAddress= None, BlockSize= None, BlockNum=None, ErasePloarity='1') :
-        self.__InitialInf__(BaseAddress, BlockSize, BlockNum)
+    def AddToBuffer (self, Buffer, BaseAddress=None, BlockSize= None, BlockNum=None, ErasePloarity='1', VtfDict=None) :
+        self.__InitialInf__(BaseAddress, BlockSize, BlockNum, VtfDict=None)
         #
         # First Process the Apriori section
         #
@@ -80,10 +80,11 @@ class FV:
         fv.close
         return FvOutputFile
     
-    def __InitialInf__ (self, BaseAddress = None, BlockSize= None, BlockNum = None, ErasePloarity='1') :
+    def __InitialInf__ (self, BaseAddress = None, BlockSize= None, BlockNum = None, ErasePloarity='1', VtfDict=None) :
         self.InfFileName = os.path.join(GenFdsGlobalVariable.FvDir,
                                    self.UiFvName + '.inf')
         self.FvInfFile = open (self.InfFileName, 'w+')
+        
         #
         # Add [Options]
         #
@@ -136,6 +137,11 @@ class FV:
         #
             
         self.FvInfFile.writelines("[files]" + T_CHAR_LF)
+        if VtfDict != None and self.UiFvName in VtfDict.keys():
+            self.FvInfFile.writelines("EFI_FILE_NAME = "                   + \
+                                       VtfDict.get(self.UiFvName)          + \
+                                       T_CHAR_LF)
+        
 
 
 

@@ -19,7 +19,7 @@ class region:
 ##
 #  Add RegionData to Fd file
 ##
-    def AddToBuffer(self, Buffer, BaseAddress, BlockSizeList, ErasePolarity, FvBinDict):
+    def AddToBuffer(self, Buffer, BaseAddress, BlockSizeList, ErasePolarity, FvBinDict, vtfDict = None):
         Size = self.Size
         print "Fv Size = %d" %Size
         
@@ -41,7 +41,7 @@ class region:
                 BlockSize = self.__BlockSizeOfRegion__(BlockSizeList)
                 BlockNum = self.__BlockNumOfRegion__(BlockSize)
                 FvBaseAddress = '0x%x' %self.FvAddress
-                FileName = fv.AddToBuffer(Buffer, FvBaseAddress, BlockSize, BlockNum, ErasePolarity)
+                FileName = fv.AddToBuffer(Buffer, FvBaseAddress, BlockSize, BlockNum, ErasePolarity, vtfDict)
                 FvBinDict[self.RegionData.upper()] = FileName
 
         if self.RegionType == 'FILE':

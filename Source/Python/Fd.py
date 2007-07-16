@@ -21,7 +21,7 @@ class FD:
         # SetVarDict[var] = value
         self.SetVarDict = {}
         self.RegionList = []
-        
+        self.vtfRawDict = {}
         
 ##
 #  Create Fd file
@@ -34,12 +34,14 @@ class FD:
         for item in GenFdsGlobalVariable.FdfParser.profile.FvDict:
             print item
             
+        self.GenVtfFile()
+        
         FdBuffer = StringIO.StringIO('')
         for Regions in self.RegionList :
             #
             # Call each region's AddToBuffer function 
             #
-            Regions.AddToBuffer (FdBuffer, self.BaseAddress, self.BlockSizeList, self.ErasePolarity, FvBinDict)
+            Regions.AddToBuffer (FdBuffer, self.BaseAddress, self.BlockSizeList, self.ErasePolarity, FvBinDict, self.vtfRawDict)
         #
         # Create a empty Fd file
         #
@@ -60,3 +62,35 @@ class FD:
 ##
     def GenFlashMap ():
         pass
+    
+    def GenVtfFile (self) :
+        #
+        # Get this Fd's all Fv name
+        #
+        fvAddDict ={}
+        fvList = []
+        for region in self.RegionList:
+            if region.RegionType == 'FV':
+                fvList.append(region.RegionData)
+                fvAddDict[region.RegionData] = (int(self.BaseAddress,16) + \
+                                                region.Offset, region.Size)
+        #
+        # Check whether this Fd need VTF
+        #
+        flag = False
+        for vtf in GenFdsGlobalVariable.FdfParser.profile.VtfList:
+            compLocList = vtf.GetFvList()
+            if set(compLocList).issubset(fvList):
+                flag = True
+                break
+        if flag == True:
+            self.vtfRawDict = vtf.GenVtf(fvAddDict)
+
+        
+
+               
+
+
+                
+                
+            

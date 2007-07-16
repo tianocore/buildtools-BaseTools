@@ -12,6 +12,7 @@ class GenFdsGlobalVariable:
     RuleDict = {}
     DefaultRule = None
     ArchList = None
+    VtfDict = {}
     
     def ExtendMarco (String):
         return String
@@ -37,6 +38,9 @@ class GenFdsGlobalVariable:
     def CallExternalTool (cmd, errorMess):
         PopenObject = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr= subprocess.PIPE)
         (out, error) = PopenObject.communicate()
+        
+        while PopenObject.returncode == None :
+            PopenObject.wait()
         if PopenObject.returncode != 0:
             print out
             print error

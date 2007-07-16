@@ -114,7 +114,6 @@ class FfsInfStatement(Ffs.Ffs):
                    '.'         + \
                    self.ModuleType.upper()
         
-
         Rule = GenFdsGlobalVariable.FdfParser.profile.RuleDict.get(RuleName)
         if Rule == None :
             RuleName = 'RULE'      + \
@@ -122,7 +121,7 @@ class FfsInfStatement(Ffs.Ffs):
                        'COMMON'    + \
                        '.'         + \
                        self.ModuleType.upper()
-                       
+            print "Want To Find Rule Name is : " + RuleName
             Rule = GenFdsGlobalVariable.FdfParser.profile.RuleDict.get(RuleName)
             if Rule == None :
                 print 'Dont Find Related Rule, Using Default Rule !!!'

@@ -124,6 +124,8 @@ class GenFds :
                 fv = GenFdsGlobalVariable.FdfParser.profile.FvDict[FvName]
                 fv.AddToBuffer(Buffer)
                 Buffer.close()
+                
+        #print "#########   Gen Capsule              ####################"
         for capsule in GenFdsGlobalVariable.FdfParser.profile.CapsuleList:
             capsule.GenCapsule()
 
@@ -131,7 +133,12 @@ class GenFds :
             vtf.GenVtf()
 
     #Finish GenFd()
-            
+    def GenVTFList() :
+        for item in GenFdsGlobalVariable.FdfParser.profile.VtfList:
+            for comp in item.ComponentStatementList:
+                if comp.CompLoc != None :
+                    compList.append(comp.Loc)
+            GenFdsGlobalVariable.VtfDict[item.UiName] = compList
     #
     # Define GenFd as static function
     #

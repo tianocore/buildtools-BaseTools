@@ -123,9 +123,4 @@ class EfiSection (Section.Section):
         #
         print GenSectionCmd
         GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed !")
-##        if self.Alignment == None:
-##             print "#####################################"
-##             print "Align is none"
-        
-        
         return OutputFile , self.Alignment
