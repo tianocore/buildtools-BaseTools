@@ -42,6 +42,7 @@ class GenFdsGlobalVariable:
         while PopenObject.returncode == None :
             PopenObject.wait()
         if PopenObject.returncode != 0:
+            print "Return Value =" + PopenObject.returncode
             print out
             print error
             raise Exception(errorMess)
