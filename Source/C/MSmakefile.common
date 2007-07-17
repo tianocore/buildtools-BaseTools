@@ -44,6 +44,6 @@ LINKER = $(LD)
 
 INC = -I . -I $(SOURCE_PATH)\Include -I $(SOURCE_PATH)\Include\Common -I $(SOURCE_PATH)\Include\IndustryStandard -I $(ARCH_INCLUDE) -I $(SOURCE_PATH)\Common
 
-CFLAGS = $(CFLAGS) /nologo /c /Zi /Od /GZ /D_DEBUG /MDd $(INC)
+CFLAGS = $(CFLAGS) /nologo /c /Zi /Od /GZ /D_DEBUG /MTd $(INC)
 CPPFLAGS = $(CPPFLAGS) /EHsc $(CFLAGS)
 
