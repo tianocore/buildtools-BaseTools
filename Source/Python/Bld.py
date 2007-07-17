@@ -155,8 +155,6 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
 
     Sem = BoundedSemaphore(int(opt.NUM))
 
-    result = open("compare.txt", 'w+')
-
     if opt.spawn == True:
         for a in opt.TARGET:
             for b in opt.TOOL_CHAIN_TAG:
@@ -166,11 +164,9 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                         print "PlatformAutoGen : %s" % PlatformFile
                         for d in PlatformAutoGen.Platform[str(c)].Modules:
                             print "Module : %s" % d
-                            result.write("Module : %s\n" % d)
                             ModuleAutoGen = AutoGen(d, PlatformFile, ewb, str(a), b, str(c))
                             for e in ModuleAutoGen.BuildInfo.DependentLibraryList:
                                 print "Library: %s" % e
-                                result.write("Library: %s\n" % e)
                                 LibraryAutoGen = AutoGen(e, PlatformFile, ewb, str(a), b, str(c))
                                 LibraryAutoGen.CreateAutoGenFile()
                                 LibraryAutoGen.CreateMakefile()
@@ -184,7 +180,7 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                                         if FileNum >= 2:
                                             print "There are %d makefilss in %s.\n" % (FileNum, DestDir)
                                             return 1
-                                        BuildSpawn(Sem, FileList[0], t, 1).start()
+                                        BuildSpawn(Sem, FileList[0], 'lbuild', 1).start()
                                     else:
                                        print "There isn't makefile in %s.\n" % DestDir
                                        return 1
@@ -201,7 +197,7 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                                         return 1
                                     for i in range(0, int(opt.NUM)):
                                         Sem.acquire()
-                                    p = Popen(["nmake", "/nologo", "-f", FileList[0], t], env=os.environ, cwd=os.path.dirname(FileList[0]))
+                                    p = Popen(["nmake", "/nologo", "-f", FileList[0], 'pbuild'], env=os.environ, cwd=os.path.dirname(FileList[0]))
                                     p.communicate()
                                     if p.returncode != 0:
                                         return p.returncode
@@ -213,12 +209,14 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                         print "successful"
                         # call GenFds
                         #GenFds -f C:\Work\Temp\T1\Nt32Pkg\Nt32Pkg.fdf -o $(BUILD_DIR) -p Nt32Pkg\Nt32Pkg.dsc
-                        result.close()
                         PlatformAutoGen.CreateAutoGenFile()
                         PlatformAutoGen.CreateMakefile()
+                        
                         if opt.FDFFILE != '':
                             opt.FDFFILE =  os.environ["WORKSPACE"] + '\\' + opt.FDFFILE.replace('/','\\')
                             f = os.environ["WORKSPACE"] + '\\' + f.replace('/', '\\') + '\\' + a + '_' + b
+                            if os.path.isdir(f + "\\" + "FV") != True:
+                                os.mkdir(f + "\\" + "FV")
                             p = Popen(["GenFds", "-f", opt.FDFFILE, "-o", f, "-p", opt.DSCFILE], env=os.environ, cwd=os.path.dirname(opt.FDFFILE))
                             p.communicate()
                             if p.returncode != 0:
