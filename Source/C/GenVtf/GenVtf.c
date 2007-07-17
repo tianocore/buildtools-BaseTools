@@ -2006,7 +2006,9 @@ Returns:
     printf("\n BaseAddress + FwVolumeSize must equal 0x100000000!");
     }
     Usage();
-    return 1;
+    //printf("\n we will return EFI_INVALID_PARAMETER");
+//    return 1;
+    return EFI_INVALID_PARAMETER;
   }  
 //  memset (OutFileName1, 0, FILE_NAME_SIZE);
   //
@@ -2065,7 +2067,8 @@ Returns:
         printf("\nSecondBaseAddress + SecondFwVolumeSize must equal FirstBaseAddress");
       }
       Usage();
-      return 1;
+//      return 1;
+      return EFI_INVALID_PARAMETER;
     }    
 //    memset (OutFileName2, 0, FILE_NAME_SIZE);
 /*
@@ -2529,7 +2532,7 @@ Returns:
 //  printf ("  Verbose output\n");
 //  printf ("  Quiet is to disable all messages except FATAL ERRORS\n");
 //  printf ("  DebugLevel is to enable debug message at level #\n");
-  printf ("  Print copyright,version and usage of this program and exit code: PASS\n");
+//  printf ("  Print copyright,version and usage of this program and exit code: PASS\n");
 }
 
 EFI_STATUS
@@ -2855,6 +2858,7 @@ Returns:
       printf ("\nERROR: GenVtfImage function returned unknown status %X.\n", Status);
       break;
     }
+    //printf("\n we will return 2");
     return 2;
   }
   return 0;
