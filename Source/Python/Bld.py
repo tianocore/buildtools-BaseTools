@@ -15,6 +15,7 @@ from threading import *
 from optparse import OptionParser
 from os.path import normpath
 
+
 from subprocess import *
 
 from TargetTxtClassObject import *
@@ -154,6 +155,8 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
 
     Sem = BoundedSemaphore(int(opt.NUM))
 
+    result = open("compare.txt", 'w+')
+
     if opt.spawn == True:
         for a in opt.TARGET:
             for b in opt.TOOL_CHAIN_TAG:
@@ -163,16 +166,17 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                         print "PlatformAutoGen : %s" % PlatformFile
                         for d in PlatformAutoGen.Platform[str(c)].Modules:
                             print "Module : %s" % d
+                            result.write("Module : %s\n" % d)
                             ModuleAutoGen = AutoGen(d, PlatformFile, ewb, str(a), b, str(c))
                             for e in ModuleAutoGen.BuildInfo.DependentLibraryList:
                                 print "Library: %s" % e
+                                result.write("Library: %s\n" % e)
                                 LibraryAutoGen = AutoGen(e, PlatformFile, ewb, str(a), b, str(c))
                                 LibraryAutoGen.CreateAutoGenFile()
                                 LibraryAutoGen.CreateMakefile()
                                 for f in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
-                                    DestDir = os.path.dirname(os.environ["WORKSPACE"] + '\\' + f.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + str(e))
-                                    print DestDir
-                                    DestDir = DestDir + '\\' + ewb.InfDatabase[e].Defines.DefinesDictionary['BASE_NAME'][0]
+                                    (filename, ext) = os.path.splitext(os.environ["WORKSPACE"] + '\\' + f.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + str(e))
+                                    DestDir = filename
                                     print DestDir
                                     FileList = glob.glob(DestDir + '\\makefile')
                                     FileNum = len(FileList)
@@ -181,25 +185,20 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                                             print "There are %d makefilss in %s.\n" % (FileNum, DestDir)
                                             return 1
                                         BuildSpawn(Sem, FileList[0], t, 1).start()
-##                                        p = Popen(["nmake", "/nologo", "-f", FileList[0], t], env=os.environ, cwd=os.path.dirname(FileList[0]))
-##                                        p.communicate()
-##                                        if p.returncode != 0:
-##                                            return p.returncode
+                                    else:
+                                       print "There isn't makefile in %s.\n" % DestDir
+                                       return 1
                             ModuleAutoGen.CreateAutoGenFile()
                             ModuleAutoGen.CreateMakefile()
                             for f in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
-                                DestDir = os.path.dirname(os.environ["WORKSPACE"] + '\\' + f.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + d)
-                                DestDir = DestDir + '\\' + ewb.InfDatabase[d].Defines.DefinesDictionary['BASE_NAME'][0]
+                                (filename, ext) = os.path.splitext(os.environ["WORKSPACE"] + '\\' + f.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + d)
+                                DestDir = filename
                                 FileList = glob.glob(DestDir + '\\makefile')
                                 FileNum = len(FileList)
                                 if FileNum > 0:
                                     if FileNum >= 2:
                                         print "There are %d makefilss in %s.\n" % (FileNum, DestDir)
                                         return 1
-##                                    B = BuildSpawn(Sem, FileList[0], t, opt.NUM)
-##                                    B.start()
-##                                    while(B.isAlive()):
-##                                        pass
                                     for i in range(0, int(opt.NUM)):
                                         Sem.acquire()
                                     p = Popen(["nmake", "/nologo", "-f", FileList[0], t], env=os.environ, cwd=os.path.dirname(FileList[0]))
@@ -208,18 +207,22 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                                         return p.returncode
                                     for i in range(0, int(opt.NUM)):
                                         Sem.release()
+                                else:
+                                    print "There isn't makefile in %s.\n" % DestDir
+                                    return 1
                         print "successful"
                         # call GenFds
                         #GenFds -f C:\Work\Temp\T1\Nt32Pkg\Nt32Pkg.fdf -o $(BUILD_DIR) -p Nt32Pkg\Nt32Pkg.dsc
+                        result.close()
+                        PlatformAutoGen.CreateAutoGenFile()
+                        PlatformAutoGen.CreateMakefile()
                         if opt.FDFFILE != '':
                             opt.FDFFILE =  os.environ["WORKSPACE"] + '\\' + opt.FDFFILE.replace('/','\\')
-                            f = os.environ["WORKSPACE"] + '\\' + f.replace('/', '\\')
+                            f = os.environ["WORKSPACE"] + '\\' + f.replace('/', '\\') + '\\' + a + '_' + b
                             p = Popen(["GenFds", "-f", opt.FDFFILE, "-o", f, "-p", opt.DSCFILE], env=os.environ, cwd=os.path.dirname(opt.FDFFILE))
                             p.communicate()
                             if p.returncode != 0:
                                 return p.returncode
-                        PlatformAutoGen.CreateAutoGenFile()
-                        PlatformAutoGen.CreateMakefile()
                             
                     else:
                         ModuleAutoGen = AutoGen(ModuleFile, PlatformFile, ewb, str(a), b, str(c))
@@ -230,9 +233,8 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                             LibraryAutoGen.CreateAutoGenFile()
                             LibraryAutoGen.CreateMakefile()
                             for f in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
-                                DestDir = os.path.dirname(os.environ["WORKSPACE"] + '\\' + f.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + str(e))
-                                print DestDir
-                                DestDir = DestDir + '\\' + ewb.InfDatabase[e].Defines.DefinesDictionary['BASE_NAME'][0]
+                                (filename, ext) = os.path.splitext(os.environ["WORKSPACE"] + '\\' + f.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + str(e))
+                                DestDir = filename
                                 print DestDir
                                 FileList = glob.glob(DestDir + '\\makefile')
                                 FileNum = len(FileList)
@@ -241,34 +243,31 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                                         print "There are %d makefilss in %s.\n" % (FileNum, DestDir)
                                         return 1
                                     BuildSpawn(Sem, FileList[0], t, 1).start()
-##                                p = Popen(["nmake", "/nologo", "-f", FileList[0], t], env=os.environ, cwd=os.path.dirname(FileList[0]))
-##                                p.communicate()
-##                                if p.returncode != 0:
-##                                    return p.returncode
+                                else:
+                                    print "There isn't makefils in %s.\n" % DestDir
+                                    return 1
                         ModuleAutoGen.CreateAutoGenFile()
                         ModuleAutoGen.CreateMakefile()
                         for f in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
-                            DestDir = os.path.dirname(os.environ["WORKSPACE"] + '\\' + f.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + ModuleFile)
-                            DestDir = DestDir + '\\' + ewb.InfDatabase[ModuleFile].Defines.DefinesDictionary['BASE_NAME'][0]
+                            (filename, ext) = os.path.splitext(os.environ["WORKSPACE"] + '\\' + f.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + ModuleFile)
+                            DestDir = filename
                             FileList = glob.glob(DestDir + '\\makefile')
                             FileNum = len(FileList)
                             if FileNum > 0:
                                 if FileNum >= 2:
                                     print "There are %d makefilss in %s.\n" % (FileNum, DestDir)
                                     return 1
-##                                B = BuildSpawn(Sem, FileList[0], t, int(opt.NUM))
-##                                B.start()
-##                                while(B.isAlive()):
-##                                    pass
-                            for i in range(0, int(opt.NUM)):
-                                Sem.acquire()
-                            p = Popen(["nmake", "/nologo", "-f", FileList[0], t], env=os.environ, cwd=os.path.dirname(FileList[0]))
-                            p.communicate()
-                            if p.returncode != 0:
-                                return p.returncode
-                            for i in range(0, int(opt.NUM)):
-                                Sem.release()
-                        
+                                for i in range(0, int(opt.NUM)):
+                                    Sem.acquire()
+                                p = Popen(["nmake", "/nologo", "-f", FileList[0], t], env=os.environ, cwd=os.path.dirname(FileList[0]))
+                                p.communicate()
+                                if p.returncode != 0:
+                                    return p.returncode
+                                for i in range(0, int(opt.NUM)):
+                                    Sem.release()
+                            else:
+                                print "There isn't makefils in %s.\n" % DestDir
+                                return 1
         return 0
 
     for a in opt.TARGET:
@@ -304,8 +303,8 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                 elif CleanAll != set([]):
                     if ModuleFile != None:
                         for d in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
-                            DestDir = os.path.dirname(os.environ["WORKSPACE"] + '\\' + d.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + ModuleFile)
-                            DestDir = DestDir + '\\' + ewb.InfDatabase[ModuleFile].Defines.DefinesDictionary['BASE_NAME'][0]
+                            (filename, ext) = os.path.splitext(os.environ["WORKSPACE"] + '\\' + d.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + ModuleFile)
+                            DestDir = filename
                     else:
                         for d in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
                             DestDir = os.environ["WORKSPACE"] + '\\' + d.replace('/','\\') + '\\' + a + '_' + b
@@ -320,7 +319,8 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                         p.communicate()
                         if p.returncode != None:
                             return p.returncode
-                    return 1
+                    else:
+                        return 1
                 else:
                     try:
                         ModuleAutoGen.CreateAutoGenFile()
