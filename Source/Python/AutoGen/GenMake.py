@@ -344,6 +344,8 @@ OBJECTS = ${BEGIN}$(OUTPUT_DIR)${separator}${object_file} \\
 
 LIBS = ${BEGIN}$(LIB_DIR)${separator}${library_file} \\
        ${END}
+       ${BEGIN}${system_library} \\
+       ${END}
 
 COMMON_DEPS = ${BEGIN}$(WORKSPACE)${separator}${common_dependency_file} \\
               ${END}
@@ -680,6 +682,7 @@ class Makefile(object):
             self.LibraryFileList = []
             self.LibraryMakefileList = []
             self.LibraryBuildDirectoryList = []
+            self.SystemLibraryList = []
 
         elif type(info) == type({}):    # and isinstance(info, PlatformBuildInfo):
             self.PlatformInfo = info
@@ -774,6 +777,9 @@ class Makefile(object):
         self.ProcessSourceFileList(makeType)
         self.ProcessDependentLibrary(makeType)
 
+        if "DLINK" in self.PlatformInfo.ToolStaticLib:
+            self.SystemLibraryList = self.PlatformInfo.ToolStaticLib[DLINK]
+
         entryPoint = "_ModuleEntryPoint"
         if self.ModuleInfo.Arch == "EBC":
             entryPoint = "EfiStart"
@@ -824,6 +830,7 @@ class Makefile(object):
             "include_path"              : self.ModuleInfo.IncludePathList,
             "object_file"               : self.ObjectFileList,
             "library_file"              : self.LibraryFileList,
+            "system_library"            : self.SystemLibraryList,
             "common_dependency_file"    : self.CommonFileDependency,
             "create_directory_command"  : gCreateDirectoryCommand[makeType],
             "remove_directory_command"  : gRemoveDirectoryCommand[makeType],

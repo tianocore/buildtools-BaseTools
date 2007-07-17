@@ -64,6 +64,8 @@ class ModuleBuildInfo(BuildInfo):
         self.MacroList = []
         self.DepexList = []
 
+        self.SystemLibraryList = []
+
 class PackageBuildInfo(BuildInfo):
     def __init__(self, package):
         BuildInfo.__init__(self, package)

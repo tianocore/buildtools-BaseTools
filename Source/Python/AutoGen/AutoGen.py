@@ -177,6 +177,8 @@ class AutoGen(object):
         info.DependentPackageList = self.GetDependentPackageList()
 
         info.BuildOption = self.GetModuleBuildOption(info.PlatformInfo)
+        if "DLINK" in platformInfo.ToolStaticLib:
+            info.SystemLibraryList = platformInfo.ToolStaticLib["DLINK"]
 
         info.PcdIsDriver = self.Module.PcdIsDriver
         info.PcdList = self.GetPcdList(info.DependentLibraryList)
@@ -357,6 +359,7 @@ class AutoGen(object):
         for tool in platformInfo.DefaultToolOption:
             if tool not in optionList:
                 optionList[tool] = ""
+
         return optionList
     
     def GetBuildFileList(self, platformInfo):
