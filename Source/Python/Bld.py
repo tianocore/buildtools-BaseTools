@@ -147,10 +147,23 @@ def MyOptionParser():
     return (opt, args)
 
 def Process(ModuleFile, PlatformFile, ewb, opt, args):
-    GenC = set(['GenC']) & set(args)
-    GenMake = set(['GenMake']) & set(args)
-    CleanAll = set(['CleanAll']) & set(args)
+##    GenC = set(['GenC']) & set(args)
+##    GenMake = set(['GenMake']) & set(args)
+##    CleanAll = set(['CleanAll']) & set(args)
     t = str(' '.join(args))
+
+    GenC = 0
+    GenMake = 0
+    CleanAll = 0
+
+    for t in args:
+        t = t.lower()
+        if t == 'genc':
+            GenC = 1
+        elif t == 'genmake':
+            GenMake = 1
+        elif t == 'cleanall':
+            CleanAll = 1
 
 
     Sem = BoundedSemaphore(int(opt.NUM))
@@ -240,7 +253,7 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                                     if FileNum >= 2:
                                         print "There are %d makefilss in %s.\n" % (FileNum, DestDir)
                                         return 1
-                                    BuildSpawn(Sem, FileList[0], t, 1).start()
+                                    BuildSpawn(Sem, FileList[0], 'lbuild', 1).start()
                                 else:
                                     print "There isn't makefils in %s.\n" % DestDir
                                     return 1
@@ -257,7 +270,7 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                                     return 1
                                 for i in range(0, int(opt.NUM)):
                                     Sem.acquire()
-                                p = Popen(["nmake", "/nologo", "-f", FileList[0], t], env=os.environ, cwd=os.path.dirname(FileList[0]))
+                                p = Popen(["nmake", "/nologo", "-f", FileList[0], 'pbuild'], env=os.environ, cwd=os.path.dirname(FileList[0]))
                                 p.communicate()
                                 if p.returncode != 0:
                                     return p.returncode
@@ -279,7 +292,7 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                         traceback.print_exception(last_type, last_value, last_tb)
                     print e
                     return 1
-                if GenC != set([]):
+                if GenC == 1:
                     try:
                         ModuleAutoGen.CreateAutoGenFile()
                     except Exception, e:
@@ -288,7 +301,7 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                             traceback.print_exception(last_type, last_value, last_tb)
                         print e
                         return 1
-                elif GenMake != set([]):
+                elif GenMake == 1:
                     try:
                         ModuleAutoGen.CreateAutoGenFile()
                         makefile = ModuleAutoGen.CreateMakefile()
@@ -298,7 +311,7 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                             traceback.print_exception(last_type, last_value, last_tb)
                         print e
                         return 1
-                elif CleanAll != set([]):
+                elif CleanAll == 1:
                     if ModuleFile != None:
                         for d in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
                             (filename, ext) = os.path.splitext(os.environ["WORKSPACE"] + '\\' + d.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + ModuleFile)
