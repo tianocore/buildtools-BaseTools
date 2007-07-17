@@ -176,6 +176,8 @@ class AutoGen(object):
         info.DependentPackageList = self.GetDependentPackageList()
 
         info.BuildOption = self.GetModuleBuildOption(info.PlatformInfo)
+        if "DLINK" in platformInfo.ToolStaticLib:
+            info.SystemLibraryList = platformInfo.ToolStaticLib["DLINK"]
 
         info.PcdIsDriver = self.Module.PcdIsDriver
         info.PcdList = self.GetPcdList(info.DependentLibraryList)
@@ -356,6 +358,7 @@ class AutoGen(object):
         for tool in platformInfo.DefaultToolOption:
             if tool not in optionList:
                 optionList[tool] = ""
+
         return optionList
     
     def GetBuildFileList(self, platformInfo):
@@ -567,10 +570,17 @@ class AutoGen(object):
         pcdTokenNumber = {}
         tokenNumber = 1
         for pcd in dynamicPcdList:
-            #print "@@@",tokenNumber,"=",pcd.TokenCName, pcd.TokenSpaceGuidCName, pcd.DatumType
-            pcdTokenNumber[pcd.TokenCName, pcd.TokenSpaceGuidCName] = tokenNumber
-            tokenNumber += 1
+            if pcd.Phase == "PEI":
+                EdkLogger.debug(EdkLogger.DEBUG_5, "%s %s (%s) -> %d" % (pcd.TokenCName, pcd.TokenSpaceGuidCName, pcd.Phase, tokenNumber))
+                pcdTokenNumber[pcd.TokenCName, pcd.TokenSpaceGuidCName] = tokenNumber
+                tokenNumber += 1
 
+        for pcd in dynamicPcdList:
+            if pcd.Phase == "DXE":
+                EdkLogger.debug(EdkLogger.DEBUG_5, "%s %s (%s) -> %d" % (pcd.TokenCName, pcd.TokenSpaceGuidCName, pcd.Phase, tokenNumber))
+                pcdTokenNumber[pcd.TokenCName, pcd.TokenSpaceGuidCName] = tokenNumber
+                tokenNumber += 1
+                
         platformPcds = platform.Pcds
         for key in platformPcds:
             pcd = platformPcds[key]

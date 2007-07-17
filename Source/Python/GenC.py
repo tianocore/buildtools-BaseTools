@@ -1271,6 +1271,11 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
         GeneratedTokenNumber = platform.PcdTokenNumber[CName, TokenSpaceGuidCName] - 1
         if phase == 'DXE':
             GeneratedTokenNumber -= NumberOfPeiLocalTokens
+
+        EdkLogger.debug(EdkLogger.DEBUG_1, "PCD = %s / %s" % (CName, TokenSpaceGuidCName))
+        EdkLogger.debug(EdkLogger.DEBUG_1, "phase = %s" % phase)
+        EdkLogger.debug(EdkLogger.DEBUG_1, "GeneratedTokenNumber = %s" % str(GeneratedTokenNumber))
+
         Dict['TOKEN_INIT'][GeneratedTokenNumber] = 'Init'
         if Pcd.InitString == 'UNINIT':
             Dict['TOKEN_INIT'][GeneratedTokenNumber] = 'Uninit'
