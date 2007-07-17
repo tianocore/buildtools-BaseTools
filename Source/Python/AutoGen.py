@@ -176,8 +176,8 @@ class AutoGen(object):
         info.DependentPackageList = self.GetDependentPackageList()
 
         info.BuildOption = self.GetModuleBuildOption(info.PlatformInfo)
-        if "DLINK" in platformInfo.ToolStaticLib:
-            info.SystemLibraryList = platformInfo.ToolStaticLib["DLINK"]
+        if "DLINK" in info.PlatformInfo.ToolStaticLib:
+            info.SystemLibraryList = info.PlatformInfo.ToolStaticLib["DLINK"]
 
         info.PcdIsDriver = self.Module.PcdIsDriver
         info.PcdList = self.GetPcdList(info.DependentLibraryList)
@@ -551,11 +551,16 @@ class AutoGen(object):
 
     def GetDynamicPcdList(self, platform, arch):
         pcdList = []
+        notFoundPcdList = set()
+        pcdConsumerList = set()
         for f in gModuleDatabase[arch]:
             m = gModuleDatabase[arch][f]
             for key in m.Pcds:
                 if key not in platform.Pcds:
-                    raise AutoGenError(msg="PCD [%s %s] not found in platform" % key)
+                    notFoundPcdList.add(" / ".join(key))
+                    pcdConsumerList.add(str(m))
+                    continue
+                    # raise AutoGenError(msg="PCD [%s %s] not found in platform" % key)
                 mPcd = m.Pcds[key]
                 pPcd = platform.Pcds[key]
                 if pPcd.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd:
@@ -564,6 +569,11 @@ class AutoGen(object):
                     if pPcd not in pcdList:
                         pPcd.DatumType = mPcd.DatumType
                         pcdList.append(pPcd)
+        if len(notFoundPcdList) > 0:
+            pcdListString = "\n\t".join(notFoundPcdList)
+            moduleListString = "\n\t".join(pcdConsumerList)
+            raise AutoGenError(msg="PCD(s) not found in platform:\n\t%s\n\n\tUsed by:\n\t%s\n"
+                                    % (pcdListString, moduleListString))
         return pcdList
 
     def GeneratePcdTokenNumber(self, platform, dynamicPcdList):
@@ -584,7 +594,6 @@ class AutoGen(object):
         platformPcds = platform.Pcds
         for key in platformPcds:
             pcd = platformPcds[key]
-            #print "###",key
             if key not in pcdTokenNumber:
                 pcdTokenNumber[key] = tokenNumber
                 tokenNumber += 1
@@ -598,7 +607,6 @@ class AutoGen(object):
             for pcdKey in m.Pcds:
                 pcd = m.Pcds[pcdKey]
                 if (pcd.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd) and self.Module.ModuleType in ["PEIM", "PEI_CORE"]:
-                    #platformPcds[pcdKey].Phase = "PEI"
                     pcd.Phase = "PEI"
                 if pcd not in pcdList:
                     pcdList.append(pcd)
