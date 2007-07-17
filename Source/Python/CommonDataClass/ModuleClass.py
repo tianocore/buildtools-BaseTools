@@ -28,7 +28,7 @@ class ModuleHeaderClass(IdentificationClass, CommonHeaderClass, DefineClass):
         self.InfVersion = ''
         self.EfiSpecificationVersion = ''
         self.EdkReleaseVersion = ''
-        self.LibraryClass = []                      #[ LibraryClass, ...]
+        self.LibraryClass = []                      #[ LibraryClassClass, ...]
         self.ComponentType = ''                     #LIBRARY | SECURITY_CORE | PEI_CORE | COMBINED_PEIM_DRIVER | PIC_PEIM | RELOCATABLE_PEIM | BS_DRIVER | RT_DRIVER | SAL_RT_DRIVER | APPLICATION
         self.MakefileName = ''
         self.BuildNumber = ''
@@ -127,7 +127,12 @@ class ModuleExternCallBackClass(object):
     def __init__(self):
         self.SetVirtualAddressMapCallBack = ''
         self.ExitBootServicesCallBack = ''
-        
+
+class ModuleDepexClass(CommonClass):
+    def __init__(self):
+        CommonClass.__init__(self)
+        self.Depex = ''
+
 class ModuleClass(object):
     def __init__(self):
         self.Header = ModuleHeaderClass()
@@ -138,7 +143,7 @@ class ModuleClass(object):
         self.NonProcessedFiles = []                 #[ '', '', ...]
         self.PackageDependencies = []               #[ ModulePackageDependencyClass, ... ] 
         self.Nmake = {}                             #{ Name : Value, ... }
-        self.Depex = []                             #[ '', '', ... ]
+        self.Depex = []                             #[ ModuleDepexClass, ... ]
         self.Includes = []                          #[ IncludeClass, ...]
         self.Protocols = []                         #[ ProtocolClass, ...]
         self.Ppis = []                              #[ PpiClass, ...]
