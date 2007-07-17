@@ -133,6 +133,7 @@ class PlatformModuleClass(CommonClass, DefineClass, IncludeStatementClass):
         self.Name = ''                                               #Library name or libraryclass name or module name
         self.FilePath = ''
         self.Type = ''                                               #LIBRARY | LIBRARY_CLASS | MODULE, used by dsc
+        self.ModuleType = ''
         self.LibraryClasses = []                                     #[ PlatformLibraryInstanceClass, ...]
         self.PcdBuildDefinitions = []                                #[ PcdClass, ...]
         self.ModuleSaBuildOption = PlatformModuleSaBuildOptionClass()
