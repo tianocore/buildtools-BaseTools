@@ -286,7 +286,9 @@ class FdfParser:
         StartPos = self.CurrentOffsetWithinLine
         while not self.__EndOfLine():
                 TempChar = self.__CurrentChar()
-                if not str(TempChar).isspace() and TempChar not in ('=', '|', ',', '}'):
+                if not str(TempChar).isspace() and TempChar not in ('=', '|', ',', '{', '}'):
+                    self.__GetOneChar()
+                elif StartPos == self.CurrentOffsetWithinLine and TempChar in ('=', '|', ',', '{', '}'):
                     self.__GetOneChar()
                 else:
                     break
