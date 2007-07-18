@@ -1255,6 +1255,7 @@ Returns:
   }
 
   if (EFI_ERROR (Status)) {
+    printf("\nError in CreateAndUpdateComponent");
     return EFI_ABORTED;
   }
 
@@ -1614,6 +1615,7 @@ Returns:
   } else {
 
     if ((StartAddress | IPF_CACHE_BIT) < (Vtf2LastStartAddress | IPF_CACHE_BIT)) {
+      printf("\n StartAddress Error");
       return EFI_ABORTED;
     }
     LocalBufferPtrToWrite = (UINT8 *) Vtf2EndBuffer;
@@ -2204,7 +2206,6 @@ Returns:
     if (StartAddressPtr) {
       free (StartAddressPtr);
     }
-
     return EFI_ABORTED;
   }
 
@@ -2295,6 +2296,7 @@ Returns:
   DestFile = fopen (DestFileName, "a+");
   if (DestFile == NULL) {
     fclose (SourceFile);
+    printf("\nError in open output file");
     return EFI_ABORTED;
   }
 
@@ -2304,6 +2306,7 @@ Returns:
   if (fseek (DestFile, 0, SEEK_END) != 0) {
     fclose (SourceFile);
     fclose (DestFile);
+    printf("\n not the beginning of the output file");
     return EFI_ABORTED;
   }
 
@@ -2314,6 +2317,7 @@ Returns:
   } else if (StartLocation == -1) {
     fclose (SourceFile);
     fclose (DestFile);
+    printf("\n StartLocation error");
     return EFI_ABORTED;
   }
 
@@ -2330,6 +2334,7 @@ Returns:
   if (strcmp (Buffer, "TEXTSYM format | V1.0\n")) {
     fclose (SourceFile);
     fclose (DestFile);
+    printf("\nThe symbol file does not match the expected sym format");
     return EFI_ABORTED;
   }
 
