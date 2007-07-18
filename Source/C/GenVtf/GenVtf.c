@@ -1157,7 +1157,8 @@ Returns:
   FILE        *Fp;
   FIT_TABLE   *CompFitPtr;
   BOOLEAN     Aligncheck;
-
+  
+  __asm int 3;
   if (VtfInfo->LocationType == NONE) {
     UpdateFitEntryForNonVTFComp (VtfInfo);
     return EFI_SUCCESS;
@@ -1177,6 +1178,7 @@ Returns:
     //
     // BUGBUG: Satish to correct
     //
+    printf("\n Error in size");
     FileSize -= SIZE_OF_PAL_HEADER;
   }
 
@@ -1240,7 +1242,8 @@ Returns:
   if (!Aligncheck) {
     CompStartAddress -= NumAdjustByte;
   }
-
+  
+  printf("\n We come here");
   if (VtfInfo->LocationType == SECOND_VTF && SecondVTF == TRUE) {
     Vtf2LastStartAddress = CompStartAddress;
     Vtf2TotalSize += (UINT32) (FileSize + NumAdjustByte);
@@ -1349,8 +1352,14 @@ Returns:
     return EFI_ABORTED;
   }
 
+//  __asm int 3;
   FileSize = _filelength (fileno (Fp));
+  if (FileSize < 64) {
+    printf("\n PAL_A bin header is 64 bytes, so the Bin size must be larger than 64 bytes!");
+    return EFI_INVALID_PARAMETER;
+  }
   FileSize -= SIZE_OF_PAL_HEADER;
+
 
   if (VtfInfo->PreferredSize) {
     if (FileSize > VtfInfo->CompSize) {
@@ -1879,6 +1888,7 @@ Returns:
     //
     case COMP_TYPE_FIT_PAL_A:
       //COMP_TYPE_FIT_PAL_A           0x0F
+      //printf("\n CreateAndUpdatePAL_A");
       Status = CreateAndUpdatePAL_A (ParsedInfoPtr);
 
       //
