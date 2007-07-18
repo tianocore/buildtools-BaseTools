@@ -1265,7 +1265,11 @@ Returns:
   GetNextAvailableFitPtr (&CompFitPtr);
 
   CompFitPtr->CompAddress = CompStartAddress | IPF_CACHE_BIT;
-  assert ((FileSize % 16) == 0);
+  if ((FileSize % 16) != 0) {
+    printf("\n Binary FileSize must be multiple of 16");
+    return EFI_INVALID_PARAMETER;
+  }
+  //assert ((FileSize % 16) == 0);
   CompFitPtr->CompSize    = (UINT32) (FileSize / 16);
   CompFitPtr->CompVersion = MAKE_VERSION (VtfInfo->MajorVer, VtfInfo->MinorVer);
   CompFitPtr->CvAndType   = CV_N_TYPE (VtfInfo->CheckSumRequired, VtfInfo->CompType);
@@ -1403,7 +1407,12 @@ Returns:
   GetRelativeAddressInVtfBuffer (AbsAddress, &RelativeAddress, FIRST_VTF);
   PalFitPtr               = (FIT_TABLE *) RelativeAddress;
   PalFitPtr->CompAddress  = PalStartAddress | IPF_CACHE_BIT;
-  assert ((FileSize % 16) == 0);
+  //assert ((FileSize % 16) == 0);
+  if ((FileSize % 16) != 0) {
+    printf("\n Binary FileSize must be multiple of 16");
+    return EFI_INVALID_PARAMETER;
+  }
+  
   PalFitPtr->CompSize     = (UINT32) (FileSize / 16);
   PalFitPtr->CompVersion  = MAKE_VERSION (VtfInfo->MajorVer, VtfInfo->MinorVer);
   PalFitPtr->CvAndType    = CV_N_TYPE (VtfInfo->CheckSumRequired, VtfInfo->CompType);
