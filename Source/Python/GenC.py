@@ -1508,6 +1508,7 @@ def CreateHeaderCode(info, autoGenC, autoGenH):
     autoGenH.Append(SpecificationString,   {'Specification':info.MacroList})
     # header files includes
     autoGenH.Append("#include <%s>\n" % BasicHeaderFile)
+    autoGenH.Append("\n#define ASM_PFX(name) _##name\n\n")
 
     if info.IsLibrary:
         return

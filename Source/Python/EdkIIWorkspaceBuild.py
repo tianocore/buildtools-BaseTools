@@ -39,6 +39,9 @@ class ModuleSourceFilesClassObject(object):
         self.PcdFeatureFlag     = PcdFeatureFlag
     
     def __str__(self):
+        return self.SourceFile
+    
+    def __repr__(self):
         rtn = self.SourceFile + DataType.TAB_VALUE_SPLIT + \
               self.PcdFeatureFlag + DataType.TAB_VALUE_SPLIT + \
               self.ToolChainFamily +  DataType.TAB_VALUE_SPLIT + \
@@ -86,7 +89,7 @@ class PcdClassObject(object):
         return rtn
 
     def __eq__(self, other):
-        return self.TokenCName == other.TokenCName and self.TokenSpaceGuidCName == other.TokenSpaceGuidCName
+        return other != None and self.TokenCName == other.TokenCName and self.TokenSpaceGuidCName == other.TokenSpaceGuidCName
 
     def __hash__(self):
         return hash((self.TokenCName, self.TokenSpaceGuidCName))

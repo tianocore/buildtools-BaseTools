@@ -31,6 +31,36 @@ gWorkspaceDir = ""
 gDepexTokenPattern = re.compile("(\(|\)|\w+| \S+\.inf)")
 gMakeTypeMap = {"MSFT":"nmake", "GCC":"gmake"}
 
+gDefaultOutputFlag = "-o "
+
+gOutputFlag = {
+    ("MSFT", "CC", "OUTPUT")      :   "/Fo",
+    ("MSFT", "SLINK", "OUTPUT")   :   "/OUT:",
+    ("MSFT", "DLINK", "OUTPUT")   :   "/OUT:",
+    ("MSFT", "ASMLINK", "OUTPUT") :   "/OUT:",
+    ("MSFT", "PCH", "OUTPUT")     :   "/Fp",
+    ("MSFT", "ASM", "OUTPUT")     :   "/Fo",
+
+    ("INTEL", "CC", "OUTPUT")          :   "/Fo",
+    ("INTEL", "SLINK", "OUTPUT")       :   "/OUT:",
+    ("INTEL", "DLINK", "OUTPUT")       :   "/OUT:",
+    ("INTEL", "ASMLINK", "OUTPUT")     :   "/OUT:",
+    ("INTEL", "PCH", "OUTPUT")         :   "/Fp",
+    ("INTEL", "ASM", "OUTPUT")         :   "/Fo",
+#    ("INTEL", "IPF", "ASM", "OUTPUT")  :   "-o ",
+
+    ("GCC", "CC", "OUTPUT")        :   "-o ",
+    ("GCC", "SLINK", "OUTPUT")     :   "-cr ",
+    ("GCC", "DLINK", "OUTPUT")     :   "-o ",
+    ("GCC", "ASMLINK", "OUTPUT")   :   "-o ",
+    ("GCC", "PCH", "OUTPUT")       :   "-o ",
+    ("GCC", "ASM", "OUTPUT")       :   "-o ",
+
+#   ("OUTPUT")                     :    "-o "
+}
+
+gIncludeFlag = {"MSFT" : "/I", "GCC" : "-I", "INTEL" : "-I"}
+
 def FindModuleOwnerPackage(module, pkgdb):
     for pkg in pkgdb:
         pkgDir = path.dirname(pkg)
@@ -306,6 +336,7 @@ class AutoGen(object):
             key = "%s_DPATH" % keyBaseString
             if key in toolDefinition:
                 dll = toolDefinition[key]
+                os.environ["PATH"] = dll + os.pathsep + os.environ["PATH"]
             else:
                 dll = ""
                 
@@ -315,11 +346,25 @@ class AutoGen(object):
             else:
                 lib = ""
 
+            key = keyBaseString + "_OUTPUT"
+            if key in toolDefinition:
+                oflag = toolDefinition[key]
+            elif (family, tool, "OUTPUT") in gOutputFlag:
+                oflag = gOutputFlag[family, tool, "OUTPUT"]
+                if oflag[0] == '"' and oflag[-1] == '"':
+                    oflag = oflag[1:-1]
+            else:
+                oflag = gDefaultOutputFlag
+
+            iflag = gIncludeFlag[family]
+                
             info.ToolPath[tool] = os.path.join(path, name)
             info.ToolDynamicLib[tool] = dll
             info.ToolStaticLib[tool] = lib
             info.ToolChainFamily[tool] = family
             info.DefaultToolOption[tool] = option
+            info.OutputFlag[tool] = oflag
+            info.IncludeFlag[tool] = iflag
 
         if self.IsPlatformAutoGen:
             buildOptions = self.Platform[info.Arch].BuildOptions
@@ -385,19 +430,49 @@ class AutoGen(object):
             
             # skip file which needs a tool having no matching toolchain family
             fileType = buildRule.FileTypeMapping[ext]
-            if f.ToolCode != "":
-                toolCode = f.ToolCode
-            else:
-                toolCode = buildRule.ToolCodeMapping[fileType]
-            # get the toolchain family from tools definition
-            if f.ToolChainFamily != "" and f.ToolChainFamily != platformInfo.ToolChainFamily[toolCode]:
-                EdkLogger.verbose("File %s for toolchain family %s is not supported" % (f.SourceFile, f.ToolChainFamily))
-                continue
             if fileType == "Unicode-Text":
                 self.BuildInfo.UnicodeFileList.append(os.path.join(gWorkspaceDir, self.BuildInfo.SourceDir, f.SourceFile))
-            buildFileList.append(f.SourceFile)
+                continue
+
+            if f.ToolCode != "":
+                toolCodeList = [f.ToolCode]
+            else:
+                if fileType in buildRule.ToolCodeMapping:
+                    toolCodeList = buildRule.ToolCodeMapping[fileType]
+                else:
+                    toolCodeList = []
+
+            # get the toolchain family from tools definition
+            buildable = True
+            if f.ToolChainFamily != "":
+                for toolCode in toolCodeList:
+                    if f.ToolChainFamily != platformInfo.ToolChainFamily[toolCode]:
+                        EdkLogger.verbose("File %s for toolchain family %s is not supported" % (f.SourceFile, f.ToolChainFamily))
+                        buildable = False
+                        break
+            else:
+                if toolCodeList != []:
+                    f.ToolChainFamily = platformInfo.ToolChainFamily[toolCodeList[0]]
+                else:
+                    buildable = False
+
+            if not buildable:
+                continue
+
+            #buildFileList.append(f.SourceFile)
+            buildFileList.append(f)
+
         return buildFileList
 
+    def IsToolChainFamilySupported(self):
+        pass
+
+    def IsToolCodeSupported(self):
+        pass
+
+    def IsToolChainSupported(self):
+        pass
+    
     def GetDependentPackageList(self):
         if self.Package not in self.Module.Packages:
             self.Module.Packages.insert(0, str(self.Package))

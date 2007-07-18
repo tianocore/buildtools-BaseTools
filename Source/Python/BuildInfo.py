@@ -110,4 +110,6 @@ class PlatformBuildInfo(BuildInfo):
         self.ToolStaticLib = {}     # toolcode : lib path
         self.ToolChainFamily = {}   # toolcode : tool chain family
         self.BuildOption = {}       # toolcode : option
+        self.OutputFlag = {}        # toolcode : output flag
+        self.IncludeFlag = {}        # toolcode : include flag
         self.DefaultToolOption = {}

@@ -93,6 +93,9 @@ gDirectorySeparator = {"nmake" : "\\", "gmake" : "/"}
 gCreateDirectoryCommand = {"nmake" : "mkdir", "gmake" : "mkdir -p"}
 gRemoveDirectoryCommand = {"nmake" : "rmdir /s /q", "gmake" : "rm -r -f"}
 gRemoveFileCommand = {"nmake" : "del /f /q", "gmake" : "rm -f"}
+gCopyFileCommand = {"nmake" : "copy /y", "gmake" : "cp -f"}
+
+DefaultOutputFlag = "-o "
 
 OutputFlag = {
     ("MSFT", "CC", "OUTPUT")      :   "/Fo",
@@ -108,7 +111,7 @@ OutputFlag = {
     ("INTEL", "ASMLINK", "OUTPUT")     :   "/OUT:",
     ("INTEL", "PCH", "OUTPUT")         :   "/Fp",
     ("INTEL", "ASM", "OUTPUT")         :   "/Fo",
-    ("INTEL", "IPF", "ASM", "OUTPUT")  :   "-o ",
+#    ("INTEL", "IPF", "ASM", "OUTPUT")  :   "-o ",
 
     ("GCC", "CC", "OUTPUT")        :   "-o ",
     ("GCC", "SLINK", "OUTPUT")     :   "-cr ",
@@ -117,10 +120,10 @@ OutputFlag = {
     ("GCC", "PCH", "OUTPUT")       :   "-o ",
     ("GCC", "ASM", "OUTPUT")       :   "-o ",
 
-    ("OUTPUT")                     : "-o "
+#   ("OUTPUT")                     :    "-o "
 }
 
-IncludeFlag = {"MSFT" : "/I", "GCC" : "-I"}
+IncludeFlag = {"MSFT" : "/I", "GCC" : "-I", "INTEL" : "-I"}
 
 gCustomMakefileTemplate = '''
 ${makefile_header}
@@ -479,30 +482,30 @@ $(PCH_FILE): $(DEP_FILES)
 #
 
 $(LLIB_FILE): $(OBJECTS)
-\t"$(SLINK)" $(SLINK_FLAGS) /OUT:$(LLIB_FILE) $(OBJECTS)
+\t"$(SLINK)" ${slink_output_flag}$(LLIB_FILE) $(SLINK_FLAGS) $(OBJECTS)
 
 #
 # Library file build target
 #
 
 $(LIB_FILE): $(OBJECTS)
-\t"$(SLINK)" $(SLINK_FLAGS) /OUT:$(LIB_FILE) $(OBJECTS)
+\t"$(SLINK)" ${slink_output_flag}$(LIB_FILE) $(SLINK_FLAGS) $(OBJECTS)
 
 #
 # DLL file build target
 #
 
 $(DLL_FILE): $(LIBS) $(LLIB_FILE)
-\t"$(DLINK)" $(DLINK_FLAGS) /OUT:$(DLL_FILE) $(DLINK_SPATH) $(LIBS) $(LLIB_FILE)
+\t"$(DLINK)" ${dlink_output_flag}$(DLL_FILE) $(DLINK_FLAGS) $(DLINK_SPATH) $(LIBS) $(LLIB_FILE)
 
 #
 # EFI file build target
 #
 
 $(EFI_FILE): $(LIBS) $(LLIB_FILE)
-\t"$(DLINK)" $(DLINK_FLAGS) /OUT:$(EFI_FILE) $(DLINK_SPATH) $(LIBS) $(LLIB_FILE)
+\t"$(DLINK)" $(DLINK_FLAGS) ${dlink_output_flag}$(EFI_FILE) $(DLINK_SPATH) $(LIBS) $(LLIB_FILE)
 \tGenFw -e ${module_type} -o $(EFI_FILE) $(EFI_FILE)
-\tcopy /y $(EFI_FILE) $(BIN_DIR)
+\t${copy_file_command} $(EFI_FILE) $(BIN_DIR)
 
 #
 # Individual Object Build Targets
@@ -824,7 +827,9 @@ class Makefile(object):
             "module_entry_point"        : entryPoint,
             "source_file"               : self.BuildFileList,
             #"auto_generated_file"       : self.AutoGenBuildFileList,
-            "include_path_prefix"       : "-I",
+            "include_path_prefix"       : IncludeFlag[self.PlatformInfo.ToolChainFamily["CC"]],
+            "dlink_output_flag"         : self.PlatformInfo.OutputFlag["DLINK"],
+            "slink_output_flag"         : self.PlatformInfo.OutputFlag["SLINK"],
             "include_path"              : self.ModuleInfo.IncludePathList,
             "object_file"               : self.ObjectFileList,
             "library_file"              : self.LibraryFileList,
@@ -833,9 +838,9 @@ class Makefile(object):
             "create_directory_command"  : gCreateDirectoryCommand[makeType],
             "remove_directory_command"  : gRemoveDirectoryCommand[makeType],
             "remove_file_command"       : gRemoveFileCommand[makeType],
+            "copy_file_command"         : gCopyFileCommand[makeType],
             "directory_to_be_created"   : self.IntermediateDirectoryList,
             "dependent_library_build_directory" : self.LibraryBuildDirectoryList,
-            #"dependent_library_makefile"        : [path.join(bdir, makefileName) for bdir in self.LibraryBuildDirectoryList],
             "object_build_target"               : self.ObjectBuildTargetList,
             "build_type"                        : self.BuildType,
         }
@@ -958,14 +963,26 @@ class Makefile(object):
             ftype = rule.FileTypeMapping[fext]
             if ftype == "C-Header":
                 forceIncludedFile.append(fpath)
-            if ftype not in rule.Makefile[makeType]:
+
+            if ftype in rule.ToolCodeMapping:
+                toolCodeList = rule.ToolCodeMapping[ftype]
+            else:
+                toolCodeList = []
+
+            family = None
+            for tool in toolCodeList:
+                if tool in self.PlatformInfo.ToolChainFamily:
+                    family = self.PlatformInfo.ToolChainFamily[tool]
+                    break
+
+            if family == None or ftype not in rule.Makefile[family]:
                 continue
 
             self.BuildFileList.append(fpath)
             self.ObjectFileList.append(fdir + separator + fbase + ".obj")
 
             fileBuildTemplatetList.append({
-                                   "string" : rule.Makefile[makeType][ftype],
+                                   "string" : rule.Makefile[family][ftype],
                                    "ftype"  : ftype,
                                    "fpath"  : fpath,
                                    "fdir"   : fdir,
@@ -973,11 +990,20 @@ class Makefile(object):
                                    "fbase"  : fbase,
                                    "fext"   : fext,
                                    "fdep"   : "",
-                                   "sep"    : separator,
+                                   "_sep_"    : separator,
                                    })
 
         fileList = self.ModuleInfo.SourceFileList
         for f in fileList:
+            family = f.ToolChainFamily
+            if family == None or family == "":
+                EdkLogger.verbose("Tool chain family not found for file:%s" % str(f))
+                if makeType == "nmake":
+                    family = "MSFT"
+                else:
+                    family = "GCC"
+                
+            f = str(f)
             fpath = os.path.join(self.ModuleInfo.SourceDir, f)
             fname = path.basename(f)
             fbase, fext = path.splitext(fname)
@@ -989,14 +1015,14 @@ class Makefile(object):
                 self.IntermediateDirectoryList.append(fdir)
                 
             ftype = rule.FileTypeMapping[fext]
-            if ftype not in rule.Makefile[makeType]:
+            if ftype not in rule.Makefile[family]:
                 continue
 
             self.BuildFileList.append(fpath)
             self.ObjectFileList.append(fdir + separator + fbase + ".obj")
             
             fileBuildTemplatetList.append({
-                                   "string" : rule.Makefile[makeType][ftype],
+                                   "string" : rule.Makefile[family][ftype],
                                    "ftype"  : ftype,
                                    "fpath"  : fpath,
                                    "fdir"   : fdir,
@@ -1004,7 +1030,7 @@ class Makefile(object):
                                    "fbase"  : fbase,
                                    "fext"   : fext,
                                    "fdep"   : "",
-                                   "sep"    : separator,
+                                   "_sep_"    : separator,
                                    })
 
         #
@@ -1074,7 +1100,11 @@ class Makefile(object):
                     if dep not in fileStack and dep not in dependencyList:
                         fileStack.append(dep)
             else:
-                fd = open(f, 'r')
+                try:
+                    fd = open(f, 'r')
+                except:
+                    raise AutoGenError(FILE_OPEN_FAILURE, name=f)
+
                 fileContent = fd.read()
                 fd.close()
                 if len(fileContent) == 0:
