@@ -36,11 +36,9 @@ Abstract:
 EFI_GUID      Vtf1NameGuid = EFI_IPF_VTF1_GUID
 EFI_GUID      Vtf2NameGuid = EFI_IPF_VTF2_GUID
 
-  UINTN SectionOptionFlag = 0;
-  UINTN SectionCompFlag = 0;
+UINTN SectionOptionFlag = 0;
+UINTN SectionCompFlag = 0;
 
-//CHAR8       OutFileName1[FILE_NAME_SIZE];
-//CHAR8       OutFileName2[FILE_NAME_SIZE];
 
 BOOLEAN     VTF_OUTPUT = FALSE;
 CHAR8       *OutFileName1;
@@ -115,7 +113,6 @@ Returns:
 {
   strcpy (*TokenStr, Token);
 //  fprintf(stdout,*TokenStr);
-//  printf("\n");
   TokenStr++;
 }
 
@@ -196,7 +193,7 @@ Returns:
   CHAR8 *Ptr0;
   UINTN Index;
   UINTN Index2;
-
+  
   //
   // Change '#' to '//' for Comment style
   //
@@ -211,7 +208,7 @@ Returns:
   Index2  = 0;
 
   while ((Char = Line[Index]) != 0) {
-    if ((Char != ' ') && (Char != '\t') && (Char != '\n')) {
+    if ((Char != ' ') && (Char != '\t') && (Char != '\n') && (Char != '\r')) {
       TmpLine[Index2++] = Char;
     }
     Index++;
@@ -249,7 +246,6 @@ Returns:
     }
     ValidLineNum++;
   }
-//  printf("\n%d", ValidLineNum);
 }
 
 VOID
@@ -366,12 +362,13 @@ Returns:
         VtfInfo->LocationType = SECOND_VTF;
       } else {
         VtfInfo->LocationType = NONE;
-//        printf ("\nERROR: Unknown location for component %s", VtfInfo->CompName);
+        printf ("\nERROR: Unknown location for component %s", VtfInfo->CompName);
       }
     } else if (strnicmp (*TokenStr, "COMP_TYPE", 9) == 0) {
       TokenStr++;
       if (AsciiStringToUint64 (*TokenStr, FALSE, &StringValue) != EFI_SUCCESS) {
-//        printf ("\nERROR: Could not read a numeric value from \"%s\".", TokenStr);
+        printf ("\nERROR: COMP_TYPE Could not read a numeric value from \"0x%x\".", *TokenStr);
+//        return EFI_INVALID_PARAMETER;
         return ;
       }
 
@@ -400,7 +397,8 @@ Returns:
       } else {
         VtfInfo->PreferredSize = TRUE;
         if (AsciiStringToUint64 (*TokenStr, FALSE, &StringValue) != EFI_SUCCESS) {
-          printf ("\nERROR: Could not read a numeric value from \"%s\".", TokenStr);
+          printf ("\nERROR: COMP_SIZE Could not read a numeric value from \"%s\".", TokenStr);
+//          return EFI_INVALID_PARAMETER;
           return ;
         }
 
@@ -453,17 +451,12 @@ Returns:
   SectionCompFlag   = 0;
   TokenStr          = OrgStrTokPtr;
   while (*TokenStr != NULL) {
-//    fprintf(stdout, *TokenStr);
-//    printf("\n");
-//    printf("\nTokenStr is %c", **TokenStr);
     if (strnicmp (*TokenStr, "[OPTIONS]", 9) == 0) {
-//      printf("\n Parse [OPTIONS] start!");
       SectionOptionFlag = 1;
       SectionCompFlag   = 0;
     }
 
     if (strnicmp (*TokenStr, "[COMPONENTS]", 12) == 0) {
-//      printf("\n Parse [COMPONENTS] start!");
       if (FileListPtr == NULL) {
         FileListPtr = FileListHeadPtr;
       }
@@ -475,7 +468,6 @@ Returns:
 
     if (SectionOptionFlag) {
       if (stricmp (*TokenStr, "IA32_RST_BIN") == 0) {
-//        printf("\n Parse IA32_RST_BIN start!");
         *TokenStr++;
         strcpy (IA32BinFile, *TokenStr);
       }
@@ -483,11 +475,9 @@ Returns:
 
     if (SectionCompFlag) {
       if (stricmp (*TokenStr, "COMP_NAME") == 0) {
-//        printf("\n Parse COMP_NAME start!");
         TokenStr++;
         strcpy (FileListPtr->CompName, *TokenStr);
         TokenStr++;
-//        printf("\nStart to call ParseAndUpdateComponents!");
         ParseAndUpdateComponents (FileListPtr);
       }
 
@@ -542,12 +532,10 @@ Returns:
 //  Fp = fopen (FileName, "r");
   Fp = FilePointer;
   if (Fp == NULL) {
-//    printf ("\nERROR: Error in opening %s file\n", FileName);
     printf("\nERROR: BSF INF file is invalid!\n");
     return EFI_ABORTED;
   }
 
-//  printf("\nStart to call ValidLineCount");
   ValidLineCount (Fp);
 
   if (ValidLineNum == 0) {
@@ -590,13 +578,13 @@ Returns:
   
   ParseInputFile (Fp);
   
-//  printf("\nStart to call InitializeInFileInfo!");
   InitializeInFileInfo ();
 
   if (Fp) {
     fclose (Fp);
   }
   free (OrgStrTokPtr);
+
   return EFI_SUCCESS;
 }
 
@@ -1102,7 +1090,7 @@ Returns:
     printf ("\nERROR: Error in opening file");
     return EFI_INVALID_PARAMETER;
   }
-  printf("\n we handle PEI CORE here!");
+
   while (fgets (Buff, sizeof (Buff), Fp) != NULL) {
     fscanf (
       Fp,
@@ -1171,7 +1159,6 @@ Returns:
   BOOLEAN     Aligncheck;
 
   if (VtfInfo->LocationType == NONE) {
-    printf("\n start to call UpdateFitEntryForNonVTFComp");
     UpdateFitEntryForNonVTFComp (VtfInfo);
     return EFI_SUCCESS;
   }
@@ -1255,13 +1242,11 @@ Returns:
   }
 
   if (VtfInfo->LocationType == SECOND_VTF && SecondVTF == TRUE) {
-//    printf("\nWe start to Update the second VtfBuffer!");
     Vtf2LastStartAddress = CompStartAddress;
     Vtf2TotalSize += (UINT32) (FileSize + NumAdjustByte);
-    printf("\n CompStartAddress is %d", CompStartAddress);
+    //printf("\n CompStartAddress is %d", CompStartAddress);
     Status = UpdateVtfBuffer (CompStartAddress, Buffer, FileSize, SECOND_VTF);
   } else if (VtfInfo->LocationType == FIRST_VTF) {
-//    printf("\nWe start to Update the first VtfBuffer!");
     Vtf1LastStartAddress = CompStartAddress;
     Vtf1TotalSize += (UINT32) (FileSize + NumAdjustByte);
     Status = UpdateVtfBuffer (CompStartAddress, Buffer, FileSize, FIRST_VTF);
@@ -1623,22 +1608,18 @@ Returns:
     }
 
     LocalBufferPtrToWrite = (UINT8 *) Vtf1EndBuffer;
-//    printf("\n %d", LocalBufferPtrToWrite);
+
     LocalBufferPtrToWrite -= (Fv1EndAddress - StartAddress);
-//    printf("\nLocalBufferPtrToWrite is %d", LocalBufferPtrToWrite);
+
   } else {
-//    printf("\nWe now in processing the second VTF!");
+
     if ((StartAddress | IPF_CACHE_BIT) < (Vtf2LastStartAddress | IPF_CACHE_BIT)) {
-//      printf ("ERROR: Start Address is less then the VTF start address\n");
       return EFI_ABORTED;
     }
     LocalBufferPtrToWrite = (UINT8 *) Vtf2EndBuffer;
-//    printf("\n %d", LocalBufferPtrToWrite);
     LocalBufferPtrToWrite -= (Fv2EndAddress - StartAddress);
-//    printf("\n %d", LocalBufferPtrToWrite);
   }
   
-  printf("\n Buffer is %d", *Buffer);
   memcpy (LocalBufferPtrToWrite, Buffer, (UINTN) DataSize);
 
   return EFI_SUCCESS;
@@ -1709,10 +1690,7 @@ Returns:
   FileHeader->IntegrityCheck.Checksum.File    = 0;
   FileHeader->State                           = 0;
   FileHeader->IntegrityCheck.Checksum.Header  = CalculateChecksum8 ((UINT8 *) FileHeader, sizeof (EFI_FFS_FILE_HEADER));
-  printf("\nDone for udpate header checksum");
-  printf("\nTotalVtfSize is %d", TotalVtfSize);
   FileHeader->IntegrityCheck.Checksum.File    = CalculateChecksum8 ((UINT8 *) FileHeader, TotalVtfSize);
-  printf("\nDone for udpate File checksum");
   FileHeader->State                           = EFI_FILE_HEADER_CONSTRUCTION | EFI_FILE_HEADER_VALID | EFI_FILE_DATA_VALID;
 
   return EFI_SUCCESS;
@@ -1891,7 +1869,6 @@ Returns:
     //
     case COMP_TYPE_FIT_HEADER:
       //COMP_TYPE_FIT_HEADER          0x00
-      printf("\nStart to call CreateFitTableAndInitialize!");
       Status = CreateFitTableAndInitialize (ParsedInfoPtr);
       break;
 
@@ -1900,7 +1877,6 @@ Returns:
     //
     case COMP_TYPE_FIT_PAL_A:
       //COMP_TYPE_FIT_PAL_A           0x0F
-      printf("\nStart to call CreateAndUpdatePAL_A!");
       Status = CreateAndUpdatePAL_A (ParsedInfoPtr);
 
       //
@@ -1916,7 +1892,6 @@ Returns:
 
     case COMP_TYPE_FIT_FV_BOOT:
       //COMP_TYPE_FIT_FV_BOOT         0x7E
-      printf("\nStart to call COMP_TYPE_FIT_FV_BOOT!");
       //
       // Since FIT entry for Firmware Volume has been created and it is
       // located at (PAL_A start - 16 byte). So we will not process any
@@ -1926,7 +1901,7 @@ Returns:
       break;
 
     default:
-      printf("\nDefault is to CreateAndUpdateComponent!");
+//      printf("\nDefault is to CreateAndUpdateComponent!");
       //
       // Any other component type should be handled here. This will create the
       // image in specified VTF and create appropriate entry about this
@@ -1934,7 +1909,8 @@ Returns:
       //
       Status = CreateAndUpdateComponent (ParsedInfoPtr);
       if (EFI_ERROR (Status)) {
-        printf ("ERROR: Updating %s component.\n", ParsedInfoPtr->CompName);
+        printf("\n Error in CreateAndUpdateComponent");
+        printf ("ERROR: Updating component.%s \n", ParsedInfoPtr->CompName);
       }
       break;
     }
@@ -1990,7 +1966,6 @@ Returns:
   VtfFP = fp;
   
   if (StartAddress2 == 0) {
-//    printf("\nSecondVTF is false!");
     SecondVTF = FALSE;
   } else {
     SecondVTF = TRUE;
@@ -2006,8 +1981,6 @@ Returns:
     printf("\n BaseAddress + FwVolumeSize must equal 0x100000000!");
     }
     Usage();
-    //printf("\n we will return EFI_INVALID_PARAMETER");
-//    return 1;
     return EFI_INVALID_PARAMETER;
   }  
 //  memset (OutFileName1, 0, FILE_NAME_SIZE);
@@ -2015,7 +1988,6 @@ Returns:
   // if output file name specified
   //
   if (VTF_OUTPUT) {
-    //sprintf(OutFileName1, "%s", VTF_OUTPUT_FILE);
     printf("\nThe first VTF output file is %s", OutFileName1);
     printf("\nThe second VTF output file is %s", OutFileName2);
   }
@@ -2053,8 +2025,6 @@ Returns:
   }
   memset (Vtf1Buffer, 0x00, (UINTN) Size1);
   Vtf1EndBuffer         = (UINT8 *) Vtf1Buffer + Size1;
-//  printf("\n %d", Size1);
-//  printf("\n %d", Vtf1Buffer);
   Vtf1LastStartAddress  = Fv1EndAddress | IPF_CACHE_BIT;
   
   if (SecondVTF) {
@@ -2067,7 +2037,6 @@ Returns:
         printf("\nSecondBaseAddress + SecondFwVolumeSize must equal FirstBaseAddress");
       }
       Usage();
-//      return 1;
       return EFI_INVALID_PARAMETER;
     }    
 //    memset (OutFileName2, 0, FILE_NAME_SIZE);
@@ -2103,23 +2072,20 @@ Returns:
   }
   
 //  Status = GetVtfRelatedInfoFromInfFile (VTF_INPUT_FILE);
-//  printf("\nStart to call GetVtfRelatedInfoFromInfFile!");
   Status = GetVtfRelatedInfoFromInfFile (VtfFP);
+   
   if (Status != EFI_SUCCESS) {
     printf ("\nERROR: Error in parsing input file");
     CleanUpMemory ();
     return Status;
   }
 
-//  printf("\nStart to call ProcessAndCreateVtf!");
-//  printf("\n Size1 to call ProcessAndCreateVtf is %d", Size1);
   Status = ProcessAndCreateVtf (Size1);
   if (Status != EFI_SUCCESS) {
     CleanUpMemory ();
     return Status;
   }
   
-  printf("\n Done for ProcessAndCreateVtf");
   if (SectionOptionFlag) {
   Status = UpdateIA32ResetVector (IA32BinFile, Vtf1TotalSize);
   if (Status != EFI_SUCCESS) {
@@ -2131,24 +2097,21 @@ Returns:
   //
   // Re arrange the FIT Table for Ascending order of their FIT Type..
   //
-  printf("\n start to call SortFitTable");
   SortFitTable ();
-  printf("\n Done for call SortFitTable");
   
   //
   // All components have been updated in FIT table. Now perform the FIT table
   // checksum. The following function will check if Checksum is required,
   // if yes, then it will perform the checksum otherwise not.
   //
-  printf("\n Start to call CalculateFitTableChecksum");
   CalculateFitTableChecksum ();
-  printf("\n Done for CalculateFitTableChecksum");
+
   //
   // Write the FFS header
   //
   Vtf1TotalSize += sizeof (EFI_FFS_FILE_HEADER);
   Vtf1LastStartAddress -= sizeof (EFI_FFS_FILE_HEADER);
-  printf("\nVtf1TotalSize before call UpdateFfsHeader is %d", Vtf1TotalSize);
+//  printf("\nVtf1TotalSize before call UpdateFfsHeader is %d", Vtf1TotalSize);
   Status = UpdateFfsHeader (Vtf1TotalSize, FIRST_VTF);
   if (Status != EFI_SUCCESS) {
     CleanUpMemory ();
@@ -2160,7 +2123,6 @@ Returns:
   Status  = WriteVtfBinary (OutFileName1, Vtf1TotalSize, FIRST_VTF);
 
   if (SecondVTF) {
-    printf("\n Start to write second vtf");
     Vtf2TotalSize += sizeof (EFI_FFS_FILE_HEADER);
     Vtf2LastStartAddress -= sizeof (EFI_FFS_FILE_HEADER);
     Status = UpdateFfsHeader (Vtf2TotalSize, SECOND_VTF);
@@ -2176,7 +2138,7 @@ Returns:
   }
   
   CleanUpMemory ();
-  printf ("\n");
+//  printf ("\n");
 
   return Status;
 }
@@ -2258,7 +2220,7 @@ Returns:
     free (StartAddressPtr);
   }
 
-  printf ("\n");
+//  printf ("\n");
   Status = EFI_SUCCESS;
   return Status;
 }
@@ -2517,7 +2479,7 @@ Returns:
     UTILITY_NAME
     );
   printf (
-    "\nUsage: %s [-o OutPutFile1 -o OutPutFile2 -f FileName -r FirstVTFBaseAddress -s FirstVTFFwVolumeSize -r SecondVTFBaseAddress -s SecondVTFFwVolumeSize]\n",
+    "\nUsage: %s [-o OutPutFile1 -o OutPutFile2] -f FileName -r FirstVTFBaseAddress -s FirstVTFFwVolumeSize -r SecondVTFBaseAddress -s SecondVTFFwVolumeSize\n",
     UTILITY_NAME
     );  
   printf ("  Where:\n");
@@ -2778,7 +2740,6 @@ Returns:
     //
     // Get the input VTF file name
     // 
-//    printf("\ninput file name specified!\n");    
     VtfFileName = argv[Index+1];
     printf("\nBSF inf file is %s", VtfFileName);
     VtfFP = fopen(VtfFileName, "rb");
@@ -2828,11 +2789,6 @@ Returns:
   //
   // Call the GenVtfImage
   //
-//  printf("\nStart to GenerateVtfImage!");
-//  printf("\nStartAddress1 is %d", StartAddress1);
-  printf("\nFwVolSize1 is %d", FwVolSize1);
-//  printf("\nStartAddress2 is %d", StartAddress2);
-  printf("\nFwVolSize2 is %d", FwVolSize2);
   Status = GenerateVtfImage (StartAddress1, FwVolSize1, StartAddress2, FwVolSize2, VtfFP);
 
   if (EFI_ERROR (Status)) {
@@ -2858,7 +2814,6 @@ Returns:
       printf ("\nERROR: GenVtfImage function returned unknown status %X.\n", Status);
       break;
     }
-    //printf("\n we will return 2");
     return 2;
   }
   return 0;
@@ -3590,7 +3545,7 @@ Returns:
     } else if (strnicmp (*TokenStr, "COMP_TYPE", 9) == 0) {
       TokenStr++;
       if (AsciiStringToUint64 (*TokenStr, FALSE, &StringValue) != EFI_SUCCESS) {
-        printf ("\nERROR: Could not read a numeric value from \"%s\".", TokenStr); 
+        printf ("\nERROR: COMP_TYPE32 Could not read a numeric value from \"%s\".", TokenStr); 
         return;
       }
       VtfInfo->CompType = (UINT8) StringValue;
@@ -3618,7 +3573,7 @@ Returns:
       } else {
         VtfInfo->PreferredSize = TRUE;
         if (AsciiStringToUint64 (*TokenStr, FALSE, &StringValue) != EFI_SUCCESS) {
-          printf ("\nERROR: Could not read a numeric value from \"%s\".", TokenStr); 
+          printf ("\nERROR: COMP_SIZE 32 Could not read a numeric value from \"%s\".", TokenStr); 
           return;
         }
         VtfInfo->CompSize = (UINTN) StringValue;
@@ -3636,7 +3591,7 @@ Returns:
     } else if (strnicmp (*TokenStr, "COMP_ALIGN", 10) == 0) {
       TokenStr++;
       if (AsciiStringToUint64 (*TokenStr, FALSE, &AlignStringValue) != EFI_SUCCESS) {
-        printf ("\nERROR: Could not read a numeric value from \"%s\".", TokenStr); 
+        printf ("\nERROR: COMP_ALIG 32 Could not read a numeric value from \"%s\".", TokenStr); 
         return;
       }
       if (AlignStringValue >= 0) {
