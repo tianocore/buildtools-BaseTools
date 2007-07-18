@@ -892,7 +892,7 @@ def CreateModulePcdCode(info, autoGenC, autoGenH, pcd):
         tokenNumber = pcdTokenNumber[pcd.TokenCName, pcd.TokenSpaceGuidCName]
     autoGenH.Append('#define %s  %d\n' % (pcdTokenName, tokenNumber))
 
-    EdkLogger.debug(EdkLogger.DEBUG_7, "Creating code for " + pcd.TokenCName + "/" + pcd.TokenSpaceGuidCName)
+    EdkLogger.debug(EdkLogger.DEBUG_3, "Creating code for " + pcd.TokenCName + "/" + pcd.TokenSpaceGuidCName)
     if pcd.Type not in ItemTypeStringDatabase:
         raise AutoGenError(msg="Unknown PCD type [%s] of PCD %s/%s" % (pcd.Type, pcd.TokenCName, pcd.TokenSpaceGuidCName))
     if pcd.DatumType not in DatumSizeStringDatabase:
@@ -1100,7 +1100,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
     for Pcd in platform.DynamicPcdList:
         CName = Pcd.TokenCName
         TokenSpaceGuidCName = Pcd.TokenSpaceGuidCName
-        EdkLogger.debug(EdkLogger.DEBUG_5, "PCD: %s %s (%s : %s)" % (CName, TokenSpaceGuidCName, Pcd.Phase, phase))
+        EdkLogger.debug(EdkLogger.DEBUG_3, "PCD: %s %s (%s : %s)" % (CName, TokenSpaceGuidCName, Pcd.Phase, phase))
 
         if Pcd.Phase == 'PEI':
             NumberOfPeiLocalTokens += 1

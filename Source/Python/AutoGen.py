@@ -440,7 +440,7 @@ class AutoGen(object):
             module = libraryConsumerList.pop()
             for libc, libf in module.LibraryClasses.iteritems():
                 if moduleType not in libc:
-                    EdkLogger.debug(EdkLogger.DEBUG_5, "\t%s for module type %s is not supported" % libc)
+                    EdkLogger.debug(EdkLogger.DEBUG_3, "\t%s for module type %s is not supported" % libc)
                     continue
                 if libf == None or libf == "":
                     EdkLogger.info("\tLibrary instance of library class %s is not found" % libc[0])
@@ -606,6 +606,8 @@ class AutoGen(object):
         for m in dependentLibraryList + [self.Module]:
             for pcdKey in m.Pcds:
                 pcd = m.Pcds[pcdKey]
+                #if pcdKey not in platformPcds:
+                #    EdkLogger.info("%s / %s not in current platform" % pcdKey)
                 if (pcd.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd) and self.Module.ModuleType in ["PEIM", "PEI_CORE"]:
                     pcd.Phase = "PEI"
                 if pcd not in pcdList:
@@ -769,7 +771,7 @@ class AutoGen(object):
                 platformInfo.LibraryAutoGenList.append(self)
 
             for lib in self.BuildInfo.DependentLibraryList:
-                EdkLogger.debug(EdkLogger.DEBUG_2, "###" + str(lib))
+                EdkLogger.debug(EdkLogger.DEBUG_1, "###" + str(lib))
                 key = (self.BuildTarget, self.ToolChain, self.Arch, lib)
                 libraryAutoGen = None
                 if key not in gAutoGenDatabase:
