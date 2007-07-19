@@ -126,7 +126,7 @@ PcdDatabaseAutoGenH = """
 #define ${PHASE}_EXMAP_TABLE_EMPTY              ${EXMAP_TABLE_EMPTY}
 
 typedef struct {
-${BEGIN}  UINT64             ${INIT_CNAME_DECL_UITN64}_${INIT_GUID_DECL_UINT64}[${INIT_NUMSKUS_DECL_UINT64}];
+${BEGIN}  UINT64             ${INIT_CNAME_DECL_UINT64}_${INIT_GUID_DECL_UINT64}[${INIT_NUMSKUS_DECL_UINT64}];
 ${END}
 ${BEGIN}  UINT64             ${VARDEF_CNAME_UINT64}_${VARDEF_GUID_UINT64}_VariableDefault_${VARDEF_SKUID_UINT64};
 ${END}
@@ -154,7 +154,7 @@ ${BEGIN}  UINT8              ${INIT_CNAME_DECL_UINT8}_${INIT_GUID_DECL_UINT8}[${
 ${END}
 ${BEGIN}  UINT8              ${VARDEF_CNAME_UINT8}_${VARDEF_GUID_UINT8}_VariableDefault_${VARDEF_SKUID_UINT8};
 ${END}
-${BEGIN}  BOOLEAN            ${INIT_CNAME_DECL_BOOLEAN}_${INIT_GUID_DECL_BOOLEAN}[${INIT_NUMSKUS_BOOLEAN}];
+${BEGIN}  BOOLEAN            ${INIT_CNAME_DECL_BOOLEAN}_${INIT_GUID_DECL_BOOLEAN}[${INIT_NUMSKUS_DECL_BOOLEAN}];
 ${END}
 ${BEGIN}  BOOLEAN            ${VARDEF_CNAME_BOOLEAN}_${VARDEF_GUID_BOOLEAN}_VariableDefault_${VARDEF_SKUID_BOOLEAN};
 ${END}
@@ -892,11 +892,11 @@ def CreateModulePcdCode(info, autoGenC, autoGenH, pcd):
         tokenNumber = pcdTokenNumber[pcd.TokenCName, pcd.TokenSpaceGuidCName]
     autoGenH.Append('#define %s  %d\n' % (pcdTokenName, tokenNumber))
 
-    EdkLogger.debug(EdkLogger.DEBUG_3, "Creating code for " + pcd.TokenCName + "/" + pcd.TokenSpaceGuidCName)
+    EdkLogger.debug(EdkLogger.DEBUG_3, "Creating code for " + pcd.TokenCName + "|" + pcd.TokenSpaceGuidCName)
     if pcd.Type not in ItemTypeStringDatabase:
-        raise AutoGenError(msg="Unknown PCD type [%s] of PCD %s/%s" % (pcd.Type, pcd.TokenCName, pcd.TokenSpaceGuidCName))
+        raise AutoGenError(msg="Unknown PCD type [%s] of PCD %s|%s" % (pcd.Type, pcd.TokenCName, pcd.TokenSpaceGuidCName))
     if pcd.DatumType not in DatumSizeStringDatabase:
-        raise AutoGenError(msg="Unknown datum type [%s] of PCD %s/%s" % (pcd.DatumType, pcd.TokenCName, pcd.TokenSpaceGuidCName))
+        raise AutoGenError(msg="Unknown datum type [%s] of PCD %s|%s" % (pcd.DatumType, pcd.TokenCName, pcd.TokenSpaceGuidCName))
 
     datumSize = DatumSizeStringDatabase[pcd.DatumType]
     datumSizeLib = DatumSizeStringDatabaseLib[pcd.DatumType]
@@ -926,6 +926,9 @@ def CreateModulePcdCode(info, autoGenC, autoGenH, pcd):
         if pcd.DatumType == 'UINT64':
             Value += 'ULL'
         if pcd.DatumType == 'VOID*':
+            if pcd.MaxDatumSize == None:
+                raise AutoGenError(msg="Unknown MaxDatumSize of PCD %s|%s" % (pcd.TokenCName, pcd.TokenSpaceGuidCName))
+
             ArraySize = int(pcd.MaxDatumSize)
             if Value[0] == '{':
                 Type = '(VOID *)'
@@ -977,9 +980,9 @@ def CreateLibraryPcdCode(info, autoGenC, autoGenH, pcd):
     tokenNumber = pcdTokenNumber[tokenCName, tokenSpaceGuidCName]
     
     if pcd.Type not in ItemTypeStringDatabase:
-        raise AutoGenError(msg="Unknown PCD type [%s] of PCD %s/%s" % (pcd.Type, pcd.TokenCName, pcd.TokenSpaceGuidCName))
+        raise AutoGenError(msg="Unknown PCD type [%s] of PCD %s|%s" % (pcd.Type, pcd.TokenCName, pcd.TokenSpaceGuidCName))
     if pcd.DatumType not in DatumSizeStringDatabase:
-        raise AutoGenError(msg="Unknown datum type [%s] of PCD %s/%s" % (pcd.DatumType, pcd.TokenCName, pcd.TokenSpaceGuidCName))
+        raise AutoGenError(msg="Unknown datum type [%s] of PCD %s|%s" % (pcd.DatumType, pcd.TokenCName, pcd.TokenSpaceGuidCName))
 
     datumType   = pcd.DatumType
     datumSize   = DatumSizeStringDatabaseH[datumType]

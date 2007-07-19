@@ -627,6 +627,7 @@ class AutoGen(object):
     def GetDynamicPcdList(self, platform, arch):
         pcdList = []
         notFoundPcdList = set()
+        noDatumTypePcdList = set()
         pcdConsumerList = set()
         for f in gModuleDatabase[arch]:
             m = gModuleDatabase[arch][f]
@@ -638,17 +639,25 @@ class AutoGen(object):
                     # raise AutoGenError(msg="PCD [%s %s] not found in platform" % key)
                 mPcd = m.Pcds[key]
                 pPcd = platform.Pcds[key]
+                if mPcd.DatumType == "VOID*" and pPcd.MaxDatumSize == None:
+                    noDatumTypePcdList.add(" | ".join(key))
+                    pcdConsumerList.add(str(m))
+                    #raise AutoGenError(msg="No MaxDatumSize specified for PCD %s|%s" % (pPcd.TokenCName, pPcd.TokenSpaceGuidCName))
+
                 if pPcd.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd:
                     if m.ModuleType in ["PEIM", "PEI_CORE"]:
                         pPcd.Phase = "PEI"
                     if pPcd not in pcdList:
                         pPcd.DatumType = mPcd.DatumType
                         pcdList.append(pPcd)
-        if len(notFoundPcdList) > 0:
-            pcdListString = "\n\t".join(notFoundPcdList)
-            moduleListString = "\n\t".join(pcdConsumerList)
-            raise AutoGenError(msg="PCD(s) not found in platform:\n\t%s\n\n\tUsed by:\n\t%s\n"
-                                    % (pcdListString, moduleListString))
+        if len(notFoundPcdList) > 0 or len(noDatumTypePcdList) > 0:
+            notFoundPcdListString = "\n\t\t".join(notFoundPcdList)
+            noDatumTypePcdListString = "\n\t\t".join(noDatumTypePcdList)
+            moduleListString = "\n\t\t".join(pcdConsumerList)
+            raise AutoGenError(msg="\n\tPCD(s) not found in platform:\n\t\t%s\
+                                    \n\tPCD(s) without MaxDatumSize:\n\t\t%s\
+                                    \n\tUsed by:\n\t\t%s\n"
+                                    % (notFoundPcdListString, noDatumTypePcdListString, moduleListString))
         return pcdList
 
     def GeneratePcdTokenNumber(self, platform, dynamicPcdList):

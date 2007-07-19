@@ -482,14 +482,14 @@ $(PCH_FILE): $(DEP_FILES)
 #
 
 $(LLIB_FILE): $(OBJECTS)
-\t"$(SLINK)" ${slink_output_flag}$(LLIB_FILE) $(SLINK_FLAGS) $(OBJECTS)
+\t"$(SLINK)" $(SLINK_FLAGS) ${slink_output_flag}$(LLIB_FILE) $(OBJECTS)
 
 #
 # Library file build target
 #
 
 $(LIB_FILE): $(OBJECTS)
-\t"$(SLINK)" ${slink_output_flag}$(LIB_FILE) $(SLINK_FLAGS) $(OBJECTS)
+\t"$(SLINK)" $(SLINK_FLAGS) ${slink_output_flag}$(LIB_FILE) $(OBJECTS)
 
 #
 # DLL file build target
