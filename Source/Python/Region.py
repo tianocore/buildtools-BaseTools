@@ -1,4 +1,3 @@
-import GenFds
 from struct import *
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import StringIO

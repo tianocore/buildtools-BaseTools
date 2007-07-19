@@ -3,7 +3,7 @@ import sys
 import os
 import FdfParser
 from GenFdsGlobalVariable import GenFdsGlobalVariable
-import EdkIIWorkspaceBuild
+import Common.EdkIIWorkspaceBuild
 import RuleComplexFile
 from EfiSection import EfiSection
 import StringIO
@@ -60,7 +60,7 @@ def main():
     
     """call workspace build create database"""
     os.environ["WORKSPACE"] = workspace
-    buildWorkSpace = EdkIIWorkspaceBuild.WorkspaceBuild(activePlatform)
+    buildWorkSpace = Common.EdkIIWorkspaceBuild.WorkspaceBuild(activePlatform)
     
     """Call GenFds"""
     GenFds.GenFd(outputDir, fdfParser, buildWorkSpace, archList)

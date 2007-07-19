@@ -6,7 +6,7 @@ import os
 
 class DataSection (Section.Section):
     def __init__(self):
-        self.Alignemnt = None
+        self.Alignment = None
         self.SecType = None
         self.SectFileName = None
         self.SectionList = []
@@ -48,4 +48,4 @@ class DataSection (Section.Section):
         
         print GenSectionCmd
         GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
-        return OutputFile, self.Alignemnt
+        return OutputFile, self.Alignment

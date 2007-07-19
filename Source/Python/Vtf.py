@@ -40,7 +40,7 @@ class Vtf:
                                " = "              + \
                                component.CompName + \
                                T_CHAR_LF )
-            if component.CompLoc == None or component.CompLoc == '' :
+            if component.CompLoc.supper() == 'NONE' :
                 BsfInf.writelines ("COMP_LOC"        + \
                                    " = "             + \
                                    'N'               + \

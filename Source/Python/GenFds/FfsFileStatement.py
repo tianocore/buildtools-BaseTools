@@ -33,7 +33,7 @@ class FileStatements (Ffs.Ffs) :
                                    sect
                     if align != None:
                         SectionFiles = SectionFiles  + \
-                                       ' -o '        + \
+                                       ' -n '        + \
                                        align
                                
         #

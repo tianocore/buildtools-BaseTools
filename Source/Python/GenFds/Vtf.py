@@ -11,30 +11,26 @@ class Vtf:
         self.ResetBin = None
         self.ComponentStatementList = []
         
-        
 
-    def GenVtf(self) :
+    def GenVtf(self, fdAddDict) :
         self.GenBsfInf()
-        OutputFile = os.path.join(GenFdsGlobalVariabel.FvDir, self.UiName + '.Vtf')
-        BaseAddArg = ''
-        for item in self.BaseAddressList :
-            BaseAddArg = BaseAddArg   + \
-                         ' -a '       + \
-                         item[0]      + \
-                         ' -s '       + \
-                         item[1]
-        cmd = "GenVtf -i "     + \
-               ' -o '          + \
-               OutputFile      + \
+        OutputFile = os.path.join(GenFdsGlobalVariable.FvDir, self.UiName + '.Vtf')
+        BaseAddArg = self.GetBaseAddArg(fdAddDict)
+        outputArg, VtfRawDict = self.GenOutputArg()
+        
+        cmd = "GenVtf "        + \
+               outputArg       + \
+               ' -f '          + \
                self.BsfInfName + \
-               BaseAddArg
+               ' '             + \
+               BaseAddArg      
                
         print cmd
         GenFdsGlobalVariable.CallExternalTool(cmd, "GenFv -Vtf Failed!")
-        
+        return VtfRawDict
         
     def GenBsfInf (self):
-        self.BaseAddressList = []
+        fvList = self.GetFvList()
         self.BsfInfName = os.path.join(GenFdsGlobalVariable.FvDir, self.UiName + '.inf')
         BsfInf = open (self.BsfInfName, 'w+')
         BsfInf.writelines ("[COMPONENTS]" + T_CHAR_LF)
@@ -44,10 +40,24 @@ class Vtf:
                                " = "              + \
                                component.CompName + \
                                T_CHAR_LF )
-            BsfInf.writelines ("COMP_LOC"        + \
-                               " = "             + \
-                               component.CompLoc + \
-                               T_CHAR_LF )
+            if component.CompLoc.supper() == 'NONE' :
+                BsfInf.writelines ("COMP_LOC"        + \
+                                   " = "             + \
+                                   'N'               + \
+                                   T_CHAR_LF )
+            else:
+                index = fvList.index(component.CompLoc.upper())
+                if index == 0:
+                    BsfInf.writelines ("COMP_LOC"        + \
+                                       " = "             + \
+                                       'F'               + \
+                                       T_CHAR_LF )
+                elif index == 1:
+                    BsfInf.writelines ("COMP_LOC"        + \
+                                       " = "             + \
+                                       S                 + \
+                                       T_CHAR_LF )
+                
             BsfInf.writelines ("COMP_TYPE"        + \
                                " = "              + \
                                component.CompType + \
@@ -62,11 +72,11 @@ class Vtf:
                                T_CHAR_LF )
             BsfInf.writelines ("COMP_BIN"        + \
                                " = "             + \
-                               component.CompBin + \
+                               GenFdsGlobalVariable.ReplaceWorkspaceMarco(component.CompBin) + \
                                T_CHAR_LF )
             BsfInf.writelines ("COMP_SYM"        + \
                                " = "             + \
-                               component.CompSym + \
+                               GenFdsGlobalVariable.ReplaceWorkspaceMarco(component.CompSym) + \
                                T_CHAR_LF )
             BsfInf.writelines ("COMP_SIZE"        + \
                                " = "              + \
@@ -74,13 +84,40 @@ class Vtf:
                                T_CHAR_LF )
             BsfInf.writelines (T_CHAR_LF )
             
-            if component[1] == 'F' :
-                for fd in GenFdsGlobalVariable.FdfParser.profile.FdDict :
-                    BaseAddress = fd.RegionList[0].Offset
-                    Size = fd.RegionList[0].Size
-            elif component[1] == 'S':
-                for fd in GenFdsGlobalVariable.FdfParser.profile.FdDict :
-                    BaseAddress = fd.RegionList[1].Offset
-                    Size = fd.RegionList[1].Size
-            self.BaseAddressList.append(BaseAddress, Size)
         BsfInf.close()
+
+    def GetFvList(self):
+        fvList = []
+        for component in self.ComponentStatementList :
+            if component.CompLoc != None and not (component.CompLoc in fvList):
+                fvList.append(component.CompLoc.upper())
+                
+        return fvList
+
+    def GetBaseAddArg(self, fdAddDict):
+        fvList = self.GetFvList()
+        cmdStr = ''
+        for i in fvList:
+            (baseAdd, size) = fdAddDict.get(i)
+            cmdStr = cmdStr               + \
+                     ' -r 0x%x' %baseAdd  + \
+                     ' -s 0x%x' %size
+        return cmdStr
+                     
+    def GenOutputArg(self):
+        fvVtfDict = {}
+        outPutFileName = ''
+        fvList = self.GetFvList()
+        index = 0
+        arg = ''
+        for fv in fvList:
+            index = index +1
+            outputFileName = 'Vtf%d.raw' %index
+            outPutFileName = os.path.join(GenFdsGlobalVariable.FvDir, outputFileName)
+            arg = arg    + \
+                  ' -o ' + \
+                  outPutFileName
+            fvVtfDict[fv.upper()] = outPutFileName
+            
+        return arg, fvVtfDict
+                

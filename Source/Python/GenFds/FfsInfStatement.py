@@ -7,7 +7,7 @@ import sys
 import Section
 import RuleSimpleFile
 import RuleComplexFile
-from Common.String import *
+#from String import *
 
 class FfsInfStatement(Ffs.Ffs):
     def __init__(self):
@@ -45,7 +45,6 @@ class FfsInfStatement(Ffs.Ffs):
 
         self.OutputPath = os.path.join(GenFdsGlobalVariable.FfsDir, \
                                        self.ModuleGuid + self.BaseName)
-        self.OutputPath = os.path.normcase(self.OutputPath)
         if not os.path.exists(self.OutputPath) :
             os.makedirs(self.OutputPath)
             
@@ -114,7 +113,6 @@ class FfsInfStatement(Ffs.Ffs):
                    '.'         + \
                    self.ModuleType.upper()
         
-
         Rule = GenFdsGlobalVariable.FdfParser.profile.RuleDict.get(RuleName)
         if Rule == None :
             RuleName = 'RULE'      + \
@@ -122,7 +120,7 @@ class FfsInfStatement(Ffs.Ffs):
                        'COMMON'    + \
                        '.'         + \
                        self.ModuleType.upper()
-                       
+            print "Want To Find Rule Name is : " + RuleName
             Rule = GenFdsGlobalVariable.FdfParser.profile.RuleDict.get(RuleName)
             if Rule == None :
                 print 'Dont Find Related Rule, Using Default Rule !!!'
@@ -229,7 +227,7 @@ class FfsInfStatement(Ffs.Ffs):
     def __GenComplexFileSection__(self, Rule):
         SectFiles = ''
         for Sect in Rule.SectionList:
-           print 'GenSection: %s %s :' %(self.OutputPath ,self.ModuleGuid)
+           #print 'GenSection: %s %s :' %(self.OutputPath ,self.ModuleGuid)
            secName = ''
            secName, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, self.KeyStringList, self)
            if secName != '':

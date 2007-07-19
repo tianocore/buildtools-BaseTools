@@ -60,7 +60,7 @@ def main():
     
     """call workspace build create database"""
     os.environ["WORKSPACE"] = workspace
-    buildWorkSpace = EdkIIWorkspaceBuild.WorkspaceBuild(activePlatform)
+    buildWorkSpace = Common.EdkIIWorkspaceBuild.WorkspaceBuild(activePlatform)
     
     """Call GenFds"""
     GenFds.GenFd(outputDir, fdfParser, buildWorkSpace, archList)
@@ -124,14 +124,21 @@ class GenFds :
                 fv = GenFdsGlobalVariable.FdfParser.profile.FvDict[FvName]
                 fv.AddToBuffer(Buffer)
                 Buffer.close()
+                
+        #print "#########   Gen Capsule              ####################"
         for capsule in GenFdsGlobalVariable.FdfParser.profile.CapsuleList:
             capsule.GenCapsule()
 
-        for vtf in GenFdsGlobalVariable.FdfParser.profile.VtfList:
-            vtf.GenVtf()
+##        for vtf in GenFdsGlobalVariable.FdfParser.profile.VtfList:
+##            vtf.GenVtf()
 
     #Finish GenFd()
-            
+    def GenVTFList() :
+        for item in GenFdsGlobalVariable.FdfParser.profile.VtfList:
+            for comp in item.ComponentStatementList:
+                if comp.CompLoc != None :
+                    compList.append(comp.Loc)
+            GenFdsGlobalVariable.VtfDict[item.UiName] = compList
     #
     # Define GenFd as static function
     #

@@ -1714,7 +1714,7 @@ class FdfParser:
 
         compStatement.CompLoc = ""
         if self.__GetNextWord():
-        compStatement.CompLoc = self.__Token
+            compStatement.CompLoc = self.__Token
             if self.__IsToken('|'):
                 if not self.__GetNextWord():
                     raise Warning("Expected Region Name At Line %d" % self.CurrentLineNumber)
