@@ -1100,7 +1100,10 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
     for Pcd in platform.DynamicPcdList:
         CName = Pcd.TokenCName
         TokenSpaceGuidCName = Pcd.TokenSpaceGuidCName
+
         EdkLogger.debug(EdkLogger.DEBUG_3, "PCD: %s %s (%s : %s)" % (CName, TokenSpaceGuidCName, Pcd.Phase, phase))
+        if Pcd.DatumType not in DatumSizeStringDatabase:
+            raise AutoGenError(msg="Unknown datum type [%s] of PCD %s|%s" % (Pcd.DatumType, Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
 
         if Pcd.Phase == 'PEI':
             NumberOfPeiLocalTokens += 1
@@ -1272,7 +1275,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
         if phase == 'DXE':
             GeneratedTokenNumber -= NumberOfPeiLocalTokens
 
-        EdkLogger.debug(EdkLogger.DEBUG_1, "PCD = %s / %s" % (CName, TokenSpaceGuidCName))
+        EdkLogger.debug(EdkLogger.DEBUG_1, "PCD = %s | %s" % (CName, TokenSpaceGuidCName))
         EdkLogger.debug(EdkLogger.DEBUG_1, "phase = %s" % phase)
         EdkLogger.debug(EdkLogger.DEBUG_1, "GeneratedTokenNumber = %s" % str(GeneratedTokenNumber))
 

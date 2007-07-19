@@ -632,7 +632,7 @@ class AutoGen(object):
             m = gModuleDatabase[arch][f]
             for key in m.Pcds:
                 if key not in platform.Pcds:
-                    notFoundPcdList.add(" / ".join(key))
+                    notFoundPcdList.add(" | ".join(key))
                     pcdConsumerList.add(str(m))
                     continue
                     # raise AutoGenError(msg="PCD [%s %s] not found in platform" % key)

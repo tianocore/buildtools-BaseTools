@@ -582,7 +582,6 @@ all: init build_libraries build_modules build_fds
 #
 init:
 \t-@echo Building ... $(PLATFORM_NAME)-$(PLATFORM_VERSION) [${build_architecture_list}]
-\t-${create_directory_command} $(FV_DIR) > NUL 2>&1
 \t${BEGIN}-${create_directory_command} $(BUILD_DIR)${separator}${architecture} > NUL 2>&1
 \t${END}
 \t${BEGIN}-${create_directory_command} $(BUILD_DIR)${separator}${directory_to_be_created} > NUL 2>&1
