@@ -27,7 +27,10 @@ class GenFdsGlobalVariable:
         GenFdsGlobalVariable.WorkSpaceDir = GenFdsGlobalVariable.WorkSpace.Workspace.WorkspaceDir
         if ArchList != None:
             GenFdsGlobalVariable.ArchList = ArchList
-        
+            
+        if not os.path.exists(GenFdsGlobalVariable.FvDir) :
+            os.makedirs(GenFdsGlobalVariable.FvDir)
+            
     def SetDefaultRule (Rule) :
         GenFdsGlobalVariable.DefaultRule = Rule
 
@@ -38,11 +41,11 @@ class GenFdsGlobalVariable:
     def CallExternalTool (cmd, errorMess):
         PopenObject = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr= subprocess.PIPE)
         (out, error) = PopenObject.communicate()
-        
+
         while PopenObject.returncode == None :
             PopenObject.wait()
         if PopenObject.returncode != 0:
-            print "Return Value =" + PopenObject.returncode
+            print "Return Value = %d" %PopenObject.returncode
             print out
             print error
             raise Exception(errorMess)

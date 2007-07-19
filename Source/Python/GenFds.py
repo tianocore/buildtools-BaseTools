@@ -129,8 +129,8 @@ class GenFds :
         for capsule in GenFdsGlobalVariable.FdfParser.profile.CapsuleList:
             capsule.GenCapsule()
 
-        for vtf in GenFdsGlobalVariable.FdfParser.profile.VtfList:
-            vtf.GenVtf()
+##        for vtf in GenFdsGlobalVariable.FdfParser.profile.VtfList:
+##            vtf.GenVtf()
 
     #Finish GenFd()
     def GenVTFList() :

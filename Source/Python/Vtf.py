@@ -26,11 +26,7 @@ class Vtf:
                BaseAddArg      
                
         print cmd
-        PopenObject = subprocess.Popen(cmd)
-        PopenObject.communicate()
-        if PopenObject.returncode != 0:
-            raise Exception(errorMess)
-        #GenFdsGlobalVariable.CallExternalTool(cmd, "GenFv -Vtf Failed!")
+        GenFdsGlobalVariable.CallExternalTool(cmd, "GenFv -Vtf Failed!")
         return VtfRawDict
         
     def GenBsfInf (self):
@@ -44,13 +40,13 @@ class Vtf:
                                " = "              + \
                                component.CompName + \
                                T_CHAR_LF )
-            if component.CompLoc == None:
+            if component.CompLoc == None or component.CompLoc == '' :
                 BsfInf.writelines ("COMP_LOC"        + \
                                    " = "             + \
                                    'N'               + \
                                    T_CHAR_LF )
             else:
-                index = fvList.index(component.CompLoc)
+                index = fvList.index(component.CompLoc.upper())
                 if index == 0:
                     BsfInf.writelines ("COMP_LOC"        + \
                                        " = "             + \
@@ -94,7 +90,7 @@ class Vtf:
         fvList = []
         for component in self.ComponentStatementList :
             if component.CompLoc != None and not (component.CompLoc in fvList):
-                fvList.append(component.CompLoc)
+                fvList.append(component.CompLoc.upper())
                 
         return fvList
 
@@ -121,7 +117,7 @@ class Vtf:
             arg = arg    + \
                   ' -o ' + \
                   outPutFileName
-            fvVtfDict[fv] = outPutFileName
+            fvVtfDict[fv.upper()] = outPutFileName
             
         return arg, fvVtfDict
                 

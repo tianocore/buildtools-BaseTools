@@ -31,7 +31,7 @@ class FV:
     #  Generate Fv and add it to the Buffer
     #
     def AddToBuffer (self, Buffer, BaseAddress=None, BlockSize= None, BlockNum=None, ErasePloarity='1', VtfDict=None) :
-        self.__InitialInf__(BaseAddress, BlockSize, BlockNum, VtfDict=None)
+        self.__InitialInf__(BaseAddress, BlockSize, BlockNum, ErasePloarity, VtfDict)
         #
         # First Process the Apriori section
         #

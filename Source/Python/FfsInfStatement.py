@@ -45,7 +45,6 @@ class FfsInfStatement(Ffs.Ffs):
 
         self.OutputPath = os.path.join(GenFdsGlobalVariable.FfsDir, \
                                        self.ModuleGuid + self.BaseName)
-        self.OutputPath = os.path.normcase(self.OutputPath)
         if not os.path.exists(self.OutputPath) :
             os.makedirs(self.OutputPath)
             
@@ -228,7 +227,7 @@ class FfsInfStatement(Ffs.Ffs):
     def __GenComplexFileSection__(self, Rule):
         SectFiles = ''
         for Sect in Rule.SectionList:
-           print 'GenSection: %s %s :' %(self.OutputPath ,self.ModuleGuid)
+           #print 'GenSection: %s %s :' %(self.OutputPath ,self.ModuleGuid)
            secName = ''
            secName, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, self.KeyStringList, self)
            if secName != '':

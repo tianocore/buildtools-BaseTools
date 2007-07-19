@@ -71,8 +71,8 @@ class FD:
         fvList = []
         for region in self.RegionList:
             if region.RegionType == 'FV':
-                fvList.append(region.RegionData)
-                fvAddDict[region.RegionData] = (int(self.BaseAddress,16) + \
+                fvList.append(region.RegionData.upper())
+                fvAddDict[region.RegionData.upper()] = (int(self.BaseAddress,16) + \
                                                 region.Offset, region.Size)
         #
         # Check whether this Fd need VTF
