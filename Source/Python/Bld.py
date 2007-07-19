@@ -129,11 +129,11 @@ def MyOptionParser():
     parser.add_option("-b", "--buildtarget", action="append", type="choice", choices=['DEBUG','RELEASE'], dest="TARGET",
         help="Build the platform using the BuildTarget, overrides target.txt's TARGET definition.")
     parser.add_option("-t", "--tagname", action="append", type="string", dest="TOOL_CHAIN_TAG",
-        help="Build the platform using the Tool chain, Tagname, overrides target.txt?s TOOL_CHAIN_TAG definition.")
+        help="Build the platform using the Tool chain, Tagname, overrides target.txt's TOOL_CHAIN_TAG definition.")
     parser.add_option("-s", "--spawn", action="store_true", type=None,
         help="If this flag is specified, the first two phases, AutoGen and MAKE are mixed, such that as soon as a module can be built, the build will start, without waiting for AutoGen to complete on remaining modules.  While this option provides feedback that looks fast, due to overhead of the AutoGen function, this option is slower than letting AutoGen complete before starting the MAKE phase.")
     parser.add_option("-n", action="store", type="int", dest="NUM",
-        help="Build the platform using multi-threaded compiler with # threads, values less than 2 will disable multi-thread builds.  Overrides target.txt?s MULTIPLE_THREAD and MAX_CONCURRENT_THREAD_NUMBER")
+        help="Build the platform using multi-threaded compiler with # threads, values less than 2 will disable multi-thread builds. Overrides target.txt's MULTIPLE_THREAD and MAX_CONCURRENT_THREAD_NUMBER")
     parser.add_option("-f", "--fdf", action="store", type="string", dest="FDFFILE",
         help="The name of the FDF file to use, over-riding the setting in the DSC file.")
     parser.add_option("-k", "--msft", action="store_true", type=None, help="Make Option: Generate only NMAKE Makefiles: Makefile")
@@ -173,6 +173,7 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
             for b in opt.TOOL_CHAIN_TAG:
                 for c in opt.TARGET_ARCH:
                     if ModuleFile == None:
+                        li = []
                         PlatformAutoGen = AutoGen(None, PlatformFile, ewb, str(a), b, str(c))
                         print "PlatformAutoGen : %s" % PlatformFile
                         for d in PlatformAutoGen.Platform[str(c)].Modules:
@@ -180,6 +181,11 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                             ModuleAutoGen = AutoGen(d, PlatformFile, ewb, str(a), b, str(c))
                             for e in ModuleAutoGen.BuildInfo.DependentLibraryList:
                                 print "Library: %s" % e
+                                if e in li:
+                                    continue
+                                else:
+                                    li.append(e)
+                                
                                 LibraryAutoGen = AutoGen(e, PlatformFile, ewb, str(a), b, str(c))
                                 LibraryAutoGen.CreateAutoGenFile()
                                 LibraryAutoGen.CreateMakefile()
@@ -378,19 +384,6 @@ def CalculateTime(StartTime):
         print "Totol Run Time is %2d:%2d:0%d" %(Hour, Min, Sec)
 
 if __name__ == '__main__':
-#
-# Record Start Time
-#
-    StartTime = time.time()
-    print time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.localtime())
-#
-# Check environment variable: EDK_TOOLS_PATH, WORKSPACE, PATH
-#
-    StatusCode = CheckEnvVariable()
-    if StatusCode != 0:
-        CalculateTime(StartTime)
-        sys.exit(StatusCode)
-
 # be compatibile with Ant build.bat ???
 
 #
@@ -400,8 +393,22 @@ if __name__ == '__main__':
         (opt, args) = MyOptionParser()
     except Exception, e:
         print e
-        CalculateTime(StartTime)
         sys.exit(1)
+
+#
+# Record Start Time
+#
+    StartTime = time.time()
+    print time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.localtime())
+
+#
+# Check environment variable: EDK_TOOLS_PATH, WORKSPACE, PATH
+#
+    StatusCode = CheckEnvVariable()
+    if StatusCode != 0:
+        CalculateTime(StartTime)
+        sys.exit(StatusCode)
+
 #
 # Call Parser
 #
