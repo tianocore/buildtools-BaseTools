@@ -142,6 +142,12 @@ StringtoAlignment (
   )
 {
   UINT32 Index = 0;
+  //
+  // Check AlignBuffer
+  //
+  if (AlignBuffer == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
   for (Index = 0; Index < sizeof (mAlignName) / sizeof (CHAR8 *); Index ++) {
     if (stricmp (AlignBuffer, mAlignName [Index]) == 0) {
       *AlignNumber = Index;
@@ -266,7 +272,7 @@ Returns:
       Offset = Offset - sizeof (EFI_COMMON_SECTION_HEADER);
        
       if (FileBuffer != NULL && ((Size + Offset) < *BufferLength)) {
-        SectHeader          = (EFI_COMMON_SECTION_HEADER *) FileBuffer;
+        SectHeader          = (EFI_COMMON_SECTION_HEADER *) (FileBuffer + Size);
         SectHeader->Type    = EFI_SECTION_RAW;
         SectHeader->Size[0] = (UINT8) (Offset & 0xff);
         SectHeader->Size[1] = (UINT8) ((Offset & 0xff00) >> 8);
@@ -292,7 +298,7 @@ Returns:
     // Now read the contents of the file into the buffer
     // Buffer must be enough to contain the file content.
     //
-    if (FileSize > 0 && FileBuffer != NULL && (Size + FileSize) <= *BufferLength) {
+    if ((FileSize > 0) && (FileBuffer != NULL) && ((Size + FileSize) <= *BufferLength)) {
       if (fread (FileBuffer + Size, (size_t) FileSize, 1, InFile) != 1) {
         Error (NULL, 0, 0, InputFileName[Index], "failed to read contents of input file");
         fclose (InFile);
@@ -350,6 +356,8 @@ Returns:
   EFI_FFS_FILE_HEADER     FfsFileHeader;
   FILE                    *FfsFile;
   UINT32                  Index;
+
+  fprintf (stdout, "GenFfs tool start.\n");  
 
   Index          = 0;
   FfsAttrib      = 0;  
@@ -501,7 +509,7 @@ Returns:
       argv += 2;
 
       if (argc <= 0) {
-	    InputFileNum ++;
+	      InputFileNum ++;
         break;
       }
 
@@ -672,5 +680,7 @@ Finish:
   // routines, then the status has been saved. Get the value and
   // return it to the caller.
   //
+  fprintf (stdout, "GenFfs tool done with return code is 0x%x.\n", GetUtilityStatus ());  
+
   return GetUtilityStatus ();
 }
