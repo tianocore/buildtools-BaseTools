@@ -153,6 +153,8 @@ Returns:
   EFI_CAPSULE_HEADER    *CapsuleHeader;
   UINT32                Index;
 
+  fprintf (stdout, "GenFv tool start\n");
+
   InfFileName   = NULL;
   InfFileImage  = NULL;
   OutFileName   = NULL;
@@ -362,6 +364,7 @@ Finish:
   //
   free (InfFileImage);
 
+  fprintf (stdout, "GenFv tool done with return code is 0x%x.\n", GetUtilityStatus ());
   return GetUtilityStatus ();
 }
 

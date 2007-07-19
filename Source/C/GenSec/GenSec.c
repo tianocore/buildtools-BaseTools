@@ -713,6 +713,8 @@ Returns:
   BOOLEAN                   AllocatedFlag;
   EFI_STATUS                Status;
  
+  fprintf (stdout, "GenSec tool start.\n");  
+  
   InputFileName         = NULL;
   OutputFileName        = NULL;
   SectionName           = NULL;
@@ -1129,6 +1131,8 @@ Finish:
       remove (OutputFileName);
     }
   }
+
+  fprintf (stdout, "GenSec tool done with return code is 0x%x.\n", GetUtilityStatus ()); 
 
   return GetUtilityStatus ();
 }

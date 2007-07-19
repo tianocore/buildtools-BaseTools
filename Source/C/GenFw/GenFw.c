@@ -908,8 +908,7 @@ Returns:
   UINTN             FileLength;
   RUNTIME_FUNCTION  *RuntimeFunction;
   UNWIND_INFO       *UnwindInfo;
-  STATUS            Status;
-
+  STATUS            Status;  
   EFI_TE_IMAGE_HEADER          TEImageHeader;
   EFI_IMAGE_SECTION_HEADER     *SectionHeader;
   EFI_IMAGE_DOS_HEADER         *DosHdr;
@@ -918,6 +917,7 @@ Returns:
   EFI_IMAGE_OPTIONAL_HEADER64  *Optional64;
   EFI_IMAGE_DOS_HEADER         BackupDosHdr;
 
+  fprintf (stdout, "GenFw tool start.\n");
 
   SetUtilityName (UTILITY_NAME);
 
@@ -1521,6 +1521,7 @@ Finish:
     fclose (fpInOut);
   }
 
+  fprintf (stdout, "GenFw tool done with return code is 0x%x.\n", GetUtilityStatus ());  
   return GetUtilityStatus ();
 }
 
