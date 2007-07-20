@@ -95,9 +95,9 @@ gRemoveDirectoryCommand = {"nmake" : "rmdir /s /q", "gmake" : "rm -r -f"}
 gRemoveFileCommand = {"nmake" : "del /f /q", "gmake" : "rm -f"}
 gCopyFileCommand = {"nmake" : "copy /y", "gmake" : "cp -f"}
 
-DefaultOutputFlag = "-o "
+gDefaultOutputFlag = "-o "
 
-OutputFlag = {
+gOutputFlag = {
     ("MSFT", "CC", "OUTPUT")      :   "/Fo",
     ("MSFT", "SLINK", "OUTPUT")   :   "/OUT:",
     ("MSFT", "DLINK", "OUTPUT")   :   "/OUT:",
@@ -123,7 +123,10 @@ OutputFlag = {
 #   ("OUTPUT")                     :    "-o "
 }
 
-IncludeFlag = {"MSFT" : "/I", "GCC" : "-I", "INTEL" : "-I"}
+gIncludeFlag = {"MSFT" : "/I", "GCC" : "-I", "INTEL" : "-I"}
+
+gStartGroupFlag = {"MSFT" : "", "GCC" : "-(", "INTEL" : ""}
+gEndGroupFlag = {"MSFT" : "", "GCC" : "-)", "INTEL" : ""}
 
 gCustomMakefileTemplate = '''
 ${makefile_header}
@@ -496,14 +499,14 @@ $(LIB_FILE): $(OBJECTS)
 #
 
 $(DLL_FILE): $(LIBS) $(LLIB_FILE)
-\t"$(DLINK)" ${dlink_output_flag}$(DLL_FILE) $(DLINK_FLAGS) $(DLINK_SPATH) $(LIBS) $(LLIB_FILE)
+\t"$(DLINK)" ${dlink_output_flag}$(DLL_FILE) $(DLINK_FLAGS) ${start_group_flag} $(DLINK_SPATH) $(LIBS) $(LLIB_FILE) ${end_group_flag}
 
 #
 # EFI file build target
 #
 
 $(EFI_FILE): $(LIBS) $(LLIB_FILE)
-\t"$(DLINK)" $(DLINK_FLAGS) ${dlink_output_flag}$(EFI_FILE) $(DLINK_SPATH) $(LIBS) $(LLIB_FILE)
+\t"$(DLINK)" $(DLINK_FLAGS) ${dlink_output_flag}$(EFI_FILE) ${start_group_flag} $(DLINK_SPATH) $(LIBS) $(LLIB_FILE) ${end_group_flag}
 \tGenFw -e ${module_type} -o $(EFI_FILE) $(EFI_FILE)
 \t${copy_file_command} $(EFI_FILE) $(BIN_DIR)
 
@@ -826,9 +829,11 @@ class Makefile(object):
             "module_entry_point"        : entryPoint,
             "source_file"               : self.BuildFileList,
             #"auto_generated_file"       : self.AutoGenBuildFileList,
-            "include_path_prefix"       : IncludeFlag[self.PlatformInfo.ToolChainFamily["CC"]],
+            "include_path_prefix"       : gIncludeFlag[self.PlatformInfo.ToolChainFamily["CC"]],
             "dlink_output_flag"         : self.PlatformInfo.OutputFlag["DLINK"],
             "slink_output_flag"         : self.PlatformInfo.OutputFlag["SLINK"],
+            "start_group_flag"          : gStartGroupFlag[self.PlatformInfo.ToolChainFamily["DLINK"]],
+            "end_group_flag"            : gEndGroupFlag[self.PlatformInfo.ToolChainFamily["DLINK"]],
             "include_path"              : self.ModuleInfo.IncludePathList,
             "object_file"               : self.ObjectFileList,
             "library_file"              : self.LibraryFileList,
@@ -993,6 +998,10 @@ class Makefile(object):
                                    })
 
         fileList = self.ModuleInfo.SourceFileList
+        if len(fileList) == 0:
+            raise AutoGenError(msg="No files to be built in module [%s] [%s] [%s]\n\t%s" % (self.ModuleInfo.BuildTarget,
+                                    self.ModuleInfo.ToolChain, self.ModuleInfo.Arch, str(self.ModuleInfo.Module)))
+        
         for f in fileList:
             family = f.ToolChainFamily
             if family == None or family == "":
