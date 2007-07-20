@@ -362,7 +362,7 @@ Returns:
         VtfInfo->LocationType = SECOND_VTF;
       } else {
         VtfInfo->LocationType = NONE;
-        printf ("\nERROR: Unknown location for component %s", VtfInfo->CompName);
+        printf ("\nWARN: Unknown location for component %s", VtfInfo->CompName);
       }
     } else if (strnicmp (*TokenStr, "COMP_TYPE", 9) == 0) {
       TokenStr++;
@@ -1157,8 +1157,7 @@ Returns:
   FILE        *Fp;
   FIT_TABLE   *CompFitPtr;
   BOOLEAN     Aligncheck;
-  
-  __asm int 3;
+
   if (VtfInfo->LocationType == NONE) {
     UpdateFitEntryForNonVTFComp (VtfInfo);
     return EFI_SUCCESS;
@@ -1172,13 +1171,12 @@ Returns:
   }
 
   FileSize = _filelength (fileno (Fp));
-
+  //printf("\n FileSize is %d", FileSize);
   if ((VtfInfo->CompType == COMP_TYPE_FIT_PAL_B) || (VtfInfo->CompType == COMP_TYPE_FIT_PAL_A_SPECIFIC)) {
 
     //
     // BUGBUG: Satish to correct
     //
-    printf("\n Error in size");
     FileSize -= SIZE_OF_PAL_HEADER;
   }
 
@@ -1243,7 +1241,6 @@ Returns:
     CompStartAddress -= NumAdjustByte;
   }
   
-  printf("\n We come here");
   if (VtfInfo->LocationType == SECOND_VTF && SecondVTF == TRUE) {
     Vtf2LastStartAddress = CompStartAddress;
     Vtf2TotalSize += (UINT32) (FileSize + NumAdjustByte);
@@ -1356,7 +1353,6 @@ Returns:
     return EFI_ABORTED;
   }
 
-//  __asm int 3;
   FileSize = _filelength (fileno (Fp));
   if (FileSize < 64) {
     printf("\n PAL_A bin header is 64 bytes, so the Bin size must be larger than 64 bytes!");
@@ -1931,14 +1927,14 @@ Returns:
       Status = CreateAndUpdateComponent (ParsedInfoPtr);
       if (EFI_ERROR (Status)) {
         printf("\n Error in CreateAndUpdateComponent");
-        printf ("ERROR: Updating component.%s \n", ParsedInfoPtr->CompName);
-      }
-      break;
+        printf("\nERROR: Updating component.%s \n", ParsedInfoPtr->CompName);
+        return EFI_ABORTED;
+      } else {
+      break;}
     }
 
     ParsedInfoPtr = ParsedInfoPtr->NextVtfInfo;
   }
-
   return Status;
 }
 
