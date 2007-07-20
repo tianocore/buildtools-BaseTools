@@ -61,7 +61,7 @@ def TrimVfr(source, target):
         if brace == 0 and lines[index].find(";") >= 0:
             foundTypedef = False
             typedefEnd = index
-            if lines[index].strip("} ;\r\n") == "GUID":
+            if lines[index].strip("} ;\r\n") in ["GUID", "EFI_PLABEL", "PAL_CALL_RETURN"]:
                 for i in range(typedefStart, typedefEnd+1):
                     lines[i] = "\n"
 
