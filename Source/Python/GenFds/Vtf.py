@@ -40,7 +40,7 @@ class Vtf:
                                " = "              + \
                                component.CompName + \
                                T_CHAR_LF )
-            if component.CompLoc.supper() == 'NONE' :
+            if component.CompLoc.upper() == 'NONE' :
                 BsfInf.writelines ("COMP_LOC"        + \
                                    " = "             + \
                                    'N'               + \
@@ -55,7 +55,7 @@ class Vtf:
                 elif index == 1:
                     BsfInf.writelines ("COMP_LOC"        + \
                                        " = "             + \
-                                       S                 + \
+                                       'S'                 + \
                                        T_CHAR_LF )
                 
             BsfInf.writelines ("COMP_TYPE"        + \
@@ -89,7 +89,7 @@ class Vtf:
     def GetFvList(self):
         fvList = []
         for component in self.ComponentStatementList :
-            if component.CompLoc != None and not (component.CompLoc in fvList):
+            if component.CompLoc.upper() != 'NONE' and not (component.CompLoc.upper() in fvList):
                 fvList.append(component.CompLoc.upper())
                 
         return fvList
