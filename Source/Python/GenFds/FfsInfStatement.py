@@ -18,6 +18,7 @@ class FfsInfStatement(Ffs.Ffs):
         self.InfFileName = None
         self.BuildNum = ''
         self.KeyStringList = []
+        self.RuleOverride = None
 
     def __infParse__(self):
         #

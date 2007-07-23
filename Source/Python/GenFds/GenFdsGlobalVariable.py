@@ -36,6 +36,7 @@ class GenFdsGlobalVariable:
 
     def ReplaceWorkspaceMarco(String):
         Str = String.replace('$(WORKSPACE)', GenFdsGlobalVariable.WorkSpaceDir)
+        Str = os.path.realpath(Str)
         return Str
     
     def CallExternalTool (cmd, errorMess):
