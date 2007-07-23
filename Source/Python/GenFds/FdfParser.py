@@ -57,10 +57,11 @@ class FileProfile :
             print "Error when opening file."
             return
         
+        self.PcdDict = {}
+        
         self.FdDict = {}
         self.FvDict = {}
         self.CapsuleList = []
-#        self.RuleList = []
         self.VtfList = []
         self.RuleDict = {}
         
@@ -494,6 +495,7 @@ class FdfParser:
         if self.__IsToken( "|"):
             if self.__GetNextWord():
                 fd.BaseAddressPcd = self.__Token
+                self.profile.PcdDict[fd.BaseAddressPcd] = fd.BaseAddress
             else:
                 raise Warning("expected PcdCName At Line %d" % self.CurrentLineNumber)
 
@@ -512,6 +514,7 @@ class FdfParser:
         if self.__IsToken( "|"):
             if self.__GetNextWord():
                 fd.SizePcd = self.__Token
+                self.profile.PcdDict[fd.SizePcd] = fd.Size
             else:
                 raise Warning("expected PcdCName At Line %d" % self.CurrentLineNumber)
                 
@@ -558,6 +561,7 @@ class FdfParser:
         if self.__IsToken( "|"):
             if self.__GetNextWord():
                 BlockSizePcd = self.__Token
+                self.profile.PcdDict[BlockSizePcd] = BlockSize
             else:
                 raise Warning("expected PcdCName At Line %d" % self.CurrentLineNumber)
 
@@ -619,6 +623,7 @@ class FdfParser:
                 value += self.__SkippedChars
                 
             obj.SetVarDict[macro] = value
+            self.profile.PcdDict[macro] = value
             return True
 
         return False
@@ -644,11 +649,12 @@ class FdfParser:
         
         if not self.__Token in ("SET", "FV", "FILE", "DATA"):
             region.PcdOffset = self.__Token
-            if not self.__IsToken( "|"):
-                raise Warning("expected '|' At Line %d" % self.CurrentLineNumber)
-            if not self.__GetNextWord():
-                raise Warning("expected Region PCD Size At Line %d" % self.CurrentLineNumber)
-            region.PcdSize = self.__Token
+            self.profile.PcdDict[region.PcdOffset] = region.Offset
+            if self.__IsToken( "|"):
+                if not self.__GetNextWord():
+                    raise Warning("expected Region PCD Size At Line %d" % self.CurrentLineNumber)
+                region.PcdSize = self.__Token
+                self.profile.PcdDict[region.PcdSize] = region.Size
             
             if not self.__GetNextWord():
                 return True
@@ -1815,7 +1821,7 @@ class FdfParser:
         return True
     
 if __name__ == "__main__":
-    parser = FdfParser("Nt32.fdf")
+    parser = FdfParser("..\Nt32.fdf")
     parser.ParseFile()
     print "Success!"
 
