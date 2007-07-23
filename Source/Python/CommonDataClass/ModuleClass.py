@@ -36,7 +36,7 @@ class ModuleHeaderClass(IdentificationClass, CommonHeaderClass, DefineClass):
         self.FfsExt = ''
         self.FvExt = ''
         self.SourceFv = ''
-        self.CustomMakefile = ''
+        self.CustomMakefile = {}                    #{ Family : Filename, ... }
         
 class ModuleSourceFileClass(CommonClass):
     def __init__(self):

@@ -28,7 +28,7 @@ class CommonHeaderClass(object):
 
 class DefineClass(object):
     def __init__(self):
-        self.Define = {}                                  #{ DefineName : DefineValue, ...}
+        self.Define = {}                                  #{ (DefineName, Arch) : DefineValue, ...}
         
 class ClonedRecordClass(object):
     def __init__(self):

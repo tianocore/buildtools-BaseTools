@@ -15,6 +15,40 @@ import DataType
 import os.path
 import string
 
+#
+# Get a value list from a string with multiple values splited with SplitTag
+# The default SplitTag is DataType.TAB_VALUE_SPLIT
+# 'AAA|BBB|CCC' -> ['AAA', 'BBB', 'CCC']
+#
+def GetSplitValueList(String, SplitTag = DataType.TAB_VALUE_SPLIT):
+    return map(lambda l: l.strip(), String.split(SplitTag))
+
+#
+# Find a key's all arches in dict, add the new arch to the list
+# If not exist any arch, set the arch directly
+#
+def MergeArches(Dict, Key, Arch):
+    if Key in Dict.keys():
+        Dict[Key].append(Arch)
+    else:
+        Dict[Key] = Arch.split()
+
+#
+# Parse a string with format "DEFINE <VarName> = <PATH>"
+# Generate a map Defines[VarName] = PATH
+# Return False if invalid format
+#
+def GenDefines(String, Arch, Defines):
+    if String.find(DataType.TAB_DEFINE + ' ') > -1:
+        List = String.replace(DataType.TAB_DEFINE + ' ', '').split(DataType.TAB_EQUAL_SPLIT)
+        if len(List) == 2:
+            Defines[(CleanString(List[0]), Arch)] = CleanString(List[1])
+            return 0
+        else:
+            return -1
+    
+    return 1
+
 def MergeModulePcds(pcds, pcdsFixedAtBuild, pcdsPatchableInModule, pcdsFeatureFlag, pcdsDynamic):
     #[ ['PcdName|PcdGuid|PcdType', 'IA32|X64|IPF|EBC'], ...]
     
@@ -161,41 +195,47 @@ def GetDynamics(Lines, Key, KeyValues, CommentCharacter):
 
     return True
 
+#
+# Split ModuleType out of section defien to get key
+# [LibraryClass.Arch.ModuleType|ModuleType|ModuleType] -> [ 'LibraryClass.Arch', ['ModuleType', 'ModuleType', 'ModuleType'] ]
+#
 def SplitModuleType(Key):
-    #from DataType import *
     KeyList = Key.split(DataType.TAB_SPLIT)
-    rtv = []
-    if len(KeyList) == 3:
-        rtv.append(KeyList[0] + DataType.TAB_SPLIT + KeyList[1])
-        rtv.append(KeyList[2])
-        return rtv
-    else:
-        rtv.append(Key)
-        rtv.append(None)
-        return rtv
+    KeyList.append('')                    # Fill in for arch
+    KeyList.append('')                    # Fill in for moduletype
+    ReturnValue = []
+    KeyValue = KeyList[0]
+    if KeyList[1] != '':
+        KeyValue = KeyValue + DataType.TAB_SPLIT + KeyList[1]
+    ReturnValue.append(KeyValue)
+    ReturnValue.append(GetSplitValueList(KeyList[2]))
     
+    return ReturnValue
+    
+#
+# Replace '\\', '\' with '/'
+#
 def NormPath(path):
     if path != '':
         return os.path.normpath(path)
     else:
         return path
 
+#
+# Remove comments in a string
+# Remove spaces
+#
 def CleanString(Line, CommentCharacter = DataType.TAB_COMMENT_SPLIT):
     #remove whitespace
     Line = Line.strip();
     #remove comments
     Line = Line.split(CommentCharacter, 1)[0];
     #replace '\\', '\' with '/'
-    Line = Line.replace('\\', '/')
-    Line = Line.replace('//', '/')
+    #Line = Line.replace('\\', '/')
+    #Line = Line.replace('//', '/')
     #remove ${WORKSPACE}
-    Line = Line.replace(DataType.TAB_WORKSPACE1, '')
-    Line = Line.replace(DataType.TAB_WORKSPACE2, '')
-    #remove '/' at the beginning
-#    if Line.startswith('/'):
-#        Line = Line.replace('/', '')
-    #Change path
-    #Line = os.path.normpath(Line)
+    #Line = Line.replace(DataType.TAB_WORKSPACE1, '')
+    #Line = Line.replace(DataType.TAB_WORKSPACE2, '')
     
     #remove whitespace again
     Line = Line.strip();
@@ -212,11 +252,31 @@ def GetMultipleValuesOfKeyFromLines(Lines, Key, KeyValues, CommentCharacter):
 
     return True
 
+def GetDefineValue(String, Key, CommentCharacter):
+    String = CleanString(String)
+    return String[String.find(Key + ' ') + len(Key + ' ') : ]
+
 def GetSingleValueOfKeyFromLines(Lines, Dictionary, CommentCharacter, KeySplitCharacter, ValueSplitFlag, ValueSplitCharacter):
     Lines = Lines.split('\n')
     Keys = []
     Value = ''
+    DefineValues = []
+    SpecValues = []
+    
     for Line in Lines:
+        #
+        # Handle DEFINE and SPEC
+        #
+        if Line.find(DataType.TAB_INF_DEFINES_DEFINE + ' ') > -1:
+            DefineValues.append(GetDefineValue(Line, DataType.TAB_INF_DEFINES_DEFINE, CommentCharacter))
+            continue
+        if Line.find(DataType.TAB_INF_DEFINES_SPEC + ' ') > -1:
+            SpecValues.append(GetDefineValue(Line, DataType.TAB_INF_DEFINES_SPEC, CommentCharacter))
+            continue
+                
+        #
+        # Handle Others
+        #
         LineList = Line.split(KeySplitCharacter, 1)
         if len(LineList) >= 2:
             Key = LineList[0].split()
@@ -233,6 +293,14 @@ def GetSingleValueOfKeyFromLines(Lines, Dictionary, CommentCharacter, KeySplitCh
                     Keys.append(Key[0])
                 else:
                     Dictionary[Key[0]].extend(Value)                
+    
+    if DefineValues == []:
+        DefineValues == ['']
+    if SpecValues == []:
+        SpecValues == ['']
+    Dictionary[DataType.TAB_INF_DEFINES_DEFINE] = DefineValues
+    Dictionary[DataType.TAB_INF_DEFINES_SPEC] = SpecValues
+    
     return True
 
 
@@ -240,3 +308,5 @@ if __name__ == '__main__':
     print SplitModuleType('LibraryClasses.common.DXE_RUNTIME_DRIVER')
     print SplitModuleType('Library.common')
     print SplitModuleType('Librarsdsfwe')
+    print NormPath('sdfas//dsfsadf//dsfsd')
+    print NormPath('\\dsfsdf\\\\sd\\fsd\\dsfsdfsdf\\\\')
