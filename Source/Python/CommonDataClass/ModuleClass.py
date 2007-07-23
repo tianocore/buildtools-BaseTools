@@ -128,21 +128,28 @@ class ModuleExternCallBackClass(object):
         self.SetVirtualAddressMapCallBack = ''
         self.ExitBootServicesCallBack = ''
 
-class ModuleDepexClass(CommonClass):
+class ModuleDepexClass(CommonClass, DefineClass):
     def __init__(self):
         CommonClass.__init__(self)
+        DefineClass.__init__(self)
         self.Depex = ''
+
+class ModuleNmakeClass(CommonClass):
+    def __init__(self):
+        CommonClass.__init__(self)
+        self.Name = ''
+        self.Value = ''
 
 class ModuleClass(object):
     def __init__(self):
         self.Header = ModuleHeaderClass()
         self.LibraryClasses = []                    #[ LibraryClassClass, ...]
         self.Libraries = []                         #[ ModuleLibraryClass, ...]
-        self.Sources = []                           #[ ModuleSourceFilesClass, ...]
-        self.Binaries = []                          #[ ModuleBinaryFilesClass, ...]
+        self.Sources = []                           #[ ModuleSourceFileClass, ...]
+        self.Binaries = []                          #[ ModuleBinaryFileClass, ...]
         self.NonProcessedFiles = []                 #[ '', '', ...]
         self.PackageDependencies = []               #[ ModulePackageDependencyClass, ... ] 
-        self.Nmake = {}                             #{ Name : Value, ... }
+        self.Nmake = []                             #[ ModuleNmakeClass, ... ]
         self.Depex = []                             #[ ModuleDepexClass, ... ]
         self.Includes = []                          #[ IncludeClass, ...]
         self.Protocols = []                         #[ ProtocolClass, ...]
@@ -155,7 +162,7 @@ class ModuleClass(object):
         self.DataHubs = []                          #[ ModuleDataHubClass, ...]
         self.HiiPackages = []                       #[ ModuleHiiPackageClass, ...]
         self.Guids = []                             #[ GuidClass, ...]
-        self.PcdCodes = []                          #[ TokenSpaceGuidCName)] : PcdClass, ...]
+        self.PcdCodes = []                          #[ PcdClass, ...]
         self.ExternImages = []                      #[ ModuleExternImageClass, ...]
         self.ExternLibraries = []                   #[ ModuleExternLibraryClass, ...]
         self.ExternDrivers = []                     #[ ModuleExternDriverClass, ...]

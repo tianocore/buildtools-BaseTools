@@ -20,8 +20,8 @@ import string
 # The default SplitTag is DataType.TAB_VALUE_SPLIT
 # 'AAA|BBB|CCC' -> ['AAA', 'BBB', 'CCC']
 #
-def GetSplitValueList(String, SplitTag = DataType.TAB_VALUE_SPLIT):
-    return map(lambda l: l.strip(), String.split(SplitTag))
+def GetSplitValueList(String, SplitTag = DataType.TAB_VALUE_SPLIT, MaxSplit = -1):
+    return map(lambda l: l.strip(), String.split(SplitTag, MaxSplit))
 
 #
 # Find a key's all arches in dict, add the new arch to the list
