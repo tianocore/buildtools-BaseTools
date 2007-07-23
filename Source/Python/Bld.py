@@ -146,12 +146,9 @@ def MyOptionParser():
     (opt, args)=parser.parse_args()
     return (opt, args)
 
-def Process(ModuleFile, PlatformFile, ewb, opt, args):
-##    GenC = set(['GenC']) & set(args)
-##    GenMake = set(['GenMake']) & set(args)
-##    CleanAll = set(['CleanAll']) & set(args)
-    t = str(' '.join(args))
+def Process(ModuleFile, PlatformFile, ewb, opt, args, StartTime):
 
+    t = str(' '.join(args))
     GenC = 0
     GenMake = 0
     CleanAll = 0
@@ -165,83 +162,103 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
         elif t == 'cleanall':
             CleanAll = 1
 
-
+#spawn build
     Sem = BoundedSemaphore(int(opt.NUM))
 
     if opt.spawn == True:
         for a in opt.TARGET:
             for b in opt.TOOL_CHAIN_TAG:
-                for c in opt.TARGET_ARCH:
-                    if ModuleFile == None:
-                        li = []
-                        PlatformAutoGen = AutoGen(None, PlatformFile, ewb, str(a), b, str(c))
-                        print "PlatformAutoGen : %s" % PlatformFile
+                if ModuleFile == None:
+                    PlatformAutoGen = AutoGen(None, PlatformFile, ewb, str(a), b, opt.TARGET_ARCH)
+                    print "PlatformAutoGen : %s", PlatformFile
+                    for c in opt.TARGET_ARCH:
                         for d in PlatformAutoGen.Platform[str(c)].Modules:
-                            print "Module : %s" % d
-                            ModuleAutoGen = AutoGen(d, PlatformFile, ewb, str(a), b, str(c))
-                            for e in ModuleAutoGen.BuildInfo.DependentLibraryList:
-                                print "Library: %s" % e
-                                if e in li:
-                                    continue
-                                else:
-                                    li.append(e)
-                                
-                                LibraryAutoGen = AutoGen(e, PlatformFile, ewb, str(a), b, str(c))
+                            if ewb.InfDatabase[d].Defines.DefinesDictionary['LIBRARY_CLASS'] == ['']:
+                                li = []
+                                print "Module : %s, Arch : %s" % (d, str(c))
+                                ModuleAutoGen = AutoGen(d, PlatformFile, ewb, str(a), b, str(c))
+                                for e in ModuleAutoGen.BuildInfo.DependentLibraryList:
+                                    print "Library: %s, Arch : %s" % (e, str(c))
+                                    if e in li:
+                                        continue
+                                    else:
+                                        li.append(e)
+
+                                    LibraryAutoGen = AutoGen(e, PlatformFile, ewb, str(a), b, str(c))
+                                    LibraryAutoGen.CreateAutoGenFile()
+                                    LibraryAutoGen.CreateMakefile()
+                                    for f in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
+                                        (filename, ext) = os.path.splitext(os.environ["WORKSPACE"] + '\\' + f.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + str(e))
+                                        DestDir = filename
+                                        print DestDir
+                                        FileList = glob.glob(DestDir + '\\makefile')
+                                        FileNum = len(FileList)
+                                        if FileNum > 0:
+                                            SameTypeFileInDir(FileNum, 'makefile', DestDir, StartTime)
+                                            BuildSpawn(Sem, FileList[0], 'lbuild', 1).start()
+                                        else:
+                                           print "There isn't makefile in %s.\n" % DestDir
+                                           return 1
+                                ModuleAutoGen.CreateAutoGenFile()
+                                ModuleAutoGen.CreateMakefile()
+                                for f in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
+                                    (filename, ext) = os.path.splitext(os.environ["WORKSPACE"] + '\\' + f.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + d)
+                                    DestDir = filename
+                                    FileList = glob.glob(DestDir + '\\makefile')
+                                    FileNum = len(FileList)
+                                    if FileNum > 0:
+                                        SameTypeFileInDir(FileNum, 'makefile', DestDir, StartTime)
+                                        for i in range(0, int(opt.NUM)):
+                                            Sem.acquire()
+                                        p = Popen(["nmake", "/nologo", "-f", FileList[0], 'pbuild'], env=os.environ, cwd=os.path.dirname(FileList[0]))
+                                        p.communicate()
+                                        if p.returncode != 0:
+                                            return p.returncode
+                                        for i in range(0, int(opt.NUM)):
+                                            Sem.release()
+                                    else:
+                                        print "There isn't makefile in %s.\n" % DestDir
+                                        return 1
+                            else:
+                                LibraryAutoGen = AutoGen(d, PlatformFile, ewb, str(a), b, str(c))
                                 LibraryAutoGen.CreateAutoGenFile()
                                 LibraryAutoGen.CreateMakefile()
                                 for f in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
-                                    (filename, ext) = os.path.splitext(os.environ["WORKSPACE"] + '\\' + f.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + str(e))
+                                    (filename, ext) = os.path.splitext(os.environ["WORKSPACE"] + '\\' + f.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + str(d))
                                     DestDir = filename
                                     print DestDir
                                     FileList = glob.glob(DestDir + '\\makefile')
                                     FileNum = len(FileList)
                                     if FileNum > 0:
-                                        if FileNum >= 2:
-                                            print "There are %d makefilss in %s.\n" % (FileNum, DestDir)
-                                            return 1
+                                        SameTypeFileInDir(FileNum, 'makefile', DestDir, StartTime)
                                         BuildSpawn(Sem, FileList[0], 'lbuild', 1).start()
                                     else:
                                        print "There isn't makefile in %s.\n" % DestDir
                                        return 1
-                            ModuleAutoGen.CreateAutoGenFile()
-                            ModuleAutoGen.CreateMakefile()
-                            for f in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
-                                (filename, ext) = os.path.splitext(os.environ["WORKSPACE"] + '\\' + f.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + d)
-                                DestDir = filename
-                                FileList = glob.glob(DestDir + '\\makefile')
-                                FileNum = len(FileList)
-                                if FileNum > 0:
-                                    if FileNum >= 2:
-                                        print "There are %d makefilss in %s.\n" % (FileNum, DestDir)
-                                        return 1
-                                    for i in range(0, int(opt.NUM)):
-                                        Sem.acquire()
-                                    p = Popen(["nmake", "/nologo", "-f", FileList[0], 'pbuild'], env=os.environ, cwd=os.path.dirname(FileList[0]))
-                                    p.communicate()
-                                    if p.returncode != 0:
-                                        return p.returncode
-                                    for i in range(0, int(opt.NUM)):
-                                        Sem.release()
-                                else:
-                                    print "There isn't makefile in %s.\n" % DestDir
-                                    return 1
-                        print "successful"
-                        # call GenFds
-                        #GenFds -f C:\Work\Temp\T1\Nt32Pkg\Nt32Pkg.fdf -o $(BUILD_DIR) -p Nt32Pkg\Nt32Pkg.dsc
-                        PlatformAutoGen.CreateAutoGenFile()
-                        PlatformAutoGen.CreateMakefile()
-                        
-                        if opt.FDFFILE != '':
-                            opt.FDFFILE =  os.environ["WORKSPACE"] + '\\' + opt.FDFFILE.replace('/','\\')
-                            f = os.environ["WORKSPACE"] + '\\' + f.replace('/', '\\') + '\\' + a + '_' + b
-                            if os.path.isdir(f + "\\" + "FV") != True:
-                                os.mkdir(f + "\\" + "FV")
-                            p = Popen(["GenFds", "-f", opt.FDFFILE, "-o", f, "-p", opt.DSCFILE], env=os.environ, cwd=os.path.dirname(opt.FDFFILE))
-                            p.communicate()
-                            if p.returncode != 0:
-                                return p.returncode
+
                             
-                    else:
+                    for i in range(0, int(opt.NUM)):
+                        Sem.acquire()
+                    print "successful"
+                    for i in range(0, int(opt.NUM)):
+                        Sem.release()
+                    # call GenFds
+                    #GenFds -f C:\Work\Temp\T1\Nt32Pkg\Nt32Pkg.fdf -o $(BUILD_DIR) -p Nt32Pkg\Nt32Pkg.dsc
+                    PlatformAutoGen.CreateAutoGenFile()
+                    PlatformAutoGen.CreateMakefile()
+
+                    if opt.FDFFILE != '':
+                        opt.FDFFILE =  os.environ["WORKSPACE"] + '\\' + opt.FDFFILE.replace('/','\\')
+                        f = os.environ["WORKSPACE"] + '\\' + f.replace('/', '\\') + '\\' + a + '_' + b
+                        if os.path.isdir(f + "\\" + "FV") != True:
+                            os.mkdir(f + "\\" + "FV")
+                        p = Popen(["GenFds", "-f", opt.FDFFILE, "-o", f, "-p", opt.DSCFILE], env=os.environ, cwd=os.path.dirname(opt.FDFFILE))
+                        p.communicate()
+                        if p.returncode != 0:
+                            return p.returncode
+                            
+                else:
+                    for c in opt.TARGET_ARCH:
                         ModuleAutoGen = AutoGen(ModuleFile, PlatformFile, ewb, str(a), b, str(c))
                         print "ModuleAutoGen : %s"  % ModuleFile
                         for e in ModuleAutoGen.BuildInfo.DependentLibraryList:
@@ -256,9 +273,7 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                                 FileList = glob.glob(DestDir + '\\makefile')
                                 FileNum = len(FileList)
                                 if FileNum > 0:
-                                    if FileNum >= 2:
-                                        print "There are %d makefilss in %s.\n" % (FileNum, DestDir)
-                                        return 1
+                                    SameTypeFileInDir(FileNum, 'makefile', DestDir, StartTime)
                                     BuildSpawn(Sem, FileList[0], 'lbuild', 1).start()
                                 else:
                                     print "There isn't makefils in %s.\n" % DestDir
@@ -271,9 +286,7 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                             FileList = glob.glob(DestDir + '\\makefile')
                             FileNum = len(FileList)
                             if FileNum > 0:
-                                if FileNum >= 2:
-                                    print "There are %d makefilss in %s.\n" % (FileNum, DestDir)
-                                    return 1
+                                SameTypeFileInDir(FileNum, 'makefile', DestDir, StartTime)
                                 for i in range(0, int(opt.NUM)):
                                     Sem.acquire()
                                 p = Popen(["nmake", "/nologo", "-f", FileList[0], 'pbuild'], env=os.environ, cwd=os.path.dirname(FileList[0]))
@@ -287,76 +300,86 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args):
                                 return 1
         return 0
 
+# normal build
     for a in opt.TARGET:
         for b in opt.TOOL_CHAIN_TAG:
-            for c in opt.TARGET_ARCH:
-                try:
-                    ModuleAutoGen = AutoGen(ModuleFile, PlatformFile, ewb, str(a), b, str(c))
-                except Exception, e:
-                    if opt.debug != None:
-                        last_type, last_value, last_tb = sys.exc_info()
-                        traceback.print_exception(last_type, last_value, last_tb)
-                    print e
-                    return 1
+            if ModuleFile == None:
                 if GenC == 1:
-                    try:
-                        ModuleAutoGen.CreateAutoGenFile()
-                    except Exception, e:
-                        if opt.debug != None:
-                            last_type, last_value, last_tb = sys.exc_info()
-                            traceback.print_exception(last_type, last_value, last_tb)
-                        print e
-                        return 1
+                    GenCFunc(ModuleFile, PlatformFile, ewb, a, b, opt.TARGET_ARCH)
                 elif GenMake == 1:
-                    try:
-                        ModuleAutoGen.CreateAutoGenFile()
-                        makefile = ModuleAutoGen.CreateMakefile()
-                    except Exception, e:
-                        if opt.debug != None:
-                            last_type, last_value, last_tb = sys.exc_info()
-                            traceback.print_exception(last_type, last_value, last_tb)
-                        print e
-                        return 1
+                    GenMakeFunc(ModuleFile, PlatformFile, ewb, a, b, opt.TARGET_ARCH)
                 elif CleanAll == 1:
-                    if ModuleFile != None:
-                        for d in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
-                            (filename, ext) = os.path.splitext(os.environ["WORKSPACE"] + '\\' + d.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + ModuleFile)
-                            DestDir = filename
-                    else:
-                        for d in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
-                            DestDir = os.environ["WORKSPACE"] + '\\' + d.replace('/','\\') + '\\' + a + '_' + b
-
-                    FileList = glob.glob(DestDir + '\\makefile')
-                    FileNum = len(FileList)
-                    if FileNum > 0:
-                        if FileNum >= 2:
-                            print "There are %d makefilss in %s.\n" % (FileNum, DestDir)
-                            return 1
-                        p = Popen(["nmake", "/nologo", "-f", FileList[0], t], env=os.environ, cwd=os.path.dirname(FileList[0]))
-                        p.communicate()
-                        if p.returncode != None:
-                            return p.returncode
-                    else:
-                        return 1
+                    CleanAllFunc(ModuleFile, PlatformFile, ewb, a, b, opt.TARGET_ARCH)
                 else:
-                    try:
-                        ModuleAutoGen.CreateAutoGenFile()
-                        makefile = ModuleAutoGen.CreateMakefile()
-                    except Exception, e:
-                        if opt.debug != None:
-                            last_type, last_value, last_tb = sys.exc_info()
-                            traceback.print_exception(last_type, last_value, last_tb)
-                        print e
-                        return 1
-                    if makefile != "":
-                        p = Popen(["nmake", "/nologo", "-f", makefile, t], env=os.environ, cwd=os.path.dirname(makefile))
-                        p.communicate()
-                        if p.returncode != None:
-                            return p.returncode
+                    ALLFunc(ModuleFile, PlatformFile, ewb, a, b, opt.TARGET_ARCH)
+            else:
+                for c in opt.TARGET_ARCH:
+                    if GenC == 1:
+                        GenCFunc(ModuleFile, PlatformFile, ewb, a, b, c)
+                    elif GenMake == 1:
+                        GenMakeFunc(ModuleFile, PlatformFile, ewb, a, b, c)
+                    elif CleanAll == 1:
+                        CleanAllFunc(ModuleFile, PlatformFile, ewb, a, b, c)
                     else:
-                        print "Can find Makefile.\n"
-                        return 1
+                        ALLFunc(ModuleFile, PlatformFile, ewb, a, b, c)
     return 0
+
+
+def GenCFunc(ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
+    try:
+        AutoGenResult = AutoGen(ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch)
+        AutoGenResult.CreateAutoGenFile()
+    except Exception, e:
+        TrackInfo(opt.debug)
+        print e
+        return 1
+
+def GenMakeFunc(ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
+    try:
+        AutoGenResult = AutoGen(ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch)
+        AutoGenResult.CreateAutoGenFile()
+        makefile = AutoGenResult.CreateMakefile()
+    except Exception, e:
+        TrackInfo(opt.debug)
+        print e
+        return 1
+
+def CleanAllFunc(ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
+    for d in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
+        if ModuleFile == None:
+            DestDir = os.environ["WORKSPACE"] + '\\' + d.replace('/','\\') + '\\' + Target + '_' + ToolChain
+        else:
+            (filename, ext) = os.path.splitext(os.environ["WORKSPACE"] + '\\' + d.replace('/','\\') + '\\' + Target + '_' + ToolChain + '\\' + Arch + '\\' + ModuleFile)
+            DestDir = filename
+        FileList = glob.glob(DestDir + '\\makefile')
+        FileNum = len(FileList)
+        if FileNum > 0:
+            SameTypeFileInDir(FileNum, 'makefile', DestDir, StartTime)
+            p = Popen(["nmake", "/nologo", "-f", FileList[0], 'cleanall'], env=os.environ, cwd=os.path.dirname(FileList[0]))
+            p.communicate()
+            if p.returncode != None:
+                return p.returncode
+        else:
+            return 1
+        
+def ALLFunc(ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
+    try:
+        AutoGenResult = AutoGen(ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch)
+        AutoGenResult.CreateAutoGenFile()
+        makefile = AutoGenResult.CreateMakefile()
+    except Exception, e:
+        TrackInfo(opt.debug)
+        print e
+        return 1
+    if makefile != "":
+        p = Popen(["nmake", "/nologo", "-f", makefile, 'all'], env=os.environ, cwd=os.path.dirname(makefile))
+        p.communicate()
+        if p.returncode != None:
+            return p.returncode
+    else:
+        print "Can find Makefile.\n"
+        return 1
+
 
 def CalculateTime(StartTime):
     print time.strftime("Current time is %a, %d %b %Y %H:%M:%S +0000", time.localtime())
@@ -383,9 +406,20 @@ def CalculateTime(StartTime):
     elif Hour > 10 and Min < 10 and Sec > 10:
         print "Totol Run Time is %2d:%2d:0%d" %(Hour, Min, Sec)
 
-if __name__ == '__main__':
-# be compatibile with Ant build.bat ???
+def SameTypeFileInDir(FileNum, FileType, Dir, StartTime):
+    if FileNum >= 2:
+        print "There are %d %s files in %s.\n" % (FileNum, FileType, CurWorkDir)
+        CalculateTime(StartTime)
+        sys.exit(1)
 
+def TrackInfo(DebugLevel = None):
+    if opt.debug != None:
+        last_type, last_value, last_tb = sys.exc_info()
+        traceback.print_exception(last_type, last_value, last_tb)
+
+
+
+if __name__ == '__main__':
 #
 # Parse the options and args
 #
@@ -424,9 +458,7 @@ if __name__ == '__main__':
     if opt.TARGET_ARCH == None:
         opt.TARGET_ARCH = ewb.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET_ARCH]
         if opt.TARGET_ARCH == ['']:
-            print "TARGET_ARCH is None. Don't What to Build.\n"
-            CalculateTime(StartTime)
-            sys.exit(1)
+            opt.TARGET = ['IA32', 'X64', 'IPF', 'EBC']
     print "TARGET_ARCH is", " ".join(opt.TARGET_ARCH)
             
     if opt.DSCFILE == None:
@@ -439,9 +471,7 @@ if __name__ == '__main__':
     if opt.TARGET == None:
         opt.TARGET = ewb.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET]
         if opt.TARGET == ['']:
-            print "TARGET is None. Don't What to Build.\n"
-            CalculateTime(StartTime)
-            sys.exit(1)
+            opt.TARGET = ['DEBUG', 'RELEASE']
     print "TARGET is", " ".join(opt.TARGET)
 
     if opt.TOOL_CHAIN_TAG == None:
@@ -460,8 +490,6 @@ if __name__ == '__main__':
 
     if opt.FDFFILE == None and opt.DSCFILE != '':
         opt.FDFFILE = ewb.DscDatabase[os.path.normpath(opt.DSCFILE)].Defines.DefinesDictionary[TAB_DSC_DEFINES_FLASH_DEFINITION][0]
-        if opt.FDFFILE == '':
-            pass
     print "FDF FILE is", opt.FDFFILE
 
     if opt.verbose != None:
@@ -473,6 +501,10 @@ if __name__ == '__main__':
     else:
         EdkLogger.setLevel(EdkLogger.INFO)
 
+#
+# Merge Arch
+#
+    opt.TARGET_ARCH = list(set(opt.TARGET_ARCH) & set(ewb.SupArchList))
     
 #
 # Platform Build or Module Build
@@ -484,45 +516,45 @@ if __name__ == '__main__':
             ModuleFile = opt.INFFILE
             print "MODULE build:", ModuleFile
             PlatformFile = str(os.path.normpath(opt.DSCFILE))
-            print os.path.normpath(opt.DSCFILE)
             print "PlatformFile is:", PlatformFile
-            StatusCode = Process(ModuleFile, PlatformFile, ewb, opt, args)
+            StatusCode = Process(ModuleFile, PlatformFile, ewb, opt, args, StartTime)
         else:
             print "ERROR: DON'T KNOW WHAT TO BUILD\n"
     elif len(glob.glob(CurWorkDir + '\\*.inf')) > 0:
         FileList = glob.glob(CurWorkDir + '\\*.inf')
         FileNum = len(FileList)
-        if FileNum >= 2:
-            print "There are %d INF filss in %s.\n" % (FileNum, CurWorkDir)
-            sys.exit(1)
+        SameTypeFileInDir(FileNum, 'inf', CurWorkDir, StartTime)
         if opt.DSCFILE:
-            ModuleFile = FileList[0][len(ewb.Workspace.WorkspaceDir)+1:]
+            if ewb.Workspace.WorkspaceDir[len(ewb.Workspace.WorkspaceDir)-1] == '\\':
+                ModuleFile = FileList[0][len(ewb.Workspace.WorkspaceDir):]
+            else:
+                ModuleFile = FileList[0][len(ewb.Workspace.WorkspaceDir)+1:]
             print "Module build:", ModuleFile
             PlatformFile = str(os.path.normpath(opt.DSCFILE))
-            print os.path.normpath(opt.DSCFILE)
             print "PlatformFile is:", PlatformFile
-            StatusCode = Process(ModuleFile, PlatformFile, ewb, opt, args)
+            StatusCode = Process(ModuleFile, PlatformFile, ewb, opt, args, StartTime)
         else:
             print "ERROR: DON'T KNOW WHAT TO BUILD\n"
     elif opt.DSCFILE:
         PlatformFile = os.path.normpath(opt.DSCFILE)
         print "Platform build:", PlatformFile
-        StatusCode = Process(None, PlatformFile, ewb, opt, args)
+        StatusCode = Process(None, PlatformFile, ewb, opt, args, StartTime)
     else:
         FileList = glob.glob(CurWorkDir + '\\*.dsc')
         FileNum = len(FileList)
         if FileNum > 0:
-            if FileNum >= 2:
-                print "There are %d DSC files in %s.\n" % (FileNum, CurWorkDir)
-                sys.exit(1)
-            PlatformFile = FileList[0][len(ewb.Workspace.WorkspaceDir)+1:]
+            SameTypeFileInDir(FileNum, 'dsc', CurWorkDir, StartTime)
+            if ewb.Workspace.WorkspaceDir[len(ewb.Workspace.WorkspaceDir)-1] == '\\':
+                PlatformFile = FileList[0][len(ewb.Workspace.WorkspaceDir):]
+            else:
+                PlatformFile = FileList[0][len(ewb.Workspace.WorkspaceDir)+1:]
             print "Platform build:", PlatformFile
             #
             # Call Parser Again
             #
             ewb = WorkspaceBuild(PlatformFile)
-            StatusCode = Process(None, PlatformFile, ewb, opt, args)
-
+            opt.TARGET_ARCH = list(set(opt.TARGET_ARCH) & set(ewb.SupArchList))
+            StatusCode = Process(None, PlatformFile, ewb, opt, args, StartTime)
         else:
             print "ERROR: DON'T KNOW WHAT TO BUILD\n"
 
