@@ -276,7 +276,8 @@ class WorkspaceBuild(object):
                 pb.FlashDefinition = NormPath(dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_FLASH_DEFINITION][0])
                 pb.BuildNumber = dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_BUILD_NUMBER][0]
                 pb.MakefileName = NormPath(dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_MAKEFILE_NAME][0])
-        
+                self.Fdf = pb.FlashDefinition
+                
                 #SkuId
                 for index in range(len(dscObj.Contents[key].SkuIds)):
                     SkuInfo = dscObj.Contents[key].SkuIds[index]
