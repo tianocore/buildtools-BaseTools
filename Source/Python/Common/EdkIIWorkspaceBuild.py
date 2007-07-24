@@ -228,6 +228,7 @@ class WorkspaceBuild(object):
             self.SupArchList = dscObj.Defines.DefinesDictionary[TAB_DSC_DEFINES_SUPPORTED_ARCHITECTURES]
             self.BuildTarget = dscObj.Defines.DefinesDictionary[TAB_DSC_DEFINES_BUILD_TARGETS]
             self.SkuId = dscObj.Defines.DefinesDictionary[TAB_DSC_DEFINES_SKUID_IDENTIFIER][0]
+            self.Fdf = dscObj.Defines.DefinesDictionary[TAB_DSC_DEFINES_FLASH_DEFINITION][0]
             
             #Get all inf
             for key in DataType.ARCH_LIST:
@@ -276,7 +277,6 @@ class WorkspaceBuild(object):
                 pb.FlashDefinition = NormPath(dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_FLASH_DEFINITION][0])
                 pb.BuildNumber = dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_BUILD_NUMBER][0]
                 pb.MakefileName = NormPath(dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_MAKEFILE_NAME][0])
-                self.Fdf = pb.FlashDefinition
                 
                 #SkuId
                 for index in range(len(dscObj.Contents[key].SkuIds)):
