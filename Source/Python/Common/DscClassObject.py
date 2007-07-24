@@ -16,7 +16,8 @@ from String import *
 from DataType import *
 from Identification import *
 from Dictionary import *
-from ClassObjects.PlatformClassObject import *
+from CommonDataClass.PlatformClass import *
+from BuildToolError import *
 
 class DscObject(object):
     def __init__(self):
@@ -61,10 +62,12 @@ class DscContents(DscObject):
         self.BuildOptions = []
 
 class Dsc(DscObject):
-    def __init__(self, filename = None, isMergeAllArches = False):
+    def __init__(self, filename = None, isMergeAllArches = False, isToPlatform = False):
         self.identification = Identification()
         self.Defines = DscDefines()
         self.Contents = {}
+        self.UserExtensions = ''
+        self.Platform = PlatformClass()
 
         for key in DataType.ARCH_LIST_FULL:
             self.Contents[key] = DscContents()
@@ -82,6 +85,9 @@ class Dsc(DscObject):
             
         if isMergeAllArches:
             self.MergeAllArches()
+        
+        if isToPlatform:
+            self.DscToPlatform()
         
     def ParseDsc(self, Lines, Key, KeyField):
         newKey = SplitModuleType(Key)     
@@ -125,6 +131,18 @@ class Dsc(DscObject):
                             eval(Command)
                             continue
 
+    def DscToPlatform(self):
+        #
+        # Get value for Header
+        #
+        self.Module.Header.Name = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_PLATFORM_NAME][0]
+        self.Module.Header.Guid = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_PLATFORM_GUID][0]
+        self.Module.Header.Version = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_PLATFORM_VERSION][0]
+        self.Module.Header.FileName = self.Identification.FileName
+        self.Module.Header.FullPath = self.Identification.FileFullPath
+        self.Module.Header.InfVersion = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_DSC_SPECIFICATION][0]
+        
+        
     def showDsc(self):
         print TAB_SECTION_START + TAB_INF_DEFINES + TAB_SECTION_END
         printDict(self.Defines.DefinesDictionary)

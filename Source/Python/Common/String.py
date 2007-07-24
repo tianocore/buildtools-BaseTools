@@ -231,11 +231,11 @@ def CleanString(Line, CommentCharacter = DataType.TAB_COMMENT_SPLIT):
     #remove comments
     Line = Line.split(CommentCharacter, 1)[0];
     #replace '\\', '\' with '/'
-    #Line = Line.replace('\\', '/')
-    #Line = Line.replace('//', '/')
+    Line = Line.replace('\\', '/')
+    Line = Line.replace('//', '/')
     #remove ${WORKSPACE}
-    #Line = Line.replace(DataType.TAB_WORKSPACE1, '')
-    #Line = Line.replace(DataType.TAB_WORKSPACE2, '')
+    Line = Line.replace(DataType.TAB_WORKSPACE1, '')
+    Line = Line.replace(DataType.TAB_WORKSPACE2, '')
     
     #remove whitespace again
     Line = Line.strip();

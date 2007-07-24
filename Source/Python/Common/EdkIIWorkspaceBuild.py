@@ -24,10 +24,8 @@ from InfClassObject import *
 from DecClassObject import *
 from DscClassObject import *
 from String import *
-from ClassObjects.CommonClassObject import *
-#from FdfParser import *
 from BuildToolError import *
-#from Region import *
+
 
 class ModuleSourceFilesClassObject(object):
     def __init__(self, SourceFile = '', PcdFeatureFlag = '', TagName = '', ToolCode = '', ToolChainFamily = '', String = ''):
@@ -39,6 +37,9 @@ class ModuleSourceFilesClassObject(object):
         self.PcdFeatureFlag     = PcdFeatureFlag
     
     def __str__(self):
+        return self.SourceFile
+    
+    def __repr__(self):
         rtn = self.SourceFile + DataType.TAB_VALUE_SPLIT + \
               self.PcdFeatureFlag + DataType.TAB_VALUE_SPLIT + \
               self.ToolChainFamily +  DataType.TAB_VALUE_SPLIT + \
@@ -86,7 +87,7 @@ class PcdClassObject(object):
         return rtn
 
     def __eq__(self, other):
-        return self.TokenCName == other.TokenCName and self.TokenSpaceGuidCName == other.TokenSpaceGuidCName
+        return other != None and self.TokenCName == other.TokenCName and self.TokenSpaceGuidCName == other.TokenSpaceGuidCName
 
     def __hash__(self):
         return hash((self.TokenCName, self.TokenSpaceGuidCName))
@@ -194,16 +195,12 @@ class ItemBuild(object):
         self.ModuleDatabase          = {}        #{ [InfFileName] : ModuleBuildClassObject, ...}
         
 class WorkspaceBuild(object):
-    def __init__(self, ActivePlatform = None):
-        self.Workspace               = EdkIIWorkspace()
-        self.PrintRunTime            = True
-        self.PlatformBuild           = True
-        self.TargetTxt               = TargetTxtClassObject()
-        self.ToolDef                 = ToolDefClassObject()
-
+    def __init__(self, ActivePlatform, WorkspaceDir):
+        self.WorkspaceDir            = NormPath(WorkspaceDir)
         self.SupArchList             = []        #[ 'IA32', 'X64', ...]
         self.BuildTarget             = []        #[ 'RELEASE', 'DEBUG']
         self.SkuId                   = ''
+        self.Fdf                     = ''
         
         self.InfDatabase             = {}        #{ [InfFileName] : InfClassObject}
         self.DecDatabase             = {}        #{ [DecFileName] : DecClassObject}
@@ -213,22 +210,15 @@ class WorkspaceBuild(object):
         for key in DataType.ARCH_LIST:
             self.Build[key] = ItemBuild(key)
         
-        self.TargetTxt.LoadTargetTxtFile(self.Workspace.WorkspaceFile('Conf/target.txt'))
-        self.ToolDef.LoadToolDefFile(self.Workspace.WorkspaceFile('Conf/tools_def.txt'))
-        
-        if ActivePlatform != None:
-            self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM][0] = ActivePlatform
-        
-        #get active platform
-        dscFileName = NormPath(self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM][0])
-        file = self.Workspace.WorkspaceFile(dscFileName)
-        if os.path.exists(file) and os.path.isfile(file):
-            self.DscDatabase[dscFileName] = Dsc(file, True)
+        # Get active platform
+        dscFileName = NormPath(ActivePlatform)
+        File = self.WorkspaceFile(dscFileName)
+        if os.path.exists(File) and os.path.isfile(File):
+            self.DscDatabase[dscFileName] = Dsc(File, True)
         else:
-            EdkLogger.verbose('No Active Platform')
-            return
+            raise ParserError(FILE_NOT_FOUND, name = File)
         
-        #parse platform to get module
+        # parse platform to get module
         for dsc in self.DscDatabase.keys():
             dscObj = self.DscDatabase[dsc]
             
@@ -261,7 +251,15 @@ class WorkspaceBuild(object):
             for key in DataType.ARCH_LIST:
                 for index in range(len(infObj.Contents[key].Packages)):
                     self.AddToDecDatabase(infObj.Contents[key].Packages[index])
-        
+    #End of self.Init()
+    
+    #
+    # Return a full path with workspace dir
+    #
+    def WorkspaceFile(self, Filename):
+        return os.path.join(self.WorkspaceDir, Filename)
+    
+    def GenBuildDatabase(self, PcdsSet = {}):
         #Build databases
         #Build PlatformDatabase
         for dsc in self.DscDatabase.keys():
@@ -314,9 +312,10 @@ class WorkspaceBuild(object):
                     
                 #LibraryClass
                 for index in range(len(dscObj.Contents[key].LibraryClasses)):
-                    #['DebugLib|MdePkg/Library/PeiDxeDebugLibReportStatusCode/PeiDxeDebugLibReportStatusCode.inf', 'DXE_CORE']
+                    #['DebugLib|MdePkg/Library/PeiDxeDebugLibReportStatusCode/PeiDxeDebugLibReportStatusCode.inf', ['DXE_CORE']]
+                    print dscObj.Contents[key].LibraryClasses[index]
                     list = dscObj.Contents[key].LibraryClasses[index][0].split(DataType.TAB_VALUE_SPLIT, 1)
-                    type = dscObj.Contents[key].LibraryClasses[index][1]
+                    type = dscObj.Contents[key].LibraryClasses[index][1][0]
                     pb.LibraryClasses[(list[0], type)] = NormPath(list[1])
 
                 #Pcds
@@ -658,14 +657,14 @@ class WorkspaceBuild(object):
         
         #End of build ModuleDatabase    
     
-    #End of self.Init
+
     
     def UpdateInfDatabase(self, infFileName, LibraryClass, Arch):
         infFileName = NormPath(infFileName)
         LibList = self.InfDatabase[infFileName].Contents[Arch].LibraryClasses
         NotFound = True
         for Item in LibList:
-            LibName = Item.split(DataType.TAB_VALUE_SPLIT)[0].strip()
+            LibName = Item[0].split(DataType.TAB_VALUE_SPLIT)[0].strip()
             if LibName == LibraryClass:
                 return
         
@@ -674,14 +673,14 @@ class WorkspaceBuild(object):
     
     def AddToInfDatabase(self, infFileName):
         infFileName = NormPath(infFileName)
-        file = self.Workspace.WorkspaceFile(infFileName)
+        file = self.WorkspaceFile(infFileName)
         if os.path.exists(file) and os.path.isfile(file):
             if infFileName not in self.InfDatabase:
                 self.InfDatabase[infFileName] = Inf(file, True)
                 
     def AddToDecDatabase(self, decFileName):
         decFileName = NormPath(decFileName)
-        file = self.Workspace.WorkspaceFile(decFileName)
+        file = self.WorkspaceFile(decFileName)
         if os.path.exists(file) and os.path.isfile(file):
             if decFileName not in self.DecDatabase:
                 self.DecDatabase[decFileName] = Dec(file, True)
@@ -770,12 +769,11 @@ class WorkspaceBuild(object):
 if __name__ == '__main__':
 
     # Nothing to do here. Could do some unit tests.
-    ewb = WorkspaceBuild()
-    #printDict(ewb.TargetTxt.TargetTxtDictionary)
-    #printDict(ewb.ToolDef.ToolsDefTxtDictionary)
-#    print ewb.DscDatabase
-#    print ewb.InfDatabase
-#    print ewb.DecDatabase
+    ewb = WorkspaceBuild('EdkModulePkg/EdkModulePkg.dsc', 'C:/MyWorkspace')
+    ewb.GenBuildDatabase()
+    #print ewb.DscDatabase
+    #print ewb.InfDatabase
+    #print ewb.DecDatabase
     print 'SupArchList', ewb.SupArchList
     print 'BuildTarget', ewb.BuildTarget
     print 'SkuId', ewb.SkuId
