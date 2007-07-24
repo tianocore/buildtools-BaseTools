@@ -341,7 +341,7 @@ class WorkspaceBuild(object):
                     SkuName = dscObj.Contents[key].PcdsDynamicDefault[index][1]
                     SkuInfoList = []
                     if SkuName == None:
-                        SkuName = 'DEFAULT'
+                        SkuName = ['DEFAULT']
                     SkuNameList = map(lambda l: l.strip(), SkuName.split(DataType.TAB_VALUE_SPLIT))
                     for Item in SkuNameList:
                         SkuInfo = SkuInfoClassObject()
