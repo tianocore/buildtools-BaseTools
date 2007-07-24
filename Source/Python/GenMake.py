@@ -94,6 +94,10 @@ gCreateDirectoryCommand = {"nmake" : "mkdir", "gmake" : "mkdir -p"}
 gRemoveDirectoryCommand = {"nmake" : "rmdir /s /q", "gmake" : "rm -r -f"}
 gRemoveFileCommand = {"nmake" : "del /f /q", "gmake" : "rm -f"}
 gCopyFileCommand = {"nmake" : "copy /y", "gmake" : "cp -f"}
+gCreateDirectoryCommandTemplate = {"nmake" : "if not exist %(dir)s mkdir %(dir)s",
+                                   "gmake" : "test ! -e %(dir)s && mkdir -p %(dir)s"}
+gRemoveDirectoryCommandTemplate = {"nmake" : "if exist %(dir)s rmdir /s /q %(dir)s",
+                                   "gmake" : "test -e %(dir)s && rm -r -f %(dir)s"}
 
 gDefaultOutputFlag = "-o "
 
@@ -241,9 +245,7 @@ mbuild: init all
 #
 init:
 \t-@echo Building ... $(MODULE_NAME)-$(MODULE_VERSION) [$(ARCH)] in package $(PACKAGE_NAME)-$(PACKAGE_VERSION)
-\t-${create_directory_command} $(DEBUG_DIR) > NUL 2>&1
-\t-${create_directory_command} $(OUTPUT_DIR) > NUL 2>&1
-\t${BEGIN}-${create_directory_command} $(OUTPUT_DIR)${separator}${directory_to_be_created} > NUL 2>&1
+\t${BEGIN}${create_directory_command}
 \t${END}
 
 '''
@@ -362,7 +364,7 @@ PCH_FILE = $(OUTPUT_DIR)\$(MODULE_NAME).pch
 LIB_FILE = $(LIB_DIR)\$(MODULE_NAME).lib
 LLIB_FILE = $(OUTPUT_DIR)\$(MODULE_NAME)Local.lib
 DLL_FILE = $(DEBUG_DIR)\$(MODULE_NAME).dll
-EFI_FILE = $(OUTPUT_DIR)\$(MODULE_NAME).efi
+EFI_FILE = $(DEBUG_DIR)\$(MODULE_NAME).efi
 
 #
 # Overridable Target Macro Definitions
@@ -382,7 +384,7 @@ all: ${build_type}
 # Target used when called from platform makefile, which will bypass the build of dependent libraries
 #
 
-pbuild: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(EFI_FILE) $(DLL_FILE)
+pbuild: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(DLL_FILE) $(EFI_FILE)
 
 
 #
@@ -396,7 +398,7 @@ lbuild: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(LIB_FILE)
 # ModuleTarget
 #
 
-mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(EFI_FILE) $(DLL_FILE)
+mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(DLL_FILE) $(EFI_FILE)
 
 
 #
@@ -404,9 +406,7 @@ mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(EFI_FILE)
 #
 init:
 \t-@echo Building ... $(MODULE_NAME)-$(MODULE_VERSION) [$(ARCH)] in package $(PACKAGE_NAME)-$(PACKAGE_VERSION)
-\t-${create_directory_command} $(DEBUG_DIR) > NUL 2>&1
-\t-${create_directory_command} $(OUTPUT_DIR) > NUL 2>&1
-\t${BEGIN}-${create_directory_command} $(OUTPUT_DIR)${separator}${directory_to_be_created} > NUL 2>&1
+\t${BEGIN}${create_directory_command}
 \t${END}
 
 #
@@ -504,10 +504,9 @@ $(DLL_FILE): $(LIBS) $(LLIB_FILE)
 #
 # EFI file build target
 #
-
-$(EFI_FILE): $(LIBS) $(LLIB_FILE)
-\t"$(DLINK)" $(DLINK_FLAGS) ${dlink_output_flag}$(EFI_FILE) ${start_group_flag} $(DLINK_SPATH) $(LIBS) $(LLIB_FILE) ${end_group_flag}
-\tGenFw -e ${module_type} -o $(EFI_FILE) $(EFI_FILE)
+$(EFI_FILE): $(DLL_FILE)
+\tGenFw -e ${module_type} -o $(EFI_FILE) $(DLL_FILE)
+\t${copy_file_command} $(EFI_FILE) $(OUTPUT_DIR)
 \t${copy_file_command} $(EFI_FILE) $(BIN_DIR)
 
 #
@@ -522,15 +521,16 @@ ${END}
 #
 
 clean:
-\t${remove_directory_command} $(OUTPUT_DIR) > NUL 2>&1
+\t${BEGIN}${clean_command}
+\t${END}
 
 #
 # clean all generated files
 #
 
 cleanall:
-\t${remove_directory_command} $(OUTPUT_DIR) $(DEBUG_DIR) > NUL 2>&1
-\t${remove_file_command} *.pdb *.idb > NUL 2>&1
+\t${BEGIN}${cleanall_command}
+\t${END}${remove_file_command} *.pdb *.idb > NUL 2>&1
 
 #
 # clean pre-compiled header files
@@ -585,9 +585,7 @@ all: init build_libraries build_modules build_fds
 #
 init:
 \t-@echo Building ... $(PLATFORM_NAME)-$(PLATFORM_VERSION) [${build_architecture_list}]
-\t${BEGIN}-${create_directory_command} $(BUILD_DIR)${separator}${architecture} > NUL 2>&1
-\t${END}
-\t${BEGIN}-${create_directory_command} $(BUILD_DIR)${separator}${directory_to_be_created} > NUL 2>&1
+\t${BEGIN}${create_directory_command}
 \t${END}
 #
 # library build target
@@ -649,8 +647,7 @@ clean:
 # Clean all generated files except to makefile
 #
 cleanall:
-\t${remove_directory_command} $(FV_DIR) > NUL 2>&1
-\t${BEGIN}${remove_directory_command} $(BUILD_DIR)${separator}${architecture} > NUL 2>&1
+\t${BEGIN}${cleanall_command}
 \t${END}
 
 #
@@ -716,14 +713,17 @@ class Makefile(object):
     def GeneratePlatformMakefile(self, file=None, makeType=gMakeType):
         separator = gDirectorySeparator[makeType]
 
-        activePlatform = self.PlatformInfo.values()[0].Platform
         platformInfo = self.PlatformInfo.values()[0]
+        activePlatform = platformInfo.Platform
         
         outputDir = platformInfo.OutputDir
         if os.path.isabs(outputDir):
             self.PlatformBuildDirectory = outputDir
         else:
             self.PlatformBuildDirectory = "$(WORKSPACE)" + separator + outputDir
+
+        self.IntermediateDirectoryList = ["$(BUILD_DIR)%s%s" % (separator, arch) for arch in self.PlatformInfo]
+        self.IntermediateDirectoryList.append("$(FV_DIR)")
 
         makefileName = gMakefileName[makeType]
         makefileTemplateDict = {
@@ -740,10 +740,10 @@ class Makefile(object):
             "build_architecture_list"   : " ".join(self.PlatformInfo.keys()),
             "architecture"              : self.PlatformInfo.keys(),
             "separator"                 : separator,
-            "create_directory_command"  : gCreateDirectoryCommand[makeType],
+            "create_directory_command"  : self.GetCreateDirectoryCommand(self.IntermediateDirectoryList, makeType),
             "remove_directory_command"  : gRemoveDirectoryCommand[makeType],
             "remove_file_command"       : gRemoveFileCommand[makeType],
-            "directory_to_be_created"   : self.IntermediateDirectoryList,
+            "cleanall_command"          : self.GetRemoveDirectoryCommand(self.IntermediateDirectoryList, makeType),
             "library_build_directory"   : self.LibraryBuildDirectoryList,
             "module_build_directory"    : self.ModuleBuildDirectoryList,
             "fdf_file"                  : platformInfo.FdfFileList,
@@ -790,7 +790,14 @@ class Makefile(object):
         defaultToolFlag = self.PlatformInfo.DefaultToolOption.values()
         if self.ModuleInfo.ModuleType == "USER_DEFINED":
             defaultToolFlag = ["" for p in defaultToolFlag]
-            
+
+        if "CC" not in self.PlatformInfo.ToolChainFamily:
+            raise AutoGenError(msg="[CC] is not supported [%s, %s, %s]" % (self.ModuleInfo.BuildTarget,
+                                    self.ModuleInfo.ToolChain, self.ModuleInfo.Arch))
+        if  "DLINK" not in self.PlatformInfo.ToolChainFamily:
+            raise AutoGenError(msg="[DLINK] is not supported [%s, %s, %s]" % (self.ModuleInfo.BuildTarget,
+                                    self.ModuleInfo.ToolChain, self.ModuleInfo.Arch))
+        
         makefileName = gMakefileName[makeType]
         makefileTemplateDict = {
             "makefile_header"           : MakefileHeader % makefileName,
@@ -839,11 +846,12 @@ class Makefile(object):
             "library_file"              : self.LibraryFileList,
             "system_library"            : self.SystemLibraryList,
             "common_dependency_file"    : self.CommonFileDependency,
-            "create_directory_command"  : gCreateDirectoryCommand[makeType],
+            "create_directory_command"  : self.GetCreateDirectoryCommand(self.IntermediateDirectoryList, makeType),
             "remove_directory_command"  : gRemoveDirectoryCommand[makeType],
             "remove_file_command"       : gRemoveFileCommand[makeType],
             "copy_file_command"         : gCopyFileCommand[makeType],
-            "directory_to_be_created"   : self.IntermediateDirectoryList,
+            "clean_command"             : self.GetRemoveDirectoryCommand(["$(OUTPUT_DIR)"], makeType),
+            "cleanall_command"          : self.GetRemoveDirectoryCommand(["$(DEBUG_DIR)", "$(OUTPUT_DIR)"], makeType),
             "dependent_library_build_directory" : self.LibraryBuildDirectoryList,
             "object_build_target"               : self.ObjectBuildTargetList,
             "build_type"                        : self.BuildType,
@@ -909,7 +917,7 @@ class Makefile(object):
             "tool_code"                 : self.PlatformInfo.ToolPath.keys(),
             "tool_path"                 : self.PlatformInfo.ToolPath.values(),
 
-            "create_directory_command"  : "-@mkdir",
+            "create_directory_command"  : self.GetCreateDirectoryCommand(self.IntermediateDirectoryList, makeType),
             "directory_to_be_created"   : self.IntermediateDirectoryList,
             "dependent_library_build_directory" : self.LibraryBuildDirectoryList,
             "custom_makefile_content"   : customMakefile
@@ -951,7 +959,7 @@ class Makefile(object):
         self.ObjectFileList = []
         self.ObjectBuildTargetList = []
         self.AutoGenBuildFileList = []
-        self.IntermediateDirectoryList = []
+        self.IntermediateDirectoryList = ["$(DEBUG_DIR)", "$(OUTPUT_DIR)"]
 
         fileBuildTemplatetList = []
         forceIncludedFile = []
@@ -978,8 +986,16 @@ class Makefile(object):
                 if tool in self.PlatformInfo.ToolChainFamily:
                     family = self.PlatformInfo.ToolChainFamily[tool]
                     break
+            else:
+                if makeType == "nmake":
+                    family = "MSFT"
+                else:
+                    family = "GCC"
 
-            if family == None or ftype not in rule.Makefile[family]:
+            if family not in rule.Makefile:
+                raise AutoGenError(msg="Tool chain family [%s] is not supported: %s" % (family, f))
+
+            if ftype not in rule.Makefile[family]:
                 continue
 
             self.BuildFileList.append(fpath)
@@ -999,7 +1015,7 @@ class Makefile(object):
 
         fileList = self.ModuleInfo.SourceFileList
         if len(fileList) == 0:
-            raise AutoGenError(msg="No files to be built in module [%s] [%s] [%s]\n\t%s" % (self.ModuleInfo.BuildTarget,
+            raise AutoGenError(msg="No files to be built in module [%s, %s, %s]:\n\t%s" % (self.ModuleInfo.BuildTarget,
                                     self.ModuleInfo.ToolChain, self.ModuleInfo.Arch, str(self.ModuleInfo.Module)))
         
         for f in fileList:
@@ -1010,17 +1026,22 @@ class Makefile(object):
                     family = "MSFT"
                 else:
                     family = "GCC"
-                
+
+            if family not in rule.Makefile:
+                raise AutoGenError(msg="Tool chain family [%s] is not supported: %s" % (family, str(f)))
+
             f = str(f)
-            fpath = os.path.join(self.ModuleInfo.SourceDir, f)
+            fpath = self.ModuleInfo.SourceDir + separator + f
             fname = path.basename(f)
             fbase, fext = path.splitext(fname)
             fdir = path.dirname(f)
             
             if fdir == "":
                 fdir = "."
-            elif fdir not in self.IntermediateDirectoryList:
-                self.IntermediateDirectoryList.append(fdir)
+            else:
+                p = "$(OUTPUT_DIR)" + separator + fdir
+                if p not in self.IntermediateDirectoryList:
+                    self.IntermediateDirectoryList.append(p)
                 
             ftype = rule.FileTypeMapping[fext]
             if ftype not in rule.Makefile[family]:
@@ -1157,6 +1178,12 @@ class Makefile(object):
             for la in self.PlatformInfo[arch].LibraryAutoGenList:
                 dirList.append(la.BuildInfo.BuildDir)
         return dirList
+
+    def GetCreateDirectoryCommand(self, dirs, make=gMakeType):
+        return [gCreateDirectoryCommandTemplate[make] % {'dir':dir} for dir in dirs]
+
+    def GetRemoveDirectoryCommand(self, dirs, make=gMakeType):
+        return [gRemoveDirectoryCommandTemplate[make] % {'dir':dir} for dir in dirs]
 
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.

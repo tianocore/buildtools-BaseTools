@@ -699,7 +699,6 @@ class AutoGen(object):
         return pcdList
 
     def GetGuidList(self):
-        packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
         guid = {}
         Key = ""
         for Key in self.Module.Guids:
@@ -714,6 +713,7 @@ class AutoGen(object):
                     guid[Key] = p.Ppis[Key]
                     break
             else:
+                packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
                 raise AutoGenError(msg='GUID [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.BuildInfo.Name, packageListString))
 
         for lib in self.BuildInfo.DependentLibraryList:
@@ -734,11 +734,11 @@ class AutoGen(object):
                         guid[Key] = p.Ppis[Key]
                         break
                 else:
+                    packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
                     raise AutoGenError(msg='GUID [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, lib.BaseName, packageListString))
         return guid
 
     def GetProtocolGuidList(self):
-        packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
         guid = {}
         Key = ""
         for Key in self.Module.Protocols:
@@ -753,6 +753,7 @@ class AutoGen(object):
                         guid[Key] = p.Ppis[Key]
                         break
             else:
+                packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
                 raise AutoGenError(msg='Protocol [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.BuildInfo.Name, packageListString))
 
         for lib in self.BuildInfo.DependentLibraryList:
@@ -771,12 +772,12 @@ class AutoGen(object):
                         guid[Key] = p.Ppis[Key]
                         break
                 else:
+                    packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
                     raise AutoGenError(msg='Protocol [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, lib.BaseName, packageListString))
 
         return guid
 
     def GetPpiGuidList(self):
-        packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
         guid = {}
         Key = ""
         for Key in self.Module.Ppis:
@@ -791,6 +792,7 @@ class AutoGen(object):
                     guid[Key] = p.Ppis[Key]
                     break
             else:
+                packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
                 raise AutoGenError(msg='PPI [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.BuildInfo.Name, packageListString))
 
         for lib in self.BuildInfo.DependentLibraryList:
@@ -809,6 +811,7 @@ class AutoGen(object):
                         guid[Key] = p.Ppis[Key]
                         break
                 else:
+                    packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
                     raise AutoGenError(msg='PPI [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, lib.BaseName, packageListString))
         return guid
 

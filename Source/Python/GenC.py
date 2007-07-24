@@ -838,7 +838,8 @@ def GetGuidValue(packages, cname):
         if cname in p.Ppis:
             return p.Ppis[cname]
     else:
-        raise AutoGenError(msg="Cannot find GUID value for %s in any package" % cname)
+        packageListString = "\n\t".join([str(p) for p in packages])
+        raise AutoGenError(msg="Cannot find GUID value for %s in all given packages:\n\t%s" % (cname, packageListString))
 
 class AutoGenString(object):
   def __init__(self):
@@ -889,6 +890,8 @@ def CreateModulePcdCode(info, autoGenC, autoGenH, pcd):
     if pcd.Type in gDynamicExPcd:
         tokenNumber = pcd.TokenValue
     else:
+        if (pcd.TokenCName, pcd.TokenSpaceGuidCName) not in pcdTokenNumber:
+            raise AutoGenError(msg="No generated token number for %s|%s\n" % (pcd.TokenCName, pcd.TokenSpaceGuidCName))
         tokenNumber = pcdTokenNumber[pcd.TokenCName, pcd.TokenSpaceGuidCName]
     autoGenH.Append('#define %s  %d\n' % (pcdTokenName, tokenNumber))
 
@@ -977,6 +980,8 @@ def CreateLibraryPcdCode(info, autoGenC, autoGenH, pcd):
     pcdTokenNumber = info.PlatformInfo.PcdTokenNumber
     tokenSpaceGuidCName = pcd.TokenSpaceGuidCName
     tokenCName  = pcd.TokenCName
+    if (pcd.TokenCName, pcd.TokenSpaceGuidCName) not in pcdTokenNumber:
+        raise AutoGenError(msg="No generated token number for %s|%s\n" % (pcd.TokenCName, pcd.TokenSpaceGuidCName))
     tokenNumber = pcdTokenNumber[tokenCName, tokenSpaceGuidCName]
     
     if pcd.Type not in ItemTypeStringDatabase:
@@ -1343,6 +1348,9 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
 def CreatePcdDatabaseCode (info, autoGenC, autoGenH):
     if info.PcdIsDriver == "":
         return
+    if info.PcdIsDriver not in PcdPhaseMap:
+        raise AutoGenError(msg="Not supported PcdIsDriver type:%s\n" % info.PcdIsDriver)
+    
     autoGenH.Append(PcdDatabaseCommonAutoGenH)
     additionalAutoGenH, additionalAutoGenC = CreatePcdDatabasePhaseSpecificAutoGen (info.PlatformInfo, 'PEI')
     autoGenH.Append(additionalAutoGenH.String)
@@ -1513,8 +1521,8 @@ def CreateHeaderCode(info, autoGenC, autoGenH):
     # specification macros
     autoGenH.Append(SpecificationString,   {'Specification':info.MacroList})
     # header files includes
-    autoGenH.Append("#include <%s>\n" % BasicHeaderFile)
-    autoGenH.Append("\n#define ASM_PFX(name) _##name\n\n")
+    autoGenH.Append("#include <%s>\n\n" % BasicHeaderFile)
+    #autoGenH.Append("\n#define ASM_PFX(name) _##name\n\n")
 
     if info.IsLibrary:
         return
@@ -1528,10 +1536,9 @@ def CreateHeaderCode(info, autoGenC, autoGenH):
     #
     # Publish the CallerId Guid
     #
-    if info.ModuleType == 'BASE':
-        autoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED GUID  gEfiCallerIdGuid = %s;\n' % GuidStringToGuidStructureString(info.Guid))
-    else:
-        autoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  gEfiCallerIdGuid = %s;\n' % GuidStringToGuidStructureString(info.Guid))
+    autoGenH.Append("#define EFI_CALLER_ID_GUID \\\n  %s\n" % GuidStringToGuidStructureString(info.Guid))
+    autoGenH.Append('\nextern GUID  gEfiCallerIdGuid;\n\n')
+    autoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED GUID gEfiCallerIdGuid = %s;\n' % GuidStringToGuidStructureString(info.Guid))
 
 def CreateFooterCode(info, autoGenC, autoGenH):
     autoGenH.Append(AutoGenHEpilogueString)
