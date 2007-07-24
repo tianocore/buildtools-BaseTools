@@ -200,6 +200,7 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args, StartTime):
 
                     if opt.FDFFILE != '':
                         opt.FDFFILE =  os.environ["WORKSPACE"] + '\\' + opt.FDFFILE.replace('/','\\')
+                        f = ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY'][0]
                         f = os.environ["WORKSPACE"] + '\\' + f.replace('/', '\\') + '\\' + a + '_' + b
                         if os.path.isdir(f + "\\" + "FV") != True:
                             os.mkdir(f + "\\" + "FV")
