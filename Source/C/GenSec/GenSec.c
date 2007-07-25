@@ -780,7 +780,11 @@ Returns:
     }
 
     if ((stricmp (argv[0], "-g") == 0) || (stricmp (argv[0], "--vendorguid") == 0)) {
-      StringToGuid (argv[1], &VendorGuid);
+      Status = StringToGuid (argv[1], &VendorGuid);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 0, NULL, "ERROR: %s is not a formal GUID value.", argv[1]);
+        goto Finish;
+      }
       argc -= 2;
       argv += 2;
       continue;
@@ -793,7 +797,6 @@ Returns:
         SectGuidAttribute |= EFI_GUIDED_SECTION_AUTH_STATUS_VALID;
       } else {
         Error (NULL, 0, 0, argv[1], "unknown Guid Section Attribute");
-        Usage ();
         goto Finish;
       }
       argc -= 2;
@@ -815,7 +818,6 @@ Returns:
       for (Index = 0; Index < strlen (argv[1]); Index++) {
         if ((argv[1][Index] != '-') && (isdigit (argv[1][Index]) == 0)) {
           Error (NULL, 0, 0, NULL, "ERROR: %s is not a valid integer.", argv[1]);
-          Status = EFI_ABORTED;
           goto Finish;
         }
       }
@@ -825,7 +827,7 @@ Returns:
       argv += 2;
       continue;
     }
-    
+
     //
     // Get Input file name
     //
@@ -880,7 +882,6 @@ Returns:
       SectCompSubType = EFI_STANDARD_COMPRESSION;
     } else {
       Error (NULL, 0, 0, CompressionName, "unknown compression type");
-      Usage ();
       goto Finish;
     }
   } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_GUID_DEFINED]) == 0) {
@@ -905,14 +906,12 @@ Returns:
     SectType = EFI_SECTION_VERSION;
     if (VersionNumber < 0 || VersionNumber > 9999) {
       Error (NULL, 0, 0, NULL, "%d is illegal version number\n", VersionNumber);
-      Usage ();
       goto Finish;
     }
   } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_USER_INTERFACE]) == 0) {
     SectType = EFI_SECTION_USER_INTERFACE;
     if (StringBuffer[0] == '\0') {
       Error (NULL, 0, 0, "user interface string not specified", NULL);
-      Usage ();
       goto Finish;
     }
   } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_COMPATIBILITY16]) == 0) {
@@ -927,7 +926,6 @@ Returns:
     SectType = EFI_SECTION_PEI_DEPEX;
   } else {
     Error (NULL, 0, 0, SectionName, "unknown section type");
-    Usage ();
     goto Finish;
   }
   
@@ -937,54 +935,8 @@ Returns:
     // The file are from stdin.
     //
     if (InputFileNum == 0) {
-
-      AllocatedFlag = TRUE;
-
-      //
-      // Init InputFileName pointer list
-      //
-      InputFileName = (CHAR8 **) malloc (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *));
-      if (InputFileName == NULL) {
-        Error (__FILE__, __LINE__, 0, "application error", "failed to allocate memory");
-        return EFI_OUT_OF_RESOURCES;
-      }
-      memset (InputFileName, 0, (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *)));
-
-      do {
-        if ((InputFileNum != 0) && (InputFileNum % MAXIMUM_INPUT_FILE_NUM == 0)) {
-          //
-          // InputFileName buffer too small, need to realloc
-          //
-          InputFileName = (CHAR8 **) realloc (
-                                      InputFileName,
-                                      (InputFileNum + MAXIMUM_INPUT_FILE_NUM) * sizeof (CHAR8 *)
-                                      );
-    
-          if (InputFileName == NULL) {
-            for (Index = 0; Index < InputFileNum; Index ++) {
-              free (InputFileName [InputFileNum]);
-            }
-            Error (__FILE__, __LINE__, 0, "application error", "failed to allocate memory");
-            return EFI_OUT_OF_RESOURCES;
-          }
-          memset (&(InputFileName[InputFileNum]), 0, (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *)));
-        }
-
-        InputFileName [InputFileNum] = (CHAR8 *) malloc (_MAX_PATH); 
-        if (InputFileName == NULL) {
-          Error (__FILE__, __LINE__, 0, "application error", "failed to allocate memory");
-          for (Index = 0; Index < InputFileNum; Index ++) {
-            free (InputFileName [InputFileNum]);
-          }
-          free (InputFileName);
-          return EFI_OUT_OF_RESOURCES;
-        }
-      } while (fscanf (stdin, "%s", InputFileName[InputFileNum++]) != EOF);
-      //
-      // Free the last memory space because it doesn't have data.
-      //
-      InputFileNum --;
-      free (InputFileName[InputFileNum]);
+      Error (NULL, 0, 0, NULL, "No input files is specified.");
+      goto Finish;
     }
   }
   
@@ -992,7 +944,9 @@ Returns:
   // Open output file
   //
   if (OutputFileName == NULL) {
-    OutFile = stdout;
+    Error (NULL, 0, 0, NULL, "No output file name is specified.");
+    goto Finish;
+    // OutFile = stdout;
   } else {
     OutFile = fopen (OutputFileName, "wb");
   }
@@ -1124,12 +1078,6 @@ Finish:
 
   if (OutFile != NULL) {
     fclose (OutFile);
-    //
-    // If we had errors, then delete the output file
-    //
-    if (GetUtilityStatus () == STATUS_ERROR) {
-      remove (OutputFileName);
-    }
   }
 
   fprintf (stdout, "GenSec tool done with return code is 0x%x.\n", GetUtilityStatus ()); 

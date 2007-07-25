@@ -205,9 +205,6 @@ Returns:
 
     if ((stricmp (argv[0], "-o") == 0) || (stricmp (argv[0], "--outputfile") == 0)) {
       OutFileName = argv[1];
-      if (OutFileName == NULL) {
-        Warning (NULL, 0, 0, NULL, "No output file specified.");
-      }
       argc -= 2;
       argv += 2;
       continue; 
@@ -235,6 +232,11 @@ Returns:
     //
     Error (NULL, 0, 0, NULL, "%s is invaild paramter!", argv[0]);
     return STATUS_ERROR;
+  }
+  
+  if (OutFileName == NULL) {
+    Error (NULL, 0, 0, NULL, "No output file name is specified.");
+    goto Finish;
   }
 
   //
@@ -333,16 +335,12 @@ Returns:
     //
     // write capsule data into the output file
     //
-    if (OutFileName == NULL) {
-      fpout = stdout;
-    } else {
-      fpout = fopen (OutFileName, "wb");
-      if (fpout == NULL) {
-        Error (NULL, 0, 0, NULL, "could not open %s file for writing", OutFileName);
-        free (CapBuffer);
-        goto Finish;
-      }
+    fpout = fopen (OutFileName, "wb");
+    if (fpout == NULL) {
+      Error (NULL, 0, 0, NULL, "could not open %s file for writing", OutFileName);
+      goto Finish;
     }
+
     fwrite (CapBuffer, 1, CapSize, fpout);
     fclose (fpout);
 
@@ -363,6 +361,13 @@ Finish:
   // free InfFileImage memory
   //
   free (InfFileImage);
+  
+  //
+  // free capsule file buffer
+  //
+  if (CapBuffer != NULL) {
+    free (CapBuffer);
+  }
 
   fprintf (stdout, "GenFv tool done with return code is 0x%x.\n", GetUtilityStatus ());
   return GetUtilityStatus ();

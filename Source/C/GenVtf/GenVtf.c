@@ -1689,7 +1689,7 @@ Returns:
   //
   memset (FileHeader, 0, sizeof (EFI_FFS_FILE_HEADER));
   memcpy (&FileHeader->Name, &EfiFirmwareVolumeTopFileGuid, sizeof (EFI_GUID));
-  FileHeader->Type        = EFI_FV_FILETYPE_FREEFORM;
+  FileHeader->Type        = EFI_FV_FILETYPE_RAW;
   FileHeader->Attributes  = FFS_ATTRIB_CHECKSUM;
 
   //
@@ -3341,7 +3341,7 @@ Returns:
   memset (FileHeader, 0, sizeof(EFI_FFS_FILE_HEADER));
   memcpy (&FileHeader->Name, &EfiFirmwareVolumeTopFileGuid, sizeof (EFI_GUID));
 
-  FileHeader->Type = EFI_FV_FILETYPE_FREEFORM;
+  FileHeader->Type = EFI_FV_FILETYPE_RAW;
   FileHeader->Attributes = FFS_ATTRIB_CHECKSUM;
 
   //

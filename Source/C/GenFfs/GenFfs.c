@@ -553,6 +553,12 @@ Returns:
     goto Finish;
   }
 
+  if (OutputFileName == NULL) {
+    Error (NULL, 0, 0, NULL, "No output file name is specified.");
+    goto Finish;
+    // OutFile = stdout;
+  }
+
   //
   // Calculate the size of all input section files.
   //  
@@ -645,11 +651,7 @@ Returns:
   //
   // Open output file to write ffs data.
   //
-  if (OutputFileName == NULL) {
-    FfsFile = stdout;
-  } else {
-    FfsFile = fopen (OutputFileName, "wb");
-  }
+  FfsFile = fopen (OutputFileName, "wb");
   if (FfsFile == NULL) {
     Error (NULL, 0, 0, NULL, "Can't open %s file to write!", OutputFileName);
     goto Finish;

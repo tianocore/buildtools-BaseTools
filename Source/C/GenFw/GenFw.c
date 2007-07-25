@@ -1029,7 +1029,6 @@ Returns:
   
   if (OutImageType == FW_DUMMY_IMAGE) {
     Error (NULL, 0, 0, NULL, "No action specified, such as -e, -c or -t\n");
-    Usage ();
     return STATUS_ERROR;    
   }
 
@@ -1038,6 +1037,7 @@ Returns:
   // get InImageName from stdin
   //
   if (InImageName == NULL) {
+    fprintf (stdout, "Please describe input file name!!!\n");
     fscanf (stdin, "%s", FileName);
     InImageName = (UINT8 *) FileName;
   }
@@ -1075,9 +1075,11 @@ Returns:
       }
       OutImageType = OutImageType & ~FW_REPLACE_IMAGE;
     } else {
+      Error (NULL, 0, 0, NULL, "No output file name is specified.");
+      goto Finish;
       // binary stream can't be output to string strem stdout
       // because 0x0A can be auto converted to 0x0D 0x0A.
-      fpOut = stdout;
+      // fpOut = stdout;
     } 
   } else {
     fpOut = fopen (OutImageName, "wb");
@@ -1101,42 +1103,47 @@ Returns:
   //
   if ((OutImageType == FW_EFI_IMAGE) || (OutImageType == FW_TE_IMAGE)) {
     if (ModuleType == NULL) {
-      Error (NULL, 0, 0, NULL, "No ModuleType specified, such as PEIM, DXE_DRIVER\n");
-      Usage ();
-      goto Finish;
-    }
-    
-    if (stricmp (ModuleType, "BASE") == 0 ||
-        stricmp (ModuleType, "SEC") == 0 ||
-        stricmp (ModuleType, "SECURITY_CORE") == 0 ||
-        stricmp (ModuleType, "PEI_CORE") == 0 ||
-        stricmp (ModuleType, "PEIM") == 0 ||
-        stricmp (ModuleType, "COMBINED_PEIM_DRIVER") == 0 ||
-        stricmp (ModuleType, "PIC_PEIM") == 0 ||
-        stricmp (ModuleType, "RELOCATABLE_PEIM") == 0 ||
-        stricmp (ModuleType, "DXE_CORE") == 0 ||
-        stricmp (ModuleType, "BS_DRIVER") == 0  ||
-        stricmp (ModuleType, "DXE_DRIVER") == 0 ||
-        stricmp (ModuleType, "DXE_SMM_DRIVER") == 0  ||
-        stricmp (ModuleType, "UEFI_DRIVER") == 0) {
-      Type = EFI_IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER;
-  
-    } else if (stricmp (ModuleType, "UEFI_APPLICATION") == 0 || 
-               stricmp (ModuleType, "APPLICATION") == 0) {
-      Type = EFI_IMAGE_SUBSYSTEM_EFI_APPLICATION;
-  
-    } else if (stricmp (ModuleType, "DXE_RUNTIME_DRIVER") == 0 || 
-               stricmp (ModuleType, "RT_DRIVER") == 0) {
-      Type = EFI_IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER;
-  
-    } else if (stricmp (ModuleType, "DXE_SAL_DRIVER") == 0 || 
-               stricmp (ModuleType, "SAL_RT_DRIVER") == 0) {
-      Type = EFI_IMAGE_SUBSYSTEM_SAL_RUNTIME_DRIVER;
-  
+      if (OutImageType == FW_EFI_IMAGE) {
+        Error (NULL, 0, 0, NULL, "No ModuleType specified, such as PEIM, DXE_DRIVER\n");
+        goto Finish;
+      } else if (OutImageType == FW_TE_IMAGE) {
+        //
+        // Default TE Image Type is Boot service driver
+        //
+        Type = EFI_IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER;
+      }
     } else {
-      Error (NULL, 0, 0, ModuleType, "%s is not one valid Module type.\n");
-      Usage ();
-      goto Finish;
+      if (stricmp (ModuleType, "BASE") == 0 ||
+          stricmp (ModuleType, "SEC") == 0 ||
+          stricmp (ModuleType, "SECURITY_CORE") == 0 ||
+          stricmp (ModuleType, "PEI_CORE") == 0 ||
+          stricmp (ModuleType, "PEIM") == 0 ||
+          stricmp (ModuleType, "COMBINED_PEIM_DRIVER") == 0 ||
+          stricmp (ModuleType, "PIC_PEIM") == 0 ||
+          stricmp (ModuleType, "RELOCATABLE_PEIM") == 0 ||
+          stricmp (ModuleType, "DXE_CORE") == 0 ||
+          stricmp (ModuleType, "BS_DRIVER") == 0  ||
+          stricmp (ModuleType, "DXE_DRIVER") == 0 ||
+          stricmp (ModuleType, "DXE_SMM_DRIVER") == 0  ||
+          stricmp (ModuleType, "UEFI_DRIVER") == 0) {
+        Type = EFI_IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER;
+    
+      } else if (stricmp (ModuleType, "UEFI_APPLICATION") == 0 || 
+                 stricmp (ModuleType, "APPLICATION") == 0) {
+        Type = EFI_IMAGE_SUBSYSTEM_EFI_APPLICATION;
+    
+      } else if (stricmp (ModuleType, "DXE_RUNTIME_DRIVER") == 0 || 
+                 stricmp (ModuleType, "RT_DRIVER") == 0) {
+        Type = EFI_IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER;
+    
+      } else if (stricmp (ModuleType, "DXE_SAL_DRIVER") == 0 || 
+                 stricmp (ModuleType, "SAL_RT_DRIVER") == 0) {
+        Type = EFI_IMAGE_SUBSYSTEM_SAL_RUNTIME_DRIVER;
+    
+      } else {
+        Error (NULL, 0, 0, NULL, "%s is not one valid Module type.\n", ModuleType);
+        goto Finish;
+      }
     }
   }
  
@@ -1522,6 +1529,7 @@ Finish:
   }
 
   fprintf (stdout, "GenFw tool done with return code is 0x%x.\n", GetUtilityStatus ());  
+
   return GetUtilityStatus ();
 }
 
