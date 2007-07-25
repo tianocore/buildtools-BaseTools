@@ -77,7 +77,7 @@ class AutoGen(object):
         if gWorkspace == None:
             gWorkspace = workspace
         if gWorkspaceDir == "":
-            gWorkspaceDir = workspace.Workspace.WorkspaceDir
+            gWorkspaceDir = workspace.WorkspaceDir
 
         if gModuleDatabase == {}:
             for a in workspace.Build:
