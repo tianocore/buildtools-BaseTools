@@ -64,8 +64,6 @@ class ModuleBuildInfo(BuildInfo):
         self.MacroList = []
         self.DepexList = []
 
-        self.SystemLibraryList = []
-
 class PackageBuildInfo(BuildInfo):
     def __init__(self, package):
         BuildInfo.__init__(self, package)
@@ -112,4 +110,6 @@ class PlatformBuildInfo(BuildInfo):
         self.ToolStaticLib = {}     # toolcode : lib path
         self.ToolChainFamily = {}   # toolcode : tool chain family
         self.BuildOption = {}       # toolcode : option
+        self.OutputFlag = {}        # toolcode : output flag
+        self.IncludeFlag = {}        # toolcode : include flag
         self.DefaultToolOption = {}

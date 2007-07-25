@@ -127,7 +127,7 @@ PcdDatabaseAutoGenH = """
 #define ${PHASE}_EXMAP_TABLE_EMPTY              ${EXMAP_TABLE_EMPTY}
 
 typedef struct {
-${BEGIN}  UINT64             ${INIT_CNAME_DECL_UITN64}_${INIT_GUID_DECL_UINT64}[${INIT_NUMSKUS_DECL_UINT64}];
+${BEGIN}  UINT64             ${INIT_CNAME_DECL_UINT64}_${INIT_GUID_DECL_UINT64}[${INIT_NUMSKUS_DECL_UINT64}];
 ${END}
 ${BEGIN}  UINT64             ${VARDEF_CNAME_UINT64}_${VARDEF_GUID_UINT64}_VariableDefault_${VARDEF_SKUID_UINT64};
 ${END}
@@ -155,7 +155,7 @@ ${BEGIN}  UINT8              ${INIT_CNAME_DECL_UINT8}_${INIT_GUID_DECL_UINT8}[${
 ${END}
 ${BEGIN}  UINT8              ${VARDEF_CNAME_UINT8}_${VARDEF_GUID_UINT8}_VariableDefault_${VARDEF_SKUID_UINT8};
 ${END}
-${BEGIN}  BOOLEAN            ${INIT_CNAME_DECL_BOOLEAN}_${INIT_GUID_DECL_BOOLEAN}[${INIT_NUMSKUS_BOOLEAN}];
+${BEGIN}  BOOLEAN            ${INIT_CNAME_DECL_BOOLEAN}_${INIT_GUID_DECL_BOOLEAN}[${INIT_NUMSKUS_DECL_BOOLEAN}];
 ${END}
 ${BEGIN}  BOOLEAN            ${VARDEF_CNAME_BOOLEAN}_${VARDEF_GUID_BOOLEAN}_VariableDefault_${VARDEF_SKUID_BOOLEAN};
 ${END}
@@ -253,7 +253,7 @@ ${BEGIN}  ${STRING_TABLE_VALUE}, /* ${STRING_TABLE_CNAME}_${STRING_TABLE_GUID} *
 ${END}
   /* SizeTable */
   {
-${BEGIN}    ${SIZE_TABLE_CURRENT_LENGTH}, ${SIZE_TABLE_MAXIMUM_LENGTH}, /* ${SIZE_TABLE_CNAME}_${SIZE_TABLE_GUID} */
+${BEGIN}    ${SIZE_TABLE_MAXIMUM_LENGTH}, ${SIZE_TABLE_CURRENT_LENGTH}, /* ${SIZE_TABLE_CNAME}_${SIZE_TABLE_GUID} */
 ${END}
   },
 ${BEGIN}  { ${INIT_VALUE_UINT16} }, /*  ${INIT_CNAME_DECL_UINT16}_${INIT_GUID_DECL_UINT16}[${INIT_NUMSKUS_DECL_UINT16}] */
@@ -839,7 +839,8 @@ def GetGuidValue(packages, cname):
         if cname in p.Ppis:
             return p.Ppis[cname]
     else:
-        raise AutoGenError(msg="Cannot find GUID value for %s in any package" % cname)
+        packageListString = "\n\t".join([str(p) for p in packages])
+        raise AutoGenError(msg="Cannot find GUID value for %s in all given packages:\n\t%s" % (cname, packageListString))
 
 class AutoGenString(object):
   def __init__(self):
@@ -890,14 +891,16 @@ def CreateModulePcdCode(info, autoGenC, autoGenH, pcd):
     if pcd.Type in gDynamicExPcd:
         tokenNumber = pcd.TokenValue
     else:
+        if (pcd.TokenCName, pcd.TokenSpaceGuidCName) not in pcdTokenNumber:
+            raise AutoGenError(msg="No generated token number for %s|%s\n" % (pcd.TokenCName, pcd.TokenSpaceGuidCName))
         tokenNumber = pcdTokenNumber[pcd.TokenCName, pcd.TokenSpaceGuidCName]
     autoGenH.Append('#define %s  %d\n' % (pcdTokenName, tokenNumber))
 
-    EdkLogger.debug(EdkLogger.DEBUG_7, "Creating code for " + pcd.TokenCName + "/" + pcd.TokenSpaceGuidCName)
+    EdkLogger.debug(EdkLogger.DEBUG_3, "Creating code for " + pcd.TokenCName + "|" + pcd.TokenSpaceGuidCName)
     if pcd.Type not in ItemTypeStringDatabase:
-        raise AutoGenError(msg="Unknown PCD type [%s] of PCD %s/%s" % (pcd.Type, pcd.TokenCName, pcd.TokenSpaceGuidCName))
+        raise AutoGenError(msg="Unknown PCD type [%s] of PCD %s|%s" % (pcd.Type, pcd.TokenCName, pcd.TokenSpaceGuidCName))
     if pcd.DatumType not in DatumSizeStringDatabase:
-        raise AutoGenError(msg="Unknown datum type [%s] of PCD %s/%s" % (pcd.DatumType, pcd.TokenCName, pcd.TokenSpaceGuidCName))
+        raise AutoGenError(msg="Unknown datum type [%s] of PCD %s|%s" % (pcd.DatumType, pcd.TokenCName, pcd.TokenSpaceGuidCName))
 
     datumSize = DatumSizeStringDatabase[pcd.DatumType]
     datumSizeLib = DatumSizeStringDatabaseLib[pcd.DatumType]
@@ -927,6 +930,9 @@ def CreateModulePcdCode(info, autoGenC, autoGenH, pcd):
         if pcd.DatumType == 'UINT64':
             Value += 'ULL'
         if pcd.DatumType == 'VOID*':
+            if pcd.MaxDatumSize == None:
+                raise AutoGenError(msg="Unknown MaxDatumSize of PCD %s|%s" % (pcd.TokenCName, pcd.TokenSpaceGuidCName))
+
             ArraySize = int(pcd.MaxDatumSize)
             if Value[0] == '{':
                 Type = '(VOID *)'
@@ -975,12 +981,14 @@ def CreateLibraryPcdCode(info, autoGenC, autoGenH, pcd):
     pcdTokenNumber = info.PlatformInfo.PcdTokenNumber
     tokenSpaceGuidCName = pcd.TokenSpaceGuidCName
     tokenCName  = pcd.TokenCName
+    if (pcd.TokenCName, pcd.TokenSpaceGuidCName) not in pcdTokenNumber:
+        raise AutoGenError(msg="No generated token number for %s|%s\n" % (pcd.TokenCName, pcd.TokenSpaceGuidCName))
     tokenNumber = pcdTokenNumber[tokenCName, tokenSpaceGuidCName]
     
     if pcd.Type not in ItemTypeStringDatabase:
-        raise AutoGenError(msg="Unknown PCD type [%s] of PCD %s/%s" % (pcd.Type, pcd.TokenCName, pcd.TokenSpaceGuidCName))
+        raise AutoGenError(msg="Unknown PCD type [%s] of PCD %s|%s" % (pcd.Type, pcd.TokenCName, pcd.TokenSpaceGuidCName))
     if pcd.DatumType not in DatumSizeStringDatabase:
-        raise AutoGenError(msg="Unknown datum type [%s] of PCD %s/%s" % (pcd.DatumType, pcd.TokenCName, pcd.TokenSpaceGuidCName))
+        raise AutoGenError(msg="Unknown datum type [%s] of PCD %s|%s" % (pcd.DatumType, pcd.TokenCName, pcd.TokenSpaceGuidCName))
 
     datumType   = pcd.DatumType
     datumSize   = DatumSizeStringDatabaseH[datumType]
@@ -1101,7 +1109,10 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
     for Pcd in platform.DynamicPcdList:
         CName = Pcd.TokenCName
         TokenSpaceGuidCName = Pcd.TokenSpaceGuidCName
-        EdkLogger.debug(EdkLogger.DEBUG_5, "PCD: %s %s (%s : %s)" % (CName, TokenSpaceGuidCName, Pcd.Phase, phase))
+
+        EdkLogger.debug(EdkLogger.DEBUG_3, "PCD: %s %s (%s : %s)" % (CName, TokenSpaceGuidCName, Pcd.Phase, phase))
+        if Pcd.DatumType not in DatumSizeStringDatabase:
+            raise AutoGenError(msg="Unknown datum type [%s] of PCD %s|%s" % (Pcd.DatumType, Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
 
         if Pcd.Phase == 'PEI':
             NumberOfPeiLocalTokens += 1
@@ -1196,7 +1207,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
                         else:
                             Dict['STRING_TABLE_INDEX'].append('_%d' % StringTableIndex)
                         if Sku.DefaultValue[0] == 'L':
-                            Size = len(Sku.DefaultValue) - 3
+                            Size = (len(Sku.DefaultValue) - 3) * 2
                             Dict['STRING_TABLE_VALUE'].append(Sku.DefaultValue)
                         elif Sku.DefaultValue[0] == '"':
                             Size = len(Sku.DefaultValue) - 2
@@ -1212,9 +1223,9 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
                         Dict['SIZE_TABLE_MAXIMUM_LENGTH'].append(Pcd.MaxDatumSize)
                         if Pcd.MaxDatumSize != '' and Pcd.MaxDatumSize > Size:
                             Size = int(Pcd.MaxDatumSize)
-                        Dict['STRING_TABLE_LENGTH'].append(Size)
+                        Dict['STRING_TABLE_LENGTH'].append(Size / 2 + 1)
                         StringTableIndex += 1
-                        StringTableSize += Size
+                        StringTableSize += (Size / 2 + 1)
                 else:
                     Pcd.TokenTypeList += ['PCD_TYPE_DATA']
                     if Sku.DefaultValue == 'TRUE':
@@ -1273,7 +1284,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
         if phase == 'DXE':
             GeneratedTokenNumber -= NumberOfPeiLocalTokens
 
-        EdkLogger.debug(EdkLogger.DEBUG_1, "PCD = %s / %s" % (CName, TokenSpaceGuidCName))
+        EdkLogger.debug(EdkLogger.DEBUG_1, "PCD = %s | %s" % (CName, TokenSpaceGuidCName))
         EdkLogger.debug(EdkLogger.DEBUG_1, "phase = %s" % phase)
         EdkLogger.debug(EdkLogger.DEBUG_1, "GeneratedTokenNumber = %s" % str(GeneratedTokenNumber))
 
@@ -1338,6 +1349,9 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
 def CreatePcdDatabaseCode (info, autoGenC, autoGenH):
     if info.PcdIsDriver == "":
         return
+    if info.PcdIsDriver not in PcdPhaseMap:
+        raise AutoGenError(msg="Not supported PcdIsDriver type:%s\n" % info.PcdIsDriver)
+    
     autoGenH.Append(PcdDatabaseCommonAutoGenH)
     additionalAutoGenH, additionalAutoGenC = CreatePcdDatabasePhaseSpecificAutoGen (info.PlatformInfo, 'PEI')
     autoGenH.Append(additionalAutoGenH.String)
@@ -1402,7 +1416,7 @@ def CreateLibraryDestructorCode(info, autoGenC, autoGenH):
 
 
 def CreateModuleEntryPointCode(info, autoGenC, autoGenH):
-    if info.IsLibrary:
+    if info.IsLibrary or info.ModuleType == "USER_DEFINED":
         return
     #
     # Module Entry Points
@@ -1435,7 +1449,7 @@ def CreateModuleEntryPointCode(info, autoGenC, autoGenH):
                 autoGenC.Append(UefiEntryPointString[2], Dict)
 
 def CreateModuleUnloadImageCode(info, autoGenC, autoGenH):
-    if info.IsLibrary:
+    if info.IsLibrary or info.ModuleType == "USER_DEFINED":
         return
     #
     # Unload Image Handlers
@@ -1450,29 +1464,47 @@ def CreateModuleUnloadImageCode(info, autoGenC, autoGenH):
 def CreateGuidDefinitionCode(info, autoGenC, autoGenH):
     if info.IsLibrary:
         return
+
+    if info.ModuleType in ["USER_DEFINED", "BASE"]:
+        GuidType = "GUID"
+    else:
+        GuidType = "EFI_GUID"
+
     #
     # GUIDs
     #
     for Key in info.GuidList:
-        autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, info.GuidList[Key]))
+        autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED %s %s = %s;\n' % (GuidType, Key, info.GuidList[Key]))
 
 def CreateProtocolDefinitionCode(info, autoGenC, autoGenH):
     if info.IsLibrary:
         return
+
+    if info.ModuleType in ["USER_DEFINED", "BASE"]:
+        GuidType = "GUID"
+    else:
+        GuidType = "EFI_GUID"
+
     #
     # Protocol GUIDs
     #
     for Key in info.ProtocolList:
-        autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, info.ProtocolList[Key]))
+        autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED %s %s = %s;\n' % (GuidType, Key, info.ProtocolList[Key]))
 
 def CreatePpiDefinitionCode(info, autoGenC, autoGenH):
     if info.IsLibrary:
         return
+
+    if info.ModuleType in ["USER_DEFINED", "BASE"]:
+        GuidType = "GUID"
+    else:
+        GuidType = "EFI_GUID"
+
     #
     # PPI GUIDs
     #
     for Key in info.PpiList:
-        autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, info.PpiList[Key]))
+        autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED %s %s = %s;\n' % (GuidType, Key, info.PpiList[Key]))
 
 def CreatePcdCode(info, autoGenC, autoGenH):
     if info.IsLibrary:
@@ -1508,7 +1540,8 @@ def CreateHeaderCode(info, autoGenC, autoGenH):
     # specification macros
     autoGenH.Append(SpecificationString,   {'Specification':info.MacroList})
     # header files includes
-    autoGenH.Append("#include <%s>\n" % BasicHeaderFile)
+    autoGenH.Append("#include <%s>\n\n" % BasicHeaderFile)
+    #autoGenH.Append("\n#define ASM_PFX(name) _##name\n\n")
 
     if info.IsLibrary:
         return
@@ -1522,10 +1555,9 @@ def CreateHeaderCode(info, autoGenC, autoGenH):
     #
     # Publish the CallerId Guid
     #
-    if info.ModuleType == 'BASE':
-        autoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED GUID  gEfiCallerIdGuid = %s;\n' % GuidStringToGuidStructureString(info.Guid))
-    else:
-        autoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  gEfiCallerIdGuid = %s;\n' % GuidStringToGuidStructureString(info.Guid))
+    autoGenH.Append("#define EFI_CALLER_ID_GUID \\\n  %s\n" % GuidStringToGuidStructureString(info.Guid))
+    autoGenH.Append('\nextern GUID  gEfiCallerIdGuid;\n\n')
+    autoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED GUID gEfiCallerIdGuid = %s;\n' % GuidStringToGuidStructureString(info.Guid))
 
 def CreateFooterCode(info, autoGenC, autoGenH):
     autoGenH.Append(AutoGenHEpilogueString)

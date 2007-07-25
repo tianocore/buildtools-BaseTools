@@ -95,8 +95,15 @@ gDirectorySeparator = {"nmake" : "\\", "gmake" : "/"}
 gCreateDirectoryCommand = {"nmake" : "mkdir", "gmake" : "mkdir -p"}
 gRemoveDirectoryCommand = {"nmake" : "rmdir /s /q", "gmake" : "rm -r -f"}
 gRemoveFileCommand = {"nmake" : "del /f /q", "gmake" : "rm -f"}
+gCopyFileCommand = {"nmake" : "copy /y", "gmake" : "cp -f"}
+gCreateDirectoryCommandTemplate = {"nmake" : "if not exist %(dir)s mkdir %(dir)s",
+                                   "gmake" : "test ! -e %(dir)s && mkdir -p %(dir)s"}
+gRemoveDirectoryCommandTemplate = {"nmake" : "if exist %(dir)s rmdir /s /q %(dir)s",
+                                   "gmake" : "test -e %(dir)s && rm -r -f %(dir)s"}
 
-OutputFlag = {
+gDefaultOutputFlag = "-o "
+
+gOutputFlag = {
     ("MSFT", "CC", "OUTPUT")      :   "/Fo",
     ("MSFT", "SLINK", "OUTPUT")   :   "/OUT:",
     ("MSFT", "DLINK", "OUTPUT")   :   "/OUT:",
@@ -110,7 +117,7 @@ OutputFlag = {
     ("INTEL", "ASMLINK", "OUTPUT")     :   "/OUT:",
     ("INTEL", "PCH", "OUTPUT")         :   "/Fp",
     ("INTEL", "ASM", "OUTPUT")         :   "/Fo",
-    ("INTEL", "IPF", "ASM", "OUTPUT")  :   "-o ",
+#    ("INTEL", "IPF", "ASM", "OUTPUT")  :   "-o ",
 
     ("GCC", "CC", "OUTPUT")        :   "-o ",
     ("GCC", "SLINK", "OUTPUT")     :   "-cr ",
@@ -119,10 +126,13 @@ OutputFlag = {
     ("GCC", "PCH", "OUTPUT")       :   "-o ",
     ("GCC", "ASM", "OUTPUT")       :   "-o ",
 
-    ("OUTPUT")                     : "-o "
+#   ("OUTPUT")                     :    "-o "
 }
 
-IncludeFlag = {"MSFT" : "/I", "GCC" : "-I"}
+gIncludeFlag = {"MSFT" : "/I", "GCC" : "-I", "INTEL" : "-I"}
+
+gStartGroupFlag = {"MSFT" : "", "GCC" : "-(", "INTEL" : ""}
+gEndGroupFlag = {"MSFT" : "", "GCC" : "-)", "INTEL" : ""}
 
 gCustomMakefileTemplate = '''
 ${makefile_header}
@@ -237,9 +247,7 @@ mbuild: init all
 #
 init:
 \t-@echo Building ... $(MODULE_NAME)-$(MODULE_VERSION) [$(ARCH)] in package $(PACKAGE_NAME)-$(PACKAGE_VERSION)
-\t-${create_directory_command} $(DEBUG_DIR) > NUL 2>&1
-\t-${create_directory_command} $(OUTPUT_DIR) > NUL 2>&1
-\t${BEGIN}-${create_directory_command} $(OUTPUT_DIR)${separator}${directory_to_be_created} > NUL 2>&1
+\t${BEGIN}${create_directory_command}
 \t${END}
 
 '''
@@ -336,6 +344,9 @@ SOURCE_FILES = ${BEGIN}$(MODULE_DIR)${separator}${source_file} \\
                ${END}${BEGIN}$(DEBUG_DIR)${separator}${auto_generated_file}
                ${END}
 
+TARGET_FILES = ${BEGIN}$(OUTPUT_DIR)${separator}${target_file} \\
+               ${END}
+
 INC = ${BEGIN}${include_path_prefix}$(WORKSPACE)${separator}${include_path} \\
       ${END}
 
@@ -343,8 +354,7 @@ OBJECTS = ${BEGIN}$(OUTPUT_DIR)${separator}${object_file} \\
           ${END}
 
 LIBS = ${BEGIN}$(LIB_DIR)${separator}${library_file} \\
-       ${END}
-       ${BEGIN}${system_library} \\
+       ${END}${BEGIN}${system_library} \\
        ${END}
 
 COMMON_DEPS = ${BEGIN}$(WORKSPACE)${separator}${common_dependency_file} \\
@@ -359,7 +369,7 @@ PCH_FILE = $(OUTPUT_DIR)\$(MODULE_NAME).pch
 LIB_FILE = $(LIB_DIR)\$(MODULE_NAME).lib
 LLIB_FILE = $(OUTPUT_DIR)\$(MODULE_NAME)Local.lib
 DLL_FILE = $(DEBUG_DIR)\$(MODULE_NAME).dll
-EFI_FILE = $(OUTPUT_DIR)\$(MODULE_NAME).efi
+EFI_FILE = $(DEBUG_DIR)\$(MODULE_NAME).efi
 
 #
 # Overridable Target Macro Definitions
@@ -367,6 +377,7 @@ EFI_FILE = $(OUTPUT_DIR)\$(MODULE_NAME).efi
 INIT_TARGET = init
 PCH_TARGET =
 LLIB_TARGET = $(LLIB_FILE)
+CODA_TARGET = ${remaining_build_target}
 
 #
 # Default target, which will build dependent libraries in addition to source files
@@ -379,7 +390,7 @@ all: ${build_type}
 # Target used when called from platform makefile, which will bypass the build of dependent libraries
 #
 
-pbuild: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(EFI_FILE) $(DLL_FILE)
+pbuild: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(CODA_TARGET)
 
 
 #
@@ -393,7 +404,7 @@ lbuild: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(LIB_FILE)
 # ModuleTarget
 #
 
-mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(EFI_FILE) $(DLL_FILE)
+mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(CODA_TARGET)
 
 
 #
@@ -401,51 +412,49 @@ mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(EFI_FILE)
 #
 init:
 \t-@echo Building ... $(MODULE_NAME)-$(MODULE_VERSION) [$(ARCH)] in package $(PACKAGE_NAME)-$(PACKAGE_VERSION)
-\t-${create_directory_command} $(DEBUG_DIR) > NUL 2>&1
-\t-${create_directory_command} $(OUTPUT_DIR) > NUL 2>&1
-\t${BEGIN}-${create_directory_command} $(OUTPUT_DIR)${separator}${directory_to_be_created} > NUL 2>&1
+\t${BEGIN}${create_directory_command}
 \t${END}
 
 #
 # PCH Target
 #
-pch: $(PCH_FILE)
+pch: $(INIT_TARGET) $(PCH_FILE)
 
 
 #
 # Libs Target
 #
-libs: gen_libs
+libs: $(INIT_TARGET) gen_libs
 
 
 #
 # Vfr Target
 #
-vfr: gen_vfr
+vfr: $(INIT_TARGET) gen_vfr
 
 
 #
 # Obj Target
 #
-obj: $(PCH_TARGET) gen_obj
+obj: $(INIT_TARGET) $(PCH_TARGET) gen_obj
 
 
 #
 # LocalLib Target
 #
-locallib: $(PCH_TARGET) gen_obj $(LLIB_FILE)
+locallib: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(LLIB_FILE)
 
 
 #
 # Dll Target
 #
-dll: gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(DLL_FILE)
+dll: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(DLL_FILE)
 
 
 #
 # Efi Target
 #
-efi: gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(DLL_FILE) $(EFI_FILE)
+efi: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(DLL_FILE) $(EFI_FILE)
 
 
 #
@@ -467,7 +476,7 @@ gen_vfr:
 # Phony targets for objects
 #
 
-gen_obj: $(PCH_TARGET) $(OBJECTS)
+gen_obj: $(PCH_TARGET) $(TARGET_FILES)
 
 
 #
@@ -482,30 +491,29 @@ $(PCH_FILE): $(DEP_FILES)
 #
 
 $(LLIB_FILE): $(OBJECTS)
-\t"$(SLINK)" $(SLINK_FLAGS) /OUT:$(LLIB_FILE) $(OBJECTS)
+\t"$(SLINK)" $(SLINK_FLAGS) ${slink_output_flag}$(LLIB_FILE) $(OBJECTS)
 
 #
 # Library file build target
 #
 
 $(LIB_FILE): $(OBJECTS)
-\t"$(SLINK)" $(SLINK_FLAGS) /OUT:$(LIB_FILE) $(OBJECTS)
+\t"$(SLINK)" $(SLINK_FLAGS) ${slink_output_flag}$(LIB_FILE) $(OBJECTS)
 
 #
 # DLL file build target
 #
 
 $(DLL_FILE): $(LIBS) $(LLIB_FILE)
-\t"$(DLINK)" $(DLINK_FLAGS) /OUT:$(DLL_FILE) $(DLINK_SPATH) $(LIBS) $(LLIB_FILE)
+\t"$(DLINK)" ${dlink_output_flag}$(DLL_FILE) $(DLINK_FLAGS) ${start_group_flag} $(DLINK_SPATH) $(LIBS) $(LLIB_FILE) ${end_group_flag}
 
 #
 # EFI file build target
 #
-
-$(EFI_FILE): $(LIBS) $(LLIB_FILE)
-\t"$(DLINK)" $(DLINK_FLAGS) /OUT:$(EFI_FILE) $(DLINK_SPATH) $(LIBS) $(LLIB_FILE)
-\tGenFw -e ${module_type} -o $(EFI_FILE) $(EFI_FILE)
-\tcopy /y $(EFI_FILE) $(BIN_DIR)
+$(EFI_FILE): $(DLL_FILE)
+\tGenFw -e ${module_type} -o $(EFI_FILE) $(DLL_FILE)
+\t${copy_file_command} $(EFI_FILE) $(OUTPUT_DIR)
+\t${copy_file_command} $(EFI_FILE) $(BIN_DIR)
 
 #
 # Individual Object Build Targets
@@ -519,15 +527,16 @@ ${END}
 #
 
 clean:
-\t${remove_directory_command} $(OUTPUT_DIR) > NUL 2>&1
+\t${BEGIN}${clean_command}
+\t${END}
 
 #
 # clean all generated files
 #
 
 cleanall:
-\t${remove_directory_command} $(OUTPUT_DIR) $(DEBUG_DIR) > NUL 2>&1
-\t${remove_file_command} *.pdb *.idb > NUL 2>&1
+\t${BEGIN}${cleanall_command}
+\t${END}${remove_file_command} *.pdb *.idb > NUL 2>&1
 
 #
 # clean pre-compiled header files
@@ -582,10 +591,7 @@ all: init build_libraries build_modules build_fds
 #
 init:
 \t-@echo Building ... $(PLATFORM_NAME)-$(PLATFORM_VERSION) [${build_architecture_list}]
-\t-${create_directory_command} $(FV_DIR) > NUL 2>&1
-\t${BEGIN}-${create_directory_command} $(BUILD_DIR)${separator}${architecture} > NUL 2>&1
-\t${END}
-\t${BEGIN}-${create_directory_command} $(BUILD_DIR)${separator}${directory_to_be_created} > NUL 2>&1
+\t${BEGIN}${create_directory_command}
 \t${END}
 #
 # library build target
@@ -647,8 +653,7 @@ clean:
 # Clean all generated files except to makefile
 #
 cleanall:
-\t${remove_directory_command} $(FV_DIR) > NUL 2>&1
-\t${BEGIN}${remove_directory_command} $(BUILD_DIR)${separator}${architecture} > NUL 2>&1
+\t${BEGIN}${cleanall_command}
 \t${END}
 
 #
@@ -669,11 +674,9 @@ class Makefile(object):
             self.PackageInfo = info.PackageInfo
             self.ModuleBuild = True
             
-            self.BuildType = "mbuild"
-            if self.ModuleInfo.IsLibrary:
-                self.BuildType = "lbuild"
-                
+            self.BuildType = "obj"
             self.BuildFileList = []
+            self.TargetFileList = []
             self.ObjectFileList = []
             self.ObjectBuildTargetList = []
 
@@ -714,14 +717,20 @@ class Makefile(object):
     def GeneratePlatformMakefile(self, file=None, makeType=gMakeType):
         separator = gDirectorySeparator[makeType]
 
-        activePlatform = self.PlatformInfo.values()[0].Platform
         platformInfo = self.PlatformInfo.values()[0]
+        activePlatform = platformInfo.Platform
         
         outputDir = platformInfo.OutputDir
         if os.path.isabs(outputDir):
             self.PlatformBuildDirectory = outputDir
+            CreateDirectory(self.PlatformBuildDirectory)
         else:
             self.PlatformBuildDirectory = "$(WORKSPACE)" + separator + outputDir
+            CreateDirectory(os.path.join(platformInfo.WorkspaceDir, outputDir))
+
+
+        self.IntermediateDirectoryList = ["$(BUILD_DIR)%s%s" % (separator, arch) for arch in self.PlatformInfo]
+        self.IntermediateDirectoryList.append("$(FV_DIR)")
 
         makefileName = gMakefileName[makeType]
         makefileTemplateDict = {
@@ -738,10 +747,10 @@ class Makefile(object):
             "build_architecture_list"   : " ".join(self.PlatformInfo.keys()),
             "architecture"              : self.PlatformInfo.keys(),
             "separator"                 : separator,
-            "create_directory_command"  : gCreateDirectoryCommand[makeType],
+            "create_directory_command"  : self.GetCreateDirectoryCommand(self.IntermediateDirectoryList, makeType),
             "remove_directory_command"  : gRemoveDirectoryCommand[makeType],
             "remove_file_command"       : gRemoveFileCommand[makeType],
-            "directory_to_be_created"   : self.IntermediateDirectoryList,
+            "cleanall_command"          : self.GetRemoveDirectoryCommand(self.IntermediateDirectoryList, makeType),
             "library_build_directory"   : self.LibraryBuildDirectoryList,
             "module_build_directory"    : self.ModuleBuildDirectoryList,
             "fdf_file"                  : platformInfo.FdfFileList,
@@ -778,7 +787,8 @@ class Makefile(object):
         self.ProcessDependentLibrary(makeType)
 
         if "DLINK" in self.PlatformInfo.ToolStaticLib:
-            self.SystemLibraryList = self.PlatformInfo.ToolStaticLib[DLINK]
+            EdkLogger.debug(EdkLogger.DEBUG_5, "Static library: " + self.PlatformInfo.ToolStaticLib["DLINK"])
+            self.SystemLibraryList.append(self.PlatformInfo.ToolStaticLib["DLINK"])
 
         entryPoint = "_ModuleEntryPoint"
         if self.ModuleInfo.Arch == "EBC":
@@ -787,7 +797,23 @@ class Makefile(object):
         defaultToolFlag = self.PlatformInfo.DefaultToolOption.values()
         if self.ModuleInfo.ModuleType == "USER_DEFINED":
             defaultToolFlag = ["" for p in defaultToolFlag]
-            
+
+        if "CC" not in self.PlatformInfo.ToolChainFamily:
+            raise AutoGenError(msg="[CC] is not supported [%s, %s, %s]" % (self.ModuleInfo.BuildTarget,
+                                    self.ModuleInfo.ToolChain, self.ModuleInfo.Arch))
+        if  "DLINK" not in self.PlatformInfo.ToolChainFamily:
+            raise AutoGenError(msg="[DLINK] is not supported [%s, %s, %s]" % (self.ModuleInfo.BuildTarget,
+                                    self.ModuleInfo.ToolChain, self.ModuleInfo.Arch))
+
+        if self.ModuleInfo.IsLibrary:
+            resultFile = "$(LIB_FILE)"
+        elif self.BuildType == "obj":
+            resultFile = ""
+        elif self.ModuleInfo.ModuleType == "USER_DEFINED":
+            resultFile = "$(LLIB_FILE) $(DLL_FILE)"
+        else:
+            resultFile = "$(LLIB_FILE) $(DLL_FILE) $(EFI_FILE)"
+
         makefileName = gMakefileName[makeType]
         makefileTemplateDict = {
             "makefile_header"           : MakefileHeader % makefileName,
@@ -826,18 +852,25 @@ class Makefile(object):
             "module_entry_point"        : entryPoint,
             "source_file"               : self.BuildFileList,
             #"auto_generated_file"       : self.AutoGenBuildFileList,
-            "include_path_prefix"       : "-I",
+            "include_path_prefix"       : gIncludeFlag[self.PlatformInfo.ToolChainFamily["CC"]],
+            "dlink_output_flag"         : self.PlatformInfo.OutputFlag["DLINK"],
+            "slink_output_flag"         : self.PlatformInfo.OutputFlag["SLINK"],
+            "start_group_flag"          : gStartGroupFlag[self.PlatformInfo.ToolChainFamily["DLINK"]],
+            "end_group_flag"            : gEndGroupFlag[self.PlatformInfo.ToolChainFamily["DLINK"]],
             "include_path"              : self.ModuleInfo.IncludePathList,
+            "target_file"               : self.TargetFileList,
             "object_file"               : self.ObjectFileList,
             "library_file"              : self.LibraryFileList,
+            "remaining_build_target"    : resultFile,
             "system_library"            : self.SystemLibraryList,
             "common_dependency_file"    : self.CommonFileDependency,
-            "create_directory_command"  : gCreateDirectoryCommand[makeType],
+            "create_directory_command"  : self.GetCreateDirectoryCommand(self.IntermediateDirectoryList, makeType),
             "remove_directory_command"  : gRemoveDirectoryCommand[makeType],
             "remove_file_command"       : gRemoveFileCommand[makeType],
-            "directory_to_be_created"   : self.IntermediateDirectoryList,
+            "copy_file_command"         : gCopyFileCommand[makeType],
+            "clean_command"             : self.GetRemoveDirectoryCommand(["$(OUTPUT_DIR)"], makeType),
+            "cleanall_command"          : self.GetRemoveDirectoryCommand(["$(DEBUG_DIR)", "$(OUTPUT_DIR)"], makeType),
             "dependent_library_build_directory" : self.LibraryBuildDirectoryList,
-            #"dependent_library_makefile"        : [path.join(bdir, makefileName) for bdir in self.LibraryBuildDirectoryList],
             "object_build_target"               : self.ObjectBuildTargetList,
             "build_type"                        : self.BuildType,
         }
@@ -902,7 +935,7 @@ class Makefile(object):
             "tool_code"                 : self.PlatformInfo.ToolPath.keys(),
             "tool_path"                 : self.PlatformInfo.ToolPath.values(),
 
-            "create_directory_command"  : "-@mkdir",
+            "create_directory_command"  : self.GetCreateDirectoryCommand(self.IntermediateDirectoryList, makeType),
             "directory_to_be_created"   : self.IntermediateDirectoryList,
             "dependent_library_build_directory" : self.LibraryBuildDirectoryList,
             "custom_makefile_content"   : customMakefile
@@ -944,7 +977,7 @@ class Makefile(object):
         self.ObjectFileList = []
         self.ObjectBuildTargetList = []
         self.AutoGenBuildFileList = []
-        self.IntermediateDirectoryList = []
+        self.IntermediateDirectoryList = ["$(DEBUG_DIR)", "$(OUTPUT_DIR)"]
 
         fileBuildTemplatetList = []
         forceIncludedFile = []
@@ -960,14 +993,38 @@ class Makefile(object):
             ftype = rule.FileTypeMapping[fext]
             if ftype == "C-Header":
                 forceIncludedFile.append(fpath)
-            if ftype not in rule.Makefile[makeType]:
+
+            if ftype in rule.ToolCodeMapping:
+                toolCodeList = rule.ToolCodeMapping[ftype]
+            else:
+                toolCodeList = []
+
+            family = None
+            for tool in toolCodeList:
+                if tool in self.PlatformInfo.ToolChainFamily:
+                    family = self.PlatformInfo.ToolChainFamily[tool]
+                    break
+            else:
+                if makeType == "nmake":
+                    family = "MSFT"
+                else:
+                    family = "GCC"
+
+            if family not in rule.Makefile:
+                raise AutoGenError(msg="Tool chain family [%s] is not supported: %s" % (family, f))
+
+            if ftype not in rule.Makefile[family]:
                 continue
 
             self.BuildFileList.append(fpath)
-            self.ObjectFileList.append(fdir + separator + fbase + ".obj")
+            ext = rule.ObjectFileMapping[ftype]
+            tf = fdir + separator + fbase + ext
+            self.TargetFileList.append(tf)
+            if ext == ".obj":
+                self.ObjectFileList.append(tf)
 
             fileBuildTemplatetList.append({
-                                   "string" : rule.Makefile[makeType][ftype],
+                                   "string" : rule.Makefile[family][ftype],
                                    "ftype"  : ftype,
                                    "fpath"  : fpath,
                                    "fdir"   : fdir,
@@ -975,30 +1032,54 @@ class Makefile(object):
                                    "fbase"  : fbase,
                                    "fext"   : fext,
                                    "fdep"   : "",
-                                   "sep"    : separator,
+                                   "_sep_"    : separator,
                                    })
 
         fileList = self.ModuleInfo.SourceFileList
+        if len(fileList) == 0:
+            raise AutoGenError(msg="No files to be built in module [%s, %s, %s]:\n\t%s" % (self.ModuleInfo.BuildTarget,
+                                    self.ModuleInfo.ToolChain, self.ModuleInfo.Arch, str(self.ModuleInfo.Module)))
+        
         for f in fileList:
-            fpath = os.path.join(self.ModuleInfo.SourceDir, f)
+            family = f.ToolChainFamily
+            if family == None or family == "":
+                EdkLogger.verbose("Tool chain family not found for file:%s" % str(f))
+                if makeType == "nmake":
+                    family = "MSFT"
+                else:
+                    family = "GCC"
+
+            if family not in rule.Makefile:
+                raise AutoGenError(msg="Tool chain family [%s] is not supported: %s" % (family, str(f)))
+
+            f = str(f)
+            fpath = self.ModuleInfo.SourceDir + separator + f
             fname = path.basename(f)
             fbase, fext = path.splitext(fname)
             fdir = path.dirname(f)
-            
+
             if fdir == "":
                 fdir = "."
-            elif fdir not in self.IntermediateDirectoryList:
-                self.IntermediateDirectoryList.append(fdir)
+            else:
+                p = "$(OUTPUT_DIR)" + separator + fdir
+                if p not in self.IntermediateDirectoryList:
+                    self.IntermediateDirectoryList.append(p)
                 
             ftype = rule.FileTypeMapping[fext]
-            if ftype not in rule.Makefile[makeType]:
+            if ftype not in rule.Makefile[family]:
                 continue
+            if ftype == "C-Code":
+                self.BuildType = "mbuild"
 
             self.BuildFileList.append(fpath)
-            self.ObjectFileList.append(fdir + separator + fbase + ".obj")
+            ext = rule.ObjectFileMapping[ftype]
+            tf = fdir + separator + fbase + ext
+            self.TargetFileList.append(tf)
+            if ext == ".obj":
+                self.ObjectFileList.append(tf)
             
             fileBuildTemplatetList.append({
-                                   "string" : rule.Makefile[makeType][ftype],
+                                   "string" : rule.Makefile[family][ftype],
                                    "ftype"  : ftype,
                                    "fpath"  : fpath,
                                    "fdir"   : fdir,
@@ -1006,7 +1087,7 @@ class Makefile(object):
                                    "fbase"  : fbase,
                                    "fext"   : fext,
                                    "fdep"   : "",
-                                   "sep"    : separator,
+                                   "_sep_"    : separator,
                                    })
 
         #
@@ -1076,7 +1157,11 @@ class Makefile(object):
                     if dep not in fileStack and dep not in dependencyList:
                         fileStack.append(dep)
             else:
-                fd = open(f, 'r')
+                try:
+                    fd = open(f, 'r')
+                except:
+                    raise AutoGenError(FILE_OPEN_FAILURE, name=f)
+
                 fileContent = fd.read()
                 fd.close()
                 if len(fileContent) == 0:
@@ -1121,6 +1206,12 @@ class Makefile(object):
             for la in self.PlatformInfo[arch].LibraryAutoGenList:
                 dirList.append(la.BuildInfo.BuildDir)
         return dirList
+
+    def GetCreateDirectoryCommand(self, dirs, make=gMakeType):
+        return [gCreateDirectoryCommandTemplate[make] % {'dir':dir} for dir in dirs]
+
+    def GetRemoveDirectoryCommand(self, dirs, make=gMakeType):
+        return [gRemoveDirectoryCommandTemplate[make] % {'dir':dir} for dir in dirs]
 
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.

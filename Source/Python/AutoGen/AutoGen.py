@@ -32,6 +32,36 @@ gWorkspaceDir = ""
 gDepexTokenPattern = re.compile("(\(|\)|\w+| \S+\.inf)")
 gMakeTypeMap = {"MSFT":"nmake", "GCC":"gmake"}
 
+gDefaultOutputFlag = "-o "
+
+gOutputFlag = {
+    ("MSFT", "CC", "OUTPUT")      :   "/Fo",
+    ("MSFT", "SLINK", "OUTPUT")   :   "/OUT:",
+    ("MSFT", "DLINK", "OUTPUT")   :   "/OUT:",
+    ("MSFT", "ASMLINK", "OUTPUT") :   "/OUT:",
+    ("MSFT", "PCH", "OUTPUT")     :   "/Fp",
+    ("MSFT", "ASM", "OUTPUT")     :   "/Fo",
+
+    ("INTEL", "CC", "OUTPUT")          :   "/Fo",
+    ("INTEL", "SLINK", "OUTPUT")       :   "/OUT:",
+    ("INTEL", "DLINK", "OUTPUT")       :   "/OUT:",
+    ("INTEL", "ASMLINK", "OUTPUT")     :   "/OUT:",
+    ("INTEL", "PCH", "OUTPUT")         :   "/Fp",
+    ("INTEL", "ASM", "OUTPUT")         :   "/Fo",
+#    ("INTEL", "IPF", "ASM", "OUTPUT")  :   "-o ",
+
+    ("GCC", "CC", "OUTPUT")        :   "-o ",
+    ("GCC", "SLINK", "OUTPUT")     :   "-cr ",
+    ("GCC", "DLINK", "OUTPUT")     :   "-o ",
+    ("GCC", "ASMLINK", "OUTPUT")   :   "-o ",
+    ("GCC", "PCH", "OUTPUT")       :   "-o ",
+    ("GCC", "ASM", "OUTPUT")       :   "-o ",
+
+#   ("OUTPUT")                     :    "-o "
+}
+
+gIncludeFlag = {"MSFT" : "/I", "GCC" : "-I", "INTEL" : "-I"}
+
 def FindModuleOwnerPackage(module, pkgdb):
     for pkg in pkgdb:
         pkgDir = path.dirname(pkg)
@@ -177,8 +207,8 @@ class AutoGen(object):
         info.DependentPackageList = self.GetDependentPackageList()
 
         info.BuildOption = self.GetModuleBuildOption(info.PlatformInfo)
-        if "DLINK" in platformInfo.ToolStaticLib:
-            info.SystemLibraryList = platformInfo.ToolStaticLib["DLINK"]
+        if "DLINK" in info.PlatformInfo.ToolStaticLib:
+            info.SystemLibraryList = info.PlatformInfo.ToolStaticLib["DLINK"]
 
         info.PcdIsDriver = self.Module.PcdIsDriver
         info.PcdList = self.GetPcdList(info.DependentLibraryList)
@@ -307,6 +337,7 @@ class AutoGen(object):
             key = "%s_DPATH" % keyBaseString
             if key in toolDefinition:
                 dll = toolDefinition[key]
+                os.environ["PATH"] = dll + os.pathsep + os.environ["PATH"]
             else:
                 dll = ""
                 
@@ -316,11 +347,25 @@ class AutoGen(object):
             else:
                 lib = ""
 
+            key = keyBaseString + "_OUTPUT"
+            if key in toolDefinition:
+                oflag = toolDefinition[key]
+            elif (family, tool, "OUTPUT") in gOutputFlag:
+                oflag = gOutputFlag[family, tool, "OUTPUT"]
+                if oflag[0] == '"' and oflag[-1] == '"':
+                    oflag = oflag[1:-1]
+            else:
+                oflag = gDefaultOutputFlag
+
+            iflag = gIncludeFlag[family]
+                
             info.ToolPath[tool] = os.path.join(path, name)
             info.ToolDynamicLib[tool] = dll
             info.ToolStaticLib[tool] = lib
             info.ToolChainFamily[tool] = family
             info.DefaultToolOption[tool] = option
+            info.OutputFlag[tool] = oflag
+            info.IncludeFlag[tool] = iflag
 
         if self.IsPlatformAutoGen:
             buildOptions = self.Platform[info.Arch].BuildOptions
@@ -386,19 +431,49 @@ class AutoGen(object):
             
             # skip file which needs a tool having no matching toolchain family
             fileType = buildRule.FileTypeMapping[ext]
-            if f.ToolCode != "":
-                toolCode = f.ToolCode
-            else:
-                toolCode = buildRule.ToolCodeMapping[fileType]
-            # get the toolchain family from tools definition
-            if f.ToolChainFamily != "" and f.ToolChainFamily != platformInfo.ToolChainFamily[toolCode]:
-                EdkLogger.verbose("File %s for toolchain family %s is not supported" % (f.SourceFile, f.ToolChainFamily))
-                continue
             if fileType == "Unicode-Text":
                 self.BuildInfo.UnicodeFileList.append(os.path.join(gWorkspaceDir, self.BuildInfo.SourceDir, f.SourceFile))
-            buildFileList.append(f.SourceFile)
+                continue
+
+            if f.ToolCode != "":
+                toolCodeList = [f.ToolCode]
+            else:
+                if fileType in buildRule.ToolCodeMapping:
+                    toolCodeList = buildRule.ToolCodeMapping[fileType]
+                else:
+                    toolCodeList = []
+
+            # get the toolchain family from tools definition
+            buildable = True
+            if f.ToolChainFamily != "":
+                for toolCode in toolCodeList:
+                    if f.ToolChainFamily != platformInfo.ToolChainFamily[toolCode]:
+                        EdkLogger.verbose("File %s for toolchain family %s is not supported" % (f.SourceFile, f.ToolChainFamily))
+                        buildable = False
+                        break
+            else:
+                if toolCodeList != []:
+                    f.ToolChainFamily = platformInfo.ToolChainFamily[toolCodeList[0]]
+                else:
+                    buildable = False
+
+            if not buildable:
+                continue
+
+            #buildFileList.append(f.SourceFile)
+            buildFileList.append(f)
+
         return buildFileList
 
+    def IsToolChainFamilySupported(self):
+        pass
+
+    def IsToolCodeSupported(self):
+        pass
+
+    def IsToolChainSupported(self):
+        pass
+    
     def GetDependentPackageList(self):
         if self.Package not in self.Module.Packages:
             self.Module.Packages.insert(0, str(self.Package))
@@ -441,7 +516,7 @@ class AutoGen(object):
             module = libraryConsumerList.pop()
             for libc, libf in module.LibraryClasses.iteritems():
                 if moduleType not in libc:
-                    EdkLogger.debug(EdkLogger.DEBUG_5, "\t%s for module type %s is not supported" % libc)
+                    EdkLogger.debug(EdkLogger.DEBUG_3, "\t%s for module type %s is not supported" % libc)
                     continue
                 if libf == None or libf == "":
                     EdkLogger.info("\tLibrary instance of library class %s is not found" % libc[0])
@@ -552,19 +627,38 @@ class AutoGen(object):
 
     def GetDynamicPcdList(self, platform, arch):
         pcdList = []
+        notFoundPcdList = set()
+        noDatumTypePcdList = set()
+        pcdConsumerList = set()
         for f in gModuleDatabase[arch]:
             m = gModuleDatabase[arch][f]
             for key in m.Pcds:
                 if key not in platform.Pcds:
-                    raise AutoGenError(msg="PCD [%s %s] not found in platform" % key)
+                    notFoundPcdList.add(" | ".join(key))
+                    pcdConsumerList.add(str(m))
+                    continue
+                    # raise AutoGenError(msg="PCD [%s %s] not found in platform" % key)
                 mPcd = m.Pcds[key]
                 pPcd = platform.Pcds[key]
+                if mPcd.DatumType == "VOID*" and pPcd.MaxDatumSize == None:
+                    noDatumTypePcdList.add(" | ".join(key))
+                    pcdConsumerList.add(str(m))
+                    #raise AutoGenError(msg="No MaxDatumSize specified for PCD %s|%s" % (pPcd.TokenCName, pPcd.TokenSpaceGuidCName))
+
                 if pPcd.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd:
                     if m.ModuleType in ["PEIM", "PEI_CORE"]:
                         pPcd.Phase = "PEI"
                     if pPcd not in pcdList:
                         pPcd.DatumType = mPcd.DatumType
                         pcdList.append(pPcd)
+        if len(notFoundPcdList) > 0 or len(noDatumTypePcdList) > 0:
+            notFoundPcdListString = "\n\t\t".join(notFoundPcdList)
+            noDatumTypePcdListString = "\n\t\t".join(noDatumTypePcdList)
+            moduleListString = "\n\t\t".join(pcdConsumerList)
+            raise AutoGenError(msg="\n\tPCD(s) not found in platform:\n\t\t%s\
+                                    \n\tPCD(s) without MaxDatumSize:\n\t\t%s\
+                                    \n\tUsed by:\n\t\t%s\n"
+                                    % (notFoundPcdListString, noDatumTypePcdListString, moduleListString))
         return pcdList
 
     def GeneratePcdTokenNumber(self, platform, dynamicPcdList):
@@ -585,7 +679,6 @@ class AutoGen(object):
         platformPcds = platform.Pcds
         for key in platformPcds:
             pcd = platformPcds[key]
-            #print "###",key
             if key not in pcdTokenNumber:
                 pcdTokenNumber[key] = tokenNumber
                 tokenNumber += 1
@@ -598,15 +691,15 @@ class AutoGen(object):
         for m in dependentLibraryList + [self.Module]:
             for pcdKey in m.Pcds:
                 pcd = m.Pcds[pcdKey]
+                #if pcdKey not in platformPcds:
+                #    EdkLogger.info("%s / %s not in current platform" % pcdKey)
                 if (pcd.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd) and self.Module.ModuleType in ["PEIM", "PEI_CORE"]:
-                    #platformPcds[pcdKey].Phase = "PEI"
                     pcd.Phase = "PEI"
                 if pcd not in pcdList:
                     pcdList.append(pcd)
         return pcdList
 
     def GetGuidList(self):
-        packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
         guid = {}
         Key = ""
         for Key in self.Module.Guids:
@@ -621,6 +714,7 @@ class AutoGen(object):
                     guid[Key] = p.Ppis[Key]
                     break
             else:
+                packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
                 raise AutoGenError(msg='GUID [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.BuildInfo.Name, packageListString))
 
         for lib in self.BuildInfo.DependentLibraryList:
@@ -641,11 +735,11 @@ class AutoGen(object):
                         guid[Key] = p.Ppis[Key]
                         break
                 else:
+                    packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
                     raise AutoGenError(msg='GUID [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, lib.BaseName, packageListString))
         return guid
 
     def GetProtocolGuidList(self):
-        packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
         guid = {}
         Key = ""
         for Key in self.Module.Protocols:
@@ -660,6 +754,7 @@ class AutoGen(object):
                         guid[Key] = p.Ppis[Key]
                         break
             else:
+                packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
                 raise AutoGenError(msg='Protocol [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.BuildInfo.Name, packageListString))
 
         for lib in self.BuildInfo.DependentLibraryList:
@@ -678,12 +773,12 @@ class AutoGen(object):
                         guid[Key] = p.Ppis[Key]
                         break
                 else:
+                    packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
                     raise AutoGenError(msg='Protocol [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, lib.BaseName, packageListString))
 
         return guid
 
     def GetPpiGuidList(self):
-        packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
         guid = {}
         Key = ""
         for Key in self.Module.Ppis:
@@ -698,6 +793,7 @@ class AutoGen(object):
                     guid[Key] = p.Ppis[Key]
                     break
             else:
+                packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
                 raise AutoGenError(msg='PPI [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.BuildInfo.Name, packageListString))
 
         for lib in self.BuildInfo.DependentLibraryList:
@@ -716,6 +812,7 @@ class AutoGen(object):
                         guid[Key] = p.Ppis[Key]
                         break
                 else:
+                    packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
                     raise AutoGenError(msg='PPI [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, lib.BaseName, packageListString))
         return guid
 
@@ -762,7 +859,7 @@ class AutoGen(object):
                 platformInfo.LibraryAutoGenList.append(self)
 
             for lib in self.BuildInfo.DependentLibraryList:
-                EdkLogger.debug(EdkLogger.DEBUG_2, "###" + str(lib))
+                EdkLogger.debug(EdkLogger.DEBUG_1, "###" + str(lib))
                 key = (self.BuildTarget, self.ToolChain, self.Arch, lib)
                 libraryAutoGen = None
                 if key not in gAutoGenDatabase:
