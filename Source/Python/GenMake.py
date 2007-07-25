@@ -342,6 +342,9 @@ SOURCE_FILES = ${BEGIN}$(MODULE_DIR)${separator}${source_file} \\
                ${END}${BEGIN}$(DEBUG_DIR)${separator}${auto_generated_file}
                ${END}
 
+TARGET_FILES = ${BEGIN}$(OUTPUT_DIR)${separator}${target_file} \\
+               ${END}
+
 INC = ${BEGIN}${include_path_prefix}$(WORKSPACE)${separator}${include_path} \\
       ${END}
 
@@ -372,6 +375,7 @@ EFI_FILE = $(DEBUG_DIR)\$(MODULE_NAME).efi
 INIT_TARGET = init
 PCH_TARGET =
 LLIB_TARGET = $(LLIB_FILE)
+CODA_TARGET = ${remaining_build_target}
 
 #
 # Default target, which will build dependent libraries in addition to source files
@@ -384,7 +388,7 @@ all: ${build_type}
 # Target used when called from platform makefile, which will bypass the build of dependent libraries
 #
 
-pbuild: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(DLL_FILE) $(EFI_FILE)
+pbuild: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(CODA_TARGET)
 
 
 #
@@ -398,7 +402,7 @@ lbuild: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(LIB_FILE)
 # ModuleTarget
 #
 
-mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(DLL_FILE) $(EFI_FILE)
+mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(CODA_TARGET)
 
 
 #
@@ -412,43 +416,43 @@ init:
 #
 # PCH Target
 #
-pch: $(PCH_FILE)
+pch: $(INIT_TARGET) $(PCH_FILE)
 
 
 #
 # Libs Target
 #
-libs: gen_libs
+libs: $(INIT_TARGET) gen_libs
 
 
 #
 # Vfr Target
 #
-vfr: gen_vfr
+vfr: $(INIT_TARGET) gen_vfr
 
 
 #
 # Obj Target
 #
-obj: $(PCH_TARGET) gen_obj
+obj: $(INIT_TARGET) $(PCH_TARGET) gen_obj
 
 
 #
 # LocalLib Target
 #
-locallib: $(PCH_TARGET) gen_obj $(LLIB_FILE)
+locallib: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(LLIB_FILE)
 
 
 #
 # Dll Target
 #
-dll: gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(DLL_FILE)
+dll: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(DLL_FILE)
 
 
 #
 # Efi Target
 #
-efi: gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(DLL_FILE) $(EFI_FILE)
+efi: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(DLL_FILE) $(EFI_FILE)
 
 
 #
@@ -470,7 +474,7 @@ gen_vfr:
 # Phony targets for objects
 #
 
-gen_obj: $(PCH_TARGET) $(OBJECTS)
+gen_obj: $(PCH_TARGET) $(TARGET_FILES)
 
 
 #
@@ -668,11 +672,9 @@ class Makefile(object):
             self.PackageInfo = info.PackageInfo
             self.ModuleBuild = True
             
-            self.BuildType = "mbuild"
-            if self.ModuleInfo.IsLibrary:
-                self.BuildType = "lbuild"
-                
+            self.BuildType = "obj"
             self.BuildFileList = []
+            self.TargetFileList = []
             self.ObjectFileList = []
             self.ObjectBuildTargetList = []
 
@@ -719,8 +721,11 @@ class Makefile(object):
         outputDir = platformInfo.OutputDir
         if os.path.isabs(outputDir):
             self.PlatformBuildDirectory = outputDir
+            CreateDirectory(self.PlatformBuildDirectory)
         else:
             self.PlatformBuildDirectory = "$(WORKSPACE)" + separator + outputDir
+            CreateDirectory(os.path.join(platformInfo.WorkspaceDir, outputDir))
+
 
         self.IntermediateDirectoryList = ["$(BUILD_DIR)%s%s" % (separator, arch) for arch in self.PlatformInfo]
         self.IntermediateDirectoryList.append("$(FV_DIR)")
@@ -797,7 +802,16 @@ class Makefile(object):
         if  "DLINK" not in self.PlatformInfo.ToolChainFamily:
             raise AutoGenError(msg="[DLINK] is not supported [%s, %s, %s]" % (self.ModuleInfo.BuildTarget,
                                     self.ModuleInfo.ToolChain, self.ModuleInfo.Arch))
-        
+
+        if self.ModuleInfo.IsLibrary:
+            resultFile = "$(LIB_FILE)"
+        elif self.BuildType == "obj":
+            resultFile = ""
+        elif self.ModuleInfo.ModuleType == "USER_DEFINED":
+            resultFile = "$(LLIB_FILE) $(DLL_FILE)"
+        else:
+            resultFile = "$(LLIB_FILE) $(DLL_FILE) $(EFI_FILE)"
+
         makefileName = gMakefileName[makeType]
         makefileTemplateDict = {
             "makefile_header"           : MakefileHeader % makefileName,
@@ -842,8 +856,10 @@ class Makefile(object):
             "start_group_flag"          : gStartGroupFlag[self.PlatformInfo.ToolChainFamily["DLINK"]],
             "end_group_flag"            : gEndGroupFlag[self.PlatformInfo.ToolChainFamily["DLINK"]],
             "include_path"              : self.ModuleInfo.IncludePathList,
+            "target_file"               : self.TargetFileList,
             "object_file"               : self.ObjectFileList,
             "library_file"              : self.LibraryFileList,
+            "remaining_build_target"    : resultFile,
             "system_library"            : self.SystemLibraryList,
             "common_dependency_file"    : self.CommonFileDependency,
             "create_directory_command"  : self.GetCreateDirectoryCommand(self.IntermediateDirectoryList, makeType),
@@ -999,7 +1015,11 @@ class Makefile(object):
                 continue
 
             self.BuildFileList.append(fpath)
-            self.ObjectFileList.append(fdir + separator + fbase + ".obj")
+            ext = rule.ObjectFileMapping[ftype]
+            tf = fdir + separator + fbase + ext
+            self.TargetFileList.append(tf)
+            if ext == ".obj":
+                self.ObjectFileList.append(tf)
 
             fileBuildTemplatetList.append({
                                    "string" : rule.Makefile[family][ftype],
@@ -1035,7 +1055,7 @@ class Makefile(object):
             fname = path.basename(f)
             fbase, fext = path.splitext(fname)
             fdir = path.dirname(f)
-            
+
             if fdir == "":
                 fdir = "."
             else:
@@ -1046,9 +1066,15 @@ class Makefile(object):
             ftype = rule.FileTypeMapping[fext]
             if ftype not in rule.Makefile[family]:
                 continue
+            if ftype == "C-Code":
+                self.BuildType = "mbuild"
 
             self.BuildFileList.append(fpath)
-            self.ObjectFileList.append(fdir + separator + fbase + ".obj")
+            ext = rule.ObjectFileMapping[ftype]
+            tf = fdir + separator + fbase + ext
+            self.TargetFileList.append(tf)
+            if ext == ".obj":
+                self.ObjectFileList.append(tf)
             
             fileBuildTemplatetList.append({
                                    "string" : rule.Makefile[family][ftype],

@@ -252,7 +252,7 @@ ${BEGIN}  ${STRING_TABLE_VALUE}, /* ${STRING_TABLE_CNAME}_${STRING_TABLE_GUID} *
 ${END}
   /* SizeTable */
   {
-${BEGIN}    ${SIZE_TABLE_CURRENT_LENGTH}, ${SIZE_TABLE_MAXIMUM_LENGTH}, /* ${SIZE_TABLE_CNAME}_${SIZE_TABLE_GUID} */
+${BEGIN}    ${SIZE_TABLE_MAXIMUM_LENGTH}, ${SIZE_TABLE_CURRENT_LENGTH}, /* ${SIZE_TABLE_CNAME}_${SIZE_TABLE_GUID} */
 ${END}
   },
 ${BEGIN}  { ${INIT_VALUE_UINT16} }, /*  ${INIT_CNAME_DECL_UINT16}_${INIT_GUID_DECL_UINT16}[${INIT_NUMSKUS_DECL_UINT16}] */
@@ -1206,7 +1206,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
                         else:
                             Dict['STRING_TABLE_INDEX'].append('_%d' % StringTableIndex)
                         if Sku.DefaultValue[0] == 'L':
-                            Size = len(Sku.DefaultValue) - 3
+                            Size = (len(Sku.DefaultValue) - 3) * 2
                             Dict['STRING_TABLE_VALUE'].append(Sku.DefaultValue)
                         elif Sku.DefaultValue[0] == '"':
                             Size = len(Sku.DefaultValue) - 2
@@ -1222,9 +1222,9 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
                         Dict['SIZE_TABLE_MAXIMUM_LENGTH'].append(Pcd.MaxDatumSize)
                         if Pcd.MaxDatumSize != '' and Pcd.MaxDatumSize > Size:
                             Size = int(Pcd.MaxDatumSize)
-                        Dict['STRING_TABLE_LENGTH'].append(Size)
+                        Dict['STRING_TABLE_LENGTH'].append(Size / 2 + 1)
                         StringTableIndex += 1
-                        StringTableSize += Size
+                        StringTableSize += (Size / 2 + 1)
                 else:
                     Pcd.TokenTypeList += ['PCD_TYPE_DATA']
                     if Sku.DefaultValue == 'TRUE':
@@ -1415,7 +1415,7 @@ def CreateLibraryDestructorCode(info, autoGenC, autoGenH):
 
 
 def CreateModuleEntryPointCode(info, autoGenC, autoGenH):
-    if info.IsLibrary:
+    if info.IsLibrary or info.ModuleType == "USER_DEFINED":
         return
     #
     # Module Entry Points
@@ -1448,7 +1448,7 @@ def CreateModuleEntryPointCode(info, autoGenC, autoGenH):
                 autoGenC.Append(UefiEntryPointString[2], Dict)
 
 def CreateModuleUnloadImageCode(info, autoGenC, autoGenH):
-    if info.IsLibrary:
+    if info.IsLibrary or info.ModuleType == "USER_DEFINED":
         return
     #
     # Unload Image Handlers
@@ -1463,29 +1463,47 @@ def CreateModuleUnloadImageCode(info, autoGenC, autoGenH):
 def CreateGuidDefinitionCode(info, autoGenC, autoGenH):
     if info.IsLibrary:
         return
+
+    if info.ModuleType in ["USER_DEFINED", "BASE"]:
+        GuidType = "GUID"
+    else:
+        GuidType = "EFI_GUID"
+
     #
     # GUIDs
     #
     for Key in info.GuidList:
-        autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, info.GuidList[Key]))
+        autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED %s %s = %s;\n' % (GuidType, Key, info.GuidList[Key]))
 
 def CreateProtocolDefinitionCode(info, autoGenC, autoGenH):
     if info.IsLibrary:
         return
+
+    if info.ModuleType in ["USER_DEFINED", "BASE"]:
+        GuidType = "GUID"
+    else:
+        GuidType = "EFI_GUID"
+
     #
     # Protocol GUIDs
     #
     for Key in info.ProtocolList:
-        autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, info.ProtocolList[Key]))
+        autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED %s %s = %s;\n' % (GuidType, Key, info.ProtocolList[Key]))
 
 def CreatePpiDefinitionCode(info, autoGenC, autoGenH):
     if info.IsLibrary:
         return
+
+    if info.ModuleType in ["USER_DEFINED", "BASE"]:
+        GuidType = "GUID"
+    else:
+        GuidType = "EFI_GUID"
+
     #
     # PPI GUIDs
     #
     for Key in info.PpiList:
-        autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED EFI_GUID  %s = %s;\n' % (Key, info.PpiList[Key]))
+        autoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED %s %s = %s;\n' % (GuidType, Key, info.PpiList[Key]))
 
 def CreatePcdCode(info, autoGenC, autoGenH):
     if info.IsLibrary:
