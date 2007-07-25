@@ -15,6 +15,7 @@ import os
 import EdkLogger
 from Dictionary import *
 from BuildToolError import *
+from TargetTxtClassObject import *
 
 class ToolDefClassObject(object):
     def __init__(self, filename = None):
@@ -83,7 +84,17 @@ class ToolDefClassObject(object):
                     del self.ToolsDefTxtDictionary[Key]
         
         #EdkLogger.info('LoadToolDefFile() End')
+
+def ToolDefDict(WorkSpace):
+    Target = TargetTxtClassObject()
+    Target.LoadTargetTxtFile(WorkSpace + '\\Conf\\target.txt')
+    ToolDef = ToolDefClassObject()
+    ToolDef.LoadToolDefFile(WorkSpace + '\\' + Target.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])
+    return ToolDef
         
 if __name__ == '__main__':
-    td = ToolDefClassObject('tool_def.txt')
-    print td.ToolsDefTxtDatabase
+##    td = ToolDefClassObject('tool_def.txt')
+##    print td.ToolsDefTxtDatabase
+
+    ToolDef = ToolDefDict(os.getenv("WORKSPACE"))
+    pass
