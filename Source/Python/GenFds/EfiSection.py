@@ -111,6 +111,20 @@ class EfiSection (Section.Section):
                      return '', None
                  else:
                      raise Exception(" %s does't exist" %Filename)
+             #
+             # For TE Section call GenFw to generate TE image
+             #
+             if SectionType == 'TE':
+                 TeFile = os.path.join( OutputPath, ModuleName + 'Te.raw')
+                 GenTeCmd = 'GenFW -t '    + \
+                            ' -o '         + \
+                             TeFile        + \
+                             ' '           + \
+                             GenFdsGlobalVariable.ExtendMarco(Filename)
+                 print GenTeCmd
+                 GenFdsGlobalVariable.CallExternalTool(GenTeCmd, "GenFw Failed !")
+                 Filename = TeFile
+
                  
              GenSectionCmd = 'GenSec -o '                                     + \
                               OutputFile                                      + \

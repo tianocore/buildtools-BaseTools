@@ -74,7 +74,7 @@ class FV:
         #
         fv = open ( FvOutputFile,'r+b')
                    
-        print "Write the Fv contents to buffer"
+        print "Generate %s Fv Successful" %self.UiFvName
               
         Buffer.write(fv.read())
         fv.close

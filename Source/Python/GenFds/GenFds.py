@@ -7,6 +7,7 @@ import Common.EdkIIWorkspaceBuild
 import RuleComplexFile
 from EfiSection import EfiSection
 import StringIO
+import Common.TargetTxtClassObject
 
 versionNumber = "1.0"
 __version__ = "%prog Version " + versionNumber
@@ -25,6 +26,7 @@ def main():
         sys.exit(1)
     else:
         workspace = options.workspace
+        GenFdsGlobalVariable.WorkSpaceDir = workspace
         if (options.debug):
             print "Using Workspace:", workspace
 
@@ -41,7 +43,11 @@ def main():
     if (options.activePlatform):
         activePlatform = options.activePlatform
     else :
-        activePlatform = None
+        Target = Common.TargetTxtClassObject.TargetTxtDict(GenFdsGlobalVariable.WorkSpaceDir)
+        activePlatform = Target.TargetTxtDictionary['ACTIVE_PLATFORM']
+        
+    GenFdsGlobalVariable.ActivePlatform = activePlatform
+
         
     if (options.outputDir):
         outputDir = options.outputDir
@@ -60,7 +66,8 @@ def main():
     
     """call workspace build create database"""
     os.environ["WORKSPACE"] = workspace
-    buildWorkSpace = Common.EdkIIWorkspaceBuild.WorkspaceBuild(activePlatform)
+    buildWorkSpace = Common.EdkIIWorkspaceBuild.WorkspaceBuild(activePlatform, workspace)
+    buildWorkSpace.GenBuildDatabase()
     
     """Call GenFds"""
     GenFds.GenFd(outputDir, fdfParser, buildWorkSpace, archList)

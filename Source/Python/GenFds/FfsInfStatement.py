@@ -7,6 +7,8 @@ import sys
 import Section
 import RuleSimpleFile
 import RuleComplexFile
+import Common.TargetTxtClassObject
+
 #from String import *
 
 class FfsInfStatement(Ffs.Ffs):
@@ -18,7 +20,6 @@ class FfsInfStatement(Ffs.Ffs):
         self.InfFileName = None
         self.BuildNum = ''
         self.KeyStringList = []
-        self.RuleOverride = None
 
     def __infParse__(self):
         #
@@ -69,7 +70,7 @@ class FfsInfStatement(Ffs.Ffs):
         # Get the rule of how to generate Ffs file
         #
         Rule = self.__GetRule__()
-                                                       
+
         FileType = Ffs.Ffs.ModuleTypeToFileType[Rule.ModuleType]
         #
         # For the rule only has simpleFile
@@ -105,57 +106,90 @@ class FfsInfStatement(Ffs.Ffs):
         return String
 
     def __GetRule__ (self) :
-        currentArch = 'IA32'
+        currentArchList = self.__GetCurrentArch__()
+        
         #for item in GenFdsGlobalVariable.FdfParser.profile.RuleDict :
         #    print item
+        for currentArch in currentArchList:
+            RuleName = 'RULE'              + \
+                       '.'                 + \
+                       currentArch.upper() + \
+                       '.'                 + \
+                       self.ModuleType.upper()
+            if self.Rule != None:
+                RuleName = RuleName + \
+                           '.'      + \
+                           self.Rule.upper()
+                           
+            Rule = GenFdsGlobalVariable.FdfParser.profile.RuleDict.get(RuleName)
+            if Rule != None:
+                print "Want To Find Rule Name is : " + RuleName
+                return Rule
+            
         RuleName = 'RULE'      + \
                    '.'         + \
-                   currentArch + \
+                   'COMMON'    + \
                    '.'         + \
                    self.ModuleType.upper()
-        
+        if self.Rule != None:
+            RuleName = RuleName + \
+                       '.'      + \
+                       self.Rule.upper()
+                       
         Rule = GenFdsGlobalVariable.FdfParser.profile.RuleDict.get(RuleName)
-        if Rule == None :
-            RuleName = 'RULE'      + \
-                       '.'         + \
-                       'COMMON'    + \
-                       '.'         + \
-                       self.ModuleType.upper()
+        if Rule != None:
             print "Want To Find Rule Name is : " + RuleName
-            Rule = GenFdsGlobalVariable.FdfParser.profile.RuleDict.get(RuleName)
-            if Rule == None :
-                print 'Dont Find Related Rule, Using Default Rule !!!'
-                if GenFdsGlobalVariable.DefaultRule == None:
-                    raise Exception ("Default Rule doesn't exist!!")
+            return Rule
+
+        if Rule == None :
+            print 'Dont Find Related Rule, Using Default Rule !!!'
+            if GenFdsGlobalVariable.DefaultRule == None:
+                raise Exception ("Default Rule doesn't exist!!")
+            else:
                 return GenFdsGlobalVariable.DefaultRule
-        print "Want To Find Rule Name is : " + RuleName
-        return Rule
+
+    def __GetCurrentArch__(self):
+        Target = Common.TargetTxtClassObject.TargetTxtDict(GenFdsGlobalVariable.WorkSpaceDir)
+        targetArchList = Target.TargetTxtDictionary['TARGET_ARCH']
+        #targetArchList = GenFdsGlobalVariable.WorkSpace.TargetTxt.TargetTxtDictionary["TARGET_ARCH"]
+        if len(targetArchList) == 0:
+            targetArchList = GenFdsGlobalVariable.WorkSpace.SupArchList
+        else:
+            targetArchList = set(GenFdsGlobalVariable.WorkSpace.SupArchList) & set(targetArchList)
+            
+        #activePlatform = GenFdsGlobalVariable.WorkSpace.TargetTxt.TargetTxtDictionary.get('ACTIVE_PLATFORM')[0]
+        dscArchList = []
+        if self.InfFileName in (GenFdsGlobalVariable.WorkSpace.Build.get('IA32').PlatformDatabase[GenFdsGlobalVariable.ActivePlatform].Modules):
+            dscArchList.append ('IA32')
+        if self.InfFileName in (GenFdsGlobalVariable.WorkSpace.Build.get('X64').PlatformDatabase[GenFdsGlobalVariable.ActivePlatform].Modules):
+            dscArchList.append ('X64')
+        if self.InfFileName in (GenFdsGlobalVariable.WorkSpace.Build.get('IPF').PlatformDatabase[GenFdsGlobalVariable.ActivePlatform].Modules):
+            dscArchList.append ('IPF')
+
+        curArchList = set (targetArchList) & set (dscArchList)
+        print "Valid target architecture(s) is", " ".join(curArchList)
+        return curArchList
     
     def __GetEFIOutPutPath__(self):
-        Flag = False
         Arch = ''
         OutputPath = ''
         (ModulePath, fileName) = os.path.split(self.InfFileName)
         index = fileName.find('.')
         fileName = fileName[0:index]
-        Platform = os.path.normpath(GenFdsGlobalVariable.WorkSpace.TargetTxt.TargetTxtDictionary["ACTIVE_PLATFORM"][0])
-        targetArchList = GenFdsGlobalVariable.WorkSpace.TargetTxt.TargetTxtDictionary["TARGET_ARCH"]
-        if len(targetArchList) == 0:
-            myArchList = GenFdsGlobalVariable.WorkSpace.SupArchList
-        else:
-            myArchList = set(GenFdsGlobalVariable.WorkSpace.SupArchList) & set(targetArchList)
-            print "Valid target architecture(s) is", " ".join(myArchList)
 
-        if len(myArchList) > 1 :
+        curArchList = self.__GetCurrentArch__()
+        if len(curArchList) > 1 :
             for Key in self.KeyStringList:
                 Target, Tag, Arch = Key.split('_')
                 ArchList = set (ArchList) & Arch
-                if ArchList == 1:
-                    Arch = ArchList[0]
-                else:
-                    raise Exception("Module %s has too many bulid Arch !" %self.InfFileNames)
-        elif len(myArchList) == 1 :
-            Arch = myArchList.pop()
+            if len(ArchList) == 1:
+                Arch = ArchList[0]
+            elif len(ArchList) > 1:
+                raise Exception("Module %s has too many bulid Arch !" %self.InfFileNames)
+            else:
+                raise Exception("Don't find legal Arch in Module %s !" %self.InfFileNames)
+        elif len(curArchList) == 1 :
+            Arch = curArchList.pop()
             
         OutputPath = os.path.join(GenFdsGlobalVariable.OuputDir,
                                   Arch ,
@@ -163,7 +197,8 @@ class FfsInfStatement(Ffs.Ffs):
                                   fileName,
                                   'OUTPUT'
                                   )
-        OutputPath = os.path.normcase(OutputPath)
+                                  
+        OutputPath = os.path.realpath(OutputPath)
         return OutputPath
         
     def __GenSimpleFileSection__(self, Rule):
@@ -230,7 +265,10 @@ class FfsInfStatement(Ffs.Ffs):
         for Sect in Rule.SectionList:
            #print 'GenSection: %s %s :' %(self.OutputPath ,self.ModuleGuid)
            secName = ''
-           secName, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, self.KeyStringList, self)
+           if Rule.KeyStringList != []:
+               secName, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, Rule.KeyStringList, self)
+           else :
+               secName, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, self.KeyStringList, self)
            if secName != '':
                SectFiles = SectFiles    + \
                            ' -i '       + \

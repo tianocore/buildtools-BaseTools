@@ -336,12 +336,12 @@ class WorkspaceBuild(object):
                     pcd.append(None)
                     SkuName = dscObj.Contents[key].PcdsDynamicDefault[index][1]
                     SkuInfoList = []
-                    if SkuName == None or SkuName == []:
+                    if SkuName == None or SkuName == [] or SkuName == ['']:
                         SkuName = ['DEFAULT']
                     SkuNameList = map(lambda l: l.strip(), SkuName[0].split(DataType.TAB_VALUE_SPLIT))
                     for Item in SkuNameList:
                         SkuInfo = SkuInfoClass()
-                        SkuInfo.SkuId = pb.SkuIds[Item]
+                        SkuInfo.SkuId = Item[1]
                         SkuInfo.DefaultValue = pcd[2]
                         SkuInfoList.append(SkuInfo)
                     pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_DEFAULT, None, None, None, pcd[3], SkuInfoList)

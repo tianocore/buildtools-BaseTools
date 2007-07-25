@@ -3,6 +3,7 @@ import StringIO
 from Ffs import Ffs
 import subprocess
 from GenFdsGlobalVariable import GenFdsGlobalVariable
+import os
 
 class FvImageSection(Section.Section):
     def __init__(self):
@@ -23,22 +24,13 @@ class FvImageSection(Section.Section):
                                  FvImageSection both in FvUiName and \
                                  FvImageArg!")
                                  
-        self.Fv.AddToBuffer(Buffer)
-        
-        FvFileName = OutputPath + \
-                     ModuleName + \
-                     '.fv'
-        FvFile = open ( FvFileName, 'w+')
-        FvFile.write(Buffer.getvalue())
-        FvFile.close()
+        FvFileName = self.Fv.AddToBuffer(Buffer)
         #
         # Prepare the parameter of GenSection
         #
-        OutputFile = OutputPath + \
-                     ModuleName + \
-                     Ffs.SectionSuffix.get("FV_IMAGE")
+        OutputFile = os.path.join(OutputPath, ModuleName + Ffs.SectionSuffix.get("FV_IMAGE"))
                      
-        GenSectionCmd = 'GenSec -o '                      + \
+        GenSectionCmd = 'GenSec -o '                          + \
                          OutputFile                           + \
                          ' -s '                               + \
                          'EFI_SECTION_FIRMWARE_VOLUME_IMAGE ' + \

@@ -26,14 +26,19 @@ class DataSection (Section.Section):
         if not os.path.exists(self.SectFileName):
             self.SectFileName = os.path.join (GenFdsGlobalVariable.WorkSpaceDir,
                                               self.SectFileName)
-
-        OutputFile = OutputPath + \
-                     os.sep     + \
-                     ModuleName + \
-                     Ffs.SectionSuffix.get(self.SecType)
+        if self.SecType == 'TE':
+            TeFile = os.path.join( OutputPath, ModuleName + 'Te.raw')
+            GenTeCmd = 'GenFW -t '    + \
+                       ' -o '         + \
+                        TeFile        + \
+                        ' '           + \
+                       GenFdsGlobalVariable.ExtendMarco(self.SectFileName)
+            print GenTeCmd
+            GenFdsGlobalVariable.CallExternalTool(GenTeCmd, "GenFw Failed !")
+            self.SectFileName = TeFile
+                 
+        OutputFile = os.path.join (OutputPath, ModuleName + Ffs.SectionSuffix.get(self.SecType))
         OutputFile = os.path.normpath(OutputFile)
-        print "DataSection SectionType: %s" %self.SecType
-        print "DataSection SectFileName: %s" %self.SectFileName
         
         GenSectionCmd = 'GenSec -o '                                     + \
                          OutputFile                                      + \

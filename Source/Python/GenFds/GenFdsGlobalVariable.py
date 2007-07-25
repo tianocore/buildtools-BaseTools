@@ -13,7 +13,7 @@ class GenFdsGlobalVariable:
     DefaultRule = None
     ArchList = None
     VtfDict = {}
-    
+    ActivePlatform = None
     def ExtendMarco (String):
         return String
     
@@ -24,19 +24,21 @@ class GenFdsGlobalVariable:
         GenFdsGlobalVariable.WorkSpace = WorkSpace
         GenFdsGlobalVariable.FvDir = os.path.join(GenFdsGlobalVariable.OuputDir, 'Fv')
         GenFdsGlobalVariable.FfsDir = os.path.join(GenFdsGlobalVariable.FvDir, 'Ffs')
-        GenFdsGlobalVariable.WorkSpaceDir = GenFdsGlobalVariable.WorkSpace.Workspace.WorkspaceDir
         if ArchList != None:
             GenFdsGlobalVariable.ArchList = ArchList
             
         if not os.path.exists(GenFdsGlobalVariable.FvDir) :
             os.makedirs(GenFdsGlobalVariable.FvDir)
-            
+        
     def SetDefaultRule (Rule) :
         GenFdsGlobalVariable.DefaultRule = Rule
 
     def ReplaceWorkspaceMarco(String):
         Str = String.replace('$(WORKSPACE)', GenFdsGlobalVariable.WorkSpaceDir)
-        Str = os.path.realpath(Str)
+        if os.path.exists(Str):
+            Str = os.path.realpath(Str)
+        else:
+            Str = os.path.join(GenFdsGlobalVariable.WorkSpaceDir, String)
         return Str
     
     def CallExternalTool (cmd, errorMess):

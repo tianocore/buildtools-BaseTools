@@ -36,11 +36,20 @@ class region:
                 #
                 # Call GenFv tool
                 #
+                
                 self.FvAddress = int(BaseAddress, 16) + self.Offset
                 BlockSize = self.__BlockSizeOfRegion__(BlockSizeList)
                 BlockNum = self.__BlockNumOfRegion__(BlockSize)
                 FvBaseAddress = '0x%x' %self.FvAddress
                 FileName = fv.AddToBuffer(Buffer, FvBaseAddress, BlockSize, BlockNum, ErasePolarity, vtfDict)
+                BinFile = open (FileName, 'r+b')
+                FvBuffer = StringIO.StringIO('')
+                FvBuffer.write(BinFile.read())
+                if FvBuffer.len > Size:
+                    raise Exception ("Size of Fv (%s) is large than Region Size ", self.RegionData)
+                elif FvBuffer.len < Size :
+                    raise Exception ("Size of Fv (%s) is less than Region Size ", self.RegionData)
+                FvBuffer.close()
                 FvBinDict[self.RegionData.upper()] = FileName
 
         if self.RegionType == 'FILE':
