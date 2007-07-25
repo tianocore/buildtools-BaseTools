@@ -20,6 +20,7 @@ import Vtf
 import ComponentStatement
 
 import re
+import os
 
 #define T_CHAR_SPACE                ' '
 #define T_CHAR_NULL                 '\0'
@@ -44,10 +45,14 @@ class Warning:
 class FileProfile :
     """File image in memory and information retrieved from it"""
     def __init__(self, filename):
+        if filename.find(os.getenv("WORKSPACE")) == -1:
+            filename = os.getenv("WORKSPACE") + '\\' + filename
+        if os.path.isfile(filename) == False:
+            print 'input filename is invalid!'
+        self.FileLinesList = []
         try:
             fsock = open(filename, "rb", 0)
             try:
-                self.FileLinesList = []
                 self.FileLinesList = fsock.readlines()
                 self.FileLinesList = [list(s) for s in self.FileLinesList]
             finally:
