@@ -242,14 +242,14 @@ class AutoGen(object):
 
         info = PlatformBuildInfo(platform)
 
-        ruleFile = gWorkspace.Workspace.WorkspaceFile(r'Conf\build_rule.txt')
+        ruleFile = gWorkspace.WorkspaceFile(r'Conf\build_rule.txt')
         info.BuildRule = imp.load_source("BuildRule", ruleFile)
 
         info.Arch = arch
         info.ToolChain = self.ToolChain
         info.BuildTarget = self.BuildTarget
 
-        info.WorkspaceDir = gWorkspace.Workspace.WorkspaceDir
+        info.WorkspaceDir = gWorkspace.WorkspaceDir
         info.SourceDir = path.dirname(platform.DescFilePath)
         info.OutputDir = platform.OutputDirectory
         info.BuildDir = path.join(info.OutputDir, self.BuildTarget + "_" + self.ToolChain)
