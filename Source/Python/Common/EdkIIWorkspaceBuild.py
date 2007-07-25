@@ -17,15 +17,12 @@
 import os, string, copy, pdb
 import EdkLogger
 import DataType
-from EdkIIWorkspace import *
-from TargetTxtClassObject import *
-from ToolDefClassObject import *
 from InfClassObject import *
 from DecClassObject import *
 from DscClassObject import *
 from String import *
 from BuildToolError import *
-
+from CommonDataClass.CommonClass import *
 
 class ModuleSourceFilesClassObject(object):
     def __init__(self, SourceFile = '', PcdFeatureFlag = '', TagName = '', ToolCode = '', ToolChainFamily = '', String = ''):
@@ -314,7 +311,6 @@ class WorkspaceBuild(object):
                 #LibraryClass
                 for index in range(len(dscObj.Contents[key].LibraryClasses)):
                     #['DebugLib|MdePkg/Library/PeiDxeDebugLibReportStatusCode/PeiDxeDebugLibReportStatusCode.inf', ['DXE_CORE']]
-                    print dscObj.Contents[key].LibraryClasses[index]
                     list = dscObj.Contents[key].LibraryClasses[index][0].split(DataType.TAB_VALUE_SPLIT, 1)
                     type = dscObj.Contents[key].LibraryClasses[index][1][0]
                     pb.LibraryClasses[(list[0], type)] = NormPath(list[1])
@@ -340,11 +336,11 @@ class WorkspaceBuild(object):
                     pcd.append(None)
                     SkuName = dscObj.Contents[key].PcdsDynamicDefault[index][1]
                     SkuInfoList = []
-                    if SkuName == None:
+                    if SkuName == None or SkuName == []:
                         SkuName = ['DEFAULT']
-                    SkuNameList = map(lambda l: l.strip(), SkuName.split(DataType.TAB_VALUE_SPLIT))
+                    SkuNameList = map(lambda l: l.strip(), SkuName[0].split(DataType.TAB_VALUE_SPLIT))
                     for Item in SkuNameList:
-                        SkuInfo = SkuInfoClassObject()
+                        SkuInfo = SkuInfoClass()
                         SkuInfo.SkuId = pb.SkuIds[Item]
                         SkuInfo.DefaultValue = pcd[2]
                         SkuInfoList.append(SkuInfo)
@@ -608,7 +604,7 @@ class WorkspaceBuild(object):
                 #LibraryClasses
                 for index in range(len(infObj.Contents[key].LibraryClasses)):
                     #Get LibraryClass name and default instance if existing
-                    list = infObj.Contents[key].LibraryClasses[index].split(DataType.TAB_VALUE_SPLIT)
+                    list = infObj.Contents[key].LibraryClasses[index][0].split(DataType.TAB_VALUE_SPLIT)
                     if len(list) < 2:
                         v = ''
                     else:
@@ -770,7 +766,8 @@ class WorkspaceBuild(object):
 if __name__ == '__main__':
 
     # Nothing to do here. Could do some unit tests.
-    ewb = WorkspaceBuild('EdkModulePkg/EdkModulePkg.dsc', 'C:/MyWorkspace')
+    w = os.getenv('WORKSPACE')
+    ewb = WorkspaceBuild('MdeModulePkg/MdeModulePkg.dsc', w)
     ewb.GenBuildDatabase()
     #print ewb.DscDatabase
     #print ewb.InfDatabase
