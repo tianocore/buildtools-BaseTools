@@ -25,7 +25,7 @@ class TargetTxtClassObject(object):
             DataType.TAB_TAT_DEFINES_MULTIPLE_THREAD                            : '',
             DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER               : '',
             DataType.TAB_TAT_DEFINES_TARGET                                     : [''],
-            DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG                             : '',
+            DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG                             : [''],
             DataType.TAB_TAT_DEFINES_TARGET_ARCH                                : ['']
         }
         if filename != None:
@@ -56,9 +56,10 @@ class TargetTxtClassObject(object):
                 if Key.startswith(CommentCharacter) == False and Key in self.TargetTxtDictionary.keys():
                     if Key == DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM or Key == DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF \
                       or Key == DataType.TAB_TAT_DEFINES_MULTIPLE_THREAD or Key == DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER \
-                      or Key == DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG or Key == DataType.TAB_TAT_DEFINES_ACTIVE_MODULE:
+                      or Key == DataType.TAB_TAT_DEFINES_ACTIVE_MODULE:
                         self.TargetTxtDictionary[Key] = LineList[1].replace('\\', '/').strip()
-                    elif Key == DataType.TAB_TAT_DEFINES_TARGET or Key == DataType.TAB_TAT_DEFINES_TARGET_ARCH:
+                    elif Key == DataType.TAB_TAT_DEFINES_TARGET or Key == DataType.TAB_TAT_DEFINES_TARGET_ARCH \
+                      or Key == DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG:
                         self.TargetTxtDictionary[Key] = LineList[1].split()
         f.close()
 
