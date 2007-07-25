@@ -18,11 +18,13 @@ from os.path import normpath
 
 from subprocess import *
 
-from NewTargetTxtClassObject import *
-from NewEdkIIWorkspaceBuild import *
-from AutoGen import *
-from BuildToolError import *
-import EdkLogger
+from Common.TargetTxtClassObject import *
+from Common.ToolDefClassObject import *
+from Common.EdkIIWorkspaceBuild import *
+from AutoGen.AutoGen import *
+from GenFds.FdfParser import *
+from Common.BuildToolError import *
+import Common.EdkLogger
 from BuildSpawn import *
 
 
@@ -91,10 +93,22 @@ class Build():
         self.Path         = os.getenv("PATH")
         self.Opt          = opt
         self.Args         = args
-        self.TargetTxt    = NewTargetTxtClassObject()
+        self.TargetTxt    = TargetTxtClassObject()
         self.ToolDef      = ToolDefClassObject()
         self.Sem          = None
         self.StartTime    = time.time()
+        self.GenC         = None
+        self.GenMake      = None
+        self.All          = None
+        t = self.Args[0].lower()
+        if t == 'genc':
+            self.GenC = 1
+        elif t == 'genmake':
+            self.enMake = 1
+        elif t == 'all' or t == '':
+            self.All = 1
+        else:
+            self.Args = t
         print time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.localtime())
         
 
@@ -184,7 +198,7 @@ class Build():
             AutoGenResult = AutoGen(ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch)
             AutoGenResult.CreateAutoGenFile()
         except Exception, e:
-            TrackInfo()
+            self.TrackInfo()
             print e
             return 1
 
@@ -194,12 +208,12 @@ class Build():
             AutoGenResult.CreateAutoGenFile()
             makefile = AutoGenResult.CreateMakefile()
         except Exception, e:
-            TrackInfo()
+            self.TrackInfo()
             print e
             return 1
 
 
-    def CleanAllFunc(self, ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
+    def OtherFunc(self, ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
         for d in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
             if ModuleFile == None:
                 DestDir = os.environ["WORKSPACE"] + '\\' + d.replace('/','\\') + '\\' + Target + '_' + ToolChain
@@ -210,20 +224,20 @@ class Build():
             FileNum = len(FileList)
             if FileNum > 0:
                 SameTypeFileInDir(FileNum, 'makefile', DestDir, StartTime)
-                p = Popen(["nmake", "/nologo", "-f", FileList[0], 'cleanall'], env=os.environ, cwd=os.path.dirname(FileList[0]))
+                p = Popen(["nmake", "/nologo", "-f", FileList[0], self.Args], env=os.environ, cwd=os.path.dirname(FileList[0]))
                 p.communicate()
                 if p.returncode != None:
                     return p.returncode
             else:
                 return 1
 
-    def ALLFunc(self, ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
+    def AllFunc(self, ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
         try:
             AutoGenResult = AutoGen(ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch)
             AutoGenResult.CreateAutoGenFile()
             makefile = AutoGenResult.CreateMakefile()
         except Exception, e:
-            TrackInfo()
+            self.TrackInfo()
             print e
             return 1
         if makefile != "":
@@ -242,18 +256,6 @@ class Build():
         # Merge Arch
         #
         self.Opt.TARGET_ARCH = list(set(self.Opt.TARGET_ARCH) & set(ewb.SupArchList))
-
-        GenC = 0
-        GenMake = 0
-        CleanAll = 0
-        for t in self.Args:
-            t = t.lower()
-            if t == 'genc':
-                GenC = 1
-            elif t == 'genmake':
-                GenMake = 1
-            elif t == 'cleanall':
-                CleanAll = 1
 
         if self.Opt.spawn == True:
             for a in self.Opt.TARGET:
@@ -313,24 +315,24 @@ class Build():
         for a in self.Opt.TARGET:
             for b in self.Opt.TOOL_CHAIN_TAG:
                 if ModuleFile == None:
-                    if GenC == 1:
+                    if self.GenC == 1:
                         self.GenCFunc(ModuleFile, PlatformFile, ewb, a, b, self.Opt.TARGET_ARCH)
-                    elif GenMake == 1:
+                    elif self.GenMake == 1:
                         self.GenMakeFunc(ModuleFile, PlatformFile, ewb, a, b, self.Opt.TARGET_ARCH)
-                    elif CleanAll == 1:
-                        self.CleanAllFunc(ModuleFile, PlatformFile, ewb, a, b, self.Opt.TARGET_ARCH)
+                    elif self.All == 1:
+                        self.AllFunc(ModuleFile, PlatformFile, ewb, a, b, self.Opt.TARGET_ARCH)
                     else:
-                        self.ALLFunc(ModuleFile, PlatformFile, ewb, a, b, self.Opt.TARGET_ARCH)
+                        self.OtherFunc(ModuleFile, PlatformFile, ewb, a, b, self.Opt.TARGET_ARCH)
                 else:
                     for c in self.Opt.TARGET_ARCH:
-                        if GenC == 1:
+                        if self.GenC == 1:
                             self.GenCFunc(ModuleFile, PlatformFile, ewb, a, b, c)
-                        elif GenMake == 1:
+                        elif self.GenMake == 1:
                             self.GenMakeFunc(ModuleFile, PlatformFile, ewb, a, b, c)
-                        elif CleanAll == 1:
-                            self.CleanAllFunc(ModuleFile, PlatformFile, ewb, a, b, c)
+                        elif self.All == 1:
+                            self.AllFunc(ModuleFile, PlatformFile, ewb, a, b, c)
                         else:
-                            self.ALLFunc(ModuleFile, PlatformFile, ewb, a, b, c)
+                            self.OtherFunc(ModuleFile, PlatformFile, ewb, a, b, c)
         return 0
 
     def CalculateTime(self):
@@ -395,6 +397,9 @@ if __name__ == '__main__':
 #
     try:
         (opt, args) = MyOptionParser()
+        if len(args) >= 2:
+            print 'The num of target is large than one.'
+            sys.exit(1)
     except Exception, e:
         print e
         sys.exit(1)
@@ -413,6 +418,7 @@ if __name__ == '__main__':
 #
     if os.path.isfile(build.WorkSpace + '\\Conf\\target.txt') == True:
         StatusCode =build.TargetTxt.LoadTargetTxtFile(build.WorkSpace + '\\Conf\\target.txt')
+        
         if os.path.isfile(build.WorkSpace + '\\' + build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF]) == True:
             StatusCode = build.ToolDef.LoadToolDefFile(build.WorkSpace + '\\' + build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])
         else:
@@ -445,11 +451,11 @@ if __name__ == '__main__':
 
     if build.Opt.TOOL_CHAIN_TAG == None:
         build.Opt.TOOL_CHAIN_TAG = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG]
-        if build.Opt.TOOL_CHAIN_TAG == '':
+        if build.Opt.TOOL_CHAIN_TAG == ['']:
             print "TOOL_CHAIN_TAG is None. Don't What to Build.\n"
             build.CalculateTime()
             sys.exit(1)
-    print "TOOL_CHAIN_TAG is", build.Opt.TOOL_CHAIN_TAG
+    print "TOOL_CHAIN_TAG is", " ".join(build.Opt.TOOL_CHAIN_TAG)
 
     if build.Opt.NUM == None:
         build.Opt.NUM = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER]
@@ -473,17 +479,31 @@ if __name__ == '__main__':
 #
 # Call Parser
 #
-    if (build.Opt.DSCFILE != None or build.Opt.DSCFILE != '') and os.path.isfile(build.WorkSpace + '\\' + build.Opt.DSCFILE) == False:
+    if build.Opt.DSCFILE != None and build.Opt.DSCFILE != '' and os.path.isfile(build.WorkSpace + '\\' + build.Opt.DSCFILE) == False:
         print "The input file: %s is not existed!", build.Opt.DSCFILE
         build.CalculateTime()
         sys.exit(1)
-    if build.Opt.FDFFILE != None and os.path.isfile(build.WorkSpace + '\\' + build.Opt.FDFFILE) == False:
-        print "The input file: %s is not existed!", build.Opt.FDFFILE
-        build.CalculateTime()
-        sys.exit(1)
+
     try:
         if build.Opt.DSCFILE != None and build.Opt.DSCFILE != '':
-            ewb = NewWorkspaceBuild(build.Opt.DSCFILE, build.WorkSpace)  #opt.DSCFILE is relative path plus filename
+            pcdSet = {}
+            ewb = WorkspaceBuild(build.Opt.DSCFILE, build.WorkSpace)  #opt.DSCFILE is relative path plus filename
+            if build.Opt.FDFFILE == None:
+                build.Opt.FDFFILE = ewb.Fdf
+            if build.Opt.FDFFILE != None and build.Opt.FDFFILE != '' and os.path.isfile(build.WorkSpace + '\\' + build.Opt.FDFFILE) == False:
+                print "The input file: %s is not existed!", build.Opt.FDFFILE
+                build.CalculateTime()
+                sys.exit(1)
+            if build.Opt.FDFFILE != None and build.Opt.FDFFILE != '':
+                fdf = FdfParser(build.Opt.FDFFILE)
+                fdf.ParseFile()
+                pcdSet = fdf.profile.PcdDict
+                
+            ewb.GenBuildDatabase(pcdSet)
+            
+            ewb.TargetTxt = build.TargetTxt
+            ewb.ToolDef = build.ToolDef
+            
     except Exception, e:
         print e
         build.CalculateTime()
@@ -493,6 +513,7 @@ if __name__ == '__main__':
 # Platform Build or Module Build
 #
     CurWorkDir = os.getcwd()
+    CurWorkDir = 't:\\Nt32pkg'
 
     if build.Opt.INFFILE:
         if build.Opt.DSCFILE:
@@ -531,15 +552,15 @@ if __name__ == '__main__':
             if FileNum >= 2:
                 print "There are %d DSC files in %s.\n" % (FileNum, CurWorkDir)
                 sys.exit(1)
-            if os.environ('WORKSPACE')[len(os.environ('WORKSPACE'))-1] == '\\':
-                PlatformFile = FileList[0][len(os.environ('WORKSPACE')):]
+            if build.WorkSpace[len(build.WorkSpace)-1] == '\\':
+                PlatformFile = FileList[0][len(build.WorkSpace):]
             else:
-                PlatformFile = FileList[0][len(os.environ('WORKSPACE'))+1:]
+                PlatformFile = FileList[0][len(build.WorkSpace)+1:]
             print "Platform build:", PlatformFile
             #
             # Call Parser Again
             #
-            ewb = NewWorkspaceBuild(PlatformFile, build.WorkSpace)
+            ewb = WorkspaceBuild(PlatformFile, build.WorkSpace)
             StatusCode = build.Process(None, PlatformFile, ewb)
         else:
             print "ERROR: DON'T KNOW WHAT TO BUILD\n"
