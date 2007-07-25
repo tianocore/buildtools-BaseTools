@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import string
 
-import Common.EdkLogger
+from Common import EdkLogger
 
 from Common.BuildToolError import *
 from Common.DataType import *
