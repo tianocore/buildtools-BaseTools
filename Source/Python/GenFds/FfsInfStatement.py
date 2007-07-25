@@ -149,15 +149,12 @@ class FfsInfStatement(Ffs.Ffs):
                 return GenFdsGlobalVariable.DefaultRule
 
     def __GetCurrentArch__(self):
-        Target = Common.TargetTxtClassObject.TargetTxtDict(GenFdsGlobalVariable.WorkSpaceDir)
-        targetArchList = Target.TargetTxtDictionary['TARGET_ARCH']
-        #targetArchList = GenFdsGlobalVariable.WorkSpace.TargetTxt.TargetTxtDictionary["TARGET_ARCH"]
+        targetArchList = GenFdsGlobalVariable.ArchList
         if len(targetArchList) == 0:
             targetArchList = GenFdsGlobalVariable.WorkSpace.SupArchList
         else:
             targetArchList = set(GenFdsGlobalVariable.WorkSpace.SupArchList) & set(targetArchList)
             
-        #activePlatform = GenFdsGlobalVariable.WorkSpace.TargetTxt.TargetTxtDictionary.get('ACTIVE_PLATFORM')[0]
         dscArchList = []
         if self.InfFileName in (GenFdsGlobalVariable.WorkSpace.Build.get('IA32').PlatformDatabase[GenFdsGlobalVariable.ActivePlatform].Modules):
             dscArchList.append ('IA32')
@@ -185,12 +182,13 @@ class FfsInfStatement(Ffs.Ffs):
             if len(ArchList) == 1:
                 Arch = ArchList[0]
             elif len(ArchList) > 1:
-                raise Exception("Module %s has too many bulid Arch !" %self.InfFileNames)
+                raise Exception("Module %s has too many bulid Arch !" %self.InfFileName)
             else:
-                raise Exception("Don't find legal Arch in Module %s !" %self.InfFileNames)
+                raise Exception("Don't find legal Arch in Module %s !" %self.InfFileName)
         elif len(curArchList) == 1 :
             Arch = curArchList.pop()
-            
+        else:
+            raise Exception("Don't find legal Arch in Module %s !" %self.InfFileName)
         OutputPath = os.path.join(GenFdsGlobalVariable.OuputDir,
                                   Arch ,
                                   ModulePath,

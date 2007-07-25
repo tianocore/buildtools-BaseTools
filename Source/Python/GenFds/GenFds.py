@@ -58,7 +58,8 @@ def main():
     if (options.archList) :
         archList = options.archList.split(',')
     else:
-        archList = None
+        Target = Common.TargetTxtClassObject.TargetTxtDict(GenFdsGlobalVariable.WorkSpaceDir)
+        archList = Target.TargetTxtDictionary['TARGET_ARCH']
         
     """ Parse Fdf file """
     fdfParser = FdfParser.FdfParser(fdfFilename)

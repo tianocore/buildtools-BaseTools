@@ -3,6 +3,7 @@ import subprocess
 from Ffs import Ffs
 import os
 from GenFdsGlobalVariable import GenFdsGlobalVariable
+import Common.ToolDefClassObject
 class GuidSection(Section.Section) :
     
     def __init__(self):
@@ -121,7 +122,8 @@ class GuidSection(Section.Section) :
         tool = None
         if self.keyStringList == None or self.keyStringList == []:
             return tool
-        toolDefinition = GenFdsGlobalVariable.WorkSpace.ToolDef.ToolsDefTxtDictionary
+        toolDefinition = Common.ToolDefClassObject.ToolDefDict(GenFdsGlobalVariable.WorkSpaceDir).ToolsDefTxtDictionary
+        #toolDefinition = GenFdsGlobalVariable.WorkSpace.ToolDef.ToolsDefTxtDictionary
         for toolDef in toolDefinition.items():
             if self.NameGuid == toolDef[1]:
                 keyList = toolDef[0].split('_')
