@@ -151,16 +151,18 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args, StartTime):
     t = str(' '.join(args))
     GenC = 0
     GenMake = 0
-    CleanAll = 0
+    All = 0
 
-    for t in args:
-        t = t.lower()
-        if t == 'genc':
-            GenC = 1
-        elif t == 'genmake':
-            GenMake = 1
-        elif t == 'cleanall':
-            CleanAll = 1
+# Add a check to limit multi-args
+
+    t = t.lower()
+    if t == 'genc':
+        GenC = 1
+    elif t == 'genmake':
+        GenMake = 1
+    elif t == '' or t == 'all':
+        All = 1
+            
 
 #spawn build
     Sem = BoundedSemaphore(int(opt.NUM))
@@ -227,20 +229,20 @@ def Process(ModuleFile, PlatformFile, ewb, opt, args, StartTime):
                     GenCFunc(ModuleFile, PlatformFile, ewb, a, b, opt.TARGET_ARCH)
                 elif GenMake == 1:
                     GenMakeFunc(ModuleFile, PlatformFile, ewb, a, b, opt.TARGET_ARCH)
-                elif CleanAll == 1:
-                    CleanAllFunc(ModuleFile, PlatformFile, ewb, a, b, opt.TARGET_ARCH)
-                else:
+                elif All == 1:
                     ALLFunc(ModuleFile, PlatformFile, ewb, a, b, opt.TARGET_ARCH)
+                else:
+                    OtherFunc(ModuleFile, PlatformFile, ewb, a, b, opt.TARGET_ARCH, t)
             else:
                 for c in opt.TARGET_ARCH:
                     if GenC == 1:
                         GenCFunc(ModuleFile, PlatformFile, ewb, a, b, c)
                     elif GenMake == 1:
                         GenMakeFunc(ModuleFile, PlatformFile, ewb, a, b, c)
-                    elif CleanAll == 1:
-                        CleanAllFunc(ModuleFile, PlatformFile, ewb, a, b, c)
-                    else:
+                    elif All == 1:
                         ALLFunc(ModuleFile, PlatformFile, ewb, a, b, c)
+                    else:
+                        OtherFunc(ModuleFile, PlatformFile, ewb, a, b, c, t)
     return 0
 
 
@@ -302,7 +304,7 @@ def GenMakeFunc(ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
         print e
         return 1
 
-def CleanAllFunc(ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
+def OtherFunc(ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch, t):
     for d in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
         if ModuleFile == None:
             DestDir = os.environ["WORKSPACE"] + '\\' + d.replace('/','\\') + '\\' + Target + '_' + ToolChain
@@ -313,7 +315,7 @@ def CleanAllFunc(ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
         FileNum = len(FileList)
         if FileNum > 0:
             SameTypeFileInDir(FileNum, 'makefile', DestDir, StartTime)
-            p = Popen(["nmake", "/nologo", "-f", FileList[0], 'cleanall'], env=os.environ, cwd=os.path.dirname(FileList[0]))
+            p = Popen(["nmake", "/nologo", "-f", FileList[0], t], env=os.environ, cwd=os.path.dirname(FileList[0]))
             p.communicate()
             if p.returncode != None:
                 return p.returncode
@@ -383,9 +385,11 @@ if __name__ == '__main__':
 #
     try:
         (opt, args) = MyOptionParser()
+        #Add check for len of args list
     except Exception, e:
         print e
         sys.exit(1)
+
 
 #
 # Record Start Time
@@ -405,7 +409,15 @@ if __name__ == '__main__':
 # Call Parser
 #
     try:
-        ewb = WorkspaceBuild(opt.DSCFILE)  #opt.DSCFILE is relative path plus filename
+        if opt.DSCFILE == None:
+            ewb = WorkspaceBuild(opt.DSCFILE)
+            opt.DSCFILE = ewb.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM][0]
+            if opt.DSCFILE == '':
+                pass
+            else:
+                ewb = WorkspaceBuild(opt.DSCFILE)
+        else:
+            ewb = WorkspaceBuild(opt.DSCFILE)
     except Exception, e:
         print e
         CalculateTime(StartTime)
@@ -416,15 +428,15 @@ if __name__ == '__main__':
     if opt.TARGET_ARCH == None:
         opt.TARGET_ARCH = ewb.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET_ARCH]
         if opt.TARGET_ARCH == ['']:
-            opt.TARGET = ['IA32', 'X64', 'IPF', 'EBC']
+            opt.TARGET_ARCH = ['IA32', 'X64', 'IPF', 'EBC']
     print "TARGET_ARCH is", " ".join(opt.TARGET_ARCH)
             
-    if opt.DSCFILE == None:
-        opt.DSCFILE = ewb.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM][0]
-#        if opt.DSCFILE == '':
-#            print "ACTIVE_PLATFORM is None. Don't What to Build.\n"
-#            exit()
-    print "ACTIVE_PLATFORM is %s" % opt.DSCFILE
+##    if opt.DSCFILE == None:
+##        opt.DSCFILE = ewb.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM][0]
+###        if opt.DSCFILE == '':
+###            print "ACTIVE_PLATFORM is None. Don't What to Build.\n"
+###            exit()
+##    print "ACTIVE_PLATFORM is %s" % opt.DSCFILE
 
     if opt.TARGET == None:
         opt.TARGET = ewb.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET]
@@ -462,7 +474,8 @@ if __name__ == '__main__':
 #
 # Merge Arch
 #
-    opt.TARGET_ARCH = list(set(opt.TARGET_ARCH) & set(ewb.SupArchList))
+    if opt.DSCFILE != None and opt.DSCFILE != '':
+        opt.TARGET_ARCH = list(set(opt.TARGET_ARCH) & set(ewb.SupArchList))
     
 #
 # Platform Build or Module Build
@@ -482,7 +495,7 @@ if __name__ == '__main__':
         FileList = glob.glob(CurWorkDir + '\\*.inf')
         FileNum = len(FileList)
         SameTypeFileInDir(FileNum, 'inf', CurWorkDir, StartTime)
-        if opt.DSCFILE:
+        if opt.DSCFILE != None and opt.DSCFILE != '':
             if ewb.Workspace.WorkspaceDir[len(ewb.Workspace.WorkspaceDir)-1] == '\\':
                 ModuleFile = FileList[0][len(ewb.Workspace.WorkspaceDir):]
             else:
