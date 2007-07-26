@@ -185,8 +185,8 @@ class PlatformBuildClassObject(object):
         return hash(self.DescFilePath)
 
 class ItemBuild(object):
-    def __init__(self, arch, platform = None, package = None, module = None):
-        self.Arch                    = arch
+    def __init__(self, Arch, Platform = None, Package = None, Module = None):
+        self.Arch                    = Arch
         self.PlatformDatabase        = {}        #{ [DscFileName] : PlatformBuildClassObject, ...}
         self.PackageDatabase         = {}        #{ [DecFileName] : PacakgeBuildClassObject, ...}
         self.ModuleDatabase          = {}        #{ [InfFileName] : ModuleBuildClassObject, ...}
@@ -206,58 +206,72 @@ class WorkspaceBuild(object):
         self.DscDatabase             = {}        #{ [DscFileName] : DscClassObject}
         
         self.Build                   = {}
-        for key in DataType.ARCH_LIST:
-            self.Build[key] = ItemBuild(key)
+        for Arch in DataType.ARCH_LIST:
+            self.Build[Arch] = ItemBuild(Arch)
         
+        #
         # Get active platform
-        dscFileName = ActivePlatform
-        File = self.WorkspaceFile(NormPath(dscFileName))
+        #
+        DscFileName = ActivePlatform
+        File = self.WorkspaceFile(NormPath(DscFileName))
         if os.path.exists(File) and os.path.isfile(File):
-            self.DscDatabase[dscFileName] = Dsc(File, True)
+            self.DscDatabase[DscFileName] = Dsc(File, True, True)
         else:
             raise ParserError(FILE_NOT_FOUND, name = File)
         
+        #
         # parse platform to get module
-        for dsc in self.DscDatabase.keys():
-            dscObj = self.DscDatabase[dsc]
+        #
+        for DscFile in self.DscDatabase.keys():
+            Platform = self.DscDatabase[DscFile].Platform
             
             #
             # Get global information
             #
-            self.SupArchList = dscObj.Defines.DefinesDictionary[TAB_DSC_DEFINES_SUPPORTED_ARCHITECTURES]
-            self.BuildTarget = dscObj.Defines.DefinesDictionary[TAB_DSC_DEFINES_BUILD_TARGETS]
-            self.SkuId = dscObj.Defines.DefinesDictionary[TAB_DSC_DEFINES_SKUID_IDENTIFIER][0]
-            self.Fdf = dscObj.Defines.DefinesDictionary[TAB_DSC_DEFINES_FLASH_DEFINITION][0]
+            self.SupArchList = Platform.Header.SupArchList
+            self.BuildTarget = Platform.Header.BuildTargets
+            self.SkuId = Platform.Header.SkuIdName
+            self.Fdf = Platform.FlashDefinitionFile.FilePath
             
-            #Get all inf
-            for key in DataType.ARCH_LIST:
-                for index in range(len(dscObj.Contents[key].LibraryClasses)):
-                    self.AddToInfDatabase(dscObj.Contents[key].LibraryClasses[index][0].split(DataType.TAB_VALUE_SPLIT, 1)[1])
-                for index in range(len(dscObj.Contents[key].Components)):
-                    Module = dscObj.Contents[key].Components[index][0]
-                    LibList = dscObj.Contents[key].Components[index][1]
+            #
+            # Get all inf files
+            #
+            for Item in Platform.Libraries.LibraryList:
+                for Arch in Item.SupArchList:
+                    self.AddToInfDatabase(Item.FilePath)
+            
+            for Item in Platform.Modules.ModuleList:
+                for Arch in Item.SupArchList:
+                    #
+                    # Add modules
+                    #
+                    Module = Item.FilePath
                     self.AddToInfDatabase(Module)
-                    for indexOfLib in range(len(LibList)):
-                        Lib = LibList[indexOfLib]
-                        if len(Lib.split(DataType.TAB_VALUE_SPLIT)) == 2:
-                            self.AddToInfDatabase(CleanString(Lib.split(DataType.TAB_VALUE_SPLIT)[1]))
-                            self.UpdateInfDatabase(Module, CleanString(Lib.split(DataType.TAB_VALUE_SPLIT)[0]), key)
+                    #
+                    # Add library used in modules
+                    #
+                    for Lib in Item.LibraryClasses.LibraryList:
+                        self.AddToInfDatabase(Lib.FilePath)
+                        self.UpdateLibraryClassOfModule(Module, Lib.Name, Arch)
         #End For of Dsc
         
         #parse module to get package
-        for inf in self.InfDatabase.keys():
-            infObj = self.InfDatabase[inf]
+        for InfFile in self.InfDatabase.keys():
+            Module = self.InfDatabase[InfFile].Module
             #Get all dec
-            for key in DataType.ARCH_LIST:
-                for index in range(len(infObj.Contents[key].Packages)):
-                    self.AddToDecDatabase(infObj.Contents[key].Packages[index])
+            for Item in Module.PackageDependencies:
+                for Arch in Item.SupArchList:
+                    self.AddToDecDatabase(Item.FilePath)
+#            for key in DataType.ARCH_LIST:
+#                for index in range(len(infObj.Contents[key].Packages)):
+#                    self.AddToDecDatabase(infObj.Contents[key].Packages[index])
     #End of self.Init()
     
     #
     # Return a full path with workspace dir
     #
     def WorkspaceFile(self, Filename):
-        return os.path.join(self.WorkspaceDir, Filename)
+        return os.path.join(os.path.normpath(self.WorkspaceDir), os.path.normpath(Filename))
     
     def GenBuildDatabase(self, PcdsSet = {}):
         #Build databases
@@ -654,35 +668,52 @@ class WorkspaceBuild(object):
         
         #End of Inf Go Through
         
-        #End of build ModuleDatabase    
+        #End of build ModuleDatabase
     
-
-    
-    def UpdateInfDatabase(self, infFileName, LibraryClass, Arch):
-        infFileName = NormPath(infFileName)
-        LibList = self.InfDatabase[infFileName].Contents[Arch].LibraryClasses
+    def UpdateLibraryClassOfModule(self, InfFileName, LibraryClass, Arch):
+        LibList = self.InfDatabase[NormPath(InfFileName)].Module.LibraryClasses
         NotFound = True
-        for Item in LibList:
-            LibName = Item[0].split(DataType.TAB_VALUE_SPLIT)[0].strip()
-            if LibName == LibraryClass:
-                return
-        
+        for Lib in LibList:
+            #
+            # Find this LibraryClass
+            #
+            if Lib.LibraryClass == LibraryClass:
+                if Arch in Lib.SupArchList:
+                    return
+                else:
+                    Lib.SupArchList.append(Arch)
+                    return
         if NotFound:
-            self.InfDatabase[infFileName].Contents[Arch].LibraryClasses.extend([LibraryClass])
-    
-    def AddToInfDatabase(self, infFileName):
-        infFileName = NormPath(infFileName)
-        file = self.WorkspaceFile(infFileName)
-        if os.path.exists(file) and os.path.isfile(file):
-            if infFileName not in self.InfDatabase:
-                self.InfDatabase[infFileName] = Inf(file, True)
+            Lib = LibraryClassClass()
+            Lib.LibraryClass = LibraryClass
+            Lib.SupArchList = [Arch]
                 
-    def AddToDecDatabase(self, decFileName):
-        decFileName = NormPath(decFileName)
-        file = self.WorkspaceFile(decFileName)
-        if os.path.exists(file) and os.path.isfile(file):
-            if decFileName not in self.DecDatabase:
-                self.DecDatabase[decFileName] = Dec(file, True)
+    
+#    def UpdateInfDatabase(self, InfFileName, LibraryClass, Arch):
+#        InfFileName = NormPath(InfFileName)
+#        LibList = self.InfDatabase[InfFileName].Contents[Arch].LibraryClasses
+#        LibList = self.InfDatabase[InfFileName].Module.LibraryClasses
+#        NotFound = True
+#        for Lib in LibList:
+#            if Lib.LibraryClass == LibraryClass and Arch in Lib.SupArchList:
+#                return
+#        
+#        if NotFound:
+#            self.InfDatabase[infFileName].Module.Contents[Arch].LibraryClasses.extend([LibraryClass])
+    
+    def AddToInfDatabase(self, InfFileName):
+        InfFileName = NormPath(InfFileName)
+        File = self.WorkspaceFile(InfFileName)
+        if os.path.exists(File) and os.path.isfile(File):
+            if InfFileName not in self.InfDatabase:
+                self.InfDatabase[InfFileName] = Inf(File, True, True)
+                
+    def AddToDecDatabase(self, DecFileName):
+        DecFileName = NormPath(DecFileName)
+        File = self.WorkspaceFile(DecFileName)
+        if os.path.exists(File) and os.path.isfile(File):
+            if DecFileName not in self.DecDatabase:
+                self.DecDatabase[DecFileName] = Dec(File, True, True)
                 
     def FindLibraryClassInstanceOfModule(self, lib, arch, moduleType, moduleName):
         for dsc in self.DscDatabase.keys():
@@ -769,7 +800,7 @@ if __name__ == '__main__':
 
     # Nothing to do here. Could do some unit tests.
     w = os.getenv('WORKSPACE')
-    ewb = WorkspaceBuild('MdeModulePkg/MdeModulePkg.dsc', w)
+    ewb = WorkspaceBuild('Nt32Pkg/Nt32Pkg.dsc', w)
     ewb.GenBuildDatabase()
     #print ewb.DscDatabase
     #print ewb.InfDatabase

@@ -468,14 +468,14 @@ class Inf(InfObject):
             tab = (sect.split(TAB_SECTION_END, 1)[0]).upper()
             if tab == TAB_INF_DEFINES.upper():
                 GetSingleValueOfKeyFromLines(sect, self.Defines.DefinesDictionary, TAB_COMMENT_SPLIT, TAB_EQUAL_SPLIT, False, None)
-                if self.Defines.DefinesDictionary[TAB_INF_DEFINES_ENTRY_POINT][0] == '':
-                    self.Defines.DefinesDictionary[TAB_INF_DEFINES_ENTRY_POINT] = []
-                if self.Defines.DefinesDictionary[TAB_INF_DEFINES_UNLOAD_IMAGE][0] == '':
-                    self.Defines.DefinesDictionary[TAB_INF_DEFINES_UNLOAD_IMAGE] = []
-                if self.Defines.DefinesDictionary[TAB_INF_DEFINES_CONSTRUCTOR][0] == '':
-                    self.Defines.DefinesDictionary[TAB_INF_DEFINES_CONSTRUCTOR] = []
-                if self.Defines.DefinesDictionary[TAB_INF_DEFINES_DESTRUCTOR][0] == '':
-                    self.Defines.DefinesDictionary[TAB_INF_DEFINES_DESTRUCTOR] = []
+#                if self.Defines.DefinesDictionary[TAB_INF_DEFINES_ENTRY_POINT][0] == '':
+#                    self.Defines.DefinesDictionary[TAB_INF_DEFINES_ENTRY_POINT] = []
+#                if self.Defines.DefinesDictionary[TAB_INF_DEFINES_UNLOAD_IMAGE][0] == '':
+#                    self.Defines.DefinesDictionary[TAB_INF_DEFINES_UNLOAD_IMAGE] = []
+#                if self.Defines.DefinesDictionary[TAB_INF_DEFINES_CONSTRUCTOR][0] == '':
+#                    self.Defines.DefinesDictionary[TAB_INF_DEFINES_CONSTRUCTOR] = []
+#                if self.Defines.DefinesDictionary[TAB_INF_DEFINES_DESTRUCTOR][0] == '':
+#                    self.Defines.DefinesDictionary[TAB_INF_DEFINES_DESTRUCTOR] = []
                 continue
             if tab.find(DataType.TAB_USER_EXTENSIONS.upper()) > -1:
                 self.UserExtensions = sect

@@ -217,13 +217,23 @@ def SplitModuleType(Key):
     return ReturnValue
     
 #
-# Replace '\\', '\' with '/'
+# Create a normal path
+# And replace DFEINE in the path
 #
-def NormPath(path):
-    if path != '':
-        return os.path.normpath(path)
-    else:
-        return path
+def NormPath(Path, Defines = {}):
+    if Path != '':
+        # Replace with Define
+        for Key in Defines.keys():
+            Path = Path.replace(Key, Defines[Key])
+
+        # Replace '\\', '\' with '/'
+        Path = Path.replace('\\', '/')
+        Path = Path.replace('//', '/')
+        
+        # Remove ${WORKSPACE}
+        Path = Path.replace(DataType.TAB_WORKSPACE, '')
+
+    return Path
 
 #
 # Remove comments in a string
@@ -264,8 +274,8 @@ def GetSingleValueOfKeyFromLines(Lines, Dictionary, CommentCharacter, KeySplitCh
     Lines = Lines.split('\n')
     Keys = []
     Value = ''
-    DefineValues = []
-    SpecValues = []
+    DefineValues = ['']
+    SpecValues = ['']
     
     for Line in Lines:
         #
