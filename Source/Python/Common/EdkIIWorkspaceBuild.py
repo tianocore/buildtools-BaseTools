@@ -210,8 +210,8 @@ class WorkspaceBuild(object):
             self.Build[key] = ItemBuild(key)
         
         # Get active platform
-        dscFileName = NormPath(ActivePlatform)
-        File = self.WorkspaceFile(dscFileName)
+        dscFileName = ActivePlatform
+        File = self.WorkspaceFile(NormPath(dscFileName))
         if os.path.exists(File) and os.path.isfile(File):
             self.DscDatabase[dscFileName] = Dsc(File, True)
         else:
