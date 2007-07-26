@@ -45,10 +45,6 @@ class Warning:
 class FileProfile :
     """File image in memory and information retrieved from it"""
     def __init__(self, filename):
-        if filename.find(os.getenv("WORKSPACE")) == -1:
-            filename = os.getenv("WORKSPACE") + '\\' + filename
-        if os.path.isfile(filename) == False:
-            print 'input filename is invalid!'
         self.FileLinesList = []
         try:
             fsock = open(filename, "rb", 0)
