@@ -22,7 +22,7 @@ class region(RegionClassObject):
     def AddToBuffer(self, Buffer, BaseAddress, BlockSizeList, ErasePolarity, FvBinDict, vtfDict = None):
         Size = self.Size
         print "Fv Size = %d" %Size
-        
+
         if self.RegionType == 'FV':
             #
             # Get Fv from FvDict

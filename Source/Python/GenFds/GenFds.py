@@ -43,12 +43,24 @@ def main():
 
     if (options.activePlatform):
         activePlatform = options.activePlatform
+        activePlatform = os.path.realpath(activePlatform)
+        
+        if not os.path.exists(activePlatform)  :
+            raise Exception ("ActivePlatform doesn't exist!")
+        
+        if activePlatform.find(workspace) == -1:
+            raise Exception ("ActivePlatform doesn't exist in Workspace!")
+        
+        activePlatform = activePlatform.replace(workspace, '')
+        if len(activePlatform) > 0 :
+            activePlatform = activePlatform[1:]
+        else:
+            raise Exception ("ActivePlatform doesn't exist!")
     else :
         Target = Common.TargetTxtClassObject.TargetTxtDict(GenFdsGlobalVariable.WorkSpaceDir)
         activePlatform = Target.TargetTxtDictionary[Common.DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM]
-        
-    GenFdsGlobalVariable.ActivePlatform = activePlatform
 
+    GenFdsGlobalVariable.ActivePlatform = activePlatform
         
     if (options.outputDir):
         outputDir = options.outputDir
@@ -68,7 +80,7 @@ def main():
     
     """call workspace build create database"""
     os.environ["WORKSPACE"] = workspace
-    buildWorkSpace = Common.EdkIIWorkspaceBuild.WorkspaceBuild(activePlatform, workspace)
+    buildWorkSpace = Common.EdkIIWorkspaceBuild.WorkspaceBuild(GenFdsGlobalVariable.ActivePlatform, GenFdsGlobalVariable.WorkSpaceDir)
     buildWorkSpace.GenBuildDatabase()
     
     """Call GenFds"""

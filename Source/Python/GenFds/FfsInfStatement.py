@@ -8,6 +8,7 @@ import Section
 import RuleSimpleFile
 import RuleComplexFile
 from CommonDataClass.FdfClassObject import FfsInfStatementClassObject
+from Common.String import *
 
 #from String import *
 
@@ -28,7 +29,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         #
 ##        for item in GenFdsGlobalVariable.WorkSpace.InfDatabase:
 ##            print item
-        self.InfFileName = os.path.normpath(self.InfFileName)
+        self.InfFileName = NormPath(self.InfFileName)
         Inf = GenFdsGlobalVariable.WorkSpace.InfDatabase[self.InfFileName]
         #
         # Set Ffs BaseName, MdouleGuid, ModuleType, Version, OutputPath
@@ -300,8 +301,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
 
     def __GetGenFfsComParamter__(self, Rule):
         FileType = ' -t ' + \
-                   Ffs.Ffs.ModuleTypeToFileType[Rule.ModuleType]
-        print "Rule.Fixed = ", Rule.Fixed
+                   Ffs.Ffs.FvTypeToFileType[Rule.FvType]
         if Rule.Fixed != False:
             Fixed = ' -x '
         else :
