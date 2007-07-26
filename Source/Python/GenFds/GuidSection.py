@@ -3,16 +3,19 @@ import subprocess
 from Ffs import Ffs
 import os
 from GenFdsGlobalVariable import GenFdsGlobalVariable
-import Common.ToolDefClassObject
-class GuidSection(Section.Section) :
+from CommonDataClass.FdfClassObject import GuidSectionClassObject
+from Common import ToolDefClassObject
+
+class GuidSection(GuidSectionClassObject) :
     
     def __init__(self):
-        self.Alignment = None
-        self.NameGuid = None
-        self.SectionList = []
-        self.SectionType = None
-        self.ProcessRequired = False
-        self.AuthStatusValid = False
+##        self.Alignment = None
+##        self.NameGuid = None
+##        self.SectionList = []
+##        self.SectionType = None
+##        self.ProcessRequired = False
+##        self.AuthStatusValid = False
+        GuidSectionClassObject.__init__(self)
         
     def GenSection(self, OutputPath, ModuleName , KeyStringList, FfsInf = None):
         #
@@ -122,8 +125,7 @@ class GuidSection(Section.Section) :
         tool = None
         if self.keyStringList == None or self.keyStringList == []:
             return tool
-        toolDefinition = Common.ToolDefClassObject.ToolDefDict(GenFdsGlobalVariable.WorkSpaceDir).ToolsDefTxtDictionary
-        #toolDefinition = GenFdsGlobalVariable.WorkSpace.ToolDef.ToolsDefTxtDictionary
+        toolDefinition = ToolDefClassObject.ToolDefDict(GenFdsGlobalVariable.WorkSpaceDir).ToolsDefTxtDictionary
         for toolDef in toolDefinition.items():
             if self.NameGuid == toolDef[1]:
                 keyList = toolDef[0].split('_')

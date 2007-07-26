@@ -7,19 +7,20 @@ import sys
 import Section
 import RuleSimpleFile
 import RuleComplexFile
-import Common.TargetTxtClassObject
+from CommonDataClass.FdfClassObject import FfsInfStatementClassObject
 
 #from String import *
 
-class FfsInfStatement(Ffs.Ffs):
+class FfsInfStatement(FfsInfStatementClassObject):
     def __init__(self):
-        Ffs.Ffs.__init__(self)
-        self.Rule = None
-        self.ver = None
-        self.Ui = None
-        self.InfFileName = None
-        self.BuildNum = ''
-        self.KeyStringList = []
+##        Ffs.Ffs.__init__(self)
+##        self.Rule = None
+##        self.ver = None
+##        self.Ui = None
+##        self.InfFileName = None
+##        self.BuildNum = ''
+##        self.KeyStringList = []
+        FfsInfStatementClassObject.__init__(self)
 
     def __infParse__(self):
         #
@@ -155,6 +156,7 @@ class FfsInfStatement(Ffs.Ffs):
         else:
             targetArchList = set(GenFdsGlobalVariable.WorkSpace.SupArchList) & set(targetArchList)
             
+        #activePlatform = GenFdsGlobalVariable.WorkSpace.TargetTxt.TargetTxtDictionary.get('ACTIVE_PLATFORM')[0]
         dscArchList = []
         if self.InfFileName in (GenFdsGlobalVariable.WorkSpace.Build.get('IA32').PlatformDatabase[GenFdsGlobalVariable.ActivePlatform].Modules):
             dscArchList.append ('IA32')
@@ -182,13 +184,12 @@ class FfsInfStatement(Ffs.Ffs):
             if len(ArchList) == 1:
                 Arch = ArchList[0]
             elif len(ArchList) > 1:
-                raise Exception("Module %s has too many bulid Arch !" %self.InfFileName)
+                raise Exception("Module %s has too many bulid Arch !" %self.InfFileNames)
             else:
-                raise Exception("Don't find legal Arch in Module %s !" %self.InfFileName)
+                raise Exception("Don't find legal Arch in Module %s !" %self.InfFileNames)
         elif len(curArchList) == 1 :
             Arch = curArchList.pop()
-        else:
-            raise Exception("Don't find legal Arch in Module %s !" %self.InfFileName)
+            
         OutputPath = os.path.join(GenFdsGlobalVariable.OuputDir,
                                   Arch ,
                                   ModulePath,

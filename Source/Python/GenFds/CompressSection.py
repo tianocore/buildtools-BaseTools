@@ -3,16 +3,16 @@ import Section
 import subprocess
 import os
 from GenFdsGlobalVariable import GenFdsGlobalVariable
-class CompressSection (Section.Section) :
+from CommonDataClass.FdfClassObject import CompressSectionClassObject
+
+class CompressSection (CompressSectionClassObject) :
     CompTypeDict = {
         'PI_STD'     : ' -c PI_STD ',
         'NON_PI_STD' : ' -c NON_PI_STD '
     }
     
     def __init__(self):
-        self.Alignment = None
-        self.CompType = None
-        self.SectionList = []
+        CompressSectionClassObject.__init__(self)
         
 
     def GenSection(self, OutputPath, ModuleName,  KeyStringList, FfsInf = None):

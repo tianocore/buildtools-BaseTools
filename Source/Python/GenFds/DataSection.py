@@ -3,13 +3,11 @@ from GenFdsGlobalVariable import GenFdsGlobalVariable
 import subprocess
 from Ffs import Ffs
 import os
+from CommonDataClass.FdfClassObject import DataSectionClassObject
 
-class DataSection (Section.Section):
+class DataSection (DataSectionClassObject):
     def __init__(self):
-        self.Alignment = None
-        self.SecType = None
-        self.SectFileName = None
-        self.SectionList = []
+        DataSectionClassObject.__init__(self)
         
     def GenSection(self, OutputPath, ModuleName, keyStringList, FfsInf = None):
         #

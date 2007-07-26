@@ -1,4 +1,6 @@
-class Section :
+from CommonDataClass.FdfClassObject import SectionClassObject
+
+class Section (SectionClassObject):
     SectionType = {
         'RAW'       : 'EFI_SECTION_RAW',
         'FREEFORM'  : 'EFI_SECTION_FREEFORM_SUBTYPE_GUID',
@@ -17,7 +19,9 @@ class Section :
         '0xee4e5898-0x3914-0x4259-0x9d6e-0xdc7b-0xd79403cf' : 'LzmaCompress'
     }
     def __init__(self):
-        self.Alignment = None
+
+        #self.Alignment = None
+        SectionClassObject.__init__(self)
         
     def GenSection(self, OutputPath, GuidName, keyStringList, FfsInf = None):
         pass

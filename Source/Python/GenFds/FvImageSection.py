@@ -4,12 +4,15 @@ from Ffs import Ffs
 import subprocess
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import os
+from CommonDataClass.FdfClassObject import FvImageSectionClassObject
 
-class FvImageSection(Section.Section):
+class FvImageSection(FvImageSectionClassObject):
     def __init__(self):
-        self.Aligenment = None
-        self.Fv = None
-        self.FvName = None
+##        self.Aligenment = None
+##        self.Fv = None
+##        self.FvName = None
+        FvImageSectionClassObject.__init__(self)
+        
     def GenSection(self, OutputPath, ModuleName, KeyStringList, FfsInf = None):
         Buffer = StringIO.StringIO('')
         #
@@ -38,4 +41,4 @@ class FvImageSection(Section.Section):
                          
         print GenSectionCmd
         GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
-        return OutputFile, self.Aligenment
+        return OutputFile, self.Alignment

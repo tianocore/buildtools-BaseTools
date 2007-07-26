@@ -1,19 +1,20 @@
 from struct import *
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import StringIO
+from Common.FdfClassObject import RegionClassObject
 
-class region:
+class region(RegionClassObject):
     def __init__(self):
-        self.Offset = None       # The begin position of the Region
-        self.Size = None         # The Size of the Region
-        self.PcdOffset = None
-        self.PcdSize = None
-        self.RegionSize = None
-        self.SetVarDict = {}
-        self.RegionType = None
-        self.RegionData = None
+##        self.Offset = None       # The begin position of the Region
+##        self.Size = None         # The Size of the Region
+##        self.PcdOffset = None
+##        self.PcdSize = None
+##        self.RegionSize = None
+##        self.SetVarDict = {}
+##        self.RegionType = None
+##        self.RegionData = None
         
-        
+        RegionClassObject.__init__(self)
         
 ##
 #  Add RegionData to Fd file

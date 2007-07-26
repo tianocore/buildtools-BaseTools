@@ -3,12 +3,15 @@ import Section
 import os
 import subprocess
 from GenFdsGlobalVariable import GenFdsGlobalVariable
-class VerSection (Section.Section):
+from CommonDataClass.FdfClassObject import VerSectionClassObject
+
+class VerSection (VerSectionClassObject):
     def __init__(self):
-        self.Alignment = None
-        self.BuildNum = None
-        self.StringData = None
-        self.FileName = None
+##        self.Alignment = None
+##        self.BuildNum = None
+##        self.StringData = None
+##        self.FileName = None
+        VerSectionClassObject.__init__(self)
         
     def GenSection(self,OutputPath, ModuleName, KeyStringList, FfsInf = None):
         #

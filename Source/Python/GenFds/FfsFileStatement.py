@@ -3,17 +3,11 @@ import Rule
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import os
 import subprocess
-class FileStatements (Ffs.Ffs) :
+from CommonDataClass.FdfClassObject import FileStatementsClassObject
+
+class FileStatements (FileStatementsClassObject) :
     def __init__(self):
-        Ffs.Ffs.__init__(self)
-##        Ffs.Ffs.CheckSum = False
-##        Ffs.Ffs.Fixed = False
-##        Ffs.Ffs.NameGuid = None
-##        Ffs.Ffs.Alignment = None
-        Ffs.Ffs.SectionList = []
-        self.FvType = None
-        self.FileName = None
-        self.KeyStringList = []
+        FileStatementsClassObject.__init__(self)
         
     def GenFfs(self):
         OutputDir = os.path.join(GenFdsGlobalVariable.FfsDir, self.NameGuid)

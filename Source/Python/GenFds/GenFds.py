@@ -8,6 +8,7 @@ import RuleComplexFile
 from EfiSection import EfiSection
 import StringIO
 import Common.TargetTxtClassObject
+import Common.DataType
 
 versionNumber = "1.0"
 __version__ = "%prog Version " + versionNumber
@@ -44,7 +45,7 @@ def main():
         activePlatform = options.activePlatform
     else :
         Target = Common.TargetTxtClassObject.TargetTxtDict(GenFdsGlobalVariable.WorkSpaceDir)
-        activePlatform = Target.TargetTxtDictionary['ACTIVE_PLATFORM']
+        activePlatform = Target.TargetTxtDictionary[Common.DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM]
         
     GenFdsGlobalVariable.ActivePlatform = activePlatform
 

@@ -3,18 +3,20 @@ from GenFdsGlobalVariable import GenFdsGlobalVariable
 import subprocess
 from Ffs import Ffs
 import os
+from CommonDataClass.FdfClassObject import EfiSectionClassObject
 
-class EfiSection (Section.Section):
+class EfiSection (EfiSectionClassObject):
     
     def __init__(self):
-        self.Alignment = None
-        self.SectionType = None
-        self.Optional = False
-        # store file name composed of MACROs
-        # Currently only support the String after UI section
-        self.Filename = None
-        self.BuildNum = None
-        self.VersionNum = None
+##        self.Alignment = None
+##        self.SectionType = None
+##        self.Optional = False
+##        # store file name composed of MACROs
+##        # Currently only support the String after UI section
+##        self.Filename = None
+##        self.BuildNum = None
+##        self.VersionNum = None
+          EfiSectionClassObject.__init__(self)
 
     def GenSection(self, OutputPath, ModuleName, KeyStringList, FfsInf = None) :
         #

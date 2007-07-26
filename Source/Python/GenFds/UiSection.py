@@ -3,12 +3,14 @@ from Ffs import Ffs
 import subprocess
 import os
 from GenFdsGlobalVariable import GenFdsGlobalVariable
-class UiSection (Section.Section):
-    def __init__(self):
-        self.Alignment = None
-        self.StringData = None
-        self.FileName = None
+from CommonDataClass.FdfClassObject import UiSectionClassObject
 
+class UiSection (UiSectionClassObject):
+    def __init__(self):
+##        self.Alignment = None
+##        self.StringData = None
+##        self.FileName = None
+        UiSectionClassObject.__init__(self)
 
     def GenSection(self, OutputPath, ModuleName, KeyStringList, FfsInf = None):
         #

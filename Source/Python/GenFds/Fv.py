@@ -3,27 +3,28 @@ import AprioriSection
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import os
 import subprocess
+from CommonDataClass.FdfClassObject import FvClassObject
 
 T_CHAR_LF = '\n'
 
-class FV:
+class FV (FvClassObject):
     def __init__(self):
-        self.UiFvName = None
-        self.CreateFileName = None
-        # 3-tuple list (blockSize, numBlocks, pcd)
-        self.BlockSizeList = []
-        # DefineVarDict[var] = value
-        self.DefineVarDict = {}
-        # SetVarDict[var] = value
-        self.SetVarDict = {}
-        self.FvAlignment = None
-        # FvAttributeDict[attribute] = TRUE/FALSE (1/0)
-        self.FvAttributeDict = {}
-##        self.FvAttributeset = None
-##        self.FvAttributeClear = None
-        self.AprioriSection = None
-        self.FfsList = []
-        
+##        self.UiFvName = None
+##        self.CreateFileName = None
+##        # 3-tuple list (blockSize, numBlocks, pcd)
+##        self.BlockSizeList = []
+##        # DefineVarDict[var] = value
+##        self.DefineVarDict = {}
+##        # SetVarDict[var] = value
+##        self.SetVarDict = {}
+##        self.FvAlignment = None
+##        # FvAttributeDict[attribute] = TRUE/FALSE (1/0)
+##        self.FvAttributeDict = {}
+####        self.FvAttributeset = None
+####        self.FvAttributeClear = None
+##        self.AprioriSection = None
+##        self.FfsList = []
+        FvClassObject.__init__(self)
         self.FvInfFile = None
         self.BaseAddress = None
         

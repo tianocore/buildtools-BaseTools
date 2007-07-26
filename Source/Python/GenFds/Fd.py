@@ -5,24 +5,27 @@ import StringIO
 import sys
 from struct import *
 from GenFdsGlobalVariable import GenFdsGlobalVariable
-class FD:
+T_CHAR_LF = '\n'
+from CommonDataClass.FdfClassObject import FDClassObject
+
+class FD(FDClassObject):
     def __init__(self):
-        self.FdUiName = ''
-        self.CreateFileName = None
-        self.BaseAddress = None
-        self.BaseAddressPcd = None
-        self.Size = None
-        self.SizePcd = None
-        self.ErasePolarity = '1'
-        # 3-tuple list (blockSize, numBlocks, pcd)
-        self.BlockSizeList = []
-        # DefineVarDict[var] = value
-        self.DefineVarDict = {}
-        # SetVarDict[var] = value
-        self.SetVarDict = {}
-        self.RegionList = []
-        self.vtfRawDict = {}
-        
+##        self.FdUiName = ''
+##        self.CreateFileName = None
+##        self.BaseAddress = None
+##        self.BaseAddressPcd = None
+##        self.Size = None
+##        self.SizePcd = None
+##        self.ErasePolarity = '1'
+##        # 3-tuple list (blockSize, numBlocks, pcd)
+##        self.BlockSizeList = []
+##        # DefineVarDict[var] = value
+##        self.DefineVarDict = {}
+##        # SetVarDict[var] = value
+##        self.SetVarDict = {}
+##        self.RegionList = []
+##        self.vtfRawDict = {}
+        FDClassObject.__init__(self)
 ##
 #  Create Fd file
 ##
@@ -57,12 +60,6 @@ class FD:
         fd.close;
         FdBuffer.close;
         
-##
-# Create Flash Map file
-##
-    def GenFlashMap ():
-        pass
-    
     def GenVtfFile (self) :
         #
         # Get this Fd's all Fv name
@@ -87,8 +84,17 @@ class FD:
             self.vtfRawDict = vtf.GenVtf(fvAddDict)
 
         
+##
+# Create Flash Map file
+##
+    def GenFlashMap ():
+        pass
+##        FlashFile = open( os.path.join(GenFdsGlobalVariable.FvDir, 'FalshMap.h'), 'w+b')
+##        FlashFile.writelines ("#ifndef _FLASH_MAP_H_" + T_CHAR_LF)
+##        FlashFile.writelines ("#define _FLASH_MAP_H_" + T_CHAR_LF)
+        
+        
 
-               
 
 
                 

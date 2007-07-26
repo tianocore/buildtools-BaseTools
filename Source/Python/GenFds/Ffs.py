@@ -1,4 +1,6 @@
-class Ffs:
+from CommonDataClass.FdfClassObject import FDClassObject
+
+class Ffs(FDClassObject):
     ModuleTypeToFileType = {
         'SEC'               : 'EFI_FV_FILETYPE_SECURITY_CORE',
         'PEI_CORE'          : 'EFI_FV_FILETYPE_PEI_CORE',
@@ -40,11 +42,11 @@ class Ffs:
     }
     
     def __init__(self):
-        self.NameGuid = None
-        self.Fixed = False
-        self.CheckSum = False
-        self.Alignment = None
-        self.SectionList = []
-        
+##        self.NameGuid = None
+##        self.Fixed = False
+##        self.CheckSum = False
+##        self.Alignment = None
+##        self.SectionList = []
+        FfsClassObject.__init__(self)
     def GenFfs():
         pass

@@ -1,8 +1,10 @@
-class AprioriSection :
+from CommonDataClass.FdfClassObject import AprioriSectionClassObject
+class AprioriSection (AprioriSectionClassObject):
     def __init__(self):
-        # DefineVarDict[var] = value
-        self.DefineVarDict = {}
-        self.FfsList = []
+##        # DefineVarDict[var] = value
+##        self.DefineVarDict = {}
+##        self.FfsList = []
+        AprioriSectionClassObject.__init__()
         
     def GenFfs (self):
         FfsFileList = []
@@ -10,5 +12,4 @@ class AprioriSection :
             ffsFileName = Ffs.GenFfs ()
             FfsFileList.append(ffsFileName)
         return FfsFileList
-            
             

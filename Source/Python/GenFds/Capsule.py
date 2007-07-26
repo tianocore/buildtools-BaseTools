@@ -1,24 +1,25 @@
 from GenFdsGlobalVariable import GenFdsGlobalVariable
+from CommonDataClass.FdfClassObject import CapsuleClassObject
 import os
 import subprocess
 
 T_CHAR_LF = '\n'
-class Capsule :
+class Capsule (CapsuleClassObject) :
     def __init__(self):
-        self.SpecName = None
-        self.UiCapsuleName = None
-        self.CreateFile = None
-        self.GroupIdNumber = None
-#        self.DefineStatementList = None
-#        self.SetSatementList = None
-        # DefineVarDict[var] = value
-        self.DefineVarDict = {}
-        # SetVarDict[var] = value
-        self.SetVarDict = {}
-        # TokensDict[var] = value
-        self.TokensDict = {}
-        self.CapsuleDataList = []
-        
+##        self.SpecName = None
+##        self.UiCapsuleName = None
+##        self.CreateFile = None
+##        self.GroupIdNumber = None
+###        self.DefineStatementList = None
+###        self.SetSatementList = None
+##        # DefineVarDict[var] = value
+##        self.DefineVarDict = {}
+##        # SetVarDict[var] = value
+##        self.SetVarDict = {}
+##        # TokensDict[var] = value
+##        self.TokensDict = {}
+##        self.CapsuleDataList = []
+        CapsuleClassObject.__init__(self)
         self.BlockSize = None          # For GenFv
         self.BlockNum = None           # For GenFv
         
