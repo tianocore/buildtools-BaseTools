@@ -198,6 +198,8 @@ class WorkspaceBuild(object):
         self.BuildTarget             = []        #[ 'RELEASE', 'DEBUG']
         self.SkuId                   = ''
         self.Fdf                     = ''
+        self.TargetTxt               = None
+        self.ToolDef                 = None
         
         self.InfDatabase             = {}        #{ [InfFileName] : InfClassObject}
         self.DecDatabase             = {}        #{ [DecFileName] : DecClassObject}
