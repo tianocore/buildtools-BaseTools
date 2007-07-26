@@ -56,7 +56,7 @@ class FileProfile :
 
         except IOError:
             print "Error when opening file."
-            return
+            raise
         
         self.PcdDict = {}
         
