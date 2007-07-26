@@ -29,7 +29,7 @@ class PlatformHeaderClass(IdentificationClass, CommonHeaderClass, DefineClass):
         self.IntermediateDirectories = ''                            #MODULE | UNIFIED
         self.OutputDirectory = ''                                                    
         self.ForceDebugTarget = ''
-        self.SkuId = ''
+        self.SkuIdName = []
         self.BuildNumber = ''
         self.MakefileName = ''
         self.ClonedFrom = []                                         #[ ClonedRecordClass, ...]
@@ -100,53 +100,68 @@ class PlatformFfsClass(object):
     def __init__(self):
         self.Attribute = {}                                          #{ [(Name, PlatformFfsSectionsClass)] : Value}
         self.Sections = []                                           #[ PlatformFfsSectionsClass]
-
+            
 class PlatformBuildOptionClass(object):
     def __init__(self):
         self.UserDefinedAntTasks = {}                                #{ [Id] : PlatformAntTaskClass, ...}
         self.Options = []                                            #[ BuildOptionClass, ...]
         self.UserExtensions = {}                                     #{ [(UserID, Identifier)] : UserExtensionsClass, ...}
         self.FfsKeyList = {}                                         #{ [FfsKey]: PlatformFfsClass, ...} 
-
-class PlatformLibraryInstanceClass(DefineClass):
+    
+class PlatformBuildOptionClasses(IncludeStatementClass):
     def __init__(self):
+        IncludeStatementClass.__init__(self)
+        self.FvBinding = ''
+        self.FfsFileNameGuid = ''
+        self.FfsFormatKey = ''
+        self.BuildOptionList = []                                    #[ BuildOptionClass, ...]
+
+class PlatformLibraryClass(CommonClass, DefineClass):
+    def __init__(self, Name = '', FilePath = ''):
+        CommonClass.__init__(self)
         DefineClass.__init__(self)
-        self.Name = ''
-        self.FilePath = ''
+        self.Name = Name
+        self.FilePath = FilePath
+        self.ModuleType = []
         self.ModuleGuid = ''
         self.ModuleVersion = ''
         self.PackageGuid = ''
         self.PackageVersion = ''
 
-class PlatformModuleSaBuildOptionClass(DefineClass):
+class PlatformLibraryClasses(IncludeStatementClass):
     def __init__(self):
-        self.FvBinding = ''
-        self.FfsFileNameGuid = ''
-        self.FfsFormatKey = ''
-        self.Options = []                                            #[ BuildOptionClass, ...]
-                
+        IncludeStatementClass.__init__(self)
+        self.LibraryList = []                                        #[ PlatformLibraryClass, ...]
+        
 class PlatformModuleClass(CommonClass, DefineClass, IncludeStatementClass):
     def __init__(self):
         CommonClass.__init__(self)
         DefineClass.__init__(self)
-        IncludeStatementClass.__init__(self)
         self.Name = ''                                               #Library name or libraryclass name or module name
         self.FilePath = ''
         self.Type = ''                                               #LIBRARY | LIBRARY_CLASS | MODULE, used by dsc
         self.ModuleType = ''
-        self.LibraryClasses = []                                     #[ PlatformLibraryInstanceClass, ...]
+        self.ExecFilePath = ''
+        self.LibraryClasses = PlatformLibraryClasses()
         self.PcdBuildDefinitions = []                                #[ PcdClass, ...]
-        self.ModuleSaBuildOption = PlatformModuleSaBuildOptionClass()
+        self.ModuleSaBuildOption = PlatformBuildOptionClasses()
         self.Specifications = []                                     #[ '', '', ...]
-    
+
+class PlatformModuleClasses(IncludeStatementClass):
+    def __init__(self):
+        IncludeStatementClass.__init__(self)
+        self.ModuleList = []                                         #[ PlatformModuleClass, ...]
+
 class PlatformClass(object):
     def __init__(self):
         self.Header = PlatformHeaderClass()
-        self.SkuInfoList = SkuInfoListClass()
-        self.Modules = []                                            #[ PlatformModuleClass, ...]
-        self.FlashDefinitionFile = None                              #PlatformFlashDefinitionFileClass()
+        self.SkuInfos = SkuInfoListClass()
+        self.Libraries = PlatformLibraryClasses()
+        self.LibraryClasses = PlatformLibraryClasses()
+        self.Modules = PlatformModuleClasses()
+        self.FlashDefinitionFile = PlatformFlashDefinitionFileClass()
         self.FvImages = []                                           #[ PlatformFvImagesClass, ...]
-        self.BuildOptions = []                                       #[ PlatformBuildOptionClass, ...]
+        self.BuildOptions = PlatformBuildOptionClasses()
         self.DynamicPcdBuildDefinitions = []                         #[ PcdClass, ...] 
         self.Fdf = []                                                #[ FdfClass, ...]
         self.UserExtensions = []                                     #[ UserExtensionsClass, ...]

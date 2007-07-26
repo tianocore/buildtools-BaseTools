@@ -227,6 +227,7 @@ TAB_BUILD_OPTIONS = 'BuildOptions'
 TAB_DEFINE = 'DEFINE'
 TAB_NMAKE = 'Nmake'
 TAB_USER_EXTENSIONS = 'UserExtensions'
+TAB_INCLUDE = '!include'
 
 #Common Define
 TAB_COMMON_DEFINES = 'Defines'

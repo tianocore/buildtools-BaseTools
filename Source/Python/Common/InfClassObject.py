@@ -211,22 +211,9 @@ class Inf(InfObject):
         BuildOptions = {}
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].BuildOptions:
-                ToolChainFamily = ''
-                Statement = ''
-                Option = ''
-                List = Item.split(DataType.TAB_EQUAL_SPLIT, 1)
-                if List[0].find(':') > -1:
-                    ToolChainFamily = CleanString(List[0][ : List[0].find(':')])
-                    Statement = CleanString(List[0][List[0].find(':') + 1 : ])
-                else:
-                    Statement = CleanString(List[0])                    
-                Option = CleanString(List[1])
-                MergeArches(BuildOptions, (ToolChainFamily, Statement, Option), Arch)
+                MergeArches(BuildOptions, GetBuildOption(Item), Arch)
         for Key in BuildOptions.keys():
-            BuildOption = BuildOptionClass()
-            BuildOption.ToolChainFamily = Key[0]
-            BuildOption.Statement = Key[1]
-            BuildOption.Option = Key[2]
+            BuildOption = BuildOptionClass(Key[0], Key[1], Key[2])
             BuildOption.SupArchList = BuildOptions[Key]
             self.Module.BuildOptions.append(BuildOption)    
         
@@ -555,7 +542,7 @@ class Inf(InfObject):
         print 'Specification =', m.Header.Specification
         print '\nBuildOptions =', m.BuildOptions
         for Item in m.BuildOptions:
-            print Item.ToolChainFamily, Item.Statement, Item.Option, Item.SupArchList
+            print Item.ToolChainFamily, Item.ToolChain, Item.Option, Item.SupArchList
         print '\nIncludes =', m.Includes
         for Item in m.Includes:
             print Item.FilePath, Item.SupArchList

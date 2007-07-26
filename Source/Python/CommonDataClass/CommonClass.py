@@ -12,10 +12,10 @@
 #
 
 class CommonClass(object):
-    def __init__(self):
+    def __init__(self, SupArchList = []):
         self.Usage = []                                   #ALWAYS_CONSUMED | SOMETIMES_CONSUMED | ALWAYS_PRODUCED | SOMETIMES_PRODUCED | TO_START | BY_START | PRIVATE
         self.FeatureFlag = ''
-        self.SupArchList = []                             #EBC | IA32 | X64 | IPF | ARM | PPC
+        self.SupArchList = SupArchList                    #EBC | IA32 | X64 | IPF | ARM | PPC
         self.HelpText = ''
         
 class CommonHeaderClass(object):
@@ -46,6 +46,10 @@ class IdentificationClass(object):
         self.Version = ''
         self.FileName = ''
         self.FullPath = ''
+
+class IncludeStatementClass(object):
+    def __init__(self):
+        self.IncludeFiles = {}                             #{ IncludeFile : [Arch1, Arch2, ...], ...}
 
 class GuidProtocolPpiCommonClass(CommonClass):
     def __init__(self):
@@ -81,19 +85,20 @@ class PpiClass(GuidProtocolPpiCommonClass):
         GuidProtocolPpiCommonClass.__init__(self)
         
 class SkuInfoClass(object):
-    def __init__(self):
-        self.SkuId = ''
+    def __init__(self, SkuIdName = '', SkuId = '', VariableName = '', VariableGuid = '', VariableOffset = '', HiiDefaultValue = '', VpdOffset = '', DefaultValue = ''):
+        self.SkuIdName = SkuIdName
+        self.SkuId = SkuId
         #Used by Hii
-        self.VariableName = ''
-        self.VariableGuid = ''
-        self.VariableOffset = ''
-        self.HiiDefaultValue = ''
+        self.VariableName = VariableName
+        self.VariableGuid = VariableGuid
+        self.VariableOffset = VariableOffset
+        self.HiiDefaultValue = HiiDefaultValue
         
         #Used by Vpd
-        self.VpdOffset = ''
+        self.VpdOffset = VpdOffset
         
         #Used by Default
-        self.DefaultValue = ''
+        self.DefaultValue = DefaultValue
         
     def __str__(self):
         rtn = rtn = str(self.SkuId) + "," + \
@@ -106,25 +111,27 @@ class SkuInfoClass(object):
         return rtn
 
 class PcdClass(CommonClass):
-    def __init__(self):
-        self.CName = ''
-        self.Token = ''
-        self.TokenSpaceGuidCName = ''
-        self.DatumType = ''                               #UINT8 | UINT16 | UINT32 | UINT64 | VOID* | BOOLEAN 
-        self.MaxDatumSize = ''
-        self.DefaultValue = ''
-        self.ItemType = ''                                #FEATURE_FLAG | FIXED_AT_BUILD | PATCHABLE_IN_MODULE | DYNAMIC | DYNAMIC_EX
-        self.ValidUsage = []                              #FEATURE_FLAG | FIXED_AT_BUILD | PATCHABLE_IN_MODULE | DYNAMIC | DYNAMIC_EX
-        self.SkuInfoList = {}                             #{ [SkuId] : SkuInfoClass } 
-        self.SupModuleList = []                           #BASE | SEC | PEI_CORE | PEIM | DXE_CORE | DXE_DRIVER | DXE_RUNTIME_DRIVER | DXE_SAL_DRIVER | DXE_SMM_DRIVER | UEFI_DRIVER | UEFI_APPLICATION | USER_DEFINED
+    def __init__(self, CName = '', Token = '', TokenSpaceGuidCName = '', DatumType = '', MaxDatumSize = '', DefaultValue = '', ItemType = '', ValidUsage = [], SkuInfoList = {}, SupModuleList = []):
+        self.CName = CName
+        self.Token = Token
+        self.TokenSpaceGuidCName = TokenSpaceGuidCName
+        self.DatumType = DatumType                                 #UINT8 | UINT16 | UINT32 | UINT64 | VOID* | BOOLEAN 
+        self.MaxDatumSize = MaxDatumSize
+        self.DefaultValue = DefaultValue
+        self.ItemType = ItemType                                   #FEATURE_FLAG | FIXED_AT_BUILD | PATCHABLE_IN_MODULE | DYNAMIC | DYNAMIC_EX
+        self.ValidUsage = ValidUsage                               #FEATURE_FLAG | FIXED_AT_BUILD | PATCHABLE_IN_MODULE | DYNAMIC | DYNAMIC_EX
+        self.SkuInfoList = SkuInfoList                             #{ [SkuIdName] : SkuInfoClass } 
+        self.SupModuleList = SupModuleList                         #BASE | SEC | PEI_CORE | PEIM | DXE_CORE | DXE_DRIVER | DXE_RUNTIME_DRIVER | DXE_SAL_DRIVER | DXE_SMM_DRIVER | UEFI_DRIVER | UEFI_APPLICATION | USER_DEFINED
         CommonClass.__init__(self)
 
-class BuildOptionClass(object):
-    def __init__(self):
-        self.Statement = ''                               #Family:Target_TagName_Tarch_Toolcode_FLAGS = String 
-        self.Option = ''
+class BuildOptionClass(IncludeStatementClass):
+    def __init__(self, ToolChainFamily = '', ToolChain = '', Option = ''):
+        IncludeStatementClass.__init__(self)
+        self.Statement = ''                               #Family:Target_TagName_Tarch_ToolCode_FLAGS = String 
+        self.ToolChainFamily = ToolChainFamily
+        self.ToolChain = ToolChain
+        self.Option = Option
         self.BuildTarget = ''
-        self.ToolChainFamily = ''
         self.TagName = ''
         self.ToolCode = ''
         self.SupArchList = []                             #EBC | IA32 | X64 | IPF | ARM | PPC
@@ -141,7 +148,3 @@ class UserExtensionsClass(object):
         self.UserID = ''
         self.Identifier = 0
         self.Content = ''
-        
-class IncludeStatementClass(object):
-    def __init__(self):
-        self.IncludeFile = ''

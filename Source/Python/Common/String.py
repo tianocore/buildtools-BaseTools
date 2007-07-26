@@ -49,89 +49,62 @@ def GenDefines(String, Arch, Defines):
     
     return 1
 
-def MergeModulePcds(pcds, pcdsFixedAtBuild, pcdsPatchableInModule, pcdsFeatureFlag, pcdsDynamic):
-    #[ ['PcdName|PcdGuid|PcdType', 'IA32|X64|IPF|EBC'], ...]
+#
+# Parse a string with format "!include <Filename>"
+# Return the file path
+# Return False if invalid format or NOT FOUND
+#
+def GenInclude(String, IncludeFiles, Arch):
+    if String.upper().find(DataType.TAB_INCLUDE.upper() + ' ') > -1:
+        IncludeFile = CleanString(String[String.upper().find(DataType.TAB_INCLUDE.upper() + ' ') + len(DataType.TAB_INCLUDE + ' ') : ])
+        MergeArches(IncludeFiles, IncludeFile, Arch)
+        return True
+    else:
+        return False
     
-    Item = pcdsFixedAtBuild
-    for index in range(len(Item)):
-        pcds.append([(Item[index][0].split(DataType.TAB_VALUE_SPLIT))[1] + DataType.TAB_VALUE_SPLIT + DataType.TAB_PCDS_FIXED_AT_BUILD, Item[index][1]])
-
-    Item = pcdsPatchableInModule
-    for index in range(len(Item)):
-        pcds.append([(Item[index][0].split(DataType.TAB_VALUE_SPLIT))[1] + DataType.TAB_VALUE_SPLIT + DataType.TAB_PCDS_PATCHABLE_IN_MODULE, Item[index][1]])
-                                 
-    Item = pcdsFeatureFlag
-    for index in range(len(Item)):
-        pcds.append([(Item[index][0].split(DataType.TAB_VALUE_SPLIT))[1] + DataType.TAB_VALUE_SPLIT + DataType.TAB_PCDS_FEATURE_FLAG, Item[index][1]])
-                                 
-    Item = pcdsDynamic
-    for index in range(len(Item)):
-        pcds.append([(Item[index][0].split(DataType.TAB_VALUE_SPLIT))[1] + DataType.TAB_VALUE_SPLIT + DataType.TAB_PCDS_DYNAMIC, Item[index][1]])
-
-def MergeAllArch(list1, listCommon, listIa32, listX64, listIpf, listEbc):
-    isFound = False
-    for j in range(len(list1)):
-        list1[j] = [list1[j], '']
+#
+# Parse a string with format "InfFilename [EXEC = ExecFilename]"
+# Return (InfFilename, ExecFilename)
+#
+def GetExec(String):
+    InfFilename = ''
+    ExecFilename = '' 
+    if String.find('EXEC') > -1:
+        InfFilename = String[ : String.find('EXEC')].strip()
+        ExecFilename = String[String.find('EXEC') + len('EXEC') : ].strip()
+    else:
+        InfFilename = String.strip()
     
-    for i in listCommon:
-        if i not in list1:
-            list1.append([i, ''])
-    for i in listIa32:
-        for j in range(len(list1)):
-            if i == list1[j][0]:
-                isFound = True
-                list1[j] = [list1[j][0], 'IA32|']
-                break
-        if not isFound:
-            list1.append([i, 'IA32|'])
-        isFound = False
-    
-    for i in listX64:
-        for j in range(len(list1)):
-            if i == list1[j][0]:
-                isFound = True
-                list1[j] = [list1[j][0], list1[j][1] + 'X64|']
-                break
-        if not isFound:
-            list1.append([i, 'X64|'])
-        isFound = False
-    
-    for i in listIpf:
-        for j in range(len(list1)):
-            if i == list1[j][0]:
-                isFound = True
-                list1[j] = [list1[j][0], list1[j][1] + 'Ipf|']
-                break
-        if not isFound:
-            list1.append([i, 'Ipf|'])
-        isFound = False
-        
-    for i in listEbc:
-        for j in range(len(list1)):
-            if i == list1[j][0]:
-                isFound = True
-                list1[j] = [list1[j][0], list1[j][1] + 'Ebc|']
-                break
-        if not isFound:
-            list1.append([i, 'Ebc|'])
-        isFound = False
-        
-    #Remove DataType.TAB_VALUE_SPLIT
-    for i in range(len(list1)):
-        if list1[i][1].endswith(DataType.TAB_VALUE_SPLIT):
-            list1[i][1] = list1[i][1].rsplit(DataType.TAB_VALUE_SPLIT, 1)[0]
+    return (InfFilename, ExecFilename)
 
-    #print list1
+#
+# Parse a string with format "[<Family>:]<ToolFlag>=Flag"
+# Return (Family, ToolFlag, Flag)
+#
+def GetBuildOption(String):
+    (Family, ToolChain, Flag) = ('', '', '')
+    List = GetSplitValueList(String, DataType.TAB_EQUAL_SPLIT, MaxSplit = 1)
+    if List[0].find(':') > -1:
+        Family = CleanString(List[0][ : List[0].find(':')])
+        ToolChain = CleanString(List[0][List[0].find(':') + 1 : ])
+    else:
+        ToolChain = CleanString(List[0])                    
+    Flag = CleanString(List[1])
+    
+    return (Family, ToolChain, Flag)
 
+#
+# Parse block of the components defined in dsc file
+# Return KeyValues [ ['component name', [lib1, lib2, lib3], [bo1, bo2, bo3], [pcd1, pcd2, pcd3]], ...]
+#
 def GetComponents(Lines, Key, KeyValues, CommentCharacter):
-    #KeyValues [ ['component name', [lib1, lib2, lib3], [bo1, bo2, bo3]], ...]
+    #KeyValues [ ['component name', [lib1, lib2, lib3], [bo1, bo2, bo3], [pcd1, pcd2, pcd3]], ...]
     Lines = Lines.split(DataType.TAB_SECTION_END, 1)[1]
-    findBlock = False
-    findLibraryClass = False
-    findBuildOption = False
+    (findBlock, findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (False, False, False, False, False, False, False, False)
     ListItem = None
     LibraryClassItem = []
     BuildOption = []
+    Pcd = []
     
     LineList = Lines.split('\n')
     for Line in LineList:
@@ -148,19 +121,40 @@ def GetComponents(Lines, Key, KeyValues, CommentCharacter):
 
         if findBlock:    
             if Line.find('<LibraryClass>') != -1:
-                findLibraryClass = True
+                (findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (True, False, False, False, False, False, False)
                 continue
             if Line.find('<BuildOptions>') != -1:
-                findBuildOption = True
+                (findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (False, True, False, False, False, False, False)
+                continue
+            if Line.find('<PcdsFeatureFlag>') != -1:
+                (findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (False, False, True, False, False, False, False)
+                continue
+            if Line.find('<PcdsPatchableInModule>') != -1:
+                (findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (False, False, False, True, False, False, False)
+                continue
+            if Line.find('<PcdsFixedAtBuild>') != -1:
+                (findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (False, False, False, False, True, False, False)
+                continue
+            if Line.find('<PcdsDynamic>') != -1:
+                (findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (False, False, False, False, False, True, False)
+                continue
+            if Line.find('<PcdsDynamicEx>') != -1:
+                (findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (False, False, False, False, False, False, True)
                 continue
             if Line.endswith('}'):
                 #find '}' at line tail
-                KeyValues.append([ListItem, LibraryClassItem, BuildOption])
+                KeyValues.append([ListItem, LibraryClassItem, BuildOption, Pcd])
                 findBlock = False
                 findLibraryClass = False
                 findBuildOption = False
+                findPcdsFeatureFlag = False
+                findPcdsPatchableInModule = False
+                findPcdsFixedAtBuild = False
+                findPcdsDynamic = False
+                findPcdsDynamicEx = False
                 LibraryClassItem = []
                 BuildOption = []
+                Pcd = []
                 continue
 
         if findBlock:
@@ -168,8 +162,18 @@ def GetComponents(Lines, Key, KeyValues, CommentCharacter):
                 LibraryClassItem.append(Line)
             elif findBuildOption:
                 BuildOption.append(Line)
+            elif findPcdsFeatureFlag:
+                Pcd.append((DataType.TAB_PCDS_FEATURE_FLAG, Line))
+            elif findPcdsPatchableInModule:
+                Pcd.append((DataType.TAB_PCDS_PATCHABLE_IN_MODULE, Line))
+            elif findPcdsFixedAtBuild:
+                Pcd.append((DataType.TAB_PCDS_FIXED_AT_BUILD, Line))
+            elif findPcdsDynamic:
+                Pcd.append((DataType.TAB_PCDS_DYNAMIC, Line))
+            elif findPcdsDynamicEx:
+                Pcd.append((DataType.TAB_PCDS_DYNAMIC_EX, Line))
         else:
-            KeyValues.append([ListItem, [], []])
+            KeyValues.append([ListItem, [], [], []])
         
     return True
 
@@ -231,11 +235,11 @@ def CleanString(Line, CommentCharacter = DataType.TAB_COMMENT_SPLIT):
     #remove comments
     Line = Line.split(CommentCharacter, 1)[0];
     #replace '\\', '\' with '/'
-    Line = Line.replace('\\', '/')
-    Line = Line.replace('//', '/')
+    #Line = Line.replace('\\', '/')
+    #Line = Line.replace('//', '/')
     #remove ${WORKSPACE}
-    Line = Line.replace(DataType.TAB_WORKSPACE1, '')
-    Line = Line.replace(DataType.TAB_WORKSPACE2, '')
+    #Line = Line.replace(DataType.TAB_WORKSPACE1, '')
+    #Line = Line.replace(DataType.TAB_WORKSPACE2, '')
     
     #remove whitespace again
     Line = Line.strip();
