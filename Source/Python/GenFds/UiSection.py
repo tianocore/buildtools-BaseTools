@@ -7,12 +7,9 @@ from CommonDataClass.FdfClassObject import UiSectionClassObject
 
 class UiSection (UiSectionClassObject):
     def __init__(self):
-##        self.Alignment = None
-##        self.StringData = None
-##        self.FileName = None
         UiSectionClassObject.__init__(self)
 
-    def GenSection(self, OutputPath, ModuleName, KeyStringList, FfsInf = None):
+    def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None):
         #
         # Prepare the parameter of GenSection
         #
@@ -21,7 +18,7 @@ class UiSection (UiSectionClassObject):
             self.StringData = FfsInf.__ExtendMarco__(self.StringData)
             self.FileName = FfsInf.__ExtendMarco__(self.FileName)
             
-        OutputFile = os.path.join(OutputPath, ModuleName + Ffs.SectionSuffix.get('UI'))
+        OutputFile = os.path.join(OutputPath, ModuleName + 'SEC' + SecNum + Ffs.SectionSuffix.get('UI'))
                      
         if self.StringData != None :
             NameString = self.StringData
@@ -43,6 +40,5 @@ class UiSection (UiSectionClassObject):
         #
         # Call GenSection
         #
-        print GenSectionCmd
         GenFdsGlobalVariable.CallExternalTool(GenSectionCmd,"GenSection Failed!")
         return OutputFile, self.Alignment

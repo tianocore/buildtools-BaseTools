@@ -19,9 +19,7 @@ class Section (SectionClassObject):
         '0xee4e5898-0x3914-0x4259-0x9d6e-0xdc7b-0xd79403cf' : 'LzmaCompress'
     }
     def __init__(self):
-
-        #self.Alignment = None
         SectionClassObject.__init__(self)
         
-    def GenSection(self, OutputPath, GuidName, keyStringList, FfsInf = None):
+    def GenSection(self, OutputPath, GuidName, SecNum, keyStringList, FfsInf = None):
         pass

@@ -1,5 +1,7 @@
 import os
 import subprocess
+from Common import EdkLogger
+
 class GenFdsGlobalVariable:
     FvDir = ''
     OuputDir = ''
@@ -18,7 +20,7 @@ class GenFdsGlobalVariable:
         return String
     
     def SetDir (OutputDir, FdfParser, WorkSpace, ArchList):
-        print "GenFdsGlobalVariable.OuputDir :%s" %OutputDir
+        GenFdsGlobalVariable.VerboseLogger( "GenFdsGlobalVariable.OuputDir :%s" %OutputDir)
         GenFdsGlobalVariable.OuputDir = os.path.normpath(OutputDir)
         GenFdsGlobalVariable.FdfParser = FdfParser
         GenFdsGlobalVariable.WorkSpace = WorkSpace
@@ -42,19 +44,33 @@ class GenFdsGlobalVariable:
         return Str
     
     def CallExternalTool (cmd, errorMess):
+        GenFdsGlobalVariable.InfLogger (cmd)
+        #GenFdsGlobalVariable.VerboseLogger(cmd)
         PopenObject = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr= subprocess.PIPE)
         (out, error) = PopenObject.communicate()
 
         while PopenObject.returncode == None :
             PopenObject.wait()
         if PopenObject.returncode != 0:
-            print "Return Value = %d" %PopenObject.returncode
-            print out
-            print error
-            raise Exception(errorMess)
+            GenFdsGlobalVariable.InfLogger ("Return Value = %d" %PopenObject.returncode)
+            GenFdsGlobalVariable.InfLogger (out)
+            GenFdsGlobalVariable.InfLogger (error)
+            GenFdsGlobalVariable.InfLogger (errorMess)
+
+    def VerboseLogger (msg):
+        EdkLogger.verbose(msg)
+
+    def InfLogger (msg):
+        EdkLogger.info(msg)
+
+    def DebugLogger (Level, msg):
+        EdkLogger.debug(Level, msg)
         
     SetDir = staticmethod(SetDir)
     ExtendMarco = staticmethod(ExtendMarco)
     SetDefaultRule = staticmethod(SetDefaultRule)
     ReplaceWorkspaceMarco = staticmethod(ReplaceWorkspaceMarco)
     CallExternalTool = staticmethod(CallExternalTool)
+    VerboseLogger = staticmethod(VerboseLogger)
+    InfLogger = staticmethod(InfLogger)
+    DebugLogger = staticmethod(DebugLogger)

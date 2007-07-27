@@ -1,12 +1,4 @@
 from CommonDataClass.FdfClassObject import ComponentStatementClassObject
 class ComponentStatement (ComponentStatementClassObject) :
     def __init__(self):
-##        self.CompName = None
-##        self.CompLoc = None
-##        self.CompType = None
-##        self.CompVer = None
-##        self.CompCs = None
-##        self.CompBin = None
-##        self.CompSym = None
-##        self.CompSize = None
           ComponentStatementClassObject.__init__(self)

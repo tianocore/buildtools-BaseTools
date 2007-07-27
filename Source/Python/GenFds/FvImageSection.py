@@ -8,12 +8,9 @@ from CommonDataClass.FdfClassObject import FvImageSectionClassObject
 
 class FvImageSection(FvImageSectionClassObject):
     def __init__(self):
-##        self.Aligenment = None
-##        self.Fv = None
-##        self.FvName = None
         FvImageSectionClassObject.__init__(self)
         
-    def GenSection(self, OutputPath, ModuleName, KeyStringList, FfsInf = None):
+    def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None):
         Buffer = StringIO.StringIO('')
         #
         # Generate Fv
@@ -31,7 +28,7 @@ class FvImageSection(FvImageSectionClassObject):
         #
         # Prepare the parameter of GenSection
         #
-        OutputFile = os.path.join(OutputPath, ModuleName + Ffs.SectionSuffix.get("FV_IMAGE"))
+        OutputFile = os.path.join(OutputPath, ModuleName + 'SEC' + SecNum + Ffs.SectionSuffix.get("FV_IMAGE"))
                      
         GenSectionCmd = 'GenSec -o '                          + \
                          OutputFile                           + \
@@ -39,6 +36,5 @@ class FvImageSection(FvImageSectionClassObject):
                          'EFI_SECTION_FIRMWARE_VOLUME_IMAGE ' + \
                          FvFileName
                          
-        print GenSectionCmd
         GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
         return OutputFile, self.Alignment

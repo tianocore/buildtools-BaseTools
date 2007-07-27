@@ -10,33 +10,20 @@ from CommonDataClass.FdfClassObject import FDClassObject
 
 class FD(FDClassObject):
     def __init__(self):
-##        self.FdUiName = ''
-##        self.CreateFileName = None
-##        self.BaseAddress = None
-##        self.BaseAddressPcd = None
-##        self.Size = None
-##        self.SizePcd = None
-##        self.ErasePolarity = '1'
-##        # 3-tuple list (blockSize, numBlocks, pcd)
-##        self.BlockSizeList = []
-##        # DefineVarDict[var] = value
-##        self.DefineVarDict = {}
-##        # SetVarDict[var] = value
-##        self.SetVarDict = {}
-##        self.RegionList = []
-##        self.vtfRawDict = {}
         FDClassObject.__init__(self)
-##
-#  Create Fd file
-##
+
+    """  Create Fd file """
+    
     def GenFd (self, FvBinDict):
         #
         # Print Information
         #
-        print 'Following Region will be add to Fd !!!'
+        GenFdsGlobalVariable.InfLogger("Fd File Name:%s" %self.FdUiName)
+        GenFdsGlobalVariable.VerboseLogger('Following Fv will be add to Fd !!!')
         for item in GenFdsGlobalVariable.FdfParser.profile.FvDict:
-            print item
-            
+            GenFdsGlobalVariable.VerboseLogger(item)
+
+        GenFdsGlobalVariable.VerboseLogger('################### Gen VTF ####################')
         self.GenVtfFile()
         
         FdBuffer = StringIO.StringIO('')
@@ -44,10 +31,12 @@ class FD(FDClassObject):
             #
             # Call each region's AddToBuffer function 
             #
+            GenFdsGlobalVariable.VerboseLogger('Call each region\'s AddToBuffer function')
             Regions.AddToBuffer (FdBuffer, self.BaseAddress, self.BlockSizeList, self.ErasePolarity, FvBinDict, self.vtfRawDict)
         #
         # Create a empty Fd file
         #
+        GenFdsGlobalVariable.VerboseLogger ('Create a empty Fd file')
         FdFileName = os.path.join(GenFdsGlobalVariable.FvDir,
                                   self.FdUiName + '.fd')
         fd = open(FdFileName, 'w+b')
@@ -55,7 +44,7 @@ class FD(FDClassObject):
         #
         # Write the buffer contents to Fd file
         #
-        print "Fd File Name:%s" %FdFileName
+        GenFdsGlobalVariable.VerboseLogger('Write the buffer contents to Fd file')
         fd.write(FdBuffer.getvalue());
         fd.close;
         FdBuffer.close;

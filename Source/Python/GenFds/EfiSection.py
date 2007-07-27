@@ -8,17 +8,9 @@ from CommonDataClass.FdfClassObject import EfiSectionClassObject
 class EfiSection (EfiSectionClassObject):
     
     def __init__(self):
-##        self.Alignment = None
-##        self.SectionType = None
-##        self.Optional = False
-##        # store file name composed of MACROs
-##        # Currently only support the String after UI section
-##        self.Filename = None
-##        self.BuildNum = None
-##        self.VersionNum = None
           EfiSectionClassObject.__init__(self)
 
-    def GenSection(self, OutputPath, ModuleName, KeyStringList, FfsInf = None) :
+    def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None) :
         #
         # Prepare the parameter of GenSection
         #
@@ -43,10 +35,10 @@ class EfiSection (EfiSectionClassObject):
             
         if self.Optional == True :
             if Filename == None or Filename =='':
-                print "Optional Section don't exist!"
+                GenFdsGlobalVariable.VerboseLogger( "Optional Section don't exist!")
                 return '', None
             
-        OutputFile = os.path.join( OutputPath, ModuleName + Ffs.SectionSuffix.get(SectionType))
+        OutputFile = os.path.join( OutputPath, ModuleName + 'SEC' + SecNum + Ffs.SectionSuffix.get(SectionType))
         #
         #  If Section type is 'VERSION'
         #
@@ -66,7 +58,7 @@ class EfiSection (EfiSectionClassObject):
                 BuildNumString = ''
             if VerString == '' and BuildNumString == '':
                 if self.Optional == True :
-                    print "Optional Section don't exist!"
+                    GenFdsGlobalVariable.VerboseLogger( "Optional Section don't exist!")
                     return '', None
                 else:
                     raise Exception ("File: %s miss Version Section value" %InfFileName)
@@ -97,7 +89,7 @@ class EfiSection (EfiSectionClassObject):
 
             if UiString == '':
                 if self.Optional == True :
-                    print "Optional Section don't exist!"
+                    GenFdsGlobalVariable.VerboseLogger( "Optional Section don't exist!")
                     return '', None
                 else:
                     raise Exception ("File: %s miss UI Section value" %InfFileName)
@@ -109,7 +101,7 @@ class EfiSection (EfiSectionClassObject):
         else:
              if Filename == None or not os.path.exists(Filename) :
                  if self.Optional == True:
-                     print "Optional Section don't exist!"
+                     GenFdsGlobalVariable.VerboseLogger( "Optional Section don't exist!")
                      return '', None
                  else:
                      raise Exception(" %s does't exist" %Filename)
@@ -123,7 +115,6 @@ class EfiSection (EfiSectionClassObject):
                              TeFile        + \
                              ' '           + \
                              GenFdsGlobalVariable.ExtendMarco(Filename)
-                 print GenTeCmd
                  GenFdsGlobalVariable.CallExternalTool(GenTeCmd, "GenFw Failed !")
                  Filename = TeFile
 
@@ -137,6 +128,6 @@ class EfiSection (EfiSectionClassObject):
         #
         # Call GenSection
         #
-        print GenSectionCmd
+        
         GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed !")
         return OutputFile , self.Alignment

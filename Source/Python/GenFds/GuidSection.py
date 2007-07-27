@@ -9,15 +9,9 @@ from Common import ToolDefClassObject
 class GuidSection(GuidSectionClassObject) :
     
     def __init__(self):
-##        self.Alignment = None
-##        self.NameGuid = None
-##        self.SectionList = []
-##        self.SectionType = None
-##        self.ProcessRequired = False
-##        self.AuthStatusValid = False
         GuidSectionClassObject.__init__(self)
         
-    def GenSection(self, OutputPath, ModuleName , KeyStringList, FfsInf = None):
+    def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None):
         #
         # Generate all section
         #
@@ -29,8 +23,11 @@ class GuidSection(GuidSectionClassObject) :
             self.SectionType = FfsInf.__ExtendMarco__(self.SectionType)
             
         SectFile = ''
+        Index = 0
         for Sect in self.SectionList:
-            sect, align = Sect.GenSection(OutputPath, ModuleName, KeyStringList,FfsInf)
+            Index = Index + 1
+            SecIndex = '%s.%d' %(SecNum,Index)
+            sect, align = Sect.GenSection(OutputPath, ModuleName, SecIndex, KeyStringList,FfsInf)
             if sect != None:
                 SectFile = SectFile + \
                            '  '     + \
@@ -40,6 +37,8 @@ class GuidSection(GuidSectionClassObject) :
         OutputFile = OutputPath + \
                      os.sep     + \
                      ModuleName + \
+                     'SEC'      + \
+                     SecNum     + \
                      Ffs.SectionSuffix['GUIDED']
         OutputFile = os.path.normpath(OutputFile)
         
@@ -49,14 +48,13 @@ class GuidSection(GuidSectionClassObject) :
         # GENCRC32 section
         #
         if self.NameGuid == None or ExternalTool == None :
-            print "Use GenSection function Generate CRC32 Section"
+            GenFdsGlobalVariable.VerboseLogger( "Use GenSection function Generate CRC32 Section")
             GenSectionCmd = 'GenSec -o '                                   + \
                              OutputFile                                    + \
                              ' -s '                                        + \
                              Section.Section.SectionType[self.SectionType] + \
                              SectFile
                              
-            print GenSectionCmd
             GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
             return OutputFile, self.Alignment
         else:
@@ -67,7 +65,6 @@ class GuidSection(GuidSectionClassObject) :
                              OutputFile                                    + \
                              SectFile
         
-            print GenSectionCmd
             GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
             #
             # Use external tool process the Output
@@ -76,6 +73,8 @@ class GuidSection(GuidSectionClassObject) :
             TempFile = OutputPath + \
                        os.sep     + \
                        ModuleName + \
+                       'SEC'      + \
+                       SecNum     + \
                        '.tmp'
             TempFile = os.path.normpath(TempFile)
             
@@ -89,7 +88,6 @@ class GuidSection(GuidSectionClassObject) :
             #
             # Call external tool
             #
-            print ExternalToolCmd
             GenFdsGlobalVariable.CallExternalTool(ExternalToolCmd, "Gensec Failed!")
             #
             # Call Gensection Add Secntion Header
@@ -116,9 +114,7 @@ class GuidSection(GuidSectionClassObject) :
                              ' '                                    + \
                              TempFile
                         
-            print GenSectionCmd
             GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
-            
             return OutputFile, self.Alignment
         
     def __FindExtendTool__(self):

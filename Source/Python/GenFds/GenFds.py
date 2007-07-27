@@ -9,7 +9,7 @@ from EfiSection import EfiSection
 import StringIO
 import Common.TargetTxtClassObject
 import Common.DataType
-
+from Common import EdkLogger
 versionNumber = "1.0"
 __version__ = "%prog Version " + versionNumber
 __copyright__ = "Copyright (c) 2007, Intel Corporation  All rights reserved."
@@ -21,24 +21,33 @@ def main():
     global workspace
     workspace = ""
     ArchList = None
-    
+
+    if options.verbose != None:
+        EdkLogger.setLevel(EdkLogger.VERBOSE)
+    elif options.quiet != None:
+        EdkLogger.setLevel(EdkLogger.QUIET)
+    elif options.debug != None:
+        EdkLogger.setLevel(options.debug)
+    else:
+        EdkLogger.setLevel(EdkLogger.INFO)
+        
     if (options.workspace == None):
-        print "ERROR: E0000: WORKSPACE not defined.\n  Please set the WORKSPACE environment variable to the location of the EDK II install directory."
+        GenFdsGlobalVariable.InfLogger("ERROR: E0000: WORKSPACE not defined.\n  Please set the WORKSPACE environment variable to the location of the EDK II install directory.")
         sys.exit(1)
     else:
         workspace = options.workspace
         GenFdsGlobalVariable.WorkSpaceDir = workspace
         if (options.debug):
-            print "Using Workspace:", workspace
+            GenFdsGlobalVariable.VerboseLogger( "Using Workspace:", workspace)
 
     if (options.filename):
         fdfFilename = options.filename
     else:
-        print "ERROR: E0001 - You must specify an input filename"
+        GenFdsGlobalVariable.InfLogger("ERROR: E0001 - You must specify an input filename")
         sys.exit(1)
 
     if not os.path.exists(fdfFilename):
-        print "ERROR: E1000: File %s not found" % (filename)
+        GenFdsGlobalVariable.InfLogger ("ERROR: E1000: File %s not found" % (filename))
         sys.exit(1)
 
     if (options.activePlatform):
@@ -65,7 +74,8 @@ def main():
     if (options.outputDir):
         outputDir = options.outputDir
     else:
-        print "ERROR: E0001 - You must specify an Output directory"
+        #print "ERROR: E0001 - You must specify an Output directory"
+        GenFdsGlobalVariable.InfLogger("ERROR: E0001 - You must specify an Output directory")
         sys.exit(1)
         
     if (options.archList) :
@@ -92,9 +102,9 @@ def myOptionParser():
     parser.add_option("-f", "--file", dest="filename", help="Name of FDF file to convert")
     parser.add_option("-a", "--arch", dest="archList", help="comma separated list containing one or more of: IA32, X64, IPF or EBC which should be built, overrides target.txt?s TARGET_ARCH")
     parser.add_option("-i", "--interactive", action="store_true", dest="interactive", default=False, help="Set Interactive mode, user must approve each change.")
-    parser.add_option("-q", "--quiet", action="store_const", const=0, dest="verbose", help="Do not print any messages, just return either 0 for succes or 1 for failure")
-    parser.add_option("-v", "--verbose", action="count", dest="verbose", default=0, help="Do not print any messages, just return either 0 for succes or 1 for failure")
-    parser.add_option("-d", "--debug", action="store_true", dest="debug", default=False, help="Enable printing of debug messages.")
+    parser.add_option("-q", "--quiet", action="store_true", type=None, help="Disable all messages except FATAL ERRORS.")
+    parser.add_option("-v", "--verbose", action="store_true", type=None, help="Turn on verbose output with informational messages printed.")
+    parser.add_option("-d", "--debug", action="store", type="int", help="Enable debug messages at specified level.")
     parser.add_option("-p", "--platform", dest="activePlatform", help="Set the Active platform")
     parser.add_option("-w", "--workspace", dest="workspace", default=str(os.environ.get('WORKSPACE')), help="Enable printing of debug messages.")
     parser.add_option("-o", "--outputDir", dest="outputDir", help="Name of Output directory")
@@ -135,34 +145,26 @@ class GenFds :
         ruleComplexFile1.TemplateName = ''
         ruleComplexFile1.SectionList = [uiSection1, verSection1, dataSection]
         GenFdsGlobalVariable.SetDefaultRule(ruleComplexFile1)
-        
+
+        GenFdsGlobalVariable.VerboseLogger("   Gen Fd  !")
         for item in GenFdsGlobalVariable.FdfParser.profile.FdDict.keys():
             fd = GenFdsGlobalVariable.FdfParser.profile.FdDict[item]
             fd.GenFd(GenFds.FvBinDict)
+            
+        GenFdsGlobalVariable.VerboseLogger(" Gen FV ! ")
         for FvName in GenFdsGlobalVariable.FdfParser.profile.FvDict.keys():
             if not FvName in GenFds.FvBinDict.keys():
                 Buffer = StringIO.StringIO()
                 fv = GenFdsGlobalVariable.FdfParser.profile.FvDict[FvName]
                 fv.AddToBuffer(Buffer)
                 Buffer.close()
-                
-        #print "#########   Gen Capsule              ####################"
+        
+        GenFdsGlobalVariable.VerboseLogger(" Gen Capsule !")
         for capsule in GenFdsGlobalVariable.FdfParser.profile.CapsuleList:
             capsule.GenCapsule()
 
-##        for vtf in GenFdsGlobalVariable.FdfParser.profile.VtfList:
-##            vtf.GenVtf()
 
-    #Finish GenFd()
-    def GenVTFList() :
-        for item in GenFdsGlobalVariable.FdfParser.profile.VtfList:
-            for comp in item.ComponentStatementList:
-                if comp.CompLoc != None :
-                    compList.append(comp.Loc)
-            GenFdsGlobalVariable.VtfDict[item.UiName] = compList
-    #
-    # Define GenFd as static function
-    #
+    """Define GenFd as static function"""
     GenFd = staticmethod(GenFd)
 
 if __name__ == '__main__':

@@ -15,7 +15,7 @@ class CompressSection (CompressSectionClassObject) :
         CompressSectionClassObject.__init__(self)
         
 
-    def GenSection(self, OutputPath, ModuleName,  KeyStringList, FfsInf = None):
+    def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None):
         #
         # Generate all section
         #
@@ -24,8 +24,11 @@ class CompressSection (CompressSectionClassObject) :
             self.Alignment = FfsInf.__ExtendMarco__(self.Alignment)
             
         SectFiles = ''
+        Index = 0
         for Sect in self.SectionList:
-            sect, align = Sect.GenSection(OutputPath, ModuleName, KeyStringList, FfsInf)
+            Index = Index + 1
+            SecIndex = '%s.%d' %(SecNum, Index)
+            sect, align = Sect.GenSection(OutputPath, ModuleName, SecIndex, KeyStringList, FfsInf)
             if sect != None:
                 SectFiles = SectFiles + \
                             ' '       + \
@@ -35,6 +38,8 @@ class CompressSection (CompressSectionClassObject) :
         OutputFile = OutputPath + \
                      os.sep     + \
                      ModuleName + \
+                     'SEC'      + \
+                     SecNum     + \
                      Ffs.SectionSuffix['COMPRESS']
         OutputFile = os.path.normpath(OutputFile)
         
@@ -47,7 +52,6 @@ class CompressSection (CompressSectionClassObject) :
         #
         # Call GenSection
         #
-        print GenSectionCmd
         GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
         
         return OutputFile, self.Alignment

@@ -5,12 +5,6 @@ T_CHAR_LF = '\n'
 
 class Vtf (VtfClassObject):
     def __init__(self):
-##        self.KeyArch = None
-##        self.ArchList = None
-##        self.UiName = None
-####        self.OptionStatement = None
-##        self.ResetBin = None
-##        self.ComponentStatementList = []
         VtfClassObject.__init__(self)
 
     def GenVtf(self, fdAddDict) :
@@ -26,7 +20,6 @@ class Vtf (VtfClassObject):
                ' '             + \
                BaseAddArg      
                
-        print cmd
         GenFdsGlobalVariable.CallExternalTool(cmd, "GenFv -Vtf Failed!")
         return VtfRawDict
         

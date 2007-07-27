@@ -3,8 +3,6 @@ from GenFdsGlobalVariable import GenFdsGlobalVariable
 import StringIO
 class CapsuleData:
     def __init__(self):
-       # self.FfsList = []
-       # self.FvStatementList = []
         pass
     def GenCapsuleSubItem(self):
         pass

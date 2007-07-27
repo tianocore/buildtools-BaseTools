@@ -19,8 +19,11 @@ class FileStatements (FileStatementsClassObject) :
                           GenFdsGlobalVariable.ReplaceWorkspaceMarco(self.FileName)
         else:
             SectionFiles = ''
+            Index = 0
             for section in self.SectionList :
-                sect, align = section.GenSection(OutputDir, self.NameGuid, self.KeyStringList)
+                Index = Index + 1
+                SecIndex = '%d' %Index
+                sect, align = section.GenSection(OutputDir, self.NameGuid, SecIndex, self.KeyStringList)
                 if sect != None:
                     SectionFiles = SectionFiles  + \
                                    ' -i '        + \
@@ -33,12 +36,12 @@ class FileStatements (FileStatementsClassObject) :
         #
         # Prepare the parameter
         #
-        print "Fixe = ", self.Fixed
+        
         if self.Fixed != False:
                 Fixed = ' -x '
         else :
                 Fixed = ''
-        print "CheckSum=", self.CheckSum
+                
         if self.CheckSum != False :
                 CheckSum = ' -s '
         else :
@@ -68,7 +71,6 @@ class FileStatements (FileStatementsClassObject) :
                      self.NameGuid +\
                      SectionFiles
      
-        print GenFfsCmd
         GenFdsGlobalVariable.CallExternalTool(GenFfsCmd,"GenFfs Failed !")
         return FfsFileOutput
         

@@ -9,7 +9,7 @@ class DataSection (DataSectionClassObject):
     def __init__(self):
         DataSectionClassObject.__init__(self)
         
-    def GenSection(self, OutputPath, ModuleName, keyStringList, FfsInf = None):
+    def GenSection(self, OutputPath, ModuleName, SecNum, keyStringList, FfsInf = None):
         #
         # Prepare the parameter of GenSection
         #
@@ -31,11 +31,10 @@ class DataSection (DataSectionClassObject):
                         TeFile        + \
                         ' '           + \
                        GenFdsGlobalVariable.ExtendMarco(self.SectFileName)
-            print GenTeCmd
             GenFdsGlobalVariable.CallExternalTool(GenTeCmd, "GenFw Failed !")
             self.SectFileName = TeFile
                  
-        OutputFile = os.path.join (OutputPath, ModuleName + Ffs.SectionSuffix.get(self.SecType))
+        OutputFile = os.path.join (OutputPath, ModuleName + 'SEC' + SecNum + Ffs.SectionSuffix.get(self.SecType))
         OutputFile = os.path.normpath(OutputFile)
         
         GenSectionCmd = 'GenSec -o '                                     + \
@@ -49,6 +48,5 @@ class DataSection (DataSectionClassObject):
         # Call GenSection
         #
         
-        print GenSectionCmd
         GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
         return OutputFile, self.Alignment

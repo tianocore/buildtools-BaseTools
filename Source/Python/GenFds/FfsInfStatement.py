@@ -14,13 +14,6 @@ from Common.String import *
 
 class FfsInfStatement(FfsInfStatementClassObject):
     def __init__(self):
-##        Ffs.Ffs.__init__(self)
-##        self.Rule = None
-##        self.ver = None
-##        self.Ui = None
-##        self.InfFileName = None
-##        self.BuildNum = ''
-##        self.KeyStringList = []
         FfsInfStatementClassObject.__init__(self)
 
     def __infParse__(self):
@@ -38,11 +31,12 @@ class FfsInfStatement(FfsInfStatementClassObject):
         self.ModuleGuid = Inf.Defines.DefinesDictionary['FILE_GUID'][0]
         self.ModuleType = Inf.Defines.DefinesDictionary['MODULE_TYPE'][0]
         self.VersionString = Inf.Defines.DefinesDictionary['VERSION_STRING'][0]
-        print "BaseName : %s" %self.BaseName
-        print "ModuleGuid : %s" %self.ModuleGuid
-        print "ModuleType : %s" %self.ModuleType
-        print "VersionString : %s" %self.VersionString
-        print "InfFileName :" , self.InfFileName
+        GenFdsGlobalVariable.VerboseLogger( "BaseName : %s" %self.BaseName)
+        GenFdsGlobalVariable.VerboseLogger("ModuleGuid : %s" %self.ModuleGuid)
+        GenFdsGlobalVariable.VerboseLogger("ModuleType : %s" %self.ModuleType)
+        GenFdsGlobalVariable.VerboseLogger("VersionString : %s" %self.VersionString)
+        GenFdsGlobalVariable.VerboseLogger("InfFileName :%s"  %self.InfFileName)
+        
         #
         # Set OutputPath = ${WorkSpace}\Build\Fv\Ffs\${ModuleGuid}+ ${MdouleName}\
         #
@@ -53,13 +47,13 @@ class FfsInfStatement(FfsInfStatementClassObject):
             os.makedirs(self.OutputPath)
             
         self.InfOutputPath = self.__GetEFIOutPutPath__()
-        print "ModuelEFIPath: " ,self.InfOutputPath
+        GenFdsGlobalVariable.VerboseLogger( "ModuelEFIPath: " + self.InfOutputPath)
                              
     def GenFfs(self):
         #
         # Parse Inf file get Module related information
         #
-        print " Begion parsing INf file : %s" %self.InfFileName
+        GenFdsGlobalVariable.VerboseLogger( " Begion parsing INf file : %s" %self.InfFileName)
         
         """ Replace $(WORKSPACE) to None!"""
         self.InfFileName = self.InfFileName.replace('$(WORKSPACE)', '')
@@ -125,7 +119,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                            
             Rule = GenFdsGlobalVariable.FdfParser.profile.RuleDict.get(RuleName)
             if Rule != None:
-                print "Want To Find Rule Name is : " + RuleName
+                GenFdsGlobalVariable.VerboseLogger ("Want To Find Rule Name is : " + RuleName)
                 return Rule
             
         RuleName = 'RULE'      + \
@@ -140,11 +134,11 @@ class FfsInfStatement(FfsInfStatementClassObject):
                        
         Rule = GenFdsGlobalVariable.FdfParser.profile.RuleDict.get(RuleName)
         if Rule != None:
-            print "Want To Find Rule Name is : " + RuleName
+            GenFdsGlobalVariable.VerboseLogger ("Want To Find Rule Name is : " + RuleName)
             return Rule
 
         if Rule == None :
-            print 'Dont Find Related Rule, Using Default Rule !!!'
+            GenFdsGlobalVariable.VerboseLogger ('Dont Find Related Rule, Using Default Rule !!!')
             if GenFdsGlobalVariable.DefaultRule == None:
                 raise Exception ("Default Rule doesn't exist!!")
             else:
@@ -167,7 +161,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
             dscArchList.append ('IPF')
 
         curArchList = set (targetArchList) & set (dscArchList)
-        print "Valid target architecture(s) is", " ".join(curArchList)
+        GenFdsGlobalVariable.VerboseLogger ("Valid target architecture(s) is : " + " ".join(curArchList))
         return curArchList
     
     def __GetEFIOutPutPath__(self):
@@ -223,7 +217,6 @@ class FfsInfStatement(FfsInfStatementClassObject):
         #
         # Call GenSection
         #
-        print genSectionCmd
         GenFdsGlobalVariable.CallExternalTool(genSectionCmd, "Gensection Failed!")
         return OutputFile
     
@@ -238,7 +231,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                     self.__ExtendMarco__(Rule.NameGuid) + \
                     '.ffs'
 
-        print self.__ExtendMarco__(Rule.NameGuid)
+        GenFdsGlobalVariable.VerboseLogger(self.__ExtendMarco__(Rule.NameGuid))
         InputSection = ' -i '     + \
                        InputFile
 
@@ -256,19 +249,20 @@ class FfsInfStatement(FfsInfStatementClassObject):
         #
         # Call GenSection
         #
-        print GenFfsCmd
         GenFdsGlobalVariable.CallExternalTool(GenFfsCmd, "GenFfs Failed!")
         return FfsOutput
     
     def __GenComplexFileSection__(self, Rule):
         SectFiles = ''
+        Index = 0
         for Sect in Rule.SectionList:
-           #print 'GenSection: %s %s :' %(self.OutputPath ,self.ModuleGuid)
+           Index = Index + 1
+           SecIndex = '%d' %Index
            secName = ''
            if Rule.KeyStringList != []:
-               secName, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, Rule.KeyStringList, self)
+               secName, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, SecIndex, Rule.KeyStringList, self)
            else :
-               secName, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, self.KeyStringList, self)
+               secName, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, SecIndex, self.KeyStringList, self)
            if secName != '':
                SectFiles = SectFiles    + \
                            ' -i '       + \
@@ -295,7 +289,6 @@ class FfsInfStatement(FfsInfStatementClassObject):
                      FfsOutput                                    + \
                      InputFile
                      
-        print GenFfsCmd
         GenFdsGlobalVariable.CallExternalTool(GenFfsCmd, "GenFfs Failed !")
         return FfsOutput
 

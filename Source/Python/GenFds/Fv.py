@@ -9,21 +9,6 @@ T_CHAR_LF = '\n'
 
 class FV (FvClassObject):
     def __init__(self):
-##        self.UiFvName = None
-##        self.CreateFileName = None
-##        # 3-tuple list (blockSize, numBlocks, pcd)
-##        self.BlockSizeList = []
-##        # DefineVarDict[var] = value
-##        self.DefineVarDict = {}
-##        # SetVarDict[var] = value
-##        self.SetVarDict = {}
-##        self.FvAlignment = None
-##        # FvAttributeDict[attribute] = TRUE/FALSE (1/0)
-##        self.FvAttributeDict = {}
-####        self.FvAttributeset = None
-####        self.FvAttributeClear = None
-##        self.AprioriSection = None
-##        self.FfsList = []
         FvClassObject.__init__(self)
         self.FvInfFile = None
         self.BaseAddress = None
@@ -36,6 +21,7 @@ class FV (FvClassObject):
         #
         # First Process the Apriori section
         #
+        GenFdsGlobalVariable.VerboseLogger('First generate Aprioris file !')
         if not (self.AprioriSection == None):
             FileNameList = self.AprioriSection.GenFfs ()
             #
@@ -68,14 +54,13 @@ class FV (FvClassObject):
         #
         # Call GenFv Tools
         #
-        print cmd
         GenFdsGlobalVariable.CallExternalTool(cmd, "GenFv Failed!")
         #
         # Write the Fv contents to Buffer
         #
         fv = open ( FvOutputFile,'r+b')
                    
-        print "Generate %s Fv Successful" %self.UiFvName
+        GenFdsGlobalVariable.InfLogger( "Generate %s Fv Successful" %self.UiFvName)
               
         Buffer.write(fv.read())
         fv.close
