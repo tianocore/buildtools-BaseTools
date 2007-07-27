@@ -321,10 +321,7 @@ class WorkspaceBuild(object):
                     #['DebugLib|MdePkg/Library/PeiDxeDebugLibReportStatusCode/PeiDxeDebugLibReportStatusCode.inf', 'DXE_CORE']
                     list = dscObj.Contents[key].LibraryClasses[index][0].split(DataType.TAB_VALUE_SPLIT, 1)
                     type = dscObj.Contents[key].LibraryClasses[index][1]
-                    lib = NormPath(list[1])
-                    pb.LibraryClasses[(list[0], type)] = lib
-                    if lib not in pb.Libraries:
-                        pb.Libraries.append(lib)
+                    pb.LibraryClasses[(list[0], type)] = NormPath(list[1])
 
                 #Pcds
                 for index in range(len(dscObj.Contents[key].PcdsFixedAtBuild)):

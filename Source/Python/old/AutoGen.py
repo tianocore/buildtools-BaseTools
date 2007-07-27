@@ -638,7 +638,7 @@ class AutoGen(object):
         notFoundPcdList = set()
         noDatumTypePcdList = set()
         pcdConsumerList = set()
-        for f in gModuleDatabase[arch]:
+        for f in platform.Modules + platform.Libraries:
             m = gModuleDatabase[arch][f]
             for key in m.Pcds:
                 if key not in platform.Pcds:
