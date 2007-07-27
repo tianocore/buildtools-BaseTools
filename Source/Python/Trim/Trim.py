@@ -22,7 +22,7 @@ from optparse import OptionParser
 from optparse import make_option
 
 from Common.BuildToolError import *
-from Common.ToolRoutines import *
+from Common.Misc import *
 
 ## Version and Copyright
 __version_number__ = "0.01"
@@ -34,10 +34,15 @@ gTypedefPattern = re.compile("^\s*typedef\s+struct\s+[{]*$", re.MULTILINE)
 gPragmaPattern = re.compile("^\s*#pragma\s+pack", re.MULTILINE)
 gHexNumberPattern = re.compile("0[xX]([0-9a-fA-F]+)", re.MULTILINE)
 
-##
+## Trim preprocessed source code
 #
+# Remove extra content made by preprocessor. The preprocessor must enable the
+# line number generation option when preprocessing.
 #
+# @param  foo  A parameter
 #
+# @retval EFI_OK  Function was successful
+# @retval Other   Function failed
 #
 def TrimPreprocessedFile (Source, Target, Convert):
     f = open (Source, 'r')
@@ -60,10 +65,15 @@ def TrimPreprocessedFile (Source, Target, Convert):
     f.writelines(Lines[EndOfCode:])
     f.close()
 
-##
+## brief dsce
 #
+# Detailed description of what the function does
+# and how it does it.
 #
+# @param  foo  A parameter
 #
+# @retval EFI_OK  Function was successful
+# @retval Other   Function failed
 #
 def TrimPreprocessedVfr(Source, Target):
     f = open (Source,'r')
@@ -75,8 +85,8 @@ def TrimPreprocessedVfr(Source, Target):
     TypedefStart = 0
     TypedefEnd = 0
     for Index in range (len(Lines)):
-        Line = Lines[Index].strip()
-        if Line == 'formset':
+        Line = Lines[Index]
+        if Line.strip() == 'formset':
             break
 
         if FoundTypedef == False and (Line.find('#line') == 0 or Line.find('# ') == 0):
@@ -107,19 +117,29 @@ def TrimPreprocessedVfr(Source, Target):
     f.writelines(Lines)
     f.close()
 
-##
+## brief dsce
 #
+# Detailed description of what the function does
+# and how it does it.
 #
+# @param  foo  A parameter
 #
+# @retval EFI_OK  Function was successful
+# @retval Other   Function failed
 #
 def ConvertHex(Lines, start, end):
     for Index in range (start, end):
         Lines[Index] = gHexNumberPattern.sub(r"\1h", Lines[Index])
 
-##
+## brief dsce
 #
+# Detailed description of what the function does
+# and how it does it.
 #
+# @param  foo  A parameter
 #
+# @retval EFI_OK  Function was successful
+# @retval Other   Function failed
 #
 def Options():
     OptionList = [
@@ -152,10 +172,16 @@ def Options():
         Options.OutputFile = os.path.splitext(InputFile)[0] + '.iii'
 
     return Options, InputFile
-##
+
+## brief dsce
 #
+# Detailed description of what the function does
+# and how it does it.
 #
+# @param  foo  A parameter
 #
+# @retval EFI_OK  Function was successful
+# @retval Other   Function failed
 #
 def Main():
     try:
