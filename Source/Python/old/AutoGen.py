@@ -269,7 +269,10 @@ class AutoGen(object):
         self.ProcessToolDefinition(info)
 
         if platformAutoGen != None:
-            platformAutoGen.BuildInfo = info
+            if type(platformAutoGen.BuildInfo) == type({}):
+                platformAutoGen.BuildInfo[arch] = info
+            else:
+                platformAutoGen.BuildInfo = info
         return info
 
     def GetDepexTokenList(self, info):
