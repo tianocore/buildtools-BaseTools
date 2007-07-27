@@ -516,7 +516,7 @@ class WorkspaceBuild(object):
         self.GenPlatformDatabase()
         self.GenPackageDatabase()
         self.GenModuleDatabase(PcdsSet)
-        #self.UpdateLibrariesOfPlatform()
+        self.UpdateLibrariesOfPlatform()
 
     #
     # Return a full path with workspace dir
