@@ -24,43 +24,11 @@ from String import *
 from BuildToolError import *
 from CommonDataClass.CommonClass import *
 
-class ModuleSourceFilesClassObject(object):
-    def __init__(self, SourceFile = '', PcdFeatureFlag = '', TagName = '', ToolCode = '', ToolChainFamily = '', String = ''):
-        self.SourceFile         = SourceFile
-        self.TagName            = TagName
-        self.ToolCode           = ToolCode
-        self.ToolChainFamily    = ToolChainFamily
-        self.String             = String
-        self.PcdFeatureFlag     = PcdFeatureFlag
-    
-    def __str__(self):
-        return self.SourceFile
-    
-    def __repr__(self):
-        rtn = self.SourceFile + DataType.TAB_VALUE_SPLIT + \
-              self.PcdFeatureFlag + DataType.TAB_VALUE_SPLIT + \
-              self.ToolChainFamily +  DataType.TAB_VALUE_SPLIT + \
-              self.TagName + DataType.TAB_VALUE_SPLIT + \
-              self.ToolCode + DataType.TAB_VALUE_SPLIT + \
-              self.String
-        return rtn
-
-class ModuleBinaryFilesClassObject(object):
-    def __init__(self, BinaryFile = '', FileType = '', Target = '', PcdFeatureFlag = ''):
-        self.BinaryFile = BinaryFile
-        self.FileType =FileType
-        self.Target = Target
-        self.PcdFeatureFlag = PcdFeatureFlag
-    
-    def __str__(self):
-        rtn = self.BinaryFile + DataType.TAB_VALUE_SPLIT + \
-              self.FileType + DataType.TAB_VALUE_SPLIT + \
-              self.Target +  DataType.TAB_VALUE_SPLIT + \
-              self.PcdFeatureFlag
-        return rtn
-        
+#
+# This Class is used for PcdObject 
+#
 class PcdClassObject(object):
-    def __init__(self, Name = None, Guid = None, Type = None, DatumType = None, Value = None, Token = None, MaxDatumSize = None, SkuInfoList = []):
+    def __init__(self, Name = None, Guid = None, Type = None, DatumType = None, Value = None, Token = None, MaxDatumSize = None, SkuInfoList = {}):
         self.TokenCName = Name
         self.TokenSpaceGuidCName = Guid
         self.Type = Type
@@ -79,8 +47,8 @@ class PcdClassObject(object):
               str(self.DefaultValue) + DataType.TAB_VALUE_SPLIT + \
               str(self.TokenValue) + DataType.TAB_VALUE_SPLIT + \
               str(self.MaxDatumSize) + DataType.TAB_VALUE_SPLIT
-        for Item in self.SkuInfoList:
-            rtn = rtn + str(Item)
+        for Item in self.SkuInfoList.values():
+            rtn = rtn + Item.SkuId + DataType.TAB_VALUE_SPLIT + Item.SkuIdName
         return rtn
 
     def __eq__(self, other):
@@ -89,10 +57,13 @@ class PcdClassObject(object):
     def __hash__(self):
         return hash((self.TokenCName, self.TokenSpaceGuidCName))
 
+#
+# This Class is used for LibraryClassObject
+#
 class LibraryClassObject(object):
-    def __init__(self, Name = None, Type = None):
+    def __init__(self, Name = None, SupModList = [], Type = None):
         self.LibraryClass = Name
-        self.SupModList = []
+        self.SupModList = SupModList
         if Type != None:
             self.SupModList = CleanString(Type).split(DataType.TAB_SPACE_SPLIT)
         
@@ -191,6 +162,10 @@ class ItemBuild(object):
         self.PackageDatabase         = {}        #{ [DecFileName] : PacakgeBuildClassObject, ...}
         self.ModuleDatabase          = {}        #{ [InfFileName] : ModuleBuildClassObject, ...}
         
+#
+# This class is used to parse active platform to init all inf/dec/dsc files
+# Generate module/package/platform databases for build
+#
 class WorkspaceBuild(object):
     def __init__(self, ActivePlatform, WorkspaceDir):
         self.WorkspaceDir            = NormPath(WorkspaceDir)
@@ -205,6 +180,9 @@ class WorkspaceBuild(object):
         self.DecDatabase             = {}        #{ [DecFileName] : DecClassObject}
         self.DscDatabase             = {}        #{ [DscFileName] : DscClassObject}
         
+        #
+        # Init build for all arches
+        #
         self.Build                   = {}
         for Arch in DataType.ARCH_LIST:
             self.Build[Arch] = ItemBuild(Arch)
@@ -220,7 +198,7 @@ class WorkspaceBuild(object):
             raise ParserError(FILE_NOT_FOUND, name = File)
         
         #
-        # parse platform to get module
+        # Parse platform to get module
         #
         for DscFile in self.DscDatabase.keys():
             Platform = self.DscDatabase[DscFile].Platform
@@ -253,423 +231,281 @@ class WorkspaceBuild(object):
                     for Lib in Item.LibraryClasses.LibraryList:
                         self.AddToInfDatabase(Lib.FilePath)
                         self.UpdateLibraryClassOfModule(Module, Lib.Name, Arch)
-        #End For of Dsc
         
-        #parse module to get package
+        #
+        # Parse module to get package
+        #
         for InfFile in self.InfDatabase.keys():
             Module = self.InfDatabase[InfFile].Module
-            #Get all dec
+            #
+            # Get all dec
+            #
             for Item in Module.PackageDependencies:
                 for Arch in Item.SupArchList:
                     self.AddToDecDatabase(Item.FilePath)
-#            for key in DataType.ARCH_LIST:
-#                for index in range(len(infObj.Contents[key].Packages)):
-#                    self.AddToDecDatabase(infObj.Contents[key].Packages[index])
-    #End of self.Init()
+    # End of self.Init()
     
+    #
+    # Generate PlatformDatabase
+    #
+    def GenPlatformDatabase(self):
+        for Dsc in self.DscDatabase.keys():
+            Platform = self.DscDatabase[Dsc].Platform
+            
+            for Arch in self.SupArchList:
+                pb = PlatformBuildClassObject()
+                
+                # Defines
+                pb.DescFilePath = Dsc
+                pb.PlatformName = Platform.Header.Name
+                pb.Guid = Platform.Header.Guid
+                pb.Version = Platform.Header.Version
+                pb.DscSpecification = Platform.Header.DscSpecification
+                pb.OutputDirectory = NormPath(Platform.Header.OutputDirectory)
+                pb.FlashDefinition = NormPath(Platform.FlashDefinitionFile.FilePath)
+                pb.BuildNumber = Platform.Header.BuildNumber
+            
+                # SkuId
+                for Key in Platform.SkuInfos.SkuInfoList.keys():
+                    pb.SkuIds[Key] = Platform.SkuInfos.SkuInfoList[Key]
+                
+                # Module
+                for Item in Platform.Modules.ModuleList:
+                    if Arch in Item.SupArchList:
+                        pb.Modules.append(NormPath(Item.FilePath))
+                    
+                # BuildOptions
+                for Item in Platform.BuildOptions.BuildOptionList:
+                    if Arch in Item.SupArchList:
+                        pb.BuildOptions[(Item.ToolChainFamily, Item.ToolChain)] = Item.Option
+                  
+                # LibraryClass
+                for Item in Platform.LibraryClasses.LibraryList:
+                    if Arch in Item.SupArchList:
+                        for ModuleType in Item.ModuleType:
+                            pb.LibraryClasses[(Item.Name, ModuleType)] = NormPath(Item.FilePath)
+                    
+                # Pcds
+                for Item in Platform.DynamicPcdBuildDefinitions:
+                    if Arch in Item.SupArchList:
+                        Name = Item.CName
+                        Guid = Item.TokenSpaceGuidCName
+                        Type = Item.ItemType
+                        DatumType = ''
+                        Value = Item.DefaultValue
+                        Token = Item.Token
+                        MaxDatumSize = Item.MaxDatumSize
+                        SkuInfoList = Item.SkuInfoList
+                        pb.Pcds[(Name, Guid)] = PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList)
+                
+                # Add to database
+                self.Build[Arch].PlatformDatabase[Dsc] = pb
+                pb = None
+    
+    #
+    # Generate PackageDatabase
+    #    
+    def GenPackageDatabase(self):
+        for Dec in self.DecDatabase.keys():
+            Package = self.DecDatabase[Dec].Package
+        
+            for Arch in self.SupArchList:
+                pb = PackageBuildClassObject()
+                
+                # Defines
+                pb.DescFilePath = Dec
+                pb.PackageName = Package.Header.Name
+                pb.Guid = Package.Header.Guid
+                pb.Version = Package.Header.Version
+                
+                # Protocols
+                for Item in Package.ProtocolDeclarations:
+                    if Arch in Item.SupArchList:
+                        pb.Protocols[Item.CName] = Item.Guid
+                        
+                # Ppis
+                for Item in Package.PpiDeclarations:
+                    if Arch in Item.SupArchList:
+                        pb.Ppis[Item.CName] = Item.Guid
+                
+                # Guids
+                for Item in Package.GuidDeclarations:
+                    if Arch in Item.SupArchList:
+                        pb.Ppis[Item.CName] = Item.Guid
+                
+                # Includes
+                for Item in Package.Includes:
+                    if Arch in Item.SupArchList:
+                        pb.Includes.append(NormPath(Item.FilePath))
+                        
+                # LibraryClasses
+                for Item in Package.LibraryClassDeclarations:
+                    if Arch in Item.SupArchList:
+                        pb.LibraryClasses[Item.LibraryClass] = NormPath(Item.RecommendedInstance)
+                
+                # Pcds
+                for Item in Package.PcdDeclarations:
+                    if Arch in Item.SupArchList:
+                        Name = Item.CName
+                        Guid = Item.TokenSpaceGuidCName
+                        Type = Item.ItemType
+                        DatumType = ''
+                        Value = Item.DefaultValue
+                        Token = Item.Token
+                        MaxDatumSize = Item.MaxDatumSize
+                        SkuInfoList = Item.SkuInfoList
+                        pb.Pcds[(Name, Guid)] = PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList)
+                
+                # Add to database
+                self.Build[Arch].PackageDatabase[Dec] = pb
+                pb = None
+    
+    #
+    # Generate ModuleDatabase
+    #
+    def GenModuleDatabase(self, PcdsSet = {}):
+        for Inf in self.InfDatabase.keys():
+            Module = self.InfDatabase[Inf].Module
+            
+            for Arch in self.SupArchList:
+                pb = ModuleBuildClassObject()
+                
+                # Defines
+                pb.DescFilePath = Inf
+                pb.BaseName = Module.Header.Name
+                pb.Guid = Module.Header.Guid
+                pb.Version = Module.Header.Version
+                pb.ModuleType = Module.Header.ModuleType
+                pb.PcdIsDriver = Module.Header.PcdIsDriver
+                pb.BinaryModule = Module.Header.BinaryModule
+                pb.CustomMakefile = Module.Header.CustomMakefile
+                
+                # Specs os Defines
+                pb.Specification = Module.Header.Specification
+                pb.Specification[TAB_INF_DEFINES_EDK_RELEASE_VERSION] = Module.Header.EdkReleaseVersion
+                pb.Specification[TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION] = Module.Header.EfiSpecificationVersion
+                
+                # LibraryClass of Defines
+                for Item in Module.Header.LibraryClass:
+                    pb.LibraryClass = LibraryClassObject(Item.LibraryClass, Item.SupModuleList, None)
+
+                # Module image and library of Defines
+                for Item in Module.ExternImages:
+                    if Item.ModuleEntryPoint != '':
+                        pb.ModuleEntryPointList.append(Item.ModuleEntryPoint)
+                    if Item.ModuleUnloadImage != '':
+                        pb.ModuleUnloadImageList.append(Item.ModuleUnloadImage)
+                for Item in Module.ExternLibraries:
+                    if Item.Constructor != '':
+                        pb.ConstructorList.append(Item.Constructor)
+                    if Item.Destructor != '':
+                        pb.DestructorList.append(Item.Destructor)
+                
+                # Binaries
+                for Item in Module.Binaries:
+                    if Arch in Item.SupArchList:
+                        FileName = NormPath(Item.BinaryFile)
+                        FileType = Item.FileType
+                        Target = Item.Target
+                        FeatureFlag = Item.FeatureFlag
+                        pb.Binaries.append(ModuleBinaryFileClass(FileName, FileType, Target, FeatureFlag))
+                
+                #Sources
+                for Item in Module.Sources:
+                    if Arch in Item.SupArchList:
+                        SourceFile = NormPath(Item.SourceFile)
+                        TagName = Item.TagName
+                        ToolCode = Item.ToolCode
+                        ToolChainFamily = Item.ToolChainFamily
+                        FeatureFlag = Item.FeatureFlag
+                        pb.Sources.append(ModuleSourceFileClass(SourceFile, TagName, ToolCode, ToolChainFamily, FeatureFlag))
+                
+                # Protocols
+                for Item in Module.Protocols:
+                    if Arch in Item.SupArchList:
+                        pb.Protocols.append(Item.CName)
+                        
+                # Ppis
+                for Item in Module.Ppis:
+                    if Arch in Item.SupArchList:
+                        pb.Ppis.append(Item.CName)
+                
+                # Guids
+                for Item in Module.Guids:
+                    if Arch in Item.SupArchList:
+                        pb.Ppis.append(Item.CName)
+                
+                # Includes
+                for Item in Module.Includes:
+                    if Arch in Item.SupArchList:
+                        pb.Includes.append(NormPath(Item.FilePath))                
+                
+                # Packages
+                for Item in Module.PackageDependencies:
+                    if Arch in Item.SupArchList:
+                        pb.Packages.append(NormPath(Item.FilePath))                        
+
+                # BuildOptions
+                for Item in Module.BuildOptions:
+                    if Arch in Item.SupArchList:
+                        pb.BuildOptions[(Item.ToolChainFamily, Item.ToolChain)] = Item.Option
+                self.FindBuildOptions(Arch, Inf, pb.BuildOptions)
+                
+                # Depex
+                for Item in Module.Depex:
+                    if Arch in Item.SupArchList:
+                        pb.Depex = pb.Depex + Item.Depex + ' '
+                pb.Depex = pb.Depex.strip()
+                
+                # LibraryClasses
+                for Item in Module.LibraryClasses:
+                    if Arch in Item.SupArchList:
+                        Lib = Item.LibraryClass
+                        RecommendedInstance = Item.RecommendedInstance
+                        if pb.LibraryClass != None:
+                            # For Library
+                            for Type in pb.LibraryClass.SupModList:
+                                Instance = self.FindLibraryClassInstanceOfLibrary(Lib, Arch, Type)
+                                if Instance == None:
+                                    Instance = RecommendedInstance
+                                    pb.LibraryClasses[(Lib, Type)] = NormPath(Instance)
+                        else:
+                            # For Module
+                            Instance = self.FindLibraryClassInstanceOfModule(Lib, Arch, pb.ModuleType, Inf) 
+                            if Instance == None:
+                                Instance = RecommendedInstance
+                            pb.LibraryClasses[(Lib, pb.ModuleType)] = NormPath(Instance)
+                
+                # Pcds
+                for Item in Module.PcdCodes:
+                    if Arch in Item.SupArchList:
+                        Name = Item.CName
+                        Guid = Item.TokenSpaceGuidCName
+                        Type = Item.ItemType
+                        pb.Pcds[(Name, Guid)] = self.FindPcd(Arch, Inf, Name, Guid, Type, PcdsSet)
+                
+                # Add to database
+                self.Build[Arch].ModuleDatabase[Inf] = pb
+                pb = None
+    
+    #
+    # Generate build database for all arches
+    #
+    def GenBuildDatabase(self, PcdsSet = {}):
+        self.GenPlatformDatabase()
+        self.GenPackageDatabase()
+        self.GenModuleDatabase(PcdsSet)
+        
     #
     # Return a full path with workspace dir
     #
     def WorkspaceFile(self, Filename):
         return os.path.join(os.path.normpath(self.WorkspaceDir), os.path.normpath(Filename))
     
-    def GenBuildDatabase(self, PcdsSet = {}):
-        #Build databases
-        #Build PlatformDatabase
-        for dsc in self.DscDatabase.keys():
-            dscObj = self.DscDatabase[dsc]
-            
-            for key in DataType.ARCH_LIST:
-                pb = PlatformBuildClassObject()
-                pb.DescFilePath = dsc
-                pb.PlatformName = dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_PLATFORM_NAME][0]
-                pb.Guid = dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_PLATFORM_GUID][0]
-                pb.Version = dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_PLATFORM_VERSION][0]
-                pb.DscSpecification = dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_DSC_SPECIFICATION][0]
-                pb.OutputDirectory = NormPath(dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_OUTPUT_DIRECTORY][0])
-                pb.FlashDefinition = NormPath(dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_FLASH_DEFINITION][0])
-                pb.BuildNumber = dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_BUILD_NUMBER][0]
-                pb.MakefileName = NormPath(dscObj.Defines.DefinesDictionary[DataType.TAB_DSC_DEFINES_MAKEFILE_NAME][0])
-                
-                #SkuId
-                for index in range(len(dscObj.Contents[key].SkuIds)):
-                    SkuInfo = dscObj.Contents[key].SkuIds[index]
-                    SkuName = ''
-                    SkuId = ''
-                    if SkuInfo.find('!include') > -1:
-                        SkuName = '!include'
-                        SkuId = NormPath(CleanString(SkuInfo[SkuInfo.find('!include') + len('!include'):]))
-                    elif len(SkuInfo.split(DataType.TAB_VALUE_SPLIT)) == 2:
-                        SkuName = CleanString(SkuInfo.split(DataType.TAB_VALUE_SPLIT)[1])
-                        SkuId = CleanString(SkuInfo.split(DataType.TAB_VALUE_SPLIT)[0])
-                    else:
-                        raise ParseError('Wrong defintion for SkuId: %s' % SkuInfo)
-                    pb.SkuIds[SkuName] = SkuId
-                
-                #Module
-                for index in range(len(dscObj.Contents[key].Components)):
-                    pb.Modules.append(NormPath(dscObj.Contents[key].Components[index][0]))
-                
-                #BuildOptions
-                for index in range(len(dscObj.Contents[key].BuildOptions)):
-                    b = dscObj.Contents[key].BuildOptions[index].split(DataType.TAB_EQUAL_SPLIT, 1)
-                    Family = ''
-                    ToolChain = ''
-                    Flag = ''
-                    if b[0].find(':') > -1:
-                        Family = CleanString(b[0][ : b[0].find(':')])
-                        ToolChain = CleanString(b[0][b[0].find(':') + 1 : ])
-                    else:
-                        ToolChain = CleanString(b[0])
-                    Flag = CleanString(b[1])
-                    pb.BuildOptions[(Family, ToolChain)] = Flag
-                    
-                #LibraryClass
-                for index in range(len(dscObj.Contents[key].LibraryClasses)):
-                    #['DebugLib|MdePkg/Library/PeiDxeDebugLibReportStatusCode/PeiDxeDebugLibReportStatusCode.inf', ['DXE_CORE']]
-                    list = dscObj.Contents[key].LibraryClasses[index][0].split(DataType.TAB_VALUE_SPLIT, 1)
-                    type = dscObj.Contents[key].LibraryClasses[index][1][0]
-                    pb.LibraryClasses[(list[0], type)] = NormPath(list[1])
-
-                #Pcds
-                for index in range(len(dscObj.Contents[key].PcdsFixedAtBuild)):
-                    pcd = dscObj.Contents[key].PcdsFixedAtBuild[index].split(DataType.TAB_VALUE_SPLIT)
-                    pcd.append(None)
-                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_FIXED_AT_BUILD, None, pcd[2], None, pcd[3])
-                for index in range(len(dscObj.Contents[key].PcdsPatchableInModule)):
-                    pcd = dscObj.Contents[key].PcdsPatchableInModule[index].split(DataType.TAB_VALUE_SPLIT)
-                    pcd.append(None)
-                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_PATCHABLE_IN_MODULE, None, pcd[2], None, pcd[3])
-                for index in range(len(dscObj.Contents[key].PcdsFeatureFlag)):
-                    pcd = dscObj.Contents[key].PcdsFeatureFlag[index].split(DataType.TAB_VALUE_SPLIT)
-                    pcd.append(None)                    
-                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_FEATURE_FLAG, None, pcd[2], None, pcd[3])
-                #
-                # PcdsDynamic
-                #
-                for index in range(len(dscObj.Contents[key].PcdsDynamicDefault)):
-                    pcd = dscObj.Contents[key].PcdsDynamicDefault[index][0].split(DataType.TAB_VALUE_SPLIT)
-                    pcd.append(None)
-                    SkuName = dscObj.Contents[key].PcdsDynamicDefault[index][1]
-                    SkuInfoList = []
-                    if SkuName == None or SkuName == [] or SkuName == ['']:
-                        SkuName = ['DEFAULT']
-                    SkuNameList = map(lambda l: l.strip(), SkuName[0].split(DataType.TAB_VALUE_SPLIT))
-                    for Item in SkuNameList:
-                        SkuInfo = SkuInfoClass()
-                        SkuInfo.SkuId = Item[1]
-                        SkuInfo.DefaultValue = pcd[2]
-                        SkuInfoList.append(SkuInfo)
-                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_DEFAULT, None, None, None, pcd[3], SkuInfoList)
-                for index in range(len(dscObj.Contents[key].PcdsDynamicVpd)):
-                    pcd = dscObj.Contents[key].PcdsDynamicVpd[index][0].split(DataType.TAB_VALUE_SPLIT)
-                    pcd.append(None)
-                    SkuId = dscObj.Contents[key].PcdsDynamicVpd[index][1]
-                    SkuInfoList = []
-                    if SkuId == None:
-                        SkuId = 'DEFAULT'
-                    SkuIdList = map(lambda l: l.strip(), SkuId.split(DataType.TAB_VALUE_SPLIT))
-                    for Item in SkuIdList:
-                        SkuInfo = SkuInfoClassObject()
-                        SkuInfo.SkuId = Item
-                        SkuInfo.VpdOffset = pcd[2]
-                        SkuInfoList.append(SkuInfo)
-                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_VPD, None, None, None, pcd[3], SkuInfoList)
-                for index in range(len(dscObj.Contents[key].PcdsDynamicHii)):
-                    pcd = dscObj.Contents[key].PcdsDynamicHii[index][0].split(DataType.TAB_VALUE_SPLIT)
-                    pcd.append(None)
-                    SkuId = dscObj.Contents[key].PcdsDynamicHii[index][1]
-                    SkuInfoList = []
-                    if SkuId == None:
-                        SkuId = 'DEFAULT'
-                    SkuIdList = map(lambda l: l.strip(), SkuId.split(DataType.TAB_VALUE_SPLIT))
-                    for Item in SkuIdList:
-                        SkuInfo = SkuInfoClassObject()
-                        SkuInfo.SkuId = Item
-                        SkuInfo.VariableName = pcd[2]
-                        SkuInfo.VariableGuid = pcd[3]
-                        SkuInfo.VariableOffset = pcd[4]
-                        SkuInfo.HiiDefaultValue = pcd[5]                                                
-                        SkuInfoList.append(SkuInfo)
-                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_HII, None, None, None, pcd[6], SkuInfoList)
-                #
-                # PcdsDynamicEx
-                #
-                for index in range(len(dscObj.Contents[key].PcdsDynamicExDefault)):
-                    pcd = dscObj.Contents[key].PcdsDynamicExDefault[index][0].split(DataType.TAB_VALUE_SPLIT)
-                    pcd.append(None)
-                    SkuId = dscObj.Contents[key].PcdsDynamicExDefault[index][1]
-                    SkuInfoList = []
-                    if SkuId == None:
-                        SkuId = 'DEFAULT'
-                    SkuIdList = map(lambda l: l.strip(), SkuId.split(DataType.TAB_VALUE_SPLIT))
-                    for Item in SkuIdList:
-                        SkuInfo = SkuInfoClassObject()
-                        SkuInfo.SkuId = Item
-                        SkuInfo.DefaultValue = pcd[2]
-                        SkuInfoList.append(SkuInfo)
-                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_EX_DEFAULT, None, None, None, pcd[3], SkuInfoList)
-                for index in range(len(dscObj.Contents[key].PcdsDynamicExVpd)):
-                    pcd = dscObj.Contents[key].PcdsDynamicExVpd[index][0].split(DataType.TAB_VALUE_SPLIT)
-                    pcd.append(None)
-                    SkuId = dscObj.Contents[key].PcdsDynamicExVpd[index][1]
-                    SkuInfoList = []
-                    if SkuId == None:
-                        SkuId = 'DEFAULT'
-                    SkuIdList = map(lambda l: l.strip(), SkuId.split(DataType.TAB_VALUE_SPLIT))
-                    for Item in SkuIdList:
-                        SkuInfo = SkuInfoClassObject()
-                        SkuInfo.SkuId = Item
-                        SkuInfo.VpdOffset = pcd[2]
-                        SkuInfoList.append(SkuInfo)
-                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_EX_VPD, None, None, None, pcd[3], SkuInfoList)
-                for index in range(len(dscObj.Contents[key].PcdsDynamicExHii)):
-                    pcd = dscObj.Contents[key].PcdsDynamicExHii[index][0].split(DataType.TAB_VALUE_SPLIT)
-                    pcd.append(None)
-                    SkuId = dscObj.Contents[key].PcdsDynamicExHii[index][1]
-                    SkuInfoList = []
-                    if SkuId == None:
-                        SkuId = 'DEFAULT'
-                    SkuIdList = map(lambda l: l.strip(), SkuId.split(DataType.TAB_VALUE_SPLIT))
-                    for Item in SkuIdList:
-                        SkuInfo = SkuInfoClassObject()
-                        SkuInfo.SkuId = Item
-                        SkuInfo.VariableName = pcd[2]
-                        SkuInfo.VariableGuid = pcd[3]
-                        SkuInfo.VariableOffset = pcd[4]
-                        SkuInfo.HiiDefaultValue = pcd[5]                                                
-                        SkuInfoList.append(SkuInfo)
-                    pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_EX_HII, None, None, None, pcd[6], SkuInfoList)
-              
-                self.Build[key].PlatformDatabase[dsc] = pb
-                pb = None    
-            #End of Arch List Go Through    
-                
-        #End of Dsc Go Through
-        
-        #End of build PlatformDatabase
-        
-        #Build PackageDatabase
-        for dec in self.DecDatabase.keys():
-            decObj = self.DecDatabase[dec]
-
-            for key in DataType.ARCH_LIST:
-                pb = PackageBuildClassObject()
-                #Defines
-                pb.DescFilePath = dec
-                pb.PackageName = decObj.Defines.DefinesDictionary[TAB_DEC_DEFINES_PACKAGE_NAME][0]
-                pb.Guid = decObj.Defines.DefinesDictionary[TAB_DEC_DEFINES_PACKAGE_GUID][0]
-                pb.Version = decObj.Defines.DefinesDictionary[TAB_DEC_DEFINES_PACKAGE_VERSION][0]
-                
-                #Protocols
-                for index in range(len(decObj.Contents[key].Protocols)):
-                    list = decObj.Contents[key].Protocols[index].split(DataType.TAB_EQUAL_SPLIT)
-                    pb.Protocols[CleanString(list[0])] = CleanString(list[1])
-
-                #Ppis
-                for index in range(len(decObj.Contents[key].Ppis)):
-                    list = decObj.Contents[key].Ppis[index].split(DataType.TAB_EQUAL_SPLIT)
-                    pb.Ppis[CleanString(list[0])] = CleanString(list[1])            
-
-                #Guids
-                for index in range(len(decObj.Contents[key].Guids)):
-                    list = decObj.Contents[key].Guids[index].split(DataType.TAB_EQUAL_SPLIT)
-                    pb.Guids[CleanString(list[0])] = CleanString(list[1])        
-                
-                #Includes
-                for index in range(len(decObj.Contents[key].Includes)):
-                    pb.Includes.append(NormPath(decObj.Contents[key].Includes[index]))
-            
-                #LibraryClasses
-                for index in range(len(decObj.Contents[key].LibraryClasses)):
-                    list = decObj.Contents[key].LibraryClasses[index].split(DataType.TAB_VALUE_SPLIT)
-                    pb.LibraryClasses[CleanString(list[0])] = NormPath(CleanString(list[1]))
-                                                
-                #Pcds
-                for index in range(len(decObj.Contents[key].PcdsFixedAtBuild)):
-                    pcd = decObj.Contents[key].PcdsFixedAtBuild[index].split(DataType.TAB_VALUE_SPLIT)
-                    pb.Pcds[(pcd[0], pcd[2])] = PcdClassObject(pcd[0], pcd[2], DataType.TAB_PCDS_FIXED_AT_BUILD, pcd[3], pcd[4], pcd[1], None)
-                for index in range(len(decObj.Contents[key].PcdsPatchableInModule)):
-                    pcd = decObj.Contents[key].PcdsPatchableInModule[index].split(DataType.TAB_VALUE_SPLIT)
-                    pb.Pcds[(pcd[0], pcd[2])] = PcdClassObject(pcd[0], pcd[2], DataType.TAB_PCDS_PATCHABLE_IN_MODULE, pcd[3], pcd[4], pcd[1], None)
-                for index in range(len(decObj.Contents[key].PcdsFeatureFlag)):
-                    pcd = decObj.Contents[key].PcdsFeatureFlag[index].split(DataType.TAB_VALUE_SPLIT)
-                    pb.Pcds[(pcd[0], pcd[2])] = PcdClassObject(pcd[0], pcd[2], DataType.TAB_PCDS_FEATURE_FLAG, pcd[3], pcd[4], pcd[1], None)
-                for index in range(len(decObj.Contents[key].PcdsDynamic)):
-                    pcd = decObj.Contents[key].PcdsDynamic[index].split(DataType.TAB_VALUE_SPLIT)
-                    pb.Pcds[(pcd[0], pcd[2])] = PcdClassObject(pcd[0], pcd[2], DataType.TAB_PCDS_DYNAMIC, pcd[3], pcd[4], pcd[1], None)
-                for index in range(len(decObj.Contents[key].PcdsDynamicEx)):
-                    pcd = decObj.Contents[key].PcdsDynamicEx[index].split(DataType.TAB_VALUE_SPLIT)
-                    pb.Pcds[(pcd[0], pcd[2])] = PcdClassObject(pcd[0], pcd[2], DataType.TAB_PCDS_DYNAMIC_EX, pcd[3], pcd[4], pcd[1], None)
-            
-                #Add to database
-                self.Build[key].PackageDatabase[dec] = pb
-                pb = None    
-            #End of Arch List Go Through
-        
-        #End of Dec Go Through    
-        
-        #End of build PackageDatabase
-    
-        #Build ModuleDatabase
-        for inf in self.InfDatabase.keys():
-            infObj = self.InfDatabase[inf]
-            
-            for key in DataType.ARCH_LIST:
-                #Defines
-                pb = ModuleBuildClassObject()
-                pb.DescFilePath = inf
-                pb.BaseName = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_BASE_NAME][0]
-                pb.Guid = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_FILE_GUID][0]
-                pb.Version = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_STRING][0]
-                pb.ModuleType = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_MODULE_TYPE][0]
-                pb.PcdIsDriver = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_PCD_IS_DRIVER][0]
-                pb.BinaryModule = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_BINARY_MODULE][0]
-                
-                for Index in range(len(infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_CUSTOM_MAKEFILE])):
-                    Makefile = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_CUSTOM_MAKEFILE][Index]
-                    if Makefile != '':
-                        MakefileList = Makefile.split(DataType.TAB_VALUE_SPLIT)
-                        if len(MakefileList) == 2:
-                            pb.CustomMakefile[CleanString(MakefileList[0])] = CleanString(MakefileList[1])
-                        else:
-                            raise ParseError('Wrong custom makefile defined in file ' + inf + ', correct format is CUSTOM_MAKEFILE = Family|Filename')
-                
-                if infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_EDK_RELEASE_VERSION][0] != '':
-                    pb.Specification[TAB_INF_DEFINES_EDK_RELEASE_VERSION] = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_EDK_RELEASE_VERSION][0]
-                if infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION][0] != '':
-                    pb.Specification[TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION] = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION][0]                
-                
-                LibraryClass = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_LIBRARY_CLASS][0]
-                if LibraryClass != '':
-                    l = LibraryClass.split(DataType.TAB_VALUE_SPLIT, 1)
-                    if len(l) == 1:
-                        pb.LibraryClass = LibraryClassObject(l[0], DataType.SUP_MODULE_LIST_STRING)
-                    else:
-                        pb.LibraryClass = LibraryClassObject(l[0], l[1])
-
-                pb.ModuleEntryPointList.extend(infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_ENTRY_POINT])
-                pb.ModuleUnloadImageList.extend(infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_UNLOAD_IMAGE])
-                pb.ConstructorList.extend(infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_CONSTRUCTOR])
-                pb.DestructorList.extend(infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_DESTRUCTOR])
-
-                #Binaries
-                for index in range(len(infObj.Contents[key].Binaries)):
-                    BinaryFile = infObj.Contents[key].Binaries[index].split(DataType.TAB_VALUE_SPLIT)
-                    BinaryFile.append('')
-                    FileType = BinaryFile[0].strip()
-                    Target = BinaryFile[1].strip()
-                    FileName = NormPath(BinaryFile[2].strip())
-                    PcdFeatureFlag = BinaryFile[3].strip()
-                    pb.Binaries.append(ModuleBinaryFilesClassObject(FileName, FileType, Target, PcdFeatureFlag))
-                    
-                #Sources
-                for index in range(len(infObj.Contents[key].Sources)):
-                    SourceFile = infObj.Contents[key].Sources[index].split(DataType.TAB_VALUE_SPLIT)
-                    if len(SourceFile) == 6:
-                        FileName = NormPath(SourceFile[0].strip())
-                        PcdFeatureFlag = SourceFile[1].strip()
-                        TagName = SourceFile[3].strip()
-                        ToolCode = SourceFile[4].strip()
-                        ToolChainFamily = SourceFile[2].strip()
-                        String = SourceFile[5].strip()
-                        pb.Sources.append(ModuleSourceFilesClassObject(FileName, PcdFeatureFlag, TagName, ToolCode, ToolChainFamily, String))
-                    elif len(SourceFile) == 1:
-                        pb.Sources.append(ModuleSourceFilesClassObject(NormPath(infObj.Contents[key].Sources[index])))
-                    else:
-                        raise ParseError("Inconsistent '|' value defined in SourceFiles." + key + " section in file " + inf)
-
-                #Protocols
-                for index in range(len(infObj.Contents[key].Protocols)):
-                    pb.Protocols.append(infObj.Contents[key].Protocols[index])
-            
-                #Ppis
-                for index in range(len(infObj.Contents[key].Ppis)):
-                    pb.Ppis.append(infObj.Contents[key].Ppis[index])
-                                
-                #Guids
-                for index in range(len(infObj.Contents[key].Guids)):
-                    pb.Guids.append(infObj.Contents[key].Guids[index])
-            
-                #Includes
-                for index in range(len(infObj.Contents[key].Includes)):
-                    pb.Includes.append(NormPath(infObj.Contents[key].Includes[index]))
-            
-                #Packages
-                for index in range(len(infObj.Contents[key].Packages)):
-                    pb.Packages.append(NormPath(infObj.Contents[key].Packages[index]))
-                    
-                #BuildOptions
-                for index in range(len(infObj.Contents[key].BuildOptions)):
-                    b = infObj.Contents[key].BuildOptions[index].split(DataType.TAB_EQUAL_SPLIT, 1)
-                    Family = ''
-                    ToolChain = ''
-                    Flag = ''
-                    if b[0].find(':') > -1:
-                        Family = CleanString(b[0][ : b[0].find(':')])
-                        ToolChain = CleanString(b[0][b[0].find(':') + 1 : ])
-                    else:
-                        ToolChain = CleanString(b[0])
-                    Flag = CleanString(b[1])
-                    pb.BuildOptions[(Family, ToolChain)] = Flag
-                self.FindBuildOptions(key, inf, pb.BuildOptions)
-                
-                #Depex
-                pb.Depex = ' '.join(infObj.Contents[key].Depex)
-                
-                #LibraryClasses
-                for index in range(len(infObj.Contents[key].LibraryClasses)):
-                    #Get LibraryClass name and default instance if existing
-                    list = infObj.Contents[key].LibraryClasses[index][0].split(DataType.TAB_VALUE_SPLIT)
-                    if len(list) < 2:
-                        v = ''
-                    else:
-                        v = list[1]
-                    
-                    if pb.LibraryClass != None:
-                        #For Library
-                        for type in pb.LibraryClass.SupModList:
-                            instance = self.FindLibraryClassInstanceOfLibrary(CleanString(list[0]), key, type)
-                            if instance != None:
-                                v = instance
-                                pb.LibraryClasses[(CleanString(list[0]), type)] = NormPath(CleanString(v))
-                    else:
-                        #For Module                        
-                        instance = self.FindLibraryClassInstanceOfModule(CleanString(list[0]), key, pb.ModuleType, inf) 
-                        if instance != None:
-                            v = instance
-                            pb.LibraryClasses[(CleanString(list[0]), pb.ModuleType)] = NormPath(CleanString(v))
-
-                #Pcds
-                for index in range(len(infObj.Contents[key].PcdsFixedAtBuild)):
-                    pcd = infObj.Contents[key].PcdsFixedAtBuild[index].split(DataType.TAB_VALUE_SPLIT)
-                    pb.Pcds[(pcd[0], pcd[1])] = self.FindPcd(key, pcd[0], pcd[1], DataType.TAB_PCDS_FIXED_AT_BUILD)
-                for index in range(len(infObj.Contents[key].PcdsPatchableInModule)):
-                    pcd = infObj.Contents[key].PcdsPatchableInModule[index].split(DataType.TAB_VALUE_SPLIT)
-                    pb.Pcds[(pcd[0], pcd[1])] = self.FindPcd(key, pcd[0], pcd[1], DataType.TAB_PCDS_PATCHABLE_IN_MODULE)
-                    #pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_PATCHABLE_IN_MODULE, None, None, None, None)                    
-                for index in range(len(infObj.Contents[key].PcdsFeatureFlag)):
-                    pcd = infObj.Contents[key].PcdsFeatureFlag[index].split(DataType.TAB_VALUE_SPLIT)
-                    pb.Pcds[(pcd[0], pcd[1])] = self.FindPcd(key, pcd[0], pcd[1], DataType.TAB_PCDS_FEATURE_FLAG)
-                    #pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_FEATURE_FLAG, None, None, None, None)                    
-                for index in range(len(infObj.Contents[key].PcdsDynamic)):
-                    pcd = infObj.Contents[key].PcdsDynamic[index].split(DataType.TAB_VALUE_SPLIT)
-                    pb.Pcds[(pcd[0], pcd[1])] = self.FindPcd(key, pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC)
-                    #pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC, None, None, None, None)
-                for index in range(len(infObj.Contents[key].PcdsDynamicEx)):
-                    pcd = infObj.Contents[key].PcdsDynamicEx[index].split(DataType.TAB_VALUE_SPLIT)
-                    pb.Pcds[(pcd[0], pcd[1])] = self.FindPcd(key, pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_EX)
-                    #pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_EX, None, None, None, None)
-                                        
-                #Add to database
-                self.Build[key].ModuleDatabase[inf] = pb
-                pb = None    
-            #End of Arch List Go Through
-        
-        #End of Inf Go Through
-        
-        #End of build ModuleDatabase
-    
+    #
+    # If a module of a platform has its own override libraryclass but the libraryclass not defined in the module
+    # Add this libraryclass to the module
+    #
     def UpdateLibraryClassOfModule(self, InfFileName, LibraryClass, Arch):
         LibList = self.InfDatabase[NormPath(InfFileName)].Module.LibraryClasses
         NotFound = True
@@ -687,201 +523,234 @@ class WorkspaceBuild(object):
             Lib = LibraryClassClass()
             Lib.LibraryClass = LibraryClass
             Lib.SupArchList = [Arch]
-                
-    
-#    def UpdateInfDatabase(self, InfFileName, LibraryClass, Arch):
-#        InfFileName = NormPath(InfFileName)
-#        LibList = self.InfDatabase[InfFileName].Contents[Arch].LibraryClasses
-#        LibList = self.InfDatabase[InfFileName].Module.LibraryClasses
-#        NotFound = True
-#        for Lib in LibList:
-#            if Lib.LibraryClass == LibraryClass and Arch in Lib.SupArchList:
-#                return
-#        
-#        if NotFound:
-#            self.InfDatabase[infFileName].Module.Contents[Arch].LibraryClasses.extend([LibraryClass])
-    
+            self.InfDatabase[NormPath(InfFileName)].Module.LibraryClasses.append(Lib)
+            
+    #
+    # Create a Inf instance for input inf file and add it to InfDatabase
+    #
     def AddToInfDatabase(self, InfFileName):
         InfFileName = NormPath(InfFileName)
         File = self.WorkspaceFile(InfFileName)
         if os.path.exists(File) and os.path.isfile(File):
             if InfFileName not in self.InfDatabase:
                 self.InfDatabase[InfFileName] = Inf(File, True, True)
-                
+        else:
+            raise ParserError(FILE_NOT_FOUND, name = File)
+    
+    #
+    # Create a Dec instance for input dec file and add it to DecDatabase
+    #                
     def AddToDecDatabase(self, DecFileName):
         DecFileName = NormPath(DecFileName)
         File = self.WorkspaceFile(DecFileName)
         if os.path.exists(File) and os.path.isfile(File):
             if DecFileName not in self.DecDatabase:
                 self.DecDatabase[DecFileName] = Dec(File, True, True)
+        else:
+            raise ParserError(FILE_NOT_FOUND, name = File)
                 
-    def FindLibraryClassInstanceOfModule(self, lib, arch, moduleType, moduleName):
-        for dsc in self.DscDatabase.keys():
-            #First find if exist in <LibraryClass> of <Components> from dsc file            
-            dscObj = self.DscDatabase[dsc]
-            for index in range(len(dscObj.Contents[arch].Components)):
-                if NormPath(dscObj.Contents[arch].Components[index][0]) == moduleName and len(dscObj.Contents[arch].Components[index][1]) > 0:
-                    #Search each library class
-                    LibList = dscObj.Contents[arch].Components[index][1]
-                    for indexOfLib in range(len(LibList)):
-                        if LibList[indexOfLib].split(DataType.TAB_VALUE_SPLIT)[0].strip() == lib:
-                            return LibList[indexOfLib].split(DataType.TAB_VALUE_SPLIT)[1].strip()
+    #
+    # Search PlatformBuildDatabase to find LibraryClass Instance for Module
+    # Return the instance if found
+    #
+    def FindLibraryClassInstanceOfModule(self, Lib, Arch, ModuleType, ModuleName):
+        #
+        # First find if exist in <LibraryClass> of <Components> from dsc file
+        #
+        for Dsc in self.DscDatabase.keys():
+            Platform = self.DscDatabase[Dsc].Platform
+            for Module in Platform.Modules.ModuleList:
+                if Arch in Module.SupArchList:
+                    if NormPath(Module.FilePath) == ModuleName:
+                        for LibraryClass in Module.LibraryClasses.LibraryList:
+                            if LibraryClass.Name == Lib:
+                                return NormPath(LibraryClass.FilePath)
+        #
+        #Second find if exist in <LibraryClass> of <LibraryClasses> from dsc file            
+        #
+        return self.FindLibraryClassInstanceOfLibrary(Lib, Arch, ModuleType)
             
-            #Second find if exist in <LibraryClass> of <LibraryClasses> from dsc file            
-            if (lib, moduleType) in self.Build[arch].PlatformDatabase[dsc].LibraryClasses:
-                return self.Build[arch].PlatformDatabase[dsc].LibraryClasses[(lib, moduleType)]
-            elif (lib, None) in self.Build[arch].PlatformDatabase[dsc].LibraryClasses:
-                return self.Build[arch].PlatformDatabase[dsc].LibraryClasses[(lib, None)]
+    #
+    # Search PlatformBuildDatabase to find LibraryClass Instance for Library
+    # Return the instance if found
+    #
+    def FindLibraryClassInstanceOfLibrary(self, Lib, Arch, Type):
+        for Dsc in self.DscDatabase.keys():
+            Platform  = self.DscDatabase[Dsc].Platform
+            if (Lib, Type) in self.Build[Arch].PlatformDatabase[Dsc].LibraryClasses:
+                return self.Build[Arch].PlatformDatabase[Dsc].LibraryClasses[(Lib, Type)]
+            elif (Lib, '') in self.Build[Arch].PlatformDatabase[Dsc].LibraryClasses:
+                return self.Build[Arch].PlatformDatabase[Dsc].LibraryClasses[(Lib, '')]
+        return None
             
-    def FindLibraryClassInstanceOfLibrary(self, lib, arch, type):
-        for dsc in self.DscDatabase.keys():
-            dscObj = self.DscDatabase[dsc]
-            if (lib, type) in self.Build[arch].PlatformDatabase[dsc].LibraryClasses:
-                return self.Build[arch].PlatformDatabase[dsc].LibraryClasses[(lib, type)]
-            elif (lib, None) in self.Build[arch].PlatformDatabase[dsc].LibraryClasses:
-                return self.Build[arch].PlatformDatabase[dsc].LibraryClasses[(lib, None)]
-            
-    def FindBuildOptions(self, arch, moduleName, BuildOptions):
-        for dsc in self.DscDatabase.keys():
-            #First find if exist in <BuildOptions> of <Components> from dsc file
-            dscObj = self.DscDatabase[dsc]
-            for index in range(len(dscObj.Contents[arch].Components)):
-                if NormPath(dscObj.Contents[arch].Components[index][0]) == moduleName and len(dscObj.Contents[arch].Components[index][2]) > 0:
-                    list = dscObj.Contents[arch].Components[index][2]
-                    for l in list:
-                        b = l.split(DataType.TAB_EQUAL_SPLIT, 1)
-                        Family = ''
-                        ToolChain = ''
-                        Flag = ''
-                        if b[0].find(':') > -1:
-                            Family = CleanString(b[0][ : b[0].find(':')])
-                            ToolChain = CleanString(b[0][b[0].find(':') + 1 : ])
-                        else:
-                            ToolChain = CleanString(b[0])
-                        Flag = CleanString(b[1])
-                        BuildOptions[(Family, ToolChain)] = Flag
+    #
+    # Search DscDatabase to find component definition of ModuleName
+    # Override BuildOption if it is defined in component
+    #
+    def FindBuildOptions(self, Arch, ModuleName, BuildOptions):
+        for Dsc in self.DscDatabase.keys():
+            #
+            # First find if exist in <BuildOptions> of <Components> from dsc file
+            # if find, use that override the one defined in inf file
+            #
+            Platform = self.DscDatabase[Dsc].Platform
+            for Module in Platform.Modules.ModuleList:
+                if Arch in Module.SupArchList:
+                    if NormPath(Module.FilePath) == ModuleName:
+                        for BuildOption in Module.ModuleSaBuildOption.BuildOptionList:
+                            BuildOptions[(BuildOption.ToolChainFamily, BuildOption.ToolChain)] = BuildOption.Option
                         
-    def FindPcd(self, arch, CName, GuidCName, Type):
+    #
+    # Search platform database, package database, module database and PcdsSet from Fdf
+    # Return found Pcd
+    #
+    def FindPcd(self, Arch, ModuleName, Name, Guid, Type, PcdsSet):
         DatumType = ''
-        DefaultValue = ''
-        TokenValue = ''
+        Value = ''
+        Token = ''
         MaxDatumSize = ''
-        SkuInfoList = None
-        for dsc in self.Build[arch].PlatformDatabase.keys():
-            platform = self.Build[arch].PlatformDatabase[dsc]
-            pcds = platform.Pcds
-            if (CName, GuidCName) in pcds:
-                Type = pcds[(CName, GuidCName)].Type
-                DatumType = pcds[(CName, GuidCName)].DatumType
-                DefaultValue = pcds[(CName, GuidCName)].DefaultValue
-                TokenValue = pcds[(CName, GuidCName)].TokenValue
-                MaxDatumSize = pcds[(CName, GuidCName)].MaxDatumSize
-                SkuInfoList =  pcds[(CName, GuidCName)].SkuInfoList
+        SkuInfoList = {}
+        #
+        # First get information from platform database
+        #
+        for Dsc in self.Build[Arch].PlatformDatabase.keys():
+            Pcds = self.Build[Arch].PlatformDatabase[Dsc].Pcds
+            if (Name, Guid) in Pcds:
+                Type = Pcds[(Name, Guid)].Type
+                DatumType = Pcds[(Name, Guid)].DatumType
+                Value = Pcds[(Name, Guid)].DefaultValue
+                Token = Pcds[(Name, Guid)].TokenValue
+                MaxDatumSize = Pcds[(Name, Guid)].MaxDatumSize
+                SkuInfoList =  Pcds[(Name, Guid)].SkuInfoList
                 break
 
-        for dec in self.Build[arch].PackageDatabase.keys():
-            package = self.Build[arch].PackageDatabase[dec]
-            pcds = package.Pcds
-            if (CName, GuidCName) in pcds:
-                DatumType = pcds[(CName, GuidCName)].DatumType
-                #DefaultValue = pcds[(CName, GuidCName)].DefaultValue
-                TokenValue = pcds[(CName, GuidCName)].TokenValue
-                #MaxDatumSize = pcds[(CName, GuidCName)].MaxDatumSize
+        #
+        # Second get information from package database
+        #
+        for Dec in self.Build[Arch].PackageDatabase.keys():
+            Pcds = self.Build[Arch].PackageDatabase[Dec].Pcds
+            if (Name, Guid) in Pcds:
+                DatumType = Pcds[(Name, Guid)].DatumType
+                Token = Pcds[(Name, Guid)].TokenValue
                 break
         
-        return PcdClassObject(CName, GuidCName, Type, DatumType, DefaultValue, TokenValue, MaxDatumSize, SkuInfoList)
-    
-    def ReloadPcd(self, FvDict):
-        pass
-                
+        #
+        # Third get information from <Pcd> of <Compontents> from module database
+        #
+        for Dsc in self.DscDatabase.keys():
+            for Module in self.DscDatabase[Dsc].Platform.Modules.ModuleList:
+                if Arch in Module.SupArchList:
+                    if NormPath(Module.FilePath) == ModuleName:
+                        for Pcd in Module.PcdBuildDefinitions:
+                            if (Name, Guid) == (Pcd.CName, Pcd.TokenSpaceGuidCName):
+                                if Pcd.DefaultValue != '':
+                                    Value = Pcd.DefaultValue
+                                if Pcd.MaxDatumSize != '':
+                                    MaxDatumSize = Pcd.MaxDatumSize
+        
+        #
+        # Last get information from PcdsSet defined by FDF
+        #
+        if Guid in PcdsSet.keys():
+            Value = PcdsSet[Guid]
+        
+        return PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList)   
+
+    #
+    # Show all content of the workspacebuild
+    #
+    def ShowWorkspaceBuild(self):
+        #print ewb.DscDatabase
+        #print ewb.InfDatabase
+        #print ewb.DecDatabase
+        print 'SupArchList', ewb.SupArchList
+        print 'BuildTarget', ewb.BuildTarget
+        print 'SkuId', ewb.SkuId
+        
+        for arch in ewb.SupArchList:
+            print arch
+            print 'Platform'
+            for platform in ewb.Build[arch].PlatformDatabase.keys():
+                p = ewb.Build[arch].PlatformDatabase[platform]
+                print 'DescFilePath = ', p.DescFilePath     
+                print 'PlatformName = ', p.PlatformName     
+                print 'Guid = ', p.Guid                     
+                print 'Version = ', p.Version
+                print 'OutputDirectory = ', p.OutputDirectory                
+                print 'FlashDefinition = ', p.FlashDefinition
+                print 'SkuIds = ', p.SkuIds
+                print 'Modules = ', p.Modules
+                print 'LibraryClasses = ', p.LibraryClasses 
+                print 'Pcds = ', p.Pcds
+                for item in p.Pcds.keys():
+                    print p.Pcds[item]
+                print 'BuildOptions = ', p.BuildOptions
+                print ''   
+            # End of Platform
+        
+            print 'package'
+            for package in ewb.Build[arch].PackageDatabase.keys():
+                p = ewb.Build[arch].PackageDatabase[package]
+                print 'DescFilePath = ', p.DescFilePath    
+                print 'PackageName = ', p.PackageName     
+                print 'Guid = ', p.Guid                    
+                print 'Version = ', p.Version             
+                print 'Protocols = ', p.Protocols         
+                print 'Ppis = ', p.Ppis                    
+                print 'Guids = ', p.Guids                 
+                print 'Includes = ', p.Includes            
+                print 'LibraryClasses = ', p.LibraryClasses
+                print 'Pcds = ', p.Pcds
+                for item in p.Pcds.keys():
+                    print p.Pcds[item]
+                print ''                    
+            # End of Package
+            
+            print 'module'
+            for module in ewb.Build[arch].ModuleDatabase.keys():
+                p = ewb.Build[arch].ModuleDatabase[module]
+                print 'DescFilePath = ', p.DescFilePath                    
+                print 'BaseName = ', p.BaseName                         
+                print 'ModuleType = ', p.ModuleType                     
+                print 'Guid = ', p.Guid                                 
+                print 'Version = ', p.Version
+                print 'CustomMakefile = ', p.CustomMakefile
+                print 'Specification = ', p.Specification
+                print 'PcdIsDriver = ', p.PcdIsDriver
+                if p.LibraryClass != None:
+                    print 'LibraryClass = ', p.LibraryClass.LibraryClass, 'SupModList = ', p.LibraryClass.SupModList
+                print 'ModuleEntryPointList = ', p.ModuleEntryPointList 
+                print 'ModuleUnloadImageList = ', p.ModuleUnloadImageList
+                print 'ConstructorList = ', p.ConstructorList            
+                print 'DestructorList = ', p.DestructorList             
+                                                                         
+                print 'Binaries = '
+                for item in p.Binaries:
+                    print item.BinaryFile, item.FeatureFlag
+                print 'Sources = '
+                for item in p.Sources:
+                    print item.SourceFile
+                print 'LibraryClasses = ', p.LibraryClasses             
+                print 'Protocols = ', p.Protocols                        
+                print 'Ppis = ', p.Ppis                                 
+                print 'Guids = ', p.Guids                                
+                print 'Includes = ', p.Includes                         
+                print 'Packages = ', p.Packages                         
+                print 'Pcds = ', p.Pcds
+                for item in p.Pcds.keys():
+                    print p.Pcds[item]
+                print 'BuildOptions = ', p.BuildOptions
+                print 'Depex = ', p.Depex
+                print ''
+            # End of Module    
+
+#
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
+#
 if __name__ == '__main__':
-
     # Nothing to do here. Could do some unit tests.
     w = os.getenv('WORKSPACE')
     ewb = WorkspaceBuild('Nt32Pkg/Nt32Pkg.dsc', w)
-    ewb.GenBuildDatabase()
-    #print ewb.DscDatabase
-    #print ewb.InfDatabase
-    #print ewb.DecDatabase
-    print 'SupArchList', ewb.SupArchList
-    print 'BuildTarget', ewb.BuildTarget
-    print 'SkuId', ewb.SkuId
-    
-    #
-    for arch in DataType.ARCH_LIST:
-        print arch
-        print 'Platform'
-        for platform in ewb.Build[arch].PlatformDatabase.keys():
-            p = ewb.Build[arch].PlatformDatabase[platform]
-            print 'DescFilePath = ', p.DescFilePath     
-            print 'PlatformName = ', p.PlatformName     
-            print 'Guid = ', p.Guid                     
-            print 'Version = ', p.Version
-            print 'OutputDirectory = ', p.OutputDirectory                
-            print 'FlashDefinition = ', p.FlashDefinition
-            print 'SkuIds = ', p.SkuIds
-            print 'Modules = ', p.Modules
-            print 'LibraryClasses = ', p.LibraryClasses 
-            print 'Pcds = ', p.Pcds
-            for item in p.Pcds.keys():
-                print p.Pcds[item]
-            print 'BuildOptions = ', p.BuildOptions
-            print ''   
-        #End of Platform
-    
-        print 'package'
-        for package in ewb.Build[arch].PackageDatabase.keys():
-            p = ewb.Build[arch].PackageDatabase[package]
-            print 'DescFilePath = ', p.DescFilePath    
-            print 'PackageName = ', p.PackageName     
-            print 'Guid = ', p.Guid                    
-            print 'Version = ', p.Version             
-            print 'Protocols = ', p.Protocols         
-            print 'Ppis = ', p.Ppis                    
-            print 'Guids = ', p.Guids                 
-            print 'Includes = ', p.Includes            
-            print 'LibraryClasses = ', p.LibraryClasses
-            print 'Pcds = ', p.Pcds
-            print ''                    
-        #End of Package
-        
-        print 'module'
-        for module in ewb.Build[arch].ModuleDatabase.keys():
-            p = ewb.Build[arch].ModuleDatabase[module]
-            print 'DescFilePath = ', p.DescFilePath                    
-            print 'BaseName = ', p.BaseName                         
-            print 'ModuleType = ', p.ModuleType                     
-            print 'Guid = ', p.Guid                                 
-            print 'Version = ', p.Version
-            print 'CustomMakefile = ', p.CustomMakefile
-            print 'Specification = ', p.Specification
-            print 'PcdIsDriver = ', p.PcdIsDriver
-            if p.LibraryClass != None:
-                print 'LibraryClass = ', p.LibraryClass.LibraryClass
-                print 'SupModList = ', p.LibraryClass.SupModList
-            print 'ModuleEntryPointList = ', p.ModuleEntryPointList 
-            print 'ModuleUnloadImageList = ', p.ModuleUnloadImageList
-            print 'ConstructorList = ', p.ConstructorList            
-            print 'DestructorList = ', p.DestructorList             
-                                                                     
-            print 'Binaries = '
-            for item in p.Binaries:
-                print str(item)
-            print 'Sources = '
-            for item in p.Sources:
-                print str(item)
-            print 'LibraryClasses = ', p.LibraryClasses             
-            print 'Protocols = ', p.Protocols                        
-            print 'Ppis = ', p.Ppis                                 
-            print 'Guids = ', p.Guids                                
-            print 'Includes = ', p.Includes                         
-            print 'Packages = ', p.Packages                         
-            print 'Pcds = ', p.Pcds
-            print 'BuildOptions = ', p.BuildOptions
-            print 'Depex = ', p.Depex
-            print ''
-        #End of Module    
-            
-    #End of Arch List
+    ewb.GenBuildDatabase({'gEfiMdeModulePkgTokenSpaceGuid' : 'KKKKKKKKKKKKKKKKKKKKK'})
+    ewb.ShowWorkspaceBuild()

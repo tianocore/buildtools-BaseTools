@@ -39,19 +39,19 @@ class ModuleHeaderClass(IdentificationClass, CommonHeaderClass, DefineClass):
         self.CustomMakefile = {}                    #{ Family : Filename, ... }
         
 class ModuleSourceFileClass(CommonClass):
-    def __init__(self):
-        self.SourceFile = ''
-        self.TagName = ''
-        self.ToolCode = ''
-        self.ToolChainFamily = ''
-        CommonClass.__init__(self)
+    def __init__(self, SourceFile = '', TagName = '', ToolCode = '', ToolChainFamily = '', FeatureFlag = '', SupArchList = []):
+        self.SourceFile = SourceFile
+        self.TagName = TagName
+        self.ToolCode = ToolCode
+        self.ToolChainFamily = ToolChainFamily
+        CommonClass.__init__(self, FeatureFlag = FeatureFlag, SupArchList = SupArchList)
 
 class ModuleBinaryFileClass(CommonClass):
-    def __init__(self):
-        self.BinaryFile = ''
-        self.FileType = ''                          #FW | GUID | PREEFORM | UEFI_APP | UNI_UI | UNI_VER | LIB | PE32 | PIC | PEI_DEPEX | DXE_DEPEX | TE | VER | UI | BIN | FV
-        self.Target = ''
-        CommonClass.__init__(self)
+    def __init__(self, BinaryFile = '', FileType = '', Target = '', FeatureFlag = '', SupArchList = []):
+        self.BinaryFile = BinaryFile
+        self.FileType = FileType                          #FW | GUID | PREEFORM | UEFI_APP | UNI_UI | UNI_VER | LIB | PE32 | PIC | PEI_DEPEX | DXE_DEPEX | TE | VER | UI | BIN | FV
+        self.Target = Target
+        CommonClass.__init__(self, FeatureFlag = FeatureFlag, SupArchList = SupArchList)
         
 class ModulePackageDependencyClass(CommonClass, DefineClass):
     def __init__(self):

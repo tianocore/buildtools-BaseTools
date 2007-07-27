@@ -147,10 +147,13 @@ class Inf(InfObject):
         #LibraryClass of Define
         if self.Defines.DefinesDictionary[TAB_INF_DEFINES_LIBRARY_CLASS][0] != '':
             for Item in self.Defines.DefinesDictionary[TAB_INF_DEFINES_LIBRARY_CLASS]:
-                List = Item.split(DataType.TAB_VALUE_SPLIT, 1)
+                List = GetSplitValueList(Item, DataType.TAB_VALUE_SPLIT, 1)
                 Lib = LibraryClassClass()
                 Lib.LibraryClass = CleanString(List[0])
-                Lib.SupModuleList = GetSplitValueList(CleanString(List[1]))
+                if len(List) == 1:
+                    Lib.SupModuleList = DataType.SUP_MODULE_LIST
+                elif len(List) == 2:
+                    Lib.SupModuleList = GetSplitValueList(CleanString(List[1]))
                 self.Module.Header.LibraryClass.append(Lib)
         
         #Custom makefile
@@ -342,7 +345,7 @@ class Inf(InfObject):
                 MergeArches(Pcds, (List[0], List[1], List[2], TAB_PCDS_DYNAMIC), Arch)
         for Key in Pcds.keys():
             Pcd = PcdClass()
-            Pcd.Token = Key[0]
+            Pcd.CName = Key[0]
             Pcd.TokenSpaceGuidCName = Key[1]
             Pcd.DefaultValue = Key[2]
             Pcd.ItemType = Key[3]
@@ -357,13 +360,7 @@ class Inf(InfObject):
                 List = GetSplitValueList(Item)
                 MergeArches(Sources, (List[0], List[1], List[2], List[3], List[4]), Arch)
         for Key in Sources.keys():
-            Source = ModuleSourceFileClass()
-            Source.SourceFile = Key[0]
-            Source.ToolChainFamily = Key[1]
-            Source.FeatureFlag = Key[2]
-            Source.TagName = Key[3]
-            Source.ToolCode = Key[4]
-            Source.SupArchList = Sources[Key]
+            Source = ModuleSourceFileClass(Key[0], Key[3], Key[4], Key[1], Key[2], Sources[Key])
             self.Module.Sources.append(Source)
         
         #UserExtensions
@@ -443,17 +440,12 @@ class Inf(InfObject):
                 Item = Item + DataType.TAB_VALUE_SPLIT
                 List = GetSplitValueList(Item)
                 if len(List) < 4:
-                    ErrorMsg = "Wrong DEFINE statement '%s' found in section Binaries in file '%s', correct format is '<FileType>|<Target>|<FileName>[|<PcdFeatureFlag>]'" % (Item[0:-1], self.Module.Header.FullPath) 
+                    ErrorMsg = "Wrong statement '%s' found in section Binaries in file '%s', correct format is '<FileType>|<Target>|<FileName>[|<PcdFeatureFlag>]'" % (Item[0:-1], self.Module.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                 else:
                     MergeArches(Binaries, (List[0], List[1], List[2], List[3]), Arch)
         for Key in Binaries.keys():
-            Binary = ModuleBinaryFileClass()
-            Binary.FileType = Key[0]
-            Binary.Target = Key[1]
-            Binary.BinaryFile = Key[2]
-            Binary.FeatureFlag = Key[3]
-            Binary.SupArchList = Binaries[Key]
+            Binary = ModuleBinaryFileClass(Key[2], Key[0], Key[1], Key[3], Binaries[Key])
             self.Module.Binaries.append(Binary)
         
     def LoadInfFile(self, Filename):     
@@ -468,14 +460,6 @@ class Inf(InfObject):
             tab = (sect.split(TAB_SECTION_END, 1)[0]).upper()
             if tab == TAB_INF_DEFINES.upper():
                 GetSingleValueOfKeyFromLines(sect, self.Defines.DefinesDictionary, TAB_COMMENT_SPLIT, TAB_EQUAL_SPLIT, False, None)
-#                if self.Defines.DefinesDictionary[TAB_INF_DEFINES_ENTRY_POINT][0] == '':
-#                    self.Defines.DefinesDictionary[TAB_INF_DEFINES_ENTRY_POINT] = []
-#                if self.Defines.DefinesDictionary[TAB_INF_DEFINES_UNLOAD_IMAGE][0] == '':
-#                    self.Defines.DefinesDictionary[TAB_INF_DEFINES_UNLOAD_IMAGE] = []
-#                if self.Defines.DefinesDictionary[TAB_INF_DEFINES_CONSTRUCTOR][0] == '':
-#                    self.Defines.DefinesDictionary[TAB_INF_DEFINES_CONSTRUCTOR] = []
-#                if self.Defines.DefinesDictionary[TAB_INF_DEFINES_DESTRUCTOR][0] == '':
-#                    self.Defines.DefinesDictionary[TAB_INF_DEFINES_DESTRUCTOR] = []
                 continue
             if tab.find(DataType.TAB_USER_EXTENSIONS.upper()) > -1:
                 self.UserExtensions = sect
@@ -560,7 +544,7 @@ class Inf(InfObject):
             print Item.Name, Item.Value, Item.SupArchList
         print '\nPcds =', m.PcdCodes
         for Item in m.PcdCodes:
-            print Item.Token, Item.TokenSpaceGuidCName, Item.DefaultValue, Item.ItemType, Item.SupArchList
+            print Item.CName, Item.TokenSpaceGuidCName, Item.DefaultValue, Item.ItemType, Item.SupArchList
         print '\nSources =', m.Sources
         for Source in m.Sources:
             print Source.SourceFile, Source.ToolChainFamily, Source.FeatureFlag, Source.TagName, Source.ToolCode, Source.SupArchList

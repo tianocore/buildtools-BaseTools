@@ -12,11 +12,11 @@
 #
 
 class CommonClass(object):
-    def __init__(self, SupArchList = []):
-        self.Usage = []                                   #ALWAYS_CONSUMED | SOMETIMES_CONSUMED | ALWAYS_PRODUCED | SOMETIMES_PRODUCED | TO_START | BY_START | PRIVATE
-        self.FeatureFlag = ''
+    def __init__(self, Usage = [], FeatureFlag = '', SupArchList = [], HelpText = ''):
+        self.Usage = Usage                                   #ALWAYS_CONSUMED | SOMETIMES_CONSUMED | ALWAYS_PRODUCED | SOMETIMES_PRODUCED | TO_START | BY_START | PRIVATE
+        self.FeatureFlag = FeatureFlag
         self.SupArchList = SupArchList                    #EBC | IA32 | X64 | IPF | ARM | PPC
-        self.HelpText = ''
+        self.HelpText = HelpText
         
 class CommonHeaderClass(object):
     def __init__(self):
@@ -101,7 +101,8 @@ class SkuInfoClass(object):
         self.DefaultValue = DefaultValue
         
     def __str__(self):
-        rtn = rtn = str(self.SkuId) + "," + \
+        rtn = rtn = 'SkuInfo = ' + str(self.SkuId) + "," + \
+                    str(self.SkuIdName) + "," + \
                     str(self.VariableName) + "," + \
                     str(self.VariableGuid) + "," + \
                     str(self.VariableOffset) + "," + \
