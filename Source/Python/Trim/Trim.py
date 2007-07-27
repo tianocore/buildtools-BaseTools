@@ -24,14 +24,16 @@ from optparse import make_option
 from Common.BuildToolError import *
 from Common.Misc import *
 
-## Version and Copyright
+# Version and Copyright
 __version_number__ = "0.01"
 __version__ = "%prog Version " + __version_number__
 __copyright__ = "Copyright (c) 2007, Intel Corporation. All rights reserved."
 
-## Global variables
+## Regular expression for matching "typedef struct"
 gTypedefPattern = re.compile("^\s*typedef\s+struct\s+[{]*$", re.MULTILINE)
+## Regular expression for matching "#pragma pack"
 gPragmaPattern = re.compile("^\s*#pragma\s+pack", re.MULTILINE)
+## Regular expression for matching HEX number
 gHexNumberPattern = re.compile("0[xX]([0-9a-fA-F]+)", re.MULTILINE)
 
 ## Trim preprocessed source code
@@ -39,44 +41,48 @@ gHexNumberPattern = re.compile("0[xX]([0-9a-fA-F]+)", re.MULTILINE)
 # Remove extra content made by preprocessor. The preprocessor must enable the
 # line number generation option when preprocessing.
 #
-# @param  foo  A parameter
-#
-# @retval EFI_OK  Function was successful
-# @retval Other   Function failed
+# @param  Source    File to be trimmed
+# @param  Target    File to store the trimmed content
+# @param  Convert   If True, convert standard HEX format to MASM format
 #
 def TrimPreprocessedFile (Source, Target, Convert):
     f = open (Source, 'r')
+    # read whole file
     Lines = f.readlines()
     f.close()
 
+    # find "#line" (MSFT) or "# xxx" (GCC) from the end of file
     for Index in range (len(Lines) - 1, -1, -1):
         Line = Lines[Index].strip()
         if Line.find('#line') == 0 or Line.find('# ') == 0:
+            # remove the lines between the top of file and the last "#line" or "# xxx"
             EndOfCode = Index + 1
             break
     else:
+        # no "#line" or "# xxx" found, keep all lines
         Index = 0
         EndOfCode = len(Lines) - 1
 
+    # convert HEX number format if indicated
     if Convert:
         ConvertHex(Lines, EndOfCode, len(Lines))
 
+    # save to file
     f = open (Target, 'w')
     f.writelines(Lines[EndOfCode:])
     f.close()
 
-## brief dsce
+## Trim preprocessed VFR file
 #
-# Detailed description of what the function does
-# and how it does it.
+# Remove extra content made by preprocessor. The preprocessor doesn't need to
+# enable line number generation option when preprocessing.
 #
-# @param  foo  A parameter
-#
-# @retval EFI_OK  Function was successful
-# @retval Other   Function failed
+# @param  Source    File to be trimmed
+# @param  Target    File to store the trimmed content
 #
 def TrimPreprocessedVfr(Source, Target):
     f = open (Source,'r')
+    # read whole file
     Lines = f.readlines()
     f.close()
 
@@ -86,60 +92,67 @@ def TrimPreprocessedVfr(Source, Target):
     TypedefEnd = 0
     for Index in range (len(Lines)):
         Line = Lines[Index]
+        # don't trim the lines from "formset" definition to the end of file
         if Line.strip() == 'formset':
             break
 
         if FoundTypedef == False and (Line.find('#line') == 0 or Line.find('# ') == 0):
+            # empty the line number directive if it's not aomong "typedef struct"
             Lines[Index] = "\n"
             continue
 
         if FoundTypedef == False and gTypedefPattern.search(Line) == None:
+            # keep "#pragram pack" directive
             if gPragmaPattern.search(Line) == None:
                 Lines[Index] = "\n"
             continue
         elif FoundTypedef == False:
+            # found "typedef struct", keept its position and set a flag
             FoundTypedef = True
             TypedefStart = Index
 
+        # match { and } to find the end of typedef definition
         if Line.find("{") >= 0:
             Brace += 1
         elif Line.find("}") >= 0:
             Brace -= 1
 
+        # "typedef struct" must end with a ";"
         if Brace == 0 and Line.find(";") >= 0:
             FoundTypedef = False
             TypedefEnd = Index
+            # keep all "typedef struct" except to GUID, EFI_PLABEL and PAL_CALL_RETURN
             if Line.strip("} ;\r\n") in ["GUID", "EFI_PLABEL", "PAL_CALL_RETURN"]:
                 for i in range(TypedefStart, TypedefEnd+1):
                     Lines[i] = "\n"
 
+    # save all lines trimmed
     f = open (Target,'w')
     f.writelines(Lines)
     f.close()
 
-## brief dsce
+## Convert HEX format
 #
-# Detailed description of what the function does
-# and how it does it.
+# Convert HEX format like 0xabcd to MASM format like abcdh.
 #
-# @param  foo  A parameter
+# @param  Lines     List containg the string which may have hex number
+# @param  Start     The line number to start the conversion
+# @param  End       The line number to end the conversion
 #
-# @retval EFI_OK  Function was successful
-# @retval Other   Function failed
-#
-def ConvertHex(Lines, start, end):
-    for Index in range (start, end):
-        Lines[Index] = gHexNumberPattern.sub(r"\1h", Lines[Index])
+def ConvertHex(Lines, Start, End):
+    for Index in range (Start, End):
+        #
+        # HEX number starting with [abcdef] must be prefixed with a '0'
+        # otherwise assembler will take it as symbol
+        #
+        Lines[Index] = gHexNumberPattern.sub(r"0\1h", Lines[Index])
 
-## brief dsce
+## Parse command line options
 #
-# Detailed description of what the function does
-# and how it does it.
+# Using standard Python module optparse to parse command line option of this tool.
 #
-# @param  foo  A parameter
-#
-# @retval EFI_OK  Function was successful
-# @retval Other   Function failed
+# @retval Options   A optparse.Values object containing the parsed options
+# @retval InputFile Path of file to be trimmed
 #
 def Options():
     OptionList = [
@@ -153,7 +166,8 @@ def Options():
                           help="File to store the trimmed content"),
         make_option("-?", action="help", help="show this help message and exit"),
     ]
-    
+
+    # use clearer usage to override default usage message
     UsageString = "%prog [-s|-v] [-c] [-o <output_file>] <input_file>"
 
     Parser = OptionParser(description=__copyright__, version=__version__, option_list=OptionList, usage=UsageString)
@@ -162,6 +176,7 @@ def Options():
 
     Options, Args = Parser.parse_args()
 
+    # error check
     if len(Args) == 0:
         raise BuildToolError(OPTION_MISSING, name="Input file", usage=Parser.get_usage())
     if len(Args) > 1:
@@ -173,15 +188,14 @@ def Options():
 
     return Options, InputFile
 
-## brief dsce
+## Entrance method
 #
-# Detailed description of what the function does
-# and how it does it.
+# This method mainly dispatch specific methods per the command line options.
+# If no error found, return zero value so the caller of this tool can know
+# if it's executed successfully or not.
 #
-# @param  foo  A parameter
-#
-# @retval EFI_OK  Function was successful
-# @retval Other   Function failed
+# @retval 0     Tool was successful
+# @retval 1     Tool failed
 #
 def Main():
     try:
