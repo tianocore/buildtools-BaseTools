@@ -752,7 +752,7 @@ class Makefile(object):
             "library_build_directory"   : self.LibraryBuildDirectoryList,
             "module_build_directory"    : self.ModuleBuildDirectoryList,
             "fdf_file"                  : platformInfo.FdfFileList,
-            "active_platform"           : activePlatform.DescFilePath
+            "active_platform"           : platformInfo.WorkspaceDir + separator + activePlatform.DescFilePath
         }
 
         self.PrepareDirectory()

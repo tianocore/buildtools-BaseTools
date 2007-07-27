@@ -176,6 +176,7 @@ class PlatformBuildClassObject(object):
                 
         self.SkuIds                  = {}       #{ 'SkuName' : SkuId, '!include' : includefilename, ...}
         self.Modules                 = []       #[ InfFileName, ... ]
+        self.Libraries               = []       #[ InfFileName, ... ]
         self.LibraryClasses          = {}       #{ (LibraryClassName, ModuleType) : LibraryClassInfFile }
         self.Pcds                    = {}       #{ [(PcdCName, PcdGuidCName)] : PcdClassObject }
         self.BuildOptions            = {}       #{ [BuildOptionKey] : BuildOptionValue }    
@@ -320,7 +321,10 @@ class WorkspaceBuild(object):
                     #['DebugLib|MdePkg/Library/PeiDxeDebugLibReportStatusCode/PeiDxeDebugLibReportStatusCode.inf', 'DXE_CORE']
                     list = dscObj.Contents[key].LibraryClasses[index][0].split(DataType.TAB_VALUE_SPLIT, 1)
                     type = dscObj.Contents[key].LibraryClasses[index][1]
-                    pb.LibraryClasses[(list[0], type)] = NormPath(list[1])
+                    lib = NormPath(list[1])
+                    pb.LibraryClasses[(list[0], type)] = lib
+                    if lib not in pb.Libraries:
+                        pb.Libraries.append(lib)
 
                 #Pcds
                 for index in range(len(dscObj.Contents[key].PcdsFixedAtBuild)):
@@ -660,7 +664,16 @@ class WorkspaceBuild(object):
         #End of Inf Go Through
         
         #End of build ModuleDatabase    
-    
+
+        for arch in self.Build:
+            PlatformDatabase = self.Build[arch].PlatformDatabase
+            for dsc in PlatformDatabase:
+                platform = PlatformDatabase[dsc]
+                for inf in platform.Modules:
+                    module = self.Build[arch].ModuleDatabase[inf]
+                    for lib in module.LibraryClasses.values():
+                        if lib not in platform.Libraries:
+                            platform.Libraries.append(lib)
     #End of self.Init
     
     def UpdateInfDatabase(self, infFileName, LibraryClass, Arch):
