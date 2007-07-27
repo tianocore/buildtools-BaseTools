@@ -1,90 +1,175 @@
-#!/usr/bin/env python
-
+## @file
+# Trim files preprocessed by compiler
 #
+# Copyright (c) 2007, Intel Corporation
+# All rights reserved. This program and the accompanying materials
+# are licensed and made available under the terms and conditions of the BSD License
+# which accompanies this distribution.  The full text of the license may be found at
+# http://opensource.org/licenses/bsd-license.php
+#
+# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+
+##
 # Import Modules
 #
-import os, sys, re
+import os
+import sys
+import re
 
-cTypedefPattern = re.compile("^\s*typedef\s+struct\s+[{]*$", re.MULTILINE)
-cPragmaPattern = re.compile("^\s*#pragma\s+pack", re.MULTILINE)
+from optparse import OptionParser
+from optparse import make_option
 
-def TrimPreprocessedFile (source, target, Convert):
-    f = open (source,'r')
-    lines = f.readlines()
+from Common.BuildToolError import *
+from Common.ToolRoutines import *
+
+## Version and Copyright
+__version_number__ = "0.01"
+__version__ = "%prog Version " + __version_number__
+__copyright__ = "Copyright (c) 2007, Intel Corporation. All rights reserved."
+
+## Global variables
+gTypedefPattern = re.compile("^\s*typedef\s+struct\s+[{]*$", re.MULTILINE)
+gPragmaPattern = re.compile("^\s*#pragma\s+pack", re.MULTILINE)
+gHexNumberPattern = re.compile("0[xX]([0-9a-fA-F]+)", re.MULTILINE)
+
+##
+#
+#
+#
+#
+def TrimPreprocessedFile (Source, Target, Convert):
+    f = open (Source, 'r')
+    Lines = f.readlines()
     f.close()
 
-    for index in range (len(lines) - 1, -1, -1):
-        if lines[index].strip().find('#line') >= 0 or lines[index].strip().find('# ') == 0:
-            endOfCode = index + 1
+    for Index in range (len(Lines) - 1, -1, -1):
+        Line = Lines[Index].strip()
+        if Line.find('#line') == 0 or Line.find('# ') == 0:
+            EndOfCode = Index + 1
             break
     else:
-        index = 0
-        endOfCode = len(lines) - 1
+        Index = 0
+        EndOfCode = len(Lines) - 1
 
-    f = open (target,'w')
     if Convert:
-        ConvertHex(lines, endOfCode, len(lines))
-    f.writelines(lines[endOfCode:])
+        ConvertHex(Lines, EndOfCode, len(Lines))
+
+    f = open (Target, 'w')
+    f.writelines(Lines[EndOfCode:])
     f.close()
 
-def TrimVfr(source, target):
-    f = open (source,'r')
-    lines = f.readlines()
+##
+#
+#
+#
+#
+def TrimPreprocessedVfr(Source, Target):
+    f = open (Source,'r')
+    Lines = f.readlines()
     f.close()
 
-    foundTypedef = False
-    brace = 0
-    typedefStart = 0
-    typedefEnd = 0
-    for index in range (len(lines)):
-        if lines[index].strip() == 'formset':
+    FoundTypedef = False
+    Brace = 0
+    TypedefStart = 0
+    TypedefEnd = 0
+    for Index in range (len(Lines)):
+        Line = Lines[Index].strip()
+        if Line == 'formset':
             break
 
-        if foundTypedef == False and (lines[index].strip().find('#line') == 0 or
-            lines[index].strip().find('# ') == 0):
-            lines[index] = "\n"
+        if FoundTypedef == False and (Line.find('#line') == 0 or Line.find('# ') == 0):
+            Lines[Index] = "\n"
             continue
 
-        if foundTypedef == False and cTypedefPattern.search(lines[index]) == None:
-            if cPragmaPattern.search(lines[index]) == None:
-                lines[index] = "\n"
+        if FoundTypedef == False and gTypedefPattern.search(Line) == None:
+            if gPragmaPattern.search(Line) == None:
+                Lines[Index] = "\n"
             continue
-        elif foundTypedef == False:
-            foundTypedef = True
-            typedefStart = index
+        elif FoundTypedef == False:
+            FoundTypedef = True
+            TypedefStart = Index
 
-        if lines[index].find("{") >= 0:
-            brace += 1
-        elif lines[index].find("}") >= 0:
-            brace -= 1
+        if Line.find("{") >= 0:
+            Brace += 1
+        elif Line.find("}") >= 0:
+            Brace -= 1
 
-        if brace == 0 and lines[index].find(";") >= 0:
-            foundTypedef = False
-            typedefEnd = index
-            if lines[index].strip("} ;\r\n") in ["GUID", "EFI_PLABEL", "PAL_CALL_RETURN"]:
-                for i in range(typedefStart, typedefEnd+1):
-                    lines[i] = "\n"
+        if Brace == 0 and Line.find(";") >= 0:
+            FoundTypedef = False
+            TypedefEnd = Index
+            if Line.strip("} ;\r\n") in ["GUID", "EFI_PLABEL", "PAL_CALL_RETURN"]:
+                for i in range(TypedefStart, TypedefEnd+1):
+                    Lines[i] = "\n"
 
-    f = open (target,'w')
-    f.writelines(lines)
+    f = open (Target,'w')
+    f.writelines(Lines)
     f.close()
 
-def ConvertHex(lines, start, end):
-    for index in range (start, end):
-        while lines[index].lower().find('0x') >= 0:
-            foo=lines[index].lower().find('0x')
-            bar = foo + 2
-            while lines[index][bar].lower() in '0123456789abcdef':
-                bar += 1
-            if lines[index][foo+2].lower() in 'abcdef': 
-                lines[index] = lines[index][0:foo] + '0' + lines[index][foo+2:bar] + 'h' + lines[index][bar:]
-            else:
-                lines[index] = lines[index][0:foo] + lines[index][foo+2:bar] + 'h' + lines[index][bar:]
+##
+#
+#
+#
+#
+def ConvertHex(Lines, start, end):
+    for Index in range (start, end):
+        Lines[Index] = gHexNumberPattern.sub(r"\1h", Lines[Index])
+
+##
+#
+#
+#
+#
+def Options():
+    OptionList = [
+        make_option("-s", "--source-code", dest="FileType", const="SourceCode", action="store_const",
+                          help="The input file is preprocessed source code, including C or assembly code"),
+        make_option("-v", "--vfr-file", dest="FileType", const="Vfr", action="store_const",
+                          help="The input file is preprocessed VFR file"),
+        make_option("-c", "--convert-hex", dest="ConvertHex", action="store_true",
+                          help="Convert standard hex format (0xabcd) to MASM format (abcdh)"),
+        make_option("-o", "--output", dest="OutputFile",
+                          help="File to store the trimmed content"),
+        make_option("-?", action="help", help="show this help message and exit"),
+    ]
+    
+    UsageString = "%prog [-s|-v] [-c] [-o <output_file>] <input_file>"
+
+    Parser = OptionParser(description=__copyright__, version=__version__, option_list=OptionList, usage=UsageString)
+    Parser.set_defaults(FileType="SourceCode")
+    Parser.set_defaults(ConvertHex=False)
+
+    Options, Args = Parser.parse_args()
+
+    if len(Args) == 0:
+        raise BuildToolError(OPTION_MISSING, name="Input file", usage=Parser.get_usage())
+    if len(Args) > 1:
+        raise BuildToolError(OPTION_NOT_SUPPORTED, name="Too many input files", usage=Parser.get_usage())
+
+    InputFile = Args[0]
+    if Options.OutputFile == None:
+        Options.OutputFile = os.path.splitext(InputFile)[0] + '.iii'
+
+    return Options, InputFile
+##
+#
+#
+#
+#
+def Main():
+    try:
+        CommandOptions, InputFile = Options()
+
+        if CommandOptions.FileType == "Vfr":
+            TrimPreprocessedVfr(InputFile, CommandOptions.OutputFile)
+        else :
+            TrimPreprocessedFile(InputFile, CommandOptions.OutputFile, CommandOptions.ConvertHex)
+    except Exception, e:
+        print e
+        return 1
+
+    return 0
 
 if __name__ == '__main__':
-    if sys.argv[1] == '-CONVERT':
-        TrimPreprocessedFile(sys.argv[2], os.path.splitext(sys.argv[2])[0] + '.iii', True)
-    elif sys.argv[1] == '-VFR':
-        TrimVfr(sys.argv[2], os.path.splitext(sys.argv[2])[0] + '.iii')
-    else:
-        TrimPreprocessedFile(sys.argv[1], os.path.splitext(sys.argv[1])[0] + '.iii', False)
+    sys.exit(Main())
