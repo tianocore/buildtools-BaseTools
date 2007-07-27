@@ -100,15 +100,18 @@ class Build():
         self.GenC         = None
         self.GenMake      = None
         self.All          = None
-        t = self.Args[0].lower()
-        if t == 'genc':
-            self.GenC = 1
-        elif t == 'genmake':
-            self.enMake = 1
-        elif t == 'all' or t == '':
+        if len(self.Args) == 0:
             self.All = 1
         else:
-            self.Args = t
+            t = self.Args[0].lower()
+            if t == 'genc':
+                self.GenC = 1
+            elif t == 'genmake':
+                self.GenMake = 1
+            elif t == 'all' or t == '':
+                self.All = 1
+            else:
+                self.Args = t
         print time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.localtime())
         
 
@@ -142,6 +145,42 @@ class Build():
                     print "Please execute %s\Bin\Win32\edksetup.bat to set %s\Bin\Win64 in environment variable: PATH!\n" % (self.EdkToolsPath, self.EdkToolsPath)
                     return 1
         return 0
+
+    def Parser(self, ewb):
+            pcdSet = {}
+            if self.Opt.FDFFILE == None:
+                self.Opt.FDFFILE = ewb.Fdf
+                if self.Opt.FDFFILE != '' and os.path.isfile(self.WorkSpace + '\\' + self.Opt.FDFFILE) == False:
+                    print "The file: %s is not existed!" % self.Opt.FDFFILE
+                    sys.exit(1)
+                if self.Opt.FDFFILE != '':
+                    (filename, ext) = os.path.splitext(self.WorkSpace + '\\' + self.Opt.FDFFILE)
+                    if ext.lower() != 'fdf':
+                        print "The file: %s is not a fdf file!" % self.Opt.FDFFILE
+                        sys.exit(1)
+                    self.Opt.FDFFILE = self.WorkSpace + '\\' + self.Opt.FDFFILE
+                    fdf = FdfParser(self.Opt.FDFFILE)
+                    fdf.ParseFile()
+                    pcdSet = fdf.profile.PcdDict
+                print "FDFFILE is %s" % self.Opt.FDFFILE
+            else:
+                if os.path.isfile(os.path.abspath(self.Opt.FDFFILE)) == True:
+                    realpath = os.path.abspath(self.Opt.FDFFILE)
+                    (filename, ext) = os.path.splitext(realpath)
+                    if ext.lower() != 'fdf':
+                        print "The input file: %s is not a fdf file!" % self.Opt.FDFFILE
+                        sys.exit(1)
+                    self.Opt.FDFFILE = realpath
+                    fdf = FdfParser(self.Opt.FDFFILE)
+                    fdf.ParseFile()
+                    pcdSet = fdf.profile.PcdDict
+                else:
+                    print "The input file: %s is not existed!"  % self.Opt.FDFFILE
+                    sys.exit(1)
+
+            ewb.GenBuildDatabase(pcdSet)
+            ewb.TargetTxt = self.TargetTxt
+            ewb.ToolDef = self.ToolDef
 
     def LibBuild(LibFile, PlatformFile, ewb, a, b, c):
         LibraryAutoGen = AutoGen(LibFile, PlatformFile, ewb, str(a), b, str(c))
@@ -300,7 +339,6 @@ class Build():
                             p.communicate()
                             if p.returncode != 0:
                                 return p.returncode
-
                     else:
                         for c in self.Opt.TARGET_ARCH:
                             ModuleAutoGen = AutoGen(ModuleFile, PlatformFile, ewb, a, b, c)
@@ -360,6 +398,11 @@ class Build():
         elif Hour > 10 and Min < 10 and Sec > 10:
             print "Totol Run Time is %2d:%2d:0%d" %(Hour, Min, Sec)
 
+    def isexit(self, StatusCode):
+        if StatusCode != 0:
+            self.CalculateTime()
+            sys.exit(StatusCode)
+
 def MyOptionParser():
     parser = OptionParser(description=__copyright__,version=__version__,prog="bld.exe",usage="%prog [options] [target]")
     parser.add_option("-a", "--arch", action="append", type="choice", choices=['IA32','X64','IPF','EBC'], dest="TARGET_ARCH",
@@ -398,7 +441,7 @@ if __name__ == '__main__':
     try:
         (opt, args) = MyOptionParser()
         if len(args) >= 2:
-            print 'The num of target is large than one.'
+            print 'It is invaild to input more than one target.'
             sys.exit(1)
     except Exception, e:
         print e
@@ -409,39 +452,31 @@ if __name__ == '__main__':
 #
     build = Build(opt, args)
     StatusCode = build.CheckEnvVariable()
-    if StatusCode != 0:
-        build.CalculateTime()
-        sys.exit(StatusCode)
-
+    isexit(StatusCode)
+    
 #
 # Check target.txt and tools_def.txt and Init them
 #
     if os.path.isfile(build.WorkSpace + '\\Conf\\target.txt') == True:
-        StatusCode =build.TargetTxt.LoadTargetTxtFile(build.WorkSpace + '\\Conf\\target.txt')
-        
+        StatusCode = build.TargetTxt.LoadTargetTxtFile(build.WorkSpace + '\\Conf\\target.txt')
+        isexit(StatusCode)
         if os.path.isfile(build.WorkSpace + '\\' + build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF]) == True:
             StatusCode = build.ToolDef.LoadToolDefFile(build.WorkSpace + '\\' + build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])
         else:
             print "%s is not existed." % build.WorkSpace + '\\' + build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF]
-            build.CalculateTime()
-            sys.exit(1)
+            isexit(1)
     else:
         print "%s is not existed." % build.WorkSpace + '\\Conf\\target.txt'
-        build.CalculateTime()
-        sys.exit(1)
+        isexit(1)
 
 #
-# Merge the Build Options
+# Merge the Build Options except input file(DSCFILE, INFFILE, FDFFILE)
 #
     if build.Opt.TARGET_ARCH == None:
         build.Opt.TARGET_ARCH = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET_ARCH]
         if build.Opt.TARGET_ARCH == ['']:
             build.Opt.TARGET_ARCH = ['IA32', 'X64', 'IPF', 'EBC']
     print "TARGET_ARCH is", " ".join(opt.TARGET_ARCH)
-
-    if build.Opt.DSCFILE == None:
-        build.Opt.DSCFILE = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM]
-    print "ACTIVE_PLATFORM is %s" % build.Opt.DSCFILE
 
     if build.Opt.TARGET == None:
         build.Opt.TARGET = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET]
@@ -477,33 +512,42 @@ if __name__ == '__main__':
         EdkLogger.setLevel(EdkLogger.INFO)
 
 #
-# Call Parser
+# Marge DSC file with cmd input and default value in target.txt
 #
-    if build.Opt.DSCFILE != None and build.Opt.DSCFILE != '' and os.path.isfile(build.WorkSpace + '\\' + build.Opt.DSCFILE) == False:
-        print "The input file: %s is not existed!", build.Opt.DSCFILE
-        build.CalculateTime()
-        sys.exit(1)
-
-    try:
-        if build.Opt.DSCFILE != None and build.Opt.DSCFILE != '':
-            pcdSet = {}
-            ewb = WorkspaceBuild(build.Opt.DSCFILE, build.WorkSpace)  #opt.DSCFILE is relative path plus filename
-            if build.Opt.FDFFILE == None:
-                build.Opt.FDFFILE = ewb.Fdf
-            if build.Opt.FDFFILE != None and build.Opt.FDFFILE != '' and os.path.isfile(build.WorkSpace + '\\' + build.Opt.FDFFILE) == False:
-                print "The input file: %s is not existed!", build.Opt.FDFFILE
-                build.CalculateTime()
+    if build.Opt.DSCFILE == None:
+        build.Opt.DSCFILE = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM]
+        if build.Opt.DSCFILE != '' and os.path.isfile(build.WorkSpace + '\\' + build.Opt.DSCFILE) == False:
+            print "The file: %s is not existed!" % build.Opt.DSCFILE
+            sys.exit(1)
+        if build.Opt.DSCFILE != '':
+            (filename, ext) = os.path.splitext(build.WorkSpace + '\\' + build.Opt.DSCFILE)
+            if ext.lower() != 'dsc':
+                print "The file: %s is not a dsc file!" % build.Opt.DSCFILE
                 sys.exit(1)
-            if build.Opt.FDFFILE != None and build.Opt.FDFFILE != '':
-                fdf = FdfParser(build.Opt.FDFFILE)
-                fdf.ParseFile()
-                pcdSet = fdf.profile.PcdDict
-                
-            ewb.GenBuildDatabase(pcdSet)
-            
-            ewb.TargetTxt = build.TargetTxt
-            ewb.ToolDef = build.ToolDef
-            
+        print "ACTIVE_PLATFORM is %s" % build.Opt.DSCFILE
+    else:
+        if os.path.isfile(os.path.abspath(build.Opt.DSCFILE)) == True:
+            realpath = os.path.abspath(build.Opt.DSCFILE)
+            (filename, ext) = os.path.splitext(realpath)
+            if ext.lower() != 'dsc':
+                print "The input file: %s is not a dsc file!" % build.Opt.DSCFILE
+                sys.exit(1)
+            if build.WorkSpace[len(build.WorkSpace)-1] == '\\':
+                build.Opt.DSCFILE = realpath[len(build.WorkSpace):]
+            else:
+                build.Opt.DSCFILE = realpath[len(build.WorkSpace)+1:]
+            print "ACTIVE_PLATFORM is %s" % build.Opt.DSCFILE
+        else:
+            print "The input file: %s is not existed!"  % build.Opt.DSCFILE
+            sys.exit(1)
+
+#
+# Call Parser and Merge FDF file
+#
+    try:
+        if build.Opt.DSCFILE != '':                  # check the work flow below
+            ewb = WorkspaceBuild(build.Opt.DSCFILE, build.WorkSpace)
+            Parser(ewb)
     except Exception, e:
         print e
         build.CalculateTime()
@@ -513,7 +557,6 @@ if __name__ == '__main__':
 # Platform Build or Module Build
 #
     CurWorkDir = os.getcwd()
-    CurWorkDir = 't:\\Nt32pkg'
 
     if build.Opt.INFFILE:
         if build.Opt.DSCFILE:
@@ -560,7 +603,9 @@ if __name__ == '__main__':
             #
             # Call Parser Again
             #
+            build.Opt.DSCFILE = PlatformFile
             ewb = WorkspaceBuild(PlatformFile, build.WorkSpace)
+            Parser(ewb)
             StatusCode = build.Process(None, PlatformFile, ewb)
         else:
             print "ERROR: DON'T KNOW WHAT TO BUILD\n"
