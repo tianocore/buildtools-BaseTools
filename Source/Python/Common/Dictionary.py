@@ -7,25 +7,25 @@ from DataType import *
 def ConvertTextFileToDictionary(FileName, Dictionary, CommentCharacter, KeySplitCharacter, ValueSplitFlag, ValueSplitCharacter):
   """Convert a text file to a dictionary of (name:value) pairs."""
   try:
-    f = open(FileName,'r')
+      f = open(FileName,'r')
+      Keys = []
+      for Line in f:
+        if Line.startswith(CommentCharacter):
+          continue
+        LineList = Line.split(KeySplitCharacter,1)
+        if len(LineList) >= 2:
+          Key = LineList[0].split()
+          if len(Key) == 1 and Key[0][0] != CommentCharacter and Key[0] not in Keys:
+            if ValueSplitFlag:
+              Dictionary[Key[0]] = LineList[1].replace('\\','/').split(ValueSplitCharacter)
+            else:
+              Dictionary[Key[0]] = LineList[1].strip().replace('\\','/')
+            Keys += [Key[0]]
+      f.close()
+      return 0
   except:
-    EdkLogger.info('Open file failed')
-    return False
-  Keys = []
-  for Line in f:
-    if Line.startswith(CommentCharacter):
-      continue
-    LineList = Line.split(KeySplitCharacter,1)
-    if len(LineList) >= 2:
-      Key = LineList[0].split()
-      if len(Key) == 1 and Key[0][0] != CommentCharacter and Key[0] not in Keys:
-        if ValueSplitFlag:
-          Dictionary[Key[0]] = LineList[1].replace('\\','/').split(ValueSplitCharacter)
-        else:
-          Dictionary[Key[0]] = LineList[1].strip().replace('\\','/')
-        Keys += [Key[0]]
-  f.close()
-  return True
+      EdkLogger.info('Open file failed')
+      return 1
 
 def printDict(dict):
   if dict != None:

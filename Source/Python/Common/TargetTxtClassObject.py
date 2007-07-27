@@ -33,7 +33,7 @@ class TargetTxtClassObject(object):
 
     def LoadTargetTxtFile(self, filename):
         if os.path.exists(filename) and os.path.isfile(filename):
-             return self.ConvertTextFileToDictionary(filename, '#', '=')
+             return self.ConvertTextFileToDict(filename, '#', '=')
         else:
             raise ParseError('LoadTargetTxtFile() : No Target.txt file exist')
             return 1
@@ -41,7 +41,7 @@ class TargetTxtClassObject(object):
 #
 # Convert a text file to a dictionary
 #
-    def ConvertTextFileToDictionary(self, FileName, CommentCharacter, KeySplitCharacter):
+    def ConvertTextFileToDict(self, FileName, CommentCharacter, KeySplitCharacter):
         """Convert a text file to a dictionary of (name:value) pairs."""
         try:
             f = open(FileName,'r')

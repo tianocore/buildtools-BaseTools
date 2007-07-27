@@ -13,6 +13,7 @@
 
 import os
 import EdkLogger
+
 from Dictionary import *
 from BuildToolError import *
 from TargetTxtClassObject import *
@@ -33,9 +34,11 @@ class ToolDefClassObject(object):
     def LoadToolDefFile(self, filename):
         #EdkLogger.info('LoadToolDefFile() Start')
         if os.path.exists(filename) and os.path.isfile(filename):
-            ConvertTextFileToDictionary(filename, self.ToolsDefTxtDictionary, '#', '=', False, None)
+            if ConvertTextFileToDictionary(filename, self.ToolsDefTxtDictionary, '#', '=', False, None) == 1:
+                return 1
         else:
             raise ParseError('LoadTargetTxtFile() : No Target.txt file exist')
+            return 1
         
         self.ToolsDefTxtDatabase = {
             TAB_TOD_DEFINES_TARGET                                             : [],
@@ -82,7 +85,7 @@ class ToolDefClassObject(object):
                     del self.ToolsDefTxtDictionary[Key]
                 elif List[Index] not in self.ToolsDefTxtDatabase[KeyList[Index]]:
                     del self.ToolsDefTxtDictionary[Key]
-        
+        return 0
         #EdkLogger.info('LoadToolDefFile() End')
 
 def ToolDefDict(WorkSpace):
