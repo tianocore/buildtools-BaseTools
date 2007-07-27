@@ -62,7 +62,8 @@ def main():
         
         activePlatform = activePlatform.replace(workspace, '')
         if len(activePlatform) > 0 :
-            activePlatform = activePlatform[1:]
+            if activePlatform[0] == '\\' or activePlatform[0] == '/':
+                activePlatform = activePlatform[1:]
         else:
             raise Exception ("ActivePlatform doesn't exist!")
     else :
