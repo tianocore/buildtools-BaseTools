@@ -36,6 +36,7 @@ class TargetTxtClassObject(object):
              return self.ConvertTextFileToDictionary(filename, '#', '=')
         else:
             raise ParseError('LoadTargetTxtFile() : No Target.txt file exist')
+            return 1
 
 #
 # Convert a text file to a dictionary
@@ -44,24 +45,25 @@ class TargetTxtClassObject(object):
         """Convert a text file to a dictionary of (name:value) pairs."""
         try:
             f = open(FileName,'r')
+            for Line in f:
+                if Line.startswith(CommentCharacter) or Line.strip() == '':
+                    continue
+                LineList = Line.split(KeySplitCharacter,1)
+                if len(LineList) >= 2:
+                    Key = LineList[0].strip()
+                    if Key.startswith(CommentCharacter) == False and Key in self.TargetTxtDictionary.keys():
+                        if Key == DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM or Key == DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF \
+                          or Key == DataType.TAB_TAT_DEFINES_MULTIPLE_THREAD or Key == DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER \
+                          or Key == DataType.TAB_TAT_DEFINES_ACTIVE_MODULE:
+                            self.TargetTxtDictionary[Key] = LineList[1].replace('\\', '/').strip()
+                        elif Key == DataType.TAB_TAT_DEFINES_TARGET or Key == DataType.TAB_TAT_DEFINES_TARGET_ARCH \
+                          or Key == DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG:
+                            self.TargetTxtDictionary[Key] = LineList[1].split()
+            f.close()
+            return 0
         except:
             EdkLogger.info('Open file failed')
-            return False
-        for Line in f:
-            if Line.startswith(CommentCharacter) or Line.strip() == '':
-                continue
-            LineList = Line.split(KeySplitCharacter,1)
-            if len(LineList) >= 2:
-                Key = LineList[0].strip()
-                if Key.startswith(CommentCharacter) == False and Key in self.TargetTxtDictionary.keys():
-                    if Key == DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM or Key == DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF \
-                      or Key == DataType.TAB_TAT_DEFINES_MULTIPLE_THREAD or Key == DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER \
-                      or Key == DataType.TAB_TAT_DEFINES_ACTIVE_MODULE:
-                        self.TargetTxtDictionary[Key] = LineList[1].replace('\\', '/').strip()
-                    elif Key == DataType.TAB_TAT_DEFINES_TARGET or Key == DataType.TAB_TAT_DEFINES_TARGET_ARCH \
-                      or Key == DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG:
-                        self.TargetTxtDictionary[Key] = LineList[1].split()
-        f.close()
+            return 1
 
     def printDict(dict):
         if dict != None:
