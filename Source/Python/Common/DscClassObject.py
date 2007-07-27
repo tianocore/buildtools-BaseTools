@@ -487,7 +487,7 @@ class Dsc(DscObject):
     
 if __name__ == '__main__':
     p = Dsc()
-    directory = 'C:\MyWorkspace\\EdkModulePkg'
+    directory = 'C:\MyWorkspace\Nt32Pkg'
     fileList = []
     for f in os.listdir(directory):
         if os.path.splitext(os.path.normcase(f))[1] == '.dsc':

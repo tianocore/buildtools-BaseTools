@@ -142,6 +142,7 @@ class PlatformBuildClassObject(object):
                 
         self.SkuIds                  = {}       #{ 'SkuName' : SkuId, '!include' : includefilename, ...}
         self.Modules                 = []       #[ InfFileName, ... ]
+        self.Libraries               = []       #[ InfFileName, ... ]
         self.LibraryClasses          = {}       #{ (LibraryClassName, ModuleType) : LibraryClassInfFile }
         self.Pcds                    = {}       #{ [(PcdCName, PcdGuidCName)] : PcdClassObject }
         self.BuildOptions            = {}       #{ [BuildOptionKey] : BuildOptionValue }    
@@ -214,7 +215,7 @@ class WorkspaceBuild(object):
             #
             # Get all inf files
             #
-            for Item in Platform.Libraries.LibraryList:
+            for Item in Platform.LibraryClasses.LibraryList:
                 for Arch in Item.SupArchList:
                     self.AddToInfDatabase(Item.FilePath)
             
@@ -489,13 +490,34 @@ class WorkspaceBuild(object):
                 pb = None
     
     #
+    # Update Libraries Of Platform Database
+    #
+    def UpdateLibrariesOfPlatform(self):
+        for Arch in self.SupArchList:
+            PlatformDatabase = self.Build[Arch].PlatformDatabase
+            for Dsc in PlatformDatabase:
+                Platform = PlatformDatabase[Dsc]
+                for Inf in Platform.Modules:
+                    Module = self.Build[Arch].ModuleDatabase[NormPath(Inf)]
+                    Stack = [NormPath(str(Module))]
+                    while len(Stack) > 0:
+                        M = self.Build[Arch].ModuleDatabase[Stack.pop()]
+                        if M != Module:
+                            Platform.Libraries.append(M)
+                        for Lib in M.LibraryClasses.values():
+                            if Lib not in Platform.Libraries and Lib != '':
+                                Platform.Libraries.append(NormPath(Lib))
+                                Stack.append(NormPath(Lib))
+    
+    #
     # Generate build database for all arches
     #
     def GenBuildDatabase(self, PcdsSet = {}):
         self.GenPlatformDatabase()
         self.GenPackageDatabase()
         self.GenModuleDatabase(PcdsSet)
-        
+        #self.UpdateLibrariesOfPlatform()
+
     #
     # Return a full path with workspace dir
     #
@@ -660,9 +682,9 @@ class WorkspaceBuild(object):
     # Show all content of the workspacebuild
     #
     def ShowWorkspaceBuild(self):
-        #print ewb.DscDatabase
-        #print ewb.InfDatabase
-        #print ewb.DecDatabase
+        print ewb.DscDatabase
+        print ewb.InfDatabase
+        print ewb.DecDatabase
         print 'SupArchList', ewb.SupArchList
         print 'BuildTarget', ewb.BuildTarget
         print 'SkuId', ewb.SkuId
