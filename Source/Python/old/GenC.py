@@ -968,7 +968,7 @@ def CreateModulePcdCode(info, autoGenC, autoGenH, pcd):
             autoGenH.Append('extern %s  %s  %s%s;\n' % (Const, pcd.DatumType, PcdVariableName, Array))
             autoGenH.Append('#define %s  %s%s\n' % (getModeName, Type, PcdVariableName))
 
-        if pcd.Type == 'PATCHABLE_IN_MODULE':
+        if pcd.Type == TAB_PCDS_PATCHABLE_IN_MODULE:
             if pcd.DatumType == 'VOID*':
                 autoGenH.Append('#define %s(SizeOfBuffer, Buffer)  LibPatchPcdSetPtr(_gPcd_BinaryPatch_%s, (UINTN)_PCD_PATCHABLE_%s_SIZE, (SizeOfBuffer), (Buffer))\n' % (setModeName, pcd.TokenCName, pcd.TokenCName))
             else:
