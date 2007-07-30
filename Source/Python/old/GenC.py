@@ -888,7 +888,7 @@ def CreateModulePcdCode(info, autoGenC, autoGenH, pcd):
     #
     pcdTokenName = '_PCD_TOKEN_' + pcd.TokenCName
     if pcd.Type in gDynamicExPcd:
-        tokenNumber = pcd.TokenValue
+        tokenNumber = int(pcd.TokenValue, 16)
     else:
         if (pcd.TokenCName, pcd.TokenSpaceGuidCName) not in pcdTokenNumber:
             raise AutoGenError(msg="No generated token number for %s|%s\n" % (pcd.TokenCName, pcd.TokenSpaceGuidCName))

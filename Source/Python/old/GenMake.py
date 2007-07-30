@@ -12,7 +12,7 @@ from BuildInfo import *
 from BuildToolError import *
 
 gDependencyDatabase = {}    # file path : [dependent files list]
-gIncludePattern = re.compile("^[ \t#]*include[ \t]+[\"<]*([^\"<>]+)[>\" \t\n\r]*", re.MULTILINE | re.UNICODE)
+gIncludePattern = re.compile("^[ #]*include[ ]+[\"<]*([^\"< >]+)[>\" ]*$", re.MULTILINE | re.UNICODE)
 
 class AutoGenString(object):
     def __init__(self):
