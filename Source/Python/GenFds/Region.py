@@ -1,7 +1,7 @@
 from struct import *
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import StringIO
-from Common.FdfClassObject import RegionClassObject
+from CommonDataClass.FdfClassObject import RegionClassObject
 
 class region(RegionClassObject):
     def __init__(self):

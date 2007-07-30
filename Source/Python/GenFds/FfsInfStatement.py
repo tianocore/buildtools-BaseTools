@@ -153,12 +153,20 @@ class FfsInfStatement(FfsInfStatementClassObject):
             
         #activePlatform = GenFdsGlobalVariable.WorkSpace.TargetTxt.TargetTxtDictionary.get('ACTIVE_PLATFORM')[0]
         dscArchList = []
-        if self.InfFileName in (GenFdsGlobalVariable.WorkSpace.Build.get('IA32').PlatformDatabase[GenFdsGlobalVariable.ActivePlatform].Modules):
-            dscArchList.append ('IA32')
-        if self.InfFileName in (GenFdsGlobalVariable.WorkSpace.Build.get('X64').PlatformDatabase[GenFdsGlobalVariable.ActivePlatform].Modules):
-            dscArchList.append ('X64')
-        if self.InfFileName in (GenFdsGlobalVariable.WorkSpace.Build.get('IPF').PlatformDatabase[GenFdsGlobalVariable.ActivePlatform].Modules):
-            dscArchList.append ('IPF')
+        PlatformDataBase = GenFdsGlobalVariable.WorkSpace.Build.get('IA32').PlatformDatabase.get(GenFdsGlobalVariable.ActivePlatform)
+        if  PlatformDataBase != None:
+            if self.InfFileName in PlatformDataBase.Modules:
+                dscArchList.append ('IA32')
+                
+        PlatformDataBase = GenFdsGlobalVariable.WorkSpace.Build.get('X64').PlatformDatabase.get(GenFdsGlobalVariable.ActivePlatform)
+        if  PlatformDataBase != None:
+            if self.InfFileName in PlatformDataBase.Modules:
+                dscArchList.append ('X64')
+                
+        PlatformDataBase = GenFdsGlobalVariable.WorkSpace.Build.get('IPF').PlatformDatabase.get(GenFdsGlobalVariable.ActivePlatform)
+        if PlatformDataBase != None:
+            if self.InfFileName in (PlatformDataBase.Modules):
+                dscArchList.append ('IPF')
 
         curArchList = set (targetArchList) & set (dscArchList)
         GenFdsGlobalVariable.VerboseLogger ("Valid target architecture(s) is : " + " ".join(curArchList))
