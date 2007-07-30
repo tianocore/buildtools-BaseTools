@@ -136,13 +136,15 @@ class Build():
         else:
             if self.SysPlatform == "win32":
                 #print EDK_TOOLS_PATH + "\Bin\Win32"
-                if str(self.Path).find(self.EdkToolsPath + "\Bin\Win32") == -1:
-                    print "Please execute %s\Bin\Win32\edksetup.bat to set %s\Bin\Win32 in environment variable: PATH!\n" % (self.EdkToolsPath, self.EdkToolsPath)
+                if str(self.Path).find(os.path.normpath(os.path.join(self.EdkToolsPath, "\Bin\Win32"))) == -1:
+                    path = os.path.normpath(os.path.join(self.EdkToolsPath, "\Bin\Win32"))
+                    print "Please execute %s to set %s in environment variable: PATH!\n" % (os.path.normpath(os.path.join(path, 'edksetup.bat')), path)
                     return 1
             if self.SysPlatform == "win64":
                 #print EDK_TOOLS_PATH + "\Bin\Win64"
-                if str(self.Path).find(self.EdkToolsPath + "\Bin\Win64") == -1:
-                    print "Please execute %s\Bin\Win32\edksetup.bat to set %s\Bin\Win64 in environment variable: PATH!\n" % (self.EdkToolsPath, self.EdkToolsPath)
+                if str(self.Path).find(os.path.normpath(os.path.join(self.EdkToolsPath, "\Bin\Win64"))) == -1:
+                    path = os.path.normpath(os.path.join(self.EdkToolsPath, "\Bin\Win64"))
+                    print "Please execute %s to set %s in environment variable: PATH!\n" % (os.path.normpath(os.path.join(path, 'edksetup.bat')), path)
                     return 1
         return 0
 
@@ -150,15 +152,15 @@ class Build():
         pcdSet = {}
         if self.Opt.FDFFILE == None:
             self.Opt.FDFFILE = ewb.Fdf
-            if self.Opt.FDFFILE != '' and os.path.isfile(self.WorkSpace + '\\' + self.Opt.FDFFILE) == False:
+            if self.Opt.FDFFILE != '' and os.path.isfile(os.path.normpath(os.path.join(self.WorkSpace, self.Opt.FDFFILE))) == False:
                 print "The file: %s is not existed!" % self.Opt.FDFFILE
                 self.isexit(1)
             if self.Opt.FDFFILE != '':
-                (filename, ext) = os.path.splitext(self.WorkSpace + '\\' + self.Opt.FDFFILE)
+                (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(self.WorkSpace, self.Opt.FDFFILE)))
                 if ext.lower() != '.fdf':
                     print "The file: %s is not a fdf file!" % self.Opt.FDFFILE
                     self.isexit(1)
-                self.Opt.FDFFILE = self.WorkSpace + '\\' + self.Opt.FDFFILE
+                self.Opt.FDFFILE = os.path.normpath(os.path.join(self.WorkSpace, self.Opt.FDFFILE))
                 fdf = FdfParser(self.Opt.FDFFILE)
                 fdf.ParseFile()
                 pcdSet = fdf.profile.PcdDict
@@ -189,10 +191,10 @@ class Build():
         LibraryAutoGen.CreateAutoGenFile()
         LibraryAutoGen.CreateMakefile()
         for f in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
-            (filename, ext) = os.path.splitext(os.environ["WORKSPACE"] + '\\' + f.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + str(LibFile))
+            (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(os.environ["WORKSPACE"], f, a + '_' + b, c, str(LibFile))))
             DestDir = filename
             print DestDir
-            FileList = glob.glob(DestDir + '\\makefile')
+            FileList = glob.glob(os.path.normpath(os.path.join(DestDir, 'makefile')))
             FileNum = len(FileList)
             if FileNum > 0:
                 SameTypeFileInDir(FileNum, 'makefile', DestDir)
@@ -205,9 +207,9 @@ class Build():
         ModuleAutoGen.CreateAutoGenFile()
         ModuleAutoGen.CreateMakefile()
         for f in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
-            (filename, ext) = os.path.splitext(os.environ["WORKSPACE"] + '\\' + f.replace('/','\\') + '\\' + a + '_' + b + '\\' + c + '\\' + ModuleFile)
+            (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(os.environ["WORKSPACE"], f, a + '_' + b, c, ModuleFile)))
             DestDir = filename
-            FileList = glob.glob(DestDir + '\\makefile')
+            FileList = glob.glob(os.path.normpath(os.path.join(DestDir, 'makefile')))
             FileNum = len(FileList)
             if FileNum > 0:
                 SameTypeFileInDir(FileNum, 'makefile', DestDir)
@@ -220,12 +222,12 @@ class Build():
                 for i in range(0, int(self.Opt.NUM)):
                     self.Sem.release()
             else:
-                print "There isn't makefile in %s.\n" % DestDir
+                print "There isn't makefile in %s." % DestDir
                 self.isexit(1)
 
     def SameTypeFileInDir(self, FileNum, FileType, Dir):
         if FileNum >= 2:
-            print "There are %d %s files in %s.\n" % (FileNum, FileType, Dir)
+            print "There are %d %s files in %s." % (FileNum, FileType, Dir)
             self.isexit(1)
 
     def TrackInfo(self, e):
@@ -256,11 +258,11 @@ class Build():
     def OtherFunc(self, ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
         for d in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
             if ModuleFile == None:
-                DestDir = os.environ["WORKSPACE"] + '\\' + d.replace('/','\\') + '\\' + Target + '_' + ToolChain
+                DestDir = os.normpath(os.path.join(os.environ["WORKSPACE"], d, Target + '_' + ToolChain))
             else:
-                (filename, ext) = os.path.splitext(os.environ["WORKSPACE"] + '\\' + d.replace('/','\\') + '\\' + Target + '_' + ToolChain + '\\' + Arch + '\\' + ModuleFile)
+                (filename, ext) = os.path.splitext(os.normpath(os.path.join(os.environ["WORKSPACE"], d, Target + '_' + ToolChain, Arch, ModuleFile)))
                 DestDir = filename
-            FileList = glob.glob(DestDir + '\\makefile')
+            FileList = glob.glob(os.path.normpath(os.path.join(DestDir, 'makefile')))
             FileNum = len(FileList)
             if FileNum > 0:
                 SameTypeFileInDir(FileNum, 'makefile', DestDir)
@@ -330,11 +332,10 @@ class Build():
                             # call GenFds
                             #GenFds -f C:\Work\Temp\T1\Nt32Pkg\Nt32Pkg.fdf -o $(BUILD_DIR) -p Nt32Pkg\Nt32Pkg.dsc
                             if self.Opt.FDFFILE != '':
-                                self.Opt.FDFFILE =  os.environ["WORKSPACE"] + '\\' + self.Opt.FDFFILE.replace('/','\\')
                                 f = ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']
-                                f = os.environ["WORKSPACE"] + '\\' + f.replace('/', '\\') + '\\' + a + '_' + b
-                                if os.path.isdir(f + "\\" + "FV") != True:
-                                    os.mkdir(f + "\\" + "FV")
+                                f = os.path.normpath(os.path.join(os.environ["WORKSPACE"], f, a + '_' + b))
+                                if os.path.isdir(os.path.normpath(os.path.join(f, "FV"))) != True:
+                                    os.mkdir(os.path.normpath(os.path.join(f, "FV")))
                                 p = Popen(["GenFds", "-f", self.Opt.FDFFILE, "-o", f, "-p", self.Opt.DSCFILE], env=os.environ, cwd=os.path.dirname(self.Opt.FDFFILE))
                                 p.communicate()
                                 if p.returncode != 0:
@@ -460,17 +461,17 @@ if __name__ == '__main__':
 #
 # Check target.txt and tools_def.txt and Init them
 #
-    if os.path.isfile(build.WorkSpace + '\\Conf\\target.txt') == True:
-        StatusCode = build.TargetTxt.LoadTargetTxtFile(build.WorkSpace + '\\Conf\\target.txt')
+    if os.path.isfile(os.path.normpath(os.path.join(build.WorkSpace, 'Conf\\target.txt'))) == True:
+        StatusCode = build.TargetTxt.LoadTargetTxtFile(os.path.normpath(os.path.join(build.WorkSpace, 'Conf\\target.txt')))
         build.isexit(StatusCode)
-        if os.path.isfile(build.WorkSpace + '\\' + build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF]) == True:
-            StatusCode = build.ToolDef.LoadToolDefFile(build.WorkSpace + '\\' + build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])
+        if os.path.isfile(os.path.normpath(os.path.join(build.WorkSpace, build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF]))) == True:
+            StatusCode = build.ToolDef.LoadToolDefFile(os.path.normpath(os.path.join(build.WorkSpace, build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])))
             build.isexit(StatusCode)
         else:
-            print "%s is not existed." % build.WorkSpace + '\\' + build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF]
+            print "%s is not existed." % os.path.normpath(os.path.join(build.WorkSpace, build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF]))
             build.isexit(1)
     else:
-        print "%s is not existed." % build.WorkSpace + '\\Conf\\target.txt'
+        print "%s is not existed." % os.path.normpath(os.path.join(build.WorkSpace, 'Conf\\target.txt'))
         build.isexit(1)
 
 #
@@ -483,7 +484,7 @@ if __name__ == '__main__':
             if ext.lower() != '.inf':
                 print "The input file: %s is not a inf file!" % build.Opt.INFFILE
                 build.isexit(1)
-            if build.WorkSpace[len(build.WorkSpace)-1] == '\\':
+            if build.WorkSpace[len(build.WorkSpace)-1] == '\\' or build.WorkSpace[len(build.WorkSpace)-1] == '/':
                 build.Opt.INFFILE = realpath[len(build.WorkSpace):]
             else:
                 build.Opt.INFFILE = realpath[len(build.WorkSpace)+1:]
@@ -534,13 +535,13 @@ if __name__ == '__main__':
 #
     if build.Opt.DSCFILE == None:
         build.Opt.DSCFILE = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM]
-        if build.Opt.DSCFILE != '' and os.path.isfile(build.WorkSpace + '\\' + build.Opt.DSCFILE) == False:
-            print "The file: %s is not existed!" % build.Opt.DSCFILE
+        if build.Opt.DSCFILE != '' and os.path.isfile(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE))) == False:
+            print "The file: %s is not existed!" % os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE))
             build.isexit(1)
         if build.Opt.DSCFILE != '':
-            (filename, ext) = os.path.splitext(build.WorkSpace + '\\' + build.Opt.DSCFILE)
+            (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE)))
             if ext.lower() != 'dsc':
-                print "The file: %s is not a dsc file!" % build.Opt.DSCFILE
+                print "The file: %s is not a dsc file!" % os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE))
                 build.isexit(1)
     else:
         if os.path.isfile(os.path.abspath(build.Opt.DSCFILE)) == True:
@@ -549,7 +550,7 @@ if __name__ == '__main__':
             if ext.lower() != '.dsc':
                 print "The input file: %s is not a dsc file!" % build.Opt.DSCFILE
                 build.isexit(1)
-            if build.WorkSpace[len(build.WorkSpace)-1] == '\\':
+            if build.WorkSpace[len(build.WorkSpace)-1] == '\\' or build.WorkSpace[len(build.WorkSpace)-1] == '/':
                 build.Opt.DSCFILE = realpath[len(build.WorkSpace):]
             else:
                 build.Opt.DSCFILE = realpath[len(build.WorkSpace)+1:]
@@ -561,12 +562,12 @@ if __name__ == '__main__':
 # Call Parser and Merge FDF file
 #
     try:
-        if build.Opt.DSCFILE != '':                  # check the work flow below
+        if build.Opt.DSCFILE != '':
             EdkLogger.debug(EdkLogger.DEBUG_5, '\tACTIVE_PLATFORM is: %s' % build.Opt.DSCFILE)
             ewb = WorkspaceBuild(build.Opt.DSCFILE, build.WorkSpace)
             build.Parser(ewb)
     except Exception, e:
-        self.TrackInfo(e)
+        build.TrackInfo(e)
         build.isexit(1)
 
 #
@@ -583,14 +584,14 @@ if __name__ == '__main__':
             StatusCode = build.Process(ModuleFile, PlatformFile, ewb)
         else:
             print "ERROR: ACTIVE_PLATFORM isn't specified. DON'T KNOW WHAT TO BUILD\n"
-    elif len(glob.glob(CurWorkDir + '\\*.inf')) > 0:
-        FileList = glob.glob(CurWorkDir + '\\*.inf')
+    elif len(glob.glob(os.path.normpath(os.path.join(CurWorkDir, '*.inf')))) > 0:
+        FileList = glob.glob(os.path.normpath(os.path.join(CurWorkDir, '*.inf')))
         FileNum = len(FileList)
         if FileNum >= 2:
             print "There are %d INF filss in %s.\n" % (FileNum, CurWorkDir)
             build.isexit(1)
         if build.Opt.DSCFILE:
-            if ewb.Workspace.WorkspaceDir[len(ewb.Workspace.WorkspaceDir)-1] == '\\':
+            if ewb.Workspace.WorkspaceDir[len(ewb.Workspace.WorkspaceDir)-1] == '\\' or ewb.Workspace.WorkspaceDir[len(ewb.Workspace.WorkspaceDir)-1] == '/':
                 ModuleFile = os.path.normpath(FileList[0][len(ewb.Workspace.WorkspaceDir):])
             else:
                 ModuleFile = os.path.normpath(FileList[0][len(ewb.Workspace.WorkspaceDir)+1:])
@@ -605,13 +606,13 @@ if __name__ == '__main__':
         EdkLogger.debug(EdkLogger.DEBUG_5, '\tPlatformFile is: %s' % PlatformFile)
         StatusCode = build.Process(None, PlatformFile, ewb)
     else:
-        FileList = glob.glob(CurWorkDir + '\\*.dsc')
+        FileList = glob.glob(os.path.normpath(os.path.join(CurWorkDir, '*.dsc')))
         FileNum = len(FileList)
         if FileNum > 0:
             if FileNum >= 2:
                 print "There are %d DSC files in %s.\n" % (FileNum, CurWorkDir)
                 build.isexit(1)
-            if build.WorkSpace[len(build.WorkSpace)-1] == '\\':
+            if build.WorkSpace[len(build.WorkSpace)-1] == '\\' or build.WorkSpace[len(build.WorkSpace)-1] == '/':
                 PlatformFile = os.path.normpath(FileList[0][len(build.WorkSpace):])
             else:
                 PlatformFile = os.path.normpath(FileList[0][len(build.WorkSpace)+1:])
@@ -624,7 +625,7 @@ if __name__ == '__main__':
                 ewb = WorkspaceBuild(PlatformFile, build.WorkSpace)
                 build.Parser(ewb)
             except Exception, e:
-                self.TrackInfo(e)
+                build.TrackInfo(e)
                 build.isexit(1)
             StatusCode = build.Process(None, PlatformFile, ewb)
         else:
