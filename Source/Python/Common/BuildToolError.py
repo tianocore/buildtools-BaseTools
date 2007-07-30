@@ -1,3 +1,16 @@
+## @file
+# Standardized Error Hanlding infrastructures.
+#
+# Copyright (c) 2007, Intel Corporation
+# All rights reserved. This program and the accompanying materials
+# are licensed and made available under the terms and conditions of the BSD License
+# which accompanies this distribution.  The full text of the license may be found at
+# http://opensource.org/licenses/bsd-license.php
+#
+# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+
 #
 # name
 # type
@@ -68,6 +81,7 @@ IO_UNKNOWN_ERROR = 0x6FFF
 AUTOGEN_ERROR = 0xF000
 PARSER_ERROR = 0xF001
 GENFDS_ERROR = 0xF002
+MIGRATION_ERROR = 0xF010
 UNKNOWN_ERROR = 0xFFFF
 
 gKeyWord = ["name", "type", "lineno", "msg", "arg", "arg1", "arg2", "directory",
@@ -129,7 +143,8 @@ gErrorMessage = {
     AUTOGEN_ERROR           :   "%(msg)s",
     PARSER_ERROR            :   "%(msg)s",
     GENFDS_ERROR            :   "%(msg)s",
-
+    MIGRATION_ERROR         :   "%(msg)s",
+    
     UNKNOWN_ERROR           :   "Unknown error: %(msg)s",
 }
 
@@ -169,6 +184,13 @@ class GenFdsError(BuildToolError):
     def __str__(self):
         return "\nGenFds: %s" % BuildToolError.__str__(self)
 
+class MigrationError(BuildToolError):
+    def __init__(self, code=MIGRATION_ERROR, **kwargs):
+        BuildToolError.__init__(self, code, **kwargs)
+
+    def __str__(self):
+        return "\nMigration: %s" % BuildToolError.__str__(self)
+    
 if __name__ == "__main__":
     try:
         raise AutoGenError(FILE_ALREADY_EXIST, name="my_fault.file")
