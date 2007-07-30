@@ -1159,7 +1159,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
             if len(Sku.VariableName) > 0:
                 Pcd.TokenTypeList += ['PCD_TYPE_HII']
                 Pcd.InitString = 'INIT'
-                VariableNameStructure = '{' + ', '.join(Sku.VariableName) + ', 0x0000}'
+                VariableNameStructure = '{' + ', '.join(Sku.VariableName.split(" ")) + ', 0x0000}'
                 if VariableNameStructure not in Dict['STRING_TABLE_VALUE']:
                     Dict['STRING_TABLE_CNAME'].append(CName)
                     Dict['STRING_TABLE_GUID'].append(TokenSpaceGuid)
