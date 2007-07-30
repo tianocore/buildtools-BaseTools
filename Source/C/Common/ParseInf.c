@@ -465,12 +465,18 @@ Returns:
   UINT8   Index;
   UINT64  HexNumber;
   CHAR8   CurrentChar;
-
+  
   //
   // Initialize the result
   //
   HexNumber = 0;
-
+  
+  //
+  // Check input paramter
+  //
+  if (AsciiString == NULL || ReturnValue == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
   //
   // Add each character to the result
   //
@@ -518,7 +524,7 @@ Returns:
   }
 
   return EFI_SUCCESS;
-};
+}
 
 CHAR8 *
 ReadLineInStream (

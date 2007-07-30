@@ -73,12 +73,32 @@ UINT8 *InImageName;
 #define FW_BIN_IMAGE         4
 #define FW_ZERO_DEBUG_IMAGE  5
 #define FW_SET_STAMP_IMAGE   6
+#define FW_MCI_IMAGE         7
+#define FW_MERGE_IMAGE       8
 
 #define DUMP_TE_HEADER       0x11
 #define FW_REPLACE_IMAGE     0x100
 
- 
-#define MAX_STRING_LENGTH 100
+#define DEFAULT_MC_PAD_BYTE_VALUE  0xFF
+#define DEFAULT_MC_ALIGNMENT       16
+#define MAXIMUM_INPUT_FILE_NUM     10
+#define MAX_STRING_LENGTH          100
+
+//
+// Structure definition for a microcode header
+//
+typedef struct {
+  UINTN  HeaderVersion;
+  UINTN  PatchId;
+  UINTN  Date;
+  UINTN  CpuId;
+  UINTN  Checksum;
+  UINTN  LoaderVersion;
+  UINTN  PlatformId;
+  UINTN  DataSize;   // if 0, then TotalSize = 2048, and TotalSize field is invalid
+  UINTN  TotalSize;  // number of bytes
+  UINTN  Reserved[3];
+} MICROCODE_IMAGE_HEADER;
 
 STATIC
 EFI_STATUS
@@ -124,6 +144,10 @@ Usage (
         -b, --exe2bin\n\
         -r, --replace\n\
         -s, --stamp [time-data] <NOW|\"####-##-## ##:##:##\">\n\
+        -m, --mcifile\n\
+        -j, --join\n\
+        -a, --align <HEX|DEC>\n\
+        -p, --pad  [padvalue] <HEX|DEC>\n\
         -h, --help\n\
         -V, --version\n");
 }
@@ -892,6 +916,8 @@ Returns:
 --*/
 {
   UINT32            Type;
+  UINT32            InputFileNum;
+  CHAR8             **InputFileName;
   UINT8             *OutImageName;
   UINT8             *ModuleType;
   CHAR8             *TimeStamp;
@@ -900,12 +926,18 @@ Returns:
   FILE              *fpIn;
   FILE              *fpOut;
   FILE              *fpInOut;
+  UINTN             Data;
+  UINTN             *DataPointer;
+  UINTN             CheckSum;
   UINT32            Index;
   UINT32            Index1;
   UINT32            Index2;
-  UINTN             AllignedRelocSize;
+  UINT64            Temp64;
+  UINT32            MciAlignment;
+  UINT8             MciPadValue;
+  UINT32            AllignedRelocSize;
   UINT8             *FileBuffer;
-  UINTN             FileLength;
+  UINT32            FileLength;
   RUNTIME_FUNCTION  *RuntimeFunction;
   UNWIND_INFO       *UnwindInfo;
   STATUS            Status;  
@@ -916,6 +948,7 @@ Returns:
   EFI_IMAGE_OPTIONAL_HEADER32  *Optional32;
   EFI_IMAGE_OPTIONAL_HEADER64  *Optional64;
   EFI_IMAGE_DOS_HEADER         BackupDosHdr;
+  MICROCODE_IMAGE_HEADER       *MciHeader; 
 
   fprintf (stdout, "GenFw tool start.\n");
 
@@ -924,6 +957,8 @@ Returns:
   //
   // Assign to fix compile warning
   //
+  InputFileNum      = 0; 
+  InputFileName     = NULL;
   InImageName       = NULL;
   OutImageName      = NULL;
   ModuleType        = NULL;
@@ -935,6 +970,11 @@ Returns:
   fpOut             = NULL;
   fpInOut           = NULL;
   TimeStamp         = NULL;
+  MciAlignment      = DEFAULT_MC_ALIGNMENT;
+  MciPadValue       = DEFAULT_MC_PAD_BYTE_VALUE;
+  FileLength        = 0;
+  MciHeader         = NULL;
+  CheckSum          = 0;
 
   if (argc == 1) {
     Usage();
@@ -1022,45 +1062,101 @@ Returns:
       continue;
     }
 
-    InImageName = argv[0];
+    if ((stricmp (argv[0], "-m") == 0) || (stricmp (argv[0], "--mcifile") == 0)) {
+      OutImageType = FW_MCI_IMAGE;
+      argc --;
+      argv ++;
+      continue;
+    }
+
+    if ((stricmp (argv[0], "-j") == 0) || (stricmp (argv[0], "--join") == 0)) {
+      OutImageType = FW_MERGE_IMAGE;
+      argc --;
+      argv ++;
+      continue;
+    }
+
+    if ((stricmp (argv[0], "-a") == 0) || (stricmp (argv[0], "--align") == 0)) {
+      if (AsciiStringToUint64 (argv[1], FALSE, &Temp64) != EFI_SUCCESS) {
+        Error (NULL, 0, 0, NULL, "Your input alginment is incorrect format.\n");
+        goto Finish;
+      }
+      MciAlignment = (UINT32) Temp64;
+      argc -= 2;
+      argv += 2;
+      continue;
+    }
+
+    if ((stricmp (argv[0], "-p") == 0) || (stricmp (argv[0], "--pad") == 0)) {
+      if (AsciiStringToUint64 (argv[1], FALSE, &Temp64) != EFI_SUCCESS) {
+        Error (NULL, 0, 0, NULL, "Incorrect format of PadValue\n");
+        goto Finish;
+      }
+      MciPadValue = (UINT8) Temp64;
+      argc -= 2;
+      argv += 2;
+      continue;
+    }
+
+    //
+    // Get Input file name
+    //
+    if ((InputFileNum == 0) && (InputFileName == NULL)) {
+      InputFileName = (CHAR8 **) malloc (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *));
+      if (InputFileName == NULL) {
+        Error (__FILE__, __LINE__, 0, "application error", "failed to allocate memory");
+        return EFI_OUT_OF_RESOURCES;
+      }
+
+      memset (InputFileName, 0, (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *)));
+    } else if (InputFileNum % MAXIMUM_INPUT_FILE_NUM == 0) {
+      //
+      // InputFileName buffer too small, need to realloc
+      //
+      InputFileName = (CHAR8 **) realloc (
+                                  InputFileName,
+                                  (InputFileNum + MAXIMUM_INPUT_FILE_NUM) * sizeof (CHAR8 *)
+                                  );
+
+      if (InputFileName == NULL) {
+        Error (__FILE__, __LINE__, 0, "application error", "failed to allocate memory");
+        return EFI_OUT_OF_RESOURCES;
+      }
+
+      memset (&(InputFileName[InputFileNum]), 0, (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *)));
+    }
+
+    InputFileName [InputFileNum ++] = argv[0];
     argc --;
     argv ++;
   }
-  
+
   if (OutImageType == FW_DUMMY_IMAGE) {
     Error (NULL, 0, 0, NULL, "No action specified, such as -e, -c or -t\n");
-    return STATUS_ERROR;    
-  }
-
-
-  //
-  // get InImageName from stdin
-  //
-  if (InImageName == NULL) {
-    fprintf (stdout, "Please describe input file name!!!\n");
-    fscanf (stdin, "%s", FileName);
-    InImageName = (UINT8 *) FileName;
-  }
-
-  //
-  // Open input file and read file data into file buffer.
-  //
-  fpIn = fopen (InImageName, "rb");
-  if (!fpIn) {
-    Error (NULL, 0, 0, InImageName, "failed to open input file for reading");
     goto Finish;
   }
 
-  FileLength = _filelength (fileno (fpIn));
-  FileBuffer = malloc (FileLength);
-  if (FileBuffer == NULL) {
-    Error (NULL, 0, 0, NULL, "can't allocate enough memory space");
-    fclose (fpIn);
+  //
+  // check input files
+  //
+  if (InputFileNum == 0) {
+    Error (NULL, 0, 0, NULL, "No input files\n");
     goto Finish;
   }
+
+  //
+  // Combine MciBinary files to one file
+  //
+  if (OutImageType == (FW_MERGE_IMAGE | FW_REPLACE_IMAGE)) {
+    Error (NULL, 0, 0, NULL, "-r replace parameter can't be input together with -j merge files");
+    goto Finish;
+  }
+   
   
-  fread (FileBuffer, 1, FileLength, fpIn);
-  fclose (fpIn);
+  //
+  // One input file
+  //
+  InImageName = InputFileName [InputFileNum - 1];
 
   //
   // Open output file and Write image into the output file.
@@ -1095,6 +1191,192 @@ Returns:
       }
       OutImageType = OutImageType & ~FW_REPLACE_IMAGE;
     }
+  }
+
+  //
+  // Combine MciBinary files to one file
+  //
+  if (OutImageType == FW_MERGE_IMAGE) {
+    for (Index = 0; Index < InputFileNum; Index ++) {
+      fpIn = fopen (InputFileName [Index], "rb");
+      if (!fpIn) {
+        Error (NULL, 0, 0, InputFileName [Index], "failed to open input file for reading");
+        goto Finish;
+      }
+    
+      FileLength = _filelength (fileno (fpIn));
+      FileBuffer = malloc (FileLength);
+      if (FileBuffer == NULL) {
+        Error (NULL, 0, 0, NULL, "can't allocate enough memory space");
+        fclose (fpIn);
+        goto Finish;
+      }
+      
+      fread (FileBuffer, 1, FileLength, fpIn);
+      fclose (fpIn);
+      //
+      // write input file to out file
+      //
+      fwrite (FileBuffer, 1, FileLength, fpOut);
+      //
+      // write pad value to out file.
+      //
+      while (FileLength ++ % MciAlignment != 0) {
+        fwrite (&MciPadValue, 1, 1, fpOut);
+      }
+      //
+      // free allcoated memory space
+      //
+      free (FileBuffer);
+    }
+    // 
+    // Done successfully
+    //
+    goto Finish;
+  }
+
+  //
+  // Conver MicroCode.txt file to MicroCode.bin file
+  //
+  if (OutImageType == FW_MCI_IMAGE) {
+    fpIn = fopen (InImageName, "r");
+    if (!fpIn) {
+      Error (NULL, 0, 0, InImageName, "failed to open input file for reading");
+      goto Finish;
+    }
+    
+    //
+    // The first pass is to determine 
+    // how much data is in the file so we can allocate a working buffer. 
+    //
+    FileLength = 0;
+    do {
+      Status = MicrocodeReadData (fpIn, &Data);
+      if (Status == STATUS_SUCCESS) {
+        FileLength += sizeof (Data);
+      }
+    } while (Status == STATUS_SUCCESS);
+
+    //
+    // Error if no data.
+    //
+    if (FileLength == 0) {
+      Error (NULL, 0, 0, InImageName, "no parse-able data found in file");
+      goto Finish;
+    }
+    if (FileLength < sizeof (MICROCODE_IMAGE_HEADER)) {
+      Error (NULL, 0, 0, InImageName, "amount of parse-able data is insufficient to contain a microcode header");
+      goto Finish;
+    }
+
+    //
+    // Allocate a buffer for the data
+    //
+    FileBuffer = malloc (FileLength);
+    if (FileBuffer == NULL) {
+      Error (NULL, 0, 0, NULL, "can't allocate enough memory space");
+      goto Finish;
+    }
+    //
+    // Re-read the file, storing the data into our buffer
+    //
+    fseek (fpIn, 0, SEEK_SET);
+    DataPointer = (UINTN *) FileBuffer;
+    do {
+      Status = MicrocodeReadData (fpIn, DataPointer++);
+    } while (Status == STATUS_SUCCESS);
+    //
+    // close input file after read data
+    //
+    fclose (fpIn);
+
+    //
+    // Can't do much checking on the header because, per the spec, the
+    // DataSize field may be 0, which means DataSize = 2000 and TotalSize = 2K,
+    // and the TotalSize field is invalid (actually missing). Thus we can't
+    // even verify the Reserved fields are 0.
+    //
+    MciHeader = (MICROCODE_IMAGE_HEADER *) FileBuffer;
+    if (MciHeader->DataSize == 0) {
+      Index = 2048;
+    } else {
+      Index = MciHeader->TotalSize;
+    }
+
+    if (Index != FileLength) {
+      Error (NULL, 0, 0, InImageName, "file contents do not contain expected TotalSize 0x%04X", Index);
+      goto Finish;
+    }
+
+    //
+    // Checksum the contents
+    //
+    DataPointer = (UINTN *) FileBuffer;
+    CheckSum  = 0;
+    Index     = 0;
+    while (Index < FileLength) {
+      CheckSum    += *DataPointer;
+      DataPointer ++;
+      Index       += sizeof (UINTN);
+    }
+    if (CheckSum != 0) {
+      Error (NULL, 0, 0, InImageName, "checksum failed on file contents");
+      goto Finish;
+    }
+    //
+    // Open the output file and write the buffer contents
+    //
+    if (fwrite (FileBuffer, FileLength, 1, fpOut) != 1) {
+      Error (NULL, 0, 0, OutImageName, "failed to write microcode data to output file");
+      goto Finish;
+    }
+    //
+    //  Convert Mci.TXT to Mci.bin file successfully
+    //
+    goto Finish;
+  }
+
+  //
+  // Open input file and read file data into file buffer.
+  //
+  fpIn = fopen (InImageName, "rb");
+  if (!fpIn) {
+    Error (NULL, 0, 0, InImageName, "failed to open input file for reading");
+    goto Finish;
+  }
+
+  FileLength = _filelength (fileno (fpIn));
+  FileBuffer = malloc (FileLength);
+  if (FileBuffer == NULL) {
+    Error (NULL, 0, 0, NULL, "can't allocate enough memory space");
+    fclose (fpIn);
+    goto Finish;
+  }
+  
+  fread (FileBuffer, 1, FileLength, fpIn);
+  fclose (fpIn);
+ 
+  //
+  // Dump TeImage Header into output file.
+  //
+  if (OutImageType == DUMP_TE_HEADER) {
+    memcpy (&TEImageHeader, FileBuffer, sizeof (TEImageHeader));
+    if (TEImageHeader.Signature != EFI_TE_IMAGE_HEADER_SIGNATURE) {
+      Error (NULL, 0, 0, InImageName, "TE header signature is not correct");
+      goto Finish;      
+    }
+    fprintf (fpOut, "Dump of file %s\n\n", InImageName);
+    fprintf (fpOut, "TE IMAGE HEADER VALUES\n");
+    fprintf (fpOut, "%17X machine\n", TEImageHeader.Machine);
+    fprintf (fpOut, "%17X number of sections\n", TEImageHeader.NumberOfSections);
+    fprintf (fpOut, "%17X subsystems\n", TEImageHeader.Subsystem);
+    fprintf (fpOut, "%17X stripped size\n", TEImageHeader.StrippedSize);
+    fprintf (fpOut, "%17X entry point\n", TEImageHeader.AddressOfEntryPoint);
+    fprintf (fpOut, "%17X base of code\n", TEImageHeader.BaseOfCode);
+    fprintf (fpOut, "%17X image base\n", TEImageHeader.ImageBase);
+    fprintf (fpOut, "%17X [%8X] RVA [size] of Base Relocation Directory\n", TEImageHeader.DataDirectory[0].VirtualAddress, TEImageHeader.DataDirectory[0].Size);
+    fprintf (fpOut, "%17X [%8X] RVA [size] of Debug Directory\n", TEImageHeader.DataDirectory[1].VirtualAddress, TEImageHeader.DataDirectory[1].Size);
+    goto Finish;
   }
 
   //
@@ -1145,29 +1427,6 @@ Returns:
         goto Finish;
       }
     }
-  }
- 
-  //
-  // Dump TeImage Header into output file.
-  //
-  if (OutImageType == DUMP_TE_HEADER) {
-    memcpy (&TEImageHeader, FileBuffer, sizeof (TEImageHeader));
-    if (TEImageHeader.Signature != EFI_TE_IMAGE_HEADER_SIGNATURE) {
-      Error (NULL, 0, 0, InImageName, "TE header signature is not correct");
-      goto Finish;      
-    }
-    fprintf (fpOut, "Dump of file %s\n\n", InImageName);
-    fprintf (fpOut, "TE IMAGE HEADER VALUES\n");
-    fprintf (fpOut, "%17X machine\n", TEImageHeader.Machine);
-    fprintf (fpOut, "%17X number of sections\n", TEImageHeader.NumberOfSections);
-    fprintf (fpOut, "%17X subsystems\n", TEImageHeader.Subsystem);
-    fprintf (fpOut, "%17X stripped size\n", TEImageHeader.StrippedSize);
-    fprintf (fpOut, "%17X entry point\n", TEImageHeader.AddressOfEntryPoint);
-    fprintf (fpOut, "%17X base of code\n", TEImageHeader.BaseOfCode);
-    fprintf (fpOut, "%17X image base\n", TEImageHeader.ImageBase);
-    fprintf (fpOut, "%17X [%8X] RVA [size] of Base Relocation Directory\n", TEImageHeader.DataDirectory[0].VirtualAddress, TEImageHeader.DataDirectory[0].Size);
-    fprintf (fpOut, "%17X [%8X] RVA [size] of Debug Directory\n", TEImageHeader.DataDirectory[1].VirtualAddress, TEImageHeader.DataDirectory[1].Size);
-    goto Finish;
   }
 
   //
@@ -1513,6 +1772,10 @@ Finish:
   if (FileBuffer != NULL) {
     free (FileBuffer);
   }
+  
+  if (InputFileName != NULL) {
+    free (InputFileName);
+  }
 
   if (fpOut != NULL) {
     //
@@ -1782,4 +2045,68 @@ SetStamp (
   }
   
   return EFI_SUCCESS;
+}
+
+STATIC
+STATUS
+MicrocodeReadData (
+  FILE          *InFptr,
+  UINTN         *Data
+  )
+/*++
+
+Routine Description:
+  Read a 32-bit microcode data value from a text file and convert to raw binary form.
+
+Arguments:
+  InFptr    - file pointer to input text file
+  Data      - pointer to where to return the data parsed
+
+Returns:
+  STATUS_SUCCESS    - no errors or warnings, Data contains valid information
+  STATUS_ERROR      - errors were encountered
+
+--*/
+{
+  CHAR8  Line[MAX_LINE_LEN];
+  CHAR8  *cptr;
+
+  Line[MAX_LINE_LEN - 1]  = 0;
+  *Data                   = 0;
+  if (fgets (Line, MAX_LINE_LEN, InFptr) == NULL) {
+    return STATUS_ERROR;
+  }
+  //
+  // If it was a binary file, then it may have overwritten our null terminator
+  //
+  if (Line[MAX_LINE_LEN - 1] != 0) {
+    return STATUS_ERROR;
+  }
+
+  //
+  // Look for
+  // dd 000000001h ; comment
+  // dd XXXXXXXX
+  // DD  XXXXXXXXX
+  //  DD XXXXXXXXX
+  //
+  for (cptr = Line; *cptr && isspace(*cptr); cptr++) {
+  }
+
+  if ((tolower(cptr[0]) == 'd') && (tolower(cptr[1]) == 'd') && isspace (cptr[2])) {
+    //
+    // Skip blanks and look for a hex digit
+    //
+    cptr += 3;
+    for (; *cptr && isspace(*cptr); cptr++) {
+    }
+    if (isxdigit (*cptr)) {
+      if (sscanf (cptr, "%X", Data) != 1) {
+        return STATUS_ERROR;
+      }
+    }
+    return STATUS_SUCCESS;
+  }
+
+  return STATUS_ERROR;
 }
