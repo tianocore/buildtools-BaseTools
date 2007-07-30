@@ -147,40 +147,42 @@ class Build():
         return 0
 
     def Parser(self, ewb):
-            pcdSet = {}
-            if self.Opt.FDFFILE == None:
-                self.Opt.FDFFILE = ewb.Fdf
-                if self.Opt.FDFFILE != '' and os.path.isfile(self.WorkSpace + '\\' + self.Opt.FDFFILE) == False:
-                    print "The file: %s is not existed!" % self.Opt.FDFFILE
-                    sys.exit(1)
-                if self.Opt.FDFFILE != '':
-                    (filename, ext) = os.path.splitext(self.WorkSpace + '\\' + self.Opt.FDFFILE)
-                    if ext.lower() != 'fdf':
-                        print "The file: %s is not a fdf file!" % self.Opt.FDFFILE
-                        sys.exit(1)
-                    self.Opt.FDFFILE = self.WorkSpace + '\\' + self.Opt.FDFFILE
-                    fdf = FdfParser(self.Opt.FDFFILE)
-                    fdf.ParseFile()
-                    pcdSet = fdf.profile.PcdDict
-                print "FDFFILE is %s" % self.Opt.FDFFILE
+        pcdSet = {}
+        if self.Opt.FDFFILE == None:
+            self.Opt.FDFFILE = ewb.Fdf
+            if self.Opt.FDFFILE != '' and os.path.isfile(self.WorkSpace + '\\' + self.Opt.FDFFILE) == False:
+                print "The file: %s is not existed!" % self.Opt.FDFFILE
+                self.isexit(1)
+            if self.Opt.FDFFILE != '':
+                (filename, ext) = os.path.splitext(self.WorkSpace + '\\' + self.Opt.FDFFILE)
+                if ext.lower() != 'fdf':
+                    print "The file: %s is not a fdf file!" % self.Opt.FDFFILE
+                    self.isexit(1)
+                self.Opt.FDFFILE = self.WorkSpace + '\\' + self.Opt.FDFFILE
+                fdf = FdfParser(self.Opt.FDFFILE)
+                fdf.ParseFile()
+                pcdSet = fdf.profile.PcdDict
+        else:
+            if os.path.isfile(os.path.abspath(self.Opt.FDFFILE)) == True:
+                realpath = os.path.abspath(self.Opt.FDFFILE)
+                (filename, ext) = os.path.splitext(realpath)
+                if ext.lower() != 'fdf':
+                    print "The input file: %s is not a fdf file!" % self.Opt.FDFFILE
+                    self.isexit(1)
+                self.Opt.FDFFILE = realpath
+                fdf = FdfParser(self.Opt.FDFFILE)
+                fdf.ParseFile()
+                pcdSet = fdf.profile.PcdDict
             else:
-                if os.path.isfile(os.path.abspath(self.Opt.FDFFILE)) == True:
-                    realpath = os.path.abspath(self.Opt.FDFFILE)
-                    (filename, ext) = os.path.splitext(realpath)
-                    if ext.lower() != 'fdf':
-                        print "The input file: %s is not a fdf file!" % self.Opt.FDFFILE
-                        sys.exit(1)
-                    self.Opt.FDFFILE = realpath
-                    fdf = FdfParser(self.Opt.FDFFILE)
-                    fdf.ParseFile()
-                    pcdSet = fdf.profile.PcdDict
-                else:
-                    print "The input file: %s is not existed!"  % self.Opt.FDFFILE
-                    sys.exit(1)
+                print "The input file: %s is not existed!"  % self.Opt.FDFFILE
+                self.isexit(1)
 
-            ewb.GenBuildDatabase(pcdSet)
-            ewb.TargetTxt = self.TargetTxt
-            ewb.ToolDef = self.ToolDef
+        if self.Opt.FDFFILE != '':
+            EdkLogger.debug(EdkLogger.DEBUG_5, '\FDFFILE is: %s' % self.Opt.FDFFILE)
+            
+        ewb.GenBuildDatabase(pcdSet)
+        ewb.TargetTxt = self.TargetTxt
+        ewb.ToolDef = self.ToolDef
 
     def LibBuild(LibFile, PlatformFile, ewb, a, b, c):
         LibraryAutoGen = AutoGen(LibFile, PlatformFile, ewb, str(a), b, str(c))
@@ -193,11 +195,11 @@ class Build():
             FileList = glob.glob(DestDir + '\\makefile')
             FileNum = len(FileList)
             if FileNum > 0:
-                SameTypeFileInDir(FileNum, 'makefile', DestDir, self.StartTime)
+                SameTypeFileInDir(FileNum, 'makefile', DestDir)
                 BuildSpawn(self.Sem, FileList[0], 'lbuild', 1).start()
             else:
                 print "There isn't makefils in %s.\n" % DestDir
-                return 1
+                self.isexit(1)
 
     def ModuleBuild(ModuleFile, PlatformFile, ewb, a, b, c, ModuleAutoGen):
         ModuleAutoGen.CreateAutoGenFile()
@@ -208,24 +210,23 @@ class Build():
             FileList = glob.glob(DestDir + '\\makefile')
             FileNum = len(FileList)
             if FileNum > 0:
-                SameTypeFileInDir(FileNum, 'makefile', DestDir, self.StartTime)
+                SameTypeFileInDir(FileNum, 'makefile', DestDir)
                 for i in range(0, int(self.Opt.NUM)):
                     self.Sem.acquire()
                 p = Popen(["nmake", "/nologo", "-f", FileList[0], 'pbuild'], env=os.environ, cwd=os.path.dirname(FileList[0]))
                 p.communicate()
                 if p.returncode != 0:
-                    return p.returncode
+                    self.isexit(p.returncode)
                 for i in range(0, int(self.Opt.NUM)):
                     self.Sem.release()
             else:
                 print "There isn't makefile in %s.\n" % DestDir
-                return 1
+                self.isexit(1)
 
     def SameTypeFileInDir(FileNum, FileType, Dir):
         if FileNum >= 2:
-            print "There are %d %s files in %s.\n" % (FileNum, FileType, CurWorkDir)
-            self.CalculateTime()
-            sys.exit(1)
+            print "There are %d %s files in %s.\n" % (FileNum, FileType, Dir)
+            self.isexit(1)
 
     def TrackInfo(self):
         if self.Opt.debug != None:
@@ -239,7 +240,7 @@ class Build():
         except Exception, e:
             self.TrackInfo()
             print e
-            return 1
+            self.isexit(1)
 
     def GenMakeFunc(self, ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
         try:
@@ -249,7 +250,7 @@ class Build():
         except Exception, e:
             self.TrackInfo()
             print e
-            return 1
+            self.isexit(1)
 
 
     def OtherFunc(self, ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
@@ -262,13 +263,13 @@ class Build():
             FileList = glob.glob(DestDir + '\\makefile')
             FileNum = len(FileList)
             if FileNum > 0:
-                SameTypeFileInDir(FileNum, 'makefile', DestDir, StartTime)
+                SameTypeFileInDir(FileNum, 'makefile', DestDir)
                 p = Popen(["nmake", "/nologo", "-f", FileList[0], self.Args], env=os.environ, cwd=os.path.dirname(FileList[0]))
                 p.communicate()
                 if p.returncode != None:
-                    return p.returncode
+                    self.isexit(p.returncode)
             else:
-                return 1
+                self.isexit(1)
 
     def AllFunc(self, ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
         try:
@@ -278,15 +279,15 @@ class Build():
         except Exception, e:
             self.TrackInfo()
             print e
-            return 1
+            self.isexit(1)
         if makefile != "":
             p = Popen(["nmake", "/nologo", "-f", makefile, 'all'], env=os.environ, cwd=os.path.dirname(makefile))
             p.communicate()
             if p.returncode != None:
-                return p.returncode
+                self.isexit(p.returncode)
         else:
             print "Can find Makefile.\n"
-            return 1
+            self.isexit(1)
 
 
     def Process(self, ModuleFile, PlatformFile, ewb):
@@ -295,59 +296,62 @@ class Build():
         # Merge Arch
         #
         self.Opt.TARGET_ARCH = list(set(self.Opt.TARGET_ARCH) & set(ewb.SupArchList))
+        try:
+            if self.Opt.spawn == True:
+                for a in self.Opt.TARGET:
+                    for b in self.Opt.TOOL_CHAIN_TAG:
+                        if ModuleFile == None:
+                            PlatformAutoGen = AutoGen(None, PlatformFile, ewb, a, b, self.Opt.TARGET_ARCH)
+                            print "PlatformAutoGen : %s", PlatformFile
+                            for c in self.Opt.TARGET_ARCH:
+                                li = []
+                                for d in PlatformAutoGen.Platform[c].Modules:
+                                    if ewb.InfDatabase[d].Defines.DefinesDictionary['LIBRARY_CLASS'] == ['']:
+                                        print "Module : %s, Arch : %s" % (d, c)
+                                        ModuleAutoGen = AutoGen(d, PlatformFile, ewb, a, b, c)
+                                        for e in ModuleAutoGen.BuildInfo.DependentLibraryList:
+                                            print "Library: %s, Arch : %s" % (e, c)
+                                            if e in li:
+                                                continue
+                                            else:
+                                                li.append(e)
+                                            self.LibBuild(e, PlatformFile, ewb, a, b, c)
+                                        self.ModuleBuild(d, PlatformFile, ewb, a, b, c, ModuleAutoGen)
+                                    else:
+                                        self.LibBuild(d, PlatformFile, ewb, a, b, c)
 
-        if self.Opt.spawn == True:
-            for a in self.Opt.TARGET:
-                for b in self.Opt.TOOL_CHAIN_TAG:
-                    if ModuleFile == None:
-                        PlatformAutoGen = AutoGen(None, PlatformFile, ewb, a, b, self.Opt.TARGET_ARCH)
-                        print "PlatformAutoGen : %s", PlatformFile
-                        for c in self.Opt.TARGET_ARCH:
-                            li = []
-                            for d in PlatformAutoGen.Platform[c].Modules:
-                                if ewb.InfDatabase[d].Defines.DefinesDictionary['LIBRARY_CLASS'] == ['']:
-                                    print "Module : %s, Arch : %s" % (d, c)
-                                    ModuleAutoGen = AutoGen(d, PlatformFile, ewb, a, b, c)
-                                    for e in ModuleAutoGen.BuildInfo.DependentLibraryList:
-                                        print "Library: %s, Arch : %s" % (e, c)
-                                        if e in li:
-                                            continue
-                                        else:
-                                            li.append(e)
-                                        self.LibBuild(e, PlatformFile, ewb, a, b, c)
-                                    self.ModuleBuild(d, PlatformFile, ewb, a, b, c, ModuleAutoGen)
-                                else:
-                                    self.LibBuild(d, PlatformFile, ewb, a, b, c)
+                            PlatformAutoGen.CreateAutoGenFile()
+                            PlatformAutoGen.CreateMakefile()
+                            for i in range(0, int(self.Opt.NUM)):
+                                Sem.acquire()
+                            print "successful"
+                            for i in range(0, int(self.Opt.NUM)):
+                                Sem.release()
 
-                        PlatformAutoGen.CreateAutoGenFile()
-                        PlatformAutoGen.CreateMakefile()
-                        for i in range(0, int(self.Opt.NUM)):
-                            Sem.acquire()
-                        print "successful"
-                        for i in range(0, int(self.Opt.NUM)):
-                            Sem.release()
-                            
-                        # call GenFds
-                        #GenFds -f C:\Work\Temp\T1\Nt32Pkg\Nt32Pkg.fdf -o $(BUILD_DIR) -p Nt32Pkg\Nt32Pkg.dsc
-                        if self.Opt.FDFFILE != '':
-                            self.Opt.FDFFILE =  os.environ["WORKSPACE"] + '\\' + self.Opt.FDFFILE.replace('/','\\')
-                            f = ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']
-                            f = os.environ["WORKSPACE"] + '\\' + f.replace('/', '\\') + '\\' + a + '_' + b
-                            if os.path.isdir(f + "\\" + "FV") != True:
-                                os.mkdir(f + "\\" + "FV")
-                            p = Popen(["GenFds", "-f", self.Opt.FDFFILE, "-o", f, "-p", self.Opt.DSCFILE], env=os.environ, cwd=os.path.dirname(self.Opt.FDFFILE))
-                            p.communicate()
-                            if p.returncode != 0:
-                                return p.returncode
-                    else:
-                        for c in self.Opt.TARGET_ARCH:
-                            ModuleAutoGen = AutoGen(ModuleFile, PlatformFile, ewb, a, b, c)
-                            print "ModuleAutoGen : %s"  % ModuleFile
-                            for e in ModuleAutoGen.BuildInfo.DependentLibraryList:
-                                print "Library: %s" % stre
-                                self.LibBuild(e, PlatformFile, ewb, a, b, c)
-                            self.ModuleBuild(ModuleFile, PlatformFile, ewb, a, b, c, ModuleAutoGen)
-            return 0
+                            # call GenFds
+                            #GenFds -f C:\Work\Temp\T1\Nt32Pkg\Nt32Pkg.fdf -o $(BUILD_DIR) -p Nt32Pkg\Nt32Pkg.dsc
+                            if self.Opt.FDFFILE != '':
+                                self.Opt.FDFFILE =  os.environ["WORKSPACE"] + '\\' + self.Opt.FDFFILE.replace('/','\\')
+                                f = ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']
+                                f = os.environ["WORKSPACE"] + '\\' + f.replace('/', '\\') + '\\' + a + '_' + b
+                                if os.path.isdir(f + "\\" + "FV") != True:
+                                    os.mkdir(f + "\\" + "FV")
+                                p = Popen(["GenFds", "-f", self.Opt.FDFFILE, "-o", f, "-p", self.Opt.DSCFILE], env=os.environ, cwd=os.path.dirname(self.Opt.FDFFILE))
+                                p.communicate()
+                                if p.returncode != 0:
+                                    self.isexit(p.returncode)
+                        else:
+                            for c in self.Opt.TARGET_ARCH:
+                                ModuleAutoGen = AutoGen(ModuleFile, PlatformFile, ewb, a, b, c)
+                                print "ModuleAutoGen : %s"  % ModuleFile
+                                for e in ModuleAutoGen.BuildInfo.DependentLibraryList:
+                                    print "Library: %s" % stre
+                                    self.LibBuild(e, PlatformFile, ewb, a, b, c)
+                                self.ModuleBuild(ModuleFile, PlatformFile, ewb, a, b, c, ModuleAutoGen)
+                return 0
+        except Exception, e:
+            print e
+            self.isexit(1)
 
     # normal build
         for a in self.Opt.TARGET:
@@ -406,21 +410,21 @@ class Build():
 def MyOptionParser():
     parser = OptionParser(description=__copyright__,version=__version__,prog="bld.exe",usage="%prog [options] [target]")
     parser.add_option("-a", "--arch", action="append", type="choice", choices=['IA32','X64','IPF','EBC'], dest="TARGET_ARCH",
-        help="ARCHS is a comma separated list containing one or more of: IA32, X64, IPF or EBC which should be built, overrides target.txt's TARGET_ARCH")
+        help="ARCHS is one of list: IA32, X64, IPF or EBC, which overrides target.txt's TARGET_ARCH definition. To specify more archs, please repeat this option.")
     parser.add_option("-p", "--platform", action="store", type="string", dest="DSCFILE",
-        help="Build the platform specified by the DSC file name argument, over rides the ACTIVE_PLATFORM")
+        help="Build the platform specified by the DSC file name argument, overrides target.txt's ACTIVE_PLATFORM definition.")
     parser.add_option("-m", "--module", action="store", type="string", dest="INFFILE",
         help="Build the module specified by the INF file name argument.")
     parser.add_option("-b", "--buildtarget", action="append", type="choice", choices=['DEBUG','RELEASE'], dest="TARGET",
-        help="Build the platform using the BuildTarget, overrides target.txt's TARGET definition.")
+        help="TARGET is onr of list: DEBUG, RELEASE, which overrides target.txt's TARGET definition. To specify more TARGET, please repeat this option.")
     parser.add_option("-t", "--tagname", action="append", type="string", dest="TOOL_CHAIN_TAG",
-        help="Build the platform using the Tool chain, Tagname, overrides target.txt's TOOL_CHAIN_TAG definition.")
+        help="Using the Tool Chain Tagname to build the platform, overrides target.txt's TOOL_CHAIN_TAG definition.")
     parser.add_option("-s", "--spawn", action="store_true", type=None,
-        help="If this flag is specified, the first two phases, AutoGen and MAKE are mixed, such that as soon as a module can be built, the build will start, without waiting for AutoGen to complete on remaining modules.  While this option provides feedback that looks fast, due to overhead of the AutoGen function, this option is slower than letting AutoGen complete before starting the MAKE phase.")
+        help="If this flag is specified, as soon as a module can be built, the build will start, without waiting for AutoGen to complete remaining modules. While this option provides feedback that looks fast, due to overhead of the AutoGen function, this option is slower than letting AutoGen complete before starting the MAKE phase.")
     parser.add_option("-n", action="store", type="int", dest="NUM",
-        help="Build the platform using multi-threaded compiler with # threads, values less than 2 will disable multi-thread builds. Overrides target.txt's MULTIPLE_THREAD and MAX_CONCURRENT_THREAD_NUMBER")
+        help="Build the platform using multi-threaded compiler, this option must combine with spawn option. The value overrides target.txt's MULTIPLE_THREAD and MAX_CONCURRENT_THREAD_NUMBER, less than 2 will disable multi-thread builds.")
     parser.add_option("-f", "--fdf", action="store", type="string", dest="FDFFILE",
-        help="The name of the FDF file to use, over-riding the setting in the DSC file.")
+        help="The name of the FDF file to use, which overrides the setting in the DSC file.")
     parser.add_option("-k", "--msft", action="store_true", type=None, help="Make Option: Generate only NMAKE Makefiles: Makefile")
     parser.add_option("-g", "--gcc", action="store_true", type=None, help="Make Option: Generate only GMAKE Makefiles: GNUmakefile")
     parser.add_option("-l", "--all", action="store_true", type=None, help="Make Option: Generate both NMAKE and GMAKE makefiles.")
@@ -462,35 +466,50 @@ if __name__ == '__main__':
         isexit(StatusCode)
         if os.path.isfile(build.WorkSpace + '\\' + build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF]) == True:
             StatusCode = build.ToolDef.LoadToolDefFile(build.WorkSpace + '\\' + build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])
+            isexit(StatusCode)
         else:
             print "%s is not existed." % build.WorkSpace + '\\' + build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF]
-            isexit(1)
+            build.isexit(1)
     else:
         print "%s is not existed." % build.WorkSpace + '\\Conf\\target.txt'
-        isexit(1)
+        build.isexit(1)
 
 #
-# Merge the Build Options except input file(DSCFILE, INFFILE, FDFFILE)
+# Merge the Build Options except input file(DSCFILE, FDFFILE)
 #
+    if build.Opt.INFFILE != None:
+        if os.path.isfile(os.path.abspath(build.Opt.INFFILE)) == True:
+            realpath = os.path.abspath(build.Opt.INFFILE)
+            (filename, ext) = os.path.splitext(realpath)
+            if ext.lower() != 'inf':
+                print "The input file: %s is not a inf file!" % build.Opt.INFFILE
+                build.isexit(1)
+            if build.WorkSpace[len(build.WorkSpace)-1] == '\\':
+                build.Opt.INFFILE = realpath[len(build.WorkSpace):]
+            else:
+                build.Opt.INFFILE = realpath[len(build.WorkSpace)+1:]
+        else:
+            print "The input file: %s is not existed!"  % build.Opt.INFFILE
+            build.isexit(1)
+
     if build.Opt.TARGET_ARCH == None:
         build.Opt.TARGET_ARCH = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET_ARCH]
         if build.Opt.TARGET_ARCH == ['']:
             build.Opt.TARGET_ARCH = ['IA32', 'X64', 'IPF', 'EBC']
-    print "TARGET_ARCH is", " ".join(opt.TARGET_ARCH)
+    EdkLogger.debug(EdkLogger.DEBUG_5, '\tTARGET_ARCH is: %s' % ''.join(build.Opt.TARGET_ARCH))
 
     if build.Opt.TARGET == None:
         build.Opt.TARGET = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET]
         if build.Opt.TARGET == ['']:
             build.Opt.TARGET_ARCH = ['DEBUG', 'RELEASE']
-    print "TARGET is", " ".join(build.Opt.TARGET)
+    EdkLogger.debug(EdkLogger.DEBUG_5, '\tTARGET is: %s' % ''.join(build.Opt.TARGET))
 
     if build.Opt.TOOL_CHAIN_TAG == None:
         build.Opt.TOOL_CHAIN_TAG = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG]
         if build.Opt.TOOL_CHAIN_TAG == ['']:
             print "TOOL_CHAIN_TAG is None. Don't What to Build.\n"
-            build.CalculateTime()
-            sys.exit(1)
-    print "TOOL_CHAIN_TAG is", " ".join(build.Opt.TOOL_CHAIN_TAG)
+            build.isexit(1)
+    EdkLogger.debug(EdkLogger.DEBUG_5, '\tTOOL_CHAIN_TAG is: %s' % ''.join(build.Opt.TOOL_CHAIN_TAG))
 
     if build.Opt.NUM == None:
         build.Opt.NUM = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER]
@@ -498,7 +517,7 @@ if __name__ == '__main__':
         build.Opt.NUM = 1
     else:
         build.Opt.NUM = int(build.Opt.NUM)
-    print "MAX_CONCURRENT_THREAD_NUMBER is", build.Opt.NUM
+    EdkLogger.debug(EdkLogger.DEBUG_5, '\tMAX_CONCURRENT_THREAD_NUMBER is: %s' % build.Opt.NUM)
     if build.Opt.spawn == True:
         build.Sem = BoundedSemaphore(int(build.Opt.NUM))
 
@@ -507,7 +526,7 @@ if __name__ == '__main__':
     elif build.Opt.quiet != None:
         EdkLogger.setLevel(EdkLogger.QUIET)
     elif build.Opt.debug != None:
-        EdkLogger.setLevel(build.Opt.debug)
+        EdkLogger.setLevel(build.Opt.debug + 1)
     else:
         EdkLogger.setLevel(EdkLogger.INFO)
 
@@ -518,40 +537,38 @@ if __name__ == '__main__':
         build.Opt.DSCFILE = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM]
         if build.Opt.DSCFILE != '' and os.path.isfile(build.WorkSpace + '\\' + build.Opt.DSCFILE) == False:
             print "The file: %s is not existed!" % build.Opt.DSCFILE
-            sys.exit(1)
+            build.isexit(1)
         if build.Opt.DSCFILE != '':
             (filename, ext) = os.path.splitext(build.WorkSpace + '\\' + build.Opt.DSCFILE)
             if ext.lower() != 'dsc':
                 print "The file: %s is not a dsc file!" % build.Opt.DSCFILE
-                sys.exit(1)
-        print "ACTIVE_PLATFORM is %s" % build.Opt.DSCFILE
+                build.isexit(1)
     else:
         if os.path.isfile(os.path.abspath(build.Opt.DSCFILE)) == True:
             realpath = os.path.abspath(build.Opt.DSCFILE)
             (filename, ext) = os.path.splitext(realpath)
             if ext.lower() != 'dsc':
                 print "The input file: %s is not a dsc file!" % build.Opt.DSCFILE
-                sys.exit(1)
+                build.isexit(1)
             if build.WorkSpace[len(build.WorkSpace)-1] == '\\':
                 build.Opt.DSCFILE = realpath[len(build.WorkSpace):]
             else:
                 build.Opt.DSCFILE = realpath[len(build.WorkSpace)+1:]
-            print "ACTIVE_PLATFORM is %s" % build.Opt.DSCFILE
         else:
             print "The input file: %s is not existed!"  % build.Opt.DSCFILE
-            sys.exit(1)
+            build.isexit(1)
 
 #
 # Call Parser and Merge FDF file
 #
     try:
         if build.Opt.DSCFILE != '':                  # check the work flow below
+            EdkLogger.debug(EdkLogger.DEBUG_5, '\tACTIVE_PLATFORM is: %s' % build.Opt.DSCFILE)
             ewb = WorkspaceBuild(build.Opt.DSCFILE, build.WorkSpace)
             Parser(ewb)
     except Exception, e:
         print e
-        build.CalculateTime()
-        sys.exit(1)
+        build.isexit(1)
 
 #
 # Platform Build or Module Build
@@ -560,11 +577,11 @@ if __name__ == '__main__':
 
     if build.Opt.INFFILE:
         if build.Opt.DSCFILE:
-            ModuleFile = build.Opt.INFFILE
-            print "MODULE build:", ModuleFile
-            PlatformFile = str(os.path.normpath(build.Opt.DSCFILE))
-            print "PlatformFile is:", PlatformFile
-            StatusCode = build.Process(ModuleFile, PlatformFile, ewb, build.Opt)
+            ModuleFile = os.path.normpath(build.Opt.INFFILE)
+            EdkLogger.debug(EdkLogger.DEBUG_5, '\tMODULE build: %s' % ModuleFile)
+            PlatformFile = os.path.normpath(build.Opt.DSCFILE)
+            EdkLogger.debug(EdkLogger.DEBUG_5, '\tPlatformFile is: %s' % PlatformFile)
+            StatusCode = build.Process(ModuleFile, PlatformFile, ewb)
         else:
             print "ERROR: DON'T KNOW WHAT TO BUILD\n"
     elif len(glob.glob(CurWorkDir + '\\*.inf')) > 0:
@@ -572,21 +589,21 @@ if __name__ == '__main__':
         FileNum = len(FileList)
         if FileNum >= 2:
             print "There are %d INF filss in %s.\n" % (FileNum, CurWorkDir)
-            sys.exit(1)
+            build.isexit(1)
         if build.Opt.DSCFILE:
             if ewb.Workspace.WorkspaceDir[len(ewb.Workspace.WorkspaceDir)-1] == '\\':
-                ModuleFile = FileList[0][len(ewb.Workspace.WorkspaceDir):]
+                ModuleFile = os.path.normpath(FileList[0][len(ewb.Workspace.WorkspaceDir):])
             else:
-                ModuleFile = FileList[0][len(ewb.Workspace.WorkspaceDir)+1:]
-            print "Module build:", ModuleFile
-            PlatformFile = str(os.path.normpath(build.Opt.DSCFILE))
-            print "PlatformFile is:", PlatformFile
+                ModuleFile = os.path.normpath(FileList[0][len(ewb.Workspace.WorkspaceDir)+1:])
+            EdkLogger.debug(EdkLogger.DEBUG_5, '\tMODULE build: %s' % ModuleFile)
+            PlatformFile = os.path.normpath(build.Opt.DSCFILE)
+            EdkLogger.debug(EdkLogger.DEBUG_5, '\tPlatformFile is: %s' % PlatformFile)
             StatusCode = build.Process(ModuleFile, PlatformFile, ewb)
         else:
             print "ERROR: DON'T KNOW WHAT TO BUILD\n"
     elif build.Opt.DSCFILE:
         PlatformFile = os.path.normpath(build.Opt.DSCFILE)
-        print "Platform build:", PlatformFile
+        EdkLogger.debug(EdkLogger.DEBUG_5, '\tPlatformFile is: %s' % PlatformFile)
         StatusCode = build.Process(None, PlatformFile, ewb)
     else:
         FileList = glob.glob(CurWorkDir + '\\*.dsc')
@@ -594,18 +611,22 @@ if __name__ == '__main__':
         if FileNum > 0:
             if FileNum >= 2:
                 print "There are %d DSC files in %s.\n" % (FileNum, CurWorkDir)
-                sys.exit(1)
+                build.isexit(1)
             if build.WorkSpace[len(build.WorkSpace)-1] == '\\':
-                PlatformFile = FileList[0][len(build.WorkSpace):]
+                PlatformFile = os.path.normpath(FileList[0][len(build.WorkSpace):])
             else:
-                PlatformFile = FileList[0][len(build.WorkSpace)+1:]
-            print "Platform build:", PlatformFile
+                PlatformFile = os.path.normpath(FileList[0][len(build.WorkSpace)+1:])
             #
             # Call Parser Again
             #
             build.Opt.DSCFILE = PlatformFile
-            ewb = WorkspaceBuild(PlatformFile, build.WorkSpace)
-            Parser(ewb)
+            try:
+                EdkLogger.debug(EdkLogger.DEBUG_5, '\ACTIVE_PLATFORM is: %s' % build.Opt.DSCFILE)
+                ewb = WorkspaceBuild(PlatformFile, build.WorkSpace)
+                Parser(ewb)
+            except Exception, e:
+                print e
+                build.isexit(1)
             StatusCode = build.Process(None, PlatformFile, ewb)
         else:
             print "ERROR: DON'T KNOW WHAT TO BUILD\n"
