@@ -1124,7 +1124,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
         # TODO: need GetGuidValue() definition
         #
         TokenSpaceGuidStructure = GetGuidValue(platform.PackageList, TokenSpaceGuidCName)
-        TokenSpaceGuid =GuidStructureStringToGuidValueName(TokenSpaceGuidStructure)
+        TokenSpaceGuid = GuidStructureStringToGuidValueName(TokenSpaceGuidStructure)
         if Pcd.Type == 'DYNAMIC_EX':
             if TokenSpaceGuid not in GuidList:
                 GuidList += [TokenSpaceGuid]
@@ -1178,7 +1178,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
                     VariableHeadStringIndex += Dict['STRING_TABLE_LENGTH'][Index]
 
                 VariableGuidStructure = GetGuidValue(platform.PackageList, Sku.VariableGuid)
-                VariableGuid = GuidStringToGuidStructureString(VariableGuidStructure)
+                VariableGuid = GuidStructureStringToGuidValueName(VariableGuidStructure)
                 if VariableGuid not in GuidList:
                     GuidList += [VariableGuid]
                     Dict['GUID_STRUCTURE'].append(VariableGuidStructure)
