@@ -155,7 +155,7 @@ class Build():
                 self.isexit(1)
             if self.Opt.FDFFILE != '':
                 (filename, ext) = os.path.splitext(self.WorkSpace + '\\' + self.Opt.FDFFILE)
-                if ext.lower() != 'fdf':
+                if ext.lower() != '.fdf':
                     print "The file: %s is not a fdf file!" % self.Opt.FDFFILE
                     self.isexit(1)
                 self.Opt.FDFFILE = self.WorkSpace + '\\' + self.Opt.FDFFILE
@@ -166,7 +166,7 @@ class Build():
             if os.path.isfile(os.path.abspath(self.Opt.FDFFILE)) == True:
                 realpath = os.path.abspath(self.Opt.FDFFILE)
                 (filename, ext) = os.path.splitext(realpath)
-                if ext.lower() != 'fdf':
+                if ext.lower() != '.fdf':
                     print "The input file: %s is not a fdf file!" % self.Opt.FDFFILE
                     self.isexit(1)
                 self.Opt.FDFFILE = realpath
@@ -184,7 +184,7 @@ class Build():
         ewb.TargetTxt = self.TargetTxt
         ewb.ToolDef = self.ToolDef
 
-    def LibBuild(LibFile, PlatformFile, ewb, a, b, c):
+    def LibBuild(self, LibFile, PlatformFile, ewb, a, b, c):
         LibraryAutoGen = AutoGen(LibFile, PlatformFile, ewb, str(a), b, str(c))
         LibraryAutoGen.CreateAutoGenFile()
         LibraryAutoGen.CreateMakefile()
@@ -201,7 +201,7 @@ class Build():
                 print "There isn't makefils in %s.\n" % DestDir
                 self.isexit(1)
 
-    def ModuleBuild(ModuleFile, PlatformFile, ewb, a, b, c, ModuleAutoGen):
+    def ModuleBuild(self, ModuleFile, PlatformFile, ewb, a, b, c, ModuleAutoGen):
         ModuleAutoGen.CreateAutoGenFile()
         ModuleAutoGen.CreateMakefile()
         for f in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
@@ -223,7 +223,7 @@ class Build():
                 print "There isn't makefile in %s.\n" % DestDir
                 self.isexit(1)
 
-    def SameTypeFileInDir(FileNum, FileType, Dir):
+    def SameTypeFileInDir(self, FileNum, FileType, Dir):
         if FileNum >= 2:
             print "There are %d %s files in %s.\n" % (FileNum, FileType, Dir)
             self.isexit(1)
@@ -481,7 +481,7 @@ if __name__ == '__main__':
         if os.path.isfile(os.path.abspath(build.Opt.INFFILE)) == True:
             realpath = os.path.abspath(build.Opt.INFFILE)
             (filename, ext) = os.path.splitext(realpath)
-            if ext.lower() != 'inf':
+            if ext.lower() != '.inf':
                 print "The input file: %s is not a inf file!" % build.Opt.INFFILE
                 build.isexit(1)
             if build.WorkSpace[len(build.WorkSpace)-1] == '\\':
@@ -547,7 +547,7 @@ if __name__ == '__main__':
         if os.path.isfile(os.path.abspath(build.Opt.DSCFILE)) == True:
             realpath = os.path.abspath(build.Opt.DSCFILE)
             (filename, ext) = os.path.splitext(realpath)
-            if ext.lower() != 'dsc':
+            if ext.lower() != '.dsc':
                 print "The input file: %s is not a dsc file!" % build.Opt.DSCFILE
                 build.isexit(1)
             if build.WorkSpace[len(build.WorkSpace)-1] == '\\':
@@ -565,7 +565,7 @@ if __name__ == '__main__':
         if build.Opt.DSCFILE != '':                  # check the work flow below
             EdkLogger.debug(EdkLogger.DEBUG_5, '\tACTIVE_PLATFORM is: %s' % build.Opt.DSCFILE)
             ewb = WorkspaceBuild(build.Opt.DSCFILE, build.WorkSpace)
-            Parser(ewb)
+            build.Parser(ewb)
     except Exception, e:
         print e
         build.isexit(1)
@@ -623,7 +623,7 @@ if __name__ == '__main__':
             try:
                 EdkLogger.debug(EdkLogger.DEBUG_5, '\ACTIVE_PLATFORM is: %s' % build.Opt.DSCFILE)
                 ewb = WorkspaceBuild(PlatformFile, build.WorkSpace)
-                Parser(ewb)
+                build.Parser(ewb)
             except Exception, e:
                 print e
                 build.isexit(1)
