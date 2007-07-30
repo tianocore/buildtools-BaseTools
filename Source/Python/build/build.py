@@ -228,18 +228,19 @@ class Build():
             print "There are %d %s files in %s.\n" % (FileNum, FileType, Dir)
             self.isexit(1)
 
-    def TrackInfo(self):
+    def TrackInfo(self, e):
         if self.Opt.debug != None:
             last_type, last_value, last_tb = sys.exc_info()
             traceback.print_exception(last_type, last_value, last_tb)
+        else:
+            print e
 
     def GenCFunc(self, ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
         try:
             AutoGenResult = AutoGen(ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch)
             AutoGenResult.CreateAutoGenFile()
         except Exception, e:
-            self.TrackInfo()
-            print e
+            self.TrackInfo(e)
             self.isexit(1)
 
     def GenMakeFunc(self, ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
@@ -248,8 +249,7 @@ class Build():
             AutoGenResult.CreateAutoGenFile()
             makefile = AutoGenResult.CreateMakefile()
         except Exception, e:
-            self.TrackInfo()
-            print e
+            self.TrackInfo(e)
             self.isexit(1)
 
 
@@ -277,8 +277,7 @@ class Build():
             AutoGenResult.CreateAutoGenFile()
             makefile = AutoGenResult.CreateMakefile()
         except Exception, e:
-            self.TrackInfo()
-            print e
+            self.TrackInfo(e)
             self.isexit(1)
         if makefile != "":
             p = Popen(["nmake", "/nologo", "-f", makefile, 'all'], env=os.environ, cwd=os.path.dirname(makefile))
@@ -302,7 +301,7 @@ class Build():
                     for b in self.Opt.TOOL_CHAIN_TAG:
                         if ModuleFile == None:
                             PlatformAutoGen = AutoGen(None, PlatformFile, ewb, a, b, self.Opt.TARGET_ARCH)
-                            print "PlatformAutoGen : %s", PlatformFile
+                            print "PlatformAutoGen: %s" % PlatformFile
                             for c in self.Opt.TARGET_ARCH:
                                 li = []
                                 for d in PlatformAutoGen.Platform[c].Modules:
@@ -350,7 +349,7 @@ class Build():
                                 self.ModuleBuild(ModuleFile, PlatformFile, ewb, a, b, c, ModuleAutoGen)
                 return 0
         except Exception, e:
-            print e
+            self.TrackInfo(e)
             self.isexit(1)
 
     # normal build
@@ -448,7 +447,7 @@ if __name__ == '__main__':
             print 'It is invaild to input more than one target.'
             sys.exit(1)
     except Exception, e:
-        print e
+        self.TrackInfo(e)
         sys.exit(1)
 
 #
@@ -567,7 +566,7 @@ if __name__ == '__main__':
             ewb = WorkspaceBuild(build.Opt.DSCFILE, build.WorkSpace)
             build.Parser(ewb)
     except Exception, e:
-        print e
+        self.TrackInfo(e)
         build.isexit(1)
 
 #
@@ -583,7 +582,7 @@ if __name__ == '__main__':
             EdkLogger.debug(EdkLogger.DEBUG_5, '\tPlatformFile is: %s' % PlatformFile)
             StatusCode = build.Process(ModuleFile, PlatformFile, ewb)
         else:
-            print "ERROR: ACTIVE_PLATFORM isn't setted, DON'T KNOW WHAT TO BUILD\n"
+            print "ERROR: ACTIVE_PLATFORM isn't specified. DON'T KNOW WHAT TO BUILD\n"
     elif len(glob.glob(CurWorkDir + '\\*.inf')) > 0:
         FileList = glob.glob(CurWorkDir + '\\*.inf')
         FileNum = len(FileList)
@@ -600,7 +599,7 @@ if __name__ == '__main__':
             EdkLogger.debug(EdkLogger.DEBUG_5, '\tPlatformFile is: %s' % PlatformFile)
             StatusCode = build.Process(ModuleFile, PlatformFile, ewb)
         else:
-            print "ERROR: DON'T KNOW WHAT TO BUILD\n"
+            print "ERROR: ACTIVE_PLATFORM isn't specified. DON'T KNOW WHAT TO BUILD\n"
     elif build.Opt.DSCFILE:
         PlatformFile = os.path.normpath(build.Opt.DSCFILE)
         EdkLogger.debug(EdkLogger.DEBUG_5, '\tPlatformFile is: %s' % PlatformFile)
@@ -625,11 +624,11 @@ if __name__ == '__main__':
                 ewb = WorkspaceBuild(PlatformFile, build.WorkSpace)
                 build.Parser(ewb)
             except Exception, e:
-                print e
+                self.TrackInfo(e)
                 build.isexit(1)
             StatusCode = build.Process(None, PlatformFile, ewb)
         else:
-            print "ERROR: DON'T KNOW WHAT TO BUILD\n"
+            print "ERROR: ACTIVE_PLATFORM isn't specified. DON'T KNOW WHAT TO BUILD\n"
 
 #
 # Record Build Process Time
