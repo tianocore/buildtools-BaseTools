@@ -408,7 +408,7 @@ class Build():
             sys.exit(StatusCode)
 
 def MyOptionParser():
-    parser = OptionParser(description=__copyright__,version=__version__,prog="bld.exe",usage="%prog [options] [target]")
+    parser = OptionParser(description=__copyright__,version=__version__,prog="build.exe",usage="%prog [options] [target]")
     parser.add_option("-a", "--arch", action="append", type="choice", choices=['IA32','X64','IPF','EBC'], dest="TARGET_ARCH",
         help="ARCHS is one of list: IA32, X64, IPF or EBC, which overrides target.txt's TARGET_ARCH definition. To specify more archs, please repeat this option.")
     parser.add_option("-p", "--platform", action="store", type="string", dest="DSCFILE",
@@ -416,7 +416,7 @@ def MyOptionParser():
     parser.add_option("-m", "--module", action="store", type="string", dest="INFFILE",
         help="Build the module specified by the INF file name argument.")
     parser.add_option("-b", "--buildtarget", action="append", type="choice", choices=['DEBUG','RELEASE'], dest="TARGET",
-        help="TARGET is onr of list: DEBUG, RELEASE, which overrides target.txt's TARGET definition. To specify more TARGET, please repeat this option.")
+        help="TARGET is one of list: DEBUG, RELEASE, which overrides target.txt's TARGET definition. To specify more TARGET, please repeat this option.")
     parser.add_option("-t", "--tagname", action="append", type="string", dest="TOOL_CHAIN_TAG",
         help="Using the Tool Chain Tagname to build the platform, overrides target.txt's TOOL_CHAIN_TAG definition.")
     parser.add_option("-s", "--spawn", action="store_true", type=None,
@@ -456,7 +456,7 @@ if __name__ == '__main__':
 #
     build = Build(opt, args)
     StatusCode = build.CheckEnvVariable()
-    isexit(StatusCode)
+    build.isexit(StatusCode)
     
 #
 # Check target.txt and tools_def.txt and Init them
@@ -583,7 +583,7 @@ if __name__ == '__main__':
             EdkLogger.debug(EdkLogger.DEBUG_5, '\tPlatformFile is: %s' % PlatformFile)
             StatusCode = build.Process(ModuleFile, PlatformFile, ewb)
         else:
-            print "ERROR: DON'T KNOW WHAT TO BUILD\n"
+            print "ERROR: ACTIVE_PLATFORM isn't setted, DON'T KNOW WHAT TO BUILD\n"
     elif len(glob.glob(CurWorkDir + '\\*.inf')) > 0:
         FileList = glob.glob(CurWorkDir + '\\*.inf')
         FileNum = len(FileList)
