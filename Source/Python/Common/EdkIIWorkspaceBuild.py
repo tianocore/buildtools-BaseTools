@@ -292,7 +292,7 @@ class WorkspaceBuild(object):
                         Name = Item.CName
                         Guid = Item.TokenSpaceGuidCName
                         Type = Item.ItemType
-                        DatumType = ''
+                        DatumType = Item.DatumType
                         Value = Item.DefaultValue
                         Token = Item.Token
                         MaxDatumSize = Item.MaxDatumSize
@@ -350,7 +350,7 @@ class WorkspaceBuild(object):
                         Name = Item.CName
                         Guid = Item.TokenSpaceGuidCName
                         Type = Item.ItemType
-                        DatumType = ''
+                        DatumType = Item.DatumType
                         Value = Item.DefaultValue
                         Token = Item.Token
                         MaxDatumSize = Item.MaxDatumSize
