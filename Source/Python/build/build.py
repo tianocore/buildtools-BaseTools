@@ -463,10 +463,10 @@ if __name__ == '__main__':
 #
     if os.path.isfile(build.WorkSpace + '\\Conf\\target.txt') == True:
         StatusCode = build.TargetTxt.LoadTargetTxtFile(build.WorkSpace + '\\Conf\\target.txt')
-        isexit(StatusCode)
+        build.isexit(StatusCode)
         if os.path.isfile(build.WorkSpace + '\\' + build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF]) == True:
             StatusCode = build.ToolDef.LoadToolDefFile(build.WorkSpace + '\\' + build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])
-            isexit(StatusCode)
+            build.isexit(StatusCode)
         else:
             print "%s is not existed." % build.WorkSpace + '\\' + build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF]
             build.isexit(1)
