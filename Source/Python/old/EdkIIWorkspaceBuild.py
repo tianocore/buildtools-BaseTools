@@ -363,7 +363,7 @@ class WorkspaceBuild(object):
                     SkuIdList = map(lambda l: l.strip(), SkuId.split(DataType.TAB_VALUE_SPLIT))
                     for Item in SkuIdList:
                         SkuInfo = SkuInfoClassObject()
-                        SkuInfo.SkuId = Item
+                        SkuInfo.SkuId = pb.SkuIds[Item]
                         SkuInfo.VpdOffset = pcd[2]
                         SkuInfoList.append(SkuInfo)
                     pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_VPD, None, None, None, pcd[3], SkuInfoList)
@@ -377,7 +377,7 @@ class WorkspaceBuild(object):
                     SkuIdList = map(lambda l: l.strip(), SkuId.split(DataType.TAB_VALUE_SPLIT))
                     for Item in SkuIdList:
                         SkuInfo = SkuInfoClassObject()
-                        SkuInfo.SkuId = Item
+                        SkuInfo.SkuId = pb.SkuIds[Item]
                         SkuInfo.VariableName = pcd[2]
                         SkuInfo.VariableGuid = pcd[3]
                         SkuInfo.VariableOffset = pcd[4]
@@ -397,7 +397,7 @@ class WorkspaceBuild(object):
                     SkuIdList = map(lambda l: l.strip(), SkuId.split(DataType.TAB_VALUE_SPLIT))
                     for Item in SkuIdList:
                         SkuInfo = SkuInfoClassObject()
-                        SkuInfo.SkuId = Item
+                        SkuInfo.SkuId = pb.SkuIds[Item]
                         SkuInfo.DefaultValue = pcd[2]
                         SkuInfoList.append(SkuInfo)
                     pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_EX_DEFAULT, None, None, None, pcd[3], SkuInfoList)
@@ -411,7 +411,7 @@ class WorkspaceBuild(object):
                     SkuIdList = map(lambda l: l.strip(), SkuId.split(DataType.TAB_VALUE_SPLIT))
                     for Item in SkuIdList:
                         SkuInfo = SkuInfoClassObject()
-                        SkuInfo.SkuId = Item
+                        SkuInfo.SkuId = pb.SkuIds[Item]
                         SkuInfo.VpdOffset = pcd[2]
                         SkuInfoList.append(SkuInfo)
                     pb.Pcds[(pcd[0], pcd[1])] = PcdClassObject(pcd[0], pcd[1], DataType.TAB_PCDS_DYNAMIC_EX_VPD, None, None, None, pcd[3], SkuInfoList)
@@ -425,7 +425,7 @@ class WorkspaceBuild(object):
                     SkuIdList = map(lambda l: l.strip(), SkuId.split(DataType.TAB_VALUE_SPLIT))
                     for Item in SkuIdList:
                         SkuInfo = SkuInfoClassObject()
-                        SkuInfo.SkuId = Item
+                        SkuInfo.SkuId = pb.SkuIds[Item]
                         SkuInfo.VariableName = pcd[2]
                         SkuInfo.VariableGuid = pcd[3]
                         SkuInfo.VariableOffset = pcd[4]
