@@ -295,7 +295,7 @@ class WorkspaceBuild(object):
                         SkuName = CleanString(SkuInfo.split(DataType.TAB_VALUE_SPLIT)[1])
                         SkuId = CleanString(SkuInfo.split(DataType.TAB_VALUE_SPLIT)[0])
                     else:
-                        raise ParseError('Wrong defintion for SkuId: %s' % SkuInfo)
+                        raise ParserError('Wrong defintion for SkuId: %s' % SkuInfo)
                     pb.SkuIds[SkuName] = SkuId
                 
                 #Module
@@ -525,7 +525,7 @@ class WorkspaceBuild(object):
                         if len(MakefileList) == 2:
                             pb.CustomMakefile[CleanString(MakefileList[0])] = CleanString(MakefileList[1])
                         else:
-                            raise ParseError('Wrong custom makefile defined in file ' + inf + ', correct format is CUSTOM_MAKEFILE = Family|Filename')
+                            raise ParserError('Wrong custom makefile defined in file ' + inf + ', correct format is CUSTOM_MAKEFILE = Family|Filename')
                 
                 if infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_EDK_RELEASE_VERSION][0] != '':
                     pb.Specification[TAB_INF_DEFINES_EDK_RELEASE_VERSION] = infObj.Defines.DefinesDictionary[TAB_INF_DEFINES_EDK_RELEASE_VERSION][0]
@@ -569,7 +569,7 @@ class WorkspaceBuild(object):
                     elif len(SourceFile) == 1:
                         pb.Sources.append(ModuleSourceFilesClassObject(NormPath(infObj.Contents[key].Sources[index])))
                     else:
-                        raise ParseError("Inconsistent '|' value defined in SourceFiles." + key + " section in file " + inf)
+                        raise ParserError("Inconsistent '|' value defined in SourceFiles." + key + " section in file " + inf)
 
                 #Protocols
                 for index in range(len(infObj.Contents[key].Protocols)):
