@@ -231,6 +231,8 @@ class Dsc(DscObject):
                         ErrorMsg = "Wrong statement '%s' found in section LibraryClasses in file '%s', correct format is '<LibraryClassKeyWord>|<LibraryInstance>'" % (Item, self.Platform.Header.FullPath) 
                         raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                     else:
+                        if Item[1] == ['']:
+                            Item[1] = DataType.SUP_MODULE_LIST
                         MergeArches(LibraryClasses, (List[0], List[1]) + tuple(Item[1]), Arch)
         self.Platform.LibraryClasses.IncludeFiles = IncludeFiles
         for Key in LibraryClasses.keys():

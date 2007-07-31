@@ -153,7 +153,7 @@ class Inf(InfObject):
                 if len(List) == 1:
                     Lib.SupModuleList = DataType.SUP_MODULE_LIST
                 elif len(List) == 2:
-                    Lib.SupModuleList = GetSplitValueList(CleanString(List[1]))
+                    Lib.SupModuleList = GetSplitValueList(CleanString(List[1]), ' ')
                 self.Module.Header.LibraryClass.append(Lib)
         
         #Custom makefile
