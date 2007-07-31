@@ -689,7 +689,7 @@ class Makefile(object):
 
         elif type(info) == type({}):    # and isinstance(info, PlatformBuildInfo):
             if len(info) <= 0:
-                raise AutoGenError(msg="No valid platform found! Please check your build configuration!\n")
+                raise AutoGenError(msg="No buildable platform found! Please check your build configuration!\n")
             self.PlatformInfo = info
             self.ModuleBuild = False
             self.ModuleBuildCommandList = []
