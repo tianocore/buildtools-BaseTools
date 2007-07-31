@@ -351,7 +351,7 @@ INC = ${BEGIN}${include_path_prefix}$(WORKSPACE)${separator}${include_path} \\
 OBJECTS = ${BEGIN}$(OUTPUT_DIR)${separator}${object_file} \\
           ${END}
 
-LIBS = ${BEGIN}$(LIB_DIR)${separator}${library_file} \\
+LIBS = ${BEGIN}$(BUILD_DIR)${separator}$(ARCH)${separator}${library_file} \\
        ${END}${BEGIN}${system_library} \\
        ${END}
 
@@ -364,7 +364,7 @@ ENTRYPOINT = ${module_entry_point}
 # Target File Macro Definitions
 #
 PCH_FILE = $(OUTPUT_DIR)\$(MODULE_NAME).pch
-LIB_FILE = $(LIB_DIR)\$(MODULE_NAME).lib
+LIB_FILE = $(OUTPUT_DIR)\$(MODULE_NAME).lib
 LLIB_FILE = $(OUTPUT_DIR)\$(MODULE_NAME)Local.lib
 DLL_FILE = $(DEBUG_DIR)\$(MODULE_NAME).dll
 EFI_FILE = $(DEBUG_DIR)\$(MODULE_NAME).efi
@@ -1120,10 +1120,10 @@ class Makefile(object):
     def ProcessDependentLibrary(self, makeType=gMakeType):
         for libm in self.ModuleInfo.DependentLibraryList:
             libf = str(libm)
-            libp = path.dirname(libf)
             base = path.basename(libf).split(".")[0]
-            self.LibraryBuildDirectoryList.append(libp + gDirectorySeparator[makeType] + base)
-            self.LibraryFileList.append(libm.BaseName + ".lib")
+            libp = path.dirname(libf) + gDirectorySeparator[makeType] + base
+            self.LibraryBuildDirectoryList.append(libp)
+            self.LibraryFileList.append(gDirectorySeparator[makeType].join([libp, "OUTPUT", libm.BaseName + ".lib"]))
 
     def GetPlatformBuildDirectory(self):
         if os.path.isabs(self.PlatformInfo.OutputDir):
