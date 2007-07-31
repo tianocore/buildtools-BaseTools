@@ -165,11 +165,24 @@ class Build():
                 fdf.ParseFile()
                 pcdSet = fdf.profile.PcdDict
         else:
-            if os.path.isfile(os.path.abspath(self.Opt.FDFFILE)) == True:
+            if self.Opt.FDFFILE[0] == '.':
+                print "ERROR: Please specify a absolute path or a WORKSPACE realtive path for FDF file."
+                self.isexit(1)
+            if os.path.isfile(os.path.normpath(os.path.join(self.WorkSpace, self.Opt.FDFFILE))) == True:
+                realpath = os.path.normpath(os.path.join(self.WorkSpace, self.Opt.FDFFILE))
+                (filename, ext) = os.path.splitext(realpath)
+                if ext.lower() != '.fdf':
+                    print "The input file: %s is not a fdf file!" % realpath
+                    self.isexit(1)
+                self.Opt.FDFFILE = realpath
+                fdf = FdfParser(self.Opt.FDFFILE)
+                fdf.ParseFile()
+                pcdSet = fdf.profile.PcdDict
+            elif os.path.isfile(os.path.abspath(self.Opt.FDFFILE)) == True:
                 realpath = os.path.abspath(self.Opt.FDFFILE)
                 (filename, ext) = os.path.splitext(realpath)
                 if ext.lower() != '.fdf':
-                    print "The input file: %s is not a fdf file!" % self.Opt.FDFFILE
+                    print "The input file: %s is not a fdf file!" % realpath
                     self.isexit(1)
                 self.Opt.FDFFILE = realpath
                 fdf = FdfParser(self.Opt.FDFFILE)
@@ -478,7 +491,15 @@ if __name__ == '__main__':
 # Merge the Build Options except input file(DSCFILE, FDFFILE)
 #
     if build.Opt.INFFILE != None:
-        if os.path.isfile(os.path.abspath(build.Opt.INFFILE)) == True:
+        if build.Opt.INFFILE[0] == '.':
+            print "ERROR: Please specify a absolute path or a WORKSPACE realtive path for Module(INF) file."
+            build.isexit(1)
+        if os.path.isfile(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.INFFILE))) == True:
+            (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.INFFILE)))
+            if ext.lower() != '.inf':
+                print "The input file: %s is not a inf file!" % build.Opt.INFFILE
+                build.isexit(1)
+        elif os.path.isfile(os.path.abspath(build.Opt.INFFILE)) == True:
             realpath = os.path.abspath(build.Opt.INFFILE)
             (filename, ext) = os.path.splitext(realpath)
             if ext.lower() != '.inf':
@@ -544,7 +565,15 @@ if __name__ == '__main__':
                 print "The file: %s is not a dsc file!" % os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE))
                 build.isexit(1)
     else:
-        if os.path.isfile(os.path.abspath(build.Opt.DSCFILE)) == True:
+        if build.Opt.DSCFILE[0] == '.':
+            print "ERROR: Please specify a absolute path or a WORKSPACE realtive path for PLATFORM(DSC) file."
+            build.isexit(1)
+        if os.path.isfile(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE))) == True:
+            (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE)))
+            if ext.lower() != '.dsc':
+                print "The input file: %s is not a dsc file!" % build.Opt.DSCFILE
+                build.isexit(1)
+        elif os.path.isfile(os.path.abspath(build.Opt.DSCFILE)) == True:
             realpath = os.path.abspath(build.Opt.DSCFILE)
             (filename, ext) = os.path.splitext(realpath)
             if ext.lower() != '.dsc':
