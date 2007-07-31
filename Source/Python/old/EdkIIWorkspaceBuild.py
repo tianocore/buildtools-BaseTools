@@ -669,16 +669,17 @@ class WorkspaceBuild(object):
                 for inf in platform.Modules:
                     module = self.Build[arch].ModuleDatabase[inf]
                     stack = [module]
+                    libs = []
                     while len(stack) > 0:
                         m = self.Build[arch].ModuleDatabase[stack.pop()]
-                        if m != module:
-                            platform.Libraries.append(m)
                         for libc, libf in m.LibraryClasses.iteritems():
                             if module.ModuleType not in libc or libf == None or libf == "":
                                 continue
                             if libf not in platform.Libraries:
                                 platform.Libraries.append(libf)
+                            if libf not in libs:
                                 stack.append(libf)
+                                libs.append(libf)
     #End of self.Init
     
     def UpdateInfDatabase(self, infFileName, LibraryClass, Arch):
