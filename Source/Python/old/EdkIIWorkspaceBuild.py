@@ -674,7 +674,7 @@ class WorkspaceBuild(object):
                         if m != module:
                             platform.Libraries.append(m)
                         for libc, libf in m.LibraryClasses.iteritems():
-                            if m.ModuleType not in libc or libf == None or libf == "":
+                            if module.ModuleType not in libc or libf == None or libf == "":
                                 continue
                             if libf not in platform.Libraries:
                                 platform.Libraries.append(libf)
