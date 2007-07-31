@@ -667,6 +667,8 @@ cleanlib:
 class Makefile(object):
     def __init__(self, info, opt):
         if isinstance(info, ModuleBuildInfo):
+            if info == None or info == "":
+                raise AutoGenError(msg="No valid module found! Please check your build configuration!\n")
             self.ModuleInfo = info
             self.PlatformInfo = info.PlatformInfo
             self.PackageInfo = info.PackageInfo
@@ -686,6 +688,8 @@ class Makefile(object):
             self.SystemLibraryList = []
 
         elif type(info) == type({}):    # and isinstance(info, PlatformBuildInfo):
+            if len(info) <= 0:
+                raise AutoGenError(msg="No valid platform found! Please check your build configuration!\n")
             self.PlatformInfo = info
             self.ModuleBuild = False
             self.ModuleBuildCommandList = []
