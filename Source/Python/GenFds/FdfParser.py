@@ -317,10 +317,13 @@ class FdfParser:
     def __UndoToken(self):
         self.__UndoOneChar()
         while self.__CurrentChar().isspace():
-            self.__UndoOneChar()
+            if not self.__UndoOneChar():
+                break
         while not str(self.__CurrentChar()).isspace() and self.__CurrentChar() not in ('=', '|', ','):
-            self.__UndoOneChar()
-        self.__GetOneChar()
+            if not self.__UndoOneChar():
+                break
+        else:
+            self.__GetOneChar()
     
     def __HexDigit(self, TempChar):
         if (TempChar >= 'a' and TempChar <= 'f') or (TempChar >= 'A' and TempChar <= 'F') \
