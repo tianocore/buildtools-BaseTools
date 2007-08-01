@@ -540,6 +540,28 @@ class FdfParser:
         Status = self.__GetBlockStatements(fd)
         return Status
     
+    def __GetAddressStatements(self, obj):
+        
+        if self.__IsKeyword("BsBaseAddress"):
+            if not self.__IsToken( "="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            
+            if not self.__GetDecimalNumber() and not self.__GetHexNumber():
+                raise Warning("expected address At Line %d" % self.CurrentLineNumber)
+                
+            BsAddress = long(self.__Token, 0)
+            obj.BsBaseAddress = BsAddress
+            
+        if self.__IsKeyword("RtBaseAddress"):
+            if not self.__IsToken( "="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            
+            if not self.__GetDecimalNumber() and not self.__GetHexNumber():
+                raise Warning("expected address At Line %d" % self.CurrentLineNumber)
+                
+            RtAddress = long(self.__Token, 0)
+            obj.RtBaseAddress = RtAddress
+    
     def __GetBlockStatements(self, obj):
         
         if not self.__GetBlockStatement(obj):
@@ -695,7 +717,17 @@ class FdfParser:
             raise Warning("expected FV name At Line %d" % self.CurrentLineNumber)
         
         region.RegionType = "FV"
-        region.RegionData = self.__Token
+        region.RegionDataList.append(self.__Token)
+        
+        while self.__IsKeyword( "FV"):
+        
+            if not self.__IsToken( "="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+        
+            if not self.__GetNextToken():
+                raise Warning("expected FV name At Line %d" % self.CurrentLineNumber)
+        
+            region.RegionDataList.append(self.__Token)
         
     def __GetRegionFileType(self, region):
 
@@ -709,7 +741,17 @@ class FdfParser:
             raise Warning("expected File name At Line %d" % self.CurrentLineNumber)
 
         region.RegionType = "FILE"
-        region.RegionData = self.__Token
+        region.RegionDataList.append( self.__Token)
+        
+        while self.__IsKeyword( "FILE"):
+        
+            if not self.__IsToken( "="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+        
+            if not self.__GetNextToken():
+                raise Warning("expected FILE name At Line %d" % self.CurrentLineNumber)
+        
+            region.RegionDataList.append(self.__Token)
 
     def __GetRegionDataType(self, region):
         
@@ -743,7 +785,37 @@ class FdfParser:
         
         DataString = DataString.rstrip(",")
         region.RegionType = "DATA"
-        region.RegionData = DataString
+        region.RegionDataList.append( DataString)
+        
+        while self.__IsKeyword( "DATA"):
+
+            if not self.__IsToken( "="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+        
+            if not self.__IsToken( "{"):
+                raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
+        
+            if not self.__GetHexNumber():
+                raise Warning("expected Hex byte At Line %d" % self.CurrentLineNumber)
+        
+            if len(self.__Token) > 4:
+                raise Warning("Hex byte(must be 2 digits) too long At Line %d" % self.CurrentLineNumber)
+        
+            DataString = self.__Token
+            DataString += ","
+        
+            while self.__IsToken(","):
+                self.__GetHexNumber()
+                if len(self.__Token) > 4:
+                    raise Warning("Hex byte(must be 2 digits) too long At Line %d" % self.CurrentLineNumber)
+                DataString += self.__Token
+                DataString += ","
+            
+            if not self.__IsToken( "}"):
+                raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
+        
+            DataString = DataString.rstrip(",")
+            region.RegionDataList.append( DataString)
         
     def __GetFv(self):
         if not self.__GetNextToken():
@@ -777,6 +849,8 @@ class FdfParser:
 
         self.__GetDefineStatements( fv)
 
+        self.__GetAddressStatements (fv)
+        
         self.__GetBlockStatement( fv)
 
         self.__GetSetStatements( fv)
@@ -1396,7 +1470,7 @@ class FdfParser:
         if self.__Token.upper() not in ("SEC", "PEI_CORE", "PEIM", "DXE_CORE", \
                              "DXE_DRIVER", "DXE_SAL_DRIVER", \
                              "DXE_SMM_DRIVER", "DXE_RUNTIME_DRIVER", \
-                             "UEFI_DRIVER", "UEFI_APPLICATION", "USER", "DEFAULT"):
+                             "UEFI_DRIVER", "UEFI_APPLICATION", "USER_DEFINED", "DEFAULT"):
             raise Warning("Unknown Module type At line %d" % self.CurrentLineNumber)
         return self.__Token
         

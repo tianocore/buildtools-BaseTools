@@ -43,7 +43,7 @@ class RegionClassObject:
         self.RegionSize = None
         self.SetVarDict = {}
         self.RegionType = None
-        self.RegionDataList = None
+        self.RegionDataList = []
         
 class FfsClassObject:
      def __init__(self):
