@@ -268,7 +268,7 @@ class Build():
     def OtherFunc(self, ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
         for d in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
             if ModuleFile == None:
-                DestDir = os.normpath(os.path.join(os.environ["WORKSPACE"], d, Target + '_' + ToolChain))
+                DestDir = os.path.normpath(os.path.join(os.environ["WORKSPACE"], d, Target + '_' + ToolChain))
             else:
                 (filename, ext) = os.path.splitext(os.normpath(os.path.join(os.environ["WORKSPACE"], d, Target + '_' + ToolChain, Arch, ModuleFile)))
                 DestDir = filename
@@ -558,7 +558,7 @@ if __name__ == '__main__':
             build.isexit(1)
         if build.Opt.DSCFILE != '':
             (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE)))
-            if ext.lower() != 'dsc':
+            if ext.lower() != '.dsc':
                 print "The file: %s is not a dsc file!" % os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE))
                 build.isexit(1)
     else:
