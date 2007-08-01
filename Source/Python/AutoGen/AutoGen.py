@@ -16,6 +16,8 @@ from Common.BuildToolError import *
 from Common.EdkIIWorkspaceBuild import *
 from Common.EdkIIWorkspace import *
 from Common.DataType import *
+from Common.Misc import *
+from Common.String import *
 
 #
 # generate AutoGen.c, AutoGen.h
@@ -73,6 +75,11 @@ class AutoGen(object):
 
     def __init__(self, moduleFile, platformFile, workspace, target, toolchain, arch):
         global gModuleDatabase, gPackageDatabase, gPlatformDatabase, gAutoGenDatabase, gWorkspace, gWorkspaceDir
+
+        if moduleFile != None:
+            moduleFile = NormPath(str(moduleFile))
+        if platformFile != None:
+            platformFile = NormPath(str(platformFile))
 
         if gWorkspace == None:
             gWorkspace = workspace
@@ -136,8 +143,11 @@ class AutoGen(object):
             raise AutoGenError(msg="[%s] is not active platform, or %s is not supported!" % (platformFile, self.Arch))
         if self.Arch not in gModuleDatabase or str(moduleFile) not in gModuleDatabase[self.Arch]:
             raise AutoGenError(msg="[%s] for %s is not found in active platform [%s]!" % (moduleFile, self.Arch, platformFile))
-        self.Module = gModuleDatabase[self.Arch][str(moduleFile)]
+
         self.Platform = gPlatformDatabase[arch][str(platformFile)]
+        if str(moduleFile) not in self.Platform.Modules and str(moduleFile) not in self.Platform.Libraries:
+            raise AutoGenError(msg="Cannot find module %s for [%s] in platform:\n\t%s\n" % (moduleFile, self.Arch, self.Platform))
+        self.Module = gModuleDatabase[arch][str(moduleFile)]
 
         self.Package = FindModuleOwnerPackage(self.Module, gPackageDatabase[arch])
         if self.Package == None:
@@ -237,8 +247,11 @@ class AutoGen(object):
         platformAutoGen = None
         if key in gAutoGenDatabase:
             platformAutoGen = gAutoGenDatabase[key]
-            if arch in platformAutoGen.BuildInfo:
-                return platformAutoGen.BuildInfo[arch]
+            if type(platformAutoGen.BuildInfo) == type({}):
+                if arch in platformAutoGen.BuildInfo:
+                    return platformAutoGen.BuildInfo[arch]
+            else:
+                return platformAutoGen.BuildInfo
 
         info = PlatformBuildInfo(platform)
 
@@ -264,7 +277,10 @@ class AutoGen(object):
         self.ProcessToolDefinition(info)
 
         if platformAutoGen != None:
-            platformAutoGen.BuildInfo = info
+            if type(platformAutoGen.BuildInfo) == type({}):
+                platformAutoGen.BuildInfo[arch] = info
+            else:
+                platformAutoGen.BuildInfo = info
         return info
 
     def GetDepexTokenList(self, info):
@@ -519,7 +535,7 @@ class AutoGen(object):
                     EdkLogger.debug(EdkLogger.DEBUG_3, "\t%s for module type %s is not supported" % libc)
                     continue
                 if libf == None or libf == "":
-                    EdkLogger.info("\tLibrary instance of library class %s is not found" % libc[0])
+                    EdkLogger.verbose("\tWARNING: Library instance for library class %s is not found" % libc[0])
                     continue
                 
                 libm = gModuleDatabase[self.Arch][libf]
@@ -630,7 +646,7 @@ class AutoGen(object):
         notFoundPcdList = set()
         noDatumTypePcdList = set()
         pcdConsumerList = set()
-        for f in gModuleDatabase[arch]:
+        for f in platform.Modules + platform.Libraries:
             m = gModuleDatabase[arch][f]
             for key in m.Pcds:
                 if key not in platform.Pcds:
@@ -874,13 +890,13 @@ class AutoGen(object):
             makefile = GenMake.Makefile(self.BuildInfo, myBuildOption)
             f = makefile.Generate()
             self.IsMakefileCreated = True
-            EdkLogger.info("Generated [%s] for module %s" % (path.basename(f), self.BuildInfo.Name))
+            EdkLogger.info("Generated [%s] for module %s [%s]" % (path.basename(f), self.BuildInfo.Name, self.BuildInfo.Arch))
             return f
 
         makefile = GenMake.Makefile(self.BuildInfo, myBuildOption)
         f = makefile.Generate()
         self.IsMakefileCreated = True
-        EdkLogger.info("Generated [%s] for platform %s" % (path.basename(f), self.BuildInfo[self.Arch[0]].Name))
+        EdkLogger.info("Generated [%s] for platform %s\n" % (path.basename(f), self.BuildInfo[self.Arch[0]].Name))
 
         return f
 
@@ -929,7 +945,7 @@ class AutoGen(object):
                 autoGenList.append(dpxFile)
 
             self.IsAutoGenCodeCreated = True
-            EdkLogger.info("Generated [%s] files for module %s" % (" ".join([path.basename(f) for f in autoGenList]), self.BuildInfo.Name))
+            EdkLogger.info("Generated [%s] files for module %s [%s]" % (" ".join([path.basename(f) for f in autoGenList]), self.BuildInfo.Name, self.BuildInfo.Arch))
 
             return autoGenList
 

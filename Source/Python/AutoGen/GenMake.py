@@ -11,58 +11,11 @@ import os.path as path
 from Common.EdkIIWorkspaceBuild import *
 from Common.EdkIIWorkspace import *
 from Common.BuildToolError import *
+from Common.Misc import *
 from BuildInfo import *
 
 gDependencyDatabase = {}    # file path : [dependent files list]
-gIncludePattern = re.compile("^[ \t#]*include[ \t]+[\"<]*([^\"<>]+)[>\" \t\n\r]*", re.MULTILINE | re.UNICODE)
-
-class AutoGenString(object):
-    def __init__(self):
-        self.String = ''
-
-    def __str__(self):
-        return self.String
-
-    def Append(self, AppendString, Dictionary=None):
-        if Dictionary == None:
-            self.String += AppendString
-        else:
-            while AppendString.find('${BEGIN}') >= 0:
-                Start = AppendString.find('${BEGIN}')
-                End   = AppendString.find('${END}')
-                SubString = AppendString[AppendString.find('${BEGIN}'):AppendString.find('${END}')+6]
-                
-                RepeatTime = -1
-                NewDict = {"BEGIN":"", "END":""}
-                for Key in Dictionary:
-                    if SubString.find('$' + Key) >= 0 or SubString.find('${' + Key + '}') >= 0:
-                        Value = Dictionary[Key]
-                        if type(Value) != type([]):
-                            NewDict[Key] = Value
-                            continue
-                        if RepeatTime < 0:
-                            RepeatTime = len(Value)
-                        elif RepeatTime != len(Value):
-                            raise AutoGenError(msg=Key + " has different repeat time from others!")
-                        NewDict[Key] = ""
-
-                NewString = ''
-                for Index in range(0, RepeatTime):
-                    for Key in NewDict:
-                        if Key == "BEGIN" or Key == "END" or type(Dictionary[Key]) != type([]):
-                            continue
-                        #print "###",Key
-                        NewDict[Key] = Dictionary[Key][Index]
-                    NewString += string.Template(SubString).safe_substitute(NewDict)
-                AppendString = AppendString[0:Start] + NewString + AppendString[End + 6:]
-
-            NewDict = {}
-            for Key in Dictionary:
-                if type(Dictionary[Key]) == type([]):
-                    continue
-                NewDict[Key] = Dictionary[Key]
-            self.String += string.Template(AppendString).safe_substitute(NewDict)
-
+gIncludePattern = re.compile("^[ #]*include[ ]+[\"<]*([^\"< >]+)[>\" ]*$", re.MULTILINE | re.UNICODE)
 
 MakefileHeader = '''#
 # DO NOT EDIT
@@ -74,7 +27,7 @@ MakefileHeader = '''#
 #
 # Abstract:
 #
-#   Auto-generated makefile for building module and libraries
+#   Auto-generated makefile for building modules and libraries
 #
 '''
 
@@ -353,7 +306,7 @@ INC = ${BEGIN}${include_path_prefix}$(WORKSPACE)${separator}${include_path} \\
 OBJECTS = ${BEGIN}$(OUTPUT_DIR)${separator}${object_file} \\
           ${END}
 
-LIBS = ${BEGIN}$(LIB_DIR)${separator}${library_file} \\
+LIBS = ${BEGIN}$(BUILD_DIR)${separator}$(ARCH)${separator}${library_file} \\
        ${END}${BEGIN}${system_library} \\
        ${END}
 
@@ -366,7 +319,7 @@ ENTRYPOINT = ${module_entry_point}
 # Target File Macro Definitions
 #
 PCH_FILE = $(OUTPUT_DIR)\$(MODULE_NAME).pch
-LIB_FILE = $(LIB_DIR)\$(MODULE_NAME).lib
+LIB_FILE = $(OUTPUT_DIR)\$(MODULE_NAME).lib
 LLIB_FILE = $(OUTPUT_DIR)\$(MODULE_NAME)Local.lib
 DLL_FILE = $(DEBUG_DIR)\$(MODULE_NAME).dll
 EFI_FILE = $(DEBUG_DIR)\$(MODULE_NAME).efi
@@ -514,6 +467,7 @@ $(EFI_FILE): $(DLL_FILE)
 \tGenFw -e ${module_type} -o $(EFI_FILE) $(DLL_FILE)
 \t${copy_file_command} $(EFI_FILE) $(OUTPUT_DIR)
 \t${copy_file_command} $(EFI_FILE) $(BIN_DIR)
+\t-${copy_file_command} $(DEBUG_DIR)${separator}*.map $(OUTPUT_DIR)
 
 #
 # Individual Object Build Targets
@@ -669,6 +623,8 @@ cleanlib:
 class Makefile(object):
     def __init__(self, info, opt):
         if isinstance(info, ModuleBuildInfo):
+            if info == None or info == "":
+                raise AutoGenError(msg="No valid module found! Please check your build configuration!\n")
             self.ModuleInfo = info
             self.PlatformInfo = info.PlatformInfo
             self.PackageInfo = info.PackageInfo
@@ -688,6 +644,8 @@ class Makefile(object):
             self.SystemLibraryList = []
 
         elif type(info) == type({}):    # and isinstance(info, PlatformBuildInfo):
+            if len(info) <= 0:
+                raise AutoGenError(msg="No buildable platform found! Please check your build configuration!\n")
             self.PlatformInfo = info
             self.ModuleBuild = False
             self.ModuleBuildCommandList = []
@@ -754,12 +712,12 @@ class Makefile(object):
             "library_build_directory"   : self.LibraryBuildDirectoryList,
             "module_build_directory"    : self.ModuleBuildDirectoryList,
             "fdf_file"                  : platformInfo.FdfFileList,
-            "active_platform"           : activePlatform.DescFilePath
+            "active_platform"           : platformInfo.WorkspaceDir + separator + activePlatform.DescFilePath
         }
 
         self.PrepareDirectory()
 
-        autoGenMakefile = AutoGenString()
+        autoGenMakefile = TemplateString()
         autoGenMakefile.Append(gPlatformMakefileTemplate, makefileTemplateDict)
         #print autoGenMakefile.String
 
@@ -769,7 +727,7 @@ class Makefile(object):
         else:
             filePath = file
 
-        self.SaveFile(filePath, str(autoGenMakefile))
+        SaveFileOnChange(filePath, str(autoGenMakefile))
         return filePath
 
     def GenerateModuleMakefile(self, file=None, makeType=gMakeType):
@@ -877,7 +835,7 @@ class Makefile(object):
         
         self.PrepareDirectory()
         
-        autoGenMakefile = AutoGenString()
+        autoGenMakefile = TemplateString()
         autoGenMakefile.Append(gModuleMakefileTemplate, makefileTemplateDict)
         #print autoGenMakefile.String
         
@@ -887,7 +845,7 @@ class Makefile(object):
         else:
             filePath = file
 
-        self.SaveFile(filePath, str(autoGenMakefile))
+        SaveFileOnChange(filePath, str(autoGenMakefile))
         return filePath
 
     def GenerateCustomBuildMakefile(self, file=None, makeType=gMakeType):
@@ -943,7 +901,7 @@ class Makefile(object):
 
         self.PrepareDirectory()
 
-        autoGenMakefile = AutoGenString()
+        autoGenMakefile = TemplateString()
         autoGenMakefile.Append(gCustomMakefileTemplate, makefileTemplateDict)
         #print autoGenMakefile.String
 
@@ -953,21 +911,8 @@ class Makefile(object):
         else:
             filePath = file
 
-        self.SaveFile(filePath, str(autoGenMakefile))
+        SaveFileOnChange(filePath, str(autoGenMakefile))
         return filePath
-
-    def SaveFile(self, file, content):
-        # print "######",file,"######"
-        f = None
-        if os.path.exists(file):
-            f = open(file, 'r')
-            if content == f.read():
-                f.close()
-                return
-            f.close()
-        f = open(file, "w")
-        f.write(content)
-        f.close()
 
     def ProcessSourceFileList(self, makeType=gMakeType):
         rule = self.PlatformInfo.BuildRule
@@ -1052,7 +997,7 @@ class Makefile(object):
             if family not in rule.Makefile:
                 raise AutoGenError(msg="Tool chain family [%s] is not supported: %s" % (family, str(f)))
 
-            f = str(f)
+            f = f.SourceFile
             fpath = self.ModuleInfo.SourceDir + separator + f
             fname = path.basename(f)
             fbase, fext = path.splitext(fname)
@@ -1110,7 +1055,7 @@ class Makefile(object):
         # Expand "fdep"
         #
         for template in fileBuildTemplatetList:
-            makefileString = AutoGenString()
+            makefileString = TemplateString()
             template["fdep"] = self.FileDependency[template["fpath"]]
             makefileString.Append(template["string"], template)
             self.ObjectBuildTargetList.append(makefileString)
@@ -1118,10 +1063,10 @@ class Makefile(object):
     def ProcessDependentLibrary(self, makeType=gMakeType):
         for libm in self.ModuleInfo.DependentLibraryList:
             libf = str(libm)
-            libp = path.dirname(libf)
             base = path.basename(libf).split(".")[0]
-            self.LibraryBuildDirectoryList.append(libp + gDirectorySeparator[makeType] + base)
-            self.LibraryFileList.append(libm.BaseName + ".lib")
+            libp = path.dirname(libf) + gDirectorySeparator[makeType] + base
+            self.LibraryBuildDirectoryList.append(libp)
+            self.LibraryFileList.append(gDirectorySeparator[makeType].join([libp, "OUTPUT", libm.BaseName + ".lib"]))
 
     def GetPlatformBuildDirectory(self):
         if os.path.isabs(self.PlatformInfo.OutputDir):

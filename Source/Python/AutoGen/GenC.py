@@ -6,6 +6,7 @@ from Common import EdkLogger
 from Common.BuildToolError import *
 from Common.DataType import *
 from Common.EdkIIWorkspace import *
+from Common.Misc import *
 from BuildInfo import *
 from StrGather import *
 
@@ -767,69 +768,6 @@ ModuleTypeHeaderFile = {
     "USER_DEFINED"      :   [BasicHeaderFile]
 }
 
-##ModuleTypeHeaderFile = {
-##    "BASE"              :   BasicHeaderFile,
-##    "SEC"               :   ["Peim.h", "DebugLib.h", ],         # "PiPei.h",
-##    "PEI_CORE"          :   ["PeiCore.h", "DebugLib.h"],        # "PiPei.h",
-##    "PEIM"              :   ["Peim.h", "DebugLib.h"],           # PiPei.h",
-##    "DXE_CORE"          :   ["DxeCore.h", "DebugLib.h"],        # PiDxe.h",
-##    "DXE_DRIVER"        :   ["Dxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
-##    "DXE_SMM_DRIVER"    :   ["Dxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
-##    "DXE_RUNTIME_DRIVER":   ["Dxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
-##    "DXE_SAL_DRIVER"    :   ["Dxe.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],   # "PiDxe.h",
-##    "UEFI_DRIVER"       :   ["Uefi.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"],
-##    "UEFI_APPLICATION"  :   ["Uefi.h", "BaseLib.h", "DebugLib.h", "UefiBootServicesTableLib.h"]
-##}
-
-def GuidStringToGuidStructureString(Guid):
-  GuidList = Guid.split('-')
-  Result = '{'
-  for Index in range(0,3,1):
-    Result = Result + '0x' + GuidList[Index] + ', '
-  Result = Result + '{0x' + GuidList[3][0:2] + ', 0x' + GuidList[3][2:4]
-  for Index in range(0,12,2):
-    Result = Result + ', 0x' + GuidList[4][Index:Index+2]
-  Result += '}}'
-  return Result
-
-def GuidStructureStringToGuidString(GuidValue):
-    guidValueString = GuidValue.lower().replace("{", "").replace("}", "").replace(" ", "")
-    guidValueList = guidValueString.split(",")
-    if len(guidValueList) != 11:
-        raise AutoGenError(msg="Invalid GUID value string %s" % GuidValue)
-    return "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x" % (
-            int(guidValueList[0], 16),
-            int(guidValueList[1], 16),
-            int(guidValueList[2], 16),
-            int(guidValueList[3], 16),
-            int(guidValueList[4], 16),
-            int(guidValueList[5], 16),
-            int(guidValueList[6], 16),
-            int(guidValueList[7], 16),
-            int(guidValueList[8], 16),
-            int(guidValueList[9], 16),
-            int(guidValueList[10], 16)
-            )
-
-def GuidStructureStringToGuidValueName(GuidValue):
-    guidValueString = GuidValue.lower().replace("{", "").replace("}", "").replace(" ", "")
-    guidValueList = guidValueString.split(",")
-    if len(guidValueList) != 11:
-        raise AutoGenError(msg="Invalid GUID value string %s" % GuidValue)
-    return "%08x_%04x_%04x_%02x%02x_%02x%02x%02x%02x%02x%02x" % (
-            int(guidValueList[0], 16),
-            int(guidValueList[1], 16),
-            int(guidValueList[2], 16),
-            int(guidValueList[3], 16),
-            int(guidValueList[4], 16),
-            int(guidValueList[5], 16),
-            int(guidValueList[6], 16),
-            int(guidValueList[7], 16),
-            int(guidValueList[8], 16),
-            int(guidValueList[9], 16),
-            int(guidValueList[10], 16)
-            )
-
 def GetGuidValue(packages, cname):
     for p in packages:
         if cname in p.Guids:
@@ -889,7 +827,7 @@ def CreateModulePcdCode(info, autoGenC, autoGenH, pcd):
     #
     pcdTokenName = '_PCD_TOKEN_' + pcd.TokenCName
     if pcd.Type in gDynamicExPcd:
-        tokenNumber = pcd.TokenValue
+        tokenNumber = int(pcd.TokenValue, 16)
     else:
         if (pcd.TokenCName, pcd.TokenSpaceGuidCName) not in pcdTokenNumber:
             raise AutoGenError(msg="No generated token number for %s|%s\n" % (pcd.TokenCName, pcd.TokenSpaceGuidCName))
@@ -969,7 +907,7 @@ def CreateModulePcdCode(info, autoGenC, autoGenH, pcd):
             autoGenH.Append('extern %s  %s  %s%s;\n' % (Const, pcd.DatumType, PcdVariableName, Array))
             autoGenH.Append('#define %s  %s%s\n' % (getModeName, Type, PcdVariableName))
 
-        if pcd.Type == 'PATCHABLE_IN_MODULE':
+        if pcd.Type == TAB_PCDS_PATCHABLE_IN_MODULE:
             if pcd.DatumType == 'VOID*':
                 autoGenH.Append('#define %s(SizeOfBuffer, Buffer)  LibPatchPcdSetPtr(_gPcd_BinaryPatch_%s, (UINTN)_PCD_PATCHABLE_%s_SIZE, (SizeOfBuffer), (Buffer))\n' % (setModeName, pcd.TokenCName, pcd.TokenCName))
             else:
@@ -1124,11 +1062,12 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
         #
         # TODO: need GetGuidValue() definition
         #
-        TokenSpaceGuid = GuidStructureStringToGuidValueName(GetGuidValue(platform.PackageList, TokenSpaceGuidCName))
+        TokenSpaceGuidStructure = GetGuidValue(platform.PackageList, TokenSpaceGuidCName)
+        TokenSpaceGuid = GuidStructureStringToGuidValueName(TokenSpaceGuidStructure)
         if Pcd.Type == 'DYNAMIC_EX':
             if TokenSpaceGuid not in GuidList:
                 GuidList += [TokenSpaceGuid]
-                Dict['GUID_STRUCTURE'].append(TokenSpaceGuid)
+                Dict['GUID_STRUCTURE'].append(TokenSpaceGuidStructure)
             NumberOfExTokens += 1
 
         ValueList = []
@@ -1147,7 +1086,8 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
         if len(Pcd.SkuInfoList) > 1:
             Pcd.TokenTypeList += ['PCD_TYPE_SKU_ENABLED']
 
-        for Sku in Pcd.SkuInfoList:
+        for SkuName in Pcd.SkuInfoList:
+            Sku = Pcd.SkuInfoList[SkuName]
             SkuId = Sku.SkuId
             if SkuId == None or SkuId == '':
                 continue
@@ -1159,7 +1099,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
             if len(Sku.VariableName) > 0:
                 Pcd.TokenTypeList += ['PCD_TYPE_HII']
                 Pcd.InitString = 'INIT'
-                VariableNameStructure = '{' + ', '.join(Sku.VariableName) + ', 0x0000}'
+                VariableNameStructure = '{' + ', '.join(Sku.VariableName.split(" ")) + ', 0x0000}'
                 if VariableNameStructure not in Dict['STRING_TABLE_VALUE']:
                     Dict['STRING_TABLE_CNAME'].append(CName)
                     Dict['STRING_TABLE_GUID'].append(TokenSpaceGuid)
@@ -1177,10 +1117,11 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
                 for Index in range(Dict['STRING_TABLE_VALUE'].index(VariableNameStructure)):
                     VariableHeadStringIndex += Dict['STRING_TABLE_LENGTH'][Index]
 
-                VariableGuid = GuidStructureStringToGuidValueName(self.GetGuidValue(Sku.VariableGuid))
+                VariableGuidStructure = GetGuidValue(platform.PackageList, Sku.VariableGuid)
+                VariableGuid = GuidStructureStringToGuidValueName(VariableGuidStructure)
                 if VariableGuid not in GuidList:
                     GuidList += [VariableGuid]
-                    Dict['GUID_STRUCTURE'].append(VariableGuid)
+                    Dict['GUID_STRUCTURE'].append(VariableGuidStructure)
                 VariableHeadGuidIndex = GuidList.index(VariableGuid)
 
                 VariableHeadValueList.append('%d, %d, %s, offsetof(${PHASE}_PCD_DATABASE, Init.%s_%s_VariableDefault_%s)' %
@@ -1581,23 +1522,11 @@ def Generate(filePath, autoGenC, autoGenH):
     CreateDirectory(filePath)
 
     autoGenFileList = []
-    SaveFile(os.path.join(filePath, "AutoGen.h"), autoGenH.String)
+    SaveFileOnChange(os.path.join(filePath, "AutoGen.h"), autoGenH.String)
     autoGenFileList.append("AutoGen.h")
 
     if autoGenC.String != "":
-        SaveFile(os.path.join(filePath, "AutoGen.c"), autoGenC.String)
+        SaveFileOnChange(os.path.join(filePath, "AutoGen.c"), autoGenC.String)
         autoGenFileList.append("AutoGen.c")
 
     return autoGenFileList
-
-def SaveFile(file, content):
-    f = None
-    if os.path.exists(file):
-        f = open(file, "r")
-        if content == f.read():
-            f.close()
-            return
-        f.close()
-    f = open(file, "w")
-    f.write(content)
-    f.close()
