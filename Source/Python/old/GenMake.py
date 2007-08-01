@@ -512,6 +512,7 @@ $(EFI_FILE): $(DLL_FILE)
 \tGenFw -e ${module_type} -o $(EFI_FILE) $(DLL_FILE)
 \t${copy_file_command} $(EFI_FILE) $(OUTPUT_DIR)
 \t${copy_file_command} $(EFI_FILE) $(BIN_DIR)
+\t-${copy_file_command} $(DEBUG_DIR)${separator}*.map $(OUTPUT_DIR)
 
 #
 # Individual Object Build Targets
