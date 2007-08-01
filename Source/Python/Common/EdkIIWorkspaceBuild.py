@@ -469,7 +469,7 @@ class WorkspaceBuild(object):
                                 Instance = self.FindLibraryClassInstanceOfLibrary(Lib, Arch, Type)
                                 if Instance == None:
                                     Instance = RecommendedInstance
-                                    pb.LibraryClasses[(Lib, Type)] = NormPath(Instance)
+                                pb.LibraryClasses[(Lib, Type)] = NormPath(Instance)
                         else:
                             # For Module
                             Instance = self.FindLibraryClassInstanceOfModule(Lib, Arch, pb.ModuleType, Inf) 

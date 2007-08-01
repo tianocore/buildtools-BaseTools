@@ -265,8 +265,10 @@ class Inf(InfObject):
             LibraryClass.RecommendedInstance = Key[1]
             LibraryClass.FeatureFlag = Key[2]
             LibraryClass.SupArchList = LibraryClasses[Key]
-            if Key[3] != ['']:
+            if Key[3] != '':
                 LibraryClass.SupModuleList = GetSplitValueList(Key[3])
+            else:
+                LibraryClass.SupModuleList = DataType.SUP_MODULE_LIST
             self.Module.LibraryClasses.append(LibraryClass)
         
         #Packages
@@ -569,7 +571,7 @@ class Inf(InfObject):
         
 if __name__ == '__main__':
     m = Inf()
-    directory = 'C:\Documents and Settings\\hchen30\\Desktop\\prototype\\inf'
+    directory = 'C:\MyWorkspace\MdePkg\Library\BaseLib'
     fileList = []
     
     for f in os.listdir(directory):

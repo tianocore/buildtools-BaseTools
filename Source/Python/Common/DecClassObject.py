@@ -73,7 +73,11 @@ class Dec(DecObject):
             self.DecToPackage()
     
     def ParseDec(self, Lines, Key, KeyField):
-        GetMultipleValuesOfKeyFromLines(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
+        newKey = SplitModuleType(Key)
+        if newKey[0].find(DataType.TAB_LIBRARY_CLASSES.upper()) != -1:
+            GetLibraryClassesWithModuleType(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
+        else:
+            GetMultipleValuesOfKeyFromLines(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
             
     def MergeAllArches(self):
         for key in self.KeyList:
@@ -188,16 +192,19 @@ class Dec(DecObject):
         LibraryClasses = {}
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].LibraryClasses:
-                List = GetSplitValueList(Item, DataType.TAB_VALUE_SPLIT)
+                List = GetSplitValueList(Item[0], DataType.TAB_VALUE_SPLIT)
                 if len(List) != 2:
                     ErrorMsg = "Wrong statement '%s' found in section LibraryClasses in file '%s', correct format is '<CName>=<GuidValue>'" % (Item, self.Package.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                 else:
-                    MergeArches(LibraryClasses, (List[0], List[1]), Arch)
+                    if Item[1] == ['']:
+                            Item[1] = DataType.SUP_MODULE_LIST
+                    MergeArches(LibraryClasses, (List[0], List[1]) + tuple(Item[1]), Arch)
         for Key in LibraryClasses.keys():
             LibraryClass = LibraryClassClass()
             LibraryClass.LibraryClass = Key[0]
             LibraryClass.RecommendedInstance = Key[1]
+            LibraryClass.SupModuleList = list(Key[2:])
             LibraryClass.SupArchList = LibraryClasses[Key]
             self.Package.LibraryClassDeclarations.append(LibraryClass)
         
@@ -278,7 +285,7 @@ class Dec(DecObject):
             print Item.CName, Item.Guid, Item.SupArchList
         print '\nLibraryClasses =', m.LibraryClassDeclarations
         for Item in m.LibraryClassDeclarations:
-            print Item.LibraryClass, Item.RecommendedInstance, Item.SupArchList
+            print Item.LibraryClass, Item.RecommendedInstance, Item.SupModuleList, Item.SupArchList
         print '\nPcds =', m.PcdDeclarations
         for Item in m.PcdDeclarations:
             print Item.CName, Item.TokenSpaceGuidCName, Item.DefaultValue, Item.ItemType, Item.Token, Item.DatumType, Item.SupArchList
