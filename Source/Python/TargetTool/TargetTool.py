@@ -112,7 +112,7 @@ class TargetTool():
                                         Line = "%-30s = %s\n" % (Key, self.Opt.TOOL_DEFINITION_FILE)
                                     else:
                                         pass
-                                elif Key == TAB_TAT_DEFINES_MULTIPLE_THREAD and self.Opt.Num != None:
+                                elif Key == TAB_TAT_DEFINES_MULTIPLE_THREAD and self.Opt.NUM != None:
                                     if self.Opt.NUM >= 2:
                                         Line = "%-30s = %s\n" % (Key, 'Enable')
                                     else:
@@ -131,7 +131,7 @@ class TargetTool():
                                 elif Key == TAB_TAT_DEFINES_TARGET_ARCH:
                                     if self.Opt.TARGET == ['0']:
                                         Line = "%-30s = \n" % Key
-                                    if self.Opt.TARGET_ARCH != None:
+                                    elif self.Opt.TARGET_ARCH != None:
                                         Line = "%-30s = %s\n" % (Key, ''.join(elem + ' ' for elem in self.Opt.TARGET_ARCH))
                                     else:
                                         pass
@@ -162,8 +162,6 @@ __usage__ = "%prog [options] {args} \
 
 def MyOptionParser():
     parser = OptionParser(version=__version__,prog="TargetTool.exe",usage=__usage__,description=__copyright__)
-    parser.add_option("-d", "--dest", action="store", type="string", dest="DestFile",
-        help="Specify the WORKSPACE relative path of Dest File: Target.txt which is to be edited.")
     parser.add_option("-a", "--arch", action="append", type="choice", choices=['IA32','X64','IPF','EBC','0'], dest="TARGET_ARCH",
         help="ARCHS is one of list: IA32, X64, IPF or EBC, which replaces target.txt's TARGET_ARCH definition. To specify more archs, please repeat this option. 0 will clear this setting in target.txt and can't combine with other value.")
     parser.add_option("-p", "--platform", action="store", type="string", dest="DSCFILE",
