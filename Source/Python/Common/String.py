@@ -226,12 +226,11 @@ def NormPath(Path, Defines = {}):
         for Key in Defines.keys():
             Path = Path.replace(Key, Defines[Key])
 
-        # Replace '\\', '\' with '/'
-        Path = Path.replace('\\', '/')
-        Path = Path.replace('//', '/')
-        
         # Remove ${WORKSPACE}
         Path = Path.replace(DataType.TAB_WORKSPACE, '')
+
+        # To local path format
+        Path = os.path.normpath(Path)
 
     return Path
 

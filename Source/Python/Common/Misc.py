@@ -16,10 +16,20 @@
 #
 import os
 import sys
+import string
 
-##
+## callback routine for processing variable option
 #
+# This function can be used to process variable number of option values. The
+# typical usage of it is specify architecure list on command line.
+# (e.g. <tool> -a IA32 X64 IPF)
 #
+# @param  Option        Standard callback function parameter
+# @param  OptionString  Standard callback function parameter
+# @param  Value         Standard callback function parameter
+# @param  Parser        Standard callback function parameter
+#
+# @retval
 #
 def ProcessVariableArgument(Option, OptionString, Value, Parser):
     assert Value is None

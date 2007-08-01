@@ -191,8 +191,8 @@ class WorkspaceBuild(object):
         #
         # Get active platform
         #
-        DscFileName = ActivePlatform
-        File = self.WorkspaceFile(NormPath(DscFileName))
+        DscFileName = NormPath(ActivePlatform)
+        File = self.WorkspaceFile(DscFileName)
         if os.path.exists(File) and os.path.isfile(File):
             self.DscDatabase[DscFileName] = Dsc(File, True, True)
         else:
@@ -500,14 +500,18 @@ class WorkspaceBuild(object):
                 for Inf in Platform.Modules:
                     Module = self.Build[Arch].ModuleDatabase[NormPath(Inf)]
                     Stack = [NormPath(str(Module))]
+                    Libs = []
                     while len(Stack) > 0:
                         M = self.Build[Arch].ModuleDatabase[Stack.pop()]
-                        if M != Module:
-                            Platform.Libraries.append(M)
-                        for Lib in M.LibraryClasses.values():
-                            if Lib not in Platform.Libraries and Lib != '':
-                                Platform.Libraries.append(NormPath(Lib))
-                                Stack.append(NormPath(Lib))
+                        for Key, Lib in M.LibraryClasses.iteritems():
+                            if Module.ModuleType not in Key or Lib == None or Lib == "":
+                                continue
+                            Lib = NormPath(Lib)
+                            if Lib not in Platform.Libraries:
+                                Platform.Libraries.append(Lib)
+                            if Lib not in Libs:
+                                Libs.append(Lib)
+                                Stack.append(Lib)
     
     #
     # Generate build database for all arches
@@ -522,7 +526,7 @@ class WorkspaceBuild(object):
     # Return a full path with workspace dir
     #
     def WorkspaceFile(self, Filename):
-        return os.path.join(os.path.normpath(self.WorkspaceDir), os.path.normpath(Filename))
+        return os.path.join(self.WorkspaceDir, Filename)
     
     #
     # If a module of a platform has its own override libraryclass but the libraryclass not defined in the module
