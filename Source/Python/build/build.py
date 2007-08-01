@@ -13,9 +13,6 @@
 import os, sys, string, glob, time, traceback
 from threading import *
 from optparse import OptionParser
-from os.path import normpath
-
-
 from subprocess import *
 
 from Common.TargetTxtClassObject import *
