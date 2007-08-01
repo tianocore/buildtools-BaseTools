@@ -4,7 +4,7 @@ import subprocess
 from Ffs import Ffs
 import os
 from CommonDataClass.FdfClassObject import EfiSectionClassObject
-
+import shutil
 class EfiSection (EfiSectionClassObject):
     
     def __init__(self):
@@ -67,6 +67,7 @@ class EfiSection (EfiSectionClassObject):
                              ' -s EFI_SECTION_VERSION'  + \
                              VerString                  + \
                              BuildNumString
+            
         #
         # If Section Type is 'UI'
         #
@@ -125,6 +126,15 @@ class EfiSection (EfiSectionClassObject):
                               Section.Section.SectionType.get (SectionType)   + \
                               ' '                                             + \
                               GenFdsGlobalVariable.ExtendMarco(Filename)
+
+             """ Copy Map file to FFS output path """
+             Filename = GenFdsGlobalVariable.ExtendMarco(Filename)
+             if Filename[(len(Filename)-4):] == '.efi':
+                 MapFile = Filename.replace('.efi', '.map')
+                 if os.path.exists(MapFile):
+                     CopyMapFile = os.path.join(OutputPath, ModuleName + '.map')
+                     shutil.copyfile(MapFile, CopyMapFile)
+
         #
         # Call GenSection
         #

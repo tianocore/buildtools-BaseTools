@@ -42,18 +42,30 @@ def main():
 
     if (options.filename):
         fdfFilename = options.filename
+        fdfFilename = GenFdsGlobalVariable.ReplaceWorkspaceMarco(fdfFilename)
     else:
         GenFdsGlobalVariable.InfLogger("ERROR: E0001 - You must specify an input filename")
         sys.exit(1)
 
+    if fdfFilename[0:2] == '..':
+        fdfFilename = os.path.realpath(fdfFilename)
+    if fdfFilename[1] != ':':
+        fdfFilename = os.path.join(GenFdsGlobalVariable.WorkSpaceDir, fdfFilename)
+            
     if not os.path.exists(fdfFilename):
-        GenFdsGlobalVariable.InfLogger ("ERROR: E1000: File %s not found" % (filename))
+        GenFdsGlobalVariable.InfLogger ("ERROR: E1000: File %s not found" % (fdfFilename))
         sys.exit(1)
 
     if (options.activePlatform):
         activePlatform = options.activePlatform
-        activePlatform = os.path.realpath(activePlatform)
-        
+        activePlatform = GenFdsGlobalVariable.ReplaceWorkspaceMarco(activePlatform)
+
+        if activePlatform[0:2] == '..':
+            activePlatform = os.path.realpath(activePlatform)
+
+        if activePlatform[1] != ':':
+            activePlatform = os.path.join(GenFdsGlobalVariable.WorkSpaceDir, activePlatform)
+
         if not os.path.exists(activePlatform)  :
             raise Exception ("ActivePlatform doesn't exist!")
         
@@ -74,16 +86,33 @@ def main():
         
     if (options.outputDir):
         outputDir = options.outputDir
+        outputDir = GenFdsGlobalVariable.ReplaceWorkspaceMarco(outputDir)
     else:
         #print "ERROR: E0001 - You must specify an Output directory"
         GenFdsGlobalVariable.InfLogger("ERROR: E0001 - You must specify an Output directory")
         sys.exit(1)
+
+    if outputDir[0:2] == '..':
+        outputDir = os.path.realpath(outputDir)
         
+    if outputDir[1] != ':':
+        outputDir = os.path.join (GenFdsGlobalVariable.WorkSpaceDir, outputDir)
+
+    if not os.path.exists(outputDir):
+        GenFdsGlobalVariable.InfLogger ("ERROR: E1000: Directory %s not found" % (outputDir))
+        sys.exit(1)
+
     if (options.archList) :
         archList = options.archList.split(',')
     else:
         Target = Common.TargetTxtClassObject.TargetTxtDict(GenFdsGlobalVariable.WorkSpaceDir)
         archList = Target.TargetTxtDictionary['TARGET_ARCH']
+
+    if (options.uiFdName) :
+        GenFds.currentFd = options.uiFdName
+
+    if (options.uiFvName) :
+        GenFds.currentFv = options.uiFvName
         
     """ Parse Fdf file """
     fdfParser = FdfParser.FdfParser(fdfFilename)
@@ -102,13 +131,14 @@ def myOptionParser():
     parser = OptionParser(usage=usage,description=__copyright__,version="%prog " + str(versionNumber))
     parser.add_option("-f", "--file", dest="filename", help="Name of FDF file to convert")
     parser.add_option("-a", "--arch", dest="archList", help="comma separated list containing one or more of: IA32, X64, IPF or EBC which should be built, overrides target.txt?s TARGET_ARCH")
-    parser.add_option("-i", "--interactive", action="store_true", dest="interactive", default=False, help="Set Interactive mode, user must approve each change.")
     parser.add_option("-q", "--quiet", action="store_true", type=None, help="Disable all messages except FATAL ERRORS.")
     parser.add_option("-v", "--verbose", action="store_true", type=None, help="Turn on verbose output with informational messages printed.")
     parser.add_option("-d", "--debug", action="store", type="int", help="Enable debug messages at specified level.")
     parser.add_option("-p", "--platform", dest="activePlatform", help="Set the Active platform")
     parser.add_option("-w", "--workspace", dest="workspace", default=str(os.environ.get('WORKSPACE')), help="Enable printing of debug messages.")
     parser.add_option("-o", "--outputDir", dest="outputDir", help="Name of Output directory")
+    parser.add_option("-r", "--rom_image", dest="uiFdName", help="Build the image using the [FD] section named by FdUiName.")
+    parser.add_option("-i", "--FvImage", dest="uiFvName", help="Buld the FV image using the [FV] section named by UiFvName")
     (options, args) = parser.parse_args()
     return options
 
@@ -116,9 +146,12 @@ def myOptionParser():
 class GenFds :
     FdfParsef = None
     FvBinDict = {}      # FvName in Fdf, FvBinFile
+    currentFd = None
+    currentFv = None
     
     def GenFd (OutputDir, FdfParser, WorkSpace, ArchList):
         GenFdsGlobalVariable.SetDir (OutputDir, FdfParser, WorkSpace, ArchList)
+        
         """Set Default Rule! Hard code here will be move"""
         verSection1 = EfiSection()
         verSection1.BuildNum = "$(BUILD_NUMBER)"
@@ -136,7 +169,7 @@ class GenFds :
         dataSection.Filename = "$(INF_OUTPUT)/$(MODULE_NAME).efi"
 
         ruleComplexFile1 = RuleComplexFile.RuleComplexFile()
-        ruleComplexFile1.Alignment = 16
+        ruleComplexFile1.Alignment = 32
         ruleComplexFile1.Arch = 'COMMON'
         ruleComplexFile1.CheckSum = True
         ruleComplexFile1.Fixed = True
@@ -148,17 +181,30 @@ class GenFds :
         GenFdsGlobalVariable.SetDefaultRule(ruleComplexFile1)
 
         GenFdsGlobalVariable.VerboseLogger("   Gen Fd  !")
-        for item in GenFdsGlobalVariable.FdfParser.profile.FdDict.keys():
-            fd = GenFdsGlobalVariable.FdfParser.profile.FdDict[item]
-            fd.GenFd(GenFds.FvBinDict)
+        if GenFds.currentFd != None:
+            fd = GenFdsGlobalVariable.FdfParser.profile.FdDict.get(GenFds.currentFd.upper())
+            if fd != None:
+                fd.GenFd(GenFds.FvBinDict)
+        else :
+            for item in GenFdsGlobalVariable.FdfParser.profile.FdDict.keys():
+                fd = GenFdsGlobalVariable.FdfParser.profile.FdDict[item]
+                fd.GenFd(GenFds.FvBinDict)
             
         GenFdsGlobalVariable.VerboseLogger(" Gen FV ! ")
-        for FvName in GenFdsGlobalVariable.FdfParser.profile.FvDict.keys():
-            if not FvName in GenFds.FvBinDict.keys():
+        if GenFds.currentFv != None:
+            fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(GenFds.currentFv.upper())
+            if fv != None:
                 Buffer = StringIO.StringIO()
-                fv = GenFdsGlobalVariable.FdfParser.profile.FvDict[FvName]
                 fv.AddToBuffer(Buffer)
                 Buffer.close()
+                
+        else:
+            for FvName in GenFdsGlobalVariable.FdfParser.profile.FvDict.keys():
+                if not FvName in GenFds.FvBinDict.keys():
+                    Buffer = StringIO.StringIO()
+                    fv = GenFdsGlobalVariable.FdfParser.profile.FvDict[FvName]
+                    fv.AddToBuffer(Buffer)
+                    Buffer.close()
         
         GenFdsGlobalVariable.VerboseLogger(" Gen Capsule !")
         for capsule in GenFdsGlobalVariable.FdfParser.profile.CapsuleList:

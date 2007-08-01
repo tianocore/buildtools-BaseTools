@@ -4,6 +4,7 @@ import subprocess
 from Ffs import Ffs
 import os
 from CommonDataClass.FdfClassObject import DataSectionClassObject
+import shutil
 
 class DataSection (DataSectionClassObject):
     def __init__(self):
@@ -43,7 +44,14 @@ class DataSection (DataSectionClassObject):
                          Section.Section.SectionType.get (self.SecType)  + \
                          ' '                                             + \
                          GenFdsGlobalVariable.ExtendMarco(self.SectFileName)
-
+                         
+        """Copy Map file to Ffs output"""
+        Filename = GenFdsGlobalVariable.ExtendMarco(self.SectFileName)
+        if Filename[(len(Filename)-4):] == '.efi':
+             MapFile = Filename.replace('.efi', '.map')
+             if os.path.exists(MapFile):
+                 CopyMapFile = os.path.join(OutputPath, ModuleName + '.map')
+                 shutil.copyfile(MapFile, CopyMapFile)
         #
         # Call GenSection
         #
