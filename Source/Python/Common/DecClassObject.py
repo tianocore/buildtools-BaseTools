@@ -92,6 +92,7 @@ class Dec(DecObject):
         self.Identification.FileRelativePath = Filepath
         
         f = open(Filename, 'r').read()
+        PreCheck(Filename, f, self.KeyList)
         sects = f.split('[')
         for sect in sects:
             tab = (sect.split(TAB_SECTION_END, 1)[0]).upper()

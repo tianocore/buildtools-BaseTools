@@ -116,7 +116,7 @@ gErrorMessage = {
     PARAMETER_MISSING       :   "Missing parameter: %(name)s",
     PARAMETER_UNKNOWN_ERROR :   "Unknown error in parameters",
 
-    FORMAT_INVALID          :   "Invalid sytax/format at line %(lineno) in %(name)s",
+    FORMAT_INVALID          :   "Invalid sytax/format at line %(lineno)s in file %(name)s",
     FORMAT_NOT_SUPPORTED    :   "Not supported: %(name)s",
     FORMAT_UNKNOWN          :   "Unknown format: %(name)s",
     FORMAT_UNKNOWN_ERROR    :   "Unknown error in %(name)s",

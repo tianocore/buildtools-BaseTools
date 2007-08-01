@@ -114,6 +114,7 @@ class Dsc(DscObject):
         self.Identification.FileRelativePath = Filepath
         
         F = open(Filename, 'r').read()
+        PreCheck(Filename, F, self.KeyList)
         sects = F.split('[')
         for sect in sects:
             tab = (sect.split(TAB_SECTION_END, 1)[0]).upper()

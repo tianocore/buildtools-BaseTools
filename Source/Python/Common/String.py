@@ -14,6 +14,7 @@
 import DataType
 import os.path
 import string
+from BuildToolError import *
 
 #
 # Get a value list from a string with multiple values splited with SplitTag
@@ -243,13 +244,6 @@ def CleanString(Line, CommentCharacter = DataType.TAB_COMMENT_SPLIT):
     Line = Line.strip();
     #remove comments
     Line = Line.split(CommentCharacter, 1)[0];
-    #replace '\\', '\' with '/'
-    #Line = Line.replace('\\', '/')
-    #Line = Line.replace('//', '/')
-    #remove ${WORKSPACE}
-    #Line = Line.replace(DataType.TAB_WORKSPACE1, '')
-    #Line = Line.replace(DataType.TAB_WORKSPACE2, '')
-    
     #remove whitespace again
     Line = Line.strip();
     
@@ -316,6 +310,43 @@ def GetSingleValueOfKeyFromLines(Lines, Dictionary, CommentCharacter, KeySplitCh
     
     return True
 
+#
+# Do pre-check for a file before it is parsed
+# Check $()
+# Check []
+#
+def PreCheck(FileName, FileContent, SupSectionTag):
+    LineNo = 0
+    IsFailed = False
+    for Line in FileContent.splitlines():
+        LineNo = LineNo + 1
+        Line = CleanString(Line)
+        #
+        # Check $()
+        #
+        if Line.find('$') > -1:
+            if Line.find('$(') < 0 or Line.find(')') < 0:
+                IsFailed = True
+                break
+
+        #
+        # Check []
+        #
+        if Line.find('[') > -1 or Line.find(']') > -1:
+            # Only get one '[' or one ']'
+            if not (Line.find('[') > -1 and Line.find(']') > -1):
+                IsFailed = True
+                break
+            # Tag not in defined value
+            Tag = Line.split(DataType.TAB_SPLIT, 1)[0].replace('[', '').replace(']', '').strip()
+            if Tag.upper() == DataType.TAB_COMMON_DEFINES.upper():
+                break
+            if Tag.upper() not in map(lambda s: s.upper(), SupSectionTag):
+                IsFailed = True
+                break
+    
+    if IsFailed:
+       raise ParserError(FORMAT_INVALID, lineno = LineNo, name = FileName)
 
 if __name__ == '__main__':
     print SplitModuleType('LibraryClasses.common.DXE_RUNTIME_DRIVER')
