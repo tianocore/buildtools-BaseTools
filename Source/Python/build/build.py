@@ -207,7 +207,7 @@ class Build():
             FileList = glob.glob(os.path.normpath(os.path.join(DestDir, 'makefile')))
             FileNum = len(FileList)
             if FileNum > 0:
-                SameTypeFileInDir(FileNum, 'makefile', DestDir)
+                self.SameTypeFileInDir(FileNum, 'makefile', DestDir)
                 BuildSpawn(self.Sem, FileList[0], 'lbuild', 1).start()
             else:
                 print "There isn't makefils in %s.\n" % DestDir
@@ -222,7 +222,7 @@ class Build():
             FileList = glob.glob(os.path.normpath(os.path.join(DestDir, 'makefile')))
             FileNum = len(FileList)
             if FileNum > 0:
-                SameTypeFileInDir(FileNum, 'makefile', DestDir)
+                self.SameTypeFileInDir(FileNum, 'makefile', DestDir)
                 for i in range(0, int(self.Opt.NUM)):
                     self.Sem.acquire()
                 p = Popen(["nmake", "/nologo", "-f", FileList[0], 'pbuild'], env=os.environ, cwd=os.path.dirname(FileList[0]))
@@ -275,7 +275,7 @@ class Build():
             FileList = glob.glob(os.path.normpath(os.path.join(DestDir, 'makefile')))
             FileNum = len(FileList)
             if FileNum > 0:
-                SameTypeFileInDir(FileNum, 'makefile', DestDir)
+                self.SameTypeFileInDir(FileNum, 'makefile', DestDir)
                 p = Popen(["nmake", "/nologo", "-f", FileList[0], self.Args], env=os.environ, cwd=os.path.dirname(FileList[0]))
                 p.communicate()
                 if p.returncode != None:
