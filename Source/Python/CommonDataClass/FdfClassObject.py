@@ -31,6 +31,8 @@ class FvClassObject:
         self.FvAttributeDict = {}
         self.AprioriSection = None
         self.FfsList = []
+        self.BsBaseAddress = None
+        self.RtBaseAddress = None
 
 class RegionClassObject:
     def __init__(self):
@@ -41,7 +43,7 @@ class RegionClassObject:
         self.RegionSize = None
         self.SetVarDict = {}
         self.RegionType = None
-        self.RegionData = None
+        self.RegionDataList = None
         
 class FfsClassObject:
      def __init__(self):
