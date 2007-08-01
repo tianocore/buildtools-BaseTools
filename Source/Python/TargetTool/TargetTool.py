@@ -129,15 +129,19 @@ class TargetTool():
                                     else:
                                         pass
                                 elif Key == TAB_TAT_DEFINES_TARGET_ARCH:
-                                    if self.Opt.TARGET == ['0']:
+                                    if self.Opt.TARGET_ARCH == ['0']:
                                         Line = "%-30s = \n" % Key
                                     elif self.Opt.TARGET_ARCH != None:
                                         Line = "%-30s = %s\n" % (Key, ''.join(elem + ' ' for elem in self.Opt.TARGET_ARCH))
                                     else:
                                         pass
                                 elif Key == TAB_TAT_DEFINES_TOOL_CHAIN_TAG:
-                                    if self.Opt.TOOL_CHAIN_TAG != None:
-                                        Line = "%-30s = %s\n" % (Key, ''.join(elem + ' ' for elem in self.Opt.TOOL_CHAIN_TAG))
+                                    if self.Opt.TOOL_CHAIN_TAG == '0':
+                                        Line = "%-30s = \n" % Key
+                                    elif self.Opt.TOOL_CHAIN_TAG != None:
+                                        Line = "%-30s = %s\n" % (Key, self.Opt.TOOL_CHAIN_TAG)
+                                    else:
+                                        pass
                                 else:
                                     pass
                             fw.write(Line)
