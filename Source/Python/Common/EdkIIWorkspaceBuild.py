@@ -210,7 +210,7 @@ class WorkspaceBuild(object):
             self.SupArchList = Platform.Header.SupArchList
             self.BuildTarget = Platform.Header.BuildTargets
             self.SkuId = Platform.Header.SkuIdName
-            self.Fdf = Platform.FlashDefinitionFile.FilePath
+            self.Fdf = NormPath(Platform.FlashDefinitionFile.FilePath)
             
             #
             # Get all inf files
