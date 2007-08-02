@@ -266,22 +266,23 @@ class Build():
 
 
     def OtherFunc(self, ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
-        for d in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
-            if ModuleFile == None:
-                DestDir = os.path.normpath(os.path.join(os.environ["WORKSPACE"], d, Target + '_' + ToolChain))
-            else:
-                (filename, ext) = os.path.splitext(os.normpath(os.path.join(os.environ["WORKSPACE"], d, Target + '_' + ToolChain, Arch, ModuleFile)))
-                DestDir = filename
-            FileList = glob.glob(os.path.normpath(os.path.join(DestDir, 'makefile')))
-            FileNum = len(FileList)
-            if FileNum > 0:
-                self.SameTypeFileInDir(FileNum, 'makefile', DestDir)
-                p = Popen(["nmake", "/nologo", "-f", FileList[0], self.Args], env=os.environ, cwd=os.path.dirname(FileList[0]))
-                p.communicate()
-                if p.returncode != None:
-                    self.isexit(p.returncode)
-            else:
-                self.isexit(1)
+        for Platform in ewb.Build[Arch[0]].PlatformDatabase.values():
+            d = Platform.OutputDirectory
+        if ModuleFile == None:
+            DestDir = os.path.normpath(os.path.join(os.environ["WORKSPACE"], d, Target + '_' + ToolChain))
+        else:
+            (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(os.environ["WORKSPACE"], d, Target + '_' + ToolChain, Arch, ModuleFile)))
+            DestDir = filename
+        FileList = glob.glob(os.path.normpath(os.path.join(DestDir, 'makefile')))
+        FileNum = len(FileList)
+        if FileNum > 0:
+            self.SameTypeFileInDir(FileNum, 'makefile', DestDir)
+            p = Popen(["nmake", "/nologo", "-f", FileList[0], self.Args], env=os.environ, cwd=os.path.dirname(FileList[0]))
+            p.communicate()
+            if p.returncode != None:
+                self.isexit(p.returncode)
+        else:
+            self.isexit(1)
 
     def AllFunc(self, ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
         try:
@@ -307,6 +308,8 @@ class Build():
         # Merge Arch
         #
         self.Opt.TARGET_ARCH = list(set(self.Opt.TARGET_ARCH) & set(ewb.SupArchList))
+        if len(self.Opt.TARGET_ARCH) == 0:
+            self.isexit(1)
         try:
             if self.Opt.spawn == True:
                 for a in self.Opt.TARGET:
@@ -376,6 +379,9 @@ class Build():
                     else:
                         self.OtherFunc(ModuleFile, PlatformFile, ewb, a, b, self.Opt.TARGET_ARCH)
                 else:
+                    #
+                    #
+                    #
                     for c in self.Opt.TARGET_ARCH:
                         if self.GenC == 1:
                             self.GenCFunc(ModuleFile, PlatformFile, ewb, a, b, c)
@@ -452,13 +458,10 @@ if __name__ == '__main__':
 #
 # Parse the options and args
 #
-    try:
-        (opt, args) = MyOptionParser()
-        if len(args) >= 2:
-            print 'It is invaild to input more than one target.'
-            sys.exit(1)
-    except Exception, e:
-        self.TrackInfo(e)
+
+    (opt, args) = MyOptionParser()
+    if len(args) >= 2:
+        print 'It is invaild to input more than one target.'
         sys.exit(1)
 
 #
