@@ -41,7 +41,7 @@ def LoadModuleClonedRecords(XmlMsa):
 # @param  XmlMsa               An XML DOM object read from MSA file.
 # @param  MsaFileName          The file path of MSA File.
 #
-# @retvel ModuleHeader        A new Module Header object loaded from XmlMsa.
+# @retvel ModuleHeader         A new Module Header object loaded from XmlMsa.
 #
 def LoadModuleHeader(XmlMsa, MsaFileName):
     ModuleHeader = ModuleHeaderClass()

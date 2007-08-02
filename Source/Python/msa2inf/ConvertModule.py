@@ -34,10 +34,10 @@ def AddModuleMiscVersion(Module):
     Version = gInfVersion
     Module.Header.InfVersion = Version
 
-    Version = ModuleHeader.Specification.get("EFI_SPECIFICATION_VERSION", "")
+    Version = Module.Header.Specification.get("EFI_SPECIFICATION_VERSION", "")
     Module.Header.EfiSpecificationVersion = Version
     
-    Version = ModuleHeader.Specification.get("EDK_RELEASE_VERSION", "")
+    Version = Module.Header.Specification.get("EDK_RELEASE_VERSION", "")
     Module.Header.EdkReleaseVersion = Version
 
 
