@@ -463,12 +463,16 @@ class AutoGen(object):
             buildable = True
             if f.ToolChainFamily != "":
                 for toolCode in toolCodeList:
+                    if toolCode not in platformInfo.ToolChainFamily:
+                        raise AutoGenError(msg="No tool chain family available for %s" % toolCode)
                     if f.ToolChainFamily != platformInfo.ToolChainFamily[toolCode]:
                         EdkLogger.verbose("File %s for toolchain family %s is not supported" % (f.SourceFile, f.ToolChainFamily))
                         buildable = False
                         break
             else:
                 if toolCodeList != []:
+                    if toolCodeList[0] not in platformInfo.ToolChainFamily:
+                        raise AutoGenError(msg="No tool chain family available for %s" % toolCodeList[0])
                     f.ToolChainFamily = platformInfo.ToolChainFamily[toolCodeList[0]]
                 else:
                     buildable = False
