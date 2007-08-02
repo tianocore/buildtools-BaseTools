@@ -22,6 +22,7 @@ from DecClassObject import *
 from DscClassObject import *
 from String import *
 from BuildToolError import *
+from SequentialDict import *
 from CommonDataClass.CommonClass import *
 
 #
@@ -499,20 +500,178 @@ class WorkspaceBuild(object):
                 Platform = PlatformDatabase[Dsc]
                 for Inf in Platform.Modules:
                     Module = self.Build[Arch].ModuleDatabase[NormPath(Inf)]
-                    Stack = [NormPath(str(Module))]
-                    Libs = []
-                    while len(Stack) > 0:
-                        M = self.Build[Arch].ModuleDatabase[Stack.pop()]
-                        for Key, Lib in M.LibraryClasses.iteritems():
-                            if Module.ModuleType not in Key or Lib == None or Lib == "":
-                                continue
-                            Lib = NormPath(Lib)
+                    if Module.LibraryClass == None or Module.LibraryClass == "":
+                        self.UpdateLibrariesOfModule(Module, Arch)
+                        for Key in Module.LibraryClasses:
+                            Lib = Module.LibraryClasses[Key]
                             if Lib not in Platform.Libraries:
                                 Platform.Libraries.append(Lib)
-                            if Lib not in Libs:
-                                Libs.append(Lib)
-                                Stack.append(Lib)
-    
+##                    Stack = [NormPath(str(Module))]
+##                    Libs = []
+##                    while len(Stack) > 0:
+##                        M = self.Build[Arch].ModuleDatabase[Stack.pop()]
+##                        for Key, Lib in M.LibraryClasses.iteritems():
+##                            if Module.ModuleType not in Key or Lib == None or Lib == "":
+##                                continue
+##                            Lib = NormPath(Lib)
+##                            if Lib not in Platform.Libraries:
+##                                Platform.Libraries.append(Lib)
+##                            if Lib not in Libs:
+##                                Libs.append(Lib)
+##                                Stack.append(Lib)
+
+    def UpdateLibrariesOfModule(self, Module, Arch):
+        ModuleDatabase = self.Build[Arch].ModuleDatabase
+        
+        ModuleType = Module.ModuleType
+        LibraryConsumerList = [Module]
+
+        LibraryList         = []
+        Constructor         = []
+        ConsumedByList      = {}
+        LibraryClassList    = []
+
+        EdkLogger.verbose("")
+        EdkLogger.verbose("Library instances of module [%s]:" % str(Module))
+        while len(LibraryConsumerList) > 0:
+            module = LibraryConsumerList.pop()
+            for libc, libf in module.LibraryClasses.iteritems():
+                if ModuleType not in libc:
+                    EdkLogger.debug(EdkLogger.DEBUG_3, "\t%s for module type %s is not supported" % libc)
+                    continue
+                if libf == None or libf == "":
+                    EdkLogger.verbose("\tWARNING: Library instance for library class %s is not found" % libc[0])
+                    continue
+
+                libm = ModuleDatabase[libf]
+                if libm not in LibraryList and libc not in LibraryClassList:
+                    LibraryConsumerList.append(libm)
+                    LibraryList.append(libm)
+                    LibraryClassList.append(libc)
+                    EdkLogger.verbose("\t" + libc[0] + " : " + str(libm))
+
+                if libm.ConstructorList != [] and libm not in Constructor:
+                    Constructor.append(libm)
+
+                if libm not in ConsumedByList:
+                    ConsumedByList[libm] = []
+                if module != Module:
+                    if module in ConsumedByList[libm]:
+                        continue
+                    ConsumedByList[libm].append(module)
+        #
+        # Initialize the sorted output list to the empty set
+        #
+        SortedLibraryList = []
+        #
+        # Q <- Set of all nodes with no incoming edges
+        #
+        Q = []
+        for m in LibraryList:
+            if ConsumedByList[m] == []:
+                Q.insert(0, m)
+        #
+        # while Q is not empty do
+        #
+        while Q != []:
+            #
+            # remove node n from Q
+            #
+            n = Q.pop()
+            #
+            # output n
+            #
+            SortedLibraryList.append(n)
+            #
+            # for each node m with an edge e from n to m do
+            #
+            for m in LibraryList:
+                if n not in ConsumedByList[m]:
+                    continue
+                #
+                # remove edge e from the graph
+                #
+                ConsumedByList[m].remove(n)
+                #
+                # If m has no other incoming edges then
+                #
+                if ConsumedByList[m] == []:
+                    #
+                    # insert m into Q
+                    #
+                    Q.insert(0,m)
+
+            EdgeRemoved = True
+            while Q == [] and EdgeRemoved:
+                EdgeRemoved = False
+                #
+                # for each node m with a Constructor
+                #
+                for m in LibraryList:
+                    if m in Constructor:
+                        #
+                        # for each node n without a constructor with an edge e from m to n
+                        #
+                        for n in ConsumedByList[m]:
+                            if n not in Constructor:
+                                #
+                                # remove edge e from the graph
+                                #
+                                ConsumedByList[m].remove(n)
+                                EdgeRemoved = True
+                                if ConsumedByList[m] == []:
+                                    #
+                                    # insert m into Q
+                                    #
+                                    Q.insert(0,m)
+                                    break
+                    if Q != []:
+                        break
+
+        #
+        # if any remaining node m in the graph has a constructor and an incoming edge, then the graph has a cycle
+        #
+        for m in LibraryList:
+            if ConsumedByList[m] != [] and m in Constructor:
+                errorMessage = 'Module library [%s] with constructors have a cycle:\n\t' % str(m)
+                errorMessage += "\n\tconsumed by ".join([str(l) for l in ConsumedByList[m]])
+                raise AutoGenError(msg=errorMessage)
+            if m not in SortedLibraryList:
+                SortedLibraryList.append(m)
+
+        #
+        # Build the list of constructor and destructir names
+        # The DAG Topo sort produces the destructor order, so the list of constructors must generated in the reverse order
+        #
+        SortedLibraryList.reverse()
+        Module.LibraryClasses = SequentialDict()
+        for L in SortedLibraryList:
+            Module.LibraryClasses[L.LibraryClass.LibraryClass, ModuleType] = str(L)
+            #
+            # Merge PCDs from library instance
+            #
+            for Key in L.Pcds:
+                if Key not in Module.Pcds:
+                    Module.Pcds[Key] = L.Pcds[Key]
+            #
+            # Merge GUIDs from library instance
+            #
+            for CName in L.Guids:
+                if CName not in Module.Guids:
+                    Module.Guids.append(CName)
+            #
+            # Merge Protocols from library instance
+            #
+            for CName in L.Protocols:
+                if CName not in Module.Protocols:
+                    Module.Protocols.append(CName)
+            #
+            # Merge Ppis from library instance
+            #
+            for CName in L.Ppis:
+                if CName not in Module.Ppis:
+                    Module.Ppis.append(CName)
+
     #
     # Generate build database for all arches
     #
