@@ -620,10 +620,10 @@ if __name__ == '__main__':
             print "There are %d INF filss in %s.\n" % (FileNum, CurWorkDir)
             build.isexit(1)
         if build.Opt.DSCFILE:
-            if ewb.Workspace.WorkspaceDir[len(ewb.Workspace.WorkspaceDir)-1] == '\\' or ewb.Workspace.WorkspaceDir[len(ewb.Workspace.WorkspaceDir)-1] == '/':
-                ModuleFile = os.path.normpath(FileList[0][len(ewb.Workspace.WorkspaceDir):])
+            if ewb.WorkspaceDir[len(ewb.WorkspaceDir)-1] == '\\' or ewb.WorkspaceDir[len(ewb.WorkspaceDir)-1] == '/':
+                ModuleFile = os.path.normpath(FileList[0][len(ewb.WorkspaceDir):])
             else:
-                ModuleFile = os.path.normpath(FileList[0][len(ewb.Workspace.WorkspaceDir)+1:])
+                ModuleFile = os.path.normpath(FileList[0][len(ewb.WorkspaceDir)+1:])
             EdkLogger.debug(EdkLogger.DEBUG_5, '\tMODULE build: %s' % ModuleFile)
             PlatformFile = os.path.normpath(build.Opt.DSCFILE)
             EdkLogger.debug(EdkLogger.DEBUG_5, '\tPlatformFile is: %s' % PlatformFile)
