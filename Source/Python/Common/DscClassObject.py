@@ -345,7 +345,7 @@ class Dsc(DscObject):
     
     def GenSkuInfoList(self, SkuNameList, SkuInfo, VariableName = '', VariableGuid = '', VariableOffset = '', HiiDefaultValue = '', VpdOffset = '', DefaultValue = ''):
         if SkuNameList == None or SkuNameList == [] or SkuNameList == ['']:
-                SkuNameList = ['DEFAULT']
+            SkuNameList = ['DEFAULT']
         SkuInfoList = {}
         for Item in SkuNameList:
             if Item not in SkuInfo:
@@ -403,7 +403,7 @@ class Dsc(DscObject):
                 else:
                     MergeArches(Pcds, (List[0], List[1], List[2], List[3], List[4], List[5], List[6], Type), Arch)
         for Key in Pcds:
-            (Status, SkuInfoList) = self.GenSkuInfoList(Item[1], self.Platform.SkuInfos.SkuInfoList, List[2], List[3], List[4], List[5], '', '')
+            (Status, SkuInfoList) = self.GenSkuInfoList(Item[1], self.Platform.SkuInfos.SkuInfoList, Key[2], Key[3], Key[4], Key[5], '', '')
             if Status == False:
                 ErrorMsg = "SKUID '%s' of '%s' not defined in file '%s'" % (SkuInfoList, Type, self.Platform.Header.FullPath) 
                 raise ParserError(PARSER_ERROR, msg = ErrorMsg)
@@ -478,6 +478,8 @@ class Dsc(DscObject):
         print '\nPcds =', m.DynamicPcdBuildDefinitions
         for Item in m.DynamicPcdBuildDefinitions:
             print Item.CName, Item.TokenSpaceGuidCName, Item.DefaultValue, Item.Token, Item.ItemType, Item.MaxDatumSize, Item.SupArchList, Item.SkuInfoList
+            for Sku in Item.SkuInfoList.values():
+                print str(Sku)
         print '\nComponents =', m.Modules.ModuleList, m.Modules.IncludeFiles
         for Item in m.Modules.ModuleList:
             print Item.FilePath, Item.ExecFilePath, Item.SupArchList
