@@ -485,15 +485,6 @@ class AutoGen(object):
 
         return buildFileList
 
-    def IsToolChainFamilySupported(self):
-        pass
-
-    def IsToolCodeSupported(self):
-        pass
-
-    def IsToolChainSupported(self):
-        pass
-    
     def GetDependentPackageList(self):
         if self.Package not in self.Module.Packages:
             self.Module.Packages.insert(0, str(self.Package))
@@ -522,155 +513,33 @@ class AutoGen(object):
         return fileList
     
     def GetSortedLibraryList(self):
-        moduleType = self.Module.ModuleType
-        libraryConsumerList = [self.Module]
-        
-        libraryList         = []
-        constructor         = []
-        consumedByList      = {}
-        libraryClassList    = []
-
-        EdkLogger.verbose("")
-        EdkLogger.verbose("Library instances of module [%s]:" % str(self.Module))
-        while len(libraryConsumerList) > 0:
-            module = libraryConsumerList.pop()
-            for libc, libf in module.LibraryClasses.iteritems():
-                if moduleType not in libc:
-                    EdkLogger.debug(EdkLogger.DEBUG_3, "\t%s for module type %s is not supported" % libc)
-                    continue
-                if libf == None or libf == "":
-                    EdkLogger.verbose("\tWARNING: Library instance for library class %s is not found" % libc[0])
-                    continue
-                
-                libm = gModuleDatabase[self.Arch][libf]
-                if libm not in libraryList and libc not in libraryClassList:
-                    libraryConsumerList.append(libm)
-                    libraryList.append(libm)
-                    libraryClassList.append(libc)
-                    EdkLogger.verbose("\t" + libc[0] + " : " + str(libm))
-
-                if libm.ConstructorList != [] and libm not in constructor:
-                    constructor.append(libm)
-                    
-                if libm not in consumedByList:
-                    consumedByList[libm] = []
-                if module != self.Module:
-                    if module in consumedByList[libm]:
-                        continue
-                    consumedByList[libm].append(module)
-        #
-        # Initialize the sorted output list to the empty set
-        #
-        SortedLibraryList = []
-        #
-        # Q <- Set of all nodes with no incoming edges
-        #
-        Q = []
-        for m in libraryList:
-            if consumedByList[m] == []:
-                Q.insert(0, m)
-        #
-        # while Q is not empty do
-        #
-        while Q != []:
-            #
-            # remove node n from Q
-            #
-            n = Q.pop()
-            #
-            # output n
-            #
-            SortedLibraryList.append(n)
-            #
-            # for each node m with an edge e from n to m do
-            #
-            for m in libraryList:
-                if n not in consumedByList[m]:
-                    continue
-                #
-                # remove edge e from the graph
-                #
-                consumedByList[m].remove(n)
-                #
-                # If m has no other incoming edges then
-                #
-                if consumedByList[m] == []:
-                    #
-                    # insert m into Q
-                    #
-                    Q.insert(0,m)
-
-            EdgeRemoved = True
-            while Q == [] and EdgeRemoved:
-                EdgeRemoved = False
-                #
-                # for each node m with a constructor
-                #
-                for m in libraryList:
-                    if m in constructor:
-                        #
-                        # for each node n without a constructor with an edge e from m to n
-                        #
-                        for n in consumedByList[m]:
-                            if n not in constructor:
-                                #
-                                # remove edge e from the graph
-                                #
-                                consumedByList[m].remove(n)
-                                EdgeRemoved = True
-                                if consumedByList[m] == []:
-                                    #
-                                    # insert m into Q
-                                    #
-                                    Q.insert(0,m)
-                                    break
-                    if Q != []:
-                        break
-
-        #
-        # if any remaining node m in the graph has a constructor and an incoming edge, then the graph has a cycle
-        #
-        for m in libraryList:
-            if consumedByList[m] != [] and m in constructor:
-                errorMessage = 'Module library [%s] with constructors have a cycle:\n\t' % str(m)
-                errorMessage += "\n\tconsumed by ".join([str(l) for l in consumedByList[m]])
-                raise AutoGenError(msg=errorMessage)
-            if m not in SortedLibraryList:
-                SortedLibraryList.append(m)
-
-        #
-        # Build the list of constructor and destructir names
-        # The DAG Topo sort produces the destructor order, so the list of constructors must generated in the reverse order
-        #
-        SortedLibraryList.reverse()
-        return SortedLibraryList
+        return [gModuleDatabase[self.Arch][self.Module.LibraryClasses[Key]] for Key in self.Module.LibraryClasses]
 
     def GetDynamicPcdList(self, platform, arch):
         pcdList = []
         notFoundPcdList = set()
         noDatumTypePcdList = set()
         pcdConsumerList = set()
-        for f in platform.Modules + platform.Libraries:
+        for f in platform.Modules:
             m = gModuleDatabase[arch][f]
             for key in m.Pcds:
                 if key not in platform.Pcds:
                     notFoundPcdList.add(" | ".join(key))
                     pcdConsumerList.add(str(m))
                     continue
-                    # raise AutoGenError(msg="PCD [%s %s] not found in platform" % key)
                 mPcd = m.Pcds[key]
                 pPcd = platform.Pcds[key]
                 if mPcd.DatumType == "VOID*" and pPcd.MaxDatumSize == None:
                     noDatumTypePcdList.add(" | ".join(key))
                     pcdConsumerList.add(str(m))
-                    #raise AutoGenError(msg="No MaxDatumSize specified for PCD %s|%s" % (pPcd.TokenCName, pPcd.TokenSpaceGuidCName))
-
+                    
                 if pPcd.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd:
                     if m.ModuleType in ["PEIM", "PEI_CORE"]:
                         pPcd.Phase = "PEI"
                     if pPcd not in pcdList:
                         pPcd.DatumType = mPcd.DatumType
                         pcdList.append(pPcd)
+
         if len(notFoundPcdList) > 0 or len(noDatumTypePcdList) > 0:
             notFoundPcdListString = "\n\t\t".join(notFoundPcdList)
             noDatumTypePcdListString = "\n\t\t".join(noDatumTypePcdList)
@@ -708,22 +577,25 @@ class AutoGen(object):
         platformPcds = self.Platform.Pcds
 
         pcdList = []
-        for m in dependentLibraryList + [self.Module]:
-            for pcdKey in m.Pcds:
-                pcd = m.Pcds[pcdKey]
-                #if pcdKey not in platformPcds:
-                #    EdkLogger.info("%s / %s not in current platform" % pcdKey)
-                if (pcd.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd) and self.Module.ModuleType in ["PEIM", "PEI_CORE"]:
-                    pcd.Phase = "PEI"
-                if pcd not in pcdList:
-                    pcdList.append(pcd)
+        for pcdKey in self.Module.Pcds:
+            pcd = self.Module.Pcds[pcdKey]
+            #if pcdKey not in platformPcds:
+            #    EdkLogger.info("%s / %s not in current platform" % pcdKey)
+            if (pcd.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd) and self.Module.ModuleType in ["PEIM", "PEI_CORE"]:
+                pcd.Phase = "PEI"
+            pcdList.append(pcd)
         return pcdList
 
     def GetGuidList(self):
+        packages = [] + self.Module.Packages
+        for lib in self.BuildInfo.DependentLibraryList:
+            packages += lib.Packages
+        packages = set(packages)
         guid = {}
         Key = ""
         for Key in self.Module.Guids:
-            for p in self.BuildInfo.DependentPackageList:
+            for pf in packages:
+                p = gPackageDatabase[self.Arch][pf]
                 if Key in p.Guids:
                     guid[Key] = p.Guids[Key]
                     break
@@ -736,73 +608,42 @@ class AutoGen(object):
             else:
                 packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
                 raise AutoGenError(msg='GUID [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.BuildInfo.Name, packageListString))
-
-        for lib in self.BuildInfo.DependentLibraryList:
-            if lib.Guids == []:
-                continue
-
-            for Key in lib.Guids:
-                for p in lib.Packages:
-                    # print gPackageDatabase
-                    p = gPackageDatabase[self.Arch][p]
-                    if Key in p.Guids:
-                        guid[Key] = p.Guids[Key]
-                        break
-                    if Key in p.Protocols:
-                        guid[Key] = p.Protocols[Key]
-                        break
-                    if Key in p.Ppis:
-                        guid[Key] = p.Ppis[Key]
-                        break
-                else:
-                    packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
-                    raise AutoGenError(msg='GUID [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, lib.BaseName, packageListString))
         return guid
 
     def GetProtocolGuidList(self):
+        packages = [] + self.Module.Packages
+        for lib in self.BuildInfo.DependentLibraryList:
+            packages += lib.Packages
+        packages = set(packages)
         guid = {}
         Key = ""
         for Key in self.Module.Protocols:
-            for p in self.BuildInfo.DependentPackageList:
-                    if Key in p.Guids:
-                        guid[Key] = p.Guids[Key]
-                        break
-                    if Key in p.Protocols:
-                        guid[Key] = p.Protocols[Key]
-                        break
-                    if Key in p.Ppis:
-                        guid[Key] = p.Ppis[Key]
-                        break
+            for pf in packages:
+                p = gPackageDatabase[self.Arch][pf]
+                if Key in p.Guids:
+                    guid[Key] = p.Guids[Key]
+                    break
+                if Key in p.Protocols:
+                    guid[Key] = p.Protocols[Key]
+                    break
+                if Key in p.Ppis:
+                    guid[Key] = p.Ppis[Key]
+                    break
             else:
                 packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
                 raise AutoGenError(msg='Protocol [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.BuildInfo.Name, packageListString))
-
-        for lib in self.BuildInfo.DependentLibraryList:
-            if lib.Protocols == []:
-                continue
-            for Key in lib.Protocols:
-                for p in lib.Packages:
-                    p = gPackageDatabase[self.Arch][p]
-                    if Key in p.Guids:
-                        guid[Key] = p.Guids[Key]
-                        break
-                    if Key in p.Protocols:
-                        guid[Key] = p.Protocols[Key]
-                        break
-                    if Key in p.Ppis:
-                        guid[Key] = p.Ppis[Key]
-                        break
-                else:
-                    packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
-                    raise AutoGenError(msg='Protocol [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, lib.BaseName, packageListString))
-
         return guid
 
     def GetPpiGuidList(self):
+        packages = [] + self.Module.Packages
+        for lib in self.BuildInfo.DependentLibraryList:
+            packages += lib.Packages
+        packages = set(packages)
         guid = {}
         Key = ""
         for Key in self.Module.Ppis:
-            for p in self.BuildInfo.DependentPackageList:
+            for pf in packages:
+                p = gPackageDatabase[self.Arch][pf]
                 if Key in p.Guids:
                     guid[Key] = p.Guids[Key]
                     break
@@ -815,25 +656,6 @@ class AutoGen(object):
             else:
                 packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
                 raise AutoGenError(msg='PPI [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.BuildInfo.Name, packageListString))
-
-        for lib in self.BuildInfo.DependentLibraryList:
-            if lib.Ppis == []:
-                continue
-            for Key in lib.Ppis:
-                for p in lib.Packages:
-                    p = gPackageDatabase[self.Arch][p]
-                    if Key in p.Guids:
-                        guid[Key] = p.Guids[Key]
-                        break
-                    if Key in p.Protocols:
-                        guid[Key] = p.Protocols[Key]
-                        break
-                    if Key in p.Ppis:
-                        guid[Key] = p.Ppis[Key]
-                        break
-                else:
-                    packageListString = "\n\t".join([p.PackageName for p in self.BuildInfo.DependentPackageList])
-                    raise AutoGenError(msg='PPI [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, lib.BaseName, packageListString))
         return guid
 
     def GetIncludePathList(self, dependentPackageList):

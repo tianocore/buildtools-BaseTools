@@ -15,17 +15,17 @@ ItemTypeStringDatabase  = {
     TAB_PCDS_FIXED_AT_BUILD:'FixedAtBuild',
     TAB_PCDS_PATCHABLE_IN_MODULE:'BinaryPatch',
     TAB_PCDS_DYNAMIC:'',
-    TAB_PCDS_DYNAMIC+"Default":'',
-    TAB_PCDS_DYNAMIC+"Vpd":'',
-    TAB_PCDS_DYNAMIC+"Hii":'',
+    TAB_PCDS_DYNAMIC_DEFAULT:'',
+    TAB_PCDS_DYNAMIC_VPD:'',
+    TAB_PCDS_DYNAMIC_HII:'',
     TAB_PCDS_DYNAMIC_EX:'',
-    TAB_PCDS_DYNAMIC_EX+"Default":'',
-    TAB_PCDS_DYNAMIC_EX+"Vpd":'',
-    TAB_PCDS_DYNAMIC_EX+"Hii":'',
+    TAB_PCDS_DYNAMIC_EX_DEFAULT:'',
+    TAB_PCDS_DYNAMIC_EX_VPD:'',
+    TAB_PCDS_DYNAMIC_EX_HII:'',
 }
 
-gDynamicPcd = [TAB_PCDS_DYNAMIC, TAB_PCDS_DYNAMIC+"Default", TAB_PCDS_DYNAMIC+"Vpd", TAB_PCDS_DYNAMIC+"Hii"]
-gDynamicExPcd = [TAB_PCDS_DYNAMIC_EX, TAB_PCDS_DYNAMIC_EX+"Default", TAB_PCDS_DYNAMIC_EX+"Vpd", TAB_PCDS_DYNAMIC_EX+"Hii"]
+gDynamicPcd = [TAB_PCDS_DYNAMIC, TAB_PCDS_DYNAMIC_DEFAULT, TAB_PCDS_DYNAMIC_VPD, TAB_PCDS_DYNAMIC_HII]
+gDynamicExPcd = [TAB_PCDS_DYNAMIC_EX, TAB_PCDS_DYNAMIC_EX_DEFAULT, TAB_PCDS_DYNAMIC_EX_VPD, TAB_PCDS_DYNAMIC_EX_HII]
 
 DatumSizeStringDatabase = {'UINT8':'8','UINT16':'16','UINT32':'32','UINT64':'64','BOOLEAN':'BOOLEAN','VOID*':'8'}
 DatumSizeStringDatabaseH = {'UINT8':'8','UINT16':'16','UINT32':'32','UINT64':'64','BOOLEAN':'BOOL','VOID*':'PTR'}
@@ -1180,6 +1180,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (platform, phase):
                     ValueList.append(Sku.DefaultValue)
 
         Pcd.TokenTypeList = list(set(Pcd.TokenTypeList))
+        
         if 'PCD_TYPE_HII' in Pcd.TokenTypeList:
             Dict['VARIABLE_HEAD_CNAME_DECL'].append(CName)
             Dict['VARIABLE_HEAD_GUID_DECL'].append(TokenSpaceGuid)
