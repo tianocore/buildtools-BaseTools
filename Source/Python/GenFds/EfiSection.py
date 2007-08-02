@@ -117,6 +117,14 @@ class EfiSection (EfiSectionClassObject):
                              ' '           + \
                              GenFdsGlobalVariable.ExtendMarco(Filename)
                  GenFdsGlobalVariable.CallExternalTool(GenTeCmd, "GenFw Failed !")
+                 
+                 """ Copy Map file to FFS output path """
+                 Filename = GenFdsGlobalVariable.ExtendMarco(Filename)
+                 if Filename[(len(Filename)-4):] == '.efi':
+                     MapFile = Filename.replace('.efi', '.map')
+                     if os.path.exists(MapFile):
+                         CopyMapFile = os.path.join(OutputPath, ModuleName + '.map')
+                         shutil.copyfile(MapFile, CopyMapFile)
                  Filename = TeFile
 
                  
@@ -128,12 +136,13 @@ class EfiSection (EfiSectionClassObject):
                               GenFdsGlobalVariable.ExtendMarco(Filename)
 
              """ Copy Map file to FFS output path """
-             Filename = GenFdsGlobalVariable.ExtendMarco(Filename)
-             if Filename[(len(Filename)-4):] == '.efi':
-                 MapFile = Filename.replace('.efi', '.map')
-                 if os.path.exists(MapFile):
-                     CopyMapFile = os.path.join(OutputPath, ModuleName + '.map')
-                     shutil.copyfile(MapFile, CopyMapFile)
+             if SectionType != 'TE':
+                 Filename = GenFdsGlobalVariable.ExtendMarco(Filename)
+                 if Filename[(len(Filename)-4):] == '.efi':
+                     MapFile = Filename.replace('.efi', '.map')
+                     if os.path.exists(MapFile):
+                         CopyMapFile = os.path.join(OutputPath, ModuleName + '.map')
+                         shutil.copyfile(MapFile, CopyMapFile)
 
         #
         # Call GenSection

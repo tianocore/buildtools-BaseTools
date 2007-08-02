@@ -57,9 +57,25 @@ class FD(FDClassObject):
         fvList = []
         for region in self.RegionList:
             if region.RegionType == 'FV':
-                fvList.append(region.RegionData.upper())
-                fvAddDict[region.RegionData.upper()] = (int(self.BaseAddress,16) + \
+                if len(region.RegionDataList) == 1:
+                    RegionData = region.RegionDataList[0]
+                    fvList.append(RegionData.upper())
+                    fvAddDict[RegionData.upper()] = (int(self.BaseAddress,16) + \
                                                 region.Offset, region.Size)
+                else:
+                    Offset = region.Offset
+                    for RegionData in region.RegionDataList:
+                        fvList.append(RegionData.upper())
+                        fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(RegionData.upper())
+                        if len(fv.BlockSizeList) < 1:
+                            raise Exception ('FV.%s must point out FVs blocksize and Fv BlockNum' %fv.UiFvName)
+                        else:
+                            Size = 0
+                            for blockStatement in fv.BlockSizeList:
+                                Size = Size + blockStatement[0] * blockStatement[1]
+                            fvAddDict[RegionData.upper()] = (int(self.BaseAddress,16) + \
+                                                             Offset, Size)
+                            Offset = Offset + Size
         #
         # Check whether this Fd need VTF
         #

@@ -33,7 +33,16 @@ class DataSection (DataSectionClassObject):
                         ' '           + \
                        GenFdsGlobalVariable.ExtendMarco(self.SectFileName)
             GenFdsGlobalVariable.CallExternalTool(GenTeCmd, "GenFw Failed !")
+            """Copy Map file to Ffs output"""
+            Filename = GenFdsGlobalVariable.ExtendMarco(self.SectFileName)
+            if Filename[(len(Filename)-4):] == '.efi':
+                MapFile = Filename.replace('.efi', '.map')
+                if os.path.exists(MapFile):
+                    CopyMapFile = os.path.join(OutputPath, ModuleName + '.map')
+                    shutil.copyfile(MapFile, CopyMapFile)
             self.SectFileName = TeFile
+           
+            
                  
         OutputFile = os.path.join (OutputPath, ModuleName + 'SEC' + SecNum + Ffs.SectionSuffix.get(self.SecType))
         OutputFile = os.path.normpath(OutputFile)

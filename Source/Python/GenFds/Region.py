@@ -19,63 +19,83 @@ class region(RegionClassObject):
             #
             # Get Fv from FvDict
             #
-            fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(self.RegionData.upper())
+            FvBuffer = StringIO.StringIO('')
+            BlockSize = self.__BlockSizeOfRegion__(BlockSizeList)
+            if len(self.RegionDataList) == 1:
+                RegionData = self.RegionDataList[0]
+                fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(RegionData.upper())
             #
-            # Create local Buffer
-            #
+            # Create local Buffer            #
             
-            if fv != None :
-                GenFdsGlobalVariable.InfLogger('   Region Name = Fv:%s'%self.RegionData)
-                #
-                # Call GenFv tool
-                #
+                if fv != None :
+                    GenFdsGlobalVariable.InfLogger('   Region Name = %s'%self.Offset)
+                    #
+                    # Call GenFv tool
+                    #
                 
-                self.FvAddress = int(BaseAddress, 16) + self.Offset
-                BlockSize = self.__BlockSizeOfRegion__(BlockSizeList)
-                BlockNum = self.__BlockNumOfRegion__(BlockSize)
-                FvBaseAddress = '0x%x' %self.FvAddress
-                FileName = fv.AddToBuffer(Buffer, FvBaseAddress, BlockSize, BlockNum, ErasePolarity, vtfDict)
-                BinFile = open (FileName, 'r+b')
-                FvBuffer = StringIO.StringIO('')
-                FvBuffer.write(BinFile.read())
-                if FvBuffer.len > Size:
-                    raise Exception ("Size of Fv (%s) is large than Region Size ", self.RegionData)
-                elif FvBuffer.len < Size :
-                    raise Exception ("Size of Fv (%s) is less than Region Size ", self.RegionData)
-                FvBuffer.close()
-                FvBinDict[self.RegionData.upper()] = FileName
+                    self.FvAddress = int(BaseAddress, 16) + self.Offset
+                    BlockSize = self.__BlockSizeOfRegion__(BlockSizeList)
+                    BlockNum = self.__BlockNumOfRegion__(BlockSize)
+                    FvBaseAddress = '0x%x' %self.FvAddress
+                    FileName = fv.AddToBuffer(FvBuffer, FvBaseAddress, BlockSize, BlockNum, ErasePolarity, vtfDict)
+                    
+                    #BinFile = open (FileName, 'r+b')
+                    #FvBuffer.write(BinFile.read())
+                    FvBinDict[self.RegionDataList[0].upper()] = FileName
+            else:
+                for RegionData in self.RegionDataList:
+                    fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(RegionData.upper())
+                    if fv != None:
+                        FileName = fv.AddToBuffer(FvBuffer, None, BlockSize, None, ErasePolarity, vtfDict)
+                        FvBinDict[RegionData.upper()] = FileName
+                
+            if FvBuffer.len > Size:
+                raise Exception ("Size of Region (%s) is large than Region Size ", self.Offset)
+            elif FvBuffer.len < Size :
+                raise Exception ("Size of Region (%s) is less than Region Size ", self.Offset)
+
+            #BinFile = open (FileName, 'r+b')
+            #Buffer.write(BinFile.read())
+            Buffer.write(FvBuffer.getvalue())
+            FvBuffer.close()
 
         if self.RegionType == 'FILE':
-            GenFdsGlobalVariable.InfLogger('   Region Name = FILE: %s'%self.RegionData)
-            BinFile = open (self.RegionData, 'r+b')
             FvBuffer = StringIO.StringIO('')
-            FvBuffer.write(BinFile.read())
-            if FvBuffer.len > Size :
-                raise Exception ("Size of File (%s) large than Region Size ", self.RegionData)
+            for RegionData in self.RegionDataList:
+                GenFdsGlobalVariable.InfLogger('   Region File Name = FILE: %s'%RegionData)
+                BinFile = open (self.RegionData, 'r+b')
+                FvBuffer.write(BinFile.read())
+                if FvBuffer.len > Size :
+                    raise Exception ("Size of File (%s) large than Region Size ", RegionData)
+
             #
             # If File contents less than region size, append "0xff" after it
             #
-            elif FvBuffer.len < Size:
+            if FvBuffer.len < Size:
                 for index in range(0, (Size-FvBuffer.len)):
                     if (ErasePolarity == '1'):
                         FvBuffer.write(Pack('B', int('0xFF', 16)))
                     else:
                         FvBuffer.write(Pack('B', int('0x00', 16)))
-            Buffer.write(FvBuffer)
+            Buffer.write(FvBuffer.getvalue())
             FvBuffer.close()
             
         if self.RegionType == 'DATA' :
             GenFdsGlobalVariable.InfLogger('   Region Name = DATA')
-            Data = self.RegionData.split(',')
-            if len(Data) > Size:
-               raise Exception ("Size of DATA large than Region Size ")
-            elif len(Data) <= Size:
-                for item in Data :
-                    Buffer.write(pack('B', int(item, 16)))
-                if (ErasePolarity == '1'):
-                    Buffer.write(pack(str(Size - len(Data))+'B', *(int('0xFF', 16) for i in range(Size - len(Data)))))
+            DataSize = 0
+            for RegionData in self.RegionDataList:
+                Data = RegionData.split(',')
+                DataSize = DataSize + len(Data)
+                if DataSize > Size:
+                   raise Exception ("Size of DATA large than Region Size ")
                 else:
-                    Buffer.write(pack(str(Size - len(Data))+'B', *(int('0x00', 16) for i in range(Size - len(Data)))))
+                    for item in Data :
+                        Buffer.write(pack('B', int(item, 16)))
+            if DataSize < Size:
+                if (ErasePolarity == '1'):
+                    Buffer.write(pack(str(Size -DataSize)+'B', *(int('0xFF', 16) for i in range(Size - DataSize))))
+                else:
+                    Buffer.write(pack(str(Size - DataSize)+'B', *(int('0x00', 16) for i in range(Size - DataSize))))
 
                 
         if self.RegionType == None:

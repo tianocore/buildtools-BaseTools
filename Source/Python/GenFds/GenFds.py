@@ -10,6 +10,8 @@ import StringIO
 import Common.TargetTxtClassObject
 import Common.DataType
 from Common import EdkLogger
+from Common.String import *
+
 versionNumber = "1.0"
 __version__ = "%prog Version " + versionNumber
 __copyright__ = "Copyright (c) 2007, Intel Corporation  All rights reserved."
@@ -82,7 +84,7 @@ def main():
         Target = Common.TargetTxtClassObject.TargetTxtDict(GenFdsGlobalVariable.WorkSpaceDir)
         activePlatform = Target.TargetTxtDictionary[Common.DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM]
 
-    GenFdsGlobalVariable.ActivePlatform = activePlatform
+    GenFdsGlobalVariable.ActivePlatform = NormPath(activePlatform)
         
     if (options.outputDir):
         outputDir = options.outputDir
