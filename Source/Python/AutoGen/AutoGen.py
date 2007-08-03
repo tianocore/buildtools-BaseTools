@@ -113,7 +113,9 @@ class AutoGen(object):
                 self.Arch = arch
             else:
                 self.Arch = [arch]
-                
+            EdkLogger.verbose("")
+            EdkLogger.verbose("\nAutoGen platform [%s] %s" % (platformFile, self.Arch))
+
             self.Platform = {}
             self.BuildInfo = {}
             for a in self.Arch:
@@ -127,7 +129,6 @@ class AutoGen(object):
         elif key not in gAutoGenDatabase:
             gAutoGenDatabase[key] = AutoGen(None, platformFile, workspace, target, toolchain, arch)
 
-        #print "-------------",moduleFile,"----------------"
         #
         # autogen for module
         #
@@ -138,6 +139,8 @@ class AutoGen(object):
             self.Arch = arch[0]
         else:
             self.Arch = arch
+        EdkLogger.verbose("")
+        EdkLogger.verbose("AutoGen module [%s] [%s]" % (moduleFile, self.Arch))
 
         if self.Arch not in gPlatformDatabase or str(platformFile) not in gPlatformDatabase[arch]:
             raise AutoGenError(msg="[%s] is not active platform, or %s is not supported!" % (platformFile, self.Arch))
@@ -215,6 +218,7 @@ class AutoGen(object):
             info.DependentLibraryList = self.GetSortedLibraryList()
 
         info.DependentPackageList = self.GetDependentPackageList()
+        info.DerivedPackageList = self.GetDerivedPackageList()
 
         info.BuildOption = self.GetModuleBuildOption(info.PlatformInfo)
         if "DLINK" in info.PlatformInfo.ToolStaticLib:
@@ -283,18 +287,31 @@ class AutoGen(object):
                 platformAutoGen.BuildInfo = info
         return info
 
+    def GetDerivedPackageList(self):
+        PackageList = [self.Package]
+        for M in [self.Module] + self.BuildInfo.DependentLibraryList:
+            for Package in M.Packages:
+                if Package not in PackageList:
+                    PackageList.append(gPackageDatabase[self.Arch][Package])
+        return PackageList
+
     def GetDepexTokenList(self, info):
-        dxs = self.Module.Depex
+        Dxs = self.Module.Depex
+        if Dxs == None or Dxs == "":
+            return []
+
         #
         # Append depex from dependent libraries
         #
         for lib in info.DependentLibraryList:
-            if lib.Depex != "":
-                dxs += " AND " + lib.Depex
-        if dxs == "":
+            if lib.Depex != None and lib.Depex != "":
+                Dxs += " AND (" + lib.Depex + ")"
+                EdkLogger.verbose("DEPEX string (+%s) = %s" % (lib.BaseName, Dxs))
+        if Dxs == "":
             return []
 
-        tokenList = gDepexTokenPattern.findall(self.Module.Depex)
+        tokenList = gDepexTokenPattern.findall(Dxs)
+        EdkLogger.verbose("TokenList(raw) = %s" % (tokenList))
         for i in range(0, len(tokenList)):
             token = tokenList[i].strip()
             if token.endswith(".inf"):  # module file name
@@ -302,9 +319,9 @@ class AutoGen(object):
                 token = gModuleDatabase[moduleFile].Guid
             elif token.upper() in GenDepex.DependencyExpression.SupportedOpcode: # Opcode name
                 token = token.upper()
-            else:   # GUID C Name
+            elif token not in ['(', ')']:   # GUID C Name
                 guidCName = token
-                for p in info.DependentPackageList:
+                for p in info.DerivedPackageList:
                     if guidCName in p.Protocols:
                         token = p.Protocols[guidCName]
                         break
@@ -317,6 +334,7 @@ class AutoGen(object):
                 else:
                     raise AutoGenError(msg="%s used in module %s cannot be found in any package!" % (guidCName, info.Name))
             tokenList[i] = token
+        EdkLogger.verbose("TokenList(guid) = %s" % " ".join(tokenList))
         return tokenList
 
     def GetMacroList(self):
@@ -587,15 +605,10 @@ class AutoGen(object):
         return pcdList
 
     def GetGuidList(self):
-        packages = [] + self.Module.Packages
-        for lib in self.BuildInfo.DependentLibraryList:
-            packages += lib.Packages
-        packages = set(packages)
         guid = {}
         Key = ""
         for Key in self.Module.Guids:
-            for pf in packages:
-                p = gPackageDatabase[self.Arch][pf]
+            for p in self.BuildInfo.DerivedPackageList:
                 if Key in p.Guids:
                     guid[Key] = p.Guids[Key]
                     break
@@ -611,15 +624,10 @@ class AutoGen(object):
         return guid
 
     def GetProtocolGuidList(self):
-        packages = [] + self.Module.Packages
-        for lib in self.BuildInfo.DependentLibraryList:
-            packages += lib.Packages
-        packages = set(packages)
         guid = {}
         Key = ""
         for Key in self.Module.Protocols:
-            for pf in packages:
-                p = gPackageDatabase[self.Arch][pf]
+            for p in self.BuildInfo.DerivedPackageList:
                 if Key in p.Guids:
                     guid[Key] = p.Guids[Key]
                     break
@@ -635,15 +643,10 @@ class AutoGen(object):
         return guid
 
     def GetPpiGuidList(self):
-        packages = [] + self.Module.Packages
-        for lib in self.BuildInfo.DependentLibraryList:
-            packages += lib.Packages
-        packages = set(packages)
         guid = {}
         Key = ""
         for Key in self.Module.Ppis:
-            for pf in packages:
-                p = gPackageDatabase[self.Arch][pf]
+            for p in self.BuildInfo.DerivedPackageList:
                 if Key in p.Guids:
                     guid[Key] = p.Guids[Key]
                     break

@@ -52,6 +52,7 @@ class ModuleBuildInfo(BuildInfo):
         self.DependentPackageList = []
         self.DependentLibraryList = []
         self.LibraryAutoGenList = []
+        self.DerivedPackageList = []
 
         self.FileDependency = {}
         self.BuildOption = {}
