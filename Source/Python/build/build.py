@@ -266,8 +266,12 @@ class Build():
 
 
     def OtherFunc(self, ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
-        for Platform in ewb.Build[Arch[0]].PlatformDatabase.values():
-            d = Platform.OutputDirectory
+        if type(Arch) == type([]):
+            for Platform in ewb.Build[Arch[0]].PlatformDatabase.values():
+                d = Platform.OutputDirectory
+        else:
+            for Platform in ewb.Build[Arch].PlatformDatabase.values():
+                d = Platform.OutputDirectory
         if ModuleFile == None:
             DestDir = os.path.normpath(os.path.join(os.environ["WORKSPACE"], d, Target + '_' + ToolChain))
         else:
