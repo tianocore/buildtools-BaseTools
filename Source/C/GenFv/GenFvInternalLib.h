@@ -59,6 +59,11 @@ Abstract:
 #endif
 
 //
+// the maximum number of char in one line 
+//
+#define MAX_LINE_LEN                    0x200
+
+//
 // The maximum number of block map entries supported by the library
 //
 #define MAX_NUMBER_OF_FV_BLOCKS         100
@@ -89,6 +94,8 @@ Abstract:
 #define EFI_CAPSULE_HEADER_SIZE_STRING    "EFI_CAPSULE_HEADER_SIZE"
 #define EFI_CAPSULE_FLAGS_STRING          "EFI_CAPSULE_FLAGS"
 #define EFI_CAPSULE_VERSION_STRING        "EFI_CAPSULE_VERSION"
+#define EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING    "EFI_BOOT_DRIVER_BASE_ADDRESS"
+#define EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING "EFI_RUNTIME_DRIVER_BASE_ADDRESS"
 
 //
 // Attributes section
@@ -231,6 +238,7 @@ typedef struct {
   UINT32                  HeaderSize;
   UINT32                  Flags;
   UINT32                  Version;
+  CHAR8                   CapName[_MAX_PATH];
   CHAR8                   CapFiles[MAX_NUMBER_OF_FILES_IN_CAP][_MAX_PATH];
 } CAP_INFO;
 

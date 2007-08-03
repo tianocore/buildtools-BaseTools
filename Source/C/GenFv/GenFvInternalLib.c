@@ -66,7 +66,8 @@ FfsRebase (
   IN OUT  FV_INFO               *FvInfo, 
   IN      CHAR8                 *FileName,           
   IN OUT  EFI_FFS_FILE_HEADER   *FfsFile,
-  IN      UINTN                 XipOffset
+  IN      UINTN                 XipOffset,
+  IN      FILE                  *FvMapFile
   );
 /*++
 
@@ -81,6 +82,7 @@ Arguments:
   FileName          Ffs file Name
   FfsFile           A pointer to Ffs file image.
   XipOffset         The offset address to use for rebasing the XIP file image.
+  FvMapFile         File pointer to FvMap file
 
 Returns:
 
@@ -257,6 +259,40 @@ Returns:
     }
 
     FvInfo->BaseAddress = Value64;
+  }
+
+  //
+  // Read the FV boot driver base address
+  //
+  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING, 0, Value);
+  if (Status == EFI_SUCCESS) {
+    //
+    // Get the base address
+    //
+    Status = AsciiStringToUint64 (Value, FALSE, &Value64);
+    if (EFI_ERROR (Status)) {
+      Error (NULL, 0, 0, EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING, "invalid value");
+      return EFI_ABORTED;
+    }
+
+    FvInfo->BootBaseAddress = Value64;
+  }
+
+  //
+  // Read the FV runtime driver base address
+  //
+  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, 0, Value);
+  if (Status == EFI_SUCCESS) {
+    //
+    // Get the base address
+    //
+    Status = AsciiStringToUint64 (Value, FALSE, &Value64);
+    if (EFI_ERROR (Status)) {
+      Error (NULL, 0, 0, EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, "invalid value");
+      return EFI_ABORTED;
+    }
+
+    FvInfo->RuntimeBaseAddress = Value64;
   }
 
   //
@@ -700,7 +736,8 @@ AddFile (
   IN OUT MEMORY_FILE          *FvImage,
   IN FV_INFO                  *FvInfo,
   IN UINTN                    Index,
-  IN OUT EFI_FFS_FILE_HEADER  **VtfFileImage  
+  IN OUT EFI_FFS_FILE_HEADER  **VtfFileImage,
+  IN FILE                     *FvMapFile  
   )
 /*++
 
@@ -717,6 +754,7 @@ Arguments:
   Index         The file in the FvInfo file list to add.
   VtfFileImage  A pointer to the VTF file within the FvImage.  If this is equal
                 to the end of the FvImage then no VTF previously found.
+  FvMapFile     Pointer to FvMap File
 
 Returns:
 
@@ -843,7 +881,7 @@ Returns:
       // Rebase the PE or TE image in FileBuffer of FFS file for XIP 
       // Rebase for the debug genfvmap tool
       //
-      FfsRebase (FvInfo, FvInfo->FvFiles[Index], (EFI_FFS_FILE_HEADER *) FileBuffer, (UINTN) *VtfFileImage - (UINTN) FvImage->FileImage);
+      FfsRebase (FvInfo, FvInfo->FvFiles[Index], (EFI_FFS_FILE_HEADER *) FileBuffer, (UINTN) *VtfFileImage - (UINTN) FvImage->FileImage, FvMapFile);
       //
       // copy VTF File
       //
@@ -877,7 +915,7 @@ Returns:
     // Rebase the PE or TE image in FileBuffer of FFS file for XIP. 
     // Rebase Bs and Rt drivers for the debug genfvmap tool.
     //
-    FfsRebase (FvInfo, FvInfo->FvFiles[Index], (EFI_FFS_FILE_HEADER *) FileBuffer, (UINTN) FvImage->CurrentFilePointer - (UINTN) FvImage->FileImage);
+    FfsRebase (FvInfo, FvInfo->FvFiles[Index], (EFI_FFS_FILE_HEADER *) FileBuffer, (UINTN) FvImage->CurrentFilePointer - (UINTN) FvImage->FileImage, FvMapFile);
     //
     // Copy the file
     //
@@ -1450,9 +1488,12 @@ Returns:
   UINT8                       *FvImage;
   UINTN                       FvImageSize;
   FILE                        *FvFile;
+  CHAR8                       FvMapName [_MAX_PATH];
+  FILE                        *FvMapFile;
 
   FvBufferHeader = NULL;
   FvFile         = NULL;
+  FvMapFile      = NULL;
   //
   // Check for invalid parameter
   //
@@ -1481,6 +1522,22 @@ Returns:
   //
   if (FvFileName == NULL && FvInfo.FvName[0] != '\0') {
     FvFileName = FvInfo.FvName;
+  }
+
+  if (FvFileName == NULL) {
+    Error (NULL, 0, 0, NULL, "Output file name is not specified.");
+    return EFI_ABORTED;
+  }
+  
+  //
+  // FvMap file to record the function address of all modules in one Fvimage
+  //
+  strcpy (FvMapName, FvFileName);
+  strcat (FvMapName, ".map");
+  FvMapFile = fopen (FvMapName, "w");
+  if (FvMapFile == NULL) {
+    Error (NULL, 0, 0, FvMapName, "Can't open to be written.");
+    return EFI_ABORTED;
   }
   
   //
@@ -1596,7 +1653,7 @@ Returns:
     //
     // Add the file
     //
-    Status = AddFile (&FvImageMemoryFile, &FvInfo, Index, &VtfFileImage);
+    Status = AddFile (&FvImageMemoryFile, &FvInfo, Index, &VtfFileImage, FvMapFile);
 
     //
     // Exit if error detected while adding the file
@@ -1652,12 +1709,7 @@ WriteFile:
   //
   // Write fv file
   //
-  if (FvFileName == NULL) {
-    FvFile = stdout;
-  } else {
-    FvFile = fopen (FvFileName, "wb");
-  }
-
+  FvFile = fopen (FvFileName, "wb");
   if (FvFile == NULL) {
     Error (NULL, 0, 0, FvFileName, "could not open output file");
     Status = EFI_ABORTED;
@@ -1677,6 +1729,10 @@ Finish:
   
   if (FvFile != NULL) {
     fclose (FvFile);
+  }
+  
+  if (FvMapFile != NULL) {
+    fclose (FvMapFile);
   }
 
   return Status;
@@ -1915,7 +1971,8 @@ FfsRebase (
   IN OUT  FV_INFO               *FvInfo, 
   IN      CHAR8                 *FileName,           
   IN OUT  EFI_FFS_FILE_HEADER   *FfsFile,
-  IN      UINTN                 XipOffset
+  IN      UINTN                 XipOffset,
+  IN      FILE                  *FvMapFile
   )
 /*++
 
@@ -1927,8 +1984,10 @@ Routine Description:
 Arguments:
   
   FvInfo            A pointer to FV_INFO struture.
+  FileName          Ffs File PathName
   FfsFile           A pointer to Ffs file image.
   XipOffset         The offset address to use for rebasing the XIP file image.
+  FvMapFile         FvMapFile to record the function address in one Fvimage
 
 Returns:
 
@@ -2206,6 +2265,11 @@ Returns:
 
       FfsFile->State = SavedState;
     }
+
+    //
+    // Get this module function address from ModulePeMapFile and add them into FvMap file
+    //
+    WriteMapFile (FvMapFile, FileName, ImageContext.DestinationAddress, PeHdr->OptionalHeader.AddressOfEntryPoint);
   }
 
   if ((Flags & 1) == 0 || (
@@ -2283,6 +2347,10 @@ Returns:
 
       FfsFile->State = SavedState;
     }
+    //
+    // Get this module function address from ModulePeMapFile and add them into FvMap file
+    //
+    WriteMapFile (FvMapFile, FileName, ImageContext.DestinationAddress, TEImageHeader->AddressOfEntryPoint);  
   }
  
   return EFI_SUCCESS;
@@ -2347,6 +2415,159 @@ FindApResetVectorPosition (
   
   return EFI_NOT_FOUND;
 }
+
+EFI_STATUS
+WriteMapFile (
+  IN OUT FILE                  *FvMapFile,
+  IN     CHAR8                 *FileName, 
+  IN     EFI_PHYSICAL_ADDRESS  ImageBaseAddress,
+  IN     UINT32                AddressOfEntryPoint
+  )
+/*++
+
+Routine Description:
+
+  This function abstracts Pe Map file information and add them into FvMap file for Debug.
+
+Arguments:
+
+  FvMapFile             A pointer to FvMap File
+  FileName              Ffs File PathName
+  ImageBaseAddress      PeImage Base Address.
+  AddressOfEntryPoint   EntryPoint address relative to PeBase Address
+
+Returns:
+
+  EFI_SUCCESS           Added required map information.
+
+--*/
+{
+  CHAR8           PeMapFileName [_MAX_PATH];
+  CHAR8           *Cptr;
+  CHAR8           *FileGuidName;
+  EFI_GUID        FileGuidValue;
+  FILE            *PeMapFile;
+  CHAR8           Line [MAX_LINE_LEN];
+  CHAR8           KeyWord [MAX_LINE_LEN];
+  CHAR8                 FunctionName [MAX_LINE_LEN];
+  EFI_PHYSICAL_ADDRESS  FunctionAddress;
+  UINT32                FunctionType;
+  CHAR8                 FunctionTypeName [MAX_LINE_LEN];
+
+  //
+  // Construct Map file Name 
+  //
+  strcpy (PeMapFileName, FileName);
+  Cptr = PeMapFileName + strlen (PeMapFileName);
+  while (*Cptr != '.') {
+    Cptr --;
+  }
+  if (*Cptr != '.') {
+    return EFI_NOT_FOUND;
+  } else {
+    *(Cptr + 1) = 'm';
+    *(Cptr + 2) = 'a';
+    *(Cptr + 3) = 'p';
+    *(Cptr + 4) = '\0';
+  }
+  //
+  // Open PeMapFile
+  //
+  PeMapFile = fopen (PeMapFileName, "r");
+  if (PeMapFile == NULL) {
+    // fprintf (stdout, "can't open %s file to reading\n", PeMapFileName);
+    return EFI_ABORTED;
+  }
+  //
+  // Get Module Guid from FileName
+  //
+  *Cptr = '\0';
+  while ((*Cptr != FILE_SEP_CHAR) && (Cptr >= PeMapFileName)) {
+    Cptr --;
+  }
+  if (*Cptr == FILE_SEP_CHAR) {
+    FileGuidName = Cptr + 1;
+    if (StringToGuid (FileGuidName, &FileGuidValue) != EFI_SUCCESS) {
+      FileGuidName = NULL;
+    }
+  }
+  //
+  // Output Functions information into Fv Map file
+  //
+  fgets (Line, MAX_LINE_LEN, PeMapFile);
+  sscanf (Line, "%s", KeyWord);
+  //
+  // module information output
+  //
+  if (FileGuidName != NULL) {
+    fprintf (FvMapFile, "%s (", KeyWord);
+    fprintf (FvMapFile, "BaseAddress=%08lx, ", ImageBaseAddress);
+    fprintf (FvMapFile, "EntryPoint=%08lx, ", ImageBaseAddress + AddressOfEntryPoint);
+    fprintf (FvMapFile, "GUID=%s)\n\n", FileGuidName);
+  } else {
+    fprintf (FvMapFile, "%s (", KeyWord);
+    fprintf (FvMapFile, "BaseAddress=%08lx, ", ImageBaseAddress);
+    fprintf (FvMapFile, "EntryPoint=%08lx)", ImageBaseAddress + AddressOfEntryPoint);
+  }
+
+  while (fgets (Line, MAX_LINE_LEN, PeMapFile) != NULL) {
+    //
+    // Skip blank line
+    //
+    if (Line[0] == 0x0a) {
+      FunctionType = 0;
+      continue;
+    }
+    //
+    // By Address and Static keyword
+    //  
+    if (FunctionType == 0) {
+      sscanf (Line, "%s", KeyWord);
+      if (stricmp (KeyWord, "Address") == 0) {
+        //
+        // function list
+        //
+        FunctionType = 1;
+        fgets (Line, MAX_LINE_LEN, PeMapFile);
+        continue;
+      } else if (stricmp (KeyWord, "Static") == 0) {
+        //
+        // static function list
+        //
+        FunctionType = 2;
+        fgets (Line, MAX_LINE_LEN, PeMapFile);
+        continue;
+      }
+    }
+    //
+    // Printf Function Information
+    //
+    if (FunctionType == 1) {
+      sscanf (Line, "%s %s %lx %s", KeyWord, FunctionName, &FunctionAddress, FunctionTypeName);
+      if (FunctionTypeName [1] == '\0' && (FunctionTypeName [0] == 'f' || FunctionTypeName [0] == 'F')) {
+        fprintf (FvMapFile, "  %016lx F  ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "%s\n", FunctionName);
+    } else {
+        fprintf (FvMapFile, "  %016lx    ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "%s\n", FunctionName);
+      }
+    } else if (FunctionType == 2) {
+      sscanf (Line, "%s %s %lx %s", KeyWord, FunctionName, &FunctionAddress, FunctionTypeName);
+      if (FunctionTypeName [1] == '\0' && (FunctionTypeName [0] == 'f' || FunctionTypeName [0] == 'F')) {
+        fprintf (FvMapFile, "  %016lx FS ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "%s\n", FunctionName);
+      } else {
+        fprintf (FvMapFile, "  %016lx    ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "%s\n", FunctionName);
+      }
+    }
+  }
+  //
+  // Close PeMap file
+  //
+  fprintf (FvMapFile, "\n\n");
+  fclose (PeMapFile);
   
-  
+  return EFI_SUCCESS;
+}
   

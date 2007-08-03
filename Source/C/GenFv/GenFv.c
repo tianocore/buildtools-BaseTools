@@ -233,11 +233,6 @@ Returns:
     Error (NULL, 0, 0, NULL, "%s is invaild paramter!", argv[0]);
     return STATUS_ERROR;
   }
-  
-  if (OutFileName == NULL) {
-    Error (NULL, 0, 0, NULL, "No output file name is specified.");
-    goto Finish;
-  }
 
   //
   // Read the INF file image
@@ -275,6 +270,15 @@ Returns:
       goto Finish;
     }
     
+    if (OutFileName == NULL && CapInfo.CapName[0] != '\0') {
+      OutFileName = CapInfo.CapName;
+    }
+    
+    if (OutFileName == NULL) {
+      Error (NULL, 0, 0, NULL, "Output file name is not specified.");
+      goto Finish;
+    }
+        
     //
     // Calculate the size of capsule image.
     //
@@ -467,6 +471,17 @@ Returns:
       Error (NULL, 0, 0, Value, "invalid Version setting for %s", EFI_CAPSULE_VERSION_STRING);
       return EFI_ABORTED;
     }
+  }
+
+  //
+  // Read Capsule File name
+  //
+  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_FILE_NAME_STRING, 0, Value);
+  if (Status == EFI_SUCCESS) {
+    //
+    // Get output file name
+    //
+    strcpy (CapInfo->CapName, Value); 
   }
 
   //
