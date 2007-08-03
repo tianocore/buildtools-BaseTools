@@ -163,25 +163,23 @@ CreateDir (
 )
 {
   CHAR8* temp = *FullFileName;
+  CHAR8* start = temp;
   UINT64 index = 0;
-  UINT64 SlashPos = -1;
   
   for (;index < strlen(temp); ++index) {
     if (temp[index] == '\\' || temp[index] == '/') {
-      temp[index] = '/';
-      SlashPos = index;
-    }
-  }
-  
-  if (SlashPos != -1) {
-    temp[SlashPos] = 0;
-    if (chdir(temp)) {
-      if (mkdir(temp) != 0) {
+      temp[index] = 0;
+      if (chdir(start)) {
+        if (mkdir(start) != 0) {
         return EFI_ABORTED;
       }
+        chdir(start);
     }
-    temp[SlashPos] = '/';
+      start = temp + index + 1;
+      temp[index] = '/';
   }
+  }
+  
   return EFI_SUCCESS;
 }
 
