@@ -1,4 +1,19 @@
-#!/usr/bin/env python
+## @file
+# Generate AutoGen.h, AutoGen.c and *.depex files
+#
+# Copyright (c) 2007, Intel Corporation
+# All rights reserved. This program and the accompanying materials
+# are licensed and made available under the terms and conditions of the BSD License
+# which accompanies this distribution.  The full text of the license may be found at
+# http://opensource.org/licenses/bsd-license.php
+#
+# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+
+##
+# Import Modules
+#
 import sys
 import os
 import re
@@ -19,18 +34,25 @@ from Common.DataType import *
 from Common.Misc import *
 from Common.String import *
 
-#
-# generate AutoGen.c, AutoGen.h
-# parse unicode file and generate XXXXString.h, XXXXString.c
-# generate makefile
-#
-
+## PlatformBuildClassObject database
 gPlatformDatabase = {}      # {arch : {dsc file path : PlatformBuildClassObject}}
+
+## ModuleBuildClassObject database
 gModuleDatabase = {}        # {arch : {inf file path : ModuleBuildClassObject}}
+
+## PackageBuildClassObject database
 gPackageDatabase = {}       # {arch : {dec file path : PackageBuildClassObject}}
+
+## AutoGen object database
 gAutoGenDatabase = {}       # (module/package/platform obj, BuildTarget, ToolChain, Arch) : build info
+
+## Shortcut global of WorkspaceBuild object representing current workspace
 gWorkspace = None
+
+## Shortcut global of current workspace directory
 gWorkspaceDir = ""
+
+## Regular expression for splitting Dependency Expression stirng into tokens
 gDepexTokenPattern = re.compile("(\(|\)|\w+| \S+\.inf)")
 gMakeTypeMap = {"MSFT":"nmake", "GCC":"gmake"}
 
@@ -311,7 +333,7 @@ class AutoGen(object):
             return []
 
         tokenList = gDepexTokenPattern.findall(Dxs)
-        EdkLogger.verbose("TokenList(raw) = %s" % (tokenList))
+        EdkLogger.debug(EdkLogger.DEBUG_8, "TokenList(raw) = %s" % (tokenList))
         for i in range(0, len(tokenList)):
             token = tokenList[i].strip()
             if token.endswith(".inf"):  # module file name
@@ -334,7 +356,7 @@ class AutoGen(object):
                 else:
                     raise AutoGenError(msg="%s used in module %s cannot be found in any package!" % (guidCName, info.Name))
             tokenList[i] = token
-        EdkLogger.verbose("TokenList(guid) = %s" % " ".join(tokenList))
+        EdkLogger.debug(EdkLogger.DEBUG_8, "TokenList(guid) = %s" % " ".join(tokenList))
         return tokenList
 
     def GetMacroList(self):
