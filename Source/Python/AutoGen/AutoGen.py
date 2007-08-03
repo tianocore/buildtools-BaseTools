@@ -54,10 +54,14 @@ gWorkspaceDir = ""
 
 ## Regular expression for splitting Dependency Expression stirng into tokens
 gDepexTokenPattern = re.compile("(\(|\)|\w+| \S+\.inf)")
+
+## Mapping Makefile type
 gMakeTypeMap = {"MSFT":"nmake", "GCC":"gmake"}
 
+## Default output flag for all tools
 gDefaultOutputFlag = "-o "
 
+## Output flags for specific tools
 gOutputFlag = {
     ("MSFT", "CC", "OUTPUT")      :   "/Fo",
     ("MSFT", "SLINK", "OUTPUT")   :   "/OUT:",
@@ -72,7 +76,6 @@ gOutputFlag = {
     ("INTEL", "ASMLINK", "OUTPUT")     :   "/OUT:",
     ("INTEL", "PCH", "OUTPUT")         :   "/Fp",
     ("INTEL", "ASM", "OUTPUT")         :   "/Fo",
-#    ("INTEL", "IPF", "ASM", "OUTPUT")  :   "-o ",
 
     ("GCC", "CC", "OUTPUT")        :   "-o ",
     ("GCC", "SLINK", "OUTPUT")     :   "-cr ",
@@ -80,16 +83,15 @@ gOutputFlag = {
     ("GCC", "ASMLINK", "OUTPUT")   :   "-o ",
     ("GCC", "PCH", "OUTPUT")       :   "-o ",
     ("GCC", "ASM", "OUTPUT")       :   "-o ",
-
-#   ("OUTPUT")                     :    "-o "
 }
 
+## Flag for include file search path
 gIncludeFlag = {"MSFT" : "/I", "GCC" : "-I", "INTEL" : "-I"}
 
-def FindModuleOwnerPackage(module, pkgdb):
+def FindModuleOwnerPackage(Module, pkgdb):
     for pkg in pkgdb:
         pkgDir = path.dirname(pkg)
-        if module.DescFilePath.find(pkgDir) == 0:
+        if Module.DescFilePath.find(pkgDir) == 0:
             return pkgdb[pkg]
     return None
 
