@@ -29,15 +29,13 @@ Abstract:
 #include <stdlib.h>
 
 #include <Common/UefiBaseTypes.h>
-#include <Common/MultiPhase.h>
 #include <Common/UefiCapsule.h>
 
-#include <Common/FirmwareVolumeImageFormat.h>
-#include <Common/PiFirmwareVolumeHeader.h>
-#include <Common/PiFirmwareFileSystem.h>
+#include <Common/PiFirmwareFile.h>
+#include <Common/PiFirmwareVolume.h>
 #include <Guid/PiFirmwareFileSystem.h>
 
-#include <Common/EfiImage.h>
+#include <IndustryStandard/PeImage.h>
 #include <Library/PeCoffLib.h>
 
 #include "CommonLib.h"

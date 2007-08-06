@@ -43,19 +43,20 @@ Abstract:
 #endif
 
 #include <Common/UefiBaseTypes.h>
-#include <Common/EfiImage.h>
-
-#include "CommonLib.h"
-#include "EfiUtilityMsgs.c"
+#include <IndustryStandard/PeImage.h>
 
 //
 // Acpi Table definition
 //
-#include "Acpi.h"
-#include "Acpi1_0.h"
-#include "Acpi2_0.h"
-#include "Acpi3_0.h"
-#include "MemoryMappedConfigurationSpaceAccessTable.h"
+#include <IndustryStandard/Acpi.h>
+#include <IndustryStandard/Acpi1_0.h>
+#include <IndustryStandard/Acpi2_0.h>
+#include <IndustryStandard/Acpi3_0.h>
+#include <IndustryStandard/MemoryMappedConfigurationSpaceAccessTable.h>
+
+
+#include "CommonLib.h"
+#include "EfiUtilityMsgs.h"
 
 //
 // Version of this utility

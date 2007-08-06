@@ -26,8 +26,7 @@ Abstract:
 #include <stdlib.h>
 
 #include <Common/UefiBaseTypes.h>
-#include <Common/EfiImage.h>  // for PE32 structure definitions
-#include <Common/MultiPhase.h>
+#include <IndustryStandard/PeImage.h> // for PE32 structure definitions
 
 #include <IndustryStandard/pci22.h>  // for option ROM header structures
 #include <IndustryStandard/pci30.h>

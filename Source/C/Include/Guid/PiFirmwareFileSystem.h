@@ -17,8 +17,8 @@
 
 **/
 
-#ifndef __FIRMWARE_FILE_SYSTEM_GUID_H__
-#define __FIRMWARE_FILE_SYSTEM_GUID_H__
+#ifndef __FIRMWARE_FILE_SYSTEM2_GUID_H__
+#define __FIRMWARE_FILE_SYSTEM2_GUID_H__
 
 //
 // GUIDs defined by the PI specification.

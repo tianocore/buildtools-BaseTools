@@ -39,8 +39,6 @@ Abstract:
 //
 #define MAX_STRING_IDENTIFIER_NAME  100
 
-#define MAX_LINE_LEN                400
-
 #define T_CHAR_SPACE                ' '
 #define T_CHAR_NULL                 0
 #define T_CHAR_CR                   '\r'

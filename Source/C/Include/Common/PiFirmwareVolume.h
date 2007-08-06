@@ -10,8 +10,6 @@
   THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,                     
   WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.             
 
-  Module Name:  PiFirmwareVolume.h
-
   @par Revision Reference:
   Version 1.0.
 
@@ -20,7 +18,19 @@
 #ifndef __PI_FIRMWAREVOLUME_H__
 #define __PI_FIRMWAREVOLUME_H__
 
-typedef UINT32 	EFI_FVB_ATTRIBUTES;
+//
+// EFI_FV_FILE_ATTRIBUTES
+//
+typedef UINT32  EFI_FV_FILE_ATTRIBUTES;
+
+//
+// Value of EFI_FV_FILE_ATTRIBUTES.
+// 
+#define EFI_FV_FILE_ATTRIB_ALIGNMENT      0x0000001F
+#define EFI_FV_FILE_ATTRIB_FIXED          0x00000100
+#define EFI_FV_FILE_ATTRIB_MEMORY_MAPPED  0x00000200
+
+typedef UINT32  EFI_FVB_ATTRIBUTES;
 
 // 
 // Attributes bit definitions
@@ -74,19 +84,7 @@ typedef UINT32 	EFI_FVB_ATTRIBUTES;
 #define EFI_FVB2_ALIGNMENT_1G       0x001E0000
 #define EFI_FVB2_ALIGNMENT_2G       0x001F0000
 
-//
-// PI1.0 define Firmware Volume Header Revision to 2
-//
-#define EFI_FVH_PI_REVISION  0x02
 
-//
-// Firmware Volume Header Signature definition
-//
-#define EFI_FVH_SIGNATURE EFI_SIGNATURE_32 ('_', 'F', 'V', 'H')
-
-//
-// Firmware Volume Header Block Map Entry definition
-//
 typedef struct {
   UINT32 NumBlocks;
   UINT32 Length;
@@ -96,18 +94,25 @@ typedef struct {
 // Describes the features and layout of the firmware volume.
 //
 typedef struct {
-  UINT8                   ZeroVector[16];
-  EFI_GUID                FileSystemGuid;
-  UINT64                  FvLength;
-  UINT32                  Signature;
-  EFI_FVB_ATTRIBUTES      Attributes;
-  UINT16                  HeaderLength;
-  UINT16                  Checksum;
-  UINT16                  ExtHeaderOffset;
-  UINT8                   Reserved[1];
-  UINT8                   Revision;
-  EFI_FV_BLOCK_MAP_ENTRY  BlockMap[1];
+  UINT8                     ZeroVector[16];
+  EFI_GUID                  FileSystemGuid;
+  UINT64                    FvLength;
+  UINT32                    Signature;
+  EFI_FVB_ATTRIBUTES        Attributes;
+  UINT16                    HeaderLength;
+  UINT16                    Checksum;
+  UINT16                    ExtHeaderOffset;
+  UINT8                     Reserved[1];
+  UINT8                     Revision;
+  EFI_FV_BLOCK_MAP_ENTRY    BlockMap[1];
 } EFI_FIRMWARE_VOLUME_HEADER;
+
+#define EFI_FVH_SIGNATURE EFI_SIGNATURE_32 ('_', 'F', 'V', 'H')
+
+///
+/// Firmware Volume Header Revision definition
+///
+#define EFI_FVH_REVISION  0x02
 
 //
 // Extension header pointed by ExtHeaderOffset of volume header.

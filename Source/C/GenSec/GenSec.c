@@ -24,7 +24,7 @@ Abstract:
 #include <string.h>
 
 #include <Common/UefiBaseTypes.h>
-#include <Common/FirmwareVolumeImageFormat.h>
+#include <Common/PiFirmwareFile.h>
 #include <Protocol/GuidedSectionExtraction.h>
 
 #include "CommonLib.h"

@@ -27,8 +27,6 @@ Abstract:
 
 #include "EfiUtilityMsgs.h"
 
-#define MAX_LINE_LEN  200
-
 //
 // Declare module globals for keeping track of the the utility's
 // name and other settings.

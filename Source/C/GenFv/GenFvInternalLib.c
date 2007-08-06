@@ -1597,7 +1597,7 @@ Returns:
   FvHeader->FvLength        = FvImageSize;
   FvHeader->Signature       = EFI_FVH_SIGNATURE;
   FvHeader->Attributes      = FvInfo.FvAttributes;
-  FvHeader->Revision        = EFI_FVH_PI_REVISION;
+  FvHeader->Revision        = EFI_FVH_REVISION;
   FvHeader->ExtHeaderOffset = 0;
   FvHeader->Reserved[0]     = 0;
   

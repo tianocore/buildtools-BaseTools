@@ -25,10 +25,6 @@
 #include <ProcessorBind.h>
 #include <stdarg.h>
 
-#define MEMORY_FENCE()  MemoryFence ()
-#define BREAKPOINT()    CpuBreakpoint ()
-#define DEADLOOP()      CpuDeadLoop ()
-
 typedef struct {
   UINT32  Data1;
   UINT16  Data2;
@@ -136,6 +132,11 @@ typedef struct {
 
 #endif
 
+//
+// Macro that returns the byte offset of a field in a data structure. 
+//
+#define OFFSET_OF(TYPE, Field) ((UINTN) &(((TYPE *)0)->Field))
+
 ///
 ///  CONTAINING_RECORD - returns a pointer to the structure
 ///      from one of it's elements.
@@ -145,7 +146,7 @@ typedef struct {
 ///
 ///  ALIGN_POINTER - aligns a pointer to the lowest boundry
 ///
-#define ALIGN_POINTER(p, s) ((VOID *) ((p) + (((s) - ((UINTN) (p))) & ((s) - 1))))
+#define ALIGN_POINTER(p, s) ((VOID *) ((UINTN)(p) + (((s) - ((UINTN) (p))) & ((s) - 1))))
 
 ///
 ///  ALIGN_VARIABLE - aligns a variable up to the next natural boundry for int size of a processor
@@ -156,6 +157,24 @@ typedef struct {
     (Adjustment) = (UINTN)(sizeof (UINTN) - ((UINTN) (Value) % sizeof (UINTN))); \
   } \
   (Value) = (UINTN)((UINTN) (Value) + (UINTN) (Adjustment))
+
+//
+// Return the maximum of two operands. 
+// This macro returns the maximum of two operand specified by a and b.  
+// Both a and b must be the same numerical types, signed or unsigned.
+//
+#define MAX(a, b)                       \
+  (((a) > (b)) ? (a) : (b))
+
+
+//
+// Return the minimum of two operands. 
+// This macro returns the minimal of two operand specified by a and b.  
+// Both a and b must be the same numerical types, signed or unsigned.
+//
+#define MIN(a, b)                       \
+  (((a) < (b)) ? (a) : (b))
+
 
 //
 // EFI Error Codes common to all execution phases

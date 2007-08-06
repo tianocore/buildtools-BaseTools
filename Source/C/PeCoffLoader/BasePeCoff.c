@@ -22,7 +22,7 @@ Revision History
 --*/
 
 #include <Common/UefiBaseTypes.h>
-#include <Common/EfiImage.h>
+#include <IndustryStandard/PeImage.h>
 #include <Library/PeCoffLib.h>
 
 typedef union {

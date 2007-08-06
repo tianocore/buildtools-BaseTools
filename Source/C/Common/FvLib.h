@@ -28,10 +28,8 @@ Abstract:
 #include <string.h>
 
 #include <Common/UefiBaseTypes.h>
-#include <Common/FirmwareVolumeImageFormat.h>
-#include <Common/PiFirmwareFileSystem.h>
-#include <Common/PiFirmwareVolumeHeader.h>
-#include <Common/MultiPhase.h>
+#include <Common/PiFirmwareFile.h>
+#include <Common/PiFirmwareVolume.h>
 
 EFI_STATUS
 InitializeFvLib (

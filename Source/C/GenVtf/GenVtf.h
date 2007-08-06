@@ -34,9 +34,7 @@ Abstract:
 #include <stdlib.h>
 #include <string.h>
 #include "assert.h"
-// #include "TianoCommon.h"
-#include "Common/PiFirmwareFileSystem.h"
-#include "Common/PiFirmwareVolumeHeader.h"
+#include <Common/PiFirmwareFile.h>
 #include "ParseInf.h"
 
 //
