@@ -259,11 +259,12 @@ class Build():
             self.isexit(1)
         if makefile != "":
             p = Popen(["nmake", "/nologo", "-f", makefile, 'all'], stdout=PIPE, stderr=PIPE, env=os.environ, cwd=os.path.dirname(makefile))
-            EdkLogger.debug(EdkLogger.INFO, p.stdout.read())
-            p.communicate()
-            EdkLogger.debug(EdkLogger.INFO, p.stdout.read())
-            EdkLogger.debug(EdkLogger.QUIET, p.stderr.read())
+            while p.poll() == None:
+                EdkLogger.info(p.stdout.readline()[:-2])
             if p.returncode != None:
+                if p.returncode != 0:
+                    EdkLogger.info(p.stdout.read())
+                    EdkLogger.info(p.stderr.read())
                 self.isexit(p.returncode)
         else:
             print "Can find Makefile.\n"
