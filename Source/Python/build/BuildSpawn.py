@@ -15,6 +15,7 @@ import os
 from threading import *
 from subprocess import *
 
+import Common.EdkLogger
 
 
 class BuildSpawn(Thread):
@@ -28,8 +29,10 @@ class BuildSpawn(Thread):
 
     def run(self):
         self.sem.acquire()
-        p = Popen(["nmake", "/nologo", "-f", self.filename, self.args], env=os.environ, cwd=os.path.dirname(self.filename))
+        p = Popen(["nmake", "/nologo", "-f", self.filename, self.args], stdout=PIPE, stderr=PIPE, env=os.environ, cwd=os.path.dirname(self.filename))
         p.communicate()
+        EdkLogger.debug(EdkLogger.INFO, p.stdout.read())
+        EdkLogger.debug(EdkLogger.QUIET, p.stderr.read())
         if p.returncode != 0:
             return p.returncode
         self.sem.release()

@@ -18,6 +18,7 @@ from subprocess import *
 from Common.TargetTxtClassObject import *
 from Common.ToolDefClassObject import *
 from Common.EdkIIWorkspaceBuild import *
+from Common.DataType import *
 from AutoGen.AutoGen import *
 from GenFds.FdfParser import *
 from Common.BuildToolError import *
@@ -30,58 +31,6 @@ __version__ = "%prog Version " + VersionNumber
 __copyright__ = "Copyright (c) 2007, Intel Corporation  All rights reserved."
 
 
-# target, command options process
-##-a, --arch <ARCHS>
-##      ARCHS is a comma separated list containing one or more of: IA32, X64, IPF or EBC which should be built, overrides target.txt?s TARGET_ARCH
-##-p, --platform PlatformName.dsc
-##      Build the platform specified by the DSC file name argument, over rides the ACTIVE_PLATFORM
-##-m, --module Module.inf
-##      Build the module specified by the INF file name argument.
-##-b, --buildtarget BuildTarget
-##      Build the platform using the BuildTarget, overrides target.txt?s TARGET definition.
-##-t, --tagname Tagname
-##      Build the platform using the Tool chain, Tagname, overrides target.txt?s TOOL_CHAIN_TAG definition.
-##-s, --spawn
-##      If this flag is specified, the first two phases, AutoGen and MAKE are mixed, such that as soon as a module can be built, the build will start, without waiting for AutoGen to complete on remaining modules.  While this option provides feedback that looks fast, due to overhead of the AutoGen function, this option is slower than letting AutoGen complete before starting the MAKE phase.
-##-n #
-##      Build the platform using multi-threaded compiler with # threads, values less than 2 will disable multi-thread builds.  Overrides target.txt?s MULTIPLE_THREAD and MAX_CONCURRENT_THREAD_NUMBER
-##-f, --fdf Filename.fdf
-##      The name of the FDF file to use, over-riding the setting in the DSC file.
-##-k, --msft
-##      Make Option: Generate only NMAKE Makefiles: Makefile
-##-g, --gcc
-##      Make Option: Generate only GMAKE Makefiles: GNUmakefile
-##-l, --all
-##      Make Option: Generate both NMAKE and GMAKE makefiles.
-
-# VFR related options: should not be in this tool
-##-r, --vfr VfrScriptFile
-##      VFR Option: Name of the VFR Script File to use
-##-e, --CreateC [Filename]
-##      VFR Option: [DEFAULT] Create the C File, named Filename, otherwise use the VfrScriptFile name as the C code?s filename, i.e., VfrFilename.c
-##-x, --CreateList [Filename]
-##      VFR Option: Create the text list file, named Filename, otherwise use the VfrScriptFile name as the List file?s filename, i.e., VfrFilename.lst
-##-i, --include [Path]
-##      One or more statements to add to the include path for searching.
-##-o, --outdir [DirName]
-##      VFR Option: Directory Location where the C, Lst and/or IFR files are to be created.
-##-b, --Bin [Filename]
-##      VFR Option: Create a binary IFR HII pack file, named Filename, otherwise use the VfrScriptFile name as the IFR file?s name, i.e., VfrFilename.i
-
-#
-##-c, --flashheader [Filename]
-##      Flash option: Create a header file, default to FlashMap.h, containing flash device definitions for EDK modules which need those flash information.
-##--version
-##      Print version and copyright of this program and exit
-##-v, --verbose
-##      Turn on verbose output with informational messages printed. This is a count value, so specifying ?vv can be used to increase the verbosity level.
-##-q, --quiet
-##      disable all messages except FATAL ERRORS
-##-d, --debug [#]
-##      Enable debug messages, at level #
-##-h, --help
-##      Print copyright, version and usage of this program and exit code: PASS
-
 class Build():
     def __init__(self, opt, args):
         self.SysPlatform  = sys.platform
@@ -90,6 +39,7 @@ class Build():
         self.Path         = os.getenv("PATH")
         self.Opt          = opt
         self.Args         = args
+        self.ArgList      = ['all', 'genc', 'genmake', 'modules', 'libraries', 'clean', 'cleanall', 'cleanlib']
         self.TargetTxt    = TargetTxtClassObject()
         self.ToolDef      = ToolDefClassObject()
         self.Sem          = None
@@ -99,8 +49,13 @@ class Build():
         self.All          = None
         if len(self.Args) == 0:
             self.All = 1
+        elif len(self.Args) >= 2:
+            print "There are too many targets in command line input, please select one from: %s" %(''.join(elem + ' ' for elem in self.ArgList))
         else:
             t = self.Args[0].lower()
+            if t not in self.ArgList:
+                print "'%s' is an invalid targets, please select one from: %s" %(self.Args[0], ''.join(elem + ' ' for elem in self.ArgList))
+                self.isexit(1)
             if t == 'genc':
                 self.GenC = 1
             elif t == 'genmake':
@@ -200,10 +155,11 @@ class Build():
         LibraryAutoGen = AutoGen(LibFile, PlatformFile, ewb, str(a), b, str(c))
         LibraryAutoGen.CreateAutoGenFile()
         LibraryAutoGen.CreateMakefile()
-        for f in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
-            (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(os.environ["WORKSPACE"], f, a + '_' + b, c, str(LibFile))))
+        for Platform in ewb.Build[c].PlatformDatabase.values():
+            d = Platform.OutputDirectory
+            (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(os.environ["WORKSPACE"], d, a + '_' + b, c, str(LibFile))))
             DestDir = filename
-            print DestDir
+            EdkLogger.debug(EdkLogger.DEBUG_5, '\Makefile DestDir is: %s' % DestDir)
             FileList = glob.glob(os.path.normpath(os.path.join(DestDir, 'makefile')))
             FileNum = len(FileList)
             if FileNum > 0:
@@ -216,8 +172,9 @@ class Build():
     def ModuleBuild(self, ModuleFile, PlatformFile, ewb, a, b, c, ModuleAutoGen):
         ModuleAutoGen.CreateAutoGenFile()
         ModuleAutoGen.CreateMakefile()
-        for f in ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']:
-            (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(os.environ["WORKSPACE"], f, a + '_' + b, c, ModuleFile)))
+        for Platform in ewb.Build[c].PlatformDatabase.values():
+            d = Platform.OutputDirectory
+            (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(os.environ["WORKSPACE"], d, a + '_' + b, c, ModuleFile)))
             DestDir = filename
             FileList = glob.glob(os.path.normpath(os.path.join(DestDir, 'makefile')))
             FileNum = len(FileList)
@@ -225,8 +182,10 @@ class Build():
                 self.SameTypeFileInDir(FileNum, 'makefile', DestDir)
                 for i in range(0, int(self.Opt.NUM)):
                     self.Sem.acquire()
-                p = Popen(["nmake", "/nologo", "-f", FileList[0], 'pbuild'], env=os.environ, cwd=os.path.dirname(FileList[0]))
+                p = Popen(["nmake", "/nologo", "-f", FileList[0], 'pbuild'], stdout=PIPE, stderr=PIPE, env=os.environ, cwd=os.path.dirname(FileList[0]))
                 p.communicate()
+                EdkLogger.debug(EdkLogger.INFO, p.stdout.read())
+                EdkLogger.debug(EdkLogger.QUIET, p.stderr.read())
                 if p.returncode != 0:
                     self.isexit(p.returncode)
                 for i in range(0, int(self.Opt.NUM)):
@@ -281,8 +240,10 @@ class Build():
         FileNum = len(FileList)
         if FileNum > 0:
             self.SameTypeFileInDir(FileNum, 'makefile', DestDir)
-            p = Popen(["nmake", "/nologo", "-f", FileList[0], self.Args], env=os.environ, cwd=os.path.dirname(FileList[0]))
+            p = Popen(["nmake", "/nologo", "-f", FileList[0], self.Args], stdout=PIPE, stderr=PIPE, env=os.environ, cwd=os.path.dirname(FileList[0]))
             p.communicate()
+            EdkLogger.debug(EdkLogger.INFO, p.stdout.read())
+            EdkLogger.debug(EdkLogger.QUIET, p.stderr.read())
             if p.returncode != None:
                 self.isexit(p.returncode)
         else:
@@ -297,8 +258,11 @@ class Build():
             self.TrackInfo(e)
             self.isexit(1)
         if makefile != "":
-            p = Popen(["nmake", "/nologo", "-f", makefile, 'all'], env=os.environ, cwd=os.path.dirname(makefile))
+            p = Popen(["nmake", "/nologo", "-f", makefile, 'all'], stdout=PIPE, stderr=PIPE, env=os.environ, cwd=os.path.dirname(makefile))
+            EdkLogger.debug(EdkLogger.INFO, p.stdout.read())
             p.communicate()
+            EdkLogger.debug(EdkLogger.INFO, p.stdout.read())
+            EdkLogger.debug(EdkLogger.QUIET, p.stderr.read())
             if p.returncode != None:
                 self.isexit(p.returncode)
         else:
@@ -307,13 +271,14 @@ class Build():
 
 
     def Process(self, ModuleFile, PlatformFile, ewb):
-
         #
         # Merge Arch
         #
         self.Opt.TARGET_ARCH = list(set(self.Opt.TARGET_ARCH) & set(ewb.SupArchList))
         if len(self.Opt.TARGET_ARCH) == 0:
+            print "Please specify a ARCH, and try again."
             self.isexit(1)
+            
         try:
             if self.Opt.spawn == True:
                 for a in self.Opt.TARGET:
@@ -341,20 +306,24 @@ class Build():
                             PlatformAutoGen.CreateAutoGenFile()
                             PlatformAutoGen.CreateMakefile()
                             for i in range(0, int(self.Opt.NUM)):
-                                Sem.acquire()
+                                self.Sem.acquire()
                             print "successful"
                             for i in range(0, int(self.Opt.NUM)):
-                                Sem.release()
+                                self.Sem.release()
 
                             # call GenFds
                             #GenFds -f C:\Work\Temp\T1\Nt32Pkg\Nt32Pkg.fdf -o $(BUILD_DIR) -p Nt32Pkg\Nt32Pkg.dsc
                             if self.Opt.FDFFILE != '':
-                                f = ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']
+                                for Platform in ewb.Build[self.Opt.TARGET_ARCH[0]].PlatformDatabase.values():
+                                    f = Platform.OutputDirectory
+#                                f = ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']
                                 f = os.path.normpath(os.path.join(os.environ["WORKSPACE"], f, a + '_' + b))
                                 if os.path.isdir(os.path.normpath(os.path.join(f, "FV"))) != True:
                                     os.mkdir(os.path.normpath(os.path.join(f, "FV")))
-                                p = Popen(["GenFds", "-f", self.Opt.FDFFILE, "-o", f, "-p", self.Opt.DSCFILE], env=os.environ, cwd=os.path.dirname(self.Opt.FDFFILE))
+                                p = Popen(["GenFds", "-f", self.Opt.FDFFILE, "-o", f, "-p", self.Opt.DSCFILE], stdout=PIPE, stderr=PIPE, env=os.environ, cwd=os.path.dirname(self.Opt.FDFFILE))
                                 p.communicate()
+                                EdkLogger.debug(EdkLogger.INFO, p.stdout.read())
+                                EdkLogger.debug(EdkLogger.QUIET, p.stderr.read())
                                 if p.returncode != 0:
                                     self.isexit(p.returncode)
                         else:
@@ -384,17 +353,31 @@ class Build():
                         self.OtherFunc(ModuleFile, PlatformFile, ewb, a, b, self.Opt.TARGET_ARCH)
                 else:
                     #
+                    # Check the arch of Module
                     #
-                    #
+                    li = []
                     for c in self.Opt.TARGET_ARCH:
-                        if self.GenC == 1:
-                            self.GenCFunc(ModuleFile, PlatformFile, ewb, a, b, c)
-                        elif self.GenMake == 1:
-                            self.GenMakeFunc(ModuleFile, PlatformFile, ewb, a, b, c)
-                        elif self.All == 1:
-                            self.AllFunc(ModuleFile, PlatformFile, ewb, a, b, c)
-                        else:
-                            self.OtherFunc(ModuleFile, PlatformFile, ewb, a, b, c)
+                        ss = 0
+                        for elem in ewb.Build[c].ModuleDatabase.values():
+                            if ModuleFile != elem.DescFilePath:
+                                continue
+                            else:
+                                ss = 1
+                                break
+                        if ss == 0:
+                            li.append(c)
+                        if ss == 1:
+                            print "Module: %s, ARCH: %s" %(ModuleFile, c)
+                            if self.GenC == 1:
+                                self.GenCFunc(ModuleFile, PlatformFile, ewb, a, b, c)
+                            elif self.GenMake == 1:
+                                self.GenMakeFunc(ModuleFile, PlatformFile, ewb, a, b, c)
+                            elif self.All == 1:
+                                self.AllFunc(ModuleFile, PlatformFile, ewb, a, b, c)
+                            else:
+                                self.OtherFunc(ModuleFile, PlatformFile, ewb, a, b, c)
+                    if len(li) != 0:
+                        print "Module: %s doesn't support the ARCH: %s" %(ModuleFile, ''.join(elem + ' ' for elem in li))
         return 0
 
     def CalculateTime(self):
@@ -457,16 +440,11 @@ def MyOptionParser():
 
 
 
-
-if __name__ == '__main__':
+def main():
 #
 # Parse the options and args
 #
-
     (opt, args) = MyOptionParser()
-    if len(args) >= 2:
-        print 'It is invaild to input more than one target.'
-        sys.exit(1)
 
 #
 # Check environment variable: EDK_TOOLS_PATH, WORKSPACE, PATH
@@ -494,6 +472,15 @@ if __name__ == '__main__':
 #
 # Merge the Build Options except input file(DSCFILE, FDFFILE)
 #
+    if build.Opt.verbose != None:
+        EdkLogger.setLevel(EdkLogger.VERBOSE)
+    elif build.Opt.quiet != None:
+        EdkLogger.setLevel(EdkLogger.QUIET)
+    elif build.Opt.debug != None:
+        EdkLogger.setLevel(build.Opt.debug + 1)
+    else:
+        EdkLogger.setLevel(EdkLogger.INFO)
+
     if build.Opt.INFFILE != None:
         if build.Opt.INFFILE[0] == '.':
             print "ERROR: Please specify a absolute path or a WORKSPACE realtive path for Module(INF) file."
@@ -520,7 +507,7 @@ if __name__ == '__main__':
     if build.Opt.TARGET_ARCH == None:
         build.Opt.TARGET_ARCH = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET_ARCH]
         if build.Opt.TARGET_ARCH == ['']:
-            build.Opt.TARGET_ARCH = ['IA32', 'X64', 'IPF', 'EBC']
+            build.Opt.TARGET_ARCH = ARCH_LIST
     EdkLogger.debug(EdkLogger.DEBUG_5, '\tTARGET_ARCH is: %s' % ''.join(build.Opt.TARGET_ARCH))
 
     if build.Opt.TARGET == None:
@@ -545,15 +532,6 @@ if __name__ == '__main__':
     EdkLogger.debug(EdkLogger.DEBUG_5, '\tMAX_CONCURRENT_THREAD_NUMBER is: %s' % build.Opt.NUM)
     if build.Opt.spawn == True:
         build.Sem = BoundedSemaphore(int(build.Opt.NUM))
-
-    if build.Opt.verbose != None:
-        EdkLogger.setLevel(EdkLogger.VERBOSE)
-    elif build.Opt.quiet != None:
-        EdkLogger.setLevel(EdkLogger.QUIET)
-    elif build.Opt.debug != None:
-        EdkLogger.setLevel(build.Opt.debug + 1)
-    else:
-        EdkLogger.setLevel(EdkLogger.INFO)
 
 #
 # Marge DSC file with cmd input and default value in target.txt
@@ -607,6 +585,9 @@ if __name__ == '__main__':
 # Platform Build or Module Build
 #
     CurWorkDir = os.getcwd()
+#
+#    CurWorkDir = 'C:\Work\R9\LakeportX64Dev\LakeportX64Pkg\AcpiPlatformDxe'
+#
 
     if build.Opt.INFFILE:
         if build.Opt.DSCFILE:
@@ -671,3 +652,13 @@ if __name__ == '__main__':
 
 # To Do: add a judgement for return code
     sys.exit(StatusCode)
+
+
+if __name__ == '__main__':
+
+    try:
+        main()
+    except Exception:
+        last_type, last_value, last_tb = sys.exc_info()
+        traceback.print_exception(last_type, last_value, last_tb)
+        sys.exit(1)
