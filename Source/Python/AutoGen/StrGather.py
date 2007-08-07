@@ -11,7 +11,8 @@
 #This file is used to parse a strings file and create or add to a string database file.
 #
 
-import Common.EdkLogger
+import re
+import Common.EdkLogger as EdkLogger
 from Common.BuildToolError import *
 from UniClassObject import *
 
@@ -27,7 +28,7 @@ COMMON_FILE_NAME = 'Strings'
 OFFSET = 'offset'
 STRING = 'string'
 TO = 'to'
-STRING_TOKEN = 'STRING_TOKEN'
+STRING_TOKEN = re.compile('STRING_TOKEN *\(([A-Z0-9_]+) *\)', re.MULTILINE | re.UNICODE)
 
 LENGTH_EFI_HII_STRING_PACK_HEADER = 22
 LENGTH_STRING_OFFSET = 4
@@ -224,13 +225,10 @@ def SearchString(UniObjectClass, FileList):
         if os.path.isfile(File):
             Lines = open(File, 'r')
             for Line in Lines:
-                if Line.find(STRING_TOKEN) > 0:
-                    Line = Line[Line.find(STRING_TOKEN) : ]
-                    StringList = Line.split(STRING_TOKEN)
-                    for Line in StringList:
-                        Line = Line.strip()
-                        StrName = Line[Line.find('(') + len('(') : Line.find(')')].strip()
-                        UniObjectClass.SetStringReferenced(StrName)
+                StringTokenList = STRING_TOKEN.findall(Line)
+                for StrName in StringTokenList:
+                    EdkLogger.debug(EdkLogger.DEBUG_5, "Found string identifier: " + StrName)
+                    UniObjectClass.SetStringReferenced(StrName)
      
     UniObjectClass.ReToken()
 
@@ -265,8 +263,31 @@ def WriteLine(Target, Item):
 if __name__ == '__main__':
     EdkLogger.info('start')
     
-    UniFileList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\inventorystrings.uni', 'C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\VfrStrings.uni']
-    IncludeList = ['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample']
+    UniFileList = [
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\SmbiosMiscStrings.uni',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscOemString.uni',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscSystemOptionString.uni',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscOnboardDevice.uni',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscSystemSlotOnboardDevices.uni',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscBiosVendor.uni',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscChassisManufacturer.uni',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscSystemSlotDesignation.uni',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscPortInternalConnectorDesignator.uni',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscSystemManufacturer.uni',
+    ]
+    IncludeList = [
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\Build\LakeportX64Pkg\DEBUG_MYTOOLS\X64\LakeportX64Pkg\SmbiosMiscDxe\SmbiosMiscDxe\DEBUG',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\MdePkg',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\MdePkg\Include\x64',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\MdePkg\Include',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\IntelFrameworkPkg',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\IntelFrameworkPkg\Include',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\MdeModulePkg',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\MdeModulePkg\Include',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg',
+        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\Include',
+    ]
 #    UniFileList = (['C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\PlatformBds\\DeviceMngr\\DeviceManagerStrings.uni'])
 #    UniFileList.append('C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\PlatformBds\\BootMngr\\BootManagerStrings.uni')
 #    UniFileList.append('C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\PlatformBds\\Strings.uni')
@@ -282,8 +303,8 @@ if __name__ == '__main__':
     SkipList = ['.inf', '.uni']
     BaseName = 'SetupBrowser'
     (h, c) = GetStringFiles(UniFileList, IncludeList, SkipList, BaseName)
-    hfile = open('C:\string.h', 'w')
-    cfile = open('C:\string.c', 'w')
+    hfile = open('unistring.h', 'w')
+    cfile = open('unistring.c', 'w')
     hfile.write(h)
     cfile.write(c)
     

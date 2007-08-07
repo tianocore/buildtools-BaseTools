@@ -11,7 +11,7 @@
 #This file is used to collect all defined strings in multiple uni files 
 #
 
-import os, codecs
+import os, codecs, re
 import Common.EdkLogger
 from Common.BuildToolError import *
 
@@ -29,6 +29,8 @@ LF = u'\u000A'
 NULL = u'\u0000'
 TAB = u'\t'
 BACK_SPLASH = u'\\'
+
+gIncludePattern = re.compile("^#include +[\"<]+([^\"< >]+)[>\"]+$", re.MULTILINE | re.UNICODE)
 
 def UniToStr(Uni):
     return repr(Uni)[2:-1]
@@ -81,7 +83,7 @@ class UniFileClassObject(object):
     def GetLangDef(self, Line):
         Lang = Line.split()
         if len(Lang) != 3:
-            raise ParseError("""Wrong language definition '""" + Line + """' which should be '#langdef eng "English"'""")
+            raise ParserError(msg="""Wrong language definition '""" + Line + """' which should be '#langdef eng "English"'""")
         else:
             LangName = Lang[1]
             LangPrintName = Lang[2][1:-1]
@@ -116,130 +118,129 @@ class UniFileClassObject(object):
         FileName = Item[Item.find(u'#include ') + len(u'#include ') :Item.find(u' ', len(u'#include '))][1:-1]
         self.LoadUniFile(FileName)
     
-    def PreProcess(self, FileIn):
+    def PreProcess(self, File):
+        if not os.path.exists(File) or not os.path.isfile(File):
+            raise ParserError(msg=File + ' is not a valid file')
+        
+        Dir = os.path.dirname(File)
+        FileIn = codecs.open(File, mode='rb', encoding='utf-16').readlines()
         Lines = []
         #
         # Use unique identifier
         #
-        for Index in range(len(FileIn)):
-            if FileIn[Index].startswith(u'//') or FileIn[Index] == u'\r\n':
+        for Line in FileIn:
+            Line = Line.strip()
+            #
+            # Ignore comment line and empty line
+            #
+            if Line == u'' or Line.startswith(u'//'):
                 continue
-            FileIn[Index] = FileIn[Index].replace(u'/langdef', u'#langdef')
-            FileIn[Index] = FileIn[Index].replace(u'/string', u'#string')
-            FileIn[Index] = FileIn[Index].replace(u'/language', u'#language')
-            FileIn[Index] = FileIn[Index].replace(u'/include', u'#include')
+            Line = Line.replace(u'/langdef', u'#langdef')
+            Line = Line.replace(u'/string', u'#string')
+            Line = Line.replace(u'/language', u'#language')
+            Line = Line.replace(u'/include', u'#include')
                         
-            FileIn[Index] = FileIn[Index].replace(UNICODE_WIDE_CHAR, WIDE_CHAR)
-            FileIn[Index] = FileIn[Index].replace(UNICODE_NARROW_CHAR, NARROW_CHAR)
-            FileIn[Index] = FileIn[Index].replace(UNICODE_NON_BREAKING_CHAR, NON_BREAKING_CHAR)
-            FileIn[Index] = FileIn[Index].replace(u'\\r\\n', CR + LF)
-            FileIn[Index] = FileIn[Index].replace(u'\\n', CR + LF)
-            FileIn[Index] = FileIn[Index].replace(u'\\r', CR)
-            FileIn[Index] = FileIn[Index].replace(u'\\t', u'\t')
-            FileIn[Index] = FileIn[Index].replace(u'\\\\', u'\\')
-            FileIn[Index] = FileIn[Index].replace(u'''\"''', u'''"''')
-            FileIn[Index] = FileIn[Index].replace(u'\t', u' ')
-#           if FileIn[Index].find(u'\\x'):
-#               hex = FileIn[Index][FileIn[Index].find(u'\\x') + 2 : FileIn[Index].find(u'\\x') + 6]
+            Line = Line.replace(UNICODE_WIDE_CHAR, WIDE_CHAR)
+            Line = Line.replace(UNICODE_NARROW_CHAR, NARROW_CHAR)
+            Line = Line.replace(UNICODE_NON_BREAKING_CHAR, NON_BREAKING_CHAR)
+            Line = Line.replace(u'\\r\\n', CR + LF)
+            Line = Line.replace(u'\\n', CR + LF)
+            Line = Line.replace(u'\\r', CR)
+            Line = Line.replace(u'\\t', u'\t')
+            Line = Line.replace(u'\\\\', u'\\')
+            Line = Line.replace(u'''\"''', u'''"''')
+            Line = Line.replace(u'\t', u' ')
+#           if Line.find(u'\\x'):
+#               hex = Line[Line.find(u'\\x') + 2 : Line.find(u'\\x') + 6]
 #               hex = "u'\\u" + hex + "'"
                         
-            Lines.append(FileIn[Index])
+            IncList = gIncludePattern.findall(Line)
+            if len(IncList) == 1:
+                Lines.extend(self.PreProcess(os.path.join(Dir, IncList[0])))
+                continue
+
+            Lines.append(Line)
         
         return Lines
     
     def LoadUniFile(self, File = None):
-        if File != None:
-            if os.path.exists(File) and os.path.isfile(File):
-                Dir = File.rsplit('\\', 1)[0]
-                FileIn = codecs.open(File, mode='rb', encoding='utf-16').readlines()             
-                
-                #
-                # Process special char in file
-                #
-                Lines = self.PreProcess(FileIn)
-                
-                #
-                # Get Unicode Information
-                #
-                for IndexI in range(len(Lines)):
-                    Line = Lines[IndexI]
-                    #
-                    # Ignore comment line and empty line
-                    #
-                    if Line.startswith(u'//') or Line.strip() == u'\r\n':
-                        continue
-                    
-                    if (IndexI + 1) < len(Lines):
-                        SecondLine = Lines[IndexI + 1]
-                    if (IndexI + 2) < len(Lines):
-                        ThirdLine = Lines[IndexI + 2]
-                                            
-                    #
-                    # Get Language def information
-                    # 
-                    if Line.find(u'#langdef ') >= 0:
-                        self.GetLangDef(Line)
-                        continue
-                    
-#                    if Line.find(u'#include ') >= 0:
-#                        self.GetIncludeFile(Line, Dir)
-#                        continue
-                    
-                    Name = ''
-                    Language = ''
-                    Value = ''
-                    #
-                    # Get string def information format 1 as below
-                    #
-                    #     #string MY_STRING_1
-                    #     #language eng
-                    #     My first English string line 1
-                    #     My first English string line 2
-                    #     #string MY_STRING_1
-                    #     #language spa
-                    #     Mi segunda secuencia 1
-                    #     Mi segunda secuencia 2
-                    #
-                    if Line.find(u'#string ') >= 0 and Line.find(u'#language ') < 0 and \
-                        SecondLine.find(u'#string ') < 0 and SecondLine.find(u'#language ') >= 0 and \
-                        ThirdLine.find(u'#string ') < 0 and ThirdLine.find(u'#language ') < 0:
-                        Name = Line[Line.find(u'#string ') + len(u'#string ') : ].strip()
-                        Language = SecondLine[SecondLine.find(u'#language ') + len(u'#language ') : ].strip()
-                        for IndexJ in range(IndexI + 2, len(Lines)):
-                            if Lines[IndexJ].find(u'#string ') < 0 and Lines[IndexJ].find(u'#language ') < 0:
-                                Value = Value + Lines[IndexJ]
-                            else:
-                                IndexI = IndexJ
-                                break
-                        Value = Value.replace(u'\r\n', u'')
-                        self.AddStringToList(Name, Language, Value)
-                        continue
-                    
-                    #
-                    # Get string def information format 2 as below
-                    #
-                    #     #string MY_STRING_1     #language eng     "My first English string line 1"
-                    #                                               "My first English string line 2"
-                    #                             #language spa     "Mi segunda secuencia 1"
-                    #                                               "Mi segunda secuencia 2"
-                    #     #string MY_STRING_2     #language eng     "My first English string line 1"
-                    #                                               "My first English string line 2"
-                    #     #string MY_STRING_2     #language spa     "Mi segunda secuencia 1"
-                    #                                               "Mi segunda secuencia 2"
-                    #
-                    if Line.find(u'#string ') >= 0 and Line.find(u'#language ') >= 0:
-                        StringItem = Line
-                        for IndexJ in range(IndexI + 1, len(Lines)):
-                            if Lines[IndexJ].find(u'#string ') >= 0 and Lines[IndexJ].find(u'#language ') >= 0:
-                                IndexI = IndexJ
-                                break
-                            elif Lines[IndexJ].find(u'#string ') < 0 and Lines[IndexJ].find(u'#language ') >= 0:
-                                StringItem = StringItem + Lines[IndexJ]
-                            elif Lines[IndexJ].find(u'\"') >= 2:
-                                StringItem = StringItem[ : StringItem.rfind(u'\"')] + Lines[IndexJ][Lines[IndexJ].find(u'\"') + len(u'\"') : ]
-                        self.GetStringObject(StringItem)              
-            else:
-                raise ParseError(File + ' is not a valid file')
+        if File == None:
+            raise ParserError(ms='No unicode file is given')
+        #
+        # Process special char in file
+        #
+        Lines = self.PreProcess(File)
+        
+        #
+        # Get Unicode Information
+        #
+        for IndexI in range(len(Lines)):
+            Line = Lines[IndexI]
+            if (IndexI + 1) < len(Lines):
+                SecondLine = Lines[IndexI + 1]
+            if (IndexI + 2) < len(Lines):
+                ThirdLine = Lines[IndexI + 2]
+                                    
+            #
+            # Get Language def information
+            # 
+            if Line.find(u'#langdef ') >= 0:
+                self.GetLangDef(Line)
+                continue
+            
+            Name = ''
+            Language = ''
+            Value = ''
+            #
+            # Get string def information format 1 as below
+            #
+            #     #string MY_STRING_1
+            #     #language eng
+            #     My first English string line 1
+            #     My first English string line 2
+            #     #string MY_STRING_1
+            #     #language spa
+            #     Mi segunda secuencia 1
+            #     Mi segunda secuencia 2
+            #
+            if Line.find(u'#string ') >= 0 and Line.find(u'#language ') < 0 and \
+                SecondLine.find(u'#string ') < 0 and SecondLine.find(u'#language ') >= 0 and \
+                ThirdLine.find(u'#string ') < 0 and ThirdLine.find(u'#language ') < 0:
+                Name = Line[Line.find(u'#string ') + len(u'#string ') : ].strip()
+                Language = SecondLine[SecondLine.find(u'#language ') + len(u'#language ') : ].strip()
+                for IndexJ in range(IndexI + 2, len(Lines)):
+                    if Lines[IndexJ].find(u'#string ') < 0 and Lines[IndexJ].find(u'#language ') < 0:
+                        Value = Value + Lines[IndexJ]
+                    else:
+                        IndexI = IndexJ
+                        break
+                Value = Value.replace(u'\r\n', u'')
+                self.AddStringToList(Name, Language, Value)
+                continue
+            
+            #
+            # Get string def information format 2 as below
+            #
+            #     #string MY_STRING_1     #language eng     "My first English string line 1"
+            #                                               "My first English string line 2"
+            #                             #language spa     "Mi segunda secuencia 1"
+            #                                               "Mi segunda secuencia 2"
+            #     #string MY_STRING_2     #language eng     "My first English string line 1"
+            #                                               "My first English string line 2"
+            #     #string MY_STRING_2     #language spa     "Mi segunda secuencia 1"
+            #                                               "Mi segunda secuencia 2"
+            #
+            if Line.find(u'#string ') >= 0 and Line.find(u'#language ') >= 0:
+                StringItem = Line
+                for IndexJ in range(IndexI + 1, len(Lines)):
+                    if Lines[IndexJ].find(u'#string ') >= 0 and Lines[IndexJ].find(u'#language ') >= 0:
+                        IndexI = IndexJ
+                        break
+                    elif Lines[IndexJ].find(u'#string ') < 0 and Lines[IndexJ].find(u'#language ') >= 0:
+                        StringItem = StringItem + Lines[IndexJ]
+                    elif Lines[IndexJ].find(u'\"') >= 2:
+                        StringItem = StringItem[ : StringItem.rfind(u'\"')] + Lines[IndexJ][Lines[IndexJ].find(u'\"') + len(u'\"') : ]
+                self.GetStringObject(StringItem)              
     
     def LoadUniFiles(self, FileList = []):
         if len(FileList) > 0:
