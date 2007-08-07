@@ -47,6 +47,7 @@ class Build():
         self.GenC         = None
         self.GenMake      = None
         self.All          = None
+        self.Returncode   = 0
         if len(self.Args) == 0:
             self.All = 1
         elif len(self.Args) >= 2:
@@ -164,7 +165,8 @@ class Build():
             FileNum = len(FileList)
             if FileNum > 0:
                 self.SameTypeFileInDir(FileNum, 'makefile', DestDir)
-                BuildSpawn(self.Sem, FileList[0], 'lbuild', 1).start()
+                BuildSpawn(self.Returncode, self.Sem, FileList[0], 'lbuild', 1).start()
+                self.isexit(self.Returncode)
             else:
                 print "There isn't makefils in %s.\n" % DestDir
                 self.isexit(1)
@@ -183,13 +185,14 @@ class Build():
                 for i in range(0, int(self.Opt.NUM)):
                     self.Sem.acquire()
                 p = Popen(["nmake", "/nologo", "-f", FileList[0], 'pbuild'], stdout=PIPE, stderr=PIPE, env=os.environ, cwd=os.path.dirname(FileList[0]))
-                p.communicate()
-                EdkLogger.debug(EdkLogger.INFO, p.stdout.read())
-                EdkLogger.debug(EdkLogger.QUIET, p.stderr.read())
-                if p.returncode != 0:
-                    self.isexit(p.returncode)
+                while p.poll() == None:
+                    EdkLogger.info(p.stdout.readline()[:-2])
+                EdkLogger.info(p.stdout.read())
                 for i in range(0, int(self.Opt.NUM)):
                     self.Sem.release()
+                if p.returncode != 0:
+                    EdkLogger.info(p.stderr.read())
+                    self.isexit(p.returncode)
             else:
                 print "There isn't makefile in %s." % DestDir
                 self.isexit(1)
@@ -241,10 +244,11 @@ class Build():
         if FileNum > 0:
             self.SameTypeFileInDir(FileNum, 'makefile', DestDir)
             p = Popen(["nmake", "/nologo", "-f", FileList[0], self.Args], stdout=PIPE, stderr=PIPE, env=os.environ, cwd=os.path.dirname(FileList[0]))
-            p.communicate()
-            EdkLogger.debug(EdkLogger.INFO, p.stdout.read())
-            EdkLogger.debug(EdkLogger.QUIET, p.stderr.read())
-            if p.returncode != None:
+            while p.poll() == None:
+                EdkLogger.info(p.stdout.readline()[:-2])
+            EdkLogger.info(p.stdout.read())
+            if p.returncode != 0:
+                EdkLogger.info(p.stderr.read())
                 self.isexit(p.returncode)
         else:
             self.isexit(1)
@@ -261,10 +265,9 @@ class Build():
             p = Popen(["nmake", "/nologo", "-f", makefile, 'all'], stdout=PIPE, stderr=PIPE, env=os.environ, cwd=os.path.dirname(makefile))
             while p.poll() == None:
                 EdkLogger.info(p.stdout.readline()[:-2])
-            if p.returncode != None:
-                if p.returncode != 0:
-                    EdkLogger.info(p.stdout.read())
-                    EdkLogger.info(p.stderr.read())
+            EdkLogger.info(p.stdout.read())
+            if p.returncode != 0:
+                EdkLogger.info(p.stderr.read())
                 self.isexit(p.returncode)
         else:
             print "Can find Makefile.\n"
@@ -317,15 +320,17 @@ class Build():
                             if self.Opt.FDFFILE != '':
                                 for Platform in ewb.Build[self.Opt.TARGET_ARCH[0]].PlatformDatabase.values():
                                     f = Platform.OutputDirectory
-#                                f = ewb.DscDatabase[PlatformFile].Defines.DefinesDictionary['OUTPUT_DIRECTORY']
                                 f = os.path.normpath(os.path.join(os.environ["WORKSPACE"], f, a + '_' + b))
                                 if os.path.isdir(os.path.normpath(os.path.join(f, "FV"))) != True:
                                     os.mkdir(os.path.normpath(os.path.join(f, "FV")))
-                                p = Popen(["GenFds", "-f", self.Opt.FDFFILE, "-o", f, "-p", self.Opt.DSCFILE], stdout=PIPE, stderr=PIPE, env=os.environ, cwd=os.path.dirname(self.Opt.FDFFILE))
-                                p.communicate()
-                                EdkLogger.debug(EdkLogger.INFO, p.stdout.read())
-                                EdkLogger.debug(EdkLogger.QUIET, p.stderr.read())
+                                archlist = ''.join(elem + ',' for elem in self.Opt.TARGET_ARCH)
+                                arch = archlist[:len(archlist)-1]
+                                p = Popen(["GenFds", "-f", self.Opt.FDFFILE, "-o", f, "-a", arch, "-p", self.Opt.DSCFILE], stdout=PIPE, stderr=PIPE, env=os.environ, cwd=os.path.dirname(self.Opt.FDFFILE))
+                                while p.poll() == None:
+                                    EdkLogger.info(p.stdout.readline()[:-2])
+                                EdkLogger.info(p.stdout.read())
                                 if p.returncode != 0:
+                                    EdkLogger.info(p.stderr.read())
                                     self.isexit(p.returncode)
                         else:
                             for c in self.Opt.TARGET_ARCH:
