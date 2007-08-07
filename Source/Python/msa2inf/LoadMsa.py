@@ -740,6 +740,7 @@ def LoadMsa(MsaFileName):
     
     return Module
 
+
 # This acts like the main() function for the script, unless it is 'import'ed
 # into another script.
 if __name__ == '__main__':

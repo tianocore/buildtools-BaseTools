@@ -188,7 +188,6 @@ def StorePackagePcdsSection(DecFile, Package):
     for PcdSectionName in PcdsDict:
         Pcds = PcdsDict[PcdSectionName]
         Section += GetSection(PcdSectionName, GetPackagePcdItem, Pcds)
-        Section += "\n"
 
     StoreTextFile(DecFile, Section)
 
@@ -214,11 +213,10 @@ def StoreDec(DecFileName, Package):
     StorePackagePcdsSection(DecFile, Package)
 
     DecFile.close()
-    
-if __name__ == '__main__':
-    Filename = r"X:\edk2\EdkModulePkg\EdkModulePkg.spd"
-    Package = LoadSpd(Filename)
 
-    Filename = r"X:\edk2\EdkModulePkg\EdkModulePkg.dec"
-    StoreDec(Filename, Package)
+    
+# This acts like the main() function for the script, unless it is 'import'ed
+# into another script.
+if __name__ == '__main__':
+    pass
     

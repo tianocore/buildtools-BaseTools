@@ -58,6 +58,9 @@ def StoreModuleDefinesSection(InfFile, Module):
     if ModuleHeader.Guid != "":
         DefinesTupleList.append(("FILE_GUID", ModuleHeader.Guid))
 
+    if ModuleHeader.Version != "":
+        DefinesTupleList.append(("VERSION_STRING", ModuleHeader.Version))
+        
     if ModuleHeader.ModuleType != "":
         DefinesTupleList.append(("MODULE_TYPE", ModuleHeader.ModuleType))
 

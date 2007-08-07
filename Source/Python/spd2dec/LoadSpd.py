@@ -19,6 +19,7 @@ from Common.XmlRoutines import *
 from Common.MigrationUtilities import *
 from CommonDataClass.PackageClass import *
 
+
 ## Load a list of Package Cloned Records.
 #
 # Read an input Package XML DOM object and return a list of Cloned Records
@@ -80,8 +81,8 @@ def LoadPackageLibraryClasses(XmlSpd):
 
 ## Load a new Package Industry Std Header class object.
 #
-# Read an input XML IndustryStdHeader DOM object and return an object of Industry Std Header
-# contained in the DOM object.
+# Read an input XML IndustryStdHeader DOM object and return an object of
+# Industry Std Header contained in the DOM object.
 #
 # @param  XmlIndustryStdHeader     A child XML DOM object in Package XML DOM.
 #
@@ -108,9 +109,9 @@ def LoadPackageIndustryStdHeader(XmlIndustryStdHeader):
 # Read an input Package XML DOM object and return a list of Industry Std Headers
 # contained in the DOM object.
 #
-# @param  XmlSpd               An XML DOM object read from SPD file.
+# @param  XmlSpd             An XML DOM object read from SPD file.
 #
-# @retvel IndustryStdHeaders   A list of Industry Std Headers loaded from XmlSpd.
+# @retvel IndustryStdHeaders A list of Industry Std Headers loaded from XmlSpd.
 #
 def LoadPackageIndustryStdHeaders(XmlSpd):
     XmlTag = "PackageSurfaceArea/IndustryStdIncludes/IndustryStdHeader"
@@ -121,9 +122,9 @@ def LoadPackageIndustryStdHeaders(XmlSpd):
 # Read an input Package XML DOM object and return a list of Module Files
 # contained in the DOM object.
 #
-# @param  XmlSpd               An XML DOM object read from SPD file.
+# @param  XmlSpd             An XML DOM object read from SPD file.
 #
-# @retvel ModuleFiles          A list of Module Files loaded from XmlSpd.
+# @retvel ModuleFiles        A list of Module Files loaded from XmlSpd.
 #
 def LoadPackageModuleFiles(XmlSpd):
     XmlTag = "PackageSurfaceArea/MsaFiles/Filename"
@@ -233,6 +234,7 @@ def LoadPackageUserExtensions(XmlSpd):
     XmlTag = "PackageSurfaceArea/UserExtensions"
     return map(LoadUserExtensions, XmlList(XmlSpd, XmlTag))
 
+
 ## Load a new Package class object.
 #
 # Read an input SPD File and return a new Package class Object.
@@ -243,7 +245,7 @@ def LoadPackageUserExtensions(XmlSpd):
 #
 def LoadSpd(SpdFileName):
     XmlSpd = XmlParseFile(SpdFileName)
-    print "Xml Object loaded for file %s" % SpdFileName
+    EdkLogger.verbose("Xml Object loaded for file %s" % SpdFileName)
 
     Package = PackageClass()
     Package.Header = LoadPackageHeader(XmlSpd, SpdFileName)
@@ -259,20 +261,8 @@ def LoadSpd(SpdFileName):
     
     return Package
 
-if __name__ == '__main__':
-    Filename = r"X:\edk2\EdkModulePkg\EdkModulePkg.spd"
-    Package = LoadSpd(Filename)
-    
-    print "begin dumping"
-    for obj in Package.__dict__:
-        print "#####%s#####" % obj
-        objlst = Package.__dict__[obj]
-        if obj == "Header":
-            print objlst.__dict__
-        elif obj == "ModuleFiles":
-            for obj2 in objlst:
-                print obj2
-        else:
-            for obj2 in objlst:
-                print obj2.__dict__
 
+# This acts like the main() function for the script, unless it is 'import'ed
+# into another script.
+if __name__ == '__main__':
+    pass

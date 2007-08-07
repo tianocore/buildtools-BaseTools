@@ -417,7 +417,6 @@ def GetSection(SectionName, Method, ObjectList):
 # @param  CommonHeader       The source CommonHeader class object.
 #
 def StoreHeader(TextFile, CommonHeader):
-    """Write CommonHeader info to OutputFile in a unified format"""
     CopyRight = CommonHeader.Copyright
     Abstract = CommonHeader.Abstract
     Description = CommonHeader.Description
