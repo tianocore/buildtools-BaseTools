@@ -34,12 +34,11 @@ Abstract:
 #include <Common/PiFirmwareFile.h>
 #include <Common/PiFirmwareVolume.h>
 #include <Guid/PiFirmwareFileSystem.h>
-
 #include <IndustryStandard/PeImage.h>
-#include <Library/PeCoffLib.h>
 
 #include "CommonLib.h"
 #include "ParseInf.h"
+#include "PeCoffLib.h"
 
 //
 // Private data declarations

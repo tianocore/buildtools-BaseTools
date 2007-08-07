@@ -2,8 +2,8 @@ ARCH = IA32
 
 !INCLUDE MSmakefile.common
 
-LIBRARIES = Common PeCoffLoader String
-APPLICATIONS = GenFw GenSec GenFv GenFfs GenVtf EfiRom TianoCompress Split
+LIBRARIES = Common
+APPLICATIONS = GenFw GenSec GenFv GenFfs GenVtf EfiRom TianoCompress Split GenBootSector
 
 all: libs apps install
 

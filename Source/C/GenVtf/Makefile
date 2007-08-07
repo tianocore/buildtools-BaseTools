@@ -2,7 +2,7 @@
 
 APPNAME = GenVtf
 
-LIBS = Common.lib String.lib
+LIBS = Common.lib
 
 OBJECTS = GenVtf.obj
 

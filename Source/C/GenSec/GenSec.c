@@ -710,7 +710,6 @@ Returns:
   EFI_COMMON_SECTION_HEADER CommonSect;
   UINT32                    InputLength;
   UINT8                     *FileBuffer;
-  BOOLEAN                   AllocatedFlag;
   EFI_STATUS                Status;
  
   fprintf (stdout, "GenSec tool start.\n");  
@@ -730,7 +729,6 @@ Returns:
   SectGuidAttribute     = 0;
   FileBuffer            = NULL;
   InputLength           = 0;
-  AllocatedFlag         = FALSE;
   Status                = STATUS_SUCCESS;
   
 
@@ -932,7 +930,6 @@ Returns:
   if ((SectType != EFI_SECTION_VERSION) && (SectType != EFI_SECTION_USER_INTERFACE)) {
     //
     // The input file are required for those section type.
-    // The file are from stdin.
     //
     if (InputFileNum == 0) {
       Error (NULL, 0, 0, NULL, "No input files is specified.");
@@ -1066,12 +1063,6 @@ Returns:
   }
 
 Finish:
-  if (AllocatedFlag == TRUE) {
-    for (Index = 0; Index < InputFileNum; Index ++) {
-      free (InputFileName[Index]);
-    }
-  }
-
   if (InputFileName != NULL) {
     free (InputFileName);
   }
