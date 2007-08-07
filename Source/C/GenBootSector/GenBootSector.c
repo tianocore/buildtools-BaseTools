@@ -523,12 +523,12 @@ Returns:
 
 VOID
 PrintUsage (
-  CHAR* AppName
+  void
   )
 {
   Version();
   printf ("\nUsage: \n\
-   Split\n\
+   GenBootSector\n\
      [-l, --list list disks]\n\
      [-i, --input Filename]\n\
      [-o, --output Filename]\n\
@@ -597,7 +597,7 @@ main (
       }
     }
     else {
-      PrintUsage (AppName);
+      PrintUsage ();
       return 1;
     }
   }
