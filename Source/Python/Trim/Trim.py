@@ -61,7 +61,7 @@ def TrimPreprocessedFile (Source, Target, Convert):
     else:
         # no "#line" or "# xxx" found, keep all lines
         Index = 0
-        EndOfCode = len(Lines) - 1
+        EndOfCode = 0
 
     # convert HEX number format if indicated
     if Convert:
