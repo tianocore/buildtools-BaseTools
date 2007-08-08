@@ -160,7 +160,6 @@ class PlatformClass(object):
         self.LibraryClasses = PlatformLibraryClasses()
         self.Modules = PlatformModuleClasses()
         self.FlashDefinitionFile = PlatformFlashDefinitionFileClass()
-        self.FvImages = []                                           #[ PlatformFvImagesClass, ...]
         self.BuildOptions = PlatformBuildOptionClasses()
         self.DynamicPcdBuildDefinitions = []                         #[ PcdClass, ...] 
         self.Fdf = []                                                #[ FdfClass, ...]

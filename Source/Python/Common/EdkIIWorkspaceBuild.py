@@ -372,8 +372,7 @@ class WorkspaceBuild(object):
             
             for Arch in self.SupArchList:
                 if not self.IsModuleDefinedInPlatform(Inf, Arch):
-                    pass
-                    #break
+                    break
                 
                 pb = ModuleBuildClassObject()
                 
@@ -504,6 +503,8 @@ class WorkspaceBuild(object):
             for Dsc in PlatformDatabase:
                 Platform = PlatformDatabase[Dsc]
                 for Inf in Platform.Modules:
+                    if not self.IsModuleDefinedInPlatform(Inf, Arch):
+                        continue
                     Module = self.Build[Arch].ModuleDatabase[NormPath(Inf)]
                     if Module.LibraryClass == None or Module.LibraryClass == "":
                         self.UpdateLibrariesOfModule(Module, Arch)
@@ -862,9 +863,16 @@ class WorkspaceBuild(object):
     #
     def IsModuleDefinedInPlatform(self, Inf, Arch):
         for Dsc in self.DscDatabase.values():
-            for Module in Dsc.Platform.Modules.ModuleList:
-                if Inf == Module.Name and Arch in Module.SupArchList:
+            for LibraryClass in Dsc.Platform.LibraryClasses.LibraryList:
+                if Inf == NormPath(LibraryClass.FilePath) and Arch in LibraryClass.SupArchList:
                     return True
+            for Module in Dsc.Platform.Modules.ModuleList:
+                if Inf == NormPath(Module.Name) and Arch in Module.SupArchList:
+                    return True
+                for Item in Module.LibraryClasses.LibraryList:
+                    if Inf == NormPath(Item.FilePath) and Arch in Item.SupArchList:
+                        return True
+                
         return False
 
     #
