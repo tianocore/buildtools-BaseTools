@@ -247,7 +247,7 @@ class UniFileClassObject(object):
             for File in FileList:
                 self.LoadUniFile(File)
                 
-    def AddStringToList(self, Name, Language, Value, Token = None, Referenced = False, UseOtherLangDef = ''):
+    def AddStringToList(self, Name, Language, Value, Token = None, Referenced = False, UseOtherLangDef = '', Index = -1):
         if Language not in self.OrderedStringList:
             self.OrderedStringList[Language] = []
         
@@ -258,7 +258,10 @@ class UniFileClassObject(object):
                 break
         if not IsAdded:
             Token = len(self.OrderedStringList[Language])
-            self.OrderedStringList[Language].append(StringDefClassObject(Name, Value, Referenced, Token, UseOtherLangDef))
+            if Index == -1:
+                self.OrderedStringList[Language].append(StringDefClassObject(Name, Value, Referenced, Token, UseOtherLangDef))
+            else:
+                self.OrderedStringList[Language].insert(Index, StringDefClassObject(Name, Value, Referenced, Token, UseOtherLangDef))
     
     def SetStringReferenced(self, Name):
         for Lang in self.OrderedStringList:
@@ -285,11 +288,12 @@ class UniFileClassObject(object):
                 Name = Item.StringName
                 Value = Item.StringValue[0:-1]
                 Referenced = Item.Referenced
+                Index = self.OrderedStringList[LangKey].index(Item)
                 for IndexJ in range(0, len(self.LanguageDef)):
                     LangFind = self.LanguageDef[IndexJ][0]
                     if self.FindStringValue(Name, LangFind) == None:
                         Token = len(self.OrderedStringList[LangFind])
-                        self.AddStringToList(Name, LangFind, Value, Token, Referenced, LangKey)
+                        self.AddStringToList(Name, LangFind, Value, Token, Referenced, LangKey, Index)
         
         #
         # Retoken
@@ -310,14 +314,17 @@ class UniFileClassObject(object):
             for Index in range(len(NotReferencedStringList)):
                 NotReferencedStringList[Index].Token = Token + Index
                 self.OrderedStringList[LangName].append(NotReferencedStringList[Index])
+        
+    def ShowMe(self):
+        print self.LanguageDef
+        #print self.OrderedStringList
+        for Item in self.OrderedStringList:
+            print Item
+            for Member in self.OrderedStringList[Item]:
+                print str(Member)
             
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
 if __name__ == '__main__':
     a = UniFileClassObject(['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\inventorystrings.uni', 'C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\VfrStrings.uni'])
-    print a.LanguageDef
-    print a.OrderedStringList
-    for i in a.OrderedStringList:
-        print i
-        for m in a.OrderedStringList[i]:
-            print str(m)
+    a.ShowMe()

@@ -229,9 +229,9 @@ def SearchString(UniObjectClass, FileList):
                 for StrName in StringTokenList:
                     EdkLogger.debug(EdkLogger.DEBUG_5, "Found string identifier: " + StrName)
                     UniObjectClass.SetStringReferenced(StrName)
-     
+    
     UniObjectClass.ReToken()
-
+    
     return UniObjectClass
 
 def GetStringFiles(UniFilList, IncludeList, SkipList, BaseName):
@@ -263,42 +263,60 @@ def WriteLine(Target, Item):
 if __name__ == '__main__':
     EdkLogger.info('start')
     
+#    UniFileList = [
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\SmbiosMiscStrings.uni',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscOemString.uni',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscSystemOptionString.uni',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscOnboardDevice.uni',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscSystemSlotOnboardDevices.uni',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscBiosVendor.uni',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscChassisManufacturer.uni',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscSystemSlotDesignation.uni',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscPortInternalConnectorDesignator.uni',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscSystemManufacturer.uni',
+#    ]
+#    IncludeList = [
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\Build\LakeportX64Pkg\DEBUG_MYTOOLS\X64\LakeportX64Pkg\SmbiosMiscDxe\SmbiosMiscDxe\DEBUG',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\MdePkg',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\MdePkg\Include\x64',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\MdePkg\Include',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\IntelFrameworkPkg',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\IntelFrameworkPkg\Include',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\MdeModulePkg',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\MdeModulePkg\Include',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg',
+#        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\Include',
+#    ]
+    
     UniFileList = [
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\SmbiosMiscStrings.uni',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscOemString.uni',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscSystemOptionString.uni',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscOnboardDevice.uni',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscSystemSlotOnboardDevices.uni',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscBiosVendor.uni',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscChassisManufacturer.uni',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscSystemSlotDesignation.uni',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscPortInternalConnectorDesignator.uni',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscSystemManufacturer.uni',
+        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\FrontPageStrings.uni',
+        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\Strings.uni',
+        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\DeviceMngr\DeviceManagerStrings.uni',
+        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\BootMngr\BootManagerStrings.uni',
+        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\FrontPageStrings.uni',
+        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\BootMaint\bmstring.uni'
     ]
+
     IncludeList = [
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\Build\LakeportX64Pkg\DEBUG_MYTOOLS\X64\LakeportX64Pkg\SmbiosMiscDxe\SmbiosMiscDxe\DEBUG',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\MdePkg',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\MdePkg\Include\x64',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\MdePkg\Include',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\IntelFrameworkPkg',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\IntelFrameworkPkg\Include',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\MdeModulePkg',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\MdeModulePkg\Include',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg',
-        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\Include',
+        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\BootMngr',
+        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic',
+        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\DeviceMngr',
+        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\BootMaint',
+        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe',
+        r'C:\SVN\EDKII\Build\NT32\DEBUG_MYTOOLS\IA32\Nt32Pkg\PlatformBdsDxe\PlatformBdsDxe\DEBUG',
+        r'C:\SVN\EDKII\Nt32Pkg',
+        r'C:\SVN\EDKII\Nt32Pkg\Include',
+        r'C:\SVN\EDKII\MdePkg',
+        r'C:\SVN\EDKII\MdePkg\Include',
+        r'C:\SVN\EDKII\MdePkg\Include\Ia32',
+        r'C:\SVN\EDKII\IntelFrameworkPkg',
+        r'C:\SVN\EDKII\IntelFrameworkPkg\Include',
+        r'C:\SVN\EDKII\IntelFrameworkModulePkg',
+        r'C:\SVN\EDKII\IntelFrameworkModulePkg\Include',
+        r'C:\SVN\EDKII\MdeModulePkg',
+        r'C:\SVN\EDKII\MdeModulePkg\Include'
     ]
-#    UniFileList = (['C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\PlatformBds\\DeviceMngr\\DeviceManagerStrings.uni'])
-#    UniFileList.append('C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\PlatformBds\\BootMngr\\BootManagerStrings.uni')
-#    UniFileList.append('C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\PlatformBds\\Strings.uni')
-#    UniFileList.append('C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\PlatformBds\\FrontPageStrings.uni')
-#
-#    IncludeList = ['C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\']
-#    IncludeList.append('C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\PlatformBds\\BootMngr\\')
-#    IncludeList.append('C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\')
-#    IncludeList.append('C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\PlatformBds\\')
-#    IncludeList.append('C:\\Tiano\\Edk\\Sample\\Platform\\Generic\\Dxe\\PlatformBds\\DeviceMngr\\')
-   
     
     SkipList = ['.inf', '.uni']
     BaseName = 'SetupBrowser'
