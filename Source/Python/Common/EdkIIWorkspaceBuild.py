@@ -283,8 +283,9 @@ class WorkspaceBuild(object):
                   
                 # LibraryClass
                 for Item in Platform.LibraryClasses.LibraryList:
+                    SupModuleList = self.FindSupModuleListOfLibraryClass(Item.Name, NormPath(Item.FilePath))
                     if Arch in Item.SupArchList:
-                        for ModuleType in Item.ModuleType:
+                        for ModuleType in SupModuleList:
                             pb.LibraryClasses[(Item.Name, ModuleType)] = NormPath(Item.FilePath)
                     
                 # Pcds
@@ -370,6 +371,10 @@ class WorkspaceBuild(object):
             Module = self.InfDatabase[Inf].Module
             
             for Arch in self.SupArchList:
+                if not self.IsModuleDefinedInPlatform(Inf, Arch):
+                    pass
+                    #break
+                
                 pb = ModuleBuildClassObject()
                 
                 # Defines
@@ -839,7 +844,28 @@ class WorkspaceBuild(object):
         if Guid in PcdsSet.keys():
             Value = PcdsSet[Guid]
         
-        return PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList)   
+        return PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList)
+    
+    #
+    # Search in InfDatabase, find the supmodulelist of the libraryclass
+    #
+    def FindSupModuleListOfLibraryClass(self, Name, FilePath):
+        LibraryClassList = self.InfDatabase[FilePath].Module.Header.LibraryClass
+        for Item in LibraryClassList:
+            if Item.LibraryClass == Name:
+                return Item.SupModuleList
+        
+        return []
+    
+    #
+    # Check if the module is defined in <Compentent> of <Platform>
+    #
+    def IsModuleDefinedInPlatform(self, Inf, Arch):
+        for Dsc in self.DscDatabase.values():
+            for Module in Dsc.Platform.Modules.ModuleList:
+                if Inf == Module.Name and Arch in Module.SupArchList:
+                    return True
+        return False
 
     #
     # Show all content of the workspacebuild
