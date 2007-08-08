@@ -862,15 +862,16 @@ class WorkspaceBuild(object):
     # Check if the module is defined in <Compentent> of <Platform>
     #
     def IsModuleDefinedInPlatform(self, Inf, Arch):
+        Inf = NormPath(Inf)
         for Dsc in self.DscDatabase.values():
             for LibraryClass in Dsc.Platform.LibraryClasses.LibraryList:
                 if Inf == NormPath(LibraryClass.FilePath) and Arch in LibraryClass.SupArchList:
                     return True
             for Module in Dsc.Platform.Modules.ModuleList:
-                if Inf == NormPath(Module.Name) and Arch in Module.SupArchList:
+                if Inf == NormPath(Module.FilePath) and Arch in Module.SupArchList:
                     return True
                 for Item in Module.LibraryClasses.LibraryList:
-                    if Inf == NormPath(Item.FilePath) and Arch in Item.SupArchList:
+                    if Inf == NormPath(Item.FilePath):
                         return True
                 
         return False
