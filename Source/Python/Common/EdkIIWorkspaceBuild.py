@@ -79,7 +79,7 @@ class ModuleBuildClassObject(object):
         self.BinaryModule            = ''
         self.CustomMakefile          = {}
         self.Specification           = {}
-        self.LibraryClass            = None      # LibraryClassObject
+        self.LibraryClass            = []      # [ LibraryClassObject, ...]
         self.ModuleEntryPointList    = []
         self.ModuleUnloadImageList   = []
         self.ConstructorList         = []
@@ -393,7 +393,7 @@ class WorkspaceBuild(object):
                 
                 # LibraryClass of Defines
                 for Item in Module.Header.LibraryClass:
-                    pb.LibraryClass = LibraryClassObject(Item.LibraryClass, Item.SupModuleList, None)
+                    pb.LibraryClass.append(LibraryClassObject(Item.LibraryClass, Item.SupModuleList, None))
 
                 # Module image and library of Defines
                 for Item in Module.ExternImages:
@@ -470,11 +470,13 @@ class WorkspaceBuild(object):
                         RecommendedInstance = Item.RecommendedInstance
                         if pb.LibraryClass != None:
                             # For Library
-                            for Type in pb.LibraryClass.SupModList:
-                                Instance = self.FindLibraryClassInstanceOfLibrary(Lib, Arch, Type)
-                                if Instance == None:
-                                    Instance = RecommendedInstance
-                                pb.LibraryClasses[(Lib, Type)] = NormPath(Instance)
+                            for Libs in pb.LibraryClass:
+                                if Lib == Libs.LibraryClass:
+                                    for Type in Libs.SupModList:
+                                        Instance = self.FindLibraryClassInstanceOfLibrary(Lib, Arch, Type)
+                                        if Instance == None:
+                                            Instance = RecommendedInstance
+                                        pb.LibraryClasses[(Lib, Type)] = NormPath(Instance)
                         else:
                             # For Module
                             Instance = self.FindLibraryClassInstanceOfModule(Lib, Arch, pb.ModuleType, Inf) 
@@ -937,8 +939,8 @@ class WorkspaceBuild(object):
                 print 'CustomMakefile = ', p.CustomMakefile
                 print 'Specification = ', p.Specification
                 print 'PcdIsDriver = ', p.PcdIsDriver
-                if p.LibraryClass != None:
-                    print 'LibraryClass = ', p.LibraryClass.LibraryClass, 'SupModList = ', p.LibraryClass.SupModList
+                for Lib in p.LibraryClass:
+                    print 'LibraryClassDefinition = ', Lib.LibraryClass, 'SupModList = ', Lib.SupModList
                 print 'ModuleEntryPointList = ', p.ModuleEntryPointList 
                 print 'ModuleUnloadImageList = ', p.ModuleUnloadImageList
                 print 'ConstructorList = ', p.ConstructorList            
