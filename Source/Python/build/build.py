@@ -39,7 +39,7 @@ class Build():
         self.Path         = os.getenv("PATH")
         self.Opt          = opt
         self.Args         = args
-        self.ArgList      = ['all', 'genc', 'genmake', 'modules', 'libraries', 'clean', 'cleanall', 'cleanlib']
+        self.ArgList      = ['all', 'genc', 'genmake', 'modules', 'libraries', 'clean', 'cleanall', 'cleanlib', 'run']
         self.TargetTxt    = TargetTxtClassObject()
         self.ToolDef      = ToolDefClassObject()
         self.Sem          = None
@@ -47,15 +47,15 @@ class Build():
         self.GenC         = None
         self.GenMake      = None
         self.All          = None
-        self.Returncode   = 0
+        self.ReturnCode   = [0,1]
         if len(self.Args) == 0:
             self.All = 1
         elif len(self.Args) >= 2:
-            print "There are too many targets in command line input, please select one from: %s" %(''.join(elem + ' ' for elem in self.ArgList))
+            EdkLogger.quiet("There are too many targets in command line input, please select one from: %s" %(''.join(elem + ' ' for elem in self.ArgList)))
         else:
             t = self.Args[0].lower()
             if t not in self.ArgList:
-                print "'%s' is an invalid targets, please select one from: %s" %(self.Args[0], ''.join(elem + ' ' for elem in self.ArgList))
+                EdkLogger.quiet("'%s' is an invalid targets, please select one from: %s" %(self.Args[0], ''.join(elem + ' ' for elem in self.ArgList)))
                 self.isexit(1)
             if t == 'genc':
                 self.GenC = 1
@@ -65,39 +65,39 @@ class Build():
                 self.All = 1
             else:
                 self.Args = t
-        print time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.localtime())
+        EdkLogger.quiet(time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.localtime()))
         
 
     def CheckEnvVariable(self):
-        print "Running Operating System =", self.SysPlatform
+        EdkLogger.quiet("Running Operating System = %s" % self.SysPlatform)
 
         if self.EdkToolsPath == None:
-            print "Please set environment variable: EDK_TOOLS_PATH !\n"
+            EdkLogger.quiet("ERROR: Please set environment variable: EDK_TOOLS_PATH !\n")
             return 1
         else:
-            print "EDK_TOOLS_PATH = %s" % self.EdkToolsPath
+            EdkLogger.quiet("EDK_TOOLS_PATH = %s" % self.EdkToolsPath)
 
         if self.WorkSpace == None:
-            print "Please set environment variable: WORKSPACE !\n"
+            EdkLogger.quiet("ERROR: Please set environment variable: WORKSPACE !\n")
             return 1
         else:
-            print "WORKSPACE = %s" % self.WorkSpace
+            EdkLogger.quiet("WORKSPACE = %s" % self.WorkSpace)
 
         if self.Path == None:
-            print "Please set environment variable: PATH !\n"
+            EdkLogger.quiet("ERROR: Please set environment variable: PATH !\n")
             return 1
         else:
             if self.SysPlatform == "win32":
                 #print EDK_TOOLS_PATH + "\Bin\Win32"
                 if str(self.Path).find(os.path.normpath(os.path.join(self.EdkToolsPath, "\Bin\Win32"))) == -1:
                     path = os.path.normpath(os.path.join(self.EdkToolsPath, "\Bin\Win32"))
-                    print "Please execute %s to set %s in environment variable: PATH!\n" % (os.path.normpath(os.path.join(path, 'edksetup.bat')), path)
+                    EdkLogger.quiet("ERROR: Please execute %s to set %s in environment variable: PATH!\n" % (os.path.normpath(os.path.join(path, 'edksetup.bat')), path))
                     return 1
             if self.SysPlatform == "win64":
                 #print EDK_TOOLS_PATH + "\Bin\Win64"
                 if str(self.Path).find(os.path.normpath(os.path.join(self.EdkToolsPath, "\Bin\Win64"))) == -1:
                     path = os.path.normpath(os.path.join(self.EdkToolsPath, "\Bin\Win64"))
-                    print "Please execute %s to set %s in environment variable: PATH!\n" % (os.path.normpath(os.path.join(path, 'edksetup.bat')), path)
+                    EdkLogger.quiet("ERROR: Please execute %s to set %s in environment variable: PATH!\n" % (os.path.normpath(os.path.join(path, 'edksetup.bat')), path))
                     return 1
         return 0
 
@@ -106,12 +106,12 @@ class Build():
         if self.Opt.FDFFILE == None:
             self.Opt.FDFFILE = ewb.Fdf
             if self.Opt.FDFFILE != '' and os.path.isfile(os.path.normpath(os.path.join(self.WorkSpace, self.Opt.FDFFILE))) == False:
-                print "The file: %s is not existed!" % self.Opt.FDFFILE
+                EdkLogger.quiet("ERROR: The file: %s is not existed!" % self.Opt.FDFFILE)
                 self.isexit(1)
             if self.Opt.FDFFILE != '':
                 (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(self.WorkSpace, self.Opt.FDFFILE)))
                 if ext.lower() != '.fdf':
-                    print "The file: %s is not a fdf file!" % self.Opt.FDFFILE
+                    EdkLogger.quiet("ERROR: The file: %s is not a fdf file!" % self.Opt.FDFFILE)
                     self.isexit(1)
                 self.Opt.FDFFILE = os.path.normpath(os.path.join(self.WorkSpace, self.Opt.FDFFILE))
                 fdf = FdfParser(self.Opt.FDFFILE)
@@ -119,13 +119,13 @@ class Build():
                 pcdSet = fdf.profile.PcdDict
         else:
             if self.Opt.FDFFILE[0] == '.':
-                print "ERROR: Please specify a absolute path or a WORKSPACE realtive path for FDF file."
+                EdkLogger.quiet("ERROR: Please specify a absolute path or a WORKSPACE realtive path for FDF file.")
                 self.isexit(1)
             if os.path.isfile(os.path.normpath(os.path.join(self.WorkSpace, self.Opt.FDFFILE))) == True:
                 realpath = os.path.normpath(os.path.join(self.WorkSpace, self.Opt.FDFFILE))
                 (filename, ext) = os.path.splitext(realpath)
                 if ext.lower() != '.fdf':
-                    print "The input file: %s is not a fdf file!" % realpath
+                    EdkLogger.quiet("ERROR: The input file: %s is not a fdf file!" % realpath)
                     self.isexit(1)
                 self.Opt.FDFFILE = realpath
                 fdf = FdfParser(self.Opt.FDFFILE)
@@ -135,18 +135,18 @@ class Build():
                 realpath = os.path.abspath(self.Opt.FDFFILE)
                 (filename, ext) = os.path.splitext(realpath)
                 if ext.lower() != '.fdf':
-                    print "The input file: %s is not a fdf file!" % realpath
+                    EdkLogger.quiet("ERROR: The input file: %s is not a fdf file!" % realpath)
                     self.isexit(1)
                 self.Opt.FDFFILE = realpath
                 fdf = FdfParser(self.Opt.FDFFILE)
                 fdf.ParseFile()
                 pcdSet = fdf.profile.PcdDict
             else:
-                print "The input file: %s is not existed!"  % self.Opt.FDFFILE
+                EdkLogger.quiet("ERROR: The file: %s is not existed!" % self.Opt.FDFFILE)
                 self.isexit(1)
 
         if self.Opt.FDFFILE != '':
-            EdkLogger.debug(EdkLogger.DEBUG_5, '\FDFFILE is: %s' % self.Opt.FDFFILE)
+            EdkLogger.info('\FDFFILE is: %s' % self.Opt.FDFFILE)
             
         ewb.GenBuildDatabase(pcdSet)
         ewb.TargetTxt = self.TargetTxt
@@ -160,15 +160,14 @@ class Build():
             d = Platform.OutputDirectory
             (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(os.environ["WORKSPACE"], d, a + '_' + b, c, str(LibFile))))
             DestDir = filename
-            EdkLogger.debug(EdkLogger.DEBUG_5, '\Makefile DestDir is: %s' % DestDir)
+            EdkLogger.info('\Makefile DestDir is: %s' % DestDir)
             FileList = glob.glob(os.path.normpath(os.path.join(DestDir, 'makefile')))
             FileNum = len(FileList)
             if FileNum > 0:
                 self.SameTypeFileInDir(FileNum, 'makefile', DestDir)
-                BuildSpawn(self.Returncode, self.Sem, FileList[0], 'lbuild', 1).start()
-                self.isexit(self.Returncode)
+                BuildSpawn(self.ReturnCode, self.Sem, FileList[0], 'lbuild', 1).start()
             else:
-                print "There isn't makefils in %s.\n" % DestDir
+                EdkLogger.quiet("ERROR: There isn't makefils in %s.\n" % DestDir)
                 self.isexit(1)
 
     def ModuleBuild(self, ModuleFile, PlatformFile, ewb, a, b, c, ModuleAutoGen):
@@ -191,15 +190,15 @@ class Build():
                 for i in range(0, int(self.Opt.NUM)):
                     self.Sem.release()
                 if p.returncode != 0:
-                    EdkLogger.info(p.stderr.read())
+                    EdkLogger.quiet(p.stderr.read())
                     self.isexit(p.returncode)
             else:
-                print "There isn't makefile in %s." % DestDir
+                EdkLogger.quiet("ERROR: There isn't makefils in %s.\n" % DestDir)
                 self.isexit(1)
 
     def SameTypeFileInDir(self, FileNum, FileType, Dir):
         if FileNum >= 2:
-            print "There are %d %s files in %s." % (FileNum, FileType, Dir)
+            EdkLogger.quiet("ERROR: There are %d %s files in %s." % (FileNum, FileType, Dir))
             self.isexit(1)
 
     def TrackInfo(self, e):
@@ -248,7 +247,7 @@ class Build():
                 EdkLogger.info(p.stdout.readline()[:-2])
             EdkLogger.info(p.stdout.read())
             if p.returncode != 0:
-                EdkLogger.info(p.stderr.read())
+                EdkLogger.quiet(p.stderr.read())
                 self.isexit(p.returncode)
         else:
             self.isexit(1)
@@ -267,10 +266,10 @@ class Build():
                 EdkLogger.info(p.stdout.readline()[:-2])
             EdkLogger.info(p.stdout.read())
             if p.returncode != 0:
-                EdkLogger.info(p.stderr.read())
+                EdkLogger.quiet(p.stderr.read())
                 self.isexit(p.returncode)
         else:
-            print "Can find Makefile.\n"
+            EdkLogger.quiet("ERROR: Can find Makefile: %s. % makefile")
             self.isexit(1)
 
 
@@ -280,7 +279,7 @@ class Build():
         #
         self.Opt.TARGET_ARCH = list(set(self.Opt.TARGET_ARCH) & set(ewb.SupArchList))
         if len(self.Opt.TARGET_ARCH) == 0:
-            print "Please specify a ARCH, and try again."
+            EdkLogger.quiet("ERROR: Please specify a ARCH, and try again.")
             self.isexit(1)
             
         try:
@@ -289,33 +288,38 @@ class Build():
                     for b in self.Opt.TOOL_CHAIN_TAG:
                         if ModuleFile == None:
                             PlatformAutoGen = AutoGen(None, PlatformFile, ewb, a, b, self.Opt.TARGET_ARCH)
-                            print "PlatformAutoGen: %s" % PlatformFile
+                            EdkLogger.info("PlatformAutoGen: %s" % PlatformFile)
                             for c in self.Opt.TARGET_ARCH:
                                 li = []
                                 for d in PlatformAutoGen.Platform[c].Modules:
                                     if ewb.InfDatabase[d].Defines.DefinesDictionary['LIBRARY_CLASS'] == ['']:
-                                        print "Module : %s, Arch : %s" % (d, c)
+                                        EdkLogger.info("Module : %s, Arch : %s" % (d, c))
                                         ModuleAutoGen = AutoGen(d, PlatformFile, ewb, a, b, c)
                                         for e in ModuleAutoGen.BuildInfo.DependentLibraryList:
-                                            print "Library: %s, Arch : %s" % (e, c)
+                                            EdkLogger.info("Library: %s, Arch : %s" % (e, c))
                                             if e in li:
                                                 continue
                                             else:
                                                 li.append(e)
+                                            # Thread build error
+                                            if self.ReturnCode[0] == 1:
+                                                self.isexit(1)
                                             self.LibBuild(e, PlatformFile, ewb, a, b, c)
+                                        # Thread build error
+                                        if self.ReturnCode[0] == 1:
+                                            self.isexit(1)
                                         self.ModuleBuild(d, PlatformFile, ewb, a, b, c, ModuleAutoGen)
                                     else:
+                                        EdkLogger.info("Library: %s, Arch : %s" % (d, c))
                                         self.LibBuild(d, PlatformFile, ewb, a, b, c)
 
                             PlatformAutoGen.CreateAutoGenFile()
                             PlatformAutoGen.CreateMakefile()
                             for i in range(0, int(self.Opt.NUM)):
                                 self.Sem.acquire()
-                            print "successful"
                             for i in range(0, int(self.Opt.NUM)):
                                 self.Sem.release()
 
-                            # call GenFds
                             #GenFds -f C:\Work\Temp\T1\Nt32Pkg\Nt32Pkg.fdf -o $(BUILD_DIR) -p Nt32Pkg\Nt32Pkg.dsc
                             if self.Opt.FDFFILE != '':
                                 for Platform in ewb.Build[self.Opt.TARGET_ARCH[0]].PlatformDatabase.values():
@@ -330,14 +334,14 @@ class Build():
                                     EdkLogger.info(p.stdout.readline()[:-2])
                                 EdkLogger.info(p.stdout.read())
                                 if p.returncode != 0:
-                                    EdkLogger.info(p.stderr.read())
+                                    EdkLogger.quiet(p.stderr.read())
                                     self.isexit(p.returncode)
                         else:
                             for c in self.Opt.TARGET_ARCH:
                                 ModuleAutoGen = AutoGen(ModuleFile, PlatformFile, ewb, a, b, c)
-                                print "ModuleAutoGen : %s"  % ModuleFile
+                                EdkLogger.info("ModuleAutoGen : %s"  % ModuleFile)
                                 for e in ModuleAutoGen.BuildInfo.DependentLibraryList:
-                                    print "Library: %s" % stre
+                                    EdkLogger.info("Library: %s" % e)
                                     self.LibBuild(e, PlatformFile, ewb, a, b, c)
                                 self.ModuleBuild(ModuleFile, PlatformFile, ewb, a, b, c, ModuleAutoGen)
                 return 0
@@ -469,10 +473,10 @@ def main():
             StatusCode = build.ToolDef.LoadToolDefFile(os.path.normpath(os.path.join(build.WorkSpace, build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])))
             build.isexit(StatusCode)
         else:
-            print "%s is not existed." % os.path.normpath(os.path.join(build.WorkSpace, build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF]))
+            EdkLogger.quiet("ERROR: %s is not existed." % os.path.normpath(os.path.join(build.WorkSpace, build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])))
             build.isexit(1)
     else:
-        print "%s is not existed." % os.path.normpath(os.path.join(build.WorkSpace, 'Conf\\target.txt'))
+        EdkLogger.quiet("ERROR: %s is not existed." % os.path.normpath(os.path.join(build.WorkSpace, 'Conf\\target.txt')))
         build.isexit(1)
 
 #
@@ -489,45 +493,45 @@ def main():
 
     if build.Opt.INFFILE != None:
         if build.Opt.INFFILE[0] == '.':
-            print "ERROR: Please specify a absolute path or a WORKSPACE realtive path for Module(INF) file."
+            EdkLogger.quiet("ERROR: Please specify a absolute path or a WORKSPACE realtive path for Module(INF) file.")
             build.isexit(1)
         if os.path.isfile(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.INFFILE))) == True:
             (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.INFFILE)))
             if ext.lower() != '.inf':
-                print "The input file: %s is not a inf file!" % build.Opt.INFFILE
+                EdkLogger.quiet("ERROR: The input file: %s is not a inf file!" % build.Opt.INFFILE)
                 build.isexit(1)
         elif os.path.isfile(os.path.abspath(build.Opt.INFFILE)) == True:
             realpath = os.path.abspath(build.Opt.INFFILE)
             (filename, ext) = os.path.splitext(realpath)
             if ext.lower() != '.inf':
-                print "The input file: %s is not a inf file!" % build.Opt.INFFILE
+                EdkLogger.quiet("ERROR: The input file: %s is not a inf file!" % build.Opt.INFFILE)
                 build.isexit(1)
             if build.WorkSpace[len(build.WorkSpace)-1] == '\\' or build.WorkSpace[len(build.WorkSpace)-1] == '/':
                 build.Opt.INFFILE = realpath[len(build.WorkSpace):]
             else:
                 build.Opt.INFFILE = realpath[len(build.WorkSpace)+1:]
         else:
-            print "The input file: %s is not existed!"  % build.Opt.INFFILE
+            EdkLogger.quiet("The input file: %s is not existed!"  % build.Opt.INFFILE)
             build.isexit(1)
 
     if build.Opt.TARGET_ARCH == None:
         build.Opt.TARGET_ARCH = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET_ARCH]
         if build.Opt.TARGET_ARCH == ['']:
             build.Opt.TARGET_ARCH = ARCH_LIST
-    EdkLogger.debug(EdkLogger.DEBUG_5, '\tTARGET_ARCH is: %s' % ''.join(build.Opt.TARGET_ARCH))
+    EdkLogger.info('\tTARGET_ARCH is: %s' % ''.join(build.Opt.TARGET_ARCH))
 
     if build.Opt.TARGET == None:
         build.Opt.TARGET = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET]
         if build.Opt.TARGET == ['']:
             build.Opt.TARGET_ARCH = ['DEBUG', 'RELEASE']
-    EdkLogger.debug(EdkLogger.DEBUG_5, '\tTARGET is: %s' % ''.join(build.Opt.TARGET))
+    EdkLogger.info('\tTARGET is: %s' % ''.join(build.Opt.TARGET))
 
     if build.Opt.TOOL_CHAIN_TAG == None:
         build.Opt.TOOL_CHAIN_TAG = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG]
         if build.Opt.TOOL_CHAIN_TAG == ['']:
-            print "TOOL_CHAIN_TAG is None. Don't What to Build.\n"
+            EdkLogger.quiet("TOOL_CHAIN_TAG is None. Don't What to Build.\n")
             build.isexit(1)
-    EdkLogger.debug(EdkLogger.DEBUG_5, '\tTOOL_CHAIN_TAG is: %s' % ''.join(build.Opt.TOOL_CHAIN_TAG))
+    EdkLogger.info('\tTOOL_CHAIN_TAG is: %s' % ''.join(build.Opt.TOOL_CHAIN_TAG))
 
     if build.Opt.NUM == None:
         build.Opt.NUM = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER]
@@ -535,7 +539,7 @@ def main():
         build.Opt.NUM = 1
     else:
         build.Opt.NUM = int(build.Opt.NUM)
-    EdkLogger.debug(EdkLogger.DEBUG_5, '\tMAX_CONCURRENT_THREAD_NUMBER is: %s' % build.Opt.NUM)
+    EdkLogger.info('\tMAX_CONCURRENT_THREAD_NUMBER is: %s' % build.Opt.NUM)
     if build.Opt.spawn == True:
         build.Sem = BoundedSemaphore(int(build.Opt.NUM))
 
@@ -545,34 +549,34 @@ def main():
     if build.Opt.DSCFILE == None:
         build.Opt.DSCFILE = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM]
         if build.Opt.DSCFILE != '' and os.path.isfile(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE))) == False:
-            print "The file: %s is not existed!" % os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE))
+            EdkLogger.quiet("ERROR: The file: %s is not existed!" % os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE)))
             build.isexit(1)
         if build.Opt.DSCFILE != '':
             (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE)))
             if ext.lower() != '.dsc':
-                print "The file: %s is not a dsc file!" % os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE))
+                EdkLogger.quiet("ERROR: The file: %s is not a dsc file!" % os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE)))
                 build.isexit(1)
     else:
         if build.Opt.DSCFILE[0] == '.':
-            print "ERROR: Please specify a absolute path or a WORKSPACE realtive path for PLATFORM(DSC) file."
+            EdkLogger.quiet("ERROR: Please specify a absolute path or a WORKSPACE realtive path for PLATFORM(DSC) file.")
             build.isexit(1)
         if os.path.isfile(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE))) == True:
             (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE)))
             if ext.lower() != '.dsc':
-                print "The input file: %s is not a dsc file!" % build.Opt.DSCFILE
+                EdkLogger.quiet("ERROR: The input file: %s is not a dsc file!" % build.Opt.DSCFILE)
                 build.isexit(1)
         elif os.path.isfile(os.path.abspath(build.Opt.DSCFILE)) == True:
             realpath = os.path.abspath(build.Opt.DSCFILE)
             (filename, ext) = os.path.splitext(realpath)
             if ext.lower() != '.dsc':
-                print "The input file: %s is not a dsc file!" % build.Opt.DSCFILE
+                EdkLogger.quiet("ERROR: The input file: %s is not a dsc file!" % build.Opt.DSCFILE)
                 build.isexit(1)
             if build.WorkSpace[len(build.WorkSpace)-1] == '\\' or build.WorkSpace[len(build.WorkSpace)-1] == '/':
                 build.Opt.DSCFILE = realpath[len(build.WorkSpace):]
             else:
                 build.Opt.DSCFILE = realpath[len(build.WorkSpace)+1:]
         else:
-            print "The input file: %s is not existed!"  % build.Opt.DSCFILE
+            EdkLogger.quiet("ERROR: The input file: %s is not existed!"  % build.Opt.DSCFILE)
             build.isexit(1)
 
 #
@@ -580,7 +584,7 @@ def main():
 #
     try:
         if build.Opt.DSCFILE != '':
-            EdkLogger.debug(EdkLogger.DEBUG_5, '\tACTIVE_PLATFORM is: %s' % build.Opt.DSCFILE)
+            EdkLogger.info('\tACTIVE_PLATFORM is: %s' % build.Opt.DSCFILE)
             ewb = WorkspaceBuild(build.Opt.DSCFILE, build.WorkSpace)
             build.Parser(ewb)
     except Exception, e:
@@ -598,39 +602,39 @@ def main():
     if build.Opt.INFFILE:
         if build.Opt.DSCFILE:
             ModuleFile = os.path.normpath(build.Opt.INFFILE)
-            EdkLogger.debug(EdkLogger.DEBUG_5, '\tMODULE build: %s' % ModuleFile)
+            EdkLogger.info('\tMODULE build: %s' % ModuleFile)
             PlatformFile = os.path.normpath(build.Opt.DSCFILE)
-            EdkLogger.debug(EdkLogger.DEBUG_5, '\tPlatformFile is: %s' % PlatformFile)
+            EdkLogger.info('\tPlatformFile is: %s' % PlatformFile)
             StatusCode = build.Process(ModuleFile, PlatformFile, ewb)
         else:
-            print "ERROR: ACTIVE_PLATFORM isn't specified. DON'T KNOW WHAT TO BUILD\n"
+            EdkLogger.quiet("ERROR: ACTIVE_PLATFORM isn't specified. DON'T KNOW WHAT TO BUILD\n")
     elif len(glob.glob(os.path.normpath(os.path.join(CurWorkDir, '*.inf')))) > 0:
         FileList = glob.glob(os.path.normpath(os.path.join(CurWorkDir, '*.inf')))
         FileNum = len(FileList)
         if FileNum >= 2:
-            print "There are %d INF filss in %s.\n" % (FileNum, CurWorkDir)
+            EdkLogger.quiet("ERROR: There are %d INF filss in %s.\n" % (FileNum, CurWorkDir))
             build.isexit(1)
         if build.Opt.DSCFILE:
             if ewb.WorkspaceDir[len(ewb.WorkspaceDir)-1] == '\\' or ewb.WorkspaceDir[len(ewb.WorkspaceDir)-1] == '/':
                 ModuleFile = os.path.normpath(FileList[0][len(ewb.WorkspaceDir):])
             else:
                 ModuleFile = os.path.normpath(FileList[0][len(ewb.WorkspaceDir)+1:])
-            EdkLogger.debug(EdkLogger.DEBUG_5, '\tMODULE build: %s' % ModuleFile)
+            EdkLogger.info('\tMODULE build: %s' % ModuleFile)
             PlatformFile = os.path.normpath(build.Opt.DSCFILE)
-            EdkLogger.debug(EdkLogger.DEBUG_5, '\tPlatformFile is: %s' % PlatformFile)
+            EdkLogger.info('\tPlatformFile is: %s' % PlatformFile)
             StatusCode = build.Process(ModuleFile, PlatformFile, ewb)
         else:
-            print "ERROR: ACTIVE_PLATFORM isn't specified. DON'T KNOW WHAT TO BUILD\n"
+            EdkLogger.quiet("ERROR: ACTIVE_PLATFORM isn't specified. DON'T KNOW WHAT TO BUILD\n")
     elif build.Opt.DSCFILE:
         PlatformFile = os.path.normpath(build.Opt.DSCFILE)
-        EdkLogger.debug(EdkLogger.DEBUG_5, '\tPlatformFile is: %s' % PlatformFile)
+        EdkLogger.info('\tPlatform build: %s' % PlatformFile)
         StatusCode = build.Process(None, PlatformFile, ewb)
     else:
         FileList = glob.glob(os.path.normpath(os.path.join(CurWorkDir, '*.dsc')))
         FileNum = len(FileList)
         if FileNum > 0:
             if FileNum >= 2:
-                print "There are %d DSC files in %s.\n" % (FileNum, CurWorkDir)
+                EdkLogger.quiet("ERROR: There are %d DSC files in %s.\n" % (FileNum, CurWorkDir))
                 build.isexit(1)
             if build.WorkSpace[len(build.WorkSpace)-1] == '\\' or build.WorkSpace[len(build.WorkSpace)-1] == '/':
                 PlatformFile = os.path.normpath(FileList[0][len(build.WorkSpace):])
@@ -641,7 +645,7 @@ def main():
             #
             build.Opt.DSCFILE = PlatformFile
             try:
-                EdkLogger.debug(EdkLogger.DEBUG_5, '\ACTIVE_PLATFORM is: %s' % build.Opt.DSCFILE)
+                EdkLogger.info('\Platform build: %s' % build.Opt.DSCFILE)
                 ewb = WorkspaceBuild(PlatformFile, build.WorkSpace)
                 build.Parser(ewb)
             except Exception, e:
@@ -649,7 +653,7 @@ def main():
                 build.isexit(1)
             StatusCode = build.Process(None, PlatformFile, ewb)
         else:
-            print "ERROR: ACTIVE_PLATFORM isn't specified. DON'T KNOW WHAT TO BUILD\n"
+            EdkLogger.quiet("ERROR: ACTIVE_PLATFORM isn't specified. DON'T KNOW WHAT TO BUILD\n")
 
 #
 # Record Build Process Time

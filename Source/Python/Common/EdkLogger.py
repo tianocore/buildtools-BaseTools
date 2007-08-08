@@ -38,12 +38,22 @@ _info_formatter = logging.Formatter("%(message)s")
 _info_ch.setFormatter(_info_formatter)
 _info_logger.addHandler(_info_ch)
 
-debug = _debug_logger.log
+_quiet_logger = logging.getLogger("tool_quiet")
+_quiet_logger.setLevel(QUIET)
+_quiet_ch = logging.StreamHandler(sys.stderr)
+_quiet_formatter = logging.Formatter("%(message)s")
+_quiet_ch.setFormatter(_quiet_formatter)
+_quiet_logger.addHandler(_quiet_ch)
+
+debug   = _debug_logger.log
 
 def verbose(msg):
     return _verbose_logger.log(VERBOSE, msg)
 
 info    = _info_logger.info
+
+quiet   = _quiet_logger.critical
+#quiet   = logging.critical("%(message)s")
 
 def setLevel(level):
     if level not in _log_levels:
@@ -52,6 +62,7 @@ def setLevel(level):
     _debug_logger.setLevel(level)
     _verbose_logger.setLevel(level)
     _info_logger.setLevel(level)
+    _quiet_logger.setLevel(level)
 
 def setLogFile(log):
     if os.path.exists(log):
@@ -68,3 +79,7 @@ def setLogFile(log):
     _ch = logging.FileHandler(log)
     _ch.setFormatter(_info_formatter)
     _info_logger.addHandler(_ch)
+
+if __name__ == '__main__':
+    setLevel(QUIET)
+    quiet('hello')

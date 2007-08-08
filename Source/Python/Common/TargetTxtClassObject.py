@@ -62,7 +62,7 @@ class TargetTxtClassObject(object):
             f.close()
             return 0
         except:
-            EdkLogger.info('Open file failed')
+            EdkLogger.quiet('Open file failed')
             return 1
 
     def printDict(dict):
