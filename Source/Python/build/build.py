@@ -146,7 +146,7 @@ class Build():
                 self.isexit(1)
 
         if self.Opt.FDFFILE != '':
-            EdkLogger.info('\FDFFILE is: %s' % self.Opt.FDFFILE)
+            EdkLogger.info('FDFFILE is: %s' % self.Opt.FDFFILE)
             
         ewb.GenBuildDatabase(pcdSet)
         ewb.TargetTxt = self.TargetTxt
@@ -160,7 +160,7 @@ class Build():
             d = Platform.OutputDirectory
             (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(os.environ["WORKSPACE"], d, a + '_' + b, c, str(LibFile))))
             DestDir = filename
-            EdkLogger.info('\Makefile DestDir is: %s' % DestDir)
+            EdkLogger.info('Makefile DestDir is: %s' % DestDir)
             FileList = glob.glob(os.path.normpath(os.path.join(DestDir, 'makefile')))
             FileNum = len(FileList)
             if FileNum > 0:
@@ -518,20 +518,20 @@ def main():
         build.Opt.TARGET_ARCH = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET_ARCH]
         if build.Opt.TARGET_ARCH == ['']:
             build.Opt.TARGET_ARCH = ARCH_LIST
-    EdkLogger.info('\tTARGET_ARCH is: %s' % ''.join(build.Opt.TARGET_ARCH))
+    EdkLogger.info('TARGET_ARCH is: %s' % ''.join(build.Opt.TARGET_ARCH))
 
     if build.Opt.TARGET == None:
         build.Opt.TARGET = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET]
         if build.Opt.TARGET == ['']:
             build.Opt.TARGET_ARCH = ['DEBUG', 'RELEASE']
-    EdkLogger.info('\tTARGET is: %s' % ''.join(build.Opt.TARGET))
+    EdkLogger.info('TARGET is: %s' % ''.join(build.Opt.TARGET))
 
     if build.Opt.TOOL_CHAIN_TAG == None:
         build.Opt.TOOL_CHAIN_TAG = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG]
         if build.Opt.TOOL_CHAIN_TAG == ['']:
             EdkLogger.quiet("TOOL_CHAIN_TAG is None. Don't What to Build.\n")
             build.isexit(1)
-    EdkLogger.info('\tTOOL_CHAIN_TAG is: %s' % ''.join(build.Opt.TOOL_CHAIN_TAG))
+    EdkLogger.info('TOOL_CHAIN_TAG is: %s' % ''.join(build.Opt.TOOL_CHAIN_TAG))
 
     if build.Opt.NUM == None:
         build.Opt.NUM = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER]
@@ -539,7 +539,7 @@ def main():
         build.Opt.NUM = 1
     else:
         build.Opt.NUM = int(build.Opt.NUM)
-    EdkLogger.info('\tMAX_CONCURRENT_THREAD_NUMBER is: %s' % build.Opt.NUM)
+    EdkLogger.info('MAX_CONCURRENT_THREAD_NUMBER is: %s' % build.Opt.NUM)
     if build.Opt.spawn == True:
         build.Sem = BoundedSemaphore(int(build.Opt.NUM))
 
@@ -584,7 +584,7 @@ def main():
 #
     try:
         if build.Opt.DSCFILE != '':
-            EdkLogger.info('\tACTIVE_PLATFORM is: %s' % build.Opt.DSCFILE)
+            EdkLogger.info('ACTIVE_PLATFORM is: %s' % build.Opt.DSCFILE)
             ewb = WorkspaceBuild(build.Opt.DSCFILE, build.WorkSpace)
             build.Parser(ewb)
     except Exception, e:
@@ -602,9 +602,9 @@ def main():
     if build.Opt.INFFILE:
         if build.Opt.DSCFILE:
             ModuleFile = os.path.normpath(build.Opt.INFFILE)
-            EdkLogger.info('\tMODULE build: %s' % ModuleFile)
+            EdkLogger.info('MODULE build: %s' % ModuleFile)
             PlatformFile = os.path.normpath(build.Opt.DSCFILE)
-            EdkLogger.info('\tPlatformFile is: %s' % PlatformFile)
+            EdkLogger.info('PlatformFile is: %s' % PlatformFile)
             StatusCode = build.Process(ModuleFile, PlatformFile, ewb)
         else:
             EdkLogger.quiet("ERROR: ACTIVE_PLATFORM isn't specified. DON'T KNOW WHAT TO BUILD\n")
@@ -619,15 +619,15 @@ def main():
                 ModuleFile = os.path.normpath(FileList[0][len(ewb.WorkspaceDir):])
             else:
                 ModuleFile = os.path.normpath(FileList[0][len(ewb.WorkspaceDir)+1:])
-            EdkLogger.info('\tMODULE build: %s' % ModuleFile)
+            EdkLogger.info('MODULE build: %s' % ModuleFile)
             PlatformFile = os.path.normpath(build.Opt.DSCFILE)
-            EdkLogger.info('\tPlatformFile is: %s' % PlatformFile)
+            EdkLogger.info('PlatformFile is: %s' % PlatformFile)
             StatusCode = build.Process(ModuleFile, PlatformFile, ewb)
         else:
             EdkLogger.quiet("ERROR: ACTIVE_PLATFORM isn't specified. DON'T KNOW WHAT TO BUILD\n")
     elif build.Opt.DSCFILE:
         PlatformFile = os.path.normpath(build.Opt.DSCFILE)
-        EdkLogger.info('\tPlatform build: %s' % PlatformFile)
+        EdkLogger.info('Platform build: %s' % PlatformFile)
         StatusCode = build.Process(None, PlatformFile, ewb)
     else:
         FileList = glob.glob(os.path.normpath(os.path.join(CurWorkDir, '*.dsc')))
@@ -645,7 +645,7 @@ def main():
             #
             build.Opt.DSCFILE = PlatformFile
             try:
-                EdkLogger.info('\Platform build: %s' % build.Opt.DSCFILE)
+                EdkLogger.info('Platform build: %s' % build.Opt.DSCFILE)
                 ewb = WorkspaceBuild(PlatformFile, build.WorkSpace)
                 build.Parser(ewb)
             except Exception, e:
