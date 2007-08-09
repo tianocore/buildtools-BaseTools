@@ -541,8 +541,6 @@ class WorkspaceBuild(object):
         EdkLogger.verbose("Library instances of module [%s]:" % str(Module))
         while len(LibraryConsumerList) > 0:
             module = LibraryConsumerList.pop()
-            #EdkLogger.verbose(str(Module))
-            #EdkLogger.verbose(module.LibraryClasses)
             for Key, LibraryPath in module.LibraryClasses.iteritems():
                 # The "Key" is in format of (library_class_name, supported_module_type)
                 LibraryClassName = Key[0]
@@ -556,13 +554,8 @@ class WorkspaceBuild(object):
                 LibraryModule = ModuleDatabase[LibraryPath]
                 if LibraryClassName not in LibraryInstance:
                     LibraryConsumerList.append(LibraryModule)
-                    #LibraryList.append(LibraryModule)
-                    #LibraryClassList.append(Key)
                     LibraryInstance[LibraryClassName] = LibraryModule
                     EdkLogger.verbose("\t" + LibraryClassName + " : " + str(LibraryModule))
-                elif str(LibraryInstance[LibraryClassName]) != LibraryPath:
-                    raise AutoGenError(msg="More than one library instance found for library class %s in module %s:\n\t%s\n\t%s"
-                                           % (LibraryClassName, Module, LibraryPath, LibraryInstance[LibraryClassName]))
 
                 if LibraryModule.ConstructorList != [] and LibraryModule not in Constructor:
                     Constructor.append(LibraryModule)
@@ -576,13 +569,20 @@ class WorkspaceBuild(object):
         #
         # Initialize the sorted output list to the empty set
         #
-        LibraryList       = LibraryInstance.values()
         SortedLibraryList = []
         #
         # Q <- Set of all nodes with no incoming edges
         #
+        LibraryList = LibraryInstance.values()
         Q = []
         for m in LibraryList:
+            #
+            # check if there're duplicate library classes
+            #
+            for Lc in m.LibraryClass:
+                if Lc.LibraryClass in LibraryInstance and str(m) != str(LibraryInstance[Lc.LibraryClass]):
+                    raise AutoGenError(msg="More than one library instance found for library class %s in module %s:\n\t%s\n\t%s"
+                                           % (Lc.LibraryClass, Module, LibraryInstance[Lc.LibraryClass], str(m)))
             if ConsumedByList[m] == []:
                 Q.insert(0, m)
         #
