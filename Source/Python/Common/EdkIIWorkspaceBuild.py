@@ -548,7 +548,7 @@ class WorkspaceBuild(object):
                     EdkLogger.debug(EdkLogger.DEBUG_3, "\t%s for module type %s is not supported" % Key)
                     continue
                 if LibraryPath == None or LibraryPath == "":
-                    EdkLogger.verbose("\tWARNING: Library instance for library class %s is not found" % LibraryClassName)
+                    EdkLogger.warn("\tWARNING: Library instance for library class %s is not found" % LibraryClassName)
                     continue
 
                 LibraryModule = ModuleDatabase[LibraryPath]

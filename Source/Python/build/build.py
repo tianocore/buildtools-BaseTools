@@ -65,7 +65,7 @@ class Build():
                 self.All = 1
             else:
                 self.Args = t
-        EdkLogger.quiet(time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.localtime()))
+        EdkLogger.quiet(time.strftime("%a, %d %b %Y %H:%M:%S +0000\n", time.localtime()))
         
 
     def CheckEnvVariable(self):
@@ -377,7 +377,7 @@ class Build():
                         if ss == 0:
                             li.append(c)
                         if ss == 1:
-                            print "Module: %s, ARCH: %s" %(ModuleFile, c)
+                            EdkLogger.quiet("Module: %s, ARCH: %s" %(ModuleFile, c))
                             if self.GenC == 1:
                                 self.GenCFunc(ModuleFile, PlatformFile, ewb, a, b, c)
                             elif self.GenMake == 1:
@@ -387,11 +387,11 @@ class Build():
                             else:
                                 self.OtherFunc(ModuleFile, PlatformFile, ewb, a, b, c)
                     if len(li) != 0:
-                        print "Module: %s doesn't support the ARCH: %s" %(ModuleFile, ''.join(elem + ' ' for elem in li))
+                        EdkLogger.error("Module: %s doesn't support the ARCH: %s" %(ModuleFile, ''.join(elem + ' ' for elem in li)))
         return 0
 
     def CalculateTime(self):
-        print time.strftime("Current time is %a, %d %b %Y %H:%M:%S +0000", time.localtime())
+        EdkLogger.quiet(time.strftime("\n%a, %d %b %Y %H:%M:%S +0000", time.localtime()))
         Hour = 0
         Min = 0
         Sec = int(time.time() - self.StartTime)
@@ -399,21 +399,21 @@ class Build():
         Min = (Sec%3600)/60
         Sec = (Sec%3600)%60
         if Hour < 10 and Min < 10 and Sec < 10:
-            print "Totol Run Time is 0%d:0%d:0%d" %(Hour, Min, Sec)
+            EdkLogger.quiet("Totol Run Time is 0%d:0%d:0%d" %(Hour, Min, Sec))
         elif Hour < 10 and Min < 10 and Sec > 10:
-            print "Totol Run Time is 0%d:0%d:%2d" %(Hour, Min, Sec)
+            EdkLogger.quiet("Totol Run Time is 0%d:0%d:%2d" %(Hour, Min, Sec))
         elif Hour < 10 and Min > 10 and Sec < 10:
-            print "Totol Run Time is 0%d:%2d:0%d" %(Hour, Min, Sec)
+            EdkLogger.quiet("Totol Run Time is 0%d:%2d:0%d" %(Hour, Min, Sec))
         elif Hour < 10 and Min > 10 and Sec > 10:
-            print "Totol Run Time is 0%d:%2d:%2d" %(Hour, Min, Sec)
+            EdkLogger.quiet("Totol Run Time is 0%d:%2d:%2d" %(Hour, Min, Sec))
         elif Hour > 10 and Min < 10 and Sec < 10:
-            print "Totol Run Time is %2d:0%d:0%d" %(Hour, Min, Sec)
+            EdkLogger.quiet("Totol Run Time is %2d:0%d:0%d" %(Hour, Min, Sec))
         elif Hour > 10 and Min < 10 and Sec > 10:
-            print "Totol Run Time is %2d:0%d:%2d" %(Hour, Min, Sec)
+            EdkLogger.quiet("Totol Run Time is %2d:0%d:%2d" %(Hour, Min, Sec))
         elif Hour > 10 and Min > 10 and Sec < 10:
-            print "Totol Run Time is %2d:%2d:0%d" %(Hour, Min, Sec)
+            EdkLogger.quiet("Totol Run Time is %2d:%2d:0%d" %(Hour, Min, Sec))
         elif Hour > 10 and Min < 10 and Sec > 10:
-            print "Totol Run Time is %2d:%2d:0%d" %(Hour, Min, Sec)
+            EdkLogger.quiet("Totol Run Time is %2d:%2d:0%d" %(Hour, Min, Sec))
 
     def isexit(self, StatusCode):
         if StatusCode != 0:

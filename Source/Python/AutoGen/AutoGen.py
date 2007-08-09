@@ -505,7 +505,7 @@ class AutoGen(object):
             # skip unknown file
             Base, Ext = path.splitext(F.SourceFile)
             if Ext not in BuildRule.FileTypeMapping:
-                EdkLogger.verbose("Don't know how to process file %s (%s)" % (F.SourceFile, Ext))
+                EdkLogger.warn("Don't know how to process file %s (%s)" % (F.SourceFile, Ext))
                 continue
             
             # skip file which needs a tool having no matching toolchain family
@@ -529,7 +529,7 @@ class AutoGen(object):
                     if ToolCode not in PlatformInfo.ToolChainFamily:
                         raise AutoGenError(msg="No tool chain family available for %s" % ToolCode)
                     if F.ToolChainFamily != PlatformInfo.ToolChainFamily[ToolCode]:
-                        EdkLogger.verbose("File %s for toolchain family %s is not supported" % (F.SourceFile, F.ToolChainFamily))
+                        EdkLogger.warn("File %s for toolchain family %s is not supported" % (F.SourceFile, F.ToolChainFamily))
                         Buildable = False
                         break
             else:
