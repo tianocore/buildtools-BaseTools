@@ -468,15 +468,14 @@ class WorkspaceBuild(object):
                     if Arch in Item.SupArchList:
                         Lib = Item.LibraryClass
                         RecommendedInstance = Item.RecommendedInstance
-                        if pb.LibraryClass != None:
+                        if pb.LibraryClass != []:
                             # For Library
                             for Libs in pb.LibraryClass:
-                                if Lib == Libs.LibraryClass:
-                                    for Type in Libs.SupModList:
-                                        Instance = self.FindLibraryClassInstanceOfLibrary(Lib, Arch, Type)
-                                        if Instance == None:
-                                            Instance = RecommendedInstance
-                                        pb.LibraryClasses[(Lib, Type)] = NormPath(Instance)
+                                for Type in Libs.SupModList:
+                                    Instance = self.FindLibraryClassInstanceOfLibrary(Lib, Arch, Type)
+                                    if Instance == None:
+                                        Instance = RecommendedInstance
+                                    pb.LibraryClasses[(Lib, Type)] = NormPath(Instance)
                         else:
                             # For Module
                             Instance = self.FindLibraryClassInstanceOfModule(Lib, Arch, pb.ModuleType, Inf) 
@@ -508,7 +507,7 @@ class WorkspaceBuild(object):
                     if not self.IsModuleDefinedInPlatform(Inf, Arch):
                         continue
                     Module = self.Build[Arch].ModuleDatabase[NormPath(Inf)]
-                    if Module.LibraryClass == None or Module.LibraryClass == "":
+                    if Module.LibraryClass == None or Module.LibraryClass == []:
                         self.UpdateLibrariesOfModule(Module, Arch)
                         for Key in Module.LibraryClasses:
                             Lib = Module.LibraryClasses[Key]
