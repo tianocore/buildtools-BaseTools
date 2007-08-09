@@ -544,7 +544,7 @@ class WorkspaceBuild(object):
             for Key, LibraryPath in module.LibraryClasses.iteritems():
                 # The "Key" is in format of (library_class_name, supported_module_type)
                 LibraryClassName = Key[0]
-                if ModuleType not in Key:
+                if ModuleType != "USER_DEFINED" and ModuleType not in Key:
                     EdkLogger.debug(EdkLogger.DEBUG_3, "\t%s for module type %s is not supported" % Key)
                     continue
                 if LibraryPath == None or LibraryPath == "":

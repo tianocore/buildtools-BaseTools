@@ -1,3 +1,6 @@
+## @file
+# This file is used to generate DEPEX file for module's dependency expression
+#
 # Copyright (c) 2007, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
@@ -7,10 +10,8 @@
 # THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
+## Import Modules
 #
-# This file is used to generate DEPEX file for module's dependency expression
-#
-
 import sys
 import os
 import re
@@ -101,83 +102,83 @@ class DependencyExpression:
         self.TokenList = self.TokenPattern.findall(self.ExpressionString)
 
     def GetPostfixNotation(self):
-        stack = []
-        for token in self.TokenList:
-            if token == "(":
-                stack.append(token)
-            elif token == ")":
-                while len(stack) > 0:
-                    if stack[-1] == '(':
-                        stack.pop()
+        Stack = []
+        for Token in self.TokenList:
+            if Token == "(":
+                Stack.append(Token)
+            elif Token == ")":
+                while len(Stack) > 0:
+                    if Stack[-1] == '(':
+                        Stack.pop()
                         break
-                    self.PostfixNotation.append(stack.pop())
-            elif token in self.OpcodePriority:
-                while len(stack) > 0:
-                    if stack[-1] == "(" or self.OpcodePriority[token] > self.OpcodePriority[stack[-1]]:
+                    self.PostfixNotation.append(Stack.pop())
+            elif Token in self.OpcodePriority:
+                while len(Stack) > 0:
+                    if Stack[-1] == "(" or self.OpcodePriority[Token] > self.OpcodePriority[Stack[-1]]:
                         break
-                    self.PostfixNotation.append(stack.pop())
-                stack.append(token)
-                self.OpcodeList.append(token)
+                    self.PostfixNotation.append(Stack.pop())
+                Stack.append(Token)
+                self.OpcodeList.append(Token)
             else:
-                if token not in self.Opcode[self.Phase]:
+                if Token not in self.Opcode[self.Phase]:
                     self.PostfixNotation.append("PUSH")
                 else:
-                    self.OpcodeList.append(token)
-                self.PostfixNotation.append(token)
-        while len(stack) > 0:
-            self.PostfixNotation.append(stack.pop())
+                    self.OpcodeList.append(Token)
+                self.PostfixNotation.append(Token)
+        while len(Stack) > 0:
+            self.PostfixNotation.append(Stack.pop())
         self.PostfixNotation.append("END")
         #print "  ","\n   ".join(self.PostfixNotation)
 
     def ValidateOpcode(self):
-        for op in self.AboveAllOpcode:
-            if op in self.OpcodeList and op != self.OpcodeList[0]:
-                raise AutoGenError("Opcode=%s should be the first one in expression", op)
-        for op in self.ExclusiveOpcode:
-            if op in self.OpcodeList and len(self.OpcodeList) > 1:
-                raise AutoGenError("Opcode=%s should be only opcode in expression", op)
+        for Op in self.AboveAllOpcode:
+            if Op in self.OpcodeList and Op != self.OpcodeList[0]:
+                raise AutoGenError("Opcode=%s should be the first one in expression", Op)
+        for Op in self.ExclusiveOpcode:
+            if Op in self.OpcodeList and len(self.OpcodeList) > 1:
+                raise AutoGenError("Opcode=%s should be only opcode in expression", Op)
         # print "######", self.ExpressionString
         if self.TokenList[-1] in self.NonEndingOpcode:
             raise AutoGenError("Extra %s at the end of dependency expression" % self.TokenList[-1])
 
-    def GetGuidValue(self, guid):
-        guidValueString = guid.replace("{", "").replace("}", "").replace(" ", "")
-        guidValueList = guidValueString.split(",")
-        if len(guidValueList) != 11:
-            raise AutoGenError("Invalid GUID value string or opcode: %s" % guid)
-        return pack("1I2H8B", *(int(value, 16) for value in guidValueList))
+    def GetGuidValue(self, Guid):
+        GuidValueString = Guid.replace("{", "").replace("}", "").replace(" ", "")
+        GuidValueList = GuidValueString.split(",")
+        if len(GuidValueList) != 11:
+            raise AutoGenError("Invalid GUID value string or opcode: %s" % Guid)
+        return pack("1I2H8B", *(int(value, 16) for value in GuidValueList))
 
-    def SaveFile(self, file, content):
-        CreateDirectory(os.path.dirname(file))
-        f = None
-        if os.path.exists(file):
-            f = open(file, 'rb')
-            if content == f.read():
-                f.close()
+    def SaveFile(self, File, Content):
+        CreateDirectory(os.path.dirname(File))
+        F = None
+        if os.path.exists(File):
+            F = open(File, 'rb')
+            if Content == F.read():
+                F.close()
                 return
-            f.close()
-        f = open(file, "wb")
-        f.write(content)
-        f.close()
+            F.close()
+        F = open(File, "wb")
+        F.write(Content)
+        F.close()
 
-    def Generate(self, file=None):
-        buffer = StringIO()
-        for item in self.PostfixNotation:
-            if item in self.Opcode[self.Phase]:
-                buffer.write(pack("B", self.Opcode[self.Phase][item]))
+    def Generate(self, File=None):
+        Buffer = StringIO()
+        for Item in self.PostfixNotation:
+            if Item in self.Opcode[self.Phase]:
+                Buffer.write(pack("B", self.Opcode[self.Phase][Item]))
             else:
-                buffer.write(self.GetGuidValue(item))
+                Buffer.write(self.GetGuidValue(Item))
 
-        filePath = ""
-        if file == None:
-            sys.stdout.write(buffer.getvalue())
-            filePath = "STDOUT"
+        FilePath = ""
+        if File == None:
+            sys.stdout.write(Buffer.getvalue())
+            FilePath = "STDOUT"
         else:
-            self.SaveFile(file, buffer.getvalue())
-            filePath = file
+            self.SaveFile(File, Buffer.getvalue())
+            FilePath = File
 
-        buffer.close()
-        return filePath
+        Buffer.close()
+        return FilePath
 
 versionNumber = "0.01"
 __version__ = "%prog Version " + versionNumber
@@ -187,47 +188,47 @@ __usage__ = "%prog [options] [dependency_expression_file]"
 def GetOptions():
     from optparse import OptionParser
 
-    parser = OptionParser(description=__copyright__, version=__version__, usage=__usage__)
+    Parser = OptionParser(description=__copyright__, version=__version__, usage=__usage__)
 
-    parser.add_option("-o", "--output", dest="OutputFile", default=None, metavar="FILE",
+    Parser.add_option("-o", "--output", dest="OutputFile", default=None, metavar="FILE",
                       help="Specify the name of depex file to be generated")
-    parser.add_option("-t", "--module-type", dest="ModuleType", default=None,
+    Parser.add_option("-t", "--module-type", dest="ModuleType", default=None,
                       help="The type of module for which the dependency expression serves")
-    parser.add_option("-e", "--dependency-expression", dest="Expression", default="",
+    Parser.add_option("-e", "--dependency-expression", dest="Expression", default="",
                       help="The string of dependency expression. If this option presents, the input file will be ignored.")
-    parser.add_option("-v", "--verbose", dest="verbose", default=False, action="store_true",
+    Parser.add_option("-v", "--verbose", dest="verbose", default=False, action="store_true",
                       help="build with verbose information")
-    parser.add_option("-d", "--debug", dest="debug", default=False, action="store_true",
+    Parser.add_option("-d", "--debug", dest="debug", default=False, action="store_true",
                       help="build with debug information")
-    parser.add_option("-q", "--quiet", dest="quiet", default=False, action="store_true",
+    Parser.add_option("-q", "--quiet", dest="quiet", default=False, action="store_true",
                       help="build with little information")
 
-    return parser.parse_args()
+    return Parser.parse_args()
 
 
 def Main():
-    option, input = GetOptions()
-    if option.ModuleType == None or option.ModuleType not in gType2Phase:
+    Option, Input = GetOptions()
+    if Option.ModuleType == None or Option.ModuleType not in gType2Phase:
         print "Module type is not specified or supported"
         return -1
 
     try:
-        if len(input) > 0 and option.Expression == "":
-            dxsFile = input[0]
-            dxsString = open(dxsFile, 'r').read().replace("\n", " ").replace("\r", " ")
-            dxsString = re.compile("DEPENDENCY_START(.+)DEPENDENCY_END").findall(dxsString)[0]
-        elif option.Expression != "":
-            dxsString = option.Expression
+        if len(Input) > 0 and Option.Expression == "":
+            DxsFile = Input[0]
+            DxsString = open(DxsFile, 'r').read().replace("\n", " ").replace("\r", " ")
+            DxsString = re.compile("DEPENDENCY_START(.+)DEPENDENCY_END").findall(DxsString)[0]
+        elif Option.Expression != "":
+            DxsString = Option.Expression
         else:
             print "No expression string or file given"
             return -1
 
-        dpx = DependencyExpression(dxsString, option.ModuleType)
+        Dpx = DependencyExpression(DxsString, Option.ModuleType)
 
-        if option.OutputFile != None:
-            dpx.Generate(option.OutputFile)
+        if Option.OutputFile != None:
+            Dpx.Generate(Option.OutputFile)
         else:
-            dpx.Generate()
+            Dpx.Generate()
     except Exception, e:
         return -1
 
