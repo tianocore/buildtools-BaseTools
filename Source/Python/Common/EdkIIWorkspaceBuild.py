@@ -14,7 +14,7 @@
 #
 # Import Modules
 #
-import os, string, copy, pdb
+import os, string, copy, pdb, copy
 import EdkLogger
 import DataType
 from InfClassObject import *
@@ -283,7 +283,7 @@ class WorkspaceBuild(object):
                   
                 # LibraryClass
                 for Item in Platform.LibraryClasses.LibraryList:
-                    SupModuleList = self.FindSupModuleListOfLibraryClass(Item.Name, NormPath(Item.FilePath))
+                    SupModuleList = self.FindSupModuleListOfLibraryClass(Item, Platform.LibraryClasses.LibraryList)
                     if Arch in Item.SupArchList:
                         for ModuleType in SupModuleList:
                             pb.LibraryClasses[(Item.Name, ModuleType)] = NormPath(Item.FilePath)
@@ -860,13 +860,25 @@ class WorkspaceBuild(object):
     #
     # Search in InfDatabase, find the supmodulelist of the libraryclass
     #
-    def FindSupModuleListOfLibraryClass(self, Name, FilePath):
-        LibraryClassList = self.InfDatabase[FilePath].Module.Header.LibraryClass
-        for Item in LibraryClassList:
-            if Item.LibraryClass == Name:
-                return Item.SupModuleList
+    def FindSupModuleListOfLibraryClass(self, LibraryClass, OverridedLibraryClassList):
+        Name = LibraryClass.Name
+        FilePath = NormPath(LibraryClass.FilePath)
+        SupModuleList = copy.copy(LibraryClass.ModuleType)
         
-        return []
+        #
+        # If the SupModuleList means all, remove overrided module types of platform
+        #
+        if SupModuleList == DataType.SUP_MODULE_LIST:
+            EdkLogger.debug(EdkLogger.DEBUG_3, "\tLibraryClass %s supports all module types" % Name)
+            for Item in OverridedLibraryClassList:
+                if Item.Name == Name:
+                    if Item.ModuleType == DataType.SUP_MODULE_LIST:
+                        continue
+                    for ModuleType in Item.ModuleType:
+                        EdkLogger.debug(EdkLogger.DEBUG_3, "\tLibraryClass %s has specific defined module types" % Name)
+                        SupModuleList.remove(ModuleType)
+
+        return SupModuleList
     
     #
     # Check if the module is defined in <Compentent> of <Platform>
