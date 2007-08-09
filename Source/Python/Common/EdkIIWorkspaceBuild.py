@@ -533,42 +533,50 @@ class WorkspaceBuild(object):
         ModuleType = Module.ModuleType
         LibraryConsumerList = [Module]
 
-        LibraryList         = []
         Constructor         = []
         ConsumedByList      = {}
-        LibraryClassList    = []
+        LibraryInstance     = {}
 
         EdkLogger.verbose("")
         EdkLogger.verbose("Library instances of module [%s]:" % str(Module))
         while len(LibraryConsumerList) > 0:
             module = LibraryConsumerList.pop()
-            for libc, libf in module.LibraryClasses.iteritems():
-                if ModuleType not in libc:
-                    EdkLogger.debug(EdkLogger.DEBUG_3, "\t%s for module type %s is not supported" % libc)
+            #EdkLogger.verbose(str(Module))
+            #EdkLogger.verbose(module.LibraryClasses)
+            for Key, LibraryPath in module.LibraryClasses.iteritems():
+                # The "Key" is in format of (library_class_name, supported_module_type)
+                LibraryClassName = Key[0]
+                if ModuleType not in Key:
+                    EdkLogger.debug(EdkLogger.DEBUG_3, "\t%s for module type %s is not supported" % Key)
                     continue
-                if libf == None or libf == "":
-                    EdkLogger.verbose("\tWARNING: Library instance for library class %s is not found" % libc[0])
+                if LibraryPath == None or LibraryPath == "":
+                    EdkLogger.verbose("\tWARNING: Library instance for library class %s is not found" % LibraryClassName)
                     continue
 
-                libm = ModuleDatabase[libf]
-                if libm not in LibraryList and libc not in LibraryClassList:
-                    LibraryConsumerList.append(libm)
-                    LibraryList.append(libm)
-                    LibraryClassList.append(libc)
-                    EdkLogger.verbose("\t" + libc[0] + " : " + str(libm))
+                LibraryModule = ModuleDatabase[LibraryPath]
+                if LibraryClassName not in LibraryInstance:
+                    LibraryConsumerList.append(LibraryModule)
+                    #LibraryList.append(LibraryModule)
+                    #LibraryClassList.append(Key)
+                    LibraryInstance[LibraryClassName] = LibraryModule
+                    EdkLogger.verbose("\t" + LibraryClassName + " : " + str(LibraryModule))
+                elif str(LibraryInstance[LibraryClassName]) != LibraryPath:
+                    raise AutoGenError(msg="More than one library instance found for library class %s in module %s:\n\t%s\n\t%s"
+                                           % (LibraryClassName, Module, LibraryPath, LibraryInstance[LibraryClassName]))
 
-                if libm.ConstructorList != [] and libm not in Constructor:
-                    Constructor.append(libm)
+                if LibraryModule.ConstructorList != [] and LibraryModule not in Constructor:
+                    Constructor.append(LibraryModule)
 
-                if libm not in ConsumedByList:
-                    ConsumedByList[libm] = []
+                if LibraryModule not in ConsumedByList:
+                    ConsumedByList[LibraryModule] = []
                 if module != Module:
-                    if module in ConsumedByList[libm]:
+                    if module in ConsumedByList[LibraryModule]:
                         continue
-                    ConsumedByList[libm].append(module)
+                    ConsumedByList[LibraryModule].append(module)
         #
         # Initialize the sorted output list to the empty set
         #
+        LibraryList       = LibraryInstance.values()
         SortedLibraryList = []
         #
         # Q <- Set of all nodes with no incoming edges
@@ -653,7 +661,8 @@ class WorkspaceBuild(object):
         SortedLibraryList.reverse()
         Module.LibraryClasses = SequentialDict()
         for L in SortedLibraryList:
-            Module.LibraryClasses[L.LibraryClass.LibraryClass, ModuleType] = str(L)
+            for Lc in L.LibraryClass:
+                Module.LibraryClasses[Lc.LibraryClass, ModuleType] = str(L)
             #
             # Merge PCDs from library instance
             #
