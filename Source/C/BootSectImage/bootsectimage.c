@@ -30,7 +30,7 @@ Abstract:
 //
 // Utility Name
 //
-#define UTILITY_NAME  "Split"
+#define UTILITY_NAME  "BootSectImage"
 
 //
 // Utility version information
