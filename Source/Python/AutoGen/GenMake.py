@@ -594,7 +594,7 @@ build_modules:
 #
 build_fds:
 \t-@echo Generating flash image, if any ...
-${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -p ${active_platform}${END}
+${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -p ${active_platform} -a ${build_architecture_list}${END}
 
 #
 # run command for emulator platform only
@@ -686,6 +686,7 @@ class Makefile(object):
     def GeneratePlatformMakefile(self, File=None, MakeType=gMakeType):
         Separator = gDirectorySeparator[MakeType]
 
+        ArchList = self.PlatformInfo.keys()
         PlatformInfo = self.PlatformInfo.values()[0]
         ActivePlatform = PlatformInfo.Platform
         
@@ -713,7 +714,7 @@ class Makefile(object):
 
             "toolchain_tag"             : PlatformInfo.ToolChain,
             "build_target"              : PlatformInfo.BuildTarget,
-            "build_architecture_list"   : " ".join(self.PlatformInfo.keys()),
+            "build_architecture_list"   : ",".join(ArchList),
             "architecture"              : self.PlatformInfo.keys(),
             "separator"                 : Separator,
             "create_directory_command"  : self.GetCreateDirectoryCommand(self.IntermediateDirectoryList, MakeType),
@@ -723,7 +724,7 @@ class Makefile(object):
             "library_build_directory"   : self.LibraryBuildDirectoryList,
             "module_build_directory"    : self.ModuleBuildDirectoryList,
             "fdf_file"                  : PlatformInfo.FdfFileList,
-            "active_platform"           : PlatformInfo.WorkspaceDir + Separator + ActivePlatform.DescFilePath
+            "active_platform"           : PlatformInfo.WorkspaceDir + Separator + ActivePlatform.DescFilePath,
         }
 
         self.PrepareDirectory()
