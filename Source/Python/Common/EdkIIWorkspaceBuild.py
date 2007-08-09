@@ -372,7 +372,7 @@ class WorkspaceBuild(object):
             
             for Arch in self.SupArchList:
                 if not self.IsModuleDefinedInPlatform(Inf, Arch):
-                    break
+                    continue
                 
                 pb = ModuleBuildClassObject()
                 
