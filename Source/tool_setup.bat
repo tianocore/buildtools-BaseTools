@@ -42,7 +42,7 @@ goto build
 
 :rebuild
 pushd .
-cd %BASE_TOOLS_PATH%\CSource
+cd %BASE_TOOLS_PATH%\C
 call nmake cleanall
 popd
 
