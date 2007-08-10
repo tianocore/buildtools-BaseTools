@@ -24,8 +24,11 @@ Abstract:
 
 #include <stdio.h>
 #include <stdlib.h>
-
 #include <Common/UefiBaseTypes.h>
+
+#ifndef _MAX_PATH
+#define _MAX_PATH 500
+#endif
 
 //
 // Common data structures

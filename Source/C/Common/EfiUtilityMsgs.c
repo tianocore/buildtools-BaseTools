@@ -148,7 +148,7 @@ Notes:
 
   mErrorCount++;
   va_start (List, MsgFmt);
-  PrintMessage ("error", FileName, LineNumber, MessageCode, Text, MsgFmt, List);
+  PrintMessage ("ERROR", FileName, LineNumber, MessageCode, Text, MsgFmt, List);
   va_end (List);
   //
   // Set status accordingly
@@ -208,7 +208,7 @@ Returns:
 
   mErrorCount++;
   va_start (List, MsgFmt);
-  PrintMessage ("error", mSourceFileName, mSourceFileLineNum, MessageCode, Text, MsgFmt, List);
+  PrintMessage ("ERROR", mSourceFileName, mSourceFileLineNum, MessageCode, Text, MsgFmt, List);
   va_end (List);
   //
   // Set status accordingly
@@ -268,7 +268,7 @@ Returns:
 
   mWarningCount++;
   va_start (List, MsgFmt);
-  PrintMessage ("warning", mSourceFileName, mSourceFileLineNum, ErrorCode, OffendingText, MsgFmt, List);
+  PrintMessage ("WARNING", mSourceFileName, mSourceFileLineNum, ErrorCode, OffendingText, MsgFmt, List);
   va_end (List);
   //
   // Set status accordingly
@@ -339,7 +339,7 @@ Returns:
 
   mWarningCount++;
   va_start (List, MsgFmt);
-  PrintMessage ("warning", FileName, LineNumber, MessageCode, Text, MsgFmt, List);
+  PrintMessage ("WARNING", FileName, LineNumber, MessageCode, Text, MsgFmt, List);
   va_end (List);
   //
   // Set status accordingly
@@ -391,7 +391,7 @@ Returns:
   }
 
   va_start (List, MsgFmt);
-  PrintMessage ("debug", FileName, LineNumber, 0, Text, MsgFmt, List);
+  PrintMessage ("DEBUG", FileName, LineNumber, 0, Text, MsgFmt, List);
   va_end (List);
 }
 
@@ -470,7 +470,7 @@ Notes:
     Cptr = "Unknown utility";
   }
 
-  strcpy (Line, Cptr);
+  sprintf (Line, "(%s)", Cptr);
   if (LineNumber != 0) {
     sprintf (Line2, "(%d)", LineNumber);
     strcat (Line, Line2);
@@ -479,7 +479,7 @@ Notes:
   // Have to print an error code or Visual Studio won't find the
   // message for you. It has to be decimal digits too.
   //
-  sprintf (Line2, " : %s %c%04d", Type, toupper (Type[0]), MessageCode);
+  sprintf (Line2, " %s: %c%04d", Type, toupper (Type[0]), MessageCode);
   strcat (Line, Line2);
   fprintf (stdout, "%s", Line);
   //

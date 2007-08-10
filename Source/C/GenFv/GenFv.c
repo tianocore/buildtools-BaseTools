@@ -28,9 +28,7 @@ Abstract:
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "CommonLib.h"
 #include "GenFvInternalLib.h"
-#include "EfiUtilityMsgs.h"
 
 //
 // Utility Name
@@ -43,15 +41,11 @@ Abstract:
 #define UTILITY_MAJOR_VERSION 0
 #define UTILITY_MINOR_VERSION 1
 
-EFI_STATUS
-ParseCapInf (
-  IN  MEMORY_FILE  *InfFile,
-  OUT CAP_INFO     *CapInfo
-  );
+BOOLEAN VerboseMode = FALSE;
 
 static
 void 
-Version(
+Version (
   void
 )
 /*++
@@ -70,14 +64,12 @@ Returns:
 
 --*/
 {
-  printf ("%s v%d.%d - EDKII Firmware Volume Generation Utility.\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
-  printf ("Copyright (c) 2007 Intel Corporation. All rights reserved.\n");
+  fprintf (stdout, "%s Version %d.%d\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
 }
- 
 
 static
 void 
-Usage(
+Usage (
   void
   )
 /*++
@@ -96,15 +88,42 @@ Returns:
 
 --*/
 {
-  Version();
+  //
+  // Summary usage
+  //
+  fprintf (stdout, "Usage: %s [options]\n\n", UTILITY_NAME);
+  
+  //
+  // Copyright declaration
+  // 
+  fprintf (stdout, "Copyright (c) 2007, Intel Corporation. All rights reserved.\n\n");
 
-  printf ("\nUsage: " UTILITY_NAME "\n\
-        -i, --inputfile [FileName (FV.inf or Cap.inf)]\n\
-        -o, --outputfile [FileName (FileName.fv)]\n\
-        -r, --baseaddress (0x##### or #####)\n\
-        -c, --capsule\n\
-        -h, --help\n\
-        -V, --version\n");
+  //
+  // Details Option
+  //
+  fprintf (stdout, "Options:\n");
+  fprintf (stdout, "  -o FileName, --outputfile FileName\n\
+                        File is the FvImage or CapImage to be created.\n");
+  fprintf (stdout, "  -i FileName, --inputfile FileName\n\
+                        File is the input FV.inf or Cap.inf to specify\n\
+                        how to construct FvImage or CapImage.\n");
+  fprintf (stdout, "  -r Address, --baseaddr Address\n\
+                        Address is the rebase start address for drivers that\n\
+                        run in Flash. It supports DEC or HEX digital format.\n");
+  fprintf (stdout, "  -b Address, --bootbaseaddr Address\n\
+                        Address is the boot time driver base address, which is\n\
+                        used to define the prefered loaded address for all\n\
+                        boot time drivers in this Fv image.\n\
+                        It supports DEC or HEX digital format.\n");
+  fprintf (stdout, "  -t Address, --runtimebaseaddr Address\n\
+                        Address is the runtime driver base address, which is\n\
+                        used to define the prefered loaded address for all\n\
+                        runtime drivers in this Fv image.\n\
+                        It supports DEC or HEX digital format.\n");
+  fprintf (stdout, "  -c, --capsule         Create Capsule Image.\n");
+  fprintf (stdout, "  -v, --verbose         Turn on verbose output with informational messages.\n");
+  fprintf (stdout, "  --version             Show program's version number and exit.\n");
+  fprintf (stdout, "  -h, --help            Show this help message and exit.\n");
 }
 
 int
@@ -143,35 +162,23 @@ Returns:
   UINTN                 InfFileSize;
   CHAR8                 *OutFileName;
   EFI_PHYSICAL_ADDRESS  XipBase;
-  UINT8                 CapsuleFlag;
-  CAP_INFO              CapInfo;
-  MEMORY_FILE           InfMemoryFile;
-  FILE                  *fpin, *fpout;
-  UINT32                FileSize;
-  UINT32                CapSize;
-  UINT8                 *CapBuffer;
-  EFI_CAPSULE_HEADER    *CapsuleHeader;
-  UINT32                Index;
-
-  fprintf (stdout, "GenFv tool start\n");
+  EFI_PHYSICAL_ADDRESS  BtBase;
+  EFI_PHYSICAL_ADDRESS  RtBase;
+  BOOLEAN               CapsuleFlag;
 
   InfFileName   = NULL;
   InfFileImage  = NULL;
   OutFileName   = NULL;
   XipBase       = -1;
+  BtBase        = 0;
+  RtBase        = 0;
   InfFileSize   = 0;
-  CapsuleFlag   = 0;
-  fpin          = NULL;
-  fpout         = NULL;
-  FileSize      = 0;
-  CapSize       = 0;
-  Index         = 0;
-  CapBuffer     = NULL;
-  CapsuleHeader = NULL;
+  CapsuleFlag   = FALSE;
 
   SetUtilityName (UTILITY_NAME);
 
   if (argc == 1) {
+    Error (NULL, 0, 1001, "Missing options", "Input file");
     Usage ();
     return STATUS_ERROR;
   }
@@ -183,21 +190,18 @@ Returns:
   argv ++;
 
   if ((stricmp (argv[0], "-h") == 0) || (stricmp (argv[0], "--help") == 0)) {
-    Usage();
+    Usage ();
     return STATUS_SUCCESS;    
   }
 
-  if ((stricmp (argv[0], "-v") == 0) || (stricmp (argv[0], "--version") == 0)) {
-    Version();
+  if (stricmp (argv[0], "--version") == 0) {
+    Version ();
     return STATUS_SUCCESS;    
   }
 
   while (argc > 0) {
     if ((stricmp (argv[0], "-i") == 0) || (stricmp (argv[0], "--inputfile") == 0)) {
       InfFileName = argv[1];
-      if (InfFileName == NULL) {
-        Warning (NULL, 0, 0, NULL, "No input file specified.");
-      }
       argc -= 2;
       argv += 2;
       continue; 
@@ -213,7 +217,29 @@ Returns:
     if ((stricmp (argv[0], "-r") == 0) || (stricmp (argv[0], "--baseaddr") == 0)) {
       Status = AsciiStringToUint64 (argv[1], FALSE, &XipBase);
       if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 0, "Input paramter is not one valid integrator.", NULL);
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        return STATUS_ERROR;        
+      }
+      argc -= 2;
+      argv += 2;
+      continue; 
+    }
+
+    if ((stricmp (argv[0], "-b") == 0) || (stricmp (argv[0], "--bootbaseaddr") == 0)) {
+      Status = AsciiStringToUint64 (argv[1], FALSE, &BtBase);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        return STATUS_ERROR;        
+      }
+      argc -= 2;
+      argv += 2;
+      continue; 
+    }
+
+    if ((stricmp (argv[0], "-t") == 0) || (stricmp (argv[0], "--runtimebaseaddr") == 0)) {
+      Status = AsciiStringToUint64 (argv[1], FALSE, &RtBase);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
         return STATUS_ERROR;        
       }
       argc -= 2;
@@ -222,18 +248,37 @@ Returns:
     }
 
     if ((stricmp (argv[0], "-c") == 0) || (stricmp (argv[0], "--capsule") == 0)) {
-      CapsuleFlag = 1;
+      CapsuleFlag = TRUE;
       argc --;
       argv ++;
       continue; 
     }
+
+    if ((stricmp (argv[0], "-v") == 0) || (stricmp (argv[0], "--verbose") == 0)) {
+      VerboseMode = TRUE;
+      argc --;
+      argv ++;
+      continue;
+    }
     //
     // Don't recognize the paramter.
     //
-    Error (NULL, 0, 0, NULL, "%s is invaild paramter!", argv[0]);
+    Error (NULL, 0, 1000, "Unknown option", "%s", argv[0]);
     return STATUS_ERROR;
   }
 
+  if (VerboseMode) {
+    fprintf (stdout, "%s tool start.\n", UTILITY_NAME);
+  }
+  
+  //
+  // check input parameter
+  //
+  if (InfFileName == NULL) {
+    Error (NULL, 0, 1001, "Missing Option", "Input File");
+    return STATUS_ERROR;
+  }
+  
   //
   // Read the INF file image
   //
@@ -247,265 +292,37 @@ Returns:
   //
   if (CapsuleFlag) {
     //
-    // Initialize file structures
+    // Call the GenerateCapImage to generate Capsule Image
     //
-    InfMemoryFile.FileImage           = InfFileImage;
-    InfMemoryFile.CurrentFilePointer  = InfFileImage;
-    InfMemoryFile.Eof                 = InfFileImage + InfFileSize;
-
-    //
-    // Parse the Cap inf file for header information
-    //
-    Status = ParseCapInf (&InfMemoryFile, &CapInfo);
-    if (Status != EFI_SUCCESS) {
-      goto Finish;
-    }
-    
-    if (CapInfo.HeaderSize == 0) {
-      CapInfo.HeaderSize = sizeof (EFI_CAPSULE_HEADER);
-    }
-
-    if (CapInfo.HeaderSize < sizeof (EFI_CAPSULE_HEADER)) {
-      Error (NULL, 0, 0, NULL, "The specified HeaderSize can't be less than the size of EFI_CAPSULE_HEADER.");
-      goto Finish;
-    }
-    
-    if (OutFileName == NULL && CapInfo.CapName[0] != '\0') {
-      OutFileName = CapInfo.CapName;
-    }
-    
-    if (OutFileName == NULL) {
-      Error (NULL, 0, 0, NULL, "Output file name is not specified.");
-      goto Finish;
-    }
-        
-    //
-    // Calculate the size of capsule image.
-    //
-    Index    = 0;
-    FileSize = 0;
-    CapSize  = sizeof (EFI_CAPSULE_HEADER);
-    while (CapInfo.CapFiles [Index][0] != '\0') {
-      fpin = fopen (CapInfo.CapFiles[Index], "rb");
-      if (fpin == NULL) {
-        Error (NULL, 0, 0, NULL, "%s could not open for reading", CapInfo.CapFiles[Index]);
-        goto Finish;
-      }
-      FileSize  = _filelength (fileno (fpin));
-      CapSize  += FileSize;
-      fclose (fpin);
-      Index ++;
-    }
-
-    //
-    // Allocate buffer for capsule image.
-    //
-    CapBuffer = (UINT8 *) malloc (CapSize);
-    if (CapBuffer == NULL) {
-      Error (NULL, 0, 0, NULL, "could not allocate enough memory space for capsule");
-      goto Finish;
-    }
-
-    //
-    // Initialize the capsule header to zero
-    //
-    memset (CapBuffer, 0, sizeof (EFI_CAPSULE_HEADER));
-    
-    //
-    // create capsule header and get capsule body
-    //
-    CapsuleHeader = (EFI_CAPSULE_HEADER *) CapBuffer;
-    memcpy (&CapsuleHeader->CapsuleGuid, &CapInfo.CapGuid, sizeof (EFI_GUID));
-    CapsuleHeader->HeaderSize       = CapInfo.HeaderSize;
-    CapsuleHeader->Flags            = CapInfo.Flags;
-    CapsuleHeader->CapsuleImageSize = CapSize;
-
-    Index    = 0;
-    FileSize = 0;
-    CapSize  = CapsuleHeader->HeaderSize;
-    while (CapInfo.CapFiles [Index][0] != '\0') {
-      fpin = fopen (CapInfo.CapFiles[Index], "rb");
-      if (fpin == NULL) {
-        Error (NULL, 0, 0, NULL, "%s could not open for reading", CapInfo.CapFiles[Index]);
-        goto Finish;
-      }
-      FileSize = _filelength (fileno (fpin));
-      fread (CapBuffer + CapSize, 1, FileSize, fpin);
-      fclose (fpin);
-      Index ++;
-      CapSize += FileSize;
-    }
-    
-    //
-    // write capsule data into the output file
-    //
-    fpout = fopen (OutFileName, "wb");
-    if (fpout == NULL) {
-      Error (NULL, 0, 0, NULL, "could not open %s file for writing", OutFileName);
-      goto Finish;
-    }
-
-    fwrite (CapBuffer, 1, CapSize, fpout);
-    fclose (fpout);
-
+    GenerateCapImage (
+      InfFileImage, 
+      InfFileSize,
+      OutFileName
+      );
   } else {
     //
-    // Call the GenFvImageFunction to generate Fv Image
+    // Call the GenerateFvImage to generate Fv Image
     //
     GenerateFvImage (
       InfFileImage,
       InfFileSize,
       OutFileName,
-      XipBase
+      XipBase,
+      BtBase,
+      RtBase
       );
   }
 
-Finish:
   //
   // free InfFileImage memory
   //
-  free (InfFileImage);
-  
-  //
-  // free capsule file buffer
-  //
-  if (CapBuffer != NULL) {
-    free (CapBuffer);
+  if (InfFileImage == NULL) {
+    free (InfFileImage);
   }
 
-  fprintf (stdout, "GenFv tool done with return code is 0x%x.\n", GetUtilityStatus ());
+  if (VerboseMode) {
+    fprintf (stdout, "%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());  
+  }
+
   return GetUtilityStatus ();
-}
-
-EFI_STATUS
-ParseCapInf (
-  IN  MEMORY_FILE  *InfFile,
-  OUT CAP_INFO     *CapInfo
-  )
-/*++
-
-Routine Description:
-
-  This function parses a Cap.INF file and copies info into a CAP_INFO structure.
-
-Arguments:
-
-  InfFile        Memory file image.
-  CapInfo        Information read from INF file.
-
-Returns:
-
-  EFI_SUCCESS       INF file information successfully retrieved.
-  EFI_ABORTED       INF file has an invalid format.
-  EFI_NOT_FOUND     A required string was not found in the INF file.
---*/
-{
-  CHAR8       Value[_MAX_PATH];
-  UINT64      Value64;
-  UINTN       Index;
-  EFI_STATUS  Status;
-
-  //
-  // Initialize Cap info
-  //
-  memset (CapInfo, 0, sizeof (CAP_INFO));
-
-  //
-  // Read the Capsule Guid
-  //
-  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_CAPSULE_GUID_STRING, 0, Value);
-  if (Status == EFI_SUCCESS) {
-    //
-    // Get the Capsule Guid
-    //
-    Status = StringToGuid (Value, &CapInfo->CapGuid);
-    if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0, EFI_CAPSULE_GUID_STRING, "not valid guid value");
-      return EFI_ABORTED;
-    }
-  } else {
-    Error (NULL, 0, 0, EFI_CAPSULE_GUID_STRING, "is not specified.");
-    return EFI_ABORTED;
-  }
-
-  //
-  // Read the Capsule Header Size
-  //
-  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_CAPSULE_HEADER_SIZE_STRING, 0, Value);
-  if (Status == EFI_SUCCESS) {
-    Status = AsciiStringToUint64 (Value, FALSE, &Value64);
-    if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0, Value, "invalid value for %s", EFI_CAPSULE_HEADER_SIZE_STRING);
-      return EFI_ABORTED;
-    }
-    CapInfo->HeaderSize = (UINT32) Value64;
-  }
-
-  //
-  // Read the Capsule Flag
-  //
-  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_CAPSULE_FLAGS_STRING, 0, Value);
-  if (Status == EFI_SUCCESS) {
-    if (stricmp (Value, "PersistAcrossReset") == 0) {
-      CapInfo->Flags = CAPSULE_FLAGS_PERSIST_ACROSS_RESET; 
-    } else if (stricmp (Value, "PopulateSystemTable") == 0) {
-      CapInfo->Flags = CAPSULE_FLAGS_PERSIST_ACROSS_RESET | CAPSULE_FLAGS_POPULATE_SYSTEM_TABLE;
-    } else {
-      Error (NULL, 0, 0, Value, "invalid Flag setting for %s", EFI_CAPSULE_FLAGS_STRING);
-      return EFI_ABORTED;
-    }
-  }
-  
-  //
-  // Read the Capsule Version
-  //
-  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_CAPSULE_VERSION_STRING, 0, Value);
-  if (Status == EFI_SUCCESS) {
-    if (stricmp (Value, "UEFI") == 0) {
-      CapInfo->Version = 0x20000;  
-    } else if (stricmp (Value, "FRAMEWORK") == 0) {
-      CapInfo->Version = 0x10010;
-      Error (NULL, 0, 0, Value, "is not supported Version for %s", EFI_CAPSULE_VERSION_STRING);
-      return EFI_ABORTED;
-    } else {
-      Error (NULL, 0, 0, Value, "invalid Version setting for %s", EFI_CAPSULE_VERSION_STRING);
-      return EFI_ABORTED;
-    }
-  }
-
-  //
-  // Read Capsule File name
-  //
-  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_FILE_NAME_STRING, 0, Value);
-  if (Status == EFI_SUCCESS) {
-    //
-    // Get output file name
-    //
-    strcpy (CapInfo->CapName, Value); 
-  }
-
-  //
-  // Read the Capsule FileImage
-  //
-  for (Index = 0; Index < MAX_NUMBER_OF_FILES_IN_CAP; Index++) {
-    //
-    // Read the capsule file name
-    //
-    Status = FindToken (InfFile, FILES_SECTION_STRING, EFI_FILE_NAME_STRING, Index, Value);
-
-    if (Status == EFI_SUCCESS) {
-      //
-      // Add the file
-      //
-      strcpy (CapInfo->CapFiles[Index], Value);
-    } else {
-      break;
-    }
-  }
-  
-  if (Index == 0) {
-    printf("Cap Files are not specified.\n");
-  }
-
-  return EFI_SUCCESS;
 }

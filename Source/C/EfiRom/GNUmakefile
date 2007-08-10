@@ -3,7 +3,7 @@ MAKEROOT ?= ..
 
 APPNAME = EfiRom
 
-LIBS = -lCommon -lString
+LIBS = -lCommon
 
 OBJECTS = EfiRom.o
 

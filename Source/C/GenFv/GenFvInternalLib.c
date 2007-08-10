@@ -32,11 +32,15 @@ Abstract:
 #endif
 #include <assert.h>
 
-#include <Common/UefiBaseTypes.h>
 #include "GenFvInternalLib.h"
-#include "CommonLib.h"
-#include "EfiUtilityMsgs.h"
+#include "PeCoffLib.h"
 #include "WinNtInclude.h"
+
+EFI_STATUS
+ParseCapInf (
+  IN  MEMORY_FILE  *InfFile,
+  OUT CAP_INFO     *CapInfo
+  );
 
 EFI_STATUS
 FindApResetVectorPosition (
@@ -254,7 +258,7 @@ Returns:
     //
     Status = AsciiStringToUint64 (Value, FALSE, &Value64);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0, EFI_FV_BASE_ADDRESS_STRING, "invalid value");
+      Error (NULL, 0, 2000, "Invalid paramter", "%s = %s", EFI_FV_BASE_ADDRESS_STRING, Value);
       return EFI_ABORTED;
     }
 
@@ -271,7 +275,7 @@ Returns:
     //
     Status = AsciiStringToUint64 (Value, FALSE, &Value64);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0, EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING, "invalid value");
+      Error (NULL, 0, 2000, "Invalid paramter", "%s = %s", EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING, Value);
       return EFI_ABORTED;
     }
 
@@ -288,7 +292,7 @@ Returns:
     //
     Status = AsciiStringToUint64 (Value, FALSE, &Value64);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0, EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, "invalid value");
+      Error (NULL, 0, 2000, "Invalid paramter", "%s = %s", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, Value);
       return EFI_ABORTED;
     }
 
@@ -331,7 +335,7 @@ Returns:
       if ((strcmp (Value, TRUE_STRING) == 0) || (strcmp (Value, ONE_STRING) == 0)) {
         FvInfo->FvAttributes |= 1 << Index;
       } else if ((strcmp (Value, FALSE_STRING) != 0) && (strcmp (Value, ZERO_STRING) != 0)) {
-        Error (NULL, 0, 0, FvbAttributeName [Index], "expected %s | %s", TRUE_STRING, FALSE_STRING);
+        Error (NULL, 0, 2000, "Invalid parameter", "%s expected %s | %s", FvbAttributeName [Index], TRUE_STRING, FALSE_STRING);
         return EFI_ABORTED;
       }
     }
@@ -364,7 +368,7 @@ Returns:
       //
       Status = AsciiStringToUint64 (Value, FALSE, &Value64);
       if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 0, Value, "invalid value for %s", EFI_BLOCK_SIZE_STRING);
+        Error (NULL, 0, 2000, "Invalid parameter", "%s = %s", EFI_BLOCK_SIZE_STRING, Value);
         return EFI_ABORTED;
       }
 
@@ -376,7 +380,7 @@ Returns:
       //
       Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_NUM_BLOCKS_STRING, Index, Value);
       if (!EFI_ERROR (Status)) {
-        Error (NULL, 0, 0, "must specify both", "%s and %s", EFI_NUM_BLOCKS_STRING, EFI_BLOCK_SIZE_STRING);
+        Error (NULL, 0, 2000, "Invalid parameter", "%s and %s must specify both", EFI_NUM_BLOCKS_STRING, EFI_BLOCK_SIZE_STRING);
         return EFI_ABORTED;
       } else {
         //
@@ -397,7 +401,7 @@ Returns:
       //
       Status = AsciiStringToUint64 (Value, FALSE, &Value64);
       if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 0, Value, "invalid value specified for %s", EFI_NUM_BLOCKS_STRING);
+        Error (NULL, 0, 2000, "Invalid parameter", "%s = %s", EFI_NUM_BLOCKS_STRING, Value);
         return EFI_ABORTED;
       }
 
@@ -406,7 +410,7 @@ Returns:
   }
 
   if (Index == 0) {
-    Error (NULL, 0, 0, NULL, "at lease one block size must be specified.");
+    Error (NULL, 0, 2001, "Missing required argument", "block size");
     return EFI_ABORTED;
   }
 
@@ -560,8 +564,7 @@ Returns:
     break;
 
   default:
-    Error (NULL, 0, 0, "nvalid file attribute calculated, this is most likely a utility error", NULL);
-    return EFI_ABORTED;
+    break;
   }
 
   return EFI_SUCCESS;
@@ -788,7 +791,7 @@ Returns:
   NewFile = fopen (FvInfo->FvFiles[Index], "rb");
 
   if (NewFile == NULL) {
-    Error (NULL, 0, 0, FvInfo->FvFiles[Index], "failed to open file for reading");
+    Error (NULL, 0, 0001, "Error opening file", FvInfo->FvFiles[Index]);
     return EFI_ABORTED;
   }
 
@@ -802,7 +805,7 @@ Returns:
   //
   FileBuffer = malloc (FileSize);
   if (FileBuffer == NULL) {
-    Error (NULL, 0, 0, "memory allocation failure", NULL);
+    Error (NULL, 0, 4001, "Resouce", "memory cannot be allocated");
     return EFI_OUT_OF_RESOURCES;
   }
 
@@ -817,8 +820,8 @@ Returns:
   // Verify read successful
   //
   if (NumBytesRead != sizeof (UINT8) * FileSize) {
-    free (FileBuffer);
-    Error (NULL, 0, 0, FvInfo->FvFiles[Index], "failed to read input file contents");
+    free  (FileBuffer);
+    Error (NULL, 0, 0004, "Error reading file", FvInfo->FvFiles[Index]);
     return EFI_ABORTED;
   }
   
@@ -827,8 +830,8 @@ Returns:
   //
   Status = VerifyFfsFile (FileBuffer);
   if (EFI_ERROR (Status)) {
-    Error (NULL, 0, 0, FvInfo->FvFiles[Index], "the invalid FFS file");
     free (FileBuffer);
+    Error (NULL, 0, 3000, "Invalid", "%s is FFS file", FvInfo->FvFiles[Index]);
     return EFI_INVALID_PARAMETER;
   }
 
@@ -836,8 +839,8 @@ Returns:
   // Verify space exists to add the file
   //
   if (FileSize > (UINTN) ((UINTN) *VtfFileImage - (UINTN) FvImage->CurrentFilePointer)) {
-    Error (NULL, 0, 0, FvInfo->FvFiles[Index], "insufficient space remains to add the file");
     free (FileBuffer);
+    Error (NULL, 0, 4002, "Resource", "Fv space is full not to add %s file", FvInfo->FvFiles[Index]);
     return EFI_OUT_OF_RESOURCES;
   }
 
@@ -873,7 +876,7 @@ Returns:
       // Sanity check. The file MUST align appropriately
       //
       if (((UINTN) *VtfFileImage + sizeof (EFI_FFS_FILE_HEADER) - (UINTN) FvImage->FileImage) % (1 << CurrentFileAlignment)) {
-        Error (NULL, 0, 0, NULL, "VTF file does not align on %d-byte boundary", 1 << CurrentFileAlignment);
+        Error (NULL, 0, 3000, "Invalid", "VTF file does not align on %d-byte boundary", 1 << CurrentFileAlignment);
         free (FileBuffer);
         return EFI_ABORTED;
       }
@@ -892,7 +895,7 @@ Returns:
       //
       // Already found a VTF file.
       //
-      Error (NULL, 0, 0, "multiple VTF files are illegal in a single FV", NULL);
+      Error (NULL, 0, 3000, "Invalid", "multiple VTF files are illegal in a single FV");
       free (FileBuffer);
       return EFI_ABORTED;
     }
@@ -903,7 +906,7 @@ Returns:
   //
   Status = AddPadFile (FvImage, 1 << CurrentFileAlignment);
   if (EFI_ERROR (Status)) {
-    Error (NULL, 0, 0, NULL, "ERROR: Could not align the file data properly.");
+    Error (NULL, 0, 4002, "Resource", "Fv space is full not to add pad file for data align property");
     free (FileBuffer);
     return EFI_ABORTED;
   }
@@ -922,7 +925,7 @@ Returns:
     memcpy (FvImage->CurrentFilePointer, FileBuffer, FileSize);
     FvImage->CurrentFilePointer += FileSize;
   } else {
-    Error (NULL, 0, 0, NULL, "ERROR: The firmware volume is out of space, could not add file %s.\n", FvInfo->FvFiles[Index]);
+    Error (NULL, 0, 4002, "Resource", "Fv space is full not to add %s file", FvInfo->FvFiles[Index]);
     free (FileBuffer);
     return EFI_ABORTED;
   }
@@ -1111,7 +1114,7 @@ Returns:
   //
   Status = GetFileByType (EFI_FV_FILETYPE_SECURITY_CORE, 1, &SecCoreFile);
   if (EFI_ERROR (Status) || SecCoreFile == NULL) {
-    Error (NULL, 0, 0, "could not find the Sec core in the FV", NULL);
+    Error (NULL, 0, 3000, "Invaild", "could not find the Sec core in the FV");
     return EFI_ABORTED;
   }
   //
@@ -1123,7 +1126,7 @@ Returns:
   }
 
   if (EFI_ERROR (Status)) {
-    Error (NULL, 0, 0, "could not find PE32 section in SEC core file", NULL);
+    Error (NULL, 0, 3000, "Invaild", "could not find PE32 section in SEC core file");
     return EFI_ABORTED;
   }
 
@@ -1135,7 +1138,7 @@ Returns:
             );
 
   if (EFI_ERROR (Status)) {
-    Error (NULL, 0, 0, "could not get PE32 entry point for SEC core", NULL);
+    Error (NULL, 0, 3000, "Invaild", "could not get PE32 entry point for SEC core");
     return EFI_ABORTED;
   }
   //
@@ -1150,7 +1153,7 @@ Returns:
   //
   Status = GetFileByType (EFI_FV_FILETYPE_PEI_CORE, 1, &PeiCoreFile);
   if (EFI_ERROR (Status) || PeiCoreFile == NULL) {
-    Error (NULL, 0, 0, "could not find the PEI core in the FV", NULL);
+    Error (NULL, 0, 3000, "Invaild", "could not find the PEI core in the FV");
     return EFI_ABORTED;
   }
   //
@@ -1162,7 +1165,7 @@ Returns:
   }
 
   if (EFI_ERROR (Status)) {
-    Error (NULL, 0, 0, "could not find PE32 or TE section in PEI core file", NULL);
+    Error (NULL, 0, 3000, "Invaild", "could not find PE32 or TE section in PEI core file");
     return EFI_ABORTED;
   }
 
@@ -1174,7 +1177,7 @@ Returns:
             );
 
   if (EFI_ERROR (Status)) {
-    Error (NULL, 0, 0, "could not get PE32 entry point for PEI core", NULL);
+    Error (NULL, 0, 3000, "Invaild", "could not get PE32 entry point for PEI core");
     return EFI_ABORTED;
   }
   //
@@ -1197,8 +1200,8 @@ Returns:
     // Check if address is aligned on a 16 byte boundary
     //
     if (PeiCorePhysicalAddress & 0xF) {
-      Error (NULL, 0, 0, NULL,
-        "ERROR: PEI_CORE entry point is not aligned on a 16 byte boundary, address specified is %Xh.",
+      Error (NULL, 0, 3000, "Invaild",
+        "PEI_CORE entry point is not aligned on a 16 byte boundary, address specified is %Xh.",
         PeiCorePhysicalAddress
         );
       return EFI_ABORTED;
@@ -1227,8 +1230,8 @@ Returns:
     // Check if address is aligned on a 16 byte boundary
     //
     if (SecCorePhysicalAddress & 0xF) {
-      Error (NULL, 0, 0, NULL, 
-        "ERROR: SALE_ENTRY entry point is not aligned on a 16 byte boundary, address specified is %Xh.",
+      Error (NULL, 0, 3000, "Invaild",
+        "SALE_ENTRY entry point is not aligned on a 16 byte boundary, address specified is %Xh.",
         SecCorePhysicalAddress
         );
       return EFI_ABORTED;
@@ -1257,7 +1260,7 @@ Returns:
     
     Ia32SecEntryOffset   = SecCorePhysicalAddress - (FV_IMAGES_TOP_ADDRESS - IA32_SEC_CORE_ENTRY_OFFSET + 2);
     if (Ia32SecEntryOffset <= -65536) {
-      Error (NULL, 0, 0, NULL, "The SEC EXE file size is too big");
+      Error (NULL, 0, 3000, "Invaild", "The SEC EXE file size is too big");
       return STATUS_ERROR;
     }
     
@@ -1287,7 +1290,7 @@ Returns:
       //
       Status = FindApResetVectorPosition (FvImage, &BytePointer);
       if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 0, NULL, "Can't find the appropriate space in FvImage to add Ap reset vector!");
+        Error (NULL, 0, 3000, "Invaild", "Can't find the appropriate space in FvImage to add Ap reset vector!");
         return EFI_ABORTED;
       }
     }
@@ -1323,7 +1326,7 @@ Returns:
     Ia32ResetAddressPtr   = (UINT32 *) ((UINTN) FvImage->Eof - 8);
     *Ia32ResetAddressPtr  = IpiVector;
   } else {
-    Error (NULL, 0, 0, "invalid machine type in PEI core", "machine type=0x%X", (UINT32) MachineType);
+    Error (NULL, 0, 3000, "Invaild", "machine type=0x%X in PEI core", (UINT32) MachineType);
     return EFI_ABORTED;
   }
 
@@ -1412,7 +1415,7 @@ Returns:
     // Verify DOS header is expected
     //
     if (DosHeader->e_magic != EFI_IMAGE_DOS_SIGNATURE) {
-      Error (NULL, 0, 0, NULL, "ERROR: Unknown magic number in the DOS header, 0x%04X.", DosHeader->e_magic);
+      Error (NULL, 0, 3000, "Invaild", "Unknown magic number in the DOS header, 0x%04X.", DosHeader->e_magic);
       return EFI_UNSUPPORTED;
     }
     //
@@ -1424,7 +1427,7 @@ Returns:
     // Verify NT header is expected
     //
     if (NtHeader->Signature != EFI_IMAGE_NT_SIGNATURE) {
-      Error (NULL, 0, 0, NULL, "ERROR: Unrecognized image signature 0x%08X.", NtHeader->Signature);
+      Error (NULL, 0, 3000, "Invaild", "Unrecognized image signature 0x%08X.", NtHeader->Signature);
       return EFI_UNSUPPORTED;
     }
     //
@@ -1439,7 +1442,7 @@ Returns:
   // Verify machine type is supported
   //
   if (*MachineType != EFI_IMAGE_MACHINE_IA32 && *MachineType != EFI_IMAGE_MACHINE_IA64 && *MachineType != EFI_IMAGE_MACHINE_X64 && *MachineType != EFI_IMAGE_MACHINE_EBC) {
-    Error (NULL, 0, 0, NULL, "ERROR: Unrecognized machine type in the PE32 file.");
+    Error (NULL, 0, 3000, "Invaild", "Unrecognized machine type in the PE32 file.");
     return EFI_UNSUPPORTED;
   }
 
@@ -1453,7 +1456,9 @@ GenerateFvImage (
   IN CHAR8                *InfFileImage,
   IN UINTN                InfFileSize,
   IN CHAR8                *FvFileName,
-  IN EFI_PHYSICAL_ADDRESS XipBaseAddress
+  IN EFI_PHYSICAL_ADDRESS XipBaseAddress,
+  IN EFI_PHYSICAL_ADDRESS BtBaseAddress,
+  IN EFI_PHYSICAL_ADDRESS RtBaseAddress
   )
 /*++
 
@@ -1467,6 +1472,8 @@ Arguments:
   InfFileSize    Size of the contents of the InfFileImage buffer.
   FvFileName     Requested name for the FV file.
   XipBaseAddress BaseAddress is to be rebased.
+  BtBaseAddress  BaseAddress is to set the prefer loaded image start address for boot drivers.
+  RtBaseAddress  BaseAddress is to set the prefer loaded image start address for runtime drivers.
 
 Returns:
 
@@ -1513,7 +1520,7 @@ Returns:
   //
   Status = ParseFvInf (&InfMemoryFile, &FvInfo);
   if (EFI_ERROR (Status)) {
-    Error (NULL, 0, 0, NULL, "ERROR: Could not parse the input INF file.");
+    Error (NULL, 0, 0003, "Error parsing file", "the input INF file.");
     return Status;
   }
 
@@ -1525,7 +1532,7 @@ Returns:
   }
 
   if (FvFileName == NULL) {
-    Error (NULL, 0, 0, NULL, "Output file name is not specified.");
+    Error (NULL, 0, 1001, "Missing option", "Output file name");
     return EFI_ABORTED;
   }
   
@@ -1536,7 +1543,7 @@ Returns:
   strcat (FvMapName, ".map");
   FvMapFile = fopen (FvMapName, "w");
   if (FvMapFile == NULL) {
-    Error (NULL, 0, 0, FvMapName, "Can't open to be written.");
+    Error (NULL, 0, 0001, "Error opening file", FvMapName);
     return EFI_ABORTED;
   }
   
@@ -1545,6 +1552,12 @@ Returns:
   //
   if (XipBaseAddress != -1) {
     FvInfo.BaseAddress = XipBaseAddress;
+  }
+  if (BtBaseAddress != 0) {
+    FvInfo.BootBaseAddress = BtBaseAddress;
+  }
+  if (RtBaseAddress != 0) {
+    FvInfo.RuntimeBaseAddress = RtBaseAddress;
   }
 
   //
@@ -1659,7 +1672,7 @@ Returns:
     // Exit if error detected while adding the file
     //
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0, NULL, "ERROR: Could not add file %s.", FvInfo.FvFiles[Index]);
+      Error (NULL, 0, 4002, "Resource", "Fv space is full not to add file %s", FvInfo.FvFiles[Index]);
       goto Finish;
     }
   }
@@ -1674,7 +1687,7 @@ Returns:
     //
     Status = PadFvImage (&FvImageMemoryFile, VtfFileImage);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0, NULL, "ERROR: Could not create the pad file between the last file and the VTF file.");
+      Error (NULL, 0, 4002, "Resource", "Fv space is full not to add pad file between the last file and the VTF file.");
       goto Finish;
     }
     //
@@ -1687,7 +1700,7 @@ Returns:
     if ((FvInfo.BaseAddress + FvInfo.Size) == FV_IMAGES_TOP_ADDRESS) {       
       Status = UpdateResetVector (&FvImageMemoryFile, &FvInfo, VtfFileImage);
       if (EFI_ERROR(Status)) {                                               
-        Error (NULL, 0, 0, NULL, "ERROR: Could not update the reset vector.");
+        Error (NULL, 0, 3000, "Invalid", "Could not update the reset vector.");
         goto Finish;                                              
       }
     }
@@ -1711,13 +1724,13 @@ WriteFile:
   //
   FvFile = fopen (FvFileName, "wb");
   if (FvFile == NULL) {
-    Error (NULL, 0, 0, FvFileName, "could not open output file");
+    Error (NULL, 0, 0001, "Error opening file", FvFileName);
     Status = EFI_ABORTED;
     goto Finish;
   }
 
   if (fwrite (FvImage, 1, FvImageSize, FvFile) != FvImageSize) {
-    Error (NULL, 0, 0, FvFileName, "failed to write to output file");
+    Error (NULL, 0, 0002, "Error writing file", FvFileName);
     Status = EFI_ABORTED;
     goto Finish;
   }
@@ -1856,7 +1869,7 @@ Returns:
     fpin = NULL;
     fpin = fopen (FvInfoPtr->FvFiles[Index], "rb");
     if (fpin == NULL) {
-      Error (NULL, 0, 0, NULL, "%s could not open for reading", FvInfoPtr->FvFiles[Index]);
+      Error (NULL, 0, 0001, "Error opening file", FvInfoPtr->FvFiles[Index]);
       return EFI_ABORTED;
     }
     //
@@ -2079,7 +2092,7 @@ Returns:
     ImageContext.ImageRead  = (PE_COFF_LOADER_READ_FILE) FfsRebaseImageRead;
     Status                  = PeCoffLoaderGetImageInfo (&ImageContext);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0, "GetImageInfo() call failed on rebase", FileName);
+      Error (NULL, 0, 3000, "Invalid", "GetImageInfo() call failed on rebase %s", FileName);
       return Status;
     }
 
@@ -2179,7 +2192,7 @@ Returns:
     //
     MemoryImagePointer = (UINT8 *) malloc ((UINTN) ImageContext.ImageSize + ImageContext.SectionAlignment);
     if (MemoryImagePointer == NULL) {
-      Error (NULL, 0, 0, "Can't allocate enough memory on rebase", FileName);
+      Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated when rebase %s", FileName);
       return EFI_OUT_OF_RESOURCES;
     }
     memset ((VOID *) MemoryImagePointer, 0, (UINTN) ImageContext.ImageSize + ImageContext.SectionAlignment);
@@ -2187,7 +2200,7 @@ Returns:
     
     Status =  PeCoffLoaderLoadImage (&ImageContext);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0, "LocateImage() call failed on rebase", FileName);
+      Error (NULL, 0, 3000, "Invalid", "LocateImage() call failed on rebase %s", FileName);
       free ((VOID *) MemoryImagePointer);
       return Status;
     }
@@ -2195,7 +2208,7 @@ Returns:
     ImageContext.DestinationAddress = NewPe32BaseAddress;
     Status                          = PeCoffLoaderRelocateImage (&ImageContext);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0, "RelocateImage() call failed on rebase", FileName);
+      Error (NULL, 0, 3000, "Invalid", "RelocateImage() call failed on rebase %s", FileName);
       free ((VOID *) MemoryImagePointer);
       return Status;
     }
@@ -2211,12 +2224,7 @@ Returns:
       Optional64 = (EFI_IMAGE_OPTIONAL_HEADER64 *) &(PeHdr->OptionalHeader);
       Optional64->ImageBase     = NewPe32BaseAddress;
     } else {
-      Error (
-        NULL,
-        0,
-        0,
-        "unknown machine type in PE32 image",
-        "machine type=0x%X, file=%s",
+      Error (NULL, 0, 3000, "Invalid", "unknown machine type %X in PE32 image %s", 
         (UINT32) PeHdr->FileHeader.Machine,
         FileName
         );
@@ -2310,7 +2318,7 @@ Returns:
     Status                  = PeCoffLoaderGetImageInfo (&ImageContext);
 
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0, "GetImageInfo() call failed on rebase of TE image", FileName);
+      Error (NULL, 0, 3000, "Invalid", "GetImageInfo() call failed on rebase of TE image %s", FileName);
       return Status;
     }
     //
@@ -2325,7 +2333,7 @@ Returns:
                                       - TEImageHeader->StrippedSize - (UINTN) FfsFile;
     Status                          = PeCoffLoaderRelocateImage (&ImageContext);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0, "RelocateImage() call failed on rebase of TE image", FileName);
+      Error (NULL, 0, 3000, "Invalid", "RelocateImage() call failed on rebase of TE image %s", FileName);
       return Status;
     }
 
@@ -2570,4 +2578,280 @@ Returns:
   
   return EFI_SUCCESS;
 }
+
+EFI_STATUS
+ParseCapInf (
+  IN  MEMORY_FILE  *InfFile,
+  OUT CAP_INFO     *CapInfo
+  )
+/*++
+
+Routine Description:
+
+  This function parses a Cap.INF file and copies info into a CAP_INFO structure.
+
+Arguments:
+
+  InfFile        Memory file image.
+  CapInfo        Information read from INF file.
+
+Returns:
+
+  EFI_SUCCESS       INF file information successfully retrieved.
+  EFI_ABORTED       INF file has an invalid format.
+  EFI_NOT_FOUND     A required string was not found in the INF file.
+--*/
+{
+  CHAR8       Value[_MAX_PATH];
+  UINT64      Value64;
+  UINTN       Index;
+  EFI_STATUS  Status;
+
+  //
+  // Initialize Cap info
+  //
+  memset (CapInfo, 0, sizeof (CAP_INFO));
+
+  //
+  // Read the Capsule Guid
+  //
+  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_CAPSULE_GUID_STRING, 0, Value);
+  if (Status == EFI_SUCCESS) {
+    //
+    // Get the Capsule Guid
+    //
+    Status = StringToGuid (Value, &CapInfo->CapGuid);
+    if (EFI_ERROR (Status)) {
+      Error (NULL, 0, 2000, "Invalid paramter", "%s = %s", EFI_CAPSULE_GUID_STRING, Value);
+      return EFI_ABORTED;
+    }
+  } else {
+    Error (NULL, 0, 2001, "Missing required argument", EFI_CAPSULE_GUID_STRING);
+    return EFI_ABORTED;
+  }
+
+  //
+  // Read the Capsule Header Size
+  //
+  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_CAPSULE_HEADER_SIZE_STRING, 0, Value);
+  if (Status == EFI_SUCCESS) {
+    Status = AsciiStringToUint64 (Value, FALSE, &Value64);
+    if (EFI_ERROR (Status)) {
+      Error (NULL, 0, 2000, "Invalid paramter", "%s = %s", EFI_CAPSULE_HEADER_SIZE_STRING, Value);
+      return EFI_ABORTED;
+    }
+    CapInfo->HeaderSize = (UINT32) Value64;
+  }
+
+  //
+  // Read the Capsule Flag
+  //
+  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_CAPSULE_FLAGS_STRING, 0, Value);
+  if (Status == EFI_SUCCESS) {
+    if (stricmp (Value, "PersistAcrossReset") == 0) {
+      CapInfo->Flags = CAPSULE_FLAGS_PERSIST_ACROSS_RESET; 
+    } else if (stricmp (Value, "PopulateSystemTable") == 0) {
+      CapInfo->Flags = CAPSULE_FLAGS_PERSIST_ACROSS_RESET | CAPSULE_FLAGS_POPULATE_SYSTEM_TABLE;
+    } else {
+      Error (NULL, 0, 2000, "Invalid paramter", "invalid Flag setting for %s", EFI_CAPSULE_FLAGS_STRING);
+      return EFI_ABORTED;
+    }
+  }
   
+  //
+  // Read the Capsule Version
+  //
+  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_CAPSULE_VERSION_STRING, 0, Value);
+  if (Status == EFI_SUCCESS) {
+    if (stricmp (Value, "UEFI") == 0) {
+      CapInfo->Version = 0x20000;  
+    } else if (stricmp (Value, "FRAMEWORK") == 0) {
+      CapInfo->Version = 0x10010;
+      Error (NULL, 0, 2000, "Invalid paramter", "%s is not supported Version for %s", Value, EFI_CAPSULE_VERSION_STRING);
+      return EFI_ABORTED;
+    } else {
+      Error (NULL, 0, 2000, "Invalid paramter", "%s is invalid Version setting for %s", Value, EFI_CAPSULE_VERSION_STRING);
+      return EFI_ABORTED;
+    }
+  }
+
+  //
+  // Read Capsule File name
+  //
+  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_FILE_NAME_STRING, 0, Value);
+  if (Status == EFI_SUCCESS) {
+    //
+    // Get output file name
+    //
+    strcpy (CapInfo->CapName, Value); 
+  }
+
+  //
+  // Read the Capsule FileImage
+  //
+  for (Index = 0; Index < MAX_NUMBER_OF_FILES_IN_CAP; Index++) {
+    //
+    // Read the capsule file name
+    //
+    Status = FindToken (InfFile, FILES_SECTION_STRING, EFI_FILE_NAME_STRING, Index, Value);
+
+    if (Status == EFI_SUCCESS) {
+      //
+      // Add the file
+      //
+      strcpy (CapInfo->CapFiles[Index], Value);
+    } else {
+      break;
+    }
+  }
+  
+  if (Index == 0 && VerboseMode) {
+    fprintf(stdout, "Cap Files are not specified.\n");
+  }
+
+  return EFI_SUCCESS;
+}
+
+EFI_STATUS
+GenerateCapImage (
+  IN CHAR8                *InfFileImage,
+  IN UINTN                InfFileSize,
+  IN CHAR8                *CapFileName
+  )
+/*++
+
+Routine Description:
+
+  This is the main function which will be called from application to create UEFI Capsule image.
+
+Arguments:
+
+  InfFileImage   Buffer containing the INF file contents.
+  InfFileSize    Size of the contents of the InfFileImage buffer.
+  CapFileName    Requested name for the Cap file.
+
+Returns:
+
+  EFI_SUCCESS             Function completed successfully.
+  EFI_OUT_OF_RESOURCES    Could not allocate required resources.
+  EFI_ABORTED             Error encountered.
+  EFI_INVALID_PARAMETER   A required parameter was NULL.
+
+--*/
+{
+  UINT32                CapSize;
+  UINT8                 *CapBuffer;
+  EFI_CAPSULE_HEADER    *CapsuleHeader;
+  MEMORY_FILE           InfMemoryFile;
+  UINT32                FileSize;
+  UINT32                Index;
+  FILE                  *fpin, *fpout;
+  EFI_STATUS            Status;
+  CAP_INFO              CapInfo;
+
+  //
+  // Initialize file structures
+  //
+  InfMemoryFile.FileImage           = InfFileImage;
+  InfMemoryFile.CurrentFilePointer  = InfFileImage;
+  InfMemoryFile.Eof                 = InfFileImage + InfFileSize;
+
+  //
+  // Parse the Cap inf file for header information
+  //
+  Status = ParseCapInf (&InfMemoryFile, &CapInfo);
+  if (Status != EFI_SUCCESS) {
+    return Status;
+  }
+  
+  if (CapInfo.HeaderSize == 0) {
+    CapInfo.HeaderSize = sizeof (EFI_CAPSULE_HEADER);
+  }
+
+  if (CapInfo.HeaderSize < sizeof (EFI_CAPSULE_HEADER)) {
+    Error (NULL, 0, 2000, "Invalid paramter", "The specified HeaderSize can't be less than the size of EFI_CAPSULE_HEADER.");
+    return EFI_INVALID_PARAMETER;
+  }
+  
+  if (CapFileName == NULL && CapInfo.CapName[0] != '\0') {
+    CapFileName = CapInfo.CapName;
+  }
+  
+  if (CapFileName == NULL) {
+    Error (NULL, 0, 2001, "Missing required argument", "Capsule file name");
+    return EFI_INVALID_PARAMETER;
+  }
+      
+  //
+  // Calculate the size of capsule image.
+  //
+  Index    = 0;
+  FileSize = 0;
+  CapSize  = sizeof (EFI_CAPSULE_HEADER);
+  while (CapInfo.CapFiles [Index][0] != '\0') {
+    fpin = fopen (CapInfo.CapFiles[Index], "rb");
+    if (fpin == NULL) {
+      Error (NULL, 0, 0001, "Error opening file", CapInfo.CapFiles[Index]);
+      return EFI_ABORTED;
+    }
+    FileSize  = _filelength (fileno (fpin));
+    CapSize  += FileSize;
+    fclose (fpin);
+    Index ++;
+  }
+
+  //
+  // Allocate buffer for capsule image.
+  //
+  CapBuffer = (UINT8 *) malloc (CapSize);
+  if (CapBuffer == NULL) {
+    Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated for capsule");
+    return EFI_OUT_OF_RESOURCES;
+  }
+
+  //
+  // Initialize the capsule header to zero
+  //
+  memset (CapBuffer, 0, sizeof (EFI_CAPSULE_HEADER));
+  
+  //
+  // create capsule header and get capsule body
+  //
+  CapsuleHeader = (EFI_CAPSULE_HEADER *) CapBuffer;
+  memcpy (&CapsuleHeader->CapsuleGuid, &CapInfo.CapGuid, sizeof (EFI_GUID));
+  CapsuleHeader->HeaderSize       = CapInfo.HeaderSize;
+  CapsuleHeader->Flags            = CapInfo.Flags;
+  CapsuleHeader->CapsuleImageSize = CapSize;
+
+  Index    = 0;
+  FileSize = 0;
+  CapSize  = CapsuleHeader->HeaderSize;
+  while (CapInfo.CapFiles [Index][0] != '\0') {
+    fpin = fopen (CapInfo.CapFiles[Index], "rb");
+    if (fpin == NULL) {
+      Error (NULL, 0, 0001, "Error opening file", CapInfo.CapFiles[Index]);
+      free (CapBuffer);
+      return EFI_ABORTED;
+    }
+    FileSize = _filelength (fileno (fpin));
+    fread (CapBuffer + CapSize, 1, FileSize, fpin);
+    fclose (fpin);
+    Index ++;
+    CapSize += FileSize;
+  }
+  
+  //
+  // write capsule data into the output file
+  //
+  fpout = fopen (CapFileName, "wb");
+  if (fpout == NULL) {
+    Error (NULL, 0, 0001, "Error opening file", CapFileName);
+    free (CapBuffer);
+    return EFI_ABORTED;
+  }
+
+  fwrite (CapBuffer, 1, CapSize, fpout);
+  fclose (fpout);
+
+  return EFI_SUCCESS;
+}

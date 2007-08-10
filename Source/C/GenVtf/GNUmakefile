@@ -3,7 +3,7 @@ MAKEROOT ?= ..
 
 APPNAME = GenVtf
 
-LIBS = -lCommon -lString
+LIBS = -lCommon
 
 OBJECTS = GenVtf.o
 

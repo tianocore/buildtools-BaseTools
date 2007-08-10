@@ -23,11 +23,6 @@ Abstract:
 #define _EFI_COMMON_LIB_H
 
 #include <Common/UefiBaseTypes.h>
-
-#ifndef _MAX_PATH
-#define _MAX_PATH 500
-#endif
-
 #define PRINTED_GUID_BUFFER_SIZE  37  // including null-termination
 //
 // Function declarations

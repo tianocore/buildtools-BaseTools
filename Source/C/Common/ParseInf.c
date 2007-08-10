@@ -25,10 +25,6 @@ Abstract:
 #include <stdlib.h>
 #include "ParseInf.h"
 
-#ifndef _MAX_PATH
-#define _MAX_PATH 500
-#endif
-
 CHAR8 *
 ReadLine (
   IN MEMORY_FILE    *InputFile,

@@ -34,7 +34,8 @@ Abstract:
 
 typedef int STATUS;
 
-#define MAX_LINE_LEN  0x200
+#define MAX_LINE_LEN               0x200
+#define MAXIMUM_INPUT_FILE_NUM     10
 
 #ifdef __cplusplus
 extern "C" {

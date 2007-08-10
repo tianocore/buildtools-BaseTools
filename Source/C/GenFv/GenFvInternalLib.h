@@ -38,11 +38,9 @@ Abstract:
 
 #include "CommonLib.h"
 #include "ParseInf.h"
-#include "PeCoffLib.h"
+#include "EfiUtilityMsgs.h"
 
-//
-// Private data declarations
-//
+extern BOOLEAN VerboseMode;
 
 //
 // Different file separater for Linux and Windows
@@ -54,11 +52,6 @@ Abstract:
 #define FILE_SEP_CHAR '\\'
 #define FILE_SEP_STRING "\\"
 #endif
-
-//
-// the maximum number of char in one line 
-//
-#define MAX_LINE_LEN                    0x200
 
 //
 // The maximum number of block map entries supported by the library
@@ -320,11 +313,20 @@ GetPe32Info (
 // Exported function prototypes
 //
 EFI_STATUS
+GenerateCapImage (
+  IN CHAR8                *InfFileImage,
+  IN UINTN                InfFileSize,
+  IN CHAR8                *CapFileName
+  );
+
+EFI_STATUS
 GenerateFvImage (
   IN CHAR8                *InfFileImage,
   IN UINTN                InfFileSize,
   IN CHAR8                *FvFileName,  
-  IN EFI_PHYSICAL_ADDRESS XipBaseAddress
+  IN EFI_PHYSICAL_ADDRESS XipBaseAddress,
+  IN EFI_PHYSICAL_ADDRESS BtBaseAddress,
+  IN EFI_PHYSICAL_ADDRESS RtBaseAddress
   )
 /*++
 
@@ -338,6 +340,8 @@ Arguments:
   InfFileSize    Size of the contents of the InfFileImage buffer.
   FvFileName     Requested name for the FV file.
   XipBaseAddress BaseAddress is to be rebased.
+  BtBaseAddress  BaseAddress is to set the prefer loaded image start address for boot drivers.
+  RtBaseAddress  BaseAddress is to set the prefer loaded image start address for runtime drivers.
     
 Returns:
  

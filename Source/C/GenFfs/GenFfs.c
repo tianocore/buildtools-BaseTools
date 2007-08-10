@@ -31,10 +31,8 @@ Abstract:
 #include "EfiUtilityMsgs.h"
 
 #define UTILITY_NAME            "GenFfs"
-#define UTILITY_MAJOR_VERSION   1
-#define UTILITY_MINOR_VERSION   0
-
-#define MAXIMUM_INPUT_FILE_NUM 10
+#define UTILITY_MAJOR_VERSION   0
+#define UTILITY_MINOR_VERSION   1
 
 static CHAR8 *mFfsFileType[] = {
   NULL,                                   // 0x00
@@ -64,9 +62,11 @@ static UINT32 mFfsValidAlign[] = {0, 8, 16, 128, 512, 1024, 4096, 32768, 65536};
 
 static EFI_GUID mZeroGuid = {0};
 
+static BOOLEAN VerboseMode = FALSE;
+
 static
 void 
-Version(
+Version (
   void
   )
 /*++
@@ -85,8 +85,7 @@ Returns:
   
 --*/ 
 {
-  printf ("%s v%d.%d - EDKII utility to generate a Firmware File System files.\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
-  printf ("Copyright (c) 2007 Intel Corporation. All rights reserved.\n");
+  fprintf (stdout, "%s Version %d.%d\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
 }
 
 static
@@ -110,27 +109,48 @@ Returns:
 
 --*/
 {
-  Version();
+  //
+  // Summary usage
+  //
+  fprintf (stdout, "Usage: %s [options]\n\n", UTILITY_NAME);
   
-  printf ("\nUsage: " UTILITY_NAME "\n\
-        -o, --outputfile [FileName]\n\
-        -t, --filetype <EFI_FV_FILETYPE_RAW|\n\
-                        EFI_FV_FILETYPE_FREEFORM|\n\
-                        EFI_FV_FILETYPE_SECURITY_CORE|\n\
-                        EFI_FV_FILETYPE_PEI_CORE|\n\
-                        EFI_FV_FILETYPE_DXE_CORE|\n\
-                        EFI_FV_FILETYPE_PEIM|\n\
-                        EFI_FV_FILETYPE_DRIVER|\n\
-                        EFI_FV_FILETYPE_COMBINED_PEIM_DRIVER|\n\
-                        EFI_FV_FILETYPE_APPLICATION|\n\
-                        EFI_FV_FILETYPE_FIRMWARE_VOLUME_IMAGE>|\n\
-        -g, --fileguid [GuidValue (########-####-####-####-############)]\n\
-        -x, --fixed\n\
-        -s, --checksum\n\
-        -a, --align <8,16,128,512,1K,4K,32K,64K>\n\
-        -i, --sectionfile [FileName] [-n, --sectionalign <1~64K>]\n\
-        -h, --help\n\
-        -V, --version\n");
+  //
+  // Copyright declaration
+  // 
+  fprintf (stdout, "Copyright (c) 2007, Intel Corporation. All rights reserved.\n\n");
+
+  //
+  // Details Option
+  //
+  fprintf (stdout, "Options:\n");
+  fprintf (stdout, "  -o FileName, --outputfile FileName\n\
+                        File is FFS file to be created.\n");
+  fprintf (stdout, "  -t Type, --filetype Type\n\
+                        Type is one FV file type defined in PI spec, which is\n\
+                        EFI_FV_FILETYPE_RAW, EFI_FV_FILETYPE_FREEFORM,\n\
+                        EFI_FV_FILETYPE_SECURITY_CORE, EFI_FV_FILETYPE_PEIM,\n\
+                        EFI_FV_FILETYPE_PEI_CORE, EFI_FV_FILETYPE_DXE_CORE,\n\
+                        EFI_FV_FILETYPE_DRIVER, EFI_FV_FILETYPE_APPLICATION,\n\
+                        EFI_FV_FILETYPE_COMBINED_PEIM_DRIVER,\n\
+                        EFI_FV_FILETYPE_FIRMWARE_VOLUME_IMAGE.\n");
+  fprintf (stdout, "  -g FileGuid, --fileguid FileGuid\n\
+                        FileGuid is one module guid.\n\
+                        Its format is 00000000-0000-0000-0000-000000000000\n");
+  fprintf (stdout, "  -x, --fixed           Indicates that the file may not be moved\n\
+                        from its present location.\n");
+  fprintf (stdout, "  -s, --checksum        Indicates to calculate file checksum.\n");
+  fprintf (stdout, "  -a FileAlign, --align FileAlign\n\
+                        FileAlign points to file alignment, which only support\n\
+                        the following align: 8,16,128,512,1K,4K,32K,64K\n");
+  fprintf (stdout, "  -i SectionFile, --sectionfile SectionFile\n\
+                        Section file will be contained in this FFS file.\n");
+  fprintf (stdout, "  -n SectionAlign, --sectionalign SectionAlign\n\
+                        SectionAlign points to section alignment, which support\n\
+                        the alignment scope 1~64K. It is specified together\n\
+                        with sectionfile to point its alignment in FFS file.\n");
+  fprintf (stdout, "  -v, --verbose         Turn on verbose output with informational messages.\n");
+  fprintf (stdout, "  --version             Show program's version number and exit.\n");
+  fprintf (stdout, "  -h, --help            Show this help message and exit.\n");
 }
 
 static
@@ -286,7 +306,7 @@ Returns:
     //
     InFile = fopen (InputFileName[Index], "rb");
     if (InFile == NULL) {
-      Error (NULL, 0, 0, InputFileName[Index], "failed to open input file");
+      Error (NULL, 0, 0001, "Error opening file", InputFileName[Index]);
       return EFI_ABORTED;
     }
 
@@ -299,7 +319,7 @@ Returns:
     //
     if ((FileSize > 0) && (FileBuffer != NULL) && ((Size + FileSize) <= *BufferLength)) {
       if (fread (FileBuffer + Size, (size_t) FileSize, 1, InFile) != 1) {
-        Error (NULL, 0, 0, InputFileName[Index], "failed to read contents of input file");
+        Error (NULL, 0, 0004, "Error reading file", InputFileName[Index]);
         fclose (InFile);
         return EFI_ABORTED;
       }
@@ -356,8 +376,6 @@ Returns:
   FILE                    *FfsFile;
   UINT32                  Index;
 
-  fprintf (stdout, "GenFfs tool start.\n");  
-
   Index          = 0;
   FfsAttrib      = 0;  
   FfsAlign       = 0;
@@ -375,6 +393,7 @@ Returns:
   SetUtilityName (UTILITY_NAME);
 
   if (argc == 1) {
+    Error (NULL, 0, 1001, "Missing options", "Input file");
     Usage ();
     return STATUS_ERROR;
   }
@@ -390,14 +409,18 @@ Returns:
     return STATUS_SUCCESS;    
   }
 
-  if ((stricmp (argv[0], "-v") == 0) || (stricmp (argv[0], "--version") == 0)) {
-    Version();
+  if (stricmp (argv[0], "--version") == 0) {
+    Version ();
     return STATUS_SUCCESS;    
   }
 
   while (argc > 0) {
     if ((stricmp (argv[0], "-t") == 0) || (stricmp (argv[0], "--filetype") == 0)) {
       FfsFiletype = StringToType (argv[1]);
+      if (FfsFiletype == EFI_FV_FILETYPE_ALL) {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        goto Finish;
+      }
       argc -= 2;
       argv += 2;
       continue; 
@@ -413,7 +436,7 @@ Returns:
     if ((stricmp (argv[0], "-g") == 0) || (stricmp (argv[0], "--fileguid") == 0)) {
       Status = StringToGuid (argv[1], &FileGuid);
       if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 0, NULL, "ERROR: %s is not correct guid format", argv[1]);
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
         goto Finish;
       }
       argc -= 2;
@@ -442,7 +465,7 @@ Returns:
         }
       }
       if (Index == sizeof (mFfsValidAlignName) / sizeof (CHAR8 *)) {
-        Error (NULL, 0, 0, NULL, "ERROR: %s is one invalid ffs file alignment", argv[1]);
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
         goto Finish;
       }
       FfsAlign = Index;
@@ -462,14 +485,14 @@ Returns:
       if ((InputFileNum == 0) && (InputFileName == NULL)) {
         InputFileName = (CHAR8 **) malloc (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *));
         if (InputFileName == NULL) {
-          Error (__FILE__, __LINE__, 0, "application error", "failed to allocate memory");
+          Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
           return EFI_OUT_OF_RESOURCES;
         }
         memset (InputFileName, 0, (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *)));
         
         InputFileAlign = (UINT32 *) malloc (MAXIMUM_INPUT_FILE_NUM * sizeof (UINT32));
         if (InputFileAlign == NULL) {
-          Error (__FILE__, __LINE__, 0, "application error", "failed to allocate memory");
+          Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
           free (InputFileName);
           return EFI_OUT_OF_RESOURCES;
         }
@@ -484,7 +507,7 @@ Returns:
                                     );
   
         if (InputFileName == NULL) {
-          Error (__FILE__, __LINE__, 0, "application error", "failed to allocate memory");
+          Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
           free (InputFileAlign);
           return EFI_OUT_OF_RESOURCES;
         }
@@ -496,7 +519,7 @@ Returns:
                                     );
   
         if (InputFileAlign == NULL) {
-          Error (__FILE__, __LINE__, 0, "application error", "failed to allocate memory");
+          Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
           free (InputFileName);
           return EFI_OUT_OF_RESOURCES;
         }
@@ -515,7 +538,7 @@ Returns:
       if ((stricmp (argv[0], "-n") == 0) || (stricmp (argv[0], "--sectionalign") == 0)) {
         Status = StringtoAlignment (argv[1], &(InputFileAlign[InputFileNum]));
         if (EFI_ERROR (Status)) {
-          Error (NULL, 0, 0, NULL, "ERROR: %s is invalid alignment", argv[1]);
+          Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
           goto Finish;
         }
         argc -= 2;
@@ -526,34 +549,45 @@ Returns:
     }
 
     if ((stricmp (argv[0], "-n") == 0) || (stricmp (argv[0], "--sectionalign") == 0)) {
-      Error (NULL, 0, 0, NULL, "ERROR: SectionAlign much be specified with section file");
+      Error (NULL, 0, 1000, "Unknown option", "SectionAlign much be specified with section file");
       goto Finish;
     }
+
+    if ((stricmp (argv[0], "-v") == 0) || (stricmp (argv[0], "--verbose") == 0)) {
+      VerboseMode = TRUE;
+      argc --;
+      argv ++;
+      continue;
+    }
     
-    Error (NULL, 0, 0, NULL, "%s is invaild paramter!", argv[0]);
+    Error (NULL, 0, 1000, "Unknown option", argv[0]);
     goto Finish;
   }
-  
+
+  if (VerboseMode) {
+    fprintf (stdout, "%s tool start.\n", UTILITY_NAME);
+  }
+   
   //
   // Check the complete input paramters.
   //
   if (FfsFiletype == EFI_FV_FILETYPE_ALL) {
-    Error (NULL, 0, 0, NULL, "ERROR: File Type is not specified or File Type is not one valid type");
+    Error (NULL, 0, 1001, "Missing option", "filetype");
     goto Finish;      
   }
 
   if (CompareGuid (&FileGuid, &mZeroGuid) == 0) {
-    Error (NULL, 0, 0, NULL, "File Guid value is not specified");
+    Error (NULL, 0, 1001, "Missing option", "fileguid");
     goto Finish;    
   }
 
   if (InputFileNum == 0) {
-    Error (NULL, 0, 0, NULL, "ERROR: No input section files");
+    Error (NULL, 0, 1001, "Missing option", "Input files");
     goto Finish;
   }
 
   if (OutputFileName == NULL) {
-    Error (NULL, 0, 0, NULL, "No output file name is specified.");
+    Error (NULL, 0, 1001, "Missing option", "Output file");
     goto Finish;
     // OutFile = stdout;
   }
@@ -573,7 +607,7 @@ Returns:
   if (Status == EFI_BUFFER_TOO_SMALL) {
     FileBuffer = (UINT8 *) malloc (FileSize);
     if (FileBuffer == NULL) {
-      Error (__FILE__, __LINE__, 0, "application error", "failed to allocate memory");
+      Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
       goto Finish;
     }
     memset (FileBuffer, 0, FileSize);
@@ -652,7 +686,7 @@ Returns:
   //
   FfsFile = fopen (OutputFileName, "wb");
   if (FfsFile == NULL) {
-    Error (NULL, 0, 0, NULL, "Can't open %s file to write!", OutputFileName);
+    Error (NULL, 0, 0001, "Error opening file", OutputFileName);
     goto Finish;
   }
   //
@@ -681,7 +715,9 @@ Finish:
   // routines, then the status has been saved. Get the value and
   // return it to the caller.
   //
-  fprintf (stdout, "GenFfs tool done with return code is 0x%x.\n", GetUtilityStatus ());  
+  if (VerboseMode) {
+    fprintf (stdout, "%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());  
+  }
 
   return GetUtilityStatus ();
 }

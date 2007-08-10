@@ -54,7 +54,6 @@ Abstract:
 #include <IndustryStandard/Acpi3_0.h>
 #include <IndustryStandard/MemoryMappedConfigurationSpaceAccessTable.h>
 
-
 #include "CommonLib.h"
 #include "EfiUtilityMsgs.h"
 
@@ -62,10 +61,8 @@ Abstract:
 // Version of this utility
 //
 #define UTILITY_NAME "GenFw"
-#define UTILITY_MAJOR_VERSION 1
-#define UTILITY_MINOR_VERSION 0
-
-UINT8 *InImageName;
+#define UTILITY_MAJOR_VERSION 0
+#define UTILITY_MINOR_VERSION 1
 
 #define FW_DUMMY_IMAGE       0
 #define FW_EFI_IMAGE         1
@@ -78,12 +75,13 @@ UINT8 *InImageName;
 #define FW_MERGE_IMAGE       8
 
 #define DUMP_TE_HEADER       0x11
-#define FW_REPLACE_IMAGE     0x100
 
 #define DEFAULT_MC_PAD_BYTE_VALUE  0xFF
 #define DEFAULT_MC_ALIGNMENT       16
-#define MAXIMUM_INPUT_FILE_NUM     10
-#define MAX_STRING_LENGTH          100
+
+#ifndef _MAX_PATH
+#define _MAX_PATH 500
+#endif
 
 //
 // Structure definition for a microcode header
@@ -101,6 +99,9 @@ typedef struct {
   UINTN  Reserved[3];
 } MICROCODE_IMAGE_HEADER;
 
+static UINT8 *InImageName;
+static BOOLEAN VerboseMode = FALSE;
+
 STATIC
 EFI_STATUS
 ZeroDebugData (
@@ -114,14 +115,28 @@ SetStamp (
   IN     CHAR8  *TimeStamp
   );
 
-static
+STATIC
 VOID
 Version (
   VOID
   )
+/*++
+
+Routine Description:
+
+  Print out version information for this utility.
+
+Arguments:
+
+  None
+  
+Returns:
+
+  None
+  
+--*/ 
 {
-  printf ("%s v%d.%d -EDK Utility mainly for Converting a pe32+ image to an FW image type.\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
-  printf ("Copyright (c) 2007 Intel Corporation. All rights reserved.\n");
+  fprintf (stdout, "%s Version %d.%d\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
 }
 
 STATIC
@@ -130,27 +145,45 @@ Usage (
   VOID
   )
 {
-  Version();
-  printf ("\nUsage: " UTILITY_NAME " [inputfilename]\n\
-        -o, --outputfile [FileName]\n\
-        -e, --efiImage <BASE|SEC|PEI_CORE|PEIM|DXE_CORE|DXE_DRIVER|\n\
-                        DXE_RUNTIME_DRIVER|DXE_SAL_DRIVER|DXE_SMM_DRIVER|\n\
-                        UEFI_DRIVER|UEFI_APPLICATION|SECURITY_CORE|\n\
-                        COMBINED_PEIM_DRIVER|PIC_PEIM|RELOCATABLE_PEIM|\n\
-                        BS_DRIVER|RT_DRIVER|SAL_RT_DRIVER|APPLICATION>\n\
-        -c, --acpi\n\
-        -t, --terse\n\
-        -u, --dump\n\
-        -z, --zero\n\
-        -b, --exe2bin\n\
-        -r, --replace\n\
-        -s, --stamp [time-data] <NOW|\"####-##-## ##:##:##\">\n\
-        -m, --mcifile\n\
-        -j, --join\n\
-        -a, --align <HEX|DEC>\n\
-        -p, --pad  [padvalue] <HEX|DEC>\n\
-        -h, --help\n\
-        -V, --version\n");
+  //
+  // Summary usage
+  //
+  fprintf (stdout, "Usage: %s [options] <input_file>\n\n", UTILITY_NAME);
+  
+  //
+  // Copyright declaration
+  // 
+  fprintf (stdout, "Copyright (c) 2007, Intel Corporation. All rights reserved.\n\n");
+
+  //
+  // Details Option
+  //
+  fprintf (stdout, "Options:\n");
+  fprintf (stdout, "  -o FileName, --outputfile FileName\n\
+                        File will be created to store the ouput content.\n");
+  fprintf (stdout, "  -e EFI_FILETYPE, --efiImage EFI_FILETYPE\n\
+                        EFI_FILETYPE is one of BASE, SEC, PEI_CORE, PEIM, \n\
+                        DXE_CORE, DXE_RUNTIME_DRIVER, DXE_SAL_DRIVER, \n\
+                        DXE_SMM_DRIVER, UEFI_DRIVER, UEFI_APPLICATIOn, \n\
+                        SECURITY_CORE, COMBINED_PEIM_DRIVER, PIC_PEIM, \n\
+                        RELOCATABLE_PEIM, BS_DRIVER, RT_DRIVER, APPLICATION, \n\
+                        SAL_RT_DRIVER to support all module types.\n");
+  fprintf (stdout, "  -c, --acpi            Create Acpi table.\n");
+  fprintf (stdout, "  -t, --terse           Create Te Image.\n");
+  fprintf (stdout, "  -u, --dump            Dump TeImage Header.\n");
+  fprintf (stdout, "  -z, --zero            Zero the Debug Data Fields in the PE input image file.\n");
+  fprintf (stdout, "  -b, --exe2bin         Convert the input EXE to the output BIN file.\n");
+  fprintf (stdout, "  -r, --replace         Overwrite the input file with the ouput content.\n");
+  fprintf (stdout, "  -s [time-date], --stamp [time-date]\n\
+                        time-date format is yyyy-mm-dd 00:00:00. if time-data \n\
+                        is set to NOW, current system time is used.\n");
+  fprintf (stdout, "  -m, --mcifile         Convert input microcode txt file to microcode bin file.\n");
+  fprintf (stdout, "  -j, --join            Combine multi microcode bin files to one files.\n");
+  fprintf (stdout, "  -a NUM, --align NUM   NUM is one HEX or DEC format alignment value.\n");
+  fprintf (stdout, "  -p NUM, --pad NUM     NUM is one HEX or DEC format padding value.\n");
+  fprintf (stdout, "  -v, --verbose         Turn on verbose output with informational messages.\n");
+  fprintf (stdout, "  --version             Show program's version number and exit\n");
+  fprintf (stdout, "  -h, --help            Show this help message and exit\n");
 }
 
 static
@@ -187,7 +220,7 @@ Returns:
   // Generic check for AcpiTable length.
   //
   if (AcpiHeader->Length > Length) {
-    Error (NULL, 0, 0, "CheckAcpiTable", "failed to pass AcpiTable Length check");
+    Error (NULL, 0, 3000, "Invalid", "failed to pass AcpiTable Length check", NULL);
     return STATUS_ERROR;
   }
 
@@ -212,11 +245,11 @@ Returns:
       ExpectedLength = sizeof(EFI_ACPI_3_0_FIXED_ACPI_DESCRIPTION_TABLE);
       break;
     default:
-      Error (NULL, 0, 0, "CheckAcpiTable", "failed to pass FACP revision check");
+      Error (NULL, 0, 3000, "Invalid", "failed to pass FACP revision check");
       return STATUS_ERROR;
     }
     if (ExpectedLength != AcpiHeader->Length) {
-      Error (NULL, 0, 0, "CheckAcpiTable", "failed to pass FACP Length check");
+      Error (NULL, 0, 3000, "Invalid", "failed to pass FACP Length check");
       return STATUS_ERROR;
     }
     break;
@@ -229,13 +262,13 @@ Returns:
     if ((Facs->Version != 0) &&
         (Facs->Version != EFI_ACPI_2_0_FIRMWARE_ACPI_CONTROL_STRUCTURE_VERSION) &&
         (Facs->Version != EFI_ACPI_3_0_FIRMWARE_ACPI_CONTROL_STRUCTURE_VERSION)){
-      Error (NULL, 0, 0, "CheckAcpiTable", "failed to pass FACS version check");
+      Error (NULL, 0, 3000, "Invalid", "failed to pass FACS version check");
       return STATUS_ERROR;
     }
     if ((Facs->Length != sizeof(EFI_ACPI_1_0_FIRMWARE_ACPI_CONTROL_STRUCTURE)) &&
         (Facs->Length != sizeof(EFI_ACPI_2_0_FIRMWARE_ACPI_CONTROL_STRUCTURE)) &&
         (Facs->Length != sizeof(EFI_ACPI_3_0_FIRMWARE_ACPI_CONTROL_STRUCTURE))) {
-      Error (NULL, 0, 0, "CheckAcpiTable", "failed to pass FACS Length check");
+      Error (NULL, 0, 3000, "Invalid", "failed to pass FACS Length check");
       return STATUS_ERROR;
     }
     break;
@@ -245,11 +278,11 @@ Returns:
   //
   case EFI_ACPI_3_0_DIFFERENTIATED_SYSTEM_DESCRIPTION_TABLE_SIGNATURE:
     if (AcpiHeader->Revision > EFI_ACPI_3_0_DIFFERENTIATED_SYSTEM_DESCRIPTION_TABLE_REVISION) {
-      Error (NULL, 0, 0, "CheckAcpiTable", "failed to pass DSDT revision check");
+      Error (NULL, 0, 3000, "Invalid", "failed to pass DSDT revision check");
       return STATUS_ERROR;
     }
     if (AcpiHeader->Length <= sizeof(EFI_ACPI_DESCRIPTION_HEADER)) {
-      Error (NULL, 0, 0, "CheckAcpiTable", "failed to pass DSDT Length check");
+      Error (NULL, 0, 3000, "Invalid", "failed to pass DSDT Length check");
       return STATUS_ERROR;
     }
     break;
@@ -261,11 +294,11 @@ Returns:
     if ((AcpiHeader->Revision != EFI_ACPI_1_0_MULTIPLE_APIC_DESCRIPTION_TABLE_REVISION) &&
         (AcpiHeader->Revision != EFI_ACPI_2_0_MULTIPLE_APIC_DESCRIPTION_TABLE_REVISION) &&
         (AcpiHeader->Revision != EFI_ACPI_3_0_MULTIPLE_APIC_DESCRIPTION_TABLE_REVISION)) {
-      Error (NULL, 0, 0, "CheckAcpiTable", "failed to pass APIC revision check");
+      Error (NULL, 0, 3000, "Invalid", "failed to pass APIC revision check");
       return STATUS_ERROR;
     }
     if (AcpiHeader->Length <= sizeof(EFI_ACPI_DESCRIPTION_HEADER) + sizeof(UINT32) + sizeof(UINT32)) {
-      Error (NULL, 0, 0, "CheckAcpiTable", "failed to pass APIC Length check");
+      Error (NULL, 0, 3000, "Invalid", "failed to pass APIC Length check");
       return STATUS_ERROR;
     }
     break;
@@ -275,11 +308,11 @@ Returns:
   //
   case EFI_ACPI_3_0_PCI_EXPRESS_MEMORY_MAPPED_CONFIGURATION_SPACE_BASE_ADDRESS_DESCRIPTION_TABLE_SIGNATURE:
     if (AcpiHeader->Revision != EFI_ACPI_MEMORY_MAPPED_CONFIGURATION_SPACE_ACCESS_TABLE_REVISION) {
-      Error (NULL, 0, 0, "CheckAcpiTable", "failed to pass MCFG revision check");
+      Error (NULL, 0, 3000, "Invalid", "failed to pass MCFG revision check");
       return STATUS_ERROR;
     }
     if (AcpiHeader->Length <= sizeof(EFI_ACPI_DESCRIPTION_HEADER) + sizeof(UINT64)) {
-      Error (NULL, 0, 0, "CheckAcpiTable", "failed to pass MCFG Length check");
+      Error (NULL, 0, 3000, "Invalid", "failed to pass MCFG Length check");
       return STATUS_ERROR;
     }
     break;
@@ -325,7 +358,7 @@ FCopyFile (
   }
 
   if ((UINT32 ) ftell (out) != filesize) {
-    Error (NULL, 0, 0, "write error", NULL);
+    Error (NULL, 0, 0002, "Error writing file", NULL);
     return STATUS_ERROR;
   }
 
@@ -632,8 +665,7 @@ WriteSections(
   memset(CoffFile + CoffSectionsOffset[Idx], 0, Shdr->sh_size);
   break;
       default:
-  Error (NULL, 0, 0, InImageName, "unhandle section type %x",
-         (UINTN)Shdr->sh_type);
+  Error (NULL, 0, 3000, "Invalid", "%s unhandle section type %x", InImageName, (UINTN)Shdr->sh_type);
       }
     }
   }
@@ -662,7 +694,7 @@ WriteSections(
   if (Sym->st_shndx == SHN_UNDEF
       || Sym->st_shndx == SHN_ABS
       || Sym->st_shndx > Ehdr->e_shnum) {
-    Error (NULL, 0, 0, InImageName, "bad symbol definition");
+    Error (NULL, 0, 3000, "Invalid", "%s bad symbol definition", InImageName);
   }
   SymShdr = GetShdrByIndex(Sym->st_shndx);
 
@@ -691,8 +723,7 @@ WriteSections(
       - (SecOffset - SecShdr->sh_addr);
     break;
   default:
-    Error (NULL, 0, 0, InImageName, "unhandled relocation type %x",
-     ELF_R_TYPE(Rel->r_info));
+    Error (NULL, 0, 3000, "Invalid", "%s unhandle section type %x", InImageName, ELF_R_TYPE(Rel->r_info));
   }
       }
     }
@@ -778,8 +809,7 @@ WriteRelocations(
        EFI_IMAGE_REL_BASED_HIGHLOW);
       break;
     default:
-      Error (NULL, 0, 0, InImageName, "unhandled relocation type %x",
-       ELF_R_TYPE(Rel->r_info));
+      Error (NULL, 0, 3000, "Invalid", "%s unhandle section type %x", InImageName, ELF_R_TYPE(Rel->r_info));
     }
   }
       }
@@ -922,7 +952,7 @@ Returns:
   UINT8             *OutImageName;
   UINT8             *ModuleType;
   CHAR8             *TimeStamp;
-  CHAR8             FileName[MAX_STRING_LENGTH];
+  CHAR8             FileName[_MAX_PATH];
   UINT32            OutImageType;
   FILE              *fpIn;
   FILE              *fpOut;
@@ -941,7 +971,8 @@ Returns:
   UINT32            FileLength;
   RUNTIME_FUNCTION  *RuntimeFunction;
   UNWIND_INFO       *UnwindInfo;
-  STATUS            Status;  
+  STATUS            Status;
+  BOOLEAN           ReplaceFlag;
   EFI_TE_IMAGE_HEADER          TEImageHeader;
   EFI_IMAGE_SECTION_HEADER     *SectionHeader;
   EFI_IMAGE_DOS_HEADER         *DosHdr;
@@ -950,8 +981,6 @@ Returns:
   EFI_IMAGE_OPTIONAL_HEADER64  *Optional64;
   EFI_IMAGE_DOS_HEADER         BackupDosHdr;
   MICROCODE_IMAGE_HEADER       *MciHeader; 
-
-  fprintf (stdout, "GenFw tool start.\n");
 
   SetUtilityName (UTILITY_NAME);
 
@@ -976,9 +1005,11 @@ Returns:
   FileLength        = 0;
   MciHeader         = NULL;
   CheckSum          = 0;
+  ReplaceFlag       = FALSE;
 
   if (argc == 1) {
-    Usage();
+    Error (NULL, 0, 1001, "Missing options", "Input file");
+    Usage ();
     return STATUS_ERROR;
   }
   
@@ -986,15 +1017,15 @@ Returns:
   argv ++;  
 
   if ((stricmp (argv[0], "-h") == 0) || (stricmp (argv[0], "--help") == 0)) {
-    Usage();
-    return STATUS_ERROR;    
+    Usage ();
+    return STATUS_SUCCESS;    
   }
 
-  if ((stricmp (argv[0], "-v") == 0) || (stricmp (argv[0], "--version") == 0)) {
-    Version();
-    return STATUS_ERROR;    
+  if (stricmp (argv[0], "--version") == 0) {
+    Version ();
+    return STATUS_SUCCESS;
   }
-  
+
   while (argc > 0) {
     if ((stricmp (argv[0], "-o") == 0) || (stricmp (argv[0], "--outputfile") == 0)) {
       OutImageName = argv[1];
@@ -1057,7 +1088,7 @@ Returns:
     }
 
     if ((stricmp (argv[0], "-r") == 0) || (stricmp (argv[0], "--replace") == 0)) {
-      OutImageType |= FW_REPLACE_IMAGE;
+      ReplaceFlag = TRUE;
       argc --;
       argv ++;
       continue;
@@ -1079,7 +1110,7 @@ Returns:
 
     if ((stricmp (argv[0], "-a") == 0) || (stricmp (argv[0], "--align") == 0)) {
       if (AsciiStringToUint64 (argv[1], FALSE, &Temp64) != EFI_SUCCESS) {
-        Error (NULL, 0, 0, NULL, "Your input alginment is incorrect format.\n");
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
         goto Finish;
       }
       MciAlignment = (UINT32) Temp64;
@@ -1090,12 +1121,19 @@ Returns:
 
     if ((stricmp (argv[0], "-p") == 0) || (stricmp (argv[0], "--pad") == 0)) {
       if (AsciiStringToUint64 (argv[1], FALSE, &Temp64) != EFI_SUCCESS) {
-        Error (NULL, 0, 0, NULL, "Incorrect format of PadValue\n");
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
         goto Finish;
       }
       MciPadValue = (UINT8) Temp64;
       argc -= 2;
       argv += 2;
+      continue;
+    }
+
+    if ((stricmp (argv[0], "-v") == 0) || (stricmp (argv[0], "--verbose") == 0)) {
+      VerboseMode = TRUE;
+      argc --;
+      argv ++;
       continue;
     }
 
@@ -1105,7 +1143,7 @@ Returns:
     if ((InputFileNum == 0) && (InputFileName == NULL)) {
       InputFileName = (CHAR8 **) malloc (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *));
       if (InputFileName == NULL) {
-        Error (__FILE__, __LINE__, 0, "application error", "failed to allocate memory");
+        Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
         return EFI_OUT_OF_RESOURCES;
       }
 
@@ -1120,7 +1158,7 @@ Returns:
                                   );
 
       if (InputFileName == NULL) {
-        Error (__FILE__, __LINE__, 0, "application error", "failed to allocate memory");
+        Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
         return EFI_OUT_OF_RESOURCES;
       }
 
@@ -1131,9 +1169,13 @@ Returns:
     argc --;
     argv ++;
   }
+  
+  if (VerboseMode) {
+    fprintf (stdout, "%s tool start.\n", UTILITY_NAME);
+  }
 
   if (OutImageType == FW_DUMMY_IMAGE) {
-    Error (NULL, 0, 0, NULL, "No action specified, such as -e, -c or -t\n");
+    Error (NULL, 0, 1001, "Missing option", "No action specified, such as -e, -c or -t\n");
     goto Finish;
   }
 
@@ -1141,15 +1183,15 @@ Returns:
   // check input files
   //
   if (InputFileNum == 0) {
-    Error (NULL, 0, 0, NULL, "No input files\n");
+    Error (NULL, 0, 1001, "Missing option", "Input files\n");
     goto Finish;
   }
 
   //
   // Combine MciBinary files to one file
   //
-  if (OutImageType == (FW_MERGE_IMAGE | FW_REPLACE_IMAGE)) {
-    Error (NULL, 0, 0, NULL, "-r replace parameter can't be input together with -j merge files");
+  if ((OutImageType == FW_MERGE_IMAGE) && ReplaceFlag) {
+    Error (NULL, 0, 1002, "Conflicting option", "-r replace parameter can't be input together with -j merge files");
     goto Finish;
   }
    
@@ -1163,33 +1205,31 @@ Returns:
   // if OutImageName == NULL, output data to stdout.
   //
   if (OutImageName == NULL) {
-    if ((OutImageType & FW_REPLACE_IMAGE) != 0) {
+    if (ReplaceFlag) {
       fpOut = fopen (InImageName, "wb");
       if (!fpOut) {
-        Error (NULL, 0, 0, InImageName, "could not open input file for modify");
+        Error (NULL, 0, 0001, "Error opening file", InImageName);
         goto Finish;
       }
-      OutImageType = OutImageType & ~FW_REPLACE_IMAGE;
     } else {
-      Error (NULL, 0, 0, NULL, "No output file name is specified.");
+      Error (NULL, 0, 1001, "Missing option", "output file\n");
       goto Finish;
       // binary stream can't be output to string strem stdout
       // because 0x0A can be auto converted to 0x0D 0x0A.
       // fpOut = stdout;
-    } 
+    }
   } else {
     fpOut = fopen (OutImageName, "wb");
     if (!fpOut) {
-      Error (NULL, 0, 0, OutImageName, "could not open output file for writing");
+      Error (NULL, 0, 0001, "Error opening file", OutImageName);
       goto Finish;
     }
-    if ((OutImageType & FW_REPLACE_IMAGE) != 0) {
+    if (ReplaceFlag != 0) {
       fpInOut = fopen (InImageName, "wb");
       if (!fpInOut) {
-        Error (NULL, 0, 0, InImageName, "could not open input file for modify");
+        Error (NULL, 0, 0001, "Error opening file", InImageName);
         goto Finish;
       }
-      OutImageType = OutImageType & ~FW_REPLACE_IMAGE;
     }
   }
 
@@ -1200,14 +1240,14 @@ Returns:
     for (Index = 0; Index < InputFileNum; Index ++) {
       fpIn = fopen (InputFileName [Index], "rb");
       if (!fpIn) {
-        Error (NULL, 0, 0, InputFileName [Index], "failed to open input file for reading");
+        Error (NULL, 0, 0001, "Error opening file", InputFileName [Index]);
         goto Finish;
       }
     
       FileLength = _filelength (fileno (fpIn));
       FileBuffer = malloc (FileLength);
       if (FileBuffer == NULL) {
-        Error (NULL, 0, 0, NULL, "can't allocate enough memory space");
+        Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
         fclose (fpIn);
         goto Finish;
       }
@@ -1241,7 +1281,7 @@ Returns:
   if (OutImageType == FW_MCI_IMAGE) {
     fpIn = fopen (InImageName, "r");
     if (!fpIn) {
-      Error (NULL, 0, 0, InImageName, "failed to open input file for reading");
+      Error (NULL, 0, 0001, "Error opening file", InImageName);
       goto Finish;
     }
     
@@ -1261,11 +1301,11 @@ Returns:
     // Error if no data.
     //
     if (FileLength == 0) {
-      Error (NULL, 0, 0, InImageName, "no parse-able data found in file");
+      Error (NULL, 0, 3000, "Invalid", "no parse-able data found in file %s", InImageName);
       goto Finish;
     }
     if (FileLength < sizeof (MICROCODE_IMAGE_HEADER)) {
-      Error (NULL, 0, 0, InImageName, "amount of parse-able data is insufficient to contain a microcode header");
+      Error (NULL, 0, 3000, "Invalid", "amount of parse-able data in %s is insufficient to contain a microcode header", InImageName);
       goto Finish;
     }
 
@@ -1274,7 +1314,7 @@ Returns:
     //
     FileBuffer = malloc (FileLength);
     if (FileBuffer == NULL) {
-      Error (NULL, 0, 0, NULL, "can't allocate enough memory space");
+      Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
       goto Finish;
     }
     //
@@ -1304,7 +1344,7 @@ Returns:
     }
 
     if (Index != FileLength) {
-      Error (NULL, 0, 0, InImageName, "file contents do not contain expected TotalSize 0x%04X", Index);
+      Error (NULL, 0, 3000, "Invalid", "file contents of %s do not contain expected TotalSize 0x%04X", InImageName, Index);
       goto Finish;
     }
 
@@ -1320,14 +1360,14 @@ Returns:
       Index       += sizeof (UINTN);
     }
     if (CheckSum != 0) {
-      Error (NULL, 0, 0, InImageName, "checksum failed on file contents");
+      Error (NULL, 0, 3000, "Invalid", "checksum failed on file contents of %s", InImageName);
       goto Finish;
     }
     //
     // Open the output file and write the buffer contents
     //
     if (fwrite (FileBuffer, FileLength, 1, fpOut) != 1) {
-      Error (NULL, 0, 0, OutImageName, "failed to write microcode data to output file");
+      Error (NULL, 0, 0002, "Error writing file", OutImageName);
       goto Finish;
     }
     //
@@ -1341,14 +1381,14 @@ Returns:
   //
   fpIn = fopen (InImageName, "rb");
   if (!fpIn) {
-    Error (NULL, 0, 0, InImageName, "failed to open input file for reading");
+    Error (NULL, 0, 0001, "Error opening file", InImageName);
     goto Finish;
   }
 
   FileLength = _filelength (fileno (fpIn));
   FileBuffer = malloc (FileLength);
   if (FileBuffer == NULL) {
-    Error (NULL, 0, 0, NULL, "can't allocate enough memory space");
+    Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
     fclose (fpIn);
     goto Finish;
   }
@@ -1362,7 +1402,7 @@ Returns:
   if (OutImageType == DUMP_TE_HEADER) {
     memcpy (&TEImageHeader, FileBuffer, sizeof (TEImageHeader));
     if (TEImageHeader.Signature != EFI_TE_IMAGE_HEADER_SIGNATURE) {
-      Error (NULL, 0, 0, InImageName, "TE header signature is not correct");
+      Error (NULL, 0, 3000, "Invalid", "TE header signature of file %s is not correct", InImageName);
       goto Finish;      
     }
     fprintf (fpOut, "Dump of file %s\n\n", InImageName);
@@ -1386,7 +1426,7 @@ Returns:
   if ((OutImageType == FW_EFI_IMAGE) || (OutImageType == FW_TE_IMAGE)) {
     if (ModuleType == NULL) {
       if (OutImageType == FW_EFI_IMAGE) {
-        Error (NULL, 0, 0, NULL, "No ModuleType specified, such as PEIM, DXE_DRIVER\n");
+        Error (NULL, 0, 1001, "Missing option", "EFI_FILETYPE");
         goto Finish;
       } else if (OutImageType == FW_TE_IMAGE) {
         //
@@ -1423,7 +1463,7 @@ Returns:
         Type = EFI_IMAGE_SUBSYSTEM_SAL_RUNTIME_DRIVER;
     
       } else {
-        Error (NULL, 0, 0, NULL, "%s is not one valid Module type.\n", ModuleType);
+        Error (NULL, 0, 1003, "Invalid option value", "EFI_FILETYPE = %s", ModuleType);
         goto Finish;
       }
     }
@@ -1443,13 +1483,13 @@ Returns:
   //
   DosHdr = (EFI_IMAGE_DOS_HEADER *)FileBuffer;
   if (DosHdr->e_magic != EFI_IMAGE_DOS_SIGNATURE) {
-    Error (NULL, 0, 0, InImageName, "DOS header signature not found in source image");
+    Error (NULL, 0, 3000, "Invalid", "DOS header signature not found in source image");
     goto Finish;
   }
 
   PeHdr = (EFI_IMAGE_NT_HEADERS *)(FileBuffer + DosHdr->e_lfanew);
   if (PeHdr->Signature != EFI_IMAGE_NT_SIGNATURE) {
-    Error (NULL, 0, 0, InImageName, "PE header signature not found in source image");
+    Error (NULL, 0, 3000, "Invalid", "PE header signature not found in source image");
     goto Finish;
   }
   
@@ -1458,7 +1498,7 @@ Returns:
   //
   if (OutImageType == FW_BIN_IMAGE) {
     if (FileLength < PeHdr->OptionalHeader.SizeOfHeaders) {
-      Error (NULL, 0, 0, InImageName, "FileSize is not a legal size.");
+      Error (NULL, 0, 3000, "Invalid", "FileSize of %s is not a legal size.", InImageName);
       goto Finish;
     }
     //
@@ -1520,7 +1560,7 @@ Returns:
         }
 
         if (CheckAcpiTable (FileBuffer + SectionHeader->PointerToRawData, FileLength) != STATUS_SUCCESS) {
-          Error (NULL, 0, 0, InImageName, "failed to check ACPI table");
+          Error (NULL, 0, 3000, "Invalid", "failed to check ACPI table in %s", InImageName);
           goto Finish;
         }
         
@@ -1534,7 +1574,7 @@ Returns:
         goto Finish;
       }
     }
-    Error (NULL, 0, 0, InImageName, "failed to get ACPI table");
+    Error (NULL, 0, 3000, "Invalid", "failed to get ACPI table from %s", InImageName);
     goto Finish;
   }
   //
@@ -1736,7 +1776,7 @@ Returns:
       //
       // Pack the subsystem and NumberOfSections into 1 byte. Make sure they fit both.
       //
-      Error (NULL, 0, 0, InImageName, "image subsystem or NumberOfSections cannot be packed into 1 byte");
+      Error (NULL, 0, 3000, "Invalid", "Image subsystem or NumberOfSections of PeImage %s cannot be packed into 1 byte", InImageName);
       goto Finish;
     }
 
@@ -1744,7 +1784,7 @@ Returns:
       //
       // TeImage has the same section alignment and file alignment.
       //
-      Error (NULL, 0, 0, InImageName, "Section-Alignment and File-Alignment does not match for TeImage");
+      Error (NULL, 0, 3000, "Invalid", "Section-Alignment and File-Alignment of PeImage %s does not match for TeImage", InImageName);
       goto Finish;
     }
 
@@ -1790,9 +1830,11 @@ Finish:
     //
     fclose (fpInOut);
   }
-
-  fprintf (stdout, "GenFw tool done with return code is 0x%x.\n", GetUtilityStatus ());  
-
+  
+  if (VerboseMode) {
+    fprintf (stdout, "%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());  
+  }
+  
   return GetUtilityStatus ();
 }
 
@@ -1858,7 +1900,7 @@ ZeroDebugData (
   }
   
   if (Index >= FileHdr->NumberOfSections) {
-    Error (NULL, 0, 0, NULL, "Invalid PeImage.");
+    Error (NULL, 0, 3000, "Invalid", "PeImage");
     return EFI_ABORTED;
   }
   
@@ -1905,7 +1947,10 @@ SetStamp (
   //
   // Get time and date that will be set.
   //
-  
+  if (TimeStamp == NULL) {
+    Error (NULL, 0, 3000, "Invalid", "TimeData can't be NULL");
+    return EFI_INVALID_PARAMETER;
+  }
   //
   // compare the value with "NOW", if yes, current system time is set.
   //
@@ -1926,7 +1971,7 @@ SetStamp (
             &stime.tm_min,
             &stime.tm_sec
             ) != 6) {
-      Error (NULL, 0, 0, TimeStamp, "Invaild date or time!");
+      Error (NULL, 0, 3000, "Invalid", "%s Invaild date or time!", TimeStamp);
       return EFI_INVALID_PARAMETER;
     }
 
@@ -1956,7 +2001,7 @@ SetStamp (
     //
     newtime = mktime (&stime);
     if (newtime == (time_t) - 1) {
-      Error (NULL, 0, 0, TimeStamp, "Invaild date or time!");
+      Error (NULL, 0, 3000, "Invalid", "%s Invaild date or time!", TimeStamp);
       return EFI_INVALID_PARAMETER;
     }
   }

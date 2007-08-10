@@ -3,7 +3,7 @@ MAKEROOT ?= ..
 
 APPNAME = TianoCompress
 
-LIBS = -lCommon -lString
+LIBS = -lCommon
 
 OBJECTS = TianoCompress.o
 

@@ -36,13 +36,12 @@ Abstract:
 // GenSec Tool Information
 //
 #define UTILITY_NAME            "GenSec"
-#define UTILITY_MAJOR_VERSION   1
-#define UTILITY_MINOR_VERSION   0
+#define UTILITY_MAJOR_VERSION   0
+#define UTILITY_MINOR_VERSION   1
 
-#define MAXIMUM_INPUT_FILE_NUM  10
 #define MAX_SECTION_SIZE        0x1000000
 
-CHAR8      *SectionTypeName[] = {
+static CHAR8      *SectionTypeName[] = {
   NULL,                                 // 0x00 - reserved
   "EFI_SECTION_COMPRESSION",            // 0x01
   "EFI_SECTION_GUID_DEFINED",           // 0x02
@@ -73,8 +72,8 @@ CHAR8      *SectionTypeName[] = {
   "EFI_SECTION_PEI_DEPEX"               // 0x1B
 };
 
-CHAR8      *CompressionTypeName[]    = { "PI_NONE", "PI_STD" };
-CHAR8      *GUIDedSectionAttribue[]  = { NULL, "PROCESSING_REQUIRED", "AUTH_STATUS_VALID"};
+static CHAR8      *CompressionTypeName[]    = { "PI_NONE", "PI_STD" };
+static CHAR8      *GUIDedSectionAttribue[]  = { NULL, "PROCESSING_REQUIRED", "AUTH_STATUS_VALID"};
 
 //
 // Crc32 GUID section related definitions.
@@ -84,12 +83,17 @@ typedef struct {
   UINT32                    CRC32Checksum;
 } CRC32_SECTION_HEADER;
 
-EFI_GUID  gZeroGuid                 = {0x0, 0x0, 0x0, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}};
-EFI_GUID  gEfiCrc32SectionGuid      = EFI_CRC32_GUIDED_SECTION_EXTRACTION_PROTOCOL_GUID;
+static EFI_GUID  gZeroGuid                 = {0x0, 0x0, 0x0, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}};
+static EFI_GUID  gEfiCrc32SectionGuid      = EFI_CRC32_GUIDED_SECTION_EXTRACTION_PROTOCOL_GUID;
+
+//
+// VerboseMode setting
+//
+static BOOLEAN VerboseMode = FALSE;
 
 STATIC
 VOID 
-Version(
+Version (
   VOID
   )
 /*++
@@ -108,8 +112,7 @@ Returns:
   
 --*/ 
 {
-  printf ("%s v%d.%d - EDKII Utility to create output file with formed section per the PI spec.\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
-  printf ("Copyright (c) 2007 Intel Corporation. All rights reserved.\n");
+  fprintf (stdout, "%s Version %d.%d\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
 }
 
 STATIC
@@ -118,30 +121,49 @@ Usage (
   VOID
   )
 {
-  Version();
+  //
+  // Summary usage
+  //
+  fprintf (stdout, "Usage: %s [options] <input_file>\n\n", UTILITY_NAME);
+  
+  //
+  // Copyright declaration
+  // 
+  fprintf (stdout, "Copyright (c) 2007, Intel Corporation. All rights reserved.\n\n");
 
-  printf ("\nUsage: " UTILITY_NAME " [inputfilename]\n\
-        -o, --outputfile [FileName]\n\
-        -s, --SectionType <EFI_SECTION_COMPRESSION|\n\
-                          EFI_SECTION_GUID_DEFINED|\n\
-                          EFI_SECTION_PE32|\n\
-                          EFI_SECTION_PIC|\n\
-                          EFI_SECTION_TE|\n\
-                          EFI_SECTION_DXE_DEPEX|\n\
-                          EFI_SECTION_VERSION|\n\
-                          EFI_SECTION_USER_INTERFACE|\n\
-                          EFI_SECTION_COMPATIBILITY16|\n\
-                          EFI_SECTION_FIRMWARE_VOLUME_IMAGE|\n\
-                          EFI_SECTION_FREEFORM_SUBTYPE_GUID|\n\
-                          EFI_SECTION_RAW|\n\
-                          EFI_SECTION_PEI_DEPEX>\n\
-        -c, --compress <PI_NONE|PI_STD>\n\
-        -g, --vendorguid [GuidValue (########-####-####-####-############)]\n\
-        -r, --attributes <PROCESSING_REQUIRED|AUTH_STATUS_VALID>\n\
-        -n, --name \"string\"\n\
-        -j, --buildnumber #### (0000~9999)\n\
-        -h, --help\n\
-        -V, --version\n");
+  //
+  // Details Option
+  //
+  fprintf (stdout, "Options:\n");
+  fprintf (stdout, "  -o FileName, --outputfile FileName\n\
+                        File is the SectionFile to be created.\n");
+  fprintf (stdout, "  -s [SectionType], --sectiontype [SectionType]\n\
+                        SectionType defined in PI spec is one type of\n\
+                        EFI_SECTION_COMPRESSION, EFI_SECTION_GUID_DEFINED,\n\
+                        EFI_SECTION_PE32, EFI_SECTION_PIC, EFI_SECTION_TE,\n\
+                        EFI_SECTION_DXE_DEPEX, EFI_SECTION_COMPATIBILITY16,\n\
+                        EFI_SECTION_USER_INTERFACE, EFI_SECTION_VERSION,\n\
+                        EFI_SECTION_FIRMWARE_VOLUME_IMAGE, EFI_SECTION_RAW,\n\
+                        EFI_SECTION_FREEFORM_SUBTYPE_GUID,\n\
+                        EFI_SECTION_PEI_DEPEX. if sectiontype is not given, \n\
+                        EFI_SECTION_ALL is default type.\n");
+  fprintf (stdout, "  -c [Type], --compress [Type]\n\
+                        Compress method type can be PI_NONE or PI_STD.\n\
+                        if Type is not given, PI_STD is default type.\n"); 
+  fprintf (stdout, "  -g GuidValue, --vendorguid GuidValue\n\
+                        GuidValue is one specific vendor guid value.\n\
+                        Its format is 00000000-0000-0000-0000-000000000000\n");
+  fprintf (stdout, "  -r GuidAttr, --attributes GuidAttr\n\
+                        GuidAttr is guid section atttributes, which may be\n\
+                        PROCESSING_REQUIRED or AUTH_STATUS_VALID\n");
+  fprintf (stdout, "  -n String, --name String\n\
+                        String is a NULL terminated string used in Ui section.\n");
+  fprintf (stdout, "  -j Number, --buildnumber Number\n\
+                        Number is an integer value between 0000 and 9999\n\
+                        used in Ver section.\n");
+  fprintf (stdout, "  -v, --verbose         Turn on verbose output with informational messages.\n");
+  fprintf (stdout, "  --version             Show program's version number and exit.\n");
+  fprintf (stdout, "  -h, --help            Show this help message and exit.\n");
 }
 
 VOID
@@ -207,10 +229,10 @@ Returns:
   STATUS                    Status;
 
   if (InputFileNum > 1) {
-    Error (NULL, 0, 0, "invalid parameter", "more than one input file specified");
+    Error (NULL, 0, 2000, "Invalid paramter", "more than one input file specified");
     return STATUS_ERROR;
   } else if (InputFileNum < 1) {
-    Error (NULL, 0, 0, "no input file specified", NULL);
+    Error (NULL, 0, 2000, "Invalid paramter", "no input file specified");
     return STATUS_ERROR;
   }
   //
@@ -218,7 +240,7 @@ Returns:
   //
   InFile = fopen (InputFileName[0], "rb");
   if (InFile == NULL) {
-    Error (NULL, 0, 0, InputFileName[0], "failed to open input file");
+    Error (NULL, 0, 0001, "Error opening file", InputFileName[0]);
     return STATUS_ERROR;
   }
 
@@ -239,7 +261,7 @@ Returns:
   // Size must fit in 3 bytes
   //
   if (TotalLength >= MAX_SECTION_SIZE) {
-    Error (NULL, 0, 0, InputFileName[0], "file size (0x%X) exceeds section size limit(%dM).", TotalLength, MAX_SECTION_SIZE>>20);
+    Error (NULL, 0, 2000, "Invalid paramter", "%s file size (0x%X) exceeds section size limit(%dM).", InputFileName[0], TotalLength, MAX_SECTION_SIZE>>20);
     goto Done;
   }
   //
@@ -254,17 +276,17 @@ Returns:
   if (InputFileLength != 0) {
     Buffer = (UINT8 *) malloc ((size_t) InputFileLength);
     if (Buffer == NULL) {
-      Error (__FILE__, __LINE__, 0, "memory allocation failure", NULL);
+      Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated"); 
       goto Done;
     }
 
     if (fread (Buffer, (size_t) InputFileLength, 1, InFile) != 1) {
-      Error (NULL, 0, 0, InputFileName[0], "failed to read contents of file");
+      Error (NULL, 0, 0004, "Error reading file", InputFileName[0]);
       goto Done;
     }
 
     if (fwrite (Buffer, (size_t) InputFileLength, 1, OutFile) != 1) {
-      Error (NULL, 0, 0, "failed to write to output file", NULL);
+      Error (NULL, 0, 0002, "Error writing file", NULL);
       goto Done;
     }
   }
@@ -319,12 +341,12 @@ Returns:
   FILE    *InFile;
 
   if (InputFileNum < 1) {
-    Error (NULL, 0, 0, "must specify at least one input file", NULL);
+    Error (NULL, 0, 2000, "Invalid paramter", "must specify at least one input file");
     return EFI_INVALID_PARAMETER;
   }
 
   if (BufferLength == NULL) {
-    Error (NULL, 0, 0, "BufferLength can't be NULL", NULL);
+    Error (NULL, 0, 2000, "Invalid paramter", "BufferLength can't be NULL");
     return EFI_INVALID_PARAMETER;
   }
 
@@ -349,7 +371,7 @@ Returns:
     //
     InFile = fopen (InputFileName[Index], "rb");
     if (InFile == NULL) {
-      Error (NULL, 0, 0, InputFileName[Index], "failed to open input file");
+      Error (NULL, 0, 0001, "Error opening file", InputFileName[Index]);
       return EFI_ABORTED;
     }
 
@@ -362,7 +384,7 @@ Returns:
     //
     if (FileSize > 0 && FileBuffer != NULL && (Size + FileSize) <= *BufferLength) {
       if (fread (FileBuffer + Size, (size_t) FileSize, 1, InFile) != 1) {
-        Error (NULL, 0, 0, InputFileName[Index], "failed to read contents of input file");
+        Error (NULL, 0, 0004, "Error reading file", InputFileName[Index]);
         fclose (InFile);
         return EFI_ABORTED;
       }
@@ -442,7 +464,7 @@ Returns:
   if (Status == EFI_BUFFER_TOO_SMALL) {
     FileBuffer = (UINT8 *) malloc (InputLength);
     if (FileBuffer == NULL) {
-      Error (__FILE__, __LINE__, 0, "application error", "failed to allocate memory");
+      Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
       return EFI_OUT_OF_RESOURCES;
     }
     //
@@ -478,7 +500,7 @@ Returns:
     break;
 
   default:
-    Error (NULL, 0, 0, "unknown compression type", NULL);
+    Error (NULL, 0, 2000, "Invalid paramter", "unknown compression type");
     free (FileBuffer);
     return EFI_ABORTED;
   }
@@ -510,7 +532,7 @@ Returns:
 
   TotalLength = CompressedLength + sizeof (EFI_COMPRESSION_SECTION);
   if (TotalLength >= MAX_SECTION_SIZE) {
-    Error (__FILE__, __LINE__, 0, "input error", "The size of all files exceeds section size limit(%dM).", MAX_SECTION_SIZE>>20);
+    Error (NULL, 0, 2000, "Invalid paramter", "The size of all files exceeds section size limit(%dM).", MAX_SECTION_SIZE>>20);
     if (FileBuffer != NULL) {
       free (FileBuffer);
     }
@@ -598,7 +620,7 @@ Returns:
   if (Status == EFI_BUFFER_TOO_SMALL) {
     FileBuffer = (UINT8 *) malloc (InputLength);
     if (FileBuffer == NULL) {
-      Error (__FILE__, __LINE__, 0, "application error", "failed to allocate memory");
+      Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
       return EFI_OUT_OF_RESOURCES;
     }
     //
@@ -631,7 +653,7 @@ Returns:
 
     TotalLength = InputLength + sizeof (CRC32_SECTION_HEADER);
     if (TotalLength >= MAX_SECTION_SIZE) {
-      Error (__FILE__, __LINE__, 0, "input error", "The size of all files exceeds section size limit(%dM).", MAX_SECTION_SIZE>>20);
+      Error (NULL, 0, 2000, "Invalid paramter", "The size of all files exceeds section size limit(%dM).", MAX_SECTION_SIZE>>20);
       free (FileBuffer);
       return STATUS_ERROR;
     }
@@ -649,7 +671,7 @@ Returns:
   } else {
     TotalLength = InputLength + sizeof (EFI_GUID_DEFINED_SECTION);
     if (TotalLength >= MAX_SECTION_SIZE) {
-      Error (__FILE__, __LINE__, 0, "input error", "The size of all files exceeds section size limit(%dM).", MAX_SECTION_SIZE>>20);
+      Error (NULL, 0, 2000, "Invalid paramter", "The size of all files exceeds section size limit(%dM).", MAX_SECTION_SIZE>>20);
       free (FileBuffer);
       return STATUS_ERROR;
     }
@@ -711,15 +733,12 @@ Returns:
   UINT32                    InputLength;
   UINT8                     *FileBuffer;
   EFI_STATUS                Status;
- 
-  fprintf (stdout, "GenSec tool start.\n");  
   
   InputFileName         = NULL;
   OutputFileName        = NULL;
   SectionName           = NULL;
   CompressionName       = NULL;
   StringBuffer          = "";
-
   InFile                = NULL;
   OutFile               = NULL;
   VersionNumber         = 0;
@@ -731,10 +750,10 @@ Returns:
   InputLength           = 0;
   Status                = STATUS_SUCCESS;
   
-
   SetUtilityName (UTILITY_NAME);
   
   if (argc == 1) {
+    Error (NULL, 0, 1001, "Missing options", "Input file");
     Usage ();
     return STATUS_ERROR;
   }
@@ -747,12 +766,12 @@ Returns:
 
   if ((stricmp (argv[0], "-h") == 0) || (stricmp (argv[0], "--help") == 0)) {
     Usage();
-    return STATUS_ERROR;    
+    return STATUS_SUCCESS;    
   }
 
-  if ((stricmp (argv[0], "-v") == 0) || (stricmp (argv[0], "--version") == 0)) {
-    Version();
-    return STATUS_ERROR;    
+  if (stricmp (argv[0], "--version") == 0) {
+    Version ();
+    return STATUS_SUCCESS;    
   }
 
   while (argc > 0) {
@@ -780,7 +799,7 @@ Returns:
     if ((stricmp (argv[0], "-g") == 0) || (stricmp (argv[0], "--vendorguid") == 0)) {
       Status = StringToGuid (argv[1], &VendorGuid);
       if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 0, NULL, "ERROR: %s is not a formal GUID value.", argv[1]);
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
         goto Finish;
       }
       argc -= 2;
@@ -794,7 +813,7 @@ Returns:
       } else if (stricmp (argv[1], GUIDedSectionAttribue[EFI_GUIDED_SECTION_AUTH_STATUS_VALID]) == 0) {
         SectGuidAttribute |= EFI_GUIDED_SECTION_AUTH_STATUS_VALID;
       } else {
-        Error (NULL, 0, 0, argv[1], "unknown Guid Section Attribute");
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
         goto Finish;
       }
       argc -= 2;
@@ -815,7 +834,7 @@ Returns:
       //
       for (Index = 0; Index < strlen (argv[1]); Index++) {
         if ((argv[1][Index] != '-') && (isdigit (argv[1][Index]) == 0)) {
-          Error (NULL, 0, 0, NULL, "ERROR: %s is not a valid integer.", argv[1]);
+          Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
           goto Finish;
         }
       }
@@ -826,13 +845,19 @@ Returns:
       continue;
     }
 
+    if ((stricmp (argv[0], "-v") == 0) || (stricmp (argv[0], "--verbose") == 0)) {
+      VerboseMode = TRUE;
+      argc --;
+      argv ++;
+      continue;
+    }
     //
     // Get Input file name
     //
     if ((InputFileNum == 0) && (InputFileName == NULL)) {
       InputFileName = (CHAR8 **) malloc (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *));
       if (InputFileName == NULL) {
-        Error (__FILE__, __LINE__, 0, "application error", "failed to allocate memory");
+        Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
         return EFI_OUT_OF_RESOURCES;
       }
 
@@ -847,7 +872,7 @@ Returns:
                                   );
 
       if (InputFileName == NULL) {
-        Error (__FILE__, __LINE__, 0, "application error", "failed to allocate memory");
+        Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
         return EFI_OUT_OF_RESOURCES;
       }
 
@@ -859,6 +884,9 @@ Returns:
     argv ++;
   }
 
+  if (VerboseMode) {
+    fprintf (stdout, "%s tool start.\n", UTILITY_NAME);
+  }
   //
   // Parse all command line parameters to get the corresponding section type.
   //
@@ -879,7 +907,7 @@ Returns:
     } else if (stricmp (CompressionName, CompressionTypeName[EFI_STANDARD_COMPRESSION]) == 0) {
       SectCompSubType = EFI_STANDARD_COMPRESSION;
     } else {
-      Error (NULL, 0, 0, CompressionName, "unknown compression type");
+      Error (NULL, 0, 1003, "Invalid option value", "--compress = %s", CompressionName);
       goto Finish;
     }
   } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_GUID_DEFINED]) == 0) {
@@ -903,13 +931,13 @@ Returns:
   } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_VERSION]) == 0) {
     SectType = EFI_SECTION_VERSION;
     if (VersionNumber < 0 || VersionNumber > 9999) {
-      Error (NULL, 0, 0, NULL, "%d is illegal version number\n", VersionNumber);
+      Error (NULL, 0, 1003, "Invalid option value", "%d is not in 0~9999", VersionNumber);
       goto Finish;
     }
   } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_USER_INTERFACE]) == 0) {
     SectType = EFI_SECTION_USER_INTERFACE;
     if (StringBuffer[0] == '\0') {
-      Error (NULL, 0, 0, "user interface string not specified", NULL);
+      Error (NULL, 0, 1001, "Missing option", "user interface string");
       goto Finish;
     }
   } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_COMPATIBILITY16]) == 0) {
@@ -923,7 +951,7 @@ Returns:
   } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_PEI_DEPEX]) == 0) {
     SectType = EFI_SECTION_PEI_DEPEX;
   } else {
-    Error (NULL, 0, 0, SectionName, "unknown section type");
+    Error (NULL, 0, 1003, "Invalid option value", "SectionType = %s", SectionName);
     goto Finish;
   }
   
@@ -932,7 +960,7 @@ Returns:
     // The input file are required for those section type.
     //
     if (InputFileNum == 0) {
-      Error (NULL, 0, 0, NULL, "No input files is specified.");
+      Error (NULL, 0, 1001, "Missing options", "Input files");
       goto Finish;
     }
   }
@@ -941,7 +969,7 @@ Returns:
   // Open output file
   //
   if (OutputFileName == NULL) {
-    Error (NULL, 0, 0, NULL, "No output file name is specified.");
+    Error (NULL, 0, 1001, "Missing options", "Output file");
     goto Finish;
     // OutFile = stdout;
   } else {
@@ -949,7 +977,7 @@ Returns:
   }
 
   if (OutFile == NULL) {
-    Error (NULL, 0, 0, OutputFileName, "failed to open output file for writing");
+    Error (NULL, 0, 0001, "Error opening file", OutputFileName);
     goto Finish;
   }
   
@@ -1026,7 +1054,7 @@ Returns:
     if (Status == EFI_BUFFER_TOO_SMALL) {
       FileBuffer = (UINT8 *) malloc (InputLength);
       if (FileBuffer == NULL) {
-        Error (__FILE__, __LINE__, 0, "application error", "failed to allocate memory");
+        Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
         goto Finish;
       }
       //
@@ -1070,8 +1098,10 @@ Finish:
   if (OutFile != NULL) {
     fclose (OutFile);
   }
-
-  fprintf (stdout, "GenSec tool done with return code is 0x%x.\n", GetUtilityStatus ()); 
+  
+  if (VerboseMode) {
+    fprintf (stdout, "%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());  
+  }
 
   return GetUtilityStatus ();
 }
