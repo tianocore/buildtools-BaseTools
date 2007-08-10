@@ -24,11 +24,15 @@ from optparse import make_option
 from Common.BuildToolError import *
 from Common.Misc import *
 
+import Common.EdkLogger as EdkLogger
+
 # Version and Copyright
 __version_number__ = "0.01"
 __version__ = "%prog Version " + __version_number__
 __copyright__ = "Copyright (c) 2007, Intel Corporation. All rights reserved."
 
+## Regular expression for matching "#line xxx"/"# xxx"
+gLineControlDirective = re.compile("^\s*#line\s+[0-9]+\s+(.+)$")
 ## Regular expression for matching "typedef struct"
 gTypedefPattern = re.compile("^\s*typedef\s+struct\s+[{]*$", re.MULTILINE)
 ## Regular expression for matching "#pragma pack"
@@ -36,6 +40,22 @@ gPragmaPattern = re.compile("^\s*#pragma\s+pack", re.MULTILINE)
 ## Regular expression for matching HEX number
 gHexNumberPattern = re.compile("0[xX]([0-9a-fA-F]+)", re.MULTILINE)
 
+## Get the name of file in the Line Control directive line
+#
+# Extract the name of file whose content was injected by preprocessor from the
+# Line Control directive line
+#
+# @param  Line     The string may contain the line control directive
+#
+# @retval "string" The name of the file
+#
+def GetInjectedFile(Line):
+    FileList = gLineControlDirective.findall(Line)
+    if len(FileList) != 1:
+        return ""
+    return FileList[0]
+    
+    
 ## Trim preprocessed source code
 #
 # Remove extra content made by preprocessor. The preprocessor must enable the
@@ -51,25 +71,45 @@ def TrimPreprocessedFile (Source, Target, Convert):
     Lines = f.readlines()
     f.close()
 
-    # find "#line" (MSFT) or "# xxx" (GCC) from the end of file
-    for Index in range (len(Lines) - 1, -1, -1):
-        Line = Lines[Index].strip()
-        if Line.find('#line') == 0 or Line.find('# ') == 0:
-            # remove the lines between the top of file and the last "#line" or "# xxx"
-            EndOfCode = Index + 1
+    # skip empty lines, if any(necessary?)
+    FirstLine = ""
+    for Line in Lines:
+        FirstLine = Line.strip()
+        if FirstLine != "":
             break
+
+    PreprocessedFile = GetInjectedFile(FirstLine)
+    if PreprocessedFile != "":
+        # find "#line" from the end of file to the top of file
+        for Index in range (len(Lines) - 1, -1, -1):
+            Line = Lines[Index].strip()
+            InjectedFile = GetInjectedFile(Line)
+            
+            # skip lines without "#line"
+            if InjectedFile == "":
+                continue
+            
+            # empty embedded line control lines
+            if InjectedFile == PreprocessedFile:
+                Lines[Index] = "\n"
+                EdkLogger.verbose("Found embedded line control directive at line%d: %s" % (Index + 1, Line))
+                continue
+            else:
+                # remove the lines between the top of file and the last "#line"
+                StartOfCode = Index + 1
+                EdkLogger.verbose("Found last non-embedded line control directive at line%d: %s" % (Index, Line))
+                break
     else:
-        # no "#line" or "# xxx" found, keep all lines
-        Index = 0
-        EndOfCode = 0
+        # no "#line" found, keep all lines
+        StartOfCode = 0
 
     # convert HEX number format if indicated
     if Convert:
-        ConvertHex(Lines, EndOfCode, len(Lines))
+        ConvertHex(Lines, StartOfCode, len(Lines))
 
     # save to file
     f = open (Target, 'w')
-    f.writelines(Lines[EndOfCode:])
+    f.writelines(Lines[StartOfCode:])
     f.close()
 
 ## Trim preprocessed VFR file
@@ -158,21 +198,28 @@ def Options():
     OptionList = [
         make_option("-s", "--source-code", dest="FileType", const="SourceCode", action="store_const",
                           help="The input file is preprocessed source code, including C or assembly code"),
-        make_option("-v", "--vfr-file", dest="FileType", const="Vfr", action="store_const",
+        make_option("-r", "--vfr-file", dest="FileType", const="Vfr", action="store_const",
                           help="The input file is preprocessed VFR file"),
         make_option("-c", "--convert-hex", dest="ConvertHex", action="store_true",
                           help="Convert standard hex format (0xabcd) to MASM format (abcdh)"),
         make_option("-o", "--output", dest="OutputFile",
                           help="File to store the trimmed content"),
+        make_option("-v", "--verbose", dest="LogLevel", action="store_const", const=EdkLogger.VERBOSE,
+                          help="Run verbosely"),
+        make_option("-d", "--debug", dest="LogLevel", type="int",
+                          help="Run with debug information"),
+        make_option("-q", "--quiet", dest="LogLevel", action="store_const", const=EdkLogger.QUIET,
+                          help="Run quietly"),
         make_option("-?", action="help", help="show this help message and exit"),
     ]
 
     # use clearer usage to override default usage message
-    UsageString = "%prog [-s|-v] [-c] [-o <output_file>] <input_file>"
+    UsageString = "%prog [-s|-r] [-c] [-v|-d <debug_level>|-q] [-o <output_file>] <input_file>"
 
     Parser = OptionParser(description=__copyright__, version=__version__, option_list=OptionList, usage=UsageString)
-    Parser.set_defaults(FileType="SourceCode")
+    Parser.set_defaults(FileType="Vfr")
     Parser.set_defaults(ConvertHex=False)
+    Parser.set_defaults(LogLevel=EdkLogger.INFO)
 
     Options, Args = Parser.parse_args()
 
@@ -200,6 +247,10 @@ def Options():
 def Main():
     try:
         CommandOptions, InputFile = Options()
+        if CommandOptions.LogLevel < EdkLogger.DEBUG_9:
+            EdkLogger.setLevel(CommandOptions.LogLevel + 1)
+        else:
+            EdkLogger.setLevel(CommandOptions.LogLevel)
 
         if CommandOptions.FileType == "Vfr":
             TrimPreprocessedVfr(InputFile, CommandOptions.OutputFile)
