@@ -338,6 +338,7 @@ class Build():
                                     self.isexit(p.returncode)
                         else:
                             for c in self.Opt.TARGET_ARCH:
+                                #To Do: check the arch of the module
                                 ModuleAutoGen = AutoGen(ModuleFile, PlatformFile, ewb, a, b, c)
                                 EdkLogger.info("ModuleAutoGen : %s"  % ModuleFile)
                                 for e in ModuleAutoGen.BuildInfo.DependentLibraryList:
@@ -516,22 +517,22 @@ def main():
 
     if build.Opt.TARGET_ARCH == None:
         build.Opt.TARGET_ARCH = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET_ARCH]
-        if build.Opt.TARGET_ARCH == ['']:
+        if build.Opt.TARGET_ARCH == []:
             build.Opt.TARGET_ARCH = ARCH_LIST
-    EdkLogger.info('TARGET_ARCH is: %s' % ''.join(build.Opt.TARGET_ARCH))
+    EdkLogger.info('TARGET_ARCH is: %s' % ''.join(elem + ' ' for elem in build.Opt.TARGET_ARCH))
 
     if build.Opt.TARGET == None:
         build.Opt.TARGET = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET]
-        if build.Opt.TARGET == ['']:
-            build.Opt.TARGET_ARCH = ['DEBUG', 'RELEASE']
-    EdkLogger.info('TARGET is: %s' % ''.join(build.Opt.TARGET))
+        if build.Opt.TARGET == []:
+            build.Opt.TARGET = ['DEBUG', 'RELEASE']
+    EdkLogger.info('TARGET is: %s' % ''.join(elem + ' ' for elem in build.Opt.TARGET))
 
     if build.Opt.TOOL_CHAIN_TAG == None:
         build.Opt.TOOL_CHAIN_TAG = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG]
-        if build.Opt.TOOL_CHAIN_TAG == ['']:
+        if build.Opt.TOOL_CHAIN_TAG == []:
             EdkLogger.quiet("TOOL_CHAIN_TAG is None. Don't What to Build.\n")
             build.isexit(1)
-    EdkLogger.info('TOOL_CHAIN_TAG is: %s' % ''.join(build.Opt.TOOL_CHAIN_TAG))
+    EdkLogger.info('TOOL_CHAIN_TAG is: %s' % ''.join(elem + ' ' for elem in build.Opt.TOOL_CHAIN_TAG))
 
     if build.Opt.NUM == None:
         build.Opt.NUM = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER]
