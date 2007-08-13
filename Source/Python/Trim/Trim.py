@@ -20,19 +20,17 @@ import re
 
 from optparse import OptionParser
 from optparse import make_option
-
 from Common.BuildToolError import *
-from Common.Misc import *
 
 import Common.EdkLogger as EdkLogger
 
 # Version and Copyright
-__version_number__ = "0.01"
+__version_number__ = "0.02"
 __version__ = "%prog Version " + __version_number__
 __copyright__ = "Copyright (c) 2007, Intel Corporation. All rights reserved."
 
-## Regular expression for matching "#line xxx"/"# xxx"
-gLineControlDirective = re.compile("^\s*#line\s+[0-9]+\s+(.+)$")
+## Regular expression for matching Line Control directive like "#line xxx"
+gLineControlDirective = re.compile("^\s*(#line)\s+[0-9]*\s*(.*)$")
 ## Regular expression for matching "typedef struct"
 gTypedefPattern = re.compile("^\s*typedef\s+struct\s+[{]*$", re.MULTILINE)
 ## Regular expression for matching "#pragma pack"
@@ -40,22 +38,6 @@ gPragmaPattern = re.compile("^\s*#pragma\s+pack", re.MULTILINE)
 ## Regular expression for matching HEX number
 gHexNumberPattern = re.compile("0[xX]([0-9a-fA-F]+)", re.MULTILINE)
 
-## Get the name of file in the Line Control directive line
-#
-# Extract the name of file whose content was injected by preprocessor from the
-# Line Control directive line
-#
-# @param  Line     The string may contain the line control directive
-#
-# @retval "string" The name of the file
-#
-def GetInjectedFile(Line):
-    FileList = gLineControlDirective.findall(Line)
-    if len(FileList) != 1:
-        return ""
-    return FileList[0]
-    
-    
 ## Trim preprocessed source code
 #
 # Remove extra content made by preprocessor. The preprocessor must enable the
@@ -65,51 +47,54 @@ def GetInjectedFile(Line):
 # @param  Target    File to store the trimmed content
 # @param  Convert   If True, convert standard HEX format to MASM format
 #
-def TrimPreprocessedFile (Source, Target, Convert):
+def TrimPreprocessedFile(Source, Target, Convert):
     f = open (Source, 'r')
     # read whole file
     Lines = f.readlines()
     f.close()
 
-    # skip empty lines, if any(necessary?)
-    FirstLine = ""
-    for Line in Lines:
-        FirstLine = Line.strip()
-        if FirstLine != "":
-            break
+    PreprocessedFile = ""
+    InjectedFile = ""
+    LineIndexOfOriginalFile = 0
+    for Index in range(len(Lines)):
+        Line = Lines[Index].strip()
+        if Line == "":
+            continue
 
-    PreprocessedFile = GetInjectedFile(FirstLine)
-    if PreprocessedFile != "":
-        # find "#line" from the end of file to the top of file
-        for Index in range (len(Lines) - 1, -1, -1):
-            Line = Lines[Index].strip()
-            InjectedFile = GetInjectedFile(Line)
-            
-            # skip lines without "#line"
-            if InjectedFile == "":
-                continue
-            
-            # empty embedded line control lines
-            if InjectedFile == PreprocessedFile:
-                Lines[Index] = "\n"
-                EdkLogger.verbose("Found embedded line control directive at line%d: %s" % (Index + 1, Line))
-                continue
-            else:
-                # remove the lines between the top of file and the last "#line"
-                StartOfCode = Index + 1
-                EdkLogger.verbose("Found last non-embedded line control directive at line%d: %s" % (Index, Line))
-                break
-    else:
-        # no "#line" found, keep all lines
-        StartOfCode = 0
+        #
+        # Find out the name of files injected by preprocessor from the lines
+        # with Line Control directive
+        #
+        MatchList = gLineControlDirective.findall(Line)
+        if MatchList != []:
+            MatchList = MatchList[0]
+            if len(MatchList) == 2:
+                InjectedFile = MatchList[1]
+                # The first injetcted file must be the preprocessed file itself
+                if PreprocessedFile == "":
+                    PreprocessedFile = InjectedFile
+            # Don't save lines with Line Control directive. Use an empty string to mark it.
+            Lines[Index] = ""
+        elif InjectedFile != PreprocessedFile:
+            # Don't save lines not from preprocessed file directly. Use an empty string to mark it.
+            Lines[Index] = ""
 
-    # convert HEX number format if indicated
-    if Convert:
-        ConvertHex(Lines, StartOfCode, len(Lines))
+        if Lines[Index] != "":
+            # convert HEX number format if indicated
+            if Convert:
+                Lines[Index] = gHexNumberPattern.sub(r"0\1h", Lines[Index])
+            if LineIndexOfOriginalFile == 0:
+                #
+                # Any non-empty lines must be from original preprocessed file.
+                # And this must be the first one.
+                #
+                LineIndexOfOriginalFile = Index
+                EdkLogger.verbose("Found original file content starting from line %d"
+                                  % (LineIndexOfOriginalFile + 1))
 
     # save to file
     f = open (Target, 'w')
-    f.writelines(Lines[StartOfCode:])
+    f.writelines(Lines[LineIndexOfOriginalFile:])
     f.close()
 
 ## Trim preprocessed VFR file
@@ -130,7 +115,7 @@ def TrimPreprocessedVfr(Source, Target):
     Brace = 0
     TypedefStart = 0
     TypedefEnd = 0
-    for Index in range (len(Lines)):
+    for Index in range(len(Lines)):
         Line = Lines[Index]
         # don't trim the lines from "formset" definition to the end of file
         if Line.strip() == 'formset':
@@ -170,22 +155,6 @@ def TrimPreprocessedVfr(Source, Target):
     f = open (Target,'w')
     f.writelines(Lines)
     f.close()
-
-## Convert HEX format
-#
-# Convert HEX format like 0xabcd to MASM format like abcdh.
-#
-# @param  Lines     List containg the string which may have hex number
-# @param  Start     The line number to start the conversion
-# @param  End       The line number to end the conversion
-#
-def ConvertHex(Lines, Start, End):
-    for Index in range (Start, End):
-        #
-        # HEX number starting with [abcdef] must be prefixed with a '0'
-        # otherwise assembler will take it as symbol
-        #
-        Lines[Index] = gHexNumberPattern.sub(r"0\1h", Lines[Index])
 
 ## Parse command line options
 #
