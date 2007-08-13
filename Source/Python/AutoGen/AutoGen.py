@@ -215,7 +215,7 @@ class AutoGen(object):
             self.IsAutoGenCodeCreated = gAutoGenDatabase[Key].IsAutoGenCodeCreated
             self.IsMakefileCreated = gAutoGenDatabase[Key].IsMakefileCreated
             return gAutoGenDatabase[Key].BuildInfo
-        
+
         Info = ModuleBuildInfo(self.Module)
         self.BuildInfo = Info
         Info.PlatformInfo = self.GetPlatformBuildInfo(self.Platform, self.BuildTarget, self.ToolChain, self.Arch)
@@ -276,7 +276,7 @@ class AutoGen(object):
         Info.PpiList = self.GetPpiGuidList()
         Info.MacroList = self.GetMacroList()
         Info.DepexList = self.GetDepexTokenList(Info)
-        
+
         Info.IncludePathList = [Info.SourceDir, Info.DebugDir]
         Info.IncludePathList.extend(self.GetIncludePathList(Info.DependentPackageList))
 
@@ -384,7 +384,7 @@ class AutoGen(object):
 
     def GetMacroList(self):
         return ["%s %s" % (Name, self.Module.Specification[Name]) for Name in self.Module.Specification]
-    
+
     def ProcessToolDefinition(self, Info):
         ToolDefinition = gWorkspace.ToolDef.ToolsDefTxtDictionary
         ToolCodeList = gWorkspace.ToolDef.ToolsDefTxtDatabase["COMMAND_TYPE"]
@@ -394,7 +394,7 @@ class AutoGen(object):
             if Key not in ToolDefinition:
                 continue
             Name = ToolDefinition[Key]
-            
+
             Key = "%s_PATH" % KeyBaseString
             if Key in ToolDefinition:
                 Path = ToolDefinition[Key]
@@ -412,14 +412,14 @@ class AutoGen(object):
                 Option = ToolDefinition[Key]
             else:
                 Option = ""
-                
+
             Key = "%s_DPATH" % KeyBaseString
             if Key in ToolDefinition:
                 Dll = ToolDefinition[Key]
                 os.environ["PATH"] = Dll + os.pathsep + os.environ["PATH"]
             else:
                 Dll = ""
-                
+
             Key = "%s_SPATH" % KeyBaseString
             if Key in ToolDefinition:
                 Lib = ToolDefinition[Key]
@@ -437,7 +437,7 @@ class AutoGen(object):
                 OutputFlag = gDefaultOutputFlag
 
             InputFlag = gIncludeFlag[Family]
-                
+
             Info.ToolPath[Tool] = os.path.join(Path, Name)
             Info.ToolDynamicLib[Tool] = Dll
             Info.ToolStaticLib[Tool] = Lib
@@ -485,7 +485,7 @@ class AutoGen(object):
                 OptionList[Tool] = ""
 
         return OptionList
-    
+
     def GetBuildFileList(self, PlatformInfo):
         BuildRule = PlatformInfo.BuildRule
         BuildFileList = []
@@ -507,7 +507,7 @@ class AutoGen(object):
             if Ext not in BuildRule.FileTypeMapping:
                 EdkLogger.warn("Don't know how to process file %s (%s)" % (F.SourceFile, Ext))
                 continue
-            
+
             # skip file which needs a tool having no matching toolchain family
             FileType = BuildRule.FileTypeMapping[Ext]
             if FileType == "Unicode-Text":
@@ -574,7 +574,7 @@ class AutoGen(object):
             FileList.append("AutoGen.h")
             #print self.AutoGenH.String
         return FileList
-    
+
     def GetSortedLibraryList(self):
         LibraryList = []
         ModuleDatabase = gModuleDatabase[self.Arch]
@@ -592,16 +592,21 @@ class AutoGen(object):
         for F in Platform.Modules:
             M = gModuleDatabase[Arch][F]
             for Key in M.Pcds:
-                if Key not in Platform.Pcds:
+                PcdFromModule = M.Pcds[Key]
+                if not PcdFromModule.IsOverrided:
                     NotFoundPcdList.add(" | ".join(Key))
                     PcdConsumerList.add(str(M))
                     continue
-                PcdFromModule = M.Pcds[Key]
-                PcdFromPlatform = Platform.Pcds[Key]
+
+                if Key not in Platform.Pcds:
+                    PcdFromPlatform = PcdFromModule
+                else:
+                    PcdFromPlatform = Platform.Pcds[Key]
+
                 if PcdFromModule.DatumType == "VOID*" and PcdFromPlatform.MaxDatumSize == None:
                     NoDatumTypePcdList.add(" | ".join(Key))
                     PcdConsumerList.add(str(M))
-                    
+
                 if PcdFromPlatform.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd:
                     if M.ModuleType in ["PEIM", "PEI_CORE"]:
                         PcdFromPlatform.Phase = "PEI"
@@ -633,7 +638,7 @@ class AutoGen(object):
                 EdkLogger.debug(EdkLogger.DEBUG_5, "%s %s (%s) -> %d" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Pcd.Phase, TokenNumber))
                 PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
                 TokenNumber += 1
-                
+
         PlatformPcds = Platform.Pcds
         for Key in PlatformPcds:
             Pcd = PlatformPcds[Key]
@@ -716,7 +721,7 @@ class AutoGen(object):
         IncludePathList = []
         for Inc in self.Module.Includes:
             IncludePathList.append(Inc)
-            
+
         for Package in DependentPackageList:
             PackageDir = path.dirname(Package.DescFilePath)
             IncludePathList.append(PackageDir)
@@ -783,7 +788,7 @@ class AutoGen(object):
     def CreateAutoGenFile(self, FilePath=None):
         if self.IsAutoGenCodeCreated:
             return
-        
+
         if self.IsPlatformAutoGen:
             for Arch in self.BuildInfo:
                 Info = self.BuildInfo[Arch]
@@ -818,7 +823,7 @@ class AutoGen(object):
 
             AutoGenList = GenC.Generate(os.path.join(self.BuildInfo.WorkspaceDir, self.BuildInfo.DebugDir),
                                         self.AutoGenC, self.AutoGenH)
-                          
+
             if self.BuildInfo.DepexList != []:
                 dpx = GenDepex.DependencyExpression(self.BuildInfo.DepexList, self.BuildInfo.ModuleType)
                 dpxFile = dpx.Generate(os.path.join(gWorkspaceDir, self.BuildInfo.OutputDir, self.BuildInfo.Name + ".depex"))
@@ -857,7 +862,7 @@ if __name__ == '__main__':
         "ENABLE_PCH"        :   False,
         "ENABLE_LOCAL_LIB"  :   True,
     }
-    
+
     def PrintAutoGen(ag):
         bi = ag.ModuleBuildInfo
 
