@@ -880,7 +880,8 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
         Array = ''
         Value = Pcd.DefaultValue
         if Pcd.DatumType == 'UINT64':
-            Value += 'ULL'
+            if not Value.endswith('ULL'):
+                Value += 'ULL'
         if Pcd.DatumType == 'VOID*':
             if Pcd.MaxDatumSize == None:
                 raise AutoGenError(msg="Unknown MaxDatumSize of PCD %s|%s" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
