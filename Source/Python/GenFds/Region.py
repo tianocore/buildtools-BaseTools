@@ -2,7 +2,7 @@ from struct import *
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import StringIO
 from CommonDataClass.FdfClassObject import RegionClassObject
-
+import os
 class region(RegionClassObject):
     def __init__(self):
         RegionClassObject.__init__(self)
@@ -10,7 +10,7 @@ class region(RegionClassObject):
 
     """Add RegionData to Fd file"""
 
-    def AddToBuffer(self, Buffer, BaseAddress, BlockSizeList, ErasePolarity, FvBinDict, vtfDict = None):
+    def AddToBuffer(self, Buffer, BaseAddress, BlockSizeList, ErasePolarity, FvBinDict, vtfDict = None, MarcoDict = None):
         Size = self.Size
         GenFdsGlobalVariable.InfLogger('Generate Region')
         GenFdsGlobalVariable.InfLogger("   Region Size = %d" %Size)
@@ -28,7 +28,7 @@ class region(RegionClassObject):
             # Create local Buffer            #
             
                 if fv != None :
-                    GenFdsGlobalVariable.InfLogger('   Region Name = %s'%self.Offset)
+                    GenFdsGlobalVariable.InfLogger('   Region Name = FV')
                     #
                     # Call GenFv tool
                     #
@@ -62,8 +62,14 @@ class region(RegionClassObject):
         if self.RegionType == 'FILE':
             FvBuffer = StringIO.StringIO('')
             for RegionData in self.RegionDataList:
+                RegionData = GenFdsGlobalVariable.MarcoExend(RegionData, MarcoDict)
                 GenFdsGlobalVariable.InfLogger('   Region File Name = FILE: %s'%RegionData)
-                BinFile = open (self.RegionData, 'r+b')
+                if RegionData[1] != ':' :
+                    RegionData = os.path.join (GenFdsGlobalVariable.WorkSpaceDir, RegionData)
+                if not os.path.exists(RegionData):
+                    raise Excetpion ( 'File: %s dont exist !' %RegionData)
+                
+                BinFile = open (RegionData, 'r+b')
                 FvBuffer.write(BinFile.read())
                 if FvBuffer.len > Size :
                     raise Exception ("Size of File (%s) large than Region Size ", RegionData)
@@ -74,9 +80,9 @@ class region(RegionClassObject):
             if FvBuffer.len < Size:
                 for index in range(0, (Size-FvBuffer.len)):
                     if (ErasePolarity == '1'):
-                        FvBuffer.write(Pack('B', int('0xFF', 16)))
+                        FvBuffer.write(pack('B', int('0xFF', 16)))
                     else:
-                        FvBuffer.write(Pack('B', int('0x00', 16)))
+                        FvBuffer.write(pack('B', int('0x00', 16)))
             Buffer.write(FvBuffer.getvalue())
             FvBuffer.close()
             

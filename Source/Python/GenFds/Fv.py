@@ -97,7 +97,12 @@ class FV (FvClassObject):
                                           ' 0x%x' %BlockSize[1]    + \
                                           T_CHAR_LF)
                                           
-        
+        if self.BsBaseAddress != None:
+            self.FvInfFile.writelines('EFI_BOOT_DRIVER_BASE_ADDRESS = ' + \
+                                       '0x%x' %self.BsBaseAddress)
+        if self.RtBaseAddress != None:
+            self.FvInfFile.writelines('EFI_RUNTIME_DRIVER_BASE_ADDRESS = ' + \
+                                      '0x%x' %self.RtBaseAddress)
         #
         # Add attribute
         #

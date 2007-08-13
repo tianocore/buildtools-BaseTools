@@ -32,7 +32,7 @@ class FD(FDClassObject):
             # Call each region's AddToBuffer function 
             #
             GenFdsGlobalVariable.VerboseLogger('Call each region\'s AddToBuffer function')
-            Regions.AddToBuffer (FdBuffer, self.BaseAddress, self.BlockSizeList, self.ErasePolarity, FvBinDict, self.vtfRawDict)
+            Regions.AddToBuffer (FdBuffer, self.BaseAddress, self.BlockSizeList, self.ErasePolarity, FvBinDict, self.vtfRawDict, self.DefineVarDict)
         #
         # Create a empty Fd file
         #
@@ -88,7 +88,6 @@ class FD(FDClassObject):
         if flag == True:
             self.vtfRawDict = vtf.GenVtf(fvAddDict)
 
-        
 ##
 # Create Flash Map file
 ##

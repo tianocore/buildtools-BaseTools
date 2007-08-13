@@ -65,7 +65,26 @@ class GenFdsGlobalVariable:
 
     def DebugLogger (Level, msg):
         EdkLogger.debug(Level, msg)
+
+    def MarcoExend (Str, MarcoDict):
+        if MarcoDict == None  or len (MarcoDict) == 0:
+            return Str
+        if Str == None :
+            return None
         
+        Dict = {'$(WORKSPACE)'   : GenFdsGlobalVariable.WorkSpaceDir}
+        for marco in MarcoDict.keys():
+            key = '$(' + marco + ')'
+            Dict[key] = MarcoDict.get(marco)
+
+
+        
+        for key in Dict.keys():
+            if Str.find(key) >= 0 :
+                Str = Str.replace (key, Dict[key])
+        return Str
+
+
     SetDir = staticmethod(SetDir)
     ExtendMarco = staticmethod(ExtendMarco)
     SetDefaultRule = staticmethod(SetDefaultRule)
@@ -74,3 +93,4 @@ class GenFdsGlobalVariable:
     VerboseLogger = staticmethod(VerboseLogger)
     InfLogger = staticmethod(InfLogger)
     DebugLogger = staticmethod(DebugLogger)
+    MarcoExend = staticmethod (MarcoExend)

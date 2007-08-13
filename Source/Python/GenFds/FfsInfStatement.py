@@ -67,7 +67,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         #
         Rule = self.__GetRule__()
 
-        FileType = Ffs.Ffs.ModuleTypeToFileType[Rule.ModuleType]
+        #FileType = Ffs.Ffs.ModuleTypeToFileType[Rule.ModuleType]
         #
         # For the rule only has simpleFile
         #
