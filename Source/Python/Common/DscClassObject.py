@@ -91,12 +91,12 @@ class Dsc(DscObject):
             self.DscToPlatform()
         
     def ParseDsc(self, Lines, Key, KeyField):
-        newKey = SplitModuleType(Key)     
-        if newKey[0].find(TAB_LIBRARY_CLASSES.upper()) != -1:
+        newKey = SplitModuleType(Key)
+        if newKey[0].upper().find(TAB_LIBRARY_CLASSES.upper()) != -1:
             GetLibraryClassesWithModuleType(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
-        elif newKey[0].find(TAB_COMPONENTS.upper()) != -1:
+        elif newKey[0].upper().find(TAB_COMPONENTS.upper()) != -1:
             GetComponents(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
-        elif newKey[0].find(TAB_PCDS_DYNAMIC.upper()) != -1:
+        elif newKey[0].upper().find(TAB_PCDS_DYNAMIC.upper()) != -1:
             GetDynamics(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
         else:
             GetMultipleValuesOfKeyFromLines(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
@@ -115,27 +115,28 @@ class Dsc(DscObject):
         
         F = open(Filename, 'r').read()
         PreCheck(Filename, F, self.KeyList)
-        sects = F.split('[')
-        for sect in sects:
-            tab = (sect.split(TAB_SECTION_END, 1)[0]).upper()
-            if tab == TAB_INF_DEFINES.upper():
-                GetSingleValueOfKeyFromLines(sect, self.Defines.DefinesDictionary, TAB_COMMENT_SPLIT, TAB_EQUAL_SPLIT, True, TAB_VALUE_SPLIT)
-                continue
-            for arch in DataType.ARCH_LIST_FULL + [DataType.TAB_ARCH_NULL]:
-                for key in self.KeyList:
-                    if arch != DataType.TAB_ARCH_NULL:
-                        target = (key + DataType.TAB_SPLIT + arch).upper()
-                    else:
-                        target = key.upper()
-                    if SplitModuleType(tab)[0] == target:
-                        if arch != DataType.TAB_ARCH_NULL:
-                            Command = 'self.ParseDsc(sect, tab, self.Contents[arch].' + key + ')'
-                            eval(Command)
-                            continue
+        Sects = F.split(DataType.TAB_SECTION_START)
+        for Sect in Sects:
+            TabList = GetSplitValueList(Sect.split(TAB_SECTION_END, 1)[0], DataType.TAB_COMMA_SPLIT)
+            for Tab in TabList:
+                if Tab.upper() == TAB_INF_DEFINES.upper():
+                    GetSingleValueOfKeyFromLines(Sect, self.Defines.DefinesDictionary, TAB_COMMENT_SPLIT, TAB_EQUAL_SPLIT, True, TAB_VALUE_SPLIT)
+                    continue
+                for Arch in DataType.ARCH_LIST_FULL + [DataType.TAB_ARCH_NULL]:
+                    for Key in self.KeyList:
+                        if Arch != DataType.TAB_ARCH_NULL:
+                            Target = (Key + DataType.TAB_SPLIT + Arch).upper()
                         else:
-                            Command = "self.ParseDsc(sect, tab, self.Contents['" + DataType.TAB_ARCH_COMMON + "']." + key + ')'
-                            eval(Command)
-                            continue
+                            Target = Key.upper()
+                        if SplitModuleType(Tab)[0].upper() == Target:
+                            if Arch != DataType.TAB_ARCH_NULL:
+                                Command = 'self.ParseDsc(Sect, Tab, self.Contents[Arch].' + Key + ')'
+                                eval(Command)
+                                continue
+                            else:
+                                Command = "self.ParseDsc(Sect, Tab, self.Contents['" + DataType.TAB_ARCH_COMMON + "']." + Key + ')'
+                                eval(Command)
+                                continue
 
     def DscToPlatform(self):
         #

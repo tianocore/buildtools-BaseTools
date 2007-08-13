@@ -29,7 +29,7 @@ from CommonDataClass.CommonClass import *
 # This Class is used for PcdObject 
 #
 class PcdClassObject(object):
-    def __init__(self, Name = None, Guid = None, Type = None, DatumType = None, Value = None, Token = None, MaxDatumSize = None, SkuInfoList = {}):
+    def __init__(self, Name = None, Guid = None, Type = None, DatumType = None, Value = None, Token = None, MaxDatumSize = None, SkuInfoList = {}, IsOverrided = False):
         self.TokenCName = Name
         self.TokenSpaceGuidCName = Guid
         self.Type = Type
@@ -38,6 +38,7 @@ class PcdClassObject(object):
         self.TokenValue = Token
         self.MaxDatumSize = MaxDatumSize
         self.SkuInfoList = SkuInfoList
+        self.IsOverrided = IsOverrided
         self.Phase = "DXE"
         
     def __str__(self):
@@ -49,7 +50,9 @@ class PcdClassObject(object):
               str(self.TokenValue) + DataType.TAB_VALUE_SPLIT + \
               str(self.MaxDatumSize) + DataType.TAB_VALUE_SPLIT
         for Item in self.SkuInfoList.values():
-            rtn = rtn + Item.SkuId + DataType.TAB_VALUE_SPLIT + Item.SkuIdName
+            rtn = rtn + Item.SkuId + DataType.TAB_VALUE_SPLIT + Item.SkuIdName + DataType.TAB_VALUE_SPLIT
+        rtn = rtn + str(self.IsOverrided)
+        
         return rtn
 
     def __eq__(self, other):
@@ -299,7 +302,7 @@ class WorkspaceBuild(object):
                         Token = Item.Token
                         MaxDatumSize = Item.MaxDatumSize
                         SkuInfoList = Item.SkuInfoList
-                        pb.Pcds[(Name, Guid)] = PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList)
+                        pb.Pcds[(Name, Guid)] = PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, False)
                 
                 # Add to database
                 self.Build[Arch].PlatformDatabase[Dsc] = pb
@@ -357,7 +360,7 @@ class WorkspaceBuild(object):
                         Token = Item.Token
                         MaxDatumSize = Item.MaxDatumSize
                         SkuInfoList = Item.SkuInfoList
-                        pb.Pcds[(Name, Guid)] = PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList)
+                        pb.Pcds[(Name, Guid)] = PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, False)
                 
                 # Add to database
                 self.Build[Arch].PackageDatabase[Dec] = pb
@@ -811,6 +814,7 @@ class WorkspaceBuild(object):
         Token = ''
         MaxDatumSize = ''
         SkuInfoList = {}
+        IsOverrided = False
         #
         # First get information from platform database
         #
@@ -823,6 +827,7 @@ class WorkspaceBuild(object):
                 Token = Pcds[(Name, Guid)].TokenValue
                 MaxDatumSize = Pcds[(Name, Guid)].MaxDatumSize
                 SkuInfoList =  Pcds[(Name, Guid)].SkuInfoList
+                IsOverrided = True
                 break
 
         #
@@ -848,14 +853,16 @@ class WorkspaceBuild(object):
                                     Value = Pcd.DefaultValue
                                 if Pcd.MaxDatumSize != '':
                                     MaxDatumSize = Pcd.MaxDatumSize
+                                IsOverrided = True
         
         #
         # Last get information from PcdsSet defined by FDF
         #
         if Guid in PcdsSet.keys():
             Value = PcdsSet[Guid]
-        
-        return PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList)
+            IsOverrided = True
+
+        return PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, IsOverrided)
     
     #
     # Search in InfDatabase, find the supmodulelist of the libraryclass

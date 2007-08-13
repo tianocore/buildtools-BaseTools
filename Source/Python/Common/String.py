@@ -178,6 +178,9 @@ def GetComponents(Lines, Key, KeyValues, CommentCharacter):
         
     return True
 
+#
+# Get Library Class definition when no module type defined
+#
 def GetLibraryClassesWithModuleType(Lines, Key, KeyValues, CommentCharacter):
     newKey = SplitModuleType(Key)
     Lines = Lines.split(DataType.TAB_SECTION_END, 1)[1]
@@ -189,14 +192,21 @@ def GetLibraryClassesWithModuleType(Lines, Key, KeyValues, CommentCharacter):
 
     return True
 
+#
+# Get Dynamic Pcds
+#
 def GetDynamics(Lines, Key, KeyValues, CommentCharacter):
-    newKey = SplitModuleType(Key)
+    #
+    # Get SkuId Name List
+    #
+    SkuIdNameList = SplitModuleType(Key)
+    
     Lines = Lines.split(DataType.TAB_SECTION_END, 1)[1]
     LineList = Lines.splitlines()
     for Line in LineList:
         Line = CleanString(Line, CommentCharacter)
         if Line != '' and Line[0] != CommentCharacter:
-            KeyValues.append([CleanString(Line, CommentCharacter), newKey[1]])
+            KeyValues.append([CleanString(Line, CommentCharacter), SkuIdNameList[1]])
 
     return True
 
