@@ -815,6 +815,8 @@ class WorkspaceBuild(object):
         MaxDatumSize = ''
         SkuInfoList = {}
         IsOverrided = False
+        IsFoundInDsc = False
+        IsFoundInDec = False
         #
         # First get information from platform database
         #
@@ -828,8 +830,13 @@ class WorkspaceBuild(object):
                 MaxDatumSize = Pcds[(Name, Guid)].MaxDatumSize
                 SkuInfoList =  Pcds[(Name, Guid)].SkuInfoList
                 IsOverrided = True
+                IsFoundInDsc = True
                 break
-
+        if not IsFoundInDsc:
+            ErrorMsg = "Pcd '%s' defined in module '%s' is not found in platform" % (Name, ModuleName) 
+            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+            
+        
         #
         # Second get information from package database
         #
@@ -838,7 +845,12 @@ class WorkspaceBuild(object):
             if (Name, Guid) in Pcds:
                 DatumType = Pcds[(Name, Guid)].DatumType
                 Token = Pcds[(Name, Guid)].TokenValue
+                IsOverrided = True
+                IsFoundInDec = True
                 break
+        if not IsFoundInDec:
+            ErrorMsg = "Pcd '%s' defined in module '%s' is not found in package" % (Name, ModuleName) 
+            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
         
         #
         # Third get information from <Pcd> of <Compontents> from module database
@@ -860,7 +872,6 @@ class WorkspaceBuild(object):
         #
         if Guid in PcdsSet.keys():
             Value = PcdsSet[Guid]
-            IsOverrided = True
 
         return PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, IsOverrided)
     
