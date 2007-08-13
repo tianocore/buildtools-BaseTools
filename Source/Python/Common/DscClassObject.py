@@ -297,17 +297,18 @@ class Dsc(DscObject):
                         else:
                             Component.PcdBuildDefinitions.append(PcdClass(List[0], '', List[1], '', '', List[2], Type, [], {}, []))
                     if Type == DataType.TAB_PCDS_FIXED_AT_BUILD or Type == DataType.TAB_PCDS_PATCHABLE_IN_MODULE:
-                        if len(List.append('')) < 4:
+                        List.append('')
+                        if len(List) < 4:
                             ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<Cname>|<TokenSpaceGuidCName>|<Value>[|<MaxDatumSize>]'" % (Type, Pcd[1], self.Platform.Header.FullPath) 
                             raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                         else:
                             Component.PcdBuildDefinitions.append(PcdClass(List[0], '', List[1], '', List[3], List[2], Type, [], {}, []))
                     if Type == DataType.TAB_PCDS_DYNAMIC or Type == DataType.TAB_PCDS_DYNAMIC_EX:
-                        if len(List) != 2:
-                            ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<Cname>|<TokenSpaceGuidCName>|<Value>[|<MaxDatumSize>]'" % (Type, Pcd[1], self.Platform.Header.FullPath) 
+                        if len(List) != 3:
+                            ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<Cname>|<TokenSpaceGuidCName>'" % (Type, Pcd[1], self.Platform.Header.FullPath) 
                             raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                         else:
-                            Component.PcdBuildDefinitions.append(PcdClass(List[0], '', List[1], '', List[3], List[2], Type, [], {}, []))                        
+                            Component.PcdBuildDefinitions.append(PcdClass(List[0], '', List[1], '', '', List[2], Type, [], {}, []))                        
                     
                 if GenInclude(Item[0], IncludeFiles, Arch):
                     continue
