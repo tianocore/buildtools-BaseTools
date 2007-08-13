@@ -876,7 +876,8 @@ class WorkspaceBuild(object):
                         continue
                     for ModuleType in Item.ModuleType:
                         EdkLogger.debug(EdkLogger.DEBUG_3, "\tLibraryClass %s has specific defined module types" % Name)
-                        SupModuleList.remove(ModuleType)
+                        if ModuleType in SupModuleList:
+                            SupModuleList.remove(ModuleType)
 
         return SupModuleList
     

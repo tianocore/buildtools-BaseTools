@@ -80,15 +80,15 @@ class InfContents(InfObject):
         self.Nmake = []
         
 class Inf(InfObject):
-    def __init__(self, filename = None, isMergeAllArches = False, isToModule = False):
+    def __init__(self, Filename = None, IsMergeAllArches = False, IsToModule = False):
         self.Identification = Identification()
         self.Defines = InfDefines()
         self.Contents = {}
         self.UserExtensions = ''
         self.Module = ModuleClass()
         
-        for key in DataType.ARCH_LIST_FULL:
-            self.Contents[key] = InfContents()
+        for Arch in DataType.ARCH_LIST_FULL:
+            self.Contents[Arch] = InfContents()
 
         self.KeyList = [
             TAB_SOURCES, TAB_BUILD_OPTIONS, TAB_BINARIES, TAB_INCLUDES, TAB_GUIDS, TAB_PROTOCOLS, TAB_PPIS, TAB_LIBRARY_CLASSES, TAB_PACKAGES, TAB_LIBRARIES, \
@@ -96,13 +96,13 @@ class Inf(InfObject):
             TAB_PCDS_DYNAMIC_NULL, TAB_PCDS_DYNAMIC_EX_NULL, TAB_DEPEX, TAB_NMAKE
         ]
                 
-        if filename != None:
-            self.LoadInfFile(filename)
+        if Filename != None:
+            self.LoadInfFile(Filename)
         
-        if isMergeAllArches:
+        if IsMergeAllArches:
             self.MergeAllArches()
         
-        if isToModule:
+        if IsToModule:
             self.InfToModule()
     
     def MergeAllArches(self):
@@ -256,6 +256,9 @@ class Inf(InfObject):
                 elif Status == 1:     # Not find DEFINE statement
                     #{ (LibraryClass, Instance, PcdFeatureFlag, ModuleType1|ModuleType2|ModuleType3) : [Arch1, Arch2, ...] }
                     ItemList = GetSplitValueList((Item[0] + DataType.TAB_VALUE_SPLIT * 2))
+                    if ItemList[1] != '' and CheckFileType(ItemList[1], '.Inf') == False:
+                        ErrorMsg = "Wrong library instance '%s' found for LibraryClasses '%s' in file '%s', it is NOT a valid INF file" % (ItemList[1], ItemList[0], self.Module.Header.FullPath) 
+                        raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                     MergeArches(LibraryClasses, (ItemList[0], ItemList[1], ItemList[2], DataType.TAB_VALUE_SPLIT.join(Item[1])), Arch)
         for Key in LibraryClasses.keys():
             KeyList = Key[0].split(DataType.TAB_VALUE_SPLIT)
@@ -283,6 +286,9 @@ class Inf(InfObject):
                     ErrorMsg = "Wrong DEFINE statement '%s' found in section Packages in file '%s', correct format is 'DEFINE <VarName> = <PATH>'" % (Item, self.Module.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                 elif Status == 1:     # Not find DEFINE statement
+                    if Item != '' and CheckFileType(Item, '.Dec') == False:
+                        ErrorMsg = "Wrong package definition '%s' found in file '%s', it is NOT a valid DEC file" % (Item, self.Module.Header.FullPath) 
+                        raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                     MergeArches(Packages, Item, Arch)
         for Key in Packages.keys():
             Package = ModulePackageDependencyClass()

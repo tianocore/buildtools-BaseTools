@@ -63,15 +63,15 @@ class DscContents(DscObject):
         self.BuildOptions = []
 
 class Dsc(DscObject):
-    def __init__(self, filename = None, isMergeAllArches = False, isToPlatform = False):
+    def __init__(self, Filename = None, IsMergeAllArches = False, IsToPlatform = False):
         self.Identification = Identification()
         self.Defines = DscDefines()
         self.Contents = {}
         self.UserExtensions = ''
         self.Platform = PlatformClass()
 
-        for key in DataType.ARCH_LIST_FULL:
-            self.Contents[key] = DscContents()
+        for Arch in DataType.ARCH_LIST_FULL:
+            self.Contents[Arch] = DscContents()
         
         self.KeyList = [
             TAB_SKUIDS, TAB_LIBRARIES, TAB_LIBRARY_CLASSES, TAB_BUILD_OPTIONS, TAB_PCDS_FIXED_AT_BUILD_NULL, \
@@ -81,13 +81,13 @@ class Dsc(DscObject):
             TAB_COMPONENTS
         ]
         
-        if filename != None:
-            self.LoadDscFile(filename)
+        if Filename != None:
+            self.LoadDscFile(Filename)
             
-        if isMergeAllArches:
+        if IsMergeAllArches:
             self.MergeAllArches()
         
-        if isToPlatform:
+        if IsToPlatform:
             self.DscToPlatform()
         
     def ParseDsc(self, Lines, Key, KeyField):
@@ -232,6 +232,9 @@ class Dsc(DscObject):
                         ErrorMsg = "Wrong statement '%s' found in section LibraryClasses in file '%s', correct format is '<LibraryClassKeyWord>|<LibraryInstance>'" % (Item, self.Platform.Header.FullPath) 
                         raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                     else:
+                        if List[1] != '' and CheckFileType(List[1], '.Inf') == False:
+                            ErrorMsg = "Wrong library instance '%s' found for LibraryClasses '%s' in file '%s', it is NOT a valid INF file" % (List[1], List[0], self.Platform.Header.FullPath) 
+                            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                         if Item[1] == ['']:
                             Item[1] = DataType.SUP_MODULE_LIST
                         MergeArches(LibraryClasses, (List[0], List[1]) + tuple(Item[1]), Arch)
@@ -263,6 +266,9 @@ class Dsc(DscObject):
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].Components:
                 (InfFilename, ExecFilename) = GetExec(Item[0])
+                if InfFilename != '' and CheckFileType(InfFilename, '.Inf') == False:
+                    ErrorMsg = "Wrong component name '%s' found in file '%s', it is NOT a valid INF file" % (InfFilename, self.Platform.Header.FullPath)
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                 LibraryClasses = Item[1]
                 BuildOptions = Item[2]
                 Pcds = Item[3]
@@ -273,6 +279,9 @@ class Dsc(DscObject):
                     List = GetSplitValueList(Lib)
                     if len(List) != 2:
                         ErrorMsg = "Wrong LibraryClass statement '%s' found in section Components in file '%s', correct format is '<ClassName>|<InfFilename>'" % (Lib, self.Platform.Header.FullPath) 
+                        raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                    if List[1] != '' and CheckFileType(List[1], '.Inf') == False:
+                        ErrorMsg = "Wrong library instance '%s' found for LibraryClasses '%s' in section components of file '%s', it is NOT a valid INF file" % (List[1], List[0], self.Platform.Header.FullPath) 
                         raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                     Component.LibraryClasses.LibraryList.append(PlatformLibraryClass(List[0], List[1]))
                 for BuildOption in BuildOptions:

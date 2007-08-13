@@ -198,6 +198,9 @@ class Dec(DecObject):
                     ErrorMsg = "Wrong statement '%s' found in section LibraryClasses in file '%s', correct format is '<CName>=<GuidValue>'" % (Item, self.Package.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                 else:
+#                    if List[1] != '' and CheckFileType(List[1], '.Inf') == False:
+#                        ErrorMsg = "Wrong library instance '%s' found for LibraryClasses '%s' in file '%s', it is NOT a valid INF file" % (List[1], List[0], self.Package.Header.FullPath) 
+#                        raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                     if Item[1] == ['']:
                             Item[1] = DataType.SUP_MODULE_LIST
                     MergeArches(LibraryClasses, (List[0], List[1]) + tuple(Item[1]), Arch)

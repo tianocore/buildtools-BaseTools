@@ -350,6 +350,18 @@ def PreCheck(FileName, FileContent, SupSectionTag):
     if IsFailed:
        raise ParserError(FORMAT_INVALID, lineno = LineNo, name = FileName)
 
+#
+# Check if the Filename is including ExtName
+# Return True if is
+# Retrun False if not
+#
+def CheckFileType(Filename, ExtName):
+    (Root, Ext) = os.path.splitext(Filename)
+    if Ext.upper() == ExtName.upper():
+        return True
+    
+    return False
+
 if __name__ == '__main__':
     print SplitModuleType('LibraryClasses.common.DXE_RUNTIME_DRIVER')
     print SplitModuleType('Library.common')
