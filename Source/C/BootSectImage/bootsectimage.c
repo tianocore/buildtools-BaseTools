@@ -882,9 +882,9 @@ main (
         Usage ();
         return -1;
       }
-      SrcImage   = *argv;
-      argc--; argv++;
       DstImage   = *argv;
+      argc--; argv++;
+      SrcImage   = *argv;
     } else if (strcmp (*argv, "-m") == 0 || strcmp (*argv, "--mbr") == 0) {
       ProcessMbr = TRUE;
     } else if (strcmp (*argv, "-v") == 0 || strcmp (*argv, "--verbose") == 0) {
