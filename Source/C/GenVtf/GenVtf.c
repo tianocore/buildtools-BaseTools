@@ -112,7 +112,6 @@ Returns:
 --*/
 {
   strcpy (*TokenStr, Token);
-//  fprintf(stdout,*TokenStr);
   TokenStr++;
 }
 
@@ -367,8 +366,8 @@ Returns:
     } else if (strnicmp (*TokenStr, "COMP_TYPE", 9) == 0) {
       TokenStr++;
       if (AsciiStringToUint64 (*TokenStr, FALSE, &StringValue) != EFI_SUCCESS) {
-        printf ("\nERROR: COMP_TYPE Could not read a numeric value from \"0x%x\".", *TokenStr);
-//        return EFI_INVALID_PARAMETER;
+        //printf ("\nERROR: COMP_TYPE Could not read a numeric value from \"0x%x\".", *TokenStr);
+        Error (NULL, 0, 5001, "Cannot get: \"0x%x\".", *TokenStr);
         return ;
       }
 
@@ -397,8 +396,8 @@ Returns:
       } else {
         VtfInfo->PreferredSize = TRUE;
         if (AsciiStringToUint64 (*TokenStr, FALSE, &StringValue) != EFI_SUCCESS) {
-          printf ("\nERROR: COMP_SIZE Could not read a numeric value from \"%s\".", TokenStr);
-//          return EFI_INVALID_PARAMETER;
+          //printf ("\nERROR: COMP_SIZE Could not read a numeric value from \"%s\".", TokenStr);
+          Error (NULL, 0, 5001, "Cannot get: %s", TokenStr);
           return ;
         }
 
@@ -412,7 +411,7 @@ Returns:
       } else if (strnicmp (*TokenStr, "0", 1) == 0) {
         VtfInfo->CheckSumRequired = 0;
       } else {
-        printf ("\nERROR: Bad information in INF file about Checksum required field");
+        Error (NULL, 0, 3000, "Invaild", "Bad information in INF file about Checksum required field");
       }
     }
 
@@ -484,7 +483,7 @@ Returns:
       if (*TokenStr != NULL) {
         FileListPtr->NextVtfInfo  = malloc (sizeof (PARSED_VTF_INFO));
         if (FileListPtr->NextVtfInfo == NULL) {
-          printf ("Error: Out of memory resources.\n");
+          Error (NULL, 0, 4003, "Resource", "Out of memory resources.", NULL);
           break;
         }
         FileListPtr = FileListPtr->NextVtfInfo;
@@ -502,7 +501,6 @@ Returns:
 
 EFI_STATUS
 GetVtfRelatedInfoFromInfFile (
-//  IN  CHAR8 *FileName
   IN FILE *FilePointer
   )
 /*++
@@ -529,17 +527,16 @@ Returns:
   UINTN       Index;
   EFI_STATUS  Status;
   
-//  Fp = fopen (FileName, "r");
   Fp = FilePointer;
   if (Fp == NULL) {
-    printf("\nERROR: BSF INF file is invalid!\n");
+    Error (NULL, 0, 2000, "Invalid paramter", "BSF INF file is invalid!");
     return EFI_ABORTED;
   }
 
   ValidLineCount (Fp);
 
   if (ValidLineNum == 0) {
-    printf ("\nERROR: File doesn't contain any valid informations");
+    Error (NULL, 0, 2000, "Invalid paramter", "File doesn't contain any valid informations!");
     return EFI_INVALID_PARAMETER;
   }
 
@@ -561,7 +558,6 @@ Returns:
     }
 
     memset (*TokenStr, 0, FILE_NAME_SIZE);
-//    free (*TokenStr);
     TokenStr++;
   }
 
@@ -1004,7 +1000,7 @@ Returns:
   //
   GetNextAvailableFitPtr (&CompFitPtr);
   if (CompFitPtr == NULL) {
-    printf ("\nERROR: Can't update this component in FIT");
+    Error(NULL, 0, 5003, "Invalid", "Can't update this component in FIT");
     return EFI_ABORTED;
   }
 
@@ -1087,7 +1083,7 @@ Returns:
   Fp = fopen (VtfInfo->CompSymName, "r+b");
 
   if (Fp == NULL) {
-    printf ("\nERROR: Error in opening file");
+    Error (NULL, 0, 0001, "Error opening file", VtfInfo->CompSymName);
     return EFI_INVALID_PARAMETER;
   }
 
@@ -1166,12 +1162,11 @@ Returns:
   Fp = fopen (VtfInfo->CompBinName, "r+b");
 
   if (Fp == NULL) {
-    printf ("\nERROR: Opening file %s", VtfInfo->CompBinName);
+    Error (NULL, 0, 0001, "Error opening file", VtfInfo->CompBinName);
     return EFI_ABORTED;
   }
 
   FileSize = _filelength (fileno (Fp));
-  //printf("\n FileSize is %d", FileSize);
   if ((VtfInfo->CompType == COMP_TYPE_FIT_PAL_B) || (VtfInfo->CompType == COMP_TYPE_FIT_PAL_A_SPECIFIC)) {
 
     //
@@ -1182,7 +1177,7 @@ Returns:
 
   if (VtfInfo->PreferredSize) {
     if (FileSize > VtfInfo->CompSize) {
-      printf ("\nERROR: The component size is more than specified size");
+      Error (NULL, 0, 2000, "Invalid paramter", "The component size is more than specified size");
       return EFI_ABORTED;
     }
 
@@ -1244,7 +1239,6 @@ Returns:
   if (VtfInfo->LocationType == SECOND_VTF && SecondVTF == TRUE) {
     Vtf2LastStartAddress = CompStartAddress;
     Vtf2TotalSize += (UINT32) (FileSize + NumAdjustByte);
-    //printf("\n CompStartAddress is %d", CompStartAddress);
     Status = UpdateVtfBuffer (CompStartAddress, Buffer, FileSize, SECOND_VTF);
   } else if (VtfInfo->LocationType == FIRST_VTF) {
     Vtf1LastStartAddress = CompStartAddress;
@@ -1255,7 +1249,6 @@ Returns:
   }
 
   if (EFI_ERROR (Status)) {
-    printf("\nError in CreateAndUpdateComponent");
     return EFI_ABORTED;
   }
 
@@ -1263,7 +1256,7 @@ Returns:
 
   CompFitPtr->CompAddress = CompStartAddress | IPF_CACHE_BIT;
   if ((FileSize % 16) != 0) {
-    printf("\n Binary FileSize must be multiple of 16");
+    Error (NULL, 0, 2000, "Invalid paramter", "Binary FileSize must be multiple of 16");
     return EFI_INVALID_PARAMETER;
   }
   //assert ((FileSize % 16) == 0);
@@ -1349,13 +1342,13 @@ Returns:
   Fp = fopen (VtfInfo->CompBinName, "r+b");
 
   if (Fp == NULL) {
-    printf ("\nERROR: Opening file %s", VtfInfo->CompBinName);
+    Error (NULL, 0, 0001, "Error opening file", VtfInfo->CompBinName);
     return EFI_ABORTED;
   }
 
   FileSize = _filelength (fileno (Fp));
   if (FileSize < 64) {
-    printf("\n PAL_A bin header is 64 bytes, so the Bin size must be larger than 64 bytes!");
+    Error (NULL, 0, 2000, "Invalid paramter", "PAL_A bin header is 64 bytes, so the Bin size must be larger than 64 bytes!");
     return EFI_INVALID_PARAMETER;
   }
   FileSize -= SIZE_OF_PAL_HEADER;
@@ -1363,7 +1356,7 @@ Returns:
 
   if (VtfInfo->PreferredSize) {
     if (FileSize > VtfInfo->CompSize) {
-      printf ("\nERROR: The PAL_A Size is more than specified size");
+      Error (NULL, 0, 2000, "Invalid paramter", "The PAL_A Size is more than specified size");
       return EFI_ABORTED;
     }
 
@@ -1405,7 +1398,7 @@ Returns:
   PalFitPtr->CompAddress  = PalStartAddress | IPF_CACHE_BIT;
   //assert ((FileSize % 16) == 0);
   if ((FileSize % 16) != 0) {
-    printf("\n Binary FileSize must be multiple of 16");
+    Error (NULL, 0, 2000, "Invalid paramter", "Binary FileSize must be multiple of 16");
     return EFI_INVALID_PARAMETER;
   }
   
@@ -1467,12 +1460,12 @@ Returns:
   UINTN     Index;
 
   if (!VtfInfo->PreferredSize) {
-    printf ("\nERROR: FIT could not be allocated becuase there are no size information");
+    Error (NULL, 0, 2000, "Invalid paramter", "FIT could not be allocated becuase there are no size information");
     return EFI_ABORTED;
   }
 
   if ((VtfInfo->CompSize % 16) != 0) {
-    printf ("\nERROR: Invalid Fit Table Size, not multiple of 16 bytes. Please correct the size");
+    Error (NULL, 0, 2000, "Invalid paramter", "Invalid Fit Table Size, not multiple of 16 bytes. Please correct the size");
   }
 
   PalFitTableAdd = Fv1EndAddress - SIZE_TO_PAL_A_FIT;
@@ -1567,7 +1560,7 @@ Returns:
 
   Fp = fopen (FileName, "w+b");
   if (Fp == NULL) {
-    printf ("Error in opening file %s\n", FileName);
+    Error (NULL, 0, 0001, "Error opening file", FileName);
     return EFI_ABORTED;
   }
 
@@ -1578,7 +1571,7 @@ Returns:
   }
 
   if (NumByte != (sizeof (UINT8) * VtfSize)) {
-    printf ("\nERROR: Could not copy buffer into file %s ", FileName);
+    Error (NULL, 0, 0002, "Error writing file", FileName);
     return EFI_ABORTED;
   }
 
@@ -1618,7 +1611,7 @@ Returns:
 
   if (LocType == FIRST_VTF) {
     if ((StartAddress | IPF_CACHE_BIT) < (Vtf1LastStartAddress | IPF_CACHE_BIT)) {
-      printf ("ERROR: Start Address is less then the VTF start address\n");
+      Error (NULL, 0, 2000, "Invalid paramter", "Start Address is less then the VTF start address");
       return EFI_ABORTED;
     }
 
@@ -1629,7 +1622,7 @@ Returns:
   } else {
 
     if ((StartAddress | IPF_CACHE_BIT) < (Vtf2LastStartAddress | IPF_CACHE_BIT)) {
-      printf("\n StartAddress Error");
+      Error (NULL, 0, 2000, "Invalid paramter", "Error StartAddress");
       return EFI_ABORTED;
     }
     LocalBufferPtrToWrite = (UINT8 *) Vtf2EndBuffer;
@@ -1781,7 +1774,7 @@ Returns:
   Fp = fopen (FileName, "r+b");
 
   if (Fp == NULL) {
-    printf ("\nERROR: Unable to open the file %s", FileName);
+    Error (NULL, 0, 0001, "Error opening file", FileName);
   }
 
   FileSize = _filelength (fileno (Fp));
@@ -1893,7 +1886,6 @@ Returns:
     //
     case COMP_TYPE_FIT_PAL_A:
       //COMP_TYPE_FIT_PAL_A           0x0F
-      //printf("\n CreateAndUpdatePAL_A");
       Status = CreateAndUpdatePAL_A (ParsedInfoPtr);
 
       //
@@ -1918,7 +1910,6 @@ Returns:
       break;
 
     default:
-//      printf("\nDefault is to CreateAndUpdateComponent!");
       //
       // Any other component type should be handled here. This will create the
       // image in specified VTF and create appropriate entry about this
@@ -1926,8 +1917,7 @@ Returns:
       //
       Status = CreateAndUpdateComponent (ParsedInfoPtr);
       if (EFI_ERROR (Status)) {
-        printf("\n Error in CreateAndUpdateComponent");
-        printf("\nERROR: Updating component.%s \n", ParsedInfoPtr->CompName);
+        Error (NULL, 0, 0002, "Error updating component", ParsedInfoPtr->CompName);
         return EFI_ABORTED;
       } else {
       break;}
@@ -1974,10 +1964,7 @@ Returns:
 --*/
 {
   EFI_STATUS  Status;
-//  CHAR8       OutFileName1[FILE_NAME_SIZE];
-//  CHAR8       OutFileName2[FILE_NAME_SIZE];
-//  BOOLEAN     SecondVTF;
-  FILE        *VtfFP;
+  FILE            *VtfFP;
 
   Status          = EFI_UNSUPPORTED;
   VtfFP = fp;
@@ -1991,11 +1978,11 @@ Returns:
   Fv1BaseAddress        = StartAddress1;
   Fv1EndAddress         = Fv1BaseAddress + Size1;
   if (Fv1EndAddress != 0x100000000 || Size1 < 0x100000) {
-    printf("\n Error BaseAddress and Size parameters");
+    Error (NULL, 0, 2000, "Invalid paramter", "Error BaseAddress and Size parameters!");
     if (Size1 < 0x100000) {
-      printf("\n The FwVolumeSize must be larger than 1M");
+      Error (NULL, 0, 2000, "Invalid paramter", "The FwVolumeSize must be larger than 1M!");
     } else if (SecondVTF != TRUE) {
-    printf("\n BaseAddress + FwVolumeSize must equal 0x100000000!");
+      Error (NULL, 0, 2000, "Invalid paramter", "BaseAddress + FwVolumeSize must equal 0x100000000!");
     }
     Usage();
     return EFI_INVALID_PARAMETER;
@@ -2013,6 +2000,7 @@ Returns:
   //
   else {
   printf("\nno output file specified, output to stdout!");
+  //Error (NULL, 0, 2000, "Invalid paramter", "no output file specified, output to stdout!");
 /*
   sprintf (
     OutFileName1,
@@ -2037,7 +2025,7 @@ Returns:
   //
   Vtf1Buffer = malloc ((UINTN) Size1);
   if (Vtf1Buffer == NULL) {
-    printf ("\nERROR: Not enough resource to create memory mapped file for Boot Strap File");
+    Error (NULL, 0, 4001, "Resource", "Not enough resource to create memory mapped file for Boot Strap File!");
     return EFI_OUT_OF_RESOURCES;
   }
   memset (Vtf1Buffer, 0x00, (UINTN) Size1);
@@ -2048,10 +2036,10 @@ Returns:
     Fv2BaseAddress        = StartAddress2;
     Fv2EndAddress         = Fv2BaseAddress + Size2;
     if (Fv2EndAddress != StartAddress1) {
-      printf("\n Error BaseAddress and Size parameters");
+      Error (NULL, 0, 2000, "Invalid paramter", "Error BaseAddress and Size parameters");
       if (SecondVTF == TRUE) {
-        printf("\nFirstBaseAddress + FirstFwVolumeSize must equal 0x100000000!");
-        printf("\nSecondBaseAddress + SecondFwVolumeSize must equal FirstBaseAddress");
+        Error (NULL, 0, 2000, "Invalid paramter", "FirstBaseAddress + FirstFwVolumeSize must equal 0x100000000!");
+        Error (NULL, 0, 2000, "Invalid paramter", "SecondBaseAddress + SecondFwVolumeSize must equal FirstBaseAddress!");
       }
       Usage();
       return EFI_INVALID_PARAMETER;
@@ -2080,7 +2068,7 @@ Returns:
     //
     Vtf2Buffer = malloc ((UINTN) Size2);
     if (Vtf2Buffer == NULL) {
-      printf ("\nERROR: Not enough resource to create memory mapped file for Boot Strap File");
+      Error (NULL, 0, 4001, "Resource", "Not enough resource to create memory mapped file for Boot Strap File!");
       return EFI_OUT_OF_RESOURCES;
     }
     memset (Vtf2Buffer, 0x00, (UINTN) Size2);
@@ -2088,11 +2076,10 @@ Returns:
     Vtf2LastStartAddress  = Fv2EndAddress | IPF_CACHE_BIT;
   }
   
-//  Status = GetVtfRelatedInfoFromInfFile (VTF_INPUT_FILE);
   Status = GetVtfRelatedInfoFromInfFile (VtfFP);
    
   if (Status != EFI_SUCCESS) {
-    printf ("\nERROR: Error in parsing input file");
+    Error (NULL, 0, 0003, "Error parsing file", "the input file.");
     CleanUpMemory ();
     return Status;
   }
@@ -2128,7 +2115,7 @@ Returns:
   //
   Vtf1TotalSize += sizeof (EFI_FFS_FILE_HEADER);
   Vtf1LastStartAddress -= sizeof (EFI_FFS_FILE_HEADER);
-//  printf("\nVtf1TotalSize before call UpdateFfsHeader is %d", Vtf1TotalSize);
+
   Status = UpdateFfsHeader (Vtf1TotalSize, FIRST_VTF);
   if (Status != EFI_SUCCESS) {
     CleanUpMemory ();
@@ -2155,7 +2142,6 @@ Returns:
   }
   
   CleanUpMemory ();
-//  printf ("\n");
 
   return Status;
 }
@@ -2187,7 +2173,6 @@ Returns:
   UINT64      *StartAddressPtr;
   UINTN       FirstFwVSize;
   UINTN       NumByte;
-//  CHAR8       OutFileName1[FILE_NAME_SIZE];
 
   StartAddressPtr   = malloc (sizeof (UINT64));
   if (StartAddressPtr == NULL) {
@@ -2217,7 +2202,7 @@ Returns:
   Fp = fopen (OutFileName1, "r+b");
 
   if (Fp == NULL) {
-    printf ("\nERROR: Error opening file ");
+    Error (NULL, 0, 0001, "Error opening file", OutFileName1);
     if (StartAddressPtr) {
       free (StartAddressPtr);
     }
@@ -2236,7 +2221,6 @@ Returns:
     free (StartAddressPtr);
   }
 
-//  printf ("\n");
   Status = EFI_SUCCESS;
   return Status;
 }
@@ -2277,7 +2261,7 @@ Returns:
   CHAR8   Token[_MAX_PATH];
   CHAR8   BaseToken[_MAX_PATH];
   UINT64  TokenAddress;
-  long    StartLocation;
+  long      StartLocation;
 
   //
   // Verify input parameters.
@@ -2311,7 +2295,7 @@ Returns:
   DestFile = fopen (DestFileName, "a+");
   if (DestFile == NULL) {
     fclose (SourceFile);
-    printf("\nError in open output file");
+    Error (NULL, 0, 0001, "Error opening file", DestFileName);
     return EFI_ABORTED;
   }
 
@@ -2321,7 +2305,7 @@ Returns:
   if (fseek (DestFile, 0, SEEK_END) != 0) {
     fclose (SourceFile);
     fclose (DestFile);
-    printf("\n not the beginning of the output file");
+    Error (NULL, 0, 2000, "Invalid paramter", "not the beginning of the output file");
     return EFI_ABORTED;
   }
 
@@ -2332,7 +2316,7 @@ Returns:
   } else if (StartLocation == -1) {
     fclose (SourceFile);
     fclose (DestFile);
-    printf("\n StartLocation error");
+    Error (NULL, 0, 2000, "Invalid paramter", "StartLocation error");
     return EFI_ABORTED;
   }
 
@@ -2349,7 +2333,7 @@ Returns:
   if (strcmp (Buffer, "TEXTSYM format | V1.0\n")) {
     fclose (SourceFile);
     fclose (DestFile);
-    printf("\nThe symbol file does not match the expected sym format");
+    Error (NULL, 0, 2000, "Invalid paramter", "The symbol file does not match the expected sym format");
     return EFI_ABORTED;
   }
 
@@ -2557,9 +2541,9 @@ Returns:
   BOOLEAN     FirstRoundS;
   EFI_STATUS  Status;
   BOOLEAN     IsIA32;
-  FILE        *VtfFP;
-  CHAR8       *OutputFileName;
-  CHAR8       *VtfFileName;
+  FILE           *VtfFP;
+  CHAR8        *OutputFileName;
+  CHAR8        *VtfFileName;
 
 
   VtfFP = NULL;
@@ -2573,8 +2557,8 @@ Returns:
     //  the IA32-specific functions need to be updated and verified, the updating can  
     //  refer to IPF relevant functions)
     //
-    printf ("ERROR: Now this tool does not support the IA32 platform!\n");
-    printf ("ERROR: And the IA32-specific functions need to be updated and verified!\n");
+    Error (NULL, 0, 2000, "Invalid paramter", "Now this tool does not support the IA32 platform!");
+    Error (NULL, 0, 2000, "Invalid paramter", "And the IA32-specific functions need to be updated and verified!");
     return 5;
     
     /*
@@ -2712,7 +2696,7 @@ Returns:
     //
     if (argv[Index][0] != '-' && argv[Index][0] != '/') {
       Usage ();
-      printf ("ERROR: Argument pair must begin with \"-\" or \"/\"\n");
+      Error (NULL, 0, 2000, "Invalid paramter", "Argument pair must begin with \"-\" or \"/\"!");
       return 1;
     }
 
@@ -2721,7 +2705,7 @@ Returns:
     //
     if (argv[Index][2] != 0) {
       Usage ();
-      printf ("ERROR: Unrecognized argument \"%s\".\n", argv[Index]);
+      Error (NULL, 0, 2000, "Invalid paramter", "Unrecognized argument %s", argv[Index]);
       return 1;
     }
 
@@ -2742,7 +2726,6 @@ Returns:
     //
     //strncpy(OutFileName1, argv[Index+1], FILE_NAME_SIZE);
     OutFileName1 = (CHAR8 *)argv[Index+1];
-    printf("\nOutFileName1 is %s", OutFileName1);
     FirstRoundO = FALSE;
     }
     else {
@@ -2751,7 +2734,6 @@ Returns:
     //
     //strncpy(OutFileName2, argv[Index+1], FILE_NAME_SIZE);
     OutFileName2 = (CHAR8 *)argv[Index+1];
-    printf("\nOutFileName2 is %s", OutFileName2);
     }
     break;
     
@@ -2761,10 +2743,9 @@ Returns:
     // Get the input VTF file name
     // 
     VtfFileName = argv[Index+1];
-    printf("\nBSF inf file is %s", VtfFileName);
     VtfFP = fopen(VtfFileName, "rb");
     if (VtfFP == NULL) {
-      printf("\nERROR to open VTF inf file!");
+      Error (NULL, 0, 0001, "Error opening file", VtfFileName);
       return 1;
     }
     break;
@@ -2778,7 +2759,7 @@ Returns:
         Status = AsciiStringToUint64 (argv[Index + 1], FALSE, &StartAddress2);
       }
       if (Status = 0) {
-        printf ("\nERROR: Bad start of address \"%s\"\n", argv[Index + 1]);
+        Error (NULL, 0, 2000, "Invalid paramter", "Bad start of address %s", argv[Index + 1]);
         return 1;
       }
       break;
@@ -2793,14 +2774,14 @@ Returns:
       }
 
       if (Status != EFI_SUCCESS) {
-        printf ("\nERROR: Bad size \"%s\"\n", argv[Index + 1]);
+        Error (NULL, 0, 2000, "Invalid paramter", "Bad size %s", argv[Index + 1]);
         return 1;
       }
       break;
 
     default:
       Usage ();
-      printf ("ERROR: Unrecognized argument \"%s\".\n", argv[Index]);
+      Error (NULL, 0, 2000, "Invalid paramter", "Unrecognized argument %s", argv[Index]);
       return 1;
       break;
     }
@@ -2815,23 +2796,23 @@ Returns:
     switch (Status) {
 
     case EFI_INVALID_PARAMETER:
-      printf ("\nERROR: Invalid parameter passed to GenVtfImage function .\n");
+      Error (NULL, 0, 2000, "Invalid paramter", "Invalid parameter passed to GenVtfImage function.");
       break;
 
     case EFI_ABORTED:
-      printf ("\nERROR: Error detected while creating the file image.\n");
+      Error (NULL, 0, 3000, "Invaild", "Error detected while creating the file image.");
       break;
 
     case EFI_OUT_OF_RESOURCES:
-      printf ("\nERROR: GenVtfImage function could not allocate required resources.\n");
+      Error (NULL, 0, 4002, "Resource", "GenVtfImage function could not allocate required resources.");
       break;
 
     case EFI_VOLUME_CORRUPTED:
-      printf ("\nERROR: No base address was specified \n");
+      Error (NULL, 0, 3000, "Invaild", "No base address was specified");
       break;
 
     default:
-      printf ("\nERROR: GenVtfImage function returned unknown status %X.\n", Status);
+      Error (NULL, 0, 3000, "Invaild", "GenVtfImage function returned unknown status %x",Status );
       break;
     }
     return 2;
