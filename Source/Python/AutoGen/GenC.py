@@ -770,13 +770,13 @@ gBasicHeaderFile = "Base.h"
 gModuleTypeHeaderFile = {
     "BASE"              :   [gBasicHeaderFile],
     "SEC"               :   ["PiPei.h", "Library/DebugLib.h"],
-    "PEI_CORE"          :   ["PiPei.h", "Library/DebugLib.h"],  
-    "PEIM"              :   ["PiPei.h", "Library/DebugLib.h"],  
-    "DXE_CORE"          :   ["PiDxe.h", "Library/DebugLib.h"],  
-    "DXE_DRIVER"        :   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"], 
-    "DXE_SMM_DRIVER"    :   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"], 
-    "DXE_RUNTIME_DRIVER":   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"], 
-    "DXE_SAL_DRIVER"    :   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"], 
+    "PEI_CORE"          :   ["PiPei.h", "Library/DebugLib.h"],
+    "PEIM"              :   ["PiPei.h", "Library/DebugLib.h"],
+    "DXE_CORE"          :   ["PiDxe.h", "Library/DebugLib.h"],
+    "DXE_DRIVER"        :   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"],
+    "DXE_SMM_DRIVER"    :   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"],
+    "DXE_RUNTIME_DRIVER":   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"],
+    "DXE_SAL_DRIVER"    :   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"],
     "UEFI_DRIVER"       :   ["Uefi.h",  "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"],
     "UEFI_APPLICATION"  :   ["Uefi.h",  "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"],
     "USER_DEFINED"      :   [gBasicHeaderFile]
@@ -861,7 +861,7 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
 
     if Pcd.Type in gDynamicExPcd:
         AutoGenH.Append('#define %s  LibPcdGetEx%s(&%s, %s)\n' % (GetModeName, DatumSizeLib, Pcd.TokenSpaceGuidCName, PcdTokenName))
-        if DatumType == 'VOID*':
+        if Pcd.DatumType == 'VOID*':
             AutoGenH.Append('#define %s(SizeOfBuffer, Buffer)  LibPcdSetEx%s(&%s, %s, (SizeOfBuffer), (Buffer))\n' % (SetModeName, DatumSizeLib, Pcd.TokenSpaceGuidCName, PcdTokenName))
         else:
             AutoGenH.Append('#define %s(Value)  LibPcdSetEx%s(&%s, %s, (Value))\n' % (SetModeName, DatumSizeLib, Pcd.TokenSpaceGuidCName, PcdTokenName))
@@ -936,7 +936,7 @@ def CreateLibraryPcdCode(Info, AutoGenC, AutoGenH, Pcd):
     if (Pcd.TokenCName, Pcd.TokenSpaceGuidCName) not in PcdTokenNumber:
         raise AutoGenError(msg="No generated token number for %s|%s\n" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
     TokenNumber = PcdTokenNumber[TokenCName, TokenSpaceGuidCName]
-    
+
     if Pcd.Type not in gItemTypeStringDatabase:
         raise AutoGenError(msg="Unknown PCD type [%s] of PCD %s|%s" % (Pcd.Type, Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
     if Pcd.DatumType not in gDatumSizeStringDatabase:
@@ -1194,7 +1194,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
                     ValueList.append(Sku.DefaultValue)
 
         Pcd.TokenTypeList = list(set(Pcd.TokenTypeList))
-        
+
         if 'PCD_TYPE_HII' in Pcd.TokenTypeList:
             Dict['VARIABLE_HEAD_CNAME_DECL'].append(CName)
             Dict['VARIABLE_HEAD_GUID_DECL'].append(TokenSpaceGuid)
@@ -1307,7 +1307,7 @@ def CreatePcdDatabaseCode (Info, AutoGenC, AutoGenH):
         return
     if Info.PcdIsDriver not in gPcdPhaseMap:
         raise AutoGenError(msg="Not supported PcdIsDriver type:%s\n" % Info.PcdIsDriver)
-    
+
     AutoGenH.Append(gPcdDatabaseCommonAutoGenH)
     AdditionalAutoGenH, AdditionalAutoGenC = CreatePcdDatabasePhaseSpecificAutoGen (Info.PlatformInfo, 'PEI')
     AutoGenH.Append(AdditionalAutoGenH.String)

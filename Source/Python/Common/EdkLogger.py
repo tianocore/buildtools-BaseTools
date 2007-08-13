@@ -21,14 +21,13 @@ _log_levels = [DEBUG_0, DEBUG_1, DEBUG_2, DEBUG_3, DEBUG_4, DEBUG_5, DEBUG_6, DE
 _debug_logger = logging.getLogger("tool_debug")
 _debug_logger.setLevel(INFO)
 _debug_ch = logging.StreamHandler(sys.stdout)
-_debug_formatter = logging.Formatter("> %(filename)s : %(lineno)d : %(funcName)s():\n>\t%(message)s")
+_debug_formatter = logging.Formatter("#[%(asctime)s] %(filename)s:%(lineno)d: %(message)s", datefmt="%H:%M:%S")
 _debug_ch.setFormatter(_debug_formatter)
 _debug_logger.addHandler(_debug_ch)
 
 _verbose_logger = logging.getLogger("tool_verbose")
 _verbose_logger.setLevel(INFO)
 _verbose_ch = logging.StreamHandler(sys.stdout)
-#_verbose_formatter = logging.Formatter("[%(asctime)s]%(message)s")
 _verbose_formatter = logging.Formatter("> %(message)s")
 _verbose_ch.setFormatter(_verbose_formatter)
 _verbose_logger.addHandler(_verbose_ch)
@@ -90,11 +89,11 @@ def setLevel(level):
 def setLogFile(log):
     if os.path.exists(log):
         os.remove(log)
-        
+
     _ch = logging.FileHandler(log)
     _ch.setFormatter(_debug_formatter)
     _debug_logger.addHandler(_ch)
-    
+
     _ch = logging.FileHandler(log)
     _ch.setFormatter(_verbose_formatter)
     _verbose_logger.addHandler(_ch)

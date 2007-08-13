@@ -545,7 +545,7 @@ class WorkspaceBuild(object):
                 # The "Key" is in format of (library_class_name, supported_module_type)
                 LibraryClassName = Key[0]
                 if ModuleType != "USER_DEFINED" and ModuleType not in Key:
-                    EdkLogger.debug(EdkLogger.DEBUG_3, "\t%s for module type %s is not supported" % Key)
+                    EdkLogger.debug(EdkLogger.DEBUG_3, "%s for module type %s is not supported (%s)" % (Key + (LibraryPath,)))
                     continue
                 if LibraryPath == None or LibraryPath == "":
                     EdkLogger.warn("\tWARNING: Library instance for library class %s is not found" % LibraryClassName)
