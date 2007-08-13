@@ -1294,6 +1294,7 @@ class FdfParser:
             
     def __GetEncapsulationSec(self, ffsFile):        
         
+        oldPos = self.GetFileBufferPos()
         if not self.__IsKeyword( "SECTION"):
             if len(ffsFile.SectionList) == 0:
                 raise Warning("expected SECTION At Line %d" % self.CurrentLineNumber)
@@ -1304,7 +1305,11 @@ class FdfParser:
         if self.__GetAlignment():
             alignment = self.__Token
             
-        return self.__GetCglSection(ffsFile, alignment)    
+        if not self.__GetCglSection(ffsFile, alignment):
+            self.SetFileBufferPos(oldPos)
+            return False
+        else:
+            return True
 
     def __GetCapsule(self):
         
