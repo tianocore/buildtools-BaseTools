@@ -832,10 +832,6 @@ class WorkspaceBuild(object):
                 IsOverrided = True
                 IsFoundInDsc = True
                 break
-        if not IsFoundInDsc:
-            ErrorMsg = "Pcd '%s' defined in module '%s' is not found in platform" % (Name, ModuleName) 
-            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-            
         
         #
         # Second get information from package database
@@ -849,7 +845,7 @@ class WorkspaceBuild(object):
                 IsFoundInDec = True
                 break
         if not IsFoundInDec:
-            ErrorMsg = "Pcd '%s' defined in module '%s' is not found in package" % (Name, ModuleName) 
+            ErrorMsg = "Pcd '%s' defined in module '%s' is not found in any package" % (Name, ModuleName) 
             raise ParserError(PARSER_ERROR, msg = ErrorMsg)
         
         #
@@ -865,7 +861,12 @@ class WorkspaceBuild(object):
                                     Value = Pcd.DefaultValue
                                 if Pcd.MaxDatumSize != '':
                                     MaxDatumSize = Pcd.MaxDatumSize
+                                IsFoundInDsc = True
                                 IsOverrided = True
+                                break
+        if not IsFoundInDsc:
+            ErrorMsg = "Pcd '%s' defined in module '%s' is not found in any platform" % (Name, ModuleName) 
+            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
         
         #
         # Last get information from PcdsSet defined by FDF
