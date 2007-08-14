@@ -332,7 +332,9 @@ class FdfParser:
         else:
             return False
         
-    def __GetHexNumber(self):
+    # GetNext*** procedures mean these procedures will get next token first, then make judgement.
+    # Get*** procedures mean these procedures will make judgement on current token only.
+    def __GetNextHexNumber(self):
         if not self.__GetNextToken():
             return False
         if not self.__Token.upper().startswith("0X"):
@@ -348,7 +350,7 @@ class FdfParser:
             self.__UndoToken()
             return False
         
-    def __GetDecimalNumber(self):
+    def __GetNextDecimalNumber(self):
         if not self.__GetNextToken():
             return False
         if self.__Token.isdigit():
@@ -356,11 +358,41 @@ class FdfParser:
         else:
             self.__UndoToken()
             return False
+    
+    def __GetNextPcdName(self):
+        if not self.__GetNextWord():
+            raise Warning("expected PcdCName:PcdTokenSpaceCName At Line %d" % self.CurrentLineNumber)
+        pcdCName = self.__Token
         
+        if not self.__IsToken( ":"):
+            raise Warning("expected PcdCName:PcdTokenSpaceCName At Line %d" % self.CurrentLineNumber)
+        
+        if not self.__GetNextWord():
+            raise Warning("expected PcdCName:PcdTokenSpaceCName At Line %d" % self.CurrentLineNumber)
+        pcdTokenSpaceCName = self.__Token
+        
+        return (pcdCName, pcdTokenSpaceCName) 
+            
+        
+    def __GetStringData(self):
+        if self.__Token.startswith("\"") or self.__Token.startswith("L\""):
+            self.__UndoToken()
+            self.__SkipToToken("\"")
+            currentLineNumber = self.CurrentLineNumber
+            
+            if not self.__SkipToToken("\""):
+                raise Warning("Missing Quote \" for String At Line %d" % self.CurrentLineNumber)
+            if currentLineNumber != self.CurrentLineNumber:
+                raise Warning("Missing Quote \" for String At Line %d" % self.CurrentLineNumber)
+            self.__Token = self.__SkippedChars.rstrip('"')
+            return True
+        else:
+            return False
+            
     """Skip to the occurrence of string in file lines buffer"""
     def __SkipToToken(self, string, ignoreCase = False):
         StartPos = self.GetFileBufferPos()
-        self.__SkipWhiteSpace()
+        #self.__SkipWhiteSpace()
         self.__SkippedChars = ""
         while not self.__EndOfFile():
             index = -1
@@ -374,7 +406,7 @@ class FdfParser:
                 return True
             self.__SkippedChars += str(self.__CurrentChar())
             self.__GetOneChar()
-            self.__SkipWhiteSpace()
+            #self.__SkipWhiteSpace()
 
         self.SetFileBufferPos( StartPos)
         self.__SkippedChars = ""
@@ -491,38 +523,33 @@ class FdfParser:
         if not self.__IsToken( "="):
             raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
             
-        if not self.__GetHexNumber():
+        if not self.__GetNextHexNumber():
             raise Warning("expected Hex base address At Line %d" % self.CurrentLineNumber)
             
         fd.BaseAddress = self.__Token
         
         if self.__IsToken( "|"):
-            if self.__GetNextWord():
-                fd.BaseAddressPcd = self.__Token
-                self.profile.PcdDict[fd.BaseAddressPcd] = fd.BaseAddress
-            else:
-                raise Warning("expected PcdCName At Line %d" % self.CurrentLineNumber)
-
+            pcdPair = self.__GetNextPcdName()
+            fd.BaseAddressPcd = pcdPair
+            self.profile.PcdDict[pcdPair] = fd.BaseAddress
+            
         if not self.__IsKeyword( "Size"):
             raise Warning("Size missing At Line %d" % self.CurrentLineNumber)
             
         if not self.__IsToken( "="):
             raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
             
-        if not self.__GetHexNumber():
+        if not self.__GetNextHexNumber():
             raise Warning("expected Hex size At Line %d" % self.CurrentLineNumber)
             
       
         fd.Size = long(self.__Token, 0)
 
         if self.__IsToken( "|"):
-            if self.__GetNextWord():
-                fd.SizePcd = self.__Token
-                self.profile.PcdDict[fd.SizePcd] = fd.Size
-            else:
-                raise Warning("expected PcdCName At Line %d" % self.CurrentLineNumber)
-                
-        
+            pcdPair = self.__GetNextPcdName()
+            fd.SizePcd = pcdPair
+            self.profile.PcdDict[pcdPair] = fd.Size
+                    
         if not self.__IsKeyword( "ErasePolarity"):
             raise Warning("ErasePolarity missing At Line %d" % self.CurrentLineNumber)
            
@@ -546,7 +573,7 @@ class FdfParser:
             if not self.__IsToken( "="):
                 raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
             
-            if not self.__GetDecimalNumber() and not self.__GetHexNumber():
+            if not self.__GetNextDecimalNumber() and not self.__GetNextHexNumber():
                 raise Warning("expected address At Line %d" % self.CurrentLineNumber)
                 
             BsAddress = long(self.__Token, 0)
@@ -556,7 +583,7 @@ class FdfParser:
             if not self.__IsToken( "="):
                 raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
             
-            if not self.__GetDecimalNumber() and not self.__GetHexNumber():
+            if not self.__GetNextDecimalNumber() and not self.__GetNextHexNumber():
                 raise Warning("expected address At Line %d" % self.CurrentLineNumber)
                 
             RtAddress = long(self.__Token, 0)
@@ -579,24 +606,22 @@ class FdfParser:
         if not self.__IsToken( "="):
             raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
             
-        if not self.__GetHexNumber() and not self.__GetDecimalNumber():
+        if not self.__GetNextHexNumber() and not self.__GetNextDecimalNumber():
             raise Warning("expected Hex block size At Line %d" % self.CurrentLineNumber)
 
         BlockSize = long(self.__Token, 0)
         BlockSizePcd = None
         if self.__IsToken( "|"):
-            if self.__GetNextWord():
-                BlockSizePcd = self.__Token
-                self.profile.PcdDict[BlockSizePcd] = BlockSize
-            else:
-                raise Warning("expected PcdCName At Line %d" % self.CurrentLineNumber)
-
+            pcdPair = self.__GetNextPcdName()
+            BlockSizePcd = pcdPair
+            self.profile.PcdDict[pcdPair] = BlockSize
+            
         BlockNumber = 0x1
         if self.__IsKeyword( "NumBlocks"):
             if not self.__IsToken( "="):
                 raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
                 
-            if not self.__GetDecimalNumber() and not self.__GetHexNumber():
+            if not self.__GetNextDecimalNumber() and not self.__GetNextHexNumber():
                 raise Warning("expected block numbers At Line %d" % self.CurrentLineNumber)
                 
             BlockNumber = long(self.__Token, 0)
@@ -631,10 +656,8 @@ class FdfParser:
 
     def __GetSetStatement(self, obj):
         if self.__IsKeyword("SET"):
-            if not self.__GetNextWord():
-                raise Warning("expected PCD CName At Line %d" % self.CurrentLineNumber)
-                
-            macro = self.__Token
+            pcdPair = self.__GetNextPcdName()
+            
             if not self.__IsToken( "="):
                 raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
                 
@@ -648,14 +671,14 @@ class FdfParser:
                     raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
                 value += self.__SkippedChars
                 
-            obj.SetVarDict[macro] = value
-            self.profile.PcdDict[macro] = value
+            obj.SetVarDict[pcdPair] = value
+            self.profile.PcdDict[pcdPair] = value
             return True
 
         return False
 
     def __GetRegionLayout(self, fd):
-        if not self.__GetHexNumber():
+        if not self.__GetNextHexNumber():
 ##            raise Warning("expected Region Offset At Line %d" % self.CurrentLineNumber)
             return False
         
@@ -666,7 +689,7 @@ class FdfParser:
         if not self.__IsToken( "|"):
             raise Warning("expected '|' At Line %d" % self.CurrentLineNumber)
         
-        if not self.__GetHexNumber():
+        if not self.__GetNextHexNumber():
             raise Warning("expected Region Size At Line %d" % self.CurrentLineNumber)
         region.Size = long(self.__Token, 0)
         
@@ -674,12 +697,11 @@ class FdfParser:
             return True
         
         if not self.__Token in ("SET", "FV", "FILE", "DATA"):
-            region.PcdOffset = self.__Token
+            self.__UndoToken()
+            region.PcdOffset = self.__GetNextPcdName()
             self.profile.PcdDict[region.PcdOffset] = region.Offset
             if self.__IsToken( "|"):
-                if not self.__GetNextWord():
-                    raise Warning("expected Region PCD Size At Line %d" % self.CurrentLineNumber)
-                region.PcdSize = self.__Token
+                region.PcdSize = self.__GetNextPcdName()
                 self.profile.PcdDict[region.PcdSize] = region.Size
             
             if not self.__GetNextWord():
@@ -764,7 +786,7 @@ class FdfParser:
         if not self.__IsToken( "{"):
             raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
         
-        if not self.__GetHexNumber():
+        if not self.__GetNextHexNumber():
             raise Warning("expected Hex byte At Line %d" % self.CurrentLineNumber)
         
         if len(self.__Token) > 4:
@@ -774,7 +796,7 @@ class FdfParser:
         DataString += ","
         
         while self.__IsToken(","):
-            self.__GetHexNumber()
+            self.__GetNextHexNumber()
             if len(self.__Token) > 4:
                 raise Warning("Hex byte(must be 2 digits) too long At Line %d" % self.CurrentLineNumber)
             DataString += self.__Token
@@ -795,7 +817,7 @@ class FdfParser:
             if not self.__IsToken( "{"):
                 raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
         
-            if not self.__GetHexNumber():
+            if not self.__GetNextHexNumber():
                 raise Warning("expected Hex byte At Line %d" % self.CurrentLineNumber)
         
             if len(self.__Token) > 4:
@@ -805,7 +827,7 @@ class FdfParser:
             DataString += ","
         
             while self.__IsToken(","):
-                self.__GetHexNumber()
+                self.__GetNextHexNumber()
                 if len(self.__Token) > 4:
                     raise Warning("Hex byte(must be 2 digits) too long At Line %d" % self.CurrentLineNumber)
                 DataString += self.__Token
@@ -1121,7 +1143,7 @@ class FdfParser:
             section = VerSection.VerSection()
             section.Alignment = alignment
             section.BuildNum = buildNum
-            if self.__Token.startswith("\"") or self.__Token.startswith("L\""):
+            if self.__GetStringData():
                 section.StringData = self.__Token
             else:
                 section.FileName = self.__Token
@@ -1134,7 +1156,7 @@ class FdfParser:
                 raise Warning("expected UI At Line %d" % self.CurrentLineNumber)
             section = UiSection.UiSection()
             section.Alignment = alignment
-            if self.__Token.startswith("\"") or self.__Token.startswith("L\""):
+            if self.__GetStringData():
                 section.StringData = self.__Token
             else:
                 section.FileName = self.__Token
@@ -1359,7 +1381,7 @@ class FdfParser:
             capsule.CreateFile = self.__Token
         
         if self.__IsToken("<Capsule."):
-            if not self.__GetDecimalNumber():
+            if not self.__GetNextDecimalNumber():
                 raise Warning("expected Group ID number At Line %d" % self.CurrentLineNumber)
             capsule.GroupIdNumber = self.__Token
             
@@ -1658,9 +1680,14 @@ class FdfParser:
             self.SetFileBufferPos(oldPos)
             return False
         
+        
         if not self.__GetNextToken():
-            raise Warning("expected EFI section File At Line %d" % self.CurrentLineNumber)
-        section.Filename = self.__Token
+            raise Warning("expected EFI section At Line %d" % self.CurrentLineNumber)
+        
+        if self.__GetStringData():
+            section.StringData = self.__Token
+        else:
+            section.Filename = self.__Token
         obj.SectionList.append(section)
         
         return True
@@ -1893,9 +1920,9 @@ class FdfParser:
 
         if self.__IsToken("-"):
             compStatement.CompSize = self.__Token
-        elif self.__GetDecimalNumber():
+        elif self.__GetNextDecimalNumber():
             compStatement.CompSize = self.__Token
-        elif self.__GetHexNumber():
+        elif self.__GetNextHexNumber():
             compStatement.CompSize = self.__Token
         else:
             raise Warning("Unknown size At line %d" % self.CurrentLineNumber)

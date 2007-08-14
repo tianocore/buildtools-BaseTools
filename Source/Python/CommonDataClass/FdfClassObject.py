@@ -102,6 +102,7 @@ class EfiSectionClassObject (SectionClassObject):
         self.Optional = False
         # store file name composed of MACROs
         # Currently only support the String after UI section
+        self.StringData = None
         self.Filename = None
         self.BuildNum = None
         self.VersionNum = None
