@@ -889,13 +889,27 @@ class WorkspaceBuild(object):
         if SupModuleList == DataType.SUP_MODULE_LIST:
             EdkLogger.debug(EdkLogger.DEBUG_3, "\tLibraryClass %s supports all module types" % Name)
             for Item in OverridedLibraryClassList:
+                #
+                # Find a library class with the same name
+                #
                 if Item.Name == Name:
+                    #
+                    # Do nothing if it is itself
+                    #
                     if Item.ModuleType == DataType.SUP_MODULE_LIST:
                         continue
-                    for ModuleType in Item.ModuleType:
-                        EdkLogger.debug(EdkLogger.DEBUG_3, "\tLibraryClass %s has specific defined module types" % Name)
-                        if ModuleType in SupModuleList:
-                            SupModuleList.remove(ModuleType)
+                    #
+                    # If not itself, check arch first
+                    #
+                    for Arch in LibraryClass.SupArchList:
+                        #
+                        # If arch is supportted, remove all related module type
+                        #
+                        if Arch in Item.SupArchList:
+                            for ModuleType in Item.ModuleType:
+                                EdkLogger.debug(EdkLogger.DEBUG_3, "\tLibraryClass %s has specific defined module types" % Name)
+                                if ModuleType in SupModuleList:
+                                    SupModuleList.remove(ModuleType)
 
         return SupModuleList
     
