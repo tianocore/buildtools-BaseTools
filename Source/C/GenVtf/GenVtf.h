@@ -133,9 +133,9 @@ Abstract:
 //
 // The maximum number of arguments accepted from the command line.
 //
-#define ONE_VTF_ARGS  9
-#define TWO_VTF_ARGS  11
-#define THREE_VTF_ARGS  15
+#define ONE_VTF_ARGS  10
+#define TWO_VTF_ARGS  12
+#define THREE_VTF_ARGS  16
 
 
 //
@@ -144,6 +144,8 @@ Abstract:
 #define IA32_ARGS  20
 
 #define IA32_SOFT_FIT "IA32VtfAddress.inf"
+
+static BOOLEAN VerboseMode = FALSE;
 
 //
 // Internal Data Structure

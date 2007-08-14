@@ -1,6 +1,6 @@
 /*++
 
-Copyright (c) 2006, Intel Corporation                                              
+Copyright (c) 2007, Intel Corporation                                              
 All rights reserved. This program and the accompanying materials                          
 are licensed and made available under the terms and conditions of the BSD License         
 which accompanies this distribution.  The full text of the license may be found at        
@@ -31,9 +31,10 @@ Abstract:
 //
 // Macro Definitions
 //
-#define ONE_TIANOCOMPRESS_ARGS  3
+#define ONE_TIANOCOMPRESS_ARGS 3
 #define TWO_TIANOCOMPRESS_ARGS  5
-
+#define THREE_TIANOCOMPRESS_ARGS  6
+static BOOLEAN VerboseMode = FALSE;
 #define UINT8_MAX     0xff
 #define UINT8_BIT     8
 #define THRESHOLD     3
@@ -66,18 +67,11 @@ Abstract:
 //#endif
 
 //
-// global variable
+//  Global Variables
 //
 STATIC BOOLEAN ENCODE = FALSE;
 STATIC BOOLEAN DECODE = FALSE;
-
-
-
-//
-//  Global Variables
-//
 STATIC UINT8  *mSrc, *mDst, *mSrcUpperLimit, *mDstUpperLimit;
-
 STATIC UINT8  *mLevel, *mText, *mChildCount, *mBuf, mCLen[NC], mPTLen[NPT], *mLen;
 STATIC INT16  mHeap[NC + 1];
 STATIC INT32  mRemainder, mMatchLen, mBitCount, mHeapSize, mN;
@@ -126,9 +120,6 @@ Returns:
 --*/
 {
   EFI_STATUS  Status;
-//  assert(SrcBuffer);
-//  assert(SrcSize);
-//  assert(DstBuffer);
 
   //
   // Initializations
@@ -354,7 +345,7 @@ Returns: (VOID)
 
   for (Index = WNDSIZ; Index <= WNDSIZ + UINT8_MAX; Index++) {
     mLevel[Index]     = 1;
-    mPosition[Index]  = NIL;  /* sentinel */
+    mPosition[Index]  = NIL;  // sentinel
   }
 
   for (Index = WNDSIZ; Index < WNDSIZ * 2; Index++) {
@@ -1626,7 +1617,7 @@ Returns:
   //
   InputFile = fopen (InputFileName, "rb");
     if (InputFile == NULL) {
-      printf ("%s failed to open input file\n", InputFileName);
+      Error(NULL, 0, 0001, "Error opening file: %s", InputFileName);
       return EFI_ABORTED;
     }
   
@@ -1638,7 +1629,7 @@ Returns:
     // 
     if (FileSize > 0 && FileBuffer != NULL) {
       if (fread (FileBuffer + Size, (size_t) FileSize, 1, InputFile) != 1) {
-        printf ("%s failed to read contents of input file\n", InputFileName);
+        Error(NULL, 0, 0004, "Error reading contents of input file: %s", InputFileName);
         fclose (InputFile);
         return EFI_ABORTED;
       }
@@ -1675,12 +1666,7 @@ Returns:
 
 --*/
 {
-  printf (
-    "%s, Tiano Compress Utility. Version %i.%i.\n",
-    UTILITY_NAME,
-    UTILITY_MAJOR_VERSION,
-    UTILITY_MINOR_VERSION
-    );
+  fprintf (stdout, "%s Version %d.%d\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
 }
 
 VOID
@@ -1703,8 +1689,32 @@ Returns:
 
 --*/
 {
-  printf ("Usage: "UTILITY_NAME "  -e|-d [-o OutputFile]  input_file\n or \n");
-  printf ("Usage: "UTILITY_NAME "  -e|-d input_file [-o OutputFile]\n");
+  //
+  // Summary usage
+  //
+  fprintf (stdout, "Usage: %s -e|-d [options] <input_file>\n\n", UTILITY_NAME);
+  
+  //
+  // Copyright declaration
+  // 
+  fprintf (stdout, "Copyright (c) 2007, Intel Corporation. All rights reserved.\n\n");
+
+  //
+  // Details Option
+  //
+  fprintf (stdout, "Options:\n");
+  fprintf (stdout, "  -o FileName, --output FileName\n\
+            File will be created to store the ouput content.\n");
+  fprintf (stdout, "  -v, --verbose\n\
+            Turn on verbose output with informational messages.\n");
+  fprintf (stdout, "  --version\n\
+            Show program's version number and exit.\n");
+  fprintf (stdout, "  -h, --help\n\
+            Show this help message and exit.\n");
+  //fprintf (stdout, "  -q, --quiet\n\
+  //       Disable all messages except FATAL ERRORS.\n");
+  //fprintf (stdout, "  -d, --debug [#]\n\
+  //       Enable debug messages at level #.\n");  
 }
 
 
@@ -1732,7 +1742,6 @@ Returns:
 --*/  
 {
   FILE       *OutputFile;
-  INTN       Index;
   char       *OutputFileName;
   char       *InputFileName;
   FILE       *InputFile;
@@ -1744,6 +1753,8 @@ Returns:
   SCRATCH_DATA      *Scratch;
   UINT8      *Src;
   UINT32     OrigSize;
+
+  SetUtilityName(UTILITY_NAME);
   
   FileBuffer = NULL;
   Src = NULL;
@@ -1757,40 +1768,43 @@ Returns:
   //
   if (argc == 1) {
     Usage();
-    return 1;
+    return 0;
   }
   
   if ((strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0) || 
       (strcmp(argv[1], "-?") == 0) || (strcmp(argv[1], "/?") == 0)) {
     Usage();
-    return 1;
+    return 0;
   }
   
-  if ((strcmp(argv[1], "-v") == 0) || (strcmp(argv[1], "--version") == 0)) {
+  if ( (strcmp(argv[1], "--version") == 0)) {
     Version();
-    return 1;
+    return 0;
   }
 
 
-  if (argc != ONE_TIANOCOMPRESS_ARGS && argc != TWO_TIANOCOMPRESS_ARGS) {
+  if (argc != ONE_TIANOCOMPRESS_ARGS && argc != TWO_TIANOCOMPRESS_ARGS && argc != THREE_TIANOCOMPRESS_ARGS) {
     Usage ();
-    return 1;
+    return 0;
   }
   
-  Index = 1;
-  if (strcmp(argv[Index],"-e") == 0) {
+  argc--;
+  argv++;
+  if (strcmp(argv[0],"-e") == 0) {
   //
   // encode the input file
   //
-  Index++;
   ENCODE = TRUE;
+  argc--;
+  argv++;
   }
-  else if (strcmp(argv[Index], "-d") == 0) {
+  else if (strcmp(argv[0], "-d") == 0) {
   //
   // decode the input file
   //
-  Index++;
   DECODE = TRUE;
+  argc--;
+  argv++;
   }
   else {
   //
@@ -1799,59 +1813,48 @@ Returns:
   Usage();
   return 1;
   }
-  
-  if ((strcmp(argv[Index], "-O") == 0) || (strcmp(argv[Index], "-o") == 0)) {
-    Index++;
-    if (Index < argc) {
-    if ((argv[Index][0]!='-') && (Index+1 < argc)){
-    OutputFileName = argv[Index];
-    InputFileName = argv[Index+1];
-    } else {
-      printf("\nError Parameters!\n");
-      Usage();
-      return 1;
-    }
-    } else {
-      printf("\nError Parameters!\n");
-      Usage();
-      return 1;       
-    }
-  }
-  else if (argv[Index][0]!='-' && ((Index+1) == argc)) {
-    //
-    // Input file name specified here
-    //
-    InputFileName = argv[Index];
-    OutputFileName = NULL;
-    OutputFile = stdout;
-  }
-  else if (argv[Index][0]!='-' && ((Index+1) < argc)) {
-  //
-  //
-  //
-  InputFileName = argv[Index];
-  OutputFileName = argv[Index+2];
-  }
-  else {
-    printf("please input output filename or InputFileName!\n");
-    Usage();
-    return 1;
-  }
 
-
+  while (argc > 0) {
+   if ((strcmp(argv[0], "-v") == 0) || (stricmp(argv[0], "--verbose") == 0)) {
+    VerboseMode = TRUE;
+    argc--;
+    argv++;
+    continue;
+  }
+   if ((strcmp(argv[0], "-o") == 0) || (stricmp (argv[0], "--output") == 0)) {
+    argc-=2;
+    argv++;
+    OutputFileName = argv[0];
+    argv++;
+    continue; 
+    }
+   if (argv[0][0]!='-') {
+   InputFileName = argv[0];
+   argc--;
+   argv++;
+   continue;
+   }
+    Error (NULL, 0, 1000, "Unknown option", argv[0]);
+    goto ERROR;     
+  }
 //
 // All Parameters has been parsed
 // 
+  if (VerboseMode) {
+    fprintf (stdout, "%s tool start.\n", UTILITY_NAME);
+   }
   Scratch = (SCRATCH_DATA *)malloc(sizeof(SCRATCH_DATA));
   if (Scratch == NULL) {
-    fprintf (stdout, "ERROR: Memory allocation failed\n");
-    return 1;
+    Error(NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
+    //return 1;
+    goto ERROR;
   }
     
   InputFile = fopen (InputFileName, "rb");
   if (InputFile == NULL) {
-    printf ("%s failed to open input file\n", InputFileName);
-    return 1;
+    Error(NULL, 0, 0001, "Error opening input file", InputFileName);
+    //return 1;
+    goto ERROR;
   }
         
   Status = GetFileContents(
@@ -1862,7 +1865,7 @@ Returns:
   if (Status == EFI_BUFFER_TOO_SMALL) {
     FileBuffer = (UINT8 *) malloc (InputLength);
     if (FileBuffer == NULL) {
-      printf ("application error", "failed to allocate memory\n");
+      Error(NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
       return EFI_OUT_OF_RESOURCES;
     }
 
@@ -1874,7 +1877,6 @@ Returns:
   }
 
   if (EFI_ERROR(Status)) {
-    printf("\nERROR2!\n");
     free(FileBuffer);
     return 1;
   }
@@ -1882,25 +1884,27 @@ Returns:
   if (OutputFileName != NULL) {
     OutputFile = fopen (OutputFileName, "wb");
     if (OutputFile == NULL) {
-      printf ("%s failed to open output file for writing\n", OutputFileName);
+      Error(NULL, 0, 0001, "Error opening output file for writing", OutputFileName);
     if (InputFile != NULL) {
       fclose (InputFile);
       }
-      return EFI_ABORTED;
+      //return EFI_ABORTED;
+      goto ERROR;
       }
     }
     
   if (ENCODE) {
   OutBuffer = (UINT8 *) malloc (InputLength);
   if (OutBuffer == NULL) {
-      printf ("application error", "failed to allocate memory\n");
-      return EFI_OUT_OF_RESOURCES;
+      Error(NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
+      goto ERROR;
+      //return EFI_OUT_OF_RESOURCES;
     }
     
   Status = TianoCompress ((UINT8 *)FileBuffer, InputLength, OutBuffer, &DstSize);
   if (Status != EFI_SUCCESS) {
-    printf("\nError in Compress the input file!\n");
-    return 1;
+    Error(NULL, 0, 0007, "Error compressing file");
+    goto ERROR;
   }
   fwrite(OutBuffer,(size_t)DstSize, 1, OutputFile);
   free(FileBuffer);
@@ -1919,14 +1923,14 @@ Returns:
   //
   OutBuffer = (UINT8 *)malloc(OrigSize);
   if (OutBuffer == NULL) {
-    printf("\n No enough memory to allocate!");
-    return 1;
-  }  
+    Error(NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
+    goto ERROR;
+   }  
 
   Status = Decompress((VOID *)FileBuffer, (VOID *)OutBuffer, (VOID *)Scratch, 2);
   if (Status != EFI_SUCCESS) {
-    printf("\nError in Decompress the input file !\n");
-    return 1;
+    //Error(NULL, 0, 0008, "Error decompressing file: %s", InputFileName);
+   goto ERROR; 	
   }
 
   fwrite(OutBuffer, (size_t)(Scratch->mOrigSize), 1, OutputFile);
@@ -1936,7 +1940,16 @@ Returns:
   return 0;
   }
   
-  return 0;
+ERROR:
+  free(Scratch);
+  free(FileBuffer);
+  free(OutBuffer);
+  if (VerboseMode) {
+    fprintf (stdout, "%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());  
+  }
+
+  return GetUtilityStatus ();   
+  //return 0;
 }
 
 VOID
@@ -2082,7 +2095,9 @@ Returns:
   }
 
   if (Start[17] != 0) {
-    /*(1U << 16)*/
+    //
+    //(1U << 16)
+    //
     return (UINT16) BAD_TABLE;
   }
 

@@ -1,6 +1,6 @@
 /*++
 
-Copyright (c)  1999 - 2006, Intel Corporation. All rights reserved
+Copyright (c)  1999 - 2007, Intel Corporation. All rights reserved
 This software and associated documentation (if any) is furnished
 under a license and may only be used or copied in accordance
 with the terms of the license. Except as permitted by such
@@ -361,7 +361,7 @@ Returns:
         VtfInfo->LocationType = SECOND_VTF;
       } else {
         VtfInfo->LocationType = NONE;
-        printf ("\nWARN: Unknown location for component %s", VtfInfo->CompName);
+        printf ("\nWARN: Unknown location for component %s\n", VtfInfo->CompName);
       }
     } else if (strnicmp (*TokenStr, "COMP_TYPE", 9) == 0) {
       TokenStr++;
@@ -1245,6 +1245,7 @@ Returns:
     Vtf1TotalSize += (UINT32) (FileSize + NumAdjustByte);
     Status = UpdateVtfBuffer (CompStartAddress, Buffer, FileSize, FIRST_VTF);
   } else {
+    Error(NULL, 0, 2000,"Invalid Parameter", "There's component in second VTF so second BaseAddress and Size must be specified!");
     return EFI_INVALID_PARAMETER;
   }
 
@@ -1984,16 +1985,17 @@ Returns:
     } else if (SecondVTF != TRUE) {
       Error (NULL, 0, 2000, "Invalid paramter", "BaseAddress + FwVolumeSize must equal 0x100000000!");
     }
-    Usage();
+    //Usage();
     return EFI_INVALID_PARAMETER;
   }  
 //  memset (OutFileName1, 0, FILE_NAME_SIZE);
   //
   // if output file name specified
   //
+/*  
   if (VTF_OUTPUT) {
-    printf("\nThe first VTF output file is %s", OutFileName1);
-    printf("\nThe second VTF output file is %s", OutFileName2);
+    printf("The first VTF output file is %s\n", OutFileName1);
+    printf("The second VTF output file is %s\n", OutFileName2);
   }
   //
   // else if output file name not specified, then use the default one
@@ -2001,7 +2003,7 @@ Returns:
   else {
   printf("\nno output file specified, output to stdout!");
   //Error (NULL, 0, 2000, "Invalid paramter", "no output file specified, output to stdout!");
-/*
+
   sprintf (
     OutFileName1,
     "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x-%s",
@@ -2018,8 +2020,9 @@ Returns:
     Vtf1NameGuid.Data4[7],
     VTF_OUTPUT_FILE
     );
-*/
+
     }
+*/    
   //
   // The image buffer for the First VTF
   //
@@ -2443,12 +2446,7 @@ Returns:
 
 --*/
 {
-  printf (
-    "\n%s, EFI 2.0 BootStrap File Generation Utility. Version %i.%i.\n",
-    UTILITY_NAME,
-    UTILITY_MAJOR_VERSION,
-    UTILITY_MINOR_VERSION
-    );
+  fprintf (stdout, "%s Version %d.%d\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
 }
 
 VOID
@@ -2471,34 +2469,38 @@ Returns:
 
 --*/
 {
-  Version();
+  //
+  // Summary usage
+  //
+  fprintf (stdout, "Usage: %s [options] <-f input_file> <-r BaseAddress> <-s FwVolumeSize>\n\n", UTILITY_NAME);
   
-//  printf (
-//    "\nUsage: %s -a Arch -o OutPutFile -f FileName -r BaseAddress -s FwVolumeSize\
-//    -v Verbose -q Quiet -d DebugLevel -h\n",
-//    UTILITY_NAME
-//    );
-  printf (
-    "\nUsage: %s [-o OutPutFile -f FileName -r BaseAddress -s FwVolumeSize]\n",
-    UTILITY_NAME
-    );
-  printf (
-    "\nUsage: %s [-o OutPutFile1 -o OutPutFile2] -f FileName -r FirstVTFBaseAddress -s FirstVTFFwVolumeSize -r SecondVTFBaseAddress -s SecondVTFFwVolumeSize\n",
-    UTILITY_NAME
-    );  
-  printf ("  Where:\n");
-//  Only Support IPF now
-//  printf ("  Arch is Platform architecture\n");
-//  OutPutFile name is GUID-Vtf.RAW
-  printf ("  OutPutFile is Filename that will be created\n");
-  printf ("  File Name is Name of the BS Image INF file to use\n");
-  printf ("  BaseAddress is the starting address of Firmware Volume where Boot\n");
-  printf ("  Strapped Image will reside.\n");
-  printf ("  FwVolumeSize is the size of Firmware Volume.\n");
-//  printf ("  Verbose output\n");
-//  printf ("  Quiet is to disable all messages except FATAL ERRORS\n");
-//  printf ("  DebugLevel is to enable debug message at level #\n");
-//  printf ("  Print copyright,version and usage of this program and exit code: PASS\n");
+  //
+  // Copyright declaration
+  // 
+  fprintf (stdout, "Copyright (c) 2007, Intel Corporation. All rights reserved.\n\n");
+
+  fprintf (stdout, "  -f  input_file\n\
+  	      input_file is name of the BS Image INF file to use.\n");
+  fprintf (stdout, "  -r  BaseAddress\n\
+            BaseAddress is the starting address of Firmware Volume where Boot Strapped Image will reside.\n");
+  fprintf (stdout, "  -s  FwVolumeSize\n\
+            FwVolumeSize is the size of Firmware Volume.\n");
+  //
+  // Details Option
+  //
+  fprintf (stdout, "Options:\n");
+  fprintf (stdout, "  -o FileName, --output FileName\n\
+            File will be created to store the ouput content.\n");
+  fprintf (stdout, "  -v, --verbose\n\
+            Turn on verbose output with informational messages.\n");
+  fprintf (stdout, "  --version\n\
+            Show program's version number and exit.\n");
+  fprintf (stdout, "  -h, --help\n\
+            Show this help message and exit.\n");
+  //fprintf (stdout, "  -q, --quiet\n\
+  //       Disable all messages except FATAL ERRORS.\n");
+  //fprintf (stdout, "  -d, --debug [#]\n\
+  //       Enable debug messages at level #.\n");  
 }
 
 EFI_STATUS
@@ -2545,7 +2547,8 @@ Returns:
   CHAR8        *OutputFileName;
   CHAR8        *VtfFileName;
 
-
+  SetUtilityName (UTILITY_NAME);
+  
   VtfFP = NULL;
   //
   // Verify the correct number of IA32 arguments
@@ -2557,8 +2560,8 @@ Returns:
     //  the IA32-specific functions need to be updated and verified, the updating can  
     //  refer to IPF relevant functions)
     //
-    Error (NULL, 0, 2000, "Invalid paramter", "Now this tool does not support the IA32 platform!");
-    Error (NULL, 0, 2000, "Invalid paramter", "And the IA32-specific functions need to be updated and verified!");
+    Error (NULL, 0, 2000, "Invalid paramter", "Now this tool does not support the IA32 platform!\n");
+    Error (NULL, 0, 2000, "Invalid paramter", "And the IA32-specific functions need to be updated and verified!\n");
     return 5;
     
     /*
@@ -2652,18 +2655,18 @@ Returns:
   //
   if (argc == 1) {
     Usage();
-    return 1;
+    return 0;
   }
   
   if ((strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0) || 
       (strcmp(argv[1], "-?") == 0) || (strcmp(argv[1], "/?") == 0)) {
     Usage();
-    return 1;
+    return 0;
   }
   
-  if ((strcmp(argv[1], "-V") == 0) || (strcmp(argv[1], "--version") == 0)) {
+  if ((strcmp(argv[1], "--version") == 0)) {
     Version();
-    return 1;
+    return 0;
   }
  
   if (argc != ONE_VTF_ARGS && argc != TWO_VTF_ARGS && argc != THREE_VTF_ARGS) {
@@ -2697,7 +2700,8 @@ Returns:
     if (argv[Index][0] != '-' && argv[Index][0] != '/') {
       Usage ();
       Error (NULL, 0, 2000, "Invalid paramter", "Argument pair must begin with \"-\" or \"/\"!");
-      return 1;
+      //return 1;
+      goto ERROR;
     }
 
     //
@@ -2706,9 +2710,9 @@ Returns:
     if (argv[Index][2] != 0) {
       Usage ();
       Error (NULL, 0, 2000, "Invalid paramter", "Unrecognized argument %s", argv[Index]);
-      return 1;
+      //return 1;
+      goto ERROR;
     }
-
     //
     // Determine argument to read
     //
@@ -2746,7 +2750,8 @@ Returns:
     VtfFP = fopen(VtfFileName, "rb");
     if (VtfFP == NULL) {
       Error (NULL, 0, 0001, "Error opening file", VtfFileName);
-      return 1;
+      //return 1;
+      goto ERROR;
     }
     break;
     
@@ -2760,7 +2765,8 @@ Returns:
       }
       if (Status = 0) {
         Error (NULL, 0, 2000, "Invalid paramter", "Bad start of address %s", argv[Index + 1]);
-        return 1;
+        //return 1;
+        goto ERROR;
       }
       break;
 
@@ -2775,18 +2781,31 @@ Returns:
 
       if (Status != EFI_SUCCESS) {
         Error (NULL, 0, 2000, "Invalid paramter", "Bad size %s", argv[Index + 1]);
-        return 1;
+        //return 1;
+        goto ERROR;
       }
       break;
-
+    case 'v':
+    case '-':
+	//
+	// Verbose
+	//
+	  VerboseMode = TRUE;
+	  Index--;
+	break;
     default:
       Usage ();
       Error (NULL, 0, 2000, "Invalid paramter", "Unrecognized argument %s", argv[Index]);
-      return 1;
+      //return 1;
+      goto ERROR;
       break;
     }
   }
 
+  if (VerboseMode) {
+    fprintf (stdout, "%s tool start.\n", UTILITY_NAME);
+  }
+  
   //
   // Call the GenVtfImage
   //
@@ -2815,7 +2834,12 @@ Returns:
       Error (NULL, 0, 3000, "Invaild", "GenVtfImage function returned unknown status %x",Status );
       break;
     }
-    return 2;
+ERROR:
+  if (VerboseMode) {
+    fprintf (stdout, "%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());  
+  }
+
+  return GetUtilityStatus ();     
   }
   return 0;
 }

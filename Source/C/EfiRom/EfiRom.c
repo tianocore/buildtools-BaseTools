@@ -1,6 +1,6 @@
 /*++
 
-Copyright (c)  1999-2006 Intel Corporation. All rights reserved
+Copyright (c)  1999-2007 Intel Corporation. All rights reserved
 This program and the accompanying materials are licensed and made available 
 under the terms and conditions of the BSD License which accompanies this 
 distribution.  The full text of the license may be found at
@@ -38,8 +38,8 @@ Abstract:
 // Version of this utility
 //
 #define UTILITY_NAME "EfiRom"
-#define UTILITY_MAJOR_VERSION 2
-#define UTILITY_MINOR_VERSION 5
+#define UTILITY_MAJOR_VERSION 0
+#define UTILITY_MINOR_VERSION 1
 
 //
 // Define some status return values
@@ -242,6 +242,8 @@ Returns:
   CHAR8     *Ptr0;
   FILE_LIST *OutFileList;
 
+
+  SetUtilityName(UTILITY_NAME);
   Status  = STATUS_SUCCESS;
   FptrOut = NULL;
 
@@ -250,7 +252,7 @@ Returns:
   //
   OutFileList = (FILE_LIST *) malloc (sizeof (FILE_LIST));
   if (OutFileList == NULL) {
-    fprintf (stdout, "ERROR: Memory allocation failure\n");
+    Error(stdout, 0, 4001, "Resource", "memory cannot be allocated ");
     return STATUS_ERROR;
   }  
   memset ((char *) OutFileList, 0, sizeof (FILE_LIST));
@@ -260,6 +262,9 @@ Returns:
   if (ParseCommandLine (Argc, Argv, &mOptions)) {
     return STATUS_ERROR;
   }
+  if (mOptions.Verbose) {
+    fprintf (stdout, "%s tool start.\n", UTILITY_NAME);
+    }  
   //
   // If dumping an image, then do that and quit
   //
@@ -305,12 +310,7 @@ Returns:
   for (FList = mOptions.FileList; FList != NULL; FList = FList->Next) {
     if (stricmp (mOptions.OutFileName, FList->FileName) == 0) {
       Status = STATUS_ERROR;
-      fprintf (
-        stdout,
-        "ERROR: Input and output file names must be different - %s = %s\n",
-        FList->FileName,
-        mOptions.OutFileName
-        );
+      Error(NULL, 0, 1002, "Input and output file names must be different - %s = %s", FList->FileName, mOptions.OutFileName);
       goto BailOut;
     }
   }
@@ -318,7 +318,7 @@ Returns:
   // Now open our output file
   //
   if ((FptrOut = fopen (mOptions.OutFileName, "w+b")) == NULL) {
-    fprintf (stdout, "ERROR: Failed to open output file %s\n", mOptions.OutFileName);
+    Error(stdout, 0, 0001, "Error opening file", mOptions.OutFileName);
     goto BailOut;
   }
   //
@@ -340,7 +340,7 @@ Returns:
 
       Status = ProcessBinFile (FptrOut, FList, &Size);
     } else {
-      fprintf (stdout, "ERROR: File not specified as EFI or binary: %s\n", FList->FileName);
+      Error(stdout, 0, 2000, "Invalid parameter", "File not specified as EFI or binary: %s", FList->FileName);
       Status = STATUS_ERROR;
     }
 
@@ -358,17 +358,12 @@ Returns:
   // Check total size
   //
   if (TotalSize > MAX_OPTION_ROM_SIZE) {
-    fprintf (
-      stdout,
-      "ERROR: Option ROM image size exceeds limit 0x%X bytes\n",
-      MAX_OPTION_ROM_SIZE
-      );
+    Error(NULL, 0, 2000, "Option ROM image size exceeds limit 0x%X bytes", MAX_OPTION_ROM_SIZE);
     Status = STATUS_ERROR;
   }
 
 BailOut:
   if (Status == STATUS_SUCCESS) {
-  //__asm int 3;
   if (mOptions.DumpOption) {
     OutFileList->FileName = mOptions.OutFileName;
     DumpImage(OutFileList);
@@ -386,8 +381,11 @@ BailOut:
     mOptions.FileList = FList;
   }
   }
+  if (mOptions.Verbose) {
+    fprintf (stdout, "%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());  
+  }
 
-  return Status;
+  return GetUtilityStatus (); 
 }
 
 static
@@ -433,7 +431,7 @@ Returns:
   // Try to open the input file
   //
   if ((InFptr = fopen (InFile->FileName, "rb")) == NULL) {
-    fprintf (stdout, "ERROR: Failed to open input file %s\n", InFile->FileName);
+    Error (NULL, 0, 0001, "Error opening file", InFile->FileName);
     return STATUS_ERROR;
   }
   //
@@ -449,13 +447,13 @@ Returns:
   fseek (InFptr, 0, SEEK_SET);
   Buffer = (INT8 *) malloc (FileSize);
   if (Buffer == NULL) {
-    fprintf (stdout, "ERROR: Memory allocation failed\n");
+    Error (NULL, 0, 4003, "Resource", "Out of memory resources.", NULL);
     Status = STATUS_ERROR;
     goto BailOut;
   }
 
   if (fread (Buffer, FileSize, 1, InFptr) != 1) {
-    fprintf (stdout, "ERROR: Failed to read all bytes from input file\n");
+    Error(NULL, 0, 2000, "Invalid", "Failed to read all bytes from input file");
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -469,12 +467,7 @@ Returns:
   }
 
   if (TotalSize > MAX_OPTION_ROM_SIZE) {
-    fprintf (
-      stdout,
-      "ERROR: Option ROM image %s size exceeds limit 0x%X bytes\n",
-      InFile->FileName,
-      MAX_OPTION_ROM_SIZE
-      );
+    Error(NULL, 0, 3001, "Option ROM image %s size exceeds limit 0x%X bytes", InFile->FileName, MAX_OPTION_ROM_SIZE);
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -488,7 +481,7 @@ Returns:
   //
   RomHdr = (PCI_EXPANSION_ROM_HEADER *) Buffer;
   if (RomHdr->Signature != PCI_EXPANSION_ROM_HEADER_SIGNATURE) {
-    fprintf (stdout, "\nERROR: ROM image file has invalid ROM signature\n");
+    Error(NULL, 0, 2000, "Invalid parameter", "ROM image file has invalid ROM signature");
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -497,7 +490,7 @@ Returns:
   // Then check it for valid signature.
   //
   if ((RomHdr->PcirOffset > FileSize) || (RomHdr->PcirOffset == 0)) {
-    fprintf (stdout, "ERROR: Invalid PCI data structure offset\n");
+    Error(NULL, 0, 2000, "Invalid parameter", "Invalid PCI data structure offset");
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -508,7 +501,7 @@ Returns:
   if (mOptions.Pci23 == 1) {
   PciDs23 = (PCI_DATA_STRUCTURE *) (Buffer + RomHdr->PcirOffset);
   if (PciDs23->Signature != PCI_DATA_STRUCTURE_SIGNATURE) {
-    fprintf (stdout, "ERROR: PCI data structure has invalid signature\n");
+    Error(NULL, 0, 2000, "Invalid parameter", "PCI data structure has invalid signature");
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -518,7 +511,7 @@ Returns:
     //
     PciDs30 = (PCI_3_0_DATA_STRUCTURE *)(Buffer + RomHdr->PcirOffset);
   if (PciDs30->Signature != PCI_DATA_STRUCTURE_SIGNATURE) {
-    fprintf (stdout, "ERROR: PCI data structure has invalid signature\n");
+    Error(NULL, 0, 2000, "Invalid parameter", "PCI data structure has invalid signature");
     Status = STATUS_ERROR;
     goto BailOut;
   }    
@@ -529,7 +522,6 @@ Returns:
   // If this is the last image, then set the LAST bit unless requested not
   // to via the command-line -n argument. Otherwise, make sure you clear it.
   //
-  //__asm int 3;
   if ((InFile->Next == NULL) && (mOptions.NoLast == 0)) {
     if (mOptions.Pci23 == 1) {
     PciDs23->Indicator = INDICATOR_LAST;
@@ -556,7 +548,7 @@ Returns:
   // Now copy the input file contents out to the output file
   //
   if (fwrite (Buffer, FileSize, 1, OutFptr) != 1) {
-    fprintf (stdout, "ERROR: Failed to write all file bytes to output file\n");
+    Error(NULL, 0, 0005, "Failed to write all file bytes to output file");
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -582,7 +574,7 @@ BailOut:
   // Print the file name if errors occurred
   //
   if (Status != STATUS_SUCCESS) {
-    fprintf (stdout, "Error processing binary file %s\n", InFile->FileName);
+    Error(NULL, 0, 0003, "Error parsing file: %s", InFile->FileName);
   }
 
   return Status;
@@ -637,7 +629,7 @@ Returns:
   // Try to open the input file
   //
   if ((InFptr = fopen (InFile->FileName, "rb")) == NULL) {
-    fprintf (stdout, "ERROR: Failed to open input file %s\n", InFile->FileName);
+    Error(NULL, 0, 0001, "Error opening file: %s", InFile->FileName);
     return STATUS_ERROR;
   }
   //
@@ -679,14 +671,14 @@ Returns:
   //
   Buffer = (INT8 *) malloc (FileSize);
   if (Buffer == NULL) {
-    fprintf (stdout, "ERROR: Memory allocation failed\n");
+    Error (NULL, 0, 4001, "Resouce", "memory cannot be allocated");
     Status = STATUS_ERROR;
     goto BailOut;
   }
 
   fseek (InFptr, 0, SEEK_SET);
   if (fread (Buffer, FileSize, 1, InFptr) != 1) {
-    fprintf (stdout, "ERROR: Failed to read all bytes from input file\n");
+    Error(NULL, 0, 0004, "Error reading file", InFptr);
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -701,7 +693,7 @@ Returns:
     //
     CompressedBuffer = (INT8 *) malloc (FileSize);
     if (CompressedBuffer == NULL) {
-      fprintf (stdout, "ERROR: Memory allocation failed\n");
+      Error (NULL, 0, 4001, "Resouce", "memory cannot be allocated");
       Status = STATUS_ERROR;
       goto BailOut;
     }
@@ -709,7 +701,7 @@ Returns:
     CompressedFileSize  = FileSize;
     Status              = EfiCompress (Buffer, FileSize, CompressedBuffer, &CompressedFileSize);
     if (Status != STATUS_SUCCESS) {
-      fprintf (stdout, "ERROR: Compression failed\n");
+      Error(NULL, 0, 0007, "Error compressing file");
       goto BailOut;
     }
     //
@@ -737,12 +729,7 @@ Returns:
   // Check size
   //
   if (TotalSize > MAX_OPTION_ROM_SIZE) {
-    fprintf (
-      stdout,
-      "ERROR: Option ROM image %s size exceeds limit 0x%X bytes\n",
-      InFile->FileName,
-      MAX_OPTION_ROM_SIZE
-      );
+    Error(NULL, 0, 2000, "Option ROM image %s size exceeds limit 0x%X bytes", InFile->FileName, MAX_OPTION_ROM_SIZE);	
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -817,7 +804,6 @@ Returns:
   // If this is the last image, then set the LAST bit unless requested not
   // to via the command-line -n argument.
   //
-  //__asm int 3;
   if ((InFile->Next == NULL) && (mOptions.NoLast == 0)) {
     if (mOptions.Pci23 == 1) {
       PciDs23.Indicator = INDICATOR_LAST;
@@ -834,7 +820,7 @@ Returns:
   // Write the ROM header to the output file
   //
   if (fwrite (&RomHdr, sizeof (RomHdr), 1, OutFptr) != 1) {
-    fprintf (stdout, "ERROR: Failed to write ROM header to output file\n");
+    Error(NULL, 0, 0002, "Failed to write ROM header to output file");
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -844,7 +830,7 @@ Returns:
   //
   while (HeaderPadBytes > 0) {
     if (putc (0, OutFptr) == EOF) {
-      fprintf (stdout, "ERROR: Failed to write ROM header pad bytes to output file\n");
+      Error(NULL, 0, 0002, "Failed to write ROM header pad bytes to output file");
       Status = STATUS_ERROR;
       goto BailOut;
     }
@@ -856,13 +842,13 @@ Returns:
   //
   if (mOptions.Pci23 == 1) {
   if (fwrite (&PciDs23, sizeof (PciDs23), 1, OutFptr) != 1) {
-    fprintf (stdout, "ERROR: Failed to write PCI ROM header to output file\n");
+    Error(NULL, 0, 0002, "Failed to write PCI ROM header to output file");
     Status = STATUS_ERROR;
     goto BailOut;
   } 
   } else {
   if (fwrite (&PciDs30, sizeof (PciDs30), 1, OutFptr) != 1) {
-    fprintf (stdout, "ERROR: Failed to write PCI ROM header to output file\n");
+    Error(NULL, 0, 0002, "Failed to write PCI ROM header to output file");
     Status = STATUS_ERROR;
     goto BailOut;
   } 
@@ -876,7 +862,7 @@ Returns:
   // Now dump the input file's contents to the output file
   //
   if (fwrite (Buffer, FileSize, 1, OutFptr) != 1) {
-    fprintf (stdout, "ERROR: Failed to write all file bytes to output file\n");
+    Error(NULL, 0, 0002, "Failed to write all file bytes to output file");
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -887,7 +873,7 @@ Returns:
   //
   while (TotalSize > 0) {
     if (putc (~0, OutFptr) == EOF) {
-      fprintf (stdout, "ERROR: Failed to write trailing pad bytes output file\n");
+      Error(NULL, 0, 2000, "Failed to write trailing pad bytes output file");
       Status = STATUS_ERROR;
       goto BailOut;
     }
@@ -914,7 +900,7 @@ BailOut:
   // Print the file name if errors occurred
   //
   if (Status != STATUS_SUCCESS) {
-    fprintf (stdout, "Error processing EFI file %s\n", InFile->FileName);
+    Error(NULL, 0 , 0003, "Error parsing file: %s", InFile->FileName);
   }
 
   return Status;
@@ -961,14 +947,14 @@ Returns:
   // Read the DOS header
   //
   if (fread (&DosHeader, sizeof (DosHeader), 1, Fptr) != 1) {
-    fprintf (stdout, "ERROR: Failed to read the DOS stub from the input file\n");
+    Error(NULL, 0, 0004, "Failed to read the DOS stub from the input file");
     return STATUS_ERROR;
   }
   //
   // Check the magic number (0x5A4D)
   //
   if (DosHeader.e_magic != EFI_IMAGE_DOS_SIGNATURE) {
-    fprintf (stdout, "ERROR: Input file does not appear to be a PE32 image (magic number)\n");
+    Error(NULL, 0, 2000, "Invalid parameter", "Input file does not appear to be a PE32 image (magic number)");
     return STATUS_ERROR;
   }
   //
@@ -976,21 +962,21 @@ Returns:
   //
   fseek (Fptr, (long) DosHeader.e_lfanew, SEEK_SET);
   if (fread (&PESig, sizeof (PESig), 1, Fptr) != 1) {
-    fprintf (stdout, "ERROR: Failed to read PE signature bytes from input file\n");
+    Error(NULL, 0, 0004, "Failed to read PE signature bytes from input file");
     return STATUS_ERROR;
   }
   //
   // Check the PE signature in the header "PE\0\0"
   //
   if (PESig != EFI_IMAGE_NT_SIGNATURE) {
-    fprintf (stdout, "ERROR: Input file does not appear to be a PE32 image (signature)\n");
+    Error(NULL, 0, 2000, "Invalid parameter", "Input file does not appear to be a PE32 image (signature)");
     return STATUS_ERROR;
   }
   //
   // Read the file header and stuff their MachineType
   //
   if (fread (&FileHdr, sizeof (FileHdr), 1, Fptr) != 1) {
-    fprintf (stdout, "ERROR: Failed to read PE file header from input file\n");
+    Error(NULL, 0, 0004, "Failed to read PE file header from input file");
     return STATUS_ERROR;
   }
 
@@ -1000,7 +986,7 @@ Returns:
   // Read the optional header so we can get the subsystem
   //
   if (fread (&OptionalHdr, sizeof (OptionalHdr), 1, Fptr) != 1) {
-    fprintf (stdout, "ERROR: Failed to read COFF optional header from input file\n");
+    Error(NULL, 0, 0004, "Failed to read COFF optional header from input file");
     return STATUS_ERROR;
   }
 
@@ -1083,11 +1069,11 @@ Returns:
     return STATUS_ERROR;
   }
   
-  if ((strcmp(Argv[0], "-V") == 0) || (strcmp(Argv[0], "--version") == 0)) {
+  if ((strcmp(Argv[0], "--version") == 0)) {
     Version();
     return STATUS_ERROR;
   }
- 
+
   //
   // Process until no more arguments
   //
@@ -1110,11 +1096,7 @@ Returns:
           Options->VendId       = (UINT16) strtol (Argv[1], NULL, 16);
           Options->VendIdValid  = 1;
         } else {
-          fprintf (
-            stdout,
-            "ERROR: Missing Vendor ID with %s\n\n",
-            Argv[0]
-            );
+	    Error (NULL, 0, 2000, "Invalid parameter", "Missing Vendor ID with %s", Argv[0]);
           Usage ();
           return STATUS_ERROR;
         }
@@ -1131,18 +1113,14 @@ Returns:
           Options->DevId      = (UINT16) strtol (Argv[1], NULL, 16);
           Options->DevIdValid = 1;
         } else {
-          fprintf (
-            stdout,
-            "ERROR: Missing Device ID with %s\n\n",
-            Argv[0]
-            );
+          Error (NULL, 0, 2000, "Invalid parameter", "Missing Device ID with %s", Argv[0]);
           Usage ();
           return STATUS_ERROR;
         }
 
         Argv++;
         Argc--;
-      } else if (stricmp (Argv[0], "-o") == 0) {
+      } else if ((stricmp (Argv[0], "-o") == 0) || (stricmp (Argv[0], "--output") == 0)) {
         //
         // Output filename specified with -o
         // Make sure there's another parameter
@@ -1150,11 +1128,7 @@ Returns:
         if (Argc > 1) {
           strcpy (Options->OutFileName, Argv[1]);
         } else {
-          fprintf (
-            stdout,
-            "ERROR: Missing output file name with %s\n\n",
-            Argv[0]
-            );
+          Error (NULL, 0, 2000, "Invalid parameter", "Missing output file name with %s", Argv[0]);
           Usage ();
           return STATUS_ERROR;
         }
@@ -1215,15 +1189,11 @@ Returns:
           //
           ClassCode = (UINT32) strtol (Argv[1], NULL, 16);
           if (ClassCode & 0xFF000000) {
-            fprintf (stdout, "ERROR: Class code %s out of range\n", Argv[1]);
+            Error (NULL, 0, 2000, "Invalid parameter", "Class code %s out of range", Argv[1]);
             return STATUS_ERROR;
           }
         } else {
-          fprintf (
-            stdout,
-            "ERROR: Missing class code value with %s\n\n",
-            Argv[0]
-            );
+	    Error (NULL, 0, 2000, "Invalid parameter", "Missing class code value with %s", Argv[0]);
           Usage ();
           return STATUS_ERROR;
         }
@@ -1244,15 +1214,11 @@ Returns:
           //
           CodeRevision = (UINT32) strtol (Argv[1], NULL, 16);
           if (CodeRevision & 0xFFFF0000) {
-            fprintf (stdout, "ERROR: Code revision %s out of range\n", Argv[1]);
+            Error (NULL, 0, 2000, "Invalid parameter", "Code revision %s out of range", Argv[1]);
             return STATUS_ERROR;
           }
         } else {
-          fprintf (
-            stdout,
-            "ERROR: Missing code revision value with %s\n\n",
-            Argv[0]
-            );
+	    Error (NULL, 0, 2000, "Invalid parameter", "Missing code revision value with %s", Argv[0]);
           Usage ();
           return STATUS_ERROR;
         }
@@ -1265,7 +1231,7 @@ Returns:
         //
         mOptions.Pci23 = 1; 
       } else {
-        fprintf (stdout, "ERROR: Invalid option specified: %s\n\n", Argv[0]);
+        Error (NULL, 0, 2000, "Invalid parameter", "Invalid option specified: %s", Argv[0]);
         Usage ();
         return STATUS_ERROR;
       }
@@ -1275,7 +1241,7 @@ Returns:
       // -e or -b already.
       //
       if ((FileFlags & (FILE_FLAG_BINARY | FILE_FLAG_EFI)) == 0) {
-        fprintf (stdout, "ERROR: Missing -e or -b with input file %s\n", Argv[0]);
+        Error (NULL, 0, 2000, "Invalid parameter", "Missing -e or -b with input file %s", Argv[0]);
         return STATUS_ERROR;
       }
       //
@@ -1283,7 +1249,7 @@ Returns:
       //
       FileList = (FILE_LIST *) malloc (sizeof (FILE_LIST));
       if (FileList == NULL) {
-        fprintf (stdout, "ERROR: Memory allocation failure\n");
+        Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
         return STATUS_ERROR;
       }
 
@@ -1321,13 +1287,13 @@ Returns:
   //
 /*  
   if (!Options->VendIdValid) {
-    fprintf (stdout, "ERROR: Missing Vendor ID on command line\n\n");
+    Error(NULL, 0, 2000, "Missing Vendor ID in command line");
     Usage ();
     return STATUS_ERROR;
   }
 
   if (!Options->DevIdValid) {
-    fprintf (stdout, "ERROR: Missing Device ID on command line\n\n");
+    Error(NULL, 0, 2000, "Missing Device ID in command line");
     Usage ();
     return STATUS_ERROR;
   }
@@ -1336,7 +1302,7 @@ Returns:
   // Must have specified some files
   //
   if (Options->FileList == NULL) {
-    fprintf (stdout, "ERROR: Missing input file name\n");
+    Error (NULL, 0, 2000, "Invalid parameter", "Missing input file name");
     Usage ();
     return STATUS_ERROR;
   }
@@ -1364,8 +1330,7 @@ Returns:
   Nothing.
 --*/
 {
-  printf ("%s v%d.%d -EDK utility to create an option ROM image from a list of input files\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
-  printf ("Copyright (c) 1999-2007 Intel Corporation. All rights reserved.\n");
+ fprintf (stdout, "%s Version %d.%d\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
 }
    
 static
@@ -1389,44 +1354,52 @@ Returns:
 
 --*/
 {
-  int               Index;
-  static const char *Msg[] = {
-    "\nUsage: \nEfiRom [-o OutPutFileName] -e/-ec {EfiFileName1} [EfiFileName(s)] -b {BinFileName1} [BinFileName(s)]\
- [-l ClassCode] [-r Rev] [-f VendorId] [-i DeviceId] [-v Version] [-n]\
- [-p/-pci23] [-d/-dump] [-v Verbose] [-q Quiet] [-d Debug#] [-h Help]", 
-     //{FileName1} [FileName(s)]",
-    "   where:",
-    "   -o OutFileName - optional output file name. Default is the first input",
-    "                       file name with a "DEFAULT_OUTPUT_EXTENSION " file extension\n",
-    "   -e EfiFileName - following FileNames are EFI PE32 image files\n",
-    "   -ec EfiFileName- following FileNames are EFI PE32 image files, and should",
-    "                       be compressed by this utility",
-    "   -b BinFileName - following FileNames are binary files\n",
-    "   -l ClassCode   - to use hex ClassCode in the PCI data structure header for",
-    "                       the following FileName\n",
-    "   -r Rev         - to use hex Revision in the PCI data structure header for",
-    "                       the following FileName\n",
-    "   -n             - not to automatically set the LAST bit on the last file\n",
-    "   -f VendorId    - required hex PCI Vendor ID for the device\n",
-    "   -i DeviceId    - required hex PCI Device ID for the device\n",
-    "   -p/-pci23      - Default layout meets PCI 3.0 specifications, specifying this flag will for a PCI 2.3 layout",
-    "   -d/-dump       - to dump the headers of an existing option ROM image\n",
-//    "   -c             - Compress input PE/PE32+/COFF file using standard compress algorithm\n",
-//    "   --version      - to display version information\n",
-//    "   -v Verbose     - Turn on Verbose output\n",
-//    "   -q Quiet       - disable all messages except FATAL ERRORS\n",
-//    "   -d Debug[#]    - Enable debug messages, at level #\n",
-    "   -h,--help,-?,/?      - to display help messages\n",
-    "",
-    "Example usage: EfiRom -f 0xABCD -i 0x1234 -b File1.bin File2.bin -e File1.efi File2.efi ",
-    "",
-    NULL
-  };
+  //
+  // Summary usage
+  //
+  fprintf (stdout, "Usage: %s [options] <-e input_file>|<-b input_file> \n\n", UTILITY_NAME);
+  
+  //
+  // Copyright declaration
+  // 
+  fprintf (stdout, "Copyright (c) 2007, Intel Corporation. All rights reserved.\n\n");
 
-  Version();
-  for (Index = 0; Msg[Index] != NULL; Index++) {
-    fprintf (stdout, "%s\n", Msg[Index]);
-  }
+  //
+  // Details Option
+  //
+  fprintf (stdout, "Options:\n");
+  fprintf (stdout, "  -o FileName, --output FileName\n\
+            File will be created to store the ouput content.\n");
+  fprintf (stdout, "  -e EfiFileName\n\
+            EFI PE32 image files.\n");
+  fprintf (stdout, "  -ec EfiFileName\n\
+            EFI PE32 image files and will be compressed.\n");
+  fprintf (stdout, "  -b BinFileName\n\
+            Legacy binary files.\n");
+  fprintf (stdout, "  -l ClassCode\n\
+            Hex ClassCode in the PCI data structure header.\n");
+  fprintf (stdout, "  -r Rev\n\
+            hex Revision in the PCI data structure header.\n");
+  fprintf (stdout, "  -n\n\
+            not to automatically set the LAST bit in the last file.\n");
+  fprintf (stdout, "  -f VendorId\n\
+            Hex PCI Vendor ID for the device OpROM.\n");
+  fprintf (stdout, "  -i DeviceId\n\
+            Hex PCI Device ID for the device OpROM.\n");
+  fprintf (stdout, "  -p, --pci23\n\
+            Default layout meets PCI 3.0 specifications, specifying this flag will for a PCI 2.3 layout.\n");
+  fprintf (stdout, "  -d, --dump\n\
+            Dump the headers of an existing option ROM image.\n");
+  fprintf (stdout, "  -v, --verbose\n\
+            Turn on verbose output with informational messages.\n");
+  fprintf (stdout, "  --version\n\
+            Show program's version number and exit.\n");
+  fprintf (stdout, "  -h, --help\n\
+            Show this help message and exit.\n");
+  //fprintf (stdout, "  -q, --quiet\n\
+  //       Disable all messages except FATAL ERRORS.\n");
+  //fprintf (stdout, "  -d, --debug [#]\n\
+  //       Enable debug messages at level #.\n");  
 }
 
 static
@@ -1451,7 +1424,6 @@ Returns:
 --*/
 {
   PCI_EXPANSION_ROM_HEADER      PciRomHdr;
-  //EFI_PCI_EXPANSION_ROM_HEADER  PciRomHdr;
   FILE                          *InFptr;
   UINT32                        ImageStart;
   UINT32                        ImageCount;
@@ -1463,17 +1435,12 @@ Returns:
   // Open the input file
   //
   if ((InFptr = fopen (InFile->FileName, "rb")) == NULL) {
-    fprintf (
-      stdout,
-      "ERROR: Could not open input file %s\n",
-      InFile->FileName
-      );
+    Error (NULL, 0, 0001, "Error opening file", InFile->FileName);
     return ;
   }
   //
   // Go through the image and dump the header stuff for each
   //
-  //__asm int 3;
   ImageCount = 0;
   for (;;) {
     //
@@ -1488,7 +1455,7 @@ Returns:
     //
     if (fread (&PciRomHdr, sizeof (PciRomHdr), 1, InFptr) != 1) {
       if (ImageStart == 0) {
-      fprintf (stdout, "ERROR: Failed to read PCI ROM header from file\n");
+      Error (NULL, 0, 3001, "Not supported", "Failed to read PCI ROM header from file");
       goto BailOut;
       }
       else
@@ -1506,7 +1473,7 @@ Returns:
     // Find PCI data structure
     //
     if (fseek (InFptr, ImageStart + PciRomHdr.PcirOffset, SEEK_SET)) {
-      fprintf (stdout, "ERROR: Failed to seek to PCI data structure\n");
+      Error (NULL, 0, 3001, "Not supported", "Failed to seek to PCI data structure");
       goto BailOut;
     }
     //
@@ -1514,12 +1481,12 @@ Returns:
     //
     if (mOptions.Pci23 == 1) {
     if (fread (&PciDs23, sizeof (PciDs23), 1, InFptr) != 1) {
-      fprintf (stdout, "ERROR: Failed to read PCI data structure from file\n");
+      Error (NULL, 0, 3001, "Not supported", "Failed to read PCI data structure from file");
       goto BailOut;
     }
     } else {
     if (fread (&PciDs30, sizeof (PciDs30), 1, InFptr) != 1) {
-      fprintf (stdout, "ERROR: Failed to read PCI data structure from file\n");
+      Error (NULL, 0, 3001, "Not supported", "Failed to read PCI data structure from file");
       goto BailOut;
     }
     }
@@ -1595,12 +1562,12 @@ Returns:
       //
       fprintf (stdout, "  EFI ROM header contents\n");
       if (fseek (InFptr, ImageStart, SEEK_SET)) {
-        fprintf (stdout, "ERROR: Failed to re-seek to ROM header structure\n");
+        Error(NULL, 0, 5001, "Failed to re-seek to ROM header structure");
         goto BailOut;
       }
 
       if (fread (&EfiRomHdr, sizeof (EfiRomHdr), 1, InFptr) != 1) {
-        fprintf (stdout, "ERROR: Failed to read EFI PCI ROM header from file\n");
+        Error(NULL, 0, 5001, "Failed to read EFI PCI ROM header from file");
         goto BailOut;
       }
       //
@@ -1659,12 +1626,12 @@ Returns:
     //
     if (mOptions.Pci23 == 1) {
     if (fseek (InFptr, ImageStart + (PciDs23.ImageLength * 512), SEEK_SET)) {
-      fprintf (stdout, "ERROR: Failed to seek to next image\n");
+      Error (NULL, 0, 3001, "Not supported", "Failed to seek to next image");
       goto BailOut;
     }    
     } else {
     if (fseek (InFptr, ImageStart + (PciDs30.ImageLength * 512), SEEK_SET)) {
-      fprintf (stdout, "ERROR: Failed to seek to next image\n");
+      Error (NULL, 0, 3001, "Not supported", "Failed to seek to next image");
       goto BailOut;
     }
     }
