@@ -1760,6 +1760,8 @@ Returns:
   Src = NULL;
   OrigSize = 0;
   InputLength = 0;
+  InputFileName = NULL;
+  OutputFileName = NULL;
   DstSize=0;
   MySize= 0;  
  
@@ -1837,6 +1839,13 @@ Returns:
     Error (NULL, 0, 1000, "Unknown option", argv[0]);
     goto ERROR;     
   }
+
+  if (InputFileName == NULL) {
+    Error(NULL, 0, 2000, " Invalid parameter");
+    Usage();
+    return 1;    
+  }
+  
 //
 // All Parameters has been parsed
 // 
