@@ -1500,6 +1500,9 @@ def CreateHeaderCode(Info, AutoGenC, AutoGenH):
     AutoGenH.Append("#include <%s>\n\n" % gBasicHeaderFile)
     #autoGenH.Append("\n#define ASM_PFX(name) _##name\n\n")
 
+    AutoGenH.Append("#define EFI_CALLER_ID_GUID \\\n  %s\n" % GuidStringToGuidStructureString(Info.Guid))
+    AutoGenH.Append('\nextern GUID  gEfiCallerIdGuid;\n\n')
+    
     if Info.IsLibrary:
         return
 
@@ -1512,8 +1515,6 @@ def CreateHeaderCode(Info, AutoGenC, AutoGenH):
     #
     # Publish the CallerId Guid
     #
-    AutoGenH.Append("#define EFI_CALLER_ID_GUID \\\n  %s\n" % GuidStringToGuidStructureString(Info.Guid))
-    AutoGenH.Append('\nextern GUID  gEfiCallerIdGuid;\n\n')
     AutoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED GUID gEfiCallerIdGuid = %s;\n' % GuidStringToGuidStructureString(Info.Guid))
 
 def CreateFooterCode(Info, AutoGenC, AutoGenH):
