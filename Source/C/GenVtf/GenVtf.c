@@ -16,7 +16,7 @@ Module Name:
 
 Abstract:
 
-  This file contains functions required to generate a boot strap file (VTF) 
+  This file contains functions required to generate a boot strap file (BSF) 
   also known as the Volume Top File (VTF)
 
 --*/
@@ -33,9 +33,6 @@ Abstract:
 //
 // Global variables
 //
-EFI_GUID      Vtf1NameGuid = EFI_IPF_VTF1_GUID
-EFI_GUID      Vtf2NameGuid = EFI_IPF_VTF2_GUID
-
 UINTN SectionOptionFlag = 0;
 UINTN SectionCompFlag = 0;
 
@@ -366,7 +363,6 @@ Returns:
     } else if (strnicmp (*TokenStr, "COMP_TYPE", 9) == 0) {
       TokenStr++;
       if (AsciiStringToUint64 (*TokenStr, FALSE, &StringValue) != EFI_SUCCESS) {
-        //printf ("\nERROR: COMP_TYPE Could not read a numeric value from \"0x%x\".", *TokenStr);
         Error (NULL, 0, 5001, "Cannot get: \"0x%x\".", *TokenStr);
         return ;
       }
@@ -396,7 +392,6 @@ Returns:
       } else {
         VtfInfo->PreferredSize = TRUE;
         if (AsciiStringToUint64 (*TokenStr, FALSE, &StringValue) != EFI_SUCCESS) {
-          //printf ("\nERROR: COMP_SIZE Could not read a numeric value from \"%s\".", TokenStr);
           Error (NULL, 0, 5001, "Cannot get: %s", TokenStr);
           return ;
         }
@@ -443,12 +438,11 @@ Returns:
 
 --*/
 {
-//  UINTN SectionOptionFlag;
-//  UINTN SectionCompFlag;
 
   SectionOptionFlag = 0;
   SectionCompFlag   = 0;
   TokenStr          = OrgStrTokPtr;
+  
   while (*TokenStr != NULL) {
     if (strnicmp (*TokenStr, "[OPTIONS]", 9) == 0) {
       SectionOptionFlag = 1;
@@ -1985,44 +1979,10 @@ Returns:
     } else if (SecondVTF != TRUE) {
       Error (NULL, 0, 2000, "Invalid paramter", "BaseAddress + FwVolumeSize must equal 0x100000000!");
     }
-    //Usage();
+    Usage();
     return EFI_INVALID_PARAMETER;
   }  
-//  memset (OutFileName1, 0, FILE_NAME_SIZE);
-  //
-  // if output file name specified
-  //
-/*  
-  if (VTF_OUTPUT) {
-    printf("The first VTF output file is %s\n", OutFileName1);
-    printf("The second VTF output file is %s\n", OutFileName2);
-  }
-  //
-  // else if output file name not specified, then use the default one
-  //
-  else {
-  printf("\nno output file specified, output to stdout!");
-  //Error (NULL, 0, 2000, "Invalid paramter", "no output file specified, output to stdout!");
 
-  sprintf (
-    OutFileName1,
-    "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x-%s",
-    Vtf1NameGuid.Data1,
-    Vtf1NameGuid.Data2,
-    Vtf1NameGuid.Data3,
-    Vtf1NameGuid.Data4[0],
-    Vtf1NameGuid.Data4[1],
-    Vtf1NameGuid.Data4[2],
-    Vtf1NameGuid.Data4[3],
-    Vtf1NameGuid.Data4[4],
-    Vtf1NameGuid.Data4[5],
-    Vtf1NameGuid.Data4[6],
-    Vtf1NameGuid.Data4[7],
-    VTF_OUTPUT_FILE
-    );
-
-    }
-*/    
   //
   // The image buffer for the First VTF
   //
@@ -2047,25 +2007,7 @@ Returns:
       Usage();
       return EFI_INVALID_PARAMETER;
     }    
-//    memset (OutFileName2, 0, FILE_NAME_SIZE);
-/*
-    sprintf (
-      OutFileName2,
-      "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x-%s",
-      Vtf2NameGuid.Data1,
-      Vtf2NameGuid.Data2,
-      Vtf2NameGuid.Data3,
-      Vtf2NameGuid.Data4[0],
-      Vtf2NameGuid.Data4[1],
-      Vtf2NameGuid.Data4[2],
-      Vtf2NameGuid.Data4[3],
-      Vtf2NameGuid.Data4[4],
-      Vtf2NameGuid.Data4[5],
-      Vtf2NameGuid.Data4[6],
-      Vtf2NameGuid.Data4[7],
-      VTF_OUTPUT_FILE
-      );
-*/    
+
     //
     // The image buffer for the second VTF
     //
@@ -2182,25 +2124,6 @@ Returns:
     return EFI_OUT_OF_RESOURCES;
   }
   *StartAddressPtr = StartAddress;
-
-//  memset (OutFileName1, 0, FILE_NAME_SIZE);
-
-  sprintf (
-    OutFileName1,
-    "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x-%s",
-    Vtf1NameGuid.Data1,
-    Vtf1NameGuid.Data2,
-    Vtf1NameGuid.Data3,
-    Vtf1NameGuid.Data4[0],
-    Vtf1NameGuid.Data4[1],
-    Vtf1NameGuid.Data4[2],
-    Vtf1NameGuid.Data4[3],
-    Vtf1NameGuid.Data4[4],
-    Vtf1NameGuid.Data4[5],
-    Vtf1NameGuid.Data4[6],
-    Vtf1NameGuid.Data4[7],
-    VTF_OUTPUT_FILE
-    );
 
   Fp = fopen (OutFileName1, "r+b");
 
@@ -2533,122 +2456,23 @@ Returns:
 
 --*/
 {
-  UINT8       Index;
-  UINT64      StartAddress1;
-  UINT64      StartAddress2;
-  UINT64      FwVolSize1;
-  UINT64      FwVolSize2;
-  BOOLEAN     FirstRoundO;
-  BOOLEAN     FirstRoundB;
-  BOOLEAN     FirstRoundS;
+  UINT8           Index;
+  UINT64         StartAddress1;
+  UINT64         StartAddress2;
+  UINT64         FwVolSize1;
+  UINT64         FwVolSize2;
+  BOOLEAN      FirstRoundO;
+  BOOLEAN      FirstRoundB;
+  BOOLEAN      FirstRoundS;
   EFI_STATUS  Status;
-  BOOLEAN     IsIA32;
-  FILE           *VtfFP;
-  CHAR8        *OutputFileName;
-  CHAR8        *VtfFileName;
+  BOOLEAN      IsIA32;
+  FILE            *VtfFP;
+  CHAR8         *OutputFileName;
+  CHAR8         *VtfFileName;
 
   SetUtilityName (UTILITY_NAME);
   
   VtfFP = NULL;
-  //
-  // Verify the correct number of IA32 arguments
-  //
-  IsIA32 = FALSE;
-  if (argc == IA32_ARGS) {
-    //
-    //  Now this tool is not used for IA32 platform, if it will be used in future,
-    //  the IA32-specific functions need to be updated and verified, the updating can  
-    //  refer to IPF relevant functions)
-    //
-    Error (NULL, 0, 2000, "Invalid paramter", "Now this tool does not support the IA32 platform!\n");
-    Error (NULL, 0, 2000, "Invalid paramter", "And the IA32-specific functions need to be updated and verified!\n");
-    return 5;
-    
-    /*
-    StartAddress1 = 0;
-    IsIA32        = TRUE;
-
-    //
-    // Parse the command line arguments
-    //
-    for (Index = 1; Index < IA32_ARGS; Index += 2) {
-
-      //
-      // Make sure argument pair begin with - or /
-      //
-      if (argv[Index][0] != '-' && argv[Index][0] != '/') {
-        Usage ();
-        printf ("ERROR: Argument pair must begin with \"-\" or \"/\"\n");
-        return 1;
-      }
-
-      //
-      // Make sure argument specifier is only one letter
-      //
-      if (argv[Index][2] != 0) {
-        Usage ();
-        printf ("ERROR: Unrecognized argument \"%s\".\n", argv[Index]);
-        return 1;
-      }
-
-      //
-      // Determine argument to read
-      //
-      switch (argv[Index][1]) {
-
-      case 't':
-      case 'T':
-        Status = AsciiStringToUint64 (argv[Index + 1], FALSE, &StartAddress1);
-        if (Status != EFI_SUCCESS) {
-          printf ("\nERROR: Bad start of address \"%s\"\n", argv[Index + 1]);
-          return 1;
-        }
-        break;
-
-      default:
-        Usage ();
-        printf ("Unrecognized IA32 argument \"%s\".\n", argv[Index]);
-        IsIA32 = FALSE;
-        break;
-      }
-    }
-
-    if (IsIA32) {
-      //
-      // Call the GenVtfImage 
-      //
-      Status = Generate32VtfImage (StartAddress1);
-
-      if (EFI_ERROR(Status)) {
-        switch (Status) {
-
-        case EFI_INVALID_PARAMETER:
-          printf ("\nERROR: Invalid parameter passed to GenVtfImage function .\n");
-          break;
-
-        case EFI_ABORTED:
-          printf ("\nERROR: Error detected while creating the file image.\n");
-          break;
-
-        case EFI_OUT_OF_RESOURCES:
-          printf ("\nERROR: GenVtfImage function could not allocate required resources.\n");
-          break;
-
-        case EFI_VOLUME_CORRUPTED:
-          printf ("\nERROR: No base address was specified \n");
-          break;
-
-        default:
-          printf ("\nERROR: GenVtfImage function returned unknown status %X.\n", Status);
-          break;
-        }
-        return 2;
-      }
-
-      return 0;
-    }
-    */
-  } 
 
   //
   // Verify the correct number of arguments
@@ -2687,8 +2511,6 @@ Returns:
   OutFileName1  = NULL;
   OutFileName2  = NULL;
   
-//  memset (OutFileName1, 0, FILE_NAME_SIZE);
-//  memset (OutFileName2, 0, FILE_NAME_SIZE);
   //
   // Parse the command line arguments
   //
@@ -2700,7 +2522,6 @@ Returns:
     if (argv[Index][0] != '-' && argv[Index][0] != '/') {
       Usage ();
       Error (NULL, 0, 2000, "Invalid paramter", "Argument pair must begin with \"-\" or \"/\"!");
-      //return 1;
       goto ERROR;
     }
 
@@ -2710,7 +2531,6 @@ Returns:
     if (argv[Index][2] != 0) {
       Usage ();
       Error (NULL, 0, 2000, "Invalid paramter", "Unrecognized argument %s", argv[Index]);
-      //return 1;
       goto ERROR;
     }
     //
@@ -2728,15 +2548,13 @@ Returns:
     //
     // It's the first output file name
     //
-    //strncpy(OutFileName1, argv[Index+1], FILE_NAME_SIZE);
     OutFileName1 = (CHAR8 *)argv[Index+1];
     FirstRoundO = FALSE;
     }
     else {
     //
+    //It's the second output file name
     //
-    //
-    //strncpy(OutFileName2, argv[Index+1], FILE_NAME_SIZE);
     OutFileName2 = (CHAR8 *)argv[Index+1];
     }
     break;
@@ -2750,7 +2568,6 @@ Returns:
     VtfFP = fopen(VtfFileName, "rb");
     if (VtfFP == NULL) {
       Error (NULL, 0, 0001, "Error opening file", VtfFileName);
-      //return 1;
       goto ERROR;
     }
     break;
@@ -2765,7 +2582,6 @@ Returns:
       }
       if (Status = 0) {
         Error (NULL, 0, 2000, "Invalid paramter", "Bad start of address %s", argv[Index + 1]);
-        //return 1;
         goto ERROR;
       }
       break;
@@ -2781,7 +2597,6 @@ Returns:
 
       if (Status != EFI_SUCCESS) {
         Error (NULL, 0, 2000, "Invalid paramter", "Bad size %s", argv[Index + 1]);
-        //return 1;
         goto ERROR;
       }
       break;
@@ -2796,7 +2611,6 @@ Returns:
     default:
       Usage ();
       Error (NULL, 0, 2000, "Invalid paramter", "Unrecognized argument %s", argv[Index]);
-      //return 1;
       goto ERROR;
       break;
     }
@@ -2842,847 +2656,4 @@ ERROR:
   return GetUtilityStatus ();     
   }
   return 0;
-}
-
-EFI_STATUS
-Generate32VtfImage (
-IN  UINT64  BootFileStartAddress
-  )
-/*++
-
-Routine Description:
-
-  This is the main IA32 function which will be called from application.
-  (Now this tool is not used for IA32 platform, if it will be used in future,
-  the relative functions need to be updated, the updating can refer to IPF 
-  functions)
-
-Arguments:
-
-  BootFileStartAddress   - Top Address of Boot File
-
-Returns:
- 
-  The return value can be any of the values 
-  returned by the calls to following functions:
-      Get32VftRelatedInfoFromInfFile
-      CreateVtfBuffer
-      ProcessAndCreate32Vtf
-      Update32FfsHeader
-      WriteVtfBinary
-  
---*/
-{
-  EFI_STATUS    Status;
-  UINT32        VtfSize;
-  CHAR8         OutFileName[FILE_NAME_SIZE];
-
-  EFI_GUID      VtfNameGuid = EFI_IA32_BOOT_STRAP_GUID;
-
-  Status = EFI_UNSUPPORTED;
-
-  memset (OutFileName, 0, FILE_NAME_SIZE);
-
-  sprintf (
-    OutFileName, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x-%s",
-    VtfNameGuid.Data1,
-    VtfNameGuid.Data2,
-    VtfNameGuid.Data3,
-    VtfNameGuid.Data4[0],
-    VtfNameGuid.Data4[1],
-    VtfNameGuid.Data4[2],
-    VtfNameGuid.Data4[3],
-    VtfNameGuid.Data4[4],
-    VtfNameGuid.Data4[5],
-    VtfNameGuid.Data4[6],
-    VtfNameGuid.Data4[7],
-    VTF_OUTPUT_FILE
-    );
-
-
-  Status = Get32VtfRelatedInfoFromInfFile (VTF_INPUT_FILE);
-
-  if (Status != EFI_SUCCESS) {
-    printf ("\nERROR: Error in parsing input file");
-    CleanUpMemory ();
-    return Status;
-  }
-
-  if (GetTotal32VtfSize (&VtfSize) == EFI_SUCCESS) {
-    Vtf1Buffer = malloc ((UINTN) VtfSize);
-    if (Vtf1Buffer == NULL) {
-      printf ("\nERROR: Not enough resource to create memory mapped file for Boot Strap File");
-      CleanUpMemory ();
-      return EFI_OUT_OF_RESOURCES;
-    }
-    memset (Vtf1Buffer, 0x00, (UINTN) VtfSize);
-  } else {
-    printf ("\nERROR: Could not get VTF size.");
-    CleanUpMemory ();
-    return EFI_ABORTED;
-  }
-
-  //
-  //VTF must align properly
-  //
-  Vtf1LastStartAddress = BootFileStartAddress - VtfSize;
-  Vtf1LastStartAddress = Vtf1LastStartAddress & -8;
-  VtfSize          = (UINT32)BootFileStartAddress - (UINT32)Vtf1LastStartAddress;
-  Vtf1LastStartAddress = VtfSize;
-  BufferToTop      = (UINT32)BootFileStartAddress - VtfSize;
-
-  Status = ProcessAndCreate32Vtf (VtfSize);
-
-  if (Status != EFI_SUCCESS) {
-    CleanUpMemory();
-    return Status;
-  }
-
-  //
-  // Write the FFS header
-  //
-  Status = Update32FfsHeader (VtfSize);
-
-  if (Status != EFI_SUCCESS) {
-    CleanUpMemory();
-    return Status;
-  }
-
-  // 
-  // Calculate the Start address of this VTF
-  //
-  Vtf1Buffer = (UINT8 *)Vtf1Buffer + Vtf1LastStartAddress;
-
-  //
-  // Update the VTF buffer into specified VTF binary file
-  //
-  Status = WriteVtfBinary (OutFileName, VtfSize - (UINT32)Vtf1LastStartAddress, FIRST_VTF);
-
-  if (Status != EFI_SUCCESS) {
-    CleanUpMemory();
-    return Status;
-  }
-
-  Status = Write32SoftFit (IA32_SOFT_FIT, FileListHeadPtr);
-
-  if (Status != EFI_SUCCESS) {
-    CleanUpMemory();
-    return Status;
-  }
-  
-  CleanUpMemory ();
-  printf ("\n");  
-
-  return Status;
-}
-
-EFI_STATUS
-GetTotal32VtfSize(
-  IN  UINT32  *VtfSize 
-  )
-/*++
-
-Routine Description:
-
-  This function calculates total size for IA32 VTF which would be needed to create
-  the buffer. This will be done using Passed Info link list and looking for the
-  size of the components which belong to VTF. The addtional file header is accounted.
-
-Arguments:
-
-  VTFSize     - Pointer to the size of IA32 VTF 
-
-Returns:
-
-  EFI_ABORTED - Returned due to one of the following resons:
-                (a) Error Opening File
-  EFI_SUCCESS - The fuction completes successfully
-
---*/
-{
-  PARSED_VTF_INFO     *VtfInfo;
-  FILE                *Fp;
-  UINT32              Alignment;
-
-  *VtfSize = 0;
-  Alignment = 0;
-  
-  VtfInfo = FileListHeadPtr;
-
-  while (VtfInfo != NULL) {
-    if (VtfInfo->LocationType != SECOND_VTF) {
-
-      if ( VtfInfo->Align ) {
-        //
-        // Create additional align to compensate for component boundary requirements
-        //
-        Alignment = 1 << VtfInfo->Align;
-        *VtfSize += Alignment;
-      }
-      
-      if (VtfInfo->PreferredSize) {
-        *VtfSize += VtfInfo->CompSize;
-      } else {
-        Fp = fopen (VtfInfo->CompBinName,"r+b");
-
-        if (Fp == NULL) {
-          printf ("\nERROR: Error in opening file %s", VtfInfo->CompBinName);
-          return EFI_ABORTED;
-        }
-        
-        *VtfSize += _filelength (fileno (Fp));
-        
-        if (Fp) {
-          fclose (Fp);
-        }
-      }    
-    }
-    VtfInfo = VtfInfo->NextVtfInfo;
-  }
-
-  //
-  // Add file header space
-  //
-  *VtfSize += sizeof (EFI_FFS_FILE_HEADER);
-
-  //
-  // Create additional to IA32 Seccore section header
-  //
-  *VtfSize += sizeof (EFI_COMMON_SECTION_HEADER);
-
-  return EFI_SUCCESS;
-}
-
-EFI_STATUS
-ProcessAndCreate32Vtf (
-  IN  UINT64  Size
-  )
-/*++
-
-Routine Description:
-
-  This function process the link list created during INF file parsing
-  and create component in IA32 VTF
-  
-Arguments:
-
-  Size   - Size of the Firmware Volume of which, this VTF belongs to.
-
-Returns:
-  
-  EFI_UNSUPPORTED - Unknown component type
-  EFI_SUCCESS     - The function completed successfully                 
-
---*/
-{
-  EFI_STATUS          Status;
-  PARSED_VTF_INFO     *ParsedInfoPtr;
-
-  Status = EFI_SUCCESS;
-
-  ParsedInfoPtr = FileListHeadPtr;
-
-  while (ParsedInfoPtr != NULL) {
-    
-    switch (ParsedInfoPtr->CompType) {
-
-    case COMP_TYPE_SECCORE:
-      Status = CreateAndUpdateSeccore (ParsedInfoPtr);
-      break;
-
-    default:
-      //
-      // Any other component type should be handled here. This will create the
-      // image in specified VTF
-      //
-      Status = CreateAndUpdate32Component (ParsedInfoPtr);
-      if (EFI_ERROR(Status)) {
-        printf ("ERROR: Updating %s component.\n", ParsedInfoPtr->CompName);
-      }
-      break;
-    }
-
-    ParsedInfoPtr = ParsedInfoPtr->NextVtfInfo;
-  }
-
-  return Status;
-}
-
-EFI_STATUS
-CreateAndUpdateSeccore (
-  IN  PARSED_VTF_INFO   *VtfInfo
-  )
-/*++
-  
-Routine Description:
-
-  This function reads the binary file for seccore and update them
-  in IA32 VTF Buffer
-  
-Arguments:
-
-  VtfInfo    - Pointer to Parsed Info
-  
-Returns:
-
-  EFI_ABORTED           - Due to one of the following reasons:
-                           (a)Error Opening File
-                           (b)The PAL_A Size is more than specified size status
-                              One of the values mentioned below returned from 
-                              call to UpdateSymFile
-  EFI_SUCCESS           - The function completed successfully.
-  EFI_INVALID_PARAMETER - One of the input parameters was invalid.
-  EFI_ABORTED           - An error occurred.UpdateSymFile
-  EFI_OUT_OF_RESOURCES  - Memory allocation failed.
-   
---*/
-{
-  UINT8                      *SecbinStartAddress;
-  UINT8                      *SecfileStartAddress;
-  UINT32                     FileSize;
-  UINT64                     NumByteRead;
-  UINT8                      *Buffer;
-  FILE                       *Fp;
-  UINT64                     TotalLength;
-  EFI_COMMON_SECTION_HEADER  *SecHeader;
-
-  Fp = fopen (VtfInfo->CompBinName, "r+b");
-
-  if (Fp == NULL) {
-    printf ("\nERROR: Opening file %s", VtfInfo->CompBinName);
-    return EFI_ABORTED;
-  }
-
-  FileSize = _filelength (fileno (Fp));
-
-  if (VtfInfo->PreferredSize) {
-    if (FileSize > VtfInfo->CompSize) {
-      printf("\nERROR: The Seccore Size is more than specified size");
-      return EFI_ABORTED;
-    }
-
-    FileSize = VtfInfo->CompSize;
-  }
-
-  VtfInfo->CompSize = FileSize;
-
-  Buffer = malloc ((UINTN) FileSize);
-  if (Buffer == NULL) {
-    return EFI_OUT_OF_RESOURCES;
-  }
-  memset (Buffer, 0, (UINTN) FileSize);
-
-  //
-  // Read seccore in a buffer
-  //
-  NumByteRead = fread (Buffer, sizeof (UINT8), (UINTN) FileSize, Fp);
-  fclose (Fp);
-
-  SecfileStartAddress = (UINT8 *) Vtf1Buffer + Vtf1LastStartAddress - FileSize - sizeof (EFI_COMMON_SECTION_HEADER); 
-  if (SecfileStartAddress == NULL) {
-    return EFI_INVALID_PARAMETER;
-  }
-
-  SecbinStartAddress = SecfileStartAddress + sizeof (EFI_COMMON_SECTION_HEADER);
-
-  VtfInfo->CompPreferredAddress = Vtf1LastStartAddress - FileSize + BufferToTop;
-
-  //
-  // write section header
-  //
-  memset (SecfileStartAddress, 0, sizeof (EFI_COMMON_SECTION_HEADER));
-  SecHeader = (EFI_COMMON_SECTION_HEADER *) SecfileStartAddress;
-  SecHeader->Type = EFI_SECTION_RAW;
-  TotalLength     = sizeof (EFI_COMMON_SECTION_HEADER) + (UINT64) FileSize;
-  memcpy (SecHeader->Size, &TotalLength, 3);
-
-  //
-  // write seccore
-  //
-  memcpy (SecbinStartAddress, Buffer, (UINTN) FileSize);
-
-  if (Buffer) {
-    free (Buffer);
-  }
-
-  Vtf1LastStartAddress = SecfileStartAddress - (UINT8 *) Vtf1Buffer;
-
-  return EFI_SUCCESS;
-}
-
-EFI_STATUS
-CreateAndUpdate32Component (
-  IN  PARSED_VTF_INFO   *VtfInfo
-  )
-/*++
-  
-Routine Description:
-
-  This function reads the binary file for each components. Add it at aligned address.
-  
-Arguments:
-
-  VtfInfo    - Pointer to Parsed Info
-  
-Returns:
-
-  EFI_SUCCESS              - The function completed successful
-  EFI_ABORTED              - Aborted due to one of the many reasons like:
-                              (a) Component Size greater than the specified size.
-                              (b) Error opening files.
-  EFI_INVALID_PARAMETER    - Value returned from call to UpdateEntryPoint()
-  EFI_OUT_OF_RESOURCES     - Memory allocation failed.
-  
---*/
-{
-  UINT64      CompStartAddress;
-  UINT32      FileSize;
-  UINT64      NumByteRead;
-  UINT8       *Buffer;
-  FILE        *Fp;
-  UINT8       *LocalBufferPtrToWrite;
-  UINT64      Alignment;
-
-  Fp = fopen (VtfInfo->CompBinName, "r+b");
-
-  if (Fp == NULL) {
-    printf("\nERROR: Opening file %s", VtfInfo->CompBinName);
-    return EFI_ABORTED;
-  }
-
-  FileSize = _filelength (fileno (Fp));
-
-  if (VtfInfo->PreferredSize) {
-    if (FileSize > VtfInfo->CompSize) {
-      printf("\nERROR: The component size is more than specified size");
-      return EFI_ABORTED;
-    }
-    FileSize = VtfInfo->CompSize;
-  }
-  VtfInfo->CompSize = FileSize;
-
-  Buffer = malloc ((UINTN) FileSize);
-  if (Buffer == NULL) {
-    return EFI_OUT_OF_RESOURCES;
-  }
-  memset (Buffer,0, (UINTN) FileSize);
-
-  NumByteRead = fread (Buffer, sizeof (UINT8), (UINTN) FileSize, Fp);
-  fclose (Fp);
-
-  CompStartAddress = Vtf1LastStartAddress - FileSize + BufferToTop;
-
-  if (VtfInfo->Align) {
-    //
-    // Create additional align to compensate for component boundary requirements
-    //
-    Alignment = 0 - (1 << VtfInfo->Align);
-    CompStartAddress = CompStartAddress & Alignment;    
-  }
-
-  VtfInfo->CompPreferredAddress = CompStartAddress;
-
-  //
-  // write bin
-  //
-  LocalBufferPtrToWrite = (UINT8 *) Vtf1Buffer;
-  Vtf1LastStartAddress  = CompStartAddress - BufferToTop;
-  LocalBufferPtrToWrite += Vtf1LastStartAddress;
-  memcpy (LocalBufferPtrToWrite, Buffer, (UINTN) FileSize);  
-  Vtf1LastStartAddress = CompStartAddress - BufferToTop;
-
-  //
-  // Free the buffer
-  //
-  if (Buffer) {
-    free (Buffer);
-  }
-
-  return EFI_SUCCESS;
-}
-
-EFI_STATUS
-Update32FfsHeader(
-  IN UINT32     VtfSize
-  )
-/*++
-
-Routine Description:
-
-  Update the Firmware Volume Buffer with requested buffer data
-
-Arguments:
-
-  VtfSize     - Size of the IA32 VTF
-
-Returns:
-  
-  EFI_SUCCESS            - The function completed successfully
-  EFI_INVALID_PARAMETER  - The Ffs File Header Pointer is NULL
-
---*/
-{
-  EFI_FFS_FILE_HEADER     *FileHeader;
-  UINT32                  TotalVtfSize;
-  EFI_GUID                EfiFirmwareVolumeTopFileGuid = EFI_FFS_VOLUME_TOP_FILE_GUID;
-
-  
-  //
-  // Find the VTF file header location, the VTF file must be 8 bytes aligned
-  //
-  Vtf1LastStartAddress -= sizeof (EFI_FFS_FILE_HEADER);
-  Vtf1LastStartAddress += BufferToTop;
-  Vtf1LastStartAddress = Vtf1LastStartAddress & -8;
-  Vtf1LastStartAddress -= BufferToTop;
-  FileHeader = (EFI_FFS_FILE_HEADER*)((UINT8*)Vtf1Buffer + Vtf1LastStartAddress);
-
-  if (FileHeader == NULL) {
-    return EFI_INVALID_PARAMETER;
-  }
-
-  //
-  // write header
-  //
-  memset (FileHeader, 0, sizeof(EFI_FFS_FILE_HEADER));
-  memcpy (&FileHeader->Name, &EfiFirmwareVolumeTopFileGuid, sizeof (EFI_GUID));
-
-  FileHeader->Type = EFI_FV_FILETYPE_RAW;
-  FileHeader->Attributes = FFS_ATTRIB_CHECKSUM;
-
-  //
-  // Now FileSize includes the EFI_FFS_FILE_HEADER
-  //
-  TotalVtfSize = VtfSize - (UINT32)Vtf1LastStartAddress;
-  FileHeader->Size[0] = (UINT8) (TotalVtfSize & 0x000000FF);
-  FileHeader->Size[1] = (UINT8) ((TotalVtfSize & 0x0000FF00) >> 8);
-  FileHeader->Size[2] = (UINT8) ((TotalVtfSize & 0x00FF0000) >> 16);
-
-  //
-  // Fill in checksums and state, all three must be zero for the checksums.
-  //
-  FileHeader->IntegrityCheck.Checksum.Header = 0;
-  FileHeader->IntegrityCheck.Checksum.File = 0;
-  FileHeader->State = 0;
-  FileHeader->IntegrityCheck.Checksum.Header = CalculateChecksum8 ((UINT8*) FileHeader, sizeof (EFI_FFS_FILE_HEADER));
-  FileHeader->IntegrityCheck.Checksum.File = CalculateChecksum8 ((UINT8*) FileHeader, TotalVtfSize);
-  FileHeader->State = EFI_FILE_HEADER_CONSTRUCTION | EFI_FILE_HEADER_VALID | EFI_FILE_DATA_VALID;
-
-  return EFI_SUCCESS;
-}
-
-EFI_STATUS
-Get32VtfRelatedInfoFromInfFile (
-  IN  CHAR8 *FileName
-  )
-/*++
-  
-Routine Description:
-
-  This function reads the input file, parse it and create a list of tokens
-  which is parsed and used, to intialize the data related to IA32 VTF
-  
-Arguments:
-
-  FileName  FileName which needed to be read to parse data
-
-Returns:
-   
-  EFI_ABORTED            Error in opening file
-  EFI_INVALID_PARAMETER  File doesn't contain any valid informations
-  EFI_OUT_OF_RESOURCES   Malloc Failed
-  EFI_SUCCESS            The function completed successfully 
-
---*/
-{
-  FILE          *Fp;
-  UINTN         Index;
-  EFI_STATUS    Status;
-  
-  Fp = fopen (FileName, "r");
-  if (Fp == NULL) {
-    printf ("\nERROR: Error in opening %s file\n", FileName);
-    return EFI_ABORTED;
-  }
-  
-  printf("\n%s", *FileName);
-  ValidLineCount (Fp);
-  
-  if (ValidLineNum == 0) {
-    printf ("\nERROR: File doesn't contain any valid informations");
-    return EFI_INVALID_PARAMETER;
-  }
-  
-  TokenStr = (CHAR8 **)malloc (sizeof (UINTN) * (2 * ValidLineNum + 1));
-
-  if (TokenStr == NULL) {
-    return EFI_OUT_OF_RESOURCES;
-  }
-  memset (TokenStr, 0, (sizeof (UINTN) * (2 * ValidLineNum + 1)));
-  OrgStrTokPtr = TokenStr;
-  
-  for (Index = 0; Index < (2 * ValidLineNum); Index++) {
-    *TokenStr = (CHAR8 *)malloc (sizeof (CHAR8) * FILE_NAME_SIZE);
-
-    if (*TokenStr == NULL) {
-      free (OrgStrTokPtr);
-      return EFI_OUT_OF_RESOURCES;
-    }
-    
-    memset (*TokenStr, 0, FILE_NAME_SIZE);
-//    free (*TokenStr);
-    TokenStr++;
-  }
-  
-  TokenStr = NULL;
-  TokenStr = OrgStrTokPtr;
-  fseek (Fp, 0L, SEEK_SET);
-  
-  Status = InitializeComps();
-
-  if (Status != EFI_SUCCESS) {
-    free (TokenStr);
-    return Status;
-  }
-  ParseInputFile (Fp);
-  Initialize32InFileInfo ();
-  
-  if (Fp) {
-    fclose (Fp);
-  }
-  free (TokenStr);
-  return EFI_SUCCESS;
-}
-
-VOID
-Initialize32InFileInfo (
-  VOID                     
-  )
-/*++
-
-Routine Description:
-
-  This function intializes the relevant global variable which is being
-  used to store the information retrieved from IA32 INF file.
-
-Arguments:
-
-  NONE
-
-Returns:
-
-  NONE
-
---*/
-{
-//  UINTN   SectionOptionFlag;
-//  UINTN   SectionCompFlag;
-
-  SectionOptionFlag =0 ;
-  SectionCompFlag = 0;  
-  TokenStr = OrgStrTokPtr;
-  while (*TokenStr != NULL) {
-    if (strnicmp (*TokenStr, "[OPTIONS]", 9) == 0) {
-      SectionOptionFlag = 1;
-      SectionCompFlag = 0;
-    }
-    
-    if (strnicmp (*TokenStr, "[COMPONENTS]", 12) == 0) {
-      if (FileListPtr == NULL) {
-        FileListPtr = FileListHeadPtr;
-      }
-      
-      SectionCompFlag = 1;
-      SectionOptionFlag = 0;
-      TokenStr++;
-    }
-    
-    if (SectionOptionFlag) {
-      if (strnicmp (*TokenStr, "IA32_RST_BIN", 12) == 0) {
-        *TokenStr++;
-        strcpy (IA32BinFile, *TokenStr);
-      }
-    }
-    
-    if (SectionCompFlag) {
-      if (strnicmp (*TokenStr, "COMP_NAME", 9) == 0) {
-        TokenStr++;
-        strcpy (FileListPtr->CompName, *TokenStr);
-        TokenStr++;
-        ParseAndUpdate32Components (FileListPtr);
-      }
-      
-      if (*TokenStr != NULL) {
-        FileListPtr->NextVtfInfo = malloc (sizeof (PARSED_VTF_INFO));
-        if (FileListPtr->NextVtfInfo == NULL) {
-          printf ("Error: Out of memory resources.\n");
-          break;
-        }
-        FileListPtr = FileListPtr->NextVtfInfo;
-        memset (FileListPtr, 0, sizeof(PARSED_VTF_INFO));
-        FileListPtr->NextVtfInfo = NULL;
-        continue;
-      } else {
-        break;
-      }
-    }
-    
-    TokenStr++;
-  }
-}
-
-VOID 
-ParseAndUpdate32Components (
-  IN  PARSED_VTF_INFO   *VtfInfo
-  )
-/*++
-
-Routine Description:
-
-  This function intializes the relevant global variable which is being
-  used to store the information retrieved from INF file.
-  
-Arguments:
-
-  VtfInfo   - A pointer to the VTF Info Structure
-  
-
-Returns:
-
-  None
-
---*/
-{
-  UINT64  StringValue;
-  UINT64  AlignStringValue;
-
-  while (*TokenStr != NULL && (strnicmp (*TokenStr, "COMP_NAME", 9) != 0)) {
-
-    if (strnicmp (*TokenStr, "COMP_LOC", 8) == 0) {
-      TokenStr++;
-      if (strnicmp (*TokenStr, "B", 1) == 0) {
-        VtfInfo->LocationType = FIRST_VTF;
-      } else if (strnicmp (*TokenStr, "N", 1) == 0) {
-        VtfInfo->LocationType = SECOND_VTF;
-      } else {
-        VtfInfo->LocationType = NONE;
-        printf ("\nERROR: Unknown location for component %s", VtfInfo->CompName);
-      }
-    } else if (strnicmp (*TokenStr, "COMP_TYPE", 9) == 0) {
-      TokenStr++;
-      if (AsciiStringToUint64 (*TokenStr, FALSE, &StringValue) != EFI_SUCCESS) {
-        printf ("\nERROR: COMP_TYPE32 Could not read a numeric value from \"%s\".", TokenStr); 
-        return;
-      }
-      VtfInfo->CompType = (UINT8) StringValue;
-    } else if (strnicmp (*TokenStr, "COMP_VER", 8) == 0) {
-      TokenStr++;
-      if (strnicmp (*TokenStr, "-", 1) == 0) {
-        VtfInfo->VersionPresent = FALSE;
-        VtfInfo->MajorVer = 0;
-        VtfInfo->MinorVer = 0;
-      } else {
-        VtfInfo->VersionPresent = TRUE;
-        ConvertVersionInfo (*TokenStr, &VtfInfo->MajorVer, &VtfInfo->MinorVer);
-      }
-    } else if (strnicmp (*TokenStr, "COMP_BIN", 8) == 0) {
-      TokenStr++;
-      strcpy (VtfInfo->CompBinName, *TokenStr);
-    } else if (strnicmp (*TokenStr, "COMP_SYM", 8) == 0) {
-      TokenStr++;
-      strcpy (VtfInfo->CompSymName, *TokenStr);
-    } else if (strnicmp (*TokenStr, "COMP_SIZE", 9) == 0) {
-      TokenStr++;
-      if (strnicmp (*TokenStr, "-", 1) == 0) {
-        VtfInfo->PreferredSize = FALSE;
-        VtfInfo->CompSize = 0;
-      } else {
-        VtfInfo->PreferredSize = TRUE;
-        if (AsciiStringToUint64 (*TokenStr, FALSE, &StringValue) != EFI_SUCCESS) {
-          printf ("\nERROR: COMP_SIZE 32 Could not read a numeric value from \"%s\".", TokenStr); 
-          return;
-        }
-        VtfInfo->CompSize = (UINTN) StringValue;
-      }
-
-    } else if (strnicmp (*TokenStr, "COMP_CS", 7) == 0) {
-      TokenStr++;
-      if (strnicmp (*TokenStr, "1", 1) == 0) {
-        VtfInfo->CheckSumRequired = 1;
-      } else if (strnicmp (*TokenStr, "0", 1) == 0) {
-        VtfInfo->CheckSumRequired = 0;
-      } else {
-        printf ("\nERROR: Bad information in INF file about Checksum required field");
-      }
-    } else if (strnicmp (*TokenStr, "COMP_ALIGN", 10) == 0) {
-      TokenStr++;
-      if (AsciiStringToUint64 (*TokenStr, FALSE, &AlignStringValue) != EFI_SUCCESS) {
-        printf ("\nERROR: COMP_ALIG 32 Could not read a numeric value from \"%s\".", TokenStr); 
-        return;
-      }
-      if (AlignStringValue >= 0) {
-        VtfInfo->Align = (UINT32) AlignStringValue;
-      } else {
-        printf ("\nERROR: invalid align \"%s\".", AlignStringValue); 
-        return;
-      }
-    }
-    TokenStr++;
-    if (*TokenStr == NULL) {
-      break;
-    }
-  }
-}
-
-EFI_STATUS
-Write32SoftFit(
-  IN CHAR8              *FileName,
-  IN PARSED_VTF_INFO    *VtfInfo
-  )
-/*++
-
-Routine Description:
-
-  Write IA32 Firmware Volume component address from memory to a file.
-  
-Arguments:
-
-  FileName      Output File Name which needed to be created/
-  VtfInfo       Parsed info link
-  
-Returns:
-
-  EFI_ABORTED  - Returned due to one of the following resons:
-                  (a) Error Opening File
-                  (b) Failing to copy buffers
-  EFI_SUCCESS  - The function completes successfully
-
---*/
-{
-  FILE    *Fp;
-
-  Fp = fopen (FileName, "w+t");
-  if (Fp == NULL) {
-    printf ("Error in opening file %s\n", FileName);
-    return EFI_ABORTED;
-  }
-
-  while (VtfInfo != NULL) {
-    if (strlen (VtfInfo->CompName) != 0) {
-      fprintf (Fp, "\n%s\n", VtfInfo->CompName);
-    } else {
-      fprintf (Fp, "\n%s\n", "Name not available");    
-    }
-    
-    fprintf (Fp, "%d\n", VtfInfo->CompPreferredAddress);
-    fprintf (Fp, "%d\n", VtfInfo->CompSize);
-    fprintf (Fp, "%d\n", VtfInfo->Align);
-    
-    VtfInfo = VtfInfo->NextVtfInfo;
-  }
-
-  if (Fp) {
-    fclose (Fp);
-  }
-
-  return EFI_SUCCESS;
 }
