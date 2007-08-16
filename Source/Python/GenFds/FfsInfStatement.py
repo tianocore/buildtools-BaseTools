@@ -310,7 +310,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         if Rule.CheckSum != False:
             CheckSum = ' -s '
         else :
-            CheckSume = ''
+            CheckSum = ''
             
         if Rule.Alignment != None and Rule.Alignment != '':
             Alignment = ' -a %s' %Rule.Alignment
