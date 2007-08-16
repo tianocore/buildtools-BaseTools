@@ -42,15 +42,15 @@ class PcdClassObject(object):
         self.Phase = "DXE"
         
     def __str__(self):
-        rtn = str(self.TokenCName) + DataType.TAB_VALUE_SPLIT + \
-              str(self.TokenSpaceGuidCName) + DataType.TAB_VALUE_SPLIT + \
-              str(self.Type) + DataType.TAB_VALUE_SPLIT + \
-              str(self.DatumType) + DataType.TAB_VALUE_SPLIT + \
-              str(self.DefaultValue) + DataType.TAB_VALUE_SPLIT + \
-              str(self.TokenValue) + DataType.TAB_VALUE_SPLIT + \
-              str(self.MaxDatumSize) + DataType.TAB_VALUE_SPLIT
+        rtn = '\tTokenCName=' + str(self.TokenCName) + ', ' + \
+              'TokenSpaceGuidCName=' + str(self.TokenSpaceGuidCName) + ', ' + \
+              'Type=' + str(self.Type) + ', ' + \
+              'DatumType=' + str(self.DatumType) + ', ' + \
+              'DefaultValue=' + str(self.DefaultValue) + ', ' + \
+              'TokenValue=' + str(self.TokenValue) + ', ' + \
+              'MaxDatumSize=' + str(self.MaxDatumSize) + ', '
         for Item in self.SkuInfoList.values():
-            rtn = rtn + Item.SkuId + DataType.TAB_VALUE_SPLIT + Item.SkuIdName + DataType.TAB_VALUE_SPLIT
+            rtn = rtn + 'SkuId=' + Item.SkuId + ', ' + 'SkuIdName=' + Item.SkuIdName
         rtn = rtn + str(self.IsOverrided)
         
         return rtn
@@ -871,8 +871,8 @@ class WorkspaceBuild(object):
         #
         # Last get information from PcdsSet defined by FDF
         #
-        if Guid in PcdsSet.keys():
-            Value = PcdsSet[Guid]
+        if (Name, Guid) in PcdsSet:
+            Value = PcdsSet[(Name, Guid)]
 
         return PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, IsOverrided)
     
@@ -1028,5 +1028,5 @@ if __name__ == '__main__':
     # Nothing to do here. Could do some unit tests.
     w = os.getenv('WORKSPACE')
     ewb = WorkspaceBuild('Nt32Pkg/Nt32Pkg.dsc', w)
-    ewb.GenBuildDatabase({'gEfiMdeModulePkgTokenSpaceGuid' : 'KKKKKKKKKKKKKKKKKKKKK'})
+    ewb.GenBuildDatabase({('PcdDevicePathSupportDevicePathFromText, gEfiMdeModulePkgTokenSpaceGuid') : 'KKKKKKKKKKKKKKKKKKKKK'})
     ewb.ShowWorkspaceBuild()

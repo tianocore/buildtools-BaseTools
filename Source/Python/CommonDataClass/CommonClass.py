@@ -101,14 +101,14 @@ class SkuInfoClass(object):
         self.DefaultValue = DefaultValue
         
     def __str__(self):
-        rtn = rtn = 'SkuInfo = ' + str(self.SkuId) + "," + \
-                    str(self.SkuIdName) + "," + \
-                    str(self.VariableName) + "," + \
-                    str(self.VariableGuid) + "," + \
-                    str(self.VariableOffset) + "," + \
-                    str(self.HiiDefaultValue) + "," + \
-                    str(self.VpdOffset) + "," + \
-                    str(self.DefaultValue) + ","
+        rtn = rtn = 'SkuId = ' + str(self.SkuId) + "," + \
+                    'SkuIdName = ' + str(self.SkuIdName) + "," + \
+                    'VariableName = ' + str(self.VariableName) + "," + \
+                    'VariableGuid = ' + str(self.VariableGuid) + "," + \
+                    'VariableOffset = ' + str(self.VariableOffset) + "," + \
+                    'HiiDefaultValue = ' + str(self.HiiDefaultValue) + "," + \
+                    'VpdOffset = ' + str(self.VpdOffset) + "," + \
+                    'DefaultValue = ' + str(self.DefaultValue) + ","
         return rtn
 
 class PcdClass(CommonClass):

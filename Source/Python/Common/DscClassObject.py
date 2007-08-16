@@ -252,7 +252,7 @@ class Dsc(DscObject):
         #Pcds
         self.GenPcds(DataType.TAB_PCDS_FIXED_AT_BUILD)
         self.GenPcds(DataType.TAB_PCDS_PATCHABLE_IN_MODULE)
-        self.GenPcds(DataType.TAB_PCDS_FEATURE_FLAG)
+        self.GenFeatureFlagPcds(DataType.TAB_PCDS_FEATURE_FLAG)
         self.GenDynamicDefaultPcds(DataType.TAB_PCDS_DYNAMIC_DEFAULT)
         self.GenDynamicDefaultPcds(DataType.TAB_PCDS_DYNAMIC_EX_DEFAULT)
         self.GenDynamicHiiPcds(DataType.TAB_PCDS_DYNAMIC_HII)
@@ -291,25 +291,51 @@ class Dsc(DscObject):
                 for Pcd in Pcds:
                     Type = Pcd[0]
                     List = GetSplitValueList(Pcd[1])
+                    
+                    #
+                    # For FeatureFlag
+                    #
                     if Type == DataType.TAB_PCDS_FEATURE_FLAG:
-                        if len(List) != 3:
-                            ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<Cname>|<TokenSpaceGuidCName>|<TrueFalse>'" % (Type, Pcd[1], self.Platform.Header.FullPath) 
+                        if len(List) != 2:
+                            ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<PcdTokenName>|TRUE/FALSE'" % (Type, Pcd[1], self.Platform.Header.FullPath) 
+                            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                        
+                        TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                        if len(TokenInfo) != 2:
+                            ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<PcdTokenName>|TRUE/FALSE'" % (Type, Pcd[1], self.Platform.Header.FullPath) 
                             raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                         else:
-                            Component.PcdBuildDefinitions.append(PcdClass(List[0], '', List[1], '', '', List[2], Type, [], {}, []))
+                            Component.PcdBuildDefinitions.append(PcdClass(TokenInfo[1], '', TokenInfo[0], '', '', List[1], Type, [], {}, []))
+                    #
+                    # For FixedAtBuild or PatchableInModule
+                    #
                     if Type == DataType.TAB_PCDS_FIXED_AT_BUILD or Type == DataType.TAB_PCDS_PATCHABLE_IN_MODULE:
                         List.append('')
-                        if len(List) < 4:
-                            ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<Cname>|<TokenSpaceGuidCName>|<Value>[|<MaxDatumSize>]'" % (Type, Pcd[1], self.Platform.Header.FullPath) 
+                        if len(List) < 3:
+                            ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<PcdTokenName>|<Value>[|<MaxDatumSize>]'" % (Type, Pcd[1], self.Platform.Header.FullPath) 
+                            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                        
+                        TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                        if len(TokenInfo) != 2:
+                            ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<PcdTokenName>|<Value>[|<MaxDatumSize>]'" % (Type, Pcd[1], self.Platform.Header.FullPath) 
                             raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                         else:
-                            Component.PcdBuildDefinitions.append(PcdClass(List[0], '', List[1], '', List[3], List[2], Type, [], {}, []))
+                            Component.PcdBuildDefinitions.append(PcdClass(TokenInfo[1], '', TokenInfo[0], '', List[2], List[1], Type, [], {}, []))
+                    
+                    #
+                    # For Dynamic or DynamicEx
+                    #
                     if Type == DataType.TAB_PCDS_DYNAMIC or Type == DataType.TAB_PCDS_DYNAMIC_EX:
-                        if len(List) != 3:
-                            ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<Cname>|<TokenSpaceGuidCName>'" % (Type, Pcd[1], self.Platform.Header.FullPath) 
+                        if len(List) != 1:
+                            ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<PcdTokenName>'" % (Type, Pcd[1], self.Platform.Header.FullPath) 
+                            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                        
+                        TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                        if len(TokenInfo) != 2:
+                            ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<PcdTokenName>'" % (Type, Pcd[1], self.Platform.Header.FullPath) 
                             raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                         else:
-                            Component.PcdBuildDefinitions.append(PcdClass(List[0], '', List[1], '', '', List[2], Type, [], {}, []))                        
+                            Component.PcdBuildDefinitions.append(PcdClass(TokenInfo[1], '', TokenInfo[0], '', '', '', Type, [], {}, []))                        
                     
                 if GenInclude(Item[0], IncludeFiles, Arch):
                     continue
@@ -329,28 +355,57 @@ class Dsc(DscObject):
         
     #End of DscToPlatform
     
-    def GenPcds(self, Type = ''):
+    def GenFeatureFlagPcds(self, Type = ''):
         Pcds = {}
         Items = []
         for Arch in DataType.ARCH_LIST:
-            if Type == DataType.TAB_PCDS_FIXED_AT_BUILD:
-                Items = self.Contents[Arch].PcdsFixedAtBuild
-            elif Type == DataType.TAB_PCDS_PATCHABLE_IN_MODULE:
-                Items = self.Contents[Arch].PcdsPatchableInModule
-            elif Type == DataType.TAB_PCDS_FEATURE_FLAG:
+            if Type == DataType.TAB_PCDS_FEATURE_FLAG:
                 Items = self.Contents[Arch].PcdsFeatureFlag
             else:
                 pass
             
             for Item in Items:
-                List = GetSplitValueList(Item + DataType.TAB_VALUE_SPLIT)
+                List = GetSplitValueList(Item)
+                if len(List) != 2:
+                    ErrorMsg = "Wrong statement '%s' found in section Pcds%s in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<TokenCName>|TRUE/FALSE'" % (Item, Type, self.Platform.Header.FullPath) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                
+                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                if len(TokenInfo) != 2:
+                    ErrorMsg = "Wrong statement '%s' found in section Pcds%s in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<TokenCName>|TRUE/FALSE'" % (Item, Type, self.Platform.Header.FullPath) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                
+                MergeArches(Pcds, (TokenInfo[1], TokenInfo[0], List[1], Type), Arch)
+        for Key in Pcds:
+            Pcd = PcdClass(Key[0], '', Key[1], '', '', Key[2], Key[3], [], {}, [])
+            Pcd.SupArchList = Pcds[Key]
+            self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
+    
+    def GenPcds(self, Type = ''):
+        Pcds = {}
+        Items = []
+        for Arch in DataType.ARCH_LIST:
+            if Type == DataType.TAB_PCDS_PATCHABLE_IN_MODULE:
+                Items = self.Contents[Arch].PcdsPatchableInModule
+            elif Type == DataType.TAB_PCDS_FIXED_AT_BUILD:
+                Items = self.Contents[Arch].PcdsFixedAtBuild
+            else:
+                pass
+            
+            for Item in Items:
+                List = GetSplitValueList(Item + DataType.TAB_VALUE_SPLIT * 2)
                 if len(List) < 4:
-                    ErrorMsg = "Wrong statement '%s' found in section %s in file '%s', correct format is '<PcdTokenName>|<PcdTokenSpaceGuidCName>|<Value>[|<MaximumDatumSize>]'" % (Item, Type, self.Platform.Header.FullPath) 
+                    ErrorMsg = "Wrong statement '%s' found in section Pcds%s in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<TokenCName>|<Value>[|<Type>|<MaximumDatumSize>]'" % (Item, Type, self.Platform.Header.FullPath) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                
+                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                if len(TokenInfo) != 2:
+                    ErrorMsg = "Wrong statement '%s' found in section Pcds%s in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<TokenCName>|<Value>[|<Type>|<MaximumDatumSize>]'" % (Item, Type, self.Platform.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                 else:
-                    MergeArches(Pcds, (List[0], List[1], List[2], List[3], Type), Arch)
+                    MergeArches(Pcds, (TokenInfo[1], TokenInfo[0], List[1], List[2], List[3], Type), Arch)
         for Key in Pcds:
-            Pcd = PcdClass(Key[0], '', Key[1], '', Key[3], Key[2], Key[4], [], {}, [])
+            Pcd = PcdClass(Key[0], '', Key[1], Key[3], Key[4], Key[2], Key[5], [], {}, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
     
@@ -380,17 +435,22 @@ class Dsc(DscObject):
             
             for Item in Items:
                 List = GetSplitValueList(Item[0] + DataType.TAB_VALUE_SPLIT)
-                if len(List) < 4:
-                    ErrorMsg = "Wrong statement '%s' found in section %s in file '%s', correct format is '<PcdTokenName>|<PcdTokenSpaceGuidCName>|<Value>[|<MaximumDatumSize>]'" % (Item, Type, self.Platform.Header.FullPath) 
+                if len(List) < 3:
+                    ErrorMsg = "Wrong statement '%s' found in section Pcds%s in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<TokenCName>|<Value>'" % (Item[0], Type, self.Platform.Header.FullPath) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                
+                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                if len(TokenInfo) != 2:
+                    ErrorMsg = "Wrong statement '%s' found in section Pcds%s in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<TokenCName>|<Value>'" % (Item[0], Type, self.Platform.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                 else:
-                    MergeArches(Pcds, (List[0], List[1], List[2], List[3], Type), Arch)
+                    MergeArches(Pcds, (TokenInfo[1], TokenInfo[0], List[1], List[2], Type), Arch)
         for Key in Pcds:
             (Status, SkuInfoList) = self.GenSkuInfoList(Item[1], self.Platform.SkuInfos.SkuInfoList, '', '', '', '', '', Key[2])
             if Status == False:
                 ErrorMsg = "SKUID '%s' of '%s' not defined in file '%s'" % (SkuInfoList, Type, self.Platform.Header.FullPath) 
                 raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-            Pcd = PcdClass(Key[0], '', Key[1], '', Key[3], '', Key[4], [], SkuInfoList, [])
+            Pcd = PcdClass(Key[0], '', Key[1], '', Key[3], Key[2], Key[4], [], SkuInfoList, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
          
@@ -407,18 +467,23 @@ class Dsc(DscObject):
                 pass
             
             for Item in Items:
-                List = GetSplitValueList(Item[0] + DataType.TAB_VALUE_SPLIT)
-                if len(List) < 7:
-                    ErrorMsg = "Wrong statement '%s' found in section %s in file '%s', correct format is '<PcdTokenName>|<PcdTokenSpaceGuidCName>|<String>|<VariableGuidCName>|<VariableOffset>|<DefaultValue>[|<MaximumDatumSize>]'" % (Item, Type, self.Platform.Header.FullPath) 
+                List = GetSplitValueList(Item[0] + DataType.TAB_VALUE_SPLIT * 2)
+                if len(List) < 6:
+                    ErrorMsg = "Wrong statement '%s' found in section %s in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<TokenCName>|<String>|<VariableGuidCName>|<VariableOffset>[|<DefaultValue>[|<MaximumDatumSize>]]'" % (Item[0], Type, self.Platform.Header.FullPath) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                
+                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                if len(TokenInfo) != 2:
+                    ErrorMsg = "Wrong statement '%s' found in section %s in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<TokenCName>|<String>|<VariableGuidCName>|<VariableOffset>[|<DefaultValue>[|<MaximumDatumSize>]]'" % (Item[0], Type, self.Platform.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                 else:
-                    MergeArches(Pcds, (List[0], List[1], List[2], List[3], List[4], List[5], List[6], Type), Arch)
+                    MergeArches(Pcds, (TokenInfo[1], TokenInfo[0], List[1], List[2], List[3], List[4], List[5], Type), Arch)
         for Key in Pcds:
             (Status, SkuInfoList) = self.GenSkuInfoList(Item[1], self.Platform.SkuInfos.SkuInfoList, Key[2], Key[3], Key[4], Key[5], '', '')
             if Status == False:
                 ErrorMsg = "SKUID '%s' of '%s' not defined in file '%s'" % (SkuInfoList, Type, self.Platform.Header.FullPath) 
                 raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-            Pcd = PcdClass(Key[0], '', Key[1], '', Key[3], '', Key[7], [], SkuInfoList, [])
+            Pcd = PcdClass(Key[0], '', Key[1], '', Key[6], Key[5], Key[7], [], SkuInfoList, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
     
@@ -436,13 +501,18 @@ class Dsc(DscObject):
             
             for Item in Items:
                 List = GetSplitValueList(Item[0] + DataType.TAB_VALUE_SPLIT)
-                if len(List) < 4:
-                    ErrorMsg = "Wrong statement '%s' found in section %s in file '%s', correct format is '<PcdTokenName>|<PcdTokenSpaceGuidCName>|<DefaultValue>[|<MaximumDatumSize>]'" % (Item, Type, self.Platform.Header.FullPath) 
+                if len(List) < 3:
+                    ErrorMsg = "Wrong statement '%s' found in section %s in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<TokenCName>|<VpdOffset>[|<MaximumDatumSize>]'" % (Item[0], Type, self.Platform.Header.FullPath) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                
+                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                if len(TokenInfo) != 2:
+                    ErrorMsg = "Wrong statement '%s' found in section %s in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<TokenCName>|<VpdOffset>[|<MaximumDatumSize>]'" % (Item[0], Type, self.Platform.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                 else:
-                    MergeArches(Pcds, (List[0], List[1], List[2], List[3], Type), Arch)
+                    MergeArches(Pcds, (TokenInfo[1], TokenInfo[0], List[1], List[2], Type), Arch)
         for Key in Pcds:
-            (Status, SkuInfoList) = self.GenSkuInfoList(Item[1], self.Platform.SkuInfos.SkuInfoList, '', '', '', '', List[2], '')
+            (Status, SkuInfoList) = self.GenSkuInfoList(Item[1], self.Platform.SkuInfos.SkuInfoList, '', '', '', '', Key[2], '')
             if Status == False:
                 ErrorMsg = "SKUID '%s' of '%s' not defined in file '%s'" % (SkuInfoList, Type, self.Platform.Header.FullPath) 
                 raise ParserError(PARSER_ERROR, msg = ErrorMsg)
@@ -478,38 +548,31 @@ class Dsc(DscObject):
         print 'Fdf =', m.FlashDefinitionFile.FilePath
         print '\nBuildOptions =', m.BuildOptions, m.BuildOptions.IncludeFiles
         for Item in m.BuildOptions.BuildOptionList:
-            print Item.ToolChainFamily, Item.ToolChain, Item.Option, Item.SupArchList
+            print '\t', Item.ToolChainFamily, Item.ToolChain, Item.Option, Item.SupArchList
         print '\nSkuIds =', m.SkuInfos.SkuInfoList, m.SkuInfos.IncludeFiles
         print '\nLibraries =', m.Libraries, m.Libraries.IncludeFiles
         for Item in m.Libraries.LibraryList:
-            print Item.FilePath, Item.SupArchList, Item.Define
+            print '\t', Item.FilePath, Item.SupArchList, Item.Define
         print '\nLibraryClasses =', m.LibraryClasses, m.LibraryClasses.IncludeFiles
         for Item in m.LibraryClasses.LibraryList:
-            print Item.Name, Item.FilePath, Item.ModuleType, Item.SupArchList, Item.Define
+            print '\t', Item.Name, Item.FilePath, Item.ModuleType, Item.SupArchList, Item.Define
         print '\nPcds =', m.DynamicPcdBuildDefinitions
         for Item in m.DynamicPcdBuildDefinitions:
-            print Item.CName, Item.TokenSpaceGuidCName, Item.DefaultValue, Item.Token, Item.ItemType, Item.MaxDatumSize, Item.SupArchList, Item.SkuInfoList
+            print '\tCname=', Item.CName, 'TSG=', Item.TokenSpaceGuidCName, 'Value=', Item.DefaultValue, 'Token=', Item.Token, 'Type=', Item.ItemType, 'Datum=', Item.DatumType, 'Size=', Item.MaxDatumSize, 'Arch=', Item.SupArchList, Item.SkuInfoList
             for Sku in Item.SkuInfoList.values():
-                print str(Sku)
+                print '\t\t', str(Sku)
         print '\nComponents =', m.Modules.ModuleList, m.Modules.IncludeFiles
         for Item in m.Modules.ModuleList:
-            print Item.FilePath, Item.ExecFilePath, Item.SupArchList
+            print '\t', Item.FilePath, Item.ExecFilePath, Item.SupArchList
             for Lib in Item.LibraryClasses.LibraryList:
-                print Lib.Name, Lib.FilePath
+                print '\t\tLib:', Lib.Name, Lib.FilePath
             for Bo in Item.ModuleSaBuildOption.BuildOptionList:
-                print Bo.ToolChainFamily, Bo.ToolChain, Bo.Option
+                print '\t\tBuildOption:', Bo.ToolChainFamily, Bo.ToolChain, Bo.Option
             for Pcd in Item.PcdBuildDefinitions:
-                print Pcd.CName, Pcd.TokenSpaceGuidCName, Pcd.MaxDatumSize, Pcd.DefaultValue, Pcd.ItemType
+                print '\t\tPcd:', Pcd.CName, Pcd.TokenSpaceGuidCName, Pcd.MaxDatumSize, Pcd.DefaultValue, Pcd.ItemType
     
 if __name__ == '__main__':
-    p = Dsc()
-    directory = 'C:\MyWorkspace\Nt32Pkg'
-    fileList = []
-    for f in os.listdir(directory):
-        if os.path.splitext(os.path.normcase(f))[1] == '.dsc':
-            fileList.append(os.path.join(directory, os.path.normcase(f)))
-            
-    for f in fileList:
-        p = Dsc(f, True, True)
-        #p.ShowDsc()
-        p.ShowPlatform()
+    w = os.getenv('WORKSPACE')
+    f = os.path.join(w, 'Nt32Pkg/Nt32Pkg.dsc')
+    p = Dsc(os.path.normpath(f), True, True)
+    p.ShowPlatform()

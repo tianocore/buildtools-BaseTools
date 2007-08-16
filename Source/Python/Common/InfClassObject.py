@@ -71,11 +71,11 @@ class InfContents(InfObject):
         self.Libraries = []
         self.LibraryClasses = []
         self.Packages = []
-        self.PcdsFixedAtBuild = []
-        self.PcdsPatchableInModule = []
-        self.PcdsFeatureFlag = []
-        self.PcdsDynamic = []
-        self.PcdsDynamicEx = []
+        self.FixedPcd = []
+        self.PatchPcd = []
+        self.FeaturePcd = []
+        self.Pcd = []
+        self.PcdEx = []
         self.Depex = []
         self.Nmake = []
         
@@ -92,8 +92,7 @@ class Inf(InfObject):
 
         self.KeyList = [
             TAB_SOURCES, TAB_BUILD_OPTIONS, TAB_BINARIES, TAB_INCLUDES, TAB_GUIDS, TAB_PROTOCOLS, TAB_PPIS, TAB_LIBRARY_CLASSES, TAB_PACKAGES, TAB_LIBRARIES, \
-            TAB_PCDS_FIXED_AT_BUILD_NULL, TAB_PCDS_PATCHABLE_IN_MODULE_NULL, TAB_PCDS_FEATURE_FLAG_NULL, \
-            TAB_PCDS_DYNAMIC_NULL, TAB_PCDS_DYNAMIC_EX_NULL, TAB_DEPEX, TAB_NMAKE
+            TAB_INF_FIXED_PCD, TAB_INF_PATCH_PCD, TAB_INF_FEATURE_PCD, TAB_INF_PCD, TAB_INF_PCD_EX, TAB_DEPEX, TAB_NMAKE
         ]
                 
         if Filename != None:
@@ -316,45 +315,69 @@ class Inf(InfObject):
         #Pcds
         Pcds = {}
         for Arch in DataType.ARCH_LIST:
-            for Item in self.Contents[Arch].PcdsFixedAtBuild:
+            for Item in self.Contents[Arch].FixedPcd:
                 Item = Item + DataType.TAB_VALUE_SPLIT
                 List = GetSplitValueList(Item)
-                if len(List) <= 2:
-                    ErrorMsg = "Wrong statement '%s' found in section PcdsFixedAtBuild in file '%s', correct format is '<TokenName>|<TSGuidName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
+                if len(List) < 2:
+                    ErrorMsg = "Wrong statement '%s' found in section FixedPcd in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                MergeArches(Pcds, (List[0], List[1], List[2], TAB_PCDS_FIXED_AT_BUILD), Arch)
-            for Item in self.Contents[Arch].PcdsPatchableInModule:
+                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                if len(TokenInfo) != 2:
+                    ErrorMsg = "Wrong statement '%s' found in section FixedPcd in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                MergeArches(Pcds, (TokenInfo[0], TokenInfo[1], List[1], TAB_PCDS_FIXED_AT_BUILD), Arch)
+            
+            for Item in self.Contents[Arch].PatchPcd:
                 Item = Item + DataType.TAB_VALUE_SPLIT
                 List = GetSplitValueList(Item)
-                if len(List) <= 2:
-                    ErrorMsg = "Wrong statement '%s' found in section PcdsPatchableInModule in file '%s', correct format is '<TokenName>|<TSGuidName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
+                if len(List) < 2:
+                    ErrorMsg = "Wrong statement '%s' found in section PatchPcd in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                MergeArches(Pcds, (List[0], List[1], List[2], TAB_PCDS_PATCHABLE_IN_MODULE), Arch)
-            for Item in self.Contents[Arch].PcdsFeatureFlag:
+                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                if len(TokenInfo) != 2:
+                    ErrorMsg = "Wrong statement '%s' found in section FixedPcd in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                MergeArches(Pcds, (TokenInfo[0], TokenInfo[1], List[1], TAB_PCDS_PATCHABLE_IN_MODULE), Arch)
+            
+            for Item in self.Contents[Arch].FeaturePcd:
                 Item = Item + DataType.TAB_VALUE_SPLIT
                 List = GetSplitValueList(Item)
-                if len(List) <= 2:
-                    ErrorMsg = "Wrong statement '%s' found in section PcdsFeatureFlag in file '%s', correct format is '<TokenName>|<TSGuidName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
+                if len(List) < 2:
+                    ErrorMsg = "Wrong statement '%s' found in section FeaturePcd in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                MergeArches(Pcds, (List[0], List[1], List[2], TAB_PCDS_FEATURE_FLAG), Arch)
-            for Item in self.Contents[Arch].PcdsDynamicEx:
+                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                if len(TokenInfo) != 2:
+                    ErrorMsg = "Wrong statement '%s' found in section FixedPcd in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                MergeArches(Pcds, (TokenInfo[0], TokenInfo[1], List[1], TAB_PCDS_FEATURE_FLAG), Arch)
+            
+            for Item in self.Contents[Arch].PcdEx:
                 Item = Item + DataType.TAB_VALUE_SPLIT
                 List = GetSplitValueList(Item)
-                if len(List) <= 2:
-                    ErrorMsg = "Wrong statement '%s' found in section PcdsDynamicEx in file '%s', correct format is '<TokenName>|<TSGuidName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
+                if len(List) < 2:
+                    ErrorMsg = "Wrong statement '%s' found in section PcdEx in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                MergeArches(Pcds, (List[0], List[1], List[2], TAB_PCDS_DYNAMIC_EX), Arch)
-            for Item in self.Contents[Arch].PcdsDynamic:
+                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                if len(TokenInfo) != 2:
+                    ErrorMsg = "Wrong statement '%s' found in section FixedPcd in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                MergeArches(Pcds, (TokenInfo[0], TokenInfo[1], List[1], TAB_PCDS_DYNAMIC_EX), Arch)
+            
+            for Item in self.Contents[Arch].Pcd:
                 Item = Item + DataType.TAB_VALUE_SPLIT
                 List = GetSplitValueList(Item)
-                if len(List) <= 2:
-                    ErrorMsg = "Wrong statement '%s' found in section PcdsDynamic in file '%s', correct format is '<TokenName>|<TSGuidName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
+                if len(List) < 2:
+                    ErrorMsg = "Wrong statement '%s' found in section Pcd in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                MergeArches(Pcds, (List[0], List[1], List[2], TAB_PCDS_DYNAMIC), Arch)
+                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                if len(TokenInfo) != 2:
+                    ErrorMsg = "Wrong statement '%s' found in section FixedPcd in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                MergeArches(Pcds, (TokenInfo[0], TokenInfo[1], List[1], TAB_PCDS_DYNAMIC), Arch)
         for Key in Pcds.keys():
             Pcd = PcdClass()
-            Pcd.CName = Key[0]
-            Pcd.TokenSpaceGuidCName = Key[1]
+            Pcd.CName = Key[1]
+            Pcd.TokenSpaceGuidCName = Key[0]
             Pcd.DefaultValue = Key[2]
             Pcd.ItemType = Key[3]
             Pcd.SupArchList = Pcds[Key]
@@ -554,7 +577,7 @@ class Inf(InfObject):
             print Item.Name, Item.Value, Item.SupArchList
         print '\nPcds =', m.PcdCodes
         for Item in m.PcdCodes:
-            print Item.CName, Item.TokenSpaceGuidCName, Item.DefaultValue, Item.ItemType, Item.SupArchList
+            print '\tCName=', Item.CName, 'TokenSpaceGuidCName=', Item.TokenSpaceGuidCName, 'DefaultValue=', Item.DefaultValue, 'ItemType=', Item.ItemType, Item.SupArchList
         print '\nSources =', m.Sources
         for Source in m.Sources:
             print Source.SourceFile, Source.ToolChainFamily, Source.FeatureFlag, Source.TagName, Source.ToolCode, Source.SupArchList
@@ -578,15 +601,7 @@ class Inf(InfObject):
             print Binary.FileType, Binary.Target, Binary.BinaryFile, Binary.FeatureFlag
         
 if __name__ == '__main__':
-    m = Inf()
-    directory = 'C:\MyWorkspace\MdePkg\Library\BaseLib'
-    fileList = []
-    
-    for f in os.listdir(directory):
-        if os.path.splitext(os.path.normcase(f))[1] == '.inf':
-            fileList.append(os.path.join(directory, os.path.normcase(f)))
-            
-    for f in fileList:
-        m = Inf(f, True, True)
-        #m.ShowInf()
-        m.ShowModule()
+    w = os.getenv('WORKSPACE')
+    f = os.path.join(w, 'MdeModulePkg/Application/HelloWorld/HelloWorld.inf')
+    p = Inf(os.path.normpath(f), True, True)
+    p.ShowModule()

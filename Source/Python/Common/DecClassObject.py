@@ -218,41 +218,65 @@ class Dec(DecObject):
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].PcdsFixedAtBuild:
                 List = GetSplitValueList(Item)
-                if len(List) != 5:
-                    ErrorMsg = "Wrong statement '%s' found in section PcdsFixedAtBuild in file '%s', correct format is '<TokenCName>|<Token>|<CName>|<DatumType>|<Default>'" % (Item, self.Package.Header.FullPath) 
+                if len(List) != 4:
+                    ErrorMsg = "Wrong statement '%s' found in section PcdsFixedAtBuild in file '%s', correct format is '<TokenSpcCName>.<TokenCName>|<Token>|<Value>|<DatumType>'" % (Item, self.Package.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                MergeArches(Pcds, (List[0], List[1], List[2], List[3], List[4],TAB_PCDS_FIXED_AT_BUILD), Arch)
+                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                if len(TokenInfo) != 2:
+                    ErrorMsg = "Wrong statement '%s' found in section PcdsFixedAtBuild in file '%s', correct format is '<TokenSpcCName>.<TokenCName>|<Token>|<Value>|<DatumType>'" % (Item[0], Type, self.Platform.Header.FullPath) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                MergeArches(Pcds, (TokenInfo[0], TokenInfo[1], List[1], List[2], List[3], TAB_PCDS_FIXED_AT_BUILD), Arch)
+            
             for Item in self.Contents[Arch].PcdsPatchableInModule:
                 List = GetSplitValueList(Item)
-                if len(List) != 5:
-                    ErrorMsg = "Wrong statement '%s' found in section PcdsPatchableInModule in file '%s', correct format is '<TokenCName>|<Token>|<CName>|<DatumType>|<Default>'" % (Item, self.Package.Header.FullPath) 
+                if len(List) != 4:
+                    ErrorMsg = "Wrong statement '%s' found in section PcdsPatchableInModule in file '%s', correct format is '<TokenSpcCName>.<TokenCName>|<Token>|<Value>|<DatumType>'" % (Item, self.Package.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                MergeArches(Pcds, (List[0], List[1], List[2], List[3], List[4], TAB_PCDS_PATCHABLE_IN_MODULE), Arch)
+                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                if len(TokenInfo) != 2:
+                    ErrorMsg = "Wrong statement '%s' found in section PcdsPatchableInModule in file '%s', correct format is '<TokenSpcCName>.<TokenCName>|<Token>|<Value>|<DatumType>'" % (Item[0], Type, self.Platform.Header.FullPath) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                MergeArches(Pcds, (TokenInfo[0], TokenInfo[1], List[1], List[2], List[3], TAB_PCDS_PATCHABLE_IN_MODULE), Arch)
+            
             for Item in self.Contents[Arch].PcdsFeatureFlag:
                 List = GetSplitValueList(Item)
-                if len(List) != 5:
-                    ErrorMsg = "Wrong statement '%s' found in section PcdsFeatureFlag in file '%s', correct format is '<TokenCName>|<Token>|<CName>|<DatumType>|<Default>'" % (Item, self.Package.Header.FullPath) 
+                if len(List) != 4:
+                    ErrorMsg = "Wrong statement '%s' found in section PcdsFeatureFlag in file '%s', correct format is '<TokenSpcCName>.<TokenCName>|<Token>|<Value>|<DatumType>'" % (Item, self.Package.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                MergeArches(Pcds, (List[0], List[1], List[2], List[3], List[4], TAB_PCDS_FEATURE_FLAG), Arch)
+                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                if len(TokenInfo) != 2:
+                    ErrorMsg = "Wrong statement '%s' found in section PcdsFeatureFlag in file '%s', correct format is '<TokenSpcCName>.<TokenCName>|<Token>|<Value>|<DatumType>'" % (Item[0], Type, self.Platform.Header.FullPath) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                MergeArches(Pcds, (TokenInfo[0], TokenInfo[1], List[1], List[2], List[3], TAB_PCDS_FEATURE_FLAG), Arch)
+            
             for Item in self.Contents[Arch].PcdsDynamicEx:
                 List = GetSplitValueList(Item)
-                if len(List) != 5:
-                    ErrorMsg = "Wrong statement '%s' found in section PcdsDynamicEx in file '%s', correct format is '<TokenCName>|<Token>|<CName>|<DatumType>|<Default>'" % (Item, self.Package.Header.FullPath) 
+                if len(List) != 4:
+                    ErrorMsg = "Wrong statement '%s' found in section PcdsDynamicEx in file '%s', correct format is '<TokenSpcCName>.<TokenCName>|<Token>|<Value>|<DatumType>'" % (Item, self.Package.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                MergeArches(Pcds, (List[0], List[1], List[2], List[3], List[4], TAB_PCDS_DYNAMIC_EX), Arch)
+                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                if len(TokenInfo) != 2:
+                    ErrorMsg = "Wrong statement '%s' found in section PcdsDynamicEx in file '%s', correct format is '<TokenSpcCName>.<TokenCName>|<Token>|<Value>|<DatumType>'" % (Item[0], Type, self.Platform.Header.FullPath) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                MergeArches(Pcds, (TokenInfo[0], TokenInfo[1], List[1], List[2], List[3], TAB_PCDS_DYNAMIC_EX), Arch)
+            
             for Item in self.Contents[Arch].PcdsDynamic:
                 List = GetSplitValueList(Item)
-                if len(List) != 5:
-                    ErrorMsg = "Wrong statement '%s' found in section PcdsDynamic in file '%s', correct format is '<TokenCName>|<Token>|<CName>|<DatumType>|<Default>'" % (Item, self.Package.Header.FullPath) 
+                if len(List) != 4:
+                    ErrorMsg = "Wrong statement '%s' found in section PcdsDynamic in file '%s', correct format is '<TokenSpcCName>.<TokenCName>|<Token>|<Value>|<DatumType>'" % (Item, self.Package.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                MergeArches(Pcds, (List[0], List[1], List[2], List[3], List[4], TAB_PCDS_DYNAMIC), Arch)
+                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                if len(TokenInfo) != 2:
+                    ErrorMsg = "Wrong statement '%s' found in section PcdsDynamic in file '%s', correct format is '<TokenSpcCName>.<TokenCName>|<Token>|<Value>|<DatumType>'" % (Item[0], Type, self.Platform.Header.FullPath) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                MergeArches(Pcds, (TokenInfo[0], TokenInfo[1], List[1], List[2], List[3], TAB_PCDS_DYNAMIC), Arch)
         for Key in Pcds.keys():
             Pcd = PcdClass()
-            Pcd.CName = Key[0]
-            Pcd.Token = Key[1]
-            Pcd.TokenSpaceGuidCName = Key[2]
+            Pcd.CName = Key[1]
+            Pcd.Token = Key[4]
+            Pcd.TokenSpaceGuidCName = Key[0]
             Pcd.DatumType = Key[3]
-            Pcd.DefaultValue = Key[4]
+            Pcd.DefaultValue = Key[2]
             Pcd.ItemType = Key[5]
             Pcd.SupArchList = Pcds[Key]
             self.Package.PcdDeclarations.append(Pcd)
@@ -293,17 +317,10 @@ class Dec(DecObject):
             print Item.LibraryClass, Item.RecommendedInstance, Item.SupModuleList, Item.SupArchList
         print '\nPcds =', m.PcdDeclarations
         for Item in m.PcdDeclarations:
-            print Item.CName, Item.TokenSpaceGuidCName, Item.DefaultValue, Item.ItemType, Item.Token, Item.DatumType, Item.SupArchList
+            print 'CName=', Item.CName, 'TokenSpaceGuidCName=', Item.TokenSpaceGuidCName, 'DefaultValue=', Item.DefaultValue, 'ItemType=', Item.ItemType, 'Token=', Item.Token, 'DatumType=', Item.DatumType, Item.SupArchList
 
 if __name__ == '__main__':
-    p = Dec()
-    directory = 'C:\Documents and Settings\\hchen30\\Desktop\\prototype\\dec'
-    fileList = []
-    for f in os.listdir(directory):
-        if os.path.splitext(os.path.normcase(f))[1] == '.dec':
-            fileList.append(os.path.join(directory, os.path.normcase(f)))
-            
-    for f in fileList:
-        p = Dec(f, True, True)
-        #p.ShowDec()
-        p.ShowPackage()
+    w = os.getenv('WORKSPACE')
+    f = os.path.join(w, 'Nt32Pkg/Nt32Pkg.dec')
+    p = Dec(os.path.normpath(f), True, True)
+    p.ShowPackage()

@@ -121,7 +121,7 @@ def GetComponents(Lines, Key, KeyValues, CommentCharacter):
                 ListItem = CleanString(Line.rsplit('{', 1)[0], CommentCharacter)
 
         if findBlock:    
-            if Line.find('<LibraryClass>') != -1:
+            if Line.find('<LibraryClasses>') != -1:
                 (findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (True, False, False, False, False, False, False)
                 continue
             if Line.find('<BuildOptions>') != -1:
