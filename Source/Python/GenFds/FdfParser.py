@@ -531,7 +531,7 @@ class FdfParser:
         if self.__IsToken( "|"):
             pcdPair = self.__GetNextPcdName()
             fd.BaseAddressPcd = pcdPair
-            self.profile.PcdDict[pcdPair] = fd.BaseAddress
+            self.profile.PcdDict[pcdPair] = long(fd.BaseAddress, 0)
             
         if not self.__IsKeyword( "Size"):
             raise Warning("Size missing At Line %d" % self.CurrentLineNumber)
