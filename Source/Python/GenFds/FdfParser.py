@@ -701,7 +701,7 @@ class FdfParser:
         if not self.__Token in ("SET", "FV", "FILE", "DATA"):
             self.__UndoToken()
             region.PcdOffset = self.__GetNextPcdName()
-            self.profile.PcdDict[region.PcdOffset] = region.Offset
+            self.profile.PcdDict[region.PcdOffset] = region.Offset + long(fd.BaseAddress, 0)
             if self.__IsToken( "|"):
                 region.PcdSize = self.__GetNextPcdName()
                 self.profile.PcdDict[region.PcdSize] = region.Size
