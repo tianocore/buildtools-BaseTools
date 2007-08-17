@@ -361,15 +361,15 @@ class FdfParser:
     
     def __GetNextPcdName(self):
         if not self.__GetNextWord():
-            raise Warning("expected PcdCName:PcdTokenSpaceCName At Line %d" % self.CurrentLineNumber)
-        pcdCName = self.__Token
+            raise Warning("expected PcdTokenSpaceCName.PcdCName At Line %d" % self.CurrentLineNumber)
+        pcdTokenSpaceCName = self.__Token
         
-        if not self.__IsToken( ":"):
-            raise Warning("expected PcdCName:PcdTokenSpaceCName At Line %d" % self.CurrentLineNumber)
+        if not self.__IsToken( "."):
+            raise Warning("expected PcdTokenSpaceCName.PcdCName At Line %d" % self.CurrentLineNumber)
         
         if not self.__GetNextWord():
-            raise Warning("expected PcdCName:PcdTokenSpaceCName At Line %d" % self.CurrentLineNumber)
-        pcdTokenSpaceCName = self.__Token
+            raise Warning("expected PcdTokenSpaceCName.PcdCName At Line %d" % self.CurrentLineNumber)
+        pcdCName = self.__Token
         
         return (pcdCName, pcdTokenSpaceCName) 
             
@@ -463,6 +463,8 @@ class FdfParser:
         
         self.__UndoToken()
         if not self.__IsToken("[FD.", True):
+            print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
+                    % (self.profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
             raise Warning("expected [FD.] At Line %d" % self.CurrentLineNumber)
         
         fdName = self.__GetUiName()
@@ -854,7 +856,8 @@ class FdfParser:
 
         self.__UndoToken()
         if not self.__IsToken("[FV.", True):
-##            raise Warning("expected [FV.] At Line %d" % self.CurrentLineNumber)
+            print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
+                    % (self.profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
             raise Warning("Unknown Keyword At Line %d" % self.CurrentLineNumber)
         
         fvName = self.__GetUiName()
@@ -1348,6 +1351,8 @@ class FdfParser:
 
         self.__UndoToken()
         if not self.__IsToken("[CAPSULE.", True):
+            print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
+                    % (self.profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
             raise Warning("expected [Capsule.] At Line %d" % self.CurrentLineNumber)        
             
 #        if not self.__IsToken("."):
@@ -1449,6 +1454,8 @@ class FdfParser:
 
         self.__UndoToken()
         if not self.__IsToken("[Rule.", True):
+            print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
+                    % (self.profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
             raise Warning("expected [Rule.] At Line %d" % self.CurrentLineNumber)
 
         if not self.__SkipToToken("."):
@@ -1766,6 +1773,8 @@ class FdfParser:
 
         self.__UndoToken()
         if not self.__IsToken("[VTF.", True):
+            print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
+                    % (self.profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
             raise Warning("expected [VTF.] At Line %d" % self.CurrentLineNumber)
 
         if not self.__SkipToToken("."):
