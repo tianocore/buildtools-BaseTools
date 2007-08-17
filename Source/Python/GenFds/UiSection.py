@@ -23,8 +23,10 @@ class UiSection (UiSectionClassObject):
         if self.StringData != None :
             NameString = self.StringData
         elif self.FileName != None:
-            f = open(self.FileName, 'r')
+            file = GenFdsGlobalVariable.ReplaceWorkspaceMarco(self.FileName)
+            f = open(file, 'r')
             NameString = f.read()
+            NameString = '\"' + NameString + "\""
             f.close()
         else:
             NameString = ''
@@ -34,9 +36,7 @@ class UiSection (UiSectionClassObject):
                          OutputFile                        + \
                          ' -s EFI_SECTION_USER_INTERFACE ' + \
                          '-n '                             + \
-                          '\"'                             + \
-                          NameString                       + \
-                          '\"'
+                          NameString                       
         #
         # Call GenSection
         #

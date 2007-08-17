@@ -26,6 +26,7 @@ class EfiSection (EfiSectionClassObject):
             #print 'version Num: %s' %self.VersionNum
             VersionNum = FfsInf.__ExtendMarco__(self.VersionNum)
             #print 'After extend Version Num: %s' %self.VersionNum
+            StringData = FfsInf.__ExtendMarco__(self.StringData)
         else:
             SectionType = self.SectionType
             Filename = self.Filename
@@ -44,10 +45,19 @@ class EfiSection (EfiSectionClassObject):
         #
         if SectionType == 'VERSION':
             if Filename != None:
+                Filename = GenFdsGlobalVariable.ReplaceWorkspaceMarco(Filename)
+                f = open (Filename, 'r')
+                VerString = f.read()
                 VerString = ' -n '           + \
                              ' \"'           + \
-                             Filename        + \
+                             VerString       + \
                              ' \"'
+                             
+            elif StringData != None:
+                VerString = ' -n '          + \
+                            '\"'            + \
+                            StringData      + \
+                            '\"'
             else:
                 VerString = ''
                              
@@ -81,9 +91,18 @@ class EfiSection (EfiSectionClassObject):
             #                UiString + \
             #                '\"'
             if Filename != None:
+               Filename = GenFdsGlobalVariable.ReplaceWorkspaceMarco(Filename)
+               f = open (Filename, 'r')
+               UiString = f.read()
+               UiString = ' -n '         + \
+                           '\"'          + \
+                           UiString      + \
+                           '\"'
+                           
+            elif StringData != None:
                 UiString = ' -n '        + \
                            '\"'          + \
-                           Filename      + \
+                           StringData    + \
                            '\"'
             else:
                 UiString = ''

@@ -35,6 +35,7 @@ class VerSection (VerSectionClassObject):
         elif self.FileName != None:
             f = open (self.FileName, 'r')
             StringData = f.read()
+            StringData = '\"' + StringData + '\"'
             f.close()
         else:
             StringData = ''
@@ -43,9 +44,7 @@ class VerSection (VerSectionClassObject):
                          OutputFile                 + \
                          ' -s EFI_SECTION_VERSION ' + \
                          '-n '                      + \
-                         '\"'                       + \
                          StringData                 + \
-                         '\"'                       + \
                          BuildNum                   
                          
         #

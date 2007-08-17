@@ -52,10 +52,10 @@ class DataSection (DataSectionClassObject):
                          ' -s '                                          + \
                          Section.Section.SectionType.get (self.SecType)  + \
                          ' '                                             + \
-                         GenFdsGlobalVariable.ExtendMarco(self.SectFileName)
+                         GenFdsGlobalVariable.ReplaceWorkspaceMarco(self.SectFileName)
                          
         """Copy Map file to Ffs output"""
-        Filename = GenFdsGlobalVariable.ExtendMarco(self.SectFileName)
+        Filename = GenFdsGlobalVariable.ReplaceWorkspaceMarco(self.SectFileName)
         if Filename[(len(Filename)-4):] == '.efi':
              MapFile = Filename.replace('.efi', '.map')
              if os.path.exists(MapFile):
