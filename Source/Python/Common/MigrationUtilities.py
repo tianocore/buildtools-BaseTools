@@ -508,7 +508,7 @@ def GetXmlFileInfo(FileName, TagTuple):
     return tuple([XmlElement(XmlDom, XmlTag) for XmlTag in TagTuple])
 
 # Version and Copyright
-__version_number__ = "0.01"
+__version_number__ = "1.0"
 __version__ = "%prog Version " + __version_number__
 __copyright__ = "Copyright (c) 2007, Intel Corporation. All rights reserved."
 
@@ -531,8 +531,7 @@ def MigrationOptionParser(Source, Destinate):
     HelpText = "The name of the %s file to be created." % Destinate
     Parser.add_option("-o", "--output", dest="OutputFile", help=HelpText)
     
-    HelpText = "Automatically create the %s file using the name of the %s file and\
-                replacing file extension" % (Source, Destinate)
+    HelpText = "Automatically create the %s file using the name of the %s file and replacing file extension" % (Source, Destinate)
     Parser.add_option("-a", "--auto", dest="AutoWrite", action="store_true", default=False, help=HelpText)
 
     Options, Args = Parser.parse_args()
