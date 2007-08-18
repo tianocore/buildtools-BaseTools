@@ -26,6 +26,8 @@ import GenDepex
 
 from BuildInfo import *
 from StrGather import *
+from BuildEngine import *
+
 from Common.BuildToolError import *
 from Common.EdkIIWorkspaceBuild import *
 from Common.EdkIIWorkspace import *
@@ -87,6 +89,9 @@ gOutputFlag = {
 ## Flag for include file search path
 gIncludeFlag = {"MSFT" : "/I", "GCC" : "-I", "INTEL" : "-I"}
 
+## Build rule configuration file
+gBuildRuleFile = 'Conf/build_rule.txt'
+
 ## Find the package containing the module
 #
 # Find out the package which contains the given module, according to the path
@@ -119,7 +124,7 @@ def FindModuleOwnerPackage(Module, PackageDatabase):
 class AutoGen(object):
 
     def __init__(self, ModuleFile, PlatformFile, Workspace, Target, Toolchain, Arch):
-        global gModuleDatabase, gPackageDatabase, gPlatformDatabase, gAutoGenDatabase, gWorkspace, gWorkspaceDir
+        global gModuleDatabase, gPackageDatabase, gPlatformDatabase, gAutoGenDatabase, gWorkspace, gWorkspaceDir, gBuildRuleDatabase
 
         if ModuleFile != None:
             ModuleFile = NormPath(str(ModuleFile))
@@ -142,6 +147,7 @@ class AutoGen(object):
                 gPlatformDatabase[a] = gWorkspace.Build[a].PlatformDatabase
 
         self.ToolChain = Toolchain
+        self.ToolChainFamily = "MSFT"
         self.BuildTarget = Target
         self.IsMakefileCreated = False
         self.IsAutoGenCodeCreated = False
@@ -304,9 +310,6 @@ class AutoGen(object):
 
         Info = PlatformBuildInfo(Platform)
 
-        RuleFile = gWorkspace.WorkspaceFile(r'Conf\build_rule.txt')
-        Info.BuildRule = imp.load_source("BuildRule", RuleFile)
-
         Info.Arch = Arch
         Info.ToolChain = self.ToolChain
         Info.BuildTarget = self.BuildTarget
@@ -324,6 +327,7 @@ class AutoGen(object):
         Info.PackageList = gPackageDatabase[Arch].values()
 
         self.ProcessToolDefinition(Info)
+        Info.BuildRule = self.GetBuildRule()
 
         if PlatformAutoGen != None:
             if type(PlatformAutoGen.BuildInfo) == type({}):
@@ -331,6 +335,9 @@ class AutoGen(object):
             else:
                 PlatformAutoGen.BuildInfo = Info
         return Info
+
+    def GetBuildRule(self):
+        return BuildRule(gWorkspace.WorkspaceFile(gBuildRuleFile))
 
     def GetDerivedPackageList(self):
         PackageList = [self.Package]
@@ -446,6 +453,7 @@ class AutoGen(object):
             Info.OutputFlag[Tool] = OutputFlag
             Info.IncludeFlag[Tool] = InputFlag
 
+        self.ToolChainFamily = Info.ToolChainFamily["CC"]
         if self.IsPlatformAutoGen:
             BuildOptions = self.Platform[Info.Arch].BuildOptions
         else:
@@ -487,66 +495,74 @@ class AutoGen(object):
         return OptionList
 
     def GetBuildFileList(self, PlatformInfo):
+        ToolChainFamily = PlatformInfo.ToolChainFamily["CC"]
         BuildRule = PlatformInfo.BuildRule
         BuildFileList = []
-        FileList = self.Module.Sources
-        for F in FileList:
+        for F in self.Module.Sources:
+            SourceFile = F.SourceFile
+            # ToolCode = F.ToolCode
             if F.TagName != "" and F.TagName != self.ToolChain:
+                EdkLogger.verbose("The toolchain [%s] for processing file [%s] is found, "
+                                  "but [%s] is needed" % (F.TagName, F.SourceFile, self.ToolChain))
                 continue
-            if F.ToolCode != "" and F.ToolCode not in PlatformInfo.ToolPath:
+            if F.ToolChainFamily != "" and F.ToolChainFamily != ToolChainFamily:
+                EdkLogger.verbose("The file [%s] must be built by tools of [%s], "
+                                  "but current toolchain family is [%s]" % (SourceFile, F.ToolChainFamily, ToolChainFamily))
                 continue
 
-            Dir = path.dirname(F.SourceFile)
+            Dir = path.dirname(SourceFile)
             if Dir != "":
                 Dir = path.join(self.BuildInfo.SourceDir, Dir)
                 if Dir not in self.BuildInfo.IncludePathList:
                     self.BuildInfo.IncludePathList.insert(0, Dir)
 
             # skip unknown file
-            Base, Ext = path.splitext(F.SourceFile)
-            if Ext not in BuildRule.FileTypeMapping:
-                EdkLogger.warn("Don't know how to process file %s (%s)" % (F.SourceFile, Ext))
-                continue
+            Base, Ext = path.splitext(SourceFile)
 
             # skip file which needs a tool having no matching toolchain family
-            FileType = BuildRule.FileTypeMapping[Ext]
-            if FileType == "Unicode-Text":
-                self.BuildInfo.UnicodeFileList.append(os.path.join(gWorkspaceDir, self.BuildInfo.SourceDir, F.SourceFile))
+            FileType, RuleObject = BuildRule.Get(Ext, ToolChainFamily)
+            if FileType == None:
+                EdkLogger.verbose("Don't know how to process file [%s]." % SourceFile)
                 continue
 
-            if F.ToolCode != "":
-                ToolCodeList = [F.ToolCode]
-            else:
-                if FileType in BuildRule.ToolCodeMapping:
-                    ToolCodeList = BuildRule.ToolCodeMapping[FileType]
-                else:
-                    ToolCodeList = []
-
-            # get the toolchain family from tools definition
-            Buildable = True
-            if F.ToolChainFamily != "":
-                for ToolCode in ToolCodeList:
-                    if ToolCode not in PlatformInfo.ToolChainFamily:
-                        raise AutoGenError(msg="No tool chain family available for %s" % ToolCode)
-                    if F.ToolChainFamily != PlatformInfo.ToolChainFamily[ToolCode]:
-                        EdkLogger.warn("File %s for toolchain family %s is not supported" % (F.SourceFile, F.ToolChainFamily))
-                        Buildable = False
-                        break
-            else:
-                if ToolCodeList != []:
-                    if ToolCodeList[0] not in PlatformInfo.ToolChainFamily:
-                        raise AutoGenError(msg="No tool chain family available for %s" % ToolCodeList[0])
-                    F.ToolChainFamily = PlatformInfo.ToolChainFamily[ToolCodeList[0]]
-                else:
-                    Buildable = False
-
-            if not Buildable:
+            # unicode must be processed by AutoGen
+            if FileType == "Unicode-Text-File":
+                self.BuildInfo.UnicodeFileList.append(os.path.join(gWorkspaceDir, self.BuildInfo.SourceDir, SourceFile))
                 continue
 
-            #buildFileList.append(f.SourceFile)
-            BuildFileList.append(F)
+            # no command, no build
+            if RuleObject == None or RuleObject.CommandList == []:
+                Buildable = False
+                EdkLogger.warn("No rule or command defined for building [%s], ignore file [%s]" % (FileType, SourceFile))
+                continue
+
+            if Ext == ".dxs":
+                print "###", SourceFile, FileType, RuleObject
+            BuildFileList.append([SourceFile, FileType, RuleObject])
 
         return BuildFileList
+
+    def GetToolChainFamily(self, FileType):
+        PlatformInfo = self.BuildInfo.PlatformInfo
+        ToolChainFamily = PlatformInfo.ToolChainFamily
+        if FileType not in gBuildRuleDatabase[ToolChainFamily]:
+            for Family in gBuildRuleDatabase:
+                if FileType in gBuildRuleDatabase[Family]:
+                    ToolChainFamily = Family
+                    break
+            else:
+                return ""
+        FileBuildRule = gBuildRuleDatabase[ToolChainFamily][FileType]
+        ToolCodeList = FileBuildRule.ToolList
+
+        ToolChainFamily = ""
+        for ToolCode in ToolCodeList:
+            # if one tool is not defined in current toolchain, break the build
+            if ToolCode in PlatformInfo.ToolChainFamily:
+                ToolChainFamily = PlatformInfo.ToolChainFamily[ToolCode]
+                break
+
+        return ToolChainFamily
 
     def GetDependentPackageList(self):
         if self.Package not in self.Module.Packages:

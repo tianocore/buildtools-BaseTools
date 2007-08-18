@@ -24,6 +24,7 @@ from Common.EdkIIWorkspace import *
 from Common.BuildToolError import *
 from Common.Misc import *
 from BuildInfo import *
+from BuildEngine import *
 
 gDependencyDatabase = {}    # file path : [dependent files list]
 gIncludePattern = re.compile("^[ #]*include[ ]+[\"<]*([^\"< >]+)[>\" ]*$", re.MULTILINE | re.UNICODE)
@@ -65,34 +66,34 @@ gCreateDirectoryCommandTemplate = {"nmake" : "if not exist %(dir)s mkdir %(dir)s
 gRemoveDirectoryCommandTemplate = {"nmake" : "if exist %(dir)s rmdir /s /q %(dir)s",
                                    "gmake" : "test -e %(dir)s && rm -r -f %(dir)s"}
 
-gDefaultOutputFlag = "-o "
+#   $(CP)     copy file command
+#   $(MV)     move file command
+#   $(RM)     remove file command
+#   $(MD)     create dir command
+#   $(RD)     remove dir command
+#
+#   $(TCP)     copy file if destination file doesn't exist
+#   $(TMV)     move file if destination file doesn't exist
+#   $(TRM)     remove file if destination file exists
+#   $(TMD)     create dir if destination dir doesn't exist
+#   $(TRD)     remove dir if destination dir exists
+gShellCommand = {
+    "nmake" : {
+        "CP"    :   "copy /y",
+        "MV"    :   "move /y",
+        "RM"    :   "del /f /q",
+        "MD"    :   "mkdir",
+        "RD"    :   "rmdir /s /q",
+    },
 
-gOutputFlag = {
-    ("MSFT", "CC", "OUTPUT")      :   "/Fo",
-    ("MSFT", "SLINK", "OUTPUT")   :   "/OUT:",
-    ("MSFT", "DLINK", "OUTPUT")   :   "/OUT:",
-    ("MSFT", "ASMLINK", "OUTPUT") :   "/OUT:",
-    ("MSFT", "PCH", "OUTPUT")     :   "/Fp",
-    ("MSFT", "ASM", "OUTPUT")     :   "/Fo",
-    
-    ("INTEL", "CC", "OUTPUT")          :   "/Fo",
-    ("INTEL", "SLINK", "OUTPUT")       :   "/OUT:",
-    ("INTEL", "DLINK", "OUTPUT")       :   "/OUT:",
-    ("INTEL", "ASMLINK", "OUTPUT")     :   "/OUT:",
-    ("INTEL", "PCH", "OUTPUT")         :   "/Fp",
-    ("INTEL", "ASM", "OUTPUT")         :   "/Fo",
-#    ("INTEL", "IPF", "ASM", "OUTPUT")  :   "-o ",
-
-    ("GCC", "CC", "OUTPUT")        :   "-o ",
-    ("GCC", "SLINK", "OUTPUT")     :   "-cr ",
-    ("GCC", "DLINK", "OUTPUT")     :   "-o ",
-    ("GCC", "ASMLINK", "OUTPUT")   :   "-o ",
-    ("GCC", "PCH", "OUTPUT")       :   "-o ",
-    ("GCC", "ASM", "OUTPUT")       :   "-o ",
-
-#   ("OUTPUT")                     :    "-o "
+    "gmake" : {
+        "CP"    :   "cp -f",
+        "MV"    :   "mv -f",
+        "RM"    :   "rm -f",
+        "MD"    :   "mkdir -p",
+        "RD"    :   "rm -r -f",
+    }
 }
-
 gIncludeFlag = {"MSFT" : "/I", "GCC" : "-I", "INTEL" : "-I"}
 
 gStartGroupFlag = {"MSFT" : "", "GCC" : "-(", "INTEL" : ""}
@@ -302,20 +303,29 @@ ${BEGIN}${tool_code} = ${tool_path}
 ${END}
 
 #
+# Shell Command Macro
+#
+${BEGIN}${shell_command_code} = ${shell_command}
+${END}
+
+#
 # Build Macro
 #
-SOURCE_FILES = ${BEGIN}$(MODULE_DIR)${separator}${source_file} \\
-               ${END}${BEGIN}$(DEBUG_DIR)${separator}${auto_generated_file}
-               ${END}
+${BEGIN}${source_file_macro}
+${END}
 
-TARGET_FILES = ${BEGIN}$(OUTPUT_DIR)${separator}${target_file} \\
-               ${END}
+${BEGIN}${target_file_macro}
+${END}
+
+SOURCE_FILES = ${BEGIN}${source_file_macro_name} ${END}
+
+TARGET_FILES = ${BEGIN}${target_file_macro_name} ${END}
 
 INC = ${BEGIN}${include_path_prefix}$(WORKSPACE)${separator}${include_path} \\
       ${END}
 
-OBJECTS = ${BEGIN}$(OUTPUT_DIR)${separator}${object_file} \\
-          ${END}
+#OBJECTS = ${BEGIN}$(OUTPUT_DIR)${separator}${object_file} \\
+#          ${END}
 
 LIBS = ${BEGIN}$(BUILD_DIR)${separator}$(ARCH)${separator}${library_file} \\
        ${END}${BEGIN}${system_library} \\
@@ -327,21 +337,12 @@ COMMON_DEPS = ${BEGIN}$(WORKSPACE)${separator}${common_dependency_file} \\
 ENTRYPOINT = ${module_entry_point}
 
 #
-# Target File Macro Definitions
-#
-PCH_FILE = $(OUTPUT_DIR)\$(MODULE_NAME).pch
-LIB_FILE = $(OUTPUT_DIR)\$(MODULE_NAME).lib
-LLIB_FILE = $(OUTPUT_DIR)\$(MODULE_NAME)Local.lib
-DLL_FILE = $(DEBUG_DIR)\$(MODULE_NAME).dll
-EFI_FILE = $(DEBUG_DIR)\$(MODULE_NAME).efi
-
-#
 # Overridable Target Macro Definitions
 #
 INIT_TARGET = init
 PCH_TARGET =
-LLIB_TARGET = $(LLIB_FILE)
-CODA_TARGET = ${remaining_build_target}
+CODA_TARGET = ${BEGIN}${remaining_build_target} \\
+              ${END}
 
 #
 # Default target, which will build dependent libraries in addition to source files
@@ -354,21 +355,13 @@ all: ${build_type}
 # Target used when called from platform makefile, which will bypass the build of dependent libraries
 #
 
-pbuild: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(CODA_TARGET)
-
-
-#
-# Target used for library build, which will bypass the build of dependent libraries
-#
-
-lbuild: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(LIB_FILE)
-
+pbuild: $(INIT_TARGET) $(PCH_TARGET) $(CODA_TARGET)
 
 #
 # ModuleTarget
 #
 
-mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(CODA_TARGET)
+mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) $(CODA_TARGET)
 
 
 #
@@ -380,48 +373,6 @@ init:
 \t${END}
 
 #
-# PCH Target
-#
-pch: $(INIT_TARGET) $(PCH_FILE)
-
-
-#
-# Libs Target
-#
-libs: $(INIT_TARGET) gen_libs
-
-
-#
-# Vfr Target
-#
-vfr: $(INIT_TARGET) gen_vfr
-
-
-#
-# Obj Target
-#
-obj: $(INIT_TARGET) $(PCH_TARGET) gen_obj
-
-
-#
-# LocalLib Target
-#
-locallib: $(INIT_TARGET) $(PCH_TARGET) gen_obj $(LLIB_FILE)
-
-
-#
-# Dll Target
-#
-dll: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(DLL_FILE)
-
-
-#
-# Efi Target
-#
-efi: $(INIT_TARGET) gen_libs $(PCH_TARGET) gen_obj $(LLIB_TARGET) $(DLL_FILE) $(EFI_FILE)
-
-
-#
 # GenLibsTarget
 #
 gen_libs:
@@ -430,60 +381,9 @@ gen_libs:
 \t${END}cd $(MODULE_BUILD_DIR)
 
 #
-# GenVfrTarget
-#
-
-gen_vfr:
-\t@echo placeholder: processing vfr files
-
-#
-# Phony targets for objects
-#
-
-gen_obj: $(PCH_TARGET) $(TARGET_FILES)
-
-
-#
-# PCH file build target
-#
-
-$(PCH_FILE): $(DEP_FILES)
-\t$(PCH) $(CC_FLAGS) $(PCH_FLAGS) $(DEP_FILES)
-
-#
-# Local Lib file build target
-#
-
-$(LLIB_FILE): $(OBJECTS)
-\t"$(SLINK)" $(SLINK_FLAGS) ${slink_output_flag}$(LLIB_FILE) $(OBJECTS)
-
-#
-# Library file build target
-#
-
-$(LIB_FILE): $(OBJECTS)
-\t"$(SLINK)" $(SLINK_FLAGS) ${slink_output_flag}$(LIB_FILE) $(OBJECTS)
-
-#
-# DLL file build target
-#
-
-$(DLL_FILE): $(LIBS) $(LLIB_FILE)
-\t"$(DLINK)" ${dlink_output_flag}$(DLL_FILE) $(DLINK_FLAGS) ${start_group_flag} $(DLINK_SPATH) $(LIBS) $(LLIB_FILE) ${end_group_flag}
-
-#
-# EFI file build target
-#
-$(EFI_FILE): $(DLL_FILE)
-\tGenFw -e ${module_type} -o $(EFI_FILE) $(DLL_FILE)
-\t${copy_file_command} $(EFI_FILE) $(OUTPUT_DIR)
-\t${copy_file_command} $(EFI_FILE) $(BIN_DIR)
-\t-${copy_file_command} $(DEBUG_DIR)${separator}*.map $(OUTPUT_DIR)
-
-#
 # Individual Object Build Targets
 #
-${BEGIN}${object_build_target}
+${BEGIN}${file_build_target}
 ${END}
 
 
@@ -508,7 +408,7 @@ cleanall:
 #
 
 cleanpch:
-\t${remove_file_command} /f /q $(OUTPUT_DIR)\*.pch > NUL 2>&1
+\t${remove_file_command} $(OUTPUT_DIR)\*.pch > NUL 2>&1
 
 #
 # clean all dependent libraries built
@@ -578,7 +478,7 @@ fds: init build_libraries build_modules build_fds
 #
 build_libraries:
 \t${BEGIN}cd $(WORKSPACE)${separator}${library_build_directory}
-\t$(MAKE) $(MAKE_FLAGS) lbuild
+\t$(MAKE) $(MAKE_FLAGS) pbuild
 \t${END}cd $(BUILD_DIR)
 
 #
@@ -640,8 +540,8 @@ class Makefile(object):
             self.PlatformInfo = Info.PlatformInfo
             self.PackageInfo = Info.PackageInfo
             self.ModuleBuild = True
-            
-            self.BuildType = "obj"
+
+            self.BuildType = "mbuild"
             self.BuildFileList = []
             self.TargetFileList = []
             self.ObjectFileList = []
@@ -682,14 +582,14 @@ class Makefile(object):
             return self.GenerateModuleMakefile(File, MakeType)
         else:
             return self.GeneratePlatformMakefile(File, MakeType)
-    
+
     def GeneratePlatformMakefile(self, File=None, MakeType=gMakeType):
         Separator = gDirectorySeparator[MakeType]
 
         ArchList = self.PlatformInfo.keys()
         PlatformInfo = self.PlatformInfo.values()[0]
         ActivePlatform = PlatformInfo.Platform
-        
+
         OutputDir = PlatformInfo.OutputDir
         if os.path.isabs(OutputDir):
             self.PlatformBuildDirectory = OutputDir
@@ -775,13 +675,33 @@ class Makefile(object):
                                     self.ModuleInfo.ToolChain, self.ModuleInfo.Arch))
 
         if self.ModuleInfo.IsLibrary:
-            ResultFile = "$(LIB_FILE)"
-        elif self.BuildType == "obj":
-            ResultFile = ""
+            self.ResultFileList = self.DestFileDatabase["Static-Library-File"]
+        #elif self.BuildType == "obj":
+        #    ResultFile = ""
         elif self.ModuleInfo.ModuleType == "USER_DEFINED":
-            ResultFile = "$(LLIB_FILE) $(DLL_FILE)"
-        else:
-            ResultFile = "$(LLIB_FILE) $(DLL_FILE) $(EFI_FILE)"
+            self.ResultFileList = self.DestFileDatabase["Dynamic-Library-File"]
+            #ResultFile = "$(LLIB_FILE) $(DLL_FILE)"
+        #else:
+        #    ResultFile = "$(LLIB_FILE) $(DLL_FILE) $(EFI_FILE)"
+
+        SourceFileMacroNameList = []
+        SourceFileMacroList = [] # macro name = file list
+        for FileType in self.SourceFileDatabase:
+            Macro = "%s_LIST" % FileType.replace("-", "_").upper()
+            SourceFileMacroNameList.append("$(%s)" % Macro)
+            Template = TemplateString()
+            Template.Append("%s = ${BEGIN}${source_file} \\\n\t${END}" % Macro,
+                            {"source_file" : self.SourceFileDatabase[FileType]})
+            SourceFileMacroList.append(str(Template))
+        TargetFileMacroList = []
+        TargetFileMacroNameList = []
+        for FileType in self.DestFileDatabase:
+            Macro = "%s_LIST" % FileType.replace("-", "_").upper()
+            TargetFileMacroNameList.append("$(%s)" % Macro)
+            Template = TemplateString()
+            Template.Append("%s = ${BEGIN}${target_file} \\\n\t${END}" % Macro,
+                            {"target_file" : self.DestFileDatabase[FileType]})
+            TargetFileMacroList.append(str(Template))
 
         MakefileName = gMakefileName[MakeType]
         MakefileTemplateDict = {
@@ -818,8 +738,10 @@ class Makefile(object):
             "tool_code"                 : self.PlatformInfo.ToolPath.keys(),
             "tool_path"                 : self.PlatformInfo.ToolPath.values(),
 
+            "shell_command_code"        : gShellCommand[MakeType].keys(),
+            "shell_command"             : gShellCommand[MakeType].values(),
+
             "module_entry_point"        : EntryPoint,
-            "source_file"               : self.BuildFileList,
             #"auto_generated_file"       : self.AutoGenBuildFileList,
             "include_path_prefix"       : gIncludeFlag[self.PlatformInfo.ToolChainFamily["CC"]],
             "dlink_output_flag"         : self.PlatformInfo.OutputFlag["DLINK"],
@@ -830,7 +752,7 @@ class Makefile(object):
             "target_file"               : self.TargetFileList,
             "object_file"               : self.ObjectFileList,
             "library_file"              : self.LibraryFileList,
-            "remaining_build_target"    : ResultFile,
+            "remaining_build_target"    : self.ResultFileList,
             "system_library"            : self.SystemLibraryList,
             "common_dependency_file"    : self.CommonFileDependency,
             "create_directory_command"  : self.GetCreateDirectoryCommand(self.IntermediateDirectoryList, MakeType),
@@ -840,15 +762,20 @@ class Makefile(object):
             "clean_command"             : self.GetRemoveDirectoryCommand(["$(OUTPUT_DIR)"], MakeType),
             "cleanall_command"          : self.GetRemoveDirectoryCommand(["$(DEBUG_DIR)", "$(OUTPUT_DIR)"], MakeType),
             "dependent_library_build_directory" : self.LibraryBuildDirectoryList,
-            "object_build_target"               : self.ObjectBuildTargetList,
+            #"file_build_target"               : self.BuildTargetList,
             "build_type"                        : self.BuildType,
+            "source_file_macro"         : SourceFileMacroList,
+            "target_file_macro"         : TargetFileMacroList,
+            "source_file_macro_name"    : SourceFileMacroNameList,
+            "target_file_macro_name"    : TargetFileMacroNameList,
+            "file_build_target"         : self.BuildTargetList
         }
-        
+
         self.PrepareDirectory()
-        
+
         AutoGenMakefile = TemplateString()
         AutoGenMakefile.Append(gModuleMakefileTemplate, MakefileTemplateDict)
-        
+
         FilePath = ""
         if File == None:
             FilePath = path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.MakefileDir, MakefileName)
@@ -867,7 +794,7 @@ class Makefile(object):
             self.PlatformBuildDirectory = "$(WORKSPACE)" + Separator + self.PlatformInfo.OutputDir
 
         CustomMakefile = open(os.path.join(self.ModuleInfo.WorkspaceDir, self .ModuleInfo.CustomMakefile[MakeType]), 'r').read()
-        
+
         MakefileName = gMakefileName[MakeType]
         MakefileTemplateDict = {
             "makefile_header"           : gMakefileHeader % MakefileName,
@@ -924,150 +851,225 @@ class Makefile(object):
         return FilePath
 
     def ProcessSourceFileList(self, MakeType=gMakeType):
-        Rule = self.PlatformInfo.BuildRule
         Separator = gDirectorySeparator[MakeType]
 
-        self.BuildFileList = []
-        self.ObjectFileList = []
-        self.ObjectBuildTargetList = []
-        self.AutoGenBuildFileList = []
+        Family = self.PlatformInfo.ToolChainFamily["CC"]
+        BuildRule = self.PlatformInfo.BuildRule
+
+        self.ResultFileList = []
+        #self.ObjectFileList = []
+        #self.ObjectBuildTargetList = []
+        #self.AutoGenBuildFileList = []
         self.IntermediateDirectoryList = ["$(DEBUG_DIR)", "$(OUTPUT_DIR)"]
 
-        FileBuildTemplatetList = []
+        self.SourceFileDatabase = {}  # {file type : file path}
+        self.DestFileDatabase = {}  # {file type : file path}
+        self.FileBuildTargetList = [] # [(src, target string)]
+        self.BuildTargetList = [] # [target string]
+        self.PendingBuildTargetList = [] # [FileBuildRule objects]
+
         ForceIncludedFile = []
-
-        for F in self.ModuleInfo.AutoGenFileList:
-            FilePath = path.join(self.ModuleInfo.DebugDir, F)
-            FileDir = path.dirname(F)
-            if FileDir == "":
-                FileDir = "."
-            FileName = path.basename(F)
-            FileBase, FileExt = path.splitext(FileName)
-
-            FileType = Rule.FileTypeMapping[FileExt]
-            if FileType == "C-Header":
-                ForceIncludedFile.append(FilePath)
-
-            if FileType in Rule.ToolCodeMapping:
-                ToolCodeList = Rule.ToolCodeMapping[FileType]
-            else:
-                ToolCodeList = []
-
-            Family = None
-            for Tool in ToolCodeList:
-                if Tool in self.PlatformInfo.ToolChainFamily:
-                    Family = self.PlatformInfo.ToolChainFamily[Tool]
-                    break
-            else:
-                if MakeType == "nmake":
-                    Family = "MSFT"
-                else:
-                    Family = "GCC"
-
-            if Family not in Rule.Makefile:
-                raise AutoGenError(msg="Tool chain family [%s] is not supported: %s" % (Family, F))
-
-            if FileType not in Rule.Makefile[Family]:
-                continue
-
-            self.BuildFileList.append(FilePath)
-            Ext = Rule.ObjectFileMapping[FileType]
-            TargetFile = FileDir + Separator + FileBase + Ext
-            self.TargetFileList.append(TargetFile)
-            if Ext == ".obj":
-                self.ObjectFileList.append(TargetFile)
-
-            FileBuildTemplatetList.append({
-                                   "string" : Rule.Makefile[Family][FileType],
-                                   "ftype"  : FileType,
-                                   "fpath"  : FilePath,
-                                   "fdir"   : FileDir,
-                                   "fname"  : FileName,
-                                   "fbase"  : FileBase,
-                                   "fext"   : FileExt,
-                                   "fdep"   : "",
-                                   "_sep_"    : Separator,
-                                   })
+        SourceFileList = []
 
         FileList = self.ModuleInfo.SourceFileList
         if len(FileList) == 0:
             raise AutoGenError(msg="No files to be built in module [%s, %s, %s]:\n\t%s" % (self.ModuleInfo.BuildTarget,
                                     self.ModuleInfo.ToolChain, self.ModuleInfo.Arch, str(self.ModuleInfo.Module)))
-        
-        for F in FileList:
-            Family = F.ToolChainFamily
-            if Family == None or Family == "":
-                EdkLogger.verbose("Tool chain family not found for file:%s" % str(F))
-                if MakeType == "nmake":
-                    Family = "MSFT"
-                else:
-                    Family = "GCC"
 
-            if Family not in Rule.Makefile:
-                raise AutoGenError(msg="Tool chain family [%s] is not supported: %s" % (Family, str(F)))
-
-            F = F.SourceFile
-            FilePath = self.ModuleInfo.SourceDir + Separator + F
-            FileName = path.basename(F)
-            FileBase, FileExt = path.splitext(FileName)
-            FileDir = path.dirname(F)
-
-            if FileDir == "":
-                FileDir = "."
+        CCodeFlag = False
+        for FileInfo in FileList:
+            F, SrcFileType, SrcFileBuildRule = FileInfo
+            if SrcFileType == "C-Code-File":
+                CCodeFlag = True
+            SrcFileName = path.basename(F)
+            SrcFileBase, SrcFileExt = path.splitext(SrcFileName)
+            SrcFileDir = path.dirname(F)
+            if SrcFileDir == "":
+                SrcFileDir = "."
             else:
-                P = "$(OUTPUT_DIR)" + Separator + FileDir
+                P = "$(OUTPUT_DIR)" + Separator + SrcFileDir
                 if P not in self.IntermediateDirectoryList:
                     self.IntermediateDirectoryList.append(P)
-                
-            FileType = Rule.FileTypeMapping[FileExt]
-            if FileType not in Rule.Makefile[Family]:
-                continue
-            if FileType == "C-Code":
-                self.BuildType = "mbuild"
+            SrcFileRelativePath = os.path.join(self.ModuleInfo.SourceDir, F)
 
-            self.BuildFileList.append(FilePath)
-            Ext = Rule.ObjectFileMapping[FileType]
-            TargetFile = FileDir + Separator + FileBase + Ext
-            self.TargetFileList.append(TargetFile)
-            if Ext == ".obj":
-                self.ObjectFileList.append(TargetFile)
-            
-            FileBuildTemplatetList.append({
-                                   "string" : Rule.Makefile[Family][FileType],
-                                   "ftype"  : FileType,
-                                   "fpath"  : FilePath,
-                                   "fdir"   : FileDir,
-                                   "fname"  : FileName,
-                                   "fbase"  : FileBase,
-                                   "fext"   : FileExt,
-                                   "fdep"   : "",
-                                   "_sep_"    : Separator,
-                                   })
+            SrcFile, DstFile, CommandList = SrcFileBuildRule.Apply(F, self.ModuleInfo.SourceDir, Separator)
+
+            if SrcFileType not in self.SourceFileDatabase:
+                self.SourceFileDatabase[SrcFileType] = []
+            self.SourceFileDatabase[SrcFileType].append(SrcFile)
+            SourceFileList.append(SrcFileRelativePath)
+
+            BuildTargetTemplate = "${BEGIN}%s : ${deps}\n"\
+                                  "${END}\t%s\n" % (DstFile, "\n\t".join(CommandList))
+            self.FileBuildTargetList.append((SrcFileRelativePath, BuildTargetTemplate))
+
+            while True:
+                # next target
+                DstFileType, DstFileBuildRule = BuildRule.Get(SrcFileBuildRule.DestFileExt, Family)
+                if DstFileType == None:
+                    DstFileType = "Unknow-Type-File"
+
+                if DstFileType  in self.SourceFileDatabase:
+                    self.SourceFileDatabase[DstFileType].append(DstFile)
+                else:
+                    if DstFileType not in self.DestFileDatabase:
+                        self.DestFileDatabase[DstFileType] = []
+                    self.DestFileDatabase[DstFileType].append(DstFile)
+
+                if DstFileBuildRule != None and DstFileBuildRule.IsMultipleInput:
+                    if DstFileBuildRule not in self.PendingBuildTargetList:
+                        self.PendingBuildTargetList.append(DstFileBuildRule)
+                    break
+                elif DstFileBuildRule == None or DstFileBuildRule.CommandList == []:
+                    self.ResultFileList.append(DstFile)
+                    break
+
+                SrcFile, DstFile, CommandList = DstFileBuildRule.Apply(DstFile, None, Separator)
+                BuildTargetString = "%s : %s\n"\
+                                    "\t%s\n" % (DstFile, SrcFile, "\n\t".join(CommandList))
+                self.FileBuildTargetList.append((SrcFile, BuildTargetString))
+                SrcFileBuildRule = DstFileBuildRule
+
+        # handle pending targets
+        TempBuildTargetList = []
+        while True:
+            while len(self.PendingBuildTargetList) > 0:
+                SrcFileBuildRule = self.PendingBuildTargetList.pop()
+                SrcFileList = []
+                for FileType in SrcFileBuildRule.SourceFileType:
+                    if FileType not in self.SourceFileDatabase:
+                        if FileType not in self.DestFileDatabase:
+                            continue
+                        else:
+                            SrcFileList.extend(self.DestFileDatabase[FileType])
+                    else:
+                        SrcFileList.extend(self.SourceFileDatabase[FileType])
+                SrcFile, DstFile, CommandList = SrcFileBuildRule.Apply(SrcFileList, None, Separator)
+                BuildTargetString = "%s : %s\n"\
+                                    "\t%s\n" % (DstFile, SrcFile, "\n\t".join(CommandList))
+                self.FileBuildTargetList.append((SrcFile, BuildTargetString))
+
+                # try to find next target
+                while True:
+                    DstFileType, DstFileBuildRule = BuildRule.Get(SrcFileBuildRule.DestFileExt, Family)
+                    if DstFileType == None:
+                        DstFileType = "Unknow-Type-File"
+
+                    if DstFileType  in self.SourceFileDatabase:
+                        self.SourceFileDatabase[DstFileType].append(DstFile)
+                    else:
+                        if DstFileType not in self.DestFileDatabase:
+                            self.DestFileDatabase[DstFileType] = []
+                        self.DestFileDatabase[DstFileType].append(DstFile)
+
+                    if DstFileBuildRule != None and DstFileBuildRule.IsMultipleInput:
+                        TempBuildTargetList.append(DstFileBuildRule)
+                        break
+                    elif DstFileBuildRule == None or DstFileBuildRule.CommandList == []:
+                        self.ResultFileList.append(DstFile)
+                        break
+
+                    SrcFile, DstFile, CommandList = DstFileBuildRule.Apply(DstFile, None, Separator)
+                    BuildTargetString = "%s : %s\n"\
+                                        "\t%s\n" % (DstFile, SrcFile, "\n\t".join(CommandList))
+                    self.FileBuildTargetList.append((SrcFile, BuildTargetString))
+                    SrcFileBuildRule = DstFileBuildRule
+            if len(TempBuildTargetList) == 0:
+                break
+            self.PendingBuildTargetList = TempBuildTargetList
+
+        if CCodeFlag == True:
+            for F in self.ModuleInfo.AutoGenFileList:
+                SrcFileName = path.basename(F)
+                SrcFileBase, SrcFileExt = path.splitext(SrcFileName)
+                SrcFileDir = path.dirname(F)
+                if SrcFileDir == "":
+                    SrcFileDir = "."
+                else:
+                    P = "$(DEBUG_DIR)" + Separator + SrcFileDir
+                    if P not in self.IntermediateDirectoryList:
+                        self.IntermediateDirectoryList.append(P)
+
+                SrcFileRelativePath = os.path.join(self.ModuleInfo.DebugDir, F)
+
+                SrcFileType, SrcFileBuildRule = BuildRule.Get(SrcFileExt, Family)
+                if SrcFileType != None and SrcFileType == "C-Header-File":
+                    ForceIncludedFile.append(SrcFileRelativePath)
+                if SrcFileBuildRule == None or SrcFileBuildRule.CommandList == []:
+                    continue
+
+                SrcFile, DstFile, CommandList = SrcFileBuildRule.Apply(F, self.ModuleInfo.DebugDir, Separator)
+
+                if SrcFileType not in self.SourceFileDatabase:
+                    self.SourceFileDatabase[SrcFileType] = []
+                self.SourceFileDatabase[SrcFileType].append(SrcFile)
+                SourceFileList.append(SrcFileRelativePath)
+
+                BuildTargetTemplate = "${BEGIN}%s : ${deps}\n"\
+                                      "${END}\t%s\n" % (DstFile, "\n\t".join(CommandList))
+                self.FileBuildTargetList.append((SrcFileRelativePath, BuildTargetTemplate))
+
+                while True:
+                    # next target
+                    DstFileType, DstFileBuildRule = BuildRule.Get(SrcFileBuildRule.DestFileExt, Family)
+                    if DstFileType == None:
+                        DstFileType = "Unknow-Type-File"
+
+                    if DstFileType  in self.SourceFileDatabase:
+                        self.SourceFileDatabase[DstFileType].append(DstFile)
+                    else:
+                        if DstFileType not in self.DestFileDatabase:
+                            self.DestFileDatabase[DstFileType] = []
+                        self.DestFileDatabase[DstFileType].append(DstFile)
+
+                    if DstFileBuildRule != None and DstFileBuildRule.IsMultipleInput:
+                        if DstFileBuildRule not in self.PendingBuildTargetList:
+                            self.PendingBuildTargetList.append(DstFileBuildRule)
+                        break
+                    elif DstFileBuildRule == None or DstFileBuildRule.CommandList == []:
+                        self.ResultFileList.append(DstFile)
+                        break
+
+                    SrcFile, DstFile, CommandList = DstFileBuildRule.Apply(DstFile, None, Separator)
+                    BuildTargetString = "%s : %s\n"\
+                                        "\t%s\n" % (DstFile, SrcFile, "\n\t".join(CommandList))
+                    self.FileBuildTargetList.append((SrcFile, BuildTargetString))
+                    SrcFileBuildRule = DstFileBuildRule
 
         #
         # Search dependency file list for each source file
         #
-        self.FileDependency = self.GetFileDependency(ForceIncludedFile)
-        DepSet = set(self.FileDependency.values()[0])
-        for Dep in self.FileDependency.values():
-            DepSet &= set(Dep)
+        self.FileDependency = self.GetFileDependency(SourceFileList, ForceIncludedFile, self.ModuleInfo.IncludePathList)
+        DepSet = set()
+        DepList = []
+        for File in self.FileDependency:
+            # skipt AutoGen.c
+            if File.endswith("AutoGen.c") or not File.endswith(".c"):
+                continue
+            elif len(DepSet) == 0:
+                DepSet = set(self.FileDependency[File])
+            else:
+                DepSet &= set(self.FileDependency[File])
+        #DepSet = set(DepList)
         #
         # Extract comman files list in the dependency files
         #
-        self.CommonFileDependency = ForceIncludedFile + list(DepSet)
+        self.CommonFileDependency = list(DepSet)
         for F in self.FileDependency:
             NewDepSet = set(self.FileDependency[F])
             NewDepSet -= DepSet
-            self.FileDependency[F] = list(NewDepSet)
+            if F.endswith("AutoGen.c") or not F.endswith(".c"):
+                self.FileDependency[F] = [Separator.join(["$(WORKSPACE)", dep]) for dep in self.FileDependency[F]]
+            else:
+                self.FileDependency[F] = ["$(COMMON_DEPS)"] + [Separator.join(["$(WORKSPACE)", dep]) for dep in NewDepSet]
 
-        #
-        # Expand "fdep"
-        #
-        for Template in FileBuildTemplatetList:
-            MakefileString = TemplateString()
-            Template["fdep"] = self.FileDependency[Template["fpath"]]
-            MakefileString.Append(Template["string"], Template)
-            self.ObjectBuildTargetList.append(MakefileString)
+        for File, TargetTemplate in self.FileBuildTargetList:
+            if File not in self.FileDependency:
+                self.BuildTargetList.append(TargetTemplate)
+                continue
+            Template = TemplateString()
+            Template.Append(TargetTemplate, {"deps" : self.FileDependency[File]})
+            self.BuildTargetList.append(str(Template))
 
     def ProcessDependentLibrary(self, MakeType=gMakeType):
         for LibraryModule in self.ModuleInfo.DependentLibraryList:
@@ -1083,12 +1085,12 @@ class Makefile(object):
         else:
             return os.path.join("$(WORKSPACE)", self.PlatformInfo.OutputDir)
 
-    def GetFileDependency(self, ForceList):
+    def GetFileDependency(self, FileList, ForceInculeList, SearchPathList):
         WorkingDir = os.getcwd()
         os.chdir(self.ModuleInfo.WorkspaceDir)
         Dependency = {}
-        for F in self.BuildFileList:
-            Dependency[F] = self.GetDependencyList(F, ForceList, self.ModuleInfo.IncludePathList)
+        for F in FileList:
+            Dependency[F] = self.GetDependencyList(F, ForceInculeList, SearchPathList)
         os.chdir(WorkingDir)
         return Dependency
 
@@ -1096,10 +1098,11 @@ class Makefile(object):
         WorkingDir = os.getcwd()
         os.chdir(self.ModuleInfo.WorkspaceDir)
 
-        EdkLogger.debug(EdkLogger.DEBUG_3, "Get dependency files for %s" % File)
+        EdkLogger.debug(EdkLogger.DEBUG_3, "Try to get dependency files for %s" % File)
         EdkLogger.debug(EdkLogger.DEBUG_2, "Including %s" % " ".join(ForceList))
         FileStack = [File] + ForceList
-        DependencyList = []
+        #DependencyList = []
+        DependencyList = [] + ForceList
         while len(FileStack) > 0:
             EdkLogger.debug(EdkLogger.DEBUG_2, "Stack %s" % "\n\t".join(FileStack))
             F = FileStack.pop()
@@ -1173,12 +1176,12 @@ if __name__ == '__main__':
     print "Running Operating System =", sys.platform
     ewb = WorkspaceBuild()
     #print ewb.Build.keys()
-    
+
     myArch = ewb.Build["IA32"].Arch
     #print myArch
 
     myBuild = ewb.Build["IA32"]
-    
+
     myWorkspace = ewb
     apf = ewb.TargetTxt.TargetTxtDictionary["ACTIVE_PLATFORM"][0]
     myPlatform = myBuild.PlatformDatabase[os.path.normpath(apf)]
