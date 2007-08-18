@@ -211,8 +211,8 @@ mbuild: init all
 # Initialization target: print build information and create necessary directories
 #
 init:
-\t-@echo Building ... $(MODULE_NAME)-$(MODULE_VERSION) [$(ARCH)] in package $(PACKAGE_NAME)-$(PACKAGE_VERSION)
-\t${BEGIN}${create_directory_command}
+\t-@echo Building ... $(MODULE_NAME) $(MODULE_VERSION) [$(ARCH)] in package $(PACKAGE_NAME)-$(PACKAGE_VERSION)
+\t${BEGIN}@${create_directory_command}
 \t${END}
 
 '''
@@ -368,8 +368,8 @@ mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) $(CODA_TARGET)
 # Initialization target: print build information and create necessary directories
 #
 init:
-\t-@echo Building ... $(MODULE_NAME)-$(MODULE_VERSION) [$(ARCH)] in package $(PACKAGE_NAME)-$(PACKAGE_VERSION)
-\t${BEGIN}${create_directory_command}
+\t-@echo Building ... $(MODULE_NAME) $(MODULE_VERSION) [$(ARCH)] in package $(PACKAGE_NAME)-$(PACKAGE_VERSION)
+\t${BEGIN}@${create_directory_command}
 \t${END}
 
 #
@@ -455,8 +455,8 @@ all: init build_libraries build_modules build_fds
 # Initialization target: print build information and create necessary directories
 #
 init:
-\t-@echo Building ... $(PLATFORM_NAME)-$(PLATFORM_VERSION) [${build_architecture_list}]
-\t${BEGIN}${create_directory_command}
+\t-@echo Building ... $(PLATFORM_NAME) $(PLATFORM_VERSION) [${build_architecture_list}]
+\t${BEGIN}@${create_directory_command}
 \t${END}
 #
 # library build target
