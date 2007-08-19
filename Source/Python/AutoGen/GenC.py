@@ -841,7 +841,7 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
     #
     PcdTokenName = '_PCD_TOKEN_' + Pcd.TokenCName
     if Pcd.Type in gDynamicExPcd:
-        TokenNumber = int(Pcd.TokenValue, 16)
+        TokenNumber = int(Pcd.TokenValue, 0)
     else:
         if (Pcd.TokenCName, Pcd.TokenSpaceGuidCName) not in PcdTokenNumber:
             raise AutoGenError(msg="No generated token number for %s|%s\n" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
@@ -886,7 +886,7 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
             if Pcd.MaxDatumSize == None:
                 raise AutoGenError(msg="Unknown MaxDatumSize of PCD %s|%s" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
 
-            ArraySize = int(Pcd.MaxDatumSize)
+            ArraySize = int(Pcd.MaxDatumSize, 0)
             if Value[0] == '{':
                 Type = '(VOID *)'
             else:
@@ -1178,7 +1178,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
                         Dict['SIZE_TABLE_CURRENT_LENGTH'].append(Size)
                         Dict['SIZE_TABLE_MAXIMUM_LENGTH'].append(Pcd.MaxDatumSize)
                         if Pcd.MaxDatumSize != '' and Pcd.MaxDatumSize > Size:
-                            Size = int(Pcd.MaxDatumSize)
+                            Size = int(Pcd.MaxDatumSize, 0)
                         Dict['STRING_TABLE_LENGTH'].append(Size / 2 + 1)
                         StringTableIndex += 1
                         StringTableSize += (Size / 2 + 1)
@@ -1186,12 +1186,12 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
                     Pcd.TokenTypeList += ['PCD_TYPE_DATA']
                     if Sku.DefaultValue == 'TRUE':
                         Pcd.InitString = 'INIT'
-                    elif Sku.DefaultValue.find('0x') == 0:
-                        if int(Sku.DefaultValue,16) != 0:
-                            Pcd.InitString = 'INIT'
-                    elif Sku.DefaultValue[0].isdigit():
-                        if int(Sku.DefaultValue) != 0:
-                            Pcd.InitString = 'INIT'
+                    else:
+                        try:
+                            if int(Sku.DefaultValue, 0) != 0:
+                                Pcd.InitString = 'INIT'
+                        except:
+                            pass
                     ValueList.append(Sku.DefaultValue)
 
         Pcd.TokenTypeList = list(set(Pcd.TokenTypeList))
@@ -1502,7 +1502,7 @@ def CreateHeaderCode(Info, AutoGenC, AutoGenH):
 
     AutoGenH.Append("#define EFI_CALLER_ID_GUID \\\n  %s\n" % GuidStringToGuidStructureString(Info.Guid))
     AutoGenH.Append('\nextern GUID  gEfiCallerIdGuid;\n\n')
-    
+
     if Info.IsLibrary:
         return
 
