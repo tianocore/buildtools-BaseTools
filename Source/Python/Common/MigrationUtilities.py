@@ -447,22 +447,6 @@ def StoreDefinesSection(TextFile, DefinesTupleList):
     StoreTextFile(TextFile, Section)
 
 
-## Add item to PCD dictionary.
-#
-# Add an PcdClass object to PCD dictionary. The key is generated from
-# PcdItemType.
-#
-# @param  PcdDict            PCD dictionary indexed by Pcd Item Type.
-# @param  Arch               CPU architecture: Ia32, X64, Ipf, Ebc or Common.
-# @param  Item               The Item to be added to section dictionary.
-#
-def AddToPcdsDict(PcdDict, PcdItemType, PcdCode):
-    PcdSectionName = PcdItemType
-    PcdSectionName = PcdSectionName.title()
-    PcdSectionName = PcdSectionName.replace("_", "")
-    PcdSectionName = "Pcds" + PcdSectionName
-    PcdDict.setdefault(PcdSectionName, []).append(PcdCode)
-
 ## Regular expression to match an equation.
 mReEquation = re.compile(r"\s*(\S+)\s*=\s*(\S*)\s*")
 

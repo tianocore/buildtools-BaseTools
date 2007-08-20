@@ -1,6 +1,6 @@
 ## @file
 # Convert an MSA Module class object ot an INF Module class object by filling
-# several info requried by INF file.
+# several info required by INF file.
 #
 # Copyright (c) 2007, Intel Corporation
 # All rights reserved. This program and the accompanying materials

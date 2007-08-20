@@ -161,14 +161,22 @@ def StorePackageGuidsSection(DecFile, Package):
 # @retval PcdItem            A Package Pcd Item.
 #
 def GetPackagePcdItem(Pcd):
-    CName = Pcd.CName
-    Token = Pcd.Token
-    TokenSpaceGuidCName = Pcd.TokenSpaceGuidCName
+    PcdPair = "%s.%s" % (Pcd.TokenSpaceGuidCName, Pcd.CName)
     DatumType = Pcd.DatumType
     DefaultValue = Pcd.DefaultValue
-    PcdList = [CName, Token, TokenSpaceGuidCName, DatumType, DefaultValue]
+    Token = Pcd.Token
+    PcdList = [PcdPair, DefaultValue, DatumType, Token]
     return "|".join(PcdList)
 
+
+## DEC Pcd Section Name dictionary indexed by PCD Item Type.
+mDecPcdSectionNameDict = {
+    "FEATURE_FLAG" : "PcdsFeatureFlag",
+    "FIXED_AT_BUILD" : "PcdsFixedAtBuild",
+    "PATCHABLE_IN_MODULE" : "PcdsPatchableInModule",
+    "DYNAMIC" : "PcdsDynamic",
+    "DYNAMIC_EX" : "PcdsDynamicEx"
+    }
 
 ## Store Pcds section.
 #
@@ -182,7 +190,11 @@ def StorePackagePcdsSection(DecFile, Package):
     PcdsDict = {}
     for Pcd in Package.PcdDeclarations:
         for PcdItemType in Pcd.ValidUsage:
-            AddToPcdsDict(PcdsDict, PcdItemType, Pcd)
+            PcdSectionName = mDecPcdSectionNameDict.get(PcdItemType)
+            if PcdSectionName:
+                PcdsDict.setdefault(PcdSectionName, []).append(Pcd)
+            else:
+                EdkLogger.info("Unknow Pcd Item Type %s" % PcdItemType)
 
     Section = ""
     for PcdSectionName in PcdsDict:

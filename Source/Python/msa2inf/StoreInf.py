@@ -133,6 +133,35 @@ def StoreModuleSourcesSection(InfFile, Module):
     StoreTextFile(InfFile, Section)
 
 
+## Return a Module Binary Item.
+#
+# Read the input ModuleBinaryFile class object and return one line of Binary Item.
+#
+# @param  ModuleBinaryFile     An input ModuleBinaryFile class object.
+#
+# @retval BinaryItem           A Module Binary Item.
+#
+def GetModuleBinaryItem(ModuleBinaryFile):
+    Binary = []
+    Binary.append(ModuleBinaryFile.FileType)
+    Binary.append(ModuleBinaryFile.Target)
+    Binary.append(ModuleBinaryFile.BinaryFile)
+    return "|".join(Binary)
+
+
+## Store Binaries section.
+#
+# Write [Binaries] section to the InfFile based on Module class object.
+# Different CPU architectures are specified in the subsection if possible.
+#
+# @param  InfFile              The output INF file to store the Binaries section.
+# @param  Module               An input Module class object.
+#
+def StoreModuleBinariesSection(InfFile, Module):
+    Section = GetSection("Binaries", GetModuleBinaryItem, Module.Binaries)
+    StoreTextFile(InfFile, Section)
+
+
 ## Return a Module Library Class Item.
 #
 # Read the input LibraryClass class object and return one line of Library Class Item.
@@ -229,8 +258,7 @@ def StoreModuleProtocolsSection(InfFile, Module):
 #
 def StoreModulePpisSection(InfFile, Module):
     Section = GetSection("Ppis", GetModuleGuidCNameItem, Module.Ppis)
-    print Section
-    InfFile.write(Section)
+    StoreTextFile(InfFile, Section)
 
 
 ## Store Guids section.
@@ -263,16 +291,25 @@ def StoreModuleGuidsSection(InfFile, Module):
 # @retval PcdItem              A Module Pcd Item.
 #
 def GetModulePcdItem(Pcd):
-    PcdList = [Pcd.CName, Pcd.TokenSpaceGuidCName]
+    PcdItem = "%s.%s" % (Pcd.TokenSpaceGuidCName, Pcd.CName)
     if Pcd.DefaultValue != "":
-        PcdList.append(Pcd.DefaultValue)
+        PcdItem = "%s|%s" % (PcdItem, Pcd.DefaultValue)
 
-    return "|".join(PcdList)
+    return PcdItem
 
 
+## DEC Pcd Section Name dictionary indexed by PCD Item Type.
+mInfPcdSectionNameDict = {
+    "FEATURE_FLAG" : "FeaturePcd",
+    "FIXED_AT_BUILD" : "FixedPcd",
+    "PATCHABLE_IN_MODULE" : "PatchPcd",
+    "DYNAMIC" : "Pcd",
+    "DYNAMIC_EX" : "PcdEx"
+    }
+    
 ## Store Pcds section.
 #
-# Write [Pcds*] section to the InfFile based on Module class object.
+# Write [(PcdType)] section to the InfFile based on Module class object.
 # Different CPU architectures are specified in the subsection if possible.
 #
 # @param  InfFile              The output INF file to store the Pcds section.
@@ -281,7 +318,11 @@ def GetModulePcdItem(Pcd):
 def StoreModulePcdsSection(InfFile, Module):
     PcdsDict = {}
     for Pcd in Module.PcdCodes:
-        AddToPcdsDict(PcdsDict, Pcd.ItemType, Pcd)
+        PcdSectionName = mInfPcdSectionNameDict.get(Pcd.ItemType)
+        if PcdSectionName:
+            PcdsDict.setdefault(PcdSectionName, []).append(Pcd)
+        else:
+            EdkLogger.info("Unknow Pcd Item Type %s" % Pcd.ItemType)
 
     Section = ""
     for PcdSectionName in PcdsDict:
@@ -405,6 +446,7 @@ def StoreInf(InfFileName, Module):
     StoreHeader(InfFile, Module.Header)
     StoreModuleDefinesSection(InfFile, Module)
     StoreModuleSourcesSection(InfFile, Module)
+    StoreModuleBinariesSection(InfFile, Module)
     StoreModulePackagesSection(InfFile, Module)
     StoreModuleLibraryClassesSection(InfFile, Module)
     StoreModuleProtocolsSection(InfFile, Module)
