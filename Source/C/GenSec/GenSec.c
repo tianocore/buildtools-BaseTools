@@ -120,11 +120,26 @@ VOID
 Usage (
   VOID
   )
+/*++
+
+Routine Description:
+
+  Print Help message.
+
+Arguments:
+
+  void
+
+Returns:
+
+  None
+
+--*/
 {
   //
   // Summary usage
   //
-  fprintf (stdout, "Usage: %s [options] <input_file>\n\n", UTILITY_NAME);
+  fprintf (stdout, "Usage: %s [options] [input_file]\n\n", UTILITY_NAME);
   
   //
   // Copyright declaration
@@ -150,7 +165,7 @@ Usage (
   fprintf (stdout, "  -c [Type], --compress [Type]\n\
                         Compress method type can be PI_NONE or PI_STD.\n\
                         if Type is not given, PI_STD is default type.\n"); 
-  fprintf (stdout, "  -g GuidValue, --vendorguid GuidValue\n\
+  fprintf (stdout, "  -g GuidValue, --vendor GuidValue\n\
                         GuidValue is one specific vendor guid value.\n\
                         Its format is 00000000-0000-0000-0000-000000000000\n");
   fprintf (stdout, "  -r GuidAttr, --attributes GuidAttr\n\
@@ -171,6 +186,22 @@ Ascii2UnicodeWriteString (
   CHAR8    *String,
   FILE     *OutFile
   )
+/*++
+
+Routine Description:
+
+  Write ascii string as unicode string format to FILE 
+
+Arguments:
+
+  String    - Pointer to string that is written to FILE.
+  OutFile   - Pointer to FILE
+
+Returns:
+
+  NULL
+
+--*/
 {
   UINT32 Index;
   UINT8  AsciiNull;
@@ -185,7 +216,7 @@ Ascii2UnicodeWriteString (
     fwrite (&String[Index], 1, 1, OutFile);
     fwrite (&AsciiNull, 1, 1, OutFile);
   } while (String[Index++] != 0);
-}
+} 
 
 STATUS
 GenSectionCommonLeafSection (
@@ -765,7 +796,8 @@ Returns:
   argv ++;
 
   if ((stricmp (argv[0], "-h") == 0) || (stricmp (argv[0], "--help") == 0)) {
-    Usage();
+    Version ();
+    Usage ();
     return STATUS_SUCCESS;    
   }
 
@@ -796,7 +828,7 @@ Returns:
       continue;
     }
 
-    if ((stricmp (argv[0], "-g") == 0) || (stricmp (argv[0], "--vendorguid") == 0)) {
+    if ((stricmp (argv[0], "-g") == 0) || (stricmp (argv[0], "--vendor") == 0)) {
       Status = StringToGuid (argv[1], &VendorGuid);
       if (EFI_ERROR (Status)) {
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);

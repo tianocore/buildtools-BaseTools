@@ -144,6 +144,21 @@ VOID
 Usage (
   VOID
   )
+/*++
+
+Routine Description:
+
+  Print Help message.
+
+Arguments:
+
+  void
+
+Returns:
+
+  None
+
+--*/
 {
   //
   // Summary usage
@@ -162,23 +177,23 @@ Usage (
   fprintf (stdout, "  -o FileName, --outputfile FileName\n\
                         File will be created to store the ouput content.\n");
   fprintf (stdout, "  -e EFI_FILETYPE, --efiImage EFI_FILETYPE\n\
-                        EFI_FILETYPE is one of BASE, SEC, PEI_CORE, PEIM, \n\
-                        DXE_CORE, DXE_RUNTIME_DRIVER, DXE_SAL_DRIVER, \n\
-                        DXE_SMM_DRIVER, UEFI_DRIVER, UEFI_APPLICATIOn, \n\
-                        SECURITY_CORE, COMBINED_PEIM_DRIVER, PIC_PEIM, \n\
-                        RELOCATABLE_PEIM, BS_DRIVER, RT_DRIVER, APPLICATION, \n\
-                        SAL_RT_DRIVER to support all module types.\n");
+                        Create Efi Image. EFI_FILETYPE is one of BASE, SEC,\n\
+                        PEI_CORE, PEIM, DXE_CORE, DXE_RUNTIME_DRIVER,\n\
+                        DXE_SAL_DRIVER, UEFI_DRIVER, UEFI_APPLICATIOn, \n\
+                        DXE_SMM_DRIVER, SECURITY_CORE, COMBINED_PEIM_DRIVER, \n\
+                        PIC_PEIM, RELOCATABLE_PEIM, BS_DRIVER, RT_DRIVER,\n\
+                        APPLICATION, SAL_RT_DRIVER to support all module types\n");
   fprintf (stdout, "  -c, --acpi            Create Acpi table.\n");
   fprintf (stdout, "  -t, --terse           Create Te Image.\n");
   fprintf (stdout, "  -u, --dump            Dump TeImage Header.\n");
   fprintf (stdout, "  -z, --zero            Zero the Debug Data Fields in the PE input image file.\n");
   fprintf (stdout, "  -b, --exe2bin         Convert the input EXE to the output BIN file.\n");
-  fprintf (stdout, "  -r, --replace         Overwrite the input file with the ouput content.\n");
-  fprintf (stdout, "  -s [time-date], --stamp [time-date]\n\
-                        time-date format is yyyy-mm-dd 00:00:00. if time-data \n\
+  fprintf (stdout, "  -r, --replace         Overwrite the input file with the output content.\n");
+  fprintf (stdout, "  -s timedate, --stamp timedate\n\
+                        timedate format is \"yyyy-mm-dd 00:00:00\". if timedata \n\
                         is set to NOW, current system time is used.\n");
   fprintf (stdout, "  -m, --mcifile         Convert input microcode txt file to microcode bin file.\n");
-  fprintf (stdout, "  -j, --join            Combine multi microcode bin files to one files.\n");
+  fprintf (stdout, "  -j, --join            Combine multi microcode bin files to one file.\n");
   fprintf (stdout, "  -a NUM, --align NUM   NUM is one HEX or DEC format alignment value.\n");
   fprintf (stdout, "  -p NUM, --pad NUM     NUM is one HEX or DEC format padding value.\n");
   fprintf (stdout, "  -v, --verbose         Turn on verbose output with informational messages.\n");
@@ -1017,6 +1032,7 @@ Returns:
   argv ++;  
 
   if ((stricmp (argv[0], "-h") == 0) || (stricmp (argv[0], "--help") == 0)) {
+    Version ();
     Usage ();
     return STATUS_SUCCESS;    
   }
@@ -1036,7 +1052,7 @@ Returns:
 
     if ((stricmp (argv[0], "-e") == 0) || (stricmp (argv[0], "--efiImage") == 0)) {
       ModuleType   = argv[1];
-      if (OutImageType == FW_DUMMY_IMAGE) {
+      if (OutImageType != FW_TE_IMAGE) {
         OutImageType = FW_EFI_IMAGE;
       }
       argc -= 2;
@@ -1843,6 +1859,22 @@ EFI_STATUS
 ZeroDebugData (
   IN OUT UINT8   *FileBuffer
   )
+/*++
+
+Routine Description:
+
+  Zero debug information in PeImage.
+
+Arguments:
+
+  FileBuffer    - Pointer to PeImage.
+
+Returns:
+
+  EFI_ABORTED   - PeImage is invalid.
+  EFI_SUCCESS   - Zero debug data successfully.
+
+--*/
 {
   UINTN                           Index;
   UINTN                           DebugDirectoryEntryRva;
@@ -1920,9 +1952,27 @@ SetStamp (
   IN OUT UINT8  *FileBuffer, 
   IN     CHAR8  *TimeStamp
   )
+/*++
+
+Routine Description:
+
+  Set new time stamp into PeImage FileHdr and Directory table: 
+  Debug, Export and Resource.
+
+Arguments:
+
+  FileBuffer    - Pointer to PeImage.
+  TimeStamp     - Time stamp string.
+
+Returns:
+
+  EFI_INVALID_PARAMETER   - TimeStamp format is not recognized.
+  EFI_SUCCESS             - Set new time stamp in this image successfully.
+
+--*/
 {
-  struct tm stime;
-  time_t    newtime;
+  struct tm                       stime;
+  time_t                          newtime;
   UINTN                           Index;
   UINTN                           DebugDirectoryEntryRva;
   UINTN                           DebugDirectoryEntryFileOffset;

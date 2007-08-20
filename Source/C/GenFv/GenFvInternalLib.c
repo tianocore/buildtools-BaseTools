@@ -36,68 +36,6 @@ Abstract:
 #include "PeCoffLib.h"
 #include "WinNtInclude.h"
 
-EFI_STATUS
-ParseCapInf (
-  IN  MEMORY_FILE  *InfFile,
-  OUT CAP_INFO     *CapInfo
-  );
-
-EFI_STATUS
-FindApResetVectorPosition (
-  IN  MEMORY_FILE  *FvImage,
-  OUT UINT8        **Pointer
-  ); 
-
-EFI_STATUS
-CalculateFvSize (
-  FV_INFO *FvInfoPtr
-  );
-/*++
-Routine Description:
-  Calculate the FV size and Update Fv Size based on the actual FFS files.
-  And Update FvInfo data.
-
-Arguments:
-  FvInfoPtr     - The pointer to FV_INFO structure.
-
-Returns:
-  EFI_ABORTED   - Ffs Image Error
-  EFI_SUCCESS   - Successfully update FvSize
---*/
-
-EFI_STATUS
-FfsRebase ( 
-  IN OUT  FV_INFO               *FvInfo, 
-  IN      CHAR8                 *FileName,           
-  IN OUT  EFI_FFS_FILE_HEADER   *FfsFile,
-  IN      UINTN                 XipOffset,
-  IN      FILE                  *FvMapFile
-  );
-/*++
-
-Routine Description:
-
-  This function determines if a file is XIP and should be rebased.  It will
-  rebase any PE32 sections found in the file using the base address.
-
-Arguments:
-  
-  FvInfo            A pointer to FV_INFO struture.
-  FileName          Ffs file Name
-  FfsFile           A pointer to Ffs file image.
-  XipOffset         The offset address to use for rebasing the XIP file image.
-  FvMapFile         File pointer to FvMap file
-
-Returns:
-
-  EFI_SUCCESS             The image was properly rebased.
-  EFI_INVALID_PARAMETER   An input parameter is invalid.
-  EFI_ABORTED             An error occurred while rebasing the input file image.
-  EFI_OUT_OF_RESOURCES    Could not allocate a required resource.
-  EFI_NOT_FOUND           No compressed sections could be found.
-
---*/
-
 static UINT32 MaxFfsAlignment = 0;
 
 EFI_GUID  gEfiFirmwareFileSystem2Guid = EFI_FIRMWARE_FILE_SYSTEM2_GUID;
@@ -263,40 +201,6 @@ Returns:
     }
 
     FvInfo->BaseAddress = Value64;
-  }
-
-  //
-  // Read the FV boot driver base address
-  //
-  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING, 0, Value);
-  if (Status == EFI_SUCCESS) {
-    //
-    // Get the base address
-    //
-    Status = AsciiStringToUint64 (Value, FALSE, &Value64);
-    if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 2000, "Invalid paramter", "%s = %s", EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING, Value);
-      return EFI_ABORTED;
-    }
-
-    FvInfo->BootBaseAddress = Value64;
-  }
-
-  //
-  // Read the FV runtime driver base address
-  //
-  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, 0, Value);
-  if (Status == EFI_SUCCESS) {
-    //
-    // Get the base address
-    //
-    Status = AsciiStringToUint64 (Value, FALSE, &Value64);
-    if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 2000, "Invalid paramter", "%s = %s", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, Value);
-      return EFI_ABORTED;
-    }
-
-    FvInfo->RuntimeBaseAddress = Value64;
   }
 
   //
@@ -1448,17 +1352,16 @@ Returns:
 
   return EFI_SUCCESS;
 }
-//
-// Exposed function implementations (prototypes are defined in GenFvImageLib.h)
-//
+
 EFI_STATUS
 GenerateFvImage (
   IN CHAR8                *InfFileImage,
   IN UINTN                InfFileSize,
   IN CHAR8                *FvFileName,
+  IN CHAR8                *MapFileName,
   IN EFI_PHYSICAL_ADDRESS XipBaseAddress,
-  IN EFI_PHYSICAL_ADDRESS BtBaseAddress,
-  IN EFI_PHYSICAL_ADDRESS RtBaseAddress
+  IN EFI_PHYSICAL_ADDRESS *BtBaseAddress,
+  IN EFI_PHYSICAL_ADDRESS *RtBaseAddress
   )
 /*++
 
@@ -1471,9 +1374,10 @@ Arguments:
   InfFileImage   Buffer containing the INF file contents.
   InfFileSize    Size of the contents of the InfFileImage buffer.
   FvFileName     Requested name for the FV file.
+  MapFileName    Fv map file to log fv driver information.
   XipBaseAddress BaseAddress is to be rebased.
-  BtBaseAddress  BaseAddress is to set the prefer loaded image start address for boot drivers.
-  RtBaseAddress  BaseAddress is to set the prefer loaded image start address for runtime drivers.
+  BtBaseAddress  Pointer to BaseAddress is to set the prefer loaded image start address for boot drivers.
+  RtBaseAddress  Pointer to BaseAddress is to set the prefer loaded image start address for runtime drivers.
 
 Returns:
 
@@ -1537,10 +1441,15 @@ Returns:
   }
   
   //
-  // FvMap file to record the function address of all modules in one Fvimage
+  // FvMap file to log the function address of all modules in one Fvimage
   //
-  strcpy (FvMapName, FvFileName);
-  strcat (FvMapName, ".map");
+  if (MapFileName != NULL) {
+    strcpy (FvMapName, MapFileName);
+  } else {
+    strcpy (FvMapName, FvFileName);
+    strcat (FvMapName, ".map");
+  }
+
   FvMapFile = fopen (FvMapName, "w");
   if (FvMapFile == NULL) {
     Error (NULL, 0, 0001, "Error opening file", FvMapName);
@@ -1553,11 +1462,11 @@ Returns:
   if (XipBaseAddress != -1) {
     FvInfo.BaseAddress = XipBaseAddress;
   }
-  if (BtBaseAddress != 0) {
-    FvInfo.BootBaseAddress = BtBaseAddress;
+  if (*BtBaseAddress != 0) {
+    FvInfo.BootBaseAddress = *BtBaseAddress;
   }
-  if (RtBaseAddress != 0) {
-    FvInfo.RuntimeBaseAddress = RtBaseAddress;
+  if (*RtBaseAddress != 0) {
+    FvInfo.RuntimeBaseAddress = *RtBaseAddress;
   }
 
   //
@@ -1747,6 +1656,12 @@ Finish:
   if (FvMapFile != NULL) {
     fclose (FvMapFile);
   }
+
+  //
+  // Update BootAddress and RuntimeAddress
+  //
+  *BtBaseAddress = FvInfo.BootBaseAddress;
+  *RtBaseAddress = FvInfo.RuntimeBaseAddress;
 
   return Status;
 }
@@ -2146,7 +2061,10 @@ Returns:
               //
               continue;
             }
-
+            //
+            // make sure image base address at the section alignment
+            //
+            FvInfo->RuntimeBaseAddress = (FvInfo->RuntimeBaseAddress + ImageContext.SectionAlignment - 1) & (~(ImageContext.SectionAlignment - 1));
             NewPe32BaseAddress = FvInfo->RuntimeBaseAddress;
             BaseToUpdate = &(FvInfo->RuntimeBaseAddress);
             break;
@@ -2161,7 +2079,10 @@ Returns:
               //
               continue;
             }
-
+            //
+            // make sure image base address at the section alignment
+            //
+            FvInfo->BootBaseAddress = (FvInfo->BootBaseAddress + ImageContext.SectionAlignment - 1) & (~(ImageContext.SectionAlignment - 1));
             NewPe32BaseAddress = FvInfo->BootBaseAddress;
             BaseToUpdate = &(FvInfo->BootBaseAddress);
             break;
@@ -2175,7 +2096,10 @@ Returns:
           //
           return EFI_SUCCESS;
         }
-
+        //
+        // make sure image base address at the section alignment
+        //
+        FvInfo->BootBaseAddress = (FvInfo->BootBaseAddress + ImageContext.SectionAlignment - 1) & (~(ImageContext.SectionAlignment - 1));
         NewPe32BaseAddress = FvInfo->BootBaseAddress;
         BaseToUpdate = &(FvInfo->BootBaseAddress);
         break;
@@ -2251,9 +2175,9 @@ Returns:
     free ((VOID *) MemoryImagePointer);
 
     //
-    // Update BASE address
+    // Update BASE address by add one page size.
     //
-    *BaseToUpdate += EFI_SIZE_TO_PAGES (ImageContext.ImageSize) * EFI_PAGE_SIZE;
+    *BaseToUpdate += ImageContext.ImageSize + EFI_PAGE_SIZE;
 
     //
     // Now update file checksum
@@ -2369,6 +2293,23 @@ FindApResetVectorPosition (
   IN  MEMORY_FILE  *FvImage,
   OUT UINT8        **Pointer
   )
+/*++
+
+Routine Description:
+
+  Find the position in this FvImage to place Ap reset vector.
+
+Arguments:
+
+  FvImage       Memory file for the FV memory image.
+  Pointer       Pointer to pointer to position.
+
+Returns:
+
+  EFI_NOT_FOUND   - No satisfied position is found.
+  EFI_SUCCESS     - The suitable position is return.
+
+--*/
 {
   EFI_FFS_FILE_HEADER   *PadFile;
   UINT32                Index;

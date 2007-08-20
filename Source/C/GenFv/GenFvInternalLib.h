@@ -209,7 +209,7 @@ typedef struct {
 } COMPONENT_INFO;
 
 //
-// FV information holder
+// FV and capsule information holder
 //
 typedef struct {
   EFI_PHYSICAL_ADDRESS    BaseAddress;
@@ -309,6 +309,32 @@ GetPe32Info (
   OUT UINT16                *MachineType
   );
 
+EFI_STATUS
+ParseCapInf (
+  IN  MEMORY_FILE  *InfFile,
+  OUT CAP_INFO     *CapInfo
+  );
+
+EFI_STATUS
+FindApResetVectorPosition (
+  IN  MEMORY_FILE  *FvImage,
+  OUT UINT8        **Pointer
+  ); 
+
+EFI_STATUS
+CalculateFvSize (
+  FV_INFO *FvInfoPtr
+  );
+
+EFI_STATUS
+FfsRebase ( 
+  IN OUT  FV_INFO               *FvInfo, 
+  IN      CHAR8                 *FileName,           
+  IN OUT  EFI_FFS_FILE_HEADER   *FfsFile,
+  IN      UINTN                 XipOffset,
+  IN      FILE                  *FvMapFile
+  );
+
 //
 // Exported function prototypes
 //
@@ -317,31 +343,56 @@ GenerateCapImage (
   IN CHAR8                *InfFileImage,
   IN UINTN                InfFileSize,
   IN CHAR8                *CapFileName
-  );
+  )
+/*++
+
+Routine Description:
+
+  This is the main function which will be called from application to 
+  generate UEFI Capsule image.
+
+Arguments:
+
+  InfFileImage   Buffer containing the INF file contents.
+  InfFileSize    Size of the contents of the InfFileImage buffer.
+  CapFileName    Requested name for the Cap file.
+
+Returns:
+
+  EFI_SUCCESS             Function completed successfully.
+  EFI_OUT_OF_RESOURCES    Could not allocate required resources.
+  EFI_ABORTED             Error encountered.
+  EFI_INVALID_PARAMETER   A required parameter was NULL.
+
+--*/
+;
 
 EFI_STATUS
 GenerateFvImage (
   IN CHAR8                *InfFileImage,
   IN UINTN                InfFileSize,
   IN CHAR8                *FvFileName,  
+  IN CHAR8                *MapFileName,
   IN EFI_PHYSICAL_ADDRESS XipBaseAddress,
-  IN EFI_PHYSICAL_ADDRESS BtBaseAddress,
-  IN EFI_PHYSICAL_ADDRESS RtBaseAddress
+  IN EFI_PHYSICAL_ADDRESS *BtBaseAddress,
+  IN EFI_PHYSICAL_ADDRESS *RtBaseAddress
   )
 /*++
 
 Routine Description:
 
-  This is the main function which will be called from application.
+  This is the main function which will be called from application to 
+  generate Firmware Image conforms to PI spec.
 
 Arguments:
 
   InfFileImage   Buffer containing the INF file contents.
   InfFileSize    Size of the contents of the InfFileImage buffer.
   FvFileName     Requested name for the FV file.
+  MapFileName    Fv map file to log fv driver information.
   XipBaseAddress BaseAddress is to be rebased.
-  BtBaseAddress  BaseAddress is to set the prefer loaded image start address for boot drivers.
-  RtBaseAddress  BaseAddress is to set the prefer loaded image start address for runtime drivers.
+  BtBaseAddress  Pointer to BaseAddress is to set the prefer loaded image start address for boot drivers.
+  RtBaseAddress  Pointer to BaseAddress is to set the prefer loaded image start address for runtime drivers.
     
 Returns:
  

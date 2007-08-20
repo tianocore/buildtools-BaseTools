@@ -110,17 +110,17 @@ Returns:
   fprintf (stdout, "  -r Address, --baseaddr Address\n\
                         Address is the rebase start address for drivers that\n\
                         run in Flash. It supports DEC or HEX digital format.\n");
-  fprintf (stdout, "  -b Address, --bootbaseaddr Address\n\
-                        Address is the boot time driver base address, which is\n\
-                        used to define the prefered loaded address for all\n\
-                        boot time drivers in this Fv image.\n\
-                        It supports DEC or HEX digital format.\n");
-  fprintf (stdout, "  -t Address, --runtimebaseaddr Address\n\
-                        Address is the runtime driver base address, which is\n\
-                        used to define the prefered loaded address for all\n\
-                        runtime drivers in this Fv image.\n\
-                        It supports DEC or HEX digital format.\n");
+  fprintf (stdout, "  -a AddressFile, --addrfile AddressFile\n\
+                        AddressFile is one file used to record boot driver base\n\
+                        address and runtime driver base address. And this tool\n\
+                        will update these two addresses after it relocates all\n\
+                        boot drivers and runtime drivers in this fv iamge to\n\
+                        the preferred loaded memory address.\n");
+  fprintf (stdout, "  -m logfile, --map logfile\n\
+                        Logfile is the output fv map file name. if it is not\n\
+                        given, the FvName.map will be the default map file name\n"); 
   fprintf (stdout, "  -c, --capsule         Create Capsule Image.\n");
+  fprintf (stdout, "  -p, --dump            Dump Capsule Image header.\n");
   fprintf (stdout, "  -v, --verbose         Turn on verbose output with informational messages.\n");
   fprintf (stdout, "  --version             Show program's version number and exit.\n");
   fprintf (stdout, "  -h, --help            Show this help message and exit.\n");
@@ -158,22 +158,32 @@ Returns:
 {
   EFI_STATUS            Status;
   CHAR8                 *InfFileName;
+  CHAR8                 *AddrFileName;
+  CHAR8                 *MapFileName;
   CHAR8                 *InfFileImage;
   UINTN                 InfFileSize;
   CHAR8                 *OutFileName;
+  CHAR8                 ValueString[_MAX_PATH];
   EFI_PHYSICAL_ADDRESS  XipBase;
   EFI_PHYSICAL_ADDRESS  BtBase;
   EFI_PHYSICAL_ADDRESS  RtBase;
   BOOLEAN               CapsuleFlag;
+  BOOLEAN               DumpCapsule;
+  MEMORY_FILE           AddrMemoryFile;
+  FILE                  *FpFile;
 
   InfFileName   = NULL;
+  AddrFileName  = NULL;
   InfFileImage  = NULL;
   OutFileName   = NULL;
+  MapFileName   = NULL;
   XipBase       = -1;
   BtBase        = 0;
   RtBase        = 0;
   InfFileSize   = 0;
   CapsuleFlag   = FALSE;
+  DumpCapsule   = FALSE;
+  FpFile        = NULL;
 
   SetUtilityName (UTILITY_NAME);
 
@@ -190,6 +200,7 @@ Returns:
   argv ++;
 
   if ((stricmp (argv[0], "-h") == 0) || (stricmp (argv[0], "--help") == 0)) {
+    Version ();
     Usage ();
     return STATUS_SUCCESS;    
   }
@@ -202,6 +213,13 @@ Returns:
   while (argc > 0) {
     if ((stricmp (argv[0], "-i") == 0) || (stricmp (argv[0], "--inputfile") == 0)) {
       InfFileName = argv[1];
+      argc -= 2;
+      argv += 2;
+      continue; 
+    }
+
+    if ((stricmp (argv[0], "-a") == 0) || (stricmp (argv[0], "--addrfile") == 0)) {
+      AddrFileName = argv[1];
       argc -= 2;
       argv += 2;
       continue; 
@@ -225,32 +243,24 @@ Returns:
       continue; 
     }
 
-    if ((stricmp (argv[0], "-b") == 0) || (stricmp (argv[0], "--bootbaseaddr") == 0)) {
-      Status = AsciiStringToUint64 (argv[1], FALSE, &BtBase);
-      if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
-        return STATUS_ERROR;        
-      }
-      argc -= 2;
-      argv += 2;
-      continue; 
-    }
-
-    if ((stricmp (argv[0], "-t") == 0) || (stricmp (argv[0], "--runtimebaseaddr") == 0)) {
-      Status = AsciiStringToUint64 (argv[1], FALSE, &RtBase);
-      if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
-        return STATUS_ERROR;        
-      }
-      argc -= 2;
-      argv += 2;
-      continue; 
-    }
-
     if ((stricmp (argv[0], "-c") == 0) || (stricmp (argv[0], "--capsule") == 0)) {
       CapsuleFlag = TRUE;
       argc --;
       argv ++;
+      continue; 
+    }
+
+    if ((stricmp (argv[0], "-p") == 0) || (stricmp (argv[0], "--dump") == 0)) {
+      DumpCapsule = TRUE;
+      argc --;
+      argv ++;
+      continue; 
+    }
+
+    if ((stricmp (argv[0], "-m") == 0) || (stricmp (argv[0], "--map") == 0)) {
+      MapFileName = argv[1];
+      argc -= 2;
+      argv += 2;
       continue; 
     }
 
@@ -278,7 +288,61 @@ Returns:
     Error (NULL, 0, 1001, "Missing Option", "Input File");
     return STATUS_ERROR;
   }
+
+  if (OutFileName == NULL) {
+    Error (NULL, 0, 1001, "Missing option", "Output file name");
+    return STATUS_ERROR;
+  }
   
+  //
+  // Read boot and runtime address from address file
+  //
+  if (AddrFileName != NULL) {
+    Status = GetFileImage (AddrFileName, &InfFileImage, &InfFileSize);
+    if (EFI_ERROR (Status)) {
+      return STATUS_ERROR;
+    }
+
+    AddrMemoryFile.FileImage           = InfFileImage;
+    AddrMemoryFile.CurrentFilePointer  = InfFileImage;
+    AddrMemoryFile.Eof                 = InfFileImage + InfFileSize;
+
+    //
+    // Read the boot driver base address for this FV image
+    //
+    Status = FindToken (&AddrMemoryFile, OPTIONS_SECTION_STRING, EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING, 0, ValueString);
+    if (Status == EFI_SUCCESS) {
+      //
+      // Get the base address
+      //
+      Status = AsciiStringToUint64 (ValueString, FALSE, &BtBase);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 2000, "Invalid paramter", "%s = %s", EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING, ValueString);
+        return STATUS_ERROR;
+      }
+    }
+  
+    //
+    // Read the FV runtime driver base address
+    //
+    Status = FindToken (&AddrMemoryFile, OPTIONS_SECTION_STRING, EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, 0, ValueString);
+    if (Status == EFI_SUCCESS) {
+      //
+      // Get the base address
+      //
+      Status = AsciiStringToUint64 (ValueString, FALSE, &RtBase);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 2000, "Invalid paramter", "%s = %s", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, ValueString);
+        return STATUS_ERROR;
+      }
+    }
+    
+    //
+    // free the allocated memory space for addr file.
+    //
+    free (InfFileImage);
+  }
+
   //
   // Read the INF file image
   //
@@ -307,17 +371,36 @@ Returns:
       InfFileImage,
       InfFileSize,
       OutFileName,
+      MapFileName,
       XipBase,
-      BtBase,
-      RtBase
+      &BtBase,
+      &RtBase
       );
   }
 
   //
   // free InfFileImage memory
   //
-  if (InfFileImage == NULL) {
+  if (InfFileImage != NULL) {
     free (InfFileImage);
+  }
+  
+  //
+  //  update boot driver address and runtime driver address in address file
+  //
+  if (AddrFileName != NULL) {
+    FpFile = fopen (AddrFileName, "w");
+    if (FpFile == NULL) {
+      Error (NULL, 0, 0001, "Error opening file", AddrFileName);
+      return STATUS_ERROR;
+    }
+    fprintf (FpFile, OPTIONS_SECTION_STRING);
+    fprintf (FpFile, "\n");
+    fprintf (FpFile, EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING);
+    fprintf (FpFile, " = 0x%x\n", BtBase);
+    fprintf (FpFile, EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING);
+    fprintf (FpFile, " = 0x%x\n", RtBase);
+    fclose (FpFile);
   }
 
   if (VerboseMode) {

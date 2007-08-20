@@ -159,6 +159,23 @@ StringtoAlignment (
   IN  CHAR8  *AlignBuffer,
   OUT UINT32 *AlignNumber
   )
+/*++
+
+Routine Description:
+
+  Converts Align String to align value (1~64K). 
+
+Arguments:
+
+  AlignBuffer    - Pointer to Align string.
+  AlignNumber    - Pointer to Align value.
+
+Returns:
+
+  EFI_SUCCESS             Successfully convert align string to align value.
+  EFI_INVALID_PARAMETER   Align string is invalid or align value is not in scope.
+
+--*/
 {
   UINT32 Index = 0;
   //
@@ -405,7 +422,8 @@ Returns:
   argv ++;
 
   if ((stricmp (argv[0], "-h") == 0) || (stricmp (argv[0], "--help") == 0)) {
-    Usage();
+    Version ();
+    Usage ();
     return STATUS_SUCCESS;    
   }
 
