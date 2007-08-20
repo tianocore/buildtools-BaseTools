@@ -46,7 +46,8 @@ Abstract:
 #define   FILE_NAME_SIZE          256
 #define   COMPONENT_NAME_SIZE     128
 #define   VTF_INPUT_FILE          "VTF.INF"
-#define   VTF_OUTPUT_FILE         "Vtf.RAW"
+#define   VTF_OUTPUT_FILE1      "VTF1.RAW"
+#define   VTF_OUTPUT_FILE2      "VTF2.RAW"
 #define   VTF_SYM_FILE            "Vtf.SYM"
 #define   FIT_SIGNATURE           "_FIT_   "
 

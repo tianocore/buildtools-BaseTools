@@ -2493,6 +2493,11 @@ Returns:
     return 0;
   }
  
+//  if (argc != ONE_VTF_ARGS && argc != TWO_VTF_ARGS && argc != THREE_VTF_ARGS) {
+//    Usage ();
+//    return 1;
+//  }
+
   //
   // Initialize variables
   //
@@ -2505,7 +2510,7 @@ Returns:
   FirstRoundO   = TRUE;
   OutFileName1  = NULL;
   OutFileName2  = NULL;
-
+  
   //
   // Parse the command line arguments
   //
@@ -2588,6 +2593,7 @@ Returns:
         FirstRoundS = FALSE;
       } else {
         Status = AsciiStringToUint64 (argv[Index + 1], FALSE, &FwVolSize2);
+	  SecondVTF = TRUE;
       }
 
       if (Status != EFI_SUCCESS) {
@@ -2596,7 +2602,7 @@ Returns:
       }
       break;
     case 'v':
-    case 'V':
+    case '-':
 	//
 	// Verbose
 	//
@@ -2613,6 +2619,15 @@ Returns:
 
   if (VerboseMode) {
     fprintf (stdout, "%s tool start.\n", UTILITY_NAME);
+  }
+
+  if (VTF_OUTPUT == FALSE) {
+  	if (SecondVTF == TRUE) {
+        OutFileName1 = VTF_OUTPUT_FILE1;
+        OutFileName2 = VTF_OUTPUT_FILE2;
+	} else {
+        OutFileName1 = VTF_OUTPUT_FILE1;
+	}
   }
   
   //
