@@ -194,7 +194,7 @@ def StorePackagePcdsSection(DecFile, Package):
             if PcdSectionName:
                 PcdsDict.setdefault(PcdSectionName, []).append(Pcd)
             else:
-                EdkLogger.info("Unknow Pcd Item Type %s" % PcdItemType)
+                EdkLogger.info("Unknown Pcd Item Type: %s" % PcdItemType)
 
     Section = ""
     for PcdSectionName in PcdsDict:

@@ -322,7 +322,7 @@ def StoreModulePcdsSection(InfFile, Module):
         if PcdSectionName:
             PcdsDict.setdefault(PcdSectionName, []).append(Pcd)
         else:
-            EdkLogger.info("Unknow Pcd Item Type %s" % Pcd.ItemType)
+            EdkLogger.info("Unknown Pcd Item Type: %s" % Pcd.ItemType)
 
     Section = ""
     for PcdSectionName in PcdsDict:
