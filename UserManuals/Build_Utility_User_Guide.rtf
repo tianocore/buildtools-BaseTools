@@ -1,0 +1,103 @@
+{\rtf1\ansi\ansicpg1252\deff0\deflang1033\deflangfe1033{\fonttbl{\f0\fswiss\fprq2\fcharset0 Verdana;}}
+{\colortbl ;\red8\green96\blue168;\red0\green0\blue0;}
+{\stylesheet{ Normal;}{\s1 heading 1;}{\s2 heading 2;}}
+{\*\generator Msftedit 5.41.15.1507;}\viewkind4\uc1\pard\keep\keepn\s2\li-1440\sb400\sa60\sl-340\slmult0\tx360\cf1\b\f0\fs28 Name\par
+\pard\li360\sb200\cf2\b0\fs18 Build.exe \endash  the master command that provides the developer with a single command for selecting various options of a build\par
+\pard\keep\keepn\s2\li-1440\sb400\sa60\sl-340\slmult0\tx360\cf1\b\fs28 Synopsis\par
+\pard\li360\sb200\cf2\fs18 Build.exe [options] [target]\par
+\pard\keep\keepn\s2\li-1440\sb400\sa60\sl-340\slmult0\cf1\fs28 Description\par
+\pard\li360\sb200\cf2\b0\fs18 Build.exe is the master command line (CLI) tool that provides the developer with a single command for selecting various options of a build.  In general, it checks the environment variables, gets the user\rquote s configuration from either the CLI or target.txt, parses the dsc, dec, inf, target.txt, tools_def.txt, generates .C, .H files and the Makefiles for one or more modules and/or the active platform, calls a make (NMake or make) program to process these Makefiles, then optionally calls GenFds to generate an fd file.\par
+The build tool supports two kinds of path specifications on command line - an absolutely path or a relative (to the WORKSPACE environment variable) path.\par
+\pard\keep\keepn\s2\li-1440\sb400\sa60\sl-340\slmult0\tx360\tx1440\cf1\b\fs28 Options\par
+\pard\li360\sb200\cf2\b0\fs18 There are no required options. \par
+\b -a, --arch <ARCH>\par
+\pard\li720\sb200\b0 ARCH is one of list: IA32, X64, IPF or EBC,  which overrides target.txt's TARGET_ARCH  definition. To specify more ARCH, please  repeat this option.\par
+\pard\li360\sb200\b -p, --platform PlatformName.dsc\par
+\pard\li720\sb200\b0 Build the platform specified by the DSC file  name argument, overrides target.txt's  ACTIVE_PLATFORM definition.\par
+\pard\li360\sb200\b -m, --module ModuleName.inf\par
+\pard\li720\sb200\b0 Build the module specified by the INF file name argument.\par
+\pard\li360\sb200\b -b, --buildtarget <TARGET>\par
+\pard\li720\sb200\b0 TARGET is one of list: DEBUG, RELEASE,  which overrides target.txt's TARGET definition. To specify more TARGET, please repeat this option.\par
+\pard\li360\sb200\b -t, --tagname Tagname\par
+\pard\li720\sb200\b0 Using the Tool Chain Tagname to build the platform, overrides target.txt's TOOL_CHAIN_TAG definition.\par
+\pard\li360\sb200\b -f --fdf Filename.fdf\par
+\pard\li720\sb200\b0 The name of the FDF file to use, which overrides the setting in the DSC file.\par
+\pard\keepn\li360\sb200\b -s \endash spawn\par
+\pard\li720\sb200\b0 If this flag is specified, as soon as a module can be built, the build will start, without waiting for AutoGen to complete remaining modules. While this option provides feedback that looks fast.\par
+\pard\li360\sb200\b -n NUM\par
+\pard\li720\sb200\b0 Build the platform using multi-threaded compiler, this option must combine with spawn option. The value overrides target.txt's MULTIPLE_THREAD and MAX_CONCURRENT_THREAD_NUMBER, less than 2 will disable multi-thread builds.\par
+\pard\li360\sb200\b -d, --debug [#]\par
+\pard\li720\sb200\b0 Enable debug messages at specified level. It is used by Tool itself.\par
+\pard\li360\sb200\b -q, --quiet\par
+\pard\li720\sb200\b0 Disable all messages except FATAL ERRORS.\par
+\pard\li360\sb200\b -v, --verbose\par
+\pard\li720\sb200\b0 Turn on verbose output with informational messages printed.\par
+\pard\li360\sb200\b -k, --msft\par
+\pard\li720\sb200\b0 Make Option: Generate only NMAKE Makefiles: Makefile\par
+\pard\li360\sb200\b -g, -gcc\par
+\pard\li720\sb200\b0 Make Option: Generate only GMAKE Makefiles: GNUmakefile\par
+\pard\li360\sb200\b -l, --all\par
+\pard\li720\sb200\b0 Make Option: Generate both NMAKE and GMAKE makefiles.\par
+\pard\li360\sb200\b --version\par
+\pard\li720\sb200\b0 Show program's copyright and version number then exit.\par
+\pard\li360\sb200\b -h, --help\par
+\pard\li720\sb200\b0 Print the copyright, version and usage of this program then exit.\par
+\pard\keep\keepn\s2\li-1440\sb400\sa60\sl-340\slmult0\tx360\tx1440\cf1\b\fs28 Target\par
+\pard\li360\sb200\cf2\b0\fs18 If no target is given, then default target is ALL.\par
+\b ALL\b0                Build everything for either the platform or module.\par
+\b GenC\b0             Auto-generate all C files for either the platform or module.\par
+\b GenMake\b0      Generate the Makefiles \endash  if auto-generated files are missing,\par
+\pard\li360                      then auto-generate all C files first for either the platform or module.\par
+\pard\li360\sb200\b Fds\b0                Create the FD Image files.\par
+\b Libraries\b0       Build all EDK Libraries and EDK II Library Instances which are specified.\par
+\b Modules\b0        Build all EDK components and EDK II modules which are specified.\par
+\b Clean\b0            Remove intermediate files generated by the NMAKE command (leaving\par
+\pard\li360                     the auto-generated C format, FD image files, PE32 output files, PCH \par
+                    files and LIB files).\par
+\pard\li360\sb200\b CleanAll\b0       Remove all intermmediate, auto-generated, FV and FD image files \endash  \par
+\pard\li360                    state of the tree should be exactly as if a fresh checkout or install has \par
+                   occurred.\par
+\pard\li360\sb200\b CleanLib\b0      Remove intermediate files generated by the NMAKE command AND LIB \par
+\pard\li360                    files (leaving the auto-generated, FV and FD image files, PE32 output \par
+                   files and PCH files)\par
+\pard\keep\keepn\s2\li-1440\sb400\sa60\sl-340\slmult0\tx360\tx1440\cf1\b\fs28 Examples\par
+\pard\li360\sb200\cf2\b0\fs18 Assume that $(WORKSPACE) is C:\\MyWorkspace\par
+\pard\li180\sb200 Build platform: Nt32Pkg.dsc\par
+\pard\li360\sb200 Specify the platform description file on the command line.\par
+\pard\li720\sb200\b C:\\MyWorkspace>build -p Nt32Pkg\\Nt32Pkg.dsc \endash a IA32\par
+\pard\li360\sb200\b0 Build the platform in the current working directory if it contains a platform description file.\par
+\pard\li720\sb200\b C:\\MyWorkspace\\Nt32Pkg>build \endash a IA32\par
+\pard\li360\sb200\b0 Build the active platform specified in the target.txt file.\par
+\pard\li720\sb200\b C:\\ MyWorkspace>build \endash a Ia32\par
+\pard\li360\sb200\b0\par
+\pard\li180\sb200 Build Module: HelloWorld.inf\par
+\pard\li360\sb200 Specify the platform and Module on the command line.\par
+\pard\li720\sb200\b C:\\MyWorkspace>build -p Nt32Pkg\\Nt32Pkg.dsc \endash a IA32 \\\par
+\pard\li720  \endash m MdeModulePkg/Application/HelloWorld/HelloWorld.inf\par
+\pard\li360\sb200\b0 Specify the Module on the command line and use the active platform specified in the target.txt file.\par
+\pard\li720\sb200\b C:\\MyWorkspace>build \endash a IA32 \\\par
+\pard\li720\endash m MdeModulePkg/Application/HelloWorld/HelloWorld.inf\par
+\pard\li360\sb200\b0 Build the module in the current working directory if it contains a module description file and specify the platform on the command line.\par
+\pard\li720\sb200\b C:\\ MyWorkspace\\MdeModulePkg\\Application\\HelloWorld>build \endash a Ia32 \\\par
+\pard\li720\endash p Nt32Pkg\\Nt32Pkg.dsc\par
+\pard\li360\sb200\b0 Build the module in the current working directory and use the active platform specified in the target.txt file.\par
+\pard\li720\sb200\b C:\\ MyWorkspace\\MdeModulePkg\\Application\\HelloWorld>build \endash a Ia32 \par
+\pard\keep\keepn\s2\li-1440\sb400\sa60\sl-340\slmult0\tx360\tx1440\cf1\fs28 Bugs \par
+\pard\li360\sb200\cf2\b0\fs18 No known bugs.\par
+Report bugs to issues@buildtools.tianocore.org\par
+\pard\keep\keepn\s2\li-1440\sb400\sa60\sl-340\slmult0\tx360\tx1440\cf1\b\fs28 Files \par
+\pard\li360\sb200\cf2\b0\fs18 target.txt, tools_def.txt, platform.dsc, flashmap.fdf, package.dec and module.inf.\par
+\pard\keep\keepn\s2\li-1440\sb400\sa60\sl-340\slmult0\tx360\tx1440\cf1\b\fs28 See also\par
+\pard\li360\sb200\cf2\b0\fs18  GenFds.exe\par
+\pard\keep\keepn\s2\li-1440\sb400\sa60\sl-340\slmult0\tx360\tx1440\cf1\b\fs28 License\par
+\pard\li360\cf2\b0\fs18 Copyright (c)  1999-2007 Intel Corporation. All rights reserved.\par
+\par
+This program and the accompanying materials are licensed and made available under the terms and\par
+conditions of the BSD License which accompanies this distribution.  The full text of the license may be\par
+found at:\par
+http://opensource.org/licenses/bsd-license.php\par
+\par
+THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS, WITHOUT WARRANTIES\par
+OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.\par
+}
+ 
