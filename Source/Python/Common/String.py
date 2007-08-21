@@ -338,24 +338,29 @@ def PreCheck(FileName, FileContent, SupSectionTag):
         #
         if Line.find('$') > -1:
             if Line.find('$(') < 0 or Line.find(')') < 0:
-                IsFailed = True
-                break
+                raise ParserError(FORMAT_INVALID, lineno = LineNo, name = FileName)
 
         #
         # Check []
         #
         if Line.find('[') > -1 or Line.find(']') > -1:
+            #
             # Only get one '[' or one ']'
+            #
             if not (Line.find('[') > -1 and Line.find(']') > -1):
-                IsFailed = True
-                break
+                raise ParserError(FORMAT_INVALID, lineno = LineNo, name = FileName)
+
+            #
             # Tag not in defined value
-            Tag = Line.split(DataType.TAB_SPLIT, 1)[0].replace('[', '').replace(']', '').strip()
-            if Tag.upper() == DataType.TAB_COMMON_DEFINES.upper():
-                break
-            if Tag.upper() not in map(lambda s: s.upper(), SupSectionTag):
-                IsFailed = True
-                break
+            #
+            TagList = GetSplitValueList(Line, DataType.TAB_COMMA_SPLIT)
+            for Tag in TagList:
+                Tag = Tag.split(DataType.TAB_SPLIT, 1)[0].replace('[', '').replace(']', '').strip()
+                if Tag.upper() == DataType.TAB_COMMON_DEFINES.upper():
+                    break
+                if Tag.upper() not in map(lambda s: s.upper(), SupSectionTag):
+                    ErrorMsg = "'%s' is not a supportted section name found at line %s in file '%s'" % (Tag, LineNo, FileName)
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
     
     if IsFailed:
        raise ParserError(FORMAT_INVALID, lineno = LineNo, name = FileName)
@@ -371,6 +376,16 @@ def CheckFileType(Filename, ExtName):
         return True
     
     return False
+
+#
+# Find the index of a line in a file
+#
+def GetLineNo(FileContent, Line):
+    LineNo = -1
+    LineList = FileContent.splitlines()
+    for Index in range(len(LineList)):
+        if LineList[Index].find(Line) > -1:
+            return Index + 1
 
 if __name__ == '__main__':
     print SplitModuleType('LibraryClasses.common.DXE_RUNTIME_DRIVER')

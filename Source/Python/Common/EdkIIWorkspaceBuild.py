@@ -864,15 +864,21 @@ class WorkspaceBuild(object):
                                 IsFoundInDsc = True
                                 IsOverrided = True
                                 break
-        if not IsFoundInDsc:
-            ErrorMsg = "Pcd '%s' defined in module '%s' is not found in any platform" % (Name, ModuleName) 
-            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
         
         #
         # Last get information from PcdsSet defined by FDF
         #
         if (Name, Guid) in PcdsSet:
             Value = PcdsSet[(Name, Guid)]
+            IsFoundInDsc = True
+            IsOverrided = True
+            
+        #
+        # Not found in any platform and fdf
+        #
+        if not IsFoundInDsc:
+            ErrorMsg = "Pcd '%s' defined in module '%s' is not found in any platform" % (Name, ModuleName) 
+            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
 
         return PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, IsOverrided)
     
@@ -882,7 +888,7 @@ class WorkspaceBuild(object):
     def FindSupModuleListOfLibraryClass(self, LibraryClass, OverridedLibraryClassList):
         Name = LibraryClass.Name
         FilePath = NormPath(LibraryClass.FilePath)
-        SupModuleList = copy.copy(LibraryClass.ModuleType)
+        SupModuleList = copy.copy(LibraryClass.SupModuleList)
         
         #
         # If the SupModuleList means all, remove overrided module types of platform
@@ -907,7 +913,7 @@ class WorkspaceBuild(object):
                         # If arch is supportted, remove all related module type
                         #
                         if Arch in Item.SupArchList:
-                            for ModuleType in Item.ModuleType:
+                            for ModuleType in Item.SupModuleList:
                                 EdkLogger.debug(EdkLogger.DEBUG_3, "\tLibraryClass %s has specific defined module types" % Name)
                                 if ModuleType in SupModuleList:
                                     SupModuleList.remove(ModuleType)

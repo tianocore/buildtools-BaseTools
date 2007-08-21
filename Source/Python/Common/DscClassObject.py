@@ -244,7 +244,7 @@ class Dsc(DscObject):
             Library = PlatformLibraryClass()
             Library.Name = Key[0]
             Library.FilePath = Key[1]
-            Library.ModuleType = list(Key[2:])
+            Library.SupModuleList = list(Key[2:])
             Library.Define = Defines
             Library.SupArchList = LibraryClasses[Key]
             self.Platform.LibraryClasses.LibraryList.append(Library)
@@ -555,7 +555,7 @@ class Dsc(DscObject):
             print '\t', Item.FilePath, Item.SupArchList, Item.Define
         print '\nLibraryClasses =', m.LibraryClasses, m.LibraryClasses.IncludeFiles
         for Item in m.LibraryClasses.LibraryList:
-            print '\t', Item.Name, Item.FilePath, Item.ModuleType, Item.SupArchList, Item.Define
+            print '\t', Item.Name, Item.FilePath, Item.SupModuleList, Item.SupArchList, Item.Define
         print '\nPcds =', m.DynamicPcdBuildDefinitions
         for Item in m.DynamicPcdBuildDefinitions:
             print '\tCname=', Item.CName, 'TSG=', Item.TokenSpaceGuidCName, 'Value=', Item.DefaultValue, 'Token=', Item.Token, 'Type=', Item.ItemType, 'Datum=', Item.DatumType, 'Size=', Item.MaxDatumSize, 'Arch=', Item.SupArchList, Item.SkuInfoList

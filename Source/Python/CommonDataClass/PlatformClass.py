@@ -110,7 +110,7 @@ class PlatformBuildOptionClass(object):
     
 class PlatformBuildOptionClasses(IncludeStatementClass):
     def __init__(self):
-        IncludeStatementClass.__init__(self)
+        IncludeStatementClass.__init__(self)                         # Used by .Dsc
         self.FvBinding = ''
         self.FfsFileNameGuid = ''
         self.FfsFormatKey = ''
@@ -122,7 +122,7 @@ class PlatformLibraryClass(CommonClass, DefineClass):
         DefineClass.__init__(self)
         self.Name = Name
         self.FilePath = FilePath
-        self.ModuleType = []
+        self.SupModuleList = []
         self.ModuleGuid = ''
         self.ModuleVersion = ''
         self.PackageGuid = ''
