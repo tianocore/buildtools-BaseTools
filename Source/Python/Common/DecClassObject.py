@@ -47,11 +47,12 @@ class DecContents(DecObject):
         self.PcdsDynamicEx = []
 
 class Dec(DecObject):
-    def __init__(self, filename = None, isMergeAllArches = False, isToPackage = False):
+    def __init__(self, filename = None, isMergeAllArches = False, isToPackage = False, WorkspaceDir = None):
         self.Identification = Identification()
         self.Defines = DecDefines()
         self.UserExtensions = ''
         self.Package = PackageClass()
+        self.WorkspaceDir = WorkspaceDir
         
         self.Contents = {}
         for key in DataType.ARCH_LIST_FULL:
@@ -199,9 +200,7 @@ class Dec(DecObject):
                     ErrorMsg = "Wrong statement '%s' found in section LibraryClasses in file '%s', correct format is '<CName>=<GuidValue>'" % (Item, self.Package.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                 else:
-#                    if List[1] != '' and CheckFileType(List[1], '.Inf') == False:
-#                        ErrorMsg = "Wrong library instance '%s' found for LibraryClasses '%s' in file '%s', it is NOT a valid INF file" % (List[1], List[0], self.Package.Header.FullPath) 
-#                        raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                    CheckFileExist(self.WorkspaceDir, os.path.join(self.Identification.FileRelativePath, List[1]), self.Package.Header.FullPath, 'LibraryClasses', Item[0])
                     if Item[1] == ['']:
                             Item[1] = DataType.SUP_MODULE_LIST
                     MergeArches(LibraryClasses, (List[0], List[1]) + tuple(Item[1]), Arch)
@@ -322,5 +321,5 @@ class Dec(DecObject):
 if __name__ == '__main__':
     w = os.getenv('WORKSPACE')
     f = os.path.join(w, 'Nt32Pkg/Nt32Pkg.dec')
-    p = Dec(os.path.normpath(f), True, True)
+    p = Dec(os.path.normpath(f), True, True, w)
     p.ShowPackage()

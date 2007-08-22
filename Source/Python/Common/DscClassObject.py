@@ -63,12 +63,13 @@ class DscContents(DscObject):
         self.BuildOptions = []
 
 class Dsc(DscObject):
-    def __init__(self, Filename = None, IsMergeAllArches = False, IsToPlatform = False):
+    def __init__(self, Filename = None, IsMergeAllArches = False, IsToPlatform = False, WorkspaceDir = None):
         self.Identification = Identification()
         self.Defines = DscDefines()
         self.Contents = {}
         self.UserExtensions = ''
         self.Platform = PlatformClass()
+        self.WorkspaceDir = WorkspaceDir
 
         for Arch in DataType.ARCH_LIST_FULL:
             self.Contents[Arch] = DscContents()
@@ -166,8 +167,13 @@ class Dsc(DscObject):
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].BuildOptions:
                 if GenInclude(Item, IncludeFiles, Arch):
+                    IncludeFile = CleanString(Item[Item.upper().find(DataType.TAB_INCLUDE.upper() + ' ') + len(DataType.TAB_INCLUDE + ' ') : ])
+                    CheckFileExist(self.WorkspaceDir, IncludeFile, self.Platform.Header.FullPath, 'BuildOptions', Item)
+                    for NewItem in open(WorkspaceFile(self.WorkspaceDir, IncludeFile), 'r').readlines():
+                        MergeArches(BuildOptions, GetBuildOption(NewItem), Arch)
                     continue
                 MergeArches(BuildOptions, GetBuildOption(Item), Arch)
+        
         self.Platform.BuildOptions.IncludeFiles = IncludeFiles
         for Key in BuildOptions.keys():
             BuildOption = BuildOptionClass(Key[0], Key[1], Key[2])
@@ -180,6 +186,15 @@ class Dsc(DscObject):
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].SkuIds:
                 if GenInclude(Item, IncludeFiles, Arch):
+                    IncludeFile = CleanString(Item[Item.upper().find(DataType.TAB_INCLUDE.upper() + ' ') + len(DataType.TAB_INCLUDE + ' ') : ])
+                    CheckFileExist(self.WorkspaceDir, IncludeFile, self.Platform.Header.FullPath, 'SkuIds', Item)
+                    for NewItem in open(WorkspaceFile(self.WorkspaceDir, IncludeFile), 'r').readlines():
+                        List = GetSplitValueList(NewItem)
+                        if len(List) != 2:
+                            ErrorMsg = "Wrong statement '%s' found in section SkuIds in file '%s', correct format is '<Integer>|<UiName>'" % (Item, self.Platform.Header.FullPath)
+                            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                        else:
+                            self.Platform.SkuInfos.SkuInfoList[List[1]] = List[0]
                     continue
                 List = GetSplitValueList(Item)
                 if len(List) != 2:
@@ -196,6 +211,10 @@ class Dsc(DscObject):
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].Libraries:
                 if GenInclude(Item, IncludeFiles, Arch):
+                    IncludeFile = CleanString(Item[Item.upper().find(DataType.TAB_INCLUDE.upper() + ' ') + len(DataType.TAB_INCLUDE + ' ') : ])
+                    CheckFileExist(self.WorkspaceDir, IncludeFile, self.Platform.Header.FullPath, 'Libraries', Item)
+                    for NewItem in open(WorkspaceFile(self.WorkspaceDir, IncludeFile), 'r').readlines():
+                        MergeArches(Libraries, Item, Arch)
                     continue
                 Status = GenDefines(Item, Arch, Defines)
                 if Status == 0:       # Find DEFINE statement
@@ -220,6 +239,11 @@ class Dsc(DscObject):
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].LibraryClasses:
                 if GenInclude(Item[0], IncludeFiles, Arch):
+                    IncludeFile = CleanString(Item[0][Item[0].upper().find(DataType.TAB_INCLUDE.upper() + ' ') + len(DataType.TAB_INCLUDE + ' ') : ])
+                    IncludeFilePath = WorkspaceFile(self.WorkspaceDir, IncludeFile)
+                    CheckFileExist(self.WorkspaceDir, IncludeFile, self.Platform.Header.FullPath, 'LibraryClasses', Item[0])
+                    for NewItem in open(IncludeFilePath, 'r').readlines():
+                        MergeArches(LibraryClasses, self.GenLibraryClass([NewItem, Item[1]], IncludeFilePath), Arch)
                     continue
                 Status = GenDefines(Item[0], Arch, Defines)
                 if Status == 0:       # Find DEFINE statement
@@ -228,17 +252,7 @@ class Dsc(DscObject):
                     ErrorMsg = "Wrong DEFINE statement '%s' found in section LibraryClasses in file '%s', correct format is 'DEFINE <VarName> = <PATH>'" % (Item, self.Platform.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                 elif Status == 1:     # Not find DEFINE statement
-                    List = GetSplitValueList(Item[0])
-                    if len(List) != 2:
-                        ErrorMsg = "Wrong statement '%s' found in section LibraryClasses in file '%s', correct format is '<LibraryClassKeyWord>|<LibraryInstance>'" % (Item, self.Platform.Header.FullPath) 
-                        raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                    else:
-                        if List[1] != '' and CheckFileType(List[1], '.Inf') == False:
-                            ErrorMsg = "Wrong library instance '%s' found for LibraryClasses '%s' in file '%s', it is NOT a valid INF file" % (List[1], List[0], self.Platform.Header.FullPath) 
-                            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                        if Item[1] == ['']:
-                            Item[1] = DataType.SUP_MODULE_LIST
-                        MergeArches(LibraryClasses, (List[0], List[1]) + tuple(Item[1]), Arch)
+                    MergeArches(LibraryClasses, self.GenLibraryClass(Item, self.Platform.Header.FullPath), Arch)
         self.Platform.LibraryClasses.IncludeFiles = IncludeFiles
         for Key in LibraryClasses.keys():
             Library = PlatformLibraryClass()
@@ -266,78 +280,14 @@ class Dsc(DscObject):
         Defines = {}
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].Components:
-                (InfFilename, ExecFilename) = GetExec(Item[0])
-                if InfFilename != '' and CheckFileType(InfFilename, '.Inf') == False:
-                    ErrorMsg = "Wrong component name '%s' found in file '%s', it is NOT a valid INF file" % (InfFilename, self.Platform.Header.FullPath)
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                LibraryClasses = Item[1]
-                BuildOptions = Item[2]
-                Pcds = Item[3]
-                Component = PlatformModuleClass()
-                Component.FilePath = InfFilename
-                Component.ExecFilePath = ExecFilename
-                for Lib in LibraryClasses:
-                    List = GetSplitValueList(Lib)
-                    if len(List) != 2:
-                        ErrorMsg = "Wrong LibraryClass statement '%s' found in section Components in file '%s', correct format is '<ClassName>|<InfFilename>'" % (Lib, self.Platform.Header.FullPath) 
-                        raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                    if List[1] != '' and CheckFileType(List[1], '.Inf') == False:
-                        ErrorMsg = "Wrong library instance '%s' found for LibraryClasses '%s' in section components of file '%s', it is NOT a valid INF file" % (List[1], List[0], self.Platform.Header.FullPath) 
-                        raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                    Component.LibraryClasses.LibraryList.append(PlatformLibraryClass(List[0], List[1]))
-                for BuildOption in BuildOptions:
-                    Key = GetBuildOption(BuildOption)
-                    Component.ModuleSaBuildOption.BuildOptionList.append(BuildOptionClass(Key[0], Key[1], Key[2]))
-                for Pcd in Pcds:
-                    Type = Pcd[0]
-                    List = GetSplitValueList(Pcd[1])
-                    
-                    #
-                    # For FeatureFlag
-                    #
-                    if Type == DataType.TAB_PCDS_FEATURE_FLAG:
-                        if len(List) != 2:
-                            ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<PcdTokenName>|TRUE/FALSE'" % (Type, Pcd[1], self.Platform.Header.FullPath) 
-                            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                        
-                        TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
-                        if len(TokenInfo) != 2:
-                            ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<PcdTokenName>|TRUE/FALSE'" % (Type, Pcd[1], self.Platform.Header.FullPath) 
-                            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                        else:
-                            Component.PcdBuildDefinitions.append(PcdClass(TokenInfo[1], '', TokenInfo[0], '', '', List[1], Type, [], {}, []))
-                    #
-                    # For FixedAtBuild or PatchableInModule
-                    #
-                    if Type == DataType.TAB_PCDS_FIXED_AT_BUILD or Type == DataType.TAB_PCDS_PATCHABLE_IN_MODULE:
-                        List.append('')
-                        if len(List) < 3:
-                            ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<PcdTokenName>|<Value>[|<MaxDatumSize>]'" % (Type, Pcd[1], self.Platform.Header.FullPath) 
-                            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                        
-                        TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
-                        if len(TokenInfo) != 2:
-                            ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<PcdTokenName>|<Value>[|<MaxDatumSize>]'" % (Type, Pcd[1], self.Platform.Header.FullPath) 
-                            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                        else:
-                            Component.PcdBuildDefinitions.append(PcdClass(TokenInfo[1], '', TokenInfo[0], '', List[2], List[1], Type, [], {}, []))
-                    
-                    #
-                    # For Dynamic or DynamicEx
-                    #
-                    if Type == DataType.TAB_PCDS_DYNAMIC or Type == DataType.TAB_PCDS_DYNAMIC_EX:
-                        if len(List) != 1:
-                            ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<PcdTokenName>'" % (Type, Pcd[1], self.Platform.Header.FullPath) 
-                            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                        
-                        TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
-                        if len(TokenInfo) != 2:
-                            ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<PcdTokenName>'" % (Type, Pcd[1], self.Platform.Header.FullPath) 
-                            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                        else:
-                            Component.PcdBuildDefinitions.append(PcdClass(TokenInfo[1], '', TokenInfo[0], '', '', '', Type, [], {}, []))                        
-                    
                 if GenInclude(Item[0], IncludeFiles, Arch):
+                    IncludeFile = CleanString(Item[0][Item[0].upper().find(DataType.TAB_INCLUDE.upper() + ' ') + len(DataType.TAB_INCLUDE + ' ') : ])
+                    IncludeFilePath = WorkspaceFile(self.WorkspaceDir, IncludeFile)
+                    CheckFileExist(self.WorkspaceDir, IncludeFile, self.Platform.Header.FullPath, 'Components', Item[0])
+                    NewItems = []
+                    GetComponents(open(IncludeFilePath, 'r').read(), TAB_COMPONENTS, NewItems, TAB_COMMENT_SPLIT)
+                    for NewItem in NewItems:
+                        MergeArches(Components, self.GenComponent(NewItem, IncludeFilePath), Arch)
                     continue
                 Status = GenDefines(Item[0], Arch, Defines)
                 if Status == 0:       # Find DEFINE statement
@@ -346,7 +296,7 @@ class Dsc(DscObject):
                     ErrorMsg = "Wrong DEFINE statement '%s' found in section LibraryClasses in file '%s', correct format is 'DEFINE <VarName> = <PATH>'" % (Item, self.Platform.Header.FullPath) 
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
                 elif Status == 1:     # Not find DEFINE statement
-                    MergeArches(Components, Component, Arch)
+                    MergeArches(Components, self.GenComponent(Item, self.Platform.Header.FullPath), Arch)
         self.Platform.Modules.IncludeFiles = IncludeFiles
         for Key in Components.keys():
             Key.Define = Defines
@@ -354,6 +304,97 @@ class Dsc(DscObject):
             self.Platform.Modules.ModuleList.append(Key)
         
     #End of DscToPlatform
+    
+    #
+    # Gen Library Class
+    #
+    def GenLibraryClass(self, Item, ContainerFile):
+        List = GetSplitValueList(Item[0])
+        if len(List) != 2:
+            ErrorMsg = "Wrong statement '%s' found in section LibraryClasses in file '%s', correct format is '<LibraryClassKeyWord>|<LibraryInstance>'" % (Item, ContainerFile) 
+            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+        else:
+            CheckFileType(List[1], '.Inf', ContainerFile, 'library class instance', Item[0])
+            CheckFileExist(self.WorkspaceDir, List[1], ContainerFile, 'LibraryClasses', Item[0])
+            if Item[1] == ['']:
+                Item[1] = DataType.SUP_MODULE_LIST
+        return (List[0], List[1]) + tuple(Item[1])
+    
+    #
+    # Gen Component
+    #
+    def GenComponent(self, Item, ContainerFile):
+        (InfFilename, ExecFilename) = GetExec(Item[0])
+        CheckFileType(InfFilename, '.Inf', ContainerFile, 'component name', Item[0])
+        CheckFileExist(self.WorkspaceDir, InfFilename, ContainerFile, 'component', Item[0])
+        LibraryClasses = Item[1]
+        BuildOptions = Item[2]
+        Pcds = Item[3]
+        Component = PlatformModuleClass()
+        Component.FilePath = InfFilename
+        Component.ExecFilePath = ExecFilename
+        for Lib in LibraryClasses:
+            List = GetSplitValueList(Lib)
+            if len(List) != 2:
+                ErrorMsg = "Wrong LibraryClass statement '%s' found in section Components in file '%s', correct format is '<ClassName>|<InfFilename>'" % (Lib, ContainerFile) 
+                raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+            CheckFileType(List[1], '.Inf', ContainerFile, 'library instance of component ', Lib)
+            CheckFileExist(self.WorkspaceDir, List[1], ContainerFile, 'library instance of component', Lib)
+            Component.LibraryClasses.LibraryList.append(PlatformLibraryClass(List[0], List[1]))
+        for BuildOption in BuildOptions:
+            Key = GetBuildOption(BuildOption)
+            Component.ModuleSaBuildOption.BuildOptionList.append(BuildOptionClass(Key[0], Key[1], Key[2]))
+        for Pcd in Pcds:
+            Type = Pcd[0]
+            List = GetSplitValueList(Pcd[1])
+            
+            #
+            # For FeatureFlag
+            #
+            if Type == DataType.TAB_PCDS_FEATURE_FLAG:
+                if len(List) != 2:
+                    ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<PcdTokenName>|TRUE/FALSE'" % (Type, Pcd[1], ContainerFile) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                
+                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                if len(TokenInfo) != 2:
+                    ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<PcdTokenName>|TRUE/FALSE'" % (Type, Pcd[1], ContainerFile) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                else:
+                    Component.PcdBuildDefinitions.append(PcdClass(TokenInfo[1], '', TokenInfo[0], '', '', List[1], Type, [], {}, []))
+            #
+            # For FixedAtBuild or PatchableInModule
+            #
+            if Type == DataType.TAB_PCDS_FIXED_AT_BUILD or Type == DataType.TAB_PCDS_PATCHABLE_IN_MODULE:
+                List.append('')
+                if len(List) < 3:
+                    ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<PcdTokenName>|<Value>[|<MaxDatumSize>]'" % (Type, Pcd[1], ContainerFile) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                
+                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                if len(TokenInfo) != 2:
+                    ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<PcdTokenName>|<Value>[|<MaxDatumSize>]'" % (Type, Pcd[1], ContainerFile) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                else:
+                    Component.PcdBuildDefinitions.append(PcdClass(TokenInfo[1], '', TokenInfo[0], '', List[2], List[1], Type, [], {}, []))
+            
+            #
+            # For Dynamic or DynamicEx
+            #
+            if Type == DataType.TAB_PCDS_DYNAMIC or Type == DataType.TAB_PCDS_DYNAMIC_EX:
+                if len(List) != 1:
+                    ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<PcdTokenName>'" % (Type, Pcd[1], ContainerFile) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                
+                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+                if len(TokenInfo) != 2:
+                    ErrorMsg = "Wrong Pcds%s statement '%s' found in section Components in file '%s', correct format is '<PcdTokenSpaceGuidCName>.<PcdTokenName>'" % (Type, Pcd[1], ContainerFile) 
+                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                else:
+                    Component.PcdBuildDefinitions.append(PcdClass(TokenInfo[1], '', TokenInfo[0], '', '', '', Type, [], {}, []))                        
+        
+        return Component
+    #End of GenComponent
     
     def GenFeatureFlagPcds(self, Type = ''):
         Pcds = {}
@@ -574,5 +615,5 @@ class Dsc(DscObject):
 if __name__ == '__main__':
     w = os.getenv('WORKSPACE')
     f = os.path.join(w, 'Nt32Pkg/Nt32Pkg.dsc')
-    p = Dsc(os.path.normpath(f), True, True)
+    p = Dsc(os.path.normpath(f), True, True, w)
     p.ShowPlatform()

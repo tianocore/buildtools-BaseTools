@@ -100,7 +100,8 @@ def GetBuildOption(String):
 #
 def GetComponents(Lines, Key, KeyValues, CommentCharacter):
     #KeyValues [ ['component name', [lib1, lib2, lib3], [bo1, bo2, bo3], [pcd1, pcd2, pcd3]], ...]
-    Lines = Lines.split(DataType.TAB_SECTION_END, 1)[1]
+    if Lines.find(DataType.TAB_SECTION_END) > -1:
+        Lines = Lines.split(DataType.TAB_SECTION_END, 1)[1]
     (findBlock, findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (False, False, False, False, False, False, False, False)
     ListItem = None
     LibraryClassItem = []
@@ -367,15 +368,37 @@ def PreCheck(FileName, FileContent, SupSectionTag):
 
 #
 # Check if the Filename is including ExtName
-# Return True if is
-# Retrun False if not
+# Pass if it exists
+# Raise a error message if it not exists
 #
-def CheckFileType(Filename, ExtName):
-    (Root, Ext) = os.path.splitext(Filename)
-    if Ext.upper() == ExtName.upper():
-        return True
+def CheckFileType(CheckFilename, ExtName, ContainerFilename, SectionName, Line):
+    if CheckFilename != '' and CheckFilename != None:
+        (Root, Ext) = os.path.splitext(CheckFilename)
+        if Ext.upper() != ExtName.upper():
+            ContainerFile = open(ContainerFilename, 'r').read()
+            LineNo = GetLineNo(ContainerFile, Line)
+            ErrorMsg = "Invalid %s '%s' defined at line %s in file '%s', it is NOT a valid '%s' file" % (SectionName, CheckFilename, LineNo, ContainerFilename, ExtName) 
+            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
     
-    return False
+    return True
+
+#
+# Check if the file exists
+# Pass if it exists
+# Raise a error message if it not exists
+#
+def CheckFileExist(WorkspaceDir, CheckFilename, ContainerFilename, SectionName, Line):
+    if CheckFilename != '' and CheckFilename != None:
+        CheckFile = WorkspaceFile(WorkspaceDir, NormPath(CheckFilename))
+        if os.path.exists(CheckFile) and os.path.isfile(CheckFile):
+            pass
+        else:
+            ContainerFile = open(ContainerFilename, 'r').read()
+            LineNo = GetLineNo(ContainerFile, Line)
+            ErrorMsg = "Can't find file '%s' defined in section %s at line %s in file '%s'" % (CheckFile, SectionName, LineNo, ContainerFilename) 
+            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+    
+    return True
 
 #
 # Find the index of a line in a file
@@ -386,6 +409,12 @@ def GetLineNo(FileContent, Line):
     for Index in range(len(LineList)):
         if LineList[Index].find(Line) > -1:
             return Index + 1
+
+#
+# Return a full path with workspace dir
+#
+def WorkspaceFile(WorkspaceDir, Filename):
+    return os.path.join(NormPath(WorkspaceDir), NormPath(Filename))
 
 if __name__ == '__main__':
     print SplitModuleType('LibraryClasses.common.DXE_RUNTIME_DRIVER')

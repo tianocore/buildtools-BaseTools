@@ -198,7 +198,7 @@ class WorkspaceBuild(object):
         DscFileName = NormPath(ActivePlatform)
         File = self.WorkspaceFile(DscFileName)
         if os.path.exists(File) and os.path.isfile(File):
-            self.DscDatabase[DscFileName] = Dsc(File, True, True)
+            self.DscDatabase[DscFileName] = Dsc(File, True, True, self.WorkspaceDir)
         else:
             raise ParserError(FILE_NOT_FOUND, name = File)
         
@@ -704,7 +704,7 @@ class WorkspaceBuild(object):
     # Return a full path with workspace dir
     #
     def WorkspaceFile(self, Filename):
-        return os.path.join(self.WorkspaceDir, Filename)
+        return WorkspaceFile(self.WorkspaceDir, Filename)
     
     #
     # If a module of a platform has its own override libraryclass but the libraryclass not defined in the module
@@ -737,7 +737,7 @@ class WorkspaceBuild(object):
         File = self.WorkspaceFile(InfFileName)
         if os.path.exists(File) and os.path.isfile(File):
             if InfFileName not in self.InfDatabase:
-                self.InfDatabase[InfFileName] = Inf(File, True, True)
+                self.InfDatabase[InfFileName] = Inf(File, True, True, self.WorkspaceDir)
         else:
             raise ParserError(FILE_NOT_FOUND, name = File)
     
@@ -749,7 +749,7 @@ class WorkspaceBuild(object):
         File = self.WorkspaceFile(DecFileName)
         if os.path.exists(File) and os.path.isfile(File):
             if DecFileName not in self.DecDatabase:
-                self.DecDatabase[DecFileName] = Dec(File, True, True)
+                self.DecDatabase[DecFileName] = Dec(File, True, True, self.WorkspaceDir)
         else:
             raise ParserError(FILE_NOT_FOUND, name = File)
                 
