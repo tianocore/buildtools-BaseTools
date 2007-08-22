@@ -165,7 +165,7 @@ class Build():
             FileNum = len(FileList)
             if FileNum > 0:
                 self.SameTypeFileInDir(FileNum, 'makefile', DestDir)
-                BuildSpawn(self.ReturnCode, self.Sem, FileList[0], 'mbuild', 1).start()
+                BuildSpawn(self.ReturnCode, self.Sem, FileList[0], 'pbuild', 1).start()
             else:
                 EdkLogger.quiet("ERROR: There isn't makefils in %s.\n" % DestDir)
                 self.isexit(1)
