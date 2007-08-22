@@ -37,6 +37,7 @@ class FileBuildRule:
 
         self.SourceFileType = {}
         self.SourceFileExtList = []
+        self.ExtraSourceFileList = []
         self.IsMultipleInput = False
         for FileType in Input:
             if FileType not in self.SourceFileType:
@@ -44,7 +45,12 @@ class FileBuildRule:
             for File in Input[FileType]:
                 Base, Ext = os.path.splitext(File)
                 if Base.find("*") >= 0:
+                    # There's "*" in the file name
                     self.IsMultipleInput = True
+                elif Base.find("?") < 0:
+                    # There's no "*" and "?" in file name
+                    self.ExtraSourceFileList.append(File)
+                    continue
                 self.SourceFileType[FileType].append(Ext)
                 self.SourceFileExtList.append(Ext)
 
@@ -146,7 +152,7 @@ class FileBuildRule:
             CommandString = string.Template(CommandString).safe_substitute(BuildRulePlaceholderDict)
             CommandList.append(CommandString)
         #print "%s : %s\n\t%s" % (DstFileList[0], SrcFile, "\n\t".join(CommandList))
-        return SrcFile, DstFileList[0], CommandList
+        return SrcFile, self.ExtraSourceFileList, DstFileList[0], CommandList
 
 class BuildRule:
     _SectionHeader = "SECTIONHEADER"
