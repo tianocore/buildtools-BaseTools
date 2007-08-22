@@ -892,7 +892,7 @@ class Makefile(object):
                     self.IntermediateDirectoryList.append(P)
             SrcFileRelativePath = os.path.join(self.ModuleInfo.SourceDir, F)
 
-            SrcFile, DstFile, CommandList = SrcFileBuildRule.Apply(F, self.ModuleInfo.SourceDir, Separator)
+            SrcFile, ExtraSrcFileList, DstFile, CommandList = SrcFileBuildRule.Apply(F, self.ModuleInfo.SourceDir, Separator)
 
             if SrcFileType not in self.SourceFileDatabase:
                 self.SourceFileDatabase[SrcFileType] = []
@@ -924,9 +924,9 @@ class Makefile(object):
                     self.ResultFileList.append(DstFile)
                     break
 
-                SrcFile, DstFile, CommandList = DstFileBuildRule.Apply(DstFile, None, Separator)
-                BuildTargetString = "%s : %s\n"\
-                                    "\t%s\n" % (DstFile, SrcFile, "\n\t".join(CommandList))
+                SrcFile, ExtraSrcFileList, DstFile, CommandList = DstFileBuildRule.Apply(DstFile, None, Separator)
+                BuildTargetString = "%s : %s %s\n"\
+                                    "\t%s\n" % (DstFile, SrcFile, " ".join(ExtraSrcFileList), "\n\t".join(CommandList))
                 self.FileBuildTargetList.append((SrcFile, BuildTargetString))
                 SrcFileBuildRule = DstFileBuildRule
 
@@ -944,9 +944,9 @@ class Makefile(object):
                             SrcFileList.extend(self.DestFileDatabase[FileType])
                     else:
                         SrcFileList.extend(self.SourceFileDatabase[FileType])
-                SrcFile, DstFile, CommandList = SrcFileBuildRule.Apply(SrcFileList, None, Separator)
-                BuildTargetString = "%s : %s\n"\
-                                    "\t%s\n" % (DstFile, SrcFile, "\n\t".join(CommandList))
+                SrcFile, ExtraSrcFileList, DstFile, CommandList = SrcFileBuildRule.Apply(SrcFileList, None, Separator)
+                BuildTargetString = "%s : %s %s\n"\
+                                    "\t%s\n" % (DstFile, SrcFile, " ".join(ExtraSrcFileList), "\n\t".join(CommandList))
                 self.FileBuildTargetList.append((SrcFile, BuildTargetString))
 
                 # try to find next target
@@ -969,9 +969,9 @@ class Makefile(object):
                         self.ResultFileList.append(DstFile)
                         break
 
-                    SrcFile, DstFile, CommandList = DstFileBuildRule.Apply(DstFile, None, Separator)
-                    BuildTargetString = "%s : %s\n"\
-                                        "\t%s\n" % (DstFile, SrcFile, "\n\t".join(CommandList))
+                    SrcFile, ExtraSrcFileList, DstFile, CommandList = DstFileBuildRule.Apply(DstFile, None, Separator)
+                    BuildTargetString = "%s : %s %s\n"\
+                                        "\t%s\n" % (DstFile, SrcFile, " ".join(ExtraSrcFileList), "\n\t".join(CommandList))
                     self.FileBuildTargetList.append((SrcFile, BuildTargetString))
                     SrcFileBuildRule = DstFileBuildRule
             if len(TempBuildTargetList) == 0:
@@ -998,7 +998,7 @@ class Makefile(object):
                 if SrcFileBuildRule == None or SrcFileBuildRule.CommandList == []:
                     continue
 
-                SrcFile, DstFile, CommandList = SrcFileBuildRule.Apply(F, self.ModuleInfo.DebugDir, Separator)
+                SrcFile, ExtraSrcFileList, DstFile, CommandList = SrcFileBuildRule.Apply(F, self.ModuleInfo.DebugDir, Separator)
 
                 if SrcFileType not in self.SourceFileDatabase:
                     self.SourceFileDatabase[SrcFileType] = []
@@ -1030,9 +1030,9 @@ class Makefile(object):
                         self.ResultFileList.append(DstFile)
                         break
 
-                    SrcFile, DstFile, CommandList = DstFileBuildRule.Apply(DstFile, None, Separator)
-                    BuildTargetString = "%s : %s\n"\
-                                        "\t%s\n" % (DstFile, SrcFile, "\n\t".join(CommandList))
+                    SrcFile, ExtraSrcFileList, DstFile, CommandList = DstFileBuildRule.Apply(DstFile, None, Separator)
+                    BuildTargetString = "%s : %s %s\n"\
+                                        "\t%s\n" % (DstFile, SrcFile, " ".join(ExtraSrcFileList), "\n\t".join(CommandList))
                     self.FileBuildTargetList.append((SrcFile, BuildTargetString))
                     SrcFileBuildRule = DstFileBuildRule
 
