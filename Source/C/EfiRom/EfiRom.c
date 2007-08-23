@@ -268,7 +268,6 @@ Returns:
   //
   // If dumping an image, then do that and quit
   //
-//  __asm int 3; 
 //  if (mOptions.DumpOption) {
 //    for (FList = mOptions.FileList; FList != NULL; FList = FList->Next) {
 //    if ((Ptr0 = strstr ((CONST CHAR8 *)FList->FileName, DEFAULT_OUTPUT_EXTENSION)) != NULL) {
