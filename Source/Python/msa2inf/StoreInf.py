@@ -401,36 +401,17 @@ def StoreModuleBuildOptionsSection(InfFile, Module):
     StoreTextFile(InfFile, Section)
 
 
-## Return one Module User Extension section.
-#
-# Read the input UserExtentsions class object and return one section.
-#
-# @param  UserExtensions       An input UserExtensions class object.
-#
-# @retval UserExtensionSection A section representing UserExtensions object.
-#
-def GetModuleUserExtensions(UserExtensions):
-    UserId = UserExtensions.UserID
-    Identifier = UserExtensions.Identifier
-    Content = UserExtensions.Content
-    
-    return "[UserExtensions.%s.%s]\n  %s\n" % (UserId, Identifier, Content)
-
-
 ## Store User Extensions section.
 #
 # Write [UserExtensions] section to the InfFile based on Module class object.
-# Different CPU architectures are specified in the subsection if possible.
 #
 # @param  InfFile              The output INF file to store the User Extensions section.
 # @param  Module               An input Module class object.
 #
 def StoreModuleUserExtensionsSection(InfFile, Module):
-    Section = "\n".join(map(GetModuleUserExtensions, Module.UserExtensions))
-    if Section != "":
-        Section += "\n"
-    
+    Section = "".join(map(GetUserExtensions, Module.UserExtensions))
     StoreTextFile(InfFile, Section)
+
 
 ## Store a Module class object to a new INF file.
 #

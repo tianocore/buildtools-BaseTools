@@ -204,6 +204,18 @@ def StorePackagePcdsSection(DecFile, Package):
     StoreTextFile(DecFile, Section)
 
 
+## Store User Extensions section.
+#
+# Write [UserExtensions] section to the DecFile based on Package class object.
+#
+# @param  DecFile              The output DEC file to store the User Extensions section.
+# @param  Package              An input Package class object.
+#
+def StorePackageUserExtensionsSection(DecFile, Package):
+    Section = "".join(map(GetUserExtensions, Package.UserExtensions))
+    StoreTextFile(DecFile, Section)
+
+
 ## Store a Package class object to a new DEC file.
 #
 # Read an input Package class object and ave the contents to a new DEC file.
@@ -223,7 +235,8 @@ def StoreDec(DecFileName, Package):
     StorePackagePpisSection(DecFile, Package)
     StorePackageGuidsSection(DecFile, Package)
     StorePackagePcdsSection(DecFile, Package)
-
+    StorePackageUserExtensionsSection(DecFile, Package)
+    
     DecFile.close()
 
     

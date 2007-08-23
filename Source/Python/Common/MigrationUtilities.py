@@ -447,6 +447,21 @@ def StoreDefinesSection(TextFile, DefinesTupleList):
     StoreTextFile(TextFile, Section)
 
 
+## Return one User Extension section.
+#
+# Read the input UserExtentsions class object and return one section.
+#
+# @param  UserExtensions       An input UserExtensions class object.
+#
+# @retval UserExtensionSection A section representing UserExtensions object.
+#
+def GetUserExtensions(UserExtensions):
+    UserId = UserExtensions.UserID
+    Identifier = UserExtensions.Identifier
+    Content = UserExtensions.Content
+
+    return "[UserExtensions.%s.%s]\n  %s\n\n" % (UserId, Identifier, Content)
+
 ## Regular expression to match an equation.
 mReEquation = re.compile(r"\s*(\S+)\s*=\s*(\S*)\s*")
 
@@ -511,15 +526,21 @@ def MigrationOptionParser(Source, Destinate):
     UsageString = "%prog [-a] [-o <output_file>] <input_file>"
 
     Parser = OptionParser(description=__copyright__, version=__version__, usage=UsageString)
-
-    HelpText = "The name of the %s file to be created." % Destinate
-    Parser.add_option("-o", "--output", dest="OutputFile", help=HelpText)
-    
-    HelpText = "Automatically create the %s file using the name of the %s file and replacing file extension" % (Source, Destinate)
-    Parser.add_option("-a", "--auto", dest="AutoWrite", action="store_true", default=False, help=HelpText)
+    Parser.add_option("-o", "--output", dest="OutputFile", help="The name of the %s file to be created." % Destinate)
+    Parser.add_option("-a", "--auto", dest="AutoWrite", action="store_true", default=False, help="Automatically create the %s file using the name of the %s file and replacing file extension" % (Source, Destinate))
+    Parser.add_option("-q", "--quiet", action="store_true", type=None, help="Disable all messages except FATAL ERRORS.")
+    Parser.add_option("-v", "--verbose", action="store_true", type=None, help="Turn on verbose output with informational messages printed.")
 
     Options, Args = Parser.parse_args()
 
+    # Set logging level
+    if Options.verbose != None:
+        EdkLogger.setLevel(EdkLogger.VERBOSE)
+    elif Options.quiet != None:
+        EdkLogger.setLevel(EdkLogger.QUIET)
+    else:
+        EdkLogger.setLevel(EdkLogger.INFO)
+        
     # error check
     if len(Args) == 0:
         raise MigrationError(OPTION_MISSING, name="Input file", usage=Parser.get_usage())
