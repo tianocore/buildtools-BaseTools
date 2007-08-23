@@ -2493,10 +2493,6 @@ Returns:
     return 0;
   }
  
-//  if (argc != ONE_VTF_ARGS && argc != TWO_VTF_ARGS && argc != THREE_VTF_ARGS) {
-//    Usage ();
-//    return 1;
-//  }
 
   //
   // Initialize variables
@@ -2510,7 +2506,7 @@ Returns:
   FirstRoundO   = TRUE;
   OutFileName1  = NULL;
   OutFileName2  = NULL;
-  
+
   //
   // Parse the command line arguments
   //
@@ -2602,7 +2598,7 @@ Returns:
       }
       break;
     case 'v':
-    case '-':
+    case 'V':
 	//
 	// Verbose
 	//
