@@ -31,7 +31,7 @@ from ConvertPackage import ConvertSpdPackageToDecPackage
 #
 def Main():
     try:
-        Options, InputFile = MigrationOptionParser("SPD", "DEC")
+        Options, InputFile = MigrationOptionParser("SPD", "DEC", "%prog")
         Package = LoadSpd(InputFile)
         ConvertSpdPackageToDecPackage(Package)
         StoreDec(Options.OutputFile, Package)

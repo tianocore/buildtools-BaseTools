@@ -31,7 +31,7 @@ from ConvertModule import ConvertMsaModuleToInfModule
 #
 def Main():
     try:
-        Options, InputFile = MigrationOptionParser("MSA", "INF")
+        Options, InputFile = MigrationOptionParser("MSA", "INF", "%prog")
         Module = LoadMsa(InputFile)
         ConvertMsaModuleToInfModule(Module)
         StoreInf(Options.OutputFile, Module)

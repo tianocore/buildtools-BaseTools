@@ -492,6 +492,7 @@ def GetTextFileInfo(FileName, TagTuple):
         
     return ValueTuple
 
+
 ## Return a value tuple matching information in an XML fle.
 #
 # Parse the XML file and return a value tuple corresponding to an input tag
@@ -506,10 +507,6 @@ def GetXmlFileInfo(FileName, TagTuple):
     XmlDom = XmlParseFile(FileName)
     return tuple([XmlElement(XmlDom, XmlTag) for XmlTag in TagTuple])
 
-# Version and Copyright
-__version_number__ = "1.0"
-__version__ = "%prog Version " + __version_number__
-__copyright__ = "Copyright (c) 2007, Intel Corporation. All rights reserved."
 
 ## Parse migration command line options
 #
@@ -521,11 +518,13 @@ __copyright__ = "Copyright (c) 2007, Intel Corporation. All rights reserved."
 # @retval Options            A optparse object containing the parsed options.
 # @retval InputFile          Path of an source file to be migrated.
 #
-def MigrationOptionParser(Source, Destinate):
+def MigrationOptionParser(Source, Destinate, ToolName, VersionNumber = 1.0):
     # use clearer usage to override default usage message
-    UsageString = "%prog [-a] [-o <output_file>] <input_file>"
-
-    Parser = OptionParser(description=__copyright__, version=__version__, usage=UsageString)
+    UsageString = "%s [-a] [-v|-q] [-o <output_file>] <input_file>" % ToolName
+    Version = "%s Version %.2f" % (ToolName, VersionNumber)
+    Copyright = "Copyright (c) 2007, Intel Corporation. All rights reserved."
+    
+    Parser = OptionParser(description=Copyright, version=Version, usage=UsageString)
     Parser.add_option("-o", "--output", dest="OutputFile", help="The name of the %s file to be created." % Destinate)
     Parser.add_option("-a", "--auto", dest="AutoWrite", action="store_true", default=False, help="Automatically create the %s file using the name of the %s file and replacing file extension" % (Source, Destinate))
     Parser.add_option("-q", "--quiet", action="store_true", type=None, help="Disable all messages except FATAL ERRORS.")
@@ -534,9 +533,9 @@ def MigrationOptionParser(Source, Destinate):
     Options, Args = Parser.parse_args()
 
     # Set logging level
-    if Options.verbose != None:
+    if Options.verbose:
         EdkLogger.setLevel(EdkLogger.VERBOSE)
-    elif Options.quiet != None:
+    elif Options.quiet:
         EdkLogger.setLevel(EdkLogger.QUIET)
     else:
         EdkLogger.setLevel(EdkLogger.INFO)
