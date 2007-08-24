@@ -114,9 +114,9 @@ def GetModuleSourceItem(ModuleSourceFile):
     Source = []
     Source.append(ModuleSourceFile.SourceFile)
     Source.append(ModuleSourceFile.ToolChainFamily)
-    Source.append(ModuleSourceFile.FeatureFlag)
     Source.append(ModuleSourceFile.TagName)
     Source.append(ModuleSourceFile.ToolCode)
+    Source.append(ModuleSourceFile.FeatureFlag)
     return "|".join(Source).rstrip("|")
     
 
@@ -144,9 +144,10 @@ def StoreModuleSourcesSection(InfFile, Module):
 def GetModuleBinaryItem(ModuleBinaryFile):
     Binary = []
     Binary.append(ModuleBinaryFile.FileType)
-    Binary.append(ModuleBinaryFile.Target)
     Binary.append(ModuleBinaryFile.BinaryFile)
-    return "|".join(Binary)
+    Binary.append(ModuleBinaryFile.Target)
+    Binary.append(ModuleBinaryFile.FeatureFlag)
+    return "|".join(Binary).rstrip("|")
 
 
 ## Store Binaries section.
