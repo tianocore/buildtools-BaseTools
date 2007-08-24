@@ -33,6 +33,7 @@ def LoadPackageClonedRecords(XmlSpd):
     XmlTag = "PackageSurfaceArea/PackageDefinitions/ClonedFrom/Cloned"
     return map(LoadClonedRecord, XmlList(XmlSpd, XmlTag))
 
+
 ## Load Package Header.
 #
 # Read an input Package XML DOM object and return Package Header class object
@@ -117,6 +118,7 @@ def LoadPackageIndustryStdHeaders(XmlSpd):
     XmlTag = "PackageSurfaceArea/IndustryStdIncludes/IndustryStdHeader"
     return map(LoadPackageIndustryStdHeader, XmlList(XmlSpd, XmlTag))
 
+
 ## Load a list of Package Module Files.
 #
 # Read an input Package XML DOM object and return a list of Module Files
@@ -133,12 +135,13 @@ def LoadPackageModuleFiles(XmlSpd):
 
 ## Load a new Package Include Pkg Header class object.
 #
-# Read an input XML IncludePkgHeader DOM object and return an object of Include Pkg Header
-# contained in the DOM object.
+# Read an input XML IncludePkgHeader DOM object and return an object of Include
+# Package Header contained in the DOM object.
 #
 # @param  XmlPackageIncludeHeader A child XML DOM object in Package XML DOM.
 #
-# @retvel PackageIncludePkgHeader A new Include Pkg Header object created by XmlPackageIncludeHeader.
+# @retvel PackageIncludePkgHeader A new Include Pkg Header object created by
+#                                 XmlPackageIncludeHeader.
 #
 def LoadPackageIncludePkgHeader(XmlPackageIncludeHeader):
     PackageIncludeHeader = PackageIncludePkgHeaderClass()
@@ -152,6 +155,7 @@ def LoadPackageIncludePkgHeader(XmlPackageIncludeHeader):
     
     return PackageIncludeHeader
 
+
 ## Load a list of Package Include Pkg Headers.
 #
 # Read an input Package XML DOM object and return a list of Include Pkg Headers
@@ -164,6 +168,7 @@ def LoadPackageIncludePkgHeader(XmlPackageIncludeHeader):
 def LoadPackageIncludePkgHeaders(XmlSpd):
     XmlTag = "PackageSurfaceArea/PackageHeaders/IncludePkgHeader"
     return map(LoadPackageIncludePkgHeader, XmlList(XmlSpd, XmlTag))
+
 
 ## Load a list of Package Guid Declarations.
 #
