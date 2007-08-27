@@ -76,7 +76,8 @@ STATIC UINT8  *mLevel, *mText, *mChildCount, *mBuf, mCLen[NC], mPTLen[NPT], *mLe
 STATIC INT16  mHeap[NC + 1];
 STATIC INT32  mRemainder, mMatchLen, mBitCount, mHeapSize, mN;
 STATIC UINT32 mBufSiz = 0, mOutputPos, mOutputMask, mSubBitBuf, mCrc;
-STATIC UINT32 mCompSize, mOrigSize,MySize;
+STATIC UINT32 mCompSize, mOrigSize;
+STATIC UINT32 MySize;
 
 STATIC UINT16 *mFreq, *mSortPtr, mLenCnt[17], mLeft[2 * NC - 1], mRight[2 * NC - 1], mCrcTable[UINT8_MAX + 1],
   mCFreq[2 * NC - 1], mCTable[4096], mCCode[NC], mPFreq[2 * NP - 1], mPTCode[NPT], mTFreq[2 * NT - 1];
@@ -138,7 +139,7 @@ Returns:
   mSrc            = SrcBuffer;
   mSrcUpperLimit  = mSrc + SrcSize;
   mDst            = DstBuffer;
-  mDstUpperLimit  = mDst +SrcSize; 
+  mDstUpperLimit  = mDst +*DstSize;
     
   PutDword (0L);
   PutDword (0L);
@@ -174,14 +175,14 @@ Returns:
   //
   // Return
   //
-  *DstSize=MySize;
+  //*DstSize=MySize;
 
   if (mCompSize + 1 + 8 > *DstSize) {
     *DstSize = mCompSize + 1 + 8;    
-    //   return EFI_BUFFER_TOO_SMALL;
+       return EFI_BUFFER_TOO_SMALL;
     } else {
     *DstSize = mCompSize + 1 + 8;   
-   // return EFI_SUCCESS;
+      return EFI_SUCCESS;
    }
   return EFI_SUCCESS;
 }
@@ -1259,7 +1260,7 @@ Returns: (VOID)
 
     if (mDst < mDstUpperLimit) {
       *mDst++ = Temp;
-      MySize++;
+      //MySize++;
       
     }
 
@@ -1615,6 +1616,7 @@ Returns:
   //
   // Copy the file contents to the output buffer.
   //
+  //__asm int 3;
   InputFile = fopen (InputFileName, "rb");
     if (InputFile == NULL) {
       Error(NULL, 0, 0001, "Error opening file: %s", InputFileName);
@@ -1628,7 +1630,7 @@ Returns:
     // Now read the contents of the file into the buffer
     // 
     if (FileSize > 0 && FileBuffer != NULL) {
-      if (fread (FileBuffer + Size, (size_t) FileSize, 1, InputFile) != 1) {
+      if (fread (FileBuffer, FileSize, 1, InputFile) != 1) {
         Error(NULL, 0, 0004, "Error reading contents of input file: %s", InputFileName);
         fclose (InputFile);
         return EFI_ABORTED;
@@ -1763,7 +1765,7 @@ Returns:
   InputFileName = NULL;
   OutputFileName = NULL;
   DstSize=0;
-  MySize= 0;  
+  //MySize= 0;  
  
   //
   // Verify the correct number of arguments
@@ -1872,7 +1874,7 @@ Returns:
             &InputLength);
 
   if (Status == EFI_BUFFER_TOO_SMALL) {
-    FileBuffer = (UINT8 *) malloc (InputLength);
+    FileBuffer = (UINT8 *) malloc (10*InputLength);
     if (FileBuffer == NULL) {
       Error(NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
       return EFI_OUT_OF_RESOURCES;
@@ -1903,18 +1905,19 @@ Returns:
     }
     
   if (ENCODE) {
-  OutBuffer = (UINT8 *) malloc (InputLength);
+  OutBuffer = (UINT8 *) malloc (10*InputLength);
   if (OutBuffer == NULL) {
       Error(NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
       goto ERROR;
-      //return EFI_OUT_OF_RESOURCES;
     }
+  DstSize = 10 * InputLength;
     
   Status = TianoCompress ((UINT8 *)FileBuffer, InputLength, OutBuffer, &DstSize);
   if (Status != EFI_SUCCESS) {
     Error(NULL, 0, 0007, "Error compressing file");
     goto ERROR;
   }
+  //__asm int 3;
   fwrite(OutBuffer,(size_t)DstSize, 1, OutputFile);
   free(FileBuffer);
   free(OutBuffer);
@@ -1930,7 +1933,7 @@ Returns:
   //
   // Allocate OutputBuffer
   //
-  OutBuffer = (UINT8 *)malloc(OrigSize);
+  OutBuffer = (UINT8 *)malloc(10*OrigSize);
   if (OutBuffer == NULL) {
     Error(NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
     goto ERROR;
@@ -1941,7 +1944,7 @@ Returns:
     //Error(NULL, 0, 0008, "Error decompressing file: %s", InputFileName);
    goto ERROR; 	
   }
-
+  //__asm int 3;
   fwrite(OutBuffer, (size_t)(Scratch->mOrigSize), 1, OutputFile);
   free(Scratch);
   free(FileBuffer);
@@ -1958,7 +1961,6 @@ ERROR:
   }
 
   return GetUtilityStatus ();   
-  //return 0;
 }
 
 VOID
