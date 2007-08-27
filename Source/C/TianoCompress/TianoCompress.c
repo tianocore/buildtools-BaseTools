@@ -31,9 +31,6 @@ Abstract:
 //
 // Macro Definitions
 //
-#define ONE_TIANOCOMPRESS_ARGS 3
-#define TWO_TIANOCOMPRESS_ARGS  5
-#define THREE_TIANOCOMPRESS_ARGS  6
 static BOOLEAN VerboseMode = FALSE;
 #define UINT8_MAX     0xff
 #define UINT8_BIT     8
@@ -77,7 +74,6 @@ STATIC INT16  mHeap[NC + 1];
 STATIC INT32  mRemainder, mMatchLen, mBitCount, mHeapSize, mN;
 STATIC UINT32 mBufSiz = 0, mOutputPos, mOutputMask, mSubBitBuf, mCrc;
 STATIC UINT32 mCompSize, mOrigSize;
-STATIC UINT32 MySize;
 
 STATIC UINT16 *mFreq, *mSortPtr, mLenCnt[17], mLeft[2 * NC - 1], mRight[2 * NC - 1], mCrcTable[UINT8_MAX + 1],
   mCFreq[2 * NC - 1], mCTable[4096], mCCode[NC], mPFreq[2 * NP - 1], mPTCode[NPT], mTFreq[2 * NT - 1];
@@ -175,7 +171,6 @@ Returns:
   //
   // Return
   //
-  //*DstSize=MySize;
 
   if (mCompSize + 1 + 8 > *DstSize) {
     *DstSize = mCompSize + 1 + 8;    
@@ -1260,8 +1255,6 @@ Returns: (VOID)
 
     if (mDst < mDstUpperLimit) {
       *mDst++ = Temp;
-      //MySize++;
-      
     }
 
     mCompSize++;
@@ -1616,7 +1609,6 @@ Returns:
   //
   // Copy the file contents to the output buffer.
   //
-  //__asm int 3;
   InputFile = fopen (InputFileName, "rb");
     if (InputFile == NULL) {
       Error(NULL, 0, 0001, "Error opening file: %s", InputFileName);
@@ -1760,13 +1752,13 @@ Returns:
   
   FileBuffer = NULL;
   Src = NULL;
+  OutBuffer = NULL;
   OrigSize = 0;
   InputLength = 0;
   InputFileName = NULL;
   OutputFileName = NULL;
   DstSize=0;
-  //MySize= 0;  
- 
+
   //
   // Verify the correct number of arguments
   //
@@ -1786,12 +1778,6 @@ Returns:
     return 0;
   }
 
-
-  if (argc != ONE_TIANOCOMPRESS_ARGS && argc != TWO_TIANOCOMPRESS_ARGS && argc != THREE_TIANOCOMPRESS_ARGS) {
-    Usage ();
-    return 0;
-  }
-  
   argc--;
   argv++;
   if (strcmp(argv[0],"-e") == 0) {
@@ -1874,7 +1860,7 @@ Returns:
             &InputLength);
 
   if (Status == EFI_BUFFER_TOO_SMALL) {
-    FileBuffer = (UINT8 *) malloc (10*InputLength);
+    FileBuffer = (UINT8 *) malloc (InputLength);
     if (FileBuffer == NULL) {
       Error(NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
       return EFI_OUT_OF_RESOURCES;
@@ -1905,19 +1891,24 @@ Returns:
     }
     
   if (ENCODE) {
-  OutBuffer = (UINT8 *) malloc (10*InputLength);
-  if (OutBuffer == NULL) {
+  //
+  // First call TianoCompress to get DstSize
+  //  
+  Status = TianoCompress ((UINT8 *)FileBuffer, InputLength, OutBuffer, &DstSize);
+  
+  if (Status == EFI_BUFFER_TOO_SMALL) {
+    OutBuffer = (UINT8 *) malloc (DstSize);
+    if (OutBuffer == NULL) {
       Error(NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
       goto ERROR;
     }
-  DstSize = 10 * InputLength;
-    
+  }
   Status = TianoCompress ((UINT8 *)FileBuffer, InputLength, OutBuffer, &DstSize);
   if (Status != EFI_SUCCESS) {
     Error(NULL, 0, 0007, "Error compressing file");
     goto ERROR;
   }
-  //__asm int 3;
+
   fwrite(OutBuffer,(size_t)DstSize, 1, OutputFile);
   free(FileBuffer);
   free(OutBuffer);
@@ -1933,7 +1924,7 @@ Returns:
   //
   // Allocate OutputBuffer
   //
-  OutBuffer = (UINT8 *)malloc(10*OrigSize);
+  OutBuffer = (UINT8 *)malloc(OrigSize);
   if (OutBuffer == NULL) {
     Error(NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
     goto ERROR;
@@ -1944,7 +1935,7 @@ Returns:
     //Error(NULL, 0, 0008, "Error decompressing file: %s", InputFileName);
    goto ERROR; 	
   }
-  //__asm int 3;
+
   fwrite(OutBuffer, (size_t)(Scratch->mOrigSize), 1, OutputFile);
   free(Scratch);
   free(FileBuffer);
