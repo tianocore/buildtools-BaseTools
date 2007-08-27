@@ -70,9 +70,6 @@ def StoreModuleDefinesSection(InfFile, Module):
     if ModuleHeader.EdkReleaseVersion != "":
         DefinesTupleList.append(("EDK_RELEASE_VERSION", ModuleHeader.EdkReleaseVersion))
     
-    if ModuleHeader.BinaryModule:
-        DefinesTupleList.append(("BINARY_MODULE", "TRUE"))
-
     ProducedLibraryClass = GetModuleLibraryClass(ModuleHeader.LibraryClass)
     if ProducedLibraryClass != "":
         DefinesTupleList.append(("LIBRARY_CLASS", ProducedLibraryClass))

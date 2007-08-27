@@ -542,9 +542,9 @@ def MigrationOptionParser(Source, Destinate, ToolName, VersionNumber = 1.0):
         
     # error check
     if len(Args) == 0:
-        raise MigrationError(OPTION_MISSING, name="Input file", usage=Parser.get_usage())
+        raise MigrationError(PARAMETER_MISSING, name="Input file", usage=Parser.get_usage())
     if len(Args) > 1:
-        raise MigrationError(OPTION_NOT_SUPPORTED, name="Too many input files", usage=Parser.get_usage())
+        raise MigrationError(PARAMETER_INVALID, name="Too many input files", usage=Parser.get_usage())
 
     InputFile = Args[0]
     if not os.path.exists(InputFile):
