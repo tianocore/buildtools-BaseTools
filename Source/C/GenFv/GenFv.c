@@ -139,7 +139,7 @@ Routine Description:
 
 Arguments:
 
-  FvInfFileName      The name of an FV image description file.
+  FvInfFileName      The name of an FV image description file or Capsule Image.
 
   Arguments come in pair in any order.
     -I FvInfFileName 
@@ -171,6 +171,7 @@ Returns:
   BOOLEAN               DumpCapsule;
   MEMORY_FILE           AddrMemoryFile;
   FILE                  *FpFile;
+  EFI_CAPSULE_HEADER    *CapsuleHeader;
 
   InfFileName   = NULL;
   AddrFileName  = NULL;
@@ -184,6 +185,7 @@ Returns:
   CapsuleFlag   = FALSE;
   DumpCapsule   = FALSE;
   FpFile        = NULL;
+  CapsuleHeader = NULL;
 
   SetUtilityName (UTILITY_NAME);
 
@@ -289,7 +291,7 @@ Returns:
     return STATUS_ERROR;
   }
 
-  if (OutFileName == NULL) {
+  if (!DumpCapsule && OutFileName == NULL) {
     Error (NULL, 0, 1001, "Missing option", "Output file name");
     return STATUS_ERROR;
   }
@@ -350,11 +352,39 @@ Returns:
   if (EFI_ERROR (Status)) {
     return STATUS_ERROR;
   }
-
-  //
-  // Create Capsule Header
-  //
-  if (CapsuleFlag) {
+  
+  if (DumpCapsule) {
+    //
+    // Dump Capsule Image Header Information
+    //
+    CapsuleHeader = (EFI_CAPSULE_HEADER *) InfFileImage;
+    if (OutFileName == NULL) {
+      FpFile = stdout;
+    } else {
+      FpFile = fopen (OutFileName, "w");
+      if (FpFile == NULL) {
+        Error (NULL, 0, 0001, "Error opening file", OutFileName);
+        return STATUS_ERROR;
+      }
+    }
+    fprintf (FpFile, "Capsule %s Image Header Information\n", InfFileName);
+    fprintf (FpFile, "  GUID                  %08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X\n", 
+                    CapsuleHeader->CapsuleGuid.Data1,
+                    (UINT32) CapsuleHeader->CapsuleGuid.Data2,
+                    (UINT32) CapsuleHeader->CapsuleGuid.Data3,
+                    (UINT32) CapsuleHeader->CapsuleGuid.Data4[0],
+                    (UINT32) CapsuleHeader->CapsuleGuid.Data4[1],
+                    (UINT32) CapsuleHeader->CapsuleGuid.Data4[2],
+                    (UINT32) CapsuleHeader->CapsuleGuid.Data4[3],
+                    (UINT32) CapsuleHeader->CapsuleGuid.Data4[4],
+                    (UINT32) CapsuleHeader->CapsuleGuid.Data4[5],
+                    (UINT32) CapsuleHeader->CapsuleGuid.Data4[6],
+                    (UINT32) CapsuleHeader->CapsuleGuid.Data4[7]);
+    fprintf (FpFile, "  Header size           0x%08X\n", CapsuleHeader->HeaderSize);
+    fprintf (FpFile, "  Flags                 0x%08X\n", CapsuleHeader->Flags);
+    fprintf (FpFile, "  Capsule image size    0x%08X\n", CapsuleHeader->CapsuleImageSize);
+    fclose (FpFile);
+  } else if (CapsuleFlag) {
     //
     // Call the GenerateCapImage to generate Capsule Image
     //
@@ -396,10 +426,14 @@ Returns:
     }
     fprintf (FpFile, OPTIONS_SECTION_STRING);
     fprintf (FpFile, "\n");
-    fprintf (FpFile, EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING);
-    fprintf (FpFile, " = 0x%x\n", BtBase);
-    fprintf (FpFile, EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING);
-    fprintf (FpFile, " = 0x%x\n", RtBase);
+    if (BtBase != 0) {
+      fprintf (FpFile, EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING);
+      fprintf (FpFile, " = 0x%x\n", BtBase);
+    }
+    if (RtBase != 0) {
+      fprintf (FpFile, EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING);
+      fprintf (FpFile, " = 0x%x\n", RtBase);
+    }
     fclose (FpFile);
   }
 
