@@ -59,6 +59,10 @@ class FileStatementsClassObject (FfsClassObject) :
         self.FvType = None
         self.FileName = None
         self.KeyStringList = []
+        self.FvName = None
+        self.FdName = None
+        self.DefineVarDict = {}
+        self.AprioriSection = None
 
 class FfsInfStatementClassObject(FfsClassObject):
     def __init__(self):

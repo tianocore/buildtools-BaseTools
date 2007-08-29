@@ -282,19 +282,24 @@ class FdfParser:
         return False
     
     def __GetNextToken(self):
+        # Skip leading spaces, if exist.
         self.__SkipWhiteSpace()
         if self.__EndOfFile():
             return False
-
+        # Record the token start position, the position of the first non-space char.
         StartPos = self.CurrentOffsetWithinLine
         while not self.__EndOfLine():
-                TempChar = self.__CurrentChar()
-                if not str(TempChar).isspace() and TempChar not in ('=', '|', ',', '{', '}'):
-                    self.__GetOneChar()
-                elif StartPos == self.CurrentOffsetWithinLine and TempChar in ('=', '|', ',', '{', '}'):
-                    self.__GetOneChar()
-                else:
-                    break
+            TempChar = self.__CurrentChar()
+            # Try to find the end char that is not a space and not in seperator tuple.
+            # That is, when we got a space or any char in the tuple, we got the end of token.
+            if not str(TempChar).isspace() and TempChar not in ('=', '|', ',', '{', '}'):
+                self.__GetOneChar()
+            # if we happen to meet a seperator as the first char, we must proceed to get it.
+            # That is, we get a token that is a seperator char. nomally it is the boundary of other tokens.
+            elif StartPos == self.CurrentOffsetWithinLine and TempChar in ('=', '|', ',', '{', '}'):
+                self.__GetOneChar()
+            else:
+                break
         else:
             return False
         
@@ -1055,15 +1060,34 @@ class FdfParser:
         
         self.__GetFileOpts( ffsFile)
         
+        if not self.__IsToken( "{"):
+            raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
+            
         if not self.__GetNextToken():
             raise Warning("expected File name or section data At Line %d" % self.CurrentLineNumber)
         
-        if self.__Token == "{":
+        if self.__Token == "FV":
+            if not self.__IsToken( "="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            if not self.__GetNextToken():
+                raise Warning("expected FV name At Line %d" % self.CurrentLineNumber)
+            ffsFile.FvName = self.__Token
+            
+        elif self.__Token == "FD":
+            if not self.__IsToken( "="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            if not self.__GetNextToken():
+                raise Warning("expected FD name At Line %d" % self.CurrentLineNumber)
+            ffsFile.FdName = self.__Token
+            
+        elif self.__Token in ("DEFINE", "APRIORI", "SECTION"):
             self.__UndoToken()
             self.__GetSectionData( ffsFile)
         else:
             ffsFile.FileName = self.__Token
         
+        if not self.__IsToken( "}"):
+            raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
     
     def __GetFileOpts(self, ffsFile):
         
@@ -1105,15 +1129,15 @@ class FdfParser:
     
     def __GetSectionData(self, ffsFile):
         
-        if self.__IsToken( "{"):
-            while True:
-                isLeafSection = self.__GetLeafSection(ffsFile)
-                isEncapSection = self.__GetEncapsulationSec(ffsFile)
-                if not isLeafSection and not isEncapSection:
-                    break
+        self.__GetDefineStatements(ffsFile)
+        self.__GetAprioriSection(ffsFile)
+        while True:
+            isLeafSection = self.__GetLeafSection(ffsFile)
+            isEncapSection = self.__GetEncapsulationSec(ffsFile)
+            if not isLeafSection and not isEncapSection:
+                break
 
-            if not self.__IsToken( "}"):
-                raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
+           
     
     def __GetLeafSection(self, obj):
         
