@@ -100,10 +100,10 @@ class EfiSectionClassObject (SectionClassObject):
         SectionClassObject.__init__(self)
         self.SectionType = None
         self.Optional = False
-        # store file name composed of MACROs
-        # Currently only support the String after UI section
+        self.FileType = None
         self.StringData = None
-        self.Filename = None
+        self.FileName = None
+        self.FileExtension = None
         self.BuildNum = None
         self.VersionNum = None
         
@@ -112,6 +112,9 @@ class FvImageSectionClassObject (SectionClassObject):
         SectionClassObject.__init__(self)
         self.Fv = None
         self.FvName = None
+        self.FvFileType = None
+        self.FvFileName = None
+        self.FvFileExtension = None
         
 class GuidSectionClassObject (SectionClassObject) :
     def __init__(self):
@@ -158,6 +161,11 @@ class RuleSimpleFileClassObject(RuleClassObject) :
         self.FileName = None
         self.SectionType = ''
 
+class RuleFileExtensionClassObject(RuleClassObject):
+    def __init__(self):
+        RuleClassObject.__init__(self)
+        self.FileExtension = None
+        
 class CapsuleClassObject :
     def __init__(self):
         self.SpecName = None

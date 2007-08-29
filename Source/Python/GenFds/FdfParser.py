@@ -15,6 +15,7 @@ import CapsuleData
 import Rule
 import RuleComplexFile
 import RuleSimpleFile
+import RuleFileExtension
 import EfiSection
 import Vtf
 import ComponentStatement
@@ -1507,6 +1508,23 @@ class FdfParser:
                              "UEFI_DRIVER", "UEFI_APPLICATION", "USER_DEFINED", "DEFAULT"):
             raise Warning("Unknown Module type At line %d" % self.CurrentLineNumber)
         return self.__Token
+    
+    def __GetFileExtension(self):
+        if not self.__IsToken("."):
+                raise Warning("expected '.' At Line %d" % self.CurrentLineNumber)
+            
+        ext = ""
+        if self.__GetNextToken():
+            p = re.compile(r'([a-zA-Z][a-zA-Z0-9]*)')
+            if p.match(self.__Token):
+                ext = self.__Token                            
+                return ext    
+            else:
+#                    self.__UndoToken()
+                raise Warning("Unknown file extension At Line %d" % self.CurrentLineNumber)
+                
+        else:
+            raise Warning("expected file extension At Line %d" % self.CurrentLineNumber)
         
     def __GetRuleFileStatements(self):
         
@@ -1516,12 +1534,10 @@ class FdfParser:
         if not self.__GetNextWord():
             raise Warning("expected FV type At Line %d" % self.CurrentLineNumber)
         
-        if self.__Token.strip().upper() not in ("SEC", "RAW", "FREEFORM", "DXE_CORE", \
-                             "PEI_DXE_COMBO", "FV_IMAGE", \
-                             "DRIVER", "APPLICATION", "PEI_CORE", "PEIM"):
-            raise Warning("Unknown FV type At line %d" % self.CurrentLineNumber)
-        
         type = self.__Token.strip().upper()
+        if type not in ("RAW", "FREEFORM", "SEC", "PEI_CORE", "PEIM",\
+                             "PEI_DXE_COMBO", "DRIVER", "DXE_CORE", "APPLICATION", "FV_IMAGE"):
+            raise Warning("Unknown FV type At line %d" % self.CurrentLineNumber)
 
         if not self.__IsToken("="):
             raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
@@ -1531,7 +1547,7 @@ class FdfParser:
 
         keyStringList = []
         if self.__GetNextToken():
-            p = re.compile(r'([a-zA-Z0-9]+|\*)_([a-zA-Z0-9]+|\*)_([a-zA-Z0-9]+|\*)')
+            p = re.compile(r'([a-zA-Z0-9\-]+|\$\(TARGET\)|\*)_([a-zA-Z0-9\-]+|\$\(TOOLCHAIN_TAG\)|\*)_([a-zA-Z0-9\-]+|\$\(ARCH\)|\*)')
             if p.match(self.__Token):
                 keyStringList.append(self.__Token)
                 if self.__IsToken(","):
@@ -1556,12 +1572,8 @@ class FdfParser:
             checksum = True
             
         alignment = ""
-        if self.__IsKeyword("Align", True):
-            if not self.__IsToken("="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
-            if not self.__GetNextToken():
-                raise Warning("expected alignment value At Line %d" % self.CurrentLineNumber)
-            if self.__Token not in ("8", "16", "32", "4K", "32K" ,"64K"):
+        if self.__GetAlignment():
+            if self.__Token not in ("8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
                 raise Warning("Incorrect alignment At Line %d" % self.CurrentLineNumber)
             alignment = self.__Token
 
@@ -1576,7 +1588,7 @@ class FdfParser:
             
             while True:
                 isEncapsulate = self.__GetRuleEncapsulationSection(rule)
-                isLeaf = self.__GetEfiSection(rule, True)
+                isLeaf = self.__GetEfiSection(rule)
                 if not isEncapsulate and not isLeaf:
                     break
                 
@@ -1585,31 +1597,44 @@ class FdfParser:
             
             return rule
         
+        elif self.__IsToken("|"):
+            # Ext rule expected
+            ext = self.__GetFileExtension()
+            
+            rule = RuleFileExtension.RuleFileExtension()
+            rule.FvType = type
+            rule.Alignment = alignment
+            rule.CheckSum = checksum
+            rule.Fixed = fixed
+            rule.KeyStringList = keyStringList
+            rule.FileExtension = ext
+            return rule
+            
         else:
             # Simple file rule expected
             if not self.__GetNextWord():
-                raise Warning("expected EFI section name At Line %d" % self.CurrentLineNumber)
+                raise Warning("expected leaf section type At Line %d" % self.CurrentLineNumber)
 
             sectionName = self.__Token
         
-            if sectionName not in ("PE32", "PIC", "TE", "DXE_DEPEX", "VERSION", "UI", "COMPAT16", "FV_IMAGE", \
-                                "SUBTYPE_GUID", "RAW", "PEI_DEPEX"):
+            if sectionName not in ("COMPAT16", "PE32", "PIC", "TE", "FV_IMAGE", "RAW", "DXE_DEPEX",\
+                                    "UI", "PEI_DEPEX", "VERSION", "SUBTYPE_GUID"):
                 raise Warning("Unknown leaf section name At Line %d" % self.CurrentLineNumber)
             
-            if self.__IsKeyword("Fixed", True):
-                fixed = True
-            
-            if self.__IsKeyword("CheckSum", True):
-                checksum = True
-            
-            if self.__IsKeyword("Align", True):
-                if not self.__IsToken("="):
-                    raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
-                if not self.__GetNextToken():
-                    raise Warning("expected alignment value At Line %d" % self.CurrentLineNumber)
-                if self.__Token not in ("8", "16", "32", "4K", "32K" ,"64K"):
-                    raise Warning("Incorrect alignment At Line %d" % self.CurrentLineNumber)
-                alignment = self.__Token
+#            if self.__IsKeyword("Fixed", True):
+#                fixed = True
+#            
+#            if self.__IsKeyword("CheckSum", True):
+#                checksum = True
+#            
+#            if self.__IsKeyword("Align", True):
+#                if not self.__IsToken("="):
+#                    raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+#                if not self.__GetNextToken():
+#                    raise Warning("expected alignment value At Line %d" % self.CurrentLineNumber)
+#                if self.__Token not in ("8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
+#                    raise Warning("Incorrect alignment At Line %d" % self.CurrentLineNumber)
+#                alignment = self.__Token
             
             if not self.__GetNextToken():
                 raise Warning("expected File name At Line %d" % self.CurrentLineNumber)
@@ -1625,7 +1650,7 @@ class FdfParser:
             return rule
         
 
-    def __GetEfiSection(self, obj, checkLeafArgs = False):
+    def __GetEfiSection(self, obj):
         
         oldPos = self.GetFileBufferPos()
         if not self.__GetNextWord():
@@ -1633,8 +1658,8 @@ class FdfParser:
             return False
         sectionName = self.__Token
         
-        if sectionName not in ("PE32", "PIC", "TE", "DXE_DEPEX", "VERSION", "UI", "COMPAT16", "FV_IMAGE", \
-                                "FREEFORM_SUBTYPE_GUID", "RAW", "PEI_DEPEX"):
+        if sectionName not in ("COMPAT16", "PE32", "PIC", "TE", "FV_IMAGE", "RAW", "DXE_DEPEX",\
+                               "UI", "VERSION", "PEI_DEPEX", "GUID"):
             self.__UndoToken()
             return False
         
@@ -1660,46 +1685,146 @@ class FdfParser:
                     raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
                 section.Fv = fv
                 section.FvName = None
-                obj.SectionList.append(section)
-                return True
+                
             else:
-                raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
+                if not self.__IsKeyword("FV") or not self.__IsKeyword("SEC_FV"):
+                    raise Warning("expected 'FV' At Line %d" % self.CurrentLineNumber)
+                section.FvFileType = self.__Token
+                
+                if self.__GetAlignment():
+                    if self.__Token not in ("8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
+                        raise Warning("Incorrect alignment At Line %d" % self.CurrentLineNumber)
+                    section.Alignment = self.__Token
+                
+                if self.__IsToken('|'):
+                    section.FvFileExtension = self.__GetFileExtension()
+                elif self.__GetNextToken():
+                    if self.__Token not in ("COMPAT16", "PE32", "PIC", "TE", "FV_IMAGE", "RAW", "DXE_DEPEX",\
+                               "UI", "VERSION", "PEI_DEPEX", "GUID"):
+                        section.FvFileName = self.__Token
+                    else:
+                        self.__UndoToken()
+                else:
+                    raise Warning("expected FV file name At Line %d" % self.CurrentLineNumber)
+                    
+            obj.SectionList.append(section)
+            return True
         
         section = EfiSection.EfiSection()
         section.SectionType = sectionName
         
-        if self.__IsKeyword("Optional"):
-            section.Optional = True
-
-        if checkLeafArgs:
+        if not self.__GetNextToken():
+            raise Warning("expected file type At Line %d" % self.CurrentLineNumber)
+        
+        if self.__Token == "STRING":
+            if not self.__RuleSectionCouldHaveString(section.SectionType):
+                raise Warning("%s section could NOT have string data At Line %d" % (section.SectionType, self.CurrentLineNumber))
+            
+            if not self.__IsToken('='):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+            
+            if not self.__GetNextToken():
+                raise Warning("expected Quoted String At Line %d" % self.CurrentLineNumber)
+        
+            if self.__GetStringData():
+                section.StringData = self.__Token
+            
             if self.__IsKeyword("BUILD_NUM"):
+                if not self.__RuleSectionCouldHaveBuildNum(section.SectionType):
+                    raise Warning("%s section could NOT have BUILD_NUM At Line %d" % (section.SectionType, self.CurrentLineNumber))
+            
                 if not self.__IsToken("="):
                     raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
                 if not self.__GetNextToken():
                     raise Warning("expected Build number At Line %d" % self.CurrentLineNumber)
                 section.BuildNum = self.__Token
                 
-            if self.__GetAlignment():
-                section.Alignment = self.__Token
-                
-        #        Leaf section encountered, restore to the beginning of section.
-        if self.__IsKeyword("BUILD_NUM") or self.__IsKeyword("Align"):
-            self.SetFileBufferPos(oldPos)
-            return False
-        
-        
-        if not self.__GetNextToken():
-            raise Warning("expected EFI section At Line %d" % self.CurrentLineNumber)
-        
-        if self.__GetStringData():
-            section.StringData = self.__Token
         else:
-            section.Filename = self.__Token
-        obj.SectionList.append(section)
+            section.FileType = self.__Token
+            self.__CheckRuleSectionFileType(section.SectionType, section.FileType)
+            
+        if self.__IsKeyword("Optional"):
+            if not self.__RuleSectionCouldBeOptional(section.SectionType):
+                raise Warning("%s section could NOT be optional At Line %d" % (section.SectionType, self.CurrentLineNumber))
+            section.Optional = True
         
+            if self.__IsKeyword("BUILD_NUM"):
+                if not self.__RuleSectionCouldHaveBuildNum(section.SectionType):
+                    raise Warning("%s section could NOT have BUILD_NUM At Line %d" % (section.SectionType, self.CurrentLineNumber))
+                
+                if not self.__IsToken("="):
+                    raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+                if not self.__GetNextToken():
+                    raise Warning("expected Build number At Line %d" % self.CurrentLineNumber)
+                section.BuildNum = self.__Token
+                
+        if self.__GetAlignment():
+            section.Alignment = self.__Token
+        
+        if self.__IsToken('|'):
+            section.FileExtension = self.__GetFileExtension()
+        elif self.__GetNextToken():
+            if self.__Token not in ("COMPAT16", "PE32", "PIC", "TE", "FV_IMAGE", "RAW", "DXE_DEPEX",\
+                       "UI", "VERSION", "PEI_DEPEX", "GUID"):
+                section.FileName = self.__Token
+            else:
+                self.__UndoToken()
+        else:
+            raise Warning("expected section file name At Line %d" % self.CurrentLineNumber)
+                
+        obj.SectionList.append(section)
         return True
         
-        
+    def __RuleSectionCouldBeOptional(self, sectionType):
+        if sectionType in ("DXE_DEPEX", "UI", "VERSION", "PEI_DEPEX"):
+            return True
+        else:
+            return False
+    
+    def __RuleSectionCouldHaveBuildNum(self, sectionType):
+        if sectionType in ("VERSION"):
+            return True
+        else:
+            return False
+    
+    def __RuleSectionCouldHaveString(self, sectionType):
+        if sectionType in ("UI", "VERSION"):
+            return True
+        else:
+            return False
+    
+    def __CheckRuleSectionFileType(self, sectionType, fileType):
+        if sectionType == "COMPAT16":
+            if fileType not in ("COMPAT16", "SEC_COMPAT16"):
+                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber)
+        elif sectionType == "PE32":
+            if fileType not in ("PE32", "SEC_PE32"):
+                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber)
+        elif sectionType == "PIC":
+            if fileType not in ("PIC", "PIC"):
+                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber)
+        elif sectionType == "TE":
+            if fileType not in ("TE", "SEC_TE"):
+                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber)
+        elif sectionType == "RAW":
+            if fileType not in ("BIN", "SEC_BIN", "RAW", "ASL", "ACPI"):
+                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber)
+        elif sectionType == "DXE_DEPEX":
+            if fileType not in ("DXE_DEPEX", "SEC_DXE_DEPEX"):
+                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber)
+        elif sectionType == "UI":
+            if fileType not in ("UI", "SEC_UI"):
+                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber)
+        elif sectionType == "VERSION":
+            if fileType not in ("VERSION", "SEC_VERSION"):
+                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber)
+        elif sectionType == "PEI_DEPEX":
+            if fileType not in ("PEI_DEPEX", "SEC_PEI_DEPEX"):
+                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber)
+        elif sectionType == "GUID":
+            if fileType not in ("PE32", "SEC_GUID"):
+                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber)    
+              
     def __GetRuleEncapsulationSection(self, rule):
 
         if self.__IsKeyword( "COMPRESS"):
@@ -1716,7 +1841,7 @@ class FdfParser:
             # Recursive sections...
             while True:
                 isEncapsulate = self.__GetRuleEncapsulationSection(section)
-                isLeaf = self.__GetEfiSection(section, True)
+                isLeaf = self.__GetEfiSection(section)
                 if not isEncapsulate and not isLeaf:
                     break
             
@@ -1733,6 +1858,12 @@ class FdfParser:
             guid = None
             if self.__GetNextGuid():
                 guid = self.__Token
+            
+#            elif not self.__IsKeyword( "$(NAMED_GUID)"):
+#                raise Warning("expected '$(NAMED_GUID)' At Line %d" % self.CurrentLineNumber)
+            if self.__IsKeyword( "$(NAMED_GUID)"):
+                guid = self.__Token
+                
             attribDict = self.__GetGuidAttrib()
             
             if not self.__IsToken("{"):
@@ -1746,7 +1877,7 @@ class FdfParser:
             # Efi sections...
             while True:
                 isEncapsulate = self.__GetRuleEncapsulationSection(section)
-                isLeaf = self.__GetEfiSection(section, True)
+                isLeaf = self.__GetEfiSection(section)
                 if not isEncapsulate and not isLeaf:
                     break
             
