@@ -127,6 +127,7 @@ class Inf(InfObject):
         self.Module.Header.Version = self.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_NUMBER][0]
         self.Module.Header.FileName = self.Identification.FileName
         self.Module.Header.FullPath = self.Identification.FileFullPath
+        File = self.Module.Header.FullPath
         
         self.Module.Header.EfiSpecificationVersion = self.Defines.DefinesDictionary[TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION][0]
         self.Module.Header.EdkReleaseVersion = self.Defines.DefinesDictionary[TAB_INF_DEFINES_EDK_RELEASE_VERSION][0]
@@ -144,7 +145,9 @@ class Inf(InfObject):
         self.Module.Header.PcdIsDriver = self.Defines.DefinesDictionary[TAB_INF_DEFINES_PCD_IS_DRIVER][0]
         self.Module.Header.TianoR8FlashMap_h = self.Defines.DefinesDictionary[TAB_INF_DEFINES_TIANO_R8_FLASHMAP_H][0]
         
-        #LibraryClass of Define
+        #
+        # LibraryClass of Defines
+        #
         if self.Defines.DefinesDictionary[TAB_INF_DEFINES_LIBRARY_CLASS][0] != '':
             for Item in self.Defines.DefinesDictionary[TAB_INF_DEFINES_LIBRARY_CLASS]:
                 List = GetSplitValueList(Item, DataType.TAB_VALUE_SPLIT, 1)
@@ -156,17 +159,20 @@ class Inf(InfObject):
                     Lib.SupModuleList = GetSplitValueList(CleanString(List[1]), ' ')
                 self.Module.Header.LibraryClass.append(Lib)
         
-        #Custom makefile
+        #
+        # Custom makefile of Defines
+        #
         if self.Defines.DefinesDictionary[TAB_INF_DEFINES_CUSTOM_MAKEFILE][0] != '':
             for Item in self.Defines.DefinesDictionary[TAB_INF_DEFINES_CUSTOM_MAKEFILE]:
                 List = Item.split(DataType.TAB_VALUE_SPLIT)
                 if len(List) == 2:
                     self.Module.Header.CustomMakefile[CleanString(List[0])] = CleanString(List[1])
                 else:
-                    ErrorMsg = "Wrong CUSTOM_MAKEFILE statement '%s' found in section Defines in file '%s', correct format is 'CUSTOM_MAKEFILE = Family|Filename'" % (Item, self.Module.Header.FullPath) 
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                    RaiseParserError(Item, 'CUSTOM_MAKEFILE of Defines', File, 'CUSTOM_MAKEFILE=<Family>|<Filename>')
         
-        #EntryPoint and UnloadImage
+        #
+        # EntryPoint and UnloadImage of Defines
+        #
         if self.Defines.DefinesDictionary[TAB_INF_DEFINES_ENTRY_POINT][0] != '':
             for Item in self.Defines.DefinesDictionary[TAB_INF_DEFINES_ENTRY_POINT]:
                 Image = ModuleExternImageClass()
@@ -178,7 +184,9 @@ class Inf(InfObject):
                 Image.ModuleUnloadImage = CleanString(Item)
                 self.Module.ExternImages.append(Image)
         
-        #Constructor and Destructor
+        #
+        # Constructor and Destructor of Defines
+        #
         if self.Defines.DefinesDictionary[TAB_INF_DEFINES_CONSTRUCTOR][0] != '':
             for Item in self.Defines.DefinesDictionary[TAB_INF_DEFINES_CONSTRUCTOR]:
                 LibraryClass = ModuleExternLibraryClass()
@@ -190,37 +198,44 @@ class Inf(InfObject):
                 LibraryClass.Destructor = CleanString(Item)
                 self.Module.ExternLibraries.append(LibraryClass)
         
-        #Define
+        #
+        # Define of Defines
+        #
         if self.Defines.DefinesDictionary[TAB_INF_DEFINES_DEFINE][0] != '':
             for Item in self.Defines.DefinesDictionary[TAB_INF_DEFINES_DEFINE]:
                 List = Item.split(DataType.TAB_EQUAL_SPLIT)
                 if len(List) != 2:
-                    ErrorMsg = "Wrong DEFINE statement '%s' found in section Defines in file '%s', correct format is 'DEFINE <Word> = <Word>'" % (Item, self.Module.Header.FullPath) 
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                    RaiseParserError(Item, 'DEFINE of Defines', File, 'DEFINE <Word> = <Word>')
                 else:
                     self.Module.Header.Define[CleanString(List[0])] = CleanString(List[1])
         
-        #Spec
+        #
+        # Spec
+        #
         if self.Defines.DefinesDictionary[TAB_INF_DEFINES_SPEC][0] != '':
             for Item in self.Defines.DefinesDictionary[TAB_INF_DEFINES_SPEC]:
                 List = Item.split(DataType.TAB_EQUAL_SPLIT)
                 if len(List) != 2:
-                    ErrorMsg = "Wrong SPEC statement '%s' found in section Defines in file '%s', correct format is 'SPEC <Word> = <Version>'" % (Item, self.Module.Header.FullPath) 
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                    RaiseParserError(Item, 'SPEC of Defines', File, 'SPEC <Word> = <Version>')
                 else:
                     self.Module.Header.Specification[CleanString(List[0])] = CleanString(List[1])
                 
-        #BuildOptions
+        #
+        # BuildOptions
+        # [<Family>:]<ToolFlag>=Flag
+        #
         BuildOptions = {}
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].BuildOptions:
-                MergeArches(BuildOptions, GetBuildOption(Item), Arch)
+                MergeArches(BuildOptions, GetBuildOption(Item, File), Arch)
         for Key in BuildOptions.keys():
             BuildOption = BuildOptionClass(Key[0], Key[1], Key[2])
             BuildOption.SupArchList = BuildOptions[Key]
             self.Module.BuildOptions.append(BuildOption)    
         
-        #Includes
+        #
+        # Includes
+        #
         Includes = {}
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].Includes:
@@ -231,7 +246,9 @@ class Inf(InfObject):
             Include.SupArchList = Includes[Key]
             self.Module.Includes.append(Include)
         
-        #Libraries
+        #
+        # Libraries
+        #
         Libraries = {}
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].Libraries:
@@ -242,7 +259,10 @@ class Inf(InfObject):
             Library.SupArchList = Libraries[Key]
             self.Module.Libraries.append(Library)
         
-        #LibraryClasses
+        #
+        # LibraryClasses
+        # LibraryClass[|<LibraryClassInstanceFilename>[|<TokenSpaceGuidCName>.<PcdCName>]]
+        #
         LibraryClasses = {}
         Defines = {}
         for Arch in DataType.ARCH_LIST:
@@ -251,13 +271,13 @@ class Inf(InfObject):
                 if Status == 0:       # Find DEFINE statement
                     pass
                 elif Status == -1:    # Find DEFINE statement but in wrong format
-                    ErrorMsg = "Wrong DEFINE statement '%s' found in section LibraryClasses in file '%s', correct format is 'DEFINE <VarName> = <PATH>'" % (Item[0], self.Module.Header.FullPath) 
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                    RaiseParserError(Item[0], 'LibraryClasses', File, 'DEFINE <VarName> = <PATH>')
                 elif Status == 1:     # Not find DEFINE statement
                     #{ (LibraryClass, Instance, PcdFeatureFlag, ModuleType1|ModuleType2|ModuleType3) : [Arch1, Arch2, ...] }
                     ItemList = GetSplitValueList((Item[0] + DataType.TAB_VALUE_SPLIT * 2))
                     CheckFileType(ItemList[1], '.Inf', self.Module.Header.FullPath, 'LibraryClasses', Item[0])
                     CheckFileExist(self.WorkspaceDir, ItemList[1], self.Module.Header.FullPath, 'LibraryClasses', Item[0])
+                    CheckPcdTokenInfo(ItemList[2], 'LibraryClasses', File)
                     MergeArches(LibraryClasses, (ItemList[0], ItemList[1], ItemList[2], DataType.TAB_VALUE_SPLIT.join(Item[1])), Arch)
         for Key in LibraryClasses.keys():
             KeyList = Key[0].split(DataType.TAB_VALUE_SPLIT)
@@ -273,7 +293,9 @@ class Inf(InfObject):
                 LibraryClass.SupModuleList = DataType.SUP_MODULE_LIST
             self.Module.LibraryClasses.append(LibraryClass)
         
-        #Packages
+        #
+        # Packages
+        #
         Packages = {}
         Defines = {}
         for Arch in DataType.ARCH_LIST:
@@ -282,8 +304,7 @@ class Inf(InfObject):
                 if Status == 0:       # Find DEFINE statement
                     pass
                 elif Status == -1:    # Find DEFINE statement but in wrong format
-                    ErrorMsg = "Wrong DEFINE statement '%s' found in section Packages in file '%s', correct format is 'DEFINE <VarName> = <PATH>'" % (Item, self.Module.Header.FullPath) 
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                    RaiseParserError(Item[0], 'Packages', File, 'DEFINE <VarName> = <PATH>')
                 elif Status == 1:     # Not find DEFINE statement
                     CheckFileType(Item, '.Dec', self.Module.Header.FullPath, 'package', Item)
                     CheckFileExist(self.WorkspaceDir, Item, self.Module.Header.FullPath, 'Packages', Item)
@@ -295,7 +316,9 @@ class Inf(InfObject):
             Package.SupArchList = Packages[Key]
             self.Module.PackageDependencies.append(Package)
             
-        #Nmake
+        #
+        # Nmake
+        #
         Nmakes = {}
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].Nmake:
@@ -303,76 +326,34 @@ class Inf(InfObject):
         for Key in Nmakes.keys():
             List = GetSplitValueList(Key, DataType.TAB_EQUAL_SPLIT)
             if len(List) != 2:
-                ErrorMsg = "Wrong statement '%s' found in section Nmake in file '%s', correct format is '<Word>=<Word>'" % (Item, self.Module.Header.FullPath) 
-                raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                RaiseParserError(Item[0], 'Nmake', File, 'DEFINE <VarName> = <PATH>')
             Nmake = ModuleNmakeClass()
             Nmake.Name = List[0]
             Nmake.Value = List[1]
             Nmake.SupArchList = Nmakes[Key]
             self.Module.Nmake.append(Nmake)
         
-        #Pcds
+        #
+        # Pcds
+        # <TokenSpaceGuidCName>.<PcdCName>[|<Value>]
+        #
         Pcds = {}
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].FixedPcd:
-                Item = Item + DataType.TAB_VALUE_SPLIT
-                List = GetSplitValueList(Item)
-                if len(List) < 2:
-                    ErrorMsg = "Wrong statement '%s' found in section FixedPcd in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
-                if len(TokenInfo) != 2:
-                    ErrorMsg = "Wrong statement '%s' found in section FixedPcd in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                MergeArches(Pcds, (TokenInfo[0], TokenInfo[1], List[1], TAB_PCDS_FIXED_AT_BUILD), Arch)
+                MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_FIXED_AT_BUILD, File), Arch)
             
             for Item in self.Contents[Arch].PatchPcd:
-                Item = Item + DataType.TAB_VALUE_SPLIT
-                List = GetSplitValueList(Item)
-                if len(List) < 2:
-                    ErrorMsg = "Wrong statement '%s' found in section PatchPcd in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
-                if len(TokenInfo) != 2:
-                    ErrorMsg = "Wrong statement '%s' found in section FixedPcd in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                MergeArches(Pcds, (TokenInfo[0], TokenInfo[1], List[1], TAB_PCDS_PATCHABLE_IN_MODULE), Arch)
+                MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_PATCHABLE_IN_MODULE, File), Arch)
             
             for Item in self.Contents[Arch].FeaturePcd:
-                Item = Item + DataType.TAB_VALUE_SPLIT
-                List = GetSplitValueList(Item)
-                if len(List) < 2:
-                    ErrorMsg = "Wrong statement '%s' found in section FeaturePcd in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
-                if len(TokenInfo) != 2:
-                    ErrorMsg = "Wrong statement '%s' found in section FixedPcd in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                MergeArches(Pcds, (TokenInfo[0], TokenInfo[1], List[1], TAB_PCDS_FEATURE_FLAG), Arch)
+                MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_FEATURE_FLAG, File), Arch)
             
             for Item in self.Contents[Arch].PcdEx:
-                Item = Item + DataType.TAB_VALUE_SPLIT
-                List = GetSplitValueList(Item)
-                if len(List) < 2:
-                    ErrorMsg = "Wrong statement '%s' found in section PcdEx in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
-                if len(TokenInfo) != 2:
-                    ErrorMsg = "Wrong statement '%s' found in section FixedPcd in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                MergeArches(Pcds, (TokenInfo[0], TokenInfo[1], List[1], TAB_PCDS_DYNAMIC_EX), Arch)
+                MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_DYNAMIC_EX, File), Arch)
             
             for Item in self.Contents[Arch].Pcd:
-                Item = Item + DataType.TAB_VALUE_SPLIT
-                List = GetSplitValueList(Item)
-                if len(List) < 2:
-                    ErrorMsg = "Wrong statement '%s' found in section Pcd in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
-                if len(TokenInfo) != 2:
-                    ErrorMsg = "Wrong statement '%s' found in section FixedPcd in file '%s', correct format is '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'" % (Item[0:-1], self.Module.Header.FullPath) 
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-                MergeArches(Pcds, (TokenInfo[0], TokenInfo[1], List[1], TAB_PCDS_DYNAMIC), Arch)
+                MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_DYNAMIC, File), Arch)
+                
         for Key in Pcds.keys():
             Pcd = PcdClass()
             Pcd.CName = Key[1]
@@ -382,25 +363,33 @@ class Inf(InfObject):
             Pcd.SupArchList = Pcds[Key]
             self.Module.PcdCodes.append(Pcd)
         
-        #Sources
+        #
+        # Sources
+        # <Filename>[|<Family>|<TagName>|<ToolCode>|<PcdFeatureFlag>]
+        #
         Sources = {}
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].Sources:
-                Item = Item + DataType.TAB_VALUE_SPLIT * 4
-                List = GetSplitValueList(Item)
+                ItemNew = Item + DataType.TAB_VALUE_SPLIT * 4
+                List = GetSplitValueList(ItemNew)
+                if len(List) != 5 and len(List) != 9:
+                    RaiseParserError(Item, 'Sources', File, '<Filename>[|<Family>|<TagName>|<ToolCode>|<PcdFeatureFlag>]')
+                CheckFileExist(self.Identification.FileRelativePath, List[0], File, 'Sources', Item)
+                CheckPcdTokenInfo(List[4], 'Sources', File)
                 MergeArches(Sources, (List[0], List[1], List[2], List[3], List[4]), Arch)
         for Key in Sources.keys():
-            Source = ModuleSourceFileClass(Key[0], Key[3], Key[4], Key[1], Key[2], Sources[Key])
+            Source = ModuleSourceFileClass(Key[0], Key[2], Key[3], Key[1], Key[4], Sources[Key])
             self.Module.Sources.append(Source)
-        
-        #UserExtensions
+
+        #
+        # UserExtensions
+        #
         if self.UserExtensions != '':
             UserExtension = UserExtensionsClass()
             Lines = self.UserExtensions.splitlines()
             List = GetSplitValueList(Lines[0], DataType.TAB_SPLIT, 2)
             if len(List) != 3:
-                ErrorMsg = "Wrong statement '%s' found in section UserExtensions in file '%s', correct format is 'UserExtensions.UserId.'Identifier''" % (Item[0:-1], self.Module.Header.FullPath) 
-                raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                RaiseParserError(Lines[0], 'UserExtensions', File, "UserExtensions.UserId.'Identifier'")
             else:
                 UserExtension.UserID = List[1]
                 UserExtension.Identifier = List[2][0:-1].replace("'", '').replace('\"', '')
@@ -408,7 +397,9 @@ class Inf(InfObject):
                     UserExtension.Content = UserExtension.Content + CleanString(Line) + '\n'
             self.Module.UserExtensions.append(UserExtension)
         
-        #Guids
+        #
+        # Guids
+        #
         Guids = {}
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].Guids:
@@ -419,7 +410,9 @@ class Inf(InfObject):
             Guid.SupArchList = Guids[Key]
             self.Module.Guids.append(Guid)
 
-        #Protocols
+        #
+        # Protocols
+        #
         Protocols = {}
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].Protocols:
@@ -430,7 +423,9 @@ class Inf(InfObject):
             Protocol.SupArchList = Protocols[Key]
             self.Module.Protocols.append(Protocol)
         
-        #Ppis
+        #
+        # Ppis
+        #
         Ppis = {}
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].Ppis:
@@ -441,7 +436,9 @@ class Inf(InfObject):
             Ppi.SupArchList = Ppis[Key]
             self.Module.Ppis.append(Ppi)
         
-        #Depex
+        #
+        # Depex
+        #
         Depex = {}
         Defines = {}
         for Arch in DataType.ARCH_LIST:
@@ -451,8 +448,7 @@ class Inf(InfObject):
                 if Status == 0:       # Find DEFINE statement
                     pass
                 elif Status == -1:    # Find DEFINE statement but in wrong format
-                    ErrorMsg = "Wrong DEFINE statement '%s' found in section Depex in file '%s', correct format is 'DEFINE <VarName> = <PATH>'" % (Item, self.Module.Header.FullPath) 
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                    RaiseParserError(Item, 'Depex', File, 'DEFINE <VarName> = <PATH>')
                 elif Status == 1:     # Not find DEFINE statement
                     Line = Line + Item + ' '
             MergeArches(Depex, Line, Arch)
@@ -463,21 +459,39 @@ class Inf(InfObject):
             Dep.Define = Defines
             self.Module.Depex.append(Dep)
         
-        #Binaries
+        #
+        # Binaries
+        # <FileType>|<Filename>|<Target>[|<TokenSpaceGuidCName>.<PcdCName>]
+        #
         Binaries = {}
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].Binaries:
-                Item = Item + DataType.TAB_VALUE_SPLIT
-                List = GetSplitValueList(Item)
-                if len(List) < 4:
-                    ErrorMsg = "Wrong statement '%s' found in section Binaries in file '%s', correct format is '<FileType>|<Target>|<FileName>[|<PcdFeatureFlag>]'" % (Item[0:-1], self.Module.Header.FullPath) 
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                ItemNew = Item + DataType.TAB_VALUE_SPLIT
+                List = GetSplitValueList(ItemNew)
+                if len(List) != 4 and len(List) != 5:
+                    RaiseParserError(Item, 'Binaries', File, "<FileType>|<Filename>|<Target>[|<TokenSpaceGuidCName>.<PcdCName>]")
                 else:
+                    CheckPcdTokenInfo(List[3], 'Binaries', File)
                     MergeArches(Binaries, (List[0], List[1], List[2], List[3]), Arch)
         for Key in Binaries.keys():
             Binary = ModuleBinaryFileClass(Key[2], Key[0], Key[1], Key[3], Binaries[Key])
             self.Module.Binaries.append(Binary)
         
+    #
+    # Get Pcd of Dec as <TokenSpaceGuidCName>.<PcdCName>[|<Value>]
+    # Return (TokenSpcCName, TokenCName, Value, ItemType)
+    #
+    def GetPcdOfInf(self, Item, Type, File):
+        Format = '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'
+        List = GetSplitValueList(Item + DataType.TAB_VALUE_SPLIT)
+        if len(List) < 2 or len(List) > 3:
+            RaiseParserError(Item, 'Pcds' + Type, File, Format)
+        TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+        if len(TokenInfo) != 2:
+            RaiseParserError(Item, 'Pcds' + Type, File, Format)
+        
+        return (TokenInfo[0], TokenInfo[1], List[1], Type)
+    
     def LoadInfFile(self, Filename):     
         (Filepath, Name) = os.path.split(Filename)
         self.Identification.FileName = Name
@@ -513,6 +527,9 @@ class Inf(InfObject):
                                 continue
             #EndFor
 
+    #
+    # Show detailed information of Inf
+    #
     def ShowInf(self):
         print TAB_SECTION_START + TAB_INF_DEFINES + TAB_SECTION_END
         printDict(self.Defines.DefinesDictionary)
@@ -525,6 +542,9 @@ class Inf(InfObject):
                 eval(Command)
         print ""
     
+    #
+    # Show detailed information of Module
+    #
     def ShowModule(self):
         m = self.Module
         print 'Filename =', m.Header.FileName
@@ -576,10 +596,10 @@ class Inf(InfObject):
             print Item.Name, Item.Value, Item.SupArchList
         print '\nPcds =', m.PcdCodes
         for Item in m.PcdCodes:
-            print '\tCName=', Item.CName, 'TokenSpaceGuidCName=', Item.TokenSpaceGuidCName, 'DefaultValue=', Item.DefaultValue, 'ItemType=', Item.ItemType, Item.SupArchList
+            print '\tCName=',Item.CName, 'TokenSpaceGuidCName=', Item.TokenSpaceGuidCName, 'DefaultValue=', Item.DefaultValue, 'ItemType=', Item.ItemType, Item.SupArchList
         print '\nSources =', m.Sources
         for Source in m.Sources:
-            print Source.SourceFile, Source.ToolChainFamily, Source.FeatureFlag, Source.TagName, Source.ToolCode, Source.SupArchList
+            print Source.SourceFile, 'Fam=', Source.ToolChainFamily, 'Pcd=', Source.FeatureFlag, 'Tag=', Source.TagName, 'ToolCode=', Source.ToolCode, Source.SupArchList
         print '\nUserExtensions =', m.UserExtensions
         for UserExtension in m.UserExtensions:
             print UserExtension.UserID, UserExtension.Identifier,UserExtension.Content

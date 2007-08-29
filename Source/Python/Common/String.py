@@ -82,7 +82,9 @@ def GetExec(String):
 # Parse a string with format "[<Family>:]<ToolFlag>=Flag"
 # Return (Family, ToolFlag, Flag)
 #
-def GetBuildOption(String):
+def GetBuildOption(String, File):
+    if String.find(DataType.TAB_EQUAL_SPLIT) < 0:
+        RaiseParserError(String, 'BuildOptions', File, '[<Family>:]<ToolFlag>=Flag')
     (Family, ToolChain, Flag) = ('', '', '')
     List = GetSplitValueList(String, DataType.TAB_EQUAL_SPLIT, MaxSplit = 1)
     if List[0].find(':') > -1:
@@ -288,9 +290,13 @@ def GetSingleValueOfKeyFromLines(Lines, Dictionary, CommentCharacter, KeySplitCh
         # Handle DEFINE and SPEC
         #
         if Line.find(DataType.TAB_INF_DEFINES_DEFINE + ' ') > -1:
+            if '' in DefineValues:
+                DefineValues.remove('')
             DefineValues.append(GetDefineValue(Line, DataType.TAB_INF_DEFINES_DEFINE, CommentCharacter))
             continue
         if Line.find(DataType.TAB_INF_DEFINES_SPEC + ' ') > -1:
+            if '' in SpecValues:
+                SpecValues.remove('')
             SpecValues.append(GetDefineValue(Line, DataType.TAB_INF_DEFINES_SPEC, CommentCharacter))
             continue
                 
@@ -304,7 +310,7 @@ def GetSingleValueOfKeyFromLines(Lines, Dictionary, CommentCharacter, KeySplitCh
                 #Remove comments and white spaces
                 LineList[1] = CleanString(LineList[1], CommentCharacter)
                 if ValueSplitFlag:
-                    Value = map(string.strip, LineList[1].replace('\\','/').split(ValueSplitCharacter))
+                    Value = map(string.strip, LineList[1].split(ValueSplitCharacter))
                 else:
                     Value = CleanString(LineList[1], CommentCharacter).splitlines()
                 
@@ -359,6 +365,8 @@ def PreCheck(FileName, FileContent, SupSectionTag):
                 Tag = Tag.split(DataType.TAB_SPLIT, 1)[0].replace('[', '').replace(']', '').strip()
                 if Tag.upper() == DataType.TAB_COMMON_DEFINES.upper():
                     break
+                if Tag.upper() == DataType.TAB_USER_EXTENSIONS.upper():
+                    break
                 if Tag.upper() not in map(lambda s: s.upper(), SupSectionTag):
                     ErrorMsg = "'%s' is not a supportted section name found at line %s in file '%s'" % (Tag, LineNo, FileName)
                     raise ParserError(PARSER_ERROR, msg = ErrorMsg)
@@ -377,7 +385,7 @@ def CheckFileType(CheckFilename, ExtName, ContainerFilename, SectionName, Line):
         if Ext.upper() != ExtName.upper():
             ContainerFile = open(ContainerFilename, 'r').read()
             LineNo = GetLineNo(ContainerFile, Line)
-            ErrorMsg = "Invalid %s '%s' defined at line %s in file '%s', it is NOT a valid '%s' file" % (SectionName, CheckFilename, LineNo, ContainerFilename, ExtName) 
+            ErrorMsg = "Invalid %s '%s' is defined at line %s in file '%s', it is NOT a valid '%s' file" % (SectionName, CheckFilename, LineNo, ContainerFilename, ExtName) 
             raise ParserError(PARSER_ERROR, msg = ErrorMsg)
     
     return True
@@ -395,8 +403,20 @@ def CheckFileExist(WorkspaceDir, CheckFilename, ContainerFilename, SectionName, 
         else:
             ContainerFile = open(ContainerFilename, 'r').read()
             LineNo = GetLineNo(ContainerFile, Line)
-            ErrorMsg = "Can't find file '%s' defined in section %s at line %s in file '%s'" % (CheckFile, SectionName, LineNo, ContainerFilename) 
+            ErrorMsg = "Can't find file '%s' defined in section '%s' at line %s in file '%s'" % (CheckFile, SectionName, LineNo, ContainerFilename) 
             raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+    
+    return True
+
+#
+# Check if PcdTokenInfo is following <TokenSpaceGuidCName>.<PcdCName>
+#
+def CheckPcdTokenInfo(TokenInfoString, Section, File):
+    if TokenInfoString != '' and TokenInfoString != None:
+        Format = '<TokenSpaceGuidCName>.<PcdCName>'
+        TokenInfoList = GetSplitValueList(TokenInfoString, DataType.TAB_SPLIT)
+        if len(TokenInfoList) != 2:
+            RaiseParserError(TokenInfoString, Section, File, Format)
     
     return True
 
@@ -404,11 +424,20 @@ def CheckFileExist(WorkspaceDir, CheckFilename, ContainerFilename, SectionName, 
 # Find the index of a line in a file
 #
 def GetLineNo(FileContent, Line):
-    LineNo = -1
     LineList = FileContent.splitlines()
     for Index in range(len(LineList)):
         if LineList[Index].find(Line) > -1:
             return Index + 1
+    
+    return -1
+
+#
+# Raise a parser error
+#
+def RaiseParserError(Line, Section, File, Format):
+    LineNo = GetLineNo(open(os.path.normpath(File), 'r').read(), Line)
+    ErrorMsg = "Invalid statement '%s' is found in section '%s' at line %s in file '%s', correct format is '%s'" % (Line, Section, LineNo, File, Format) 
+    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
 
 #
 # Return a full path with workspace dir

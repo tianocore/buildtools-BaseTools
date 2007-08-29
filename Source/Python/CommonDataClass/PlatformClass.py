@@ -33,6 +33,8 @@ class PlatformHeaderClass(IdentificationClass, CommonHeaderClass, DefineClass):
         self.BuildNumber = ''
         self.MakefileName = ''
         self.ClonedFrom = []                                         #[ ClonedRecordClass, ...]
+        self.BsBaseAddress = ''
+        self.RtBaseAddress = ''
 
 class PlatformFlashDefinitionFileClass(object):
     def __init__(self):
