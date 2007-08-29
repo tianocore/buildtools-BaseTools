@@ -66,7 +66,7 @@ class Build():
             else:
                 self.Args = t
         EdkLogger.quiet(time.strftime("%a, %d %b %Y %H:%M:%S +0000\n", time.localtime()))
-        
+
 
     def CheckEnvVariable(self):
         EdkLogger.quiet("Running Operating System = %s" % self.SysPlatform)
@@ -147,7 +147,7 @@ class Build():
 
         if self.Opt.FDFFILE != '':
             EdkLogger.info('FDFFILE is: %s' % self.Opt.FDFFILE)
-            
+
         ewb.GenBuildDatabase(pcdSet)
         ewb.TargetTxt = self.TargetTxt
         ewb.ToolDef = self.ToolDef
@@ -183,15 +183,7 @@ class Build():
                 self.SameTypeFileInDir(FileNum, 'makefile', DestDir)
                 for i in range(0, int(self.Opt.NUM)):
                     self.Sem.acquire()
-                p = Popen(["nmake", "/nologo", "-f", FileList[0], 'pbuild'], stdout=PIPE, stderr=PIPE, env=os.environ, cwd=os.path.dirname(FileList[0]))
-                while p.poll() == None:
-                    EdkLogger.info(p.stdout.readline()[:-2])
-                EdkLogger.info(p.stdout.read())
-                for i in range(0, int(self.Opt.NUM)):
-                    self.Sem.release()
-                if p.returncode != 0:
-                    EdkLogger.quiet(p.stderr.read())
-                    self.isexit(p.returncode)
+                self.Launch(["nmake", "/nologo", "-f", FileList[0], 'pbuild'], os.path.dirname(FileList[0]))
             else:
                 EdkLogger.quiet("ERROR: There isn't makefils in %s.\n" % DestDir)
                 self.isexit(1)
@@ -242,13 +234,7 @@ class Build():
         FileNum = len(FileList)
         if FileNum > 0:
             self.SameTypeFileInDir(FileNum, 'makefile', DestDir)
-            p = Popen(["nmake", "/nologo", "-f", FileList[0], self.Args], stdout=PIPE, stderr=PIPE, env=os.environ, cwd=os.path.dirname(FileList[0]))
-            while p.poll() == None:
-                EdkLogger.info(p.stdout.readline()[:-2])
-            EdkLogger.info(p.stdout.read())
-            if p.returncode != 0:
-                EdkLogger.quiet(p.stderr.read())
-                self.isexit(p.returncode)
+            self.Launch(["nmake", "/nologo", "-f", FileList[0], self.Args], os.path.dirname(FileList[0]))
         else:
             self.isexit(1)
 
@@ -261,13 +247,7 @@ class Build():
             self.TrackInfo(e)
             self.isexit(1)
         if makefile != "":
-            p = Popen(["nmake", "/nologo", "-f", makefile, 'all'], stdout=PIPE, stderr=PIPE, env=os.environ, cwd=os.path.dirname(makefile))
-            while p.poll() == None:
-                EdkLogger.info(p.stdout.readline()[:-2])
-            EdkLogger.info(p.stdout.read())
-            if p.returncode != 0:
-                EdkLogger.quiet(p.stderr.read())
-                self.isexit(p.returncode)
+            self.Launch(["nmake", "/nologo", "-f", makefile, 'all'], os.path.dirname(makefile))
         else:
             EdkLogger.quiet("ERROR: Can find Makefile: %s. % makefile")
             self.isexit(1)
@@ -281,7 +261,7 @@ class Build():
         if len(self.Opt.TARGET_ARCH) == 0:
             EdkLogger.quiet("ERROR: Please specify a ARCH, and try again.")
             self.isexit(1)
-            
+
         try:
             if self.Opt.spawn == True:
                 for a in self.Opt.TARGET:
@@ -329,13 +309,7 @@ class Build():
                                     os.mkdir(os.path.normpath(os.path.join(f, "FV")))
                                 archlist = ''.join(elem + ',' for elem in self.Opt.TARGET_ARCH)
                                 arch = archlist[:len(archlist)-1]
-                                p = Popen(["GenFds", "-f", self.Opt.FDFFILE, "-o", f, "-a", arch, "-p", self.Opt.DSCFILE], stdout=PIPE, stderr=PIPE, env=os.environ, cwd=os.path.dirname(self.Opt.FDFFILE))
-                                while p.poll() == None:
-                                    EdkLogger.info(p.stdout.readline()[:-2])
-                                EdkLogger.info(p.stdout.read())
-                                if p.returncode != 0:
-                                    EdkLogger.quiet(p.stderr.read())
-                                    self.isexit(p.returncode)
+                                self.Launch(["GenFds", "-f", self.Opt.FDFFILE, "-o", f, "-a", arch, "-p", self.Opt.DSCFILE], os.path.dirname(self.Opt.FDFFILE))
                         else:
                             for c in self.Opt.TARGET_ARCH:
                                 #To Do: check the arch of the module
@@ -421,6 +395,37 @@ class Build():
             self.CalculateTime()
             sys.exit(StatusCode)
 
+    def _ReadMessage(self, From, To, ExitFlag):
+        while not ExitFlag.isSet():
+            Line = From.readline()
+            if Line != "":
+                To(Line.rstrip())
+
+    def Launch(self, CommandStringList, WorkingDir):
+        Proc = Popen(CommandStringList, stdout=PIPE, stderr=PIPE, env=os.environ, cwd=WorkingDir)
+
+        EndOfProcedure = Event()
+        EndOfProcedure.clear()
+        if Proc.stdout:
+            StdOutThread = Thread(target=self._ReadMessage, args=(Proc.stdout, EdkLogger.info, EndOfProcedure))
+            StdOutThread.setDaemon(True)
+            StdOutThread.start()
+
+        if Proc.stderr:
+            StdErrThread = Thread(target=self._ReadMessage, args=(Proc.stderr, EdkLogger.quiet, EndOfProcedure))
+            StdErrThread.setDaemon(True)
+            StdErrThread.start()
+
+        Proc.wait()
+        EndOfProcedure.set()
+        if Proc.stdout:
+            StdOutThread.join()
+        if Proc.stderr:
+            StdErrThread.join()
+
+        if Proc.returncode != 0:
+            self.isexit(Proc.returncode)
+
 def MyOptionParser():
     parser = OptionParser(description=__copyright__,version=__version__,prog="build.exe",usage="%prog [options] [target]")
     parser.add_option("-a", "--arch", action="append", type="choice", choices=['IA32','X64','IPF','EBC'], dest="TARGET_ARCH",
@@ -463,7 +468,7 @@ def main():
     build = Build(opt, args)
     StatusCode = build.CheckEnvVariable()
     build.isexit(StatusCode)
-    
+
 #
 # Check target.txt and tools_def.txt and Init them
 #
