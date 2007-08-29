@@ -1684,7 +1684,7 @@ def main():
         if (len(AutoGenVirtualAddressChanged) > 0):
             print "[Warning] Please manually add Create Event statement for Virtual Address Change Event!"
             if options.event:
-                AutoGenCode = AddBootServiceEventStatement(AutoGenVirtualAddressChanged)
+                AutoGenCode = AddVirtualAddressEventStatement(AutoGenVirtualAddressChanged)
                 AutoGenEntryPointSource += AutoGenCode[0]
                 AutoGenUnloadSource += AutoGenCode[1]
                 AutoGenDefinitionSource += AutoGenCode[2]

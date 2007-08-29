@@ -241,7 +241,7 @@ def AddBootServiceEventStatement(EventList):
     
     CreateStatement  = "\n"
     CreateStatement += "  Status = gBS->CreateEvent (\n"
-    CreateStatement += "                  EFI_EVENT_SIGNAL_EXIT_BOOT_SERVICES,\n"
+    CreateStatement += "                  EVT_SIGNAL_EXIT_BOOT_SERVICES,\n"
     CreateStatement += "                  EFI_TPL_NOTIFY,\n"
     CreateStatement += "                  " + FinalEvent + ",\n"
     CreateStatement += "                  NULL,\n"
@@ -260,18 +260,19 @@ def AddBootServiceEventStatement(EventList):
     return (CreateStatement, "", GlobalDefinition, GlobalDeclaration)
 
 def AddVirtualAddressEventStatement(EventList):
+    FinalEvent = ""
     if len(EventList) > 1:
         print "Current prototype does not support multi virtual address change event"
-
-    FinalEvent       = EventList[0]
+    else:
+        FinalEvent       = EventList[0]
+    
     CreateStatement  = "\n"
-    Indention        = "                  "
 
     CreateStatement += "  Status = gBS->CreateEvent (\n"
-    CreateStatement += "                  EVT_SIGNAL_EXIT_BOOT_SERVICES,\n"
+    CreateStatement += "                  EVT_SIGNAL_VIRTUAL_ADDRESS_CHANGE,\n"
     CreateStatement += "                  TPL_NOTIFY,\n"
     CreateStatement += "                  " + FinalEvent + ",\n"
-    CreateStatement += "                  NULL,\n",
+    CreateStatement += "                  NULL,\n"
     CreateStatement += "                  &mVirtualAddressChangedEvent\n"
     CreateStatement += "                  );\n"
     CreateStatement += "  ASSERT_EFI_ERROR (Status);\n"
@@ -282,7 +283,7 @@ def AddVirtualAddressEventStatement(EventList):
     GlobalDeclaration = EventDeclarationTemplate % FinalEvent
 
     DestroyStatement  = "\n"
-    DestroyStatement += "  Status = gBS->CloseEvent (mExitBootServicesEvent);\n"
+    DestroyStatement += "  Status = gBS->CloseEvent (mVirtualAddressChangedEvent);\n"
     DestroyStatement += "  ASSERT_EFI_ERROR (Status);\n"
     
     return (CreateStatement, "", GlobalDefinition, GlobalDeclaration)
