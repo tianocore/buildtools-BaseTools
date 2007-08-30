@@ -903,7 +903,7 @@ class WorkspaceBuild(object):
                     #
                     # Do nothing if it is itself
                     #
-                    if Item.ModuleType == DataType.SUP_MODULE_LIST:
+                    if Item.SupModuleList == DataType.SUP_MODULE_LIST:
                         continue
                     #
                     # If not itself, check arch first
