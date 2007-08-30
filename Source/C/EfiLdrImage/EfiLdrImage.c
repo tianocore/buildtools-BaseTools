@@ -260,7 +260,7 @@ Returns:
   //
   fpOut = fopen(OutputFileName, "w+b");
   if (!fpOut) {
-    printf ("efildrimage: Could not open output file %s\n", OutputFileName);
+    printf ("efildrimage: ERROR: E0001: Could not open output file %s\n", OutputFileName);
     exit(1);
   }
 
@@ -284,7 +284,7 @@ Returns:
     //
     fpIn = fopen (InputFileNames[i], "rb");
     if (!fpIn) {
-      printf ("efildrimage: Could not open input file %s\n", InputFileNames[i]);
+      printf ("efildrimage: ERROR: E1001: Could not open input file %s\n", InputFileNames[i]);
       exit(1);
     }
     filesize = FCopyFile (fpIn, fpOut);
