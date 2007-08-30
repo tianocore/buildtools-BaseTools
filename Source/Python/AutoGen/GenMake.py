@@ -28,6 +28,7 @@ from BuildEngine import *
 
 gDependencyDatabase = {}    # file path : [dependent files list]
 gIncludePattern = re.compile("^[ #]*include[ ]+[\"<]*([^\"< >]+)[>\" ]*$", re.MULTILINE | re.UNICODE)
+gMacroPattern = re.compile("[_A-Z][_A-Z0-9]*\(.+\)", re.UNICODE)
 
 gMakefileHeader = '''#
 # DO NOT EDIT
@@ -111,15 +112,6 @@ PLATFORM_VERSION = ${platform_version}
 PLATFORM_RELATIVE_DIR = ${platform_relative_directory}
 PLATFORM_DIR = $(WORKSPACE)${separator}${platform_relative_directory}
 PLATFORM_OUTPUT_DIR = ${platform_output_directory}
-
-#
-# Package Macro Definition
-#
-PACKAGE_NAME = ${package_name}
-PACKAGE_GUID = ${package_guid}
-PACKAGE_VERSION = ${package_version}
-PACKAGE_RELATIVE_DIR = ${package_relative_directory}
-PACKAGE_DIR = $(WORKSPACE)${separator}${package_relative_directory}
 
 #
 # Module Macro Definition
@@ -211,7 +203,7 @@ mbuild: init all
 # Initialization target: print build information and create necessary directories
 #
 init:
-\t-@echo Building ... $(MODULE_NAME) $(MODULE_VERSION) [$(ARCH)] in package $(PACKAGE_NAME)-$(PACKAGE_VERSION)
+\t-@echo Building ... $(MODULE_NAME) $(MODULE_VERSION) [$(ARCH)] in platform $(PLATFORM_NAME) $(PLATFORM_VERSION)
 \t${BEGIN}@${create_directory_command}
 \t${END}
 
@@ -229,15 +221,6 @@ PLATFORM_VERSION = ${platform_version}
 PLATFORM_RELATIVE_DIR = ${platform_relative_directory}
 PLATFORM_DIR = $(WORKSPACE)${separator}${platform_relative_directory}
 PLATFORM_OUTPUT_DIR = ${platform_output_directory}
-
-#
-# Package Macro Definition
-#
-PACKAGE_NAME = ${package_name}
-PACKAGE_GUID = ${package_guid}
-PACKAGE_VERSION = ${package_version}
-PACKAGE_RELATIVE_DIR = ${package_relative_directory}
-PACKAGE_DIR = $(WORKSPACE)${separator}${package_relative_directory}
 
 #
 # Module Macro Definition
@@ -368,7 +351,7 @@ mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) $(CODA_TARGET)
 # Initialization target: print build information and create necessary directories
 #
 init:
-\t-@echo Building ... $(MODULE_NAME) $(MODULE_VERSION) [$(ARCH)] in package $(PACKAGE_NAME)-$(PACKAGE_VERSION)
+\t-@echo Building ... $(MODULE_NAME) $(MODULE_VERSION) [$(ARCH)] in platform $(PLATFORM_NAME) $(PLATFORM_VERSION)
 \t${BEGIN}@${create_directory_command}
 \t${END}
 
@@ -538,7 +521,6 @@ class Makefile(object):
                 raise AutoGenError(msg="No valid module found! Please check your build configuration!\n")
             self.ModuleInfo = Info
             self.PlatformInfo = Info.PlatformInfo
-            self.PackageInfo = Info.PackageInfo
             self.ModuleBuild = True
 
             self.BuildType = "mbuild"
@@ -712,11 +694,6 @@ class Makefile(object):
             "platform_relative_directory": self.PlatformInfo.SourceDir,
             "platform_output_directory" : self.PlatformInfo.OutputDir,
 
-            "package_name"              : self.PackageInfo.Name,
-            "package_guid"              : self.PackageInfo.Guid,
-            "package_version"           : self.PackageInfo.Version,
-            "package_relative_directory": self.PackageInfo.SourceDir,
-
             "module_name"               : self.ModuleInfo.Name,
             "module_guid"               : self.ModuleInfo.Guid,
             "module_version"            : self.ModuleInfo.Version,
@@ -803,11 +780,6 @@ class Makefile(object):
             "platform_version"          : self.PlatformInfo.Version,
             "platform_relative_directory": self.PlatformInfo.SourceDir,
             "platform_output_directory" : self.PlatformInfo.OutputDir,
-
-            "package_name"              : self.PackageInfo.Name,
-            "package_guid"              : self.PackageInfo.Guid,
-            "package_version"           : self.PackageInfo.Version,
-            "package_relative_directory": self.PackageInfo.SourceDir,
 
             "module_name"               : self.ModuleInfo.Name,
             "module_guid"               : self.ModuleInfo.Guid,
@@ -1040,13 +1012,12 @@ class Makefile(object):
         # Search dependency file list for each source file
         #
         self.FileDependency = self.GetFileDependency(SourceFileList, ForceIncludedFile, self.ModuleInfo.IncludePathList)
-        DepSet = set()
-        DepList = []
+        DepSet = None
         for File in self.FileDependency:
             # skipt AutoGen.c
             if File.endswith("AutoGen.c") or not File.endswith(".c"):
                 continue
-            elif len(DepSet) == 0:
+            elif DepSet == None:
                 DepSet = set(self.FileDependency[File])
             else:
                 DepSet &= set(self.FileDependency[File])
@@ -1103,6 +1074,8 @@ class Makefile(object):
         FileStack = [File] + ForceList
         #DependencyList = []
         DependencyList = [] + ForceList
+        MacroUsedByIncludedFile = False
+
         while len(FileStack) > 0:
             EdkLogger.debug(EdkLogger.DEBUG_2, "Stack %s" % "\n\t".join(FileStack))
             F = FileStack.pop()
@@ -1140,14 +1113,29 @@ class Makefile(object):
                             FileStack.append(FilePath)
                         break
                     else:
-                        #raise AutoGenError("%s included by %s was not found in any given path:\n\t%s" % (inc, f, "\n\t".join(searchPathList)))
+                        if gMacroPattern.match(Inc) != None:
+                            print "###", Inc
+                            MacroUsedByIncludedFile = True
                         EdkLogger.verbose("%s included by %s was not found in any given path:\n\t%s" % (Inc, F, "\n\t".join(SearchPathList)))
-                gDependencyDatabase[F] = CurrentFileDependencyList
+                if not MacroUsedByIncludedFile:
+                    #
+                    # Don't keep the file in cache if it uses macro in included file.
+                    # So it will be scanned again if another file includes this file.
+                    #
+                    gDependencyDatabase[F] = CurrentFileDependencyList
             DependencyList.extend(CurrentFileDependencyList)
-        DependencyList = list(set(DependencyList))  # remove duplicate ones
+
+        #
+        # If there's macro used in included file, always build the file by
+        # returning a empty dependency
+        #
+        if MacroUsedByIncludedFile:
+            DependencyList = []
+        else:
+            DependencyList = list(set(DependencyList))  # remove duplicate ones
+            DependencyList.append(File)
 
         os.chdir(WorkingDir)
-        DependencyList.append(File)
         return DependencyList
 
     def GetModuleBuildDirectoryList(self):

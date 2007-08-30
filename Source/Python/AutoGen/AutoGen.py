@@ -204,8 +204,6 @@ class AutoGen(object):
         self.Module = gModuleDatabase[Arch][str(ModuleFile)]
 
         self.Package = FindModuleOwnerPackage(self.Module, gPackageDatabase[Arch])
-        if self.Package == None:
-            raise AutoGenError(msg="Cannot find owner package for [%s]!" % (ModuleFile))
 
         self.AutoGenC = GenC.AutoGenString()
         self.AutoGenH = GenC.AutoGenString()
@@ -225,14 +223,6 @@ class AutoGen(object):
         Info = ModuleBuildInfo(self.Module)
         self.BuildInfo = Info
         Info.PlatformInfo = self.GetPlatformBuildInfo(self.Platform, self.BuildTarget, self.ToolChain, self.Arch)
-
-        Key = (self.Package, self.BuildTarget, self.ToolChain, self.Arch)
-        if Key in gAutoGenDatabase:
-            Info.PackageInfo = gAutoGenDatabase[Key]
-        else:
-            Info.PackageInfo = PackageBuildInfo(self.Package)
-            self.InitPackageBuildInfo(Info.PackageInfo)
-            gAutoGenDatabase[Key] = Info.PackageInfo
 
         # basic information
         Info.WorkspaceDir = gWorkspaceDir
@@ -340,7 +330,7 @@ class AutoGen(object):
         return BuildRule(gWorkspace.WorkspaceFile(gBuildRuleFile))
 
     def GetDerivedPackageList(self):
-        PackageList = [self.Package]
+        PackageList = []
         for M in [self.Module] + self.BuildInfo.DependentLibraryList:
             for Package in M.Packages:
                 if Package not in PackageList:
@@ -565,8 +555,8 @@ class AutoGen(object):
         return ToolChainFamily
 
     def GetDependentPackageList(self):
-        if self.Package not in self.Module.Packages:
-            self.Module.Packages.insert(0, str(self.Package))
+        #if self.Package != None and self.Package not in self.Module.Packages:
+        #    self.Module.Packages.insert(0, str(self.Package))
 
         if self.Arch not in gPackageDatabase:
             raise AutoGenError(msg="[%s] is not supported!")
