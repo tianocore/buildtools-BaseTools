@@ -58,7 +58,7 @@ Returns:
 
 --*/
 {
-  printf ("%s v%d.%d -Utility to break a file into two pieces at the request offset.\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
+  printf ("%s v%d.%d - Utility to break a file into two pieces at the specified offset.\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
   printf ("Copyright (c) 1999-2007 Intel Corporation. All rights reserved.\n");
 }
 
@@ -84,11 +84,11 @@ Returns:
   Version();
   printf ("\nUsage: \n\
    BootSectImage\n\
-     [-f, --force force patch even FAT type of SrcImage and DstImage mismatch]\n\
+     [-f, --force force patch even if the FAT type of SrcImage and DstImage mismatch]\n\
      [-m, --mbr process MBR instead of boot sector]\n\
      [-p, --parse parse SrcImageFile]\n\
      [-o, --output DstImage]\n\
-     [-g, --patch patch DstImage by data from SrcImageFile]\n\
+     [-g, --patch patch DstImage using data from SrcImageFile]\n\
      [-v, --verbose]\n\
      [--version]\n\
      [-q, --quiet disable all messages except fatal errors]\n\
@@ -158,13 +158,13 @@ Return:
 
   FileHandle = fopen (FileName, "rb");
   if (FileHandle == NULL) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "Open file: %s", FileName);
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E0001: Error opening file: %s", FileName);
     return 0;
   }
 
   result = fread (BootSector, 1, 512, FileHandle);
   if (result != 512) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "Read file: %s", FileName);
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E0004: Error reading file: %s", FileName);
     result = 0;
   }
 
@@ -226,7 +226,7 @@ Return:
   // Simple check
   //
   if (FatBpb->Fat12_16.Signature != FAT_BS_SIGNATURE) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT: Signature Invalid - %04x, expected - %04x",
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT - Signature Invalid - %04x, expected: %04x",
         FatBpb->Fat12_16.Signature, FAT_BS_SIGNATURE);
     return FatTypeUnknown;
   }
@@ -236,7 +236,7 @@ Return:
   //
   if ((FatBpb->Fat12_16.BS_jmpBoot[0] != FAT_BS_JMP1) &&
       (FatBpb->Fat12_16.BS_jmpBoot[0] != FAT_BS_JMP2)) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT: BS_jmpBoot - %02x, expected - %02x or %02x",
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT - BS_jmpBoot - %02x, expected: %02x or %02x",
         FatBpb->Fat12_16.BS_jmpBoot[0], FAT_BS_JMP1, FAT_BS_JMP2);
     return FatTypeUnknown;
   }
@@ -245,12 +245,12 @@ Return:
       (FatBpb->Fat12_16.BPB_BytsPerSec != 1024) &&
       (FatBpb->Fat12_16.BPB_BytsPerSec != 2048) &&
       (FatBpb->Fat12_16.BPB_BytsPerSec != 4096)) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT: BPB_BytsPerSec - %04x, expected - %04x, %04x, %04x, or %04x",
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT - BPB_BytsPerSec - %04x, expected: %04x, %04x, %04x, or %04x",
         FatBpb->Fat12_16.BPB_BytsPerSec, 512, 1024, 2048, 4096);
     return FatTypeUnknown;
   }
   if (FatBpb->Fat12_16.BPB_BytsPerSec != 512) {
-    DebugMsg (NULL, 0, DEBUG_WARN, NULL, "FAT: BPB_BytsPerSec - %04x, expected - %04x",
+    DebugMsg (NULL, 0, DEBUG_WARN, NULL, "ERROR: E3003: FAT - BPB_BytsPerSec - %04x, expected: %04x",
         FatBpb->Fat12_16.BPB_BytsPerSec, 512);
   }
   if ((FatBpb->Fat12_16.BPB_SecPerClus != 1) &&
@@ -261,22 +261,22 @@ Return:
       (FatBpb->Fat12_16.BPB_SecPerClus != 32) &&
       (FatBpb->Fat12_16.BPB_SecPerClus != 64) &&
       (FatBpb->Fat12_16.BPB_SecPerClus != 128)) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT: BPB_SecPerClus - %02x, expected - %02x, %02x, %02x, %02x, %02x, %02x, %02x, or %02x",
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT - BPB_SecPerClus - %02x, expected: %02x, %02x, %02x, %02x, %02x, %02x, %02x, or %02x",
         FatBpb->Fat12_16.BPB_BytsPerSec, 1, 2, 4, 8, 16, 32, 64, 128);
     return FatTypeUnknown;
   }
   if (FatBpb->Fat12_16.BPB_BytsPerSec * FatBpb->Fat12_16.BPB_SecPerClus > 32 * 1024) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT: BPB_BytsPerSec * BPB_SecPerClus - %08x, expected <= %08x",
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT - BPB_BytsPerSec * BPB_SecPerClus - %08x, expected: <= %08x",
         FatBpb->Fat12_16.BPB_BytsPerSec * FatBpb->Fat12_16.BPB_SecPerClus, 32 * 1024);
     return FatTypeUnknown;
   }
   if (FatBpb->Fat12_16.BPB_RsvdSecCnt == 0) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT: BPB_RsvdSecCnt - %04x, expected - Non-Zero",
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT - BPB_RsvdSecCnt - %04x, expected: Non-Zero Value",
         FatBpb->Fat12_16.BPB_RsvdSecCnt);
     return FatTypeUnknown;
   }
   if (FatBpb->Fat12_16.BPB_NumFATs != 2) {
-    DebugMsg (NULL, 0, DEBUG_WARN, NULL, "FAT: BPB_NumFATs - %02x, expected - %02x",
+    DebugMsg (NULL, 0, DEBUG_WARN, NULL, "ERROR: E3003: FAT - BPB_NumFATs - %02x, expected: %02x",
         FatBpb->Fat12_16.BPB_NumFATs, 2);
   }
   if ((FatBpb->Fat12_16.BPB_Media != 0xF0) &&
@@ -288,7 +288,7 @@ Return:
       (FatBpb->Fat12_16.BPB_Media != 0xFD) &&
       (FatBpb->Fat12_16.BPB_Media != 0xFE) &&
       (FatBpb->Fat12_16.BPB_Media != 0xFF)) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT: BPB_Media - %02x, expected - %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, or %02x",
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT - BPB_Media - %02x, expected: %02x, %02x, %02x, %02x, %02x, %02x, %02x, %02x, or %02x",
         FatBpb->Fat12_16.BPB_Media, 0xF0, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF);
     return FatTypeUnknown;
   }
@@ -306,7 +306,7 @@ Return:
     FATSz = FatBpb->Fat32.BPB_FATSz32;
   }
   if (FATSz == 0) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT: BPB_FATSz16, BPB_FATSz32 - 0, expected - Non-Zero");
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT - BPB_FATSz16, BPB_FATSz32 - 0, expected: Non-Zero Value");
     return FatTypeUnknown;
   }
 
@@ -316,7 +316,7 @@ Return:
     TotSec = FatBpb->Fat12_16.BPB_TotSec32;
   }
   if (TotSec == 0) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT: BPB_TotSec16, BPB_TotSec32 - 0, expected - Non-Zero");
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT - BPB_TotSec16, BPB_TotSec32 - 0, expected: Non-Zero Value");
     return FatTypeUnknown;
   }
 
@@ -340,12 +340,12 @@ Return:
   //
   if (((FatType == FatTypeFat12) || (FatType == FatTypeFat16)) &&
        (FatBpb->Fat12_16.BPB_RsvdSecCnt != 1)) {
-    DebugMsg (NULL, 0, DEBUG_WARN, NULL, "FAT12_16: BPB_RsvdSecCnt - %04x, expected - %04x",
+    DebugMsg (NULL, 0, DEBUG_WARN, NULL, "ERROR: E3003: FAT12_16 - BPB_RsvdSecCnt - %04x, expected: %04x",
         FatBpb->Fat12_16.BPB_RsvdSecCnt, 1);
   }
   if ((FatType == FatTypeFat32) &&
        (FatBpb->Fat12_16.BPB_RsvdSecCnt != 32)) {
-    DebugMsg (NULL, 0, DEBUG_WARN, NULL, "FAT32: BPB_RsvdSecCnt - %04x, expected - %04x",
+    DebugMsg (NULL, 0, DEBUG_WARN, NULL, "ERROR: E3003: FAT32 - BPB_RsvdSecCnt - %04x, expected: %04x",
         FatBpb->Fat12_16.BPB_RsvdSecCnt, 32);
   }
   if ((FatType == FatTypeFat16) &&
@@ -355,59 +355,59 @@ Return:
   }
   if ((FatType == FatTypeFat32) &&
       (FatBpb->Fat12_16.BPB_RootEntCnt != 0)) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT32: BPB_RootEntCnt - %04x, expected - %04x",
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT32 - BPB_RootEntCnt - %04x, expected: %04x",
         FatBpb->Fat12_16.BPB_RootEntCnt, 0);
     return FatTypeUnknown;
   }
   if ((FatType == FatTypeFat32) &&
       (FatBpb->Fat12_16.BPB_TotSec16 != 0)) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT32: BPB_TotSec16 - %04x, expected - %04x",
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT32 - BPB_TotSec16 - %04x, expected: %04x",
         FatBpb->Fat12_16.BPB_TotSec16, 0);
     return FatTypeUnknown;
   }
   if ((FatType == FatTypeFat32) &&
       (FatBpb->Fat12_16.BPB_FATSz16 != 0)) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT32: BPB_FATSz16 - %04x, expected - %04x",
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT32 - BPB_FATSz16 - %04x, expected: %04x",
         FatBpb->Fat12_16.BPB_FATSz16, 0);
     return FatTypeUnknown;
   }
   if ((FatType == FatTypeFat32) &&
       (FatBpb->Fat12_16.BPB_TotSec32 == 0)) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT32: BPB_TotSec32 - %04x, expected - Non-Zero",
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT32 - BPB_TotSec32 - %04x, expected: Non-Zero",
         FatBpb->Fat12_16.BPB_TotSec32);
     return FatTypeUnknown;
   }
   if ((FatType == FatTypeFat32) &&
       (FatBpb->Fat32.BPB_FATSz32 == 0)) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT32: BPB_FATSz32 - %08x, expected - Non-Zero",
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT32 - BPB_FATSz32 - %08x, expected: Non-Zero",
         FatBpb->Fat32.BPB_FATSz32);
     return FatTypeUnknown;
   }
   if ((FatType == FatTypeFat32) &&
       (FatBpb->Fat32.BPB_FSVer != 0)) {
-    DebugMsg (NULL, 0, DEBUG_WARN, NULL, "FAT32: BPB_FSVer - %08x, expected - %04x",
+    DebugMsg (NULL, 0, DEBUG_WARN, NULL, "ERROR: E3003: FAT32 - BPB_FSVer - %08x, expected: %04x",
         FatBpb->Fat32.BPB_FSVer, 0);
   }
   if ((FatType == FatTypeFat32) &&
       (FatBpb->Fat32.BPB_RootClus != 2)) {
-    DebugMsg (NULL, 0, DEBUG_WARN, NULL, "FAT32: BPB_RootClus - %08x, expected - %04x",
+    DebugMsg (NULL, 0, DEBUG_WARN, NULL, "ERROR: E3003: FAT32 - BPB_RootClus - %08x, expected: %04x",
         FatBpb->Fat32.BPB_RootClus, 2);
   }
   if ((FatType == FatTypeFat32) &&
       (FatBpb->Fat32.BPB_FSInfo != 1)) {
-    DebugMsg (NULL, 0, DEBUG_WARN, NULL, "FAT32: BPB_FSInfo - %08x, expected - %04x",
+    DebugMsg (NULL, 0, DEBUG_WARN, NULL, "ERROR: E3003: FAT32 - BPB_FSInfo - %08x, expected: %04x",
         FatBpb->Fat32.BPB_FSInfo, 1);
   }
   if ((FatType == FatTypeFat32) &&
       (FatBpb->Fat32.BPB_BkBootSec != 6)) {
-    DebugMsg (NULL, 0, DEBUG_WARN, NULL, "FAT32: BPB_BkBootSec - %08x, expected - %04x",
+    DebugMsg (NULL, 0, DEBUG_WARN, NULL, "ERROR: E3003: FAT32 - BPB_BkBootSec - %08x, expected: %04x",
         FatBpb->Fat32.BPB_BkBootSec, 6);
   }
   if ((FatType == FatTypeFat32) &&
       ((*(UINT32 *)FatBpb->Fat32.BPB_Reserved != 0) ||
        (*((UINT32 *)FatBpb->Fat32.BPB_Reserved + 1) != 0) ||
        (*((UINT32 *)FatBpb->Fat32.BPB_Reserved + 2) != 0))) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT32: BPB_Reserved - %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x, expected - 0",
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT32 - BPB_Reserved - %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x, expected: 0",
         FatBpb->Fat32.BPB_Reserved[0],
         FatBpb->Fat32.BPB_Reserved[1],
         FatBpb->Fat32.BPB_Reserved[2],
@@ -424,25 +424,25 @@ Return:
   }
   if (((FatType == FatTypeFat12) || (FatType == FatTypeFat16)) &&
        (FatBpb->Fat12_16.BS_Reserved1 != 0)) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT12_16: BS_Reserved1 - %02x, expected - 0\n",
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT12_16 - BS_Reserved1 - %02x, expected: 0\n",
         FatBpb->Fat12_16.BS_Reserved1);
     return FatTypeUnknown;
   }
   if ((FatType == FatTypeFat32) &&
       (FatBpb->Fat32.BS_Reserved1 != 0)) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT32: BS_Reserved1 - %02x, expected - 0\n",
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT32 - BS_Reserved1 - %02x, expected: 0\n",
         FatBpb->Fat32.BS_Reserved1);
     return FatTypeUnknown;
   }
   if (((FatType == FatTypeFat12) || (FatType == FatTypeFat16)) &&
        (FatBpb->Fat12_16.BS_BootSig != FAT_BS_BOOTSIG)) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT12_16: BS_BootSig - %02x, expected - %02x\n",
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT12_16 - BS_BootSig - %02x, expected: %02x\n",
         FatBpb->Fat12_16.BS_BootSig, FAT_BS_BOOTSIG);
     return FatTypeUnknown;
   }
   if ((FatType == FatTypeFat32) &&
       (FatBpb->Fat32.BS_BootSig != FAT_BS_BOOTSIG)) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT32: BS_BootSig - %02x, expected - %02x\n",
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3003: FAT32 - BS_BootSig - %02x, expected: %02x\n",
         FatBpb->Fat32.BS_BootSig, FAT_BS_BOOTSIG);
     return FatTypeUnknown;
   }
@@ -453,13 +453,13 @@ Return:
     if ((FatType == FatTypeFat12) && 
         (strcmp (FilSysType, FAT12_FILSYSTYPE) != 0) &&
         (strcmp (FilSysType, FAT_FILSYSTYPE) != 0)) {
-      DebugMsg (NULL, 0, DEBUG_WARN, NULL, "FAT12: BS_FilSysType - %s, expected - %s, or %s\n",
+      DebugMsg (NULL, 0, DEBUG_WARN, NULL, "ERROR: E3003: FAT12 - BS_FilSysType - %s, expected: %s, or %s\n",
           FilSysType, FAT12_FILSYSTYPE, FAT_FILSYSTYPE);
     }
     if ((FatType == FatTypeFat16) && 
         (strcmp (FilSysType, FAT16_FILSYSTYPE) != 0) &&
         (strcmp (FilSysType, FAT_FILSYSTYPE) != 0)) {
-      DebugMsg (NULL, 0, DEBUG_WARN, NULL, "FAT16: BS_FilSysType - %s, expected - %s, or %s\n",
+      DebugMsg (NULL, 0, DEBUG_WARN, NULL, "ERROR: E3003: FAT16 - BS_FilSysType - %s, expected: %s, or %s\n",
           FilSysType, FAT16_FILSYSTYPE, FAT_FILSYSTYPE);
     }
   }
@@ -467,7 +467,7 @@ Return:
     memcpy (FilSysType, FatBpb->Fat32.BS_FilSysType, 8);
     FilSysType[8] = 0;
     if (strcmp (FilSysType, FAT32_FILSYSTYPE) != 0) {
-      DebugMsg (NULL, 0, DEBUG_WARN, NULL, "FAT32: BS_FilSysType - %s, expected - %s\n",
+      DebugMsg (NULL, 0, DEBUG_WARN, NULL, "ERROR: E3003: FAT32 - BS_FilSysType - %s, expected: %s\n",
           FilSysType, FAT32_FILSYSTYPE);
     }
   }
@@ -493,7 +493,7 @@ ParseBootSector (
   
   FatType = GetFatType (&FatBpb);
   if (FatType <= FatTypeUnknown || FatType >= FatTypeMax) {
-    printf ("ERROR: Unknown Fat Type!\n");
+    printf ("ERROR: E3002: Unknown FAT Type!\n");
     return;
   }
 
@@ -650,17 +650,17 @@ Arguments:
     // FAT type mismatch
     //
     if (ForcePatch) {
-      DebugMsg (NULL, 0, DEBUG_WARN, NULL, "FAT type mismatch: Dest - %s, Source - %s", 
-          FatTypeToString(DestFatType), FatTypeToString(SourceFatType));
+      DebugMsg (NULL, 0, DEBUG_WARN, NULL, "ERROR: E3004: FAT type mismatch: Source - %s, Dest - %s", 
+        FatTypeToString(SourceFatType), FatTypeToString(DestFatType));
     } else {
-      DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "FAT type mismatch: Dest - %s, Source - %s", 
-          FatTypeToString(DestFatType), FatTypeToString(SourceFatType));
+      DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3004: FAT type mismatch: Source - %s, Dest - %s", 
+        FatTypeToString(SourceFatType), FatTypeToString(DestFatType));
       return ;
     }
   }
 
   if (SourceFatType <= FatTypeUnknown || SourceFatType >= FatTypeMax) {
-    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "Unknown Fat Type!\n");
+    DebugMsg (NULL, 0, DEBUG_ERROR, NULL, "ERROR: E3002: Unknown FAT Type!\n");
     return;
   }
 
@@ -717,7 +717,7 @@ Arguments:
   // Write DestFatBpb
   //
   if (WriteToFile ((void *)&DestFatBpb, DestFileName)) {
-    printf ("successfully!\n");
+    printf ("successful!\n");
   } else {
     printf ("failed!\n");
   }
@@ -814,7 +814,7 @@ PatchMbr (
   }
   
   if (SourceMbr.Signature != MBR_SIGNATURE) {
-    printf ("ERROR: Invalid MBR!\n");
+    printf ("ERROR: E3000: Invalid MBR!\n");
     return;
   }
 
@@ -829,7 +829,7 @@ PatchMbr (
 
 
   if (WriteToFile ((void *)&DestMbr, DestFileName)) {
-    printf ("\tsuccessfully!\n");
+    printf ("\tsuccessful!\n");
   }
 
   return ;
@@ -898,12 +898,12 @@ main (
   }
 
   if (ForcePatch && DoParse) {
-    printf ("Cannot apply force(-f) to parse(-p)!\n");
+    printf ("ERROR: E1002: Conflicting options: -f, -p. Cannot apply force(-f) to parse(-p)!\n");
     Usage ();
     return -1;
   }
   if (ForcePatch && !DoParse && ProcessMbr) {
-    printf ("Cannot apply force(-f) to processing MBR (-g -m)!\n");
+    printf ("ERROR: E1002: Conflicting options: -f, -g -m. Cannot apply force(-f) to processing MBR (-g -m)!\n");
     Usage ();
     return -1;
   }
