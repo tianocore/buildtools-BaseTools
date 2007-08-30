@@ -365,15 +365,15 @@ class Inf(InfObject):
         
         #
         # Sources
-        # <Filename>[|<Family>|<TagName>|<ToolCode>|<PcdFeatureFlag>]
+        # <Filename>[|<Family>[|<TagName>[|<ToolCode>[|<PcdFeatureFlag>]]]]
         #
         Sources = {}
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].Sources:
                 ItemNew = Item + DataType.TAB_VALUE_SPLIT * 4
                 List = GetSplitValueList(ItemNew)
-                if len(List) != 5 and len(List) != 9:
-                    RaiseParserError(Item, 'Sources', File, '<Filename>[|<Family>|<TagName>|<ToolCode>|<PcdFeatureFlag>]')
+                if len(List) < 5 or len(List) > 9:
+                    RaiseParserError(Item, 'Sources', File, '<Filename>[|<Family>[|<TagName>[|<ToolCode>[|<PcdFeatureFlag>]]]]')
                 CheckFileExist(self.Identification.FileRelativePath, List[0], File, 'Sources', Item)
                 CheckPcdTokenInfo(List[4], 'Sources', File)
                 MergeArches(Sources, (List[0], List[1], List[2], List[3], List[4]), Arch)
