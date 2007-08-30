@@ -27,7 +27,7 @@ class TargetTool():
         self.Arg       = args[0]
         self.FileName  = os.path.normpath(os.path.join(self.WorkSpace, 'Conf\\target.txt'))
         if os.path.isfile(self.FileName) == False:
-            print "%s is not existed." % self.FileName
+            print "%s does not exist." % self.FileName
             sys.exit(1)
         self.TargetTxtDictionary = {
             TAB_TAT_DEFINES_ACTIVE_PLATFORM                            : '',
@@ -44,7 +44,7 @@ class TargetTool():
         if os.path.exists(filename) and os.path.isfile(filename):
              return self.ConvertTextFileToDict(filename, '#', '=')
         else:
-            raise ParseError('LoadTargetTxtFile() : No Target.txt file exist')
+            raise ParseError('LoadTargetTxtFile() : No Target.txt file exists.')
             return 1
 
 #
