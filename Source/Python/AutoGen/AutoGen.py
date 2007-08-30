@@ -171,7 +171,7 @@ class AutoGen(object):
             self.BuildInfo = {}
             for a in self.Arch:
                 if a not in gPlatformDatabase or str(PlatformFile) not in gPlatformDatabase[a]:
-                    raise AutoGenError(msg="[%s] is not active platform, or %s is not supported!" % (PlatformFile, a))
+                    raise AutoGenError(msg="[%s] is not the active platform, or %s is not supported by the active platform!" % (PlatformFile, a))
                 p = gPlatformDatabase[a][str(PlatformFile)]
                 self.Platform[a] = p
                 self.BuildInfo[a] = self.GetPlatformBuildInfo(p, self.BuildTarget, self.ToolChain, a)
@@ -186,7 +186,7 @@ class AutoGen(object):
         self.IsPlatformAutoGen = False
         if type(Arch) == type([]):
             if len(Arch) > 1:
-                raise AutoGenError(msg="Cannot AutoGen a module for more than one platform objects at the same time!")
+                raise AutoGenError(msg="Cannot AutoGen a module for more than one platform object at a time!")
             self.Arch = Arch[0]
         else:
             self.Arch = Arch
@@ -194,13 +194,13 @@ class AutoGen(object):
         EdkLogger.verbose("AutoGen module [%s] [%s]" % (ModuleFile, self.Arch))
 
         if self.Arch not in gPlatformDatabase or str(PlatformFile) not in gPlatformDatabase[Arch]:
-            raise AutoGenError(msg="[%s] is not active platform, or %s is not supported!" % (PlatformFile, self.Arch))
+            raise AutoGenError(msg="[%s] is not the active platform, or %s is not supported by the platform!" % (PlatformFile, self.Arch))
         if self.Arch not in gModuleDatabase or str(ModuleFile) not in gModuleDatabase[self.Arch]:
-            raise AutoGenError(msg="[%s] for %s is not found in active platform [%s]!" % (ModuleFile, self.Arch, PlatformFile))
+            raise AutoGenError(msg="[%s] architecture %s is not supported by active platform [%s]!" % (ModuleFile, self.Arch, PlatformFile))
 
         self.Platform = gPlatformDatabase[Arch][str(PlatformFile)]
         if str(ModuleFile) not in self.Platform.Modules and str(ModuleFile) not in self.Platform.Libraries:
-            raise AutoGenError(msg="Cannot find module %s for [%s] in platform:\n\t%s\n" % (ModuleFile, self.Arch, self.Platform))
+            raise AutoGenError(msg="Cannot find module %s for architecture [%s] in the active platform:\n\t%s\n" % (ModuleFile, self.Arch, self.Platform))
         self.Module = gModuleDatabase[Arch][str(ModuleFile)]
 
         self.Package = FindModuleOwnerPackage(self.Module, gPackageDatabase[Arch])

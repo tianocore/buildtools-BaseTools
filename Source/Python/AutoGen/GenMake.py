@@ -879,7 +879,7 @@ class Makefile(object):
                 # next target
                 DstFileType, DstFileBuildRule = BuildRule.Get(SrcFileBuildRule.DestFileExt, Family)
                 if DstFileType == None:
-                    DstFileType = "Unknow-Type-File"
+                    DstFileType = "Unknown-Type-File"
 
                 if DstFileType  in self.SourceFileDatabase:
                     self.SourceFileDatabase[DstFileType].append(DstFile)
@@ -925,7 +925,7 @@ class Makefile(object):
                 while True:
                     DstFileType, DstFileBuildRule = BuildRule.Get(SrcFileBuildRule.DestFileExt, Family)
                     if DstFileType == None:
-                        DstFileType = "Unknow-Type-File"
+                        DstFileType = "Unknown-Type-File"
 
                     if DstFileType  in self.SourceFileDatabase:
                         self.SourceFileDatabase[DstFileType].append(DstFile)
@@ -985,7 +985,7 @@ class Makefile(object):
                     # next target
                     DstFileType, DstFileBuildRule = BuildRule.Get(SrcFileBuildRule.DestFileExt, Family)
                     if DstFileType == None:
-                        DstFileType = "Unknow-Type-File"
+                        DstFileType = "Unknown-Type-File"
 
                     if DstFileType  in self.SourceFileDatabase:
                         self.SourceFileDatabase[DstFileType].append(DstFile)

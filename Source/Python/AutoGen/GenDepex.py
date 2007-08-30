@@ -133,13 +133,13 @@ class DependencyExpression:
     def ValidateOpcode(self):
         for Op in self.AboveAllOpcode:
             if Op in self.OpcodeList and Op != self.OpcodeList[0]:
-                raise AutoGenError("Opcode=%s should be the first one in expression", Op)
+                raise AutoGenError("Opcode=%s should be the first one in the expression", Op)
         for Op in self.ExclusiveOpcode:
             if Op in self.OpcodeList and len(self.OpcodeList) > 1:
-                raise AutoGenError("Opcode=%s should be only opcode in expression", Op)
+                raise AutoGenError("Opcode=%s should be the only opcode in the expression", Op)
         # print "######", self.ExpressionString
         if self.TokenList[-1] in self.NonEndingOpcode:
-            raise AutoGenError("Extra %s at the end of dependency expression" % self.TokenList[-1])
+            raise AutoGenError("Extra %s at the end of the dependency expression" % self.TokenList[-1])
 
     def GetGuidValue(self, Guid):
         GuidValueString = Guid.replace("{", "").replace("}", "").replace(" ", "")
