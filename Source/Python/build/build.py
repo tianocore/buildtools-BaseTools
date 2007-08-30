@@ -106,12 +106,12 @@ class Build():
         if self.Opt.FDFFILE == None:
             self.Opt.FDFFILE = ewb.Fdf
             if self.Opt.FDFFILE != '' and os.path.isfile(os.path.normpath(os.path.join(self.WorkSpace, self.Opt.FDFFILE))) == False:
-                EdkLogger.quiet("ERROR: The file: %s is not existed!" % self.Opt.FDFFILE)
+                EdkLogger.quiet("ERROR: The file: %s does not exist!" % self.Opt.FDFFILE)
                 self.isexit(1)
             if self.Opt.FDFFILE != '':
                 (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(self.WorkSpace, self.Opt.FDFFILE)))
                 if ext.lower() != '.fdf':
-                    EdkLogger.quiet("ERROR: The file: %s is not a fdf file!" % self.Opt.FDFFILE)
+                    EdkLogger.quiet("ERROR: The file: %s is not a FDF file!" % self.Opt.FDFFILE)
                     self.isexit(1)
                 self.Opt.FDFFILE = os.path.normpath(os.path.join(self.WorkSpace, self.Opt.FDFFILE))
                 fdf = FdfParser(self.Opt.FDFFILE)
@@ -125,7 +125,7 @@ class Build():
                 realpath = os.path.normpath(os.path.join(self.WorkSpace, self.Opt.FDFFILE))
                 (filename, ext) = os.path.splitext(realpath)
                 if ext.lower() != '.fdf':
-                    EdkLogger.quiet("ERROR: The input file: %s is not a fdf file!" % realpath)
+                    EdkLogger.quiet("ERROR: The input file: %s is not a FDF file!" % realpath)
                     self.isexit(1)
                 self.Opt.FDFFILE = realpath
                 fdf = FdfParser(self.Opt.FDFFILE)
@@ -135,14 +135,14 @@ class Build():
                 realpath = os.path.abspath(self.Opt.FDFFILE)
                 (filename, ext) = os.path.splitext(realpath)
                 if ext.lower() != '.fdf':
-                    EdkLogger.quiet("ERROR: The input file: %s is not a fdf file!" % realpath)
+                    EdkLogger.quiet("ERROR: The input file: %s is not a FDF file!" % realpath)
                     self.isexit(1)
                 self.Opt.FDFFILE = realpath
                 fdf = FdfParser(self.Opt.FDFFILE)
                 fdf.ParseFile()
                 pcdSet = fdf.profile.PcdDict
             else:
-                EdkLogger.quiet("ERROR: The file: %s is not existed!" % self.Opt.FDFFILE)
+                EdkLogger.quiet("ERROR: The file: %s does not exist!" % self.Opt.FDFFILE)
                 self.isexit(1)
 
         if self.Opt.FDFFILE != '':
@@ -167,7 +167,7 @@ class Build():
                 self.SameTypeFileInDir(FileNum, 'makefile', DestDir)
                 BuildSpawn(self.ReturnCode, self.Sem, FileList[0], 'pbuild', 1).start()
             else:
-                EdkLogger.quiet("ERROR: There isn't makefils in %s.\n" % DestDir)
+                EdkLogger.quiet("ERROR: There is no Makefile in %s.\n" % DestDir)
                 self.isexit(1)
 
     def ModuleBuild(self, ModuleFile, PlatformFile, ewb, a, b, c, ModuleAutoGen):
@@ -185,7 +185,7 @@ class Build():
                     self.Sem.acquire()
                 self.Launch(["nmake", "/nologo", "-f", FileList[0], 'pbuild'], os.path.dirname(FileList[0]))
             else:
-                EdkLogger.quiet("ERROR: There isn't makefils in %s.\n" % DestDir)
+                EdkLogger.quiet("ERROR: There is no Makefile in %s.\n" % DestDir)
                 self.isexit(1)
 
     def SameTypeFileInDir(self, FileNum, FileType, Dir):
@@ -259,7 +259,7 @@ class Build():
         #
         self.Opt.TARGET_ARCH = list(set(self.Opt.TARGET_ARCH) & set(ewb.SupArchList))
         if len(self.Opt.TARGET_ARCH) == 0:
-            EdkLogger.quiet("ERROR: Please specify a ARCH, and try again.")
+            EdkLogger.quiet("ERROR: Please specify an ARCH, then try again.")
             self.isexit(1)
 
         try:
@@ -479,10 +479,10 @@ def main():
             StatusCode = build.ToolDef.LoadToolDefFile(os.path.normpath(os.path.join(build.WorkSpace, build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])))
             build.isexit(StatusCode)
         else:
-            EdkLogger.quiet("ERROR: %s is not existed." % os.path.normpath(os.path.join(build.WorkSpace, build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])))
+            EdkLogger.quiet("ERROR: %s does not exist." % os.path.normpath(os.path.join(build.WorkSpace, build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])))
             build.isexit(1)
     else:
-        EdkLogger.quiet("ERROR: %s is not existed." % os.path.normpath(os.path.join(build.WorkSpace, 'Conf\\target.txt')))
+        EdkLogger.quiet("ERROR: %s does not exist." % os.path.normpath(os.path.join(build.WorkSpace, 'Conf\\target.txt')))
         build.isexit(1)
 
 #
@@ -499,25 +499,25 @@ def main():
 
     if build.Opt.INFFILE != None:
         if build.Opt.INFFILE[0] == '.':
-            EdkLogger.quiet("ERROR: Please specify a absolute path or a WORKSPACE realtive path for Module(INF) file.")
+            EdkLogger.quiet("ERROR: Please specify an absolute path or a WORKSPACE realtive path for the MODULE (.inf) file.")
             build.isexit(1)
         if os.path.isfile(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.INFFILE))) == True:
             (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.INFFILE)))
             if ext.lower() != '.inf':
-                EdkLogger.quiet("ERROR: The input file: %s is not a inf file!" % build.Opt.INFFILE)
+                EdkLogger.quiet("ERROR: The input file: %s is not a INF file!" % build.Opt.INFFILE)
                 build.isexit(1)
         elif os.path.isfile(os.path.abspath(build.Opt.INFFILE)) == True:
             realpath = os.path.abspath(build.Opt.INFFILE)
             (filename, ext) = os.path.splitext(realpath)
             if ext.lower() != '.inf':
-                EdkLogger.quiet("ERROR: The input file: %s is not a inf file!" % build.Opt.INFFILE)
+                EdkLogger.quiet("ERROR: The input file: %s is not a INF file!" % build.Opt.INFFILE)
                 build.isexit(1)
             if build.WorkSpace[len(build.WorkSpace)-1] == '\\' or build.WorkSpace[len(build.WorkSpace)-1] == '/':
                 build.Opt.INFFILE = realpath[len(build.WorkSpace):]
             else:
                 build.Opt.INFFILE = realpath[len(build.WorkSpace)+1:]
         else:
-            EdkLogger.quiet("The input file: %s is not existed!"  % build.Opt.INFFILE)
+            EdkLogger.quiet("The input file: %s does not exist!"  % build.Opt.INFFILE)
             build.isexit(1)
 
     if build.Opt.TARGET_ARCH == None:
@@ -555,34 +555,34 @@ def main():
     if build.Opt.DSCFILE == None:
         build.Opt.DSCFILE = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM]
         if build.Opt.DSCFILE != '' and os.path.isfile(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE))) == False:
-            EdkLogger.quiet("ERROR: The file: %s is not existed!" % os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE)))
+            EdkLogger.quiet("ERROR: The file: %s does not exist!" % os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE)))
             build.isexit(1)
         if build.Opt.DSCFILE != '':
             (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE)))
             if ext.lower() != '.dsc':
-                EdkLogger.quiet("ERROR: The file: %s is not a dsc file!" % os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE)))
+                EdkLogger.quiet("ERROR: The file: %s is not a DSC file!" % os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE)))
                 build.isexit(1)
     else:
         if build.Opt.DSCFILE[0] == '.':
-            EdkLogger.quiet("ERROR: Please specify a absolute path or a WORKSPACE realtive path for PLATFORM(DSC) file.")
+            EdkLogger.quiet("ERROR: Please specify an absolute path or a WORKSPACE realtive path for the PLATFORM (.dsc) file.")
             build.isexit(1)
         if os.path.isfile(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE))) == True:
             (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE)))
             if ext.lower() != '.dsc':
-                EdkLogger.quiet("ERROR: The input file: %s is not a dsc file!" % build.Opt.DSCFILE)
+                EdkLogger.quiet("ERROR: The input file: %s is not a DSC file!" % build.Opt.DSCFILE)
                 build.isexit(1)
         elif os.path.isfile(os.path.abspath(build.Opt.DSCFILE)) == True:
             realpath = os.path.abspath(build.Opt.DSCFILE)
             (filename, ext) = os.path.splitext(realpath)
             if ext.lower() != '.dsc':
-                EdkLogger.quiet("ERROR: The input file: %s is not a dsc file!" % build.Opt.DSCFILE)
+                EdkLogger.quiet("ERROR: The input file: %s is not a DSC file!" % build.Opt.DSCFILE)
                 build.isexit(1)
             if build.WorkSpace[len(build.WorkSpace)-1] == '\\' or build.WorkSpace[len(build.WorkSpace)-1] == '/':
                 build.Opt.DSCFILE = realpath[len(build.WorkSpace):]
             else:
                 build.Opt.DSCFILE = realpath[len(build.WorkSpace)+1:]
         else:
-            EdkLogger.quiet("ERROR: The input file: %s is not existed!"  % build.Opt.DSCFILE)
+            EdkLogger.quiet("ERROR: The input file: %s does not exist!"  % build.Opt.DSCFILE)
             build.isexit(1)
 
 #
@@ -618,7 +618,7 @@ def main():
         FileList = glob.glob(os.path.normpath(os.path.join(CurWorkDir, '*.inf')))
         FileNum = len(FileList)
         if FileNum >= 2:
-            EdkLogger.quiet("ERROR: There are %d INF filss in %s.\n" % (FileNum, CurWorkDir))
+            EdkLogger.quiet("ERROR: There are %d INF files in %s.\n" % (FileNum, CurWorkDir))
             build.isexit(1)
         if build.Opt.DSCFILE:
             if ewb.WorkspaceDir[len(ewb.WorkspaceDir)-1] == '\\' or ewb.WorkspaceDir[len(ewb.WorkspaceDir)-1] == '/':
