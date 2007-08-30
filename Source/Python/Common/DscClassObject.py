@@ -409,6 +409,7 @@ class Dsc(DscObject):
     
     #
     # Gen FeatureFlagPcds
+    # <PcdTokenSpaceGuidCName>.<TokenCName>|TRUE/FALSE
     #
     def GenFeatureFlagPcds(self, Type = '', ContainerFile = ''):
         Pcds = {}
@@ -434,6 +435,7 @@ class Dsc(DscObject):
     
     #
     # Gen Pcds
+    # <PcdTokenSpaceGuidCName>.<TokenCName>|<Value>[|<Type>|<MaximumDatumSize>]
     #
     def GenPcds(self, Type = '', ContainerFile = ''):
         Pcds = {}
@@ -476,6 +478,7 @@ class Dsc(DscObject):
             
     #
     # Gen DynamicDefaultPcds
+    # <PcdTokenSpaceGuidCName>.<TokenCName>|<Value>[|<DatumTyp>[|<MaxDatumSize>]]
     #
     def GenDynamicDefaultPcds(self, Type = '', ContainerFile = ''):
         Pcds = {}
@@ -490,24 +493,25 @@ class Dsc(DscObject):
                 pass
             
             for Item in Items:
-                List = GetSplitValueList(Item[0] + DataType.TAB_VALUE_SPLIT)
-                if len(List) < 3:
-                    RaiseParserError(Item[0], 'Pcds' + Type, ContainerFile, '<PcdTokenSpaceGuidCName>.<TokenCName>|<Value>')
+                List = GetSplitValueList(Item[0] + DataType.TAB_VALUE_SPLIT * 2)
+                if len(List) < 4 or len(List) > 8:
+                    RaiseParserError(Item[0], 'Pcds' + Type, ContainerFile, '<PcdTokenSpaceGuidCName>.<TokenCName>|<Value>[|<DatumTyp>[|<MaxDatumSize>]]')
                 
                 CheckPcdTokenInfo(List[0], 'Pcds' + Type, ContainerFile)
                 TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
-                MergeArches(Pcds, (TokenInfo[1], TokenInfo[0], List[1], List[2], Type), Arch)
+                MergeArches(Pcds, (TokenInfo[1], TokenInfo[0], List[1], List[2], List[3], Type), Arch)
         for Key in Pcds:
             (Status, SkuInfoList) = self.GenSkuInfoList(Item[1], self.Platform.SkuInfos.SkuInfoList, '', '', '', '', '', Key[2])
             if Status == False:
                 ErrorMsg = "SKUID '%s' of '%s' not defined in file '%s'" % (SkuInfoList, Type, self.Platform.Header.FullPath) 
                 raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-            Pcd = PcdClass(Key[0], '', Key[1], '', Key[3], Key[2], Key[4], [], SkuInfoList, [])
+            Pcd = PcdClass(Key[0], '', Key[1], Key[3], Key[4], Key[2], Key[5], [], SkuInfoList, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
          
     #
     # Gen DynamicHiiPcds
+    # <PcdTokenSpaceGuidCName>.<TokenCName>|<String>|<VariableGuidCName>|<VariableOffset>[|<DefaultValue>[|<MaximumDatumSize>]]
     #
     def GenDynamicHiiPcds(self, Type = '', ContainerFile = ''):
         Pcds = {}
@@ -540,6 +544,7 @@ class Dsc(DscObject):
     
     #
     # Gen DynamicVpdPcds
+    # <PcdTokenSpaceGuidCName>.<TokenCName>|<VpdOffset>[|<MaximumDatumSize>]
     #
     def GenDynamicVpdPcds(self, Type = '', ContainerFile = ''):
         Pcds = {}
