@@ -150,7 +150,7 @@ Return:
   if (VolumeHandle == INVALID_HANDLE_VALUE) {
     fprintf (
       stderr, 
-      "ERROR: CreateFile failed: Volume = %s, LastError = 0x%x\n", 
+      "ERROR: E0005: CreateFile failed: Volume = %s, LastError = 0x%x\n", 
       VolumeAccessPath, 
       GetLastError ()
       );
@@ -205,7 +205,7 @@ Return:
     //
     // Should have a type.
     //
-    fprintf (stderr, "ERROR: fetal error!!!\n");
+    fprintf (stderr, "ERROR: E3005: Fatal Error!!!\n");
     return FALSE;
   }
   return TRUE;
@@ -606,12 +606,12 @@ main (
   // Check parameter
   //
   if (VolumeLetter == 0) {
-    fprintf (stderr, "ERROR: Volume isn't provided!\n");
+    fprintf (stderr, "ERROR: E2003: Volume was not provided!\n");
     return 1;
   }
   
   if (FilePath == NULL) {
-    fprintf (stderr, "ERROR: File isn't provided!\n");
+    fprintf (stderr, "ERROR: E2003: File was not provided!\n");
     return 1;
   }
     
@@ -631,7 +631,7 @@ main (
     // Hard/USB disk
     //
     if (!GetDriveInfo (VolumeLetter, &DriveInfo)) {
-      fprintf (stderr, "ERROR: GetDriveInfo - 0x%x\n", GetLastError ());
+      fprintf (stderr, "ERROR: E2004: GetDriveInfo - 0x%x\n", GetLastError ());
       return 1;
     }
 
@@ -640,7 +640,7 @@ main (
     // very safe then:)
     //
     if (DriveInfo.DriveType->Type == DRIVE_FIXED && WriteToDisk) {
-      fprintf (stderr, "ERROR: Write to local harddisk - permission denied!\n");
+      fprintf (stderr, "ERROR: E0002: Error writing to local harddisk - permission denied!\n");
       return 1;
     }
     
@@ -654,7 +654,7 @@ main (
   }
 
   if (PatchType == PatchTypeUnknown) {
-    fprintf (stderr, "ERROR: PatchType unknown!\n");
+    fprintf (stderr, "ERROR: E3002: PatchType unknown!\n");
     return 1;
   }
 
@@ -665,7 +665,7 @@ main (
   if (Status == ErrorSuccess) {
     fprintf (
       stdout, 
-      "%s %s: successfully!\n", 
+      "%s %s: successful!\n", 
       WriteToDisk ? "Write" : "Read", 
       ProcessMbr ? "MBR" : "DBR"
       );

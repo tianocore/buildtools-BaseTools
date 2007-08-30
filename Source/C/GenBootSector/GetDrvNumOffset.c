@@ -27,7 +27,7 @@ GetDrvNumOffset (
     FATSz = FatBpb->Fat32.BPB_FATSz32;
   }
   if (FATSz == 0) {
-    fprintf (stderr, "ERROR: FAT: BPB_FATSz16, BPB_FATSz32 - 0, expected - Non-Zero\n");
+    fprintf (stderr, "ERROR: E3003: FAT - BPB_FATSz16, BPB_FATSz32 - 0, expected: Non-Zero number\n");
     return -1;
   }
 
@@ -37,7 +37,7 @@ GetDrvNumOffset (
     TotSec = FatBpb->Fat12_16.BPB_TotSec32;
   }
   if (TotSec == 0) {
-    fprintf (stderr, "ERROR: FAT: BPB_TotSec16, BPB_TotSec32 - 0, expected - Non-Zero\n");
+    fprintf (stderr, "ERROR: E3003: FAT - BPB_TotSec16, BPB_TotSec32 - 0, expected: Non-Zero number\n");
     return -1;
   }
 
