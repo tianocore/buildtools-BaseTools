@@ -195,14 +195,14 @@ Returns:
   //
   InputFile = fopen (InputFileName, "rb");
   if (InputFile == NULL) {
-    printf ("ERROR: Could not open input file \"%s\".\n", InputFileName);
+    printf ("ERROR: E0001: Could not open input file \"%s\".\n", InputFileName);
     return EFI_ABORTED;
   }
   //
   // Go to the end so that we can determine the file size
   //
   if (fseek (InputFile, 0, SEEK_END)) {
-    printf ("ERROR: System error reading input file \"%s\".\n", InputFileName);
+    printf ("ERROR: E0004: System error reading input file \"%s\".\n", InputFileName);
     fclose (InputFile);
     return EFI_ABORTED;
   }
@@ -211,7 +211,7 @@ Returns:
   //
   FileSize = ftell (InputFile);
   if (FileSize == -1) {
-    printf ("ERROR: System error parsing input file \"%s\".\n", InputFileName);
+    printf ("ERROR: E0003: System error parsing input file \"%s\".\n", InputFileName);
     fclose (InputFile);
     return EFI_ABORTED;
   }
@@ -227,7 +227,7 @@ Returns:
   // Reset to the beginning of the file
   //
   if (fseek (InputFile, 0, SEEK_SET)) {
-    printf ("ERROR: System error reading input file \"%s\".\n", InputFileName);
+    printf ("ERROR: E0004: System error reading input file \"%s\".\n", InputFileName);
     fclose (InputFile);
     free (*InputFileImage);
     *InputFileImage = NULL;
@@ -238,7 +238,7 @@ Returns:
   //
   *BytesRead = fread (*InputFileImage, sizeof (UINT8), FileSize, InputFile);
   if (*BytesRead != sizeof (UINT8) * FileSize) {
-    printf ("ERROR: Reading file \"%s\"%i.\n", InputFileName);
+    printf ("ERROR: E0004: Reading file \"%s\"%i.\n", InputFileName);
     fclose (InputFile);
     free (*InputFileImage);
     *InputFileImage = NULL;
