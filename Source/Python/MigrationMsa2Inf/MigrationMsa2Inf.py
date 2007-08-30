@@ -611,7 +611,7 @@ def main():
             try:
                 lcKeyword = str(XmlElementData(Lc.getElementsByTagName("Keyword")[0]))
             except:
-                raise SyntaxError, "The MSA is not correctly formed, a Keyword Element is required"
+                raise SyntaxError, "The MSA is not correctly formed, a Library Class Keyword Element is required"
 
             lcUsage = ""
             try:
@@ -987,7 +987,7 @@ def main():
                     AddGuid(Archs, CName, Usage)
                     AutoGenGuid.append(CName)
                 else:
-                    raise AssertionError, "Guid %s defined in %s is not declared in any package: " % (CName, filename)
+                    raise AssertionError, "Guid %s defined in %s is not declared in any package (.dec) file!" % (CName, filename)
             except:
                 pass
 
