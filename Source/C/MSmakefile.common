@@ -3,7 +3,7 @@
 !ENDIF
 
 !IFNDEF BASE_TOOLS_PATH
-!ERROR "Please run tool_setup.bat at first!"
+!ERROR "Please run build_tools.bat at first!"
 !ENDIF
 
 !IFNDEF ARCH
@@ -12,7 +12,7 @@ ARCH = IA32
 
 MAKE        = nmake -nologo
 
-SOURCE_PATH = $(BASE_TOOLS_PATH)\C
+SOURCE_PATH = $(BASE_TOOLS_PATH)\Source\C
 BIN_PATH    = $(BASE_TOOLS_PATH)\Bin
 LIB_PATH    = $(BASE_TOOLS_PATH)\Lib
 

@@ -3,7 +3,7 @@ ARCH = IA32
 !INCLUDE MSmakefile.common
 
 LIBRARIES = Common
-APPLICATIONS = GenFw GenSec GenFv GenFfs GenVtf EfiRom TianoCompress Split GenBootSector
+APPLICATIONS = GenFw GenSec GenFv GenFfs GenVtf EfiRom TianoCompress Split GenBootSector BootSectImage EfiLdrImage GenPage
 
 all: libs apps install
 
@@ -27,9 +27,10 @@ install: $(LIB_PATH) $(BIN_PATH)
 	@echo.
 	@echo ######################
 	@echo # Install to $(SYS_LIB_PATH)
+	@echo # Install to $(SYS_BIN_PATH)
 	@echo ######################
-	@xcopy $(LIB_PATH)\*.lib $(SYS_LIB_PATH) /I /D /E /F /Y
-	@xcopy $(BIN_PATH)\*.exe $(SYS_BIN_PATH) /I /D /E /F /Y
+	@-xcopy $(LIB_PATH)\*.lib $(SYS_LIB_PATH) /I /D /E /F /Y > NUL 2>&1
+	@-xcopy $(BIN_PATH)\*.exe $(SYS_BIN_PATH) /I /D /E /F /Y > NUL 2>&1
 
 .PHONY: clean
 clean:
