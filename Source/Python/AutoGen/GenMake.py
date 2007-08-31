@@ -1021,7 +1021,9 @@ class Makefile(object):
                 DepSet = set(self.FileDependency[File])
             else:
                 DepSet &= set(self.FileDependency[File])
-        #DepSet = set(DepList)
+        # in case nothing in SourceFileList
+        if DepSet == None:
+            DepSet = set()
         #
         # Extract comman files list in the dependency files
         #
