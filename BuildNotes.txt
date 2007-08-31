@@ -1,0 +1,51 @@
+Intel(R) Platform Innovation Framework for EFI
+BuildTools Project, BaseTools Sub-Project
+Root Package 1.00
+2007-08-31
+
+Intel is a trademark or registered trademark of Intel Corporation or its
+subsidiaries in the United States and other countries.
+* Other names and brands may be claimed as the property of others.
+Copyright (c) 2007, Intel Corporation
+
+-------------------------------------------------------------------------------
+Quick Start
+-----------
+  Set the EDK_TOOLS_PATH to be the root directory of the tools (the root
+  directory contains the Bin\ directory.)
+
+Supported build targets
+-----------------------
+
+all				- Incremental Build of all C based tools. This is the default target
+clean     - Clean intermediate files
+cleanall  - Clean all generated files and directories during build
+
+-------------------------------------------------------------------------------
+
+Tools in Python
+---------------
+* Convert Python source to exe file
+  The tools written in Python can be coverted into executable program which can 
+  be executed without installing a Python interpreter. 
+
+  For Windows and Linux, the convertion tool package is called cx_Freeze, its
+  home page is:
+
+		http://sourceforge.net/projects/cx-freeze/
+
+	If you have installed cx_Freeze at c:\cx_Freeze-3.0.3. Use following command
+  lines to convert MyBuild.py to MyBuild.exe (note this is an example, there is
+  no MyBuild Python project in the BaseTools\Python tree.
+
+    set PYTHONPATH=<BaseToolsDirPath>\Source\Python
+  	c:\cx_Freeze-3.0.3\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8 --install-dir=.\mybuild MyBuild.py
+
+	The generated .exe (and .dll) files are put in "mybuild" subdirectory.
+
+  The following is a real example with the BuildTools/trunk/BaseTools project 
+  installed in: C:\Work\BaseTools
+
+  
+  C:\Work\BaseTools\Source\Python> set PYTHONPATH=C:\Work\BaseTools\Source\Python
+  C:\Work\BaseTools\Source\Python> c:\cx_Freeze-3.0.3\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8 --install-dir=C:\Work\BaseTools\Bin\Win32 build\build.py
