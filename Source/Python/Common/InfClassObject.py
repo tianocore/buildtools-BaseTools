@@ -489,7 +489,12 @@ class Inf(InfObject):
         TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
         if len(TokenInfo) != 2:
             RaiseParserError(Item, 'Pcds' + Type, File, Format)
-        
+        if len(List) == 3 and List[1] == '':
+            #
+            # Value is empty
+            #
+            RaiseParserError(Item, 'Pcds' + Type, File, Format)
+
         return (TokenInfo[0], TokenInfo[1], List[1], Type)
     
     def LoadInfFile(self, Filename):     
