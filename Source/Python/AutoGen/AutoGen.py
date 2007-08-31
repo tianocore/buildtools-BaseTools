@@ -374,7 +374,7 @@ class AutoGen(object):
                         Token = P.Guids[GuidCName]
                         break
                 else:
-                    raise AutoGenError(msg="%s used in module %s cannot be found in any package!" % (GuidCName, Info.Name))
+                    raise AutoGenError(msg="%s used in module %s cannot be found in any package!" % (GuidCName, self.Module))
             TokenList[I] = Token
         EdkLogger.debug(EdkLogger.DEBUG_8, "TokenList(guid) = %s" % " ".join(TokenList))
         return TokenList
@@ -682,7 +682,7 @@ class AutoGen(object):
                     break
             else:
                 PackageListString = "\n\t".join([str(P) for P in self.BuildInfo.DerivedPackageList])
-                raise AutoGenError(msg='GUID [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.BuildInfo.Name, PackageListString))
+                raise AutoGenError(msg='GUID [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.Module, PackageListString))
         return Guid
 
     def GetProtocolGuidList(self):
@@ -701,7 +701,7 @@ class AutoGen(object):
                     break
             else:
                 PackageListString = "\n\t".join([str(P) for P in self.BuildInfo.DerivedPackageList])
-                raise AutoGenError(msg='Protocol [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.BuildInfo.Name, PackageListString))
+                raise AutoGenError(msg='Protocol [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.Module, PackageListString))
         return Guid
 
     def GetPpiGuidList(self):
@@ -720,7 +720,7 @@ class AutoGen(object):
                     break
             else:
                 PackageListString = "\n\t".join([str(P) for P in self.BuildInfo.DerivedPackageList])
-                raise AutoGenError(msg='PPI [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.BuildInfo.Name, PackageListString))
+                raise AutoGenError(msg='PPI [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.Module, PackageListString))
         return Guid
 
     def GetIncludePathList(self, DependentPackageList):
