@@ -79,7 +79,7 @@ goto end
 
 :rebuild
 pushd .
-cd %BASE_TOOLS_PATH%\CSource
+cd %BASE_TOOLS_PATH%\Source\C
 call nmake cleanall
 popd
 
@@ -93,7 +93,7 @@ echo Building the Framework Tools
 echo.
 
 pushd .
-cd %BASE_TOOLS_PATH%\CSource
+cd %BASE_TOOLS_PATH%\Source\C
 call nmake
 popd
 
