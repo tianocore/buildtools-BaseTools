@@ -374,7 +374,9 @@ class AutoGen(object):
                         Token = P.Guids[GuidCName]
                         break
                 else:
-                    raise AutoGenError(msg="%s used in module %s cannot be found in any package!" % (GuidCName, self.Module))
+                    PackageListString = "\n\t".join([str(P) for P in self.BuildInfo.DerivedPackageList])
+                    raise AutoGenError(msg="GUID [%s] used in module [%s] cannot be found in dependent packages!\n\t%s"
+                                       % (GuidCName, self.Module, PackageListString))
             TokenList[I] = Token
         EdkLogger.debug(EdkLogger.DEBUG_8, "TokenList(guid) = %s" % " ".join(TokenList))
         return TokenList
