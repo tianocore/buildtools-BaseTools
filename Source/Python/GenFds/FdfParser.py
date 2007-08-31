@@ -1788,7 +1788,7 @@ class FdfParser:
         if self.__IsToken('|'):
             section.FileExtension = self.__GetFileExtension()
         elif self.__GetNextToken():
-            if self.__Token not in ("COMPAT16", "PE32", "PIC", "TE", "FV_IMAGE", "RAW", "DXE_DEPEX",\
+            if self.__Token not in ("}", "COMPAT16", "PE32", "PIC", "TE", "FV_IMAGE", "RAW", "DXE_DEPEX",\
                        "UI", "VERSION", "PEI_DEPEX", "GUID"):
                 section.FileName = self.__Token
             else:
