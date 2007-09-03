@@ -1,5 +1,5 @@
 @REM
-@REM Copyright (c) 2006, Intel Corporation
+@REM Copyright (c) 2007, Intel Corporation
 @REM All rights reserved. This program and the accompanying materials
 @REM are licensed and made available under the terms and conditions of the BSD License
 @REM which accompanies this distribution.  The full text of the license may be found at
@@ -15,126 +15,133 @@ REM ##############################################################
 REM # You should not have to modify anything below this line
 REM #
 
-if /I "%1"=="-h" goto usage
-if /I "%1"=="-help" goto usage
-if /I "%1"=="--help" goto usage
-if /I "%1"=="/h" goto usage
-if /I "%1"=="/?" goto usage
-if /I "%1"=="/help" goto usage
-
-if /I "%1"=="Reconfig" (
-  if NOT "%2"=="" set EDK_TOOLS_PATH=%2
-) else (
-  if NOT "%1"=="" set EDK_TOOLS_PATH=%1
-)
-
 REM
-REM Check the required system environment variables
+REM check the EDK_TOOLS_PATH
 REM
-
 :check_vc
-if defined VCINSTALLDIR goto setup_workspace
+if defined VCINSTALLDIR goto check_path
 if defined VS71COMNTOOLS (
   call "%VS71COMNTOOLS%\vsvars32.bat"
 ) else (
   echo.
-  echo !!!WARNING!!! Cannot find Visual Studio !!!
+  echo !!! WARNING !!!! Cannot find Visual Studio !!!
   echo.
 )
-
-:setup_workspace
-REM
-REM check the EDK_TOOLS_PATH
-REM
-if not defined EDK_TOOLS_PATH goto no_tools_path
-if exist %EDK_TOOLS_PATH% goto set_path
-echo.
-echo !!!WARNING!!! %EDK_TOOLS_PATH% doesn't exist. %WORKSPACE%\BaseTools will be used !!!
-echo.
-
-:no_tools_path
-if exist %WORKSPACE%\BaseTools (
-  set EDK_TOOLS_PATH=%WORKSPACE%\BaseTools
-) else (
-  echo.
-  echo !!!WARNING!!! No tools path found. Please set EDK_TOOLS_PATH !!!
-  echo.
-  goto end
-)
-
-:set_path
-if defined WORKSPACE_TOOLS_PATH goto check_path
-set PATH=%EDK_TOOLS_PATH%\Bin;%EDK_TOOLS_PATH%\Bin\Win32;%PATH%
-set WORKSPACE_TOOLS_PATH=%EDK_TOOLS_PATH%
-goto path_ok
 
 :check_path
-if "%EDK_TOOLS_PATH%"=="%WORKSPACE_TOOLS_PATH%" goto path_ok
-set PATH=%EDK_TOOLS_PATH%\Bin;%EDK_TOOLS_PATH%\Bin\Win32;%PATH%
-set WORKSPACE_TOOLS_PATH=%EDK_TOOLS_PATH%
-echo Resetting the PATH variable to include the EDK_TOOLS_PATH for this WORKSPACE
+if not defined PYTHON_FREEZER_PATH set PYTHON_FREEZER_PATH=C:\cx_Freeze
+if not exist %PYTHON_FREEZER_PATH% goto no_freezer_path
+
+pushd .
+cd %~dp0
+set BASE_TOOLS_PATH=%CD%
+popd
+
+if not defined EDK_TOOLS_PATH set EDK_TOOLS_PATH=%BASE_TOOLS_PATH%
+mkdir %EDK_TOOLS_PATH%\Bin\Win32
 
 :path_ok
-echo           PATH = %PATH%
-echo.
-echo      WORKSPACE = %WORKSPACE%
-echo EDK_TOOLS_PATH = %EDK_TOOLS_PATH%
-echo.
 
-REM
-REM copy *.template to %WORKSPACE%\Conf
-REM
-if NOT exist %WORKSPACE%\Conf (
-  mkdir %WORKSPACE%\Conf
-) else (
-  if /I "%1"=="Reconfig" (
-    echo.
-    echo  Over-writing the files in the WORKSPACE\Conf directory
-    echo  using the default template files
-    echo.
-  )
-)
-if NOT exist %WORKSPACE%\Conf\FrameworkDatabase.db (
-  echo copying ... FrameworkDatabase.template to %WORKSPACE%\Conf\FrameworkDatabase.db
-  copy %EDK_TOOLS_PATH%\Conf\FrameworkDatabase.template %WORKSPACE%\Conf\FrameworkDatabase.db > nul
-) else (
-  if /I "%1"=="Reconfig" copy /Y %EDK_TOOLS_PATH%\Conf\FrameworkDatabase.template %WORKSPACE%\Conf\FrameworkDatabase.db > nul
-)
-if NOT exist %WORKSPACE%\Conf\target.txt (
-  echo copying ... target.template to %WORKSPACE%\Conf\target.txt
-  copy %EDK_TOOLS_PATH%\Conf\target.template %WORKSPACE%\Conf\target.txt > nul
-) else (
-  if /I "%1"=="Reconfig" copy /Y %EDK_TOOLS_PATH%\Conf\target.template %WORKSPACE%\Conf\target.txt > nul
-)
-if NOT exist %WORKSPACE%\Conf\tools_def.txt (
-  echo copying ... tools_def.template to %WORKSPACE%\Conf\tools_def.txt
-  copy %EDK_TOOLS_PATH%\Conf\tools_def.template %WORKSPACE%\Conf\tools_def.txt > nul
-) else (
-  if /I "%1"=="Reconfig" copy /Y %EDK_TOOLS_PATH%\Conf\tools_def.template %WORKSPACE%\Conf\tools_def.txt > nul
-)
-if NOT exist %WORKSPACE%\Conf\build_rule.txt (
-  echo copying ... build_rule.template to %WORKSPACE%\Conf\build_rule.txt
-  copy %EDK_TOOLS_PATH%\Conf\build_rule.template %WORKSPACE%\Conf\build_rule.txt > nul
-) else (
-  if /I "%1"=="Reconfig" copy /Y %EDK_TOOLS_PATH%\Conf\build_rule.template %WORKSPACE%\Conf\build_rule.txt > nul
-)
+if /I "%1"=="-h" goto Usage
+if /I "%1"=="-help" goto Usage
+if /I "%1"=="--help" goto Usage
+if /I "%1"=="/h" goto Usage
+if /I "%1"=="/?" goto Usage
+if /I "%1"=="/help" goto Usage
+if /I "%1"=="build" goto build
+if /I "%1"=="rebuild" goto rebuild
+if NOT "%1"=="" goto Usage
 
-REM
-REM copy XMLSchema to %EDK_TOOLS_PATH%\Conf\XMLSchema
-REM
-REM echo copying ... XMLSchema to %EDK_TOOLS_PATH%\Conf\XMLSchema
-REM xcopy %WORKSPACE%\Conf\XMLSchema %EDK_TOOLS_PATH%\Conf\XMLSchema /S /I /D /F /Q > nul
+if not defined ORIGINAL_PATH set ORIGINAL_PATH=%PATH%
+set PATH=%EDK_TOOLS_PATH%\Bin\Win32;%EDK_TOOLS_PATH%\Bin;%ORIGINAL_PATH%
 
-REM
-REM Done!!!
-REM
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\BootSectImage.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\build.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\EfiLdrImage.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\EfiRom.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\GenBootSector.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\GenFds.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\GenFfs.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\GenFv.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\GenFw.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\GenPage.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\GenSec.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\GenVtf.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\MigrationMsa2Inf.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\Split.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\TargetTool.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\TianoCompress.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\Trim.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\VfrCompile.exe" goto build
+
+:skipbuild
 goto end
 
-:usage
+:rebuild
+pushd .
+cd %BASE_TOOLS_PATH%\Source\C
+call nmake cleanall
+del /f /q %BASE_TOOLS_PATH%\Bin\Win32\*.*
+popd
+
+:build
+REM
+REM Start to build the Framework Tools
+REM
+
 echo.
-echo  "Usage: %0 [/? | /h | /help | -h | -help | --help] [Reconfig] [tools_path]"
+echo Building the C Tools
 echo.
-echo                      tools_path       Tools' path. EDK_TOOLS_PATH will be set to this path.
+
+pushd .
+cd %BASE_TOOLS_PATH%\Source\C
+call nmake
+popd
+
+echo.
+echo Building the Python Tools
+echo.
+
+set PYTHON_PATH=%BASE_TOOLS_PATH%\Source\Python
+pushd .
+
+echo Generating build.exe
+cd %BASE_TOOLS_PATH%\Source\Python\build
+%PYTHON_FREEZER_PATH%\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8 --install-dir=%EDK_TOOLS_PATH%\Bin\Win32 build.py > NUL
+
+echo Generating GenFds.exe
+cd %BASE_TOOLS_PATH%\Source\Python\GenFds
+%PYTHON_FREEZER_PATH%\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8 --install-dir=%EDK_TOOLS_PATH%\Bin\Win32 GenFds.py > NUL
+
+echo Generating Trim.exe
+cd %BASE_TOOLS_PATH%\Source\Python\Trim
+%PYTHON_FREEZER_PATH%\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8 --install-dir=%EDK_TOOLS_PATH%\Bin\Win32 Trim.py > NUL
+
+echo Generating MigrationMsa2Inf.exe
+cd %BASE_TOOLS_PATH%\Source\Python\MigrationMsa2Inf
+%PYTHON_FREEZER_PATH%\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8 --install-dir=%EDK_TOOLS_PATH%\Bin\Win32 MigrationMsa2Inf.py > NUL
+
+popd
+echo Done!
+goto end
+
+:no_freezer_path
+echo.
+echo !!!WARNING!!! No cx_Freeze path found. Please install cx_Freeze and set PYTHON_FREEZER_PATH.
+echo.
+goto end
+
+:no_tools_path
+echo.
+echo !!!WARNING!!! No tools path found. Please check and set EDK_TOOLS_PATH.
+echo.
+goto end
+
+:Usage
+echo.
+echo  Usage: %0 [build] [rebuild]
+echo         build:    Incremental build, only build those updated tools; 
+echo         rebuild:  Rebuild all tools neither updated or not; 
 echo.
 
 :end

@@ -4,7 +4,7 @@
 # LIB="C:/Program Files/Microsoft Visual Studio .NET 2003/Vc7/lib;c:/Microsoft Visual Studio .NET 2003/Vc7/PlatformSDK/Lib"
 
 # PCCTS_HOME=<your PCCTS_HOME>
-PCCTS_HOME=$(BASE_TOOLS_PATH)\Source\C\Pccts
+PCCTS_HOME=$(BASE_TOOLS_PATH)\Source\C\VfrCompile\Pccts
 DLG_SRC=$(PCCTS_HOME)\dlg
 PCCTS_H=$(PCCTS_HOME)\h
 

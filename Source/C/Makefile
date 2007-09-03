@@ -3,7 +3,7 @@ ARCH = IA32
 !INCLUDE MSmakefile.common
 
 LIBRARIES = Common
-APPLICATIONS = GenFw GenSec GenFv GenFfs GenVtf EfiRom TianoCompress Split GenBootSector BootSectImage EfiLdrImage GenPage
+APPLICATIONS = GenFw GenSec GenFv GenFfs GenVtf EfiRom TianoCompress Split GenBootSector BootSectImage EfiLdrImage GenPage VfrCompile
 
 all: libs apps install
 
