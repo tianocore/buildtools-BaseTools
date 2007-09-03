@@ -11,18 +11,16 @@ Copyright (c) 2007, Intel Corporation
 -------------------------------------------------------------------------------
 Quick Start
 -----------
-  Set the EDK_TOOLS_PATH to be the root directory of the tools (the root
-  directory contains the Bin\ directory.)
+  a) Set the PYTHON_FREEZER_PATH to the cx_Freeze installation directory
+  b) Go to the <buildtools_project>/BaseTools and run "toolsetup" script
 
 Supported build targets
 -----------------------
 
-all				- Incremental Build of all C based tools. This is the default target
-clean     - Clean intermediate files
-cleanall  - Clean all generated files and directories during build
+build(or none)  - Incremental Build of all C based tools. This is the default target
+rebuild         - Clean all generated files and directories during build, and rebuild all tools
 
 -------------------------------------------------------------------------------
-
 Tools in Python
 ---------------
 * Convert Python source to exe file
@@ -49,3 +47,19 @@ Tools in Python
   
   C:\Work\BaseTools\Source\Python> set PYTHONPATH=C:\Work\BaseTools\Source\Python
   C:\Work\BaseTools\Source\Python> c:\cx_Freeze-3.0.3\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8 --install-dir=C:\Work\BaseTools\Bin\Win32 build\build.py
+
+* Execute tools written in Python without convertion
+  The tools written in Python can be executely directly from its source directory
+as long as the Python interpreter (Python 2.5) has been installed. Before the execution,
+please make sure the environment variable PYTHONPATH is set to 
+
+        <buildtools_project>/BaseTools/Source/Python
+
+  There're four tools written in Python. The entrance file of each tool is listed
+below.
+
+      build               <buildtools_project>/BaseTools/Source/Python/build/build.py
+      GenFds              <buildtools_project>/BaseTools/Source/Python/GenFds/GenFds.py
+      Trim                <buildtools_project>/BaseTools/Source/Python/Trim/Trim.py
+      MigrationMsa2Inf    <buildtools_project>/BaseTools/Source/Python/MigrationMsa2Inf/MigrationMsa2Inf.py
+

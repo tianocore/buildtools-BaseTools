@@ -102,7 +102,7 @@ echo.
 echo Building the Python Tools
 echo.
 
-set PYTHON_PATH=%BASE_TOOLS_PATH%\Source\Python
+set PYTHONPATH=%BASE_TOOLS_PATH%\Source\Python
 pushd .
 
 echo Generating build.exe
