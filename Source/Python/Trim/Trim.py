@@ -55,7 +55,7 @@ def TrimPreprocessedFile(Source, Target, Convert):
 
     PreprocessedFile = ""
     InjectedFile = ""
-    LineIndexOfOriginalFile = 0
+    LineIndexOfOriginalFile = None
     for Index in range(len(Lines)):
         Line = Lines[Index].strip()
         if Line == "":
@@ -83,7 +83,7 @@ def TrimPreprocessedFile(Source, Target, Convert):
             # convert HEX number format if indicated
             if Convert:
                 Lines[Index] = gHexNumberPattern.sub(r"0\1h", Lines[Index])
-            if LineIndexOfOriginalFile == 0:
+            if LineIndexOfOriginalFile == None:
                 #
                 # Any non-empty lines must be from original preprocessed file.
                 # And this must be the first one.
