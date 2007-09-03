@@ -23,10 +23,10 @@ Abstract:
 #include <stdlib.h>   // for malloc() and free()
 
 #include <Common/UefiBaseTypes.h>
-#include <Common/MultiPhase.h>
-#include <Common/InternalFormRepresentation.h>
+#include <Common/UefiMultiPhase.h>
+#include <Common/UefiInternalFormRepresentation.h>
 #include <Protocol/UgaDraw.h>  // for EFI_UGA_PIXEL definition
-#include <Protocol/Hii.h>
+#include <Protocol/HiiFramework.h>
 
 #include "EfiUtilityMsgs.h"
 #include "EfiVfr.h"

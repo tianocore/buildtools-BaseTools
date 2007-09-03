@@ -26,7 +26,7 @@ Abstract:
 #include <string.h>
 
 #include <Common/UefiBaseTypes.h>
-#include <Common/InternalFormRepresentation.h>
+#include <Common/UefiInternalFormRepresentation.h>
 
 //
 // This number should be incremented with each change to the VFR compiler.
@@ -41,6 +41,7 @@ Abstract:
 #define MAX_PATH        255
 #endif
 #define MAX_QUEUE_COUNT 255
+#undef  MAX_LINE_LEN
 #define MAX_LINE_LEN    1024
 #define PROGRAM_NAME    "VfrCompile"
 

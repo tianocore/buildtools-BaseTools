@@ -22,10 +22,10 @@ Abstract:
 #header<<
 
 #include <Common/UefiBaseTypes.h>
-#include <Common/MultiPhase.h>
-#include <Common/InternalFormRepresentation.h>
+#include <Common/UefiMultiPhase.h>
+#include <Common/UefiInternalFormRepresentation.h>
 #include <Protocol/UgaDraw.h>
-#include <Protocol/Hii.h>
+#include <Protocol/HiiFramework.h>
 
 #include "CommonLib.h"
 #include "EfiUtilityMsgs.h"
