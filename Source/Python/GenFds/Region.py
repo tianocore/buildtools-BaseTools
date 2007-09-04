@@ -67,7 +67,7 @@ class region(RegionClassObject):
                 if RegionData[1] != ':' :
                     RegionData = os.path.join (GenFdsGlobalVariable.WorkSpaceDir, RegionData)
                 if not os.path.exists(RegionData):
-                    raise Excetpion ( 'File: %s dont exist !' %RegionData)
+                    raise Exception ( 'File: %s dont exist !' %RegionData)
                 
                 BinFile = open (RegionData, 'r+b')
                 FvBuffer.write(BinFile.read())
