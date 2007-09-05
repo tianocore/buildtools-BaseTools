@@ -16,6 +16,7 @@ class GenFdsGlobalVariable:
     ArchList = None
     VtfDict = {}
     ActivePlatform = None
+
     def ExtendMarco (String):
         return String
     

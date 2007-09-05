@@ -164,7 +164,7 @@ class RuleSimpleFileClassObject(RuleClassObject) :
         RuleClassObject.__init__(self)
         self.FileName = None
         self.SectionType = ''
-
+        self.FileExtension = None
 class RuleFileExtensionClassObject(RuleClassObject):
     def __init__(self):
         RuleClassObject.__init__(self)

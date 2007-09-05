@@ -17,20 +17,23 @@ class FfsInfStatement(FfsInfStatementClassObject):
         FfsInfStatementClassObject.__init__(self)
 
     def __infParse__(self):
+        self.CurrentArch = self.__GetCurrentArch__()
         #
         # Get the InfClass object
         #
 ##        for item in GenFdsGlobalVariable.WorkSpace.InfDatabase:
 ##            print item
         self.InfFileName = NormPath(self.InfFileName)
-        Inf = GenFdsGlobalVariable.WorkSpace.InfDatabase[self.InfFileName]
+        (self.SourceDir, InfName) = os.path.split(self.InfFileName)
+        Inf = GenFdsGlobalVariable.WorkSpace.Build[self.CurrentArch].ModuleDatabase[self.InfFileName]
         #
         # Set Ffs BaseName, MdouleGuid, ModuleType, Version, OutputPath
         #
-        self.BaseName = Inf.Defines.DefinesDictionary['BASE_NAME'][0]
-        self.ModuleGuid = Inf.Defines.DefinesDictionary['FILE_GUID'][0]
-        self.ModuleType = Inf.Defines.DefinesDictionary['MODULE_TYPE'][0]
-        self.VersionString = Inf.Defines.DefinesDictionary['VERSION_STRING'][0]
+        self.BaseName = Inf.Header.Name
+        self.ModuleGuid = Inf.Header.Guid
+        self.ModuleType = Inf.ModuleType
+        self.VersionString = Inf.Header.Version
+        self.BinFileList = Inf.Binaries
         GenFdsGlobalVariable.VerboseLogger( "BaseName : %s" %self.BaseName)
         GenFdsGlobalVariable.VerboseLogger("ModuleGuid : %s" %self.ModuleGuid)
         GenFdsGlobalVariable.VerboseLogger("ModuleType : %s" %self.ModuleType)
@@ -46,8 +49,8 @@ class FfsInfStatement(FfsInfStatementClassObject):
         if not os.path.exists(self.OutputPath) :
             os.makedirs(self.OutputPath)
             
-        self.InfOutputPath = self.__GetEFIOutPutPath__()
-        GenFdsGlobalVariable.VerboseLogger( "ModuelEFIPath: " + self.InfOutputPath)
+        self.EfiOutputPath = self.__GetEFIOutPutPath__()
+        GenFdsGlobalVariable.VerboseLogger( "ModuelEFIPath: " + self.EfiOutputPath)
                              
     def GenFfs(self):
         #
@@ -72,8 +75,8 @@ class FfsInfStatement(FfsInfStatementClassObject):
         # For the rule only has simpleFile
         #
         if isinstance (Rule, RuleSimpleFile.RuleSimpleFile) :
-            SectionOutput = self.__GenSimpleFileSection__(Rule)
-            FfsOutput = self.__GenSimpleFileFfs__(Rule, SectionOutput)
+            SectionOutputList = self.__GenSimpleFileSection__(Rule)
+            FfsOutput = self.__GenSimpleFileFfs__(Rule, SectionOutputList)
             return FfsOutput
         #
         # For Rule has ComplexFile
@@ -87,7 +90,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                 
     def __ExtendMarco__ (self, String):
         MarcoDict = {
-            '$(INF_OUTPUT)'  : self.InfOutputPath,
+            '$(INF_OUTPUT)'  : self.EfiOutputPath,
             '$(MODULE_NAME)' : self.BaseName,
             '$(BUILD_NUMBER)': self.BuildNum,
             '$(INF_VERSION)' : self.VersionString,
@@ -144,14 +147,13 @@ class FfsInfStatement(FfsInfStatementClassObject):
             else:
                 return GenFdsGlobalVariable.DefaultRule
 
-    def __GetCurrentArch__(self):
+    def __GetPlatformArchList__(self):
         targetArchList = GenFdsGlobalVariable.ArchList
         if len(targetArchList) == 0:
             targetArchList = GenFdsGlobalVariable.WorkSpace.SupArchList
         else:
             targetArchList = set(GenFdsGlobalVariable.WorkSpace.SupArchList) & set(targetArchList)
             
-        #activePlatform = GenFdsGlobalVariable.WorkSpace.TargetTxt.TargetTxtDictionary.get('ACTIVE_PLATFORM')[0]
         dscArchList = []
         PlatformDataBase = GenFdsGlobalVariable.WorkSpace.Build.get('IA32').PlatformDatabase.get(GenFdsGlobalVariable.ActivePlatform)
         if  PlatformDataBase != None:
@@ -172,14 +174,8 @@ class FfsInfStatement(FfsInfStatementClassObject):
         GenFdsGlobalVariable.VerboseLogger ("Valid target architecture(s) is : " + " ".join(curArchList))
         return curArchList
     
-    def __GetEFIOutPutPath__(self):
-        Arch = ''
-        OutputPath = ''
-        (ModulePath, fileName) = os.path.split(self.InfFileName)
-        index = fileName.find('.')
-        fileName = fileName[0:index]
-
-        curArchList = self.__GetCurrentArch__()
+    def _GetCurrentArch__(self) :
+        curArchList = self.__GetPlateformArchList__()
         if len(curArchList) > 1 :
             for Key in self.KeyStringList:
                 Target, Tag, Arch = Key.split('_')
@@ -192,14 +188,22 @@ class FfsInfStatement(FfsInfStatementClassObject):
                 raise Exception("Don't find legal Arch in Module %s !" %self.InfFileNames)
         elif len(curArchList) == 1 :
             Arch = curArchList.pop()
-            
+        return Arch
+    
+    def __GetEFIOutPutPath__(self):
+        Arch = ''
+        OutputPath = ''
+        (ModulePath, fileName) = os.path.split(self.InfFileName)
+        index = fileName.find('.')
+        fileName = fileName[0:index]
+        Arch = self._GetCurrentArch__()
+        
         OutputPath = os.path.join(GenFdsGlobalVariable.OuputDir,
                                   Arch ,
                                   ModulePath,
                                   fileName,
                                   'OUTPUT'
                                   )
-                                  
         OutputPath = os.path.realpath(OutputPath)
         return OutputPath
         
@@ -207,28 +211,53 @@ class FfsInfStatement(FfsInfStatementClassObject):
         #
         # Prepare the parameter of GenSection
         #
-        GenSecInputFile = self.__ExtendMarco__(Rule.FileName)
+        FileList = []
+        OutputFileList = []
+        if Rule.FileName != None:
+            GenSecInputFile = self.__ExtendMarco__(Rule.FileName)
+        else:
+            FileList, IsSect = Section.Section.GetFileList(self, '', Rule.FileExtension)
 
+        Index = 0
         SectionType     = Rule.SectionType
+        if FileList != [] :
+            for File in FileList:
+                SecNum = '%d', Index
+                GenSecOutputFile= self.__ExtendMarco__(Rule.NameGuid) + \
+                              Ffs.Ffs.SectionSuffix[SectionType] + 'SEC' + Index
+                Index = Index + 1
+                OutputFile = os.path.join(self.OutputPath, GenSecOutputFile)
+                genSectionCmd = 'GenSec -o '                                + \
+                                 OutputFile                                 + \
+                                 ' -s '                                     + \
+                                 Section.Section.SectionType[SectionType]   + \
+                                 ' '                                        + \
+                                 File
+                #
+                # Call GenSection
+                #
+                GenFdsGlobalVariable.CallExternalTool(genSectionCmd, "Gensection Failed!")
+                OutputFileList.append(GenSecOutputFile)
+        else:
+            GenSecOutputFile= self.__ExtendMarco__(Rule.NameGuid) + \
+                              Ffs.Ffs.SectionSuffix[SectionType] + 'SEC' + Index
+            OutputFile = os.path.join(self.OutputPath, GenSecOutputFile)
+            
+            genSectionCmd = 'GenSec -o '                                + \
+                             OutputFile                                 + \
+                             ' -s '                                     + \
+                             Section.Section.SectionType[SectionType]   + \
+                             ' '                                        + \
+                             GenSecInputFile
+            #
+            # Call GenSection
+            #
+            GenFdsGlobalVariable.CallExternalTool(genSectionCmd, "Gensection Failed!")
+            OutputFileList.append(GenSecOutputFile)
 
-        GenSecOutputFile= self.__ExtendMarco__(Rule.NameGuid) + \
-                              Ffs.Ffs.SectionSuffix[SectionType]
-                              
-        OutputFile = os.path.join(self.OutputPath, GenSecOutputFile)
-        
-        genSectionCmd = 'GenSec -o '                                   + \
-                         OutputFile                                    + \
-                         ' -s '                                        + \
-                         Section.Section.SectionType[SectionType]      + \
-                         ' '                                           + \
-                         GenSecInputFile
-        #
-        # Call GenSection
-        #
-        GenFdsGlobalVariable.CallExternalTool(genSectionCmd, "Gensection Failed!")
         return OutputFile
     
-    def __GenSimpleFileFfs__(self, Rule, InputFile):
+    def __GenSimpleFileFfs__(self, Rule, InputFileList):
         #
         # Prepare the parameter of GenFfs
         #
@@ -240,8 +269,15 @@ class FfsInfStatement(FfsInfStatementClassObject):
                     '.ffs'
 
         GenFdsGlobalVariable.VerboseLogger(self.__ExtendMarco__(Rule.NameGuid))
-        InputSection = ' -i '     + \
-                       InputFile
+        InputSection = ''
+        for InputFile in InputFileList:
+            InputSection = InputSection + \
+                           ' -i '       + \
+                           InputFile
+            if Alignment != '':
+                InputSection = InputSection  + \
+                               ' -n '        + \
+                               Alignment
 
 
         GenFfsCmd = 'GenFfs '  + \
@@ -264,14 +300,13 @@ class FfsInfStatement(FfsInfStatementClassObject):
         SectFiles = ''
         Index = 0
         for Sect in Rule.SectionList:
-           Index = Index + 1
            SecIndex = '%d' %Index
-           secName = ''
+           SecList  = []
            if Rule.KeyStringList != []:
-               secName, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, SecIndex, Rule.KeyStringList, self)
+               SecList, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, SecIndex, Rule.KeyStringList, self)
            else :
-               secName, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, SecIndex, self.KeyStringList, self)
-           if secName != '':
+               SectList, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, SecIndex, self.KeyStringList, self)
+           for SecName in  SectList :
                SectFiles = SectFiles    + \
                            ' -i '       + \
                            secName
@@ -279,6 +314,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                    SectFiles = SectFiles + \
                                ' -n '    + \
                                Align
+               Index = Index + 1
         return SectFiles
 
     def __GenComplexFileFfs__(self, Rule, InputFile):

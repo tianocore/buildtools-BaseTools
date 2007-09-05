@@ -66,4 +66,5 @@ class DataSection (DataSectionClassObject):
         #
         
         GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
-        return OutputFile, self.Alignment
+        FileList = [OutputFile]
+        return FileList, self.Alignment

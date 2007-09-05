@@ -41,4 +41,6 @@ class UiSection (UiSectionClassObject):
         # Call GenSection
         #
         GenFdsGlobalVariable.CallExternalTool(GenSectionCmd,"GenSection Failed!")
-        return OutputFile, self.Alignment
+        OutputFileList = []
+        OutputFileList.append(OutputFile)
+        return OutputFileList, self.Alignment

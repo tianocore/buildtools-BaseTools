@@ -115,7 +115,9 @@ class GuidSection(GuidSectionClassObject) :
                              TempFile
                         
             GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
-            return OutputFile, self.Alignment
+            OutputFileList = []
+            OutputFileList.append(OutputFile)
+            return OutputFileList, self.Alignment
         
     def __FindExtendTool__(self):
         tool = None

@@ -11,11 +11,32 @@ class FvImageSection(FvImageSectionClassObject):
         FvImageSectionClassObject.__init__(self)
         
     def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None):
-        Buffer = StringIO.StringIO('')
+        OutputFileList = []
+        
+        '''If Is FvBin '''
+        if self.FvFileType != None:
+            FileList, IsSect = Section.Section.GetFileList(FfsInf, self.FvFileType, self.FvFileExtension)
+            if IsSect :
+                return FileList, self.Alignment
+            
+            Num = SecNum
+            
+            for FileName in FileList:
+                OutputFile = os.path.join(OutputPath, ModuleName + 'SEC' + Num + Ffs.SectionSuffix.get("FV_IMAGE"))
+                GenSectionCmd = 'GenSec -o '                         + \
+                                OutputFile                           + \
+                                ' -s '                               + \
+                                'EFI_SECTION_FIRMWARE_VOLUME_IMAGE ' + \
+                                FvFileName
+
+                GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
+                OutputFileList.append(OutputFile)
+            return OuptuFileList, self.Alignment
         #
         # Generate Fv
         #
         if self.FvName != None:
+            Buffer = StringIO.StringIO('')
             Fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(self.FvName)
             if self.Fv == None:
                 self.Fv = Fv
@@ -24,17 +45,20 @@ class FvImageSection(FvImageSectionClassObject):
                                  FvImageSection both in FvUiName and \
                                  FvImageArg!")
                                  
-        FvFileName = self.Fv.AddToBuffer(Buffer)
-        #
-        # Prepare the parameter of GenSection
-        #
-        OutputFile = os.path.join(OutputPath, ModuleName + 'SEC' + SecNum + Ffs.SectionSuffix.get("FV_IMAGE"))
+            FvFileName = self.Fv.AddToBuffer(Buffer)
+            
+            #
+            # Prepare the parameter of GenSection
+            #
+            OutputFile = os.path.join(OutputPath, ModuleName + 'SEC' + SecNum + Ffs.SectionSuffix.get("FV_IMAGE"))
                      
-        GenSectionCmd = 'GenSec -o '                          + \
-                         OutputFile                           + \
-                         ' -s '                               + \
-                         'EFI_SECTION_FIRMWARE_VOLUME_IMAGE ' + \
-                         FvFileName
+            GenSectionCmd = 'GenSec -o '                          + \
+                             OutputFile                           + \
+                             ' -s '                               + \
+                             'EFI_SECTION_FIRMWARE_VOLUME_IMAGE ' + \
+                             FvFileName
                          
-        GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
-        return OutputFile, self.Alignment
+            GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
+            OutputFileList.append(OutputFile)
+            
+            return OutputFileList, self.Alignment

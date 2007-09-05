@@ -51,4 +51,6 @@ class VerSection (VerSectionClassObject):
         # Call GenSection
         #
         GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "Gensection Failed!")
-        return OutputFile, self.Alignment
+        OutputFileList = []
+        OutputFileList.append(OutputFile)
+        return OutputFileList, self.Alignment

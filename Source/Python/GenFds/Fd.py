@@ -48,7 +48,8 @@ class FD(FDClassObject):
         fd.write(FdBuffer.getvalue());
         fd.close;
         FdBuffer.close;
-        
+        return FdFileName
+    
     def GenVtfFile (self) :
         #
         # Get this Fd's all Fv name
