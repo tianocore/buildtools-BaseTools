@@ -1625,13 +1625,15 @@ class FdfParser:
             # Ext rule expected
             ext = self.__GetFileExtension()
             
-            rule = RuleFileExtension.RuleFileExtension()
+            rule = RuleSimpleFile.RuleSimpleFile()
+#            rule.SectionType = sectionName
             rule.FvType = type
             rule.Alignment = alignment
             rule.CheckSum = checksum
             rule.Fixed = fixed
-            rule.KeyStringList = keyStringList
             rule.FileExtension = ext
+            rule.KeyStringList = keyStringList
+            
             return rule
             
         else:
@@ -1645,20 +1647,17 @@ class FdfParser:
                                     "UI", "PEI_DEPEX", "VERSION", "SUBTYPE_GUID"):
                 raise Warning("Unknown leaf section name At Line %d" % self.CurrentLineNumber)
             
-#            if self.__IsKeyword("Fixed", True):
-#                fixed = True
-#            
-#            if self.__IsKeyword("CheckSum", True):
-#                checksum = True
-#            
-#            if self.__IsKeyword("Align", True):
-#                if not self.__IsToken("="):
-#                    raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
-#                if not self.__GetNextToken():
-#                    raise Warning("expected alignment value At Line %d" % self.CurrentLineNumber)
-#                if self.__Token not in ("8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
-#                    raise Warning("Incorrect alignment At Line %d" % self.CurrentLineNumber)
-#                alignment = self.__Token
+
+            if self.__IsKeyword("Fixed", True):
+                fixed = True              
+    
+            if self.__IsKeyword("CheckSum", True):
+                checksum = True
+    
+            if self.__GetAlignment():
+                if self.__Token not in ("8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
+                    raise Warning("Incorrect alignment At Line %d" % self.CurrentLineNumber)
+                alignment = self.__Token
             
             if not self.__GetNextToken():
                 raise Warning("expected File name At Line %d" % self.CurrentLineNumber)
@@ -1689,6 +1688,8 @@ class FdfParser:
         
         if sectionName == "FV_IMAGE":
             section = FvImageSection.FvImageSection()
+            if self.__IsKeyword("FV_IMAGE"):
+                pass
             if self.__IsToken( "{"):
                 fv = Fv.FV()
 #                fv.UiFvName = fvName
@@ -1711,7 +1712,7 @@ class FdfParser:
                 section.FvName = None
                 
             else:
-                if not self.__IsKeyword("FV") or not self.__IsKeyword("SEC_FV"):
+                if not self.__IsKeyword("FV"):
                     raise Warning("expected 'FV' At Line %d" % self.CurrentLineNumber)
                 section.FvFileType = self.__Token
                 
@@ -1720,10 +1721,18 @@ class FdfParser:
                         raise Warning("Incorrect alignment At Line %d" % self.CurrentLineNumber)
                     section.Alignment = self.__Token
                 
+                if self.__IsKeyword("FV"):
+                    section.FvFileType = self.__Token
+                
+                if self.__GetAlignment():
+                    if self.__Token not in ("8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
+                        raise Warning("Incorrect alignment At Line %d" % self.CurrentLineNumber)
+                    section.Alignment = self.__Token
+                    
                 if self.__IsToken('|'):
                     section.FvFileExtension = self.__GetFileExtension()
                 elif self.__GetNextToken():
-                    if self.__Token not in ("COMPAT16", "PE32", "PIC", "TE", "FV_IMAGE", "RAW", "DXE_DEPEX",\
+                    if self.__Token not in ("}", "COMPAT16", "PE32", "PIC", "TE", "FV_IMAGE", "RAW", "DXE_DEPEX",\
                                "UI", "VERSION", "PEI_DEPEX", "GUID"):
                         section.FvFileName = self.__Token
                     else:
