@@ -57,8 +57,8 @@ class Section (SectionClassObject):
     def GenSection(self, OutputPath, GuidName, SecNum, keyStringList, FfsInf = None):
         pass
 
-    def GetFileList(self, FfsInf, FileType, FileExtension):
-        if FileType in Section.SectFileType.getKeys() :
+    def GetFileList(FfsInf, FileType, FileExtension):
+        if FileType in Section.SectFileType.keys() :
             IsSect = True
         else :
             IsSect = False
@@ -66,9 +66,9 @@ class Section (SectionClassObject):
         if FileExtension != None:
             suffix = FileExtension
         elif IsSect :
-            suffix = Section.SectionType(FileType)
+            suffix = Section.SectionType[FileType]
         else:
-            suffix = Section.BinFileType(FileType)
+            suffix = Section.BinFileType[FileType]
         if FfsInf == None:
             raise Exception ('Dont have Inf File!')
         
@@ -82,3 +82,5 @@ class Section (SectionClassObject):
                    FileList.append(FfsInf.EfiOutputPath, file)
                    
         return FileList, IsSect
+    
+    GetFileList = staticmethod(GetFileList)

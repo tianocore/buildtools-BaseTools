@@ -29,10 +29,10 @@ class FfsInfStatement(FfsInfStatementClassObject):
         #
         # Set Ffs BaseName, MdouleGuid, ModuleType, Version, OutputPath
         #
-        self.BaseName = Inf.Header.Name
-        self.ModuleGuid = Inf.Header.Guid
+        self.BaseName = Inf.BaseName
+        self.ModuleGuid = Inf.Guid
         self.ModuleType = Inf.ModuleType
-        self.VersionString = Inf.Header.Version
+        self.VersionString = Inf.Version
         self.BinFileList = Inf.Binaries
         GenFdsGlobalVariable.VerboseLogger( "BaseName : %s" %self.BaseName)
         GenFdsGlobalVariable.VerboseLogger("ModuleGuid : %s" %self.ModuleGuid)
@@ -154,41 +154,44 @@ class FfsInfStatement(FfsInfStatementClassObject):
         else:
             targetArchList = set(GenFdsGlobalVariable.WorkSpace.SupArchList) & set(targetArchList)
             
+        InfFileKey = os.path.normpath(self.InfFileName)
         dscArchList = []
         PlatformDataBase = GenFdsGlobalVariable.WorkSpace.Build.get('IA32').PlatformDatabase.get(GenFdsGlobalVariable.ActivePlatform)
         if  PlatformDataBase != None:
-            if self.InfFileName in PlatformDataBase.Modules:
+            if InfFileKey in PlatformDataBase.Modules:
                 dscArchList.append ('IA32')
                 
         PlatformDataBase = GenFdsGlobalVariable.WorkSpace.Build.get('X64').PlatformDatabase.get(GenFdsGlobalVariable.ActivePlatform)
         if  PlatformDataBase != None:
-            if self.InfFileName in PlatformDataBase.Modules:
+            if InfFileKey in PlatformDataBase.Modules:
                 dscArchList.append ('X64')
                 
         PlatformDataBase = GenFdsGlobalVariable.WorkSpace.Build.get('IPF').PlatformDatabase.get(GenFdsGlobalVariable.ActivePlatform)
         if PlatformDataBase != None:
-            if self.InfFileName in (PlatformDataBase.Modules):
+            if InfFileKey in (PlatformDataBase.Modules):
                 dscArchList.append ('IPF')
 
         curArchList = set (targetArchList) & set (dscArchList)
         GenFdsGlobalVariable.VerboseLogger ("Valid target architecture(s) is : " + " ".join(curArchList))
         return curArchList
     
-    def _GetCurrentArch__(self) :
-        curArchList = self.__GetPlateformArchList__()
+    def __GetCurrentArch__(self) :
+        curArchList = self.__GetPlatformArchList__()
         if len(curArchList) > 1 :
+            ArchList = curArchList[:]
             for Key in self.KeyStringList:
                 Target, Tag, Arch = Key.split('_')
                 ArchList = set (ArchList) & Arch
             if len(ArchList) == 1:
                 Arch = ArchList[0]
+                return Arch
             elif len(ArchList) > 1:
                 raise Exception("Module %s has too many bulid Arch !" %self.InfFileNames)
             else:
                 raise Exception("Don't find legal Arch in Module %s !" %self.InfFileNames)
         elif len(curArchList) == 1 :
             Arch = curArchList.pop()
-        return Arch
+            return Arch
     
     def __GetEFIOutPutPath__(self):
         Arch = ''
@@ -196,7 +199,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         (ModulePath, fileName) = os.path.split(self.InfFileName)
         index = fileName.find('.')
         fileName = fileName[0:index]
-        Arch = self._GetCurrentArch__()
+        Arch = self.__GetCurrentArch__()
         
         OutputPath = os.path.join(GenFdsGlobalVariable.OuputDir,
                                   Arch ,
