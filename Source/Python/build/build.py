@@ -374,21 +374,21 @@ class Build():
         Min = (Sec%3600)/60
         Sec = (Sec%3600)%60
         if Hour < 10 and Min < 10 and Sec < 10:
-            EdkLogger.quiet("Totol Run Time is 0%d:0%d:0%d" %(Hour, Min, Sec))
+            EdkLogger.quiet("Total Run Time is 0%d:0%d:0%d" %(Hour, Min, Sec))
         elif Hour < 10 and Min < 10 and Sec > 10:
-            EdkLogger.quiet("Totol Run Time is 0%d:0%d:%2d" %(Hour, Min, Sec))
+            EdkLogger.quiet("Total Run Time is 0%d:0%d:%2d" %(Hour, Min, Sec))
         elif Hour < 10 and Min > 10 and Sec < 10:
-            EdkLogger.quiet("Totol Run Time is 0%d:%2d:0%d" %(Hour, Min, Sec))
+            EdkLogger.quiet("Total Run Time is 0%d:%2d:0%d" %(Hour, Min, Sec))
         elif Hour < 10 and Min > 10 and Sec > 10:
-            EdkLogger.quiet("Totol Run Time is 0%d:%2d:%2d" %(Hour, Min, Sec))
+            EdkLogger.quiet("Total Run Time is 0%d:%2d:%2d" %(Hour, Min, Sec))
         elif Hour > 10 and Min < 10 and Sec < 10:
-            EdkLogger.quiet("Totol Run Time is %2d:0%d:0%d" %(Hour, Min, Sec))
+            EdkLogger.quiet("Total Run Time is %2d:0%d:0%d" %(Hour, Min, Sec))
         elif Hour > 10 and Min < 10 and Sec > 10:
-            EdkLogger.quiet("Totol Run Time is %2d:0%d:%2d" %(Hour, Min, Sec))
+            EdkLogger.quiet("Total Run Time is %2d:0%d:%2d" %(Hour, Min, Sec))
         elif Hour > 10 and Min > 10 and Sec < 10:
-            EdkLogger.quiet("Totol Run Time is %2d:%2d:0%d" %(Hour, Min, Sec))
+            EdkLogger.quiet("Total Run Time is %2d:%2d:0%d" %(Hour, Min, Sec))
         elif Hour > 10 and Min < 10 and Sec > 10:
-            EdkLogger.quiet("Totol Run Time is %2d:%2d:0%d" %(Hour, Min, Sec))
+            EdkLogger.quiet("Total Run Time is %2d:%2d:0%d" %(Hour, Min, Sec))
 
     def isexit(self, StatusCode):
         if StatusCode != 0:
