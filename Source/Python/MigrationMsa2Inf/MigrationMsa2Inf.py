@@ -1563,9 +1563,9 @@ def main():
                 pass
 
             if (len(DefVal) > 0):
-                line = CName + "|" + TSGC + "|" + DefVal
+                line = TSGC + "." + CName + "|" + DefVal
             else:
-                line = CName + "|" + TSGC
+                line = TSGC + "." + CName
 
             if (ItemType == "FEATURE_FLAG"):
                 if ("IA32" in Archs):
@@ -1819,9 +1819,6 @@ def main():
     if (len(PcdIsDriver) > 0):
         Defines += "  %-30s = %s\n" %  ("PCD_DRIVER", PcdIsDriver)
   
-    if (BinModule != "false"):
-        Defines += "  %-30s = %s\n" %  ("BINARY_MODULE", BinModule)
-  
     if (len(IamLibrary) > 0):
         lcstr = ""
         for lc in IamLibrary[:]:
@@ -1859,13 +1856,13 @@ def main():
 ##        Sources += "#\n" + "#"*80 + "\n\n"
         Sources = "\n"
         if ModType == "UEFI_APPLICATION":
-            FileType = "UEFI_APP|RELEASE"
+            FileType = "UEFI_APP"
             if options.verbose > 0:
-                print "WARNING: Binary Module: %s is assuming UEFI_APPLICATION file type using the RELEASE Target." % (options.filename)
+                print "WARNING: Binary Module: %s is assuming UEFI_APPLICATION file type." % (options.filename)
         else:
-            FileType = "FV|RELEASE"
+            FileType = "FV"
             if options.verbose > 0:
-                print "WARNING: Binary Module: %s is assuming FV file type using the RELEASE Target." % (options.filename)
+                print "WARNING: Binary Module: %s is assuming FV file type." % (options.filename)
   
         if (len(SrcFilenames) > 0):
             Sources += "[Binaries.common]\n"
@@ -2195,17 +2192,17 @@ def main():
   
         FeatureFlagSection = "\n"
         if (len(PcdFF) > 0):
-            FeatureFlagSection += "[PcdsFeatureFlag.common]\n"
+            FeatureFlagSection += "[FeaturePcd.common]\n"
             for Entry in PcdFF[:]:
                 FeatureFlagSection += "  " + Entry + "\n"
             FeatureFlagSection += "\n"
         if (len(PcdFFIa32) > 0):
-            FeatureFlagSection += "[PcdsFeatureFlag.IA32]\n"
+            FeatureFlagSection += "[FeaturePcd.IA32]\n"
             for Entry in PcdFFIa32[:]:
                 FeatureFlagSection += "  " + Entry + "\n"
             FeatureFlagSection += "\n"
         if (len(PcdFFX64) > 0):
-            FeatureFlagSection += "[PcdsFeatureFlag.X64]\n"
+            FeatureFlagSection += "[FeaturePcd.X64]\n"
             for Entry in PcdFFX64[:]:
                 FeatureFlagSection += "  " + Entry + "\n"
             FeatureFlagSection += "\n"
@@ -2215,7 +2212,7 @@ def main():
                 FeatureFlagSection += "  " + Entry + "\n"
             FeatureFlagSection += "\n"
         if (len(PcdFFEbc) > 0):
-            FeatureFlagSection += "[PcdsFeatureFlag.EBC]\n"
+            FeatureFlagSection += "[FeaturePcd.EBC]\n"
             for Entry in PcdFFEbc[:]:
                 FeatureFlagSection += "  " + Entry + "\n"
             FeatureFlagSection += "\n"
@@ -2231,27 +2228,27 @@ def main():
   
         FixedAtBuildSection = "\n"
         if (len(PcdFAB) > 0):
-            FixedAtBuildSection += "[PcdsFixedAtBuild.common]\n"
+            FixedAtBuildSection += "[FixedPcd.common]\n"
             for Entry in PcdFAB[:]:
                 FixedAtBuildSection += "  " + Entry + "\n"
             FixedAtBuildSection += "\n"
         if (len(PcdFABIa32) > 0):
-            FixedAtBuildSection += "[PcdsFixedAtBuild.IA32]\n"
+            FixedAtBuildSection += "[FixedPcd.IA32]\n"
             for Entry in PcdFABIa32[:]:
                 FixedAtBuildSection += "  " + Entry + "\n"
             FixedAtBuildSection += "\n"
         if (len(PcdFABX64) > 0):
-            FixedAtBuildSection += "[PcdsFixedAtBuild.X64]\n"
+            FixedAtBuildSection += "[FixedPcd.X64]\n"
             for Entry in PcdFABX64[:]:
                 FixedAtBuildSection += "  " + Entry + "\n"
             FixedAtBuildSection += "\n"
         if (len(PcdFABIpf) > 0):
-            FixedAtBuildSection += "[PcdsFixedAtBuild.IPF]\n"
+            FixedAtBuildSection += "[FixedPcd.IPF]\n"
             for Entry in PcdFABIpf[:]:
                 FixedAtBuildSection += "  " + Entry + "\n"
             FixedAtBuildSection += "\n"
         if (len(PcdFABEbc) > 0):
-            FixedAtBuildSection += "[PcdsFixedAtBuild.EBC]\n"
+            FixedAtBuildSection += "[FixedPcd.EBC]\n"
             for Entry in PcdFABEbc[:]:
                 FixedAtBuildSection += "  " + Entry + "\n"
             FixedAtBuildSection += "\n"
@@ -2267,27 +2264,27 @@ def main():
     
         PatchableInModuleSection = "\n"
         if (len(PcdPIM) > 0):
-            PatchableInModuleSection += "[PcdsPatchableInModule.common]\n"
+            PatchableInModuleSection += "[PatchPcd.common]\n"
             for Entry in PcdPIM[:]:
                 PatchableInModuleSection += "  " + Entry + "\n"
             PatchableInModuleSection += "\n"
         if (len(PcdPIMIa32) > 0):
-            PatchableInModuleSection += "[PcdsPatchableInModule.IA32]\n"
+            PatchableInModuleSection += "[PatchPcd.IA32]\n"
             for Entry in PcdPIMIa32[:]:
                 PatchableInModuleSection += "  " + Entry + "\n"
             PatchableInModuleSection += "\n"
         if (len(PcdPIMX64) > 0):
-            PatchableInModuleSection += "[PcdsPatchableInModule.X64]\n"
+            PatchableInModuleSection += "[PatchPcd.X64]\n"
             for Entry in PcdPIMX64[:]:
                 PatchableInModuleSection += "  " + Entry + "\n"
             PatchableInModuleSection += "\n"
         if (len(PcdPIMIpf) > 0):
-            PatchableInModuleSection += "[PcdsPatchableInModule.IPF]\n"
+            PatchableInModuleSection += "[PatchPcd.IPF]\n"
             for Entry in PcdPIMIpf[:]:
                 PatchableInModuleSection += "  " + Entry + "\n"
             PatchableInModuleSection += "\n"
         if (len(PcdPIMEbc) > 0):
-            PatchableInModuleSection += "[PcdsPatchableInModule.EBC]\n"
+            PatchableInModuleSection += "[PatchPcd.EBC]\n"
             for Entry in PcdPIMEbc[:]:
                 PatchableInModuleSection += "  " + Entry + "\n"
             PatchableInModuleSection += "\n"
@@ -2303,27 +2300,27 @@ def main():
   
         DynamicExSection = "\n"
         if (len(PcdDYE) > 0):
-            DynamicExSection += "[PcdsDynamicEx.common]\n"
+            DynamicExSection += "[PcdEx.common]\n"
             for Entry in PcdDYE[:]:
                 DynamicExSection += "  " + Entry + "\n"
             DynamicExSection += "\n"
         if (len(PcdDYEIa32) > 0):
-            DynamicExSection += "[PcdsDynamicEx.IA32]\n"
+            DynamicExSection += "[PcdEx.IA32]\n"
             for Entry in PcdDYEIa32[:]:
                 DynamicExSection += "  " + Entry + "\n"
             DynamicExSection += "\n"
         if (len(PcdDYEX64) > 0):
-            DynamicExSection += "[PcdsDynamicEx.X64]\n"
+            DynamicExSection += "[PcdEx.X64]\n"
             for Entry in PcdDYEX64[:]:
                 DynamicExSection += "  " + Entry + "\n"
             DynamicExSection += "\n"
         if (len(PcdDYEIpf) > 0):
-            DynamicExSection += "[PcdsDynamicEx.IPF]\n"
+            DynamicExSection += "[PcdEx.IPF]\n"
             for Entry in PcdDYEIpf[:]:
                 DynamicExSection += "  " + Entry + "\n"
             DynamicExSection += "\n"
         if (len(PcdDYEEbc) > 0):
-            DynamicExSection += "[PcdsDynamicEx.EBC]\n"
+            DynamicExSection += "[PcdEx.EBC]\n"
             for Entry in PcdDYEEbc[:]:
                 DynamicExSection += "  " + Entry + "\n"
             DynamicExSection += "\n"
@@ -2339,27 +2336,27 @@ def main():
       
         DynamicSection = "\n"
         if (len(PcdDY) > 0):
-            DynamicSection += "[PcdsDynamic.common]\n"
+            DynamicSection += "[Pcd.common]\n"
             for Entry in PcdDY[:]:
                 DynamicSection += "  " + Entry + "\n"
             DynamicSection += "\n"
         if (len(PcdDYIa32) > 0):
-            DynamicSection += "[PcdsDynamic.IA32]\n"
+            DynamicSection += "[Pcd.IA32]\n"
             for Entry in PcdDYIa32[:]:
                 DynamicSection += "  " + Entry + "\n"
             DynamicSection += "\n"
         if (len(PcdDYX64) > 0):
-            DynamicSection += "[PcdsDynamic.X64]\n"
+            DynamicSection += "[Pcd.X64]\n"
             for Entry in PcdDYX64[:]:
                 DynamicSection += "  " + Entry + "\n"
             DynamicSection += "\n"
         if (len(PcdDYIpf) > 0):
-            DynamicSection += "[PcdsDynamic.IPF]\n"
+            DynamicSection += "[Pcd.IPF]\n"
             for Entry in PcdDYIpf[:]:
                 DynamicSection += "  " + Entry + "\n"
             DynamicSection += "\n"
         if (len(PcdDYEbc) > 0):
-            DynamicSection += "[PcdsDynamic.EBC]\n"
+            DynamicSection += "[Pcd.EBC]\n"
             for Entry in PcdDYEbc[:]:
                 DynamicSection += "  " + Entry + "\n"
             DynamicSection += "\n"
