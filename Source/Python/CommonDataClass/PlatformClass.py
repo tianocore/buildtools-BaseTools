@@ -123,7 +123,7 @@ class PlatformLibraryClass(CommonClass, DefineClass):
         DefineClass.__init__(self)
         self.Name = Name
         self.FilePath = FilePath
-        self.ModuleType = ''
+        self.ModuleType = []
         self.SupModuleList = []
         self.ModuleGuid = ''
         self.ModuleVersion = ''
