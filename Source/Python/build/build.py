@@ -149,6 +149,7 @@ class Build():
             EdkLogger.info('FDFFILE is: %s' % self.Opt.FDFFILE)
 
         ewb.GenBuildDatabase(pcdSet)
+        ewb.Fdf = self.Opt.FDFFILE
         ewb.TargetTxt = self.TargetTxt
         ewb.ToolDef = self.ToolDef
 
