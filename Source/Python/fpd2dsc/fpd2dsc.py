@@ -55,6 +55,7 @@ def Main():
     global args
     global workspace
     options,args = myOptionParser()
+    print args
     
     workspace = ""
 
@@ -72,8 +73,12 @@ def Main():
         options.verbose = 1
         pass
 
-    InputFile = args[0]
-
+    InputFile = ""
+    if args == []:
+        print "usage:" "%prog [options] input_filename"
+    else:
+        InputFile = args[0]
+        print InputFile
     if InputFile != "":
         filename = InputFile
         if ((options.verbose > 1) | (options.autowrite)):
@@ -92,7 +97,7 @@ def Main():
         
     try:
         Platform = LoadFpd(filename)
-        StoreDsc(options.outfile, Platform)
+        StoreDsc(outputFile, Platform)
         return 0
     except Exception, e:
         print e
