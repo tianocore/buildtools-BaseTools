@@ -78,7 +78,6 @@ def StorePlatformSkuIdsSection(DscFile, Platform):
     Section = "[SkuIds]" + '\n'
     
     List = Platform.SkuInfos.SkuInfoList
-    #print List
     for Item in List:
         Section = Section + "%s" % Item[0] + '|' + "%s" % Item[1] + '\n'
     Section = Section + '\n'
@@ -148,11 +147,10 @@ def StorePlatformBuildOptionsSection(DscFile, Platform):
     StandardBuildTargets = ["DEBUG", "RELEASE"]
     SupportedArches = ["COMMON", "IA32", "X64", "IPF", "EBC"]
     Target = TargetTxtClassObject()
-    #WorkSpace = 'C:\SourceTree\R9'
-    WorkSpace = options.workspace
-    Target.LoadTargetTxtFile(WorkSpace + '\\Conf\\target.txt')
+    workspace = os.getenv('WORKSPACE')
+    Target.LoadTargetTxtFile(workspace + '\\Conf\\target.txt')
     ToolDef = ToolDefClassObject()
-    ToolDef.LoadToolDefFile(WorkSpace + '\\' + Target.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])
+    ToolDef.LoadToolDefFile(workspace + '\\' + Target.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])
     # Now we have got ToolDef object
     #ToolDef.ToolsDefTxtDictionary
     Dict = ToolDef.ToolsDefTxtDatabase

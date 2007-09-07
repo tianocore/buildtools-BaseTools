@@ -170,8 +170,8 @@ def LoadPlatformModuleLibraryInstance(XmlLibraryInstance):
     #LibraryInstance.append(ModuleGuid)
     #LibraryInstance.append(ModulePath)
     ModuleMSAFile = ModulePath.replace('.inf', '.msa')
-    #ModuleMSAFileName = 'C:/SourceTree/R9/' + ModuleMSAFile
-    ModuleMSAFileName = options.workspace + ModuleMSAFile
+    workspace = os.getenv('WORKSPACE')
+    ModuleMSAFileName = os.path.join(workspace, ModuleMSAFile)
     XmlMsa = XmlParseFile(ModuleMSAFileName)
     
     XmlTag = "ModuleSurfaceArea/LibraryClassDefinitions/LibraryClass/Keyword"
@@ -192,14 +192,6 @@ def LoadLibraryClass(XmlLibraryClass):
         SupModuleList = XmlAttribute(XmlLibraryClass, XmlTag).split()
         return SupModuleList
         
-    #List = []
-    #List.append(Usage)
-    
-    #XmlTag = "SupModuleList"
-    #SupModuleList = XmlAttribute(XmlLibraryClass, XmlTag).split()
-    #List.append(SupModuleList)
-    #return List
-
 ## Load Platform Library Class.
 #
 # Read an input Platform XML DOM object and return Platform module class object
@@ -224,9 +216,9 @@ def LoadPlatformLibraryClass(XmlPlatformLibraryClass):
         PlatformLibraryInstance.FilePath = LibraryInstancePath
         #
         LibraryInstanceMSAName = LibraryInstancePath.replace('.inf', '.msa')
-        #LibraryInstanceMSAPath = 'C:/SourceTree/R9/' + LibraryInstanceMSAName
-        LibraryInstanceMSAPath = options.workspace + LibraryInstanceMSAName
-    
+        workspace = os.getenv('WORKSPACE')
+        LibraryInstanceMSAPath = os.path.join(workspace, LibraryInstanceMSAName)
+        
         PlatformLibraryInstance.FilePath = LibraryInstancePath
     
         XmlMsa = XmlParseFile(LibraryInstanceMSAPath)
@@ -240,7 +232,6 @@ def LoadPlatformLibraryClass(XmlPlatformLibraryClass):
         if PlatformLibraryInstance.ModuleType != "BASE":
             XmlTag = "ModuleSurfaceArea/LibraryClassDefinitions/LibraryClass"
             #LoadLibraryClass(PlatformLibraryInstance, XmlList(XmlMsa, XmlTag))
-            
             List = map(LoadLibraryClass, XmlList(XmlMsa, XmlTag))
             PlatformLibraryInstance.SupModuleList = List[0]
         XmlTag = "ModuleSurfaceArea/ModuleDefinitions/SupportedArchitectures"
@@ -317,8 +308,8 @@ def LoadModuleSA(XmlModuleSA):
     PlatformModule.FilePath = PlatformModulePath # *.inf file path
     # *.inf back to *.msa
     ModuleMSAFileName = PlatformModulePath.replace('.inf', '.msa')
-    #ModuleMSAFileName = 'C:/SourceTree/R9/' + ModuleMSAFileName
-    ModuleMSAFileName = options.workspace + ModuleMSAFileName
+    workspace = os.getenv('WORKSPACE')
+    ModuleMSAFileName = os.path.join(workspace, ModuleMSAFileName)
     # Open this module
     #ModuleMSA = open(ModuleMSAFileName, "r")
     XmlMsa = XmlParseFile(ModuleMSAFileName)

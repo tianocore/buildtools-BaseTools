@@ -55,16 +55,14 @@ def Main():
     global args
     global workspace
     options,args = myOptionParser()
-    print args
-    
-    workspace = ""
 
+    workspace = ""
+    print options.workspace
     if (options.workspace == None):
         print "ERROR: E0000: WORKSPACE not defined.\n  Please set the WORKSPACE environment variable to the location of the EDK II install directory."
         sys.exit(1)
     else:
         workspace = options.workspace
-        #print workspace
         if (options.debug):
             print "Using Workspace:", workspace
     try:
