@@ -30,29 +30,25 @@ class EfiSection (EfiSectionClassObject):
             BuildNum = self.BuildNum
             VerstionNum = self.VersionNum
             InfFileName = ''
-            
-        if self.Optional == True :
-            if Filename == None or Filename =='':
-                GenFdsGlobalVariable.VerboseLogger( "Optional Section don't exist!")
-                return '', None
-            
-       
-        
+
         FileList, IsSect = Section.Section.GetFileList(FfsInf, self.FileType, self.FileExtension)
         if IsSect :
             return FileList, self.Alignment
 
         Num = SecNum
-        
+        """If the file name was pointed out, add it in FileList"""
+        if FileList == []:
+            if Filename != None:
+                FileList.append(Filename)
+            
         """ If Section type is 'VERSION'"""
-        
         OutputFileList = []
         if SectionType == 'VERSION':
             if FileList != []:
-                for FileName in FileList:
+                for File in FileList:
                     OutputFile = os.path.join( OutputPath, ModuleName + 'SEC' + Num + Ffs.SectionSuffix.get(SectionType))
                     Num = Num + 1
-                    f = open (Filename, 'r')
+                    f = open (File, 'r')
                     VerString = f.read()
                     VerString = ' -n '          + \
                                 ' \"'           + \
@@ -103,8 +99,10 @@ class EfiSection (EfiSectionClassObject):
         #
         elif SectionType == 'UI':
             if FileList != []:
-                for Filename in FileList:
-                    f = open (Filename, 'r')
+                for File in FileList:
+                    OutputFile = os.path.join( OutputPath, ModuleName + 'SEC' + Num + Ffs.SectionSuffix.get(SectionType))
+                    Num = Num + 1
+                    f = open (File, 'r')
                     UiString = f.read()
                     UiString = ' -n '         + \
                                 '\"'          + \
@@ -132,6 +130,7 @@ class EfiSection (EfiSectionClassObject):
                         return '', None
                     else:
                         raise Exception ("File: %s miss UI Section value" %InfFileName)
+                OutputFile = os.path.join( OutputPath, ModuleName + 'SEC' + Num + Ffs.SectionSuffix.get(SectionType))
                 GenSectionCmd = 'GenSec -o '                       + \
                                  OutputFile                        + \
                                  ' -s EFI_SECTION_USER_INTERFACE'  + \
@@ -148,15 +147,17 @@ class EfiSection (EfiSectionClassObject):
                      GenFdsGlobalVariable.VerboseLogger( "Optional Section don't exist!")
                      return [], None
                 else:
-                     raise Exception(" %s does't exist" %Filename)
+                     raise Exception(" %s does't exist " %SectionType)
             
             else:
                 """Convert the File to Section file one by one """
-                for Filename in FileList:
+                for File in FileList:
                     """ Copy Map file to FFS output path """
-                    Filename = GenFdsGlobalVariable.ExtendMarco(Filename)
-                    if Filename[(len(Filename)-4):] == '.efi':
-                        MapFile = Filename.replace('.efi', '.map')
+                    OutputFile = os.path.join( OutputPath, ModuleName + 'SEC' + Num + Ffs.SectionSuffix.get(SectionType))
+                    Num = Num + 1
+                    File = GenFdsGlobalVariable.ExtendMarco(File)
+                    if File[(len(File)-4):] == '.efi':
+                        MapFile = File.replace('.efi', '.map')
                         if os.path.exists(MapFile):
                             CopyMapFile = os.path.join(OutputPath, ModuleName + '.map')
                             shutil.copyfile(MapFile, CopyMapFile)
@@ -169,9 +170,9 @@ class EfiSection (EfiSectionClassObject):
                                    ' -o '         + \
                                     TeFile        + \
                                     ' '           + \
-                                   GenFdsGlobalVariable.ExtendMarco(Filename)
+                                   GenFdsGlobalVariable.ExtendMarco(File)
                         GenFdsGlobalVariable.CallExternalTool(GenTeCmd, "GenFw Failed !")
-                        Filename = TeFile
+                        File = TeFile
 
                     """Call GenSection"""
                     GenSectionCmd = 'GenSec -o '                                         + \
@@ -179,7 +180,7 @@ class EfiSection (EfiSectionClassObject):
                                          ' -s '                                          + \
                                          Section.Section.SectionType.get (SectionType)   + \
                                          ' '                                             + \
-                                         GenFdsGlobalVariable.ExtendMarco(Filename)
+                                         GenFdsGlobalVariable.ExtendMarco(File)
                         
                     GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed !")
                     OutputFileList.append(OutputFile)
