@@ -233,7 +233,8 @@ def LoadPlatformLibraryClass(XmlPlatformLibraryClass):
             XmlTag = "ModuleSurfaceArea/LibraryClassDefinitions/LibraryClass"
             #LoadLibraryClass(PlatformLibraryInstance, XmlList(XmlMsa, XmlTag))
             List = map(LoadLibraryClass, XmlList(XmlMsa, XmlTag))
-            PlatformLibraryInstance.SupModuleList = List[0]
+            if List != []:
+                PlatformLibraryInstance.SupModuleList = List[0]
         XmlTag = "ModuleSurfaceArea/ModuleDefinitions/SupportedArchitectures"
         PlatformLibraryInstance.SupArchList = XmlElement(XmlMsa, XmlTag).split()
     

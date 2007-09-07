@@ -84,56 +84,6 @@ def StorePlatformSkuIdsSection(DscFile, Platform):
     
     StoreTextFile(DscFile, Section)
 
-## Return a Build Option Item.
-#
-# Read the input LibraryClass class object and return Platform Build Option Item.
-#
-# @param  Item         An Specified CPU Arch object.
-# @param  Dict1        An input Dictionary containing the build option information.
-#
-# @retval Section     A Platform Build Option Section Item.
-#
-def GetBuildOption(Item, Dict1):
-    Section = "[BuildOptions." + Item + "]\n"
-    for key in Dict1.keys():
-        if key.find(Item + "_CC_FLAGS") != -1:
-            if key.find('WINDDK3790x1830') != -1:
-                b = Dict1.get(key)
-                Section += "*_WINDDK3790x1830_" + Item + "_CC_FLAGS" + "  =  " + b + "\n"
-            elif key.find('VS2003') != -1:
-                b = Dict1.get(key)
-                Section += "*_VS2003_" + Item + "_CC_FLAGS" + "  =  " + b + "\n"
-            elif key.find('VS2005EXP') != -1:
-                b = Dict1.get(key)
-                Section += "*_VS2005EXP_" + Item + "_CC_FLAGS" + "  =  " + b + "\n"
-            elif key.find('VS2005STD') != -1:
-                b = Dict1.get(key)
-                Section += "*_VS2005STD_" + Item + "_CC_FLAGS" + "  =  " + b + "\n"
-            elif key.find('VS2005PRO') != -1:
-                b = Dict1.get(key)
-                Section += "*_VS2005PRO_" + Item + "_CC_FLAGS" + "  =  " + b + "\n"
-            elif key.find('VS2005TEAMSUITE') != -1:
-                b = Dict1.get(key)
-                Section += "*_VS2005TEAMSUITE_" + Item + "_CC_FLAGS" + "  =  " + b + "\n"
-            elif key.find('UNIXGCC') != -1:
-                b = Dict1.get(key)
-                Section += "*_UNIXGCC_" + Item + "_CC_FLAGS" + "  =  " + b + "\n"
-            elif key.find('CYGWINGCC') != -1:
-                b = Dict1.get(key)
-                Section += "*_CYGWINGCC_" + Item + "_CC_FLAGS" + "  =  " + b + "\n"
-            elif key.find('ELFGCC') != -1:
-                b = Dict1.get(key)
-                Section += "*_ELFGCC_" + Item + "_CC_FLAGS" + "  =  " + b + "\n"
-            elif key.find('ICC') != -1:
-                a = Dict1.get(key).split(' ')
-                Section += "*_ICC_" + Item + "_CC_FLAGS" + "  =  " + b + "\n"
-            elif key.find('MYTOOLS') != -1:
-                a = Dict1.get(key).split(' ')
-                Section += "*_MYTOOLS_" + Item + "_CC_FLAGS" + "  =  " + b + "\n"
-            else:
-                print "Error!"
-    return Section
-
 ## Store Build Options section.
 #
 # Write [BuildOptions] section to the DscFile based on Platform class object.
@@ -159,31 +109,94 @@ def StorePlatformBuildOptionsSection(DscFile, Platform):
     #
     # We only support *(DEBUG/RELEASE) and *(All Arch: IA32, X64, IPF and EBC) for now
     #
+    for key in Dict1.keys():
+        if key.find("_CC_FLAGS") != -1:
+            if key.find('WINDDK3790x1830') != -1:
+                SectionWINDDK = "  =  " + Dict1.get(key) + "\n"
+            elif key.find('VS2003') != -1:
+                SectionVS2003 = "  =  " + Dict1.get(key)+ "\n"
+            elif key.find('VS2005EXP') != -1:
+                SectionVS2005EXP = "  =  " + Dict1.get(key) + "\n"
+            elif key.find('VS2005STD') != -1:
+                SectionVS2005STD = "  =  " + Dict1.get(key) + "\n"
+            elif key.find('VS2005PRO') != -1:
+                SectionVS2005PRO = "  =  " + Dict1.get(key) + "\n"
+            elif key.find('VS2005TEAMSUITE') != -1:
+                SectionVS2005TEAMSUITE = "  =  " + Dict1.get(key) + "\n"
+            elif key.find('UNIXGCC') != -1:
+                SectionUNIXGCC = "  =  " + Dict1.get(key) + "\n"
+            elif key.find('CYGWINGCC') != -1:
+                SectionCYGWINGCC = "  =  " + Dict1.get(key) + "\n"
+            elif key.find('ELFGCC') != -1:
+                SectionELFGCC = "  =  " + Dict1.get(key) + "\n"
+            elif key.find('ICC') != -1:
+                SectionICC = "  =  " + Dict1.get(key) + "\n"
+            elif key.find('MYTOOLS') != -1:
+                SectionMYTOOLS = "  =  " + Dict1.get(key) + "\n"
+            else:
+                print "Error!"
+
     #
     # First need to check which arch
     #
     Archs = Platform.Header.SupArchList
     BuildTargets = Platform.Header.BuildTargets
-    if BuildTargets == StandardBuildTargets:
-        print "Debug and Release both support" # skip debug/release string search
-    else:
-        print "need to search debug/release string"
+    #if BuildTargets == StandardBuildTargets:
+        #print "Debug and Release both support" # skip debug/release string search
+    #else:
+        #print "need to search debug/release string"
 
     if len(Archs) == 4:
-        print "support all Arch, skip search Arch"
+        Arch = "*"
+        SectionName = "[BuildOptions.Common]\n"
     else:
-        for Item in Archs:
-            if Item == 'IA32':
-                Section = GetBuildOption(Item, Dict1)
-            elif Item == 'X64':
-                Section = GetBuildOption(Item, Dict1)
-            elif Item == 'IPF':
-                Section = GetBuildOption(Item, Dict1)
-            elif Item == 'EBC':
-                Section = GetBuildOption(Item, Dict1)
+        for Arch in Archs:
+            if Arch == 'IA32':
+                SectionName = "[BuildOptions.IA32]\n"
+            elif Arch == 'X64':
+                SectionName = "[BuildOptions.X64]\n"
+            elif Arch == 'IPF':
+                SectionName = "[BuildOptions.IPF]\n"
+            elif Arch == 'EBC':
+                SectionName = "[BuildOptions.EBC]\n"
             else:
                 print 'Error!'
-        Section += "\n"
+    Section = ""
+    if SectionWINDDK != "":
+        SectionWINDDK = "*_WINDDK3790x1830_" + Arch + "_CC_FLAGS" + SectionWINDDK
+        Section += SectionWINDDK
+    if SectionVS2003 != "":
+        SectionVS2003 = "*_VS2003_" + Arch + "_CC_FLAGS" + SectionVS2003
+        Section += SectionVS2003
+    if SectionVS2005EXP != "":
+        SectionVS2005EXP = "*_VS2005EXP_" + Arch + "_CC_FLAGS" + SectionVS2005EXP
+        Section += SectionVS2005EXP
+    if SectionVS2005STD != "":
+        SectionVS2005STD = "*_VS2005STD_" + Arch + "_CC_FLAGS" + SectionVS2005STD
+        Section += SectionVS2005STD
+    if SectionVS2005PRO != "":
+        SectionVS2005PRO = "*_VS2005PRO_" + Arch + "_CC_FLAGS" + SectionVS2005PRO
+        Section += SectionVS2005PRO
+    if SectionVS2005TEAMSUITE != "":
+        SectionVS2005TEAMSUITE = "*_VS2005TEAMSUITE_" + Arch + "_CC_FLAGS" + SectionVS2005TEAMSUITE
+        Section += SectionVS2005TEAMSUITE
+    if SectionUNIXGCC != "":
+        SectionUNIXGCC = "*_UNIXGCC_" + Arch + "_CC_FLAGS" + SectionUNIXGCC
+        Section += SectionUNIXGCC
+    if SectionCYGWINGCC != "":
+        SectionCYGWINGCC = "*_CYGWINGCC_" + Arch + "_CC_FLAGS" + SectionCYGWINGCC
+        Section += SectionCYGWINGCC
+    if SectionELFGCC != "":
+        SectionELFGCC = "*_ELFGCC_" + Arch + "_CC_FLAGS" + SectionELFGCC
+        Section += SectionELFGCC
+    if SectionICC != "":
+        SectionICC = "*_ICC_" + Arch + "_CC_FLAGS" + SectionICC
+        Section += SectionICC
+    if SectionMYTOOLS != "":
+        SectionMYTOOLS = "*_MYTOOLS_" + Arch + "_CC_FLAGS" + SectionMYTOOLS
+        Section += SectionMYTOOLS
+    Section = SectionName + Section
+    Section += "\n"
     StoreTextFile(DscFile, Section)
 
 ## Store Libraries section.
@@ -224,7 +237,6 @@ def GetPlatformLibraryClassItem(LibraryClass):
 #
 def AddToLibraryClassSection(Section, SupModuleList, Item):
     for ModuleType in SupModuleList:
-        
         SectionModule = Section.get(ModuleType, [])
         if Item not in SectionModule:
             SectionModule.append(Item)
@@ -348,7 +360,6 @@ def GetLibraryClassesSection(SectionName, Method, ObjectList):
 def StorePlatformLibraryClassesSection(DscFile, Platform):
     Section = GetLibraryClassesSection("LibraryClasses", GetPlatformLibraryClassItem, Platform.LibraryClasses.LibraryList)
     StoreTextFile(DscFile, Section)
-
 
 ## Store Pcd section.
 #
