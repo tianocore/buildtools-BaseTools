@@ -367,7 +367,7 @@ GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = 0;
 EFI_STATUS
 EFIAPI
 ProcessModuleEntryPointList (
-  IN EFI_FFS_FILE_HEADER  *FfsHeader,
+  IN EFI_PEI_FILE_HANDLE  *FfsHeader,
   IN EFI_PEI_SERVICES     **PeiServices
   )
 
@@ -380,14 +380,14 @@ GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = 0;
 
 EFI_STATUS
 ${Function} (
-  IN EFI_FFS_FILE_HEADER  *FfsHeader,
+  IN EFI_PEI_FILE_HANDLE  *FfsHeader,
   IN EFI_PEI_SERVICES     **PeiServices
   );
 
 EFI_STATUS
 EFIAPI
 ProcessModuleEntryPointList (
-  IN EFI_FFS_FILE_HEADER  *FfsHeader,
+  IN EFI_PEI_FILE_HANDLE  *FfsHeader,
   IN EFI_PEI_SERVICES     **PeiServices
   )
 
@@ -401,7 +401,7 @@ GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = 0;
 ${BEGIN}
 EFI_STATUS
 ${Function} (
-  IN EFI_FFS_FILE_HEADER  *FfsHeader,
+  IN EFI_PEI_FILE_HANDLE  *FfsHeader,
   IN EFI_PEI_SERVICES     **PeiServices
   );
 ${END}
@@ -409,7 +409,7 @@ ${END}
 EFI_STATUS
 EFIAPI
 ProcessModuleEntryPointList (
-  IN EFI_FFS_FILE_HEADER  *FfsHeader,
+  IN EFI_PEI_FILE_HANDLE  *FfsHeader,
   IN EFI_PEI_SERVICES     **PeiServices
   )
 
@@ -668,7 +668,7 @@ ProcessLibrary${Type}List (
 VOID
 EFIAPI
 ProcessLibrary${Type}List (
-  IN EFI_FFS_FILE_HEADER       *FfsHeader,
+  IN EFI_PEI_FILE_HANDLE       *FfsHeader,
   IN EFI_PEI_SERVICES          **PeiServices
   )
 {
@@ -712,7 +712,7 @@ ${BEGIN}
 EFI_STATUS
 EFIAPI
 ${Function} (
-  IN EFI_FFS_FILE_HEADER       *FfsHeader,
+  IN EFI_PEI_FILE_HANDLE       *FfsHeader,
   IN EFI_PEI_SERVICES          **PeiServices
   );
 ${END}
@@ -720,7 +720,7 @@ ${END}
 VOID
 EFIAPI
 ProcessLibrary${Type}List (
-  IN EFI_FFS_FILE_HEADER       *FfsHeader,
+  IN EFI_PEI_FILE_HANDLE       *FfsHeader,
   IN EFI_PEI_SERVICES          **PeiServices
   )
 {
