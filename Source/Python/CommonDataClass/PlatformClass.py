@@ -16,7 +16,7 @@ from CommonClass import *
 class SkuInfoListClass(IncludeStatementClass):
     def __init__(self):
         IncludeStatementClass.__init__(self)
-        self.SkuInfoList = {}                                       #{ SkuName : SkuId }
+        self.SkuInfoList = []                                       #{ SkuName : SkuId }
 
 class PlatformHeaderClass(IdentificationClass, CommonHeaderClass, DefineClass):
     def __init__(self):
@@ -33,8 +33,6 @@ class PlatformHeaderClass(IdentificationClass, CommonHeaderClass, DefineClass):
         self.BuildNumber = ''
         self.MakefileName = ''
         self.ClonedFrom = []                                         #[ ClonedRecordClass, ...]
-        self.BsBaseAddress = ''
-        self.RtBaseAddress = ''
 
 class PlatformFlashDefinitionFileClass(object):
     def __init__(self):
@@ -43,7 +41,7 @@ class PlatformFlashDefinitionFileClass(object):
         self.Preferred = False
         self.FilePath = ''
 
-class PlatformFvImageOption(object):
+class PlatformFvImageOptionClass(object):
     def __init__(self):
         self.FvImageOptionName = ''
         self.FvImageOptionValues = []
@@ -64,9 +62,10 @@ class PlatformFvImageNameClass(object):
         
 class PlatformFvImagesClass(object):
     def __init__(self):
-        self.FvImages1 = []                                          #[ PlatformFvImageClass, ...]
-        self.FvImages2 = []                                          #[ PlatformFvImageNameClass, ...]
-
+        #self.FvImages1 = []                                          #[ PlatformFvImageClass, ...]
+        #self.FvImages2 = []                                          #[ PlatformFvImageNameClass, ...]
+        self.FvImages = []
+        
 class PlatformAntTaskClass(object):
     def __init__(self):
         self.Id = ''
@@ -112,7 +111,7 @@ class PlatformBuildOptionClass(object):
     
 class PlatformBuildOptionClasses(IncludeStatementClass):
     def __init__(self):
-        IncludeStatementClass.__init__(self)                         # Used by .Dsc
+        IncludeStatementClass.__init__(self)
         self.FvBinding = ''
         self.FfsFileNameGuid = ''
         self.FfsFormatKey = ''
@@ -124,6 +123,7 @@ class PlatformLibraryClass(CommonClass, DefineClass):
         DefineClass.__init__(self)
         self.Name = Name
         self.FilePath = FilePath
+        self.ModuleType = ''
         self.SupModuleList = []
         self.ModuleGuid = ''
         self.ModuleVersion = ''
@@ -133,7 +133,8 @@ class PlatformLibraryClass(CommonClass, DefineClass):
 class PlatformLibraryClasses(IncludeStatementClass):
     def __init__(self):
         IncludeStatementClass.__init__(self)
-        self.LibraryList = []                                        #[ PlatformLibraryClass, ...]
+        #self.LibraryList = []                                        #[ PlatformLibraryClass, ...]
+        self.LibraryList = {}
         
 class PlatformModuleClass(CommonClass, DefineClass, IncludeStatementClass):
     def __init__(self):
