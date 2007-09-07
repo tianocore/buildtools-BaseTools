@@ -221,14 +221,14 @@ class FfsInfStatement(FfsInfStatementClassObject):
         else:
             FileList, IsSect = Section.Section.GetFileList(self, '', Rule.FileExtension)
 
-        Index = 0
+        Index = 1
         SectionType     = Rule.SectionType
         if FileList != [] :
             for File in FileList:
-                SecNum = '%d', Index
+                SecNum = '%d' %Index
                 GenSecOutputFile= self.__ExtendMarco__(Rule.NameGuid) + \
-                              Ffs.Ffs.SectionSuffix[SectionType] + 'SEC' + Index
-                Index = Index + 1
+                              Ffs.Ffs.SectionSuffix[SectionType] + 'SEC' + SecNum   
+                Index = Index + 1             
                 OutputFile = os.path.join(self.OutputPath, GenSecOutputFile)
                 genSectionCmd = 'GenSec -o '                                + \
                                  OutputFile                                 + \
@@ -242,8 +242,9 @@ class FfsInfStatement(FfsInfStatementClassObject):
                 GenFdsGlobalVariable.CallExternalTool(genSectionCmd, "Gensection Failed!")
                 OutputFileList.append(GenSecOutputFile)
         else:
+            SecNum = '%d' %Index
             GenSecOutputFile= self.__ExtendMarco__(Rule.NameGuid) + \
-                              Ffs.Ffs.SectionSuffix[SectionType] + 'SEC' + Index
+                              Ffs.Ffs.SectionSuffix[SectionType] + 'SEC' + SecNum
             OutputFile = os.path.join(self.OutputPath, GenSecOutputFile)
             
             genSectionCmd = 'GenSec -o '                                + \
@@ -301,7 +302,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
     
     def __GenComplexFileSection__(self, Rule):
         SectFiles = ''
-        Index = 0
+        Index = 1
         for Sect in Rule.SectionList:
            SecIndex = '%d' %Index
            SecList  = []
@@ -312,12 +313,12 @@ class FfsInfStatement(FfsInfStatementClassObject):
            for SecName in  SectList :
                SectFiles = SectFiles    + \
                            ' -i '       + \
-                           secName
+                           SecName
                if Align != None:
                    SectFiles = SectFiles + \
                                ' -n '    + \
                                Align
-               Index = Index + 1
+           Index = Index + 1
         return SectFiles
 
     def __GenComplexFileFfs__(self, Rule, InputFile):

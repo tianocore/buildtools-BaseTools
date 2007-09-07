@@ -28,11 +28,12 @@ class CompressSection (CompressSectionClassObject) :
         for Sect in self.SectionList:
             Index = Index + 1
             SecIndex = '%s.%d' %(SecNum, Index)
-            sect, align = Sect.GenSection(OutputPath, ModuleName, SecIndex, KeyStringList, FfsInf)
-            if sect != None:
-                SectFiles = SectFiles + \
-                            ' '       + \
-                            sect
+            ReturnSectList, align = Sect.GenSection(OutputPath, ModuleName, SecIndex, KeyStringList, FfsInf)
+            if ReturnSectList != []:
+                for file in ReturnSectList:
+                   SectFiles = SectFiles + \
+                               ' '       + \
+                               file
                         
 
         OutputFile = OutputPath + \

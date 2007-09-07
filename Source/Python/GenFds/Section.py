@@ -1,4 +1,5 @@
 from CommonDataClass.FdfClassObject import SectionClassObject
+import os
 
 class Section (SectionClassObject):
     SectionType = {
@@ -66,9 +67,9 @@ class Section (SectionClassObject):
         if FileExtension != None:
             suffix = FileExtension
         elif IsSect :
-            suffix = Section.SectionType[FileType]
+            suffix = Section.SectionType.get(FileType)
         else:
-            suffix = Section.BinFileType[FileType]
+            suffix = Section.BinFileType.get(FileType)
         if FfsInf == None:
             raise Exception ('Dont have Inf File!')
         
@@ -79,7 +80,7 @@ class Section (SectionClassObject):
             for file in os.listdir(FfsInf.EfiOutputPath):
                 Name, Ext = os.path.splitext(file)
                 if Ext == suffix:
-                   FileList.append(FfsInf.EfiOutputPath, file)
+                   FileList.append(os.path.join(FfsInf.EfiOutputPath, file))
                    
         return FileList, IsSect
     GetFileList = staticmethod(GetFileList)

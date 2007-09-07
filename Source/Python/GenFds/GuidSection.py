@@ -27,11 +27,12 @@ class GuidSection(GuidSectionClassObject) :
         for Sect in self.SectionList:
             Index = Index + 1
             SecIndex = '%s.%d' %(SecNum,Index)
-            sect, align = Sect.GenSection(OutputPath, ModuleName, SecIndex, KeyStringList,FfsInf)
-            if sect != None:
-                SectFile = SectFile + \
-                           '  '     + \
-                           sect
+            ReturnSectList, align = Sect.GenSection(OutputPath, ModuleName, SecIndex, KeyStringList,FfsInf)
+            if ReturnSectList != []:
+                for file in ReturnSectList:
+                    SectFile = SectFile + \
+                               '  '     + \
+                               file
                        
 
         OutputFile = OutputPath + \
@@ -56,7 +57,9 @@ class GuidSection(GuidSectionClassObject) :
                              SectFile
                              
             GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
-            return OutputFile, self.Alignment
+            OutputFileList = []
+            OutputFileList.append(OutputFile)
+            return OutputFileList, self.Alignment
         else:
             #
             # Call GenSection with DUMMY section type.

@@ -1542,7 +1542,7 @@ class FdfParser:
             p = re.compile(r'([a-zA-Z][a-zA-Z0-9]*)')
             if p.match(self.__Token):
                 ext = self.__Token                            
-                return ext    
+                return '.' + ext    
             else:
 #                    self.__UndoToken()
                 raise Warning("Unknown file extension At Line %d" % self.CurrentLineNumber)
