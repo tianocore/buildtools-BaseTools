@@ -74,7 +74,7 @@ class Section (SectionClassObject):
         
         FileList = []
         for File in FfsInf.BinFileList :
-            if File.FileType == self.FileType:
+            if File.FileType == FileType:
                 FileList.append(os.path.join(GenFdsGlobalVariable.WorkSpaceDir, FfsInf.SourceDir, File.BinaryFile))
             for file in os.listdir(FfsInf.EfiOutputPath):
                 Name, Ext = os.path.splitext(file)
@@ -82,5 +82,4 @@ class Section (SectionClassObject):
                    FileList.append(FfsInf.EfiOutputPath, file)
                    
         return FileList, IsSect
-    
     GetFileList = staticmethod(GetFileList)
