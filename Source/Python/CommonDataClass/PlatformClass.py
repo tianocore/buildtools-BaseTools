@@ -16,7 +16,7 @@ from CommonClass import *
 class SkuInfoListClass(IncludeStatementClass):
     def __init__(self):
         IncludeStatementClass.__init__(self)
-        self.SkuInfoList = []                                       #{ SkuName : SkuId }
+        self.SkuInfoList = {}                                       #{ SkuName : SkuId }
 
 class PlatformHeaderClass(IdentificationClass, CommonHeaderClass, DefineClass):
     def __init__(self):
@@ -133,8 +133,7 @@ class PlatformLibraryClass(CommonClass, DefineClass):
 class PlatformLibraryClasses(IncludeStatementClass):
     def __init__(self):
         IncludeStatementClass.__init__(self)
-        #self.LibraryList = []                                        #[ PlatformLibraryClass, ...]
-        self.LibraryList = {}
+        self.LibraryList = []                                        #[ PlatformLibraryClass, ...]
         
 class PlatformModuleClass(CommonClass, DefineClass, IncludeStatementClass):
     def __init__(self):
