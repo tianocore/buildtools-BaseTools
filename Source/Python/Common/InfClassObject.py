@@ -340,6 +340,11 @@ class Inf(InfObject):
         Pcds = {}
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].FixedPcd:
+                #
+                # Library should not have FixedPcd
+                #
+                if self.Module.Header.LibraryClass != {}:
+                    pass
                 MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_FIXED_AT_BUILD, File), Arch)
             
             for Item in self.Contents[Arch].PatchPcd:
@@ -353,6 +358,10 @@ class Inf(InfObject):
             
             for Item in self.Contents[Arch].Pcd:
                 MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_DYNAMIC, File), Arch)
+                MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_DYNAMIC_EX, File), Arch)
+                MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_FEATURE_FLAG, File), Arch)
+                MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_FIXED_AT_BUILD, File), Arch)
+                MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_PATCHABLE_IN_MODULE, File), Arch)
                 
         for Key in Pcds.keys():
             Pcd = PcdClass()
@@ -474,7 +483,7 @@ class Inf(InfObject):
                     CheckPcdTokenInfo(List[3], 'Binaries', File)
                     MergeArches(Binaries, (List[0], List[1], List[2], List[3]), Arch)
         for Key in Binaries.keys():
-            Binary = ModuleBinaryFileClass(Key[2], Key[0], Key[1], Key[3], Binaries[Key])
+            Binary = ModuleBinaryFileClass(Key[1], Key[0], Key[2], Key[3], Binaries[Key])
             self.Module.Binaries.append(Binary)
         
     #
@@ -483,12 +492,23 @@ class Inf(InfObject):
     #
     def GetPcdOfInf(self, Item, Type, File):
         Format = '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'
+        InfType = ''
+        if Type == TAB_PCDS_FIXED_AT_BUILD:
+            InfType = TAB_INF_FIXED_PCD
+        elif Type == TAB_PCDS_PATCHABLE_IN_MODULE:
+            InfType = TAB_INF_PATCH_PCD
+        elif Type == TAB_PCDS_FEATURE_FLAG:
+            InfType = TAB_INF_FEATURE_PCD        
+        elif Type == TAB_PCDS_DYNAMIC_EX:
+            InfType = TAB_INF_PCD_EX        
+        elif Type == TAB_PCDS_DYNAMIC:
+            InfType = TAB_INF_PCD
         List = GetSplitValueList(Item + DataType.TAB_VALUE_SPLIT)
         if len(List) < 2 or len(List) > 3:
-            RaiseParserError(Item, 'Pcds' + Type, File, Format)
+            RaiseParserError(Item, InfType, File, Format)
         TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
         if len(TokenInfo) != 2:
-            RaiseParserError(Item, 'Pcds' + Type, File, Format)
+            RaiseParserError(Item, InfType, File, Format)
         if len(List) == 3 and List[1] == '':
             #
             # Value is empty
@@ -622,7 +642,7 @@ class Inf(InfObject):
             print Item.Depex, Item.SupArchList, Item.Define
         print '\nBinaries =', m.Binaries
         for Binary in m.Binaries:
-            print Binary.FileType, Binary.Target, Binary.BinaryFile, Binary.FeatureFlag
+            print 'Type=', Binary.FileType, 'Target=', Binary.Target, 'Name=', Binary.BinaryFile, Binary.FeatureFlag
         
 if __name__ == '__main__':
     w = os.getenv('WORKSPACE')
