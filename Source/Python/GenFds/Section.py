@@ -1,4 +1,5 @@
 from CommonDataClass.FdfClassObject import SectionClassObject
+from GenFdsGlobalVariable import GenFdsGlobalVariable
 import os
 
 class Section (SectionClassObject):
