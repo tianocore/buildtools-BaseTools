@@ -101,14 +101,15 @@ class PlatformFfsClass(object):
     def __init__(self):
         self.Attribute = {}                                          #{ [(Name, PlatformFfsSectionsClass)] : Value}
         self.Sections = []                                           #[ PlatformFfsSectionsClass]
-            
+        self.Key = ''
+        
 class PlatformBuildOptionClass(object):
     def __init__(self):
         self.UserDefinedAntTasks = {}                                #{ [Id] : PlatformAntTaskClass, ...}
         self.Options = []                                            #[ BuildOptionClass, ...]
         self.UserExtensions = {}                                     #{ [(UserID, Identifier)] : UserExtensionsClass, ...}
         self.FfsKeyList = {}                                         #{ [FfsKey]: PlatformFfsClass, ...} 
-    
+
 class PlatformBuildOptionClasses(IncludeStatementClass):
     def __init__(self):
         IncludeStatementClass.__init__(self)

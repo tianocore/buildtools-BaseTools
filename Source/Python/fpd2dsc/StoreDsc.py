@@ -329,30 +329,30 @@ def GetLibraryClassesSection(SectionName, Method, ObjectList):
             Section += "[%s.Common.%s]\n%s\n" % (SectionName, ModuleType, SectionCommonModule)
             Section += "\n"
     for ModuleType in Object.SupModuleList:
-        print ModuleType
+        #print ModuleType
         ListIA32 = SectionIA32Dict.get(ModuleType, [])
-        print ListIA32
+        #print ListIA32
         if ListIA32 != []:
             SectionIA32Module = "\n".join(SectionIA32Dict.get(ModuleType, []))
             if SectionIA32Module != "":
                 Section += "[%s.IA32.%s]\n%s\n" % (SectionName, ModuleType, SectionIA32Module)
                 Section += "\n"
         ListX64 = SectionX64Dict.get(ModuleType, [])
-        print ListX64
+        #print ListX64
         if ListX64 != []:
             SectionX64Module = "\n".join(SectionX64Dict.get(ModuleType, []))
             if SectionX64Module != "":
                 Section += "[%s.X64.%s]\n%s\n" % (SectionName, ModuleType, SectionX64Module)
                 Section += "\n"
         ListIPF = SectionIPFDict.get(ModuleType, [])
-        print ListIPF
+        #print ListIPF
         if ListIPF != []:
             SectionIPFModule = "\n".join(SectionIPFDict.get(ModuleType, []))
             if SectionIPFModule != "":
                 Section += "[%s.IPF.%s]\n%s\n" % (SectionName, ModuleType, SectionIPFModule)
                 Section += "\n"
         ListEBC = SectionEBCDict.get(ModuleType, [])
-        print ListEBC
+        #print ListEBC
         if ListEBC != []:
             SectionEBCModule = "\n".join(SectionEBCDict.get(ModuleType, []))
             if SectionEBCModule != "":
@@ -590,7 +590,7 @@ def GetPlatformComponentItem(Component):
                     ListOption.append(Item)
                 ListOption.append(Option.ToolCode)
                 ListOption.append("FLAGS")
-                print ListOption
+                #print ListOption
                 SectionOption += "  " + "_".join(List) + "    =  " + Option.Option + "\n"
                 ListOption = []
     if SectionOption != "":

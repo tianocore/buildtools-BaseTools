@@ -642,8 +642,8 @@ def LoadPlatformFfs(XmlFfs):
             Dict[(Name, Item)] = Value
     PlatformFfs.Attribute = Dict
     
-    #XmlTag = "Ffs/FfsKey"
-    #PlatformFfs.Key = XmlAttribute(XmlFfs, XmlTag)
+    XmlTag = "Ffs/FfsKey"
+    PlatformFfs.Key = XmlAttribute(XmlFfs, XmlTag)
     
     return PlatformFfs
 
