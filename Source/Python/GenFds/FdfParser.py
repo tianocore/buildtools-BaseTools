@@ -1529,7 +1529,7 @@ class FdfParser:
         if self.__Token.upper() not in ("SEC", "PEI_CORE", "PEIM", "DXE_CORE", \
                              "DXE_DRIVER", "DXE_SAL_DRIVER", \
                              "DXE_SMM_DRIVER", "DXE_RUNTIME_DRIVER", \
-                             "UEFI_DRIVER", "UEFI_APPLICATION", "USER_DEFINED", "DEFAULT"):
+                             "UEFI_DRIVER", "UEFI_APPLICATION", "USER_DEFINED", "DEFAULT", "BASE"):
             raise Warning("Unknown Module type At line %d" % self.CurrentLineNumber)
         return self.__Token
     
