@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 from Common import EdkLogger
 
@@ -16,6 +17,8 @@ class GenFdsGlobalVariable:
     ArchList = None
     VtfDict = {}
     ActivePlatform = None
+    VerboseMode = False
+    SharpCounter = 0
 
     def ExtendMarco (String):
         return String
@@ -45,14 +48,21 @@ class GenFdsGlobalVariable:
         return Str
     
     def CallExternalTool (cmd, errorMess):
-        GenFdsGlobalVariable.InfLogger (cmd)
+        if GenFdsGlobalVariable.VerboseMode:
+            GenFdsGlobalVariable.InfLogger (cmd)
+        else:
+            sys.stdout.write ('#')
+            sys.stdout.flush()
+            GenFdsGlobalVariable.SharpCounter = GenFdsGlobalVariable.SharpCounter + 1
+            if GenFdsGlobalVariable.SharpCounter % 80 == 0:
+                sys.stdout.write('\n')
         #GenFdsGlobalVariable.VerboseLogger(cmd)
         PopenObject = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr= subprocess.PIPE)
         (out, error) = PopenObject.communicate()
 
         while PopenObject.returncode == None :
             PopenObject.wait()
-        if PopenObject.returncode != 0:
+        if GenFdsGlobalVariable.VerboseMode and PopenObject.returncode != 0:
             GenFdsGlobalVariable.InfLogger ("Return Value = %d" %PopenObject.returncode)
             GenFdsGlobalVariable.InfLogger (out)
             GenFdsGlobalVariable.InfLogger (error)

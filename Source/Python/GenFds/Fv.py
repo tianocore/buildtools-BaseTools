@@ -59,7 +59,8 @@ class FV (FvClassObject):
         #
         fv = open ( FvOutputFile,'r+b')
                    
-        GenFdsGlobalVariable.InfLogger( "Generate %s Fv Successfully" %self.UiFvName)
+        GenFdsGlobalVariable.InfLogger( "\nGenerate %s Fv Successfully" %self.UiFvName)
+        GenFdsGlobalVariable.SharpCounter = 0
               
         Buffer.write(fv.read())
         fv.close

@@ -14,6 +14,7 @@ class region(RegionClassObject):
         Size = self.Size
         GenFdsGlobalVariable.InfLogger('Generate Region')
         GenFdsGlobalVariable.InfLogger("   Region Size = %d" %Size)
+        GenFdsGlobalVariable.SharpCounter = 0
         
         if self.RegionType == 'FV':
             #

@@ -21,6 +21,8 @@ class Vtf (VtfClassObject):
                BaseAddArg      
                
         GenFdsGlobalVariable.CallExternalTool(cmd, "GenFv -Vtf Failed!")
+        GenFdsGlobalVariable.SharpCounter = 0
+        
         return VtfRawDict
         
     def GenBsfInf (self):

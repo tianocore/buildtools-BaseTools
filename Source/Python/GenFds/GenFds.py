@@ -26,6 +26,7 @@ def main():
 
     if options.verbose != None:
         EdkLogger.setLevel(EdkLogger.VERBOSE)
+        GenFdsGlobalVariable.VerboseMode = True
     elif options.quiet != None:
         EdkLogger.setLevel(EdkLogger.QUIET)
     elif options.debug != None:
@@ -127,6 +128,7 @@ def main():
     
     """Call GenFds"""
     GenFds.GenFd(outputDir, fdfParser, buildWorkSpace, archList)
+    print "\nDone!\n"
     
 def myOptionParser():
     usage = "%prog [options] -f input_file"

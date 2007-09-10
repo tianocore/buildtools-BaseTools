@@ -31,6 +31,7 @@ class Capsule (CapsuleClassObject) :
                CapOutputFile       + \
                ' -c '
         GenFdsGlobalVariable.CallExternalTool(cmd, "GefFv GenCapsule Failed!")
+        GenFdsGlobalVariable.SharpCounter = 0
 
     def GenCapInf(self):
         self.CapInfFileName = os.path.join(GenFdsGlobalVariable.FvDir,

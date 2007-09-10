@@ -78,6 +78,8 @@ class Section (SectionClassObject):
         for File in FfsInf.BinFileList :
             if File.FileType == FileType:
                 FileList.append(os.path.join(GenFdsGlobalVariable.WorkSpaceDir, FfsInf.SourceDir, File.BinaryFile))
+        
+        if os.path.exists(FfsInf.EfiOutputPath):
             for file in os.listdir(FfsInf.EfiOutputPath):
                 Name, Ext = os.path.splitext(file)
                 if Ext == suffix:
