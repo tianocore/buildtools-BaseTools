@@ -224,7 +224,7 @@ def GetPlatformLibraryClassItem(LibraryClass):
     LibraryClassList.append(LibraryClass.Name)
     LibraryClassList.append(LibraryClass.FilePath)
 
-    return "|".join(LibraryClassList).rstrip("|")
+    return "|$(WORKSPACE)/".join(LibraryClassList).rstrip("|")
 
 ## Add item to a LibraryClass section.
 #
@@ -323,27 +323,41 @@ def GetLibraryClassesSection(SectionName, Method, ObjectList):
                             AddToLibraryClassSection(SectionEBCDict, SupModuleList, Item)
 
     Section = ""
-    for ModuleType in ModuleTypes:
+    for ModuleType in Object.SupModuleList:
         SectionCommonModule = "\n".join(SectionCommonDict.get(ModuleType, []))
         if SectionCommonModule != "":
             Section += "[%s.Common.%s]\n%s\n" % (SectionName, ModuleType, SectionCommonModule)
             Section += "\n"
-        SectionIA32Module = "\n".join(SectionIA32Dict.get(ModuleType, []))
-        if SectionIA32Module != "":
-            Section += "[%s.IA32.%s]\n%s\n" % (SectionName, ModuleType, SectionIA32Module)
-            Section += "\n"
-        SectionX64Module = "\n".join(SectionX64Dict.get(ModuleType, []))
-        if SectionX64Module != "":
-            Section += "[%s.X64.%s]\n%s\n" % (SectionName, ModuleType, SectionX64Module)
-            Section += "\n"
-        SectionIPFModule = "\n".join(SectionIPFDict.get(ModuleType, []))
-        if SectionIPFModule != "":
-            Section += "[%s.IPF.%s]\n%s\n" % (SectionName, ModuleType, SectionIPFModule)
-            Section += "\n"
-        SectionEBCModule = "\n".join(SectionEBCDict.get(ModuleType, []))
-        if SectionEBCModule != "":
-            Section += "[%s.EBC.%s]\n%s\n" % (SectionName, ModuleType, SectionEBCModule)
-            Section += "\n"
+    for ModuleType in Object.SupModuleList:
+        print ModuleType
+        ListIA32 = SectionIA32Dict.get(ModuleType, [])
+        print ListIA32
+        if ListIA32 != []:
+            SectionIA32Module = "\n".join(SectionIA32Dict.get(ModuleType, []))
+            if SectionIA32Module != "":
+                Section += "[%s.IA32.%s]\n%s\n" % (SectionName, ModuleType, SectionIA32Module)
+                Section += "\n"
+        ListX64 = SectionX64Dict.get(ModuleType, [])
+        print ListX64
+        if ListX64 != []:
+            SectionX64Module = "\n".join(SectionX64Dict.get(ModuleType, []))
+            if SectionX64Module != "":
+                Section += "[%s.X64.%s]\n%s\n" % (SectionName, ModuleType, SectionX64Module)
+                Section += "\n"
+        ListIPF = SectionIPFDict.get(ModuleType, [])
+        print ListIPF
+        if ListIPF != []:
+            SectionIPFModule = "\n".join(SectionIPFDict.get(ModuleType, []))
+            if SectionIPFModule != "":
+                Section += "[%s.IPF.%s]\n%s\n" % (SectionName, ModuleType, SectionIPFModule)
+                Section += "\n"
+        ListEBC = SectionEBCDict.get(ModuleType, [])
+        print ListEBC
+        if ListEBC != []:
+            SectionEBCModule = "\n".join(SectionEBCDict.get(ModuleType, []))
+            if SectionEBCModule != "":
+                Section += "[%s.EBC.%s]\n%s\n" % (SectionName, ModuleType, SectionEBCModule)
+                Section += "\n"
 
     if Section != "":
         Section += "\n"
@@ -427,55 +441,14 @@ def StorePlatformPcdSection(DscFile, Platform):
                 SectionPcdsDynamic.append(String)
                 SectionDict[ItemType] = SectionPcdsDynamic
     ItemType = "FIXED_AT_BUILD"
-    Section = "[PcdsFixedAtBuild]\n" + "\n".join(SectionDict.get(ItemType, []))
+    Section = "[PcdsFixedAtBuild]\n  " + "\n  ".join(SectionDict.get(ItemType, []))
     ItemType = "FEATURE_FLAG"
-    Section += "\n\n[PcdsFeatureFlag]\n" + "\n".join(SectionDict.get(ItemType, []))
+    Section += "\n\n[PcdsFeatureFlag]\n  " + "\n  ".join(SectionDict.get(ItemType, []))
     ItemType = "PATCHABLE_IN_MODULE"
-    Section += "\n\n[PcdsPatchableInModule]\n" + "\n".join(SectionDict.get(ItemType, []))
+    Section += "\n\n[PcdsPatchableInModule]\n  " + "\n  ".join(SectionDict.get(ItemType, []))
     ItemType = "DYNAMIC"
-    Section += "\n\n[PcdsDynamic]\n" + "\n".join(SectionDict.get(ItemType, []))
-    Section += "\n"
-    StoreTextFile(DscFile, Section)
-
-## Return one Platform Pcd Dynamic Section.
-#
-# Read the input Pcd Dynamic Section class object and return one section.
-#
-# @param  PcdDynamic              An input PcdDynamic class object.
-#
-# @retval   PcdDynamicSection A section representing PcdDynamic object.
-#    
-def GetPlatformPcdDynamicItem(PcdDynamic):
-    CName = Pcd.CName
-    Token = Pcd.Token
-    TokenSpaceGuidCName = Pcd.TokenSpaceGuidCName
-    DatumType = Pcd.DatumType
-    PcdList = [CName, Token, TokenSpaceGuidCName, DatumType]
-    if Pcd.ItemType == "DYNAMIC":
-        PcdList.append(Pcd.ItemType)
-    
-    return "|".join(PcdList)
-    
-## Store Pcd Dynamic section.
-#
-# Write [PcdDynamic] section to the DscFile based on Platform class object.
-# Different CPU architectures are specified in the subsection if possible.
-#
-# @param  DscFile                 The output DSC file to store the Build Options section.
-# @param  Platform               An input Platform class object.
-#
-def StorePlatformPcdDynamicSection(DscFile, Platform):
-    PcdsDict = {}
-    for Pcd in Platform.PcdDeclarations:
-        if Pcd.ItemType == "DYNAMIC":
-            AddToPcdsDict(PcdsDict, PcdItemType, Pcd)
-
-    Section = ""
-    for PcdSectionName in PcdsDict:
-        Pcds = PcdsDict[PcdSectionName]
-        Section += GetSection(PcdSectionName, GetPlatformPcdDynamicItem, Pcds)
-        Section += "\n"
-
+    Section += "\n\n[PcdsDynamic]\n  " + "\n  ".join(SectionDict.get(ItemType, []))
+    Section += "\n\n"
     StoreTextFile(DscFile, Section)
 
 ## Add item to a section.
@@ -544,14 +517,15 @@ def GetPlatformComponentItem(Component):
     List = []
     Section = {}
 
-    List.append(Component.FilePath)
+    List.append("$(WORKSPACE)/" + Component.FilePath)
 
     LibraryClasses = Component.LibraryClasses
-    List.append("{\n<LibraryClasses>")
-    for LibraryClass in LibraryClasses:
-        if LibraryClass == ["", ""]:
-            continue
-        List.append(LibraryClass[0] + "|" + LibraryClass[1])
+    if LibraryClasses != []:
+        List.append("{\n  <LibraryClasses>")
+        for LibraryClass in LibraryClasses:
+            if LibraryClass == ["", ""]:
+                continue
+            List.append("  " + LibraryClass[0] + "|$(WORKSPACE)/" + LibraryClass[1])
     PcdBuildDefinitions = Component.PcdBuildDefinitions
     for PcdData in PcdBuildDefinitions:
         List1 = []
@@ -586,26 +560,45 @@ def GetPlatformComponentItem(Component):
             print "Error!"
     ItemType = "FIXED_AT_BUILD"
     if Section.get(ItemType, []) != []:
-        List.append("\n<PcdsFixedAtBuild>")
-        List.append("\n".join(Section.get(ItemType,[])))
+        List.append("<PcdsFixedAtBuild>")
+        List.append("  " + "\n    ".join(Section.get(ItemType,[])))
     ItemType = "FEATURE_FLAG"
     if Section.get(ItemType, []) != []:
-        List.append("\n<PcdsFeatureFlag>")
-        List.append("\n".join(Section.get(ItemType,[])))
+        List.append("<PcdsFeatureFlag>")
+        List.append("  " + "\n    ".join(Section.get(ItemType,[])))
     ItemType = "PATCHABLE_IN_MODULE"
     if Section.get(ItemType, []) != []:
-        List.append("\n<PcdsPatchableInModule>")
-        List.append("\n".join(Section.get(ItemType,[])))
+        List.append("<PcdsPatchableInModule>")
+        List.append("  " + "\n    ".join(Section.get(ItemType,[])))
     ItemType = "DYNAMIC"
     if Section.get(ItemType, []) != []:
-        List.append("\n<PcdsDynamic>")
-        List.append("\n".join(Section.get(ItemType,[])))
-    
-    ModuleSaBuildOption = Component.ModuleSaBuildOption
-    List.append("\n<ModuleSaBuildOption>")
-    List.append(ModuleSaBuildOption.FvBinding + "|" + ModuleSaBuildOption.FfsFormatKey + "\n")
-    
-    return "\n".join(List)
+        List.append("<PcdsDynamic>")
+        List.append("  " + "\n    ".join(Section.get(ItemType,[])))
+
+    ListOption = []
+    SectionOption = ""
+    ListBuildOptions = Component.BuildOptions # a list
+    if ListBuildOptions != []:
+        SectionOption += "\n  <BuildOptions>\n"
+        for BuildOptions in ListBuildOptions:
+            Options = BuildOptions.Options
+            for Option in Options:
+                for Item in Option.BuildTargetList:
+                    ListOption.append(Item)
+                List.append(Option.ToolChainFamily)
+                for Item in Option.SupArchList:
+                    ListOption.append(Item)
+                ListOption.append(Option.ToolCode)
+                ListOption.append("FLAGS")
+                print ListOption
+                SectionOption += "  " + "_".join(List) + "    =  " + Option.Option + "\n"
+                ListOption = []
+    if SectionOption != "":
+        List.append(SectionOption)
+    if List != ["$(WORKSPACE)/" + Component.FilePath]:
+        List.append("}\n")
+
+    return "\n  ".join(List)
 
 ## Store Components section.
 #

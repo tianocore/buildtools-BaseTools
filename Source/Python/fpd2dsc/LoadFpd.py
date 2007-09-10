@@ -19,6 +19,7 @@ from CommonDataClass.PlatformClass import *
 from CommonDataClass.FdfClassObject import *
 from Common.XmlRoutines import *
 from Common.MigrationUtilities import *
+#from MigrationUtilities import *
 from EdkIIWorkspaceGuidsInfo import gEdkIIWorkspaceGuidsInfo
 
 ## Load Platform Header.
@@ -123,7 +124,32 @@ def LoadPlatformSkuInfos(XmlFpd):
     PlatformSkuIds.SkuInfoList = SkuInfoList
 
     return PlatformSkuIds
-      
+
+def LoadModuleBuildOption(XmlModuleBuildOption):
+    PlatformBuildOption = PlatformBuildOptionClass()
+    PlatformBuildOption.UserDefinedAntTasks = {}
+    
+    XmlTag = "BuildOptions/Options/Option"
+    PlatformBuildOption.Options = map(LoadBuildOption, XmlList(XmlModuleBuildOption, XmlTag))
+    
+    PlatformBuildOption.UserExtensions = {}
+    PlatformBuildOption.FfsKeyList = {}
+    return PlatformBuildOption
+
+def LoadModuleExtern(XmlModuleExtern):
+    PlatformModuleExtern = []
+    
+    XmlTag = "Externs/PcdIsDriver"
+    PcdIsDriver = XmlElement(XmlModuleExtern, XmlTag)
+    PlatformModuleExtern.append(PcdIsDriver)
+    
+    XmlTag = "Externs/Specification"
+    Specification = XmlElement(XmlModuleExtern, XmlTag)
+    PlatformModuleExtern.append(Specification)
+    
+    XmlTag = "Externs/Extern"
+
+    return PlatformModuleExtern
 ## Load Platform ModuleSaBuildOptions.
 #
 # Read an input Platform XML DOM object and return Platform ModuleSaBuildOptions class object
@@ -143,13 +169,11 @@ def LoadPlatformModuleSaBuildOption(XmlModuleSA):
     PlatformModuleSaBuildOption.FfsFormatKey = XmlElement(XmlModuleSA, XmlTag)
     
     XmlTag = "ModuleSA/ModuleSaBuildOptions/FfsFileNameGuid"
-    FfsFileNameGuid = XmlElement(XmlModuleSA, XmlTag)
+    PlatformModuleSaBuildOption.FfsFileNameGuid = XmlElement(XmlModuleSA, XmlTag)
     
-    #XmlTag = "ModuleSA/ModuleSaBuildOptions/Options/Option"
-    #Options = map(LoadModuleSaBuildOption, XmlList(XmlModuleSA, XmlTag))
-    #Options = LoadBuildOptions(XmlModuleSA)
-    #PlatformModuleSaBuildOption.append(Options)
-    
+    XmlTag = "ModuleSA/ModuleSaBuildOptions/Options/Option"
+    PlatformModuleSaBuildOption.BuildOptionList = map(LoadBuildOption, XmlList(XmlModuleSA, XmlTag))
+
     return PlatformModuleSaBuildOption
 
 ## Load a list of Platform Library Classes.
@@ -287,11 +311,17 @@ def LoadModuleSA(XmlModuleSA):
     PlatformModule.LibraryClasses = map(LoadPlatformModuleLibraryInstance, XmlList(XmlModuleSA, XmlTag))
 
     XmlTag = "ModuleSA/PcdBuildDefinition/PcdData"
-    PlatformModule.PcdBuildDefinitions = map(LoadPlatformPcdData, XmlList(XmlModuleSA, XmlTag)) #bugbug fix me
+    PlatformModule.PcdBuildDefinitions = map(LoadPlatformPcdData, XmlList(XmlModuleSA, XmlTag))
 
     XmlTag = "ModuleSA/ModuleSaBuildOptions"
-    PlatformModule.ModuleSaBuildOption = LoadPlatformModuleSaBuildOption(XmlModuleSA) #bugbug fix me
+    PlatformModule.ModuleSaBuildOption = LoadPlatformModuleSaBuildOption(XmlModuleSA)
 
+    XmlTag = "ModuleSA/BuildOptions"
+    PlatformModule.BuildOptions = map(LoadModuleBuildOption, XmlList(XmlModuleSA, XmlTag)) #bugbug fix me
+    
+    XmlTag = "ModuleSA/Externs"
+    PlatformModule.Externs = map(LoadModuleExtern, XmlList(XmlModuleSA, XmlTag)) #bugbug fix me
+    
     XmlTag = "SupArchList"
     PlatformModule.SupArchList = XmlAttribute(XmlModuleSA, XmlTag).split()
     
@@ -382,29 +412,22 @@ def LoadPlatformFlashDefinitionFile(XmlFpd, FpdFileName):
 #
 # @retvel  AntTask         An Ant Task loaded from XmlFpd.
 #
-def LoadAntTask(XmlAntTask):
-    XmlTag = ""
-    AntTask = []
-    return AntTask
-
-## Load Platform User Defined Ant Tasks.
-#
-# Read an input Platform XML DOM object and return platform
-# User Defined Ant Tasks contained in the DOM object.
-#
-# @param  XmlUserDefinedAntTasks   An XML DOM object read from FPD file.
-#
-# @retvel  AntTask         An Ant Task loaded from XmlFpd.
-#
-def LoadUserDefinedAntTasks(XmlUserDefinedAntTasks):
+def LoadUserDefinedAntTasks(XmlFpd):
+    Dict = {}
     AntTask = PlatformAntTaskClass()
     
-    AntTask.Id = ''
-    AntTask.AntCmdOptions = ''
-    AntTask.FilePath = ''
-    #XmlTag = "minOccurs"
-    #AntTask = XmlAttribute(XmlUserDefinedAntTasks, XmlTag)
-    return AntTask
+    #XmlTag = "PlatformSurfaceArea/BuildOptions/UserDefinedAntTasks/AntTask"
+    XmlTag = "PlatformSurfaceArea/BuildOptions/UserDefinedAntTasks/AntTask/Id"
+    AntTask.Id = XmlAttribute(XmlFpd, XmlTag)
+    
+    XmlTag = "PlatformSurfaceArea/BuildOptions/UserDefinedAntTasks/AntTask/AntCmdOptions"
+    AntTask.AntCmdOptions = XmlElement(XmlFpd, XmlTag)
+    
+    XmlTag = "PlatformSurfaceArea/BuildOptions/UserDefinedAntTasks/AntTask/Filename"
+    AntTask.FilePath = XmlElement(XmlFpd, XmlTag)
+    
+    Dict[AntTask.Id] = AntTask
+    return Dict
 
 ## Load Platform Build Options.
 #
@@ -432,23 +455,164 @@ def LoadPlatformBuildOption(XmlBuildOptions):
     PlatformBuildOption = PlatformBuildOptionClass()
     
     # handle UserDefinedAntTasks
-    XmlTag = "PlatformSurfaceArea/BuildOptions/UserDefinedAntTasks/AntTask"
+    XmlTag = "BuildOptions/UserDefinedAntTasks/AntTask"
     PlatformBuildOption.UserDefinedAntTasks = LoadUserDefinedAntTasks(XmlTag)
     
     # handle Options
-    XmlTag = "PlatformSurfaceArea/BuildOptions/Options/Option"
+    XmlTag = "BuildOptions/Options/Option"
     PlatformBuildOption.Options = map(LoadBuildOption, XmlList(XmlBuildOptions, XmlTag))
     
     
     # handle UserExtensions
-    XmlTag = "PlatformSurfaceArea/BuildOptions/UserExtensions"
+    XmlTag = "BuildOptions/UserExtensions"
     PlatformBuildOption.UserExtensions = LoadUserExtensions(XmlTag) # from MigrationUtilities.py LoadUserExtensions
 
     # handle Ffs
-    XmlTag = "Ffs/FfsKey"
-    PlatformBuildOption.FfsKeyList = map(LoadPlatformFfsKey, XmlList(XmlBuildOptions, XmlTag))
+    XmlTag = "BuildOptions/Ffs/FfsKey"
+    PlatformBuildOption.FfsKeyList = map(LoadPlatformFfs, XmlList(XmlBuildOptions, XmlTag))
 
     return PlatformBuildOption
+
+## Load Platform Ffs Dictionary.
+#
+# Read an input Platform XML DOM object and return a platform Ffs Dictionary
+# contained in the DOM object.
+#
+# @param  XmlFpd     An XML DOM object read from FPD file.
+#
+# @retvel  Dict      A platform Ffs Dict loaded from XmlFpd.
+#
+def LoadPlatformFfsDict(XmlFpd):
+    Dict = {}
+    XmlTag = "PlatformSurfaceArea/BuildOptions/Ffs"
+    List = map(LoadPlatformFfs, XmlList(XmlFpd, XmlTag))
+    if List != []:
+        for Ffs in List:
+            Dict[Ffs.Key] = Ffs
+    #PlatformFfs = LoadPlatformFfs(XmlFpd)
+    return Dict
+
+## Load Platform Ffs Section.
+#
+# Read an input Platform XML DOM object and return a platform Ffs Section
+# contained in the DOM object.
+#
+# @param  XmlFfs                    An XML DOM object read from FPD file.
+#
+# @retvel  PlatformFfsSection      A platform Ffs Section loaded from XmlFpd.
+#
+def LoadPlatformFfsSection(XmlFfsSection):
+    PlatformFfsSection = PlatformFfsSectionClass()
+    
+    XmlTag = ""
+    PlatformFfsSection.BindingOrder = ''
+    
+    XmlTag = ""
+    PlatformFfsSection.Compressible = ''
+    
+    XmlTag = "SectionType"
+    PlatformFfsSection.SectionType = XmlAttribute(XmlFfsSection, XmlTag)
+    
+    XmlTag = ""
+    PlatformFfsSection.EncapsulationType = ''
+    
+    XmlTag = ""
+    PlatformFfsSection.ToolName = ''
+    
+    XmlTag = ""
+    PlatformFfsSection.Filenames = []
+    
+    XmlTag = ""
+    PlatformFfsSection.Args = ''
+    
+    XmlTag = ""
+    PlatformFfsSection.OutFile = ''
+    
+    XmlTag = ""
+    PlatformFfsSection.OutputFileExtension = ''
+    
+    XmlTag = ""
+    PlatformFfsSection.ToolNameElement = ''
+    
+    return PlatformFfsSection
+
+## Load Platform Ffs Sections.
+#
+# Read an input Platform XML DOM object and return a platform Ffs Sections
+# contained in the DOM object.
+#
+# @param  XmlFfs                    An XML DOM object read from FPD file.
+#
+# @retvel  PlatformFfsSections      A platform Ffs Sections loaded from XmlFpd.
+#
+def LoadFfsSections():
+    PlatformFfsSections = PlatformFfsSectionsClass()
+    PlatformFfsSections.BindingOrder = ''
+    PlatformFfsSections.Compressible = ''
+    PlatformFfsSections.SectionType = ''
+    PlatformFfsSections.EncapsulationType = ''
+    PlatformFfsSections.ToolName = ''
+    PlatformFfsSections.Section = []
+    PlatformFfsSections.Sections = []
+    
+    return PlatformFfsSections
+
+## Load Platform Ffs Sections.
+#
+# Read an input Platform XML DOM object and return a platform Ffs Sections
+# contained in the DOM object.
+#
+# @param  XmlFfs                    An XML DOM object read from FPD file.
+#
+# @retvel  PlatformFfsSections      A platform Ffs Sections loaded from XmlFpd.
+#
+def LoadPlatformFfsSections(XmlFfsSections):
+    PlatformFfsSections = PlatformFfsSectionsClass()
+    
+    XmlTag = ""
+    PlatformFfsSections.BindingOrder = ''
+    
+    XmlTag = ""
+    Compressible = ''
+    
+    XmlTag = ""
+    SectionType = ''
+    
+    XmlTag = "EncapsulationType"
+    EncapsulationType = XmlAttribute(XmlFfsSections, XmlTag)
+    
+    XmlTag = ""
+    ToolName = ''
+    
+    XmlTag = "Sections/Section"
+    Section = []   #[ PlatformFfsSectionClass, ... ]
+    Section = map(LoadPlatformFfsSection, XmlList(XmlFfsSections, XmlTag))
+    
+    
+    XmlTag = "Sections/Sections"
+    Sections = map(LoadFfsSections, XmlList(XmlFfsSections, XmlTag)) #[ PlatformFfsSectionsClass, ...]
+    
+    return PlatformFfsSections
+
+## Load Platform Ffs Attribute.
+#
+# Read an input Platform XML DOM object and return a platform Ffs Attribute
+# contained in the DOM object.
+#
+# @param  XmlFfs     An XML DOM object read from FPD file.
+#
+# @retvel  List      A platform Ffs Attribute loaded from XmlFpd.
+#
+def LoadFfsAttribute(XmlFfs):
+    List = []
+    XmlTag = "Ffs/Attribute"
+    for XmlAttr in XmlList(XmlFfs, XmlTag):
+        XmlTag = "Name"
+        Name = XmlAttribute(XmlAttr, XmlTag)
+        XmlTag = "Value"
+        Value = XmlAttribute(XmlAttr, XmlTag)
+        List.append([Name,Value])
+    return List
 
 ## Load a list of Platform Build Options.
 #
@@ -459,30 +623,29 @@ def LoadPlatformBuildOption(XmlBuildOptions):
 #
 # @retvel  PlatformFfsKey      A platform Ffs key loaded from XmlFpd.
 #
-def LoadPlatformFfsKey(XmlFfs):
-    PlatformFfsKey = []
+def LoadPlatformFfs(XmlFfs):
+    PlatformFfs = PlatformFfsClass()
     
-    XmlTag = "FfsKey"
-    PlatformFfsKey.Key = XmlAttribute(XmlFfs, XmlTag)
-
-    XmlTag = "Attribute"
-    for XmlAttribute in XmlList(XmlFfs, XmlTag):
-        XmlTag = "Name"
-        PlatformFfsKey.Name = XmlAttribute(XmlAttribute, XmlTag)
-        XmlTag = "Value"
-        PlatformFfsKey.Name = XmlAttribute(XmlAttribute, XmlTag)
-
-    XmlTag = "Ffs/Sections"
-    for XmlSections in XmlList(XmlFfs, XmlTag):
-        XmlTag = "EncapsulationType"
-        #PlatformFfsKey.EncapsulationType = XmlAttribute(XmlSections, XmlTag)
-
-    XmlTag = "Ffs/Sections/Section"
-    for XmlSection in XmlList(XmlFfs, XmlTag):
-        XmlTag = "SectionType"
-        #PlatformFfsKey.SectionType = XmlAttribute(XmlFfs, XmlTag)
-        
-    return PlatformFfsKey
+    PlatformFfs.Attribute = {}
+    Dict = {}
+    #PlatformFfs.Attribute = LoadFfsAttributeDict(XmlFfs)
+    
+    List = LoadFfsAttribute(XmlFfs)
+    
+    XmlTag = "Ffs/Sections/Sections"
+    PlatformFfs.Sections = map(LoadPlatformFfsSections, XmlList(XmlFfs, XmlTag)) #[PlatformFfsSectionsClass, ...]
+    
+    for Item in List:
+        Name = Item[0]
+        Value = Item[1]
+        for Item in PlatformFfs.Sections:
+            Dict[(Name, Item)] = Value
+    PlatformFfs.Attribute = Dict
+    
+    #XmlTag = "Ffs/FfsKey"
+    #PlatformFfs.Key = XmlAttribute(XmlFfs, XmlTag)
+    
+    return PlatformFfs
 
 ## Load a list of Platform Build Options.
 #
@@ -494,8 +657,19 @@ def LoadPlatformFfsKey(XmlFfs):
 # @retvel  PlatformBuildOptions         A list of Build Options loaded from XmlFpd.
 #
 def LoadPlatformBuildOptions(XmlFpd):
-    XmlTag = "PlatformSurfaceArea/BuildOptions/Ffs"
-    return map(LoadPlatformBuildOption, XmlList(XmlFpd, XmlTag))
+    PlatformBuildOptions = PlatformBuildOptionClass()
+
+    PlatformBuildOptions.UserDefinedAntTasks = LoadUserDefinedAntTasks(XmlFpd)
+    
+    XmlTag = "PlatformSurfaceArea/BuildOptions/Options/Option"
+    PlatformBuildOptions.Options = map(LoadBuildOption, XmlList(XmlFpd, XmlTag))
+
+    PlatformBuildOptions.UserExtensions = LoadPlatformUserExtension(XmlFpd)
+    
+    PlatformBuildOptions.FfsKeyList = LoadPlatformFfsDict(XmlFpd)
+    
+    return PlatformBuildOptions
+    #return map(LoadPlatformBuildOption, XmlList(XmlFpd, XmlTag))
 
 ## Load Platform Pcd Data.
 #
@@ -775,18 +949,28 @@ def LoadPlatformFdfs(XmlFpd):
 #
 # @retvel PlatformUserExtensions       A platform User Extension loaded from XmlFpd
 #
-def LoadPlatformUserExtension(XmlUserExtension):
+def LoadPlatformUserExtension(XmlFpd):
+    Dict = {}
+    
     PlatformUserExtensions = UserExtensionsClass()
 
-    XmlTag = "UserID"
-    PlatformUserExtensions.UserID = XmlAttribute(XmlUserExtension, XmlTag)
+    XmlTag = "PlatformSurfaceArea/BuildOptions/UserExtensions"
+    List = map(LoadUserExtensions, XmlList(XmlFpd, XmlTag))
+    if List != []:
+        for Item in List:
+            UserID = Item.UserID
+            Identifier = Item.Identifier
+            Dict[(UserID, Identifier)] = Item
+    #XmlTag = "PlatformSurfaceArea/BuildOptions/UserExtensions/UserID"
+    #PlatformUserExtensions.UserID = XmlAttribute(XmlFpd, XmlTag)
     
-    XmlTag = "Identifier"
-    PlatformUserExtensions.Identifier = XmlAttribute(XmlUserExtension, XmlTag)
+    #XmlTag = "PlatformSurfaceArea/BuildOptions/UserExtensions/Identifier"
+    #PlatformUserExtensions.Identifier = XmlAttribute(XmlFpd, XmlTag)
     
-    PlatformUserExtensions.Content = XmlElementData(XmlUserExtension)
-    
-    return PlatformUserExtensions
+    #PlatformUserExtensions.Content = XmlElementData(XmlFpd)
+    #Dict[(PlatformUserExtensions.UserID,PlatformUserExtensions.Identifier)] = PlatformUserExtensions
+    #return PlatformUserExtensions
+    return Dict
 
 ## Load a list of Platform User Extensions.
 #
@@ -798,10 +982,8 @@ def LoadPlatformUserExtension(XmlUserExtension):
 # @retvel UserExtensions       A list of platform User Extensions loaded from XmlFpd
 #
 def LoadPlatformUserExtensions(XmlFpd):
-    PlatformUserExtensions = []
-
     XmlTag = "PlatformSurfaceArea/UserExtensions"
-    return map(LoadPlatformUserExtension, XmlList(XmlFpd, XmlTag)) # from MigrationUtilities.py LoadUserExtensions
+    return map(LoadUserExtensions, XmlList(XmlFpd, XmlTag)) # from MigrationUtilities.py LoadUserExtensions
 
 ## Load a new Platform class object.
 #
