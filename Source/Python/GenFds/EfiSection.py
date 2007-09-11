@@ -30,20 +30,19 @@ class EfiSection (EfiSectionClassObject):
             BuildNum = self.BuildNum
             VerstionNum = self.VersionNum
             InfFileName = ''
-            
-        FileList, IsSect = Section.Section.GetFileList(FfsInf, self.FileType, self.FileExtension)
-        if IsSect :
-            return FileList, self.Alignment
+        """If the file name was pointed out, add it in FileList"""     
+        if Filename != None:
+            if not self.Optional:
+                FileList.append(Filename)
+            elif os.path.exists(Filename):                 
+                FileList.append(Filename)
+        else:
+            FileList, IsSect = Section.Section.GetFileList(FfsInf, self.FileType, self.FileExtension)
+            if IsSect :
+                return FileList, self.Alignment
 
         Index = 0
-        """If the file name was pointed out, add it in FileList"""
-        if FileList == []:
-            if Filename != None:
-                if not self.Optional:
-                    FileList.append(Filename)
-                elif os.path.exists(Filename):                 
-                    FileList.append(Filename)
-        
+              
         """ If Section type is 'VERSION'"""
         OutputFileList = []
         if SectionType == 'VERSION':
