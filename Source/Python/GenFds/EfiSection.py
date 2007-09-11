@@ -31,6 +31,7 @@ class EfiSection (EfiSectionClassObject):
             VerstionNum = self.VersionNum
             InfFileName = ''
         """If the file name was pointed out, add it in FileList"""     
+        FileList = []
         if Filename != None:
             if not self.Optional:
                 FileList.append(Filename)

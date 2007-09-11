@@ -19,6 +19,7 @@ class GenFdsGlobalVariable:
     ActivePlatform = None
     VerboseMode = False
     SharpCounter = 0
+    SharpNumberPerLine = 40
 
     def ExtendMarco (String):
         return String
@@ -54,7 +55,7 @@ class GenFdsGlobalVariable:
             sys.stdout.write ('#')
             sys.stdout.flush()
             GenFdsGlobalVariable.SharpCounter = GenFdsGlobalVariable.SharpCounter + 1
-            if GenFdsGlobalVariable.SharpCounter % 80 == 0:
+            if GenFdsGlobalVariable.SharpCounter % GenFdsGlobalVariable.SharpNumberPerLine == 0:
                 sys.stdout.write('\n')
         #GenFdsGlobalVariable.VerboseLogger(cmd)
         PopenObject = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr= subprocess.PIPE)
