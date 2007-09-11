@@ -24,10 +24,10 @@ rebuild         - Clean all generated files and directories during build, and re
 Tools in Python
 ---------------
 * Convert Python source to exe file
-  The tools written in Python can be coverted into executable program which can 
+  The tools written in Python can be converted into executable program which can 
   be executed without installing a Python interpreter. 
 
-  For Windows and Linux, the convertion tool package is called cx_Freeze, its
+  For Windows and Linux, the conversion tool package is called cx_Freeze, its
   home page is:
 
 		http://sourceforge.net/projects/cx-freeze/
@@ -48,8 +48,8 @@ Tools in Python
   C:\Work\BaseTools\Source\Python> set PYTHONPATH=C:\Work\BaseTools\Source\Python
   C:\Work\BaseTools\Source\Python> c:\cx_Freeze-3.0.3\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8 --install-dir=C:\Work\BaseTools\Bin\Win32 build\build.py
 
-* Execute tools written in Python without convertion
-  The tools written in Python can be executely directly from its source directory
+* Execute tools written in Python without conversion
+  The tools written in Python can be executed directly from its source directory
 as long as the Python interpreter (Python 2.5) has been installed. Before the execution,
 please make sure the environment variable PYTHONPATH is set to 
 
@@ -62,4 +62,3 @@ below.
       GenFds              <buildtools_project>/BaseTools/Source/Python/GenFds/GenFds.py
       Trim                <buildtools_project>/BaseTools/Source/Python/Trim/Trim.py
       MigrationMsa2Inf    <buildtools_project>/BaseTools/Source/Python/MigrationMsa2Inf/MigrationMsa2Inf.py
-
