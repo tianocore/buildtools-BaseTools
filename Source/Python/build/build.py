@@ -37,7 +37,7 @@ class Build():
         self.EdkToolsPath = os.getenv("EDK_TOOLS_PATH")
         self.WorkSpace    = os.getenv("WORKSPACE")
         self.Path         = os.getenv("PATH")
-        self.Opt  = opt
+        self.Opt          = opt
         self.Args         = args
         self.ArgList      = ['all', 'genc', 'genmake', 'modules', 'libraries', 'clean', 'cleanall', 'cleanlib', 'run']
         self.TargetTxt    = TargetTxtClassObject()
