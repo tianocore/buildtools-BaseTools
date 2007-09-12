@@ -319,19 +319,21 @@ gAutoGenHEpilogueString = """
 gPeiCoreEntryPointString = """
 EFI_STATUS
 ${Function} (
-  IN EFI_PEI_STARTUP_DESCRIPTOR  *PeiStartupDescriptor,
-  IN VOID                        *OldCoreData
+  IN CONST  EFI_SEC_PEI_HAND_OFF    *SecCoreData,
+  IN CONST  EFI_PEI_PPI_DESCRIPTOR  *PpiList,
+  IN VOID                           *OldCoreData
   );
 
 EFI_STATUS
 EFIAPI
 ProcessModuleEntryPointList (
-  IN EFI_PEI_STARTUP_DESCRIPTOR  *PeiStartupDescriptor,
-  IN VOID                        *OldCoreData
+  IN CONST  EFI_SEC_PEI_HAND_OFF    *SecCoreData,
+  IN CONST  EFI_PEI_PPI_DESCRIPTOR  *PpiList,
+  IN VOID                           *OldCoreData
   )
 
 {
-  return ${Function} (PeiStartupDescriptor, OldCoreData);
+  return ${Function} (SecCoreData, PpiList, OldCoreData);
 }
 """
 
