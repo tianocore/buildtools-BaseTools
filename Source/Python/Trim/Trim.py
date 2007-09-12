@@ -30,7 +30,7 @@ __version__ = "%prog Version " + __version_number__
 __copyright__ = "Copyright (c) 2007, Intel Corporation. All rights reserved."
 
 ## Regular expression for matching Line Control directive like "#line xxx"
-gLineControlDirective = re.compile("^\s*(#line)\s+[0-9]*\s*(.*)$")
+gLineControlDirective = re.compile('^\s*(#line|#)\s+([0-9]+)\s*"*([^"]*)"*')
 ## Regular expression for matching "typedef struct"
 gTypedefPattern = re.compile("^\s*typedef\s+struct\s+[{]*$", re.MULTILINE)
 ## Regular expression for matching "#pragma pack"
@@ -56,11 +56,9 @@ def TrimPreprocessedFile(Source, Target, Convert):
     PreprocessedFile = ""
     InjectedFile = ""
     LineIndexOfOriginalFile = None
+    NewLines = []
     for Index in range(len(Lines)):
-        Line = Lines[Index].strip()
-        if Line == "":
-            continue
-
+        Line = Lines[Index].replace("\r", "")
         #
         # Find out the name of files injected by preprocessor from the lines
         # with Line Control directive
@@ -68,33 +66,48 @@ def TrimPreprocessedFile(Source, Target, Convert):
         MatchList = gLineControlDirective.findall(Line)
         if MatchList != []:
             MatchList = MatchList[0]
-            if len(MatchList) == 2:
-                InjectedFile = MatchList[1]
+            if len(MatchList) == 3:
+                LineNumber = int(MatchList[1], 0)
+                InjectedFile = MatchList[2]
                 # The first injetcted file must be the preprocessed file itself
                 if PreprocessedFile == "":
                     PreprocessedFile = InjectedFile
-            # Don't save lines with Line Control directive. Use an empty string to mark it.
-            Lines[Index] = ""
-        elif InjectedFile != PreprocessedFile:
-            # Don't save lines not from preprocessed file directly. Use an empty string to mark it.
-            Lines[Index] = ""
+            continue
+        elif PreprocessedFile == "" or InjectedFile != PreprocessedFile:
+            continue
 
-        if Lines[Index] != "":
-            # convert HEX number format if indicated
-            if Convert:
-                Lines[Index] = gHexNumberPattern.sub(r"0\1h", Lines[Index])
-            if LineIndexOfOriginalFile == None:
-                #
-                # Any non-empty lines must be from original preprocessed file.
-                # And this must be the first one.
-                #
-                LineIndexOfOriginalFile = Index
-                EdkLogger.verbose("Found original file content starting from line %d"
-                                  % (LineIndexOfOriginalFile + 1))
+        if LineIndexOfOriginalFile == None:
+            #
+            # Any non-empty lines must be from original preprocessed file.
+            # And this must be the first one.
+            #
+            LineIndexOfOriginalFile = Index
+            EdkLogger.verbose("Found original file content starting from line %d"
+                              % (LineIndexOfOriginalFile + 1))
+
+        # convert HEX number format if indicated
+        if Convert:
+            Line = gHexNumberPattern.sub(r"0\1h", Line)
+
+        if LineNumber != None:
+            EdkLogger.verbose("Got line directive: line=%d" % LineNumber)
+            # in case preprocessor removed some lines, like blank or comment lines
+            if LineNumber <= len(NewLines):
+                # possible?
+                NewLines[LineNumber - 1] = Line
+            else:
+                if LineNumber > (len(NewLines) + 1):
+                    for LineIndex in range(len(NewLines), LineNumber-1):
+                        NewLines.append("\n")
+                NewLines.append(Line)
+            LineNumber = None
+            EdkLogger.verbose("Now we have lines: %d" % len(NewLines))
+        else:
+            NewLines.append(Line)
 
     # save to file
     f = open (Target, 'w')
-    f.writelines(Lines[LineIndexOfOriginalFile:])
+    f.writelines(NewLines)
     f.close()
 
 ## Trim preprocessed VFR file
