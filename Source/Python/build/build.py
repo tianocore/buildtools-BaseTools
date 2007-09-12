@@ -37,7 +37,7 @@ class Build():
         self.EdkToolsPath = os.getenv("EDK_TOOLS_PATH")
         self.WorkSpace    = os.getenv("WORKSPACE")
         self.Path         = os.getenv("PATH")
-        self.Opt          = opt
+        self.Opt  = opt
         self.Args         = args
         self.ArgList      = ['all', 'genc', 'genmake', 'modules', 'libraries', 'clean', 'cleanall', 'cleanlib', 'run']
         self.TargetTxt    = TargetTxtClassObject()
@@ -557,7 +557,7 @@ def main():
 #
     if build.Opt.DSCFILE == None:
         build.Opt.DSCFILE = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM]
-        if os.path.isfile(os.path.normpath(self.Opt.DSCFILE)) == True:
+        if os.path.isfile(os.path.normpath(build.Opt.DSCFILE)) == True:
             EdkLogger.quiet("ERROR: The file: %s specified in target.txt should be described in a WORKSPACE realtive path!" % self.Opt.DSCFILE)
             self.isexit(1)
         if build.Opt.DSCFILE != '' and os.path.isfile(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE))) == False:
