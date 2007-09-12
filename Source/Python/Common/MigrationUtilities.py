@@ -330,7 +330,7 @@ def LoadBuildOption(XmlBuildOption):
 def LoadUserExtensions(XmlUserExtensions):
     UserExtensions = UserExtensionsClass()
     
-    XmlTag = "UserId"
+    XmlTag = "UserID"
     UserExtensions.UserID = XmlAttribute(XmlUserExtensions, XmlTag)
     
     XmlTag = "Identifier"
