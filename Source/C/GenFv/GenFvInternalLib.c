@@ -2589,29 +2589,12 @@ Returns:
   //
   Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_CAPSULE_FLAGS_STRING, 0, Value);
   if (Status == EFI_SUCCESS) {
-    if (stricmp (Value, "PersistAcrossReset") == 0) {
-      CapInfo->Flags = CAPSULE_FLAGS_PERSIST_ACROSS_RESET; 
-    } else if (stricmp (Value, "PopulateSystemTable") == 0) {
-      CapInfo->Flags = CAPSULE_FLAGS_PERSIST_ACROSS_RESET | CAPSULE_FLAGS_POPULATE_SYSTEM_TABLE;
+    if (strstr (Value, "PersistAcrossReset") != NULL) {
+      CapInfo->Flags |= CAPSULE_FLAGS_PERSIST_ACROSS_RESET; 
+    } else if (strstr (Value, "PopulateSystemTable") != NULL) {
+      CapInfo->Flags |= CAPSULE_FLAGS_PERSIST_ACROSS_RESET | CAPSULE_FLAGS_POPULATE_SYSTEM_TABLE;
     } else {
       Error (NULL, 0, 2000, "Invalid paramter", "invalid Flag setting for %s", EFI_CAPSULE_FLAGS_STRING);
-      return EFI_ABORTED;
-    }
-  }
-  
-  //
-  // Read the Capsule Version
-  //
-  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_CAPSULE_VERSION_STRING, 0, Value);
-  if (Status == EFI_SUCCESS) {
-    if (stricmp (Value, "UEFI") == 0) {
-      CapInfo->Version = 0x20000;  
-    } else if (stricmp (Value, "FRAMEWORK") == 0) {
-      CapInfo->Version = 0x10010;
-      Error (NULL, 0, 2000, "Invalid paramter", "%s is not supported Version for %s", Value, EFI_CAPSULE_VERSION_STRING);
-      return EFI_ABORTED;
-    } else {
-      Error (NULL, 0, 2000, "Invalid paramter", "%s is invalid Version setting for %s", Value, EFI_CAPSULE_VERSION_STRING);
       return EFI_ABORTED;
     }
   }
@@ -2624,7 +2607,7 @@ Returns:
     //
     // Get output file name
     //
-    strcpy (CapInfo->CapName, Value); 
+    strcpy (CapInfo->CapName, Value);
   }
 
   //
@@ -2647,7 +2630,7 @@ Returns:
   }
   
   if (Index == 0 && VerboseMode) {
-    fprintf(stdout, "Cap Files are not specified.\n");
+    fprintf(stdout, "Capsule components are not specified.\n");
   }
 
   return EFI_SUCCESS;
@@ -2719,16 +2702,16 @@ Returns:
   }
   
   if (CapFileName == NULL) {
-    Error (NULL, 0, 2001, "Missing required argument", "Capsule file name");
+    Error (NULL, 0, 2001, "Missing required argument", "Output Capsule file name");
     return EFI_INVALID_PARAMETER;
   }
-      
+
   //
   // Calculate the size of capsule image.
   //
   Index    = 0;
   FileSize = 0;
-  CapSize  = sizeof (EFI_CAPSULE_HEADER);
+  CapSize  = CapInfo.HeaderSize;
   while (CapInfo.CapFiles [Index][0] != '\0') {
     fpin = fopen (CapInfo.CapFiles[Index], "rb");
     if (fpin == NULL) {
@@ -2753,7 +2736,7 @@ Returns:
   //
   // Initialize the capsule header to zero
   //
-  memset (CapBuffer, 0, sizeof (EFI_CAPSULE_HEADER));
+  memset (CapBuffer, 0, CapInfo.HeaderSize);
   
   //
   // create capsule header and get capsule body

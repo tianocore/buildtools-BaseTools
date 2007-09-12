@@ -227,7 +227,6 @@ typedef struct {
   EFI_GUID                CapGuid;
   UINT32                  HeaderSize;
   UINT32                  Flags;
-  UINT32                  Version;
   CHAR8                   CapName[_MAX_PATH];
   CHAR8                   CapFiles[MAX_NUMBER_OF_FILES_IN_CAP][_MAX_PATH];
 } CAP_INFO;
