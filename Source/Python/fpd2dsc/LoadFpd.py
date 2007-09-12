@@ -79,6 +79,15 @@ def LoadPlatformSkuInfo(XmlPlatformSkuInfo):
     SkuInfo.append(Value)
     return SkuInfo
 
+## Load a Platform SkuId.
+#
+# Read an input Platform XML DOM object and return a list of Platform SkuId
+# contained in the DOM object.
+#
+# @param    XmlSkuInfo     An XML DOM object read from FPD file.
+#
+# @retvel   List           A list of SkuId and SkuValue loaded from XmlFpd.
+#
 def LoadSkuId(XmlSkuInfo):
     XmlTag = "SkuInfo/UiSkuName"
     SkuValue = XmlElement(XmlSkuInfo, XmlTag)
@@ -125,6 +134,15 @@ def LoadPlatformSkuInfos(XmlFpd):
 
     return PlatformSkuIds
 
+## Load Platform Module Build Option.
+#
+# Read an input Platform XML DOM object and return Platform Module Build Option class object
+# contained in the DOM object.
+#
+# @param  XmlModuleBuildOption             An XML DOM object read from FPD file.
+#
+# @retvel   PlatformBuildOption             A Platform Build Option object loaded from XmlFpd.
+#
 def LoadModuleBuildOption(XmlModuleBuildOption):
     PlatformBuildOption = PlatformBuildOptionClass()
     PlatformBuildOption.UserDefinedAntTasks = {}
@@ -136,6 +154,15 @@ def LoadModuleBuildOption(XmlModuleBuildOption):
     PlatformBuildOption.FfsKeyList = {}
     return PlatformBuildOption
 
+## Load Platform Module Extern.
+#
+# Read an input Platform XML DOM object and return Platform Module Extern class object
+# contained in the DOM object.
+#
+# @param  XmlModuleExtern             An XML DOM object read from FPD file.
+#
+# @retvel   PlatformModuleExtern             A Platform Module Extern object loaded from XmlFpd.
+#
 def LoadModuleExtern(XmlModuleExtern):
     PlatformModuleExtern = []
     
@@ -150,6 +177,7 @@ def LoadModuleExtern(XmlModuleExtern):
     XmlTag = "Externs/Extern"
 
     return PlatformModuleExtern
+
 ## Load Platform ModuleSaBuildOptions.
 #
 # Read an input Platform XML DOM object and return Platform ModuleSaBuildOptions class object
@@ -190,9 +218,8 @@ def LoadPlatformModuleLibraryInstance(XmlLibraryInstance):
 
     XmlTag = "ModuleGuid"
     ModuleGuid = XmlAttribute(XmlLibraryInstance, XmlTag)
+    
     ModulePath = gEdkIIWorkspaceGuidsInfo.ResolveModuleFilePath(ModuleGuid)
-    #LibraryInstance.append(ModuleGuid)
-    #LibraryInstance.append(ModulePath)
     ModuleMSAFile = ModulePath.replace('.inf', '.msa')
     workspace = os.getenv('WORKSPACE')
     ModuleMSAFileName = os.path.join(workspace, ModuleMSAFile)
@@ -208,7 +235,16 @@ def LoadPlatformModuleLibraryInstance(XmlLibraryInstance):
     #LibraryInstance.append(PackageGuid)
     return LibraryInstance
 
-def LoadLibraryClass(XmlLibraryClass):
+## Load a Library Class.
+#
+# Read an input Platform XML DOM object and return a library class object
+# contained in the DOM object.
+#
+# @param    XmlLibraryClass       An XML DOM object read from FPD file.
+#
+# @retvel   SupModuleList         A Library Class Supported Module List object loaded from XmlFpd.
+#
+def LoadLibraryClassSupModuleList(XmlLibraryClass):
     XmlTag = "Usage"
     Usage = XmlAttribute(XmlLibraryClass, XmlTag)
     if Usage == "ALWAYS_PRODUCED":
@@ -255,8 +291,7 @@ def LoadPlatformLibraryClass(XmlPlatformLibraryClass):
     
         if PlatformLibraryInstance.ModuleType != "BASE":
             XmlTag = "ModuleSurfaceArea/LibraryClassDefinitions/LibraryClass"
-            #LoadLibraryClass(PlatformLibraryInstance, XmlList(XmlMsa, XmlTag))
-            List = map(LoadLibraryClass, XmlList(XmlMsa, XmlTag))
+            List = map(LoadLibraryClassSupModuleList, XmlList(XmlMsa, XmlTag))
             if List != []:
                 PlatformLibraryInstance.SupModuleList = List[0]
         XmlTag = "ModuleSurfaceArea/ModuleDefinitions/SupportedArchitectures"
@@ -397,9 +432,15 @@ def LoadPlatformFlashDefinitionFile(XmlFpd, FpdFileName):
     
     XmlTag = "PlatformSurfaceArea/Flash/FlashDefinitionFile"
     PlatformFlashDefinitionFile.FilePath = XmlElement(XmlFpd, XmlTag)
-    PlatformFlashDefinitionFile.Id = ''
-    PlatformFlashDefinitionFile.UiName = ''
-    PlatformFlashDefinitionFile.Preferred = ''
+    
+    XmlTag = "PlatformSurfaceArea/Flash/FlashDefinitionFile/Id"
+    PlatformFlashDefinitionFile.Id = XmlAttribute(XmlFpd, XmlTag)
+    
+    XmlTag = "PlatformSurfaceArea/Flash/FlashDefinitionFile/UiName"
+    PlatformFlashDefinitionFile.UiName = XmlAttribute(XmlFpd, XmlTag)
+    
+    XmlTag = "PlatformSurfaceArea/Flash/FlashDefinitionFile/Preferred"
+    PlatformFlashDefinitionFile.Preferred = XmlAttribute(XmlFpd, XmlTag)
     
     return PlatformFlashDefinitionFile
 
@@ -415,8 +456,7 @@ def LoadPlatformFlashDefinitionFile(XmlFpd, FpdFileName):
 def LoadUserDefinedAntTasks(XmlFpd):
     Dict = {}
     AntTask = PlatformAntTaskClass()
-    
-    #XmlTag = "PlatformSurfaceArea/BuildOptions/UserDefinedAntTasks/AntTask"
+
     XmlTag = "PlatformSurfaceArea/BuildOptions/UserDefinedAntTasks/AntTask/Id"
     AntTask.Id = XmlAttribute(XmlFpd, XmlTag)
     
@@ -489,7 +529,6 @@ def LoadPlatformFfsDict(XmlFpd):
     if List != []:
         for Ffs in List:
             Dict[Ffs.Key] = Ffs
-    #PlatformFfs = LoadPlatformFfs(XmlFpd)
     return Dict
 
 ## Load Platform Ffs Section.
@@ -628,8 +667,7 @@ def LoadPlatformFfs(XmlFfs):
     
     PlatformFfs.Attribute = {}
     Dict = {}
-    #PlatformFfs.Attribute = LoadFfsAttributeDict(XmlFfs)
-    
+
     List = LoadFfsAttribute(XmlFfs)
     
     XmlTag = "Ffs/Sections/Sections"
@@ -669,7 +707,6 @@ def LoadPlatformBuildOptions(XmlFpd):
     PlatformBuildOptions.FfsKeyList = LoadPlatformFfsDict(XmlFpd)
     
     return PlatformBuildOptions
-    #return map(LoadPlatformBuildOption, XmlList(XmlFpd, XmlTag))
 
 ## Load Platform Pcd Data.
 #
@@ -752,63 +789,6 @@ def LoadDynamicPcdBuildDefinitions(XmlFpd):
     XmlTag = "PlatformSurfaceArea/DynamicPcdBuildDefinitions/PcdBuildData"
     return map(LoadPlatformPcdBuildData, XmlList(XmlFpd, XmlTag))
 
-## Load a Platform Fv Image Name object.
-#
-# Read an input Platform XML DOM object and return a platform Fv Image
-# Name contained in the DOM object.
-#
-# @param  XmlFvImageNames     An XML DOM object read from FPD file.
-#
-# @retvel FvImageName          A Platform Fv Image Name object
-#
-def LoadFvImageName(XmlFvImageNames):
-    XmlTag = "FvImageNames"
-    FvImageName = XmlElement(XmlFvImageNames, XmlTag)
-    return FvImageName
-
-## Load a Platform Fv Image option object.
-#
-# Read an input Platform XML DOM object and return a platform Fv Image
-# Option contained in the DOM object.
-#
-# @param  XmlFvImageOptions     An XML DOM object read from FPD file.
-#
-# @retvel FvImageOption          A Platform Fv Image Option object
-#
-def LoadFvImageOption(XmlFvImageOptions):
-    XmlTag = "NameValue"
-    FvImageOption = XmlElement(XmlFvImageOptions, XmlTag)
-    return FvImageOption
-
-## Load a Platform Fv Image object.
-#
-# Read an input Platform XML DOM object and return a platform Fv Image
-# contained in the DOM object.
-#
-# @param  XmlFvImage       An XML DOM object read from FPD file.
-#
-# @retvel FvImage          A Platform Fv Image object
-#
-def LoadFvImage(XmlFvImage):
-    FvImage = PlatformFvImageClass()
-
-    XmlTag = ""
-    FvImage.Name = ''
-    
-    XmlTag = ""
-    FvImage.Value = ''
-    
-    XmlTag = "Type"
-    FvImage.Type = XmlAttribute(XmlFvImage, XmlTag)
-    
-    XmlTag = "FvImage/FvImageNames"
-    FvImage.FvImageNames = map(LoadFvImageName, XmlList(XmlFvImage, XmlTag))
-    
-    XmlTag = "FvImage/FvImageOptions"
-    FvImage.FvImageOptions = map(LoadFvImageOption, XmlList(XmlFvImage, XmlTag))
-    
-    return FvImage
-
 ## Load a Platform NameValue object.
 #
 # Read an input Platform XML DOM object and return a list of User Extensions
@@ -831,6 +811,72 @@ def LoadNameValue(XmlNameValue):
     
     return NameValue
 
+## Load a Platform Fv Image Name object.
+#
+# Read an input Platform XML DOM object and return a platform Fv Image
+# Name contained in the DOM object.
+#
+# @param  XmlFvImageNames     An XML DOM object read from FPD file.
+#
+# @retvel FvImageNames          A Platform Fv Image Name object
+#
+def LoadFvImageNames(XmlFvImageNames):
+    XmlTag = "FvImageNames"
+    FvImageNames = XmlElement(XmlFvImageNames, XmlTag)
+    return FvImageNames
+
+## Load a Platform Fv Image option object.
+#
+# Read an input Platform XML DOM object and return a platform Fv Image
+# Option contained in the DOM object.
+#
+# @param  XmlFvImageOptions         An XML DOM object read from FPD file.
+#
+# @retvel PlatformFvImageOption     A Platform Fv Image Option object
+#
+def LoadFvImageOptions(XmlFvImageOptions):
+    PlatformFvImageOption = PlatformFvImageOptionClass()
+    
+    XmlTag = ""
+    PlatformFvImageOption.FvImageOptionName = ''
+    
+    XmlTag = ""
+    PlatformFvImageOption.FvImageOptionValues = []
+
+    XmlTag = "FvImageOptions/NameValue"
+    List = map(LoadNameValue, XmlList(XmlFvImageOptions, XmlTag))
+    
+    return PlatformFvImageOption
+    
+## Load a Platform Fv Image object.
+#
+# Read an input Platform XML DOM object and return a list of User Extensions
+# contained in the DOM object.
+#
+# @param  XmlFvImage          An XML DOM object read from Fpd file.
+#
+# @retvel PlatformFvImage     A Platform Fv Image object
+#
+def LoadPlatformFvImage(XmlFvImage):
+    PlatformFvImage = PlatformFvImageClass()
+
+    XmlTag = "Name"
+    PlatformFvImage.Name = XmlAttribute(XmlFvImage, XmlTag)
+
+    XmlTag = "Value"
+    PlatformFvImage.Value = XmlAttribute(XmlFvImage, XmlTag)
+
+    XmlTag = "Type"
+    PlatformFvImage.Type = XmlAttribute(XmlFvImage, XmlTag)
+
+    XmlTag = "FvImage/FvImageNames"
+    PlatformFvImage.FvImageNames = map(LoadFvImageNames, XmlList(XmlFvImage, XmlTag))
+
+    XmlTag = "FvImage/FvImageOptions"
+    PlatformFvImage.FvImageOptions = map(LoadFvImageOptions, XmlList(XmlFvImage, XmlTag))
+    
+    return PlatformFvImage
+
 ## Load a Platform fdf object.
 #
 # Read an input Platform XML DOM object and return a list of User Extensions
@@ -840,92 +886,46 @@ def LoadNameValue(XmlNameValue):
 #
 # @retvel PlatformFdf          A Platform fdf object
 #
-def LoadPlatformFdf(XmlFvImages):
-    #PlatformFdf = FdfClassObject()
-    PlatformFdf = []
-    # PlatformFds is a list of platform Fdfs [Fdf,....]
-    # PlatformFdf [FV,...]
-    # [FV] is a list of [Ffs]
-    #[[Fdf],...]
-    #[[[FV],...],...]
-    #[[[Ffs,...],...],...]
-    PlatformFfs = PlatformFfsClass()
+def LoadPlatformFvImages(XmlFvImages):
+    List = []
     
-    PlatformFvImageName = PlatformFvImageNameClass()
-    #XmlTag = "FvImages/NameValue/Name"
     XmlTag = "FvImages/NameValue"
-    List = []
-    List = map(LoadNameValue, XmlList(XmlFvImages, XmlTag))
+    NameValues = map(LoadNameValue, XmlList(XmlFvImages, XmlTag))
+    List.append(NameValues)
     
-    #PlatformFvImageName.Name = XmlAttribute(XmlFvImages, XmlTag)
-    
-    #XmlTag = "FvImages/NameValue/Value"
-    #PlatformFvImageName.Value = XmlAttribute(XmlFvImages, XmlTag)
-    PlatformFdf.append(List)
-    
-    PlatformFvImages = PlatformFvImagesClass()
     XmlTag = "FvImages/FvImage"
-    List = []
-    PlatformFvImages.FvImages = [] # list of FvImage
-    List = map(LoadFvImage, XmlList(XmlFvImages, XmlTag))
-    PlatformFvImages.FvImages = List
-    PlatformFdf.append(PlatformFvImages)
+    FvImages = map(LoadPlatformFvImage, XmlList(XmlFvImages, XmlTag))
+    List.append(FvImages)
     
+    XmlTag = "FvImages/FvImageName"
+    FvImageNames = map(LoadPlatformFvImageName, XmlList(XmlFvImages, XmlTag))
+    List.append(FvImageNames)
     
-    #PlatformFvImage = PlatformFvImageClass()
-    #PlatformFvImage.Name = ''
-    #PlatformFvImage.Value = ''
-    #PlatformFvImage.Type = ''
-    #PlatformFvImage.FvImageNames = []
-    #PlatformFvImage.FvImageOptions = []
-    
-    PlatformFfs.Attribute = () #{ [(Name, PlatformFfsSectionsClass)] : Value}
-    PlatformFfs.Sections = [] #[ PlatformFfsSectionsClass]
-    
-    PlatformFfsSections = PlatformFfsSectionsClass()
-    PlatformFfsSections.BindingOrder = ''
-    PlatformFfsSections.Compressible = ''
-    PlatformFfsSections.SectionType = ''
-    PlatformFfsSections.EncapsulationType = ''
-    PlatformFfsSections.ToolName = ''
-    PlatformFfsSections.Section = [] #[ PlatformFfsSectionClass, ... ]
-    PlatformFfsSections.Sections = [] #[ PlatformFfsSectionsClass, ...]
-    
-    
-    PlatformFfsSection = PlatformFfsSectionClass()
-    PlatformFfsSection.BindingOrder = ''
-    PlatformFfsSection.Compressible = ''
-    PlatformFfsSection.SectionType = ''
-    PlatformFfsSection.EncapsulationType = ''
-    PlatformFfsSection.ToolName = ''
-    PlatformFfsSection.Filenames = []
-    PlatformFfsSection.Args = ''
-    PlatformFfsSection.OutFile = ''
-    PlatformFfsSection.OutputFileExtension = ''
-    PlatformFfsSection.ToolNameElement = ''
-    
-    #PlatformFvImages = PlatformFvImagesClass()
-    #PlatformFvImages.FvImages1 = []
-    #PlatformFvImages.FvImages2 = []
-    
-    #PlatformFvImageName = PlatformFvImageNameClass()
-    #PlatformFvImageName.Name = ''
-    #PlatformFvImageName.Type = '' #FV_MAIN | FV_MAIN_COMPACT | NV_STORAGE | FV_RECOVERY | FV_RECOVERY_FLOPPY | FV_FILE | CAPSULE_CARGO | NULL | USER_DEFINED
-    #PlatformFvImageName.FvImageOptions = [] #[ PlatformFvImageOption, ...]
-    
-    #PlatformFvImage = PlatformFvImageClass()
-    #PlatformFvImage.Name = ''
-    #PlatformFvImage.Type = '' #Attributes | Options | Components | ImageName
-    #PlatformFvImage.Value = ''
-    #PlatformFvImage.FvImageNames = []
-    #PlatformFvImage.FvImageOptions = [] #[ PlatformFvImageOption, ...]
+    return List
 
-    #PlatformFvImageOption = PlatformFvImageOptionClass()
-    #PlatformFvImageOption.FvImageOptionName = ''
-    #PlatformFvImageOption.FvImageOptionValues = []
-    
-    return PlatformFdf
+## Load a Platform Fv Image Name object.
+#
+# Read an input Platform XML DOM object and return a list of User Extensions
+# contained in the DOM object.
+#
+# @param  XmlFvImageName        An XML DOM object read from FPD file.
+#
+# @retvel PlatformFvImageName   A Platform Fv Image Name object
+#
+def LoadPlatformFvImageName(XmlFvImageName):
+    PlatformFvImageName = PlatformFvImageNameClass()
 
+    XmlTag = "Name"
+    PlatformFvImageName.Name = XmlAttribute(XmlFvImageName, XmlTag)
+    
+    XmlTag = "Type"
+    PlatformFvImageName.Type = XmlAttribute(XmlFvImageName, XmlTag)
+    
+    XmlTag = "FvImageOptions"
+    PlatformFvImageName.FvImageOptions = map(LoadFvImageOptions, XmlList(XmlFvImageName, XmlTag))
+    
+    return PlatformFvImageName
+    
 ## Load a list of Platform fdf objects.
 #
 # Read an input Platform XML DOM object and return a list of User Extensions
@@ -936,9 +936,12 @@ def LoadPlatformFdf(XmlFvImages):
 # @retvel PlatformFdfs          A list of Platform fdf object
 #
 def LoadPlatformFdfs(XmlFpd):
+    PlatformFvImages = PlatformFvImagesClass()
+
     XmlTag = "PlatformSurfaceArea/Flash/FvImages"
-    PlatformFdfs = map(LoadPlatformFdf, XmlList(XmlFpd, XmlTag))
-    return PlatformFdfs
+    PlatformFvImages.FvImages = map(LoadPlatformFvImages, XmlList(XmlFpd, XmlTag))
+
+    return PlatformFvImages
 
 ## Load a Platform User Extensions.
 #
