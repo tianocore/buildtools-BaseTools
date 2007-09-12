@@ -1074,7 +1074,7 @@ Returns:
   CHAR8   Buff5[10];
   CHAR8   Token[50];
 
-  Fp = fopen (VtfInfo->CompSymName, "r+b");
+  Fp = fopen (VtfInfo->CompSymName, "rb");
 
   if (Fp == NULL) {
     Error (NULL, 0, 0001, "Error opening file", VtfInfo->CompSymName);
@@ -1153,7 +1153,7 @@ Returns:
     return EFI_SUCCESS;
   }
 
-  Fp = fopen (VtfInfo->CompBinName, "r+b");
+  Fp = fopen (VtfInfo->CompBinName, "rb");
 
   if (Fp == NULL) {
     Error (NULL, 0, 0001, "Error opening file", VtfInfo->CompBinName);
@@ -1334,7 +1334,7 @@ Returns:
   FILE        *Fp;
   FIT_TABLE   *PalFitPtr;
 
-  Fp = fopen (VtfInfo->CompBinName, "r+b");
+  Fp = fopen (VtfInfo->CompBinName, "rb");
 
   if (Fp == NULL) {
     Error (NULL, 0, 0001, "Error opening file", VtfInfo->CompBinName);
@@ -1553,7 +1553,7 @@ Returns:
     VtfBuffer = (VOID *) RelativeAddress;
   }
 
-  Fp = fopen (FileName, "w+b");
+  Fp = fopen (FileName, "wb");
   if (Fp == NULL) {
     Error (NULL, 0, 0001, "Error opening file", FileName);
     return EFI_ABORTED;
@@ -1766,7 +1766,7 @@ Returns:
     return EFI_INVALID_PARAMETER;
   }
 
-  Fp = fopen (FileName, "r+b");
+  Fp = fopen (FileName, "rb");
 
   if (Fp == NULL) {
     Error (NULL, 0, 0001, "Error opening file", FileName);
@@ -2125,7 +2125,7 @@ Returns:
   }
   *StartAddressPtr = StartAddress;
 
-  Fp = fopen (OutFileName1, "r+b");
+  Fp = fopen (OutFileName1, "rb");
 
   if (Fp == NULL) {
     Error (NULL, 0, 0001, "Error opening file", OutFileName1);
