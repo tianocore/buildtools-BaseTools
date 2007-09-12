@@ -105,7 +105,7 @@ class Build():
         pcdSet = {}
         if self.Opt.FDFFILE == None:
             self.Opt.FDFFILE = ewb.Fdf
-            if self.Opt.FDFFILE != '' and os.path.isfile(os.path.normpath(self.Opt.FDFFILE)) == False:
+            if os.path.isfile(os.path.normpath(self.Opt.FDFFILE)) == True and os.path.normpath(os.getcwd()) != os.path.normpath(self.WorkSpace):
                 EdkLogger.quiet("ERROR: The file: %s specified in DSC file should be described in a WORKSPACE realtive path!" % self.Opt.FDFFILE)
                 self.isexit(1)
             if self.Opt.FDFFILE != '' and os.path.isfile(os.path.normpath(os.path.join(self.WorkSpace, self.Opt.FDFFILE))) == False:
@@ -557,7 +557,7 @@ def main():
 #
     if build.Opt.DSCFILE == None:
         build.Opt.DSCFILE = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM]
-        if os.path.isfile(os.path.normpath(build.Opt.DSCFILE)) == False:
+        if os.path.isfile(os.path.normpath(build.Opt.DSCFILE)) == True and os.path.normpath(os.getcwd()) != os.path.normpath(build.WorkSpace):
             EdkLogger.quiet("ERROR: The file: %s specified in target.txt should be described in a WORKSPACE realtive path!" % build.Opt.DSCFILE)
             build.isexit(1)
         if build.Opt.DSCFILE != '' and os.path.isfile(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE))) == False:
