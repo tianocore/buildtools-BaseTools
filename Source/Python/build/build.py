@@ -105,7 +105,7 @@ class Build():
         pcdSet = {}
         if self.Opt.FDFFILE == None:
             self.Opt.FDFFILE = ewb.Fdf
-            if os.path.isfile(os.path.normpath(self.Opt.FDFFILE)) == False:
+            if self.Opt.FDFFILE != '' and os.path.isfile(os.path.normpath(self.Opt.FDFFILE)) == False:
                 EdkLogger.quiet("ERROR: The file: %s specified in DSC file should be described in a WORKSPACE realtive path!" % self.Opt.FDFFILE)
                 self.isexit(1)
             if self.Opt.FDFFILE != '' and os.path.isfile(os.path.normpath(os.path.join(self.WorkSpace, self.Opt.FDFFILE))) == False:
