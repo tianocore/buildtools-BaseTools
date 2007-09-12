@@ -558,7 +558,7 @@ def main():
     if build.Opt.DSCFILE == None:
         build.Opt.DSCFILE = build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM]
         if os.path.isfile(os.path.normpath(build.Opt.DSCFILE)) == True:
-            EdkLogger.quiet("ERROR: The file: %s specified in target.txt should be described in a WORKSPACE realtive path!" % self.Opt.DSCFILE)
+            EdkLogger.quiet("ERROR: The file: %s specified in target.txt should be described in a WORKSPACE realtive path!" % build.Opt.DSCFILE)
             build.isexit(1)
         if build.Opt.DSCFILE != '' and os.path.isfile(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE))) == False:
             EdkLogger.quiet("ERROR: The file: %s does not exist!" % os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE)))
