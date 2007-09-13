@@ -11,7 +11,7 @@
 #This file is used to define each component of DSC file
 #
 
-import os
+import os, uuid
 from String import *
 from DataType import *
 from Identification import *
@@ -359,11 +359,20 @@ class Dsc(DscObject):
         Component.ExecFilePath = ExecFilename
         for Lib in LibraryClasses:
             List = GetSplitValueList(Lib)
-            if len(List) != 2:
-                RaiseParserError(Lib, 'LibraryClasses', ContainerFile, '<ClassName>|<InfFilename>')
-            CheckFileType(List[1], '.Inf', ContainerFile, 'library instance of component ', Lib)
-            CheckFileExist(self.WorkspaceDir, List[1], ContainerFile, 'library instance of component', Lib)
-            Component.LibraryClasses.LibraryList.append(PlatformLibraryClass(List[0], List[1]))
+            LibName = ''
+            LibFile = ''
+            if len(List) == 1:
+                LibName = uuid.uuid4()
+                print LibName
+                LibFile = List[0]
+            elif len(List) == 2:
+                LibName = List[0]
+                LibFile = List[1]
+            else:
+                RaiseParserError(Lib, 'LibraryClasses', ContainerFile, '[<ClassName>|]<InfFilename>')
+            CheckFileType(LibFile, '.Inf', ContainerFile, 'library instance of component ', Lib)
+            CheckFileExist(self.WorkspaceDir, LibFile, ContainerFile, 'library instance of component', Lib)
+            Component.LibraryClasses.LibraryList.append(PlatformLibraryClass(LibName, LibFile))
         for BuildOption in BuildOptions:
             Key = GetBuildOption(BuildOption, ContainerFile)
             Component.ModuleSaBuildOption.BuildOptionList.append(BuildOptionClass(Key[0], Key[1], Key[2]))
