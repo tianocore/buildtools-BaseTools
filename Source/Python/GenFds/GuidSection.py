@@ -136,19 +136,19 @@ class GuidSection(GuidSectionClassObject) :
                       '_'        + \
                       keyList[2]
                 if key in self.keyStringList and keyList[4] == 'GUID':
-                    toolMaro = keyList[3]
-                    toolName = toolDefinition.get( key        + \
-                                                   '_'        + \
-                                                   keyList[3] + \
-                                                   '_'        + \
-                                                   'NAME')
+#                    toolMaro = keyList[3]
+#                    toolName = toolDefinition.get( key        + \
+#                                                   '_'        + \
+#                                                   keyList[3] + \
+#                                                   '_'        + \
+#                                                   'NAME')
                     toolPath = toolDefinition.get( key        + \
                                                    '_'        + \
                                                    keyList[3] + \
                                                    '_'        + \
                                                    'PATH')
-                    tool = os.path.join (toolPath, toolName)
-                    return tool
+#                    tool = os.path.join (toolPath, toolName)
+                    return toolPath
         return tool
 
 
