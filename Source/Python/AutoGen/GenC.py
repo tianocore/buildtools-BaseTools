@@ -1537,15 +1537,5 @@ def CreateCode(Info, AutoGenC, AutoGenH):
 
     CreateFooterCode(Info, AutoGenC, AutoGenH)
 
-def Generate(FilePath, AutoGenC, AutoGenH):
-    CreateDirectory(FilePath)
-
-    AutoGenFileList = []
-    SaveFileOnChange(os.path.join(FilePath, "AutoGen.h"), AutoGenH.String)
-    AutoGenFileList.append("AutoGen.h")
-
-    if AutoGenC.String != "":
-        SaveFileOnChange(os.path.join(FilePath, "AutoGen.c"), AutoGenC.String)
-        AutoGenFileList.append("AutoGen.c")
-
-    return AutoGenFileList
+def Generate(FilePath, Content):
+    return SaveFileOnChange(FilePath, Content)

@@ -105,6 +105,10 @@ def TrimPreprocessedFile(Source, Target, Convert):
         else:
             NewLines.append(Line)
 
+    # in case there's no line directive or linemarker found
+    if NewLines == []:
+        NewLines = Lines
+
     # save to file
     f = open (Target, 'w')
     f.writelines(NewLines)

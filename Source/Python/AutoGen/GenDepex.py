@@ -19,6 +19,7 @@ from StringIO import StringIO
 from struct import pack
 from Common.EdkIIWorkspace import CreateDirectory
 from Common.BuildToolError import *
+from Common.Misc import SaveFileOnChange
 
 gType2Phase = {
     "BASE"              :   None,
@@ -71,18 +72,18 @@ class DependencyExpression:
     }
 
     SupportedOpcode = ["BEFORE", "AFTER", "PUSH", "AND", "OR", "NOT", "TRUE", "FALSE", "END", "SOR"]
-    
+
     NonEndingOpcode = ["AND", "OR"]
 
     ExclusiveOpcode = ["BEFORE", "AFTER"]
-    
+
     AboveAllOpcode = ["SOR"]
 
     #
     # open and close brace must be taken as individual tokens
     #
     TokenPattern = re.compile("(\(|\)|\{[^{}]+\{[^{}]+\}[ ]*\}|\w+)")
-    
+
     def __init__(self, expression, mtype):
         self.Phase = gType2Phase[mtype]
         if type(expression) == type([]):
@@ -148,19 +149,6 @@ class DependencyExpression:
             raise AutoGenError("Invalid GUID value string or opcode: %s" % Guid)
         return pack("1I2H8B", *(int(value, 16) for value in GuidValueList))
 
-    def SaveFile(self, File, Content):
-        CreateDirectory(os.path.dirname(File))
-        F = None
-        if os.path.exists(File):
-            F = open(File, 'rb')
-            if Content == F.read():
-                F.close()
-                return
-            F.close()
-        F = open(File, "wb")
-        F.write(Content)
-        F.close()
-
     def Generate(self, File=None):
         Buffer = StringIO()
         for Item in self.PostfixNotation:
@@ -170,15 +158,15 @@ class DependencyExpression:
                 Buffer.write(self.GetGuidValue(Item))
 
         FilePath = ""
+        FileChangeFlag = True
         if File == None:
             sys.stdout.write(Buffer.getvalue())
             FilePath = "STDOUT"
         else:
-            self.SaveFile(File, Buffer.getvalue())
-            FilePath = File
+            FileChangeFlag = SaveFileOnChange(File, Buffer.getvalue(), True)
 
         Buffer.close()
-        return FilePath
+        return FileChangeFlag
 
 versionNumber = "0.01"
 __version__ = "%prog Version " + versionNumber

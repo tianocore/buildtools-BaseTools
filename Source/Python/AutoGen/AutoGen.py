@@ -18,6 +18,8 @@ import os
 import re
 import os.path as path
 import imp
+from optparse import OptionParser
+from optparse import make_option
 
 import Common.EdkLogger
 import GenC
@@ -91,6 +93,11 @@ gIncludeFlag = {"MSFT" : "/I", "GCC" : "-I", "INTEL" : "-I"}
 
 ## Build rule configuration file
 gBuildRuleFile = 'Conf/build_rule.txt'
+
+## default file name for AutoGen
+gAutoGenCodeFileName = "AutoGen.c"
+gAutoGenHeaderFileName = "AutoGen.h"
+gAutoGenDepexFileName = "%(module_name)s.depex"
 
 ## Find the package containing the module
 #
@@ -310,7 +317,7 @@ class AutoGen(object):
         Info.BuildDir = path.join(Info.OutputDir, self.BuildTarget + "_" + self.ToolChain)
         Info.MakefileDir = Info.BuildDir
         if Platform.FlashDefinition != "":
-            Info.FdfFileList.append(path.join(gWorkspaceDir, Platform.FlashDefinition))
+            Info.FdfFile= path.join(gWorkspaceDir, Platform.FlashDefinition)
 
         Info.DynamicPcdList = self.GetDynamicPcdList(Platform, Arch)
         Info.PcdTokenNumber = self.GeneratePcdTokenNumber(Platform, Info.DynamicPcdList)
@@ -318,6 +325,8 @@ class AutoGen(object):
 
         self.ProcessToolDefinition(Info)
         Info.BuildRule = self.GetBuildRule()
+        Info.FdTargetList = gWorkspace.FdTargetList
+        Info.FvTargetList = gWorkspace.FvTargetList
 
         if PlatformAutoGen != None:
             if type(PlatformAutoGen.BuildInfo) == type({}):
@@ -325,6 +334,12 @@ class AutoGen(object):
             else:
                 PlatformAutoGen.BuildInfo = Info
         return Info
+
+    def GetMakefileDir(self):
+        if self.IsPlatformAutoGen:
+            return self.BuildInfo[self.Arch[0]].MakefileDir
+        else:
+            return self.BuildInfo.MakefileDir
 
     def GetBuildRule(self):
         return BuildRule(gWorkspace.WorkspaceFile(gBuildRuleFile))
@@ -389,16 +404,11 @@ class AutoGen(object):
         ToolCodeList = gWorkspace.ToolDef.ToolsDefTxtDatabase["COMMAND_TYPE"]
         for Tool in ToolCodeList:
             KeyBaseString = "%s_%s_%s_%s" % (Info.BuildTarget, Info.ToolChain, Info.Arch, Tool)
-            Key = "%s_NAME" % KeyBaseString
-            if Key not in ToolDefinition:
-                continue
-            Name = ToolDefinition[Key]
 
             Key = "%s_PATH" % KeyBaseString
-            if Key in ToolDefinition:
-                Path = ToolDefinition[Key]
-            else:
-                Path = ""
+            if Key not in ToolDefinition:
+                continue
+            Path = ToolDefinition[Key]
 
             Key = "%s_FAMILY" % KeyBaseString
             if Key in ToolDefinition:
@@ -412,18 +422,12 @@ class AutoGen(object):
             else:
                 Option = ""
 
-            Key = "%s_DPATH" % KeyBaseString
+            Key = "%s_DLL" % KeyBaseString
             if Key in ToolDefinition:
                 Dll = ToolDefinition[Key]
                 os.environ["PATH"] = Dll + os.pathsep + os.environ["PATH"]
             else:
                 Dll = ""
-
-            Key = "%s_SPATH" % KeyBaseString
-            if Key in ToolDefinition:
-                Lib = ToolDefinition[Key]
-            else:
-                Lib = ""
 
             Key = KeyBaseString + "_OUTPUT"
             if Key in ToolDefinition:
@@ -437,9 +441,8 @@ class AutoGen(object):
 
             InputFlag = gIncludeFlag[Family]
 
-            Info.ToolPath[Tool] = os.path.join(Path, Name)
+            Info.ToolPath[Tool] = Path
             Info.ToolDynamicLib[Tool] = Dll
-            Info.ToolStaticLib[Tool] = Lib
             Info.ToolChainFamily[Tool] = Family
             Info.DefaultToolOption[Tool] = Option
             Info.OutputFlag[Tool] = OutputFlag
@@ -528,8 +531,6 @@ class AutoGen(object):
                 EdkLogger.warn("No rule or command defined for building [%s], ignore file [%s]" % (FileType, SourceFile))
                 continue
 
-            if Ext == ".dxs":
-                print "###", SourceFile, FileType, RuleObject
             BuildFileList.append([SourceFile, FileType, RuleObject])
 
         return BuildFileList
@@ -580,7 +581,6 @@ class AutoGen(object):
             FileList.append("AutoGen.c")
         if self.AutoGenH.String != "":
             FileList.append("AutoGen.h")
-            #print self.AutoGenH.String
         return FileList
 
     def GetSortedLibraryList(self):
@@ -781,17 +781,23 @@ class AutoGen(object):
                 LibraryAutoGen.CreateMakefile()
 
             Makefile = GenMake.Makefile(self.BuildInfo, myBuildOption)
-            F = Makefile.Generate()
+            if Makefile.Generate():
+                EdkLogger.info("Generated makefile for module %s [%s]" %
+                               (self.BuildInfo.Name, self.BuildInfo.Arch))
+            else:
+                EdkLogger.info("Skipped the generation of makefile for module %s [%s]" %
+                               (self.BuildInfo.Name, self.BuildInfo.Arch))
             self.IsMakefileCreated = True
-            EdkLogger.info("Generated [%s] for module %s [%s]" % (path.basename(F), self.BuildInfo.Name, self.BuildInfo.Arch))
-            return F
+            return
 
         Makefile = GenMake.Makefile(self.BuildInfo, myBuildOption)
-        F = Makefile.Generate()
+        if Makefile.Generate():
+            EdkLogger.info("Generated makefile for platform %s [%s]\n" %
+                           (self.BuildInfo[self.Arch[0]].Name, " ".join(self.Arch)))
+        else:
+            EdkLogger.info("Skipped the generation of makefile for platform %s [%s]\n" %
+                           (self.BuildInfo[self.Arch[0]].Name, " ".join(self.Arch)))
         self.IsMakefileCreated = True
-        EdkLogger.info("Generated [%s] for platform %s\n" % (path.basename(F), self.BuildInfo[self.Arch[0]].Name))
-
-        return F
 
     def CreateAutoGenFile(self, FilePath=None):
         if self.IsAutoGenCodeCreated:
@@ -809,7 +815,7 @@ class AutoGen(object):
                     else:
                         ModuleAutoGen = gAutoGenDatabase[Key]
                     ModuleAutoGen.CreateAutoGenFile()
-            print
+            EdkLogger.info("")
         else:
             PlatformInfo = self.BuildInfo.PlatformInfo
             if not self.BuildInfo.IsLibrary and self not in PlatformInfo.ModuleAutoGenList:
@@ -829,108 +835,133 @@ class AutoGen(object):
                     self.BuildInfo.LibraryAutoGenList.append(LibraryAutoGen)
                 LibraryAutoGen.CreateAutoGenFile()
 
-            AutoGenList = GenC.Generate(os.path.join(self.BuildInfo.WorkspaceDir, self.BuildInfo.DebugDir),
-                                        self.AutoGenC, self.AutoGenH)
+            AutoGenList = []
+            IgoredAutoGenList = []
+            if self.AutoGenC.String != "":
+                if GenC.Generate(os.path.join(self.BuildInfo.WorkspaceDir, self.BuildInfo.DebugDir, gAutoGenCodeFileName),
+                                 self.AutoGenC.String):
+                    AutoGenList.append(gAutoGenCodeFileName)
+                else:
+                    IgoredAutoGenList.append(gAutoGenCodeFileName)
+
+            if self.AutoGenH.String != "":
+                if GenC.Generate(os.path.join(self.BuildInfo.WorkspaceDir, self.BuildInfo.DebugDir, gAutoGenHeaderFileName),
+                                 self.AutoGenH.String):
+                    AutoGenList.append(gAutoGenHeaderFileName)
+                else:
+                    IgoredAutoGenList.append(gAutoGenHeaderFileName)
 
             if self.BuildInfo.DepexList != []:
-                dpx = GenDepex.DependencyExpression(self.BuildInfo.DepexList, self.BuildInfo.ModuleType)
-                dpxFile = dpx.Generate(os.path.join(gWorkspaceDir, self.BuildInfo.OutputDir, self.BuildInfo.Name + ".depex"))
-                AutoGenList.append(dpxFile)
+                Dpx = GenDepex.DependencyExpression(self.BuildInfo.DepexList, self.BuildInfo.ModuleType)
+                DpxFile = gAutoGenDepexFileName % {"module_name" : self.BuildInfo.Name}
+                if Dpx.Generate(os.path.join(gWorkspaceDir, self.BuildInfo.OutputDir, DpxFile)):
+                    AutoGenList.append(DpxFile)
+                else:
+                    IgoredAutoGenList.append(DpxFile)
+
+            if IgoredAutoGenList == []:
+                EdkLogger.info("Generated [%s] files for module %s [%s]" %
+                               (" ".join(AutoGenList), self.BuildInfo.Name, self.BuildInfo.Arch))
+            elif AutoGenList == []:
+                EdkLogger.info("Skipped the generation of [%s] files for module %s [%s]" %
+                               (" ".join(IgoredAutoGenList), self.BuildInfo.Name, self.BuildInfo.Arch))
+            else:
+                EdkLogger.info("Generated [%s] (skipped %s) files for module %s [%s]" %
+                               (" ".join(AutoGenList), " ".join(IgoredAutoGenList), self.BuildInfo.Name, self.BuildInfo.Arch))
 
             self.IsAutoGenCodeCreated = True
-            EdkLogger.info("Generated [%s] files for module %s [%s]" % (" ".join([path.basename(f) for f in AutoGenList]), self.BuildInfo.Name, self.BuildInfo.Arch))
-
             return AutoGenList
 
-# This acts like the main() function for the script, unless it is 'import'ed into another
-# script.
+# Version and Copyright
+__version_number__ = "0.01"
+__version__ = "%prog Version " + __version_number__
+__copyright__ = "Copyright (c) 2007, Intel Corporation. All rights reserved."
+
+## Parse command line options
+#
+# Using standard Python module optparse to parse command line option of this tool.
+#
+# @retval Options   A optparse.Values object containing the parsed options
+# @retval InputFile Path of file to be trimmed
+#
+def GetOptions():
+    OptionList = [
+        make_option("-a", "--arch", dest="Arch",
+                          help="The input file is preprocessed source code, including C or assembly code"),
+        make_option("-p", "--platform", dest="ActivePlatform",
+                          help="The input file is preprocessed VFR file"),
+        make_option("-m", "--module", dest="ActiveModule",
+                          help="Convert standard hex format (0xabcd) to MASM format (abcdh)"),
+        make_option("-f", "--FDF-file", dest="FdfFile",
+                          help="Convert standard hex format (0xabcd) to MASM format (abcdh)"),
+        make_option("-o", "--output", dest="OutputDirectory",
+                          help="File to store the trimmed content"),
+        make_option("-t", "--toolchain-tag", dest="ToolChain",
+                          help=""),
+        make_option("-k", "--msft", dest="MakefileType", action="store_const", const="nmake",
+                          help=""),
+        make_option("-g", "--gcc", dest="MakefileType", action="store_const", const="gmake",
+                          help=""),
+        make_option("-v", "--verbose", dest="LogLevel", action="store_const", const=EdkLogger.VERBOSE,
+                          help="Run verbosely"),
+        make_option("-d", "--debug", dest="LogLevel", type="int",
+                          help="Run with debug information"),
+        make_option("-q", "--quiet", dest="LogLevel", action="store_const", const=EdkLogger.QUIET,
+                          help="Run quietly"),
+        make_option("-?", action="help", help="show this help message and exit"),
+    ]
+
+    # use clearer usage to override default usage message
+    UsageString = "%prog [-a ARCH] [-p PLATFORM] [-m MODULE] [-t TOOLCHAIN_TAG] [-k] [-g] [-v|-d <debug_level>|-q] [-o <output_directory>] [GenC|GenMake]"
+
+    Parser = OptionParser(description=__copyright__, version=__version__, option_list=OptionList, usage=UsageString)
+    Parser.set_defaults(Arch=[])
+    Parser.set_defaults(ActivePlatform=None)
+    Parser.set_defaults(ActiveModule=None)
+    Parser.set_defaults(OutputDirectory="build")
+    Parser.set_defaults(FdfFile=None)
+    Parser.set_defaults(ToolChain="MYTOOLS")
+    if sys.platform == "win32":
+        Parser.set_defaults(MakefileType="nmake")
+    else:
+        Parser.set_defaults(MakefileType="gmake")
+    Parser.set_defaults(LogLevel=EdkLogger.INFO)
+
+    Options, Args = Parser.parse_args()
+
+    # error check
+    if len(Args) == 0:
+        Options.Target = "genmake"
+        sys.argv.append("genmake")
+    elif len(Args) == 1:
+        Options.Target = Args[0].lower()
+        if Options.Target not in ["genc", "genmake"]:
+            raise AutoGenError(OPTION_NOT_SUPPORTED, name="Not supported target", usage=Parser.get_usage())
+    else:
+        raise AutoGenError(OPTION_NOT_SUPPORTED, name="Too many targets", usage=Parser.get_usage())
+
+    return Options
+
+## Entrance method
+#
+# This method mainly dispatch specific methods per the command line options.
+# If no error found, return zero value so the caller of this tool can know
+# if it's executed successfully or not.
+#
+# @retval 0     Tool was successful
+# @retval 1     Tool failed
+#
+def Main():
+    from build import build
+    try:
+        Option = GetOptions()
+        build.main()
+    except Exception, e:
+        print e
+        return 1
+
+    return 0
+
+# This acts like the main() function for the script, unless it is 'import'ed into another script.
 if __name__ == '__main__':
-    print "Running Operating System =", sys.platform
-    ewb = WorkspaceBuild()
-    #print ewb.Build.keys()
-
-    myArch = ewb.Build["IA32"].Arch
-    print myArch
-
-    myBuild = ewb.Build["IA32"]
-
-    myWorkspace = ewb
-    apf = os.path.normpath(ewb.TargetTxt.TargetTxtDictionary["ACTIVE_PLATFORM"][0])
-    myPlatform = myBuild.PlatformDatabase[os.path.normpath(apf)]
-
-    #LoadBuildRule(myWorkspace.Workspace.WorkspaceFile('Tools/Conf/build.rule'))
-
-    myToolchain = ewb.TargetTxt.TargetTxtDictionary["TOOL_CHAIN_TAG"][0]
-    #print myToolchain
-
-    myBuildTarget = ewb.TargetTxt.TargetTxtDictionary["TARGET"][0]
-    #print myBuildTarget
-
-    myBuildOption = {
-        "ENABLE_PCH"        :   False,
-        "ENABLE_LOCAL_LIB"  :   True,
-    }
-
-    def PrintAutoGen(ag):
-        bi = ag.ModuleBuildInfo
-
-        print " WorkSpaceDir =",bi.WorkspaceDir
-        print " SourceDir =",bi.SourceDir
-        print " Is Library =",bi.IsLibrary
-        print " BaseName =",bi.BaseName
-        print " FileBase =",bi.FileBase
-        print " FileExt =",bi.FileExt
-        print " BuildDir =",bi.BuildDir
-        print " OutputDir =",bi.OutputDir
-        print " DebugDir =",bi.DebugDir
-        print " MakefileDir =",bi.MakefileDir
-
-        print " Include Path:","\n   ","\n    ".join(bi.InclduePathList)
-        print " SourceFileList:","\n   ","\n    ".join(bi.SourceFileList)
-
-        print " BuildOption:","\n   ","\n    ".join(["%s = %s" % (tool,bi.BuildOption[tool]) for tool in bi.BuildOption])
-        print " PcdList:","\n   ","\n    ".join([pcd.TokenCName for pcd in bi.PcdList])
-        print " GuidList:","\n   ","\n    ".join(bi.GuidList)
-        print " ProtocolList:","\n   ","\n    ".join(bi.ProtocolList)
-        print " PpiList:","\n   ","\n    ".join(bi.PpiList)
-        print " LibraryList:","\n   ","\n    ".join([str(l) for l in bi.DependentLibraryList])
-
-        print
-
-##        for key in gAutoGenDatabase:
-##            if str(myPlatform) == str(key[0]):
-##                pi = gAutoGenDatabase[key]
-##                print " BuildDir =",pi.BuildDir
-##                print " OutputDir =",pi.OutputDir
-##                print " DebugDir =",pi.DebugDir
-##                print " LibraryDir =",pi.LibraryDir
-##                print " FvDir =",pi.FvDir
-##                print " MakefileDir =",pi.MakefileDir
-##                print " PcdTokenNumber:","\n   ","\n    ".join(["%s = %s" % (pcd,pi.PcdTokenNumber[pcd]) for pcd in pi.PcdTokenNumber])
-##                print " DynamicPcdList:","\n   ","\n    ".join([str(pcd) for pcd in pi.DynamicPcdList])
-##
-##                print " ToolPath:","\n   ","\n    ".join(["%s = %s" % (tool,pi.ToolPath[tool]) for tool in pi.ToolPath])
-##                print " ToolDynamicLib:","\n   ","\n    ".join(["%s = %s" % (tool,pi.ToolDynamicLib[tool]) for tool in pi.ToolDynamicLib])
-##                print " ToolStaticLib:","\n   ","\n    ".join(["%s = %s" % (tool,pi.ToolStaticLib[tool]) for tool in pi.ToolStaticLib])
-##                print " ToolChainFamily:","\n   ","\n    ".join(["%s = %s" % (tool,pi.ToolChainFamily[tool]) for tool in pi.ToolChainFamily])
-##                print " BuildOption:","\n   ","\n    ".join(["%s = %s" % (tool,pi.BuildOption[tool]) for tool in pi.BuildOption])
-##                print " DefaultToolOption:","\n   ","\n    ".join(["%s = %s" % (tool,pi.DefaultToolOption[tool]) for tool in pi.DefaultToolOption])
-
-    for mf in myBuild.ModuleDatabase:
-        #mf = "MdePkg\\Library\\BaseLib\\BaseLib.inf"
-        #if mf in myPlatform.Modules and mf in myBuild.ModuleDatabase:
-        #print mf
-        myModule = myBuild.ModuleDatabase[mf]
-        ag = AutoGen(myModule, myPlatform, myWorkspace, myBuildTarget, myToolchain, myArch)
-        ag.CreateAutoGenFile()
-        ag.CreateMakefile()
-
-        #PrintAutoGen(ag)
-##        for lib in ag.ModuleBuildInfo.DependentLibraryList:
-##            ag = AutoGen(lib, myPlatform, myWorkspace, myArch, myToolchain, myBuildTarget)
-##            ag.CreateAutoGenFile()
-##            ag.CreateMakefile()
-##            #PrintAutoGen(ag)
-    platformAutoGen = AutoGen(None, apf, myWorkspace, myBuildTarget, myToolchain, myWorkspace.SupArchList)
-    platformAutoGen.CreateAutoGenFile()
-    platformAutoGen.CreateMakefile()
+    sys.exit(Main())

@@ -45,7 +45,7 @@ gMakefileHeader = '''#
 '''
 
 gLibraryMakeCommand = '''cd %(makedir)s
-\t$(MAKE) $(MAKE_FLAGS) -f %(makefile)s %(target)s
+\t$(MAKE) $(MAKE_FLAGS) %(target)s
 \tcd $(MODULE_BUILD_DIR)'''
 
 gMakeType = ""
@@ -62,9 +62,9 @@ gCreateDirectoryCommand = {"nmake" : "mkdir", "gmake" : "mkdir -p"}
 gRemoveDirectoryCommand = {"nmake" : "rmdir /s /q", "gmake" : "rm -r -f"}
 gRemoveFileCommand = {"nmake" : "del /f /q", "gmake" : "rm -f"}
 gCopyFileCommand = {"nmake" : "copy /y", "gmake" : "cp -f"}
-gCreateDirectoryCommandTemplate = {"nmake" : "if not exist %(dir)s mkdir %(dir)s",
+gCreateDirectoryCommandTemplate = {"nmake" : 'if not exist %(dir)s mkdir %(dir)s',
                                    "gmake" : "test ! -e %(dir)s && mkdir -p %(dir)s"}
-gRemoveDirectoryCommandTemplate = {"nmake" : "if exist %(dir)s rmdir /s /q %(dir)s",
+gRemoveDirectoryCommandTemplate = {"nmake" : 'if exist %(dir)s rmdir /s /q %(dir)s',
                                    "gmake" : "test -e %(dir)s && rm -r -f %(dir)s"}
 
 #   $(CP)     copy file command
@@ -348,6 +348,12 @@ mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) $(CODA_TARGET)
 
 
 #
+# Target to update the FD
+#
+
+fds: mbuild gen_fds
+
+#
 # Initialization target: print build information and create necessary directories
 #
 init:
@@ -362,6 +368,14 @@ gen_libs:
 \t${BEGIN}cd $(BUILD_DIR)${separator}$(ARCH)${separator}${dependent_library_build_directory}
 \t$(MAKE) $(MAKE_FLAGS)
 \t${END}cd $(MODULE_BUILD_DIR)
+
+#
+# Build Flash Device Image
+#
+gen_fds:
+\tcd $(BUILD_DIR)
+\t$(MAKE) $(MAKE_FLAGS) fds
+\tcd $(MODULE_BUILD_DIR)
 
 #
 # Individual Object Build Targets
@@ -454,7 +468,7 @@ modules: init build_libraries build_modules
 #
 # Flash Device Image Target
 #
-fds: init build_libraries build_modules build_fds
+fds: init build_fds
 
 #
 # Build all libraries:
@@ -477,7 +491,7 @@ build_modules:
 #
 build_fds:
 \t-@echo Generating flash image, if any ...
-${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -p ${active_platform} -a ${build_architecture_list}${END}
+${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -p ${active_platform} -a ${build_architecture_list}${END}${BEGIN} -r ${fd} ${END}${BEGIN} -i ${fv} ${END}
 
 #
 # run command for emulator platform only
@@ -584,6 +598,12 @@ class Makefile(object):
         self.IntermediateDirectoryList = ["$(BUILD_DIR)%s%s" % (Separator, Arch) for Arch in self.PlatformInfo]
         self.IntermediateDirectoryList.append("$(FV_DIR)")
 
+        # TRICK: for not generating GenFds call in makefile if no FDF file
+        if PlatformInfo.FdfFile != None and PlatformInfo.FdfFile != "":
+            FdfFileList = [PlatformInfo.FdfFile]
+        else:
+            FdfFileList = []
+
         MakefileName = gMakefileName[MakeType]
         MakefileTemplateDict = {
             "makefile_header"           : gMakefileHeader % MakefileName,
@@ -605,8 +625,10 @@ class Makefile(object):
             "cleanall_command"          : self.GetRemoveDirectoryCommand(self.IntermediateDirectoryList, MakeType),
             "library_build_directory"   : self.LibraryBuildDirectoryList,
             "module_build_directory"    : self.ModuleBuildDirectoryList,
-            "fdf_file"                  : PlatformInfo.FdfFileList,
+            "fdf_file"                  : FdfFileList,
             "active_platform"           : PlatformInfo.WorkspaceDir + Separator + ActivePlatform.DescFilePath,
+            "fd"                        : PlatformInfo.FdTargetList,
+            "fv"                        : PlatformInfo.FvTargetList
         }
 
         self.PrepareDirectory()
@@ -620,39 +642,39 @@ class Makefile(object):
         else:
             FilePath = File
 
-        SaveFileOnChange(FilePath, str(AutoGenMakefile))
-        return FilePath
+        return SaveFileOnChange(FilePath, str(AutoGenMakefile))
 
     def GenerateModuleMakefile(self, File=None, MakeType=gMakeType):
         if MakeType in self.ModuleInfo.CustomMakefile and self.ModuleInfo.CustomMakefile[MakeType] != "":
             return self.GenerateCustomBuildMakefile(File, MakeType)
 
         Separator = gDirectorySeparator[MakeType]
+        PlatformInfo = self.PlatformInfo
 
-        if os.path.isabs(self.PlatformInfo.OutputDir):
-            self.PlatformBuildDirectory = self.PlatformInfo.OutputDir
+        if os.path.isabs(PlatformInfo.OutputDir):
+            self.PlatformBuildDirectory = PlatformInfo.OutputDir
         else:
-            self.PlatformBuildDirectory = "$(WORKSPACE)" + Separator + self.PlatformInfo.OutputDir
+            self.PlatformBuildDirectory = "$(WORKSPACE)" + Separator + PlatformInfo.OutputDir
 
         self.ProcessSourceFileList(MakeType)
         self.ProcessDependentLibrary(MakeType)
 
-        if "DLINK" in self.PlatformInfo.ToolStaticLib:
-            EdkLogger.debug(EdkLogger.DEBUG_5, "Static library: " + self.PlatformInfo.ToolStaticLib["DLINK"])
-            self.SystemLibraryList.append(self.PlatformInfo.ToolStaticLib["DLINK"])
+        if "DLINK" in PlatformInfo.ToolStaticLib:
+            EdkLogger.debug(EdkLogger.DEBUG_5, "Static library: " + PlatformInfo.ToolStaticLib["DLINK"])
+            self.SystemLibraryList.append(PlatformInfo.ToolStaticLib["DLINK"])
 
         EntryPoint = "_ModuleEntryPoint"
         if self.ModuleInfo.Arch == "EBC":
             EntryPoint = "EfiStart"
 
-        DefaultToolFlag = self.PlatformInfo.DefaultToolOption.values()
+        DefaultToolFlag = PlatformInfo.DefaultToolOption.values()
         if self.ModuleInfo.ModuleType == "USER_DEFINED":
             DefaultToolFlag = ["" for p in DefaultToolFlag]
 
-        if "CC" not in self.PlatformInfo.ToolChainFamily:
+        if "CC" not in PlatformInfo.ToolChainFamily:
             raise AutoGenError(msg="[CC] is not supported [%s, %s, %s]" % (self.ModuleInfo.BuildTarget,
                                     self.ModuleInfo.ToolChain, self.ModuleInfo.Arch))
-        if  "DLINK" not in self.PlatformInfo.ToolChainFamily:
+        if  "DLINK" not in PlatformInfo.ToolChainFamily:
             raise AutoGenError(msg="[DLINK] is not supported [%s, %s, %s]" % (self.ModuleInfo.BuildTarget,
                                     self.ModuleInfo.ToolChain, self.ModuleInfo.Arch))
 
@@ -688,11 +710,11 @@ class Makefile(object):
         MakefileName = gMakefileName[MakeType]
         MakefileTemplateDict = {
             "makefile_header"           : gMakefileHeader % MakefileName,
-            "platform_name"             : self.PlatformInfo.Name,
-            "platform_guid"             : self.PlatformInfo.Guid,
-            "platform_version"          : self.PlatformInfo.Version,
-            "platform_relative_directory": self.PlatformInfo.SourceDir,
-            "platform_output_directory" : self.PlatformInfo.OutputDir,
+            "platform_name"             : PlatformInfo.Name,
+            "platform_guid"             : PlatformInfo.Guid,
+            "platform_version"          : PlatformInfo.Version,
+            "platform_relative_directory": PlatformInfo.SourceDir,
+            "platform_output_directory" : PlatformInfo.OutputDir,
 
             "module_name"               : self.ModuleInfo.Name,
             "module_guid"               : self.ModuleInfo.Guid,
@@ -709,22 +731,22 @@ class Makefile(object):
 
             "separator"                 : Separator,
             "default_tool_flags"        : DefaultToolFlag,
-            "platform_tool_flags"       : [self.PlatformInfo.BuildOption[tool] for tool in self.PlatformInfo.ToolPath],
-            "module_tool_flags"         : [self.ModuleInfo.BuildOption[tool] for tool in self.PlatformInfo.ToolPath],
+            "platform_tool_flags"       : [PlatformInfo.BuildOption[tool] for tool in PlatformInfo.ToolPath],
+            "module_tool_flags"         : [self.ModuleInfo.BuildOption[tool] for tool in PlatformInfo.ToolPath],
 
-            "tool_code"                 : self.PlatformInfo.ToolPath.keys(),
-            "tool_path"                 : self.PlatformInfo.ToolPath.values(),
+            "tool_code"                 : PlatformInfo.ToolPath.keys(),
+            "tool_path"                 : PlatformInfo.ToolPath.values(),
 
             "shell_command_code"        : gShellCommand[MakeType].keys(),
             "shell_command"             : gShellCommand[MakeType].values(),
 
             "module_entry_point"        : EntryPoint,
             #"auto_generated_file"       : self.AutoGenBuildFileList,
-            "include_path_prefix"       : gIncludeFlag[self.PlatformInfo.ToolChainFamily["CC"]],
-            "dlink_output_flag"         : self.PlatformInfo.OutputFlag["DLINK"],
-            "slink_output_flag"         : self.PlatformInfo.OutputFlag["SLINK"],
-            "start_group_flag"          : gStartGroupFlag[self.PlatformInfo.ToolChainFamily["DLINK"]],
-            "end_group_flag"            : gEndGroupFlag[self.PlatformInfo.ToolChainFamily["DLINK"]],
+            "include_path_prefix"       : gIncludeFlag[PlatformInfo.ToolChainFamily["CC"]],
+            "dlink_output_flag"         : PlatformInfo.OutputFlag["DLINK"],
+            "slink_output_flag"         : PlatformInfo.OutputFlag["SLINK"],
+            "start_group_flag"          : gStartGroupFlag[PlatformInfo.ToolChainFamily["DLINK"]],
+            "end_group_flag"            : gEndGroupFlag[PlatformInfo.ToolChainFamily["DLINK"]],
             "include_path"              : self.ModuleInfo.IncludePathList,
             "target_file"               : self.TargetFileList,
             "object_file"               : self.ObjectFileList,
@@ -745,7 +767,7 @@ class Makefile(object):
             "target_file_macro"         : TargetFileMacroList,
             "source_file_macro_name"    : SourceFileMacroNameList,
             "target_file_macro_name"    : TargetFileMacroNameList,
-            "file_build_target"         : self.BuildTargetList
+            "file_build_target"         : self.BuildTargetList,
         }
 
         self.PrepareDirectory()
@@ -759,8 +781,7 @@ class Makefile(object):
         else:
             FilePath = File
 
-        SaveFileOnChange(FilePath, str(AutoGenMakefile))
-        return FilePath
+        return SaveFileOnChange(FilePath, str(AutoGenMakefile))
 
     def GenerateCustomBuildMakefile(self, File=None, MakeType=gMakeType):
         Separator = gDirectorySeparator[MakeType]
@@ -819,8 +840,7 @@ class Makefile(object):
         else:
             FilePath = File
 
-        SaveFileOnChange(FilePath, str(AutoGenMakefile))
-        return FilePath
+        return SaveFileOnChange(FilePath, str(AutoGenMakefile))
 
     def ProcessSourceFileList(self, MakeType=gMakeType):
         Separator = gDirectorySeparator[MakeType]
@@ -1159,43 +1179,6 @@ class Makefile(object):
     def GetRemoveDirectoryCommand(self, DirList, MakeType=gMakeType):
         return [gRemoveDirectoryCommandTemplate[MakeType] % {'dir':Dir} for Dir in DirList]
 
-# This acts like the main() function for the script, unless it is 'import'ed into another
-# script.
+# This acts like the main() function for the script, unless it is 'import'ed into another script.
 if __name__ == '__main__':
-    print "Running Operating System =", sys.platform
-    ewb = WorkspaceBuild()
-    #print ewb.Build.keys()
-
-    myArch = ewb.Build["IA32"].Arch
-    #print myArch
-
-    myBuild = ewb.Build["IA32"]
-
-    myWorkspace = ewb
-    apf = ewb.TargetTxt.TargetTxtDictionary["ACTIVE_PLATFORM"][0]
-    myPlatform = myBuild.PlatformDatabase[os.path.normpath(apf)]
-
-    for mf in myBuild.ModuleDatabase:
-        #mf = "MdePkg\\Library\\BaseLib\\BaseLib.inf"
-        #if mf in myPlatform.Modules and mf in myBuild.ModuleDatabase:
-        #print mf
-
-        myModule = myBuild.ModuleDatabase[mf]
-
-        myPackage = FindModuleOwner(myModule.DescFilePath, myBuild.PackageDatabase)
-
-        myToolchain = ewb.TargetTxt.TargetTxtDictionary["TOOL_CHAIN_TAG"][0]
-        #print myToolchain
-
-        myBuildTarget = ewb.TargetTxt.TargetTxtDictionary["TARGET"][0]
-        #print myBuildTarget
-
-        myBuildOption = {
-            "ENABLE_PCH"        :   False,
-            "ENABLE_LOCAL_LIB"  :   True,
-        }
-
-        myMakefile = Makefile(myModule, myPackage, myPlatform, myWorkspace, myToolchain, myBuildTarget,
-                              myArch, myBuildOption, "nmake")
-
-        myMakefile.NewGenerate()
+    pass

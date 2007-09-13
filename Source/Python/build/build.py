@@ -237,7 +237,7 @@ class Build():
         FileNum = len(FileList)
         if FileNum > 0:
             self.SameTypeFileInDir(FileNum, 'makefile', DestDir)
-            self.Launch(["nmake", "/nologo", "-f", FileList[0], self.Args], os.path.dirname(FileList[0]))
+            self.Launch(["nmake", "/nologo", self.Args], os.path.dirname(FileList[0]))
         else:
             self.isexit(1)
 
@@ -245,16 +245,11 @@ class Build():
         try:
             AutoGenResult = AutoGen(ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch)
             AutoGenResult.CreateAutoGenFile()
-            makefile = AutoGenResult.CreateMakefile()
+            AutoGenResult.CreateMakefile()
         except Exception, e:
             self.TrackInfo(e)
             self.isexit(1)
-        if makefile != "":
-            self.Launch(["nmake", "/nologo", "-f", makefile, 'all'], os.path.dirname(makefile))
-        else:
-            EdkLogger.quiet("ERROR: Can find Makefile: %s. % makefile")
-            self.isexit(1)
-
+        self.Launch(["nmake", "/nologo", 'all'], os.path.join(os.environ["WORKSPACE"], AutoGenResult.GetMakefileDir()))
 
     def Process(self, ModuleFile, PlatformFile, ewb):
         #
@@ -471,7 +466,6 @@ def main():
     build = Build(opt, args)
     StatusCode = build.CheckEnvVariable()
     build.isexit(StatusCode)
-
 #
 # Check target.txt and tools_def.txt and Init them
 #
@@ -479,15 +473,14 @@ def main():
         StatusCode = build.TargetTxt.LoadTargetTxtFile(os.path.normpath(os.path.join(build.WorkSpace, 'Conf\\target.txt')))
         build.isexit(StatusCode)
         if os.path.isfile(os.path.normpath(os.path.join(build.WorkSpace, build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF]))) == True:
-            StatusCode = build.ToolDef.LoadToolDefFile(os.path.normpath(os.path.join(build.WorkSpace, build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])))
+            build.ToolDef.LoadToolDefFile(os.path.normpath(os.path.join(build.WorkSpace, build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])))
             build.isexit(StatusCode)
         else:
-            EdkLogger.quiet("ERROR: %s does not exist." % os.path.normpath(os.path.join(build.WorkSpace, build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])))
+            EdkLogger.info("ERROR: %s does not exist." % os.path.normpath(os.path.join(build.WorkSpace, build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])))
             build.isexit(1)
     else:
-        EdkLogger.quiet("ERROR: %s does not exist." % os.path.normpath(os.path.join(build.WorkSpace, 'Conf\\target.txt')))
+        EdkLogger.info("ERROR: %s does not exist." % os.path.normpath(os.path.join(build.WorkSpace, 'Conf\\target.txt')))
         build.isexit(1)
-
 #
 # Merge the Build Options except input file(DSCFILE, FDFFILE)
 #

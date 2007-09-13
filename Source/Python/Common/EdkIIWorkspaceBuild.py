@@ -26,7 +26,7 @@ from SequentialDict import *
 from CommonDataClass.CommonClass import *
 
 #
-# This Class is used for PcdObject 
+# This Class is used for PcdObject
 #
 class PcdClassObject(object):
     def __init__(self, Name = None, Guid = None, Type = None, DatumType = None, Value = None, Token = None, MaxDatumSize = None, SkuInfoList = {}, IsOverrided = False):
@@ -40,7 +40,7 @@ class PcdClassObject(object):
         self.SkuInfoList = SkuInfoList
         self.IsOverrided = IsOverrided
         self.Phase = "DXE"
-        
+
     def __str__(self):
         rtn = '\tTokenCName=' + str(self.TokenCName) + ', ' + \
               'TokenSpaceGuidCName=' + str(self.TokenSpaceGuidCName) + ', ' + \
@@ -52,7 +52,7 @@ class PcdClassObject(object):
         for Item in self.SkuInfoList.values():
             rtn = rtn + 'SkuId=' + Item.SkuId + ', ' + 'SkuIdName=' + Item.SkuIdName
         rtn = rtn + str(self.IsOverrided)
-        
+
         return rtn
 
     def __eq__(self, other):
@@ -70,7 +70,7 @@ class LibraryClassObject(object):
         self.SupModList = SupModList
         if Type != None:
             self.SupModList = CleanString(Type).split(DataType.TAB_SPACE_SPLIT)
-        
+
 class ModuleBuildClassObject(object):
     def __init__(self):
         self.DescFilePath            = ''
@@ -87,7 +87,7 @@ class ModuleBuildClassObject(object):
         self.ModuleUnloadImageList   = []
         self.ConstructorList         = []
         self.DestructorList          = []
-        
+
         self.Binaries                = []        #[ ModuleBinaryClassObject, ...]
         self.Sources                 = []        #[ ModuleSourceFilesClassObject, ... ]
         self.LibraryClasses          = {}        #{ [LibraryClassName, ModuleType] : LibraryClassInfFile }
@@ -115,14 +115,14 @@ class PackageBuildClassObject(object):
         self.PackageName             = ''
         self.Guid                    = ''
         self.Version                 = ''
-        
+
         self.Protocols               = {}       #{ [ProtocolName] : Protocol Guid, ... }
         self.Ppis                    = {}       #{ [PpiName] : Ppi Guid, ... }
         self.Guids                   = {}       #{ [GuidName] : Guid, ... }
-        self.Includes                = []       #[ IncludePath, ... ]        
+        self.Includes                = []       #[ IncludePath, ... ]
         self.LibraryClasses          = {}       #{ [LibraryClassName] : LibraryClassInfFile }
         self.Pcds                    = {}       #{ [(PcdCName, PcdGuidCName)] : PcdClassObject}
-        
+
     def __str__(self):
         return self.DescFilePath
 
@@ -143,13 +143,13 @@ class PlatformBuildClassObject(object):
         self.FlashDefinition         = ''
         self.BuildNumber             = ''
         self.MakefileName            = ''
-                
+
         self.SkuIds                  = {}       #{ 'SkuName' : SkuId, '!include' : includefilename, ...}
         self.Modules                 = []       #[ InfFileName, ... ]
         self.Libraries               = []       #[ InfFileName, ... ]
         self.LibraryClasses          = {}       #{ (LibraryClassName, ModuleType) : LibraryClassInfFile }
         self.Pcds                    = {}       #{ [(PcdCName, PcdGuidCName)] : PcdClassObject }
-        self.BuildOptions            = {}       #{ [BuildOptionKey] : BuildOptionValue }    
+        self.BuildOptions            = {}       #{ [BuildOptionKey] : BuildOptionValue }
 
     def __str__(self):
         return self.DescFilePath
@@ -166,7 +166,7 @@ class ItemBuild(object):
         self.PlatformDatabase        = {}        #{ [DscFileName] : PlatformBuildClassObject, ...}
         self.PackageDatabase         = {}        #{ [DecFileName] : PacakgeBuildClassObject, ...}
         self.ModuleDatabase          = {}        #{ [InfFileName] : ModuleBuildClassObject, ...}
-        
+
 #
 # This class is used to parse active platform to init all inf/dec/dsc files
 # Generate module/package/platform databases for build
@@ -178,20 +178,22 @@ class WorkspaceBuild(object):
         self.BuildTarget             = []        #[ 'RELEASE', 'DEBUG']
         self.SkuId                   = ''
         self.Fdf                     = ''
+        self.FdTargetList            = []
+        self.FvTargetList            = []
         self.TargetTxt               = None
         self.ToolDef                 = None
-        
+
         self.InfDatabase             = {}        #{ [InfFileName] : InfClassObject}
         self.DecDatabase             = {}        #{ [DecFileName] : DecClassObject}
         self.DscDatabase             = {}        #{ [DscFileName] : DscClassObject}
-        
+
         #
         # Init build for all arches
         #
         self.Build                   = {}
         for Arch in DataType.ARCH_LIST:
             self.Build[Arch] = ItemBuild(Arch)
-        
+
         #
         # Get active platform
         #
@@ -201,13 +203,13 @@ class WorkspaceBuild(object):
             self.DscDatabase[DscFileName] = Dsc(File, True, True, self.WorkspaceDir)
         else:
             raise ParserError(FILE_NOT_FOUND, name = File)
-        
+
         #
         # Parse platform to get module
         #
         for DscFile in self.DscDatabase.keys():
             Platform = self.DscDatabase[DscFile].Platform
-            
+
             #
             # Get global information
             #
@@ -215,14 +217,14 @@ class WorkspaceBuild(object):
             self.BuildTarget = Platform.Header.BuildTargets
             self.SkuId = Platform.Header.SkuIdName
             self.Fdf = NormPath(Platform.FlashDefinitionFile.FilePath)
-            
+
             #
             # Get all inf files
             #
             for Item in Platform.LibraryClasses.LibraryList:
                 for Arch in Item.SupArchList:
                     self.AddToInfDatabase(Item.FilePath)
-            
+
             for Item in Platform.Modules.ModuleList:
                 for Arch in Item.SupArchList:
                     #
@@ -236,7 +238,7 @@ class WorkspaceBuild(object):
                     for Lib in Item.LibraryClasses.LibraryList:
                         self.AddToInfDatabase(Lib.FilePath)
                         self.UpdateLibraryClassOfModule(Module, Lib.Name, Arch, Lib.FilePath)
-        
+
         #
         # Parse module to get package
         #
@@ -249,17 +251,17 @@ class WorkspaceBuild(object):
                 for Arch in Item.SupArchList:
                     self.AddToDecDatabase(Item.FilePath)
     # End of self.Init()
-    
+
     #
     # Generate PlatformDatabase
     #
     def GenPlatformDatabase(self):
         for Dsc in self.DscDatabase.keys():
             Platform = self.DscDatabase[Dsc].Platform
-            
+
             for Arch in self.SupArchList:
                 pb = PlatformBuildClassObject()
-                
+
                 # Defines
                 pb.DescFilePath = Dsc
                 pb.PlatformName = Platform.Header.Name
@@ -269,28 +271,28 @@ class WorkspaceBuild(object):
                 pb.OutputDirectory = NormPath(Platform.Header.OutputDirectory)
                 pb.FlashDefinition = NormPath(Platform.FlashDefinitionFile.FilePath)
                 pb.BuildNumber = Platform.Header.BuildNumber
-            
+
                 # SkuId
                 for Key in Platform.SkuInfos.SkuInfoList.keys():
                     pb.SkuIds[Key] = Platform.SkuInfos.SkuInfoList[Key]
-                
+
                 # Module
                 for Item in Platform.Modules.ModuleList:
                     if Arch in Item.SupArchList:
                         pb.Modules.append(NormPath(Item.FilePath))
-                    
+
                 # BuildOptions
                 for Item in Platform.BuildOptions.BuildOptionList:
                     if Arch in Item.SupArchList:
                         pb.BuildOptions[(Item.ToolChainFamily, Item.ToolChain)] = Item.Option
-                  
+
                 # LibraryClass
                 for Item in Platform.LibraryClasses.LibraryList:
                     SupModuleList = self.FindSupModuleListOfLibraryClass(Item, Platform.LibraryClasses.LibraryList)
                     if Arch in Item.SupArchList:
                         for ModuleType in SupModuleList:
                             pb.LibraryClasses[(Item.Name, ModuleType)] = NormPath(Item.FilePath)
-                    
+
                 # Pcds
                 for Item in Platform.DynamicPcdBuildDefinitions:
                     if Arch in Item.SupArchList:
@@ -303,52 +305,52 @@ class WorkspaceBuild(object):
                         MaxDatumSize = Item.MaxDatumSize
                         SkuInfoList = Item.SkuInfoList
                         pb.Pcds[(Name, Guid)] = PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, False)
-                
+
                 # Add to database
                 self.Build[Arch].PlatformDatabase[Dsc] = pb
                 pb = None
-    
+
     #
     # Generate PackageDatabase
-    #    
+    #
     def GenPackageDatabase(self):
         for Dec in self.DecDatabase.keys():
             Package = self.DecDatabase[Dec].Package
-        
+
             for Arch in self.SupArchList:
                 pb = PackageBuildClassObject()
-                
+
                 # Defines
                 pb.DescFilePath = Dec
                 pb.PackageName = Package.Header.Name
                 pb.Guid = Package.Header.Guid
                 pb.Version = Package.Header.Version
-                
+
                 # Protocols
                 for Item in Package.ProtocolDeclarations:
                     if Arch in Item.SupArchList:
                         pb.Protocols[Item.CName] = Item.Guid
-                        
+
                 # Ppis
                 for Item in Package.PpiDeclarations:
                     if Arch in Item.SupArchList:
                         pb.Ppis[Item.CName] = Item.Guid
-                
+
                 # Guids
                 for Item in Package.GuidDeclarations:
                     if Arch in Item.SupArchList:
                         pb.Ppis[Item.CName] = Item.Guid
-                
+
                 # Includes
                 for Item in Package.Includes:
                     if Arch in Item.SupArchList:
                         pb.Includes.append(NormPath(Item.FilePath))
-                        
+
                 # LibraryClasses
                 for Item in Package.LibraryClassDeclarations:
                     if Arch in Item.SupArchList:
                         pb.LibraryClasses[Item.LibraryClass] = NormPath(Item.RecommendedInstance)
-                
+
                 # Pcds
                 for Item in Package.PcdDeclarations:
                     if Arch in Item.SupArchList:
@@ -361,24 +363,24 @@ class WorkspaceBuild(object):
                         MaxDatumSize = Item.MaxDatumSize
                         SkuInfoList = Item.SkuInfoList
                         pb.Pcds[(Name, Guid)] = PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, False)
-                
+
                 # Add to database
                 self.Build[Arch].PackageDatabase[Dec] = pb
                 pb = None
-    
+
     #
     # Generate ModuleDatabase
     #
     def GenModuleDatabase(self, PcdsSet = {}):
         for Inf in self.InfDatabase.keys():
             Module = self.InfDatabase[Inf].Module
-            
+
             for Arch in self.SupArchList:
                 if not self.IsModuleDefinedInPlatform(Inf, Arch):
                     continue
-                
+
                 pb = ModuleBuildClassObject()
-                
+
                 # Defines
                 pb.DescFilePath = Inf
                 pb.BaseName = Module.Header.Name
@@ -388,12 +390,12 @@ class WorkspaceBuild(object):
                 pb.PcdIsDriver = Module.Header.PcdIsDriver
                 pb.BinaryModule = Module.Header.BinaryModule
                 pb.CustomMakefile = Module.Header.CustomMakefile
-                
+
                 # Specs os Defines
                 pb.Specification = Module.Header.Specification
                 pb.Specification[TAB_INF_DEFINES_EDK_RELEASE_VERSION] = Module.Header.EdkReleaseVersion
                 pb.Specification[TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION] = Module.Header.EfiSpecificationVersion
-                
+
                 # LibraryClass of Defines
                 for Item in Module.Header.LibraryClass:
                     pb.LibraryClass.append(LibraryClassObject(Item.LibraryClass, Item.SupModuleList, None))
@@ -409,7 +411,7 @@ class WorkspaceBuild(object):
                         pb.ConstructorList.append(Item.Constructor)
                     if Item.Destructor != '':
                         pb.DestructorList.append(Item.Destructor)
-                
+
                 # Binaries
                 for Item in Module.Binaries:
                     if Arch in Item.SupArchList:
@@ -418,7 +420,7 @@ class WorkspaceBuild(object):
                         Target = Item.Target
                         FeatureFlag = Item.FeatureFlag
                         pb.Binaries.append(ModuleBinaryFileClass(FileName, FileType, Target, FeatureFlag))
-                
+
                 #Sources
                 for Item in Module.Sources:
                     if Arch in Item.SupArchList:
@@ -428,44 +430,44 @@ class WorkspaceBuild(object):
                         ToolChainFamily = Item.ToolChainFamily
                         FeatureFlag = Item.FeatureFlag
                         pb.Sources.append(ModuleSourceFileClass(SourceFile, TagName, ToolCode, ToolChainFamily, FeatureFlag))
-                
+
                 # Protocols
                 for Item in Module.Protocols:
                     if Arch in Item.SupArchList:
                         pb.Protocols.append(Item.CName)
-                        
+
                 # Ppis
                 for Item in Module.Ppis:
                     if Arch in Item.SupArchList:
                         pb.Ppis.append(Item.CName)
-                
+
                 # Guids
                 for Item in Module.Guids:
                     if Arch in Item.SupArchList:
                         pb.Ppis.append(Item.CName)
-                
+
                 # Includes
                 for Item in Module.Includes:
                     if Arch in Item.SupArchList:
-                        pb.Includes.append(NormPath(Item.FilePath))                
-                
+                        pb.Includes.append(NormPath(Item.FilePath))
+
                 # Packages
                 for Item in Module.PackageDependencies:
                     if Arch in Item.SupArchList:
-                        pb.Packages.append(NormPath(Item.FilePath))                        
+                        pb.Packages.append(NormPath(Item.FilePath))
 
                 # BuildOptions
                 for Item in Module.BuildOptions:
                     if Arch in Item.SupArchList:
                         pb.BuildOptions[(Item.ToolChainFamily, Item.ToolChain)] = Item.Option
                 self.FindBuildOptions(Arch, Inf, pb.BuildOptions)
-                
+
                 # Depex
                 for Item in Module.Depex:
                     if Arch in Item.SupArchList:
                         pb.Depex = pb.Depex + Item.Depex + ' '
                 pb.Depex = pb.Depex.strip()
-                
+
                 # LibraryClasses
                 for Item in Module.LibraryClasses:
                     if Arch in Item.SupArchList:
@@ -481,11 +483,11 @@ class WorkspaceBuild(object):
                                     pb.LibraryClasses[(Lib, Type)] = NormPath(Instance)
                         else:
                             # For Module
-                            Instance = self.FindLibraryClassInstanceOfModule(Lib, Arch, pb.ModuleType, Inf) 
+                            Instance = self.FindLibraryClassInstanceOfModule(Lib, Arch, pb.ModuleType, Inf)
                             if Instance == None:
                                 Instance = RecommendedInstance
                             pb.LibraryClasses[(Lib, pb.ModuleType)] = NormPath(Instance)
-                
+
                 # Pcds
                 for Item in Module.PcdCodes:
                     if Arch in Item.SupArchList:
@@ -493,11 +495,11 @@ class WorkspaceBuild(object):
                         Guid = Item.TokenSpaceGuidCName
                         Type = Item.ItemType
                         pb.Pcds[(Name, Guid)] = self.FindPcd(Arch, Inf, Name, Guid, Type, PcdsSet)
-                
+
                 # Add to database
                 self.Build[Arch].ModuleDatabase[Inf] = pb
                 pb = None
-    
+
     #
     # Update Libraries Of Platform Database
     #
@@ -532,7 +534,7 @@ class WorkspaceBuild(object):
 
     def UpdateLibrariesOfModule(self, Module, Arch):
         ModuleDatabase = self.Build[Arch].ModuleDatabase
-        
+
         ModuleType = Module.ModuleType
         LibraryConsumerList = [Module]
 
@@ -651,8 +653,8 @@ class WorkspaceBuild(object):
         #
         for m in LibraryList:
             if ConsumedByList[m] != [] and m in Constructor:
-                errorMessage = 'Module library [%s] with constructors have a cycle:\n\t' % str(m)
-                errorMessage += "\n\tconsumed by ".join([str(l) for l in ConsumedByList[m]])
+                errorMessage = 'Library [%s] with constructors has a cycle:' % str(m)
+                errorMessage += "\n\tconsumed by " + "\n\tconsumed by ".join([str(l) for l in ConsumedByList[m]])
                 raise AutoGenError(msg=errorMessage)
             if m not in SortedLibraryList:
                 SortedLibraryList.append(m)
@@ -705,7 +707,7 @@ class WorkspaceBuild(object):
     #
     def WorkspaceFile(self, Filename):
         return WorkspaceFile(self.WorkspaceDir, Filename)
-    
+
     #
     # If a module of a platform has its own override libraryclass but the libraryclass not defined in the module
     # Add this libraryclass to the module
@@ -728,7 +730,7 @@ class WorkspaceBuild(object):
             NewLib.LibraryClass = LibraryClass
             NewLib.SupModuleList = self.InfDatabase[NormPath(InstanceFilePath)].Module.Header.ModuleType.split()
             self.InfDatabase[NormPath(InstanceFilePath)].Module.Header.LibraryClass.append(NewLib)
-        
+
         #
         # Add it to LibraryClasses Section for the module which is using the library
         #
@@ -749,7 +751,7 @@ class WorkspaceBuild(object):
             Lib.LibraryClass = LibraryClass
             Lib.SupArchList = [Arch]
             self.InfDatabase[NormPath(InfFileName)].Module.LibraryClasses.append(Lib)
-            
+
     #
     # Create a Inf instance for input inf file and add it to InfDatabase
     #
@@ -761,10 +763,10 @@ class WorkspaceBuild(object):
                 self.InfDatabase[InfFileName] = Inf(File, True, True, self.WorkspaceDir)
         else:
             raise ParserError(FILE_NOT_FOUND, name = File)
-    
+
     #
     # Create a Dec instance for input dec file and add it to DecDatabase
-    #                
+    #
     def AddToDecDatabase(self, DecFileName):
         DecFileName = NormPath(DecFileName)
         File = self.WorkspaceFile(DecFileName)
@@ -773,7 +775,7 @@ class WorkspaceBuild(object):
                 self.DecDatabase[DecFileName] = Dec(File, True, True, self.WorkspaceDir)
         else:
             raise ParserError(FILE_NOT_FOUND, name = File)
-                
+
     #
     # Search PlatformBuildDatabase to find LibraryClass Instance for Module
     # Return the instance if found
@@ -791,10 +793,10 @@ class WorkspaceBuild(object):
                             if LibraryClass.Name == Lib:
                                 return NormPath(LibraryClass.FilePath)
         #
-        #Second find if exist in <LibraryClass> of <LibraryClasses> from dsc file            
+        #Second find if exist in <LibraryClass> of <LibraryClasses> from dsc file
         #
         return self.FindLibraryClassInstanceOfLibrary(Lib, Arch, ModuleType)
-            
+
     #
     # Search PlatformBuildDatabase to find LibraryClass Instance for Library
     # Return the instance if found
@@ -807,7 +809,7 @@ class WorkspaceBuild(object):
             elif (Lib, '') in self.Build[Arch].PlatformDatabase[Dsc].LibraryClasses:
                 return self.Build[Arch].PlatformDatabase[Dsc].LibraryClasses[(Lib, '')]
         return None
-            
+
     #
     # Search DscDatabase to find component definition of ModuleName
     # Override BuildOption if it is defined in component
@@ -824,7 +826,7 @@ class WorkspaceBuild(object):
                     if NormPath(Module.FilePath) == ModuleName:
                         for BuildOption in Module.ModuleSaBuildOption.BuildOptionList:
                             BuildOptions[(BuildOption.ToolChainFamily, BuildOption.ToolChain)] = BuildOption.Option
-                        
+
     #
     # Search platform database, package database, module database and PcdsSet from Fdf
     # Return found Pcd
@@ -853,7 +855,7 @@ class WorkspaceBuild(object):
                 IsOverrided = True
                 IsFoundInDsc = True
                 break
-        
+
         #
         # Second get information from package database
         #
@@ -866,9 +868,9 @@ class WorkspaceBuild(object):
                 IsFoundInDec = True
                 break
         if not IsFoundInDec:
-            ErrorMsg = "Pcd '%s' defined in module '%s' is not found in any package" % (Name, ModuleName) 
+            ErrorMsg = "Pcd '%s' defined in module '%s' is not found in any package" % (Name, ModuleName)
             raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-        
+
         #
         # Third get information from <Pcd> of <Compontents> from module database
         #
@@ -885,7 +887,7 @@ class WorkspaceBuild(object):
                                 IsFoundInDsc = True
                                 IsOverrided = True
                                 break
-        
+
         #
         # Last get information from PcdsSet defined by FDF
         #
@@ -893,16 +895,16 @@ class WorkspaceBuild(object):
             Value = PcdsSet[(Name, Guid)]
             IsFoundInDsc = True
             IsOverrided = True
-            
+
         #
         # Not found in any platform and fdf
         #
         if not IsFoundInDsc:
-            ErrorMsg = "Pcd '%s' defined in module '%s' is not found in any platform" % (Name, ModuleName) 
+            ErrorMsg = "Pcd '%s' defined in module '%s' is not found in any platform" % (Name, ModuleName)
             raise ParserError(PARSER_ERROR, msg = ErrorMsg)
 
         return PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, IsOverrided)
-    
+
     #
     # Search in InfDatabase, find the supmodulelist of the libraryclass
     #
@@ -910,7 +912,7 @@ class WorkspaceBuild(object):
         Name = LibraryClass.Name
         FilePath = NormPath(LibraryClass.FilePath)
         SupModuleList = copy.copy(LibraryClass.SupModuleList)
-        
+
         #
         # If the SupModuleList means all, remove overrided module types of platform
         #
@@ -940,7 +942,7 @@ class WorkspaceBuild(object):
                                     SupModuleList.remove(ModuleType)
 
         return SupModuleList
-    
+
     #
     # Check if the module is defined in <Compentent> of <Platform>
     #
@@ -956,7 +958,7 @@ class WorkspaceBuild(object):
                 for Item in Module.LibraryClasses.LibraryList:
                     if Inf == NormPath(Item.FilePath):
                         return True
-                
+
         return False
 
     #
@@ -969,83 +971,83 @@ class WorkspaceBuild(object):
         print 'SupArchList', ewb.SupArchList
         print 'BuildTarget', ewb.BuildTarget
         print 'SkuId', ewb.SkuId
-        
+
         for arch in ewb.SupArchList:
             print arch
             print 'Platform'
             for platform in ewb.Build[arch].PlatformDatabase.keys():
                 p = ewb.Build[arch].PlatformDatabase[platform]
-                print 'DescFilePath = ', p.DescFilePath     
-                print 'PlatformName = ', p.PlatformName     
-                print 'Guid = ', p.Guid                     
+                print 'DescFilePath = ', p.DescFilePath
+                print 'PlatformName = ', p.PlatformName
+                print 'Guid = ', p.Guid
                 print 'Version = ', p.Version
-                print 'OutputDirectory = ', p.OutputDirectory                
+                print 'OutputDirectory = ', p.OutputDirectory
                 print 'FlashDefinition = ', p.FlashDefinition
                 print 'SkuIds = ', p.SkuIds
                 print 'Modules = ', p.Modules
-                print 'LibraryClasses = ', p.LibraryClasses 
-                print 'Pcds = ', p.Pcds
-                for item in p.Pcds.keys():
-                    print p.Pcds[item]
-                print 'BuildOptions = ', p.BuildOptions
-                print ''   
-            # End of Platform
-        
-            print 'package'
-            for package in ewb.Build[arch].PackageDatabase.keys():
-                p = ewb.Build[arch].PackageDatabase[package]
-                print 'DescFilePath = ', p.DescFilePath    
-                print 'PackageName = ', p.PackageName     
-                print 'Guid = ', p.Guid                    
-                print 'Version = ', p.Version             
-                print 'Protocols = ', p.Protocols         
-                print 'Ppis = ', p.Ppis                    
-                print 'Guids = ', p.Guids                 
-                print 'Includes = ', p.Includes            
                 print 'LibraryClasses = ', p.LibraryClasses
                 print 'Pcds = ', p.Pcds
                 for item in p.Pcds.keys():
                     print p.Pcds[item]
-                print ''                    
+                print 'BuildOptions = ', p.BuildOptions
+                print ''
+            # End of Platform
+
+            print 'package'
+            for package in ewb.Build[arch].PackageDatabase.keys():
+                p = ewb.Build[arch].PackageDatabase[package]
+                print 'DescFilePath = ', p.DescFilePath
+                print 'PackageName = ', p.PackageName
+                print 'Guid = ', p.Guid
+                print 'Version = ', p.Version
+                print 'Protocols = ', p.Protocols
+                print 'Ppis = ', p.Ppis
+                print 'Guids = ', p.Guids
+                print 'Includes = ', p.Includes
+                print 'LibraryClasses = ', p.LibraryClasses
+                print 'Pcds = ', p.Pcds
+                for item in p.Pcds.keys():
+                    print p.Pcds[item]
+                print ''
             # End of Package
-            
+
             print 'module'
             for module in ewb.Build[arch].ModuleDatabase.keys():
                 p = ewb.Build[arch].ModuleDatabase[module]
-                print 'DescFilePath = ', p.DescFilePath                    
-                print 'BaseName = ', p.BaseName                         
-                print 'ModuleType = ', p.ModuleType                     
-                print 'Guid = ', p.Guid                                 
+                print 'DescFilePath = ', p.DescFilePath
+                print 'BaseName = ', p.BaseName
+                print 'ModuleType = ', p.ModuleType
+                print 'Guid = ', p.Guid
                 print 'Version = ', p.Version
                 print 'CustomMakefile = ', p.CustomMakefile
                 print 'Specification = ', p.Specification
                 print 'PcdIsDriver = ', p.PcdIsDriver
                 for Lib in p.LibraryClass:
                     print 'LibraryClassDefinition = ', Lib.LibraryClass, 'SupModList = ', Lib.SupModList
-                print 'ModuleEntryPointList = ', p.ModuleEntryPointList 
+                print 'ModuleEntryPointList = ', p.ModuleEntryPointList
                 print 'ModuleUnloadImageList = ', p.ModuleUnloadImageList
-                print 'ConstructorList = ', p.ConstructorList            
-                print 'DestructorList = ', p.DestructorList             
-                                                                         
+                print 'ConstructorList = ', p.ConstructorList
+                print 'DestructorList = ', p.DestructorList
+
                 print 'Binaries = '
                 for item in p.Binaries:
                     print item.BinaryFile, item.FeatureFlag
                 print 'Sources = '
                 for item in p.Sources:
                     print item.SourceFile
-                print 'LibraryClasses = ', p.LibraryClasses             
-                print 'Protocols = ', p.Protocols                        
-                print 'Ppis = ', p.Ppis                                 
-                print 'Guids = ', p.Guids                                
-                print 'Includes = ', p.Includes                         
-                print 'Packages = ', p.Packages                         
+                print 'LibraryClasses = ', p.LibraryClasses
+                print 'Protocols = ', p.Protocols
+                print 'Ppis = ', p.Ppis
+                print 'Guids = ', p.Guids
+                print 'Includes = ', p.Includes
+                print 'Packages = ', p.Packages
                 print 'Pcds = ', p.Pcds
                 for item in p.Pcds.keys():
                     print p.Pcds[item]
                 print 'BuildOptions = ', p.BuildOptions
                 print 'Depex = ', p.Depex
                 print ''
-            # End of Module    
+            # End of Module
 
 #
 # This acts like the main() function for the script, unless it is 'import'ed into another

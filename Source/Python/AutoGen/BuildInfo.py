@@ -47,7 +47,7 @@ class ModuleBuildInfo(BuildInfo):
         self.BaseName = ""
         self.FileBase = ""
         self.FileExt = ""
-        
+
         self.WorkspaceDir = ""
         self.SourceDir = ""
         self.BuildDir = ""
@@ -85,7 +85,7 @@ class PackageBuildInfo(BuildInfo):
         self.Name       = package.PackageName
         self.Guid       = package.Guid
         self.Version    = package.Version
-        
+
         self.SourceDir = ""
         self.IncludePathList = []
 
@@ -110,12 +110,12 @@ class PlatformBuildInfo(BuildInfo):
         self.LibraryDir = ""
         self.FvDir = ""
         self.MakefileDir = ""
-        self.FdfFileList = []
+        self.FdfFile = ""
 
         self.ModuleAutoGenList = []
         self.LibraryAutoGenList = []
         self.PackageList = []
-        
+
         self.PcdTokenNumber = {}    # (TokenCName, TokenSpaceGuidCName) : GeneratedTokenNumber
         self.DynamicPcdList = []    # [(TokenCName1, TokenSpaceGuidCName1), (TokenCName2, TokenSpaceGuidCName2), ...]
 

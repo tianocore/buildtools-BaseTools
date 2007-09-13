@@ -17,6 +17,9 @@
 import os
 import sys
 import string
+import thread
+import threading
+import time
 
 ## callback routine for processing variable option
 #
@@ -93,17 +96,27 @@ def GuidStructureStringToGuidValueName(GuidValue):
             int(guidValueList[10], 16)
             )
 
-def SaveFileOnChange(file, content):
-    f = None
-    if os.path.exists(file):
-        f = open(file, "r")
-        if content == f.read():
-            f.close()
-            return
-        f.close()
-    f = open(file, "w")
-    f.write(content)
-    f.close()
+def CreateDirectory(Directory):
+    if not os.access(Directory, os.F_OK):
+        os.makedirs(Directory)
+
+def SaveFileOnChange(File, Content, IsBinaryFile=False):
+    if IsBinaryFile:
+        BinaryFlag = 'b'
+    else:
+        BinaryFlag = ''
+    Fd = None
+    if os.path.exists(File):
+        Fd = open(File, "r"+BinaryFlag)
+        if Content == Fd.read():
+            Fd.close()
+            return False
+        Fd.close()
+    CreateDirectory(os.path.dirname(File))
+    Fd = open(File, "w"+BinaryFlag)
+    Fd.write(Content)
+    Fd.close()
+    return True
 
 class TemplateString(object):
     def __init__(self):
@@ -115,39 +128,67 @@ class TemplateString(object):
     def Append(self, AppendString, Dictionary=None):
         if Dictionary == None:
             self.String += AppendString
-        else:
-            while AppendString.find('${BEGIN}') >= 0:
-                Start = AppendString.find('${BEGIN}')
-                End   = AppendString.find('${END}')
-                SubString = AppendString[AppendString.find('${BEGIN}'):AppendString.find('${END}')+6]
+            return
 
-                RepeatTime = -1
-                NewDict = {"BEGIN":"", "END":""}
-                for Key in Dictionary:
-                    if SubString.find('$' + Key) >= 0 or SubString.find('${' + Key + '}') >= 0:
-                        Value = Dictionary[Key]
-                        if type(Value) != type([]):
-                            NewDict[Key] = Value
-                            continue
-                        if RepeatTime < 0:
-                            RepeatTime = len(Value)
-                        elif RepeatTime != len(Value):
-                            raise AutoGenError(msg=Key + " has different repeat time from others!")
-                        NewDict[Key] = ""
+        while AppendString.find('${BEGIN}') >= 0:
+            Start = AppendString.find('${BEGIN}')
+            End   = AppendString.find('${END}')
+            SubString = AppendString[AppendString.find('${BEGIN}'):AppendString.find('${END}')+6]
 
-                NewString = ''
-                for Index in range(0, RepeatTime):
-                    for Key in NewDict:
-                        if Key == "BEGIN" or Key == "END" or type(Dictionary[Key]) != type([]):
-                            continue
-                        #print "###",Key
-                        NewDict[Key] = Dictionary[Key][Index]
-                    NewString += string.Template(SubString).safe_substitute(NewDict)
-                AppendString = AppendString[0:Start] + NewString + AppendString[End + 6:]
-
-            NewDict = {}
+            RepeatTime = -1
+            NewDict = {"BEGIN":"", "END":""}
             for Key in Dictionary:
-                if type(Dictionary[Key]) == type([]):
-                    continue
-                NewDict[Key] = Dictionary[Key]
-            self.String += string.Template(AppendString).safe_substitute(NewDict)
+                if SubString.find('$' + Key) >= 0 or SubString.find('${' + Key + '}') >= 0:
+                    Value = Dictionary[Key]
+                    if type(Value) != type([]):
+                        NewDict[Key] = Value
+                        continue
+                    if RepeatTime < 0:
+                        RepeatTime = len(Value)
+                    elif RepeatTime != len(Value):
+                        raise AutoGenError(msg=Key + " has different repeat time from others!")
+                    NewDict[Key] = ""
+
+            NewString = ''
+            for Index in range(0, RepeatTime):
+                for Key in NewDict:
+                    if Key == "BEGIN" or Key == "END" or type(Dictionary[Key]) != type([]):
+                        continue
+                    NewDict[Key] = Dictionary[Key][Index]
+                NewString += string.Template(SubString).safe_substitute(NewDict)
+            AppendString = AppendString[0:Start] + NewString + AppendString[End + 6:]
+
+        NewDict = {}
+        for Key in Dictionary:
+            if type(Dictionary[Key]) == type([]):
+                continue
+            NewDict[Key] = Dictionary[Key]
+        self.String += string.Template(AppendString).safe_substitute(NewDict)
+
+class Progressor:
+    def __init__(self, OpenMessage="", CloseMessage="", ProgressChar='.', Interval=1):
+        self.StopFlag = threading.Event()
+        self.StopFlag.clear()
+
+        self.ProgressThread = None
+        self.PromptMessage = OpenMessage
+        self.CodaMessage = CloseMessage
+        self.ProgressChar = ProgressChar
+        self.Interval = Interval
+
+    def Start(self):
+        self.ProgressThread = threading.Thread(target=self._ProgressThreadEntry)
+        self.ProgressThread.setDaemon(True)
+        self.ProgressThread.start()
+
+    def Stop(self):
+        self.StopFlag.set()
+        self.ProgressThread.join()
+        self.ProgressThread = None
+
+    def _ProgressThreadEntry(self):
+        print self.PromptMessage,
+        while not self.StopFlag.isSet():
+            time.sleep(self.Interval)
+            print self.ProgressChar,
+        print self.CodaMessage
