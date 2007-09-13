@@ -235,7 +235,7 @@ class WorkspaceBuild(object):
                     #
                     for Lib in Item.LibraryClasses.LibraryList:
                         self.AddToInfDatabase(Lib.FilePath)
-                        self.UpdateLibraryClassOfModule(Module, Lib.Name, Arch)
+                        self.UpdateLibraryClassOfModule(Module, Lib.Name, Arch, Lib.FilePath)
         
         #
         # Parse module to get package
@@ -710,7 +710,28 @@ class WorkspaceBuild(object):
     # If a module of a platform has its own override libraryclass but the libraryclass not defined in the module
     # Add this libraryclass to the module
     #
-    def UpdateLibraryClassOfModule(self, InfFileName, LibraryClass, Arch):
+    def UpdateLibraryClassOfModule(self, InfFileName, LibraryClass, Arch, InstanceFilePath):
+        #
+        # Update the library instance itself to add this libraryclass name
+        #
+        LibList = self.InfDatabase[NormPath(InstanceFilePath)].Module.Header.LibraryClass
+        NotFound = True
+        for Lib in LibList:
+            #
+            # Find this LibraryClass
+            #
+            if Lib.LibraryClass == LibraryClass:
+                NotFound = False;
+                break;
+        if NotFound:
+            NewLib = LibraryClassClass()
+            NewLib.LibraryClass = LibraryClass
+            NewLib.SupModuleList = self.InfDatabase[NormPath(InstanceFilePath)].Module.Header.ModuleType.split()
+            self.InfDatabase[NormPath(InstanceFilePath)].Module.Header.LibraryClass.append(NewLib)
+        
+        #
+        # Add it to LibraryClasses Section for the module which is using the library
+        #
         LibList = self.InfDatabase[NormPath(InfFileName)].Module.LibraryClasses
         NotFound = True
         for Lib in LibList:

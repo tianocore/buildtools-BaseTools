@@ -362,8 +362,7 @@ class Dsc(DscObject):
             LibName = ''
             LibFile = ''
             if len(List) == 1:
-                LibName = uuid.uuid4()
-                print LibName
+                LibName = str(uuid.uuid4())
                 LibFile = List[0]
             elif len(List) == 2:
                 LibName = List[0]
