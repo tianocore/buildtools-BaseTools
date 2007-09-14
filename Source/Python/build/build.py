@@ -123,8 +123,8 @@ class Build():
             if self.Opt.FDFFILE[0] == '.':
                 EdkLogger.quiet("ERROR: Please specify a absolute path or a WORKSPACE realtive path for FDF file.")
                 self.isexit(1)
-            if os.path.isfile(os.path.abspath(self.Opt.FDFFILE)) == True:
-                (filename, ext) = os.path.splitext(os.path.abspath(self.Opt.FDFFILE))
+            if os.path.isabs(self.Opt.FDFFILE) == True:
+                (filename, ext) = os.path.splitext(self.Opt.FDFFILE)
                 if ext.lower() != '.fdf':
                     EdkLogger.quiet("ERROR: The input file: %s is not a FDF file!" % self.Opt.FDFFILE)
                     self.isexit(1)
@@ -466,6 +466,7 @@ def main():
     build = Build(opt, args)
     StatusCode = build.CheckEnvVariable()
     build.isexit(StatusCode)
+
 #
 # Check target.txt and tools_def.txt and Init them
 #
@@ -474,13 +475,13 @@ def main():
         build.isexit(StatusCode)
         if os.path.isfile(os.path.normpath(os.path.join(build.WorkSpace, build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF]))) == True:
             build.ToolDef.LoadToolDefFile(os.path.normpath(os.path.join(build.WorkSpace, build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])))
-            build.isexit(StatusCode)
         else:
-            EdkLogger.info("ERROR: %s does not exist." % os.path.normpath(os.path.join(build.WorkSpace, build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])))
+            EdkLogger.quiet("ERROR: %s does not exist." % os.path.normpath(os.path.join(build.WorkSpace, build.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])))
             build.isexit(1)
     else:
-        EdkLogger.info("ERROR: %s does not exist." % os.path.normpath(os.path.join(build.WorkSpace, 'Conf\\target.txt')))
+        EdkLogger.quiet("ERROR: %s does not exist." % os.path.normpath(os.path.join(build.WorkSpace, 'Conf\\target.txt')))
         build.isexit(1)
+
 #
 # Merge the Build Options except input file(DSCFILE, FDFFILE)
 #
@@ -565,16 +566,15 @@ def main():
         if build.Opt.DSCFILE[0] == '.':
             EdkLogger.quiet("ERROR: Please specify an absolute path or a WORKSPACE realtive path for the PLATFORM (.dsc) file.")
             build.isexit(1)
-        if os.path.isfile(os.path.abspath(build.Opt.DSCFILE)) == True:
-            realpath = os.path.abspath(build.Opt.DSCFILE)
-            (filename, ext) = os.path.splitext(realpath)
+        if os.path.isabs(build.Opt.DSCFILE) == True:
+            (filename, ext) = os.path.splitext(build.Opt.DSCFILE)
             if ext.lower() != '.dsc':
                 EdkLogger.quiet("ERROR: The input file: %s is not a DSC file!" % build.Opt.DSCFILE)
                 build.isexit(1)
             if build.WorkSpace[len(build.WorkSpace)-1] == '\\' or build.WorkSpace[len(build.WorkSpace)-1] == '/':
-                build.Opt.DSCFILE = realpath[len(build.WorkSpace):]
+                build.Opt.DSCFILE = build.Opt.DSCFILE[len(build.WorkSpace):]
             else:
-                build.Opt.DSCFILE = realpath[len(build.WorkSpace)+1:]
+                build.Opt.DSCFILE = build.Opt.DSCFILE[len(build.WorkSpace)+1:]
         elif os.path.isfile(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE))) == True:
             (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(build.WorkSpace, build.Opt.DSCFILE)))
             if ext.lower() != '.dsc':
