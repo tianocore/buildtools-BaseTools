@@ -1,4 +1,4 @@
-class SequentialDict(dict):
+class sdict(dict):
     def __init__(self):
         self._key_list = []
 
@@ -9,7 +9,7 @@ class SequentialDict(dict):
 
     def __delitem__(self, key):
         self._key_list.remove(key)
-        del self[key]
+        dict.__delitem__(self, key)
     #
     # used in "for k in dict" loop to ensure the correct order
     #
@@ -58,23 +58,23 @@ class SequentialDict(dict):
 
     def pop(self, key, *dv):
         value = None
-        if len(dv) == 0 or key in self._key_list:
+        if key in self._key_list:
             value = self[key]
-            del self[key]
-        else:
+            dict.__delitem__(self, key)
+        elif len(dv) != 0 :
             value = kv[0]
         return value
 
     def popitem(self):
         key = self._key_list[0]
         value = self[key]
-        del self[key]
+        dict.__delitem__(self, key)
         return key, value
 
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
 if __name__ == '__main__':
-    sd = SequentialDict()
+    sd = sdict()
     print "#### 11111111111 ###"
     sd["abc"] = 1
     sd['efg'] = 2
@@ -140,3 +140,8 @@ if __name__ == '__main__':
     print "itervalues() =",[v for v in sd.itervalues()]
     print "iteritems() =",[i for i in sd.iteritems()]
     print sd
+
+    if sdict() == {}:
+        print "Empty sdict equals to {}. No need to override the __eq__()"
+    else:
+        print "Empty sdict doesn't equal to {}. sdict needs to override the __eq__()"

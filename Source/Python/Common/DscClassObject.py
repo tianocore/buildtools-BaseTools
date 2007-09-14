@@ -11,7 +11,7 @@
 #This file is used to define each component of DSC file
 #
 
-import os, uuid
+import os
 from String import *
 from DataType import *
 from Identification import *
@@ -59,13 +59,15 @@ class DscContents(DscObject):
         self.PcdsFeatureFlag = []
         self.PcdsDynamicDefault = []
         self.PcdsDynamicVpd = []
-        self.PcdsDynamicHii = []       
+        self.PcdsDynamicHii = []
         self.PcdsDynamicExDefault = []
         self.PcdsDynamicExVpd = []
-        self.PcdsDynamicExHii = []                
+        self.PcdsDynamicExHii = []
         self.BuildOptions = []
 
 class Dsc(DscObject):
+    _NullClassIndex = 0
+
     def __init__(self, Filename = None, IsMergeAllArches = False, IsToPlatform = False, WorkspaceDir = None):
         self.Identification = Identification()
         self.Defines = DscDefines()
@@ -76,7 +78,7 @@ class Dsc(DscObject):
 
         for Arch in DataType.ARCH_LIST_FULL:
             self.Contents[Arch] = DscContents()
-        
+
         self.KeyList = [
             TAB_SKUIDS, TAB_LIBRARIES, TAB_LIBRARY_CLASSES, TAB_BUILD_OPTIONS, TAB_PCDS_FIXED_AT_BUILD_NULL, \
             TAB_PCDS_PATCHABLE_IN_MODULE_NULL, TAB_PCDS_FEATURE_FLAG_NULL, \
@@ -84,16 +86,16 @@ class Dsc(DscObject):
             TAB_PCDS_DYNAMIC_EX_DEFAULT_NULL, TAB_PCDS_DYNAMIC_EX_HII_NULL, TAB_PCDS_DYNAMIC_EX_VPD_NULL, \
             TAB_COMPONENTS
         ]
-        
+
         if Filename != None:
             self.LoadDscFile(Filename)
-            
+
         if IsMergeAllArches:
             self.MergeAllArches()
-        
+
         if IsToPlatform:
             self.DscToPlatform()
-        
+
     def ParseDsc(self, Lines, Key, KeyField):
         newKey = SplitModuleType(Key)
         if newKey[0].upper().find(TAB_LIBRARY_CLASSES.upper()) != -1:
@@ -104,19 +106,19 @@ class Dsc(DscObject):
             GetDynamics(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
         else:
             GetMultipleValuesOfKeyFromLines(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
-    
+
     def MergeAllArches(self):
         for key in self.KeyList:
             for arch in DataType.ARCH_LIST:
                 Command = "self.Contents[arch]." + key + ".extend(" + "self.Contents['" + DataType.TAB_ARCH_COMMON + "']." + key + ")"
                 eval(Command)
-            
+
     def LoadDscFile(self, Filename):
         (Filepath, Name) = os.path.split(Filename)
         self.Identification.FileName = Name
         self.Identification.FileFullPath = Filename
         self.Identification.FileRelativePath = Filepath
-        
+
         F = open(Filename, 'r').read()
         PreCheck(Filename, F, self.KeyList)
         Sects = F.split(DataType.TAB_SECTION_START)
@@ -153,17 +155,17 @@ class Dsc(DscObject):
         self.Platform.Header.FullPath = self.Identification.FileFullPath
         self.Platform.Header.DscSpecification = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_DSC_SPECIFICATION][0]
         File = self.Platform.Header.FullPath
-        
+
         self.Platform.Header.SkuIdName = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_SKUID_IDENTIFIER]
         self.Platform.Header.SupArchList = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_SUPPORTED_ARCHITECTURES]
         self.Platform.Header.BuildTargets = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_BUILD_TARGETS]
         self.Platform.Header.OutputDirectory = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_OUTPUT_DIRECTORY][0]
         self.Platform.Header.BuildNumber = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_BUILD_NUMBER][0]
         self.Platform.Header.MakefileName = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_MAKEFILE_NAME][0]
-        
+
         self.Platform.Header.BsBaseAddress = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_BS_BASE_ADDRESS][0]
         self.Platform.Header.RtBaseAddress = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_RT_BASE_ADDRESS][0]
-        
+
         #
         # Define of Defines
         #
@@ -174,11 +176,11 @@ class Dsc(DscObject):
                     RaiseParserError(Item, 'DEFINE of Defines', File, 'DEFINE <MACRO> = <PATH>')
                 else:
                     self.Platform.Header.Define[CleanString(List[0])] = CleanString(List[1])
-        
+
         Fdf = PlatformFlashDefinitionFileClass()
         Fdf.FilePath = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_FLASH_DEFINITION][0]
         self.Platform.FlashDefinitionFile = Fdf
-        
+
         #
         # BuildOptions
         # [<Family>:]<ToolFlag>=Flag
@@ -194,13 +196,13 @@ class Dsc(DscObject):
                         MergeArches(BuildOptions, GetBuildOption(NewItem, File), Arch)
                     continue
                 MergeArches(BuildOptions, GetBuildOption(Item, File), Arch)
-        
+
         self.Platform.BuildOptions.IncludeFiles = IncludeFiles
         for Key in BuildOptions.keys():
             BuildOption = BuildOptionClass(Key[0], Key[1], Key[2])
             BuildOption.SupArchList = BuildOptions[Key]
             self.Platform.BuildOptions.BuildOptionList.append(BuildOption)
-        
+
         #
         # SkuIds
         # <Integer>|<UiName>
@@ -225,7 +227,7 @@ class Dsc(DscObject):
                 else:
                     self.Platform.SkuInfos.SkuInfoList[List[1]] = List[0]
         self.Platform.SkuInfos.IncludeFiles = IncludeFiles
-        
+
         #
         # Libraries
         # <PathAndFilename>
@@ -255,7 +257,7 @@ class Dsc(DscObject):
             Library.Define = Defines
             Library.SupArchList = Libraries[Key]
             self.Platform.Libraries.LibraryList.append(Library)
-        
+
         #
         # LibraryClasses
         # <LibraryClassKeyWord>|<LibraryInstance>
@@ -288,7 +290,7 @@ class Dsc(DscObject):
             Library.Define = Defines
             Library.SupArchList = LibraryClasses[Key]
             self.Platform.LibraryClasses.LibraryList.append(Library)
-        
+
         #Pcds
         self.GenPcds(DataType.TAB_PCDS_FIXED_AT_BUILD, File)
         self.GenPcds(DataType.TAB_PCDS_PATCHABLE_IN_MODULE, File)
@@ -299,7 +301,7 @@ class Dsc(DscObject):
         self.GenDynamicHiiPcds(DataType.TAB_PCDS_DYNAMIC_EX_HII, File)
         self.GenDynamicVpdPcds(DataType.TAB_PCDS_DYNAMIC_VPD, File)
         self.GenDynamicVpdPcds(DataType.TAB_PCDS_DYNAMIC_EX_VPD, File)
-        
+
         #Components
         Components = {}
         IncludeFiles = {}
@@ -327,9 +329,9 @@ class Dsc(DscObject):
             Key.Define = Defines
             Key.SupArchList = Components[Key]
             self.Platform.Modules.ModuleList.append(Key)
-        
+
     #End of DscToPlatform
-    
+
     #
     # Gen Library Class
     #
@@ -343,7 +345,7 @@ class Dsc(DscObject):
             if Item[1] == ['']:
                 Item[1] = DataType.SUP_MODULE_LIST
         return (List[0], List[1]) + tuple(Item[1])
-    
+
     #
     # Gen Component
     #
@@ -359,16 +361,13 @@ class Dsc(DscObject):
         Component.ExecFilePath = ExecFilename
         for Lib in LibraryClasses:
             List = GetSplitValueList(Lib)
-            LibName = ''
-            LibFile = ''
-            if len(List) == 1:
-                LibName = str(uuid.uuid4())
-                LibFile = List[0]
-            elif len(List) == 2:
-                LibName = List[0]
-                LibFile = List[1]
-            else:
+            if len(List) != 2:
                 RaiseParserError(Lib, 'LibraryClasses', ContainerFile, '[<ClassName>|]<InfFilename>')
+            LibName = List[0]
+            LibFile = List[1]
+            if LibName == "" or LibName == "NULL":
+                LibName = "NULL%d" % self._NullClassIndex
+                self._NullClassIndex += 1
             CheckFileType(LibFile, '.Inf', ContainerFile, 'library instance of component ', Lib)
             CheckFileExist(self.WorkspaceDir, LibFile, ContainerFile, 'library instance of component', Lib)
             Component.LibraryClasses.LibraryList.append(PlatformLibraryClass(LibName, LibFile))
@@ -378,14 +377,14 @@ class Dsc(DscObject):
         for Pcd in Pcds:
             Type = Pcd[0]
             List = GetSplitValueList(Pcd[1])
-            
+
             #
             # For FeatureFlag
             #
             if Type == DataType.TAB_PCDS_FEATURE_FLAG:
                 if len(List) != 2:
                     RaiseParserError(Pcd[1], 'Components', ContainerFile, '<PcdTokenSpaceGuidCName>.<PcdTokenName>|TRUE/FALSE')
-                
+
                 CheckPcdTokenInfo(List[0], 'Components', ContainerFile)
                 TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
                 Component.PcdBuildDefinitions.append(PcdClass(TokenInfo[1], '', TokenInfo[0], '', '', List[1], Type, [], {}, []))
@@ -400,21 +399,21 @@ class Dsc(DscObject):
                 CheckPcdTokenInfo(List[0], 'Components', ContainerFile)
                 TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
                 Component.PcdBuildDefinitions.append(PcdClass(TokenInfo[1], '', TokenInfo[0], '', List[2], List[1], Type, [], {}, []))
-            
+
             #
             # For Dynamic or DynamicEx
             #
             if Type == DataType.TAB_PCDS_DYNAMIC or Type == DataType.TAB_PCDS_DYNAMIC_EX:
                 if len(List) != 1:
                     RaiseParserError(Pcd[1], 'Components', ContainerFile, '<PcdTokenSpaceGuidCName>.<PcdTokenName>')
-                
+
                 CheckPcdTokenInfo(List[0], 'Components', ContainerFile)
                 TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
-                Component.PcdBuildDefinitions.append(PcdClass(TokenInfo[1], '', TokenInfo[0], '', '', '', Type, [], {}, []))                        
-        
+                Component.PcdBuildDefinitions.append(PcdClass(TokenInfo[1], '', TokenInfo[0], '', '', '', Type, [], {}, []))
+
         return Component
     #End of GenComponent
-    
+
     #
     # Gen FeatureFlagPcds
     # <PcdTokenSpaceGuidCName>.<TokenCName>|TRUE/FALSE
@@ -427,12 +426,12 @@ class Dsc(DscObject):
                 Items = self.Contents[Arch].PcdsFeatureFlag
             else:
                 pass
-            
+
             for Item in Items:
                 List = GetSplitValueList(Item)
                 if len(List) != 2:
                     RaiseParserError(Item, 'Pcds' + Type, ContainerFile, '<PcdTokenSpaceGuidCName>.<TokenCName>|TRUE/FALSE')
-                
+
                 CheckPcdTokenInfo(List[0], 'Pcds' + Type, ContainerFile)
                 TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
                 MergeArches(Pcds, (TokenInfo[1], TokenInfo[0], List[1], Type), Arch)
@@ -440,7 +439,7 @@ class Dsc(DscObject):
             Pcd = PcdClass(Key[0], '', Key[1], '', '', Key[2], Key[3], [], {}, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
-    
+
     #
     # Gen Pcds
     # <PcdTokenSpaceGuidCName>.<TokenCName>|<Value>[|<Type>|<MaximumDatumSize>]
@@ -455,12 +454,12 @@ class Dsc(DscObject):
                 Items = self.Contents[Arch].PcdsFixedAtBuild
             else:
                 pass
-            
+
             for Item in Items:
                 List = GetSplitValueList(Item + DataType.TAB_VALUE_SPLIT * 2)
                 if len(List) < 4:
                     RaiseParserError(Item, 'Pcds' + Type, ContainerFile, '<PcdTokenSpaceGuidCName>.<TokenCName>|<Value>[|<Type>|<MaximumDatumSize>]')
-                    
+
                 CheckPcdTokenInfo(List[0], 'Pcds' + Type, ContainerFile)
                 TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
                 MergeArches(Pcds, (TokenInfo[1], TokenInfo[0], List[1], List[2], List[3], Type), Arch)
@@ -468,7 +467,7 @@ class Dsc(DscObject):
             Pcd = PcdClass(Key[0], '', Key[1], Key[3], Key[4], Key[2], Key[5], [], {}, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
-    
+
     #
     # Gen SkuInfoList
     #
@@ -481,9 +480,9 @@ class Dsc(DscObject):
                 return False, Item
             Sku = SkuInfoClass(Item, SkuInfo[Item], VariableName, VariableGuid, VariableOffset, HiiDefaultValue, VpdOffset, DefaultValue)
             SkuInfoList[Item] = Sku
-        
+
         return True, SkuInfoList
-            
+
     #
     # Gen DynamicDefaultPcds
     # <PcdTokenSpaceGuidCName>.<TokenCName>|<Value>[|<DatumTyp>[|<MaxDatumSize>]]
@@ -499,24 +498,24 @@ class Dsc(DscObject):
                 Items = self.Contents[Arch].PcdsDynamicExDefault
             else:
                 pass
-            
+
             for Item in Items:
                 List = GetSplitValueList(Item[0] + DataType.TAB_VALUE_SPLIT * 2)
                 if len(List) < 4 or len(List) > 8:
                     RaiseParserError(Item[0], 'Pcds' + Type, ContainerFile, '<PcdTokenSpaceGuidCName>.<TokenCName>|<Value>[|<DatumTyp>[|<MaxDatumSize>]]')
-                
+
                 CheckPcdTokenInfo(List[0], 'Pcds' + Type, ContainerFile)
                 TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
                 MergeArches(Pcds, (TokenInfo[1], TokenInfo[0], List[1], List[2], List[3], Type), Arch)
         for Key in Pcds:
             (Status, SkuInfoList) = self.GenSkuInfoList(Item[1], self.Platform.SkuInfos.SkuInfoList, '', '', '', '', '', Key[2])
             if Status == False:
-                ErrorMsg = "SKUID '%s' of '%s' not defined in file '%s'" % (SkuInfoList, Type, self.Platform.Header.FullPath) 
+                ErrorMsg = "SKUID '%s' of '%s' not defined in file '%s'" % (SkuInfoList, Type, self.Platform.Header.FullPath)
                 raise ParserError(PARSER_ERROR, msg = ErrorMsg)
             Pcd = PcdClass(Key[0], '', Key[1], Key[3], Key[4], Key[2], Key[5], [], SkuInfoList, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
-         
+
     #
     # Gen DynamicHiiPcds
     # <PcdTokenSpaceGuidCName>.<TokenCName>|<String>|<VariableGuidCName>|<VariableOffset>[|<DefaultValue>[|<MaximumDatumSize>]]
@@ -532,24 +531,24 @@ class Dsc(DscObject):
                 Items = self.Contents[Arch].PcdsDynamicExHii
             else:
                 pass
-            
+
             for Item in Items:
                 List = GetSplitValueList(Item[0] + DataType.TAB_VALUE_SPLIT * 2)
                 if len(List) < 6:
                     RaiseParserError(Item[0], 'Pcds' + Type, ContainerFile, '<PcdTokenSpaceGuidCName>.<TokenCName>|<String>|<VariableGuidCName>|<VariableOffset>[|<DefaultValue>[|<MaximumDatumSize>]]')
-                
+
                 CheckPcdTokenInfo(List[0], 'Pcds' + Type, ContainerFile)
                 TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
                 MergeArches(Pcds, (TokenInfo[1], TokenInfo[0], List[1], List[2], List[3], List[4], List[5], Type), Arch)
         for Key in Pcds:
             (Status, SkuInfoList) = self.GenSkuInfoList(Item[1], self.Platform.SkuInfos.SkuInfoList, Key[2], Key[3], Key[4], Key[5], '', '')
             if Status == False:
-                ErrorMsg = "SKUID '%s' of '%s' not defined in file '%s'" % (SkuInfoList, Type, self.Platform.Header.FullPath) 
+                ErrorMsg = "SKUID '%s' of '%s' not defined in file '%s'" % (SkuInfoList, Type, self.Platform.Header.FullPath)
                 raise ParserError(PARSER_ERROR, msg = ErrorMsg)
             Pcd = PcdClass(Key[0], '', Key[1], '', Key[6], Key[5], Key[7], [], SkuInfoList, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
-    
+
     #
     # Gen DynamicVpdPcds
     # <PcdTokenSpaceGuidCName>.<TokenCName>|<VpdOffset>[|<MaximumDatumSize>]
@@ -565,24 +564,24 @@ class Dsc(DscObject):
                 Items = self.Contents[Arch].PcdsDynamicExVpd
             else:
                 pass
-            
+
             for Item in Items:
                 List = GetSplitValueList(Item[0] + DataType.TAB_VALUE_SPLIT)
                 if len(List) < 3:
                     RaiseParserError(Item[0], 'Pcds' + Type, ContainerFile, '<PcdTokenSpaceGuidCName>.<TokenCName>|<VpdOffset>[|<MaximumDatumSize>]')
-                
+
                 CheckPcdTokenInfo(List[0], 'Pcds' + Type, ContainerFile)
                 TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
                 MergeArches(Pcds, (TokenInfo[1], TokenInfo[0], List[1], List[2], Type), Arch)
         for Key in Pcds:
             (Status, SkuInfoList) = self.GenSkuInfoList(Item[1], self.Platform.SkuInfos.SkuInfoList, '', '', '', '', Key[2], '')
             if Status == False:
-                ErrorMsg = "SKUID '%s' of '%s' not defined in file '%s'" % (SkuInfoList, Type, self.Platform.Header.FullPath) 
+                ErrorMsg = "SKUID '%s' of '%s' not defined in file '%s'" % (SkuInfoList, Type, self.Platform.Header.FullPath)
                 raise ParserError(PARSER_ERROR, msg = ErrorMsg)
             Pcd = PcdClass(Key[0], '', Key[1], '', Key[3], '', Key[4], [], SkuInfoList, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
-    
+
     #
     # Show detailed information of Dsc
     #
@@ -596,7 +595,7 @@ class Dsc(DscObject):
                                     key + DataType.TAB_SPLIT + arch + \
                                     "' + TAB_SECTION_END, self.Contents[arch]." + key + ')'
                 eval(Command)
-    
+
     #
     # Show detailed information of Platform
     #
@@ -642,7 +641,7 @@ class Dsc(DscObject):
                 print '\t\tBuildOption:', Bo.ToolChainFamily, Bo.ToolChain, Bo.Option
             for Pcd in Item.PcdBuildDefinitions:
                 print '\t\tPcd:', Pcd.CName, Pcd.TokenSpaceGuidCName, Pcd.MaxDatumSize, Pcd.DefaultValue, Pcd.ItemType
-    
+
 if __name__ == '__main__':
     w = os.getenv('WORKSPACE')
     f = os.path.join(w, 'Nt32Pkg/Nt32Pkg.dsc')
