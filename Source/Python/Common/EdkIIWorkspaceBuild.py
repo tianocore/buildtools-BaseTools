@@ -664,7 +664,7 @@ class WorkspaceBuild(object):
         # The DAG Topo sort produces the destructor order, so the list of constructors must generated in the reverse order
         #
         SortedLibraryList.reverse()
-        Module.LibraryClasses = {}
+        Module.LibraryClasses = sdict()
         for L in SortedLibraryList:
             for Lc in L.LibraryClass:
                 Module.LibraryClasses[Lc.LibraryClass, ModuleType] = str(L)

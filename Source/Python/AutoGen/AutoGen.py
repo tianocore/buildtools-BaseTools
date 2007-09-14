@@ -633,7 +633,7 @@ class AutoGen(object):
         return PcdList
 
     def GeneratePcdTokenNumber(self, Platform, DynamicPcdList):
-        PcdTokenNumber = {}
+        PcdTokenNumber = sdict()
         TokenNumber = 1
         for Pcd in DynamicPcdList:
             if Pcd.Phase == "PEI":

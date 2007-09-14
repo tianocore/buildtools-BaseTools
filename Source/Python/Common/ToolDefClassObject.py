@@ -19,16 +19,15 @@ from Dictionary import *
 from BuildToolError import *
 from TargetTxtClassObject import *
 
-gMacroRefPattern = re.compile("(DEF\([^\(\)]+\))")
+gMacroRefPattern = re.compile('(DEF\([^\(\)]+\)|ENV\([^\(\)]+\))')
 gMacroDefPattern = re.compile("DEFINE\s+([^\s]+)")
 
 class ToolDefClassObject(object):
     def __init__(self, FileName = None):
         self.ToolsDefTxtDictionary = {}
         self.MacroDictionary = {}
-        self.EnvronDictionary = {}
         for Env in os.environ:
-            self.EnvronDictionary["ENV(%s)" % Env] = os.environ[Env]
+            self.MacroDictionary["ENV(%s)" % Env] = os.environ[Env]
 
         if FileName != None:
             self.LoadToolDefFile(FileName)
