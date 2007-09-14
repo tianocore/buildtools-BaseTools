@@ -19,7 +19,8 @@ from Dictionary import *
 from BuildToolError import *
 from TargetTxtClassObject import *
 
-gMacroRefPattern = re.compile('(DEF\([^\(\)]+\)|ENV\([^\(\)]+\))')
+gMacroRefPattern = re.compile('(DEF\([^\(\)]+\))')
+gEnvRefPattern = re.compile('(ENV\([^\(\)]+\))')
 gMacroDefPattern = re.compile("DEFINE\s+([^\s]+)")
 
 class ToolDefClassObject(object):
@@ -68,6 +69,12 @@ class ToolDefClassObject(object):
 
             MacroDefinition = gMacroDefPattern.findall(Name)
             if MacroDefinition != []:
+                EnvReference = gEnvRefPattern.findall(Value)
+                for Ref in EnvReference:
+                    if Ref not in self.MacroDictionary:
+                        raise ParserError(msg="Environment [%s] has not been defined" % Ref)
+                    Value = Value.replace(Ref, self.MacroDictionary[Ref])
+
                 MacroName = MacroDefinition[0].strip()
                 self.MacroDictionary["DEF(%s)" % MacroName] = Value
                 EdkLogger.verbose("Line %d: Found macro: %s = %s" % ((Index + 1), MacroName, Value))
