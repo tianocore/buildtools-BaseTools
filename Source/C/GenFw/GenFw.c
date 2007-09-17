@@ -1218,34 +1218,19 @@ Returns:
 
   //
   // Open output file and Write image into the output file.
-  // if OutImageName == NULL, output data to stdout.
   //
-  if (OutImageName == NULL) {
-    if (ReplaceFlag) {
-      fpOut = fopen (InImageName, "wb");
-      if (!fpOut) {
-        Error (NULL, 0, 0001, "Error opening file", InImageName);
-        goto Finish;
-      }
-    } else {
-      Error (NULL, 0, 1001, "Missing option", "output file\n");
-      goto Finish;
-      // binary stream can't be output to string strem stdout
-      // because 0x0A can be auto converted to 0x0D 0x0A.
-      // fpOut = stdout;
-    }
-  } else {
+  if (OutImageName != NULL) {
     fpOut = fopen (OutImageName, "wb");
     if (!fpOut) {
       Error (NULL, 0, 0001, "Error opening file", OutImageName);
       goto Finish;
     }
-    if (ReplaceFlag != 0) {
-      fpInOut = fopen (InImageName, "wb");
-      if (!fpInOut) {
-        Error (NULL, 0, 0001, "Error opening file", InImageName);
-        goto Finish;
-      }
+  } else if (!ReplaceFlag) {
+    if (OutImageType == DUMP_TE_HEADER) {
+      fpOut = stdout;
+    } else {
+      Error (NULL, 0, 1001, "Missing option", "output file\n");
+      goto Finish;
     }
   }
 
@@ -1382,10 +1367,25 @@ Returns:
     //
     // Open the output file and write the buffer contents
     //
-    if (fwrite (FileBuffer, FileLength, 1, fpOut) != 1) {
-      Error (NULL, 0, 0002, "Error writing file", OutImageName);
-      goto Finish;
+    if (fpOut != NULL) {
+      if (fwrite (FileBuffer, FileLength, 1, fpOut) != 1) {
+        Error (NULL, 0, 0002, "Error writing file", OutImageName);
+        goto Finish;
+      }
     }
+    
+    if (ReplaceFlag) {
+      fpInOut = fopen (InImageName, "wb");
+      if (fpInOut != NULL) {
+        Error (NULL, 0, 0001, "Error opening file", InImageName);
+        goto Finish;
+      }
+      if (fwrite (FileBuffer, FileLength, 1, fpInOut) != 1) {
+        Error (NULL, 0, 0002, "Error writing file", InImageName);
+        goto Finish;
+      }
+    }
+      
     //
     //  Convert Mci.TXT to Mci.bin file successfully
     //
@@ -1411,7 +1411,17 @@ Returns:
   
   fread (FileBuffer, 1, FileLength, fpIn);
   fclose (fpIn);
- 
+  
+  //
+  // Replace file
+  //
+  if (ReplaceFlag) {
+    fpInOut = fopen (InImageName, "wb");
+    if (!fpInOut) {
+      Error (NULL, 0, 0001, "Error opening file", InImageName);
+      goto Finish;
+    }
+  }
   //
   // Dump TeImage Header into output file.
   //
@@ -1421,17 +1431,33 @@ Returns:
       Error (NULL, 0, 3000, "Invalid", "TE header signature of file %s is not correct", InImageName);
       goto Finish;      
     }
-    fprintf (fpOut, "Dump of file %s\n\n", InImageName);
-    fprintf (fpOut, "TE IMAGE HEADER VALUES\n");
-    fprintf (fpOut, "%17X machine\n", TEImageHeader.Machine);
-    fprintf (fpOut, "%17X number of sections\n", TEImageHeader.NumberOfSections);
-    fprintf (fpOut, "%17X subsystems\n", TEImageHeader.Subsystem);
-    fprintf (fpOut, "%17X stripped size\n", TEImageHeader.StrippedSize);
-    fprintf (fpOut, "%17X entry point\n", TEImageHeader.AddressOfEntryPoint);
-    fprintf (fpOut, "%17X base of code\n", TEImageHeader.BaseOfCode);
-    fprintf (fpOut, "%17X image base\n", TEImageHeader.ImageBase);
-    fprintf (fpOut, "%17X [%8X] RVA [size] of Base Relocation Directory\n", TEImageHeader.DataDirectory[0].VirtualAddress, TEImageHeader.DataDirectory[0].Size);
-    fprintf (fpOut, "%17X [%8X] RVA [size] of Debug Directory\n", TEImageHeader.DataDirectory[1].VirtualAddress, TEImageHeader.DataDirectory[1].Size);
+    if (fpInOut != NULL) {
+      fprintf (fpInOut, "Dump of file %s\n\n", InImageName);
+      fprintf (fpInOut, "TE IMAGE HEADER VALUES\n");
+      fprintf (fpInOut, "%17X machine\n", TEImageHeader.Machine);
+      fprintf (fpInOut, "%17X number of sections\n", TEImageHeader.NumberOfSections);
+      fprintf (fpInOut, "%17X subsystems\n", TEImageHeader.Subsystem);
+      fprintf (fpInOut, "%17X stripped size\n", TEImageHeader.StrippedSize);
+      fprintf (fpInOut, "%17X entry point\n", TEImageHeader.AddressOfEntryPoint);
+      fprintf (fpInOut, "%17X base of code\n", TEImageHeader.BaseOfCode);
+      fprintf (fpInOut, "%17X image base\n", TEImageHeader.ImageBase);
+      fprintf (fpInOut, "%17X [%8X] RVA [size] of Base Relocation Directory\n", TEImageHeader.DataDirectory[0].VirtualAddress, TEImageHeader.DataDirectory[0].Size);
+      fprintf (fpInOut, "%17X [%8X] RVA [size] of Debug Directory\n", TEImageHeader.DataDirectory[1].VirtualAddress, TEImageHeader.DataDirectory[1].Size);
+    }
+
+    if (fpOut != NULL) {
+      fprintf (fpOut, "Dump of file %s\n\n", InImageName);
+      fprintf (fpOut, "TE IMAGE HEADER VALUES\n");
+      fprintf (fpOut, "%17X machine\n", TEImageHeader.Machine);
+      fprintf (fpOut, "%17X number of sections\n", TEImageHeader.NumberOfSections);
+      fprintf (fpOut, "%17X subsystems\n", TEImageHeader.Subsystem);
+      fprintf (fpOut, "%17X stripped size\n", TEImageHeader.StrippedSize);
+      fprintf (fpOut, "%17X entry point\n", TEImageHeader.AddressOfEntryPoint);
+      fprintf (fpOut, "%17X base of code\n", TEImageHeader.BaseOfCode);
+      fprintf (fpOut, "%17X image base\n", TEImageHeader.ImageBase);
+      fprintf (fpOut, "%17X [%8X] RVA [size] of Base Relocation Directory\n", TEImageHeader.DataDirectory[0].VirtualAddress, TEImageHeader.DataDirectory[0].Size);
+      fprintf (fpOut, "%17X [%8X] RVA [size] of Debug Directory\n", TEImageHeader.DataDirectory[1].VirtualAddress, TEImageHeader.DataDirectory[1].Size);
+    }
     goto Finish;
   }
 
@@ -1520,7 +1546,9 @@ Returns:
     //
     // Output bin data from exe file
     //
-    fwrite (FileBuffer + PeHdr->OptionalHeader.SizeOfHeaders, 1, FileLength - PeHdr->OptionalHeader.SizeOfHeaders, fpOut);
+    if (fpOut != NULL) {
+      fwrite (FileBuffer + PeHdr->OptionalHeader.SizeOfHeaders, 1, FileLength - PeHdr->OptionalHeader.SizeOfHeaders, fpOut);
+    }
     if (fpInOut != NULL) {
       fwrite (FileBuffer + PeHdr->OptionalHeader.SizeOfHeaders, 1, FileLength - PeHdr->OptionalHeader.SizeOfHeaders, fpInOut);
     }
@@ -1535,8 +1563,10 @@ Returns:
     if (EFI_ERROR (Status)) {
       goto Finish;
     }
-
-    fwrite (FileBuffer, 1, FileLength, fpOut);
+    
+    if (fpOut != NULL) {
+      fwrite (FileBuffer, 1, FileLength, fpOut);
+    }
     if (fpInOut != NULL) {
       fwrite (FileBuffer, 1, FileLength, fpInOut);
     }
@@ -1551,8 +1581,10 @@ Returns:
     if (EFI_ERROR (Status)) {
       goto Finish;
     }
-
-    fwrite (FileBuffer, 1, FileLength, fpOut);
+    
+    if (fpOut != NULL) {
+      fwrite (FileBuffer, 1, FileLength, fpOut);  
+    }
     if (fpInOut != NULL) {
       fwrite (FileBuffer, 1, FileLength, fpInOut);
     }
@@ -1583,7 +1615,9 @@ Returns:
         //
         // Output Apci data to file
         //
-        fwrite (FileBuffer + SectionHeader->PointerToRawData, 1, FileLength, fpOut);
+        if (fpOut != NULL) {
+          fwrite (FileBuffer + SectionHeader->PointerToRawData, 1, FileLength, fpOut);
+        }
         if (fpInOut != NULL) {
           fwrite (FileBuffer + SectionHeader->PointerToRawData, 1, FileLength, fpInOut);
         }
@@ -1807,11 +1841,13 @@ Returns:
     //
     // Update Image to TeImage
     //
-    fwrite (&TEImageHeader, 1, sizeof (EFI_TE_IMAGE_HEADER), fpOut);
-    fwrite (FileBuffer + TEImageHeader.StrippedSize, 1, FileLength - TEImageHeader.StrippedSize, fpOut);
-    if (fpInOut != NULL) {
+    if (fpOut != NULL) {
       fwrite (&TEImageHeader, 1, sizeof (EFI_TE_IMAGE_HEADER), fpOut);
       fwrite (FileBuffer + TEImageHeader.StrippedSize, 1, FileLength - TEImageHeader.StrippedSize, fpOut);
+    }
+    if (fpInOut != NULL) {
+      fwrite (&TEImageHeader, 1, sizeof (EFI_TE_IMAGE_HEADER), fpInOut);
+      fwrite (FileBuffer + TEImageHeader.StrippedSize, 1, FileLength - TEImageHeader.StrippedSize, fpInOut);
     }
     goto Finish;
   }
@@ -1819,7 +1855,9 @@ Returns:
   //
   // Update Image to EfiImage
   //
-  fwrite (FileBuffer, 1, FileLength, fpOut);
+  if (fpOut != NULL) {
+    fwrite (FileBuffer, 1, FileLength, fpOut);
+  }
   if (fpInOut != NULL) {
     fwrite (FileBuffer, 1, FileLength, fpInOut);
   }
