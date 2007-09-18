@@ -212,8 +212,8 @@ class AutoGen(object):
 
         self.Package = FindModuleOwnerPackage(self.Module, gPackageDatabase[Arch])
 
-        self.AutoGenC = GenC.AutoGenString()
-        self.AutoGenH = GenC.AutoGenString()
+        self.AutoGenC = TemplateString()
+        self.AutoGenH = TemplateString()
 
         self.BuildInfo = None
         self.GetModuleBuildInfo()
@@ -316,8 +316,8 @@ class AutoGen(object):
         Info.OutputDir = Platform.OutputDirectory
         Info.BuildDir = path.join(Info.OutputDir, self.BuildTarget + "_" + self.ToolChain)
         Info.MakefileDir = Info.BuildDir
-        if Platform.FlashDefinition != "":
-            Info.FdfFile= path.join(gWorkspaceDir, Platform.FlashDefinition)
+        if gWorkspace.Fdf != "":
+            Info.FdfFile= path.join(gWorkspaceDir, gWorkspace.Fdf)
 
         Info.DynamicPcdList = self.GetDynamicPcdList(Platform, Arch)
         Info.PcdTokenNumber = self.GeneratePcdTokenNumber(Platform, Info.DynamicPcdList)

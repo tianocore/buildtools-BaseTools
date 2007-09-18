@@ -154,8 +154,10 @@ class Build():
         ewb.GenBuildDatabase(pcdSet)
         ewb.TargetTxt = self.TargetTxt
         ewb.ToolDef = self.ToolDef
-        ewb.uiFdName = self.Opt.uiFdName
-        ewb.uiFvName = self.Opt.uiFvName
+        if self.Opt.uiFdName != None:
+            ewb.FdTargetList.append(self.Opt.uiFdName)
+        if self.Opt.uiFvName != None:
+            ewb.FvTargetList.append(self.Opt.uiFvName)
 
     def LibBuild(self, LibFile, PlatformFile, ewb, a, b, c):
         LibraryAutoGen = AutoGen(LibFile, PlatformFile, ewb, str(a), b, str(c))

@@ -26,7 +26,6 @@ from Common.Misc import *
 from BuildInfo import *
 from BuildEngine import *
 
-gDependencyDatabase = {}    # file path : [dependent files list]
 gIncludePattern = re.compile("^[ #]*include[ ]+[\"<]*([^\"< >]+)[>\" ]*$", re.MULTILINE | re.UNICODE)
 gMacroPattern = re.compile("[_A-Z][_A-Z0-9]*\(.+\)", re.UNICODE)
 
@@ -1094,8 +1093,7 @@ class Makefile(object):
         EdkLogger.debug(EdkLogger.DEBUG_3, "Try to get dependency files for %s" % File)
         EdkLogger.debug(EdkLogger.DEBUG_2, "Including %s" % " ".join(ForceList))
         FileStack = [File] + ForceList
-        #DependencyList = []
-        DependencyList = [] + ForceList
+        DependencySet = set()
         MacroUsedByIncludedFile = False
 
         while len(FileStack) > 0:
@@ -1103,10 +1101,10 @@ class Makefile(object):
             F = FileStack.pop()
 
             CurrentFileDependencyList = []
-            if F in gDependencyDatabase:
+            if F in gDependencyDatabase and not IsChanged(F):
                 CurrentFileDependencyList = gDependencyDatabase[F]
                 for Dep in CurrentFileDependencyList:
-                    if Dep not in FileStack and Dep not in DependencyList:
+                    if Dep not in FileStack and Dep not in DependencySet:
                         FileStack.append(Dep)
             else:
                 try:
@@ -1131,7 +1129,7 @@ class Makefile(object):
                         if not os.path.exists(FilePath) or FilePath in CurrentFileDependencyList:
                             continue
                         CurrentFileDependencyList.append(FilePath)
-                        if FilePath not in FileStack and FilePath not in DependencyList:
+                        if FilePath not in FileStack and FilePath not in DependencySet:
                             FileStack.append(FilePath)
                         break
                     else:
@@ -1139,12 +1137,14 @@ class Makefile(object):
                             MacroUsedByIncludedFile = True
                         EdkLogger.verbose("%s included by %s was not found in any given path:\n\t%s" % (Inc, F, "\n\t".join(SearchPathList)))
                 if not MacroUsedByIncludedFile:
+                    if F == File:
+                        CurrentFileDependencyList += ForceList
                     #
                     # Don't keep the file in cache if it uses macro in included file.
                     # So it will be scanned again if another file includes this file.
                     #
                     gDependencyDatabase[F] = CurrentFileDependencyList
-            DependencyList.extend(CurrentFileDependencyList)
+            DependencySet.update(CurrentFileDependencyList)
 
         #
         # If there's macro used in included file, always build the file by
@@ -1153,7 +1153,7 @@ class Makefile(object):
         if MacroUsedByIncludedFile:
             DependencyList = []
         else:
-            DependencyList = list(set(DependencyList))  # remove duplicate ones
+            DependencyList = list(DependencySet)  # remove duplicate ones
             DependencyList.append(File)
 
         os.chdir(WorkingDir)

@@ -317,6 +317,7 @@ gAutoGenHEpilogueString = """
 # PEI Core Entry Point Templates
 #
 gPeiCoreEntryPointString = """
+${BEGIN}
 EFI_STATUS
 ${Function} (
   IN CONST  EFI_SEC_PEI_HAND_OFF    *SecCoreData,
@@ -335,6 +336,7 @@ ProcessModuleEntryPointList (
 {
   return ${Function} (SecCoreData, PpiList, OldCoreData);
 }
+${END}
 """
 
 #
@@ -342,7 +344,7 @@ ProcessModuleEntryPointList (
 #
 gDxeCoreEntryPointString = """
 const UINT32 _gUefiDriverRevision = 0;
-
+${BEGIN}
 VOID
 ${Function} (
   IN VOID  *HobStart
@@ -357,6 +359,7 @@ ProcessModuleEntryPointList (
 {
   ${Function} (HobStart);
 }
+${END}
 """
 
 #
@@ -379,7 +382,7 @@ ProcessModuleEntryPointList (
 """,
 """
 GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = 0;
-
+${BEGIN}
 EFI_STATUS
 ${Function} (
   IN EFI_PEI_FILE_HANDLE  *FfsHeader,
@@ -396,6 +399,7 @@ ProcessModuleEntryPointList (
 {
   return ${Function} (FfsHeader, PeiServices);
 }
+${END}
 """,
 """
 GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = 0;
@@ -511,7 +515,7 @@ ProcessModuleEntryPointList (
 """,
 """
 const UINT32 _gUefiDriverRevision = 0;
-
+${BEGIN}
 EFI_STATUS
 ${Function} (
   IN EFI_HANDLE        ImageHandle,
@@ -528,7 +532,7 @@ ProcessModuleEntryPointList (
 {
   return ${Function} (ImageHandle, SystemTable);
 }
-
+${END}
 VOID
 EFIAPI
 ExitDriver (
@@ -611,7 +615,6 @@ EFI_STATUS
 ${Function} (
   IN EFI_HANDLE        ImageHandle
   );
-${END}
 
 EFI_STATUS
 EFIAPI
@@ -621,6 +624,7 @@ ProcessModuleUnloadList (
 {
   return ${Function} (ImageHandle);
 }
+${END}
 """,
 """
 GLOBAL_REMOVE_IF_UNREFERENCED const UINT8 _gDriverUnloadImageCount = ${Count};
@@ -796,46 +800,6 @@ def GetGuidValue(Packages, CName):
         PackageListString = "\n\t".join([str(P) for P in Packages])
         raise AutoGenError(msg="Cannot find GUID value for %s in all given packages:\n\t%s" % (CName, PackageListString))
 
-class AutoGenString(object):
-  def __init__(self):
-    self.String = ''
-
-  def Append(self, AppendString, Dictionary=None):
-    if Dictionary == None:
-      self.String += AppendString
-    else:
-      while AppendString.find('${BEGIN}') >= 0:
-        Start = AppendString.find('${BEGIN}')
-        End   = AppendString.find('${END}')
-        SubString = AppendString[AppendString.find('${BEGIN}'):AppendString.find('${END}')+6]
-        Max = 0
-        MaxLen = {}
-        for Key in Dictionary:
-          if SubString.find('$'+Key) >= 0 or SubString.find('${'+Key+'}') >= 0:
-            Value = Dictionary[Key]
-            if type(Value) == type([]):
-              MaxLen[Key] = len(Value)
-            else:
-              MaxLen[Key] = 1
-            if MaxLen[Key] > Max:
-              Max = MaxLen[Key]
-
-        NewString = ''
-        for Index in range(0,Max):
-          NewDict = {'BEGIN':'','END':''}
-          for Key in MaxLen:
-            NewDict[Key] = Dictionary[Key]
-            if type(Dictionary[Key]) == type([]):
-              NewDict[Key] = Dictionary[Key][Index]
-          NewString += string.Template(SubString).safe_substitute(NewDict)
-        AppendString = AppendString[0:Start] + NewString + AppendString[End+6:]
-      NewDict = {}
-      for Key in Dictionary:
-        NewDict[Key] = Dictionary[Key]
-        if type(Dictionary[Key]) == type([]) and len(Dictionary[Key]) > 0:
-          NewDict[Key] = Dictionary[Key][0]
-      self.String += string.Template(AppendString).safe_substitute(NewDict)
-
 def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
     PcdTokenNumber = Info.PlatformInfo.PcdTokenNumber
     #
@@ -989,8 +953,8 @@ def CreateLibraryPcdCode(Info, AutoGenC, AutoGenH, Pcd):
         AutoGenH.Append('//#define %s  ASSERT(FALSE)  // It is not allowed to set value for a FIXED_AT_BUILD PCD\n' % SetModeName)
 
 def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
-    AutoGenC = AutoGenString()
-    AutoGenH = AutoGenString()
+    AutoGenC = TemplateString()
+    AutoGenH = TemplateString()
 
     Dict = {
         'PHASE'                         : Phase,

@@ -22,7 +22,7 @@ from DecClassObject import *
 from DscClassObject import *
 from String import *
 from BuildToolError import *
-from SequentialDict import *
+from Misc import sdict
 from CommonDataClass.CommonClass import *
 
 #

@@ -20,6 +20,14 @@ import string
 import thread
 import threading
 import time
+import re
+import cPickle
+
+from Common.BuildToolError import *
+
+gPlaceholderPattern = re.compile("\$\{([^$()\s]+)\}", re.MULTILINE|re.UNICODE)
+gFileTimeStampCache = {}    # {file path : file time stamp}
+gDependencyDatabase = {}    # file path : [dependent files list]
 
 ## callback routine for processing variable option
 #
@@ -100,6 +108,18 @@ def CreateDirectory(Directory):
     if not os.access(Directory, os.F_OK):
         os.makedirs(Directory)
 
+def IsChanged(File):
+    FileState = os.stat(File)
+    TimeStamp = FileState[-2]
+
+    if File in gFileTimeStampCache and TimeStamp <= gFileTimeStampCache[File]:
+        FileChanged = False
+    else:
+        FileChanged = True
+        gFileTimeStampCache[File] = TimeStamp
+
+    return FileChanged
+
 def SaveFileOnChange(File, Content, IsBinaryFile=False):
     if IsBinaryFile:
         BinaryFlag = 'b'
@@ -118,6 +138,27 @@ def SaveFileOnChange(File, Content, IsBinaryFile=False):
     Fd.close()
     return True
 
+def Cache(Data, File):
+    Fd = None
+    try:
+        Fd = open(File, 'w')
+        cPickle.dump(Data, Fd)
+    except:
+        raise AutoGenError(FILE_OPEN_FAILURE, name=File)
+    finally:
+        if Fd != None:
+            Fd.close()
+
+def Restore(File):
+    try:
+        Fd = open(File, 'r')
+        return cPickle.load(Fd)
+    except Exception, e:
+        raise AutoGenError(FILE_OPEN_FAILURE, name=File)
+    finally:
+        if Fd != None:
+            Fd.close()
+
 class TemplateString(object):
     def __init__(self):
         self.String = ''
@@ -130,58 +171,71 @@ class TemplateString(object):
             self.String += AppendString
             return
 
-        while AppendString.find('${BEGIN}') >= 0:
+        # replace single ones
+        SubDict = {}
+        for Key in Dictionary:
+            Value = Dictionary[Key]
+            if type(Value) == type([]):
+                continue
+            SubDict[Key] = Value
+        AppendString = string.Template(AppendString).safe_substitute(SubDict)
+
+        # replace repeat ones, enclosed by ${BEGIN} and $(END)
+        while True:
             Start = AppendString.find('${BEGIN}')
+            if Start < 0:
+                break
             End   = AppendString.find('${END}')
-            SubString = AppendString[AppendString.find('${BEGIN}'):AppendString.find('${END}')+6]
+
+            # exclude the ${BEGIN} and ${END}
+            SubString = AppendString[Start + 8 : End]
 
             RepeatTime = -1
-            NewDict = {"BEGIN":"", "END":""}
-            for Key in Dictionary:
-                if SubString.find('$' + Key) >= 0 or SubString.find('${' + Key + '}') >= 0:
-                    Value = Dictionary[Key]
-                    if type(Value) != type([]):
-                        NewDict[Key] = Value
-                        continue
-                    if RepeatTime < 0:
-                        RepeatTime = len(Value)
-                    elif RepeatTime != len(Value):
-                        raise AutoGenError(msg=Key + " has different repeat time from others!")
-                    NewDict[Key] = ""
+            SubDict = {}
+            PlaceholderList = gPlaceholderPattern.findall(SubString)
+            for Key in PlaceholderList:
+                if Key not in Dictionary:
+                    continue
+
+                Value = Dictionary[Key]
+                if type(Value) != type([]):
+                    continue
+
+                SubDict[Key] = ""
+                if RepeatTime < 0:
+                    RepeatTime = len(Value)
+                elif RepeatTime != len(Value):
+                    raise AutoGenError(msg=Key + " has different repeat time from others!")
 
             NewString = ''
             for Index in range(0, RepeatTime):
-                for Key in NewDict:
-                    if Key == "BEGIN" or Key == "END" or type(Dictionary[Key]) != type([]):
-                        continue
-                    NewDict[Key] = Dictionary[Key][Index]
-                NewString += string.Template(SubString).safe_substitute(NewDict)
+                for Key in SubDict:
+                    SubDict[Key] = Dictionary[Key][Index]
+                NewString += string.Template(SubString).safe_substitute(SubDict)
             AppendString = AppendString[0:Start] + NewString + AppendString[End + 6:]
 
-        NewDict = {}
-        for Key in Dictionary:
-            if type(Dictionary[Key]) == type([]):
-                continue
-            NewDict[Key] = Dictionary[Key]
-        self.String += string.Template(AppendString).safe_substitute(NewDict)
+        self.String += AppendString
 
 class Progressor:
     def __init__(self, OpenMessage="", CloseMessage="", ProgressChar='.', Interval=1):
         self.StopFlag = threading.Event()
-        self.StopFlag.clear()
-
         self.ProgressThread = None
         self.PromptMessage = OpenMessage
         self.CodaMessage = CloseMessage
         self.ProgressChar = ProgressChar
         self.Interval = Interval
 
-    def Start(self):
+    def Start(self, OpenMessage=None):
+        if OpenMessage != None:
+            self.PromptMessage = OpenMessage
+        self.StopFlag.clear()
         self.ProgressThread = threading.Thread(target=self._ProgressThreadEntry)
         self.ProgressThread.setDaemon(True)
         self.ProgressThread.start()
 
-    def Stop(self):
+    def Stop(self, CloseMessage=None):
+        if CloseMessage != None:
+            self.CodaMessage = CloseMessage
         self.StopFlag.set()
         self.ProgressThread.join()
         self.ProgressThread = None
@@ -192,3 +246,83 @@ class Progressor:
             time.sleep(self.Interval)
             print self.ProgressChar,
         print self.CodaMessage
+
+class sdict(dict):
+    def __init__(self):
+        self._key_list = []
+
+    def __setitem__(self, key, value):
+        if key not in self._key_list:
+            self._key_list.append(key)
+        dict.__setitem__(self, key, value)
+
+    def __delitem__(self, key):
+        self._key_list.remove(key)
+        dict.__delitem__(self, key)
+    #
+    # used in "for k in dict" loop to ensure the correct order
+    #
+    def __iter__(self):
+        return self.iterkeys()
+
+    def __len__(self):
+        return len(self._key_list)
+
+    def __contains__(self, key):
+        return key in self._key_list
+
+    def has_key(self, key):
+        return key in self._key_list
+
+    def clear(self):
+        self._key_list = []
+        dict.clear(self)
+
+    def keys(self):
+        keys = []
+        for key in self._key_list:
+            keys.append(key)
+        return keys
+
+    def values(self):
+        values = []
+        for key in self._key_list:
+            values.append(self[key])
+        return values
+
+    def items(self):
+        items = []
+        for key in self._key_list:
+            items.append((key, self[key]))
+        return items
+
+    def iteritems(self):
+        return iter(self.items())
+
+    def iterkeys(self):
+        return iter(self.keys())
+
+    def itervalues(self):
+        return iter(self.values())
+
+    def pop(self, key, *dv):
+        value = None
+        if key in self._key_list:
+            value = self[key]
+            dict.__delitem__(self, key)
+        elif len(dv) != 0 :
+            value = kv[0]
+        return value
+
+    def popitem(self):
+        key = self._key_list[0]
+        value = self[key]
+        dict.__delitem__(self, key)
+        return key, value
+
+
+if gFileTimeStampCache == {} and os.path.exists(".TsCache"):
+    gFileTimeStampCache = Restore(".TsCache")
+
+if gDependencyDatabase == {} and os.path.exists(".DepCache"):
+    gDependencyDatabase = Restore(".DepCache")
