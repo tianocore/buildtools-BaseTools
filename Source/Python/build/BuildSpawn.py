@@ -19,18 +19,19 @@ import Common.EdkLogger as EdkLogger
 
 
 class BuildSpawn(Thread):
-    def __init__(self, ReturnCode, Sem=None, Filename=None, Args=None, Num=0):
+    def __init__(self, ReturnCode, Sem=None, Filename=None, Args=None, Num=0, Dir=None):
         Thread.__init__(self)
         self.sem=Sem
         self.filename=Filename
         self.args=Args
         self.num=Num
         self.returncode=ReturnCode
+        self.Dir=Dir
         
 
     def run(self):
         self.sem.acquire()
-        p = Popen(["nmake", "/nologo", "-f", self.filename, self.args], stdout=PIPE, stderr=PIPE, env=os.environ, cwd=os.path.dirname(self.filename))
+        p = Popen([self.filename, "/nologo", self.args], stdout=PIPE, stderr=PIPE, env=os.environ, cwd=self.Dir)
         while p.poll() == None:
             EdkLogger.info(p.stdout.readline()[:-2])
         EdkLogger.info(p.stdout.read())

@@ -39,7 +39,7 @@ class Build():
         self.Path         = os.getenv("PATH")
         self.Opt          = opt
         self.Args         = args
-        self.ArgList      = ['all', 'genc', 'genmake', 'modules', 'libraries', 'clean', 'cleanall', 'cleanlib', 'run']
+        self.ArgList      = ['all', 'genc', 'genmake', 'modules', 'libraries', 'clean', 'cleanall', 'cleanlib', 'run', 'fds']
         self.TargetTxt    = TargetTxtClassObject()
         self.ToolDef      = ToolDefClassObject()
         self.Sem          = None
@@ -154,6 +154,8 @@ class Build():
         ewb.GenBuildDatabase(pcdSet)
         ewb.TargetTxt = self.TargetTxt
         ewb.ToolDef = self.ToolDef
+        ewb.uiFdName = self.Opt.uiFdName
+        ewb.uiFvName = self.Opt.uiFvName
 
     def LibBuild(self, LibFile, PlatformFile, ewb, a, b, c):
         LibraryAutoGen = AutoGen(LibFile, PlatformFile, ewb, str(a), b, str(c))
@@ -163,15 +165,18 @@ class Build():
             d = Platform.OutputDirectory
             (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(os.environ["WORKSPACE"], d, a + '_' + b, c, str(LibFile))))
             DestDir = filename
-            EdkLogger.info('Makefile DestDir is: %s' % DestDir)
-            FileList = glob.glob(os.path.normpath(os.path.join(DestDir, 'makefile')))
-            FileNum = len(FileList)
-            if FileNum > 0:
-                self.SameTypeFileInDir(FileNum, 'makefile', DestDir)
-                BuildSpawn(self.ReturnCode, self.Sem, FileList[0], 'pbuild', 1).start()
+            if self.SysPlatform == 'win32' or self.SysPlatform == 'win64':
+                if os.path.isfile(os.path.join(DestDir, 'makefile')) == True:
+                    BuildSpawn(self.ReturnCode, self.Sem, 'nmake', 'pbuild', 1, DestDir).start()
+                else:
+                    EdkLogger.quiet("ERROR: makefile doesn't exist in the directory: %s!" % DestDir)
+                    self.isexit(1)
             else:
-                EdkLogger.quiet("ERROR: There is no Makefile in %s.\n" % DestDir)
-                self.isexit(1)
+                if os.path.isfile(os.path.join(DestDir, 'gnumakefile')) == True:
+                    BuildSpawn(self.ReturnCode, self.Sem, 'make', 'pbuild', 1, DestDir).start()
+                else:
+                    EdkLogger.quiet("ERROR: makefile doesn't exist in the directory: %s!" % DestDir)
+                    self.isexit(1)
 
     def ModuleBuild(self, ModuleFile, PlatformFile, ewb, a, b, c, ModuleAutoGen):
         ModuleAutoGen.CreateAutoGenFile()
@@ -180,16 +185,26 @@ class Build():
             d = Platform.OutputDirectory
             (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(os.environ["WORKSPACE"], d, a + '_' + b, c, ModuleFile)))
             DestDir = filename
-            FileList = glob.glob(os.path.normpath(os.path.join(DestDir, 'makefile')))
-            FileNum = len(FileList)
-            if FileNum > 0:
-                self.SameTypeFileInDir(FileNum, 'makefile', DestDir)
-                for i in range(0, int(self.Opt.NUM)):
-                    self.Sem.acquire()
-                self.Launch(["nmake", "/nologo", "-f", FileList[0], 'pbuild'], os.path.dirname(FileList[0]))
+            if self.SysPlatform == 'win32' or self.SysPlatform == 'win64':
+                if os.path.isfile(os.path.join(DestDir, 'makefile')) == True:
+                    for i in range(0, int(self.Opt.NUM)):
+                        self.Sem.acquire()
+                    self.Launch(["nmake", "/nologo", self.Args], DestDir)
+                    for i in range(0, int(self.Opt.NUM)):
+                        self.Sem.release()
+                else:
+                    EdkLogger.quiet("ERROR: makefile doesn't exist in the directory: %s!" % DestDir)
+                    self.isexit(1)
             else:
-                EdkLogger.quiet("ERROR: There is no Makefile in %s.\n" % DestDir)
-                self.isexit(1)
+                if os.path.isfile(os.path.join(DestDir, 'gnumakefile')) == True:
+                    for i in range(0, int(self.Opt.NUM)):
+                        self.Sem.acquire()
+                    self.Launch(["make", self.Args], DestDir)
+                    for i in range(0, int(self.Opt.NUM)):
+                        self.Sem.release()
+                else:
+                    EdkLogger.quiet("ERROR: gnumakefile doesn't exist in the directory: %s!" % DestDir)
+                    self.isexit(1)
 
     def SameTypeFileInDir(self, FileNum, FileType, Dir):
         if FileNum >= 2:
@@ -233,13 +248,18 @@ class Build():
         else:
             (filename, ext) = os.path.splitext(os.path.normpath(os.path.join(os.environ["WORKSPACE"], d, Target + '_' + ToolChain, Arch, ModuleFile)))
             DestDir = filename
-        FileList = glob.glob(os.path.normpath(os.path.join(DestDir, 'makefile')))
-        FileNum = len(FileList)
-        if FileNum > 0:
-            self.SameTypeFileInDir(FileNum, 'makefile', DestDir)
-            self.Launch(["nmake", "/nologo", self.Args], os.path.dirname(FileList[0]))
+        if self.SysPlatform == 'win32' or self.SysPlatform == 'win64':
+            if os.path.isfile(os.path.join(DestDir, 'makefile')) == True:
+                self.Launch(["nmake", "/nologo", self.Args], DestDir)
+            else:
+                EdkLogger.quiet("ERROR: makefile doesn't exist in the directory: %s!" % DestDir)
+                self.isexit(1)
         else:
-            self.isexit(1)
+            if os.path.isfile(os.path.join(DestDir, 'gnumakefile')) == True:
+                self.Launch(["make", self.Args], DestDir)
+            else:
+                EdkLogger.quiet("ERROR: gnumakefile doesn't exist in the directory: %s!" % DestDir)
+                self.isexit(1)
 
     def AllFunc(self, ModuleFile, PlatformFile, ewb, Target, ToolChain, Arch):
         try:
@@ -249,7 +269,11 @@ class Build():
         except Exception, e:
             self.TrackInfo(e)
             self.isexit(1)
-        self.Launch(["nmake", "/nologo", 'all'], os.path.join(os.environ["WORKSPACE"], AutoGenResult.GetMakefileDir()))
+        if self.SysPlatform == 'win32' or self.SysPlatform == 'win64':
+            self.Launch(["nmake", "/nologo", 'all'], os.path.join(self.WorkSpace, AutoGenResult.GetMakefileDir()))
+        else:
+            self.Launch(["make", 'all'], os.path.join(self.WorkSpace, AutoGenResult.GetMakefileDir()))
+
 
     def Process(self, ModuleFile, PlatformFile, ewb):
         #
@@ -448,6 +472,8 @@ def MyOptionParser():
     parser.add_option("-q", "--quiet", action="store_true", type=None, help="Disable all messages except FATAL ERRORS.")
     parser.add_option("-v", "--verbose", action="store_true", type=None, help="Turn on verbose output with informational messages printed.")
     parser.add_option("-d", "--debug", action="store", type="int", help="Enable debug messages at specified level.")
+    parser.add_option("-r", "--rom_image", dest="uiFdName", help="Build the image using the [FD] section named by FdUiName.")
+    parser.add_option("-i", "--FvImage", dest="uiFvName", help="Buld the FV image using the [FV] section named by UiFvName")
 
     (opt, args)=parser.parse_args()
     return (opt, args)
@@ -600,9 +626,6 @@ def main():
 # Platform Build or Module Build
 #
     CurWorkDir = os.getcwd()
-#
-#    CurWorkDir = 'C:\Work\R9\LakeportX64Dev\LakeportX64Pkg\AcpiPlatformDxe'
-#
 
     if build.Opt.INFFILE:
         if build.Opt.DSCFILE:
