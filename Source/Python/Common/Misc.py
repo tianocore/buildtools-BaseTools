@@ -171,15 +171,6 @@ class TemplateString(object):
             self.String += AppendString
             return
 
-        # replace single ones
-        SubDict = {}
-        for Key in Dictionary:
-            Value = Dictionary[Key]
-            if type(Value) == type([]):
-                continue
-            SubDict[Key] = Value
-        AppendString = string.Template(AppendString).safe_substitute(SubDict)
-
         # replace repeat ones, enclosed by ${BEGIN} and $(END)
         while True:
             Start = AppendString.find('${BEGIN}')
@@ -213,6 +204,15 @@ class TemplateString(object):
                     SubDict[Key] = Dictionary[Key][Index]
                 NewString += string.Template(SubString).safe_substitute(SubDict)
             AppendString = AppendString[0:Start] + NewString + AppendString[End + 6:]
+
+        # replace single ones
+        SubDict = {}
+        for Key in Dictionary:
+            Value = Dictionary[Key]
+            if type(Value) == type([]):
+                continue
+            SubDict[Key] = Value
+        AppendString = string.Template(AppendString).safe_substitute(SubDict)
 
         self.String += AppendString
 
