@@ -36,7 +36,10 @@ Abstract:
 #include "PeCoffLib.h"
 #include "WinNtInclude.h"
 
-static UINT32 MaxFfsAlignment = 0;
+static UINT32   MaxFfsAlignment = 0;
+
+extern EFI_GUID mPadFileGuidTable[];
+static UINT32   mPadFileIndex = 0;
 
 EFI_GUID  gEfiFirmwareFileSystem2Guid = EFI_FIRMWARE_FILE_SYSTEM2_GUID;
 EFI_GUID  gEfiFirmwareVolumeTopFileGuid = EFI_FFS_VOLUME_TOP_FILE_GUID;
@@ -531,17 +534,21 @@ Returns:
     return EFI_OUT_OF_RESOURCES;
   }
 
-#ifdef __GNUC__
-  {
-    uuid_t tmp_id;
-    uuid_generate (tmp_id);
-    memcpy (&PadFileGuid, tmp_id, sizeof (EFI_GUID));
-  }
-#else
-  UuidCreate (&PadFileGuid);
-#endif
   memset (PadFile, 0, sizeof (EFI_FFS_FILE_HEADER));
-  memcpy (&PadFile->Name, &PadFileGuid, sizeof (EFI_GUID));
+  if (mPadFileIndex < MAX_NUMBER_OF_PAD_FILE_GUIDS) {
+    memcpy (&PadFile->Name, &mPadFileGuidTable[mPadFileIndex++], sizeof (EFI_GUID));
+  } else {
+#ifdef __GNUC__
+    {
+      uuid_t tmp_id;
+      uuid_generate (tmp_id);
+      memcpy (&PadFileGuid, tmp_id, sizeof (EFI_GUID));
+    }
+#else
+    UuidCreate (&PadFileGuid);
+#endif
+    memcpy (&PadFile->Name, &PadFileGuid, sizeof (EFI_GUID));
+  }
   PadFile->Type       = EFI_FV_FILETYPE_FFS_PAD;
   PadFile->Attributes = 0;
 
@@ -895,16 +902,20 @@ Returns:
   // write header
   //
   memset (PadFile, 0, sizeof (EFI_FFS_FILE_HEADER));
+  if (mPadFileIndex < MAX_NUMBER_OF_PAD_FILE_GUIDS) {
+    memcpy (&PadFile->Name, &mPadFileGuidTable[mPadFileIndex++], sizeof (EFI_GUID));
+  } else {
 #ifdef __GNUC__
-  {
-    uuid_t tmp_id;
-    uuid_generate (tmp_id);
-    memcpy (&PadFileGuid, tmp_id, sizeof (EFI_GUID));
-  }
+    {
+      uuid_t tmp_id;
+      uuid_generate (tmp_id);
+      memcpy (&PadFileGuid, tmp_id, sizeof (EFI_GUID));
+    }
 #else
-  UuidCreate (&PadFileGuid);
+    UuidCreate (&PadFileGuid);
 #endif
-  memcpy (&PadFile->Name, &PadFileGuid, sizeof (EFI_GUID));
+    memcpy (&PadFile->Name, &PadFileGuid, sizeof (EFI_GUID));
+  }
   PadFile->Type       = EFI_FV_FILETYPE_FFS_PAD;
   PadFile->Attributes = 0;
 

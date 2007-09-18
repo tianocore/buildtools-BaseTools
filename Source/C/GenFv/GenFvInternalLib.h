@@ -54,6 +54,11 @@ extern BOOLEAN VerboseMode;
 #endif
 
 //
+// The maximum number of Pad file guid entries.
+//
+#define MAX_NUMBER_OF_PAD_FILE_GUIDS    1024
+
+//
 // The maximum number of block map entries supported by the library
 //
 #define MAX_NUMBER_OF_FV_BLOCKS         100

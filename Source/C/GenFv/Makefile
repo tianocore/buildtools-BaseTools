@@ -4,7 +4,7 @@ APPNAME = GenFv
 
 LIBS = Common.lib RpcRT4.lib
 
-OBJECTS = GenFv.obj GenFvInternalLib.obj
+OBJECTS = GenFv.obj GenFvInternalLib.obj GenFvPadFileTable.obj
 
 !INCLUDE ..\MSmakefile.app
 
