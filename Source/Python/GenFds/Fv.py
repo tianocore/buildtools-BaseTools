@@ -29,7 +29,7 @@ class FV (FvClassObject):
             #
             self.FvInfFile.writelines("EFI_FILE_NAME = " + \
                                        FileName          + \
-                                       T_CHAR_LF)
+                                           T_CHAR_LF)
         #
         # Process Modules in FfsList
         #
@@ -80,20 +80,23 @@ class FV (FvClassObject):
                                        BaseAddress          + \
                                        T_CHAR_LF)
                                        
-        if BlockSize != None and BlockNum != None:
+        if BlockSize != None:
             self.FvInfFile.writelines("EFI_BLOCK_SIZE = " + \
                                       '0x%x' %BlockSize    + \
                                       T_CHAR_LF)
-            self.FvInfFile.writelines("EFI_NUM_BLOCKS   = "  + \
+            if BlockNum != None:
+                self.FvInfFile.writelines("EFI_NUM_BLOCKS   = "  + \
                                       ' 0x%x' %BlockNum    + \
                                       T_CHAR_LF)
         else:
             for BlockSize in self.BlockSizeList :
-                self.FvInfFile.writelines("EFI_BLOCK_SIZE  = "  + \
+                if BlockSize[0] != None:
+                    self.FvInfFile.writelines("EFI_BLOCK_SIZE  = "  + \
                                           '0x%x' %BlockSize[0]    + \
                                           T_CHAR_LF)
-                                  
-                self.FvInfFile.writelines("EFI_NUM_BLOCKS   = "  + \
+                
+                if BlockSize[1] != None:                  
+                    self.FvInfFile.writelines("EFI_NUM_BLOCKS   = "  + \
                                           ' 0x%x' %BlockSize[1]    + \
                                           T_CHAR_LF)
                                           

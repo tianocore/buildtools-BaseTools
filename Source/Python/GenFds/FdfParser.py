@@ -624,7 +624,7 @@ class FdfParser:
             BlockSizePcd = pcdPair
             self.profile.PcdDict[pcdPair] = BlockSize
             
-        BlockNumber = 0x1
+        BlockNumber = None
         if self.__IsKeyword( "NumBlocks"):
             if not self.__IsToken( "="):
                 raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)

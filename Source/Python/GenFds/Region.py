@@ -13,7 +13,7 @@ class region(RegionClassObject):
     def AddToBuffer(self, Buffer, BaseAddress, BlockSizeList, ErasePolarity, FvBinDict, vtfDict = None, MarcoDict = None):
         Size = self.Size
         GenFdsGlobalVariable.InfLogger('Generate Region')
-        GenFdsGlobalVariable.InfLogger("   Region Size = %d" %Size)
+        GenFdsGlobalVariable.InfLogger("   Region Size = %x" %Size)
         GenFdsGlobalVariable.SharpCounter = 0
         
         if self.RegionType == 'FV':
@@ -21,38 +21,51 @@ class region(RegionClassObject):
             # Get Fv from FvDict
             #
             FvBuffer = StringIO.StringIO('')
-            BlockSize = self.__BlockSizeOfRegion__(BlockSizeList)
-            if len(self.RegionDataList) == 1:
-                RegionData = self.RegionDataList[0]
-                fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(RegionData.upper())
-            #
-            # Create local Buffer            #
+            RegionBlockSize = self.BlockSizeOfRegion(BlockSizeList)
+            RegionBlockNum = self.BlockNumOfRegion(RegionBlockSize)
             
+            self.FvAddress = int(BaseAddress, 16) + self.Offset
+            FvBaseAddress = '0x%x' %self.FvAddress
+                    
+            for RegionData in self.RegionDataList:
+                if FvBuffer.len > Size:
+                    raise Exception ("Size of Region (%s) is large than Region Size ", self.Offset)
+                
+                if RegionData.endswith(".fv"):
+                    RegionData = GenFdsGlobalVariable.MarcoExend(RegionData, MarcoDict)
+                    GenFdsGlobalVariable.InfLogger('   Region FV File Name = .fv : %s'%RegionData)
+                    if RegionData[1] != ':' :
+                        RegionData = os.path.join (GenFdsGlobalVariable.WorkSpaceDir, RegionData)
+                    if not os.path.exists(RegionData):
+                        raise Exception ( 'File: %s dont exist !' %RegionData)
+                    
+                    BinFile = open (RegionData, 'r+b')
+                    FvBuffer.write(BinFile.read())
+                    break
+                
+                fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(RegionData.upper())
+                        
                 if fv != None :
                     GenFdsGlobalVariable.InfLogger('   Region Name = FV')
                     #
                     # Call GenFv tool
                     #
-                
-                    self.FvAddress = int(BaseAddress, 16) + self.Offset
-                    BlockSize = self.__BlockSizeOfRegion__(BlockSizeList)
-                    BlockNum = self.__BlockNumOfRegion__(BlockSize)
+                    BlockSize = RegionBlockSize
+                    BlockNum = RegionBlockNum
+                    if fv.BlockSizeList != []:
+                        if fv.BlockSizeList[0][0] != None:
+                            BlockSize = fv.BlockSizeList[0][0]
+                        if fv.BlockSizeList[0][1] != None:
+                            BlockNum = fv.BlockSizeList[0][1]
+                    self.FvAddress = self.FvAddress + FvBuffer.len                    
                     FvBaseAddress = '0x%x' %self.FvAddress
                     FileName = fv.AddToBuffer(FvBuffer, FvBaseAddress, BlockSize, BlockNum, ErasePolarity, vtfDict)
                     
                     #BinFile = open (FileName, 'r+b')
                     #FvBuffer.write(BinFile.read())
-                    FvBinDict[self.RegionDataList[0].upper()] = FileName
-            else:
-                for RegionData in self.RegionDataList:
-                    fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(RegionData.upper())
-                    if fv != None:
-                        FileName = fv.AddToBuffer(FvBuffer, None, BlockSize, None, ErasePolarity, vtfDict)
-                        FvBinDict[RegionData.upper()] = FileName
-                
-            if FvBuffer.len > Size:
-                raise Exception ("Size of Region (%s) is large than Region Size ", self.Offset)
-            elif FvBuffer.len < Size :
+                    FvBinDict[RegionData.upper()] = FileName
+            
+            if FvBuffer.len < Size :
                 raise Exception ("Size of Region (%s) is less than Region Size ", self.Offset)
 
             #BinFile = open (FileName, 'r+b')
@@ -112,7 +125,7 @@ class region(RegionClassObject):
             else :
                 Buffer.write(pack(str(Size)+'B', *(int('0x00', 16) for i in range(0, Size))))
 
-    def __BlockSizeOfRegion__(self, BlockSizeList):
+    def BlockSizeOfRegion(self, BlockSizeList):
         Offset = 0x00
         BlockSize = 0
         for item in BlockSizeList:
@@ -126,7 +139,7 @@ class region(RegionClassObject):
                 return BlockSize
         return BlockSize
     
-    def __BlockNumOfRegion__ (self, BlockSize):
+    def BlockNumOfRegion (self, BlockSize):
         if BlockSize == 0 :
             raise Exception ("Region: %s doesn't in Fd address scope !" %self.Offset)
         BlockNum = self.Size / BlockSize

@@ -110,17 +110,26 @@ def main():
     else:
         Target = Common.TargetTxtClassObject.TargetTxtDict(GenFdsGlobalVariable.WorkSpaceDir)
         archList = Target.TargetTxtDictionary['TARGET_ARCH']
-
-    if (options.uiFdName) :
-        GenFds.currentFd = options.uiFdName
-
-    if (options.uiFvName) :
-        GenFds.currentFv = options.uiFvName
         
     """ Parse Fdf file """
     fdfParser = FdfParser.FdfParser(fdfFilename)
     fdfParser.ParseFile()
     
+    
+    if (options.uiFdName) :
+        if options.uiFdName.upper() in fdfParser.profile.FdDict.keys():
+            GenFds.currentFd = options.uiFdName
+        else:
+            GenFdsGlobalVariable.InfLogger("ERROR: E0001 - No such an FD in FDF file.")
+            sys.exit(1)
+
+    if (options.uiFvName) :
+        if options.uiFvName.upper() in fdfParser.profile.FvDict.keys():
+            GenFds.currentFv = options.uiFvName
+        else:
+            GenFdsGlobalVariable.InfLogger("ERROR: E0001 - No such an FV in FDF file.")
+            sys.exit(1)
+        
     """call workspace build create database"""
     os.environ["WORKSPACE"] = workspace
     buildWorkSpace = Common.EdkIIWorkspaceBuild.WorkspaceBuild(GenFdsGlobalVariable.ActivePlatform, GenFdsGlobalVariable.WorkSpaceDir)
@@ -189,7 +198,7 @@ class GenFds :
             fd = GenFdsGlobalVariable.FdfParser.profile.FdDict.get(GenFds.currentFd.upper())
             if fd != None:
                 fd.GenFd(GenFds.FvBinDict)
-        else :
+        elif GenFds.currentFv == None:
             for item in GenFdsGlobalVariable.FdfParser.profile.FdDict.keys():
                 fd = GenFdsGlobalVariable.FdfParser.profile.FdDict[item]
                 fd.GenFd(GenFds.FvBinDict)
@@ -199,24 +208,51 @@ class GenFds :
             fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(GenFds.currentFv.upper())
             if fv != None:
                 Buffer = StringIO.StringIO()
-                fv.AddToBuffer(Buffer)
+                # Get FV base Address
+                fv.AddToBuffer(Buffer, None, GenFds.GetFvBlockSize(fv))
                 Buffer.close()
-                
-        else:
+                return
+        elif GenFds.currentFd == None:
             for FvName in GenFdsGlobalVariable.FdfParser.profile.FvDict.keys():
                 if not FvName in GenFds.FvBinDict.keys():
                     Buffer = StringIO.StringIO()
                     fv = GenFdsGlobalVariable.FdfParser.profile.FvDict[FvName]
-                    fv.AddToBuffer(Buffer)
+                    # Get FV base Address
+                    fv.AddToBuffer(Buffer, None, GenFds.GetFvBlockSize(fv))
                     Buffer.close()
         
-        GenFdsGlobalVariable.VerboseLogger(" Gen Capsule !")
-        for capsule in GenFdsGlobalVariable.FdfParser.profile.CapsuleList:
-            capsule.GenCapsule()
+        if GenFds.currentFv == None and GenFds.currentFd == None:
+            GenFdsGlobalVariable.VerboseLogger(" Gen Capsule !")
+            for capsule in GenFdsGlobalVariable.FdfParser.profile.CapsuleList:
+                capsule.GenCapsule()
 
-
+    def GetFvBlockSize(fv):
+        fd = None
+        if GenFds.currentFd != None:
+            fd = GenFdsGlobalVariable.FdfParser.profile.FdDict[GenFds.currentFd.upper()]
+        if fd == None:
+            for elementFd in GenFdsGlobalVariable.FdfParser.profile.FdDict.values():
+                for elementRegion in elementFd.RegionList:
+                    if elementRegion.RegionType == 'FV':
+                        for elementRegionData in elementRegion.RegionDataList:
+                            if elementRegionData == fv.UiFvName:
+                                if fv.BlockSizeList != []:
+                                    return fv.BlockSizeList[0][0]
+                                else:
+                                    return elementRegion.BlockSizeOfRegion(elementFd.BlockSizeList)
+        else:
+            for elementRegion in fd.RegionList:
+                    if elementRegion.RegionType == 'FV':
+                        for elementRegionData in elementRegion.RegionDataList:
+                            if elementRegionData == fv.UiFvName:
+                                if fv.BlockSizeList != []:
+                                    return fv.BlockSizeList[0][0]
+                                else:
+                                    return elementRegion.BlockSizeOfRegion(elementFd.BlockSizeList)
+        
     """Define GenFd as static function"""
     GenFd = staticmethod(GenFd)
+    GetFvBlockSize = staticmethod(GetFvBlockSize)
 
 if __name__ == '__main__':
     

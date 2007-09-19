@@ -3,25 +3,26 @@ import os
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 from CommonDataClass.FdfClassObject import AprioriSectionClassObject
 class AprioriSection (AprioriSectionClassObject):
+    DXE_GUID = ""
+    PEI_GUID = ""
     def __init__(self):
         AprioriSectionClassObject.__init__()
-        DXE_GUID = ""
-        PEI_GUID = ""
+        self.AprioriType = ""
         
     def GenFfs (self):
         Buffer = StringIO.StringIO('')
         OutputFilePath = os.path.join (GenFdsGlobalVariable.WorkSpaceDir, \
                                    GenFdsGlobalVariable.FfsDir,\
-                                   self.DXE_GUID)
+                                   AprioriSection.DXE_GUID)
         if not os.path.exists(OutputFilePath) :
             os.makedirs(OutputFilePath)
             
         OutputFileName = os.path.join( OutputFilePath, \
-                                       Self.DXE_GUID + '.Apri' )
+                                       AprioriSection.DXE_GUID + '.Apri' )
         FfsFileName = os.path.join (GenFdsGlobalVariable.WorkSpaceDir, \
                                     GenFdsGlobalVariable.FfsDir, \
-                                    self.DXE_GUID,\
-                                    self.DXE_GUID + '.Ffs')
+                                    AprioriSection.DXE_GUID,\
+                                    AprioriSection.DXE_GUID + '.Ffs')
                                    
         OutputFile = open(OutPutFileName, 'w+b')
         for Ffs in self.FfsList :
