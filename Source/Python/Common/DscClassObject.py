@@ -362,7 +362,7 @@ class Dsc(DscObject):
         for Lib in LibraryClasses:
             List = GetSplitValueList(Lib)
             if len(List) != 2:
-                RaiseParserError(Lib, 'LibraryClasses', ContainerFile, '[<ClassName>|]<InfFilename>')
+                RaiseParserError(Lib, 'LibraryClasses', ContainerFile, '<ClassName>|<InfFilename>')
             LibName = List[0]
             LibFile = List[1]
             if LibName == "" or LibName == "NULL":
