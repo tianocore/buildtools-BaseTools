@@ -209,8 +209,13 @@
         "$(DLINK)" -o ${dst} $(DLINK_FLAGS) -( $(DLINK_SPATH) $(LIBS) ${src} -)
 
 [Build.Dynamic-Library-File]
-    <InputFile>
+    <InputFile.MSFT, InputFile.INTEL>
         ?.dll
+        $(MODULE_BUILD_DIR)\Makefile
+
+    <InputFile.GCC>
+        ?.dll
+        $(MODULE_BUILD_DIR)/GnuMakefile
 
     <OutputFile>
         $(DEBUG_DIR)(+)$(MODULE_NAME).efi
@@ -240,8 +245,7 @@
 
     <Command.MSFT, Command.INTEL>
         "$(PP)" $(APP_FLAGS) $(INC) ${src} > ${d_path}(+)${s_base}.i
-        Trim --source-code -o ${d_path}(+)${s_base}.iii ${d_path}(+)${s_base}.i
-        "$(ASL)" -p ${dst} ${d_path}(+)${s_base}.iii
+        "$(ASL)" -p ${dst} ${d_path}(+)${s_base}.i
 
 [Build.Acpi-Table-Code-File]
     <InputFile>
