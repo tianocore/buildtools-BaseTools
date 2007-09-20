@@ -68,6 +68,7 @@ class GenFdsGlobalVariable:
             GenFdsGlobalVariable.InfLogger (out)
             GenFdsGlobalVariable.InfLogger (error)
             GenFdsGlobalVariable.InfLogger (errorMess)
+            sys.exit(1)
 
     def VerboseLogger (msg):
         EdkLogger.verbose(msg)

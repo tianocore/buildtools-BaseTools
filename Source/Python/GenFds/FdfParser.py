@@ -891,6 +891,7 @@ class FdfParser:
         self.__GetFvAttributes( fv)
         
         self.__GetAprioriSection( fv)
+        self.__GetAprioriSection( fv)
         
         while True:
             isInf = self.__GetInfStatement( fv)
@@ -948,10 +949,16 @@ class FdfParser:
         if not self.__IsKeyword( "APRIORI"):
             return False
         
+        if not self.__IsKeyword("PEI") and not self.__IsKeyword("DXE"):
+            raise Warning("expected Apriori file type At Line %d" % self.CurrentLineNumber)
+        type = self.__Token
+        
         if not self.__IsToken( "{"):
             raise Warning("expected '{' At Line %d" % self.CurrentLineNumber)
         
         aprSection = AprioriSection.AprioriSection()
+        aprSection.AprioriType = type
+        
         self.__GetDefineStatements(aprSection)
         while self.__GetInfStatement( aprSection):
             pass
@@ -962,7 +969,7 @@ class FdfParser:
         if not self.__IsToken( "}"):
             raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)
 
-        fv.AprioriSection = aprSection
+        fv.AprioriSectionList.append(aprSection)
         return True
 
     def __GetInfStatement(self, obj, ForCapsule = False):
@@ -1131,6 +1138,8 @@ class FdfParser:
         
         self.__GetDefineStatements(ffsFile)
         self.__GetAprioriSection(ffsFile)
+        self.__GetAprioriSection(ffsFile)
+        
         while True:
             isLeafSection = self.__GetLeafSection(ffsFile)
             isEncapSection = self.__GetEncapsulationSec(ffsFile)
@@ -1208,6 +1217,7 @@ class FdfParser:
                 self.__GetSetStatements( fv)
                 self.__GetFvAlignment( fv)
                 self.__GetFvAttributes( fv)
+                self.__GetAprioriSection( fv)
                 self.__GetAprioriSection( fv)
     
                 while True:
@@ -1698,6 +1708,7 @@ class FdfParser:
                 self.__GetSetStatements( fv)
                 self.__GetFvAlignment( fv)
                 self.__GetFvAttributes( fv)
+                self.__GetAprioriSection( fv)
                 self.__GetAprioriSection( fv)
     
                 while True:

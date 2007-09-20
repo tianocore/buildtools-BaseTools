@@ -235,7 +235,7 @@ class GenFds :
                 for elementRegion in elementFd.RegionList:
                     if elementRegion.RegionType == 'FV':
                         for elementRegionData in elementRegion.RegionDataList:
-                            if elementRegionData == fv.UiFvName:
+                            if elementRegionData != None and elementRegionData.upper() == fv.UiFvName:
                                 if fv.BlockSizeList != []:
                                     return fv.BlockSizeList[0][0]
                                 else:
@@ -244,7 +244,7 @@ class GenFds :
             for elementRegion in fd.RegionList:
                     if elementRegion.RegionType == 'FV':
                         for elementRegionData in elementRegion.RegionDataList:
-                            if elementRegionData == fv.UiFvName:
+                            if elementRegionData != None and elementRegionData.upper() == fv.UiFvName:
                                 if fv.BlockSizeList != []:
                                     return fv.BlockSizeList[0][0]
                                 else:

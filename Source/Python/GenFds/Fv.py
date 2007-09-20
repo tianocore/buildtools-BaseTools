@@ -22,17 +22,15 @@ class FV (FvClassObject):
         # First Process the Apriori section
         #
         GenFdsGlobalVariable.VerboseLogger('First generate Aprioris file !')
-        if not (self.AprioriSection == None):
-            FileName = self.AprioriSection.GenFfs ()
-            #
-            # Add Apriori section included Ffs file name to Inf file
-            #
+        for aprSection in self.AprioriSectionList:
+            FileName = aprSection.GenFfs (self.UiFvName)
+            # Add Apriori file name to Inf file
             self.FvInfFile.writelines("EFI_FILE_NAME = " + \
                                        FileName          + \
                                            T_CHAR_LF)
-        #
+        
         # Process Modules in FfsList
-        #
+        
         for FfsFile in self.FfsList :
             FileName = FfsFile.GenFfs()
             self.FvInfFile.writelines("EFI_FILE_NAME = " + \
