@@ -5,6 +5,7 @@ import os
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 from CommonDataClass.FdfClassObject import GuidSectionClassObject
 from Common import ToolDefClassObject
+import sys
 
 class GuidSection(GuidSectionClassObject) :
     
@@ -43,12 +44,14 @@ class GuidSection(GuidSectionClassObject) :
                      Ffs.SectionSuffix['GUIDED']
         OutputFile = os.path.normpath(OutputFile)
         
-        ExternalTool = self.__FindExtendTool__()
+        ExternalTool = None
+        if self.NameGuid != None:
+            ExternalTool = self.__FindExtendTool__()
         #
-        # If not have GUID or GUID not in External Tool List, call default
+        # If not have GUID , call default
         # GENCRC32 section
         #
-        if self.NameGuid == None or ExternalTool == None :
+        if self.NameGuid == None :
             GenFdsGlobalVariable.VerboseLogger( "Use GenSection function Generate CRC32 Section")
             GenSectionCmd = 'GenSec -o '                                   + \
                              OutputFile                                    + \
@@ -60,6 +63,10 @@ class GuidSection(GuidSectionClassObject) :
             OutputFileList = []
             OutputFileList.append(OutputFile)
             return OutputFileList, self.Alignment
+        #or GUID not in External Tool List
+        elif ExternalTool == None:
+            print "No tool found with GUID %s" % self.NameGuid
+            sys.exit(1)
         else:
             #
             # Call GenSection with DUMMY section type.

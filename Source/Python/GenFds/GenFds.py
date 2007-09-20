@@ -240,6 +240,7 @@ class GenFds :
                                     return fv.BlockSizeList[0][0]
                                 else:
                                     return elementRegion.BlockSizeOfRegion(elementFd.BlockSizeList)
+            return 0x10000
         else:
             for elementRegion in fd.RegionList:
                     if elementRegion.RegionType == 'FV':
@@ -249,6 +250,7 @@ class GenFds :
                                     return fv.BlockSizeList[0][0]
                                 else:
                                     return elementRegion.BlockSizeOfRegion(elementFd.BlockSizeList)
+            return 0x10000
         
     """Define GenFd as static function"""
     GenFd = staticmethod(GenFd)

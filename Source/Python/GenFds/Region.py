@@ -28,8 +28,6 @@ class region(RegionClassObject):
             FvBaseAddress = '0x%x' %self.FvAddress
                     
             for RegionData in self.RegionDataList:
-                if FvBuffer.len > Size:
-                    raise Exception ("Size of Region (%s) is large than Region Size ", self.Offset)
                 
                 if RegionData.endswith(".fv"):
                     RegionData = GenFdsGlobalVariable.MarcoExend(RegionData, MarcoDict)
@@ -41,6 +39,8 @@ class region(RegionClassObject):
                     
                     BinFile = open (RegionData, 'r+b')
                     FvBuffer.write(BinFile.read())
+                    if FvBuffer.len > Size:
+                        raise Exception ("Size of FV File (%s) is larger than Region Size %d" % (RegionData, Size))
                     break
                 
                 fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(RegionData.upper())
@@ -61,12 +61,11 @@ class region(RegionClassObject):
                     FvBaseAddress = '0x%x' %self.FvAddress
                     FileName = fv.AddToBuffer(FvBuffer, FvBaseAddress, BlockSize, BlockNum, ErasePolarity, vtfDict)
                     
-                    #BinFile = open (FileName, 'r+b')
-                    #FvBuffer.write(BinFile.read())
                     FvBinDict[RegionData.upper()] = FileName
-            
-            if FvBuffer.len < Size :
-                raise Exception ("Size of Region (%s) is less than Region Size ", self.Offset)
+                    if FvBuffer.len > Size:
+                        raise Exception ("Size of FV (%s) is larger than Region Size %d" % (RegionData, Size))
+#            if FvBuffer.len < Size :
+#                raise Exception ("Size of Region (%s) is less than Region Size ", self.Offset)
 
             #BinFile = open (FileName, 'r+b')
             #Buffer.write(BinFile.read())
