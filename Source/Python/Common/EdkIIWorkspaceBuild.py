@@ -371,12 +371,12 @@ class WorkspaceBuild(object):
     #
     # Generate ModuleDatabase
     #
-    def GenModuleDatabase(self, PcdsSet = {}):
+    def GenModuleDatabase(self, PcdsSet = {}, InfList = []):
         for Inf in self.InfDatabase.keys():
             Module = self.InfDatabase[Inf].Module
 
             for Arch in self.SupArchList:
-                if not self.IsModuleDefinedInPlatform(Inf, Arch):
+                if not self.IsModuleDefinedInPlatform(Inf, Arch, InfList):
                     continue
 
                 pb = ModuleBuildClassObject()
@@ -503,13 +503,13 @@ class WorkspaceBuild(object):
     #
     # Update Libraries Of Platform Database
     #
-    def UpdateLibrariesOfPlatform(self):
+    def UpdateLibrariesOfPlatform(self, InfList = []):
         for Arch in self.SupArchList:
             PlatformDatabase = self.Build[Arch].PlatformDatabase
             for Dsc in PlatformDatabase:
                 Platform = PlatformDatabase[Dsc]
                 for Inf in Platform.Modules:
-                    if not self.IsModuleDefinedInPlatform(Inf, Arch):
+                    if not self.IsModuleDefinedInPlatform(Inf, Arch, InfList):
                         continue
                     Module = self.Build[Arch].ModuleDatabase[NormPath(Inf)]
                     if Module.LibraryClass == None or Module.LibraryClass == []:
@@ -696,11 +696,13 @@ class WorkspaceBuild(object):
     #
     # Generate build database for all arches
     #
-    def GenBuildDatabase(self, PcdsSet = {}):
+    def GenBuildDatabase(self, PcdsSet = {}, InfList = []):
+        for InfFile in InfList:
+            self.AddToInfDatabase(InfFile)
         self.GenPlatformDatabase()
         self.GenPackageDatabase()
-        self.GenModuleDatabase(PcdsSet)
-        self.UpdateLibrariesOfPlatform()
+        self.GenModuleDatabase(PcdsSet, InfList)
+        self.UpdateLibrariesOfPlatform(InfList)
 
     #
     # Return a full path with workspace dir
@@ -946,7 +948,9 @@ class WorkspaceBuild(object):
     #
     # Check if the module is defined in <Compentent> of <Platform>
     #
-    def IsModuleDefinedInPlatform(self, Inf, Arch):
+    def IsModuleDefinedInPlatform(self, Inf, Arch, InfList):
+        if Inf in InfList:
+            return True
         Inf = NormPath(Inf)
         for Dsc in self.DscDatabase.values():
             for LibraryClass in Dsc.Platform.LibraryClasses.LibraryList:
@@ -1057,5 +1061,5 @@ if __name__ == '__main__':
     # Nothing to do here. Could do some unit tests.
     w = os.getenv('WORKSPACE')
     ewb = WorkspaceBuild('Nt32Pkg/Nt32Pkg.dsc', w)
-    ewb.GenBuildDatabase({('PcdDevicePathSupportDevicePathFromText, gEfiMdeModulePkgTokenSpaceGuid') : 'KKKKKKKKKKKKKKKKKKKKK'})
+    ewb.GenBuildDatabase({('PcdDevicePathSupportDevicePathFromText, gEfiMdeModulePkgTokenSpaceGuid') : 'KKKKKKKKKKKKKKKKKKKKK'}, ['Test.Inf'])
     ewb.ShowWorkspaceBuild()
