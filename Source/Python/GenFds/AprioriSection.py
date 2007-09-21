@@ -1,6 +1,7 @@
 from struct import *
 import os
 import StringIO
+import FfsFileStatement
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 from CommonDataClass.FdfClassObject import AprioriSectionClassObject
 from Common.String import *
@@ -31,18 +32,22 @@ class AprioriSection (AprioriSectionClassObject):
                                    
         OutputAprFile = open(OutputAprFileName, 'w+b')
         for ffs in self.FfsList :
-            InfFileName = NormPath(ffs.InfFileName)
-            Inf = GenFdsGlobalVariable.WorkSpace.Build['IA32'].ModuleDatabase.get(InfFileName)
-            if Inf == None:
-                Inf = GenFdsGlobalVariable.WorkSpace.Build['X64'].ModuleDatabase.get(InfFileName)
+            Guid = ""
+            if isinstance(ffs, FfsFileStatement.FileStatements):
+                Guid = ffs.NameGuid
+            else:
+                InfFileName = NormPath(ffs.InfFileName)
+                Inf = GenFdsGlobalVariable.WorkSpace.Build['IA32'].ModuleDatabase.get(InfFileName)
                 if Inf == None:
-                    Inf = GenFdsGlobalVariable.WorkSpace.Build['IPF'].ModuleDatabase.get(InfFileName)
+                    Inf = GenFdsGlobalVariable.WorkSpace.Build['X64'].ModuleDatabase.get(InfFileName)
                     if Inf == None:
-                        Inf = GenFdsGlobalVariable.WorkSpace.Build['EBC'].ModuleDatabase.get(InfFileName)
+                        Inf = GenFdsGlobalVariable.WorkSpace.Build['IPF'].ModuleDatabase.get(InfFileName)
                         if Inf == None:
-                            raise Exception ("This File :%s doesn't exist!", InfFileName)
+                            Inf = GenFdsGlobalVariable.WorkSpace.Build['EBC'].ModuleDatabase.get(InfFileName)
+                            if Inf == None:
+                                raise Exception ("This File :%s doesn't exist!", InfFileName)
             
-            Guid = Inf.Guid
+                Guid = Inf.Guid
             GuidPart = Guid.split('-')
             Buffer.write(pack('I', long(GuidPart[0], 16)))
             Buffer.write(pack('H', int(GuidPart[1], 16)))

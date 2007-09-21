@@ -960,11 +960,12 @@ class FdfParser:
         aprSection.AprioriType = type
         
         self.__GetDefineStatements(aprSection)
-        while self.__GetInfStatement( aprSection):
-            pass
         
-        while self.__GetFileStatement( aprSection):
-            pass
+        while True:
+            isInf = self.__GetInfStatement( aprSection)
+            isFile = self.__GetFileStatement( aprSection)
+            if not isInf and not isFile:
+                break
         
         if not self.__IsToken( "}"):
             raise Warning("expected '}' At Line %d" % self.CurrentLineNumber)

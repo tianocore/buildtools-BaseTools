@@ -21,7 +21,7 @@ class FV (FvClassObject):
         #
         # First Process the Apriori section
         #
-        GenFdsGlobalVariable.VerboseLogger('First generate Aprioris file !')
+        GenFdsGlobalVariable.VerboseLogger('First generate Apriori file !')
         for aprSection in self.AprioriSectionList:
             FileName = aprSection.GenFfs (self.UiFvName)
             # Add Apriori file name to Inf file
@@ -39,11 +39,15 @@ class FV (FvClassObject):
             
         self.FvInfFile.close()
         #
-        # Call GenFv tool
+        # Call GenFv tool 
         #
         
         FvOutputFile = os.path.join(GenFdsGlobalVariable.FvDir, self.UiFvName)
         FvOutputFile = FvOutputFile + '.Fv'
+        # BUGBUG: FvOutputFile could be specified from FDF file (FV section, CreateFile statement)
+        if self.CreateFileName != None:
+            FvOutputFile = self.CreateFileName
+            
         cmd = 'GenFv -i '                 + \
                self.InfFileName           + \
                ' -o '                     + \
