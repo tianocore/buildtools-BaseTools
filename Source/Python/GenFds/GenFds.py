@@ -133,7 +133,7 @@ def main():
     """call workspace build create database"""
     os.environ["WORKSPACE"] = workspace
     buildWorkSpace = Common.EdkIIWorkspaceBuild.WorkspaceBuild(GenFdsGlobalVariable.ActivePlatform, GenFdsGlobalVariable.WorkSpaceDir)
-    buildWorkSpace.GenBuildDatabase()
+    buildWorkSpace.GenBuildDatabase({}, fdfParser.profile.InfList)
     
     """Call GenFds"""
     GenFds.GenFd(outputDir, fdfParser, buildWorkSpace, archList)

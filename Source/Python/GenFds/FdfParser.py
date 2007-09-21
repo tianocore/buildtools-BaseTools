@@ -60,6 +60,7 @@ class FileProfile :
             raise
         
         self.PcdDict = {}
+        self.InfList = []
         
         self.FdDict = {}
         self.FvDict = {}
@@ -984,6 +985,8 @@ class FdfParser:
         if not self.__GetNextToken():
             raise Warning("expected INF file path At Line %d" % self.CurrentLineNumber)
         ffsInf.InfFileName = self.__Token
+        if not ffsInf.InfFileName in self.profile.InfList:
+            self.profile.InfList.append(ffsInf.InfFileName)
         
         if ForCapsule:
             capsuleFfs = CapsuleData.CapsuleFfs()

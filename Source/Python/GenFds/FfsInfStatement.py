@@ -25,15 +25,33 @@ class FfsInfStatement(FfsInfStatementClassObject):
 ##            print item
         self.InfFileName = NormPath(self.InfFileName)
         (self.SourceDir, InfName) = os.path.split(self.InfFileName)
-        Inf = GenFdsGlobalVariable.WorkSpace.Build[self.CurrentArch].ModuleDatabase[self.InfFileName]
-        #
-        # Set Ffs BaseName, MdouleGuid, ModuleType, Version, OutputPath
-        #
-        self.BaseName = Inf.BaseName
-        self.ModuleGuid = Inf.Guid
-        self.ModuleType = Inf.ModuleType
-        self.VersionString = Inf.Version
-        self.BinFileList = Inf.Binaries
+        if self.CurrentArch != None and self.InfFileName in GenFdsGlobalVariable.WorkSpace.Build[self.CurrentArch].ModuleDatabase.keys():
+            
+            Inf = GenFdsGlobalVariable.WorkSpace.Build[self.CurrentArch].ModuleDatabase[self.InfFileName]
+            #
+            # Set Ffs BaseName, MdouleGuid, ModuleType, Version, OutputPath
+            #
+            self.BaseName = Inf.BaseName
+            self.ModuleGuid = Inf.Guid
+            self.ModuleType = Inf.ModuleType
+            self.VersionString = Inf.Version
+            self.BinFileList = Inf.Binaries
+        
+        elif self.InfFileName in GenFdsGlobalVariable.WorkSpace.InfDatabase.keys():
+            Inf = GenFdsGlobalVariable.WorkSpace.InfDatabase[self.InfFileName]
+            self.BaseName = Inf.Module.Header.Name
+            self.ModuleGuid = Inf.Module.Header.Guid
+            self.ModuleType = Inf.Module.Header.ModuleType
+            self.VersionString = Inf.Module.Header.Version
+            self.BinFileList = Inf.Module.Binaries
+            if self.BinFileList == []:
+                raise Exception ("INF %s not found in database!" % self.InfFileName)
+                sys.exit(1)
+        
+        else:
+            raise Exception ("INF %s not found in database!" % self.InfFileName)
+            sys.exit(1)
+        
         GenFdsGlobalVariable.VerboseLogger( "BaseName : %s" %self.BaseName)
         GenFdsGlobalVariable.VerboseLogger("ModuleGuid : %s" %self.ModuleGuid)
         GenFdsGlobalVariable.VerboseLogger("ModuleType : %s" %self.ModuleType)
@@ -106,6 +124,8 @@ class FfsInfStatement(FfsInfStatementClassObject):
 
     def __GetRule__ (self) :
         currentArchList = self.__GetCurrentArch__()
+        if currentArchList == None:
+            currentArchList = ['common']
         
         #for item in GenFdsGlobalVariable.FdfParser.profile.RuleDict :
         #    print item
@@ -199,7 +219,9 @@ class FfsInfStatement(FfsInfStatementClassObject):
         (ModulePath, fileName) = os.path.split(self.InfFileName)
         index = fileName.find('.')
         fileName = fileName[0:index]
-        Arch = self.__GetCurrentArch__()
+        Arch = "NoneArch"
+        if self.__GetCurrentArch__() != None:
+            Arch = self.__GetCurrentArch__()
         
         OutputPath = os.path.join(GenFdsGlobalVariable.OuputDir,
                                   Arch ,
