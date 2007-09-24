@@ -1,5 +1,5 @@
 ## @file
-# Store a Module class object to an INF file.
+# Store a Platform class object to an INF file.
 #
 # Copyright (c) 2007, Intel Corporation
 # All rights reserved. This program and the accompanying materials
@@ -21,13 +21,13 @@ from Common.MigrationUtilities import *
 from Common.ToolDefClassObject import *
 from Common.TargetTxtClassObject import *
 
-## Store Defines section.
+## Store Defines section
 #
 # Write [Defines] section to the DscFile based on Platform class object.
 # Different CPU architectures are specified in the subsection if possible.
 #
-# @param  DscFile                 The output DSC file to store the Defines section.
-# @param  Platform               An input Platform class object.
+# @param  DscFile                The output DSC file to store the Defines section
+# @param  Platform               An input Platform class object
 #
 def StorePlatformDefinesSection(DscFile, Platform):
     PlatformHeader = Platform.Header
@@ -66,13 +66,13 @@ def StorePlatformDefinesSection(DscFile, Platform):
 	
     StoreDefinesSection(DscFile, DefinesTupleList)
 
-## Store SkuIds section.
+## Store SkuIds section
 #
 # Write [SkuIds] section to the DscFile based on Platform class object.
 # Different CPU architectures are specified in the subsection if possible.
 #
-# @param  DscFile                 The output DSC file to store the Library Classes section.
-# @param  Platform               An input Platform class object.
+# @param  DscFile                The output DSC file to store the Library Classes section
+# @param  Platform               An input Platform class object
 #
 def StorePlatformSkuIdsSection(DscFile, Platform):
     Section = "[SkuIds]" + '\n'
@@ -84,13 +84,13 @@ def StorePlatformSkuIdsSection(DscFile, Platform):
     
     StoreTextFile(DscFile, Section)
 
-## Store Build Options section.
+## Store Build Options section
 #
 # Write [BuildOptions] section to the DscFile based on Platform class object.
 # Different CPU architectures are specified in the subsection if possible.
 #
-# @param  DscFile                 The output DSC file to store the Build Options section.
-# @param  Platform               An input Platform class object.
+# @param  DscFile                The output DSC file to store the Build Options section
+# @param  Platform               An input Platform class object
 #
 def StorePlatformBuildOptionsSection(DscFile, Platform):
     # which is from tools_def.txt
@@ -199,25 +199,25 @@ def StorePlatformBuildOptionsSection(DscFile, Platform):
     Section += "\n"
     StoreTextFile(DscFile, Section)
 
-## Store Libraries section.
+## Store Libraries section
 #
 # Write [Libraries] section to the DscFile based on Platform class object.
 # Different CPU architectures are specified in the subsection if possible.
 #
-# @param  DscFile                 The output DSC file to store the Library Classes section.
-# @param  Platform               An input Platform class object.
+# @param  DscFile                The output DSC file to store the Library Classes section
+# @param  Platform               An input Platform class object
 #
 def StorePlatformLibrariesSection(DscFile,Platform):
     Section = '[Libraries]\n\n'
     StoreTextFile(DscFile, Section)
 
-## Return a Platform Library Class Item.
+## Return a Platform Library Class Item
 #
 # Read the input LibraryClass class object and return one line of Library Class Item.
 #
-# @param  LibraryClass         An input LibraryClass class object.
+# @param  LibraryClass         An input LibraryClass class object
 #
-# @retval LibraryClassItem     A Module Library Class Item.
+# @retval LibraryClassItem     A Module Library Class Item
 #
 def GetPlatformLibraryClassItem(LibraryClass):
     LibraryClassList = []
@@ -226,14 +226,14 @@ def GetPlatformLibraryClassItem(LibraryClass):
 
     return "|$(WORKSPACE)/".join(LibraryClassList).rstrip("|")
 
-## Add item to a LibraryClass section.
+## Add item to a LibraryClass section
 #
 # Add an Item with specific Module Type to section dictionary.
 # The possible duplication is ensured to be removed.
 #
-# @param  Section            Section dictionary indexed by CPU architecture.
-# @param  SupModuleList      LibraryClass SupModuleList: BASE, SEC, PEI_CORE, PEIM, etc.
-# @param  Item               The Item to be added to section dictionary.
+# @param  Section            Section dictionary indexed by CPU architecture
+# @param  SupModuleList      LibraryClass SupModuleList: BASE, SEC, PEI_CORE, PEIM, etc
+# @param  Item               The Item to be added to section dictionary
 #
 def AddToLibraryClassSection(Section, SupModuleList, Item):
     for ModuleType in SupModuleList:
@@ -242,14 +242,14 @@ def AddToLibraryClassSection(Section, SupModuleList, Item):
             SectionModule.append(Item)
             Section[ModuleType] = SectionModule
 
-## Get Library Classes section contents.
+## Get Library Classes section contents
 #
 # Return the content of section named SectionName.
 # the contents is based on Methods and ObjectLists.
 #
-# @param  SectionName        The name of the section.
-# @param  Method             A function returning a string item of an object.
-# @param  ObjectList         The list of object.
+# @param  SectionName        The name of the section
+# @param  Method             A function returning a string item of an object
+# @param  ObjectList         The list of object
 #
 # @retval Section            The string content of a section.
 #
@@ -363,25 +363,25 @@ def GetLibraryClassesSection(SectionName, Method, ObjectList):
         Section += "\n"
     return Section
 
-## Store Library Classes section.
+## Store Library Classes section
 #
 # Write [LibraryClasses] section to the DscFile based on Platform class object.
 # Different CPU architectures are specified in the subsection if possible.
 #
-# @param  DscFile                 The output DSC file to store the Library Classes section.
-# @param  Platform               An input Platform class object.
+# @param  DscFile                The output DSC file to store the Library Classes section
+# @param  Platform               An input Platform class object
 #
 def StorePlatformLibraryClassesSection(DscFile, Platform):
     Section = GetLibraryClassesSection("LibraryClasses", GetPlatformLibraryClassItem, Platform.LibraryClasses.LibraryList)
     StoreTextFile(DscFile, Section)
 
-## Store Pcd section.
+## Store Pcd section
 #
 # Write [Pcd] section to the DscFile based on Platform class object.
 # Different CPU architectures are specified in the subsection if possible.
 #
-# @param  DscFile                 The output DSC file to store the Build Options section.
-# @param  Platform               An input Platform class object.
+# @param  DscFile                The output DSC file to store the Build Options section
+# @param  Platform               An input Platform class object
 #
 def StorePlatformPcdSection(DscFile, Platform):
     # {PcdsFixedAtBuild:String1, PcdsFixedAtBuild:String2, PcdsPatchableInModule:String3}
@@ -451,14 +451,14 @@ def StorePlatformPcdSection(DscFile, Platform):
     Section += "\n\n"
     StoreTextFile(DscFile, Section)
 
-## Add item to a section.
+## Add item to a section
 #
 # Add an Item with specific CPU architecture to section dictionary.
 # The possible duplication is ensured to be removed.
 #
-# @param  Section            Section dictionary indexed by CPU architecture.
-# @param  Arch               CPU architecture: Ia32, X64, Ipf, Ebc or Common.
-# @param  Item               The Item to be added to section dictionary.
+# @param  Section            Section dictionary indexed by CPU architecture
+# @param  Arch               CPU architecture: Ia32, X64, Ipf, Ebc or Common
+# @param  Item               The Item to be added to section dictionary
 #
 def AddToSection(Section, Arch, Item):
     SectionArch = Section.get(Arch, [])
@@ -466,16 +466,16 @@ def AddToSection(Section, Arch, Item):
         SectionArch.append(Item)
         Section[Arch] = SectionArch
 
-## Get section contents.
+## Get section contents
 #
 # Return the content of section named SectionName.
 # the contents is based on Methods and ObjectLists.
 #
-# @param  SectionName        The name of the section.
-# @param  Method             A function returning a string item of an object.
-# @param  ObjectList         The list of object.
+# @param  SectionName        The name of the section
+# @param  Method             A function returning a string item of an object
+# @param  ObjectList         The list of object
 #
-# @retval Section            The string content of a section.
+# @retval Section            The string content of a section
 #
 def GetSection(SectionName, Method, ObjectList):
     SupportedArches = ["COMMON", "IA32", "X64", "IPF", "EBC"]
@@ -505,13 +505,13 @@ def GetSection(SectionName, Method, ObjectList):
         Section += "\n"
     return Section
 
-## Return a Platform Component Item.
+## Return a Platform Component Item
 #
 # Read the input Platform Component object and return one line of Platform Component Item.
 #
-# @param  Component         An input Platform Component class object.
+# @param  Component         An input Platform Component class object
 #
-# @retval ComponentItem     A Platform Component Item.
+# @retval ComponentItem     A Platform Component Item
 #
 def GetPlatformComponentItem(Component):
     List = []
@@ -605,8 +605,8 @@ def GetPlatformComponentItem(Component):
 # Write [Components] section to the DscFile based on Platform class object.
 # Different CPU architectures are specified in the subsection if possible.
 #
-# @param  DscFile                The output DSC file to store the Components section.
-# @param  Platform               An input Platform class object.
+# @param  DscFile                The output DSC file to store the Components section
+# @param  Platform               An input Platform class object
 #
 def StorePlatformComponentsSection(DscFile, Platform):
     Section = GetSection("Components", GetPlatformComponentItem, Platform.Modules.ModuleList)
@@ -617,8 +617,8 @@ def StorePlatformComponentsSection(DscFile, Platform):
 # Write [UserExtensions] section to the InfFile based on Module class object.
 # Different CPU architectures are specified in the subsection if possible.
 #
-# @param  DscFile                The output DSC file to store the User Extensions section.
-# @param  Platform               An input Platform class object.
+# @param  DscFile                The output DSC file to store the User Extensions section
+# @param  Platform               An input Platform class object
 #
 def StorePlatformUserExtensionsSection(DscFile, Platform):
     Section = "".join(map(GetUserExtensions, Platform.UserExtensions))
@@ -628,8 +628,8 @@ def StorePlatformUserExtensionsSection(DscFile, Platform):
 #
 # Read an input Platform class object and save the contents to a new DSC file.
 #
-# @param  DSCFileName          The output DSC file.
-# @param  Platform                  An input Platform class object.
+# @param  DSCFileName             The output DSC file
+# @param  Platform                An input Platform class object
 #
 def StoreDsc(DscFileName, Platform):
     DscFile = open(DscFileName, "w+")

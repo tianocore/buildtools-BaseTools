@@ -19,7 +19,7 @@ import fnmatch
 from Common.EdkIIWorkspace import EdkIIWorkspace
 from Common.MigrationUtilities import *
 
-## A class for EdkII work space to resolve Guids.
+## A class for EdkII work space to resolve Guids
 #
 # This class inherits from EdkIIWorkspace and collects the Guids information
 # in current workspace. The Guids information is important to translate the
@@ -28,13 +28,13 @@ from Common.MigrationUtilities import *
 #
 class EdkIIWorkspaceGuidsInfo(EdkIIWorkspace):
 
-    ## The classconstructor.
+    ## The classconstructor
     #
     # The constructor initialize workspace directory. It does not collect
     # pakage and module Guids info at initialization; instead, it collects them
     # on the fly.
     #
-    # @param  self           The object pointer.
+    # @param  self           The object pointer
     #
     def __init__(self):
         # Initialize parent class.
@@ -50,21 +50,21 @@ class EdkIIWorkspaceGuidsInfo(EdkIIWorkspace):
         # to avoid re-collection collected.
         self.__ModuleGuidInitialized = False
 
-    ## Add Guid, Version and FilePath to Guids database.
+    ## Add Guid, Version and FilePath to Guids database
     #
     # Add Guid, Version and FilePath to Guids database. It constructs a map
     # table from Guid, Version to FilePath internally. If also detects possible
     # Guid collision. For now, the version information is simply ignored and
     # Guid value itself acts as master key.
     #
-    # @param  self           The object pointer.
-    # @param  Guid           The Guid Value.
+    # @param  self           The object pointer
+    # @param  Guid           The Guid Value
     # @param  Version        The version information
     # @param  FilePath       The Guid related file path
     #
-    # @retval True           The Guid value is successfully added to map table.
+    # @retval True           The Guid value is successfully added to map table
     # @retval False          The Guid is an empty string or the map table
-    #                        already contains a same Guid.
+    #                        already contains a same Guid
     #
     def __AddGuidToFilePath(self, Guid, Version, FilePath):
         if Guid == "":
@@ -80,18 +80,18 @@ class EdkIIWorkspaceGuidsInfo(EdkIIWorkspace):
             return False
         
 
-    ## Gets file information from a module description file.
+    ## Gets file information from a module description file
     #
     # Extracts Module Name, File Guid and Version number from INF, MSA and NMSA
     # file. It supports to exact such information from text based INF file or
     # XML based (N)MSA file.
     #
-    # @param  self           The object pointer.
-    # @param  FileName       The input module file name.
+    # @param  self           The object pointer
+    # @param  FileName       The input module file name
     #
     # @retval True           This module file represents a new module discovered
-    #                        in current workspace.
-    # @retval False          This module file is not regarded as a valid module.
+    #                        in current workspace
+    # @retval False          This module file is not regarded as a valid module
     #                        The File Guid cannot be extracted or the another
     #                        file with the same Guid already exists
     #
@@ -109,19 +109,19 @@ class EdkIIWorkspaceGuidsInfo(EdkIIWorkspace):
         return self.__AddGuidToFilePath(Guid, Version, FileName)
     
     
-    ## Gets file information from a package description file.
+    ## Gets file information from a package description file
     #
     # Extracts Package Name, File Guid and Version number from INF, SPD and NSPD
     # file. It supports to exact such information from text based DEC file or
     # XML based (N)SPD file. EDK Compatibility Package is hardcoded to be
     # ignored since no EDKII INF file depends on that package.
     #
-    # @param  self           The object pointer.
-    # @param  FileName       The input package file name.
+    # @param  self           The object pointer
+    # @param  FileName       The input package file name
     #
     # @retval True           This package file represents a new package
-    #                        discovered in current workspace.
-    # @retval False          This package is not regarded as a valid package.
+    #                        discovered in current workspace
+    # @retval False          This package is not regarded as a valid package
     #                        The File Guid cannot be extracted or the another
     #                        file with the same Guid already exists
     #
@@ -144,13 +144,13 @@ class EdkIIWorkspaceGuidsInfo(EdkIIWorkspace):
         
         return self.__AddGuidToFilePath(Guid, Version, FileName)
 
-    ## Iterate on all package files listed in framework database file.
+    ## Iterate on all package files listed in framework database file
     #
     # Yields all package description files listed in framework database files.
     # The framework database file describes the packages current workspace
     # includes.
     #
-    # @param  self           The object pointer.
+    # @param  self           The object pointer
     #
     def __FrameworkDatabasePackageFiles(self):
         XmlFrameworkDb = XmlParseFile(self.WorkspaceFile)
@@ -159,12 +159,12 @@ class EdkIIWorkspaceGuidsInfo(EdkIIWorkspace):
             yield os.path.join(self.WorkspaceDir, PackageFile)
     
     
-    ## Iterate on all package files in current workspace directory.
+    ## Iterate on all package files in current workspace directory
     #
     # Yields all package description files listed in current workspace
     # directory. This happens when no framework database file exists.
     #
-    # @param  self           The object pointer.
+    # @param  self           The object pointer
     #
     def __TraverseAllPackageFiles(self):
         for Path, Dirs, Files in os.walk(self.WorkspaceDir):
@@ -185,12 +185,12 @@ class EdkIIWorkspaceGuidsInfo(EdkIIWorkspace):
                 del Dirs[:]
                 yield os.path.join(Path, File)
 
-    ## Iterate on all module files in current package directory.
+    ## Iterate on all module files in current package directory
     #
     # Yields all module description files listed in current package
     # directory.
     #
-    # @param  self           The object pointer.
+    # @param  self           The object pointer
     #
     def __TraverseAllModuleFiles(self):
         for PackageDir in self.__PackageDirList:
@@ -208,12 +208,12 @@ class EdkIIWorkspaceGuidsInfo(EdkIIWorkspace):
                 for File in ModuleFiles:
                     yield os.path.join(Path, File)
 
-    ## Initialize package Guids info mapping table.
+    ## Initialize package Guids info mapping table
     #
     # Collects all package guids map to package decription file path. This
     # function is invokes on demand to avoid unnecessary directory scan.
     #
-    # @param  self           The object pointer.
+    # @param  self           The object pointer
     #
     def __InitializePackageGuidInfo(self):
         if self.__PackageGuidInitialized:
@@ -240,12 +240,12 @@ class EdkIIWorkspaceGuidsInfo(EdkIIWorkspace):
                 
         self.__PackageGuidInitialized = True
 
-    ## Initialize module Guids info mapping table.
+    ## Initialize module Guids info mapping table
     #
     # Collects all module guids map to module decription file path. This
     # function is invokes on demand to avoid unnecessary directory scan.
     #
-    # @param  self           The object pointer.
+    # @param  self           The object pointer
     #
     def __InitializeModuleGuidInfo(self):
         if self.__ModuleGuidInitialized:
@@ -259,16 +259,16 @@ class EdkIIWorkspaceGuidsInfo(EdkIIWorkspace):
                 
         self.__ModuleGuidInitialized = True
 
-    ## Get Package file path by Package Guid and Version.
+    ## Get Package file path by Package Guid and Version
     #
     # Translates the Package Guid and Version to a file path relative
     # to workspace directory. If no package in current workspace match the
     # input Guid, an empty file path is returned. For now, the version
     # value is simply ignored.
     #
-    # @param  self           The object pointer.
-    # @param  Guid           The Package Guid value to look for.
-    # @param  Version        The Package Version value to look for.
+    # @param  self           The object pointer
+    # @param  Guid           The Package Guid value to look for
+    # @param  Version        The Package Version value to look for
     #
     def ResolvePackageFilePath(self, Guid, Version = ""):
         self.__InitializePackageGuidInfo()
@@ -283,16 +283,16 @@ class EdkIIWorkspaceGuidsInfo(EdkIIWorkspace):
             FileName = FileName.replace("\\", "/")
         return FileName
 
-    ## Get Module file path by Module Guid and Version.
+    ## Get Module file path by Module Guid and Version
     #
     # Translates the Module Guid and Version to a file path relative
     # to workspace directory. If no module in current workspace match the
     # input Guid, an empty file path is returned. For now, the version
     # value is simply ignored.
     #
-    # @param  self           The object pointer.
-    # @param  Guid           The Module Guid value to look for.
-    # @param  Version        The Module Version value to look for.
+    # @param  self           The object pointer
+    # @param  Guid           The Module Guid value to look for
+    # @param  Version        The Module Version value to look for
     #
     def ResolveModuleFilePath(self, Guid, Version = ""):
         self.__InitializeModuleGuidInfo()

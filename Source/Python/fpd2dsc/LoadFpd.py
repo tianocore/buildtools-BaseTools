@@ -19,18 +19,17 @@ from CommonDataClass.PlatformClass import *
 from CommonDataClass.FdfClassObject import *
 from Common.XmlRoutines import *
 from Common.MigrationUtilities import *
-#from MigrationUtilities import *
 from EdkIIWorkspaceGuidsInfo import gEdkIIWorkspaceGuidsInfo
 
-## Load Platform Header.
+## Load Platform Header
 #
 # Read an input Platform XML DOM object and return Platform Header class object
 # contained in the DOM object.
 #
-# @param  XmlFpd                     An XML DOM object read from FPD file.
-# @param  FpdFileName           The file path of FPD File.
+# @param  XmlFpd                An XML DOM object read from FPD file
+# @param  FpdFileName           The file path of FPD File
 #
-# @retvel  PlatformHeader         A new Platform Header object loaded from XmlFpd.
+# @retvel  PlatformHeader       A new Platform Header object loaded from XmlFpd
 #
 def LoadPlatformHeader(XmlFpd, FpdFileName):
     PlatformHeader = PlatformHeaderClass()
@@ -59,14 +58,14 @@ def LoadPlatformHeader(XmlFpd, FpdFileName):
 
     return PlatformHeader
 
-## Load a Platform SkuId.
+## Load a Platform SkuId
 #
 # Read an input Platform XML DOM object and return a list of Platform SkuId
 # contained in the DOM object.
 #
-# @param    XmlPlatformSkuInfo     An XML DOM object read from FPD file.
+# @param    XmlPlatformSkuInfo     An XML DOM object read from FPD file
 #
-# @retvel   PlatformSkuInfo        A SkuInfo loaded from XmlFpd.
+# @retvel   PlatformSkuInfo        A SkuInfo loaded from XmlFpd
 #
 def LoadPlatformSkuInfo(XmlPlatformSkuInfo):
     XmlTag = "SkuInfo/SkuId"
@@ -79,14 +78,14 @@ def LoadPlatformSkuInfo(XmlPlatformSkuInfo):
     SkuInfo.append(Value)
     return SkuInfo
 
-## Load a Platform SkuId.
+## Load a Platform SkuId
 #
 # Read an input Platform XML DOM object and return a list of Platform SkuId
 # contained in the DOM object.
 #
-# @param    XmlSkuInfo     An XML DOM object read from FPD file.
+# @param    XmlSkuInfo     An XML DOM object read from FPD file
 #
-# @retvel   List           A list of SkuId and SkuValue loaded from XmlFpd.
+# @retvel   List           A list of SkuId and SkuValue loaded from XmlFpd
 #
 def LoadSkuId(XmlSkuInfo):
     XmlTag = "SkuInfo/UiSkuName"
@@ -99,14 +98,14 @@ def LoadSkuId(XmlSkuInfo):
     List.append(SkuValue)
     return List
 
-## Load a list of Platform SkuIds.
+## Load a list of Platform SkuIds
 #
 # Read an input Platform XML DOM object and return a list of Platform SkuId
 # contained in the DOM object.
 #
-# @param    XmlFpd                 An XML DOM object read from FPD file.
+# @param    XmlFpd                 An XML DOM object read from FPD file
 #
-# @retvel   PlatformSkuIds                A list of SkuIds loaded from XmlFpd.
+# @retvel   PlatformSkuIds         A platform SkuIds object loaded from XmlFpd
 #
 def LoadPlatformSkuInfos(XmlFpd):
     PlatformSkuIds = SkuInfoListClass()
@@ -134,14 +133,14 @@ def LoadPlatformSkuInfos(XmlFpd):
 
     return PlatformSkuIds
 
-## Load Platform Module Build Option.
+## Load Platform Module Build Option
 #
 # Read an input Platform XML DOM object and return Platform Module Build Option class object
 # contained in the DOM object.
 #
-# @param  XmlModuleBuildOption             An XML DOM object read from FPD file.
+# @param    XmlModuleBuildOption            An XML DOM object read from FPD file
 #
-# @retvel   PlatformBuildOption             A Platform Build Option object loaded from XmlFpd.
+# @retvel   PlatformBuildOption             A Platform Build Option object loaded from XmlFpd
 #
 def LoadModuleBuildOption(XmlModuleBuildOption):
     PlatformBuildOption = PlatformBuildOptionClass()
@@ -154,14 +153,14 @@ def LoadModuleBuildOption(XmlModuleBuildOption):
     PlatformBuildOption.FfsKeyList = {}
     return PlatformBuildOption
 
-## Load Platform Module Extern.
+## Load Platform Module Extern
 #
 # Read an input Platform XML DOM object and return Platform Module Extern class object
 # contained in the DOM object.
 #
-# @param  XmlModuleExtern             An XML DOM object read from FPD file.
+# @param    XmlModuleExtern                  An XML DOM object read from FPD file
 #
-# @retvel   PlatformModuleExtern             A Platform Module Extern object loaded from XmlFpd.
+# @retvel   PlatformModuleExtern             A Platform Module Extern object loaded from XmlFpd
 #
 def LoadModuleExtern(XmlModuleExtern):
     PlatformModuleExtern = []
@@ -178,14 +177,14 @@ def LoadModuleExtern(XmlModuleExtern):
 
     return PlatformModuleExtern
 
-## Load Platform ModuleSaBuildOptions.
+## Load Platform ModuleSaBuildOptions
 #
 # Read an input Platform XML DOM object and return Platform ModuleSaBuildOptions class object
 # contained in the DOM object.
 #
-# @param  XmlModuleSaBuildOptions             An XML DOM object read from FPD file.
+# @param    XmlModuleSaBuildOptions            An XML DOM object read from FPD file
 #
-# @retvel   PlatformBuildOptions               A list of Platform ModuleSaBuildOption object loaded from XmlFpd.
+# @retvel   PlatformBuildOptions               A list of Platform ModuleSaBuildOption object loaded from XmlFpd
 #
 def LoadPlatformModuleSaBuildOption(XmlModuleSA):
     PlatformModuleSaBuildOption = PlatformBuildOptionClasses()
@@ -204,14 +203,14 @@ def LoadPlatformModuleSaBuildOption(XmlModuleSA):
 
     return PlatformModuleSaBuildOption
 
-## Load a list of Platform Library Classes.
+## Load a list of Platform Library Classes
 #
 # Read an input Platform XML DOM object and return a list of Library Classes
 # contained in the DOM object.
 #
-# @param  XmlLibraryInstance       An XML DOM object read from FPD file.
+# @param  XmlLibraryInstance       An XML DOM object read from FPD file
 #
-# @retvel  LibraryInstance         A Library Instance loaded from XmlFpd.
+# @retvel  LibraryInstance         A Library Instance loaded from XmlFpd
 #
 def LoadPlatformModuleLibraryInstance(XmlLibraryInstance):
     LibraryInstance = []
@@ -235,14 +234,14 @@ def LoadPlatformModuleLibraryInstance(XmlLibraryInstance):
     #LibraryInstance.append(PackageGuid)
     return LibraryInstance
 
-## Load a Library Class.
+## Load a Library Class
 #
 # Read an input Platform XML DOM object and return a library class object
 # contained in the DOM object.
 #
-# @param    XmlLibraryClass       An XML DOM object read from FPD file.
+# @param    XmlLibraryClass       An XML DOM object read from FPD file
 #
-# @retvel   SupModuleList         A Library Class Supported Module List object loaded from XmlFpd.
+# @retvel   SupModuleList         A Library Class Supported Module List object loaded from XmlFpd
 #
 def LoadLibraryClassSupModuleList(XmlLibraryClass):
     XmlTag = "Usage"
@@ -252,14 +251,14 @@ def LoadLibraryClassSupModuleList(XmlLibraryClass):
         SupModuleList = XmlAttribute(XmlLibraryClass, XmlTag).split()
         return SupModuleList
         
-## Load Platform Library Class.
+## Load Platform Library Class
 #
 # Read an input Platform XML DOM object and return Platform module class object
 # contained in the DOM object.
 #
-# @param    XmlLibraries             An XML DOM object read from FPD file.
+# @param    XmlLibraries             An XML DOM object read from FPD file
 #
-# @retvel   PlatformLibraryClass     A Platform Library Class object loaded from XmlFpd.
+# @retvel   PlatformLibraryClass     A Platform Library Class object loaded from XmlFpd
 #
 def LoadPlatformLibraryClass(XmlPlatformLibraryClass):
     PlatformLibraryInstance = PlatformLibraryClass()
@@ -274,7 +273,7 @@ def LoadPlatformLibraryClass(XmlPlatformLibraryClass):
     
     if LibraryInstancePath != "": # if LibraryInstancePath == "" that's because the module guid cannot be resolved
         PlatformLibraryInstance.FilePath = LibraryInstancePath
-        #
+        # replace *.inf to *.msa
         LibraryInstanceMSAName = LibraryInstancePath.replace('.inf', '.msa')
         workspace = os.getenv('WORKSPACE')
         LibraryInstanceMSAPath = os.path.join(workspace, LibraryInstanceMSAName)
@@ -307,14 +306,14 @@ def LoadPlatformLibraryClass(XmlPlatformLibraryClass):
     
         return PlatformLibraryInstance
 
-## Load Platform Library Classes.
+## Load Platform Library Classes
 #
 # Read an input Platform XML DOM object and return Platform module class object
 # contained in the DOM object.
 #
-# @param    XmlLibraries             An XML DOM object read from FPD file.
+# @param    XmlLibraries             An XML DOM object read from FPD file
 #
-# @retvel   PlatformLibraryClasses    A list of Platform Library Class object loaded from XmlFpd.
+# @retvel   PlatformLibraryClasses    A list of Platform Library Class object loaded from XmlFpd
 #
 def LoadPlatformLibraryClasses(XmlFpd):
     PlatformLibraryInstances = PlatformLibraryClasses()
@@ -328,14 +327,14 @@ def LoadPlatformLibraryClasses(XmlFpd):
     
     return PlatformLibraryInstances
 
-## Load Platform module.
+## Load Platform module
 #
 # Read an input Platform XML DOM object and return Platform module class object
 # contained in the DOM object.
 #
-# @param  XmlModuleSA             An XML DOM object read from FPD file.
+# @param    XmlModuleSA            An XML DOM object read from FPD file
 #
-# @retvel   PlatformModule         A Platform module object loaded from XmlFpd.
+# @retvel   PlatformModule         A Platform module object loaded from XmlFpd
 #
 def LoadModuleSA(XmlModuleSA):
     PlatformModule = PlatformModuleClass()
@@ -400,14 +399,14 @@ def LoadModuleSA(XmlModuleSA):
 
     return PlatformModule
 
-## Load Platform modules.
+## Load Platform modules
 #
 # Read an input Platform XML DOM object and return a list of Platform modules class object
 # contained in the DOM object.
 #
-# @param  XmlFpd                  An XML DOM object read from FPD file.
+# @param    XmlFpd                  An XML DOM object read from FPD file
 #
-# @retvel   PlatformModules         A list of Platform modules object loaded from XmlFpd.
+# @retvel   PlatformModules         A list of Platform modules object loaded from XmlFpd
 #
 def LoadPlatformModules(XmlFpd):
     PlatformModules = PlatformModuleClasses()
@@ -417,15 +416,15 @@ def LoadPlatformModules(XmlFpd):
     
     return PlatformModules
 
-## Load Platform Flash Definition File.
+## Load Platform Flash Definition File
 #
 # Read an input Platform XML DOM object and return Platform Flash Definition File class object
 # contained in the DOM object.
 #
-# @param  XmlFpd                  An XML DOM object read from FPD file.
-# @param  FpdFileName          The file path of FPD File.
+# @param    XmlFpd                              An XML DOM object read from FPD file
+# @param    FpdFileName                         The file path of FPD File
 #
-# @retvel   PlatformFlashDefinitionFile         A new Platform Flash Definition File object loaded from XmlFpd.
+# @retvel   PlatformFlashDefinitionFile         A new Platform Flash Definition File object loaded from XmlFpd
 #
 def LoadPlatformFlashDefinitionFile(XmlFpd, FpdFileName):
     PlatformFlashDefinitionFile = PlatformFlashDefinitionFileClass()
@@ -444,14 +443,14 @@ def LoadPlatformFlashDefinitionFile(XmlFpd, FpdFileName):
     
     return PlatformFlashDefinitionFile
 
-## Load Platform User Defined Ant Tasks.
+## Load Platform User Defined Ant Tasks
 #
 # Read an input Platform XML DOM object and return platform
 # User Defined Ant Tasks contained in the DOM object.
 #
-# @param  XmlUserDefinedAntTasks   An XML DOM object read from FPD file.
+# @param   XmlUserDefinedAntTasks   An XML DOM object read from FPD file
 #
-# @retvel  AntTask         An Ant Task loaded from XmlFpd.
+# @retvel  AntTask                  An Ant Task loaded from XmlFpd
 #
 def LoadUserDefinedAntTasks(XmlFpd):
     Dict = {}
@@ -469,27 +468,27 @@ def LoadUserDefinedAntTasks(XmlFpd):
     Dict[AntTask.Id] = AntTask
     return Dict
 
-## Load Platform Build Options.
+## Load Platform Build Options
 #
 # Read an input Platform XML DOM object and return a list of platform
 # Build Option contained in the DOM object.
 #
-# @param  XmlBuildOptions               An XML DOM object read from FPD file.
+# @param   XmlBuildOptions              An XML DOM object read from FPD file
 #
-# @retvel  PlatformBuildOptions         A list of platform Build Options loaded from XmlFpd.
+# @retvel  PlatformBuildOptions         A list of platform Build Options loaded from XmlFpd
 #
 def LoadBuildOptions(XmlBuildOptions):
     XmlTag = "Option"
     return map(LoadBuildOption, XmlList(XmlBuildOptions, XmlTag)) # LoadBuildOption is a method in MigrationUtilities.py
 
-## Load Platform Build Option.
+## Load Platform Build Option
 #
 # Read an input Platform XML DOM object and return a Build Option
 # contained in the DOM object.
 #
-# @param  XmlFpd               An XML DOM object read from FPD file.
+# @param   XmlFpd                      An XML DOM object read from FPD file
 #
-# @retvel  PlatformBuildOption         A Build Options loaded from XmlFpd.
+# @retvel  PlatformBuildOption         A Build Options loaded from XmlFpd
 #
 def LoadPlatformBuildOption(XmlBuildOptions):
     PlatformBuildOption = PlatformBuildOptionClass()
@@ -502,7 +501,6 @@ def LoadPlatformBuildOption(XmlBuildOptions):
     XmlTag = "BuildOptions/Options/Option"
     PlatformBuildOption.Options = map(LoadBuildOption, XmlList(XmlBuildOptions, XmlTag))
     
-    
     # handle UserExtensions
     XmlTag = "BuildOptions/UserExtensions"
     PlatformBuildOption.UserExtensions = LoadUserExtensions(XmlTag) # from MigrationUtilities.py LoadUserExtensions
@@ -513,14 +511,14 @@ def LoadPlatformBuildOption(XmlBuildOptions):
 
     return PlatformBuildOption
 
-## Load Platform Ffs Dictionary.
+## Load Platform Ffs Dictionary
 #
 # Read an input Platform XML DOM object and return a platform Ffs Dictionary
 # contained in the DOM object.
 #
-# @param  XmlFpd     An XML DOM object read from FPD file.
+# @param  XmlFpd     An XML DOM object read from FPD file
 #
-# @retvel  Dict      A platform Ffs Dict loaded from XmlFpd.
+# @retvel  Dict      A platform Ffs Dict loaded from XmlFpd
 #
 def LoadPlatformFfsDict(XmlFpd):
     Dict = {}
@@ -531,14 +529,14 @@ def LoadPlatformFfsDict(XmlFpd):
             Dict[Ffs.Key] = Ffs
     return Dict
 
-## Load Platform Ffs Section.
+## Load Platform Ffs Section
 #
 # Read an input Platform XML DOM object and return a platform Ffs Section
 # contained in the DOM object.
 #
-# @param  XmlFfs                    An XML DOM object read from FPD file.
+# @param   XmlFfs                  An XML DOM object read from FPD file
 #
-# @retvel  PlatformFfsSection      A platform Ffs Section loaded from XmlFpd.
+# @retvel  PlatformFfsSection      A platform Ffs Section loaded from XmlFpd
 #
 def LoadPlatformFfsSection(XmlFfsSection):
     PlatformFfsSection = PlatformFfsSectionClass()
@@ -575,14 +573,14 @@ def LoadPlatformFfsSection(XmlFfsSection):
     
     return PlatformFfsSection
 
-## Load Platform Ffs Sections.
+## Load Platform Ffs Sections
 #
 # Read an input Platform XML DOM object and return a platform Ffs Sections
 # contained in the DOM object.
 #
-# @param  XmlFfs                    An XML DOM object read from FPD file.
+# @param   XmlFfs                   An XML DOM object read from FPD file
 #
-# @retvel  PlatformFfsSections      A platform Ffs Sections loaded from XmlFpd.
+# @retvel  PlatformFfsSections      A platform Ffs Sections loaded from XmlFpd
 #
 def LoadFfsSections():
     PlatformFfsSections = PlatformFfsSectionsClass()
@@ -596,14 +594,14 @@ def LoadFfsSections():
     
     return PlatformFfsSections
 
-## Load Platform Ffs Sections.
+## Load Platform Ffs Sections
 #
 # Read an input Platform XML DOM object and return a platform Ffs Sections
 # contained in the DOM object.
 #
-# @param  XmlFfs                    An XML DOM object read from FPD file.
+# @param   XmlFfs                   An XML DOM object read from FPD file
 #
-# @retvel  PlatformFfsSections      A platform Ffs Sections loaded from XmlFpd.
+# @retvel  PlatformFfsSections      A platform Ffs Sections loaded from XmlFpd
 #
 def LoadPlatformFfsSections(XmlFfsSections):
     PlatformFfsSections = PlatformFfsSectionsClass()
@@ -633,14 +631,14 @@ def LoadPlatformFfsSections(XmlFfsSections):
     
     return PlatformFfsSections
 
-## Load Platform Ffs Attribute.
+## Load Platform Ffs Attribute
 #
 # Read an input Platform XML DOM object and return a platform Ffs Attribute
 # contained in the DOM object.
 #
-# @param  XmlFfs     An XML DOM object read from FPD file.
+# @param   XmlFfs    An XML DOM object read from FPD file
 #
-# @retvel  List      A platform Ffs Attribute loaded from XmlFpd.
+# @retvel  List      A platform Ffs Attribute loaded from XmlFpd
 #
 def LoadFfsAttribute(XmlFfs):
     List = []
@@ -653,14 +651,14 @@ def LoadFfsAttribute(XmlFfs):
         List.append([Name,Value])
     return List
 
-## Load a list of Platform Build Options.
+## Load a list of Platform Build Options
 #
 # Read an input Platform XML DOM object and return a list of Build Options
 # contained in the DOM object.
 #
-# @param  XmlFfs               An XML DOM object read from FPD file.
+# @param   XmlFfs              An XML DOM object read from FPD file
 #
-# @retvel  PlatformFfsKey      A platform Ffs key loaded from XmlFpd.
+# @retvel  PlatformFfsKey      A platform Ffs key loaded from XmlFpd
 #
 def LoadPlatformFfs(XmlFfs):
     PlatformFfs = PlatformFfsClass()
@@ -685,14 +683,14 @@ def LoadPlatformFfs(XmlFfs):
     
     return PlatformFfs
 
-## Load a list of Platform Build Options.
+## Load a list of Platform Build Options
 #
 # Read an input Platform XML DOM object and return a list of Build Options
 # contained in the DOM object.
 #
-# @param  XmlFpd               An XML DOM object read from FPD file.
+# @param   XmlFpd                       An XML DOM object read from FPD file
 #
-# @retvel  PlatformBuildOptions         A list of Build Options loaded from XmlFpd.
+# @retvel  PlatformBuildOptions         A list of Build Options loaded from XmlFpd
 #
 def LoadPlatformBuildOptions(XmlFpd):
     PlatformBuildOptions = PlatformBuildOptionClass()
@@ -708,14 +706,14 @@ def LoadPlatformBuildOptions(XmlFpd):
     
     return PlatformBuildOptions
 
-## Load Platform Pcd Data.
+## Load Platform Pcd Data
 #
 # Read an input Platform XML DOM object and return Platform module class object
 # contained in the DOM object.
 #
-# @param    XmlPcd             An XML DOM object read from FPD file.
+# @param    XmlPcd             An XML DOM object read from FPD file
 #
-# @retvel   PlatformPcdData    A Platform Pcd object loaded from XmlFpd.
+# @retvel   PlatformPcdData    A Platform Pcd object loaded from XmlFpd
 #
 def LoadPlatformPcdData(XmlPcdData):
     PcdData = PcdClass() # defined in CommonDataClass.CommonClass.py
@@ -743,14 +741,14 @@ def LoadPlatformPcdData(XmlPcdData):
     
     return PcdData
 
-## Load a Platform Pcd Build Data.
+## Load a Platform Pcd Build Data
 #
 # Read an input Platform XML DOM object and return a list of Pcd Dynamic
 # contained in the DOM object.
 #
-# @param  XmlPcdBuildData        An XML DOM object read from FPD file.
+# @param    XmlPcdBuildData        An XML DOM object read from FPD file
 #
-# @retvel   PcdBuildData         A Platform Pcd Build Data loaded from XmlFpd.
+# @retvel   PcdBuildData           A Platform Pcd Build Data loaded from XmlFpd
 #
 def LoadPlatformPcdBuildData(XmlPcdBuildData):
     PcdBuildData = PcdClass() # defined in CommonDataClass.CommonClass.py
@@ -775,26 +773,26 @@ def LoadPlatformPcdBuildData(XmlPcdBuildData):
 
     return PcdBuildData
 
-## Load a list of Platform Pcd Dynamic.
+## Load a list of Platform Pcd Dynamic
 #
 # Read an input Platform XML DOM object and return a list of Pcd Dynamic
 # contained in the DOM object.
 #
-# @param  XmlFpd               An XML DOM object read from FPD file.
+# @param    XmlFpd             An XML DOM object read from FPD file
 #
-# @retvel   PcdDynamic         A list of Pcd Dynamic loaded from XmlFpd.
+# @retvel   PcdDynamic         A list of Pcd Dynamic loaded from XmlFpd
 #
 def LoadDynamicPcdBuildDefinitions(XmlFpd):
     DynamicPcdBuildDefinitions = []
     XmlTag = "PlatformSurfaceArea/DynamicPcdBuildDefinitions/PcdBuildData"
     return map(LoadPlatformPcdBuildData, XmlList(XmlFpd, XmlTag))
 
-## Load a Platform NameValue object.
+## Load a Platform NameValue object
 #
 # Read an input Platform XML DOM object and return a list of User Extensions
 # contained in the DOM object.
 #
-# @param  XmlNameValue       An XML DOM object read from FPD file.
+# @param  XmlNameValue       An XML DOM object read from FPD file
 #
 # @retvel NameValue          A Platform NameValue object
 #
@@ -811,12 +809,12 @@ def LoadNameValue(XmlNameValue):
     
     return NameValue
 
-## Load a Platform Fv Image Name object.
+## Load a Platform Fv Image Name object
 #
 # Read an input Platform XML DOM object and return a platform Fv Image
 # Name contained in the DOM object.
 #
-# @param  XmlFvImageNames     An XML DOM object read from FPD file.
+# @param  XmlFvImageNames       An XML DOM object read from FPD file
 #
 # @retvel FvImageNames          A Platform Fv Image Name object
 #
@@ -825,12 +823,12 @@ def LoadFvImageNames(XmlFvImageNames):
     FvImageNames = XmlElement(XmlFvImageNames, XmlTag)
     return FvImageNames
 
-## Load a Platform Fv Image option object.
+## Load a Platform Fv Image option object
 #
 # Read an input Platform XML DOM object and return a platform Fv Image
 # Option contained in the DOM object.
 #
-# @param  XmlFvImageOptions         An XML DOM object read from FPD file.
+# @param  XmlFvImageOptions         An XML DOM object read from FPD file
 #
 # @retvel PlatformFvImageOption     A Platform Fv Image Option object
 #
@@ -848,12 +846,12 @@ def LoadFvImageOptions(XmlFvImageOptions):
     
     return PlatformFvImageOption
     
-## Load a Platform Fv Image object.
+## Load a Platform Fv Image object
 #
 # Read an input Platform XML DOM object and return a list of User Extensions
 # contained in the DOM object.
 #
-# @param  XmlFvImage          An XML DOM object read from Fpd file.
+# @param  XmlFvImage          An XML DOM object read from Fpd file
 #
 # @retvel PlatformFvImage     A Platform Fv Image object
 #
@@ -877,12 +875,12 @@ def LoadPlatformFvImage(XmlFvImage):
     
     return PlatformFvImage
 
-## Load a Platform fdf object.
+## Load a Platform fdf object
 #
 # Read an input Platform XML DOM object and return a list of User Extensions
 # contained in the DOM object.
 #
-# @param  XmlFvImages          An XML DOM object read from FPD file.
+# @param  XmlFvImages          An XML DOM object read from FPD file
 #
 # @retvel PlatformFdf          A Platform fdf object
 #
@@ -903,12 +901,12 @@ def LoadPlatformFvImages(XmlFvImages):
     
     return List
 
-## Load a Platform Fv Image Name object.
+## Load a Platform Fv Image Name object
 #
 # Read an input Platform XML DOM object and return a list of User Extensions
 # contained in the DOM object.
 #
-# @param  XmlFvImageName        An XML DOM object read from FPD file.
+# @param  XmlFvImageName        An XML DOM object read from FPD file
 #
 # @retvel PlatformFvImageName   A Platform Fv Image Name object
 #
@@ -926,12 +924,12 @@ def LoadPlatformFvImageName(XmlFvImageName):
     
     return PlatformFvImageName
     
-## Load a list of Platform fdf objects.
+## Load a list of Platform fdf objects
 #
 # Read an input Platform XML DOM object and return a list of User Extensions
 # contained in the DOM object.
 #
-# @param  XmlFpd               An XML DOM object read from FPD file.
+# @param  XmlFpd                An XML DOM object read from FPD file
 #
 # @retvel PlatformFdfs          A list of Platform fdf object
 #
@@ -943,12 +941,12 @@ def LoadPlatformFdfs(XmlFpd):
 
     return PlatformFvImages
 
-## Load a Platform User Extensions.
+## Load a Platform User Extensions
 #
 # Read an input Platform XML DOM object and return an User Extension
 # contained in the DOM object.
 #
-# @param  XmlUserExtension    An XML DOM object read from FPD file.
+# @param  XmlUserExtension             An XML DOM object read from FPD file
 #
 # @retvel PlatformUserExtensions       A platform User Extension loaded from XmlFpd
 #
@@ -975,12 +973,12 @@ def LoadPlatformUserExtension(XmlFpd):
     #return PlatformUserExtensions
     return Dict
 
-## Load a list of Platform User Extensions.
+## Load a list of Platform User Extensions
 #
 # Read an input Platform XML DOM object and return a list of User Extensions
 # contained in the DOM object.
 #
-# @param  XmlFpd               An XML DOM object read from FPD file.
+# @param  XmlFpd               An XML DOM object read from FPD file
 #
 # @retvel UserExtensions       A list of platform User Extensions loaded from XmlFpd
 #
@@ -988,13 +986,13 @@ def LoadPlatformUserExtensions(XmlFpd):
     XmlTag = "PlatformSurfaceArea/UserExtensions"
     return map(LoadUserExtensions, XmlList(XmlFpd, XmlTag)) # from MigrationUtilities.py LoadUserExtensions
 
-## Load a new Platform class object.
+## Load a new Platform class object
 #
 # Read an input FPD File and return a new Platform class Object.
 #
-# @param  FpdFileName          An XML DOM object read from FPD file.
+# @param   FpdFileName              An XML DOM object read from FPD file
 #
-# @retvel  Platform                 A new Platform class object loaded from FPD File.
+# @retvel  Platform                 A new Platform class object loaded from FPD File
 #
 def LoadFpd(FpdFileName):
     XmlFpd = XmlParseFile(FpdFileName)

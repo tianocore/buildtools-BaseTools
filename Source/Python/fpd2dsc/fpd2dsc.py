@@ -14,11 +14,12 @@
 ##
 # Import Modules
 #
-import os, re, sys, xml.dom.minidom  #, XmlRoutines, EdkIIWorkspace
+import os, re, sys, xml.dom.minidom  #XmlRoutines, EdkIIWorkspace
 from LoadFpd import LoadFpd
 from StoreDsc import StoreDsc
 from optparse import OptionParser
 
+# Version and Copyright
 versionNumber = "1.0"
 __version__ = "%prog Version " + versionNumber
 __copyright__ = "Copyright (c) 2007, Intel Corporation  All rights reserved."
@@ -47,8 +48,8 @@ def myOptionParser():
 # If no error found, return zero value so the caller of this tool can know
 # if it's executed successfully or not.
 #
-# @retval 0     Tool was successful.
-# @retval 1     Tool failed.
+# @retval 0     Tool was successful
+# @retval 1     Tool failed
 #
 def Main():
     global options
