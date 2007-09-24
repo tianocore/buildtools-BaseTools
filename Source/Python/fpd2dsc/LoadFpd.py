@@ -220,8 +220,8 @@ def LoadPlatformModuleLibraryInstance(XmlLibraryInstance):
     
     ModulePath = gEdkIIWorkspaceGuidsInfo.ResolveModuleFilePath(ModuleGuid)
     ModuleMSAFile = ModulePath.replace('.inf', '.msa')
-    workspace = os.getenv('WORKSPACE')
-    ModuleMSAFileName = os.path.join(workspace, ModuleMSAFile)
+    WorkSpace = os.getenv('WORKSPACE')
+    ModuleMSAFileName = os.path.join(WorkSpace, ModuleMSAFile)
     XmlMsa = XmlParseFile(ModuleMSAFileName)
     
     XmlTag = "ModuleSurfaceArea/LibraryClassDefinitions/LibraryClass/Keyword"
@@ -275,8 +275,8 @@ def LoadPlatformLibraryClass(XmlPlatformLibraryClass):
         PlatformLibraryInstance.FilePath = LibraryInstancePath
         # replace *.inf to *.msa
         LibraryInstanceMSAName = LibraryInstancePath.replace('.inf', '.msa')
-        workspace = os.getenv('WORKSPACE')
-        LibraryInstanceMSAPath = os.path.join(workspace, LibraryInstanceMSAName)
+        WorkSpace = os.getenv('WORKSPACE')
+        LibraryInstanceMSAPath = os.path.join(WorkSpace, LibraryInstanceMSAName)
         
         PlatformLibraryInstance.FilePath = LibraryInstancePath
     
@@ -373,8 +373,8 @@ def LoadModuleSA(XmlModuleSA):
     PlatformModule.FilePath = PlatformModulePath # *.inf file path
     # *.inf back to *.msa
     ModuleMSAFileName = PlatformModulePath.replace('.inf', '.msa')
-    workspace = os.getenv('WORKSPACE')
-    ModuleMSAFileName = os.path.join(workspace, ModuleMSAFileName)
+    WorkSpace = os.getenv('WORKSPACE')
+    ModuleMSAFileName = os.path.join(WorkSpace, ModuleMSAFileName)
     # Open this module
     #ModuleMSA = open(ModuleMSAFileName, "r")
     XmlMsa = XmlParseFile(ModuleMSAFileName)

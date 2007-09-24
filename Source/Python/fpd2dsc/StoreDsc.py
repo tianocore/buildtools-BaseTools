@@ -97,10 +97,10 @@ def StorePlatformBuildOptionsSection(DscFile, Platform):
     StandardBuildTargets = ["DEBUG", "RELEASE"]
     SupportedArches = ["COMMON", "IA32", "X64", "IPF", "EBC"]
     Target = TargetTxtClassObject()
-    workspace = os.getenv('WORKSPACE')
-    Target.LoadTargetTxtFile(workspace + '\\Conf\\target.txt')
+    WorkSpace = os.getenv('WORKSPACE')
+    Target.LoadTargetTxtFile(WorkSpace + '\\Conf\\target.txt')
     ToolDef = ToolDefClassObject()
-    ToolDef.LoadToolDefFile(workspace + '\\' + Target.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])
+    ToolDef.LoadToolDefFile(WorkSpace + '\\' + Target.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])
     # Now we have got ToolDef object
     #ToolDef.ToolsDefTxtDictionary
     Dict = ToolDef.ToolsDefTxtDatabase
@@ -251,7 +251,7 @@ def AddToLibraryClassSection(Section, SupModuleList, Item):
 # @param  Method             A function returning a string item of an object
 # @param  ObjectList         The list of object
 #
-# @retval Section            The string content of a section.
+# @retval Section            The string content of a section
 #
 def GetLibraryClassesSection(SectionName, Method, ObjectList):
     SupportedArches = ["COMMON", "IA32", "X64", "IPF", "EBC"]

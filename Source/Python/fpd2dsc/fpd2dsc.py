@@ -20,27 +20,34 @@ from StoreDsc import StoreDsc
 from optparse import OptionParser
 
 # Version and Copyright
-versionNumber = "1.0"
-__version__ = "%prog Version " + versionNumber
+__version_number__ = "1.0"
+__version__ = "%prog Version " + __version_number__
 __copyright__ = "Copyright (c) 2007, Intel Corporation  All rights reserved."
 
-def myOptionParser():
+## Parse command line options
+#
+# Using standard Python module optparse to parse command line option of this tool.
+#
+# @retval Options   A optparse.Values object containing the parsed options
+# @retval Args      All the arguments got from the command line
+#
+def MyOptionParser():
     """ Argument Parser """
-    usage = "%prog [options] input_filename"
-    parser = OptionParser(usage=usage,description=__copyright__,version="%prog " + str(versionNumber))
-    parser.add_option("-o", "--output", dest="outfile", help="Specific Name of the DSC file to create, otherwise it is the FPD filename with the extension repalced.")
-    parser.add_option("-a", "--auto", action="store_true", dest="autowrite", default=False, help="Automatically create output files and write the DSC file")
-    parser.add_option("-i", "--interactive", action="store_true", dest="interactive", default=False, help="Set Interactive mode, user must approve each change.")
-    parser.add_option("-q", "--quiet", action="store_const", const=0, dest="verbose", help="Do not print any messages, just return either 0 for succes or 1 for failure")
-    parser.add_option("-v", "--verbose", action="count", dest="verbose", help="Do not print any messages, just return either 0 for succes or 1 for failure")
-    parser.add_option("-d", "--debug", action="store_true", dest="debug", default=False, help="Enable printing of debug messages.")
-    parser.add_option("-c", "--convert", action="store_true", dest="convert", default=False, help="Convert package: OldMdePkg->MdePkg EdkModulePkg->MdeModulePkg.")
-    parser.add_option("-e", "--event", action="store_true", dest="event", default=False, help="Enable handling of Exit Boot Services & Virtual Address Changed Event")
-    parser.add_option("-m", "--manual", action="store_true", dest="manual", default=False, help="Generate CommonHeader.txt, user picks up & copy it to a module common header")
-    parser.add_option("-w", "--workspace", dest="workspace", default=str(os.environ.get('WORKSPACE')), help="Specify workspace directory.")
-    (options, args) = parser.parse_args(sys.argv[1:])
+    Usage = "%prog [options] input_filename"
+    Parser = OptionParser(usage=Usage,description=__copyright__,version="%prog " + str(__version_number__))
+    Parser.add_option("-o", "--output", dest="outfile", help="Specific Name of the DSC file to create, otherwise it is the FPD filename with the extension repalced.")
+    Parser.add_option("-a", "--auto", action="store_true", dest="autowrite", default=False, help="Automatically create output files and write the DSC file")
+    Parser.add_option("-i", "--interactive", action="store_true", dest="interactive", default=False, help="Set Interactive mode, user must approve each change.")
+    Parser.add_option("-q", "--quiet", action="store_const", const=0, dest="verbose", help="Do not print any messages, just return either 0 for succes or 1 for failure")
+    Parser.add_option("-v", "--verbose", action="count", dest="verbose", help="Do not print any messages, just return either 0 for succes or 1 for failure")
+    Parser.add_option("-d", "--debug", action="store_true", dest="debug", default=False, help="Enable printing of debug messages.")
+    Parser.add_option("-c", "--convert", action="store_true", dest="convert", default=False, help="Convert package: OldMdePkg->MdePkg EdkModulePkg->MdeModulePkg.")
+    Parser.add_option("-e", "--event", action="store_true", dest="event", default=False, help="Enable handling of Exit Boot Services & Virtual Address Changed Event")
+    Parser.add_option("-m", "--manual", action="store_true", dest="manual", default=False, help="Generate CommonHeader.txt, user picks up & copy it to a module common header")
+    Parser.add_option("-w", "--workspace", dest="workspace", default=str(os.environ.get('WORKSPACE')), help="Specify workspace directory.")
+    (Options, Args) = Parser.parse_args(sys.argv[1:])
 
-    return options,args
+    return Options,Args
 
 ## Entrance method
 #
@@ -52,51 +59,51 @@ def myOptionParser():
 # @retval 1     Tool failed
 #
 def Main():
-    global options
-    global args
-    global workspace
-    options,args = myOptionParser()
+    global Options
+    global Args
+    global WorkSpace
+    Options,Args = MyOptionParser()
 
-    workspace = ""
-    print options.workspace
-    if (options.workspace == None):
+    WorkSpace = ""
+    print Options.workspace
+    if (Options.workspace == None):
         print "ERROR: E0000: WORKSPACE not defined.\n  Please set the WORKSPACE environment variable to the location of the EDK II install directory."
         sys.exit(1)
     else:
-        workspace = options.workspace
-        if (options.debug):
-            print "Using Workspace:", workspace
+        WorkSpace = Options.workspace
+        if (Options.debug):
+            print "Using Workspace:", WorkSpace
     try:
-        options.verbose +=1
+        Options.verbose +=1
     except:
-        options.verbose = 1
+        Options.verbose = 1
         pass
 
     InputFile = ""
-    if args == []:
+    if Args == []:
         print "usage:" "%prog [options] input_filename"
     else:
-        InputFile = args[0]
+        InputFile = Args[0]
         print InputFile
     if InputFile != "":
-        filename = InputFile
-        if ((options.verbose > 1) | (options.autowrite)):
+        FileName = InputFile
+        if ((Options.verbose > 1) | (Options.autowrite)):
             print "FileName:",InputFile
     else:
         print "ERROR: E0001 - You must specify an input filename"
         sys.exit(1)
 
-    if (options.outfile):
-        outputFile = options.outfile
+    if (Options.outfile):
+        OutputFile = Options.outfile
     else:
-       outputFile = filename.replace('.fpd', '.dsc')
+       OutputFile = FileName.replace('.fpd', '.dsc')
 
-    if ((options.verbose > 2) or (options.debug)):
-        print "Output Filename:", outputFile
+    if ((Options.verbose > 2) or (Options.debug)):
+        print "Output Filename:", OutputFile
         
     try:
-        Platform = LoadFpd(filename)
-        StoreDsc(outputFile, Platform)
+        Platform = LoadFpd(FileName)
+        StoreDsc(OutputFile, Platform)
         return 0
     except Exception, e:
         print e
