@@ -11,7 +11,10 @@ class FV (FvClassObject):
     def __init__(self):
         FvClassObject.__init__(self)
         self.FvInfFile = None
+        self.FvAddressFile = None
         self.BaseAddress = None
+        self.InfFileName = None
+        self.FvAddressFileName = None
         
     #
     #  Generate Fv and add it to the Buffer
@@ -51,7 +54,9 @@ class FV (FvClassObject):
         cmd = 'GenFv -i '                 + \
                self.InfFileName           + \
                ' -o '                     + \
-               FvOutputFile
+               FvOutputFile               + \
+               ' -a '                     + \
+               self.FvAddressFileName
         #
         # Call GenFv Tools
         #
@@ -69,6 +74,9 @@ class FV (FvClassObject):
         return FvOutputFile
     
     def __InitialInf__ (self, BaseAddress = None, BlockSize= None, BlockNum = None, ErasePloarity='1', VtfDict=None) :
+        #
+        # Create FV inf file
+        #
         self.InfFileName = os.path.join(GenFdsGlobalVariable.FvDir,
                                    self.UiFvName + '.inf')
         self.FvInfFile = open (self.InfFileName, 'w+')
@@ -139,8 +147,34 @@ class FV (FvClassObject):
                                        T_CHAR_LF)
         
 
-
-
-    
-
-
+        #
+        # Create FV Address inf file
+        #
+        self.FvAddressFileName = os.path.join(GenFdsGlobalVariable.FvDir,
+                                   'FvAddress.inf')
+        self.FvAddressFile = open (self.FvAddressFileName, 'w+')
+        #
+        # Add [Options]
+        #
+        self.FvAddressFile.writelines("[options]" + T_CHAR_LF)
+        BsAddress = '0'
+        if 'BsBaseAddress' in GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Defines.DefinesDictionary.keys():
+            BsAddressList = GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Defines.DefinesDictionary['BsBaseAddress']
+            if BsAddressList != []:
+                BsAddress = BsAddressList[0]
+        
+        self.FvAddressFile.writelines("EFI_BOOT_DRIVER_BASE_ADDRESS = " + \
+                                       BsAddress          + \
+                                       T_CHAR_LF)
+                                       
+        RtAddress = '0'
+        if 'RtBaseAddress' in GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Defines.DefinesDictionary.keys():
+            RtAddressList = GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Defines.DefinesDictionary['RtBaseAddress']
+            if RtAddressList != []:
+                RtAddress = RtAddressList[0]
+                
+        self.FvAddressFile.writelines("EFI_RUNTIME_DRIVER_BASE_ADDRESS = " + \
+                                       RtAddress          + \
+                                       T_CHAR_LF)
+        
+        self.FvAddressFile.close()

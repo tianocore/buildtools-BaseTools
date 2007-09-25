@@ -45,7 +45,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
             self.VersionString = Inf.Module.Header.Version
             self.BinFileList = Inf.Module.Binaries
             if self.BinFileList == []:
-                raise Exception ("INF %s not found in database!" % self.InfFileName)
+                raise Exception ("INF %s not found in build ARCH %s!" % (self.InfFileName, GenFdsGlobalVariable.ArchList))
                 sys.exit(1)
         
         else:
@@ -191,27 +191,29 @@ class FfsInfStatement(FfsInfStatementClassObject):
             if InfFileKey in (PlatformDataBase.Modules):
                 dscArchList.append ('IPF')
 
-        curArchList = set (targetArchList) & set (dscArchList)
+        if dscArchList != []:
+            curArchList = set (targetArchList) & set (dscArchList)
         GenFdsGlobalVariable.VerboseLogger ("Valid target architecture(s) is : " + " ".join(curArchList))
         return curArchList
     
     def __GetCurrentArch__(self) :
         curArchList = self.__GetPlatformArchList__()
-        if len(curArchList) > 1 :
-            ArchList = curArchList[:]
-            for Key in self.KeyStringList:
-                Target, Tag, Arch = Key.split('_')
-                ArchList = set (ArchList) & Arch
-            if len(ArchList) == 1:
-                Arch = ArchList[0]
-                return Arch
-            elif len(ArchList) > 1:
-                raise Exception("Module %s has too many bulid Arch !" %self.InfFileNames)
-            else:
-                raise Exception("Don't find legal Arch in Module %s !" %self.InfFileNames)
-        elif len(curArchList) == 1 :
-            Arch = curArchList.pop()
+        ArchList = curArchList
+        for Key in self.KeyStringList:
+            Target, Tag, Arch = Key.split('_')
+            ArchList = set (ArchList) & set(list(Arch))
+        if len(ArchList) == 1:
+            Arch = list(ArchList)[0]
             return Arch
+        elif len(ArchList) > 1:
+            raise Exception("Module %s has too many build ARCH !" %self.InfFileName)
+        else:
+            raise Exception("Don't find legal ARCH in Module %s !" %self.InfFileName)
+#        if len(curArchList) > 1 :
+#            
+#        elif len(curArchList) == 1 :
+#            Arch = curArchList.pop()
+#            return Arch
     
     def __GetEFIOutPutPath__(self):
         Arch = ''
