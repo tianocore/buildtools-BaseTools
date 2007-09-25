@@ -25,6 +25,15 @@ Abstract:
 #include <Common/UefiBaseTypes.h>
 
 //
+// Log message print Level
+//
+#define VERBOSE_LOG_LEVEL    15
+#define WARNING_LOG_LEVEL    15
+#define INFO_LOG_LEVEL       20
+#define KEY_LOG_LEVEL        40
+#define ERROR_LOG_LEVLE      50
+
+//
 // Status codes returned by EFI utility programs and functions
 //
 #define STATUS_SUCCESS  0
@@ -76,7 +85,7 @@ void
 Warning (
   CHAR8   *FileName,
   UINT32  LineNumber,
-  UINT32  ErrorCode,
+  UINT32  WarningCode,
   CHAR8   *OffendingText,
   CHAR8   *MsgFmt,
   ...
@@ -95,10 +104,27 @@ DebugMsg (
 ;
 
 void
-SetDebugMsgMask (
-  UINT32    MsgMask
-  )
-;
+VerboseMsg (
+  CHAR8   *MsgFmt,
+  ...
+  );
+
+void
+NormalMsg (
+  CHAR8   *MsgFmt,
+  ...
+  );
+
+void
+KeyMsg (
+  CHAR8   *MsgFmt,
+  ...
+  );
+
+void
+SetPrintLevel (
+  UINT32  LogLevel
+  );
 
 void
 ParserSetPosition (

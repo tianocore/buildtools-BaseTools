@@ -24,6 +24,7 @@ Abstract:
 #include <string.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <time.h>
 
 #include "EfiUtilityMsgs.h"
 
@@ -33,7 +34,7 @@ Abstract:
 //
 static STATUS mStatus                 = STATUS_SUCCESS;
 static CHAR8  mUtilityName[50]        = { 0 };
-static UINT32 mDebugMsgMask           = 0;
+static UINT32 mPrintLogLevel          = INFO_LOG_LEVEL;
 static CHAR8  *mSourceFileName        = NULL;
 static UINT32 mSourceFileLineNum      = 0;
 static UINT32 mErrorCount             = 0;
@@ -271,11 +272,11 @@ Returns:
   PrintMessage ("WARNING", mSourceFileName, mSourceFileLineNum, ErrorCode, OffendingText, MsgFmt, List);
   va_end (List);
   //
-  // Set status accordingly
+  // Don't set warning status accordingly
   //
-  if (mStatus < STATUS_WARNING) {
-    mStatus = STATUS_WARNING;
-  }
+  //  if (mStatus < STATUS_WARNING) {
+  //    mStatus = STATUS_WARNING;
+  //  }
 }
 
 void
@@ -313,6 +314,13 @@ Returns:
 --*/
 {
   va_list List;
+  
+  //
+  // Current Print Level not output warning information.
+  //
+  if (WARNING_LOG_LEVEL < mPrintLogLevel) {
+    return;
+  }
   //
   // If limits have been set, then check them
   //
@@ -341,19 +349,13 @@ Returns:
   va_start (List, MsgFmt);
   PrintMessage ("WARNING", FileName, LineNumber, MessageCode, Text, MsgFmt, List);
   va_end (List);
-  //
-  // Set status accordingly
-  //
-  if (mStatus < STATUS_WARNING) {
-    mStatus = STATUS_WARNING;
-  }
 }
 
 void
 DebugMsg (
   CHAR8   *FileName,
   UINT32  LineNumber,
-  UINT32  MsgMask,
+  UINT32  MsgLevel,
   CHAR8   *Text,
   CHAR8   *MsgFmt,
   ...
@@ -361,7 +363,7 @@ DebugMsg (
 /*++
 
 Routine Description:
-  Print a warning message.
+  Print a Debug message.
 
 Arguments:
   FileName    - typically the name of the utility printing the debug message, but
@@ -369,8 +371,7 @@ Arguments:
   
   LineNumber  - the line number in FileName (parsers) 
                
-  MsgMask     - an application-specific bitmask that, in combination with mDebugMsgMask,
-                determines if the debug message gets printed.
+  MsgLevel    - Debug message print level (0~9)
 
   Text        - the text in question (parsers)
   
@@ -384,9 +385,9 @@ Returns:
 {
   va_list List;
   //
-  // If the debug mask is not applicable, then do nothing.
+  // If the debug level is less than current print level, then do nothing.
   //
-  if ((MsgMask != 0) && ((mDebugMsgMask & MsgMask) == 0)) {
+  if (MsgLevel < mPrintLogLevel) {
     return ;
   }
 
@@ -455,48 +456,124 @@ Notes:
 
 --*/
 {
-  CHAR8 Line[MAX_LINE_LEN];
-  CHAR8 Line2[MAX_LINE_LEN];
-  CHAR8 *Cptr;
+  CHAR8       Line[MAX_LINE_LEN];
+  CHAR8       Line2[MAX_LINE_LEN];
+  CHAR8       *Cptr;
+  struct tm   *NewTime;
+  time_t      CurrentTime;
+
+  //
+  // init local variable
+  //
+  Line[0] = '\0';
+  Line2[0] = '\0';
+  
   //
   // If given a filename, then add it (and the line number) to the string.
   // If there's no filename, then use the program name if provided.
   //
   if (FileName != NULL) {
     Cptr = FileName;
-  } else if (mUtilityName[0] != 0) {
-    Cptr = mUtilityName;
   } else {
-    Cptr = "Unknown utility";
+    Cptr = NULL;
+  }
+  
+  if (strcmp (Type, "DEBUG") == 0) {
+    //
+    // Debug Message requires current time.
+    //
+    time (&CurrentTime);
+    NewTime = localtime (&CurrentTime);
+    fprintf (stdout, "%04d-%02d-%02d %02d:%02d:%02d", 
+                     NewTime->tm_year + 1900,
+                     NewTime->tm_mon + 1,
+                     NewTime->tm_mday,
+                     NewTime->tm_hour,
+                     NewTime->tm_min,
+                     NewTime->tm_sec
+                     );
+    if (Cptr != NULL) {
+      sprintf (Line, ": %s", Cptr);
+      if (LineNumber != 0) {
+        sprintf (Line2, "(%d)", LineNumber);
+        strcat (Line, Line2);
+      }
+    }
+  } else {
+    //
+    // Error and Warning Information.
+    //
+    if (Cptr != NULL) {
+      if (mUtilityName[0] != '\0') {
+        fprintf (stdout, "%s...\n", mUtilityName);
+      }
+      sprintf (Line, "%s", Cptr);
+      if (LineNumber != 0) {
+        sprintf (Line2, "(%d)", LineNumber);
+        strcat (Line, Line2);
+      }
+    } else {
+      if (mUtilityName[0] != '\0') {
+        sprintf (Line, "%s", mUtilityName);
+      }
+    }
   }
 
-  sprintf (Line, "(%s)", Cptr);
-  if (LineNumber != 0) {
-    sprintf (Line2, "(%d)", LineNumber);
-    strcat (Line, Line2);
-  }
   //
   // Have to print an error code or Visual Studio won't find the
   // message for you. It has to be decimal digits too.
   //
-  sprintf (Line2, " %s: %c%04d", Type, toupper (Type[0]), MessageCode);
+  if (MessageCode != 0) {
+    sprintf (Line2, ": %s: %c%04d", Type, toupper (Type[0]), MessageCode);
+  } else {
+    sprintf (Line2, ": %s", Type);
+  }
   strcat (Line, Line2);
   fprintf (stdout, "%s", Line);
   //
   // If offending text was provided, then print it
   //
   if (Text != NULL) {
-    fprintf (stdout, ": %s ", Text);
+    fprintf (stdout, ": %s", Text);
   }
+  fprintf (stdout, "\n");
+
   //
   // Print formatted message if provided
   //
   if (MsgFmt != NULL) {
     vsprintf (Line2, MsgFmt, List);
-    fprintf (stdout, ": %s", Line2);
+    fprintf (stdout, "  %s\n", Line2);
   }
+}
 
-  fprintf (stdout, "\n");
+static
+void
+PrintSimpleMessage (
+  CHAR8   *MsgFmt,
+  va_list List
+  )
+/*++
+Routine Description:
+  Print message into stdout.
+ 
+Arguments:
+  MsgFmt      - the format string for the message. Can contain formatting
+                controls for use with varargs.
+  List        - the variable list.
+           
+Returns:
+  None.
+--*/
+{
+  CHAR8       Line[MAX_LINE_LEN];
+  //
+  // Print formatted message if provided
+  //
+  if (MsgFmt != NULL) {
+    vsprintf (Line, MsgFmt, List);
+    fprintf (stdout, "%s\n", Line);
+  }
 }
 
 void
@@ -587,24 +664,123 @@ Returns:
 }
 
 void
-SetDebugMsgMask (
-  UINT32  DebugMask
+SetPrintLevel (
+  UINT32  LogLevel
   )
 /*++
 
 Routine Description:
-  Set the debug printing mask. This is used by the DebugMsg() function
-  to determine when/if a debug message should be printed.
+  Set the printing message Level. This is used by the PrintMsg() function
+  to determine when/if a message should be printed.
 
 Arguments:
-  DebugMask  - bitmask, specific to the calling application
+  LogLevel  - 0~50 to specify the different level message.
 
 Returns:
   NA
 
 --*/
 {
-  mDebugMsgMask = DebugMask;
+  mPrintLogLevel = LogLevel;
+}
+
+void
+VerboseMsg (
+  CHAR8   *MsgFmt,
+  ...
+  )
+/*++
+
+Routine Description:
+  Print a verbose level message.
+
+Arguments:
+  MsgFmt      - the format string for the message. Can contain formatting
+                controls for use with varargs.
+  List        - the variable list.
+
+Returns:
+  NA
+
+--*/
+{
+  va_list List;
+  //
+  // If the debug level is less than current print level, then do nothing.
+  //
+  if (VERBOSE_LOG_LEVEL < mPrintLogLevel) {
+    return ;
+  }
+
+  va_start (List, MsgFmt);
+  PrintSimpleMessage (MsgFmt, List);
+  va_end (List);
+}
+
+void
+NormalMsg (
+  CHAR8   *MsgFmt,
+  ...
+  )
+/*++
+
+Routine Description:
+  Print a default level message.
+
+Arguments:
+  MsgFmt      - the format string for the message. Can contain formatting
+                controls for use with varargs.
+  List        - the variable list.
+
+Returns:
+  NA
+
+--*/
+{
+  va_list List;
+  //
+  // If the debug level is less than current print level, then do nothing.
+  //
+  if (INFO_LOG_LEVEL < mPrintLogLevel) {
+    return ;
+  }
+
+  va_start (List, MsgFmt);
+  PrintSimpleMessage (MsgFmt, List);
+  va_end (List);
+}
+
+void
+KeyMsg (
+  CHAR8   *MsgFmt,
+  ...
+  )
+/*++
+
+Routine Description:
+  Print a key level message.
+
+Arguments:
+  MsgFmt      - the format string for the message. Can contain formatting
+                controls for use with varargs.
+  List        - the variable list.
+
+Returns:
+  NA
+
+--*/
+{
+  va_list List;
+  //
+  // If the debug level is less than current print level, then do nothing.
+  //
+  if (KEY_LOG_LEVEL < mPrintLogLevel) {
+    return ;
+  }
+
+  va_start (List, MsgFmt);
+  PrintSimpleMessage (MsgFmt, List);
+  va_end (List);
 }
 
 void
