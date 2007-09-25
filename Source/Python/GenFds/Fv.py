@@ -1,6 +1,7 @@
 import Ffs
 import AprioriSection
 from GenFdsGlobalVariable import GenFdsGlobalVariable
+from GenFds import GenFds
 import os
 import subprocess
 from CommonDataClass.FdfClassObject import FvClassObject
@@ -21,6 +22,8 @@ class FV (FvClassObject):
     #
     def AddToBuffer (self, Buffer, BaseAddress=None, BlockSize= None, BlockNum=None, ErasePloarity='1', VtfDict=None) :
         self.__InitialInf__(BaseAddress, BlockSize, BlockNum, ErasePloarity, VtfDict)
+        if self.UiFvName.upper() in GenFds.FvBinDict.keys():
+            return GenFds.FvBinDict[self.UiFvName.upper()]
         #
         # First Process the Apriori section
         #
@@ -70,7 +73,8 @@ class FV (FvClassObject):
         GenFdsGlobalVariable.SharpCounter = 0
               
         Buffer.write(fv.read())
-        fv.close
+        fv.close()
+        GenFds.FvBinDict[self.UiFvName.upper()] = FvOutputFile
         return FvOutputFile
     
     def __InitialInf__ (self, BaseAddress = None, BlockSize= None, BlockNum = None, ErasePloarity='1', VtfDict=None) :

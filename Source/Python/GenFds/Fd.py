@@ -36,7 +36,7 @@ class FD(FDClassObject):
         #
         # Create a empty Fd file
         #
-        GenFdsGlobalVariable.VerboseLogger ('Create a empty Fd file')
+        GenFdsGlobalVariable.VerboseLogger ('Create an empty Fd file')
         FdFileName = os.path.join(GenFdsGlobalVariable.FvDir,
                                   self.FdUiName + '.fd')
         fd = open(FdFileName, 'w+b')
@@ -46,10 +46,10 @@ class FD(FDClassObject):
         #
         GenFdsGlobalVariable.VerboseLogger('Write the buffer contents to Fd file')
         fd.write(FdBuffer.getvalue());
-        fd.close;
-        FdBuffer.close;
+        fd.close();
+        FdBuffer.close();
         return FdFileName
-    
+        
     def GenVtfFile (self) :
         #
         # Get this Fd's all Fv name

@@ -43,7 +43,12 @@ class region(RegionClassObject):
                         raise Exception ("Size of FV File (%s) is larger than Region Size %d" % (RegionData, Size))
                     break
                 
-                fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(RegionData.upper())
+                if RegionData.upper() in FvBinDict.keys():
+                    continue
+                
+                fv = None
+                if RegionData.upper() in GenFdsGlobalVariable.FdfParser.profile.FvDict.keys():
+                    fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(RegionData.upper())
                         
                 if fv != None :
                     GenFdsGlobalVariable.InfLogger('   Region Name = FV')
@@ -61,11 +66,10 @@ class region(RegionClassObject):
                     FvBaseAddress = '0x%x' %self.FvAddress
                     FileName = fv.AddToBuffer(FvBuffer, FvBaseAddress, BlockSize, BlockNum, ErasePolarity, vtfDict)
                     
-                    FvBinDict[RegionData.upper()] = FileName
                     if FvBuffer.len > Size:
                         raise Exception ("Size of FV (%s) is larger than Region Size %d" % (RegionData, Size))
-#            if FvBuffer.len < Size :
-#                raise Exception ("Size of Region (%s) is less than Region Size ", self.Offset)
+                else:
+                    raise Exception ("FV (%s) is NOT described in FDF file!" % (RegionData))
 
             #BinFile = open (FileName, 'r+b')
             #Buffer.write(BinFile.read())
