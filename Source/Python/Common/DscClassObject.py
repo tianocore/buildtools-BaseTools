@@ -12,6 +12,7 @@
 #
 
 import os
+import EdkLogger
 from String import *
 from DataType import *
 from Identification import *
@@ -510,8 +511,8 @@ class Dsc(DscObject):
         for Key in Pcds:
             (Status, SkuInfoList) = self.GenSkuInfoList(Item[1], self.Platform.SkuInfos.SkuInfoList, '', '', '', '', '', Key[2])
             if Status == False:
-                ErrorMsg = "SKUID '%s' of '%s' not defined in file '%s'" % (SkuInfoList, Type, self.Platform.Header.FullPath)
-                raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                ErrorMsg = "SKUID '%s' of '%s' is not defined" % (SkuInfoList, Type)
+                EdkLogger.error("DSC File Parser", PARSER_ERROR, ErrorMsg, File=self.Platform.Header.FullPath)
             Pcd = PcdClass(Key[0], '', Key[1], Key[3], Key[4], Key[2], Key[5], [], SkuInfoList, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
@@ -543,8 +544,8 @@ class Dsc(DscObject):
         for Key in Pcds:
             (Status, SkuInfoList) = self.GenSkuInfoList(Item[1], self.Platform.SkuInfos.SkuInfoList, Key[2], Key[3], Key[4], Key[5], '', '')
             if Status == False:
-                ErrorMsg = "SKUID '%s' of '%s' not defined in file '%s'" % (SkuInfoList, Type, self.Platform.Header.FullPath)
-                raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                ErrorMsg = "SKUID '%s' of '%s' is not defined" % (SkuInfoList, Type)
+                EdkLogger.error("DSC File Parser", PARSER_ERROR, ErrorMsg, File=self.Platform.Header.FullPath)
             Pcd = PcdClass(Key[0], '', Key[1], '', Key[6], Key[5], Key[7], [], SkuInfoList, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
@@ -576,8 +577,8 @@ class Dsc(DscObject):
         for Key in Pcds:
             (Status, SkuInfoList) = self.GenSkuInfoList(Item[1], self.Platform.SkuInfos.SkuInfoList, '', '', '', '', Key[2], '')
             if Status == False:
-                ErrorMsg = "SKUID '%s' of '%s' not defined in file '%s'" % (SkuInfoList, Type, self.Platform.Header.FullPath)
-                raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+                ErrorMsg = "SKUID '%s' of '%s' is not defined." % (SkuInfoList, Type)
+                EdkLogger.error("DSC File Parser", PARSER_ERROR, ErrorMsg, File=self.Platform.Header.FullPath)
             Pcd = PcdClass(Key[0], '', Key[1], '', Key[3], '', Key[4], [], SkuInfoList, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)

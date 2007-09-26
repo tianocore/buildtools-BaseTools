@@ -11,21 +11,6 @@
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #
 
-#
-# name
-# type
-# lineno
-# msg
-# arg
-# arg1
-# arg2
-# directory
-# resource
-# structure
-# attribute
-# port
-#
-
 FILE_NOT_FOUND = 0
 FILE_OPEN_FAILURE = 1
 FILE_WRITE_FAILURE = 2
@@ -84,131 +69,64 @@ GENFDS_ERROR = 0xF002
 MIGRATION_ERROR = 0xF010
 UNKNOWN_ERROR = 0xFFFF
 
-gKeyWord = ["name", "type", "lineno", "msg", "arg", "arg1", "arg2", "directory",
-            "resource", "structure", "attribute", "port", "usage"]
-
 gErrorMessage = {
-    FILE_NOT_FOUND          :   "File not found: %(name)s",
-    FILE_OPEN_FAILURE       :   "Opening file: %(name)s",
-    FILE_WRITE_FAILURE      :   "Writing file: %(name)s",
-    FILE_PARSE_FAILURE      :   "Parsing file: %(name)s",
-    FILE_READ_FAILURE       :   "Reading file: %(name)s",
-    FILE_CREATE_FAILURE     :   "Creating file: %(name)s",
-    FILE_CHECKSUM_FAILURE   :   "Invalid checksum of file: %(name)s",
-    FILE_COMPRESS_FAILURE   :   "Compressing file: %(name)s",
-    FILE_DECOMPRESS_FAILURE :   "Decompressing file: %(name)s",
-    FILE_MOVE_FAILURE       :   "Moving file: %(name)s",
-    FILE_DELETE_FAILURE     :   "Deleting file: %(name)s",
-    FILE_COPY_FAILURE       :   "Copying file: %(name)s",
-    FILE_POSITIONING_FAILURE:   "Seeking position of ile: %(name)s",
-    FILE_ALREADY_EXIST      :   "File or directory already exists: %(name)s",
-    FILE_UNKNOWN_ERROR      :   "Unknown error encountered on file: %(name)s",
+    FILE_NOT_FOUND          :   "File not found",
+    FILE_OPEN_FAILURE       :   "File open failure",
+    FILE_WRITE_FAILURE      :   "File write failure",
+    FILE_PARSE_FAILURE      :   "File parse failure",
+    FILE_READ_FAILURE       :   "File read failure",
+    FILE_CREATE_FAILURE     :   "File create failure",
+    FILE_CHECKSUM_FAILURE   :   "Invalid checksum of file",
+    FILE_COMPRESS_FAILURE   :   "File compress failure",
+    FILE_DECOMPRESS_FAILURE :   "File decompress failure",
+    FILE_MOVE_FAILURE       :   "File move failure",
+    FILE_DELETE_FAILURE     :   "File delete failure",
+    FILE_COPY_FAILURE       :   "File copy failure",
+    FILE_POSITIONING_FAILURE:   "Failed to seeking position",
+    FILE_ALREADY_EXIST      :   "File or directory already exists",
+    FILE_UNKNOWN_ERROR      :   "Unknown error encountered on file",
 
-    OPTION_UNKNOWN          :   "Unknown option: %(name)s\n%(usage)s",
-    OPTION_MISSING          :   "Missing option: %(name)s\n%(usage)s",
-    OPTION_CONFLICT         :   "Conflict options: %(arg1) <-> %(arg2)\n%(usage)s",
-    OPTION_VALUE_INVALID    :   "Invalid value of option: %(name)s\n%(usage)s",
-    OPTION_DEPRECATED       :   "Deprecated option: %(name)s\n%(usage)s",
-    OPTION_NOT_SUPPORTED    :   "Unsupported option: %(name)s\n%(usage)s",
+    OPTION_UNKNOWN          :   "Unknown option",
+    OPTION_MISSING          :   "Missing option",
+    OPTION_CONFLICT         :   "Conflict options",
+    OPTION_VALUE_INVALID    :   "Invalid value of option",
+    OPTION_DEPRECATED       :   "Deprecated option",
+    OPTION_NOT_SUPPORTED    :   "Unsupported option",
     OPTION_UNKNOWN_ERROR    :   "Unknown error when processing options",
 
-    PARAMETER_INVALID       :   "Invalid parameter: %(name)s",
-    PARAMETER_MISSING       :   "Missing parameter: %(name)s",
+    PARAMETER_INVALID       :   "Invalid parameter",
+    PARAMETER_MISSING       :   "Missing parameter",
     PARAMETER_UNKNOWN_ERROR :   "Unknown error in parameters",
 
-    FORMAT_INVALID          :   "Invalid sytax/format at line %(lineno)s in file %(name)s",
-    FORMAT_NOT_SUPPORTED    :   "Not supported: %(name)s",
-    FORMAT_UNKNOWN          :   "Unknown format: %(name)s",
-    FORMAT_UNKNOWN_ERROR    :   "Unknown error in %(name)s",
+    FORMAT_INVALID          :   "Invalid sytax/format",
+    FORMAT_NOT_SUPPORTED    :   "Not supported sytax/format",
+    FORMAT_UNKNOWN          :   "Unknown format",
+    FORMAT_UNKNOWN_ERROR    :   "Unknown error in sytax/format ",
 
-    RESOURCE_NOT_AVAILABLE  :   "%(name)s is not available",
-    RESOURCE_ALLOCATE_FAILURE :   "Failed to allocate %(name)s",
-    RESOURCE_FULL           :   "%(name)s is full",
-    RESOURCE_OVERFLOW       :   "%(name)s is overflow",
-    RESOURCE_UNDERRUN       :   "%(name)s is underrun",
-    RESOURCE_UNKNOWN_ERROR  :   "Unkown error in %(name)s",
+    RESOURCE_NOT_AVAILABLE  :   "Not available",
+    RESOURCE_ALLOCATE_FAILURE :   "Allocate failure",
+    RESOURCE_FULL           :   "Full",
+    RESOURCE_OVERFLOW       :   "Overflow",
+    RESOURCE_UNDERRUN       :   "Underrun",
+    RESOURCE_UNKNOWN_ERROR  :   "Unkown error",
 
-    ATTRIBUTE_NOT_AVAILABLE :   "%(name)s is not available",
-    ATTRIBUTE_GET_FAILURE   :   "Failed to get %(name)s",
-    ATTRIBUTE_SET_FAILURE   :   "Failed to set %(name)s",
-    ATTRIBUTE_UPDATE_FAILURE:   "Failed to update %(name)s",
-    ATTRIBUTE_ACCESS_DENIED :   "Access denied: %(name)s",
-    ATTRIBUTE_UNKNOWN_ERROR :   "Unknown error when accessing %(name)s",
+    ATTRIBUTE_NOT_AVAILABLE :   "Not available",
+    ATTRIBUTE_GET_FAILURE   :   "Failed to retrieve",
+    ATTRIBUTE_SET_FAILURE   :   "Failed to set",
+    ATTRIBUTE_UPDATE_FAILURE:   "Failed to update",
+    ATTRIBUTE_ACCESS_DENIED :   "Access denied",
+    ATTRIBUTE_UNKNOWN_ERROR :   "Unknown error when accessing",
 
-    IO_NOT_READY            :   "%(name)s is not ready",
-    IO_BUSY                 :   "%(name)s is busy",
-    IO_TIMEOUT              :   "%(name)s timeout",
-    IO_UNKNOWN_ERROR        :   "Unknown error in %(name)s",
+    IO_NOT_READY            :   "Not ready",
+    IO_BUSY                 :   "Busy",
+    IO_TIMEOUT              :   "Timeout",
+    IO_UNKNOWN_ERROR        :   "Unknown error in IO operation",
 
-    AUTOGEN_ERROR           :   "%(msg)s",
-    PARSER_ERROR            :   "%(msg)s",
-    GENFDS_ERROR            :   "%(msg)s",
-    MIGRATION_ERROR         :   "%(msg)s",
-    
-    UNKNOWN_ERROR           :   "Unknown error: %(msg)s",
+    UNKNOWN_ERROR           :   "Unknown error",
 }
 
-class BuildToolError(Exception):
-    def __init__(self, code=0xffff, **kwargs):
-        if code not in gErrorMessage:
-            code = 0xffff
+class FatalError(Exception):
+    pass
 
-        for key in gKeyWord:
-            if key not in kwargs:
-                kwargs[key] = "<Unknown>"
-
-        self.ErrorMessage = gErrorMessage[code] % kwargs
-        self.ErrorCode = 0xEEEE0000 + code
-
-    def __str__(self):
-        return "ERROR: %04X: %s" % (self.ErrorCode & 0xffff, self.ErrorMessage)
-
-class AutoGenError(BuildToolError):
-    def __init__(self, code=AUTOGEN_ERROR, **kwargs):
-        BuildToolError.__init__(self, code, **kwargs)
-
-    def __str__(self):
-        return "\nAutoGen: %s" % BuildToolError.__str__(self)
-
-class ParserError(BuildToolError):
-    def __init__(self, code=PARSER_ERROR, **kwargs):
-        BuildToolError.__init__(self, code, **kwargs)
-
-    def __str__(self):
-        return "\nParser: %s" % BuildToolError.__str__(self)
-
-class GenFdsError(BuildToolError):
-    def __init__(self, code=GENFDS_ERROR, **kwargs):
-        BuildToolError.__init__(self, code, **kwargs)
-
-    def __str__(self):
-        return "\nGenFds: %s" % BuildToolError.__str__(self)
-
-class MigrationError(BuildToolError):
-    def __init__(self, code=MIGRATION_ERROR, **kwargs):
-        BuildToolError.__init__(self, code, **kwargs)
-
-    def __str__(self):
-        return "\nMigration: %s" % BuildToolError.__str__(self)
-    
 if __name__ == "__main__":
-    try:
-        raise AutoGenError(FILE_ALREADY_EXIST, name="my_fault.file")
-    except BuildToolError, e:
-        print e
-    except Exception, e:
-        print "Python:", e
-
-    try:
-        raise GenFdsError(msg="my fault")
-    except BuildToolError, e:
-        print e
-    except Exception, e:
-        print "Python:", e
-
-    try:
-        xyz = abc[1]
-    except BuildToolError, e:
-        print e
-    except Exception, e:
-        print "\nPython:", e
+    pass

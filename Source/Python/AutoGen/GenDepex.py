@@ -129,24 +129,22 @@ class DependencyExpression:
         while len(Stack) > 0:
             self.PostfixNotation.append(Stack.pop())
         self.PostfixNotation.append("END")
-        #print "  ","\n   ".join(self.PostfixNotation)
 
     def ValidateOpcode(self):
         for Op in self.AboveAllOpcode:
             if Op in self.OpcodeList and Op != self.OpcodeList[0]:
-                raise AutoGenError("Opcode=%s should be the first one in the expression", Op)
+                EdkLogger.error("DepexParser", PARSER_ERROR, "Opcode=%s should be the first one in the expression" % Op)
         for Op in self.ExclusiveOpcode:
             if Op in self.OpcodeList and len(self.OpcodeList) > 1:
-                raise AutoGenError("Opcode=%s should be the only opcode in the expression", Op)
-        # print "######", self.ExpressionString
+                EdkLogger.error("DepexParser", PARSER_ERROR, "Opcode=%s should be the only opcode in the expression" % Op)
         if self.TokenList[-1] in self.NonEndingOpcode:
-            raise AutoGenError("Extra %s at the end of the dependency expression" % self.TokenList[-1])
+            EdkLogger.error("DepexParser", PARSER_ERROR, "Extra %s at the end of the dependency expression" % self.TokenList[-1])
 
     def GetGuidValue(self, Guid):
         GuidValueString = Guid.replace("{", "").replace("}", "").replace(" ", "")
         GuidValueList = GuidValueString.split(",")
         if len(GuidValueList) != 11:
-            raise AutoGenError("Invalid GUID value string or opcode: %s" % Guid)
+            EdkLogger.error("DepexParser", PARSER_ERROR, "Invalid GUID value string or opcode: %s" % Guid)
         return pack("1I2H8B", *(int(value, 16) for value in GuidValueList))
 
     def Generate(self, File=None):

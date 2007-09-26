@@ -8,7 +8,7 @@
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 #
-#This file is used to collect all defined strings in multiple uni files 
+#This file is used to collect all defined strings in multiple uni files
 #
 
 import os, codecs, re
@@ -53,7 +53,7 @@ class StringDefClassObject(object):
         self.Referenced = Referenced
         self.UseOtherLangDef = UseOtherLangDef
         self.Length = 0
-        
+
         if Name != None:
             self.StringName = Name
             self.StringNameByteList = UniToHexList(Name)
@@ -76,21 +76,22 @@ class UniFileClassObject(object):
         self.Token = 2
         self.LanguageDef = []                   #[ [u'LanguageIdentifier', u'PrintableName'], ... ]
         self.OrderedStringList = {}             #{ u'LanguageIdentifier' : [StringDefClassObject]  }
-        
+
         if len(self.FileList) > 0:
             self.LoadUniFiles(FileList)
 
     def GetLangDef(self, Line):
         Lang = Line.split()
         if len(Lang) != 3:
-            raise ParserError(msg="""Wrong language definition '""" + Line + """' which should be '#langdef eng "English"'""")
+            EdkLogger.error("Unicode File Parser", PARSER_ERROR, "Wrong language definition",
+                            ExtraData="""%s\n\t*Correct format is '#langdef eng "English"'""" % Line)
         else:
             LangName = Lang[1]
             LangPrintName = Lang[2][1:-1]
 
         if [LangName, LangPrintName] not in self.LanguageDef:
             self.LanguageDef.append([LangName, LangPrintName])
-        
+
         #
         # Add language string
         #
@@ -98,12 +99,12 @@ class UniFileClassObject(object):
         self.AddStringToList(u'$PRINTABLE_LANGUAGE_NAME', LangName, LangPrintName, 1, True)
 
         return True
-        
+
     def GetStringObject(self, Item):
         Name = ''
         Language = ''
         Value = ''
-        
+
         Name = Item.split()[1]
         LanguageList = Item.split(u'#language ')
         for IndexI in range(len(LanguageList)):
@@ -113,15 +114,15 @@ class UniFileClassObject(object):
                 Language = LanguageList[IndexI].split()[0]
                 Value = LanguageList[IndexI][LanguageList[IndexI].find(u'\"') + len(u'\"') : LanguageList[IndexI].rfind(u'\"')].replace(u'\r\n', u'')
                 self.AddStringToList(Name, Language, Value)
-    
+
     def GetIncludeFile(self, Item, Dir):
         FileName = Item[Item.find(u'#include ') + len(u'#include ') :Item.find(u' ', len(u'#include '))][1:-1]
         self.LoadUniFile(FileName)
-    
+
     def PreProcess(self, File):
         if not os.path.exists(File) or not os.path.isfile(File):
-            raise ParserError(msg=File + ' is not a valid file')
-        
+            EdkLogger.error("Unicode File Parser", FILE_NOT_FOUND, ExtraData=File)
+
         Dir = os.path.dirname(File)
         FileIn = codecs.open(File, mode='rb', encoding='utf-16').readlines()
         Lines = []
@@ -139,7 +140,7 @@ class UniFileClassObject(object):
             Line = Line.replace(u'/string', u'#string')
             Line = Line.replace(u'/language', u'#language')
             Line = Line.replace(u'/include', u'#include')
-                        
+
             Line = Line.replace(UNICODE_WIDE_CHAR, WIDE_CHAR)
             Line = Line.replace(UNICODE_NARROW_CHAR, NARROW_CHAR)
             Line = Line.replace(UNICODE_NON_BREAKING_CHAR, NON_BREAKING_CHAR)
@@ -153,24 +154,24 @@ class UniFileClassObject(object):
 #           if Line.find(u'\\x'):
 #               hex = Line[Line.find(u'\\x') + 2 : Line.find(u'\\x') + 6]
 #               hex = "u'\\u" + hex + "'"
-                        
+
             IncList = gIncludePattern.findall(Line)
             if len(IncList) == 1:
                 Lines.extend(self.PreProcess(os.path.join(Dir, IncList[0])))
                 continue
 
             Lines.append(Line)
-        
+
         return Lines
-    
+
     def LoadUniFile(self, File = None):
         if File == None:
-            raise ParserError(ms='No unicode file is given')
+            EdkLogger.error("Unicode File Parser", PARSER_ERROR, 'No unicode file is given')
         #
         # Process special char in file
         #
         Lines = self.PreProcess(File)
-        
+
         #
         # Get Unicode Information
         #
@@ -180,14 +181,14 @@ class UniFileClassObject(object):
                 SecondLine = Lines[IndexI + 1]
             if (IndexI + 2) < len(Lines):
                 ThirdLine = Lines[IndexI + 2]
-                                    
+
             #
             # Get Language def information
-            # 
+            #
             if Line.find(u'#langdef ') >= 0:
                 self.GetLangDef(Line)
                 continue
-            
+
             Name = ''
             Language = ''
             Value = ''
@@ -217,7 +218,7 @@ class UniFileClassObject(object):
                 Value = Value.replace(u'\r\n', u'')
                 self.AddStringToList(Name, Language, Value)
                 continue
-            
+
             #
             # Get string def information format 2 as below
             #
@@ -240,17 +241,17 @@ class UniFileClassObject(object):
                         StringItem = StringItem + Lines[IndexJ]
                     elif Lines[IndexJ].find(u'\"') >= 2:
                         StringItem = StringItem[ : StringItem.rfind(u'\"')] + Lines[IndexJ][Lines[IndexJ].find(u'\"') + len(u'\"') : ]
-                self.GetStringObject(StringItem)              
-    
+                self.GetStringObject(StringItem)
+
     def LoadUniFiles(self, FileList = []):
         if len(FileList) > 0:
             for File in FileList:
                 self.LoadUniFile(File)
-                
+
     def AddStringToList(self, Name, Language, Value, Token = None, Referenced = False, UseOtherLangDef = '', Index = -1):
         if Language not in self.OrderedStringList:
             self.OrderedStringList[Language] = []
-        
+
         IsAdded = False
         for Item in self.OrderedStringList[Language]:
             if Name == Item.StringName:
@@ -262,26 +263,26 @@ class UniFileClassObject(object):
                 self.OrderedStringList[Language].append(StringDefClassObject(Name, Value, Referenced, Token, UseOtherLangDef))
             else:
                 self.OrderedStringList[Language].insert(Index, StringDefClassObject(Name, Value, Referenced, Token, UseOtherLangDef))
-    
+
     def SetStringReferenced(self, Name):
         for Lang in self.OrderedStringList:
             for Item in self.OrderedStringList[Lang]:
                 if Name == Item.StringName:
                     Item.Referenced = True
                     break
-    
+
     def FindStringValue(self, Name, Lang):
         for Item in self.OrderedStringList[Lang]:
             if Item.StringName == Name:
                 return Item
-        
+
         return None
-    
+
     def ReToken(self):
         #
         # Search each string to find if it is defined for each language
         # Use secondary language value to replace if missing in any one language
-        #           
+        #
         for IndexI in range(0, len(self.LanguageDef)):
             LangKey = self.LanguageDef[IndexI][0]
             for Item in self.OrderedStringList[LangKey]:
@@ -294,7 +295,7 @@ class UniFileClassObject(object):
                     if self.FindStringValue(Name, LangFind) == None:
                         Token = len(self.OrderedStringList[LangFind])
                         self.AddStringToList(Name, LangFind, Value, Token, Referenced, LangKey, Index)
-        
+
         #
         # Retoken
         #
@@ -314,7 +315,7 @@ class UniFileClassObject(object):
             for Index in range(len(NotReferencedStringList)):
                 NotReferencedStringList[Index].Token = Token + Index
                 self.OrderedStringList[LangName].append(NotReferencedStringList[Index])
-        
+
     def ShowMe(self):
         print self.LanguageDef
         #print self.OrderedStringList
@@ -322,7 +323,7 @@ class UniFileClassObject(object):
             print Item
             for Member in self.OrderedStringList[Item]:
                 print str(Member)
-            
+
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
 if __name__ == '__main__':

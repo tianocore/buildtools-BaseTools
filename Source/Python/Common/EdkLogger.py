@@ -1,4 +1,6 @@
 import sys, os, logging
+import traceback
+from  Common.BuildToolError import *
 
 DEBUG_0 = 1
 DEBUG_1 = 2
@@ -12,114 +14,196 @@ DEBUG_8 = 9
 DEBUG_9 = 10
 VERBOSE = 15
 WARN    = VERBOSE
-INFO    = logging.INFO      # 20
-ERROR   = 40
-QUIET   = 50
+INFO    = 20
+QUIET   = 40
+ERROR   = 50
 
-_log_levels = [DEBUG_0, DEBUG_1, DEBUG_2, DEBUG_3, DEBUG_4, DEBUG_5, DEBUG_6, DEBUG_7, DEBUG_8, DEBUG_9, VERBOSE, WARN, INFO, ERROR, QUIET]
+_LogLevels = [DEBUG_0, DEBUG_1, DEBUG_2, DEBUG_3, DEBUG_4, DEBUG_5, DEBUG_6, DEBUG_7, DEBUG_8, DEBUG_9, VERBOSE, WARN, INFO, ERROR, QUIET]
 
-_debug_logger = logging.getLogger("tool_debug")
-_debug_logger.setLevel(INFO)
-_debug_ch = logging.StreamHandler(sys.stdout)
-_debug_formatter = logging.Formatter("#[%(asctime)s] %(filename)s:%(lineno)d: %(message)s", datefmt="%H:%M:%S")
-_debug_ch.setFormatter(_debug_formatter)
-_debug_logger.addHandler(_debug_ch)
+_DebugLogger = logging.getLogger("tool_debug")
+_DebugLogger.setLevel(INFO)
+_DebugChannel = logging.StreamHandler(sys.stdout)
+_DebugFormatter = logging.Formatter("[%(asctime)s.%(msecs)d]: %(message)s", datefmt="%H:%M:%S")
+_DebugChannel.setFormatter(_DebugFormatter)
+_DebugLogger.addHandler(_DebugChannel)
 
-_verbose_logger = logging.getLogger("tool_verbose")
-_verbose_logger.setLevel(INFO)
-_verbose_ch = logging.StreamHandler(sys.stdout)
-_verbose_formatter = logging.Formatter("> %(message)s")
-_verbose_ch.setFormatter(_verbose_formatter)
-_verbose_logger.addHandler(_verbose_ch)
+##_VerboseLogger = logging.getLogger("tool_verbose")
+##_VerboseLogger.setLevel(INFO)
+##_VerboseChannel = logging.StreamHandler(sys.stdout)
+##_VerboseFormatter = logging.Formatter("%(message)s")
+##_VerboseChannel.setFormatter(_VerboseFormatter)
+##_VerboseLogger.addHandler(_VerboseChannel)
+##
+##_WarnLogger = logging.getLogger("tool_warn")
+##_WarnLogger.setLevel(INFO)
+##_WarnChannel = logging.StreamHandler(sys.stdout)
+##_WarnFormatter = logging.Formatter("%(message)s")
+##_WarnChannel.setFormatter(_WarnFormatter)
+##_WarnLogger.addHandler(_WarnChannel)
 
-_warn_logger = logging.getLogger("tool_warn")
-_warn_logger.setLevel(INFO)
-_warn_ch = logging.StreamHandler(sys.stdout)
-_warn_formatter = logging.Formatter("! %(message)s")
-_warn_ch.setFormatter(_warn_formatter)
-_warn_logger.addHandler(_warn_ch)
+_InfoLogger = logging.getLogger("tool_info")
+_InfoLogger.setLevel(INFO)
+_InfoChannel = logging.StreamHandler(sys.stdout)
+_InfoFormatter = logging.Formatter("%(message)s")
+_InfoChannel.setFormatter(_InfoFormatter)
+_InfoLogger.addHandler(_InfoChannel)
 
-_info_logger = logging.getLogger("tool_info")
-_info_logger.setLevel(INFO)
-_info_ch = logging.StreamHandler(sys.stdout)
-_info_formatter = logging.Formatter("%(message)s")
-_info_ch.setFormatter(_info_formatter)
-_info_logger.addHandler(_info_ch)
+_ErrorLogger = logging.getLogger("tool_error")
+_ErrorLogger.setLevel(INFO)
+_ErrorCh = logging.StreamHandler(sys.stderr)
+_ErrorFormatter = logging.Formatter("%(message)s")
+_ErrorCh.setFormatter(_ErrorFormatter)
+_ErrorLogger.addHandler(_ErrorCh)
 
-_error_logger = logging.getLogger("tool_error")
-_error_logger.setLevel(INFO)
-_error_ch = logging.StreamHandler(sys.stderr)
-_error_formatter = logging.Formatter("? %(message)s")
-_error_ch.setFormatter(_error_formatter)
-_error_logger.addHandler(_error_ch)
+_ErrorMessageTemplate = '\n%(tool)s...\n%(file)s(%(line)s): error %(errorcode)X: %(msg)s'
+_ErrorMessageTemplateWithoutFile = '\n%(tool)s: : error %(errorcode)X: %(msg)s'
+_WarningMessageTemplate = '%(tool)s...\n%(file)s(%(line)s): warning: %(msg)s'
+_WarningMessageTemplateWithoutFile = '%(tool)s: : warning: %(msg)s'
+_DebugMessageTemplate = '%(file)s(%(line)s): debug: %(msg)s'
 
-_quiet_logger = logging.getLogger("tool_quiet")
-_quiet_logger.setLevel(INFO)
-_quiet_ch = logging.StreamHandler(sys.stderr)
-_quiet_formatter = logging.Formatter("%(message)s")
-_quiet_ch.setFormatter(_quiet_formatter)
-_quiet_logger.addHandler(_quiet_ch)
+_WarningAsError = False
 
 
-debug   = _debug_logger.log
+def debug(Level, Message, ExtraData=None):
+    if _DebugLogger.getEffectiveLevel() > Level:
+        return
+    if Level > DEBUG_9:
+        return
 
-def verbose(msg):
-    return _verbose_logger.log(VERBOSE, msg)
+    CallerStack = traceback.extract_stack()[-2]
+    TemplateDict = {
+        "file"      : CallerStack[0],
+        "line"      : CallerStack[1],
+        "msg"       : Message,
+    }
 
-def warn(msg):
-    return _warn_logger.log(WARN, msg)
+    if ExtraData != None:
+        LogText = _DebugMessageTemplate % TemplateDict + "\n  " + ExtraData
+    else:
+        LogText = _DebugMessageTemplate % TemplateDict
 
-info    = _info_logger.info
+    _DebugLogger.log(Level, LogText)
 
-error   = _error_logger.error
+def verbose(Message):
+    return _InfoLogger.log(VERBOSE, Message)
 
-quiet   = _quiet_logger.critical
+def warn(ToolName, Message, File=None, Line=None, ExtraData=None):
+    if _InfoLogger.getEffectiveLevel() > WARN:
+        return
 
-def setLevel(level):
-    if level not in _log_levels:
-        info("Not supported log level (%d)" % level)
-        level = INFO
-    _debug_logger.setLevel(level)
-    _verbose_logger.setLevel(level)
-    _info_logger.setLevel(level)
-    _warn_logger.setLevel(level)
-    _error_logger.setLevel(level)
-    _quiet_logger.setLevel(level)
+    # if no tool name given, use caller's source file name as tool name
+    if ToolName == None or ToolName == "":
+        ToolName = os.path.basename(traceback.extract_stack()[-2][0])
 
-def setLogFile(log):
-    if os.path.exists(log):
-        os.remove(log)
+    if Line == None:
+        Line = "..."
+    else:
+        Line = "%d" % Line
 
-    _ch = logging.FileHandler(log)
-    _ch.setFormatter(_debug_formatter)
-    _debug_logger.addHandler(_ch)
+    TemplateDict = {
+        "tool"      : ToolName,
+        "file"      : File,
+        "line"      : Line,
+        "msg"       : Message,
+    }
 
-    _ch = logging.FileHandler(log)
-    _ch.setFormatter(_verbose_formatter)
-    _verbose_logger.addHandler(_ch)
+    if File != None:
+        LogText = _WarningMessageTemplate % TemplateDict
+    else:
+        LogText = _WarningMessageTemplateWithoutFile % TemplateDict
 
-    _ch = logging.FileHandler(log)
-    _ch.setFormatter(_warn_formatter)
-    _warn_logger.addHandler(_ch)
+    if ExtraData != None:
+        LogText += "\n  " + ExtraData
 
-    _ch = logging.FileHandler(log)
-    _ch.setFormatter(_info_formatter)
-    _info_logger.addHandler(_ch)
+    _InfoLogger.log(WARN, LogText)
 
-    _ch = logging.FileHandler(log)
-    _ch.setFormatter(_error_formatter)
-    _error_logger.addHandler(_ch)
+    if _WarningAsError == True:
+        raise FatalError("%s failed by warning!" % ToolName)
 
-    _ch = logging.FileHandler(log)
-    _ch.setFormatter(_quiet_formatter)
-    _quiet_logger.addHandler(_ch)
+info    = _InfoLogger.info
+
+def error(ToolName, ErrorCode, Message=None, File=None, Line=None, ExtraData=None):
+    # if no tool name given, use caller's source file name as tool name
+    if ToolName == None or ToolName == "":
+        ToolName = os.path.basename(traceback.extract_stack()[-2][0])
+
+    if Line == None:
+        Line = "..."
+    else:
+        Line = "%d" % Line
+
+    if Message == None:
+        if ErrorCode in gErrorMessage:
+            Message = gErrorMessage[ErrorCode]
+        else:
+            Message = gErrorMessage[UNKNOWN_ERROR]
+
+    TemplateDict = {
+        "tool"      : ToolName,
+        "file"      : File,
+        "line"      : Line,
+        "errorcode" : ErrorCode,
+        "msg"       : Message,
+        "extra"     : ExtraData
+    }
+
+    if File != None:
+        LogText =  _ErrorMessageTemplate % TemplateDict
+    else:
+        LogText = _ErrorMessageTemplateWithoutFile % TemplateDict
+
+    if ExtraData != None:
+        LogText += "\n  " + ExtraData
+
+    _ErrorLogger.log(ERROR, LogText)
+    raise FatalError("%s failed!" % ToolName)
+
+quiet   = _ErrorLogger.error
+
+def SetLevel(Level):
+    if Level not in _LogLevels:
+        info("Not supported log level (%d)" % Level)
+        Level = INFO
+    _DebugLogger.setLevel(Level)
+    #_VerboseLogger.setLevel(Level)
+    _InfoLogger.setLevel(Level)
+    #_WarnLogger.setLevel(Level)
+    _ErrorLogger.setLevel(Level)
+    #_QuietLogger.setLevel(Level)
+
+def SetWarningAsError():
+    global _WarningAsError
+    _WarningAsError = True
+
+def SetLogFile(LogFile):
+    if os.path.exists(LogFile):
+        os.remove(LogFile)
+
+    _Ch = logging.FileHandler(LogFile)
+    _Ch.setFormatter(_DebugFormatter)
+    _DebugLogger.addHandler(_Ch)
+
+    #_Ch = logging.FileHandler(LogFile)
+    #_Ch.setFormatter(_VerboseFormatter)
+    #_VerboseLogger.addHandler(_Ch)
+
+    #_Ch = logging.FileHandler(LogFile)
+    #_Ch.setFormatter(_WarnFormatter)
+    #_WarnLogger.addHandler(_Ch)
+
+    _Ch= logging.FileHandler(LogFile)
+    _Ch.setFormatter(_InfoFormatter)
+    _InfoLogger.addHandler(_Ch)
+
+    _Ch = logging.FileHandler(LogFile)
+    _Ch.setFormatter(_ErrorFormatter)
+    _ErrorLogger.addHandler(_Ch)
+    
+    #
+    #_ch = logging.FileHandler(log)
+    #_ch.setFormatter(_quiet_formatter)
+    #_QuietLogger.addHandler(_ch)
 
 if __name__ == '__main__':
-    setLevel(QUIET)
-    quiet('hello')
+    pass
 
-    setLevel(ERROR)
-    error('hello')
-
-    setLevel(WARN)
-    warn('hello')

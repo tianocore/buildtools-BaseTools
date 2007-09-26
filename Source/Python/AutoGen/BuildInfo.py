@@ -53,7 +53,7 @@ class ModuleBuildInfo(BuildInfo):
         self.BuildDir = ""
         self.OutputDir = ""
         self.DebugDir = ""
-        self.MakefileDir = ""
+        self.MakeFileDir = ""
         self.CustomMakefile = {}
 
         self.IncludePathList = []
@@ -109,7 +109,7 @@ class PlatformBuildInfo(BuildInfo):
         self.DebugDir = ""
         self.LibraryDir = ""
         self.FvDir = ""
-        self.MakefileDir = ""
+        self.MakeFileDir = ""
         self.FdfFile = ""
 
         self.ModuleAutoGenList = []
@@ -120,10 +120,10 @@ class PlatformBuildInfo(BuildInfo):
         self.DynamicPcdList = []    # [(TokenCName1, TokenSpaceGuidCName1), (TokenCName2, TokenSpaceGuidCName2), ...]
 
         self.ToolPath = {}          # toolcode : tool path
-        self.ToolDynamicLib = {}    # toolcode : lib path
+        self.ToolDllPath = {}    # toolcode : lib path
         self.ToolStaticLib = {}     # toolcode : lib path
         self.ToolChainFamily = {}   # toolcode : tool chain family
         self.BuildOption = {}       # toolcode : option
         self.OutputFlag = {}        # toolcode : output flag
         self.IncludeFlag = {}        # toolcode : include flag
-        self.DefaultToolOption = {}
+        self.ToolOption = {}

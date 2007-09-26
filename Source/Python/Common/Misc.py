@@ -70,7 +70,7 @@ def GuidStructureStringToGuidString(GuidValue):
     guidValueString = GuidValue.lower().replace("{", "").replace("}", "").replace(" ", "")
     guidValueList = guidValueString.split(",")
     if len(guidValueList) != 11:
-        raise AutoGenError(msg="Invalid GUID value string %s" % GuidValue)
+        EdkLogger.error(None, None, "Invalid GUID value string %s" % GuidValue)
     return "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x" % (
             int(guidValueList[0], 16),
             int(guidValueList[1], 16),
@@ -89,7 +89,7 @@ def GuidStructureStringToGuidValueName(GuidValue):
     guidValueString = GuidValue.lower().replace("{", "").replace("}", "").replace(" ", "")
     guidValueList = guidValueString.split(",")
     if len(guidValueList) != 11:
-        raise AutoGenError(msg="Invalid GUID value string %s" % GuidValue)
+        EdkLogger.error(None, None, "Invalid GUID value string %s" % GuidValue)
     return "%08x_%04x_%04x_%02x%02x_%02x%02x%02x%02x%02x%02x" % (
             int(guidValueList[0], 16),
             int(guidValueList[1], 16),
@@ -144,7 +144,7 @@ def Cache(Data, File):
         Fd = open(File, 'w')
         cPickle.dump(Data, Fd)
     except:
-        raise AutoGenError(FILE_OPEN_FAILURE, name=File)
+        EdkLogger.error("", FILE_OPEN_FAILURE, ExtraData=File)
     finally:
         if Fd != None:
             Fd.close()
@@ -154,7 +154,7 @@ def Restore(File):
         Fd = open(File, 'r')
         return cPickle.load(Fd)
     except Exception, e:
-        raise AutoGenError(FILE_OPEN_FAILURE, name=File)
+        EdkLogger.error("", FILE_OPEN_FAILURE, ExtraData=File)
     finally:
         if Fd != None:
             Fd.close()
@@ -196,7 +196,7 @@ class TemplateString(object):
                 if RepeatTime < 0:
                     RepeatTime = len(Value)
                 elif RepeatTime != len(Value):
-                    raise AutoGenError(msg=Key + " has different repeat time from others!")
+                    EdkLogger.error("TemplateString", None, Key + " has different repeat time from others!")
 
             NewString = ''
             for Index in range(0, RepeatTime):
@@ -309,15 +309,15 @@ class sdict(dict):
         value = None
         if key in self._key_list:
             value = self[key]
-            dict.__delitem__(self, key)
+            self.__delitem__(key)
         elif len(dv) != 0 :
             value = kv[0]
         return value
 
     def popitem(self):
-        key = self._key_list[0]
+        key = self._key_list[-1]
         value = self[key]
-        dict.__delitem__(self, key)
+        self.__delitem__(key)
         return key, value
 
 

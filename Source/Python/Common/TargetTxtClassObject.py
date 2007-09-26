@@ -35,7 +35,7 @@ class TargetTxtClassObject(object):
         if os.path.exists(filename) and os.path.isfile(filename):
              return self.ConvertTextFileToDict(filename, '#', '=')
         else:
-            raise ParseError('LoadTargetTxtFile() : No Target.txt file exist')
+            EdkLogger.error("Target.txt Parser", FILE_NOT_FOUND, ExtraData=filename)
             return 1
 
 #

@@ -31,9 +31,9 @@ def FileType2Macro(FileType):
 class FileBuildRule:
     def __init__(self, Input, Output, Command):
         if Input == {}:
-            raise AutoGenError(msg="No input files")
+            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No input files for a build rule")
         if Output == []:
-            raise AutoGenError(msg="No output files")
+            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No output files for a build rule")
 
         self.SourceFileType = {}
         self.SourceFileExtList = []
@@ -167,15 +167,16 @@ class BuildRule:
     _SubSectionList = [_InputFile, _OutputFile, _Command]
 
     def __init__(self, File=None, Content=None, LineIndex=0, SupportedFamily=["MSFT", "INTEL", "GCC"]):
+        self.RuleFile = File
         if File != None:
             try:
                 self.RuleContent = open(File, 'r').readlines()
             except:
-                raise ParserError(FILE_OPEN_FAILURE, name=File)
+                EdkLogger.error("BuildRuleParser", FILE_OPEN_FAILURE, ExtraData=File)
         elif Content != None:
             self.RuleContent = Content
         else:
-            raise ParserError(msg="No rule file or string given")
+            EdkLogger.error("BuildRuleParser", PARSER_ERROR, "No rule file or string given")
 
         self.SupportedToolChainFamilyList = SupportedFamily
         self.RuleDatabase = {}  # {version : {family : {file type : FileBuildRule object}}}
@@ -217,12 +218,14 @@ class BuildRule:
     def ParseSection(self, LineIndex):
         TokenList = self.RuleContent[LineIndex].split("=", 1)
         if len(TokenList) != 2 or TokenList[0] != "BUILD_VERSION":
-            raise ParserError(msg="Invalid define: %s, line %d" % (self.RuleContent[LineIndex], LineIndex+1))
+            EdkLogger.error("BuildRuleParser", PARSER_ERROR, "Invalid definition",
+                            File=RuleFile, Line=LineIndex+1, ExtraData=self.RuleContent[LineIndex])
 
         try:
             self._BuildVersion = int(TokenList[1].strip(), 0)
         except:
-            raise ParserError(msg="Version is not a valid number: %s, line %d" % (self.RuleContent[LineIndex], LineIndex+1))
+            EdkLogger.error("BuildRuleParser", PARSER_ERROR, "Version is not a valid number",
+                            File=self.RuleFile, Line=LineIndex+1, ExtraData=self.RuleContent[LineIndex])
 
     def ParseSubSection(self, LineIndex):
         pass
@@ -271,12 +274,12 @@ class BuildRule:
             if self._InputFile in Rule:
                 Input = Rule[self._InputFile]
             else:
-                raise ParserError(msg="No input files found")
+                EdkLogger.error("BuildRuleParser", PARSER_ERROR, "No input files found for a rule")
 
             if self._OutputFile in Rule:
                 Output = Rule[self._OutputFile]
             else:
-                raise ParserError(msg="No output files found")
+                EdkLogger.error("BuildRuleParser", PARSER_ERROR, "No output files found a rule")
 
             if self._Command in Rule:
                 Command = Rule[self._Command]
@@ -306,18 +309,18 @@ class BuildRule:
         for RuleName in RuleNameList:
             TokenList = RuleName.split('.')
             if len(TokenList) == 1:
-                raise ParserError(msg="Invalid rule section: %s, line %d"
-                                  % (self.RuleContent[LineIndex], LineIndex+1))
+                EdkLogger.error("BuildRuleParser", PARSER_ERROR, "Invalid rule section",
+                                File=self.RuleFile, Line=LineIndex+1, ExtraData=self.RuleContent[LineIndex])
 
             Rule = TokenList[0].strip()
             if Rule.upper() != "BUILD":
-                #raise ParserError(msg="Not supported section %s" % Line)
                 self._State = self._UnknownSection
                 return
 
             FileType = TokenList[1].strip()
             if FileType == '':
-                raise ParserError(msg="No file type given: %s, line %d" % (Line, LineIndex+1))
+                EdkLogger.error("BuildRuleParser", PARSER_ERROR, "No file type given",
+                                File=self.RuleFile, Line=LineIndex+1, ExtraData=Line)
             FileTypeList.append(FileType)
 
         self._FileTypeList = FileTypeList
@@ -335,7 +338,8 @@ class BuildRule:
             if SectionType == "":
                 SectionType = Type
             elif SectionType != Type:
-                raise ParserError(msg="Two different section types are not allowed: %s, line %d" % (Line, LineIndex+1))
+                EdkLogger.error("BuildRuleParser", PARSER_ERROR, "Two different section types are not allowed",
+                                File=self.RuleFile, Line=LineIndex+1, ExtraData=Line)
 
             if len(TokenList) > 1:
                 Family = TokenList[1].strip().upper()
@@ -355,12 +359,14 @@ class BuildRule:
         if len(TokenList) > 1:
             FileType = TokenList[0].strip()
             if FileType not in self._FileTypeList:
-                raise ParserError(msg="File type must be %s: %s, line %d"
-                                  % (Line, self._FileTypeList, LineIndex))
+                EdkLogger.error("BuildRuleParser", PARSER_ERROR,
+                                "File type must be one of %s: %s" % (self._FileTypeList, FileType),
+                                File=self.RuleFile, ExtraData=Line, Line=LineIndex+1)
             FileString = TokenList[1]
         else:
             if len(self._FileTypeList) > 1:
-                raise ParserError(msg="File type must be given: %s, line %d" % (Line, LineIndex))
+                EdkLogger.error("BuildRuleParser", PARSER_ERROR, "File type must be given",
+                                File=self.RuleFile, Line=LineIndex, ExtraData=Line)
             else:
                 FileType = self._FileTypeList[0]
             FileString = TokenList[0]

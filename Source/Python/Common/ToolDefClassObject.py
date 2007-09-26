@@ -40,9 +40,9 @@ class ToolDefClassObject(object):
                 F = open(FileName,'r')
                 FileContent = F.readlines()
             except:
-                raise ParserError(FILE_OPEN_FAILURE, name=FileName)
+                EdkLogger.error("tools_def.txt parser", FILE_OPEN_FAILURE, ExtraData=FileName)
         else:
-            raise ParserError(FILE_NOT_FOUND, name=FileName)
+            EdkLogger.error("tools_def.txt parser", FILE_NOT_FOUND, ExtraData=FileName)
 
         self.ToolsDefTxtDatabase = {
             TAB_TOD_DEFINES_TARGET          :   [],
@@ -72,7 +72,9 @@ class ToolDefClassObject(object):
                 EnvReference = gEnvRefPattern.findall(Value)
                 for Ref in EnvReference:
                     if Ref not in self.MacroDictionary:
-                        raise ParserError(msg="Environment [%s] has not been defined" % Ref)
+                        EdkLogger.error("tools_def.txt parser", PARSER_ERROR,
+                                        "Environment [%s] has not been defined" % Ref,
+                                        File=FileName, Line=Index+1)
                     Value = Value.replace(Ref, self.MacroDictionary[Ref])
 
                 MacroName = MacroDefinition[0].strip()
@@ -83,7 +85,9 @@ class ToolDefClassObject(object):
             MacroReference = gMacroRefPattern.findall(Value)
             for Ref in MacroReference:
                 if Ref not in self.MacroDictionary:
-                    raise ParserError(msg="Macro [%s] has not been defined" % Ref)
+                    EdkLogger.error("tools_def.txt parser", PARSER_ERROR,
+                                    "Macro [%s] has not been defined" % Ref,
+                                    File=FileName, Line=Index+1)
                 Value = Value.replace(Ref, self.MacroDictionary[Ref])
 
             List = Name.split('_')

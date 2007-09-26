@@ -202,7 +202,7 @@ class WorkspaceBuild(object):
         if os.path.exists(File) and os.path.isfile(File):
             self.DscDatabase[DscFileName] = Dsc(File, True, True, self.WorkspaceDir)
         else:
-            raise ParserError(FILE_NOT_FOUND, name = File)
+            EdkLogger.error("AutoGen", FILE_NOT_FOUND, ExtraData = File)
 
         #
         # Parse platform to get module
@@ -553,7 +553,7 @@ class WorkspaceBuild(object):
                     EdkLogger.debug(EdkLogger.DEBUG_3, "%s for module type %s is not supported (%s)" % (Key + (LibraryPath,)))
                     continue
                 if LibraryPath == None or LibraryPath == "":
-                    EdkLogger.warn("\tWARNING: Library instance for library class %s is not found" % LibraryClassName)
+                    EdkLogger.warn(None, "\tWARNING: Library instance for library class %s is not found" % LibraryClassName)
                     continue
 
                 LibraryModule = ModuleDatabase[LibraryPath]
@@ -586,8 +586,10 @@ class WorkspaceBuild(object):
             #
             for Lc in m.LibraryClass:
                 if Lc.LibraryClass in LibraryInstance and str(m) != str(LibraryInstance[Lc.LibraryClass]):
-                    raise AutoGenError(msg="More than one library instance found for library class %s in module %s:\n\t%s\n\t%s"
-                                           % (Lc.LibraryClass, Module, LibraryInstance[Lc.LibraryClass], str(m)))
+                    EdkLogger.error("AutoGen", AUTOGEN_ERROR,
+                                    "More than one library instance found for library class %s in module %s" % (Lc.LibraryClass, Module),
+                                    ExtraData="\t%s\n\t%s" % (LibraryInstance[Lc.LibraryClass], str(m))
+                                    )
             if ConsumedByList[m] == []:
                 Q.insert(0, m)
         #
@@ -653,9 +655,9 @@ class WorkspaceBuild(object):
         #
         for m in LibraryList:
             if ConsumedByList[m] != [] and m in Constructor:
-                errorMessage = 'Library [%s] with constructors has a cycle:' % str(m)
-                errorMessage += "\n\tconsumed by " + "\n\tconsumed by ".join([str(l) for l in ConsumedByList[m]])
-                raise AutoGenError(msg=errorMessage)
+                ErrorMessage = 'Library [%s] with constructors has a cycle' % str(m)
+                EdkLogger.error("AutoGen", AUTOGEN_ERROR, ErrorMessage,
+                                "\tconsumed by " + "\n\tconsumed by ".join([str(l) for l in ConsumedByList[m]]))
             if m not in SortedLibraryList:
                 SortedLibraryList.append(m)
 
@@ -764,7 +766,7 @@ class WorkspaceBuild(object):
             if InfFileName not in self.InfDatabase:
                 self.InfDatabase[InfFileName] = Inf(File, True, True, self.WorkspaceDir)
         else:
-            raise ParserError(FILE_NOT_FOUND, name = File)
+            EdkLogger.error("AutoGen", FILE_NOT_FOUND, ExtraData=File)
 
     #
     # Create a Dec instance for input dec file and add it to DecDatabase
@@ -776,7 +778,7 @@ class WorkspaceBuild(object):
             if DecFileName not in self.DecDatabase:
                 self.DecDatabase[DecFileName] = Dec(File, True, True, self.WorkspaceDir)
         else:
-            raise ParserError(FILE_NOT_FOUND, name = File)
+            EdkLogger.error("AutoGen", FILE_NOT_FOUND, ExtraData=File)
 
     #
     # Search PlatformBuildDatabase to find LibraryClass Instance for Module
@@ -871,7 +873,7 @@ class WorkspaceBuild(object):
                 break
         if not IsFoundInDec:
             ErrorMsg = "Pcd '%s' defined in module '%s' is not found in any package" % (Name, ModuleName)
-            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+            EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
 
         #
         # Third get information from <Pcd> of <Compontents> from module database
@@ -903,7 +905,7 @@ class WorkspaceBuild(object):
         #
         if not IsFoundInDsc:
             ErrorMsg = "Pcd '%s' defined in module '%s' is not found in any platform" % (Name, ModuleName)
-            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+            EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
 
         return PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, IsOverrided)
 

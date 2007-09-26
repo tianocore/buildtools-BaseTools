@@ -14,6 +14,7 @@
 import DataType
 import os.path
 import string
+import EdkLogger
 from BuildToolError import *
 
 #
@@ -47,7 +48,7 @@ def GenDefines(String, Arch, Defines):
             return 0
         else:
             return -1
-    
+
     return 1
 
 #
@@ -62,20 +63,20 @@ def GenInclude(String, IncludeFiles, Arch):
         return True
     else:
         return False
-    
+
 #
 # Parse a string with format "InfFilename [EXEC = ExecFilename]"
 # Return (InfFilename, ExecFilename)
 #
 def GetExec(String):
     InfFilename = ''
-    ExecFilename = '' 
+    ExecFilename = ''
     if String.find('EXEC') > -1:
         InfFilename = String[ : String.find('EXEC')].strip()
         ExecFilename = String[String.find('EXEC') + len('EXEC') : ].strip()
     else:
         InfFilename = String.strip()
-    
+
     return (InfFilename, ExecFilename)
 
 #
@@ -91,9 +92,9 @@ def GetBuildOption(String, File):
         Family = CleanString(List[0][ : List[0].find(':')])
         ToolChain = CleanString(List[0][List[0].find(':') + 1 : ])
     else:
-        ToolChain = CleanString(List[0])                    
+        ToolChain = CleanString(List[0])
     Flag = CleanString(List[1])
-    
+
     return (Family, ToolChain, Flag)
 
 #
@@ -109,13 +110,13 @@ def GetComponents(Lines, Key, KeyValues, CommentCharacter):
     LibraryClassItem = []
     BuildOption = []
     Pcd = []
-    
+
     LineList = Lines.split('\n')
     for Line in LineList:
         Line = CleanString(Line, CommentCharacter)
         if Line == None or Line == '':
             continue
-        
+
         if findBlock == False:
             ListItem = Line
             #find '{' at line tail
@@ -123,7 +124,7 @@ def GetComponents(Lines, Key, KeyValues, CommentCharacter):
                 findBlock = True
                 ListItem = CleanString(Line.rsplit('{', 1)[0], CommentCharacter)
 
-        if findBlock:    
+        if findBlock:
             if Line.find('<LibraryClasses>') != -1:
                 (findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (True, False, False, False, False, False, False)
                 continue
@@ -178,7 +179,7 @@ def GetComponents(Lines, Key, KeyValues, CommentCharacter):
                 Pcd.append((DataType.TAB_PCDS_DYNAMIC_EX, Line))
         else:
             KeyValues.append([ListItem, [], [], []])
-        
+
     return True
 
 #
@@ -203,7 +204,7 @@ def GetDynamics(Lines, Key, KeyValues, CommentCharacter):
     # Get SkuId Name List
     #
     SkuIdNameList = SplitModuleType(Key)
-    
+
     Lines = Lines.split(DataType.TAB_SECTION_END, 1)[1]
     LineList = Lines.splitlines()
     for Line in LineList:
@@ -227,9 +228,9 @@ def SplitModuleType(Key):
         KeyValue = KeyValue + DataType.TAB_SPLIT + KeyList[1]
     ReturnValue.append(KeyValue)
     ReturnValue.append(GetSplitValueList(KeyList[2]))
-    
+
     return ReturnValue
-    
+
 #
 # Create a normal path
 # And replace DFEINE in the path
@@ -261,7 +262,7 @@ def CleanString(Line, CommentCharacter = DataType.TAB_COMMENT_SPLIT):
     Line = Line.split(CommentCharacter, 1)[0];
     #remove whitespace again
     Line = Line.strip();
-    
+
     return Line
 
 def GetMultipleValuesOfKeyFromLines(Lines, Key, KeyValues, CommentCharacter):
@@ -284,7 +285,7 @@ def GetSingleValueOfKeyFromLines(Lines, Dictionary, CommentCharacter, KeySplitCh
     Value = ''
     DefineValues = ['']
     SpecValues = ['']
-    
+
     for Line in Lines:
         #
         # Handle DEFINE and SPEC
@@ -299,7 +300,7 @@ def GetSingleValueOfKeyFromLines(Lines, Dictionary, CommentCharacter, KeySplitCh
                 SpecValues.remove('')
             SpecValues.append(GetDefineValue(Line, DataType.TAB_INF_DEFINES_SPEC, CommentCharacter))
             continue
-                
+
         #
         # Handle Others
         #
@@ -313,20 +314,20 @@ def GetSingleValueOfKeyFromLines(Lines, Dictionary, CommentCharacter, KeySplitCh
                     Value = map(string.strip, LineList[1].split(ValueSplitCharacter))
                 else:
                     Value = CleanString(LineList[1], CommentCharacter).splitlines()
-                
+
                 if Key[0] not in Keys:
                     Dictionary[Key[0]] = Value
                     Keys.append(Key[0])
                 else:
-                    Dictionary[Key[0]].extend(Value)                
-    
+                    Dictionary[Key[0]].extend(Value)
+
     if DefineValues == []:
         DefineValues == ['']
     if SpecValues == []:
         SpecValues == ['']
     Dictionary[DataType.TAB_INF_DEFINES_DEFINE] = DefineValues
     Dictionary[DataType.TAB_INF_DEFINES_SPEC] = SpecValues
-    
+
     return True
 
 #
@@ -345,7 +346,7 @@ def PreCheck(FileName, FileContent, SupSectionTag):
         #
         if Line.find('$') > -1:
             if Line.find('$(') < 0 or Line.find(')') < 0:
-                raise ParserError(FORMAT_INVALID, lineno = LineNo, name = FileName)
+                EdkLogger.error("Parser", FORMAT_INVALID, Line=LineNo, File=FileName)
 
         #
         # Check []
@@ -355,7 +356,7 @@ def PreCheck(FileName, FileContent, SupSectionTag):
             # Only get one '[' or one ']'
             #
             if not (Line.find('[') > -1 and Line.find(']') > -1):
-                raise ParserError(FORMAT_INVALID, lineno = LineNo, name = FileName)
+                EdkLogger.error("Parser", FORMAT_INVALID, Line=LineNo, File=FileName)
 
             #
             # Tag not in defined value
@@ -368,11 +369,11 @@ def PreCheck(FileName, FileContent, SupSectionTag):
                 if Tag.upper() == DataType.TAB_USER_EXTENSIONS.upper():
                     break
                 if Tag.upper() not in map(lambda s: s.upper(), SupSectionTag):
-                    ErrorMsg = "'%s' is not a supportted section name found at line %s in file '%s'" % (Tag, LineNo, FileName)
-                    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-    
+                    ErrorMsg = "'%s' is not a supportted section name." % Tag
+                    EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, File=FileName, Line=LineNo)
+
     if IsFailed:
-       raise ParserError(FORMAT_INVALID, lineno = LineNo, name = FileName)
+       EdkLogger.error("Parser", FORMAT_INVALID, Line=LineNo, File=FileName)
 
 #
 # Check if the Filename is including ExtName
@@ -385,9 +386,10 @@ def CheckFileType(CheckFilename, ExtName, ContainerFilename, SectionName, Line):
         if Ext.upper() != ExtName.upper():
             ContainerFile = open(ContainerFilename, 'r').read()
             LineNo = GetLineNo(ContainerFile, Line)
-            ErrorMsg = "Invalid %s '%s' is defined at line %s in file '%s', it is NOT a valid '%s' file" % (SectionName, CheckFilename, LineNo, ContainerFilename, ExtName) 
-            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-    
+            ErrorMsg = "Invalid %s. '%s' is found, but '%s' file is needed" % (SectionName, CheckFilename, ExtName)
+            EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, Line=LineNo,
+                            File=ContainerFilename)
+
     return True
 
 #
@@ -403,9 +405,10 @@ def CheckFileExist(WorkspaceDir, CheckFilename, ContainerFilename, SectionName, 
         else:
             ContainerFile = open(ContainerFilename, 'r').read()
             LineNo = GetLineNo(ContainerFile, Line)
-            ErrorMsg = "Can't find file '%s' defined in section '%s' at line %s in file '%s'" % (CheckFile, SectionName, LineNo, ContainerFilename) 
-            raise ParserError(PARSER_ERROR, msg = ErrorMsg)
-    
+            ErrorMsg = "Can't find file '%s' defined in section '%s'" % (CheckFile, SectionName)
+            EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg,
+                            File=ContainerFilename, Line=LineNo)
+
     return True
 
 #
@@ -417,7 +420,7 @@ def CheckPcdTokenInfo(TokenInfoString, Section, File):
         TokenInfoList = GetSplitValueList(TokenInfoString, DataType.TAB_SPLIT)
         if len(TokenInfoList) != 2:
             RaiseParserError(TokenInfoString, Section, File, Format)
-    
+
     return True
 
 #
@@ -428,7 +431,7 @@ def GetLineNo(FileContent, Line):
     for Index in range(len(LineList)):
         if LineList[Index].find(Line) > -1:
             return Index + 1
-    
+
     return -1
 
 #
@@ -436,8 +439,9 @@ def GetLineNo(FileContent, Line):
 #
 def RaiseParserError(Line, Section, File, Format):
     LineNo = GetLineNo(open(os.path.normpath(File), 'r').read(), Line)
-    ErrorMsg = "Invalid statement '%s' is found in section '%s' at line %s in file '%s', correct format is '%s'" % (Line, Section, LineNo, File, Format) 
-    raise ParserError(PARSER_ERROR, msg = ErrorMsg)
+    ErrorMsg = "Invalid statement '%s' is found in section '%s'" % (Line, Section)
+    EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, File=File, Line=LineNo,
+                    ExtraData="Correct format is " + Format)
 
 #
 # Return a full path with workspace dir

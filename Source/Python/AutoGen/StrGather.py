@@ -76,7 +76,7 @@ def CreateHFileContent(BaseName, UniObjectClass):
             else:
                 Line = COMMENT_DEFINE_STR + ' ' + Name + ' ' * (ValueStartPtr - len(DEFINE_STR + Name)) + DecToHexStr(Token, 4) + COMMENT_NOT_REFERENCED
             Str = WriteLine(Str, Line)
-    
+
     Str =  WriteLine(Str, '')
     Str = WriteLine(Str, 'extern unsigned char ' + BaseName + 'Strings[];')
     return Str
@@ -91,15 +91,15 @@ def CreateCFileHeader():
     Str = ''
     for Item in H_C_FILE_HEADER:
         Str = WriteLine(Str, Item)
-    
+
     return Str
-  
+
 def CreateArrayItem(Value, Width = 16):
     MaxLength = Width
     Index = 0
     Line = '  '
     ArrayItem = ''
-    
+
     for Item in Value:
         if Index < MaxLength:
             Line = Line + Item + ', '
@@ -109,7 +109,7 @@ def CreateArrayItem(Value, Width = 16):
             Line = '  ' + Item +  ', '
             Index = 1
     ArrayItem = Write(ArrayItem, Line.rstrip())
-    
+
     return ArrayItem
 
 def CreateCFileStringDef(Name, Offset, Token, UseOtherLangDef = ''):
@@ -119,11 +119,11 @@ def CreateCFileStringDef(Name, Offset, Token, UseOtherLangDef = ''):
     Str = Write('', CreateArrayItem(DecToHexList(Offset)) + '  ' + COMMENT + 'offset to string ' + Name + ' (' + DecToHexStr(Token, 4) + ')' + Comment)
 
     return Str
-    
-def CreateCFileStringValue(Name, Language, Value, Offset):    
+
+def CreateCFileStringValue(Name, Language, Value, Offset):
     Str = WriteLine('  ', COMMENT + STRING + ' ' + Name + ' ' + OFFSET + ' ' + DecToHexStr(Offset, 8))
     Str = WriteLine(Str, CreateArrayItem(Value))
-    
+
     return Str
 
 def CreateCFileContent(BaseName, UniObjectClass):
@@ -143,7 +143,7 @@ def CreateCFileContent(BaseName, UniObjectClass):
 
         Str = WriteLine(Str, '//******************************************************************************')
         Str = WriteLine(Str, COMMENT + 'Start of string definitions for ' + Language)
-        
+
         #
         # EFI_HII_STRING_PACK_HEADER
         #
@@ -151,7 +151,7 @@ def CreateCFileContent(BaseName, UniObjectClass):
         Length = Offset + Length
         List = DecToHexList(Length) + DecToHexList(2)[0:2] + DecToHexList(Offset) + DecToHexList(Offset + len(UniToHexList(Language)) + 2) + DecToHexList(Count) + DecToHexList(0)
         Str = WriteLine(Str, CreateArrayItem(List, 8))
-        
+
         Str = WriteLine(Str, '  // offset 0x16')
         StrStringDef = ''
         StrStringValue = ''
@@ -162,7 +162,7 @@ def CreateCFileContent(BaseName, UniObjectClass):
             Token = Item.Token
             Length = Item.Length
             UseOtherLangDef = Item.UseOtherLangDef
-             
+
             if Referenced:
                 StrStringDef = WriteLine(StrStringDef, CreateCFileStringDef(Name, Offset, Token, UseOtherLangDef))
                 StrStringValue = Write(StrStringValue, CreateCFileStringValue(Name, Language, Value, Offset))
@@ -189,12 +189,12 @@ def CreateCFile(BaseName, UniObjectClass):
 
 def GetFileList(IncludeList, SkipList):
     if IncludeList == None:
-        raise AutoGenError("Include path for unicode file is not defined")
-    
+        EdkLogger.error("UnicodeStringGather", AUTOGEN_ERROR, "Include path for unicode file is not defined")
+
     FileList = []
     if SkipList == None:
         SkipList = []
-        
+
     for Dir in IncludeList:
         for File in os.listdir(Dir):
             File = os.path.join(Dir, os.path.normcase(File))
@@ -211,16 +211,16 @@ def GetFileList(IncludeList, SkipList):
                 if os.path.splitext(File)[1].upper() == Skip.upper():
                     IsSkip = True
                     break
-            
+
             if not IsSkip:
                 FileList.append(File)
-    
+
     return FileList
 
 def SearchString(UniObjectClass, FileList):
     if FileList == []:
         return UniObjectClass
-    
+
     for File in FileList:
         if os.path.isfile(File):
             Lines = open(File, 'r')
@@ -229,27 +229,27 @@ def SearchString(UniObjectClass, FileList):
                 for StrName in StringTokenList:
                     EdkLogger.debug(EdkLogger.DEBUG_5, "Found string identifier: " + StrName)
                     UniObjectClass.SetStringReferenced(StrName)
-    
+
     UniObjectClass.ReToken()
-    
+
     return UniObjectClass
 
 def GetStringFiles(UniFilList, IncludeList, SkipList, BaseName):
     Status = True
     ErrorMessage = ''
-    
+
     if len(UniFilList) > 0:
         Uni = UniFileClassObject(UniFilList)
     else:
-        raise AutoGenError('No unicode files given')
-    
+        EdkLogger.error("UnicodeStringGather", AUTOGEN_ERROR, 'No unicode files given')
+
     FileList = GetFileList(IncludeList, SkipList)
-    
+
     Uni = SearchString(Uni, FileList)
-    
+
     HFile = CreateHFile(BaseName, Uni)
     CFile = CreateCFile(BaseName, Uni)
-    
+
     return HFile, CFile
 
 def Write(Target, Item):
@@ -257,12 +257,12 @@ def Write(Target, Item):
 
 def WriteLine(Target, Item):
     return Target + Item + '\n'
-    
+
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
 if __name__ == '__main__':
     EdkLogger.info('start')
-    
+
 #    UniFileList = [
 #        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\SmbiosMiscStrings.uni',
 #        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\SmbiosMiscDxe\MiscOemString.uni',
@@ -288,7 +288,7 @@ if __name__ == '__main__':
 #        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg',
 #        r'E:\SRC\r9prime\verify\LakeportX64Dev\LakeportX64Pkg\Include',
 #    ]
-    
+
     UniFileList = [
         r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\FrontPageStrings.uni',
         r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\Strings.uni',
@@ -317,7 +317,7 @@ if __name__ == '__main__':
         r'C:\SVN\EDKII\MdeModulePkg',
         r'C:\SVN\EDKII\MdeModulePkg\Include'
     ]
-    
+
     SkipList = ['.inf', '.uni']
     BaseName = 'SetupBrowser'
     (h, c) = GetStringFiles(UniFileList, IncludeList, SkipList, BaseName)
@@ -325,5 +325,5 @@ if __name__ == '__main__':
     cfile = open('unistring.c', 'w')
     hfile.write(h)
     cfile.write(c)
-    
+
     EdkLogger.info('end')

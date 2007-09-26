@@ -528,10 +528,10 @@ cleanlib:
 '''
 
 class Makefile(object):
-    def __init__(self, Info, Option):
+    def __init__(self, Info, Option=None):
         if isinstance(Info, ModuleBuildInfo):
             if Info == None or Info == "":
-                raise AutoGenError(msg="No valid module found! Please check your build configuration!\n")
+                EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No valid module found! Please check your build configuration!\n")
             self.ModuleInfo = Info
             self.PlatformInfo = Info.PlatformInfo
             self.ModuleBuild = True
@@ -551,7 +551,7 @@ class Makefile(object):
 
         elif type(Info) == type({}):    # and isinstance(info, PlatformBuildInfo):
             if len(Info) <= 0:
-                raise AutoGenError(msg="No buildable platform found! Please check your build configuration!\n")
+                EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No buildable platform found! Please check your build configuration!\n")
             self.PlatformInfo = Info
             self.ModuleBuild = False
             self.ModuleBuildCommandList = []
@@ -559,11 +559,11 @@ class Makefile(object):
             self.ModuleBuildDirectoryList = self.GetModuleBuildDirectoryList()
             self.LibraryBuildDirectoryList = self.GetLibraryBuildDirectoryList()
         else:
-            raise AutoGenError(msg="Non-buildable item:%s" % str(Info))
+            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Non-buildable item:%s" % str(Info))
 
-        self.Opt = Option
-        self.BuildWithPch = Option["ENABLE_PCH"]
-        self.BuildWithLocalLib = Option["ENABLE_LOCAL_LIB"]
+        #self.Opt = Option
+        #self.BuildWithPch = Option["ENABLE_PCH"]
+        #self.BuildWithLocalLib = Option["ENABLE_LOCAL_LIB"]
         self.IntermediateDirectoryList = []
 
     def PrepareDirectory(self):
@@ -637,7 +637,7 @@ class Makefile(object):
 
         FilePath = ""
         if File == None:
-            FilePath = path.join(PlatformInfo.WorkspaceDir, PlatformInfo.MakefileDir, MakefileName)
+            FilePath = path.join(PlatformInfo.WorkspaceDir, PlatformInfo.MakeFileDir, MakefileName)
         else:
             FilePath = File
 
@@ -666,15 +666,15 @@ class Makefile(object):
         if self.ModuleInfo.Arch == "EBC":
             EntryPoint = "EfiStart"
 
-        DefaultToolFlag = PlatformInfo.DefaultToolOption.values()
+        DefaultToolFlag = PlatformInfo.ToolOption.values()
         if self.ModuleInfo.ModuleType == "USER_DEFINED":
             DefaultToolFlag = ["" for p in DefaultToolFlag]
 
         if "CC" not in PlatformInfo.ToolChainFamily:
-            raise AutoGenError(msg="[CC] is not supported [%s, %s, %s]" % (self.ModuleInfo.BuildTarget,
+            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Tool [CC] is not supported [%s, %s, %s]" % (self.ModuleInfo.BuildTarget,
                                     self.ModuleInfo.ToolChain, self.ModuleInfo.Arch))
         if  "DLINK" not in PlatformInfo.ToolChainFamily:
-            raise AutoGenError(msg="[DLINK] is not supported [%s, %s, %s]" % (self.ModuleInfo.BuildTarget,
+            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Tool [DLINK] is not supported [%s, %s, %s]" % (self.ModuleInfo.BuildTarget,
                                     self.ModuleInfo.ToolChain, self.ModuleInfo.Arch))
 
         if self.ModuleInfo.IsLibrary:
@@ -776,7 +776,7 @@ class Makefile(object):
 
         FilePath = ""
         if File == None:
-            FilePath = path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.MakefileDir, MakefileName)
+            FilePath = path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.MakeFileDir, MakefileName)
         else:
             FilePath = File
 
@@ -815,7 +815,7 @@ class Makefile(object):
             "platform_build_directory"  : self.PlatformBuildDirectory,
 
             "separator"                 : Separator,
-            "default_tool_flags"        : self.PlatformInfo.DefaultToolOption.values(),
+            "default_tool_flags"        : self.PlatformInfo.ToolOption.values(),
             "platform_tool_flags"       : self.PlatformInfo.BuildOption.values(),
             "module_tool_flags"         : self.ModuleInfo.BuildOption.values(),
 
@@ -835,7 +835,7 @@ class Makefile(object):
 
         FilePath = ""
         if File == None:
-            FilePath = path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.MakefileDir, MakefileName)
+            FilePath = path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.MakeFileDir, MakefileName)
         else:
             FilePath = File
 
@@ -864,8 +864,9 @@ class Makefile(object):
 
         FileList = self.ModuleInfo.SourceFileList
         if len(FileList) == 0:
-            raise AutoGenError(msg="No files to be built in module [%s, %s, %s]:\n\t%s" % (self.ModuleInfo.BuildTarget,
-                                    self.ModuleInfo.ToolChain, self.ModuleInfo.Arch, str(self.ModuleInfo.Module)))
+            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No files to be built in module [%s, %s, %s]"
+                            % (self.ModuleInfo.BuildTarget, self.ModuleInfo.ToolChain, self.ModuleInfo.Arch),
+                            ExtraData=str(self.ModuleInfo.Module))
 
         CCodeFlag = False
         for FileInfo in FileList:
@@ -1110,7 +1111,7 @@ class Makefile(object):
                 try:
                     Fd = open(F, 'r')
                 except:
-                    raise AutoGenError(FILE_OPEN_FAILURE, name=F)
+                    EdkLogger.error("AutoGen", FILE_OPEN_FAILURE, ExtraData=F)
 
                 FileContent = Fd.read()
                 Fd.close()
