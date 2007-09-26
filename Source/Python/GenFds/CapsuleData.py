@@ -21,9 +21,9 @@ class CapsuleFv (CapsuleData):
         self.FvName = None
 
     def GenCapsuleSubItem(self):
-        if self.FvName.find('.fv') != -1:
-            if self.FvName in GenFdsGlobalVariable.FdfParser.profile.FvDict.keys():
-                fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(self.FvName)
+        if self.FvName.find('.fv') == -1:
+            if self.FvName.upper() in GenFdsGlobalVariable.FdfParser.profile.FvDict.keys():
+                fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(self.FvName.upper())
                 FdBuffer = StringIO.StringIO('')
                 FvFile = fv.AddToBuffer(FdBuffer)
                 return FvFile

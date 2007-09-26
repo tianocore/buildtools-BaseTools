@@ -2,6 +2,7 @@ import Ffs
 import Rule
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import os
+import StringIO
 import subprocess
 from CommonDataClass.FdfClassObject import FileStatementsClassObject
 
@@ -16,15 +17,22 @@ class FileStatements (FileStatementsClassObject) :
 
         if self.FvName != None :
             Buffer = StringIO.StringIO('')
-            Fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(self.FvName)
+            if self.FvName.upper() not in GenFdsGlobalVariable.FdfParser.profile.FvDict.keys():
+                raise Exception ("FV (%s) is NOT described in FDF file!" % (self.FvName))
+            Fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(self.FvName.upper())
             FileName = Fv.AddToBuffer(Buffer)
             SectionFiles = ' -i ' + FileName
             
         elif self.FdName != None:
-            Fd = GenFdsGlobalVariable.FdfParser.profile.FdDict.get(self.FdName)
+            if self.FdName.upper() not in GenFdsGlobalVariable.FdfParser.profile.FdDict.keys():
+                raise Exception ("FD (%s) is NOT described in FDF file!" % (self.FdName))
+            Fd = GenFdsGlobalVariable.FdfParser.profile.FdDict.get(self.FdName.upper())
             FvBin = {}
             FileName = Fd.GenFd(FvBin)
             SectionFiles = ' -i ' + FileName
+        
+        elif self.FileName != None:
+            SectionFiles = ' -i ' + GenFdsGlobalVariable.ReplaceWorkspaceMarco(self.FileName)
             
         else:
             SectionFiles = ''

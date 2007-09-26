@@ -74,7 +74,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         #
         # Parse Inf file get Module related information
         #
-        GenFdsGlobalVariable.VerboseLogger( " Begion parsing INf file : %s" %self.InfFileName)
+        GenFdsGlobalVariable.VerboseLogger( " Begine parsing INf file : %s" %self.InfFileName)
         
         """ Replace $(WORKSPACE) to None!"""
         self.InfFileName = self.InfFileName.replace('$(WORKSPACE)', '')
@@ -87,7 +87,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         # Get the rule of how to generate Ffs file
         #
         Rule = self.__GetRule__()
-
+        GenFdsGlobalVariable.VerboseLogger( "Packing binaries from INf file : %s" %self.InfFileName)
         #FileType = Ffs.Ffs.ModuleTypeToFileType[Rule.ModuleType]
         #
         # For the rule only has simpleFile
@@ -191,6 +191,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
             if InfFileKey in (PlatformDataBase.Modules):
                 dscArchList.append ('IPF')
 
+        curArchList = targetArchList
         if dscArchList != []:
             curArchList = set (targetArchList) & set (dscArchList)
         GenFdsGlobalVariable.VerboseLogger ("Valid target architecture(s) is : " + " ".join(curArchList))
@@ -206,7 +207,8 @@ class FfsInfStatement(FfsInfStatementClassObject):
             Arch = list(ArchList)[0]
             return Arch
         elif len(ArchList) > 1:
-            raise Exception("Module %s has too many build ARCH !" %self.InfFileName)
+#            raise Exception("Module %s has too many build ARCH !" %self.InfFileName)
+            return None 
         else:
             raise Exception("Don't find legal ARCH in Module %s !" %self.InfFileName)
 #        if len(curArchList) > 1 :

@@ -163,16 +163,17 @@ class FdfParser:
     ### BUGBUG: No !include statement processing contained in this procedure
     ### !include statement should be expanded at the same FileLinesList[CurrentLineNumber - 1]
     def PreprocessFile(self):
-        # change string to list of chars, as string can NOT be modified
         
-
         self.Rewind()
         InComment = False
         DoubleSlashComment = False
         HashComment = False
+        InString = False    # HashComment in quoted string " " is ignored.
 
         while not self.__EndOfFile():
             
+            if self.__CurrentChar() == T_CHAR_DOUBLE_QUOTE:
+                InString = not InString
             # meet new line, then no longer in a comment for // and '#'
             if self.__CurrentChar() == T_CHAR_LF:
                 self.CurrentLineNumber += 1
@@ -199,7 +200,7 @@ class FdfParser:
                 InComment = True
                 DoubleSlashComment = True
             # check for '#' comment
-            elif self.__CurrentChar() == T_CHAR_HASH and not self.__EndOfLine():
+            elif self.__CurrentChar() == T_CHAR_HASH and not self.__EndOfLine() and not InString:
                 InComment = True
                 HashComment = True
             # check for /* comment start
@@ -1397,14 +1398,15 @@ class FdfParser:
 #        if not self.__IsToken("."):
 #            raise Warning("expected '.' At line %d" % self.CurrentLineNumber)
         
-        if not self.__SkipToToken("UEFI") and not self.__SkipToToken("FRAMEWORK"):
-            raise Warning("expected Spec (UEFI | FRAMEWORK) At line %d" % self.CurrentLineNumber)
+#        if not self.__SkipToToken("UEFI") and not self.__SkipToToken("FRAMEWORK"):
+#            raise Warning("expected Spec (UEFI | FRAMEWORK) At line %d" % self.CurrentLineNumber)
         
         capsule = Capsule.Capsule()
-        capsule.SpecName = self.__SkippedChars
+
+#        capsule.SpecName = self.__SkippedChars
         
-        if not self.__IsToken("."):
-            raise Warning("expected '.' At line %d" % self.CurrentLineNumber)
+#        if not self.__IsToken("."):
+#            raise Warning("expected '.' At line %d" % self.CurrentLineNumber)
         
         capsuleName = self.__GetUiName()
         if not capsuleName:
@@ -1415,7 +1417,7 @@ class FdfParser:
         if not self.__IsToken( "]"):
             raise Warning("expected ']' At Line %d" % self.CurrentLineNumber)
         
-        if self.__IsKeyword("OUTFILE"):
+        if self.__IsKeyword("CREATE_FILE"):
             if not self.__IsToken( "="):
                 raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
             
@@ -1424,29 +1426,31 @@ class FdfParser:
             
             capsule.CreateFile = self.__Token
         
-        if self.__IsToken("<Capsule."):
-            if not self.__GetNextDecimalNumber():
-                raise Warning("expected Group ID number At Line %d" % self.CurrentLineNumber)
-            capsule.GroupIdNumber = self.__Token
-            
-            if not self.__IsToken( ">"):
-                raise Warning("expected '>' At Line %d" % self.CurrentLineNumber)
+#        if self.__IsToken("<Capsule."):
+#            if not self.__GetNextDecimalNumber():
+#                raise Warning("expected Group ID number At Line %d" % self.CurrentLineNumber)
+#            capsule.GroupIdNumber = self.__Token
+#            
+#            if not self.__IsToken( ">"):
+#                raise Warning("expected '>' At Line %d" % self.CurrentLineNumber)
             
         self.__GetCapsuleStatements(capsule)
         self.profile.CapsuleList.append(capsule)
         return True    
             
     def __GetCapsuleStatements(self, capsule):
-        
+        self.__GetCapsuleTokens(capsule)
         self.__GetDefineStatements(capsule)
         self.__GetSetStatements(capsule)
         
-        self.__GetTokens(capsule)
 #        capsuleData = CapsuleData.CapsuleData()
 #        capsule.CapsuleData = capsuleData
         self.__GetCapsuleData(capsule)
                 
-    def __GetTokens(self, capsule):
+    def __GetCapsuleTokens(self, capsule):
+        
+        if not self.__IsKeyword("CAPSULE_GUID"):
+            raise Warning("expected 'CAPSULE_GUID' At Line %d" % self.CurrentLineNumber)
         
         while self.__CurrentLine().find("=") != -1:
             NameValue = self.__CurrentLine().split("=")

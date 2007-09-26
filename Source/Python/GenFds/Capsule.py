@@ -39,9 +39,9 @@ class Capsule (CapsuleClassObject) :
         capInfFile = open (self.CapInfFileName , 'w+')
         
         capInfFile.writelines("[options]" + T_CHAR_LF)
-        capInfFile.writelines("EFI_CAPSULE_VERSION = " + \
-                              self.SpecName            + \
-                              T_CHAR_LF)
+#        capInfFile.writelines("EFI_CAPSULE_VERSION = " + \
+#                              self.SpecName            + \
+#                              T_CHAR_LF)
                               
         for item in self.TokensDict.keys():
             capInfFile.writelines("EFI_"                    + \

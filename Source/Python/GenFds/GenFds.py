@@ -159,8 +159,10 @@ def myOptionParser():
 class GenFds :
     FdfParsef = None
     FvBinDict = {}      # FvName in Fdf, FvBinFile
-    currentFd = None
-    currentFv = None
+    OnlyGenerateThisFd = None
+    OnlyGenerateThisFv = None
+#    CurrentFdName = None
+#    CurrentFvName = None
     
     def GenFd (OutputDir, FdfParser, WorkSpace, ArchList):
         GenFdsGlobalVariable.SetDir (OutputDir, FdfParser, WorkSpace, ArchList)
@@ -194,25 +196,25 @@ class GenFds :
         GenFdsGlobalVariable.SetDefaultRule(ruleComplexFile1)
 
         GenFdsGlobalVariable.VerboseLogger("   Gen Fd  !")
-        if GenFds.currentFd != None:
-            fd = GenFdsGlobalVariable.FdfParser.profile.FdDict.get(GenFds.currentFd.upper())
+        if GenFds.OnlyGenerateThisFd != None and GenFds.OnlyGenerateThisFd.upper() in GenFdsGlobalVariable.FdfParser.profile.FdDict.keys():
+            fd = GenFdsGlobalVariable.FdfParser.profile.FdDict.get(GenFds.OnlyGenerateThisFd.upper())
             if fd != None:
                 fd.GenFd(GenFds.FvBinDict)
-        elif GenFds.currentFv == None:
+        elif GenFds.OnlyGenerateThisFv == None:
             for item in GenFdsGlobalVariable.FdfParser.profile.FdDict.keys():
                 fd = GenFdsGlobalVariable.FdfParser.profile.FdDict[item]
                 fd.GenFd(GenFds.FvBinDict)
             
         GenFdsGlobalVariable.VerboseLogger(" Gen FV ! ")
-        if GenFds.currentFv != None:
-            fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(GenFds.currentFv.upper())
+        if GenFds.OnlyGenerateThisFv != None and GenFds.OnlyGenerateThisFv.upper() in GenFdsGlobalVariable.FdfParser.profile.FvDict.keys():
+            fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(GenFds.OnlyGenerateThisFv.upper())
             if fv != None:
                 Buffer = StringIO.StringIO()
                 # Get FV base Address
                 fv.AddToBuffer(Buffer, None, GenFds.GetFvBlockSize(fv))
                 Buffer.close()
                 return
-        elif GenFds.currentFd == None:
+        elif GenFds.OnlyGenerateThisFd == None:
             for FvName in GenFdsGlobalVariable.FdfParser.profile.FvDict.keys():
                 if not FvName in GenFds.FvBinDict.keys():
                     Buffer = StringIO.StringIO()
@@ -221,15 +223,15 @@ class GenFds :
                     fv.AddToBuffer(Buffer, None, GenFds.GetFvBlockSize(fv))
                     Buffer.close()
         
-        if GenFds.currentFv == None and GenFds.currentFd == None:
+        if GenFds.OnlyGenerateThisFv == None and GenFds.OnlyGenerateThisFd == None:
             GenFdsGlobalVariable.VerboseLogger(" Gen Capsule !")
             for capsule in GenFdsGlobalVariable.FdfParser.profile.CapsuleList:
                 capsule.GenCapsule()
 
     def GetFvBlockSize(fv):
         fd = None
-        if GenFds.currentFd != None:
-            fd = GenFdsGlobalVariable.FdfParser.profile.FdDict[GenFds.currentFd.upper()]
+        if GenFds.OnlyGenerateThisFd != None and GenFds.OnlyGenerateThisFd.upper() in GenFdsGlobalVariable.FdfParser.profile.FdDict.keys():
+            fd = GenFdsGlobalVariable.FdfParser.profile.FdDict[GenFds.OnlyGenerateThisFd.upper()]
         if fd == None:
             for elementFd in GenFdsGlobalVariable.FdfParser.profile.FdDict.values():
                 for elementRegion in elementFd.RegionList:
