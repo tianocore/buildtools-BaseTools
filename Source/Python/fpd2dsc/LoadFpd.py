@@ -40,6 +40,12 @@ def LoadPlatformHeader(XmlFpd, FpdFileName):
     SetIdentification(PlatformHeader, FpdHeader, "PlatformName", FpdFileName)
     SetCommonHeader(PlatformHeader, FpdHeader)
 
+    XmlTag = "PlatformSurfaceArea/PlatformHeader/Specification"
+    List = XmlElement(XmlFpd, XmlTag).split()
+    SpecificationName = List[0]
+    SpecificationValue = List[1]
+    PlatformHeader.Specification = {SpecificationName:SpecificationValue}
+    
     XmlTag = "PlatformSurfaceArea/PlatformDefinitions/SupportedArchitectures"
     PlatformHeader.SupArchList = XmlElement(XmlFpd, XmlTag).split()
 
@@ -736,8 +742,8 @@ def LoadPlatformPcdData(XmlPcdData):
     XmlTag = "PcdData/MaxDatumSize"
     PcdData.MaxDatumSize = XmlElement(XmlPcdData, XmlTag)
     
-    #XmlTag = "PcdData/Value"
-    #PcdData.Value = XmlElement(XmlPcdData, XmlTag)
+    XmlTag = "PcdData/Value"
+    PcdData.Value = XmlElement(XmlPcdData, XmlTag)
     
     return PcdData
 
@@ -770,6 +776,9 @@ def LoadPlatformPcdBuildData(XmlPcdBuildData):
 
     XmlTag = "PcdBuildData/MaxDatumSize"
     PcdBuildData.MaxDatumSize = XmlElement(XmlPcdBuildData, XmlTag)
+    
+    #XmlTag = "PcdBuildData/Value"
+    #PcdBuildData.Value = XmlElement(XmlPcdBuildData, XmlTag)
 
     return PcdBuildData
 

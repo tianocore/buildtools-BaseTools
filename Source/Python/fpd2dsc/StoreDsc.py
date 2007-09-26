@@ -42,8 +42,9 @@ def StorePlatformDefinesSection(DscFile, Platform):
 
     if PlatformHeader.Version != "":
         DefinesTupleList.append(("PLATFORM_VERSION", PlatformHeader.Version))
-
-    DefinesTupleList.append(("DSC_ SPECIFICATION", PlatformHeader.DscSpecification))
+    for key in PlatformHeader.Specification.keys():
+        SpecificationValue = PlatformHeader.Specification.get(key)
+        DefinesTupleList.append(("DSC_ SPECIFICATION", SpecificationValue))
     
     if PlatformHeader.OutputDirectory != "":
         DefinesTupleList.append(("OUTPUT_DIRECTORY", PlatformHeader.OutputDirectory))
@@ -63,7 +64,17 @@ def StorePlatformDefinesSection(DscFile, Platform):
         
 	String = Platform.FlashDefinitionFile.FilePath
 	DefinesTupleList.append(("FLASH_DEFINITION", String))
-	
+
+    List = []
+    List.append("################################################################################")
+    List.append("#")
+    List.append("# Defines Section - statements that will be processed to create a Makefile.")
+    List.append("#")
+    List.append("################################################################################")
+    Section = "\n".join(List)
+    Section += "\n"
+    StoreTextFile(DscFile, Section)
+    
     StoreDefinesSection(DscFile, DefinesTupleList)
 
 ## Store SkuIds section
@@ -75,7 +86,16 @@ def StorePlatformDefinesSection(DscFile, Platform):
 # @param  Platform               An input Platform class object
 #
 def StorePlatformSkuIdsSection(DscFile, Platform):
-    Section = "[SkuIds]" + '\n'
+    List = []
+    List.append("################################################################################")
+    List.append("#")
+    List.append("# SKU Identification section - list of all SKU IDs supported by this Platform.")
+    List.append("#")
+    List.append("################################################################################")
+    Section = "\n".join(List)
+    Section += "\n"
+    
+    Section += "[SkuIds]" + '\n'
     
     List = Platform.SkuInfos.SkuInfoList
     for Item in List:
@@ -195,7 +215,17 @@ def StorePlatformBuildOptionsSection(DscFile, Platform):
     if SectionMYTOOLS != "":
         SectionMYTOOLS = "*_MYTOOLS_" + Arch + "_CC_FLAGS" + SectionMYTOOLS
         Section += SectionMYTOOLS
-    Section = SectionName + Section
+
+    List = []
+    List.append("################################################################################")
+    List.append("#")
+    List.append("# Build Options section - list of all Build Options supported by this Platform.")
+    List.append("#")
+    List.append("################################################################################")
+    SectionHeader = "\n".join(List)
+    SectionHeader += "\n"
+    
+    Section = SectionHeader + SectionName + Section
     Section += "\n"
     StoreTextFile(DscFile, Section)
 
@@ -208,7 +238,16 @@ def StorePlatformBuildOptionsSection(DscFile, Platform):
 # @param  Platform               An input Platform class object
 #
 def StorePlatformLibrariesSection(DscFile,Platform):
-    Section = '[Libraries]\n\n'
+    List = []
+    List.append("################################################################################")
+    List.append("#")
+    List.append("# Libraries section - list of all Libraries needed by this Platform.")
+    List.append("#")
+    List.append("################################################################################")
+    SectionHeader = "\n".join(List)
+    SectionHeader += "\n"
+    
+    Section = SectionHeader + '[Libraries]\n\n'
     StoreTextFile(DscFile, Section)
 
 ## Return a Platform Library Class Item
@@ -329,30 +368,25 @@ def GetLibraryClassesSection(SectionName, Method, ObjectList):
             Section += "[%s.Common.%s]\n%s\n" % (SectionName, ModuleType, SectionCommonModule)
             Section += "\n"
     for ModuleType in Object.SupModuleList:
-        #print ModuleType
         ListIA32 = SectionIA32Dict.get(ModuleType, [])
-        #print ListIA32
         if ListIA32 != []:
             SectionIA32Module = "\n".join(SectionIA32Dict.get(ModuleType, []))
             if SectionIA32Module != "":
                 Section += "[%s.IA32.%s]\n%s\n" % (SectionName, ModuleType, SectionIA32Module)
                 Section += "\n"
         ListX64 = SectionX64Dict.get(ModuleType, [])
-        #print ListX64
         if ListX64 != []:
             SectionX64Module = "\n".join(SectionX64Dict.get(ModuleType, []))
             if SectionX64Module != "":
                 Section += "[%s.X64.%s]\n%s\n" % (SectionName, ModuleType, SectionX64Module)
                 Section += "\n"
         ListIPF = SectionIPFDict.get(ModuleType, [])
-        #print ListIPF
         if ListIPF != []:
             SectionIPFModule = "\n".join(SectionIPFDict.get(ModuleType, []))
             if SectionIPFModule != "":
                 Section += "[%s.IPF.%s]\n%s\n" % (SectionName, ModuleType, SectionIPFModule)
                 Section += "\n"
         ListEBC = SectionEBCDict.get(ModuleType, [])
-        #print ListEBC
         if ListEBC != []:
             SectionEBCModule = "\n".join(SectionEBCDict.get(ModuleType, []))
             if SectionEBCModule != "":
@@ -373,6 +407,15 @@ def GetLibraryClassesSection(SectionName, Method, ObjectList):
 #
 def StorePlatformLibraryClassesSection(DscFile, Platform):
     Section = GetLibraryClassesSection("LibraryClasses", GetPlatformLibraryClassItem, Platform.LibraryClasses.LibraryList)
+    List = []
+    List.append("################################################################################")
+    List.append("#")
+    List.append("# Library Class section - list of all Library Classes needed by this Platform.")
+    List.append("#")
+    List.append("################################################################################")
+    SectionHeader = "\n".join(List)
+    SectionHeader += "\n"
+    Section = SectionHeader + Section
     StoreTextFile(DscFile, Section)
 
 ## Store Pcd section
@@ -394,43 +437,51 @@ def StorePlatformPcdSection(DscFile, Platform):
     for Module in Modules:
         PcdBuildDefinitions = Module.PcdBuildDefinitions # it's a list of PcdData
         for PcdData in PcdBuildDefinitions:
-            List = []
-            List.append(PcdData.C_NAME)
-            List.append(PcdData.Token)
-            List.append(PcdData.TokenSpaceGuidCName)
-            List.append(PcdData.DatumType)
-            List.append(PcdData.MaxDatumSize)
-            String = "|".join(List)
-            ItemType = PcdData.ItemType
-            if PcdData.ItemType == "FIXED_AT_BUILD":
-                SectionPcdsFixedAtBuild = SectionDict.get(ItemType, [])
-                if String not in SectionPcdsFixedAtBuild:
-                    SectionPcdsFixedAtBuild.append(String)
-                    SectionDict[ItemType] = SectionPcdsFixedAtBuild
-            elif PcdData.ItemType == "FEATURE_FLAG":
+            if PcdData.ItemType == "FEATURE_FLAG":
+                List = []
+                List.append(PcdData.TokenSpaceGuidCName + "." + PcdData.C_NAME)
+                List.append(PcdData.Value)
+                String = "|".join(List)
+                ItemType = PcdData.ItemType
                 SectionPcdsFeatureFlag = SectionDict.get(ItemType, [])
                 if String not in SectionPcdsFeatureFlag:
                     SectionPcdsFeatureFlag.append(String)
                     SectionDict[ItemType] = SectionPcdsFeatureFlag
-            elif PcdData.ItemType == "PATCHABLE_IN_MODULE":
-                SectionPcdsPatchableInModule = SectionDict.get(ItemType, [])
-                if String not in SectionPcdsPatchableInModule:
-                    SectionPcdsPatchableInModule.append(String)
-                    SectionDict[ItemType] = SectionPcdsPatchableInModule
-            elif PcdData.ItemType == "DYNAMIC":
-                SectionPcdsDynamic = SectionDict.get(ItemType, [])
-                if String not in SectionPcdsDynamic:
-                    SectionPcdsDynamic.append(String)
-                    SectionDict[ItemType] = SectionPcdsDynamic
             else:
-                print "Error!"
-        
+                List = []
+                List.append(PcdData.TokenSpaceGuidCName + "." + PcdData.C_NAME)
+                List.append(PcdData.Value)
+                List.append(PcdData.Token)
+                List.append(PcdData.DatumType)
+                List.append(PcdData.MaxDatumSize)
+                String = "|".join(List)
+                ItemType = PcdData.ItemType
+                if PcdData.ItemType == "FIXED_AT_BUILD":
+                    SectionPcdsFixedAtBuild = SectionDict.get(ItemType, [])
+                    if String not in SectionPcdsFixedAtBuild:
+                        SectionPcdsFixedAtBuild.append(String)
+                        SectionDict[ItemType] = SectionPcdsFixedAtBuild
+                #elif PcdData.ItemType == "FEATURE_FLAG":
+                    #SectionPcdsFeatureFlag = SectionDict.get(ItemType, [])
+                    #if String not in SectionPcdsFeatureFlag:
+                        #SectionPcdsFeatureFlag.append(String)
+                        #SectionDict[ItemType] = SectionPcdsFeatureFlag
+                elif PcdData.ItemType == "PATCHABLE_IN_MODULE":
+                    SectionPcdsPatchableInModule = SectionDict.get(ItemType, [])
+                    if String not in SectionPcdsPatchableInModule:
+                        SectionPcdsPatchableInModule.append(String)
+                        SectionDict[ItemType] = SectionPcdsPatchableInModule
+                elif PcdData.ItemType == "DYNAMIC":
+                    SectionPcdsDynamic = SectionDict.get(ItemType, [])
+                    if String not in SectionPcdsDynamic:
+                        SectionPcdsDynamic.append(String)
+                        SectionDict[ItemType] = SectionPcdsDynamic
+
     DynamicPcdBuildDefinitions = Platform.DynamicPcdBuildDefinitions # It's a list
     for PcdBuildData in DynamicPcdBuildDefinitions:
         List = []
-        List.append(PcdData.C_NAME)
+        List.append(PcdData.TokenSpaceGuidCName + "." + PcdData.C_NAME)
         List.append(PcdData.Token)
-        List.append(PcdData.TokenSpaceGuidCName)
         List.append(PcdData.DatumType)
         List.append(PcdData.MaxDatumSize)
         String = "|".join(List)
@@ -446,9 +497,28 @@ def StorePlatformPcdSection(DscFile, Platform):
     Section += "\n\n[PcdsFeatureFlag]\n  " + "\n  ".join(SectionDict.get(ItemType, []))
     ItemType = "PATCHABLE_IN_MODULE"
     Section += "\n\n[PcdsPatchableInModule]\n  " + "\n  ".join(SectionDict.get(ItemType, []))
+    Section += "\n\n"
+    List = []
+    List.append("################################################################################")
+    List.append("#")
+    List.append("# Pcd Dynamic Section - list of all EDK II PCD Entries defined by this Platform.")
+    List.append("#")
+    List.append("################################################################################")
+    String = "\n".join(List)
+    Section += String
     ItemType = "DYNAMIC"
     Section += "\n\n[PcdsDynamic]\n  " + "\n  ".join(SectionDict.get(ItemType, []))
     Section += "\n\n"
+    
+    List = []
+    List.append("################################################################################")
+    List.append("#")
+    List.append("# Pcd Section - list of all EDK II PCD Entries defined by this Platform.")
+    List.append("#")
+    List.append("################################################################################")
+    SectionHeader = "\n".join(List)
+    SectionHeader += "\n"
+    Section = SectionHeader + Section
     StoreTextFile(DscFile, Section)
 
 ## Add item to a section
@@ -521,43 +591,56 @@ def GetPlatformComponentItem(Component):
 
     LibraryClasses = Component.LibraryClasses
     if LibraryClasses != []:
-        List.append("{\n  <LibraryClasses>")
+        List = []
+        List.append("$(WORKSPACE)/" + Component.FilePath + " {")
+        List.append("<LibraryClasses>")
         for LibraryClass in LibraryClasses:
             if LibraryClass == ["", ""]:
                 continue
             List.append("  " + LibraryClass[0] + "|$(WORKSPACE)/" + LibraryClass[1])
+            
     PcdBuildDefinitions = Component.PcdBuildDefinitions
     for PcdData in PcdBuildDefinitions:
-        List1 = []
-        List1.append(PcdData.C_NAME)
-        List1.append(PcdData.Token)
-        List1.append(PcdData.TokenSpaceGuidCName)
-        List1.append(PcdData.DatumType)
-        List1.append(PcdData.MaxDatumSize)
-        String = "|".join(List1)
-        ItemType = PcdData.ItemType
-        if ItemType == "FIXED_AT_BUILD":
-            SectionPcd = Section.get(ItemType, [])
-            if String not in SectionPcd:
-                SectionPcd.append(String)
-            Section[ItemType] = SectionPcd
-        elif ItemType == "FEATURE_FLAG":
-            SectionPcd = Section.get(ItemType, [])
-            if String not in SectionPcd:
-                SectionPcd.append(String)
-            Section[ItemType] = SectionPcd
-        elif ItemType == "PATCHABLE_IN_MODULE":
-            SectionPcd = Section.get(ItemType, [])
-            if String not in SectionPcd:
-                SectionPcd.append(String)
-            Section[ItemType] = SectionPcd
-        elif ItemType == "DYNAMIC":
+        if PcdData.ItemType == "FEATURE_FLAG":
+            List1 = []
+            List1.append(PcdData.TokenSpaceGuidCName + "." + PcdData.C_NAME)
+            List1.append(PcdData.Value)
+            String = "|".join(List1)
+            ItemType = PcdData.ItemType
             SectionPcd = Section.get(ItemType, [])
             if String not in SectionPcd:
                 SectionPcd.append(String)
             Section[ItemType] = SectionPcd
         else:
-            print "Error!"
+            List1 = []
+            List1.append(PcdData.TokenSpaceGuidCName + "." + PcdData.C_NAME)
+            List1.append(PcdData.Value)
+            List1.append(PcdData.Token)
+            List1.append(PcdData.DatumType)
+            List1.append(PcdData.MaxDatumSize)
+            String = "|".join(List1)
+            ItemType = PcdData.ItemType
+            if ItemType == "FIXED_AT_BUILD":
+                SectionPcd = Section.get(ItemType, [])
+                if String not in SectionPcd:
+                    SectionPcd.append(String)
+                Section[ItemType] = SectionPcd
+            #elif ItemType == "FEATURE_FLAG":
+                #SectionPcd = Section.get(ItemType, [])
+                #if String not in SectionPcd:
+                    #SectionPcd.append(String)
+                #Section[ItemType] = SectionPcd
+            elif ItemType == "PATCHABLE_IN_MODULE":
+                SectionPcd = Section.get(ItemType, [])
+                if String not in SectionPcd:
+                    SectionPcd.append(String)
+                Section[ItemType] = SectionPcd
+            elif ItemType == "DYNAMIC":
+                SectionPcd = Section.get(ItemType, [])
+                if String not in SectionPcd:
+                    SectionPcd.append(String)
+                Section[ItemType] = SectionPcd
+
     ItemType = "FIXED_AT_BUILD"
     if Section.get(ItemType, []) != []:
         List.append("<PcdsFixedAtBuild>")
@@ -610,6 +693,15 @@ def GetPlatformComponentItem(Component):
 #
 def StorePlatformComponentsSection(DscFile, Platform):
     Section = GetSection("Components", GetPlatformComponentItem, Platform.Modules.ModuleList)
+    List = []
+    List.append("################################################################################")
+    List.append("#")
+    List.append("# Components Section - list of all EDK II Modules needed by this Platform.")
+    List.append("#")
+    List.append("################################################################################")
+    SectionHeader = "\n".join(List)
+    SectionHeader += "\n"
+    Section = SectionHeader + Section
     StoreTextFile(DscFile, Section)
 
 ## Store User Extensions section.
@@ -622,6 +714,15 @@ def StorePlatformComponentsSection(DscFile, Platform):
 #
 def StorePlatformUserExtensionsSection(DscFile, Platform):
     Section = "".join(map(GetUserExtensions, Platform.UserExtensions))
+    List = []
+    List.append("################################################################################")
+    List.append("#")
+    List.append("# User Extensions Section - list of all User Extensions specified by user.")
+    List.append("#")
+    List.append("################################################################################")
+    SectionHeader = "\n".join(List)
+    SectionHeader += "\n"
+    Section = SectionHeader + Section
     StoreTextFile(DscFile, Section)
     
 ## Store a Platform class object to a new DSC file.
