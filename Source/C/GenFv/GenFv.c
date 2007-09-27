@@ -288,11 +288,11 @@ Returns:
       Status = AsciiStringToUint64 (argv[1], FALSE, &LogLevel);
       if (EFI_ERROR (Status)) {
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
-        goto Finish;
+        return STATUS_ERROR;
       }
       if (LogLevel > 9) {
         Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0~9, currnt input level is %d", LogLevel);
-        goto Finish;
+        return STATUS_ERROR;
       }
       SetPrintLevel (LogLevel);
       DebugMsg (NULL, 0, 9, "Debug Mode Set", "Debug Output Mode Level %s is set!", argv[1]);

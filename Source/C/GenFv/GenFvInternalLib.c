@@ -358,7 +358,7 @@ Returns:
   }
 
   if (Index == 0) {
-    Warning (NULL, 0, 0, "Fv components are not specified.");
+    Warning (NULL, 0, 0, "Fv components are not specified.", NULL);
   }
   //
   // Compute size for easy access later
@@ -2673,7 +2673,7 @@ Returns:
   }
   
   if (Index == 0) {
-    Warning (NULL, 0, 0, "Capsule components are not specified.");
+    Warning (NULL, 0, 0, "Capsule components are not specified.", NULL);
   }
 
   return EFI_SUCCESS;
