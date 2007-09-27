@@ -114,7 +114,9 @@ def main():
     """ Parse Fdf file """
     fdfParser = FdfParser.FdfParser(fdfFilename)
     fdfParser.ParseFile()
-    
+    if fdfParser.CycleReferenceCheck():
+        GenFdsGlobalVariable.InfLogger ("ERROR: Cycle Reference Detected in FDF file")
+        sys.exit(1)
     
     if (options.uiFdName) :
         if options.uiFdName.upper() in fdfParser.profile.FdDict.keys():
@@ -216,7 +218,6 @@ class GenFds :
                 return
         elif GenFds.OnlyGenerateThisFd == None:
             for FvName in GenFdsGlobalVariable.FdfParser.profile.FvDict.keys():
-                if not FvName in GenFds.FvBinDict.keys():
                     Buffer = StringIO.StringIO()
                     fv = GenFdsGlobalVariable.FdfParser.profile.FvDict[FvName]
                     # Get FV base Address

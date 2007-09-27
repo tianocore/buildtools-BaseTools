@@ -75,6 +75,8 @@ class FdfParser:
         self.profile = FileProfile(filename)
         self.CurrentLineNumber = 1
         self.CurrentOffsetWithinLine = 0
+        self.CurrentFdName = None
+        self.CurrentFvName = None
         self.__Token = ""
         self.__SkippedChars = ""
 
@@ -476,13 +478,14 @@ class FdfParser:
             raise Warning("expected [FD.] At Line %d" % self.CurrentLineNumber)
         
         fdName = self.__GetUiName()
+        self.CurrentFdName = fdName.upper()
         
         if not self.__IsToken( "]"):
             raise Warning("expected ']' At Line %d" % self.CurrentLineNumber)
         
         fd = Fd.FD()
-        fd.FdUiName = fdName.upper()
-        self.profile.FdDict[fdName.upper()] = fd
+        fd.FdUiName = self.CurrentFdName
+        self.profile.FdDict[self.CurrentFdName] = fd
         Status = self.__GetCreateFile( fd)
         if not Status:
             raise Warning("FD name error At Line %d" % self.CurrentLineNumber)
@@ -869,12 +872,14 @@ class FdfParser:
             raise Warning("Unknown Keyword At Line %d" % self.CurrentLineNumber)
         
         fvName = self.__GetUiName()
+        self.CurrentFvName = fvName.upper()
+        
         if not self.__IsToken( "]"):
             raise Warning("expected ']' At Line %d" % self.CurrentLineNumber)
         
         fv = Fv.FV()
-        fv.UiFvName = fvName.upper()
-        self.profile.FvDict[fvName.upper()] = fv
+        fv.UiFvName = self.CurrentFvName
+        self.profile.FvDict[self.CurrentFvName] = fv
         
         Status = self.__GetCreateFile( fv)
         if not Status:
@@ -1066,6 +1071,7 @@ class FdfParser:
             obj.CapsuleDataList.append(capsuleFfs)
         else:
             obj.FfsList.append(ffsFile)
+                
         return True
         
     def __GetFilePart(self, ffsFile):
@@ -2122,8 +2128,106 @@ class FdfParser:
         vtf.ComponentStatementList.append(compStatement)
         return True
     
+    def __GetFvInFd (self, fdName):
+    
+        fvList = []
+        if fdName.upper() in self.profile.FdDict.keys():
+            fd = self.profile.FdDict[fdName.upper()]
+            for elementRegion in fd.RegionList:
+                if elementRegion.RegionType == 'FV':
+                    for elementRegionData in elementRegion.RegionDataList:
+                        if elementRegionData != None and elementRegionData.upper() not in fvList:
+                            fvList.append(elementRegionData.upper())
+        return fvList
+    
+    def __GetReferencedFdFvTuple(self, fvObj, refFdList = [], refFvList = []):
+        
+        for ffs in fvObj.FfsList:
+            if isinstance(ffs, FfsFileStatement.FileStatements):
+                if ffs.FvName != None and ffs.FvName.upper() not in refFvList:
+                    refFvList.append(ffs.FvName.upper())
+                elif ffs.FdName != None and ffs.FdName.upper() not in refFdList:
+                    refFdList.append(ffs.FdName.upper())
+                else:
+                    self.__GetReferencedFdFvTupleFromSection(ffs, refFdList, refFvList)    
+    
+    def __GetReferencedFdFvTupleFromSection(self, ffsFile, fdList = [], fvList = []):
+        
+        sectionStack = []
+        sectionStack.extend(ffsFile.SectionList)
+        while sectionStack != []:
+            section = sectionStack.pop()
+            if isinstance(section, FvImageSection.FvImageSection):
+                if section.FvName != None and section.FvName.upper() not in fvList:
+                    fvList.append(section.FvName.upper())
+                if section.Fv != None and section.Fv.UiFvName != None and section.Fv.UiFvName.upper() not in fvList:
+                    fvList.append(section.Fv.UiFvName.upper())
+                    self.__GetReferencedFdFvTuple(section.Fv, fdList, fvList)
+            
+            if isinstance(section, CompressSection.CompressSection) or isinstance(section, GuidSection.GuidSection):
+                sectionStack.extend(section.SectionList)
+                
+            
+    
+    def CycleReferenceCheck(self):
+        
+        CycleRefExists = False
+        
+        try:
+            for fvName in self.profile.FvDict.keys():
+                logStr = "Cycle Reference Checking for FV: %s\n" % fvName
+                refFvStack = []
+                refFvStack.append(fvName)
+                fdAnalyzedList = []
+                
+                while refFvStack != []:
+                    fvNameFromStack = refFvStack.pop()
+                    if fvNameFromStack.upper() in self.profile.FvDict.keys():
+                        fv = self.profile.FvDict[fvNameFromStack.upper()]
+                    else:
+                        continue
+                    
+                    refFdList = []
+                    refFvList = []
+                    self.__GetReferencedFdFvTuple(fv, refFdList, refFvList)
+                    
+                    for refFdName in refFdList:
+                        if refFdName in fdAnalyzedList:
+                            continue
+                        
+                        logStr += "FD %s is referenced by FV %s\n" % (refFdName, fvNameFromStack) 
+                        fvInFdList = self.__GetFvInFd(refFdName)
+                        if fvInFdList != []:
+                            logStr += "FD %s contains FV: " % refFdName
+                            for fv in fvInFdList:
+                                logStr += fv
+                                logStr += ' \n'
+                                if fv not in refFvStack:
+                                    refFvStack.append(fv)
+                        
+                                if fvName in refFvStack:
+                                    CycleRefExists = True
+                                    raise Warning(logStr)
+                        fdAnalyzedList.append(refFdName)
+                                   
+                    for refFvName in refFvList:
+                        logStr += "FV %s is referenced by FV %s\n" % (refFvName, fvNameFromStack)
+                        if refFvName not in refFvStack:
+                            refFvStack.append(refFvName)
+                            
+                        if fvName in refFvStack:
+                            CycleRefExists = True
+                            raise Warning(logStr)
+        
+        except Warning:
+            print logStr
+        
+        finally:
+            return CycleRefExists
+        
 if __name__ == "__main__":
-    parser = FdfParser("..\Nt32.fdf")
+    parser = FdfParser("..\LakeportX64Pkg.fdf")
     parser.ParseFile()
+    parser.CycleReferenceCheck()
     print "Success!"
 

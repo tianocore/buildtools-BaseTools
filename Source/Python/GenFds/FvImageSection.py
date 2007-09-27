@@ -38,12 +38,10 @@ class FvImageSection(FvImageSectionClassObject):
         if self.FvName != None:
             Buffer = StringIO.StringIO('')
             Fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(self.FvName)
-            if self.Fv == None:
+            if Fv != None:
                 self.Fv = Fv
             else:
-                raise Exception("FvImageSection Failed! Can't describe the \
-                                 FvImageSection both in FvUiName and \
-                                 FvImageArg!")
+                raise Exception("FvImageSection Failed! %s NOT found in FDF" % self.FvName)
                                  
             FvFileName = self.Fv.AddToBuffer(Buffer)
             
