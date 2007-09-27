@@ -372,7 +372,7 @@ GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = 0;
 EFI_STATUS
 EFIAPI
 ProcessModuleEntryPointList (
-  IN EFI_PEI_FILE_HANDLE  *FfsHeader,
+  IN EFI_PEI_FILE_HANDLE  FileHandle,
   IN EFI_PEI_SERVICES     **PeiServices
   )
 
@@ -385,19 +385,19 @@ GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = 0;
 ${BEGIN}
 EFI_STATUS
 ${Function} (
-  IN EFI_PEI_FILE_HANDLE  *FfsHeader,
+  IN EFI_PEI_FILE_HANDLE  FileHandle,
   IN EFI_PEI_SERVICES     **PeiServices
   );
 
 EFI_STATUS
 EFIAPI
 ProcessModuleEntryPointList (
-  IN EFI_PEI_FILE_HANDLE  *FfsHeader,
+  IN EFI_PEI_FILE_HANDLE  FileHandle,
   IN EFI_PEI_SERVICES     **PeiServices
   )
 
 {
-  return ${Function} (FfsHeader, PeiServices);
+  return ${Function} (FileHandle, PeiServices);
 }
 ${END}
 """,
@@ -407,7 +407,7 @@ GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = 0;
 ${BEGIN}
 EFI_STATUS
 ${Function} (
-  IN EFI_PEI_FILE_HANDLE  *FfsHeader,
+  IN EFI_PEI_FILE_HANDLE  FileHandle,
   IN EFI_PEI_SERVICES     **PeiServices
   );
 ${END}
@@ -415,7 +415,7 @@ ${END}
 EFI_STATUS
 EFIAPI
 ProcessModuleEntryPointList (
-  IN EFI_PEI_FILE_HANDLE  *FfsHeader,
+  IN EFI_PEI_FILE_HANDLE  FileHandle,
   IN EFI_PEI_SERVICES     **PeiServices
   )
 
@@ -425,7 +425,7 @@ ProcessModuleEntryPointList (
 
   CombinedStatus = EFI_LOAD_ERROR;
 ${BEGIN}
-  Status = ${Function} (FfsHeader, PeiServices);
+  Status = ${Function} (FileHandle, PeiServices);
   if (!EFI_ERROR (Status) || EFI_ERROR (CombinedStatus)) {
     CombinedStatus = Status;
   }
@@ -674,7 +674,7 @@ ProcessLibrary${Type}List (
 VOID
 EFIAPI
 ProcessLibrary${Type}List (
-  IN EFI_PEI_FILE_HANDLE       *FfsHeader,
+  IN EFI_PEI_FILE_HANDLE       FileHandle,
   IN EFI_PEI_SERVICES          **PeiServices
   )
 {
@@ -718,7 +718,7 @@ ${BEGIN}
 EFI_STATUS
 EFIAPI
 ${Function} (
-  IN EFI_PEI_FILE_HANDLE       *FfsHeader,
+  IN EFI_PEI_FILE_HANDLE       FileHandle,
   IN EFI_PEI_SERVICES          **PeiServices
   );
 ${END}
@@ -726,14 +726,14 @@ ${END}
 VOID
 EFIAPI
 ProcessLibrary${Type}List (
-  IN EFI_PEI_FILE_HANDLE       *FfsHeader,
+  IN EFI_PEI_FILE_HANDLE       FileHandle,
   IN EFI_PEI_SERVICES          **PeiServices
   )
 {
   EFI_STATUS  Status;
 
 ${BEGIN}
-  Status = ${Function} (FfsHeader, PeiServices);
+  Status = ${Function} (FileHandle, PeiServices);
   ASSERT_EFI_ERROR (Status);
 ${END}
 }
