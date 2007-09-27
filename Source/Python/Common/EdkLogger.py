@@ -55,8 +55,8 @@ _ErrorFormatter = logging.Formatter("%(message)s")
 _ErrorCh.setFormatter(_ErrorFormatter)
 _ErrorLogger.addHandler(_ErrorCh)
 
-_ErrorMessageTemplate = '\n%(tool)s...\n%(file)s(%(line)s): error %(errorcode)X: %(msg)s'
-_ErrorMessageTemplateWithoutFile = '\n%(tool)s: : error %(errorcode)X: %(msg)s'
+_ErrorMessageTemplate = '\n%(tool)s...\n%(file)s(%(line)s): error %(errorcode)X: %(msg)s\n    %(extra)s'
+_ErrorMessageTemplateWithoutFile = '\n%(tool)s...\n : error %(errorcode)04X: %(msg)s\n    %(extra)s'
 _WarningMessageTemplate = '%(tool)s...\n%(file)s(%(line)s): warning: %(msg)s'
 _WarningMessageTemplateWithoutFile = '%(tool)s: : warning: %(msg)s'
 _DebugMessageTemplate = '%(file)s(%(line)s): debug: %(msg)s'
@@ -78,7 +78,7 @@ def debug(Level, Message, ExtraData=None):
     }
 
     if ExtraData != None:
-        LogText = _DebugMessageTemplate % TemplateDict + "\n  " + ExtraData
+        LogText = _DebugMessageTemplate % TemplateDict + "\n    " + ExtraData
     else:
         LogText = _DebugMessageTemplate % TemplateDict
 
@@ -113,7 +113,7 @@ def warn(ToolName, Message, File=None, Line=None, ExtraData=None):
         LogText = _WarningMessageTemplateWithoutFile % TemplateDict
 
     if ExtraData != None:
-        LogText += "\n  " + ExtraData
+        LogText += "\n    " + ExtraData
 
     _InfoLogger.log(WARN, LogText)
 
@@ -138,6 +138,9 @@ def error(ToolName, ErrorCode, Message=None, File=None, Line=None, ExtraData=Non
         else:
             Message = gErrorMessage[UNKNOWN_ERROR]
 
+    if ExtraData == None:
+        ExtraData = ""
+
     TemplateDict = {
         "tool"      : ToolName,
         "file"      : File,
@@ -151,9 +154,6 @@ def error(ToolName, ErrorCode, Message=None, File=None, Line=None, ExtraData=Non
         LogText =  _ErrorMessageTemplate % TemplateDict
     else:
         LogText = _ErrorMessageTemplateWithoutFile % TemplateDict
-
-    if ExtraData != None:
-        LogText += "\n  " + ExtraData
 
     _ErrorLogger.log(ERROR, LogText)
     raise FatalError("%s failed!" % ToolName)
@@ -198,7 +198,7 @@ def SetLogFile(LogFile):
     _Ch = logging.FileHandler(LogFile)
     _Ch.setFormatter(_ErrorFormatter)
     _ErrorLogger.addHandler(_Ch)
-    
+
     #
     #_ch = logging.FileHandler(log)
     #_ch.setFormatter(_quiet_formatter)
@@ -206,4 +206,3 @@ def SetLogFile(LogFile):
 
 if __name__ == '__main__':
     pass
-

@@ -1097,13 +1097,16 @@ class Makefile(object):
         DependencySet = set()
         MacroUsedByIncludedFile = False
 
+        if self.ModuleInfo.Arch not in gDependencyDatabase:
+            gDependencyDatabase[self.ModuleInfo.Arch] = {}
+        DepDb = gDependencyDatabase[self.ModuleInfo.Arch]
         while len(FileStack) > 0:
             EdkLogger.debug(EdkLogger.DEBUG_2, "Stack %s" % "\n\t".join(FileStack))
             F = FileStack.pop()
 
             CurrentFileDependencyList = []
-            if F in gDependencyDatabase and not IsChanged(F):
-                CurrentFileDependencyList = gDependencyDatabase[F]
+            if F in DepDb and not IsChanged(F):
+                CurrentFileDependencyList = DepDb[F]
                 for Dep in CurrentFileDependencyList:
                     if Dep not in FileStack and Dep not in DependencySet:
                         FileStack.append(Dep)
@@ -1144,7 +1147,7 @@ class Makefile(object):
                     # Don't keep the file in cache if it uses macro in included file.
                     # So it will be scanned again if another file includes this file.
                     #
-                    gDependencyDatabase[F] = CurrentFileDependencyList
+                    DepDb[F] = CurrentFileDependencyList
             DependencySet.update(CurrentFileDependencyList)
 
         #

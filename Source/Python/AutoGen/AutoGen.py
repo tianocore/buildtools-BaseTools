@@ -143,7 +143,6 @@ class PlatformAutoGen:
             Platform = self.PlatformDatabase[Arch][PlatformFile]
             self.Platform[Arch] = Platform
             self.BuildInfo[Arch] = self.CollectBuildInfo(Platform, Arch)
-        self._Database[self.PlatformFile, self.BuildTarget, self.ToolChain] = self
 
     def __hash__(self):
         return hash(self.PlatformFile)
@@ -152,14 +151,21 @@ class PlatformAutoGen:
         return self.PlatformFile
 
     @staticmethod
-    def GetAutoGen(Workspace, Platform, Target, Toolchain, ArchList):
+    def New(Workspace, Platform, Target, Toolchain, ArchList, ModuleAutoGenFlag=False):
         Key = (Platform, Target, Toolchain)
         if Key not in PlatformAutoGen._Database:
             if ArchList == None or ArchList == []:
                 return None
             AutoGenObject = PlatformAutoGen()
             AutoGenObject.Init(Workspace, Platform, Target, Toolchain, ArchList)
-        return PlatformAutoGen._Database[Key]
+            PlatformAutoGen._Database[Key] = AutoGenObject
+        else:
+            AutoGenObject = PlatformAutoGen._Database[Key]
+
+        if ModuleAutoGenFlag:
+            AutoGenObject.CreateModuleAutoGen()
+
+        return AutoGenObject
 
     def CollectBuildInfo(self, Platform, Arch):
         Info = PlatformBuildInfo(Platform)
@@ -326,22 +332,29 @@ class PlatformAutoGen:
                 TokenNumber += 1
         return PcdTokenNumber
 
+    def CreateModuleAutoGen(self):
+        for Arch in self.BuildInfo:
+            Info = self.BuildInfo[Arch]
+            for ModuleFile in Info.Platform.Libraries:
+                ModuleAutoGen.New(self.Workspace, Info.Platform, ModuleFile,
+                                         Info.BuildTarget, Info.ToolChain, Info.Arch)
+
+            for ModuleFile in Info.Platform.Modules:
+                ModuleAutoGen.New(self.Workspace, Info.Platform, ModuleFile,
+                                         Info.BuildTarget, Info.ToolChain, Info.Arch)
+
     def CreateMakeFile(self, CreateModuleMakeFile=False):
         if CreateModuleMakeFile:
             for Arch in self.BuildInfo:
                 Info = self.BuildInfo[Arch]
                 for ModuleFile in Info.Platform.Libraries:
-                    AutoGenObject = ModuleAutoGen.GetAutoGen(self.Workspace, Info.Platform, ModuleFile,
-                                                             Info.BuildTarget, Info.ToolChain, Info.Arch)
-                    if AutoGenObject not in Info.LibraryAutoGenList:
-                        Info.LibraryAutoGenList.append(AutoGenObject)
+                    AutoGenObject = ModuleAutoGen.New(self.Workspace, Info.Platform, ModuleFile,
+                                                      Info.BuildTarget, Info.ToolChain, Info.Arch)
                     AutoGenObject.CreateMakeFile(False)
 
                 for ModuleFile in Info.Platform.Modules:
-                    AutoGenObject = ModuleAutoGen.GetAutoGen(self.Workspace, Info.Platform, ModuleFile,
-                                                             Info.BuildTarget, Info.ToolChain, Info.Arch)
-                    if AutoGenObject not in Info.ModuleAutoGenList:
-                        Info.ModuleAutoGenList.append(AutoGenObject)
+                    AutoGenObject = ModuleAutoGen.New(self.Workspace, Info.Platform, ModuleFile,
+                                                      Info.BuildTarget, Info.ToolChain, Info.Arch)
                     AutoGenObject.CreateMakeFile(False)
 
         if self.IsMakeFileCreated:
@@ -363,17 +376,13 @@ class PlatformAutoGen:
         for Arch in self.BuildInfo:
             Info = self.BuildInfo[Arch]
             for ModuleFile in Info.Platform.Libraries:
-                AutoGenObject = ModuleAutoGen.GetAutoGen(self.Workspace, Info.Platform, ModuleFile,
-                                                         Info.BuildTarget, Info.ToolChain, Info.Arch)
-                if AutoGenObject not in Info.LibraryAutoGenList:
-                    Info.LibraryAutoGenList.append(AutoGenObject)
+                AutoGenObject = ModuleAutoGen.New(self.Workspace, Info.Platform, ModuleFile,
+                                                  Info.BuildTarget, Info.ToolChain, Info.Arch)
                 AutoGenObject.CreateCodeFile()
 
             for ModuleFile in Info.Platform.Modules:
-                AutoGenObject = ModuleAutoGen.GetAutoGen(self.Workspace, Info.Platform, ModuleFile,
-                                                         Info.BuildTarget, Info.ToolChain, Info.Arch)
-                if AutoGenObject not in Info.ModuleAutoGenList:
-                    Info.ModuleAutoGenList.append(AutoGenObject)
+                AutoGenObject = ModuleAutoGen.New(self.Workspace, Info.Platform, ModuleFile,
+                                                  Info.BuildTarget, Info.ToolChain, Info.Arch)
                 AutoGenObject.CreateCodeFile()
 
         self.IsCodeFileCreated = True
@@ -426,6 +435,14 @@ class PlatformAutoGen:
             return None
         return self.ModuleDatabase[Arch][ModuleFile]
 
+    def AddModuleAutoGen(self, ModuleAutoGen, Arch):
+        if ModuleAutoGen not in self.BuildInfo[Arch].ModuleAutoGenList:
+            self.BuildInfo[Arch].ModuleAutoGenList.append(ModuleAutoGen)
+
+    def AddLibraryAutoGen(self, LibraryAutoGen, Arch):
+        if LibraryAutoGen not in self.BuildInfo[Arch].LibraryAutoGenList:
+            self.BuildInfo[Arch].LibraryAutoGenList.append(LibraryAutoGen)
+
 ## AutoGen class
 #
 # This class encapsules the AutoGen behaviors for the build tools. In addition to
@@ -435,10 +452,11 @@ class PlatformAutoGen:
 #
 class ModuleAutoGen(object):
     _Database = {}
+    _PlatformAutoGen = None
 
-    def Init(self, Workspace, PlatformFile, ModuleFile, Target, Toolchain, Arch):
+    def Init(self, Workspace, PlatformAutoGenObj, ModuleFile, Target, Toolchain, Arch):
         self.ModuleFile = str(ModuleFile)
-        self.PlatformFile = str(PlatformFile)
+        self.PlatformFile = PlatformAutoGenObj.PlatformFile
 
         self.Workspace = Workspace
         self.WorkspaceDir = Workspace.WorkspaceDir
@@ -451,9 +469,10 @@ class ModuleAutoGen(object):
         self.IsMakeFileCreated = False
         self.IsCodeFileCreated = False
 
-        self.PlatformAutoGen = PlatformAutoGen.GetAutoGen(Workspace, PlatformFile, Target, Toolchain, None)
-        if self.PlatformAutoGen == None:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Please create platform AutoGen first!")
+        self.PlatformAutoGen = PlatformAutoGenObj
+        #self.PlatformAutoGen = PlatformAutoGen.New(Workspace, PlatformFile, Target, Toolchain, None)
+        #if self.PlatformAutoGen == None:
+        #    EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Please create platform AutoGen first!")
         try:
             self.PlatformAutoGen.CheckModule(ModuleFile, self.Arch)
         except:
@@ -473,26 +492,38 @@ class ModuleAutoGen(object):
         self.AutoGenH = TemplateString()
 
         self.BuildInfo = self.GetModuleBuildInfo()
-
-        self._Database[self.Module, self.BuildTarget, self.ToolChain, self.Arch] = self
-
         return True
 
+    def __eq__(self, Other):
+        return Other != None and self.ModuleFile == Other.ModuleFile and self.Arch == Other.Arch
+
     def __hash__(self):
-        return hash(self.ModuleFile)
+        return hash(self.ModuleFile) + hash(self.Arch)
 
     def __str__(self):
-        return self.ModuleFile
+        return "%s [%s]" % (self.ModuleFile, self.Arch)
 
     @staticmethod
-    def GetAutoGen(Workspace, Platform, Module, Target, Toolchain, Arch):
+    def New(Workspace, Platform, Module, Target, Toolchain, Arch):
+        if ModuleAutoGen._PlatformAutoGen == None:
+            ModuleAutoGen._PlatformAutoGen = PlatformAutoGen.New(Workspace, Platform, Target, Toolchain, None)
+            if ModuleAutoGen._PlatformAutoGen == None:
+                EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Please create platform AutoGen first!")
+
         Key = (Module, Target, Toolchain, Arch)
         if Key not in ModuleAutoGen._Database:
             if Arch == None or Arch == "":
                 return None
             AutoGenObject = ModuleAutoGen()
-            if AutoGenObject.Init(Workspace, Platform, Module, Target, Toolchain, Arch) == False:
+            if AutoGenObject.Init(Workspace, ModuleAutoGen._PlatformAutoGen, Module, Target, Toolchain, Arch) == False:
                 return None
+            ModuleAutoGen._Database[Key] = AutoGenObject
+            if AutoGenObject.BuildInfo.IsLibrary:
+                ModuleAutoGen._PlatformAutoGen.AddLibraryAutoGen(AutoGenObject, Arch)
+            else:
+                ModuleAutoGen._PlatformAutoGen.AddModuleAutoGen(AutoGenObject, Arch)
+            return AutoGenObject
+
         return ModuleAutoGen._Database[Key]
 
     def GetModuleBuildInfo(self):
@@ -814,7 +845,7 @@ class ModuleAutoGen(object):
         if CreateLibraryMakeFile:
             for Lib in self.BuildInfo.DependentLibraryList:
                 EdkLogger.debug(EdkLogger.DEBUG_1, "###" + str(Lib))
-                LibraryAutoGen = ModuleAutoGen.GetAutoGen(self.Workspace, self.Platform, Lib,
+                LibraryAutoGen = ModuleAutoGen.New(self.Workspace, self.Platform, Lib,
                                                           self.BuildTarget, self.ToolChain, self.Arch)
                 if LibraryAutoGen not in self.BuildInfo.LibraryAutoGenList:
                     self.BuildInfo.LibraryAutoGenList.append(LibraryAutoGen)
@@ -842,7 +873,7 @@ class ModuleAutoGen(object):
 
         if CreateLibraryCodeFile:
             for Lib in self.BuildInfo.DependentLibraryList:
-                LibraryAutoGen = ModuleAutoGen.GetAutoGen(self.Workspace, self.Platform, Lib,
+                LibraryAutoGen = ModuleAutoGen.New(self.Workspace, self.Platform, Lib,
                                                           self.BuildTarget, self.ToolChain, self.Arch)
                 if LibraryAutoGen not in self.BuildInfo.LibraryAutoGenList:
                     self.BuildInfo.LibraryAutoGenList.append(LibraryAutoGen)

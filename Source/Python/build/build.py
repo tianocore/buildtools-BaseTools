@@ -75,6 +75,9 @@ def ReadMessage(From, To, ExitFlag):
             To(Line.rstrip())
 
 def LaunchCommand(CommandStringList, WorkingDir):
+    if not os.path.isdir(WorkingDir):
+        EdkLogger.error("build", FILE_NOT_FOUND, ExtraData=WorkingDir)
+
     Proc = Popen(CommandStringList, stdout=PIPE, stderr=PIPE, env=os.environ, cwd=WorkingDir)
 
     EndOfProcedure = Event()
@@ -97,7 +100,8 @@ def LaunchCommand(CommandStringList, WorkingDir):
         StdErrThread.join()
 
     if Proc.returncode != 0:
-        EdkLogger.error("build", UNKNOWN_ERROR, "failed to execute command\n\t%s [%s]" % (" ".join(CommandStringList), WorkingDir))
+        EdkLogger.error("build", UNKNOWN_ERROR, "failed to execute command",
+                        ExtraData="%s [%s]" % (" ".join(CommandStringList), WorkingDir))
 
 class BuildObjectClass:
     def __init__(self, Obj, Target):
@@ -110,7 +114,7 @@ class BuildObjectClass:
         return str(self.BuildObject)
 
     def __eq__(self, Other):
-        return Other != None and str(self.BuildObject) == str(Other)
+        return Other != None and self.BuildObject == Other.BuildObject
 
     def __hash__(self):
         return hash(self.BuildObject)
@@ -179,16 +183,18 @@ class BuildTask:
                 while True:
                     if len(BuildTask._ReadyQueue) == 0:
                         break
-                    if len(BuildTask._PendingQueue) == 0:
-                        BuildTask._Thread.acquire(True)
-                    elif not BuildTask._Thread.acquire(False):
-                        break
+                    # wait for active thread(s) exit
+                    BuildTask._Thread.acquire(True)
                     Bo = BuildTask._ReadyQueue.keys()
                     Bt = BuildTask._ReadyQueue.pop(Bo[0])
                     Bt.Start()
+                # avoid tense loop
+                time.sleep(0.01)
 
-            while BuildTask._Thread._Semaphore__value != BuildTask._Thread._initial_value:
+            while not BuildTask._ErrorFlag.isSet() and \
+                  BuildTask._Thread._Semaphore__value != BuildTask._Thread._initial_value:
                 EdkLogger.verbose( "Waiting for thread ending...(%d ended)" % BuildTask._Thread._Semaphore__value)
+                # avoid tense loop
                 time.sleep(0.1)
             BuildTask._CompleteFlag.set()
             BuildTask._SchedulerStarted = False
@@ -262,9 +268,10 @@ class BuildTask:
             self.CompleteFlag = True
         except Exception, e:
             BuildTask._ErrorFlag.set()
-            BuildTask._ErrorMessage = "failed to execute command [%s]" % threading.currentThread().getName()
+            BuildTask._ErrorMessage = "broken by %s\n    %s [%s]" % \
+                                      (threading.currentThread().getName(),
+                                       " ".join(CommandStringList), WorkingDir)
         BuildTask._Thread.release()
-
 
     def Start(self):
         if sys.platform in ["win32", "win64"]:
@@ -323,9 +330,9 @@ class Build():
             EdkLogger.info('%-24s = %s' % ("Active Module", self.ModuleFile))
 
         if self.SpawnMode:
-            EdkLogger.info('%-24s = %s' % ("Max Thread Number", self.ThreadNumber))
+            EdkLogger.verbose('%-24s = %s' % ("Max Thread Number", self.ThreadNumber))
 
-        self.Progress.Start("\nEstablishing platform and modules database")
+        self.Progress.Start("\nEstablishing build database")
         if self.Fdf != None and self.Fdf != "":
             FdfFile = os.path.join(self.WorkspaceDir, self.Fdf)
             Fdf = FdfParser(FdfFile)
@@ -443,34 +450,43 @@ class Build():
             LaunchCommand(["make", Target], WorkingDir)
 
     def _Build(self, Target, Platform, Module, BuildTarget, ToolChain, Arch, CreateDepModuleCodeFile=True, CreateDepModuleMakeFile=True):
+        ProgressPrompt = "Generating code/makefile for "
         if Module != None:
-            self.Progress.Start("Generating code/makefile for module")
-            AutoGenResult = ModuleAutoGen.GetAutoGen(self.Ewb, Platform, Module, BuildTarget, ToolChain, Arch)
+            ProgressPrompt += "module"
+            AutoGenResult = ModuleAutoGen.New(self.Ewb, Platform, Module, BuildTarget, ToolChain, Arch)
         else:
-            self.Progress.Start("Generating code/makefile for platform")
-            AutoGenResult = PlatformAutoGen.GetAutoGen(self.Ewb, Platform, BuildTarget, ToolChain, Arch)
+            ProgressPrompt += "platform"
+            AutoGenResult = PlatformAutoGen.New(self.Ewb, Platform, BuildTarget, ToolChain, Arch)
 
         if AutoGenResult == None:
-            self.Progress.Stop("failed!")
             return
 
         # skip file generation for some targets
         if Target not in ['clean', 'cleanlib', 'cleanall', 'run']:
-            # for target which must generate AutoGen code and makefile
-            if Target in ["genc", "all"]:
-                AutoGenResult.CreateCodeFile(CreateDepModuleCodeFile)
-                if Target == "genc":
-                    self.Progress.Stop("done!")
-                    return
+            #
+            # no need to generate code/makefile for dependent modules/libraries
+            # if the target is 'fds'
+            #
+            if Target == 'fds':
+                CreateDepModuleCodeFile = False
+                CreateDepModuleMakeFile = False
 
-            if Target in ["genmake", "all"]:
-                AutoGenResult.CreateMakeFile(CreateDepModuleMakeFile)
-                if Target == "genmake":
-                    self.Progress.Stop("done!")
-                    return
+            self.Progress.Start(ProgressPrompt)
+
+            # for target which must generate AutoGen code and makefile
+            AutoGenResult.CreateCodeFile(CreateDepModuleCodeFile)
+            if Target == "genc":
+                self.Progress.Stop("done!")
+                return
+
+            AutoGenResult.CreateMakeFile(CreateDepModuleMakeFile)
+            if Target == "genmake":
+                self.Progress.Stop("done!")
+                return
 
             self.Progress.Stop("done!")
 
+        EdkLogger.info("")
         self.LaunchBuildCommand(Target, os.path.join(self.WorkspaceDir, AutoGenResult.GetMakeFileDir()))
 
     def _BuildPlatform(self):
@@ -481,31 +497,42 @@ class Build():
     def _BuildModule(self):
         for BuildTarget in self.BuildTargetList:
             for ToolChain in self.ToolChainList:
-                self._Build("genmake", self.PlatformFile, None, BuildTarget, ToolChain, self.ArchList, False, False)
+                #
+                # module build needs platform build information, so get platform
+                # AutoGen first
+                #
+                if self.Target == 'fds':
+                    #
+                    # we need to re-generate the command in platform's Makefile
+                    # in case the user changed command line option for 'fds' target
+                    #
+                    PlatformAutoGen.New(self.Ewb, self.PlatformFile, BuildTarget, ToolChain, self.ArchList, True)
+                    self._Build("genmake", self.PlatformFile, None, BuildTarget, ToolChain, self.ArchList, False, False)
+                else:
+                    PlatformAutoGen.New(self.Ewb, self.PlatformFile, BuildTarget, ToolChain, self.ArchList)
+
                 for Arch in self.ArchList:
                     self._Build(self.Target, self.PlatformFile, self.ModuleFile, BuildTarget, ToolChain, Arch)
 
     def _MultiThreadBuildPlatform(self):
         for BuildTarget in self.BuildTargetList:
             for ToolChain in self.ToolChainList:
-                Pa = PlatformAutoGen.GetAutoGen(self.Ewb, self.PlatformFile, BuildTarget, ToolChain, self.ArchList)
+                Pa = PlatformAutoGen.New(self.Ewb, self.PlatformFile, BuildTarget, ToolChain, self.ArchList)
                 ExitFlag = threading.Event()
                 ExitFlag.clear()
                 for Arch in self.ArchList:
                     for Module in Pa.Platform[Arch].Modules:
-                        Ma = ModuleAutoGen.GetAutoGen(self.Ewb, self.PlatformFile, Module, BuildTarget, ToolChain, Arch)
+                        Ma = ModuleAutoGen.New(self.Ewb, self.PlatformFile, Module, BuildTarget, ToolChain, Arch)
 
-                        if self.Target not in ['clean', 'cleanlib', 'cleanall', 'run']:
+                        if self.Target not in ['clean', 'cleanlib', 'cleanall', 'run', 'fds']:
                             # for target which must generate AutoGen code and makefile
-                            if self.Target in ["genc", "all"]:
-                                Ma.CreateCodeFile(True)
-                                if self.Target == "genc":
-                                    continue
+                            Ma.CreateCodeFile(True)
+                            if self.Target == "genc":
+                                continue
 
-                            if self.Target in ["genmake", "all"]:
-                                Ma.CreateMakeFile(True)
-                                if self.Target == "genmake":
-                                    continue
+                            Ma.CreateMakeFile(True)
+                            if self.Target == "genmake":
+                                continue
 
                         Bt = BuildTask.New(ModuleMakeObject(Ma, self.Target))
 
@@ -513,21 +540,26 @@ class Build():
                             BuildTask.StartScheduler(self.ThreadNumber, ExitFlag)
 
                         if BuildTask.HasError():
+                            # we need a full version of makefile for platform
+                            Pa.CreateModuleAutoGen()
+                            Pa.CreateMakeFile(False)
                             EdkLogger.error("build", UNKNOWN_ERROR, BuildTask.GetErrorMessage())
 
                 ExitFlag.set()
                 BuildTask.WaitForComplete()
+                # in case there's an interruption. we need a full version of makefile for platform
+                Pa.CreateModuleAutoGen()
+                Pa.CreateMakeFile(False)
                 if BuildTask.HasError():
                     EdkLogger.error("build", UNKNOWN_ERROR, BuildTask.GetErrorMessage())
 
-                Pa.CreateMakeFile(False)
-
-                if self.Fdf != '':
+                if self.Fdf != '' and self.Target in ["", "all", "fds"]:
                     self.LaunchBuildCommand("fds", Pa.GetMakeFileDir())
 
     def Launch(self):
         if self.ModuleFile == None or self.ModuleFile == "":
-            if not self.SpawnMode:
+            if not self.SpawnMode or self.Target not in ["", "all"]:
+                self.SpawnMode = False
                 self._BuildPlatform()
             else:
                 self._MultiThreadBuildPlatform()
@@ -569,10 +601,33 @@ def MyOptionParser():
     return (opt, args)
 
 def Main():
-    EdkLogger.quiet(time.strftime("%H:%M:%S, %b.%d %Y ", time.localtime()) + "[00:00]" + "\n")
     StartTime = time.clock()
+    #
+    # Parse the options and args
+    #
+    (Option, Target) = MyOptionParser()
 
-    Option = None
+    if len(Target) == 0:
+        Target = "all"
+    elif len(Target) >= 2:
+        EdkLogger.error("build", OPTION_NOT_SUPPORTED, "More than on targets are not supported.",
+                        ExtraData="Please select one of: %s" %(' '.join(gSupportedTarget)))
+    else:
+        Target = Target[0].lower()
+
+    if Option.verbose != None:
+        EdkLogger.SetLevel(EdkLogger.VERBOSE)
+    elif Option.quiet != None:
+        EdkLogger.SetLevel(EdkLogger.QUIET)
+    elif Option.debug != None:
+        EdkLogger.SetLevel(Option.debug + 1)
+    else:
+        EdkLogger.SetLevel(EdkLogger.INFO)
+
+    if Option.LogFile != None:
+        EdkLogger.SetLogFile(Option.LogFile)
+
+    EdkLogger.quiet(time.strftime("%H:%M:%S, %b.%d %Y ", time.localtime()) + "[00:00]" + "\n")
     ReturnCode = 0
     try:
         #
@@ -580,30 +635,6 @@ def Main():
         #
         CheckEnvVariable()
         Workspace = os.getenv("WORKSPACE")
-
-        #
-        # Parse the options and args
-        #
-        (Option, Target) = MyOptionParser()
-
-        if len(Target) == 0:
-            Target = "all"
-        elif len(Target) >= 2:
-            EdkLogger.quiet("There are too many targets in command line input, please select one from: %s" %(' '.join(Target)))
-        else:
-            Target = Target[0].lower()
-
-        if Option.verbose != None:
-            EdkLogger.SetLevel(EdkLogger.VERBOSE)
-        elif Option.quiet != None:
-            EdkLogger.SetLevel(EdkLogger.QUIET)
-        elif Option.debug != None:
-            EdkLogger.SetLevel(Option.debug + 1)
-        else:
-            EdkLogger.SetLevel(EdkLogger.INFO)
-
-        if Option.LogFile != None:
-            EdkLogger.SetLogFile(Option.LogFile)
 
         WorkingDirectory = os.getcwd()
         if Option.ModuleFile != None:

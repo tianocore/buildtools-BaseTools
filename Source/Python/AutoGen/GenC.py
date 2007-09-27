@@ -1466,13 +1466,12 @@ def CreateHeaderCode(Info, AutoGenC, AutoGenH):
     AutoGenH.Append(gSpecificationString,   {'Specification':Info.MacroList})
     # header files includes
     AutoGenH.Append("#include <%s>\n\n" % gBasicHeaderFile)
-    #autoGenH.Append("\n#define ASM_PFX(name) _##name\n\n")
-
-    AutoGenH.Append("#define EFI_CALLER_ID_GUID \\\n  %s\n" % GuidStringToGuidStructureString(Info.Guid))
     AutoGenH.Append('\nextern GUID  gEfiCallerIdGuid;\n\n')
 
     if Info.IsLibrary:
         return
+
+    AutoGenH.Append("#define EFI_CALLER_ID_GUID \\\n  %s\n" % GuidStringToGuidStructureString(Info.Guid))
 
     # C file header
     AutoGenC.Append(gAutoGenHeaderString, {'FileName':'AutoGen.c'})

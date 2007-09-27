@@ -109,6 +109,9 @@ def CreateDirectory(Directory):
         os.makedirs(Directory)
 
 def IsChanged(File):
+    if not os.path.exists(File):
+        return True
+
     FileState = os.stat(File)
     TimeStamp = FileState[-2]
 
