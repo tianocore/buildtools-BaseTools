@@ -331,9 +331,9 @@ class FfsInfStatement(FfsInfStatementClassObject):
         Index = 1
         for Sect in Rule.SectionList:
            SecIndex = '%d' %Index
-           SecList  = []
+           SectList  = []
            if Rule.KeyStringList != []:
-               SecList, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, SecIndex, Rule.KeyStringList, self)
+               SectList, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, SecIndex, Rule.KeyStringList, self)
            else :
                SectList, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, SecIndex, self.KeyStringList, self)
            for SecName in  SectList :
