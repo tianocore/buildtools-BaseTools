@@ -21,193 +21,8 @@ Abstract:
 
 --*/
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include "EfiRom.h"
 
-#include <Common/UefiBaseTypes.h>
-#include <IndustryStandard/PeImage.h> // for PE32 structure definitions
-
-#include <IndustryStandard/pci22.h>  // for option ROM header structures
-#include <IndustryStandard/pci30.h>
-
-#include "Compress.h"
-#include "CommonLib.h"
-
-//
-// Version of this utility
-//
-#define UTILITY_NAME "EfiRom"
-#define UTILITY_MAJOR_VERSION 0
-#define UTILITY_MINOR_VERSION 1
-
-//
-// Define some status return values
-//
-#define STATUS_SUCCESS  0
-#define STATUS_WARNING  1
-#define STATUS_ERROR    2
-
-//
-// Define the max length of a filename
-//
-#define MAX_PATH                  200
-
-#define DEFAULT_OUTPUT_EXTENSION  ".rom"
-
-//
-// Max size for an option ROM image
-//
-#define MAX_OPTION_ROM_SIZE (1024 * 1024 * 16)  // 16MB
-//
-// Values for the indicator field in the PCI data structure
-//
-#define INDICATOR_LAST  0x80  // last file in series of files
-//
-// Masks for the FILE_LIST.FileFlags field
-//
-#define FILE_FLAG_BINARY    0x01
-#define FILE_FLAG_EFI       0x02
-#define FILE_FLAG_COMPRESS  0x04
-
-//
-// Use this linked list structure to keep track of all the filenames
-// specified on the command line.
-//
-typedef struct _FILE_LIST {
-  struct _FILE_LIST *Next;
-  INT8              *FileName;
-  UINT32            FileFlags;
-  UINT32            ClassCode;
-  UINT16            CodeRevision;
-} FILE_LIST;
-
-//
-// Use this to track our command-line options
-//
-typedef struct {
-  INT8      OutFileName[MAX_PATH];
-  INT8      NoLast;
-  INT8      Verbose;
-  INT8      DumpOption;
-  INT8      Pci23;
-  UINT8     DevIdValid;
-  UINT8     VendIdValid;
-  UINT16    VendId;
-  UINT16    DevId;
-  FILE_LIST *FileList;
-} OPTIONS;
-
-//
-// Make a global structure to keep track of command-line options
-//
-static OPTIONS  mOptions;
-
-//
-// Use these to convert from machine type value to a named type
-//
-typedef struct {
-  UINT16  Value;
-  char    *Name;
-} STRING_LOOKUP;
-
-static STRING_LOOKUP  mMachineTypes[] = {
-  EFI_IMAGE_MACHINE_IA32,
-  "IA32",
-  EFI_IMAGE_MACHINE_IA64,
-  "IA64",
-  EFI_IMAGE_MACHINE_EBC,
-  "EBC",
-  0,
-  NULL
-};
-
-static STRING_LOOKUP  mSubsystemTypes[] = {
-  EFI_IMAGE_SUBSYSTEM_EFI_APPLICATION,
-  "EFI application",
-  EFI_IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER,
-  "EFI boot service driver",
-  EFI_IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER,
-  "EFI runtime driver",
-  0,
-  NULL
-};
-
-static char* mCodeTypeStr[] = {
-  "PCAT Image",
-  "Open Firmware Image",
-  "HP PA RISC Image",
-  "EFI Image",
-  "Undefined"
-};
-
-//
-//  Function prototypes
-//
-static
-void
-Version (
-  VOID
-  );
-
-static
-void
-Usage (
-  VOID
-  );
-
-static
-int
-ParseCommandLine (
-  int       Argc,
-  char      *Argv[],
-  OPTIONS   *Options
-  );
-
-static
-int
-CheckPE32File (
-  FILE      *Fptr,
-  UINT16    *MachineType,
-  UINT16    *SubSystem
-  );
-
-static
-int
-ProcessEfiFile (
-  FILE      *OutFptr,
-  FILE_LIST *InFile,
-  UINT16    VendId,
-  UINT16    DevId,
-  UINT32    *Size
-  );
-
-static
-int
-ProcessBinFile (
-  FILE      *OutFptr,
-  FILE_LIST *InFile,
-  UINT32    *Size
-  );
-
-static
-void
-DumpImage (
-  INT8 *InFileName
-  );
-
-char                  *
-GetMachineTypeStr (
-  UINT16    MachineType
-  );
-
-static
-char                  *
-GetSubsystemTypeStr (
-  UINT16  SubsystemType
-  );
-
-int
 main (
   int   Argc,
   char  *Argv[]
@@ -239,11 +54,24 @@ Returns:
   FILE_LIST *FList;
   UINT32    TotalSize;
   UINT32    Size;
+  CHAR8     *Ptr0;
+  FILE_LIST *OutFileList;
+
 
   SetUtilityName(UTILITY_NAME);
+
   Status  = STATUS_SUCCESS;
   FptrOut = NULL;
 
+  //
+  // Create a new out file structure
+  //
+  OutFileList = (FILE_LIST *) malloc (sizeof (FILE_LIST));
+  if (OutFileList == NULL) {
+    Error(stdout, 0, 4001, "Resource", "memory cannot be allocated ");
+    return STATUS_ERROR;
+  }  
+  memset ((char *) OutFileList, 0, sizeof (FILE_LIST));
   //
   // Parse the command line arguments
   //
@@ -251,19 +79,31 @@ Returns:
     return STATUS_ERROR;
   }
 
+  if (mOptions.Quiet) {
+    SetPrintLevel(40);
+  } else if (mOptions.Verbose) {
+    SetPrintLevel(15);
+  } else if (mOptions.Debug) {
+    SetPrintLevel(DebugLevel);
+  }
+  
   if (mOptions.Verbose) {
     fprintf (stdout, "%s tool start.\n", UTILITY_NAME);
-  }
+    }  
   //
   // If dumping an image, then do that and quit
   //
-  if (mOptions.DumpOption) {
-    for (FList = mOptions.FileList; FList != NULL; FList = FList->Next) {
-      DumpImage (FList->FileName);
-      goto BailOut;
-    }
-  }
-
+//  if (mOptions.DumpOption) {
+//    for (FList = mOptions.FileList; FList != NULL; FList = FList->Next) {
+//    if ((Ptr0 = strstr ((CONST CHAR8 *)FList->FileName, DEFAULT_OUTPUT_EXTENSION)) != NULL) {
+//    DumpImage (mOptions.FileList);
+//    goto BailOut;
+//    }
+//    }
+//    else
+//    printf("\n *.rom file has not been generated, so -p option should be used //after the *.rom Option Rom binary generated!");
+//    goto BailOut;
+//  }
   //
   // Determine the output filename. Either what they specified on
   // the command line, or the first input filename with a different extension.
@@ -294,15 +134,15 @@ Returns:
   for (FList = mOptions.FileList; FList != NULL; FList = FList->Next) {
     if (stricmp (mOptions.OutFileName, FList->FileName) == 0) {
       Status = STATUS_ERROR;
-      Error(NULL, 0, 1002, "Conflicting options", "Input and output file names must be different - %s = %s", FList->FileName, mOptions.OutFileName);
+      Error(NULL, 0, 1002, "Input and output file names must be different - %s = %s", FList->FileName, mOptions.OutFileName);
       goto BailOut;
     }
   }
   //
   // Now open our output file
   //
-  if ((FptrOut = fopen (mOptions.OutFileName, "wb")) == NULL) {
-    Error(NULL, 0, 0001, "Error opening file", mOptions.OutFileName);
+  if ((FptrOut = fopen (mOptions.OutFileName, "w+b")) == NULL) {
+    Error(stdout, 0, 0001, "Error opening file", mOptions.OutFileName);
     goto BailOut;
   }
   //
@@ -324,7 +164,7 @@ Returns:
 
       Status = ProcessBinFile (FptrOut, FList, &Size);
     } else {
-      Error(NULL, 0, 2000, "Invalid parameter", "File not specified as EFI or binary: %s", FList->FileName);
+      Error(stdout, 0, 2000, "Invalid parameter", "File not specified as EFI or binary: %s", FList->FileName);
       Status = STATUS_ERROR;
     }
 
@@ -342,11 +182,17 @@ Returns:
   // Check total size
   //
   if (TotalSize > MAX_OPTION_ROM_SIZE) {
-    Error(NULL, 0, 2000, "Invalid parameter", "Option ROM image size exceeds limit 0x%X bytes", MAX_OPTION_ROM_SIZE);
+    Error(NULL, 0, 2000, "Option ROM image size exceeds limit 0x%X bytes", MAX_OPTION_ROM_SIZE);
     Status = STATUS_ERROR;
   }
 
 BailOut:
+  if (Status == STATUS_SUCCESS) {
+  if (mOptions.DumpOption) {
+    OutFileList->FileName = mOptions.OutFileName;
+    DumpImage(OutFileList);
+  }
+  } else {
   if (FptrOut != NULL) {
     fclose (FptrOut);
   }
@@ -358,51 +204,12 @@ BailOut:
     free (mOptions.FileList);
     mOptions.FileList = FList;
   }
-
+  }
   if (mOptions.Verbose) {
     fprintf (stdout, "%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());  
   }
 
   return GetUtilityStatus (); 
-}
-
-UINT8
-CheckSumPadff (
-  UINT8  *Buffer, 
-  UINT32 DataSize,
-  UINT32 PaddingSize
-  )
-/*++
-Routine Description:
-  Calculate checksum from DataSize of Buffer and Add pad 0xff
-
-Arguments:
-  Buffer      - pointer to data buffer
-  DataSize    - size of data buffer in bytes
-
-Return:
-  UINT8       - checksum
---*/
-{
-  UINT8 Checksum = 0;
-  while (DataSize-- != 0) {
-    Checksum = Checksum + Buffer[DataSize];
-  }
-  while (PaddingSize-- != 0) {
-    Checksum = Checksum + 0xff;
-  }
-  return Checksum;
-}
-
-char *
-GetCodeTypeStr (
-  UINT8     CodeType
-  )
-{
-  if (CodeType >= sizeof (mCodeTypeStr) / sizeof (*mCodeTypeStr)) {
-    CodeType = sizeof (mCodeTypeStr) / sizeof (*mCodeTypeStr) - 1;
-  }
-  return mCodeTypeStr[CodeType];
 }
 
 static
@@ -433,13 +240,14 @@ Returns:
   FILE                      *InFptr;
   UINT32                    TotalSize;
   UINT32                    FileSize;
-  UINT32                    DataSize;
-  UINT32                    PaddingSize;
   UINT8                     *Buffer;
   UINT32                    Status;
   PCI_EXPANSION_ROM_HEADER  *RomHdr;
+  PCI_DATA_STRUCTURE        *PciDs23;
   PCI_3_0_DATA_STRUCTURE    *PciDs30;
+  UINT32                    Index;
   UINT8                     ByteCheckSum;
+ 
 
   Status = STATUS_SUCCESS;
 
@@ -463,24 +271,39 @@ Returns:
   fseek (InFptr, 0, SEEK_SET);
   Buffer = (INT8 *) malloc (FileSize);
   if (Buffer == NULL) {
-    Error (NULL, 0, 4003, "Resource", "Out of memory resources.");
+    Error (NULL, 0, 4003, "Resource", "Out of memory resources.", NULL);
     Status = STATUS_ERROR;
     goto BailOut;
   }
 
   if (fread (Buffer, FileSize, 1, InFptr) != 1) {
-    Error(NULL, 0, 2000, "Invalid parameter", "Failed to read all bytes from input file");
+    Error(NULL, 0, 2000, "Invalid", "Failed to read all bytes from input file");
     Status = STATUS_ERROR;
     goto BailOut;
   }
+  //
+  // Total size must be an even multiple of 512 bytes, and can't exceed
+  // the option ROM image size.
+  //
+  TotalSize = FileSize;
+  if (TotalSize & 0x1FF) {
+    TotalSize = (TotalSize + 0x200) &~0x1ff;
+  }
 
-  
-  RomHdr  = (PCI_EXPANSION_ROM_HEADER *) Buffer;
-  PciDs30 = (PCI_3_0_DATA_STRUCTURE *) (Buffer + RomHdr->PcirOffset);
+  if (TotalSize > MAX_OPTION_ROM_SIZE) {
+    Error(NULL, 0, 3001, "Option ROM image %s size exceeds limit 0x%X bytes", InFile->FileName, MAX_OPTION_ROM_SIZE);
+    Status = STATUS_ERROR;
+    goto BailOut;
+  }
+  //
+  // Return the size to the caller so they can keep track of the running total.
+  //
+  *Size = TotalSize;
 
   //
   // Crude check to make sure it's a legitimate ROM image
   //
+  RomHdr = (PCI_EXPANSION_ROM_HEADER *) Buffer;
   if (RomHdr->Signature != PCI_EXPANSION_ROM_HEADER_SIGNATURE) {
     Error(NULL, 0, 2000, "Invalid parameter", "ROM image file has invalid ROM signature");
     Status = STATUS_ERROR;
@@ -491,82 +314,77 @@ Returns:
   // Then check it for valid signature.
   //
   if ((RomHdr->PcirOffset > FileSize) || (RomHdr->PcirOffset == 0)) {
-    Error (NULL, 0, 2000, "Invalid parameter", "Invalid PCI data structure offset");
+    Error(NULL, 0, 2000, "Invalid parameter", "Invalid PCI data structure offset");
     Status = STATUS_ERROR;
     goto BailOut;
   }
 
-  if (PciDs30->Signature != PCI_DATA_STRUCTURE_SIGNATURE) {
-    Error (NULL, 0, 2000, "Invalid parameter", "PCI data structure has invalid signature\n");
+  //
+  // Check the header is conform to PCI2.3 or PCI3.0
+  //
+  if (mOptions.Pci23 == 1) {
+  PciDs23 = (PCI_DATA_STRUCTURE *) (Buffer + RomHdr->PcirOffset);
+  if (PciDs23->Signature != PCI_DATA_STRUCTURE_SIGNATURE) {
+    Error(NULL, 0, 2000, "Invalid parameter", "PCI data structure has invalid signature");
     Status = STATUS_ERROR;
     goto BailOut;
   }
-
-  if ((UINT32) (PciDs30->ImageLength * 512) == FileSize) {
-    //
-    // ImageLength reflects the actual file size correctly.
-    //
-    DataSize    = FileSize - 1;
-    PaddingSize = 0;
-    TotalSize   = FileSize;
   } else {
     //
-    // ImageLength doesn't reflect the actual file size,
-    // 1). add additional 512 bytes if actual file size is multiple of 512
-    // 2). add additional X (X <= 512) bytes so that the result size is multiple of 512
+    // Default setting is PCI3.0 header
     //
-    fprintf (stdout, "WARNING: ImageLength in PCI data structure != Actual File Size\n"
-                     "         --> add additional padding bytes\n"
-                     "         --> adjust ImageLength\n"
-            );
-    TotalSize   = (FileSize + 0x200) & ~0x1ff;
-    DataSize    = FileSize;
-    PaddingSize = TotalSize - DataSize - 1;
-    PciDs30->ImageLength = (UINT16) (TotalSize / 512);
-  }
-
-  //
-  // Check size
-  //
-  if (TotalSize > MAX_OPTION_ROM_SIZE) {
-    Error (NULL, 0, 2000, "Invalid parameter", "Option ROM image %s size exceeds limit 0x%X bytes\n",
-      InFile->FileName, MAX_OPTION_ROM_SIZE
-      );
+    PciDs30 = (PCI_3_0_DATA_STRUCTURE *)(Buffer + RomHdr->PcirOffset);
+  if (PciDs30->Signature != PCI_DATA_STRUCTURE_SIGNATURE) {
+    Error(NULL, 0, 2000, "Invalid parameter", "PCI data structure has invalid signature");
     Status = STATUS_ERROR;
     goto BailOut;
+  }    
   }
 
-  //
-  // Return the size to the caller so they can keep track of the running total.
-  //
-  *Size = TotalSize;
-
+  
   //
   // If this is the last image, then set the LAST bit unless requested not
-  // to via the command-line -l argument. Otherwise, make sure you clear it.
+  // to via the command-line -n argument. Otherwise, make sure you clear it.
   //
   if ((InFile->Next == NULL) && (mOptions.NoLast == 0)) {
-    PciDs30->Indicator |= INDICATOR_LAST;
+    if (mOptions.Pci23 == 1) {
+    PciDs23->Indicator = INDICATOR_LAST;
+    	} else {
+          PciDs30->Indicator = INDICATOR_LAST;
+		  }
   } else {
-    PciDs30->Indicator &= ~INDICATOR_LAST;
+    if (mOptions.Pci23 == 1) {
+      PciDs23->Indicator = 0;
+	} else {
+    PciDs30->Indicator = 0;
+		}
   }
 
-  ByteCheckSum = -CheckSumPadff (Buffer, DataSize, PaddingSize);
+  ByteCheckSum = 0;
+  for (Index = 0; Index < FileSize - 1; Index++) {
+    ByteCheckSum = (UINT8) (ByteCheckSum + Buffer[Index]);
+  }
+
+  Buffer[FileSize - 1] = (UINT8) ((~ByteCheckSum) + 1);
+  fprintf (stdout, "Checksum = %02x\n", (UINT32) Buffer[FileSize - 1]);
 
   //
   // Now copy the input file contents out to the output file
-  // Add 0xff as pad byte, and fill checksum in the last byte.
   //
-  if (fwrite (Buffer, DataSize, 1, OutFptr) != 1) {
-    Error(NULL, 0, 0002, "Error writing file", "Failed to write all file bytes to output file");
+  if (fwrite (Buffer, FileSize, 1, OutFptr) != 1) {
+    Error(NULL, 0, 0005, "Failed to write all file bytes to output file");
     Status = STATUS_ERROR;
     goto BailOut;
   }
 
-  while (PaddingSize-- != 0) {
+  TotalSize -= FileSize;
+  //
+  // Pad the rest of the image to make it a multiple of 512 bytes
+  //
+  while (TotalSize > 0) {
     putc (~0, OutFptr);
+    TotalSize--;
   }
-  putc (ByteCheckSum, OutFptr);
 
 BailOut:
   if (InFptr != NULL) {
@@ -580,7 +398,7 @@ BailOut:
   // Print the file name if errors occurred
   //
   if (Status != STATUS_SUCCESS) {
-    Error (NULL, 0, 0003, "Error parsing file", InFile->FileName);
+    Error(NULL, 0, 0003, "Error parsing file: %s", InFile->FileName);
   }
 
   return Status;
@@ -635,7 +453,7 @@ Returns:
   // Try to open the input file
   //
   if ((InFptr = fopen (InFile->FileName, "rb")) == NULL) {
-    Error(NULL, 0, 0001, "Error opening file", InFile->FileName);
+    Error(NULL, 0, 0001, "Error opening file: %s", InFile->FileName);
     return STATUS_ERROR;
   }
   //
@@ -666,13 +484,8 @@ Returns:
   } else {
     HeaderPadBytes = 0;
   }
-  
-  if (mOptions.Pci23 == 1) {
-    HeaderSize = sizeof (PCI_DATA_STRUCTURE) + HeaderPadBytes + sizeof (EFI_PCI_EXPANSION_ROM_HEADER);
-  } else {
-    HeaderSize = sizeof (PCI_3_0_DATA_STRUCTURE) + HeaderPadBytes + sizeof (EFI_PCI_EXPANSION_ROM_HEADER);
-  }
-  
+
+  HeaderSize = sizeof (PCI_DATA_STRUCTURE) + HeaderPadBytes + sizeof (EFI_PCI_EXPANSION_ROM_HEADER);
   if (mOptions.Verbose) {
     fprintf (stdout, "  File size   = 0x%X\n", FileSize);
   }
@@ -740,7 +553,7 @@ Returns:
   // Check size
   //
   if (TotalSize > MAX_OPTION_ROM_SIZE) {
-    Error(NULL, 0, 2000, "Invalid parameter", "Option ROM image %s size exceeds limit 0x%X bytes", InFile->FileName, MAX_OPTION_ROM_SIZE);  
+    Error(NULL, 0, 2000, "Option ROM image %s size exceeds limit 0x%X bytes", InFile->FileName, MAX_OPTION_ROM_SIZE);	
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -773,7 +586,7 @@ Returns:
   if (mOptions.Pci23 == 1) {
     memset (&PciDs23, 0, sizeof (PCI_DATA_STRUCTURE));
   } else {
-    memset (&PciDs30, 0, sizeof (PCI_3_0_DATA_STRUCTURE));
+  memset (&PciDs30, 0, sizeof (PCI_3_0_DATA_STRUCTURE));
   }
 
   if (mOptions.Pci23 == 1) {
@@ -781,7 +594,7 @@ Returns:
   PciDs23.VendorId  = VendId;
   PciDs23.DeviceId  = DevId;
   PciDs23.Length    = (UINT16) sizeof (PCI_DATA_STRUCTURE);
-  PciDs23.Revision  = 2;
+  PciDs23.Revision  = 0;
   //
   // Class code and code revision from the command line (optional)
   //
@@ -797,7 +610,7 @@ Returns:
   PciDs30.DeviceId  = DevId;
   PciDs30.DeviceListOffset = 0; // to be fixed
   PciDs30.Length    = (UINT16) sizeof (PCI_3_0_DATA_STRUCTURE);
-  PciDs30.Revision  = 3;
+  PciDs30.Revision  = 0;
   //
   // Class code and code revision from the command line (optional)
   //
@@ -817,22 +630,21 @@ Returns:
   //
   if ((InFile->Next == NULL) && (mOptions.NoLast == 0)) {
     if (mOptions.Pci23 == 1) {
-      PciDs23.Indicator |= INDICATOR_LAST;
-    } else {
-      PciDs30.Indicator |= INDICATOR_LAST;
-    }
+      PciDs23.Indicator = INDICATOR_LAST;
+	  } else {
+    PciDs30.Indicator = INDICATOR_LAST;}
   } else {
     if (mOptions.Pci23 == 1) {
-      PciDs23.Indicator &= ~INDICATOR_LAST;
-    } else {
-      PciDs30.Indicator &= ~INDICATOR_LAST;
-    }
+      PciDs23.Indicator = 0;
+	} else {
+    PciDs30.Indicator = 0;
+		}
   }
   //
   // Write the ROM header to the output file
   //
   if (fwrite (&RomHdr, sizeof (RomHdr), 1, OutFptr) != 1) {
-    Error(NULL, 0, 0002, "Error writing file", "Failed to write ROM header to output file");
+    Error(NULL, 0, 0002, "Failed to write ROM header to output file");
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -842,7 +654,7 @@ Returns:
   //
   while (HeaderPadBytes > 0) {
     if (putc (0, OutFptr) == EOF) {
-      Error(NULL, 0, 0002, "Error writing file", "Failed to write ROM header pad bytes to output file");
+      Error(NULL, 0, 0002, "Failed to write ROM header pad bytes to output file");
       Status = STATUS_ERROR;
       goto BailOut;
     }
@@ -853,17 +665,17 @@ Returns:
   // Write the PCI data structure header to the output file
   //
   if (mOptions.Pci23 == 1) {
-    if (fwrite (&PciDs23, sizeof (PciDs23), 1, OutFptr) != 1) {
-      Error(NULL, 0, 0002, "Error writing file", "Failed to write PCI ROM header to output file");
-      Status = STATUS_ERROR;
-      goto BailOut;
-    } 
+  if (fwrite (&PciDs23, sizeof (PciDs23), 1, OutFptr) != 1) {
+    Error(NULL, 0, 0002, "Failed to write PCI ROM header to output file");
+    Status = STATUS_ERROR;
+    goto BailOut;
+  } 
   } else {
-    if (fwrite (&PciDs30, sizeof (PciDs30), 1, OutFptr) != 1) {
-      Error(NULL, 0, 0002, "Error writing file", "Failed to write PCI ROM header to output file");
-      Status = STATUS_ERROR;
-      goto BailOut;
-    } 
+  if (fwrite (&PciDs30, sizeof (PciDs30), 1, OutFptr) != 1) {
+    Error(NULL, 0, 0002, "Failed to write PCI ROM header to output file");
+    Status = STATUS_ERROR;
+    goto BailOut;
+  } 
   }
   //
   // Keep track of how many bytes left to write
@@ -874,7 +686,7 @@ Returns:
   // Now dump the input file's contents to the output file
   //
   if (fwrite (Buffer, FileSize, 1, OutFptr) != 1) {
-    Error(NULL, 0, 0002, "Error writing file", "Failed to write all file bytes to output file");
+    Error(NULL, 0, 0002, "Failed to write all file bytes to output file");
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -885,7 +697,7 @@ Returns:
   //
   while (TotalSize > 0) {
     if (putc (~0, OutFptr) == EOF) {
-      Error(NULL, 0, 2000, "Invalid parameter", "Failed to write trailing pad bytes output file");
+      Error(NULL, 0, 2000, "Failed to write trailing pad bytes output file");
       Status = STATUS_ERROR;
       goto BailOut;
     }
@@ -912,7 +724,7 @@ BailOut:
   // Print the file name if errors occurred
   //
   if (Status != STATUS_SUCCESS) {
-    Error(NULL, 0 , 0003, "Error parsing file", InFile->FileName);
+    Error(NULL, 0 , 0003, "Error parsing file: %s", InFile->FileName);
   }
 
   return Status;
@@ -959,7 +771,7 @@ Returns:
   // Read the DOS header
   //
   if (fread (&DosHeader, sizeof (DosHeader), 1, Fptr) != 1) {
-    Error(NULL, 0, 0004, "Error reading file", "Failed to read the DOS stub from the input file");
+    Error(NULL, 0, 0004, "Failed to read the DOS stub from the input file");
     return STATUS_ERROR;
   }
   //
@@ -974,7 +786,7 @@ Returns:
   //
   fseek (Fptr, (long) DosHeader.e_lfanew, SEEK_SET);
   if (fread (&PESig, sizeof (PESig), 1, Fptr) != 1) {
-    Error(NULL, 0, 0004, "Error reading file", "Failed to read PE signature bytes from input file");
+    Error(NULL, 0, 0004, "Failed to read PE signature bytes from input file");
     return STATUS_ERROR;
   }
   //
@@ -988,7 +800,7 @@ Returns:
   // Read the file header and stuff their MachineType
   //
   if (fread (&FileHdr, sizeof (FileHdr), 1, Fptr) != 1) {
-    Error(NULL, 0, 0004, "Error reading file", "Failed to read PE file header from input file");
+    Error(NULL, 0, 0004, "Failed to read PE file header from input file");
     return STATUS_ERROR;
   }
 
@@ -998,7 +810,7 @@ Returns:
   // Read the optional header so we can get the subsystem
   //
   if (fread (&OptionalHdr, sizeof (OptionalHdr), 1, Fptr) != 1) {
-    Error(NULL, 0, 0004, "Error reading file", "Failed to read COFF optional header from input file");
+    Error(NULL, 0, 0004, "Failed to read COFF optional header from input file");
     return STATUS_ERROR;
   }
 
@@ -1046,6 +858,7 @@ Returns:
   UINT32    FileFlags;
   UINT32    ClassCode;
   UINT32    CodeRevision;
+  EFI_STATUS Status;
 
   FileFlags = 0;
 
@@ -1089,6 +902,7 @@ Returns:
   //
   // Process until no more arguments
   //
+  //__asm int 3;
   while (Argc > 0) {
     if ((Argv[0][0] == '-') || (Argv[0][0] == '/')) {
       //
@@ -1108,7 +922,7 @@ Returns:
           Options->VendId       = (UINT16) strtol (Argv[1], NULL, 16);
           Options->VendIdValid  = 1;
         } else {
-          Error (NULL, 0, 2000, "Invalid parameter", "Missing Vendor ID with %s", Argv[0]);
+	        Error (NULL, 0, 2000, "Invalid parameter", "Missing Vendor ID with %s", Argv[0]);
           Usage ();
           return STATUS_ERROR;
         }
@@ -1176,7 +990,24 @@ Returns:
         // -v for verbose
         //
         Options->Verbose = 1;
-      } else if ((stricmp (Argv[0], "--dump") == 0) || (stricmp (Argv[0], "-d") == 0)) {
+      } else if (stricmp (Argv[0], "--debug") == 0) {
+        Argv++;
+        Status = AsciiStringToUint64(Argv[0], FALSE, &DebugLevel);
+        if (DebugLevel > 9 || DebugLevel < 0) {
+          Error(NULL, 0, 2000, "Invalid parameter", "Unrecognized parameter %s\n", Argv[0]);
+          return 1;
+        }
+        if (DebugLevel>=5 && DebugLevel<=9) {
+          DebugMode = TRUE;
+        } else {
+          DebugMode = FALSE;
+        }
+        Argv++;
+      } else if ((stricmp (Argv[0], "-quiet") == 0) || (stricmp (Argv[0], "-q") == 0)) {
+        QuietMode = TRUE;
+        //Argv++;
+        //Argc--;
+      } else if ((stricmp (Argv[0], "-dump") == 0) || (stricmp (Argv[0], "-d") == 0)) {
         //
         // -dump for dumping a ROM image. In this case, say that the device id
         // and vendor id are valid so we don't have to specify bogus ones on the
@@ -1204,7 +1035,7 @@ Returns:
             return STATUS_ERROR;
           }
         } else {
-          Error (NULL, 0, 2000, "Invalid parameter", "Missing class code value with %s", Argv[0]);
+	        Error (NULL, 0, 2000, "Invalid parameter", "Missing class code value with %s", Argv[0]);
           Usage ();
           return STATUS_ERROR;
         }
@@ -1229,14 +1060,14 @@ Returns:
             return STATUS_ERROR;
           }
         } else {
-          Error (NULL, 0, 2000, "Invalid parameter", "Missing code revision value with %s", Argv[0]);
+	        Error (NULL, 0, 2000, "Invalid parameter", "Missing code revision value with %s", Argv[0]);
           Usage ();
           return STATUS_ERROR;
         }
 
         Argv++;
         Argc--;
-      } else if ((stricmp (Argv[0], "-p") == 0) || (stricmp (Argv[0], "--pci23") == 0)) {
+      } else if ((stricmp (Argv[0], "-p") == 0) || (stricmp (Argv[0], "-pci23") == 0)) {
         //
         // Default layout meets PCI 3.0 specifications, specifying this flag will for a PCI 2.3 layout.
         //
@@ -1278,13 +1109,6 @@ Returns:
       }
 
       PrevFileList = FileList;
-      //
-      // Set the class code and code revision for this file, then reset the values.
-      //
-      FileList->ClassCode     = ClassCode;
-      FileList->CodeRevision  = (UINT16) CodeRevision;
-      ClassCode               = 0;
-      CodeRevision            = 0;
     }
     //
     // Next argument
@@ -1292,22 +1116,7 @@ Returns:
     Argv++;
     Argc--;
   }
-  //
-  // Make sure they specified a device ID and vendor ID
-  //
-/*  
-  if (!Options->VendIdValid) {
-    Error(NULL, 0, 2000, "Invalid parameter", "Missing Vendor ID in command line");
-    Usage ();
-    return STATUS_ERROR;
-  }
 
-  if (!Options->DevIdValid) {
-    Error(NULL, 0, 2000, "Invalid parameter", "Missing Device ID in command line");
-    Usage ();
-    return STATUS_ERROR;
-  }
-*/  
   //
   // Must have specified some files
   //
@@ -1315,8 +1124,30 @@ Returns:
     Error (NULL, 0, 2000, "Invalid parameter", "Missing input file name");
     Usage ();
     return STATUS_ERROR;
+  }  
+      //
+      // Set the class code and code revision for this file, then reset the values.
+      //
+      FileList->ClassCode     = ClassCode;
+      FileList->CodeRevision  = (UINT16) CodeRevision;
+      ClassCode               = 0;
+      CodeRevision            = 0;  
+  //
+  // Make sure they specified a device ID and vendor ID
+  //
+/*  
+  if (!Options->VendIdValid) {
+    Error(NULL, 0, 2000, "Missing Vendor ID in command line");
+    Usage ();
+    return STATUS_ERROR;
   }
 
+  if (!Options->DevIdValid) {
+    Error(NULL, 0, 2000, "Missing Device ID in command line");
+    Usage ();
+    return STATUS_ERROR;
+  }
+*/  
   return 0;
 }
 
@@ -1406,12 +1237,16 @@ Returns:
             Show program's version number and exit.\n");
   fprintf (stdout, "  -h, --help\n\
             Show this help message and exit.\n");
+  fprintf (stdout, "  -q, --quiet\n\
+            Disable all messages except FATAL ERRORS.\n");
+  fprintf (stdout, "  --debug [#]\n\
+            Enable debug messages at level #.\n");  
 }
 
 static
 void
 DumpImage (
-  INT8 *InFileName
+  FILE_LIST *InFile
   )
 /*++
 
@@ -1421,7 +1256,7 @@ Routine Description:
 
 Arguments:
 
-  InFileName  - the file name of an existing option ROM image
+  InFile  - the file name of an existing option ROM image
 
 Returns:
 
@@ -1434,17 +1269,16 @@ Returns:
   UINT32                        ImageStart;
   UINT32                        ImageCount;
   EFI_PCI_EXPANSION_ROM_HEADER  EfiRomHdr;
+  PCI_DATA_STRUCTURE            PciDs23;
   PCI_3_0_DATA_STRUCTURE        PciDs30;
-  UINT16                        DeviceId;  
 
   //
   // Open the input file
   //
-  if ((InFptr = fopen (InFileName, "rb")) == NULL) {
-    Error (NULL, 0, 0001, "Error opening file", InFileName);
+  if ((InFptr = fopen (InFile->FileName, "rb")) == NULL) {
+    Error (NULL, 0, 0001, "Error opening file", InFile->FileName);
     return ;
   }
-  fprintf (stdout, "\nThe dumped option ROM image : %s.\n", InFileName);
   //
   // Go through the image and dump the header stuff for each
   //
@@ -1462,11 +1296,11 @@ Returns:
     //
     if (fread (&PciRomHdr, sizeof (PciRomHdr), 1, InFptr) != 1) {
       if (ImageStart == 0) {
-        Error (NULL, 0, 3001, "Not supported", "Failed to read PCI ROM header from file");
-        goto BailOut;
-      } else {
-        goto BailOut;
+      Error (NULL, 0, 3001, "Not supported", "Failed to read PCI ROM header from file");
+      goto BailOut;
       }
+      else
+      goto BailOut;
     }
 
     //
@@ -1486,76 +1320,97 @@ Returns:
     //
     // Read and dump the PCI data structure
     //
+    if (mOptions.Pci23 == 1) {
+    if (fread (&PciDs23, sizeof (PciDs23), 1, InFptr) != 1) {
+      Error (NULL, 0, 3001, "Not supported", "Failed to read PCI data structure from file");
+      goto BailOut;
+    }
+    } else {
     if (fread (&PciDs30, sizeof (PciDs30), 1, InFptr) != 1) {
       Error (NULL, 0, 3001, "Not supported", "Failed to read PCI data structure from file");
       goto BailOut;
     }
+    }
 
     fprintf (stdout, "  PCI Data Structure\n");
+    if (mOptions.Pci23 == 1) {
     fprintf (
       stdout,
       "    Signature              %c%c%c%c\n",
+      (char) PciDs23.Signature,
+      (char) (PciDs23.Signature >> 8),
+      (char) (PciDs23.Signature >> 16),
+      (char) (PciDs23.Signature >> 24)
+      );
+    fprintf (stdout, "    Vendor ID              0x%04X\n", PciDs23.VendorId);
+    fprintf (stdout, "    Device ID              0x%04X\n", PciDs23.DeviceId);
+    fprintf (stdout, "    Length                 0x%04X\n", PciDs23.Length);
+    fprintf (stdout, "    Revision               0x%04X\n", PciDs23.Revision);
+    fprintf (
+      stdout,
+      "    Class Code             0x%06X\n",
+      (UINT32) (PciDs23.ClassCode[0] | (PciDs23.ClassCode[1] << 8) | (PciDs23.ClassCode[2] << 16))
+      );
+    fprintf (stdout, "    Image size             0x%X\n", PciDs23.ImageLength * 512);
+    fprintf (stdout, "    Code revision:         0x%04X\n", PciDs23.CodeRevision);
+    fprintf (stdout, "    Indicator              0x%02X", (UINT32) PciDs23.Indicator);
+    } else {
+    fprintf (
+      stdout,
+      "    Signature               %c%c%c%c\n",
       (char) PciDs30.Signature,
       (char) (PciDs30.Signature >> 8),
       (char) (PciDs30.Signature >> 16),
       (char) (PciDs30.Signature >> 24)
       );
-    fprintf (stdout, "    Vendor ID              0x%04X\n", PciDs30.VendorId);
-    fprintf (stdout, "    Device ID              0x%04X\n", PciDs30.DeviceId);
-    fprintf (stdout, "    Length                 0x%04X\n", PciDs30.Length);
-    fprintf (stdout, "    Revision               0x%04X\n", PciDs30.Revision);
+    fprintf (stdout, "    Vendor ID               0x%04X\n", PciDs30.VendorId);
+    fprintf (stdout, "    Device ID               0x%04X\n", PciDs30.DeviceId);
+    fprintf (stdout, "    Length                  0x%04X\n", PciDs30.Length);
+    fprintf (stdout, "    Revision                0x%04X\n", PciDs30.Revision);
+    fprintf (stdout, "    DeviceListOffset        0x%02X\n", (UINT32) PciDs30.DeviceListOffset);    
     fprintf (
       stdout,
-      "    Class Code             0x%06X\n",
+      "    Class Code              0x%06X\n",
       (UINT32) (PciDs30.ClassCode[0] | (PciDs30.ClassCode[1] << 8) | (PciDs30.ClassCode[2] << 16))
       );
-    fprintf (stdout, "    Image size             0x%X\n", PciDs30.ImageLength * 512);
-    fprintf (stdout, "    Code revision:         0x%04X\n", PciDs30.CodeRevision);
-    fprintf (stdout, "    Indicator              0x%02X\n", (UINT32) PciDs30.Indicator);
+    fprintf (stdout, "    Image size              0x%X\n", PciDs30.ImageLength * 512);
+    fprintf (stdout, "    Code revision:          0x%04X\n", PciDs30.CodeRevision);
+    fprintf (stdout, "    MaxRuntimeImageLength   0x%02X\n", (UINT32) PciDs30.MaxRuntimeImageLength);
+    fprintf (stdout, "    ConfigUtilityCodeHeaderOffset 0x%02X\n", (UINT32) PciDs30.ConfigUtilityCodeHeaderOffset);
+    fprintf (stdout, "    DMTFCLPEntryPointOffset 0x%02X\n", (UINT32) PciDs30.DMTFCLPEntryPointOffset);   
+    fprintf (stdout, "    Indicator               0x%02X", (UINT32) PciDs30.Indicator);    
+    }
+    //
+    // Print the indicator, used to flag the last image
+    //
+    if (PciDs23.Indicator == INDICATOR_LAST || PciDs30.Indicator == INDICATOR_LAST) {
+      fprintf (stdout, "   (last image)\n");
+    } else {
+      fprintf (stdout, "\n");
+    }
     //
     // Print the code type. If EFI code, then we can provide more info.
     //
-    fprintf (stdout, "    Code type              0x%02X   (%s)\n", (UINT32) PciDs30.CodeType, GetCodeTypeStr(PciDs30.CodeType));
-
-    //
-    // Dump additional information for PCI 3.0 OpROM
-    //
-    if (PciDs30.Revision >= 3) {
-      fprintf (stdout, "  Extended for PCI 3.0\n");
-      
-      if (PciDs30.DeviceListOffset != 0) {
-        if (fseek (InFptr, ImageStart + PciRomHdr.PcirOffset + PciDs30.DeviceListOffset, SEEK_SET)) {
-          Error (NULL, 0, 3001, "Not supported", "Failed to seek to supported Device List");
-          goto BailOut;
-        }
-        fprintf (stdout, "    Device ID List         ");
-        while (TRUE) {
-          if (fread (&DeviceId, sizeof (DeviceId), 1, InFptr) != 1) {
-            Error (NULL, 0, 3001, "Not supported", "Failed to read supported DeviceId from DeviceId List");
-            goto BailOut;
-          }
-          if (DeviceId == 0) {
-            break;
-          }
-          fprintf (stdout, "0x%04X ", DeviceId);
-        }
-        fprintf (stdout, "\n");
-      }
-      fprintf (stdout, "    Max Runtime Image Length 0x%08X\n", PciDs30.MaxRuntimeImageLength * 512);
-      if (PciDs30.Length == sizeof (PCI_3_0_DATA_STRUCTURE)) {
-        fprintf (stdout, "    Config Utility Header  0x%04X\n", PciDs30.ConfigUtilityCodeHeaderOffset);
-        fprintf (stdout, "    DMTF CLP Entry Point   0x%04X\n", PciDs30.DMTFCLPEntryPointOffset);
-      } else {
-        fprintf (stdout, "WARNING: Oprom declars 3.0 revision with wrong structure length 0x%04X\n", PciDs30.Length);
-      }
+    if (mOptions.Pci23 == 1) {
+      fprintf (stdout, "    Code type              0x%02X", (UINT32) PciDs23.CodeType);
+    } else {
+      fprintf (stdout, "    Code type               0x%02X", (UINT32) PciDs30.CodeType); 
     }
-
-    if (PciDs30.CodeType == PCI_CODE_TYPE_EFI_IMAGE) {
+    if (PciDs23.CodeType == PCI_CODE_TYPE_EFI_IMAGE || PciDs30.CodeType == PCI_CODE_TYPE_EFI_IMAGE) {
+      fprintf (stdout, "   (EFI image)\n");
       //
       // Re-read the header as an EFI ROM header, then dump more info
       //
       fprintf (stdout, "  EFI ROM header contents\n");
-      memcpy (&EfiRomHdr, &PciRomHdr, sizeof (EfiRomHdr));
+      if (fseek (InFptr, ImageStart, SEEK_SET)) {
+        Error(NULL, 0, 5001, "Failed to re-seek to ROM header structure");
+        goto BailOut;
+      }
+
+      if (fread (&EfiRomHdr, sizeof (EfiRomHdr), 1, InFptr) != 1) {
+        Error(NULL, 0, 5001, "Failed to read EFI PCI ROM header from file");
+        goto BailOut;
+      }
       //
       // Now dump more info
       //
@@ -1589,21 +1444,37 @@ Returns:
         (UINT32) EfiRomHdr.EfiImageHeaderOffset,
         (UINT32) (EfiRomHdr.EfiImageHeaderOffset + ImageStart)
         );
-    }
 
+    } else {
+      //
+      // Not an EFI image
+      //
+      fprintf (stdout, "\n");
+    }
+    //
+    // If code type is EFI image, then dump it as well?
+    //
+    // if (PciDs.CodeType == PCI_CODE_TYPE_EFI_IMAGE) {
+    // }
     //
     // If last image, then we're done
     //
-    if ((PciDs30.Indicator & INDICATOR_LAST) == INDICATOR_LAST) {
-      fprintf (stdout, "  (last image)\n");
+    if (PciDs23.Indicator == INDICATOR_LAST || PciDs30.Indicator == INDICATOR_LAST) {
       goto BailOut;
     }
     //
     // Seek to the start of the next image
     //
+    if (mOptions.Pci23 == 1) {
+    if (fseek (InFptr, ImageStart + (PciDs23.ImageLength * 512), SEEK_SET)) {
+      Error (NULL, 0, 3001, "Not supported", "Failed to seek to next image");
+      goto BailOut;
+    }    
+    } else {
     if (fseek (InFptr, ImageStart + (PciDs30.ImageLength * 512), SEEK_SET)) {
       Error (NULL, 0, 3001, "Not supported", "Failed to seek to next image");
       goto BailOut;
+    }
     }
   }
 
