@@ -60,10 +60,12 @@ def StorePlatformDefinesSection(DscFile, Platform):
     if PlatformHeader.SkuIdName != "":
         #DefinesTupleList.append(("SKUID_IDENTIFIER", PlatformHeader.SkuIdName))
         String = "|".join(PlatformHeader.SkuIdName)
-        DefinesTupleList.append(("SKUID_IDENTIFIER", String))
+        if String != "":
+            DefinesTupleList.append(("SKUID_IDENTIFIER", String))
         
 	String = Platform.FlashDefinitionFile.FilePath
-	DefinesTupleList.append(("FLASH_DEFINITION", String))
+	if String != "":
+	    DefinesTupleList.append(("FLASH_DEFINITION", String))
 
     List = []
     List.append("################################################################################")
@@ -129,6 +131,17 @@ def StorePlatformBuildOptionsSection(DscFile, Platform):
     #
     # We only support *(DEBUG/RELEASE) and *(All Arch: IA32, X64, IPF and EBC) for now
     #
+    SectionWINDDK = ''
+    SectionVS2003 = ''
+    SectionVS2005EXP = ''
+    SectionVS2005STD = ''
+    SectionVS2005PRO = ''
+    SectionVS2005TEAMSUITE = ''
+    SectionUNIXGCC = ''
+    SectionCYGWINGCC = ''
+    SectionELFGCC = ''
+    SectionICC = ''
+    SectionMYTOOLS = ''
     for key in Dict1.keys():
         if key.find("_CC_FLAGS") != -1:
             if key.find('WINDDK3790x1830') != -1:

@@ -60,8 +60,9 @@ def LoadPlatformHeader(XmlFpd, FpdFileName):
 
     XmlTag = "PlatformSurfaceArea/PlatformDefinitions/SkuInfo"
     List = map(LoadSkuId, XmlList(XmlFpd, XmlTag))
-    PlatformHeader.SkuIdName = List[0]
-
+    if List != []:
+        PlatformHeader.SkuIdName = List[0]
+    
     return PlatformHeader
 
 ## Load a Platform SkuId
@@ -97,12 +98,20 @@ def LoadSkuId(XmlSkuInfo):
     XmlTag = "SkuInfo/UiSkuName"
     SkuValue = XmlElement(XmlSkuInfo, XmlTag)
     
-    XmlTag = "SkuInfo/UiSkuName/SkuID"
-    SkuId = XmlAttribute(XmlSkuInfo, XmlTag)
+    XmlTag = "SkuInfo/UiSkuName"
+    List = map(LoadSkuID, XmlList(XmlSkuInfo, XmlTag))
+    if List != []:
+        SkuID = List[0]
+    #SkuID = XmlAttribute(XmlSkuInfo, XmlTag)
     List = []
-    List.append(SkuId)
+    List.append(SkuID)
     List.append(SkuValue)
     return List
+
+def LoadSkuID(XmlUiSkuName):
+    XmlTag = "SkuID"
+    SkuID = XmlAttribute(XmlUiSkuName, XmlTag)
+    return SkuID
 
 ## Load a list of Platform SkuIds
 #
@@ -329,7 +338,10 @@ def LoadPlatformLibraryClasses(XmlFpd):
     XmlTag = "PlatformSurfaceArea/FrameworkModules/ModuleSA/Libraries/Instance"
     List = map(LoadPlatformLibraryClass, XmlList(XmlFpd, XmlTag))
     #List.sort()
-    PlatformLibraryInstances.LibraryList = List
+    if List == []:
+        print "Error"
+    else:
+        PlatformLibraryInstances.LibraryList = List
     
     return PlatformLibraryInstances
 

@@ -33,21 +33,21 @@ __copyright__ = "Copyright (c) 2007, Intel Corporation  All rights reserved."
 #
 def MyOptionParser():
     """ Argument Parser """
-    Usage = "%prog [options] input_filename"
-    Parser = OptionParser(usage=Usage,description=__copyright__,version="%prog " + str(__version_number__))
-    Parser.add_option("-o", "--output", dest="outfile", help="Specific Name of the DSC file to create, otherwise it is the FPD filename with the extension repalced.")
-    Parser.add_option("-a", "--auto", action="store_true", dest="autowrite", default=False, help="Automatically create output files and write the DSC file")
-    Parser.add_option("-i", "--interactive", action="store_true", dest="interactive", default=False, help="Set Interactive mode, user must approve each change.")
-    Parser.add_option("-q", "--quiet", action="store_const", const=0, dest="verbose", help="Do not print any messages, just return either 0 for succes or 1 for failure")
-    Parser.add_option("-v", "--verbose", action="count", dest="verbose", help="Do not print any messages, just return either 0 for succes or 1 for failure")
-    Parser.add_option("-d", "--debug", action="store_true", dest="debug", default=False, help="Enable printing of debug messages.")
-    Parser.add_option("-c", "--convert", action="store_true", dest="convert", default=False, help="Convert package: OldMdePkg->MdePkg EdkModulePkg->MdeModulePkg.")
-    Parser.add_option("-e", "--event", action="store_true", dest="event", default=False, help="Enable handling of Exit Boot Services & Virtual Address Changed Event")
-    Parser.add_option("-m", "--manual", action="store_true", dest="manual", default=False, help="Generate CommonHeader.txt, user picks up & copy it to a module common header")
-    Parser.add_option("-w", "--workspace", dest="workspace", default=str(os.environ.get('WORKSPACE')), help="Specify workspace directory.")
-    (Options, Args) = Parser.parse_args(sys.argv[1:])
+    usage = "%prog [options] input_filename"
+    parser = OptionParser(usage=usage,description=__copyright__,version="%prog " + str(__version_number__))
+    parser.add_option("-o", "--output", dest="outfile", help="Specific Name of the DSC file to create, otherwise it is the FPD filename with the extension repalced.")
+    parser.add_option("-a", "--auto", action="store_true", dest="autowrite", default=False, help="Automatically create output files and write the DSC file")
+    parser.add_option("-i", "--interactive", action="store_true", dest="interactive", default=False, help="Set Interactive mode, user must approve each change.")
+    parser.add_option("-q", "--quiet", action="store_const", const=0, dest="verbose", help="Do not print any messages, just return either 0 for succes or 1 for failure")
+    parser.add_option("-v", "--verbose", action="count", dest="verbose", help="Do not print any messages, just return either 0 for succes or 1 for failure")
+    parser.add_option("-d", "--debug", action="store_true", dest="debug", default=False, help="Enable printing of debug messages.")
+    parser.add_option("-c", "--convert", action="store_true", dest="convert", default=False, help="Convert package: OldMdePkg->MdePkg EdkModulePkg->MdeModulePkg.")
+    parser.add_option("-e", "--event", action="store_true", dest="event", default=False, help="Enable handling of Exit Boot Services & Virtual Address Changed Event")
+    parser.add_option("-m", "--manual", action="store_true", dest="manual", default=False, help="Generate CommonHeader.txt, user picks up & copy it to a module common header")
+    parser.add_option("-w", "--workspace", dest="workspace", default=str(os.environ.get('WORKSPACE')), help="Specify workspace directory.")
+    (options, args) = parser.parse_args(sys.argv[1:])
 
-    return Options,Args
+    return options,args
 
 ## Entrance method
 #
@@ -65,7 +65,7 @@ def Main():
     Options,Args = MyOptionParser()
 
     WorkSpace = ""
-    print Options.workspace
+    #print Options.workspace
     if (Options.workspace == None):
         print "ERROR: E0000: WORKSPACE not defined.\n  Please set the WORKSPACE environment variable to the location of the EDK II install directory."
         sys.exit(1)
@@ -84,7 +84,7 @@ def Main():
         print "usage:" "%prog [options] input_filename"
     else:
         InputFile = Args[0]
-        print InputFile
+        #print InputFile
     if InputFile != "":
         FileName = InputFile
         if ((Options.verbose > 1) | (Options.autowrite)):
@@ -112,3 +112,9 @@ def Main():
 if __name__ == '__main__':
     sys.exit(Main())
     #pass
+    #global Options
+    #global Args
+    #Options,Args = MyOptionParser()
+    
+    #Main()
+    #sys.exit(0)
