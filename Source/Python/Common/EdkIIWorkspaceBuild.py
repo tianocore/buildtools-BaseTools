@@ -872,7 +872,7 @@ class WorkspaceBuild(object):
                 IsFoundInDec = True
                 break
         if not IsFoundInDec:
-            ErrorMsg = "Pcd '%s' defined in module '%s' is not found in any package" % (Name, ModuleName)
+            ErrorMsg = "Pcd '%s.%s' defined in module '%s' is not found in any package" % (Guid, Name, ModuleName)
             EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
 
         #
@@ -904,7 +904,7 @@ class WorkspaceBuild(object):
         # Not found in any platform and fdf
         #
         if not IsFoundInDsc:
-            ErrorMsg = "Pcd '%s' defined in module '%s' is not found in any platform" % (Name, ModuleName)
+            ErrorMsg = "Pcd '%s.%s' defined in module '%s' is not found in any platform" % (Guid, Name, ModuleName)
             EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
 
         return PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, IsOverrided)
