@@ -24,8 +24,8 @@ Abstract:
 //
 // Module Coded to EFI 2.0 Coding Conventions
 //
-#ifndef   _EFI_GEN_VTF_H
-#define   _EFI_GEN_VTF_H
+#ifndef   __GEN_VTF_H__
+#define   __GEN_VTF_H__
 
 //
 // External Files Referenced
@@ -46,10 +46,10 @@ Abstract:
 #define   FILE_NAME_SIZE          256
 #define   COMPONENT_NAME_SIZE     128
 #define   VTF_INPUT_FILE          "VTF.INF"
-#define   VTF_OUTPUT_FILE1      "VTF1.RAW"
-#define   VTF_OUTPUT_FILE2      "VTF2.RAW"
+#define   VTF_OUTPUT_FILE1        "VTF1.RAW"
+#define   VTF_OUTPUT_FILE2        "VTF2.RAW"
 #define   VTF_SYM_FILE            "Vtf.SYM"
-#define   FIT_SIGNATURE           "_FIT_   "
+#define   FIT_SIGNATURE           "_FIT_"
 
 //
 //Fit Type Definition

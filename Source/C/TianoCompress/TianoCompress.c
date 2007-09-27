@@ -32,6 +32,7 @@ Abstract:
 // Macro Definitions
 //
 static BOOLEAN VerboseMode = FALSE;
+static BOOLEAN QuietMode = FALSE;
 #define UINT8_MAX     0xff
 #define UINT8_BIT     8
 #define THRESHOLD     3
@@ -80,6 +81,8 @@ STATIC UINT16 *mFreq, *mSortPtr, mLenCnt[17], mLeft[2 * NC - 1], mRight[2 * NC -
 
 STATIC NODE   mPos, mMatchPos, mAvail, *mPosition, *mParent, *mPrev, *mNext = NULL;
 
+static  UINTN      DebugLevel;
+static  BOOLEAN    DebugMode;
 //
 // functions
 //
@@ -1705,10 +1708,10 @@ Returns:
             Show program's version number and exit.\n");
   fprintf (stdout, "  -h, --help\n\
             Show this help message and exit.\n");
-  //fprintf (stdout, "  -q, --quiet\n\
-  //       Disable all messages except FATAL ERRORS.\n");
-  //fprintf (stdout, "  -d, --debug [#]\n\
-  //       Enable debug messages at level #.\n");  
+  fprintf (stdout, "  -q, --quiet\n\
+         Disable all messages except FATAL ERRORS.\n");
+  fprintf (stdout, "  -d, --debug [#]\n\
+         Enable debug messages at level #.\n");  
 }
 
 
@@ -1758,6 +1761,8 @@ Returns:
   InputFileName = NULL;
   OutputFileName = NULL;
   DstSize=0;
+  DebugLevel = 0;
+  DebugMode = FALSE;
 
   //
   // Verify the correct number of arguments
@@ -1811,6 +1816,28 @@ Returns:
     argv++;
     continue;
   }
+   if ((stricmp (argv[0], "-d") == 0) || (stricmp (argv[0], "--debug") == 0)) {
+     argc-=2;
+     argv++;
+     Status = AsciiStringToUint64(argv[0], FALSE, &DebugLevel);
+     if (DebugLevel > 9 || DebugLevel < 0) {
+       Error(NULL, 0 ,2000, "Invalid parameter", "Unrecognized argument %s", argv[0]);
+       goto ERROR;
+     }
+     if (DebugLevel>=5 && DebugLevel <=9){
+       DebugMode = TRUE;
+     } else {
+       DebugMode = FALSE;
+     }
+     argv++;
+     continue;
+   }
+   if ((strcmp(argv[0], "-q") == 0) || (stricmp (argv[0], "--debug") == 0)) {
+     QuietMode = TRUE;
+     argc--;
+     argv++;
+     continue;
+   }
    if ((strcmp(argv[0], "-o") == 0) || (stricmp (argv[0], "--output") == 0)) {
     argc-=2;
     argv++;
@@ -1833,7 +1860,7 @@ Returns:
     Usage();
     return 1;    
   }
-  
+
 //
 // All Parameters has been parsed
 // 
@@ -1893,7 +1920,10 @@ Returns:
   if (ENCODE) {
   //
   // First call TianoCompress to get DstSize
-  //  
+  //
+  if (DebugMode) {
+    fprintf(stdout, "Encoding\n");
+  }
   Status = TianoCompress ((UINT8 *)FileBuffer, InputLength, OutBuffer, &DstSize);
   
   if (Status == EFI_BUFFER_TOO_SMALL) {
@@ -1912,9 +1942,16 @@ Returns:
   fwrite(OutBuffer,(size_t)DstSize, 1, OutputFile);
   free(FileBuffer);
   free(OutBuffer);
+
+  if (DebugMode) {
+    fprintf(stdout, "Encoding successful\n");
+  }
   return 0;  
   }
   else if (DECODE) {
+  if (DebugMode) {
+    fprintf(stdout, "Decoding\n");
+  }
   //
   // Get Compressed file original size
   // 
@@ -1939,19 +1976,29 @@ Returns:
   fwrite(OutBuffer, (size_t)(Scratch->mOrigSize), 1, OutputFile);
   free(Scratch);
   free(FileBuffer);
-  free(OutBuffer);  
+  free(OutBuffer);
+
+  if (DebugMode) {
+    fprintf(stdout, "Decoding successful\n");
+  }
   return 0;
   }
   
 ERROR:
+  if (DebugMode) {
+    if (ENCODE) {
+      fprintf(stdout, "Encoding Error\n");
+    } else if (DECODE) {
+      fprintf(stdout, "Decoding Error\n");
+    }
+  }
   free(Scratch);
   free(FileBuffer);
   free(OutBuffer);
   if (VerboseMode) {
     fprintf (stdout, "%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());  
   }
-
-  return GetUtilityStatus ();   
+  return GetUtilityStatus ();
 }
 
 VOID

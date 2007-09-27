@@ -22,7 +22,7 @@ Abstract:
 --*/
 
 //
-// Module Coded to EFI 2.0 Coding Conventions
+//
 //
 #include <FvLib.h>
 #include <Common/UefiBaseTypes.h>
@@ -36,6 +36,10 @@ Abstract:
 UINTN SectionOptionFlag = 0;
 UINTN SectionCompFlag = 0;
 
+UINT64        DebugLevel;
+BOOLEAN       DebugMode;
+
+BOOLEAN     QuietMode = FALSE;
 
 BOOLEAN     VTF_OUTPUT = FALSE;
 CHAR8       *OutFileName1;
@@ -67,6 +71,7 @@ UINTN           SectionOptionNum  = 0;
 //
 BOOLEAN         VTFPresent = FALSE;
 BOOLEAN         SecondVTF = FALSE;
+
 //
 // Address related information
 //
@@ -2403,7 +2408,7 @@ Returns:
   fprintf (stdout, "Copyright (c) 2007, Intel Corporation. All rights reserved.\n\n");
 
   fprintf (stdout, "  -f  input_file\n\
-  	      input_file is name of the BS Image INF file to use.\n");
+  	    input_file is name of the BS Image INF file to use.\n");
   fprintf (stdout, "  -r  BaseAddress\n\
             BaseAddress is the starting address of Firmware Volume where Boot Strapped Image will reside.\n");
   fprintf (stdout, "  -s  FwVolumeSize\n\
@@ -2420,16 +2425,16 @@ Returns:
             Show program's version number and exit.\n");
   fprintf (stdout, "  -h, --help\n\
             Show this help message and exit.\n");
-  //fprintf (stdout, "  -q, --quiet\n\
-  //       Disable all messages except FATAL ERRORS.\n");
-  //fprintf (stdout, "  -d, --debug [#]\n\
-  //       Enable debug messages at level #.\n");  
+  fprintf (stdout, "  -q\n\
+            Disable all messages except FATAL ERRORS.\n");
+  fprintf (stdout, "  -d [#, 0-9]\n\
+            Enable debug messages at level #.\n");  
 }
 
 EFI_STATUS
 main (
-  IN UINTN  argc,
-  IN  CHAR8 **argv
+  IN  UINTN  argc,
+  IN  CHAR8  **argv
   )
 /*++
 
@@ -2456,7 +2461,7 @@ Returns:
 
 --*/
 {
-  UINT8           Index;
+  UINT8          Index;
   UINT64         StartAddress1;
   UINT64         StartAddress2;
   UINT64         FwVolSize1;
@@ -2471,8 +2476,22 @@ Returns:
   CHAR8         *VtfFileName;
 
   SetUtilityName (UTILITY_NAME);
-  
+
+  //
+  // Initialize variables
+  //
+  StartAddress1 = 0;
+  StartAddress2 = 0;
+  FwVolSize1    = 0;
+  FwVolSize2    = 0;
+  FirstRoundB   = TRUE;
+  FirstRoundS   = TRUE;
+  FirstRoundO   = TRUE;
+  DebugMode     = FALSE;
+  OutFileName1  = NULL;
+  OutFileName2  = NULL;
   VtfFP = NULL;
+  DebugLevel = 0;
 
   //
   // Verify the correct number of arguments
@@ -2492,26 +2511,11 @@ Returns:
     Version();
     return 0;
   }
- 
-
-  //
-  // Initialize variables
-  //
-  StartAddress1 = 0;
-  StartAddress2 = 0;
-  FwVolSize1    = 0;
-  FwVolSize2    = 0;
-  FirstRoundB   = TRUE;
-  FirstRoundS   = TRUE;
-  FirstRoundO   = TRUE;
-  OutFileName1  = NULL;
-  OutFileName2  = NULL;
 
   //
   // Parse the command line arguments
   //
   for (Index = 1; Index < argc; Index += 2) {
-
     //
     // Make sure argument pair begin with - or /
     //
@@ -2589,7 +2593,7 @@ Returns:
         FirstRoundS = FALSE;
       } else {
         Status = AsciiStringToUint64 (argv[Index + 1], FALSE, &FwVolSize2);
-	  SecondVTF = TRUE;
+    	  SecondVTF = TRUE;
       }
 
       if (Status != EFI_SUCCESS) {
@@ -2599,12 +2603,31 @@ Returns:
       break;
     case 'v':
     case 'V':
-	//
-	// Verbose
-	//
-	  VerboseMode = TRUE;
-	  Index--;
-	break;
+	    //
+    	// Verbose
+    	//
+	    VerboseMode = TRUE;
+	    Index--;
+	    break;
+    case 'd':
+      //
+      // debug level specified
+      //
+      Status = AsciiStringToUint64(argv[Index + 1], FALSE, &DebugLevel);
+      if((DebugLevel > 9) || (DebugLevel < 0)) {
+        Error(NULL, 0, 2000, "Invalid parameter", "Unrecognized argument %s", argv[Index + 1]);
+        goto ERROR;
+      }
+      if((DebugLevel <= 9) &&(DebugLevel >= 5)) {
+        DebugMode = TRUE;
+      } else {
+        DebugMode = FALSE;
+      }
+      break;
+    case 'q':
+      QuietMode = TRUE;
+      Index--;
+      break;
     default:
       Usage ();
       Error (NULL, 0, 2000, "Invalid paramter", "Unrecognized argument %s", argv[Index]);
@@ -2625,17 +2648,20 @@ Returns:
         OutFileName1 = VTF_OUTPUT_FILE1;
 	}
   }
-  
+
   //
   // Call the GenVtfImage
   //
+  if (DebugMode) {
+    fprintf(stdout, "Start to generate the VTF image\n");
+  }
   Status = GenerateVtfImage (StartAddress1, FwVolSize1, StartAddress2, FwVolSize2, VtfFP);
 
   if (EFI_ERROR (Status)) {
     switch (Status) {
 
     case EFI_INVALID_PARAMETER:
-      Error (NULL, 0, 2000, "Invalid paramter", "Invalid parameter passed to GenVtfImage function.");
+      Error (NULL, 0, 2000, "Invalid paramter", "Invalid parameter passed to GenVtf function.");
       break;
 
     case EFI_ABORTED:
@@ -2660,6 +2686,9 @@ ERROR:
   }
 
   return GetUtilityStatus ();     
+  }
+  if (DebugMode) {
+    fprintf(stdout, "VTF image generated successful\n");
   }
   return 0;
 }
