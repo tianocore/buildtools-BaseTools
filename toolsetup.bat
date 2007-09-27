@@ -73,6 +73,7 @@ IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\TargetTool.exe" goto build
 IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\TianoCompress.exe" goto build
 IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\Trim.exe" goto build
 IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\VfrCompile.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\Fpd2Dsc.exe" goto build
 
 :skipbuild
 goto end
@@ -120,6 +121,10 @@ cd %BASE_TOOLS_PATH%\Source\Python\Trim
 echo Generating MigrationMsa2Inf.exe
 cd %BASE_TOOLS_PATH%\Source\Python\MigrationMsa2Inf
 %PYTHON_FREEZER_PATH%\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8 --install-dir=%EDK_TOOLS_PATH%\Bin\Win32 MigrationMsa2Inf.py > NUL
+
+echo Generating Fpd2Dsc.exe
+cd %BASE_TOOLS_PATH%\Source\Python\Fpd2Dsc
+%PYTHON_FREEZER_PATH%\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8 --install-dir=%EDK_TOOLS_PATH%\Bin\Win32 Fpd2Dsc.py > NUL
 
 popd
 echo Done!

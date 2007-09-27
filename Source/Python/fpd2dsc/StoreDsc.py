@@ -313,7 +313,7 @@ def GetLibraryClassesSection(SectionName, Method, ObjectList):
     SectionX64Dict = {}
     SectionIPFDict = {}
     SectionEBCDict = {}
-    ObjectList = list(set(ObjectList)) # delete the same element in the list
+    #ObjectList = list(set(ObjectList)) # delete the same element in the list
     for Object in ObjectList:
         if Object == None:
             continue
@@ -375,12 +375,12 @@ def GetLibraryClassesSection(SectionName, Method, ObjectList):
                             AddToLibraryClassSection(SectionEBCDict, SupModuleList, Item)
 
     Section = ""
-    for ModuleType in Object.SupModuleList:
+    for ModuleType in ModuleTypes:
         SectionCommonModule = "\n".join(SectionCommonDict.get(ModuleType, []))
         if SectionCommonModule != "":
             Section += "[%s.Common.%s]\n%s\n" % (SectionName, ModuleType, SectionCommonModule)
             Section += "\n"
-    for ModuleType in Object.SupModuleList:
+    for ModuleType in ModuleTypes:
         ListIA32 = SectionIA32Dict.get(ModuleType, [])
         if ListIA32 != []:
             SectionIA32Module = "\n".join(SectionIA32Dict.get(ModuleType, []))
