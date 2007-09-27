@@ -64,6 +64,9 @@ Abstract:
 #define UTILITY_MAJOR_VERSION 0
 #define UTILITY_MINOR_VERSION 1
 
+//
+// Action for this tool.
+//
 #define FW_DUMMY_IMAGE       0
 #define FW_EFI_IMAGE         1
 #define FW_TE_IMAGE          2
@@ -99,8 +102,7 @@ typedef struct {
   UINTN  Reserved[3];
 } MICROCODE_IMAGE_HEADER;
 
-static UINT8 *InImageName;
-static BOOLEAN VerboseMode = FALSE;
+STATIC UINT8 *mInImageName;
 
 STATIC
 EFI_STATUS
@@ -152,7 +154,7 @@ Routine Description:
 
 Arguments:
 
-  void
+  VOID
 
 Returns:
 
@@ -163,7 +165,7 @@ Returns:
   //
   // Summary usage
   //
-  fprintf (stdout, "Usage: %s [options] <input_file>\n\n", UTILITY_NAME);
+  fprintf (stdout, "\nUsage: %s [options] <input_file>\n\n", UTILITY_NAME);
   
   //
   // Copyright declaration
@@ -179,7 +181,7 @@ Returns:
   fprintf (stdout, "  -e EFI_FILETYPE, --efiImage EFI_FILETYPE\n\
                         Create Efi Image. EFI_FILETYPE is one of BASE, SEC,\n\
                         PEI_CORE, PEIM, DXE_CORE, DXE_RUNTIME_DRIVER,\n\
-                        DXE_SAL_DRIVER, UEFI_DRIVER, UEFI_APPLICATIOn, \n\
+                        DXE_SAL_DRIVER, UEFI_DRIVER, UEFI_APPLICATION, \n\
                         DXE_SMM_DRIVER, SECURITY_CORE, COMBINED_PEIM_DRIVER, \n\
                         PIC_PEIM, RELOCATABLE_PEIM, BS_DRIVER, RT_DRIVER,\n\
                         APPLICATION, SAL_RT_DRIVER to support all module types\n");
@@ -197,11 +199,13 @@ Returns:
   fprintf (stdout, "  -a NUM, --align NUM   NUM is one HEX or DEC format alignment value.\n");
   fprintf (stdout, "  -p NUM, --pad NUM     NUM is one HEX or DEC format padding value.\n");
   fprintf (stdout, "  -v, --verbose         Turn on verbose output with informational messages.\n");
+  fprintf (stdout, "  -q, --quiet           Disable all messages except key message and fatal error\n");
+  fprintf (stdout, "  -d, --debug level     Enable debug messages, at input debug level.\n");
   fprintf (stdout, "  --version             Show program's version number and exit\n");
   fprintf (stdout, "  -h, --help            Show this help message and exit\n");
 }
 
-static
+STATIC
 STATUS
 CheckAcpiTable (
   VOID      *AcpiTable,
@@ -342,7 +346,7 @@ Returns:
   return STATUS_SUCCESS;
 }
 
-static
+STATIC
 STATUS
 FCopyFile (
   FILE    *in,
@@ -503,12 +507,12 @@ IsDataShdr(
   return (Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == (SHF_ALLOC | SHF_WRITE);
 }
 
-void
+VOID
 CreateSectionHeader(
-  const char *Name,
-  UINT32     Offset,
-  UINT32     Size,
-  UINT32     Flags
+  const CHAR8 *Name,
+  UINT32      Offset,
+  UINT32      Size,
+  UINT32      Flags
   )
 {
   EFI_IMAGE_SECTION_HEADER *Hdr;
@@ -528,7 +532,7 @@ CreateSectionHeader(
   TableOffset += sizeof (EFI_IMAGE_SECTION_HEADER);
 }
 
-void
+VOID
 ScanSections(
   VOID
   )
@@ -656,7 +660,7 @@ ScanSections(
            | EFI_IMAGE_SCN_MEM_READ);
 }
 
-void
+VOID
 WriteSections(
   int   (*Filter)(Elf_Shdr *)
   )
@@ -680,7 +684,7 @@ WriteSections(
   memset(CoffFile + CoffSectionsOffset[Idx], 0, Shdr->sh_size);
   break;
       default:
-  Error (NULL, 0, 3000, "Invalid", "%s unhandle section type %x", InImageName, (UINTN)Shdr->sh_type);
+  Error (NULL, 0, 3000, "Invalid", "%s unhandle section type %x", mInImageName, (UINTN)Shdr->sh_type);
       }
     }
   }
@@ -709,7 +713,7 @@ WriteSections(
   if (Sym->st_shndx == SHN_UNDEF
       || Sym->st_shndx == SHN_ABS
       || Sym->st_shndx > Ehdr->e_shnum) {
-    Error (NULL, 0, 3000, "Invalid", "%s bad symbol definition", InImageName);
+    Error (NULL, 0, 3000, "Invalid", "%s bad symbol definition", mInImageName);
   }
   SymShdr = GetShdrByIndex(Sym->st_shndx);
 
@@ -738,14 +742,14 @@ WriteSections(
       - (SecOffset - SecShdr->sh_addr);
     break;
   default:
-    Error (NULL, 0, 3000, "Invalid", "%s unhandle section type %x", InImageName, ELF_R_TYPE(Rel->r_info));
+    Error (NULL, 0, 3000, "Invalid", "%s unhandle section type %x", mInImageName, ELF_R_TYPE(Rel->r_info));
   }
       }
     }
   }
 }
 
-void
+VOID
 CoffAddFixupEntry(
   UINT16 Val
   )
@@ -756,7 +760,7 @@ CoffAddFixupEntry(
   CoffOffset += 2;
 }
 
-void
+VOID
 CoffAddFixup(
   UINT32 Offset,
   UINT8  Type
@@ -796,7 +800,7 @@ CoffAddFixup(
   CoffAddFixupEntry((Type << 12) | (Offset & 0xfff));
 }
 
-void
+VOID
 WriteRelocations(
   VOID
   )
@@ -824,7 +828,7 @@ WriteRelocations(
        EFI_IMAGE_REL_BASED_HIGHLOW);
       break;
     default:
-      Error (NULL, 0, 3000, "Invalid", "%s unhandle section type %x", InImageName, ELF_R_TYPE(Rel->r_info));
+      Error (NULL, 0, 3000, "Invalid", "%s unhandle section type %x", mInImageName, ELF_R_TYPE(Rel->r_info));
     }
   }
       }
@@ -849,12 +853,12 @@ WriteRelocations(
   Dir->Size = CoffOffset - RelocOffset;
 }
 
-void
+VOID
 WriteDebug(
   VOID
   )
 {
-  UINT32 Len = strlen(InImageName) + 1;
+  UINT32 Len = strlen(mInImageName) + 1;
   UINT32 DebugOffset = CoffOffset;
   EFI_IMAGE_NT_HEADERS *NtHdr;
   EFI_IMAGE_DATA_DIRECTORY *DataDir;
@@ -878,7 +882,7 @@ WriteDebug(
   
   Nb10 = (EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY*)(Dir + 1);
   Nb10->Signature = CODEVIEW_SIGNATURE_NB10;
-  strcpy ((UINT8 *)(Nb10 + 1), InImageName);
+  strcpy ((UINT8 *)(Nb10 + 1), mInImageName);
 
   CreateSectionHeader (".debug", DebugOffset, CoffOffset - DebugOffset,
            EFI_IMAGE_SCN_CNT_INITIALIZED_DATA
@@ -891,7 +895,7 @@ WriteDebug(
   DataDir->Size = CoffOffset - DebugOffset;
 }
 
-void
+VOID
 ConvertElf (
   UINT8  **FileBuffer,
   UINTN *FileLength
@@ -988,6 +992,7 @@ Returns:
   UNWIND_INFO       *UnwindInfo;
   STATUS            Status;
   BOOLEAN           ReplaceFlag;
+  UINT64            LogLevel;
   EFI_TE_IMAGE_HEADER          TEImageHeader;
   EFI_IMAGE_SECTION_HEADER     *SectionHeader;
   EFI_IMAGE_DOS_HEADER         *DosHdr;
@@ -1004,7 +1009,7 @@ Returns:
   //
   InputFileNum      = 0; 
   InputFileName     = NULL;
-  InImageName       = NULL;
+  mInImageName       = NULL;
   OutImageName      = NULL;
   ModuleType        = NULL;
   OutImageType      = FW_DUMMY_IMAGE;
@@ -1021,9 +1026,10 @@ Returns:
   MciHeader         = NULL;
   CheckSum          = 0;
   ReplaceFlag       = FALSE;
+  LogLevel          = 0;
 
   if (argc == 1) {
-    Error (NULL, 0, 1001, "Missing options", "Input file");
+    Error (NULL, 0, 1001, "Missing options", "No input options");
     Usage ();
     return STATUS_ERROR;
   }
@@ -1147,9 +1153,35 @@ Returns:
     }
 
     if ((stricmp (argv[0], "-v") == 0) || (stricmp (argv[0], "--verbose") == 0)) {
-      VerboseMode = TRUE;
+      SetPrintLevel (VERBOSE_LOG_LEVEL);
+      VerboseMsg ("Verbose output Mode Set!");
       argc --;
       argv ++;
+      continue;
+    }
+
+    if ((stricmp (argv[0], "-q") == 0) || (stricmp (argv[0], "--quiet") == 0)) {
+      SetPrintLevel (KEY_LOG_LEVEL);
+      KeyMsg ("Quiet output Mode Set!");
+      argc --;
+      argv ++;
+      continue;
+    }
+
+    if ((stricmp (argv[0], "-d") == 0) || (stricmp (argv[0], "--debug") == 0)) {
+      Status = AsciiStringToUint64 (argv[1], FALSE, &LogLevel);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        goto Finish;
+      }
+      if (LogLevel > 9) {
+        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0~9, currnt input level is %d", LogLevel);
+        goto Finish;
+      }
+      SetPrintLevel (LogLevel);
+      DebugMsg (NULL, 0, 9, "Debug Mode Set", "Debug Output Mode Level %s is set!", argv[1]);
+      argc -= 2;
+      argv += 2;
       continue;
     }
 
@@ -1186,12 +1218,10 @@ Returns:
     argv ++;
   }
   
-  if (VerboseMode) {
-    fprintf (stdout, "%s tool start.\n", UTILITY_NAME);
-  }
+  VerboseMsg ("%s tool start.", UTILITY_NAME);
 
   if (OutImageType == FW_DUMMY_IMAGE) {
-    Error (NULL, 0, 1001, "Missing option", "No action specified, such as -e, -c or -t\n");
+    Error (NULL, 0, 1001, "Missing option", "No action specified, such as -e, -c or -t");
     goto Finish;
   }
 
@@ -1199,7 +1229,7 @@ Returns:
   // check input files
   //
   if (InputFileNum == 0) {
-    Error (NULL, 0, 1001, "Missing option", "Input files\n");
+    Error (NULL, 0, 1001, "Missing option", "Input files");
     goto Finish;
   }
 
@@ -1212,9 +1242,49 @@ Returns:
   }
    
   //
-  // One input file
+  // Input image file
   //
-  InImageName = InputFileName [InputFileNum - 1];
+  mInImageName = InputFileName [InputFileNum - 1];
+  VerboseMsg ("the input file name is %s", mInImageName);
+  
+  //
+  // Action will be taken for the input file.
+  //
+  switch (OutImageType) {
+  case FW_EFI_IMAGE:
+    VerboseMsg ("Create efi image on module type %s based on the input PE image.", ModuleType);
+    break;
+  case FW_TE_IMAGE:
+    VerboseMsg ("Create Te Image based on the input PE image.");
+    break;
+  case FW_ACPI_IMAGE:
+    VerboseMsg ("Get acpi table data from the input PE image.");
+    break;
+  case FW_BIN_IMAGE:
+    VerboseMsg ("Convert the input EXE to the output BIN file.");
+    break;
+  case FW_ZERO_DEBUG_IMAGE:
+    VerboseMsg ("Zero the Debug Data Fields in input PE image.");
+    break;
+  case FW_SET_STAMP_IMAGE:
+    VerboseMsg ("Set new time stamp %s in the input PE image.", TimeStamp);
+    break;
+  case DUMP_TE_HEADER:
+    VerboseMsg ("Dump the TE header information of the input TE image.");
+    break;
+  case FW_MCI_IMAGE:
+    VerboseMsg ("Conver input MicroCode.txt file to MicroCode.bin file.");
+    break;
+  case FW_MERGE_IMAGE:
+    VerboseMsg ("Combine the input multi microcode bin files to one bin file.");
+    break;
+  default:
+    break;
+  }
+  
+  if (ReplaceFlag) {
+    VerboseMsg ("Overwrite the input file with the output content.");
+  }
 
   //
   // Open output file and Write image into the output file.
@@ -1225,11 +1295,12 @@ Returns:
       Error (NULL, 0, 0001, "Error opening file", OutImageName);
       goto Finish;
     }
+    VerboseMsg ("Output file name is %s", OutImageName);
   } else if (!ReplaceFlag) {
     if (OutImageType == DUMP_TE_HEADER) {
       fpOut = stdout;
     } else {
-      Error (NULL, 0, 1001, "Missing option", "output file\n");
+      Error (NULL, 0, 1001, "Missing option", "output file");
       goto Finish;
     }
   }
@@ -1280,9 +1351,9 @@ Returns:
   // Conver MicroCode.txt file to MicroCode.bin file
   //
   if (OutImageType == FW_MCI_IMAGE) {
-    fpIn = fopen (InImageName, "r");
+    fpIn = fopen (mInImageName, "r");
     if (!fpIn) {
-      Error (NULL, 0, 0001, "Error opening file", InImageName);
+      Error (NULL, 0, 0001, "Error opening file", mInImageName);
       goto Finish;
     }
     
@@ -1302,11 +1373,11 @@ Returns:
     // Error if no data.
     //
     if (FileLength == 0) {
-      Error (NULL, 0, 3000, "Invalid", "no parse-able data found in file %s", InImageName);
+      Error (NULL, 0, 3000, "Invalid", "no parse-able data found in file %s", mInImageName);
       goto Finish;
     }
     if (FileLength < sizeof (MICROCODE_IMAGE_HEADER)) {
-      Error (NULL, 0, 3000, "Invalid", "amount of parse-able data in %s is insufficient to contain a microcode header", InImageName);
+      Error (NULL, 0, 3000, "Invalid", "amount of parse-able data in %s is insufficient to contain a microcode header", mInImageName);
       goto Finish;
     }
 
@@ -1345,7 +1416,7 @@ Returns:
     }
 
     if (Index != FileLength) {
-      Error (NULL, 0, 3000, "Invalid", "file contents of %s do not contain expected TotalSize 0x%04X", InImageName, Index);
+      Error (NULL, 0, 3000, "Invalid", "file contents of %s do not contain expected TotalSize 0x%04X", mInImageName, Index);
       goto Finish;
     }
 
@@ -1361,7 +1432,7 @@ Returns:
       Index       += sizeof (UINTN);
     }
     if (CheckSum != 0) {
-      Error (NULL, 0, 3000, "Invalid", "checksum failed on file contents of %s", InImageName);
+      Error (NULL, 0, 3000, "Invalid", "checksum failed on file contents of %s", mInImageName);
       goto Finish;
     }
     //
@@ -1375,17 +1446,17 @@ Returns:
     }
     
     if (ReplaceFlag) {
-      fpInOut = fopen (InImageName, "wb");
+      fpInOut = fopen (mInImageName, "wb");
       if (fpInOut != NULL) {
-        Error (NULL, 0, 0001, "Error opening file", InImageName);
+        Error (NULL, 0, 0001, "Error opening file", mInImageName);
         goto Finish;
       }
       if (fwrite (FileBuffer, FileLength, 1, fpInOut) != 1) {
-        Error (NULL, 0, 0002, "Error writing file", InImageName);
+        Error (NULL, 0, 0002, "Error writing file", mInImageName);
         goto Finish;
       }
     }
-      
+    VerboseMsg ("the size of output file is %d bytes", FileLength);
     //
     //  Convert Mci.TXT to Mci.bin file successfully
     //
@@ -1395,9 +1466,9 @@ Returns:
   //
   // Open input file and read file data into file buffer.
   //
-  fpIn = fopen (InImageName, "rb");
+  fpIn = fopen (mInImageName, "rb");
   if (!fpIn) {
-    Error (NULL, 0, 0001, "Error opening file", InImageName);
+    Error (NULL, 0, 0001, "Error opening file", mInImageName);
     goto Finish;
   }
 
@@ -1412,13 +1483,15 @@ Returns:
   fread (FileBuffer, 1, FileLength, fpIn);
   fclose (fpIn);
   
+  DebugMsg (NULL, 0, 9, "input file info", "the input file size is %d bytes", FileLength);
+  
   //
   // Replace file
   //
   if (ReplaceFlag) {
-    fpInOut = fopen (InImageName, "wb");
+    fpInOut = fopen (mInImageName, "wb");
     if (!fpInOut) {
-      Error (NULL, 0, 0001, "Error opening file", InImageName);
+      Error (NULL, 0, 0001, "Error opening file", mInImageName);
       goto Finish;
     }
   }
@@ -1428,11 +1501,11 @@ Returns:
   if (OutImageType == DUMP_TE_HEADER) {
     memcpy (&TEImageHeader, FileBuffer, sizeof (TEImageHeader));
     if (TEImageHeader.Signature != EFI_TE_IMAGE_HEADER_SIGNATURE) {
-      Error (NULL, 0, 3000, "Invalid", "TE header signature of file %s is not correct", InImageName);
+      Error (NULL, 0, 3000, "Invalid", "TE header signature of file %s is not correct", mInImageName);
       goto Finish;      
     }
     if (fpInOut != NULL) {
-      fprintf (fpInOut, "Dump of file %s\n\n", InImageName);
+      fprintf (fpInOut, "Dump of file %s\n\n", mInImageName);
       fprintf (fpInOut, "TE IMAGE HEADER VALUES\n");
       fprintf (fpInOut, "%17X machine\n", TEImageHeader.Machine);
       fprintf (fpInOut, "%17X number of sections\n", TEImageHeader.NumberOfSections);
@@ -1446,7 +1519,7 @@ Returns:
     }
 
     if (fpOut != NULL) {
-      fprintf (fpOut, "Dump of file %s\n\n", InImageName);
+      fprintf (fpOut, "Dump of file %s\n\n", mInImageName);
       fprintf (fpOut, "TE IMAGE HEADER VALUES\n");
       fprintf (fpOut, "%17X machine\n", TEImageHeader.Machine);
       fprintf (fpOut, "%17X number of sections\n", TEImageHeader.NumberOfSections);
@@ -1475,6 +1548,7 @@ Returns:
         // Default TE Image Type is Boot service driver
         //
         Type = EFI_IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER;
+        VerboseMsg ("Efi Image substytem type is efi boot service driver");
       }
     } else {
       if (stricmp (ModuleType, "BASE") == 0 ||
@@ -1491,18 +1565,22 @@ Returns:
           stricmp (ModuleType, "DXE_SMM_DRIVER") == 0  ||
           stricmp (ModuleType, "UEFI_DRIVER") == 0) {
         Type = EFI_IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER;
+        VerboseMsg ("Efi Image substytem type is efi boot service driver");
     
       } else if (stricmp (ModuleType, "UEFI_APPLICATION") == 0 || 
                  stricmp (ModuleType, "APPLICATION") == 0) {
         Type = EFI_IMAGE_SUBSYSTEM_EFI_APPLICATION;
+        VerboseMsg ("Efi Image substytem type is efi application");
     
       } else if (stricmp (ModuleType, "DXE_RUNTIME_DRIVER") == 0 || 
                  stricmp (ModuleType, "RT_DRIVER") == 0) {
         Type = EFI_IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER;
+        VerboseMsg ("Efi Image substytem type is efi runtime driver");
     
       } else if (stricmp (ModuleType, "DXE_SAL_DRIVER") == 0 || 
                  stricmp (ModuleType, "SAL_RT_DRIVER") == 0) {
         Type = EFI_IMAGE_SUBSYSTEM_SAL_RUNTIME_DRIVER;
+        VerboseMsg ("Efi Image substytem type is efi sal runtime driver");
     
       } else {
         Error (NULL, 0, 1003, "Invalid option value", "EFI_FILETYPE = %s", ModuleType);
@@ -1516,6 +1594,7 @@ Returns:
   //
 #ifdef HAVE_ELF
   if (IsElfHeader(FileBuffer)) {
+    VerboseMsg ("Convert the input ELF Image to Pe Image");
     ConvertElf(&FileBuffer, &FileLength);
   }
 #endif
@@ -1525,13 +1604,13 @@ Returns:
   //
   DosHdr = (EFI_IMAGE_DOS_HEADER *)FileBuffer;
   if (DosHdr->e_magic != EFI_IMAGE_DOS_SIGNATURE) {
-    Error (NULL, 0, 3000, "Invalid", "DOS header signature not found in source image");
+    Error (NULL, 0, 3000, "Invalid", "DOS header signature not found in %s image", mInImageName);
     goto Finish;
   }
 
   PeHdr = (EFI_IMAGE_NT_HEADERS *)(FileBuffer + DosHdr->e_lfanew);
   if (PeHdr->Signature != EFI_IMAGE_NT_SIGNATURE) {
-    Error (NULL, 0, 3000, "Invalid", "PE header signature not found in source image");
+    Error (NULL, 0, 3000, "Invalid", "PE header signature not found in %s image", mInImageName);
     goto Finish;
   }
   
@@ -1540,7 +1619,7 @@ Returns:
   //
   if (OutImageType == FW_BIN_IMAGE) {
     if (FileLength < PeHdr->OptionalHeader.SizeOfHeaders) {
-      Error (NULL, 0, 3000, "Invalid", "FileSize of %s is not a legal size.", InImageName);
+      Error (NULL, 0, 3000, "Invalid", "FileSize of %s is not a legal size.", mInImageName);
       goto Finish;
     }
     //
@@ -1552,6 +1631,7 @@ Returns:
     if (fpInOut != NULL) {
       fwrite (FileBuffer + PeHdr->OptionalHeader.SizeOfHeaders, 1, FileLength - PeHdr->OptionalHeader.SizeOfHeaders, fpInOut);
     }
+    VerboseMsg ("the size of output file is %d bytes", FileLength - PeHdr->OptionalHeader.SizeOfHeaders);
     goto Finish;
   }
 
@@ -1570,6 +1650,7 @@ Returns:
     if (fpInOut != NULL) {
       fwrite (FileBuffer, 1, FileLength, fpInOut);
     }
+    VerboseMsg ("the size of output file is %d bytes", FileLength);
     goto Finish; 
   }
 
@@ -1588,6 +1669,7 @@ Returns:
     if (fpInOut != NULL) {
       fwrite (FileBuffer, 1, FileLength, fpInOut);
     }
+    VerboseMsg ("the size of output file is %d bytes", FileLength);
     goto Finish;
   }
 
@@ -1608,7 +1690,7 @@ Returns:
         }
 
         if (CheckAcpiTable (FileBuffer + SectionHeader->PointerToRawData, FileLength) != STATUS_SUCCESS) {
-          Error (NULL, 0, 3000, "Invalid", "failed to check ACPI table in %s", InImageName);
+          Error (NULL, 0, 3000, "Invalid", "failed to check ACPI table in %s", mInImageName);
           goto Finish;
         }
         
@@ -1621,10 +1703,11 @@ Returns:
         if (fpInOut != NULL) {
           fwrite (FileBuffer + SectionHeader->PointerToRawData, 1, FileLength, fpInOut);
         }
+        VerboseMsg ("the size of output file is %d bytes", FileLength);
         goto Finish;
       }
     }
-    Error (NULL, 0, 3000, "Invalid", "failed to get ACPI table from %s", InImageName);
+    Error (NULL, 0, 3000, "Invalid", "failed to get ACPI table from %s", mInImageName);
     goto Finish;
   }
   //
@@ -1713,6 +1796,7 @@ Returns:
                 Optional32->SizeOfInitializedData -= (SectionHeader->SizeOfRawData - AllignedRelocSize);
                 SectionHeader->SizeOfRawData = AllignedRelocSize;
                 FileLength = Optional32->SizeOfImage;
+                DebugMsg (NULL, 0, 9, "Remove the zero padding bytes at the end of the base relocations", "The size of padding bytes is %d", SectionHeader->SizeOfRawData - AllignedRelocSize);
               }
             }
           }
@@ -1775,6 +1859,7 @@ Returns:
                 }
                 memset (RuntimeFunction, 0, sizeof (RUNTIME_FUNCTION));
               }
+              DebugMsg (NULL, 0, 9, "Zero the .pdata section if the machine type is X64 and the Debug Directory is empty", NULL);
 
               break;
             }
@@ -1813,6 +1898,7 @@ Returns:
                 Optional64->SizeOfInitializedData -= (SectionHeader->SizeOfRawData - AllignedRelocSize);
                 SectionHeader->SizeOfRawData = AllignedRelocSize;
                 FileLength = Optional64->SizeOfImage;
+                DebugMsg (NULL, 0, 9, "Remove the zero padding bytes at the end of the base relocations", "The size of padding bytes is %d", SectionHeader->SizeOfRawData - AllignedRelocSize);
               }
             }
           }
@@ -1826,7 +1912,7 @@ Returns:
       //
       // Pack the subsystem and NumberOfSections into 1 byte. Make sure they fit both.
       //
-      Error (NULL, 0, 3000, "Invalid", "Image subsystem or NumberOfSections of PeImage %s cannot be packed into 1 byte", InImageName);
+      Error (NULL, 0, 3000, "Invalid", "Image subsystem or NumberOfSections of PeImage %s cannot be packed into 1 byte", mInImageName);
       goto Finish;
     }
 
@@ -1834,10 +1920,12 @@ Returns:
       //
       // TeImage has the same section alignment and file alignment.
       //
-      Error (NULL, 0, 3000, "Invalid", "Section-Alignment and File-Alignment of PeImage %s does not match for TeImage", InImageName);
+      Error (NULL, 0, 3000, "Invalid", "Section-Alignment and File-Alignment of PeImage %s does not match for TeImage", mInImageName);
       goto Finish;
     }
-
+    
+    DebugMsg (NULL, 0, 9, "TeImage Header Info", "Machine type is %X, Sections number is %X, Stripped size is %X, EntryPoint is %X, BaseOfCode is %X, ImageBase is %X", 
+              TEImageHeader.Machine, TEImageHeader.NumberOfSections, TEImageHeader.StrippedSize, TEImageHeader.AddressOfEntryPoint, TEImageHeader.BaseOfCode, TEImageHeader.ImageBase);
     //
     // Update Image to TeImage
     //
@@ -1849,6 +1937,7 @@ Returns:
       fwrite (&TEImageHeader, 1, sizeof (EFI_TE_IMAGE_HEADER), fpInOut);
       fwrite (FileBuffer + TEImageHeader.StrippedSize, 1, FileLength - TEImageHeader.StrippedSize, fpInOut);
     }
+    VerboseMsg ("the size of output file is %d bytes", FileLength - TEImageHeader.StrippedSize);
     goto Finish;
   }
   
@@ -1861,6 +1950,7 @@ Returns:
   if (fpInOut != NULL) {
     fwrite (FileBuffer, 1, FileLength, fpInOut);
   }
+  VerboseMsg ("the size of output file is %d bytes", FileLength);
 
 Finish:
   if (FileBuffer != NULL) {
@@ -1885,9 +1975,7 @@ Finish:
     fclose (fpInOut);
   }
   
-  if (VerboseMode) {
-    fprintf (stdout, "%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());  
-  }
+  VerboseMsg ("%s tool done with return code is 0x%x.", UTILITY_NAME, GetUtilityStatus ());
   
   return GetUtilityStatus ();
 }
@@ -2010,6 +2098,7 @@ Returns:
 --*/
 {
   struct tm                       stime;
+  struct tm                       *ptime;
   time_t                          newtime;
   UINTN                           Index;
   UINTN                           DebugDirectoryEntryRva;
@@ -2094,6 +2183,9 @@ Returns:
     }
   }
   
+  ptime = localtime (&newtime);
+  DebugMsg (NULL, 0, 9, "New Image Time Stamp", "%04d-%02d-%02d %02d:%02d:%02d",
+            ptime->tm_year + 1900, ptime->tm_mon + 1, ptime->tm_mday, ptime->tm_hour, ptime->tm_min, ptime->tm_sec); 
   //
   // Set new time and data into PeImage.
   //

@@ -2,7 +2,7 @@
 
 APPNAME = GenFw
 
-LIBS = Common.lib
+LIBS = $(LIB_PATH)\Common.lib
 
 OBJECTS = GenFw.obj
 

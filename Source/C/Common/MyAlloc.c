@@ -32,13 +32,13 @@ Abstract:
 //
 // Start of allocation list.
 //
-static MY_ALLOC_STRUCT  *MyAllocData = NULL;
+STATIC MY_ALLOC_STRUCT  *MyAllocData = NULL;
 
 //
 //
 //
-static UINT32           MyAllocHeadMagik  = MYALLOC_HEAD_MAGIK;
-static UINT32           MyAllocTailMagik  = MYALLOC_TAIL_MAGIK;
+STATIC UINT32           MyAllocHeadMagik  = MYALLOC_HEAD_MAGIK;
+STATIC UINT32           MyAllocTailMagik  = MYALLOC_TAIL_MAGIK;
 
 //
 // ////////////////////////////////////////////////////////////////////////////

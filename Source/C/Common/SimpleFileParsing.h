@@ -24,8 +24,6 @@ Abstract:
 
 #include <Common/UefiBaseTypes.h>
 
-#define T_CHAR  char
-
 STATUS
 SFPInit (
   VOID
@@ -34,32 +32,32 @@ SFPInit (
 
 STATUS
 SFPOpenFile (
-  char    *FileName
+  CHAR8    *FileName
   )
 ;
 
 BOOLEAN
 SFPIsKeyword (
-  T_CHAR *Str
+  CHAR8 *Str
   )
 ;
 
 BOOLEAN
 SFPIsToken (
-  T_CHAR *Str
+  CHAR8 *Str
   )
 ;
 
 BOOLEAN
 SFPGetNextToken (
-  T_CHAR        *Str,
-  unsigned int  Len
+  CHAR8  *Str,
+  UINTN  Len
   )
 ;
 
 BOOLEAN
 SFPGetGuidToken (
-  T_CHAR *Str,
+  CHAR8 *Str,
   UINT32 Len
   )
 ;
@@ -68,27 +66,27 @@ SFPGetGuidToken (
 
 BOOLEAN
 SFPGetGuid (
-  int         GuidStyle,
+  INTN        GuidStyle,
   EFI_GUID    *Value
   )
 ;
 
 BOOLEAN
 SFPSkipToToken (
-  T_CHAR *Str
+  CHAR8 *Str
   )
 ;
 
 BOOLEAN
 SFPGetNumber (
-  unsigned int   *Value
+  UINTN   *Value
   )
 ;
 
 BOOLEAN
 SFPGetQuotedString (
-  T_CHAR      *Str,
-  int         Length
+  CHAR8      *Str,
+  INTN       Length
   )
 ;
 
@@ -104,14 +102,13 @@ SFPCloseFile (
   )
 ;
 
-unsigned
-int
+UINTN
 SFPGetLineNumber (
   VOID
   )
 ;
 
-T_CHAR  *
+CHAR8  *
 SFPGetFileName (
   VOID
   )

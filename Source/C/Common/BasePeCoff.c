@@ -48,7 +48,7 @@ PeCoffLoaderCheckImageType (
   );
 
 STATIC
-void *
+VOID *
 PeCoffLoaderImageAddress (
   IN OUT PE_COFF_LOADER_IMAGE_CONTEXT  *ImageContext,
   IN     UINTN                         Address
@@ -928,7 +928,7 @@ Returns:
                             ImageContext->Handle,
                             0,
                             &ImageContext->SizeOfHeaders,
-                            (void *) (UINTN) ImageContext->ImageAddress
+                            (VOID *) (UINTN) ImageContext->ImageAddress
                             );
 
     TeHdr             = (EFI_TE_IMAGE_HEADER *) (UINTN) (ImageContext->ImageAddress);

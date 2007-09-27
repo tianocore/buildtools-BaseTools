@@ -40,8 +40,6 @@ Abstract:
 #include "ParseInf.h"
 #include "EfiUtilityMsgs.h"
 
-extern BOOLEAN VerboseMode;
-
 //
 // Different file separater for Linux and Windows
 //

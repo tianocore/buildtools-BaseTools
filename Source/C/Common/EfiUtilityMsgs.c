@@ -32,20 +32,20 @@ Abstract:
 // Declare module globals for keeping track of the the utility's
 // name and other settings.
 //
-static STATUS mStatus                 = STATUS_SUCCESS;
-static CHAR8  mUtilityName[50]        = { 0 };
-static UINT32 mPrintLogLevel          = INFO_LOG_LEVEL;
-static CHAR8  *mSourceFileName        = NULL;
-static UINT32 mSourceFileLineNum      = 0;
-static UINT32 mErrorCount             = 0;
-static UINT32 mWarningCount           = 0;
-static UINT32 mMaxErrors              = 0;
-static UINT32 mMaxWarnings            = 0;
-static UINT32 mMaxWarningsPlusErrors  = 0;
-static INT8   mPrintLimitsSet         = 0;
+STATIC STATUS mStatus                 = STATUS_SUCCESS;
+STATIC CHAR8  mUtilityName[50]        = { 0 };
+STATIC UINT32 mPrintLogLevel          = INFO_LOG_LEVEL;
+STATIC CHAR8  *mSourceFileName        = NULL;
+STATIC UINT32 mSourceFileLineNum      = 0;
+STATIC UINT32 mErrorCount             = 0;
+STATIC UINT32 mWarningCount           = 0;
+STATIC UINT32 mMaxErrors              = 0;
+STATIC UINT32 mMaxWarnings            = 0;
+STATIC UINT32 mMaxWarningsPlusErrors  = 0;
+STATIC INT8   mPrintLimitsSet         = 0;
 
-static
-void
+STATIC
+VOID
 PrintMessage (
   CHAR8   *Type,
   CHAR8   *FileName,
@@ -56,13 +56,13 @@ PrintMessage (
   va_list List
   );
 
-static
-void
+STATIC
+VOID
 PrintLimitExceeded (
   VOID
   );
 
-void
+VOID
 Error (
   CHAR8   *FileName,
   UINT32  LineNumber,
@@ -159,7 +159,7 @@ Notes:
   }
 }
 
-void
+VOID
 ParserError (
   UINT32  MessageCode,
   CHAR8   *Text,
@@ -219,7 +219,7 @@ Returns:
   }
 }
 
-void
+VOID
 ParserWarning (
   UINT32  ErrorCode,
   CHAR8   *OffendingText,
@@ -279,7 +279,7 @@ Returns:
   //  }
 }
 
-void
+VOID
 Warning (
   CHAR8   *FileName,
   UINT32  LineNumber,
@@ -351,7 +351,7 @@ Returns:
   va_end (List);
 }
 
-void
+VOID
 DebugMsg (
   CHAR8   *FileName,
   UINT32  LineNumber,
@@ -396,8 +396,8 @@ Returns:
   va_end (List);
 }
 
-static
-void
+STATIC
+VOID
 PrintMessage (
   CHAR8   *Type,
   CHAR8   *FileName,
@@ -547,8 +547,8 @@ Notes:
   }
 }
 
-static
-void
+STATIC
+VOID
 PrintSimpleMessage (
   CHAR8   *MsgFmt,
   va_list List
@@ -576,7 +576,7 @@ Returns:
   }
 }
 
-void
+VOID
 ParserSetPosition (
   CHAR8   *SourceFileName,
   UINT32  LineNum
@@ -600,7 +600,7 @@ Returns:
   mSourceFileLineNum  = LineNum;
 }
 
-void
+VOID
 SetUtilityName (
   CHAR8   *UtilityName
   )
@@ -663,7 +663,7 @@ Returns:
   return mStatus;
 }
 
-void
+VOID
 SetPrintLevel (
   UINT32  LogLevel
   )
@@ -684,7 +684,7 @@ Returns:
   mPrintLogLevel = LogLevel;
 }
 
-void
+VOID
 VerboseMsg (
   CHAR8   *MsgFmt,
   ...
@@ -717,7 +717,7 @@ Returns:
   va_end (List);
 }
 
-void
+VOID
 NormalMsg (
   CHAR8   *MsgFmt,
   ...
@@ -750,7 +750,7 @@ Returns:
   va_end (List);
 }
 
-void
+VOID
 KeyMsg (
   CHAR8   *MsgFmt,
   ...
@@ -783,7 +783,7 @@ Returns:
   va_end (List);
 }
 
-void
+VOID
 SetPrintLimits (
   UINT32  MaxErrors,
   UINT32  MaxWarnings,
@@ -812,13 +812,13 @@ Returns:
   mPrintLimitsSet         = 1;
 }
 
-static
-void
+STATIC
+VOID
 PrintLimitExceeded (
   VOID
   )
 {
-  static INT8 mPrintLimitExceeded = 0;
+  STATIC INT8 mPrintLimitExceeded = 0;
   //
   // If we've already printed the message, do nothing. Otherwise
   // temporarily increase our print limits so we can pass one
@@ -837,13 +837,13 @@ PrintLimitExceeded (
 }
 
 #if 0
-void
+VOID
 TestUtilityMessages (
   VOID
   )
 {
-  char *ArgStr = "ArgString";
-  int  ArgInt;
+  CHAR8 *ArgStr = "ArgString";
+  INTN  ArgInt;
 
   ArgInt  = 0x12345678;
   //

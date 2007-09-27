@@ -41,7 +41,7 @@ Abstract:
 
 #define MAX_SECTION_SIZE        0x1000000
 
-static CHAR8      *SectionTypeName[] = {
+STATIC CHAR8      *mSectionTypeName[] = {
   NULL,                                 // 0x00 - reserved
   "EFI_SECTION_COMPRESSION",            // 0x01
   "EFI_SECTION_GUID_DEFINED",           // 0x02
@@ -72,8 +72,8 @@ static CHAR8      *SectionTypeName[] = {
   "EFI_SECTION_PEI_DEPEX"               // 0x1B
 };
 
-static CHAR8      *CompressionTypeName[]    = { "PI_NONE", "PI_STD" };
-static CHAR8      *GUIDedSectionAttribue[]  = { NULL, "PROCESSING_REQUIRED", "AUTH_STATUS_VALID"};
+STATIC CHAR8      *mCompressionTypeName[]    = { "PI_NONE", "PI_STD" };
+STATIC CHAR8      *mGUIDedSectionAttribue[]  = { NULL, "PROCESSING_REQUIRED", "AUTH_STATUS_VALID"};
 
 //
 // Crc32 GUID section related definitions.
@@ -83,13 +83,8 @@ typedef struct {
   UINT32                    CRC32Checksum;
 } CRC32_SECTION_HEADER;
 
-static EFI_GUID  gZeroGuid                 = {0x0, 0x0, 0x0, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}};
-static EFI_GUID  gEfiCrc32SectionGuid      = EFI_CRC32_GUIDED_SECTION_EXTRACTION_PROTOCOL_GUID;
-
-//
-// VerboseMode setting
-//
-static BOOLEAN VerboseMode = FALSE;
+STATIC EFI_GUID  mZeroGuid                 = {0x0, 0x0, 0x0, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}};
+STATIC EFI_GUID  mEfiCrc32SectionGuid      = EFI_CRC32_GUIDED_SECTION_EXTRACTION_PROTOCOL_GUID;
 
 STATIC
 VOID 
@@ -128,7 +123,7 @@ Routine Description:
 
 Arguments:
 
-  void
+  VOID
 
 Returns:
 
@@ -139,7 +134,7 @@ Returns:
   //
   // Summary usage
   //
-  fprintf (stdout, "Usage: %s [options] [input_file]\n\n", UTILITY_NAME);
+  fprintf (stdout, "\nUsage: %s [options] [input_file]\n\n", UTILITY_NAME);
   
   //
   // Copyright declaration
@@ -177,6 +172,8 @@ Returns:
                         Number is an integer value between 0000 and 9999\n\
                         used in Ver section.\n");
   fprintf (stdout, "  -v, --verbose         Turn on verbose output with informational messages.\n");
+  fprintf (stdout, "  -q, --quiet           Disable all messages except key message and fatal error\n");
+  fprintf (stdout, "  -d, --debug level     Enable debug messages, at input debug level.\n");
   fprintf (stdout, "  --version             Show program's version number and exit.\n");
   fprintf (stdout, "  -h, --help            Show this help message and exit.\n");
 }
@@ -283,6 +280,7 @@ Returns:
   fseek (InFile, 0, SEEK_END);
   InputFileLength = ftell (InFile);
   fseek (InFile, 0, SEEK_SET);
+  DebugMsg (NULL, 0, 9, "Input file", "File name is %s and File size is %d bytes", InputFileName[0], InputFileLength);
   //
   // Fill in the fields in the local section header structure
   //
@@ -295,6 +293,7 @@ Returns:
     Error (NULL, 0, 2000, "Invalid paramter", "%s file size (0x%X) exceeds section size limit(%dM).", InputFileName[0], TotalLength, MAX_SECTION_SIZE>>20);
     goto Done;
   }
+  VerboseMsg ("the size of the created section file is %d bytes", TotalLength);
   //
   // Now copy the size into the section header and write out the section header
   //
@@ -409,6 +408,7 @@ Returns:
     fseek (InFile, 0, SEEK_END);
     FileSize = ftell (InFile);
     fseek (InFile, 0, SEEK_SET);
+    DebugMsg (NULL, 0, 9, "Input files", "the input file name is %s and the size is %d bytes", InputFileName[Index], FileSize); 
     //
     // Now read the contents of the file into the buffer
     // Buffer must be enough to contain the file content.
@@ -425,6 +425,9 @@ Returns:
     Size += FileSize;
   }
   
+  //
+  // Set the real required buffer size.
+  //
   if (Size > *BufferLength) {
     *BufferLength = Size;
     return EFI_BUFFER_TOO_SMALL;
@@ -561,6 +564,8 @@ Returns:
     }
   }
 
+  DebugMsg (NULL, 0, 9, "comprss file size", 
+            "the original section size is %d bytes and the compressed section size is %d bytes", InputLength, CompressedLength);
   TotalLength = CompressedLength + sizeof (EFI_COMPRESSION_SECTION);
   if (TotalLength >= MAX_SECTION_SIZE) {
     Error (NULL, 0, 2000, "Invalid paramter", "The size of all files exceeds section size limit(%dM).", MAX_SECTION_SIZE>>20);
@@ -572,6 +577,7 @@ Returns:
     }
     return STATUS_ERROR;
   }
+  VerboseMsg ("the size of the created section file is %d bytes", TotalLength);
 
   //
   // Add the section header for the compressed data
@@ -675,7 +681,7 @@ Returns:
   //
   // Now data is in FileBuffer
   //
-  if (CompareGuid (VendorGuid, &gEfiCrc32SectionGuid) == 0) {
+  if (CompareGuid (VendorGuid, &mEfiCrc32SectionGuid) == 0) {
     //
     // Default Guid section is CRC32.
     //
@@ -693,7 +699,7 @@ Returns:
     Crc32GuidSect.GuidSectionHeader.CommonHeader.Size[0]  = (UINT8) (TotalLength & 0xff);
     Crc32GuidSect.GuidSectionHeader.CommonHeader.Size[1]  = (UINT8) ((TotalLength & 0xff00) >> 8);
     Crc32GuidSect.GuidSectionHeader.CommonHeader.Size[2]  = (UINT8) ((TotalLength & 0xff0000) >> 16);
-    memcpy (&(Crc32GuidSect.GuidSectionHeader.SectionDefinitionGuid), &gEfiCrc32SectionGuid, sizeof (EFI_GUID));
+    memcpy (&(Crc32GuidSect.GuidSectionHeader.SectionDefinitionGuid), &mEfiCrc32SectionGuid, sizeof (EFI_GUID));
     Crc32GuidSect.GuidSectionHeader.Attributes  = EFI_GUIDED_SECTION_AUTH_STATUS_VALID;
     Crc32GuidSect.GuidSectionHeader.DataOffset  = sizeof (CRC32_SECTION_HEADER);
     Crc32GuidSect.CRC32Checksum                 = Crc32Checksum;
@@ -716,10 +722,12 @@ Returns:
     VendorGuidSect.DataOffset  = sizeof (EFI_GUID_DEFINED_SECTION);
     fwrite (&VendorGuidSect, sizeof (EFI_GUID_DEFINED_SECTION), 1, OutFile);  
   }
+  DebugMsg (NULL, 0, 9, "Guided section", "Data offset is %d", VendorGuidSect.DataOffset);
+  VerboseMsg ("the size of the created section file is %d bytes", TotalLength);
 
   fwrite (FileBuffer, InputLength, 1, OutFile);
   free (FileBuffer);
-
+  
   return EFI_SUCCESS;
 }
 
@@ -755,7 +763,7 @@ Returns:
   CHAR8                     *SectionName;
   CHAR8                     *CompressionName;
   CHAR8                     *StringBuffer;
-  EFI_GUID                  VendorGuid = gZeroGuid;
+  EFI_GUID                  VendorGuid = mZeroGuid;
   INT32                     VersionNumber;
   UINT8                     SectType;
   UINT8                     SectCompSubType;
@@ -764,6 +772,7 @@ Returns:
   UINT32                    InputLength;
   UINT8                     *FileBuffer;
   EFI_STATUS                Status;
+  UINT64                    LogLevel;
   
   InputFileName         = NULL;
   OutputFileName        = NULL;
@@ -780,11 +789,12 @@ Returns:
   FileBuffer            = NULL;
   InputLength           = 0;
   Status                = STATUS_SUCCESS;
+  LogLevel              = 0;
   
   SetUtilityName (UTILITY_NAME);
   
   if (argc == 1) {
-    Error (NULL, 0, 1001, "Missing options", "Input file");
+    Error (NULL, 0, 1001, "Missing options", "No options input");
     Usage ();
     return STATUS_ERROR;
   }
@@ -840,9 +850,9 @@ Returns:
     }
 
     if ((stricmp (argv[0], "-r") == 0) || (stricmp (argv[0], "--attributes") == 0)) {
-      if (stricmp (argv[1], GUIDedSectionAttribue[EFI_GUIDED_SECTION_PROCESSING_REQUIRED]) == 0) {
+      if (stricmp (argv[1], mGUIDedSectionAttribue[EFI_GUIDED_SECTION_PROCESSING_REQUIRED]) == 0) {
         SectGuidAttribute |= EFI_GUIDED_SECTION_PROCESSING_REQUIRED;
-      } else if (stricmp (argv[1], GUIDedSectionAttribue[EFI_GUIDED_SECTION_AUTH_STATUS_VALID]) == 0) {
+      } else if (stricmp (argv[1], mGUIDedSectionAttribue[EFI_GUIDED_SECTION_AUTH_STATUS_VALID]) == 0) {
         SectGuidAttribute |= EFI_GUIDED_SECTION_AUTH_STATUS_VALID;
       } else {
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
@@ -878,11 +888,38 @@ Returns:
     }
 
     if ((stricmp (argv[0], "-v") == 0) || (stricmp (argv[0], "--verbose") == 0)) {
-      VerboseMode = TRUE;
+      SetPrintLevel (VERBOSE_LOG_LEVEL);
+      VerboseMsg ("Verbose output Mode Set!");
       argc --;
       argv ++;
       continue;
     }
+
+    if ((stricmp (argv[0], "-q") == 0) || (stricmp (argv[0], "--quiet") == 0)) {
+      SetPrintLevel (KEY_LOG_LEVEL);
+      KeyMsg ("Quiet output Mode Set!");
+      argc --;
+      argv ++;
+      continue;
+    }
+
+    if ((stricmp (argv[0], "-d") == 0) || (stricmp (argv[0], "--debug") == 0)) {
+      Status = AsciiStringToUint64 (argv[1], FALSE, &LogLevel);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        goto Finish;
+      }
+      if (LogLevel > 9) {
+        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0~9, currnt input level is %d", LogLevel);
+        goto Finish;
+      }
+      SetPrintLevel (LogLevel);
+      DebugMsg (NULL, 0, 9, "Debug Mode Set", "Debug Output Mode Level %s is set!", argv[1]);
+      argc -= 2;
+      argv += 2;
+      continue;
+    }
+
     //
     // Get Input file name
     //
@@ -916,98 +953,127 @@ Returns:
     argv ++;
   }
 
-  if (VerboseMode) {
-    fprintf (stdout, "%s tool start.\n", UTILITY_NAME);
-  }
+  VerboseMsg ("%s tool start.", UTILITY_NAME);
+
   //
   // Parse all command line parameters to get the corresponding section type.
   //
+  VerboseMsg ("Section type is %s", SectionName);
   if (SectionName == NULL) {
     //
     // No specified Section type, default is SECTION_ALL.
     //
     SectType = EFI_SECTION_ALL;
-  } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_COMPRESSION]) == 0) {
+  } else if (stricmp (SectionName, mSectionTypeName[EFI_SECTION_COMPRESSION]) == 0) {
     SectType     = EFI_SECTION_COMPRESSION;
     if (CompressionName == NULL) {
       //
       // Default is PI_STD compression algorithm.
       //
       SectCompSubType = EFI_STANDARD_COMPRESSION;
-    } else if (stricmp (CompressionName, CompressionTypeName[EFI_NOT_COMPRESSED]) == 0) {
+    } else if (stricmp (CompressionName, mCompressionTypeName[EFI_NOT_COMPRESSED]) == 0) {
       SectCompSubType = EFI_NOT_COMPRESSED;
-    } else if (stricmp (CompressionName, CompressionTypeName[EFI_STANDARD_COMPRESSION]) == 0) {
+    } else if (stricmp (CompressionName, mCompressionTypeName[EFI_STANDARD_COMPRESSION]) == 0) {
       SectCompSubType = EFI_STANDARD_COMPRESSION;
     } else {
       Error (NULL, 0, 1003, "Invalid option value", "--compress = %s", CompressionName);
       goto Finish;
     }
-  } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_GUID_DEFINED]) == 0) {
+    VerboseMsg ("Compress method is %s", mCompressionTypeName [SectCompSubType]);
+  } else if (stricmp (SectionName, mSectionTypeName[EFI_SECTION_GUID_DEFINED]) == 0) {
     SectType     = EFI_SECTION_GUID_DEFINED;
 
-    if (CompareGuid (&VendorGuid, &gZeroGuid) == 0) {
-      memcpy (&VendorGuid, &gEfiCrc32SectionGuid, sizeof (EFI_GUID));
+    if (CompareGuid (&VendorGuid, &mZeroGuid) == 0) {
+      memcpy (&VendorGuid, &mEfiCrc32SectionGuid, sizeof (EFI_GUID));
     }
     
     if (SectGuidAttribute == 0) {
       SectGuidAttribute = EFI_GUIDED_SECTION_PROCESSING_REQUIRED;
     }
-  } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_PE32]) == 0) {
+    VerboseMsg ("Vendor Guid is %08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X", 
+                VendorGuid.Data1,
+                VendorGuid.Data2,
+                VendorGuid.Data3,
+                VendorGuid.Data4[0],
+                VendorGuid.Data4[1],
+                VendorGuid.Data4[2],
+                VendorGuid.Data4[3],
+                VendorGuid.Data4[4],
+                VendorGuid.Data4[5],
+                VendorGuid.Data4[6],
+                VendorGuid.Data4[7]);
+    if ((SectGuidAttribute & EFI_GUIDED_SECTION_PROCESSING_REQUIRED) != 0) {
+      VerboseMsg ("Guid Attribute is %s", mGUIDedSectionAttribue[EFI_GUIDED_SECTION_PROCESSING_REQUIRED]);
+    }
+    if ((SectGuidAttribute & EFI_GUIDED_SECTION_AUTH_STATUS_VALID) != 0) {
+      VerboseMsg ("Guid Attribute is %s", mGUIDedSectionAttribue[EFI_GUIDED_SECTION_AUTH_STATUS_VALID]);
+    }
+  } else if (stricmp (SectionName, mSectionTypeName[EFI_SECTION_PE32]) == 0) {
     SectType = EFI_SECTION_PE32;
-  } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_PIC]) == 0) {
+  } else if (stricmp (SectionName, mSectionTypeName[EFI_SECTION_PIC]) == 0) {
     SectType = EFI_SECTION_PIC;
-  } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_TE]) == 0) {
+  } else if (stricmp (SectionName, mSectionTypeName[EFI_SECTION_TE]) == 0) {
     SectType = EFI_SECTION_TE;
-  } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_DXE_DEPEX]) == 0) {
+  } else if (stricmp (SectionName, mSectionTypeName[EFI_SECTION_DXE_DEPEX]) == 0) {
     SectType = EFI_SECTION_DXE_DEPEX;
-  } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_VERSION]) == 0) {
+  } else if (stricmp (SectionName, mSectionTypeName[EFI_SECTION_VERSION]) == 0) {
     SectType = EFI_SECTION_VERSION;
     if (VersionNumber < 0 || VersionNumber > 9999) {
       Error (NULL, 0, 1003, "Invalid option value", "%d is not in 0~9999", VersionNumber);
       goto Finish;
     }
-  } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_USER_INTERFACE]) == 0) {
+    VerboseMsg ("Version section number is %d", VersionNumber);
+  } else if (stricmp (SectionName, mSectionTypeName[EFI_SECTION_USER_INTERFACE]) == 0) {
     SectType = EFI_SECTION_USER_INTERFACE;
     if (StringBuffer[0] == '\0') {
       Error (NULL, 0, 1001, "Missing option", "user interface string");
       goto Finish;
     }
-  } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_COMPATIBILITY16]) == 0) {
+    VerboseMsg ("UI section string name is %s", StringBuffer);
+  } else if (stricmp (SectionName, mSectionTypeName[EFI_SECTION_COMPATIBILITY16]) == 0) {
     SectType = EFI_SECTION_COMPATIBILITY16;
-  } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_FIRMWARE_VOLUME_IMAGE]) == 0) {
+  } else if (stricmp (SectionName, mSectionTypeName[EFI_SECTION_FIRMWARE_VOLUME_IMAGE]) == 0) {
     SectType = EFI_SECTION_FIRMWARE_VOLUME_IMAGE;
-  } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_FREEFORM_SUBTYPE_GUID]) == 0) {
+  } else if (stricmp (SectionName, mSectionTypeName[EFI_SECTION_FREEFORM_SUBTYPE_GUID]) == 0) {
     SectType = EFI_SECTION_FREEFORM_SUBTYPE_GUID;
-  } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_RAW]) == 0) {
+  } else if (stricmp (SectionName, mSectionTypeName[EFI_SECTION_RAW]) == 0) {
     SectType = EFI_SECTION_RAW;
-  } else if (stricmp (SectionName, SectionTypeName[EFI_SECTION_PEI_DEPEX]) == 0) {
+  } else if (stricmp (SectionName, mSectionTypeName[EFI_SECTION_PEI_DEPEX]) == 0) {
     SectType = EFI_SECTION_PEI_DEPEX;
   } else {
     Error (NULL, 0, 1003, "Invalid option value", "SectionType = %s", SectionName);
     goto Finish;
   }
   
+  //
+  // Check whether there is input file
+  //  
   if ((SectType != EFI_SECTION_VERSION) && (SectType != EFI_SECTION_USER_INTERFACE)) {
     //
-    // The input file are required for those section type.
+    // The input file are required for other section type.
     //
     if (InputFileNum == 0) {
       Error (NULL, 0, 1001, "Missing options", "Input files");
       goto Finish;
     }
   }
-  
   //
-  // Open output file
+  // Check whether there is output file
   //
+  for (Index = 0; Index < InputFileNum; Index ++) {
+    VerboseMsg ("the %dth input file name is %s", Index, InputFileName[Index]);
+  }
   if (OutputFileName == NULL) {
     Error (NULL, 0, 1001, "Missing options", "Output file");
     goto Finish;
     // OutFile = stdout;
-  } else {
-    OutFile = fopen (OutputFileName, "wb");
   }
+  VerboseMsg ("Output file name is %s", OutputFileName);
 
+  //
+  // Open output file
+  //
+  OutFile = fopen (OutputFileName, "wb");
   if (OutFile == NULL) {
     Error (NULL, 0, 0001, "Error opening file", OutputFileName);
     goto Finish;
@@ -1057,6 +1123,7 @@ Returns:
     fwrite (&CommonSect, sizeof (CommonSect), 1, OutFile);
     fwrite (&VersionNumber, sizeof (UINT16), 1, OutFile);
     Ascii2UnicodeWriteString (StringBuffer, OutFile);
+    VerboseMsg ("the size of the created section file is %d bytes", Index);
     break;
 
   case EFI_SECTION_USER_INTERFACE:
@@ -1069,6 +1136,7 @@ Returns:
     memcpy (&CommonSect.Size, &Index, 3);
     fwrite (&CommonSect, sizeof (CommonSect), 1, OutFile);
     Ascii2UnicodeWriteString (StringBuffer, OutFile);
+    VerboseMsg ("the size of the created section file is %d bytes", Index);
     break;
 
   case EFI_SECTION_ALL:
@@ -1107,7 +1175,7 @@ Returns:
     if (FileBuffer != NULL) {
       free (FileBuffer);
     }
-    
+    VerboseMsg ("the size of the created section file is %d bytes", InputLength);
     break;
   default:
     //
@@ -1131,9 +1199,7 @@ Finish:
     fclose (OutFile);
   }
   
-  if (VerboseMode) {
-    fprintf (stdout, "%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());  
-  }
+  VerboseMsg ("%s tool done with return code is 0x%x.", UTILITY_NAME, GetUtilityStatus ());
 
   return GetUtilityStatus ();
 }

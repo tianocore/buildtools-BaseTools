@@ -41,12 +41,10 @@ Abstract:
 #define UTILITY_MAJOR_VERSION 0
 #define UTILITY_MINOR_VERSION 1
 
-BOOLEAN VerboseMode = FALSE;
-
-static
-void 
+STATIC
+VOID 
 Version (
-  void
+  VOID
 )
 /*++
 
@@ -67,10 +65,10 @@ Returns:
   fprintf (stdout, "%s Version %d.%d\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
 }
 
-static
-void 
+STATIC
+VOID 
 Usage (
-  void
+  VOID
   )
 /*++
 
@@ -91,7 +89,7 @@ Returns:
   //
   // Summary usage
   //
-  fprintf (stdout, "Usage: %s [options]\n\n", UTILITY_NAME);
+  fprintf (stdout, "\nUsage: %s [options]\n\n", UTILITY_NAME);
   
   //
   // Copyright declaration
@@ -122,6 +120,8 @@ Returns:
   fprintf (stdout, "  -c, --capsule         Create Capsule Image.\n");
   fprintf (stdout, "  -p, --dump            Dump Capsule Image header.\n");
   fprintf (stdout, "  -v, --verbose         Turn on verbose output with informational messages.\n");
+  fprintf (stdout, "  -q, --quiet           Disable all messages except key message and fatal error\n");
+  fprintf (stdout, "  -d, --debug level     Enable debug messages, at input debug level.\n");
   fprintf (stdout, "  --version             Show program's version number and exit.\n");
   fprintf (stdout, "  -h, --help            Show this help message and exit.\n");
 }
@@ -172,6 +172,7 @@ Returns:
   MEMORY_FILE           AddrMemoryFile;
   FILE                  *FpFile;
   EFI_CAPSULE_HEADER    *CapsuleHeader;
+  UINT64                LogLevel;
 
   InfFileName   = NULL;
   AddrFileName  = NULL;
@@ -186,11 +187,12 @@ Returns:
   DumpCapsule   = FALSE;
   FpFile        = NULL;
   CapsuleHeader = NULL;
+  LogLevel      = 0;
 
   SetUtilityName (UTILITY_NAME);
 
   if (argc == 1) {
-    Error (NULL, 0, 1001, "Missing options", "Input file");
+    Error (NULL, 0, 1001, "Missing options", "No input options");
     Usage ();
     return STATUS_ERROR;
   }
@@ -267,11 +269,38 @@ Returns:
     }
 
     if ((stricmp (argv[0], "-v") == 0) || (stricmp (argv[0], "--verbose") == 0)) {
-      VerboseMode = TRUE;
+      SetPrintLevel (VERBOSE_LOG_LEVEL);
+      VerboseMsg ("Verbose output Mode Set!");
       argc --;
       argv ++;
       continue;
     }
+
+    if ((stricmp (argv[0], "-q") == 0) || (stricmp (argv[0], "--quiet") == 0)) {
+      SetPrintLevel (KEY_LOG_LEVEL);
+      KeyMsg ("Quiet output Mode Set!");
+      argc --;
+      argv ++;
+      continue;
+    }
+
+    if ((stricmp (argv[0], "-d") == 0) || (stricmp (argv[0], "--debug") == 0)) {
+      Status = AsciiStringToUint64 (argv[1], FALSE, &LogLevel);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        goto Finish;
+      }
+      if (LogLevel > 9) {
+        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0~9, currnt input level is %d", LogLevel);
+        goto Finish;
+      }
+      SetPrintLevel (LogLevel);
+      DebugMsg (NULL, 0, 9, "Debug Mode Set", "Debug Output Mode Level %s is set!", argv[1]);
+      argc -= 2;
+      argv += 2;
+      continue;
+    }
+
     //
     // Don't recognize the paramter.
     //
@@ -279,9 +308,7 @@ Returns:
     return STATUS_ERROR;
   }
 
-  if (VerboseMode) {
-    fprintf (stdout, "%s tool start.\n", UTILITY_NAME);
-  }
+  VerboseMsg ("%s tool start.", UTILITY_NAME);
   
   //
   // check input parameter
@@ -290,16 +317,21 @@ Returns:
     Error (NULL, 0, 1001, "Missing Option", "Input File");
     return STATUS_ERROR;
   }
+  VerboseMsg ("the input file name is %s", InfFileName);
 
   if (!DumpCapsule && OutFileName == NULL) {
     Error (NULL, 0, 1001, "Missing option", "Output file name");
     return STATUS_ERROR;
+  }
+  if (OutFileName != NULL) {
+    VerboseMsg ("the output file name is %s", OutFileName);
   }
   
   //
   // Read boot and runtime address from address file
   //
   if (AddrFileName != NULL) {
+    VerboseMsg ("the input address file name is %s", AddrFileName);
     Status = GetFileImage (AddrFileName, &InfFileImage, &InfFileSize);
     if (EFI_ERROR (Status)) {
       return STATUS_ERROR;
@@ -322,6 +354,7 @@ Returns:
         Error (NULL, 0, 2000, "Invalid paramter", "%s = %s", EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING, ValueString);
         return STATUS_ERROR;
       }
+      DebugMsg (NULL, 0, 9, "Boot driver base address", "%s = %s", EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING, ValueString);
     }
   
     //
@@ -337,6 +370,7 @@ Returns:
         Error (NULL, 0, 2000, "Invalid paramter", "%s = %s", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, ValueString);
         return STATUS_ERROR;
       }
+      DebugMsg (NULL, 0, 9, "Runtime driver base address", "%s = %s", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, ValueString);
     }
     
     //
@@ -354,6 +388,7 @@ Returns:
   }
   
   if (DumpCapsule) {
+    VerboseMsg ("Dump the capsule header information for the input capsule image %s", InfFileName);
     //
     // Dump Capsule Image Header Information
     //
@@ -385,6 +420,7 @@ Returns:
     fprintf (FpFile, "  Capsule image size    0x%08X\n", CapsuleHeader->CapsuleImageSize);
     fclose (FpFile);
   } else if (CapsuleFlag) {
+    VerboseMsg ("Create capsule image");
     //
     // Call the GenerateCapImage to generate Capsule Image
     //
@@ -394,6 +430,10 @@ Returns:
       OutFileName
       );
   } else {
+    VerboseMsg ("Create Fv image and its map file");
+    if (XipBase != -1) {
+      VerboseMsg ("FvImage Rebase Address is 0x%X", XipBase);
+    }
     //
     // Call the GenerateFvImage to generate Fv Image
     //
@@ -429,17 +469,17 @@ Returns:
     if (BtBase != 0) {
       fprintf (FpFile, EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING);
       fprintf (FpFile, " = 0x%x\n", BtBase);
+      DebugMsg (NULL, 0, 9, "Updated boot driver base address", "%s = 0x%x", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, BtBase);
     }
     if (RtBase != 0) {
       fprintf (FpFile, EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING);
       fprintf (FpFile, " = 0x%x\n", RtBase);
+      DebugMsg (NULL, 0, 9, "Updated runtime driver base address", "%s = 0x%x", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, RtBase);
     }
     fclose (FpFile);
   }
 
-  if (VerboseMode) {
-    fprintf (stdout, "%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());  
-  }
+  VerboseMsg ("%s tool done with return code is 0x%x.", UTILITY_NAME, GetUtilityStatus ());
 
   return GetUtilityStatus ();
 }

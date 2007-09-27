@@ -2,7 +2,7 @@
 
 APPNAME = GenFv
 
-LIBS = Common.lib RpcRT4.lib
+LIBS = $(LIB_PATH)\Common.lib RpcRT4.lib
 
 OBJECTS = GenFv.obj GenFvInternalLib.obj GenFvPadFileTable.obj
 

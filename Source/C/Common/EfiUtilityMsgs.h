@@ -56,7 +56,7 @@ extern "C" {
 //
 STATUS
 GetUtilityStatus (
-  void
+  VOID
   );
 
 //
@@ -64,13 +64,13 @@ GetUtilityStatus (
 // then we print the utility name instead. However they must tell us the
 // utility name early on via this function.
 //
-void
+VOID
 SetUtilityName (
   CHAR8 *ProgramName
   )
 ;
 
-void
+VOID
 Error (
   CHAR8   *FileName,
   UINT32  LineNumber,
@@ -81,7 +81,7 @@ Error (
   )
 ;
 
-void
+VOID
 Warning (
   CHAR8   *FileName,
   UINT32  LineNumber,
@@ -92,7 +92,7 @@ Warning (
   )
 ;
 
-void
+VOID
 DebugMsg (
   CHAR8   *FileName,
   UINT32  LineNumber,
@@ -103,37 +103,37 @@ DebugMsg (
   )
 ;
 
-void
+VOID
 VerboseMsg (
   CHAR8   *MsgFmt,
   ...
   );
 
-void
+VOID
 NormalMsg (
   CHAR8   *MsgFmt,
   ...
   );
 
-void
+VOID
 KeyMsg (
   CHAR8   *MsgFmt,
   ...
   );
 
-void
+VOID
 SetPrintLevel (
   UINT32  LogLevel
   );
 
-void
+VOID
 ParserSetPosition (
   CHAR8   *SourceFileName,
   UINT32  LineNum
   )
 ;
 
-void
+VOID
 ParserError (
   UINT32  ErrorCode,
   CHAR8   *OffendingText,
@@ -142,7 +142,7 @@ ParserError (
   )
 ;
 
-void
+VOID
 ParserWarning (
   UINT32  ErrorCode,
   CHAR8   *OffendingText,
@@ -151,7 +151,7 @@ ParserWarning (
   )
 ;
 
-void
+VOID
 SetPrintLimits (
   UINT32  NumErrors,
   UINT32  NumWarnings,

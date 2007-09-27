@@ -34,7 +34,7 @@ Abstract:
 #define UTILITY_MAJOR_VERSION   0
 #define UTILITY_MINOR_VERSION   1
 
-static CHAR8 *mFfsFileType[] = {
+STATIC CHAR8 *mFfsFileType[] = {
   NULL,                                   // 0x00
   "EFI_FV_FILETYPE_RAW",                  // 0x01
   "EFI_FV_FILETYPE_FREEFORM",             // 0x02
@@ -49,25 +49,23 @@ static CHAR8 *mFfsFileType[] = {
   "EFI_FV_FILETYPE_FIRMWARE_VOLUME_IMAGE" // 0x0B
  };
 
-static CHAR8 *mAlignName[] = {
+STATIC CHAR8 *mAlignName[] = {
   "1", "2", "4", "8", "16", "32", "64", "128", "256", "512",
   "1K", "2K", "4K", "8K", "16K", "32K", "64K"
  };
 
-static CHAR8 *mFfsValidAlignName[] = {
+STATIC CHAR8 *mFfsValidAlignName[] = {
   "8", "16", "128", "512", "1K", "4K", "32K", "64K"
  };
 
-static UINT32 mFfsValidAlign[] = {0, 8, 16, 128, 512, 1024, 4096, 32768, 65536};
+STATIC UINT32 mFfsValidAlign[] = {0, 8, 16, 128, 512, 1024, 4096, 32768, 65536};
 
-static EFI_GUID mZeroGuid = {0};
+STATIC EFI_GUID mZeroGuid = {0};
 
-static BOOLEAN VerboseMode = FALSE;
-
-static
-void 
+STATIC
+VOID 
 Version (
-  void
+  VOID
   )
 /*++
 
@@ -88,10 +86,10 @@ Returns:
   fprintf (stdout, "%s Version %d.%d\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
 }
 
-static
-void
+STATIC
+VOID
 Usage (
-  void
+  VOID
   )
 /*++
 
@@ -101,7 +99,7 @@ Routine Description:
 
 Arguments:
 
-  void
+  VOID
 
 Returns:
 
@@ -112,7 +110,7 @@ Returns:
   //
   // Summary usage
   //
-  fprintf (stdout, "Usage: %s [options]\n\n", UTILITY_NAME);
+  fprintf (stdout, "\nUsage: %s [options]\n\n", UTILITY_NAME);
   
   //
   // Copyright declaration
@@ -149,11 +147,13 @@ Returns:
                         the alignment scope 1~64K. It is specified together\n\
                         with sectionfile to point its alignment in FFS file.\n");
   fprintf (stdout, "  -v, --verbose         Turn on verbose output with informational messages.\n");
+  fprintf (stdout, "  -q, --quiet           Disable all messages except key message and fatal error\n");
+  fprintf (stdout, "  -d, --debug level     Enable debug messages, at input debug level.\n");
   fprintf (stdout, "  --version             Show program's version number and exit.\n");
   fprintf (stdout, "  -h, --help            Show this help message and exit.\n");
 }
 
-static
+STATIC
 EFI_STATUS
 StringtoAlignment (
   IN  CHAR8  *AlignBuffer,
@@ -193,7 +193,7 @@ Returns:
   return EFI_INVALID_PARAMETER;
 }
 
-static
+STATIC
 UINT8
 StringToType (
   IN CHAR8 *String
@@ -229,7 +229,7 @@ Returns:
   return EFI_FV_FILETYPE_ALL;
 }
 
-static
+STATIC
 EFI_STATUS
 GetSectionContents (
   IN  CHAR8   **InputFileName,
@@ -314,6 +314,8 @@ Returns:
         SectHeader->Size[1] = (UINT8) ((Offset & 0xff00) >> 8);
         SectHeader->Size[2] = (UINT8) ((Offset & 0xff0000) >> 16);
       }
+      DebugMsg (NULL, 0, 9, "Pad raw section for section data alignment", 
+                "Pad Raw section size is %d", Offset);
 
       Size = Size + Offset;
     }
@@ -330,6 +332,9 @@ Returns:
     fseek (InFile, 0, SEEK_END);
     FileSize = ftell (InFile);
     fseek (InFile, 0, SEEK_SET);
+    DebugMsg (NULL, 0, 9, "Input section files", 
+              "the input section name is %s and the size is %d bytes", InputFileName[Index], FileSize); 
+
     //
     // Now read the contents of the file into the buffer
     // Buffer must be enough to contain the file content.
@@ -346,6 +351,9 @@ Returns:
     Size += FileSize;
   }
   
+  //
+  // Set the actual length of the data.
+  //
   if (Size > *BufferLength) {
     *BufferLength = Size;
     return EFI_BUFFER_TOO_SMALL;
@@ -392,7 +400,12 @@ Returns:
   EFI_FFS_FILE_HEADER     FfsFileHeader;
   FILE                    *FfsFile;
   UINT32                  Index;
-
+  UINT64                  LogLevel;
+  
+  //
+  // Init local variables
+  //
+  LogLevel       = 0;
   Index          = 0;
   FfsAttrib      = 0;  
   FfsAlign       = 0;
@@ -406,11 +419,11 @@ Returns:
   MaxAlignment   = 1;
   FfsFile        = NULL;
   Status         = EFI_SUCCESS;
-  
+
   SetUtilityName (UTILITY_NAME);
 
   if (argc == 1) {
-    Error (NULL, 0, 1001, "Missing options", "Input file");
+    Error (NULL, 0, 1001, "Missing options", "no options input");
     Usage ();
     return STATUS_ERROR;
   }
@@ -552,7 +565,10 @@ Returns:
 	      InputFileNum ++;
         break;
       }
-
+      
+      //
+      // Section File alignment requirement
+      //
       if ((stricmp (argv[0], "-n") == 0) || (stricmp (argv[0], "--sectionalign") == 0)) {
         Status = StringtoAlignment (argv[1], &(InputFileAlign[InputFileNum]));
         if (EFI_ERROR (Status)) {
@@ -572,20 +588,44 @@ Returns:
     }
 
     if ((stricmp (argv[0], "-v") == 0) || (stricmp (argv[0], "--verbose") == 0)) {
-      VerboseMode = TRUE;
+      SetPrintLevel (VERBOSE_LOG_LEVEL);
+      VerboseMsg ("Verbose output Mode Set!");
       argc --;
       argv ++;
       continue;
     }
-    
+
+    if ((stricmp (argv[0], "-q") == 0) || (stricmp (argv[0], "--quiet") == 0)) {
+      SetPrintLevel (KEY_LOG_LEVEL);
+      KeyMsg ("Quiet output Mode Set!");
+      argc --;
+      argv ++;
+      continue;
+    }
+
+    if ((stricmp (argv[0], "-d") == 0) || (stricmp (argv[0], "--debug") == 0)) {
+      Status = AsciiStringToUint64 (argv[1], FALSE, &LogLevel);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        goto Finish;
+      }
+      if (LogLevel > 9) {
+        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0~9, currnt input level is %d", LogLevel);
+        goto Finish;
+      }
+      SetPrintLevel (LogLevel);
+      DebugMsg (NULL, 0, 9, "Debug Mode Set", "Debug Output Mode Level %s is set!", argv[1]);
+      argc -= 2;
+      argv += 2;
+      continue;
+    }
+
     Error (NULL, 0, 1000, "Unknown option", argv[0]);
     goto Finish;
   }
 
-  if (VerboseMode) {
-    fprintf (stdout, "%s tool start.\n", UTILITY_NAME);
-  }
-   
+  VerboseMsg ("%s tool start.", UTILITY_NAME);
+
   //
   // Check the complete input paramters.
   //
@@ -608,6 +648,34 @@ Returns:
     Error (NULL, 0, 1001, "Missing option", "Output file");
     goto Finish;
     // OutFile = stdout;
+  }
+  
+  //
+  // Output input parameter information
+  //
+  VerboseMsg ("Fv File type is %s", mFfsFileType [FfsFiletype]);
+  VerboseMsg ("Output file name is %s", OutputFileName);
+  VerboseMsg ("FFS File Guid is %08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X", 
+                FileGuid.Data1,
+                FileGuid.Data2,
+                FileGuid.Data3,
+                FileGuid.Data4[0],
+                FileGuid.Data4[1],
+                FileGuid.Data4[2],
+                FileGuid.Data4[3],
+                FileGuid.Data4[4],
+                FileGuid.Data4[5],
+                FileGuid.Data4[6],
+                FileGuid.Data4[7]);
+  if (FfsAttrib & FFS_ATTRIB_FIXED != 0) {
+    VerboseMsg ("FFS File has the fixed file attribute");
+  }
+  if (FfsAttrib & FFS_ATTRIB_CHECKSUM != 0) {
+    VerboseMsg ("FFS File requires the checksum of the whole file");
+  }
+  VerboseMsg ("FFS file alignment is %s", mFfsValidAlignName[FfsAlign]);
+  for (Index = 0; Index < InputFileNum; Index ++) {
+    VerboseMsg ("the %dth input section name is %s and section alignment is %d", Index, InputFileName[Index], InputFileAlign[Index]);
   }
 
   //
@@ -664,13 +732,14 @@ Returns:
   if (FfsAlign < Index) {
     FfsAlign = Index;
   }
-  
+  VerboseMsg ("the alignment of the genreated FFS file is %d", mFfsValidAlign [FfsAlign]);  
   FfsFileHeader.Attributes = FfsAttrib | (FfsAlign << 3);
   
   //
   // Now FileSize includes the EFI_FFS_FILE_HEADER
   //
   FileSize += sizeof (EFI_FFS_FILE_HEADER);
+  VerboseMsg ("the size of the genreated FFS file is %d bytes", FileSize);
   FfsFileHeader.Size[0]  = (UINT8) (FileSize & 0xFF);
   FfsFileHeader.Size[1]  = (UINT8) ((FileSize & 0xFF00) >> 8);
   FfsFileHeader.Size[2]  = (UINT8) ((FileSize & 0xFF0000) >> 16);
@@ -733,9 +802,7 @@ Finish:
   // routines, then the status has been saved. Get the value and
   // return it to the caller.
   //
-  if (VerboseMode) {
-    fprintf (stdout, "%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());  
-  }
+  VerboseMsg ("%s tool done with return code is 0x%x.", UTILITY_NAME, GetUtilityStatus ());
 
   return GetUtilityStatus ();
 }

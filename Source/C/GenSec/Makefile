@@ -2,7 +2,7 @@
 
 APPNAME = GenSec
 
-LIBS = Common.lib
+LIBS = $(LIB_PATH)\Common.lib
 
 OBJECTS = GenSec.obj
 

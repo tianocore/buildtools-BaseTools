@@ -36,15 +36,15 @@ Abstract:
 #include "PeCoffLib.h"
 #include "WinNtInclude.h"
 
-static UINT32   MaxFfsAlignment = 0;
+STATIC UINT32   MaxFfsAlignment = 0;
 
 extern EFI_GUID mPadFileGuidTable[];
-static UINT32   mPadFileIndex = 0;
+STATIC UINT32   mPadFileIndex = 0;
 
-EFI_GUID  gEfiFirmwareFileSystem2Guid = EFI_FIRMWARE_FILE_SYSTEM2_GUID;
-EFI_GUID  gEfiFirmwareVolumeTopFileGuid = EFI_FFS_VOLUME_TOP_FILE_GUID;
+EFI_GUID  mEfiFirmwareFileSystem2Guid = EFI_FIRMWARE_FILE_SYSTEM2_GUID;
+EFI_GUID  mEfiFirmwareVolumeTopFileGuid = EFI_FFS_VOLUME_TOP_FILE_GUID;
 
-CHAR8      *FvbAttributeName[] = {
+CHAR8      *mFvbAttributeName[] = {
   EFI_FVB2_READ_DISABLED_CAP_STRING, 
   EFI_FVB2_READ_ENABLED_CAP_STRING,  
   EFI_FVB2_READ_STATUS_STRING,       
@@ -63,7 +63,7 @@ CHAR8      *FvbAttributeName[] = {
   EFI_FVB2_WRITE_LOCK_STATUS_STRING 
 };
 
-CHAR8      *FvbAlignmentName[] = {
+CHAR8      *mFvbAlignmentName[] = {
   EFI_FVB2_ALIGNMENT_1_STRING,   
   EFI_FVB2_ALIGNMENT_2_STRING,   
   EFI_FVB2_ALIGNMENT_4_STRING,   
@@ -202,6 +202,7 @@ Returns:
       Error (NULL, 0, 2000, "Invalid paramter", "%s = %s", EFI_FV_BASE_ADDRESS_STRING, Value);
       return EFI_ABORTED;
     }
+    DebugMsg (NULL, 0, 9, "rebase address", "%s = %s", EFI_FV_BASE_ADDRESS_STRING, Value);
 
     FvInfo->BaseAddress = Value64;
   }
@@ -216,11 +217,23 @@ Returns:
     //
     Status = StringToGuid (Value, &FvInfo->FvGuid);
     if (EFI_ERROR (Status)) {
-      memcpy (&FvInfo->FvGuid, &gEfiFirmwareFileSystem2Guid, sizeof (EFI_GUID));
+      memcpy (&FvInfo->FvGuid, &mEfiFirmwareFileSystem2Guid, sizeof (EFI_GUID));
     }
   } else {
-    memcpy (&FvInfo->FvGuid, &gEfiFirmwareFileSystem2Guid, sizeof (EFI_GUID));
+    memcpy (&FvInfo->FvGuid, &mEfiFirmwareFileSystem2Guid, sizeof (EFI_GUID));
   }
+  DebugMsg (NULL, 0, 9, "Fv File Guid", "%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X", 
+                FvInfo->FvGuid.Data1,
+                FvInfo->FvGuid.Data2,
+                FvInfo->FvGuid.Data3,
+                FvInfo->FvGuid.Data4[0],
+                FvInfo->FvGuid.Data4[1],
+                FvInfo->FvGuid.Data4[2],
+                FvInfo->FvGuid.Data4[3],
+                FvInfo->FvGuid.Data4[4],
+                FvInfo->FvGuid.Data4[5],
+                FvInfo->FvGuid.Data4[6],
+                FvInfo->FvGuid.Data4[7]);
 
   //
   // Read the FV file name
@@ -236,13 +249,13 @@ Returns:
   //
   // Read Fv Attribute
   //
-  for (Index = 0; Index < sizeof (FvbAttributeName)/sizeof (char *); Index ++) {
-    if ((FvbAttributeName [Index] != NULL) && \
-        (FindToken (InfFile, ATTRIBUTES_SECTION_STRING, FvbAttributeName [Index], 0, Value) == EFI_SUCCESS)) {
+  for (Index = 0; Index < sizeof (mFvbAttributeName)/sizeof (CHAR8 *); Index ++) {
+    if ((mFvbAttributeName [Index] != NULL) && \
+        (FindToken (InfFile, ATTRIBUTES_SECTION_STRING, mFvbAttributeName [Index], 0, Value) == EFI_SUCCESS)) {
       if ((strcmp (Value, TRUE_STRING) == 0) || (strcmp (Value, ONE_STRING) == 0)) {
         FvInfo->FvAttributes |= 1 << Index;
       } else if ((strcmp (Value, FALSE_STRING) != 0) && (strcmp (Value, ZERO_STRING) != 0)) {
-        Error (NULL, 0, 2000, "Invalid parameter", "%s expected %s | %s", FvbAttributeName [Index], TRUE_STRING, FALSE_STRING);
+        Error (NULL, 0, 2000, "Invalid parameter", "%s expected %s | %s", mFvbAttributeName [Index], TRUE_STRING, FALSE_STRING);
         return EFI_ABORTED;
       }
     }
@@ -251,10 +264,11 @@ Returns:
   //
   // Read Fv Alignment
   //
-  for (Index = 0; Index < sizeof (FvbAlignmentName)/sizeof (char *); Index ++) {
-    if (FindToken (InfFile, ATTRIBUTES_SECTION_STRING, FvbAlignmentName [Index], 0, Value) == EFI_SUCCESS) {
+  for (Index = 0; Index < sizeof (mFvbAlignmentName)/sizeof (CHAR8 *); Index ++) {
+    if (FindToken (InfFile, ATTRIBUTES_SECTION_STRING, mFvbAlignmentName [Index], 0, Value) == EFI_SUCCESS) {
       if (strcmp (Value, TRUE_STRING) == 0) {
         FvInfo->FvAttributes |= Index << 16;
+        DebugMsg (NULL, 0, 9, "FV file alignment", "Align = %s", mFvbAlignmentName [Index]);
         break;
       }
     }
@@ -280,6 +294,7 @@ Returns:
       }
 
       FvInfo->FvBlocks[Index].Length = (UINT32) Value64;
+      DebugMsg (NULL, 0, 9, "Fv Block Size", "%s = %s", EFI_BLOCK_SIZE_STRING, Value);
     } else {
       //
       // If there is no blocks size, but there is the number of block, then we have a mismatched pair
@@ -313,6 +328,7 @@ Returns:
       }
 
       FvInfo->FvBlocks[Index].NumBlocks = (UINT32) Value64;
+      DebugMsg (NULL, 0, 9, "Fv Block Number", "%s = %s", EFI_NUM_BLOCKS_STRING, Value);
     }
   }
 
@@ -335,11 +351,15 @@ Returns:
       // Add the file
       //
       strcpy (FvInfo->FvFiles[Index], Value);
+      DebugMsg (NULL, 0, 9, "Fv component file", "the %dth name is %s", Index, Value);
     } else {
       break;
     }
   }
 
+  if (Index == 0) {
+    Warning (NULL, 0, 0, "Fv components are not specified.");
+  }
   //
   // Compute size for easy access later
   //
@@ -638,7 +658,7 @@ Returns:
 
 --*/
 {
-  if (!memcmp (&FileBuffer->Name, &gEfiFirmwareVolumeTopFileGuid, sizeof (EFI_GUID))) {
+  if (!memcmp (&FileBuffer->Name, &mEfiFirmwareVolumeTopFileGuid, sizeof (EFI_GUID))) {
     return TRUE;
   } else {
     return FALSE;
@@ -801,6 +821,7 @@ Returns:
       //
       memcpy (*VtfFileImage, FileBuffer, FileSize);
       free (FileBuffer);
+      DebugMsg (NULL, 0, 9, "Add VTF FFS file in FV image", NULL);
       return EFI_SUCCESS;
     } else {
       //
@@ -1062,6 +1083,7 @@ Returns:
   SecCorePhysicalAddress = FvInfo->BaseAddress;
   SecCorePhysicalAddress += (UINTN) Pe32Section.Pe32Section + sizeof (EFI_SECTION_PE32) - (UINTN) FvImage->FileImage;
   SecCorePhysicalAddress += EntryPoint;
+  DebugMsg (NULL, 0, 9, "SecCore physical entry point address", "Address = 0x%X", SecCorePhysicalAddress); 
 
   //
   // Find the PEI Core
@@ -1101,6 +1123,7 @@ Returns:
   PeiCorePhysicalAddress = FvInfo->BaseAddress;
   PeiCorePhysicalAddress += (UINTN) Pe32Section.Pe32Section + sizeof (EFI_SECTION_PE32) - (UINTN) FvImage->FileImage;
   PeiCorePhysicalAddress += EntryPoint;
+  DebugMsg (NULL, 0, 9, "PeiCore physical entry point address", "Address = 0x%X", PeiCorePhysicalAddress);
 
   if (MachineType == EFI_IMAGE_MACHINE_IA64) {
     //
@@ -1186,6 +1209,7 @@ Returns:
     //
     Ia32ResetAddressPtr   = (UINT32 *) ((UINTN) FvImage->Eof - 4);
     *Ia32ResetAddressPtr  = (UINT32) (FvInfo->BaseAddress);
+    DebugMsg (NULL, 0, 9, "update BFV base address in the top FV image", "BFV base address = 0x%X", FvInfo->BaseAddress);
 
     //
     // Update the Startup AP in the FVH header block ZeroVector region.
@@ -1232,6 +1256,7 @@ Returns:
     // IpiVector at the 4k aligned address in the top 2 blocks in the PEI FV. 
     //
     IpiVector  = FV_IMAGES_TOP_ADDRESS - ((UINTN) FvImage->Eof - (UINTN) BytePointer);
+    DebugMsg (NULL, 0, 9, "Startup AP Vector address", "IpiVector at 0x%X", IpiVector);
     IpiVector  = IpiVector >> 12;
     IpiVector  = IpiVector & 0xFF;
 
@@ -1460,6 +1485,7 @@ Returns:
     strcpy (FvMapName, FvFileName);
     strcat (FvMapName, ".map");
   }
+  VerboseMsg ("Fv Map file name is %s", FvMapName);
 
   FvMapFile = fopen (FvMapName, "w");
   if (FvMapFile == NULL) {
@@ -1488,6 +1514,7 @@ Returns:
   if (EFI_ERROR (Status)) {
     return Status;    
   }
+  VerboseMsg ("the generated Fv image size is %d bytes", FvInfo.Size);
   
   //
   // support fv image and empty fv image
@@ -1497,7 +1524,7 @@ Returns:
   //
   // Allocate the FV, assure FvImage Header 8 byte alignment
   //
-  FvBufferHeader = malloc (FvImageSize + 8);
+  FvBufferHeader = malloc (FvImageSize + sizeof (UINT64));
   if (FvBufferHeader == NULL) {
     return EFI_OUT_OF_RESOURCES;
   }
@@ -1623,6 +1650,7 @@ Returns:
         Error (NULL, 0, 3000, "Invalid", "Could not update the reset vector.");
         goto Finish;                                              
       }
+      DebugMsg (NULL, 0, 9, "Update Reset vector in VTF file", NULL);
     }
   } 
   
@@ -2577,6 +2605,7 @@ Returns:
       Error (NULL, 0, 2000, "Invalid paramter", "%s = %s", EFI_CAPSULE_GUID_STRING, Value);
       return EFI_ABORTED;
     }
+    DebugMsg (NULL, 0, 9, "Capsule Guid", "%s = %s", EFI_CAPSULE_GUID_STRING, Value);
   } else {
     Error (NULL, 0, 2001, "Missing required argument", EFI_CAPSULE_GUID_STRING);
     return EFI_ABORTED;
@@ -2593,6 +2622,7 @@ Returns:
       return EFI_ABORTED;
     }
     CapInfo->HeaderSize = (UINT32) Value64;
+    DebugMsg (NULL, 0, 9, "Capsule Header size", "%s = %s", EFI_CAPSULE_HEADER_SIZE_STRING, Value);
   }
 
   //
@@ -2608,6 +2638,7 @@ Returns:
       Error (NULL, 0, 2000, "Invalid paramter", "invalid Flag setting for %s", EFI_CAPSULE_FLAGS_STRING);
       return EFI_ABORTED;
     }
+    DebugMsg (NULL, 0, 9, "Capsule Flag", Value);
   }
 
   //
@@ -2635,13 +2666,14 @@ Returns:
       // Add the file
       //
       strcpy (CapInfo->CapFiles[Index], Value);
+      DebugMsg (NULL, 0, 9, "Capsule component file", "the %dth file name is %s", Index, CapInfo->CapFiles[Index]); 
     } else {
       break;
     }
   }
   
-  if (Index == 0 && VerboseMode) {
-    fprintf(stdout, "Capsule components are not specified.\n");
+  if (Index == 0) {
+    Warning (NULL, 0, 0, "Capsule components are not specified.");
   }
 
   return EFI_SUCCESS;
@@ -2787,6 +2819,8 @@ Returns:
 
   fwrite (CapBuffer, 1, CapSize, fpout);
   fclose (fpout);
+  
+  VerboseMsg ("The size of the generated capsule image is %d bytes", CapSize);
 
   return EFI_SUCCESS;
 }
