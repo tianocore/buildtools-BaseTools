@@ -389,7 +389,17 @@ class Build():
 
         if self.PlatformFile == None:
             self.PlatformFile = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM]
-            self.PlatformFile = NormFile(self.PlatformFile, self.WorkspaceDir)
+            if self.PlatformFile == None or self.PlatformFile == "":
+                WorkingDirectory = os.getcwd()
+                FileList = glob.glob(os.path.normpath(os.path.join(WorkingDirectory, '*.dsc')))
+                FileNum = len(FileList)
+                if FileNum >= 2:
+                    EdkLogger.error("build", None, "There are %d DSC files in %s.\n" % (FileNum, WorkingDirectory))
+                elif FileNum == 1:
+                    self.PlatformFile = NormFile(FileList[0], self.WorkspaceDir)
+            else:
+                self.PlatformFile = NormFile(self.PlatformFile, self.WorkspaceDir)
+
 
     def InitBuild(self):
         if self.PlatformFile == None or self.PlatformFile == "":
@@ -649,13 +659,6 @@ def Main():
 
         if Option.PlatformFile != None:
             Option.PlatformFile = NormFile(Option.PlatformFile, Workspace)
-        else:
-            FileList = glob.glob(os.path.normpath(os.path.join(WorkingDirectory, '*.dsc')))
-            FileNum = len(FileList)
-            if FileNum >= 2:
-                EdkLogger.error("build", None, "There are %d DSC files in %s.\n" % (FileNum, WorkingDirectory))
-            elif FileNum == 1:
-                Option.PlatformFile = NormFile(FileList[0], Workspace)
 
         if Option.FdfFile != None:
             Option.FdfFile = NormFile(Option.FdfFile, Workspace)
