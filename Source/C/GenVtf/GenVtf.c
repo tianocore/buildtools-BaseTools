@@ -363,7 +363,7 @@ Returns:
         VtfInfo->LocationType = SECOND_VTF;
       } else {
         VtfInfo->LocationType = NONE;
-        printf ("\nWARN: Unknown location for component %s\n", VtfInfo->CompName);
+        Warning(UTILITY_NAME, 0, 0001, "Unknown location for component", VtfInfo->CompName);
       }
     } else if (strnicmp (*TokenStr, "COMP_TYPE", 9) == 0) {
       TokenStr++;
@@ -2636,8 +2636,19 @@ Returns:
     }
   }
 
+//
+// All Parameters has been parsed, now set the message print level
+//
+  if (QuietMode) {
+    SetPrintLevel(40);
+  } else if (VerboseMode) {
+    SetPrintLevel(15);
+  } else if (DebugMode) {
+    SetPrintLevel(DebugLevel);
+  }
+  
   if (VerboseMode) {
-    fprintf (stdout, "%s tool start.\n", UTILITY_NAME);
+    VerboseMsg("%s tool start.\n", UTILITY_NAME);
   }
 
   if (VTF_OUTPUT == FALSE) {
@@ -2653,7 +2664,7 @@ Returns:
   // Call the GenVtfImage
   //
   if (DebugMode) {
-    fprintf(stdout, "Start to generate the VTF image\n");
+    DebugMsg(UTILITY_NAME, 0, DebugLevel, "Start to generate the VTF image\n");
   }
   Status = GenerateVtfImage (StartAddress1, FwVolSize1, StartAddress2, FwVolSize2, VtfFP);
 
@@ -2682,13 +2693,14 @@ Returns:
     }
 ERROR:
   if (VerboseMode) {
-    fprintf (stdout, "%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());  
+    VerboseMsg("%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());
   }
 
   return GetUtilityStatus ();     
   }
   if (DebugMode) {
-    fprintf(stdout, "VTF image generated successful\n");
+    //fprintf(stdout, "VTF image generated successful\n");
+    DebugMsg(UTILITY_NAME, 0, DebugLevel, "VTF image generated successful\n");
   }
   return 0;
 }

@@ -82,8 +82,6 @@ Abstract:
 // global variables
 //
 UINTN DebugLevel = 0;
-BOOLEAN DebugMode = FALSE;
-BOOLEAN QuietMode = FALSE;
 
 //
 // Use this linked list structure to keep track of all the filenames

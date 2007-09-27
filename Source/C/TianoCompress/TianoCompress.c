@@ -1710,7 +1710,7 @@ Returns:
             Show this help message and exit.\n");
   fprintf (stdout, "  -q, --quiet\n\
          Disable all messages except FATAL ERRORS.\n");
-  fprintf (stdout, "  -d, --debug [#]\n\
+  fprintf (stdout, "  -d, --debug [#,0-9]\n\
          Enable debug messages at level #.\n");  
 }
 
@@ -1862,22 +1862,28 @@ Returns:
   }
 
 //
-// All Parameters has been parsed
-// 
+// All Parameters has been parsed, now set the message print level
+//
+  if (QuietMode) {
+    SetPrintLevel(40);
+  } else if (VerboseMode) {
+    SetPrintLevel(15);
+  } else if (DebugMode) {
+    SetPrintLevel(DebugLevel);
+  }
+  
   if (VerboseMode) {
-    fprintf (stdout, "%s tool start.\n", UTILITY_NAME);
+    VerboseMsg("%s tool start.\n", UTILITY_NAME);
    }
   Scratch = (SCRATCH_DATA *)malloc(sizeof(SCRATCH_DATA));
   if (Scratch == NULL) {
     Error(NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
-    //return 1;
     goto ERROR;
   }
     
   InputFile = fopen (InputFileName, "rb");
   if (InputFile == NULL) {
     Error(NULL, 0, 0001, "Error opening input file", InputFileName);
-    //return 1;
     goto ERROR;
   }
         
@@ -1912,9 +1918,11 @@ Returns:
     if (InputFile != NULL) {
       fclose (InputFile);
       }
-      //return EFI_ABORTED;
       goto ERROR;
       }
+    } else {
+      OutputFileName = DEFAULT_OUTPUT_FILE;
+      OutputFile = fopen (OutputFileName, "wb");
     }
     
   if (ENCODE) {
@@ -1922,7 +1930,7 @@ Returns:
   // First call TianoCompress to get DstSize
   //
   if (DebugMode) {
-    fprintf(stdout, "Encoding\n");
+    DebugMsg(UTILITY_NAME, 0, DebugLevel, "Encoding");
   }
   Status = TianoCompress ((UINT8 *)FileBuffer, InputLength, OutBuffer, &DstSize);
   
@@ -1940,17 +1948,21 @@ Returns:
   }
 
   fwrite(OutBuffer,(size_t)DstSize, 1, OutputFile);
+  free(Scratch);
   free(FileBuffer);
   free(OutBuffer);
 
   if (DebugMode) {
-    fprintf(stdout, "Encoding successful\n");
+    DebugMsg(UTILITY_NAME, 0, DebugLevel, "Encoding Successful!\n");
+  }
+  if (VerboseMode) {
+    VerboseMsg("Encoding successful\n");
   }
   return 0;  
   }
   else if (DECODE) {
   if (DebugMode) {
-    fprintf(stdout, "Decoding\n");
+    DebugMsg(UTILITY_NAME, 0, DebugLevel, "Decoding\n");
   }
   //
   // Get Compressed file original size
@@ -1969,7 +1981,6 @@ Returns:
 
   Status = Decompress((VOID *)FileBuffer, (VOID *)OutBuffer, (VOID *)Scratch, 2);
   if (Status != EFI_SUCCESS) {
-    //Error(NULL, 0, 0008, "Error decompressing file: %s", InputFileName);
    goto ERROR; 	
   }
 
@@ -1979,7 +1990,11 @@ Returns:
   free(OutBuffer);
 
   if (DebugMode) {
-    fprintf(stdout, "Decoding successful\n");
+    DebugMsg(UTILITY_NAME, 0, DebugLevel, "Encoding successful!\n");
+  }
+  
+  if (VerboseMode) {
+    VerboseMsg("Decoding successful\n");
   }
   return 0;
   }
@@ -1987,16 +2002,16 @@ Returns:
 ERROR:
   if (DebugMode) {
     if (ENCODE) {
-      fprintf(stdout, "Encoding Error\n");
+      DebugMsg(UTILITY_NAME, 0, DebugLevel, "Encoding Error\n");
     } else if (DECODE) {
-      fprintf(stdout, "Decoding Error\n");
+      DebugMsg(UTILITY_NAME, 0, DebugLevel, "Decoding Error\n");
     }
   }
   free(Scratch);
   free(FileBuffer);
   free(OutBuffer);
   if (VerboseMode) {
-    fprintf (stdout, "%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());  
+    VerboseMsg("%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());
   }
   return GetUtilityStatus ();
 }

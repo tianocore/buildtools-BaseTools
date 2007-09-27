@@ -20,12 +20,20 @@
 #include <stdio.h>
 #include <assert.h>
 #include <Common/UefiBaseTypes.h>
+
+
 //
 // Decompression algorithm begins here
 //
 #define UTILITY_NAME "TianoCompress"
 #define UTILITY_MAJOR_VERSION 0
 #define UTILITY_MINOR_VERSION 1
+
+//
+// Default output file name
+//
+#define DEFAULT_OUTPUT_FILE "file.tmp"
+
 #define BITBUFSIZ 32
 #define MAXMATCH  256
 #define THRESHOLD 3

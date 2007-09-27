@@ -88,7 +88,7 @@ Returns:
   }
   
   if (mOptions.Verbose) {
-    fprintf (stdout, "%s tool start.\n", UTILITY_NAME);
+    VerboseMsg("%s tool start.\n", UTILITY_NAME);
     }  
   //
   // If dumping an image, then do that and quit
@@ -153,13 +153,13 @@ Returns:
     Size = 0;
     if (FList->FileFlags & FILE_FLAG_EFI) {
       if (mOptions.Verbose) {
-        fprintf (stdout, "Processing EFI file    %s\n", FList->FileName);
+        VerboseMsg("Processing EFI file    %s\n", FList->FileName);
       }
 
       Status = ProcessEfiFile (FptrOut, FList, mOptions.VendId, mOptions.DevId, &Size);
     } else if (FList->FileFlags & FILE_FLAG_BINARY) {
       if (mOptions.Verbose) {
-        fprintf (stdout, "Processing binary file %s\n", FList->FileName);
+        VerboseMsg("Processing binary file %s\n", FList->FileName);
       }
 
       Status = ProcessBinFile (FptrOut, FList, &Size);
@@ -169,7 +169,7 @@ Returns:
     }
 
     if (mOptions.Verbose) {
-      fprintf (stdout, "  Output size = 0x%X\n", Size);
+      VerboseMsg("  Output size = 0x%X\n", Size);
     }
 
     if (Status != STATUS_SUCCESS) {
@@ -206,7 +206,7 @@ BailOut:
   }
   }
   if (mOptions.Verbose) {
-    fprintf (stdout, "%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());  
+    VerboseMsg("%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());
   }
 
   return GetUtilityStatus (); 
@@ -265,7 +265,7 @@ Returns:
   fseek (InFptr, 0, SEEK_END);
   FileSize = ftell (InFptr);
   if (mOptions.Verbose) {
-    fprintf (stdout, "  File size   = 0x%X\n", FileSize);
+    VerboseMsg("  File size   = 0x%X\n", FileSize);
   }
 
   fseek (InFptr, 0, SEEK_SET);
@@ -366,7 +366,9 @@ Returns:
   }
 
   Buffer[FileSize - 1] = (UINT8) ((~ByteCheckSum) + 1);
-  fprintf (stdout, "Checksum = %02x\n", (UINT32) Buffer[FileSize - 1]);
+  if (mOptions.Verbose) {
+    VerboseMsg("  Checksum = %02x\n\n", (UINT32) Buffer[FileSize - 1]);
+  }
 
   //
   // Now copy the input file contents out to the output file
@@ -487,7 +489,7 @@ Returns:
 
   HeaderSize = sizeof (PCI_DATA_STRUCTURE) + HeaderPadBytes + sizeof (EFI_PCI_EXPANSION_ROM_HEADER);
   if (mOptions.Verbose) {
-    fprintf (stdout, "  File size   = 0x%X\n", FileSize);
+    VerboseMsg("  File size   = 0x%X\n", FileSize);
   }
   //
   // Allocate memory for the entire file (in case we have to compress), then
@@ -532,7 +534,7 @@ Returns:
     // Now compute the size, then swap buffer pointers.
     //
     if (mOptions.Verbose) {
-      fprintf (stdout, "  Comp size   = 0x%X\n", CompressedFileSize);
+      VerboseMsg("  Comp size   = 0x%X\n", CompressedFileSize);
     }
 
     TotalSize         = CompressedFileSize + HeaderSize;
@@ -816,7 +818,7 @@ Returns:
 
   *SubSystem = OptionalHdr.Subsystem;
   if (mOptions.Verbose) {
-    fprintf (stdout, "  Got subsystem = 0x%X from image\n", (int) *SubSystem);
+    VerboseMsg("  Got subsystem = 0x%X from image\n", (int) *SubSystem);
   }
   //
   // Good to go
@@ -902,7 +904,6 @@ Returns:
   //
   // Process until no more arguments
   //
-  //__asm int 3;
   while (Argc > 0) {
     if ((Argv[0][0] == '-') || (Argv[0][0] == '/')) {
       //
@@ -917,7 +918,6 @@ Returns:
         //
         // Make sure there's another parameter
         //
-        //printf("\nvendor id specified!\n");
         if (Argc > 1) {
           Options->VendId       = (UINT16) strtol (Argv[1], NULL, 16);
           Options->VendIdValid  = 1;
@@ -998,16 +998,14 @@ Returns:
           return 1;
         }
         if (DebugLevel>=5 && DebugLevel<=9) {
-          DebugMode = TRUE;
+          Options->Debug = TRUE;
         } else {
-          DebugMode = FALSE;
+          Options->Debug = FALSE;
         }
-        Argv++;
-      } else if ((stricmp (Argv[0], "-quiet") == 0) || (stricmp (Argv[0], "-q") == 0)) {
-        QuietMode = TRUE;
-        //Argv++;
-        //Argc--;
-      } else if ((stricmp (Argv[0], "-dump") == 0) || (stricmp (Argv[0], "-d") == 0)) {
+        Argc--;
+      } else if ((stricmp (Argv[0], "--quiet") == 0) || (stricmp (Argv[0], "-q") == 0)) {
+        Options->Quiet = TRUE;
+      } else if ((stricmp (Argv[0], "--dump") == 0) || (stricmp (Argv[0], "-d") == 0)) {
         //
         // -dump for dumping a ROM image. In this case, say that the device id
         // and vendor id are valid so we don't have to specify bogus ones on the
@@ -1239,7 +1237,7 @@ Returns:
             Show this help message and exit.\n");
   fprintf (stdout, "  -q, --quiet\n\
             Disable all messages except FATAL ERRORS.\n");
-  fprintf (stdout, "  --debug [#]\n\
+  fprintf (stdout, "  --debug [#,0-9]\n\
             Enable debug messages at level #.\n");  
 }
 
@@ -1322,17 +1320,20 @@ Returns:
     //
     if (mOptions.Pci23 == 1) {
     if (fread (&PciDs23, sizeof (PciDs23), 1, InFptr) != 1) {
-      Error (NULL, 0, 3001, "Not supported", "Failed to read PCI data structure from file");
+      Error (NULL, 0, 3001, "Not supported", "Failed to read PCI data structure from file %s", InFile->FileName);
       goto BailOut;
     }
     } else {
     if (fread (&PciDs30, sizeof (PciDs30), 1, InFptr) != 1) {
-      Error (NULL, 0, 3001, "Not supported", "Failed to read PCI data structure from file");
+      Error (NULL, 0, 3001, "Not supported", "Failed to read PCI data structure from file %s", InFile->FileName);
       goto BailOut;
     }
     }
+    if (mOptions.Verbose) {
+      VerboseMsg("Read PCI data structure from file %s", InFile->FileName);
+    }
 
-    fprintf (stdout, "  PCI Data Structure\n");
+    //fprintf (stdout, "  PCI Data Structure\n");
     if (mOptions.Pci23 == 1) {
     fprintf (
       stdout,
