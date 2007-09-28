@@ -1047,7 +1047,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
         #
         TokenSpaceGuidStructure = GetGuidValue(Platform.PackageList, TokenSpaceGuidCName)
         TokenSpaceGuid = GuidStructureStringToGuidValueName(TokenSpaceGuidStructure)
-        if Pcd.Type == 'DYNAMIC_EX':
+        if Pcd.Type in gDynamicExPcd:
             if TokenSpaceGuid not in GuidList:
                 GuidList += [TokenSpaceGuid]
                 Dict['GUID_STRUCTURE'].append(TokenSpaceGuidStructure)
@@ -1219,7 +1219,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
         Dict['TOKEN_CNAME'][GeneratedTokenNumber] = CName
         Dict['TOKEN_GUID'][GeneratedTokenNumber] = TokenSpaceGuid
         Dict['TOKEN_TYPE'][GeneratedTokenNumber] = ' | '.join(Pcd.TokenTypeList)
-        if Pcd.Type == 'DYNAMIC_EX':
+        if Pcd.Type in gDynamicExPcd:
             Dict['EXMAPPING_TABLE_EXTOKEN'].append(Pcd.Token)
             Dict['EXMAPPING_TABLE_LOCAL_TOKEN'].append(GeneratedTokenNumber)
             Dict['EXMAPPING_TABLE_GUID_INDEX'].append(GuidList.index(TokenSpaceGuid))
