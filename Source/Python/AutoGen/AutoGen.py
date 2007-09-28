@@ -295,6 +295,7 @@ class PlatformAutoGen:
                     if M.ModuleType in ["PEIM", "PEI_CORE"]:
                         PcdFromPlatform.Phase = "PEI"
                     if PcdFromPlatform not in PcdList:
+                        PcdFromPlatform.TokenValue = PcdFromModule.TokenValue
                         PcdFromPlatform.DatumType = PcdFromModule.DatumType
                         PcdList.append(PcdFromPlatform)
 
