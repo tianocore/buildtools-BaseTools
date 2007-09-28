@@ -141,7 +141,7 @@ Returns:
   //
   // Now open our output file
   //
-  if ((FptrOut = fopen (mOptions.OutFileName, "w+b")) == NULL) {
+  if ((FptrOut = fopen (mOptions.OutFileName, "wb")) == NULL) {
     Error(stdout, 0, 0001, "Error opening file", mOptions.OutFileName);
     goto BailOut;
   }
