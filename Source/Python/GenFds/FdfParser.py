@@ -1260,6 +1260,9 @@ class FdfParser:
                 self.SetFileBufferPos(oldPos)
                 return False
             
+            if self.__Token not in ("COMPAT16", "PE32", "PIC", "TE", "FV_IMAGE", "RAW", "DXE_DEPEX",\
+                               "UI", "VERSION", "PEI_DEPEX", "SUBTYPE_GUID"):
+                raise Warning("Unknown section type At Line %d" % self.CurrentLineNumber)
             # DataSection
             section = DataSection.DataSection()
             section.Alignment = alignment
