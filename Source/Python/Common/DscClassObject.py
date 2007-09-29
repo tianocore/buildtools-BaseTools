@@ -20,6 +20,7 @@ from Dictionary import *
 from CommonDataClass.PlatformClass import *
 from CommonDataClass.CommonClass import SkuInfoClass
 from BuildToolError import *
+from Misc import sdict
 
 class DscObject(object):
     def __init__(self):
@@ -304,7 +305,7 @@ class Dsc(DscObject):
         self.GenDynamicVpdPcds(DataType.TAB_PCDS_DYNAMIC_EX_VPD, File)
 
         #Components
-        Components = {}
+        Components = sdict()
         IncludeFiles = {}
         Defines = {}
         for Arch in DataType.ARCH_LIST:

@@ -539,8 +539,8 @@ class WorkspaceBuild(object):
         LibraryConsumerList = [Module]
 
         Constructor         = []
-        ConsumedByList      = {}
-        LibraryInstance     = {}
+        ConsumedByList      = sdict()
+        LibraryInstance     = sdict()
 
         EdkLogger.verbose("")
         EdkLogger.verbose("Library instances of module [%s]:" % str(Module))
