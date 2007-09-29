@@ -10,11 +10,13 @@ class FileStatements (FileStatementsClassObject) :
     def __init__(self):
         FileStatementsClassObject.__init__(self)
         
-    def GenFfs(self):
+    def GenFfs(self, Dict = {}):
         OutputDir = os.path.join(GenFdsGlobalVariable.FfsDir, self.NameGuid)
         if not os.path.exists(OutputDir):
              os.makedirs(OutputDir)
 
+        Dict.update(self.DefineVarDict)
+        
         if self.FvName != None :
             Buffer = StringIO.StringIO('')
             if self.FvName.upper() not in GenFdsGlobalVariable.FdfParser.profile.FvDict.keys():
@@ -32,7 +34,8 @@ class FileStatements (FileStatementsClassObject) :
             SectionFiles = ' -i ' + FileName
         
         elif self.FileName != None:
-            SectionFiles = ' -i ' + GenFdsGlobalVariable.ReplaceWorkspaceMarco(self.FileName)
+            self.FileName = GenFdsGlobalVariable.ReplaceWorkspaceMarco(self.FileName)
+            SectionFiles = ' -i ' + GenFdsGlobalVariable.MacroExtend(self.FileName, Dict)
             
         else:
             SectionFiles = ''
@@ -40,7 +43,7 @@ class FileStatements (FileStatementsClassObject) :
             for section in self.SectionList :
                 Index = Index + 1
                 SecIndex = '%d' %Index
-                sectList, align = section.GenSection(OutputDir, self.NameGuid, SecIndex, self.KeyStringList)
+                sectList, align = section.GenSection(OutputDir, self.NameGuid, SecIndex, self.KeyStringList, None, Dict)
                 if sectList != []:
                     for sect in sectList:
                         SectionFiles = SectionFiles  + \

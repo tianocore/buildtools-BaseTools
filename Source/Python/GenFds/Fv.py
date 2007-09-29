@@ -16,20 +16,24 @@ class FV (FvClassObject):
         self.BaseAddress = None
         self.InfFileName = None
         self.FvAddressFileName = None
-        
+
     #
     #  Generate Fv and add it to the Buffer
     #
-    def AddToBuffer (self, Buffer, BaseAddress=None, BlockSize= None, BlockNum=None, ErasePloarity='1', VtfDict=None) :
-        self.__InitialInf__(BaseAddress, BlockSize, BlockNum, ErasePloarity, VtfDict)
+    def AddToBuffer (self, Buffer, BaseAddress=None, BlockSize= None, BlockNum=None, ErasePloarity='1', VtfDict=None, MacroDict = {}) :
+        
         if self.UiFvName.upper() in GenFds.FvBinDict.keys():
             return GenFds.FvBinDict[self.UiFvName.upper()]
+        
+        self.__InitialInf__(BaseAddress, BlockSize, BlockNum, ErasePloarity, VtfDict)
         #
         # First Process the Apriori section
         #
+        MacroDict.update(self.DefineVarDict)
+        
         GenFdsGlobalVariable.VerboseLogger('First generate Apriori file !')
         for aprSection in self.AprioriSectionList:
-            FileName = aprSection.GenFfs (self.UiFvName)
+            FileName = aprSection.GenFfs (self.UiFvName, MacroDict)
             # Add Apriori file name to Inf file
             self.FvInfFile.writelines("EFI_FILE_NAME = " + \
                                        FileName          + \
@@ -38,7 +42,7 @@ class FV (FvClassObject):
         # Process Modules in FfsList
         
         for FfsFile in self.FfsList :
-            FileName = FfsFile.GenFfs()
+            FileName = FfsFile.GenFfs(MacroDict)
             self.FvInfFile.writelines("EFI_FILE_NAME = " + \
                                        FileName          + \
                                        T_CHAR_LF)

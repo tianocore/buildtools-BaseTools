@@ -9,7 +9,7 @@ class UiSection (UiSectionClassObject):
     def __init__(self):
         UiSectionClassObject.__init__(self)
 
-    def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None):
+    def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None, Dict = {}):
         #
         # Prepare the parameter of GenSection
         #
@@ -24,6 +24,7 @@ class UiSection (UiSectionClassObject):
             NameString = self.StringData
         elif self.FileName != None:
             file = GenFdsGlobalVariable.ReplaceWorkspaceMarco(self.FileName)
+            file = GenFdsGlobalVariable.MacroExtend(file, Dict)
             f = open(file, 'r')
             NameString = f.read()
             NameString = '\"' + NameString + "\""

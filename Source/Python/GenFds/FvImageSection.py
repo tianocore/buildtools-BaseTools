@@ -10,7 +10,7 @@ class FvImageSection(FvImageSectionClassObject):
     def __init__(self):
         FvImageSectionClassObject.__init__(self)
         
-    def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None):
+    def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None, Dict = {}):
         OutputFileList = []
         
         '''If Is FvBin '''
@@ -43,20 +43,20 @@ class FvImageSection(FvImageSectionClassObject):
             else:
                 raise Exception("FvImageSection Failed! %s NOT found in FDF" % self.FvName)
                                  
-            FvFileName = self.Fv.AddToBuffer(Buffer)
+        FvFileName = self.Fv.AddToBuffer(Buffer, MacroDict = Dict)
             
-            #
-            # Prepare the parameter of GenSection
-            #
-            OutputFile = os.path.join(OutputPath, ModuleName + 'SEC' + SecNum + Ffs.SectionSuffix.get("FV_IMAGE"))
+        #
+        # Prepare the parameter of GenSection
+        #
+        OutputFile = os.path.join(OutputPath, ModuleName + 'SEC' + SecNum + Ffs.SectionSuffix.get("FV_IMAGE"))
                      
-            GenSectionCmd = 'GenSec -o '                          + \
-                             OutputFile                           + \
-                             ' -s '                               + \
-                             'EFI_SECTION_FIRMWARE_VOLUME_IMAGE ' + \
-                             FvFileName
+        GenSectionCmd = 'GenSec -o '                          + \
+                         OutputFile                           + \
+                         ' -s '                               + \
+                         'EFI_SECTION_FIRMWARE_VOLUME_IMAGE ' + \
+                         FvFileName
                          
-            GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
-            OutputFileList.append(OutputFile)
+        GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
+        OutputFileList.append(OutputFile)
             
-            return OutputFileList, self.Alignment
+        return OutputFileList, self.Alignment

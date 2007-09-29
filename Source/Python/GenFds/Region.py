@@ -10,7 +10,7 @@ class region(RegionClassObject):
 
     """Add RegionData to Fd file"""
 
-    def AddToBuffer(self, Buffer, BaseAddress, BlockSizeList, ErasePolarity, FvBinDict, vtfDict = None, MarcoDict = None):
+    def AddToBuffer(self, Buffer, BaseAddress, BlockSizeList, ErasePolarity, FvBinDict, vtfDict = None, MacroDict = {}):
         Size = self.Size
         GenFdsGlobalVariable.InfLogger('Generate Region')
         GenFdsGlobalVariable.InfLogger("   Region Size = 0x%x" %Size)
@@ -30,7 +30,7 @@ class region(RegionClassObject):
             for RegionData in self.RegionDataList:
                 
                 if RegionData.endswith(".fv"):
-                    RegionData = GenFdsGlobalVariable.MarcoExend(RegionData, MarcoDict)
+                    RegionData = GenFdsGlobalVariable.MacroExtend(RegionData, MacroDict)
                     GenFdsGlobalVariable.InfLogger('   Region FV File Name = .fv : %s'%RegionData)
                     if RegionData[1] != ':' :
                         RegionData = os.path.join (GenFdsGlobalVariable.WorkSpaceDir, RegionData)
@@ -79,7 +79,7 @@ class region(RegionClassObject):
         if self.RegionType == 'FILE':
             FvBuffer = StringIO.StringIO('')
             for RegionData in self.RegionDataList:
-                RegionData = GenFdsGlobalVariable.MarcoExend(RegionData, MarcoDict)
+                RegionData = GenFdsGlobalVariable.MacroExtend(RegionData, MacroDict)
                 GenFdsGlobalVariable.InfLogger('   Region File Name = FILE: %s'%RegionData)
                 if RegionData[1] != ':' :
                     RegionData = os.path.join (GenFdsGlobalVariable.WorkSpaceDir, RegionData)

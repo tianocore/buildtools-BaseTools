@@ -12,6 +12,10 @@ class GenFdsGlobalVariable:
     LibDir = ''
     WorkSpace = None
     WorkSpaceDir = ''
+    EdkSourceDir = ''
+    OutputDirFromDsc = ''
+    TargetName = ''
+    ToolChainTag = ''
     RuleDict = {}
     DefaultRule = None
     ArchList = None
@@ -21,8 +25,8 @@ class GenFdsGlobalVariable:
     SharpCounter = 0
     SharpNumberPerLine = 40
 
-    def ExtendMarco (String):
-        return String
+#    def ExtendMarco (String):
+#        return String
     
     def SetDir (OutputDir, FdfParser, WorkSpace, ArchList):
         GenFdsGlobalVariable.VerboseLogger( "GenFdsGlobalVariable.OuputDir :%s" %OutputDir)
@@ -79,28 +83,42 @@ class GenFdsGlobalVariable:
     def DebugLogger (Level, msg):
         EdkLogger.debug(Level, msg)
 
-    def MarcoExend (Str, MarcoDict):
+    def MacroExtend (Str, MacroDict = {}):
         if Str == None :
             return None
         
-        Dict = {'$(WORKSPACE)'   : GenFdsGlobalVariable.WorkSpaceDir}
-        if MarcoDict != None  and len (MarcoDict) != 0:
-            for marco in MarcoDict.keys():
-                key = '$(' + marco + ')'
-                Dict[key] = MarcoDict.get(marco)
+        Dict = {'$(WORKSPACE)'   : GenFdsGlobalVariable.WorkSpaceDir,
+                '$(EDK_SOURCE)'  : GenFdsGlobalVariable.EdkSourceDir,
+                '$(OUTPUT_DIRECTORY)': GenFdsGlobalVariable.OutputDirFromDsc,
+                '$(TARGET)' : GenFdsGlobalVariable.TargetName,
+                '$(TOOL_CHAIN_TAG)' : GenFdsGlobalVariable.ToolChainTag
+               }
+        if MacroDict != None  and len (MacroDict) != 0:
+#            for marco in MarcoDict.keys():
+#                key = '$(' + marco + ')'
+#                Dict[key] = MarcoDict.get(marco)
+            Dict.update(MacroDict)
 
         for key in Dict.keys():
             if Str.find(key) >= 0 :
                 Str = Str.replace (key, Dict[key])
+        
+        if Str.find('$(ARCH)') >= 0:
+            if len(GenFdsGlobalVariable.ArchList) == 1:
+                Str = Str.replace('$(ARCH)', GenFdsGlobalVariable.ArchList[0])
+            else:
+                GenFdsGlobalVariable.InfLogger ("No way to determine $(ARCH) for %s\n" % Str)
+                sys.exit(1)
+            
         return Str
 
 
     SetDir = staticmethod(SetDir)
-    ExtendMarco = staticmethod(ExtendMarco)
+#    ExtendMarco = staticmethod(ExtendMarco)
     SetDefaultRule = staticmethod(SetDefaultRule)
     ReplaceWorkspaceMarco = staticmethod(ReplaceWorkspaceMarco)
     CallExternalTool = staticmethod(CallExternalTool)
     VerboseLogger = staticmethod(VerboseLogger)
     InfLogger = staticmethod(InfLogger)
     DebugLogger = staticmethod(DebugLogger)
-    MarcoExend = staticmethod (MarcoExend)
+    MacroExtend = staticmethod (MacroExtend)

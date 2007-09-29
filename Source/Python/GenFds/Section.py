@@ -56,10 +56,10 @@ class Section (SectionClassObject):
     def __init__(self):
         SectionClassObject.__init__(self)
         
-    def GenSection(self, OutputPath, GuidName, SecNum, keyStringList, FfsInf = None):
+    def GenSection(self, OutputPath, GuidName, SecNum, keyStringList, FfsInf = None, Dict = {}):
         pass
 
-    def GetFileList(FfsInf, FileType, FileExtension):
+    def GetFileList(FfsInf, FileType, FileExtension, Dict = {}):
         if FileType in Section.SectFileType.keys() :
             IsSect = True
         else :
@@ -76,8 +76,9 @@ class Section (SectionClassObject):
         
         FileList = []
         for File in FfsInf.BinFileList :
-            if File.FileType == FileType:
-                FileList.append(os.path.join(GenFdsGlobalVariable.WorkSpaceDir, FfsInf.SourceDir, File.BinaryFile))
+            if File.FileType == FileType and FfsInf.CurrentArch in File.SupArchList:
+                if '*' in FfsInf.TargetOverrideList or File.Target == '*' or File.Target in FfsInf.TargetOverrideList:
+                    FileList.append(os.path.join(GenFdsGlobalVariable.WorkSpaceDir, FfsInf.SourceDir, File.BinaryFile))
         
         if os.path.exists(FfsInf.EfiOutputPath):
             for file in os.listdir(FfsInf.EfiOutputPath):
@@ -85,5 +86,5 @@ class Section (SectionClassObject):
                 if Ext == suffix:
                    FileList.append(os.path.join(FfsInf.EfiOutputPath, file))
                    
-        return FileList, IsSect
+        return FileList, IsSect 
     GetFileList = staticmethod(GetFileList)

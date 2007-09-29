@@ -9,7 +9,7 @@ class VerSection (VerSectionClassObject):
     def __init__(self):
         VerSectionClassObject.__init__(self)
         
-    def GenSection(self,OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None):
+    def GenSection(self,OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None, Dict = {}):
         #
         # Prepare the parameter of GenSection
         #
@@ -33,7 +33,9 @@ class VerSection (VerSectionClassObject):
         if self.StringData != None:
              StringData = self.StringData
         elif self.FileName != None:
-            f = open (self.FileName, 'r')
+            file = GenFdsGlobalVariable.ReplaceWorkspaceMarco(self.FileName)
+            file = GenFdsGlobalVariable.MacroExtend(file, Dict)
+            f = open (file, 'r')
             StringData = f.read()
             StringData = '\"' + StringData + '\"'
             f.close()

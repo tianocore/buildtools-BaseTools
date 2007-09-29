@@ -15,15 +15,17 @@ from Common.String import *
 class FfsInfStatement(FfsInfStatementClassObject):
     def __init__(self):
         FfsInfStatementClassObject.__init__(self)
+        self.TargetOverrideList = []
 
-    def __infParse__(self):
-        self.CurrentArch = self.__GetCurrentArch__()
+    def __infParse__(self, Dict = {}):
+        self.CurrentArch = self.GetCurrentArch()
         #
         # Get the InfClass object
         #
 ##        for item in GenFdsGlobalVariable.WorkSpace.InfDatabase:
 ##            print item
         self.InfFileName = NormPath(self.InfFileName)
+        self.InfFileName = GenFdsGlobalVariable.MacroExtend(self.InfFileName, Dict)
         (self.SourceDir, InfName) = os.path.split(self.InfFileName)
         if self.CurrentArch != None and self.InfFileName in GenFdsGlobalVariable.WorkSpace.Build[self.CurrentArch].ModuleDatabase.keys():
             
@@ -70,7 +72,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         self.EfiOutputPath = self.__GetEFIOutPutPath__()
         GenFdsGlobalVariable.VerboseLogger( "ModuelEFIPath: " + self.EfiOutputPath)
                              
-    def GenFfs(self):
+    def GenFfs(self, Dict = {}):
         #
         # Parse Inf file get Module related information
         #
@@ -82,7 +84,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
             self.InfFileName = self.InfFileName[1:]
         
  
-        self.__infParse__()
+        self.__infParse__(Dict)
         #
         # Get the rule of how to generate Ffs file
         #
@@ -107,23 +109,18 @@ class FfsInfStatement(FfsInfStatementClassObject):
             return FfsOutput
                 
     def __ExtendMarco__ (self, String):
-        MarcoDict = {
+        MacroDict = {
             '$(INF_OUTPUT)'  : self.EfiOutputPath,
             '$(MODULE_NAME)' : self.BaseName,
             '$(BUILD_NUMBER)': self.BuildNum,
             '$(INF_VERSION)' : self.VersionString,
-            '$(NAMED_GUID)'  : self.ModuleGuid,
-            '$(WORKSPACE)'   : GenFdsGlobalVariable.WorkSpaceDir
+            '$(NAMED_GUID)'  : self.ModuleGuid        
         }
-        if String == None :
-            return None
-        for Marco in MarcoDict.keys():
-            if String.find(Marco) >= 0 :
-                String = String.replace (Marco, MarcoDict[Marco])
+        String = GenFdsGlobalVariable.MacroExtend(String, MacroDict)
         return String
 
     def __GetRule__ (self) :
-        currentArchList = self.__GetCurrentArch__()
+        currentArchList = self.CurrentArch
         if currentArchList == None:
             currentArchList = ['common']
         
@@ -195,16 +192,23 @@ class FfsInfStatement(FfsInfStatementClassObject):
         if dscArchList != []:
             curArchList = set (targetArchList) & set (dscArchList)
         GenFdsGlobalVariable.VerboseLogger ("Valid target architecture(s) is : " + " ".join(curArchList))
-        return curArchList
+        return list(curArchList)
     
-    def __GetCurrentArch__(self) :
+    def GetCurrentArch(self) :
         curArchList = self.__GetPlatformArchList__()
-        ArchList = curArchList
-        for Key in self.KeyStringList:
-            Target, Tag, Arch = Key.split('_')
-            ArchList = set (ArchList) & set(list(Arch))
+        ArchList = []
+        if self.KeyStringList != []:
+            for Key in self.KeyStringList:
+                Target, Tag, Arch = Key.split('_')
+                if Arch in curArchList:
+                    ArchList.append(Arch)
+                if Target not in self.TargetOverrideList:
+                    self.TargetOverrideList.append(Target)
+        else:
+            ArchList = curArchList
+                
         if len(ArchList) == 1:
-            Arch = list(ArchList)[0]
+            Arch = ArchList[0]
             return Arch
         elif len(ArchList) > 1:
 #            raise Exception("Module %s has too many build ARCH !" %self.InfFileName)
@@ -224,8 +228,8 @@ class FfsInfStatement(FfsInfStatementClassObject):
         index = fileName.find('.')
         fileName = fileName[0:index]
         Arch = "NoneArch"
-        if self.__GetCurrentArch__() != None:
-            Arch = self.__GetCurrentArch__()
+        if self.CurrentArch != None:
+            Arch = self.CurrentArch
         
         OutputPath = os.path.join(GenFdsGlobalVariable.OuputDir,
                                   Arch ,
@@ -265,7 +269,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                 #
                 # Call GenSection
                 #
-                GenFdsGlobalVariable.CallExternalTool(genSectionCmd, "Gensection Failed!")
+                GenFdsGlobalVariable.CallExternalTool(genSectionCmd, "Gen section Failed!")
                 OutputFileList.append(GenSecOutputFile)
         else:
             SecNum = '%d' %Index
@@ -282,7 +286,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
             #
             # Call GenSection
             #
-            GenFdsGlobalVariable.CallExternalTool(genSectionCmd, "Gensection Failed!")
+            GenFdsGlobalVariable.CallExternalTool(genSectionCmd, "Gen section Failed!")
             OutputFileList.append(GenSecOutputFile)
 
         return OutputFile

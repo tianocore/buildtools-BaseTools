@@ -43,5 +43,5 @@ class Ffs(FDClassObject):
     
     def __init__(self):
         FfsClassObject.__init__(self)
-    def GenFfs():
-        pass
+#    def GenFfs():
+#        pass

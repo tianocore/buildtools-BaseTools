@@ -15,7 +15,7 @@ class CompressSection (CompressSectionClassObject) :
         CompressSectionClassObject.__init__(self)
         
 
-    def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None):
+    def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None, Dict = {}):
         #
         # Generate all section
         #
@@ -28,7 +28,7 @@ class CompressSection (CompressSectionClassObject) :
         for Sect in self.SectionList:
             Index = Index + 1
             SecIndex = '%s.%d' %(SecNum, Index)
-            ReturnSectList, align = Sect.GenSection(OutputPath, ModuleName, SecIndex, KeyStringList, FfsInf)
+            ReturnSectList, align = Sect.GenSection(OutputPath, ModuleName, SecIndex, KeyStringList, FfsInf, Dict)
             if ReturnSectList != []:
                 for file in ReturnSectList:
                    SectFiles = SectFiles + \

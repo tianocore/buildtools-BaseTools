@@ -19,6 +19,7 @@ import RuleFileExtension
 import EfiSection
 import Vtf
 import ComponentStatement
+import GenFdsGlobalVariable
 
 import re
 import os
@@ -657,6 +658,7 @@ class FdfParser:
                 raise Warning("expected value At Line %d" % self.CurrentLineNumber)
 
             value = self.__Token
+            macro = '$(' + macro + ')'
             obj.DefineVarDict[macro] = value
             return True
         
@@ -897,12 +899,12 @@ class FdfParser:
 
         self.__GetFvAttributes( fv)
         
-        self.__GetAprioriSection( fv)
-        self.__GetAprioriSection( fv)
+        self.__GetAprioriSection( fv, fv.DefineVarDict.copy())
+        self.__GetAprioriSection( fv, fv.DefineVarDict.copy())
         
         while True:
-            isInf = self.__GetInfStatement( fv)
-            isFile = self.__GetFileStatement( fv)
+            isInf = self.__GetInfStatement( fv, MacroDict = fv.DefineVarDict.copy())
+            isFile = self.__GetFileStatement( fv, MacroDict = fv.DefineVarDict.copy())
             if not isInf and not isFile:
                 break
         
@@ -951,7 +953,7 @@ class FdfParser:
 
         return
 
-    def __GetAprioriSection(self, fv):
+    def __GetAprioriSection(self, fv, MacroDict = {}):
         
         if not self.__IsKeyword( "APRIORI"):
             return False
@@ -967,9 +969,10 @@ class FdfParser:
         aprSection.AprioriType = type
         
         self.__GetDefineStatements(aprSection)
+        MacroDict.update(aprSection.DefineVarDict)
         
         while True:
-            isInf = self.__GetInfStatement( aprSection)
+            isInf = self.__GetInfStatement( aprSection, MacroDict = MacroDict)
             isFile = self.__GetFileStatement( aprSection)
             if not isInf and not isFile:
                 break
@@ -980,7 +983,7 @@ class FdfParser:
         fv.AprioriSectionList.append(aprSection)
         return True
 
-    def __GetInfStatement(self, obj, ForCapsule = False):
+    def __GetInfStatement(self, obj, ForCapsule = False, MacroDict = {}):
 
         if not self.__IsKeyword( "INF"):
             return False
@@ -991,6 +994,10 @@ class FdfParser:
         if not self.__GetNextToken():
             raise Warning("expected INF file path At Line %d" % self.CurrentLineNumber)
         ffsInf.InfFileName = self.__Token
+        
+        if ffsInf.InfFileName.find('$') >= 0:
+            ffsInf.InfFileName = GenFdsGlobalVariable.GenFdsGlobalVariable.MacroExtend(ffsInf.InfFileName, MacroDict)
+            
         if not ffsInf.InfFileName in self.profile.InfList:
             self.profile.InfList.append(ffsInf.InfFileName)
         
@@ -1045,7 +1052,7 @@ class FdfParser:
                 
 
 
-    def __GetFileStatement(self, obj, ForCapsule = False):
+    def __GetFileStatement(self, obj, ForCapsule = False, MacroDict = {}):
 
         if not self.__IsKeyword( "FILE"):
             return False
@@ -1063,7 +1070,7 @@ class FdfParser:
             raise Warning("expected File GUID At Line %d" % self.CurrentLineNumber)
         ffsFile.NameGuid = self.__Token
     
-        self.__GetFilePart( ffsFile)
+        self.__GetFilePart( ffsFile, MacroDict.copy())
         
         if ForCapsule:
             capsuleFfs = CapsuleData.CapsuleFfs()
@@ -1074,7 +1081,7 @@ class FdfParser:
                 
         return True
         
-    def __GetFilePart(self, ffsFile):
+    def __GetFilePart(self, ffsFile, MacroDict = {}):
         
         self.__GetFileOpts( ffsFile)
         
@@ -1100,7 +1107,7 @@ class FdfParser:
             
         elif self.__Token in ("DEFINE", "APRIORI", "SECTION"):
             self.__UndoToken()
-            self.__GetSectionData( ffsFile)
+            self.__GetSectionData( ffsFile, MacroDict)
         else:
             ffsFile.FileName = self.__Token
         
@@ -1145,21 +1152,25 @@ class FdfParser:
             
         return False
     
-    def __GetSectionData(self, ffsFile):
+    def __GetSectionData(self, ffsFile, MacroDict = {}):
+        Dict = {}
+        Dict.update(MacroDict)
         
         self.__GetDefineStatements(ffsFile)
-        self.__GetAprioriSection(ffsFile)
-        self.__GetAprioriSection(ffsFile)
+        
+        Dict.update(ffsFile.DefineVarDict)
+        self.__GetAprioriSection(ffsFile, Dict.copy())
+        self.__GetAprioriSection(ffsFile, Dict.copy())
         
         while True:
-            isLeafSection = self.__GetLeafSection(ffsFile)
+            isLeafSection = self.__GetLeafSection(ffsFile, Dict)
             isEncapSection = self.__GetEncapsulationSec(ffsFile)
             if not isLeafSection and not isEncapSection:
                 break
 
            
     
-    def __GetLeafSection(self, obj):
+    def __GetLeafSection(self, obj, MacroDict = {}):
         
         oldPos = self.GetFileBufferPos()
         
@@ -1224,16 +1235,17 @@ class FdfParser:
                 fv = Fv.FV()
                 fv.UiFvName = fvName
                 self.__GetDefineStatements( fv)
+                MacroDict.update(fv.DefineVarDict)
                 self.__GetBlockStatement( fv)
                 self.__GetSetStatements( fv)
                 self.__GetFvAlignment( fv)
                 self.__GetFvAttributes( fv)
-                self.__GetAprioriSection( fv)
-                self.__GetAprioriSection( fv)
+                self.__GetAprioriSection( fv, MacroDict.copy())
+                self.__GetAprioriSection( fv, MacroDict.copy())
     
                 while True:
-                    isInf = self.__GetInfStatement( fv)
-                    isFile = self.__GetFileStatement( fv)
+                    isInf = self.__GetInfStatement( fv, MacroDict.copy())
+                    isFile = self.__GetFileStatement( fv, MacroDict.copy())
                     if not isInf and not isFile:
                         break
     

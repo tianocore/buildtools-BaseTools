@@ -10,7 +10,7 @@ class DataSection (DataSectionClassObject):
     def __init__(self):
         DataSectionClassObject.__init__(self)
         
-    def GenSection(self, OutputPath, ModuleName, SecNum, keyStringList, FfsInf = None):
+    def GenSection(self, OutputPath, ModuleName, SecNum, keyStringList, FfsInf = None, Dict = {}):
         #
         # Prepare the parameter of GenSection
         #
@@ -20,6 +20,9 @@ class DataSection (DataSectionClassObject):
             self.SectFileName = FfsInf.__ExtendMarco__(self.SectFileName)
         else:
             self.SectFileName = GenFdsGlobalVariable.ReplaceWorkspaceMarco(self.SectFileName)
+            
+        self.SectFileName = GenFdsGlobalVariable.MacroExtend(self.SectFileName, Dict)
+        
         """Check Section file exist or not !"""
 
         if not os.path.exists(self.SectFileName):
@@ -31,10 +34,10 @@ class DataSection (DataSectionClassObject):
                        ' -o '         + \
                         TeFile        + \
                         ' '           + \
-                       GenFdsGlobalVariable.ExtendMarco(self.SectFileName)
+                       GenFdsGlobalVariable.MacroExtend(self.SectFileName, Dict)
             GenFdsGlobalVariable.CallExternalTool(GenTeCmd, "GenFw Failed !")
             """Copy Map file to Ffs output"""
-            Filename = GenFdsGlobalVariable.ExtendMarco(self.SectFileName)
+            Filename = GenFdsGlobalVariable.MacroExtend(self.SectFileName)
             if Filename[(len(Filename)-4):] == '.efi':
                 MapFile = Filename.replace('.efi', '.map')
                 if os.path.exists(MapFile):
@@ -52,10 +55,10 @@ class DataSection (DataSectionClassObject):
                          ' -s '                                          + \
                          Section.Section.SectionType.get (self.SecType)  + \
                          ' '                                             + \
-                         GenFdsGlobalVariable.ReplaceWorkspaceMarco(self.SectFileName)
+                         self.SectFileName
                          
         """Copy Map file to Ffs output"""
-        Filename = GenFdsGlobalVariable.ReplaceWorkspaceMarco(self.SectFileName)
+        Filename = self.SectFileName
         if Filename[(len(Filename)-4):] == '.efi':
              MapFile = Filename.replace('.efi', '.map')
              if os.path.exists(MapFile):

@@ -11,7 +11,7 @@ class EfiSection (EfiSectionClassObject):
     def __init__(self):
           EfiSectionClassObject.__init__(self)
 
-    def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None) :
+    def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None, Dict = {}) :
         """Prepare the parameter of GenSection"""
         if FfsInf != None :
             InfFileName = FfsInf.InfFileName
@@ -33,12 +33,13 @@ class EfiSection (EfiSectionClassObject):
         """If the file name was pointed out, add it in FileList"""     
         FileList = []
         if Filename != None:
+            Filename = GenFdsGlobalVariable.MacroExtend(Filename, Dict)
             if not self.Optional:
                 FileList.append(Filename)
             elif os.path.exists(Filename):                 
                 FileList.append(Filename)
         else:
-            FileList, IsSect = Section.Section.GetFileList(FfsInf, self.FileType, self.FileExtension)
+            FileList, IsSect = Section.Section.GetFileList(FfsInf, self.FileType, self.FileExtension, Dict)
             if IsSect :
                 return FileList, self.Alignment
 
@@ -164,7 +165,7 @@ class EfiSection (EfiSectionClassObject):
                     Index = Index + 1
                     Num = '%s.%d' %(SecNum , Index)
                     OutputFile = os.path.join( OutputPath, ModuleName + 'SEC' + Num + Ffs.SectionSuffix.get(SectionType))
-                    File = GenFdsGlobalVariable.ExtendMarco(File)
+                    File = GenFdsGlobalVariable.MacroExtend(File, Dict)
                     if File[(len(File)-4):] == '.efi':
                         MapFile = File.replace('.efi', '.map')
                         if os.path.exists(MapFile):
@@ -179,7 +180,7 @@ class EfiSection (EfiSectionClassObject):
                                    ' -o '         + \
                                     TeFile        + \
                                     ' '           + \
-                                   GenFdsGlobalVariable.ExtendMarco(File)
+                                   GenFdsGlobalVariable.MacroExtend(File, Dict)
                         GenFdsGlobalVariable.CallExternalTool(GenTeCmd, "GenFw Failed !")
                         File = TeFile
 
@@ -189,7 +190,7 @@ class EfiSection (EfiSectionClassObject):
                                          ' -s '                                          + \
                                          Section.Section.SectionType.get (SectionType)   + \
                                          ' '                                             + \
-                                         GenFdsGlobalVariable.ExtendMarco(File)
+                                         GenFdsGlobalVariable.MacroExtend(File)
                         
                     GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed !")
                     OutputFileList.append(OutputFile)
