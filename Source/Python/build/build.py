@@ -149,12 +149,12 @@ def LaunchCommand(CommandStringList, WorkingDir):
     EndOfProcedure.clear()
     if Proc.stdout:
         StdOutThread = Thread(target=ReadMessage, args=(Proc.stdout, EdkLogger.info, EndOfProcedure))
-        StdOutThread.setDaemon(True)
+        StdOutThread.setName("STDOUT Redirector")
         StdOutThread.start()
 
     if Proc.stderr:
         StdErrThread = Thread(target=ReadMessage, args=(Proc.stderr, EdkLogger.quiet, EndOfProcedure))
-        StdErrThread.setDaemon(True)
+        StdErrThread.setName("STDERR Redirector")
         StdErrThread.start()
 
     # waiting for program exit
@@ -305,7 +305,7 @@ class BuildTask:
     @staticmethod
     def StartScheduler(MaxThreadNumber, ExitFlag):
         SchedulerThread = Thread(target=BuildTask.Scheduler, args=(MaxThreadNumber, ExitFlag))
-        SchedulerThread.setDaemon(True)
+        SchedulerThread.setName("Build Task Scheduler")
         SchedulerThread.start()
         BuildTask._SchedulerStarted = True
 
@@ -490,6 +490,7 @@ class BuildTask:
             CommandList = ["make", self.BuildItem.Target]
 
         self.BuildTread = Thread(target=self._CommandThread, args=(CommandList, self.BuildItem.WorkingDir))
+        self.BuildTread.setName("Maker")
         self.BuildTread.start()
 
 ## The class implementing the EDK2 build process
