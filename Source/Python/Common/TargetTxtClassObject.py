@@ -24,9 +24,9 @@ class TargetTxtClassObject(object):
             DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF                            : '',
             DataType.TAB_TAT_DEFINES_MULTIPLE_THREAD                            : '',
             DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER               : '',
-            DataType.TAB_TAT_DEFINES_TARGET                                     : [''],
-            DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG                             : [''],
-            DataType.TAB_TAT_DEFINES_TARGET_ARCH                                : ['']
+            DataType.TAB_TAT_DEFINES_TARGET                                     : [],
+            DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG                             : [],
+            DataType.TAB_TAT_DEFINES_TARGET_ARCH                                : []
         }
         if filename != None:
             self.LoadTargetTxtFile(filename)
