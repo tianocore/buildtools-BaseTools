@@ -26,7 +26,10 @@ from Common.Misc import *
 from BuildInfo import *
 from BuildEngine import *
 
+## Regular expression for finding header file inclusions
 gIncludePattern = re.compile("^[ #]*include[ ]+[\"<]*([^\"< >]+)[>\" ]*$", re.MULTILINE | re.UNICODE)
+
+## Regular expression for matching macro used in header file inclusion
 gMacroPattern = re.compile("[_A-Z][_A-Z0-9]*\(.+\)", re.UNICODE)
 
 gMakefileHeader = '''#
@@ -99,7 +102,7 @@ gIncludeFlag = {"MSFT" : "/I", "GCC" : "-I", "INTEL" : "-I"}
 gStartGroupFlag = {"MSFT" : "", "GCC" : "-(", "INTEL" : ""}
 gEndGroupFlag = {"MSFT" : "", "GCC" : "-)", "INTEL" : ""}
 
-gCustomMakefileTemplate = '''
+gCustomMakefileTemplate = '''\
 ${makefile_header}
 
 #
@@ -208,7 +211,7 @@ init:
 
 '''
 
-gModuleMakefileTemplate = '''
+gModuleMakefileTemplate = '''\
 ${makefile_header}
 
 #
@@ -417,7 +420,7 @@ cleanlib:
 
 '''
 
-gPlatformMakefileTemplate = '''
+gPlatformMakefileTemplate = '''\
 ${makefile_header}
 
 #
@@ -527,7 +530,20 @@ cleanlib:
 
 '''
 
+## Makefile class
+#
+#  This class encapsules makefie and its generation. It uses template to generate
+#  the content of makefile. The content of makefile will be got from PlatformBuildInfo
+#  or ModuleBuildInfo objects.
+#
 class Makefile(object):
+    ## Constructor
+    #
+    #  Intitialize the data member simply
+    #
+    #   @param      Info    PlatformBuildInfo or ModuleBuildInfo object
+    #   @param      Option  Option for the makefile generation (not used)
+    #
     def __init__(self, Info, Option=None):
         if isinstance(Info, ModuleBuildInfo):
             if Info == None or Info == "":
@@ -548,7 +564,6 @@ class Makefile(object):
             self.LibraryMakefileList = []
             self.LibraryBuildDirectoryList = []
             self.SystemLibraryList = []
-
         elif type(Info) == type({}):    # and isinstance(info, PlatformBuildInfo):
             if len(Info) <= 0:
                 EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No buildable platform found! Please check your build configuration!\n")
@@ -561,23 +576,39 @@ class Makefile(object):
         else:
             EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Non-buildable item:%s" % str(Info))
 
-        #self.Opt = Option
-        #self.BuildWithPch = Option["ENABLE_PCH"]
-        #self.BuildWithLocalLib = Option["ENABLE_LOCAL_LIB"]
         self.IntermediateDirectoryList = []
 
+    ## Create necessary directory for makefile generation
     def PrepareDirectory(self):
         if self.ModuleBuild:
             CreateDirectory(path.join(self.ModuleInfo.WorkspaceDir, self.PlatformInfo.BuildDir))
             CreateDirectory(path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.BuildDir))
             CreateDirectory(path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.DebugDir))
 
+    ## Create the makefile
+    #
+    #   @param      File        The path of the makefile
+    #   @param      MakeType    GNU makefile or MS makefile
+    #
+    #   @retval     True        If the file is changed or doesn't exist
+    #   @retval     False       If the file exists and its content is not changed
+    #                           since last time
+    #
     def Generate(self, File=None, MakeType=gMakeType):
         if self.ModuleBuild:
             return self.GenerateModuleMakefile(File, MakeType)
         else:
             return self.GeneratePlatformMakefile(File, MakeType)
 
+    ## Create makefile of platform
+    #
+    #   @param      File        The path of the makefile
+    #   @param      MakeType    GNU makefile or MS makefile
+    #
+    #   @retval     True        If the file is changed or doesn't exist
+    #   @retval     False       If the file exists and its content is not changed
+    #                           since last time
+    #
     def GeneratePlatformMakefile(self, File=None, MakeType=gMakeType):
         Separator = gDirectorySeparator[MakeType]
 
@@ -606,6 +637,7 @@ class Makefile(object):
         MakefileName = gMakefileName[MakeType]
         MakefileTemplateDict = {
             "makefile_header"           : gMakefileHeader % MakefileName,
+            "makefile_path"             : os.path.join("$(BUILD_DIR)", MakefileName),
             "platform_name"             : PlatformInfo.Name,
             "platform_guid"             : PlatformInfo.Guid,
             "platform_version"          : PlatformInfo.Version,
@@ -643,6 +675,15 @@ class Makefile(object):
 
         return SaveFileOnChange(FilePath, str(AutoGenMakefile))
 
+    ## Create makefile of a module
+    #
+    #   @param      File        The path of the makefile
+    #   @param      MakeType    GNU makefile or MS makefile
+    #
+    #   @retval     True        If the file is changed or doesn't exist
+    #   @retval     False       If the file exists and its content is not changed
+    #                           since last time
+    #
     def GenerateModuleMakefile(self, File=None, MakeType=gMakeType):
         if MakeType in self.ModuleInfo.CustomMakefile and self.ModuleInfo.CustomMakefile[MakeType] != "":
             return self.GenerateCustomBuildMakefile(File, MakeType)
@@ -679,13 +720,8 @@ class Makefile(object):
 
         if self.ModuleInfo.IsLibrary:
             self.ResultFileList = self.DestFileDatabase["Static-Library-File"]
-        #elif self.BuildType == "obj":
-        #    ResultFile = ""
         elif self.ModuleInfo.ModuleType == "USER_DEFINED":
             self.ResultFileList = self.DestFileDatabase["Dynamic-Library-File"]
-            #ResultFile = "$(LLIB_FILE) $(DLL_FILE)"
-        #else:
-        #    ResultFile = "$(LLIB_FILE) $(DLL_FILE) $(EFI_FILE)"
 
         SourceFileMacroNameList = []
         SourceFileMacroList = [] # macro name = file list
@@ -709,6 +745,7 @@ class Makefile(object):
         MakefileName = gMakefileName[MakeType]
         MakefileTemplateDict = {
             "makefile_header"           : gMakefileHeader % MakefileName,
+            "makefile_path"             : os.path.join("$(MODULE_BUILD_DIR)", MakefileName),
             "platform_name"             : PlatformInfo.Name,
             "platform_guid"             : PlatformInfo.Guid,
             "platform_version"          : PlatformInfo.Version,
@@ -740,7 +777,6 @@ class Makefile(object):
             "shell_command"             : gShellCommand[MakeType].values(),
 
             "module_entry_point"        : EntryPoint,
-            #"auto_generated_file"       : self.AutoGenBuildFileList,
             "include_path_prefix"       : gIncludeFlag[PlatformInfo.ToolChainFamily["CC"]],
             "dlink_output_flag"         : PlatformInfo.OutputFlag["DLINK"],
             "slink_output_flag"         : PlatformInfo.OutputFlag["SLINK"],
@@ -760,7 +796,6 @@ class Makefile(object):
             "clean_command"             : self.GetRemoveDirectoryCommand(["$(OUTPUT_DIR)"], MakeType),
             "cleanall_command"          : self.GetRemoveDirectoryCommand(["$(DEBUG_DIR)", "$(OUTPUT_DIR)"], MakeType),
             "dependent_library_build_directory" : self.LibraryBuildDirectoryList,
-            #"file_build_target"               : self.BuildTargetList,
             "build_type"                        : self.BuildType,
             "source_file_macro"         : SourceFileMacroList,
             "target_file_macro"         : TargetFileMacroList,
@@ -782,6 +817,15 @@ class Makefile(object):
 
         return SaveFileOnChange(FilePath, str(AutoGenMakefile))
 
+    ## Create customized makefile for a module
+    #
+    #   @param      File        The path of the makefile
+    #   @param      MakeType    GNU makefile or MS makefile
+    #
+    #   @retval     True        If the file is changed or doesn't exist
+    #   @retval     False       If the file exists and its content is not changed
+    #                           since last time
+    #
     def GenerateCustomBuildMakefile(self, File=None, MakeType=gMakeType):
         Separator = gDirectorySeparator[MakeType]
 
@@ -841,6 +885,14 @@ class Makefile(object):
 
         return SaveFileOnChange(FilePath, str(AutoGenMakefile))
 
+    ## Process source files to generate makefile targets and dependencies
+    #
+    #  The intermediate and final targets and dependencies are controlled by
+    #  build rules in $(WORKSPACE)/Conf/build_rule.txt. The dependencies of source
+    #  file are figured out by search included files in the source file.
+    #
+    #   @param      MakeType    GNU makefile or MS makefile
+    #
     def ProcessSourceFileList(self, MakeType=gMakeType):
         Separator = gDirectorySeparator[MakeType]
 
@@ -848,9 +900,6 @@ class Makefile(object):
         BuildRule = self.PlatformInfo.BuildRule
 
         self.ResultFileList = []
-        #self.ObjectFileList = []
-        #self.ObjectBuildTargetList = []
-        #self.AutoGenBuildFileList = []
         self.IntermediateDirectoryList = ["$(DEBUG_DIR)", "$(OUTPUT_DIR)"]
 
         self.SourceFileDatabase = {}  # {file type : file path}
@@ -1064,6 +1113,10 @@ class Makefile(object):
             Template.Append(TargetTemplate, {"deps" : self.FileDependency[File]})
             self.BuildTargetList.append(str(Template))
 
+    ## For creating makefile targets for dependent libraries
+    #
+    #   @param      MakeType    GNU makefile or MS makefile
+    #
     def ProcessDependentLibrary(self, MakeType=gMakeType):
         for LibraryModule in self.ModuleInfo.DependentLibraryList:
             LibraryFile = str(LibraryModule)
@@ -1072,12 +1125,21 @@ class Makefile(object):
             self.LibraryBuildDirectoryList.append(LibraryBuildPath)
             self.LibraryFileList.append(gDirectorySeparator[MakeType].join([LibraryBuildPath, "OUTPUT", LibraryModule.BaseName + ".lib"]))
 
+    ## Determine the root directory for a platform build
     def GetPlatformBuildDirectory(self):
         if os.path.isabs(self.PlatformInfo.OutputDir):
             return self.PlatformInfo.OutputDir
         else:
             return os.path.join("$(WORKSPACE)", self.PlatformInfo.OutputDir)
 
+    ## Return a list containing source file's dependencies
+    #
+    #   @param      FileList        The list of source files
+    #   @param      ForceInculeList The list of files which will be included forcely
+    #   @param      SearchPathList  The list of search path
+    #
+    #   @retval     dict            The mapping between source file path and its dependencies
+    #
     def GetFileDependency(self, FileList, ForceInculeList, SearchPathList):
         WorkingDir = os.getcwd()
         os.chdir(self.ModuleInfo.WorkspaceDir)
@@ -1087,6 +1149,18 @@ class Makefile(object):
         os.chdir(WorkingDir)
         return Dependency
 
+    ## Find dependencies for one source file
+    #
+    #  By searching recursively "#include" directive in file, find out all the
+    #  files needed by given source file. The dependecies will be only searched
+    #  in given search path list.
+    #
+    #   @param      File            The source file
+    #   @param      ForceInculeList The list of files which will be included forcely
+    #   @param      SearchPathList  The list of search path
+    #
+    #   @retval     list            The list of files the given source file depends on
+    #
     def GetDependencyList(self, File, ForceList, SearchPathList):
         WorkingDir = os.getcwd()
         os.chdir(self.ModuleInfo.WorkspaceDir)
@@ -1163,6 +1237,10 @@ class Makefile(object):
         os.chdir(WorkingDir)
         return DependencyList
 
+    ## Get the root directory list for intermediate files of all modules build
+    #
+    #   @retval     list    The list of directory
+    #
     def GetModuleBuildDirectoryList(self):
         DirList = []
         for Arch in self.PlatformInfo:
@@ -1170,6 +1248,10 @@ class Makefile(object):
                 DirList.append(ModuleAutoGen.BuildInfo.BuildDir)
         return DirList
 
+    ## Get the root directory list for intermediate files of all libraries build
+    #
+    #   @retval     list    The list of directory
+    #
     def GetLibraryBuildDirectoryList(self):
         DirList = []
         for Arch in self.PlatformInfo:
@@ -1177,9 +1259,23 @@ class Makefile(object):
                 DirList.append(LibraryAutoGen.BuildInfo.BuildDir)
         return DirList
 
+    ## Return a list of directory creation command string
+    #
+    #   @param      DirList     The list of directory to be created
+    #   @param      MakeType    GNU makefile or MS makefile
+    #
+    #   @retval     list        The directory creation command list
+    #
     def GetCreateDirectoryCommand(self, DirList, MakeType=gMakeType):
         return [gCreateDirectoryCommandTemplate[MakeType] % {'dir':Dir} for Dir in DirList]
 
+    ## Return a list of directory removal command string
+    #
+    #   @param      DirList     The list of directory to be removed
+    #   @param      MakeType    GNU makefile or MS makefile
+    #
+    #   @retval     list        The directory removal command list
+    #
     def GetRemoveDirectoryCommand(self, DirList, MakeType=gMakeType):
         return [gRemoveDirectoryCommandTemplate[MakeType] % {'dir':Dir} for Dir in DirList]
 
