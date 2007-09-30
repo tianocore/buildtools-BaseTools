@@ -187,7 +187,6 @@ Returns:
   // Initialize FV info
   //
   memset (FvInfo, 0, sizeof (FV_INFO));
-  FvInfo->BaseAddress = -1;
 
   //
   // Read the FV base address
@@ -1496,7 +1495,7 @@ Returns:
   //
   // Update FvImage Base Address, XipBase not same to BtBase, RtBase address.
   //
-  if (XipBaseAddress != -1) {
+  if (XipBaseAddress != 0) {
     FvInfo.BaseAddress = XipBaseAddress;
   }
   if (*BtBaseAddress != 0) {
@@ -1996,7 +1995,7 @@ Returns:
   //
   Flags = 0;
 
-  if (FvInfo->BaseAddress != -1) {
+  if (FvInfo->BaseAddress != 0) {
     Flags  |= REBASE_XIP_FILE;
     XipBase = FvInfo->BaseAddress + XipOffset;
   }

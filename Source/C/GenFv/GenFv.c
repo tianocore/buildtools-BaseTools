@@ -179,7 +179,7 @@ Returns:
   InfFileImage  = NULL;
   OutFileName   = NULL;
   MapFileName   = NULL;
-  XipBase       = -1;
+  XipBase       = 0;
   BtBase        = 0;
   RtBase        = 0;
   InfFileSize   = 0;
@@ -431,7 +431,7 @@ Returns:
       );
   } else {
     VerboseMsg ("Create Fv image and its map file");
-    if (XipBase != -1) {
+    if (XipBase != 0) {
       VerboseMsg ("FvImage Rebase Address is 0x%X", XipBase);
     }
     //

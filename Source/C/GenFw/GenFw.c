@@ -424,7 +424,11 @@ UINT32 CoffOffset;
 //
 // Result Coff file in memory.
 //
-UINT8 *CoffFile;
+UINT8 *CoffFile = NULL;
+//
+// ELF sections to offset in Coff file.
+//
+UINT32 *CoffSectionsOffset = NULL;
 
 //
 // Offset in Coff file of headers and sections.
@@ -434,11 +438,6 @@ UINT32 TableOffset;
 UINT32 TextOffset;
 UINT32 DataOffset;
 UINT32 RelocOffset;
-
-//
-// ELF sections to offset in Coff file.
-//
-UINT32 *CoffSectionsOffset;
 
 EFI_IMAGE_BASE_RELOCATION *CoffBaseRel;
 UINT16 *CoffEntryRel;
@@ -940,6 +939,13 @@ ConvertElf (
   free(*FileBuffer);
   *FileBuffer = CoffFile;
   *FileLength = CoffOffset;
+  
+  //
+  // Free memory space
+  //
+  if (CoffSectionsOffset != NULL) {
+    free (CoffSectionsOffset);
+  }
 }
 #endif // HAVE_ELF
 
@@ -1368,7 +1374,6 @@ Returns:
         FileLength += sizeof (Data);
       }
     } while (Status == STATUS_SUCCESS);
-
     //
     // Error if no data.
     //
@@ -2297,7 +2302,6 @@ Returns:
   CHAR8  *cptr;
 
   Line[MAX_LINE_LEN - 1]  = 0;
-  *Data                   = 0;
   if (fgets (Line, MAX_LINE_LEN, InFptr) == NULL) {
     return STATUS_ERROR;
   }
