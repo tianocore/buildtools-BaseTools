@@ -24,27 +24,33 @@ from Common.Misc import *
 from BuildInfo import *
 from StrGather import *
 
+## PCD type string
 gItemTypeStringDatabase  = {
-    TAB_PCDS_FEATURE_FLAG:'FixedAtBuild',
-    TAB_PCDS_FIXED_AT_BUILD:'FixedAtBuild',
-    TAB_PCDS_PATCHABLE_IN_MODULE:'BinaryPatch',
-    TAB_PCDS_DYNAMIC:'',
-    TAB_PCDS_DYNAMIC_DEFAULT:'',
-    TAB_PCDS_DYNAMIC_VPD:'',
-    TAB_PCDS_DYNAMIC_HII:'',
-    TAB_PCDS_DYNAMIC_EX:'',
-    TAB_PCDS_DYNAMIC_EX_DEFAULT:'',
-    TAB_PCDS_DYNAMIC_EX_VPD:'',
-    TAB_PCDS_DYNAMIC_EX_HII:'',
+    TAB_PCDS_FEATURE_FLAG       :   'FixedAtBuild',
+    TAB_PCDS_FIXED_AT_BUILD     :   'FixedAtBuild',
+    TAB_PCDS_PATCHABLE_IN_MODULE:   'BinaryPatch',
+    TAB_PCDS_DYNAMIC            :   '',
+    TAB_PCDS_DYNAMIC_DEFAULT    :   '',
+    TAB_PCDS_DYNAMIC_VPD        :   '',
+    TAB_PCDS_DYNAMIC_HII        :   '',
+    TAB_PCDS_DYNAMIC_EX         :   '',
+    TAB_PCDS_DYNAMIC_EX_DEFAULT :   '',
+    TAB_PCDS_DYNAMIC_EX_VPD     :   '',
+    TAB_PCDS_DYNAMIC_EX_HII     :   '',
 }
 
+## Dynamic PCD types
 gDynamicPcd = [TAB_PCDS_DYNAMIC, TAB_PCDS_DYNAMIC_DEFAULT, TAB_PCDS_DYNAMIC_VPD, TAB_PCDS_DYNAMIC_HII]
+
+## Dynamic-ex PCD types
 gDynamicExPcd = [TAB_PCDS_DYNAMIC_EX, TAB_PCDS_DYNAMIC_EX_DEFAULT, TAB_PCDS_DYNAMIC_EX_VPD, TAB_PCDS_DYNAMIC_EX_HII]
 
+## Datum size
 gDatumSizeStringDatabase = {'UINT8':'8','UINT16':'16','UINT32':'32','UINT64':'64','BOOLEAN':'BOOLEAN','VOID*':'8'}
 gDatumSizeStringDatabaseH = {'UINT8':'8','UINT16':'16','UINT32':'32','UINT64':'64','BOOLEAN':'BOOL','VOID*':'PTR'}
 gDatumSizeStringDatabaseLib = {'UINT8':'8','UINT16':'16','UINT32':'32','UINT64':'64','BOOLEAN':'Bool','VOID*':'Ptr'}
 
+## Mapping between PCD driver type and EFI phase
 gPcdPhaseMap = {
     "PEI_PCD_DRIVER"    :   "PEI",
     "DXE_PCD_DRIVER"    :   "DXE"
@@ -289,9 +295,8 @@ ${END}
 };
 """
 
-#
-# AutoGen File Header Templates
-#
+
+## AutoGen File Header Templates
 gAutoGenHeaderString = """\
 /**
   DO NOT EDIT
@@ -313,9 +318,7 @@ gAutoGenHEpilogueString = """
 #endif
 """
 
-#
-# PEI Core Entry Point Templates
-#
+## PEI Core Entry Point Templates
 gPeiCoreEntryPointString = """
 ${BEGIN}
 EFI_STATUS
@@ -339,9 +342,8 @@ ProcessModuleEntryPointList (
 ${END}
 """
 
-#
-# DXE Core Entry Point Templates
-#
+
+## DXE Core Entry Point Templates
 gDxeCoreEntryPointString = """
 const UINT32 _gUefiDriverRevision = 0;
 ${BEGIN}
@@ -362,9 +364,7 @@ ProcessModuleEntryPointList (
 ${END}
 """
 
-#
-# PEIM Entry Point Templates
-#
+## PEIM Entry Point Templates
 gPeimEntryPointString = [
 """
 GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = 0;
@@ -435,9 +435,7 @@ ${END}
 """
 ]
 
-#
-# DXE SMM Entry Point Templates
-#
+## DXE SMM Entry Point Templates
 gDxeSmmEntryPointString = [
 """
 EFI_STATUS
@@ -496,9 +494,7 @@ ${END}
 """
 ]
 
-#
-# UEFI Entry Point Templates
-#
+## UEFI Entry Point Templates
 gUefiEntryPointString = [
 """
 const UINT32 _gUefiDriverRevision = 0;
@@ -591,9 +587,7 @@ ExitDriver (
 """
 ]
 
-#
-# UEFI Unload Image Templates
-#
+## UEFI Unload Image Templates
 gUefiUnloadImageString = [
 """
 GLOBAL_REMOVE_IF_UNREFERENCED const UINT8 _gDriverUnloadImageCount = ${Count};
@@ -657,9 +651,7 @@ ${END}
 """
 ]
 
-#
-# Library Constructor and Destructor Templates
-#
+## Library Constructor and Destructor Templates
 gLibraryString = [
 """
 VOID
@@ -788,6 +780,12 @@ gModuleTypeHeaderFile = {
     "USER_DEFINED"      :   [gBasicHeaderFile]
 }
 
+## Find value for the given GUID C name
+#
+#   @param      Packages    The list of package object
+#   @param      CName       The C name of the GUID
+#   @retval     string      The value string of given GUID
+#
 def GetGuidValue(Packages, CName):
     for P in Packages:
         if CName in P.Guids:
@@ -802,6 +800,13 @@ def GetGuidValue(Packages, CName):
                         "Cannot find GUID value for %s in all given packages" % CName,
                         ExtraData=PackageListString)
 
+## Create code for module PCDs
+#
+#   @param      Info        The ModuleBuildInfo object
+#   @param      AutoGenC    The TemplateString object for C code
+#   @param      AutoGenH    The TemplateString object for header file
+#   @param      Pcd         The PCD object
+#
 def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
     PcdTokenNumber = Info.PlatformInfo.PcdTokenNumber
     #
@@ -898,6 +903,13 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
         else:
             AutoGenH.Append('//#define %s  ASSERT(FALSE)  // It is not allowed to set value for a FIXED_AT_BUILD PCD\n' % SetModeName)
 
+## Create code for library module PCDs
+#
+#   @param      Info        The ModuleBuildInfo object
+#   @param      AutoGenC    The TemplateString object for C code
+#   @param      AutoGenH    The TemplateString object for header file
+#   @param      Pcd         The PCD object
+#
 def CreateLibraryPcdCode(Info, AutoGenC, AutoGenH, Pcd):
     PcdTokenNumber = Info.PlatformInfo.PcdTokenNumber
     TokenSpaceGuidCName = Pcd.TokenSpaceGuidCName
@@ -954,6 +966,12 @@ def CreateLibraryPcdCode(Info, AutoGenC, AutoGenH, Pcd):
         AutoGenH.Append('#define %s  %s_gPcd_FixedAtBuild_%s\n' %(GetModeName, Type, TokenCName))
         AutoGenH.Append('//#define %s  ASSERT(FALSE)  // It is not allowed to set value for a FIXED_AT_BUILD PCD\n' % SetModeName)
 
+## Create code for PCD database in DXE or PEI phase
+#
+#   @param      Platform    The platform object
+#   @retval     tuple       Two TemplateString objects for C code and header file,
+#                           respectively
+#
 def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
     AutoGenC = TemplateString()
     AutoGenH = TemplateString()
@@ -1271,6 +1289,12 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
 
     return AutoGenH, AutoGenC
 
+## Create code for PCD database
+#
+#   @param      Info        The ModuleBuildInfo object
+#   @param      AutoGenC    The TemplateString object for C code
+#   @param      AutoGenH    The TemplateString object for header file
+#
 def CreatePcdDatabaseCode (Info, AutoGenC, AutoGenH):
     if Info.PcdIsDriver == "":
         return
@@ -1291,6 +1315,12 @@ def CreatePcdDatabaseCode (Info, AutoGenC, AutoGenH):
         AutoGenC.Append(AdditionalAutoGenC.String)
         AutoGenH.Append(gPcdDatabaseEpilogueAutoGenH)
 
+## Create code for library constructor
+#
+#   @param      Info        The ModuleBuildInfo object
+#   @param      AutoGenC    The TemplateString object for C code
+#   @param      AutoGenH    The TemplateString object for header file
+#
 def CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH):
     if Info.IsLibrary:
         return
@@ -1320,6 +1350,12 @@ def CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH):
         else:
             AutoGenC.Append(gLibraryString[5], Dict)
 
+## Create code for library destructor
+#
+#   @param      Info        The ModuleBuildInfo object
+#   @param      AutoGenC    The TemplateString object for C code
+#   @param      AutoGenH    The TemplateString object for header file
+#
 def CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH):
     if Info.IsLibrary:
         return
@@ -1340,6 +1376,12 @@ def CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH):
             AutoGenC.Append(gLibraryString[5], {'Type':'Destructor','Function':DestructorList})
 
 
+## Create code for ModuleEntryPoint
+#
+#   @param      Info        The ModuleBuildInfo object
+#   @param      AutoGenC    The TemplateString object for C code
+#   @param      AutoGenH    The TemplateString object for header file
+#
 def CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH):
     if Info.IsLibrary or Info.ModuleType == "USER_DEFINED":
         return
@@ -1373,6 +1415,12 @@ def CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH):
             else:
                 AutoGenC.Append(gUefiEntryPointString[2], Dict)
 
+## Create code for ModuleUnloadImage
+#
+#   @param      Info        The ModuleBuildInfo object
+#   @param      AutoGenC    The TemplateString object for C code
+#   @param      AutoGenH    The TemplateString object for header file
+#
 def CreateModuleUnloadImageCode(Info, AutoGenC, AutoGenH):
     if Info.IsLibrary or Info.ModuleType == "USER_DEFINED":
         return
@@ -1386,6 +1434,12 @@ def CreateModuleUnloadImageCode(Info, AutoGenC, AutoGenH):
     else:
         AutoGenC.Append(gUefiUnloadImageString[2], Dict)
 
+## Create code for GUID
+#
+#   @param      Info        The ModuleBuildInfo object
+#   @param      AutoGenC    The TemplateString object for C code
+#   @param      AutoGenH    The TemplateString object for header file
+#
 def CreateGuidDefinitionCode(Info, AutoGenC, AutoGenH):
     if Info.IsLibrary:
         return
@@ -1401,6 +1455,12 @@ def CreateGuidDefinitionCode(Info, AutoGenC, AutoGenH):
     for Key in Info.GuidList:
         AutoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED %s %s = %s;\n' % (GuidType, Key, Info.GuidList[Key]))
 
+## Create code for protocol
+#
+#   @param      Info        The ModuleBuildInfo object
+#   @param      AutoGenC    The TemplateString object for C code
+#   @param      AutoGenH    The TemplateString object for header file
+#
 def CreateProtocolDefinitionCode(Info, AutoGenC, AutoGenH):
     if Info.IsLibrary:
         return
@@ -1416,6 +1476,12 @@ def CreateProtocolDefinitionCode(Info, AutoGenC, AutoGenH):
     for Key in Info.ProtocolList:
         AutoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED %s %s = %s;\n' % (GuidType, Key, Info.ProtocolList[Key]))
 
+## Create code for PPI
+#
+#   @param      Info        The ModuleBuildInfo object
+#   @param      AutoGenC    The TemplateString object for C code
+#   @param      AutoGenH    The TemplateString object for header file
+#
 def CreatePpiDefinitionCode(Info, AutoGenC, AutoGenH):
     if Info.IsLibrary:
         return
@@ -1431,6 +1497,12 @@ def CreatePpiDefinitionCode(Info, AutoGenC, AutoGenH):
     for Key in Info.PpiList:
         AutoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED %s %s = %s;\n' % (GuidType, Key, Info.PpiList[Key]))
 
+## Create code for PCD
+#
+#   @param      Info        The ModuleBuildInfo object
+#   @param      AutoGenC    The TemplateString object for C code
+#   @param      AutoGenH    The TemplateString object for header file
+#
 def CreatePcdCode(Info, AutoGenC, AutoGenH):
     if Info.IsLibrary:
         for Pcd in Info.PcdList:
@@ -1440,6 +1512,12 @@ def CreatePcdCode(Info, AutoGenC, AutoGenH):
             CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd)
     CreatePcdDatabaseCode(Info, AutoGenC, AutoGenH)
 
+## Create code for unicode string definition
+#
+#   @param      Info        The ModuleBuildInfo object
+#   @param      AutoGenC    The TemplateString object for C code
+#   @param      AutoGenH    The TemplateString object for header file
+#
 def CreateUnicodeStringCode(Info, AutoGenC, AutoGenH):
     if len(Info.UnicodeFileList) == 0:
         return
@@ -1457,6 +1535,12 @@ def CreateUnicodeStringCode(Info, AutoGenC, AutoGenH):
     AutoGenH.Append("\n#define STRING_ARRAY_NAME %sStrings\n" % Info.Name)
     os.chdir(WorkingDir)
 
+## Create common code
+#
+#   @param      Info        The ModuleBuildInfo object
+#   @param      AutoGenC    The TemplateString object for C code
+#   @param      AutoGenH    The TemplateString object for header file
+#
 def CreateHeaderCode(Info, AutoGenC, AutoGenH):
     # file header
     AutoGenH.Append(gAutoGenHeaderString,   {'FileName':'AutoGen.h'})
@@ -1484,9 +1568,21 @@ def CreateHeaderCode(Info, AutoGenC, AutoGenH):
     #
     AutoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED GUID gEfiCallerIdGuid = %s;\n' % GuidStringToGuidStructureString(Info.Guid))
 
+## Create common code for header file
+#
+#   @param      Info        The ModuleBuildInfo object
+#   @param      AutoGenC    The TemplateString object for C code
+#   @param      AutoGenH    The TemplateString object for header file
+#
 def CreateFooterCode(Info, AutoGenC, AutoGenH):
     AutoGenH.Append(gAutoGenHEpilogueString)
 
+## Create code for a module
+#
+#   @param      Info        The ModuleBuildInfo object
+#   @param      AutoGenC    The TemplateString object for C code
+#   @param      AutoGenH    The TemplateString object for header file
+#
 def CreateCode(Info, AutoGenC, AutoGenH):
     CreateHeaderCode(Info, AutoGenC, AutoGenH)
 
@@ -1502,5 +1598,13 @@ def CreateCode(Info, AutoGenC, AutoGenH):
 
     CreateFooterCode(Info, AutoGenC, AutoGenH)
 
+## Create the code file
+#
+#   @param      FilePath    The path of code file
+#   @param      Content     The content of code file
+#
+#   @retval     True        If file content is changed or file doesn't exist
+#   @retval     False       If the file exists and the content is not changed
+#
 def Generate(FilePath, Content):
     return SaveFileOnChange(FilePath, Content)
