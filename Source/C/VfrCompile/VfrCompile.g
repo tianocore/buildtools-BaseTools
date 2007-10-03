@@ -2076,7 +2076,7 @@ private:
 public:        
 
 VOID 
-EfiVfrParser::SetIfStart (
+SetIfStart (
   UINT32 LineNum
   )
 /*++
@@ -2097,7 +2097,7 @@ Returns:
   mIfStart = LineNum;
 }
 VOID 
-EfiVfrParser::SetClass (
+SetClass (
   UINT32 LineNum, 
   UINT32 Value
   ) 
@@ -2122,7 +2122,7 @@ Returns:
   mClass |= (UINT16)Value;
 }
 VOID 
-EfiVfrParser::SetSubclass (
+SetSubclass (
   UINT32 LineNum, 
   UINT32 Value
   ) 
@@ -2146,22 +2146,22 @@ Returns:
   }
   mSubclass |= (UINT16)Value;
 }
-VOID EfiVfrParser::WriteClass ()
+VOID WriteClass ()
 {
   WriteWord (mClass);
   mClass = 0;
 }
-VOID EfiVfrParser::WriteSubclass ()
+VOID WriteSubclass ()
 {
   WriteWord (mSubclass);
   mSubclass = 0;
 }
-VOID EfiVfrParser::WriteIfrBytes ()
+VOID WriteIfrBytes ()
 {
   mOpcodeHandler.WriteIfrBytes ();
 }
 VOID 
-EfiVfrParser::WriteFlagsKey (
+WriteFlagsKey (
   UINT32 KeyValue, 
   UINT32 LineNum
   ) 
@@ -2194,12 +2194,12 @@ Returns:
   WriteWord (KeyValue);
 }
 VOID 
-EfiVfrParser::InitOrderedList ()
+InitOrderedList ()
 {
   mOptionCount = 0;
 }  
 VOID 
-EfiVfrParser::EndOrderedList (
+EndOrderedList (
   UINT32 LineNum
   )
 {
@@ -2208,7 +2208,7 @@ EfiVfrParser::EndOrderedList (
   }
 }
 VOID 
-EfiVfrParser::ResetFlags ()
+ResetFlags ()
 /*++
 
 Routine Description:
@@ -2235,7 +2235,7 @@ Returns:
 // Test validity of flags value for a one-of statement.
 //
 VOID 
-EfiVfrParser::TestOneOfFlags (
+TestOneOfFlags (
   UINT32 LineNum
   ) 
 {
@@ -2247,7 +2247,7 @@ EfiVfrParser::TestOneOfFlags (
   }
 }
 VOID 
-EfiVfrParser::SetFlags (
+SetFlags (
   UINT32 Flags, 
   UINT32 LineNum
   ) 
@@ -2265,7 +2265,7 @@ EfiVfrParser::SetFlags (
   mSubStmtFlagsLineNum = LineNum;
 }
 VOID 
-EfiVfrParser::WriteFlags ()
+WriteFlags ()
 {
   //
   // Check value for validity
@@ -2290,7 +2290,7 @@ EfiVfrParser::WriteFlags ()
 // later use. Call this first to init the values.
 //
 VOID 
-EfiVfrParser::InitMinMaxStepDefault ()
+InitMinMaxStepDefault ()
 {
   mMinimumValue         = 0;
   mMaximumValue         = 0;
@@ -2298,7 +2298,7 @@ EfiVfrParser::InitMinMaxStepDefault ()
   mDefaultValue         = 0;
 }  
 VOID 
-EfiVfrParser::WriteMinMaxStepDefault ()
+WriteMinMaxStepDefault ()
 {
   WriteWord (mMinimumValue);
   WriteWord (mMaximumValue);
@@ -2306,7 +2306,7 @@ EfiVfrParser::WriteMinMaxStepDefault ()
   WriteWord (mDefaultValue);
 }  
 VOID 
-EfiVfrParser::SetMinMaxStepDefault (
+SetMinMaxStepDefault (
   UINT16  Value, 
   INT32   MMSD, 
   INT32   LineNum
@@ -2355,7 +2355,7 @@ EfiVfrParser::SetMinMaxStepDefault (
   }
 }
 VOID 
-EfiVfrParser::AddLabel (
+AddLabel (
   UINT32 LabelNumber, 
   UINT32 LineNum
   ) 
@@ -2385,7 +2385,7 @@ EfiVfrParser::AddLabel (
   mDefinedLabels = Label;
 }
 VOID 
-EfiVfrParser::QueueIdEqValList (
+QueueIdEqValList (
   UINT16 Value
   )
 {
@@ -2406,7 +2406,7 @@ EfiVfrParser::QueueIdEqValList (
   }
 }    
 VOID 
-EfiVfrParser::FlushQueueIdEqValList ()
+FlushQueueIdEqValList ()
 {
   UINT32 Count;
   
@@ -2441,7 +2441,7 @@ EfiVfrParser::FlushQueueIdEqValList ()
   }
 }
 VOID 
-EfiVfrParser::PrintErrorMessage (
+PrintErrorMessage (
   UINT32              LineNum,
   CHAR8               *Msg1,
   CHAR8               *Msg2
@@ -2457,7 +2457,7 @@ EfiVfrParser::PrintErrorMessage (
   }
 }
 VOID 
-EfiVfrParser::PrintWarningMessage (
+PrintWarningMessage (
   UINT32              LineNum,
   CHAR8               *Msg1,
   CHAR8               *Msg2
@@ -2473,7 +2473,7 @@ EfiVfrParser::PrintWarningMessage (
   }
 }
 VOID 
-EfiVfrParser::syn (
+syn (
   ANTLRAbstractToken  *Tok, 
   ANTLRChar           *Egroup, 
   SetWordType         *Eset, 
@@ -2523,7 +2523,7 @@ Returns:
 }
 
 VOID 
-EfiVfrParser::init()        
+init()        
 /*++
 
 Routine Description:
@@ -2565,12 +2565,12 @@ Returns:
 //
 // Destructor for the parser.
 //
-EfiVfrParser::~EfiVfrParser(VOID)
+~EfiVfrParser(VOID)
 {
   Cleanup();
 }
 VOID
-EfiVfrParser::Cleanup (VOID)
+Cleanup (VOID)
 /*++
 
 Routine Description:
@@ -2630,7 +2630,7 @@ Returns:
 }
 
 INT32 
-EfiVfrParser::AtoX (
+AtoX (
   CHAR8   *HexString, 
   INT32   NumBytes, 
   UINT32  *HexValue
@@ -2684,7 +2684,7 @@ Returns:
   return Count;
 }
 VOID 
-EfiVfrParser::WriteGuidValue (
+WriteGuidValue (
   UINT32       TokenLineNum,
   CHAR8        *G1, 
   CHAR8        *G2,
@@ -2743,7 +2743,7 @@ Returns:
   WriteByte (mFormSetGuid.Data4[7], 0);
 }
 VOID 
-EfiVfrParser::WriteFieldOffset (
+WriteFieldOffset (
   INT8    WriteLength,
   CHAR8   *StructName, 
   INT32   LineNum1, 
@@ -2979,7 +2979,7 @@ Returns:
   }
 }
 VOID
-EfiVfrParser::StartStructDefinition (
+StartStructDefinition (
   INT32  IsNonNV,
   INT32  LineNum
   )
@@ -3022,7 +3022,7 @@ Returns:
   mLastStructDefinition = StructDef;
 }
 VOID
-EfiVfrParser::EndStructDefinition (
+EndStructDefinition (
   CHAR8  *StructName,
   INT32  LineNum
   )
@@ -3080,7 +3080,7 @@ EfiVfrParser::EndStructDefinition (
   }
 }
 VOID 
-EfiVfrParser::AddStructField (
+AddStructField (
   CHAR8   *FieldName, 
   INT32   LineNum, 
   INT32   DataSize,
@@ -3145,7 +3145,7 @@ Returns:
   mLastStructDefinition->LastField = FieldDef;
 }
 VOID
-EfiVfrParser::AddVarStore (
+AddVarStore (
   CHAR8  *StructName,       // actual name of the structure
   CHAR8  *VarName,          // actual NV variable name
   UINT16 VarStoreId,        // key value
@@ -3228,7 +3228,7 @@ Returns:
   PrintErrorMessage (LineNum, StructName, "structure with this name not defined");
 }
 VOID 
-EfiVfrParser::WriteDWord (
+WriteDWord (
   UINT32    Value, 
   UINT8     KeyByte
   )
@@ -3261,7 +3261,7 @@ Returns:
   mOpcodeHandler.AddByte ((UINT8)Value, 0);
 }
 VOID 
-EfiVfrParser::WriteOpByte (
+WriteOpByte (
   UINT32    LineNum,
   UINT8     ByteValue
   )
@@ -3285,7 +3285,7 @@ Returns:
   mOpcodeHandler.AddOpcodeByte (ByteValue, LineNum);
 }
 VOID 
-EfiVfrParser::WriteByte (
+WriteByte (
   UINT8   ByteValue, 
   UINT8   Key
   )
@@ -3312,7 +3312,7 @@ Returns:
   mOpcodeHandler.AddByte (ByteValue, Key);
 }
 VOID 
-EfiVfrParser::WriteWord (
+WriteWord (
   UINT32  Value
   )
 /*++
@@ -3333,7 +3333,7 @@ Returns:
   mOpcodeHandler.AddByte ((UINT8)((Value \>> 8) & 0xFF), 0);
 }
 VOID 
-EfiVfrParser::WriteStringIdWord (
+WriteStringIdWord (
   UINT16 WordValue
   )
 {
@@ -3341,7 +3341,7 @@ EfiVfrParser::WriteStringIdWord (
   mOpcodeHandler.AddByte ((UINT8)((WordValue \>> 8) & 0xFF), 0);
 }
 VOID
-EfiVfrParser::FreeGotoReferences ()
+FreeGotoReferences ()
 /*++
 
 Routine Description:
@@ -3399,7 +3399,7 @@ Returns:
   mGotoReferences = NULL;
 }
 VOID
-EfiVfrParser::AddGotoReference (
+AddGotoReference (
   UINT32  GotoNumber,
   UINT32  LineNum
   )
@@ -3434,7 +3434,7 @@ Returns:
   mGotoReferences = NewRef;
 }
 VOID
-EfiVfrParser::AddFormId (
+AddFormId (
   INT32   FormIdValue,
   UINT32  LineNum
   )
@@ -3500,7 +3500,7 @@ Returns:
   mFormIdValues = NewFormId;
 }
 UINT32
-EfiVfrParser::GetNumber (
+GetNumber (
   CHAR8   *NumStr,
   UINT32  LineNum,
   UINT32  NumBytes
