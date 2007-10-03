@@ -909,9 +909,9 @@ main (
   }
 
   if (Verbose) {
-    SetDebugMsgMask (DEBUG_WARN | DEBUG_ERROR);
+    SetPrintLevel (VERBOSE_LOG_LEVEL);
   } else {
-    SetDebugMsgMask (0);
+    SetPrintLevel (KEY_LOG_LEVEL);
   }
 
   if (DoParse) {
