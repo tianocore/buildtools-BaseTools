@@ -124,8 +124,8 @@ OUT_OBJ = -o
 OBJ = dlg_p.o dlg_a.o main.o err.o set.o support.o output.o \
         relabel.o automata.o
 
-dlg : $(OBJ) $(SRC)
-		$(CC) $(CFLAGS) -o ${BIN_DIR}/dlg $(OBJ)
+$(BIN_DIR)/dlg : $(OBJ) $(SRC)
+		$(CC) $(CFLAGS) -o $(BIN_DIR)/dlg $(OBJ)
 
 SRC = dlg_p.c dlg_a.c main.c err.c $(SET)/set.c support.c output.c \
         relabel.c automata.c
@@ -153,4 +153,4 @@ lint:
 
 #clean up all the intermediate files
 clean:
-	rm -f *.$(OBJ_EXT) core
+	rm -f $(BIN_DIR)/dlg *.$(OBJ_EXT) core

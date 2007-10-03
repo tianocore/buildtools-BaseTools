@@ -3,11 +3,17 @@ MAKEROOT = .
 
 include header.makefile
 
-LIBRARIES = 
+all: makerootdir subdirs $(MAKEROOT)/libs
 
-all: subdirs $(MAKEROOT)/libs
+LIBRARIES = Common
+NON_BUILDABLE_APPLICATIONS = GenBootSector BootSectImage
+APPLICATIONS = GenFw GenSec GenFv GenFfs GenVtf EfiRom TianoCompress Split EfiLdrImage GenPage VfrCompile
 
-SUBDIRS := Common CustomizedCompress String Pccts CreateMtFile EfiCompress EfiRom FlashMap FwImage GenAcpiTable GenBsfFixup GenBsfImage GenCRC32Section GenDepex GenFvImage GenFvMap GenSection GenTEImage MakeDeps ModifyInf SecApResetVectorFixup SecFixup SetStamp SplitFile StrGather Strip VfrCompile ZeroDebugData
+SUBDIRS := $(LIBRARIES) $(APPLICATIONS)
+
+.PHONY: outputdirs
+makerootdir:
+	-mkdir $(MAKEROOT)
 
 .PHONY: subdirs $(SUBDIRS)
 subdirs: $(SUBDIRS)
@@ -19,5 +25,11 @@ $(patsubst %,%-clean,$(sort $(SUBDIRS))):
 	-$(MAKE) -C $(@:-clean=) clean
 
 clean:  $(patsubst %,%-clean,$(sort $(SUBDIRS)))
+
+clean: localClean
+
+localClean:
+	rm -f $(MAKEROOT)/bin/*
+	-rmdir $(MAKEROOT)/libs $(MAKEROOT)/bin
 
 include footer.makefile

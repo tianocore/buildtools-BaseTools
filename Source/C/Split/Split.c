@@ -15,6 +15,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "CommonLib.h"
 #include "EfiUtilityMsgs.h"
 //
 // Utility Name
@@ -170,9 +171,9 @@ CreateDir (
     if (temp[index] == '\\' || temp[index] == '/') {
       temp[index] = 0;
       if (chdir(start)) {
-        if (mkdir(start) != 0) {
-        return EFI_ABORTED;
-      }
+        if (mkdir(start, S_IRWXU | S_IRWXG | S_IRWXO) != 0) {
+          return EFI_ABORTED;
+        }
         chdir(start);
     }
       start = temp + index + 1;

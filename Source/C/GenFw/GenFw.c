@@ -117,6 +117,13 @@ SetStamp (
   IN     CHAR8  *TimeStamp
   );
 
+STATIC 
+STATUS
+MicrocodeReadData (
+  FILE          *InFptr,
+  UINTN         *Data
+  );
+
 STATIC
 VOID
 Version (

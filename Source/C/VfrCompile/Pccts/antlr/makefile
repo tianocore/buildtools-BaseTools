@@ -178,7 +178,7 @@ CFLAGS= $(COPT) -I. -I$(SET) -I$(PCCTS_H) -DUSER_ZZSYN $(COTHER) -DZZLEXBUFSIZE=
 OBJ=antlr.o scan.o err.o bits.o build.o fset2.o fset.o gen.o  \
         globals.o hash.o lex.o main.o misc.o set.o pred.o egman.o mrhoist.o fcache.o
 
-antlr : $(OBJ) $(SRC)
+$(BIN_DIR)/antlr : $(OBJ) $(SRC)
 		$(CC) $(CFLAGS) -o $(BIN_DIR)/antlr $(OBJ)
 
 # what files does PCCTS generate (both ANTLR and DLG)
@@ -211,7 +211,7 @@ set.o : $(SET)/set.c
 
 #clean up all the intermediate files
 clean:
-	rm -f *.$(OBJ_EXT) core
+	rm -f $(BIN_DIR)/antlr *.$(OBJ_EXT) core
 
 #remove everything in clean plus the PCCTS files generated
 scrub:

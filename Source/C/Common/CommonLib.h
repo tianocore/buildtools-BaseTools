@@ -131,4 +131,14 @@ char *strlwr(char *s);
 #endif
 #endif
 
+//
+// On windows, mkdir only has one parameter.
+// On unix, it has two parameters
+//
+#if defined(__GNUC__) && !defined(__CYGWIN__)
+#define mkdir(dir, perm) mkdir(dir, perm)
+#else
+#define mkdir(dir, perm) mkdir(dir)
+#endif
+
 #endif
