@@ -13,7 +13,7 @@ libs: $(LIBRARIES)
 	@echo # Build libraries
 	@echo ######################
 	@if not exist $(LIB_PATH) mkdir $(LIB_PATH)
-	@for %%i in ($**) do @pushd . & cd %%i & $(MAKE) & popd
+  @NmakeSubdirs.bat all $**
 
 apps: $(APPLICATIONS)
 	@echo.
@@ -21,7 +21,7 @@ apps: $(APPLICATIONS)
 	@echo # Build executables
 	@echo ######################
 	@if not exist $(BIN_PATH) mkdir $(BIN_PATH)
-	@for %%i in ($**) do @pushd . & cd %%i & $(MAKE) & popd
+  @NmakeSubdirs.bat all $**
 
 install: $(LIB_PATH) $(BIN_PATH)
 	@echo.
@@ -34,12 +34,12 @@ install: $(LIB_PATH) $(BIN_PATH)
 
 .PHONY: clean
 clean:
-	@for %%i in ($(LIBRARIES) $(APPLICATIONS)) do @pushd . & cd %%i & $(MAKE) clean & popd
+  @NmakeSubdirs.bat clean $(LIBRARIES) $(APPLICATIONS)
 
 .PHONY: cleanall
 cleanall:
-	@for %%i in ($(LIBRARIES) $(APPLICATIONS)) do @pushd . & cd %%i & $(MAKE) cleanall & popd
-        @del /f /q $(BIN_PATH)\*.pdb $(BIN_PATH)\*.ilk
+  @NmakeSubdirs.bat cleanall $(LIBRARIES) $(APPLICATIONS)
+  @del /f /q $(BIN_PATH)\*.pdb $(BIN_PATH)\*.ilk
 
 !INCLUDE MSmakefile.rule
 
