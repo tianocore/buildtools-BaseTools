@@ -25,3 +25,13 @@ DLexerBase.obj: Pccts\h\DLexerBase.cpp
 AParser.obj: Pccts\h\AParser.cpp
 	$(CXX) -c $(CPPFLAGS) $(INC) $? -o $@
 
+EXTRA_CLEAN_OBJECTS = EfiVfrParser.cpp parser.dlg EfiVfrParser.h DLGLexer.cpp VfrCompile.cpp tokens.h DLGLexer.h
+
+clean: localClean
+cleanall: localClean localCleanall
+
+localClean:
+	-DEL $(EXTRA_CLEAN_OBJECTS)
+
+localCleanall:
+	pushd . & cd Pccts & $(MAKE) cleanall & popd

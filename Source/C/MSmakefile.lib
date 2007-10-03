@@ -10,7 +10,7 @@ $(LIBRARY) : $(OBJECTS)
 
 .PHONY:clean
 clean:
-	del /f /q $(OBJECTS) > nul
+	del /f /q $(OBJECTS) *.pdb > nul
 
 .PHONY:cleanall
 cleanall:
