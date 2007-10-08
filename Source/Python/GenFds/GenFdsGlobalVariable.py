@@ -67,7 +67,7 @@ class GenFdsGlobalVariable:
 
         while PopenObject.returncode == None :
             PopenObject.wait()
-        if GenFdsGlobalVariable.VerboseMode and PopenObject.returncode != 0:
+        if PopenObject.returncode != 0:
             GenFdsGlobalVariable.InfLogger ("Return Value = %d" %PopenObject.returncode)
             GenFdsGlobalVariable.InfLogger (out)
             GenFdsGlobalVariable.InfLogger (error)
@@ -107,7 +107,7 @@ class GenFdsGlobalVariable:
             if len(GenFdsGlobalVariable.ArchList) == 1:
                 Str = Str.replace('$(ARCH)', GenFdsGlobalVariable.ArchList[0])
             else:
-                GenFdsGlobalVariable.InfLogger ("No way to determine $(ARCH) for %s\n" % Str)
+                GenFdsGlobalVariable.InfLogger ("\nNo way to determine $(ARCH) for %s\n" % Str)
                 sys.exit(1)
             
         return Str

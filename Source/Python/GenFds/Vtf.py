@@ -68,11 +68,11 @@ class Vtf (VtfClassObject):
                                T_CHAR_LF )
             BsfInf.writelines ("COMP_BIN"        + \
                                " = "             + \
-                               GenFdsGlobalVariable.ReplaceWorkspaceMarco(component.CompBin) + \
+                               GenFdsGlobalVariable.MacroExtend(GenFdsGlobalVariable.ReplaceWorkspaceMarco(component.CompBin)) + \
                                T_CHAR_LF )
             BsfInf.writelines ("COMP_SYM"        + \
                                " = "             + \
-                               GenFdsGlobalVariable.ReplaceWorkspaceMarco(component.CompSym) + \
+                               GenFdsGlobalVariable.MacroExtend(GenFdsGlobalVariable.ReplaceWorkspaceMarco(component.CompSym)) + \
                                T_CHAR_LF )
             BsfInf.writelines ("COMP_SIZE"        + \
                                " = "              + \

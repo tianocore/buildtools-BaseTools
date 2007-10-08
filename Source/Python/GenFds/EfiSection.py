@@ -156,7 +156,7 @@ class EfiSection (EfiSectionClassObject):
                      GenFdsGlobalVariable.VerboseLogger( "Optional Section don't exist!")
                      return [], None
                 else:
-                     raise Exception(" %s does't exist " %SectionType)
+                     raise Exception("Section with type %s could not be found for %s" % (SectionType, InfFileName))
             
             else:
                 """Convert the File to Section file one by one """

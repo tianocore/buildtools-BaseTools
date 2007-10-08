@@ -72,13 +72,15 @@ class Section (SectionClassObject):
         else:
             suffix = Section.BinFileType.get(FileType)
         if FfsInf == None:
-            raise Exception ('Dont have Inf File!')
+            raise Exception ('Inf File does not exist!')
         
         FileList = []
         for File in FfsInf.BinFileList :
             if File.FileType == FileType and FfsInf.CurrentArch in File.SupArchList:
                 if '*' in FfsInf.TargetOverrideList or File.Target == '*' or File.Target in FfsInf.TargetOverrideList:
                     FileList.append(os.path.join(GenFdsGlobalVariable.WorkSpaceDir, FfsInf.SourceDir, File.BinaryFile))
+                else:
+                    GenFdsGlobalVariable.InfLogger ("\nBuild Target \'%s\' of File %s is not in the Scope of %s specified by INF %s in FDF" %(File.Target, File.BinaryFile, FfsInf.TargetOverrideList, FfsInf.InfFileName))
         
         if os.path.exists(FfsInf.EfiOutputPath):
             for file in os.listdir(FfsInf.EfiOutputPath):

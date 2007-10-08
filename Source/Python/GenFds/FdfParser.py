@@ -1033,7 +1033,7 @@ class FdfParser:
             ffsInf.Ui = self.__Token
 
         if self.__GetNextToken():
-            p = re.compile(r'([a-zA-Z0-9]+|\*)_([a-zA-Z0-9]+|\*)_([a-zA-Z0-9]+|\*)')
+            p = re.compile(r'([a-zA-Z0-9\-]+|\$\(TARGET\)|\*)_([a-zA-Z0-9\-]+|\$\(TOOL_CHAIN_TAG\)|\*)_([a-zA-Z0-9\-]+|\$\(ARCH\)|\*)')
             if p.match(self.__Token):
                 ffsInf.KeyStringList.append(self.__Token)
                 if not self.__IsToken(","):
@@ -1117,7 +1117,7 @@ class FdfParser:
     def __GetFileOpts(self, ffsFile):
         
         if self.__GetNextToken():
-            p = re.compile(r'([a-zA-Z0-9]+|\*)_([a-zA-Z0-9]+|\*)_([a-zA-Z0-9]+|\*)')
+            p = re.compile(r'([a-zA-Z0-9\-]+|\$\(TARGET\)|\*)_([a-zA-Z0-9\-]+|\$\(TOOL_CHAIN_TAG\)|\*)_([a-zA-Z0-9\-]+|\$\(ARCH\)|\*)')
             if p.match(self.__Token):
                 ffsFile.KeyStringList.append(self.__Token)
                 if self.__IsToken(","):
@@ -1610,7 +1610,7 @@ class FdfParser:
 
         keyStringList = []
         if self.__GetNextToken():
-            p = re.compile(r'([a-zA-Z0-9\-]+|\$\(TARGET\)|\*)_([a-zA-Z0-9\-]+|\$\(TOOLCHAIN_TAG\)|\*)_([a-zA-Z0-9\-]+|\$\(ARCH\)|\*)')
+            p = re.compile(r'([a-zA-Z0-9\-]+|\$\(TARGET\)|\*)_([a-zA-Z0-9\-]+|\$\(TOOL_CHAIN_TAG\)|\*)_([a-zA-Z0-9\-]+|\$\(ARCH\)|\*)')
             if p.match(self.__Token):
                 keyStringList.append(self.__Token)
                 if self.__IsToken(","):

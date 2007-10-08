@@ -47,11 +47,11 @@ class FfsInfStatement(FfsInfStatementClassObject):
             self.VersionString = Inf.Module.Header.Version
             self.BinFileList = Inf.Module.Binaries
             if self.BinFileList == []:
-                raise Exception ("INF %s not found in build ARCH %s!" % (self.InfFileName, GenFdsGlobalVariable.ArchList))
+                raise Exception ("INF %s specified in FDF could not be found in build ARCH %s!" % (self.InfFileName, GenFdsGlobalVariable.ArchList))
                 sys.exit(1)
         
         else:
-            raise Exception ("INF %s not found in database!" % self.InfFileName)
+            raise Exception ("INF %s specified in FDF could not be found in database!" % self.InfFileName)
             sys.exit(1)
         
         GenFdsGlobalVariable.VerboseLogger( "BaseName : %s" %self.BaseName)
@@ -199,6 +199,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         ArchList = []
         if self.KeyStringList != []:
             for Key in self.KeyStringList:
+                Key = GenFdsGlobalVariable.MacroExtend(Key)
                 Target, Tag, Arch = Key.split('_')
                 if Arch in curArchList:
                     ArchList.append(Arch)
