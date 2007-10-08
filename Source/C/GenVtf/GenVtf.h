@@ -49,7 +49,7 @@ Abstract:
 #define   VTF_OUTPUT_FILE1        "VTF1.RAW"
 #define   VTF_OUTPUT_FILE2        "VTF2.RAW"
 #define   VTF_SYM_FILE            "Vtf.SYM"
-#define   FIT_SIGNATURE           "_FIT_"
+#define   FIT_SIGNATURE           "_FIT_   "
 
 //
 //Fit Type Definition
