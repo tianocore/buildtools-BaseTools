@@ -27,7 +27,7 @@ from Common.BuildToolError import *
 
 gPlaceholderPattern = re.compile("\$\{([^$()\s]+)\}", re.MULTILINE|re.UNICODE)
 gFileTimeStampCache = {}    # {file path : file time stamp}
-gDependencyDatabase = {}    # file path : [dependent files list]
+gDependencyDatabase = {}    # arch : {file path : [dependent files list]}
 
 ## callback routine for processing variable option
 #
@@ -55,17 +55,29 @@ def ProcessVariableArgument(Option, OptionString, Value, Parser):
         del RawArgs[0]
     setattr(Parser.values, Option.dest, Value)
 
+## Convert GUID string in xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx style to C structure style
+#
+#   @param      Guid    The GUID string
+#
+#   @retval     string  The GUID string in C structure style
+#
 def GuidStringToGuidStructureString(Guid):
-  GuidList = Guid.split('-')
-  Result = '{'
-  for Index in range(0,3,1):
-    Result = Result + '0x' + GuidList[Index] + ', '
-  Result = Result + '{0x' + GuidList[3][0:2] + ', 0x' + GuidList[3][2:4]
-  for Index in range(0,12,2):
-    Result = Result + ', 0x' + GuidList[4][Index:Index+2]
-  Result += '}}'
-  return Result
+    GuidList = Guid.split('-')
+    Result = '{'
+    for Index in range(0,3,1):
+        Result = Result + '0x' + GuidList[Index] + ', '
+    Result = Result + '{0x' + GuidList[3][0:2] + ', 0x' + GuidList[3][2:4]
+    for Index in range(0,12,2):
+        Result = Result + ', 0x' + GuidList[4][Index:Index+2]
+    Result += '}}'
+    return Result
 
+## Convert GUID string in C structure style to xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+#
+#   @param      GuidValue   The GUID value in C structure format
+#
+#   @retval     string      The GUID value in xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx format
+#
 def GuidStructureStringToGuidString(GuidValue):
     guidValueString = GuidValue.lower().replace("{", "").replace("}", "").replace(" ", "")
     guidValueList = guidValueString.split(",")
@@ -85,6 +97,12 @@ def GuidStructureStringToGuidString(GuidValue):
             int(guidValueList[10], 16)
             )
 
+## Convert GUID string in C structure style to xxxxxxxx_xxxx_xxxx_xxxx_xxxxxxxxxxxx
+#
+#   @param      GuidValue   The GUID value in C structure format
+#
+#   @retval     string      The GUID value in xxxxxxxx_xxxx_xxxx_xxxx_xxxxxxxxxxxx format
+#
 def GuidStructureStringToGuidValueName(GuidValue):
     guidValueString = GuidValue.lower().replace("{", "").replace("}", "").replace(" ", "")
     guidValueList = guidValueString.split(",")
@@ -104,10 +122,25 @@ def GuidStructureStringToGuidValueName(GuidValue):
             int(guidValueList[10], 16)
             )
 
+## Create directories
+#
+#   @param      Directory   The directory name
+#
 def CreateDirectory(Directory):
     if not os.access(Directory, os.F_OK):
         os.makedirs(Directory)
 
+## Check if given file is changed or not
+#
+#  This method is used to check if a file is changed or not between two build
+#  actions. It makes use a cache to store files timestamp.
+#
+#   @param      File    The path of file
+#
+#   @retval     True    If the given file is changed, doesn't exist, or can't be
+#                       found in timestamp cache
+#   @retval     False   If the given file is changed
+#
 def IsChanged(File):
     if not os.path.exists(File):
         return True
@@ -123,6 +156,18 @@ def IsChanged(File):
 
     return FileChanged
 
+## Store content in file
+#
+#  This method is used to save file only when its content is changed. This is
+#  quite useful for "make" system to decide what will be re-built and what won't.
+#
+#   @param      File            The path of file
+#   @param      Content         The new content of the file
+#   @param      IsBinaryFile    The flag indicating if the file is binary file or not
+#
+#   @retval     True            If the file content is changed and the file is renewed
+#   @retval     False           If the file content is the same
+#
 def SaveFileOnChange(File, Content, IsBinaryFile=False):
     if IsBinaryFile:
         BinaryFlag = 'b'
@@ -141,7 +186,12 @@ def SaveFileOnChange(File, Content, IsBinaryFile=False):
     Fd.close()
     return True
 
-def Cache(Data, File):
+## Make a Python object persistent on file system
+#
+#   @param      Data    The object to be stored in file
+#   @param      File    The path of file to store the object
+#
+def ObjectDump(Data, File):
     Fd = None
     try:
         Fd = open(File, 'w')
@@ -152,23 +202,51 @@ def Cache(Data, File):
         if Fd != None:
             Fd.close()
 
-def Restore(File):
+## Restore a Python object from a file
+#
+#   @param      File    The path of file stored the object
+#
+#   @retval     object  A python object
+#   @retval     None    If failure in file operation
+#
+def ObjectRestore(File):
     try:
         Fd = open(File, 'r')
         return cPickle.load(Fd)
     except Exception, e:
-        EdkLogger.error("", FILE_OPEN_FAILURE, ExtraData=File)
-    finally:
-        if Fd != None:
-            Fd.close()
+        EdkLogger.verbose("Failed to open [%s]" % File)
+        return None
 
+## A string template class
+#
+#  This class implements a template for string replacement. A string template
+#  looks like following
+#
+#       ${BEGIN} other_string ${placeholder_name} other_string ${END}
+#
+#  The string between ${BEGIN} and ${END} will be repeated as many times as the
+#  length of "placeholder_name", which is a list passed through a dict. The
+#  "placeholder_name" is the key name of the dict. The ${BEGIN} and ${END} can
+#  be not used and, in this case, the "placeholder_name" must not a list and it
+#  will just be replaced once.
+#
 class TemplateString(object):
+    ## Constructor
     def __init__(self):
         self.String = ''
 
+    ## str() operator
+    #
+    #   @retval     string  The string replaced
+    #
     def __str__(self):
         return self.String
 
+    ## Replace the string template with dictionary of placeholders
+    #
+    #   @param      AppendString    The string template to append
+    #   @param      Dictionary      The placeholder dictionaries
+    #
     def Append(self, AppendString, Dictionary=None):
         if Dictionary == None:
             self.String += AppendString
@@ -219,7 +297,18 @@ class TemplateString(object):
 
         self.String += AppendString
 
+## Progress indicator class
+#
+#  This class makes use of thread to print progress on console.
+#
 class Progressor:
+    ## Constructor
+    #
+    #   @param      OpenMessage     The string printed before progress charaters
+    #   @param      CloseMessage    The string printed after progress charaters
+    #   @param      ProgressChar    The charater used to indicate the progress
+    #   @param      Interval        The interval in seconds between two progress charaters
+    #
     def __init__(self, OpenMessage="", CloseMessage="", ProgressChar='.', Interval=1):
         self.StopFlag = threading.Event()
         self.ProgressThread = None
@@ -228,21 +317,33 @@ class Progressor:
         self.ProgressChar = ProgressChar
         self.Interval = Interval
 
+    ## Start to print progress charater
+    #
+    #   @param      OpenMessage     The string printed before progress charaters
+    #
     def Start(self, OpenMessage=None):
         if OpenMessage != None:
             self.PromptMessage = OpenMessage
         self.StopFlag.clear()
         self.ProgressThread = threading.Thread(target=self._ProgressThreadEntry)
-        self.ProgressThread.setDaemon(True)
+        self.ProgressThread.setDaemon(False)
         self.ProgressThread.start()
 
+    ## Stop printing progress charater
+    #
+    #   @param      CloseMessage    The string printed after progress charaters
+    #
     def Stop(self, CloseMessage=None):
         if CloseMessage != None:
             self.CodaMessage = CloseMessage
-        self.StopFlag.set()
-        self.ProgressThread.join()
-        self.ProgressThread = None
 
+        self.StopFlag.set()
+
+        if self.ProgressThread != None:
+            self.ProgressThread.join()
+            self.ProgressThread = None
+
+    ## Thread entry method
     def _ProgressThreadEntry(self):
         print self.PromptMessage,
         while not self.StopFlag.isSet():
@@ -250,64 +351,82 @@ class Progressor:
             print self.ProgressChar,
         print self.CodaMessage
 
+## A dict which can access its keys and/or values orderly
+#
+#  The class implements a new kind of dict which its keys or values can be
+#  accessed in the order they are added into the dict. It guarantees the order
+#  by making use of an internal list to keep a copy of keys.
+#
 class sdict(dict):
+    ## Constructor
     def __init__(self):
         self._key_list = []
 
+    ## [] operator
     def __setitem__(self, key, value):
         if key not in self._key_list:
             self._key_list.append(key)
         dict.__setitem__(self, key, value)
 
+    ## del operator
     def __delitem__(self, key):
         self._key_list.remove(key)
         dict.__delitem__(self, key)
-    #
-    # used in "for k in dict" loop to ensure the correct order
-    #
+
+    ## used in "for k in dict" loop to ensure the correct order
     def __iter__(self):
         return self.iterkeys()
 
+    ## len() support
     def __len__(self):
         return len(self._key_list)
 
+    ## "in" test support
     def __contains__(self, key):
         return key in self._key_list
 
     def has_key(self, key):
         return key in self._key_list
 
+    ## Empty the dict
     def clear(self):
         self._key_list = []
         dict.clear(self)
 
+    ## Return a copy of keys
     def keys(self):
         keys = []
         for key in self._key_list:
             keys.append(key)
         return keys
 
+    ## Return a copy of values
     def values(self):
         values = []
         for key in self._key_list:
             values.append(self[key])
         return values
 
+    ## Return a copy of (key, value) list
     def items(self):
         items = []
         for key in self._key_list:
             items.append((key, self[key]))
         return items
 
+    ## Iteration support
     def iteritems(self):
         return iter(self.items())
 
+    ## Keys interation support
     def iterkeys(self):
         return iter(self.keys())
 
+    ## Values interation support
     def itervalues(self):
         return iter(self.values())
 
+    ## Return value related to a key, and remove the (key, value) from the dict
     def pop(self, key, *dv):
         value = None
         if key in self._key_list:
@@ -317,15 +436,16 @@ class sdict(dict):
             value = kv[0]
         return value
 
+    ## Return (key, value) pair, and remove the (key, value) from the dict
     def popitem(self):
         key = self._key_list[-1]
         value = self[key]
         self.__delitem__(key)
         return key, value
 
-
-if gFileTimeStampCache == {} and os.path.exists(".TsCache"):
-    gFileTimeStampCache = Restore(".TsCache")
-
-if gDependencyDatabase == {} and os.path.exists(".DepCache"):
-    gDependencyDatabase = Restore(".DepCache")
+#
+#if gFileTimeStampCache == {} and os.path.exists(".TsCache"):
+#    gFileTimeStampCache = ObjectRestore(".TsCache")
+#
+#if gDependencyDatabase == {} and os.path.exists(".DepCache"):
+#    gDependencyDatabase = ObjectRestore(".DepCache")

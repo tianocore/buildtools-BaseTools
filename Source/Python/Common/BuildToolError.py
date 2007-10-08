@@ -63,9 +63,12 @@ IO_BUSY = 0x6001
 IO_TIMEOUT = 0x6002
 IO_UNKNOWN_ERROR = 0x6FFF
 
+COMMAND_FAILURE = 0x7000
+
 AUTOGEN_ERROR = 0xF000
 PARSER_ERROR = 0xF001
-GENFDS_ERROR = 0xF002
+BUILD_ERROR = 0xF002
+GENFDS_ERROR = 0xF003
 MIGRATION_ERROR = 0xF010
 UNKNOWN_ERROR = 0xFFFF
 
@@ -116,6 +119,8 @@ gErrorMessage = {
     ATTRIBUTE_UPDATE_FAILURE:   "Failed to update",
     ATTRIBUTE_ACCESS_DENIED :   "Access denied",
     ATTRIBUTE_UNKNOWN_ERROR :   "Unknown error when accessing",
+
+    COMMAND_FAILURE         :   "Failed to execute command",
 
     IO_NOT_READY            :   "Not ready",
     IO_BUSY                 :   "Busy",

@@ -101,7 +101,7 @@ def NormFile(FilePath, Workspace):
 
     # check if the file path exists or not
     if not os.path.isfile(FileFullPath):
-        EdkLogger.error("build", FILE_NOT_FOUND, "%s.\n\tPlease give file in absolute path or relative to WORKSPACE!"  % FileFullPath)
+        EdkLogger.error("build", FILE_NOT_FOUND, ExtraData="\t%s (Please give file in absolute path or relative to WORKSPACE)"  % FileFullPath)
 
     # remove workspace directory from the beginning part of the file path
     if Workspace[-1] in ["\\", "/"]:
@@ -149,13 +149,13 @@ def LaunchCommand(CommandStringList, WorkingDir):
     EndOfProcedure.clear()
     if Proc.stdout:
         StdOutThread = Thread(target=ReadMessage, args=(Proc.stdout, EdkLogger.info, EndOfProcedure))
-        StdOutThread.setName("STDOUT Redirector")
+        StdOutThread.setName("STDOUT-Redirector")
         StdOutThread.setDaemon(False)
         StdOutThread.start()
 
     if Proc.stderr:
         StdErrThread = Thread(target=ReadMessage, args=(Proc.stderr, EdkLogger.quiet, EndOfProcedure))
-        StdErrThread.setName("STDERR Redirector")
+        StdErrThread.setName("STDERR-Redirector")
         StdErrThread.setDaemon(False)
         StdErrThread.start()
 
@@ -171,8 +171,7 @@ def LaunchCommand(CommandStringList, WorkingDir):
 
     # check the return code of the program
     if Proc.returncode != 0:
-        EdkLogger.error("build", UNKNOWN_ERROR, "failed to execute command",
-                        ExtraData="%s [%s]" % (" ".join(CommandStringList), WorkingDir))
+        EdkLogger.error("build", COMMAND_FAILURE, ExtraData="%s [%s]" % (" ".join(CommandStringList), WorkingDir))
 
 ## The smallest unit that can be built in multi-thread build mode
 #
@@ -307,7 +306,7 @@ class BuildTask:
     @staticmethod
     def StartScheduler(MaxThreadNumber, ExitFlag):
         SchedulerThread = Thread(target=BuildTask.Scheduler, args=(MaxThreadNumber, ExitFlag))
-        SchedulerThread.setName("Build Task Scheduler")
+        SchedulerThread.setName("Build-Task-Scheduler")
         SchedulerThread.setDaemon(False)
         SchedulerThread.start()
         BuildTask._SchedulerStarted = True
@@ -347,7 +346,7 @@ class BuildTask:
                         BuildTask._PendingQueueLock.release()
 
                 # launch build thread until the maximum number of threads is reached
-                while True:
+                while not BuildTask._ErrorFlag.isSet():
                     # empty ready queue, do nothing further
                     if len(BuildTask._ReadyQueue) == 0:
                         break
@@ -361,14 +360,25 @@ class BuildTask:
                 time.sleep(0.01)
 
             # wait for all running threads exit if no error occured
-            while not BuildTask._ErrorFlag.isSet() and \
-                  BuildTask._Thread._Semaphore__value != BuildTask._Thread._initial_value:
-                EdkLogger.verbose( "Waiting for thread ending...(%d ended)" % BuildTask._Thread._Semaphore__value)
+            if BuildTask._ErrorFlag.isSet():
+                EdkLogger.quiet("\nWaiting for all Command-Threads exit...")
+            # while not BuildTask._ErrorFlag.isSet() and \
+            while BuildTask._Thread._Semaphore__value < BuildTask._Thread._initial_value:
+                EdkLogger.verbose("Waiting for thread ending...(%d)" %
+                                  (BuildTask._Thread._initial_value - BuildTask._Thread._Semaphore__value)
+                                 )
+                EdkLogger.debug(EdkLogger.DEBUG_9, "Threads [%s]" %
+                                ", ".join([Th.getName() for Th in threading.enumerate()]))
                 # avoid tense loop
                 time.sleep(0.1)
             BuildTask._CompleteFlag.set()
             BuildTask._SchedulerStarted = False
         except Exception, e:
+            #
+            # TRICK: hide the output of threads left runing, so that the user can
+            #        catch the error message easily
+            #
+            EdkLogger.SetLevel(EdkLogger.QUIET)
             BuildTask._ErrorFlag.set()
             BuildTask._ErrorMessage = "build thread scheduler error\n\t%s" % str(e)
             BuildTask._CompleteFlag.set()
@@ -477,8 +487,13 @@ class BuildTask:
             LaunchCommand(CommandStringList, WorkingDir)
             self.CompleteFlag = True
         except Exception, e:
+            #
+            # TRICK: hide the output of threads left runing, so that the user can
+            #        catch the error message easily
+            #
+            EdkLogger.SetLevel(EdkLogger.QUIET)
             BuildTask._ErrorFlag.set()
-            BuildTask._ErrorMessage = "broken by %s\n    %s [%s]" % \
+            BuildTask._ErrorMessage = "%s broken\n    %s [%s]" % \
                                       (threading.currentThread().getName(),
                                        " ".join(CommandStringList), WorkingDir)
         # indicate there's a thread is available for another build task
@@ -493,7 +508,7 @@ class BuildTask:
             CommandList = ["make", self.BuildItem.Target]
 
         self.BuildTread = Thread(target=self._CommandThread, args=(CommandList, self.BuildItem.WorkingDir))
-        self.BuildTread.setName("Maker")
+        self.BuildTread.setName("Command-Thread")
         self.BuildTread.setDaemon(False)
         self.BuildTread.start()
 
@@ -553,8 +568,12 @@ class Build():
 
         # parse target.txt, tools_def.txt, and platform file
         self.Progress.Start("Loading build configuration")
-        self.LoadConfiguration()
-        self.InitBuild()
+        try:
+            self.LoadConfiguration()
+            self.InitBuild()
+        except Exception, E:
+            self.Progress.Stop()
+            raise E
         self.Progress.Stop("done!")
 
         # print current build environment and configuration
@@ -581,16 +600,20 @@ class Build():
 
         # establish build database, INF/DEC files will be parsed in this stage
         self.Progress.Start("\nEstablishing build database")
-        if self.Fdf != None and self.Fdf != "":
-            FdfFile = os.path.join(self.WorkspaceDir, self.Fdf)
-            Fdf = FdfParser(FdfFile)
-            Fdf.ParseFile()
-            PcdSet = Fdf.profile.PcdDict
-        else:
-            PcdSet = {}
+        try:
+            if self.Fdf != None and self.Fdf != "":
+                FdfFile = os.path.join(self.WorkspaceDir, self.Fdf)
+                Fdf = FdfParser(FdfFile)
+                Fdf.ParseFile()
+                PcdSet = Fdf.profile.PcdDict
+            else:
+                PcdSet = {}
 
-        self.Ewb.GenBuildDatabase(PcdSet)
-        self.Platform = self.Ewb.Build[self.ArchList[0]].PlatformDatabase[self.PlatformFile]
+            self.Ewb.GenBuildDatabase(PcdSet)
+            self.Platform = self.Ewb.Build[self.ArchList[0]].PlatformDatabase[self.PlatformFile]
+        except Exception, E:
+            self.Progress.Stop()
+            raise E
         self.Progress.Stop("done!")
 
     ## Load configuration
@@ -847,15 +870,17 @@ class Build():
                                 continue
                         # Generate build task for the module
                         Bt = BuildTask.New(ModuleMakeUnit(Ma, self.Target))
-                        # Start task scheduler
-                        if not BuildTask.IsOnGoing():
-                            BuildTask.StartScheduler(self.ThreadNumber, ExitFlag)
                         # Break build if any build thread has error
                         if BuildTask.HasError():
                             # we need a full version of makefile for platform
+                            ExitFlag.set()
+                            BuildTask.WaitForComplete()
                             Pa.CreateModuleAutoGen()
                             Pa.CreateMakeFile(False)
-                            EdkLogger.error("build", UNKNOWN_ERROR, BuildTask.GetErrorMessage())
+                            EdkLogger.error("build", BUILD_ERROR, BuildTask.GetErrorMessage())
+                        # Start task scheduler
+                        if not BuildTask.IsOnGoing():
+                            BuildTask.StartScheduler(self.ThreadNumber, ExitFlag)
 
                 #
                 # All modules have been put in build tasks queue. Tell task scheduler
@@ -867,7 +892,7 @@ class Build():
                 Pa.CreateModuleAutoGen()
                 Pa.CreateMakeFile(False)
                 if BuildTask.HasError():
-                    EdkLogger.error("build", UNKNOWN_ERROR, BuildTask.GetErrorMessage())
+                    EdkLogger.error("build", BUILD_ERROR, BuildTask.GetErrorMessage())
 
                 # Generate FD image if there's a FDF file found
                 if self.Fdf != '' and self.Target in ["", "all", "fds"]:
@@ -876,14 +901,18 @@ class Build():
     ## Launch the module or platform build
     #
     def Launch(self):
-        if self.ModuleFile == None or self.ModuleFile == "":
-            if not self.SpawnMode or self.Target not in ["", "all"]:
-                self.SpawnMode = False
-                self._BuildPlatform()
+        try:
+            if self.ModuleFile == None or self.ModuleFile == "":
+                if not self.SpawnMode or self.Target not in ["", "all"]:
+                    self.SpawnMode = False
+                    self._BuildPlatform()
+                else:
+                    self._MultiThreadBuildPlatform()
             else:
-                self._MultiThreadBuildPlatform()
-        else:
-            self._BuildModule()
+                self._BuildModule()
+        except Exception, E:
+            self.Progress.Stop()
+            raise E
 
 ## Parse command line options
 #
