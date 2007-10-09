@@ -603,17 +603,21 @@ class Build():
         try:
             if self.Fdf != None and self.Fdf != "":
                 FdfFile = os.path.join(self.WorkspaceDir, self.Fdf)
+                
                 Fdf = FdfParser(FdfFile)
                 Fdf.ParseFile()
+                
                 PcdSet = Fdf.profile.PcdDict
             else:
                 PcdSet = {}
 
             self.Ewb.GenBuildDatabase(PcdSet)
             self.Platform = self.Ewb.Build[self.ArchList[0]].PlatformDatabase[self.PlatformFile]
-        except Exception, E:
+        
+        except Exception, X:
             self.Progress.Stop()
-            raise E
+            EdkLogger.error(X.ToolName, BUILD_ERROR, X.message, X.FileName, X.LineNumber, RaiseError = False)
+            raise X
         self.Progress.Stop("done!")
 
     ## Load configuration
