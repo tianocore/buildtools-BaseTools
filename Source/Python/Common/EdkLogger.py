@@ -122,7 +122,7 @@ def warn(ToolName, Message, File=None, Line=None, ExtraData=None):
 
 info    = _InfoLogger.info
 
-def error(ToolName, ErrorCode, Message=None, File=None, Line=None, ExtraData=None):
+def error(ToolName, ErrorCode, Message=None, File=None, Line=None, ExtraData=None, RaiseError=True):
     # if no tool name given, use caller's source file name as tool name
     if ToolName == None or ToolName == "":
         ToolName = os.path.basename(traceback.extract_stack()[-2][0])
@@ -156,7 +156,8 @@ def error(ToolName, ErrorCode, Message=None, File=None, Line=None, ExtraData=Non
         LogText = _ErrorMessageTemplateWithoutFile % TemplateDict
 
     _ErrorLogger.log(ERROR, LogText)
-    raise FatalError("%s failed!" % ToolName)
+    if RaiseError:
+        raise FatalError("%s failed!" % ToolName)
 
 quiet   = _ErrorLogger.error
 
