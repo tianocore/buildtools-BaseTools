@@ -36,10 +36,16 @@ class Vtf (VtfClassObject):
                                " = "              + \
                                component.CompName + \
                                T_CHAR_LF )
-            if component.CompLoc.upper() == 'NONE' :
+            if component.CompLoc.upper() == 'NONE':
                 BsfInf.writelines ("COMP_LOC"        + \
                                    " = "             + \
                                    'N'               + \
+                                   T_CHAR_LF )
+            
+            elif component.FilePos != None:
+                BsfInf.writelines ("COMP_LOC"        + \
+                                   " = "             + \
+                                   component.FilePos + \
                                    T_CHAR_LF )
             else:
                 index = fvList.index(component.CompLoc.upper())
@@ -66,13 +72,21 @@ class Vtf (VtfClassObject):
                                " = "            + \
                                component.CompCs + \
                                T_CHAR_LF )
+            
+            BinPath = component.CompBin
+            if BinPath != '-':
+                BinPath = GenFdsGlobalVariable.MacroExtend(GenFdsGlobalVariable.ReplaceWorkspaceMarco(BinPath))
             BsfInf.writelines ("COMP_BIN"        + \
                                " = "             + \
-                               GenFdsGlobalVariable.MacroExtend(GenFdsGlobalVariable.ReplaceWorkspaceMarco(component.CompBin)) + \
+                               BinPath + \
                                T_CHAR_LF )
+            
+            SymPath = component.CompSym
+            if SymPath != '-':
+                SymPath = GenFdsGlobalVariable.MacroExtend(GenFdsGlobalVariable.ReplaceWorkspaceMarco(SymPath))
             BsfInf.writelines ("COMP_SYM"        + \
                                " = "             + \
-                               GenFdsGlobalVariable.MacroExtend(GenFdsGlobalVariable.ReplaceWorkspaceMarco(component.CompSym)) + \
+                               SymPath + \
                                T_CHAR_LF )
             BsfInf.writelines ("COMP_SIZE"        + \
                                " = "              + \

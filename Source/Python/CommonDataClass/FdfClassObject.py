@@ -203,6 +203,7 @@ class ComponentStatementClassObject :
         self.CompBin = None
         self.CompSym = None
         self.CompSize = None
+        self.FilePos = None
         
         
 ##class UefiTokenClassObject:

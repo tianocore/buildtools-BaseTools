@@ -1,6 +1,7 @@
 import os
 import sys
 import subprocess
+from Common import BuildToolError
 from Common import EdkLogger
 
 class GenFdsGlobalVariable:
@@ -50,7 +51,7 @@ class GenFdsGlobalVariable:
             Str = os.path.realpath(Str)
         else:
             Str = os.path.join(GenFdsGlobalVariable.WorkSpaceDir, String)
-        return Str
+        return os.path.normpath(Str)
     
     def CallExternalTool (cmd, errorMess):
         if GenFdsGlobalVariable.VerboseMode:
@@ -79,6 +80,9 @@ class GenFdsGlobalVariable:
 
     def InfLogger (msg):
         EdkLogger.info(msg)
+        
+    def ErrorLogger (msg, File = None, Line = None, ExtraData = None):
+        EdkLogger.error('GenFds', BuildToolError.GENFDS_ERROR, Message, File, Line, ExtraData)
 
     def DebugLogger (Level, msg):
         EdkLogger.debug(Level, msg)

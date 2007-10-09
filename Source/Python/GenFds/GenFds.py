@@ -2,6 +2,7 @@ from optparse import OptionParser
 import sys
 import os
 import FdfParser
+from Common import BuildToolError
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import Common.EdkIIWorkspaceBuild
 import RuleComplexFile
@@ -135,8 +136,13 @@ def main():
         sys.exit(1)
 
     """ Parse Fdf file, has to place after build workspace as FDF may contain macros from DSC file """
-    fdfParser = FdfParser.FdfParser(fdfFilename)
-    fdfParser.ParseFile()
+    try:
+        fdfParser = FdfParser.FdfParser(fdfFilename)
+        fdfParser.ParseFile()
+    except FdfParser.Warning, X:
+        EdkLogger.error(X.ToolName, BuildToolError.GENFDS_ERROR, X.message, X.FileName, X.LineNumber, RaiseError = False)    
+        sys.exit(1)
+        
     if fdfParser.CycleReferenceCheck():
         GenFdsGlobalVariable.InfLogger ("ERROR: Cycle Reference Detected in FDF file")
         sys.exit(1)
