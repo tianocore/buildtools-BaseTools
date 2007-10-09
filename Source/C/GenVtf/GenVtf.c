@@ -1775,6 +1775,7 @@ Returns:
 
   if (Fp == NULL) {
     Error (NULL, 0, 0001, "Error opening file", FileName);
+    return EFI_ABORTED;
   }
 
   FileSize = _filelength (fileno (Fp));
@@ -2696,11 +2697,10 @@ ERROR:
     VerboseMsg("%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());
   }
 
-  return GetUtilityStatus ();     
+  return GetUtilityStatus();
   }
   if (DebugMode) {
-    //fprintf(stdout, "VTF image generated successful\n");
     DebugMsg(UTILITY_NAME, 0, DebugLevel, "VTF image generated successful\n");
+    }
+  return GetUtilityStatus();
   }
-  return 0;
-}
