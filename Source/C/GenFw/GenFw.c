@@ -62,7 +62,7 @@ Abstract:
 //
 #define UTILITY_NAME "GenFw"
 #define UTILITY_MAJOR_VERSION 0
-#define UTILITY_MINOR_VERSION 1
+#define UTILITY_MINOR_VERSION 2
 
 //
 // Action for this tool.
