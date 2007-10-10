@@ -86,6 +86,7 @@ Abstract:
 #define _MAX_PATH 500
 #endif
 
+#define STATUS_IGNORE        0xA
 //
 // Structure definition for a microcode header
 //
@@ -991,6 +992,7 @@ Returns:
   FILE              *fpInOut;
   UINTN             Data;
   UINTN             *DataPointer;
+  UINTN             *OldDataPointer;
   UINTN             CheckSum;
   UINT32            Index;
   UINT32            Index1;
@@ -1361,7 +1363,7 @@ Returns:
   }
 
   //
-  // Conver MicroCode.txt file to MicroCode.bin file
+  // Convert MicroCode.txt file to MicroCode.bin file
   //
   if (OutImageType == FW_MCI_IMAGE) {
     fpIn = fopen (mInImageName, "r");
@@ -1379,6 +1381,9 @@ Returns:
       Status = MicrocodeReadData (fpIn, &Data);
       if (Status == STATUS_SUCCESS) {
         FileLength += sizeof (Data);
+      }
+      if (Status == STATUS_IGNORE) {
+        Status = STATUS_SUCCESS;
       }
     } while (Status == STATUS_SUCCESS);
     //
@@ -1406,8 +1411,14 @@ Returns:
     //
     fseek (fpIn, 0, SEEK_SET);
     DataPointer = (UINTN *) FileBuffer;
+    OldDataPointer = DataPointer;
     do {
+      OldDataPointer = DataPointer;
       Status = MicrocodeReadData (fpIn, DataPointer++);
+      if (Status == STATUS_IGNORE) {
+        DataPointer = OldDataPointer;
+        Status = STATUS_SUCCESS;
+      }
     } while (Status == STATUS_SUCCESS);
     //
     // close input file after read data
@@ -1428,7 +1439,7 @@ Returns:
     }
 
     if (Index != FileLength) {
-      Error (NULL, 0, 3000, "Invalid", "file contents of %s do not contain expected TotalSize 0x%04X", mInImageName, Index);
+      Error (NULL, 0, 3000, "Invalid", "file contents of %s (0x%x) do not equal expected TotalSize: 0x%04X", mInImageName, FileLength, Index);
       goto Finish;
     }
 
@@ -1444,7 +1455,7 @@ Returns:
       Index       += sizeof (UINTN);
     }
     if (CheckSum != 0) {
-      Error (NULL, 0, 3000, "Invalid", "checksum failed on file contents of %s", mInImageName);
+      Error (NULL, 0, 3000, "Invalid", "checksum (0x%x) failed on file contents of %s", CheckSum, mInImageName);
       goto Finish;
     }
     //
@@ -2307,11 +2318,24 @@ Returns:
 {
   CHAR8  Line[MAX_LINE_LEN];
   CHAR8  *cptr;
+  UINT8  ctr;
 
   Line[MAX_LINE_LEN - 1]  = 0;
   if (fgets (Line, MAX_LINE_LEN, InFptr) == NULL) {
     return STATUS_ERROR;
   }
+
+  // Strip leading white-space characters (except carriage returns) from Line
+  //
+  if (isspace(Line[0]) && Line[0] != '\n') {
+    // printf("Found a space character at Line[0] = 0x%x\n", Line[0]);
+    while (isspace(Line[0])) {
+       for (ctr = 0; ctr < strlen(Line); ctr++)
+         if (Line[ctr] != '\n')
+           Line[ctr] = Line[ctr + 1];
+    }
+  }
+
   //
   // If it was a binary file, then it may have overwritten our null terminator
   //
@@ -2319,7 +2343,6 @@ Returns:
     return STATUS_ERROR;
   }
 
-  //
   // Look for
   // dd 000000001h ; comment
   // dd XXXXXXXX
@@ -2342,6 +2365,14 @@ Returns:
       }
     }
     return STATUS_SUCCESS;
+  }
+  // Skip Blank Lines 
+  if (strlen(Line) == 1) {
+    return STATUS_IGNORE;
+  }
+  // Skip Comment Lines
+  if (tolower(cptr[0]) == ';') {
+    return STATUS_IGNORE;
   }
 
   return STATUS_ERROR;
