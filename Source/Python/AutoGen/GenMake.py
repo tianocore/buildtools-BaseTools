@@ -493,7 +493,7 @@ build_modules:
 #
 build_fds:
 \t-@echo Generating flash image, if any ...
-${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -p ${active_platform} -a ${build_architecture_list}${END}${BEGIN} -r ${fd} ${END}${BEGIN} -i ${fv} ${END}
+${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -t $(TOOLCHAIN_TAG) -b $(TARGET) -p ${active_platform} -a ${build_architecture_list}${END}${BEGIN} -r ${fd} ${END}${BEGIN} -i ${fv} ${END}
 
 #
 # run command for emulator platform only

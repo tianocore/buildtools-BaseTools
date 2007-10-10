@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 ## @file
 # The engine for building files
 #
@@ -16,15 +15,17 @@
 # Import Modules
 #
 import os
-#import re
 import string
 
 from Common.BuildToolError import *
-
 import Common.EdkLogger as EdkLogger
 
-#gMacroPattern = re.compile("\$\([A-Z_]+\)(.*)")
-
+## Convert file type to makefile macro name
+#
+#   @param      FileType    The name of file type
+#
+#   @retval     string      The name of macro
+#
 def FileType2Macro(FileType):
     return "$(%s_LIST)" % FileType.replace("-", "_").upper()
 
@@ -456,27 +457,4 @@ class BuildRule:
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
 if __name__ == '__main__':
-    import sys
-    if len(sys.argv) <= 1:
-        print "No input file"
-        sys.exit(1)
-
-    br = BuildRule(File=sys.argv[1])
-    for BuildVersion in br.RuleDatabase:
-        print "\nVVVVVVVVVVVVV %s VVVVVVVVVVVVVVV" % BuildVersion
-        for Family in br.RuleDatabase[BuildVersion]:
-            print "\n------------------ %s ----------------" % Family
-            for FileType in br.RuleDatabase[BuildVersion][Family]:
-                print "\n%s" % br.RuleDatabase[BuildVersion][Family][FileType]
-
-    print "\n------ .c"
-    ct, cr = br.Get(".c", "MSFT")
-    print cr
-    s, d, c = cr.Apply("abc\\y.c", "MdeModulePkg\\Universal", "\\")
-    print "\n------ .obj"
-    objt, objr = br.Get(".obj", "MSFT")
-    print objr
-    s, d, c = objr.Apply(["abc\\y.obj", "xyz\\z.obj"], "MdeModulePkg\\Universal", "\\")
-    print "\n------ .VFR"
-    print br.Get(".VFR", "GCC")
-    sys.exit(0)
+    pass

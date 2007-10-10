@@ -1064,7 +1064,6 @@ class ModuleAutoGen(object):
                     break
             else:
                 PackageListString = "\t" + "\n\t".join([str(P) for P in self.BuildInfo.DerivedPackageList])
-                #EdkLogger.error("AutoGen", AUTOGEN_ERROR, msg='PPI [%s] used by [%s] cannot be found in dependent packages:\n\t%s' % (Key, self.Module, PackageListString))
                 EdkLogger.error("AutoGen", AUTOGEN_ERROR, 'PPI [%s] used by [%s] cannot be found in dependent packages' % (Key, self.Module),
                                 ExtraData=PackageListString)
         return Guid
