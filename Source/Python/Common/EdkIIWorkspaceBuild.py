@@ -654,7 +654,7 @@ class WorkspaceBuild(object):
         # if any remaining node m in the graph has a constructor and an incoming edge, then the graph has a cycle
         #
         for m in LibraryList:
-            if ConsumedByList[m] != [] and m in Constructor:
+            if ConsumedByList[m] != [] and m in Constructor and len(Constructor) > 1:
                 ErrorMessage = 'Library [%s] with constructors has a cycle' % str(m)
                 EdkLogger.error("AutoGen", AUTOGEN_ERROR, ErrorMessage,
                                 "\tconsumed by " + "\n\tconsumed by ".join([str(l) for l in ConsumedByList[m]]))
