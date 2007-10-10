@@ -20,15 +20,20 @@ class EfiSection (EfiSectionClassObject):
             """print 'Buile Num: %s' %self.BuildNum"""
             BuildNum = FfsInf.__ExtendMarco__(self.BuildNum)
             """print 'After extend Build Num: %s' %self.BuildNum"""
-            """print 'version Num: %s' %self.VersionNum"""
-            VersionNum = FfsInf.__ExtendMarco__(self.VersionNum)
-            """print 'After extend Version Num: %s' %self.VersionNum"""
+            
             StringData = FfsInf.__ExtendMarco__(self.StringData)
+            InfOverrideString = False
+            if FfsInf.Ui != None:
+                StringData = FfsInf.Ui
+                InfOverrideString = True
+            if FfsInf.ver != None:
+                StringData = FfsInf.ver
+                InfOverrideString = True
         else:
             SectionType = self.SectionType
             Filename = self.Filename
             BuildNum = self.BuildNum
-            VerstionNum = self.VersionNum
+            
             InfFileName = ''
         """If the file name was pointed out, add it in FileList"""     
         FileList = []
@@ -48,7 +53,28 @@ class EfiSection (EfiSectionClassObject):
         """ If Section type is 'VERSION'"""
         OutputFileList = []
         if SectionType == 'VERSION':
-            if FileList != []:
+            if InfOverrideString:
+                VerString = ' -n '          + \
+                                '\"'            + \
+                                StringData      + \
+                                '\"'
+                if BuildNum != None and BuildNum != '':
+                        BuildNumString = ' -j ' + \
+                                         BuildNum
+                else:
+                    BuildNumString = ''
+                    
+                Num = SecNum
+                OutputFile = os.path.join( OutputPath, ModuleName + 'SEC' + str(Num) + Ffs.SectionSuffix.get(SectionType))
+                GenSectionCmd = 'GenSec -o '                + \
+                                     OutputFile                 + \
+                                     ' -s EFI_SECTION_VERSION'  + \
+                                     VerString                  + \
+                                     BuildNumString
+                GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed !")
+                OutputFileList.append(OutputFile)    
+                
+            elif FileList != []:
                 for File in FileList:
                     Index = Index + 1
                     Num = '%s.%d' %(SecNum , Index)
@@ -105,7 +131,22 @@ class EfiSection (EfiSectionClassObject):
         # If Section Type is 'UI'
         #
         elif SectionType == 'UI':
-            if FileList != []:
+            if InfOverrideString:
+                UiString = ' -n '        + \
+                               '\"'          + \
+                               StringData    + \
+                               '\"'
+                Num = SecNum
+                OutputFile = os.path.join( OutputPath, ModuleName + 'SEC' + str(Num) + Ffs.SectionSuffix.get(SectionType))
+                GenSectionCmd = 'GenSec -o '                       + \
+                                 OutputFile                        + \
+                                 ' -s EFI_SECTION_USER_INTERFACE'  + \
+                                 UiString
+
+                GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed !")
+                OutputFileList.append(OutputFile)
+                
+            elif FileList != []:
                 for File in FileList:
                     Index = Index + 1
                     Num = '%s.%d' %(SecNum , Index)

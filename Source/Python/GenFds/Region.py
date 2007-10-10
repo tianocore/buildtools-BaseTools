@@ -71,9 +71,13 @@ class region(RegionClassObject):
                 else:
                     raise Exception ("FV (%s) is NOT described in FDF file!" % (RegionData))
 
-            #BinFile = open (FileName, 'r+b')
-            #Buffer.write(BinFile.read())
-            Buffer.write(FvBuffer.getvalue())
+            
+            if FvBuffer.len > 0:
+                Buffer.write(FvBuffer.getvalue())
+            else:
+                BinFile = open (FileName, 'rb')
+                Buffer.write(BinFile.read())
+                
             FvBuffer.close()
 
         if self.RegionType == 'FILE':

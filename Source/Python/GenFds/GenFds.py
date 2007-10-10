@@ -46,9 +46,9 @@ def main():
         if (options.debug):
             GenFdsGlobalVariable.VerboseLogger( "Using Workspace:", workspace)
 
-    Target = Common.TargetTxtClassObject.TargetTxtDict(GenFdsGlobalVariable.WorkSpaceDir)
-    GenFdsGlobalVariable.TargetName = Target.TargetTxtDictionary['TARGET'][0]
-    GenFdsGlobalVariable.ToolChainTag = Target.TargetTxtDictionary['TOOL_CHAIN_TAG'][0]
+#    Target = Common.TargetTxtClassObject.TargetTxtDict(GenFdsGlobalVariable.WorkSpaceDir)
+#    GenFdsGlobalVariable.TargetName = Target.TargetTxtDictionary['TARGET'][0]
+#    GenFdsGlobalVariable.ToolChainTag = Target.TargetTxtDictionary['TOOL_CHAIN_TAG'][0]
 
     if (options.filename):
         fdfFilename = options.filename
@@ -57,6 +57,18 @@ def main():
         GenFdsGlobalVariable.InfLogger("ERROR: E0001 - You must specify an input filename")
         sys.exit(1)
 
+    if (options.BuildTarget):
+        GenFdsGlobalVariable.TargetName = options.BuildTarget
+    else:
+        GenFdsGlobalVariable.InfLogger("ERROR: E0001 - You must specify a build target")
+        sys.exit(1)
+        
+    if (options.ToolChain):
+        GenFdsGlobalVariable.ToolChainTag = options.ToolChain
+    else:
+        GenFdsGlobalVariable.InfLogger("ERROR: E0001 - You must specify a tool chain tag")
+        sys.exit(1)
+        
     if fdfFilename[0:2] == '..':
         fdfFilename = os.path.realpath(fdfFilename)
     if fdfFilename[1] != ':':
@@ -89,14 +101,16 @@ def main():
         else:
             raise Exception ("ActivePlatform doesn't exist!")
     else :
-        activePlatform = Target.TargetTxtDictionary['ACTIVE_PLATFORM']
+        GenFdsGlobalVariable.InfLogger("ERROR: E0001 - You must specify an active platform")
+        sys.exit(1)
 
     GenFdsGlobalVariable.ActivePlatform = NormPath(activePlatform)
         
     if (options.archList) :
         archList = options.archList.split(',')
     else:
-        archList = Target.TargetTxtDictionary['TARGET_ARCH']
+        GenFdsGlobalVariable.InfLogger("ERROR: E0001 - You must specify a build ARCH")
+        sys.exit(1)
     
     if (options.uiFdName) :
         if options.uiFdName.upper() in fdfParser.profile.FdDict.keys():
@@ -154,19 +168,21 @@ def main():
     print "\nDone!\n"
     
 def myOptionParser():
-    usage = "%prog [options] -f input_file"
-    parser = OptionParser(usage=usage,description=__copyright__,version="%prog " + str(versionNumber))
-    parser.add_option("-f", "--file", dest="filename", help="Name of FDF file to convert")
-    parser.add_option("-a", "--arch", dest="archList", help="comma separated list containing one or more of: IA32, X64, IPF or EBC which should be built, overrides target.txt?s TARGET_ARCH")
-    parser.add_option("-q", "--quiet", action="store_true", type=None, help="Disable all messages except FATAL ERRORS.")
-    parser.add_option("-v", "--verbose", action="store_true", type=None, help="Turn on verbose output with informational messages printed.")
-    parser.add_option("-d", "--debug", action="store", type="int", help="Enable debug messages at specified level.")
-    parser.add_option("-p", "--platform", dest="activePlatform", help="Set the Active platform")
-    parser.add_option("-w", "--workspace", dest="workspace", default=str(os.environ.get('WORKSPACE')), help="Set the WORKSPACE")
-    parser.add_option("-o", "--outputDir", dest="outputDir", help="Name of Build Output directory")
-    parser.add_option("-r", "--rom_image", dest="uiFdName", help="Build the image using the [FD] section named by FdUiName.")
-    parser.add_option("-i", "--FvImage", dest="uiFvName", help="Buld the FV image using the [FV] section named by UiFvName")
-    (options, args) = parser.parse_args()
+    usage = "%prog [options] -f input_file -a arch_list -b build_target -p active_platform -t tool_chain_tag"
+    Parser = OptionParser(usage=usage,description=__copyright__,version="%prog " + str(versionNumber))
+    Parser.add_option("-f", "--file", dest="filename", help="Name of FDF file to convert")
+    Parser.add_option("-a", "--arch", dest="archList", help="comma separated list containing one or more of: IA32, X64, IPF or EBC which should be built, overrides target.txt?s TARGET_ARCH")
+    Parser.add_option("-q", "--quiet", action="store_true", type=None, help="Disable all messages except FATAL ERRORS.")
+    Parser.add_option("-v", "--verbose", action="store_true", type=None, help="Turn on verbose output with informational messages printed.")
+    Parser.add_option("-d", "--debug", action="store", type="int", help="Enable debug messages at specified level.")
+    Parser.add_option("-p", "--platform", dest="activePlatform", help="Set the Active platform")
+    Parser.add_option("-w", "--workspace", dest="workspace", default=str(os.environ.get('WORKSPACE')), help="Set the WORKSPACE")
+    Parser.add_option("-o", "--outputDir", dest="outputDir", help="Name of Build Output directory")
+    Parser.add_option("-r", "--rom_image", dest="uiFdName", help="Build the image using the [FD] section named by FdUiName.")
+    Parser.add_option("-i", "--FvImage", dest="uiFvName", help="Buld the FV image using the [FV] section named by UiFvName")
+    Parser.add_option("-b", "--buildtarget", action="store", type="choice", choices=['DEBUG','RELEASE'], dest="BuildTarget", help="BuildTarget is one of list: DEBUG, RELEASE.")
+    Parser.add_option("-t", "--tagname", action="store", type="string", dest="ToolChain", help="Using the Tool Chain Tagname to build the platform.")
+    (options, args) = Parser.parse_args()
     return options
 
 
@@ -230,7 +246,7 @@ class GenFds :
                 return
         elif GenFds.OnlyGenerateThisFd == None:
             for FvName in GenFdsGlobalVariable.FdfParser.profile.FvDict.keys():          
-                Buffer = StringIO.StringIO()
+                Buffer = StringIO.StringIO('')
                 fv = GenFdsGlobalVariable.FdfParser.profile.FvDict[FvName]
                 # Get FV base Address
                 fv.AddToBuffer(Buffer, None, GenFds.GetFvBlockSize(fv))

@@ -1,3 +1,20 @@
+## @file
+# parse FDF file
+#
+#  Copyright (c) 2007, Intel Corporation
+#
+#  All rights reserved. This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution.  The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+
+##
+# Import Modules
+#
 import Fd
 import Region
 import Fv
@@ -24,27 +41,38 @@ import GenFdsGlobalVariable
 import re
 import os
 
-#define T_CHAR_SPACE                ' '
-#define T_CHAR_NULL                 '\0'
-#define T_CHAR_CR                   '\r'
-#define T_CHAR_TAB                  '\t'
-#define T_CHAR_LF                   '\n'
-#define T_CHAR_SLASH                '/'
-#define T_CHAR_BACKSLASH            '\\'
-#define T_CHAR_DOUBLE_QUOTE         '\"'
-#define T_CHAR_SINGLE_QUOTE         '\''
-#define T_CHAR_STAR                 '*'
-#define T_CHAR_HASH                 '#'
+##define T_CHAR_SPACE                ' '
+##define T_CHAR_NULL                 '\0'
+##define T_CHAR_CR                   '\r'
+##define T_CHAR_TAB                  '\t'
+##define T_CHAR_LF                   '\n'
+##define T_CHAR_SLASH                '/'
+##define T_CHAR_BACKSLASH            '\\'
+##define T_CHAR_DOUBLE_QUOTE         '\"'
+##define T_CHAR_SINGLE_QUOTE         '\''
+##define T_CHAR_STAR                 '*'
+##define T_CHAR_HASH                 '#'
 
 (T_CHAR_SPACE, T_CHAR_NULL, T_CHAR_CR, T_CHAR_TAB, T_CHAR_LF, T_CHAR_SLASH, \
 T_CHAR_BACKSLASH, T_CHAR_DOUBLE_QUOTE, T_CHAR_SINGLE_QUOTE, T_CHAR_STAR, T_CHAR_HASH) = \
 (' ', '\0', '\r', '\t', '\n', '/', '\\', '\"', '\'', '*', '#')
 
+## The exception class that used to report error messages when parsing FDF
+#
+# Currently the "ToolName" is set to be "FDF Parser".
+#
 class Warning (Exception):
-    def __init__(self, s, file = None, line = None):
-        self.message = s
-        self.FileName = file
-        self.LineNumber = line
+    ## The constructor
+    #
+    #   @param  self        The object pointer
+    #   @param  Str         The message to record
+    #   @param  File        The FDF name
+    #   @param  Line        The Line number that error occurs
+    #
+    def __init__(self, Str, File = None, Line = None):
+        self.message = Str
+        self.FileName = File
+        self.LineNumber = Line
         self.ToolName = 'FDF Parser'
 
 class FileProfile :
@@ -1025,14 +1053,18 @@ class FdfParser:
                 raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
             if not self.__GetNextToken():
                 raise Warning("expected Version At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
-            ffsInf.ver = self.__Token
+            
+            if self.__GetStringData():
+                ffsInf.ver = self.__Token
         
         if self.__IsKeyword( "UI"):
             if not self.__IsToken( "="):
                 raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
             if not self.__GetNextToken():
                 raise Warning("expected UI name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
-            ffsInf.Ui = self.__Token
+            
+            if self.__GetStringData():
+                ffsInf.Ui = self.__Token
 
         if self.__GetNextToken():
             p = re.compile(r'([a-zA-Z0-9\-]+|\$\(TARGET\)|\*)_([a-zA-Z0-9\-]+|\$\(TOOL_CHAIN_TAG\)|\*)_([a-zA-Z0-9\-]+|\$\(ARCH\)|\*)')

@@ -109,7 +109,7 @@ class EfiSectionClassObject (SectionClassObject):
         self.FileName = None
         self.FileExtension = None
         self.BuildNum = None
-        self.VersionNum = None
+#        self.VersionNum = None
         
 class FvImageSectionClassObject (SectionClassObject):
     def __init__(self):

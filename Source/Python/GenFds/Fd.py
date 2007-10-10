@@ -39,7 +39,7 @@ class FD(FDClassObject):
         GenFdsGlobalVariable.VerboseLogger ('Create an empty Fd file')
         FdFileName = os.path.join(GenFdsGlobalVariable.FvDir,
                                   self.FdUiName + '.fd')
-        fd = open(FdFileName, 'w+b')
+        fd = open(FdFileName, 'wb')
        
         #
         # Write the buffer contents to Fd file
