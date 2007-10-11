@@ -234,9 +234,9 @@ def Main():
     try:
         CommandOptions, InputFile = Options()
         if CommandOptions.LogLevel < EdkLogger.DEBUG_9:
-            EdkLogger.setLevel(CommandOptions.LogLevel + 1)
+            EdkLogger.SetLevel(CommandOptions.LogLevel + 1)
         else:
-            EdkLogger.setLevel(CommandOptions.LogLevel)
+            EdkLogger.SetLevel(CommandOptions.LogLevel)
 
         if CommandOptions.FileType == "Vfr":
             TrimPreprocessedVfr(InputFile, CommandOptions.OutputFile)
