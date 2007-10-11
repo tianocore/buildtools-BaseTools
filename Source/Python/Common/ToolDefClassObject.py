@@ -64,7 +64,7 @@ class ToolDefClassObject(object):
             Value = NameValuePair[1].strip()
 
             if Name == "IDENTIFIER":
-                EdkLogger.verbose("Line %d: Found identifier statement, skipped: %s" % ((Index + 1), Value))
+                EdkLogger.debug(EdkLogger.DEBUG_9, "Line %d: Found identifier statement, skipped: %s" % ((Index + 1), Value))
                 continue
 
             MacroDefinition = gMacroDefPattern.findall(Name)
@@ -79,7 +79,7 @@ class ToolDefClassObject(object):
 
                 MacroName = MacroDefinition[0].strip()
                 self.MacroDictionary["DEF(%s)" % MacroName] = Value
-                EdkLogger.verbose("Line %d: Found macro: %s = %s" % ((Index + 1), MacroName, Value))
+                EdkLogger.debug(EdkLogger.DEBUG_9, "Line %d: Found macro: %s = %s" % ((Index + 1), MacroName, Value))
                 continue
 
             MacroReference = gMacroRefPattern.findall(Value)

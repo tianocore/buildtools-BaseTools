@@ -133,34 +133,38 @@ def ReadMessage(From, To, ExitFlag):
 # redirecting output of the external program, threads are used to to do the
 # redirection work.
 #
-# @param  CommandStringList     A list contains the calling of the program
+# @param  Command               A list or string containing the call of the program
 # @param  WorkingDir            The directory in which the program will be running
 #
-def LaunchCommand(CommandStringList, WorkingDir):
+def LaunchCommand(Command, WorkingDir):
     # if working directory doesn't exist, Popen() will raise an exception
     if not os.path.isdir(WorkingDir):
         EdkLogger.error("build", FILE_NOT_FOUND, ExtraData=WorkingDir)
 
-    # launch the command
-    Proc = Popen(CommandStringList, stdout=PIPE, stderr=PIPE, env=os.environ, cwd=WorkingDir)
+    try:
+        # launch the command
+        Proc = Popen(Command, stdout=PIPE, stderr=PIPE, env=os.environ, cwd=WorkingDir)
 
-    # launch two threads to read the STDOUT and STDERR
-    EndOfProcedure = Event()
-    EndOfProcedure.clear()
-    if Proc.stdout:
-        StdOutThread = Thread(target=ReadMessage, args=(Proc.stdout, EdkLogger.info, EndOfProcedure))
-        StdOutThread.setName("STDOUT-Redirector")
-        StdOutThread.setDaemon(False)
-        StdOutThread.start()
+        # launch two threads to read the STDOUT and STDERR
+        EndOfProcedure = Event()
+        EndOfProcedure.clear()
+        if Proc.stdout:
+            StdOutThread = Thread(target=ReadMessage, args=(Proc.stdout, EdkLogger.info, EndOfProcedure))
+            StdOutThread.setName("STDOUT-Redirector")
+            StdOutThread.setDaemon(False)
+            StdOutThread.start()
 
-    if Proc.stderr:
-        StdErrThread = Thread(target=ReadMessage, args=(Proc.stderr, EdkLogger.quiet, EndOfProcedure))
-        StdErrThread.setName("STDERR-Redirector")
-        StdErrThread.setDaemon(False)
-        StdErrThread.start()
+        if Proc.stderr:
+            StdErrThread = Thread(target=ReadMessage, args=(Proc.stderr, EdkLogger.quiet, EndOfProcedure))
+            StdErrThread.setName("STDERR-Redirector")
+            StdErrThread.setDaemon(False)
+            StdErrThread.start()
 
-    # waiting for program exit
-    Proc.wait()
+        # waiting for program exit
+        Proc.wait()
+    except:
+        # prevent this method calling from aborting
+        pass
 
     # terminate the threads redirecting the program output
     EndOfProcedure.set()
@@ -171,7 +175,9 @@ def LaunchCommand(CommandStringList, WorkingDir):
 
     # check the return code of the program
     if Proc.returncode != 0:
-        EdkLogger.error("build", COMMAND_FAILURE, ExtraData="%s [%s]" % (" ".join(CommandStringList), WorkingDir))
+        if type(Command) != type(""):
+            Command = " ".join(Command)
+        EdkLogger.error("build", COMMAND_FAILURE, ExtraData="%s [%s]" % (Command, WorkingDir))
 
 ## The smallest unit that can be built in multi-thread build mode
 #
@@ -190,11 +196,12 @@ class BuildUnit:
     #   @param  Dependency  The BuildUnit(s) which must be completed in advance
     #   @param  WorkingDir  The directory build command starts in
     #
-    def __init__(self, Obj, Target, Dependency, WorkingDir="."):
+    def __init__(self, Obj, BuildComamnd, Target, Dependency, WorkingDir="."):
         self.BuildObject = Obj
         self.Dependency = Dependency
         self.WorkingDir = WorkingDir
         self.Target = Target
+        self.BuildCommand = BuildComamnd
 
     ## str() method
     #
@@ -242,7 +249,7 @@ class ModuleMakeUnit(BuildUnit):
     #
     def __init__(self, Obj, Target):
         Dependency = [ModuleMakeUnit(La, Target) for La in Obj.BuildInfo.LibraryAutoGenList]
-        BuildUnit.__init__(self, Obj, Target, Dependency, Obj.GetMakeFileDir())
+        BuildUnit.__init__(self, Obj, Obj.GetBuildCommand(), Target, Dependency, Obj.GetMakeFileDir())
         if Target in [None, "", "all"]:
             self.Target = "pbuild"
 
@@ -264,7 +271,7 @@ class PlatformMakeUnit(BuildUnit):
     def __init__(self, Obj, Target):
         Dependency = [ModuleMakeUnit(Lib, Target) for Lib in self.BuildObject.BuildInfo.LibraryAutoGenList]
         Dependency.extend([ModuleMakeUnit(Mod, Target) for Mod in self.BuildObject.BuildInfo.ModuleAutoGenList])
-        BuildUnit.__init__(self, Obj, Target, Dependency, Obj.GetMakeFileDir())
+        BuildUnit.__init__(self, Obj, Obj.GetBuildCommand(), Target, Dependency, Obj.GetMakeFileDir())
 
 ## The class representing the task of a module build or platform build
 #
@@ -373,7 +380,7 @@ class BuildTask:
                 time.sleep(0.1)
             BuildTask._CompleteFlag.set()
             BuildTask._SchedulerStarted = False
-        except Exception, e:
+        except BaseException, X:
             #
             # TRICK: hide the output of threads left runing, so that the user can
             #        catch the error message easily
@@ -395,6 +402,12 @@ class BuildTask:
     @staticmethod
     def IsOnGoing():
         return BuildTask._SchedulerStarted
+
+    ## Abort the build
+    @staticmethod
+    def Abort():
+        BuildTask._ErrorFlag.set()
+        BuildTask._CompleteFlag.wait()
 
     ## Check if there's error in running thread
     #
@@ -479,14 +492,14 @@ class BuildTask:
 
     ## The thread wrapper of LaunchCommand function
     #
-    # @param  CommandStringList     A list contains the calling of the program
+    # @param  Command               A list or string contains the call of the command
     # @param  WorkingDir            The directory in which the program will be running
     #
-    def _CommandThread(self, CommandStringList, WorkingDir):
+    def _CommandThread(self, Command, WorkingDir):
         try:
-            LaunchCommand(CommandStringList, WorkingDir)
+            LaunchCommand(Command, WorkingDir)
             self.CompleteFlag = True
-        except Exception, e:
+        except Exception, X:
             #
             # TRICK: hide the output of threads left runing, so that the user can
             #        catch the error message easily
@@ -494,20 +507,15 @@ class BuildTask:
             EdkLogger.SetLevel(EdkLogger.QUIET)
             BuildTask._ErrorFlag.set()
             BuildTask._ErrorMessage = "%s broken\n    %s [%s]" % \
-                                      (threading.currentThread().getName(),
-                                       " ".join(CommandStringList), WorkingDir)
+                                      (threading.currentThread().getName(), Command, WorkingDir)
         # indicate there's a thread is available for another build task
         BuildTask._Thread.release()
 
     ## Start build task thread
     #
     def Start(self):
-        if sys.platform in ["win32", "win64"]:
-            CommandList = ["nmake", "/nologo", self.BuildItem.Target]
-        else:
-            CommandList = ["make", self.BuildItem.Target]
-
-        self.BuildTread = Thread(target=self._CommandThread, args=(CommandList, self.BuildItem.WorkingDir))
+        Command = self.BuildItem.BuildCommand + " " + self.BuildItem.Target
+        self.BuildTread = Thread(target=self._CommandThread, args=(Command, self.BuildItem.WorkingDir))
         self.BuildTread.setName("Command-Thread")
         self.BuildTread.setDaemon(False)
         self.BuildTread.start()
@@ -532,8 +540,8 @@ class Build():
     #   @param  WorkspaceDir        The directory of workspace
     #   @param  Platform            The DSC file of active platform
     #   @param  Module              The INF file of active module, if any
-    #   @param  Arch                The Arch of platform or module
-    #   @param  ToolChain           The name of toolchain
+    #   @param  Arch                The Arch list of platform or module
+    #   @param  ToolChain           The name list of toolchain
     #   @param  BuildTarget         The "DEBUG" or "RELEASE" build
     #   @param  FlashDefinition     The FDF file of active platform
     #   @param  FdList=[]           The FD names to be individually built
@@ -571,9 +579,9 @@ class Build():
         try:
             self.LoadConfiguration()
             self.InitBuild()
-        except Exception, E:
-            self.Progress.Stop()
-            raise E
+        except BaseException, X:
+            self.Progress.Stop("")
+            raise
         self.Progress.Stop("done!")
 
         # print current build environment and configuration
@@ -614,11 +622,11 @@ class Build():
             self.Ewb.GenBuildDatabase(PcdSet)
             self.Platform = self.Ewb.Build[self.ArchList[0]].PlatformDatabase[self.PlatformFile]
 
-        except Exception, X:
-            self.Progress.Stop()
+        except BaseException, X:
+            self.Progress.Stop("")
             if isinstance(X, Warning):
                 EdkLogger.error(X.ToolName, BUILD_ERROR, X.message, X.FileName, X.LineNumber, RaiseError = False)
-            raise X
+            raise
         self.Progress.Stop("done!")
 
     ## Load configuration
@@ -643,20 +651,36 @@ class Build():
             EdkLogger.error("build", FILE_NOT_FOUND, ExtraData=BuildConfigurationFile)
 
         # if no ARCH given in command line, get it from target.txt
-        if self.ArchList == None or self.ArchList == []:
+        if self.ArchList == None or len(self.ArchList) == 0:
             self.ArchList = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET_ARCH]
-            if self.ArchList == []:
+            if len(self.ArchList) == 0:
                 self.ArchList = ARCH_LIST
 
-        if self.BuildTargetList == None or self.BuildTargetList == []:
+        # if no build target given in command line, get it from target.txt
+        if self.BuildTargetList == None or len(self.BuildTargetList) == 0:
             self.BuildTargetList = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET]
-            if self.BuildTargetList == None or self.BuildTargetList == []:
+            if self.BuildTargetList == None or len(self.BuildTargetList) == 0:
                 self.BuildTargetList = ['DEBUG', 'RELEASE']
 
-        if self.ToolChainList == None or self.ToolChainList == []:
+        # if no tool chain given in command line, get it from target.txt
+        if self.ToolChainList == None or len(self.ToolChainList) == 0:
             self.ToolChainList = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG]
-            if self.ToolChainList == None or self.ToolChainList == []:
+            if self.ToolChainList == None or len(self.ToolChainList) == 0:
                 EdkLogger.error("build", RESOURCE_NOT_AVAILABLE, ExtraData="No toolchain given. Don't know how to build.\n")
+
+        # check if the tool chains are defined or not
+        NewToolChainList = []
+        for ToolChain in self.ToolChainList:
+            if ToolChain not in self.ToolDef.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TOOL_CHAIN_TAG]:
+                EdkLogger.warn("build", "Tool chain [%s] is not defined" % ToolChain)
+            else:
+                NewToolChainList.append(ToolChain)
+        # if no tool chain available, break the build
+        if len(NewToolChainList) == 0:
+            EdkLogger.error("build", RESOURCE_NOT_AVAILABLE,
+                            ExtraData="[%s] not defined. No toolchain available for build!\n" % ", ".join(self.ToolChainList))
+        else:
+            self.ToolChainList = NewToolChainList
 
         if self.ThreadNumber == None or self.ThreadNumber == "":
             self.ThreadNumber = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER]
@@ -744,19 +768,6 @@ class Build():
 
         self.Ewb = Wb
 
-    ## System independent command launcher
-    #
-    #   @param  Target      Target of build command, one of gSupportedTarget
-    #   @param  WorkingDir  The directory the command starts from
-    #
-    def LaunchBuildCommand(self, Target, WorkingDir):
-        if sys.platform in ["win32", "win64"]:
-            # in Windows, use "nmake" from Visual Studio
-            LaunchCommand(["nmake", "/nologo", Target], WorkingDir)
-        else:
-            # in Linux or Mac, use GNU "make"
-            LaunchCommand(["make", Target], WorkingDir)
-
     ## Build a module or platform
     #
     # Create autogen code and makfile for a module or platform, and the launch
@@ -819,7 +830,12 @@ class Build():
                                                     ToolChain, Arch, False)
 
         EdkLogger.info("")
-        self.LaunchBuildCommand(Target, os.path.join(self.WorkspaceDir, AutoGenResult.GetMakeFileDir()))
+        BuildCommand = AutoGenResult.GetBuildCommand()
+        if BuildCommand == None or BuildCommand == "":
+            EdkLogger.error("build", OPTION_MISSING, ExtraData="No MAKE command found for [%s, %s, %s]" % Key)
+
+        BuildCommand = "%s %s" % (BuildCommand, Target)
+        LaunchCommand(BuildCommand, os.path.join(self.WorkspaceDir, AutoGenResult.GetMakeFileDir()))
 
     ## Build active platform for different build targets and different tool chains
     #
@@ -901,7 +917,7 @@ class Build():
 
                 # Generate FD image if there's a FDF file found
                 if self.Fdf != '' and self.Target in ["", "all", "fds"]:
-                    self.LaunchBuildCommand("fds", Pa.GetMakeFileDir())
+                    self.LaunchBuildCommand(Pa.GetBuildCommand() + " fds", Pa.GetMakeFileDir())
 
     ## Launch the module or platform build
     #
@@ -915,9 +931,14 @@ class Build():
                     self._MultiThreadBuildPlatform()
             else:
                 self._BuildModule()
-        except Exception, E:
-            self.Progress.Stop()
-            raise E
+        except BaseException, X:
+            self.Progress.Stop("")
+            raise
+
+    ## Do some clean-up works when error occurred
+    def Relinquish(self):
+        if self.SpawnMode == True:
+            BuildTask.Abort()
 
 ## Parse command line options
 #
@@ -955,7 +976,9 @@ def MyOptionParser():
     Parser.add_option("-w", "--warning-as-error", action="store_true", dest="WarningAsError", help="Treat warning in tools as error.")
     Parser.add_option("-j", "--log", action="store", dest="LogFile", help="Putlog in specified file as well as on console.")
     Parser.add_option("-q", "--quiet", action="store_true", type=None, help="Disable all messages except FATAL ERRORS.")
-    Parser.add_option("-v", "--verbose", action="store_true", type=None, help="Turn on verbose output with informational messages printed.")
+    Parser.add_option("-v", "--verbose", action="store_true", type=None, help="Turn on verbose output with informational messages printed, "\
+                                                                               "including library instances selected, final dependency expression, "\
+                                                                               "and warning messages, etc.")
     Parser.add_option("-d", "--debug", action="store", type="int", help="Enable debug messages at specified level.")
 
     (Opt, Args)=Parser.parse_args()
@@ -1002,6 +1025,7 @@ def Main():
 
     EdkLogger.quiet(time.strftime("%H:%M:%S, %b.%d %Y ", time.localtime()) + "[00:00]" + "\n")
     ReturnCode = 0
+    MyBuild = None
     try:
         #
         # Check environment variable: EDK_TOOLS_PATH, WORKSPACE, PATH
@@ -1030,12 +1054,16 @@ def Main():
                         Option.ToolChain, Option.BuildTarget, Option.FdfFile, Option.RomImage, Option.FvImage,
                         Option.MakefileType, Option.SpawnMode, Option.ThreadNumber)
         MyBuild.Launch()
-    except Exception, e:
+    except BaseException, X:
+        if MyBuild != None:
+            # for multi-thread build exits safely
+            MyBuild.Relinquish()
+
         EdkLogger.quiet("")
         if Option != None and Option.debug != None:
             EdkLogger.quiet(traceback.format_exc())
         else:
-            EdkLogger.quiet(e)
+            EdkLogger.quiet(str(X))
         ReturnCode = 1
 
     FinishTime = time.clock()

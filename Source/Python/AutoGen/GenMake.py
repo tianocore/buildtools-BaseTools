@@ -47,7 +47,7 @@ gMakefileHeader = '''#
 '''
 
 gLibraryMakeCommand = '''cd %(makedir)s
-\t$(MAKE) $(MAKE_FLAGS) %(target)s
+\t"$(MAKE)" $(MAKE_FLAGS) %(target)s
 \tcd $(MODULE_BUILD_DIR)'''
 
 gMakeType = ""
@@ -170,7 +170,6 @@ ${END}
 #
 ${BEGIN}${tool_code}_FLAGS = $(DEFAULT_${tool_code}_FLAGS) $(PLATFORM_${tool_code}_FLAGS) $(MODULE_${tool_code}_FLAGS)
 ${END}
-MAKE_FLAGS = /nologo
 
 #
 # ToolsPathMacro
@@ -279,7 +278,6 @@ ${END}
 #
 ${BEGIN}${tool_code}_FLAGS = $(DEFAULT_${tool_code}_FLAGS) $(PLATFORM_${tool_code}_FLAGS) $(MODULE_${tool_code}_FLAGS)
 ${END}
-MAKE_FLAGS = /nologo
 
 #
 # Tools Path Macro
@@ -368,7 +366,7 @@ init:
 #
 gen_libs:
 \t${BEGIN}cd $(BUILD_DIR)${separator}$(ARCH)${separator}${dependent_library_build_directory}
-\t$(MAKE) $(MAKE_FLAGS)
+\t"$(MAKE)" $(MAKE_FLAGS)
 \t${END}cd $(MODULE_BUILD_DIR)
 
 #
@@ -376,7 +374,7 @@ gen_libs:
 #
 gen_fds:
 \tcd $(BUILD_DIR)
-\t$(MAKE) $(MAKE_FLAGS) fds
+\t"$(MAKE)" $(MAKE_FLAGS) fds
 \tcd $(MODULE_BUILD_DIR)
 
 #
@@ -415,7 +413,7 @@ cleanpch:
 
 cleanlib:
 \t${BEGIN}cd $(BUILD_DIR)${separator}$(ARCH)${separator}${dependent_library_build_directory}
-\t$(MAKE) $(MAKE_FLAGS) cleanall
+\t"$(MAKE)" $(MAKE_FLAGS) cleanall
 \t${END}cd $(MODULE_BUILD_DIR)
 
 '''
@@ -437,7 +435,9 @@ PLATFORM_OUTPUT_DIR = ${platform_output_directory}
 #
 TOOLCHAIN_TAG = ${toolchain_tag}
 TARGET = ${build_target}
-MAKE_FLAGS = /nologo
+
+MAKE = ${make_path}
+MAKE_FLAGS = ${make_flag}
 
 #
 # Build Directory Macro Definition
@@ -477,7 +477,7 @@ fds: init build_fds
 #
 build_libraries:
 \t${BEGIN}cd $(WORKSPACE)${separator}${library_build_directory}
-\t$(MAKE) $(MAKE_FLAGS) pbuild
+\t"$(MAKE)" $(MAKE_FLAGS) pbuild
 \t${END}cd $(BUILD_DIR)
 
 #
@@ -485,7 +485,7 @@ build_libraries:
 #
 build_modules:
 \t${BEGIN}cd $(WORKSPACE)${separator}${module_build_directory}
-\t$(MAKE) $(MAKE_FLAGS) pbuild
+\t"$(MAKE)" $(MAKE_FLAGS) pbuild
 \t${END}cd $(BUILD_DIR)
 
 #
@@ -493,7 +493,7 @@ build_modules:
 #
 build_fds:
 \t-@echo Generating flash image, if any ...
-${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -t $(TOOLCHAIN_TAG) -b $(TARGET) -p ${active_platform} -a ${build_architecture_list}${END}${BEGIN} -r ${fd} ${END}${BEGIN} -i ${fv} ${END}
+${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -t $(TOOLCHAIN_TAG) -b $(TARGET) -p ${active_platform} -a ${build_architecture_list}${END}${BEGIN} -r ${fd} ${END}${BEGIN} -i ${fv} ${END} ${log_level}
 
 #
 # run command for emulator platform only
@@ -508,9 +508,9 @@ run:
 #
 clean:
 \t${BEGIN}cd $(WORKSPACE)${separator}${library_build_directory}
-\t$(MAKE) $(MAKE_FLAGS) clean
+\t"$(MAKE)" $(MAKE_FLAGS) clean
 \t${END}${BEGIN}cd $(WORKSPACE)${separator}${module_build_directory}
-\t$(MAKE) $(MAKE_FLAGS) clean
+\t"$(MAKE)" $(MAKE_FLAGS) clean
 \t${END}cd $(BUILD_DIR)
 
 #
@@ -525,7 +525,7 @@ cleanall:
 #
 cleanlib:
 \t${BEGIN}cd $(WORKSPACE)${separator}${library_build_directory}
-\t$(MAKE) $(MAKE_FLAGS) cleanall
+\t"$(MAKE)" $(MAKE_FLAGS) cleanall
 \t${END}cd $(BUILD_DIR)
 
 '''
@@ -634,6 +634,17 @@ class Makefile(object):
         else:
             FdfFileList = []
 
+        # pass log level to external program called in makefile, currently GenFds.exe
+        LogLevel = EdkLogger.GetLevel()
+        if LogLevel == EdkLogger.VERBOSE:
+            LogOption = "-v"
+        elif LogLevel <= EdkLogger.DEBUG_9:
+            LogOption = "-d %d" % (LogLevel - 1)
+        elif LogLevel == EdkLogger.QUIET:
+            LogOption = "-q"
+        else:
+            LogOption = ""
+
         MakefileName = gMakefileName[MakeType]
         MakefileTemplateDict = {
             "makefile_header"           : gMakefileHeader % MakefileName,
@@ -647,6 +658,8 @@ class Makefile(object):
 
             "toolchain_tag"             : PlatformInfo.ToolChain,
             "build_target"              : PlatformInfo.BuildTarget,
+            "make_path"                 : PlatformInfo.ToolPath["MAKE"],
+            "make_flag"                 : PlatformInfo.ToolOption["MAKE"],
             "build_architecture_list"   : ",".join(ArchList),
             "architecture"              : self.PlatformInfo.keys(),
             "separator"                 : Separator,
@@ -659,7 +672,8 @@ class Makefile(object):
             "fdf_file"                  : FdfFileList,
             "active_platform"           : PlatformInfo.WorkspaceDir + Separator + ActivePlatform.DescFilePath,
             "fd"                        : PlatformInfo.FdTargetList,
-            "fv"                        : PlatformInfo.FvTargetList
+            "fv"                        : PlatformInfo.FvTargetList,
+            "log_level"                 : LogOption,
         }
 
         self.PrepareDirectory()

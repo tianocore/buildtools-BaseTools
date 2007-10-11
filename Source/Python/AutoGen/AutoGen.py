@@ -242,6 +242,24 @@ class PlatformAutoGen:
     def GetMakeFileDir(self):
         return os.path.join(self.WorkspaceDir, self.BuildInfo[self.ArchList[0]].MakeFileDir)
 
+    ## Return build command string
+    #
+    #   @retval     string  Build command string
+    #
+    def GetBuildCommand(self, Arch=None):
+        if Arch != None:
+            Arch = [Arch]
+        else:
+            Arch = self.ArchList
+        CommandString = ""
+        for A in Arch:
+            if A in self.BuildInfo and "MAKE" in self.BuildInfo[A].ToolPath:
+                CommandString = self.BuildInfo[A].ToolPath["MAKE"]
+                if "MAKE" in self.BuildInfo[A].ToolOption:
+                    CommandString = CommandString + " " + self.BuildInfo[A].ToolOption["MAKE"]
+                break
+        return CommandString
+
     ## Parse build_rule.txt in $(WORKSPACE)/Conf/build_rule.txt
     #
     #   @retval     BuildRule object
@@ -782,6 +800,13 @@ class ModuleAutoGen(object):
     #
     def GetMakeFileDir(self):
         return os.path.join(self.WorkspaceDir, self.BuildInfo.MakeFileDir)
+
+    ## Return build command string
+    #
+    #   @retval     string  Build command string
+    #
+    def GetBuildCommand(self):
+        return self.PlatformAutoGen.GetBuildCommand(self.Arch)
 
     ## Get object list of all packages the module and its dependent libraries belong to
     #

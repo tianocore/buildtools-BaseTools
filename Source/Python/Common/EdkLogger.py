@@ -172,6 +172,9 @@ def SetLevel(Level):
     _ErrorLogger.setLevel(Level)
     #_QuietLogger.setLevel(Level)
 
+def GetLevel():
+    return _InfoLogger.getEffectiveLevel()
+
 def SetWarningAsError():
     global _WarningAsError
     _WarningAsError = True
