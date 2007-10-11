@@ -77,18 +77,14 @@ class ToolDefClassObject(object):
                                         File=FileName, Line=Index+1)
                     Value = Value.replace(Ref, self.MacroDictionary[Ref])
 
+                Value = self.ExpandMacros(Value)
+
                 MacroName = MacroDefinition[0].strip()
                 self.MacroDictionary["DEF(%s)" % MacroName] = Value
                 EdkLogger.debug(EdkLogger.DEBUG_9, "Line %d: Found macro: %s = %s" % ((Index + 1), MacroName, Value))
                 continue
 
-            MacroReference = gMacroRefPattern.findall(Value)
-            for Ref in MacroReference:
-                if Ref not in self.MacroDictionary:
-                    EdkLogger.error("tools_def.txt parser", PARSER_ERROR,
-                                    "Macro [%s] has not been defined" % Ref,
-                                    File=FileName, Line=Index+1)
-                Value = Value.replace(Ref, self.MacroDictionary[Ref])
+            Value = self.ExpandMacros(Value)
 
             List = Name.split('_')
             if len(List) != 5:
@@ -132,6 +128,18 @@ class ToolDefClassObject(object):
                     del self.ToolsDefTxtDictionary[Key]
                 elif List[Index] not in self.ToolsDefTxtDatabase[KeyList[Index]]:
                     del self.ToolsDefTxtDictionary[Key]
+
+    def ExpandMacros(self, Value):
+
+        MacroReference = gMacroRefPattern.findall(Value)
+        for Ref in MacroReference:
+            if Ref not in self.MacroDictionary:
+                EdkLogger.error("tools_def.txt parser", PARSER_ERROR,
+                                "Macro [%s] has not been defined" % Ref,
+                                File=FileName, Line=Index+1)
+            Value = Value.replace(Ref, self.MacroDictionary[Ref])
+
+        return Value
 
 def ToolDefDict(WorkSpace):
     Target = TargetTxtClassObject()
