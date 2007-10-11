@@ -616,6 +616,9 @@ class Makefile(object):
         PlatformInfo = self.PlatformInfo.values()[0]
         ActivePlatform = PlatformInfo.Platform
 
+        if "MAKE" not in PlatformInfo.ToolPath:
+            EdkLogger.error("GenMake", OPTION_MISSING, "No MAKE command defined. Please check your tools_def.txt!")
+
         OutputDir = PlatformInfo.OutputDir
         if os.path.isabs(OutputDir):
             self.PlatformBuildDirectory = OutputDir

@@ -258,6 +258,8 @@ class PlatformAutoGen:
                 if "MAKE" in self.BuildInfo[A].ToolOption:
                     CommandString = CommandString + " " + self.BuildInfo[A].ToolOption["MAKE"]
                 break
+        if CommandString == "":
+            EdkLogger.error("AutoGen", OPTION_MISSING, "No MAKE command defined. Please check your tools_def.txt!")
         return CommandString
 
     ## Parse build_rule.txt in $(WORKSPACE)/Conf/build_rule.txt

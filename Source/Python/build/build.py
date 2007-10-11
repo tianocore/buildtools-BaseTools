@@ -406,8 +406,9 @@ class BuildTask:
     ## Abort the build
     @staticmethod
     def Abort():
-        BuildTask._ErrorFlag.set()
-        BuildTask._CompleteFlag.wait()
+        if not BuildTask._CompleteFlag.isSet():
+            BuildTask._ErrorFlag.set()
+            BuildTask._CompleteFlag.wait()
 
     ## Check if there's error in running thread
     #
@@ -917,7 +918,7 @@ class Build():
 
                 # Generate FD image if there's a FDF file found
                 if self.Fdf != '' and self.Target in ["", "all", "fds"]:
-                    self.LaunchBuildCommand(Pa.GetBuildCommand() + " fds", Pa.GetMakeFileDir())
+                    LaunchCommand(Pa.GetBuildCommand() + " fds", Pa.GetMakeFileDir())
 
     ## Launch the module or platform build
     #
@@ -930,8 +931,9 @@ class Build():
                 else:
                     self._MultiThreadBuildPlatform()
             else:
+                self.SpawnMode = False
                 self._BuildModule()
-        except BaseException, X:
+        except:
             self.Progress.Stop("")
             raise
 
