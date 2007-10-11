@@ -22,13 +22,7 @@ class EfiSection (EfiSectionClassObject):
             """print 'After extend Build Num: %s' %self.BuildNum"""
             
             StringData = FfsInf.__ExtendMarco__(self.StringData)
-            InfOverrideString = False
-            if FfsInf.Ui != None:
-                StringData = FfsInf.Ui
-                InfOverrideString = True
-            if FfsInf.ver != None:
-                StringData = FfsInf.ver
-                InfOverrideString = True
+            
         else:
             SectionType = self.SectionType
             Filename = self.Filename
@@ -53,7 +47,13 @@ class EfiSection (EfiSectionClassObject):
         """ If Section type is 'VERSION'"""
         OutputFileList = []
         if SectionType == 'VERSION':
-            if InfOverrideString:
+            
+            InfOverrideVerString = False
+            if FfsInf.ver != None:
+                StringData = FfsInf.ver
+                InfOverrideVerString = True
+            
+            if InfOverrideVerString:
                 VerString = ' -n '          + \
                                 '\"'            + \
                                 StringData      + \
@@ -97,7 +97,7 @@ class EfiSection (EfiSectionClassObject):
                     OutputFileList.append(OutputFile)
                     
             else:
-                if StringData != None:
+                if StringData != None and len(StringData) > 0:
                     VerString = ' -n '          + \
                                 '\"'            + \
                                 StringData      + \
@@ -131,7 +131,13 @@ class EfiSection (EfiSectionClassObject):
         # If Section Type is 'UI'
         #
         elif SectionType == 'UI':
-            if InfOverrideString:
+            
+            InfOverrideUiString = False
+            if FfsInf.Ui != None:
+                StringData = FfsInf.Ui
+                InfOverrideUiString = True
+            
+            if InfOverrideUiString:
                 UiString = ' -n '        + \
                                '\"'          + \
                                StringData    + \
@@ -165,7 +171,7 @@ class EfiSection (EfiSectionClassObject):
                     GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed !")
                     OutputFileList.append(OutputFile)
             else:
-                if StringData != None:
+                if StringData != None and len(StringData) > 0:
                     UiString = ' -n '        + \
                                '\"'          + \
                                StringData    + \
