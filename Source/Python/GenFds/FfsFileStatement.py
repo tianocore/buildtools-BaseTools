@@ -19,16 +19,16 @@ class FileStatements (FileStatementsClassObject) :
         
         if self.FvName != None :
             Buffer = StringIO.StringIO('')
-            if self.FvName.upper() not in GenFdsGlobalVariable.FdfParser.profile.FvDict.keys():
+            if self.FvName.upper() not in GenFdsGlobalVariable.FdfParser.Profile.FvDict.keys():
                 raise Exception ("FV (%s) is NOT described in FDF file!" % (self.FvName))
-            Fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(self.FvName.upper())
+            Fv = GenFdsGlobalVariable.FdfParser.Profile.FvDict.get(self.FvName.upper())
             FileName = Fv.AddToBuffer(Buffer)
             SectionFiles = ' -i ' + FileName
             
         elif self.FdName != None:
-            if self.FdName.upper() not in GenFdsGlobalVariable.FdfParser.profile.FdDict.keys():
+            if self.FdName.upper() not in GenFdsGlobalVariable.FdfParser.Profile.FdDict.keys():
                 raise Exception ("FD (%s) is NOT described in FDF file!" % (self.FdName))
-            Fd = GenFdsGlobalVariable.FdfParser.profile.FdDict.get(self.FdName.upper())
+            Fd = GenFdsGlobalVariable.FdfParser.Profile.FdDict.get(self.FdName.upper())
             FvBin = {}
             FileName = Fd.GenFd(FvBin)
             SectionFiles = ' -i ' + FileName

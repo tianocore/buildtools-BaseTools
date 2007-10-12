@@ -82,7 +82,7 @@ class GenFdsGlobalVariable:
         EdkLogger.info(msg)
         
     def ErrorLogger (msg, File = None, Line = None, ExtraData = None):
-        EdkLogger.error('GenFds', BuildToolError.GENFDS_ERROR, Message, File, Line, ExtraData)
+        EdkLogger.error('GenFds', BuildToolError.GENFDS_ERROR, msg, File, Line, ExtraData)
 
     def DebugLogger (Level, msg):
         EdkLogger.debug(Level, msg)
@@ -124,5 +124,6 @@ class GenFdsGlobalVariable:
     CallExternalTool = staticmethod(CallExternalTool)
     VerboseLogger = staticmethod(VerboseLogger)
     InfLogger = staticmethod(InfLogger)
+    ErrorLogger = staticmethod(ErrorLogger)
     DebugLogger = staticmethod(DebugLogger)
     MacroExtend = staticmethod (MacroExtend)

@@ -47,8 +47,8 @@ class region(RegionClassObject):
                     continue
                 
                 fv = None
-                if RegionData.upper() in GenFdsGlobalVariable.FdfParser.profile.FvDict.keys():
-                    fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(RegionData.upper())
+                if RegionData.upper() in GenFdsGlobalVariable.FdfParser.Profile.FvDict.keys():
+                    fv = GenFdsGlobalVariable.FdfParser.Profile.FvDict.get(RegionData.upper())
                         
                 if fv != None :
                     GenFdsGlobalVariable.InfLogger('   Region Name = FV')

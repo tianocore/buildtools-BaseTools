@@ -616,7 +616,7 @@ class Build():
                 Fdf = FdfParser(FdfFile)
                 Fdf.ParseFile()
 
-                PcdSet = Fdf.profile.PcdDict
+                PcdSet = Fdf.Profile.PcdDict
             else:
                 PcdSet = {}
 

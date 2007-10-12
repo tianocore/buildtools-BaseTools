@@ -68,7 +68,7 @@ class FfsInfStatementClassObject(FfsClassObject):
     def __init__(self):
         FfsClassObject.__init__(self)
         self.Rule = None
-        self.ver = None
+        self.Version = None
         self.Ui = None
         self.InfFileName = None
         self.BuildNum = ''

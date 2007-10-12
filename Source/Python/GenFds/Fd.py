@@ -20,7 +20,7 @@ class FD(FDClassObject):
         #
         GenFdsGlobalVariable.InfLogger("Fd File Name:%s" %self.FdUiName)
         GenFdsGlobalVariable.VerboseLogger('Following Fv will be add to Fd !!!')
-        for item in GenFdsGlobalVariable.FdfParser.profile.FvDict:
+        for item in GenFdsGlobalVariable.FdfParser.Profile.FvDict:
             GenFdsGlobalVariable.VerboseLogger(item)
 
         GenFdsGlobalVariable.VerboseLogger('################### Gen VTF ####################')
@@ -67,7 +67,7 @@ class FD(FDClassObject):
                     Offset = region.Offset
                     for RegionData in region.RegionDataList:
                         fvList.append(RegionData.upper())
-                        fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(RegionData.upper())
+                        fv = GenFdsGlobalVariable.FdfParser.Profile.FvDict.get(RegionData.upper())
                         if len(fv.BlockSizeList) < 1:
                             raise Exception ('FV.%s must point out FVs blocksize and Fv BlockNum' %fv.UiFvName)
                         else:
@@ -81,7 +81,7 @@ class FD(FDClassObject):
         # Check whether this Fd need VTF
         #
         flag = False
-        for vtf in GenFdsGlobalVariable.FdfParser.profile.VtfList:
+        for vtf in GenFdsGlobalVariable.FdfParser.Profile.VtfList:
             compLocList = vtf.GetFvList()
             if set(compLocList).issubset(fvList):
                 flag = True

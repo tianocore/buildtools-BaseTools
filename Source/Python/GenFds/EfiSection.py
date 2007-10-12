@@ -49,8 +49,8 @@ class EfiSection (EfiSectionClassObject):
         if SectionType == 'VERSION':
             
             InfOverrideVerString = False
-            if FfsInf.ver != None:
-                StringData = FfsInf.ver
+            if FfsInf.Version != None:
+                StringData = FfsInf.Version
                 InfOverrideVerString = True
             
             if InfOverrideVerString:

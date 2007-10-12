@@ -124,8 +124,6 @@ class FfsInfStatement(FfsInfStatementClassObject):
         if currentArchList == None:
             currentArchList = ['common']
         
-        #for item in GenFdsGlobalVariable.FdfParser.profile.RuleDict :
-        #    print item
         for currentArch in currentArchList:
             RuleName = 'RULE'              + \
                        '.'                 + \
@@ -137,7 +135,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                            '.'      + \
                            self.Rule.upper()
                            
-            Rule = GenFdsGlobalVariable.FdfParser.profile.RuleDict.get(RuleName)
+            Rule = GenFdsGlobalVariable.FdfParser.Profile.RuleDict.get(RuleName)
             if Rule != None:
                 GenFdsGlobalVariable.VerboseLogger ("Want To Find Rule Name is : " + RuleName)
                 return Rule
@@ -152,7 +150,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                        '.'      + \
                        self.Rule.upper()
                        
-        Rule = GenFdsGlobalVariable.FdfParser.profile.RuleDict.get(RuleName)
+        Rule = GenFdsGlobalVariable.FdfParser.Profile.RuleDict.get(RuleName)
         if Rule != None:
             GenFdsGlobalVariable.VerboseLogger ("Want To Find Rule Name is : " + RuleName)
             return Rule

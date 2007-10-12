@@ -77,10 +77,12 @@ class Section (SectionClassObject):
         FileList = []
         for File in FfsInf.BinFileList :
             if File.FileType == FileType and FfsInf.CurrentArch in File.SupArchList:
-                if '*' in FfsInf.TargetOverrideList or File.Target == '*' or File.Target in FfsInf.TargetOverrideList:
+                if '*' in FfsInf.TargetOverrideList or File.Target == '*' or File.Target in FfsInf.TargetOverrideList or FfsInf.TargetOverrideList == []:
                     FileList.append(os.path.join(GenFdsGlobalVariable.WorkSpaceDir, FfsInf.SourceDir, File.BinaryFile))
                 else:
                     GenFdsGlobalVariable.InfLogger ("\nBuild Target \'%s\' of File %s is not in the Scope of %s specified by INF %s in FDF" %(File.Target, File.BinaryFile, FfsInf.TargetOverrideList, FfsInf.InfFileName))
+            else:
+                    GenFdsGlobalVariable.InfLogger ("\nCurrent ARCH \'%s\' of File %s is not in the Scope of %s specified by INF %s in FDF" %(FfsInf.CurrentArch, File.BinaryFile, File.SupArchList, FfsInf.InfFileName))
         
         if os.path.exists(FfsInf.EfiOutputPath):
             for file in os.listdir(FfsInf.EfiOutputPath):

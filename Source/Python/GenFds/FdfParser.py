@@ -75,12 +75,20 @@ class Warning (Exception):
         self.LineNumber = Line
         self.ToolName = 'FDF Parser'
 
+## The FDF content class that used to record file data when parsing FDF
+#
+# May raise Exception when opening file.
+#
 class FileProfile :
-    """File image in memory and information retrieved from it"""
-    def __init__(self, filename):
+    ## The constructor
+    #
+    #   @param  self        The object pointer
+    #   @param  FileName    The file that to be parsed
+    #
+    def __init__(self, FileName):
         self.FileLinesList = []
         try:
-            fsock = open(filename, "rb", 0)
+            fsock = open(FileName, "rb", 0)
             try:
                 self.FileLinesList = fsock.readlines()
                 self.FileLinesList = [list(s) for s in self.FileLinesList]
@@ -88,7 +96,7 @@ class FileProfile :
                 fsock.close()
 
         except IOError:
-            raise Warning("Error when opening file %s" % filename)
+            raise Warning("Error when opening file %s" % FileName)
         
         self.PcdDict = {}
         self.InfList = []
@@ -98,13 +106,24 @@ class FileProfile :
         self.CapsuleList = []
         self.VtfList = []
         self.RuleDict = {}
-        
-class FdfParser:
-    
 
-    def __init__(self, f):
-        self.profile = FileProfile(f)
-        self.FileName = f
+## The syntax parser for FDF
+#
+# PreprocessFile method should be called prior to ParseFile
+# CycleReferenceCheck method can detect cycles in FDF contents
+#
+# GetNext*** procedures mean these procedures will get next token first, then make judgement.
+# Get*** procedures mean these procedures will make judgement on current token only.
+#        
+class FdfParser:
+    ## The constructor
+    #
+    #   @param  self        The object pointer
+    #   @param  FileName    The file that to be parsed
+    #
+    def __init__(self, FileName):
+        self.Profile = FileProfile(FileName)
+        self.FileName = FileName
         self.CurrentLineNumber = 1
         self.CurrentOffsetWithinLine = 0
         self.CurrentFdName = None
@@ -112,14 +131,28 @@ class FdfParser:
         self.__Token = ""
         self.__SkippedChars = ""
 
-    """Whether char at current FileBufferPos is whitespace,"""
-    def __IsWhiteSpace(self, char):
-        if char in (T_CHAR_NULL, T_CHAR_CR, T_CHAR_SPACE, T_CHAR_TAB, T_CHAR_LF):
+    ## __IsWhiteSpace() method
+    #
+    #   Whether char at current FileBufferPos is whitespace
+    #
+    #   @param  self        The object pointer
+    #   @param  Char        The char to test
+    #   @retval True        The char is a kind of white space
+    #   @retval False       The char is NOT a kind of white space
+    #
+    def __IsWhiteSpace(self, Char):
+        if Char in (T_CHAR_NULL, T_CHAR_CR, T_CHAR_SPACE, T_CHAR_TAB, T_CHAR_LF):
             return True
         else:
             return False
 
-    """Skip white spaces from current char, return number of chars skipped"""
+    ## __SkipWhiteSpace() method
+    #
+    #   Skip white spaces from current char, return number of chars skipped
+    #
+    #   @param  self        The object pointer
+    #   @retval Count       The number of chars skipped
+    #
     def __SkipWhiteSpace(self):
         Count = 0
         while not self.__EndOfFile():
@@ -127,34 +160,60 @@ class FdfParser:
             if self.__CurrentChar() in (T_CHAR_NULL, T_CHAR_CR, T_CHAR_LF, T_CHAR_SPACE, T_CHAR_TAB):
                 self.__SkippedChars += str(self.__CurrentChar())
                 self.__GetOneChar()
-##            elif self.__CurrentChar() == T_CHAR_LF:
-##                self.CurrentLineNumber += 1
-##                self.CurrentOffsetWithinLine = 0
-            else:
-                return Count - 1
 
-    """Judge current buffer pos is at file end"""
+            else:
+                Count = Count - 1
+                return Count
+
+    ## __EndOfFile() method
+    #
+    #   Judge current buffer pos is at file end
+    #
+    #   @param  self        The object pointer
+    #   @retval True        Current File buffer position is at file end
+    #   @retval False       Current File buffer position is NOT at file end
+    #
     def __EndOfFile(self):
-        NumberOfLines = len(self.profile.FileLinesList)
-        SizeOfLastLine = len(self.profile.FileLinesList[-1])
+        NumberOfLines = len(self.Profile.FileLinesList)
+        SizeOfLastLine = len(self.Profile.FileLinesList[-1])
         if self.CurrentLineNumber == NumberOfLines and self.CurrentOffsetWithinLine >= SizeOfLastLine - 1:
             return True
         else:
             return False
 
-    """Judge current char is at line end"""
+    ## __EndOfLine() method
+    #
+    #   Judge current buffer pos is at line end
+    #
+    #   @param  self        The object pointer
+    #   @retval True        Current File buffer position is at line end
+    #   @retval False       Current File buffer position is NOT at line end
+    #
     def __EndOfLine(self):
-        SizeOfCurrentLine = len(self.profile.FileLinesList[self.CurrentLineNumber - 1])
+        SizeOfCurrentLine = len(self.Profile.FileLinesList[self.CurrentLineNumber - 1])
         if self.CurrentOffsetWithinLine >= SizeOfCurrentLine - 1:
             return True
         else:
             return False
     
-    """Reset file data buffer to the initial state"""
+    ## Rewind() method
+    #
+    #   Reset file data buffer to the initial state
+    #
+    #   @param  self        The object pointer
+    #
     def Rewind(self):
         self.CurrentLineNumber = 1
         self.CurrentOffsetWithinLine = 0
-        
+    
+    ## __UndoOneChar() method
+    #
+    #   Go back one char in the file buffer
+    #
+    #   @param  self        The object pointer
+    #   @retval True        Successfully go back one char
+    #   @retval False       Not able to go back one char as file beginning reached
+    #    
     def __UndoOneChar(self):
         
         if self.CurrentLineNumber == 1 and self.CurrentOffsetWithinLine == 0:
@@ -166,43 +225,79 @@ class FdfParser:
             self.CurrentOffsetWithinLine -= 1
         return True
         
-    """Forward one char"""
+    ## __GetOneChar() method
+    #
+    #   Move forward one char in the file buffer
+    #
+    #   @param  self        The object pointer
+    #  
     def __GetOneChar(self):
-        if self.CurrentOffsetWithinLine == len(self.profile.FileLinesList[self.CurrentLineNumber - 1]) - 1:
+        if self.CurrentOffsetWithinLine == len(self.Profile.FileLinesList[self.CurrentLineNumber - 1]) - 1:
                 self.CurrentLineNumber += 1
                 self.CurrentOffsetWithinLine = 0
         else:
                 self.CurrentOffsetWithinLine += 1
 
-    """Return copy of current char"""
+    ## __CurrentChar() method
+    #
+    #   Get the char pointed to by the file buffer pointer
+    #
+    #   @param  self        The object pointer
+    #   @retval Char        Current char
+    #  
     def __CurrentChar(self):
-        return self.profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine]
+        return self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine]
     
-    """Return copy of next char"""
+    ## __NextChar() method
+    #
+    #   Get the one char pass the char pointed to by the file buffer pointer
+    #
+    #   @param  self        The object pointer
+    #   @retval Char        Next char
+    #
     def __NextChar(self):
-        if self.CurrentOffsetWithinLine == len(self.profile.FileLinesList[self.CurrentLineNumber - 1]) - 1:
-            return self.profile.FileLinesList[self.CurrentLineNumber][0]
+        if self.CurrentOffsetWithinLine == len(self.Profile.FileLinesList[self.CurrentLineNumber - 1]) - 1:
+            return self.Profile.FileLinesList[self.CurrentLineNumber][0]
         else:
-            return self.profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine + 1]
+            return self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine + 1]
         
-    """Modify the value of current char"""
-    def __SetCurrentCharValue(self, value):
-        self.profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine] = value
+    ## __SetCurrentCharValue() method
+    #
+    #   Modify the value of current char
+    #
+    #   @param  self        The object pointer
+    #   @param  Value       The new value of current char
+    #
+    def __SetCurrentCharValue(self, Value):
+        self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine] = Value
         
-    """Get current file line"""
+    ## __CurrentLine() method
+    #
+    #   Get the list that contains current line contents
+    #
+    #   @param  self        The object pointer
+    #   @retval List        current line contents
+    #
     def __CurrentLine(self):
-        return self.profile.FileLinesList[self.CurrentLineNumber - 1]
+        return self.Profile.FileLinesList[self.CurrentLineNumber - 1]
         
-    """Replace comments with spaces"""
-    ### BUGBUG: No !include statement processing contained in this procedure
-    ### !include statement should be expanded at the same FileLinesList[CurrentLineNumber - 1]
+    ## PreprocessFile() method
+    #
+    #   Preprocess file contents, replace comments with spaces.
+    #   In the end, rewind the file buffer pointer to the beginning
+    #   BUGBUG: No !include statement processing contained in this procedure
+    #   !include statement should be expanded at the same FileLinesList[CurrentLineNumber - 1]
+    #
+    #   @param  self        The object pointer
+    #   
     def PreprocessFile(self):
         
         self.Rewind()
         InComment = False
         DoubleSlashComment = False
         HashComment = False
-        InString = False    # HashComment in quoted string " " is ignored.
+        # HashComment in quoted string " " is ignored.
+        InString = False    
 
         while not self.__EndOfFile():
             
@@ -248,49 +343,75 @@ class FdfParser:
                 self.__GetOneChar()
 
         # restore from ListOfList to ListOfString
-        self.profile.FileLinesList = ["".join(list) for list in self.profile.FileLinesList]
+        self.Profile.FileLinesList = ["".join(list) for list in self.Profile.FileLinesList]
         self.Rewind()
 
-    """check whether input string is found from current char position along"""
-    def __IsToken(self, string, ignoreCase = False):
+    ## __IsToken() method
+    #
+    #   Check whether input string is found from current char position along
+    #   If found, the string value is put into self.__Token
+    #
+    #   @param  self        The object pointer
+    #   @param  String      The string to search
+    #   @param  IgnoreCase  Indicate case sensitive/non-sensitive search, default is case sensitive
+    #   @retval True        Successfully find string, file buffer pointer moved forward
+    #   @retval False       Not able to find string, file buffer pointer not changed
+    #
+    def __IsToken(self, String, IgnoreCase = False):
         self.__SkipWhiteSpace()
-##        if self.__EndOfFile():
-##            return False
+
         # Only consider the same line, no multi-line token allowed
         StartPos = self.CurrentOffsetWithinLine
         index = -1
-        if ignoreCase:
-            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].upper().find(string.upper()) 
+        if IgnoreCase:
+            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].upper().find(String.upper()) 
         else:
-            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].find(string)
+            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].find(String)
         if index == 0:
-            self.CurrentOffsetWithinLine += len(string)
+            self.CurrentOffsetWithinLine += len(String)
             self.__Token = self.__CurrentLine()[StartPos : self.CurrentOffsetWithinLine]
             return True
         return False
 
-    """check whether input keyword is found from current char position along, whole word only!"""
-    def __IsKeyword(self, keyword, ignoreCase = False):
+    ## __IsKeyword() method
+    #
+    #   Check whether input keyword is found from current char position along, whole word only!
+    #   If found, the string value is put into self.__Token
+    #
+    #   @param  self        The object pointer
+    #   @param  Keyword     The string to search
+    #   @param  IgnoreCase  Indicate case sensitive/non-sensitive search, default is case sensitive
+    #   @retval True        Successfully find string, file buffer pointer moved forward
+    #   @retval False       Not able to find string, file buffer pointer not changed
+    #
+    def __IsKeyword(self, KeyWord, IgnoreCase = False):
         self.__SkipWhiteSpace()
-##        if self.__EndOfFile():
-##            return False
+
         # Only consider the same line, no multi-line token allowed
         StartPos = self.CurrentOffsetWithinLine
         index = -1
-        if ignoreCase:
-            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].upper().find(keyword.upper()) 
+        if IgnoreCase:
+            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].upper().find(KeyWord.upper()) 
         else:
-            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].find(keyword)
+            index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].find(KeyWord)
         if index == 0:
-            followingChar = self.__CurrentLine()[self.CurrentOffsetWithinLine + len(keyword)]
+            followingChar = self.__CurrentLine()[self.CurrentOffsetWithinLine + len(KeyWord)]
             if not str(followingChar).isspace() and followingChar not in ('=', '|'):
                 return False
-            self.CurrentOffsetWithinLine += len(keyword)
+            self.CurrentOffsetWithinLine += len(KeyWord)
             self.__Token = self.__CurrentLine()[StartPos : self.CurrentOffsetWithinLine]
             return True
         return False
 
-    """get next C name from file lines"""
+    ## __GetNextWord() method
+    #
+    #   Get next C name from file lines
+    #   If found, the string value is put into self.__Token
+    #
+    #   @param  self        The object pointer
+    #   @retval True        Successfully find a C name string, file buffer pointer moved forward
+    #   @retval False       Not able to find a C name string, file buffer pointer not changed
+    #
     def __GetNextWord(self):
         self.__SkipWhiteSpace()
         if self.__EndOfFile():
@@ -311,12 +432,18 @@ class FdfParser:
 
             self.__Token = self.__CurrentLine()[StartPos : self.CurrentOffsetWithinLine]
             return True
-        #elif ...:
-            # other conditions
-        #    return True
             
         return False
     
+    ## __GetNextToken() method
+    #
+    #   Get next token unit before a seperator
+    #   If found, the string value is put into self.__Token
+    #
+    #   @param  self        The object pointer
+    #   @retval True        Successfully find a token unit, file buffer pointer moved forward
+    #   @retval False       Not able to find a token unit, file buffer pointer not changed
+    #
     def __GetNextToken(self):
         # Skip leading spaces, if exist.
         self.__SkipWhiteSpace()
@@ -345,6 +472,15 @@ class FdfParser:
         else:
             return False
 
+    ## __GetNextGuid() method
+    #
+    #   Get next token unit before a seperator
+    #   If found, the GUID string is put into self.__Token
+    #
+    #   @param  self        The object pointer
+    #   @retval True        Successfully find a registry format GUID, file buffer pointer moved forward
+    #   @retval False       Not able to find a registry format GUID, file buffer pointer not changed
+    #
     def __GetNextGuid(self):
         
         if not self.__GetNextToken():
@@ -356,6 +492,12 @@ class FdfParser:
             self.__UndoToken()
             return False
 
+    ## __UndoToken() method
+    #
+    #   Go back one token unit in file buffer
+    #
+    #   @param  self        The object pointer
+    #
     def __UndoToken(self):
         self.__UndoOneChar()
         while self.__CurrentChar().isspace():
@@ -367,6 +509,15 @@ class FdfParser:
         else:
             self.__GetOneChar()
     
+    ## __HexDigit() method
+    #
+    #   Whether char input is a Hex data bit
+    #
+    #   @param  self        The object pointer
+    #   @param  TempChar    The char to test
+    #   @retval True        The char is a Hex data bit
+    #   @retval False       The char is NOT a Hex data bit
+    #
     def __HexDigit(self, TempChar):
         if (TempChar >= 'a' and TempChar <= 'f') or (TempChar >= 'A' and TempChar <= 'F') \
                 or (TempChar >= '0' and TempChar <= '9'):
@@ -374,8 +525,15 @@ class FdfParser:
         else:
             return False
         
-    # GetNext*** procedures mean these procedures will get next token first, then make judgement.
-    # Get*** procedures mean these procedures will make judgement on current token only.
+    ## __GetNextHexNumber() method
+    #
+    #   Get next HEX data before a seperator
+    #   If found, the HEX data is put into self.__Token
+    #
+    #   @param  self        The object pointer
+    #   @retval True        Successfully find a HEX data, file buffer pointer moved forward
+    #   @retval False       Not able to find a HEX data, file buffer pointer not changed
+    #
     def __GetNextHexNumber(self):
         if not self.__GetNextToken():
             return False
@@ -392,6 +550,15 @@ class FdfParser:
             self.__UndoToken()
             return False
         
+    ## __GetNextDecimalNumber() method
+    #
+    #   Get next decimal data before a seperator
+    #   If found, the decimal data is put into self.__Token
+    #
+    #   @param  self        The object pointer
+    #   @retval True        Successfully find a decimal data, file buffer pointer moved forward
+    #   @retval False       Not able to find a decimal data, file buffer pointer not changed
+    #
     def __GetNextDecimalNumber(self):
         if not self.__GetNextToken():
             return False
@@ -401,6 +568,14 @@ class FdfParser:
             self.__UndoToken()
             return False
     
+    ## __GetNextPcdName() method
+    #
+    #   Get next PCD token space C name and PCD C name pair before a seperator
+    #   If found, the decimal data is put into self.__Token
+    #
+    #   @param  self        The object pointer
+    #   @retval Tuple       PCD C name and PCD token space C name pair 
+    #
     def __GetNextPcdName(self):
         if not self.__GetNextWord():
             raise Warning("expected PcdTokenSpaceCName.PcdCName At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
@@ -415,7 +590,15 @@ class FdfParser:
         
         return (pcdCName, pcdTokenSpaceCName) 
             
-        
+    ## __GetStringData() method
+    #
+    #   Get string contents quoted in ""
+    #   If found, the decimal data is put into self.__Token
+    #
+    #   @param  self        The object pointer
+    #   @retval True        Successfully find a string data, file buffer pointer moved forward
+    #   @retval False       Not able to find a string data, file buffer pointer not changed
+    #    
     def __GetStringData(self):
         if self.__Token.startswith("\"") or self.__Token.startswith("L\""):
             self.__UndoToken()
@@ -431,38 +614,65 @@ class FdfParser:
         else:
             return False
             
-    """Skip to the occurrence of string in file lines buffer"""
-    def __SkipToToken(self, string, ignoreCase = False):
+    ## __SkipToToken() method
+    #
+    #   Search forward in file buffer for the string
+    #   The skipped chars are put into self.__SkippedChars
+    #
+    #   @param  self        The object pointer
+    #   @param  String      The string to search
+    #   @param  IgnoreCase  Indicate case sensitive/non-sensitive search, default is case sensitive
+    #   @retval True        Successfully find the string, file buffer pointer moved forward
+    #   @retval False       Not able to find the string, file buffer pointer not changed
+    #
+    def __SkipToToken(self, String, IgnoreCase = False):
         StartPos = self.GetFileBufferPos()
-        #self.__SkipWhiteSpace()
+        
         self.__SkippedChars = ""
         while not self.__EndOfFile():
             index = -1
-            if ignoreCase:
-                index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].upper().find(string.upper()) 
+            if IgnoreCase:
+                index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].upper().find(String.upper()) 
             else:
-                index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].find(string)
+                index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].find(String)
             if index == 0:
-                self.CurrentOffsetWithinLine += len(string)
-                self.__SkippedChars += string
+                self.CurrentOffsetWithinLine += len(String)
+                self.__SkippedChars += String
                 return True
             self.__SkippedChars += str(self.__CurrentChar())
             self.__GetOneChar()
-            #self.__SkipWhiteSpace()
-
+            
         self.SetFileBufferPos( StartPos)
         self.__SkippedChars = ""
         return False
 
-    """Return the tuple of current line and offset within the line"""
+    ## GetFileBufferPos() method
+    #
+    #   Return the tuple of current line and offset within the line
+    #
+    #   @param  self        The object pointer
+    #   @retval Tuple       Line number and offset pair 
+    #
     def GetFileBufferPos(self):
         return (self.CurrentLineNumber, self.CurrentOffsetWithinLine)
     
-    """Restore the file buffer position"""
-    def SetFileBufferPos(self, pos):
-        (self.CurrentLineNumber, self.CurrentOffsetWithinLine) = pos
+    ## SetFileBufferPos() method
+    #
+    #   Restore the file buffer position
+    #
+    #   @param  self        The object pointer
+    #   @param  Pos         The new file buffer position
+    #
+    def SetFileBufferPos(self, Pos):
+        (self.CurrentLineNumber, self.CurrentOffsetWithinLine) = Pos
             
-    """Parse the file profile buffer to extract fd, fv ... information"""
+    ## ParseFile() method
+    #
+    #   Parse the file profile buffer to extract fd, fv ... information
+    #   Exception will be raised if syntax error found
+    #
+    #   @param  self        The object pointer
+    #
     def ParseFile(self):
 
         try:
@@ -486,9 +696,17 @@ class FdfParser:
             self.__UndoToken()
             X.message += '\nGot Token: %s\n' % self.__Token + \
                 'Parsing String: %s At line: %d, Offset Within Line: %d\n' \
-                    % (self.profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
+                    % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
             raise
         
+    ## __GetFd() method
+    #
+    #   Get FD section contents and store its data into FD dictionary of self.Profile
+    #
+    #   @param  self        The object pointer
+    #   @retval True        Successfully find a FD
+    #   @retval False       Not able to find a FD
+    #
     def __GetFd(self):
 
         if not self.__GetNextToken():
@@ -505,44 +723,59 @@ class FdfParser:
         self.__UndoToken()
         if not self.__IsToken("[FD.", True):
             print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
-                    % (self.profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
+                    % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
             raise Warning("expected [FD.] At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
         
-        fdName = self.__GetUiName()
-        self.CurrentFdName = fdName.upper()
+        FdName = self.__GetUiName()
+        self.CurrentFdName = FdName.upper()
         
         if not self.__IsToken( "]"):
             raise Warning("expected ']' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
         
-        fd = Fd.FD()
-        fd.FdUiName = self.CurrentFdName
-        self.profile.FdDict[self.CurrentFdName] = fd
-        Status = self.__GetCreateFile( fd)
+        FdObj = Fd.FD()
+        FdObj.FdUiName = self.CurrentFdName
+        self.Profile.FdDict[self.CurrentFdName] = FdObj
+        Status = self.__GetCreateFile( FdObj)
         if not Status:
             raise Warning("FD name error At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
         
-        if not self.__GetTokenStatements( fd):
+        if not self.__GetTokenStatements(FdObj):
             return False
         
-        self.__GetDefineStatements( fd)
+        self.__GetDefineStatements(FdObj)
 
-        self.__GetSetStatements( fd)
+        self.__GetSetStatements(FdObj)
 
-        if not self.__GetRegionLayout( fd):
+        if not self.__GetRegionLayout(FdObj):
             raise Warning("expected region layout At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
             
-        while self.__GetRegionLayout( fd):
+        while self.__GetRegionLayout(FdObj):
             pass
         return True
     
+    ## __GetUiName() method
+    #
+    #   Return the UI name of a section
+    #
+    #   @param  self        The object pointer
+    #   @retval FdName      UI name
+    #
     def __GetUiName(self):
-        fdName = ""
+        FdName = ""
         if self.__GetNextWord():
-            fdName = self.__Token
+            FdName = self.__Token
             
-        return fdName
+        return FdName
 
-    def __GetCreateFile(self, fd):
+    ## __GetCreateFile() method
+    #
+    #   Return the output file name of object
+    #
+    #   @param  self        The object pointer
+    #   @param  Obj         object whose data will be stored in file
+    #   @retval FdName      UI name
+    #
+    def __GetCreateFile(self, Obj):
 
         if self.__IsKeyword( "CREATE_FILE"):
             if not self.__IsToken( "="):
@@ -551,16 +784,21 @@ class FdfParser:
             if not self.__GetNextToken():
                 raise Warning("expected file name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
                 
-            fileName = self.__Token
-##            if not self.__IsToken( ".fd"):
-##                raise Warning("expected '.fd' end At Line %d" % self.CurrentLineNumber)
-##
-##            fileName += ".fd"
-            fd.CreateFileName = fileName
+            FileName = self.__Token
+            Obj.CreateFileName = FileName
 
         return True
 
-    def __GetTokenStatements(self, fd):
+    ## __GetTokenStatements() method
+    #
+    #   Get token statements
+    #
+    #   @param  self        The object pointer
+    #   @param  Obj         for whom token statement is got
+    #   @retval True        Successfully find a token statement
+    #   @retval False       Not able to find a token statement
+    #
+    def __GetTokenStatements(self, Obj):
         if not self.__IsKeyword( "BaseAddress"):
             raise Warning("BaseAddress missing At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
            
@@ -570,12 +808,12 @@ class FdfParser:
         if not self.__GetNextHexNumber():
             raise Warning("expected Hex base address At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
             
-        fd.BaseAddress = self.__Token
+        Obj.BaseAddress = self.__Token
         
         if self.__IsToken( "|"):
             pcdPair = self.__GetNextPcdName()
-            fd.BaseAddressPcd = pcdPair
-            self.profile.PcdDict[pcdPair] = long(fd.BaseAddress, 0)
+            Obj.BaseAddressPcd = pcdPair
+            self.Profile.PcdDict[pcdPair] = long(Obj.BaseAddress, 0)
             
         if not self.__IsKeyword( "Size"):
             raise Warning("Size missing At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
@@ -587,12 +825,12 @@ class FdfParser:
             raise Warning("expected Hex size At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
             
       
-        fd.Size = long(self.__Token, 0)
+        Obj.Size = long(self.__Token, 0)
 
         if self.__IsToken( "|"):
             pcdPair = self.__GetNextPcdName()
-            fd.SizePcd = pcdPair
-            self.profile.PcdDict[pcdPair] = fd.Size
+            Obj.SizePcd = pcdPair
+            self.Profile.PcdDict[pcdPair] = Obj.Size
                     
         if not self.__IsKeyword( "ErasePolarity"):
             raise Warning("ErasePolarity missing At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
@@ -606,12 +844,21 @@ class FdfParser:
         if self.__Token != "1" and self.__Token != "0":
             raise Warning("expected 1 or 0 Erase Polarity At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
             
-        fd.ErasePolarity = self.__Token
+        Obj.ErasePolarity = self.__Token
 
-        Status = self.__GetBlockStatements(fd)
+        Status = self.__GetBlockStatements(Obj)
         return Status
     
-    def __GetAddressStatements(self, obj):
+    ## __GetAddressStatements() method
+    #
+    #   Get address statements
+    #
+    #   @param  self        The object pointer
+    #   @param  Obj         for whom address statement is got
+    #   @retval True        Successfully find
+    #   @retval False       Not able to find
+    #
+    def __GetAddressStatements(self, Obj):
         
         if self.__IsKeyword("BsBaseAddress"):
             if not self.__IsToken( "="):
@@ -621,7 +868,7 @@ class FdfParser:
                 raise Warning("expected address At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
                 
             BsAddress = long(self.__Token, 0)
-            obj.BsBaseAddress = BsAddress
+            Obj.BsBaseAddress = BsAddress
             
         if self.__IsKeyword("RtBaseAddress"):
             if not self.__IsToken( "="):
@@ -631,20 +878,37 @@ class FdfParser:
                 raise Warning("expected address At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
                 
             RtAddress = long(self.__Token, 0)
-            obj.RtBaseAddress = RtAddress
+            Obj.RtBaseAddress = RtAddress
     
-    def __GetBlockStatements(self, obj):
+    ## __GetBlockStatements() method
+    #
+    #   Get block statements
+    #
+    #   @param  self        The object pointer
+    #   @param  Obj         for whom block statement is got
+    #   @retval True        Successfully find
+    #   @retval False       Not able to find
+    #
+    def __GetBlockStatements(self, Obj):
         
-        if not self.__GetBlockStatement(obj):
+        if not self.__GetBlockStatement(Obj):
             raise Warning("expected block statement At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
             
-        while self.__GetBlockStatement(obj):
+        while self.__GetBlockStatement(Obj):
             pass
         return True
     
-    def __GetBlockStatement(self, obj):
+    ## __GetBlockStatement() method
+    #
+    #   Get block statement
+    #
+    #   @param  self        The object pointer
+    #   @param  Obj         for whom block statement is got
+    #   @retval True        Successfully find
+    #   @retval False       Not able to find
+    #
+    def __GetBlockStatement(self, Obj):
         if not self.__IsKeyword( "BlockSize"):
-##            raise Warning("Block size missing At Line %d" % self.CurrentLineNumber)
             return False
         
         if not self.__IsToken( "="):
@@ -656,9 +920,9 @@ class FdfParser:
         BlockSize = long(self.__Token, 0)
         BlockSizePcd = None
         if self.__IsToken( "|"):
-            pcdPair = self.__GetNextPcdName()
-            BlockSizePcd = pcdPair
-            self.profile.PcdDict[pcdPair] = BlockSize
+            PcdPair = self.__GetNextPcdName()
+            BlockSizePcd = PcdPair
+            self.Profile.PcdDict[PcdPair] = BlockSize
             
         BlockNumber = None
         if self.__IsKeyword( "NumBlocks"):
@@ -670,38 +934,73 @@ class FdfParser:
                 
             BlockNumber = long(self.__Token, 0)
         
-        obj.BlockSizeList.append((BlockSize, BlockNumber, BlockSizePcd))
+        Obj.BlockSizeList.append((BlockSize, BlockNumber, BlockSizePcd))
         return True
 
-    def __GetDefineStatements(self, obj):
-        while self.__GetDefineStatement( obj):
+    ## __GetDefineStatements() method
+    #
+    #   Get define statements
+    #
+    #   @param  self        The object pointer
+    #   @param  Obj         for whom define statement is got
+    #   @retval True        Successfully find
+    #   @retval False       Not able to find
+    #
+    def __GetDefineStatements(self, Obj):
+        while self.__GetDefineStatement( Obj):
             pass
     
-    def __GetDefineStatement(self, obj):
+    ## __GetDefineStatement() method
+    #
+    #   Get define statement
+    #
+    #   @param  self        The object pointer
+    #   @param  Obj         for whom define statement is got
+    #   @retval True        Successfully find
+    #   @retval False       Not able to find
+    #
+    def __GetDefineStatement(self, Obj):
         if self.__IsKeyword("DEFINE"):
             self.__GetNextToken()
-            macro = self.__Token
+            Macro = self.__Token
             if not self.__IsToken( "="):
                 raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
                 
             if not self.__GetNextToken():
                 raise Warning("expected value At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
 
-            value = self.__Token
-            macro = '$(' + macro + ')'
-            obj.DefineVarDict[macro] = value
+            Value = self.__Token
+            Macro = '$(' + Macro + ')'
+            Obj.DefineVarDict[Macro] = Value
             return True
         
         return False
     
-    
-    def __GetSetStatements(self, obj):
-        while self.__GetSetStatement(obj):
+    ## __GetSetStatements() method
+    #
+    #   Get set statements
+    #
+    #   @param  self        The object pointer
+    #   @param  Obj         for whom set statement is got
+    #   @retval True        Successfully find
+    #   @retval False       Not able to find
+    #
+    def __GetSetStatements(self, Obj):
+        while self.__GetSetStatement(Obj):
             pass
 
-    def __GetSetStatement(self, obj):
+    ## __GetSetStatement() method
+    #
+    #   Get set statement
+    #
+    #   @param  self        The object pointer
+    #   @param  Obj         for whom set statement is got
+    #   @retval True        Successfully find
+    #   @retval False       Not able to find
+    #
+    def __GetSetStatement(self, Obj):
         if self.__IsKeyword("SET"):
-            pcdPair = self.__GetNextPcdName()
+            PcdPair = self.__GetNextPcdName()
             
             if not self.__IsToken( "="):
                 raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
@@ -709,15 +1008,15 @@ class FdfParser:
             if not self.__GetNextToken():
                 raise Warning("expected value At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
                 
-            value = self.__Token
-            if value.startswith("{"):
+            Value = self.__Token
+            if Value.startswith("{"):
                 # deal with value with {}
                 if not self.__SkipToToken( "}"):
                     raise Warning("expected '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
-                value += self.__SkippedChars
+                Value += self.__SkippedChars
                 
-            obj.SetVarDict[pcdPair] = value
-            self.profile.PcdDict[pcdPair] = value
+            Obj.SetVarDict[PcdPair] = Value
+            self.Profile.PcdDict[PcdPair] = Value
             return True
 
         return False
@@ -744,10 +1043,10 @@ class FdfParser:
         if not self.__Token in ("SET", "FV", "FILE", "DATA"):
             self.__UndoToken()
             region.PcdOffset = self.__GetNextPcdName()
-            self.profile.PcdDict[region.PcdOffset] = region.Offset + long(fd.BaseAddress, 0)
+            self.Profile.PcdDict[region.PcdOffset] = region.Offset + long(fd.BaseAddress, 0)
             if self.__IsToken( "|"):
                 region.PcdSize = self.__GetNextPcdName()
-                self.profile.PcdDict[region.PcdSize] = region.Size
+                self.Profile.PcdDict[region.PcdSize] = region.Size
             
             if not self.__GetNextWord():
                 return True
@@ -900,7 +1199,7 @@ class FdfParser:
         self.__UndoToken()
         if not self.__IsToken("[FV.", True):
             print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
-                    % (self.profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
+                    % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
             raise Warning("Unknown Keyword At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
         
         fvName = self.__GetUiName()
@@ -911,7 +1210,7 @@ class FdfParser:
         
         fv = Fv.FV()
         fv.UiFvName = self.CurrentFvName
-        self.profile.FvDict[self.CurrentFvName] = fv
+        self.Profile.FvDict[self.CurrentFvName] = fv
         
         Status = self.__GetCreateFile( fv)
         if not Status:
@@ -1028,8 +1327,8 @@ class FdfParser:
         if ffsInf.InfFileName.find('$') >= 0:
             ffsInf.InfFileName = GenFdsGlobalVariable.GenFdsGlobalVariable.MacroExtend(ffsInf.InfFileName, MacroDict)
             
-        if not ffsInf.InfFileName in self.profile.InfList:
-            self.profile.InfList.append(ffsInf.InfFileName)
+        if not ffsInf.InfFileName in self.Profile.InfList:
+            self.Profile.InfList.append(ffsInf.InfFileName)
         
         if ForCapsule:
             capsuleFfs = CapsuleData.CapsuleFfs()
@@ -1055,7 +1354,7 @@ class FdfParser:
                 raise Warning("expected Version At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
             
             if self.__GetStringData():
-                ffsInf.ver = self.__Token
+                ffsInf.Version = self.__Token
         
         if self.__IsKeyword( "UI"):
             if not self.__IsToken( "="):
@@ -1447,7 +1746,7 @@ class FdfParser:
         self.__UndoToken()
         if not self.__IsToken("[CAPSULE.", True):
             print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
-                    % (self.profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
+                    % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
             raise Warning("expected [Capsule.] At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)        
             
 #        if not self.__IsToken("."):
@@ -1490,7 +1789,7 @@ class FdfParser:
 #                raise Warning("expected '>' At Line %d" % self.CurrentLineNumber)
             
         self.__GetCapsuleStatements(capsule)
-        self.profile.CapsuleList.append(capsule)
+        self.Profile.CapsuleList.append(capsule)
         return True    
             
     def __GetCapsuleStatements(self, capsule):
@@ -1553,7 +1852,7 @@ class FdfParser:
         self.__UndoToken()
         if not self.__IsToken("[Rule.", True):
             print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
-                    % (self.profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
+                    % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
             raise Warning("expected [Rule.] At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
 
         if not self.__SkipToToken("."):
@@ -1579,20 +1878,20 @@ class FdfParser:
         rule.ModuleType = moduleType
         rule.TemplateName = templateName
         if templateName == '' :
-            self.profile.RuleDict['RULE'             + \
+            self.Profile.RuleDict['RULE'             + \
                               '.'                    + \
                               arch.upper()           + \
                               '.'                    + \
                               moduleType.upper()     ] = rule
         else :
-            self.profile.RuleDict['RULE'             + \
+            self.Profile.RuleDict['RULE'             + \
                               '.'                    + \
                               arch.upper()           + \
                               '.'                    + \
                               moduleType.upper()     + \
                               '.'                    + \
                               templateName.upper() ] = rule
-#        self.profile.RuleList.append(rule)
+#        self.Profile.RuleList.append(rule)
         return True
     
     def __GetModuleType(self):
@@ -2012,7 +2311,7 @@ class FdfParser:
         self.__UndoToken()
         if not self.__IsToken("[VTF.", True):
             print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
-                    % (self.profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
+                    % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
             raise Warning("expected [VTF.] At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
 
         if not self.__SkipToToken("."):
@@ -2052,7 +2351,7 @@ class FdfParser:
         while self.__GetComponentStatement(vtf):
             pass
         
-        self.profile.VtfList.append(vtf)
+        self.Profile.VtfList.append(vtf)
         return True
     
     def __GetComponentStatement(self, vtf):
@@ -2180,8 +2479,8 @@ class FdfParser:
     def __GetFvInFd (self, fdName):
     
         fvList = []
-        if fdName.upper() in self.profile.FdDict.keys():
-            fd = self.profile.FdDict[fdName.upper()]
+        if fdName.upper() in self.Profile.FdDict.keys():
+            fd = self.Profile.FdDict[fdName.upper()]
             for elementRegion in fd.RegionList:
                 if elementRegion.RegionType == 'FV':
                     for elementRegionData in elementRegion.RegionDataList:
@@ -2223,7 +2522,7 @@ class FdfParser:
         CycleRefExists = False
         
         try:
-            for fvName in self.profile.FvDict.keys():
+            for fvName in self.Profile.FvDict.keys():
                 logStr = "Cycle Reference Checking for FV: %s\n" % fvName
                 refFvStack = []
                 refFvStack.append(fvName)
@@ -2231,8 +2530,8 @@ class FdfParser:
                 
                 while refFvStack != []:
                     fvNameFromStack = refFvStack.pop()
-                    if fvNameFromStack.upper() in self.profile.FvDict.keys():
-                        fv = self.profile.FvDict[fvNameFromStack.upper()]
+                    if fvNameFromStack.upper() in self.Profile.FvDict.keys():
+                        fv = self.Profile.FvDict[fvNameFromStack.upper()]
                     else:
                         continue
                     

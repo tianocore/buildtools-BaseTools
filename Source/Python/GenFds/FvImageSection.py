@@ -37,7 +37,7 @@ class FvImageSection(FvImageSectionClassObject):
         #
         if self.FvName != None:
             Buffer = StringIO.StringIO('')
-            Fv = GenFdsGlobalVariable.FdfParser.profile.FvDict.get(self.FvName)
+            Fv = GenFdsGlobalVariable.FdfParser.Profile.FvDict.get(self.FvName)
             if Fv != None:
                 self.Fv = Fv
             else:
