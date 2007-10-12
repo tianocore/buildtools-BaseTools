@@ -46,8 +46,7 @@ gMakefileHeader = '''#
 #
 '''
 
-gLibraryMakeCommand = '''cd %(makedir)s
-\t"$(MAKE)" $(MAKE_FLAGS) %(target)s
+gLibraryMakeCommand = '''cd %(makedir)s && "$(MAKE)" $(MAKE_FLAGS) %(target)s
 \tcd $(MODULE_BUILD_DIR)'''
 
 gMakeType = ""
@@ -205,7 +204,7 @@ mbuild: init all
 #
 init:
 \t-@echo Building ... $(MODULE_NAME) $(MODULE_VERSION) [$(ARCH)] in platform $(PLATFORM_NAME) $(PLATFORM_VERSION)
-\t${BEGIN}@${create_directory_command}
+\t${BEGIN}-@${create_directory_command}
 \t${END}
 
 '''
@@ -358,23 +357,21 @@ fds: mbuild gen_fds
 #
 init:
 \t-@echo Building ... $(MODULE_NAME) $(MODULE_VERSION) [$(ARCH)] in platform $(PLATFORM_NAME) $(PLATFORM_VERSION)
-\t${BEGIN}@${create_directory_command}
+\t${BEGIN}-@${create_directory_command}
 \t${END}
 
 #
 # GenLibsTarget
 #
 gen_libs:
-\t${BEGIN}cd $(BUILD_DIR)${separator}$(ARCH)${separator}${dependent_library_build_directory}
-\t"$(MAKE)" $(MAKE_FLAGS)
+\t${BEGIN}cd $(BUILD_DIR)${separator}$(ARCH)${separator}${dependent_library_build_directory} && "$(MAKE)" $(MAKE_FLAGS)
 \t${END}cd $(MODULE_BUILD_DIR)
 
 #
 # Build Flash Device Image
 #
 gen_fds:
-\tcd $(BUILD_DIR)
-\t"$(MAKE)" $(MAKE_FLAGS) fds
+\tcd $(BUILD_DIR) && "$(MAKE)" $(MAKE_FLAGS) fds
 \tcd $(MODULE_BUILD_DIR)
 
 #
@@ -412,8 +409,7 @@ cleanpch:
 #
 
 cleanlib:
-\t${BEGIN}cd $(BUILD_DIR)${separator}$(ARCH)${separator}${dependent_library_build_directory}
-\t"$(MAKE)" $(MAKE_FLAGS) cleanall
+\t${BEGIN}cd $(BUILD_DIR)${separator}$(ARCH)${separator}${dependent_library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) cleanall
 \t${END}cd $(MODULE_BUILD_DIR)
 
 '''
@@ -455,7 +451,7 @@ all: init build_libraries build_modules build_fds
 #
 init:
 \t-@echo Building ... $(PLATFORM_NAME) $(PLATFORM_VERSION) [${build_architecture_list}]
-\t${BEGIN}@${create_directory_command}
+\t${BEGIN}-@${create_directory_command}
 \t${END}
 #
 # library build target
@@ -476,16 +472,17 @@ fds: init build_fds
 # Build all libraries:
 #
 build_libraries:
-\t${BEGIN}cd $(WORKSPACE)${separator}${library_build_directory}
-\t"$(MAKE)" $(MAKE_FLAGS) pbuild
+\t${BEGIN}
+\techo Building library: $(WORKSPACE)${separator}${library_build_directory}
+\tcd $(WORKSPACE)${separator}${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
 \t${END}cd $(BUILD_DIR)
 
 #
 # Build all modules:
 #
 build_modules:
-\t${BEGIN}cd $(WORKSPACE)${separator}${module_build_directory}
-\t"$(MAKE)" $(MAKE_FLAGS) pbuild
+\t${BEGIN}echo Building module $(WORKSPACE)${separator}${module_build_directory}
+\tcd $(WORKSPACE)${separator}${module_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
 \t${END}cd $(BUILD_DIR)
 
 #
@@ -507,10 +504,8 @@ run:
 # Clean intermediate files
 #
 clean:
-\t${BEGIN}cd $(WORKSPACE)${separator}${library_build_directory}
-\t"$(MAKE)" $(MAKE_FLAGS) clean
-\t${END}${BEGIN}cd $(WORKSPACE)${separator}${module_build_directory}
-\t"$(MAKE)" $(MAKE_FLAGS) clean
+\t${BEGIN}cd $(WORKSPACE)${separator}${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) clean
+\t${END}${BEGIN}cd $(WORKSPACE)${separator}${module_build_directory} && "$(MAKE)" $(MAKE_FLAGS) clean
 \t${END}cd $(BUILD_DIR)
 
 #
@@ -524,8 +519,7 @@ cleanall:
 # Clean all library files
 #
 cleanlib:
-\t${BEGIN}cd $(WORKSPACE)${separator}${library_build_directory}
-\t"$(MAKE)" $(MAKE_FLAGS) cleanall
+\t${BEGIN}cd $(WORKSPACE)${separator}${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) cleanall
 \t${END}cd $(BUILD_DIR)
 
 '''
