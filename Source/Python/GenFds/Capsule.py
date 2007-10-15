@@ -1,53 +1,86 @@
+## @file
+# generate capsule
+#
+#  Copyright (c) 2007, Intel Corporation
+#
+#  All rights reserved. This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution.  The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+
+##
+# Import Modules
+#
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 from CommonDataClass.FdfClassObject import CapsuleClassObject
 import os
 import subprocess
 
 T_CHAR_LF = '\n'
+
+## create inf file describes what goes into capsule and call GenFv to generate capsule
+#
+#
 class Capsule (CapsuleClassObject) :
+    ## The constructor
+    #
+    #   @param  self        The object pointer
+    #
     def __init__(self):
         CapsuleClassObject.__init__(self)
-        self.BlockSize = None          # For GenFv
-        self.BlockNum = None           # For GenFv
+        # For GenFv
+        self.BlockSize = None          
+        # For GenFv
+        self.BlockNum = None           
         
+    ## Generate capsule
+    #
+    #   @param  self        The object pointer
+    #
     def GenCapsule(self):
-        capInfFile = self.GenCapInf()
-        capInfFile.writelines("[files]" + T_CHAR_LF)
+        CapInfFile = self.GenCapInf()
+        CapInfFile.writelines("[files]" + T_CHAR_LF)
         
-        for file in self.CapsuleDataList :
-            fileName = file.GenCapsuleSubItem()
-            capInfFile.writelines("EFI_FILE_NAME = " + \
-                                   fileName      + \
+        for CapsuleDataObj in self.CapsuleDataList :
+            FileName = CapsuleDataObj.GenCapsuleSubItem()
+            CapInfFile.writelines("EFI_FILE_NAME = " + \
+                                   FileName      + \
                                    T_CHAR_LF)
-        capInfFile.close()
+        CapInfFile.close()
         #
         # Call GenFv tool to generate capsule
         #
         CapOutputFile = os.path.join(GenFdsGlobalVariable.FvDir, self.UiCapsuleName)
         CapOutputFile = CapOutputFile + '.Cap'
-        cmd = 'GenFv -i '          + \
+        Cmd = 'GenFv -i '          + \
                self.CapInfFileName + \
                ' -o '              + \
                CapOutputFile       + \
                ' -c '
-        GenFdsGlobalVariable.CallExternalTool(cmd, "GefFv GenCapsule Failed!")
+        GenFdsGlobalVariable.CallExternalTool(Cmd, "GefFv GenCapsule Failed!")
         GenFdsGlobalVariable.SharpCounter = 0
 
+    ## Generate inf file for capsule
+    #
+    #   @param  self        The object pointer
+    #   @retval file        inf file object
+    #
     def GenCapInf(self):
         self.CapInfFileName = os.path.join(GenFdsGlobalVariable.FvDir,
                                    self.UiCapsuleName +  "_Cap" + '.inf')
-        capInfFile = open (self.CapInfFileName , 'w+')
+        CapInfFile = open (self.CapInfFileName , 'w+')
         
-        capInfFile.writelines("[options]" + T_CHAR_LF)
-#        capInfFile.writelines("EFI_CAPSULE_VERSION = " + \
-#                              self.SpecName            + \
-#                              T_CHAR_LF)
+        CapInfFile.writelines("[options]" + T_CHAR_LF)
                               
-        for item in self.TokensDict.keys():
-            capInfFile.writelines("EFI_"                    + \
-                                  item                      + \
+        for Item in self.TokensDict.keys():
+            CapInfFile.writelines("EFI_"                    + \
+                                  Item                      + \
                                   ' = '                     + \
-                                  self.TokensDict.get(item) + \
+                                  self.TokensDict.get(Item) + \
                                   T_CHAR_LF)
 
-        return capInfFile
+        return CapInfFile

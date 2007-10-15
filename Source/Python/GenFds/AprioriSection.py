@@ -1,3 +1,20 @@
+## @file
+# process APRIORI file data and generate PEI/DXE APRIORI file
+#
+#  Copyright (c) 2007, Intel Corporation
+#
+#  All rights reserved. This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution.  The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+
+##
+# Import Modules
+#
 from struct import *
 import os
 import StringIO
@@ -6,54 +23,61 @@ from GenFdsGlobalVariable import GenFdsGlobalVariable
 from CommonDataClass.FdfClassObject import AprioriSectionClassObject
 from Common.String import *
 
+## process APRIORI file data and generate PEI/DXE APRIORI file
+#
+#
 class AprioriSection (AprioriSectionClassObject):
-    
+    ## The constructor
+    #
+    #   @param  self        The object pointer
+    #
     def __init__(self):
         AprioriSectionClassObject.__init__(self)
         self.AprioriType = ""
-        
-    def GenFfs (self, fvName, Dict = {}):
+    
+    ## GenFfs() method
+    #
+    #   Generate FFS for APRIORI file
+    #
+    #   @param  self        The object pointer
+    #   @param  FvName      for whom apriori file generated
+    #   @param  Dict        dictionary contains macro and its value
+    #   @retval string      Generated file name
+    #
+    def GenFfs (self, FvName, Dict = {}):
         DXE_GUID = "FC510EE7-FFDC-11D4-BD41-0080C73C8881"
         PEI_GUID = "1B45CC0A-156A-428A-AF62-49864DA0E6E6"
         Buffer = StringIO.StringIO('')
-        guid = DXE_GUID
+        AprioriFileGuid = DXE_GUID
         if self.AprioriType == "PEI":
-            guid = PEI_GUID
+            AprioriFileGuid = PEI_GUID
         OutputAprFilePath = os.path.join (GenFdsGlobalVariable.WorkSpaceDir, \
                                    GenFdsGlobalVariable.FfsDir,\
-                                   guid + fvName)
+                                   AprioriFileGuid + FvName)
         if not os.path.exists(OutputAprFilePath) :
             os.makedirs(OutputAprFilePath)
             
         OutputAprFileName = os.path.join( OutputAprFilePath, \
-                                       guid + fvName + '.Apri' )
+                                       AprioriFileGuid + FvName + '.Apri' )
         AprFfsFileName = os.path.join (OutputAprFilePath,\
-                                    guid + fvName + '.Ffs')
+                                    AprioriFileGuid + FvName + '.Ffs')
                                    
         OutputAprFile = open(OutputAprFileName, 'w+b')
         
         Dict.update(self.DefineVarDict)
         
-        for ffs in self.FfsList :
+        for FfsObj in self.FfsList :
             Guid = ""
-            if isinstance(ffs, FfsFileStatement.FileStatements):
-                Guid = ffs.NameGuid
+            if isinstance(FfsObj, FfsFileStatement.FileStatements):
+                Guid = FfsObj.NameGuid
             else:
-                InfFileName = NormPath(ffs.InfFileName)
-                Arch = ffs.GetCurrentArch()
+                InfFileName = NormPath(FfsObj.InfFileName)
+                Arch = FfsObj.GetCurrentArch()
                 
                 if Arch != None:
                     Dict['$(ARCH)'] = Arch
                 InfFileName = GenFdsGlobalVariable.MacroExtend(InfFileName, Dict)
-#                Inf = GenFdsGlobalVariable.WorkSpace.Build['IA32'].ModuleDatabase.get(InfFileName)
-#                if Inf == None:
-#                    Inf = GenFdsGlobalVariable.WorkSpace.Build['X64'].ModuleDatabase.get(InfFileName)
-#                    if Inf == None:
-#                        Inf = GenFdsGlobalVariable.WorkSpace.Build['IPF'].ModuleDatabase.get(InfFileName)
-#                        if Inf == None:
-#                            Inf = GenFdsGlobalVariable.WorkSpace.Build['EBC'].ModuleDatabase.get(InfFileName)
-#                            if Inf == None:
-#                                raise Exception ("This File :%s doesn't exist!", InfFileName)
+
                 if Arch != None and InfFileName in GenFdsGlobalVariable.WorkSpace.Build[Arch].ModuleDatabase.keys():
                     Inf = GenFdsGlobalVariable.WorkSpace.Build[Arch].ModuleDatabase[InfFileName]
                     Guid = Inf.Guid
@@ -78,17 +102,17 @@ class AprioriSection (AprioriSectionClassObject):
             Buffer.write(pack('H', int(GuidPart[2], 16)))
             
             for Num in range(2):
-                char = GuidPart[3][Num*2:Num*2+2]
-                Buffer.write(pack('B', int(char, 16)))
+                Char = GuidPart[3][Num*2:Num*2+2]
+                Buffer.write(pack('B', int(Char, 16)))
             
             for Num in range(6):
-                char = GuidPart[4][Num*2:Num*2+2]
-                Buffer.write(pack('B', int(char, 16)))
+                Char = GuidPart[4][Num*2:Num*2+2]
+                Buffer.write(pack('B', int(Char, 16)))
     
         OutputAprFile.write(Buffer.getvalue())
         OutputAprFile.close()
         RawSectionFileName = os.path.join( OutputAprFilePath, \
-                                       guid + fvName + '.raw' )
+                                       AprioriFileGuid + FvName + '.raw' )
         
         GenSectionCmd = 'GenSec -o '                                     + \
                          RawSectionFileName                              + \
@@ -98,7 +122,7 @@ class AprioriSection (AprioriSectionClassObject):
         GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
         
         GenFfsCmd = 'GenFfs -t EFI_FV_FILETYPE_FREEFORM -g '         + \
-                     guid                                            + \
+                     AprioriFileGuid                                            + \
                      ' -o '                                          + \
                      AprFfsFileName                                  + \
                      ' -i ' + RawSectionFileName

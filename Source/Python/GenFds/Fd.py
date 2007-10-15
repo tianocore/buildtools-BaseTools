@@ -1,3 +1,20 @@
+## @file
+# process FD generation
+#
+#  Copyright (c) 2007, Intel Corporation
+#
+#  All rights reserved. This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution.  The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+
+##
+# Import Modules
+#
 import Region
 import Fv
 import os
@@ -8,20 +25,33 @@ from GenFdsGlobalVariable import GenFdsGlobalVariable
 T_CHAR_LF = '\n'
 from CommonDataClass.FdfClassObject import FDClassObject
 
+## generate FD
+#
+#
 class FD(FDClassObject):
+    ## The constructor
+    #
+    #   @param  self        The object pointer
+    #
     def __init__(self):
         FDClassObject.__init__(self)
 
-    """  Create Fd file """
-    
+    ## GenFd() method
+    #
+    #   Generate FD
+    #
+    #   @param  self        The object pointer
+    #   @param  FvBinDict   dictionary contains generated FV name and its file name
+    #   @retval string      Generated FD file name
+    #
     def GenFd (self, FvBinDict):
         #
         # Print Information
         #
         GenFdsGlobalVariable.InfLogger("Fd File Name:%s" %self.FdUiName)
         GenFdsGlobalVariable.VerboseLogger('Following Fv will be add to Fd !!!')
-        for item in GenFdsGlobalVariable.FdfParser.Profile.FvDict:
-            GenFdsGlobalVariable.VerboseLogger(item)
+        for FvObj in GenFdsGlobalVariable.FdfParser.Profile.FvDict:
+            GenFdsGlobalVariable.VerboseLogger(FvObj)
 
         GenFdsGlobalVariable.VerboseLogger('################### Gen VTF ####################')
         self.GenVtfFile()
@@ -39,64 +69,66 @@ class FD(FDClassObject):
         GenFdsGlobalVariable.VerboseLogger ('Create an empty Fd file')
         FdFileName = os.path.join(GenFdsGlobalVariable.FvDir,
                                   self.FdUiName + '.fd')
-        fd = open(FdFileName, 'wb')
+        FdFile = open(FdFileName, 'wb')
        
         #
         # Write the buffer contents to Fd file
         #
         GenFdsGlobalVariable.VerboseLogger('Write the buffer contents to Fd file')
-        fd.write(FdBuffer.getvalue());
-        fd.close();
+        FdFile.write(FdBuffer.getvalue());
+        FdFile.close();
         FdBuffer.close();
         return FdFileName
-        
+    
+    ## generate VTF
+    #
+    #   @param  self        The object pointer
+    #    
     def GenVtfFile (self) :
         #
         # Get this Fd's all Fv name
         #
-        fvAddDict ={}
-        fvList = []
-        for region in self.RegionList:
-            if region.RegionType == 'FV':
-                if len(region.RegionDataList) == 1:
-                    RegionData = region.RegionDataList[0]
-                    fvList.append(RegionData.upper())
-                    fvAddDict[RegionData.upper()] = (int(self.BaseAddress,16) + \
-                                                region.Offset, region.Size)
+        FvAddDict ={}
+        FvList = []
+        for RegionObj in self.RegionList:
+            if RegionObj.RegionType == 'FV':
+                if len(RegionObj.RegionDataList) == 1:
+                    RegionData = RegionObj.RegionDataList[0]
+                    FvList.append(RegionData.upper())
+                    FvAddDict[RegionData.upper()] = (int(self.BaseAddress,16) + \
+                                                RegionObj.Offset, RegionObj.Size)
                 else:
-                    Offset = region.Offset
-                    for RegionData in region.RegionDataList:
-                        fvList.append(RegionData.upper())
-                        fv = GenFdsGlobalVariable.FdfParser.Profile.FvDict.get(RegionData.upper())
-                        if len(fv.BlockSizeList) < 1:
-                            raise Exception ('FV.%s must point out FVs blocksize and Fv BlockNum' %fv.UiFvName)
+                    Offset = RegionObj.Offset
+                    for RegionData in RegionObj.RegionDataList:
+                        FvList.append(RegionData.upper())
+                        FvObj = GenFdsGlobalVariable.FdfParser.Profile.FvDict.get(RegionData.upper())
+                        if len(FvObj.BlockSizeList) < 1:
+                            raise Exception ('FV.%s must point out FVs blocksize and Fv BlockNum' %FvObj.UiFvName)
                         else:
                             Size = 0
-                            for blockStatement in fv.BlockSizeList:
+                            for blockStatement in FvObj.BlockSizeList:
                                 Size = Size + blockStatement[0] * blockStatement[1]
-                            fvAddDict[RegionData.upper()] = (int(self.BaseAddress,16) + \
+                            FvAddDict[RegionData.upper()] = (int(self.BaseAddress,16) + \
                                                              Offset, Size)
                             Offset = Offset + Size
         #
         # Check whether this Fd need VTF
         #
-        flag = False
-        for vtf in GenFdsGlobalVariable.FdfParser.Profile.VtfList:
-            compLocList = vtf.GetFvList()
-            if set(compLocList).issubset(fvList):
-                flag = True
+        Flag = False
+        for VtfObj in GenFdsGlobalVariable.FdfParser.Profile.VtfList:
+            compLocList = VtfObj.GetFvList()
+            if set(compLocList).issubset(FvList):
+                Flag = True
                 break
-        if flag == True:
-            self.vtfRawDict = vtf.GenVtf(fvAddDict)
+        if Flag == True:
+            self.vtfRawDict = VtfObj.GenVtf(FvAddDict)
 
-##
-# Create Flash Map file
-##
-    def GenFlashMap ():
+    ## generate flash map file
+    #
+    #   @param  self        The object pointer
+    #  
+    def GenFlashMap (self):
         pass
-##        FlashFile = open( os.path.join(GenFdsGlobalVariable.FvDir, 'FalshMap.h'), 'w+b')
-##        FlashFile.writelines ("#ifndef _FLASH_MAP_H_" + T_CHAR_LF)
-##        FlashFile.writelines ("#define _FLASH_MAP_H_" + T_CHAR_LF)
         
         
 

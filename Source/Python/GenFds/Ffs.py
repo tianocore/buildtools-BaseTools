@@ -1,6 +1,28 @@
+## @file
+# process FFS generation
+#
+#  Copyright (c) 2007, Intel Corporation
+#
+#  All rights reserved. This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution.  The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+
+##
+# Import Modules
+#
 from CommonDataClass.FdfClassObject import FDClassObject
 
+## generate FFS
+#
+#
 class Ffs(FDClassObject):
+    
+    # mapping between module type in FDF and file type for GenFfs
     ModuleTypeToFileType = {
         'SEC'               : 'EFI_FV_FILETYPE_SECURITY_CORE',
         'PEI_CORE'          : 'EFI_FV_FILETYPE_PEI_CORE',
@@ -13,6 +35,8 @@ class Ffs(FDClassObject):
         'UEFI_DRIVER'       : 'EFI_FV_FILETYPE_DRIVER',
         'UEFI_APPLICATION'  : 'EFI_FV_FILETYPE_APPLICATION'
     }
+    
+    # mapping between fv type in FDF and file type for GenFfs
     FvTypeToFileType = {
         'SEC'               : 'EFI_FV_FILETYPE_SECURITY_CORE',
         'PEI_CORE'          : 'EFI_FV_FILETYPE_PEI_CORE',
@@ -25,6 +49,8 @@ class Ffs(FDClassObject):
         'RAW'               : 'EFI_FV_FILETYPE_RAW',
         'PEI_DXE_COMBO'     : 'EFI_FV_FILETYPE_COMBINED_PEIM_DRIVER'
     }
+    
+    # mapping between section type in FDF and file suffix
     SectionSuffix = {
         'PE32'                 : '.pe32',
         'PIC'                  : '.pic',
@@ -41,7 +67,9 @@ class Ffs(FDClassObject):
         'PEI_DEPEX'            : '.dpx'
     }
     
+    ## The constructor
+    #
+    #   @param  self        The object pointer
+    #
     def __init__(self):
         FfsClassObject.__init__(self)
-#    def GenFfs():
-#        pass

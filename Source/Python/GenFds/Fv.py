@@ -1,3 +1,20 @@
+## @file
+# process FV generation
+#
+#  Copyright (c) 2007, Intel Corporation
+#
+#  All rights reserved. This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution.  The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+
+##
+# Import Modules
+#
 import Ffs
 import AprioriSection
 from GenFdsGlobalVariable import GenFdsGlobalVariable
@@ -8,7 +25,14 @@ from CommonDataClass.FdfClassObject import FvClassObject
 
 T_CHAR_LF = '\n'
 
+## generate FV
+#
+#
 class FV (FvClassObject):
+    ## The constructor
+    #
+    #   @param  self        The object pointer
+    #
     def __init__(self):
         FvClassObject.__init__(self)
         self.FvInfFile = None
@@ -17,23 +41,34 @@ class FV (FvClassObject):
         self.InfFileName = None
         self.FvAddressFileName = None
 
+    ## AddToBuffer()
     #
-    #  Generate Fv and add it to the Buffer
+    #   Generate Fv and add it to the Buffer
+    #
+    #   @param  self        The object pointer
+    #   @param  Buffer      The buffer generated FV data will be put
+    #   @param  BaseAddress base address of FV
+    #   @param  BlockSize   block size of FV
+    #   @param  BlockNum    How many blocks in FV
+    #   @param  ErasePolarity      Flash erase polarity
+    #   @param  VtfDict     VTF objects
+    #   @param  MacroDict   macro value pair
+    #   @retval string      Generated FV file path
     #
     def AddToBuffer (self, Buffer, BaseAddress=None, BlockSize= None, BlockNum=None, ErasePloarity='1', VtfDict=None, MacroDict = {}) :
         
         if self.UiFvName.upper() in GenFds.FvBinDict.keys():
             return GenFds.FvBinDict[self.UiFvName.upper()]
         
-        self.__InitialInf__(BaseAddress, BlockSize, BlockNum, ErasePloarity, VtfDict)
+        self.__InitializeInf__(BaseAddress, BlockSize, BlockNum, ErasePloarity, VtfDict)
         #
         # First Process the Apriori section
         #
         MacroDict.update(self.DefineVarDict)
         
         GenFdsGlobalVariable.VerboseLogger('First generate Apriori file !')
-        for aprSection in self.AprioriSectionList:
-            FileName = aprSection.GenFfs (self.UiFvName, MacroDict)
+        for AprSection in self.AprioriSectionList:
+            FileName = AprSection.GenFfs (self.UiFvName, MacroDict)
             # Add Apriori file name to Inf file
             self.FvInfFile.writelines("EFI_FILE_NAME = " + \
                                        FileName          + \
@@ -58,7 +93,7 @@ class FV (FvClassObject):
         if self.CreateFileName != None:
             FvOutputFile = self.CreateFileName
             
-        cmd = 'GenFv -i '                 + \
+        Cmd = 'GenFv -i '                 + \
                self.InfFileName           + \
                ' -o '                     + \
                FvOutputFile               + \
@@ -67,21 +102,32 @@ class FV (FvClassObject):
         #
         # Call GenFv Tools
         #
-        GenFdsGlobalVariable.CallExternalTool(cmd, "GenFv Failed!")
+        GenFdsGlobalVariable.CallExternalTool(Cmd, "GenFv Failed!")
         #
         # Write the Fv contents to Buffer
         #
-        fv = open ( FvOutputFile,'r+b')
+        FvFileObj = open ( FvOutputFile,'r+b')
                    
         GenFdsGlobalVariable.InfLogger( "\nGenerate %s Fv Successfully" %self.UiFvName)
         GenFdsGlobalVariable.SharpCounter = 0
               
-        Buffer.write(fv.read())
-        fv.close()
+        Buffer.write(FvFileObj.read())
+        FvFileObj.close()
         GenFds.FvBinDict[self.UiFvName.upper()] = FvOutputFile
         return FvOutputFile
     
-    def __InitialInf__ (self, BaseAddress = None, BlockSize= None, BlockNum = None, ErasePloarity='1', VtfDict=None) :
+    ## __InitializeInf__()
+    #
+    #   Initilize the inf file to create FV
+    #
+    #   @param  self        The object pointer
+    #   @param  BaseAddress base address of FV
+    #   @param  BlockSize   block size of FV
+    #   @param  BlockNum    How many blocks in FV
+    #   @param  ErasePolarity      Flash erase polarity
+    #   @param  VtfDict     VTF objects
+    #
+    def __InitializeInf__ (self, BaseAddress = None, BlockSize= None, BlockNum = None, ErasePloarity='1', VtfDict=None) :
         #
         # Create FV inf file
         #
