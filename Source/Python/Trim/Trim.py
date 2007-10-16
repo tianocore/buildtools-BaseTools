@@ -30,7 +30,7 @@ __version__ = "%prog Version " + __version_number__
 __copyright__ = "Copyright (c) 2007, Intel Corporation. All rights reserved."
 
 ## Regular expression for matching Line Control directive like "#line xxx"
-gLineControlDirective = re.compile('^\s*(#line|#)\s+([0-9]+)\s*"*([^"]*)"*')
+gLineControlDirective = re.compile('^\s*(#line|#)\s+([0-9]+)\s+"*([^"]*)"*')
 ## Regular expression for matching "typedef struct"
 gTypedefPattern = re.compile("^\s*typedef\s+struct\s+[{]*$", re.MULTILINE)
 ## Regular expression for matching "#pragma pack"
