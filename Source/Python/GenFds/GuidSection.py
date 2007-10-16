@@ -1,3 +1,20 @@
+## @file
+# process GUIDed section generation
+#
+#  Copyright (c) 2007, Intel Corporation
+#
+#  All rights reserved. This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution.  The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+
+##
+# Import Modules
+#
 import Section
 import subprocess
 from Ffs import Ffs
@@ -7,16 +24,36 @@ from CommonDataClass.FdfClassObject import GuidSectionClassObject
 from Common import ToolDefClassObject
 import sys
 
+## generate GUIDed section
+#
+#
 class GuidSection(GuidSectionClassObject) :
     
+    ## The constructor
+    #
+    #   @param  self        The object pointer
+    #
     def __init__(self):
         GuidSectionClassObject.__init__(self)
-        
+    
+    ## GenSection() method
+    #
+    #   Generate GUIDed section
+    #
+    #   @param  self        The object pointer
+    #   @param  OutputPath  Where to place output file
+    #   @param  ModuleName  Which module this section belongs to
+    #   @param  SecNum      Index of section
+    #   @param  KeyStringList  Filter for inputs of section generation
+    #   @param  FfsInf      FfsInfStatement object that contains this section data
+    #   @param  Dict        dictionary contains macro and its value
+    #   @retval tuple       (Generated file name, section alignment)
+    #    
     def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None, Dict = {}):
         #
         # Generate all section
         #
-        self.keyStringList = KeyStringList
+        self.KeyStringList = KeyStringList
         
         if FfsInf != None:
             self.Alignment = FfsInf.__ExtendMarco__(self.Alignment)
@@ -109,18 +146,18 @@ class GuidSection(GuidSectionClassObject) :
             if self.AuthStatusValid == True:
                 AUTH_STATUS_VALID = "AUTH_STATUS_VALID"
             if PROCSSING_REQUIRED != '' or AUTH_STATUS_VALID != '':
-                attribute = ' -a '              + \
+                AttributeStr = ' -a '              + \
                              PROCSSING_REQUIRED + \
                              AUTH_STATUS_VALID
             else :
-                attribute = ''
+                AttributeStr = ''
             GenSectionCmd = 'GenSec -o '                            + \
                              OutputFile                             + \
                              ' -s '                                 + \
                              Section.Section.SectionType['GUIDED']  + \
                              ' -g '                                 + \
                              self.NameGuid                          + \
-                             attribute                              + \
+                             AttributeStr                              + \
                              ' '                                    + \
                              TempFile
                         
@@ -128,35 +165,35 @@ class GuidSection(GuidSectionClassObject) :
             OutputFileList = []
             OutputFileList.append(OutputFile)
             return OutputFileList, self.Alignment
-        
+    
+    ## __FindExtendTool()
+    #
+    #    Find location of tools to process section data
+    #
+    #   @param  self        The object pointer
+    #    
     def __FindExtendTool__(self):
-        tool = None
-        if self.keyStringList == None or self.keyStringList == []:
-            return tool
-        toolDefinition = ToolDefClassObject.ToolDefDict(GenFdsGlobalVariable.WorkSpaceDir).ToolsDefTxtDictionary
-        for toolDef in toolDefinition.items():
-            if self.NameGuid == toolDef[1]:
-                keyList = toolDef[0].split('_')
-                key = keyList[0] + \
+        Tool = None
+        if self.KeyStringList == None or self.KeyStringList == []:
+            return Tool
+        ToolDefinition = ToolDefClassObject.ToolDefDict(GenFdsGlobalVariable.WorkSpaceDir).ToolsDefTxtDictionary
+        for ToolDef in ToolDefinition.items():
+            if self.NameGuid == ToolDef[1]:
+                KeyList = ToolDef[0].split('_')
+                Key = KeyList[0] + \
                       '_'        + \
-                      keyList[1] + \
+                      KeyList[1] + \
                       '_'        + \
-                      keyList[2]
-                if key in self.keyStringList and keyList[4] == 'GUID':
-#                    toolMaro = keyList[3]
-#                    toolName = toolDefinition.get( key        + \
-#                                                   '_'        + \
-#                                                   keyList[3] + \
-#                                                   '_'        + \
-#                                                   'NAME')
-                    toolPath = toolDefinition.get( key        + \
+                      KeyList[2]
+                if Key in self.KeyStringList and KeyList[4] == 'GUID':
+
+                    ToolPath = ToolDefinition.get( Key        + \
                                                    '_'        + \
-                                                   keyList[3] + \
+                                                   KeyList[3] + \
                                                    '_'        + \
                                                    'PATH')
-#                    tool = os.path.join (toolPath, toolName)
-                    return toolPath
-        return tool
+                    return ToolPath
+        return Tool
 
 
                 

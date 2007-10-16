@@ -1,14 +1,54 @@
+## @file
+# process FD Region generation
+#
+#  Copyright (c) 2007, Intel Corporation
+#
+#  All rights reserved. This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution.  The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+
+##
+# Import Modules
+#
 from struct import *
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import StringIO
 from CommonDataClass.FdfClassObject import RegionClassObject
 import os
+
+
+## generate Region
+#
+#
 class region(RegionClassObject):
+    
+    ## The constructor
+    #
+    #   @param  self        The object pointer
+    #
     def __init__(self):
         RegionClassObject.__init__(self)
         
 
-    """Add RegionData to Fd file"""
+    ## AddToBuffer()
+    #
+    #   Add region data to the Buffer
+    #
+    #   @param  self        The object pointer
+    #   @param  Buffer      The buffer generated region data will be put
+    #   @param  BaseAddress base address of region
+    #   @param  BlockSize   block size of region
+    #   @param  BlockNum    How many blocks in region
+    #   @param  ErasePolarity      Flash erase polarity
+    #   @param  VtfDict     VTF objects
+    #   @param  MacroDict   macro value pair
+    #   @retval string      Generated FV file path
+    #
 
     def AddToBuffer(self, Buffer, BaseAddress, BlockSizeList, ErasePolarity, FvBinDict, vtfDict = None, MacroDict = {}):
         Size = self.Size
@@ -46,25 +86,25 @@ class region(RegionClassObject):
                 if RegionData.upper() in FvBinDict.keys():
                     continue
                 
-                fv = None
+                FvObj = None
                 if RegionData.upper() in GenFdsGlobalVariable.FdfParser.Profile.FvDict.keys():
-                    fv = GenFdsGlobalVariable.FdfParser.Profile.FvDict.get(RegionData.upper())
+                    FvObj = GenFdsGlobalVariable.FdfParser.Profile.FvDict.get(RegionData.upper())
                         
-                if fv != None :
+                if FvObj != None :
                     GenFdsGlobalVariable.InfLogger('   Region Name = FV')
                     #
                     # Call GenFv tool
                     #
                     BlockSize = RegionBlockSize
                     BlockNum = RegionBlockNum
-                    if fv.BlockSizeList != []:
-                        if fv.BlockSizeList[0][0] != None:
-                            BlockSize = fv.BlockSizeList[0][0]
-                        if fv.BlockSizeList[0][1] != None:
-                            BlockNum = fv.BlockSizeList[0][1]
+                    if FvObj.BlockSizeList != []:
+                        if FvObj.BlockSizeList[0][0] != None:
+                            BlockSize = FvObj.BlockSizeList[0][0]
+                        if FvObj.BlockSizeList[0][1] != None:
+                            BlockNum = FvObj.BlockSizeList[0][1]
                     self.FvAddress = self.FvAddress + FvBuffer.len                    
                     FvBaseAddress = '0x%x' %self.FvAddress
-                    FileName = fv.AddToBuffer(FvBuffer, FvBaseAddress, BlockSize, BlockNum, ErasePolarity, vtfDict)
+                    FileName = FvObj.AddToBuffer(FvBuffer, FvBaseAddress, BlockSize, BlockNum, ErasePolarity, vtfDict)
                     
                     if FvBuffer.len > Size:
                         raise Exception ("Size of FV (%s) is larger than Region Size 0x%X" % (RegionData, Size))
@@ -132,6 +172,11 @@ class region(RegionClassObject):
             else :
                 Buffer.write(pack(str(Size)+'B', *(int('0x00', 16) for i in range(0, Size))))
 
+    ## BlockSizeOfRegion()
+    #
+    #   @param  BlockSizeList        List of block information
+    #   @retval int                  Block size of region
+    #
     def BlockSizeOfRegion(self, BlockSizeList):
         Offset = 0x00
         BlockSize = 0
@@ -142,10 +187,15 @@ class region(RegionClassObject):
 
             if self.Offset < Offset :
                 BlockSize = item[0]
-                GenFdsGlobalVariable.VerboseLogger ("BlockSize = %s" %BlockSize)
+                GenFdsGlobalVariable.VerboseLogger ("BlockSize = %x" %BlockSize)
                 return BlockSize
         return BlockSize
     
+    ## BlockNumOfRegion()
+    #
+    #   @param  BlockSize            block size of region
+    #   @retval int                  Block number of region
+    #
     def BlockNumOfRegion (self, BlockSize):
         if BlockSize == 0 :
             raise Exception ("Region: %s doesn't in Fd address scope !" %self.Offset)

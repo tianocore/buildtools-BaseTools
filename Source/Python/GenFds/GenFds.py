@@ -1,3 +1,20 @@
+## @file
+# generate flash image
+#
+#  Copyright (c) 2007, Intel Corporation
+#
+#  All rights reserved. This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution.  The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+
+##
+# Import Modules
+#
 from optparse import OptionParser
 import sys
 import os
@@ -13,164 +30,176 @@ import Common.DataType
 from Common import EdkLogger
 from Common.String import *
 
+## Version and Copyright
 versionNumber = "1.0"
 __version__ = "%prog Version " + versionNumber
 __copyright__ = "Copyright (c) 2007, Intel Corporation  All rights reserved."
 
-
+## Tool entrance method
+#
+# This method mainly dispatch specific methods per the command line options.
+# If no error found, return zero value so the caller of this tool can know
+# if it's executed successfully or not.
+#
+#   @retval 0     Tool was successful
+#   @retval 1     Tool failed
+#
 def main():
-    global options
-    options = myOptionParser()
-    global workspace
-    workspace = ""
+    global Options
+    Options = myOptionParser()
+    global Workspace
+    Workspace = ""
     ArchList = None
     try:
-        if options.verbose != None:
+        if Options.verbose != None:
             EdkLogger.SetLevel(EdkLogger.VERBOSE)
             GenFdsGlobalVariable.VerboseMode = True
-        elif options.quiet != None:
+        elif Options.quiet != None:
             EdkLogger.SetLevel(EdkLogger.QUIET)
-        elif options.debug != None:
-            EdkLogger.SetLevel(options.debug)
+        elif Options.debug != None:
+            EdkLogger.SetLevel(Options.debug)
         else:
             EdkLogger.SetLevel(EdkLogger.INFO)
             
-        if (options.workspace == None):
+        if (Options.Workspace == None):
             GenFdsGlobalVariable.ErrorLogger("WORKSPACE not defined.\n  Please set the WORKSPACE environment variable to the location of the EDK II install directory.")
             sys.exit(1)
         else:
-            workspace = options.workspace
-            GenFdsGlobalVariable.WorkSpaceDir = workspace
+            Workspace = Options.Workspace
+            GenFdsGlobalVariable.WorkSpaceDir = Workspace
             if 'EDK_SOURCE' in os.environ.keys():
                 GenFdsGlobalVariable.EdkSourceDir = os.environ['EDK_SOURCE']
-            if (options.debug):
-                GenFdsGlobalVariable.VerboseLogger( "Using Workspace:", workspace)
+            if (Options.debug):
+                GenFdsGlobalVariable.VerboseLogger( "Using Workspace:", Workspace)
     
-    #    Target = Common.TargetTxtClassObject.TargetTxtDict(GenFdsGlobalVariable.WorkSpaceDir)
-    #    GenFdsGlobalVariable.TargetName = Target.TargetTxtDictionary['TARGET'][0]
-    #    GenFdsGlobalVariable.ToolChainTag = Target.TargetTxtDictionary['TOOL_CHAIN_TAG'][0]
-    
-        if (options.filename):
-            fdfFilename = options.filename
-            fdfFilename = GenFdsGlobalVariable.ReplaceWorkspaceMarco(fdfFilename)
+        if (Options.filename):
+            FdfFilename = Options.filename
+            FdfFilename = GenFdsGlobalVariable.ReplaceWorkspaceMarco(FdfFilename)
         else:
             GenFdsGlobalVariable.ErrorLogger("You must specify an input filename")
             sys.exit(1)
     
-        if (options.BuildTarget):
-            GenFdsGlobalVariable.TargetName = options.BuildTarget
+        if (Options.BuildTarget):
+            GenFdsGlobalVariable.TargetName = Options.BuildTarget
         else:
             GenFdsGlobalVariable.ErrorLogger("You must specify a build target")
             sys.exit(1)
             
-        if (options.ToolChain):
-            GenFdsGlobalVariable.ToolChainTag = options.ToolChain
+        if (Options.ToolChain):
+            GenFdsGlobalVariable.ToolChainTag = Options.ToolChain
         else:
             GenFdsGlobalVariable.ErrorLogger("You must specify a tool chain tag")
             sys.exit(1)
             
-        if fdfFilename[0:2] == '..':
-            fdfFilename = os.path.realpath(fdfFilename)
-        if fdfFilename[1] != ':':
-            fdfFilename = os.path.join(GenFdsGlobalVariable.WorkSpaceDir, fdfFilename)
+        if FdfFilename[0:2] == '..':
+            FdfFilename = os.path.realpath(FdfFilename)
+        if FdfFilename[1] != ':':
+            FdfFilename = os.path.join(GenFdsGlobalVariable.WorkSpaceDir, FdfFilename)
                 
-        if not os.path.exists(fdfFilename):
-            GenFdsGlobalVariable.ErrorLogger ("File %s not found" % (fdfFilename))
+        if not os.path.exists(FdfFilename):
+            GenFdsGlobalVariable.ErrorLogger ("File %s not found" % (FdfFilename))
             sys.exit(1)
     
-        if (options.activePlatform):
-            activePlatform = options.activePlatform
-            activePlatform = GenFdsGlobalVariable.ReplaceWorkspaceMarco(activePlatform)
+        if (Options.activePlatform):
+            ActivePlatform = Options.activePlatform
+            ActivePlatform = GenFdsGlobalVariable.ReplaceWorkspaceMarco(ActivePlatform)
     
-            if activePlatform[0:2] == '..':
-                activePlatform = os.path.realpath(activePlatform)
+            if ActivePlatform[0:2] == '..':
+                ActivePlatform = os.path.realpath(ActivePlatform)
     
-            if activePlatform[1] != ':':
-                activePlatform = os.path.join(GenFdsGlobalVariable.WorkSpaceDir, activePlatform)
+            if ActivePlatform[1] != ':':
+                ActivePlatform = os.path.join(GenFdsGlobalVariable.WorkSpaceDir, ActivePlatform)
     
-            if not os.path.exists(activePlatform)  :
+            if not os.path.exists(ActivePlatform)  :
                 raise Exception ("ActivePlatform doesn't exist!")
             
-            if activePlatform.find(workspace) == -1:
+            if ActivePlatform.find(Workspace) == -1:
                 raise Exception ("ActivePlatform doesn't exist in Workspace!")
             
-            activePlatform = activePlatform.replace(workspace, '')
-            if len(activePlatform) > 0 :
-                if activePlatform[0] == '\\' or activePlatform[0] == '/':
-                    activePlatform = activePlatform[1:]
+            ActivePlatform = ActivePlatform.replace(Workspace, '')
+            if len(ActivePlatform) > 0 :
+                if ActivePlatform[0] == '\\' or ActivePlatform[0] == '/':
+                    ActivePlatform = ActivePlatform[1:]
             else:
                 raise Exception ("ActivePlatform doesn't exist!")
         else :
             GenFdsGlobalVariable.ErrorLogger("You must specify an active platform")
             sys.exit(1)
     
-        GenFdsGlobalVariable.ActivePlatform = NormPath(activePlatform)
+        GenFdsGlobalVariable.ActivePlatform = NormPath(ActivePlatform)
             
-        if (options.archList) :
-            archList = options.archList.split(',')
+        if (Options.archList) :
+            ArchList = Options.archList.split(',')
         else:
             GenFdsGlobalVariable.ErrorLogger("You must specify a build ARCH")
             sys.exit(1)
         
             
-        """call workspace build create database"""
-        os.environ["WORKSPACE"] = workspace
-        buildWorkSpace = Common.EdkIIWorkspaceBuild.WorkspaceBuild(GenFdsGlobalVariable.ActivePlatform, GenFdsGlobalVariable.WorkSpaceDir)
+        """call Workspace build create database"""
+        os.environ["WORKSPACE"] = Workspace
+        BuildWorkSpace = Common.EdkIIWorkspaceBuild.WorkspaceBuild(GenFdsGlobalVariable.ActivePlatform, GenFdsGlobalVariable.WorkSpaceDir)
             
-        outputDirFromDsc = buildWorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Defines.DefinesDictionary['OUTPUT_DIRECTORY'][0]
-        GenFdsGlobalVariable.OutputDirFromDsc = NormPath(outputDirFromDsc)
+        OutputDirFromDsc = BuildWorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Defines.DefinesDictionary['OUTPUT_DIRECTORY'][0]
+        GenFdsGlobalVariable.OutputDirFromDsc = NormPath(OutputDirFromDsc)
         
-        if (options.outputDir):
-            outputDir = options.outputDir
-            outputDir = GenFdsGlobalVariable.ReplaceWorkspaceMarco(outputDir)
+        if (Options.outputDir):
+            OutputDir = Options.outputDir
+            OutputDir = GenFdsGlobalVariable.ReplaceWorkspaceMarco(OutputDir)
         else:
-            outputDir = os.path.join(GenFdsGlobalVariable.OutputDirFromDsc, GenFdsGlobalVariable.TargetName + '_' + GenFdsGlobalVariable.ToolChainTag)        
+            OutputDir = os.path.join(GenFdsGlobalVariable.OutputDirFromDsc, GenFdsGlobalVariable.TargetName + '_' + GenFdsGlobalVariable.ToolChainTag)        
     
-        if outputDir[0:2] == '..':
-            outputDir = os.path.realpath(outputDir)
+        if OutputDir[0:2] == '..':
+            OutputDir = os.path.realpath(OutputDir)
             
-        if outputDir[1] != ':':
-            outputDir = os.path.join (GenFdsGlobalVariable.WorkSpaceDir, outputDir)
+        if OutputDir[1] != ':':
+            OutputDir = os.path.join (GenFdsGlobalVariable.WorkSpaceDir, OutputDir)
     
-        if not os.path.exists(outputDir):
-            GenFdsGlobalVariable.ErrorLogger ("Directory %s not found" % (outputDir))
+        if not os.path.exists(OutputDir):
+            GenFdsGlobalVariable.ErrorLogger ("Directory %s not found" % (OutputDir))
             sys.exit(1)
     
-        """ Parse Fdf file, has to place after build workspace as FDF may contain macros from DSC file """
+        """ Parse Fdf file, has to place after build Workspace as FDF may contain macros from DSC file """
         try:
-            fdfParser = FdfParser.FdfParser(fdfFilename)
-            fdfParser.ParseFile()
+            FdfParser = FdfParser.FdfParser(FdfFilename)
+            FdfParser.ParseFile()
         except FdfParser.Warning, X:
             EdkLogger.error(X.ToolName, BuildToolError.GENFDS_ERROR, X.message, X.FileName, X.LineNumber, RaiseError = False)    
             sys.exit(1)
             
-        if fdfParser.CycleReferenceCheck():
+        if FdfParser.CycleReferenceCheck():
             GenFdsGlobalVariable.InfLogger ("ERROR: Cycle Reference Detected in FDF file")
             sys.exit(1)
         
-        if (options.uiFdName) :
-            if options.uiFdName.upper() in fdfParser.Profile.FdDict.keys():
-                GenFds.currentFd = options.uiFdName
+        if (Options.uiFdName) :
+            if Options.uiFdName.upper() in FdfParser.Profile.FdDict.keys():
+                GenFds.currentFd = Options.uiFdName
             else:
                 GenFdsGlobalVariable.ErrorLogger("No such an FD in FDF file.")
                 sys.exit(1)
     
-        if (options.uiFvName) :
-            if options.uiFvName.upper() in fdfParser.Profile.FvDict.keys():
-                GenFds.currentFv = options.uiFvName
+        if (Options.uiFvName) :
+            if Options.uiFvName.upper() in FdfParser.Profile.FvDict.keys():
+                GenFds.currentFv = Options.uiFvName
             else:
                 GenFdsGlobalVariable.ErrorLogger("No such an FV in FDF file.")
                 sys.exit(1)
             
-        buildWorkSpace.GenBuildDatabase({}, fdfParser.Profile.InfList)
+        BuildWorkSpace.GenBuildDatabase({}, FdfParser.Profile.InfList)
         
         """Call GenFds"""
-        GenFds.GenFd(outputDir, fdfParser, buildWorkSpace, archList)
+        GenFds.GenFd(OutputDir, FdfParser, BuildWorkSpace, ArchList)
         print "\nDone!\n"
     except Exception, X:
         EdkLogger.error("GenFds", BuildToolError.GENFDS_ERROR, X, RaiseError = False)
         sys.exit(1)
-    
+
+## Parse command line options
+#
+# Using standard Python module optparse to parse command line option of this tool.
+#
+#   @retval Opt   A optparse.Values object containing the parsed options
+#   @retval Args  Target of build command
+#    
 def myOptionParser():
     usage = "%prog [options] -f input_file -a arch_list -b build_target -p active_platform -t tool_chain_tag"
     Parser = OptionParser(usage=usage,description=__copyright__,version="%prog " + str(versionNumber))
@@ -180,114 +209,131 @@ def myOptionParser():
     Parser.add_option("-v", "--verbose", action="store_true", type=None, help="Turn on verbose output with informational messages printed.")
     Parser.add_option("-d", "--debug", action="store", type="int", help="Enable debug messages at specified level.")
     Parser.add_option("-p", "--platform", dest="activePlatform", help="Set the Active platform")
-    Parser.add_option("-w", "--workspace", dest="workspace", default=str(os.environ.get('WORKSPACE')), help="Set the WORKSPACE")
+    Parser.add_option("-w", "--workspace", dest="Workspace", default=str(os.environ.get('WORKSPACE')), help="Set the WORKSPACE")
     Parser.add_option("-o", "--outputDir", dest="outputDir", help="Name of Build Output directory")
     Parser.add_option("-r", "--rom_image", dest="uiFdName", help="Build the image using the [FD] section named by FdUiName.")
     Parser.add_option("-i", "--FvImage", dest="uiFvName", help="Buld the FV image using the [FV] section named by UiFvName")
     Parser.add_option("-b", "--buildtarget", action="store", type="choice", choices=['DEBUG','RELEASE'], dest="BuildTarget", help="BuildTarget is one of list: DEBUG, RELEASE.")
     Parser.add_option("-t", "--tagname", action="store", type="string", dest="ToolChain", help="Using the Tool Chain Tagname to build the platform.")
-    (options, args) = Parser.parse_args()
-    return options
+    (Options, args) = Parser.parse_args()
+    return Options
 
-
+## The class implementing the EDK2 flash image generation process
+#
+#   This process includes:
+#       1. Collect workspace information, includes platform and module information
+#       2. Call methods of Fd class to generate FD
+#       3. Call methods of Fv class to generate FV that not belong to FD
+#
 class GenFds :
     FdfParsef = None
-    FvBinDict = {}      # FvName in Fdf, FvBinFile
+    # FvName in FDF, FvBinFile name
+    FvBinDict = {}
     OnlyGenerateThisFd = None
     OnlyGenerateThisFv = None
-#    CurrentFdName = None
-#    CurrentFvName = None
     
+    ## GenFd()
+    #
+    #   @param  OutputDir           Output directory
+    #   @param  FdfParser           FDF contents parser
+    #   @param  Workspace           The directory of workspace
+    #   @param  ArchList            The Arch list of platform
+    #
     def GenFd (OutputDir, FdfParser, WorkSpace, ArchList):
         GenFdsGlobalVariable.SetDir (OutputDir, FdfParser, WorkSpace, ArchList)
         
-        """Set Default Rule! Hard code here will be move"""
-        verSection1 = EfiSection()
-        verSection1.BuildNum = "$(BUILD_NUMBER)"
-        verSection1.SectionType = "VERSION"
-        verSection1.Filename = "$(INF_VERSION)"
-        verSection1.VersionNum = "$(INF_VERSION)"
+        #Set Default Rule
+        VerSection1 = EfiSection()
+        VerSection1.BuildNum = "$(BUILD_NUMBER)"
+        VerSection1.SectionType = "VERSION"
+        VerSection1.Filename = "$(INF_VERSION)"
+        VerSection1.VersionNum = "$(INF_VERSION)"
         
-        uiSection1 = EfiSection()
-        uiSection1.SectionType = 'UI'
-        uiSection1.Filename = "$(INF_VERSION)"
-        uiSection1.VersionNum = "$(INF_VERSION)"
+        UiSection1 = EfiSection()
+        UiSection1.SectionType = 'UI'
+        UiSection1.Filename = "$(INF_VERSION)"
+        UiSection1.VersionNum = "$(INF_VERSION)"
 
-        dataSection = EfiSection()
-        dataSection.SectionType = "PE32"
-        dataSection.Filename = "$(INF_OUTPUT)/$(MODULE_NAME).efi"
+        DataSection = EfiSection()
+        DataSection.SectionType = "PE32"
+        DataSection.Filename = "$(INF_OUTPUT)/$(MODULE_NAME).efi"
 
-        ruleComplexFile1 = RuleComplexFile.RuleComplexFile()
-        ruleComplexFile1.Alignment = 32
-        ruleComplexFile1.Arch = 'COMMON'
-        ruleComplexFile1.CheckSum = True
-        ruleComplexFile1.Fixed = True
-        ruleComplexFile1.FvType = "APPLICATION"
-        ruleComplexFile1.ModuleType = "UEFI_APPLICATION"
-        ruleComplexFile1.NameGuid = "$(MODULE_NAME)"
-        ruleComplexFile1.TemplateName = ''
-        ruleComplexFile1.SectionList = [uiSection1, verSection1, dataSection]
-        GenFdsGlobalVariable.SetDefaultRule(ruleComplexFile1)
+        RuleComplexFile1 = RuleComplexFile.RuleComplexFile()
+        RuleComplexFile1.Alignment = 32
+        RuleComplexFile1.Arch = 'COMMON'
+        RuleComplexFile1.CheckSum = True
+        RuleComplexFile1.Fixed = True
+        RuleComplexFile1.FvType = "APPLICATION"
+        RuleComplexFile1.ModuleType = "UEFI_APPLICATION"
+        RuleComplexFile1.NameGuid = "$(MODULE_NAME)"
+        RuleComplexFile1.TemplateName = ''
+        RuleComplexFile1.SectionList = [UiSection1, VerSection1, DataSection]
+        GenFdsGlobalVariable.SetDefaultRule(RuleComplexFile1)
 
         GenFdsGlobalVariable.VerboseLogger("   Gen Fd  !")
         if GenFds.OnlyGenerateThisFd != None and GenFds.OnlyGenerateThisFd.upper() in GenFdsGlobalVariable.FdfParser.Profile.FdDict.keys():
-            fd = GenFdsGlobalVariable.FdfParser.Profile.FdDict.get(GenFds.OnlyGenerateThisFd.upper())
-            if fd != None:
-                fd.GenFd(GenFds.FvBinDict)
+            FdObj = GenFdsGlobalVariable.FdfParser.Profile.FdDict.get(GenFds.OnlyGenerateThisFd.upper())
+            if FdObj != None:
+                FdObj.GenFd(GenFds.FvBinDict)
         elif GenFds.OnlyGenerateThisFv == None:
-            for item in GenFdsGlobalVariable.FdfParser.Profile.FdDict.keys():
-                fd = GenFdsGlobalVariable.FdfParser.Profile.FdDict[item]
-                fd.GenFd(GenFds.FvBinDict)
+            for FdName in GenFdsGlobalVariable.FdfParser.Profile.FdDict.keys():
+                FdObj = GenFdsGlobalVariable.FdfParser.Profile.FdDict[FdName]
+                FdObj.GenFd(GenFds.FvBinDict)
             
         GenFdsGlobalVariable.VerboseLogger(" Gen FV ! ")
         if GenFds.OnlyGenerateThisFv != None and GenFds.OnlyGenerateThisFv.upper() in GenFdsGlobalVariable.FdfParser.Profile.FvDict.keys():
-            fv = GenFdsGlobalVariable.FdfParser.Profile.FvDict.get(GenFds.OnlyGenerateThisFv.upper())
-            if fv != None:
+            FvObj = GenFdsGlobalVariable.FdfParser.Profile.FvDict.get(GenFds.OnlyGenerateThisFv.upper())
+            if FvObj != None:
                 Buffer = StringIO.StringIO()
                 # Get FV base Address
-                fv.AddToBuffer(Buffer, None, GenFds.GetFvBlockSize(fv))
+                FvObj.AddToBuffer(Buffer, None, GenFds.GetFvBlockSize(FvObj))
                 Buffer.close()
                 return
         elif GenFds.OnlyGenerateThisFd == None:
             for FvName in GenFdsGlobalVariable.FdfParser.Profile.FvDict.keys():          
                 Buffer = StringIO.StringIO('')
-                fv = GenFdsGlobalVariable.FdfParser.Profile.FvDict[FvName]
+                FvObj = GenFdsGlobalVariable.FdfParser.Profile.FvDict[FvName]
                 # Get FV base Address
-                fv.AddToBuffer(Buffer, None, GenFds.GetFvBlockSize(fv))
+                FvObj.AddToBuffer(Buffer, None, GenFds.GetFvBlockSize(FvObj))
                 Buffer.close()
     
         if GenFds.OnlyGenerateThisFv == None and GenFds.OnlyGenerateThisFd == None:
             GenFdsGlobalVariable.VerboseLogger(" Gen Capsule !")
-            for capsule in GenFdsGlobalVariable.FdfParser.Profile.CapsuleList:
-                capsule.GenCapsule()
+            for CapsuleObj in GenFdsGlobalVariable.FdfParser.Profile.CapsuleList:
+                CapsuleObj.GenCapsule()
 
-    def GetFvBlockSize(fv):
-        fd = None
+    ## GetFvBlockSize()
+    #
+    #   @param  FvObj           Whose block size to get
+    #   @retval int             Block size value
+    #
+    def GetFvBlockSize(FvObj):
+        FdObj = None
         if GenFds.OnlyGenerateThisFd != None and GenFds.OnlyGenerateThisFd.upper() in GenFdsGlobalVariable.FdfParser.Profile.FdDict.keys():
-            fd = GenFdsGlobalVariable.FdfParser.Profile.FdDict[GenFds.OnlyGenerateThisFd.upper()]
-        if fd == None:
-            for elementFd in GenFdsGlobalVariable.FdfParser.Profile.FdDict.values():
-                for elementRegion in elementFd.RegionList:
-                    if elementRegion.RegionType == 'FV':
-                        for elementRegionData in elementRegion.RegionDataList:
-                            if elementRegionData != None and elementRegionData.upper() == fv.UiFvName:
-                                if fv.BlockSizeList != []:
-                                    return fv.BlockSizeList[0][0]
+            FdObj = GenFdsGlobalVariable.FdfParser.Profile.FdDict[GenFds.OnlyGenerateThisFd.upper()]
+        if FdObj == None:
+            for ElementFd in GenFdsGlobalVariable.FdfParser.Profile.FdDict.values():
+                for ElementRegion in ElementFd.RegionList:
+                    if ElementRegion.RegionType == 'FV':
+                        for ElementRegionData in ElementRegion.RegionDataList:
+                            if ElementRegionData != None and ElementRegionData.upper() == FvObj.UiFvName:
+                                if FvObj.BlockSizeList != []:
+                                    return FvObj.BlockSizeList[0][0]
                                 else:
-                                    return elementRegion.BlockSizeOfRegion(elementFd.BlockSizeList)
+                                    return ElementRegion.BlockSizeOfRegion(ElementFd.BlockSizeList)
             return 0x10000
         else:
-            for elementRegion in fd.RegionList:
-                    if elementRegion.RegionType == 'FV':
-                        for elementRegionData in elementRegion.RegionDataList:
-                            if elementRegionData != None and elementRegionData.upper() == fv.UiFvName:
-                                if fv.BlockSizeList != []:
-                                    return fv.BlockSizeList[0][0]
+            for ElementRegion in FdObj.RegionList:
+                    if ElementRegion.RegionType == 'FV':
+                        for ElementRegionData in ElementRegion.RegionDataList:
+                            if ElementRegionData != None and ElementRegionData.upper() == FvObj.UiFvName:
+                                if FvObj.BlockSizeList != []:
+                                    return FvObj.BlockSizeList[0][0]
                                 else:
-                                    return elementRegion.BlockSizeOfRegion(elementFd.BlockSizeList)
+                                    return ElementRegion.BlockSizeOfRegion(ElementFd.BlockSizeList)
             return 0x10000
         
-    """Define GenFd as static function"""
+    ##Define GenFd as static function
     GenFd = staticmethod(GenFd)
     GetFvBlockSize = staticmethod(GetFvBlockSize)
 

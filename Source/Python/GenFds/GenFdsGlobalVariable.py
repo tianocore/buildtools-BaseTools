@@ -1,14 +1,35 @@
+## @file
+# Global variables for GenFds
+#
+#  Copyright (c) 2007, Intel Corporation
+#
+#  All rights reserved. This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution.  The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+
+##
+# Import Modules
+#
 import os
 import sys
 import subprocess
 from Common import BuildToolError
 from Common import EdkLogger
 
+## Global variables
+#
+#
 class GenFdsGlobalVariable:
     FvDir = ''
     OuputDir = ''
     BinDir = ''
-    FfsDir = ''      # FvDir + os.sep + 'Ffs'
+    # will be FvDir + os.sep + 'Ffs'
+    FfsDir = ''
     FdfParser = None
     LibDir = ''
     WorkSpace = None
@@ -26,9 +47,13 @@ class GenFdsGlobalVariable:
     SharpCounter = 0
     SharpNumberPerLine = 40
 
-#    def ExtendMarco (String):
-#        return String
-    
+    ## SetDir()
+    #
+    #   @param  OutputDir           Output directory
+    #   @param  FdfParser           FDF contents parser
+    #   @param  Workspace           The directory of workspace
+    #   @param  ArchList            The Arch list of platform
+    #
     def SetDir (OutputDir, FdfParser, WorkSpace, ArchList):
         GenFdsGlobalVariable.VerboseLogger( "GenFdsGlobalVariable.OuputDir :%s" %OutputDir)
         GenFdsGlobalVariable.OuputDir = os.path.normpath(OutputDir)
@@ -41,11 +66,19 @@ class GenFdsGlobalVariable:
             
         if not os.path.exists(GenFdsGlobalVariable.FvDir) :
             os.makedirs(GenFdsGlobalVariable.FvDir)
-        
+    
+    ## SetDefaultRule()
+    #
+    #   @param  Rule           Rule object to generate FFS
+    #    
     def SetDefaultRule (Rule) :
         GenFdsGlobalVariable.DefaultRule = Rule
 
-    def ReplaceWorkspaceMarco(String):
+    ## ReplaceWorkspaceMacro()
+    #
+    #   @param  String           String that may contain macro
+    #
+    def ReplaceWorkspaceMacro(String):
         Str = String.replace('$(WORKSPACE)', GenFdsGlobalVariable.WorkSpaceDir)
         if os.path.exists(Str):
             Str = os.path.realpath(Str)
@@ -87,6 +120,11 @@ class GenFdsGlobalVariable:
     def DebugLogger (Level, msg):
         EdkLogger.debug(Level, msg)
 
+    ## ReplaceWorkspaceMacro()
+    #
+    #   @param  Str           String that may contain macro
+    #   @param  MacroDict     Dictionary that contains macro value pair
+    #
     def MacroExtend (Str, MacroDict = {}):
         if Str == None :
             return None
@@ -98,9 +136,6 @@ class GenFdsGlobalVariable:
                 '$(TOOL_CHAIN_TAG)' : GenFdsGlobalVariable.ToolChainTag
                }
         if MacroDict != None  and len (MacroDict) != 0:
-#            for marco in MarcoDict.keys():
-#                key = '$(' + marco + ')'
-#                Dict[key] = MarcoDict.get(marco)
             Dict.update(MacroDict)
 
         for key in Dict.keys():
@@ -118,9 +153,8 @@ class GenFdsGlobalVariable:
 
 
     SetDir = staticmethod(SetDir)
-#    ExtendMarco = staticmethod(ExtendMarco)
     SetDefaultRule = staticmethod(SetDefaultRule)
-    ReplaceWorkspaceMarco = staticmethod(ReplaceWorkspaceMarco)
+    ReplaceWorkspaceMacro = staticmethod(ReplaceWorkspaceMacro)
     CallExternalTool = staticmethod(CallExternalTool)
     VerboseLogger = staticmethod(VerboseLogger)
     InfLogger = staticmethod(InfLogger)
