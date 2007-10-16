@@ -52,10 +52,10 @@ class VerSection (VerSectionClassObject):
         # Prepare the parameter of GenSection
         #
         if FfsInf != None:
-            self.Alignment = FfsInf.__ExtendMarco__(self.Alignment)
-            self.BuildNum = FfsInf.__ExtendMarco__(self.BuildNum)
-            self.StringData = FfsInf.__ExtendMarco__(self.StringData)
-            self.FileName = FfsInf.__ExtendMarco__(self.FileName)
+            self.Alignment = FfsInf.__ExtendMacro__(self.Alignment)
+            self.BuildNum = FfsInf.__ExtendMacro__(self.BuildNum)
+            self.StringData = FfsInf.__ExtendMacro__(self.StringData)
+            self.FileName = FfsInf.__ExtendMacro__(self.FileName)
             
         OutputFile = os.path.join(OutputPath,
                                   ModuleName + 'SEC' + SecNum + Ffs.SectionSuffix.get('VERSION'))
@@ -71,7 +71,7 @@ class VerSection (VerSectionClassObject):
         if self.StringData != None:
              StringData = self.StringData
         elif self.FileName != None:
-            FileNameStr = GenFdsGlobalVariable.ReplaceWorkspaceMarco(self.FileName)
+            FileNameStr = GenFdsGlobalVariable.ReplaceWorkspaceMacro(self.FileName)
             FileNameStr = GenFdsGlobalVariable.MacroExtend(FileNameStr, Dict)
             FileObj = open (FileNameStr, 'r')
             StringData = FileObj.read()

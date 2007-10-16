@@ -58,8 +58,8 @@ class CompressSection (CompressSectionClassObject) :
         # Generate all section
         #
         if FfsInf != None:
-            self.CompType = FfsInf.__ExtendMarco__(self.CompType)
-            self.Alignment = FfsInf.__ExtendMarco__(self.Alignment)
+            self.CompType = FfsInf.__ExtendMacro__(self.CompType)
+            self.Alignment = FfsInf.__ExtendMacro__(self.Alignment)
             
         SectFiles = ''
         Index = 0

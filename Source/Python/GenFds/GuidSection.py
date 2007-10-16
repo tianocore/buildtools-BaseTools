@@ -56,9 +56,9 @@ class GuidSection(GuidSectionClassObject) :
         self.KeyStringList = KeyStringList
         
         if FfsInf != None:
-            self.Alignment = FfsInf.__ExtendMarco__(self.Alignment)
-            self.NameGuid = FfsInf.__ExtendMarco__(self.NameGuid)
-            self.SectionType = FfsInf.__ExtendMarco__(self.SectionType)
+            self.Alignment = FfsInf.__ExtendMacro__(self.Alignment)
+            self.NameGuid = FfsInf.__ExtendMacro__(self.NameGuid)
+            self.SectionType = FfsInf.__ExtendMacro__(self.SectionType)
             
         SectFile = ''
         Index = 0

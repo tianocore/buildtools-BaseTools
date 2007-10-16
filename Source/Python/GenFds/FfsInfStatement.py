@@ -170,14 +170,16 @@ class FfsInfStatement(FfsInfStatementClassObject):
     #   @retval Rule        Rule object
     # 
     def __GetRule__ (self) :
-        CurrentArchList = self.CurrentArch
-        if CurrentArchList == None:
+        CurrentArchList = []
+        if self.CurrentArch == None:
             CurrentArchList = ['common']
+        else:
+            CurrentArchList.append(self.CurrentArch)
         
-        for currentArch in CurrentArchList:
+        for CurrentArch in CurrentArchList:
             RuleName = 'RULE'              + \
                        '.'                 + \
-                       currentArch.upper() + \
+                       CurrentArch.upper() + \
                        '.'                 + \
                        self.ModuleType.upper()
             if self.Rule != None:
@@ -295,7 +297,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         if self.CurrentArch != None:
             Arch = self.CurrentArch
         
-        OutputPath = os.path.join(GenFdsGlobalVariable.OuputDir,
+        OutputPath = os.path.join(GenFdsGlobalVariable.OutputDir,
                                   Arch ,
                                   ModulePath,
                                   FileName,

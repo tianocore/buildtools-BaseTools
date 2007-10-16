@@ -37,13 +37,13 @@ class Vtf (VtfClassObject):
     #   Generate VTF
     #
     #   @param  self        The object pointer
-    #   @param  FdAddDict   dictionary contains FV name and its base address
+    #   @param  FdAddressDict   dictionary contains FV name and its base address
     #   @retval Dict        FV and corresponding VTF file name
     #
-    def GenVtf(self, fdAddDict) :
+    def GenVtf(self, FdAddressDict) :
         self.GenBsfInf()
         OutputFile = os.path.join(GenFdsGlobalVariable.FvDir, self.UiName + '.Vtf')
-        BaseAddArg = self.GetBaseAddressArg(fdAddDict)
+        BaseAddArg = self.GetBaseAddressArg(FdAddressDict)
         OutputArg, VtfRawDict = self.GenOutputArg()
         
         Cmd = "GenVtf "        + \
@@ -114,7 +114,7 @@ class Vtf (VtfClassObject):
             
             BinPath = ComponentObj.CompBin
             if BinPath != '-':
-                BinPath = GenFdsGlobalVariable.MacroExtend(GenFdsGlobalVariable.ReplaceWorkspaceMarco(BinPath))
+                BinPath = GenFdsGlobalVariable.MacroExtend(GenFdsGlobalVariable.ReplaceWorkspaceMacro(BinPath))
             BsfInf.writelines ("COMP_BIN"        + \
                                " = "             + \
                                BinPath + \
@@ -122,7 +122,7 @@ class Vtf (VtfClassObject):
             
             SymPath = ComponentObj.CompSym
             if SymPath != '-':
-                SymPath = GenFdsGlobalVariable.MacroExtend(GenFdsGlobalVariable.ReplaceWorkspaceMarco(SymPath))
+                SymPath = GenFdsGlobalVariable.MacroExtend(GenFdsGlobalVariable.ReplaceWorkspaceMacro(SymPath))
             BsfInf.writelines ("COMP_SYM"        + \
                                " = "             + \
                                SymPath + \
@@ -142,12 +142,12 @@ class Vtf (VtfClassObject):
     #   @param  self        The object pointer
     #
     def GetFvList(self):
-        fvList = []
+        FvList = []
         for component in self.ComponentStatementList :
-            if component.CompLoc.upper() != 'NONE' and not (component.CompLoc.upper() in fvList):
-                fvList.append(component.CompLoc.upper())
+            if component.CompLoc.upper() != 'NONE' and not (component.CompLoc.upper() in FvList):
+                FvList.append(component.CompLoc.upper())
                 
-        return fvList
+        return FvList
 
     ## GetBaseAddressArg() method
     #

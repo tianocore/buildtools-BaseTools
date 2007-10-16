@@ -74,7 +74,7 @@ def main():
     
         if (Options.filename):
             FdfFilename = Options.filename
-            FdfFilename = GenFdsGlobalVariable.ReplaceWorkspaceMarco(FdfFilename)
+            FdfFilename = GenFdsGlobalVariable.ReplaceWorkspaceMacro(FdfFilename)
         else:
             GenFdsGlobalVariable.ErrorLogger("You must specify an input filename")
             sys.exit(1)
@@ -102,7 +102,7 @@ def main():
     
         if (Options.activePlatform):
             ActivePlatform = Options.activePlatform
-            ActivePlatform = GenFdsGlobalVariable.ReplaceWorkspaceMarco(ActivePlatform)
+            ActivePlatform = GenFdsGlobalVariable.ReplaceWorkspaceMacro(ActivePlatform)
     
             if ActivePlatform[0:2] == '..':
                 ActivePlatform = os.path.realpath(ActivePlatform)
@@ -144,7 +144,7 @@ def main():
         
         if (Options.outputDir):
             OutputDir = Options.outputDir
-            OutputDir = GenFdsGlobalVariable.ReplaceWorkspaceMarco(OutputDir)
+            OutputDir = GenFdsGlobalVariable.ReplaceWorkspaceMacro(OutputDir)
         else:
             OutputDir = os.path.join(GenFdsGlobalVariable.OutputDirFromDsc, GenFdsGlobalVariable.TargetName + '_' + GenFdsGlobalVariable.ToolChainTag)        
     
@@ -160,34 +160,34 @@ def main():
     
         """ Parse Fdf file, has to place after build Workspace as FDF may contain macros from DSC file """
         try:
-            FdfParser = FdfParser.FdfParser(FdfFilename)
-            FdfParser.ParseFile()
+            FdfParserObj = FdfParser.FdfParser(FdfFilename)
+            FdfParserObj.ParseFile()
         except FdfParser.Warning, X:
             EdkLogger.error(X.ToolName, BuildToolError.GENFDS_ERROR, X.message, X.FileName, X.LineNumber, RaiseError = False)    
             sys.exit(1)
             
-        if FdfParser.CycleReferenceCheck():
+        if FdfParserObj.CycleReferenceCheck():
             GenFdsGlobalVariable.InfLogger ("ERROR: Cycle Reference Detected in FDF file")
             sys.exit(1)
         
         if (Options.uiFdName) :
-            if Options.uiFdName.upper() in FdfParser.Profile.FdDict.keys():
+            if Options.uiFdName.upper() in FdfParserObj.Profile.FdDict.keys():
                 GenFds.currentFd = Options.uiFdName
             else:
                 GenFdsGlobalVariable.ErrorLogger("No such an FD in FDF file.")
                 sys.exit(1)
     
         if (Options.uiFvName) :
-            if Options.uiFvName.upper() in FdfParser.Profile.FvDict.keys():
+            if Options.uiFvName.upper() in FdfParserObj.Profile.FvDict.keys():
                 GenFds.currentFv = Options.uiFvName
             else:
                 GenFdsGlobalVariable.ErrorLogger("No such an FV in FDF file.")
                 sys.exit(1)
             
-        BuildWorkSpace.GenBuildDatabase({}, FdfParser.Profile.InfList)
+        BuildWorkSpace.GenBuildDatabase({}, FdfParserObj.Profile.InfList)
         
         """Call GenFds"""
-        GenFds.GenFd(OutputDir, FdfParser, BuildWorkSpace, ArchList)
+        GenFds.GenFd(OutputDir, FdfParserObj, BuildWorkSpace, ArchList)
         print "\nDone!\n"
     except Exception, X:
         EdkLogger.error("GenFds", BuildToolError.GENFDS_ERROR, X, RaiseError = False)

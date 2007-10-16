@@ -80,5 +80,5 @@ class CapsuleFv (CapsuleData):
                 return FvFile
             
         else:
-            FvFile = GenFdsGlobalVariable.ReplaceWorkspaceMarco(self.FvName)
+            FvFile = GenFdsGlobalVariable.ReplaceWorkspaceMacro(self.FvName)
             return FvFile

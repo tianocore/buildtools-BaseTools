@@ -66,7 +66,7 @@ class FileStatements (FileStatementsClassObject) :
             SectionFiles = ' -i ' + FileName
         
         elif self.FileName != None:
-            self.FileName = GenFdsGlobalVariable.ReplaceWorkspaceMarco(self.FileName)
+            self.FileName = GenFdsGlobalVariable.ReplaceWorkspaceMacro(self.FileName)
             SectionFiles = ' -i ' + GenFdsGlobalVariable.MacroExtend(self.FileName, Dict)
             
         else:

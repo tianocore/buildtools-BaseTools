@@ -52,11 +52,11 @@ class DataSection (DataSectionClassObject):
         # Prepare the parameter of GenSection
         #
         if FfsInf != None:
-            self.Alignment = FfsInf.__ExtendMarco__(self.Alignemnt)
-            self.SecType = FfsInf.__ExtendMarco__(self.SecType)
-            self.SectFileName = FfsInf.__ExtendMarco__(self.SectFileName)
+            self.Alignment = FfsInf.__ExtendMacro__(self.Alignemnt)
+            self.SecType = FfsInf.__ExtendMacro__(self.SecType)
+            self.SectFileName = FfsInf.__ExtendMacro__(self.SectFileName)
         else:
-            self.SectFileName = GenFdsGlobalVariable.ReplaceWorkspaceMarco(self.SectFileName)
+            self.SectFileName = GenFdsGlobalVariable.ReplaceWorkspaceMacro(self.SectFileName)
             
         self.SectFileName = GenFdsGlobalVariable.MacroExtend(self.SectFileName, Dict)
         

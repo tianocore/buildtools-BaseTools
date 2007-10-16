@@ -26,7 +26,7 @@ from Common import EdkLogger
 #
 class GenFdsGlobalVariable:
     FvDir = ''
-    OuputDir = ''
+    OutputDir = ''
     BinDir = ''
     # will be FvDir + os.sep + 'Ffs'
     FfsDir = ''
@@ -43,6 +43,7 @@ class GenFdsGlobalVariable:
     ArchList = None
     VtfDict = {}
     ActivePlatform = None
+    FvAddressFileName = ''
     VerboseMode = False
     SharpCounter = 0
     SharpNumberPerLine = 40
@@ -55,17 +56,51 @@ class GenFdsGlobalVariable:
     #   @param  ArchList            The Arch list of platform
     #
     def SetDir (OutputDir, FdfParser, WorkSpace, ArchList):
-        GenFdsGlobalVariable.VerboseLogger( "GenFdsGlobalVariable.OuputDir :%s" %OutputDir)
-        GenFdsGlobalVariable.OuputDir = os.path.normpath(OutputDir)
+        GenFdsGlobalVariable.VerboseLogger( "GenFdsGlobalVariable.OutputDir :%s" %OutputDir)
+        GenFdsGlobalVariable.OutputDir = os.path.normpath(OutputDir)
         GenFdsGlobalVariable.FdfParser = FdfParser
         GenFdsGlobalVariable.WorkSpace = WorkSpace
-        GenFdsGlobalVariable.FvDir = os.path.join(GenFdsGlobalVariable.OuputDir, 'Fv')
-        GenFdsGlobalVariable.FfsDir = os.path.join(GenFdsGlobalVariable.FvDir, 'Ffs')
-        if ArchList != None:
-            GenFdsGlobalVariable.ArchList = ArchList
-            
+        GenFdsGlobalVariable.FvDir = os.path.join(GenFdsGlobalVariable.OutputDir, 'FV')
         if not os.path.exists(GenFdsGlobalVariable.FvDir) :
             os.makedirs(GenFdsGlobalVariable.FvDir)
+        GenFdsGlobalVariable.FfsDir = os.path.join(GenFdsGlobalVariable.FvDir, 'Ffs')
+        if not os.path.exists(GenFdsGlobalVariable.FfsDir) :
+            os.makedirs(GenFdsGlobalVariable.FfsDir)
+        if ArchList != None:
+            GenFdsGlobalVariable.ArchList = ArchList
+        
+        T_CHAR_LF = '\n'    
+        #
+        # Create FV Address inf file
+        #
+        GenFdsGlobalVariable.FvAddressFileName = os.path.join(GenFdsGlobalVariable.FfsDir, 'FvAddress.inf')
+        FvAddressFile = open (GenFdsGlobalVariable.FvAddressFileName, 'w')
+        #
+        # Add [Options]
+        #
+        FvAddressFile.writelines("[options]" + T_CHAR_LF)
+        BsAddress = '0'
+        if 'BsBaseAddress' in GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Defines.DefinesDictionary.keys():
+            BsAddressList = GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Defines.DefinesDictionary['BsBaseAddress']
+            if BsAddressList != []:
+                BsAddress = BsAddressList[0]
+        
+        FvAddressFile.writelines("EFI_BOOT_DRIVER_BASE_ADDRESS = " + \
+                                       BsAddress          + \
+                                       T_CHAR_LF)
+                                       
+        RtAddress = '0'
+        if 'RtBaseAddress' in GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Defines.DefinesDictionary.keys():
+            RtAddressList = GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Defines.DefinesDictionary['RtBaseAddress']
+            if RtAddressList != []:
+                RtAddress = RtAddressList[0]
+                
+        FvAddressFile.writelines("EFI_RUNTIME_DRIVER_BASE_ADDRESS = " + \
+                                       RtAddress          + \
+                                       T_CHAR_LF)
+        
+        FvAddressFile.close()
+
     
     ## SetDefaultRule()
     #

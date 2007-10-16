@@ -32,7 +32,6 @@ import CapsuleData
 import Rule
 import RuleComplexFile
 import RuleSimpleFile
-import RuleFileExtension
 import EfiSection
 import Vtf
 import ComponentStatement
@@ -735,7 +734,7 @@ class FdfParser:
         FdObj = Fd.FD()
         FdObj.FdUiName = self.CurrentFdName
         self.Profile.FdDict[self.CurrentFdName] = FdObj
-        Status = self.__GetCreateFile( FdObj)
+        Status = self.__GetCreateFile(FdObj)
         if not Status:
             raise Warning("FD name error At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
         
@@ -1051,7 +1050,7 @@ class FdfParser:
         if not self.__Token in ("SET", "FV", "FILE", "DATA"):
             self.__UndoToken()
             RegionObj.PcdOffset = self.__GetNextPcdName()
-            self.Profile.PcdDict[RegionObj.PcdOffset] = RegionObj.Offset + long(fd.BaseAddress, 0)
+            self.Profile.PcdDict[RegionObj.PcdOffset] = RegionObj.Offset + long(Fd.BaseAddress, 0)
             if self.__IsToken( "|"):
                 RegionObj.PcdSize = self.__GetNextPcdName()
                 self.Profile.PcdDict[RegionObj.PcdSize] = RegionObj.Size
@@ -1239,38 +1238,38 @@ class FdfParser:
                     % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
             raise Warning("Unknown Keyword At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
         
-        fvName = self.__GetUiName()
-        self.CurrentFvName = fvName.upper()
+        FvName = self.__GetUiName()
+        self.CurrentFvName = FvName.upper()
         
         if not self.__IsToken( "]"):
             raise Warning("expected ']' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
         
-        fv = Fv.FV()
-        fv.UiFvName = self.CurrentFvName
-        self.Profile.FvDict[self.CurrentFvName] = fv
+        FvObj = Fv.FV()
+        FvObj.UiFvName = self.CurrentFvName
+        self.Profile.FvDict[self.CurrentFvName] = FvObj
         
-        Status = self.__GetCreateFile( fv)
+        Status = self.__GetCreateFile(FvObj)
         if not Status:
             raise Warning("FV name error At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
 
-        self.__GetDefineStatements( fv)
+        self.__GetDefineStatements(FvObj)
 
-        self.__GetAddressStatements (fv)
+        self.__GetAddressStatements(FvObj)
         
-        self.__GetBlockStatement( fv)
+        self.__GetBlockStatement(FvObj)
 
-        self.__GetSetStatements( fv)
+        self.__GetSetStatements(FvObj)
 
-        self.__GetFvAlignment( fv)
+        self.__GetFvAlignment(FvObj)
 
-        self.__GetFvAttributes( fv)
+        self.__GetFvAttributes(FvObj)
         
-        self.__GetAprioriSection( fv, fv.DefineVarDict.copy())
-        self.__GetAprioriSection( fv, fv.DefineVarDict.copy())
+        self.__GetAprioriSection(FvObj, FvObj.DefineVarDict.copy())
+        self.__GetAprioriSection(FvObj, FvObj.DefineVarDict.copy())
         
         while True:
-            isInf = self.__GetInfStatement( fv, MacroDict = fv.DefineVarDict.copy())
-            isFile = self.__GetFileStatement( fv, MacroDict = fv.DefineVarDict.copy())
+            isInf = self.__GetInfStatement(FvObj, MacroDict = FvObj.DefineVarDict.copy())
+            isFile = self.__GetFileStatement(FvObj, MacroDict = FvObj.DefineVarDict.copy())
             if not isInf and not isFile:
                 break
         
@@ -1331,7 +1330,7 @@ class FdfParser:
             if not self.__GetNextToken() or self.__Token.upper() not in ("TRUE", "FALSE", "1", "0"):
                 raise Warning("expected TRUE/FALSE (1/0) At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
             
-            fv.FvAttributeDict[name] = self.__Token
+            FvObj.FvAttributeDict[name] = self.__Token
 
         return
 
@@ -1800,7 +1799,7 @@ class FdfParser:
             if not self.__IsToken("{"):
                 raise Warning("expected '{' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
             GuidSectionObj = GuidSection.GuidSection()
-            GuidSectionObj.Alignment = alignment
+            GuidSectionObj.Alignment = AlignValue
             GuidSectionObj.NameGuid = GuidValue
             GuidSectionObj.SectionType = "GUIDED"
             GuidSectionObj.ProcessRequired = AttribDict["PROCESSING_REQUIRED"]
@@ -1814,7 +1813,7 @@ class FdfParser:
             
             if not self.__IsToken( "}"):
                 raise Warning("expected '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
-            obj.SectionList.append(GuidSectionObj)
+            Obj.SectionList.append(GuidSectionObj)
                 
             return True
         
@@ -2266,7 +2265,6 @@ class FdfParser:
                 pass
             if self.__IsToken( "{"):
                 FvObj = Fv.FV()
-#                fv.UiFvName = fvName
                 self.__GetDefineStatements(FvObj)
                 self.__GetBlockStatement(FvObj)
                 self.__GetSetStatements(FvObj)
@@ -2530,7 +2528,7 @@ class FdfParser:
             
             if not self.__IsToken( "}"):
                 raise Warning("expected '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
-            rule.SectionList.append(GuidSectionObj)
+            Rule.SectionList.append(GuidSectionObj)
 
             return True
 

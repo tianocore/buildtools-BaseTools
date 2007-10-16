@@ -52,13 +52,13 @@ class EfiSection (EfiSectionClassObject):
         """Prepare the parameter of GenSection"""
         if FfsInf != None :
             InfFileName = FfsInf.InfFileName
-            SectionType = FfsInf.__ExtendMarco__(self.SectionType)
-            Filename = FfsInf.__ExtendMarco__(self.FileName)
+            SectionType = FfsInf.__ExtendMacro__(self.SectionType)
+            Filename = FfsInf.__ExtendMacro__(self.FileName)
             """print 'Buile Num: %s' %self.BuildNum"""
-            BuildNum = FfsInf.__ExtendMarco__(self.BuildNum)
+            BuildNum = FfsInf.__ExtendMacro__(self.BuildNum)
             """print 'After extend Build Num: %s' %self.BuildNum"""
             
-            StringData = FfsInf.__ExtendMarco__(self.StringData)
+            StringData = FfsInf.__ExtendMacro__(self.StringData)
             
         else:
             SectionType = self.SectionType
@@ -240,7 +240,7 @@ class EfiSection (EfiSectionClassObject):
                      GenFdsGlobalVariable.VerboseLogger( "Optional Section don't exist!")
                      return [], None
                 else:
-                     raise Exception("Section with type %s could not be found for %s" % (SectionType, InfFileName))
+                     raise Exception("Output file for %s section could not be found for %s" % (SectionType, InfFileName))
             
             else:
                 """Convert the File to Section file one by one """
