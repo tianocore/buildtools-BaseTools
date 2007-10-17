@@ -246,8 +246,6 @@ def NormPath(Path, Defines = {}):
 
         # To local path format
         Path = os.path.normpath(Path)
-        if Path[0] == os.path.sep:
-            Path = Path[1:]
 
     return Path
 
