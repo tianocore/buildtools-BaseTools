@@ -904,7 +904,7 @@ class WorkspaceBuild(object):
         # Not found in any platform and fdf
         #
         if not IsFoundInDsc:
-            ErrorMsg = "Pcd '%s.%s' defined in module '%s' is not found in any platform" % (Guid, Name, ModuleName)
+            ErrorMsg = "Pcd '%s.%s' defined in module '%s' is not found in any platform for %s" % (Guid, Name, ModuleName, Arch)
             EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
 
         return PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, IsOverrided)
