@@ -119,12 +119,16 @@ def NormFile(FilePath, Workspace):
 # @param  ExitFlag  The flag used to indicate stopping reading
 #
 def ReadMessage(From, To, ExitFlag):
-    while not ExitFlag.isSet():
+    while True:
         # read one line a time
         Line = From.readline()
-        # empty string means nothing got (blank line must have LF/CR, so it's not empty)
-        if Line != "":
+        # empty string means "end"
+        if Line != None and Line != "":
             To(Line.rstrip())
+        else:
+            break
+        if ExitFlag.isSet():
+            break
 
 ## Launch an external program
 #
@@ -141,6 +145,8 @@ def LaunchCommand(Command, WorkingDir):
     if not os.path.isdir(WorkingDir):
         EdkLogger.error("build", FILE_NOT_FOUND, ExtraData=WorkingDir)
 
+    Proc = None
+    EndOfProcedure = None
     try:
         # launch the command
         Proc = Popen(Command, stdout=PIPE, stderr=PIPE, env=os.environ, cwd=WorkingDir)
@@ -162,12 +168,15 @@ def LaunchCommand(Command, WorkingDir):
 
         # waiting for program exit
         Proc.wait()
-    except:
-        # prevent this method calling from aborting
-        pass
+    except: # in case of aborting
+        # terminate the threads redirecting the program output
+        if EndOfProcedure != None:
+            EndOfProcedure.set()
+        if Proc == None:
+            if type(Command) != type(""):
+                Command = " ".join(Command)
+            EdkLogger.error("build", COMMAND_FAILURE, "Failed to start command", ExtraData="%s [%s]" % (Command, WorkingDir))
 
-    # terminate the threads redirecting the program output
-    EndOfProcedure.set()
     if Proc.stdout:
         StdOutThread.join()
     if Proc.stderr:
@@ -577,12 +586,8 @@ class Build():
 
         # parse target.txt, tools_def.txt, and platform file
         self.Progress.Start("Loading build configuration")
-        try:
-            self.LoadConfiguration()
-            self.InitBuild()
-        except BaseException, X:
-            self.Progress.Stop("")
-            raise
+        self.LoadConfiguration()
+        self.InitBuild()
         self.Progress.Stop("done!")
 
         # print current build environment and configuration
@@ -624,7 +629,6 @@ class Build():
             self.Platform = self.Ewb.Build[self.ArchList[0]].PlatformDatabase[self.PlatformFile]
 
         except BaseException, X:
-            self.Progress.Stop("")
             if isinstance(X, Warning):
                 EdkLogger.error(X.ToolName, BUILD_ERROR, X.message, X.FileName, X.LineNumber, RaiseError = False)
             raise
@@ -923,22 +927,19 @@ class Build():
     ## Launch the module or platform build
     #
     def Launch(self):
-        try:
-            if self.ModuleFile == None or self.ModuleFile == "":
-                if not self.SpawnMode or self.Target not in ["", "all"]:
-                    self.SpawnMode = False
-                    self._BuildPlatform()
-                else:
-                    self._MultiThreadBuildPlatform()
-            else:
+        if self.ModuleFile == None or self.ModuleFile == "":
+            if not self.SpawnMode or self.Target not in ["", "all"]:
                 self.SpawnMode = False
-                self._BuildModule()
-        except:
-            self.Progress.Stop("")
-            raise
+                self._BuildPlatform()
+            else:
+                self._MultiThreadBuildPlatform()
+        else:
+            self.SpawnMode = False
+            self._BuildModule()
 
     ## Do some clean-up works when error occurred
     def Relinquish(self):
+        Progressor.Abort()
         if self.SpawnMode == True:
             BuildTask.Abort()
 
@@ -1060,13 +1061,14 @@ def Main():
         if MyBuild != None:
             # for multi-thread build exits safely
             MyBuild.Relinquish()
-
         EdkLogger.quiet("")
         if Option != None and Option.debug != None:
             EdkLogger.quiet(traceback.format_exc())
         else:
             EdkLogger.quiet(str(X))
         ReturnCode = 1
+    finally:
+        Progressor.Abort()
 
     FinishTime = time.clock()
     BuildDuration = time.strftime("%M:%S", time.gmtime(int(round(FinishTime - StartTime))))

@@ -302,6 +302,9 @@ class TemplateString(object):
 #  This class makes use of thread to print progress on console.
 #
 class Progressor:
+    # for avoiding deadloop
+    _StopFlag = None
+    _ProgressThread = None
     ## Constructor
     #
     #   @param      OpenMessage     The string printed before progress charaters
@@ -310,12 +313,12 @@ class Progressor:
     #   @param      Interval        The interval in seconds between two progress charaters
     #
     def __init__(self, OpenMessage="", CloseMessage="", ProgressChar='.', Interval=1):
-        self.StopFlag = threading.Event()
-        self.ProgressThread = None
         self.PromptMessage = OpenMessage
         self.CodaMessage = CloseMessage
         self.ProgressChar = ProgressChar
         self.Interval = Interval
+        if Progressor._StopFlag == None:
+            Progressor._StopFlag = threading.Event()
 
     ## Start to print progress charater
     #
@@ -324,32 +327,39 @@ class Progressor:
     def Start(self, OpenMessage=None):
         if OpenMessage != None:
             self.PromptMessage = OpenMessage
-        self.StopFlag.clear()
-        self.ProgressThread = threading.Thread(target=self._ProgressThreadEntry)
-        self.ProgressThread.setDaemon(False)
-        self.ProgressThread.start()
+        Progressor._StopFlag.clear()
+        if Progressor._ProgressThread == None:
+            Progressor._ProgressThread = threading.Thread(target=self._ProgressThreadEntry)
+            Progressor._ProgressThread.setDaemon(False)
+            Progressor._ProgressThread.start()
 
     ## Stop printing progress charater
     #
     #   @param      CloseMessage    The string printed after progress charaters
     #
     def Stop(self, CloseMessage=None):
+        OriginalCodaMessage = self.CodaMessage
         if CloseMessage != None:
             self.CodaMessage = CloseMessage
-
-        self.StopFlag.set()
-
-        if self.ProgressThread != None:
-            self.ProgressThread.join()
-            self.ProgressThread = None
+        self.Abort()
+        self.CodaMessage = OriginalCodaMessage
 
     ## Thread entry method
     def _ProgressThreadEntry(self):
         print self.PromptMessage,
-        while not self.StopFlag.isSet():
-            time.sleep(self.Interval)
+        while not Progressor._StopFlag.isSet():
             print self.ProgressChar,
+            time.sleep(self.Interval)
         print self.CodaMessage
+
+    ## Abort the progress display
+    @staticmethod
+    def Abort():
+        if Progressor._StopFlag != None:
+            Progressor._StopFlag.set()
+        if Progressor._ProgressThread != None:
+            Progressor._ProgressThread.join()
+            Progressor._ProgressThread = None
 
 ## A dict which can access its keys and/or values orderly
 #

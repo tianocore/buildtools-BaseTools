@@ -473,7 +473,6 @@ fds: init build_fds
 #
 build_libraries:
 \t${BEGIN}
-\techo Building library: $(WORKSPACE)${separator}${library_build_directory}
 \tcd $(WORKSPACE)${separator}${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
 \t${END}cd $(BUILD_DIR)
 

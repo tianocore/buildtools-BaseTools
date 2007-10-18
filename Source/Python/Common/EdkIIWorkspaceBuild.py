@@ -853,36 +853,38 @@ class WorkspaceBuild(object):
         LibraryInstance     = sdict()
 
         EdkLogger.verbose("")
-        EdkLogger.verbose("Library instances of module [%s]:" % str(Module))
+        EdkLogger.verbose("Library instances of module [%s] [%s]:" % (str(Module), Arch))
         while len(LibraryConsumerList) > 0:
-            _module = LibraryConsumerList.pop()
-            for Key, LibraryPath in _module.LibraryClasses.iteritems():
-                #
+            M = LibraryConsumerList.pop()
+            for Key, LibraryPath in M.LibraryClasses.iteritems():
                 # The "Key" is in format of (library_class_name, supported_module_type)
-                #
-                LibraryClassName = Key[0]
                 if ModuleType != "USER_DEFINED" and ModuleType not in Key:
                     EdkLogger.debug(EdkLogger.DEBUG_3, "%s for module type %s is not supported (%s)" % (Key + (LibraryPath,)))
                     continue
-                if LibraryPath == None or LibraryPath == "":
-                    EdkLogger.warn(None, "Library instance for library class %s is not found" % LibraryClassName)
-                    continue
 
-                LibraryModule = ModuleDatabase[LibraryPath]
-                if LibraryClassName not in LibraryInstance:
-                    LibraryConsumerList.append(LibraryModule)
+                LibraryClassName = Key[0]
+                if LibraryClassName not in LibraryInstance or LibraryInstance[LibraryClassName] == None:
+                    if LibraryPath == None or LibraryPath == "":
+                        LibraryInstance[LibraryClassName] = None
+                        continue
+                    LibraryModule = ModuleDatabase[LibraryPath]
                     LibraryInstance[LibraryClassName] = LibraryModule
+                    LibraryConsumerList.append(LibraryModule)
                     EdkLogger.verbose("\t" + LibraryClassName + " : " + str(LibraryModule))
+                elif LibraryPath == None or LibraryPath == "":
+                    continue
+                else:
+                    LibraryModule = ModuleDatabase[LibraryPath]
 
                 if LibraryModule.ConstructorList != [] and LibraryModule not in Constructor:
                     Constructor.append(LibraryModule)
 
                 if LibraryModule not in ConsumedByList:
                     ConsumedByList[LibraryModule] = []
-                if _module != Module:
-                    if _module in ConsumedByList[LibraryModule]:
+                if M != Module:
+                    if M in ConsumedByList[LibraryModule]:
                         continue
-                    ConsumedByList[LibraryModule].append(_module)
+                    ConsumedByList[LibraryModule].append(M)
         #
         # Initialize the sorted output list to the empty set
         #
@@ -890,20 +892,26 @@ class WorkspaceBuild(object):
         #
         # Q <- Set of all nodes with no incoming edges
         #
-        LibraryList = LibraryInstance.values()
+        LibraryList = [] #LibraryInstance.values()
         Q = []
-        for Item in LibraryList:
+        for LibraryClassName in LibraryInstance:
+            M = LibraryInstance[LibraryClassName]
+            if M == None:
+                EdkLogger.error("AutoGen", AUTOGEN_ERROR,
+                                "Library instance for library class [%s] is not found" % LibraryClassName,
+                                ExtraData="\t%s [%s]" % (str(Module), Arch))
+            LibraryList.append(M)
             #
             # check if there're duplicate library classes
             #
-            for Lc in Item.LibraryClass:
-                if Lc.LibraryClass in LibraryInstance and str(Item) != str(LibraryInstance[Lc.LibraryClass]):
+            for Lc in M.LibraryClass:
+                if Lc.LibraryClass in LibraryInstance and str(M) != str(LibraryInstance[Lc.LibraryClass]):
                     EdkLogger.error("AutoGen", AUTOGEN_ERROR,
-                                    "More than one library instance found for library class %s in module %s" % (Lc.LibraryClass, Module),
-                                    ExtraData="\t%s\n\t%s" % (LibraryInstance[Lc.LibraryClass], str(Item))
+                                    "More than one library instance found for library class [%s] in module [%s]" % (Lc.LibraryClass, Module),
+                                    ExtraData="\t%s\n\t%s" % (LibraryInstance[Lc.LibraryClass], str(M))
                                     )
-            if ConsumedByList[Item] == []:
-                Q.insert(0, Item)
+            if ConsumedByList[M] == []:
+                Q.insert(0, M)
         #
         # while Q is not empty do
         #
