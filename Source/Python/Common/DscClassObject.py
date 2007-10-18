@@ -1,16 +1,19 @@
+## @file
+# This file is used to define each component of DSC file
+#
 # Copyright (c) 2007, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.    The full text of the license may be found at
+# which accompanies this distribution.  The full text of the license may be found at
 # http://opensource.org/licenses/bsd-license.php
 #
 # THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
-
-#
-#This file is used to define each component of DSC file
 #
 
+##
+# Import Modules
+#
 import os
 import EdkLogger
 from String import *
@@ -22,14 +25,30 @@ from CommonDataClass.CommonClass import SkuInfoClass
 from BuildToolError import *
 from Misc import sdict
 
+## DscObject
+#
+# This class defined basic Dsc object which is used by inheriting
+# 
+# @param object:       Inherited from object class
+#
 class DscObject(object):
     def __init__(self):
         object.__init__()
 
+## DscDefines
+#
+# This class defined basic Defines used in Dsc object
+# 
+# @param DscDefines:       Inherited from DscDefines class
+#
+# @var DefinesDictionary:  To store value for DefinesDictionary 
+#
 class DscDefines(DscObject):
     def __init__(self):
         self.DefinesDictionary = {
-            #Req
+            #
+            # Required Fields
+            #
             TAB_DSC_DEFINES_PLATFORM_NAME                         : [''],
             TAB_DSC_DEFINES_PLATFORM_GUID                         : [''],
             TAB_DSC_DEFINES_PLATFORM_VERSION                      : [''],
@@ -46,15 +65,45 @@ class DscDefines(DscObject):
             TAB_DSC_DEFINES_DEFINE                                : ['']
         }
 
+## DscSkuId
+#
+# This class defined SkuId used in Dsc object
+# 
+# @param DscObject:  Inherited from DscObject class
+#
+# @var SkuId:        To store value for SkuId, it is a set structure as
+#                    { [skuid : skuname], [skuid : skuname], ...}
+#
 class DscSkuId(DscObject):
     def __init__(self):
-        self.SkuId = {}         #{ [skuid : skuname], [skuid : skuname], ...}
+        self.SkuId = {}
 
+## DscContents
+#
+# This class defined basic Contents used in Dsc object
+# 
+# @param DscObject:   Inherited from DscObject class
+#
+# @var SkuIds:                 To store value for SkuIds
+# @var Libraries:              To store value for Libraries
+# @var Components:             To store value for Components, it is a list structure as
+#                              [['component name', [lib1, lib2, lib3], [bo1, bo2, bo3]], ...]
+# @var LibraryClasses:         To store value for LibraryClasses
+# @var PcdsFixedAtBuild:       To store value for PcdsFixedAtBuild
+# @var PcdsPatchableInModule:  To store value for PcdsPatchableInModule
+# @var PcdsFeatureFlag:        To store value for PcdsFeatureFlag
+# @var PcdsDynamicDefault:     To store value for PcdsDynamicDefault
+# @var PcdsDynamicVpd:         To store value for PcdsDynamicVpd
+# @var PcdsDynamicHii:         To store value for PcdsDynamicHii
+# @var PcdsDynamicExDefault:   To store value for PcdsDynamicExDefault
+# @var PcdsDynamicExVpd:       To store value for PcdsDynamicExVpd
+# @var PcdsDynamicExHii:       To store value for PcdsDynamicExHii
+#
 class DscContents(DscObject):
     def __init__(self):
         self.SkuIds = []
         self.Libraries = []
-        self.Components = []                #[['component name', [lib1, lib2, lib3], [bo1, bo2, bo3]], ...]
+        self.Components = []
         self.LibraryClasses = []
         self.PcdsFixedAtBuild = []
         self.PcdsPatchableInModule = []
@@ -67,6 +116,31 @@ class DscContents(DscObject):
         self.PcdsDynamicExHii = []
         self.BuildOptions = []
 
+## Dsc
+#
+# This class defined the structure used in Dsc object
+# 
+# @param DscObject:         Inherited from InfObject class
+# @param Ffilename:         Input value for Ffilename of Inf file, default is None
+# @param IsMergeAllArches:  Input value for IsMergeAllArches
+#                           True is to merge all arches
+#                           Fales is not to merge all arches
+#                           default is False
+# @param IsToPlatform:      Input value for IsToPlatform
+#                           True is to transfer to ModuleObject automatically
+#                           False is not to transfer to ModuleObject automatically
+#                           default is False
+# @param WorkspaceDir:      Input value for current workspace directory, default is None
+#
+# @var _NullClassIndex:     To store value for _NullClassIndex, default is 0
+# @var Identification:      To store value for Identification, it is a structure as Identification
+# @var Defines:             To store value for Defines, it is a structure as DscDefines
+# @var Contents:            To store value for Contents, it is a structure as DscContents
+# @var UserExtensions:      To store value for UserExtensions
+# @var Platform:            To store value for Platform, it is a structure as PlatformClass
+# @var WorkspaceDir:        To store value for WorkspaceDir
+# @var KeyList:             To store value for KeyList, a list for all Keys used in Dec
+#
 class Dsc(DscObject):
     _NullClassIndex = 0
 
@@ -89,15 +163,33 @@ class Dsc(DscObject):
             TAB_COMPONENTS
         ]
 
+        #
+        # Load Dsc file if filename is not None
+        #
         if Filename != None:
             self.LoadDscFile(Filename)
 
+        #
+        # Merge contents of Dsc from all arches if IsMergeAllArches is True
+        #
         if IsMergeAllArches:
             self.MergeAllArches()
 
+        #
+        # Transfer to Platform Object if IsToPlatform is True
+        #
         if IsToPlatform:
             self.DscToPlatform()
 
+    ## Parse Dsc file
+    #
+    # Go through input lines one by one to find the value defined in Key section.
+    # Save them to KeyField
+    #
+    # @param Lines:     Lines need to be parsed
+    # @param Key:       The key value of the section to be located
+    # @param KeyField:  To save the found contents
+    #
     def ParseDsc(self, Lines, Key, KeyField):
         newKey = SplitModuleType(Key)
         if newKey[0].upper().find(TAB_LIBRARY_CLASSES.upper()) != -1:
@@ -109,12 +201,22 @@ class Dsc(DscObject):
         else:
             GetMultipleValuesOfKeyFromLines(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
 
+    ## Merge contents of Dsc from all arches
+    #
+    # Find the contents defined in all arches and merge them to all
+    #
     def MergeAllArches(self):
-        for key in self.KeyList:
-            for arch in DataType.ARCH_LIST:
-                Command = "self.Contents[arch]." + key + ".extend(" + "self.Contents['" + DataType.TAB_ARCH_COMMON + "']." + key + ")"
+        for Key in self.KeyList:
+            for Arch in DataType.ARCH_LIST:
+                Command = "self.Contents[Arch]." + Key + ".extend(" + "self.Contents['" + DataType.TAB_ARCH_COMMON + "']." + Key + ")"
                 eval(Command)
 
+    ## Load Dsc file
+    #
+    # Load the file if it exists
+    #
+    # @param Filename:  Input value for filename of Dsc file
+    #
     def LoadDscFile(self, Filename):
         (Filepath, Name) = os.path.split(Filename)
         self.Identification.FileName = Name
@@ -146,6 +248,10 @@ class Dsc(DscObject):
                                 eval(Command)
                                 continue
 
+    ## Transfer to Platform Object
+    # 
+    # Transfer all contents of an Inf file to a standard Module Object
+    #
     def DscToPlatform(self):
         #
         # Get value for Header
@@ -246,11 +352,20 @@ class Dsc(DscObject):
                         MergeArches(Libraries, Item, Arch)
                     continue
                 Status = GenDefines(Item, Arch, Defines)
-                if Status == 0:       # Find DEFINE statement
+                #
+                # Find DEFINE statement
+                #
+                if Status == 0:
                     pass
-                elif Status == -1:    # Find DEFINE statement but in wrong format
+                #
+                # Find DEFINE statement but in wrong format
+                #
+                elif Status == -1:
                     RaiseParserError(Item, 'Libraries', File, 'DEFINE <VarName> = <PATH>')
-                elif Status == 1:     # Not find DEFINE statement
+                #
+                # Not find DEFINE statement
+                #
+                elif Status == 1:
                     MergeArches(Libraries, Item, Arch)
         self.Platform.Libraries.IncludeFiles = IncludeFiles
         for Key in Libraries.keys():
@@ -277,11 +392,20 @@ class Dsc(DscObject):
                         MergeArches(LibraryClasses, self.GenLibraryClass([NewItem, Item[1]], IncludeFilePath), Arch)
                     continue
                 Status = GenDefines(Item[0], Arch, Defines)
-                if Status == 0:       # Find DEFINE statement
+                #
+                # Find DEFINE statement
+                #
+                if Status == 0:
                     pass
-                elif Status == -1:    # Find DEFINE statement but in wrong format
+                #
+                # Find DEFINE statement but in wrong format
+                #
+                elif Status == -1:
                     RaiseParserError(Item[0], 'LibraryClasses', File, 'DEFINE <VarName> = <PATH>')
-                elif Status == 1:     # Not find DEFINE statement
+                #
+                # Not find DEFINE statement
+                #
+                elif Status == 1:
                     MergeArches(LibraryClasses, self.GenLibraryClass(Item, self.Platform.Header.FullPath), Arch)
         self.Platform.LibraryClasses.IncludeFiles = IncludeFiles
         for Key in LibraryClasses.keys():
@@ -293,7 +417,9 @@ class Dsc(DscObject):
             Library.SupArchList = LibraryClasses[Key]
             self.Platform.LibraryClasses.LibraryList.append(Library)
 
-        #Pcds
+        #
+        # Pcds
+        #
         self.GenPcds(DataType.TAB_PCDS_FIXED_AT_BUILD, File)
         self.GenPcds(DataType.TAB_PCDS_PATCHABLE_IN_MODULE, File)
         self.GenFeatureFlagPcds(DataType.TAB_PCDS_FEATURE_FLAG, File)
@@ -304,7 +430,9 @@ class Dsc(DscObject):
         self.GenDynamicVpdPcds(DataType.TAB_PCDS_DYNAMIC_VPD, File)
         self.GenDynamicVpdPcds(DataType.TAB_PCDS_DYNAMIC_EX_VPD, File)
 
-        #Components
+        #
+        # Components
+        #
         Components = sdict()
         IncludeFiles = {}
         Defines = {}
@@ -320,11 +448,20 @@ class Dsc(DscObject):
                         MergeArches(Components, self.GenComponent(NewItem, IncludeFilePath), Arch)
                     continue
                 Status = GenDefines(Item[0], Arch, Defines)
-                if Status == 0:       # Find DEFINE statement
+                #
+                # Find DEFINE statement
+                #
+                if Status == 0:
                     pass
-                elif Status == -1:    # Find DEFINE statement but in wrong format
+                #
+                # Find DEFINE statement but in wrong format
+                #
+                elif Status == -1:
                     RaiseParserError(Item[0], 'Components', File, 'DEFINE <VarName> = <PATH>')
-                elif Status == 1:     # Not find DEFINE statement
+                #
+                # Not find DEFINE statement
+                #
+                elif Status == 1:
                     MergeArches(Components, self.GenComponent(Item, self.Platform.Header.FullPath), Arch)
         self.Platform.Modules.IncludeFiles = IncludeFiles
         for Key in Components.keys():
@@ -334,8 +471,14 @@ class Dsc(DscObject):
 
     #End of DscToPlatform
 
+    ## Get Library Class
     #
-    # Gen Library Class
+    # Get Library of Dsc as <LibraryClassKeyWord>|<LibraryInstance>
+    # 
+    # @param Item:           String as <LibraryClassKeyWord>|<LibraryInstance>
+    # @param ContainerFile:  The file which describes the library class, used for error report
+    #
+    # @retval (LibraryClassKeyWord, LibraryInstance, [SUP_MODULE_LIST]) Formatted Library Item
     #
     def GenLibraryClass(self, Item, ContainerFile):
         List = GetSplitValueList(Item[0])
@@ -348,8 +491,14 @@ class Dsc(DscObject):
                 Item[1] = DataType.SUP_MODULE_LIST
         return (List[0], List[1]) + tuple(Item[1])
 
+    ## Get Component 
     #
-    # Gen Component
+    # Get Component section defined in Dsc file
+    #
+    # @param Item:           Contents includes a component block
+    # @param ContainerFile:  The file which describes the library class, used for error report
+    #
+    # @retval PlatformModuleClass() A instance for PlatformModuleClass
     #
     def GenComponent(self, Item, ContainerFile):
         (InfFilename, ExecFilename) = GetExec(Item[0])
@@ -416,9 +565,12 @@ class Dsc(DscObject):
         return Component
     #End of GenComponent
 
+    ## Gen FeatureFlagPcds
     #
-    # Gen FeatureFlagPcds
-    # <PcdTokenSpaceGuidCName>.<TokenCName>|TRUE/FALSE
+    # Gen FeatureFlagPcds of Dsc file as <PcdTokenSpaceGuidCName>.<TokenCName>|TRUE/FALSE
+    #
+    # @param Type:           The type of Pcd
+    # @param ContainerFile:  The file which describes the pcd, used for error report
     #
     def GenFeatureFlagPcds(self, Type = '', ContainerFile = ''):
         Pcds = {}
@@ -442,9 +594,12 @@ class Dsc(DscObject):
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
 
+    ## Gen Pcds
     #
-    # Gen Pcds
-    # <PcdTokenSpaceGuidCName>.<TokenCName>|<Value>[|<Type>|<MaximumDatumSize>]
+    # Gen Pcd of Dsc as <PcdTokenSpaceGuidCName>.<TokenCName>|<Value>[|<Type>|<MaximumDatumSize>]
+    #
+    # @param Type:           The type of Pcd
+    # @param ContainerFile:  The file which describes the pcd, used for error report
     #
     def GenPcds(self, Type = '', ContainerFile = ''):
         Pcds = {}
@@ -470,8 +625,21 @@ class Dsc(DscObject):
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
 
+    ## Gen SkuInfoList
     #
-    # Gen SkuInfoList
+    # Gen SkuInfoList section defined in Dsc file
+    #
+    # @param SkuNameList:      Input value for SkuNameList
+    # @param SkuInfo:          Input value for SkuInfo
+    # @param VariableName:     Input value for VariableName
+    # @param VariableGuid:     Input value for VariableGuid
+    # @param VariableOffset:   Input value for VariableOffset
+    # @param HiiDefaultValue:  Input value for HiiDefaultValue
+    # @param VpdOffset:        Input value for VpdOffset
+    # @param DefaultValue:     Input value for DefaultValue
+    #
+    # @retval (False, SkuName)     Not found in section SkuId Dsc file
+    # @retval (True, SkuInfoList)  Found in section SkuId of Dsc file
     #
     def GenSkuInfoList(self, SkuNameList, SkuInfo, VariableName = '', VariableGuid = '', VariableOffset = '', HiiDefaultValue = '', VpdOffset = '', DefaultValue = ''):
         if SkuNameList == None or SkuNameList == [] or SkuNameList == ['']:
@@ -485,9 +653,12 @@ class Dsc(DscObject):
 
         return True, SkuInfoList
 
+    ## Gen DynamicDefaultPcds
     #
-    # Gen DynamicDefaultPcds
-    # <PcdTokenSpaceGuidCName>.<TokenCName>|<Value>[|<DatumTyp>[|<MaxDatumSize>]]
+    # Gen DynamicDefaultPcds of Dsc as <PcdTokenSpaceGuidCName>.<TokenCName>|<Value>[|<DatumTyp>[|<MaxDatumSize>]]
+    #
+    # @param Type:           The type of Pcd
+    # @param ContainerFile:  The file which describes the pcd, used for error report
     #
     def GenDynamicDefaultPcds(self, Type = '', ContainerFile = ''):
         Pcds = {}
@@ -518,9 +689,12 @@ class Dsc(DscObject):
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
 
+    ## Gen DynamicHiiPcds
     #
-    # Gen DynamicHiiPcds
-    # <PcdTokenSpaceGuidCName>.<TokenCName>|<String>|<VariableGuidCName>|<VariableOffset>[|<DefaultValue>[|<MaximumDatumSize>]]
+    # Gen DynamicHiiPcds of Dsc as <PcdTokenSpaceGuidCName>.<TokenCName>|<String>|<VariableGuidCName>|<VariableOffset>[|<DefaultValue>[|<MaximumDatumSize>]]
+    #
+    # @param Type:           The type of Pcd
+    # @param ContainerFile:  The file which describes the pcd, used for error report
     #
     def GenDynamicHiiPcds(self, Type = '', ContainerFile = ''):
         Pcds = {}
@@ -551,9 +725,12 @@ class Dsc(DscObject):
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
 
+    ## Gen DynamicVpdPcds
     #
-    # Gen DynamicVpdPcds
-    # <PcdTokenSpaceGuidCName>.<TokenCName>|<VpdOffset>[|<MaximumDatumSize>]
+    # Gen DynamicVpdPcds of Dsc as <PcdTokenSpaceGuidCName>.<TokenCName>|<VpdOffset>[|<MaximumDatumSize>]
+    #
+    # @param Type:           The type of Pcd
+    # @param ContainerFile:  The file which describes the pcd, used for error report
     #
     def GenDynamicVpdPcds(self, Type = '', ContainerFile = ''):
         Pcds = {}
@@ -584,58 +761,60 @@ class Dsc(DscObject):
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
 
+    ## Show detailed information of Dsc
     #
-    # Show detailed information of Dsc
+    # Print all members and their values of Dsc class
     #
     def ShowDsc(self):
         print TAB_SECTION_START + TAB_INF_DEFINES + TAB_SECTION_END
         printDict(self.Defines.DefinesDictionary)
 
-        for key in self.KeyList:
-            for arch in DataType.ARCH_LIST_FULL:
+        for Key in self.KeyList:
+            for Arch in DataType.ARCH_LIST_FULL:
                 Command = "printList(TAB_SECTION_START + '" + \
-                                    key + DataType.TAB_SPLIT + arch + \
-                                    "' + TAB_SECTION_END, self.Contents[arch]." + key + ')'
+                                    Key + DataType.TAB_SPLIT + Arch + \
+                                    "' + TAB_SECTION_END, self.Contents[arch]." + Key + ')'
                 eval(Command)
 
+    ## Show detailed information of Platform
     #
-    # Show detailed information of Platform
+    # Print all members and their values of Platform class
     #
     def ShowPlatform(self):
-        m = self.Platform
-        print 'Filename =', m.Header.FileName
-        print 'FullPath =', m.Header.FullPath
-        print 'BaseName =', m.Header.Name
-        print 'Guid =', m.Header.Guid
-        print 'Version =', m.Header.Version
-        print 'DscSpecification =', m.Header.DscSpecification
-        print 'SkuId =', m.Header.SkuIdName
-        print 'SupArchList =', m.Header.SupArchList
-        print 'BuildTargets =', m.Header.BuildTargets
-        print 'OutputDirectory =', m.Header.OutputDirectory
-        print 'BuildNumber =', m.Header.BuildNumber
-        print 'MakefileName =', m.Header.MakefileName
-        print 'Fdf =', m.FlashDefinitionFile.FilePath
-        print 'BsBaseAddress =', m.Header.BsBaseAddress
-        print 'RtBaseAddress =', m.Header.RtBaseAddress
-        print 'Define =', m.Header.Define
-        print '\nBuildOptions =', m.BuildOptions, m.BuildOptions.IncludeFiles
-        for Item in m.BuildOptions.BuildOptionList:
+        M = self.Platform
+        print 'Filename =', M.Header.FileName
+        print 'FullPath =', M.Header.FullPath
+        print 'BaseName =', M.Header.Name
+        print 'Guid =', M.Header.Guid
+        print 'Version =', M.Header.Version
+        print 'DscSpecification =', M.Header.DscSpecification
+        print 'SkuId =', M.Header.SkuIdName
+        print 'SupArchList =', M.Header.SupArchList
+        print 'BuildTargets =', M.Header.BuildTargets
+        print 'OutputDirectory =', M.Header.OutputDirectory
+        print 'BuildNumber =', M.Header.BuildNumber
+        print 'MakefileName =', M.Header.MakefileName
+        print 'Fdf =', M.FlashDefinitionFile.FilePath
+        print 'BsBaseAddress =', M.Header.BsBaseAddress
+        print 'RtBaseAddress =', M.Header.RtBaseAddress
+        print 'Define =', M.Header.Define
+        print '\nBuildOptions =', M.BuildOptions, M.BuildOptions.IncludeFiles
+        for Item in M.BuildOptions.BuildOptionList:
             print '\t', Item.ToolChainFamily, Item.ToolChain, Item.Option, Item.SupArchList
-        print '\nSkuIds =', m.SkuInfos.SkuInfoList, m.SkuInfos.IncludeFiles
-        print '\nLibraries =', m.Libraries, m.Libraries.IncludeFiles
-        for Item in m.Libraries.LibraryList:
+        print '\nSkuIds =', M.SkuInfos.SkuInfoList, M.SkuInfos.IncludeFiles
+        print '\nLibraries =', M.Libraries, M.Libraries.IncludeFiles
+        for Item in M.Libraries.LibraryList:
             print '\t', Item.FilePath, Item.SupArchList, Item.Define
-        print '\nLibraryClasses =', m.LibraryClasses, m.LibraryClasses.IncludeFiles
-        for Item in m.LibraryClasses.LibraryList:
+        print '\nLibraryClasses =', M.LibraryClasses, M.LibraryClasses.IncludeFiles
+        for Item in M.LibraryClasses.LibraryList:
             print '\t', Item.Name, Item.FilePath, Item.SupModuleList, Item.SupArchList, Item.Define
-        print '\nPcds =', m.DynamicPcdBuildDefinitions
-        for Item in m.DynamicPcdBuildDefinitions:
+        print '\nPcds =', M.DynamicPcdBuildDefinitions
+        for Item in M.DynamicPcdBuildDefinitions:
             print '\tCname=', Item.CName, 'TSG=', Item.TokenSpaceGuidCName, 'Value=', Item.DefaultValue, 'Token=', Item.Token, 'Type=', Item.ItemType, 'Datum=', Item.DatumType, 'Size=', Item.MaxDatumSize, 'Arch=', Item.SupArchList, Item.SkuInfoList
             for Sku in Item.SkuInfoList.values():
                 print '\t\t', str(Sku)
-        print '\nComponents =', m.Modules.ModuleList, m.Modules.IncludeFiles
-        for Item in m.Modules.ModuleList:
+        print '\nComponents =', M.Modules.ModuleList, M.Modules.IncludeFiles
+        for Item in M.Modules.ModuleList:
             print '\t', Item.FilePath, Item.ExecFilePath, Item.SupArchList
             for Lib in Item.LibraryClasses.LibraryList:
                 print '\t\tLib:', Lib.Name, Lib.FilePath
@@ -644,8 +823,13 @@ class Dsc(DscObject):
             for Pcd in Item.PcdBuildDefinitions:
                 print '\t\tPcd:', Pcd.CName, Pcd.TokenSpaceGuidCName, Pcd.MaxDatumSize, Pcd.DefaultValue, Pcd.ItemType
 
+##
+#
+# This acts like the main() function for the script, unless it is 'import'ed into another
+# script.
+#
 if __name__ == '__main__':
-    w = os.getenv('WORKSPACE')
-    f = os.path.join(w, 'Nt32Pkg/Nt32Pkg.dsc')
-    p = Dsc(os.path.normpath(f), True, True, w)
-    p.ShowPlatform()
+    W = os.getenv('WORKSPACE')
+    F = os.path.join(W, 'Nt32Pkg/Nt32Pkg.dsc')
+    P = Dsc(os.path.normpath(F), True, True, W)
+    P.ShowPlatform()

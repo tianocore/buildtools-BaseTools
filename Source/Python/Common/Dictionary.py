@@ -1,15 +1,34 @@
+## @file
+# Define a dictionary structure
+#
+# Copyright (c) 2007, Intel Corporation
+# All rights reserved. This program and the accompanying materials
+# are licensed and made available under the terms and conditions of the BSD License
+# which accompanies this distribution.  The full text of the license may be found at
+# http://opensource.org/licenses/bsd-license.php
+#
+# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+
+##
+# Import Modules
+#
 import EdkLogger
 from DataType import *
 
+## Convert a text file to a dictionary
 #
-# Convert a text file to a dictionary
+# Convert a text file to a dictionary of (name:value) pairs.
+#
+# @retval 0  Convert successful
+# @retval 1  Open file failed
 #
 def ConvertTextFileToDictionary(FileName, Dictionary, CommentCharacter, KeySplitCharacter, ValueSplitFlag, ValueSplitCharacter):
-  """Convert a text file to a dictionary of (name:value) pairs."""
   try:
-      f = open(FileName,'r')
+      F = open(FileName,'r')
       Keys = []
-      for Line in f:
+      for Line in F:
         if Line.startswith(CommentCharacter):
           continue
         LineList = Line.split(KeySplitCharacter,1)
@@ -21,25 +40,36 @@ def ConvertTextFileToDictionary(FileName, Dictionary, CommentCharacter, KeySplit
             else:
               Dictionary[Key[0]] = LineList[1].strip().replace('\\','/')
             Keys += [Key[0]]
-      f.close()
+      F.close()
       return 0
   except:
       EdkLogger.info('Open file failed')
       return 1
 
-def printDict(dict):
-  if dict != None:
-    KeyList = dict.keys()
+## Print the dictionary
+#
+# Print all items of dictionary one by one
+#
+# @param Dict:  The dictionary to be printed
+#
+def printDict(Dict):
+  if Dict != None:
+    KeyList = Dict.keys()
     for Key in KeyList:
-      if dict[Key] != '':
-        print Key + ' = ' + str(dict[Key])
+      if Dict[Key] != '':
+        print Key + ' = ' + str(Dict[Key])
 
-def printList(key, list):
-  if type(list) == type([]):
-      if len(list) > 0:
+## Print the dictionary
+#
+# Print the items of dictionary which matched with input key
+#
+# @param list:  The dictionary to be printed
+# @param key:   The key of the item to be printed
+#
+def printList(Key, List):
+  if type(List) == type([]):
+      if len(List) > 0:
         if key.find(TAB_SPLIT) != -1:
-          print "\n" + key
-          for i in list:
-            print i
-    
-      
+          print "\n" + Key
+          for Item in List:
+            print Item

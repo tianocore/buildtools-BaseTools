@@ -1,16 +1,19 @@
+## @file
+# This file is used to define each component of tools_def.txt file
+#
 # Copyright (c) 2007, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.    The full text of the license may be found at
+# which accompanies this distribution.  The full text of the license may be found at
 # http://opensource.org/licenses/bsd-license.php
 #
 # THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
-
-#
-#This file is used to define each component of tools_def.txt file
 #
 
+##
+# Import Modules
+#
 import os
 import re
 import EdkLogger
@@ -19,10 +22,23 @@ from Dictionary import *
 from BuildToolError import *
 from TargetTxtClassObject import *
 
+##
+# Static vailabes used for pattern
+#
 gMacroRefPattern = re.compile('(DEF\([^\(\)]+\))')
 gEnvRefPattern = re.compile('(ENV\([^\(\)]+\))')
 gMacroDefPattern = re.compile("DEFINE\s+([^\s]+)")
 
+## ToolDefClassObject
+#
+# This class defined content used in file tools_def.txt
+# 
+# @param object:               Inherited from object class
+# @param Filename:             Input value for full path of tools_def.txt
+#
+# @var ToolsDefTxtDictionary:  To store keys and values defined in target.txt
+# @var MacroDictionary:        To store keys and values defined in DEFINE statement
+#
 class ToolDefClassObject(object):
     def __init__(self, FileName = None):
         self.ToolsDefTxtDictionary = {}
@@ -33,6 +49,12 @@ class ToolDefClassObject(object):
         if FileName != None:
             self.LoadToolDefFile(FileName)
 
+    ## LoadToolDefFile
+    #
+    # Load target.txt file and parse it, return a set structure to store keys and values
+    #
+    # @param Filename:  Input value for full path of tools_def.txt
+    #
     def LoadToolDefFile(self, FileName):
         FileContent = []
         if os.path.isfile(FileName):
@@ -96,10 +118,10 @@ class ToolDefClassObject(object):
                 if List[3] != '*':
                     self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_COMMAND_TYPE] += [List[3]]
 
-        self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TARGET]                 = list(set(self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TARGET]))
+        self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TARGET] = list(set(self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TARGET]))
         self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TOOL_CHAIN_TAG] = list(set(self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TOOL_CHAIN_TAG]))
-        self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TARGET_ARCH]        = list(set(self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TARGET_ARCH]))
-        self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_COMMAND_TYPE]     = list(set(self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_COMMAND_TYPE]))
+        self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TARGET_ARCH] = list(set(self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TARGET_ARCH]))
+        self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_COMMAND_TYPE] = list(set(self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_COMMAND_TYPE]))
 
         self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TARGET].sort()
         self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TOOL_CHAIN_TAG].sort()
@@ -121,8 +143,15 @@ class ToolDefClassObject(object):
                 elif List[Index] not in self.ToolsDefTxtDatabase[KeyList[Index]]:
                     del self.ToolsDefTxtDictionary[Key]
 
+    ## ExpandMacros
+    #
+    # Replace defined macros with real value
+    #
+    # @param Value:   The string with unreplaced macros
+    #
+    # @retval Value:  The string which has been replaced with real value
+    #
     def ExpandMacros(self, Value):
-
         EnvReference = gEnvRefPattern.findall(Value)
         for Ref in EnvReference:
             if Ref not in self.MacroDictionary:
@@ -141,6 +170,14 @@ class ToolDefClassObject(object):
 
         return Value
 
+## ToolDefDict
+#
+# Load tools_def.txt in input workspace dir
+#
+# @param WorkSpace:  Workspace dir
+#
+# @retval ToolDef An instance of ToolDefClassObject() with loaded tools_def.txt
+#
 def ToolDefDict(WorkSpace):
     Target = TargetTxtClassObject()
     Target.LoadTargetTxtFile(WorkSpace + '\\Conf\\target.txt')
@@ -148,9 +185,11 @@ def ToolDefDict(WorkSpace):
     ToolDef.LoadToolDefFile(WorkSpace + '\\' + Target.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])
     return ToolDef
 
+##
+#
+# This acts like the main() function for the script, unless it is 'import'ed into another
+# script.
+#
 if __name__ == '__main__':
-##    td = ToolDefClassObject('tool_def.txt')
-##    print td.ToolsDefTxtDatabase
-
     ToolDef = ToolDefDict(os.getenv("WORKSPACE"))
     pass

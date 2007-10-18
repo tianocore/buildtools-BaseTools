@@ -1,16 +1,19 @@
+## @file
+# This file is used to define each component of INF file
+#
 # Copyright (c) 2007, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.    The full text of the license may be found at
+# which accompanies this distribution.  The full text of the license may be found at
 # http://opensource.org/licenses/bsd-license.php
 #
 # THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
-
-#
-#This file is used to define each component of INF file
 #
 
+##
+# Import Modules
+#
 import os
 import EdkLogger
 from CommonDataClass.CommonClass import LibraryClassClass
@@ -21,21 +24,39 @@ from Identification import *
 from Dictionary import *
 from BuildToolError import *
 
+## InfObject
+#
+# This class defined basic Inf object which is used by inheriting
+# 
+# @param object:       Inherited from object class
+#
 class InfObject(object):
     def __init__(self):
         object.__init__()
 
+## InfDefines
+#
+# This class defined basic Defines used in Inf object
+# 
+# @param InfObject:        Inherited from InfObject class
+#
+# @var DefinesDictionary:  To store value for DefinesDictionary 
+#
 class InfDefines(InfObject):
     def __init__(self):
         self.DefinesDictionary = {
-            #Required
+            #
+            # Required Fields
+            #
             TAB_INF_DEFINES_BASE_NAME                               : [''],
             TAB_INF_DEFINES_FILE_GUID                               : [''],
             TAB_INF_DEFINES_MODULE_TYPE                             : [''],
             TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION               : [''],
             TAB_INF_DEFINES_EDK_RELEASE_VERSION                     : [''],
             
-            #Optional            
+            #
+            # Optional Fields
+            #
             TAB_INF_DEFINES_INF_VERSION                             : [''],
             TAB_INF_DEFINES_BINARY_MODULE                           : [''],
             TAB_INF_DEFINES_LIBRARY_CLASS                           : [''],
@@ -59,6 +80,28 @@ class InfDefines(InfObject):
             TAB_INF_DEFINES_CUSTOM_MAKEFILE                         : ['']
         }
 
+## InfContents
+#
+# This class defined basic Contents used in Inf object
+# 
+# @param InfObject:   Inherited from InfObject class
+#
+# @var Sources:       To store value for Sources
+# @var BuildOptions:  To store value for BuildOptions
+# @var Binaries:      To store value for Binaries
+# @var Includes:      To store value for Includes
+# @var Guids:         To store value for Guids
+# @var Protocols:     To store value for Protocols
+# @var Ppis:          To store value for Ppis
+# @var Libraries:     To store value for Libraries
+# @var Packages:      To store value for Packages
+# @var FixedPcd:      To store value for FixedPcd
+# @var PatchPcd:      To store value for PatchPcd
+# @var Pcd:           To store value for Pcd
+# @var PcdEx:         To store value for PcdEx
+# @var Depex:         To store value for Depex
+# @var Nmake:         To store value for Nmake
+#
 class InfContents(InfObject):
     def __init__(self):
         self.Sources = []
@@ -78,7 +121,31 @@ class InfContents(InfObject):
         self.PcdEx = []
         self.Depex = []
         self.Nmake = []
-        
+
+## Inf
+#
+# This class defined the structure used in Inf object
+# 
+# @param InfObject:         Inherited from InfObject class
+# @param Ffilename:         Input value for Ffilename of Inf file, default is None
+# @param IsMergeAllArches:  Input value for IsMergeAllArches
+#                           True is to merge all arches
+#                           Fales is not to merge all arches
+#                           default is False
+# @param IsToModule:        Input value for IsToModule
+#                           True is to transfer to ModuleObject automatically
+#                           False is not to transfer to ModuleObject automatically
+#                           default is False
+# @param WorkspaceDir:      Input value for current workspace directory, default is None
+#
+# @var Identification:      To store value for Identification, it is a structure as Identification
+# @var Defines:             To store value for Defines, it is a structure as InfDefines
+# @var UserExtensions:      To store value for UserExtensions
+# @var Module:              To store value for Module, it is a structure as ModuleClass
+# @var WorkspaceDir:        To store value for WorkspaceDir
+# @var Contents:            To store value for Contents, it is a structure as InfContents
+# @var KeyList:             To store value for KeyList, a list for all Keys used in Dec
+#
 class Inf(InfObject):
     def __init__(self, Filename = None, IsMergeAllArches = False, IsToModule = False, WorkspaceDir = None):
         self.Identification = Identification()
@@ -95,22 +162,44 @@ class Inf(InfObject):
             TAB_SOURCES, TAB_BUILD_OPTIONS, TAB_BINARIES, TAB_INCLUDES, TAB_GUIDS, TAB_PROTOCOLS, TAB_PPIS, TAB_LIBRARY_CLASSES, TAB_PACKAGES, TAB_LIBRARIES, \
             TAB_INF_FIXED_PCD, TAB_INF_PATCH_PCD, TAB_INF_FEATURE_PCD, TAB_INF_PCD, TAB_INF_PCD_EX, TAB_DEPEX, TAB_NMAKE
         ]
-                
+
+        #
+        # Load Inf file if filename is not None
+        #
         if Filename != None:
             self.LoadInfFile(Filename)
         
+        #
+        # Merge contents of Inf from all arches if IsMergeAllArches is True
+        #        
         if IsMergeAllArches:
             self.MergeAllArches()
-        
+
+        #
+        # Transfer to Module Object if IsToModule is True
+        #
         if IsToModule:
             self.InfToModule()
-    
+
+    ## Merge contents of Inf from all arches
+    #
+    # Find the contents defined in all arches and merge them to all
+    #
     def MergeAllArches(self):
-        for key in self.KeyList:
-            for arch in DataType.ARCH_LIST:
-                Command = "self.Contents[arch]." + key + ".extend(" + "self.Contents['" + DataType.TAB_ARCH_COMMON + "']." + key + ")"
+        for Key in self.KeyList:
+            for Arch in DataType.ARCH_LIST:
+                Command = "self.Contents[Arch]." + Key + ".extend(" + "self.Contents['" + DataType.TAB_ARCH_COMMON + "']." + Key + ")"
                 eval(Command)     
-            
+
+    ## Parse Inf file
+    #
+    # Go through input lines one by one to find the value defined in Key section.
+    # Save them to KeyField
+    #
+    # @param Lines:     Lines need to be parsed
+    # @param Key:       The key value of the section to be located
+    # @param KeyField:  To save the found contents
+    #
     def ParseInf(self, Lines, Key, KeyField):
         newKey = SplitModuleType(Key)
         if newKey[0].upper().find(DataType.TAB_LIBRARY_CLASSES.upper()) != -1:
@@ -118,6 +207,10 @@ class Inf(InfObject):
         else:
             GetMultipleValuesOfKeyFromLines(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
 
+    ## Transfer to Module Object
+    # 
+    # Transfer all contents of an Inf file to a standard Module Object
+    #
     def InfToModule(self):
         #
         # Get value for Header
@@ -268,12 +361,23 @@ class Inf(InfObject):
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].LibraryClasses:
                 Status = GenDefines(Item[0], Arch, Defines)
-                if Status == 0:       # Find DEFINE statement
+                #
+                # Find DEFINE statement
+                #
+                if Status == 0:
                     pass
-                elif Status == -1:    # Find DEFINE statement but in wrong format
+                #
+                # Find DEFINE statement but in wrong format
+                #
+                elif Status == -1:
                     RaiseParserError(Item[0], 'LibraryClasses', File, 'DEFINE <VarName> = <PATH>')
-                elif Status == 1:     # Not find DEFINE statement
-                    #{ (LibraryClass, Instance, PcdFeatureFlag, ModuleType1|ModuleType2|ModuleType3) : [Arch1, Arch2, ...] }
+                #
+                # Not find DEFINE statement
+                #
+                elif Status == 1:
+                    #
+                    # { (LibraryClass, Instance, PcdFeatureFlag, ModuleType1|ModuleType2|ModuleType3) : [Arch1, Arch2, ...] }
+                    #
                     ItemList = GetSplitValueList((Item[0] + DataType.TAB_VALUE_SPLIT * 2))
                     CheckFileType(ItemList[1], '.Inf', self.Module.Header.FullPath, 'LibraryClasses', Item[0])
                     CheckFileExist(self.WorkspaceDir, ItemList[1], self.Module.Header.FullPath, 'LibraryClasses', Item[0])
@@ -301,11 +405,20 @@ class Inf(InfObject):
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].Packages:
                 Status = GenDefines(Item, Arch, Defines)
-                if Status == 0:       # Find DEFINE statement
+                #
+                # Find DEFINE statement
+                #
+                if Status == 0:
                     pass
-                elif Status == -1:    # Find DEFINE statement but in wrong format
+                #
+                # Find DEFINE statement but in wrong format
+                #
+                elif Status == -1:
                     RaiseParserError(Item[0], 'Packages', File, 'DEFINE <VarName> = <PATH>')
-                elif Status == 1:     # Not find DEFINE statement
+                #
+                # Not find DEFINE statement
+                #
+                elif Status == 1:
                     CheckFileType(Item, '.Dec', self.Module.Header.FullPath, 'package', Item)
                     CheckFileExist(self.WorkspaceDir, Item, self.Module.Header.FullPath, 'Packages', Item)
                     MergeArches(Packages, Item, Arch)
@@ -454,11 +567,20 @@ class Inf(InfObject):
             Line = ''
             for Item in self.Contents[Arch].Depex:
                 Status = GenDefines(Item, Arch, Defines)
-                if Status == 0:       # Find DEFINE statement
+                #
+                # Find DEFINE statement
+                #
+                if Status == 0:
                     pass
-                elif Status == -1:    # Find DEFINE statement but in wrong format
+                #
+                # Find DEFINE statement but in wrong format
+                #
+                elif Status == -1:
                     RaiseParserError(Item, 'Depex', File, 'DEFINE <VarName> = <PATH>')
-                elif Status == 1:     # Not find DEFINE statement
+                #
+                # Not find DEFINE statement
+                #
+                elif Status == 1:
                     Line = Line + Item + ' '
             MergeArches(Depex, Line, Arch)
         for Key in Depex.keys():
@@ -486,9 +608,15 @@ class Inf(InfObject):
             Binary = ModuleBinaryFileClass(Key[1], Key[0], Key[2], Key[3], Binaries[Key])
             self.Module.Binaries.append(Binary)
         
+    ## Get Pcd Values of Inf
     #
-    # Get Pcd of Dec as <TokenSpaceGuidCName>.<PcdCName>[|<Value>]
-    # Return (TokenSpcCName, TokenCName, Value, ItemType)
+    # Get Pcd of Inf as <TokenSpaceGuidCName>.<PcdCName>[|<Value>]
+    #
+    # @param Item:  The string describes pcd
+    # @param Type:  The type of Pcd
+    # @param File:  The file which describes the pcd, used for error report
+    #
+    # @retval (TokenSpcCName, TokenCName, Value, ItemType) Formatted Pcd Item
     #
     def GetPcdOfInf(self, Item, Type, File):
         Format = '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'
@@ -516,7 +644,13 @@ class Inf(InfObject):
             RaiseParserError(Item, 'Pcds' + Type, File, Format)
 
         return (TokenInfo[0], TokenInfo[1], List[1], Type)
-    
+
+    ## Load Inf file
+    #
+    # Load the file if it exists
+    #
+    # @param Filename:  Input value for filename of Inf file
+    #
     def LoadInfFile(self, Filename):     
         (Filepath, Name) = os.path.split(Filename)
         self.Identification.FileName = Name
@@ -552,8 +686,9 @@ class Inf(InfObject):
                                 continue
             #EndFor
 
+    ## Show detailed information of Inf
     #
-    # Show detailed information of Inf
+    # Print all members and their values of Inf class
     #
     def ShowInf(self):
         print TAB_SECTION_START + TAB_INF_DEFINES + TAB_SECTION_END
@@ -567,85 +702,91 @@ class Inf(InfObject):
                 eval(Command)
         print ""
     
+    ## Show detailed information of Module
     #
-    # Show detailed information of Module
+    # Print all members and their values of Module class
     #
     def ShowModule(self):
-        m = self.Module
-        print 'Filename =', m.Header.FileName
-        print 'FullPath =', m.Header.FullPath
-        print 'BaseName =', m.Header.Name
-        print 'Guid =', m.Header.Guid
-        print 'Version =', m.Header.Version
-        print 'InfVersion =', m.Header.InfVersion
-        print 'EfiSpecificationVersion =', m.Header.EfiSpecificationVersion
-        print 'EdkReleaseVersion =', m.Header.EdkReleaseVersion                
-        print 'ModuleType =', m.Header.ModuleType
-        print 'BinaryModule =', m.Header.BinaryModule
-        print 'ComponentType =', m.Header.ComponentType
-        print 'MakefileName =', m.Header.MakefileName
-        print 'BuildNumber =', m.Header.BuildNumber
-        print 'BuildType =', m.Header.BuildType
-        print 'FfsExt =', m.Header.FfsExt
-        print 'FvExt =', m.Header.FvExt
-        print 'SourceFv =', m.Header.SourceFv
-        print 'PcdIsDriver =', m.Header.PcdIsDriver
-        print 'TianoR8FlashMap_h =', m.Header.TianoR8FlashMap_h
-        print 'LibraryClass =', m.Header.LibraryClass
-        for Item in m.Header.LibraryClass:
+        M = self.Module
+        print 'Filename =', M.Header.FileName
+        print 'FullPath =', M.Header.FullPath
+        print 'BaseName =', M.Header.Name
+        print 'Guid =', M.Header.Guid
+        print 'Version =', M.Header.Version
+        print 'InfVersion =', M.Header.InfVersion
+        print 'EfiSpecificationVersion =', M.Header.EfiSpecificationVersion
+        print 'EdkReleaseVersion =', M.Header.EdkReleaseVersion                
+        print 'ModuleType =', M.Header.ModuleType
+        print 'BinaryModule =', M.Header.BinaryModule
+        print 'ComponentType =', M.Header.ComponentType
+        print 'MakefileName =', M.Header.MakefileName
+        print 'BuildNumber =', M.Header.BuildNumber
+        print 'BuildType =', M.Header.BuildType
+        print 'FfsExt =', M.Header.FfsExt
+        print 'FvExt =', M.Header.FvExt
+        print 'SourceFv =', M.Header.SourceFv
+        print 'PcdIsDriver =', M.Header.PcdIsDriver
+        print 'TianoR8FlashMap_h =', M.Header.TianoR8FlashMap_h
+        print 'LibraryClass =', M.Header.LibraryClass
+        for Item in M.Header.LibraryClass:
             print Item.LibraryClass, DataType.TAB_VALUE_SPLIT.join(Item.SupModuleList)
-        print 'CustomMakefile =', m.Header.CustomMakefile
+        print 'CustomMakefile =', M.Header.CustomMakefile
         for Item in self.Module.ExternImages:
             print 'Entry_Point = %s, UnloadImage = %s' % (Item.ModuleEntryPoint, Item.ModuleUnloadImage)
         for Item in self.Module.ExternLibraries:
             print 'Constructor = %s, Destructor = %s' % (Item.Constructor, Item.Destructor)
-        print 'Define =', m.Header.Define
-        print 'Specification =', m.Header.Specification
-        print '\nBuildOptions =', m.BuildOptions
-        for Item in m.BuildOptions:
+        print 'Define =', M.Header.Define
+        print 'Specification =', M.Header.Specification
+        print '\nBuildOptions =', M.BuildOptions
+        for Item in M.BuildOptions:
             print Item.ToolChainFamily, Item.ToolChain, Item.Option, Item.SupArchList
-        print '\nIncludes =', m.Includes
-        for Item in m.Includes:
+        print '\nIncludes =', M.Includes
+        for Item in M.Includes:
             print Item.FilePath, Item.SupArchList
-        print '\nLibraries =', m.Libraries
-        for Item in m.Libraries:
+        print '\nLibraries =', M.Libraries
+        for Item in M.Libraries:
             print Item.Library, Item.SupArchList
-        print '\nLibraryClasses =', m.LibraryClasses
-        for Item in m.LibraryClasses:
+        print '\nLibraryClasses =', M.LibraryClasses
+        for Item in M.LibraryClasses:
             print Item.LibraryClass, Item.RecommendedInstance, Item.FeatureFlag, Item.SupModuleList, Item.SupArchList, Item.Define
-        print '\nPackageDependencies =', m.PackageDependencies
-        for Item in m.PackageDependencies:
+        print '\nPackageDependencies =', M.PackageDependencies
+        for Item in M.PackageDependencies:
             print Item.FilePath, Item.SupArchList, Item.Define
-        print '\nNmake =', m.Nmake
-        for Item in m.Nmake:
+        print '\nNmake =', M.Nmake
+        for Item in M.Nmake:
             print Item.Name, Item.Value, Item.SupArchList
-        print '\nPcds =', m.PcdCodes
-        for Item in m.PcdCodes:
+        print '\nPcds =', M.PcdCodes
+        for Item in M.PcdCodes:
             print '\tCName=',Item.CName, 'TokenSpaceGuidCName=', Item.TokenSpaceGuidCName, 'DefaultValue=', Item.DefaultValue, 'ItemType=', Item.ItemType, Item.SupArchList
-        print '\nSources =', m.Sources
-        for Source in m.Sources:
+        print '\nSources =', M.Sources
+        for Source in M.Sources:
             print Source.SourceFile, 'Fam=', Source.ToolChainFamily, 'Pcd=', Source.FeatureFlag, 'Tag=', Source.TagName, 'ToolCode=', Source.ToolCode, Source.SupArchList
-        print '\nUserExtensions =', m.UserExtensions
-        for UserExtension in m.UserExtensions:
+        print '\nUserExtensions =', M.UserExtensions
+        for UserExtension in M.UserExtensions:
             print UserExtension.UserID, UserExtension.Identifier,UserExtension.Content
-        print '\nGuids =', m.Guids
-        for Item in m.Guids:
+        print '\nGuids =', M.Guids
+        for Item in M.Guids:
             print Item.CName, Item.SupArchList
-        print '\nProtocols =', m.Protocols
-        for Item in m.Protocols:
+        print '\nProtocols =', M.Protocols
+        for Item in M.Protocols:
             print Item.CName, Item.SupArchList
-        print '\nPpis =', m.Ppis
-        for Item in m.Ppis:
+        print '\nPpis =', M.Ppis
+        for Item in M.Ppis:
             print Item.CName, Item.SupArchList
-        print '\nDepex =', m.Depex
-        for Item in m.Depex:
+        print '\nDepex =', M.Depex
+        for Item in M.Depex:
             print Item.Depex, Item.SupArchList, Item.Define
-        print '\nBinaries =', m.Binaries
-        for Binary in m.Binaries:
-            print 'Type=', Binary.FileType, 'Target=', Binary.Target, 'Name=', Binary.BinaryFile, Binary.FeatureFlag
-        
+        print '\nBinaries =', M.Binaries
+        for Binary in M.Binaries:
+            print 'Type=', Binary.FileType, 'Target=', Binary.Target, 'Name=', Binary.BinaryFile, 'FeatureFlag=', Binary.FeatureFlag, 'SupArchList=', Binary.SupArchList
+
+##
+#
+# This acts like the main() function for the script, unless it is 'import'ed into another
+# script.
+#
 if __name__ == '__main__':
-    w = os.getenv('WORKSPACE')
-    f = os.path.join(w, 'MdeModulePkg/Application/HelloWorld/HelloWorld.inf')
-    p = Inf(os.path.normpath(f), True, True, w)
-    p.ShowModule()
+    W = os.getenv('WORKSPACE')
+    F = os.path.join(W, 'MdeModulePkg/Application/HelloWorld/HelloWorld.inf')
+    P = Inf(os.path.normpath(F), True, True, W)
+    P.ShowModule()

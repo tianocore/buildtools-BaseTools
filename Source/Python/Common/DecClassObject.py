@@ -1,16 +1,19 @@
+## @file
+# This file is used to define each component of DEC file
+#
 # Copyright (c) 2007, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
-# which accompanies this distribution.    The full text of the license may be found at
+# which accompanies this distribution.  The full text of the license may be found at
 # http://opensource.org/licenses/bsd-license.php
 #
 # THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
-
-#
-#This file is used to define each component of DEC file
 #
 
+##
+# Import Modules
+#
 import os
 from String import *
 from DataType import *
@@ -19,20 +22,53 @@ from Dictionary import *
 from CommonDataClass.PackageClass import *
 from BuildToolError import *
 
+## DecObject
+#
+# This class defined basic Dec object which is used by inheriting
+# 
+# @param object:       Inherited from object class
+#
 class DecObject(object):
     def __init__(self):
         object.__init__()
 
+## DecDefines
+#
+# This class defined basic Defines used in Dec object
+# 
+# @param DecObject:        Inherited from DecObject class
+#
+# @var DefinesDictionary:  To store value for DefinesDictionary 
+#
 class DecDefines(DecObject):
     def __init__(self):
         self.DefinesDictionary = {
-            #Req
+            #
+            # Required Fields
+            #
             TAB_DEC_DEFINES_DEC_SPECIFICATION           : [''],
             TAB_DEC_DEFINES_PACKAGE_NAME                : [''],
             TAB_DEC_DEFINES_PACKAGE_GUID                : [''],
             TAB_DEC_DEFINES_PACKAGE_VERSION             : ['']
         }
-        
+
+## DecContents
+#
+# This class defined basic Contents used in Dec object
+# 
+# @param DecObject:            Inherited from DecObject class
+#
+# @var Includes:               To store value for Includes
+# @var Guids:                  To store value for Guids
+# @var Protocols:              To store value for Protocols
+# @var Ppis:                   To store value for Ppis
+# @var LibraryClasses:         To store value for LibraryClasses
+# @var PcdsFixedAtBuild:       To store value for PcdsFixedAtBuild
+# @var PcdsPatchableInModule:  To store value for PcdsPatchableInModule
+# @var PcdsFeatureFlag:        To store value for PcdsFeatureFlag
+# @var PcdsDynamic:            To store value for PcdsDynamic
+# @var PcdsDynamicEx:          To store value for PcdsDynamicEx
+#
 class DecContents(DecObject):
     def __init__(self):
         self.Includes = []
@@ -46,8 +82,32 @@ class DecContents(DecObject):
         self.PcdsDynamic = []
         self.PcdsDynamicEx = []
 
+## Dec
+#
+# This class defined the structure used in Dec object
+# 
+# @param DecObject:         Inherited from DecObject class
+# @param Filename:          Input value for Filename of Dec file, default is None
+# @param IsMergeAllArches:  Input value for IsMergeAllArches
+#                           True is to merge all arches
+#                           Fales is not to merge all arches
+#                           default is False
+# @param IsToPackage:       Input value for IsToPackage
+#                           True is to transfer to PackageObject automatically
+#                           False is not to transfer to PackageObject automatically
+#                           default is False
+# @param WorkspaceDir:      Input value for current workspace directory, default is None
+#
+# @var Identification:      To store value for Identification, it is a structure as Identification
+# @var Defines:             To store value for Defines, it is a structure as DecDefines
+# @var UserExtensions:      To store value for UserExtensions
+# @var Package:             To store value for Package, it is a structure as PackageClass
+# @var WorkspaceDir:        To store value for WorkspaceDir
+# @var Contents:            To store value for Contents, it is a structure as DecContents
+# @var KeyList:             To store value for KeyList, a list for all Keys used in Dec
+#
 class Dec(DecObject):
-    def __init__(self, filename = None, isMergeAllArches = False, isToPackage = False, WorkspaceDir = None):
+    def __init__(self, Filename = None, IsMergeAllArches = False, IsToPackage = False, WorkspaceDir = None):
         self.Identification = Identification()
         self.Defines = DecDefines()
         self.UserExtensions = ''
@@ -55,8 +115,8 @@ class Dec(DecObject):
         self.WorkspaceDir = WorkspaceDir
         
         self.Contents = {}
-        for key in DataType.ARCH_LIST_FULL:
-            self.Contents[key] = DecContents()
+        for Arch in DataType.ARCH_LIST_FULL:
+            self.Contents[Arch] = DecContents()
         
         self.KeyList = [
             TAB_INCLUDES, TAB_GUIDS, TAB_PROTOCOLS, TAB_PPIS, TAB_LIBRARY_CLASSES, \
@@ -64,28 +124,56 @@ class Dec(DecObject):
             TAB_PCDS_DYNAMIC_NULL, TAB_PCDS_DYNAMIC_EX_NULL
         ]
     
-        if filename != None:
-            self.LoadDecFile(filename)
-            
-        if isMergeAllArches:
+        #
+        # Load Dec file if filename is not None
+        #
+        if Filename != None:
+            self.LoadDecFile(Filename)
+        
+        #
+        # Merge contents of Dec from all arches if IsMergeAllArches is True
+        #
+        if IsMergeAllArches:
             self.MergeAllArches()
         
-        if isToPackage:
+        #
+        # Transfer to Package Object if IsToPackage is True
+        #
+        if IsToPackage:
             self.DecToPackage()
     
+    ## Parse Dec file
+    #
+    # Go through input lines one by one to find the value defined in Key section.
+    # Save them to KeyField
+    #
+    # @param Lines:     Lines need to be parsed
+    # @param Key:       The key value of the section to be located
+    # @param KeyField:  To save the found contents
+    #
     def ParseDec(self, Lines, Key, KeyField):
         newKey = SplitModuleType(Key)
         if newKey[0].upper().find(DataType.TAB_LIBRARY_CLASSES.upper()) != -1:
             GetLibraryClassesWithModuleType(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
         else:
             GetMultipleValuesOfKeyFromLines(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
-            
+
+    ## Merge contents of Dec from all arches
+    #
+    # Find the contents defined in all arches and merge them to all
+    #   
     def MergeAllArches(self):
-        for key in self.KeyList:
-            for arch in DataType.ARCH_LIST:
-                Command = "self.Contents[arch]." + key + ".extend(" + "self.Contents['" + DataType.TAB_ARCH_COMMON + "']." + key + ")"
+        for Key in self.KeyList:
+            for Arch in DataType.ARCH_LIST:
+                Command = "self.Contents[Arch]." + Key + ".extend(" + "self.Contents['" + DataType.TAB_ARCH_COMMON + "']." + Key + ")"
                 eval(Command)
 
+    ## Load Dec file
+    #
+    # Load the file if it exists
+    #
+    # @param Filename:  Input value for filename of Dec file
+    #
     def LoadDecFile(self, Filename):
         (Filepath, Name) = os.path.split(Filename)
         self.Identification.FileName = Name
@@ -118,6 +206,10 @@ class Dec(DecObject):
                                 continue
         #EndFor
 
+    ## Transfer to Package Object
+    # 
+    # Transfer all contents of a Dec file to a standard Package Object
+    #
     def DecToPackage(self):
         #
         # Get value for Header
@@ -256,9 +348,10 @@ class Dec(DecObject):
             Pcd.SupArchList = Pcds[Key]
             self.Package.PcdDeclarations.append(Pcd)
     
+    ## Get Pcd Values of Dec
     #
     # Get Pcd of Dec as <TokenSpcCName>.<TokenCName>|<Value>|<DatumType>|<Token>
-    # Return (TokenSpcCName, TokenCName, Value, DatumType, Token, ItemType)
+    # @retval (TokenSpcCName, TokenCName, Value, DatumType, Token, ItemType) Formatted Pcd Item
     #
     def GetPcdOfDec(self, Item, Type, File):
         Format = '<TokenSpaceGuidCName>.<PcdCName>|<Value>|<DatumType>|<Token>'
@@ -271,8 +364,9 @@ class Dec(DecObject):
         
         return (TokenInfo[0], TokenInfo[1], List[1], List[2], List[3], Type)
     
+    ## Show detailed information of Dec
     #
-    # Show detailed information of Dec
+    # Print all members and their values of Dec class
     #
     def ShowDec(self):
         print TAB_SECTION_START + TAB_INF_DEFINES + TAB_SECTION_END
@@ -285,38 +379,44 @@ class Dec(DecObject):
                                     "' + TAB_SECTION_END, self.Contents[arch]." + key + ')'
                 eval(Command)
     
+    ## Show detailed information of Package
     #
-    # Show detailed information of Package
+    # Print all members and their values of Package class
     #
     def ShowPackage(self):
-        m = self.Package
-        print 'Filename =', m.Header.FileName
-        print 'FullPath =', m.Header.FullPath
-        print 'BaseName =', m.Header.Name
-        print 'Guid =', m.Header.Guid
-        print 'Version =', m.Header.Version
-        print 'DecSpecification =', m.Header.DecSpecification
-        print '\nIncludes =', m.Includes
-        for Item in m.Includes:
+        M = self.Package
+        print 'Filename =', M.Header.FileName
+        print 'FullPath =', M.Header.FullPath
+        print 'BaseName =', M.Header.Name
+        print 'Guid =', M.Header.Guid
+        print 'Version =', M.Header.Version
+        print 'DecSpecification =', M.Header.DecSpecification
+        print '\nIncludes =', M.Includes
+        for Item in M.Includes:
             print Item.FilePath, Item.SupArchList
-        print '\nGuids =', m.GuidDeclarations
-        for Item in m.GuidDeclarations:
+        print '\nGuids =', M.GuidDeclarations
+        for Item in M.GuidDeclarations:
             print Item.CName, Item.Guid, Item.SupArchList
-        print '\nProtocols =', m.ProtocolDeclarations
-        for Item in m.ProtocolDeclarations:
+        print '\nProtocols =', M.ProtocolDeclarations
+        for Item in M.ProtocolDeclarations:
             print Item.CName, Item.Guid, Item.SupArchList
-        print '\nPpis =', m.PpiDeclarations
-        for Item in m.PpiDeclarations:
+        print '\nPpis =', M.PpiDeclarations
+        for Item in M.PpiDeclarations:
             print Item.CName, Item.Guid, Item.SupArchList
-        print '\nLibraryClasses =', m.LibraryClassDeclarations
-        for Item in m.LibraryClassDeclarations:
+        print '\nLibraryClasses =', M.LibraryClassDeclarations
+        for Item in M.LibraryClassDeclarations:
             print Item.LibraryClass, Item.RecommendedInstance, Item.SupModuleList, Item.SupArchList
-        print '\nPcds =', m.PcdDeclarations
-        for Item in m.PcdDeclarations:
+        print '\nPcds =', M.PcdDeclarations
+        for Item in M.PcdDeclarations:
             print 'CName=', Item.CName, 'TokenSpaceGuidCName=', Item.TokenSpaceGuidCName, 'DefaultValue=', Item.DefaultValue, 'ItemType=', Item.ItemType, 'Token=', Item.Token, 'DatumType=', Item.DatumType, Item.SupArchList
 
+##
+#
+# This acts like the main() function for the script, unless it is 'import'ed into another
+# script.
+#
 if __name__ == '__main__':
-    w = os.getenv('WORKSPACE')
-    f = os.path.join(w, 'Nt32Pkg/Nt32Pkg.dec')
-    p = Dec(os.path.normpath(f), True, True, w)
-    p.ShowPackage()
+    W = os.getenv('WORKSPACE')
+    F = os.path.join(W, 'Nt32Pkg/Nt32Pkg.dec')
+    P = Dec(os.path.normpath(F), True, True, W)
+    P.ShowPackage()
