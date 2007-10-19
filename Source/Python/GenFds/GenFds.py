@@ -71,7 +71,7 @@ def main():
             if 'EDK_SOURCE' in os.environ.keys():
                 GenFdsGlobalVariable.EdkSourceDir = os.environ['EDK_SOURCE']
             if (Options.debug):
-                GenFdsGlobalVariable.VerboseLogger( "Using Workspace:", Workspace)
+                GenFdsGlobalVariable.VerboseLogger( "Using Workspace:" + Workspace)
     
         if (Options.filename):
             FdfFilename = Options.filename
