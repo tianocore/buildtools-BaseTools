@@ -902,7 +902,7 @@ class WorkspaceBuild(object):
         for LibraryClassName in LibraryInstance:
             M = LibraryInstance[LibraryClassName]
             if M == None:
-                EdkLogger.error("AutoGen", AUTOGEN_ERROR,
+                EdkLogger.warn("AutoGen", #AUTOGEN_ERROR,
                                 "Library instance for library class [%s] is not found" % LibraryClassName,
                                 ExtraData="\t%s [%s]" % (str(Module), Arch))
             LibraryList.append(M)
