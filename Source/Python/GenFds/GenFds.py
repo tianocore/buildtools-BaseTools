@@ -54,10 +54,11 @@ def main():
         if Options.verbose != None:
             EdkLogger.SetLevel(EdkLogger.VERBOSE)
             GenFdsGlobalVariable.VerboseMode = True
-        elif Options.quiet != None:
+        if Options.quiet != None:
             EdkLogger.SetLevel(EdkLogger.QUIET)
-        elif Options.debug != None:
-            EdkLogger.SetLevel(Options.debug)
+        if Options.debug != None:
+            EdkLogger.SetLevel(Options.debug + 1)
+            GenFdsGlobalVariable.DebugLevel = Options.debug
         else:
             EdkLogger.SetLevel(EdkLogger.INFO)
             

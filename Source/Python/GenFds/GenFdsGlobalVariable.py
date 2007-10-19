@@ -45,6 +45,7 @@ class GenFdsGlobalVariable:
     ActivePlatform = None
     FvAddressFileName = ''
     VerboseMode = False
+    DebugLevel = -1
     SharpCounter = 0
     SharpNumberPerLine = 40
 
@@ -122,7 +123,12 @@ class GenFdsGlobalVariable:
         return os.path.normpath(Str)
     
     def CallExternalTool (cmd, errorMess):
+        
+        if GenFdsGlobalVariable.DebugLevel != -1:
+            cmd += ' -d %d' % GenFdsGlobalVariable.DebugLevel
+        
         if GenFdsGlobalVariable.VerboseMode:
+            cmd += ' -v'
             GenFdsGlobalVariable.InfLogger (cmd)
         else:
             sys.stdout.write ('#')
@@ -136,12 +142,13 @@ class GenFdsGlobalVariable:
 
         while PopenObject.returncode == None :
             PopenObject.wait()
-        if PopenObject.returncode != 0:
+        if PopenObject.returncode != 0 or GenFdsGlobalVariable.VerboseMode or GenFdsGlobalVariable.DebugLevel != -1:
             GenFdsGlobalVariable.InfLogger ("Return Value = %d" %PopenObject.returncode)
             GenFdsGlobalVariable.InfLogger (out)
             GenFdsGlobalVariable.InfLogger (error)
-            GenFdsGlobalVariable.InfLogger (errorMess)
-            sys.exit(1)
+            if PopenObject.returncode != 0:
+                GenFdsGlobalVariable.InfLogger (errorMess)
+                sys.exit(1)
 
     def VerboseLogger (msg):
         EdkLogger.verbose(msg)
