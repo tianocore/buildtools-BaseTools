@@ -126,6 +126,7 @@ class GenFdsGlobalVariable:
         
         if GenFdsGlobalVariable.DebugLevel != -1:
             cmd += ' -d %d' % GenFdsGlobalVariable.DebugLevel
+            GenFdsGlobalVariable.InfLogger (cmd)
         
         if GenFdsGlobalVariable.VerboseMode:
             cmd += ' -v'
