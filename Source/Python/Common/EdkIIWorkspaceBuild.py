@@ -164,7 +164,7 @@ class LibraryClassObject(object):
 #                              { [(PcdCName, PcdGuidCName)] : PcdClassObject}
 # @var BuildOptions:           To store value for BuildOptions, it is a set structure as
 #                              { [BuildOptionKey] : BuildOptionValue}
-# @var Depex:                  To store value for Depex, it is a list structure as
+# @var Depex:                  To store value for Depex
 #
 class ModuleBuildClassObject(object):
     def __init__(self):
@@ -416,8 +416,11 @@ class ItemBuild(object):
 #                         { [DecFileName] : DecClassObject}
 # @var DscDatabase:       To store value for DscDatabase, it is a set structure as
 #                         { [DscFileName] : DscClassObject}
-# @var Build              To store value for DscDatabase, it is a set structure as
+# @var Build:             To store value for DscDatabase, it is a set structure as
 #                         ItemBuild
+# @var DscFileName:       To store value for Active Platform
+# @var UnFoundPcdInDsc:   To store values for the pcds defined in INF/DEC but not found in DSC, it is a set structure as
+#                         { (PcdGuid, PcdCName, Arch) : DecFileName }
 #
 class WorkspaceBuild(object):
     def __init__(self, ActivePlatform, WorkspaceDir):
@@ -434,6 +437,8 @@ class WorkspaceBuild(object):
         self.InfDatabase             = {}
         self.DecDatabase             = {}
         self.DscDatabase             = {}
+        
+        self.UnFoundPcdInDsc         = {}
 
         #
         # Init build for all arches
@@ -445,10 +450,10 @@ class WorkspaceBuild(object):
         #
         # Get active platform
         #
-        DscFileName = NormPath(ActivePlatform)
-        File = self.WorkspaceFile(DscFileName)
+        self.DscFileName = NormPath(ActivePlatform)
+        File = self.WorkspaceFile(self.DscFileName)
         if os.path.exists(File) and os.path.isfile(File):
-            self.DscDatabase[DscFileName] = Dsc(File, True, True, self.WorkspaceDir)
+            self.DscDatabase[self.DscFileName] = Dsc(File, True, True, self.WorkspaceDir)
         else:
             EdkLogger.error("AutoGen", FILE_NOT_FOUND, ExtraData = File)
 
@@ -1040,7 +1045,31 @@ class WorkspaceBuild(object):
         # Update Libraries Of Platform
         #
         self.UpdateLibrariesOfPlatform(InfList)
+        
+        #
+        # Output used Pcds not found in DSC file
+        #
+        self.ShowUnFoundPcds()
 
+    ## ShowUnFoundPcds()
+    #
+    # If there is any pcd used but not defined in DSC
+    # Print warning message on screen and output a list of pcds
+    #
+    def ShowUnFoundPcds(self):
+        if self.UnFoundPcdInDsc != {}:
+            WrnMessage = '**** WARNING ****\n'
+            WrnMessage += 'The following Pcds were not defined in the DSC file: %s\n' % self.DscFileName
+            WrnMessage += 'The default values were obtained from the DEC file that declares the PCD and the PCD default value\n'
+            for (Guid, Name, Arch) in self.UnFoundPcdInDsc:
+                Dec = self.UnFoundPcdInDsc[(Guid, Name, Arch)]
+                Pcds = self.Build[Arch].PackageDatabase[Dec].Pcds
+                if (Name, Guid) in Pcds:
+                    PcdItemTypeUsed = Pcds[(Name, Guid)].Type
+                    DefaultValue = Pcds[(Name, Guid)].DefaultValue
+                    WrnMessage += '%s.%s: Defined in file %s, PcdItemType is Pcds%s, DefaultValue is %s\n' % (Guid, Name, Dec, PcdItemTypeUsed, DefaultValue)
+            EdkLogger.info(WrnMessage)
+        
     ## Create a full path with workspace dir
     #
     # Convert Filename with workspace dir to create a full path
@@ -1230,36 +1259,49 @@ class WorkspaceBuild(object):
         IsOverrided = False
         IsFoundInDsc = False
         IsFoundInDec = False
+        FoundInDecFile = ''
+        
         #
-        # First get information from platform database
+        # First get information from package database
         #
-        for Dsc in self.Build[Arch].PlatformDatabase.keys():
-            Pcds = self.Build[Arch].PlatformDatabase[Dsc].Pcds
+        for Dec in self.Build[Arch].PackageDatabase.keys():
+            Pcds = self.Build[Arch].PackageDatabase[Dec].Pcds
             if (Name, Guid) in Pcds:
                 Type = Pcds[(Name, Guid)].Type
                 DatumType = Pcds[(Name, Guid)].DatumType
                 Value = Pcds[(Name, Guid)].DefaultValue
                 Token = Pcds[(Name, Guid)].TokenValue
-                MaxDatumSize = Pcds[(Name, Guid)].MaxDatumSize
-                SkuInfoList =  Pcds[(Name, Guid)].SkuInfoList
-                IsOverrided = True
-                IsFoundInDsc = True
-                break
-
-        #
-        # Second get information from package database
-        #
-        for Dec in self.Build[Arch].PackageDatabase.keys():
-            Pcds = self.Build[Arch].PackageDatabase[Dec].Pcds
-            if (Name, Guid) in Pcds:
-                DatumType = Pcds[(Name, Guid)].DatumType
-                Token = Pcds[(Name, Guid)].TokenValue
+                
                 IsOverrided = True
                 IsFoundInDec = True
+                FoundInDecFile = Dec
                 break
+
         if not IsFoundInDec:
             ErrorMsg = "Pcd '%s.%s' defined in module '%s' is not found in any package" % (Guid, Name, ModuleName)
             EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
+
+        #
+        # Second get information from platform database
+        #
+        for Dsc in self.Build[Arch].PlatformDatabase.keys():
+            Pcds = self.Build[Arch].PlatformDatabase[Dsc].Pcds
+            if (Name, Guid) in Pcds:
+                if Pcds[(Name, Guid)].Type != '' and Pcds[(Name, Guid)].Type != None:
+                    Type = Pcds[(Name, Guid)].Type
+                if Pcds[(Name, Guid)].DatumType != '' and Pcds[(Name, Guid)].DatumType != None:
+                    DatumType = Pcds[(Name, Guid)].DatumType
+                if Pcds[(Name, Guid)].TokenValue != '' and Pcds[(Name, Guid)].TokenValue != None:
+                    Token = Pcds[(Name, Guid)].TokenValue
+                if Pcds[(Name, Guid)].DefaultValue != '' and Pcds[(Name, Guid)].DefaultValue != None:
+                    Value = Pcds[(Name, Guid)].DefaultValue
+                if Pcds[(Name, Guid)].MaxDatumSize != '' and Pcds[(Name, Guid)].MaxDatumSize != None:
+                    MaxDatumSize = Pcds[(Name, Guid)].MaxDatumSize
+                SkuInfoList =  Pcds[(Name, Guid)].SkuInfoList
+                
+                IsOverrided = True
+                IsFoundInDsc = True
+                break
 
         #
         # Third get information from <Pcd> of <Compontents> from module database
@@ -1274,6 +1316,7 @@ class WorkspaceBuild(object):
                                     Value = Pcd.DefaultValue
                                 if Pcd.MaxDatumSize != '':
                                     MaxDatumSize = Pcd.MaxDatumSize
+                                    
                                 IsFoundInDsc = True
                                 IsOverrided = True
                                 break
@@ -1290,8 +1333,9 @@ class WorkspaceBuild(object):
         # Not found in any platform and fdf
         #
         if not IsFoundInDsc:
-            ErrorMsg = "Pcd '%s.%s' defined in module '%s' is not found in any platform" % (Guid, Name, ModuleName)
-            EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
+            self.UnFoundPcdInDsc[(Guid, Name, Arch)] = FoundInDecFile
+            #ErrorMsg = "Pcd '%s.%s' defined in module '%s' is not found in any platform" % (Guid, Name, ModuleName)
+            #EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
 
         return PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, IsOverrided)
 

@@ -217,7 +217,20 @@ class Inf(InfObject):
         #
         self.Module.Header.Name = self.Defines.DefinesDictionary[TAB_INF_DEFINES_BASE_NAME][0]
         self.Module.Header.Guid = self.Defines.DefinesDictionary[TAB_INF_DEFINES_FILE_GUID][0]
-        self.Module.Header.Version = self.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_NUMBER][0]
+        
+        #
+        # Get version of INF
+        #
+        VersionNumber = self.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_NUMBER][0]
+        VersionString = self.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_STRING][0]
+        if len(VersionNumber) > 0 and len(VersionString) == 0:
+            EdkLogger.warn(2000, 'VERSION_NUMBER depricated; INF file %s should be modified to use VERSION_STRING instead.' % self.Identification.FileFullPath)
+            self.Module.Header.Version = VersionNumber
+        if len(VersionString) > 0:
+            if len(VersionNumber) > 0:
+                EdkLogger.warn(2001, 'INF file %s defines both VERSION_NUMBER and VERSION_STRING, using VERSION_STRING' % self.Identification.FileFullPath)
+            self.Module.Header.Version = VersionString
+        
         self.Module.Header.FileName = self.Identification.FileName
         self.Module.Header.FullPath = self.Identification.FileFullPath
         File = self.Module.Header.FullPath
