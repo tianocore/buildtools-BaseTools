@@ -818,8 +818,8 @@ class Build():
                 self.Progress.Start("Generating code/makefile for platform")
                 AutoGenResult = PlatformAutoGen.New(self.Ewb, Platform, BuildTarget,
                                                     ToolChain, Arch, CreateDepModuleAutoGenObject)
-
-
+            if AutoGenResult == None:
+                return
 
             # for target which must generate AutoGen code and makefile
             AutoGenResult.CreateCodeFile(CreateDepModuleCodeFile)
@@ -840,6 +840,8 @@ class Build():
             else:
                 AutoGenResult = PlatformAutoGen.New(self.Ewb, Platform, BuildTarget,
                                                     ToolChain, Arch, False)
+            if AutoGenResult == None:
+                return
 
         EdkLogger.info("")
         BuildCommand = AutoGenResult.GetBuildCommand()
@@ -884,6 +886,8 @@ class Build():
         for BuildTarget in self.BuildTargetList:
             for ToolChain in self.ToolChainList:
                 Pa = PlatformAutoGen.New(self.Ewb, self.PlatformFile, BuildTarget, ToolChain, self.ArchList)
+                if Pa == None:
+                    continue
                 # multi-thread exit flag
                 ExitFlag = threading.Event()
                 ExitFlag.clear()
@@ -891,6 +895,8 @@ class Build():
                     for Module in Pa.Platform[Arch].Modules:
                         # Get ModuleAutoGen object to generate C code file and makefile
                         Ma = ModuleAutoGen.New(self.Ewb, self.PlatformFile, Module, BuildTarget, ToolChain, Arch)
+                        if Ma == None:
+                            continue
                         # Not to auto-gen for targets 'clean', 'cleanlib', 'cleanall', 'run', 'fds'
                         if self.Target not in ['clean', 'cleanlib', 'cleanall', 'run', 'fds']:
                             # for target which must generate AutoGen code and makefile
