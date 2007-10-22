@@ -856,8 +856,8 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
             if not Value.endswith('ULL'):
                 Value += 'ULL'
         if Pcd.DatumType == 'VOID*':
-            if Pcd.MaxDatumSize == None:
-                EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Unknown MaxDatumSize of PCD %s|%s" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
+            if Pcd.MaxDatumSize == None or Pcd.MaxDatumSize == '':
+                EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Unknown [MaxDatumSize] of PCD [%s.%s]" % (Pcd.TokenSpaceGuidCName, Pcd.TokenCName))
 
             ArraySize = int(Pcd.MaxDatumSize, 0)
             if Value[0] == '{':
