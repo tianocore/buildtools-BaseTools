@@ -296,12 +296,12 @@ class BuildTask:
     _ReadyQueue = sdict()
     _ReadyQueueLock = threading.Lock()
 
+    # queue for run tasks
+    _RunningQueue = sdict()
+    _RunningQueueLock = threading.Lock()
+
     # queue containing all build tasks, in case duplicate build
     _TaskQueue = sdict()
-
-    # flag indicating no thread is running
-    _CompleteFlag = threading.Event()
-    _CompleteFlag.clear()
 
     # flag indicating error occurs in a running thread
     _ErrorFlag = threading.Event()
@@ -312,7 +312,8 @@ class BuildTask:
     _Thread = None
 
     # flag indicating if the scheduler is started or not
-    _SchedulerStarted = False
+    _SchedulerStopped = threading.Event()
+    _SchedulerStopped.set()
 
     ## Start the task scheduler thread
     #
@@ -325,7 +326,6 @@ class BuildTask:
         SchedulerThread.setName("Build-Task-Scheduler")
         SchedulerThread.setDaemon(False)
         SchedulerThread.start()
-        BuildTask._SchedulerStarted = True
 
     ## Scheduler method
     #
@@ -334,6 +334,7 @@ class BuildTask:
     #
     @staticmethod
     def Scheduler(MaxThreadNumber, ExitFlag):
+        BuildTask._SchedulerStopped.clear()
         try:
             # use BoundedSemaphore to control the maximum running threads
             BuildTask._Thread = BoundedSemaphore(MaxThreadNumber)
@@ -343,7 +344,7 @@ class BuildTask:
             #
             while (len(BuildTask._PendingQueue) > 0 or len(BuildTask._ReadyQueue) > 0 \
                    or not ExitFlag.isSet()) and not BuildTask._ErrorFlag.isSet():
-                EdkLogger.debug(EdkLogger.DEBUG_5, "Pending Queue (%d), Ready Queue (%d)"
+                EdkLogger.debug(EdkLogger.DEBUG_9, "Pending Queue (%d), Ready Queue (%d)"
                                 % (len(BuildTask._PendingQueue), len(BuildTask._ReadyQueue)))
                 # get all pending tasks
                 BuildTask._PendingQueueLock.acquire()
@@ -366,29 +367,33 @@ class BuildTask:
                     # empty ready queue, do nothing further
                     if len(BuildTask._ReadyQueue) == 0:
                         break
+
                     # wait for active thread(s) exit
                     BuildTask._Thread.acquire(True)
+
                     # start a new build thread
-                    Bo = BuildTask._ReadyQueue.keys()
-                    Bt = BuildTask._ReadyQueue.pop(Bo[0])
+                    Bo = BuildTask._ReadyQueue.keys()[0]
+                    Bt = BuildTask._ReadyQueue.pop(Bo)
+
+                    # move into running queue
+                    BuildTask._RunningQueueLock.acquire()
+                    BuildTask._RunningQueue[Bo] = Bt
+                    BuildTask._RunningQueueLock.release()
+
                     Bt.Start()
+
                 # avoid tense loop
                 time.sleep(0.01)
 
-            # wait for all running threads exit if no error occured
+            # wait for all running threads exit
             if BuildTask._ErrorFlag.isSet():
                 EdkLogger.quiet("\nWaiting for all Command-Threads exit...")
             # while not BuildTask._ErrorFlag.isSet() and \
-            while BuildTask._Thread._Semaphore__value < BuildTask._Thread._initial_value:
-                EdkLogger.verbose("Waiting for thread ending...(%d)" %
-                                  (BuildTask._Thread._initial_value - BuildTask._Thread._Semaphore__value)
-                                 )
-                EdkLogger.debug(EdkLogger.DEBUG_9, "Threads [%s]" %
-                                ", ".join([Th.getName() for Th in threading.enumerate()]))
+            while len(BuildTask._RunningQueue) > 0:
+                EdkLogger.verbose("Waiting for thread ending...(%d)" % len(BuildTask._RunningQueue))
+                EdkLogger.debug(EdkLogger.DEBUG_9, "Threads [%s]" % ", ".join([Th.getName() for Th in threading.enumerate()]))
                 # avoid tense loop
                 time.sleep(0.1)
-            BuildTask._CompleteFlag.set()
-            BuildTask._SchedulerStarted = False
         except BaseException, X:
             #
             # TRICK: hide the output of threads left runing, so that the user can
@@ -396,28 +401,27 @@ class BuildTask:
             #
             EdkLogger.SetLevel(EdkLogger.QUIET)
             BuildTask._ErrorFlag.set()
-            BuildTask._ErrorMessage = "build thread scheduler error\n\t%s" % str(e)
-            BuildTask._CompleteFlag.set()
-            BuildTask._SchedulerStarted = False
+            BuildTask._ErrorMessage = "build thread scheduler error\n\t%s" % str(X)
+        BuildTask._SchedulerStopped.set()
 
     ## Wait for all running method exit
     #
     @staticmethod
     def WaitForComplete():
-        BuildTask._CompleteFlag.wait()
+        BuildTask._SchedulerStopped.wait()
 
     ## Check if the scheduler is running or not
     #
     @staticmethod
     def IsOnGoing():
-        return BuildTask._SchedulerStarted
+        return not BuildTask._SchedulerStopped.isSet()
 
     ## Abort the build
     @staticmethod
     def Abort():
-        if not BuildTask._CompleteFlag.isSet():
+        if BuildTask.IsOnGoing():
             BuildTask._ErrorFlag.set()
-            BuildTask._CompleteFlag.wait()
+            BuildTask.WaitForComplete()
 
     ## Check if there's error in running thread
     #
@@ -509,7 +513,7 @@ class BuildTask:
         try:
             LaunchCommand(Command, WorkingDir)
             self.CompleteFlag = True
-        except Exception, X:
+        except:
             #
             # TRICK: hide the output of threads left runing, so that the user can
             #        catch the error message easily
@@ -519,6 +523,9 @@ class BuildTask:
             BuildTask._ErrorMessage = "%s broken\n    %s [%s]" % \
                                       (threading.currentThread().getName(), Command, WorkingDir)
         # indicate there's a thread is available for another build task
+        BuildTask._RunningQueueLock.acquire()
+        BuildTask._RunningQueue.pop(self.BuildItem)
+        BuildTask._RunningQueueLock.release()
         BuildTask._Thread.release()
 
     ## Start build task thread
