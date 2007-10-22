@@ -118,6 +118,7 @@ class PlatformBuildInfo(BuildInfo):
 
         self.PcdTokenNumber = {}    # (TokenCName, TokenSpaceGuidCName) : GeneratedTokenNumber
         self.DynamicPcdList = []    # [(TokenCName1, TokenSpaceGuidCName1), (TokenCName2, TokenSpaceGuidCName2), ...]
+        self.NonDynamicPcdList = [] # [(TokenCName1, TokenSpaceGuidCName1), (TokenCName2, TokenSpaceGuidCName2), ...]
 
         self.ToolPath = {}          # toolcode : tool path
         self.ToolDllPath = {}    # toolcode : lib path
