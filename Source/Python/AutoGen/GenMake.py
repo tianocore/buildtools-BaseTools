@@ -1175,8 +1175,8 @@ class Makefile(object):
         WorkingDir = os.getcwd()
         os.chdir(self.ModuleInfo.WorkspaceDir)
 
-        EdkLogger.debug(EdkLogger.DEBUG_3, "Try to get dependency files for %s" % File)
-        EdkLogger.debug(EdkLogger.DEBUG_2, "Including %s" % " ".join(ForceList))
+        EdkLogger.debug(EdkLogger.DEBUG_1, "Try to get dependency files for %s" % File)
+        EdkLogger.debug(EdkLogger.DEBUG_0, "Including %s" % " ".join(ForceList))
         FileStack = [File] + ForceList
         DependencySet = set()
         MacroUsedByIncludedFile = False
@@ -1185,7 +1185,7 @@ class Makefile(object):
             gDependencyDatabase[self.ModuleInfo.Arch] = {}
         DepDb = gDependencyDatabase[self.ModuleInfo.Arch]
         while len(FileStack) > 0:
-            EdkLogger.debug(EdkLogger.DEBUG_2, "Stack %s" % "\n\t".join(FileStack))
+            EdkLogger.debug(EdkLogger.DEBUG_0, "Stack %s" % "\n\t".join(FileStack))
             F = FileStack.pop()
 
             CurrentFileDependencyList = []
