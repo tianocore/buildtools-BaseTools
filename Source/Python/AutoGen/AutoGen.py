@@ -224,8 +224,8 @@ class PlatformAutoGen:
         if self.Workspace.Fdf != "":
             Info.FdfFile= path.join(self.WorkspaceDir, self.Workspace.Fdf)
 
-        Info.DynamicPcdList = self.GetDynamicPcdList(Platform, Arch)
-        Info.PcdTokenNumber = self.GeneratePcdTokenNumber(Platform, Info.DynamicPcdList)
+        Info.NonDynamicPcdList, Info.DynamicPcdList = self.GetPcdList(Platform, Arch)
+        Info.PcdTokenNumber = self.GeneratePcdTokenNumber(Platform, Info.NonDynamicPcdList, Info.DynamicPcdList)
         Info.PackageList = self.PackageDatabase[Arch].values()
 
         self.GetToolDefinition(Info)
@@ -351,13 +351,13 @@ class PlatformAutoGen:
     #
     #   @retval     lsit        The list of dynamic PCD
     #
-    def GetDynamicPcdList(self, Platform, Arch):
-        PcdList = []
+    def GetPcdList(self, Platform, Arch):
+        NonDynamicPcdList = []
+        DynamicPcdList = []
 
         # for gathering error information
         NotFoundPcdList = set()
         NoDatumTypePcdList = set()
-        PcdConsumerList = set()
 
         for F in Platform.Modules:
             M = self.ModuleDatabase[Arch][F]
@@ -365,40 +365,31 @@ class PlatformAutoGen:
                 PcdFromModule = M.Pcds[Key]
                 # check if the setting of the PCD is found in platform
                 if not PcdFromModule.IsOverrided:
-                    NotFoundPcdList.add(" | ".join(Key))
-                    PcdConsumerList.add(str(M))
+                    NotFoundPcdList.add("%s [%s]" % (" | ".join(Key), F))
                     continue
 
-                if Key not in Platform.Pcds:
-                    PcdFromPlatform = PcdFromModule
-                else:
-                    PcdFromPlatform = Platform.Pcds[Key]
-
                 # make sure that the "VOID*" kind of datum has MaxDatumSize set
-                if PcdFromModule.DatumType == "VOID*" and PcdFromPlatform.MaxDatumSize == None:
-                    NoDatumTypePcdList.add(" | ".join(Key))
-                    PcdConsumerList.add(str(M))
+                if PcdFromModule.DatumType == "VOID*" and PcdFromModule.MaxDatumSize == None:
+                    NoDatumTypePcdList.add("%s [%s]" % (" | ".join(Key), F))
 
-                if PcdFromPlatform.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd:
+                if PcdFromModule.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd:
                     # for autogen code purpose
                     if M.ModuleType in ["PEIM", "PEI_CORE"]:
-                        PcdFromPlatform.Phase = "PEI"
-                    if PcdFromPlatform not in PcdList:
-                        PcdFromPlatform.TokenValue = PcdFromModule.TokenValue
-                        PcdFromPlatform.DatumType = PcdFromModule.DatumType
-                        PcdList.append(PcdFromPlatform)
+                        PcdFromModule.Phase = "PEI"
+                    if PcdFromModule not in DynamicPcdList:
+                        DynamicPcdList.append(PcdFromModule)
+                elif PcdFromModule not in NonDynamicPcdList:
+                    NonDynamicPcdList.append(PcdFromModule)
 
         # print out error information and break the build, if error found
         if len(NotFoundPcdList) > 0 or len(NoDatumTypePcdList) > 0:
             NotFoundPcdListString = "\n\t\t".join(NotFoundPcdList)
             NoDatumTypePcdListString = "\n\t\t".join(NoDatumTypePcdList)
-            ModuleListString = "\n\t\t".join(PcdConsumerList)
             EdkLogger.error("AutoGen", AUTOGEN_ERROR, "PCD setting error",
                             ExtraData="\n\tPCD(s) not found in platform:\n\t\t%s"
-                                      "\n\tPCD(s) without MaxDatumSize:\n\t\t%s"
-                                      "\n\tUsed by:\n\t\t%s\n"
-                                      % (NotFoundPcdListString, NoDatumTypePcdListString, ModuleListString))
-        return PcdList
+                                      "\n\tPCD(s) without MaxDatumSize:\n\t\t%s\n"
+                                      % (NotFoundPcdListString, NoDatumTypePcdListString))
+        return NonDynamicPcdList, DynamicPcdList
 
     ## Generate Token Number for all PCD
     #
@@ -407,7 +398,7 @@ class PlatformAutoGen:
     #
     #   @retval     dict            A dict object containing the PCD and its token number
     #
-    def GeneratePcdTokenNumber(self, Platform, DynamicPcdList):
+    def GeneratePcdTokenNumber(self, Platform, NonDynamicPcdList, DynamicPcdList):
         PcdTokenNumber = sdict()
         TokenNumber = 1
         for Pcd in DynamicPcdList:
@@ -422,12 +413,9 @@ class PlatformAutoGen:
                 PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
                 TokenNumber += 1
 
-        PlatformPcds = Platform.Pcds
-        for Key in PlatformPcds:
-            Pcd = PlatformPcds[Key]
-            if Key not in PcdTokenNumber:
-                PcdTokenNumber[Key] = TokenNumber
-                TokenNumber += 1
+        for Pcd in NonDynamicPcdList:
+            PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
+            TokenNumber += 1
         return PcdTokenNumber
 
     ## Create autogen object for each module in platform
@@ -1013,14 +1001,9 @@ class ModuleAutoGen(object):
     #   @retval     list                    The list of PCD
     #
     def GetPcdList(self, DependentLibraryList):
-        PlatformPcds = self.Platform.Pcds
-
         PcdList = []
         for PcdKey in self.Module.Pcds:
-            Pcd = self.Module.Pcds[PcdKey]
-            if (Pcd.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd) and self.Module.ModuleType in ["PEIM", "PEI_CORE"]:
-                Pcd.Phase = "PEI"
-            PcdList.append(Pcd)
+            PcdList.append(self.Module.Pcds[PcdKey])
         return PcdList
 
     ## Get the GUID value mapping
