@@ -29,15 +29,30 @@ import Common.EdkLogger as EdkLogger
 def FileType2Macro(FileType):
     return "$(%s_LIST)" % FileType.replace("-", "_").upper()
 
+## Class for one build rule
+#
+# This represents a build rule which can give out corresponding command list for
+# building the given source file(s). The result can be used for generating the
+# target for makefile.
+#
 class FileBuildRule:
+    ## constructor
+    #
+    #   @param  Input       The dictionary represeting input file(s) for a rule
+    #   @param  Output      The list represeting output file(s) for a rule
+    #   @param  Command     The list containing commands to generate the output from input
+    #
     def __init__(self, Input, Output, Command):
+        # The Input should not be empty
         if Input == {}:
             EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No input files for a build rule")
+        # The Output should not be empty
         if Output == []:
             EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No output files for a build rule")
 
         self.SourceFileType = {}
         self.SourceFileExtList = []
+        # source files listed not in "*" or "?" pattern format
         self.ExtraSourceFileList = []
         self.IsMultipleInput = False
         for FileType in Input:
@@ -66,6 +81,10 @@ class FileBuildRule:
         self.DestFileBase = ""
         self.CommandList = Command
 
+    ## str() function support
+    #
+    #   @retval     string
+    #
     def __str__(self):
         SourceString = ""
         for FileType in self.SourceFileType:
@@ -74,9 +93,24 @@ class FileBuildRule:
         CommandString = "\n\t".join(self.CommandList)
         return "%s : %s\n\t%s" % (DestString, SourceString, CommandString)
 
+    ## Check if given file extension is supported by this rule
+    #
+    #   @param  FileExt     The extension of a file
+    #
+    #   @retval True        If the extension is supported
+    #   @retval False       If the extension is not supported
+    #
     def IsSupported(self, FileExt):
         return FileExt in self.SourceFileExtList
 
+    ## Apply the rule to given source file(s)
+    #
+    #   @param  SourceFile      One file or a list of files to be built
+    #   @param  RelativeToDir   The relative path of the source file
+    #   @param  PathSeparator   Path separator
+    #
+    #   @retval     tuple       (Source file in full path, List of individual sourcefiles, Destionation file, List of build commands)
+    #
     def Apply(self, SourceFile, RelativeToDir, PathSeparator):
         # source file
         if not self.IsMultipleInput:
@@ -100,11 +134,6 @@ class FileBuildRule:
             SrcPath = ""
             # SourceFile must be a list
             SrcFileList = []
-            #for File in SourceFile:
-            #    if RelativeToDir != None:
-            #        SrcFileList.append(PathSeparator.join(["$(WORKSPACE)", RelativeToDir, File]))
-            #    else:
-            #        SrcFileList.append(File)
             for FileType in self.SourceFileType:
                 Macro = FileType2Macro(FileType)
                 SrcFileList.append(Macro)
@@ -136,7 +165,6 @@ class FileBuildRule:
             # destination file
             "dst"       :   self.DestFile,
             "d_path"    :   self.DestPath,
-            #"d_dir"     :   SrcFileDir,
             "d_name"    :   self.DestFileName,
             "d_base"    :   self.DestFileBase,
             "d_ext"     :   self.DestFileExt,
@@ -152,9 +180,14 @@ class FileBuildRule:
             CommandString = string.Template(CommandString).safe_substitute(BuildRulePlaceholderDict)
             CommandString = string.Template(CommandString).safe_substitute(BuildRulePlaceholderDict)
             CommandList.append(CommandString)
-        #print "%s : %s\n\t%s" % (DstFileList[0], SrcFile, "\n\t".join(CommandList))
+
         return SrcFile, self.ExtraSourceFileList, DstFileList[0], CommandList
 
+## Class for build rules
+#
+# BuildRule class parses rules defined in a file or passed by caller, and converts
+# the rule into FileBuildRule object.
+#
 class BuildRule:
     _SectionHeader = "SECTIONHEADER"
     _Section = "SECTION"
@@ -167,8 +200,16 @@ class BuildRule:
 
     _SubSectionList = [_InputFile, _OutputFile, _Command]
 
+    ## Constructor
+    #
+    #   @param  File                The file containing build rules in a well defined format
+    #   @param  Content             The string list of build rules in a well defined format
+    #   @param  LineIndex           The line number from which the parsing will begin
+    #   @param  SupportedFamily     The list of supported tool chain families
+    #
     def __init__(self, File=None, Content=None, LineIndex=0, SupportedFamily=["MSFT", "INTEL", "GCC"]):
         self.RuleFile = File
+        # Read build rules from file if it's not none
         if File != None:
             try:
                 self.RuleContent = open(File, 'r').readlines()
@@ -190,8 +231,10 @@ class BuildRule:
         self._FamilyList = []
         self._State = ""
         self._RuleObjectList = [] # FileBuildRule object list
+
         self.Parse()
 
+    ## Parse the build rule strings
     def Parse(self):
         self._State = self._Section
         for Index in range(self._LineIndex, len(self.RuleContent)):
@@ -202,22 +245,33 @@ class BuildRule:
             if Line == "" or Line[0] == "#":
                 continue
 
+            # find out section header, enclosed by []
             if Line[0] == '[' and Line[-1] == ']':
+                # merge last section information into rule database
                 self.EndOfSection()
                 self._State = self._SectionHeader
+            # find out sub-section header, enclosed by <>
             elif Line[0] == '<' and Line[-1] == '>':
                 if self._State != self._UnknownSection:
                     self._State = self._SubSectionHeader
-
+            # call section handler to parse each (sub)section
             self._StateHandler[self._State](self, Index)
+        # merge last section information into rule database
         self.EndOfSection()
+
+        # setup the relationship between file extension and file type
         for RuleObject in self._RuleObjectList:
             for FileType in RuleObject.SourceFileType:
                 for FileExt in RuleObject.SourceFileType[FileType]:
                     self.FileTypeDict[FileExt] = FileType
 
+    ## Parse definitions under a section
+    #
+    #   @param  LineIndex   The line index of build rule text
+    #
     def ParseSection(self, LineIndex):
         TokenList = self.RuleContent[LineIndex].split("=", 1)
+        # currently only BUILD_VERSION is supported
         if len(TokenList) != 2 or TokenList[0] != "BUILD_VERSION":
             EdkLogger.error("BuildRuleParser", PARSER_ERROR, "Invalid definition",
                             File=RuleFile, Line=LineIndex+1, ExtraData=self.RuleContent[LineIndex])
@@ -228,12 +282,22 @@ class BuildRule:
             EdkLogger.error("BuildRuleParser", PARSER_ERROR, "Version is not a valid number",
                             File=self.RuleFile, Line=LineIndex+1, ExtraData=self.RuleContent[LineIndex])
 
+    ## Parse definitions under a subsection
+    #
+    #   @param  LineIndex   The line index of build rule text
+    #
     def ParseSubSection(self, LineIndex):
+        # currenly nothing here
         pass
 
+    ## Placeholder for not supported sections
+    #
+    #   @param  LineIndex   The line index of build rule text
+    #
     def SkipSection(self, LineIndex):
         pass
 
+    ## Merge section information just got into rule database
     def EndOfSection(self):
         if self._FileTypeList == [] or self._RuleInfo == {}:
             return
@@ -300,9 +364,13 @@ class BuildRule:
                 self._RuleObjectList.append(RuleObject)
                 for FileType in RuleObject.SourceFileType:
                     Database[NewFamily][FileType] = RuleObject
-
+        # for new section
         self._RuleInfo = {}
 
+    ## Parse section header
+    #
+    #   @param  LineIndex   The line index of build rule text
+    #
     def ParseSectionHeader(self, LineIndex):
         BuildVersion = ""
         FileTypeList = []
@@ -328,6 +396,10 @@ class BuildRule:
         self._BuildVersion = "*"
         self._State = self._Section
 
+    ## Parse sub-section header
+    #
+    #   @param  LineIndex   The line index of build rule text
+    #
     def ParseSubSectionHeader(self, LineIndex):
         SectionType = ""
         List = self.RuleContent[LineIndex][1:-1].split(',')
@@ -353,6 +425,10 @@ class BuildRule:
         self._FamilyList = FamilyList
         self._State = SectionType.upper()
 
+    ## Parse <InputFile> sub-section
+    #
+    #   @param  LineIndex   The line index of build rule text
+    #
     def ParseInputFile(self, LineIndex):
         Line = self.RuleContent[LineIndex]
         TokenList = Line.split("=")
@@ -384,6 +460,10 @@ class BuildRule:
                     self._RuleInfo[Family][self._State][FileType] = []
                 self._RuleInfo[Family][self._State][FileType].append(File)
 
+    ## Parse <OutputFile> sub-section
+    #
+    #   @param  LineIndex   The line index of build rule text
+    #
     def ParseOutputFile(self, LineIndex):
         FileList = self.RuleContent[LineIndex].split(",")
         for File in FileList:
@@ -396,6 +476,10 @@ class BuildRule:
                     self._RuleInfo[Family][self._State] = []
                 self._RuleInfo[Family][self._State].append(File)
 
+    ## Parse <Command> sub-section
+    #
+    #   @param  LineIndex   The line index of build rule text
+    #
     def ParseCommand(self, LineIndex):
         Command = self.RuleContent[LineIndex]
         for Family in self._FamilyList:
@@ -406,7 +490,16 @@ class BuildRule:
                 self._RuleInfo[Family][self._State] = []
             self._RuleInfo[Family][self._State].append(Command)
 
-    # FileBuildRule object
+    ## Get a build rule
+    #
+    #   @param  FileExt             The extension of a file
+    #   @param  ToolChainFamily     The tool chain family name
+    #   @param  BuildVersion        The build version number. "*" means any rule
+    #                               is applicalbe.
+    #
+    #   @retval FileType        The file type string
+    #   @retval FileBuildRule   The object of FileBuildRule
+    # 
     def Get(self, FileExt, ToolChainFamily, BuildVersion="*"):
         if FileExt not in self.FileTypeDict:
             return None, None
@@ -452,9 +545,8 @@ class BuildRule:
         _UnknownSection    : SkipSection,
     }
 
-
-
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
 if __name__ == '__main__':
     pass
+
