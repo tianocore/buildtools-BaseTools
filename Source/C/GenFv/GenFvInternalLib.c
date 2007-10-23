@@ -1876,6 +1876,8 @@ Returns:
     CurrentOffset = (CurrentOffset + EFI_FFS_FILE_HEADER_ALIGNMENT - 1) & ~(EFI_FFS_FILE_HEADER_ALIGNMENT - 1);
   }
   
+  DebugMsg (NULL, 0, 9, "FvImage size", "The caculated fv image size is 0x%x and the current set fv image size is 0x%x", CurrentOffset, FvInfoPtr->Size);
+  
   if (FvInfoPtr->Size < CurrentOffset) { 
     //
     // Update FvInfo data

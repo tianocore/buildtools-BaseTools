@@ -675,7 +675,7 @@ Returns:
   }
   VerboseMsg ("FFS file alignment is %s", mFfsValidAlignName[FfsAlign]);
   for (Index = 0; Index < InputFileNum; Index ++) {
-    VerboseMsg ("the %dth input section name is %s and section alignment is %d", Index, InputFileName[Index], InputFileAlign[Index]);
+    VerboseMsg ("the %dth input section name is %s and section alignment is %d", Index, InputFileName[Index], 1 << InputFileAlign[Index]);
   }
 
   //
@@ -724,6 +724,7 @@ Returns:
   //
   // Update FFS Alignment based on the max alignment required by input section files 
   //
+  VerboseMsg ("the max alignment of all input sections is %d", MaxAlignment); 
   for (Index = 0; Index < sizeof (mFfsValidAlign) / sizeof (UINT32) - 1; Index ++) {
     if ((MaxAlignment > mFfsValidAlign [Index]) && (MaxAlignment <= mFfsValidAlign [Index + 1])) {
       break;
@@ -732,7 +733,7 @@ Returns:
   if (FfsAlign < Index) {
     FfsAlign = Index;
   }
-  VerboseMsg ("the alignment of the genreated FFS file is %d", mFfsValidAlign [FfsAlign]);  
+  VerboseMsg ("the alignment of the genreated FFS file is %d", mFfsValidAlign [FfsAlign + 1]);  
   FfsFileHeader.Attributes = FfsAttrib | (FfsAlign << 3);
   
   //
@@ -754,6 +755,7 @@ Returns:
                                                    (UINT8 *) &FfsFileHeader,
                                                    sizeof (EFI_FFS_FILE_HEADER)
                                                    );
+
   if (FfsFileHeader.Attributes & FFS_ATTRIB_CHECKSUM) {
     //
     // Ffs header checksum = zero, so only need to calculate ffs body.
