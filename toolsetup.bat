@@ -40,6 +40,9 @@ popd
 if not defined EDK_TOOLS_PATH set EDK_TOOLS_PATH=%BASE_TOOLS_PATH%
 mkdir %EDK_TOOLS_PATH%\Bin\Win32
 
+if not defined ORIGINAL_PATH set ORIGINAL_PATH=%PATH%
+set PATH=%EDK_TOOLS_PATH%\Bin\Win32;%EDK_TOOLS_PATH%\Bin;%ORIGINAL_PATH%
+
 :path_ok
 
 if /I "%1"=="-h" goto Usage
@@ -51,9 +54,6 @@ if /I "%1"=="/help" goto Usage
 if /I "%1"=="build" goto build
 if /I "%1"=="rebuild" goto rebuild
 if NOT "%1"=="" goto Usage
-
-if not defined ORIGINAL_PATH set ORIGINAL_PATH=%PATH%
-set PATH=%EDK_TOOLS_PATH%\Bin\Win32;%EDK_TOOLS_PATH%\Bin;%ORIGINAL_PATH%
 
 IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\BootSectImage.exe" goto build
 IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\build.exe" goto build
