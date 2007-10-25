@@ -16,7 +16,8 @@ SET=$(PCCTS_HOME)\support\set
 # Compiler stuff
 CC = cl
 CFLAGS = /nologo -I "." -I "$(PCCTS_H)" -I "$(SET)" -D "USER_ZZSYN" -D "PC" \
-        -D "ZZLEXBUFSIZE=65536"  /D "LONGFILENAMES" /Zi /W3 -D__USE_PROTOS /wd4700
+        -D "ZZLEXBUFSIZE=65536"  /D "LONGFILENAMES" /Zi /W3 -D__USE_PROTOS /wd4700 \
+         /D _CRT_SECURE_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE 
 
 ANTLR_OBJS = antlr.obj scan.obj err.obj bits.obj build.obj fset2.obj \
             fset.obj gen.obj globals.obj hash.obj lex.obj main.obj \
@@ -27,7 +28,7 @@ SUPPORT_OBJS = set.obj
 # Dependencies
 
 $(WORKSPACE)\Tools\bin\antlr.exe: $(ANTLR_OBJS) $(SUPPORT_OBJS)
-    $(CC) $(CFLAGS) -o antlr.exe $(ANTLR_OBJS) $(SUPPORT_OBJS)
+    $(CC) $(CFLAGS) -Feantlr.exe $(ANTLR_OBJS) $(SUPPORT_OBJS)
 		copy antlr.exe $(EDK_TOOLS_PATH)\Bin\Win32
 
 

@@ -16,7 +16,8 @@ SET=$(PCCTS_HOME)\support\set
 # Compiler stuff
 CC = cl
 CFLAGS = /nologo -I "." -I "$(PCCTS_H)" -I "$(SET)" -D "USER_ZZSYN" -D "PC" \
-        -D "ZZLEXBUFSIZE=65536"  /D "LONGFILENAMES" /W3 /Zi
+        -D "ZZLEXBUFSIZE=65536"  /D "LONGFILENAMES" /W3 /Zi \
+        /D _CRT_SECURE_NO_DEPRECATE /D _CRT_NONSTDC_NO_DEPRECATE 
 
 DLG_OBJS = dlg_p.obj dlg_a.obj main.obj err.obj support.obj \
            output.obj relabel.obj automata.obj
@@ -26,7 +27,7 @@ SUPPORT_OBJS = set.obj
 # Dependencies
 
 dlg.exe: $(DLG_OBJS) $(SUPPORT_OBJS)
-    $(CC) $(CFLAGS) -o dlg.exe $(DLG_OBJS) $(SUPPORT_OBJS)
+    $(CC) $(CFLAGS) -Fedlg.exe $(DLG_OBJS) $(SUPPORT_OBJS)
 		copy dlg.exe $(BASE_TOOLS_PATH)\Bin\Win32
 
 dlg_p.obj: $(DLG_SRC)\dlg_p.c \
