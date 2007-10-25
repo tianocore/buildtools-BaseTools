@@ -2,7 +2,7 @@
 
 APPNAME = VfrCompile
 
-LIBS = Common.lib
+LIBS = $(LIB_PATH)\Common.lib
 
 OBJECTS = VfrCompile.obj VfrServices.obj DLGLexer.obj EfiVfrParser.obj ATokenBuffer.obj DLexerBase.obj AParser.obj
 

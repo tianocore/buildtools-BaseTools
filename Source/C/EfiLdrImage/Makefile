@@ -2,7 +2,7 @@
 
 APPNAME = EfiLdrImage
 
-LIBS = Common.lib
+LIBS = $(LIB_PATH)\Common.lib
 
 OBJECTS = EfiLdrImage.obj
 

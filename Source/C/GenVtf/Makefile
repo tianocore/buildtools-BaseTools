@@ -2,7 +2,7 @@
 
 APPNAME = GenVtf
 
-LIBS = Common.lib
+LIBS = $(LIB_PATH)\Common.lib
 
 OBJECTS = GenVtf.obj
 

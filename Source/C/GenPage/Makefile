@@ -2,7 +2,7 @@
 
 APPNAME = GenPage
 
-LIBS = Common.lib
+LIBS = $(LIB_PATH)\Common.lib
 
 OBJECTS = GenPage.obj
 

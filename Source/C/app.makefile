@@ -2,12 +2,12 @@ MAKEROOT ?= ../..
 
 include $(MAKEROOT)/header.makefile
 
-APPLOCATION = $(MAKEROOT)/bin/$(APPNAME)
+APPLICATION = $(MAKEROOT)/bin/$(APPNAME)
 
 .PHONY:all
-all: $(MAKEROOT)/bin $(APPLOCATION) 
+all: $(MAKEROOT)/bin $(APPLICATION) 
 
 $(APPLOCATION): $(OBJECTS) 
-	$(LINKER) -o $(APPLOCATION) $(OBJECTS) -L$(MAKEROOT)/libs $(LIBS)
+	$(LINKER) -o $(APPLICATION) $(OBJECTS) -L$(MAKEROOT)/libs $(LIBS)
 
 include $(MAKEROOT)/footer.makefile

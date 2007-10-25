@@ -2,7 +2,7 @@
 
 APPNAME = Split
 
-LIBS = Common.lib
+LIBS = $(LIB_PATH)\Common.lib
 
 OBJECTS = Split.obj
 

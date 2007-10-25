@@ -2,7 +2,7 @@
 
 APPNAME = GenBootSector
 
-LIBS = Common.lib
+LIBS = $(LIB_PATH)\Common.lib
 
 OBJECTS = GenBootSector.obj GetDrvNumOffset.obj
 

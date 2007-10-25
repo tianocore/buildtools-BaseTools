@@ -2,7 +2,7 @@
 
 APPNAME = TianoCompress
 
-LIBS = Common.lib
+LIBS = $(LIB_PATH)\Common.lib
 
 OBJECTS = TianoCompress.obj
 

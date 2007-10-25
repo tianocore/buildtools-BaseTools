@@ -2,7 +2,7 @@
 
 APPNAME = BootSectImage
 
-LIBS = Common.lib
+LIBS = $(LIB_PATH)\Common.lib
 
 OBJECTS = BootSectImage.obj
 
