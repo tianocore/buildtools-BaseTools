@@ -1355,6 +1355,7 @@ Returns:
       // free allcoated memory space
       //
       free (FileBuffer);
+      FileBuffer = NULL;
     }
     // 
     // Done successfully
