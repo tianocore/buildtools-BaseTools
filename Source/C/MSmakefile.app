@@ -6,7 +6,7 @@ all: $(APPLICATION)
 
 $(APPLICATION) : $(OBJECTS) 
 	-@if not exist $(BIN_PATH) mkdir $(BIN_PATH)
-	$(LD) /nologo /debug /incremental:no /out:$@ /libpath:$(LIB_PATH) $(LIBS) $**
+	$(LD) /nologo /debug /incremental:no /nodefaultlib:libc.lib /out:$@ /libpath:$(LIB_PATH) $(LIBS) $**
 
 .PHONY:clean
 .PHONY:cleanall
