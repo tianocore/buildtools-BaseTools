@@ -721,8 +721,8 @@ Returns:
     VendorGuidSect.Attributes  = DataAttribute;
     VendorGuidSect.DataOffset  = sizeof (EFI_GUID_DEFINED_SECTION);
     fwrite (&VendorGuidSect, sizeof (EFI_GUID_DEFINED_SECTION), 1, OutFile);  
+    DebugMsg (NULL, 0, 9, "Guided section", "Data offset is %d", VendorGuidSect.DataOffset);
   }
-  DebugMsg (NULL, 0, 9, "Guided section", "Data offset is %d", VendorGuidSect.DataOffset);
   VerboseMsg ("the size of the created section file is %d bytes", TotalLength);
 
   fwrite (FileBuffer, InputLength, 1, OutFile);
