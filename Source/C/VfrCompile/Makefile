@@ -17,13 +17,13 @@ VfrCompile.cpp DLGLexer.cpp EfiVfrParser.cpp: VfrCompile.g
 	pushd . & cd Pccts & $(MAKE) clean
 
 ATokenBuffer.obj: Pccts\h\ATokenBuffer.cpp
-	$(CXX) -c $(CPPFLAGS) $(INC) $? -o $@
+	$(CXX) -c $(CPPFLAGS) $(INC) $? -Fo$@
 
 DLexerBase.obj: Pccts\h\DLexerBase.cpp
-	$(CXX) -c $(CPPFLAGS) $(INC) $? -o $@
+	$(CXX) -c $(CPPFLAGS) $(INC) $? -Fo$@
 
 AParser.obj: Pccts\h\AParser.cpp
-	$(CXX) -c $(CPPFLAGS) $(INC) $? -o $@
+	$(CXX) -c $(CPPFLAGS) $(INC) $? -Fo$@
 
 EXTRA_CLEAN_OBJECTS = EfiVfrParser.cpp parser.dlg EfiVfrParser.h DLGLexer.cpp VfrCompile.cpp tokens.h DLGLexer.h
 
