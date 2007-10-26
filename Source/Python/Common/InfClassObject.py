@@ -77,7 +77,8 @@ class InfDefines(InfObject):
             TAB_INF_DEFINES_DESTRUCTOR                              : [''],
             TAB_INF_DEFINES_DEFINE                                  : [''],
             TAB_INF_DEFINES_SPEC                                    : [''],
-            TAB_INF_DEFINES_CUSTOM_MAKEFILE                         : ['']
+            TAB_INF_DEFINES_CUSTOM_MAKEFILE                         : [''],
+            TAB_INF_DEFINES_SHADOW                                  : ['']
         }
 
 ## InfContents
@@ -250,6 +251,7 @@ class Inf(InfObject):
         self.Module.Header.SourceFv = self.Defines.DefinesDictionary[TAB_INF_DEFINES_SOURCE_FV][0]
         self.Module.Header.PcdIsDriver = self.Defines.DefinesDictionary[TAB_INF_DEFINES_PCD_IS_DRIVER][0]
         self.Module.Header.TianoR8FlashMap_h = self.Defines.DefinesDictionary[TAB_INF_DEFINES_TIANO_R8_FLASHMAP_H][0]
+        self.Module.Header.Shadow = self.Defines.DefinesDictionary[TAB_INF_DEFINES_SHADOW][0]
         
         #
         # LibraryClass of Defines
@@ -740,6 +742,7 @@ class Inf(InfObject):
         print 'SourceFv =', M.Header.SourceFv
         print 'PcdIsDriver =', M.Header.PcdIsDriver
         print 'TianoR8FlashMap_h =', M.Header.TianoR8FlashMap_h
+        print 'Shadow =', M.Header.Shadow
         print 'LibraryClass =', M.Header.LibraryClass
         for Item in M.Header.LibraryClass:
             print Item.LibraryClass, DataType.TAB_VALUE_SPLIT.join(Item.SupModuleList)

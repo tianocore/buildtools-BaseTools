@@ -48,6 +48,7 @@ from CommonClass import *
 # @var SourceFv:                 To store value for SourceFv
 # @var CustomMakefile:           To store value for CustomMakefile, it is a set structure as
 #                                { Family : Filename, ... }
+# @var Shadow:                   To store value for Shadow
 #
 class ModuleHeaderClass(IdentificationClass, CommonHeaderClass, DefineClass):
     def __init__(self):
@@ -73,6 +74,7 @@ class ModuleHeaderClass(IdentificationClass, CommonHeaderClass, DefineClass):
         self.FvExt = ''
         self.SourceFv = ''
         self.CustomMakefile = {}
+        self.Shadow = ''
 
 ## ModuleSourceFileClass
 #

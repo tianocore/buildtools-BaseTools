@@ -138,6 +138,7 @@ class LibraryClassObject(object):
 # @var BinaryModule:           To store value for BinaryModule
 # @var CustomMakefile:         To store value for CustomMakefile
 # @var Specification:          To store value for Specification
+# @var Shadow                  To store value for Shadow
 # @var LibraryClass:           To store value for LibraryClass, it is a list structure as
 #                              [ LibraryClassObject, ...]
 # @var ModuleEntryPointList:   To store value for ModuleEntryPointList
@@ -175,6 +176,7 @@ class ModuleBuildClassObject(object):
         self.Version                 = ''
         self.PcdIsDriver             = ''
         self.BinaryModule            = ''
+        self.Shadow                  = ''
         self.CustomMakefile          = {}
         self.Specification           = {}
         self.LibraryClass            = []
@@ -678,6 +680,7 @@ class WorkspaceBuild(object):
                 Pb.PcdIsDriver = Module.Header.PcdIsDriver
                 Pb.BinaryModule = Module.Header.BinaryModule
                 Pb.CustomMakefile = Module.Header.CustomMakefile
+                Pb.Shadow = Module.Header.Shadow
 
                 #
                 # Specs os Defines
@@ -1471,6 +1474,7 @@ class WorkspaceBuild(object):
                 print 'Version = ', P.Version
                 print 'CustomMakefile = ', P.CustomMakefile
                 print 'Specification = ', P.Specification
+                print 'Shadow = ', P.Shadow
                 print 'PcdIsDriver = ', P.PcdIsDriver
                 for Lib in P.LibraryClass:
                     print 'LibraryClassDefinition = ', Lib.LibraryClass, 'SupModList = ', Lib.SupModList
