@@ -7,7 +7,7 @@ APPLICATION = $(MAKEROOT)/bin/$(APPNAME)
 .PHONY:all
 all: $(MAKEROOT)/bin $(APPLICATION) 
 
-$(APPLOCATION): $(OBJECTS) 
+$(APPLICATION): $(OBJECTS) 
 	$(LINKER) -o $(APPLICATION) $(OBJECTS) -L$(MAKEROOT)/libs $(LIBS)
 
 include $(MAKEROOT)/footer.makefile
