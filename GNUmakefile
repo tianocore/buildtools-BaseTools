@@ -1,8 +1,19 @@
 
-all:
-	$(MAKE) -C Source/C
+all: subdirs
 
-clean:
-	$(MAKE) -C Source/C clean
-	find Source/Python -name '*.pyc' -exec rm '{}' ';'
+LANGUAGES = C Python
+
+SUBDIRS := $(patsubst %,Source/%,$(sort $(LANGUAGES)))
+CLEAN_SUBDIRS := $(patsubst %,%-clean,$(sort $(SUBDIRS)))
+
+.PHONY: subdirs $(SUBDIRS)
+subdirs: $(SUBDIRS)
+$(SUBDIRS):
+	$(MAKE) -C $@
+
+.PHONY: $(CLEAN_SUBDIRS)
+$(CLEAN_SUBDIRS):
+	-$(MAKE) -C $(@:-clean=) clean
+
+clean:  $(CLEAN_SUBDIRS)
 
