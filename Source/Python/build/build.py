@@ -71,14 +71,11 @@ def CheckEnvVariable():
         EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Please set environment variable: PATH!\n")
 
     PathString = os.environ["PATH"]
-    if sys.platform == "win32":
-        ToolPath = os.path.normpath(os.path.join(os.environ["EDK_TOOLS_PATH"], "Bin\\Win32"))
-    elif sys.platform == "win64":
-        ToolPath = os.path.normpath(os.path.join(os.environ["EDK_TOOLS_PATH"], "Bin\\Win64"))
-    else:
-        ToolPath = os.path.normpath(os.path.join(os.environ["EDK_TOOLS_PATH"], "Bin/Linux"))
+    ToolPath = os.path.normpath(os.path.join(os.environ["EDK_TOOLS_PATH"], 'Bin', sys.platform.title()))
 
     if PathString.find(ToolPath) == -1:
+        os.environ['PATH'] = os.path.pathsep.join((os.environ['PATH'], ToolPath))
+            
         EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Please execute %s to set %s in environment variable: PATH!\n"
                             % (os.path.normpath(os.path.join(PathString, 'edksetup.bat')), ToolPath))
 
@@ -845,10 +842,10 @@ class Build():
 
         EdkLogger.info("")
         BuildCommand = AutoGenResult.GetBuildCommand()
-        if BuildCommand == None or BuildCommand == "":
+        if BuildCommand == None or len(BuildCommand) == 0:
             EdkLogger.error("build", OPTION_MISSING, ExtraData="No MAKE command found for [%s, %s, %s]" % Key)
 
-        BuildCommand = "%s %s" % (BuildCommand, Target)
+        BuildCommand = BuildCommand + (Target,)
         LaunchCommand(BuildCommand, os.path.join(self.WorkspaceDir, AutoGenResult.GetMakeFileDir()))
 
     ## Build active platform for different build targets and different tool chains

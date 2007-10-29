@@ -251,16 +251,18 @@ class PlatformAutoGen:
             Arch = [Arch]
         else:
             Arch = self.ArchList
-        CommandString = ""
+        Command = tuple()
         for A in Arch:
             if A in self.BuildInfo and "MAKE" in self.BuildInfo[A].ToolPath:
-                CommandString = self.BuildInfo[A].ToolPath["MAKE"]
+                Command += (self.BuildInfo[A].ToolPath["MAKE"],)
                 if "MAKE" in self.BuildInfo[A].ToolOption:
-                    CommandString = CommandString + " " + self.BuildInfo[A].ToolOption["MAKE"]
+                    newOption = self.BuildInfo[A].ToolOption["MAKE"].strip()
+                    if newOption != '':
+                      Command += (newOption,)
                 break
-        if CommandString == "":
+        if len(Command) == 0:
             EdkLogger.error("AutoGen", OPTION_MISSING, "No MAKE command defined. Please check your tools_def.txt!")
-        return CommandString
+        return Command
 
     ## Parse build_rule.txt in $(WORKSPACE)/Conf/build_rule.txt
     #
