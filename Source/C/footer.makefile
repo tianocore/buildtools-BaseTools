@@ -11,10 +11,10 @@ $(LIBRARY): $(OBJECTS)
 	$(AR) crs $@ $^
 
 %.o : %.c 
-	$(CC)  -c $(CFLAGS) $(CPPFLAGS) $< -o $@
+	$(CC)  -c $(CFLAGS) $(CPPFLAGS) $< -Fo$@
 
 %.o : %.S
-	$(AS) -c $(ASFLAGS) $< -o $@
+	$(AS) -c $(ASFLAGS) $< -out:$@
 
 .PHONY: clean
 clean:

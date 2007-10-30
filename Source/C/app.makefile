@@ -8,6 +8,6 @@ APPLICATION = $(MAKEROOT)/bin/$(APPNAME)
 all: $(MAKEROOT)/bin $(APPLICATION) 
 
 $(APPLICATION): $(OBJECTS) 
-	$(LINKER) -o $(APPLICATION) $(OBJECTS) -L$(MAKEROOT)/libs $(LIBS)
+	$(LINKER) -out:$(APPLICATION) $(OBJECTS) -L$(MAKEROOT)/libs $(LIBS)
 
 include $(MAKEROOT)/footer.makefile
