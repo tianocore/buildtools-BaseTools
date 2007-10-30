@@ -57,6 +57,7 @@ def TrimPreprocessedFile(Source, Target, Convert):
     InjectedFile = ""
     LineIndexOfOriginalFile = None
     NewLines = []
+    LineControlDirectiveFound = False
     for Index in range(len(Lines)):
         Line = Lines[Index].replace("\r", "")
         #
@@ -72,6 +73,7 @@ def TrimPreprocessedFile(Source, Target, Convert):
                 # The first injetcted file must be the preprocessed file itself
                 if PreprocessedFile == "":
                     PreprocessedFile = InjectedFile
+            LineControlDirectiveFound = True
             continue
         elif PreprocessedFile == "" or InjectedFile != PreprocessedFile:
             continue
@@ -106,7 +108,7 @@ def TrimPreprocessedFile(Source, Target, Convert):
             NewLines.append(Line)
 
     # in case there's no line directive or linemarker found
-    if NewLines == []:
+    if (not LineControlDirectiveFound) and NewLines == []:
         NewLines = Lines
 
     # save to file
