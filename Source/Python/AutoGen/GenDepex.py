@@ -21,6 +21,7 @@ from Common.EdkIIWorkspace import CreateDirectory
 from Common.BuildToolError import *
 from Common.Misc import SaveFileOnChange
 
+## Mapping between module type and EFI phase
 gType2Phase = {
     "BASE"              :   None,
     "SEC"               :   "PEI",
@@ -35,6 +36,11 @@ gType2Phase = {
     "UEFI_APPLICATION"  :   "DXE",
 }
 
+## Convert dependency expression string into EFI internal representation
+# 
+#   DependencyExpression class is used to parse dependency expression string and
+# convert it into its binary form.
+# 
 class DependencyExpression:
 
     OpcodePriority = {
@@ -71,12 +77,13 @@ class DependencyExpression:
         }
     }
 
+    # all supported op code
     SupportedOpcode = ["BEFORE", "AFTER", "PUSH", "AND", "OR", "NOT", "TRUE", "FALSE", "END", "SOR"]
-
+    # op code that should not be the last one
     NonEndingOpcode = ["AND", "OR"]
-
+    # op code must not present at the same time
     ExclusiveOpcode = ["BEFORE", "AFTER"]
-
+    # op code that should be the first one if it presents
     AboveAllOpcode = ["SOR"]
 
     #
@@ -84,13 +91,18 @@ class DependencyExpression:
     #
     TokenPattern = re.compile("(\(|\)|\{[^{}]+\{[^{}]+\}[ ]*\}|\w+)")
 
-    def __init__(self, expression, mtype):
-        self.Phase = gType2Phase[mtype]
-        if type(expression) == type([]):
-            self.ExpressionString = " ".join(expression)
-            self.TokenList = expression
+    ## Constructor
+    # 
+    #   @param  Expression  The list or string of dependency expression
+    #   @param  ModuleType  The type of the module using the dependency expression
+    # 
+    def __init__(self, Expression, ModuleType):
+        self.Phase = gType2Phase[ModuleType]
+        if type(Expression) == type([]):
+            self.ExpressionString = " ".join(Expression)
+            self.TokenList = Expression
         else:
-            self.ExpressionString = expression
+            self.ExpressionString = Expression
             self.GetExpressionTokenList()
 
         self.PostfixNotation = []
@@ -99,9 +111,11 @@ class DependencyExpression:
         self.GetPostfixNotation()
         self.ValidateOpcode()
 
+    ## Split the expression string into token list
     def GetExpressionTokenList(self):
         self.TokenList = self.TokenPattern.findall(self.ExpressionString)
 
+    ## Convert token list into postfix notation
     def GetPostfixNotation(self):
         Stack = []
         for Token in self.TokenList:
@@ -130,6 +144,7 @@ class DependencyExpression:
             self.PostfixNotation.append(Stack.pop())
         self.PostfixNotation.append("END")
 
+    ## Validate the dependency expression
     def ValidateOpcode(self):
         for Op in self.AboveAllOpcode:
             if Op in self.OpcodeList and Op != self.OpcodeList[0]:
@@ -140,6 +155,12 @@ class DependencyExpression:
         if self.TokenList[-1] in self.NonEndingOpcode:
             EdkLogger.error("DepexParser", PARSER_ERROR, "Extra %s at the end of the dependency expression" % self.TokenList[-1])
 
+    ## Convert a GUID value in C structure format into its binary form
+    #
+    #   @param  Guid    The GUID value in C structure format
+    # 
+    #   @retval array   The byte array representing the GUID value
+    # 
     def GetGuidValue(self, Guid):
         GuidValueString = Guid.replace("{", "").replace("}", "").replace(" ", "")
         GuidValueList = GuidValueString.split(",")
@@ -147,6 +168,13 @@ class DependencyExpression:
             EdkLogger.error("DepexParser", PARSER_ERROR, "Invalid GUID value string or opcode: %s" % Guid)
         return pack("1I2H8B", *(int(value, 16) for value in GuidValueList))
 
+    ## Save the binary form of dependency expression in file
+    #
+    #   @param  File    The path of file. If None is given, put the data on console
+    # 
+    #   @retval True    If the file doesn't exist or file is changed
+    #   @retval False   If file exists and is not changed.
+    # 
     def Generate(self, File=None):
         Buffer = StringIO()
         for Item in self.PostfixNotation:
@@ -171,6 +199,10 @@ __version__ = "%prog Version " + versionNumber
 __copyright__ = "Copyright (c) 2007, Intel Corporation  All rights reserved."
 __usage__ = "%prog [options] [dependency_expression_file]"
 
+## Parse command line options
+#
+#   @retval OptionParser
+# 
 def GetOptions():
     from optparse import OptionParser
 
@@ -192,6 +224,11 @@ def GetOptions():
     return Parser.parse_args()
 
 
+## Entrance method
+#
+# @retval 0     Tool was successful
+# @retval 1     Tool failed
+#
 def Main():
     Option, Input = GetOptions()
     if Option.ModuleType == None or Option.ModuleType not in gType2Phase:
@@ -222,3 +259,4 @@ def Main():
 
 if __name__ == '__main__':
     sys.exit(Main())
+

@@ -24,6 +24,7 @@ import traceback
 from threading import *
 from optparse import OptionParser
 from subprocess import *
+from Common import Misc as Utils
 
 from Common.TargetTxtClassObject import *
 from Common.ToolDefClassObject import *
@@ -32,7 +33,7 @@ from Common.DataType import *
 from AutoGen.AutoGen import *
 from GenFds.FdfParser import *
 from Common.BuildToolError import *
-from Common.Misc import *
+#from Common.Misc import *
 import Common.EdkLogger
 
 # Version and Copyright
@@ -45,6 +46,7 @@ gSupportedTarget = ['all', 'genc', 'genmake', 'modules', 'libraries', 'fds', 'cl
 
 ## build configuration file
 gBuildConfiguration = "Conf/target.txt"
+gBuildCacheDir = "Conf/.cache"
 
 ## Check environment variables
 #
@@ -586,11 +588,15 @@ class Build():
         self.ToolDef      = ToolDefClassObject()
 
         # print dot charater during doing some time-consuming work
-        self.Progress = Progressor()
+        self.Progress = Utils.Progressor()
 
         # parse target.txt, tools_def.txt, and platform file
         self.Progress.Start("Loading build configuration")
+        self.RestoreBuildData()
         self.LoadConfiguration()
+        self.Progress.Stop("done!")
+
+        self.Progress.Start("Parsing platform/modules/packages")
         self.InitBuild()
         self.Progress.Stop("done!")
 
@@ -949,9 +955,29 @@ class Build():
 
     ## Do some clean-up works when error occurred
     def Relinquish(self):
-        Progressor.Abort()
+        self.DumpBuildData()
+        Utils.Progressor.Abort()
         if self.SpawnMode == True:
             BuildTask.Abort()
+
+    def DumpBuildData(self):
+        CacheDirectory = os.path.join(self.WorkspaceDir, gBuildCacheDir)
+        Utils.CreateDirectory(CacheDirectory)
+        Utils.DataDump(Utils.gFileTimeStampCache, os.path.join(CacheDirectory, "gFileTimeStampCache"))
+        Utils.DataDump(Utils.gDependencyDatabase, os.path.join(CacheDirectory, "gDependencyDatabase"))
+
+    def RestoreBuildData(self):
+        FilePath = os.path.join(self.WorkspaceDir, gBuildCacheDir, "gFileTimeStampCache")
+        if Utils.gFileTimeStampCache == {} and os.path.isfile(FilePath):
+            Utils.gFileTimeStampCache = Utils.DataRestore(FilePath)
+            if Utils.gFileTimeStampCache == None:
+                Utils.gFileTimeStampCache = {}
+        
+        FilePath = os.path.join(self.WorkspaceDir, gBuildCacheDir, "gDependencyDatabase")
+        if Utils.gDependencyDatabase == {} and os.path.isfile(FilePath):
+            Utils.gDependencyDatabase = Utils.DataRestore(FilePath)
+            if Utils.gDependencyDatabase == None:
+                Utils.gDependencyDatabase = {}
 
 ## Parse command line options
 #
@@ -1067,6 +1093,7 @@ def Main():
                         Option.ToolChain, Option.BuildTarget, Option.FdfFile, Option.RomImage, Option.FvImage,
                         Option.MakefileType, Option.SpawnMode, Option.ThreadNumber)
         MyBuild.Launch()
+        MyBuild.DumpBuildData()
     except BaseException, X:
         if MyBuild != None:
             # for multi-thread build exits safely
@@ -1078,7 +1105,7 @@ def Main():
             EdkLogger.quiet(str(X))
         ReturnCode = 1
     finally:
-        Progressor.Abort()
+        Utils.Progressor.Abort()
 
     FinishTime = time.clock()
     BuildDuration = time.strftime("%M:%S", time.gmtime(int(round(FinishTime - StartTime))))

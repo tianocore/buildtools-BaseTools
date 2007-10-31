@@ -256,9 +256,9 @@ class PlatformAutoGen:
             if A in self.BuildInfo and "MAKE" in self.BuildInfo[A].ToolPath:
                 Command += (self.BuildInfo[A].ToolPath["MAKE"],)
                 if "MAKE" in self.BuildInfo[A].ToolOption:
-                    newOption = self.BuildInfo[A].ToolOption["MAKE"].strip()
-                    if newOption != '':
-                      Command += (newOption,)
+                    NewOption = self.BuildInfo[A].ToolOption["MAKE"].strip()
+                    if NewOption != '':
+                      Command += (NewOption,)
                 break
         if len(Command) == 0:
             EdkLogger.error("AutoGen", OPTION_MISSING, "No MAKE command defined. Please check your tools_def.txt!")
@@ -949,7 +949,7 @@ class ModuleAutoGen(object):
             # no command, no build
             if RuleObject == None or RuleObject.CommandList == []:
                 Buildable = False
-                EdkLogger.warn(None, "No rule or command defined for building [%s], ignore file [%s]" % (FileType, SourceFile))
+                EdkLogger.verbose("No rule or command defined for building [%s], ignore file [%s]" % (FileType, SourceFile))
                 continue
 
             BuildFileList.append([SourceFile, FileType, RuleObject])

@@ -11,28 +11,50 @@
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #
 
+## Base class of build information
+# 
+#   BuildInfo defines basic operations which are needed for it to be used as KEY
+# in dictionary. This should be used for derivation only.
+# 
 class BuildInfo(object):
-    def __init__(self, rawobj):
-        self._Key = rawobj.DescFilePath
+    ## Constructor
+    #
+    #   @param  MetaInfo    The raw information the build information will be 
+    #                       extracted from
+    # 
+    def __init__(self, MetaInfo):
+        self._Key = str(MetaInfo)
 
+    ## str() operator
     def __str__(self):
         return self._Key
 
+    ## "==" operator
     def __eq__(self, other):
         return self._Key == str(other)
 
+    ## hash() operator
     def __hash__(self):
         return hash(self._Key)
 
+## Build information of a module
+# 
+#   ModuleBuildInfo class is intended to gather build information for a module.
+# The input "Module" ojbect must support str() operation.
+# 
 class ModuleBuildInfo(BuildInfo):
-    def __init__(self, module):
-        BuildInfo.__init__(self, module)
-        self.Module     = module
+    ## Constructor
+    #
+    #   @param  Module  The ModuleBuildClassObject object
+    # 
+    def __init__(self, Module):
+        BuildInfo.__init__(self, Module)
+        self.Module     = Module
 
-        self.Name       = module.BaseName
-        self.Guid       = module.Guid
-        self.Version    = module.Version
-        self.ModuleType = module.ModuleType
+        self.Name       = Module.BaseName
+        self.Guid       = Module.Guid
+        self.Version    = Module.Version
+        self.ModuleType = Module.ModuleType
 
         self.PlatformInfo = None
         self.PackageInfo = None
@@ -78,24 +100,42 @@ class ModuleBuildInfo(BuildInfo):
         self.MacroList = []
         self.DepexList = []
 
+## Build information of a package
+# 
+#   PackageBuildInfo class is intended to gather build information for a package.
+# The input "Package" ojbect must support str() operation.
+# 
 class PackageBuildInfo(BuildInfo):
-    def __init__(self, package):
-        BuildInfo.__init__(self, package)
-        self.Package    = package
-        self.Name       = package.PackageName
-        self.Guid       = package.Guid
-        self.Version    = package.Version
+    ## Constructor
+    #
+    #   @param  Package     The PackageBuildClassObject object
+    # 
+    def __init__(self, Package):
+        BuildInfo.__init__(self, Package)
+        self.Package    = Package
+        self.Name       = Package.PackageName
+        self.Guid       = Package.Guid
+        self.Version    = Package.Version
 
         self.SourceDir = ""
         self.IncludePathList = []
 
+## Build information of a platform
+# 
+#   PlatformBuildInfo class is intended to gather build information for a platform.
+# The input "Platform" ojbect must support str() operation.
+# 
 class PlatformBuildInfo(BuildInfo):
-    def __init__(self, platform):
-        BuildInfo.__init__(self, platform)
-        self.Platform   = platform
-        self.Name       = platform.PlatformName
-        self.Guid       = platform.Guid
-        self.Version    = platform.Version
+    ## Constructor
+    #
+    #   @param  Platform    The PlatformBuildClassObject object
+    # 
+    def __init__(self, Platform):
+        BuildInfo.__init__(self, Platform)
+        self.Platform   = Platform
+        self.Name       = Platform.PlatformName
+        self.Guid       = Platform.Guid
+        self.Version    = Platform.Version
 
         self.ArchList = []
         self.ToolChain = ""
@@ -121,10 +161,11 @@ class PlatformBuildInfo(BuildInfo):
         self.NonDynamicPcdList = [] # [(TokenCName1, TokenSpaceGuidCName1), (TokenCName2, TokenSpaceGuidCName2), ...]
 
         self.ToolPath = {}          # toolcode : tool path
-        self.ToolDllPath = {}    # toolcode : lib path
+        self.ToolDllPath = {}       # toolcode : lib path
         self.ToolStaticLib = {}     # toolcode : lib path
         self.ToolChainFamily = {}   # toolcode : tool chain family
         self.BuildOption = {}       # toolcode : option
         self.OutputFlag = {}        # toolcode : output flag
-        self.IncludeFlag = {}        # toolcode : include flag
-        self.ToolOption = {}
+        self.IncludeFlag = {}       # toolcode : include flag
+        self.ToolOption = {}        # toolcode : tool option string
+

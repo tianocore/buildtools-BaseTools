@@ -472,16 +472,14 @@ fds: init build_fds
 # Build all libraries:
 #
 build_libraries:
-\t${BEGIN}
-\tcd $(WORKSPACE)${separator}${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
+${BEGIN}\tcd $(WORKSPACE)${separator}${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
 \t${END}cd $(BUILD_DIR)
 
 #
 # Build all modules:
 #
 build_modules:
-\t${BEGIN}echo Building module $(WORKSPACE)${separator}${module_build_directory}
-\tcd $(WORKSPACE)${separator}${module_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
+${BEGIN}\tcd $(WORKSPACE)${separator}${module_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
 \t${END}cd $(BUILD_DIR)
 
 #

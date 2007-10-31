@@ -72,6 +72,7 @@ GENFDS_ERROR = 0xF003
 MIGRATION_ERROR = 0xF010
 UNKNOWN_ERROR = 0xFFFF
 
+## Error message of each error code
 gErrorMessage = {
     FILE_NOT_FOUND          :   "File/directory not found",
     FILE_OPEN_FAILURE       :   "File open failure",
@@ -130,6 +131,7 @@ gErrorMessage = {
     UNKNOWN_ERROR           :   "Unknown error",
 }
 
+## Exception indicating a fatal error
 class FatalError(Exception):
     pass
 

@@ -23,10 +23,16 @@ import time
 import re
 import cPickle
 
-from Common.BuildToolError import *
+from Common import EdkLogger as EdkLogger
+from BuildToolError import *
 
+## Regular expression used to find out place holders in string template
 gPlaceholderPattern = re.compile("\$\{([^$()\s]+)\}", re.MULTILINE|re.UNICODE)
+
+## Dictionary used to store file time stamp for quick re-access
 gFileTimeStampCache = {}    # {file path : file time stamp}
+
+## Dictionary used to store dependencies of files
 gDependencyDatabase = {}    # arch : {file path : [dependent files list]}
 
 ## callback routine for processing variable option
@@ -168,7 +174,7 @@ def IsChanged(File):
 #   @retval     True            If the file content is changed and the file is renewed
 #   @retval     False           If the file content is the same
 #
-def SaveFileOnChange(File, Content, IsBinaryFile=False):
+def SaveFileOnChange(File, Content, IsBinaryFile=True):
     if IsBinaryFile:
         BinaryFlag = 'b'
     else:
@@ -176,7 +182,8 @@ def SaveFileOnChange(File, Content, IsBinaryFile=False):
     Fd = None
     if os.path.exists(File):
         Fd = open(File, "r"+BinaryFlag)
-        if Content == Fd.read():
+        FileSize = os.fstat(Fd.fileno()).st_size
+        if len(Content) == FileSize and Content == Fd.read():
             Fd.close()
             return False
         Fd.close()
@@ -191,13 +198,13 @@ def SaveFileOnChange(File, Content, IsBinaryFile=False):
 #   @param      Data    The object to be stored in file
 #   @param      File    The path of file to store the object
 #
-def ObjectDump(Data, File):
+def DataDump(Data, File):
     Fd = None
     try:
-        Fd = open(File, 'w')
-        cPickle.dump(Data, Fd)
+        Fd = open(File, 'wb')
+        cPickle.dump(Data, Fd, cPickle.HIGHEST_PROTOCOL)
     except:
-        EdkLogger.error("", FILE_OPEN_FAILURE, ExtraData=File)
+        EdkLogger.error("", FILE_OPEN_FAILURE, ExtraData=File, RaiseError=False)
     finally:
         if Fd != None:
             Fd.close()
@@ -209,13 +216,19 @@ def ObjectDump(Data, File):
 #   @retval     object  A python object
 #   @retval     None    If failure in file operation
 #
-def ObjectRestore(File):
+def DataRestore(File):
+    Data = None
+    Fd = None
     try:
-        Fd = open(File, 'r')
-        return cPickle.load(Fd)
+        Fd = open(File, 'rb')
+        Data = cPickle.load(Fd)
     except Exception, e:
         EdkLogger.verbose("Failed to open [%s]" % File)
-        return None
+        Data = None
+    finally:
+        if Fd != None:
+            Fd.close()
+    return Data
 
 ## A string template class
 #
@@ -453,9 +466,3 @@ class sdict(dict):
         self.__delitem__(key)
         return key, value
 
-#
-#if gFileTimeStampCache == {} and os.path.exists(".TsCache"):
-#    gFileTimeStampCache = ObjectRestore(".TsCache")
-#
-#if gDependencyDatabase == {} and os.path.exists(".DepCache"):
-#    gDependencyDatabase = ObjectRestore(".DepCache")
