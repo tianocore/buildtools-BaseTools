@@ -530,7 +530,7 @@ class BuildTask:
     ## Start build task thread
     #
     def Start(self):
-        Command = self.BuildItem.BuildCommand + " " + self.BuildItem.Target
+        Command = self.BuildItem.BuildCommand + (self.BuildItem.Target,)
         self.BuildTread = Thread(target=self._CommandThread, args=(Command, self.BuildItem.WorkingDir))
         self.BuildTread.setName("Command-Thread")
         self.BuildTread.setDaemon(False)
@@ -938,7 +938,7 @@ class Build():
 
                 # Generate FD image if there's a FDF file found
                 if self.Fdf != '' and self.Target in ["", "all", "fds"]:
-                    LaunchCommand(Pa.GetBuildCommand() + " fds", Pa.GetMakeFileDir())
+                    LaunchCommand(Pa.GetBuildCommand() + ("fds",), Pa.GetMakeFileDir())
 
     ## Launch the module or platform build
     #
