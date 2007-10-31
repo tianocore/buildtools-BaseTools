@@ -480,7 +480,7 @@ ${BEGIN}\tcd $(WORKSPACE)${separator}${library_build_directory} && "$(MAKE)" $(M
 #
 build_modules:
 ${BEGIN}\tcd $(WORKSPACE)${separator}${module_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
-\t${END}cd $(BUILD_DIR)
+\t${END}\tcd $(BUILD_DIR)
 
 #
 # Build Flash Device Image

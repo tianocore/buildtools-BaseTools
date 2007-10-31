@@ -700,11 +700,13 @@ class Build():
         if self.ThreadNumber == None or self.ThreadNumber == "":
             self.ThreadNumber = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER]
             if self.ThreadNumber == '':
-                self.ThreadNumber = 1
+                self.ThreadNumber = 0
             else:
                 self.ThreadNumber = int(self.ThreadNumber, 0)
 
-        if self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_MULTIPLE_THREAD].lower() in ["enable", "true"]:
+        if self.ThreadNumber == 0:
+            self.SpawnMode = False
+        elif self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_MULTIPLE_THREAD].lower() in ["enable", "true"]:
             self.SpawnMode = True
 
         if self.PlatformFile == None:
