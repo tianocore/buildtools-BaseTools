@@ -1,4 +1,4 @@
-!INCLUDE ..\MSmakefile.common
+!INCLUDE ..\Makefiles\ms.common
 
 APPNAME = GenFw
 
@@ -8,5 +8,5 @@ OBJECTS = GenFw.obj
 
 #CFLAGS = $(CFLAGS) /nodefaultlib:libc.lib
 
-!INCLUDE ..\MSmakefile.app
+!INCLUDE ..\Makefiles\ms.app
 

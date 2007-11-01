@@ -1,4 +1,4 @@
-!INCLUDE ..\MSmakefile.common
+!INCLUDE ..\Makefiles\ms.common
 
 APPNAME = GenVtf
 
@@ -6,5 +6,5 @@ LIBS = $(LIB_PATH)\Common.lib
 
 OBJECTS = GenVtf.obj
 
-!INCLUDE ..\MSmakefile.app
+!INCLUDE ..\Makefiles\ms.app
 

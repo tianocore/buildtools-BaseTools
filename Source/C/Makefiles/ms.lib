@@ -1,4 +1,4 @@
-!INCLUDE MSmakefile.common
+!INCLUDE ..\Makefiles\ms.common
 
 LIBRARY = $(LIB_PATH)\$(LIBNAME).lib
 
@@ -16,5 +16,5 @@ clean:
 cleanall:
 	del /f /q $(OBJECTS) $(LIBRARY) *.pdb > nul
 
-!INCLUDE MSmakefile.rule
+!INCLUDE ..\Makefiles\ms.rule
 

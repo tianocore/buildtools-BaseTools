@@ -1,4 +1,4 @@
-!INCLUDE ..\MSmakefile.common
+!INCLUDE ..\Makefiles\ms.common
 
 APPNAME = TianoCompress
 
@@ -6,5 +6,5 @@ LIBS = $(LIB_PATH)\Common.lib
 
 OBJECTS = TianoCompress.obj
 
-!INCLUDE ..\MSmakefile.app
+!INCLUDE ..\Makefiles\ms.app
 

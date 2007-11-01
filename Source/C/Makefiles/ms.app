@@ -1,4 +1,4 @@
-!INCLUDE MSmakefile.common
+!INCLUDE ..\Makefiles\ms.common
 
 APPLICATION = $(BIN_PATH)\$(APPNAME).exe
 
@@ -17,5 +17,5 @@ clean:
 cleanall:
 	del /f /q $(OBJECTS) $(APPLICATION) *.pdb $(BIN_PATH)\*.pdb > nul
 
-!INCLUDE MSmakefile.rule
+!INCLUDE ..\Makefiles\ms.rule
 

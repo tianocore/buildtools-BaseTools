@@ -1,4 +1,4 @@
-!INCLUDE ..\MSmakefile.common
+!INCLUDE ..\Makefiles\ms.common
 
 APPNAME = VfrCompile
 
@@ -8,7 +8,7 @@ OBJECTS = VfrCompile.obj VfrServices.obj DLGLexer.obj EfiVfrParser.obj ATokenBuf
 
 INC = $(INC) -I $(BASE_TOOLS_PATH)\Source\C\VfrCompile\Pccts\h
 
-!INCLUDE ..\MSmakefile.app
+!INCLUDE ..\Makefiles\ms.app
 
 VfrCompile.cpp DLGLexer.cpp EfiVfrParser.cpp: VfrCompile.g
 	pushd . & cd Pccts & $(MAKE) & popd

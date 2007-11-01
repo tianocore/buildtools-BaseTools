@@ -1,4 +1,4 @@
-!INCLUDE ..\MSmakefile.common
+!INCLUDE ..\Makefiles\ms.common
 
 APPNAME = GenSec
 
@@ -8,5 +8,5 @@ OBJECTS = GenSec.obj
 
 #CFLAGS = $(CFLAGS) /nodefaultlib:libc.lib
 
-!INCLUDE ..\MSmakefile.app
+!INCLUDE ..\Makefiles\ms.app
 

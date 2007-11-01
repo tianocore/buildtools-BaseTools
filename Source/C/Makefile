@@ -1,6 +1,6 @@
 ARCH = IA32
 
-!INCLUDE MSmakefile.common
+!INCLUDE Makefiles\ms.common
 
 LIBRARIES = Common
 APPLICATIONS = GenFw GenSec GenFv GenFfs GenVtf EfiRom TianoCompress Split GenBootSector BootSectImage EfiLdrImage GenPage VfrCompile
@@ -13,7 +13,7 @@ libs: $(LIBRARIES)
 	@echo # Build libraries
 	@echo ######################
 	@if not exist $(LIB_PATH) mkdir $(LIB_PATH)
-  @NmakeSubdirs.bat all $**
+	@Makefiles\NmakeSubdirs.bat all $**
 
 apps: $(APPLICATIONS)
 	@echo.
@@ -21,7 +21,7 @@ apps: $(APPLICATIONS)
 	@echo # Build executables
 	@echo ######################
 	@if not exist $(BIN_PATH) mkdir $(BIN_PATH)
-  @NmakeSubdirs.bat all $**
+	@Makefiles\NmakeSubdirs.bat all $**
 
 install: $(LIB_PATH) $(BIN_PATH)
 	@echo.
@@ -34,12 +34,12 @@ install: $(LIB_PATH) $(BIN_PATH)
 
 .PHONY: clean
 clean:
-  @NmakeSubdirs.bat clean $(LIBRARIES) $(APPLICATIONS)
+  @Makefiles\NmakeSubdirs.bat clean $(LIBRARIES) $(APPLICATIONS)
 
 .PHONY: cleanall
 cleanall:
-  @NmakeSubdirs.bat cleanall $(LIBRARIES) $(APPLICATIONS)
+  @Makefiles\NmakeSubdirs.bat cleanall $(LIBRARIES) $(APPLICATIONS)
   @del /f /q $(BIN_PATH)\*.pdb $(BIN_PATH)\*.ilk
 
-!INCLUDE MSmakefile.rule
+!INCLUDE Makefiles\ms.rule
 
