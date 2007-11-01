@@ -5,7 +5,7 @@ APPNAME = GenSec
 
 OBJECTS = GenSec.o
 
-include $(MAKEROOT)/app.makefile
+include $(MAKEROOT)/Makefiles/app.makefile
 
 LIBS = -lCommon
 ifeq ($(CYGWIN), CYGWIN)

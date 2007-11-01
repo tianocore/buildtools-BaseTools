@@ -14,7 +14,7 @@ LINKER = $(CXX)
 
 EXTRA_CLEAN_OBJECTS = EfiVfrParser.cpp parser.dlg EfiVfrParser.h DLGLexer.cpp VfrCompile.cpp tokens.h DLGLexer.h
 
-include $(MAKEROOT)/app.makefile
+include $(MAKEROOT)/Makefiles/app.makefile
 
 VfrCompile.cpp DLGLexer.cpp EfiVfrParser.cpp: Pccts/antlr/antlr Pccts/dlg/dlg VfrCompile.g
 	Pccts/antlr/antlr -CC -e3 -ck 3 -o . VfrCompile.g

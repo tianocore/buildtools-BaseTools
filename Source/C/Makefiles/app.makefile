@@ -1,6 +1,6 @@
 MAKEROOT ?= ../..
 
-include $(MAKEROOT)/header.makefile
+include $(MAKEROOT)/Makefiles/header.makefile
 
 APPLICATION = $(MAKEROOT)/bin/$(APPNAME)
 
@@ -10,4 +10,4 @@ all: $(MAKEROOT)/bin $(APPLICATION)
 $(APPLICATION): $(OBJECTS) 
 	$(LINKER) -out:$(APPLICATION) $(OBJECTS) -L$(MAKEROOT)/libs $(LIBS)
 
-include $(MAKEROOT)/footer.makefile
+include $(MAKEROOT)/Makefiles/footer.makefile

@@ -7,4 +7,4 @@ LIBS = -lCommon
 
 OBJECTS = GenPage.o
 
-include $(MAKEROOT)/app.makefile
+include $(MAKEROOT)/Makefiles/app.makefile

@@ -5,7 +5,7 @@ APPNAME = Split
 
 OBJECTS = Split.o
 
-include $(MAKEROOT)/app.makefile
+include $(MAKEROOT)/Makefiles/app.makefile
 
 LIBS = -lCommon
 

@@ -5,7 +5,7 @@ APPNAME = GenFw
 
 OBJECTS = GenFw.o
 
-include $(MAKEROOT)/app.makefile
+include $(MAKEROOT)/Makefiles/app.makefile
 
 LIBS = -lCommon
 ifeq ($(CYGWIN), CYGWIN)

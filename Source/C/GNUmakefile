@@ -1,7 +1,7 @@
 ARCH ?= IA32
 MAKEROOT = .
 
-include header.makefile
+include Makefiles/header.makefile
 
 all: makerootdir subdirs $(MAKEROOT)/libs
 
@@ -32,4 +32,4 @@ localClean:
 	rm -f $(MAKEROOT)/bin/*
 	-rmdir $(MAKEROOT)/libs $(MAKEROOT)/bin
 
-include footer.makefile
+include Makefiles/footer.makefile

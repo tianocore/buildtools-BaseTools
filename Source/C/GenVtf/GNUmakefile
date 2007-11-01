@@ -7,4 +7,4 @@ LIBS = -lCommon
 
 OBJECTS = GenVtf.o
 
-include $(MAKEROOT)/app.makefile
+include $(MAKEROOT)/Makefiles/app.makefile
