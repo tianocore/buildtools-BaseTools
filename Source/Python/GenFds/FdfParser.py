@@ -1033,7 +1033,7 @@ class FdfParser:
         if not self.__GetNextHexNumber():
             return False
         
-        RegionObj = Region.region()
+        RegionObj = Region.Region()
         RegionObj.Offset = long(self.__Token, 0)
         Fd.RegionList.append(RegionObj)
         
@@ -1147,7 +1147,7 @@ class FdfParser:
     #   @param  self        The object pointer
     #   @param  RegionObj   for whom region data is got
     #
-    def __GetRegionDataType(self, region):
+    def __GetRegionDataType(self, RegionObj):
         
         if not self.__IsKeyword( "DATA"):
             raise Warning("expected Region Data type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
@@ -1178,8 +1178,8 @@ class FdfParser:
             raise Warning("expected '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
         
         DataString = DataString.rstrip(",")
-        region.RegionType = "DATA"
-        region.RegionDataList.append( DataString)
+        RegionObj.RegionType = "DATA"
+        RegionObj.RegionDataList.append( DataString)
         
         while self.__IsKeyword( "DATA"):
 
@@ -1209,7 +1209,7 @@ class FdfParser:
                 raise Warning("expected '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
         
             DataString = DataString.rstrip(",")
-            region.RegionDataList.append( DataString)
+            RegionObj.RegionDataList.append( DataString)
     
     ## __GetFv() method
     #
@@ -1402,6 +1402,14 @@ class FdfParser:
         if not ffsInf.InfFileName in self.Profile.InfList:
             self.Profile.InfList.append(ffsInf.InfFileName)
         
+        if self.__IsToken('|'):
+            if self.__IsKeyword('RELOCS_STRIPPED'):
+                ffsInf.KeepReloc = False
+            elif self.__IsKeyword('RELOCS_RETAINED'):
+                ffsInf.KeepReloc = True
+            else:
+                raise Warning("Unknown reloc strip flag At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+        
         if ForCapsule:
             capsuleFfs = CapsuleData.CapsuleFfs()
             capsuleFfs.Ffs = ffsInf
@@ -1477,11 +1485,11 @@ class FdfParser:
         if not self.__IsKeyword( "FILE"):
             return False
         
-        FfsFileObj = FfsFileStatement.FileStatements()
+        FfsFileObj = FfsFileStatement.FileStatement()
         
         if not self.__GetNextWord():
             raise Warning("expected FFS type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
-        FfsFileObj.FvType = self.__Token
+        FfsFileObj.FvFileType = self.__Token
         
         if not self.__IsToken( "="):
             raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
@@ -1500,6 +1508,38 @@ class FdfParser:
             Obj.FfsList.append(FfsFileObj)
                 
         return True
+    
+    ## __FileCouldHaveRelocFlag() method
+    #
+    #   Check whether reloc strip flag can be set for a file type.
+    #
+    #   @param  self        The object pointer
+    #   @param  FileType    The file type to check with
+    #   @retval True        This type could have relocation strip flag
+    #   @retval False       No way to have it
+    #
+    
+    def __FileCouldHaveRelocFlag (self, FileType):
+        if FileType in ('SEC', 'PEI_CORE', 'PEIM', 'PEI_DXE_COMBO'):
+            return True
+        else:
+            return False
+    
+    ## __SectionCouldHaveRelocFlag() method
+    #
+    #   Check whether reloc strip flag can be set for a section type.
+    #
+    #   @param  self        The object pointer
+    #   @param  SectionType The section type to check with
+    #   @retval True        This type could have relocation strip flag
+    #   @retval False       No way to have it
+    #
+    
+    def __SectionCouldHaveRelocFlag (self, SectionType):
+        if SectionType in ('TE', 'PE32'):
+            return True
+        else:
+            return False
         
     ## __GetFilePart() method
     #
@@ -1513,8 +1553,18 @@ class FdfParser:
         
         self.__GetFileOpts( FfsFileObj)
         
-        if not self.__IsToken( "{"):
-            raise Warning("expected '{' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+        if not self.__IsToken("{"):
+#            if self.__IsKeyword('RELOCS_STRIPPED') or self.__IsKeyword('RELOCS_RETAINED'):
+#                if self.__FileCouldHaveRelocFlag(FfsFileObj.FvFileType):
+#                    if self.__Token == 'RELOCS_STRIPPED':
+#                        FfsFileObj.KeepReloc = False
+#                    else:
+#                        FfsFileObj.KeepReloc = True
+#                else:
+#                    raise Warning("File type %s could not have reloc strip flag At Line %d" % (FfsFileObj.FvFileType, self.CurrentLineNumber), self.FileName, self.CurrentLineNumber)
+#            
+#            if not self.__IsToken("{"):
+                raise Warning("expected '{' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
             
         if not self.__GetNextToken():
             raise Warning("expected File name or section data At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
@@ -1575,6 +1625,8 @@ class FdfParser:
             
         if self.__GetAlignment():
             FfsFileObj.Alignment = self.__Token
+            
+        
     
     ## __GetAlignment() method
     #
@@ -1737,6 +1789,15 @@ class FdfParser:
             DataSectionObj = DataSection.DataSection()
             DataSectionObj.Alignment = AlignValue
             DataSectionObj.SecType = self.__Token
+            
+            if self.__IsKeyword('RELOCS_STRIPPED') or self.__IsKeyword('RELOCS_RETAINED'):
+                if self.__FileCouldHaveRelocFlag(Obj.FvFileType) and self.__SectionCouldHaveRelocFlag(DataSectionObj.SecType):
+                    if self.__Token == 'RELOCS_STRIPPED':
+                        DataSectionObj.KeepReloc = False
+                    else:
+                        DataSectionObj.KeepReloc = True
+                else:
+                    raise Warning("File type %s, section type %s, could not have reloc strip flag At Line %d" % (Obj.FvFileType, DataSectionObj.SecType, self.CurrentLineNumber), self.FileName, self.CurrentLineNumber)
             
             if self.__IsToken("="):
                 if not self.__GetNextToken():
@@ -2135,6 +2196,16 @@ class FdfParser:
         if not self.__IsKeyword("$(NAMED_GUID)"):
             raise Warning("expected $(NAMED_GUID) At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
 
+        KeepReloc = None
+        if self.__IsKeyword('RELOCS_STRIPPED') or self.__IsKeyword('RELOCS_RETAINED'):
+            if self.__FileCouldHaveRelocFlag(Type):
+                if self.__Token == 'RELOCS_STRIPPED':
+                    KeepReloc = False
+                else:
+                    KeepReloc = True
+            else:
+                raise Warning("File type %s could not have reloc strip flag At Line %d" % (Type, self.CurrentLineNumber), self.FileName, self.CurrentLineNumber)
+        
         KeyStringList = []
         if self.__GetNextToken():
             Pattern = re.compile(r'([a-zA-Z0-9\-]+|\$\(TARGET\)|\*)_([a-zA-Z0-9\-]+|\$\(TOOL_CHAIN_TAG\)|\*)_([a-zA-Z0-9\-]+|\$\(ARCH\)|\*)')
@@ -2170,11 +2241,13 @@ class FdfParser:
         if self.__IsToken("{"):
             # Complex file rule expected
             Rule = RuleComplexFile.RuleComplexFile()
-            Rule.FvType = Type
+            Rule.FvFileType = Type
             Rule.Alignment = AlignValue
             Rule.CheckSum = CheckSum
             Rule.Fixed = Fixed
             Rule.KeyStringList = KeyStringList
+            if KeepReloc != None:
+                Rule.KeepReloc = KeepReloc
             
             while True:
                 IsEncapsulate = self.__GetRuleEncapsulationSection(Rule)
@@ -2193,12 +2266,14 @@ class FdfParser:
             
             Rule = RuleSimpleFile.RuleSimpleFile()
 
-            Rule.FvType = Type
+            Rule.FvFileType = Type
             Rule.Alignment = Alignment
             Rule.CheckSum = CheckSum
             Rule.Fixed = Fixed
             Rule.FileExtension = Ext
             Rule.KeyStringList = KeyStringList
+            if KeepReloc != None:
+                Rule.KeepReloc = KeepReloc
             
             return Rule
             
@@ -2230,12 +2305,14 @@ class FdfParser:
             
             Rule = RuleSimpleFile.RuleSimpleFile()
             Rule.SectionType = SectionName
-            Rule.FvType = Type
+            Rule.FvFileType = Type
             Rule.Alignment = AlignValue
             Rule.CheckSum = CheckSum
             Rule.Fixed = Fixed
             Rule.FileName = self.__Token
             Rule.KeyStringList = KeyStringList
+            if KeepReloc != None:
+                Rule.KeepReloc = KeepReloc
             return Rule
         
     ## __GetEfiSection() method
@@ -2366,6 +2443,18 @@ class FdfParser:
                 
         if self.__GetAlignment():
             EfiSectionObj.Alignment = self.__Token
+        
+        if self.__IsKeyword('RELOCS_STRIPPED') or self.__IsKeyword('RELOCS_RETAINED'):
+            if self.__SectionCouldHaveRelocFlag(EfiSectionObj.SectionType):
+                if self.__Token == 'RELOCS_STRIPPED':
+                    EfiSectionObj.KeepReloc = False
+                else:
+                    EfiSectionObj.KeepReloc = True
+                if Obj.KeepReloc != None and Obj.KeepReloc != EfiSectionObj.KeepReloc:
+                    raise Warning("Section type %s has reloc strip flag conflict with Rule At Line %d" % (EfiSectionObj.SectionType, self.CurrentLineNumber), self.FileName, self.CurrentLineNumber)
+            else:
+                raise Warning("Section type %s could not have reloc strip flag At Line %d" % (EfiSectionObj.SectionType, self.CurrentLineNumber), self.FileName, self.CurrentLineNumber)
+        
         
         if self.__IsToken('|'):
             EfiSectionObj.FileExtension = self.__GetFileExtension()
@@ -2758,7 +2847,7 @@ class FdfParser:
     def __GetReferencedFdFvTuple(self, FvObj, RefFdList = [], RefFvList = []):
         
         for FfsObj in FvObj.FfsList:
-            if isinstance(FfsObj, FfsFileStatement.FileStatements):
+            if isinstance(FfsObj, FfsFileStatement.FileStatement):
                 if FfsObj.FvName != None and FfsObj.FvName.upper() not in RefFvList:
                     RefFvList.append(FfsObj.FvName.upper())
                 elif FfsObj.FdName != None and FfsObj.FdName.upper() not in RefFdList:

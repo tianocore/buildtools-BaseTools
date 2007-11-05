@@ -54,9 +54,7 @@ class CompressSection (CompressSectionClassObject) :
     #   @retval tuple       (Generated file name, section alignment)
     #
     def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None, Dict = {}):
-        #
-        # Generate all section
-        #
+        
         if FfsInf != None:
             self.CompType = FfsInf.__ExtendMacro__(self.CompType)
             self.Alignment = FfsInf.__ExtendMacro__(self.Alignment)

@@ -21,18 +21,18 @@ from GenFdsGlobalVariable import GenFdsGlobalVariable
 import os
 import StringIO
 import subprocess
-from CommonDataClass.FdfClassObject import FileStatementsClassObject
+from CommonDataClass.FdfClassObject import FileStatementClassObject
 
 ## generate FFS from FILE
 #
 #
-class FileStatements (FileStatementsClassObject) :
+class FileStatement (FileStatementClassObject) :
     ## The constructor
     #
     #   @param  self        The object pointer
     #
     def __init__(self):
-        FileStatementsClassObject.__init__(self)
+        FileStatementClassObject.__init__(self)
     
     ## GenFfs() method
     #
@@ -102,8 +102,8 @@ class FileStatements (FileStatementsClassObject) :
         else :
             Alignment = ''
 
-        if not (self.FvType == None):
-            FileType = ' -t ' + Ffs.Ffs.FvTypeToFileType.get(self.FvType)
+        if not (self.FvFileType == None):
+            FileType = ' -t ' + Ffs.Ffs.FdfFvFileTypeToFileType.get(self.FvFileType)
         else:
             FileType = ''
 

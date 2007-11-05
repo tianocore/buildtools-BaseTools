@@ -25,7 +25,7 @@ import os
 ## generate Region
 #
 #
-class region(RegionClassObject):
+class Region(RegionClassObject):
     
     ## The constructor
     #
@@ -52,8 +52,8 @@ class region(RegionClassObject):
 
     def AddToBuffer(self, Buffer, BaseAddress, BlockSizeList, ErasePolarity, FvBinDict, vtfDict = None, MacroDict = {}):
         Size = self.Size
-        GenFdsGlobalVariable.InfLogger('Generate Region')
-        GenFdsGlobalVariable.InfLogger("   Region Size = 0x%x" %Size)
+        GenFdsGlobalVariable.InfLogger('Generate Region at Offset 0x%X' % self.Offset)
+        GenFdsGlobalVariable.InfLogger("   Region Size = 0x%X" %Size)
         GenFdsGlobalVariable.SharpCounter = 0
         
         if self.RegionType == 'FV':
@@ -65,7 +65,7 @@ class region(RegionClassObject):
             RegionBlockNum = self.BlockNumOfRegion(RegionBlockSize)
             
             self.FvAddress = int(BaseAddress, 16) + self.Offset
-            FvBaseAddress = '0x%x' %self.FvAddress
+            FvBaseAddress = '0x%X' %self.FvAddress
                     
             for RegionData in self.RegionDataList:
                 
@@ -103,7 +103,7 @@ class region(RegionClassObject):
                         if FvObj.BlockSizeList[0][1] != None:
                             BlockNum = FvObj.BlockSizeList[0][1]
                     self.FvAddress = self.FvAddress + FvBuffer.len                    
-                    FvBaseAddress = '0x%x' %self.FvAddress
+                    FvBaseAddress = '0x%X' %self.FvAddress
                     FileName = FvObj.AddToBuffer(FvBuffer, FvBaseAddress, BlockSize, BlockNum, ErasePolarity, vtfDict)
                     
                     if FvBuffer.len > Size:
@@ -182,12 +182,12 @@ class region(RegionClassObject):
         BlockSize = 0
         for item in BlockSizeList:
             Offset = Offset + item[0]  * item[1]
-            GenFdsGlobalVariable.VerboseLogger ("Offset = 0x%x" %Offset)
-            GenFdsGlobalVariable.VerboseLogger ("self.Offset 0x%x" %self.Offset)
+            GenFdsGlobalVariable.VerboseLogger ("Offset = 0x%X" %Offset)
+            GenFdsGlobalVariable.VerboseLogger ("self.Offset 0x%X" %self.Offset)
 
             if self.Offset < Offset :
                 BlockSize = item[0]
-                GenFdsGlobalVariable.VerboseLogger ("BlockSize = %x" %BlockSize)
+                GenFdsGlobalVariable.VerboseLogger ("BlockSize = %X" %BlockSize)
                 return BlockSize
         return BlockSize
     
@@ -200,6 +200,6 @@ class region(RegionClassObject):
         if BlockSize == 0 :
             raise Exception ("Region: %s doesn't in Fd address scope !" %self.Offset)
         BlockNum = self.Size / BlockSize
-        GenFdsGlobalVariable.VerboseLogger ("BlockNum = 0x%x" %BlockNum)
+        GenFdsGlobalVariable.VerboseLogger ("BlockNum = 0x%X" %BlockNum)
         return BlockNum
                 

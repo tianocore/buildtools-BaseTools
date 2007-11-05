@@ -146,30 +146,30 @@ class FV (FvClassObject):
                                        
         if BlockSize != None:
             self.FvInfFile.writelines("EFI_BLOCK_SIZE = " + \
-                                      '0x%x' %BlockSize    + \
+                                      '0x%X' %BlockSize    + \
                                       T_CHAR_LF)
             if BlockNum != None:
                 self.FvInfFile.writelines("EFI_NUM_BLOCKS   = "  + \
-                                      ' 0x%x' %BlockNum    + \
+                                      ' 0x%X' %BlockNum    + \
                                       T_CHAR_LF)
         else:
             for BlockSize in self.BlockSizeList :
                 if BlockSize[0] != None:
                     self.FvInfFile.writelines("EFI_BLOCK_SIZE  = "  + \
-                                          '0x%x' %BlockSize[0]    + \
+                                          '0x%X' %BlockSize[0]    + \
                                           T_CHAR_LF)
                 
                 if BlockSize[1] != None:                  
                     self.FvInfFile.writelines("EFI_NUM_BLOCKS   = "  + \
-                                          ' 0x%x' %BlockSize[1]    + \
+                                          ' 0x%X' %BlockSize[1]    + \
                                           T_CHAR_LF)
                                           
         if self.BsBaseAddress != None:
             self.FvInfFile.writelines('EFI_BOOT_DRIVER_BASE_ADDRESS = ' + \
-                                       '0x%x' %self.BsBaseAddress)
+                                       '0x%X' %self.BsBaseAddress)
         if self.RtBaseAddress != None:
             self.FvInfFile.writelines('EFI_RUNTIME_DRIVER_BASE_ADDRESS = ' + \
-                                      '0x%x' %self.RtBaseAddress)
+                                      '0x%X' %self.RtBaseAddress)
         #
         # Add attribute
         #

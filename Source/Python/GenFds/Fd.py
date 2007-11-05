@@ -57,12 +57,26 @@ class FD(FDClassObject):
         self.GenVtfFile()
         
         FdBuffer = StringIO.StringIO('')
-        for Regions in self.RegionList :
+        PreviousRegionStart = -1
+        PreviousRegionSize = 1
+        for RegionObj in self.RegionList :
+            if RegionObj.Offset + RegionObj.Size <= PreviousRegionStart:
+                raise Exception ('Region offset 0x%X in wrong order with Region starting from 0x%X, size 0x%X\nRegions in FDF must have offsets appear in ascending order.' % (RegionObj.Offset, PreviousRegionStart, PreviousRegionSize))
+            elif RegionObj.Offset <= PreviousRegionStart or (RegionObj.Offset >=PreviousRegionStart and RegionObj.Offset < PreviousRegionStart + PreviousRegionSize):
+                raise Exception ('Region offset 0x%X overlaps with Region starting from 0x%X, size 0x%X' % (RegionObj.Offset, PreviousRegionStart, PreviousRegionSize))
+            elif RegionObj.Offset > PreviousRegionStart + PreviousRegionSize:
+                GenFdsGlobalVariable.InfLogger('Padding region starting from offset 0x%X, with size 0x%X' %(PreviousRegionStart + PreviousRegionSize, RegionObj.Offset - (PreviousRegionStart + PreviousRegionSize)))
+                PadRegion = Region.Region()
+                PadRegion.Offset = PreviousRegionStart + PreviousRegionSize
+                PadRegion.Size = RegionObj.Offset - PadRegion.Offset
+                PadRegion.AddToBuffer(FdBuffer, self.BaseAddress, self.BlockSizeList, self.ErasePolarity, FvBinDict, self.vtfRawDict, self.DefineVarDict)
+            PreviousRegionStart = RegionObj.Offset
+            PreviousRegionSize = RegionObj.Size
             #
             # Call each region's AddToBuffer function 
             #
             GenFdsGlobalVariable.VerboseLogger('Call each region\'s AddToBuffer function')
-            Regions.AddToBuffer (FdBuffer, self.BaseAddress, self.BlockSizeList, self.ErasePolarity, FvBinDict, self.vtfRawDict, self.DefineVarDict)
+            RegionObj.AddToBuffer (FdBuffer, self.BaseAddress, self.BlockSizeList, self.ErasePolarity, FvBinDict, self.vtfRawDict, self.DefineVarDict)
         #
         # Create a empty Fd file
         #

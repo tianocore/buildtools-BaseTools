@@ -68,7 +68,7 @@ class AprioriSection (AprioriSectionClassObject):
         
         for FfsObj in self.FfsList :
             Guid = ""
-            if isinstance(FfsObj, FfsFileStatement.FileStatements):
+            if isinstance(FfsObj, FfsFileStatement.FileStatement):
                 Guid = FfsObj.NameGuid
             else:
                 InfFileName = NormPath(FfsObj.InfFileName)

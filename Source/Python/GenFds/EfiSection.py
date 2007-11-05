@@ -54,18 +54,21 @@ class EfiSection (EfiSectionClassObject):
             InfFileName = FfsInf.InfFileName
             SectionType = FfsInf.__ExtendMacro__(self.SectionType)
             Filename = FfsInf.__ExtendMacro__(self.FileName)
-            """print 'Buile Num: %s' %self.BuildNum"""
             BuildNum = FfsInf.__ExtendMacro__(self.BuildNum)
-            """print 'After extend Build Num: %s' %self.BuildNum"""
-            
             StringData = FfsInf.__ExtendMacro__(self.StringData)
-            
+            NoStrip = True
+            if FfsInf.ModuleType in ('SEC', 'PEI_CORE', 'PEIM') and SectionType in ('TE', 'PE32'):
+                if FfsInf.KeepReloc != None:
+                    NoStrip = FfsInf.KeepReloc
+                elif FfsInf.KeepRelocFromRule != None:
+                    NoStrip = FfsInf.KeepRelocFromRule
+                elif self.KeepReloc != None:
+                    NoStrip = self.KeepReloc
+                elif FfsInf.ShadowFromInfFile != None:
+                    NoStrip = FfsInf.ShadowFromInfFile
         else:
-            SectionType = self.SectionType
-            Filename = self.Filename
-            BuildNum = self.BuildNum
-            
-            InfFileName = ''
+            raise Exception ("Module %s apply rule for None!" %ModuleName)
+        
         """If the file name was pointed out, add it in FileList"""     
         FileList = []
         if Filename != None:
@@ -256,11 +259,22 @@ class EfiSection (EfiSectionClassObject):
                             CopyMapFile = os.path.join(OutputPath, ModuleName + '.map')
                             shutil.copyfile(MapFile, CopyMapFile)
 
+                    if not NoStrip:
+                        FileBeforeStrip = os.path.join(OutputPath, ModuleName + '.reloc')
+                        shutil.copyfile(File, FileBeforeStrip)
+                        StrippedFile = os.path.join(OutputPath, ModuleName + '.stipped')
+                        StripCmd = 'GenFw -l '    + \
+                                   ' -o '         + \
+                                    StrippedFile        + \
+                                    ' '           + \
+                                    GenFdsGlobalVariable.MacroExtend(File, Dict)
+                        GenFdsGlobalVariable.CallExternalTool(StripCmd, "Strip Failed !")
+                        File = StrippedFile
                     """For TE Section call GenFw to generate TE image"""
 
                     if SectionType == 'TE':
                         TeFile = os.path.join( OutputPath, ModuleName + 'Te.raw')
-                        GenTeCmd = 'GenFW -t '    + \
+                        GenTeCmd = 'GenFw -t '    + \
                                    ' -o '         + \
                                     TeFile        + \
                                     ' '           + \

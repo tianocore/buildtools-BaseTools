@@ -37,7 +37,7 @@ class Ffs(FDClassObject):
     }
     
     # mapping between fv type in FDF and file type for GenFfs
-    FvTypeToFileType = {
+    FdfFvFileTypeToFileType = {
         'SEC'               : 'EFI_FV_FILETYPE_SECURITY_CORE',
         'PEI_CORE'          : 'EFI_FV_FILETYPE_PEI_CORE',
         'PEIM'              : 'EFI_FV_FILETYPE_PEIM',

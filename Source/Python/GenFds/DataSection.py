@@ -47,15 +47,16 @@ class DataSection (DataSectionClassObject):
     #   @param  Dict        dictionary contains macro and its value
     #   @retval tuple       (Generated file name list, section alignment)
     #    
-    def GenSection(self, OutputPath, ModuleName, SecNum, keyStringList, FfsInf = None, Dict = {}):
+    def GenSection(self, OutputPath, ModuleName, SecNum, keyStringList, FfsFile = None, Dict = {}):
         #
         # Prepare the parameter of GenSection
         #
-        if FfsInf != None:
-            self.Alignment = FfsInf.__ExtendMacro__(self.Alignemnt)
-            self.SecType = FfsInf.__ExtendMacro__(self.SecType)
-            self.SectFileName = FfsInf.__ExtendMacro__(self.SectFileName)
+        if FfsFile != None:
+#            self.Alignment = FfsInf.__ExtendMacro__(self.Alignemnt)
+#            self.SecType = FfsInf.__ExtendMacro__(self.SecType)
+            self.SectFileName = GenFdsGlobalVariable.ReplaceWorkspaceMacro(self.SectFileName)
         else:
+#            raise Exception ("Module %s GenDataSection for None!" %ModuleName)
             self.SectFileName = GenFdsGlobalVariable.ReplaceWorkspaceMacro(self.SectFileName)
             
         self.SectFileName = GenFdsGlobalVariable.MacroExtend(self.SectFileName, Dict)
@@ -65,6 +66,24 @@ class DataSection (DataSectionClassObject):
         if not os.path.exists(self.SectFileName):
             self.SectFileName = os.path.join (GenFdsGlobalVariable.WorkSpaceDir,
                                               self.SectFileName)
+        
+        NoStrip = True
+        if self.SecType in ('TE', 'PE32'):
+            if self.KeepReloc != None:
+                NoStrip = self.KeepReloc
+        
+        if not NoStrip:
+            FileBeforeStrip = os.path.join(OutputPath, ModuleName + '.reloc')
+            shutil.copyfile(self.SectFileName, FileBeforeStrip)
+            StrippedFile = os.path.join(OutputPath, ModuleName + '.stipped')
+            StripCmd = 'GenFw -l '    + \
+                       ' -o '         + \
+                        StrippedFile        + \
+                        ' '           + \
+                        GenFdsGlobalVariable.MacroExtend(self.SectFileName, Dict)
+            GenFdsGlobalVariable.CallExternalTool(StripCmd, "Strip Failed !")
+            self.SectFileName = StrippedFile
+        
         if self.SecType == 'TE':
             TeFile = os.path.join( OutputPath, ModuleName + 'Te.raw')
             GenTeCmd = 'GenFW -t '    + \

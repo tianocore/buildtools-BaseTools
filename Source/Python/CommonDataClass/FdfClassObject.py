@@ -98,20 +98,21 @@ class FfsClassObject:
 ## FILE statement data in FDF
 #
 #        
-class FileStatementsClassObject (FfsClassObject) :
+class FileStatementClassObject (FfsClassObject) :
     ## The constructor
     #
     #   @param  self        The object pointer
     #
     def __init__(self):
         FfsClassObject.__init__(self)
-        self.FvType = None
+        self.FvFileType = None
         self.FileName = None
         self.KeyStringList = []
         self.FvName = None
         self.FdName = None
         self.DefineVarDict = {}
         self.AprioriSection = None
+        self.KeepReloc = None
 
 ## INF statement data in FDF
 #
@@ -129,6 +130,7 @@ class FfsInfStatementClassObject(FfsClassObject):
         self.InfFileName = None
         self.BuildNum = ''
         self.KeyStringList = []
+        self.KeepReloc = None
 
 ## APRIORI section data in FDF
 #
@@ -180,6 +182,7 @@ class DataSectionClassObject (SectionClassObject):
         self.SecType = None
         self.SectFileName = None
         self.SectionList = []
+        self.KeepReloc = True
 
 ## Rule section data in FDF
 #
@@ -198,6 +201,7 @@ class EfiSectionClassObject (SectionClassObject):
         self.FileName = None
         self.FileExtension = None
         self.BuildNum = None
+        self.KeepReloc = None
 
 ## FV image section data in FDF
 #
@@ -274,8 +278,9 @@ class RuleClassObject :
         self.Fixed = False
         self.Alignment = None
         self.CheckSum = False
-        self.FvType = None       # for Ffs File Type
+        self.FvFileType = None       # for Ffs File Type
         self.KeyStringList = []
+        self.KeepReloc = None
 
 ## Complex rule data in FDF
 #

@@ -264,7 +264,7 @@ class GenFds :
         RuleComplexFile1.Arch = 'COMMON'
         RuleComplexFile1.CheckSum = True
         RuleComplexFile1.Fixed = True
-        RuleComplexFile1.FvType = "APPLICATION"
+        RuleComplexFile1.FvFileType = "APPLICATION"
         RuleComplexFile1.ModuleType = "UEFI_APPLICATION"
         RuleComplexFile1.NameGuid = "$(MODULE_NAME)"
         RuleComplexFile1.TemplateName = ''

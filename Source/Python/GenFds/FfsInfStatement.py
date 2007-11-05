@@ -17,6 +17,7 @@
 #
 import Rule
 import os
+import shutil
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import Ffs
 import subprocess
@@ -38,6 +39,8 @@ class FfsInfStatement(FfsInfStatementClassObject):
     def __init__(self):
         FfsInfStatementClassObject.__init__(self)
         self.TargetOverrideList = []
+        self.ShadowFromInfFile = None
+        self.KeepRelocFromRule = None
 
     ## __InfParse() method
     #
@@ -66,6 +69,11 @@ class FfsInfStatement(FfsInfStatementClassObject):
             self.ModuleType = Inf.ModuleType
             self.VersionString = Inf.Version
             self.BinFileList = Inf.Binaries
+            if self.KeepReloc == None and Inf.Shadow != '':
+                if Inf.Shadow.upper() == "TRUE":
+                    self.ShadowFromInfFile = True
+                else:
+                    self.ShadowFromInfFile = False 
         
         elif self.InfFileName in GenFdsGlobalVariable.WorkSpace.InfDatabase.keys():
             Inf = GenFdsGlobalVariable.WorkSpace.InfDatabase[self.InfFileName]
@@ -124,7 +132,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         # Get the rule of how to generate Ffs file
         #
         Rule = self.__GetRule__()
-        GenFdsGlobalVariable.VerboseLogger( "Packing binaries from INf file : %s" %self.InfFileName)
+        GenFdsGlobalVariable.VerboseLogger( "Packing binaries from inf file : %s" %self.InfFileName)
         #FileType = Ffs.Ffs.ModuleTypeToFileType[Rule.ModuleType]
         #
         # For the rule only has simpleFile
@@ -327,13 +335,46 @@ class FfsInfStatement(FfsInfStatementClassObject):
 
         Index = 1
         SectionType     = Rule.SectionType
+        NoStrip = True
+        if self.ModuleType in ('SEC', 'PEI_CORE', 'PEIM'):
+            if self.KeepReloc != None:
+                NoStrip = self.KeepReloc
+            elif Rule.KeepReloc != None:
+                NoStrip = Rule.KeepReloc
+            elif self.ShadowFromInfFile != None:
+                NoStrip = self.ShadowFromInfFile
+                
         if FileList != [] :
             for File in FileList:
+                
                 SecNum = '%d' %Index
                 GenSecOutputFile= self.__ExtendMacro__(Rule.NameGuid) + \
                               Ffs.Ffs.SectionSuffix[SectionType] + 'SEC' + SecNum   
                 Index = Index + 1             
                 OutputFile = os.path.join(self.OutputPath, GenSecOutputFile)
+                
+                if not NoStrip:
+                    FileBeforeStrip = os.path.join(self.OutputPath, ModuleName + '.reloc')
+                    shutil.copyfile(File, FileBeforeStrip)
+                    StrippedFile = os.path.join(self.OutputPath, ModuleName + '.stipped')
+                    StripCmd = 'GenFw -l '    + \
+                               ' -o '         + \
+                                StrippedFile        + \
+                                ' '           + \
+                                GenFdsGlobalVariable.MacroExtend(File, Dict)
+                    GenFdsGlobalVariable.CallExternalTool(StripCmd, "Strip Failed !")
+                    File = StrippedFile
+                    
+                if SectionType == 'TE':
+                    TeFile = os.path.join( self.OutputPath, self.ModuleGuid + 'Te.raw')
+                    GenTeCmd = 'GenFw -t '    + \
+                               ' -o '         + \
+                                TeFile        + \
+                                ' '           + \
+                               GenFdsGlobalVariable.MacroExtend(File, Dict)
+                    GenFdsGlobalVariable.CallExternalTool(GenTeCmd, "GenFw Failed !")
+                    File = TeFile
+                
                 GenSectionCmd = 'GenSec -o '                                + \
                                  OutputFile                                 + \
                                  ' -s '                                     + \
@@ -344,12 +385,34 @@ class FfsInfStatement(FfsInfStatementClassObject):
                 # Call GenSection
                 #
                 GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "Gen section Failed!")
-                OutputFileList.append(GenSecOutputFile)
+                OutputFileList.append(OutputFile)
         else:
             SecNum = '%d' %Index
             GenSecOutputFile= self.__ExtendMacro__(Rule.NameGuid) + \
                               Ffs.Ffs.SectionSuffix[SectionType] + 'SEC' + SecNum
             OutputFile = os.path.join(self.OutputPath, GenSecOutputFile)
+            
+            if not NoStrip:
+                FileBeforeStrip = os.path.join(self.OutputPath, ModuleName + '.reloc')
+                shutil.copyfile(File, FileBeforeStrip)
+                StrippedFile = os.path.join(self.OutputPath, ModuleName + '.stipped')
+                StripCmd = 'GenFw -l '    + \
+                           ' -o '         + \
+                            StrippedFile        + \
+                            ' '           + \
+                            GenFdsGlobalVariable.MacroExtend(File, Dict)
+                GenFdsGlobalVariable.CallExternalTool(StripCmd, "Strip Failed !")
+                File = StrippedFile
+            
+            if SectionType == 'TE':
+                TeFile = os.path.join( self.OutputPath, self.ModuleGuid + 'Te.raw')
+                GenTeCmd = 'GenFw -t '    + \
+                           ' -o '         + \
+                            TeFile        + \
+                            ' '           + \
+                           GenFdsGlobalVariable.MacroExtend(File, Dict)
+                GenFdsGlobalVariable.CallExternalTool(GenTeCmd, "GenFw Failed !")
+                GenSecInputFile = TeFile
             
             GenSectionCmd = 'GenSec -o '                                + \
                              OutputFile                                 + \
@@ -361,9 +424,9 @@ class FfsInfStatement(FfsInfStatementClassObject):
             # Call GenSection
             #
             GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "Gen section Failed!")
-            OutputFileList.append(GenSecOutputFile)
+            OutputFileList.append(OutputFile)
 
-        return OutputFile
+        return OutputFileList
     
     ## __GenSimpleFileFfs__() method
     #
@@ -422,6 +485,11 @@ class FfsInfStatement(FfsInfStatementClassObject):
     #   @retval string      File name of the generated section file
     #  
     def __GenComplexFileSection__(self, Rule):
+        
+        if self.ModuleType in ('SEC', 'PEI_CORE', 'PEIM'):
+            if Rule.KeepReloc != None:
+                self.KeepRelocFromRule = Rule.KeepReloc
+        
         SectFiles = ''
         Index = 1
         for Sect in Rule.SectionList:
@@ -480,7 +548,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
     #
     def __GetGenFfsCmdParameter__(self, Rule):
         FileType = ' -t ' + \
-                   Ffs.Ffs.FvTypeToFileType[Rule.FvType]
+                   Ffs.Ffs.FdfFvFileTypeToFileType[Rule.FvFileType]
         if Rule.Fixed != False:
             Fixed = ' -x '
         else :
