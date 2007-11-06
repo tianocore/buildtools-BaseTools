@@ -324,6 +324,8 @@ Returns:
   //
   if ((!(ImageContext->IsTeImage)) && ((PeHdr->FileHeader.Characteristics & EFI_IMAGE_FILE_RELOCS_STRIPPED) != 0)) {
     ImageContext->RelocationsStripped = TRUE;
+  } else if ((ImageContext->IsTeImage) && (TeHdr->DataDirectory[0].Size == 0)) {
+    ImageContext->RelocationsStripped = TRUE;
   } else {
     ImageContext->RelocationsStripped = FALSE;
   }

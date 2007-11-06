@@ -38,11 +38,9 @@ Abstract:
 
 STATIC UINT32   MaxFfsAlignment = 0;
 
-extern EFI_GUID mPadFileGuidTable[];
-STATIC UINT32   mPadFileIndex = 0;
-
 EFI_GUID  mEfiFirmwareFileSystem2Guid = EFI_FIRMWARE_FILE_SYSTEM2_GUID;
 EFI_GUID  mEfiFirmwareVolumeTopFileGuid = EFI_FFS_VOLUME_TOP_FILE_GUID;
+EFI_GUID  mFileGuidArray [MAX_NUMBER_OF_FILES_IN_FV] = {0};
 
 CHAR8      *mFvbAttributeName[] = {
   EFI_FVB2_READ_DISABLED_CAP_STRING, 
@@ -524,7 +522,6 @@ Returns:
 --*/
 {
   EFI_FFS_FILE_HEADER *PadFile;
-  EFI_GUID            PadFileGuid;
   UINTN               PadFileSize;
 
   //
@@ -553,21 +550,9 @@ Returns:
     return EFI_OUT_OF_RESOURCES;
   }
 
-  memset (PadFile, 0, sizeof (EFI_FFS_FILE_HEADER));
-  if (mPadFileIndex < MAX_NUMBER_OF_PAD_FILE_GUIDS) {
-    memcpy (&PadFile->Name, &mPadFileGuidTable[mPadFileIndex++], sizeof (EFI_GUID));
-  } else {
-#ifdef __GNUC__
-    {
-      uuid_t tmp_id;
-      uuid_generate (tmp_id);
-      memcpy (&PadFileGuid, tmp_id, sizeof (EFI_GUID));
-    }
-#else
-    UuidCreate (&PadFileGuid);
-#endif
-    memcpy (&PadFile->Name, &PadFileGuid, sizeof (EFI_GUID));
-  }
+  //
+  // write PadFile FFS header with PadType, don't need to set PAD file guid in its header.
+  //
   PadFile->Type       = EFI_FV_FILETYPE_FFS_PAD;
   PadFile->Attributes = 0;
 
@@ -708,6 +693,9 @@ Returns:
   UINT8                 VtfHeaderChecksum;
   UINT8                 VtfFileChecksum;
   UINT8                 FileState;
+  UINTN                 Index1;
+  
+  Index1 = 0;
   //
   // Verify input parameters.
   //
@@ -773,6 +761,17 @@ Returns:
     Error (NULL, 0, 4002, "Resource", "Fv space is full not to add %s file", FvInfo->FvFiles[Index]);
     return EFI_OUT_OF_RESOURCES;
   }
+
+  //
+  // Verify the input file is the duplicated file in this Fv image
+  //
+  for (Index1 = 0; Index1 < Index; Index1 ++) {
+    if (CompareGuid ((EFI_GUID *) FileBuffer, &mFileGuidArray [Index1]) == 0) {
+      Error (NULL, 0, 2000, "Invalid parameter", "the %dth file and %dth file has the same File Guid", Index1, Index);
+      return EFI_INVALID_PARAMETER;
+    }
+  }
+  CopyMem (&mFileGuidArray [Index], FileBuffer, sizeof (EFI_GUID));
 
   //
   // Update the file state based on polarity of the FV.
@@ -902,7 +901,6 @@ Returns:
 {
   EFI_FFS_FILE_HEADER *PadFile;
   UINTN               FileSize;
-  EFI_GUID            PadFileGuid;
 
   //
   // If there is no VTF or the VTF naturally follows the previous file without a
@@ -919,23 +917,8 @@ Returns:
   PadFile = (EFI_FFS_FILE_HEADER *) FvImage->CurrentFilePointer;
 
   //
-  // write header
+  // write PadFile FFS header with PadType, don't need to set PAD file guid in its header. 
   //
-  memset (PadFile, 0, sizeof (EFI_FFS_FILE_HEADER));
-  if (mPadFileIndex < MAX_NUMBER_OF_PAD_FILE_GUIDS) {
-    memcpy (&PadFile->Name, &mPadFileGuidTable[mPadFileIndex++], sizeof (EFI_GUID));
-  } else {
-#ifdef __GNUC__
-    {
-      uuid_t tmp_id;
-      uuid_generate (tmp_id);
-      memcpy (&PadFileGuid, tmp_id, sizeof (EFI_GUID));
-    }
-#else
-    UuidCreate (&PadFileGuid);
-#endif
-    memcpy (&PadFile->Name, &PadFileGuid, sizeof (EFI_GUID));
-  }
   PadFile->Type       = EFI_FV_FILETYPE_FFS_PAD;
   PadFile->Attributes = 0;
 
@@ -1618,7 +1601,6 @@ Returns:
     // Exit if error detected while adding the file
     //
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 4002, "Resource", "Fv space is full not to add file %s", FvInfo.FvFiles[Index]);
       goto Finish;
     }
   }
@@ -1982,6 +1964,11 @@ Returns:
   UINT8                                 Flags;
   UINT8                                 *MemoryImagePointer;
   EFI_IMAGE_SECTION_HEADER              *SectionHeader;
+  CHAR8                                 PeFileName [_MAX_PATH];
+  CHAR8                                 *Cptr;
+  FILE                                  *PeFile;
+  UINT8                                 *PeFileBuffer;
+  UINT32                                PeFileSize;
 
   Index              = 0;  
   MemoryImagePointer = NULL;
@@ -1990,8 +1977,10 @@ Returns:
   PeHdr              = NULL;
   Optional32         = NULL;
   Optional64         = NULL;
-  MemoryImagePointer = NULL;
   SectionHeader      = NULL;
+  Cptr               = NULL;
+  PeFile             = NULL;
+  PeFileBuffer       = NULL;
   //
   // Check XipAddress, BootAddress and RuntimeAddress
   //
@@ -2052,14 +2041,9 @@ Returns:
     }
 
     //
-    // Don't Load PeImage, only to relocate current image.
-    //
-    ImageContext.ImageAddress = (UINTN) CurrentPe32Section.Pe32Section + sizeof (EFI_PE32_SECTION);
-
-    //
     // Get PeHeader pointer
     //
-    PeHdr = (EFI_IMAGE_NT_HEADERS *)((UINTN)ImageContext.ImageAddress + ImageContext.PeCoffHeaderOffset);
+    PeHdr = (EFI_IMAGE_NT_HEADERS *)((UINTN) CurrentPe32Section.Pe32Section + sizeof (EFI_PE32_SECTION) + ImageContext.PeCoffHeaderOffset);
 
     //
     // Calculate the PE32 base address, based on file type
@@ -2083,12 +2067,65 @@ Returns:
           //
           // Xip module has the same section alignment and file alignment.
           //
-          printf("Section-Alignment and File-Alignment does not match : %s\n", FileName);
+          Error (NULL, 0, 3000, "Invalid", "Section-Alignment and File-Alignment does not match : %s", FileName);
           return EFI_ABORTED;
         }
+        //
+        // PeImage has no reloc section. It will try to get reloc data from the original EFI image. 
+        //
+        if (ImageContext.RelocationsStripped) {
+          //
+          // Construct the original efi file Name 
+          //
+          strcpy (PeFileName, FileName);
+          Cptr = PeFileName + strlen (PeFileName);
+          while (*Cptr != '.') {
+            Cptr --;
+          }
+          if (*Cptr != '.') {
+            Error (NULL, 0, 3000, "Invalid", "The file %s has not .reloc section", FileName);
+            return EFI_ABORTED;
+          } else {
+            *(Cptr + 1) = 'e';
+            *(Cptr + 2) = 'f';
+            *(Cptr + 3) = 'i';
+            *(Cptr + 4) = '\0';
+          }
+          PeFile = fopen (PeFileName, "rb");
+          if (PeFile == NULL) {
+            Error (NULL, 0, 3000, "Invalid", "The file %s has not .reloc section", FileName);
+            return EFI_ABORTED;
+          }
+          //
+          // Get the file size
+          //
+          PeFileSize = _filelength (fileno (PeFile));
+          PeFileBuffer = (UINT8 *) malloc (PeFileSize);
+          if (PeFileBuffer == NULL) {
+            Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated when rebase %s", FileName);
+            return EFI_OUT_OF_RESOURCES;
+          }
+          //
+          // Read Pe File
+          //
+          fread (PeFileBuffer, sizeof (UINT8), PeFileSize, PeFile);
+          //
+          // close file
+          //
+          fclose (PeFile);
+          //
+          // Handle pointer to the original efi image.
+          //
+          ImageContext.Handle = PeFileBuffer;
+          Status              = PeCoffLoaderGetImageInfo (&ImageContext);
+          if (EFI_ERROR (Status)) {
+            Error (NULL, 0, 3000, "Invalid", "GetImageInfo() call failed on rebase %s", FileName);
+            return Status;
+          }
+          ImageContext.RelocationsStripped = FALSE;
+        }
 
-        NewPe32BaseAddress =
-          XipBase + (UINTN)ImageContext.ImageAddress - (UINTN)FfsFile;
+        NewPe32BaseAddress = XipBase + (UINTN) CurrentPe32Section.Pe32Section + sizeof (EFI_PE32_SECTION) - (UINTN)FfsFile;
         BaseToUpdate = &XipBase;
         break;
 
@@ -2104,7 +2141,8 @@ Returns:
             //
             // make sure image base address at the section alignment
             //
-            FvInfo->RuntimeBaseAddress = (FvInfo->RuntimeBaseAddress + ImageContext.SectionAlignment - 1) & (~(ImageContext.SectionAlignment - 1));
+            FvInfo->RuntimeBaseAddress = (FvInfo->RuntimeBaseAddress - ImageContext.ImageSize) & (~(ImageContext.SectionAlignment - 1));
+            FvInfo->RuntimeBaseAddress = FvInfo->RuntimeBaseAddress & (~(EFI_PAGE_SIZE - 1));
             NewPe32BaseAddress = FvInfo->RuntimeBaseAddress;
             BaseToUpdate = &(FvInfo->RuntimeBaseAddress);
             break;
@@ -2120,9 +2158,10 @@ Returns:
               continue;
             }
             //
-            // make sure image base address at the section alignment
+            // make sure image base address at the Section and Page alignment
             //
-            FvInfo->BootBaseAddress = (FvInfo->BootBaseAddress + ImageContext.SectionAlignment - 1) & (~(ImageContext.SectionAlignment - 1));
+            FvInfo->BootBaseAddress = (FvInfo->BootBaseAddress - ImageContext.ImageSize) & (~(ImageContext.SectionAlignment - 1));
+            FvInfo->BootBaseAddress = FvInfo->BootBaseAddress & (~(EFI_PAGE_SIZE - 1));
             NewPe32BaseAddress = FvInfo->BootBaseAddress;
             BaseToUpdate = &(FvInfo->BootBaseAddress);
             break;
@@ -2137,9 +2176,10 @@ Returns:
           return EFI_SUCCESS;
         }
         //
-        // make sure image base address at the section alignment
+        // make sure image base address at the Section and Page alignment
         //
-        FvInfo->BootBaseAddress = (FvInfo->BootBaseAddress + ImageContext.SectionAlignment - 1) & (~(ImageContext.SectionAlignment - 1));
+        FvInfo->BootBaseAddress = (FvInfo->BootBaseAddress - ImageContext.ImageSize) & (~(ImageContext.SectionAlignment - 1));
+        FvInfo->BootBaseAddress = FvInfo->BootBaseAddress & (~(EFI_PAGE_SIZE - 1));
         NewPe32BaseAddress = FvInfo->BootBaseAddress;
         BaseToUpdate = &(FvInfo->BootBaseAddress);
         break;
@@ -2197,8 +2237,7 @@ Returns:
     }
 
     SectionHeader = (EFI_IMAGE_SECTION_HEADER *) (
-                       (UINTN) ImageContext.ImageAddress +
-                       ImageContext.PeCoffHeaderOffset +
+                       (UINTN) PeHdr +
                        sizeof (UINT32) + 
                        sizeof (EFI_IMAGE_FILE_HEADER) +  
                        PeHdr->FileHeader.SizeOfOptionalHeader
@@ -2206,18 +2245,23 @@ Returns:
     
     for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index ++, SectionHeader ++) {
       CopyMem (
-        (UINT8 *) ImageContext.Handle + SectionHeader->PointerToRawData, 
+        (UINT8 *) CurrentPe32Section.Pe32Section + sizeof (EFI_COMMON_SECTION_HEADER) + SectionHeader->PointerToRawData, 
         (VOID*) (UINTN) (ImageContext.ImageAddress + SectionHeader->VirtualAddress), 
         SectionHeader->SizeOfRawData
         );
     }
 
     free ((VOID *) MemoryImagePointer);
+    MemoryImagePointer = NULL;
+    if (PeFileBuffer != NULL) {
+      free (PeFileBuffer);
+      PeFileBuffer = NULL;
+    }
 
     //
     // Update BASE address by add one page size.
     //
-    *BaseToUpdate += ImageContext.ImageSize + EFI_PAGE_SIZE;
+    *BaseToUpdate -= EFI_PAGE_SIZE;
 
     //
     // Now update file checksum
@@ -2286,10 +2330,77 @@ Returns:
       return Status;
     }
     //
-    // Don't reload TeImage
+    // if reloc is stripped, try to get the original efi image to get reloc info.
     //
-    ImageContext.ImageAddress = (UINTN) TEImageHeader;
+    if (ImageContext.RelocationsStripped == TRUE) {
+      //
+      // Construct the original efi file name 
+      //
+      strcpy (PeFileName, FileName);
+      Cptr = PeFileName + strlen (PeFileName);
+      while (*Cptr != '.') {
+        Cptr --;
+      }
+      if (*Cptr != '.') {
+        Error (NULL, 0, 3000, "Invalid", "The file %s has not .reloc section", FileName);
+        return EFI_ABORTED;
+      } else {
+        *(Cptr + 1) = 'e';
+        *(Cptr + 2) = 'f';
+        *(Cptr + 3) = 'i';
+        *(Cptr + 4) = '\0';
+      }
+      PeFile = fopen (PeFileName, "rb");
+      if (PeFile == NULL) {
+        Error (NULL, 0, 3000, "Invalid", "The file %s has not .reloc section", FileName);
+        return EFI_ABORTED;
+      }
+      //
+      // Get the file size
+      //
+      PeFileSize = _filelength (fileno (PeFile));
+      PeFileBuffer = (UINT8 *) malloc (PeFileSize);
+      if (PeFileBuffer == NULL) {
+        Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated when rebase %s", FileName);
+        return EFI_OUT_OF_RESOURCES;
+      }
+      //
+      // Read Pe File
+      //
+      fread (PeFileBuffer, sizeof (UINT8), PeFileSize, PeFile);
+      //
+      // close file
+      //
+      fclose (PeFile);
+      //
+      // Append reloc section into TeImage
+      //
+      ImageContext.Handle = PeFileBuffer;
+      Status              = PeCoffLoaderGetImageInfo (&ImageContext);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 3000, "Invalid", "GetImageInfo() call failed on rebase of TE image %s", FileName);
+        return Status;
+      }
+      ImageContext.RelocationsStripped = FALSE;
+    }
 
+    //
+    // Load and Relocate Image Data
+    //
+    MemoryImagePointer = (UINT8 *) malloc ((UINTN) ImageContext.ImageSize + ImageContext.SectionAlignment);
+    if (MemoryImagePointer == NULL) {
+      Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated when rebase %s", FileName);
+      return EFI_OUT_OF_RESOURCES;
+    }
+    memset ((VOID *) MemoryImagePointer, 0, (UINTN) ImageContext.ImageSize + ImageContext.SectionAlignment);
+    ImageContext.ImageAddress = ((UINTN) MemoryImagePointer + ImageContext.SectionAlignment - 1) & (~(ImageContext.SectionAlignment - 1));
+
+    Status =  PeCoffLoaderLoadImage (&ImageContext);
+    if (EFI_ERROR (Status)) {
+      Error (NULL, 0, 3000, "Invalid", "LocateImage() call failed on rebase %s", FileName);
+      free ((VOID *) MemoryImagePointer);
+      return Status;
+    }
     //
     // Reloacate TeImage
     // 
@@ -2298,7 +2409,39 @@ Returns:
     Status                          = PeCoffLoaderRelocateImage (&ImageContext);
     if (EFI_ERROR (Status)) {
       Error (NULL, 0, 3000, "Invalid", "RelocateImage() call failed on rebase of TE image %s", FileName);
+      free ((VOID *) MemoryImagePointer);
       return Status;
+    }
+    
+    //
+    // Copy the relocated image into raw image file.
+    //
+    TEImageHeader->ImageBase = ImageContext.DestinationAddress;
+    SectionHeader = (EFI_IMAGE_SECTION_HEADER *) (TEImageHeader + 1);
+    for (Index = 0; Index < TEImageHeader->NumberOfSections; Index ++, SectionHeader ++) {
+      if (!ImageContext.IsTeImage) {
+        CopyMem (
+          (UINT8 *) TEImageHeader + sizeof (EFI_TE_IMAGE_HEADER) - TEImageHeader->StrippedSize + SectionHeader->PointerToRawData, 
+          (VOID*) (UINTN) (ImageContext.ImageAddress + SectionHeader->VirtualAddress), 
+          SectionHeader->SizeOfRawData
+          );
+      } else {
+        CopyMem (
+          (UINT8 *) TEImageHeader + sizeof (EFI_TE_IMAGE_HEADER) - TEImageHeader->StrippedSize + SectionHeader->PointerToRawData, 
+          (VOID*) (UINTN) (ImageContext.ImageAddress + sizeof (EFI_TE_IMAGE_HEADER) - TEImageHeader->StrippedSize + SectionHeader->VirtualAddress), 
+          SectionHeader->SizeOfRawData
+          );
+      }
+    }
+    
+    //
+    // Free the allocated memory resource
+    //
+    free ((VOID *) MemoryImagePointer);
+    MemoryImagePointer = NULL;
+    if (PeFileBuffer != NULL) {
+      free (PeFileBuffer);
+      PeFileBuffer = NULL;
     }
 
     //

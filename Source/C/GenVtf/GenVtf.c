@@ -94,29 +94,6 @@ CHAR8           IA32BinFile[FILE_NAME_SIZE];
 //
 // Function Implementations
 //
-VOID
-BuildTokenList (
-  IN  CHAR8 *Token
-  )
-/*++
-Routine Description:
-
-  This function builds the token list in an array which will be parsed later
-
-Arguments:
-
-  Token    - The pointer of string
-
-Returns:
-
-  None
-
---*/
-{
-  strcpy (*TokenStr, Token);
-  TokenStr++;
-}
-
 EFI_STATUS
 ConvertVersionInfo (
   IN      CHAR8     *Str,
@@ -249,7 +226,7 @@ Returns:
   }
 }
 
-VOID
+EFI_STATUS
 ParseInputFile (
   IN  FILE *Fp
   )
@@ -270,25 +247,25 @@ Returns:
 --*/
 {
   CHAR8 *Token;
-  CHAR8 Buff[FILE_NAME_SIZE];
-  CHAR8 OrgLine[FILE_NAME_SIZE];
-  CHAR8 Str[FILE_NAME_SIZE];
+  CHAR8 Buff[FILE_NAME_SIZE + 1];
   CHAR8 Delimit[] = "=";
 
-  while (fgets (Buff, sizeof (Buff), Fp) != NULL) {
-    strcpy (OrgLine, Buff);
+  Buff [FILE_NAME_SIZE] = '\0';
+  Token = NULL;
+
+  while (fgets (Buff, FILE_NAME_SIZE, Fp) != NULL) {
     TrimLine (Buff);
     if (Buff[0] == 0) {
       continue;
     }
     Token = strtok (Buff, Delimit);
-
     while (Token != NULL) {
-      strcpy (Str, Token);
-      BuildTokenList (Str);
+      strcpy (*TokenStr, Token);
+      TokenStr ++;
       Token = strtok (NULL, Delimit);
     }
   }
+  return EFI_SUCCESS;
 }
 
 EFI_STATUS
@@ -524,8 +501,10 @@ Returns:
 {
   FILE        *Fp;
   UINTN       Index;
+  UINTN       Index1;
   EFI_STATUS  Status;
   
+  Status = EFI_SUCCESS;
   Fp = FilePointer;
   if (Fp == NULL) {
     Error (NULL, 0, 2000, "Invalid paramter", "BSF INF file is invalid!");
@@ -552,35 +531,39 @@ Returns:
     *TokenStr = (CHAR8*)malloc (sizeof (CHAR8) * FILE_NAME_SIZE);
 
     if (*TokenStr == NULL) {
-      free (OrgStrTokPtr);
-      return EFI_OUT_OF_RESOURCES;
+      Status = EFI_OUT_OF_RESOURCES;
+      goto ParseFileError;
     }
 
     memset (*TokenStr, 0, FILE_NAME_SIZE);
     TokenStr++;
   }
 
-  TokenStr  = NULL;
   TokenStr  = OrgStrTokPtr;
   fseek (Fp, 0L, SEEK_SET);
  
   Status = InitializeComps ();
 
   if (Status != EFI_SUCCESS) {
-    free (OrgStrTokPtr);
-    return Status;
+    goto ParseFileError;
   }
   
-  ParseInputFile (Fp);
+  Status = ParseInputFile (Fp);
+  if (Status != EFI_SUCCESS) {
+    goto ParseFileError;
+  }
   
   InitializeInFileInfo ();
 
-  if (Fp) {
-    fclose (Fp);
+ParseFileError:
+
+  for (Index1 = 0; Index1 < Index; Index1 ++) {
+    free (OrgStrTokPtr[Index1]);
   }
+
   free (OrgStrTokPtr);
 
-  return EFI_SUCCESS;
+  return Status;
 }
 
 VOID
@@ -1111,6 +1094,10 @@ Returns:
   GetRelativeAddressInVtfBuffer (SalEntryAdd, &RelativeAddress, FIRST_VTF);
 
   memcpy ((VOID *) RelativeAddress, (VOID *) CompStartAddress, sizeof (UINT64));
+  
+  if (Fp != NULL) {
+    fclose (Fp);
+  }
 
   return EFI_SUCCESS;
 }
@@ -1798,6 +1785,9 @@ Returns:
     free (Buffer);
   }
 
+  if (Fp != NULL) {
+    fclose (Fp);
+  }
   return EFI_SUCCESS;
 }
 
@@ -2042,11 +2032,11 @@ Returns:
   }
   
   if (SectionOptionFlag) {
-  Status = UpdateIA32ResetVector (IA32BinFile, Vtf1TotalSize);
-  if (Status != EFI_SUCCESS) {
-    CleanUpMemory ();
-    return Status;
-  }
+    Status = UpdateIA32ResetVector (IA32BinFile, Vtf1TotalSize);
+    if (Status != EFI_SUCCESS) {
+      CleanUpMemory ();
+      return Status;
+    }
   }
 
   //
@@ -2581,7 +2571,7 @@ Returns:
       } else {
         Status = AsciiStringToUint64 (argv[Index + 1], FALSE, &StartAddress2);
       }
-      if (Status = 0) {
+      if (Status != EFI_SUCCESS) {
         Error (NULL, 0, 2000, "Invalid paramter", "Bad start of address %s", argv[Index + 1]);
         goto ERROR;
       }
@@ -2615,6 +2605,10 @@ Returns:
       // debug level specified
       //
       Status = AsciiStringToUint64(argv[Index + 1], FALSE, &DebugLevel);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        goto ERROR;
+      }
       if((DebugLevel > 9) || (DebugLevel < 0)) {
         Error(NULL, 0, 2000, "Invalid parameter", "Unrecognized argument %s", argv[Index + 1]);
         goto ERROR;
@@ -2653,12 +2647,12 @@ Returns:
   }
 
   if (VTF_OUTPUT == FALSE) {
-  	if (SecondVTF == TRUE) {
-        OutFileName1 = VTF_OUTPUT_FILE1;
-        OutFileName2 = VTF_OUTPUT_FILE2;
-	} else {
-        OutFileName1 = VTF_OUTPUT_FILE1;
-	}
+    if (SecondVTF == TRUE) {
+      OutFileName1 = VTF_OUTPUT_FILE1;
+      OutFileName2 = VTF_OUTPUT_FILE2;
+	  } else {
+      OutFileName1 = VTF_OUTPUT_FILE1;
+    }
   }
 
   //
@@ -2692,15 +2686,18 @@ Returns:
       Error (NULL, 0, 3000, "Invaild", "GenVtfImage function returned unknown status %x",Status );
       break;
     }
+  }
 ERROR:
+  if (VtfFP != NULL) {
+    fclose (VtfFP);
+  }
+
+  if (DebugMode) {
+    DebugMsg(UTILITY_NAME, 0, DebugLevel, "VTF image generated successful\n");
+  }
+
   if (VerboseMode) {
     VerboseMsg("%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());
   }
-
   return GetUtilityStatus();
-  }
-  if (DebugMode) {
-    DebugMsg(UTILITY_NAME, 0, DebugLevel, "VTF image generated successful\n");
-    }
-  return GetUtilityStatus();
-  }
+}

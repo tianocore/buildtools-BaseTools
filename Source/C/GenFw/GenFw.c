@@ -76,6 +76,7 @@ Abstract:
 #define FW_SET_STAMP_IMAGE   6
 #define FW_MCI_IMAGE         7
 #define FW_MERGE_IMAGE       8
+#define FW_RELOC_STRIPEED_IMAGE 9
 
 #define DUMP_TE_HEADER       0x11
 
@@ -198,6 +199,7 @@ Returns:
   fprintf (stdout, "  -u, --dump            Dump TeImage Header.\n");
   fprintf (stdout, "  -z, --zero            Zero the Debug Data Fields in the PE input image file.\n");
   fprintf (stdout, "  -b, --exe2bin         Convert the input EXE to the output BIN file.\n");
+  fprintf (stdout, "  -l, --stripped        Relocation info stripped from the input PE or TE image.\n");
   fprintf (stdout, "  -r, --replace         Overwrite the input file with the output content.\n");
   fprintf (stdout, "  -s timedate, --stamp timedate\n\
                         timedate format is \"yyyy-mm-dd 00:00:00\". if timedata \n\
@@ -1009,6 +1011,7 @@ Returns:
   BOOLEAN           ReplaceFlag;
   UINT64            LogLevel;
   EFI_TE_IMAGE_HEADER          TEImageHeader;
+  EFI_TE_IMAGE_HEADER          *TeHdr;
   EFI_IMAGE_SECTION_HEADER     *SectionHeader;
   EFI_IMAGE_DOS_HEADER         *DosHdr;
   EFI_IMAGE_NT_HEADERS         *PeHdr;
@@ -1078,6 +1081,13 @@ Returns:
       }
       argc -= 2;
       argv += 2;
+      continue;
+    }
+
+    if ((stricmp (argv[0], "-l") == 0) || (stricmp (argv[0], "--stripped") == 0)) {
+      OutImageType = FW_RELOC_STRIPEED_IMAGE;
+      argc --;
+      argv ++;
       continue;
     }
 
@@ -1274,6 +1284,9 @@ Returns:
     break;
   case FW_ACPI_IMAGE:
     VerboseMsg ("Get acpi table data from the input PE image.");
+    break;
+  case FW_RELOC_STRIPEED_IMAGE:
+    VerboseMsg ("Remove relocation section from Pe or Te image.");
     break;
   case FW_BIN_IMAGE:
     VerboseMsg ("Convert the input EXE to the output BIN file.");
@@ -1622,7 +1635,93 @@ Returns:
     ConvertElf(&FileBuffer, &FileLength);
   }
 #endif
+  
+  //
+  // Remove reloc section from PE or TE image
+  //
+  if (OutImageType == FW_RELOC_STRIPEED_IMAGE) {
+    //
+    // Check TeImage
+    //
+    TeHdr = (EFI_TE_IMAGE_HEADER *) FileBuffer;
+    if (TeHdr->Signature == EFI_TE_IMAGE_HEADER_SIGNATURE) {
+      SectionHeader = (EFI_IMAGE_SECTION_HEADER *) (TeHdr + 1);
+      for (Index = 0; Index < TeHdr->NumberOfSections; Index ++, SectionHeader ++) {
+        if (strcmp (SectionHeader->Name, ".reloc") == 0) {
+          //
+          // Check the reloc section is in the end of image.
+          //
+          if ((SectionHeader->PointerToRawData + SectionHeader->SizeOfRawData) == 
+            (FileLength + TeHdr->StrippedSize - sizeof (EFI_TE_IMAGE_HEADER))) {
+            //
+            // Remove .reloc section and update TeImage Header
+            //
+            FileLength = FileLength - SectionHeader->SizeOfRawData;
+            SectionHeader->SizeOfRawData = 0;
+            SectionHeader->Misc.VirtualSize = 0;
+            TeHdr->DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress = 0;
+            TeHdr->DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].Size           = 0;
+            break;
+          }
+        }
+      }
+    } else {
+      //
+      // Check PE Image
+      //
+      DosHdr = (EFI_IMAGE_DOS_HEADER *) FileBuffer;
+      if (DosHdr->e_magic != EFI_IMAGE_DOS_SIGNATURE) {
+        Error (NULL, 0, 3000, "Invalid", "TE and DOS header signature are not found in %s image", mInImageName);
+        goto Finish;
+      }
+      PeHdr = (EFI_IMAGE_NT_HEADERS *)(FileBuffer + DosHdr->e_lfanew);
+      if (PeHdr->Signature != EFI_IMAGE_NT_SIGNATURE) {
+        Error (NULL, 0, 3000, "Invalid", "PE header signature not found in %s image", mInImageName);
+        goto Finish;
+      }
+      SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->OptionalHeader) + PeHdr->FileHeader.SizeOfOptionalHeader);
+      for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index ++, SectionHeader ++) {
+        if (strcmp (SectionHeader->Name, ".reloc") == 0) {
+          //
+          // Check the reloc section is in the end of image.
+          //
+          if ((SectionHeader->PointerToRawData + SectionHeader->SizeOfRawData) == FileLength) {
+            //
+            // Remove .reloc section and update PeImage Header
+            //
+            FileLength = FileLength - SectionHeader->SizeOfRawData;
 
+            PeHdr->FileHeader.Characteristics |= EFI_IMAGE_FILE_RELOCS_STRIPPED;
+            if (PeHdr->OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
+              Optional32 = (EFI_IMAGE_OPTIONAL_HEADER32 *)&PeHdr->OptionalHeader;
+              Optional32->SizeOfImage -= SectionHeader->SizeOfRawData;
+              Optional32->SizeOfInitializedData -= SectionHeader->SizeOfRawData;
+              if (Optional32->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
+                Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress = 0;
+                Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC].Size = 0;
+              }
+            }
+            if (PeHdr->OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
+              Optional64 = (EFI_IMAGE_OPTIONAL_HEADER64 *)&PeHdr->OptionalHeader;
+              Optional64->SizeOfImage -= SectionHeader->SizeOfRawData;
+              Optional64->SizeOfInitializedData -= SectionHeader->SizeOfRawData;
+              if (Optional64->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
+                Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress = 0;
+                Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC].Size = 0;
+              }
+            }
+            SectionHeader->Misc.VirtualSize = 0;
+            SectionHeader->SizeOfRawData = 0;
+            break;
+          }
+        }
+      }
+    }
+    //
+    // Write file
+    //
+    goto WriteFile;
+  }
   //
   // Read the dos & pe hdrs of the image
   //
@@ -1964,7 +2063,7 @@ Returns:
     VerboseMsg ("the size of output file is %d bytes", FileLength - TEImageHeader.StrippedSize);
     goto Finish;
   }
-  
+WriteFile:
   //
   // Update Image to EfiImage
   //
