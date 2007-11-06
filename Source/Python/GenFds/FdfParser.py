@@ -56,6 +56,8 @@ import os
 T_CHAR_BACKSLASH, T_CHAR_DOUBLE_QUOTE, T_CHAR_SINGLE_QUOTE, T_CHAR_STAR, T_CHAR_HASH) = \
 (' ', '\0', '\r', '\t', '\n', '/', '\\', '\"', '\'', '*', '#')
 
+SEPERATOR_TUPLE = ('=', '|', ',', '{', '}') 
+
 ## The exception class that used to report error messages when parsing FDF
 #
 # Currently the "ToolName" is set to be "FDF Parser".
@@ -395,7 +397,7 @@ class FdfParser:
             index = self.__CurrentLine()[self.CurrentOffsetWithinLine : ].find(KeyWord)
         if index == 0:
             followingChar = self.__CurrentLine()[self.CurrentOffsetWithinLine + len(KeyWord)]
-            if not str(followingChar).isspace() and followingChar not in ('=', '|'):
+            if not str(followingChar).isspace() and followingChar not in SEPERATOR_TUPLE:
                 return False
             self.CurrentOffsetWithinLine += len(KeyWord)
             self.__Token = self.__CurrentLine()[StartPos : self.CurrentOffsetWithinLine]
@@ -454,12 +456,13 @@ class FdfParser:
             TempChar = self.__CurrentChar()
             # Try to find the end char that is not a space and not in seperator tuple.
             # That is, when we got a space or any char in the tuple, we got the end of token.
-            if not str(TempChar).isspace() and TempChar not in ('=', '|', ',', '{', '}'):
+            if not str(TempChar).isspace() and TempChar not in SEPERATOR_TUPLE:
                 self.__GetOneChar()
             # if we happen to meet a seperator as the first char, we must proceed to get it.
             # That is, we get a token that is a seperator char. nomally it is the boundary of other tokens.
-            elif StartPos == self.CurrentOffsetWithinLine and TempChar in ('=', '|', ',', '{', '}'):
+            elif StartPos == self.CurrentOffsetWithinLine and TempChar in SEPERATOR_TUPLE:
                 self.__GetOneChar()
+                break
             else:
                 break
         else:
@@ -501,12 +504,28 @@ class FdfParser:
         self.__UndoOneChar()
         while self.__CurrentChar().isspace():
             if not self.__UndoOneChar():
+                self.__GetOneChar()
+                return
+        
+        
+        StartPos = self.CurrentOffsetWithinLine
+        CurrentLine = self.CurrentLineNumber
+        while CurrentLine == self.CurrentLineNumber:
+            
+            TempChar = self.__CurrentChar()
+            # Try to find the end char that is not a space and not in seperator tuple.
+            # That is, when we got a space or any char in the tuple, we got the end of token.
+            if not str(TempChar).isspace() and not TempChar in SEPERATOR_TUPLE:
+                if not self.__UndoOneChar():
+                    break
+            # if we happen to meet a seperator as the first char, we must proceed to get it.
+            # That is, we get a token that is a seperator char. nomally it is the boundary of other tokens.
+            elif StartPos == self.CurrentOffsetWithinLine and TempChar in SEPERATOR_TUPLE:
+                return
+            else:
                 break
-        while not str(self.__CurrentChar()).isspace() and self.__CurrentChar() not in ('=', '|', ','):
-            if not self.__UndoOneChar():
-                break
-        else:
-            self.__GetOneChar()
+            
+        self.__GetOneChar()
     
     ## __HexDigit() method
     #

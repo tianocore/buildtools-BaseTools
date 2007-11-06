@@ -73,9 +73,9 @@ class DataSection (DataSectionClassObject):
                 NoStrip = self.KeepReloc
         
         if not NoStrip:
-            FileBeforeStrip = os.path.join(OutputPath, ModuleName + '.reloc')
+            FileBeforeStrip = os.path.join(OutputPath, ModuleName + '.efi')
             shutil.copyfile(self.SectFileName, FileBeforeStrip)
-            StrippedFile = os.path.join(OutputPath, ModuleName + '.stipped')
+            StrippedFile = os.path.join(OutputPath, ModuleName + '.stripped')
             StripCmd = 'GenFw -l '    + \
                        ' -o '         + \
                         StrippedFile        + \

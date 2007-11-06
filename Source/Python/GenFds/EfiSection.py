@@ -260,9 +260,9 @@ class EfiSection (EfiSectionClassObject):
                             shutil.copyfile(MapFile, CopyMapFile)
 
                     if not NoStrip:
-                        FileBeforeStrip = os.path.join(OutputPath, ModuleName + '.reloc')
+                        FileBeforeStrip = os.path.join(OutputPath, ModuleName + '.efi')
                         shutil.copyfile(File, FileBeforeStrip)
-                        StrippedFile = os.path.join(OutputPath, ModuleName + '.stipped')
+                        StrippedFile = os.path.join(OutputPath, ModuleName + '.stripped')
                         StripCmd = 'GenFw -l '    + \
                                    ' -o '         + \
                                     StrippedFile        + \
