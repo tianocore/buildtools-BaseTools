@@ -67,6 +67,14 @@ class DataSection (DataSectionClassObject):
             self.SectFileName = os.path.join (GenFdsGlobalVariable.WorkSpaceDir,
                                               self.SectFileName)
         
+        """Copy Map file to Ffs output"""
+        Filename = GenFdsGlobalVariable.MacroExtend(self.SectFileName)
+        if Filename[(len(Filename)-4):] == '.efi':
+            MapFile = Filename.replace('.efi', '.map')
+            if os.path.exists(MapFile):
+                CopyMapFile = os.path.join(OutputPath, ModuleName + '.map')
+                shutil.copyfile(MapFile, CopyMapFile) 
+        
         NoStrip = True
         if self.SecType in ('TE', 'PE32'):
             if self.KeepReloc != None:
@@ -92,16 +100,7 @@ class DataSection (DataSectionClassObject):
                         ' '           + \
                        GenFdsGlobalVariable.MacroExtend(self.SectFileName, Dict)
             GenFdsGlobalVariable.CallExternalTool(GenTeCmd, "GenFw Failed !")
-            """Copy Map file to Ffs output"""
-            Filename = GenFdsGlobalVariable.MacroExtend(self.SectFileName)
-            if Filename[(len(Filename)-4):] == '.efi':
-                MapFile = Filename.replace('.efi', '.map')
-                if os.path.exists(MapFile):
-                    CopyMapFile = os.path.join(OutputPath, ModuleName + '.map')
-                    shutil.copyfile(MapFile, CopyMapFile)
-            self.SectFileName = TeFile
-           
-            
+            self.SectFileName = TeFile    
                  
         OutputFile = os.path.join (OutputPath, ModuleName + 'SEC' + SecNum + Ffs.SectionSuffix.get(self.SecType))
         OutputFile = os.path.normpath(OutputFile)
@@ -113,13 +112,6 @@ class DataSection (DataSectionClassObject):
                          ' '                                             + \
                          self.SectFileName
                          
-        """Copy Map file to Ffs output"""
-        Filename = self.SectFileName
-        if Filename[(len(Filename)-4):] == '.efi':
-             MapFile = Filename.replace('.efi', '.map')
-             if os.path.exists(MapFile):
-                 CopyMapFile = os.path.join(OutputPath, ModuleName + '.map')
-                 shutil.copyfile(MapFile, CopyMapFile)
         #
         # Call GenSection
         #
