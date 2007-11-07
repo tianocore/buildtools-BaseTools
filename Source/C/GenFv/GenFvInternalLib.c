@@ -2585,7 +2585,12 @@ Returns:
   EFI_PHYSICAL_ADDRESS  FunctionAddress;
   UINT32                FunctionType;
   CHAR8                 FunctionTypeName [MAX_LINE_LEN];
-
+  
+  //
+  // Init local variable
+  //
+  FunctionType = 0;
+  
   //
   // Construct Map file Name 
   //
@@ -2661,15 +2666,14 @@ Returns:
         //
         FunctionType = 1;
         fgets (Line, MAX_LINE_LEN, PeMapFile);
-        continue;
       } else if (stricmp (KeyWord, "Static") == 0) {
         //
         // static function list
         //
         FunctionType = 2;
         fgets (Line, MAX_LINE_LEN, PeMapFile);
-        continue;
       }
+      continue;
     }
     //
     // Printf Function Information
