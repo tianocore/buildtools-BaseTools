@@ -434,15 +434,15 @@ PLATFORM_OUTPUT_DIR = ${platform_output_directory}
 TOOLCHAIN_TAG = ${toolchain_tag}
 TARGET = ${build_target}
 
-MAKE = ${make_path}
-MAKE_FLAGS = ${make_flag}
-MAKE_FILE = ${makefile_path}
-
 #
 # Build Directory Macro Definition
 #
 BUILD_DIR = ${platform_build_directory}${separator}${build_target}_${toolchain_tag}
 FV_DIR = ${platform_build_directory}${separator}${build_target}_${toolchain_tag}${separator}FV
+
+MAKE = ${make_path}
+MAKE_FLAGS = ${make_flag}
+MAKE_FILE = ${makefile_path}
 
 #
 # Default target
