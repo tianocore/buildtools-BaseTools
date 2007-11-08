@@ -336,7 +336,12 @@ def NormPath(Path, Defines = {}):
         #
         # Remove ${WORKSPACE}
         #
-        Path = Path.replace(DataType.TAB_WORKSPACE, '')
+        if Path.find(DataType.TAB_WORKSPACE) > -1:
+            Path = Path.replace(DataType.TAB_WORKSPACE, '')
+            if Path.find(DataType.TAB_SLASH) == 0:
+                Path = Path[1:]
+            if Path.find(DataType.TAB_BACK_SLASH) == 0:
+                Path = Path[1:]
 
         #
         # To local path format
@@ -569,7 +574,7 @@ def CheckFileType(CheckFilename, ExtName, ContainerFilename, SectionName, Line):
 #
 def CheckFileExist(WorkspaceDir, CheckFilename, ContainerFilename, SectionName, Line):
     if CheckFilename != '' and CheckFilename != None:
-        CheckFile = WorkspaceFile(WorkspaceDir, NormPath(CheckFilename))
+        CheckFile = WorkspaceFile(WorkspaceDir, CheckFilename)
         if os.path.exists(CheckFile) and os.path.isfile(CheckFile):
             pass
         else:
