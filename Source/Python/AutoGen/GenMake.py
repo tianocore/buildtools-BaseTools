@@ -284,6 +284,8 @@ ${END}
 ${BEGIN}${tool_code} = ${tool_path}
 ${END}
 
+MAKE_FILE = ${makefile_path}
+
 #
 # Shell Command Macro
 #
@@ -434,6 +436,7 @@ TARGET = ${build_target}
 
 MAKE = ${make_path}
 MAKE_FLAGS = ${make_flag}
+MAKE_FILE = ${makefile_path}
 
 #
 # Build Directory Macro Definition
