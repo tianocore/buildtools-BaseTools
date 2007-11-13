@@ -3,7 +3,7 @@ MAKEROOT ?= ..
 
 APPNAME = GenFvImage
 
-OBJECTS = GenFv.o GenFvInternalLib.o GenFvPadFileTable.o
+OBJECTS = GenFv.o GenFvInternalLib.o
 
 include $(MAKEROOT)/Makefiles/app.makefile
 
