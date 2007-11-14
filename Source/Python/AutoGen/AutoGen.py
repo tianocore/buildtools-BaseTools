@@ -507,8 +507,9 @@ class PlatformAutoGen:
                                                       % (Arch, self.PlatformFile, self.Workspace.SupArchList))
         if Arch not in self.ArchList:
             EdkLogger.error("AutoGen", AUTOGEN_ERROR, "[%s] is not supported by current build configuration!" % Arch)
+
         if str(Module) not in self.ModuleDatabase[Arch]:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "[%s] [%s] is not supported by active platform [%s]!"
+            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Module [%s] [%s] is not required by active platform [%s]!"
                                                       % (Module, Arch, self.PlatformFile))
 
     ## Find the package containing the module
