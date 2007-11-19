@@ -2778,10 +2778,10 @@ Returns:
   //
   Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_CAPSULE_FLAGS_STRING, 0, Value);
   if (Status == EFI_SUCCESS) {
-    if (strstr (Value, "PersistAcrossReset") != NULL) {
-      CapInfo->Flags |= CAPSULE_FLAGS_PERSIST_ACROSS_RESET; 
-    } else if (strstr (Value, "PopulateSystemTable") != NULL) {
+    if (strstr (Value, "PopulateSystemTable") != NULL) {
       CapInfo->Flags |= CAPSULE_FLAGS_PERSIST_ACROSS_RESET | CAPSULE_FLAGS_POPULATE_SYSTEM_TABLE;
+    } else if (strstr (Value, "PersistAcrossReset") != NULL) {
+      CapInfo->Flags |= CAPSULE_FLAGS_PERSIST_ACROSS_RESET; 
     } else {
       Error (NULL, 0, 2000, "Invalid paramter", "invalid Flag setting for %s", EFI_CAPSULE_FLAGS_STRING);
       return EFI_ABORTED;

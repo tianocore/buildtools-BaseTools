@@ -163,6 +163,8 @@ Returns:
   fprintf (stdout, "  -g GuidValue, --vendor GuidValue\n\
                         GuidValue is one specific vendor guid value.\n\
                         Its format is 00000000-0000-0000-0000-000000000000\n");
+  fprintf (stdout, "  -l GuidHeaderLength, --HeaderLength GuidHeaderLength\n\
+                        GuidHeaderLength is the size of header of guided data\n");
   fprintf (stdout, "  -r GuidAttr, --attributes GuidAttr\n\
                         GuidAttr is guid section atttributes, which may be\n\
                         PROCESSING_REQUIRED or AUTH_STATUS_VALID\n");
@@ -601,6 +603,7 @@ GenSectionGuidDefinedSection (
   UINT32   InputFileNum,
   EFI_GUID *VendorGuid,
   UINT16   DataAttribute,
+  UINT32   DataHeaderSize,
   FILE     *OutFile
   )
 /*++
@@ -621,6 +624,8 @@ Arguments:
   VendorGuid    - Specify vendor guid value.
 
   DataAttribute - Specify attribute for the vendor guid data. 
+  
+  DataHeaderSize- Guided Data Header Size
   
   OutFile       - Output file handle
 
@@ -719,7 +724,7 @@ Returns:
     VendorGuidSect.CommonHeader.Size[2]  = (UINT8) ((TotalLength & 0xff0000) >> 16);
     memcpy (&(VendorGuidSect.SectionDefinitionGuid), VendorGuid, sizeof (EFI_GUID));
     VendorGuidSect.Attributes  = DataAttribute;
-    VendorGuidSect.DataOffset  = sizeof (EFI_GUID_DEFINED_SECTION);
+    VendorGuidSect.DataOffset  = sizeof (EFI_GUID_DEFINED_SECTION) + DataHeaderSize;
     fwrite (&VendorGuidSect, sizeof (EFI_GUID_DEFINED_SECTION), 1, OutFile);  
     DebugMsg (NULL, 0, 9, "Guided section", "Data offset is %d", VendorGuidSect.DataOffset);
   }
@@ -768,6 +773,7 @@ Returns:
   UINT8                     SectType;
   UINT8                     SectCompSubType;
   UINT16                    SectGuidAttribute; 
+  UINT64                    SectGuidHeaderLength;
   EFI_COMMON_SECTION_HEADER CommonSect;
   UINT32                    InputLength;
   UINT8                     *FileBuffer;
@@ -790,6 +796,7 @@ Returns:
   InputLength           = 0;
   Status                = STATUS_SUCCESS;
   LogLevel              = 0;
+  SectGuidHeaderLength  = 0;
   
   SetUtilityName (UTILITY_NAME);
   
@@ -856,6 +863,17 @@ Returns:
         SectGuidAttribute |= EFI_GUIDED_SECTION_AUTH_STATUS_VALID;
       } else {
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        goto Finish;
+      }
+      argc -= 2;
+      argv += 2;
+      continue;
+    }
+
+    if ((stricmp (argv[0], "-l") == 0) || (stricmp (argv[0], "--HeaderLength") == 0)) {
+      Status = AsciiStringToUint64 (argv[1], FALSE, &SectGuidHeaderLength);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 1003, "Invalid option value for GuidHeaderLength", "%s = %s", argv[0], argv[1]);
         goto Finish;
       }
       argc -= 2;
@@ -1008,6 +1026,9 @@ Returns:
     if ((SectGuidAttribute & EFI_GUIDED_SECTION_AUTH_STATUS_VALID) != 0) {
       VerboseMsg ("Guid Attribute is %s", mGUIDedSectionAttribue[EFI_GUIDED_SECTION_AUTH_STATUS_VALID]);
     }
+    if (SectGuidHeaderLength != 0) {
+      VerboseMsg ("Guid Data Header size is 0x%x", SectGuidHeaderLength);
+    }
   } else if (stricmp (SectionName, mSectionTypeName[EFI_SECTION_PE32]) == 0) {
     SectType = EFI_SECTION_PE32;
   } else if (stricmp (SectionName, mSectionTypeName[EFI_SECTION_PIC]) == 0) {
@@ -1103,6 +1124,7 @@ Returns:
               InputFileNum,
               &VendorGuid,
               SectGuidAttribute,
+              (UINT32) SectGuidHeaderLength,
               OutFile
               );
     break;

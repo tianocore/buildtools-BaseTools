@@ -2421,26 +2421,27 @@ Returns:
   UINT8  ctr;
 
   Line[MAX_LINE_LEN - 1]  = 0;
-  if (fgets (Line, MAX_LINE_LEN, InFptr) == NULL) {
-    return STATUS_ERROR;
-  }
-
-  // Strip leading white-space characters (except carriage returns) from Line
-  //
-  if (isspace(Line[0]) && Line[0] != '\n') {
-    // printf("Found a space character at Line[0] = 0x%x\n", Line[0]);
-    while (isspace(Line[0])) {
-       for (ctr = 0; ctr < strlen(Line); ctr++)
-         if (Line[ctr] != '\n')
-           Line[ctr] = Line[ctr + 1];
+  while (1) {
+    if (fgets (Line, MAX_LINE_LEN, InFptr) == NULL) {
+      return STATUS_ERROR;
     }
-  }
-
-  //
-  // If it was a binary file, then it may have overwritten our null terminator
-  //
-  if (Line[MAX_LINE_LEN - 1] != 0) {
-    return STATUS_ERROR;
+    //
+    // If it was a binary file, then it may have overwritten our null terminator
+    //
+    if (Line[MAX_LINE_LEN - 1] != 0) {
+      return STATUS_ERROR;
+    }
+    
+    //
+    // strip space
+    // 
+    for (cptr = Line; *cptr && isspace(*cptr); cptr++) {
+    }
+    
+    // Skip Blank Lines and Comment Lines
+    if ((strlen(cptr) != 0) && (*cptr != ';')) {
+      break;
+    }
   }
 
   // Look for
@@ -2449,9 +2450,6 @@ Returns:
   // DD  XXXXXXXXX
   //  DD XXXXXXXXX
   //
-  for (cptr = Line; *cptr && isspace(*cptr); cptr++) {
-  }
-
   if ((tolower(cptr[0]) == 'd') && (tolower(cptr[1]) == 'd') && isspace (cptr[2])) {
     //
     // Skip blanks and look for a hex digit
@@ -2465,14 +2463,6 @@ Returns:
       }
     }
     return STATUS_SUCCESS;
-  }
-  // Skip Blank Lines 
-  if (strlen(Line) == 1) {
-    return STATUS_IGNORE;
-  }
-  // Skip Comment Lines
-  if (tolower(cptr[0]) == ';') {
-    return STATUS_IGNORE;
   }
 
   return STATUS_ERROR;
