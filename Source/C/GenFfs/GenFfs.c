@@ -26,6 +26,7 @@ Abstract:
 
 #include <Common/UefiBaseTypes.h>
 #include <Common/PiFirmwareFile.h>
+#include <IndustryStandard/PeImage.h>
 
 #include "CommonLib.h"
 #include "EfiUtilityMsgs.h"
@@ -186,7 +187,7 @@ Returns:
   }
   for (Index = 0; Index < sizeof (mAlignName) / sizeof (CHAR8 *); Index ++) {
     if (stricmp (AlignBuffer, mAlignName [Index]) == 0) {
-      *AlignNumber = Index;
+      *AlignNumber = 1 << Index;
       return EFI_SUCCESS;
     }
   }
@@ -275,10 +276,14 @@ Returns:
   UINT32                     Index;
   FILE                       *InFile;
   EFI_COMMON_SECTION_HEADER  *SectHeader;
+  EFI_COMMON_SECTION_HEADER  TempSectHeader;
+  EFI_TE_IMAGE_HEADER        TeHeader;
+  UINT32                     TeOffset;
 
   Size          = 0;
   Offset        = 0;
-  *MaxAlignment = 0;
+  TeOffset      = 0;
+
   //
   // Go through our array of file names and copy their contents
   // to the output buffer.
@@ -294,32 +299,10 @@ Returns:
     //
     // Get the Max alignment of all input file datas
     //
-    if (*MaxAlignment < (1 << InputFileAlign [Index])) {
-      *MaxAlignment = 1 << InputFileAlign [Index];
+    if (*MaxAlignment < InputFileAlign [Index]) {
+      *MaxAlignment = InputFileAlign [Index];
     }
-    
-    //
-    // make sure section data meet its alignment requirement by adding one raw pad section.
-    // But the different sections have the different section header. Necessary or not?
-    // Based on section type to adjust offset? Todo
-    //
-    if (((Size + sizeof (EFI_COMMON_SECTION_HEADER)) % (1 << InputFileAlign [Index])) != 0) {
-      Offset = ((Size + 2 * sizeof (EFI_COMMON_SECTION_HEADER) + (1 << InputFileAlign [Index]) - 1) & ~((1 << InputFileAlign [Index]) - 1)) - Size;
-      Offset = Offset - sizeof (EFI_COMMON_SECTION_HEADER);
-       
-      if (FileBuffer != NULL && ((Size + Offset) < *BufferLength)) {
-        SectHeader          = (EFI_COMMON_SECTION_HEADER *) (FileBuffer + Size);
-        SectHeader->Type    = EFI_SECTION_RAW;
-        SectHeader->Size[0] = (UINT8) (Offset & 0xff);
-        SectHeader->Size[1] = (UINT8) ((Offset & 0xff00) >> 8);
-        SectHeader->Size[2] = (UINT8) ((Offset & 0xff0000) >> 16);
-      }
-      DebugMsg (NULL, 0, 9, "Pad raw section for section data alignment", 
-                "Pad Raw section size is %d", Offset);
 
-      Size = Size + Offset;
-    }
-    
     // 
     // Open file and read contents
     //
@@ -334,6 +317,50 @@ Returns:
     fseek (InFile, 0, SEEK_SET);
     DebugMsg (NULL, 0, 9, "Input section files", 
               "the input section name is %s and the size is %d bytes", InputFileName[Index], FileSize); 
+
+    //
+    // Check this section is Te section
+    //
+    TeOffset = 0;
+    fread (&TempSectHeader, 1, sizeof (TempSectHeader), InFile);
+    if (TempSectHeader.Type == EFI_SECTION_TE) {
+      fread (&TeHeader, 1, sizeof (TeHeader), InFile);
+      if (TeHeader.Signature == EFI_TE_IMAGE_HEADER_SIGNATURE) {
+        TeOffset = TeHeader.StrippedSize - sizeof (TeHeader);
+      }
+    }
+    fseek (InFile, 0, SEEK_SET);
+
+    //
+    // Revert TeOffset to the converse value relative to Alignment
+    // This is to assure the original PeImage Header at Alignment.
+    //
+    if ((TeOffset != 0) && (InputFileAlign [Index] != 0)) {
+      TeOffset = InputFileAlign [Index] - (TeOffset % InputFileAlign [Index]);
+      TeOffset = TeOffset % InputFileAlign [Index];
+    }
+     
+    //
+    // make sure section data meet its alignment requirement by adding one raw pad section.
+    // But the different sections have the different section header. Necessary or not?
+    // Based on section type to adjust offset? Todo
+    //
+    if ((InputFileAlign [Index] != 0) && (((Size + sizeof (EFI_COMMON_SECTION_HEADER) + TeOffset) % InputFileAlign [Index]) != 0)) {
+      Offset = (Size + 2 * sizeof (EFI_COMMON_SECTION_HEADER) + TeOffset + InputFileAlign [Index] - 1) & ~(InputFileAlign [Index] - 1);
+      Offset = Offset - Size - sizeof (EFI_COMMON_SECTION_HEADER) - TeOffset;
+       
+      if (FileBuffer != NULL && ((Size + Offset) < *BufferLength)) {
+        SectHeader          = (EFI_COMMON_SECTION_HEADER *) (FileBuffer + Size);
+        SectHeader->Type    = EFI_SECTION_RAW;
+        SectHeader->Size[0] = (UINT8) (Offset & 0xff);
+        SectHeader->Size[1] = (UINT8) ((Offset & 0xff00) >> 8);
+        SectHeader->Size[2] = (UINT8) ((Offset & 0xff0000) >> 16);
+      }
+      DebugMsg (NULL, 0, 9, "Pad raw section for section data alignment", 
+                "Pad Raw section size is %d", Offset);
+
+      Size = Size + Offset;
+    }
 
     //
     // Now read the contents of the file into the buffer
@@ -675,7 +702,13 @@ Returns:
   }
   VerboseMsg ("FFS file alignment is %s", mFfsValidAlignName[FfsAlign]);
   for (Index = 0; Index < InputFileNum; Index ++) {
-    VerboseMsg ("the %dth input section name is %s and section alignment is %d", Index, InputFileName[Index], 1 << InputFileAlign[Index]);
+    if (InputFileAlign[Index] == 0) {
+      //
+      // Minimum alignment is 1 byte.
+      //
+      InputFileAlign[Index] = 1;
+    }
+    VerboseMsg ("the %dth input section name is %s and section alignment is %d", Index, InputFileName[Index], InputFileAlign[Index]);
   }
 
   //
