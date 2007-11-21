@@ -3,7 +3,7 @@
 !ENDIF
 
 !IFNDEF BASE_TOOLS_PATH
-!ERROR "Please run build_tools.bat at first!"
+!ERROR "Please set your BASE_TOOLS_PATH!"
 !ENDIF
 
 !IFNDEF ARCH
