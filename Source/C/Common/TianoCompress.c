@@ -290,7 +290,7 @@ Arguments:
   DstSize     - On input, the size of DstBuffer; On output,
                 the size of the actual compressed data.
   Version     - The version of de/compression algorithm.
-                Version 1 for EFI 1.1 de/compression algorithm.
+                Version 1 for UEFI 2.0 de/compression algorithm.
                 Version 2 for Tiano de/compression algorithm.
 
 Returns:
