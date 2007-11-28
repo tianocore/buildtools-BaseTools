@@ -1710,7 +1710,7 @@ Returns:
             Show this help message and exit.\n");
   fprintf (stdout, "  -q, --quiet\n\
          Disable all messages except FATAL ERRORS.\n");
-  fprintf (stdout, "  -d, --debug [#,0-9]\n\
+  fprintf (stdout, "  --debug [#,0-9]\n\
          Enable debug messages at level #.\n");  
 }
 
@@ -1816,7 +1816,7 @@ Returns:
     argv++;
     continue;
   }
-   if ((stricmp (argv[0], "-d") == 0) || (stricmp (argv[0], "--debug") == 0)) {
+   if (stricmp (argv[0], "--debug") == 0) {
      argc-=2;
      argv++;
      Status = AsciiStringToUint64(argv[0], FALSE, &DebugLevel);
