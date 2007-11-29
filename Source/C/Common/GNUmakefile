@@ -15,6 +15,7 @@ OBJECTS = \
   FvLib.o \
   MemoryFile.o \
   MyAlloc.o \
+  ParseGuidedSectionTools.o \
   ParseInf.o \
   PeCoffLoaderEx.o \
   SimpleFileParsing.o \
