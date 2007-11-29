@@ -5,20 +5,22 @@
 LIBNAME = Common
 
 OBJECTS = \
+  BasePeCoff.obj \
   CommonLib.obj \
+  Crc32.obj \
   Decompress.obj \
+  EfiCompress.obj \
   EfiUtilityMsgs.obj \
+  FvLib.obj \
   MemoryFile.obj \
   MyAlloc.obj \
-  SimpleFileParsing.obj \
-  Crc32.obj \
-  EfiCompress.obj \
-  FvLib.obj \
   ParseInf.obj \
-  TianoCompress.obj \
   PeCoffLoaderEx.obj \
-  BasePeCoff.obj
+  SimpleFileParsing.obj \
+  StringFuncs.obj \
+  TianoCompress.obj
 
 !INCLUDE ..\Makefiles\ms.lib
+
 
 
