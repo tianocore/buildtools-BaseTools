@@ -252,6 +252,71 @@ Returns:
   return EFI_SUCCESS;
 }
 
+EFI_STATUS
+PutFileImage (
+  IN CHAR8    *OutputFileName,
+  IN CHAR8    *OutputFileImage,
+  IN UINT32   BytesToWrite
+  )
+/*++
+
+Routine Description:
+
+  This function opens a file and writes OutputFileImage into the file.
+
+Arguments:
+
+  OutputFileName     The name of the file to write.
+  OutputFileImage    A pointer to the memory buffer.
+  BytesToWrite       The size of the memory buffer.
+
+Returns:
+
+  EFI_SUCCESS              The function completed successfully.
+  EFI_INVALID_PARAMETER    One of the input parameters was invalid.
+  EFI_ABORTED              An error occurred.
+  EFI_OUT_OF_RESOURCES     No resource to complete operations.
+
+--*/
+{
+  FILE    *OutputFile;
+  UINT32  BytesWrote;
+
+  //
+  // Verify input parameters.
+  //
+  if (OutputFileName == NULL || strlen (OutputFileName) == 0 || OutputFileImage == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
+  //
+  // Open the file and copy contents into a memory buffer.
+  //
+  //
+  // Open the file
+  //
+  OutputFile = fopen (OutputFileName, "wb");
+  if (OutputFile == NULL) {
+    printf ("ERROR: E0001: Could not open output file \"%s\".\n", OutputFileName);
+    return EFI_ABORTED;
+  }
+
+  //
+  // Write all of the file contents.
+  //
+  BytesWrote = fwrite (OutputFileImage, sizeof (UINT8), BytesToWrite, OutputFile);
+  if (BytesWrote != sizeof (UINT8) * BytesToWrite) {
+    printf ("ERROR: E0004: Writing file \"%s\"%i.\n", OutputFileName);
+    fclose (OutputFile);
+    return EFI_ABORTED;
+  }
+  //
+  // Close the file
+  //
+  fclose (OutputFile);
+
+  return EFI_SUCCESS;
+}
+
 UINT8
 CalculateChecksum8 (
   IN UINT8        *Buffer,

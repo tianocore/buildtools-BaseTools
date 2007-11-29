@@ -72,6 +72,34 @@ GetFileImage (
   )
 ;
 
+EFI_STATUS
+PutFileImage (
+  IN CHAR8    *OutputFileName,
+  IN CHAR8    *OutputFileImage,
+  IN UINT32   BytesToWrite
+  )
+;
+/*++
+
+Routine Description:
+
+  This function opens a file and writes OutputFileImage into the file.
+
+Arguments:
+
+  OutputFileName     The name of the file to write.
+  OutputFileImage    A pointer to the memory buffer.
+  BytesToWrite       The size of the memory buffer.
+
+Returns:
+
+  EFI_SUCCESS              The function completed successfully.
+  EFI_INVALID_PARAMETER    One of the input parameters was invalid.
+  EFI_ABORTED              An error occurred.
+  EFI_OUT_OF_RESOURCES     No resource to complete operations.
+
+--*/
+
 UINT8
 CalculateChecksum8 (
   IN UINT8        *Buffer,
