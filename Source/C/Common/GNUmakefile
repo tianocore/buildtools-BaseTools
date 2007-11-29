@@ -5,6 +5,19 @@ MAKEROOT ?= ..
 
 LIBNAME = Common
 
-OBJECTS = CommonLib.o Decompress.o EfiUtilityMsgs.o MyAlloc.o SimpleFileParsing.o Crc32.o EfiCompress.o FvLib.o ParseInf.o TianoCompress.o PeCoffLoaderEx.o BasePeCoff.o
+OBJECTS = \
+  CommonLib.o \
+  Decompress.o \
+  EfiUtilityMsgs.o \
+  MyAlloc.o \
+  MemoryFile.o \
+  SimpleFileParsing.o \
+  Crc32.o \
+  EfiCompress.o \
+  FvLib.o \
+  ParseInf.o \
+  TianoCompress.o \
+  PeCoffLoaderEx.o \
+  BasePeCoff.o
 
 include $(MAKEROOT)/Makefiles/lib.makefile
