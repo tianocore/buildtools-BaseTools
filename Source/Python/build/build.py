@@ -942,6 +942,61 @@ class Build():
                 if self.Fdf != '' and self.Target in ["", "all", "fds"]:
                     LaunchCommand(Pa.GetBuildCommand() + ("fds",), Pa.GetMakeFileDir())
 
+    ## Generate GuidedSectionTools.txt in the FV directories.
+    #
+    def CreateGuidedSectionToolsFile(self):
+        for Dsc in self.Ewb.DscDatabase.keys():
+            for Arch in self.ArchList:
+                for BuildTarget in self.BuildTargetList:
+                    for ToolChain in self.ToolChainList:
+                        FvDir = os.path.join(
+                                    self.WorkspaceDir,
+                                    self.Ewb.Build[Arch].PlatformDatabase[Dsc].OutputDirectory,
+                                    '_'.join((BuildTarget, ToolChain)),
+                                    'FV'
+                                    )
+                        # Build up the list of supported architectures for this build
+                        prefix = '%s_%s_%s_' % (BuildTarget, ToolChain, Arch)
+
+                        # Look through the tool definitions for GUIDed tools
+                        guidAttribs = []
+                        for (attrib, value) in self.ToolDef.ToolsDefTxtDictionary.iteritems():
+                            if attrib.upper().endswith('_GUID'):
+                                split = attrib.split('_')
+                                thisPrefix = '_'.join(split[0:3]) + '_'
+                                if thisPrefix == prefix:
+                                    guid = self.ToolDef.ToolsDefTxtDictionary[attrib]
+                                    guid = guid.lower()
+                                    toolName = split[3]
+                                    path = '_'.join(split[0:4]) + '_PATH'
+                                    path = self.ToolDef.ToolsDefTxtDictionary[path]
+                                    path = self.GetFullPathOfTool(path)
+                                    guidAttribs.append((guid, toolName, path))
+
+                        # Write out GuidedSecTools.txt
+                        toolsFile = os.path.join(FvDir, 'GuidedSectionTools.txt')
+                        toolsFile = open(toolsFile, 'wt')
+                        for guidedSectionTool in guidAttribs:
+                            print >> toolsFile, ' '.join(guidedSectionTool)
+                        toolsFile.close()
+
+    ## Returns the full path of the tool.
+    #
+    def GetFullPathOfTool (self, tool):
+        if os.path.exists(tool):
+            return os.path.realpath(tool)
+        else:
+            # We need to search for the tool using the
+            # PATH environment variable.
+            for dirInPath in os.environ['PATH'].split(os.pathsep):
+                foundPath = os.path.join(dirInPath, tool)
+                if os.path.exists(foundPath):
+                    return os.path.realpath(foundPath)
+
+        # If the tool was not found in the path then we just return
+        # the input tool.
+        return tool
+
     ## Launch the module or platform build
     #
     def Launch(self):
@@ -951,6 +1006,7 @@ class Build():
                 self._BuildPlatform()
             else:
                 self._MultiThreadBuildPlatform()
+            self.CreateGuidedSectionToolsFile()
         else:
             self.SpawnMode = False
             self._BuildModule()
