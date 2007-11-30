@@ -321,6 +321,14 @@ class BuildTask:
     #
     @staticmethod
     def StartScheduler(MaxThreadNumber, ExitFlag):
+        BuildTask._PendingQueue.clear()
+        BuildTask._ReadyQueue.clear()
+        BuildTask._RunningQueue.clear()
+        BuildTask._TaskQueue.clear()
+        BuildTask._ErrorFlag.clear()
+        BuildTask._ErrorMessage = ""
+        BuildTask._Thread = None
+
         SchedulerThread = Thread(target=BuildTask.Scheduler, args=(MaxThreadNumber, ExitFlag))
         SchedulerThread.setName("Build-Task-Scheduler")
         SchedulerThread.setDaemon(False)

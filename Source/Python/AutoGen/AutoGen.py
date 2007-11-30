@@ -697,10 +697,9 @@ class ModuleAutoGen(object):
     @staticmethod
     def New(Workspace, Platform, Module, Target, Toolchain, Arch):
         # creating module autogen needs platform's autogen
-        if ModuleAutoGen._PlatformAutoGen == None:
-            ModuleAutoGen._PlatformAutoGen = PlatformAutoGen.New(Workspace, Platform, Target, Toolchain, None)
-            if ModuleAutoGen._PlatformAutoGen == None:
-                EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Please create platform AutoGen first!")
+        _PlatformAutoGen = PlatformAutoGen.New(Workspace, Platform, Target, Toolchain, None)
+        if _PlatformAutoGen == None:
+            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No platform AutoGen available!")
 
         # check if the autogen for the module has been created or not
         Key = (Module, Target, Toolchain, Arch)
@@ -708,15 +707,15 @@ class ModuleAutoGen(object):
             if Arch == None or Arch == "":
                 return None
             AutoGenObject = ModuleAutoGen()
-            if AutoGenObject._Init(Workspace, ModuleAutoGen._PlatformAutoGen, Module, Target, Toolchain, Arch) == False:
+            if AutoGenObject._Init(Workspace, _PlatformAutoGen, Module, Target, Toolchain, Arch) == False:
                 return None
             ModuleAutoGen._Database[Key] = AutoGenObject
 
             # for new ModuleAutoGen object, put it in platform's AutoGen
             if AutoGenObject.BuildInfo.IsLibrary:
-                ModuleAutoGen._PlatformAutoGen.AddLibraryAutoGen(AutoGenObject, Arch)
+                _PlatformAutoGen.AddLibraryAutoGen(AutoGenObject, Arch)
             else:
-                ModuleAutoGen._PlatformAutoGen.AddModuleAutoGen(AutoGenObject, Arch)
+                _PlatformAutoGen.AddModuleAutoGen(AutoGenObject, Arch)
             return AutoGenObject
 
         return ModuleAutoGen._Database[Key]
@@ -1125,7 +1124,7 @@ class ModuleAutoGen(object):
                            (self.BuildInfo.Name, self.BuildInfo.Arch))
         else:
             EdkLogger.verbose("Skipped the generation of makefile for module %s [%s]" %
-                           (self.BuildInfo.Name, self.BuildInfo.Arch))
+                              (self.BuildInfo.Name, self.BuildInfo.Arch))
 
         self.IsMakeFileCreated = True
 
