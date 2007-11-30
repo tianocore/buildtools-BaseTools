@@ -64,12 +64,6 @@ CompareGuid (
   )
 ;
 
-BOOLEAN
-DoesFileExist (
-  IN CHAR8    *InputFileName
-  )
-;
-
 EFI_STATUS
 GetFileImage (
   IN CHAR8    *InputFileName,
