@@ -955,6 +955,8 @@ class Build():
                                     '_'.join((BuildTarget, ToolChain)),
                                     'FV'
                                     )
+                        if not os.path.exists(FvDir):
+                            continue 
                         # Build up the list of supported architectures for this build
                         prefix = '%s_%s_%s_' % (BuildTarget, ToolChain, Arch)
 
