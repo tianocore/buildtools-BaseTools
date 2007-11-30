@@ -882,7 +882,7 @@ class WorkspaceBuild(object):
                 elif LibraryPath == None or LibraryPath == "":
                     continue
                 else:
-                    LibraryModule = ModuleDatabase[LibraryPath]
+                    LibraryModule = LibraryInstance[LibraryClassName]
 
                 if LibraryModule.ConstructorList != [] and LibraryModule not in Constructor:
                     Constructor.append(LibraryModule)
