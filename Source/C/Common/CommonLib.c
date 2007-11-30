@@ -150,6 +150,39 @@ Returns:
   return r;
 }
 
+
+BOOLEAN
+DoesFileExist (
+  IN CHAR8    *InputFileName
+  )
+/*++
+
+Routine Description:
+
+  Checks if a file exists
+
+Arguments:
+
+  InputFileName     The name of the file to check for existence
+
+Returns:
+
+  TRUE              The file exists
+  FALSE             The file does not exist
+
+--*/
+{
+  FILE    *InputFile;
+  InputFile = fopen (InputFileName, "rb");
+  if (InputFile == NULL) {
+    return FALSE;
+  } else {
+    fclose (InputFile);
+    return TRUE;
+  }
+}
+
+
 EFI_STATUS
 GetFileImage (
   IN CHAR8    *InputFileName,
