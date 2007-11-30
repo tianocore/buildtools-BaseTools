@@ -721,7 +721,8 @@ class Build():
                 FileList = glob.glob(os.path.normpath(os.path.join(WorkingDirectory, '*.dsc')))
                 FileNum = len(FileList)
                 if FileNum >= 2:
-                    EdkLogger.error("build", None, "There are %d DSC files in %s.\n" % (FileNum, WorkingDirectory))
+                    EdkLogger.error("build", OPTION_MISSING, 
+                                    ExtraData="There are %d DSC files in %s. Use '-p' to specify one.\n" % (FileNum, WorkingDirectory))
                 elif FileNum == 1:
                     self.PlatformFile = NormFile(FileList[0], self.WorkspaceDir)
             else:
