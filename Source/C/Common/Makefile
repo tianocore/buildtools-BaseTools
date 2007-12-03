@@ -6,11 +6,13 @@ LIBNAME = Common
 
 OBJECTS = \
   BasePeCoff.obj \
+  BinderFuncs.obj \
   CommonLib.obj \
   Crc32.obj \
   Decompress.obj \
   EfiCompress.obj \
   EfiUtilityMsgs.obj \
+  FirmwareVolumeBuffer.obj \
   FvLib.obj \
   MemoryFile.obj \
   MyAlloc.obj \
