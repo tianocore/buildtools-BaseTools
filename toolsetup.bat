@@ -30,7 +30,6 @@ if defined VS71COMNTOOLS (
 
 :check_path
 if not defined PYTHON_FREEZER_PATH set PYTHON_FREEZER_PATH=C:\cx_Freeze
-if not exist %PYTHON_FREEZER_PATH% goto no_freezer_path
 
 pushd .
 cd %~dp0
@@ -74,13 +73,14 @@ IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\TianoCompress.exe" goto build
 IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\Trim.exe" goto build
 IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\VfrCompile.exe" goto build
 IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\Fpd2Dsc.exe" goto build
+IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\VolInfo.exe" goto build
 
 :skipbuild
 goto end
 
 :rebuild
 pushd .
-cd %BASE_TOOLS_PATH%\Source\C
+cd %BASE_TOOLS_PATH%
 call nmake cleanall
 del /f /q %BASE_TOOLS_PATH%\Bin\Win32\*.*
 popd
@@ -90,50 +90,11 @@ REM
 REM Start to build the Framework Tools
 REM
 
-echo.
-echo Building the C Tools
-echo.
-
 pushd .
-cd %BASE_TOOLS_PATH%\Source\C
+cd %BASE_TOOLS_PATH%
 call nmake
 popd
 
-echo.
-echo Building the Python Tools
-echo.
-
-set PYTHONPATH=%BASE_TOOLS_PATH%\Source\Python
-pushd .
-
-echo Generating build.exe
-cd %BASE_TOOLS_PATH%\Source\Python\build
-%PYTHON_FREEZER_PATH%\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8 --install-dir=%EDK_TOOLS_PATH%\Bin\Win32 build.py > NUL
-
-echo Generating GenFds.exe
-cd %BASE_TOOLS_PATH%\Source\Python\GenFds
-%PYTHON_FREEZER_PATH%\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8 --install-dir=%EDK_TOOLS_PATH%\Bin\Win32 GenFds.py > NUL
-
-echo Generating Trim.exe
-cd %BASE_TOOLS_PATH%\Source\Python\Trim
-%PYTHON_FREEZER_PATH%\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8 --install-dir=%EDK_TOOLS_PATH%\Bin\Win32 Trim.py > NUL
-
-echo Generating MigrationMsa2Inf.exe
-cd %BASE_TOOLS_PATH%\Source\Python\MigrationMsa2Inf
-%PYTHON_FREEZER_PATH%\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8 --install-dir=%EDK_TOOLS_PATH%\Bin\Win32 MigrationMsa2Inf.py > NUL
-
-echo Generating Fpd2Dsc.exe
-cd %BASE_TOOLS_PATH%\Source\Python\Fpd2Dsc
-%PYTHON_FREEZER_PATH%\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8 --install-dir=%EDK_TOOLS_PATH%\Bin\Win32 Fpd2Dsc.py > NUL
-
-popd
-echo Done!
-goto end
-
-:no_freezer_path
-echo.
-echo !!!WARNING!!! No cx_Freeze path found. Please install cx_Freeze and set PYTHON_FREEZER_PATH.
-echo.
 goto end
 
 :no_tools_path
