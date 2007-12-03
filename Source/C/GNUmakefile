@@ -7,7 +7,19 @@ all: makerootdir subdirs $(MAKEROOT)/libs
 
 LIBRARIES = Common
 NON_BUILDABLE_APPLICATIONS = GenBootSector BootSectImage
-APPLICATIONS = GenFw GenSec GenFv GenFfs GenVtf EfiRom TianoCompress Split EfiLdrImage GenPage VfrCompile
+APPLICATIONS = \
+  EfiLdrImage \
+  EfiRom \
+  GenFfs \
+  GenFv \
+  GenFw \
+  GenPage \
+  GenSec \
+  GenVtf \
+  Split \
+  TianoCompress \
+  VolInfo \
+  VfrCompile
 
 SUBDIRS := $(LIBRARIES) $(APPLICATIONS)
 
