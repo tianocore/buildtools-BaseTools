@@ -647,7 +647,7 @@ class WorkspaceBuild(object):
                         Token = Item.Token
                         MaxDatumSize = Item.MaxDatumSize
                         SkuInfoList = Item.SkuInfoList
-                        Pb.Pcds[(Name, Guid)] = PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, False)
+                        Pb.Pcds[(Name, Guid, Type)] = PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, False)
 
                 #
                 # Add to database
@@ -1064,12 +1064,13 @@ class WorkspaceBuild(object):
             WrnMessage = '**** WARNING ****\n'
             WrnMessage += 'The following Pcds were not defined in the DSC file: %s\n' % self.DscFileName
             WrnMessage += 'The default values were obtained from the DEC file that declares the PCD and the PCD default value\n'
-            for (Guid, Name, Arch) in self.UnFoundPcdInDsc:
-                Dec = self.UnFoundPcdInDsc[(Guid, Name, Arch)]
+            for (Guid, Name, Type, Arch) in self.UnFoundPcdInDsc:
+                Dec = self.UnFoundPcdInDsc[(Guid, Name, Type, Arch)]
                 Pcds = self.Build[Arch].PackageDatabase[Dec].Pcds
-                if (Name, Guid) in Pcds:
-                    PcdItemTypeUsed = Pcds[(Name, Guid)].Type
-                    DefaultValue = Pcds[(Name, Guid)].DefaultValue
+                if (Name, Guid, Type) in Pcds:
+                    Pcd = Pcds[(Name, Guid, Type)]
+                    PcdItemTypeUsed = Pcd.Type
+                    DefaultValue = Pcd.DefaultValue
                     WrnMessage += '%s.%s: Defined in file %s, PcdItemType is Pcds%s, DefaultValue is %s\n' % (Guid, Name, Dec, PcdItemTypeUsed, DefaultValue)
             EdkLogger.info(WrnMessage)
         
@@ -1265,42 +1266,28 @@ class WorkspaceBuild(object):
         FoundInDecFile = ''
         
         #
-        # First get information from package database
-        #
-        for Dec in self.Build[Arch].PackageDatabase.keys():
-            Pcds = self.Build[Arch].PackageDatabase[Dec].Pcds
-            if (Name, Guid) in Pcds:
-                Type = Pcds[(Name, Guid)].Type
-                DatumType = Pcds[(Name, Guid)].DatumType
-                Value = Pcds[(Name, Guid)].DefaultValue
-                Token = Pcds[(Name, Guid)].TokenValue
-                
-                IsOverrided = True
-                IsFoundInDec = True
-                FoundInDecFile = Dec
-                break
-
-        if not IsFoundInDec:
-            ErrorMsg = "Pcd '%s.%s' defined in module '%s' is not found in any package" % (Guid, Name, ModuleName)
-            EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
-
-        #
         # Second get information from platform database
         #
         for Dsc in self.Build[Arch].PlatformDatabase.keys():
             Pcds = self.Build[Arch].PlatformDatabase[Dsc].Pcds
             if (Name, Guid) in Pcds:
-                if Pcds[(Name, Guid)].Type != '' and Pcds[(Name, Guid)].Type != None:
-                    Type = Pcds[(Name, Guid)].Type
-                if Pcds[(Name, Guid)].DatumType != '' and Pcds[(Name, Guid)].DatumType != None:
-                    DatumType = Pcds[(Name, Guid)].DatumType
-                if Pcds[(Name, Guid)].TokenValue != '' and Pcds[(Name, Guid)].TokenValue != None:
-                    Token = Pcds[(Name, Guid)].TokenValue
-                if Pcds[(Name, Guid)].DefaultValue != '' and Pcds[(Name, Guid)].DefaultValue != None:
-                    Value = Pcds[(Name, Guid)].DefaultValue
-                if Pcds[(Name, Guid)].MaxDatumSize != '' and Pcds[(Name, Guid)].MaxDatumSize != None:
-                    MaxDatumSize = Pcds[(Name, Guid)].MaxDatumSize
-                SkuInfoList =  Pcds[(Name, Guid)].SkuInfoList
+                Pcd = Pcds[(Name, Guid)]
+                if Pcd.Type != '' and Pcd.Type != None:
+                    Type = Pcd.Type
+                    if Type.startswith("Dynamic"):
+                        if Type.startswith("DynamicEx"):
+                            Type = "DynamicEx"
+                        else:
+                            Type = "Dynamic"
+                if Pcd.DatumType != '' and Pcd.DatumType != None:
+                    DatumType = Pcd.DatumType
+                if Pcd.TokenValue != '' and Pcd.TokenValue != None:
+                    Token = Pcd.TokenValue
+                if Pcd.DefaultValue != '' and Pcd.DefaultValue != None:
+                    Value = Pcd.DefaultValue
+                if Pcd.MaxDatumSize != '' and Pcd.MaxDatumSize != None:
+                    MaxDatumSize = Pcd.MaxDatumSize
+                SkuInfoList =  Pcd.SkuInfoList
                 
                 IsOverrided = True
                 IsFoundInDsc = True
@@ -1333,10 +1320,39 @@ class WorkspaceBuild(object):
             IsOverrided = True
 
         #
+        # First get information from package database
+        #
+        for Dec in self.Build[Arch].PackageDatabase.keys():
+            Pcds = self.Build[Arch].PackageDatabase[Dec].Pcds
+            if (Name, Guid, Type) in Pcds:
+                Pcd = Pcds[(Name, Guid, Type)]
+            else:
+                for PcdType in ["FixedAtBuild", "PatchableInModule", "FeatureFlag", "Dynamic", "DynamicEx"]:
+                    if (Name, Guid, PcdType) in Pcds:
+                        Pcd = Pcds[(Name, Guid, PcdType)]
+                        break
+                else:
+                    continue
+
+            DatumType = Pcd.DatumType
+            if not IsFoundInDsc:
+                Value = Pcd.DefaultValue
+                Token = Pcd.TokenValue
+            IsOverrided = True
+            IsFoundInDec = True
+            FoundInDecFile = Dec
+            break
+
+
+        if not IsFoundInDec:
+            ErrorMsg = "Pcd '%s.%s [%s]' defined in module '%s' is not found in any package" % (Guid, Name, Type, ModuleName)
+            EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
+
+        #
         # Not found in any platform and fdf
         #
         if not IsFoundInDsc:
-            self.UnFoundPcdInDsc[(Guid, Name, Arch)] = FoundInDecFile
+            self.UnFoundPcdInDsc[(Guid, Name, Type, Arch)] = FoundInDecFile
             #ErrorMsg = "Pcd '%s.%s' defined in module '%s' is not found in any platform" % (Guid, Name, ModuleName)
             #EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
 
