@@ -485,11 +485,11 @@ class Inf(InfObject):
                 MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_DYNAMIC_EX, File), Arch)
             
             for Item in self.Contents[Arch].Pcd:
-                MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_DYNAMIC, File), Arch)
-                MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_DYNAMIC_EX, File), Arch)
-                MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_FEATURE_FLAG, File), Arch)
-                MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_FIXED_AT_BUILD, File), Arch)
-                MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_PATCHABLE_IN_MODULE, File), Arch)
+                MergeArches(Pcds, self.GetPcdOfInf(Item, "", File), Arch)
+                #MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_DYNAMIC_EX, File), Arch)
+                #MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_FEATURE_FLAG, File), Arch)
+                #MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_FIXED_AT_BUILD, File), Arch)
+                #MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_PATCHABLE_IN_MODULE, File), Arch)
                 
         for Key in Pcds.keys():
             Pcd = PcdClass()

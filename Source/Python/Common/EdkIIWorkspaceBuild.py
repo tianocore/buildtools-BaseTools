@@ -1255,6 +1255,7 @@ class WorkspaceBuild(object):
     # @retval PcdClassObject An instance for PcdClassObject with all members filled
     #
     def FindPcd(self, Arch, ModuleName, Name, Guid, Type, PcdsSet):
+        NewType = ''
         DatumType = ''
         Value = ''
         Token = ''
@@ -1268,17 +1269,25 @@ class WorkspaceBuild(object):
         #
         # Second get information from platform database
         #
+        OwnerPlatform = ''
         for Dsc in self.Build[Arch].PlatformDatabase.keys():
             Pcds = self.Build[Arch].PlatformDatabase[Dsc].Pcds
             if (Name, Guid) in Pcds:
+                OwnerPlatform = Dsc
                 Pcd = Pcds[(Name, Guid)]
                 if Pcd.Type != '' and Pcd.Type != None:
-                    Type = Pcd.Type
-                    if Type.startswith("Dynamic"):
-                        if Type.startswith("DynamicEx"):
-                            Type = "DynamicEx"
+                    if Type != '' and Type != Pcd.Type:
+                        ErrorMsg = "PCD %s.%s is declared as [%s] in module\n\t%s\n\n"\
+                                   "    But it's used as [%s] in platform\n\t%s"\
+                                   % (Guid, Name, Type, ModuleName, Pcd.Type, OwnerPlatform)
+                        EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
+
+                    NewType = Pcd.Type
+                    if NewType.startswith("Dynamic"):
+                        if NewType.startswith("DynamicEx"):
+                            NewType = "DynamicEx"
                         else:
-                            Type = "Dynamic"
+                            NewType = "Dynamic"
                 if Pcd.DatumType != '' and Pcd.DatumType != None:
                     DatumType = Pcd.DatumType
                 if Pcd.TokenValue != '' and Pcd.TokenValue != None:
@@ -1322,41 +1331,63 @@ class WorkspaceBuild(object):
         #
         # First get information from package database
         #
-        for Dec in self.Build[Arch].PackageDatabase.keys():
-            Pcds = self.Build[Arch].PackageDatabase[Dec].Pcds
-            if (Name, Guid, Type) in Pcds:
-                Pcd = Pcds[(Name, Guid, Type)]
+        Pcd = None
+        if NewType == '':
+            if Type != '':
+                PcdTypeList = [Type]
             else:
-                for PcdType in ["FixedAtBuild", "PatchableInModule", "FeatureFlag", "Dynamic", "DynamicEx"]:
+                PcdTypeList = ["FixedAtBuild", "PatchableInModule", "FeatureFlag", "Dynamic", "DynamicEx"]
+
+            for Dec in self.Build[Arch].PackageDatabase.keys():
+                Pcds = self.Build[Arch].PackageDatabase[Dec].Pcds
+                for PcdType in PcdTypeList:
                     if (Name, Guid, PcdType) in Pcds:
                         Pcd = Pcds[(Name, Guid, PcdType)]
+                        NewType = PcdType
+                        IsOverrided = True
+                        IsFoundInDec = True
+                        FoundInDecFile = Dec
                         break
                 else:
                     continue
-
-            DatumType = Pcd.DatumType
-            if not IsFoundInDsc:
-                Value = Pcd.DefaultValue
-                Token = Pcd.TokenValue
-            IsOverrided = True
-            IsFoundInDec = True
-            FoundInDecFile = Dec
-            break
-
+                break
+        else:
+            for Dec in self.Build[Arch].PackageDatabase.keys():
+                Pcds = self.Build[Arch].PackageDatabase[Dec].Pcds
+                if (Name, Guid, NewType) in Pcds:
+                    Pcd = Pcds[(Name, Guid, NewType)]
+                    IsOverrided = True
+                    IsFoundInDec = True
+                    FoundInDecFile = Dec
+                    break
 
         if not IsFoundInDec:
-            ErrorMsg = "Pcd '%s.%s [%s]' defined in module '%s' is not found in any package" % (Guid, Name, Type, ModuleName)
+            if NewType != '':
+                SupportedPcdTypeList = []
+                OwnerPackage = ''
+                for Dec in self.Build[Arch].PackageDatabase.keys():
+                    Pcds = self.Build[Arch].PackageDatabase[Dec].Pcds
+                    for PcdType in ["FixedAtBuild", "PatchableInModule", "FeatureFlag", "Dynamic", "DynamicEx"]:
+                        if (Name, Guid, PcdType) in Pcds:
+                            SupportedPcdTypeList.append(PcdType)
+                            OwnerPackage = Dec
+                ErrorMsg = "Only [%s] is supported for Pcd '%s.%s' in package\n\t%s\n\n"\
+                           "    But [%s] is specified in platform\n\t%s"\
+                           % (", ".join(SupportedPcdTypeList), Guid, Name, OwnerPackage, NewType, OwnerPlatform)
+            else:
+                ErrorMsg = "Pcd '%s.%s [%s]' defined in module '%s' is not found in any package" % (Guid, Name, NewType, ModuleName)
             EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
 
         #
         # Not found in any platform and fdf
         #
         if not IsFoundInDsc:
-            self.UnFoundPcdInDsc[(Guid, Name, Type, Arch)] = FoundInDecFile
-            #ErrorMsg = "Pcd '%s.%s' defined in module '%s' is not found in any platform" % (Guid, Name, ModuleName)
-            #EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
+            Value = Pcd.DefaultValue
+            Token = Pcd.TokenValue
+            self.UnFoundPcdInDsc[(Guid, Name, NewType, Arch)] = FoundInDecFile
+        DatumType = Pcd.DatumType
 
-        return PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, IsOverrided)
+        return PcdClassObject(Name, Guid, NewType, DatumType, Value, Token, MaxDatumSize, SkuInfoList, IsOverrided)
 
     ## Find Supportted Module List Of LibraryClass
     #
