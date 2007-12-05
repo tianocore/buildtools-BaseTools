@@ -651,94 +651,84 @@ ${END}
 """
 ]
 
-## Library Constructor and Destructor Templates
-gLibraryString = [
-"""
-VOID
-EFIAPI
-ProcessLibrary${Type}List (
-  VOID
-  )
-{
-}
-""",
-"""
-VOID
-EFIAPI
-ProcessLibrary${Type}List (
-  IN EFI_PEI_FILE_HANDLE       FileHandle,
-  IN EFI_PEI_SERVICES          **PeiServices
-  )
-{
-}
-""",
-"""
-VOID
-EFIAPI
-ProcessLibrary${Type}List (
-  IN EFI_HANDLE        ImageHandle,
-  IN EFI_SYSTEM_TABLE  *SystemTable
-  )
-{
-}
-""",
-"""
-${BEGIN}
-RETURN_STATUS
+gLibraryStructorPrototype = {
+'BASE'  : """${BEGIN}
+EFI_STATUS
 EFIAPI
 ${Function} (
   VOID
-  );
-${END}
+  );${END}
+""",
 
-VOID
+'PEI'   : """${BEGIN}
+EFI_STATUS
 EFIAPI
-ProcessLibrary${Type}List (
-  VOID
-  )
-{
-  EFI_STATUS  Status;
+${Function} (
+  IN EFI_PEI_FILE_HANDLE       FileHandle,
+  IN EFI_PEI_SERVICES          **PeiServices
+  );${END}
+""",
 
-${BEGIN}
+'DXE'   : """${BEGIN}
+EFI_STATUS
+EFIAPI
+${Function} (
+  IN EFI_HANDLE        ImageHandle,
+  IN EFI_SYSTEM_TABLE  *SystemTable
+  );${END}
+""",
+}
+
+gLibraryStructorCall = {
+'BASE'  : """${BEGIN}
   Status = ${Function} ();
-  ASSERT_EFI_ERROR (Status);
-${END}
-}
+  ASSERT_EFI_ERROR (Status);${END}
 """,
-"""
-${BEGIN}
-EFI_STATUS
-EFIAPI
-${Function} (
-  IN EFI_PEI_FILE_HANDLE       FileHandle,
-  IN EFI_PEI_SERVICES          **PeiServices
-  );
-${END}
 
-VOID
-EFIAPI
-ProcessLibrary${Type}List (
-  IN EFI_PEI_FILE_HANDLE       FileHandle,
-  IN EFI_PEI_SERVICES          **PeiServices
-  )
-{
-  EFI_STATUS  Status;
-
-${BEGIN}
+'PEI'   : """${BEGIN}
   Status = ${Function} (FileHandle, PeiServices);
-  ASSERT_EFI_ERROR (Status);
-${END}
+  ASSERT_EFI_ERROR (Status);${END}
+""",
+
+'DXE'   : """${BEGIN}
+  Status = ${Function} (ImageHandle, SystemTable);
+  ASSERT_EFI_ERROR (Status);${END}
+""",
+}
+
+## Library Constructor and Destructor Templates
+gLibraryString = {
+'BASE'  :   """
+${BEGIN}${FunctionPrototype}${END}
+
+VOID
+EFIAPI
+ProcessLibrary${Type}List (
+  VOID
+  )
+{
+${BEGIN}  EFI_STATUS  Status;
+${FunctionCall}${END}
 }
 """,
-"""
-${BEGIN}
-EFI_STATUS
+
+'PEI'   :   """
+${BEGIN}${FunctionPrototype}${END}
+
+VOID
 EFIAPI
-${Function} (
-  IN EFI_HANDLE        ImageHandle,
-  IN EFI_SYSTEM_TABLE  *SystemTable
-  );
-${END}
+ProcessLibrary${Type}List (
+  IN EFI_PEI_FILE_HANDLE       FileHandle,
+  IN EFI_PEI_SERVICES          **PeiServices
+  )
+{
+${BEGIN}  EFI_STATUS  Status;
+${FunctionCall}${END}
+}
+""",
+
+'DXE'   :   """
+${BEGIN}${FunctionPrototype}${END}
 
 VOID
 EFIAPI
@@ -747,15 +737,11 @@ ProcessLibrary${Type}List (
   IN EFI_SYSTEM_TABLE  *SystemTable
   )
 {
-  EFI_STATUS  Status;
-
-${BEGIN}
-  Status = ${Function} (ImageHandle, SystemTable);
-  ASSERT_EFI_ERROR (Status);
-${END}
+${BEGIN}  EFI_STATUS  Status;
+${FunctionCall}${END}
 }
-"""
-]
+""",
+}
 
 gSpecificationString = """
 ${BEGIN}
@@ -1329,28 +1315,42 @@ def CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH):
     #
     # Library Constructors
     #
-    ConstructorList = []
+    ConstructorPrototypeString = TemplateString()
+    ConstructorCallingString = TemplateString()
     for Lib in Info.DependentLibraryList:
         if len(Lib.ConstructorList) <= 0:
             continue
-        ConstructorList.extend(Lib.ConstructorList)
+        Dict = {'Function':Lib.ConstructorList}
+        if Lib.ModuleType == 'BASE':
+            ConstructorPrototypeString.Append(gLibraryStructorPrototype['BASE'], Dict)
+            ConstructorCallingString.Append(gLibraryStructorCall['BASE'], Dict)
+        elif Lib.ModuleType in ['PEI_CORE','PEIM']:
+            ConstructorPrototypeString.Append(gLibraryStructorPrototype['PEI'], Dict)
+            ConstructorCallingString.Append(gLibraryStructorCall['PEI'], Dict)
+        elif Lib.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER','DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
+            ConstructorPrototypeString.Append(gLibraryStructorPrototype['DXE'], Dict)
+            ConstructorCallingString.Append(gLibraryStructorCall['DXE'], Dict)
 
-    Dict = {'Type':'Constructor', 'Function':ConstructorList}
+    if str(ConstructorPrototypeString) == '':
+        ConstructorPrototypeList = []
+    else:
+        ConstructorPrototypeList = [str(ConstructorPrototypeString)]
+    if str(ConstructorCallingString) == '':
+        ConstructorCallingList = []
+    else:
+        ConstructorCallingList = [str(ConstructorCallingString)]
+
+    Dict = {
+        'Type'              :   'Constructor',
+        'FunctionPrototype' :   ConstructorPrototypeList,
+        'FunctionCall'      :   ConstructorCallingList
+    }
     if Info.ModuleType == 'BASE':
-        if len(ConstructorList) == 0:
-            AutoGenC.Append(gLibraryString[0], Dict)
-        else:
-            AutoGenC.Append(gLibraryString[3], Dict)
+        AutoGenC.Append(gLibraryString['BASE'], Dict)
     elif Info.ModuleType in ['PEI_CORE','PEIM']:
-        if len(ConstructorList) == 0:
-            AutoGenC.Append(gLibraryString[1], Dict)
-        else:
-            AutoGenC.Append(gLibraryString[4], Dict)
+        AutoGenC.Append(gLibraryString['PEI'], Dict)
     elif Info.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER','DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
-        if len(ConstructorList) == 0:
-            AutoGenC.Append(gLibraryString[2], Dict)
-        else:
-            AutoGenC.Append(gLibraryString[5], Dict)
+        AutoGenC.Append(gLibraryString['DXE'], Dict)
 
 ## Create code for library destructor
 #
@@ -1364,18 +1364,43 @@ def CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH):
     #
     # Library Destructors
     #
-    DestructorList = []
-    for Lib in Info.DependentLibraryList:
+    DestructorPrototypeString = TemplateString()
+    DestructorCallingString = TemplateString()
+    for Index in range(len(Info.DependentLibraryList)-1, -1, -1):
+        Lib = Info.DependentLibraryList[Index]
         if len(Lib.DestructorList) <= 0:
             continue
-        DestructorList.extend(Lib.DestructorList)
+        Dict = {'Function':Lib.DestructorList}
+        if Lib.ModuleType == 'BASE':
+            DestructorPrototypeString.Append(gLibraryStructorPrototype['BASE'], Dict)
+            DestructorCallingString.Append(gLibraryStructorCall['BASE'], Dict)
+        elif Lib.ModuleType in ['PEI_CORE','PEIM']:
+            DestructorPrototypeString.Append(gLibraryStructorPrototype['PEI'], Dict)
+            DestructorCallingString.Append(gLibraryStructorCall['PEI'], Dict)
+        elif Lib.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER','DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
+            DestructorPrototypeString.Append(gLibraryStructorPrototype['DXE'], Dict)
+            DestructorCallingString.Append(gLibraryStructorCall['DXE'], Dict)
 
-    DestructorList.reverse()
-    if Info.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER','DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
-        if len(DestructorList) == 0:
-            AutoGenC.Append(gLibraryString[2], {'Type':'Destructor','Function':DestructorList})
-        else:
-            AutoGenC.Append(gLibraryString[5], {'Type':'Destructor','Function':DestructorList})
+    if str(DestructorPrototypeString) == '':
+        DestructorPrototypeList = []
+    else:
+        DestructorPrototypeList = [str(DestructorPrototypeString)]
+    if str(DestructorCallingString) == '':
+        DestructorCallingList = []
+    else:
+        DestructorCallingList = [str(DestructorCallingString)]
+
+    Dict = {
+        'Type'              :   'Destructor',
+        'FunctionPrototype' :   DestructorPrototypeList,
+        'FunctionCall'      :   DestructorCallingList
+    }
+    if Info.ModuleType == 'BASE':
+        AutoGenC.Append(gLibraryString['BASE'], Dict)
+    elif Info.ModuleType in ['PEI_CORE','PEIM']:
+        AutoGenC.Append(gLibraryString['PEI'], Dict)
+    elif Info.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER','DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
+        AutoGenC.Append(gLibraryString['DXE'], Dict)
 
 
 ## Create code for ModuleEntryPoint
