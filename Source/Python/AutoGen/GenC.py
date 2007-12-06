@@ -926,10 +926,10 @@ def CreateLibraryPcdCode(Info, AutoGenC, AutoGenH, Pcd):
     AutoGenH.Append('#define _PCD_TOKEN_%s  %d\n' % (TokenCName, TokenNumber))
 
     PcdItemType = Pcd.Type
-    if PcdItemType in gDynamicPcd:
-        PcdItemType = TAB_PCDS_FIXED_AT_BUILD
-        if (TokenCName, TokenSpaceGuidCName) in Info.PlatformInfo.Platform.Pcds:
-            PcdItemType  = Info.PlatformInfo.Platform.Pcds[TokenCName, TokenSpaceGuidCName].Type
+    #if PcdItemType in gDynamicPcd:
+    #    PcdItemType = TAB_PCDS_FIXED_AT_BUILD
+    #    if (TokenCName, TokenSpaceGuidCName) in Info.PlatformInfo.Platform.Pcds:
+    #        PcdItemType  = Info.PlatformInfo.Platform.Pcds[TokenCName, TokenSpaceGuidCName].Type
     if PcdItemType in gDynamicExPcd:
         PcdTokenName = '_PCD_TOKEN_' + TokenCName
         AutoGenH.Append('#define %s  LibPcdGetEx%s(&%s, %s)\n' % (GetModeName, DatumSizeLib, TokenSpaceGuidCName, PcdTokenName))
