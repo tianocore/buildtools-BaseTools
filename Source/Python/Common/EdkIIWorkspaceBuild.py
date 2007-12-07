@@ -1276,17 +1276,20 @@ class WorkspaceBuild(object):
                 OwnerPlatform = Dsc
                 Pcd = Pcds[(Name, Guid)]
                 if Pcd.Type != '' and Pcd.Type != None:
-                    if Type != '' and Type != Pcd.Type:
-                        ErrorMsg = "PCD %s.%s is declared as [%s] in module\n\t%s\n\n"\
-                                   "    But it's used as [%s] in platform\n\t%s"\
-                                   % (Guid, Name, Type, ModuleName, Pcd.Type, OwnerPlatform)
-                        EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
-
                     NewType = Pcd.Type
                     if NewType in DataType.PCD_DYNAMIC_TYPE_LIST:
                         NewType = DataType.TAB_PCDS_DYNAMIC
                     elif NewType in DataType.PCD_DYNAMIC_EX_TYPE_LIST:
                         NewType = DataType.TAB_PCDS_DYNAMIC_EX
+                else:
+                    NewType = Type
+
+                if Type != '' and Type != NewType:
+                    ErrorMsg = "PCD %s.%s is declared as [%s] in module\n\t%s\n\n"\
+                               "    But it's used as [%s] in platform\n\t%s"\
+                               % (Guid, Name, Type, ModuleName, Pcd.Type, OwnerPlatform)
+                    EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
+
 
                 if Pcd.DatumType != '' and Pcd.DatumType != None:
                     DatumType = Pcd.DatumType
@@ -1396,6 +1399,8 @@ class WorkspaceBuild(object):
                            ExtraData=ModuleName)
             if Value[0] == 'L':
                 MaxDatumSize = str(len(Value) * 2)
+            elif Value[0] == '{':
+                MaxDatumSize = str(len(Value.split(',')))
             else:
                 MaxDatumSize = str(len(Value))
 
