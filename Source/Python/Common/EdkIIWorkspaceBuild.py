@@ -1385,15 +1385,16 @@ class WorkspaceBuild(object):
         # Not found in any platform and fdf
         #
         if not IsFoundInDsc:
+            Value = Pcd.DefaultValue
             if NewType.startswith("Dynamic") and SkuInfoList == {}:
                 SkuIds = self.Build[Arch].PlatformDatabase.values()[0].SkuIds
-                SkuInfoList['DEFAULT'] = SkuInfoClass(SkuIdName='DEFAULT', SkuId=SkuIds['DEFAULT'], DefaultValue='0')
-            Value = Pcd.DefaultValue
-            Token = Pcd.TokenValue
+                SkuInfoList['DEFAULT'] = SkuInfoClass(SkuIdName='DEFAULT', SkuId=SkuIds['DEFAULT'], DefaultValue=Value)
             self.UnFoundPcdInDsc[(Guid, Name, NewType, Arch)] = FoundInDecFile
         #elif Type != '' and NewType.startswith("Dynamic"):
         #    NewType = Pcd.Type
         DatumType = Pcd.DatumType
+        if Token in [None, '']:
+            Token = Pcd.TokenValue
         if DatumType == "VOID*" and MaxDatumSize in ['', None]:
             EdkLogger.warn("\nAutoGen", "No MaxDatumSize specified for PCD %s.%s" % (Guid, Name),
                            ExtraData=ModuleName)

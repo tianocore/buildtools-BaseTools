@@ -290,7 +290,8 @@ class TemplateString(object):
                 if RepeatTime < 0:
                     RepeatTime = len(Value)
                 elif RepeatTime != len(Value):
-                    EdkLogger.error("TemplateString", None, Key + " has different repeat time from others!")
+                    EdkLogger.error("TemplateString", PARAMETER_INVALID, Key + " has different repeat time from others!",
+                                    ExtraData=str(Dictionary))
 
             NewString = ''
             for Index in range(0, RepeatTime):

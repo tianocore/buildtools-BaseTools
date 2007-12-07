@@ -1151,8 +1151,10 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
                         Dict['SIZE_TABLE_GUID'].append(TokenSpaceGuid)
                         Dict['SIZE_TABLE_CURRENT_LENGTH'].append(Size)
                         Dict['SIZE_TABLE_MAXIMUM_LENGTH'].append(Pcd.MaxDatumSize)
-                        if Pcd.MaxDatumSize != '' and Pcd.MaxDatumSize > Size:
-                            Size = int(Pcd.MaxDatumSize, 0)
+                        if Pcd.MaxDatumSize != '':
+                            MaxDatumSize = int(Pcd.MaxDatumSize, 0)
+                            if MaxDatumSize > Size:
+                                Size = MaxDatumSize
                         Dict['STRING_TABLE_LENGTH'].append(Size / 2 + 1)
                         StringTableIndex += 1
                         StringTableSize += (Size / 2 + 1)
