@@ -1391,6 +1391,13 @@ class WorkspaceBuild(object):
         #elif Type != '' and NewType.startswith("Dynamic"):
         #    NewType = Pcd.Type
         DatumType = Pcd.DatumType
+        if DatumType == "VOID*" and MaxDatumSize in ['', None]:
+            EdkLogger.warn("\nAutoGen", "No MaxDatumSize specified for PCD %s.%s" % (Guid, Name),
+                           ExtraData=ModuleName)
+            if Value[0] == 'L':
+                MaxDatumSize = str(len(Value) * 2)
+            else:
+                MaxDatumSize = str(len(Value))
 
         return PcdClassObject(Name, Guid, NewType, DatumType, Value, Token, MaxDatumSize, SkuInfoList, IsOverrided)
 
