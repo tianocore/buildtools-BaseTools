@@ -1382,9 +1382,14 @@ class WorkspaceBuild(object):
         # Not found in any platform and fdf
         #
         if not IsFoundInDsc:
+            if NewType.startswith("Dynamic") and SkuInfoList == {}:
+                SkuIds = self.Build[Arch].PlatformDatabase.values()[0].SkuIds
+                SkuInfoList['DEFAULT'] = SkuInfoClass(SkuIdName='DEFAULT', SkuId=SkuIds['DEFAULT'], DefaultValue=0)
             Value = Pcd.DefaultValue
             Token = Pcd.TokenValue
             self.UnFoundPcdInDsc[(Guid, Name, NewType, Arch)] = FoundInDecFile
+        #elif Type != '' and NewType.startswith("Dynamic"):
+        #    NewType = Pcd.Type
         DatumType = Pcd.DatumType
 
         return PcdClassObject(Name, Guid, NewType, DatumType, Value, Token, MaxDatumSize, SkuInfoList, IsOverrided)
