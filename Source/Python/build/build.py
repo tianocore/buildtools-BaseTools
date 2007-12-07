@@ -1161,6 +1161,7 @@ def Main():
         MyBuild.Launch()
         MyBuild.DumpBuildData()
     except BaseException, X:
+        EdkLogger.SetLevel(EdkLogger.QUIET)
         if MyBuild != None:
             # for multi-thread build exits safely
             MyBuild.Relinquish()

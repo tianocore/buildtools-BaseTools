@@ -374,7 +374,7 @@ class PlatformAutoGen:
                 if PcdFromModule.DatumType == "VOID*" and PcdFromModule.MaxDatumSize == None:
                     NoDatumTypePcdList.add("%s [%s]" % (" | ".join(Key), F))
 
-                if PcdFromModule.Type in GenC.gDynamicPcd + GenC.gDynamicExPcd:
+                if PcdFromModule.Type in GenC.gDynamicPcd or PcdFromModule.Type in GenC.gDynamicExPcd:
                     # for autogen code purpose
                     if M.ModuleType in ["PEIM", "PEI_CORE"]:
                         PcdFromModule.Phase = "PEI"

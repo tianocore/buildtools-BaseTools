@@ -1283,11 +1283,11 @@ class WorkspaceBuild(object):
                         EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
 
                     NewType = Pcd.Type
-                    if NewType.startswith("Dynamic"):
-                        if NewType.startswith("DynamicEx"):
-                            NewType = "DynamicEx"
-                        else:
-                            NewType = "Dynamic"
+                    if NewType in DataType.PCD_DYNAMIC_TYPE_LIST:
+                        NewType = DataType.TAB_PCDS_DYNAMIC
+                    elif NewType in DataType.PCD_DYNAMIC_EX_TYPE_LIST:
+                        NewType = DataType.TAB_PCDS_DYNAMIC_EX
+
                 if Pcd.DatumType != '' and Pcd.DatumType != None:
                     DatumType = Pcd.DatumType
                 if Pcd.TokenValue != '' and Pcd.TokenValue != None:
