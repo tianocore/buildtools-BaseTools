@@ -1287,7 +1287,7 @@ class WorkspaceBuild(object):
                 if Type != '' and Type != NewType:
                     ErrorMsg = "PCD %s.%s is declared as [%s] in module\n\t%s\n\n"\
                                "    But it's used as [%s] in platform\n\t%s"\
-                               % (Guid, Name, Type, ModuleName, Pcd.Type, OwnerPlatform)
+                               % (Guid, Name, Type, ModuleName, NewType, OwnerPlatform)
                     EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
 
 
@@ -1387,7 +1387,7 @@ class WorkspaceBuild(object):
         if not IsFoundInDsc:
             if NewType.startswith("Dynamic") and SkuInfoList == {}:
                 SkuIds = self.Build[Arch].PlatformDatabase.values()[0].SkuIds
-                SkuInfoList['DEFAULT'] = SkuInfoClass(SkuIdName='DEFAULT', SkuId=SkuIds['DEFAULT'], DefaultValue=0)
+                SkuInfoList['DEFAULT'] = SkuInfoClass(SkuIdName='DEFAULT', SkuId=SkuIds['DEFAULT'], DefaultValue='0')
             Value = Pcd.DefaultValue
             Token = Pcd.TokenValue
             self.UnFoundPcdInDsc[(Guid, Name, NewType, Arch)] = FoundInDecFile
