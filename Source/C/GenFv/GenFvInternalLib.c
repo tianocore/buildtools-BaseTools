@@ -2285,7 +2285,7 @@ Returns:
     //
     // Get this module function address from ModulePeMapFile and add them into FvMap file
     //
-    WriteMapFile (FvMapFile, FileName, ImageContext.DestinationAddress, PeHdr->OptionalHeader.AddressOfEntryPoint);
+    WriteMapFile (FvMapFile, FileName, ImageContext.DestinationAddress, PeHdr->OptionalHeader.AddressOfEntryPoint, 0);
   }
 
   if ((Flags & 1) == 0 || (
@@ -2465,7 +2465,13 @@ Returns:
     //
     // Get this module function address from ModulePeMapFile and add them into FvMap file
     //
-    WriteMapFile (FvMapFile, FileName, ImageContext.DestinationAddress, TEImageHeader->AddressOfEntryPoint);  
+    WriteMapFile (
+      FvMapFile, 
+      FileName, 
+      ImageContext.DestinationAddress, 
+      TEImageHeader->AddressOfEntryPoint, 
+      TEImageHeader->StrippedSize - sizeof (EFI_TE_IMAGE_HEADER)
+      );  
   }
  
   return EFI_SUCCESS;
@@ -2553,7 +2559,8 @@ WriteMapFile (
   IN OUT FILE                  *FvMapFile,
   IN     CHAR8                 *FileName, 
   IN     EFI_PHYSICAL_ADDRESS  ImageBaseAddress,
-  IN     UINT32                AddressOfEntryPoint
+  IN     UINT32                AddressOfEntryPoint,
+  IN     UINT32                Offset
   )
 /*++
 
@@ -2567,6 +2574,7 @@ Arguments:
   FileName              Ffs File PathName
   ImageBaseAddress      PeImage Base Address.
   AddressOfEntryPoint   EntryPoint address relative to PeBase Address
+  Offset                Offset between TeImage address and original PeImage.
 
 Returns:
 
@@ -2638,12 +2646,12 @@ Returns:
   //
   if (FileGuidName != NULL) {
     fprintf (FvMapFile, "%s (", KeyWord);
-    fprintf (FvMapFile, "BaseAddress=%08lx, ", ImageBaseAddress);
+    fprintf (FvMapFile, "BaseAddress=%08lx, ", ImageBaseAddress + Offset);
     fprintf (FvMapFile, "EntryPoint=%08lx, ", ImageBaseAddress + AddressOfEntryPoint);
     fprintf (FvMapFile, "GUID=%s)\n\n", FileGuidName);
   } else {
     fprintf (FvMapFile, "%s (", KeyWord);
-    fprintf (FvMapFile, "BaseAddress=%08lx, ", ImageBaseAddress);
+    fprintf (FvMapFile, "BaseAddress=%08lx, ", ImageBaseAddress + Offset);
     fprintf (FvMapFile, "EntryPoint=%08lx)", ImageBaseAddress + AddressOfEntryPoint);
   }
 
