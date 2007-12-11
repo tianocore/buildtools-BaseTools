@@ -1,7 +1,7 @@
 ARCH ?= IA32
 MAKEROOT ?= ..
 
-APPNAME = GenFvImage
+APPNAME = GenFv
 
 OBJECTS = GenFv.o GenFvInternalLib.o
 
