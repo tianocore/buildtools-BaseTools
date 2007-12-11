@@ -9,6 +9,7 @@ options {
 
 scope Symbols {
 	types;
+	inFunc;
 }
 
 @members {
@@ -18,6 +19,12 @@ scope Symbols {
                 return True
 
         return False
+        
+    def printTokenInfo(self, line, offset, tokenText):
+    	print str(line)+ ',' + str(offset) + ':' + str(tokenText)
+    	
+    def printFuncHeader(self, line, offset, tokenText):
+        print str(line)+ ',' + str(offset) + ':' + str(tokenText) + ' is function header.'
 
 }
 
@@ -25,24 +32,12 @@ translation_unit
 scope Symbols; // entire file is a scope
 @init {
   $Symbols::types = set()
+  $Symbols::inFunc = False
 }
 	: external_declaration+
 	;
 
-/** Either a function definition or any other kind of C decl/def.
- *  The LL(*) analysis algorithm fails to deal with this due to
- *  recursion in the declarator rules.  I'm putting in a
- *  manual predicate here so that we don't backtrack over
- *  the entire function.  Further, you get a better error
- *  as errors within the function itself don't make it fail
- *  to predict that it's a function.  Weird errors previously.
- *  Remember: the goal is to avoid backtrack like the plague
- *  because it makes debugging, actions, and errors harder.
- *
- *  Note that k=1 results in a much smaller predictor for the 
- *  fixed lookahead; k=2 made a few extra thousand lines. ;)
- *  I'll have to optimize that in the future.
- */
+
 /*function_declaration
 @after{
   print $function_declaration.text
@@ -64,14 +59,17 @@ options {k=1;}
 
 
 function_definition
-scope Symbols; // put parameters and locals into same scope for now
-@init {
-  $Symbols::types = set()
+scope Symbols;
+@init{
+  $Symbols::inFunc = True
+}
+@after{
+  print str($function_definition.stop.line) + ',' + str($function_definition.stop.charPositionInLine)
 }
 	:	declaration_specifiers? declarator
 		(	declaration+ compound_statement	// K&R style
 		|	compound_statement				// ANSI style
-		)
+		) //{self.printFuncHeader($declarator.start.line, $declarator.start.charPositionInLine, $declarator.text)}
 	;
 
 declaration
@@ -81,7 +79,7 @@ scope {
 @init {
   $declaration::isTypedef = False;
 }
-	: 'typedef' declaration_specifiers? {$declaration::isTypedef=True}
+	: a='typedef' declaration_specifiers? //{self.printTokenInfo($a.line, $a.pos, $a.text)}
 	  init_declarator_list ';' // special case, looking for typedef	
 	| declaration_specifiers init_declarator_list? ';'
 	//| function_declaration
@@ -99,7 +97,8 @@ init_declarator_list
 	;
 
 init_declarator
-	: declarator ('=' initializer)?
+	: declarator ('=' initializer)? 
+	//{if not $Symbols::inFunc: self.printTokenInfo($declarator.start.line, $declarator.start.charPositionInLine, $declarator.text)}
 	;
 
 storage_class_specifier
@@ -127,7 +126,7 @@ options {k=3;}
 
 type_id
     :   IDENTIFIER 
-    	//{print str($IDENTIFIER.line) + ":" + $IDENTIFIER.text + " is a type"}
+    	//{self.printTokenInfo($a.line, $a.pos, $a.text)}
     ;
 
 struct_or_union_specifier
@@ -194,9 +193,10 @@ declarator
 	;
 
 direct_declarator
-	:   IDENTIFIER declarator_suffix*
-			//{print "declarator "+$IDENTIFIER.text}
-		|	'(' declarator ')' declarator_suffix+
+scope Symbols;
+	: IDENTIFIER declarator_suffix*
+	  //{if $Symbols::inFunc: self.printFuncName($IDENTIFIER.line, $IDENTIFIER.charPositonInLine, $IDENTIFIER.text)}
+	| '(' declarator ')' declarator_suffix+
 	;
 
 declarator_suffix
@@ -210,7 +210,7 @@ declarator_suffix
 pointer
 	: '*' type_qualifier+ pointer?
 	| '*' pointer
-	| '*'
+	| s='*'
 	;
 
 parameter_type_list
@@ -258,7 +258,7 @@ initializer
 	;
 
 initializer_list
-	: initializer (',' initializer)*
+	: initializer (',' initializer )*
 	;
 
 // E x p r e s s i o n s
@@ -407,7 +407,7 @@ statement
 	;
 
 macro_statement
-	: IDENTIFIER '(' (IDENTIFIER | statement_list | declaration) ')'
+	: IDENTIFIER '(' (IDENTIFIER | declaration*  statement_list?) ')'
 	;
 	
 labeled_statement
@@ -471,7 +471,7 @@ CHARACTER_LITERAL
 STRING_LITERAL
     :  ('L')? '"' ( EscapeSequence | ~('\\'|'"') )* '"'
     ;
-
+    
 HEX_LITERAL : '0' ('x'|'X') HexDigit+ IntegerTypeSuffix? ;
 
 DECIMAL_LITERAL : ('0' | '1'..'9' '0'..'9'*) IntegerTypeSuffix? ;
@@ -521,9 +521,17 @@ UnicodeEscape
 WS  :  (' '|'\r'|'\t'|'\u000C'|'\n') {$channel=HIDDEN;}
     ;
 
+//COMMENT[content]
+//@init{content = ''}
+//    :   '/*' c=( options {greedy=false;} : . )* {content += c} '*/' {$channel=HIDDEN; print content}
+//    ;
+UnicodeVocabulary
+    : '\u0003'..'\uFFFE'
+    ;
 COMMENT
     :   '/*' ( options {greedy=false;} : . )* '*/' {$channel=HIDDEN;}
     ;
+
 
 LINE_COMMENT
     : '//' ~('\n'|'\r')* '\r'? '\n' {$channel=HIDDEN;}
