@@ -619,6 +619,11 @@ def GetLineNo(FileContent, Line):
     LineList = FileContent.splitlines()
     for Index in range(len(LineList)):
         if LineList[Index].find(Line) > -1:
+            #
+            # Ignore statement in comment
+            #
+            if LineList[Index].strip()[0] == DataType.TAB_COMMENT_SPLIT:
+                continue
             return Index + 1
 
     return -1
