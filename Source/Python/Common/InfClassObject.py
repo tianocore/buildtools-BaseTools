@@ -673,7 +673,7 @@ class Inf(InfObject):
         self.Identification.FileRelativePath = Filepath
         
         F = open(Filename, 'r').read()
-        PreCheck(Filename, F, self.KeyList)
+        F = PreCheck(Filename, F, self.KeyList)
         Sects = F.split(DataType.TAB_SECTION_START)
         for Sect in Sects:
             TabList = GetSplitValueList(Sect.split(TAB_SECTION_END, 1)[0], DataType.TAB_COMMA_SPLIT)

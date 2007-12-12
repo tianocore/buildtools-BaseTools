@@ -495,9 +495,19 @@ def GetSingleValueOfKeyFromLines(Lines, Dictionary, CommentCharacter, KeySplitCh
 def PreCheck(FileName, FileContent, SupSectionTag):
     LineNo = 0
     IsFailed = False
+    NewFileContent = ''
     for Line in FileContent.splitlines():
         LineNo = LineNo + 1
+        #
+        # Clean current line
+        #
         Line = CleanString(Line)
+        
+        #
+        # Remove commented line
+        #
+        if Line.find(DataType.TAB_COMMA_SPLIT) == 0:
+            Line = ''
         #
         # Check $()
         #
@@ -528,9 +538,16 @@ def PreCheck(FileName, FileContent, SupSectionTag):
                 if Tag.upper() not in map(lambda s: s.upper(), SupSectionTag):
                     ErrorMsg = "'%s' is not a supportted section name." % Tag
                     EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, File=FileName, Line=LineNo)
+        
+        #
+        # Regenerate FileContent
+        #
+        NewFileContent = NewFileContent + Line + '\r\n'
 
     if IsFailed:
        EdkLogger.error("Parser", FORMAT_INVALID, Line=LineNo, File=FileName)
+    
+    return NewFileContent
 
 ## CheckFileType
 #
