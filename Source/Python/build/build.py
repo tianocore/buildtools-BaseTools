@@ -48,6 +48,22 @@ gSupportedTarget = ['all', 'genc', 'genmake', 'modules', 'libraries', 'fds', 'cl
 gBuildConfiguration = "Conf/target.txt"
 gBuildCacheDir = "Conf/.cache"
 
+## Check environment PATH variable to make sure the specified tool is found
+#
+#   If the tool is found in the PATH, then True is returned
+#   Otherwise, False is returned
+#
+def IsToolInPath(tool):
+    if os.environ.has_key('PATHEXT'):
+        extns = os.environ['PATHEXT'].split(os.path.pathsep)
+    else:
+        extns = ('',)
+    for pathDir in os.environ['PATH'].split(os.path.pathsep):
+        for ext in extns:
+            if os.path.exists(os.path.join(pathDir, tool + ext)):
+                return True
+    return False
+
 ## Check environment variables
 #
 #  Check environment variables that must be set for build. Currently they are
@@ -75,9 +91,9 @@ def CheckEnvVariable():
     PathString = os.environ["PATH"]
     ToolPath = os.path.normpath(os.path.join(os.environ["EDK_TOOLS_PATH"], 'Bin', sys.platform.title()))
 
-    if PathString.find(ToolPath) == -1:
+    if not IsToolInPath('build'):
         os.environ['PATH'] = os.path.pathsep.join((os.environ['PATH'], ToolPath))
-            
+
         EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Please execute %s to set %s in environment variable: PATH!\n"
                             % (os.path.normpath(os.path.join(PathString, 'edksetup.bat')), ToolPath))
 
