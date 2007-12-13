@@ -1229,6 +1229,8 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
         Dict['TOKEN_TYPE'][GeneratedTokenNumber] = ' | '.join(Pcd.TokenTypeList)
         if Pcd.Type in gDynamicExPcd:
             Dict['EXMAPPING_TABLE_EXTOKEN'].append(Pcd.TokenValue)
+            if Phase == 'DXE':
+                GeneratedTokenNumber += NumberOfPeiLocalTokens
             Dict['EXMAPPING_TABLE_LOCAL_TOKEN'].append(GeneratedTokenNumber)
             Dict['EXMAPPING_TABLE_GUID_INDEX'].append(GuidList.index(TokenSpaceGuid))
 
