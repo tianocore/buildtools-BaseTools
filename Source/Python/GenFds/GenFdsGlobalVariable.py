@@ -117,7 +117,8 @@ class GenFdsGlobalVariable:
     def ReplaceWorkspaceMacro(String):
         Str = String.replace('$(WORKSPACE)', GenFdsGlobalVariable.WorkSpaceDir)
         if os.path.exists(Str):
-            Str = os.path.realpath(Str)
+            if not os.path.isabs(Str):
+                Str = os.path.abspath(Str)
         else:
             Str = os.path.join(GenFdsGlobalVariable.WorkSpaceDir, String)
         return os.path.normpath(Str)
