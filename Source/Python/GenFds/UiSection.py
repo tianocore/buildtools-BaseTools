@@ -71,11 +71,12 @@ class UiSection (UiSectionClassObject):
             NameString = ''
             
             
-        GenSectionCmd = 'GenSec -o '                       + \
-                         OutputFile                        + \
-                         ' -s EFI_SECTION_USER_INTERFACE ' + \
-                         '-n '                             + \
-                          NameString                       
+        GenSectionCmd = (
+            'GenSec',
+            '-o', OutputFile,
+            '-s', 'EFI_SECTION_USER_INTERFACE',
+            '-n', NameString,
+            )
         #
         # Call GenSection
         #

@@ -123,13 +123,16 @@ class GenFdsGlobalVariable:
         return os.path.normpath(Str)
     
     def CallExternalTool (cmd, errorMess):
-        
+
+        if type(cmd) not in (tuple, list):
+            GenFdsGlobalVariable.ErrorLogger("ToolError!  Invalid parameter type in call to CallExternalTool")
+
         if GenFdsGlobalVariable.DebugLevel != -1:
-            cmd += ' -d %d' % GenFdsGlobalVariable.DebugLevel
+            cmd += ('-d', str(GenFdsGlobalVariable.DebugLevel))
             GenFdsGlobalVariable.InfLogger (cmd)
         
         if GenFdsGlobalVariable.VerboseMode:
-            cmd += ' -v'
+            cmd += ('-v',)
             GenFdsGlobalVariable.InfLogger (cmd)
         else:
             sys.stdout.write ('#')

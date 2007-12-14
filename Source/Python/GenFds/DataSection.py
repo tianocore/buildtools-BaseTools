@@ -84,33 +84,35 @@ class DataSection (DataSectionClassObject):
             FileBeforeStrip = os.path.join(OutputPath, ModuleName + '.efi')
             shutil.copyfile(self.SectFileName, FileBeforeStrip)
             StrippedFile = os.path.join(OutputPath, ModuleName + '.stripped')
-            StripCmd = 'GenFw -l '    + \
-                       ' -o '         + \
-                        StrippedFile        + \
-                        ' '           + \
-                        GenFdsGlobalVariable.MacroExtend(self.SectFileName, Dict)
+            StripCmd = (
+                'GenFw',
+                '-l',
+                '-o', StrippedFile,
+                GenFdsGlobalVariable.MacroExtend(self.SectFileName, Dict),
+                )
             GenFdsGlobalVariable.CallExternalTool(StripCmd, "Strip Failed !")
             self.SectFileName = StrippedFile
         
         if self.SecType == 'TE':
             TeFile = os.path.join( OutputPath, ModuleName + 'Te.raw')
-            GenTeCmd = 'GenFW -t '    + \
-                       ' -o '         + \
-                        TeFile        + \
-                        ' '           + \
-                       GenFdsGlobalVariable.MacroExtend(self.SectFileName, Dict)
+            GenTeCmd = (
+                'GenFw',
+                '-t',
+                '-o', TeFile,
+                GenFdsGlobalVariable.MacroExtend(self.SectFileName, Dict),
+                )
             GenFdsGlobalVariable.CallExternalTool(GenTeCmd, "GenFw Failed !")
             self.SectFileName = TeFile    
                  
         OutputFile = os.path.join (OutputPath, ModuleName + 'SEC' + SecNum + Ffs.SectionSuffix.get(self.SecType))
         OutputFile = os.path.normpath(OutputFile)
-        
-        GenSectionCmd = 'GenSec -o '                                     + \
-                         OutputFile                                      + \
-                         ' -s '                                          + \
-                         Section.Section.SectionType.get (self.SecType)  + \
-                         ' '                                             + \
-                         self.SectFileName
+
+        GenSectionCmd = (
+            'GenSec',
+             '-o', OutputFile,
+             '-s', Section.Section.SectionType.get (self.SecType),
+             self.SectFileName,
+            )
                          
         #
         # Call GenSection

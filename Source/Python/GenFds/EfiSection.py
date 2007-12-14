@@ -94,23 +94,19 @@ class EfiSection (EfiSectionClassObject):
                 InfOverrideVerString = True
             
             if InfOverrideVerString:
-                VerString = ' -n '          + \
-                                '\"'            + \
-                                StringData      + \
-                                '\"'
+                VerTuple = ('-n', '"' + StringData + '"')
                 if BuildNum != None and BuildNum != '':
-                        BuildNumString = ' -j ' + \
-                                         BuildNum
+                    BuildNumTuple = ('-j', BuildNum)
                 else:
-                    BuildNumString = ''
-                    
+                    BuildNumTuple = tuple()
+
                 Num = SecNum
                 OutputFile = os.path.join( OutputPath, ModuleName + 'SEC' + str(Num) + Ffs.SectionSuffix.get(SectionType))
-                GenSectionCmd = 'GenSec -o '                + \
-                                     OutputFile                 + \
-                                     ' -s EFI_SECTION_VERSION'  + \
-                                     VerString                  + \
-                                     BuildNumString
+                GenSectionCmd = (
+                    'GenSec',
+                    '-o', OutputFile,
+                    '-s', 'EFI_SECTION_VERSION',
+                    ) + VerTuple + BuildNumTuple
                 GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed !")
                 OutputFileList.append(OutputFile)    
                 
@@ -118,39 +114,34 @@ class EfiSection (EfiSectionClassObject):
                 for File in FileList:
                     Index = Index + 1
                     Num = '%s.%d' %(SecNum , Index)
-                    OutputFile = os.path.join( OutputPath, ModuleName + 'SEC' + Num + Ffs.SectionSuffix.get(SectionType))
-                    f = open (File, 'r')
+                    OutputFile = os.path.join(OutputPath, ModuleName + 'SEC' + Num + Ffs.SectionSuffix.get(SectionType))
+                    f = open(File, 'r')
                     VerString = f.read()
-                    VerString = ' -n '          + \
-                                ' \"'           + \
-                                VerString       + \
-                                ' \"'
+                    f.close()
+                    VerTuple = ('-n', '"' + VerString + '"')
                     if BuildNum != None and BuildNum != '':
-                        BuildNumString = ' -j ' + \
-                                         BuildNum
-                    GenSectionCmd = 'GenSec -o '                + \
-                                     OutputFile                 + \
-                                     ' -s EFI_SECTION_VERSION'  + \
-                                     VerString                  + \
-                                     BuildNumString
+                        BuildNumTuple = ('-j', BuildNum)
+                    GenSectionCmd = (
+                        'GenSec',
+                        '-o', OutputFile,
+                        '-s', 'EFI_SECTION_VERSION',
+                        ) + VerTuple + BuildNumTuple
                     GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed !")
                     OutputFileList.append(OutputFile)
                     
             else:
                 if StringData != None and len(StringData) > 0:
-                    VerString = ' -n '          + \
-                                '\"'            + \
-                                StringData      + \
-                                '\"'
+                    VerTuple = ('-n', '"' + StringData + '"')
                 else:
-                    VerString = ''
+                    VerTuple = tuple()
+                VerString = ' ' + ' '.join(VerTuple)
 
                 if BuildNum != None and BuildNum != '':
-                        BuildNumString = ' -j ' + \
-                                         BuildNum
+                    BuildNumTuple = ('-j', BuildNum)
                 else:
-                    BuildNumString = ''
-                    
+                    BuildNumTuple = tuple()
+                BuildNumString = ' ' + ' '.join(BuildNumTuple)
+
                 if VerString == '' and BuildNumString == '':
                     if self.Optional == True :
                         GenFdsGlobalVariable.VerboseLogger( "Optional Section don't exist!")
@@ -159,11 +150,11 @@ class EfiSection (EfiSectionClassObject):
                         raise Exception ("File: %s miss Version Section value" %InfFileName)
                 Num = SecNum
                 OutputFile = os.path.join( OutputPath, ModuleName + 'SEC' + str(Num) + Ffs.SectionSuffix.get(SectionType))
-                GenSectionCmd = 'GenSec -o '                + \
-                                     OutputFile                 + \
-                                     ' -s EFI_SECTION_VERSION'  + \
-                                     VerString                  + \
-                                     BuildNumString
+                GenSectionCmd = (
+                    'GenSec',
+                    '-o', OutputFile,
+                    '-s', 'EFI_SECTION_VERSION',
+                    ) + VerTuple + BuildNumTuple
                 GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed !")
                 OutputFileList.append(OutputFile)
 
@@ -178,16 +169,14 @@ class EfiSection (EfiSectionClassObject):
                 InfOverrideUiString = True
             
             if InfOverrideUiString:
-                UiString = ' -n '        + \
-                               '\"'          + \
-                               StringData    + \
-                               '\"'
                 Num = SecNum
                 OutputFile = os.path.join( OutputPath, ModuleName + 'SEC' + str(Num) + Ffs.SectionSuffix.get(SectionType))
-                GenSectionCmd = 'GenSec -o '                       + \
-                                 OutputFile                        + \
-                                 ' -s EFI_SECTION_USER_INTERFACE'  + \
-                                 UiString
+                GenSectionCmd = (
+                    'GenSec',
+                    '-o', OutputFile,
+                    '-s', 'EFI_SECTION_USER_INTERFACE',
+                    '-n', '"' + StringData + '"',
+                    )
 
                 GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed !")
                 OutputFileList.append(OutputFile)
@@ -196,41 +185,38 @@ class EfiSection (EfiSectionClassObject):
                 for File in FileList:
                     Index = Index + 1
                     Num = '%s.%d' %(SecNum , Index)
-                    OutputFile = os.path.join( OutputPath, ModuleName + 'SEC' + Num + Ffs.SectionSuffix.get(SectionType))
-                    f = open (File, 'r')
+                    OutputFile = os.path.join(OutputPath, ModuleName + 'SEC' + Num + Ffs.SectionSuffix.get(SectionType))
+                    f = open(File, 'r')
                     UiString = f.read()
-                    UiString = ' -n '         + \
-                                '\"'          + \
-                                UiString      + \
-                                '\"'
-                    GenSectionCmd = 'GenSec -o '                       + \
-                                 OutputFile                        + \
-                                 ' -s EFI_SECTION_USER_INTERFACE'  + \
-                                 UiString
+                    f.close()
+                    GenSectionCmd = (
+                        'GenSec',
+                        '-o', OutputFile,
+                        '-s', 'EFI_SECTION_USER_INTERFACE',
+                        '-n', '"' + UiString + '"',
+                        )
                                  
                     GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed !")
                     OutputFileList.append(OutputFile)
             else:
                 if StringData != None and len(StringData) > 0:
-                    UiString = ' -n '        + \
-                               '\"'          + \
-                               StringData    + \
-                               '\"'
+                    UiTuple = ('-n', '"' + StringData + '"')
                 else:
-                    UiString = ''
+                    UiTuple = tuple()
 
-                if UiString == '':
                     if self.Optional == True :
                         GenFdsGlobalVariable.VerboseLogger( "Optional Section don't exist!")
                         return '', None
                     else:
                         raise Exception ("File: %s miss UI Section value" %InfFileName)
+
                 Num = SecNum
                 OutputFile = os.path.join( OutputPath, ModuleName + 'SEC' + str(Num) + Ffs.SectionSuffix.get(SectionType))
-                GenSectionCmd = 'GenSec -o '                       + \
-                                 OutputFile                        + \
-                                 ' -s EFI_SECTION_USER_INTERFACE'  + \
-                                 UiString
+                GenSectionCmd = (
+                    'GenSec',
+                    '-o', OutputFile,
+                    '-s', 'EFI_SECTION_USER_INTERFACE',
+                    ) + UiTuple
 
                 GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed !")
                 OutputFileList.append(OutputFile)
@@ -263,32 +249,34 @@ class EfiSection (EfiSectionClassObject):
                         FileBeforeStrip = os.path.join(OutputPath, ModuleName + '.efi')
                         shutil.copyfile(File, FileBeforeStrip)
                         StrippedFile = os.path.join(OutputPath, ModuleName + '.stripped')
-                        StripCmd = 'GenFw -l '    + \
-                                   ' -o '         + \
-                                    StrippedFile        + \
-                                    ' '           + \
-                                    GenFdsGlobalVariable.MacroExtend(File, Dict)
+                        StripCmd = (
+                            'GenFw',
+                            '-l',
+                            '-o', StrippedFile,
+                            GenFdsGlobalVariable.MacroExtend(File, Dict),
+                            )
                         GenFdsGlobalVariable.CallExternalTool(StripCmd, "Strip Failed !")
                         File = StrippedFile
                     """For TE Section call GenFw to generate TE image"""
 
                     if SectionType == 'TE':
                         TeFile = os.path.join( OutputPath, ModuleName + 'Te.raw')
-                        GenTeCmd = 'GenFw -t '    + \
-                                   ' -o '         + \
-                                    TeFile        + \
-                                    ' '           + \
-                                   GenFdsGlobalVariable.MacroExtend(File, Dict)
+                        GenTeCmd = (
+                            'GenFw',
+                            '-t',
+                            '-o', TeFile,
+                            GenFdsGlobalVariable.MacroExtend(File, Dict),
+                            )
                         GenFdsGlobalVariable.CallExternalTool(GenTeCmd, "GenFw Failed !")
                         File = TeFile
 
                     """Call GenSection"""
-                    GenSectionCmd = 'GenSec -o '                                         + \
-                                         OutputFile                                      + \
-                                         ' -s '                                          + \
-                                         Section.Section.SectionType.get (SectionType)   + \
-                                         ' '                                             + \
-                                         GenFdsGlobalVariable.MacroExtend(File)
+                    GenSectionCmd = (
+                        'GenSec',
+                        '-o', OutputFile,
+                        '-s', Section.Section.SectionType.get (SectionType),
+                        GenFdsGlobalVariable.MacroExtend(File)
+                        )
                         
                     GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed !")
                     OutputFileList.append(OutputFile)

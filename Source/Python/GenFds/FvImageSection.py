@@ -60,11 +60,12 @@ class FvImageSection(FvImageSectionClassObject):
             
             for FileName in FileList:
                 OutputFile = os.path.join(OutputPath, ModuleName + 'SEC' + Num + Ffs.SectionSuffix.get("FV_IMAGE"))
-                GenSectionCmd = 'GenSec -o '                         + \
-                                OutputFile                           + \
-                                ' -s '                               + \
-                                'EFI_SECTION_FIRMWARE_VOLUME_IMAGE ' + \
-                                FvFileName
+                GenSectionCmd = (
+                    'GenSec',
+                    '-o', OutputFile,
+                    '-s', 'EFI_SECTION_FIRMWARE_VOLUME_IMAGE',
+                    FvFileName,
+                    )
 
                 GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
                 OutputFileList.append(OutputFile)
@@ -79,20 +80,21 @@ class FvImageSection(FvImageSectionClassObject):
                 self.Fv = Fv
             else:
                 raise Exception("FvImageSection Failed! %s NOT found in FDF" % self.FvName)
-                                 
+
             FvFileName = self.Fv.AddToBuffer(Buffer, MacroDict = Dict)
-            
+
             #
             # Prepare the parameter of GenSection
             #
             OutputFile = os.path.join(OutputPath, ModuleName + 'SEC' + SecNum + Ffs.SectionSuffix.get("FV_IMAGE"))
-                         
-            GenSectionCmd = 'GenSec -o '                          + \
-                             OutputFile                           + \
-                             ' -s '                               + \
-                             'EFI_SECTION_FIRMWARE_VOLUME_IMAGE ' + \
-                             FvFileName
-                             
+
+            GenSectionCmd = (
+                'GenSec',
+                '-o', OutputFile,
+                '-s', 'EFI_SECTION_FIRMWARE_VOLUME_IMAGE',
+                FvFileName,
+                )
+
             GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
             OutputFileList.append(OutputFile)
                 

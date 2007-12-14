@@ -92,17 +92,17 @@ class FV (FvClassObject):
         # BUGBUG: FvOutputFile could be specified from FDF file (FV section, CreateFile statement)
         if self.CreateFileName != None:
             FvOutputFile = self.CreateFileName
-            
-        Cmd = 'GenFv -i '                 + \
-               self.InfFileName           + \
-               ' -o '                     + \
-               FvOutputFile               + \
-               ' -a '                     + \
-               GenFdsGlobalVariable.FvAddressFileName
+
+        GenFvCmd = (
+            'GenFv',
+             '-i', self.InfFileName,
+             '-o', FvOutputFile,
+             '-a', GenFdsGlobalVariable.FvAddressFileName,
+            )
         #
         # Call GenFv Tools
         #
-        GenFdsGlobalVariable.CallExternalTool(Cmd, "GenFv Failed!")
+        GenFdsGlobalVariable.CallExternalTool(GenFvCmd, "GenFv Failed!")
         #
         # Write the Fv contents to Buffer
         #

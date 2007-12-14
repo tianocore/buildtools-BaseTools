@@ -29,8 +29,8 @@ class CompressSection (CompressSectionClassObject) :
     
     ## compress types: PI standard and non PI standard    
     CompTypeDict = {
-        'PI_STD'     : ' -c PI_STD ',
-        'NON_PI_STD' : ' -c NON_PI_STD '
+        'PI_STD'     : 'PI_STD',
+        'NON_PI_STD' : 'NON_PI_STD'
     }
     
     ## The constructor
@@ -59,7 +59,7 @@ class CompressSection (CompressSectionClassObject) :
             self.CompType = FfsInf.__ExtendMacro__(self.CompType)
             self.Alignment = FfsInf.__ExtendMacro__(self.Alignment)
             
-        SectFiles = ''
+        SectFiles = tuple()
         Index = 0
         for Sect in self.SectionList:
             Index = Index + 1
@@ -67,9 +67,7 @@ class CompressSection (CompressSectionClassObject) :
             ReturnSectList, AlignValue = Sect.GenSection(OutputPath, ModuleName, SecIndex, KeyStringList, FfsInf, Dict)
             if ReturnSectList != []:
                 for FileData in ReturnSectList:
-                   SectFiles = SectFiles + \
-                               ' '       + \
-                               FileData
+                   SectFiles += (FileData,)
                         
 
         OutputFile = OutputPath + \
@@ -80,12 +78,12 @@ class CompressSection (CompressSectionClassObject) :
                      Ffs.SectionSuffix['COMPRESS']
         OutputFile = os.path.normpath(OutputFile)
         
-        GenSectionCmd = 'GenSec -o '                                  + \
-                         OutputFile                                   + \
-                         ' -s '                                       + \
-                         Section.Section.SectionType['COMPRESS']      + \
-                         self.CompTypeDict[self.CompType]             + \
-                         SectFiles
+        GenSectionCmd = (
+            'GenSec',
+             '-o', OutputFile,
+             '-s', Section.Section.SectionType['COMPRESS'],
+             '-c', self.CompTypeDict[self.CompType],
+            ) + SectFiles
         #
         # Call GenSection
         #

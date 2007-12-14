@@ -60,7 +60,7 @@ class GuidSection(GuidSectionClassObject) :
             self.NameGuid = FfsInf.__ExtendMacro__(self.NameGuid)
             self.SectionType = FfsInf.__ExtendMacro__(self.SectionType)
             
-        SectFile = ''
+        SectFile = tuple()
         Index = 0
         for Sect in self.SectionList:
             Index = Index + 1
@@ -68,9 +68,7 @@ class GuidSection(GuidSectionClassObject) :
             ReturnSectList, align = Sect.GenSection(OutputPath, ModuleName, SecIndex, KeyStringList,FfsInf, Dict)
             if ReturnSectList != []:
                 for file in ReturnSectList:
-                    SectFile = SectFile + \
-                               '  '     + \
-                               file
+                    SectFile += (file,)
                        
 
         OutputFile = OutputPath + \
@@ -90,11 +88,11 @@ class GuidSection(GuidSectionClassObject) :
         #
         if self.NameGuid == None :
             GenFdsGlobalVariable.VerboseLogger( "Use GenSection function Generate CRC32 Section")
-            GenSectionCmd = 'GenSec -o '                                   + \
-                             OutputFile                                    + \
-                             ' -s '                                        + \
-                             Section.Section.SectionType[self.SectionType] + \
-                             SectFile
+            GenSectionCmd = (
+                'GenSec',
+                 '-o', OutputFile,
+                 '-s', Section.Section.SectionType[self.SectionType],
+                ) + SectFile
                              
             GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
             OutputFileList = []
@@ -108,9 +106,10 @@ class GuidSection(GuidSectionClassObject) :
             #
             # Call GenSection with DUMMY section type.
             #
-            GenSectionCmd = 'GenSec -o '                                   + \
-                             OutputFile                                    + \
-                             SectFile
+            GenSectionCmd = (
+                'GenSec',
+                '-o', OutputFile,
+                ) + SectFile
         
             GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
             #
@@ -125,12 +124,12 @@ class GuidSection(GuidSectionClassObject) :
                        '.tmp'
             TempFile = os.path.normpath(TempFile)
             
-            ExternalToolCmd = ExternalTool                             + \
-                              ' -e '                                   + \
-                              ' -o '                                   + \
-                              TempFile                                 + \
-                              ' '                                      + \
-                              InputFile
+            ExternalToolCmd = (
+                ExternalTool,
+                '-e',
+                '-o', TempFile,
+                InputFile,
+                )
 
             #
             # Call external tool
@@ -139,28 +138,20 @@ class GuidSection(GuidSectionClassObject) :
             #
             # Call Gensection Add Secntion Header
             #
-            PROCSSING_REQUIRED = ''
-            AUTH_STATUS_VALID = ''
+            AttributeTuple = tuple()
             if self.ProcessRequired == True:
-                PROCSSING_REQUIRED = "PROCSSING_REQUIRED"
+                AttributeTuple += ('-a', 'PROCSSING_REQUIRED')
             if self.AuthStatusValid == True:
-                AUTH_STATUS_VALID = "AUTH_STATUS_VALID"
-            if PROCSSING_REQUIRED != '' or AUTH_STATUS_VALID != '':
-                AttributeStr = ' -a '              + \
-                             PROCSSING_REQUIRED + \
-                             AUTH_STATUS_VALID
-            else :
-                AttributeStr = ''
-            GenSectionCmd = 'GenSec -o '                            + \
-                             OutputFile                             + \
-                             ' -s '                                 + \
-                             Section.Section.SectionType['GUIDED']  + \
-                             ' -g '                                 + \
-                             self.NameGuid                          + \
-                             AttributeStr                              + \
-                             ' '                                    + \
-                             TempFile
-                        
+                AttributeTuple += ('-a', 'AUTH_STATUS_VALID')
+            GenSectionCmd = (
+                'GenSec',
+                '-o', OutputFile,
+                '-s', Section.Section.SectionType['GUIDED'],
+                '-g', self.NameGuid,
+                ) + AttributeTuple + (
+                TempFile,
+                )
+
             GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
             OutputFileList = []
             OutputFileList.append(OutputFile)

@@ -62,9 +62,9 @@ class VerSection (VerSectionClassObject):
         OutputFile = os.path.normpath(OutputFile)
         
         # Get Build Num
-        BuildNum = ''
+        BuildNum = tuple()
         if not (self.BuildNum == None) :
-            BuildNum = ' -j ' + '%d' %self.BuildNum;
+            BuildNum = ('-j', ('%d' % self.BuildNum))
  
         # Get String Data
         StringData = ''
@@ -73,20 +73,20 @@ class VerSection (VerSectionClassObject):
         elif self.FileName != None:
             FileNameStr = GenFdsGlobalVariable.ReplaceWorkspaceMacro(self.FileName)
             FileNameStr = GenFdsGlobalVariable.MacroExtend(FileNameStr, Dict)
-            FileObj = open (FileNameStr, 'r')
+            FileObj = open(FileNameStr, 'r')
             StringData = FileObj.read()
-            StringData = '\"' + StringData + '\"'
+            StringData = '"' + StringData + '"'
             FileObj.close()
         else:
             StringData = ''
-            
-        GenSectionCmd = 'GenSec -o '                + \
-                         OutputFile                 + \
-                         ' -s EFI_SECTION_VERSION ' + \
-                         '-n '                      + \
-                         StringData                 + \
-                         BuildNum                   
-                         
+
+        GenSectionCmd = (
+            'GenSec',
+            '-o', OutputFile,
+            '-s', 'EFI_SECTION_VERSION',
+            '-n', StringData,
+            ) + BuildNum
+
         #
         # Call GenSection
         #

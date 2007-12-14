@@ -46,13 +46,12 @@ class Vtf (VtfClassObject):
         BaseAddArg = self.GetBaseAddressArg(FdAddressDict)
         OutputArg, VtfRawDict = self.GenOutputArg()
         
-        Cmd = "GenVtf "        + \
-               OutputArg       + \
-               ' -f '          + \
-               self.BsfInfName + \
-               ' '             + \
-               BaseAddArg      
-               
+        Cmd = (
+            'GenVtf',
+            ) + OutputArg + (
+            '-f', self.BsfInfName,
+            ) + BaseAddArg
+
         GenFdsGlobalVariable.CallExternalTool(Cmd, "GenFv -Vtf Failed!")
         GenFdsGlobalVariable.SharpCounter = 0
         
@@ -157,12 +156,13 @@ class Vtf (VtfClassObject):
     #
     def GetBaseAddressArg(self, FdAddressDict):
         FvList = self.GetFvList()
-        CmdStr = ''
+        CmdStr = tuple()
         for i in FvList:
             (BaseAddress, Size) = FdAddressDict.get(i)
-            CmdStr = CmdStr               + \
-                     ' -r 0x%x' %BaseAddress  + \
-                     ' -s 0x%x' %Size
+            CmdStr += (
+                '-r', '0x%x' % BaseAddress,
+                '-s', '0x%x' %Size,
+                )
         return CmdStr
     
     ## GenOutputArg() method
@@ -173,18 +173,16 @@ class Vtf (VtfClassObject):
     #                 
     def GenOutputArg(self):
         FvVtfDict = {}
-        OutPutFileName = ''
+        OutputFileName = ''
         FvList = self.GetFvList()
         Index = 0
-        Arg = ''
+        Arg = tuple()
         for FvObj in FvList:
-            Index = Index +1
-            OutputFileName = 'Vtf%d.raw' %Index
-            OutPutFileName = os.path.join(GenFdsGlobalVariable.FvDir, OutputFileName)
-            Arg = Arg    + \
-                  ' -o ' + \
-                  OutPutFileName
-            FvVtfDict[FvObj.upper()] = OutPutFileName
+            Index = Index + 1
+            OutputFileName = 'Vtf%d.raw' % Index
+            OutputFileName = os.path.join(GenFdsGlobalVariable.FvDir, OutputFileName)
+            Arg += ('-o', OutputFileName)
+            FvVtfDict[FvObj.upper()] = OutputFileName
             
         return Arg, FvVtfDict
                 

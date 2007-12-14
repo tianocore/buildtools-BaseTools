@@ -114,19 +114,22 @@ class AprioriSection (AprioriSectionClassObject):
         RawSectionFileName = os.path.join( OutputAprFilePath, \
                                        AprioriFileGuid + FvName + '.raw' )
         
-        GenSectionCmd = 'GenSec -o '                                     + \
-                         RawSectionFileName                              + \
-                         ' -s EFI_SECTION_RAW '                          + \
-                         OutputAprFileName
+        GenSectionCmd = (
+            'GenSec',
+            '-o', RawSectionFileName,
+            '-s', 'EFI_SECTION_RAW',
+            OutputAprFileName,
+            )
         
         GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
         
-        GenFfsCmd = 'GenFfs -t EFI_FV_FILETYPE_FREEFORM -g '         + \
-                     AprioriFileGuid                                            + \
-                     ' -o '                                          + \
-                     AprFfsFileName                                  + \
-                     ' -i ' + RawSectionFileName
-        
+        GenFfsCmd = (
+            'GenFfs',
+            '-t', 'EFI_FV_FILETYPE_FREEFORM',
+            '-g', AprioriFileGuid,
+            '-o', AprFfsFileName,
+            '-i', RawSectionFileName,
+            )
         
         GenFdsGlobalVariable.CallExternalTool(GenFfsCmd,"GenFfs Failed !")
         return AprFfsFileName
