@@ -169,6 +169,7 @@ class LibraryClassObject(object):
 #
 class ModuleBuildClassObject(object):
     def __init__(self):
+        self.AutoGenVersion          = 0
         self.DescFilePath            = ''
         self.BaseName                = ''
         self.ModuleType              = ''
@@ -188,6 +189,7 @@ class ModuleBuildClassObject(object):
         self.Binaries                = []
         self.Sources                 = []
         self.LibraryClasses          = {}
+        self.Libraries               = []
         self.Protocols               = []
         self.Ppis                    = []
         self.Guids                   = []
@@ -332,8 +334,9 @@ class PlatformBuildClassObject(object):
 
         self.SkuIds                  = {}
         self.Modules                 = []
-        self.Libraries               = []
+        self.LibraryInstances        = []
         self.LibraryClasses          = {}
+        self.Libraries               = {}
         self.Pcds                    = {}
         self.BuildOptions            = {}
 
@@ -471,12 +474,16 @@ class WorkspaceBuild(object):
             self.SupArchList = Platform.Header.SupArchList
             self.BuildTarget = Platform.Header.BuildTargets
             self.SkuId = Platform.Header.SkuIdName
-            self.Fdf = NormPath(Platform.FlashDefinitionFile.FilePath)
+            self.Fdf = Platform.FlashDefinitionFile.FilePath
 
             #
             # Get all inf files
             #
             for Item in Platform.LibraryClasses.LibraryList:
+                for Arch in Item.SupArchList:
+                    self.AddToInfDatabase(Item.FilePath)
+
+            for Item in Platform.Libraries.LibraryList:
                 for Arch in Item.SupArchList:
                     self.AddToInfDatabase(Item.FilePath)
 
@@ -526,8 +533,8 @@ class WorkspaceBuild(object):
                 Pb.Guid = Platform.Header.Guid
                 Pb.Version = Platform.Header.Version
                 Pb.DscSpecification = Platform.Header.DscSpecification
-                Pb.OutputDirectory = NormPath(Platform.Header.OutputDirectory)
-                Pb.FlashDefinition = NormPath(Platform.FlashDefinitionFile.FilePath)
+                Pb.OutputDirectory = Platform.Header.OutputDirectory
+                Pb.FlashDefinition = Platform.FlashDefinitionFile.FilePath
                 Pb.BuildNumber = Platform.Header.BuildNumber
 
                 #
@@ -541,7 +548,7 @@ class WorkspaceBuild(object):
                 #
                 for Item in Platform.Modules.ModuleList:
                     if Arch in Item.SupArchList:
-                        Pb.Modules.append(NormPath(Item.FilePath))
+                        Pb.Modules.append(Item.FilePath)
 
                 #
                 # BuildOptions
@@ -557,8 +564,16 @@ class WorkspaceBuild(object):
                     SupModuleList = self.FindSupModuleListOfLibraryClass(Item, Platform.LibraryClasses.LibraryList, Arch)
                     if Arch in Item.SupArchList:
                         for ModuleType in SupModuleList:
-                            Pb.LibraryClasses[(Item.Name, ModuleType)] = NormPath(Item.FilePath)
+                            Pb.LibraryClasses[(Item.Name, ModuleType)] = Item.FilePath
 
+                #
+                # Libraries
+                # 
+                for Item in Platform.Libraries.LibraryList:
+                    for Arch in Item.SupArchList:
+                        Library = self.InfDatabase[Item.FilePath]
+                        Pb.Libraries[Library.Module.Header.Name] = Item.FilePath
+                
                 #
                 # Pcds
                 #
@@ -625,14 +640,14 @@ class WorkspaceBuild(object):
                 #
                 for Item in Package.Includes:
                     if Arch in Item.SupArchList:
-                        Pb.Includes.append(NormPath(Item.FilePath))
+                        Pb.Includes.append(Item.FilePath)
 
                 #
                 # LibraryClasses
                 #
                 for Item in Package.LibraryClassDeclarations:
                     if Arch in Item.SupArchList:
-                        Pb.LibraryClasses[Item.LibraryClass] = NormPath(Item.RecommendedInstance)
+                        Pb.LibraryClasses[Item.LibraryClass] = Item.RecommendedInstance
 
                 #
                 # Pcds
@@ -688,6 +703,7 @@ class WorkspaceBuild(object):
                 Pb.Specification = Module.Header.Specification
                 Pb.Specification[TAB_INF_DEFINES_EDK_RELEASE_VERSION] = Module.Header.EdkReleaseVersion
                 Pb.Specification[TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION] = Module.Header.EfiSpecificationVersion
+                Pb.AutoGenVersion = int(Module.Header.InfVersion, 0)
 
                 #
                 # LibraryClass of Defines
@@ -714,7 +730,7 @@ class WorkspaceBuild(object):
                 #
                 for Item in Module.Binaries:
                     if Arch in Item.SupArchList:
-                        FileName = NormPath(Item.BinaryFile)
+                        FileName = Item.BinaryFile
                         FileType = Item.FileType
                         Target = Item.Target
                         FeatureFlag = Item.FeatureFlag
@@ -725,7 +741,7 @@ class WorkspaceBuild(object):
                 #
                 for Item in Module.Sources:
                     if Arch in Item.SupArchList:
-                        SourceFile = NormPath(Item.SourceFile)
+                        SourceFile = Item.SourceFile
                         TagName = Item.TagName
                         ToolCode = Item.ToolCode
                         ToolChainFamily = Item.ToolChainFamily
@@ -758,14 +774,14 @@ class WorkspaceBuild(object):
                 #
                 for Item in Module.Includes:
                     if Arch in Item.SupArchList:
-                        Pb.Includes.append(NormPath(Item.FilePath))
+                        Pb.Includes.append(Item.FilePath)
 
                 #
                 # Packages
                 #
                 for Item in Module.PackageDependencies:
                     if Arch in Item.SupArchList:
-                        Pb.Packages.append(NormPath(Item.FilePath))
+                        Pb.Packages.append(Item.FilePath)
 
                 #
                 # BuildOptions
@@ -799,7 +815,7 @@ class WorkspaceBuild(object):
                                     Instance = self.FindLibraryClassInstanceOfLibrary(Lib, Arch, Type)
                                     if Instance == None:
                                         Instance = RecommendedInstance
-                                    Pb.LibraryClasses[(Lib, Type)] = NormPath(Instance)
+                                    Pb.LibraryClasses[(Lib, Type)] = Instance
                         else:
                             #
                             # For Module
@@ -807,7 +823,14 @@ class WorkspaceBuild(object):
                             Instance = self.FindLibraryClassInstanceOfModule(Lib, Arch, Pb.ModuleType, Inf)
                             if Instance == None:
                                 Instance = RecommendedInstance
-                            Pb.LibraryClasses[(Lib, Pb.ModuleType)] = NormPath(Instance)
+                            Pb.LibraryClasses[(Lib, Pb.ModuleType)] = Instance
+
+                #
+                # Libraries
+                #
+                for Item in Module.Libraries:
+                    if Arch in Item.SupArchList:
+                        Pb.Libraries.append(Item.Library)
 
                 #
                 # Pcds
@@ -837,25 +860,46 @@ class WorkspaceBuild(object):
                 for Inf in Platform.Modules:
                     if not self.IsModuleDefinedInPlatform(Inf, Arch, InfList):
                         continue
-                    Module = self.Build[Arch].ModuleDatabase[NormPath(Inf)]
+                    Module = self.Build[Arch].ModuleDatabase[Inf]
                     if Module.LibraryClass == None or Module.LibraryClass == []:
-                        self.UpdateLibrariesOfModule(Module, Arch)
+                        self.UpdateLibrariesOfModule(Platform, Module, Arch)
                         for Key in Module.LibraryClasses:
                             Lib = Module.LibraryClasses[Key]
-                            if Lib not in Platform.Libraries:
-                                Platform.Libraries.append(Lib)
+                            if Lib not in Platform.LibraryInstances:
+                                Platform.LibraryInstances.append(Lib)
+
 
     ## Update Libraries Of Module Database
     #
     # @param Module:  The module need to be updated libraries
     # @param Arch:    The supportted arch of the module
     #
-    def UpdateLibrariesOfModule(self, Module, Arch):
+    def UpdateLibrariesOfModule(self, Platform, Module, Arch):
         ModuleDatabase = self.Build[Arch].ModuleDatabase
-
         ModuleType = Module.ModuleType
-        LibraryConsumerList = [Module]
 
+        # check R8 module
+        if Module.AutoGenVersion < 0x00010005:
+            EdkLogger.verbose("")
+            EdkLogger.verbose("Library instances of module [%s] [%s]:" % (str(Module), Arch))
+            LibraryConsumerList = [Module]
+            while len(LibraryConsumerList) > 0:
+                M = LibraryConsumerList.pop()
+                for LibraryName in M.Libraries:
+                    if LibraryName not in Platform.Libraries:
+                        EdkLogger.error("AutoGen", AUTOGEN_ERROR,
+                                        "Library instance for library class [%s] is not found" % LibraryName,
+                                        ExtraData="\t%s [%s]" % (str(Module), Arch))
+    
+                    LibraryFile = Platform.Libraries[LibraryName]
+                    if (LibraryName, ModuleType) not in Module.LibraryClasses:
+                        Module.LibraryClasses[LibraryName, ModuleType] = LibraryFile
+                        LibraryConsumerList.append(ModuleDatabase[LibraryFile])
+                    EdkLogger.verbose("\t" + LibraryName + " : " + LibraryFile)
+            return
+
+        # R9 module
+        LibraryConsumerList = [Module]
         Constructor         = []
         ConsumedByList      = sdict()
         LibraryInstance     = sdict()
@@ -1035,7 +1079,7 @@ class WorkspaceBuild(object):
         # Add additional inf file defined in Fdf file
         #
         for InfFile in InfList:
-            self.AddToInfDatabase(InfFile)
+            self.AddToInfDatabase(NormPath(InfFile))
         
         #
         # Generate PlatformDatabase, PackageDatabase and ModuleDatabase
@@ -1099,7 +1143,8 @@ class WorkspaceBuild(object):
         #
         # Update the library instance itself to add this libraryclass name
         #
-        LibList = self.InfDatabase[NormPath(InstanceFilePath)].Module.Header.LibraryClass
+        LibraryModule = self.InfDatabase[InstanceFilePath].Module
+        LibList = LibraryModule.Header.LibraryClass
         NotFound = True
         for Lib in LibList:
             #
@@ -1111,13 +1156,14 @@ class WorkspaceBuild(object):
         if NotFound:
             NewLib = LibraryClassClass()
             NewLib.LibraryClass = LibraryClass
-            NewLib.SupModuleList = self.InfDatabase[NormPath(InstanceFilePath)].Module.Header.ModuleType.split()
-            self.InfDatabase[NormPath(InstanceFilePath)].Module.Header.LibraryClass.append(NewLib)
+            NewLib.SupModuleList = LibraryModule.Header.ModuleType.split()
+            LibraryModule.Header.LibraryClass.append(NewLib)
 
         #
         # Add it to LibraryClasses Section for the module which is using the library
         #
-        LibList = self.InfDatabase[NormPath(InfFileName)].Module.LibraryClasses
+        Module = self.InfDatabase[InfFileName].Module
+        LibList = Module.LibraryClasses
         NotFound = True
         for Lib in LibList:
             #
@@ -1133,7 +1179,7 @@ class WorkspaceBuild(object):
             Lib = LibraryClassClass()
             Lib.LibraryClass = LibraryClass
             Lib.SupArchList = [Arch]
-            self.InfDatabase[NormPath(InfFileName)].Module.LibraryClasses.append(Lib)
+            Module.LibraryClasses.append(Lib)
 
     ## Add Inf file to InfDatabase
     #
@@ -1142,7 +1188,6 @@ class WorkspaceBuild(object):
     # @param InfFileName: The InfFileName need to be added to database
     #
     def AddToInfDatabase(self, InfFileName):
-        InfFileName = NormPath(InfFileName)
         File = self.WorkspaceFile(InfFileName)
         if os.path.exists(File) and os.path.isfile(File):
             if InfFileName not in self.InfDatabase:
@@ -1157,7 +1202,6 @@ class WorkspaceBuild(object):
     # @param DecFileName: The DecFileName need to be added to database
     #
     def AddToDecDatabase(self, DecFileName):
-        DecFileName = NormPath(DecFileName)
         File = self.WorkspaceFile(DecFileName)
         if os.path.exists(File) and os.path.isfile(File):
             if DecFileName not in self.DecDatabase:
@@ -1185,10 +1229,10 @@ class WorkspaceBuild(object):
             Platform = self.DscDatabase[Dsc].Platform
             for Module in Platform.Modules.ModuleList:
                 if Arch in Module.SupArchList:
-                    if NormPath(Module.FilePath) == ModuleName:
+                    if Module.FilePath == ModuleName:
                         for LibraryClass in Module.LibraryClasses.LibraryList:
                             if LibraryClass.Name == Lib:
-                                return NormPath(LibraryClass.FilePath)
+                                return LibraryClass.FilePath
         #
         #Second find if exist in <LibraryClass> of <LibraryClasses> from dsc file
         #
@@ -1233,7 +1277,7 @@ class WorkspaceBuild(object):
             Platform = self.DscDatabase[Dsc].Platform
             for Module in Platform.Modules.ModuleList:
                 if Arch in Module.SupArchList:
-                    if NormPath(Module.FilePath) == ModuleName:
+                    if Module.FilePath == ModuleName:
                         for BuildOption in Module.ModuleSaBuildOption.BuildOptionList:
                             #
                             # Add to BuildOptions
@@ -1311,7 +1355,7 @@ class WorkspaceBuild(object):
         for Dsc in self.DscDatabase.keys():
             for Module in self.DscDatabase[Dsc].Platform.Modules.ModuleList:
                 if Arch in Module.SupArchList:
-                    if NormPath(Module.FilePath) == ModuleName:
+                    if Module.FilePath == ModuleName:
                         for Pcd in Module.PcdBuildDefinitions:
                             if (Name, Guid) == (Pcd.CName, Pcd.TokenSpaceGuidCName):
                                 if Pcd.DefaultValue != '':
@@ -1419,7 +1463,7 @@ class WorkspaceBuild(object):
     #
     def FindSupModuleListOfLibraryClass(self, LibraryClass, OverridedLibraryClassList, Arch):
         Name = LibraryClass.Name
-        FilePath = NormPath(LibraryClass.FilePath)
+        FilePath = LibraryClass.FilePath
         SupModuleList = copy.copy(LibraryClass.SupModuleList)
 
         #
@@ -1464,17 +1508,19 @@ class WorkspaceBuild(object):
     # @retval Flase    Module Not Found
     #
     def IsModuleDefinedInPlatform(self, Inf, Arch, InfList):
-        Inf = NormPath(Inf)
         for Dsc in self.DscDatabase.values():
             for LibraryClass in Dsc.Platform.LibraryClasses.LibraryList:
-                if Inf == NormPath(LibraryClass.FilePath) and Arch in LibraryClass.SupArchList:
+                if Inf == LibraryClass.FilePath and Arch in LibraryClass.SupArchList:
                     return True
             for Module in Dsc.Platform.Modules.ModuleList:
-                if Inf == NormPath(Module.FilePath) and Arch in Module.SupArchList:
+                if Inf == Module.FilePath and Arch in Module.SupArchList:
                     return True
                 for Item in Module.LibraryClasses.LibraryList:
-                    if Inf == NormPath(Item.FilePath):
+                    if Inf == Item.FilePath:
                         return True
+            for Library in Dsc.Platform.Libraries.LibraryList:
+                if Inf == Library.FilePath and Arch in Library.SupArchList:
+                    return True
 
         return False
 

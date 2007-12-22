@@ -425,7 +425,7 @@ class PlatformAutoGen:
     def CreateModuleAutoGen(self):
         for Arch in self.BuildInfo:
             Info = self.BuildInfo[Arch]
-            for ModuleFile in Info.Platform.Libraries:
+            for ModuleFile in Info.Platform.LibraryInstances:
                 ModuleAutoGen.New(self.Workspace, Info.Platform, ModuleFile,
                                          Info.BuildTarget, Info.ToolChain, Info.Arch)
 
@@ -442,7 +442,7 @@ class PlatformAutoGen:
         if CreateModuleMakeFile:
             for Arch in self.BuildInfo:
                 Info = self.BuildInfo[Arch]
-                for ModuleFile in Info.Platform.Libraries:
+                for ModuleFile in Info.Platform.LibraryInstances:
                     AutoGenObject = ModuleAutoGen.New(self.Workspace, Info.Platform, ModuleFile,
                                                       Info.BuildTarget, Info.ToolChain, Info.Arch)
                     AutoGenObject.CreateMakeFile(False)
@@ -481,7 +481,7 @@ class PlatformAutoGen:
 
         for Arch in self.BuildInfo:
             Info = self.BuildInfo[Arch]
-            for ModuleFile in Info.Platform.Libraries:
+            for ModuleFile in Info.Platform.LibraryInstances:
                 AutoGenObject = ModuleAutoGen.New(self.Workspace, Info.Platform, ModuleFile,
                                                   Info.BuildTarget, Info.ToolChain, Info.Arch)
                 AutoGenObject.CreateCodeFile()
@@ -775,13 +775,13 @@ class ModuleAutoGen(object):
         Info.GuidList = self.GetGuidList()
         Info.ProtocolList = self.GetProtocolGuidList()
         Info.PpiList = self.GetPpiGuidList()
-        Info.MacroList = self.GetMacroList()
+        Info.Macro = self.GetMacroList()
         Info.DepexList = self.GetDepexTokenList(Info)
 
         Info.IncludePathList = [Info.SourceDir, Info.DebugDir]
         Info.IncludePathList.extend(self.GetIncludePathList(Info.DependentPackageList))
 
-        Info.SourceFileList = self.GetBuildFileList(Info.PlatformInfo)
+        Info.SourceFileList = self.GetBuildFileList(Info)
         Info.AutoGenFileList = self.GetAutoGenFileList(Info)
 
         return Info
@@ -819,15 +819,16 @@ class ModuleAutoGen(object):
     #
     def GetDepexTokenList(self, Info):
         Dxs = self.Module.Depex
-        if Dxs == None or Dxs == "":
-            return []
-
+        EdkLogger.verbose("DEPEX string = %s" % Dxs)
         #
         # Append depex from dependent libraries
         #
         for Lib in Info.DependentLibraryList:
             if Lib.Depex != None and Lib.Depex != "":
-                Dxs += " AND (" + Lib.Depex + ")"
+                if Dxs == None or Dxs == "":
+                    Dxs = Lib.Depex
+                else:
+                    Dxs += " AND (" + Lib.Depex + ")"
                 EdkLogger.verbose("DEPEX string (+%s) = %s" % (Lib.BaseName, Dxs))
         if Dxs == "":
             return []
@@ -868,7 +869,8 @@ class ModuleAutoGen(object):
     #   @retval     list    The list of macro defined in module file
     #
     def GetMacroList(self):
-        return ["%s %s" % (Name, self.Module.Specification[Name]) for Name in self.Module.Specification]
+        # return ["%s %s" % (Name, self.Module.Specification[Name]) for Name in self.Module.Specification]
+        return self.Module.Specification
 
     ## Tool option for the module build
     #
@@ -907,10 +909,10 @@ class ModuleAutoGen(object):
     #   @param      PlatformInfo    The object of PlatformBuildInfo
     #   @retval     list            The list of files which can be built later
     #
-    def GetBuildFileList(self, PlatformInfo):
+    def GetBuildFileList(self, Info):
         # use toolchain family of CC as the primary toolchain family
-        ToolChainFamily = PlatformInfo.ToolChainFamily["CC"]
-        BuildRule = PlatformInfo.BuildRule
+        ToolChainFamily = Info.PlatformInfo.ToolChainFamily["CC"]
+        BuildRule = Info.PlatformInfo.BuildRule
         BuildFileList = []
         for F in self.Module.Sources:
             SourceFile = F.SourceFile
@@ -945,6 +947,10 @@ class ModuleAutoGen(object):
             if FileType == "Unicode-Text-File":
                 self.BuildInfo.UnicodeFileList.append(os.path.join(self.WorkspaceDir, self.BuildInfo.SourceDir, SourceFile))
                 continue
+
+            # if there's dxs file, don't use content in [depex] section to generate .depex file
+            if FileType == "Dependency-Expression-File":
+                Info.DepexList = []
 
             # no command, no build
             if RuleObject == None or RuleObject.CommandList == []:
@@ -1088,7 +1094,11 @@ class ModuleAutoGen(object):
     def GetIncludePathList(self, DependentPackageList):
         IncludePathList = []
         for Inc in self.Module.Includes:
+            if Inc == ".":
+                continue
             IncludePathList.append(Inc)
+            # for r8 modules
+            IncludePathList.append(os.path.join(Inc, self.Arch.capitalize()))
 
         for Package in DependentPackageList:
             PackageDir = path.dirname(Package.DescFilePath)

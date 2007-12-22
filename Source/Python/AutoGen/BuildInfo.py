@@ -50,6 +50,7 @@ class ModuleBuildInfo(BuildInfo):
     def __init__(self, Module):
         BuildInfo.__init__(self, Module)
         self.Module     = Module
+        self.AutoGenVersion = Module.AutoGenVersion
 
         self.Name       = Module.BaseName
         self.Guid       = Module.Guid
@@ -97,7 +98,7 @@ class ModuleBuildInfo(BuildInfo):
         self.ProtocolList = []
         self.PpiList = []
 
-        self.MacroList = []
+        self.Macro = {}
         self.DepexList = []
 
 ## Build information of a package

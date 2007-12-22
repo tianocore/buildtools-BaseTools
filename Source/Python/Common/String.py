@@ -334,13 +334,29 @@ def NormPath(Path, Defines = {}):
             Path = Path.replace(Key, Defines[Key])
 
         #
-        # Remove ${WORKSPACE}
+        # Remove ${WORKSPACE}, $(EDK_SOURCE), $(EFI_SOURCE)
         #
+        if DataType.TAB_EDK_SOURCE in os.environ:
+            EdkSource = os.environ[DataType.TAB_EDK_SOURCE]
+        else:
+            EdkSource = "EdkCompatibilityPkg"
+
+        if DataType.TAB_EFI_SOURCE in os.environ:
+            EfiSource = os.environ[DataType.TAB_EFI_SOURCE]
+        else:
+            EfiSource = os.path.join("EdkCompatibilityPkg", "Foundation")
+    
         if Path.find(DataType.TAB_WORKSPACE) > -1:
             Path = Path.replace(DataType.TAB_WORKSPACE, '')
-            if Path.find(DataType.TAB_SLASH) == 0:
+            if len(Path) > 0 and Path[0] in [DataType.TAB_SLASH, DataType.TAB_BACK_SLASH] == 0:
                 Path = Path[1:]
-            if Path.find(DataType.TAB_BACK_SLASH) == 0:
+        elif Path.find(DataType.TAB_EDK_SOURCE) > -1:
+            Path = Path.replace(DataType.TAB_EDK_SOURCE, EdkSource)
+            if len(Path) > 0 and Path[0] in [DataType.TAB_SLASH, DataType.TAB_BACK_SLASH] == 0:
+                Path = Path[1:]
+        elif Path.find(DataType.TAB_EFI_SOURCE) > -1:
+            Path = Path.replace(DataType.TAB_EFI_SOURCE, EfiSource)
+            if len(Path) > 0 and Path[0] in [DataType.TAB_SLASH, DataType.TAB_BACK_SLASH] == 0:
                 Path = Path[1:]
 
         #
@@ -364,7 +380,7 @@ def CleanString(Line, CommentCharacter = DataType.TAB_COMMENT_SPLIT):
     #
     # remove whitespace
     #
-    Line = Line.strip();
+    # Line = Line.strip();
     #
     # remove comments
     #
@@ -592,9 +608,7 @@ def CheckFileType(CheckFilename, ExtName, ContainerFilename, SectionName, Line):
 def CheckFileExist(WorkspaceDir, CheckFilename, ContainerFilename, SectionName, Line):
     if CheckFilename != '' and CheckFilename != None:
         CheckFile = WorkspaceFile(WorkspaceDir, CheckFilename)
-        if os.path.exists(CheckFile) and os.path.isfile(CheckFile):
-            pass
-        else:
+        if not os.path.isfile(CheckFile):
             ContainerFile = open(ContainerFilename, 'r').read()
             LineNo = GetLineNo(ContainerFile, Line)
             ErrorMsg = "Can't find file '%s' defined in section '%s'" % (CheckFile, SectionName)

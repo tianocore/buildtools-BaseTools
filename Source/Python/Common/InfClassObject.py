@@ -15,6 +15,7 @@
 # Import Modules
 #
 import os
+import re
 import EdkLogger
 from CommonDataClass.CommonClass import LibraryClassClass
 from CommonDataClass.ModuleClass import *
@@ -23,6 +24,28 @@ from DataType import *
 from Identification import *
 from Dictionary import *
 from BuildToolError import *
+
+gComponentType2ModuleType = {
+    "LIBRARY"               :   "BASE",
+    "SECURITY_CORE"         :   "SEC",
+    "PEI_CORE"              :   "PEI_CORE",
+    "COMBINED_PEIM_DRIVER"  :   "PEIM",
+    "PIC_PEIM"              :   "PEIM",
+    "RELOCATABLE_PEIM"      :   "PEIM",
+    "BS_DRIVER"             :   "DXE_DRIVER",
+    "RT_DRIVER"             :   "DXE_RUNTIME_DRIVER",
+    "SAL_RT_DRIVER"         :   "DXE_SAL_DRIVER",
+#    "BS_DRIVER"             :   "DXE_SMM_DRIVER",
+#    "BS_DRIVER"             :   "UEFI_DRIVER",
+    "APPLICATION"           :   "UEFI_APPLICATION",
+}
+
+gNmakeFlagPattern = re.compile("(?:EBC_)?([A-Z])+_(?:STD_|PROJ_|ARCH_)?FLAGS(?:_DLL|_ASL|_EXE)?", re.UNICODE)
+gNmakeFlagName2ToolCode = {
+    "C"         :   "CC",
+    "LIB"       :   "SLINK",
+    "LINK"      :   "DLINK",
+}
 
 ## InfObject
 #
@@ -69,6 +92,7 @@ class InfDefines(InfObject):
             TAB_INF_DEFINES_SOURCE_FV                               : [''],
             TAB_INF_DEFINES_VERSION_NUMBER                          : [''],
             TAB_INF_DEFINES_VERSION_STRING                          : [''],
+            TAB_INF_DEFINES_VERSION                                 : [''],
             TAB_INF_DEFINES_PCD_IS_DRIVER                           : [''],
             TAB_INF_DEFINES_TIANO_R8_FLASHMAP_H                     : [''],
             TAB_INF_DEFINES_ENTRY_POINT                             : [''],
@@ -216,21 +240,9 @@ class Inf(InfObject):
         #
         # Get value for Header
         #
+        self.Module.Header.InfVersion = self.Defines.DefinesDictionary[TAB_INF_DEFINES_INF_VERSION][0]
         self.Module.Header.Name = self.Defines.DefinesDictionary[TAB_INF_DEFINES_BASE_NAME][0]
         self.Module.Header.Guid = self.Defines.DefinesDictionary[TAB_INF_DEFINES_FILE_GUID][0]
-        
-        #
-        # Get version of INF
-        #
-        VersionNumber = self.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_NUMBER][0]
-        VersionString = self.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_STRING][0]
-        if len(VersionNumber) > 0 and len(VersionString) == 0:
-            EdkLogger.warn(2000, 'VERSION_NUMBER depricated; INF file %s should be modified to use VERSION_STRING instead.' % self.Identification.FileFullPath)
-            self.Module.Header.Version = VersionNumber
-        if len(VersionString) > 0:
-            if len(VersionNumber) > 0:
-                EdkLogger.warn(2001, 'INF file %s defines both VERSION_NUMBER and VERSION_STRING, using VERSION_STRING' % self.Identification.FileFullPath)
-            self.Module.Header.Version = VersionString
         
         self.Module.Header.FileName = self.Identification.FileName
         self.Module.Header.FullPath = self.Identification.FileFullPath
@@ -238,7 +250,6 @@ class Inf(InfObject):
         
         self.Module.Header.EfiSpecificationVersion = self.Defines.DefinesDictionary[TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION][0]
         self.Module.Header.EdkReleaseVersion = self.Defines.DefinesDictionary[TAB_INF_DEFINES_EDK_RELEASE_VERSION][0]
-        self.Module.Header.InfVersion = self.Defines.DefinesDictionary[TAB_INF_DEFINES_INF_VERSION][0]
                 
         self.Module.Header.ModuleType = self.Defines.DefinesDictionary[TAB_INF_DEFINES_MODULE_TYPE][0]
         self.Module.Header.BinaryModule = self.Defines.DefinesDictionary[TAB_INF_DEFINES_BINARY_MODULE][0]
@@ -254,6 +265,28 @@ class Inf(InfObject):
         self.Module.Header.Shadow = self.Defines.DefinesDictionary[TAB_INF_DEFINES_SHADOW][0]
         
         #
+        # Get version of INF
+        #
+        if self.Module.Header.InfVersion != "":
+            # R9 inf
+            VersionNumber = self.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_NUMBER][0]
+            VersionString = self.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_STRING][0]
+            if len(VersionNumber) > 0 and len(VersionString) == 0:
+                EdkLogger.warn(2000, 'VERSION_NUMBER depricated; INF file %s should be modified to use VERSION_STRING instead.' % self.Identification.FileFullPath)
+                self.Module.Header.Version = VersionNumber
+            if len(VersionString) > 0:
+                if len(VersionNumber) > 0:
+                    EdkLogger.warn(2001, 'INF file %s defines both VERSION_NUMBER and VERSION_STRING, using VERSION_STRING' % self.Identification.FileFullPath)
+                self.Module.Header.Version = VersionString
+        else:
+            # R8 inf
+            self.Module.Header.InfVersion = "0x00010000"
+            VersionNumber = self.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION][0]
+            VersionString = self.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_STRING][0]
+            if VersionString == '' and VersionNumber != '':
+                VersionString = VersionNumber
+            self.Module.Header.ModuleType = gComponentType2ModuleType[self.Module.Header.ComponentType]
+        #
         # LibraryClass of Defines
         #
         if self.Defines.DefinesDictionary[TAB_INF_DEFINES_LIBRARY_CLASS][0] != '':
@@ -266,6 +299,11 @@ class Inf(InfObject):
                 elif len(List) == 2:
                     Lib.SupModuleList = GetSplitValueList(CleanString(List[1]), ' ')
                 self.Module.Header.LibraryClass.append(Lib)
+        elif self.Module.Header.ComponentType == "LIBRARY":
+            Lib = LibraryClassClass()
+            Lib.LibraryClass = self.Module.Header.Name
+            Lib.SupModuleList = DataType.SUP_MODULE_LIST
+            self.Module.Header.LibraryClass.append(Lib)
         
         #
         # Custom makefile of Defines
@@ -350,7 +388,7 @@ class Inf(InfObject):
                 MergeArches(Includes, Item, Arch)
         for Key in Includes.keys():
             Include = IncludeClass()
-            Include.FilePath = Key
+            Include.FilePath = NormPath(Key)
             Include.SupArchList = Includes[Key]
             self.Module.Includes.append(Include)
         
@@ -403,7 +441,7 @@ class Inf(InfObject):
             LibraryClass = LibraryClassClass()
             LibraryClass.Define = Defines
             LibraryClass.LibraryClass = Key[0]
-            LibraryClass.RecommendedInstance = Key[1]
+            LibraryClass.RecommendedInstance = NormPath(Key[1])
             LibraryClass.FeatureFlag = Key[2]
             LibraryClass.SupArchList = LibraryClasses[Key]
             if Key[3] != '':
@@ -440,7 +478,7 @@ class Inf(InfObject):
         for Key in Packages.keys():
             Package = ModulePackageDependencyClass()
             Package.Define = Defines
-            Package.FilePath = Key
+            Package.FilePath = NormPath(Key)
             Package.SupArchList = Packages[Key]
             self.Module.PackageDependencies.append(Package)
             
@@ -452,14 +490,36 @@ class Inf(InfObject):
             for Item in self.Contents[Arch].Nmake:
                 MergeArches(Nmakes, Item, Arch)
         for Key in Nmakes.keys():
-            List = GetSplitValueList(Key, DataType.TAB_EQUAL_SPLIT)
+            List = GetSplitValueList(Key, DataType.TAB_EQUAL_SPLIT, MaxSplit=1)
             if len(List) != 2:
-                RaiseParserError(Item[0], 'Nmake', File, 'DEFINE <VarName> = <PATH>')
+                RaiseParserError(Item[0], 'Nmake', File, '<MacroName> = <Value>')
             Nmake = ModuleNmakeClass()
             Nmake.Name = List[0]
             Nmake.Value = List[1]
             Nmake.SupArchList = Nmakes[Key]
             self.Module.Nmake.append(Nmake)
+
+            # convert R8 format to R9 format
+            if Nmake.Name == "IMAGE_ENTRY_POINT":
+                Image = ModuleExternImageClass()
+                Image.ModuleEntryPoint = Nmake.Value
+                self.Module.ExternImages.append(Image)
+            elif Nmake.Name == "DPX_SOURCE":
+                Source = ModuleSourceFileClass(NormPath(Nmake.Value), "", "", "", "", Nmake.SupArchList)
+                self.Module.Sources.append(Source)
+            else:
+                ToolList = gNmakeFlagPattern.findall(Nmake.Name)
+                if len(ToolList) == 0 or len(ToolList) != 1:
+                    EdkLogger.warn("\nParser", "Don't know how to do with MACRO: %s" % Nmake.Name, 
+                                   ExtraData=File)
+                else:
+                    if ToolList[0] in gNmakeFlagName2ToolCode:
+                        Tool = gNmakeFlagName2ToolCode[ToolList[0]]
+                    else:
+                        Tool = ToolList[0]
+                    BuildOption = BuildOptionClass("MSFT", "*_*_*_%s_FLAGS" % Tool, Nmake.Value)
+                    BuildOption.SupArchList = Nmake.SupArchList
+                    self.Module.BuildOptions.append(BuildOption)
         
         #
         # Pcds
@@ -515,7 +575,7 @@ class Inf(InfObject):
                 CheckPcdTokenInfo(List[4], 'Sources', File)
                 MergeArches(Sources, (List[0], List[1], List[2], List[3], List[4]), Arch)
         for Key in Sources.keys():
-            Source = ModuleSourceFileClass(Key[0], Key[2], Key[3], Key[1], Key[4], Sources[Key])
+            Source = ModuleSourceFileClass(NormPath(Key[0]), Key[2], Key[3], Key[1], Key[4], Sources[Key])
             self.Module.Sources.append(Source)
 
         #
@@ -620,7 +680,7 @@ class Inf(InfObject):
                     CheckPcdTokenInfo(List[3], 'Binaries', File)
                     MergeArches(Binaries, (List[0], List[1], List[2], List[3]), Arch)
         for Key in Binaries.keys():
-            Binary = ModuleBinaryFileClass(Key[1], Key[0], Key[2], Key[3], Binaries[Key])
+            Binary = ModuleBinaryFileClass(NormPath(Key[1]), Key[0], Key[2], Key[3], Binaries[Key])
             self.Module.Binaries.append(Binary)
         
     ## Get Pcd Values of Inf
@@ -802,7 +862,7 @@ class Inf(InfObject):
 # script.
 #
 if __name__ == '__main__':
-    W = os.getenv('WORKSPACE')
-    F = os.path.join(W, 'MdeModulePkg/Application/HelloWorld/HelloWorld.inf')
-    P = Inf(os.path.normpath(F), True, True, W)
+    import sys
+    print os.path.abspath(sys.argv[1])
+    P = Inf(os.path.abspath(sys.argv[1]), True, True, os.getenv('WORKSPACE'))
     P.ShowModule()

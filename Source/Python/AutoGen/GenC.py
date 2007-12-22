@@ -745,7 +745,8 @@ ${FunctionCall}${END}
 
 gSpecificationString = """
 ${BEGIN}
-#define ${Specification}
+#undef ${SpecificationName}
+#define ${SpecificationName} ${SpecificationValue}
 ${END}
 """
 
@@ -1577,27 +1578,32 @@ def CreateHeaderCode(Info, AutoGenC, AutoGenH):
     AutoGenH.Append(gAutoGenHeaderString,   {'FileName':'AutoGen.h'})
     # header file Prologue
     AutoGenH.Append(gAutoGenHPrologueString,{'Guid':Info.Guid.replace('-','_')})
-    # specification macros
-    AutoGenH.Append(gSpecificationString,   {'Specification':Info.MacroList})
-    # header files includes
-    AutoGenH.Append("#include <%s>\n\n" % gBasicHeaderFile)
-    AutoGenH.Append('\nextern GUID  gEfiCallerIdGuid;\n\n')
-
+    if Info.AutoGenVersion >= 0x00010005:
+        # specification macros
+        AutoGenH.Append(gSpecificationString,   {'SpecificationName':Info.Macro.keys(), 
+                                                 'SpecificationValue':Info.Macro.values()})
+        # header files includes
+        AutoGenH.Append("#include <%s>\n\n" % gBasicHeaderFile)
+        AutoGenH.Append('\nextern GUID  gEfiCallerIdGuid;\n\n')
+    
+        if Info.IsLibrary:
+            return
+    
+        AutoGenH.Append("#define EFI_CALLER_ID_GUID \\\n  %s\n" % GuidStringToGuidStructureString(Info.Guid))
+    
     if Info.IsLibrary:
         return
-
-    AutoGenH.Append("#define EFI_CALLER_ID_GUID \\\n  %s\n" % GuidStringToGuidStructureString(Info.Guid))
-
     # C file header
     AutoGenC.Append(gAutoGenHeaderString, {'FileName':'AutoGen.c'})
-    # C file header files includes
-    for Inc in gModuleTypeHeaderFile[Info.ModuleType]:
-        AutoGenC.Append("#include <%s>\n" % Inc)
-
-    #
-    # Publish the CallerId Guid
-    #
-    AutoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED GUID gEfiCallerIdGuid = %s;\n' % GuidStringToGuidStructureString(Info.Guid))
+    if Info.AutoGenVersion >= 0x00010005:
+        # C file header files includes
+        for Inc in gModuleTypeHeaderFile[Info.ModuleType]:
+            AutoGenC.Append("#include <%s>\n" % Inc)
+    
+        #
+        # Publish the CallerId Guid
+        #
+        AutoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED GUID gEfiCallerIdGuid = %s;\n' % GuidStringToGuidStructureString(Info.Guid))
 
 ## Create common code for header file
 #
@@ -1617,14 +1623,15 @@ def CreateFooterCode(Info, AutoGenC, AutoGenH):
 def CreateCode(Info, AutoGenC, AutoGenH):
     CreateHeaderCode(Info, AutoGenC, AutoGenH)
 
-    CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH)
-    CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH)
-    CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH)
-    CreateModuleUnloadImageCode(Info, AutoGenC, AutoGenH)
-    CreateGuidDefinitionCode(Info, AutoGenC, AutoGenH)
-    CreateProtocolDefinitionCode(Info, AutoGenC, AutoGenH)
-    CreatePpiDefinitionCode(Info, AutoGenC, AutoGenH)
-    CreatePcdCode(Info, AutoGenC, AutoGenH)
+    if Info.AutoGenVersion >= 0x00010005:
+        CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH)
+        CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH)
+        CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH)
+        CreateModuleUnloadImageCode(Info, AutoGenC, AutoGenH)
+        CreateGuidDefinitionCode(Info, AutoGenC, AutoGenH)
+        CreateProtocolDefinitionCode(Info, AutoGenC, AutoGenH)
+        CreatePpiDefinitionCode(Info, AutoGenC, AutoGenH)
+        CreatePcdCode(Info, AutoGenC, AutoGenH)
     CreateUnicodeStringCode(Info, AutoGenC, AutoGenH)
 
     CreateFooterCode(Info, AutoGenC, AutoGenH)

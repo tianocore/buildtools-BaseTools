@@ -232,7 +232,7 @@ class Dec(DecObject):
                 MergeArches(Includes, Item, Arch)
         for Key in Includes.keys():
             Include = IncludeClass()
-            Include.FilePath = Key
+            Include.FilePath = NormPath(Key)
             Include.SupArchList = Includes[Key]
             self.Package.Includes.append(Include)
             
@@ -311,7 +311,7 @@ class Dec(DecObject):
         for Key in LibraryClasses.keys():
             LibraryClass = LibraryClassClass()
             LibraryClass.LibraryClass = Key[0]
-            LibraryClass.RecommendedInstance = Key[1]
+            LibraryClass.RecommendedInstance = NormPath(Key[1])
             LibraryClass.SupModuleList = list(Key[2:])
             LibraryClass.SupArchList = LibraryClasses[Key]
             self.Package.LibraryClassDeclarations.append(LibraryClass)

@@ -196,6 +196,8 @@ def GetFileList(IncludeList, SkipList):
         SkipList = []
 
     for Dir in IncludeList:
+        if not os.path.exists(Dir):
+            continue
         for File in os.listdir(Dir):
             File = os.path.join(Dir, os.path.normcase(File))
             #

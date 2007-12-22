@@ -267,7 +267,7 @@ class Dsc(DscObject):
         self.Platform.Header.SkuIdName = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_SKUID_IDENTIFIER]
         self.Platform.Header.SupArchList = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_SUPPORTED_ARCHITECTURES]
         self.Platform.Header.BuildTargets = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_BUILD_TARGETS]
-        self.Platform.Header.OutputDirectory = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_OUTPUT_DIRECTORY][0]
+        self.Platform.Header.OutputDirectory = NormPath(self.Defines.DefinesDictionary[TAB_DSC_DEFINES_OUTPUT_DIRECTORY][0])
         self.Platform.Header.BuildNumber = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_BUILD_NUMBER][0]
         self.Platform.Header.MakefileName = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_MAKEFILE_NAME][0]
 
@@ -286,7 +286,7 @@ class Dsc(DscObject):
                     self.Platform.Header.Define[CleanString(List[0])] = CleanString(List[1])
 
         Fdf = PlatformFlashDefinitionFileClass()
-        Fdf.FilePath = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_FLASH_DEFINITION][0]
+        Fdf.FilePath = NormPath(self.Defines.DefinesDictionary[TAB_DSC_DEFINES_FLASH_DEFINITION][0])
         self.Platform.FlashDefinitionFile = Fdf
 
         #
@@ -370,7 +370,7 @@ class Dsc(DscObject):
         self.Platform.Libraries.IncludeFiles = IncludeFiles
         for Key in Libraries.keys():
             Library = PlatformLibraryClass()
-            Library.FilePath = Key
+            Library.FilePath = NormPath(Key)
             Library.Define = Defines
             Library.SupArchList = Libraries[Key]
             self.Platform.Libraries.LibraryList.append(Library)
@@ -411,7 +411,7 @@ class Dsc(DscObject):
         for Key in LibraryClasses.keys():
             Library = PlatformLibraryClass()
             Library.Name = Key[0]
-            Library.FilePath = Key[1]
+            Library.FilePath = NormPath(Key[1])
             Library.SupModuleList = list(Key[2:])
             Library.Define = Defines
             Library.SupArchList = LibraryClasses[Key]
@@ -508,19 +508,19 @@ class Dsc(DscObject):
         BuildOptions = Item[2]
         Pcds = Item[3]
         Component = PlatformModuleClass()
-        Component.FilePath = InfFilename
-        Component.ExecFilePath = ExecFilename
+        Component.FilePath = NormPath(InfFilename)
+        Component.ExecFilePath = NormPath(ExecFilename)
         for Lib in LibraryClasses:
             List = GetSplitValueList(Lib)
             if len(List) != 2:
                 RaiseParserError(Lib, 'LibraryClasses', ContainerFile, '<ClassName>|<InfFilename>')
             LibName = List[0]
-            LibFile = List[1]
+            LibFile = NormPath(List[1])
             if LibName == "" or LibName == "NULL":
                 LibName = "NULL%d" % self._NullClassIndex
                 self._NullClassIndex += 1
-            CheckFileType(LibFile, '.Inf', ContainerFile, 'library instance of component ', Lib)
-            CheckFileExist(self.WorkspaceDir, LibFile, ContainerFile, 'library instance of component', Lib)
+            CheckFileType(List[1], '.Inf', ContainerFile, 'library instance of component ', Lib)
+            CheckFileExist(self.WorkspaceDir, List[1], ContainerFile, 'library instance of component', Lib)
             Component.LibraryClasses.LibraryList.append(PlatformLibraryClass(LibName, LibFile))
         for BuildOption in BuildOptions:
             Key = GetBuildOption(BuildOption, ContainerFile)

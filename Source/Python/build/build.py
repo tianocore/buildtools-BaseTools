@@ -80,6 +80,12 @@ def CheckEnvVariable():
     if "WORKSPACE" not in os.environ:
         EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Please set environment variable: WORKSPACE!\n")
 
+    if "EDK_SOURCE" not in os.environ:
+        os.environ["EDK_SOURCE"] = "EdkCompatibilityPkg"
+
+    if "EFI_SOURCE" not in os.environ:
+        os.environ["EFI_SOURCE"] = os.path.join("EdkCompatibilityPkg", "Foundation")
+
     # check EDK_TOOLS_PATH
     if "EDK_TOOLS_PATH" not in os.environ == None:
         EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Please set environment variable: EDK_TOOLS_PATH!\n")
@@ -359,7 +365,7 @@ class BuildTask:
             #
             while (len(BuildTask._PendingQueue) > 0 or len(BuildTask._ReadyQueue) > 0 \
                    or not ExitFlag.isSet()) and not BuildTask._ErrorFlag.isSet():
-                EdkLogger.debug(EdkLogger.DEBUG_9, "Pending Queue (%d), Ready Queue (%d)"
+                EdkLogger.debug(EdkLogger.DEBUG_8, "Pending Queue (%d), Ready Queue (%d)"
                                 % (len(BuildTask._PendingQueue), len(BuildTask._ReadyQueue)))
                 # get all pending tasks
                 BuildTask._PendingQueueLock.acquire()
@@ -406,7 +412,7 @@ class BuildTask:
             # while not BuildTask._ErrorFlag.isSet() and \
             while len(BuildTask._RunningQueue) > 0:
                 EdkLogger.verbose("Waiting for thread ending...(%d)" % len(BuildTask._RunningQueue))
-                EdkLogger.debug(EdkLogger.DEBUG_9, "Threads [%s]" % ", ".join([Th.getName() for Th in threading.enumerate()]))
+                EdkLogger.debug(EdkLogger.DEBUG_8, "Threads [%s]" % ", ".join([Th.getName() for Th in threading.enumerate()]))
                 # avoid tense loop
                 time.sleep(0.1)
         except BaseException, X:

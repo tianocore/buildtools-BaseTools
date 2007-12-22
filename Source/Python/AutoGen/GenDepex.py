@@ -20,6 +20,7 @@ from struct import pack
 from Common.EdkIIWorkspace import CreateDirectory
 from Common.BuildToolError import *
 from Common.Misc import SaveFileOnChange
+from Common import EdkLogger as EdkLogger
 
 ## Mapping between module type and EFI phase
 gType2Phase = {
@@ -89,7 +90,7 @@ class DependencyExpression:
     #
     # open and close brace must be taken as individual tokens
     #
-    TokenPattern = re.compile("(\(|\)|\{[^{}]+\{[^{}]+\}[ ]*\}|\w+)")
+    TokenPattern = re.compile("(\(|\)|\{[^{}]+\{?[^{}]+\}?[ ]*\}|\w+)")
 
     ## Constructor
     # 
@@ -148,12 +149,12 @@ class DependencyExpression:
     def ValidateOpcode(self):
         for Op in self.AboveAllOpcode:
             if Op in self.OpcodeList and Op != self.OpcodeList[0]:
-                EdkLogger.error("DepexParser", PARSER_ERROR, "Opcode=%s should be the first one in the expression" % Op)
+                EdkLogger.error("GenDepex", PARSER_ERROR, "Opcode=%s should be the first one in the expression" % Op)
         for Op in self.ExclusiveOpcode:
             if Op in self.OpcodeList and len(self.OpcodeList) > 1:
-                EdkLogger.error("DepexParser", PARSER_ERROR, "Opcode=%s should be the only opcode in the expression" % Op)
+                EdkLogger.error("GenDepex", PARSER_ERROR, "Opcode=%s should be the only opcode in the expression" % Op)
         if self.TokenList[-1] in self.NonEndingOpcode:
-            EdkLogger.error("DepexParser", PARSER_ERROR, "Extra %s at the end of the dependency expression" % self.TokenList[-1])
+            EdkLogger.error("GenDepex", PARSER_ERROR, "Extra %s at the end of the dependency expression" % self.TokenList[-1])
 
     ## Convert a GUID value in C structure format into its binary form
     #
@@ -165,7 +166,7 @@ class DependencyExpression:
         GuidValueString = Guid.replace("{", "").replace("}", "").replace(" ", "")
         GuidValueList = GuidValueString.split(",")
         if len(GuidValueList) != 11:
-            EdkLogger.error("DepexParser", PARSER_ERROR, "Invalid GUID value string or opcode: %s" % Guid)
+            EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid GUID value string or opcode: %s" % Guid)
         return pack("1I2H8B", *(int(value, 16) for value in GuidValueList))
 
     ## Save the binary form of dependency expression in file
@@ -233,7 +234,7 @@ def Main():
     Option, Input = GetOptions()
     if Option.ModuleType == None or Option.ModuleType not in gType2Phase:
         print "Module type is not specified or supported"
-        return -1
+        return 1
 
     try:
         if len(Input) > 0 and Option.Expression == "":
@@ -244,7 +245,7 @@ def Main():
             DxsString = Option.Expression
         else:
             print "No expression string or file given"
-            return -1
+            return 1
 
         Dpx = DependencyExpression(DxsString, Option.ModuleType)
 
@@ -253,7 +254,8 @@ def Main():
         else:
             Dpx.Generate()
     except Exception, e:
-        return -1
+        print e
+        return 1
 
     return 0
 

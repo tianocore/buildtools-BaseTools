@@ -27,10 +27,31 @@ from BuildInfo import *
 from BuildEngine import *
 
 ## Regular expression for finding header file inclusions
-gIncludePattern = re.compile("^[ #]*include[ ]+[\"<]*([^\"< >]+)[>\" ]*$", re.MULTILINE | re.UNICODE)
+gIncludePattern = re.compile("^[ #]*include[ ]+[\"<]*([^\"< >\s]+)[>\" ]*$", re.MULTILINE | re.UNICODE)
 
 ## Regular expression for matching macro used in header file inclusion
-gMacroPattern = re.compile("[_A-Z][_A-Z0-9]*\(.+\)", re.UNICODE)
+gMacroPattern = re.compile("([_A-Z][_A-Z0-9]*)\((.+)\)", re.UNICODE)
+
+##
+gProtocolDefinition = "Protocol/%(HeaderKey)s/%(HeaderKey)s.h"
+gGuidDefinition = "Guid/%(HeaderKey)s/%(HeaderKey)s.h"
+gArchProtocolDefinition = "ArchProtocol/%(HeaderKey)s/%(HeaderKey)s.h"
+gPpiDefinition = "Ppi/%(HeaderKey)s/%(HeaderKey)s.h"
+gIncludeMacroConversion = {
+  "EFI_PROTOCOL_DEFINITION"         :   gProtocolDefinition,
+  "EFI_GUID_DEFINITION"             :   gGuidDefinition,
+  "EFI_ARCH_PROTOCOL_DEFINITION"    :   gArchProtocolDefinition,
+  "EFI_PROTOCOL_PRODUCER"           :   gProtocolDefinition,
+  "EFI_PROTOCOL_CONSUMER"           :   gProtocolDefinition,
+  "EFI_PROTOCOL_DEPENDENCY"         :   gProtocolDefinition,
+  "EFI_ARCH_PROTOCOL_PRODUCER"      :   gArchProtocolDefinition,
+  "EFI_ARCH_PROTOCOL_CONSUMER"      :   gArchProtocolDefinition,
+  "EFI_ARCH_PROTOCOL_DEPENDENCY"    :   gArchProtocolDefinition,
+  "EFI_PPI_DEFINITION"              :   gPpiDefinition,
+  "EFI_PPI_PRODUCER"                :   gPpiDefinition,
+  "EFI_PPI_CONSUMER"                :   gPpiDefinition,
+  "EFI_PPI_DEPENDENCY"              :   gPpiDefinition,
+}
 
 gMakefileHeader = '''#
 # DO NOT EDIT
@@ -89,7 +110,7 @@ gShellCommand = {
     },
 
     "gmake" : {
-        "CP"    :   "cp -f",
+        "CP"    :   "cp -u -f",
         "MV"    :   "mv -f",
         "RM"    :   "rm -f",
         "MD"    :   "mkdir -p",
@@ -318,6 +339,7 @@ LIBS = ${BEGIN}$(BUILD_DIR)${separator}$(ARCH)${separator}${library_file} \\
 COMMON_DEPS = ${BEGIN}$(WORKSPACE)${separator}${common_dependency_file} \\
               ${END}
 
+IMAGE_ENTRY_POINT = ${module_entry_point}
 ENTRYPOINT = ${module_entry_point}
 
 #
@@ -359,8 +381,8 @@ fds: mbuild gen_fds
 #
 init:
 \t-@echo Building ... $(MODULE_NAME) $(MODULE_VERSION) [$(ARCH)] in platform $(PLATFORM_NAME) $(PLATFORM_VERSION)
-\t${BEGIN}-@${create_directory_command}
-\t${END}
+${BEGIN}\t-@${create_directory_command}\n${END}\
+${BEGIN}\t-@${copy_autogen_h}\n${END}
 
 #
 # GenLibsTarget
@@ -714,9 +736,15 @@ class Makefile(object):
             EdkLogger.debug(EdkLogger.DEBUG_5, "Static library: " + PlatformInfo.ToolStaticLib["DLINK"])
             self.SystemLibraryList.append(PlatformInfo.ToolStaticLib["DLINK"])
 
-        EntryPoint = "_ModuleEntryPoint"
         if self.ModuleInfo.Arch == "EBC":
+            # EBC compiler always use "EfiStart" as entry point
             EntryPoint = "EfiStart"
+        elif self.ModuleInfo.AutoGenVersion < 0x00010005 and len(self.ModuleInfo.Module.ModuleEntryPointList) > 0:
+            # R8 modules use different entry point functions
+            EntryPoint = self.ModuleInfo.Module.ModuleEntryPointList[0]
+        else:
+            # R9 modules always use "_ModuleEntryPoint" as entry point
+            EntryPoint = "_ModuleEntryPoint"
 
         DefaultToolFlag = PlatformInfo.ToolOption.values()
         if self.ModuleInfo.ModuleType == "USER_DEFINED":
@@ -752,6 +780,14 @@ class Makefile(object):
             Template.Append("%s = ${BEGIN}${target_file} \\\n\t${END}" % Macro,
                             {"target_file" : self.DestFileDatabase[FileType]})
             TargetFileMacroList.append(str(Template))
+
+        # R8 modules need <BaseName>StrDefs.h for string ID
+        if self.ModuleInfo.AutoGenVersion < 0x00010005 and len(self.ModuleInfo.UnicodeFileList) > 0:
+            AutoGenHeaderFile = os.path.join("$(DEBUG_DIR)", "AutoGen.h")
+            StringHeaderFile = os.path.join("$(DEBUG_DIR)", "%sStrDefs.h" % self.ModuleInfo.BaseName)
+            CopyAutoGenHeaderFile = ["$(CP) %s %s" % (AutoGenHeaderFile, StringHeaderFile)]
+        else:
+            CopyAutoGenHeaderFile = []
 
         MakefileName = gMakefileName[MakeType]
         MakefileTemplateDict = {
@@ -813,6 +849,7 @@ class Makefile(object):
             "source_file_macro_name"    : SourceFileMacroNameList,
             "target_file_macro_name"    : TargetFileMacroNameList,
             "file_build_target"         : self.BuildTargetList,
+            "copy_autogen_h"            : CopyAutoGenHeaderFile,
         }
 
         self.PrepareDirectory()
@@ -1094,7 +1131,7 @@ class Makefile(object):
         self.FileDependency = self.GetFileDependency(SourceFileList, ForceIncludedFile, self.ModuleInfo.IncludePathList)
         DepSet = None
         for File in self.FileDependency:
-            # skipt AutoGen.c
+            # skip AutoGen.c
             if File.endswith("AutoGen.c") or not File.endswith(".c"):
                 continue
             elif DepSet == None:
@@ -1212,6 +1249,17 @@ class Makefile(object):
 
                 CurrentFilePath = os.path.dirname(F)
                 for Inc in IncludedFileList:
+                    # if there's macro used to reference header file, expand it
+                    HeaderList = gMacroPattern.findall(Inc)
+                    if len(HeaderList) == 1 and len(HeaderList[0]) == 2:
+                        HeaderType = HeaderList[0][0]
+                        HeaderKey = HeaderList[0][1]
+                        if HeaderType in gIncludeMacroConversion:
+                            Inc = gIncludeMacroConversion[HeaderType] % {"HeaderKey" : HeaderKey}
+                        else:
+                            # not known macro used in #include
+                            MacroUsedByIncludedFile = True
+                            continue
                     Inc = os.path.normpath(Inc)
                     for SearchPath in [CurrentFilePath] + SearchPathList:
                         FilePath = os.path.join(SearchPath, Inc)
@@ -1222,9 +1270,8 @@ class Makefile(object):
                             FileStack.append(FilePath)
                         break
                     else:
-                        if gMacroPattern.match(Inc) != None:
-                            MacroUsedByIncludedFile = True
                         EdkLogger.verbose("%s included by %s was not found in any given path:\n\t%s" % (Inc, F, "\n\t".join(SearchPathList)))
+
                 if not MacroUsedByIncludedFile:
                     if F == File:
                         CurrentFileDependencyList += ForceList
@@ -1240,7 +1287,7 @@ class Makefile(object):
         # returning a empty dependency
         #
         if MacroUsedByIncludedFile:
-            DependencyList = []
+            DependencyList = [""]
         else:
             DependencyList = list(DependencySet)  # remove duplicate ones
             DependencyList.append(File)
