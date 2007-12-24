@@ -32,6 +32,7 @@ gComponentType2ModuleType = {
     "COMBINED_PEIM_DRIVER"  :   "PEIM",
     "PIC_PEIM"              :   "PEIM",
     "RELOCATABLE_PEIM"      :   "PEIM",
+    "PE32_PEIM"             :   "PEIM",
     "BS_DRIVER"             :   "DXE_DRIVER",
     "RT_DRIVER"             :   "DXE_RUNTIME_DRIVER",
     "SAL_RT_DRIVER"         :   "DXE_SAL_DRIVER",
@@ -285,7 +286,11 @@ class Inf(InfObject):
             VersionString = self.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_STRING][0]
             if VersionString == '' and VersionNumber != '':
                 VersionString = VersionNumber
-            self.Module.Header.ModuleType = gComponentType2ModuleType[self.Module.Header.ComponentType]
+            if self.Module.Header.ComponentType in gComponentType2ModuleType:
+                self.Module.Header.ModuleType = gComponentType2ModuleType[self.Module.Header.ComponentType]
+            else:
+                EdkLogger.error("Parser", PARSER_ERROR, "Unsupported R8 component type [%s]" % self.Module.Header.ComponentType,
+                                ExtraData=File)
         #
         # LibraryClass of Defines
         #
