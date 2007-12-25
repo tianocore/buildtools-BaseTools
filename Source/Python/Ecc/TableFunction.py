@@ -15,6 +15,7 @@
 # Import Modules
 #
 import Common.EdkLogger as EdkLogger
+from Table import Table
 
 ## TableFunction
 #
@@ -22,9 +23,10 @@ import Common.EdkLogger as EdkLogger
 # 
 # @param object:       Inherited from object class
 #
-class TableFunction(object):
+class TableFunction(Table):
     def __init__(self, Cursor):
         self.Cur = Cursor
+        self.Table = 'Function'
     
     ## Create table
     #
@@ -42,19 +44,18 @@ class TableFunction(object):
     # @param BelongsToFile:    The Function belongs to which file
     #
     def Create(self):
-        SqlCommand = """create table IF NOT EXISTS Function(ID SINGLE PRIMARY KEY,
-                                                            Header TEXT,
-                                                            Modifier VARCHAR,
-                                                            Name VARCHAR NOT NULL,
-                                                            ReturnStatement VARCHAR,
-                                                            StartLine INTEGER NOT NULL,
-                                                            StartColumn INTEGER NOT NULL,
-                                                            EndLine INTEGER NOT NULL,
-                                                            EndColumn INTEGER NOT NULL,
-                                                            BelongsToFile SINGLE NOT NULL
-                                                           )"""
-        self.Cur.execute(SqlCommand)
-        EdkLogger.verbose("Create table Function ... DONE!")
+        SqlCommand = """create table IF NOT EXISTS %s (ID SINGLE PRIMARY KEY,
+                                                       Header TEXT,
+                                                       Modifier VARCHAR,
+                                                       Name VARCHAR NOT NULL,
+                                                       ReturnStatement VARCHAR,
+                                                       StartLine INTEGER NOT NULL,
+                                                       StartColumn INTEGER NOT NULL,
+                                                       EndLine INTEGER NOT NULL,
+                                                       EndColumn INTEGER NOT NULL,
+                                                       BelongsToFile SINGLE NOT NULL
+                                                      )""" % self.Table
+        Table.Create(self, SqlCommand)
 
     ## Insert table
     #
@@ -72,33 +73,6 @@ class TableFunction(object):
     # @param BelongsToFile:    The Function belongs to which file
     #
     def Insert(self, ID, Header, Modifier, Name, ReturnStatement, StartLine, StartColumn, EndLine, EndColumn, BelongsToFile):
-        SqlCommand = """insert into Function values(%s, '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s)""" \
-                                                 % (ID, Header, Modifier, Name, ReturnStatement, StartLine, StartColumn, EndLine, EndColumn, BelongsToFile)
-        self.Cur.execute(SqlCommand)
-        EdkLogger.verbose(SqlCommand + " ... DONE!")
-    
-    ## Query table
-    #
-    # Query all records of table Function
-    #  
-    def Query(self):
-        EdkLogger.verbose("\nQuery tabel Function started ...")
-        SqlCommand = """select * from Function"""
-        self.Cur.execute(SqlCommand)
-        for Rs in self.Cur:
-            EdkLogger.verbose(Rs)
-        SqlCommand = """select count(*) as Count from Function"""
-        self.Cur.execute(SqlCommand)
-        for Item in self.Cur:
-            EdkLogger.verbose("***Total %s records in table Function***" % Item)
-        EdkLogger.verbose("Query tabel Function DONE!")
-
-    ## Drop a table
-    #
-    # Drop the table Function
-    #
-    def Drop(self):
-        SqlCommand = """drop table IF EXISTS Function"""
-        self.Cur.execute(SqlCommand)
-        EdkLogger.verbose("Drop tabel Function ... DONE!")
-
+        SqlCommand = """insert into %s values(%s, '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s)""" \
+                                           % (self.Table, ID, Header, Modifier, Name, ReturnStatement, StartLine, StartColumn, EndLine, EndColumn, BelongsToFile)
+        Table.Insert(self, SqlCommand)

@@ -15,6 +15,7 @@
 # Import Modules
 #
 import Common.EdkLogger as EdkLogger
+from Table import Table
 
 ## TablePcd
 #
@@ -23,9 +24,10 @@ import Common.EdkLogger as EdkLogger
 # @param object:       Inherited from object class
 #
 #
-class TablePcd(object):
+class TablePcd(Table):
     def __init__(self, Cursor):
         self.Cur = Cursor
+        self.Table = 'Pcd'
     
     ## Create table
     #
@@ -45,7 +47,7 @@ class TablePcd(object):
     # @param EndColumn:            EndColumn of a Pcd
     #
     def Create(self):
-        SqlCommand = """create table IF NOT EXISTS Pcd(ID SINGLE PRIMARY KEY,
+        SqlCommand = """create table IF NOT EXISTS %s (ID SINGLE PRIMARY KEY,
                                                        CName VARCHAR NOT NULL,
                                                        TokenSpaceGuidCName VARCHAR NOT NULL,
                                                        Token INTEGER,
@@ -57,9 +59,8 @@ class TablePcd(object):
                                                        StartColumn INTEGER NOT NULL,
                                                        EndLine INTEGER NOT NULL,
                                                        EndColumn INTEGER NOT NULL
-                                                      )"""
-        self.Cur.execute(SqlCommand)
-        EdkLogger.verbose("Create table Pcd ... DONE!")
+                                                      )""" % self.Table
+        Table.Create(self, SqlCommand)
 
     ## Insert table
     #
@@ -79,33 +80,6 @@ class TablePcd(object):
     # @param EndColumn:            EndColumn of a Pcd
     #
     def Insert(self, ID, CName, TokenSpaceGuidCName, Token, DatumType, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn):
-        SqlCommand = """insert into Pcd values(%s, '%s', '%s', %s, '%s', %s, %s, %s, %s, %s, %s, %s)""" \
-                                            % (ID, CName, TokenSpaceGuidCName, Token, DatumType, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn)
-        self.Cur.execute(SqlCommand)
-        EdkLogger.verbose(SqlCommand + " ... DONE!")
-    
-    ## Query table
-    #
-    # Query all records of table Pcd
-    #  
-    def Query(self):
-        EdkLogger.verbose("\nQuery tabel Pcd started ...")
-        SqlCommand = """select * from Pcd"""
-        self.Cur.execute(SqlCommand)
-        for Rs in self.Cur:
-            EdkLogger.verbose(Rs)
-        SqlCommand = """select count(*) as Count from Pcd"""
-        self.Cur.execute(SqlCommand)
-        for Item in self.Cur:
-            EdkLogger.verbose("***Total %s records in table Pcd***" % Item)
-        EdkLogger.verbose("Query tabel Pcd DONE!")
-
-    ## Drop a table
-    #
-    # Drop the table Pcd
-    #
-    def Drop(self):
-        SqlCommand = """drop table IF EXISTS Pcd"""
-        self.Cur.execute(SqlCommand)
-        EdkLogger.verbose("Drop tabel Pcd ... DONE!")
-
+        SqlCommand = """insert into %s values(%s, '%s', '%s', %s, '%s', %s, %s, %s, %s, %s, %s, %s)""" \
+                                           % (self.Table, ID, CName, TokenSpaceGuidCName, Token, DatumType, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn)
+        Table.Insert(self, SqlCommand)

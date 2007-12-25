@@ -99,6 +99,8 @@ MODEL_LIST = [('MODEL_UNKNOWN', MODEL_UNKNOWN),
 # @param EndLine:          EndLine of a Function
 # @param EndColumn:        EndColumn of a Function
 # @param BelongsToFile:    The Function belongs to which file
+# @param VariableList:     VariableList of a File
+# @param PcdList:          PcdList of a File
 #
 # @var ID:                 ID of a Function
 # @var Header:             Header of a Function
@@ -110,9 +112,11 @@ MODEL_LIST = [('MODEL_UNKNOWN', MODEL_UNKNOWN),
 # @var EndLine:            EndLine of a Function
 # @var EndColumn:          EndColumn of a Function
 # @var BelongsToFile:      The Function belongs to which file
+# @var VariableList:       VariableList of a File
+# @var PcdList:            PcdList of a File
 #
 class FunctionClass(object):
-    def __init__(self, ID = -1, Header = '', Modifier = '', Name = '', ReturnStatement = '', StartLine = -1, StartColumn = -1, EndLine = -1, EndColumn = -1, BelongsToFile = -1):
+    def __init__(self, ID = -1, Header = '', Modifier = '', Name = '', ReturnStatement = '', StartLine = -1, StartColumn = -1, EndLine = -1, EndColumn = -1, BelongsToFile = -1, VariableList = [], PcdList = []):
         self.ID = ID
         self.Header = Header
         self.Modifier = Modifier                    
@@ -123,6 +127,9 @@ class FunctionClass(object):
         self.EndLine = EndLine
         self.EndColumn = EndColumn
         self.BelongsToFile = BelongsToFile
+        
+        self.VariableList = VariableList
+        self.PcdList = PcdList
 
 ## VariableClass
 #
@@ -154,7 +161,7 @@ class FunctionClass(object):
 # @var EndLine:              EndLine of a Variable
 # @var EndColumn:            EndColumn of a Variable
 #
-class FunctionClass(object):
+class VariableClass(object):
     def __init__(self, ID = -1, Modifier = '', Type = '', Name = '', Value = '', Model = MODEL_UNKNOWN, BelongsToFile = -1, BelongsToFunction = -1, StartLine = -1, StartColumn = -1, EndLine = -1, EndColumn = -1):
         self.ID = ID
         self.Modifier = Modifier
@@ -198,7 +205,7 @@ class FunctionClass(object):
 # @var EndLine:                EndLine of a Pcd
 # @var EndColumn:              EndColumn of a Pcd
 #
-class FunctionClass(object):
+class PcdClass(object):
     def __init__(self, ID = -1, CName = '', TokenSpaceGuidCName = '', Token = '', DatumType = '', Model = MODEL_UNKNOWN, BelongsToFile = -1, BelongsToFunction = -1, StartLine = -1, StartColumn = -1, EndLine = -1, EndColumn = -1):
         self.ID = ID
         self.CName = CName

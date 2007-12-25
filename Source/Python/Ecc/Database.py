@@ -22,6 +22,7 @@ from TableFunction import TableFunction
 from TablePcd import TablePcd
 from TableVariable import TableVariable
 import Common.EdkLogger as EdkLogger
+import DataClass
 
 ##
 # Static definitions
@@ -43,7 +44,7 @@ DATABASE_PATH = "Database/Ecc.db"
 #
 class Database(object):
     def __init__(self, DbPath):
-        EdkLogger.SetLevel(EdkLogger.VERBOSE)
+        EdkLogger.SetLevel(EdkLogger.DEBUG_0)
         self.Conn = sqlite3.connect(DbPath)
         self.Cur = self.Conn.cursor()
         self.TblDataModel = TableDataModel(self.Cur)
@@ -90,6 +91,61 @@ class Database(object):
     #
     def QueryTable(self, Table):
         Table.Query()
+    
+    ## Insert one file information
+    #
+    # Insert one file's information to the database
+    # 1. Create a record in TableFile
+    # 2. Create functions one by one
+    #    2.1 Create variables of function one by one
+    #    2.2 Create pcds of function one by one
+    # 3. Create variables one by one
+    # 4. Create pcds one by one
+    #
+    def InsertOneFile(self, File):
+        #
+        # Insert a record for file
+        #
+        FileID = self.TblFile.GetCount() + 1
+        self.TblFile.Insert(FileID, File.Name, File.ExtName, File.Path, File.FullPath, Model = File.Model)
+
+        #
+        # Insert function of file
+        #
+        for Function in File.FunctionList:
+            FunctionID = self.TblFunction.GetCount() + 1
+            self.TblFunction.Insert(FunctionID, Function.Header, Function.Modifier, Function.Name, Function.ReturnStatement, \
+                                    Function.StartLine, Function.StartColumn, Function.EndLine, Function.EndColumn, FileID)
+            #
+            # Insert Variable of function
+            #
+            for Variable in Function.VariableList:
+                VariableID = self.TblVariable.GetCount() + 1
+                self.TblVariable.Insert(VariableID, Variable.Modifier, Variable.Type, Variable.Name, Variable.Value, Variable.Model, \
+                                        FileID, FunctionID, Variable.StartLine, Variable.StartColumn, Variable.EndLine, Variable.EndColumn)
+            #
+            # Insert Pcd of function
+            #
+            for Pcd in Function.PcdList:
+                PcdID = self.TblPcd.GetCount() + 1
+                self.TblPcd.Insert(PcdID, Pcd.CName, Pcd.TokenSpaceGuidCName, Pcd.Token, Pcd.DatumType, Pcd.Model, \
+                                   FileID, FunctionID, Pcd.StartLine, Pcd.StartColumn, Pcd.EndLine, Pcd.EndColumn)
+        #
+        # Insert Variable of file
+        #
+        for Variable in File.VariableList:
+            VariableID = self.TblVariable.GetCount() + 1
+            self.TblVariable.Insert(VariableID, Variable.Modifier, Variable.Type, Variable.Name, Variable.Value, Variable.Model, \
+                                    FileID, -1, Variable.StartLine, Variable.StartColumn, Variable.EndLine, Variable.EndColumn)
+        #
+        # Insert Pcd of file
+        #
+        for Pcd in File.PcdList:
+            PcdID = self.TblPcd.GetCount() + 1
+            self.TblPcd.Insert(PcdID, Pcd.CName, Pcd.TokenSpaceGuidCName, Pcd.Token, Pcd.DatumType, Pcd.Model, \
+                               FileID, -1, Pcd.StartLine, Pcd.StartColumn, Pcd.EndLine, Pcd.EndColumn)
+                
+        EdkLogger.verbose("Insert information of file %s ... DONE!" % File.FullPath)
 
 ##
 #
@@ -104,5 +160,3 @@ if __name__ == '__main__':
     Db.QueryTable(Db.TblFunction)
     Db.QueryTable(Db.TblPcd)
     Db.QueryTable(Db.TblVariable)
-    
-    

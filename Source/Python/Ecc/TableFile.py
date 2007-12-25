@@ -15,6 +15,7 @@
 # Import Modules
 #
 import Common.EdkLogger as EdkLogger
+from Table import Table
 
 ## TableFile
 #
@@ -22,9 +23,10 @@ import Common.EdkLogger as EdkLogger
 # 
 # @param object:       Inherited from object class
 #
-class TableFile(object):
+class TableFile(Table):
     def __init__(self, Cursor):
         self.Cur = Cursor
+        self.Table = 'File'
     
     ## Create table
     #
@@ -38,15 +40,14 @@ class TableFile(object):
     # @param Model:     Model of a File
     #
     def Create(self):
-        SqlCommand = """create table IF NOT EXISTS File(ID SINGLE PRIMARY KEY,
-                                                        Name VARCHAR NOT NULL,
-                                                        ExtName VARCHAR,
-                                                        Path VARCHAR,
-                                                        FullPath VARCHAR NOT NULL,
-                                                        Model INTEGER DEFAULT 0
-                                                       )"""
-        self.Cur.execute(SqlCommand)
-        EdkLogger.verbose("Create table File ... DONE!")
+        SqlCommand = """create table IF NOT EXISTS %s (ID SINGLE PRIMARY KEY,
+                                                       Name VARCHAR NOT NULL,
+                                                       ExtName VARCHAR,
+                                                       Path VARCHAR,
+                                                       FullPath VARCHAR NOT NULL,
+                                                       Model INTEGER DEFAULT 0
+                                                      )""" % self.Table
+        Table.Create(self, SqlCommand)
 
     ## Insert table
     #
@@ -60,33 +61,6 @@ class TableFile(object):
     # @param Model:     Model of a File
     #
     def Insert(self, ID, Name, ExtName, Path, FullPath, Model):
-        SqlCommand = """insert into File values(%s, '%s', '%s', '%s', '%s', %s)""" \
-                                             % (ID, Name, ExtName, Path, FullPath, Model)
-        self.Cur.execute(SqlCommand)
-        EdkLogger.verbose(SqlCommand + " ... DONE!")
-    
-    ## Query table
-    #
-    # Query all records of table File
-    #  
-    def Query(self):
-        EdkLogger.verbose("\nQuery tabel File started ...")
-        SqlCommand = """select * from File"""
-        self.Cur.execute(SqlCommand)
-        for Rs in self.Cur:
-            EdkLogger.verbose(Rs)
-        SqlCommand = """select count(*) as Count from File"""
-        self.Cur.execute(SqlCommand)
-        for Item in self.Cur:
-            EdkLogger.verbose("***Total %s records in table File***" % Item)
-        EdkLogger.verbose("Query tabel File DONE!")
-
-    ## Drop a table
-    #
-    # Drop the table File
-    #
-    def Drop(self):
-        SqlCommand = """drop table IF EXISTS File"""
-        self.Cur.execute(SqlCommand)
-        EdkLogger.verbose("Drop tabel File ... DONE!")
-
+        SqlCommand = """insert into %s values(%s, '%s', '%s', '%s', '%s', %s)""" \
+                                           % (self.Table, ID, Name, ExtName, Path, FullPath, Model)
+        Table.Insert(self, SqlCommand)

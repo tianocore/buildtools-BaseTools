@@ -16,6 +16,7 @@
 #
 import Common.EdkLogger as EdkLogger
 import DataClass
+from Table import Table
 
 ## TableDataModel
 #
@@ -24,9 +25,10 @@ import DataClass
 # @param object:       Inherited from object class
 #
 #
-class TableDataModel(object):
+class TableDataModel(Table):
     def __init__(self, Cursor):
         self.Cur = Cursor
+        self.Table = 'DataModel'
     
     ## Create table
     #
@@ -38,13 +40,12 @@ class TableDataModel(object):
     # @param Description:  Description of a ModelType
     #
     def Create(self):
-        SqlCommand = """create table IF NOT EXISTS DataModel(ID SINGLE PRIMARY KEY,
-                                                              CrossIndex INTEGER NOT NULL,
-                                                              Name VARCHAR NOT NULL,
-                                                              Description VARCHAR
-                                                             )"""
-        self.Cur.execute(SqlCommand)
-        EdkLogger.verbose("Create table DataModel ... DONE!")
+        SqlCommand = """create table IF NOT EXISTS %s (ID SINGLE PRIMARY KEY,
+                                                       CrossIndex INTEGER NOT NULL,
+                                                       Name VARCHAR NOT NULL,
+                                                       Description VARCHAR
+                                                      )""" % self.Table
+        Table.Create(self, SqlCommand)
 
     ## Insert table
     #
@@ -56,34 +57,8 @@ class TableDataModel(object):
     # @param Description:  Description of a ModelType
     #
     def Insert(self, ID, CrossIndex, Name, Description):
-        SqlCommand = """insert into DataModel values(%s, %s, '%s', '%s')""" % (ID, CrossIndex, Name, Description)
-        self.Cur.execute(SqlCommand)
-        EdkLogger.verbose(SqlCommand + " ... DONE!")
-    
-    ## Query table
-    #
-    # Query all records of table DataModel
-    #  
-    def Query(self):
-        EdkLogger.verbose("\nQuery tabel DataModel started ...")
-        SqlCommand = """select * from DataModel"""
-        self.Cur.execute(SqlCommand)
-        for Rs in self.Cur:
-            EdkLogger.verbose(Rs)
-        SqlCommand = """select count(*) as Count from DataModel"""
-        self.Cur.execute(SqlCommand)
-        for Item in self.Cur:
-            EdkLogger.verbose("***Total %s records in table DataModel***" % Item)
-        EdkLogger.verbose("Query tabel DataModel DONE!")
-
-    ## Drop a table
-    #
-    # Drop the table DataModel
-    #
-    def Drop(self):
-        SqlCommand = """drop table IF EXISTS DataModel"""
-        self.Cur.execute(SqlCommand)
-        EdkLogger.verbose("Drop tabel DataModel ... DONE!")
+        SqlCommand = """insert into %s values(%s, %s, '%s', '%s')""" % (self.Table, ID, CrossIndex, Name, Description)
+        Table.Insert(self, SqlCommand)
     
     ## Init table
     #
@@ -99,3 +74,19 @@ class TableDataModel(object):
             Description = Item[0]
             self.Insert(ID, CrossIndex, Name, Description)
         EdkLogger.verbose("Initialize table DataModel ... DONE!")
+    
+    ## Get CrossIndex
+    #
+    # Get a model's cross index from its name
+    #
+    # @param ModelName:    Name of the model
+    # @retval CrossIndex:  CrossIndex of the model
+    #
+    def GetCrossIndex(self, ModelName):
+        CrossIndex = -1
+        SqlCommand = """select CrossIndex from DataModel where name = '""" + ModelName + """'"""
+        self.Cur.execute(SqlCommand)
+        for Item in self.Cur:
+            CrossIndex = Item[0]
+        
+        return CrossIndex

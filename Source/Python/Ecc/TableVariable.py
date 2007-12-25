@@ -15,6 +15,7 @@
 # Import Modules
 #
 import Common.EdkLogger as EdkLogger
+from Table import Table
 
 ## TableVariable
 #
@@ -23,9 +24,10 @@ import Common.EdkLogger as EdkLogger
 # @param object:       Inherited from object class
 #
 #
-class TableVariable(object):
+class TableVariable(Table):
     def __init__(self, Cursor):
         self.Cur = Cursor
+        self.Table = 'Variable'
     
     ## Create table
     #
@@ -45,21 +47,20 @@ class TableVariable(object):
     # @param EndColumn:          EndColumn of a Variable
     #
     def Create(self):
-        SqlCommand = """create table IF NOT EXISTS Variable(ID SINGLE PRIMARY KEY,
-                                                            Modifier VARCHAR,
-                                                            Type VARCHAR,
-                                                            Name VARCHAR NOT NULL,
-                                                            Value VARCHAR NOT NULL,
-                                                            Model INTEGER NOT NULL,
-                                                            BelongsToFile SINGLE NOT NULL,
-                                                            BelongsToFunction SINGLE DEFAULT -1,
-                                                            StartLine INTEGER NOT NULL,
-                                                            StartColumn INTEGER NOT NULL,
-                                                            EndLine INTEGER NOT NULL,
-                                                            EndColumn INTEGER NOT NULL
-                                                           )"""
-        self.Cur.execute(SqlCommand)
-        EdkLogger.verbose("Create table Variable ... DONE!")
+        SqlCommand = """create table IF NOT EXISTS %s(ID SINGLE PRIMARY KEY,
+                                                      Modifier VARCHAR,
+                                                      Type VARCHAR,
+                                                      Name VARCHAR NOT NULL,
+                                                      Value VARCHAR NOT NULL,
+                                                      Model INTEGER NOT NULL,
+                                                      BelongsToFile SINGLE NOT NULL,
+                                                      BelongsToFunction SINGLE DEFAULT -1,
+                                                      StartLine INTEGER NOT NULL,
+                                                      StartColumn INTEGER NOT NULL,
+                                                      EndLine INTEGER NOT NULL,
+                                                      EndColumn INTEGER NOT NULL
+                                                     )""" % self.Table
+        Table.Create(self, SqlCommand)
 
     ## Insert table
     #
@@ -79,33 +80,6 @@ class TableVariable(object):
     # @param EndColumn:          EndColumn of a Variable
     #
     def Insert(self, ID, Modifier, Type, Name, Value, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn):
-        SqlCommand = """insert into Variable values(%s, '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s, %s, %s)""" \
-                                                 % (ID, Modifier, Type, Name, Value, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn)
-        self.Cur.execute(SqlCommand)
-        EdkLogger.verbose(SqlCommand + " ... DONE!")
-    
-    ## Query table
-    #
-    # Query all records of table Variable
-    #  
-    def Query(self):
-        EdkLogger.verbose("\nQuery tabel Variable started ...")
-        SqlCommand = """select * from Variable"""
-        self.Cur.execute(SqlCommand)
-        for Rs in self.Cur:
-            EdkLogger.verbose(Rs)
-        SqlCommand = """select count(*) as Count from Variable"""
-        self.Cur.execute(SqlCommand)
-        for Item in self.Cur:
-            EdkLogger.verbose("***Total %s records in table Variable***" % Item)
-        EdkLogger.verbose("Query tabel Variable DONE!")
-
-    ## Drop a table
-    #
-    # Drop the table Variable
-    #
-    def Drop(self):
-        SqlCommand = """drop table IF EXISTS Variable"""
-        self.Cur.execute(SqlCommand)
-        EdkLogger.verbose("Drop tabel Variable ... DONE!")
-
+        SqlCommand = """insert into %s values(%s, '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s, %s, %s)""" \
+                                           % (self.Table, ID, Modifier, Type, Name, Value, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn)
+        Table.Insert(self, SqlCommand)
