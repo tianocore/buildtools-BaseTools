@@ -53,7 +53,6 @@ options {k=1;}
 	: ( declaration_specifiers? declarator declaration* '{' )=> function_definition
 	| declaration
 	| macro_statement
-//	| 'EFI_PEI_CORE_ENTRY_POINT' '(' IDENTIFIER ')'
 	;
 	
 
@@ -62,10 +61,11 @@ function_definition
 scope Symbols;
 @init{
   $Symbols::inFunc = True
-}
+}/*
 @after{
+  print str($function_definition.start.line) + ',' + str($function_definition.start.charPositionInLine)
   print str($function_definition.stop.line) + ',' + str($function_definition.stop.charPositionInLine)
-}
+}*/
 	:	declaration_specifiers? declarator
 		(	declaration+ compound_statement	// K&R style
 		|	compound_statement				// ANSI style
@@ -98,7 +98,7 @@ init_declarator_list
 
 init_declarator
 	: declarator ('=' initializer)? 
-	//{if not $Symbols::inFunc: self.printTokenInfo($declarator.start.line, $declarator.start.charPositionInLine, $declarator.text)}
+	//{self.printTokenInfo($declarator.start.line, $declarator.start.charPositionInLine, $declarator.text)}
 	;
 
 storage_class_specifier
@@ -226,8 +226,8 @@ parameter_declaration
 	;
 
 identifier_list
-	: i=IDENTIFIER //{print str($i.line) + ":" + $i.text + " is a type"}
-	(',' d=IDENTIFIER /*{print str($d.line) + ":" + $d.text + " is a type"}*/)*
+	: IDENTIFIER
+	(',' IDENTIFIER)*
 	;
 
 type_name
@@ -290,10 +290,10 @@ unary_expression
 	;
 
 postfix_expression
-	:   primary_expression
+	:   p=primary_expression
         (   '[' expression ']'
-        |   '(' ')'
-        |   '(' argument_expression_list ')'
+        |   '(' ')'//{self.printTokenInfo($p.start.line, $p.start.charPositionInLine, $p.text)}
+        |   a='(' c=argument_expression_list b=')' //{self.printTokenInfo($p.start.line, $p.start.charPositionInLine, $p.text)}
         |   '.' IDENTIFIER
         |   '*' IDENTIFIER
         |   '->' IDENTIFIER
@@ -360,7 +360,7 @@ assignment_operator
 	;
 
 conditional_expression
-	: logical_or_expression ('?' expression ':' conditional_expression)?
+	: e=logical_or_expression ('?' expression ':' conditional_expression {self.printTokenInfo($e.start.line, $e.start.charPositionInLine, $e.text)})?
 	;
 
 logical_or_expression
@@ -383,7 +383,7 @@ and_expression
 	: equality_expression ('&' equality_expression)*
 	;
 equality_expression
-	: relational_expression (('=='|'!=') relational_expression)*
+	: relational_expression (('=='|'!=') relational_expression )*
 	;
 
 relational_expression
@@ -434,14 +434,14 @@ expression_statement
 	;
 
 selection_statement
-	: 'if' '(' expression ')' statement (options {k=1; backtrack=false;}:'else' statement)?
+	: 'if' '(' e=expression ')' {self.printTokenInfo($e.start.line, $e.start.charPositionInLine, $e.text)} statement (options {k=1; backtrack=false;}:'else' statement)?
 	| 'switch' '(' expression ')' statement
 	;
 
 iteration_statement
-	: 'while' '(' expression ')' statement
-	| 'do' statement 'while' '(' expression ')' ';'
-	| 'for' '(' expression_statement expression_statement expression? ')' statement
+	: 'while' '(' e=expression ')' statement {self.printTokenInfo($e.start.line, $e.start.charPositionInLine, $e.text)}
+	| 'do' statement 'while' '(' e=expression ')' ';' {self.printTokenInfo($e.start.line, $e.start.charPositionInLine, $e.text)}
+	| 'for' '(' expression_statement e=expression_statement expression? ')' statement {self.printTokenInfo($e.start.line, $e.start.charPositionInLine, $e.text)}
 	;
 
 jump_statement
