@@ -7,33 +7,43 @@ options {
     k=2;
 }
 
-scope Symbols {
-	types;
-	inFunc;
+@header {
+    import CodeFragment
+    import FileProfile
 }
 
 @members {
-    def isTypeName(self, name):
-        for scope in reversed(self.Symbols_stack):
-            if name in scope.types:
-                return True
-
-        return False
         
     def printTokenInfo(self, line, offset, tokenText):
     	print str(line)+ ',' + str(offset) + ':' + str(tokenText)
+        
+    def StorePredicateExpression(self, StartLine, StartOffset, EndLine, EndOffset, Text):
+    	PredExp = CodeFragment.PredicateExpression(Text, (StartLine, StartOffset), (EndLine, EndOffset))
+    	FileProfile.PredicateExpressionList.append(PredExp)
     	
-    def printFuncHeader(self, line, offset, tokenText):
-        print str(line)+ ',' + str(offset) + ':' + str(tokenText) + ' is function header.'
+    def StoreEnumerationDefinition(self, StartLine, StartOffset, EndLine, EndOffset, Text):
+    	EnumDef = CodeFragment.EnumerationDefinition(Text, (StartLine, StartOffset), (EndLine, EndOffset))
+    	FileProfile.EnumerationDefinitionList.append(EnumDef)
+    	
+    def StoreStructUnionDefinition(self, StartLine, StartOffset, EndLine, EndOffset, Text):
+    	SUDef = CodeFragment.StructUnionDefinition(Text, (StartLine, StartOffset), (EndLine, EndOffset))
+    	FileProfile.StructUnionDefinitionList.append(SUDef)
+    	
+    def StoreTypedefDefinition(self, StartLine, StartOffset, EndLine, EndOffset, FromText, ToText):
+    	Tdef = CodeFragment.TypedefDefinition(FromText, ToText, (StartLine, StartOffset), (EndLine, EndOffset))
+    	FileProfile.TypedefDefinitionList.append(Tdef)
+    
+    def StoreFunctionDefinition(self, StartLine, StartOffset, EndLine, EndOffset, ModifierText, DeclText):
+    	FuncDef = CodeFragment.FunctionDefinition(ModifierText, DeclText, (StartLine, StartOffset), (EndLine, EndOffset))
+    	FileProfile.FunctionDefinitionList.append(FuncDef)
+    	
+    def StoreVariableDeclaration(self, StartLine, StartOffset, EndLine, EndOffset, ModifierText, DeclText):
+    	VarDecl = CodeFragment.VariableDeclaration(ModifierText, DeclText, (StartLine, StartOffset), (EndLine, EndOffset))
+    	FileProfile.VariableDeclarationList.append(VarDecl)
 
 }
 
 translation_unit
-scope Symbols; // entire file is a scope
-@init {
-  $Symbols::types = set()
-  $Symbols::inFunc = False
-}
 	: external_declaration+
 	;
 
@@ -52,37 +62,41 @@ options {k=1;}
 }*/
 	: ( declaration_specifiers? declarator declaration* '{' )=> function_definition
 	| declaration
-	| macro_statement
+	| macro_statement (';')?
 	;
 	
 
 
 function_definition
-scope Symbols;
-@init{
-  $Symbols::inFunc = True
-}/*
+scope {
+  ModifierText;
+  DeclText;
+}
+@init {
+  $function_definition::ModifierText = '';
+  $function_definition::DeclText = '';
+}
 @after{
-  print str($function_definition.start.line) + ',' + str($function_definition.start.charPositionInLine)
-  print str($function_definition.stop.line) + ',' + str($function_definition.stop.charPositionInLine)
-}*/
+  self.StoreFunctionDefinition($function_definition.start.line, $function_definition.start.charPositionInLine, $function_definition.stop.line, $function_definition.stop.charPositionInLine, $function_definition::ModifierText, $function_definition::DeclText)
+}
 	:	declaration_specifiers? declarator
 		(	declaration+ compound_statement	// K&R style
 		|	compound_statement				// ANSI style
-		) //{self.printFuncHeader($declarator.start.line, $declarator.start.charPositionInLine, $declarator.text)}
+		) { $function_definition::ModifierText = $declaration_specifiers.text
+		    $function_definition::DeclText = $declarator.text}
 	;
 
 declaration
-scope {
-  isTypedef;
-}
-@init {
-  $declaration::isTypedef = False;
-}
-	: a='typedef' declaration_specifiers? //{self.printTokenInfo($a.line, $a.pos, $a.text)}
-	  init_declarator_list ';' // special case, looking for typedef	
-	| declaration_specifiers init_declarator_list? ';'
-	//| function_declaration
+	: a='typedef' b=declaration_specifiers? 
+	  c=init_declarator_list d=';' 
+	  {
+	  if b != None:
+	    self.StoreTypedefDefinition($a.line, $a.charPositionInLine, $d.line, $d.charPositionInLine, $b.text, $c.text)
+	  else:
+	    self.StoreTypedefDefinition($a.line, $a.charPositionInLine, $d.line, $d.charPositionInLine, '', $c.text)
+	  }	
+	| s=declaration_specifiers t=init_declarator_list? e=';' 
+	{self.StoreVariableDeclaration($s.start.line, $s.start.charPositionInLine, $e.line, $e.charPositionInLine, $s.text, $t.text)}
 	;
 
 declaration_specifiers
@@ -98,7 +112,6 @@ init_declarator_list
 
 init_declarator
 	: declarator ('=' initializer)? 
-	//{self.printTokenInfo($declarator.start.line, $declarator.start.charPositionInLine, $declarator.text)}
 	;
 
 storage_class_specifier
@@ -109,7 +122,6 @@ storage_class_specifier
 	;
 
 type_specifier
-options {k=3;}
 	: 'void'
 	| 'char'
 	| 'short'
@@ -119,8 +131,8 @@ options {k=3;}
 	| 'double'
 	| 'signed'
 	| 'unsigned'
-	| struct_or_union_specifier
-	| enum_specifier
+	| s=struct_or_union_specifier {self.StoreStructUnionDefinition($s.start.line, $s.start.charPositionInLine, $s.stop.line, $s.stop.charPositionInLine, $s.text)}
+	| e=enum_specifier {self.StoreEnumerationDefinition($e.start.line, $e.start.charPositionInLine, $e.stop.line, $e.stop.charPositionInLine, $e.text)}
 	| (IDENTIFIER declarator)=> type_id
 	;
 
@@ -131,10 +143,6 @@ type_id
 
 struct_or_union_specifier
 options {k=3;}
-scope Symbols; // structs are scopes
-@init {
-  $Symbols::types = set()
-}
 	: struct_or_union IDENTIFIER? '{' struct_declaration_list '}'
 	| struct_or_union IDENTIFIER
 	;
@@ -193,9 +201,7 @@ declarator
 	;
 
 direct_declarator
-scope Symbols;
 	: IDENTIFIER declarator_suffix*
-	  //{if $Symbols::inFunc: self.printFuncName($IDENTIFIER.line, $IDENTIFIER.charPositonInLine, $IDENTIFIER.text)}
 	| '(' declarator ')' declarator_suffix+
 	;
 
@@ -360,7 +366,7 @@ assignment_operator
 	;
 
 conditional_expression
-	: e=logical_or_expression ('?' expression ':' conditional_expression {self.printTokenInfo($e.start.line, $e.start.charPositionInLine, $e.text)})?
+	: e=logical_or_expression ('?' expression ':' conditional_expression {self.StorePredicateExpression($e.start.line, $e.start.charPositionInLine, $e.stop.line, $e.stop.charPositionInLine, $e.text)})?
 	;
 
 logical_or_expression
@@ -417,10 +423,6 @@ labeled_statement
 	;
 
 compound_statement
-scope Symbols; // blocks have a scope of symbols
-@init {
-  $Symbols::types = set()
-}
 	: '{' declaration* statement_list? '}'
 	;
 
@@ -434,14 +436,14 @@ expression_statement
 	;
 
 selection_statement
-	: 'if' '(' e=expression ')' {self.printTokenInfo($e.start.line, $e.start.charPositionInLine, $e.text)} statement (options {k=1; backtrack=false;}:'else' statement)?
+	: 'if' '(' e=expression ')' {self.StorePredicateExpression($e.start.line, $e.start.charPositionInLine, $e.stop.line, $e.stop.charPositionInLine, $e.text)} statement (options {k=1; backtrack=false;}:'else' statement)?
 	| 'switch' '(' expression ')' statement
 	;
 
 iteration_statement
-	: 'while' '(' e=expression ')' statement {self.printTokenInfo($e.start.line, $e.start.charPositionInLine, $e.text)}
-	| 'do' statement 'while' '(' e=expression ')' ';' {self.printTokenInfo($e.start.line, $e.start.charPositionInLine, $e.text)}
-	| 'for' '(' expression_statement e=expression_statement expression? ')' statement {self.printTokenInfo($e.start.line, $e.start.charPositionInLine, $e.text)}
+	: 'while' '(' e=expression ')' statement {self.StorePredicateExpression($e.start.line, $e.start.charPositionInLine, $e.stop.line, $e.stop.charPositionInLine, $e.text)}
+	| 'do' statement 'while' '(' e=expression ')' ';' {self.StorePredicateExpression($e.start.line, $e.start.charPositionInLine, $e.stop.line, $e.stop.charPositionInLine, $e.text)}
+	| 'for' '(' expression_statement e=expression_statement expression? ')' statement {self.StorePredicateExpression($e.start.line, $e.start.charPositionInLine, $e.stop.line, $e.stop.charPositionInLine, $e.text)}
 	;
 
 jump_statement

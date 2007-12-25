@@ -1,4 +1,4 @@
-# $ANTLR 3.0.1 C.g 2007-12-12 15:55:53
+# $ANTLR 3.0.1 C.g 2007-12-25 19:09:36
 
 from antlr3 import *
 from antlr3.compat import set, frozenset
@@ -149,10 +149,9 @@ class CLexer(Lexer):
         try:
             self.type = T24
 
-            # C.g:7:5: ( 'typedef' )
-            # C.g:7:7: 'typedef'
-            self.match("typedef")
-
+            # C.g:7:5: ( ';' )
+            # C.g:7:7: ';'
+            self.match(u';')
 
 
 
@@ -172,9 +171,10 @@ class CLexer(Lexer):
         try:
             self.type = T25
 
-            # C.g:8:5: ( ';' )
-            # C.g:8:7: ';'
-            self.match(u';')
+            # C.g:8:5: ( 'typedef' )
+            # C.g:8:7: 'typedef'
+            self.match("typedef")
+
 
 
 
@@ -1965,11 +1965,11 @@ class CLexer(Lexer):
         try:
             self.type = IDENTIFIER
 
-            # C.g:457:2: ( LETTER ( LETTER | '0' .. '9' )* )
-            # C.g:457:4: LETTER ( LETTER | '0' .. '9' )*
+            # C.g:458:2: ( LETTER ( LETTER | '0' .. '9' )* )
+            # C.g:458:4: LETTER ( LETTER | '0' .. '9' )*
             self.mLETTER()
 
-            # C.g:457:11: ( LETTER | '0' .. '9' )*
+            # C.g:458:11: ( LETTER | '0' .. '9' )*
             while True: #loop1
                 alt1 = 2
                 LA1_0 = self.input.LA(1)
@@ -2011,7 +2011,7 @@ class CLexer(Lexer):
     def mLETTER(self, ):
 
         try:
-            # C.g:462:2: ( '$' | 'A' .. 'Z' | 'a' .. 'z' | '_' )
+            # C.g:463:2: ( '$' | 'A' .. 'Z' | 'a' .. 'z' | '_' )
             # C.g:
             if self.input.LA(1) == u'$' or (u'A' <= self.input.LA(1) <= u'Z') or self.input.LA(1) == u'_' or (u'a' <= self.input.LA(1) <= u'z'):
                 self.input.consume();
@@ -2040,11 +2040,11 @@ class CLexer(Lexer):
         try:
             self.type = CHARACTER_LITERAL
 
-            # C.g:469:5: ( '\\'' ( EscapeSequence | ~ ( '\\'' | '\\\\' ) ) '\\'' )
-            # C.g:469:9: '\\'' ( EscapeSequence | ~ ( '\\'' | '\\\\' ) ) '\\''
+            # C.g:470:5: ( '\\'' ( EscapeSequence | ~ ( '\\'' | '\\\\' ) ) '\\'' )
+            # C.g:470:9: '\\'' ( EscapeSequence | ~ ( '\\'' | '\\\\' ) ) '\\''
             self.match(u'\'')
 
-            # C.g:469:14: ( EscapeSequence | ~ ( '\\'' | '\\\\' ) )
+            # C.g:470:14: ( EscapeSequence | ~ ( '\\'' | '\\\\' ) )
             alt2 = 2
             LA2_0 = self.input.LA(1)
 
@@ -2053,18 +2053,18 @@ class CLexer(Lexer):
             elif ((u'\u0000' <= LA2_0 <= u'&') or (u'(' <= LA2_0 <= u'[') or (u']' <= LA2_0 <= u'\uFFFE')) :
                 alt2 = 2
             else:
-                nvae = NoViableAltException("469:14: ( EscapeSequence | ~ ( '\\'' | '\\\\' ) )", 2, 0, self.input)
+                nvae = NoViableAltException("470:14: ( EscapeSequence | ~ ( '\\'' | '\\\\' ) )", 2, 0, self.input)
 
                 raise nvae
 
             if alt2 == 1:
-                # C.g:469:16: EscapeSequence
+                # C.g:470:16: EscapeSequence
                 self.mEscapeSequence()
 
 
 
             elif alt2 == 2:
-                # C.g:469:33: ~ ( '\\'' | '\\\\' )
+                # C.g:470:33: ~ ( '\\'' | '\\\\' )
                 if (u'\u0000' <= self.input.LA(1) <= u'&') or (u'(' <= self.input.LA(1) <= u'[') or (u']' <= self.input.LA(1) <= u'\uFFFE'):
                     self.input.consume();
 
@@ -2097,16 +2097,16 @@ class CLexer(Lexer):
         try:
             self.type = STRING_LITERAL
 
-            # C.g:473:5: ( ( 'L' )? '\"' ( EscapeSequence | ~ ( '\\\\' | '\"' ) )* '\"' )
-            # C.g:473:8: ( 'L' )? '\"' ( EscapeSequence | ~ ( '\\\\' | '\"' ) )* '\"'
-            # C.g:473:8: ( 'L' )?
+            # C.g:474:5: ( ( 'L' )? '\"' ( EscapeSequence | ~ ( '\\\\' | '\"' ) )* '\"' )
+            # C.g:474:8: ( 'L' )? '\"' ( EscapeSequence | ~ ( '\\\\' | '\"' ) )* '\"'
+            # C.g:474:8: ( 'L' )?
             alt3 = 2
             LA3_0 = self.input.LA(1)
 
             if (LA3_0 == u'L') :
                 alt3 = 1
             if alt3 == 1:
-                # C.g:473:9: 'L'
+                # C.g:474:9: 'L'
                 self.match(u'L')
 
 
@@ -2114,7 +2114,7 @@ class CLexer(Lexer):
 
             self.match(u'"')
 
-            # C.g:473:19: ( EscapeSequence | ~ ( '\\\\' | '\"' ) )*
+            # C.g:474:19: ( EscapeSequence | ~ ( '\\\\' | '\"' ) )*
             while True: #loop4
                 alt4 = 3
                 LA4_0 = self.input.LA(1)
@@ -2126,13 +2126,13 @@ class CLexer(Lexer):
 
 
                 if alt4 == 1:
-                    # C.g:473:21: EscapeSequence
+                    # C.g:474:21: EscapeSequence
                     self.mEscapeSequence()
 
 
 
                 elif alt4 == 2:
-                    # C.g:473:38: ~ ( '\\\\' | '\"' )
+                    # C.g:474:38: ~ ( '\\\\' | '\"' )
                     if (u'\u0000' <= self.input.LA(1) <= u'!') or (u'#' <= self.input.LA(1) <= u'[') or (u']' <= self.input.LA(1) <= u'\uFFFE'):
                         self.input.consume();
 
@@ -2168,8 +2168,8 @@ class CLexer(Lexer):
         try:
             self.type = HEX_LITERAL
 
-            # C.g:476:13: ( '0' ( 'x' | 'X' ) ( HexDigit )+ ( IntegerTypeSuffix )? )
-            # C.g:476:15: '0' ( 'x' | 'X' ) ( HexDigit )+ ( IntegerTypeSuffix )?
+            # C.g:477:13: ( '0' ( 'x' | 'X' ) ( HexDigit )+ ( IntegerTypeSuffix )? )
+            # C.g:477:15: '0' ( 'x' | 'X' ) ( HexDigit )+ ( IntegerTypeSuffix )?
             self.match(u'0')
 
             if self.input.LA(1) == u'X' or self.input.LA(1) == u'x':
@@ -2181,7 +2181,7 @@ class CLexer(Lexer):
                 raise mse
 
 
-            # C.g:476:29: ( HexDigit )+
+            # C.g:477:29: ( HexDigit )+
             cnt5 = 0
             while True: #loop5
                 alt5 = 2
@@ -2192,7 +2192,7 @@ class CLexer(Lexer):
 
 
                 if alt5 == 1:
-                    # C.g:476:29: HexDigit
+                    # C.g:477:29: HexDigit
                     self.mHexDigit()
 
 
@@ -2207,14 +2207,14 @@ class CLexer(Lexer):
                 cnt5 += 1
 
 
-            # C.g:476:39: ( IntegerTypeSuffix )?
+            # C.g:477:39: ( IntegerTypeSuffix )?
             alt6 = 2
             LA6_0 = self.input.LA(1)
 
             if (LA6_0 == u'L' or LA6_0 == u'U' or LA6_0 == u'l' or LA6_0 == u'u') :
                 alt6 = 1
             if alt6 == 1:
-                # C.g:476:39: IntegerTypeSuffix
+                # C.g:477:39: IntegerTypeSuffix
                 self.mIntegerTypeSuffix()
 
 
@@ -2238,9 +2238,9 @@ class CLexer(Lexer):
         try:
             self.type = DECIMAL_LITERAL
 
-            # C.g:478:17: ( ( '0' | '1' .. '9' ( '0' .. '9' )* ) ( IntegerTypeSuffix )? )
-            # C.g:478:19: ( '0' | '1' .. '9' ( '0' .. '9' )* ) ( IntegerTypeSuffix )?
-            # C.g:478:19: ( '0' | '1' .. '9' ( '0' .. '9' )* )
+            # C.g:479:17: ( ( '0' | '1' .. '9' ( '0' .. '9' )* ) ( IntegerTypeSuffix )? )
+            # C.g:479:19: ( '0' | '1' .. '9' ( '0' .. '9' )* ) ( IntegerTypeSuffix )?
+            # C.g:479:19: ( '0' | '1' .. '9' ( '0' .. '9' )* )
             alt8 = 2
             LA8_0 = self.input.LA(1)
 
@@ -2249,21 +2249,21 @@ class CLexer(Lexer):
             elif ((u'1' <= LA8_0 <= u'9')) :
                 alt8 = 2
             else:
-                nvae = NoViableAltException("478:19: ( '0' | '1' .. '9' ( '0' .. '9' )* )", 8, 0, self.input)
+                nvae = NoViableAltException("479:19: ( '0' | '1' .. '9' ( '0' .. '9' )* )", 8, 0, self.input)
 
                 raise nvae
 
             if alt8 == 1:
-                # C.g:478:20: '0'
+                # C.g:479:20: '0'
                 self.match(u'0')
 
 
 
             elif alt8 == 2:
-                # C.g:478:26: '1' .. '9' ( '0' .. '9' )*
+                # C.g:479:26: '1' .. '9' ( '0' .. '9' )*
                 self.matchRange(u'1', u'9')
 
-                # C.g:478:35: ( '0' .. '9' )*
+                # C.g:479:35: ( '0' .. '9' )*
                 while True: #loop7
                     alt7 = 2
                     LA7_0 = self.input.LA(1)
@@ -2273,7 +2273,7 @@ class CLexer(Lexer):
 
 
                     if alt7 == 1:
-                        # C.g:478:35: '0' .. '9'
+                        # C.g:479:35: '0' .. '9'
                         self.matchRange(u'0', u'9')
 
 
@@ -2285,14 +2285,14 @@ class CLexer(Lexer):
 
 
 
-            # C.g:478:46: ( IntegerTypeSuffix )?
+            # C.g:479:46: ( IntegerTypeSuffix )?
             alt9 = 2
             LA9_0 = self.input.LA(1)
 
             if (LA9_0 == u'L' or LA9_0 == u'U' or LA9_0 == u'l' or LA9_0 == u'u') :
                 alt9 = 1
             if alt9 == 1:
-                # C.g:478:46: IntegerTypeSuffix
+                # C.g:479:46: IntegerTypeSuffix
                 self.mIntegerTypeSuffix()
 
 
@@ -2316,11 +2316,11 @@ class CLexer(Lexer):
         try:
             self.type = OCTAL_LITERAL
 
-            # C.g:480:15: ( '0' ( '0' .. '7' )+ ( IntegerTypeSuffix )? )
-            # C.g:480:17: '0' ( '0' .. '7' )+ ( IntegerTypeSuffix )?
+            # C.g:481:15: ( '0' ( '0' .. '7' )+ ( IntegerTypeSuffix )? )
+            # C.g:481:17: '0' ( '0' .. '7' )+ ( IntegerTypeSuffix )?
             self.match(u'0')
 
-            # C.g:480:21: ( '0' .. '7' )+
+            # C.g:481:21: ( '0' .. '7' )+
             cnt10 = 0
             while True: #loop10
                 alt10 = 2
@@ -2331,7 +2331,7 @@ class CLexer(Lexer):
 
 
                 if alt10 == 1:
-                    # C.g:480:22: '0' .. '7'
+                    # C.g:481:22: '0' .. '7'
                     self.matchRange(u'0', u'7')
 
 
@@ -2346,14 +2346,14 @@ class CLexer(Lexer):
                 cnt10 += 1
 
 
-            # C.g:480:33: ( IntegerTypeSuffix )?
+            # C.g:481:33: ( IntegerTypeSuffix )?
             alt11 = 2
             LA11_0 = self.input.LA(1)
 
             if (LA11_0 == u'L' or LA11_0 == u'U' or LA11_0 == u'l' or LA11_0 == u'u') :
                 alt11 = 1
             if alt11 == 1:
-                # C.g:480:33: IntegerTypeSuffix
+                # C.g:481:33: IntegerTypeSuffix
                 self.mIntegerTypeSuffix()
 
 
@@ -2375,8 +2375,8 @@ class CLexer(Lexer):
     def mHexDigit(self, ):
 
         try:
-            # C.g:483:10: ( ( '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' ) )
-            # C.g:483:12: ( '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' )
+            # C.g:484:10: ( ( '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' ) )
+            # C.g:484:12: ( '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' )
             if (u'0' <= self.input.LA(1) <= u'9') or (u'A' <= self.input.LA(1) <= u'F') or (u'a' <= self.input.LA(1) <= u'f'):
                 self.input.consume();
 
@@ -2402,7 +2402,7 @@ class CLexer(Lexer):
     def mIntegerTypeSuffix(self, ):
 
         try:
-            # C.g:487:2: ( ( 'u' | 'U' )? ( 'l' | 'L' ) | ( 'u' | 'U' ) ( 'l' | 'L' )? )
+            # C.g:488:2: ( ( 'u' | 'U' )? ( 'l' | 'L' ) | ( 'u' | 'U' ) ( 'l' | 'L' )? )
             alt14 = 2
             LA14_0 = self.input.LA(1)
 
@@ -2416,13 +2416,13 @@ class CLexer(Lexer):
             elif (LA14_0 == u'L' or LA14_0 == u'l') :
                 alt14 = 1
             else:
-                nvae = NoViableAltException("485:1: fragment IntegerTypeSuffix : ( ( 'u' | 'U' )? ( 'l' | 'L' ) | ( 'u' | 'U' ) ( 'l' | 'L' )? );", 14, 0, self.input)
+                nvae = NoViableAltException("486:1: fragment IntegerTypeSuffix : ( ( 'u' | 'U' )? ( 'l' | 'L' ) | ( 'u' | 'U' ) ( 'l' | 'L' )? );", 14, 0, self.input)
 
                 raise nvae
 
             if alt14 == 1:
-                # C.g:487:4: ( 'u' | 'U' )? ( 'l' | 'L' )
-                # C.g:487:4: ( 'u' | 'U' )?
+                # C.g:488:4: ( 'u' | 'U' )? ( 'l' | 'L' )
+                # C.g:488:4: ( 'u' | 'U' )?
                 alt12 = 2
                 LA12_0 = self.input.LA(1)
 
@@ -2454,7 +2454,7 @@ class CLexer(Lexer):
 
 
             elif alt14 == 2:
-                # C.g:488:4: ( 'u' | 'U' ) ( 'l' | 'L' )?
+                # C.g:489:4: ( 'u' | 'U' ) ( 'l' | 'L' )?
                 if self.input.LA(1) == u'U' or self.input.LA(1) == u'u':
                     self.input.consume();
 
@@ -2464,7 +2464,7 @@ class CLexer(Lexer):
                     raise mse
 
 
-                # C.g:488:15: ( 'l' | 'L' )?
+                # C.g:489:15: ( 'l' | 'L' )?
                 alt13 = 2
                 LA13_0 = self.input.LA(1)
 
@@ -2501,12 +2501,12 @@ class CLexer(Lexer):
         try:
             self.type = FLOATING_POINT_LITERAL
 
-            # C.g:492:5: ( ( '0' .. '9' )+ '.' ( '0' .. '9' )* ( Exponent )? ( FloatTypeSuffix )? | '.' ( '0' .. '9' )+ ( Exponent )? ( FloatTypeSuffix )? | ( '0' .. '9' )+ Exponent ( FloatTypeSuffix )? | ( '0' .. '9' )+ ( Exponent )? FloatTypeSuffix )
+            # C.g:493:5: ( ( '0' .. '9' )+ '.' ( '0' .. '9' )* ( Exponent )? ( FloatTypeSuffix )? | '.' ( '0' .. '9' )+ ( Exponent )? ( FloatTypeSuffix )? | ( '0' .. '9' )+ Exponent ( FloatTypeSuffix )? | ( '0' .. '9' )+ ( Exponent )? FloatTypeSuffix )
             alt26 = 4
             alt26 = self.dfa26.predict(self.input)
             if alt26 == 1:
-                # C.g:492:9: ( '0' .. '9' )+ '.' ( '0' .. '9' )* ( Exponent )? ( FloatTypeSuffix )?
-                # C.g:492:9: ( '0' .. '9' )+
+                # C.g:493:9: ( '0' .. '9' )+ '.' ( '0' .. '9' )* ( Exponent )? ( FloatTypeSuffix )?
+                # C.g:493:9: ( '0' .. '9' )+
                 cnt15 = 0
                 while True: #loop15
                     alt15 = 2
@@ -2517,7 +2517,7 @@ class CLexer(Lexer):
 
 
                     if alt15 == 1:
-                        # C.g:492:10: '0' .. '9'
+                        # C.g:493:10: '0' .. '9'
                         self.matchRange(u'0', u'9')
 
 
@@ -2534,7 +2534,7 @@ class CLexer(Lexer):
 
                 self.match(u'.')
 
-                # C.g:492:25: ( '0' .. '9' )*
+                # C.g:493:25: ( '0' .. '9' )*
                 while True: #loop16
                     alt16 = 2
                     LA16_0 = self.input.LA(1)
@@ -2544,7 +2544,7 @@ class CLexer(Lexer):
 
 
                     if alt16 == 1:
-                        # C.g:492:26: '0' .. '9'
+                        # C.g:493:26: '0' .. '9'
                         self.matchRange(u'0', u'9')
 
 
@@ -2553,27 +2553,27 @@ class CLexer(Lexer):
                         break #loop16
 
 
-                # C.g:492:37: ( Exponent )?
+                # C.g:493:37: ( Exponent )?
                 alt17 = 2
                 LA17_0 = self.input.LA(1)
 
                 if (LA17_0 == u'E' or LA17_0 == u'e') :
                     alt17 = 1
                 if alt17 == 1:
-                    # C.g:492:37: Exponent
+                    # C.g:493:37: Exponent
                     self.mExponent()
 
 
 
 
-                # C.g:492:47: ( FloatTypeSuffix )?
+                # C.g:493:47: ( FloatTypeSuffix )?
                 alt18 = 2
                 LA18_0 = self.input.LA(1)
 
                 if (LA18_0 == u'D' or LA18_0 == u'F' or LA18_0 == u'd' or LA18_0 == u'f') :
                     alt18 = 1
                 if alt18 == 1:
-                    # C.g:492:47: FloatTypeSuffix
+                    # C.g:493:47: FloatTypeSuffix
                     self.mFloatTypeSuffix()
 
 
@@ -2582,10 +2582,10 @@ class CLexer(Lexer):
 
 
             elif alt26 == 2:
-                # C.g:493:9: '.' ( '0' .. '9' )+ ( Exponent )? ( FloatTypeSuffix )?
+                # C.g:494:9: '.' ( '0' .. '9' )+ ( Exponent )? ( FloatTypeSuffix )?
                 self.match(u'.')
 
-                # C.g:493:13: ( '0' .. '9' )+
+                # C.g:494:13: ( '0' .. '9' )+
                 cnt19 = 0
                 while True: #loop19
                     alt19 = 2
@@ -2596,7 +2596,7 @@ class CLexer(Lexer):
 
 
                     if alt19 == 1:
-                        # C.g:493:14: '0' .. '9'
+                        # C.g:494:14: '0' .. '9'
                         self.matchRange(u'0', u'9')
 
 
@@ -2611,27 +2611,27 @@ class CLexer(Lexer):
                     cnt19 += 1
 
 
-                # C.g:493:25: ( Exponent )?
+                # C.g:494:25: ( Exponent )?
                 alt20 = 2
                 LA20_0 = self.input.LA(1)
 
                 if (LA20_0 == u'E' or LA20_0 == u'e') :
                     alt20 = 1
                 if alt20 == 1:
-                    # C.g:493:25: Exponent
+                    # C.g:494:25: Exponent
                     self.mExponent()
 
 
 
 
-                # C.g:493:35: ( FloatTypeSuffix )?
+                # C.g:494:35: ( FloatTypeSuffix )?
                 alt21 = 2
                 LA21_0 = self.input.LA(1)
 
                 if (LA21_0 == u'D' or LA21_0 == u'F' or LA21_0 == u'd' or LA21_0 == u'f') :
                     alt21 = 1
                 if alt21 == 1:
-                    # C.g:493:35: FloatTypeSuffix
+                    # C.g:494:35: FloatTypeSuffix
                     self.mFloatTypeSuffix()
 
 
@@ -2640,8 +2640,8 @@ class CLexer(Lexer):
 
 
             elif alt26 == 3:
-                # C.g:494:9: ( '0' .. '9' )+ Exponent ( FloatTypeSuffix )?
-                # C.g:494:9: ( '0' .. '9' )+
+                # C.g:495:9: ( '0' .. '9' )+ Exponent ( FloatTypeSuffix )?
+                # C.g:495:9: ( '0' .. '9' )+
                 cnt22 = 0
                 while True: #loop22
                     alt22 = 2
@@ -2652,7 +2652,7 @@ class CLexer(Lexer):
 
 
                     if alt22 == 1:
-                        # C.g:494:10: '0' .. '9'
+                        # C.g:495:10: '0' .. '9'
                         self.matchRange(u'0', u'9')
 
 
@@ -2669,14 +2669,14 @@ class CLexer(Lexer):
 
                 self.mExponent()
 
-                # C.g:494:30: ( FloatTypeSuffix )?
+                # C.g:495:30: ( FloatTypeSuffix )?
                 alt23 = 2
                 LA23_0 = self.input.LA(1)
 
                 if (LA23_0 == u'D' or LA23_0 == u'F' or LA23_0 == u'd' or LA23_0 == u'f') :
                     alt23 = 1
                 if alt23 == 1:
-                    # C.g:494:30: FloatTypeSuffix
+                    # C.g:495:30: FloatTypeSuffix
                     self.mFloatTypeSuffix()
 
 
@@ -2685,8 +2685,8 @@ class CLexer(Lexer):
 
 
             elif alt26 == 4:
-                # C.g:495:9: ( '0' .. '9' )+ ( Exponent )? FloatTypeSuffix
-                # C.g:495:9: ( '0' .. '9' )+
+                # C.g:496:9: ( '0' .. '9' )+ ( Exponent )? FloatTypeSuffix
+                # C.g:496:9: ( '0' .. '9' )+
                 cnt24 = 0
                 while True: #loop24
                     alt24 = 2
@@ -2697,7 +2697,7 @@ class CLexer(Lexer):
 
 
                     if alt24 == 1:
-                        # C.g:495:10: '0' .. '9'
+                        # C.g:496:10: '0' .. '9'
                         self.matchRange(u'0', u'9')
 
 
@@ -2712,14 +2712,14 @@ class CLexer(Lexer):
                     cnt24 += 1
 
 
-                # C.g:495:21: ( Exponent )?
+                # C.g:496:21: ( Exponent )?
                 alt25 = 2
                 LA25_0 = self.input.LA(1)
 
                 if (LA25_0 == u'E' or LA25_0 == u'e') :
                     alt25 = 1
                 if alt25 == 1:
-                    # C.g:495:21: Exponent
+                    # C.g:496:21: Exponent
                     self.mExponent()
 
 
@@ -2742,8 +2742,8 @@ class CLexer(Lexer):
     def mExponent(self, ):
 
         try:
-            # C.g:499:10: ( ( 'e' | 'E' ) ( '+' | '-' )? ( '0' .. '9' )+ )
-            # C.g:499:12: ( 'e' | 'E' ) ( '+' | '-' )? ( '0' .. '9' )+
+            # C.g:500:10: ( ( 'e' | 'E' ) ( '+' | '-' )? ( '0' .. '9' )+ )
+            # C.g:500:12: ( 'e' | 'E' ) ( '+' | '-' )? ( '0' .. '9' )+
             if self.input.LA(1) == u'E' or self.input.LA(1) == u'e':
                 self.input.consume();
 
@@ -2753,7 +2753,7 @@ class CLexer(Lexer):
                 raise mse
 
 
-            # C.g:499:22: ( '+' | '-' )?
+            # C.g:500:22: ( '+' | '-' )?
             alt27 = 2
             LA27_0 = self.input.LA(1)
 
@@ -2773,7 +2773,7 @@ class CLexer(Lexer):
 
 
 
-            # C.g:499:33: ( '0' .. '9' )+
+            # C.g:500:33: ( '0' .. '9' )+
             cnt28 = 0
             while True: #loop28
                 alt28 = 2
@@ -2784,7 +2784,7 @@ class CLexer(Lexer):
 
 
                 if alt28 == 1:
-                    # C.g:499:34: '0' .. '9'
+                    # C.g:500:34: '0' .. '9'
                     self.matchRange(u'0', u'9')
 
 
@@ -2815,8 +2815,8 @@ class CLexer(Lexer):
     def mFloatTypeSuffix(self, ):
 
         try:
-            # C.g:502:17: ( ( 'f' | 'F' | 'd' | 'D' ) )
-            # C.g:502:19: ( 'f' | 'F' | 'd' | 'D' )
+            # C.g:503:17: ( ( 'f' | 'F' | 'd' | 'D' ) )
+            # C.g:503:19: ( 'f' | 'F' | 'd' | 'D' )
             if self.input.LA(1) == u'D' or self.input.LA(1) == u'F' or self.input.LA(1) == u'd' or self.input.LA(1) == u'f':
                 self.input.consume();
 
@@ -2842,7 +2842,7 @@ class CLexer(Lexer):
     def mEscapeSequence(self, ):
 
         try:
-            # C.g:506:5: ( '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' ) | OctalEscape )
+            # C.g:507:5: ( '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' ) | OctalEscape )
             alt29 = 2
             LA29_0 = self.input.LA(1)
 
@@ -2854,17 +2854,17 @@ class CLexer(Lexer):
                 elif ((u'0' <= LA29_1 <= u'7')) :
                     alt29 = 2
                 else:
-                    nvae = NoViableAltException("504:1: fragment EscapeSequence : ( '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' ) | OctalEscape );", 29, 1, self.input)
+                    nvae = NoViableAltException("505:1: fragment EscapeSequence : ( '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' ) | OctalEscape );", 29, 1, self.input)
 
                     raise nvae
 
             else:
-                nvae = NoViableAltException("504:1: fragment EscapeSequence : ( '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' ) | OctalEscape );", 29, 0, self.input)
+                nvae = NoViableAltException("505:1: fragment EscapeSequence : ( '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' ) | OctalEscape );", 29, 0, self.input)
 
                 raise nvae
 
             if alt29 == 1:
-                # C.g:506:9: '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' )
+                # C.g:507:9: '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' )
                 self.match(u'\\')
 
                 if self.input.LA(1) == u'"' or self.input.LA(1) == u'\'' or self.input.LA(1) == u'\\' or self.input.LA(1) == u'b' or self.input.LA(1) == u'f' or self.input.LA(1) == u'n' or self.input.LA(1) == u'r' or self.input.LA(1) == u't':
@@ -2879,7 +2879,7 @@ class CLexer(Lexer):
 
 
             elif alt29 == 2:
-                # C.g:507:9: OctalEscape
+                # C.g:508:9: OctalEscape
                 self.mOctalEscape()
 
 
@@ -2897,7 +2897,7 @@ class CLexer(Lexer):
     def mOctalEscape(self, ):
 
         try:
-            # C.g:512:5: ( '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) )
+            # C.g:513:5: ( '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) )
             alt30 = 3
             LA30_0 = self.input.LA(1)
 
@@ -2924,49 +2924,22 @@ class CLexer(Lexer):
                     else:
                         alt30 = 3
                 else:
-                    nvae = NoViableAltException("510:1: fragment OctalEscape : ( '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) );", 30, 1, self.input)
+                    nvae = NoViableAltException("511:1: fragment OctalEscape : ( '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) );", 30, 1, self.input)
 
                     raise nvae
 
             else:
-                nvae = NoViableAltException("510:1: fragment OctalEscape : ( '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) );", 30, 0, self.input)
+                nvae = NoViableAltException("511:1: fragment OctalEscape : ( '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) );", 30, 0, self.input)
 
                 raise nvae
 
             if alt30 == 1:
-                # C.g:512:9: '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' )
+                # C.g:513:9: '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' )
                 self.match(u'\\')
 
-                # C.g:512:14: ( '0' .. '3' )
-                # C.g:512:15: '0' .. '3'
+                # C.g:513:14: ( '0' .. '3' )
+                # C.g:513:15: '0' .. '3'
                 self.matchRange(u'0', u'3')
-
-
-
-
-                # C.g:512:25: ( '0' .. '7' )
-                # C.g:512:26: '0' .. '7'
-                self.matchRange(u'0', u'7')
-
-
-
-
-                # C.g:512:36: ( '0' .. '7' )
-                # C.g:512:37: '0' .. '7'
-                self.matchRange(u'0', u'7')
-
-
-
-
-
-
-            elif alt30 == 2:
-                # C.g:513:9: '\\\\' ( '0' .. '7' ) ( '0' .. '7' )
-                self.match(u'\\')
-
-                # C.g:513:14: ( '0' .. '7' )
-                # C.g:513:15: '0' .. '7'
-                self.matchRange(u'0', u'7')
 
 
 
@@ -2978,14 +2951,41 @@ class CLexer(Lexer):
 
 
 
+                # C.g:513:36: ( '0' .. '7' )
+                # C.g:513:37: '0' .. '7'
+                self.matchRange(u'0', u'7')
 
 
-            elif alt30 == 3:
-                # C.g:514:9: '\\\\' ( '0' .. '7' )
+
+
+
+
+            elif alt30 == 2:
+                # C.g:514:9: '\\\\' ( '0' .. '7' ) ( '0' .. '7' )
                 self.match(u'\\')
 
                 # C.g:514:14: ( '0' .. '7' )
                 # C.g:514:15: '0' .. '7'
+                self.matchRange(u'0', u'7')
+
+
+
+
+                # C.g:514:25: ( '0' .. '7' )
+                # C.g:514:26: '0' .. '7'
+                self.matchRange(u'0', u'7')
+
+
+
+
+
+
+            elif alt30 == 3:
+                # C.g:515:9: '\\\\' ( '0' .. '7' )
+                self.match(u'\\')
+
+                # C.g:515:14: ( '0' .. '7' )
+                # C.g:515:15: '0' .. '7'
                 self.matchRange(u'0', u'7')
 
 
@@ -3006,8 +3006,8 @@ class CLexer(Lexer):
     def mUnicodeEscape(self, ):
 
         try:
-            # C.g:519:5: ( '\\\\' 'u' HexDigit HexDigit HexDigit HexDigit )
-            # C.g:519:9: '\\\\' 'u' HexDigit HexDigit HexDigit HexDigit
+            # C.g:520:5: ( '\\\\' 'u' HexDigit HexDigit HexDigit HexDigit )
+            # C.g:520:9: '\\\\' 'u' HexDigit HexDigit HexDigit HexDigit
             self.match(u'\\')
 
             self.match(u'u')
@@ -3038,8 +3038,8 @@ class CLexer(Lexer):
         try:
             self.type = WS
 
-            # C.g:522:5: ( ( ' ' | '\\r' | '\\t' | '\\u000C' | '\\n' ) )
-            # C.g:522:8: ( ' ' | '\\r' | '\\t' | '\\u000C' | '\\n' )
+            # C.g:523:5: ( ( ' ' | '\\r' | '\\t' | '\\u000C' | '\\n' ) )
+            # C.g:523:8: ( ' ' | '\\r' | '\\t' | '\\u000C' | '\\n' )
             if (u'\t' <= self.input.LA(1) <= u'\n') or (u'\f' <= self.input.LA(1) <= u'\r') or self.input.LA(1) == u' ':
                 self.input.consume();
 
@@ -3070,8 +3070,8 @@ class CLexer(Lexer):
         try:
             self.type = UnicodeVocabulary
 
-            # C.g:530:5: ( '\\u0003' .. '\\uFFFE' )
-            # C.g:530:7: '\\u0003' .. '\\uFFFE'
+            # C.g:531:5: ( '\\u0003' .. '\\uFFFE' )
+            # C.g:531:7: '\\u0003' .. '\\uFFFE'
             self.matchRange(u'\u0003', u'\uFFFE')
 
 
@@ -3092,12 +3092,12 @@ class CLexer(Lexer):
         try:
             self.type = COMMENT
 
-            # C.g:533:5: ( '/*' ( options {greedy=false; } : . )* '*/' )
-            # C.g:533:9: '/*' ( options {greedy=false; } : . )* '*/'
+            # C.g:534:5: ( '/*' ( options {greedy=false; } : . )* '*/' )
+            # C.g:534:9: '/*' ( options {greedy=false; } : . )* '*/'
             self.match("/*")
 
 
-            # C.g:533:14: ( options {greedy=false; } : . )*
+            # C.g:534:14: ( options {greedy=false; } : . )*
             while True: #loop31
                 alt31 = 2
                 LA31_0 = self.input.LA(1)
@@ -3116,7 +3116,7 @@ class CLexer(Lexer):
 
 
                 if alt31 == 1:
-                    # C.g:533:42: .
+                    # C.g:534:42: .
                     self.matchAny()
 
 
@@ -3149,12 +3149,12 @@ class CLexer(Lexer):
         try:
             self.type = LINE_COMMENT
 
-            # C.g:538:5: ( '//' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n' )
-            # C.g:538:7: '//' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n'
+            # C.g:539:5: ( '//' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n' )
+            # C.g:539:7: '//' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n'
             self.match("//")
 
 
-            # C.g:538:12: (~ ( '\\n' | '\\r' ) )*
+            # C.g:539:12: (~ ( '\\n' | '\\r' ) )*
             while True: #loop32
                 alt32 = 2
                 LA32_0 = self.input.LA(1)
@@ -3164,7 +3164,7 @@ class CLexer(Lexer):
 
 
                 if alt32 == 1:
-                    # C.g:538:12: ~ ( '\\n' | '\\r' )
+                    # C.g:539:12: ~ ( '\\n' | '\\r' )
                     if (u'\u0000' <= self.input.LA(1) <= u'\t') or (u'\u000B' <= self.input.LA(1) <= u'\f') or (u'\u000E' <= self.input.LA(1) <= u'\uFFFE'):
                         self.input.consume();
 
@@ -3180,14 +3180,14 @@ class CLexer(Lexer):
                     break #loop32
 
 
-            # C.g:538:26: ( '\\r' )?
+            # C.g:539:26: ( '\\r' )?
             alt33 = 2
             LA33_0 = self.input.LA(1)
 
             if (LA33_0 == u'\r') :
                 alt33 = 1
             if alt33 == 1:
-                # C.g:538:26: '\\r'
+                # C.g:539:26: '\\r'
                 self.match(u'\r')
 
 
@@ -3216,11 +3216,11 @@ class CLexer(Lexer):
         try:
             self.type = LINE_COMMAND
 
-            # C.g:543:5: ( '#' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n' )
-            # C.g:543:7: '#' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n'
+            # C.g:544:5: ( '#' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n' )
+            # C.g:544:7: '#' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n'
             self.match(u'#')
 
-            # C.g:543:11: (~ ( '\\n' | '\\r' ) )*
+            # C.g:544:11: (~ ( '\\n' | '\\r' ) )*
             while True: #loop34
                 alt34 = 2
                 LA34_0 = self.input.LA(1)
@@ -3230,7 +3230,7 @@ class CLexer(Lexer):
 
 
                 if alt34 == 1:
-                    # C.g:543:11: ~ ( '\\n' | '\\r' )
+                    # C.g:544:11: ~ ( '\\n' | '\\r' )
                     if (u'\u0000' <= self.input.LA(1) <= u'\t') or (u'\u000B' <= self.input.LA(1) <= u'\f') or (u'\u000E' <= self.input.LA(1) <= u'\uFFFE'):
                         self.input.consume();
 
@@ -3246,14 +3246,14 @@ class CLexer(Lexer):
                     break #loop34
 
 
-            # C.g:543:25: ( '\\r' )?
+            # C.g:544:25: ( '\\r' )?
             alt35 = 2
             LA35_0 = self.input.LA(1)
 
             if (LA35_0 == u'\r') :
                 alt35 = 1
             if alt35 == 1:
-                # C.g:543:25: '\\r'
+                # C.g:544:25: '\\r'
                 self.match(u'\r')
 
 
@@ -3885,20 +3885,20 @@ class CLexer(Lexer):
     # lookup tables for DFA #36
 
     DFA36_eot = DFA.unpack(
-        u"\1\uffff\1\64\2\uffff\1\70\13\64\3\uffff\2\64\4\uffff\1\130\1\132"
+        u"\2\uffff\1\65\1\uffff\1\70\13\65\3\uffff\2\65\4\uffff\1\130\1\132"
         u"\1\136\1\142\1\146\1\150\1\153\1\uffff\1\156\1\161\1\164\1\166"
-        u"\1\171\1\uffff\4\64\1\62\1\uffff\1\62\2\u0081\1\uffff\1\62\1\uffff"
-        u"\1\64\5\uffff\15\64\1\u0098\4\64\1\u009e\2\64\3\uffff\1\u00a2\1"
-        u"\64\34\uffff\1\u00a5\2\uffff\1\u00a7\10\uffff\3\64\4\uffff\1\u00ab"
-        u"\1\u0081\2\uffff\22\64\1\uffff\1\u00bf\2\64\1\u00c2\1\64\1\uffff"
-        u"\3\64\1\uffff\1\u00c7\4\uffff\3\64\1\uffff\1\64\1\u00cc\1\64\1"
-        u"\u00ce\6\64\1\u00d5\2\64\1\u00d8\3\64\1\u00dc\1\u00dd\1\uffff\1"
-        u"\u00de\1\64\1\uffff\4\64\1\uffff\1\64\1\u00e5\2\64\1\uffff\1\64"
-        u"\1\uffff\4\64\1\u00ed\1\64\1\uffff\2\64\1\uffff\2\64\1\u00f3\3"
-        u"\uffff\1\u00f4\2\64\1\u00f7\1\64\1\u00f9\1\uffff\1\u00fa\1\64\1"
+        u"\1\171\1\uffff\4\65\1\62\1\uffff\1\62\2\u0081\1\uffff\1\62\2\uffff"
+        u"\1\65\4\uffff\15\65\1\u0098\4\65\1\u009e\2\65\3\uffff\1\u00a2\1"
+        u"\65\34\uffff\1\u00a5\2\uffff\1\u00a7\10\uffff\3\65\4\uffff\1\u00ab"
+        u"\1\u0081\2\uffff\22\65\1\uffff\1\u00bf\2\65\1\u00c2\1\65\1\uffff"
+        u"\3\65\1\uffff\1\u00c7\4\uffff\3\65\1\uffff\1\65\1\u00cc\1\65\1"
+        u"\u00ce\6\65\1\u00d5\2\65\1\u00d8\3\65\1\u00dc\1\u00dd\1\uffff\1"
+        u"\u00de\1\65\1\uffff\4\65\1\uffff\1\65\1\u00e5\2\65\1\uffff\1\65"
+        u"\1\uffff\4\65\1\u00ed\1\65\1\uffff\2\65\1\uffff\2\65\1\u00f3\3"
+        u"\uffff\1\u00f4\2\65\1\u00f7\1\65\1\u00f9\1\uffff\1\u00fa\1\65\1"
         u"\u00fc\1\u00fd\1\u00fe\1\u00ff\1\u0100\1\uffff\1\u0101\1\u0102"
-        u"\3\64\2\uffff\1\u0106\1\64\1\uffff\1\64\2\uffff\1\u0109\7\uffff"
-        u"\3\64\1\uffff\1\u010d\1\64\1\uffff\1\u010f\1\u0110\1\u0111\1\uffff"
+        u"\3\65\2\uffff\1\u0106\1\65\1\uffff\1\65\2\uffff\1\u0109\7\uffff"
+        u"\3\65\1\uffff\1\u010d\1\65\1\uffff\1\u010f\1\u0110\1\u0111\1\uffff"
         u"\1\u0112\4\uffff"
         )
 
@@ -3907,35 +3907,35 @@ class CLexer(Lexer):
         )
 
     DFA36_min = DFA.unpack(
-        u"\1\3\1\171\2\uffff\1\75\1\154\1\150\1\165\1\145\1\157\1\141\1\146"
-        u"\1\157\1\154\1\145\1\156\3\uffff\1\116\1\125\4\uffff\1\75\1\56"
-        u"\1\53\1\55\1\52\1\75\1\46\1\uffff\1\75\1\74\3\75\1\uffff\1\150"
-        u"\1\157\1\162\1\42\1\0\1\uffff\1\0\2\56\1\uffff\1\0\1\uffff\1\160"
-        u"\5\uffff\1\165\1\164\1\163\1\147\1\141\1\157\1\151\1\164\1\147"
-        u"\1\151\1\156\1\163\1\141\1\44\1\164\1\156\1\157\1\162\1\44\1\146"
-        u"\1\151\3\uffff\1\44\1\124\34\uffff\1\75\2\uffff\1\75\10\uffff\1"
-        u"\151\1\164\1\145\4\uffff\2\56\2\uffff\1\145\1\155\3\145\1\156\1"
-        u"\164\1\165\1\162\1\164\1\157\1\165\1\151\1\144\1\141\1\163\1\145"
-        u"\1\162\1\uffff\1\44\1\147\1\141\1\44\1\142\1\uffff\1\141\1\157"
-        u"\1\151\1\uffff\1\44\4\uffff\1\154\1\157\1\141\1\uffff\1\144\1\44"
-        u"\1\162\1\44\1\157\1\145\1\151\1\143\1\164\1\143\1\44\1\162\1\163"
-        u"\1\44\1\164\1\151\1\164\2\44\1\uffff\1\44\1\164\1\uffff\1\154\1"
-        u"\165\1\156\1\147\1\uffff\1\145\1\44\1\153\1\145\1\uffff\1\156\1"
-        u"\uffff\1\146\1\144\1\143\1\164\1\44\1\150\1\uffff\1\156\1\164\1"
-        u"\uffff\1\151\1\156\1\44\3\uffff\1\44\1\145\1\154\1\44\1\156\1\44"
-        u"\1\uffff\1\44\1\146\5\44\1\uffff\2\44\1\145\1\154\1\165\2\uffff"
-        u"\1\44\1\164\1\uffff\1\145\2\uffff\1\44\7\uffff\1\162\2\145\1\uffff"
-        u"\1\44\1\144\1\uffff\3\44\1\uffff\1\44\4\uffff"
+        u"\1\3\1\uffff\1\171\1\uffff\1\75\1\154\1\150\1\165\1\145\1\157\1"
+        u"\141\1\146\1\157\1\154\1\145\1\156\3\uffff\1\116\1\125\4\uffff"
+        u"\1\75\1\56\1\53\1\55\1\52\1\75\1\46\1\uffff\1\75\1\74\3\75\1\uffff"
+        u"\1\150\1\157\1\162\1\42\1\0\1\uffff\1\0\2\56\1\uffff\1\0\2\uffff"
+        u"\1\160\4\uffff\1\165\1\164\1\163\1\147\1\141\1\157\1\151\1\164"
+        u"\1\147\1\151\1\156\1\163\1\141\1\44\1\164\1\156\1\157\1\162\1\44"
+        u"\1\146\1\151\3\uffff\1\44\1\124\34\uffff\1\75\2\uffff\1\75\10\uffff"
+        u"\1\151\1\164\1\145\4\uffff\2\56\2\uffff\1\145\1\155\3\145\1\156"
+        u"\1\164\1\165\1\162\1\164\1\157\1\165\1\151\1\144\1\141\1\163\1"
+        u"\145\1\162\1\uffff\1\44\1\147\1\141\1\44\1\142\1\uffff\1\141\1"
+        u"\157\1\151\1\uffff\1\44\4\uffff\1\154\1\157\1\141\1\uffff\1\144"
+        u"\1\44\1\162\1\44\1\157\1\145\1\151\1\143\1\164\1\143\1\44\1\162"
+        u"\1\163\1\44\1\164\1\151\1\164\2\44\1\uffff\1\44\1\164\1\uffff\1"
+        u"\154\1\165\1\156\1\147\1\uffff\1\145\1\44\1\153\1\145\1\uffff\1"
+        u"\156\1\uffff\1\146\1\144\1\143\1\164\1\44\1\150\1\uffff\1\156\1"
+        u"\164\1\uffff\1\151\1\156\1\44\3\uffff\1\44\1\145\1\154\1\44\1\156"
+        u"\1\44\1\uffff\1\44\1\146\5\44\1\uffff\2\44\1\145\1\154\1\165\2"
+        u"\uffff\1\44\1\164\1\uffff\1\145\2\uffff\1\44\7\uffff\1\162\2\145"
+        u"\1\uffff\1\44\1\144\1\uffff\3\44\1\uffff\1\44\4\uffff"
         )
 
     DFA36_max = DFA.unpack(
-        u"\1\ufffe\1\171\2\uffff\1\75\1\170\1\167\1\165\1\145\2\157\1\156"
-        u"\3\157\1\156\3\uffff\1\116\1\125\4\uffff\1\75\1\71\1\75\1\76\3"
-        u"\75\1\uffff\2\75\1\76\1\75\1\174\1\uffff\1\150\1\157\1\162\1\42"
-        u"\1\ufffe\1\uffff\1\ufffe\1\170\1\146\1\uffff\1\ufffe\1\uffff\1"
-        u"\160\5\uffff\1\165\1\164\1\163\1\172\1\162\1\157\1\151\2\164\1"
-        u"\154\1\156\1\163\1\141\1\172\1\164\1\156\1\157\1\162\1\172\1\146"
-        u"\1\163\3\uffff\1\172\1\124\34\uffff\1\75\2\uffff\1\75\10\uffff"
+        u"\1\ufffe\1\uffff\1\171\1\uffff\1\75\1\170\1\167\1\165\1\145\2\157"
+        u"\1\156\3\157\1\156\3\uffff\1\116\1\125\4\uffff\1\75\1\71\1\75\1"
+        u"\76\3\75\1\uffff\2\75\1\76\1\75\1\174\1\uffff\1\150\1\157\1\162"
+        u"\1\42\1\ufffe\1\uffff\1\ufffe\1\170\1\146\1\uffff\1\ufffe\2\uffff"
+        u"\1\160\4\uffff\1\165\1\164\1\163\1\172\1\162\1\157\1\151\2\164"
+        u"\1\154\1\156\1\163\1\141\1\172\1\164\1\156\1\157\1\162\1\172\1"
+        u"\146\1\163\3\uffff\1\172\1\124\34\uffff\1\75\2\uffff\1\75\10\uffff"
         u"\1\151\1\164\1\145\4\uffff\2\146\2\uffff\1\145\1\155\3\145\1\156"
         u"\1\164\1\165\1\162\1\164\1\157\1\165\1\151\1\144\1\141\1\164\1"
         u"\145\1\162\1\uffff\1\172\1\147\1\141\1\172\1\142\1\uffff\1\141"
@@ -3952,20 +3952,20 @@ class CLexer(Lexer):
         )
 
     DFA36_accept = DFA.unpack(
-        u"\2\uffff\1\2\1\3\14\uffff\1\22\1\23\1\26\2\uffff\1\34\1\35\1\36"
-        u"\1\37\7\uffff\1\54\5\uffff\1\70\5\uffff\1\121\3\uffff\1\130\1\uffff"
-        u"\1\131\1\uffff\1\121\1\2\1\3\1\75\1\4\25\uffff\1\22\1\23\1\26\2"
-        u"\uffff\1\34\1\35\1\36\1\37\1\56\1\40\1\41\1\51\1\127\1\46\1\61"
-        u"\1\42\1\62\1\52\1\47\1\43\1\57\1\132\1\133\1\44\1\60\1\45\1\72"
-        u"\1\65\1\53\1\54\1\76\1\55\1\uffff\1\101\1\77\1\uffff\1\102\1\100"
-        u"\1\66\1\74\1\67\1\71\1\73\1\70\3\uffff\1\123\1\122\1\124\1\125"
-        u"\2\uffff\1\130\1\134\22\uffff\1\107\5\uffff\1\113\3\uffff\1\32"
-        u"\1\uffff\1\63\1\103\1\64\1\104\3\uffff\1\126\23\uffff\1\14\2\uffff"
-        u"\1\114\4\uffff\1\33\4\uffff\1\27\1\uffff\1\110\6\uffff\1\7\2\uffff"
-        u"\1\11\3\uffff\1\105\1\12\1\15\6\uffff\1\115\7\uffff\1\13\5\uffff"
-        u"\1\30\1\16\2\uffff\1\25\1\uffff\1\112\1\117\1\uffff\1\5\1\50\1"
-        u"\20\1\6\1\24\1\111\1\120\3\uffff\1\17\2\uffff\1\1\3\uffff\1\106"
-        u"\1\uffff\1\10\1\31\1\116\1\21"
+        u"\1\uffff\1\1\1\uffff\1\3\14\uffff\1\22\1\23\1\26\2\uffff\1\34\1"
+        u"\35\1\36\1\37\7\uffff\1\54\5\uffff\1\70\5\uffff\1\121\3\uffff\1"
+        u"\130\1\uffff\1\131\1\1\1\uffff\1\121\1\3\1\75\1\4\25\uffff\1\22"
+        u"\1\23\1\26\2\uffff\1\34\1\35\1\36\1\37\1\56\1\40\1\41\1\51\1\127"
+        u"\1\46\1\61\1\42\1\62\1\52\1\47\1\43\1\57\1\132\1\133\1\44\1\60"
+        u"\1\45\1\72\1\65\1\53\1\54\1\76\1\55\1\uffff\1\101\1\77\1\uffff"
+        u"\1\102\1\100\1\66\1\74\1\67\1\71\1\73\1\70\3\uffff\1\123\1\122"
+        u"\1\124\1\125\2\uffff\1\130\1\134\22\uffff\1\107\5\uffff\1\113\3"
+        u"\uffff\1\32\1\uffff\1\63\1\103\1\64\1\104\3\uffff\1\126\23\uffff"
+        u"\1\14\2\uffff\1\114\4\uffff\1\33\4\uffff\1\27\1\uffff\1\110\6\uffff"
+        u"\1\7\2\uffff\1\11\3\uffff\1\105\1\12\1\15\6\uffff\1\115\7\uffff"
+        u"\1\13\5\uffff\1\30\1\16\2\uffff\1\25\1\uffff\1\112\1\117\1\uffff"
+        u"\1\5\1\50\1\20\1\6\1\24\1\111\1\120\3\uffff\1\17\2\uffff\1\2\3"
+        u"\uffff\1\106\1\uffff\1\10\1\31\1\116\1\21"
         )
 
     DFA36_special = DFA.unpack(
@@ -3976,12 +3976,12 @@ class CLexer(Lexer):
     DFA36_transition = [
         DFA.unpack(u"\6\62\2\60\1\62\2\60\22\62\1\60\1\41\1\55\1\61\1\54"
         u"\1\36\1\37\1\53\1\25\1\26\1\31\1\33\1\3\1\34\1\32\1\35\1\56\11"
-        u"\57\1\22\1\2\1\42\1\4\1\43\1\46\1\62\10\54\1\23\2\54\1\52\2\54"
+        u"\57\1\22\1\1\1\42\1\4\1\43\1\46\1\62\10\54\1\23\2\54\1\52\2\54"
         u"\1\24\13\54\1\27\1\62\1\30\1\44\1\54\1\62\1\7\1\51\1\12\1\16\1"
-        u"\5\1\15\1\50\1\54\1\13\2\54\1\14\5\54\1\10\1\6\1\1\1\17\1\11\1"
+        u"\5\1\15\1\50\1\54\1\13\2\54\1\14\5\54\1\10\1\6\1\2\1\17\1\11\1"
         u"\47\3\54\1\20\1\45\1\21\1\40\uff80\62"),
-        DFA.unpack(u"\1\63"),
         DFA.unpack(u""),
+        DFA.unpack(u"\1\64"),
         DFA.unpack(u""),
         DFA.unpack(u"\1\67"),
         DFA.unpack(u"\1\73\1\uffff\1\71\11\uffff\1\72"),
@@ -4031,8 +4031,8 @@ class CLexer(Lexer):
         DFA.unpack(u""),
         DFA.unpack(u"\uffff\u0085"),
         DFA.unpack(u""),
-        DFA.unpack(u"\1\u0086"),
         DFA.unpack(u""),
+        DFA.unpack(u"\1\u0086"),
         DFA.unpack(u""),
         DFA.unpack(u""),
         DFA.unpack(u""),
@@ -4050,21 +4050,21 @@ class CLexer(Lexer):
         DFA.unpack(u"\1\u0095"),
         DFA.unpack(u"\1\u0096"),
         DFA.unpack(u"\1\u0097"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u"\1\u0099"),
         DFA.unpack(u"\1\u009a"),
         DFA.unpack(u"\1\u009b"),
         DFA.unpack(u"\1\u009c"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\24\64\1\u009d\5\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\24\65\1\u009d\5\65"),
         DFA.unpack(u"\1\u009f"),
         DFA.unpack(u"\1\u00a0\11\uffff\1\u00a1"),
         DFA.unpack(u""),
         DFA.unpack(u""),
         DFA.unpack(u""),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u"\1\u00a3"),
         DFA.unpack(u""),
         DFA.unpack(u""),
@@ -4137,20 +4137,20 @@ class CLexer(Lexer):
         DFA.unpack(u"\1\u00bd"),
         DFA.unpack(u"\1\u00be"),
         DFA.unpack(u""),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u"\1\u00c0"),
         DFA.unpack(u"\1\u00c1"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u"\1\u00c3"),
         DFA.unpack(u""),
         DFA.unpack(u"\1\u00c4"),
         DFA.unpack(u"\1\u00c5"),
         DFA.unpack(u"\1\u00c6"),
         DFA.unpack(u""),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u""),
         DFA.unpack(u""),
         DFA.unpack(u""),
@@ -4160,33 +4160,33 @@ class CLexer(Lexer):
         DFA.unpack(u"\1\u00ca"),
         DFA.unpack(u""),
         DFA.unpack(u"\1\u00cb"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u"\1\u00cd"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u"\1\u00cf"),
         DFA.unpack(u"\1\u00d0"),
         DFA.unpack(u"\1\u00d1"),
         DFA.unpack(u"\1\u00d2"),
         DFA.unpack(u"\1\u00d3"),
         DFA.unpack(u"\1\u00d4"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u"\1\u00d6"),
         DFA.unpack(u"\1\u00d7"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u"\1\u00d9"),
         DFA.unpack(u"\1\u00da"),
         DFA.unpack(u"\1\u00db"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u""),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u"\1\u00df"),
         DFA.unpack(u""),
         DFA.unpack(u"\1\u00e0"),
@@ -4195,8 +4195,8 @@ class CLexer(Lexer):
         DFA.unpack(u"\1\u00e3"),
         DFA.unpack(u""),
         DFA.unpack(u"\1\u00e4"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u"\1\u00e6"),
         DFA.unpack(u"\1\u00e7"),
         DFA.unpack(u""),
@@ -4206,8 +4206,8 @@ class CLexer(Lexer):
         DFA.unpack(u"\1\u00ea"),
         DFA.unpack(u"\1\u00eb"),
         DFA.unpack(u"\1\u00ec"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u"\1\u00ee"),
         DFA.unpack(u""),
         DFA.unpack(u"\1\u00ef"),
@@ -4215,53 +4215,53 @@ class CLexer(Lexer):
         DFA.unpack(u""),
         DFA.unpack(u"\1\u00f1"),
         DFA.unpack(u"\1\u00f2"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u""),
         DFA.unpack(u""),
         DFA.unpack(u""),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u"\1\u00f5"),
         DFA.unpack(u"\1\u00f6"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u"\1\u00f8"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u""),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u"\1\u00fb"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u""),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u"\1\u0103"),
         DFA.unpack(u"\1\u0104"),
         DFA.unpack(u"\1\u0105"),
         DFA.unpack(u""),
         DFA.unpack(u""),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u"\1\u0107"),
         DFA.unpack(u""),
         DFA.unpack(u"\1\u0108"),
         DFA.unpack(u""),
         DFA.unpack(u""),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u""),
         DFA.unpack(u""),
         DFA.unpack(u""),
@@ -4273,19 +4273,19 @@ class CLexer(Lexer):
         DFA.unpack(u"\1\u010b"),
         DFA.unpack(u"\1\u010c"),
         DFA.unpack(u""),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u"\1\u010e"),
         DFA.unpack(u""),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u""),
-        DFA.unpack(u"\1\64\13\uffff\12\64\7\uffff\32\64\4\uffff\1\64\1\uffff"
-        u"\32\64"),
+        DFA.unpack(u"\1\65\13\uffff\12\65\7\uffff\32\65\4\uffff\1\65\1\uffff"
+        u"\32\65"),
         DFA.unpack(u""),
         DFA.unpack(u""),
         DFA.unpack(u""),
