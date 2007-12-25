@@ -37,6 +37,7 @@ MODEL_VARIABLE_VARIABLE = 2006
 MODEL_VARIABLE_INCLUDE = 2007
 MODEL_VARIABLE_MACRO = 2008
 MODEL_VARIABLE_PREDICATE_EXPRESSION = 2009
+MODEL_VARIABLE_ENUMERATE = 2010
 
 MODEL_EFI_PROTOCOL = 3001
 MODEL_EFI_PPI = 3002
@@ -70,6 +71,7 @@ MODEL_LIST = [('MODEL_UNKNOWN', MODEL_UNKNOWN),
               ('MODEL_VARIABLE_INCLUDE', MODEL_VARIABLE_INCLUDE),
               ('MODEL_VARIABLE_MACRO', MODEL_VARIABLE_MACRO),
               ('MODEL_VARIABLE_PREDICATE_EXPRESSION', MODEL_VARIABLE_PREDICATE_EXPRESSION),
+              ('MODEL_VARIABLE_ENUMERATE', MODEL_VARIABLE_ENUMERATE),
               ('MODEL_EFI_PROTOCOL', MODEL_EFI_PROTOCOL),
               ('MODEL_EFI_PPI', MODEL_EFI_PPI),
               ('MODEL_EFI_GUID', MODEL_EFI_GUID),
@@ -168,6 +170,7 @@ class VariableClass(object):
         self.Type = Type
         self.Name = Name
         self.Value = Value
+        self.Model = Model
         self.BelongsToFile = BelongsToFile
         self.BelongsToFunction = BelongsToFunction
         self.StartLine = StartLine
