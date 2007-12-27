@@ -28,16 +28,17 @@ MODEL_FILE_DEC = 1012
 MODEL_FILE_DSC = 1013
 MODEL_FILE_DSC = 1014
 
-MODEL_VARIABLE_FILE_HEADER = 2001
-MODEL_VARIABLE_FUNCTION_HEADER = 2002
-MODEL_VARIABLE_COMMENT = 2003
-MODEL_VARIABLE_PARAMETER = 2004
-MODEL_VARIABLE_STRUCTURE = 2005
-MODEL_VARIABLE_VARIABLE = 2006
-MODEL_VARIABLE_INCLUDE = 2007
-MODEL_VARIABLE_MACRO = 2008
-MODEL_VARIABLE_PREDICATE_EXPRESSION = 2009
-MODEL_VARIABLE_ENUMERATE = 2010
+MODEL_IDENTIFIER_FILE_HEADER = 2001
+MODEL_IDENTIFIER_FUNCTION_HEADER = 2002
+MODEL_IDENTIFIER_COMMENT = 2003
+MODEL_IDENTIFIER_PARAMETER = 2004
+MODEL_IDENTIFIER_STRUCTURE = 2005
+MODEL_IDENTIFIER_IDENTIFIER = 2006
+MODEL_IDENTIFIER_INCLUDE = 2007
+MODEL_IDENTIFIER_MACRO = 2008
+MODEL_IDENTIFIER_PREDICATE_EXPRESSION = 2009
+MODEL_IDENTIFIER_ENUMERATE = 2010
+MODEL_IDENTIFIER_PCD = 2011
 
 MODEL_EFI_PROTOCOL = 3001
 MODEL_EFI_PPI = 3002
@@ -62,16 +63,17 @@ MODEL_LIST = [('MODEL_UNKNOWN', MODEL_UNKNOWN),
               ('MODEL_FILE_DEC', MODEL_FILE_DEC),
               ('MODEL_FILE_DSC', MODEL_FILE_DSC),
               ('MODEL_FILE_DSC', MODEL_FILE_DSC),
-              ('MODEL_VARIABLE_FILE_HEADER', MODEL_VARIABLE_FILE_HEADER),
-              ('MODEL_VARIABLE_FUNCTION_HEADER', MODEL_VARIABLE_FUNCTION_HEADER),
-              ('MODEL_VARIABLE_COMMENT', MODEL_VARIABLE_COMMENT),
-              ('MODEL_VARIABLE_PARAMETER', MODEL_VARIABLE_PARAMETER),
-              ('MODEL_VARIABLE_STRUCTURE', MODEL_VARIABLE_STRUCTURE),
-              ('MODEL_VARIABLE_VARIABLE', MODEL_VARIABLE_VARIABLE),
-              ('MODEL_VARIABLE_INCLUDE', MODEL_VARIABLE_INCLUDE),
-              ('MODEL_VARIABLE_MACRO', MODEL_VARIABLE_MACRO),
-              ('MODEL_VARIABLE_PREDICATE_EXPRESSION', MODEL_VARIABLE_PREDICATE_EXPRESSION),
-              ('MODEL_VARIABLE_ENUMERATE', MODEL_VARIABLE_ENUMERATE),
+              ('MODEL_IDENTIFIER_FILE_HEADER', MODEL_IDENTIFIER_FILE_HEADER),
+              ('MODEL_IDENTIFIER_FUNCTION_HEADER', MODEL_IDENTIFIER_FUNCTION_HEADER),
+              ('MODEL_IDENTIFIER_COMMENT', MODEL_IDENTIFIER_COMMENT),
+              ('MODEL_IDENTIFIER_PARAMETER', MODEL_IDENTIFIER_PARAMETER),
+              ('MODEL_IDENTIFIER_STRUCTURE', MODEL_IDENTIFIER_STRUCTURE),
+              ('MODEL_IDENTIFIER_IDENTIFIER', MODEL_IDENTIFIER_IDENTIFIER),
+              ('MODEL_IDENTIFIER_INCLUDE', MODEL_IDENTIFIER_INCLUDE),
+              ('MODEL_IDENTIFIER_MACRO', MODEL_IDENTIFIER_MACRO),
+              ('MODEL_IDENTIFIER_PREDICATE_EXPRESSION', MODEL_IDENTIFIER_PREDICATE_EXPRESSION),
+              ('MODEL_IDENTIFIER_ENUMERATE', MODEL_IDENTIFIER_ENUMERATE),
+              ('MODEL_IDENTIFIER_PCD', MODEL_IDENTIFIER_PCD),
               ('MODEL_EFI_PROTOCOL', MODEL_EFI_PROTOCOL),
               ('MODEL_EFI_PPI', MODEL_EFI_PPI),
               ('MODEL_EFI_GUID', MODEL_EFI_GUID),
@@ -101,7 +103,7 @@ MODEL_LIST = [('MODEL_UNKNOWN', MODEL_UNKNOWN),
 # @param EndLine:          EndLine of a Function
 # @param EndColumn:        EndColumn of a Function
 # @param BelongsToFile:    The Function belongs to which file
-# @param VariableList:     VariableList of a File
+# @param IdentifierList:   IdentifierList of a File
 # @param PcdList:          PcdList of a File
 #
 # @var ID:                 ID of a Function
@@ -114,11 +116,11 @@ MODEL_LIST = [('MODEL_UNKNOWN', MODEL_UNKNOWN),
 # @var EndLine:            EndLine of a Function
 # @var EndColumn:          EndColumn of a Function
 # @var BelongsToFile:      The Function belongs to which file
-# @var VariableList:       VariableList of a File
+# @var IdentifierList:     IdentifierList of a File
 # @var PcdList:            PcdList of a File
 #
 class FunctionClass(object):
-    def __init__(self, ID = -1, Header = '', Modifier = '', Name = '', ReturnStatement = '', StartLine = -1, StartColumn = -1, EndLine = -1, EndColumn = -1, BelongsToFile = -1, VariableList = [], PcdList = []):
+    def __init__(self, ID = -1, Header = '', Modifier = '', Name = '', ReturnStatement = '', StartLine = -1, StartColumn = -1, EndLine = -1, EndColumn = -1, BelongsToFile = -1, IdentifierList = [], PcdList = []):
         self.ID = ID
         self.Header = Header
         self.Modifier = Modifier                    
@@ -130,40 +132,40 @@ class FunctionClass(object):
         self.EndColumn = EndColumn
         self.BelongsToFile = BelongsToFile
         
-        self.VariableList = VariableList
+        self.IdentifierList = IdentifierList
         self.PcdList = PcdList
 
-## VariableClass
+## IdentifierClass
 #
 # This class defines a structure of a variable
 # 
-# @param ID:                 ID of a Variable
-# @param Modifier:           Modifier of a Variable
-# @param Type:               Type of a Variable
-# @param Name:               Name of a Variable
-# @param Value:              Value of a Variable
-# @param Model:              Model of a Variable
-# @param BelongsToFile:      The Variable belongs to which file
-# @param BelongsToFunction:  The Variable belongs to which function
-# @param StartLine:          StartLine of a Variable
-# @param StartColumn:        StartColumn of a Variable
-# @param EndLine:            EndLine of a Variable
-# @param EndColumn:          EndColumn of a Variable
+# @param ID:                 ID of a Identifier
+# @param Modifier:           Modifier of a Identifier
+# @param Type:               Type of a Identifier
+# @param Name:               Name of a Identifier
+# @param Value:              Value of a Identifier
+# @param Model:              Model of a Identifier
+# @param BelongsToFile:      The Identifier belongs to which file
+# @param BelongsToFunction:  The Identifier belongs to which function
+# @param StartLine:          StartLine of a Identifier
+# @param StartColumn:        StartColumn of a Identifier
+# @param EndLine:            EndLine of a Identifier
+# @param EndColumn:          EndColumn of a Identifier
 #
-# @var ID:                   ID of a Variable
-# @var Modifier:             Modifier of a Variable
-# @var Type:                 Type of a Variable
-# @var Name:                 Name of a Variable
-# @var Value:                Value of a Variable
-# @var Model:                Model of a Variable
-# @var BelongsToFile:        The Variable belongs to which file
-# @var BelongsToFunction:    The Variable belongs to which function
-# @var StartLine:            StartLine of a Variable
-# @var StartColumn:          StartColumn of a Variable
-# @var EndLine:              EndLine of a Variable
-# @var EndColumn:            EndColumn of a Variable
+# @var ID:                   ID of a Identifier
+# @var Modifier:             Modifier of a Identifier
+# @var Type:                 Type of a Identifier
+# @var Name:                 Name of a Identifier
+# @var Value:                Value of a Identifier
+# @var Model:                Model of a Identifier
+# @var BelongsToFile:        The Identifier belongs to which file
+# @var BelongsToFunction:    The Identifier belongs to which function
+# @var StartLine:            StartLine of a Identifier
+# @var StartColumn:          StartColumn of a Identifier
+# @var EndLine:              EndLine of a Identifier
+# @var EndColumn:            EndColumn of a Identifier
 #
-class VariableClass(object):
+class IdentifierClass(object):
     def __init__(self, ID = -1, Modifier = '', Type = '', Name = '', Value = '', Model = MODEL_UNKNOWN, BelongsToFile = -1, BelongsToFunction = -1, StartLine = -1, StartColumn = -1, EndLine = -1, EndColumn = -1):
         self.ID = ID
         self.Modifier = Modifier
@@ -226,28 +228,28 @@ class PcdClass(object):
 #
 # This class defines a structure of a file
 # 
-# @param ID:            ID of a File
-# @param Name:          Name of a File
-# @param ExtName:       ExtName of a File
-# @param Path:          Path of a File
-# @param FullPath:      FullPath of a File
-# @param Model:         Model of a File
-# @param FunctionList:  FunctionList of a File
-# @param VariableList:  VariableList of a File
-# @param PcdList:       PcdList of a File
+# @param ID:              ID of a File
+# @param Name:            Name of a File
+# @param ExtName:         ExtName of a File
+# @param Path:            Path of a File
+# @param FullPath:        FullPath of a File
+# @param Model:           Model of a File
+# @param FunctionList:    FunctionList of a File
+# @param IdentifierList:  IdentifierList of a File
+# @param PcdList:         PcdList of a File
 #
-# @var ID:              ID of a File
-# @var Name:            Name of a File
-# @var ExtName:         ExtName of a File
-# @var Path:            Path of a File
-# @var FullPath:        FullPath of a File
-# @var Model:           Model of a File
-# @var FunctionList:    FunctionList of a File
-# @var VariableList:    VariableList of a File
-# @var PcdList:         PcdList of a File
+# @var ID:                ID of a File
+# @var Name:              Name of a File
+# @var ExtName:           ExtName of a File
+# @var Path:              Path of a File
+# @var FullPath:          FullPath of a File
+# @var Model:             Model of a File
+# @var FunctionList:      FunctionList of a File
+# @var IdentifierList:    IdentifierList of a File
+# @var PcdList:           PcdList of a File
 #
 class FileClass(object):
-    def __init__(self, ID = -1, Name = '', ExtName = '', Path = '', FullPath = '', Model = MODEL_UNKNOWN, FunctionList = [], VariableList = [], PcdList = []):
+    def __init__(self, ID = -1, Name = '', ExtName = '', Path = '', FullPath = '', Model = MODEL_UNKNOWN, FunctionList = [], IdentifierList = [], PcdList = []):
         self.ID = ID                                   
         self.Name = Name
         self.ExtName = ExtName                    
@@ -256,5 +258,5 @@ class FileClass(object):
         self.Model = Model
         
         self.FunctionList = FunctionList
-        self.VariableList = VariableList
+        self.IdentifierList = IdentifierList
         self.PcdList = PcdList

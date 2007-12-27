@@ -1,5 +1,5 @@
 ## @file
-# This file is used to create/update/query/erase table for variables
+# This file is used to create/update/query/erase table for Identifiers
 #
 # Copyright (c) 2007, Intel Corporation
 # All rights reserved. This program and the accompanying materials
@@ -17,34 +17,34 @@
 import Common.EdkLogger as EdkLogger
 from Table import Table
 
-## TableVariable
+## TableIdentifier
 #
-# This class defined a table used for variable
+# This class defined a table used for Identifier
 # 
 # @param object:       Inherited from object class
 #
 #
-class TableVariable(Table):
+class TableIdentifier(Table):
     def __init__(self, Cursor):
         self.Cur = Cursor
-        self.Table = 'Variable'
+        self.Table = 'Identifier'
     
     ## Create table
     #
-    # Create table Variable
+    # Create table Identifier
     #
-    # @param ID:                 ID of a Variable
-    # @param Modifier:           Modifier of a Variable
-    # @param Type:               Type of a Variable
-    # @param Name:               Name of a Variable
-    # @param Value:              Value of a Variable
-    # @param Model:              Model of a Variable
-    # @param BelongsToFile:      The Variable belongs to which file
-    # @param BelongsToFunction:  The Variable belongs to which function
-    # @param StartLine:          StartLine of a Variable
-    # @param StartColumn:        StartColumn of a Variable
-    # @param EndLine:            EndLine of a Variable
-    # @param EndColumn:          EndColumn of a Variable
+    # @param ID:                 ID of a Identifier
+    # @param Modifier:           Modifier of a Identifier
+    # @param Type:               Type of a Identifier
+    # @param Name:               Name of a Identifier
+    # @param Value:              Value of a Identifier
+    # @param Model:              Model of a Identifier
+    # @param BelongsToFile:      The Identifier belongs to which file
+    # @param BelongsToFunction:  The Identifier belongs to which function
+    # @param StartLine:          StartLine of a Identifier
+    # @param StartColumn:        StartColumn of a Identifier
+    # @param EndLine:            EndLine of a Identifier
+    # @param EndColumn:          EndColumn of a Identifier
     #
     def Create(self):
         SqlCommand = """create table IF NOT EXISTS %s(ID SINGLE PRIMARY KEY,
@@ -64,20 +64,20 @@ class TableVariable(Table):
 
     ## Insert table
     #
-    # Insert a record into table Variable
+    # Insert a record into table Identifier
     #
-    # @param ID:                 ID of a Variable
-    # @param Modifier:           Modifier of a Variable
-    # @param Type:               Type of a Variable
-    # @param Name:               Name of a Variable
-    # @param Value:              Value of a Variable
-    # @param Model:              Model of a Variable
-    # @param BelongsToFile:      The Variable belongs to which file
-    # @param BelongsToFunction:  The Variable belongs to which function
-    # @param StartLine:          StartLine of a Variable
-    # @param StartColumn:        StartColumn of a Variable
-    # @param EndLine:            EndLine of a Variable
-    # @param EndColumn:          EndColumn of a Variable
+    # @param ID:                 ID of a Identifier
+    # @param Modifier:           Modifier of a Identifier
+    # @param Type:               Type of a Identifier
+    # @param Name:               Name of a Identifier
+    # @param Value:              Value of a Identifier
+    # @param Model:              Model of a Identifier
+    # @param BelongsToFile:      The Identifier belongs to which file
+    # @param BelongsToFunction:  The Identifier belongs to which function
+    # @param StartLine:          StartLine of a Identifier
+    # @param StartColumn:        StartColumn of a Identifier
+    # @param EndLine:            EndLine of a Identifier
+    # @param EndColumn:          EndColumn of a Identifier
     #
     def Insert(self, ID, Modifier, Type, Name, Value, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn):
         SqlCommand = """insert into %s values(%s, '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s, %s, %s)""" \
