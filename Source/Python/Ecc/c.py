@@ -11,8 +11,8 @@ for dirpath, dirnames, filenames in os.walk(sys.argv[1]):
     for f in filenames:
         if os.path.splitext(f)[1] in ('.h', '.c'):
             collector = CodeFragmentCollector.CodeFragmentCollector(os.path.join(dirpath, f))
-collector.ParseFile()
-collector.PrintFragments()
+            collector.ParseFile()
+            collector.PrintFragments()
 
 #BaseName = os.path.basename(sys.argv[1])
 #DirName = os.path.dirname(sys.argv[1])
