@@ -19,6 +19,11 @@
 import re
 import os
 import sys
+
+import antlr3
+from CLexer import CLexer
+from CParser import CParser
+
 import FileProfile
 from CodeFragment import Comment
 from CodeFragment import PP_Directive
@@ -222,6 +227,32 @@ class CodeFragmentCollector:
     #
     def __CurrentLine(self):
         return self.Profile.FileLinesList[self.CurrentLineNumber - 1]
+    
+    ## __InsertComma() method
+    #
+    #   Insert ',' to replace PP
+    #
+    #   @param  self        The object pointer
+    #   @retval List        current line contents
+    #
+    def __InsertComma(self, Line):
+        
+        
+        if self.Profile.FileLinesList[Line - 1][0] != T_CHAR_HASH:
+            BeforeHashPart = str(self.Profile.FileLinesList[Line - 1]).split(T_CHAR_HASH)[0]
+            if BeforeHashPart.rstrip().endswith(T_CHAR_COMMA) or BeforeHashPart.rstrip().endswith(';'):
+                return
+        
+        if Line - 2 >= 0 and str(self.Profile.FileLinesList[Line - 2]).rstrip().endswith(','):
+            return
+        
+        if Line - 2 >= 0 and str(self.Profile.FileLinesList[Line - 2]).rstrip().endswith(';'):
+            return
+        
+        if str(self.Profile.FileLinesList[Line]).lstrip().startswith(',') or str(self.Profile.FileLinesList[Line]).lstrip().startswith(';'):
+            return
+        
+        self.Profile.FileLinesList[Line - 1].insert(self.CurrentOffsetWithinLine, ',')
         
     ## PreprocessFile() method
     #
@@ -233,7 +264,7 @@ class CodeFragmentCollector:
     #   @param  self        The object pointer
     #   
     def PreprocessFile(self):
-        
+
         self.Rewind()
         InComment = False
         DoubleSlashComment = False
@@ -309,7 +340,10 @@ class CodeFragmentCollector:
             elif self.__CurrentChar() == T_CHAR_HASH:
                 InComment = True
                 HashComment = True
+                #insert ',' at hash line to workaround PP effects on C grammar check. C parser also adjusted to accomodate the inserted comma.
+                #self.__InsertComma(self.CurrentLineNumber) 
                 PPDirectiveObj = PP_Directive('', (self.CurrentLineNumber, self.CurrentOffsetWithinLine), None)
+                #self.CurrentOffsetWithinLine += 1
             # check for /* comment start
             elif self.__CurrentChar() == T_CHAR_SLASH and self.__NextChar() == T_CHAR_STAR:
                 CommentObj = Comment('', (self.CurrentLineNumber, self.CurrentOffsetWithinLine), None, T_COMMENT_SLASH_STAR)
@@ -327,6 +361,74 @@ class CodeFragmentCollector:
         self.Profile.FileLinesList = ["".join(list) for list in self.Profile.FileLinesList]
         self.Rewind()
 
+    ## ParseFile() method
+    #
+    #   Parse the file profile buffer to extract fd, fv ... information
+    #   Exception will be raised if syntax error found
+    #
+    #   @param  self        The object pointer
+    #
+    def ParseFile(self):
+        self.PreprocessFile()
+        FileStringContents = ''
+        for fileLine in self.Profile.FileLinesList:
+            FileStringContents += fileLine
+        cStream = antlr3.StringStream(FileStringContents)
+        lexer = CLexer(cStream)
+        tStream = antlr3.CommonTokenStream(lexer)
+        parser = CParser(tStream)
+        parser.translation_unit()
+        
+    def PrintFragments(self):
+        print '/****************************************/'
+        print '/*************** COMMENTS ***************/'
+        print '/****************************************/'
+        for comment in FileProfile.CommentList:
+            print str(comment.StartPos) + comment.Content
+        
+        print '################# ' + self.FileName + '#####################'
+        
+        print '/****************************************/'
+        print '/********* PREPROCESS DIRECTIVES ********/'
+        print '/****************************************/'
+        for pp in FileProfile.PPDirectiveList:
+            print str(pp.StartPos) + pp.Content
+        
+        print '/****************************************/'
+        print '/********* VARIABLE DECLARATIONS ********/'
+        print '/****************************************/'
+        for var in FileProfile.VariableDeclarationList:
+            print str(var.StartPos) + var.Modifier + ' '+ var.Declarator
+            
+        print '/****************************************/'
+        print '/********* FUNCTION DEFINITIONS *********/'
+        print '/****************************************/'
+        for func in FileProfile.FunctionDefinitionList:
+            print str(func.StartPos) + func.Modifier + ' '+ func.Declarator
+            
+        print '/****************************************/'
+        print '/************ ENUMERATIONS **************/'
+        print '/****************************************/'
+        for enum in FileProfile.EnumerationDefinitionList:
+            print str(enum.StartPos) + enum.Content
+        
+        print '/****************************************/'
+        print '/*********** STRUCTS/UNIONS *************/'
+        print '/****************************************/'
+        for su in FileProfile.StructUnionDefinitionList:
+            print str(su.StartPos) + su.Content
+            
+        print '/****************************************/'
+        print '/********* PREDICATE EXPRESSIONS ********/'
+        print '/****************************************/'
+        for predexp in FileProfile.PredicateExpressionList:
+            print str(predexp.StartPos) + predexp.Content
+        
+        print '/****************************************/'    
+        print '/************** TYPEDEFS ****************/'
+        print '/****************************************/'
+        for typedef in FileProfile.TypedefDefinitionList:
+            print str(typedef.StartPos) + typedef.ToType
         
 if __name__ == "__main__":
     

@@ -1,4 +1,4 @@
-# $ANTLR 3.0.1 C.g 2007-12-25 19:09:35
+# $ANTLR 3.0.1 C.g 2007-12-28 14:55:17
 
 from antlr3 import *
 from antlr3.compat import set, frozenset
@@ -2816,18 +2816,16 @@ class CParser(Parser):
 
 
     # $ANTLR start pointer
-    # C.g:216:1: pointer : ( '*' ( type_qualifier )+ ( pointer )? | '*' pointer | s= '*' );
+    # C.g:216:1: pointer : ( '*' ( type_qualifier )+ ( pointer )? | '*' pointer | '*' );
     def pointer(self, ):
 
         pointer_StartIndex = self.input.index()
-        s = None
-
         try:
             try:
                 if self.backtracking > 0 and self.alreadyParsedRule(self.input, 25):
                     return 
 
-                # C.g:217:2: ( '*' ( type_qualifier )+ ( pointer )? | '*' pointer | s= '*' )
+                # C.g:217:2: ( '*' ( type_qualifier )+ ( pointer )? | '*' pointer | '*' )
                 alt32 = 3
                 LA32_0 = self.input.LA(1)
 
@@ -2845,7 +2843,7 @@ class CParser(Parser):
                                 self.failed = True
                                 return 
 
-                            nvae = NoViableAltException("216:1: pointer : ( '*' ( type_qualifier )+ ( pointer )? | '*' pointer | s= '*' );", 32, 2, self.input)
+                            nvae = NoViableAltException("216:1: pointer : ( '*' ( type_qualifier )+ ( pointer )? | '*' pointer | '*' );", 32, 2, self.input)
 
                             raise nvae
 
@@ -2863,7 +2861,7 @@ class CParser(Parser):
                                 self.failed = True
                                 return 
 
-                            nvae = NoViableAltException("216:1: pointer : ( '*' ( type_qualifier )+ ( pointer )? | '*' pointer | s= '*' );", 32, 18, self.input)
+                            nvae = NoViableAltException("216:1: pointer : ( '*' ( type_qualifier )+ ( pointer )? | '*' pointer | '*' );", 32, 18, self.input)
 
                             raise nvae
 
@@ -2872,7 +2870,7 @@ class CParser(Parser):
                             self.failed = True
                             return 
 
-                        nvae = NoViableAltException("216:1: pointer : ( '*' ( type_qualifier )+ ( pointer )? | '*' pointer | s= '*' );", 32, 1, self.input)
+                        nvae = NoViableAltException("216:1: pointer : ( '*' ( type_qualifier )+ ( pointer )? | '*' pointer | '*' );", 32, 1, self.input)
 
                         raise nvae
 
@@ -2881,7 +2879,7 @@ class CParser(Parser):
                         self.failed = True
                         return 
 
-                    nvae = NoViableAltException("216:1: pointer : ( '*' ( type_qualifier )+ ( pointer )? | '*' pointer | s= '*' );", 32, 0, self.input)
+                    nvae = NoViableAltException("216:1: pointer : ( '*' ( type_qualifier )+ ( pointer )? | '*' pointer | '*' );", 32, 0, self.input)
 
                     raise nvae
 
@@ -2962,9 +2960,8 @@ class CParser(Parser):
 
 
                 elif alt32 == 3:
-                    # C.g:219:4: s= '*'
-                    s = self.input.LT(1)
-                    self.match(self.input, 55, self.FOLLOW_55_in_pointer842)
+                    # C.g:219:4: '*'
+                    self.match(self.input, 55, self.FOLLOW_55_in_pointer840)
                     if self.failed:
                         return 
 
@@ -2996,7 +2993,7 @@ class CParser(Parser):
 
                 # C.g:223:2: ( parameter_list ( ',' '...' )? )
                 # C.g:223:4: parameter_list ( ',' '...' )?
-                self.following.append(self.FOLLOW_parameter_list_in_parameter_type_list853)
+                self.following.append(self.FOLLOW_parameter_list_in_parameter_type_list851)
                 self.parameter_list()
                 self.following.pop()
                 if self.failed:
@@ -3009,10 +3006,10 @@ class CParser(Parser):
                     alt33 = 1
                 if alt33 == 1:
                     # C.g:223:20: ',' '...'
-                    self.match(self.input, 26, self.FOLLOW_26_in_parameter_type_list856)
+                    self.match(self.input, 26, self.FOLLOW_26_in_parameter_type_list854)
                     if self.failed:
                         return 
-                    self.match(self.input, 56, self.FOLLOW_56_in_parameter_type_list858)
+                    self.match(self.input, 56, self.FOLLOW_56_in_parameter_type_list856)
                     if self.failed:
                         return 
 
@@ -3048,7 +3045,7 @@ class CParser(Parser):
 
                 # C.g:227:2: ( parameter_declaration ( ',' parameter_declaration )* )
                 # C.g:227:4: parameter_declaration ( ',' parameter_declaration )*
-                self.following.append(self.FOLLOW_parameter_declaration_in_parameter_list871)
+                self.following.append(self.FOLLOW_parameter_declaration_in_parameter_list869)
                 self.parameter_declaration()
                 self.following.pop()
                 if self.failed:
@@ -3069,10 +3066,10 @@ class CParser(Parser):
 
                     if alt34 == 1:
                         # C.g:227:27: ',' parameter_declaration
-                        self.match(self.input, 26, self.FOLLOW_26_in_parameter_list874)
+                        self.match(self.input, 26, self.FOLLOW_26_in_parameter_list872)
                         if self.failed:
                             return 
-                        self.following.append(self.FOLLOW_parameter_declaration_in_parameter_list876)
+                        self.following.append(self.FOLLOW_parameter_declaration_in_parameter_list874)
                         self.parameter_declaration()
                         self.following.pop()
                         if self.failed:
@@ -3113,7 +3110,7 @@ class CParser(Parser):
 
                 # C.g:231:2: ( declaration_specifiers ( declarator | abstract_declarator )+ )
                 # C.g:231:4: declaration_specifiers ( declarator | abstract_declarator )+
-                self.following.append(self.FOLLOW_declaration_specifiers_in_parameter_declaration889)
+                self.following.append(self.FOLLOW_declaration_specifiers_in_parameter_declaration887)
                 self.declaration_specifiers()
                 self.following.pop()
                 if self.failed:
@@ -3171,7 +3168,7 @@ class CParser(Parser):
 
                     if alt35 == 1:
                         # C.g:231:28: declarator
-                        self.following.append(self.FOLLOW_declarator_in_parameter_declaration892)
+                        self.following.append(self.FOLLOW_declarator_in_parameter_declaration890)
                         self.declarator()
                         self.following.pop()
                         if self.failed:
@@ -3180,7 +3177,7 @@ class CParser(Parser):
 
                     elif alt35 == 2:
                         # C.g:231:39: abstract_declarator
-                        self.following.append(self.FOLLOW_abstract_declarator_in_parameter_declaration894)
+                        self.following.append(self.FOLLOW_abstract_declarator_in_parameter_declaration892)
                         self.abstract_declarator()
                         self.following.pop()
                         if self.failed:
@@ -3231,7 +3228,7 @@ class CParser(Parser):
 
                 # C.g:235:2: ( IDENTIFIER ( ',' IDENTIFIER )* )
                 # C.g:235:4: IDENTIFIER ( ',' IDENTIFIER )*
-                self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_identifier_list907)
+                self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_identifier_list905)
                 if self.failed:
                     return 
                 # C.g:236:2: ( ',' IDENTIFIER )*
@@ -3245,10 +3242,10 @@ class CParser(Parser):
 
                     if alt36 == 1:
                         # C.g:236:3: ',' IDENTIFIER
-                        self.match(self.input, 26, self.FOLLOW_26_in_identifier_list911)
+                        self.match(self.input, 26, self.FOLLOW_26_in_identifier_list909)
                         if self.failed:
                             return 
-                        self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_identifier_list913)
+                        self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_identifier_list911)
                         if self.failed:
                             return 
 
@@ -3318,7 +3315,7 @@ class CParser(Parser):
 
                 if alt38 == 1:
                     # C.g:240:4: specifier_qualifier_list ( abstract_declarator )?
-                    self.following.append(self.FOLLOW_specifier_qualifier_list_in_type_name926)
+                    self.following.append(self.FOLLOW_specifier_qualifier_list_in_type_name924)
                     self.specifier_qualifier_list()
                     self.following.pop()
                     if self.failed:
@@ -3331,7 +3328,7 @@ class CParser(Parser):
                         alt37 = 1
                     if alt37 == 1:
                         # C.g:0:0: abstract_declarator
-                        self.following.append(self.FOLLOW_abstract_declarator_in_type_name928)
+                        self.following.append(self.FOLLOW_abstract_declarator_in_type_name926)
                         self.abstract_declarator()
                         self.following.pop()
                         if self.failed:
@@ -3343,7 +3340,7 @@ class CParser(Parser):
 
                 elif alt38 == 2:
                     # C.g:241:4: type_id
-                    self.following.append(self.FOLLOW_type_id_in_type_name934)
+                    self.following.append(self.FOLLOW_type_id_in_type_name932)
                     self.type_id()
                     self.following.pop()
                     if self.failed:
@@ -3394,7 +3391,7 @@ class CParser(Parser):
 
                 if alt40 == 1:
                     # C.g:245:4: pointer ( direct_abstract_declarator )?
-                    self.following.append(self.FOLLOW_pointer_in_abstract_declarator945)
+                    self.following.append(self.FOLLOW_pointer_in_abstract_declarator943)
                     self.pointer()
                     self.following.pop()
                     if self.failed:
@@ -3539,7 +3536,7 @@ class CParser(Parser):
                                 alt39 = 1
                     if alt39 == 1:
                         # C.g:0:0: direct_abstract_declarator
-                        self.following.append(self.FOLLOW_direct_abstract_declarator_in_abstract_declarator947)
+                        self.following.append(self.FOLLOW_direct_abstract_declarator_in_abstract_declarator945)
                         self.direct_abstract_declarator()
                         self.following.pop()
                         if self.failed:
@@ -3551,7 +3548,7 @@ class CParser(Parser):
 
                 elif alt40 == 2:
                     # C.g:246:4: direct_abstract_declarator
-                    self.following.append(self.FOLLOW_direct_abstract_declarator_in_abstract_declarator953)
+                    self.following.append(self.FOLLOW_direct_abstract_declarator_in_abstract_declarator951)
                     self.direct_abstract_declarator()
                     self.following.pop()
                     if self.failed:
@@ -3618,22 +3615,22 @@ class CParser(Parser):
 
                 if alt41 == 1:
                     # C.g:250:6: '(' abstract_declarator ')'
-                    self.match(self.input, 51, self.FOLLOW_51_in_direct_abstract_declarator966)
+                    self.match(self.input, 51, self.FOLLOW_51_in_direct_abstract_declarator964)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_abstract_declarator_in_direct_abstract_declarator968)
+                    self.following.append(self.FOLLOW_abstract_declarator_in_direct_abstract_declarator966)
                     self.abstract_declarator()
                     self.following.pop()
                     if self.failed:
                         return 
-                    self.match(self.input, 52, self.FOLLOW_52_in_direct_abstract_declarator970)
+                    self.match(self.input, 52, self.FOLLOW_52_in_direct_abstract_declarator968)
                     if self.failed:
                         return 
 
 
                 elif alt41 == 2:
                     # C.g:250:36: abstract_declarator_suffix
-                    self.following.append(self.FOLLOW_abstract_declarator_suffix_in_direct_abstract_declarator974)
+                    self.following.append(self.FOLLOW_abstract_declarator_suffix_in_direct_abstract_declarator972)
                     self.abstract_declarator_suffix()
                     self.following.pop()
                     if self.failed:
@@ -3817,7 +3814,7 @@ class CParser(Parser):
 
                     if alt42 == 1:
                         # C.g:0:0: abstract_declarator_suffix
-                        self.following.append(self.FOLLOW_abstract_declarator_suffix_in_direct_abstract_declarator978)
+                        self.following.append(self.FOLLOW_abstract_declarator_suffix_in_direct_abstract_declarator976)
                         self.abstract_declarator_suffix()
                         self.following.pop()
                         if self.failed:
@@ -3903,50 +3900,50 @@ class CParser(Parser):
 
                 if alt43 == 1:
                     # C.g:254:4: '[' ']'
-                    self.match(self.input, 53, self.FOLLOW_53_in_abstract_declarator_suffix990)
+                    self.match(self.input, 53, self.FOLLOW_53_in_abstract_declarator_suffix988)
                     if self.failed:
                         return 
-                    self.match(self.input, 54, self.FOLLOW_54_in_abstract_declarator_suffix992)
+                    self.match(self.input, 54, self.FOLLOW_54_in_abstract_declarator_suffix990)
                     if self.failed:
                         return 
 
 
                 elif alt43 == 2:
                     # C.g:255:4: '[' constant_expression ']'
-                    self.match(self.input, 53, self.FOLLOW_53_in_abstract_declarator_suffix997)
+                    self.match(self.input, 53, self.FOLLOW_53_in_abstract_declarator_suffix995)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_constant_expression_in_abstract_declarator_suffix999)
+                    self.following.append(self.FOLLOW_constant_expression_in_abstract_declarator_suffix997)
                     self.constant_expression()
                     self.following.pop()
                     if self.failed:
                         return 
-                    self.match(self.input, 54, self.FOLLOW_54_in_abstract_declarator_suffix1001)
+                    self.match(self.input, 54, self.FOLLOW_54_in_abstract_declarator_suffix999)
                     if self.failed:
                         return 
 
 
                 elif alt43 == 3:
                     # C.g:256:4: '(' ')'
-                    self.match(self.input, 51, self.FOLLOW_51_in_abstract_declarator_suffix1006)
+                    self.match(self.input, 51, self.FOLLOW_51_in_abstract_declarator_suffix1004)
                     if self.failed:
                         return 
-                    self.match(self.input, 52, self.FOLLOW_52_in_abstract_declarator_suffix1008)
+                    self.match(self.input, 52, self.FOLLOW_52_in_abstract_declarator_suffix1006)
                     if self.failed:
                         return 
 
 
                 elif alt43 == 4:
                     # C.g:257:4: '(' parameter_type_list ')'
-                    self.match(self.input, 51, self.FOLLOW_51_in_abstract_declarator_suffix1013)
+                    self.match(self.input, 51, self.FOLLOW_51_in_abstract_declarator_suffix1011)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_parameter_type_list_in_abstract_declarator_suffix1015)
+                    self.following.append(self.FOLLOW_parameter_type_list_in_abstract_declarator_suffix1013)
                     self.parameter_type_list()
                     self.following.pop()
                     if self.failed:
                         return 
-                    self.match(self.input, 52, self.FOLLOW_52_in_abstract_declarator_suffix1017)
+                    self.match(self.input, 52, self.FOLLOW_52_in_abstract_declarator_suffix1015)
                     if self.failed:
                         return 
 
@@ -3995,7 +3992,7 @@ class CParser(Parser):
 
                 if alt45 == 1:
                     # C.g:262:4: assignment_expression
-                    self.following.append(self.FOLLOW_assignment_expression_in_initializer1030)
+                    self.following.append(self.FOLLOW_assignment_expression_in_initializer1028)
                     self.assignment_expression()
                     self.following.pop()
                     if self.failed:
@@ -4004,10 +4001,10 @@ class CParser(Parser):
 
                 elif alt45 == 2:
                     # C.g:263:4: '{' initializer_list ( ',' )? '}'
-                    self.match(self.input, 41, self.FOLLOW_41_in_initializer1035)
+                    self.match(self.input, 41, self.FOLLOW_41_in_initializer1033)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_initializer_list_in_initializer1037)
+                    self.following.append(self.FOLLOW_initializer_list_in_initializer1035)
                     self.initializer_list()
                     self.following.pop()
                     if self.failed:
@@ -4020,13 +4017,13 @@ class CParser(Parser):
                         alt44 = 1
                     if alt44 == 1:
                         # C.g:0:0: ','
-                        self.match(self.input, 26, self.FOLLOW_26_in_initializer1039)
+                        self.match(self.input, 26, self.FOLLOW_26_in_initializer1037)
                         if self.failed:
                             return 
 
 
 
-                    self.match(self.input, 42, self.FOLLOW_42_in_initializer1042)
+                    self.match(self.input, 42, self.FOLLOW_42_in_initializer1040)
                     if self.failed:
                         return 
 
@@ -4058,7 +4055,7 @@ class CParser(Parser):
 
                 # C.g:267:2: ( initializer ( ',' initializer )* )
                 # C.g:267:4: initializer ( ',' initializer )*
-                self.following.append(self.FOLLOW_initializer_in_initializer_list1053)
+                self.following.append(self.FOLLOW_initializer_in_initializer_list1051)
                 self.initializer()
                 self.following.pop()
                 if self.failed:
@@ -4079,10 +4076,10 @@ class CParser(Parser):
 
                     if alt46 == 1:
                         # C.g:267:17: ',' initializer
-                        self.match(self.input, 26, self.FOLLOW_26_in_initializer_list1056)
+                        self.match(self.input, 26, self.FOLLOW_26_in_initializer_list1054)
                         if self.failed:
                             return 
-                        self.following.append(self.FOLLOW_initializer_in_initializer_list1058)
+                        self.following.append(self.FOLLOW_initializer_in_initializer_list1056)
                         self.initializer()
                         self.following.pop()
                         if self.failed:
@@ -4123,7 +4120,7 @@ class CParser(Parser):
 
                 # C.g:273:2: ( assignment_expression ( ',' assignment_expression )* )
                 # C.g:273:6: assignment_expression ( ',' assignment_expression )*
-                self.following.append(self.FOLLOW_assignment_expression_in_argument_expression_list1076)
+                self.following.append(self.FOLLOW_assignment_expression_in_argument_expression_list1074)
                 self.assignment_expression()
                 self.following.pop()
                 if self.failed:
@@ -4139,10 +4136,10 @@ class CParser(Parser):
 
                     if alt47 == 1:
                         # C.g:273:29: ',' assignment_expression
-                        self.match(self.input, 26, self.FOLLOW_26_in_argument_expression_list1079)
+                        self.match(self.input, 26, self.FOLLOW_26_in_argument_expression_list1077)
                         if self.failed:
                             return 
-                        self.following.append(self.FOLLOW_assignment_expression_in_argument_expression_list1081)
+                        self.following.append(self.FOLLOW_assignment_expression_in_argument_expression_list1079)
                         self.assignment_expression()
                         self.following.pop()
                         if self.failed:
@@ -4185,7 +4182,7 @@ class CParser(Parser):
                 # C.g:277:4: ( multiplicative_expression ) ( '+' multiplicative_expression | '-' multiplicative_expression )*
                 # C.g:277:4: ( multiplicative_expression )
                 # C.g:277:5: multiplicative_expression
-                self.following.append(self.FOLLOW_multiplicative_expression_in_additive_expression1095)
+                self.following.append(self.FOLLOW_multiplicative_expression_in_additive_expression1093)
                 self.multiplicative_expression()
                 self.following.pop()
                 if self.failed:
@@ -4206,10 +4203,10 @@ class CParser(Parser):
 
                     if alt48 == 1:
                         # C.g:277:33: '+' multiplicative_expression
-                        self.match(self.input, 57, self.FOLLOW_57_in_additive_expression1099)
+                        self.match(self.input, 57, self.FOLLOW_57_in_additive_expression1097)
                         if self.failed:
                             return 
-                        self.following.append(self.FOLLOW_multiplicative_expression_in_additive_expression1101)
+                        self.following.append(self.FOLLOW_multiplicative_expression_in_additive_expression1099)
                         self.multiplicative_expression()
                         self.following.pop()
                         if self.failed:
@@ -4218,10 +4215,10 @@ class CParser(Parser):
 
                     elif alt48 == 2:
                         # C.g:277:65: '-' multiplicative_expression
-                        self.match(self.input, 58, self.FOLLOW_58_in_additive_expression1105)
+                        self.match(self.input, 58, self.FOLLOW_58_in_additive_expression1103)
                         if self.failed:
                             return 
-                        self.following.append(self.FOLLOW_multiplicative_expression_in_additive_expression1107)
+                        self.following.append(self.FOLLOW_multiplicative_expression_in_additive_expression1105)
                         self.multiplicative_expression()
                         self.following.pop()
                         if self.failed:
@@ -4264,7 +4261,7 @@ class CParser(Parser):
                 # C.g:281:4: ( cast_expression ) ( '*' cast_expression | '/' cast_expression | '%' cast_expression )*
                 # C.g:281:4: ( cast_expression )
                 # C.g:281:5: cast_expression
-                self.following.append(self.FOLLOW_cast_expression_in_multiplicative_expression1121)
+                self.following.append(self.FOLLOW_cast_expression_in_multiplicative_expression1119)
                 self.cast_expression()
                 self.following.pop()
                 if self.failed:
@@ -4285,10 +4282,10 @@ class CParser(Parser):
 
                     if alt49 == 1:
                         # C.g:281:23: '*' cast_expression
-                        self.match(self.input, 55, self.FOLLOW_55_in_multiplicative_expression1125)
+                        self.match(self.input, 55, self.FOLLOW_55_in_multiplicative_expression1123)
                         if self.failed:
                             return 
-                        self.following.append(self.FOLLOW_cast_expression_in_multiplicative_expression1127)
+                        self.following.append(self.FOLLOW_cast_expression_in_multiplicative_expression1125)
                         self.cast_expression()
                         self.following.pop()
                         if self.failed:
@@ -4297,10 +4294,10 @@ class CParser(Parser):
 
                     elif alt49 == 2:
                         # C.g:281:45: '/' cast_expression
-                        self.match(self.input, 59, self.FOLLOW_59_in_multiplicative_expression1131)
+                        self.match(self.input, 59, self.FOLLOW_59_in_multiplicative_expression1129)
                         if self.failed:
                             return 
-                        self.following.append(self.FOLLOW_cast_expression_in_multiplicative_expression1133)
+                        self.following.append(self.FOLLOW_cast_expression_in_multiplicative_expression1131)
                         self.cast_expression()
                         self.following.pop()
                         if self.failed:
@@ -4309,10 +4306,10 @@ class CParser(Parser):
 
                     elif alt49 == 3:
                         # C.g:281:67: '%' cast_expression
-                        self.match(self.input, 60, self.FOLLOW_60_in_multiplicative_expression1137)
+                        self.match(self.input, 60, self.FOLLOW_60_in_multiplicative_expression1135)
                         if self.failed:
                             return 
-                        self.following.append(self.FOLLOW_cast_expression_in_multiplicative_expression1139)
+                        self.following.append(self.FOLLOW_cast_expression_in_multiplicative_expression1137)
                         self.cast_expression()
                         self.following.pop()
                         if self.failed:
@@ -4399,18 +4396,18 @@ class CParser(Parser):
 
                 if alt50 == 1:
                     # C.g:285:4: '(' type_name ')' cast_expression
-                    self.match(self.input, 51, self.FOLLOW_51_in_cast_expression1152)
+                    self.match(self.input, 51, self.FOLLOW_51_in_cast_expression1150)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_type_name_in_cast_expression1154)
+                    self.following.append(self.FOLLOW_type_name_in_cast_expression1152)
                     self.type_name()
                     self.following.pop()
                     if self.failed:
                         return 
-                    self.match(self.input, 52, self.FOLLOW_52_in_cast_expression1156)
+                    self.match(self.input, 52, self.FOLLOW_52_in_cast_expression1154)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_cast_expression_in_cast_expression1158)
+                    self.following.append(self.FOLLOW_cast_expression_in_cast_expression1156)
                     self.cast_expression()
                     self.following.pop()
                     if self.failed:
@@ -4419,7 +4416,7 @@ class CParser(Parser):
 
                 elif alt50 == 2:
                     # C.g:286:4: unary_expression
-                    self.following.append(self.FOLLOW_unary_expression_in_cast_expression1163)
+                    self.following.append(self.FOLLOW_unary_expression_in_cast_expression1161)
                     self.unary_expression()
                     self.following.pop()
                     if self.failed:
@@ -4503,7 +4500,7 @@ class CParser(Parser):
 
                 if alt51 == 1:
                     # C.g:290:4: postfix_expression
-                    self.following.append(self.FOLLOW_postfix_expression_in_unary_expression1174)
+                    self.following.append(self.FOLLOW_postfix_expression_in_unary_expression1172)
                     self.postfix_expression()
                     self.following.pop()
                     if self.failed:
@@ -4512,10 +4509,10 @@ class CParser(Parser):
 
                 elif alt51 == 2:
                     # C.g:291:4: '++' unary_expression
-                    self.match(self.input, 61, self.FOLLOW_61_in_unary_expression1179)
+                    self.match(self.input, 61, self.FOLLOW_61_in_unary_expression1177)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_unary_expression_in_unary_expression1181)
+                    self.following.append(self.FOLLOW_unary_expression_in_unary_expression1179)
                     self.unary_expression()
                     self.following.pop()
                     if self.failed:
@@ -4524,10 +4521,10 @@ class CParser(Parser):
 
                 elif alt51 == 3:
                     # C.g:292:4: '--' unary_expression
-                    self.match(self.input, 62, self.FOLLOW_62_in_unary_expression1186)
+                    self.match(self.input, 62, self.FOLLOW_62_in_unary_expression1184)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_unary_expression_in_unary_expression1188)
+                    self.following.append(self.FOLLOW_unary_expression_in_unary_expression1186)
                     self.unary_expression()
                     self.following.pop()
                     if self.failed:
@@ -4536,12 +4533,12 @@ class CParser(Parser):
 
                 elif alt51 == 4:
                     # C.g:293:4: unary_operator cast_expression
-                    self.following.append(self.FOLLOW_unary_operator_in_unary_expression1193)
+                    self.following.append(self.FOLLOW_unary_operator_in_unary_expression1191)
                     self.unary_operator()
                     self.following.pop()
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_cast_expression_in_unary_expression1195)
+                    self.following.append(self.FOLLOW_cast_expression_in_unary_expression1193)
                     self.cast_expression()
                     self.following.pop()
                     if self.failed:
@@ -4550,10 +4547,10 @@ class CParser(Parser):
 
                 elif alt51 == 5:
                     # C.g:294:4: 'sizeof' unary_expression
-                    self.match(self.input, 63, self.FOLLOW_63_in_unary_expression1200)
+                    self.match(self.input, 63, self.FOLLOW_63_in_unary_expression1198)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_unary_expression_in_unary_expression1202)
+                    self.following.append(self.FOLLOW_unary_expression_in_unary_expression1200)
                     self.unary_expression()
                     self.following.pop()
                     if self.failed:
@@ -4562,18 +4559,18 @@ class CParser(Parser):
 
                 elif alt51 == 6:
                     # C.g:295:4: 'sizeof' '(' type_name ')'
-                    self.match(self.input, 63, self.FOLLOW_63_in_unary_expression1207)
+                    self.match(self.input, 63, self.FOLLOW_63_in_unary_expression1205)
                     if self.failed:
                         return 
-                    self.match(self.input, 51, self.FOLLOW_51_in_unary_expression1209)
+                    self.match(self.input, 51, self.FOLLOW_51_in_unary_expression1207)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_type_name_in_unary_expression1211)
+                    self.following.append(self.FOLLOW_type_name_in_unary_expression1209)
                     self.type_name()
                     self.following.pop()
                     if self.failed:
                         return 
-                    self.match(self.input, 52, self.FOLLOW_52_in_unary_expression1213)
+                    self.match(self.input, 52, self.FOLLOW_52_in_unary_expression1211)
                     if self.failed:
                         return 
 
@@ -4608,7 +4605,7 @@ class CParser(Parser):
 
                 # C.g:299:2: (p= primary_expression ( '[' expression ']' | '(' ')' | a= '(' c= argument_expression_list b= ')' | '.' IDENTIFIER | '*' IDENTIFIER | '->' IDENTIFIER | '++' | '--' )* )
                 # C.g:299:6: p= primary_expression ( '[' expression ']' | '(' ')' | a= '(' c= argument_expression_list b= ')' | '.' IDENTIFIER | '*' IDENTIFIER | '->' IDENTIFIER | '++' | '--' )*
-                self.following.append(self.FOLLOW_primary_expression_in_postfix_expression1228)
+                self.following.append(self.FOLLOW_primary_expression_in_postfix_expression1226)
                 self.primary_expression()
                 self.following.pop()
                 if self.failed:
@@ -4651,25 +4648,25 @@ class CParser(Parser):
 
                     if alt52 == 1:
                         # C.g:300:13: '[' expression ']'
-                        self.match(self.input, 53, self.FOLLOW_53_in_postfix_expression1242)
+                        self.match(self.input, 53, self.FOLLOW_53_in_postfix_expression1240)
                         if self.failed:
                             return 
-                        self.following.append(self.FOLLOW_expression_in_postfix_expression1244)
+                        self.following.append(self.FOLLOW_expression_in_postfix_expression1242)
                         self.expression()
                         self.following.pop()
                         if self.failed:
                             return 
-                        self.match(self.input, 54, self.FOLLOW_54_in_postfix_expression1246)
+                        self.match(self.input, 54, self.FOLLOW_54_in_postfix_expression1244)
                         if self.failed:
                             return 
 
 
                     elif alt52 == 2:
                         # C.g:301:13: '(' ')'
-                        self.match(self.input, 51, self.FOLLOW_51_in_postfix_expression1260)
+                        self.match(self.input, 51, self.FOLLOW_51_in_postfix_expression1258)
                         if self.failed:
                             return 
-                        self.match(self.input, 52, self.FOLLOW_52_in_postfix_expression1262)
+                        self.match(self.input, 52, self.FOLLOW_52_in_postfix_expression1260)
                         if self.failed:
                             return 
 
@@ -4677,60 +4674,60 @@ class CParser(Parser):
                     elif alt52 == 3:
                         # C.g:302:13: a= '(' c= argument_expression_list b= ')'
                         a = self.input.LT(1)
-                        self.match(self.input, 51, self.FOLLOW_51_in_postfix_expression1278)
+                        self.match(self.input, 51, self.FOLLOW_51_in_postfix_expression1276)
                         if self.failed:
                             return 
-                        self.following.append(self.FOLLOW_argument_expression_list_in_postfix_expression1282)
+                        self.following.append(self.FOLLOW_argument_expression_list_in_postfix_expression1280)
                         self.argument_expression_list()
                         self.following.pop()
                         if self.failed:
                             return 
                         b = self.input.LT(1)
-                        self.match(self.input, 52, self.FOLLOW_52_in_postfix_expression1286)
+                        self.match(self.input, 52, self.FOLLOW_52_in_postfix_expression1284)
                         if self.failed:
                             return 
 
 
                     elif alt52 == 4:
                         # C.g:303:13: '.' IDENTIFIER
-                        self.match(self.input, 64, self.FOLLOW_64_in_postfix_expression1301)
+                        self.match(self.input, 64, self.FOLLOW_64_in_postfix_expression1299)
                         if self.failed:
                             return 
-                        self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_postfix_expression1303)
+                        self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_postfix_expression1301)
                         if self.failed:
                             return 
 
 
                     elif alt52 == 5:
                         # C.g:304:13: '*' IDENTIFIER
-                        self.match(self.input, 55, self.FOLLOW_55_in_postfix_expression1317)
+                        self.match(self.input, 55, self.FOLLOW_55_in_postfix_expression1315)
                         if self.failed:
                             return 
-                        self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_postfix_expression1319)
+                        self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_postfix_expression1317)
                         if self.failed:
                             return 
 
 
                     elif alt52 == 6:
                         # C.g:305:13: '->' IDENTIFIER
-                        self.match(self.input, 65, self.FOLLOW_65_in_postfix_expression1333)
+                        self.match(self.input, 65, self.FOLLOW_65_in_postfix_expression1331)
                         if self.failed:
                             return 
-                        self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_postfix_expression1335)
+                        self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_postfix_expression1333)
                         if self.failed:
                             return 
 
 
                     elif alt52 == 7:
                         # C.g:306:13: '++'
-                        self.match(self.input, 61, self.FOLLOW_61_in_postfix_expression1349)
+                        self.match(self.input, 61, self.FOLLOW_61_in_postfix_expression1347)
                         if self.failed:
                             return 
 
 
                     elif alt52 == 8:
                         # C.g:307:13: '--'
-                        self.match(self.input, 62, self.FOLLOW_62_in_postfix_expression1363)
+                        self.match(self.input, 62, self.FOLLOW_62_in_postfix_expression1361)
                         if self.failed:
                             return 
 
@@ -4834,14 +4831,14 @@ class CParser(Parser):
 
                 if alt53 == 1:
                     # C.g:321:4: IDENTIFIER
-                    self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_primary_expression1421)
+                    self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_primary_expression1419)
                     if self.failed:
                         return 
 
 
                 elif alt53 == 2:
                     # C.g:322:4: constant
-                    self.following.append(self.FOLLOW_constant_in_primary_expression1426)
+                    self.following.append(self.FOLLOW_constant_in_primary_expression1424)
                     self.constant()
                     self.following.pop()
                     if self.failed:
@@ -4850,15 +4847,15 @@ class CParser(Parser):
 
                 elif alt53 == 3:
                     # C.g:323:4: '(' expression ')'
-                    self.match(self.input, 51, self.FOLLOW_51_in_primary_expression1431)
+                    self.match(self.input, 51, self.FOLLOW_51_in_primary_expression1429)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_expression_in_primary_expression1433)
+                    self.following.append(self.FOLLOW_expression_in_primary_expression1431)
                     self.expression()
                     self.following.pop()
                     if self.failed:
                         return 
-                    self.match(self.input, 52, self.FOLLOW_52_in_primary_expression1435)
+                    self.match(self.input, 52, self.FOLLOW_52_in_primary_expression1433)
                     if self.failed:
                         return 
 
@@ -4945,7 +4942,7 @@ class CParser(Parser):
 
                 # C.g:338:2: ( assignment_expression ( ',' assignment_expression )* )
                 # C.g:338:4: assignment_expression ( ',' assignment_expression )*
-                self.following.append(self.FOLLOW_assignment_expression_in_expression1513)
+                self.following.append(self.FOLLOW_assignment_expression_in_expression1511)
                 self.assignment_expression()
                 self.following.pop()
                 if self.failed:
@@ -4961,10 +4958,10 @@ class CParser(Parser):
 
                     if alt54 == 1:
                         # C.g:338:27: ',' assignment_expression
-                        self.match(self.input, 26, self.FOLLOW_26_in_expression1516)
+                        self.match(self.input, 26, self.FOLLOW_26_in_expression1514)
                         if self.failed:
                             return retval
-                        self.following.append(self.FOLLOW_assignment_expression_in_expression1518)
+                        self.following.append(self.FOLLOW_assignment_expression_in_expression1516)
                         self.assignment_expression()
                         self.following.pop()
                         if self.failed:
@@ -5007,7 +5004,7 @@ class CParser(Parser):
 
                 # C.g:342:2: ( conditional_expression )
                 # C.g:342:4: conditional_expression
-                self.following.append(self.FOLLOW_conditional_expression_in_constant_expression1531)
+                self.following.append(self.FOLLOW_conditional_expression_in_constant_expression1529)
                 self.conditional_expression()
                 self.following.pop()
                 if self.failed:
@@ -5925,17 +5922,17 @@ class CParser(Parser):
 
                 if alt55 == 1:
                     # C.g:346:4: lvalue assignment_operator assignment_expression
-                    self.following.append(self.FOLLOW_lvalue_in_assignment_expression1542)
+                    self.following.append(self.FOLLOW_lvalue_in_assignment_expression1540)
                     self.lvalue()
                     self.following.pop()
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_assignment_operator_in_assignment_expression1544)
+                    self.following.append(self.FOLLOW_assignment_operator_in_assignment_expression1542)
                     self.assignment_operator()
                     self.following.pop()
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_assignment_expression_in_assignment_expression1546)
+                    self.following.append(self.FOLLOW_assignment_expression_in_assignment_expression1544)
                     self.assignment_expression()
                     self.following.pop()
                     if self.failed:
@@ -5944,7 +5941,7 @@ class CParser(Parser):
 
                 elif alt55 == 2:
                     # C.g:347:4: conditional_expression
-                    self.following.append(self.FOLLOW_conditional_expression_in_assignment_expression1551)
+                    self.following.append(self.FOLLOW_conditional_expression_in_assignment_expression1549)
                     self.conditional_expression()
                     self.following.pop()
                     if self.failed:
@@ -5978,7 +5975,7 @@ class CParser(Parser):
 
                 # C.g:351:2: ( unary_expression )
                 # C.g:351:4: unary_expression
-                self.following.append(self.FOLLOW_unary_expression_in_lvalue1563)
+                self.following.append(self.FOLLOW_unary_expression_in_lvalue1561)
                 self.unary_expression()
                 self.following.pop()
                 if self.failed:
@@ -6063,7 +6060,7 @@ class CParser(Parser):
 
                 # C.g:369:2: (e= logical_or_expression ( '?' expression ':' conditional_expression )? )
                 # C.g:369:4: e= logical_or_expression ( '?' expression ':' conditional_expression )?
-                self.following.append(self.FOLLOW_logical_or_expression_in_conditional_expression1637)
+                self.following.append(self.FOLLOW_logical_or_expression_in_conditional_expression1635)
                 e = self.logical_or_expression()
                 self.following.pop()
                 if self.failed:
@@ -6076,18 +6073,18 @@ class CParser(Parser):
                     alt56 = 1
                 if alt56 == 1:
                     # C.g:369:29: '?' expression ':' conditional_expression
-                    self.match(self.input, 79, self.FOLLOW_79_in_conditional_expression1640)
+                    self.match(self.input, 79, self.FOLLOW_79_in_conditional_expression1638)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_expression_in_conditional_expression1642)
+                    self.following.append(self.FOLLOW_expression_in_conditional_expression1640)
                     self.expression()
                     self.following.pop()
                     if self.failed:
                         return 
-                    self.match(self.input, 45, self.FOLLOW_45_in_conditional_expression1644)
+                    self.match(self.input, 45, self.FOLLOW_45_in_conditional_expression1642)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_conditional_expression_in_conditional_expression1646)
+                    self.following.append(self.FOLLOW_conditional_expression_in_conditional_expression1644)
                     self.conditional_expression()
                     self.following.pop()
                     if self.failed:
@@ -6136,7 +6133,7 @@ class CParser(Parser):
 
                 # C.g:373:2: ( logical_and_expression ( '||' logical_and_expression )* )
                 # C.g:373:4: logical_and_expression ( '||' logical_and_expression )*
-                self.following.append(self.FOLLOW_logical_and_expression_in_logical_or_expression1661)
+                self.following.append(self.FOLLOW_logical_and_expression_in_logical_or_expression1659)
                 self.logical_and_expression()
                 self.following.pop()
                 if self.failed:
@@ -6152,10 +6149,10 @@ class CParser(Parser):
 
                     if alt57 == 1:
                         # C.g:373:28: '||' logical_and_expression
-                        self.match(self.input, 80, self.FOLLOW_80_in_logical_or_expression1664)
+                        self.match(self.input, 80, self.FOLLOW_80_in_logical_or_expression1662)
                         if self.failed:
                             return retval
-                        self.following.append(self.FOLLOW_logical_and_expression_in_logical_or_expression1666)
+                        self.following.append(self.FOLLOW_logical_and_expression_in_logical_or_expression1664)
                         self.logical_and_expression()
                         self.following.pop()
                         if self.failed:
@@ -6198,7 +6195,7 @@ class CParser(Parser):
 
                 # C.g:377:2: ( inclusive_or_expression ( '&&' inclusive_or_expression )* )
                 # C.g:377:4: inclusive_or_expression ( '&&' inclusive_or_expression )*
-                self.following.append(self.FOLLOW_inclusive_or_expression_in_logical_and_expression1679)
+                self.following.append(self.FOLLOW_inclusive_or_expression_in_logical_and_expression1677)
                 self.inclusive_or_expression()
                 self.following.pop()
                 if self.failed:
@@ -6214,10 +6211,10 @@ class CParser(Parser):
 
                     if alt58 == 1:
                         # C.g:377:29: '&&' inclusive_or_expression
-                        self.match(self.input, 81, self.FOLLOW_81_in_logical_and_expression1682)
+                        self.match(self.input, 81, self.FOLLOW_81_in_logical_and_expression1680)
                         if self.failed:
                             return 
-                        self.following.append(self.FOLLOW_inclusive_or_expression_in_logical_and_expression1684)
+                        self.following.append(self.FOLLOW_inclusive_or_expression_in_logical_and_expression1682)
                         self.inclusive_or_expression()
                         self.following.pop()
                         if self.failed:
@@ -6258,7 +6255,7 @@ class CParser(Parser):
 
                 # C.g:381:2: ( exclusive_or_expression ( '|' exclusive_or_expression )* )
                 # C.g:381:4: exclusive_or_expression ( '|' exclusive_or_expression )*
-                self.following.append(self.FOLLOW_exclusive_or_expression_in_inclusive_or_expression1697)
+                self.following.append(self.FOLLOW_exclusive_or_expression_in_inclusive_or_expression1695)
                 self.exclusive_or_expression()
                 self.following.pop()
                 if self.failed:
@@ -6274,10 +6271,10 @@ class CParser(Parser):
 
                     if alt59 == 1:
                         # C.g:381:29: '|' exclusive_or_expression
-                        self.match(self.input, 82, self.FOLLOW_82_in_inclusive_or_expression1700)
+                        self.match(self.input, 82, self.FOLLOW_82_in_inclusive_or_expression1698)
                         if self.failed:
                             return 
-                        self.following.append(self.FOLLOW_exclusive_or_expression_in_inclusive_or_expression1702)
+                        self.following.append(self.FOLLOW_exclusive_or_expression_in_inclusive_or_expression1700)
                         self.exclusive_or_expression()
                         self.following.pop()
                         if self.failed:
@@ -6318,7 +6315,7 @@ class CParser(Parser):
 
                 # C.g:385:2: ( and_expression ( '^' and_expression )* )
                 # C.g:385:4: and_expression ( '^' and_expression )*
-                self.following.append(self.FOLLOW_and_expression_in_exclusive_or_expression1715)
+                self.following.append(self.FOLLOW_and_expression_in_exclusive_or_expression1713)
                 self.and_expression()
                 self.following.pop()
                 if self.failed:
@@ -6334,10 +6331,10 @@ class CParser(Parser):
 
                     if alt60 == 1:
                         # C.g:385:20: '^' and_expression
-                        self.match(self.input, 83, self.FOLLOW_83_in_exclusive_or_expression1718)
+                        self.match(self.input, 83, self.FOLLOW_83_in_exclusive_or_expression1716)
                         if self.failed:
                             return 
-                        self.following.append(self.FOLLOW_and_expression_in_exclusive_or_expression1720)
+                        self.following.append(self.FOLLOW_and_expression_in_exclusive_or_expression1718)
                         self.and_expression()
                         self.following.pop()
                         if self.failed:
@@ -6378,7 +6375,7 @@ class CParser(Parser):
 
                 # C.g:389:2: ( equality_expression ( '&' equality_expression )* )
                 # C.g:389:4: equality_expression ( '&' equality_expression )*
-                self.following.append(self.FOLLOW_equality_expression_in_and_expression1733)
+                self.following.append(self.FOLLOW_equality_expression_in_and_expression1731)
                 self.equality_expression()
                 self.following.pop()
                 if self.failed:
@@ -6394,10 +6391,10 @@ class CParser(Parser):
 
                     if alt61 == 1:
                         # C.g:389:25: '&' equality_expression
-                        self.match(self.input, 66, self.FOLLOW_66_in_and_expression1736)
+                        self.match(self.input, 66, self.FOLLOW_66_in_and_expression1734)
                         if self.failed:
                             return 
-                        self.following.append(self.FOLLOW_equality_expression_in_and_expression1738)
+                        self.following.append(self.FOLLOW_equality_expression_in_and_expression1736)
                         self.equality_expression()
                         self.following.pop()
                         if self.failed:
@@ -6438,7 +6435,7 @@ class CParser(Parser):
 
                 # C.g:392:2: ( relational_expression ( ( '==' | '!=' ) relational_expression )* )
                 # C.g:392:4: relational_expression ( ( '==' | '!=' ) relational_expression )*
-                self.following.append(self.FOLLOW_relational_expression_in_equality_expression1750)
+                self.following.append(self.FOLLOW_relational_expression_in_equality_expression1748)
                 self.relational_expression()
                 self.following.pop()
                 if self.failed:
@@ -6466,12 +6463,12 @@ class CParser(Parser):
 
                             mse = MismatchedSetException(None, self.input)
                             self.recoverFromMismatchedSet(
-                                self.input, mse, self.FOLLOW_set_in_equality_expression1753
+                                self.input, mse, self.FOLLOW_set_in_equality_expression1751
                                 )
                             raise mse
 
 
-                        self.following.append(self.FOLLOW_relational_expression_in_equality_expression1759)
+                        self.following.append(self.FOLLOW_relational_expression_in_equality_expression1757)
                         self.relational_expression()
                         self.following.pop()
                         if self.failed:
@@ -6512,7 +6509,7 @@ class CParser(Parser):
 
                 # C.g:396:2: ( shift_expression ( ( '<' | '>' | '<=' | '>=' ) shift_expression )* )
                 # C.g:396:4: shift_expression ( ( '<' | '>' | '<=' | '>=' ) shift_expression )*
-                self.following.append(self.FOLLOW_shift_expression_in_relational_expression1773)
+                self.following.append(self.FOLLOW_shift_expression_in_relational_expression1771)
                 self.shift_expression()
                 self.following.pop()
                 if self.failed:
@@ -6540,12 +6537,12 @@ class CParser(Parser):
 
                             mse = MismatchedSetException(None, self.input)
                             self.recoverFromMismatchedSet(
-                                self.input, mse, self.FOLLOW_set_in_relational_expression1776
+                                self.input, mse, self.FOLLOW_set_in_relational_expression1774
                                 )
                             raise mse
 
 
-                        self.following.append(self.FOLLOW_shift_expression_in_relational_expression1786)
+                        self.following.append(self.FOLLOW_shift_expression_in_relational_expression1784)
                         self.shift_expression()
                         self.following.pop()
                         if self.failed:
@@ -6586,7 +6583,7 @@ class CParser(Parser):
 
                 # C.g:400:2: ( additive_expression ( ( '<<' | '>>' ) additive_expression )* )
                 # C.g:400:4: additive_expression ( ( '<<' | '>>' ) additive_expression )*
-                self.following.append(self.FOLLOW_additive_expression_in_shift_expression1799)
+                self.following.append(self.FOLLOW_additive_expression_in_shift_expression1797)
                 self.additive_expression()
                 self.following.pop()
                 if self.failed:
@@ -6614,12 +6611,12 @@ class CParser(Parser):
 
                             mse = MismatchedSetException(None, self.input)
                             self.recoverFromMismatchedSet(
-                                self.input, mse, self.FOLLOW_set_in_shift_expression1802
+                                self.input, mse, self.FOLLOW_set_in_shift_expression1800
                                 )
                             raise mse
 
 
-                        self.following.append(self.FOLLOW_additive_expression_in_shift_expression1808)
+                        self.following.append(self.FOLLOW_additive_expression_in_shift_expression1806)
                         self.additive_expression()
                         self.following.pop()
                         if self.failed:
@@ -6715,7 +6712,7 @@ class CParser(Parser):
 
                 if alt65 == 1:
                     # C.g:406:4: labeled_statement
-                    self.following.append(self.FOLLOW_labeled_statement_in_statement1823)
+                    self.following.append(self.FOLLOW_labeled_statement_in_statement1821)
                     self.labeled_statement()
                     self.following.pop()
                     if self.failed:
@@ -6724,7 +6721,7 @@ class CParser(Parser):
 
                 elif alt65 == 2:
                     # C.g:407:4: compound_statement
-                    self.following.append(self.FOLLOW_compound_statement_in_statement1828)
+                    self.following.append(self.FOLLOW_compound_statement_in_statement1826)
                     self.compound_statement()
                     self.following.pop()
                     if self.failed:
@@ -6733,7 +6730,7 @@ class CParser(Parser):
 
                 elif alt65 == 3:
                     # C.g:408:4: expression_statement
-                    self.following.append(self.FOLLOW_expression_statement_in_statement1833)
+                    self.following.append(self.FOLLOW_expression_statement_in_statement1831)
                     self.expression_statement()
                     self.following.pop()
                     if self.failed:
@@ -6742,7 +6739,7 @@ class CParser(Parser):
 
                 elif alt65 == 4:
                     # C.g:409:4: selection_statement
-                    self.following.append(self.FOLLOW_selection_statement_in_statement1838)
+                    self.following.append(self.FOLLOW_selection_statement_in_statement1836)
                     self.selection_statement()
                     self.following.pop()
                     if self.failed:
@@ -6751,7 +6748,7 @@ class CParser(Parser):
 
                 elif alt65 == 5:
                     # C.g:410:4: iteration_statement
-                    self.following.append(self.FOLLOW_iteration_statement_in_statement1843)
+                    self.following.append(self.FOLLOW_iteration_statement_in_statement1841)
                     self.iteration_statement()
                     self.following.pop()
                     if self.failed:
@@ -6760,7 +6757,7 @@ class CParser(Parser):
 
                 elif alt65 == 6:
                     # C.g:411:4: jump_statement
-                    self.following.append(self.FOLLOW_jump_statement_in_statement1848)
+                    self.following.append(self.FOLLOW_jump_statement_in_statement1846)
                     self.jump_statement()
                     self.following.pop()
                     if self.failed:
@@ -6769,7 +6766,7 @@ class CParser(Parser):
 
                 elif alt65 == 7:
                     # C.g:412:4: macro_statement
-                    self.following.append(self.FOLLOW_macro_statement_in_statement1853)
+                    self.following.append(self.FOLLOW_macro_statement_in_statement1851)
                     self.macro_statement()
                     self.following.pop()
                     if self.failed:
@@ -6803,10 +6800,10 @@ class CParser(Parser):
 
                 # C.g:416:2: ( IDENTIFIER '(' ( IDENTIFIER | ( declaration )* ( statement_list )? ) ')' )
                 # C.g:416:4: IDENTIFIER '(' ( IDENTIFIER | ( declaration )* ( statement_list )? ) ')'
-                self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_macro_statement1864)
+                self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_macro_statement1862)
                 if self.failed:
                     return 
-                self.match(self.input, 51, self.FOLLOW_51_in_macro_statement1866)
+                self.match(self.input, 51, self.FOLLOW_51_in_macro_statement1864)
                 if self.failed:
                     return 
                 # C.g:416:19: ( IDENTIFIER | ( declaration )* ( statement_list )? )
@@ -6842,7 +6839,7 @@ class CParser(Parser):
 
                 if alt68 == 1:
                     # C.g:416:20: IDENTIFIER
-                    self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_macro_statement1869)
+                    self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_macro_statement1867)
                     if self.failed:
                         return 
 
@@ -6886,7 +6883,7 @@ class CParser(Parser):
 
                         if alt66 == 1:
                             # C.g:0:0: declaration
-                            self.following.append(self.FOLLOW_declaration_in_macro_statement1873)
+                            self.following.append(self.FOLLOW_declaration_in_macro_statement1871)
                             self.declaration()
                             self.following.pop()
                             if self.failed:
@@ -6905,7 +6902,7 @@ class CParser(Parser):
                         alt67 = 1
                     if alt67 == 1:
                         # C.g:0:0: statement_list
-                        self.following.append(self.FOLLOW_statement_list_in_macro_statement1877)
+                        self.following.append(self.FOLLOW_statement_list_in_macro_statement1875)
                         self.statement_list()
                         self.following.pop()
                         if self.failed:
@@ -6916,7 +6913,7 @@ class CParser(Parser):
 
 
 
-                self.match(self.input, 52, self.FOLLOW_52_in_macro_statement1881)
+                self.match(self.input, 52, self.FOLLOW_52_in_macro_statement1879)
                 if self.failed:
                     return 
 
@@ -6967,13 +6964,13 @@ class CParser(Parser):
 
                 if alt69 == 1:
                     # C.g:420:4: IDENTIFIER ':' statement
-                    self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_labeled_statement1893)
+                    self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_labeled_statement1891)
                     if self.failed:
                         return 
-                    self.match(self.input, 45, self.FOLLOW_45_in_labeled_statement1895)
+                    self.match(self.input, 45, self.FOLLOW_45_in_labeled_statement1893)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_statement_in_labeled_statement1897)
+                    self.following.append(self.FOLLOW_statement_in_labeled_statement1895)
                     self.statement()
                     self.following.pop()
                     if self.failed:
@@ -6982,18 +6979,18 @@ class CParser(Parser):
 
                 elif alt69 == 2:
                     # C.g:421:4: 'case' constant_expression ':' statement
-                    self.match(self.input, 92, self.FOLLOW_92_in_labeled_statement1902)
+                    self.match(self.input, 92, self.FOLLOW_92_in_labeled_statement1900)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_constant_expression_in_labeled_statement1904)
+                    self.following.append(self.FOLLOW_constant_expression_in_labeled_statement1902)
                     self.constant_expression()
                     self.following.pop()
                     if self.failed:
                         return 
-                    self.match(self.input, 45, self.FOLLOW_45_in_labeled_statement1906)
+                    self.match(self.input, 45, self.FOLLOW_45_in_labeled_statement1904)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_statement_in_labeled_statement1908)
+                    self.following.append(self.FOLLOW_statement_in_labeled_statement1906)
                     self.statement()
                     self.following.pop()
                     if self.failed:
@@ -7002,13 +6999,13 @@ class CParser(Parser):
 
                 elif alt69 == 3:
                     # C.g:422:4: 'default' ':' statement
-                    self.match(self.input, 93, self.FOLLOW_93_in_labeled_statement1913)
+                    self.match(self.input, 93, self.FOLLOW_93_in_labeled_statement1911)
                     if self.failed:
                         return 
-                    self.match(self.input, 45, self.FOLLOW_45_in_labeled_statement1915)
+                    self.match(self.input, 45, self.FOLLOW_45_in_labeled_statement1913)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_statement_in_labeled_statement1917)
+                    self.following.append(self.FOLLOW_statement_in_labeled_statement1915)
                     self.statement()
                     self.following.pop()
                     if self.failed:
@@ -7042,7 +7039,7 @@ class CParser(Parser):
 
                 # C.g:426:2: ( '{' ( declaration )* ( statement_list )? '}' )
                 # C.g:426:4: '{' ( declaration )* ( statement_list )? '}'
-                self.match(self.input, 41, self.FOLLOW_41_in_compound_statement1928)
+                self.match(self.input, 41, self.FOLLOW_41_in_compound_statement1926)
                 if self.failed:
                     return 
                 # C.g:426:8: ( declaration )*
@@ -7082,7 +7079,7 @@ class CParser(Parser):
 
                     if alt70 == 1:
                         # C.g:0:0: declaration
-                        self.following.append(self.FOLLOW_declaration_in_compound_statement1930)
+                        self.following.append(self.FOLLOW_declaration_in_compound_statement1928)
                         self.declaration()
                         self.following.pop()
                         if self.failed:
@@ -7101,7 +7098,7 @@ class CParser(Parser):
                     alt71 = 1
                 if alt71 == 1:
                     # C.g:0:0: statement_list
-                    self.following.append(self.FOLLOW_statement_list_in_compound_statement1933)
+                    self.following.append(self.FOLLOW_statement_list_in_compound_statement1931)
                     self.statement_list()
                     self.following.pop()
                     if self.failed:
@@ -7109,7 +7106,7 @@ class CParser(Parser):
 
 
 
-                self.match(self.input, 42, self.FOLLOW_42_in_compound_statement1936)
+                self.match(self.input, 42, self.FOLLOW_42_in_compound_statement1934)
                 if self.failed:
                     return 
 
@@ -7154,7 +7151,7 @@ class CParser(Parser):
 
                     if alt72 == 1:
                         # C.g:0:0: statement
-                        self.following.append(self.FOLLOW_statement_in_statement_list1947)
+                        self.following.append(self.FOLLOW_statement_in_statement_list1945)
                         self.statement()
                         self.following.pop()
                         if self.failed:
@@ -7230,19 +7227,19 @@ class CParser(Parser):
 
                 if alt73 == 1:
                     # C.g:434:4: ';'
-                    self.match(self.input, 24, self.FOLLOW_24_in_expression_statement1959)
+                    self.match(self.input, 24, self.FOLLOW_24_in_expression_statement1957)
                     if self.failed:
                         return retval
 
 
                 elif alt73 == 2:
                     # C.g:435:4: expression ';'
-                    self.following.append(self.FOLLOW_expression_in_expression_statement1964)
+                    self.following.append(self.FOLLOW_expression_in_expression_statement1962)
                     self.expression()
                     self.following.pop()
                     if self.failed:
                         return retval
-                    self.match(self.input, 24, self.FOLLOW_24_in_expression_statement1966)
+                    self.match(self.input, 24, self.FOLLOW_24_in_expression_statement1964)
                     if self.failed:
                         return retval
 
@@ -7296,24 +7293,24 @@ class CParser(Parser):
 
                 if alt75 == 1:
                     # C.g:439:4: 'if' '(' e= expression ')' statement ( options {k=1; backtrack=false; } : 'else' statement )?
-                    self.match(self.input, 94, self.FOLLOW_94_in_selection_statement1977)
+                    self.match(self.input, 94, self.FOLLOW_94_in_selection_statement1975)
                     if self.failed:
                         return 
-                    self.match(self.input, 51, self.FOLLOW_51_in_selection_statement1979)
+                    self.match(self.input, 51, self.FOLLOW_51_in_selection_statement1977)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_expression_in_selection_statement1983)
+                    self.following.append(self.FOLLOW_expression_in_selection_statement1981)
                     e = self.expression()
                     self.following.pop()
                     if self.failed:
                         return 
-                    self.match(self.input, 52, self.FOLLOW_52_in_selection_statement1985)
+                    self.match(self.input, 52, self.FOLLOW_52_in_selection_statement1983)
                     if self.failed:
                         return 
                     if self.backtracking == 0:
                         self.StorePredicateExpression(e.start.line, e.start.charPositionInLine, e.stop.line, e.stop.charPositionInLine, self.input.toString(e.start,e.stop))
 
-                    self.following.append(self.FOLLOW_statement_in_selection_statement1989)
+                    self.following.append(self.FOLLOW_statement_in_selection_statement1987)
                     self.statement()
                     self.following.pop()
                     if self.failed:
@@ -7326,10 +7323,10 @@ class CParser(Parser):
                         alt74 = 1
                     if alt74 == 1:
                         # C.g:439:200: 'else' statement
-                        self.match(self.input, 95, self.FOLLOW_95_in_selection_statement2004)
+                        self.match(self.input, 95, self.FOLLOW_95_in_selection_statement2002)
                         if self.failed:
                             return 
-                        self.following.append(self.FOLLOW_statement_in_selection_statement2006)
+                        self.following.append(self.FOLLOW_statement_in_selection_statement2004)
                         self.statement()
                         self.following.pop()
                         if self.failed:
@@ -7341,21 +7338,21 @@ class CParser(Parser):
 
                 elif alt75 == 2:
                     # C.g:440:4: 'switch' '(' expression ')' statement
-                    self.match(self.input, 96, self.FOLLOW_96_in_selection_statement2013)
+                    self.match(self.input, 96, self.FOLLOW_96_in_selection_statement2011)
                     if self.failed:
                         return 
-                    self.match(self.input, 51, self.FOLLOW_51_in_selection_statement2015)
+                    self.match(self.input, 51, self.FOLLOW_51_in_selection_statement2013)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_expression_in_selection_statement2017)
+                    self.following.append(self.FOLLOW_expression_in_selection_statement2015)
                     self.expression()
                     self.following.pop()
                     if self.failed:
                         return 
-                    self.match(self.input, 52, self.FOLLOW_52_in_selection_statement2019)
+                    self.match(self.input, 52, self.FOLLOW_52_in_selection_statement2017)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_statement_in_selection_statement2021)
+                    self.following.append(self.FOLLOW_statement_in_selection_statement2019)
                     self.statement()
                     self.following.pop()
                     if self.failed:
@@ -7410,21 +7407,21 @@ class CParser(Parser):
 
                 if alt77 == 1:
                     # C.g:444:4: 'while' '(' e= expression ')' statement
-                    self.match(self.input, 97, self.FOLLOW_97_in_iteration_statement2032)
+                    self.match(self.input, 97, self.FOLLOW_97_in_iteration_statement2030)
                     if self.failed:
                         return 
-                    self.match(self.input, 51, self.FOLLOW_51_in_iteration_statement2034)
+                    self.match(self.input, 51, self.FOLLOW_51_in_iteration_statement2032)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_expression_in_iteration_statement2038)
+                    self.following.append(self.FOLLOW_expression_in_iteration_statement2036)
                     e = self.expression()
                     self.following.pop()
                     if self.failed:
                         return 
-                    self.match(self.input, 52, self.FOLLOW_52_in_iteration_statement2040)
+                    self.match(self.input, 52, self.FOLLOW_52_in_iteration_statement2038)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_statement_in_iteration_statement2042)
+                    self.following.append(self.FOLLOW_statement_in_iteration_statement2040)
                     self.statement()
                     self.following.pop()
                     if self.failed:
@@ -7436,29 +7433,29 @@ class CParser(Parser):
 
                 elif alt77 == 2:
                     # C.g:445:4: 'do' statement 'while' '(' e= expression ')' ';'
-                    self.match(self.input, 98, self.FOLLOW_98_in_iteration_statement2049)
+                    self.match(self.input, 98, self.FOLLOW_98_in_iteration_statement2047)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_statement_in_iteration_statement2051)
+                    self.following.append(self.FOLLOW_statement_in_iteration_statement2049)
                     self.statement()
                     self.following.pop()
                     if self.failed:
                         return 
-                    self.match(self.input, 97, self.FOLLOW_97_in_iteration_statement2053)
+                    self.match(self.input, 97, self.FOLLOW_97_in_iteration_statement2051)
                     if self.failed:
                         return 
-                    self.match(self.input, 51, self.FOLLOW_51_in_iteration_statement2055)
+                    self.match(self.input, 51, self.FOLLOW_51_in_iteration_statement2053)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_expression_in_iteration_statement2059)
+                    self.following.append(self.FOLLOW_expression_in_iteration_statement2057)
                     e = self.expression()
                     self.following.pop()
                     if self.failed:
                         return 
-                    self.match(self.input, 52, self.FOLLOW_52_in_iteration_statement2061)
+                    self.match(self.input, 52, self.FOLLOW_52_in_iteration_statement2059)
                     if self.failed:
                         return 
-                    self.match(self.input, 24, self.FOLLOW_24_in_iteration_statement2063)
+                    self.match(self.input, 24, self.FOLLOW_24_in_iteration_statement2061)
                     if self.failed:
                         return 
                     if self.backtracking == 0:
@@ -7468,18 +7465,18 @@ class CParser(Parser):
 
                 elif alt77 == 3:
                     # C.g:446:4: 'for' '(' expression_statement e= expression_statement ( expression )? ')' statement
-                    self.match(self.input, 99, self.FOLLOW_99_in_iteration_statement2070)
+                    self.match(self.input, 99, self.FOLLOW_99_in_iteration_statement2068)
                     if self.failed:
                         return 
-                    self.match(self.input, 51, self.FOLLOW_51_in_iteration_statement2072)
+                    self.match(self.input, 51, self.FOLLOW_51_in_iteration_statement2070)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_expression_statement_in_iteration_statement2074)
+                    self.following.append(self.FOLLOW_expression_statement_in_iteration_statement2072)
                     self.expression_statement()
                     self.following.pop()
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_expression_statement_in_iteration_statement2078)
+                    self.following.append(self.FOLLOW_expression_statement_in_iteration_statement2076)
                     e = self.expression_statement()
                     self.following.pop()
                     if self.failed:
@@ -7492,7 +7489,7 @@ class CParser(Parser):
                         alt76 = 1
                     if alt76 == 1:
                         # C.g:0:0: expression
-                        self.following.append(self.FOLLOW_expression_in_iteration_statement2080)
+                        self.following.append(self.FOLLOW_expression_in_iteration_statement2078)
                         self.expression()
                         self.following.pop()
                         if self.failed:
@@ -7500,10 +7497,10 @@ class CParser(Parser):
 
 
 
-                    self.match(self.input, 52, self.FOLLOW_52_in_iteration_statement2083)
+                    self.match(self.input, 52, self.FOLLOW_52_in_iteration_statement2081)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_statement_in_iteration_statement2085)
+                    self.following.append(self.FOLLOW_statement_in_iteration_statement2083)
                     self.statement()
                     self.following.pop()
                     if self.failed:
@@ -7574,58 +7571,58 @@ class CParser(Parser):
 
                 if alt78 == 1:
                     # C.g:450:4: 'goto' IDENTIFIER ';'
-                    self.match(self.input, 100, self.FOLLOW_100_in_jump_statement2098)
+                    self.match(self.input, 100, self.FOLLOW_100_in_jump_statement2096)
                     if self.failed:
                         return 
-                    self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_jump_statement2100)
+                    self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_jump_statement2098)
                     if self.failed:
                         return 
-                    self.match(self.input, 24, self.FOLLOW_24_in_jump_statement2102)
+                    self.match(self.input, 24, self.FOLLOW_24_in_jump_statement2100)
                     if self.failed:
                         return 
 
 
                 elif alt78 == 2:
                     # C.g:451:4: 'continue' ';'
-                    self.match(self.input, 101, self.FOLLOW_101_in_jump_statement2107)
+                    self.match(self.input, 101, self.FOLLOW_101_in_jump_statement2105)
                     if self.failed:
                         return 
-                    self.match(self.input, 24, self.FOLLOW_24_in_jump_statement2109)
+                    self.match(self.input, 24, self.FOLLOW_24_in_jump_statement2107)
                     if self.failed:
                         return 
 
 
                 elif alt78 == 3:
                     # C.g:452:4: 'break' ';'
-                    self.match(self.input, 102, self.FOLLOW_102_in_jump_statement2114)
+                    self.match(self.input, 102, self.FOLLOW_102_in_jump_statement2112)
                     if self.failed:
                         return 
-                    self.match(self.input, 24, self.FOLLOW_24_in_jump_statement2116)
+                    self.match(self.input, 24, self.FOLLOW_24_in_jump_statement2114)
                     if self.failed:
                         return 
 
 
                 elif alt78 == 4:
                     # C.g:453:4: 'return' ';'
-                    self.match(self.input, 103, self.FOLLOW_103_in_jump_statement2121)
+                    self.match(self.input, 103, self.FOLLOW_103_in_jump_statement2119)
                     if self.failed:
                         return 
-                    self.match(self.input, 24, self.FOLLOW_24_in_jump_statement2123)
+                    self.match(self.input, 24, self.FOLLOW_24_in_jump_statement2121)
                     if self.failed:
                         return 
 
 
                 elif alt78 == 5:
                     # C.g:454:4: 'return' expression ';'
-                    self.match(self.input, 103, self.FOLLOW_103_in_jump_statement2128)
+                    self.match(self.input, 103, self.FOLLOW_103_in_jump_statement2126)
                     if self.failed:
                         return 
-                    self.following.append(self.FOLLOW_expression_in_jump_statement2130)
+                    self.following.append(self.FOLLOW_expression_in_jump_statement2128)
                     self.expression()
                     self.following.pop()
                     if self.failed:
                         return 
-                    self.match(self.input, 24, self.FOLLOW_24_in_jump_statement2132)
+                    self.match(self.input, 24, self.FOLLOW_24_in_jump_statement2130)
                     if self.failed:
                         return 
 
@@ -8104,7 +8101,7 @@ class CParser(Parser):
     def synpred64_fragment(self, ):
         # C.g:231:28: ( declarator )
         # C.g:231:28: declarator
-        self.following.append(self.FOLLOW_declarator_in_synpred64892)
+        self.following.append(self.FOLLOW_declarator_in_synpred64890)
         self.declarator()
         self.following.pop()
         if self.failed:
@@ -8119,7 +8116,7 @@ class CParser(Parser):
     def synpred65_fragment(self, ):
         # C.g:231:39: ( abstract_declarator )
         # C.g:231:39: abstract_declarator
-        self.following.append(self.FOLLOW_abstract_declarator_in_synpred65894)
+        self.following.append(self.FOLLOW_abstract_declarator_in_synpred65892)
         self.abstract_declarator()
         self.following.pop()
         if self.failed:
@@ -8134,7 +8131,7 @@ class CParser(Parser):
     def synpred68_fragment(self, ):
         # C.g:240:4: ( specifier_qualifier_list ( abstract_declarator )? )
         # C.g:240:4: specifier_qualifier_list ( abstract_declarator )?
-        self.following.append(self.FOLLOW_specifier_qualifier_list_in_synpred68926)
+        self.following.append(self.FOLLOW_specifier_qualifier_list_in_synpred68924)
         self.specifier_qualifier_list()
         self.following.pop()
         if self.failed:
@@ -8147,7 +8144,7 @@ class CParser(Parser):
             alt89 = 1
         if alt89 == 1:
             # C.g:0:0: abstract_declarator
-            self.following.append(self.FOLLOW_abstract_declarator_in_synpred68928)
+            self.following.append(self.FOLLOW_abstract_declarator_in_synpred68926)
             self.abstract_declarator()
             self.following.pop()
             if self.failed:
@@ -8165,7 +8162,7 @@ class CParser(Parser):
     def synpred69_fragment(self, ):
         # C.g:245:12: ( direct_abstract_declarator )
         # C.g:245:12: direct_abstract_declarator
-        self.following.append(self.FOLLOW_direct_abstract_declarator_in_synpred69947)
+        self.following.append(self.FOLLOW_direct_abstract_declarator_in_synpred69945)
         self.direct_abstract_declarator()
         self.following.pop()
         if self.failed:
@@ -8180,7 +8177,7 @@ class CParser(Parser):
     def synpred72_fragment(self, ):
         # C.g:250:65: ( abstract_declarator_suffix )
         # C.g:250:65: abstract_declarator_suffix
-        self.following.append(self.FOLLOW_abstract_declarator_suffix_in_synpred72978)
+        self.following.append(self.FOLLOW_abstract_declarator_suffix_in_synpred72976)
         self.abstract_declarator_suffix()
         self.following.pop()
         if self.failed:
@@ -8195,18 +8192,18 @@ class CParser(Parser):
     def synpred85_fragment(self, ):
         # C.g:285:4: ( '(' type_name ')' cast_expression )
         # C.g:285:4: '(' type_name ')' cast_expression
-        self.match(self.input, 51, self.FOLLOW_51_in_synpred851152)
+        self.match(self.input, 51, self.FOLLOW_51_in_synpred851150)
         if self.failed:
             return 
-        self.following.append(self.FOLLOW_type_name_in_synpred851154)
+        self.following.append(self.FOLLOW_type_name_in_synpred851152)
         self.type_name()
         self.following.pop()
         if self.failed:
             return 
-        self.match(self.input, 52, self.FOLLOW_52_in_synpred851156)
+        self.match(self.input, 52, self.FOLLOW_52_in_synpred851154)
         if self.failed:
             return 
-        self.following.append(self.FOLLOW_cast_expression_in_synpred851158)
+        self.following.append(self.FOLLOW_cast_expression_in_synpred851156)
         self.cast_expression()
         self.following.pop()
         if self.failed:
@@ -8221,10 +8218,10 @@ class CParser(Parser):
     def synpred90_fragment(self, ):
         # C.g:294:4: ( 'sizeof' unary_expression )
         # C.g:294:4: 'sizeof' unary_expression
-        self.match(self.input, 63, self.FOLLOW_63_in_synpred901200)
+        self.match(self.input, 63, self.FOLLOW_63_in_synpred901198)
         if self.failed:
             return 
-        self.following.append(self.FOLLOW_unary_expression_in_synpred901202)
+        self.following.append(self.FOLLOW_unary_expression_in_synpred901200)
         self.unary_expression()
         self.following.pop()
         if self.failed:
@@ -8239,10 +8236,10 @@ class CParser(Parser):
     def synpred95_fragment(self, ):
         # C.g:304:13: ( '*' IDENTIFIER )
         # C.g:304:13: '*' IDENTIFIER
-        self.match(self.input, 55, self.FOLLOW_55_in_synpred951317)
+        self.match(self.input, 55, self.FOLLOW_55_in_synpred951315)
         if self.failed:
             return 
-        self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_synpred951319)
+        self.match(self.input, IDENTIFIER, self.FOLLOW_IDENTIFIER_in_synpred951317)
         if self.failed:
             return 
 
@@ -8255,17 +8252,17 @@ class CParser(Parser):
     def synpred112_fragment(self, ):
         # C.g:346:4: ( lvalue assignment_operator assignment_expression )
         # C.g:346:4: lvalue assignment_operator assignment_expression
-        self.following.append(self.FOLLOW_lvalue_in_synpred1121542)
+        self.following.append(self.FOLLOW_lvalue_in_synpred1121540)
         self.lvalue()
         self.following.pop()
         if self.failed:
             return 
-        self.following.append(self.FOLLOW_assignment_operator_in_synpred1121544)
+        self.following.append(self.FOLLOW_assignment_operator_in_synpred1121542)
         self.assignment_operator()
         self.following.pop()
         if self.failed:
             return 
-        self.following.append(self.FOLLOW_assignment_expression_in_synpred1121546)
+        self.following.append(self.FOLLOW_assignment_expression_in_synpred1121544)
         self.assignment_expression()
         self.following.pop()
         if self.failed:
@@ -8280,7 +8277,7 @@ class CParser(Parser):
     def synpred139_fragment(self, ):
         # C.g:408:4: ( expression_statement )
         # C.g:408:4: expression_statement
-        self.following.append(self.FOLLOW_expression_statement_in_synpred1391833)
+        self.following.append(self.FOLLOW_expression_statement_in_synpred1391831)
         self.expression_statement()
         self.following.pop()
         if self.failed:
@@ -8295,7 +8292,7 @@ class CParser(Parser):
     def synpred144_fragment(self, ):
         # C.g:416:33: ( declaration )
         # C.g:416:33: declaration
-        self.following.append(self.FOLLOW_declaration_in_synpred1441873)
+        self.following.append(self.FOLLOW_declaration_in_synpred1441871)
         self.declaration()
         self.following.pop()
         if self.failed:
@@ -8310,7 +8307,7 @@ class CParser(Parser):
     def synpred148_fragment(self, ):
         # C.g:426:8: ( declaration )
         # C.g:426:8: declaration
-        self.following.append(self.FOLLOW_declaration_in_synpred1481930)
+        self.following.append(self.FOLLOW_declaration_in_synpred1481928)
         self.declaration()
         self.following.pop()
         if self.failed:
@@ -8722,218 +8719,218 @@ class CParser(Parser):
     FOLLOW_pointer_in_pointer827 = frozenset([1])
     FOLLOW_55_in_pointer833 = frozenset([55])
     FOLLOW_pointer_in_pointer835 = frozenset([1])
-    FOLLOW_55_in_pointer842 = frozenset([1])
-    FOLLOW_parameter_list_in_parameter_type_list853 = frozenset([1, 26])
-    FOLLOW_26_in_parameter_type_list856 = frozenset([56])
-    FOLLOW_56_in_parameter_type_list858 = frozenset([1])
-    FOLLOW_parameter_declaration_in_parameter_list871 = frozenset([1, 26])
-    FOLLOW_26_in_parameter_list874 = frozenset([4, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 43, 44, 46, 47, 48, 49, 50])
-    FOLLOW_parameter_declaration_in_parameter_list876 = frozenset([1, 26])
-    FOLLOW_declaration_specifiers_in_parameter_declaration889 = frozenset([4, 51, 53, 55])
-    FOLLOW_declarator_in_parameter_declaration892 = frozenset([1, 4, 51, 53, 55])
-    FOLLOW_abstract_declarator_in_parameter_declaration894 = frozenset([1, 4, 51, 53, 55])
-    FOLLOW_IDENTIFIER_in_identifier_list907 = frozenset([1, 26])
-    FOLLOW_26_in_identifier_list911 = frozenset([4])
-    FOLLOW_IDENTIFIER_in_identifier_list913 = frozenset([1, 26])
-    FOLLOW_specifier_qualifier_list_in_type_name926 = frozenset([1, 51, 53, 55])
-    FOLLOW_abstract_declarator_in_type_name928 = frozenset([1])
-    FOLLOW_type_id_in_type_name934 = frozenset([1])
-    FOLLOW_pointer_in_abstract_declarator945 = frozenset([1, 51, 53])
-    FOLLOW_direct_abstract_declarator_in_abstract_declarator947 = frozenset([1])
-    FOLLOW_direct_abstract_declarator_in_abstract_declarator953 = frozenset([1])
-    FOLLOW_51_in_direct_abstract_declarator966 = frozenset([51, 53, 55])
-    FOLLOW_abstract_declarator_in_direct_abstract_declarator968 = frozenset([52])
-    FOLLOW_52_in_direct_abstract_declarator970 = frozenset([1, 51, 53])
-    FOLLOW_abstract_declarator_suffix_in_direct_abstract_declarator974 = frozenset([1, 51, 53])
-    FOLLOW_abstract_declarator_suffix_in_direct_abstract_declarator978 = frozenset([1, 51, 53])
-    FOLLOW_53_in_abstract_declarator_suffix990 = frozenset([54])
-    FOLLOW_54_in_abstract_declarator_suffix992 = frozenset([1])
-    FOLLOW_53_in_abstract_declarator_suffix997 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_constant_expression_in_abstract_declarator_suffix999 = frozenset([54])
-    FOLLOW_54_in_abstract_declarator_suffix1001 = frozenset([1])
-    FOLLOW_51_in_abstract_declarator_suffix1006 = frozenset([52])
-    FOLLOW_52_in_abstract_declarator_suffix1008 = frozenset([1])
-    FOLLOW_51_in_abstract_declarator_suffix1013 = frozenset([4, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 43, 44, 46, 47, 48, 49, 50])
-    FOLLOW_parameter_type_list_in_abstract_declarator_suffix1015 = frozenset([52])
-    FOLLOW_52_in_abstract_declarator_suffix1017 = frozenset([1])
-    FOLLOW_assignment_expression_in_initializer1030 = frozenset([1])
-    FOLLOW_41_in_initializer1035 = frozenset([4, 5, 6, 7, 8, 9, 10, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_initializer_list_in_initializer1037 = frozenset([26, 42])
-    FOLLOW_26_in_initializer1039 = frozenset([42])
-    FOLLOW_42_in_initializer1042 = frozenset([1])
-    FOLLOW_initializer_in_initializer_list1053 = frozenset([1, 26])
-    FOLLOW_26_in_initializer_list1056 = frozenset([4, 5, 6, 7, 8, 9, 10, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_initializer_in_initializer_list1058 = frozenset([1, 26])
-    FOLLOW_assignment_expression_in_argument_expression_list1076 = frozenset([1, 26])
-    FOLLOW_26_in_argument_expression_list1079 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_assignment_expression_in_argument_expression_list1081 = frozenset([1, 26])
-    FOLLOW_multiplicative_expression_in_additive_expression1095 = frozenset([1, 57, 58])
-    FOLLOW_57_in_additive_expression1099 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_multiplicative_expression_in_additive_expression1101 = frozenset([1, 57, 58])
-    FOLLOW_58_in_additive_expression1105 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_multiplicative_expression_in_additive_expression1107 = frozenset([1, 57, 58])
-    FOLLOW_cast_expression_in_multiplicative_expression1121 = frozenset([1, 55, 59, 60])
-    FOLLOW_55_in_multiplicative_expression1125 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_cast_expression_in_multiplicative_expression1127 = frozenset([1, 55, 59, 60])
-    FOLLOW_59_in_multiplicative_expression1131 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_cast_expression_in_multiplicative_expression1133 = frozenset([1, 55, 59, 60])
-    FOLLOW_60_in_multiplicative_expression1137 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_cast_expression_in_multiplicative_expression1139 = frozenset([1, 55, 59, 60])
-    FOLLOW_51_in_cast_expression1152 = frozenset([4, 32, 33, 34, 35, 36, 37, 38, 39, 40, 43, 44, 46, 47, 48, 49, 50])
-    FOLLOW_type_name_in_cast_expression1154 = frozenset([52])
-    FOLLOW_52_in_cast_expression1156 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_cast_expression_in_cast_expression1158 = frozenset([1])
-    FOLLOW_unary_expression_in_cast_expression1163 = frozenset([1])
-    FOLLOW_postfix_expression_in_unary_expression1174 = frozenset([1])
-    FOLLOW_61_in_unary_expression1179 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_unary_expression_in_unary_expression1181 = frozenset([1])
-    FOLLOW_62_in_unary_expression1186 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_unary_expression_in_unary_expression1188 = frozenset([1])
-    FOLLOW_unary_operator_in_unary_expression1193 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_cast_expression_in_unary_expression1195 = frozenset([1])
-    FOLLOW_63_in_unary_expression1200 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_unary_expression_in_unary_expression1202 = frozenset([1])
-    FOLLOW_63_in_unary_expression1207 = frozenset([51])
-    FOLLOW_51_in_unary_expression1209 = frozenset([4, 32, 33, 34, 35, 36, 37, 38, 39, 40, 43, 44, 46, 47, 48, 49, 50])
-    FOLLOW_type_name_in_unary_expression1211 = frozenset([52])
-    FOLLOW_52_in_unary_expression1213 = frozenset([1])
-    FOLLOW_primary_expression_in_postfix_expression1228 = frozenset([1, 51, 53, 55, 61, 62, 64, 65])
-    FOLLOW_53_in_postfix_expression1242 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_expression_in_postfix_expression1244 = frozenset([54])
-    FOLLOW_54_in_postfix_expression1246 = frozenset([1, 51, 53, 55, 61, 62, 64, 65])
-    FOLLOW_51_in_postfix_expression1260 = frozenset([52])
-    FOLLOW_52_in_postfix_expression1262 = frozenset([1, 51, 53, 55, 61, 62, 64, 65])
-    FOLLOW_51_in_postfix_expression1278 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_argument_expression_list_in_postfix_expression1282 = frozenset([52])
-    FOLLOW_52_in_postfix_expression1286 = frozenset([1, 51, 53, 55, 61, 62, 64, 65])
-    FOLLOW_64_in_postfix_expression1301 = frozenset([4])
-    FOLLOW_IDENTIFIER_in_postfix_expression1303 = frozenset([1, 51, 53, 55, 61, 62, 64, 65])
-    FOLLOW_55_in_postfix_expression1317 = frozenset([4])
-    FOLLOW_IDENTIFIER_in_postfix_expression1319 = frozenset([1, 51, 53, 55, 61, 62, 64, 65])
-    FOLLOW_65_in_postfix_expression1333 = frozenset([4])
-    FOLLOW_IDENTIFIER_in_postfix_expression1335 = frozenset([1, 51, 53, 55, 61, 62, 64, 65])
-    FOLLOW_61_in_postfix_expression1349 = frozenset([1, 51, 53, 55, 61, 62, 64, 65])
-    FOLLOW_62_in_postfix_expression1363 = frozenset([1, 51, 53, 55, 61, 62, 64, 65])
+    FOLLOW_55_in_pointer840 = frozenset([1])
+    FOLLOW_parameter_list_in_parameter_type_list851 = frozenset([1, 26])
+    FOLLOW_26_in_parameter_type_list854 = frozenset([56])
+    FOLLOW_56_in_parameter_type_list856 = frozenset([1])
+    FOLLOW_parameter_declaration_in_parameter_list869 = frozenset([1, 26])
+    FOLLOW_26_in_parameter_list872 = frozenset([4, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 43, 44, 46, 47, 48, 49, 50])
+    FOLLOW_parameter_declaration_in_parameter_list874 = frozenset([1, 26])
+    FOLLOW_declaration_specifiers_in_parameter_declaration887 = frozenset([4, 51, 53, 55])
+    FOLLOW_declarator_in_parameter_declaration890 = frozenset([1, 4, 51, 53, 55])
+    FOLLOW_abstract_declarator_in_parameter_declaration892 = frozenset([1, 4, 51, 53, 55])
+    FOLLOW_IDENTIFIER_in_identifier_list905 = frozenset([1, 26])
+    FOLLOW_26_in_identifier_list909 = frozenset([4])
+    FOLLOW_IDENTIFIER_in_identifier_list911 = frozenset([1, 26])
+    FOLLOW_specifier_qualifier_list_in_type_name924 = frozenset([1, 51, 53, 55])
+    FOLLOW_abstract_declarator_in_type_name926 = frozenset([1])
+    FOLLOW_type_id_in_type_name932 = frozenset([1])
+    FOLLOW_pointer_in_abstract_declarator943 = frozenset([1, 51, 53])
+    FOLLOW_direct_abstract_declarator_in_abstract_declarator945 = frozenset([1])
+    FOLLOW_direct_abstract_declarator_in_abstract_declarator951 = frozenset([1])
+    FOLLOW_51_in_direct_abstract_declarator964 = frozenset([51, 53, 55])
+    FOLLOW_abstract_declarator_in_direct_abstract_declarator966 = frozenset([52])
+    FOLLOW_52_in_direct_abstract_declarator968 = frozenset([1, 51, 53])
+    FOLLOW_abstract_declarator_suffix_in_direct_abstract_declarator972 = frozenset([1, 51, 53])
+    FOLLOW_abstract_declarator_suffix_in_direct_abstract_declarator976 = frozenset([1, 51, 53])
+    FOLLOW_53_in_abstract_declarator_suffix988 = frozenset([54])
+    FOLLOW_54_in_abstract_declarator_suffix990 = frozenset([1])
+    FOLLOW_53_in_abstract_declarator_suffix995 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_constant_expression_in_abstract_declarator_suffix997 = frozenset([54])
+    FOLLOW_54_in_abstract_declarator_suffix999 = frozenset([1])
+    FOLLOW_51_in_abstract_declarator_suffix1004 = frozenset([52])
+    FOLLOW_52_in_abstract_declarator_suffix1006 = frozenset([1])
+    FOLLOW_51_in_abstract_declarator_suffix1011 = frozenset([4, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 43, 44, 46, 47, 48, 49, 50])
+    FOLLOW_parameter_type_list_in_abstract_declarator_suffix1013 = frozenset([52])
+    FOLLOW_52_in_abstract_declarator_suffix1015 = frozenset([1])
+    FOLLOW_assignment_expression_in_initializer1028 = frozenset([1])
+    FOLLOW_41_in_initializer1033 = frozenset([4, 5, 6, 7, 8, 9, 10, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_initializer_list_in_initializer1035 = frozenset([26, 42])
+    FOLLOW_26_in_initializer1037 = frozenset([42])
+    FOLLOW_42_in_initializer1040 = frozenset([1])
+    FOLLOW_initializer_in_initializer_list1051 = frozenset([1, 26])
+    FOLLOW_26_in_initializer_list1054 = frozenset([4, 5, 6, 7, 8, 9, 10, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_initializer_in_initializer_list1056 = frozenset([1, 26])
+    FOLLOW_assignment_expression_in_argument_expression_list1074 = frozenset([1, 26])
+    FOLLOW_26_in_argument_expression_list1077 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_assignment_expression_in_argument_expression_list1079 = frozenset([1, 26])
+    FOLLOW_multiplicative_expression_in_additive_expression1093 = frozenset([1, 57, 58])
+    FOLLOW_57_in_additive_expression1097 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_multiplicative_expression_in_additive_expression1099 = frozenset([1, 57, 58])
+    FOLLOW_58_in_additive_expression1103 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_multiplicative_expression_in_additive_expression1105 = frozenset([1, 57, 58])
+    FOLLOW_cast_expression_in_multiplicative_expression1119 = frozenset([1, 55, 59, 60])
+    FOLLOW_55_in_multiplicative_expression1123 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_cast_expression_in_multiplicative_expression1125 = frozenset([1, 55, 59, 60])
+    FOLLOW_59_in_multiplicative_expression1129 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_cast_expression_in_multiplicative_expression1131 = frozenset([1, 55, 59, 60])
+    FOLLOW_60_in_multiplicative_expression1135 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_cast_expression_in_multiplicative_expression1137 = frozenset([1, 55, 59, 60])
+    FOLLOW_51_in_cast_expression1150 = frozenset([4, 32, 33, 34, 35, 36, 37, 38, 39, 40, 43, 44, 46, 47, 48, 49, 50])
+    FOLLOW_type_name_in_cast_expression1152 = frozenset([52])
+    FOLLOW_52_in_cast_expression1154 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_cast_expression_in_cast_expression1156 = frozenset([1])
+    FOLLOW_unary_expression_in_cast_expression1161 = frozenset([1])
+    FOLLOW_postfix_expression_in_unary_expression1172 = frozenset([1])
+    FOLLOW_61_in_unary_expression1177 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_unary_expression_in_unary_expression1179 = frozenset([1])
+    FOLLOW_62_in_unary_expression1184 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_unary_expression_in_unary_expression1186 = frozenset([1])
+    FOLLOW_unary_operator_in_unary_expression1191 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_cast_expression_in_unary_expression1193 = frozenset([1])
+    FOLLOW_63_in_unary_expression1198 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_unary_expression_in_unary_expression1200 = frozenset([1])
+    FOLLOW_63_in_unary_expression1205 = frozenset([51])
+    FOLLOW_51_in_unary_expression1207 = frozenset([4, 32, 33, 34, 35, 36, 37, 38, 39, 40, 43, 44, 46, 47, 48, 49, 50])
+    FOLLOW_type_name_in_unary_expression1209 = frozenset([52])
+    FOLLOW_52_in_unary_expression1211 = frozenset([1])
+    FOLLOW_primary_expression_in_postfix_expression1226 = frozenset([1, 51, 53, 55, 61, 62, 64, 65])
+    FOLLOW_53_in_postfix_expression1240 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_expression_in_postfix_expression1242 = frozenset([54])
+    FOLLOW_54_in_postfix_expression1244 = frozenset([1, 51, 53, 55, 61, 62, 64, 65])
+    FOLLOW_51_in_postfix_expression1258 = frozenset([52])
+    FOLLOW_52_in_postfix_expression1260 = frozenset([1, 51, 53, 55, 61, 62, 64, 65])
+    FOLLOW_51_in_postfix_expression1276 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_argument_expression_list_in_postfix_expression1280 = frozenset([52])
+    FOLLOW_52_in_postfix_expression1284 = frozenset([1, 51, 53, 55, 61, 62, 64, 65])
+    FOLLOW_64_in_postfix_expression1299 = frozenset([4])
+    FOLLOW_IDENTIFIER_in_postfix_expression1301 = frozenset([1, 51, 53, 55, 61, 62, 64, 65])
+    FOLLOW_55_in_postfix_expression1315 = frozenset([4])
+    FOLLOW_IDENTIFIER_in_postfix_expression1317 = frozenset([1, 51, 53, 55, 61, 62, 64, 65])
+    FOLLOW_65_in_postfix_expression1331 = frozenset([4])
+    FOLLOW_IDENTIFIER_in_postfix_expression1333 = frozenset([1, 51, 53, 55, 61, 62, 64, 65])
+    FOLLOW_61_in_postfix_expression1347 = frozenset([1, 51, 53, 55, 61, 62, 64, 65])
+    FOLLOW_62_in_postfix_expression1361 = frozenset([1, 51, 53, 55, 61, 62, 64, 65])
     FOLLOW_set_in_unary_operator0 = frozenset([1])
-    FOLLOW_IDENTIFIER_in_primary_expression1421 = frozenset([1])
-    FOLLOW_constant_in_primary_expression1426 = frozenset([1])
-    FOLLOW_51_in_primary_expression1431 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_expression_in_primary_expression1433 = frozenset([52])
-    FOLLOW_52_in_primary_expression1435 = frozenset([1])
+    FOLLOW_IDENTIFIER_in_primary_expression1419 = frozenset([1])
+    FOLLOW_constant_in_primary_expression1424 = frozenset([1])
+    FOLLOW_51_in_primary_expression1429 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_expression_in_primary_expression1431 = frozenset([52])
+    FOLLOW_52_in_primary_expression1433 = frozenset([1])
     FOLLOW_set_in_constant0 = frozenset([1])
-    FOLLOW_assignment_expression_in_expression1513 = frozenset([1, 26])
-    FOLLOW_26_in_expression1516 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_assignment_expression_in_expression1518 = frozenset([1, 26])
-    FOLLOW_conditional_expression_in_constant_expression1531 = frozenset([1])
-    FOLLOW_lvalue_in_assignment_expression1542 = frozenset([27, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78])
-    FOLLOW_assignment_operator_in_assignment_expression1544 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_assignment_expression_in_assignment_expression1546 = frozenset([1])
-    FOLLOW_conditional_expression_in_assignment_expression1551 = frozenset([1])
-    FOLLOW_unary_expression_in_lvalue1563 = frozenset([1])
+    FOLLOW_assignment_expression_in_expression1511 = frozenset([1, 26])
+    FOLLOW_26_in_expression1514 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_assignment_expression_in_expression1516 = frozenset([1, 26])
+    FOLLOW_conditional_expression_in_constant_expression1529 = frozenset([1])
+    FOLLOW_lvalue_in_assignment_expression1540 = frozenset([27, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78])
+    FOLLOW_assignment_operator_in_assignment_expression1542 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_assignment_expression_in_assignment_expression1544 = frozenset([1])
+    FOLLOW_conditional_expression_in_assignment_expression1549 = frozenset([1])
+    FOLLOW_unary_expression_in_lvalue1561 = frozenset([1])
     FOLLOW_set_in_assignment_operator0 = frozenset([1])
-    FOLLOW_logical_or_expression_in_conditional_expression1637 = frozenset([1, 79])
-    FOLLOW_79_in_conditional_expression1640 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_expression_in_conditional_expression1642 = frozenset([45])
-    FOLLOW_45_in_conditional_expression1644 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_conditional_expression_in_conditional_expression1646 = frozenset([1])
-    FOLLOW_logical_and_expression_in_logical_or_expression1661 = frozenset([1, 80])
-    FOLLOW_80_in_logical_or_expression1664 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_logical_and_expression_in_logical_or_expression1666 = frozenset([1, 80])
-    FOLLOW_inclusive_or_expression_in_logical_and_expression1679 = frozenset([1, 81])
-    FOLLOW_81_in_logical_and_expression1682 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_inclusive_or_expression_in_logical_and_expression1684 = frozenset([1, 81])
-    FOLLOW_exclusive_or_expression_in_inclusive_or_expression1697 = frozenset([1, 82])
-    FOLLOW_82_in_inclusive_or_expression1700 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_exclusive_or_expression_in_inclusive_or_expression1702 = frozenset([1, 82])
-    FOLLOW_and_expression_in_exclusive_or_expression1715 = frozenset([1, 83])
-    FOLLOW_83_in_exclusive_or_expression1718 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_and_expression_in_exclusive_or_expression1720 = frozenset([1, 83])
-    FOLLOW_equality_expression_in_and_expression1733 = frozenset([1, 66])
-    FOLLOW_66_in_and_expression1736 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_equality_expression_in_and_expression1738 = frozenset([1, 66])
-    FOLLOW_relational_expression_in_equality_expression1750 = frozenset([1, 84, 85])
-    FOLLOW_set_in_equality_expression1753 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_relational_expression_in_equality_expression1759 = frozenset([1, 84, 85])
-    FOLLOW_shift_expression_in_relational_expression1773 = frozenset([1, 86, 87, 88, 89])
-    FOLLOW_set_in_relational_expression1776 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_shift_expression_in_relational_expression1786 = frozenset([1, 86, 87, 88, 89])
-    FOLLOW_additive_expression_in_shift_expression1799 = frozenset([1, 90, 91])
-    FOLLOW_set_in_shift_expression1802 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_additive_expression_in_shift_expression1808 = frozenset([1, 90, 91])
-    FOLLOW_labeled_statement_in_statement1823 = frozenset([1])
-    FOLLOW_compound_statement_in_statement1828 = frozenset([1])
-    FOLLOW_expression_statement_in_statement1833 = frozenset([1])
-    FOLLOW_selection_statement_in_statement1838 = frozenset([1])
-    FOLLOW_iteration_statement_in_statement1843 = frozenset([1])
-    FOLLOW_jump_statement_in_statement1848 = frozenset([1])
-    FOLLOW_macro_statement_in_statement1853 = frozenset([1])
-    FOLLOW_IDENTIFIER_in_macro_statement1864 = frozenset([51])
-    FOLLOW_51_in_macro_statement1866 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 25, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 43, 44, 46, 47, 48, 49, 50, 51, 52, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
-    FOLLOW_IDENTIFIER_in_macro_statement1869 = frozenset([52])
-    FOLLOW_declaration_in_macro_statement1873 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 25, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 43, 44, 46, 47, 48, 49, 50, 51, 52, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
-    FOLLOW_statement_list_in_macro_statement1877 = frozenset([52])
-    FOLLOW_52_in_macro_statement1881 = frozenset([1])
-    FOLLOW_IDENTIFIER_in_labeled_statement1893 = frozenset([45])
-    FOLLOW_45_in_labeled_statement1895 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
-    FOLLOW_statement_in_labeled_statement1897 = frozenset([1])
-    FOLLOW_92_in_labeled_statement1902 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_constant_expression_in_labeled_statement1904 = frozenset([45])
-    FOLLOW_45_in_labeled_statement1906 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
-    FOLLOW_statement_in_labeled_statement1908 = frozenset([1])
-    FOLLOW_93_in_labeled_statement1913 = frozenset([45])
-    FOLLOW_45_in_labeled_statement1915 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
-    FOLLOW_statement_in_labeled_statement1917 = frozenset([1])
-    FOLLOW_41_in_compound_statement1928 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 25, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
-    FOLLOW_declaration_in_compound_statement1930 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 25, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
-    FOLLOW_statement_list_in_compound_statement1933 = frozenset([42])
-    FOLLOW_42_in_compound_statement1936 = frozenset([1])
-    FOLLOW_statement_in_statement_list1947 = frozenset([1, 4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
-    FOLLOW_24_in_expression_statement1959 = frozenset([1])
-    FOLLOW_expression_in_expression_statement1964 = frozenset([24])
-    FOLLOW_24_in_expression_statement1966 = frozenset([1])
-    FOLLOW_94_in_selection_statement1977 = frozenset([51])
-    FOLLOW_51_in_selection_statement1979 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_expression_in_selection_statement1983 = frozenset([52])
-    FOLLOW_52_in_selection_statement1985 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
-    FOLLOW_statement_in_selection_statement1989 = frozenset([1, 95])
-    FOLLOW_95_in_selection_statement2004 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
-    FOLLOW_statement_in_selection_statement2006 = frozenset([1])
-    FOLLOW_96_in_selection_statement2013 = frozenset([51])
-    FOLLOW_51_in_selection_statement2015 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_expression_in_selection_statement2017 = frozenset([52])
-    FOLLOW_52_in_selection_statement2019 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
-    FOLLOW_statement_in_selection_statement2021 = frozenset([1])
-    FOLLOW_97_in_iteration_statement2032 = frozenset([51])
-    FOLLOW_51_in_iteration_statement2034 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_expression_in_iteration_statement2038 = frozenset([52])
-    FOLLOW_52_in_iteration_statement2040 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
-    FOLLOW_statement_in_iteration_statement2042 = frozenset([1])
-    FOLLOW_98_in_iteration_statement2049 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
-    FOLLOW_statement_in_iteration_statement2051 = frozenset([97])
-    FOLLOW_97_in_iteration_statement2053 = frozenset([51])
-    FOLLOW_51_in_iteration_statement2055 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_expression_in_iteration_statement2059 = frozenset([52])
-    FOLLOW_52_in_iteration_statement2061 = frozenset([24])
-    FOLLOW_24_in_iteration_statement2063 = frozenset([1])
-    FOLLOW_99_in_iteration_statement2070 = frozenset([51])
-    FOLLOW_51_in_iteration_statement2072 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_expression_statement_in_iteration_statement2074 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_expression_statement_in_iteration_statement2078 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 52, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_expression_in_iteration_statement2080 = frozenset([52])
-    FOLLOW_52_in_iteration_statement2083 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
-    FOLLOW_statement_in_iteration_statement2085 = frozenset([1])
-    FOLLOW_100_in_jump_statement2098 = frozenset([4])
-    FOLLOW_IDENTIFIER_in_jump_statement2100 = frozenset([24])
-    FOLLOW_24_in_jump_statement2102 = frozenset([1])
-    FOLLOW_101_in_jump_statement2107 = frozenset([24])
-    FOLLOW_24_in_jump_statement2109 = frozenset([1])
-    FOLLOW_102_in_jump_statement2114 = frozenset([24])
-    FOLLOW_24_in_jump_statement2116 = frozenset([1])
-    FOLLOW_103_in_jump_statement2121 = frozenset([24])
-    FOLLOW_24_in_jump_statement2123 = frozenset([1])
-    FOLLOW_103_in_jump_statement2128 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_expression_in_jump_statement2130 = frozenset([24])
-    FOLLOW_24_in_jump_statement2132 = frozenset([1])
+    FOLLOW_logical_or_expression_in_conditional_expression1635 = frozenset([1, 79])
+    FOLLOW_79_in_conditional_expression1638 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_expression_in_conditional_expression1640 = frozenset([45])
+    FOLLOW_45_in_conditional_expression1642 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_conditional_expression_in_conditional_expression1644 = frozenset([1])
+    FOLLOW_logical_and_expression_in_logical_or_expression1659 = frozenset([1, 80])
+    FOLLOW_80_in_logical_or_expression1662 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_logical_and_expression_in_logical_or_expression1664 = frozenset([1, 80])
+    FOLLOW_inclusive_or_expression_in_logical_and_expression1677 = frozenset([1, 81])
+    FOLLOW_81_in_logical_and_expression1680 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_inclusive_or_expression_in_logical_and_expression1682 = frozenset([1, 81])
+    FOLLOW_exclusive_or_expression_in_inclusive_or_expression1695 = frozenset([1, 82])
+    FOLLOW_82_in_inclusive_or_expression1698 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_exclusive_or_expression_in_inclusive_or_expression1700 = frozenset([1, 82])
+    FOLLOW_and_expression_in_exclusive_or_expression1713 = frozenset([1, 83])
+    FOLLOW_83_in_exclusive_or_expression1716 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_and_expression_in_exclusive_or_expression1718 = frozenset([1, 83])
+    FOLLOW_equality_expression_in_and_expression1731 = frozenset([1, 66])
+    FOLLOW_66_in_and_expression1734 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_equality_expression_in_and_expression1736 = frozenset([1, 66])
+    FOLLOW_relational_expression_in_equality_expression1748 = frozenset([1, 84, 85])
+    FOLLOW_set_in_equality_expression1751 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_relational_expression_in_equality_expression1757 = frozenset([1, 84, 85])
+    FOLLOW_shift_expression_in_relational_expression1771 = frozenset([1, 86, 87, 88, 89])
+    FOLLOW_set_in_relational_expression1774 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_shift_expression_in_relational_expression1784 = frozenset([1, 86, 87, 88, 89])
+    FOLLOW_additive_expression_in_shift_expression1797 = frozenset([1, 90, 91])
+    FOLLOW_set_in_shift_expression1800 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_additive_expression_in_shift_expression1806 = frozenset([1, 90, 91])
+    FOLLOW_labeled_statement_in_statement1821 = frozenset([1])
+    FOLLOW_compound_statement_in_statement1826 = frozenset([1])
+    FOLLOW_expression_statement_in_statement1831 = frozenset([1])
+    FOLLOW_selection_statement_in_statement1836 = frozenset([1])
+    FOLLOW_iteration_statement_in_statement1841 = frozenset([1])
+    FOLLOW_jump_statement_in_statement1846 = frozenset([1])
+    FOLLOW_macro_statement_in_statement1851 = frozenset([1])
+    FOLLOW_IDENTIFIER_in_macro_statement1862 = frozenset([51])
+    FOLLOW_51_in_macro_statement1864 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 25, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 43, 44, 46, 47, 48, 49, 50, 51, 52, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
+    FOLLOW_IDENTIFIER_in_macro_statement1867 = frozenset([52])
+    FOLLOW_declaration_in_macro_statement1871 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 25, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 43, 44, 46, 47, 48, 49, 50, 51, 52, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
+    FOLLOW_statement_list_in_macro_statement1875 = frozenset([52])
+    FOLLOW_52_in_macro_statement1879 = frozenset([1])
+    FOLLOW_IDENTIFIER_in_labeled_statement1891 = frozenset([45])
+    FOLLOW_45_in_labeled_statement1893 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
+    FOLLOW_statement_in_labeled_statement1895 = frozenset([1])
+    FOLLOW_92_in_labeled_statement1900 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_constant_expression_in_labeled_statement1902 = frozenset([45])
+    FOLLOW_45_in_labeled_statement1904 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
+    FOLLOW_statement_in_labeled_statement1906 = frozenset([1])
+    FOLLOW_93_in_labeled_statement1911 = frozenset([45])
+    FOLLOW_45_in_labeled_statement1913 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
+    FOLLOW_statement_in_labeled_statement1915 = frozenset([1])
+    FOLLOW_41_in_compound_statement1926 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 25, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
+    FOLLOW_declaration_in_compound_statement1928 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 25, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
+    FOLLOW_statement_list_in_compound_statement1931 = frozenset([42])
+    FOLLOW_42_in_compound_statement1934 = frozenset([1])
+    FOLLOW_statement_in_statement_list1945 = frozenset([1, 4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
+    FOLLOW_24_in_expression_statement1957 = frozenset([1])
+    FOLLOW_expression_in_expression_statement1962 = frozenset([24])
+    FOLLOW_24_in_expression_statement1964 = frozenset([1])
+    FOLLOW_94_in_selection_statement1975 = frozenset([51])
+    FOLLOW_51_in_selection_statement1977 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_expression_in_selection_statement1981 = frozenset([52])
+    FOLLOW_52_in_selection_statement1983 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
+    FOLLOW_statement_in_selection_statement1987 = frozenset([1, 95])
+    FOLLOW_95_in_selection_statement2002 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
+    FOLLOW_statement_in_selection_statement2004 = frozenset([1])
+    FOLLOW_96_in_selection_statement2011 = frozenset([51])
+    FOLLOW_51_in_selection_statement2013 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_expression_in_selection_statement2015 = frozenset([52])
+    FOLLOW_52_in_selection_statement2017 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
+    FOLLOW_statement_in_selection_statement2019 = frozenset([1])
+    FOLLOW_97_in_iteration_statement2030 = frozenset([51])
+    FOLLOW_51_in_iteration_statement2032 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_expression_in_iteration_statement2036 = frozenset([52])
+    FOLLOW_52_in_iteration_statement2038 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
+    FOLLOW_statement_in_iteration_statement2040 = frozenset([1])
+    FOLLOW_98_in_iteration_statement2047 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
+    FOLLOW_statement_in_iteration_statement2049 = frozenset([97])
+    FOLLOW_97_in_iteration_statement2051 = frozenset([51])
+    FOLLOW_51_in_iteration_statement2053 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_expression_in_iteration_statement2057 = frozenset([52])
+    FOLLOW_52_in_iteration_statement2059 = frozenset([24])
+    FOLLOW_24_in_iteration_statement2061 = frozenset([1])
+    FOLLOW_99_in_iteration_statement2068 = frozenset([51])
+    FOLLOW_51_in_iteration_statement2070 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_expression_statement_in_iteration_statement2072 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_expression_statement_in_iteration_statement2076 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 52, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_expression_in_iteration_statement2078 = frozenset([52])
+    FOLLOW_52_in_iteration_statement2081 = frozenset([4, 5, 6, 7, 8, 9, 10, 24, 41, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68, 92, 93, 94, 96, 97, 98, 99, 100, 101, 102, 103])
+    FOLLOW_statement_in_iteration_statement2083 = frozenset([1])
+    FOLLOW_100_in_jump_statement2096 = frozenset([4])
+    FOLLOW_IDENTIFIER_in_jump_statement2098 = frozenset([24])
+    FOLLOW_24_in_jump_statement2100 = frozenset([1])
+    FOLLOW_101_in_jump_statement2105 = frozenset([24])
+    FOLLOW_24_in_jump_statement2107 = frozenset([1])
+    FOLLOW_102_in_jump_statement2112 = frozenset([24])
+    FOLLOW_24_in_jump_statement2114 = frozenset([1])
+    FOLLOW_103_in_jump_statement2119 = frozenset([24])
+    FOLLOW_24_in_jump_statement2121 = frozenset([1])
+    FOLLOW_103_in_jump_statement2126 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_expression_in_jump_statement2128 = frozenset([24])
+    FOLLOW_24_in_jump_statement2130 = frozenset([1])
     FOLLOW_declaration_specifiers_in_synpred290 = frozenset([1])
     FOLLOW_declaration_specifiers_in_synpred490 = frozenset([4, 51, 55])
     FOLLOW_declarator_in_synpred493 = frozenset([4, 25, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 43, 44, 46, 47, 48, 49, 50])
@@ -8963,24 +8960,24 @@ class CParser(Parser):
     FOLLOW_pointer_in_synpred60827 = frozenset([1])
     FOLLOW_55_in_synpred61833 = frozenset([55])
     FOLLOW_pointer_in_synpred61835 = frozenset([1])
-    FOLLOW_declarator_in_synpred64892 = frozenset([1])
-    FOLLOW_abstract_declarator_in_synpred65894 = frozenset([1])
-    FOLLOW_specifier_qualifier_list_in_synpred68926 = frozenset([1, 51, 53, 55])
-    FOLLOW_abstract_declarator_in_synpred68928 = frozenset([1])
-    FOLLOW_direct_abstract_declarator_in_synpred69947 = frozenset([1])
-    FOLLOW_abstract_declarator_suffix_in_synpred72978 = frozenset([1])
-    FOLLOW_51_in_synpred851152 = frozenset([4, 32, 33, 34, 35, 36, 37, 38, 39, 40, 43, 44, 46, 47, 48, 49, 50])
-    FOLLOW_type_name_in_synpred851154 = frozenset([52])
-    FOLLOW_52_in_synpred851156 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_cast_expression_in_synpred851158 = frozenset([1])
-    FOLLOW_63_in_synpred901200 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_unary_expression_in_synpred901202 = frozenset([1])
-    FOLLOW_55_in_synpred951317 = frozenset([4])
-    FOLLOW_IDENTIFIER_in_synpred951319 = frozenset([1])
-    FOLLOW_lvalue_in_synpred1121542 = frozenset([27, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78])
-    FOLLOW_assignment_operator_in_synpred1121544 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
-    FOLLOW_assignment_expression_in_synpred1121546 = frozenset([1])
-    FOLLOW_expression_statement_in_synpred1391833 = frozenset([1])
-    FOLLOW_declaration_in_synpred1441873 = frozenset([1])
-    FOLLOW_declaration_in_synpred1481930 = frozenset([1])
+    FOLLOW_declarator_in_synpred64890 = frozenset([1])
+    FOLLOW_abstract_declarator_in_synpred65892 = frozenset([1])
+    FOLLOW_specifier_qualifier_list_in_synpred68924 = frozenset([1, 51, 53, 55])
+    FOLLOW_abstract_declarator_in_synpred68926 = frozenset([1])
+    FOLLOW_direct_abstract_declarator_in_synpred69945 = frozenset([1])
+    FOLLOW_abstract_declarator_suffix_in_synpred72976 = frozenset([1])
+    FOLLOW_51_in_synpred851150 = frozenset([4, 32, 33, 34, 35, 36, 37, 38, 39, 40, 43, 44, 46, 47, 48, 49, 50])
+    FOLLOW_type_name_in_synpred851152 = frozenset([52])
+    FOLLOW_52_in_synpred851154 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_cast_expression_in_synpred851156 = frozenset([1])
+    FOLLOW_63_in_synpred901198 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_unary_expression_in_synpred901200 = frozenset([1])
+    FOLLOW_55_in_synpred951315 = frozenset([4])
+    FOLLOW_IDENTIFIER_in_synpred951317 = frozenset([1])
+    FOLLOW_lvalue_in_synpred1121540 = frozenset([27, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78])
+    FOLLOW_assignment_operator_in_synpred1121542 = frozenset([4, 5, 6, 7, 8, 9, 10, 51, 55, 57, 58, 61, 62, 63, 66, 67, 68])
+    FOLLOW_assignment_expression_in_synpred1121544 = frozenset([1])
+    FOLLOW_expression_statement_in_synpred1391831 = frozenset([1])
+    FOLLOW_declaration_in_synpred1441871 = frozenset([1])
+    FOLLOW_declaration_in_synpred1481928 = frozenset([1])
 

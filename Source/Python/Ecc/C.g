@@ -216,7 +216,7 @@ declarator_suffix
 pointer
 	: '*' type_qualifier+ pointer?
 	| '*' pointer
-	| s='*'
+	| '*'
 	;
 
 parameter_type_list
