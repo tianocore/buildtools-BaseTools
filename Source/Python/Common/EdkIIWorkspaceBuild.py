@@ -1047,7 +1047,8 @@ class WorkspaceBuild(object):
             #
             for Key in L.Pcds:
                 if Key not in Module.Pcds:
-                    Module.Pcds[Key] = L.Pcds[Key]
+                    LibPcd = L.Pcds[Key]
+                    Module.Pcds[Key] = self.FindPcd(Arch, str(Module), LibPcd.TokenCName, LibPcd.TokenSpaceGuidCName, LibPcd.Type, [])
             #
             # Merge GUIDs from library instance
             #
