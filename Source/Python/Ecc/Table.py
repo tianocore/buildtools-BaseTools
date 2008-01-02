@@ -58,7 +58,7 @@ class Table(object):
             EdkLogger.verbose(Rs)
         
         TotalCount = self.GetCount()
-        EdkLogger.verbose("***Total %s records in table %s***" % (TotalCount, self.Table) )
+        EdkLogger.verbose("*** Total %s records in table %s ***" % (TotalCount, self.Table) )
         EdkLogger.verbose("Query tabel %s DONE!" % self.Table)
 
     ## Drop a table

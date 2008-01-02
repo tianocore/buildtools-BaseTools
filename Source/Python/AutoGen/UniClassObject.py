@@ -11,10 +11,16 @@
 #This file is used to collect all defined strings in multiple uni files
 #
 
+##
+# Import Modules
+#
 import os, codecs, re
-import Common.EdkLogger
+import Common.EdkLogger as EdkLogger
 from Common.BuildToolError import *
 
+##
+# Static definitions
+#
 UNICODE_WIDE_CHAR = u'\\wide'
 UNICODE_NARROW_CHAR = u'\\narrow'
 UNICODE_NON_BREAKING_CHAR = u'\\nbr'
@@ -32,9 +38,27 @@ BACK_SPLASH = u'\\'
 
 gIncludePattern = re.compile("^#include +[\"<]+([^\"< >]+)[>\"]+$", re.MULTILINE | re.UNICODE)
 
+## Convert a python unicode string to a normal string
+#
+# Convert a python unicode string to a normal string
+# UniToStr(u'I am a string') is 'I am a string'
+#
+# @param Uni:  The python unicode string
+#
+# @retval:     The formatted normal string 
+#
 def UniToStr(Uni):
     return repr(Uni)[2:-1]
 
+## Convert a unicode string to a Hex list
+#
+# Convert a unicode string to a Hex list
+# UniToHexList('ABC') is ['0x41', '0x00', '0x42', '0x00', '0x43', '0x00']
+#
+# @param Uni:    The python unicode string
+#
+# @retval List:  The formatted hex list 
+#
 def UniToHexList(Uni):
     List = []
     for Item in Uni:
@@ -43,6 +67,28 @@ def UniToHexList(Uni):
         List.append('0x' + Temp[0:2])
     return List
 
+## ConvertISO639ToRFC3066
+#
+# Convert a ISO639 language name to RFC3066
+#
+# @param LangName:   LangName in ISO639
+#
+# @retval LangName:  LangName in RFC3066
+#
+def ConvertISO639ToRFC3066(LangName):
+    if LangName == 'eng':
+        LangName = 'en-US'
+    if LangName == 'fra':
+        LangName = 'fr-FR'
+    if LangName == 'spa':
+        LangName = 'es-ES'
+        
+    return LangName
+
+## StringDefClassObject
+#
+# A structure for language definition
+#
 class StringDefClassObject(object):
     def __init__(self, Name = None, Value = None, Referenced = False, Token = None, UseOtherLangDef = ''):
         self.StringName = ''
@@ -70,6 +116,10 @@ class StringDefClassObject(object):
                repr(self.Referenced) + ' ' + \
                repr(self.StringValue)
 
+## UniFileClassObject
+#
+# A structure for .uni file definition
+#
 class UniFileClassObject(object):
     def __init__(self, FileList = []):
         self.FileList = FileList
@@ -80,16 +130,25 @@ class UniFileClassObject(object):
         if len(self.FileList) > 0:
             self.LoadUniFiles(FileList)
 
+    #
+    # Get Language definition
+    #
     def GetLangDef(self, Line):
         Lang = Line.split()
         if len(Lang) != 3:
             EdkLogger.error("Unicode File Parser", PARSER_ERROR, "Wrong language definition",
                             ExtraData="""%s\n\t*Correct format is '#langdef eng "English"'""" % Line)
         else:
-            LangName = Lang[1]
+            LangName = ConvertISO639ToRFC3066(Lang[1])
             LangPrintName = Lang[2][1:-1]
-
-        if [LangName, LangPrintName] not in self.LanguageDef:
+        
+        IsLangInDef = False
+        for Item in self.LanguageDef:
+            if Item[0] == LangName:
+                IsLangInDef = True
+                break;
+        
+        if not IsLangInDef:
             self.LanguageDef.append([LangName, LangPrintName])
 
         #
@@ -100,6 +159,9 @@ class UniFileClassObject(object):
 
         return True
 
+    #
+    # Get String name and value
+    #
     def GetStringObject(self, Item):
         Name = ''
         Language = ''
@@ -114,11 +176,17 @@ class UniFileClassObject(object):
                 Language = LanguageList[IndexI].split()[0]
                 Value = LanguageList[IndexI][LanguageList[IndexI].find(u'\"') + len(u'\"') : LanguageList[IndexI].rfind(u'\"')].replace(u'\r\n', u'')
                 self.AddStringToList(Name, Language, Value)
-
+    
+    #
+    # Get include file list and load them
+    #
     def GetIncludeFile(self, Item, Dir):
         FileName = Item[Item.find(u'#include ') + len(u'#include ') :Item.find(u' ', len(u'#include '))][1:-1]
         self.LoadUniFile(FileName)
 
+    #
+    # Pre-process before parse .uni file
+    #
     def PreProcess(self, File):
         if not os.path.exists(File) or not os.path.isfile(File):
             EdkLogger.error("Unicode File Parser", FILE_NOT_FOUND, ExtraData=File)
@@ -164,6 +232,9 @@ class UniFileClassObject(object):
 
         return Lines
 
+    #
+    # Load a .uni file
+    #
     def LoadUniFile(self, File = None):
         if File == None:
             EdkLogger.error("Unicode File Parser", PARSER_ERROR, 'No unicode file is given')
@@ -243,12 +314,19 @@ class UniFileClassObject(object):
                         StringItem = StringItem[ : StringItem.rfind(u'\"')] + Lines[IndexJ][Lines[IndexJ].find(u'\"') + len(u'\"') : ]
                 self.GetStringObject(StringItem)
 
+    #
+    # Load multiple .uni files
+    #
     def LoadUniFiles(self, FileList = []):
         if len(FileList) > 0:
             for File in FileList:
                 self.LoadUniFile(File)
 
+    #
+    # Add a string to list
+    #
     def AddStringToList(self, Name, Language, Value, Token = None, Referenced = False, UseOtherLangDef = '', Index = -1):
+        Language = ConvertISO639ToRFC3066(Language)
         if Language not in self.OrderedStringList:
             self.OrderedStringList[Language] = []
 
@@ -263,14 +341,19 @@ class UniFileClassObject(object):
                 self.OrderedStringList[Language].append(StringDefClassObject(Name, Value, Referenced, Token, UseOtherLangDef))
             else:
                 self.OrderedStringList[Language].insert(Index, StringDefClassObject(Name, Value, Referenced, Token, UseOtherLangDef))
-
+                
+    #
+    # Set the string as referenced
+    #
     def SetStringReferenced(self, Name):
         for Lang in self.OrderedStringList:
             for Item in self.OrderedStringList[Lang]:
                 if Name == Item.StringName:
                     Item.Referenced = True
                     break
-
+    #
+    # Search the string in language definition
+    #
     def FindStringValue(self, Name, Lang):
         for Item in self.OrderedStringList[Lang]:
             if Item.StringName == Name:
@@ -278,6 +361,9 @@ class UniFileClassObject(object):
 
         return None
 
+    #
+    # Re-order strings and re-generate tokens
+    #
     def ReToken(self):
         #
         # Search each string to find if it is defined for each language
@@ -316,6 +402,9 @@ class UniFileClassObject(object):
                 NotReferencedStringList[Index].Token = Token + Index
                 self.OrderedStringList[LangName].append(NotReferencedStringList[Index])
 
+    #
+    # Show the instance itself
+    #
     def ShowMe(self):
         print self.LanguageDef
         #print self.OrderedStringList
@@ -327,5 +416,5 @@ class UniFileClassObject(object):
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
 if __name__ == '__main__':
-    a = UniFileClassObject(['C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\inventorystrings.uni', 'C:\\Tiano\\Edk\\Sample\\Universal\\UserInterface\\SetupBrowser\\Dxe\\DriverSample\\VfrStrings.uni'])
+    a = UniFileClassObject(['C:\\Edk\\DriverSample\\SetupBrowserStr.uni', 'C:\\Edk\\DriverSample\\VfrStrings.uni'])
     a.ShowMe()
