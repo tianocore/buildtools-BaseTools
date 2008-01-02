@@ -156,6 +156,18 @@ class SectionClassObject:
     def __init__(self):
         self.Alignment = None
         
+## Depex expression section in FDF
+#
+#        
+class DepexSectionClassObject (SectionClassObject):
+    ## The constructor
+    #
+    #   @param  self        The object pointer
+    #
+    def __init__(self):
+        self.DepexType = None
+        self.Expression = None
+
 ## Compress section data in FDF
 #
 #

@@ -25,6 +25,7 @@ import VerSection
 import UiSection
 import FvImageSection
 import DataSection
+import DepexSection
 import CompressSection
 import GuidSection
 import Capsule
@@ -1791,6 +1792,21 @@ class FdfParser:
                 
             Obj.SectionList.append(FvImageSectionObj) 
            
+        elif self.__IsKeyword("PEI_DEPEX_EXP") or self.__IsKeyword("DXE_DEPEX_EXP"):
+            DepexSectionObj = DepexSection.DepexSection()
+            DepexSectionObj.Alignment = AlignValue
+            DepexSectionObj.DepexType = self.__Token
+            
+            if not self.__IsToken( "="):
+                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            if not self.__IsToken( "{"):
+                raise Warning("expected '{' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            if not self.__SkipToToken( "}"):
+                raise Warning("expected Depex expression ending '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            
+            DepexSectionObj.Expression = self.__SkippedChars.rstrip('}')
+            Obj.SectionList.append(DepexSectionObj)
+        
         else:
             
             if not self.__GetNextWord():
