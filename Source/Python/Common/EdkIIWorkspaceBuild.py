@@ -633,7 +633,7 @@ class WorkspaceBuild(object):
                 #
                 for Item in Package.GuidDeclarations:
                     if Arch in Item.SupArchList:
-                        Pb.Ppis[Item.CName] = Item.Guid
+                        Pb.Guids[Item.CName] = Item.Guid
 
                 #
                 # Includes
