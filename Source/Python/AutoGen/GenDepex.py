@@ -83,7 +83,7 @@ class DependencyExpression:
     # op code that should not be the last one
     NonEndingOpcode = ["AND", "OR"]
     # op code must not present at the same time
-    ExclusiveOpcode = ["BEFORE", "AFTER"]
+    ExclusiveOpcode = ["SOR", "BEFORE", "AFTER"]
     # op code that should be the first one if it presents
     AboveAllOpcode = ["SOR"]
 
@@ -112,6 +112,9 @@ class DependencyExpression:
         self.GetPostfixNotation()
         self.ValidateOpcode()
 
+    def __str__(self):
+        return " ".join(self.TokenList)
+
     ## Split the expression string into token list
     def GetExpressionTokenList(self):
         self.TokenList = self.TokenPattern.findall(self.ExpressionString)
@@ -119,10 +122,17 @@ class DependencyExpression:
     ## Convert token list into postfix notation
     def GetPostfixNotation(self):
         Stack = []
+        LastToken = 'AND'
         for Token in self.TokenList:
             if Token == "(":
+                if LastToken not in self.SupportedOpcode:
+                    EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid dependency expression: missing operator",
+                                    ExtraData=str(self))
                 Stack.append(Token)
             elif Token == ")":
+                if '(' not in Stack:
+                    EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid dependency expression: mismatched parentheses",
+                                    ExtraData=str(self))
                 while len(Stack) > 0:
                     if Stack[-1] == '(':
                         Stack.pop()
@@ -136,11 +146,25 @@ class DependencyExpression:
                 Stack.append(Token)
                 self.OpcodeList.append(Token)
             else:
-                if Token not in self.Opcode[self.Phase]:
+                # not OP, take it as GUID
+                if Token not in self.SupportedOpcode:
+                    if LastToken not in self.SupportedOpcode + ['(', ')']:
+                        EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid dependency expression: missing operator",
+                                        ExtraData=str(self))
                     self.PostfixNotation.append("PUSH")
-                else:
+                # check if OP is valid in this phase
+                elif Token in self.Opcode[self.Phase]:
                     self.OpcodeList.append(Token)
+                else:
+                    EdkLogger.error("GenDepex", PARSER_ERROR, 
+                                    "Opcode=%s doesn't supported in %s stage " % (Op, self.Phase))
                 self.PostfixNotation.append(Token)
+            LastToken = Token
+
+        # there should not be parentheses in Stack
+        if '(' in Stack or ')' in Stack:
+            EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid dependency expression: mismatched parentheses",
+                            ExtraData=str(self))
         while len(Stack) > 0:
             self.PostfixNotation.append(Stack.pop())
         self.PostfixNotation.append("END")
@@ -195,7 +219,7 @@ class DependencyExpression:
         Buffer.close()
         return FileChangeFlag
 
-versionNumber = "0.01"
+versionNumber = "0.02"
 __version__ = "%prog Version " + versionNumber
 __copyright__ = "Copyright (c) 2007, Intel Corporation  All rights reserved."
 __usage__ = "%prog [options] [dependency_expression_file]"
@@ -242,7 +266,10 @@ def Main():
             DxsString = open(DxsFile, 'r').read().replace("\n", " ").replace("\r", " ")
             DxsString = re.compile("DEPENDENCY_START(.+)DEPENDENCY_END").findall(DxsString)[0]
         elif Option.Expression != "":
-            DxsString = Option.Expression
+            if Option.Expression[0] == '"':
+                DxsString = Option.Expression[1:-1]
+            else:
+                DxsString = Option.Expression
         else:
             print "No expression string or file given"
             return 1
