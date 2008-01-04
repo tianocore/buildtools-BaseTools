@@ -518,7 +518,7 @@ class WorkspaceBuild(object):
     #
     # Go through each arch to get all items in DscDatabase to PlatformDatabase
     #
-    def GenPlatformDatabase(self):
+    def GenPlatformDatabase(self, PcdsSet={}):
         for Dsc in self.DscDatabase.keys():
             Platform = self.DscDatabase[Dsc].Platform
 
@@ -589,6 +589,27 @@ class WorkspaceBuild(object):
                         SkuInfoList = Item.SkuInfoList
                         Pb.Pcds[(Name, Guid)] = PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, False)
 
+                for (Name, Guid) in PcdsSet:
+                    Value = PcdsSet[Name, Guid]
+                    for PcdType in ["FixedAtBuild", "PatchableInModule", "FeatureFlag", "Dynamic", "DynamicEx"]:
+                        for Dec in self.Build[Arch].PackageDatabase:
+                            Pcds = self.Build[Arch].PackageDatabase[Dec].Pcds
+                            if (Name, Guid, PcdType) in Pcds:
+                                Pcd = Pcds[(Name, Guid, PcdType)]
+                                Type = PcdType
+                                DatumType = Pcd.DatumType
+                                Token = Pcd.TokenValue
+                                MaxDatumSize = Pcd.MaxDatumSize
+                                SkuInfoList = Pcd.SkuInfoList
+                                Pb.Pcds[(Name, Guid)] = PcdClassObject(Name, Guid, Type, DatumType, Value, Token, MaxDatumSize, SkuInfoList, False)
+                                break
+                        else:
+                            # nothing found
+                            continue
+                        # found in one package, find next PCD
+                        break
+                    else:
+                        EdkLogger.error("AutoGen", PARSER_ERROR, "PCD is not found in any package", ExtraData="%s.%s" % (Guid, Name))
                 #
                 # Add to database
                 #
@@ -674,7 +695,7 @@ class WorkspaceBuild(object):
     #
     # Go through each arch to get all items in InfDatabase to ModuleDatabase
     #    
-    def GenModuleDatabase(self, PcdsSet = {}, InfList = []):
+    def GenModuleDatabase(self, InfList = []):
         for Inf in self.InfDatabase.keys():
             Module = self.InfDatabase[Inf].Module
 
@@ -840,7 +861,7 @@ class WorkspaceBuild(object):
                         Name = Item.CName
                         Guid = Item.TokenSpaceGuidCName
                         Type = Item.ItemType
-                        Pb.Pcds[(Name, Guid)] = self.FindPcd(Arch, Inf, Name, Guid, Type, PcdsSet)
+                        Pb.Pcds[(Name, Guid)] = self.FindPcd(Arch, Inf, Name, Guid, Type)
 
                 #
                 # Add to database
@@ -1048,7 +1069,7 @@ class WorkspaceBuild(object):
             for Key in L.Pcds:
                 if Key not in Module.Pcds:
                     LibPcd = L.Pcds[Key]
-                    Module.Pcds[Key] = self.FindPcd(Arch, str(Module), LibPcd.TokenCName, LibPcd.TokenSpaceGuidCName, LibPcd.Type, [])
+                    Module.Pcds[Key] = self.FindPcd(Arch, str(Module), LibPcd.TokenCName, LibPcd.TokenSpaceGuidCName, LibPcd.Type)
             #
             # Merge GUIDs from library instance
             #
@@ -1085,9 +1106,9 @@ class WorkspaceBuild(object):
         #
         # Generate PlatformDatabase, PackageDatabase and ModuleDatabase
         #
-        self.GenPlatformDatabase()
         self.GenPackageDatabase()
-        self.GenModuleDatabase(PcdsSet, InfList)
+        self.GenPlatformDatabase(PcdsSet)
+        self.GenModuleDatabase(InfList)
         
         #
         # Update Libraries Of Platform
@@ -1295,11 +1316,10 @@ class WorkspaceBuild(object):
     # @param Name:        Name of Pcd
     # @param Guid:        Guid of Pcd
     # @param Type:        Type of Pcd
-    # @param PcdsSet:     A PcdSet get from Fdf parse result
     #
     # @retval PcdClassObject An instance for PcdClassObject with all members filled
     #
-    def FindPcd(self, Arch, ModuleName, Name, Guid, Type, PcdsSet):
+    def FindPcd(self, Arch, ModuleName, Name, Guid, Type):
         NewType = ''
         DatumType = ''
         Value = ''
@@ -1367,14 +1387,6 @@ class WorkspaceBuild(object):
                                 IsFoundInDsc = True
                                 IsOverrided = True
                                 break
-
-        #
-        # Last get information from PcdsSet defined by FDF
-        #
-        if (Name, Guid) in PcdsSet:
-            Value = PcdsSet[(Name, Guid)]
-            IsFoundInDsc = True
-            IsOverrided = True
 
         #
         # First get information from package database
