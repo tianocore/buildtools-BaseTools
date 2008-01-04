@@ -59,6 +59,8 @@ T_CHAR_BACKSLASH, T_CHAR_DOUBLE_QUOTE, T_CHAR_SINGLE_QUOTE, T_CHAR_STAR, T_CHAR_
 
 SEPERATOR_TUPLE = ('=', '|', ',', '{', '}') 
 
+IncludeFileList = []
+
 ## The exception class that used to report error messages when parsing FDF
 #
 # Currently the "ToolName" is set to be "FDF Parser".
@@ -72,10 +74,49 @@ class Warning (Exception):
     #   @param  Line        The Line number that error occurs
     #
     def __init__(self, Str, File = None, Line = None):
-        self.message = Str
-        self.FileName = File
-        self.LineNumber = Line
+        
+        FileLineTuple = self.GetRealFileLine(File, Line)
+        self.FileName = FileLineTuple[0]
+        self.LineNumber = FileLineTuple[1]
+        self.message = Str + str(self.LineNumber)
         self.ToolName = 'FDF Parser'
+        
+    def GetRealFileLine (self, File, Line):
+        
+        InsertedLines = 0
+        for Profile in IncludeFileList:
+            if Line >= Profile.InsertStartLineNumber and Line < Profile.InsertStartLineNumber + Profile.InsertAdjust + len(Profile.FileLinesList):
+                return (Profile.FileName, Line - Profile.InsertStartLineNumber + 1)
+            if Line >= Profile.InsertStartLineNumber + Profile.InsertAdjust + len(Profile.FileLinesList):
+                InsertedLines += Profile.InsertAdjust + len(Profile.FileLinesList)
+        
+        return (File, Line - InsertedLines)
+
+## The Include file content class that used to record file data when parsing include file
+#
+# May raise Exception when opening file.
+#
+class IncludeFileProfile :
+    ## The constructor
+    #
+    #   @param  self        The object pointer
+    #   @param  FileName    The file that to be parsed
+    #
+    def __init__(self, FileName):
+        self.FileName = FileName
+        self.FileLinesList = []
+        try:
+            fsock = open(FileName, "rb", 0)
+            try:
+                self.FileLinesList = fsock.readlines()
+            finally:
+                fsock.close()
+
+        except IOError:
+            raise Warning("Error when opening file %s" % FileName)
+        
+        self.InsertStartLineNumber = None
+        self.InsertAdjust = 0
 
 ## The FDF content class that used to record file data when parsing FDF
 #
@@ -93,7 +134,6 @@ class FileProfile :
             fsock = open(FileName, "rb", 0)
             try:
                 self.FileLinesList = fsock.readlines()
-                self.FileLinesList = [list(s) for s in self.FileLinesList]
             finally:
                 fsock.close()
 
@@ -132,6 +172,8 @@ class FdfParser:
         self.CurrentFvName = None
         self.__Token = ""
         self.__SkippedChars = ""
+        
+        self.__InsertedFileDict = {}
 
     ## __IsWhiteSpace() method
     #
@@ -283,6 +325,9 @@ class FdfParser:
     def __CurrentLine(self):
         return self.Profile.FileLinesList[self.CurrentLineNumber - 1]
         
+    def __StringToList(self):
+        self.Profile.FileLinesList = [list(s) for s in self.Profile.FileLinesList]
+    
     ## PreprocessFile() method
     #
     #   Preprocess file contents, replace comments with spaces.
@@ -300,7 +345,7 @@ class FdfParser:
         HashComment = False
         # HashComment in quoted string " " is ignored.
         InString = False    
-
+        
         while not self.__EndOfFile():
             
             if self.__CurrentChar() == T_CHAR_DOUBLE_QUOTE:
@@ -343,10 +388,76 @@ class FdfParser:
                 InComment = True
             else:
                 self.__GetOneChar()
-
+        
         # restore from ListOfList to ListOfString
         self.Profile.FileLinesList = ["".join(list) for list in self.Profile.FileLinesList]
         self.Rewind()
+
+    ## PreprocessIncludeFile() method
+    #
+    #   Preprocess file contents, replace !include statements with file contents.
+    #   In the end, rewind the file buffer pointer to the beginning
+    #
+    #   @param  self        The object pointer
+    #   
+    def PreprocessIncludeFile(self):
+        
+        while self.__GetNextToken():
+            
+            if self.__Token == '!include':
+                IncludeLine = self.CurrentLineNumber
+                IncludeOffset = self.CurrentOffsetWithinLine - len('!include')
+                if not self.__GetNextToken():
+                    raise Warning("expected include file name At Line ", self.FileName, self.CurrentLineNumber)
+                IncFileName = self.__Token
+                if not os.path.isabs(IncFileName):
+                    if IncFileName.startswith('$(WORKSPACE)'):
+                        Str = IncFileName.replace('$(WORKSPACE)', os.environ.get('WORKSPACE'))
+                        if os.path.exists(Str):
+                            if not os.path.isabs(Str):
+                                Str = os.path.abspath(Str)
+                        IncFileName = Str
+                    else:
+                        # file is in the same dir with FDF file
+                        FullFdf = self.FileName
+                        if not os.path.isabs(self.FileName):
+                            FullFdf = os.path.join(os.environ.get('WORKSPACE'), self.FileName)
+                
+                        IncFileName = os.path.join(os.path.dirname(FullFdf), IncFileName)
+                    
+                if not os.path.exists(os.path.normpath(IncFileName)):
+                    raise Warning("Include file not exists At Line ", self.FileName, self.CurrentLineNumber)
+                
+                IncFileProfile = IncludeFileProfile(os.path.normpath(IncFileName))
+                
+                CurrentLine = self.CurrentLineNumber
+                CurrentOffset = self.CurrentOffsetWithinLine
+                # list index of the insertion, note that line number is 'CurrentLine + 1'
+                InsertAtLine = CurrentLine
+                IncFileProfile.InsertStartLineNumber = InsertAtLine + 1
+                # deal with remaining portions after "!include filename", if exists.
+                if self.__GetNextToken():
+                    if self.CurrentLineNumber == CurrentLine:
+                        RemainingLine = self.__CurrentLine()[CurrentOffset:]
+                        self.Profile.FileLinesList.insert(self.CurrentLineNumber, RemainingLine)
+                        IncFileProfile.InsertAdjust += 1
+                        self.CurrentLineNumber += 1
+                        self.CurrentOffsetWithinLine = 0
+                
+                for Line in IncFileProfile.FileLinesList:
+                    self.Profile.FileLinesList.insert(InsertAtLine, Line)
+                    self.CurrentLineNumber += 1
+                    InsertAtLine += 1    
+                
+                IncludeFileList.append(IncFileProfile)
+                
+                # comment out the processed include file statement
+                TempList = list(self.Profile.FileLinesList[IncludeLine - 1])
+                TempList.insert(IncludeOffset, '#')
+                self.Profile.FileLinesList[IncludeLine - 1] = ''.join(TempList)
+                
+        self.Rewind()
+
 
     ## __IsToken() method
     #
@@ -597,14 +708,14 @@ class FdfParser:
     #
     def __GetNextPcdName(self):
         if not self.__GetNextWord():
-            raise Warning("expected PcdTokenSpaceCName.PcdCName At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected PcdTokenSpaceCName.PcdCName At Line ", self.FileName, self.CurrentLineNumber)
         pcdTokenSpaceCName = self.__Token
         
         if not self.__IsToken( "."):
-            raise Warning("expected PcdTokenSpaceCName.PcdCName At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected PcdTokenSpaceCName.PcdCName At Line ", self.FileName, self.CurrentLineNumber)
         
         if not self.__GetNextWord():
-            raise Warning("expected PcdTokenSpaceCName.PcdCName At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected PcdTokenSpaceCName.PcdCName At Line ", self.FileName, self.CurrentLineNumber)
         pcdCName = self.__Token
         
         return (pcdCName, pcdTokenSpaceCName) 
@@ -625,9 +736,9 @@ class FdfParser:
             currentLineNumber = self.CurrentLineNumber
             
             if not self.__SkipToToken("\""):
-                raise Warning("Missing Quote \" for String At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Missing Quote \" for String At Line ", self.FileName, self.CurrentLineNumber)
             if currentLineNumber != self.CurrentLineNumber:
-                raise Warning("Missing Quote \" for String At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Missing Quote \" for String At Line ", self.FileName, self.CurrentLineNumber)
             self.__Token = self.__SkippedChars.rstrip('"')
             return True
         else:
@@ -695,7 +806,12 @@ class FdfParser:
     def ParseFile(self):
 
         try:
+            self.__StringToList()
             self.PreprocessFile()
+            self.PreprocessIncludeFile()
+            self.__StringToList()
+            self.PreprocessFile()
+            
             while self.__GetFd():
                 pass
 
@@ -713,9 +829,10 @@ class FdfParser:
             
         except Warning, X:
             self.__UndoToken()
-            X.message += '\nGot Token: %s\n' % self.__Token + \
-                'Parsing String: %s At line: %d, Offset Within Line: %d\n' \
-                    % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
+            FileLineTuple = X.GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            X.message += '\nGot Token: \"%s\" from File %s\n' % (self.__Token, FileLineTuple[0]) + \
+                'Previous Token: \"%s\" At line: %d, Offset Within Line: %d\n' \
+                    % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :].rstrip('\n').rstrip('\r'), FileLineTuple[1], self.CurrentOffsetWithinLine)
             raise
         
     ## __GetFd() method
@@ -735,7 +852,7 @@ class FdfParser:
         if S.startswith("[") and not S.startswith("[FD."):
             if not S.startswith("[FV.") and not S.startswith("[CAPSULE.") \
                 and not S.startswith("[VTF.") and not S.startswith("[RULE."):
-                raise Warning("Unknown section At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Unknown section At Line ", self.FileName, self.CurrentLineNumber)
             self.__UndoToken()
             return False
         
@@ -743,20 +860,20 @@ class FdfParser:
         if not self.__IsToken("[FD.", True):
             print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
                     % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
-            raise Warning("expected [FD.] At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected [FD.] At Line ", self.FileName, self.CurrentLineNumber)
         
         FdName = self.__GetUiName()
         self.CurrentFdName = FdName.upper()
         
         if not self.__IsToken( "]"):
-            raise Warning("expected ']' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected ']' At Line ", self.FileName, self.CurrentLineNumber)
         
         FdObj = Fd.FD()
         FdObj.FdUiName = self.CurrentFdName
         self.Profile.FdDict[self.CurrentFdName] = FdObj
         Status = self.__GetCreateFile(FdObj)
         if not Status:
-            raise Warning("FD name error At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("FD name error At Line ", self.FileName, self.CurrentLineNumber)
         
         if not self.__GetTokenStatements(FdObj):
             return False
@@ -766,7 +883,7 @@ class FdfParser:
         self.__GetSetStatements(FdObj)
 
         if not self.__GetRegionLayout(FdObj):
-            raise Warning("expected region layout At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected region layout At Line ", self.FileName, self.CurrentLineNumber)
             
         while self.__GetRegionLayout(FdObj):
             pass
@@ -798,10 +915,10 @@ class FdfParser:
 
         if self.__IsKeyword( "CREATE_FILE"):
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
                 
             if not self.__GetNextToken():
-                raise Warning("expected file name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected file name At Line ", self.FileName, self.CurrentLineNumber)
                 
             FileName = self.__Token
             Obj.CreateFileName = FileName
@@ -819,13 +936,13 @@ class FdfParser:
     #
     def __GetTokenStatements(self, Obj):
         if not self.__IsKeyword( "BaseAddress"):
-            raise Warning("BaseAddress missing At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("BaseAddress missing At Line ", self.FileName, self.CurrentLineNumber)
            
         if not self.__IsToken( "="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             
         if not self.__GetNextHexNumber():
-            raise Warning("expected Hex base address At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected Hex base address At Line ", self.FileName, self.CurrentLineNumber)
             
         Obj.BaseAddress = self.__Token
         
@@ -835,13 +952,13 @@ class FdfParser:
             self.Profile.PcdDict[pcdPair] = long(Obj.BaseAddress, 0)
             
         if not self.__IsKeyword( "Size"):
-            raise Warning("Size missing At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("Size missing At Line ", self.FileName, self.CurrentLineNumber)
             
         if not self.__IsToken( "="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             
         if not self.__GetNextHexNumber():
-            raise Warning("expected Hex size At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected Hex size At Line ", self.FileName, self.CurrentLineNumber)
             
       
         Obj.Size = long(self.__Token, 0)
@@ -852,16 +969,16 @@ class FdfParser:
             self.Profile.PcdDict[pcdPair] = Obj.Size
                     
         if not self.__IsKeyword( "ErasePolarity"):
-            raise Warning("ErasePolarity missing At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("ErasePolarity missing At Line ", self.FileName, self.CurrentLineNumber)
            
         if not self.__IsToken( "="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             
         if not self.__GetNextToken():
-            raise Warning("expected Erase Polarity At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected Erase Polarity At Line ", self.FileName, self.CurrentLineNumber)
             
         if self.__Token != "1" and self.__Token != "0":
-            raise Warning("expected 1 or 0 Erase Polarity At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected 1 or 0 Erase Polarity At Line ", self.FileName, self.CurrentLineNumber)
             
         Obj.ErasePolarity = self.__Token
 
@@ -881,20 +998,20 @@ class FdfParser:
         
         if self.__IsKeyword("BsBaseAddress"):
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             
             if not self.__GetNextDecimalNumber() and not self.__GetNextHexNumber():
-                raise Warning("expected address At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected address At Line ", self.FileName, self.CurrentLineNumber)
                 
             BsAddress = long(self.__Token, 0)
             Obj.BsBaseAddress = BsAddress
             
         if self.__IsKeyword("RtBaseAddress"):
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             
             if not self.__GetNextDecimalNumber() and not self.__GetNextHexNumber():
-                raise Warning("expected address At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected address At Line ", self.FileName, self.CurrentLineNumber)
                 
             RtAddress = long(self.__Token, 0)
             Obj.RtBaseAddress = RtAddress
@@ -911,7 +1028,7 @@ class FdfParser:
     def __GetBlockStatements(self, Obj):
         
         if not self.__GetBlockStatement(Obj):
-            raise Warning("expected block statement At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected block statement At Line ", self.FileName, self.CurrentLineNumber)
             
         while self.__GetBlockStatement(Obj):
             pass
@@ -931,10 +1048,10 @@ class FdfParser:
             return False
         
         if not self.__IsToken( "="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             
         if not self.__GetNextHexNumber() and not self.__GetNextDecimalNumber():
-            raise Warning("expected Hex block size At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected Hex block size At Line ", self.FileName, self.CurrentLineNumber)
 
         BlockSize = long(self.__Token, 0)
         BlockSizePcd = None
@@ -946,10 +1063,10 @@ class FdfParser:
         BlockNumber = None
         if self.__IsKeyword( "NumBlocks"):
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
                 
             if not self.__GetNextDecimalNumber() and not self.__GetNextHexNumber():
-                raise Warning("expected block numbers At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected block numbers At Line ", self.FileName, self.CurrentLineNumber)
                 
             BlockNumber = long(self.__Token, 0)
         
@@ -983,10 +1100,10 @@ class FdfParser:
             self.__GetNextToken()
             Macro = self.__Token
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
                 
             if not self.__GetNextToken():
-                raise Warning("expected value At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected value At Line ", self.FileName, self.CurrentLineNumber)
 
             Value = self.__Token
             Macro = '$(' + Macro + ')'
@@ -1022,16 +1139,16 @@ class FdfParser:
             PcdPair = self.__GetNextPcdName()
             
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
                 
             if not self.__GetNextToken():
-                raise Warning("expected value At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected value At Line ", self.FileName, self.CurrentLineNumber)
                 
             Value = self.__Token
             if Value.startswith("{"):
                 # deal with value with {}
                 if not self.__SkipToToken( "}"):
-                    raise Warning("expected '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                    raise Warning("expected '}' At Line ", self.FileName, self.CurrentLineNumber)
                 Value += self.__SkippedChars
                 
             Obj.SetVarDict[PcdPair] = Value
@@ -1058,10 +1175,10 @@ class FdfParser:
         Fd.RegionList.append(RegionObj)
         
         if not self.__IsToken( "|"):
-            raise Warning("expected '|' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '|' At Line ", self.FileName, self.CurrentLineNumber)
         
         if not self.__GetNextHexNumber():
-            raise Warning("expected Region Size At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected Region Size At Line ", self.FileName, self.CurrentLineNumber)
         RegionObj.Size = long(self.__Token, 0)
         
         if not self.__GetNextWord():
@@ -1108,13 +1225,13 @@ class FdfParser:
     def __GetRegionFvType(self, RegionObj):
 
         if not self.__IsKeyword( "FV"):
-            raise Warning("expected Keyword 'FV' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected Keyword 'FV' At Line ", self.FileName, self.CurrentLineNumber)
         
         if not self.__IsToken( "="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
         
         if not self.__GetNextToken():
-            raise Warning("expected FV name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected FV name At Line ", self.FileName, self.CurrentLineNumber)
         
         RegionObj.RegionType = "FV"
         RegionObj.RegionDataList.append(self.__Token)
@@ -1122,10 +1239,10 @@ class FdfParser:
         while self.__IsKeyword( "FV"):
         
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
         
             if not self.__GetNextToken():
-                raise Warning("expected FV name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected FV name At Line ", self.FileName, self.CurrentLineNumber)
         
             RegionObj.RegionDataList.append(self.__Token)
         
@@ -1139,13 +1256,13 @@ class FdfParser:
     def __GetRegionFileType(self, RegionObj):
 
         if not self.__IsKeyword( "FILE"):
-            raise Warning("expected Keyword 'FILE' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected Keyword 'FILE' At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__IsToken( "="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__GetNextToken():
-            raise Warning("expected File name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected File name At Line ", self.FileName, self.CurrentLineNumber)
 
         RegionObj.RegionType = "FILE"
         RegionObj.RegionDataList.append( self.__Token)
@@ -1153,10 +1270,10 @@ class FdfParser:
         while self.__IsKeyword( "FILE"):
         
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
         
             if not self.__GetNextToken():
-                raise Warning("expected FILE name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected FILE name At Line ", self.FileName, self.CurrentLineNumber)
         
             RegionObj.RegionDataList.append(self.__Token)
 
@@ -1170,19 +1287,19 @@ class FdfParser:
     def __GetRegionDataType(self, RegionObj):
         
         if not self.__IsKeyword( "DATA"):
-            raise Warning("expected Region Data type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected Region Data type At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__IsToken( "="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
         
         if not self.__IsToken( "{"):
-            raise Warning("expected '{' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '{' At Line ", self.FileName, self.CurrentLineNumber)
         
         if not self.__GetNextHexNumber():
-            raise Warning("expected Hex byte At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected Hex byte At Line ", self.FileName, self.CurrentLineNumber)
         
         if len(self.__Token) > 4:
-            raise Warning("Hex byte(must be 2 digits) too long At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("Hex byte(must be 2 digits) too long At Line ", self.FileName, self.CurrentLineNumber)
         
         DataString = self.__Token
         DataString += ","
@@ -1190,12 +1307,12 @@ class FdfParser:
         while self.__IsToken(","):
             self.__GetNextHexNumber()
             if len(self.__Token) > 4:
-                raise Warning("Hex byte(must be 2 digits) too long At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Hex byte(must be 2 digits) too long At Line ", self.FileName, self.CurrentLineNumber)
             DataString += self.__Token
             DataString += ","
             
         if not self.__IsToken( "}"):
-            raise Warning("expected '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '}' At Line ", self.FileName, self.CurrentLineNumber)
         
         DataString = DataString.rstrip(",")
         RegionObj.RegionType = "DATA"
@@ -1204,16 +1321,16 @@ class FdfParser:
         while self.__IsKeyword( "DATA"):
 
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
         
             if not self.__IsToken( "{"):
-                raise Warning("expected '{' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '{' At Line ", self.FileName, self.CurrentLineNumber)
         
             if not self.__GetNextHexNumber():
-                raise Warning("expected Hex byte At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected Hex byte At Line ", self.FileName, self.CurrentLineNumber)
         
             if len(self.__Token) > 4:
-                raise Warning("Hex byte(must be 2 digits) too long At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Hex byte(must be 2 digits) too long At Line ", self.FileName, self.CurrentLineNumber)
         
             DataString = self.__Token
             DataString += ","
@@ -1221,12 +1338,12 @@ class FdfParser:
             while self.__IsToken(","):
                 self.__GetNextHexNumber()
                 if len(self.__Token) > 4:
-                    raise Warning("Hex byte(must be 2 digits) too long At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                    raise Warning("Hex byte(must be 2 digits) too long At Line ", self.FileName, self.CurrentLineNumber)
                 DataString += self.__Token
                 DataString += ","
             
             if not self.__IsToken( "}"):
-                raise Warning("expected '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '}' At Line ", self.FileName, self.CurrentLineNumber)
         
             DataString = DataString.rstrip(",")
             RegionObj.RegionDataList.append( DataString)
@@ -1256,13 +1373,13 @@ class FdfParser:
         if not self.__IsToken("[FV.", True):
             print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
                     % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
-            raise Warning("Unknown Keyword At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("Unknown Keyword At Line ", self.FileName, self.CurrentLineNumber)
         
         FvName = self.__GetUiName()
         self.CurrentFvName = FvName.upper()
         
         if not self.__IsToken( "]"):
-            raise Warning("expected ']' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected ']' At Line ", self.FileName, self.CurrentLineNumber)
         
         FvObj = Fv.FV()
         FvObj.UiFvName = self.CurrentFvName
@@ -1270,7 +1387,7 @@ class FdfParser:
         
         Status = self.__GetCreateFile(FvObj)
         if not Status:
-            raise Warning("FV name error At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("FV name error At Line ", self.FileName, self.CurrentLineNumber)
 
         self.__GetDefineStatements(FvObj)
 
@@ -1310,16 +1427,16 @@ class FdfParser:
             return False
         
         if not self.__IsToken( "="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
         
         if not self.__GetNextToken():
-            raise Warning("expected alignment value At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected alignment value At Line ", self.FileName, self.CurrentLineNumber)
         
         if self.__Token.upper() not in ("1", "2", "4", "8", "16", "32", "64", "128", "256", "512", \
                                         "1K", "2K", "4K", "8K", "16K", "32K", "64K", "128K", "256K", "512K", \
                                         "1M", "2M", "4M", "8M", "16M", "32M", "64M", "128M", "256M", "512M", \
                                         "1G", "2G"):
-            raise Warning("Unknown alignment value At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("Unknown alignment value At Line ", self.FileName, self.CurrentLineNumber)
         Obj.FvAlignment = self.__Token
         return True
     
@@ -1345,10 +1462,10 @@ class FdfParser:
                 return
 
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             
             if not self.__GetNextToken() or self.__Token.upper() not in ("TRUE", "FALSE", "1", "0"):
-                raise Warning("expected TRUE/FALSE (1/0) At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected TRUE/FALSE (1/0) At Line ", self.FileName, self.CurrentLineNumber)
             
             FvObj.FvAttributeDict[name] = self.__Token
 
@@ -1370,11 +1487,11 @@ class FdfParser:
             return False
         
         if not self.__IsKeyword("PEI") and not self.__IsKeyword("DXE"):
-            raise Warning("expected Apriori file type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected Apriori file type At Line ", self.FileName, self.CurrentLineNumber)
         AprType = self.__Token
         
         if not self.__IsToken( "{"):
-            raise Warning("expected '{' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '{' At Line ", self.FileName, self.CurrentLineNumber)
         
         AprSectionObj = AprioriSection.AprioriSection()
         AprSectionObj.AprioriType = AprType
@@ -1389,7 +1506,7 @@ class FdfParser:
                 break
         
         if not self.__IsToken( "}"):
-            raise Warning("expected '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '}' At Line ", self.FileName, self.CurrentLineNumber)
 
         FvObj.AprioriSectionList.append(AprSectionObj)
         return True
@@ -1413,7 +1530,7 @@ class FdfParser:
         self.__GetInfOptions( ffsInf)
         
         if not self.__GetNextToken():
-            raise Warning("expected INF file path At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected INF file path At Line ", self.FileName, self.CurrentLineNumber)
         ffsInf.InfFileName = self.__Token
         
         if ffsInf.InfFileName.find('$') >= 0:
@@ -1428,7 +1545,7 @@ class FdfParser:
             elif self.__IsKeyword('RELOCS_RETAINED'):
                 ffsInf.KeepReloc = True
             else:
-                raise Warning("Unknown reloc strip flag At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Unknown reloc strip flag At Line ", self.FileName, self.CurrentLineNumber)
         
         if ForCapsule:
             capsuleFfs = CapsuleData.CapsuleFfs()
@@ -1449,25 +1566,25 @@ class FdfParser:
         
         if self.__IsKeyword( "RuleOverride"):
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             if not self.__GetNextToken():
-                raise Warning("expected Rule name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected Rule name At Line ", self.FileName, self.CurrentLineNumber)
             FfsInfObj.Rule = self.__Token
             
         if self.__IsKeyword( "VERSION"):
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             if not self.__GetNextToken():
-                raise Warning("expected Version At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected Version At Line ", self.FileName, self.CurrentLineNumber)
             
             if self.__GetStringData():
                 FfsInfObj.Version = self.__Token
         
         if self.__IsKeyword( "UI"):
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             if not self.__GetNextToken():
-                raise Warning("expected UI name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected UI name At Line ", self.FileName, self.CurrentLineNumber)
             
             if self.__GetStringData():
                 FfsInfObj.Ui = self.__Token
@@ -1484,7 +1601,7 @@ class FdfParser:
                 
             while self.__GetNextToken():
                 if not p.match(self.__Token):
-                    raise Warning("expected KeyString \"Target_Tag_Arch\" At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                    raise Warning("expected KeyString \"Target_Tag_Arch\" At Line ", self.FileName, self.CurrentLineNumber)
                 FfsInfObj.KeyStringList.append(self.__Token)
     
                 if not self.__IsToken(","):
@@ -1508,14 +1625,14 @@ class FdfParser:
         FfsFileObj = FfsFileStatement.FileStatement()
         
         if not self.__GetNextWord():
-            raise Warning("expected FFS type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected FFS type At Line ", self.FileName, self.CurrentLineNumber)
         FfsFileObj.FvFileType = self.__Token
         
         if not self.__IsToken( "="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__GetNextGuid():
-            raise Warning("expected File GUID At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected File GUID At Line ", self.FileName, self.CurrentLineNumber)
         FfsFileObj.NameGuid = self.__Token
     
         self.__GetFilePart( FfsFileObj, MacroDict.copy())
@@ -1584,23 +1701,23 @@ class FdfParser:
 #                    raise Warning("File type %s could not have reloc strip flag At Line %d" % (FfsFileObj.FvFileType, self.CurrentLineNumber), self.FileName, self.CurrentLineNumber)
 #            
 #            if not self.__IsToken("{"):
-                raise Warning("expected '{' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '{' At Line ", self.FileName, self.CurrentLineNumber)
             
         if not self.__GetNextToken():
-            raise Warning("expected File name or section data At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected File name or section data At Line ", self.FileName, self.CurrentLineNumber)
         
         if self.__Token == "FV":
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             if not self.__GetNextToken():
-                raise Warning("expected FV name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected FV name At Line ", self.FileName, self.CurrentLineNumber)
             FfsFileObj.FvName = self.__Token
             
         elif self.__Token == "FD":
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             if not self.__GetNextToken():
-                raise Warning("expected FD name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected FD name At Line ", self.FileName, self.CurrentLineNumber)
             FfsFileObj.FdName = self.__Token
             
         elif self.__Token in ("DEFINE", "APRIORI", "SECTION"):
@@ -1610,7 +1727,7 @@ class FdfParser:
             FfsFileObj.FileName = self.__Token
         
         if not self.__IsToken( "}"):
-            raise Warning("expected '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '}' At Line ", self.FileName, self.CurrentLineNumber)
     
     ## __GetFileOpts() method
     #
@@ -1628,7 +1745,7 @@ class FdfParser:
                 if self.__IsToken(","):
                     while self.__GetNextToken():
                         if not Pattern.match(self.__Token):
-                            raise Warning("expected KeyString \"Target_Tag_Arch\" At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                            raise Warning("expected KeyString \"Target_Tag_Arch\" At Line ", self.FileName, self.CurrentLineNumber)
                         FfsFileObj.KeyStringList.append(self.__Token)
 
                         if not self.__IsToken(","):
@@ -1659,10 +1776,10 @@ class FdfParser:
     def __GetAlignment(self):
         if self.__IsKeyword( "Align", True):
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             
             if not self.__GetNextToken():
-                raise Warning("expected alignment value At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected alignment value At Line ", self.FileName, self.CurrentLineNumber)
             return True
             
         return False
@@ -1707,7 +1824,7 @@ class FdfParser:
         
         if not self.__IsKeyword( "SECTION"):
             if len(Obj.SectionList) == 0:
-                raise Warning("expected SECTION At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected SECTION At Line ", self.FileName, self.CurrentLineNumber)
             else:
                 return False
         
@@ -1718,18 +1835,18 @@ class FdfParser:
         BuildNum = None
         if self.__IsKeyword( "BUILD_NUM"):
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             
             if not self.__GetNextToken():
-                raise Warning("expected Build number value At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected Build number value At Line ", self.FileName, self.CurrentLineNumber)
             
             BuildNum = self.__Token
             
         if self.__IsKeyword( "VERSION"):
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             if not self.__GetNextToken():
-                raise Warning("expected version At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected version At Line ", self.FileName, self.CurrentLineNumber)
             VerSectionObj = VerSection.VerSection()
             VerSectionObj.Alignment = AlignValue
             VerSectionObj.BuildNum = BuildNum
@@ -1741,9 +1858,9 @@ class FdfParser:
 
         elif self.__IsKeyword( "UI"):
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             if not self.__GetNextToken():
-                raise Warning("expected UI At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected UI At Line ", self.FileName, self.CurrentLineNumber)
             UiSectionObj = UiSection.UiSection()
             UiSectionObj.Alignment = AlignValue
             if self.__GetStringData():
@@ -1754,9 +1871,9 @@ class FdfParser:
             
         elif self.__IsKeyword( "FV_IMAGE"):
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             if not self.__GetNextWord():
-                raise Warning("expected FV name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected FV name At Line ", self.FileName, self.CurrentLineNumber)
             
             FvName = self.__Token.upper()
             FvObj = None
@@ -1780,7 +1897,7 @@ class FdfParser:
                         break
     
                 if not self.__IsToken( "}"):
-                    raise Warning("expected '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                    raise Warning("expected '}' At Line ", self.FileName, self.CurrentLineNumber)
             
             FvImageSectionObj = FvImageSection.FvImageSection()
             FvImageSectionObj.Alignment = AlignValue
@@ -1798,11 +1915,11 @@ class FdfParser:
             DepexSectionObj.DepexType = self.__Token
             
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             if not self.__IsToken( "{"):
-                raise Warning("expected '{' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '{' At Line ", self.FileName, self.CurrentLineNumber)
             if not self.__SkipToToken( "}"):
-                raise Warning("expected Depex expression ending '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected Depex expression ending '}' At Line ", self.FileName, self.CurrentLineNumber)
             
             DepexSectionObj.Expression = self.__SkippedChars.rstrip('}')
             Obj.SectionList.append(DepexSectionObj)
@@ -1810,7 +1927,7 @@ class FdfParser:
         else:
             
             if not self.__GetNextWord():
-                raise Warning("expected section type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected section type At Line ", self.FileName, self.CurrentLineNumber)
             
             # Encapsulation section appear, UndoToken and return
             if self.__Token == "COMPRESS" or self.__Token == "GUIDED":
@@ -1819,7 +1936,7 @@ class FdfParser:
             
             if self.__Token not in ("COMPAT16", "PE32", "PIC", "TE", "FV_IMAGE", "RAW", "DXE_DEPEX",\
                                "UI", "VERSION", "PEI_DEPEX", "SUBTYPE_GUID"):
-                raise Warning("Unknown section type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Unknown section type At Line ", self.FileName, self.CurrentLineNumber)
             # DataSection
             DataSectionObj = DataSection.DataSection()
             DataSectionObj.Alignment = AlignValue
@@ -1836,7 +1953,7 @@ class FdfParser:
             
             if self.__IsToken("="):
                 if not self.__GetNextToken():
-                    raise Warning("expected section file path At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                    raise Warning("expected section file path At Line ", self.FileName, self.CurrentLineNumber)
                 DataSectionObj.SectFileName = self.__Token
             else:
                 if not self.__GetCglSection(DataSectionObj):
@@ -1864,7 +1981,7 @@ class FdfParser:
                 type = self.__Token
                 
             if not self.__IsToken("{"):
-                raise Warning("expected '{' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '{' At Line ", self.FileName, self.CurrentLineNumber)
 
             CompressSectionObj = CompressSection.CompressSection()
             CompressSectionObj.Alignment = AlignValue
@@ -1878,11 +1995,11 @@ class FdfParser:
             
             
             if not self.__IsToken( "}"):
-                raise Warning("expected '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '}' At Line ", self.FileName, self.CurrentLineNumber)
             Obj.SectionList.append(CompressSectionObj)
                 
 #            else:
-#               raise Warning("Compress type not known At Line %d" % self.CurrentLineNumber) 
+#               raise Warning("Compress type not known At Line ") 
            
             return True
         
@@ -1893,7 +2010,7 @@ class FdfParser:
 
             AttribDict = self.__GetGuidAttrib()
             if not self.__IsToken("{"):
-                raise Warning("expected '{' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '{' At Line ", self.FileName, self.CurrentLineNumber)
             GuidSectionObj = GuidSection.GuidSection()
             GuidSectionObj.Alignment = AlignValue
             GuidSectionObj.NameGuid = GuidValue
@@ -1908,7 +2025,7 @@ class FdfParser:
                     break
             
             if not self.__IsToken( "}"):
-                raise Warning("expected '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '}' At Line ", self.FileName, self.CurrentLineNumber)
             Obj.SectionList.append(GuidSectionObj)
                 
             return True
@@ -1931,20 +2048,20 @@ class FdfParser:
             AttribKey = self.__Token
 
             if not self.__IsToken("="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             
             if not self.__GetNextToken() or self.__Token.upper() not in ("TRUE", "FALSE", "1", "0"):
-                raise Warning("expected TRUE/FALSE (1/0) At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected TRUE/FALSE (1/0) At Line ", self.FileName, self.CurrentLineNumber)
             AttribDict[AttribKey] = self.__Token
             
         if self.__IsKeyword("PROCESSING_REQUIRED") or self.__IsKeyword("AUTH_STATUS_VALID"):
             AttribKey = self.__Token
 
             if not self.__IsToken("="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ")
 
             if not self.__GetNextToken() or self.__Token.upper() not in ("TRUE", "FALSE", "1", "0"):
-                raise Warning("expected TRUE/FALSE (1/0) At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected TRUE/FALSE (1/0) At Line ", self.FileName, self.CurrentLineNumber)
             AttribDict[AttribKey] = self.__Token
             
         return AttribDict
@@ -1963,7 +2080,7 @@ class FdfParser:
         OldPos = self.GetFileBufferPos()
         if not self.__IsKeyword( "SECTION"):
             if len(FfsFileObj.SectionList) == 0:
-                raise Warning("expected SECTION At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected SECTION At Line ", self.FileName, self.CurrentLineNumber)
             else:
                 return False
         
@@ -2002,25 +2119,25 @@ class FdfParser:
         if not self.__IsToken("[CAPSULE.", True):
             print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
                     % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
-            raise Warning("expected [Capsule.] At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)        
+            raise Warning("expected [Capsule.] At Line ", self.FileName, self.CurrentLineNumber)        
             
         CapsuleObj = Capsule.Capsule()
 
         CapsuleName = self.__GetUiName()
         if not CapsuleName:
-            raise Warning("expected capsule name At line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected capsule name At line ", self.FileName, self.CurrentLineNumber)
         
         CapsuleObj.UiCapsuleName = CapsuleName.upper()
         
         if not self.__IsToken( "]"):
-            raise Warning("expected ']' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected ']' At Line ", self.FileName, self.CurrentLineNumber)
         
         if self.__IsKeyword("CREATE_FILE"):
             if not self.__IsToken( "="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             
             if not self.__GetNextToken():
-                raise Warning("expected file name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected file name At Line ", self.FileName, self.CurrentLineNumber)
             
             CapsuleObj.CreateFile = self.__Token
         
@@ -2052,7 +2169,7 @@ class FdfParser:
     def __GetCapsuleTokens(self, Obj):
         
         if not self.__IsKeyword("CAPSULE_GUID"):
-            raise Warning("expected 'CAPSULE_GUID' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected 'CAPSULE_GUID' At Line ", self.FileName, self.CurrentLineNumber)
         
         while self.__CurrentLine().find("=") != -1:
             NameValue = self.__CurrentLine().split("=")
@@ -2091,10 +2208,10 @@ class FdfParser:
             return False
         
         if not self.__IsToken("="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
         
         if not self.__GetNextToken():
-            raise Warning("expected FV name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected FV name At Line ", self.FileName, self.CurrentLineNumber)
         
         CapsuleFv = CapsuleData.CapsuleFv()
         CapsuleFv.FvName = self.__Token
@@ -2123,25 +2240,25 @@ class FdfParser:
         if not self.__IsToken("[Rule.", True):
             print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
                     % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
-            raise Warning("expected [Rule.] At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected [Rule.] At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__SkipToToken("."):
-            raise Warning("expected '.' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '.' At Line ", self.FileName, self.CurrentLineNumber)
         
         Arch = self.__SkippedChars.rstrip(".")
         if Arch.upper() not in ("IA32", "X64", "IPF", "EBC", "COMMON"):
-            raise Warning("Unknown Arch At line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("Unknown Arch At line ", self.FileName, self.CurrentLineNumber)
         
         ModuleType = self.__GetModuleType()
         
         TemplateName = ""
         if self.__IsToken("."):
             if not self.__GetNextWord():
-                raise Warning("expected template name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected template name At Line ", self.FileName, self.CurrentLineNumber)
             TemplateName = self.__Token
             
         if not self.__IsToken( "]"):
-            raise Warning("expected ']' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected ']' At Line ", self.FileName, self.CurrentLineNumber)
         
         RuleObj = self.__GetRuleFileStatements()
         RuleObj.Arch = Arch.upper()
@@ -2174,12 +2291,12 @@ class FdfParser:
     def __GetModuleType(self):
         
         if not self.__GetNextWord():
-            raise Warning("expected Module type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected Module type At Line ", self.FileName, self.CurrentLineNumber)
         if self.__Token.upper() not in ("SEC", "PEI_CORE", "PEIM", "DXE_CORE", \
                              "DXE_DRIVER", "DXE_SAL_DRIVER", \
                              "DXE_SMM_DRIVER", "DXE_RUNTIME_DRIVER", \
                              "UEFI_DRIVER", "UEFI_APPLICATION", "USER_DEFINED", "DEFAULT", "BASE"):
-            raise Warning("Unknown Module type At line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("Unknown Module type At line ", self.FileName, self.CurrentLineNumber)
         return self.__Token
     
     ## __GetFileExtension() method
@@ -2191,7 +2308,7 @@ class FdfParser:
     #
     def __GetFileExtension(self):
         if not self.__IsToken("."):
-                raise Warning("expected '.' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '.' At Line ", self.FileName, self.CurrentLineNumber)
             
         Ext = ""
         if self.__GetNextToken():
@@ -2200,10 +2317,10 @@ class FdfParser:
                 Ext = self.__Token                            
                 return '.' + Ext    
             else:
-                raise Warning("Unknown file extension At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Unknown file extension At Line ", self.FileName, self.CurrentLineNumber)
                 
         else:
-            raise Warning("expected file extension At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected file extension At Line ", self.FileName, self.CurrentLineNumber)
         
     ## __GetRuleFileStatement() method
     #
@@ -2215,21 +2332,21 @@ class FdfParser:
     def __GetRuleFileStatements(self):
         
         if not self.__IsKeyword("FILE"):
-            raise Warning("expected FILE At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected FILE At Line ", self.FileName, self.CurrentLineNumber)
         
         if not self.__GetNextWord():
-            raise Warning("expected FV type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected FV type At Line ", self.FileName, self.CurrentLineNumber)
         
         Type = self.__Token.strip().upper()
         if Type not in ("RAW", "FREEFORM", "SEC", "PEI_CORE", "PEIM",\
                              "PEI_DXE_COMBO", "DRIVER", "DXE_CORE", "APPLICATION", "FV_IMAGE"):
-            raise Warning("Unknown FV type At line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("Unknown FV type At line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__IsToken("="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
         
         if not self.__IsKeyword("$(NAMED_GUID)"):
-            raise Warning("expected $(NAMED_GUID) At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected $(NAMED_GUID) At Line ", self.FileName, self.CurrentLineNumber)
 
         KeepReloc = None
         if self.__IsKeyword('RELOCS_STRIPPED') or self.__IsKeyword('RELOCS_RETAINED'):
@@ -2249,7 +2366,7 @@ class FdfParser:
                 if self.__IsToken(","):
                     while self.__GetNextToken():
                         if not Pattern.match(self.__Token):
-                            raise Warning("expected KeyString \"Target_Tag_Arch\" At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                            raise Warning("expected KeyString \"Target_Tag_Arch\" At Line ", self.FileName, self.CurrentLineNumber)
                         KeyStringList.append(self.__Token)
 
                         if not self.__IsToken(","):
@@ -2270,7 +2387,7 @@ class FdfParser:
         AlignValue = ""
         if self.__GetAlignment():
             if self.__Token not in ("8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
-                raise Warning("Incorrect alignment At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Incorrect alignment At Line ", self.FileName, self.CurrentLineNumber)
             AlignValue = self.__Token
 
         if self.__IsToken("{"):
@@ -2291,7 +2408,7 @@ class FdfParser:
                     break
                 
             if not self.__IsToken("}"):
-                raise Warning("expected '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '}' At Line ", self.FileName, self.CurrentLineNumber)
             
             return Rule
         
@@ -2315,13 +2432,13 @@ class FdfParser:
         else:
             # Simple file rule expected
             if not self.__GetNextWord():
-                raise Warning("expected leaf section type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected leaf section type At Line ", self.FileName, self.CurrentLineNumber)
 
             SectionName = self.__Token
         
             if SectionName not in ("COMPAT16", "PE32", "PIC", "TE", "FV_IMAGE", "RAW", "DXE_DEPEX",\
                                     "UI", "PEI_DEPEX", "VERSION", "SUBTYPE_GUID"):
-                raise Warning("Unknown leaf section name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Unknown leaf section name At Line ", self.FileName, self.CurrentLineNumber)
             
 
             if self.__IsKeyword("Fixed", True):
@@ -2332,11 +2449,11 @@ class FdfParser:
     
             if self.__GetAlignment():
                 if self.__Token not in ("8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
-                    raise Warning("Incorrect alignment At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                    raise Warning("Incorrect alignment At Line ", self.FileName, self.CurrentLineNumber)
                 AlignValue = self.__Token
             
             if not self.__GetNextToken():
-                raise Warning("expected File name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected File name At Line ", self.FileName, self.CurrentLineNumber)
             
             Rule = RuleSimpleFile.RuleSimpleFile()
             Rule.SectionType = SectionName
@@ -2392,18 +2509,18 @@ class FdfParser:
                         break
     
                 if not self.__IsToken( "}"):
-                    raise Warning("expected '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                    raise Warning("expected '}' At Line ", self.FileName, self.CurrentLineNumber)
                 FvImageSectionObj.Fv = FvObj
                 FvImageSectionObj.FvName = None
                 
             else:
                 if not self.__IsKeyword("FV"):
-                    raise Warning("expected 'FV' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                    raise Warning("expected 'FV' At Line ", self.FileName, self.CurrentLineNumber)
                 FvImageSectionObj.FvFileType = self.__Token
                 
                 if self.__GetAlignment():
                     if self.__Token not in ("8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
-                        raise Warning("Incorrect alignment At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                        raise Warning("Incorrect alignment At Line ", self.FileName, self.CurrentLineNumber)
                     FvImageSectionObj.Alignment = self.__Token
                 
                 if self.__IsKeyword("FV"):
@@ -2411,7 +2528,7 @@ class FdfParser:
                 
                 if self.__GetAlignment():
                     if self.__Token not in ("8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
-                        raise Warning("Incorrect alignment At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                        raise Warning("Incorrect alignment At Line ", self.FileName, self.CurrentLineNumber)
                     FvImageSectionObj.Alignment = self.__Token
                     
                 if self.__IsToken('|'):
@@ -2423,7 +2540,7 @@ class FdfParser:
                     else:
                         self.__UndoToken()
                 else:
-                    raise Warning("expected FV file name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                    raise Warning("expected FV file name At Line ", self.FileName, self.CurrentLineNumber)
                     
             Obj.SectionList.append(FvImageSectionObj)
             return True
@@ -2432,17 +2549,17 @@ class FdfParser:
         EfiSectionObj.SectionType = SectionName
         
         if not self.__GetNextToken():
-            raise Warning("expected file type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected file type At Line ", self.FileName, self.CurrentLineNumber)
         
         if self.__Token == "STRING":
             if not self.__RuleSectionCouldHaveString(EfiSectionObj.SectionType):
                 raise Warning("%s section could NOT have string data At Line %d" % (EfiSectionObj.SectionType, self.CurrentLineNumber), self.FileName, self.CurrentLineNumber)
             
             if not self.__IsToken('='):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             
             if not self.__GetNextToken():
-                raise Warning("expected Quoted String At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected Quoted String At Line ", self.FileName, self.CurrentLineNumber)
         
             if self.__GetStringData():
                 EfiSectionObj.StringData = self.__Token
@@ -2452,9 +2569,9 @@ class FdfParser:
                     raise Warning("%s section could NOT have BUILD_NUM At Line %d" % (EfiSectionObj.SectionType, self.CurrentLineNumber), self.FileName, self.CurrentLineNumber)
             
                 if not self.__IsToken("="):
-                    raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                    raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
                 if not self.__GetNextToken():
-                    raise Warning("expected Build number At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                    raise Warning("expected Build number At Line ", self.FileName, self.CurrentLineNumber)
                 EfiSectionObj.BuildNum = self.__Token
                 
         else:
@@ -2471,9 +2588,9 @@ class FdfParser:
                     raise Warning("%s section could NOT have BUILD_NUM At Line %d" % (EfiSectionObj.SectionType, self.CurrentLineNumber), self.FileName, self.CurrentLineNumber)
                 
                 if not self.__IsToken("="):
-                    raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                    raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
                 if not self.__GetNextToken():
-                    raise Warning("expected Build number At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                    raise Warning("expected Build number At Line ", self.FileName, self.CurrentLineNumber)
                 EfiSectionObj.BuildNum = self.__Token
                 
         if self.__GetAlignment():
@@ -2500,7 +2617,7 @@ class FdfParser:
             else:
                 self.__UndoToken()
         else:
-            raise Warning("expected section file name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected section file name At Line ", self.FileName, self.CurrentLineNumber)
                 
         Obj.SectionList.append(EfiSectionObj)
         return True
@@ -2561,34 +2678,34 @@ class FdfParser:
     def __CheckRuleSectionFileType(self, SectionType, FileType):
         if SectionType == "COMPAT16":
             if FileType not in ("COMPAT16", "SEC_COMPAT16"):
-                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Incorrect section file type At Line ", self.FileName, self.CurrentLineNumber)
         elif SectionType == "PE32":
             if FileType not in ("PE32", "SEC_PE32"):
-                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Incorrect section file type At Line ", self.FileName, self.CurrentLineNumber)
         elif SectionType == "PIC":
             if FileType not in ("PIC", "PIC"):
-                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Incorrect section file type At Line ", self.FileName, self.CurrentLineNumber)
         elif SectionType == "TE":
             if FileType not in ("TE", "SEC_TE"):
-                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Incorrect section file type At Line ", self.FileName, self.CurrentLineNumber)
         elif SectionType == "RAW":
             if FileType not in ("BIN", "SEC_BIN", "RAW", "ASL", "ACPI"):
-                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Incorrect section file type At Line ", self.FileName, self.CurrentLineNumber)
         elif SectionType == "DXE_DEPEX":
             if FileType not in ("DXE_DEPEX", "SEC_DXE_DEPEX"):
-                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Incorrect section file type At Line ", self.FileName, self.CurrentLineNumber)
         elif SectionType == "UI":
             if FileType not in ("UI", "SEC_UI"):
-                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Incorrect section file type At Line ", self.FileName, self.CurrentLineNumber)
         elif SectionType == "VERSION":
             if FileType not in ("VERSION", "SEC_VERSION"):
-                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Incorrect section file type At Line ", self.FileName, self.CurrentLineNumber)
         elif SectionType == "PEI_DEPEX":
             if FileType not in ("PEI_DEPEX", "SEC_PEI_DEPEX"):
-                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Incorrect section file type At Line ", self.FileName, self.CurrentLineNumber)
         elif SectionType == "GUID":
             if FileType not in ("PE32", "SEC_GUID"):
-                raise Warning("Incorrect section file type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)    
+                raise Warning("Incorrect section file type At Line ", self.FileName, self.CurrentLineNumber)    
               
     ## __GetRuleEncapsulationSection() method
     #
@@ -2607,7 +2724,7 @@ class FdfParser:
                 Type = self.__Token
                 
             if not self.__IsToken("{"):
-                raise Warning("expected '{' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '{' At Line ", self.FileName, self.CurrentLineNumber)
 
             CompressSectionObj = CompressSection.CompressSection()
             
@@ -2620,7 +2737,7 @@ class FdfParser:
                     break
             
             if not self.__IsToken( "}"):
-                raise Warning("expected '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '}' At Line ", self.FileName, self.CurrentLineNumber)
             Rule.SectionList.append(CompressSectionObj)
                 
             return True
@@ -2636,7 +2753,7 @@ class FdfParser:
             AttribDict = self.__GetGuidAttrib()
             
             if not self.__IsToken("{"):
-                raise Warning("expected '{' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '{' At Line ", self.FileName, self.CurrentLineNumber)
             GuidSectionObj = GuidSection.GuidSection()
             GuidSectionObj.NameGuid = GuidValue
             GuidSectionObj.SectionType = "GUIDED"
@@ -2651,7 +2768,7 @@ class FdfParser:
                     break
             
             if not self.__IsToken( "}"):
-                raise Warning("expected '}' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '}' At Line ", self.FileName, self.CurrentLineNumber)
             Rule.SectionList.append(GuidSectionObj)
 
             return True
@@ -2683,17 +2800,17 @@ class FdfParser:
         if not self.__IsToken("[VTF.", True):
             print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
                     % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
-            raise Warning("expected [VTF.] At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected [VTF.] At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__SkipToToken("."):
-            raise Warning("expected '.' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '.' At Line ", self.FileName, self.CurrentLineNumber)
 
         Arch = self.__SkippedChars.rstrip(".").upper()
         if Arch not in ("IA32", "X64", "IPF"):
-            raise Warning("Unknown Arch At line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("Unknown Arch At line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__GetNextWord():
-            raise Warning("expected VTF name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected VTF name At Line ", self.FileName, self.CurrentLineNumber)
         Name = self.__Token.upper()
 
         VtfObj = Vtf.Vtf()
@@ -2702,20 +2819,20 @@ class FdfParser:
         
         if self.__IsToken(","):
             if not self.__GetNextWord():
-                raise Warning("expected Arch list At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected Arch list At Line ", self.FileName, self.CurrentLineNumber)
             if self.__Token.upper() not in ("IA32", "X64", "IPF"):
-                raise Warning("Unknown Arch At line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Unknown Arch At line ", self.FileName, self.CurrentLineNumber)
             VtfObj.ArchList = self.__Token.upper()
 
         if not self.__IsToken( "]"):
-            raise Warning("expected ']' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected ']' At Line ", self.FileName, self.CurrentLineNumber)
         
         if self.__IsKeyword("IA32_RST_BIN"):
             if not self.__IsToken("="):
-                raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
 
             if not self.__GetNextToken():
-                raise Warning("expected Reset file At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("expected Reset file At Line ", self.FileName, self.CurrentLineNumber)
 
             VtfObj.ResetBin = self.__Token
             
@@ -2740,29 +2857,29 @@ class FdfParser:
             return False
         
         if not self.__IsToken("="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__GetNextWord():
-            raise Warning("expected Component Name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected Component Name At Line ", self.FileName, self.CurrentLineNumber)
 
         CompStatementObj = ComponentStatement.ComponentStatement()
         CompStatementObj.CompName = self.__Token
         
         if not self.__IsKeyword("COMP_LOC"):
-            raise Warning("expected COMP_LOC At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected COMP_LOC At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__IsToken("="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
 
         CompStatementObj.CompLoc = ""
         if self.__GetNextWord():
             CompStatementObj.CompLoc = self.__Token
             if self.__IsToken('|'):
                 if not self.__GetNextWord():
-                    raise Warning("Expected Region Name At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                    raise Warning("Expected Region Name At Line ", self.FileName, self.CurrentLineNumber)
                 
                 if self.__Token not in ("F", "N", "S"):    #, "H", "L", "PH", "PL"): not support
-                    raise Warning("Unknown location type At line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                    raise Warning("Unknown location type At line ", self.FileName, self.CurrentLineNumber)
     
                 CompStatementObj.FilePos = self.__Token
         else:
@@ -2770,73 +2887,73 @@ class FdfParser:
             self.CurrentOffsetWithinLine = 0
         
         if not self.__IsKeyword("COMP_TYPE"):
-            raise Warning("expected COMP_TYPE At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected COMP_TYPE At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__IsToken("="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__GetNextToken():
-            raise Warning("expected Component type At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected Component type At Line ", self.FileName, self.CurrentLineNumber)
         if self.__Token not in ("FIT", "PAL_B", "PAL_A", "OEM"):
             if not self.__Token.startswith("0x") or len(self.__Token) < 3 or len(self.__Token) > 4 or \
                 not self.__HexDigit(self.__Token[2]) or not self.__HexDigit(self.__Token[-1]):
-                raise Warning("Unknown location type At line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+                raise Warning("Unknown location type At line ", self.FileName, self.CurrentLineNumber)
         CompStatementObj.CompType = self.__Token
         
         if not self.__IsKeyword("COMP_VER"):
-            raise Warning("expected COMP_VER At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected COMP_VER At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__IsToken("="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__GetNextToken():
-            raise Warning("expected Component version At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected Component version At Line ", self.FileName, self.CurrentLineNumber)
 
         Pattern = re.compile('-$|[0-9]{0,1}[0-9]{1}\.[0-9]{0,1}[0-9]{1}')
         if Pattern.match(self.__Token) == None:
-            raise Warning("Unknown version format At line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("Unknown version format At line ", self.FileName, self.CurrentLineNumber)
         CompStatementObj.CompVer = self.__Token
         
         if not self.__IsKeyword("COMP_CS"):
-            raise Warning("expected COMP_CS At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected COMP_CS At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__IsToken("="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__GetNextToken():
-            raise Warning("expected Component CS At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected Component CS At Line ", self.FileName, self.CurrentLineNumber)
         if self.__Token not in ("1", "0"):
-            raise Warning("Unknown  Component CS At line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("Unknown  Component CS At line ", self.FileName, self.CurrentLineNumber)
         CompStatementObj.CompCs = self.__Token
         
         
         if not self.__IsKeyword("COMP_BIN"):
-            raise Warning("expected COMP_BIN At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected COMP_BIN At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__IsToken("="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__GetNextToken():
-            raise Warning("expected Component file At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected Component file At Line ", self.FileName, self.CurrentLineNumber)
 
         CompStatementObj.CompBin = self.__Token
         
         if not self.__IsKeyword("COMP_SYM"):
-            raise Warning("expected COMP_SYM At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected COMP_SYM At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__IsToken("="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__GetNextToken():
-            raise Warning("expected Component symbol file At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected Component symbol file At Line ", self.FileName, self.CurrentLineNumber)
 
         CompStatementObj.CompSym = self.__Token
     
         if not self.__IsKeyword("COMP_SIZE"):
-            raise Warning("expected COMP_SIZE At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected COMP_SIZE At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__IsToken("="):
-            raise Warning("expected '=' At Line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
 
         if self.__IsToken("-"):
             CompStatementObj.CompSize = self.__Token
@@ -2845,7 +2962,7 @@ class FdfParser:
         elif self.__GetNextHexNumber():
             CompStatementObj.CompSize = self.__Token
         else:
-            raise Warning("Unknown size At line %d" % self.CurrentLineNumber, self.FileName, self.CurrentLineNumber)
+            raise Warning("Unknown size At line ", self.FileName, self.CurrentLineNumber)
         
         VtfObj.ComponentStatementList.append(CompStatementObj)
         return True
@@ -2980,7 +3097,7 @@ class FdfParser:
             return CycleRefExists
         
 if __name__ == "__main__":
-    parser = FdfParser("..\Test.fdf")
+    parser = FdfParser("..\LakeportX64Pkg.fdf")
     parser.ParseFile()
     parser.CycleReferenceCheck()
     print "Success!"
