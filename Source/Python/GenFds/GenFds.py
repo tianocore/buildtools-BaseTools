@@ -159,6 +159,15 @@ def main():
             GenFdsGlobalVariable.ErrorLogger ("Directory %s not found" % (OutputDir))
             sys.exit(1)
     
+        if Options.Macros:
+            for Pair in Options.Macros:
+                Pair.strip('"')
+                List = Pair.split('=')
+                if len(List) == 2:
+                    FdfParser.InputMacroDict[List[0].strip()] = List[1].strip()
+                else:
+                    FdfParser.InputMacroDict[List[0].strip()] = None
+                    
         """ Parse Fdf file, has to place after build Workspace as FDF may contain macros from DSC file """
         try:
             FdfParserObj = FdfParser.FdfParser(FdfFilename)
@@ -202,7 +211,7 @@ def main():
 #   @retval Args  Target of build command
 #    
 def myOptionParser():
-    usage = "%prog [options] -f input_file -a arch_list -b build_target -p active_platform -t tool_chain_tag"
+    usage = "%prog [options] -f input_file -a arch_list -b build_target -p active_platform -t tool_chain_tag -y \"MacroName [= MacroValue]\""
     Parser = OptionParser(usage=usage,description=__copyright__,version="%prog " + str(versionNumber))
     Parser.add_option("-f", "--file", dest="filename", help="Name of FDF file to convert")
     Parser.add_option("-a", "--arch", dest="archList", help="comma separated list containing one or more of: IA32, X64, IPF or EBC which should be built, overrides target.txt?s TARGET_ARCH")
@@ -216,6 +225,7 @@ def myOptionParser():
     Parser.add_option("-i", "--FvImage", dest="uiFvName", help="Buld the FV image using the [FV] section named by UiFvName")
     Parser.add_option("-b", "--buildtarget", action="store", type="choice", choices=['DEBUG','RELEASE'], dest="BuildTarget", help="Build TARGET is one of list: DEBUG, RELEASE.")
     Parser.add_option("-t", "--tagname", action="store", type="string", dest="ToolChain", help="Using the tools: TOOL_CHAIN_TAG name to build the platform.")
+    Parser.add_option("-y", "--define", action="append", type="string", dest="Macros", help="Macro: \"Name [= Value]\".")
     (Options, args) = Parser.parse_args()
     return Options
 
