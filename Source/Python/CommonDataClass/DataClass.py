@@ -1,7 +1,7 @@
 ## @file
 # This file is used to define class for data sturcture used in ECC
 #
-# Copyright (c) 2007, Intel Corporation
+# Copyright (c) 2008, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.    The full text of the license may be found at
@@ -55,6 +55,14 @@ MODEL_PCD_FEATURE_FLAG = 4003
 MODEL_PCD_DYNAMIC_EX = 4004
 MODEL_PCD_DYNAMIC = 4005
 
+MODEL_META_DATA_HEADER = 5001
+MODEL_META_DATA_INCLUDE = 5002
+MODEL_META_DATA_DEFINE = 5003
+MODEL_META_DATA_IFDEF = 5004
+MODEL_META_DATA_IFNDEF = 5005
+MODEL_META_DATA_BUILD_OPTION = 5006
+MODEL_META_DATA_COMPONENT = 5007
+
 MODEL_LIST = [('MODEL_UNKNOWN', MODEL_UNKNOWN),
               ('MODEL_FILE_C', MODEL_FILE_C),
               ('MODEL_FILE_H', MODEL_FILE_H),
@@ -86,7 +94,14 @@ MODEL_LIST = [('MODEL_UNKNOWN', MODEL_UNKNOWN),
               ('MODEL_PCD_PATCHABLE_IN_MODULE', MODEL_PCD_PATCHABLE_IN_MODULE),
               ('MODEL_PCD_FEATURE_FLAG', MODEL_PCD_FEATURE_FLAG),
               ('MODEL_PCD_DYNAMIC_EX', MODEL_PCD_DYNAMIC_EX),
-              ('MODEL_PCD_DYNAMIC', MODEL_PCD_DYNAMIC)
+              ('MODEL_PCD_DYNAMIC', MODEL_PCD_DYNAMIC),
+              ("MODEL_META_DATA_HEADER", MODEL_META_DATA_HEADER),
+              ("MODEL_META_DATA_INCLUDE", MODEL_META_DATA_INCLUDE),
+              ("MODEL_META_DATA_DEFINE", MODEL_META_DATA_DEFINE),
+              ("MODEL_META_DATA_IFDEF", MODEL_META_DATA_IFDEF),
+              ("MODEL_META_DATA_IFNDEF", MODEL_META_DATA_IFNDEF),
+              ("MODEL_META_DATA_BUILD_OPTION", MODEL_META_DATA_BUILD_OPTION),
+              ("MODEL_META_DATA_COMPONENT", MODEL_META_DATA_COMPONENT)
              ]
 
 ## FunctionClass

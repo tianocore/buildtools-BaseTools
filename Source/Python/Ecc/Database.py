@@ -16,20 +16,22 @@
 #
 import sqlite3
 import os
-from TableDataModel import TableDataModel
-from TableFile import TableFile
-from TableFunction import TableFunction
-from TablePcd import TablePcd
-from TableIdentifier import TableIdentifier
+
 import Common.EdkLogger as EdkLogger
-import DataClass
+import CommonDataClass.DataClass as DataClass
+
+from Table.TableDataModel import TableDataModel
+from Table.TableFile import TableFile
+from Table.TableFunction import TableFunction
+from Table.TablePcd import TablePcd
+from Table.TableIdentifier import TableIdentifier
 
 ##
 # Static definitions
 #
 DATABASE_PATH = "Database/Ecc.db"
 
-## TableDataModel
+## Database
 #
 # This class defined the ECC databse
 # During the phase of initialization, the database will create all tables and
@@ -44,7 +46,6 @@ DATABASE_PATH = "Database/Ecc.db"
 #
 class Database(object):
     def __init__(self, DbPath):
-        EdkLogger.SetLevel(EdkLogger.DEBUG_0)
         self.Conn = sqlite3.connect(DbPath)
         self.Cur = self.Conn.cursor()
         self.TblDataModel = TableDataModel(self.Cur)
@@ -205,6 +206,8 @@ class Database(object):
 # script.
 #
 if __name__ == '__main__':
+    EdkLogger.SetLevel(EdkLogger.DEBUG_0)
+    
     Db = Database(DATABASE_PATH)
     Db.InitDatabase()
     Db.QueryTable(Db.TblDataModel)

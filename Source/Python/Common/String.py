@@ -17,7 +17,7 @@
 import DataType
 import os.path
 import string
-import EdkLogger
+import EdkLogger as EdkLogger
 from BuildToolError import *
 
 ## GetSplitValueList

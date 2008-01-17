@@ -114,7 +114,8 @@ class StringDefClassObject(object):
         return repr(self.StringName) + ' ' + \
                repr(self.Token) + ' ' + \
                repr(self.Referenced) + ' ' + \
-               repr(self.StringValue)
+               repr(self.StringValue) + ' ' + \
+               repr(self.UseOtherLangDef)
 
 ## UniFileClassObject
 #
@@ -352,11 +353,21 @@ class UniFileClassObject(object):
                     Item.Referenced = True
                     break
     #
-    # Search the string in language definition
+    # Search the string in language definition by Name
     #
     def FindStringValue(self, Name, Lang):
         for Item in self.OrderedStringList[Lang]:
             if Item.StringName == Name:
+                return Item
+
+        return None
+    
+    #
+    # Search the string in language definition by Token
+    #
+    def FindByToken(self, Token, Lang):
+        for Item in self.OrderedStringList[Lang]:
+            if Item.Token == Token:
                 return Item
 
         return None
@@ -379,28 +390,39 @@ class UniFileClassObject(object):
                 for IndexJ in range(0, len(self.LanguageDef)):
                     LangFind = self.LanguageDef[IndexJ][0]
                     if self.FindStringValue(Name, LangFind) == None:
+                        EdkLogger.debug(EdkLogger.DEBUG_5, Name)
                         Token = len(self.OrderedStringList[LangFind])
                         self.AddStringToList(Name, LangFind, Value, Token, Referenced, LangKey, Index)
 
         #
         # Retoken
         #
-        for Lang in self.LanguageDef:
-            LangName = Lang[0]
-            ReferencedStringList = []
-            NotReferencedStringList = []
-            Token = 0
-            for Item in self.OrderedStringList[LangName]:
-                if Item.Referenced == True:
-                    Item.Token = Token
-                    ReferencedStringList.append(Item)
-                    Token = Token + 1
-                else:
-                    NotReferencedStringList.append(Item)
-            self.OrderedStringList[LangName] = ReferencedStringList
-            for Index in range(len(NotReferencedStringList)):
-                NotReferencedStringList[Index].Token = Token + Index
-                self.OrderedStringList[LangName].append(NotReferencedStringList[Index])
+        # First re-token the first language
+        LangName = self.LanguageDef[0][0]
+        ReferencedStringList = []
+        NotReferencedStringList = []
+        Token = 0
+        for Item in self.OrderedStringList[LangName]:
+            if Item.Referenced == True:
+                Item.Token = Token
+                ReferencedStringList.append(Item)
+                Token = Token + 1
+            else:
+                NotReferencedStringList.append(Item)
+        self.OrderedStringList[LangName] = ReferencedStringList
+        for Index in range(len(NotReferencedStringList)):
+            NotReferencedStringList[Index].Token = Token + Index
+            self.OrderedStringList[LangName].append(NotReferencedStringList[Index])
+            
+        #
+        # Adjust the orders of other languages
+        #
+        for IndexOfLanguage in range(1, len(self.LanguageDef)):
+            for OrderedString in self.OrderedStringList[LangName]:
+                for UnOrderedString in self.OrderedStringList[self.LanguageDef[IndexOfLanguage][0]]:
+                    if OrderedString.StringName == UnOrderedString.StringName:
+                        UnOrderedString.Token = OrderedString.Token
+                        break
 
     #
     # Show the instance itself
@@ -416,5 +438,7 @@ class UniFileClassObject(object):
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
 if __name__ == '__main__':
-    a = UniFileClassObject(['C:\\Edk\\DriverSample\\SetupBrowserStr.uni', 'C:\\Edk\\DriverSample\\VfrStrings.uni'])
+    EdkLogger.SetLevel(EdkLogger.DEBUG_0)
+    a = UniFileClassObject(['C:\\Edk\\Strings.uni', 'C:\\Edk\\Strings2.uni'])
+    a.ReToken()
     a.ShowMe()

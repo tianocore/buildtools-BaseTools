@@ -2,7 +2,7 @@ import sys
 import os
 import CodeFragmentCollector
 import FileProfile
-import DataClass
+import CommonDataClass.DataClass as DataClass
 
 for dirpath, dirnames, filenames in os.walk(sys.argv[1]):
     for d in dirnames:

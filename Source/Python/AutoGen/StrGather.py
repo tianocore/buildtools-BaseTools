@@ -271,11 +271,18 @@ def CreateCFileContent(BaseName, UniObjectClass):
     for IndexI in range(len(UniObjectClass.LanguageDef)):
         Language = UniObjectClass.LanguageDef[IndexI][0]
         LangPrintName = UniObjectClass.LanguageDef[IndexI][1]
+        print len(UniObjectClass.OrderedStringList[UniObjectClass.LanguageDef[IndexI][0]])
         
         StrStringValue = ''
         ArrayLength = 0
         NumberOfUseOhterLangDef = 0
-        for Item in UniObjectClass.OrderedStringList[Language]:
+        Index = 0
+        for IndexJ in range(1, len(UniObjectClass.OrderedStringList[UniObjectClass.LanguageDef[IndexI][0]])):
+            print IndexJ
+            Item = UniObjectClass.FindByToken(IndexJ, Language)
+            print Item
+            #Item = UniObjectClass.OrderedStringList[UniObjectClass.LanguageDef[IndexI][0]][IndexJ]
+        #for Item in UniObjectClass.OrderedStringList[Language]:
             Name = Item.StringName
             Value = Item.StringValueByteList
             Referenced = Item.Referenced
@@ -285,12 +292,15 @@ def CreateCFileContent(BaseName, UniObjectClass):
             
             if UseOtherLangDef != '' and Referenced:
                 NumberOfUseOhterLangDef = NumberOfUseOhterLangDef + 1
+                Index = Index + 1
             else:
                 if NumberOfUseOhterLangDef > 0:
                     StrStringValue = WriteLine(StrStringValue, CreateArrayItem([StringSkipType, DecToHexStr(NumberOfUseOhterLangDef, 2), EFI_HII_SIBT_END]))
                     NumberOfUseOhterLangDef = 0
                     ArrayLength = ArrayLength + 3
                 if Referenced and Item.Token > 0:
+                    Index = Index + 1
+                    StrStringValue = WriteLine(StrStringValue, "// %s: %s:%s" % (DecToHexStr(Index, 4), Name, DecToHexStr(Token, 4)))
                     StrStringValue = Write(StrStringValue, CreateCFileStringValue(Value))
                     Offset = Offset + Length
                     ArrayLength = ArrayLength + Item.Length + 1 # 1 is for the length of string type        
@@ -478,38 +488,13 @@ if __name__ == '__main__':
     EdkLogger.info('start')
 
     UniFileList = [
-#        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\FrontPageStrings.uni',
-#        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\Strings.uni',
-#        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\DeviceMngr\DeviceManagerStrings.uni',
-#        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\BootMngr\BootManagerStrings.uni',
-#        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\FrontPageStrings.uni',
-#        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\BootMaint\bmstring.uni'
-         r'C:\\temp\\Edk\\Sample\\Universal\\UserInterface\\UefiSetupBrowser\\Dxe\\DriverSample\\InventoryStrings.uni',
-         r'C:\\temp\\Edk\\Sample\\Universal\\UserInterface\\UefiSetupBrowser\\Dxe\\DriverSample\\VfrStrings.uni'
+         r'C:\\Edk\\Strings2.uni',
+         r'C:\\Edk\\Strings.uni'
     ]
 
     IncludeList = [
-        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\BootMngr',
-        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic',
-        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\DeviceMngr',
-        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe\Generic\BootMaint',
-        r'C:\SVN\EDKII\Nt32Pkg\PlatformBdsDxe',
-        r'C:\SVN\EDKII\Build\NT32\DEBUG_MYTOOLS\IA32\Nt32Pkg\PlatformBdsDxe\PlatformBdsDxe\DEBUG',
-        r'C:\SVN\EDKII\Nt32Pkg',
-        r'C:\SVN\EDKII\Nt32Pkg\Include',
-        r'C:\SVN\EDKII\MdePkg',
-        r'C:\SVN\EDKII\MdePkg\Include',
-        r'C:\SVN\EDKII\MdePkg\Include\Ia32',
-        r'C:\SVN\EDKII\IntelFrameworkPkg',
-        r'C:\SVN\EDKII\IntelFrameworkPkg\Include',
-        r'C:\SVN\EDKII\IntelFrameworkModulePkg',
-        r'C:\SVN\EDKII\IntelFrameworkModulePkg\Include',
-        r'C:\SVN\EDKII\MdeModulePkg',
-        r'C:\SVN\EDKII\MdeModulePkg\Include',
-        r'C:\\temp\\Edk\\Sample\\Universal\\UserInterface\\UefiSetupBrowser\\Dxe\\DriverSample'
+        r'C:\\Edk'
     ]
-    
-    
 
     SkipList = ['.inf', '.uni']
     BaseName = 'DriverSample'
