@@ -982,7 +982,7 @@ Returns:
   //
   GetNextAvailableFitPtr (&CompFitPtr);
   if (CompFitPtr == NULL) {
-    Error(NULL, 0, 5003, "Invalid", "Can't update this component in FIT");
+    Error (NULL, 0, 5003, "Invalid", "Can't update this component in FIT");
     return EFI_ABORTED;
   }
 
@@ -1231,7 +1231,7 @@ Returns:
     Vtf1TotalSize += (UINT32) (FileSize + NumAdjustByte);
     Status = UpdateVtfBuffer (CompStartAddress, Buffer, FileSize, FIRST_VTF);
   } else {
-    Error(NULL, 0, 2000,"Invalid Parameter", "There's component in second VTF so second BaseAddress and Size must be specified!");
+    Error (NULL, 0, 2000,"Invalid Parameter", "There's component in second VTF so second BaseAddress and Size must be specified!");
     return EFI_INVALID_PARAMETER;
   }
 
@@ -2610,7 +2610,7 @@ Returns:
         goto ERROR;
       }
       if((DebugLevel > 9) || (DebugLevel < 0)) {
-        Error(NULL, 0, 2000, "Invalid parameter", "Unrecognized argument %s.", argv[Index + 1]);
+        Error (NULL, 0, 2000, "Invalid parameter", "Unrecognized argument %s.", argv[Index + 1]);
         goto ERROR;
       }
       if((DebugLevel <= 9) &&(DebugLevel >= 5)) {
