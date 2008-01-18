@@ -196,7 +196,7 @@ Returns:
     //
     Status = AsciiStringToUint64 (Value, FALSE, &Value64);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 2000, "Invalid paramter", "%s = %s", EFI_FV_BASE_ADDRESS_STRING, Value);
+      Error (NULL, 0, 2000, "Invalid parameter", "%s = %s", EFI_FV_BASE_ADDRESS_STRING, Value);
       return EFI_ABORTED;
     }
     DebugMsg (NULL, 0, 9, "rebase address", "%s = %s", EFI_FV_BASE_ADDRESS_STRING, Value);
@@ -2758,7 +2758,7 @@ Returns:
     //
     Status = StringToGuid (Value, &CapInfo->CapGuid);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 2000, "Invalid paramter", "%s = %s", EFI_CAPSULE_GUID_STRING, Value);
+      Error (NULL, 0, 2000, "Invalid parameter", "%s = %s", EFI_CAPSULE_GUID_STRING, Value);
       return EFI_ABORTED;
     }
     DebugMsg (NULL, 0, 9, "Capsule Guid", "%s = %s", EFI_CAPSULE_GUID_STRING, Value);
@@ -2774,7 +2774,7 @@ Returns:
   if (Status == EFI_SUCCESS) {
     Status = AsciiStringToUint64 (Value, FALSE, &Value64);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 2000, "Invalid paramter", "%s = %s", EFI_CAPSULE_HEADER_SIZE_STRING, Value);
+      Error (NULL, 0, 2000, "Invalid parameter", "%s = %s", EFI_CAPSULE_HEADER_SIZE_STRING, Value);
       return EFI_ABORTED;
     }
     CapInfo->HeaderSize = (UINT32) Value64;
@@ -2791,7 +2791,7 @@ Returns:
     } else if (strstr (Value, "PersistAcrossReset") != NULL) {
       CapInfo->Flags |= CAPSULE_FLAGS_PERSIST_ACROSS_RESET; 
     } else {
-      Error (NULL, 0, 2000, "Invalid paramter", "invalid Flag setting for %s", EFI_CAPSULE_FLAGS_STRING);
+      Error (NULL, 0, 2000, "Invalid parameter", "invalid Flag setting for %s", EFI_CAPSULE_FLAGS_STRING);
       return EFI_ABORTED;
     }
     DebugMsg (NULL, 0, 9, "Capsule Flag", Value);
@@ -2892,7 +2892,7 @@ Returns:
   }
 
   if (CapInfo.HeaderSize < sizeof (EFI_CAPSULE_HEADER)) {
-    Error (NULL, 0, 2000, "Invalid paramter", "The specified HeaderSize can't be less than the size of EFI_CAPSULE_HEADER.");
+    Error (NULL, 0, 2000, "Invalid parameter", "The specified HeaderSize can't be less than the size of EFI_CAPSULE_HEADER.");
     return EFI_INVALID_PARAMETER;
   }
   

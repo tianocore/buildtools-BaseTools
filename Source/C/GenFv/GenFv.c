@@ -302,7 +302,7 @@ Returns:
     }
 
     //
-    // Don't recognize the paramter.
+    // Don't recognize the parameter.
     //
     Error (NULL, 0, 1000, "Unknown option", "%s", argv[0]);
     return STATUS_ERROR;
@@ -351,7 +351,7 @@ Returns:
       //
       Status = AsciiStringToUint64 (ValueString, FALSE, &BtBase);
       if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 2000, "Invalid paramter", "%s = %s", EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING, ValueString);
+        Error (NULL, 0, 2000, "Invalid parameter", "%s = %s", EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING, ValueString);
         return STATUS_ERROR;
       }
       DebugMsg (NULL, 0, 9, "Boot driver base address", "%s = %s", EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING, ValueString);
@@ -367,7 +367,7 @@ Returns:
       //
       Status = AsciiStringToUint64 (ValueString, FALSE, &RtBase);
       if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 2000, "Invalid paramter", "%s = %s", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, ValueString);
+        Error (NULL, 0, 2000, "Invalid parameter", "%s = %s", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, ValueString);
         return STATUS_ERROR;
       }
       DebugMsg (NULL, 0, 9, "Runtime driver base address", "%s = %s", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, ValueString);
