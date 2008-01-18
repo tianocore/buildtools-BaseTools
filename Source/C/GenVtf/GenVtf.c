@@ -1243,7 +1243,7 @@ Returns:
 
   CompFitPtr->CompAddress = CompStartAddress | IPF_CACHE_BIT;
   if ((FileSize % 16) != 0) {
-    Error (NULL, 0, 2000, "Invalid parameter", "Binary FileSize must be multiple of 16.");
+    Error (NULL, 0, 2000, "Invalid parameter", "Binary FileSize must be a multiple of 16.");
     return EFI_INVALID_PARAMETER;
   }
   //assert ((FileSize % 16) == 0);
@@ -1995,7 +1995,7 @@ Returns:
     Fv2BaseAddress        = StartAddress2;
     Fv2EndAddress         = Fv2BaseAddress + Size2;
     if (Fv2EndAddress != StartAddress1) {
-      Error (NULL, 0, 2000, "Invalid parameter", "Error BaseAddress and Size parameters.");
+      Error (NULL, 0, 2000, "Invalid parameter", "Error BaseAddress and Size parameters!");
       if (SecondVTF == TRUE) {
         Error (NULL, 0, 2000, "Invalid parameter", "FirstBaseAddress + FirstFwVolumeSize must equal 0x100000000!");
         Error (NULL, 0, 2000, "Invalid parameter", "SecondBaseAddress + SecondFwVolumeSize must equal FirstBaseAddress!");
