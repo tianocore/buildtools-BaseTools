@@ -340,7 +340,7 @@ Returns:
         VtfInfo->LocationType = SECOND_VTF;
       } else {
         VtfInfo->LocationType = NONE;
-        Warning(UTILITY_NAME, 0, 0001, "Unknown location for component", VtfInfo->CompName);
+        Warning(UTILITY_NAME, 0, 0001, "Unknown location for component.", VtfInfo->CompName);
       }
     } else if (strnicmp (*TokenStr, "COMP_TYPE", 9) == 0) {
       TokenStr++;
@@ -374,7 +374,7 @@ Returns:
       } else {
         VtfInfo->PreferredSize = TRUE;
         if (AsciiStringToUint64 (*TokenStr, FALSE, &StringValue) != EFI_SUCCESS) {
-          Error (NULL, 0, 5001, "Cannot get: %s", TokenStr);
+          Error (NULL, 0, 5001, "Cannot get: %s.", TokenStr);
           return ;
         }
 
@@ -388,7 +388,7 @@ Returns:
       } else if (strnicmp (*TokenStr, "0", 1) == 0) {
         VtfInfo->CheckSumRequired = 0;
       } else {
-        Error (NULL, 0, 3000, "Invaild", "Bad information in INF file about Checksum required field");
+        Error (NULL, 0, 3000, "Invaild", "Bad value in INF file required field: Checksum, the value must be '0' or '1'.");
       }
     }
 
@@ -493,7 +493,7 @@ Arguments:
 Returns:
    
   EFI_ABORTED           - Error in opening file
-  EFI_INVALID_PARAMETER - File doesn't contain any valid informations
+  EFI_INVALID_PARAMETER - File doesn't contain any valid information
   EFI_OUT_OF_RESOURCES  - Malloc Failed
   EFI_SUCCESS           - The function completed successfully 
 
@@ -507,14 +507,14 @@ Returns:
   Status = EFI_SUCCESS;
   Fp = FilePointer;
   if (Fp == NULL) {
-    Error (NULL, 0, 2000, "Invalid paramter", "BSF INF file is invalid!");
+    Error (NULL, 0, 2000, "Invalid parameter", "BSF INF file is invalid!");
     return EFI_ABORTED;
   }
 
   ValidLineCount (Fp);
 
   if (ValidLineNum == 0) {
-    Error (NULL, 0, 2000, "Invalid paramter", "File doesn't contain any valid informations!");
+    Error (NULL, 0, 2000, "Invalid parameter", "File does not contain any valid information!");
     return EFI_INVALID_PARAMETER;
   }
 
@@ -889,7 +889,7 @@ Routine Description:
 
   This function updates the information about Firmware Volume  in FIT TABLE.
   This FIT table has to be immediately below the PAL_A Start and it contains
-  component type and address information. Other informations can't be
+  component type and address information. Other information can't be
   created this time so we would need to fix it up..
   
   
@@ -1163,7 +1163,7 @@ Returns:
 
   if (VtfInfo->PreferredSize) {
     if (FileSize > VtfInfo->CompSize) {
-      Error (NULL, 0, 2000, "Invalid paramter", "The component size is more than specified size");
+      Error (NULL, 0, 2000, "Invalid parameter", "The component size is more than specified size.");
       return EFI_ABORTED;
     }
 
@@ -1243,7 +1243,7 @@ Returns:
 
   CompFitPtr->CompAddress = CompStartAddress | IPF_CACHE_BIT;
   if ((FileSize % 16) != 0) {
-    Error (NULL, 0, 2000, "Invalid paramter", "Binary FileSize must be multiple of 16");
+    Error (NULL, 0, 2000, "Invalid parameter", "Binary FileSize must be multiple of 16.");
     return EFI_INVALID_PARAMETER;
   }
   //assert ((FileSize % 16) == 0);
@@ -1335,7 +1335,7 @@ Returns:
 
   FileSize = _filelength (fileno (Fp));
   if (FileSize < 64) {
-    Error (NULL, 0, 2000, "Invalid paramter", "PAL_A bin header is 64 bytes, so the Bin size must be larger than 64 bytes!");
+    Error (NULL, 0, 2000, "Invalid parameter", "PAL_A bin header is 64 bytes, so the Bin size must be larger than 64 bytes!");
     return EFI_INVALID_PARAMETER;
   }
   FileSize -= SIZE_OF_PAL_HEADER;
@@ -1343,7 +1343,7 @@ Returns:
 
   if (VtfInfo->PreferredSize) {
     if (FileSize > VtfInfo->CompSize) {
-      Error (NULL, 0, 2000, "Invalid paramter", "The PAL_A Size is more than specified size");
+      Error (NULL, 0, 2000, "Invalid parameter", "The PAL_A Size is more than the specified size.");
       return EFI_ABORTED;
     }
 
@@ -1385,7 +1385,7 @@ Returns:
   PalFitPtr->CompAddress  = PalStartAddress | IPF_CACHE_BIT;
   //assert ((FileSize % 16) == 0);
   if ((FileSize % 16) != 0) {
-    Error (NULL, 0, 2000, "Invalid paramter", "Binary FileSize must be multiple of 16");
+    Error (NULL, 0, 2000, "Invalid parameter", "Binary FileSize must be a multiple of 16.");
     return EFI_INVALID_PARAMETER;
   }
   
@@ -1447,12 +1447,12 @@ Returns:
   UINTN     Index;
 
   if (!VtfInfo->PreferredSize) {
-    Error (NULL, 0, 2000, "Invalid paramter", "FIT could not be allocated becuase there are no size information");
+    Error (NULL, 0, 2000, "Invalid parameter", "FIT could not be allocated because there is no size information.");
     return EFI_ABORTED;
   }
 
   if ((VtfInfo->CompSize % 16) != 0) {
-    Error (NULL, 0, 2000, "Invalid paramter", "Invalid Fit Table Size, not multiple of 16 bytes. Please correct the size");
+    Error (NULL, 0, 2000, "Invalid parameter", "Invalid FIT Table Size, it is not a multiple of 16 bytes. Please correct the size.");
   }
 
   PalFitTableAdd = Fv1EndAddress - SIZE_TO_PAL_A_FIT;
@@ -1598,7 +1598,7 @@ Returns:
 
   if (LocType == FIRST_VTF) {
     if ((StartAddress | IPF_CACHE_BIT) < (Vtf1LastStartAddress | IPF_CACHE_BIT)) {
-      Error (NULL, 0, 2000, "Invalid paramter", "Start Address is less then the VTF start address");
+      Error (NULL, 0, 2000, "Invalid parameter", "Start Address is less than the VTF start address.");
       return EFI_ABORTED;
     }
 
@@ -1609,7 +1609,7 @@ Returns:
   } else {
 
     if ((StartAddress | IPF_CACHE_BIT) < (Vtf2LastStartAddress | IPF_CACHE_BIT)) {
-      Error (NULL, 0, 2000, "Invalid paramter", "Error StartAddress");
+      Error (NULL, 0, 2000, "Invalid parameter", "Error StartAddress");
       return EFI_ABORTED;
     }
     LocalBufferPtrToWrite = (UINT8 *) Vtf2EndBuffer;
@@ -1969,11 +1969,11 @@ Returns:
   Fv1BaseAddress        = StartAddress1;
   Fv1EndAddress         = Fv1BaseAddress + Size1;
   if (Fv1EndAddress != 0x100000000 || Size1 < 0x100000) {
-    Error (NULL, 0, 2000, "Invalid paramter", "Error BaseAddress and Size parameters!");
+    Error (NULL, 0, 2000, "Invalid parameter", "Error BaseAddress and Size parameters!");
     if (Size1 < 0x100000) {
-      Error (NULL, 0, 2000, "Invalid paramter", "The FwVolumeSize must be larger than 1M!");
+      Error (NULL, 0, 2000, "Invalid parameter", "The FwVolumeSize must be larger than 1M!");
     } else if (SecondVTF != TRUE) {
-      Error (NULL, 0, 2000, "Invalid paramter", "BaseAddress + FwVolumeSize must equal 0x100000000!");
+      Error (NULL, 0, 2000, "Invalid parameter", "BaseAddress + FwVolumeSize must equal 0x100000000!");
     }
     Usage();
     return EFI_INVALID_PARAMETER;
@@ -1984,7 +1984,7 @@ Returns:
   //
   Vtf1Buffer = malloc ((UINTN) Size1);
   if (Vtf1Buffer == NULL) {
-    Error (NULL, 0, 4001, "Resource", "Not enough resource to create memory mapped file for Boot Strap File!");
+    Error (NULL, 0, 4001, "Resource", "Not enough resources available to create memory mapped file for the Boot Strap File!");
     return EFI_OUT_OF_RESOURCES;
   }
   memset (Vtf1Buffer, 0x00, (UINTN) Size1);
@@ -1995,10 +1995,10 @@ Returns:
     Fv2BaseAddress        = StartAddress2;
     Fv2EndAddress         = Fv2BaseAddress + Size2;
     if (Fv2EndAddress != StartAddress1) {
-      Error (NULL, 0, 2000, "Invalid paramter", "Error BaseAddress and Size parameters");
+      Error (NULL, 0, 2000, "Invalid parameter", "Error BaseAddress and Size parameters.");
       if (SecondVTF == TRUE) {
-        Error (NULL, 0, 2000, "Invalid paramter", "FirstBaseAddress + FirstFwVolumeSize must equal 0x100000000!");
-        Error (NULL, 0, 2000, "Invalid paramter", "SecondBaseAddress + SecondFwVolumeSize must equal FirstBaseAddress!");
+        Error (NULL, 0, 2000, "Invalid parameter", "FirstBaseAddress + FirstFwVolumeSize must equal 0x100000000!");
+        Error (NULL, 0, 2000, "Invalid parameter", "SecondBaseAddress + SecondFwVolumeSize must equal FirstBaseAddress!");
       }
       Usage();
       return EFI_INVALID_PARAMETER;
@@ -2009,7 +2009,7 @@ Returns:
     //
     Vtf2Buffer = malloc ((UINTN) Size2);
     if (Vtf2Buffer == NULL) {
-      Error (NULL, 0, 4001, "Resource", "Not enough resource to create memory mapped file for Boot Strap File!");
+      Error (NULL, 0, 4001, "Resource", "Not enough resources available to create memory mapped file for the Boot Strap File!");
       return EFI_OUT_OF_RESOURCES;
     }
     memset (Vtf2Buffer, 0x00, (UINTN) Size2);
@@ -2227,7 +2227,7 @@ Returns:
   if (fseek (DestFile, 0, SEEK_END) != 0) {
     fclose (SourceFile);
     fclose (DestFile);
-    Error (NULL, 0, 2000, "Invalid paramter", "not the beginning of the output file");
+    Error (NULL, 0, 2000, "Invalid parameter", "not at the beginning of the output file.");
     return EFI_ABORTED;
   }
 
@@ -2238,7 +2238,7 @@ Returns:
   } else if (StartLocation == -1) {
     fclose (SourceFile);
     fclose (DestFile);
-    Error (NULL, 0, 2000, "Invalid paramter", "StartLocation error");
+    Error (NULL, 0, 2000, "Invalid parameter", "StartLocation error");
     return EFI_ABORTED;
   }
 
@@ -2255,7 +2255,7 @@ Returns:
   if (strcmp (Buffer, "TEXTSYM format | V1.0\n")) {
     fclose (SourceFile);
     fclose (DestFile);
-    Error (NULL, 0, 2000, "Invalid paramter", "The symbol file does not match the expected sym format");
+    Error (NULL, 0, 2000, "Invalid parameter", "The symbol file does not match the expected TEXTSYM format (V1.0.)");
     return EFI_ABORTED;
   }
 
@@ -2512,7 +2512,7 @@ Returns:
     //
     if (argv[Index][0] != '-' && argv[Index][0] != '/') {
       Usage ();
-      Error (NULL, 0, 2000, "Invalid paramter", "Argument pair must begin with \"-\" or \"/\"!");
+      Error (NULL, 0, 2000, "Invalid parameter", "Argument pair must begin with \"-\" or \"/\"!");
       goto ERROR;
     }
 
@@ -2521,7 +2521,7 @@ Returns:
     //
     if (argv[Index][2] != 0) {
       Usage ();
-      Error (NULL, 0, 2000, "Invalid paramter", "Unrecognized argument %s", argv[Index]);
+      Error (NULL, 0, 2000, "Invalid parameter", "Unrecognized argument %s", argv[Index]);
       goto ERROR;
     }
     //
@@ -2572,7 +2572,7 @@ Returns:
         Status = AsciiStringToUint64 (argv[Index + 1], FALSE, &StartAddress2);
       }
       if (Status != EFI_SUCCESS) {
-        Error (NULL, 0, 2000, "Invalid paramter", "Bad start of address %s", argv[Index + 1]);
+        Error (NULL, 0, 2000, "Invalid parameter", "Bad start address %s.", argv[Index + 1]);
         goto ERROR;
       }
       break;
@@ -2588,7 +2588,7 @@ Returns:
       }
 
       if (Status != EFI_SUCCESS) {
-        Error (NULL, 0, 2000, "Invalid paramter", "Bad size %s", argv[Index + 1]);
+        Error (NULL, 0, 2000, "Invalid parameter", "Bad size %s.", argv[Index + 1]);
         goto ERROR;
       }
       break;
@@ -2610,7 +2610,7 @@ Returns:
         goto ERROR;
       }
       if((DebugLevel > 9) || (DebugLevel < 0)) {
-        Error(NULL, 0, 2000, "Invalid parameter", "Unrecognized argument %s", argv[Index + 1]);
+        Error(NULL, 0, 2000, "Invalid parameter", "Unrecognized argument %s.", argv[Index + 1]);
         goto ERROR;
       }
       if((DebugLevel <= 9) &&(DebugLevel >= 5)) {
@@ -2625,7 +2625,7 @@ Returns:
       break;
     default:
       Usage ();
-      Error (NULL, 0, 2000, "Invalid paramter", "Unrecognized argument %s", argv[Index]);
+      Error (NULL, 0, 2000, "Invalid parameter", "Unrecognized argument %s.", argv[Index]);
       goto ERROR;
       break;
     }
@@ -2667,7 +2667,7 @@ Returns:
     switch (Status) {
 
     case EFI_INVALID_PARAMETER:
-      Error (NULL, 0, 2000, "Invalid paramter", "Invalid parameter passed to GenVtf function.");
+      Error (NULL, 0, 2000, "Invalid parameter", "Invalid parameter passed to GenVtf function.");
       break;
 
     case EFI_ABORTED:
@@ -2679,11 +2679,11 @@ Returns:
       break;
 
     case EFI_VOLUME_CORRUPTED:
-      Error (NULL, 0, 3000, "Invaild", "No base address was specified");
+      Error (NULL, 0, 3000, "Invaild", "No base address was specified.");
       break;
 
     default:
-      Error (NULL, 0, 3000, "Invaild", "GenVtfImage function returned unknown status %x",Status );
+      Error (NULL, 0, 3000, "Invaild", "GenVtfImage function returned unknown status %x.",Status );
       break;
     }
   }
