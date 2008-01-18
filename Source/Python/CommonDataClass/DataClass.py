@@ -35,10 +35,16 @@ MODEL_IDENTIFIER_PARAMETER = 2004
 MODEL_IDENTIFIER_STRUCTURE = 2005
 MODEL_IDENTIFIER_IDENTIFIER = 2006
 MODEL_IDENTIFIER_INCLUDE = 2007
-MODEL_IDENTIFIER_MACRO = 2008
-MODEL_IDENTIFIER_PREDICATE_EXPRESSION = 2009
-MODEL_IDENTIFIER_ENUMERATE = 2010
-MODEL_IDENTIFIER_PCD = 2011
+MODEL_IDENTIFIER_PREDICATE_EXPRESSION = 2008
+MODEL_IDENTIFIER_ENUMERATE = 2009
+MODEL_IDENTIFIER_PCD = 2010
+MODEL_IDENTIFIER_UNION = 2011
+MODEL_IDENTIFIER_MACRO_IFDEF = 2012
+MODEL_IDENTIFIER_MACRO_IFNDEF = 2013
+MODEL_IDENTIFIER_MACRO_DEFINE = 2014
+MODEL_IDENTIFIER_MACRO_ENDIF = 2015
+MODEL_IDENTIFIER_MACRO_PROGMA = 2016
+
 
 MODEL_EFI_PROTOCOL = 3001
 MODEL_EFI_PPI = 3002
@@ -58,10 +64,12 @@ MODEL_PCD_DYNAMIC = 4005
 MODEL_META_DATA_HEADER = 5001
 MODEL_META_DATA_INCLUDE = 5002
 MODEL_META_DATA_DEFINE = 5003
-MODEL_META_DATA_IFDEF = 5004
-MODEL_META_DATA_IFNDEF = 5005
-MODEL_META_DATA_BUILD_OPTION = 5006
-MODEL_META_DATA_COMPONENT = 5007
+MODEL_META_DATA_CONDITIONAL_STATEMENT_IF = 5004
+MODEL_META_DATA_CONDITIONAL_STATEMENT_ELSE = 5005
+MODEL_META_DATA_CONDITIONAL_STATEMENT_IFDEF = 5006
+MODEL_META_DATA_CONDITIONAL_STATEMENT_IFNDEF = 5007
+MODEL_META_DATA_BUILD_OPTION = 5008
+MODEL_META_DATA_COMPONENT = 5009
 
 MODEL_LIST = [('MODEL_UNKNOWN', MODEL_UNKNOWN),
               ('MODEL_FILE_C', MODEL_FILE_C),
@@ -78,16 +86,22 @@ MODEL_LIST = [('MODEL_UNKNOWN', MODEL_UNKNOWN),
               ('MODEL_IDENTIFIER_STRUCTURE', MODEL_IDENTIFIER_STRUCTURE),
               ('MODEL_IDENTIFIER_IDENTIFIER', MODEL_IDENTIFIER_IDENTIFIER),
               ('MODEL_IDENTIFIER_INCLUDE', MODEL_IDENTIFIER_INCLUDE),
-              ('MODEL_IDENTIFIER_MACRO', MODEL_IDENTIFIER_MACRO),
               ('MODEL_IDENTIFIER_PREDICATE_EXPRESSION', MODEL_IDENTIFIER_PREDICATE_EXPRESSION),
               ('MODEL_IDENTIFIER_ENUMERATE', MODEL_IDENTIFIER_ENUMERATE),
               ('MODEL_IDENTIFIER_PCD', MODEL_IDENTIFIER_PCD),
+              ('MODEL_IDENTIFIER_UNION', MODEL_IDENTIFIER_UNION),
+              ('MODEL_IDENTIFIER_MACRO_IFDEF', MODEL_IDENTIFIER_MACRO_IFDEF),
+              ('MODEL_IDENTIFIER_MACRO_IFNDEF', MODEL_IDENTIFIER_MACRO_IFNDEF),
+              ('MODEL_IDENTIFIER_MACRO_DEFINE', MODEL_IDENTIFIER_MACRO_DEFINE),
+              ('MODEL_IDENTIFIER_MACRO_ENDIF', MODEL_IDENTIFIER_MACRO_ENDIF),
+              ('MODEL_IDENTIFIER_MACRO_PROGMA', MODEL_IDENTIFIER_MACRO_PROGMA),
               ('MODEL_EFI_PROTOCOL', MODEL_EFI_PROTOCOL),
               ('MODEL_EFI_PPI', MODEL_EFI_PPI),
               ('MODEL_EFI_GUID', MODEL_EFI_GUID),
               ('MODEL_EFI_LIBRARY_CLASS', MODEL_EFI_LIBRARY_CLASS),
               ('MODEL_EFI_LIBRARY_INSTANCE', MODEL_EFI_LIBRARY_INSTANCE),
               ('MODEL_EFI_PCD', MODEL_EFI_PCD),
+              ('MODEL_IDENTIFIER_UNION', MODEL_IDENTIFIER_UNION),
               ('MODEL_EFI_SOURCE_FILE', MODEL_EFI_SOURCE_FILE),
               ('MODEL_EFI_BINARY_FILE', MODEL_EFI_BINARY_FILE),
               ('MODEL_PCD_FIXED_AT_BUILD', MODEL_PCD_FIXED_AT_BUILD),
@@ -98,8 +112,10 @@ MODEL_LIST = [('MODEL_UNKNOWN', MODEL_UNKNOWN),
               ("MODEL_META_DATA_HEADER", MODEL_META_DATA_HEADER),
               ("MODEL_META_DATA_INCLUDE", MODEL_META_DATA_INCLUDE),
               ("MODEL_META_DATA_DEFINE", MODEL_META_DATA_DEFINE),
-              ("MODEL_META_DATA_IFDEF", MODEL_META_DATA_IFDEF),
-              ("MODEL_META_DATA_IFNDEF", MODEL_META_DATA_IFNDEF),
+              ("MODEL_META_DATA_CONDITIONAL_STATEMENT_IF", MODEL_META_DATA_CONDITIONAL_STATEMENT_IF),
+              ("MODEL_META_DATA_CONDITIONAL_STATEMENT_ELSE", MODEL_META_DATA_CONDITIONAL_STATEMENT_ELSE),
+              ("MODEL_META_DATA_CONDITIONAL_STATEMENT_IFDEF", MODEL_META_DATA_CONDITIONAL_STATEMENT_IFDEF),
+              ("MODEL_META_DATA_CONDITIONAL_STATEMENT_IFNDEF", MODEL_META_DATA_CONDITIONAL_STATEMENT_IFNDEF),
               ("MODEL_META_DATA_BUILD_OPTION", MODEL_META_DATA_BUILD_OPTION),
               ("MODEL_META_DATA_COMPONENT", MODEL_META_DATA_COMPONENT)
              ]
@@ -117,6 +133,8 @@ MODEL_LIST = [('MODEL_UNKNOWN', MODEL_UNKNOWN),
 # @param StartColumn:      StartColumn of a Function
 # @param EndLine:          EndLine of a Function
 # @param EndColumn:        EndColumn of a Function
+# @param BodyStartLine:    BodyStartLine of a Function Body
+# @param BodyStartColumn:  BodyStartColumn of a Function Body
 # @param BelongsToFile:    The Function belongs to which file
 # @param IdentifierList:   IdentifierList of a File
 # @param PcdList:          PcdList of a File
@@ -130,12 +148,17 @@ MODEL_LIST = [('MODEL_UNKNOWN', MODEL_UNKNOWN),
 # @var StartColumn:        StartColumn of a Function
 # @var EndLine:            EndLine of a Function
 # @var EndColumn:          EndColumn of a Function
+# @var BodyStartLine:      StartLine of a Function Body
+# @var BodyStartColumn:    StartColumn of a Function Body
 # @var BelongsToFile:      The Function belongs to which file
 # @var IdentifierList:     IdentifierList of a File
 # @var PcdList:            PcdList of a File
 #
 class FunctionClass(object):
-    def __init__(self, ID = -1, Header = '', Modifier = '', Name = '', ReturnStatement = '', StartLine = -1, StartColumn = -1, EndLine = -1, EndColumn = -1, BelongsToFile = -1, IdentifierList = [], PcdList = []):
+    def __init__(self, ID = -1, Header = '', Modifier = '', Name = '', ReturnStatement = '', \
+                 StartLine = -1, StartColumn = -1, EndLine = -1, EndColumn = -1, \
+                 BodyStartLine = -1, BodyStartColumn = -1, BelongsToFile = -1, \
+                 IdentifierList = [], PcdList = []):
         self.ID = ID
         self.Header = Header
         self.Modifier = Modifier                    
@@ -145,6 +168,8 @@ class FunctionClass(object):
         self.StartColumn = StartColumn
         self.EndLine = EndLine
         self.EndColumn = EndColumn
+        self.BodyStartLine = BodyStartLine
+        self.BodyStartColumn = BodyStartColumn
         self.BelongsToFile = BelongsToFile
         
         self.IdentifierList = IdentifierList
@@ -181,7 +206,8 @@ class FunctionClass(object):
 # @var EndColumn:            EndColumn of a Identifier
 #
 class IdentifierClass(object):
-    def __init__(self, ID = -1, Modifier = '', Type = '', Name = '', Value = '', Model = MODEL_UNKNOWN, BelongsToFile = -1, BelongsToFunction = -1, StartLine = -1, StartColumn = -1, EndLine = -1, EndColumn = -1):
+    def __init__(self, ID = -1, Modifier = '', Type = '', Name = '', Value = '', Model = MODEL_UNKNOWN, \
+                 BelongsToFile = -1, BelongsToFunction = -1, StartLine = -1, StartColumn = -1, EndLine = -1, EndColumn = -1):
         self.ID = ID
         self.Modifier = Modifier
         self.Type = Type
@@ -226,7 +252,8 @@ class IdentifierClass(object):
 # @var EndColumn:              EndColumn of a Pcd
 #
 class PcdClass(object):
-    def __init__(self, ID = -1, CName = '', TokenSpaceGuidCName = '', Token = '', DatumType = '', Model = MODEL_UNKNOWN, BelongsToFile = -1, BelongsToFunction = -1, StartLine = -1, StartColumn = -1, EndLine = -1, EndColumn = -1):
+    def __init__(self, ID = -1, CName = '', TokenSpaceGuidCName = '', Token = '', DatumType = '', Model = MODEL_UNKNOWN, \
+                 BelongsToFile = -1, BelongsToFunction = -1, StartLine = -1, StartColumn = -1, EndLine = -1, EndColumn = -1):
         self.ID = ID
         self.CName = CName
         self.TokenSpaceGuidCName = TokenSpaceGuidCName
@@ -249,6 +276,7 @@ class PcdClass(object):
 # @param Path:            Path of a File
 # @param FullPath:        FullPath of a File
 # @param Model:           Model of a File
+# @param TimeStamp:       TimeStamp of a File
 # @param FunctionList:    FunctionList of a File
 # @param IdentifierList:  IdentifierList of a File
 # @param PcdList:         PcdList of a File
@@ -259,18 +287,21 @@ class PcdClass(object):
 # @var Path:              Path of a File
 # @var FullPath:          FullPath of a File
 # @var Model:             Model of a File
+# @var TimeStamp:         TimeStamp of a File
 # @var FunctionList:      FunctionList of a File
 # @var IdentifierList:    IdentifierList of a File
 # @var PcdList:           PcdList of a File
 #
 class FileClass(object):
-    def __init__(self, ID = -1, Name = '', ExtName = '', Path = '', FullPath = '', Model = MODEL_UNKNOWN, FunctionList = [], IdentifierList = [], PcdList = []):
+    def __init__(self, ID = -1, Name = '', ExtName = '', Path = '', FullPath = '', Model = MODEL_UNKNOWN, TimeStamp = '', \
+                 FunctionList = [], IdentifierList = [], PcdList = []):
         self.ID = ID                                   
         self.Name = Name
         self.ExtName = ExtName                    
         self.Path = Path
         self.FullPath = FullPath
         self.Model = Model
+        self.TimeStamp = TimeStamp
         
         self.FunctionList = FunctionList
         self.IdentifierList = IdentifierList

@@ -21,7 +21,7 @@ from Table import Table
 #
 # This class defined a table used for function
 # 
-# @param object:       Inherited from object class
+# @param Table:       Inherited from Table class
 #
 class TableFunction(Table):
     def __init__(self, Cursor):
@@ -41,6 +41,8 @@ class TableFunction(Table):
     # @param StartColumn:      StartColumn of a Function
     # @param EndLine:          EndLine of a Function
     # @param EndColumn:        EndColumn of a Function
+    # @param BodyStartLine:    StartLine of a Function body
+    # @param BodyStartColumn:  StartColumn of a Function body
     # @param BelongsToFile:    The Function belongs to which file
     #
     def Create(self):
@@ -53,6 +55,8 @@ class TableFunction(Table):
                                                        StartColumn INTEGER NOT NULL,
                                                        EndLine INTEGER NOT NULL,
                                                        EndColumn INTEGER NOT NULL,
+                                                       BodyStartLine INTEGER NOT NULL,
+                                                       BodyStartColumn INTEGER NOT NULL,
                                                        BelongsToFile SINGLE NOT NULL
                                                       )""" % self.Table
         Table.Create(self, SqlCommand)
@@ -70,9 +74,11 @@ class TableFunction(Table):
     # @param StartColumn:      StartColumn of a Function
     # @param EndLine:          EndLine of a Function
     # @param EndColumn:        EndColumn of a Function
+    # @param BodyStartLine:    StartLine of a Function body
+    # @param BodyStartColumn:  StartColumn of a Function body
     # @param BelongsToFile:    The Function belongs to which file
     #
-    def Insert(self, ID, Header, Modifier, Name, ReturnStatement, StartLine, StartColumn, EndLine, EndColumn, BelongsToFile):
-        SqlCommand = """insert into %s values(%s, '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s)""" \
-                                           % (self.Table, ID, Header, Modifier, Name, ReturnStatement, StartLine, StartColumn, EndLine, EndColumn, BelongsToFile)
+    def Insert(self, ID, Header, Modifier, Name, ReturnStatement, StartLine, StartColumn, EndLine, EndColumn, BodyStartLine, BodyStartColumn, BelongsToFile):
+        SqlCommand = """insert into %s values(%s, '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s, %s, %s)""" \
+                                    % (self.Table, ID, Header, Modifier, Name, ReturnStatement, StartLine, StartColumn, EndLine, EndColumn, BodyStartLine, BodyStartColumn, BelongsToFile)
         Table.Insert(self, SqlCommand)

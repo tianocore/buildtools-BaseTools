@@ -38,6 +38,7 @@ class TableFile(Table):
     # @param Path:      Path of a File
     # @param FullPath:  FullPath of a File
     # @param Model:     Model of a File
+    # @param TimeStamp: TimeStamp of a File
     #
     def Create(self):
         SqlCommand = """create table IF NOT EXISTS %s (ID SINGLE PRIMARY KEY,
@@ -45,7 +46,8 @@ class TableFile(Table):
                                                        ExtName VARCHAR,
                                                        Path VARCHAR,
                                                        FullPath VARCHAR NOT NULL,
-                                                       Model INTEGER DEFAULT 0
+                                                       Model INTEGER DEFAULT 0,
+                                                       TimeStamp VARCHAR NOT NULL
                                                       )""" % self.Table
         Table.Create(self, SqlCommand)
 
@@ -59,8 +61,9 @@ class TableFile(Table):
     # @param Path:      Path of a File
     # @param FullPath:  FullPath of a File
     # @param Model:     Model of a File
+    # @param TimeStamp: TimeStamp of a File
     #
-    def Insert(self, ID, Name, ExtName, Path, FullPath, Model):
-        SqlCommand = """insert into %s values(%s, '%s', '%s', '%s', '%s', %s)""" \
-                                           % (self.Table, ID, Name, ExtName, Path, FullPath, Model)
+    def Insert(self, ID, Name, ExtName, Path, FullPath, Model, TimeStamp):
+        SqlCommand = """insert into %s values(%s, '%s', '%s', '%s', '%s', %s, '%s')""" \
+                                           % (self.Table, ID, Name, ExtName, Path, FullPath, Model, TimeStamp)
         Table.Insert(self, SqlCommand)

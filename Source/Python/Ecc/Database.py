@@ -108,7 +108,7 @@ class Database(object):
         # Insert a record for file
         #
         FileID = self.TblFile.GetCount() + 1
-        self.TblFile.Insert(FileID, File.Name, File.ExtName, File.Path, File.FullPath, Model = File.Model)
+        self.TblFile.Insert(FileID, File.Name, File.ExtName, File.Path, File.FullPath, Model = File.Model, TimeStamp = File.TimeStamp)
 
         #
         # Insert function of file
@@ -116,7 +116,8 @@ class Database(object):
         for Function in File.FunctionList:
             FunctionID = self.TblFunction.GetCount() + 1
             self.TblFunction.Insert(FunctionID, Function.Header, Function.Modifier, Function.Name, Function.ReturnStatement, \
-                                    Function.StartLine, Function.StartColumn, Function.EndLine, Function.EndColumn, FileID)
+                                    Function.StartLine, Function.StartColumn, Function.EndLine, Function.EndColumn, \
+                                    Function.BodyStartLine, Function.BodyStartColumn, FileID)
             #
             # Insert Identifier of function
             #
@@ -216,8 +217,8 @@ if __name__ == '__main__':
     identifier2 = DataClass.IdentifierClass(-1, '', '', 'i1', 'aaa', DataClass.MODEL_IDENTIFIER_COMMENT, 1, -1, 15,  43,  20,  43)
     identifier3 = DataClass.IdentifierClass(-1, '', '', 'i1', 'aaa', DataClass.MODEL_IDENTIFIER_COMMENT, 1, -1, 55,  43,  58,  43)
     identifier4 = DataClass.IdentifierClass(-1, '', '', 'i1', 'aaa', DataClass.MODEL_IDENTIFIER_COMMENT, 1, -1, 77,  43,  88,  43)
-    fun1 = DataClass.FunctionClass(-1, '', '', 'fun1', '', 21, 2, 60,  45, 1, [], [])
-    file = DataClass.FileClass(-1, 'F1', 'c', 'C:\\', 'C:\\F1.exe', DataClass.MODEL_FILE_C, [fun1], [identifier1, identifier2, identifier3, identifier4], [])
+    fun1 = DataClass.FunctionClass(-1, '', '', 'fun1', '', 21, 2, 60,  45, 1, 23, 0, [], [])
+    file = DataClass.FileClass(-1, 'F1', 'c', 'C:\\', 'C:\\F1.exe', DataClass.MODEL_FILE_C, '2007-12-28', [fun1], [identifier1, identifier2, identifier3, identifier4], [])
     Db.InsertOneFile(file)
     Db.UpdateIdentifierBelongsToFunction()
         

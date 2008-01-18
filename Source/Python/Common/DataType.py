@@ -330,3 +330,12 @@ TAB_TOD_DEFINES_TOOL_CHAIN_TAG = 'TOOL_CHAIN_TAG'
 TAB_TOD_DEFINES_TARGET_ARCH = 'TARGET_ARCH'
 TAB_TOD_DEFINES_COMMAND_TYPE = 'COMMAND_TYPE'
 
+#
+# Conditional Statements
+#
+TAB_IF = '!if'
+TAB_END_IF = '!endif'
+TAB_ELSE_IF = '!elseif'
+TAB_ELSE = '!else'
+TAB_IF_DEF = '!ifdef'
+TAB_IF_N_DEF = '!ifndef'
