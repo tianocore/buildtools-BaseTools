@@ -249,7 +249,7 @@ Returns:
   // Generic check for AcpiTable length.
   //
   if (AcpiHeader->Length > Length) {
-    Error (NULL, 0, 3000, "Invalid", "failed to pass AcpiTable Length check", NULL);
+    Error (NULL, 0, 3000, "Invalid", "AcpiTable length check failed.", NULL);
     return STATUS_ERROR;
   }
 
@@ -274,11 +274,11 @@ Returns:
       ExpectedLength = sizeof(EFI_ACPI_3_0_FIXED_ACPI_DESCRIPTION_TABLE);
       break;
     default:
-      Error (NULL, 0, 3000, "Invalid", "failed to pass FACP revision check");
+      Error (NULL, 0, 3000, "Invalid", "FACP revision check failed.");
       return STATUS_ERROR;
     }
     if (ExpectedLength != AcpiHeader->Length) {
-      Error (NULL, 0, 3000, "Invalid", "failed to pass FACP Length check");
+      Error (NULL, 0, 3000, "Invalid", "FACP length check failed.");
       return STATUS_ERROR;
     }
     break;
@@ -291,13 +291,13 @@ Returns:
     if ((Facs->Version != 0) &&
         (Facs->Version != EFI_ACPI_2_0_FIRMWARE_ACPI_CONTROL_STRUCTURE_VERSION) &&
         (Facs->Version != EFI_ACPI_3_0_FIRMWARE_ACPI_CONTROL_STRUCTURE_VERSION)){
-      Error (NULL, 0, 3000, "Invalid", "failed to pass FACS version check");
+      Error (NULL, 0, 3000, "Invalid", "FACS version check failed.");
       return STATUS_ERROR;
     }
     if ((Facs->Length != sizeof(EFI_ACPI_1_0_FIRMWARE_ACPI_CONTROL_STRUCTURE)) &&
         (Facs->Length != sizeof(EFI_ACPI_2_0_FIRMWARE_ACPI_CONTROL_STRUCTURE)) &&
         (Facs->Length != sizeof(EFI_ACPI_3_0_FIRMWARE_ACPI_CONTROL_STRUCTURE))) {
-      Error (NULL, 0, 3000, "Invalid", "failed to pass FACS Length check");
+      Error (NULL, 0, 3000, "Invalid", "FACS length check failed.");
       return STATUS_ERROR;
     }
     break;
@@ -307,11 +307,11 @@ Returns:
   //
   case EFI_ACPI_3_0_DIFFERENTIATED_SYSTEM_DESCRIPTION_TABLE_SIGNATURE:
     if (AcpiHeader->Revision > EFI_ACPI_3_0_DIFFERENTIATED_SYSTEM_DESCRIPTION_TABLE_REVISION) {
-      Error (NULL, 0, 3000, "Invalid", "failed to pass DSDT revision check");
+      Error (NULL, 0, 3000, "Invalid", "DSDT revision check failed.");
       return STATUS_ERROR;
     }
     if (AcpiHeader->Length <= sizeof(EFI_ACPI_DESCRIPTION_HEADER)) {
-      Error (NULL, 0, 3000, "Invalid", "failed to pass DSDT Length check");
+      Error (NULL, 0, 3000, "Invalid", "DSDT length check failed.");
       return STATUS_ERROR;
     }
     break;
@@ -323,11 +323,11 @@ Returns:
     if ((AcpiHeader->Revision != EFI_ACPI_1_0_MULTIPLE_APIC_DESCRIPTION_TABLE_REVISION) &&
         (AcpiHeader->Revision != EFI_ACPI_2_0_MULTIPLE_APIC_DESCRIPTION_TABLE_REVISION) &&
         (AcpiHeader->Revision != EFI_ACPI_3_0_MULTIPLE_APIC_DESCRIPTION_TABLE_REVISION)) {
-      Error (NULL, 0, 3000, "Invalid", "failed to pass APIC revision check");
+      Error (NULL, 0, 3000, "Invalid", "APIC revision check failed.");
       return STATUS_ERROR;
     }
     if (AcpiHeader->Length <= sizeof(EFI_ACPI_DESCRIPTION_HEADER) + sizeof(UINT32) + sizeof(UINT32)) {
-      Error (NULL, 0, 3000, "Invalid", "failed to pass APIC Length check");
+      Error (NULL, 0, 3000, "Invalid", "APIC length check failed.");
       return STATUS_ERROR;
     }
     break;
@@ -337,11 +337,11 @@ Returns:
   //
   case EFI_ACPI_3_0_PCI_EXPRESS_MEMORY_MAPPED_CONFIGURATION_SPACE_BASE_ADDRESS_DESCRIPTION_TABLE_SIGNATURE:
     if (AcpiHeader->Revision != EFI_ACPI_MEMORY_MAPPED_CONFIGURATION_SPACE_ACCESS_TABLE_REVISION) {
-      Error (NULL, 0, 3000, "Invalid", "failed to pass MCFG revision check");
+      Error (NULL, 0, 3000, "Invalid", "MCFG revision check failed.");
       return STATUS_ERROR;
     }
     if (AcpiHeader->Length <= sizeof(EFI_ACPI_DESCRIPTION_HEADER) + sizeof(UINT64)) {
-      Error (NULL, 0, 3000, "Invalid", "failed to pass MCFG Length check");
+      Error (NULL, 0, 3000, "Invalid", "MCFG length check failed.");
       return STATUS_ERROR;
     }
     break;
@@ -693,7 +693,7 @@ WriteSections(
   memset(CoffFile + CoffSectionsOffset[Idx], 0, Shdr->sh_size);
   break;
       default:
-  Error (NULL, 0, 3000, "Invalid", "%s unhandle section type %x", mInImageName, (UINTN)Shdr->sh_type);
+  Error (NULL, 0, 3000, "Invalid", "%s unhandled section type %x.", mInImageName, (UINTN)Shdr->sh_type);
       }
     }
   }
@@ -722,7 +722,7 @@ WriteSections(
   if (Sym->st_shndx == SHN_UNDEF
       || Sym->st_shndx == SHN_ABS
       || Sym->st_shndx > Ehdr->e_shnum) {
-    Error (NULL, 0, 3000, "Invalid", "%s bad symbol definition", mInImageName);
+    Error (NULL, 0, 3000, "Invalid", "%s bad symbol definition.", mInImageName);
   }
   SymShdr = GetShdrByIndex(Sym->st_shndx);
 
@@ -751,7 +751,7 @@ WriteSections(
       - (SecOffset - SecShdr->sh_addr);
     break;
   default:
-    Error (NULL, 0, 3000, "Invalid", "%s unhandle section type %x", mInImageName, ELF_R_TYPE(Rel->r_info));
+    Error (NULL, 0, 3000, "Invalid", "%s unhandled section type %x.", mInImageName, ELF_R_TYPE(Rel->r_info));
   }
       }
     }
@@ -837,7 +837,7 @@ WriteRelocations(
        EFI_IMAGE_REL_BASED_HIGHLOW);
       break;
     default:
-      Error (NULL, 0, 3000, "Invalid", "%s unhandle section type %x", mInImageName, ELF_R_TYPE(Rel->r_info));
+      Error (NULL, 0, 3000, "Invalid", "%s unhandled section type %x.", mInImageName, ELF_R_TYPE(Rel->r_info));
     }
   }
       }
@@ -1047,7 +1047,7 @@ Returns:
   LogLevel          = 0;
 
   if (argc == 1) {
-    Error (NULL, 0, 1001, "Missing options", "No input options");
+    Error (NULL, 0, 1001, "Missing options", "No input options.");
     Usage ();
     return STATUS_ERROR;
   }
@@ -1200,7 +1200,7 @@ Returns:
         goto Finish;
       }
       if (LogLevel > 9) {
-        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0~9, currnt input level is %d", LogLevel);
+        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0-9, currnt input level is %d", LogLevel);
         goto Finish;
       }
       SetPrintLevel (LogLevel);
@@ -1216,7 +1216,7 @@ Returns:
     if ((InputFileNum == 0) && (InputFileName == NULL)) {
       InputFileName = (CHAR8 **) malloc (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *));
       if (InputFileName == NULL) {
-        Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
+        Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
         return EFI_OUT_OF_RESOURCES;
       }
 
@@ -1231,7 +1231,7 @@ Returns:
                                   );
 
       if (InputFileName == NULL) {
-        Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
+        Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
         return EFI_OUT_OF_RESOURCES;
       }
 
@@ -1246,7 +1246,7 @@ Returns:
   VerboseMsg ("%s tool start.", UTILITY_NAME);
 
   if (OutImageType == FW_DUMMY_IMAGE) {
-    Error (NULL, 0, 1001, "Missing option", "No action specified, such as -e, -c or -t");
+    Error (NULL, 0, 1001, "Missing option", "No create action specified; specify -e, -c or -t!");
     goto Finish;
   }
 
@@ -1262,7 +1262,7 @@ Returns:
   // Combine MciBinary files to one file
   //
   if ((OutImageType == FW_MERGE_IMAGE) && ReplaceFlag) {
-    Error (NULL, 0, 1002, "Conflicting option", "-r replace parameter can't be input together with -j merge files");
+    Error (NULL, 0, 1002, "Conflicting option", "-r replace option cannot be used with -j merge files option.");
     goto Finish;
   }
    
@@ -1347,7 +1347,7 @@ Returns:
       FileLength = _filelength (fileno (fpIn));
       FileBuffer = malloc (FileLength);
       if (FileBuffer == NULL) {
-        Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
+        Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
         fclose (fpIn);
         goto Finish;
       }
@@ -1365,7 +1365,7 @@ Returns:
         fwrite (&MciPadValue, 1, 1, fpOut);
       }
       //
-      // free allcoated memory space
+      // free allocated memory space
       //
       free (FileBuffer);
       FileBuffer = NULL;
@@ -1404,11 +1404,11 @@ Returns:
     // Error if no data.
     //
     if (FileLength == 0) {
-      Error (NULL, 0, 3000, "Invalid", "no parse-able data found in file %s", mInImageName);
+      Error (NULL, 0, 3000, "Invalid", "no parseable data found in file %s", mInImageName);
       goto Finish;
     }
     if (FileLength < sizeof (MICROCODE_IMAGE_HEADER)) {
-      Error (NULL, 0, 3000, "Invalid", "amount of parse-able data in %s is insufficient to contain a microcode header", mInImageName);
+      Error (NULL, 0, 3000, "Invalid", "amount of parseable data in %s is insufficient to contain a microcode header", mInImageName);
       goto Finish;
     }
 
@@ -1417,7 +1417,7 @@ Returns:
     //
     FileBuffer = malloc (FileLength);
     if (FileBuffer == NULL) {
-      Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
+      Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
       goto Finish;
     }
     //
@@ -1453,7 +1453,7 @@ Returns:
     }
 
     if (Index != FileLength) {
-      Error (NULL, 0, 3000, "Invalid", "file contents of %s (0x%x) do not equal expected TotalSize: 0x%04X", mInImageName, FileLength, Index);
+      Error (NULL, 0, 3000, "Invalid", "file length of %s (0x%x) does not equal expected TotalSize: 0x%04X.", mInImageName, FileLength, Index);
       goto Finish;
     }
 
@@ -1469,7 +1469,7 @@ Returns:
       Index       += sizeof (UINTN);
     }
     if (CheckSum != 0) {
-      Error (NULL, 0, 3000, "Invalid", "checksum (0x%x) failed on file contents of %s", CheckSum, mInImageName);
+      Error (NULL, 0, 3000, "Invalid", "checksum (0x%x) failed on file %s.", CheckSum, mInImageName);
       goto Finish;
     }
     //
@@ -1512,7 +1512,7 @@ Returns:
   FileLength = _filelength (fileno (fpIn));
   FileBuffer = malloc (FileLength);
   if (FileBuffer == NULL) {
-    Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
+    Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
     fclose (fpIn);
     goto Finish;
   }
@@ -1538,7 +1538,7 @@ Returns:
   if (OutImageType == DUMP_TE_HEADER) {
     memcpy (&TEImageHeader, FileBuffer, sizeof (TEImageHeader));
     if (TEImageHeader.Signature != EFI_TE_IMAGE_HEADER_SIGNATURE) {
-      Error (NULL, 0, 3000, "Invalid", "TE header signature of file %s is not correct", mInImageName);
+      Error (NULL, 0, 3000, "Invalid", "TE header signature of file %s is not correct.", mInImageName);
       goto Finish;      
     }
     if (fpInOut != NULL) {
@@ -1585,7 +1585,7 @@ Returns:
         // Default TE Image Type is Boot service driver
         //
         Type = EFI_IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER;
-        VerboseMsg ("Efi Image substytem type is efi boot service driver");
+        VerboseMsg ("Efi Image subsystem type is efi boot service driver.");
       }
     } else {
       if (stricmp (ModuleType, "BASE") == 0 ||
@@ -1602,22 +1602,22 @@ Returns:
           stricmp (ModuleType, "DXE_SMM_DRIVER") == 0  ||
           stricmp (ModuleType, "UEFI_DRIVER") == 0) {
         Type = EFI_IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER;
-        VerboseMsg ("Efi Image substytem type is efi boot service driver");
+        VerboseMsg ("Efi Image subsystem type is efi boot service driver.");
     
       } else if (stricmp (ModuleType, "UEFI_APPLICATION") == 0 || 
                  stricmp (ModuleType, "APPLICATION") == 0) {
         Type = EFI_IMAGE_SUBSYSTEM_EFI_APPLICATION;
-        VerboseMsg ("Efi Image substytem type is efi application");
+        VerboseMsg ("Efi Image subsystem type is efi application.");
     
       } else if (stricmp (ModuleType, "DXE_RUNTIME_DRIVER") == 0 || 
                  stricmp (ModuleType, "RT_DRIVER") == 0) {
         Type = EFI_IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER;
-        VerboseMsg ("Efi Image substytem type is efi runtime driver");
+        VerboseMsg ("Efi Image subsystem type is efi runtime driver.");
     
       } else if (stricmp (ModuleType, "DXE_SAL_DRIVER") == 0 || 
                  stricmp (ModuleType, "SAL_RT_DRIVER") == 0) {
         Type = EFI_IMAGE_SUBSYSTEM_SAL_RUNTIME_DRIVER;
-        VerboseMsg ("Efi Image substytem type is efi sal runtime driver");
+        VerboseMsg ("Efi Image subsystem type is efi sal runtime driver.");
     
       } else {
         Error (NULL, 0, 1003, "Invalid option value", "EFI_FILETYPE = %s", ModuleType);
@@ -1671,12 +1671,12 @@ Returns:
       //
       DosHdr = (EFI_IMAGE_DOS_HEADER *) FileBuffer;
       if (DosHdr->e_magic != EFI_IMAGE_DOS_SIGNATURE) {
-        Error (NULL, 0, 3000, "Invalid", "TE and DOS header signature are not found in %s image", mInImageName);
+        Error (NULL, 0, 3000, "Invalid", "TE and DOS header signatures were not found in %s image.", mInImageName);
         goto Finish;
       }
       PeHdr = (EFI_IMAGE_NT_HEADERS *)(FileBuffer + DosHdr->e_lfanew);
       if (PeHdr->Signature != EFI_IMAGE_NT_SIGNATURE) {
-        Error (NULL, 0, 3000, "Invalid", "PE header signature not found in %s image", mInImageName);
+        Error (NULL, 0, 3000, "Invalid", "PE header signature was not found in %s image.", mInImageName);
         goto Finish;
       }
       SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->OptionalHeader) + PeHdr->FileHeader.SizeOfOptionalHeader);
@@ -1727,13 +1727,13 @@ Returns:
   //
   DosHdr = (EFI_IMAGE_DOS_HEADER *)FileBuffer;
   if (DosHdr->e_magic != EFI_IMAGE_DOS_SIGNATURE) {
-    Error (NULL, 0, 3000, "Invalid", "DOS header signature not found in %s image", mInImageName);
+    Error (NULL, 0, 3000, "Invalid", "DOS header signature was not found in %s image.", mInImageName);
     goto Finish;
   }
 
   PeHdr = (EFI_IMAGE_NT_HEADERS *)(FileBuffer + DosHdr->e_lfanew);
   if (PeHdr->Signature != EFI_IMAGE_NT_SIGNATURE) {
-    Error (NULL, 0, 3000, "Invalid", "PE header signature not found in %s image", mInImageName);
+    Error (NULL, 0, 3000, "Invalid", "PE header signature was not found in %s image.", mInImageName);
     goto Finish;
   }
   
@@ -1813,7 +1813,7 @@ Returns:
         }
 
         if (CheckAcpiTable (FileBuffer + SectionHeader->PointerToRawData, FileLength) != STATUS_SUCCESS) {
-          Error (NULL, 0, 3000, "Invalid", "failed to check ACPI table in %s", mInImageName);
+          Error (NULL, 0, 3000, "Invalid", "ACPI table check failed in %s.", mInImageName);
           goto Finish;
         }
         
@@ -1830,7 +1830,7 @@ Returns:
         goto Finish;
       }
     }
-    Error (NULL, 0, 3000, "Invalid", "failed to get ACPI table from %s", mInImageName);
+    Error (NULL, 0, 3000, "Invalid", "failed to get ACPI table from %s.", mInImageName);
     goto Finish;
   }
   //
@@ -2035,7 +2035,7 @@ Returns:
       //
       // Pack the subsystem and NumberOfSections into 1 byte. Make sure they fit both.
       //
-      Error (NULL, 0, 3000, "Invalid", "Image subsystem or NumberOfSections of PeImage %s cannot be packed into 1 byte", mInImageName);
+      Error (NULL, 0, 3000, "Invalid", "Image's subsystem or NumberOfSections of PeImage %s cannot be packed into 1 byte.", mInImageName);
       goto Finish;
     }
 
@@ -2043,11 +2043,11 @@ Returns:
       //
       // TeImage has the same section alignment and file alignment.
       //
-      Error (NULL, 0, 3000, "Invalid", "Section-Alignment and File-Alignment of PeImage %s does not match for TeImage", mInImageName);
+      Error (NULL, 0, 3000, "Invalid", "Section-Alignment and File-Alignment of PeImage %s do not match, they must be equal for a TeImage.", mInImageName);
       goto Finish;
     }
     
-    DebugMsg (NULL, 0, 9, "TeImage Header Info", "Machine type is %X, Sections number is %X, Stripped size is %X, EntryPoint is %X, BaseOfCode is %X, ImageBase is %X", 
+    DebugMsg (NULL, 0, 9, "TeImage Header Info", "Machine type is %X, Number of sections is %X, Stripped size is %X, EntryPoint is %X, BaseOfCode is %X, ImageBase is %X", 
               TEImageHeader.Machine, TEImageHeader.NumberOfSections, TEImageHeader.StrippedSize, TEImageHeader.AddressOfEntryPoint, TEImageHeader.BaseOfCode, TEImageHeader.ImageBase);
     //
     // Update Image to TeImage
@@ -2248,7 +2248,7 @@ Returns:
   // Get time and date that will be set.
   //
   if (TimeStamp == NULL) {
-    Error (NULL, 0, 3000, "Invalid", "TimeData can't be NULL");
+    Error (NULL, 0, 3000, "Invalid", "TimeStamp cannot be NULL.");
     return EFI_INVALID_PARAMETER;
   }
   //
@@ -2271,7 +2271,7 @@ Returns:
             &stime.tm_min,
             &stime.tm_sec
             ) != 6) {
-      Error (NULL, 0, 3000, "Invalid", "%s Invaild date or time!", TimeStamp);
+      Error (NULL, 0, 3000, "Invalid", "%s Invalid date or time!", TimeStamp);
       return EFI_INVALID_PARAMETER;
     }
 
@@ -2301,7 +2301,7 @@ Returns:
     //
     newtime = mktime (&stime);
     if (newtime == (time_t) - 1) {
-      Error (NULL, 0, 3000, "Invalid", "%s Invaild date or time!", TimeStamp);
+      Error (NULL, 0, 3000, "Invalid", "%s Invalid date or time!", TimeStamp);
       return EFI_INVALID_PARAMETER;
     }
   }
