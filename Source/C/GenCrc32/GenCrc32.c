@@ -215,7 +215,7 @@ Returns:
         goto Finish;
       }
       if (LogLevel > 9) {
-        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0~9, currnt input level is %d", LogLevel);
+        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0-9, current input level is %d", LogLevel);
         goto Finish;
       }
       SetPrintLevel (LogLevel);
@@ -239,7 +239,7 @@ Returns:
   // Check Input paramters
   //
   if (FileAction == CRC32_NULL) {
-    Error (NULL, 0, 1001, "Missing option", "encode or decode must be specified!");
+    Error (NULL, 0, 1001, "Missing option", "either the encode or the decode option must be specified!");
     return STATUS_ERROR;
   } else if (FileAction == CRC32_ENCODE) {
     VerboseMsg ("File will be encoded by Crc32");
@@ -276,7 +276,7 @@ Returns:
   
   FileBuffer = (UINT8 *) malloc (FileSize);
   if (FileBuffer == NULL) {
-    Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
+    Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated!");
     goto Finish;
   }
   
