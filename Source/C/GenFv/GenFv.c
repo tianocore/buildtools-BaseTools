@@ -192,7 +192,7 @@ Returns:
   SetUtilityName (UTILITY_NAME);
 
   if (argc == 1) {
-    Error (NULL, 0, 1001, "Missing options", "No input options");
+    Error (NULL, 0, 1001, "Missing options", "No input options specified.");
     Usage ();
     return STATUS_ERROR;
   }
@@ -291,7 +291,7 @@ Returns:
         return STATUS_ERROR;
       }
       if (LogLevel > 9) {
-        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0~9, currnt input level is %d", LogLevel);
+        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0-9, current input level is %d", LogLevel);
         return STATUS_ERROR;
       }
       SetPrintLevel (LogLevel);
@@ -320,7 +320,7 @@ Returns:
   VerboseMsg ("the input file name is %s", InfFileName);
 
   if (!DumpCapsule && OutFileName == NULL) {
-    Error (NULL, 0, 1001, "Missing option", "Output file name");
+    Error (NULL, 0, 1001, "Missing option", "Output File");
     return STATUS_ERROR;
   }
   if (OutFileName != NULL) {
