@@ -314,7 +314,7 @@ Returns:
   // check input parameter
   //
   if (InfFileName == NULL) {
-    Error (NULL, 0, 1001, "Missing Option", "Input File");
+    Error (NULL, 0, 1001, "Missing option", "Input File");
     return STATUS_ERROR;
   }
   VerboseMsg ("the input file name is %s", InfFileName);
