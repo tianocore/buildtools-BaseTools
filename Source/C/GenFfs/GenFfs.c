@@ -543,14 +543,14 @@ Returns:
       if ((InputFileNum == 0) && (InputFileName == NULL)) {
         InputFileName = (CHAR8 **) malloc (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *));
         if (InputFileName == NULL) {
-          Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
+          Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
           return EFI_OUT_OF_RESOURCES;
         }
         memset (InputFileName, 0, (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *)));
         
         InputFileAlign = (UINT32 *) malloc (MAXIMUM_INPUT_FILE_NUM * sizeof (UINT32));
         if (InputFileAlign == NULL) {
-          Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
+          Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
           free (InputFileName);
           return EFI_OUT_OF_RESOURCES;
         }
@@ -565,7 +565,7 @@ Returns:
                                     );
   
         if (InputFileName == NULL) {
-          Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
+          Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
           free (InputFileAlign);
           return EFI_OUT_OF_RESOURCES;
         }
@@ -577,7 +577,7 @@ Returns:
                                     );
   
         if (InputFileAlign == NULL) {
-          Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
+          Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
           free (InputFileName);
           return EFI_OUT_OF_RESOURCES;
         }
@@ -610,7 +610,7 @@ Returns:
     }
 
     if ((stricmp (argv[0], "-n") == 0) || (stricmp (argv[0], "--sectionalign") == 0)) {
-      Error (NULL, 0, 1000, "Unknown option", "SectionAlign much be specified with section file");
+      Error (NULL, 0, 1000, "Unknown option", "SectionAlign option must be specified with section file.");
       goto Finish;
     }
 
@@ -637,7 +637,7 @@ Returns:
         goto Finish;
       }
       if (LogLevel > 9) {
-        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0~9, currnt input level is %d", LogLevel);
+        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0-9, current input level is %d", LogLevel);
         goto Finish;
       }
       SetPrintLevel (LogLevel);
@@ -726,7 +726,7 @@ Returns:
   if (Status == EFI_BUFFER_TOO_SMALL) {
     FileBuffer = (UINT8 *) malloc (FileSize);
     if (FileBuffer == NULL) {
-      Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
+      Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
       goto Finish;
     }
     memset (FileBuffer, 0, FileSize);
