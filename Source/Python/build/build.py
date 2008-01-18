@@ -33,8 +33,9 @@ from Common.DataType import *
 from AutoGen.AutoGen import *
 from GenFds.FdfParser import *
 from Common.BuildToolError import *
-#from Common.Misc import *
+
 import Common.EdkLogger
+import Common.GlobalData as GlobalData
 
 # Version and Copyright
 VersionNumber = "0.02"
@@ -78,21 +79,52 @@ def IsToolInPath(tool):
 def CheckEnvVariable():
     # check WORKSPACE
     if "WORKSPACE" not in os.environ:
-        EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Please set environment variable: WORKSPACE!\n")
+        EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Environment variable not found", 
+                        ExtraData="WORKSPACE")
 
-    if "EDK_SOURCE" not in os.environ:
-        os.environ["EDK_SOURCE"] = "EdkCompatibilityPkg"
+    WorkspaceDir = os.path.normpath(os.environ["WORKSPACE"])
+    if not os.path.exists(WorkspaceDir):
+        EdkLogger.error("build", FILE_NOT_FOUND, ExtraData="WORKSPACE = %s" % WorkspaceDir)
+    os.environ["WORKSPACE"] = WorkspaceDir
 
-    if "EFI_SOURCE" not in os.environ:
-        os.environ["EFI_SOURCE"] = os.path.join("EdkCompatibilityPkg", "Foundation")
+    #
+    # Check EFI_SOURCE and EDK_SOURCE. If EFI_SOURCE is not set but EDK_SOURCE
+    # is set, set EFI_SOURCE to EDK_SOURCE (R8 build convention)
+    # 
+    if "EFI_SOURCE" not in os.environ and "EDK_SOURCE" not in os.environ:
+        os.environ["EFI_SOURCE"] = os.path.join(WorkspaceDir, GlobalData.gEdkCompatibilityPkg)
+        os.environ["EDK_SOURCE"] = os.path.join(WorkspaceDir, GlobalData.gEdkCompatibilityPkg)
+    elif "EFI_SOURCE" in os.environ and "EDK_SOURCE" not in os.environ:
+        os.environ["EDK_SOURCE"] = os.path.join(os.environ["EFI_SOURCE"], GlobalData.gEdkSource)
+    elif "EFI_SOURCE" not in os.environ and "EDK_SOURCE" in os.environ:
+        os.environ["EFI_SOURCE"] = os.environ["EDK_SOURCE"]
+
+    EfiSourceDir = os.path.normpath(os.environ["EFI_SOURCE"])
+    EdkSourceDir = os.path.normpath(os.environ["EDK_SOURCE"])
+    if not os.path.exists(EfiSourceDir):
+        EdkLogger.warn("build", "EFI_SOURCE = %s doesn't exist. R8 modules could not be built." % EfiSourceDir)
+    if not os.path.exists(EdkSourceDir):
+        EdkLogger.warn("build", "EDK_SOURCE = %s doesn't exist. R8 modules could not be built." % EdkSourceDir)
+
+    # change absolute path to relative path to WORKSPACE
+    if EfiSourceDir.upper().find(WorkspaceDir.upper()) != 0:
+        EdkLogger.error("build", PARAMETER_INVALID, "EFI_SOURCE is not under WORKSPACE", 
+                        ExtraData="WORKSPACE = %s\n    EFI_SOURCE = %s" % (WorkspaceDir, EfiSourceDir))
+    if EdkSourceDir.upper().find(WorkspaceDir.upper()) != 0:
+        EdkLogger.error("build", PARAMETER_INVALID, "EDK_SOURCE is not under WORKSPACE", 
+                        ExtraData="WORKSPACE = %s\n    EDK_SOURCE = %s" % (WorkspaceDir, EdkSourceDir))
+    EfiSourceDir = EfiSourceDir[len(WorkspaceDir)+1:]
+    EdkSourceDir = EdkSourceDir[len(WorkspaceDir)+1:]
 
     # check EDK_TOOLS_PATH
-    if "EDK_TOOLS_PATH" not in os.environ == None:
-        EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Please set environment variable: EDK_TOOLS_PATH!\n")
+    if "EDK_TOOLS_PATH" not in os.environ:
+        EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Environment variable not found", 
+                        ExtraData="EDK_TOOLS_PATH")
 
     # check PATH
     if "PATH" not in os.environ:
-        EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Please set environment variable: PATH!\n")
+        EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Environment variable not found", 
+                        ExtraData="PATH")
 
     PathString = os.environ["PATH"]
     ToolPath = os.path.normpath(os.path.join(os.environ["EDK_TOOLS_PATH"], 'Bin', sys.platform.title()))
@@ -102,6 +134,13 @@ def CheckEnvVariable():
 
         EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Please execute %s to set %s in environment variable: PATH!\n"
                             % (os.path.normpath(os.path.join(PathString, 'edksetup.bat')), ToolPath))
+
+    # for macro replacement in R9 DSC/DEC/INF file
+    GlobalData.gGlobalDefines["WORKSPACE"] = ""
+
+    # for macro replacement in R8 INF file
+    GlobalData.gGlobalDefines["EFI_SOURCE"] = EfiSourceDir
+    GlobalData.gGlobalDefines["EDK_SOURCE"] = EdkSourceDir
 
 ## Get normalized file path
 #
@@ -593,8 +632,9 @@ class Build():
     #   @param  SpawnMode           Indicate multi-thread build mode
     #   @param  ThreadNumber        The maximum number of thread if in multi-thread build mode
     #
-    def __init__(self, Target, WorkspaceDir, Platform, Module, Arch, ToolChain, BuildTarget,
-                 FlashDefinition, FdList=[], FvList=[], MakefileType="nmake", SpawnMode=False, ThreadNumber=2):
+    def __init__(self, Target, WorkspaceDir, Platform, Module, Arch, ToolChain, 
+                 BuildTarget, FlashDefinition, FdList=[], FvList=[], 
+                 MakefileType="nmake", SpawnMode=False, ThreadNumber=2):
 
         self.WorkspaceDir = WorkspaceDir
 
@@ -628,8 +668,10 @@ class Build():
         self.Progress.Stop("done!")
 
         # print current build environment and configuration
-        EdkLogger.info('')
+        EdkLogger.quiet('')
         EdkLogger.quiet("%-24s = %s" % ("WORKSPACE", os.environ["WORKSPACE"]))
+        EdkLogger.quiet("%-24s = %s" % ("EFI_SOURCE", os.environ["EFI_SOURCE"]))
+        EdkLogger.quiet("%-24s = %s" % ("EDK_SOURCE", os.environ["EDK_SOURCE"]))
         EdkLogger.quiet("%-24s = %s" % ("EDK_TOOLS_PATH", os.environ["EDK_TOOLS_PATH"]))
         EdkLogger.info('')
         EdkLogger.info('%-24s = %s' % ("TARGET_ARCH", ' '.join(self.ArchList)))
@@ -1067,6 +1109,17 @@ class Build():
             if Utils.gDependencyDatabase == None:
                 Utils.gDependencyDatabase = {}
 
+def ParseDefines(DefineList=[]):
+    DefineDict = {}
+    if DefineList != None:
+        for Define in DefineList:
+            DefineTokenList = Define.split("=", 1)
+            if len(DefineTokenList) == 1:
+                DefineDict[DefineTokenList[0]] = ""
+            else:
+                DefineDict[DefineTokenList[0]] = DefineTokenList[1].strip()
+    return DefineDict
+
 ## Parse command line options
 #
 # Using standard Python module optparse to parse command line option of this tool.
@@ -1099,6 +1152,8 @@ def MyOptionParser():
     Parser.add_option("-k", "--msft", action="store_const", dest="MakefileType", const="nmake", help="Make Option: Generate only NMAKE Makefiles: Makefile")
     Parser.add_option("-g", "--gcc", action="store_const", dest="MakefileType", const="gmake", help="Make Option: Generate only GMAKE Makefiles: GNUmakefile")
     Parser.add_option("-l", "--all", action="store_const", dest="MakefileType", const="all", help="Make Option: Generate both NMAKE and GMAKE makefiles.")
+    Parser.add_option("-D", action="append", dest="Defines", metavar="NAME[=[VALUE]]",
+        help="Define global macro which can be used in DSC/DEC/INF files.")
 
     Parser.add_option("-w", "--warning-as-error", action="store_true", dest="WarningAsError", help="Treat warning in tools as error.")
     Parser.add_option("-j", "--log", action="store", dest="LogFile", help="Putlog in specified file as well as on console.")
@@ -1122,6 +1177,10 @@ def MyOptionParser():
 #
 def Main():
     StartTime = time.clock()
+
+    # Initialize log system
+    EdkLogger.Initialize()
+
     #
     # Parse the options and args
     #
@@ -1135,6 +1194,7 @@ def Main():
     else:
         Target = Target[0].lower()
 
+    # Set log level
     if Option.verbose != None:
         EdkLogger.SetLevel(EdkLogger.VERBOSE)
     elif Option.quiet != None:
@@ -1154,6 +1214,7 @@ def Main():
     ReturnCode = 0
     MyBuild = None
     try:
+        GlobalData.gGlobalDefines = ParseDefines(Option.Defines)
         #
         # Check environment variable: EDK_TOOLS_PATH, WORKSPACE, PATH
         #

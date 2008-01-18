@@ -14,11 +14,16 @@
 ##
 # Import Modules
 #
+import re
 import DataType
 import os.path
 import string
 import EdkLogger as EdkLogger
+
 from BuildToolError import *
+
+## Regular expression for matching macro used in DSC/DEC/INF file inclusion
+gMacroPattern = re.compile("\$\(([_A-Z][_A-Z0-9]*)\)", re.UNICODE)
 
 ## GetSplitValueList
 #
@@ -315,6 +320,35 @@ def SplitModuleType(Key):
 
     return ReturnValue
 
+## Replace macro in string
+#
+# This method replace macros used in given string. The macros are given in a
+# dictionary.
+# 
+# @param String             String to be processed
+# @param MacroDefinitions   The macro definitions in the form of dictionary
+#
+# @retval string            The string whose macros are replaced
+#
+def ReplaceMacro(String, MacroDefinitions={}):
+    LastString = String
+    while MacroDefinitions != None and len(MacroDefinitions) > 0:
+        MacroUsed = gMacroPattern.findall(String)
+        # no macro found in String, stop replacing
+        if len(MacroUsed) == 0:
+            break
+
+        for Macro in MacroUsed:
+            if Macro not in MacroDefinitions:
+                continue
+            String = String.replace("$(%s)" % Macro, MacroDefinitions[Macro])
+        # in case there's macro not defined
+        if String == LastString:
+            break
+        LastString = String
+
+    return String
+
 ## NormPath
 #
 # Create a normal path
@@ -326,43 +360,26 @@ def SplitModuleType(Key):
 # @retval Path Formatted path
 #
 def NormPath(Path, Defines = {}):
+    IsRelativePath = False
     if Path != '':
+        if Path[0] == '.':
+            IsRelativePath = True
+    
         #
         # Replace with Define
         #
-        for Key in Defines.keys():
-            Path = Path.replace(Key, Defines[Key])
-
-        #
-        # Remove ${WORKSPACE}, $(EDK_SOURCE), $(EFI_SOURCE)
-        #
-        if DataType.TAB_EDK_SOURCE in os.environ:
-            EdkSource = os.environ[DataType.TAB_EDK_SOURCE]
-        else:
-            EdkSource = "EdkCompatibilityPkg"
-
-        if DataType.TAB_EFI_SOURCE in os.environ:
-            EfiSource = os.environ[DataType.TAB_EFI_SOURCE]
-        else:
-            EfiSource = os.path.join("EdkCompatibilityPkg", "Foundation")
-    
-        if Path.find(DataType.TAB_WORKSPACE) > -1:
-            Path = Path.replace(DataType.TAB_WORKSPACE, '')
+        if len(Defines) > 0:
+            Path = ReplaceMacro(Path, Defines)
+            # Remove leading path separator
             if len(Path) > 0 and Path[0] in [DataType.TAB_SLASH, DataType.TAB_BACK_SLASH] == 0:
                 Path = Path[1:]
-        elif Path.find(DataType.TAB_EDK_SOURCE) > -1:
-            Path = Path.replace(DataType.TAB_EDK_SOURCE, EdkSource)
-            if len(Path) > 0 and Path[0] in [DataType.TAB_SLASH, DataType.TAB_BACK_SLASH] == 0:
-                Path = Path[1:]
-        elif Path.find(DataType.TAB_EFI_SOURCE) > -1:
-            Path = Path.replace(DataType.TAB_EFI_SOURCE, EfiSource)
-            if len(Path) > 0 and Path[0] in [DataType.TAB_SLASH, DataType.TAB_BACK_SLASH] == 0:
-                Path = Path[1:]
-
         #
         # To local path format
         #
         Path = os.path.normpath(Path)
+
+    if IsRelativePath and Path[0] != '.':
+        Path = os.path.join('.', Path)
 
     return Path
 
@@ -483,16 +500,19 @@ def GetSingleValueOfKeyFromLines(Lines, Dictionary, CommentCharacter, KeySplitCh
                 else:
                     Value = CleanString(LineList[1], CommentCharacter).splitlines()
 
-                if Key[0] not in Keys:
-                    Dictionary[Key[0]] = Value
-                    Keys.append(Key[0])
+                if Key[0] in Dictionary:
+                    if Key[0] not in Keys:
+                        Dictionary[Key[0]] = Value
+                        Keys.append(Key[0])
+                    else:
+                        Dictionary[Key[0]].extend(Value)
                 else:
-                    Dictionary[Key[0]].extend(Value)
+                    Dictionary[DataType.TAB_INF_DEFINES_MACRO][Key[0]] = Value[0]
 
     if DefineValues == []:
-        DefineValues == ['']
+        DefineValues = ['']
     if SpecValues == []:
-        SpecValues == ['']
+        SpecValues = ['']
     Dictionary[DataType.TAB_INF_DEFINES_DEFINE] = DefineValues
     Dictionary[DataType.TAB_INF_DEFINES_SPEC] = SpecValues
 

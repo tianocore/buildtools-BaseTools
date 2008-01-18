@@ -196,6 +196,7 @@ def error(ToolName, ErrorCode, Message=None, File=None, Line=None, ExtraData=Non
 # Log information which should be always put out
 quiet   = _ErrorLogger.error
 
+## Initialize log system
 def Initialize():
     #
     # Since we use different format to log different levels of message into differen

@@ -572,7 +572,7 @@ class WorkspaceBuild(object):
                 for Item in Platform.Libraries.LibraryList:
                     for Arch in Item.SupArchList:
                         Library = self.InfDatabase[Item.FilePath]
-                        Pb.Libraries[Library.Module.Header.Name] = Item.FilePath
+                        Pb.Libraries[Library.Module.Header[Arch].Name] = Item.FilePath
                 
                 #
                 # Pcds
@@ -700,50 +700,51 @@ class WorkspaceBuild(object):
             Module = self.InfDatabase[Inf].Module
 
             for Arch in self.SupArchList:
-                if not self.IsModuleDefinedInPlatform(Inf, Arch, InfList):
+                if not self.IsModuleDefinedInPlatform(Inf, Arch, InfList) or Arch not in Module.Header:
                     continue
 
+                ModuleHeader = Module.Header[Arch]
                 Pb = ModuleBuildClassObject()
 
                 #
                 # Defines
                 #
                 Pb.DescFilePath = Inf
-                Pb.BaseName = Module.Header.Name
-                Pb.Guid = Module.Header.Guid
-                Pb.Version = Module.Header.Version
-                Pb.ModuleType = Module.Header.ModuleType
-                Pb.PcdIsDriver = Module.Header.PcdIsDriver
-                Pb.BinaryModule = Module.Header.BinaryModule
-                Pb.CustomMakefile = Module.Header.CustomMakefile
-                Pb.Shadow = Module.Header.Shadow
+                Pb.BaseName = ModuleHeader.Name
+                Pb.Guid = ModuleHeader.Guid
+                Pb.Version = ModuleHeader.Version
+                Pb.ModuleType = ModuleHeader.ModuleType
+                Pb.PcdIsDriver = ModuleHeader.PcdIsDriver
+                Pb.BinaryModule = ModuleHeader.BinaryModule
+                Pb.CustomMakefile = ModuleHeader.CustomMakefile
+                Pb.Shadow = ModuleHeader.Shadow
 
                 #
                 # Specs os Defines
                 #
-                Pb.Specification = Module.Header.Specification
-                Pb.Specification[TAB_INF_DEFINES_EDK_RELEASE_VERSION] = Module.Header.EdkReleaseVersion
-                Pb.Specification[TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION] = Module.Header.EfiSpecificationVersion
-                Pb.AutoGenVersion = int(Module.Header.InfVersion, 0)
+                Pb.Specification = ModuleHeader.Specification
+                Pb.Specification[TAB_INF_DEFINES_EDK_RELEASE_VERSION] = ModuleHeader.EdkReleaseVersion
+                Pb.Specification[TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION] = ModuleHeader.EfiSpecificationVersion
+                Pb.AutoGenVersion = int(ModuleHeader.InfVersion, 0)
 
                 #
                 # LibraryClass of Defines
                 #
-                for Item in Module.Header.LibraryClass:
+                for Item in ModuleHeader.LibraryClass:
                     Pb.LibraryClass.append(LibraryClassObject(Item.LibraryClass, Item.SupModuleList, None))
 
                 #
                 # Module image and library of Defines
                 #
                 for Item in Module.ExternImages:
-                    if Item.ModuleEntryPoint != '':
+                    if Item.ModuleEntryPoint != '' and Item.ModuleEntryPoint not in Pb.ModuleEntryPointList:
                         Pb.ModuleEntryPointList.append(Item.ModuleEntryPoint)
-                    if Item.ModuleUnloadImage != '':
+                    if Item.ModuleUnloadImage != '' and Item.ModuleUnloadImage not in Pb.ModuleUnloadImageList:
                         Pb.ModuleUnloadImageList.append(Item.ModuleUnloadImage)
                 for Item in Module.ExternLibraries:
-                    if Item.Constructor != '':
+                    if Item.Constructor != '' and Item.Constructor not in Pb.ConstructorList:
                         Pb.ConstructorList.append(Item.Constructor)
-                    if Item.Destructor != '':
+                    if Item.Destructor != '' and Item.Destructor not in Pb.DestructorList:
                         Pb.DestructorList.append(Item.Destructor)
 
                 #
@@ -809,7 +810,11 @@ class WorkspaceBuild(object):
                 #
                 for Item in Module.BuildOptions:
                     if Arch in Item.SupArchList:
-                        Pb.BuildOptions[(Item.ToolChainFamily, Item.ToolChain)] = Item.Option
+                        if (Item.ToolChainFamily, Item.ToolChain) not in Pb.BuildOptions:
+                            Pb.BuildOptions[(Item.ToolChainFamily, Item.ToolChain)] = Item.Option
+                        else:
+                            OptionString = Pb.BuildOptions[(Item.ToolChainFamily, Item.ToolChain)]
+                            Pb.BuildOptions[(Item.ToolChainFamily, Item.ToolChain)] = OptionString + " " + Item.Option
                 self.FindBuildOptions(Arch, Inf, Pb.BuildOptions)
 
                 #
@@ -904,6 +909,9 @@ class WorkspaceBuild(object):
             EdkLogger.verbose("")
             EdkLogger.verbose("Library instances of module [%s] [%s]:" % (str(Module), Arch))
             LibraryConsumerList = [Module]
+
+            # "CompilerStub" is a must for R8 modules
+            Module.Libraries.append("CompilerStub")
             while len(LibraryConsumerList) > 0:
                 M = LibraryConsumerList.pop()
                 for LibraryName in M.Libraries:
@@ -1166,7 +1174,7 @@ class WorkspaceBuild(object):
         # Update the library instance itself to add this libraryclass name
         #
         LibraryModule = self.InfDatabase[InstanceFilePath].Module
-        LibList = LibraryModule.Header.LibraryClass
+        LibList = LibraryModule.Header[Arch].LibraryClass
         NotFound = True
         for Lib in LibList:
             #
@@ -1178,8 +1186,8 @@ class WorkspaceBuild(object):
         if NotFound:
             NewLib = LibraryClassClass()
             NewLib.LibraryClass = LibraryClass
-            NewLib.SupModuleList = LibraryModule.Header.ModuleType.split()
-            LibraryModule.Header.LibraryClass.append(NewLib)
+            NewLib.SupModuleList = LibraryModule.Header[Arch].ModuleType.split()
+            LibraryModule.Header[Arch].LibraryClass.append(NewLib)
 
         #
         # Add it to LibraryClasses Section for the module which is using the library

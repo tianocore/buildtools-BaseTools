@@ -77,10 +77,10 @@ class FfsInfStatement(FfsInfStatementClassObject):
         
         elif self.InfFileName in GenFdsGlobalVariable.WorkSpace.InfDatabase.keys():
             Inf = GenFdsGlobalVariable.WorkSpace.InfDatabase[self.InfFileName]
-            self.BaseName = Inf.Module.Header.Name
-            self.ModuleGuid = Inf.Module.Header.Guid
-            self.ModuleType = Inf.Module.Header.ModuleType
-            self.VersionString = Inf.Module.Header.Version
+            self.BaseName = Inf.Module.Header[self.CurrentArch].Name
+            self.ModuleGuid = Inf.Module.Header[self.CurrentArch].Guid
+            self.ModuleType = Inf.Module.Header[self.CurrentArch].ModuleType
+            self.VersionString = Inf.Module.Header[self.CurrentArch].Version
             self.BinFileList = Inf.Module.Binaries
             if self.BinFileList == []:
                 raise Exception ("INF %s specified in FDF could not be found in build ARCH %s!" % (self.InfFileName, GenFdsGlobalVariable.ArchList))

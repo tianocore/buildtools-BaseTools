@@ -893,7 +893,11 @@ class ModuleAutoGen(object):
             if Target == "*" or Target == self.BuildTarget:
                 if Tag == "*" or Tag == self.ToolChain:
                     if Arch == "*" or Arch == self.Arch:
-                        OptionList[Tool] = BuildOption[Key]
+                        if Tool not in OptionList:
+                            OptionList[Tool] = BuildOption[Key]
+                        else:
+                            # append options for the same tool
+                            OptionList[Tool] = OptionList[Tool] + " " + BuildOption[Key]
         # for those tools that have no option in module file, give it a empty string
         for Tool in PlatformInfo.ToolOption:
             if Tool not in OptionList:
@@ -1094,8 +1098,9 @@ class ModuleAutoGen(object):
     def GetIncludePathList(self, DependentPackageList):
         IncludePathList = []
         for Inc in self.Module.Includes:
-            if Inc == ".":
-                continue
+            # '.' means "relative to module directory".
+            if Inc[0] == ".":
+                Inc = os.path.join(self.BuildInfo.SourceDir, Inc)
             IncludePathList.append(Inc)
             # for r8 modules
             IncludePathList.append(os.path.join(Inc, self.Arch.capitalize()))

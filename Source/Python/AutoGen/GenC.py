@@ -1425,7 +1425,8 @@ def CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH):
 
     if Info.ModuleType in ['PEI_CORE', 'DXE_CORE']:
         if NumEntryPoints != 1:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, '%s must have exactly one entry point' % Info.ModuleType)
+            EdkLogger.error("AutoGen", AUTOGEN_ERROR, '%s must have exactly one entry point' % Info.ModuleType,
+                            ExtraData=", ".join(Info.Module.ModuleEntryPointList))
     if Info.ModuleType == 'PEI_CORE':
         AutoGenC.Append(gPeiCoreEntryPointString, Dict)
     elif Info.ModuleType == 'DXE_CORE':

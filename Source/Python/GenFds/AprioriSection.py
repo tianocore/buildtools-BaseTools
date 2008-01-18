@@ -84,7 +84,7 @@ class AprioriSection (AprioriSectionClassObject):
         
                 elif InfFileName in GenFdsGlobalVariable.WorkSpace.InfDatabase.keys():
                     Inf = GenFdsGlobalVariable.WorkSpace.InfDatabase[InfFileName]
-                    Guid = Inf.Module.Header.Guid
+                    Guid = Inf.Module.Header[Arch].Guid
                     
                     self.BinFileList = Inf.Module.Binaries
                     if self.BinFileList == []:

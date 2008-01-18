@@ -24,6 +24,8 @@ from DataType import *
 from Identification import *
 from Dictionary import *
 from BuildToolError import *
+from Misc import sdict
+import GlobalData
 
 gComponentType2ModuleType = {
     "LIBRARY"               :   "BASE",
@@ -39,9 +41,10 @@ gComponentType2ModuleType = {
 #    "BS_DRIVER"             :   "DXE_SMM_DRIVER",
 #    "BS_DRIVER"             :   "UEFI_DRIVER",
     "APPLICATION"           :   "UEFI_APPLICATION",
+    "LOGO"                  :   "BASE",
 }
 
-gNmakeFlagPattern = re.compile("(?:EBC_)?([A-Z])+_(?:STD_|PROJ_|ARCH_)?FLAGS(?:_DLL|_ASL|_EXE)?", re.UNICODE)
+gNmakeFlagPattern = re.compile("(?:EBC_)?([A-Z]+)_(?:STD_|PROJ_|ARCH_)?FLAGS(?:_DLL|_ASL|_EXE)?", re.UNICODE)
 gNmakeFlagName2ToolCode = {
     "C"         :   "CC",
     "LIB"       :   "SLINK",
@@ -103,8 +106,19 @@ class InfDefines(InfObject):
             TAB_INF_DEFINES_DEFINE                                  : [''],
             TAB_INF_DEFINES_SPEC                                    : [''],
             TAB_INF_DEFINES_CUSTOM_MAKEFILE                         : [''],
-            TAB_INF_DEFINES_SHADOW                                  : ['']
+            TAB_INF_DEFINES_SHADOW                                  : [''],
+            TAB_INF_DEFINES_MACRO                                   : {}
         }
+
+    def extend(self, InfDefinesObj):
+        for Item in InfDefinesObj.DefinesDictionary:
+            if Item == TAB_INF_DEFINES_MACRO:
+                self.DefinesDictionary[Item].update(InfDefinesObj.DefinesDictionary[Item])
+            else:
+                if InfDefinesObj.DefinesDictionary[Item][0] != '':
+                    if self.DefinesDictionary[Item][0] == '':
+                        self.DefinesDictionary[Item] = []
+                    self.DefinesDictionary[Item].extend(InfDefinesObj.DefinesDictionary[Item])
 
 ## InfContents
 #
@@ -175,18 +189,21 @@ class InfContents(InfObject):
 class Inf(InfObject):
     def __init__(self, Filename = None, IsMergeAllArches = False, IsToModule = False, WorkspaceDir = None):
         self.Identification = Identification()
-        self.Defines = InfDefines()
+        self.Defines = {} # InfDefines()
         self.Contents = {}
         self.UserExtensions = ''
         self.Module = ModuleClass()
         self.WorkspaceDir = WorkspaceDir
-        
+        self._Macro = {}    # for inf file local replacement
+
         for Arch in DataType.ARCH_LIST_FULL:
             self.Contents[Arch] = InfContents()
 
         self.KeyList = [
-            TAB_SOURCES, TAB_BUILD_OPTIONS, TAB_BINARIES, TAB_INCLUDES, TAB_GUIDS, TAB_PROTOCOLS, TAB_PPIS, TAB_LIBRARY_CLASSES, TAB_PACKAGES, TAB_LIBRARIES, \
-            TAB_INF_FIXED_PCD, TAB_INF_PATCH_PCD, TAB_INF_FEATURE_PCD, TAB_INF_PCD, TAB_INF_PCD_EX, TAB_DEPEX, TAB_NMAKE
+            TAB_SOURCES, TAB_BUILD_OPTIONS, TAB_BINARIES, TAB_INCLUDES, TAB_GUIDS, 
+            TAB_PROTOCOLS, TAB_PPIS, TAB_LIBRARY_CLASSES, TAB_PACKAGES, TAB_LIBRARIES, 
+            TAB_INF_FIXED_PCD, TAB_INF_PATCH_PCD, TAB_INF_FEATURE_PCD, TAB_INF_PCD, 
+            TAB_INF_PCD_EX, TAB_DEPEX, TAB_NMAKE
         ]
 
         #
@@ -212,6 +229,14 @@ class Inf(InfObject):
     # Find the contents defined in all arches and merge them to all
     #
     def MergeAllArches(self):
+        for Arch in DataType.ARCH_LIST:
+            if Arch not in self.Defines:
+                self.Defines[Arch] = InfDefines()
+            self.Defines[Arch].extend(self.Defines[DataType.TAB_ARCH_COMMON.upper()])
+            self._Macro.update(self.Defines[Arch].DefinesDictionary[TAB_INF_DEFINES_MACRO])
+        self._Macro.update(GlobalData.gGlobalDefines)
+        # print "###",self._Macro
+
         for Key in self.KeyList:
             for Arch in DataType.ARCH_LIST:
                 Command = "self.Contents[Arch]." + Key + ".extend(" + "self.Contents['" + DataType.TAB_ARCH_COMMON + "']." + Key + ")"
@@ -233,69 +258,77 @@ class Inf(InfObject):
         else:
             GetMultipleValuesOfKeyFromLines(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
 
-    ## Transfer to Module Object
-    # 
-    # Transfer all contents of an Inf file to a standard Module Object
+    ## Convert [Defines] section content to ModuleHeaderClass
     #
-    def InfToModule(self):
+    # Convert [Defines] section content to ModuleHeaderClass
+    #
+    # @param Defines        The content under [Defines] section
+    # @param ModuleHeader   An object of ModuleHeaderClass
+    # @param Arch           The supported ARCH
+    #
+    def DefinesToModuleHeader(self, Defines, ModuleHeader, Arch):
+        ModuleHeader.SupArchList.append(Arch)
+        # macro definitions
+        ModuleHeader.MacroDefines.update(Defines.DefinesDictionary[TAB_INF_DEFINES_MACRO])
+        ModuleHeader.MacroDefines.update(GlobalData.gGlobalDefines)
         #
         # Get value for Header
         #
-        self.Module.Header.InfVersion = self.Defines.DefinesDictionary[TAB_INF_DEFINES_INF_VERSION][0]
-        self.Module.Header.Name = self.Defines.DefinesDictionary[TAB_INF_DEFINES_BASE_NAME][0]
-        self.Module.Header.Guid = self.Defines.DefinesDictionary[TAB_INF_DEFINES_FILE_GUID][0]
+        ModuleHeader.InfVersion = Defines.DefinesDictionary[TAB_INF_DEFINES_INF_VERSION][0]
+        ModuleHeader.Name = Defines.DefinesDictionary[TAB_INF_DEFINES_BASE_NAME][0]
+        ModuleHeader.Guid = Defines.DefinesDictionary[TAB_INF_DEFINES_FILE_GUID][0]
         
-        self.Module.Header.FileName = self.Identification.FileName
-        self.Module.Header.FullPath = self.Identification.FileFullPath
-        File = self.Module.Header.FullPath
+        ModuleHeader.FileName = self.Identification.FileName
+        ModuleHeader.FullPath = self.Identification.FileFullPath
+        File = ModuleHeader.FullPath
         
-        self.Module.Header.EfiSpecificationVersion = self.Defines.DefinesDictionary[TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION][0]
-        self.Module.Header.EdkReleaseVersion = self.Defines.DefinesDictionary[TAB_INF_DEFINES_EDK_RELEASE_VERSION][0]
-                
-        self.Module.Header.ModuleType = self.Defines.DefinesDictionary[TAB_INF_DEFINES_MODULE_TYPE][0]
-        self.Module.Header.BinaryModule = self.Defines.DefinesDictionary[TAB_INF_DEFINES_BINARY_MODULE][0]
-        self.Module.Header.ComponentType = self.Defines.DefinesDictionary[TAB_INF_DEFINES_COMPONENT_TYPE][0]
-        self.Module.Header.MakefileName = self.Defines.DefinesDictionary[TAB_INF_DEFINES_MAKEFILE_NAME][0]
-        self.Module.Header.BuildNumber = self.Defines.DefinesDictionary[TAB_INF_DEFINES_BUILD_NUMBER][0]
-        self.Module.Header.BuildType = self.Defines.DefinesDictionary[TAB_INF_DEFINES_BUILD_TYPE][0]
-        self.Module.Header.FfsExt = self.Defines.DefinesDictionary[TAB_INF_DEFINES_FFS_EXT][0]
-        self.Module.Header.FvExt = self.Defines.DefinesDictionary[TAB_INF_DEFINES_FV_EXT][0]
-        self.Module.Header.SourceFv = self.Defines.DefinesDictionary[TAB_INF_DEFINES_SOURCE_FV][0]
-        self.Module.Header.PcdIsDriver = self.Defines.DefinesDictionary[TAB_INF_DEFINES_PCD_IS_DRIVER][0]
-        self.Module.Header.TianoR8FlashMap_h = self.Defines.DefinesDictionary[TAB_INF_DEFINES_TIANO_R8_FLASHMAP_H][0]
-        self.Module.Header.Shadow = self.Defines.DefinesDictionary[TAB_INF_DEFINES_SHADOW][0]
+        ModuleHeader.EfiSpecificationVersion = Defines.DefinesDictionary[TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION][0]
+        ModuleHeader.EdkReleaseVersion = Defines.DefinesDictionary[TAB_INF_DEFINES_EDK_RELEASE_VERSION][0]
+           
+        ModuleHeader.ModuleType = Defines.DefinesDictionary[TAB_INF_DEFINES_MODULE_TYPE][0]
+        ModuleHeader.BinaryModule = Defines.DefinesDictionary[TAB_INF_DEFINES_BINARY_MODULE][0]
+        ModuleHeader.ComponentType = Defines.DefinesDictionary[TAB_INF_DEFINES_COMPONENT_TYPE][0]
+        ModuleHeader.MakefileName = Defines.DefinesDictionary[TAB_INF_DEFINES_MAKEFILE_NAME][0]
+        ModuleHeader.BuildNumber = Defines.DefinesDictionary[TAB_INF_DEFINES_BUILD_NUMBER][0]
+        ModuleHeader.BuildType = Defines.DefinesDictionary[TAB_INF_DEFINES_BUILD_TYPE][0]
+        ModuleHeader.FfsExt = Defines.DefinesDictionary[TAB_INF_DEFINES_FFS_EXT][0]
+        ModuleHeader.FvExt = Defines.DefinesDictionary[TAB_INF_DEFINES_FV_EXT][0]
+        ModuleHeader.SourceFv = Defines.DefinesDictionary[TAB_INF_DEFINES_SOURCE_FV][0]
+        ModuleHeader.PcdIsDriver = Defines.DefinesDictionary[TAB_INF_DEFINES_PCD_IS_DRIVER][0]
+        ModuleHeader.TianoR8FlashMap_h = Defines.DefinesDictionary[TAB_INF_DEFINES_TIANO_R8_FLASHMAP_H][0]
+        ModuleHeader.Shadow = Defines.DefinesDictionary[TAB_INF_DEFINES_SHADOW][0]
         
         #
         # Get version of INF
         #
-        if self.Module.Header.InfVersion != "":
+        if ModuleHeader.InfVersion != "":
             # R9 inf
-            VersionNumber = self.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_NUMBER][0]
-            VersionString = self.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_STRING][0]
+            VersionNumber = Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_NUMBER][0]
+            VersionString = Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_STRING][0]
             if len(VersionNumber) > 0 and len(VersionString) == 0:
                 EdkLogger.warn(2000, 'VERSION_NUMBER depricated; INF file %s should be modified to use VERSION_STRING instead.' % self.Identification.FileFullPath)
-                self.Module.Header.Version = VersionNumber
+                ModuleHeader.Version = VersionNumber
             if len(VersionString) > 0:
                 if len(VersionNumber) > 0:
                     EdkLogger.warn(2001, 'INF file %s defines both VERSION_NUMBER and VERSION_STRING, using VERSION_STRING' % self.Identification.FileFullPath)
-                self.Module.Header.Version = VersionString
+                ModuleHeader.Version = VersionString
         else:
             # R8 inf
-            self.Module.Header.InfVersion = "0x00010000"
-            VersionNumber = self.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION][0]
-            VersionString = self.Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_STRING][0]
+            ModuleHeader.InfVersion = "0x00010000"
+            VersionNumber = Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION][0]
+            VersionString = Defines.DefinesDictionary[TAB_INF_DEFINES_VERSION_STRING][0]
             if VersionString == '' and VersionNumber != '':
                 VersionString = VersionNumber
-            if self.Module.Header.ComponentType in gComponentType2ModuleType:
-                self.Module.Header.ModuleType = gComponentType2ModuleType[self.Module.Header.ComponentType]
-            else:
-                EdkLogger.error("Parser", PARSER_ERROR, "Unsupported R8 component type [%s]" % self.Module.Header.ComponentType,
+            if ModuleHeader.ComponentType in gComponentType2ModuleType:
+                ModuleHeader.ModuleType = gComponentType2ModuleType[ModuleHeader.ComponentType]
+            elif ModuleHeader.ComponentType != '':
+                EdkLogger.error("Parser", PARSER_ERROR, "Unsupported R8 component type [%s]" % ModuleHeader.ComponentType,
                                 ExtraData=File)
         #
         # LibraryClass of Defines
         #
-        if self.Defines.DefinesDictionary[TAB_INF_DEFINES_LIBRARY_CLASS][0] != '':
-            for Item in self.Defines.DefinesDictionary[TAB_INF_DEFINES_LIBRARY_CLASS]:
+        if Defines.DefinesDictionary[TAB_INF_DEFINES_LIBRARY_CLASS][0] != '':
+            for Item in Defines.DefinesDictionary[TAB_INF_DEFINES_LIBRARY_CLASS]:
                 List = GetSplitValueList(Item, DataType.TAB_VALUE_SPLIT, 1)
                 Lib = LibraryClassClass()
                 Lib.LibraryClass = CleanString(List[0])
@@ -303,34 +336,34 @@ class Inf(InfObject):
                     Lib.SupModuleList = DataType.SUP_MODULE_LIST
                 elif len(List) == 2:
                     Lib.SupModuleList = GetSplitValueList(CleanString(List[1]), ' ')
-                self.Module.Header.LibraryClass.append(Lib)
-        elif self.Module.Header.ComponentType == "LIBRARY":
+                ModuleHeader.LibraryClass.append(Lib)
+        elif ModuleHeader.ComponentType == "LIBRARY":
             Lib = LibraryClassClass()
-            Lib.LibraryClass = self.Module.Header.Name
+            Lib.LibraryClass = ModuleHeader.Name
             Lib.SupModuleList = DataType.SUP_MODULE_LIST
-            self.Module.Header.LibraryClass.append(Lib)
+            ModuleHeader.LibraryClass.append(Lib)
         
         #
         # Custom makefile of Defines
         #
-        if self.Defines.DefinesDictionary[TAB_INF_DEFINES_CUSTOM_MAKEFILE][0] != '':
-            for Item in self.Defines.DefinesDictionary[TAB_INF_DEFINES_CUSTOM_MAKEFILE]:
+        if Defines.DefinesDictionary[TAB_INF_DEFINES_CUSTOM_MAKEFILE][0] != '':
+            for Item in Defines.DefinesDictionary[TAB_INF_DEFINES_CUSTOM_MAKEFILE]:
                 List = Item.split(DataType.TAB_VALUE_SPLIT)
                 if len(List) == 2:
-                    self.Module.Header.CustomMakefile[CleanString(List[0])] = CleanString(List[1])
+                    ModuleHeader.CustomMakefile[CleanString(List[0])] = CleanString(List[1])
                 else:
                     RaiseParserError(Item, 'CUSTOM_MAKEFILE of Defines', File, 'CUSTOM_MAKEFILE=<Family>|<Filename>')
         
         #
         # EntryPoint and UnloadImage of Defines
         #
-        if self.Defines.DefinesDictionary[TAB_INF_DEFINES_ENTRY_POINT][0] != '':
-            for Item in self.Defines.DefinesDictionary[TAB_INF_DEFINES_ENTRY_POINT]:
+        if Defines.DefinesDictionary[TAB_INF_DEFINES_ENTRY_POINT][0] != '':
+            for Item in Defines.DefinesDictionary[TAB_INF_DEFINES_ENTRY_POINT]:
                 Image = ModuleExternImageClass()
                 Image.ModuleEntryPoint = CleanString(Item)
                 self.Module.ExternImages.append(Image)
-        if self.Defines.DefinesDictionary[TAB_INF_DEFINES_UNLOAD_IMAGE][0] != '':
-            for Item in self.Defines.DefinesDictionary[TAB_INF_DEFINES_UNLOAD_IMAGE]:
+        if Defines.DefinesDictionary[TAB_INF_DEFINES_UNLOAD_IMAGE][0] != '':
+            for Item in Defines.DefinesDictionary[TAB_INF_DEFINES_UNLOAD_IMAGE]:
                 Image = ModuleExternImageClass()
                 Image.ModuleUnloadImage = CleanString(Item)
                 self.Module.ExternImages.append(Image)
@@ -338,13 +371,13 @@ class Inf(InfObject):
         #
         # Constructor and Destructor of Defines
         #
-        if self.Defines.DefinesDictionary[TAB_INF_DEFINES_CONSTRUCTOR][0] != '':
-            for Item in self.Defines.DefinesDictionary[TAB_INF_DEFINES_CONSTRUCTOR]:
+        if Defines.DefinesDictionary[TAB_INF_DEFINES_CONSTRUCTOR][0] != '':
+            for Item in Defines.DefinesDictionary[TAB_INF_DEFINES_CONSTRUCTOR]:
                 LibraryClass = ModuleExternLibraryClass()
                 LibraryClass.Constructor = CleanString(Item)
                 self.Module.ExternLibraries.append(LibraryClass)
-        if self.Defines.DefinesDictionary[TAB_INF_DEFINES_DESTRUCTOR][0] != '':
-            for Item in self.Defines.DefinesDictionary[TAB_INF_DEFINES_DESTRUCTOR]:
+        if Defines.DefinesDictionary[TAB_INF_DEFINES_DESTRUCTOR][0] != '':
+            for Item in Defines.DefinesDictionary[TAB_INF_DEFINES_DESTRUCTOR]:
                 LibraryClass = ModuleExternLibraryClass()
                 LibraryClass.Destructor = CleanString(Item)
                 self.Module.ExternLibraries.append(LibraryClass)
@@ -352,25 +385,36 @@ class Inf(InfObject):
         #
         # Define of Defines
         #
-        if self.Defines.DefinesDictionary[TAB_INF_DEFINES_DEFINE][0] != '':
-            for Item in self.Defines.DefinesDictionary[TAB_INF_DEFINES_DEFINE]:
+        if Defines.DefinesDictionary[TAB_INF_DEFINES_DEFINE][0] != '':
+            for Item in Defines.DefinesDictionary[TAB_INF_DEFINES_DEFINE]:
                 List = Item.split(DataType.TAB_EQUAL_SPLIT)
                 if len(List) != 2:
                     RaiseParserError(Item, 'DEFINE of Defines', File, 'DEFINE <Word> = <Word>')
                 else:
-                    self.Module.Header.Define[CleanString(List[0])] = CleanString(List[1])
+                    ModuleHeader.Define[CleanString(List[0])] = CleanString(List[1])
         
         #
         # Spec
         #
-        if self.Defines.DefinesDictionary[TAB_INF_DEFINES_SPEC][0] != '':
-            for Item in self.Defines.DefinesDictionary[TAB_INF_DEFINES_SPEC]:
+        if Defines.DefinesDictionary[TAB_INF_DEFINES_SPEC][0] != '':
+            for Item in Defines.DefinesDictionary[TAB_INF_DEFINES_SPEC]:
                 List = Item.split(DataType.TAB_EQUAL_SPLIT)
                 if len(List) != 2:
                     RaiseParserError(Item, 'SPEC of Defines', File, 'SPEC <Word> = <Version>')
                 else:
-                    self.Module.Header.Specification[CleanString(List[0])] = CleanString(List[1])
+                    ModuleHeader.Specification[CleanString(List[0])] = CleanString(List[1])
                 
+
+    ## Transfer to Module Object
+    # 
+    # Transfer all contents of an Inf file to a standard Module Object
+    #
+    def InfToModule(self):
+        File = self.Identification.FileFullPath
+        for Arch in DataType.ARCH_LIST:
+            ModuleHeader = ModuleHeaderClass()
+            self.DefinesToModuleHeader(self.Defines[Arch], ModuleHeader, Arch)
+            self.Module.Header[Arch] = ModuleHeader
         #
         # BuildOptions
         # [<Family>:]<ToolFlag>=Flag
@@ -387,13 +431,13 @@ class Inf(InfObject):
         #
         # Includes
         #
-        Includes = {}
+        Includes = sdict()
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].Includes:
                 MergeArches(Includes, Item, Arch)
         for Key in Includes.keys():
             Include = IncludeClass()
-            Include.FilePath = NormPath(Key)
+            Include.FilePath = NormPath(Key, self._Macro)
             Include.SupArchList = Includes[Key]
             self.Module.Includes.append(Include)
         
@@ -406,7 +450,7 @@ class Inf(InfObject):
                 MergeArches(Libraries, Item, Arch)
         for Key in Libraries.keys():
             Library = ModuleLibraryClass()
-            Library.Library = Key
+            Library.Library = ReplaceMacro(Key, self._Macro)
             Library.SupArchList = Libraries[Key]
             self.Module.Libraries.append(Library)
         
@@ -437,8 +481,8 @@ class Inf(InfObject):
                     # { (LibraryClass, Instance, PcdFeatureFlag, ModuleType1|ModuleType2|ModuleType3) : [Arch1, Arch2, ...] }
                     #
                     ItemList = GetSplitValueList((Item[0] + DataType.TAB_VALUE_SPLIT * 2))
-                    CheckFileType(ItemList[1], '.Inf', self.Module.Header.FullPath, 'LibraryClasses', Item[0])
-                    CheckFileExist(self.WorkspaceDir, ItemList[1], self.Module.Header.FullPath, 'LibraryClasses', Item[0])
+                    CheckFileType(ItemList[1], '.Inf', File, 'LibraryClasses', Item[0])
+                    CheckFileExist(self.WorkspaceDir, ItemList[1], File, 'LibraryClasses', Item[0])
                     CheckPcdTokenInfo(ItemList[2], 'LibraryClasses', File)
                     MergeArches(LibraryClasses, (ItemList[0], ItemList[1], ItemList[2], DataType.TAB_VALUE_SPLIT.join(Item[1])), Arch)
         for Key in LibraryClasses.keys():
@@ -446,7 +490,7 @@ class Inf(InfObject):
             LibraryClass = LibraryClassClass()
             LibraryClass.Define = Defines
             LibraryClass.LibraryClass = Key[0]
-            LibraryClass.RecommendedInstance = NormPath(Key[1])
+            LibraryClass.RecommendedInstance = NormPath(Key[1], self._Macro)
             LibraryClass.FeatureFlag = Key[2]
             LibraryClass.SupArchList = LibraryClasses[Key]
             if Key[3] != '':
@@ -477,20 +521,20 @@ class Inf(InfObject):
                 # Not find DEFINE statement
                 #
                 elif Status == 1:
-                    CheckFileType(Item, '.Dec', self.Module.Header.FullPath, 'package', Item)
-                    CheckFileExist(self.WorkspaceDir, Item, self.Module.Header.FullPath, 'Packages', Item)
+                    CheckFileType(Item, '.Dec', File, 'package', Item)
+                    CheckFileExist(self.WorkspaceDir, Item, File, 'Packages', Item)
                     MergeArches(Packages, Item, Arch)
         for Key in Packages.keys():
             Package = ModulePackageDependencyClass()
             Package.Define = Defines
-            Package.FilePath = NormPath(Key)
+            Package.FilePath = NormPath(Key, self._Macro)
             Package.SupArchList = Packages[Key]
             self.Module.PackageDependencies.append(Package)
             
         #
         # Nmake
         #
-        Nmakes = {}
+        Nmakes = sdict()
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].Nmake:
                 MergeArches(Nmakes, Item, Arch)
@@ -510,7 +554,7 @@ class Inf(InfObject):
                 Image.ModuleEntryPoint = Nmake.Value
                 self.Module.ExternImages.append(Image)
             elif Nmake.Name == "DPX_SOURCE":
-                Source = ModuleSourceFileClass(NormPath(Nmake.Value), "", "", "", "", Nmake.SupArchList)
+                Source = ModuleSourceFileClass(NormPath(Nmake.Value, self._Macro), "", "", "", "", Nmake.SupArchList)
                 self.Module.Sources.append(Source)
             else:
                 ToolList = gNmakeFlagPattern.findall(Nmake.Name)
@@ -536,7 +580,7 @@ class Inf(InfObject):
                 #
                 # Library should not have FixedPcd
                 #
-                if self.Module.Header.LibraryClass != {}:
+                if self.Module.Header[Arch].LibraryClass != {}:
                     pass
                 MergeArches(Pcds, self.GetPcdOfInf(Item, TAB_PCDS_FIXED_AT_BUILD, File), Arch)
             
@@ -576,11 +620,12 @@ class Inf(InfObject):
                 List = GetSplitValueList(ItemNew)
                 if len(List) < 5 or len(List) > 9:
                     RaiseParserError(Item, 'Sources', File, '<Filename>[|<Family>[|<TagName>[|<ToolCode>[|<PcdFeatureFlag>]]]]')
+                List[0] = NormPath(List[0], self._Macro)
                 CheckFileExist(self.Identification.FileRelativePath, List[0], File, 'Sources', Item)
                 CheckPcdTokenInfo(List[4], 'Sources', File)
                 MergeArches(Sources, (List[0], List[1], List[2], List[3], List[4]), Arch)
         for Key in Sources.keys():
-            Source = ModuleSourceFileClass(NormPath(Key[0]), Key[2], Key[3], Key[1], Key[4], Sources[Key])
+            Source = ModuleSourceFileClass(Key[0], Key[2], Key[3], Key[1], Key[4], Sources[Key])
             self.Module.Sources.append(Source)
 
         #
@@ -685,7 +730,7 @@ class Inf(InfObject):
                     CheckPcdTokenInfo(List[3], 'Binaries', File)
                     MergeArches(Binaries, (List[0], List[1], List[2], List[3]), Arch)
         for Key in Binaries.keys():
-            Binary = ModuleBinaryFileClass(NormPath(Key[1]), Key[0], Key[2], Key[3], Binaries[Key])
+            Binary = ModuleBinaryFileClass(NormPath(Key[1], self._Macro), Key[0], Key[2], Key[3], Binaries[Key])
             self.Module.Binaries.append(Binary)
         
     ## Get Pcd Values of Inf
@@ -725,6 +770,28 @@ class Inf(InfObject):
 
         return (TokenInfo[0], TokenInfo[1], List[1], Type)
 
+    ## Parse [Defines] section
+    #
+    # Parse [Defines] section into InfDefines object
+    #
+    # @param InfFile    The path of the INF file
+    # @param Section    The title of "Defines" section
+    # @param Lines      The content of "Defines" section
+    #
+    def ParseDefines(self, InfFile, Section, Lines):
+        TokenList = Section.split(TAB_SPLIT)
+        if len(TokenList) == 3:
+            RaiseParserError(Section, "Defines", InfFile, "[xx.yy.%s] format (with platform) is not supported")
+        if len(TokenList) == 2:
+            Arch = TokenList[1].upper()
+        else:
+            Arch = TAB_ARCH_COMMON.upper()
+
+        if Arch not in self.Defines:
+            self.Defines[Arch] = InfDefines()
+        GetSingleValueOfKeyFromLines(Lines, self.Defines[Arch].DefinesDictionary, 
+                                     TAB_COMMENT_SPLIT, TAB_EQUAL_SPLIT, False, None)
+
     ## Load Inf file
     #
     # Load the file if it exists
@@ -742,9 +809,10 @@ class Inf(InfObject):
         Sects = F.split(DataType.TAB_SECTION_START)
         for Sect in Sects:
             TabList = GetSplitValueList(Sect.split(TAB_SECTION_END, 1)[0], DataType.TAB_COMMA_SPLIT)
-            for Tab in TabList:            
-                if Tab.upper() == TAB_INF_DEFINES.upper():
-                    GetSingleValueOfKeyFromLines(Sect, self.Defines.DefinesDictionary, TAB_COMMENT_SPLIT, TAB_EQUAL_SPLIT, False, None)
+            for Tab in TabList:
+                if Tab.upper().find(TAB_INF_DEFINES.upper()) > -1:
+                    self.ParseDefines(Filename, Tab, Sect)
+                    # GetSingleValueOfKeyFromLines(Sect, self.Defines.DefinesDictionary, TAB_COMMENT_SPLIT, TAB_EQUAL_SPLIT, False, None)
                     continue
                 if Tab.upper().find(DataType.TAB_USER_EXTENSIONS.upper()) > -1:
                     self.UserExtensions = Sect

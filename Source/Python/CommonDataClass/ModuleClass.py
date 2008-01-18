@@ -75,6 +75,7 @@ class ModuleHeaderClass(IdentificationClass, CommonHeaderClass, DefineClass):
         self.SourceFv = ''
         self.CustomMakefile = {}
         self.Shadow = ''
+        self.MacroDefines = {}
 
 ## ModuleSourceFileClass
 #
@@ -413,7 +414,7 @@ class ModuleNmakeClass(CommonClass):
 #
 class ModuleClass(object):
     def __init__(self):
-        self.Header = ModuleHeaderClass()
+        self.Header = {}            # {ARCH: ModuleHeaderClass()}
         self.LibraryClasses = []
         self.Libraries = []
         self.Sources = []

@@ -24,6 +24,7 @@ from CommonDataClass.PlatformClass import *
 from CommonDataClass.CommonClass import SkuInfoClass
 from BuildToolError import *
 from Misc import sdict
+import GlobalData
 
 ## DscObject
 #
@@ -62,7 +63,8 @@ class DscDefines(DscObject):
             TAB_DSC_DEFINES_MAKEFILE_NAME                         : [''],
             TAB_DSC_DEFINES_BS_BASE_ADDRESS                       : [''],
             TAB_DSC_DEFINES_RT_BASE_ADDRESS                       : [''],
-            TAB_DSC_DEFINES_DEFINE                                : ['']
+            TAB_DSC_DEFINES_DEFINE                                : [''],
+            TAB_INF_DEFINES_MACRO                                 : {}
         }
 
 ## DscSkuId
@@ -151,6 +153,7 @@ class Dsc(DscObject):
         self.UserExtensions = ''
         self.Platform = PlatformClass()
         self.WorkspaceDir = WorkspaceDir
+        self._Macro = {}    # for inf file local replacement
 
         for Arch in DataType.ARCH_LIST_FULL:
             self.Contents[Arch] = DscContents()
@@ -248,6 +251,9 @@ class Dsc(DscObject):
                                 eval(Command)
                                 continue
 
+        self._Macro = self.Defines.DefinesDictionary[TAB_INF_DEFINES_MACRO]
+        self._Macro.update(GlobalData.gGlobalDefines)
+
     ## Transfer to Platform Object
     # 
     # Transfer all contents of an Inf file to a standard Module Object
@@ -267,7 +273,7 @@ class Dsc(DscObject):
         self.Platform.Header.SkuIdName = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_SKUID_IDENTIFIER]
         self.Platform.Header.SupArchList = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_SUPPORTED_ARCHITECTURES]
         self.Platform.Header.BuildTargets = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_BUILD_TARGETS]
-        self.Platform.Header.OutputDirectory = NormPath(self.Defines.DefinesDictionary[TAB_DSC_DEFINES_OUTPUT_DIRECTORY][0])
+        self.Platform.Header.OutputDirectory = NormPath(self.Defines.DefinesDictionary[TAB_DSC_DEFINES_OUTPUT_DIRECTORY][0], self._Macro)
         self.Platform.Header.BuildNumber = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_BUILD_NUMBER][0]
         self.Platform.Header.MakefileName = self.Defines.DefinesDictionary[TAB_DSC_DEFINES_MAKEFILE_NAME][0]
 
@@ -286,7 +292,7 @@ class Dsc(DscObject):
                     self.Platform.Header.Define[CleanString(List[0])] = CleanString(List[1])
 
         Fdf = PlatformFlashDefinitionFileClass()
-        Fdf.FilePath = NormPath(self.Defines.DefinesDictionary[TAB_DSC_DEFINES_FLASH_DEFINITION][0])
+        Fdf.FilePath = NormPath(self.Defines.DefinesDictionary[TAB_DSC_DEFINES_FLASH_DEFINITION][0], self._Macro)
         self.Platform.FlashDefinitionFile = Fdf
 
         #
@@ -370,7 +376,7 @@ class Dsc(DscObject):
         self.Platform.Libraries.IncludeFiles = IncludeFiles
         for Key in Libraries.keys():
             Library = PlatformLibraryClass()
-            Library.FilePath = NormPath(Key)
+            Library.FilePath = NormPath(Key, self._Macro)
             Library.Define = Defines
             Library.SupArchList = Libraries[Key]
             self.Platform.Libraries.LibraryList.append(Library)
@@ -411,7 +417,7 @@ class Dsc(DscObject):
         for Key in LibraryClasses.keys():
             Library = PlatformLibraryClass()
             Library.Name = Key[0]
-            Library.FilePath = NormPath(Key[1])
+            Library.FilePath = NormPath(Key[1], self._Macro)
             Library.SupModuleList = list(Key[2:])
             Library.Define = Defines
             Library.SupArchList = LibraryClasses[Key]
@@ -502,25 +508,25 @@ class Dsc(DscObject):
     #
     def GenComponent(self, Item, ContainerFile):
         (InfFilename, ExecFilename) = GetExec(Item[0])
-        CheckFileType(InfFilename, '.Inf', ContainerFile, 'component name', Item[0])
-        CheckFileExist(self.WorkspaceDir, InfFilename, ContainerFile, 'component', Item[0])
         LibraryClasses = Item[1]
         BuildOptions = Item[2]
         Pcds = Item[3]
         Component = PlatformModuleClass()
-        Component.FilePath = NormPath(InfFilename)
-        Component.ExecFilePath = NormPath(ExecFilename)
+        Component.FilePath = NormPath(InfFilename, self._Macro)
+        Component.ExecFilePath = NormPath(ExecFilename, self._Macro)
+        CheckFileType(Component.FilePath, '.Inf', ContainerFile, 'component name', Item[0])
+        CheckFileExist(self.WorkspaceDir, Component.FilePath, ContainerFile, 'component', Item[0])
         for Lib in LibraryClasses:
             List = GetSplitValueList(Lib)
             if len(List) != 2:
                 RaiseParserError(Lib, 'LibraryClasses', ContainerFile, '<ClassName>|<InfFilename>')
             LibName = List[0]
-            LibFile = NormPath(List[1])
+            LibFile = NormPath(List[1], self._Macro)
             if LibName == "" or LibName == "NULL":
                 LibName = "NULL%d" % self._NullClassIndex
                 self._NullClassIndex += 1
             CheckFileType(List[1], '.Inf', ContainerFile, 'library instance of component ', Lib)
-            CheckFileExist(self.WorkspaceDir, List[1], ContainerFile, 'library instance of component', Lib)
+            CheckFileExist(self.WorkspaceDir, LibFile, ContainerFile, 'library instance of component', Lib)
             Component.LibraryClasses.LibraryList.append(PlatformLibraryClass(LibName, LibFile))
         for BuildOption in BuildOptions:
             Key = GetBuildOption(BuildOption, ContainerFile)

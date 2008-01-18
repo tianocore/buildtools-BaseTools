@@ -18,6 +18,7 @@ import os
 import EdkLogger
 import DataType
 from BuildToolError import *
+import GlobalData
 
 ## TargetTxtClassObject
 #
@@ -75,19 +76,27 @@ class TargetTxtClassObject(object):
         try:
             F = open(FileName,'r')
             for Line in F:
-                if Line.startswith(CommentCharacter) or Line.strip() == '':
+                Line = Line.strip()
+                if Line.startswith(CommentCharacter) or Line == '':
                     continue
-                LineList = Line.split(KeySplitCharacter,1)
-                if len(LineList) >= 2:
-                    Key = LineList[0].strip()
-                    if Key.startswith(CommentCharacter) == False and Key in self.TargetTxtDictionary.keys():
-                        if Key == DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM or Key == DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF \
-                          or Key == DataType.TAB_TAT_DEFINES_MULTIPLE_THREAD or Key == DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER \
-                          or Key == DataType.TAB_TAT_DEFINES_ACTIVE_MODULE:
-                            self.TargetTxtDictionary[Key] = LineList[1].replace('\\', '/').strip()
-                        elif Key == DataType.TAB_TAT_DEFINES_TARGET or Key == DataType.TAB_TAT_DEFINES_TARGET_ARCH \
-                          or Key == DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG:
-                            self.TargetTxtDictionary[Key] = LineList[1].split()
+
+                LineList = Line.split(KeySplitCharacter, 1)
+                Key = LineList[0].strip()
+                if len(LineList) == 2:
+                    Value = LineList[1].strip()
+                else:
+                    Value = ""
+
+                if Key == DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM or Key == DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF \
+                  or Key == DataType.TAB_TAT_DEFINES_MULTIPLE_THREAD or Key == DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER \
+                  or Key == DataType.TAB_TAT_DEFINES_ACTIVE_MODULE:
+                    self.TargetTxtDictionary[Key] = Value.replace('\\', '/')
+                elif Key == DataType.TAB_TAT_DEFINES_TARGET or Key == DataType.TAB_TAT_DEFINES_TARGET_ARCH \
+                  or Key == DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG:
+                    self.TargetTxtDictionary[Key] = Value.split()
+                elif Key not in GlobalData.gGlobalDefines:
+                    GlobalData.gGlobalDefines[Key] = Value
+
             F.close()
             return 0
         except:

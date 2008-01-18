@@ -51,6 +51,7 @@ def main():
     Workspace = ""
     ArchList = None
     try:
+        EdkLogger.Initialize()
         if Options.verbose != None:
             EdkLogger.SetLevel(EdkLogger.VERBOSE)
             GenFdsGlobalVariable.VerboseMode = True
