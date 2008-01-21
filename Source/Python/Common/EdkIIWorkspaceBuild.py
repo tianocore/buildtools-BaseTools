@@ -521,7 +521,6 @@ class WorkspaceBuild(object):
     def GenPlatformDatabase(self, PcdsSet={}):
         for Dsc in self.DscDatabase.keys():
             Platform = self.DscDatabase[Dsc].Platform
-
             for Arch in self.SupArchList:
                 Pb = PlatformBuildClassObject()
 
@@ -570,9 +569,9 @@ class WorkspaceBuild(object):
                 # Libraries
                 # 
                 for Item in Platform.Libraries.LibraryList:
-                    for Arch in Item.SupArchList:
+                    for ItemArch in Item.SupArchList:
                         Library = self.InfDatabase[Item.FilePath]
-                        Pb.Libraries[Library.Module.Header[Arch].Name] = Item.FilePath
+                        Pb.Libraries[Library.Module.Header[ItemArch].Name] = Item.FilePath
                 
                 #
                 # Pcds
@@ -916,9 +915,9 @@ class WorkspaceBuild(object):
                 M = LibraryConsumerList.pop()
                 for LibraryName in M.Libraries:
                     if LibraryName not in Platform.Libraries:
-                        EdkLogger.error("AutoGen", AUTOGEN_ERROR,
-                                        "Library instance for library class [%s] is not found" % LibraryName,
+                        EdkLogger.warn("AutoGen", "Library [%s] is not found" % LibraryName,
                                         ExtraData="\t%s [%s]" % (str(Module), Arch))
+                        continue
     
                     LibraryFile = Platform.Libraries[LibraryName]
                     if (LibraryName, ModuleType) not in Module.LibraryClasses:
@@ -986,6 +985,11 @@ class WorkspaceBuild(object):
             # check if there're duplicate library classes
             #
             for Lc in M.LibraryClass:
+                if Lc.SupModList != None and ModuleType not in Lc.SupModList:
+                    EdkLogger.error("AutoGen", AUTOGEN_ERROR,
+                                    "Module type [%s] is not supported by library instance [%s]" % (ModuleType, str(M)),
+                                    ExtraData="\t%s" % str(Module))
+
                 if Lc.LibraryClass in LibraryInstance and str(M) != str(LibraryInstance[Lc.LibraryClass]):
                     EdkLogger.error("AutoGen", AUTOGEN_ERROR,
                                     "More than one library instance found for library class [%s] in module [%s]" % (Lc.LibraryClass, Module),
@@ -1186,7 +1190,7 @@ class WorkspaceBuild(object):
         if NotFound:
             NewLib = LibraryClassClass()
             NewLib.LibraryClass = LibraryClass
-            NewLib.SupModuleList = LibraryModule.Header[Arch].ModuleType.split()
+            NewLib.SupModuleList = DataType.SUP_MODULE_LIST # LibraryModule.Header[Arch].ModuleType.split()
             LibraryModule.Header[Arch].LibraryClass.append(NewLib)
 
         #
