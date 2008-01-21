@@ -28,7 +28,7 @@ VariableDeclarationList = []
 EnumerationDefinitionList = []
 StructUnionDefinitionList = []
 TypedefDefinitionList = []
-
+FunctionCallingList = []
 
 ## record file data when parsing source
 #

@@ -379,14 +379,26 @@ class CodeFragmentCollector:
         parser = CParser(tStream)
         parser.translation_unit()
         
+    def CleanFileProfileBuffer(self):
+        FileProfile.CommentList = []
+        FileProfile.PPDirectiveList = []
+        FileProfile.PredicateExpressionList = []
+        FileProfile.FunctionDefinitionList = []
+        FileProfile.VariableDeclarationList = []
+        FileProfile.EnumerationDefinitionList = []
+        FileProfile.StructUnionDefinitionList = []
+        FileProfile.TypedefDefinitionList = []
+        FileProfile.FunctionCallingList = []
+        
     def PrintFragments(self):
-        print '/****************************************/'
-        print '/*************** COMMENTS ***************/'
-        print '/****************************************/'
-        for comment in FileProfile.CommentList:
-            print str(comment.StartPos) + comment.Content
         
         print '################# ' + self.FileName + '#####################'
+        
+#        print '/****************************************/'
+#        print '/*************** COMMENTS ***************/'
+#        print '/****************************************/'
+#        for comment in FileProfile.CommentList:
+#            print str(comment.StartPos) + comment.Content
         
         print '/****************************************/'
         print '/********* PREPROCESS DIRECTIVES ********/'

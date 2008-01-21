@@ -73,12 +73,14 @@ class FunctionDefinition :
     #   @param  Str         The message to record
     #   @param  Begin       The start position tuple.
     #   @param  End         The end position tuple.
+    #   @param  LBPos       The left brace position tuple.
     #
-    def __init__(self, ModifierStr, DeclStr, Begin, End):
+    def __init__(self, ModifierStr, DeclStr, Begin, End, LBPos):
         self.Modifier = ModifierStr
         self.Declarator = DeclStr
         self.StartPos = Begin
         self.EndPos = End
+        self.LeftBracePos = LBPos 
 
 ## The description of variable declaration and start & end position
 #
@@ -146,4 +148,17 @@ class TypedefDefinition :
         self.StartPos = Begin
         self.EndPos = End
         
+class FunctionCalling:
+    ## The constructor
+    #
+    #   @param  self        The object pointer
+    #   @param  Str         The message to record
+    #   @param  Begin       The start position tuple.
+    #   @param  End         The end position tuple.
+    #
+    def __init__(self, Name, Param, Begin, End):
+        self.FuncName = Name
+        self.ParamList = Param
+        self.StartPos = Begin
+        self.EndPos = End        
         

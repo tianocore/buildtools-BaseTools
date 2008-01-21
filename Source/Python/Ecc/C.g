@@ -33,13 +33,17 @@ options {
     	Tdef = CodeFragment.TypedefDefinition(FromText, ToText, (StartLine, StartOffset), (EndLine, EndOffset))
     	FileProfile.TypedefDefinitionList.append(Tdef)
     
-    def StoreFunctionDefinition(self, StartLine, StartOffset, EndLine, EndOffset, ModifierText, DeclText):
-    	FuncDef = CodeFragment.FunctionDefinition(ModifierText, DeclText, (StartLine, StartOffset), (EndLine, EndOffset))
+    def StoreFunctionDefinition(self, StartLine, StartOffset, EndLine, EndOffset, ModifierText, DeclText, LeftBraceLine, LeftBraceOffset):
+    	FuncDef = CodeFragment.FunctionDefinition(ModifierText, DeclText, (StartLine, StartOffset), (EndLine, EndOffset), (LeftBraceLine, LeftBraceOffset))
     	FileProfile.FunctionDefinitionList.append(FuncDef)
     	
     def StoreVariableDeclaration(self, StartLine, StartOffset, EndLine, EndOffset, ModifierText, DeclText):
     	VarDecl = CodeFragment.VariableDeclaration(ModifierText, DeclText, (StartLine, StartOffset), (EndLine, EndOffset))
     	FileProfile.VariableDeclarationList.append(VarDecl)
+    
+    def StoreFunctionCalling(self, StartLine, StartOffset, EndLine, EndOffset, FuncName, ParamList):
+    	FuncCall = CodeFragment.FunctionCalling(FuncName, ParamList, (StartLine, StartOffset), (EndLine, EndOffset))
+    	FileProfile.FunctionCallingList.append(FuncCall)
 
 }
 
@@ -71,19 +75,30 @@ function_definition
 scope {
   ModifierText;
   DeclText;
+  LBLine;
+  LBOffset;
 }
 @init {
   $function_definition::ModifierText = '';
   $function_definition::DeclText = '';
+  $function_definition::LBLine = 0;
+  $function_definition::LBOffset = 0;
 }
 @after{
-  self.StoreFunctionDefinition($function_definition.start.line, $function_definition.start.charPositionInLine, $function_definition.stop.line, $function_definition.stop.charPositionInLine, $function_definition::ModifierText, $function_definition::DeclText)
+  self.StoreFunctionDefinition($function_definition.start.line, $function_definition.start.charPositionInLine, $function_definition.stop.line, $function_definition.stop.charPositionInLine, $function_definition::ModifierText, $function_definition::DeclText, $function_definition::LBLine, $function_definition::LBOffset)
 }
 	:	declaration_specifiers? declarator
-		(	declaration+ compound_statement	// K&R style
-		|	compound_statement				// ANSI style
+		(	declaration+ a=compound_statement	// K&R style
+		|	b=compound_statement				// ANSI style
 		) { $function_definition::ModifierText = $declaration_specifiers.text
-		    $function_definition::DeclText = $declarator.text}
+		    $function_definition::DeclText = $declarator.text
+		    if a != None:
+		      $function_definition::LBLine = $a.start.line
+		      $function_definition::LBOffset = $a.start.charPositionInLine
+		    else:
+		      $function_definition::LBLine = $b.start.line
+		      $function_definition::LBOffset = $b.start.charPositionInLine
+		  }
 	;
 
 declaration
@@ -298,8 +313,8 @@ unary_expression
 postfix_expression
 	:   p=primary_expression
         (   '[' expression ']'
-        |   '(' ')'//{self.printTokenInfo($p.start.line, $p.start.charPositionInLine, $p.text)}
-        |   a='(' c=argument_expression_list b=')' //{self.printTokenInfo($p.start.line, $p.start.charPositionInLine, $p.text)}
+        |   '(' a=')'{self.StoreFunctionCalling($p.start.line, $p.start.charPositionInLine, $a.line, $a.charPositionInLine, $p.text, '')}
+        |   '(' c=argument_expression_list b=')' {self.StoreFunctionCalling($p.start.line, $p.start.charPositionInLine, $b.line, $b.charPositionInLine, $p.text, $c.text)}
         |   '.' IDENTIFIER
         |   '*' IDENTIFIER
         |   '->' IDENTIFIER
