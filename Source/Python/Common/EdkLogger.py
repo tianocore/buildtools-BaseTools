@@ -38,12 +38,15 @@ _LogLevels = [DEBUG_0, DEBUG_1, DEBUG_2, DEBUG_3, DEBUG_4, DEBUG_5, DEBUG_6, DEB
 
 # For DEBUG level (All DEBUG_0~9 are applicable)
 _DebugLogger = logging.getLogger("tool_debug")
+_DebugFormatter = logging.Formatter("[%(asctime)s.%(msecs)d]: %(message)s", datefmt="%H:%M:%S")
 
 # For VERBOSE, INFO, WARN level
 _InfoLogger = logging.getLogger("tool_info")
+_InfoFormatter = logging.Formatter("%(message)s")
 
 # For ERROR level
 _ErrorLogger = logging.getLogger("tool_error")
+_ErrorFormatter = logging.Formatter("%(message)s")
 
 # String templates for ERROR/WARN/DEBUG log message
 _ErrorMessageTemplate = '\n%(tool)s...\n%(file)s(%(line)s): error %(errorcode)X: %(msg)s\n    %(extra)s'
@@ -205,21 +208,18 @@ def Initialize():
     # For DEBUG level (All DEBUG_0~9 are applicable)
     _DebugLogger.setLevel(INFO)
     _DebugChannel = logging.StreamHandler(sys.stdout)
-    _DebugFormatter = logging.Formatter("[%(asctime)s.%(msecs)d]: %(message)s", datefmt="%H:%M:%S")
     _DebugChannel.setFormatter(_DebugFormatter)
     _DebugLogger.addHandler(_DebugChannel)
     
     # For VERBOSE, INFO, WARN level
     _InfoLogger.setLevel(INFO)
     _InfoChannel = logging.StreamHandler(sys.stdout)
-    _InfoFormatter = logging.Formatter("%(message)s")
     _InfoChannel.setFormatter(_InfoFormatter)
     _InfoLogger.addHandler(_InfoChannel)
     
     # For ERROR level
     _ErrorLogger.setLevel(INFO)
     _ErrorCh = logging.StreamHandler(sys.stderr)
-    _ErrorFormatter = logging.Formatter("%(message)s")
     _ErrorCh.setFormatter(_ErrorFormatter)
     _ErrorLogger.addHandler(_ErrorCh)
     
