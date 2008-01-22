@@ -271,16 +271,13 @@ def CreateCFileContent(BaseName, UniObjectClass):
     for IndexI in range(len(UniObjectClass.LanguageDef)):
         Language = UniObjectClass.LanguageDef[IndexI][0]
         LangPrintName = UniObjectClass.LanguageDef[IndexI][1]
-        print len(UniObjectClass.OrderedStringList[UniObjectClass.LanguageDef[IndexI][0]])
         
         StrStringValue = ''
         ArrayLength = 0
         NumberOfUseOhterLangDef = 0
         Index = 0
         for IndexJ in range(1, len(UniObjectClass.OrderedStringList[UniObjectClass.LanguageDef[IndexI][0]])):
-            print IndexJ
             Item = UniObjectClass.FindByToken(IndexJ, Language)
-            print Item
             #Item = UniObjectClass.OrderedStringList[UniObjectClass.LanguageDef[IndexI][0]][IndexJ]
         #for Item in UniObjectClass.OrderedStringList[Language]:
             Name = Item.StringName
