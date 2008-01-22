@@ -64,6 +64,7 @@ class TableFile(Table):
     # @param TimeStamp: TimeStamp of a File
     #
     def Insert(self, ID, Name, ExtName, Path, FullPath, Model, TimeStamp):
+        ID = self.GenerateID(ID)
         SqlCommand = """insert into %s values(%s, '%s', '%s', '%s', '%s', %s, '%s')""" \
                                            % (self.Table, ID, Name, ExtName, Path, FullPath, Model, TimeStamp)
         Table.Insert(self, SqlCommand)

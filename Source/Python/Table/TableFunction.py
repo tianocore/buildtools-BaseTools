@@ -79,6 +79,7 @@ class TableFunction(Table):
     # @param BelongsToFile:    The Function belongs to which file
     #
     def Insert(self, ID, Header, Modifier, Name, ReturnStatement, StartLine, StartColumn, EndLine, EndColumn, BodyStartLine, BodyStartColumn, BelongsToFile):
+        ID = self.GenerateID(ID)
         SqlCommand = """insert into %s values(%s, '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s, %s, %s)""" \
                                     % (self.Table, ID, Header, Modifier, Name, ReturnStatement, StartLine, StartColumn, EndLine, EndColumn, BodyStartLine, BodyStartColumn, BelongsToFile)
         Table.Insert(self, SqlCommand)

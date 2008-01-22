@@ -57,6 +57,7 @@ class TableDataModel(Table):
     # @param Description:  Description of a ModelType
     #
     def Insert(self, ID, CrossIndex, Name, Description):
+        ID = self.GenerateID(ID)
         SqlCommand = """insert into %s values(%s, %s, '%s', '%s')""" % (self.Table, ID, CrossIndex, Name, Description)
         Table.Insert(self, SqlCommand)
     

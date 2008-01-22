@@ -93,6 +93,16 @@ class Database(object):
     def QueryTable(self, Table):
         Table.Query()
     
+    ## Close entire database
+    #
+    # Commit all first
+    # Close the connection and cursor
+    #
+    def Close(self):
+        self.Conn.commit()
+        self.Cur.close()
+        self.Conn.close()
+    
     ## Insert one file information
     #
     # Insert one file's information to the database
@@ -207,6 +217,7 @@ class Database(object):
 # script.
 #
 if __name__ == '__main__':
+    EdkLogger.Initialize()
     EdkLogger.SetLevel(EdkLogger.DEBUG_0)
     
     Db = Database(DATABASE_PATH)
@@ -226,4 +237,6 @@ if __name__ == '__main__':
     Db.QueryTable(Db.TblFunction)
     Db.QueryTable(Db.TblPcd)
     Db.QueryTable(Db.TblIdentifier)
+    
+    Db.Close()
     

@@ -688,11 +688,13 @@ def GetLineNo(FileContent, Line):
 # @param File:     File which has the string
 # @param Format:   Correct format
 #
-def RaiseParserError(Line, Section, File, Format):
-    LineNo = GetLineNo(open(os.path.normpath(File), 'r').read(), Line)
+def RaiseParserError(Line, Section, File, Format = '', LineNo = -1):
+    if LineNo == -1:
+        LineNo = GetLineNo(open(os.path.normpath(File), 'r').read(), Line)
     ErrorMsg = "Invalid statement '%s' is found in section '%s'" % (Line, Section)
-    EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, File=File, Line=LineNo,
-                    ExtraData="Correct format is " + Format)
+    if Format != '':
+        Format = "Correct format is " + Format
+    EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, File=File, Line=LineNo, ExtraData=Format)
 
 ## WorkspaceFile
 #
@@ -705,6 +707,22 @@ def RaiseParserError(Line, Section, File, Format):
 # 
 def WorkspaceFile(WorkspaceDir, Filename):
     return os.path.join(NormPath(WorkspaceDir), NormPath(Filename))
+
+## Split string
+#
+# Revmove '"' which startswith and endswith string
+#
+# @param String:  The string need to be splited 
+#
+# @retval String: The string after removed '""'
+#
+def SplitString(String):
+    if String.startswith('\"'):
+        String = String[1:]
+    if String.endswith('\"'):
+        String = String[:-1]
+        
+    return String
 
 ##
 #

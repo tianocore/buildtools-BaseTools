@@ -81,4 +81,17 @@ class Table(object):
         self.Cur.execute(SqlCommand)
         for Item in self.Cur:
             return Item[0]
-
+    
+    ## Generate ID
+    #
+    # Generate an ID if input ID is -1
+    #
+    # @param ID:   Input ID 
+    #
+    # @retval ID:  New generated ID
+    #
+    def GenerateID(self, ID):
+        if ID == -1:
+            ID = self.GetCount() + 1
+        
+        return ID

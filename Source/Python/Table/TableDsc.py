@@ -81,6 +81,7 @@ class TableDsc(Table):
     # @param EndColumn:      EndColumn of a Dsc item
     #
     def Insert(self, ID, Model, Value1, Value2, Value3, Arch, BelongsToItem, BelongsToFile, StartLine, StartColumn, EndLine, EndColumn):
+        ID = self.GenerateID(ID)
         SqlCommand = """insert into %s values(%s, %s, '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s, %s)""" \
                      % (self.Table, ID, Model, Value1, Value2, Value3, Arch, BelongsToItem, BelongsToFile, StartLine, StartColumn, EndLine, EndColumn)
         Table.Insert(self, SqlCommand)

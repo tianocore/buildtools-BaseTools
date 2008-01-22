@@ -339,3 +339,13 @@ TAB_ELSE_IF = '!elseif'
 TAB_ELSE = '!else'
 TAB_IF_DEF = '!ifdef'
 TAB_IF_N_DEF = '!ifndef'
+
+#
+# Unknown section
+#
+TAB_UNKNOWN = 'UNKNOWN'
+
+#
+# Build database path
+#
+DATABASE_PATH = "BuildDatabase.db"
