@@ -564,16 +564,16 @@ def PreCheck(FileName, FileContent, SupSectionTag):
             #
             # Tag not in defined value
             #
-            TagList = GetSplitValueList(Line, DataType.TAB_COMMA_SPLIT)
-            for Tag in TagList:
-                Tag = Tag.split(DataType.TAB_SPLIT, 1)[0].replace('[', '').replace(']', '').strip()
-                if Tag.upper() == DataType.TAB_COMMON_DEFINES.upper():
-                    break
-                if Tag.upper() == DataType.TAB_USER_EXTENSIONS.upper():
-                    break
-                if Tag.upper() not in map(lambda s: s.upper(), SupSectionTag):
-                    ErrorMsg = "'%s' is not a supportted section name." % Tag
-                    EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, File=FileName, Line=LineNo)
+            #TagList = GetSplitValueList(Line, DataType.TAB_COMMA_SPLIT)
+            #for Tag in TagList:
+            #    Tag = Tag.split(DataType.TAB_SPLIT, 1)[0].replace('[', '').replace(']', '').strip()
+            #    if Tag.upper() == DataType.TAB_COMMON_DEFINES.upper():
+            #        break
+            #    if Tag.upper() == DataType.TAB_USER_EXTENSIONS.upper():
+            #        break
+            #    if Tag.upper() not in map(lambda s: s.upper(), SupSectionTag):
+            #        ErrorMsg = "'%s' is not a supportted section name." % Tag
+            #        EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, File=FileName, Line=LineNo)
         
         #
         # Regenerate FileContent
