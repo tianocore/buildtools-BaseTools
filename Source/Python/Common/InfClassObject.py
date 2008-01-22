@@ -275,7 +275,8 @@ class Inf(InfObject):
         # Get value for Header
         #
         ModuleHeader.InfVersion = Defines.DefinesDictionary[TAB_INF_DEFINES_INF_VERSION][0]
-        ModuleHeader.Name = Defines.DefinesDictionary[TAB_INF_DEFINES_BASE_NAME][0]
+        # R8 modules may use macro in base name
+        ModuleHeader.Name = ReplaceMacro(Defines.DefinesDictionary[TAB_INF_DEFINES_BASE_NAME][0], ModuleHeader.MacroDefines)
         ModuleHeader.Guid = Defines.DefinesDictionary[TAB_INF_DEFINES_FILE_GUID][0]
         
         ModuleHeader.FileName = self.Identification.FileName
@@ -450,7 +451,8 @@ class Inf(InfObject):
                 MergeArches(Libraries, Item, Arch)
         for Key in Libraries.keys():
             Library = ModuleLibraryClass()
-            Library.Library = ReplaceMacro(Key, self._Macro)
+            # replace macro and remove file extension
+            Library.Library = ReplaceMacro(Key, self._Macro).rsplit('.', 1)[0]
             Library.SupArchList = Libraries[Key]
             self.Module.Libraries.append(Library)
         
@@ -812,7 +814,6 @@ class Inf(InfObject):
             for Tab in TabList:
                 if Tab.upper().find(TAB_INF_DEFINES.upper()) > -1:
                     self.ParseDefines(Filename, Tab, Sect)
-                    # GetSingleValueOfKeyFromLines(Sect, self.Defines.DefinesDictionary, TAB_COMMENT_SPLIT, TAB_EQUAL_SPLIT, False, None)
                     continue
                 if Tab.upper().find(DataType.TAB_USER_EXTENSIONS.upper()) > -1:
                     self.UserExtensions = Sect
