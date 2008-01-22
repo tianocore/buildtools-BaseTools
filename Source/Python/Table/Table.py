@@ -43,8 +43,8 @@ class Table(object):
     # Insert a record into a table
     #
     def Insert(self, SqlCommand):
+        EdkLogger.debug(4, SqlCommand)
         self.Cur.execute(SqlCommand)
-        EdkLogger.debug(4, SqlCommand + " ... DONE!")
     
     ## Query table
     #

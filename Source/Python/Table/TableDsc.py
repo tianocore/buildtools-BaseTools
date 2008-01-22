@@ -17,6 +17,7 @@
 import Common.EdkLogger as EdkLogger
 import CommonDataClass.DataClass as DataClass
 from Table import Table
+from Common.String import ConvertToSqlString
 
 ## TableDsc
 #
@@ -82,6 +83,7 @@ class TableDsc(Table):
     #
     def Insert(self, ID, Model, Value1, Value2, Value3, Arch, BelongsToItem, BelongsToFile, StartLine, StartColumn, EndLine, EndColumn):
         ID = self.GenerateID(ID)
+        #(Value1, Value2, Value3, Arch) = ConvertToSqlString((Value1, Value2, Value3, Arch))
         SqlCommand = """insert into %s values(%s, %s, '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s, %s)""" \
                      % (self.Table, ID, Model, Value1, Value2, Value3, Arch, BelongsToItem, BelongsToFile, StartLine, StartColumn, EndLine, EndColumn)
         Table.Insert(self, SqlCommand)

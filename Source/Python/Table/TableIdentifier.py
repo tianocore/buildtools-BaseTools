@@ -15,6 +15,7 @@
 # Import Modules
 #
 import Common.EdkLogger as EdkLogger
+from Common.String import ConvertToSqlString
 from Table import Table
 
 ## TableIdentifier
@@ -81,6 +82,7 @@ class TableIdentifier(Table):
     #
     def Insert(self, ID, Modifier, Type, Name, Value, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn):
         ID = self.GenerateID(ID)    
+        (Modifier, Type, Name, Value) = ConvertToSqlString((Modifier, Type, Name, Value))
         SqlCommand = """insert into %s values(%s, '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s, %s, %s)""" \
                                            % (self.Table, ID, Modifier, Type, Name, Value, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn)
         Table.Insert(self, SqlCommand)

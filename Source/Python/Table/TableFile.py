@@ -16,6 +16,7 @@
 #
 import Common.EdkLogger as EdkLogger
 from Table import Table
+from Common.String import ConvertToSqlString
 
 ## TableFile
 #
@@ -65,6 +66,7 @@ class TableFile(Table):
     #
     def Insert(self, ID, Name, ExtName, Path, FullPath, Model, TimeStamp):
         ID = self.GenerateID(ID)
+        (Name, ExtName, Path, FullPath) = ConvertToSqlString((Name, ExtName, Path, FullPath))
         SqlCommand = """insert into %s values(%s, '%s', '%s', '%s', '%s', %s, '%s')""" \
                                            % (self.Table, ID, Name, ExtName, Path, FullPath, Model, TimeStamp)
         Table.Insert(self, SqlCommand)

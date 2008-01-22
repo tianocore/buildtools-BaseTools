@@ -16,6 +16,7 @@
 #
 import Common.EdkLogger as EdkLogger
 from Table import Table
+from Common.String import ConvertToSqlString
 
 ## TablePcd
 #
@@ -81,6 +82,7 @@ class TablePcd(Table):
     #
     def Insert(self, ID, CName, TokenSpaceGuidCName, Token, DatumType, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn):
         ID = self.GenerateID(ID)
+        (CName, TokenSpaceGuidCName, DatumType) = ConvertToSqlString((CName, TokenSpaceGuidCName, DatumType))
         SqlCommand = """insert into %s values(%s, '%s', '%s', %s, '%s', %s, %s, %s, %s, %s, %s, %s)""" \
                                            % (self.Table, ID, CName, TokenSpaceGuidCName, Token, DatumType, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn)
         Table.Insert(self, SqlCommand)

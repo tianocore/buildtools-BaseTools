@@ -17,6 +17,7 @@
 import Common.EdkLogger as EdkLogger
 import CommonDataClass.DataClass as DataClass
 from Table import Table
+from Common.String import ConvertToSqlString
 
 ## TableDataModel
 #
@@ -58,6 +59,7 @@ class TableDataModel(Table):
     #
     def Insert(self, ID, CrossIndex, Name, Description):
         ID = self.GenerateID(ID)
+        (Name, Description) = ConvertToSqlString((Name, Description))
         SqlCommand = """insert into %s values(%s, %s, '%s', '%s')""" % (self.Table, ID, CrossIndex, Name, Description)
         Table.Insert(self, SqlCommand)
     

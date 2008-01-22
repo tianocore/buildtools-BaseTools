@@ -724,6 +724,15 @@ def SplitString(String):
         
     return String
 
+## Convert To Sql String
+#
+# 1. Replace "'" with "''" in each item of StringList
+# 
+# @param StringList:  A list for strings to be converted
+#
+def ConvertToSqlString(StringList):
+    return map(lambda s: s.replace("'", "''") , StringList)
+
 ##
 #
 # This acts like the main() function for the script, unless it is 'import'ed into another
@@ -735,3 +744,4 @@ if __name__ == '__main__':
     print SplitModuleType('Librarsdsfwe')
     print NormPath('sdfas//dsfsadf//dsfsd')
     print NormPath('\\dsfsdf\\\\sd\\fsd\\dsfsdfsdf\\\\')
+    print ConvertToSqlString(("'sdf,'sdf'", "aaaaa'bbbbb"))
