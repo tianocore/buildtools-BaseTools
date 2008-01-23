@@ -25,6 +25,7 @@ from Common.BuildToolError import *
 from Common.Misc import *
 from BuildInfo import *
 from BuildEngine import *
+import Common.GlobalData as GlobalData
 
 ## Regular expression for finding header file inclusions
 gIncludePattern = re.compile("^[ #]*include[ ]+[\"<]*([^\"< >\s]+)[>\" ]*$", re.MULTILINE | re.UNICODE)
@@ -512,7 +513,7 @@ ${END}\tcd $(BUILD_DIR)
 #
 build_fds:
 \t-@echo Generating flash image, if any ...
-${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -t $(TOOLCHAIN_TAG) -b $(TARGET) -p ${active_platform} -a ${build_architecture_list}${END}${BEGIN} -r ${fd} ${END}${BEGIN} -i ${fv} ${END} ${log_level}
+${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -t $(TOOLCHAIN_TAG) -b $(TARGET) -p ${active_platform} -a ${build_architecture_list} ${log_level}${END}${BEGIN} -r ${fd} ${END}${BEGIN} -i ${fv} ${END}${BEGIN} -y ${macro} ${END}
 
 #
 # run command for emulator platform only
@@ -648,8 +649,11 @@ class Makefile(object):
         self.IntermediateDirectoryList.append("$(FV_DIR)")
 
         # TRICK: for not generating GenFds call in makefile if no FDF file
+        MacroList = []
         if PlatformInfo.FdfFile != None and PlatformInfo.FdfFile != "":
             FdfFileList = [PlatformInfo.FdfFile]
+            for MacroName in GlobalData.gGlobalDefines:
+                MacroList.append('"%s=%s"' % (MacroName, GlobalData.gGlobalDefines[MacroName]))    
         else:
             FdfFileList = []
 
@@ -693,6 +697,7 @@ class Makefile(object):
             "fd"                        : PlatformInfo.FdTargetList,
             "fv"                        : PlatformInfo.FvTargetList,
             "log_level"                 : LogOption,
+            "macro"                     : MacroList,
         }
 
         self.PrepareDirectory()
