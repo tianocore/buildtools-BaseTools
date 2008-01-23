@@ -25,7 +25,7 @@ import Common.EdkIIWorkspaceBuild
 import RuleComplexFile
 from EfiSection import EfiSection
 import StringIO
-import Common.TargetTxtClassObject
+import Common.TargetTxtClassObject as TargetTxtClassObject
 import Common.DataType
 import Common.GlobalData as GlobalData
 from Common import EdkLogger
@@ -135,6 +135,13 @@ def main():
             ArchList = Options.archList.split(',')
         else:
             GenFdsGlobalVariable.ErrorLogger("You must specify a build ARCH")
+            sys.exit(1)
+        
+        BuildConfigurationFile = os.path.normpath(os.path.join(GenFdsGlobalVariable.WorkSpaceDir, "Conf/target.txt"))
+        if os.path.isfile(BuildConfigurationFile) == True:
+            TargetTxtClassObject.TargetTxtClassObject(BuildConfigurationFile)
+        else:
+            GenFdsGlobalVariable.ErrorLogger("File NOT found: %s", BuildConfigrationFile)
             sys.exit(1)
         
         if Options.Macros:
