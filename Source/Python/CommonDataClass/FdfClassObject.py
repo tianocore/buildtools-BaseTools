@@ -75,7 +75,6 @@ class RegionClassObject:
         self.Size = None         # The Size of the Region
         self.PcdOffset = None
         self.PcdSize = None
-        self.RegionSize = None
         self.SetVarDict = {}
         self.RegionType = None
         self.RegionDataList = []

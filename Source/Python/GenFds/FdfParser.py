@@ -1214,8 +1214,9 @@ class FdfParser:
         
         self.__UndoToken()
         if not self.__IsToken("[FD.", True):
-            print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
-                    % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            print 'Parsing String: %s in File %s, At line: %d, Offset Within Line: %d' \
+                    % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], FileLineTuple[0], FileLineTuple[1], self.CurrentOffsetWithinLine)
             raise Warning("expected [FD.] At Line ", self.FileName, self.CurrentLineNumber)
         
         FdName = self.__GetUiName()
@@ -1727,8 +1728,9 @@ class FdfParser:
 
         self.__UndoToken()
         if not self.__IsToken("[FV.", True):
-            print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
-                    % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            print 'Parsing String: %s in File %s, At line: %d, Offset Within Line: %d' \
+                    % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], FileLineTuple[0], FileLineTuple[1], self.CurrentOffsetWithinLine)
             raise Warning("Unknown Keyword At Line ", self.FileName, self.CurrentLineNumber)
         
         FvName = self.__GetUiName()
@@ -2472,8 +2474,9 @@ class FdfParser:
 
         self.__UndoToken()
         if not self.__IsToken("[CAPSULE.", True):
-            print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
-                    % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            print 'Parsing String: %s in File %s, At line: %d, Offset Within Line: %d' \
+                    % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], FileLineTuple[0], FileLineTuple[1], self.CurrentOffsetWithinLine)
             raise Warning("expected [Capsule.] At Line ", self.FileName, self.CurrentLineNumber)        
             
         CapsuleObj = Capsule.Capsule()
@@ -2592,8 +2595,9 @@ class FdfParser:
 
         self.__UndoToken()
         if not self.__IsToken("[Rule.", True):
-            print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
-                    % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            print 'Parsing String: %s in File %s, At line: %d, Offset Within Line: %d' \
+                    % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], FileLineTuple[0], FileLineTuple[1], self.CurrentOffsetWithinLine)
             raise Warning("expected [Rule.] At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__SkipToToken("."):
@@ -2649,7 +2653,9 @@ class FdfParser:
         if self.__Token.upper() not in ("SEC", "PEI_CORE", "PEIM", "DXE_CORE", \
                              "DXE_DRIVER", "DXE_SAL_DRIVER", \
                              "DXE_SMM_DRIVER", "DXE_RUNTIME_DRIVER", \
-                             "UEFI_DRIVER", "UEFI_APPLICATION", "USER_DEFINED", "DEFAULT", "BASE"):
+                             "UEFI_DRIVER", "UEFI_APPLICATION", "USER_DEFINED", "DEFAULT", "BASE", \
+                             "SECURITY_CORE", "COMBINED_PEIM_DRIVER", "PIC_PEIM", "RELOCATABLE_PEIM", \
+                             "PE32_PEIM", "BS_DRIVER", "RT_DRIVER", "SAL_RT_DRIVER", "APPLICATION"):
             raise Warning("Unknown Module type At line ", self.FileName, self.CurrentLineNumber)
         return self.__Token
     
@@ -3151,8 +3157,9 @@ class FdfParser:
 
         self.__UndoToken()
         if not self.__IsToken("[VTF.", True):
-            print 'Parsing String: %s At line: %d, Offset Within Line: %d' \
-                    % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], self.CurrentLineNumber, self.CurrentOffsetWithinLine)
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            print 'Parsing String: %s in File %s, At line: %d, Offset Within Line: %d' \
+                    % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], FileLineTuple[0], FileLineTuple[1], self.CurrentOffsetWithinLine)
             raise Warning("expected [VTF.] At Line ", self.FileName, self.CurrentLineNumber)
 
         if not self.__SkipToToken("."):

@@ -102,7 +102,10 @@ class Region(RegionClassObject):
                             BlockSize = FvObj.BlockSizeList[0][0]
                         if FvObj.BlockSizeList[0][1] != None:
                             BlockNum = FvObj.BlockSizeList[0][1]
-                    self.FvAddress = self.FvAddress + FvBuffer.len                    
+                    self.FvAddress = self.FvAddress + FvBuffer.len
+                    FvAlignValue = self.GetFvAlignValue(FvObj.FvAlignment)
+                    if self.FvAddress % FvAlignValue != 0:
+                        raise Exception ("FV (%s) is NOT %s Aligned!" % (FvObj.UiFvName, FvObj.FvAlignment))                    
                     FvBaseAddress = '0x%X' %self.FvAddress
                     FileName = FvObj.AddToBuffer(FvBuffer, FvBaseAddress, BlockSize, BlockNum, ErasePolarity, vtfDict)
                     
@@ -172,6 +175,24 @@ class Region(RegionClassObject):
             else :
                 Buffer.write(pack(str(Size)+'B', *(int('0x00', 16) for i in range(0, Size))))
 
+    def GetFvAlignValue(self, Str):
+        AlignValue = 1
+        Granu = 1
+        Str = Str.strip().upper()
+        if Str.endswith('K'):
+            Granu = 1024
+            Str = Str[:-1]
+        elif Str.endswith('M'):
+            Granu = 1024*1024
+            Str = Str[:-1]
+        elif Str.endswith('G'):
+            Granu = 1024*1024*1024
+            Str = Str[:-1]
+        else:
+            pass
+        
+        AlignValue = int(Str)*Granu
+        return AlignValue
     ## BlockSizeOfRegion()
     #
     #   @param  BlockSizeList        List of block information
@@ -186,6 +207,8 @@ class Region(RegionClassObject):
             GenFdsGlobalVariable.VerboseLogger ("self.Offset 0x%X" %self.Offset)
 
             if self.Offset < Offset :
+                if Offset - self.Offset < self.Size:
+                    raise Exception ("Region at Offset 0x%X can NOT fit into Block array with BlockSize %X", (self.Offset, item[0]))
                 BlockSize = item[0]
                 GenFdsGlobalVariable.VerboseLogger ("BlockSize = %X" %BlockSize)
                 return BlockSize

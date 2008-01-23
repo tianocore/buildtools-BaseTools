@@ -284,7 +284,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
             Arch = ArchList[0]
             return Arch
         elif len(ArchList) > 1:
-            return None 
+            raise Exception("Not able to determine ARCH for Module %s !" %self.InfFileName) 
         else:
             raise Exception("Don't find legal ARCH in Module %s !" %self.InfFileName)
     

@@ -49,6 +49,11 @@ class FD(FDClassObject):
         # Print Information
         #
         GenFdsGlobalVariable.InfLogger("Fd File Name:%s" %self.FdUiName)
+        Offset = 0x00
+        for item in self.BlockSizeList:
+            Offset = Offset + item[0]  * item[1]
+        if Offset != self.Size:
+            raise Exception ('FD %s Size not consistent with block array', self.FdUiName)
         GenFdsGlobalVariable.VerboseLogger('Following Fv will be add to Fd !!!')
         for FvObj in GenFdsGlobalVariable.FdfParser.Profile.FvDict:
             GenFdsGlobalVariable.VerboseLogger(FvObj)
@@ -75,6 +80,8 @@ class FD(FDClassObject):
             #
             # Call each region's AddToBuffer function 
             #
+            if PreviousRegionSize > self.Size:
+                raise Exception ('FD %s size too small' % self.FdUiName)
             GenFdsGlobalVariable.VerboseLogger('Call each region\'s AddToBuffer function')
             RegionObj.AddToBuffer (FdBuffer, self.BaseAddress, self.BlockSizeList, self.ErasePolarity, FvBinDict, self.vtfRawDict, self.DefineVarDict)
         #

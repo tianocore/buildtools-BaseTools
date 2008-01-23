@@ -27,6 +27,7 @@ from EfiSection import EfiSection
 import StringIO
 import Common.TargetTxtClassObject
 import Common.DataType
+import Common.GlobalData as GlobalData
 from Common import EdkLogger
 from Common.String import *
 
@@ -136,6 +137,15 @@ def main():
             GenFdsGlobalVariable.ErrorLogger("You must specify a build ARCH")
             sys.exit(1)
         
+        if Options.Macros:
+            for Pair in Options.Macros:
+                Pair.strip('"')
+                List = Pair.split('=')
+                if len(List) == 2:
+                    FdfParser.InputMacroDict[List[0].strip()] = List[1].strip()
+                    GlobalData.gGlobalDefines[List[0].strip()] = List[1].strip()
+                else:
+                    FdfParser.InputMacroDict[List[0].strip()] = None
             
         """call Workspace build create database"""
         os.environ["WORKSPACE"] = Workspace
@@ -159,15 +169,6 @@ def main():
         if not os.path.exists(OutputDir):
             GenFdsGlobalVariable.ErrorLogger ("Directory %s not found" % (OutputDir))
             sys.exit(1)
-    
-        if Options.Macros:
-            for Pair in Options.Macros:
-                Pair.strip('"')
-                List = Pair.split('=')
-                if len(List) == 2:
-                    FdfParser.InputMacroDict[List[0].strip()] = List[1].strip()
-                else:
-                    FdfParser.InputMacroDict[List[0].strip()] = None
                     
         """ Parse Fdf file, has to place after build Workspace as FDF may contain macros from DSC file """
         try:
@@ -194,7 +195,7 @@ def main():
             else:
                 GenFdsGlobalVariable.ErrorLogger("No such an FV in FDF file.")
                 sys.exit(1)
-            
+       
         BuildWorkSpace.GenBuildDatabase({}, FdfParserObj.Profile.InfList)
         
         """Call GenFds"""
