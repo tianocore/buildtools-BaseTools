@@ -67,6 +67,8 @@ class FfsInfStatement(FfsInfStatementClassObject):
             self.BaseName = Inf.BaseName
             self.ModuleGuid = Inf.Guid
             self.ModuleType = Inf.ModuleType
+            if Inf.AutoGenVersion < 0x00010005:
+                self.ModuleType = GenFdsGlobalVariable.WorkSpace.InfDatabase[self.InfFileName].Module.Header[self.CurrentArch].ComponentType
             self.VersionString = Inf.Version
             self.BinFileList = Inf.Binaries
             if self.KeepReloc == None and Inf.Shadow != '':
@@ -205,22 +207,21 @@ class FfsInfStatement(FfsInfStatementClassObject):
                    'COMMON'    + \
                    '.'         + \
                    self.ModuleType.upper()
+        
         if self.Rule != None:
             RuleName = RuleName + \
                        '.'      + \
                        self.Rule.upper()
                        
+        GenFdsGlobalVariable.VerboseLogger ('Trying to apply common rule %s for INF %s' % (RuleName, self.InfFileName))               
+        
         Rule = GenFdsGlobalVariable.FdfParser.Profile.RuleDict.get(RuleName)
         if Rule != None:
             GenFdsGlobalVariable.VerboseLogger ("Want To Find Rule Name is : " + RuleName)
             return Rule
 
         if Rule == None :
-            GenFdsGlobalVariable.VerboseLogger ('Dont Find Related Rule, Using Default Rule !!!')
-            if GenFdsGlobalVariable.DefaultRule == None:
-                raise Exception ("Default Rule doesn't exist!!")
-            else:
-                return GenFdsGlobalVariable.DefaultRule
+            raise Exception ('Don\'t Find common rule %s for INF %s' % (RuleName, self.InfFileName))
 
     ## __GetPlatformArchList__() method
     #

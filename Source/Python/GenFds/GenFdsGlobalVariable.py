@@ -39,7 +39,6 @@ class GenFdsGlobalVariable:
     TargetName = ''
     ToolChainTag = ''
     RuleDict = {}
-    DefaultRule = None
     ArchList = None
     VtfDict = {}
     ActivePlatform = None
@@ -102,14 +101,6 @@ class GenFdsGlobalVariable:
         
         FvAddressFile.close()
 
-    
-    ## SetDefaultRule()
-    #
-    #   @param  Rule           Rule object to generate FFS
-    #    
-    def SetDefaultRule (Rule) :
-        GenFdsGlobalVariable.DefaultRule = Rule
-
     ## ReplaceWorkspaceMacro()
     #
     #   @param  String           String that may contain macro
@@ -124,14 +115,14 @@ class GenFdsGlobalVariable:
         return os.path.normpath(Str)
     
     def CallExternalTool (cmd, errorMess):
-
+        
         if type(cmd) not in (tuple, list):
             GenFdsGlobalVariable.ErrorLogger("ToolError!  Invalid parameter type in call to CallExternalTool")
 
         if GenFdsGlobalVariable.DebugLevel != -1:
             cmd += ('-d', str(GenFdsGlobalVariable.DebugLevel))
             GenFdsGlobalVariable.InfLogger (cmd)
-        
+            
         if GenFdsGlobalVariable.VerboseMode:
             cmd += ('-v',)
             GenFdsGlobalVariable.InfLogger (cmd)
@@ -200,7 +191,6 @@ class GenFdsGlobalVariable:
 
 
     SetDir = staticmethod(SetDir)
-    SetDefaultRule = staticmethod(SetDefaultRule)
     ReplaceWorkspaceMacro = staticmethod(ReplaceWorkspaceMacro)
     CallExternalTool = staticmethod(CallExternalTool)
     VerboseLogger = staticmethod(VerboseLogger)

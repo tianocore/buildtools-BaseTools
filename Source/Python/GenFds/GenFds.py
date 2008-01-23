@@ -261,34 +261,6 @@ class GenFds :
     #
     def GenFd (OutputDir, FdfParser, WorkSpace, ArchList):
         GenFdsGlobalVariable.SetDir (OutputDir, FdfParser, WorkSpace, ArchList)
-        
-        #Set Default Rule
-        VerSection1 = EfiSection()
-        VerSection1.BuildNum = "$(BUILD_NUMBER)"
-        VerSection1.SectionType = "VERSION"
-        VerSection1.Filename = "$(INF_VERSION)"
-        VerSection1.VersionNum = "$(INF_VERSION)"
-        
-        UiSection1 = EfiSection()
-        UiSection1.SectionType = 'UI'
-        UiSection1.Filename = "$(INF_VERSION)"
-        UiSection1.VersionNum = "$(INF_VERSION)"
-
-        DataSection = EfiSection()
-        DataSection.SectionType = "PE32"
-        DataSection.Filename = "$(INF_OUTPUT)/$(MODULE_NAME).efi"
-
-        RuleComplexFile1 = RuleComplexFile.RuleComplexFile()
-        RuleComplexFile1.Alignment = 32
-        RuleComplexFile1.Arch = 'COMMON'
-        RuleComplexFile1.CheckSum = True
-        RuleComplexFile1.Fixed = True
-        RuleComplexFile1.FvFileType = "APPLICATION"
-        RuleComplexFile1.ModuleType = "UEFI_APPLICATION"
-        RuleComplexFile1.NameGuid = "$(MODULE_NAME)"
-        RuleComplexFile1.TemplateName = ''
-        RuleComplexFile1.SectionList = [UiSection1, VerSection1, DataSection]
-        GenFdsGlobalVariable.SetDefaultRule(RuleComplexFile1)
 
         GenFdsGlobalVariable.VerboseLogger("   Gen Fd  !")
         if GenFds.OnlyGenerateThisFd != None and GenFds.OnlyGenerateThisFd.upper() in GenFdsGlobalVariable.FdfParser.Profile.FdDict.keys():
