@@ -75,12 +75,13 @@ class FunctionDefinition :
     #   @param  End         The end position tuple.
     #   @param  LBPos       The left brace position tuple.
     #
-    def __init__(self, ModifierStr, DeclStr, Begin, End, LBPos):
+    def __init__(self, ModifierStr, DeclStr, Begin, End, LBPos, NamePos):
         self.Modifier = ModifierStr
         self.Declarator = DeclStr
         self.StartPos = Begin
         self.EndPos = End
-        self.LeftBracePos = LBPos 
+        self.LeftBracePos = LBPos
+        self.NamePos = NamePos
 
 ## The description of variable declaration and start & end position
 #
@@ -147,7 +148,7 @@ class TypedefDefinition :
         self.ToType = ToStr
         self.StartPos = Begin
         self.EndPos = End
-        
+
 class FunctionCalling:
     ## The constructor
     #

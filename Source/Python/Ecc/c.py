@@ -82,15 +82,44 @@ def GetFunctionList():
     for FuncDef in FileProfile.FunctionDefinitionList:
         ParamIdList = []
         DeclSplitList = FuncDef.Declarator.split('(')
-        FuncName = DeclSplitList[0].strip()
+        FuncName = DeclSplitList[0]
         ParamStr = DeclSplitList[1].rstrip(')')
+        FuncNameLine = FuncDef.NamePos[0]
+        FuncNameOffset = FuncDef.NamePos[1]
+        LineSkipped = 0
+        OffsetSkipped = 0
+        Start = 0
+        while FuncName.find('\n', Start) != -1:
+            LineSkipped += 1
+            OffsetSkipped = 0
+            Start += FuncName.find('\n', Start)
+            Start += 1       
+        OffsetSkipped += len(FuncName[Start:])
+        OffsetSkipped += 1 #skip '('
+        ParamBeginLine = FuncNameLine + LineSkipped
+        ParamBeginOffset = OffsetSkipped
         for p in ParamStr.split(','):
-            RightSpacePos = p.rfind(' ')
-            ParamName = p[RightSpacePos + 1:]
+            ListP = p.split()
+            ParamName = ListP[-1]
+            RightSpacePos = p.rfind(ParamName)
             ParamModifier = p[0:RightSpacePos]
-            IdParam = DataClass.IdentifierClass(-1, ParamModifier, '', ParamName, '', DataClass.MODEL_IDENTIFIER_PARAMETER, -1, -1, FuncDef.StartPos[0],FuncDef.StartPos[1],FuncDef.LeftBracePos[0], FuncDef.LeftBracePos[1])
+            
+            Start = 0
+            while p.find('\n', Start) != -1:
+                LineSkipped += 1
+                OffsetSkipped = 0
+                Start += p.find('\n', Start)
+                Start += 1
+            OffsetSkipped += len(p[Start:])
+            
+            ParamEndLine = ParamBeginLine + LineSkipped
+            ParamEndOffset = OffsetSkipped
+            IdParam = DataClass.IdentifierClass(-1, ParamModifier, '', ParamName, '', DataClass.MODEL_IDENTIFIER_PARAMETER, -1, -1, ParamBeginLine, ParamBeginOffset, ParamEndLine, ParamEndOffset)
             ParamIdList.append(IdParam)
-        FuncObj = DataClass.FunctionClass(-1, FuncDef.Declarator, FuncDef.Modifier, FuncName, '', FuncDef.StartPos[0],FuncDef.StartPos[1],FuncDef.EndPos[0],FuncDef.EndPos[1], FuncDef.LeftBracePos[0], FuncDef.LeftBracePos[1], -1, ParamIdList, [])
+            ParamBeginLine = ParamEndLine
+            ParamBeginOffset = OffsetSkipped + 1 #skip ','
+            
+        FuncObj = DataClass.FunctionClass(-1, FuncDef.Declarator, FuncDef.Modifier, FuncName.strip(), '', FuncDef.StartPos[0],FuncDef.StartPos[1],FuncDef.EndPos[0],FuncDef.EndPos[1], FuncDef.LeftBracePos[0], FuncDef.LeftBracePos[1], -1, ParamIdList, [])
         FuncObjList.append(FuncObj)
         
     return FuncObjList
@@ -106,7 +135,7 @@ for dirpath, dirnames, filenames in os.walk(sys.argv[1]):
             model = f.endswith('c') and DataClass.MODEL_FILE_C or DataClass.MODEL_FILE_H
             collector = CodeFragmentCollector.CodeFragmentCollector(FullName)
             collector.ParseFile()
-#            collector.PrintFragments()
+            collector.PrintFragments()
             BaseName = os.path.basename(f)
             DirName = os.path.dirname(FullName)
             Ext = os.path.splitext(f)[1].lstrip('.')
@@ -116,14 +145,17 @@ for dirpath, dirnames, filenames in os.walk(sys.argv[1]):
             collector.CleanFileProfileBuffer()
 
 
-EdkLogger.SetLevel(EdkLogger.DEBUG_0)
+
 
 Db = Database.Database(Database.DATABASE_PATH)
 Db.InitDatabase()
 Db.QueryTable(Db.TblDataModel)
 
 for file in FileObjList:
+    EdkLogger.Initialize()
+    EdkLogger.SetLevel(EdkLogger.DEBUG_0)
     Db.InsertOneFile(file)
     Db.UpdateIdentifierBelongsToFunction()
+    Db.QueryTable(Db.TblIdentifier)
     
 print 'Done!'

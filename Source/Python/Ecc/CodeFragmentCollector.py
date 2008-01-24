@@ -416,7 +416,7 @@ class CodeFragmentCollector:
         print '/********* FUNCTION DEFINITIONS *********/'
         print '/****************************************/'
         for func in FileProfile.FunctionDefinitionList:
-            print str(func.StartPos) + func.Modifier + ' '+ func.Declarator
+            print str(func.StartPos) + func.Modifier + ' '+ func.Declarator + ' ' + str(func.NamePos)
             
         print '/****************************************/'
         print '/************ ENUMERATIONS **************/'
