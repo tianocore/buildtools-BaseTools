@@ -188,7 +188,7 @@ class ModuleBuildClassObject(object):
 
         self.Binaries                = []
         self.Sources                 = []
-        self.LibraryClasses          = {}
+        self.LibraryClasses          = sdict()
         self.Libraries               = []
         self.Protocols               = []
         self.Ppis                    = []
@@ -923,7 +923,7 @@ class WorkspaceBuild(object):
                     if (LibraryName, ModuleType) not in Module.LibraryClasses:
                         Module.LibraryClasses[LibraryName, ModuleType] = LibraryFile
                         LibraryConsumerList.append(ModuleDatabase[LibraryFile])
-                    EdkLogger.verbose("\t" + LibraryName + " : " + LibraryFile)
+                        EdkLogger.verbose("\t" + LibraryName + " : " + LibraryFile)
             return
 
         # R9 module

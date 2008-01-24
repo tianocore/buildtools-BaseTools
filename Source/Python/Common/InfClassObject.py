@@ -445,7 +445,7 @@ class Inf(InfObject):
         #
         # Libraries
         #
-        Libraries = {}
+        Libraries = sdict()
         for Arch in DataType.ARCH_LIST:
             for Item in self.Contents[Arch].Libraries:
                 MergeArches(Libraries, Item, Arch)
@@ -818,14 +818,14 @@ class Inf(InfObject):
                 if Tab.upper().find(DataType.TAB_USER_EXTENSIONS.upper()) > -1:
                     self.UserExtensions = Sect
                     continue
-                for Arch in DataType.ARCH_LIST_FULL + [DataType.TAB_ARCH_NULL]:
+                for Arch in DataType.ARCH_LIST_FULL + [DataType.TAB_ARCH_NULL, "PLATFORM"]:
                     for Key in self.KeyList:
                         if Arch != DataType.TAB_ARCH_NULL:
                             Target = (Key + DataType.TAB_SPLIT + Arch).upper()
                         else:
                             Target = Key.upper()
                         if SplitModuleType(Tab)[0].upper() == Target:
-                            if Arch != DataType.TAB_ARCH_NULL:
+                            if Arch != DataType.TAB_ARCH_NULL and Arch != "PLATFORM":
                                 Command = 'self.ParseInf(Sect, Tab, self.Contents[Arch].' + Key + ')'
                                 eval(Command)
                                 continue
