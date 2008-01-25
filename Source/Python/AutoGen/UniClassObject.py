@@ -175,7 +175,7 @@ class UniFileClassObject(object):
                 continue
             else:
                 Language = LanguageList[IndexI].split()[0]
-                Value = LanguageList[IndexI][LanguageList[IndexI].find(u'\"') + len(u'\"') : LanguageList[IndexI].rfind(u'\"')].replace(u'\r\n', u'')
+                Value = LanguageList[IndexI][LanguageList[IndexI].find(u'\"') + len(u'\"') : LanguageList[IndexI].rfind(u'\"')] #.replace(u'\r\n', u'')
                 self.AddStringToList(Name, Language, Value)
     
     #
@@ -279,15 +279,15 @@ class UniFileClassObject(object):
             if Line.find(u'#string ') >= 0 and Line.find(u'#language ') < 0 and \
                 SecondLine.find(u'#string ') < 0 and SecondLine.find(u'#language ') >= 0 and \
                 ThirdLine.find(u'#string ') < 0 and ThirdLine.find(u'#language ') < 0:
-                Name = Line[Line.find(u'#string ') + len(u'#string ') : ].strip()
-                Language = SecondLine[SecondLine.find(u'#language ') + len(u'#language ') : ].strip()
+                Name = Line[Line.find(u'#string ') + len(u'#string ') : ].strip(' ')
+                Language = SecondLine[SecondLine.find(u'#language ') + len(u'#language ') : ].strip(' ')
                 for IndexJ in range(IndexI + 2, len(Lines)):
                     if Lines[IndexJ].find(u'#string ') < 0 and Lines[IndexJ].find(u'#language ') < 0:
                         Value = Value + Lines[IndexJ]
                     else:
                         IndexI = IndexJ
                         break
-                Value = Value.replace(u'\r\n', u'')
+                # Value = Value.replace(u'\r\n', u'')
                 self.AddStringToList(Name, Language, Value)
                 continue
 
