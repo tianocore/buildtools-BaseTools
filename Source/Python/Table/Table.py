@@ -54,8 +54,8 @@ class Table(object):
         EdkLogger.verbose("\nQuery tabel %s started ..." % self.Table)
         SqlCommand = """select * from %s""" % self.Table
         self.Cur.execute(SqlCommand)
-        for Rs in self.Cur:
-            EdkLogger.verbose(Rs)
+#        for Rs in self.Cur:
+#            EdkLogger.verbose(Rs)
         
         TotalCount = self.GetCount()
         EdkLogger.verbose("*** Total %s records in table %s ***" % (TotalCount, self.Table) )
