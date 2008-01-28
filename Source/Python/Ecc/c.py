@@ -63,8 +63,8 @@ def GetIdentifierList():
             SkipLen = 5
         LBPos = su.Content.find('{')
         RBPos = su.Content.find('}')
-        Name = enum.Content[SkipLen:LBPos].strip()
-        Value = enum.Content[LBPos+1:RBPos]
+        Name = su.Content[SkipLen:LBPos].strip()
+        Value = su.Content[LBPos+1:RBPos]
         IdPE = DataClass.IdentifierClass(-1, '', '', Name, Value, Type, -1, -1, su.StartPos[0],su.StartPos[1],su.EndPos[0],su.EndPos[1])
         IdList.append(IdPE)
         
@@ -100,6 +100,8 @@ def GetFunctionList():
         ParamBeginOffset = OffsetSkipped
         for p in ParamStr.split(','):
             ListP = p.split()
+            if len(ListP) == 0:
+                continue
             ParamName = ListP[-1]
             RightSpacePos = p.rfind(ParamName)
             ParamModifier = p[0:RightSpacePos]
@@ -124,38 +126,49 @@ def GetFunctionList():
         
     return FuncObjList
 
-FileObjList = []
-for dirpath, dirnames, filenames in os.walk(sys.argv[1]):
-    for d in dirnames:
-        if d.startswith('.'):
-            dirnames.remove(d)
-    for f in filenames:
-        FullName = os.path.join(dirpath, f)
-        if os.path.splitext(f)[1] in ('.h', '.c'):
-            model = f.endswith('c') and DataClass.MODEL_FILE_C or DataClass.MODEL_FILE_H
-            collector = CodeFragmentCollector.CodeFragmentCollector(FullName)
-            collector.ParseFile()
-            collector.PrintFragments()
-            BaseName = os.path.basename(f)
-            DirName = os.path.dirname(FullName)
-            Ext = os.path.splitext(f)[1].lstrip('.')
-            ModifiedTime = os.path.getmtime(FullName)
-            FileObj = DataClass.FileClass(-1, BaseName, Ext, DirName, FullName, model, ModifiedTime, GetFunctionList(), GetIdentifierList(), [])
-            FileObjList.append(FileObj)
-            collector.CleanFileProfileBuffer()
+if __name__ == '__main__':
 
+    FileObjList = []
+    tuple = os.walk(sys.argv[1])
 
+    ParseErrorFileList = []
 
-
-Db = Database.Database(Database.DATABASE_PATH)
-Db.InitDatabase()
-Db.QueryTable(Db.TblDataModel)
-
-for file in FileObjList:
-    EdkLogger.Initialize()
-    EdkLogger.SetLevel(EdkLogger.DEBUG_0)
-    Db.InsertOneFile(file)
-    Db.UpdateIdentifierBelongsToFunction()
-    Db.QueryTable(Db.TblIdentifier)
+    for dirpath, dirnames, filenames in tuple:
+        for d in dirnames:
+            if d.startswith('.'):
+                dirnames.remove(d)
+        for f in filenames:
+            FullName = os.path.join(dirpath, f)
+            
+            if os.path.splitext(f)[1] in ('.h', '.c'):
+                print FullName
+                model = f.endswith('c') and DataClass.MODEL_FILE_C or DataClass.MODEL_FILE_H
+                collector = CodeFragmentCollector.CodeFragmentCollector(FullName)
+                try:
+                    collector.ParseFile()
+                except:
+                    ParseErrorFileList.append(FullName)
+                    continue
+#                collector.PrintFragments()
+                BaseName = os.path.basename(f)
+                DirName = os.path.dirname(FullName)
+                Ext = os.path.splitext(f)[1].lstrip('.')
+                ModifiedTime = os.path.getmtime(FullName)
+                FileObj = DataClass.FileClass(-1, BaseName, Ext, DirName, FullName, model, ModifiedTime, GetFunctionList(), GetIdentifierList(), [])
+                FileObjList.append(FileObj)
+                collector.CleanFileProfileBuffer()   
+    print ParseErrorFileList
     
-print 'Done!'
+    EdkLogger.Initialize()
+    EdkLogger.SetLevel(EdkLogger.QUIET)
+    Db = Database.Database(Database.DATABASE_PATH)
+    Db.InitDatabase()
+    Db.QueryTable(Db.TblDataModel)
+    
+    for file in FileObjList:    
+        Db.InsertOneFile(file)
+#        Db.UpdateIdentifierBelongsToFunction()
+        Db.QueryTable(Db.TblIdentifier)
+    Db.Close()
+        
+    print 'Done!'
