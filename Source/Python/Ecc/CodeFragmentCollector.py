@@ -271,10 +271,18 @@ class CodeFragmentCollector:
         HashComment = False
         PPExtend = False
         CommentObj = None
-        PPDirectiveObj = None 
+        PPDirectiveObj = None
+        # HashComment in quoted string " " is ignored.
+        InString = False
+        InCharLiteral = False 
 
         while not self.__EndOfFile():
             
+            if self.__CurrentChar() == T_CHAR_DOUBLE_QUOTE:
+                InString = not InString
+                
+            if self.__CurrentChar() == T_CHAR_SINGLE_QUOTE:
+                InCharLiteral = not InCharLiteral
             # meet new line, then no longer in a comment for // and '#'
             if self.__CurrentChar() == T_CHAR_LF:
                 if HashComment and PPDirectiveObj != None:
@@ -337,7 +345,7 @@ class CodeFragmentCollector:
                 DoubleSlashComment = True
                 CommentObj = Comment('', (self.CurrentLineNumber, self.CurrentOffsetWithinLine), None, T_COMMENT_TWO_SLASH)
             # check for '#' comment
-            elif self.__CurrentChar() == T_CHAR_HASH:
+            elif self.__CurrentChar() == T_CHAR_HASH and not InString and not InCharLiteral:
                 InComment = True
                 HashComment = True
                 #insert ',' at hash line to workaround PP effects on C grammar check. C parser also adjusted to accomodate the inserted comma.
