@@ -1,4 +1,4 @@
-# $ANTLR 3.0.1 C.g 2008-01-28 16:35:59
+# $ANTLR 3.0.1 C.g 2008-01-28 19:51:32
 
 from antlr3 import *
 from antlr3.compat import set, frozenset
@@ -123,25 +123,25 @@ class CLexer(Lexer):
 
     def __init__(self, input=None):
         Lexer.__init__(self, input)
-        self.dfa28 = self.DFA28(
-            self, 28,
-            eot = self.DFA28_eot,
-            eof = self.DFA28_eof,
-            min = self.DFA28_min,
-            max = self.DFA28_max,
-            accept = self.DFA28_accept,
-            special = self.DFA28_special,
-            transition = self.DFA28_transition
+        self.dfa27 = self.DFA27(
+            self, 27,
+            eot = self.DFA27_eot,
+            eof = self.DFA27_eof,
+            min = self.DFA27_min,
+            max = self.DFA27_max,
+            accept = self.DFA27_accept,
+            special = self.DFA27_special,
+            transition = self.DFA27_transition
             )
-        self.dfa38 = self.DFA38(
-            self, 38,
-            eot = self.DFA38_eot,
-            eof = self.DFA38_eof,
-            min = self.DFA38_min,
-            max = self.DFA38_max,
-            accept = self.DFA38_accept,
-            special = self.DFA38_special,
-            transition = self.DFA38_transition
+        self.dfa37 = self.DFA37(
+            self, 37,
+            eot = self.DFA37_eot,
+            eof = self.DFA37_eof,
+            min = self.DFA37_min,
+            max = self.DFA37_max,
+            accept = self.DFA37_accept,
+            special = self.DFA37_special,
+            transition = self.DFA37_transition
             )
 
 
@@ -2536,25 +2536,37 @@ class CLexer(Lexer):
     def mIntegerTypeSuffix(self, ):
 
         try:
-            # C.g:523:2: ( ( 'u' | 'U' )? ( 'l' | 'L' ) | ( 'u' | 'U' ) ( 'l' | 'L' )? ( 'l' | 'L' )? )
-            alt16 = 2
-            LA16_0 = self.input.LA(1)
+            # C.g:523:2: ( ( 'u' | 'U' )? ( 'l' | 'L' ) | ( 'u' | 'U' ) ( 'l' | 'L' )? | 'ULL' )
+            alt15 = 3
+            LA15 = self.input.LA(1)
+            if LA15 == u'U':
+                LA15 = self.input.LA(2)
+                if LA15 == u'L':
+                    LA15_4 = self.input.LA(3)
 
-            if (LA16_0 == u'U' or LA16_0 == u'u') :
-                LA16_1 = self.input.LA(2)
-
-                if (LA16_1 == u'L' or LA16_1 == u'l') :
-                    alt16 = 1
+                    if (LA15_4 == u'L') :
+                        alt15 = 3
+                    else:
+                        alt15 = 1
+                elif LA15 == u'l':
+                    alt15 = 1
                 else:
-                    alt16 = 2
-            elif (LA16_0 == u'L' or LA16_0 == u'l') :
-                alt16 = 1
+                    alt15 = 2
+            elif LA15 == u'L' or LA15 == u'l':
+                alt15 = 1
+            elif LA15 == u'u':
+                LA15_3 = self.input.LA(2)
+
+                if (LA15_3 == u'L' or LA15_3 == u'l') :
+                    alt15 = 1
+                else:
+                    alt15 = 2
             else:
-                nvae = NoViableAltException("521:1: fragment IntegerTypeSuffix : ( ( 'u' | 'U' )? ( 'l' | 'L' ) | ( 'u' | 'U' ) ( 'l' | 'L' )? ( 'l' | 'L' )? );", 16, 0, self.input)
+                nvae = NoViableAltException("521:1: fragment IntegerTypeSuffix : ( ( 'u' | 'U' )? ( 'l' | 'L' ) | ( 'u' | 'U' ) ( 'l' | 'L' )? | 'ULL' );", 15, 0, self.input)
 
                 raise nvae
 
-            if alt16 == 1:
+            if alt15 == 1:
                 # C.g:523:4: ( 'u' | 'U' )? ( 'l' | 'L' )
                 # C.g:523:4: ( 'u' | 'U' )?
                 alt13 = 2
@@ -2587,8 +2599,8 @@ class CLexer(Lexer):
 
 
 
-            elif alt16 == 2:
-                # C.g:524:4: ( 'u' | 'U' ) ( 'l' | 'L' )? ( 'l' | 'L' )?
+            elif alt15 == 2:
+                # C.g:524:4: ( 'u' | 'U' ) ( 'l' | 'L' )?
                 if self.input.LA(1) == u'U' or self.input.LA(1) == u'u':
                     self.input.consume();
 
@@ -2618,24 +2630,11 @@ class CLexer(Lexer):
 
 
 
-                # C.g:524:26: ( 'l' | 'L' )?
-                alt15 = 2
-                LA15_0 = self.input.LA(1)
-
-                if (LA15_0 == u'L' or LA15_0 == u'l') :
-                    alt15 = 1
-                if alt15 == 1:
-                    # C.g:
-                    if self.input.LA(1) == u'L' or self.input.LA(1) == u'l':
-                        self.input.consume();
-
-                    else:
-                        mse = MismatchedSetException(None, self.input)
-                        self.recover(mse)
-                        raise mse
 
 
-
+            elif alt15 == 3:
+                # C.g:525:4: 'ULL'
+                self.match("ULL")
 
 
 
@@ -2655,13 +2654,40 @@ class CLexer(Lexer):
         try:
             self.type = FLOATING_POINT_LITERAL
 
-            # C.g:528:5: ( ( '0' .. '9' )+ '.' ( '0' .. '9' )* ( Exponent )? ( FloatTypeSuffix )? | '.' ( '0' .. '9' )+ ( Exponent )? ( FloatTypeSuffix )? | ( '0' .. '9' )+ Exponent ( FloatTypeSuffix )? | ( '0' .. '9' )+ ( Exponent )? FloatTypeSuffix )
-            alt28 = 4
-            alt28 = self.dfa28.predict(self.input)
-            if alt28 == 1:
-                # C.g:528:9: ( '0' .. '9' )+ '.' ( '0' .. '9' )* ( Exponent )? ( FloatTypeSuffix )?
-                # C.g:528:9: ( '0' .. '9' )+
-                cnt17 = 0
+            # C.g:529:5: ( ( '0' .. '9' )+ '.' ( '0' .. '9' )* ( Exponent )? ( FloatTypeSuffix )? | '.' ( '0' .. '9' )+ ( Exponent )? ( FloatTypeSuffix )? | ( '0' .. '9' )+ Exponent ( FloatTypeSuffix )? | ( '0' .. '9' )+ ( Exponent )? FloatTypeSuffix )
+            alt27 = 4
+            alt27 = self.dfa27.predict(self.input)
+            if alt27 == 1:
+                # C.g:529:9: ( '0' .. '9' )+ '.' ( '0' .. '9' )* ( Exponent )? ( FloatTypeSuffix )?
+                # C.g:529:9: ( '0' .. '9' )+
+                cnt16 = 0
+                while True: #loop16
+                    alt16 = 2
+                    LA16_0 = self.input.LA(1)
+
+                    if ((u'0' <= LA16_0 <= u'9')) :
+                        alt16 = 1
+
+
+                    if alt16 == 1:
+                        # C.g:529:10: '0' .. '9'
+                        self.matchRange(u'0', u'9')
+
+
+
+                    else:
+                        if cnt16 >= 1:
+                            break #loop16
+
+                        eee = EarlyExitException(16, self.input)
+                        raise eee
+
+                    cnt16 += 1
+
+
+                self.match(u'.')
+
+                # C.g:529:25: ( '0' .. '9' )*
                 while True: #loop17
                     alt17 = 2
                     LA17_0 = self.input.LA(1)
@@ -2671,63 +2697,36 @@ class CLexer(Lexer):
 
 
                     if alt17 == 1:
-                        # C.g:528:10: '0' .. '9'
+                        # C.g:529:26: '0' .. '9'
                         self.matchRange(u'0', u'9')
 
 
 
                     else:
-                        if cnt17 >= 1:
-                            break #loop17
-
-                        eee = EarlyExitException(17, self.input)
-                        raise eee
-
-                    cnt17 += 1
+                        break #loop17
 
 
-                self.match(u'.')
+                # C.g:529:37: ( Exponent )?
+                alt18 = 2
+                LA18_0 = self.input.LA(1)
 
-                # C.g:528:25: ( '0' .. '9' )*
-                while True: #loop18
-                    alt18 = 2
-                    LA18_0 = self.input.LA(1)
-
-                    if ((u'0' <= LA18_0 <= u'9')) :
-                        alt18 = 1
-
-
-                    if alt18 == 1:
-                        # C.g:528:26: '0' .. '9'
-                        self.matchRange(u'0', u'9')
+                if (LA18_0 == u'E' or LA18_0 == u'e') :
+                    alt18 = 1
+                if alt18 == 1:
+                    # C.g:529:37: Exponent
+                    self.mExponent()
 
 
 
-                    else:
-                        break #loop18
 
-
-                # C.g:528:37: ( Exponent )?
+                # C.g:529:47: ( FloatTypeSuffix )?
                 alt19 = 2
                 LA19_0 = self.input.LA(1)
 
-                if (LA19_0 == u'E' or LA19_0 == u'e') :
+                if (LA19_0 == u'D' or LA19_0 == u'F' or LA19_0 == u'd' or LA19_0 == u'f') :
                     alt19 = 1
                 if alt19 == 1:
-                    # C.g:528:37: Exponent
-                    self.mExponent()
-
-
-
-
-                # C.g:528:47: ( FloatTypeSuffix )?
-                alt20 = 2
-                LA20_0 = self.input.LA(1)
-
-                if (LA20_0 == u'D' or LA20_0 == u'F' or LA20_0 == u'd' or LA20_0 == u'f') :
-                    alt20 = 1
-                if alt20 == 1:
-                    # C.g:528:47: FloatTypeSuffix
+                    # C.g:529:47: FloatTypeSuffix
                     self.mFloatTypeSuffix()
 
 
@@ -2735,57 +2734,57 @@ class CLexer(Lexer):
 
 
 
-            elif alt28 == 2:
-                # C.g:529:9: '.' ( '0' .. '9' )+ ( Exponent )? ( FloatTypeSuffix )?
+            elif alt27 == 2:
+                # C.g:530:9: '.' ( '0' .. '9' )+ ( Exponent )? ( FloatTypeSuffix )?
                 self.match(u'.')
 
-                # C.g:529:13: ( '0' .. '9' )+
-                cnt21 = 0
-                while True: #loop21
-                    alt21 = 2
-                    LA21_0 = self.input.LA(1)
+                # C.g:530:13: ( '0' .. '9' )+
+                cnt20 = 0
+                while True: #loop20
+                    alt20 = 2
+                    LA20_0 = self.input.LA(1)
 
-                    if ((u'0' <= LA21_0 <= u'9')) :
-                        alt21 = 1
+                    if ((u'0' <= LA20_0 <= u'9')) :
+                        alt20 = 1
 
 
-                    if alt21 == 1:
-                        # C.g:529:14: '0' .. '9'
+                    if alt20 == 1:
+                        # C.g:530:14: '0' .. '9'
                         self.matchRange(u'0', u'9')
 
 
 
                     else:
-                        if cnt21 >= 1:
-                            break #loop21
+                        if cnt20 >= 1:
+                            break #loop20
 
-                        eee = EarlyExitException(21, self.input)
+                        eee = EarlyExitException(20, self.input)
                         raise eee
 
-                    cnt21 += 1
+                    cnt20 += 1
 
 
-                # C.g:529:25: ( Exponent )?
+                # C.g:530:25: ( Exponent )?
+                alt21 = 2
+                LA21_0 = self.input.LA(1)
+
+                if (LA21_0 == u'E' or LA21_0 == u'e') :
+                    alt21 = 1
+                if alt21 == 1:
+                    # C.g:530:25: Exponent
+                    self.mExponent()
+
+
+
+
+                # C.g:530:35: ( FloatTypeSuffix )?
                 alt22 = 2
                 LA22_0 = self.input.LA(1)
 
-                if (LA22_0 == u'E' or LA22_0 == u'e') :
+                if (LA22_0 == u'D' or LA22_0 == u'F' or LA22_0 == u'd' or LA22_0 == u'f') :
                     alt22 = 1
                 if alt22 == 1:
-                    # C.g:529:25: Exponent
-                    self.mExponent()
-
-
-
-
-                # C.g:529:35: ( FloatTypeSuffix )?
-                alt23 = 2
-                LA23_0 = self.input.LA(1)
-
-                if (LA23_0 == u'D' or LA23_0 == u'F' or LA23_0 == u'd' or LA23_0 == u'f') :
-                    alt23 = 1
-                if alt23 == 1:
-                    # C.g:529:35: FloatTypeSuffix
+                    # C.g:530:35: FloatTypeSuffix
                     self.mFloatTypeSuffix()
 
 
@@ -2793,87 +2792,87 @@ class CLexer(Lexer):
 
 
 
-            elif alt28 == 3:
-                # C.g:530:9: ( '0' .. '9' )+ Exponent ( FloatTypeSuffix )?
-                # C.g:530:9: ( '0' .. '9' )+
-                cnt24 = 0
-                while True: #loop24
-                    alt24 = 2
-                    LA24_0 = self.input.LA(1)
-
-                    if ((u'0' <= LA24_0 <= u'9')) :
-                        alt24 = 1
-
-
-                    if alt24 == 1:
-                        # C.g:530:10: '0' .. '9'
-                        self.matchRange(u'0', u'9')
-
-
-
-                    else:
-                        if cnt24 >= 1:
-                            break #loop24
-
-                        eee = EarlyExitException(24, self.input)
-                        raise eee
-
-                    cnt24 += 1
-
-
-                self.mExponent()
-
-                # C.g:530:30: ( FloatTypeSuffix )?
-                alt25 = 2
-                LA25_0 = self.input.LA(1)
-
-                if (LA25_0 == u'D' or LA25_0 == u'F' or LA25_0 == u'd' or LA25_0 == u'f') :
-                    alt25 = 1
-                if alt25 == 1:
-                    # C.g:530:30: FloatTypeSuffix
-                    self.mFloatTypeSuffix()
-
-
-
-
-
-
-            elif alt28 == 4:
-                # C.g:531:9: ( '0' .. '9' )+ ( Exponent )? FloatTypeSuffix
+            elif alt27 == 3:
+                # C.g:531:9: ( '0' .. '9' )+ Exponent ( FloatTypeSuffix )?
                 # C.g:531:9: ( '0' .. '9' )+
-                cnt26 = 0
-                while True: #loop26
-                    alt26 = 2
-                    LA26_0 = self.input.LA(1)
+                cnt23 = 0
+                while True: #loop23
+                    alt23 = 2
+                    LA23_0 = self.input.LA(1)
 
-                    if ((u'0' <= LA26_0 <= u'9')) :
-                        alt26 = 1
+                    if ((u'0' <= LA23_0 <= u'9')) :
+                        alt23 = 1
 
 
-                    if alt26 == 1:
+                    if alt23 == 1:
                         # C.g:531:10: '0' .. '9'
                         self.matchRange(u'0', u'9')
 
 
 
                     else:
-                        if cnt26 >= 1:
-                            break #loop26
+                        if cnt23 >= 1:
+                            break #loop23
 
-                        eee = EarlyExitException(26, self.input)
+                        eee = EarlyExitException(23, self.input)
                         raise eee
 
-                    cnt26 += 1
+                    cnt23 += 1
 
 
-                # C.g:531:21: ( Exponent )?
-                alt27 = 2
-                LA27_0 = self.input.LA(1)
+                self.mExponent()
 
-                if (LA27_0 == u'E' or LA27_0 == u'e') :
-                    alt27 = 1
-                if alt27 == 1:
-                    # C.g:531:21: Exponent
+                # C.g:531:30: ( FloatTypeSuffix )?
+                alt24 = 2
+                LA24_0 = self.input.LA(1)
+
+                if (LA24_0 == u'D' or LA24_0 == u'F' or LA24_0 == u'd' or LA24_0 == u'f') :
+                    alt24 = 1
+                if alt24 == 1:
+                    # C.g:531:30: FloatTypeSuffix
+                    self.mFloatTypeSuffix()
+
+
+
+
+
+
+            elif alt27 == 4:
+                # C.g:532:9: ( '0' .. '9' )+ ( Exponent )? FloatTypeSuffix
+                # C.g:532:9: ( '0' .. '9' )+
+                cnt25 = 0
+                while True: #loop25
+                    alt25 = 2
+                    LA25_0 = self.input.LA(1)
+
+                    if ((u'0' <= LA25_0 <= u'9')) :
+                        alt25 = 1
+
+
+                    if alt25 == 1:
+                        # C.g:532:10: '0' .. '9'
+                        self.matchRange(u'0', u'9')
+
+
+
+                    else:
+                        if cnt25 >= 1:
+                            break #loop25
+
+                        eee = EarlyExitException(25, self.input)
+                        raise eee
+
+                    cnt25 += 1
+
+
+                # C.g:532:21: ( Exponent )?
+                alt26 = 2
+                LA26_0 = self.input.LA(1)
+
+                if (LA26_0 == u'E' or LA26_0 == u'e') :
+                    alt26 = 1
+                if alt26 == 1:
+                    # C.g:532:21: Exponent
                     self.mExponent()
 
 
@@ -2896,8 +2895,8 @@ class CLexer(Lexer):
     def mExponent(self, ):
 
         try:
-            # C.g:535:10: ( ( 'e' | 'E' ) ( '+' | '-' )? ( '0' .. '9' )+ )
-            # C.g:535:12: ( 'e' | 'E' ) ( '+' | '-' )? ( '0' .. '9' )+
+            # C.g:536:10: ( ( 'e' | 'E' ) ( '+' | '-' )? ( '0' .. '9' )+ )
+            # C.g:536:12: ( 'e' | 'E' ) ( '+' | '-' )? ( '0' .. '9' )+
             if self.input.LA(1) == u'E' or self.input.LA(1) == u'e':
                 self.input.consume();
 
@@ -2907,13 +2906,13 @@ class CLexer(Lexer):
                 raise mse
 
 
-            # C.g:535:22: ( '+' | '-' )?
-            alt29 = 2
-            LA29_0 = self.input.LA(1)
+            # C.g:536:22: ( '+' | '-' )?
+            alt28 = 2
+            LA28_0 = self.input.LA(1)
 
-            if (LA29_0 == u'+' or LA29_0 == u'-') :
-                alt29 = 1
-            if alt29 == 1:
+            if (LA28_0 == u'+' or LA28_0 == u'-') :
+                alt28 = 1
+            if alt28 == 1:
                 # C.g:
                 if self.input.LA(1) == u'+' or self.input.LA(1) == u'-':
                     self.input.consume();
@@ -2927,30 +2926,30 @@ class CLexer(Lexer):
 
 
 
-            # C.g:535:33: ( '0' .. '9' )+
-            cnt30 = 0
-            while True: #loop30
-                alt30 = 2
-                LA30_0 = self.input.LA(1)
+            # C.g:536:33: ( '0' .. '9' )+
+            cnt29 = 0
+            while True: #loop29
+                alt29 = 2
+                LA29_0 = self.input.LA(1)
 
-                if ((u'0' <= LA30_0 <= u'9')) :
-                    alt30 = 1
+                if ((u'0' <= LA29_0 <= u'9')) :
+                    alt29 = 1
 
 
-                if alt30 == 1:
-                    # C.g:535:34: '0' .. '9'
+                if alt29 == 1:
+                    # C.g:536:34: '0' .. '9'
                     self.matchRange(u'0', u'9')
 
 
 
                 else:
-                    if cnt30 >= 1:
-                        break #loop30
+                    if cnt29 >= 1:
+                        break #loop29
 
-                    eee = EarlyExitException(30, self.input)
+                    eee = EarlyExitException(29, self.input)
                     raise eee
 
-                cnt30 += 1
+                cnt29 += 1
 
 
 
@@ -2969,8 +2968,8 @@ class CLexer(Lexer):
     def mFloatTypeSuffix(self, ):
 
         try:
-            # C.g:538:17: ( ( 'f' | 'F' | 'd' | 'D' ) )
-            # C.g:538:19: ( 'f' | 'F' | 'd' | 'D' )
+            # C.g:539:17: ( ( 'f' | 'F' | 'd' | 'D' ) )
+            # C.g:539:19: ( 'f' | 'F' | 'd' | 'D' )
             if self.input.LA(1) == u'D' or self.input.LA(1) == u'F' or self.input.LA(1) == u'd' or self.input.LA(1) == u'f':
                 self.input.consume();
 
@@ -2996,29 +2995,29 @@ class CLexer(Lexer):
     def mEscapeSequence(self, ):
 
         try:
-            # C.g:542:5: ( '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' ) | OctalEscape )
-            alt31 = 2
-            LA31_0 = self.input.LA(1)
+            # C.g:543:5: ( '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' ) | OctalEscape )
+            alt30 = 2
+            LA30_0 = self.input.LA(1)
 
-            if (LA31_0 == u'\\') :
-                LA31_1 = self.input.LA(2)
+            if (LA30_0 == u'\\') :
+                LA30_1 = self.input.LA(2)
 
-                if (LA31_1 == u'"' or LA31_1 == u'\'' or LA31_1 == u'\\' or LA31_1 == u'b' or LA31_1 == u'f' or LA31_1 == u'n' or LA31_1 == u'r' or LA31_1 == u't') :
-                    alt31 = 1
-                elif ((u'0' <= LA31_1 <= u'7')) :
-                    alt31 = 2
+                if (LA30_1 == u'"' or LA30_1 == u'\'' or LA30_1 == u'\\' or LA30_1 == u'b' or LA30_1 == u'f' or LA30_1 == u'n' or LA30_1 == u'r' or LA30_1 == u't') :
+                    alt30 = 1
+                elif ((u'0' <= LA30_1 <= u'7')) :
+                    alt30 = 2
                 else:
-                    nvae = NoViableAltException("540:1: fragment EscapeSequence : ( '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' ) | OctalEscape );", 31, 1, self.input)
+                    nvae = NoViableAltException("541:1: fragment EscapeSequence : ( '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' ) | OctalEscape );", 30, 1, self.input)
 
                     raise nvae
 
             else:
-                nvae = NoViableAltException("540:1: fragment EscapeSequence : ( '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' ) | OctalEscape );", 31, 0, self.input)
+                nvae = NoViableAltException("541:1: fragment EscapeSequence : ( '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' ) | OctalEscape );", 30, 0, self.input)
 
                 raise nvae
 
-            if alt31 == 1:
-                # C.g:542:8: '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' )
+            if alt30 == 1:
+                # C.g:543:8: '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' )
                 self.match(u'\\')
 
                 if self.input.LA(1) == u'"' or self.input.LA(1) == u'\'' or self.input.LA(1) == u'\\' or self.input.LA(1) == u'b' or self.input.LA(1) == u'f' or self.input.LA(1) == u'n' or self.input.LA(1) == u'r' or self.input.LA(1) == u't':
@@ -3032,8 +3031,8 @@ class CLexer(Lexer):
 
 
 
-            elif alt31 == 2:
-                # C.g:543:9: OctalEscape
+            elif alt30 == 2:
+                # C.g:544:9: OctalEscape
                 self.mOctalEscape()
 
 
@@ -3051,76 +3050,49 @@ class CLexer(Lexer):
     def mOctalEscape(self, ):
 
         try:
-            # C.g:548:5: ( '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) )
-            alt32 = 3
-            LA32_0 = self.input.LA(1)
+            # C.g:549:5: ( '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) )
+            alt31 = 3
+            LA31_0 = self.input.LA(1)
 
-            if (LA32_0 == u'\\') :
-                LA32_1 = self.input.LA(2)
+            if (LA31_0 == u'\\') :
+                LA31_1 = self.input.LA(2)
 
-                if ((u'0' <= LA32_1 <= u'3')) :
-                    LA32_2 = self.input.LA(3)
+                if ((u'0' <= LA31_1 <= u'3')) :
+                    LA31_2 = self.input.LA(3)
 
-                    if ((u'0' <= LA32_2 <= u'7')) :
-                        LA32_5 = self.input.LA(4)
+                    if ((u'0' <= LA31_2 <= u'7')) :
+                        LA31_5 = self.input.LA(4)
 
-                        if ((u'0' <= LA32_5 <= u'7')) :
-                            alt32 = 1
+                        if ((u'0' <= LA31_5 <= u'7')) :
+                            alt31 = 1
                         else:
-                            alt32 = 2
+                            alt31 = 2
                     else:
-                        alt32 = 3
-                elif ((u'4' <= LA32_1 <= u'7')) :
-                    LA32_3 = self.input.LA(3)
+                        alt31 = 3
+                elif ((u'4' <= LA31_1 <= u'7')) :
+                    LA31_3 = self.input.LA(3)
 
-                    if ((u'0' <= LA32_3 <= u'7')) :
-                        alt32 = 2
+                    if ((u'0' <= LA31_3 <= u'7')) :
+                        alt31 = 2
                     else:
-                        alt32 = 3
+                        alt31 = 3
                 else:
-                    nvae = NoViableAltException("546:1: fragment OctalEscape : ( '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) );", 32, 1, self.input)
+                    nvae = NoViableAltException("547:1: fragment OctalEscape : ( '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) );", 31, 1, self.input)
 
                     raise nvae
 
             else:
-                nvae = NoViableAltException("546:1: fragment OctalEscape : ( '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) );", 32, 0, self.input)
+                nvae = NoViableAltException("547:1: fragment OctalEscape : ( '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) );", 31, 0, self.input)
 
                 raise nvae
 
-            if alt32 == 1:
-                # C.g:548:9: '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' )
+            if alt31 == 1:
+                # C.g:549:9: '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' )
                 self.match(u'\\')
 
-                # C.g:548:14: ( '0' .. '3' )
-                # C.g:548:15: '0' .. '3'
+                # C.g:549:14: ( '0' .. '3' )
+                # C.g:549:15: '0' .. '3'
                 self.matchRange(u'0', u'3')
-
-
-
-
-                # C.g:548:25: ( '0' .. '7' )
-                # C.g:548:26: '0' .. '7'
-                self.matchRange(u'0', u'7')
-
-
-
-
-                # C.g:548:36: ( '0' .. '7' )
-                # C.g:548:37: '0' .. '7'
-                self.matchRange(u'0', u'7')
-
-
-
-
-
-
-            elif alt32 == 2:
-                # C.g:549:9: '\\\\' ( '0' .. '7' ) ( '0' .. '7' )
-                self.match(u'\\')
-
-                # C.g:549:14: ( '0' .. '7' )
-                # C.g:549:15: '0' .. '7'
-                self.matchRange(u'0', u'7')
 
 
 
@@ -3132,14 +3104,41 @@ class CLexer(Lexer):
 
 
 
+                # C.g:549:36: ( '0' .. '7' )
+                # C.g:549:37: '0' .. '7'
+                self.matchRange(u'0', u'7')
 
 
-            elif alt32 == 3:
-                # C.g:550:9: '\\\\' ( '0' .. '7' )
+
+
+
+
+            elif alt31 == 2:
+                # C.g:550:9: '\\\\' ( '0' .. '7' ) ( '0' .. '7' )
                 self.match(u'\\')
 
                 # C.g:550:14: ( '0' .. '7' )
                 # C.g:550:15: '0' .. '7'
+                self.matchRange(u'0', u'7')
+
+
+
+
+                # C.g:550:25: ( '0' .. '7' )
+                # C.g:550:26: '0' .. '7'
+                self.matchRange(u'0', u'7')
+
+
+
+
+
+
+            elif alt31 == 3:
+                # C.g:551:9: '\\\\' ( '0' .. '7' )
+                self.match(u'\\')
+
+                # C.g:551:14: ( '0' .. '7' )
+                # C.g:551:15: '0' .. '7'
                 self.matchRange(u'0', u'7')
 
 
@@ -3160,8 +3159,8 @@ class CLexer(Lexer):
     def mUnicodeEscape(self, ):
 
         try:
-            # C.g:555:5: ( '\\\\' 'u' HexDigit HexDigit HexDigit HexDigit )
-            # C.g:555:9: '\\\\' 'u' HexDigit HexDigit HexDigit HexDigit
+            # C.g:556:5: ( '\\\\' 'u' HexDigit HexDigit HexDigit HexDigit )
+            # C.g:556:9: '\\\\' 'u' HexDigit HexDigit HexDigit HexDigit
             self.match(u'\\')
 
             self.match(u'u')
@@ -3192,8 +3191,8 @@ class CLexer(Lexer):
         try:
             self.type = WS
 
-            # C.g:558:5: ( ( ' ' | '\\r' | '\\t' | '\\u000C' | '\\n' ) )
-            # C.g:558:8: ( ' ' | '\\r' | '\\t' | '\\u000C' | '\\n' )
+            # C.g:559:5: ( ( ' ' | '\\r' | '\\t' | '\\u000C' | '\\n' ) )
+            # C.g:559:8: ( ' ' | '\\r' | '\\t' | '\\u000C' | '\\n' )
             if (u'\t' <= self.input.LA(1) <= u'\n') or (u'\f' <= self.input.LA(1) <= u'\r') or self.input.LA(1) == u' ':
                 self.input.consume();
 
@@ -3224,10 +3223,10 @@ class CLexer(Lexer):
         try:
             self.type = BS
 
-            # C.g:562:5: ( ( '\\\\' ) )
-            # C.g:562:7: ( '\\\\' )
-            # C.g:562:7: ( '\\\\' )
-            # C.g:562:8: '\\\\'
+            # C.g:563:5: ( ( '\\\\' ) )
+            # C.g:563:7: ( '\\\\' )
+            # C.g:563:7: ( '\\\\' )
+            # C.g:563:8: '\\\\'
             self.match(u'\\')
 
 
@@ -3254,8 +3253,8 @@ class CLexer(Lexer):
         try:
             self.type = UnicodeVocabulary
 
-            # C.g:570:5: ( '\\u0003' .. '\\uFFFE' )
-            # C.g:570:7: '\\u0003' .. '\\uFFFE'
+            # C.g:571:5: ( '\\u0003' .. '\\uFFFE' )
+            # C.g:571:7: '\\u0003' .. '\\uFFFE'
             self.matchRange(u'\u0003', u'\uFFFE')
 
 
@@ -3276,37 +3275,37 @@ class CLexer(Lexer):
         try:
             self.type = COMMENT
 
-            # C.g:573:5: ( '/*' ( options {greedy=false; } : . )* '*/' )
-            # C.g:573:9: '/*' ( options {greedy=false; } : . )* '*/'
+            # C.g:574:5: ( '/*' ( options {greedy=false; } : . )* '*/' )
+            # C.g:574:9: '/*' ( options {greedy=false; } : . )* '*/'
             self.match("/*")
 
 
-            # C.g:573:14: ( options {greedy=false; } : . )*
-            while True: #loop33
-                alt33 = 2
-                LA33_0 = self.input.LA(1)
+            # C.g:574:14: ( options {greedy=false; } : . )*
+            while True: #loop32
+                alt32 = 2
+                LA32_0 = self.input.LA(1)
 
-                if (LA33_0 == u'*') :
-                    LA33_1 = self.input.LA(2)
+                if (LA32_0 == u'*') :
+                    LA32_1 = self.input.LA(2)
 
-                    if (LA33_1 == u'/') :
-                        alt33 = 2
-                    elif ((u'\u0000' <= LA33_1 <= u'.') or (u'0' <= LA33_1 <= u'\uFFFE')) :
-                        alt33 = 1
-
-
-                elif ((u'\u0000' <= LA33_0 <= u')') or (u'+' <= LA33_0 <= u'\uFFFE')) :
-                    alt33 = 1
+                    if (LA32_1 == u'/') :
+                        alt32 = 2
+                    elif ((u'\u0000' <= LA32_1 <= u'.') or (u'0' <= LA32_1 <= u'\uFFFE')) :
+                        alt32 = 1
 
 
-                if alt33 == 1:
-                    # C.g:573:42: .
+                elif ((u'\u0000' <= LA32_0 <= u')') or (u'+' <= LA32_0 <= u'\uFFFE')) :
+                    alt32 = 1
+
+
+                if alt32 == 1:
+                    # C.g:574:42: .
                     self.matchAny()
 
 
 
                 else:
-                    break #loop33
+                    break #loop32
 
 
             self.match("*/")
@@ -3333,22 +3332,22 @@ class CLexer(Lexer):
         try:
             self.type = LINE_COMMENT
 
-            # C.g:578:5: ( '//' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n' )
-            # C.g:578:7: '//' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n'
+            # C.g:579:5: ( '//' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n' )
+            # C.g:579:7: '//' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n'
             self.match("//")
 
 
-            # C.g:578:12: (~ ( '\\n' | '\\r' ) )*
-            while True: #loop34
-                alt34 = 2
-                LA34_0 = self.input.LA(1)
+            # C.g:579:12: (~ ( '\\n' | '\\r' ) )*
+            while True: #loop33
+                alt33 = 2
+                LA33_0 = self.input.LA(1)
 
-                if ((u'\u0000' <= LA34_0 <= u'\t') or (u'\u000B' <= LA34_0 <= u'\f') or (u'\u000E' <= LA34_0 <= u'\uFFFE')) :
-                    alt34 = 1
+                if ((u'\u0000' <= LA33_0 <= u'\t') or (u'\u000B' <= LA33_0 <= u'\f') or (u'\u000E' <= LA33_0 <= u'\uFFFE')) :
+                    alt33 = 1
 
 
-                if alt34 == 1:
-                    # C.g:578:12: ~ ( '\\n' | '\\r' )
+                if alt33 == 1:
+                    # C.g:579:12: ~ ( '\\n' | '\\r' )
                     if (u'\u0000' <= self.input.LA(1) <= u'\t') or (u'\u000B' <= self.input.LA(1) <= u'\f') or (u'\u000E' <= self.input.LA(1) <= u'\uFFFE'):
                         self.input.consume();
 
@@ -3361,17 +3360,17 @@ class CLexer(Lexer):
 
 
                 else:
-                    break #loop34
+                    break #loop33
 
 
-            # C.g:578:26: ( '\\r' )?
-            alt35 = 2
-            LA35_0 = self.input.LA(1)
+            # C.g:579:26: ( '\\r' )?
+            alt34 = 2
+            LA34_0 = self.input.LA(1)
 
-            if (LA35_0 == u'\r') :
-                alt35 = 1
-            if alt35 == 1:
-                # C.g:578:26: '\\r'
+            if (LA34_0 == u'\r') :
+                alt34 = 1
+            if alt34 == 1:
+                # C.g:579:26: '\\r'
                 self.match(u'\r')
 
 
@@ -3400,21 +3399,21 @@ class CLexer(Lexer):
         try:
             self.type = LINE_COMMAND
 
-            # C.g:583:5: ( '#' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n' )
-            # C.g:583:7: '#' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n'
+            # C.g:584:5: ( '#' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n' )
+            # C.g:584:7: '#' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n'
             self.match(u'#')
 
-            # C.g:583:11: (~ ( '\\n' | '\\r' ) )*
-            while True: #loop36
-                alt36 = 2
-                LA36_0 = self.input.LA(1)
+            # C.g:584:11: (~ ( '\\n' | '\\r' ) )*
+            while True: #loop35
+                alt35 = 2
+                LA35_0 = self.input.LA(1)
 
-                if ((u'\u0000' <= LA36_0 <= u'\t') or (u'\u000B' <= LA36_0 <= u'\f') or (u'\u000E' <= LA36_0 <= u'\uFFFE')) :
-                    alt36 = 1
+                if ((u'\u0000' <= LA35_0 <= u'\t') or (u'\u000B' <= LA35_0 <= u'\f') or (u'\u000E' <= LA35_0 <= u'\uFFFE')) :
+                    alt35 = 1
 
 
-                if alt36 == 1:
-                    # C.g:583:11: ~ ( '\\n' | '\\r' )
+                if alt35 == 1:
+                    # C.g:584:11: ~ ( '\\n' | '\\r' )
                     if (u'\u0000' <= self.input.LA(1) <= u'\t') or (u'\u000B' <= self.input.LA(1) <= u'\f') or (u'\u000E' <= self.input.LA(1) <= u'\uFFFE'):
                         self.input.consume();
 
@@ -3427,17 +3426,17 @@ class CLexer(Lexer):
 
 
                 else:
-                    break #loop36
+                    break #loop35
 
 
-            # C.g:583:25: ( '\\r' )?
-            alt37 = 2
-            LA37_0 = self.input.LA(1)
+            # C.g:584:25: ( '\\r' )?
+            alt36 = 2
+            LA36_0 = self.input.LA(1)
 
-            if (LA37_0 == u'\r') :
-                alt37 = 1
-            if alt37 == 1:
-                # C.g:583:25: '\\r'
+            if (LA36_0 == u'\r') :
+                alt36 = 1
+            if alt36 == 1:
+                # C.g:584:25: '\\r'
                 self.match(u'\r')
 
 
@@ -3462,591 +3461,591 @@ class CLexer(Lexer):
 
     def mTokens(self):
         # C.g:1:8: ( T25 | T26 | T27 | T28 | T29 | T30 | T31 | T32 | T33 | T34 | T35 | T36 | T37 | T38 | T39 | T40 | T41 | T42 | T43 | T44 | T45 | T46 | T47 | T48 | T49 | T50 | T51 | T52 | T53 | T54 | T55 | T56 | T57 | T58 | T59 | T60 | T61 | T62 | T63 | T64 | T65 | T66 | T67 | T68 | T69 | T70 | T71 | T72 | T73 | T74 | T75 | T76 | T77 | T78 | T79 | T80 | T81 | T82 | T83 | T84 | T85 | T86 | T87 | T88 | T89 | T90 | T91 | T92 | T93 | T94 | T95 | T96 | T97 | T98 | T99 | T100 | T101 | T102 | T103 | T104 | T105 | T106 | T107 | T108 | T109 | IDENTIFIER | CHARACTER_LITERAL | STRING_LITERAL | HEX_LITERAL | DECIMAL_LITERAL | OCTAL_LITERAL | FLOATING_POINT_LITERAL | WS | BS | UnicodeVocabulary | COMMENT | LINE_COMMENT | LINE_COMMAND )
-        alt38 = 98
-        alt38 = self.dfa38.predict(self.input)
-        if alt38 == 1:
+        alt37 = 98
+        alt37 = self.dfa37.predict(self.input)
+        if alt37 == 1:
             # C.g:1:10: T25
             self.mT25()
 
 
 
-        elif alt38 == 2:
+        elif alt37 == 2:
             # C.g:1:14: T26
             self.mT26()
 
 
 
-        elif alt38 == 3:
+        elif alt37 == 3:
             # C.g:1:18: T27
             self.mT27()
 
 
 
-        elif alt38 == 4:
+        elif alt37 == 4:
             # C.g:1:22: T28
             self.mT28()
 
 
 
-        elif alt38 == 5:
+        elif alt37 == 5:
             # C.g:1:26: T29
             self.mT29()
 
 
 
-        elif alt38 == 6:
+        elif alt37 == 6:
             # C.g:1:30: T30
             self.mT30()
 
 
 
-        elif alt38 == 7:
+        elif alt37 == 7:
             # C.g:1:34: T31
             self.mT31()
 
 
 
-        elif alt38 == 8:
+        elif alt37 == 8:
             # C.g:1:38: T32
             self.mT32()
 
 
 
-        elif alt38 == 9:
+        elif alt37 == 9:
             # C.g:1:42: T33
             self.mT33()
 
 
 
-        elif alt38 == 10:
+        elif alt37 == 10:
             # C.g:1:46: T34
             self.mT34()
 
 
 
-        elif alt38 == 11:
+        elif alt37 == 11:
             # C.g:1:50: T35
             self.mT35()
 
 
 
-        elif alt38 == 12:
+        elif alt37 == 12:
             # C.g:1:54: T36
             self.mT36()
 
 
 
-        elif alt38 == 13:
+        elif alt37 == 13:
             # C.g:1:58: T37
             self.mT37()
 
 
 
-        elif alt38 == 14:
+        elif alt37 == 14:
             # C.g:1:62: T38
             self.mT38()
 
 
 
-        elif alt38 == 15:
+        elif alt37 == 15:
             # C.g:1:66: T39
             self.mT39()
 
 
 
-        elif alt38 == 16:
+        elif alt37 == 16:
             # C.g:1:70: T40
             self.mT40()
 
 
 
-        elif alt38 == 17:
+        elif alt37 == 17:
             # C.g:1:74: T41
             self.mT41()
 
 
 
-        elif alt38 == 18:
+        elif alt37 == 18:
             # C.g:1:78: T42
             self.mT42()
 
 
 
-        elif alt38 == 19:
+        elif alt37 == 19:
             # C.g:1:82: T43
             self.mT43()
 
 
 
-        elif alt38 == 20:
+        elif alt37 == 20:
             # C.g:1:86: T44
             self.mT44()
 
 
 
-        elif alt38 == 21:
+        elif alt37 == 21:
             # C.g:1:90: T45
             self.mT45()
 
 
 
-        elif alt38 == 22:
+        elif alt37 == 22:
             # C.g:1:94: T46
             self.mT46()
 
 
 
-        elif alt38 == 23:
+        elif alt37 == 23:
             # C.g:1:98: T47
             self.mT47()
 
 
 
-        elif alt38 == 24:
+        elif alt37 == 24:
             # C.g:1:102: T48
             self.mT48()
 
 
 
-        elif alt38 == 25:
+        elif alt37 == 25:
             # C.g:1:106: T49
             self.mT49()
 
 
 
-        elif alt38 == 26:
+        elif alt37 == 26:
             # C.g:1:110: T50
             self.mT50()
 
 
 
-        elif alt38 == 27:
+        elif alt37 == 27:
             # C.g:1:114: T51
             self.mT51()
 
 
 
-        elif alt38 == 28:
+        elif alt37 == 28:
             # C.g:1:118: T52
             self.mT52()
 
 
 
-        elif alt38 == 29:
+        elif alt37 == 29:
             # C.g:1:122: T53
             self.mT53()
 
 
 
-        elif alt38 == 30:
+        elif alt37 == 30:
             # C.g:1:126: T54
             self.mT54()
 
 
 
-        elif alt38 == 31:
+        elif alt37 == 31:
             # C.g:1:130: T55
             self.mT55()
 
 
 
-        elif alt38 == 32:
+        elif alt37 == 32:
             # C.g:1:134: T56
             self.mT56()
 
 
 
-        elif alt38 == 33:
+        elif alt37 == 33:
             # C.g:1:138: T57
             self.mT57()
 
 
 
-        elif alt38 == 34:
+        elif alt37 == 34:
             # C.g:1:142: T58
             self.mT58()
 
 
 
-        elif alt38 == 35:
+        elif alt37 == 35:
             # C.g:1:146: T59
             self.mT59()
 
 
 
-        elif alt38 == 36:
+        elif alt37 == 36:
             # C.g:1:150: T60
             self.mT60()
 
 
 
-        elif alt38 == 37:
+        elif alt37 == 37:
             # C.g:1:154: T61
             self.mT61()
 
 
 
-        elif alt38 == 38:
+        elif alt37 == 38:
             # C.g:1:158: T62
             self.mT62()
 
 
 
-        elif alt38 == 39:
+        elif alt37 == 39:
             # C.g:1:162: T63
             self.mT63()
 
 
 
-        elif alt38 == 40:
+        elif alt37 == 40:
             # C.g:1:166: T64
             self.mT64()
 
 
 
-        elif alt38 == 41:
+        elif alt37 == 41:
             # C.g:1:170: T65
             self.mT65()
 
 
 
-        elif alt38 == 42:
+        elif alt37 == 42:
             # C.g:1:174: T66
             self.mT66()
 
 
 
-        elif alt38 == 43:
+        elif alt37 == 43:
             # C.g:1:178: T67
             self.mT67()
 
 
 
-        elif alt38 == 44:
+        elif alt37 == 44:
             # C.g:1:182: T68
             self.mT68()
 
 
 
-        elif alt38 == 45:
+        elif alt37 == 45:
             # C.g:1:186: T69
             self.mT69()
 
 
 
-        elif alt38 == 46:
+        elif alt37 == 46:
             # C.g:1:190: T70
             self.mT70()
 
 
 
-        elif alt38 == 47:
+        elif alt37 == 47:
             # C.g:1:194: T71
             self.mT71()
 
 
 
-        elif alt38 == 48:
+        elif alt37 == 48:
             # C.g:1:198: T72
             self.mT72()
 
 
 
-        elif alt38 == 49:
+        elif alt37 == 49:
             # C.g:1:202: T73
             self.mT73()
 
 
 
-        elif alt38 == 50:
+        elif alt37 == 50:
             # C.g:1:206: T74
             self.mT74()
 
 
 
-        elif alt38 == 51:
+        elif alt37 == 51:
             # C.g:1:210: T75
             self.mT75()
 
 
 
-        elif alt38 == 52:
+        elif alt37 == 52:
             # C.g:1:214: T76
             self.mT76()
 
 
 
-        elif alt38 == 53:
+        elif alt37 == 53:
             # C.g:1:218: T77
             self.mT77()
 
 
 
-        elif alt38 == 54:
+        elif alt37 == 54:
             # C.g:1:222: T78
             self.mT78()
 
 
 
-        elif alt38 == 55:
+        elif alt37 == 55:
             # C.g:1:226: T79
             self.mT79()
 
 
 
-        elif alt38 == 56:
+        elif alt37 == 56:
             # C.g:1:230: T80
             self.mT80()
 
 
 
-        elif alt38 == 57:
+        elif alt37 == 57:
             # C.g:1:234: T81
             self.mT81()
 
 
 
-        elif alt38 == 58:
+        elif alt37 == 58:
             # C.g:1:238: T82
             self.mT82()
 
 
 
-        elif alt38 == 59:
+        elif alt37 == 59:
             # C.g:1:242: T83
             self.mT83()
 
 
 
-        elif alt38 == 60:
+        elif alt37 == 60:
             # C.g:1:246: T84
             self.mT84()
 
 
 
-        elif alt38 == 61:
+        elif alt37 == 61:
             # C.g:1:250: T85
             self.mT85()
 
 
 
-        elif alt38 == 62:
+        elif alt37 == 62:
             # C.g:1:254: T86
             self.mT86()
 
 
 
-        elif alt38 == 63:
+        elif alt37 == 63:
             # C.g:1:258: T87
             self.mT87()
 
 
 
-        elif alt38 == 64:
+        elif alt37 == 64:
             # C.g:1:262: T88
             self.mT88()
 
 
 
-        elif alt38 == 65:
+        elif alt37 == 65:
             # C.g:1:266: T89
             self.mT89()
 
 
 
-        elif alt38 == 66:
+        elif alt37 == 66:
             # C.g:1:270: T90
             self.mT90()
 
 
 
-        elif alt38 == 67:
+        elif alt37 == 67:
             # C.g:1:274: T91
             self.mT91()
 
 
 
-        elif alt38 == 68:
+        elif alt37 == 68:
             # C.g:1:278: T92
             self.mT92()
 
 
 
-        elif alt38 == 69:
+        elif alt37 == 69:
             # C.g:1:282: T93
             self.mT93()
 
 
 
-        elif alt38 == 70:
+        elif alt37 == 70:
             # C.g:1:286: T94
             self.mT94()
 
 
 
-        elif alt38 == 71:
+        elif alt37 == 71:
             # C.g:1:290: T95
             self.mT95()
 
 
 
-        elif alt38 == 72:
+        elif alt37 == 72:
             # C.g:1:294: T96
             self.mT96()
 
 
 
-        elif alt38 == 73:
+        elif alt37 == 73:
             # C.g:1:298: T97
             self.mT97()
 
 
 
-        elif alt38 == 74:
+        elif alt37 == 74:
             # C.g:1:302: T98
             self.mT98()
 
 
 
-        elif alt38 == 75:
+        elif alt37 == 75:
             # C.g:1:306: T99
             self.mT99()
 
 
 
-        elif alt38 == 76:
+        elif alt37 == 76:
             # C.g:1:310: T100
             self.mT100()
 
 
 
-        elif alt38 == 77:
+        elif alt37 == 77:
             # C.g:1:315: T101
             self.mT101()
 
 
 
-        elif alt38 == 78:
+        elif alt37 == 78:
             # C.g:1:320: T102
             self.mT102()
 
 
 
-        elif alt38 == 79:
+        elif alt37 == 79:
             # C.g:1:325: T103
             self.mT103()
 
 
 
-        elif alt38 == 80:
+        elif alt37 == 80:
             # C.g:1:330: T104
             self.mT104()
 
 
 
-        elif alt38 == 81:
+        elif alt37 == 81:
             # C.g:1:335: T105
             self.mT105()
 
 
 
-        elif alt38 == 82:
+        elif alt37 == 82:
             # C.g:1:340: T106
             self.mT106()
 
 
 
-        elif alt38 == 83:
+        elif alt37 == 83:
             # C.g:1:345: T107
             self.mT107()
 
 
 
-        elif alt38 == 84:
+        elif alt37 == 84:
             # C.g:1:350: T108
             self.mT108()
 
 
 
-        elif alt38 == 85:
+        elif alt37 == 85:
             # C.g:1:355: T109
             self.mT109()
 
 
 
-        elif alt38 == 86:
+        elif alt37 == 86:
             # C.g:1:360: IDENTIFIER
             self.mIDENTIFIER()
 
 
 
-        elif alt38 == 87:
+        elif alt37 == 87:
             # C.g:1:371: CHARACTER_LITERAL
             self.mCHARACTER_LITERAL()
 
 
 
-        elif alt38 == 88:
+        elif alt37 == 88:
             # C.g:1:389: STRING_LITERAL
             self.mSTRING_LITERAL()
 
 
 
-        elif alt38 == 89:
+        elif alt37 == 89:
             # C.g:1:404: HEX_LITERAL
             self.mHEX_LITERAL()
 
 
 
-        elif alt38 == 90:
+        elif alt37 == 90:
             # C.g:1:416: DECIMAL_LITERAL
             self.mDECIMAL_LITERAL()
 
 
 
-        elif alt38 == 91:
+        elif alt37 == 91:
             # C.g:1:432: OCTAL_LITERAL
             self.mOCTAL_LITERAL()
 
 
 
-        elif alt38 == 92:
+        elif alt37 == 92:
             # C.g:1:446: FLOATING_POINT_LITERAL
             self.mFLOATING_POINT_LITERAL()
 
 
 
-        elif alt38 == 93:
+        elif alt37 == 93:
             # C.g:1:469: WS
             self.mWS()
 
 
 
-        elif alt38 == 94:
+        elif alt37 == 94:
             # C.g:1:472: BS
             self.mBS()
 
 
 
-        elif alt38 == 95:
+        elif alt37 == 95:
             # C.g:1:475: UnicodeVocabulary
             self.mUnicodeVocabulary()
 
 
 
-        elif alt38 == 96:
+        elif alt37 == 96:
             # C.g:1:493: COMMENT
             self.mCOMMENT()
 
 
 
-        elif alt38 == 97:
+        elif alt37 == 97:
             # C.g:1:501: LINE_COMMENT
             self.mLINE_COMMENT()
 
 
 
-        elif alt38 == 98:
+        elif alt37 == 98:
             # C.g:1:514: LINE_COMMAND
             self.mLINE_COMMAND()
 
@@ -4057,34 +4056,34 @@ class CLexer(Lexer):
 
 
 
-    # lookup tables for DFA #28
+    # lookup tables for DFA #27
 
-    DFA28_eot = DFA.unpack(
+    DFA27_eot = DFA.unpack(
         u"\7\uffff\1\10\2\uffff"
         )
 
-    DFA28_eof = DFA.unpack(
+    DFA27_eof = DFA.unpack(
         u"\12\uffff"
         )
 
-    DFA28_min = DFA.unpack(
+    DFA27_min = DFA.unpack(
         u"\2\56\1\uffff\1\53\2\uffff\2\60\2\uffff"
         )
 
-    DFA28_max = DFA.unpack(
+    DFA27_max = DFA.unpack(
         u"\1\71\1\146\1\uffff\1\71\2\uffff\1\71\1\146\2\uffff"
         )
 
-    DFA28_accept = DFA.unpack(
+    DFA27_accept = DFA.unpack(
         u"\2\uffff\1\2\1\uffff\1\4\1\1\2\uffff\2\3"
         )
 
-    DFA28_special = DFA.unpack(
+    DFA27_special = DFA.unpack(
         u"\12\uffff"
         )
 
             
-    DFA28_transition = [
+    DFA27_transition = [
         DFA.unpack(u"\1\2\1\uffff\12\1"),
         DFA.unpack(u"\1\5\1\uffff\12\1\12\uffff\1\4\1\3\1\4\35\uffff\1\4"
         u"\1\3\1\4"),
@@ -4099,12 +4098,12 @@ class CLexer(Lexer):
         DFA.unpack(u"")
     ]
 
-    # class definition for DFA #28
+    # class definition for DFA #27
 
-    DFA28 = DFA
-    # lookup tables for DFA #38
+    DFA27 = DFA
+    # lookup tables for DFA #37
 
-    DFA38_eot = DFA.unpack(
+    DFA37_eot = DFA.unpack(
         u"\2\uffff\1\72\1\uffff\1\75\15\72\3\uffff\4\72\4\uffff\1\142\1\145"
         u"\1\150\1\154\1\160\1\162\1\165\1\uffff\1\170\1\173\1\176\1\u0080"
         u"\1\u0083\1\uffff\4\72\1\uffff\2\67\2\u008c\2\uffff\1\67\2\uffff"
@@ -4123,11 +4122,11 @@ class CLexer(Lexer):
         u"\1\uffff\1\u0137\1\uffff\1\u0138\5\uffff"
         )
 
-    DFA38_eof = DFA.unpack(
+    DFA37_eof = DFA.unpack(
         u"\u0139\uffff"
         )
 
-    DFA38_min = DFA.unpack(
+    DFA37_min = DFA.unpack(
         u"\1\3\1\uffff\1\171\1\uffff\1\75\1\154\1\150\1\165\1\145\1\124\1"
         u"\157\1\141\1\146\1\157\1\154\1\145\1\156\1\117\3\uffff\1\116\1"
         u"\120\1\117\1\106\4\uffff\1\75\1\56\1\53\1\55\1\52\1\75\1\46\1\uffff"
@@ -4152,7 +4151,7 @@ class CLexer(Lexer):
         u"\1\44\1\114\2\uffff\3\44\1\uffff\1\44\1\uffff\1\44\5\uffff"
         )
 
-    DFA38_max = DFA.unpack(
+    DFA37_max = DFA.unpack(
         u"\1\ufffe\1\uffff\1\171\1\uffff\1\75\1\170\1\167\1\165\1\145\1\124"
         u"\2\157\1\156\3\157\1\156\1\117\3\uffff\1\116\1\125\1\117\1\106"
         u"\4\uffff\1\75\1\71\1\75\1\76\3\75\1\uffff\2\75\1\76\1\75\1\174"
@@ -4178,7 +4177,7 @@ class CLexer(Lexer):
         u"\1\172\1\uffff\1\172\5\uffff"
         )
 
-    DFA38_accept = DFA.unpack(
+    DFA37_accept = DFA.unpack(
         u"\1\uffff\1\1\1\uffff\1\3\16\uffff\1\24\1\25\1\30\4\uffff\1\41\1"
         u"\42\1\43\1\44\7\uffff\1\61\5\uffff\1\75\4\uffff\1\126\4\uffff\1"
         u"\135\1\136\1\uffff\1\137\1\1\1\uffff\1\126\1\3\1\102\1\4\27\uffff"
@@ -4196,12 +4195,12 @@ class CLexer(Lexer):
         u"\1\uffff\1\23\1\uffff\1\10\1\33\1\123\1\22\1\36"
         )
 
-    DFA38_special = DFA.unpack(
+    DFA37_special = DFA.unpack(
         u"\u0139\uffff"
         )
 
             
-    DFA38_transition = [
+    DFA37_transition = [
         DFA.unpack(u"\6\67\2\64\1\67\2\64\22\67\1\64\1\45\1\61\1\66\1\57"
         u"\1\42\1\43\1\60\1\31\1\32\1\35\1\37\1\3\1\40\1\36\1\41\1\62\11"
         u"\63\1\24\1\1\1\46\1\4\1\47\1\52\1\67\1\57\1\21\1\27\1\57\1\30\3"
@@ -4564,8 +4563,8 @@ class CLexer(Lexer):
         DFA.unpack(u"")
     ]
 
-    # class definition for DFA #38
+    # class definition for DFA #37
 
-    DFA38 = DFA
+    DFA37 = DFA
  
 

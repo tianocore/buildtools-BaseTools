@@ -1,4 +1,4 @@
-# $ANTLR 3.0.1 C.g 2008-01-28 16:35:58
+# $ANTLR 3.0.1 C.g 2008-01-28 19:51:31
 
 from antlr3 import *
 from antlr3.compat import set, frozenset
@@ -436,9 +436,9 @@ class CParser(Parser):
 
                         raise nvae
 
-                elif (LA3_0 == 56) and (self.synpred4()):
-                    alt3 = 1
                 elif (LA3_0 == 61) and (self.synpred4()):
+                    alt3 = 1
+                elif (LA3_0 == 56) and (self.synpred4()):
                     alt3 = 1
                 elif (LA3_0 == 57) and (self.synpred4()):
                     alt3 = 1
@@ -2196,7 +2196,7 @@ class CParser(Parser):
 
 
     # $ANTLR start declarator
-    # C.g:230:1: declarator : ( ( 'EFIAPI' )? ( pointer )? direct_declarator | pointer );
+    # C.g:230:1: declarator : ( ( pointer )? ( 'EFIAPI' )? direct_declarator | pointer );
     def declarator(self, ):
 
         retval = self.declarator_return()
@@ -2207,14 +2207,12 @@ class CParser(Parser):
                 if self.backtracking > 0 and self.alreadyParsedRule(self.input, 22):
                     return retval
 
-                # C.g:231:2: ( ( 'EFIAPI' )? ( pointer )? direct_declarator | pointer )
+                # C.g:231:2: ( ( pointer )? ( 'EFIAPI' )? direct_declarator | pointer )
                 alt26 = 2
                 LA26_0 = self.input.LA(1)
 
-                if (LA26_0 == IDENTIFIER or (56 <= LA26_0 <= 57)) :
-                    alt26 = 1
-                elif (LA26_0 == 61) :
-                    LA26_2 = self.input.LA(2)
+                if (LA26_0 == 61) :
+                    LA26_1 = self.input.LA(2)
 
                     if (self.synpred55()) :
                         alt26 = 1
@@ -2225,46 +2223,48 @@ class CParser(Parser):
                             self.failed = True
                             return retval
 
-                        nvae = NoViableAltException("230:1: declarator : ( ( 'EFIAPI' )? ( pointer )? direct_declarator | pointer );", 26, 2, self.input)
+                        nvae = NoViableAltException("230:1: declarator : ( ( pointer )? ( 'EFIAPI' )? direct_declarator | pointer );", 26, 1, self.input)
 
                         raise nvae
 
+                elif (LA26_0 == IDENTIFIER or (56 <= LA26_0 <= 57)) :
+                    alt26 = 1
                 else:
                     if self.backtracking > 0:
                         self.failed = True
                         return retval
 
-                    nvae = NoViableAltException("230:1: declarator : ( ( 'EFIAPI' )? ( pointer )? direct_declarator | pointer );", 26, 0, self.input)
+                    nvae = NoViableAltException("230:1: declarator : ( ( pointer )? ( 'EFIAPI' )? direct_declarator | pointer );", 26, 0, self.input)
 
                     raise nvae
 
                 if alt26 == 1:
-                    # C.g:231:4: ( 'EFIAPI' )? ( pointer )? direct_declarator
-                    # C.g:231:4: ( 'EFIAPI' )?
+                    # C.g:231:4: ( pointer )? ( 'EFIAPI' )? direct_declarator
+                    # C.g:231:4: ( pointer )?
                     alt24 = 2
                     LA24_0 = self.input.LA(1)
 
-                    if (LA24_0 == 56) :
+                    if (LA24_0 == 61) :
                         alt24 = 1
                     if alt24 == 1:
-                        # C.g:231:5: 'EFIAPI'
-                        self.match(self.input, 56, self.FOLLOW_56_in_declarator734)
+                        # C.g:0:0: pointer
+                        self.following.append(self.FOLLOW_pointer_in_declarator733)
+                        self.pointer()
+                        self.following.pop()
                         if self.failed:
                             return retval
 
 
 
-                    # C.g:231:16: ( pointer )?
+                    # C.g:231:13: ( 'EFIAPI' )?
                     alt25 = 2
                     LA25_0 = self.input.LA(1)
 
-                    if (LA25_0 == 61) :
+                    if (LA25_0 == 56) :
                         alt25 = 1
                     if alt25 == 1:
-                        # C.g:0:0: pointer
-                        self.following.append(self.FOLLOW_pointer_in_declarator738)
-                        self.pointer()
-                        self.following.pop()
+                        # C.g:231:14: 'EFIAPI'
+                        self.match(self.input, 56, self.FOLLOW_56_in_declarator737)
                         if self.failed:
                             return retval
 
@@ -3021,7 +3021,7 @@ class CParser(Parser):
                     elif LA33 == EOF or LA33 == IDENTIFIER or LA33 == 25 or LA33 == 26 or LA33 == 27 or LA33 == 28 or LA33 == 29 or LA33 == 30 or LA33 == 31 or LA33 == 32 or LA33 == 33 or LA33 == 34 or LA33 == 35 or LA33 == 36 or LA33 == 37 or LA33 == 38 or LA33 == 39 or LA33 == 40 or LA33 == 41 or LA33 == 42 or LA33 == 43 or LA33 == 44 or LA33 == 46 or LA33 == 47 or LA33 == 48 or LA33 == 49 or LA33 == 56 or LA33 == 57 or LA33 == 58 or LA33 == 59:
                         alt33 = 3
                     elif LA33 == 54:
-                        LA33_19 = self.input.LA(3)
+                        LA33_20 = self.input.LA(3)
 
                         if (self.synpred65()) :
                             alt33 = 1
@@ -3032,12 +3032,12 @@ class CParser(Parser):
                                 self.failed = True
                                 return 
 
-                            nvae = NoViableAltException("248:1: pointer : ( '*' ( type_qualifier )+ ( pointer )? | '*' pointer | '*' );", 33, 19, self.input)
+                            nvae = NoViableAltException("248:1: pointer : ( '*' ( type_qualifier )+ ( pointer )? | '*' pointer | '*' );", 33, 20, self.input)
 
                             raise nvae
 
                     elif LA33 == 50 or LA33 == 51 or LA33 == 52 or LA33 == 53 or LA33 == 55:
-                        LA33_27 = self.input.LA(3)
+                        LA33_28 = self.input.LA(3)
 
                         if (self.synpred65()) :
                             alt33 = 1
@@ -3048,7 +3048,7 @@ class CParser(Parser):
                                 self.failed = True
                                 return 
 
-                            nvae = NoViableAltException("248:1: pointer : ( '*' ( type_qualifier )+ ( pointer )? | '*' pointer | '*' );", 33, 27, self.input)
+                            nvae = NoViableAltException("248:1: pointer : ( '*' ( type_qualifier )+ ( pointer )? | '*' pointer | '*' );", 33, 28, self.input)
 
                             raise nvae
 
@@ -3082,14 +3082,14 @@ class CParser(Parser):
                         LA31_0 = self.input.LA(1)
 
                         if (LA31_0 == 54) :
-                            LA31_18 = self.input.LA(2)
+                            LA31_19 = self.input.LA(2)
 
                             if (self.synpred63()) :
                                 alt31 = 1
 
 
                         elif ((50 <= LA31_0 <= 53) or LA31_0 == 55) :
-                            LA31_26 = self.input.LA(2)
+                            LA31_27 = self.input.LA(2)
 
                             if (self.synpred63()) :
                                 alt31 = 1
@@ -3361,10 +3361,8 @@ class CParser(Parser):
                     while True: #loop37
                         alt37 = 3
                         LA37 = self.input.LA(1)
-                        if LA37 == IDENTIFIER or LA37 == 56:
-                            alt37 = 1
-                        elif LA37 == 61:
-                            LA37_6 = self.input.LA(2)
+                        if LA37 == 61:
+                            LA37_5 = self.input.LA(2)
 
                             if (self.synpred70()) :
                                 alt37 = 1
@@ -3372,6 +3370,8 @@ class CParser(Parser):
                                 alt37 = 2
 
 
+                        elif LA37 == IDENTIFIER or LA37 == 56:
+                            alt37 = 1
                         elif LA37 == 57:
                             LA37 = self.input.LA(2)
                             if LA37 == 29 or LA37 == 30 or LA37 == 31 or LA37 == 32 or LA37 == 33 or LA37 == 34 or LA37 == 35 or LA37 == 36 or LA37 == 37 or LA37 == 38 or LA37 == 39 or LA37 == 40 or LA37 == 41 or LA37 == 42 or LA37 == 43 or LA37 == 46 or LA37 == 47 or LA37 == 49 or LA37 == 50 or LA37 == 51 or LA37 == 52 or LA37 == 53 or LA37 == 54 or LA37 == 55 or LA37 == 58 or LA37 == 59:
@@ -8618,14 +8618,14 @@ class CParser(Parser):
                                     alt72 = 1
 
 
-                            elif LA72 == 56:
+                            elif LA72 == 61:
                                 LA72_97 = self.input.LA(3)
 
                                 if (self.synpred154()) :
                                     alt72 = 1
 
 
-                            elif LA72 == 61:
+                            elif LA72 == 56:
                                 LA72_98 = self.input.LA(3)
 
                                 if (self.synpred154()) :
@@ -8642,14 +8642,14 @@ class CParser(Parser):
 
                         elif LA72 == 29 or LA72 == 30 or LA72 == 31 or LA72 == 32 or LA72 == 33:
                             LA72 = self.input.LA(2)
-                            if LA72 == 56:
+                            if LA72 == 61:
                                 LA72_100 = self.input.LA(3)
 
                                 if (self.synpred154()) :
                                     alt72 = 1
 
 
-                            elif LA72 == 61:
+                            elif LA72 == 56:
                                 LA72_101 = self.input.LA(3)
 
                                 if (self.synpred154()) :
@@ -8778,14 +8778,14 @@ class CParser(Parser):
 
                         elif LA72 == 34:
                             LA72 = self.input.LA(2)
-                            if LA72 == 56:
+                            if LA72 == 61:
                                 LA72_119 = self.input.LA(3)
 
                                 if (self.synpred154()) :
                                     alt72 = 1
 
 
-                            elif LA72 == 61:
+                            elif LA72 == 56:
                                 LA72_120 = self.input.LA(3)
 
                                 if (self.synpred154()) :
@@ -8914,14 +8914,14 @@ class CParser(Parser):
 
                         elif LA72 == 35:
                             LA72 = self.input.LA(2)
-                            if LA72 == 56:
+                            if LA72 == 61:
                                 LA72_138 = self.input.LA(3)
 
                                 if (self.synpred154()) :
                                     alt72 = 1
 
 
-                            elif LA72 == 61:
+                            elif LA72 == 56:
                                 LA72_139 = self.input.LA(3)
 
                                 if (self.synpred154()) :
@@ -9050,14 +9050,14 @@ class CParser(Parser):
 
                         elif LA72 == 36:
                             LA72 = self.input.LA(2)
-                            if LA72 == 56:
+                            if LA72 == 61:
                                 LA72_157 = self.input.LA(3)
 
                                 if (self.synpred154()) :
                                     alt72 = 1
 
 
-                            elif LA72 == 61:
+                            elif LA72 == 56:
                                 LA72_158 = self.input.LA(3)
 
                                 if (self.synpred154()) :
@@ -9186,14 +9186,14 @@ class CParser(Parser):
 
                         elif LA72 == 37:
                             LA72 = self.input.LA(2)
-                            if LA72 == 56:
+                            if LA72 == 61:
                                 LA72_176 = self.input.LA(3)
 
                                 if (self.synpred154()) :
                                     alt72 = 1
 
 
-                            elif LA72 == 61:
+                            elif LA72 == 56:
                                 LA72_177 = self.input.LA(3)
 
                                 if (self.synpred154()) :
@@ -9322,14 +9322,14 @@ class CParser(Parser):
 
                         elif LA72 == 38:
                             LA72 = self.input.LA(2)
-                            if LA72 == 56:
+                            if LA72 == 61:
                                 LA72_195 = self.input.LA(3)
 
                                 if (self.synpred154()) :
                                     alt72 = 1
 
 
-                            elif LA72 == 61:
+                            elif LA72 == 56:
                                 LA72_196 = self.input.LA(3)
 
                                 if (self.synpred154()) :
@@ -9458,14 +9458,14 @@ class CParser(Parser):
 
                         elif LA72 == 39:
                             LA72 = self.input.LA(2)
-                            if LA72 == 56:
+                            if LA72 == 61:
                                 LA72_214 = self.input.LA(3)
 
                                 if (self.synpred154()) :
                                     alt72 = 1
 
 
-                            elif LA72 == 61:
+                            elif LA72 == 56:
                                 LA72_215 = self.input.LA(3)
 
                                 if (self.synpred154()) :
@@ -9594,14 +9594,14 @@ class CParser(Parser):
 
                         elif LA72 == 40:
                             LA72 = self.input.LA(2)
-                            if LA72 == 56:
+                            if LA72 == 61:
                                 LA72_233 = self.input.LA(3)
 
                                 if (self.synpred154()) :
                                     alt72 = 1
 
 
-                            elif LA72 == 61:
+                            elif LA72 == 56:
                                 LA72_234 = self.input.LA(3)
 
                                 if (self.synpred154()) :
@@ -9730,14 +9730,14 @@ class CParser(Parser):
 
                         elif LA72 == 41:
                             LA72 = self.input.LA(2)
-                            if LA72 == 56:
+                            if LA72 == 61:
                                 LA72_252 = self.input.LA(3)
 
                                 if (self.synpred154()) :
                                     alt72 = 1
 
 
-                            elif LA72 == 61:
+                            elif LA72 == 56:
                                 LA72_253 = self.input.LA(3)
 
                                 if (self.synpred154()) :
@@ -9866,14 +9866,14 @@ class CParser(Parser):
 
                         elif LA72 == 42:
                             LA72 = self.input.LA(2)
-                            if LA72 == 56:
+                            if LA72 == 61:
                                 LA72_271 = self.input.LA(3)
 
                                 if (self.synpred154()) :
                                     alt72 = 1
 
 
-                            elif LA72 == 61:
+                            elif LA72 == 56:
                                 LA72_272 = self.input.LA(3)
 
                                 if (self.synpred154()) :
@@ -10002,14 +10002,14 @@ class CParser(Parser):
 
                         elif LA72 == 43:
                             LA72 = self.input.LA(2)
-                            if LA72 == 56:
+                            if LA72 == 61:
                                 LA72_290 = self.input.LA(3)
 
                                 if (self.synpred154()) :
                                     alt72 = 1
 
 
-                            elif LA72 == 61:
+                            elif LA72 == 56:
                                 LA72_291 = self.input.LA(3)
 
                                 if (self.synpred154()) :
@@ -10176,14 +10176,14 @@ class CParser(Parser):
 
                         elif LA72 == 50 or LA72 == 51 or LA72 == 52 or LA72 == 53 or LA72 == 54 or LA72 == 55:
                             LA72 = self.input.LA(2)
-                            if LA72 == 56:
+                            if LA72 == 61:
                                 LA72_313 = self.input.LA(3)
 
                                 if (self.synpred154()) :
                                     alt72 = 1
 
 
-                            elif LA72 == 61:
+                            elif LA72 == 56:
                                 LA72_314 = self.input.LA(3)
 
                                 if (self.synpred154()) :
@@ -10493,14 +10493,14 @@ class CParser(Parser):
                                 alt76 = 1
 
 
-                        elif LA76 == 56:
+                        elif LA76 == 61:
                             LA76_44 = self.input.LA(3)
 
                             if (self.synpred158()) :
                                 alt76 = 1
 
 
-                        elif LA76 == 61:
+                        elif LA76 == 56:
                             LA76_45 = self.input.LA(3)
 
                             if (self.synpred158()) :
@@ -10727,14 +10727,14 @@ class CParser(Parser):
                                 alt76 = 1
 
 
-                        elif LA76 == 56:
+                        elif LA76 == 61:
                             LA76_97 = self.input.LA(3)
 
                             if (self.synpred158()) :
                                 alt76 = 1
 
 
-                        elif LA76 == 61:
+                        elif LA76 == 56:
                             LA76_98 = self.input.LA(3)
 
                             if (self.synpred158()) :
@@ -10751,14 +10751,14 @@ class CParser(Parser):
 
                     elif LA76 == 29 or LA76 == 30 or LA76 == 31 or LA76 == 32 or LA76 == 33:
                         LA76 = self.input.LA(2)
-                        if LA76 == 56:
+                        if LA76 == 61:
                             LA76_100 = self.input.LA(3)
 
                             if (self.synpred158()) :
                                 alt76 = 1
 
 
-                        elif LA76 == 61:
+                        elif LA76 == 56:
                             LA76_101 = self.input.LA(3)
 
                             if (self.synpred158()) :
@@ -10887,14 +10887,14 @@ class CParser(Parser):
 
                     elif LA76 == 34:
                         LA76 = self.input.LA(2)
-                        if LA76 == 56:
+                        if LA76 == 61:
                             LA76_119 = self.input.LA(3)
 
                             if (self.synpred158()) :
                                 alt76 = 1
 
 
-                        elif LA76 == 61:
+                        elif LA76 == 56:
                             LA76_120 = self.input.LA(3)
 
                             if (self.synpred158()) :
@@ -11023,14 +11023,14 @@ class CParser(Parser):
 
                     elif LA76 == 35:
                         LA76 = self.input.LA(2)
-                        if LA76 == 56:
+                        if LA76 == 61:
                             LA76_138 = self.input.LA(3)
 
                             if (self.synpred158()) :
                                 alt76 = 1
 
 
-                        elif LA76 == 61:
+                        elif LA76 == 56:
                             LA76_139 = self.input.LA(3)
 
                             if (self.synpred158()) :
@@ -11159,14 +11159,14 @@ class CParser(Parser):
 
                     elif LA76 == 36:
                         LA76 = self.input.LA(2)
-                        if LA76 == 56:
+                        if LA76 == 61:
                             LA76_157 = self.input.LA(3)
 
                             if (self.synpred158()) :
                                 alt76 = 1
 
 
-                        elif LA76 == 61:
+                        elif LA76 == 56:
                             LA76_158 = self.input.LA(3)
 
                             if (self.synpred158()) :
@@ -11295,14 +11295,14 @@ class CParser(Parser):
 
                     elif LA76 == 37:
                         LA76 = self.input.LA(2)
-                        if LA76 == 56:
+                        if LA76 == 61:
                             LA76_176 = self.input.LA(3)
 
                             if (self.synpred158()) :
                                 alt76 = 1
 
 
-                        elif LA76 == 61:
+                        elif LA76 == 56:
                             LA76_177 = self.input.LA(3)
 
                             if (self.synpred158()) :
@@ -11431,14 +11431,14 @@ class CParser(Parser):
 
                     elif LA76 == 38:
                         LA76 = self.input.LA(2)
-                        if LA76 == 56:
+                        if LA76 == 61:
                             LA76_195 = self.input.LA(3)
 
                             if (self.synpred158()) :
                                 alt76 = 1
 
 
-                        elif LA76 == 61:
+                        elif LA76 == 56:
                             LA76_196 = self.input.LA(3)
 
                             if (self.synpred158()) :
@@ -11567,14 +11567,14 @@ class CParser(Parser):
 
                     elif LA76 == 39:
                         LA76 = self.input.LA(2)
-                        if LA76 == 56:
+                        if LA76 == 61:
                             LA76_214 = self.input.LA(3)
 
                             if (self.synpred158()) :
                                 alt76 = 1
 
 
-                        elif LA76 == 61:
+                        elif LA76 == 56:
                             LA76_215 = self.input.LA(3)
 
                             if (self.synpred158()) :
@@ -11703,14 +11703,14 @@ class CParser(Parser):
 
                     elif LA76 == 40:
                         LA76 = self.input.LA(2)
-                        if LA76 == 56:
+                        if LA76 == 61:
                             LA76_233 = self.input.LA(3)
 
                             if (self.synpred158()) :
                                 alt76 = 1
 
 
-                        elif LA76 == 61:
+                        elif LA76 == 56:
                             LA76_234 = self.input.LA(3)
 
                             if (self.synpred158()) :
@@ -11839,14 +11839,14 @@ class CParser(Parser):
 
                     elif LA76 == 41:
                         LA76 = self.input.LA(2)
-                        if LA76 == 56:
+                        if LA76 == 61:
                             LA76_252 = self.input.LA(3)
 
                             if (self.synpred158()) :
                                 alt76 = 1
 
 
-                        elif LA76 == 61:
+                        elif LA76 == 56:
                             LA76_253 = self.input.LA(3)
 
                             if (self.synpred158()) :
@@ -11975,14 +11975,14 @@ class CParser(Parser):
 
                     elif LA76 == 42:
                         LA76 = self.input.LA(2)
-                        if LA76 == 56:
+                        if LA76 == 61:
                             LA76_271 = self.input.LA(3)
 
                             if (self.synpred158()) :
                                 alt76 = 1
 
 
-                        elif LA76 == 61:
+                        elif LA76 == 56:
                             LA76_272 = self.input.LA(3)
 
                             if (self.synpred158()) :
@@ -12111,14 +12111,14 @@ class CParser(Parser):
 
                     elif LA76 == 43:
                         LA76 = self.input.LA(2)
-                        if LA76 == 56:
+                        if LA76 == 61:
                             LA76_290 = self.input.LA(3)
 
                             if (self.synpred158()) :
                                 alt76 = 1
 
 
-                        elif LA76 == 61:
+                        elif LA76 == 56:
                             LA76_291 = self.input.LA(3)
 
                             if (self.synpred158()) :
@@ -12285,14 +12285,14 @@ class CParser(Parser):
 
                     elif LA76 == 50 or LA76 == 51 or LA76 == 52 or LA76 == 53 or LA76 == 54 or LA76 == 55:
                         LA76 = self.input.LA(2)
-                        if LA76 == 56:
+                        if LA76 == 61:
                             LA76_313 = self.input.LA(3)
 
                             if (self.synpred158()) :
                                 alt76 = 1
 
 
-                        elif LA76 == 61:
+                        elif LA76 == 56:
                             LA76_314 = self.input.LA(3)
 
                             if (self.synpred158()) :
@@ -13251,33 +13251,33 @@ class CParser(Parser):
 
     # $ANTLR start synpred55
     def synpred55_fragment(self, ):
-        # C.g:231:4: ( ( 'EFIAPI' )? ( pointer )? direct_declarator )
-        # C.g:231:4: ( 'EFIAPI' )? ( pointer )? direct_declarator
-        # C.g:231:4: ( 'EFIAPI' )?
+        # C.g:231:4: ( ( pointer )? ( 'EFIAPI' )? direct_declarator )
+        # C.g:231:4: ( pointer )? ( 'EFIAPI' )? direct_declarator
+        # C.g:231:4: ( pointer )?
         alt91 = 2
         LA91_0 = self.input.LA(1)
 
-        if (LA91_0 == 56) :
+        if (LA91_0 == 61) :
             alt91 = 1
         if alt91 == 1:
-            # C.g:231:5: 'EFIAPI'
-            self.match(self.input, 56, self.FOLLOW_56_in_synpred55734)
+            # C.g:0:0: pointer
+            self.following.append(self.FOLLOW_pointer_in_synpred55733)
+            self.pointer()
+            self.following.pop()
             if self.failed:
                 return 
 
 
 
-        # C.g:231:16: ( pointer )?
+        # C.g:231:13: ( 'EFIAPI' )?
         alt92 = 2
         LA92_0 = self.input.LA(1)
 
-        if (LA92_0 == 61) :
+        if (LA92_0 == 56) :
             alt92 = 1
         if alt92 == 1:
-            # C.g:0:0: pointer
-            self.following.append(self.FOLLOW_pointer_in_synpred55738)
-            self.pointer()
-            self.following.pop()
+            # C.g:231:14: 'EFIAPI'
+            self.match(self.input, 56, self.FOLLOW_56_in_synpred55737)
             if self.failed:
                 return 
 
@@ -13532,10 +13532,8 @@ class CParser(Parser):
         while True: #loop97
             alt97 = 3
             LA97 = self.input.LA(1)
-            if LA97 == IDENTIFIER or LA97 == 56:
-                alt97 = 1
-            elif LA97 == 61:
-                LA97_4 = self.input.LA(2)
+            if LA97 == 61:
+                LA97_3 = self.input.LA(2)
 
                 if (self.synpred70()) :
                     alt97 = 1
@@ -13543,14 +13541,14 @@ class CParser(Parser):
                     alt97 = 2
 
 
+            elif LA97 == IDENTIFIER or LA97 == 56:
+                alt97 = 1
             elif LA97 == 57:
                 LA97 = self.input.LA(2)
                 if LA97 == 29 or LA97 == 30 or LA97 == 31 or LA97 == 32 or LA97 == 33 or LA97 == 34 or LA97 == 35 or LA97 == 36 or LA97 == 37 or LA97 == 38 or LA97 == 39 or LA97 == 40 or LA97 == 41 or LA97 == 42 or LA97 == 43 or LA97 == 46 or LA97 == 47 or LA97 == 49 or LA97 == 50 or LA97 == 51 or LA97 == 52 or LA97 == 53 or LA97 == 54 or LA97 == 55 or LA97 == 58 or LA97 == 59:
                     alt97 = 2
-                elif LA97 == 56:
-                    alt97 = 1
                 elif LA97 == 61:
-                    LA97_18 = self.input.LA(3)
+                    LA97_17 = self.input.LA(3)
 
                     if (self.synpred70()) :
                         alt97 = 1
@@ -13558,6 +13556,8 @@ class CParser(Parser):
                         alt97 = 2
 
 
+                elif LA97 == 56:
+                    alt97 = 1
                 elif LA97 == IDENTIFIER:
                     LA97_19 = self.input.LA(3)
 
@@ -14243,8 +14243,8 @@ class CParser(Parser):
     FOLLOW_28_in_enumerator682 = frozenset([4, 5, 6, 7, 8, 9, 10, 57, 61, 63, 64, 67, 68, 69, 72, 73, 74])
     FOLLOW_constant_expression_in_enumerator684 = frozenset([1])
     FOLLOW_set_in_type_qualifier0 = frozenset([1])
-    FOLLOW_56_in_declarator734 = frozenset([4, 57, 61])
-    FOLLOW_pointer_in_declarator738 = frozenset([4, 57])
+    FOLLOW_pointer_in_declarator733 = frozenset([4, 56, 57])
+    FOLLOW_56_in_declarator737 = frozenset([4, 57])
     FOLLOW_direct_declarator_in_declarator741 = frozenset([1])
     FOLLOW_pointer_in_declarator746 = frozenset([1])
     FOLLOW_IDENTIFIER_in_direct_declarator757 = frozenset([1, 57, 59])
@@ -14505,8 +14505,8 @@ class CParser(Parser):
     FOLLOW_IDENTIFIER_in_synpred34435 = frozenset([4, 56, 57, 61])
     FOLLOW_declarator_in_synpred34437 = frozenset([1])
     FOLLOW_type_specifier_in_synpred40560 = frozenset([1])
-    FOLLOW_56_in_synpred55734 = frozenset([4, 57, 61])
-    FOLLOW_pointer_in_synpred55738 = frozenset([4, 57])
+    FOLLOW_pointer_in_synpred55733 = frozenset([4, 56, 57])
+    FOLLOW_56_in_synpred55737 = frozenset([4, 57])
     FOLLOW_direct_declarator_in_synpred55741 = frozenset([1])
     FOLLOW_declarator_suffix_in_synpred56759 = frozenset([1])
     FOLLOW_declarator_suffix_in_synpred58771 = frozenset([1])

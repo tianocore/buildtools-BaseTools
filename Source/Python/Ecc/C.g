@@ -228,7 +228,7 @@ type_qualifier
 	;
 
 declarator
-	: ('EFIAPI')? pointer? direct_declarator
+	: pointer? ('EFIAPI')? direct_declarator
 	| pointer
 	;
 
@@ -521,7 +521,8 @@ HexDigit : ('0'..'9'|'a'..'f'|'A'..'F') ;
 fragment
 IntegerTypeSuffix
 	:	('u'|'U')? ('l'|'L')
-	|	('u'|'U')  ('l'|'L')? ('l'|'L')?
+	|	('u'|'U')  ('l'|'L')?
+	| 'ULL'
 	;
 
 FLOATING_POINT_LITERAL
