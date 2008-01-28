@@ -129,7 +129,7 @@ declaration
 
 declaration_specifiers
 	:   (   storage_class_specifier
-		|   type_specifier pointer?
+		|   type_specifier
         |   type_qualifier
         )+
 	;
@@ -160,6 +160,7 @@ type_specifier
 	| 'double'
 	| 'signed'
 	| 'unsigned'
+	| 'BOOLEAN'
 	| s=struct_or_union_specifier {self.StoreStructUnionDefinition($s.start.line, $s.start.charPositionInLine, $s.stop.line, $s.stop.charPositionInLine, $s.text)}
 	| e=enum_specifier {self.StoreEnumerationDefinition($e.start.line, $e.start.charPositionInLine, $e.stop.line, $e.stop.charPositionInLine, $e.text)}
 	| (IDENTIFIER declarator)=> type_id
@@ -223,6 +224,7 @@ type_qualifier
 	| 'IN'
 	| 'OUT'
 	| 'OPTIONAL'
+	| 'CONST'
 	;
 
 declarator
@@ -258,7 +260,9 @@ parameter_list
 	;
 
 parameter_declaration
-	: declaration_specifiers (declarator|abstract_declarator)+ ('OPTIONAL')?
+	: declaration_specifiers (declarator|abstract_declarator)* ('OPTIONAL')?
+	//accomerdate user-defined type only, no declarator follow.
+	| IDENTIFIER
 	;
 
 identifier_list

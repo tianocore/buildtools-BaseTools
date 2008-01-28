@@ -218,6 +218,16 @@ class CodeFragmentCollector:
     def __SetCurrentCharValue(self, Value):
         self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine] = Value
         
+    ## __SetCharValue() method
+    #
+    #   Modify the value of current char
+    #
+    #   @param  self        The object pointer
+    #   @param  Value       The new value of current char
+    #
+    def __SetCharValue(self, Line, Offset, Value):
+        self.Profile.FileLinesList[Line - 1][Offset] = Value
+        
     ## __CurrentLine() method
     #
     #   Get the list that contains current line contents
@@ -278,10 +288,10 @@ class CodeFragmentCollector:
 
         while not self.__EndOfFile():
             
-            if self.__CurrentChar() == T_CHAR_DOUBLE_QUOTE:
+            if self.__CurrentChar() == T_CHAR_DOUBLE_QUOTE and not InComment:
                 InString = not InString
                 
-            if self.__CurrentChar() == T_CHAR_SINGLE_QUOTE:
+            if self.__CurrentChar() == T_CHAR_SINGLE_QUOTE and not InComment:
                 InCharLiteral = not InCharLiteral
             # meet new line, then no longer in a comment for // and '#'
             if self.__CurrentChar() == T_CHAR_LF:
@@ -293,8 +303,7 @@ class CodeFragmentCollector:
                         PPExtend = False
                         
                 EndLinePos = (self.CurrentLineNumber, self.CurrentOffsetWithinLine)
-                self.CurrentLineNumber += 1
-                self.CurrentOffsetWithinLine = 0
+                
                 if InComment and DoubleSlashComment:
                     InComment = False
                     DoubleSlashComment = False
@@ -309,7 +318,15 @@ class CodeFragmentCollector:
                     PPDirectiveObj.EndPos = EndLinePos
                     FileProfile.PPDirectiveList.append(PPDirectiveObj)
                     PPDirectiveObj = None
-                    
+                
+                if InString or InCharLiteral:
+                    CurrentLine = "".join(self.__CurrentLine())
+                    if CurrentLine.rstrip(T_CHAR_LF).rstrip(T_CHAR_CR).endswith(T_CHAR_BACKSLASH):
+                        SlashIndex = CurrentLine.rindex(T_CHAR_BACKSLASH)
+                        self.__SetCharValue(self.CurrentLineNumber, SlashIndex, T_CHAR_SPACE)
+                
+                self.CurrentLineNumber += 1
+                self.CurrentOffsetWithinLine = 0    
             # check for */ comment end
             elif InComment and not DoubleSlashComment and not HashComment and self.__CurrentChar() == T_CHAR_STAR and self.__NextChar() == T_CHAR_SLASH:
                 CommentObj.Content += self.__CurrentChar()

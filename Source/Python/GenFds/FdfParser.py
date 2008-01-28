@@ -418,7 +418,7 @@ class FdfParser:
         
         while not self.__EndOfFile():
             
-            if self.__CurrentChar() == T_CHAR_DOUBLE_QUOTE:
+            if self.__CurrentChar() == T_CHAR_DOUBLE_QUOTE and not InComment:
                 InString = not InString
             # meet new line, then no longer in a comment for // and '#'
             if self.__CurrentChar() == T_CHAR_LF:
