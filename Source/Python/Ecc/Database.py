@@ -15,7 +15,7 @@
 # Import Modules
 #
 import sqlite3
-import os
+import os, time
 
 import Common.EdkLogger as EdkLogger
 import CommonDataClass.DataClass as DataClass
@@ -46,7 +46,9 @@ DATABASE_PATH = "Database/Ecc.db"
 #
 class Database(object):
     def __init__(self, DbPath):
-        self.Conn = sqlite3.connect(DbPath)
+        print time.strftime('%H/%M/%S', time.localtime())
+        self.Conn = sqlite3.connect(DbPath, isolation_level = 'DEFERRED')
+        #self.Conn = sqlite3.connect(DbPath)
         self.Cur = self.Conn.cursor()
         self.TblDataModel = TableDataModel(self.Cur)
         self.TblFile = TableFile(self.Cur)
@@ -81,6 +83,11 @@ class Database(object):
         self.TblIdentifier.Create()
         
         #
+        # Start a Transaction
+        #
+        #self.Cur.execute("""BEGIN""")
+        
+        #
         # Initialize table DataModel
         #
         self.TblDataModel.InitTable()
@@ -99,9 +106,22 @@ class Database(object):
     # Close the connection and cursor
     #
     def Close(self):
+        #
+        # Start a Transaction
+        #
+        #self.Cur.execute("""END""")
+        
+        #
+        # Commit to file
+        #        
         self.Conn.commit()
+        
+        #
+        # Close connection and cursor
+        #
         self.Cur.close()
         self.Conn.close()
+        print time.strftime('%H/%M/%S', time.localtime())
     
     ## Insert one file information
     #
@@ -218,16 +238,16 @@ class Database(object):
 #
 if __name__ == '__main__':
     EdkLogger.Initialize()
-    EdkLogger.SetLevel(EdkLogger.DEBUG_0)
+    EdkLogger.SetLevel(EdkLogger.VERBOSE)
     
     Db = Database(DATABASE_PATH)
     Db.InitDatabase()
     Db.QueryTable(Db.TblDataModel)
     
-    identifier1 = DataClass.IdentifierClass(-1, '', '', 'i1', 'aaa', DataClass.MODEL_IDENTIFIER_COMMENT, 1, -1, 32,  43,  54,  43)
+    identifier1 = DataClass.IdentifierClass(-1, '', '', "i''1", 'aaa', DataClass.MODEL_IDENTIFIER_COMMENT, 1, -1, 32,  43,  54,  43)
     identifier2 = DataClass.IdentifierClass(-1, '', '', 'i1', 'aaa', DataClass.MODEL_IDENTIFIER_COMMENT, 1, -1, 15,  43,  20,  43)
     identifier3 = DataClass.IdentifierClass(-1, '', '', 'i1', 'aaa', DataClass.MODEL_IDENTIFIER_COMMENT, 1, -1, 55,  43,  58,  43)
-    identifier4 = DataClass.IdentifierClass(-1, '', '', 'i1', 'aaa', DataClass.MODEL_IDENTIFIER_COMMENT, 1, -1, 77,  43,  88,  43)
+    identifier4 = DataClass.IdentifierClass(-1, '', '', "i1'", 'aaa', DataClass.MODEL_IDENTIFIER_COMMENT, 1, -1, 77,  43,  88,  43)
     fun1 = DataClass.FunctionClass(-1, '', '', 'fun1', '', 21, 2, 60,  45, 1, 23, 0, [], [])
     file = DataClass.FileClass(-1, 'F1', 'c', 'C:\\', 'C:\\F1.exe', DataClass.MODEL_FILE_C, '2007-12-28', [fun1], [identifier1, identifier2, identifier3, identifier4], [])
     Db.InsertOneFile(file)
