@@ -91,10 +91,14 @@ scope {
 @after{
   self.StoreFunctionDefinition($function_definition.start.line, $function_definition.start.charPositionInLine, $function_definition.stop.line, $function_definition.stop.charPositionInLine, $function_definition::ModifierText, $function_definition::DeclText, $function_definition::LBLine, $function_definition::LBOffset, $function_definition::DeclLine, $function_definition::DeclOffset)
 }
-	:	declaration_specifiers? declarator
+	:	d=declaration_specifiers? declarator
 		(	declaration+ a=compound_statement	// K&R style
 		|	b=compound_statement				// ANSI style
-		) { $function_definition::ModifierText = $declaration_specifiers.text
+		) { 
+		    if d != None:
+		      $function_definition::ModifierText = $declaration_specifiers.text
+		    else:
+		      $function_definition::ModifierText = ''
 		    $function_definition::DeclText = $declarator.text
 		    $function_definition::DeclLine = $declarator.start.line
 		    $function_definition::DeclOffset = $declarator.start.charPositionInLine
@@ -117,12 +121,15 @@ declaration
 	    self.StoreTypedefDefinition($a.line, $a.charPositionInLine, $d.line, $d.charPositionInLine, '', $c.text)
 	  }	
 	| s=declaration_specifiers t=init_declarator_list? e=';' 
-	{self.StoreVariableDeclaration($s.start.line, $s.start.charPositionInLine, $e.line, $e.charPositionInLine, $s.text, $t.text)}
+	{
+	if t != None:
+	  self.StoreVariableDeclaration($s.start.line, $s.start.charPositionInLine, $e.line, $e.charPositionInLine, $s.text, $t.text)
+	}
 	;
 
 declaration_specifiers
 	:   (   storage_class_specifier
-		|   type_specifier
+		|   type_specifier pointer?
         |   type_qualifier
         )+
 	;
@@ -140,6 +147,7 @@ storage_class_specifier
 	| 'static'
 	| 'auto'
 	| 'register'
+	| 'STATIC'
 	;
 
 type_specifier
@@ -158,7 +166,7 @@ type_specifier
 	;
 
 type_id
-    :   IDENTIFIER 
+    :   IDENTIFIER
     	//{self.printTokenInfo($a.line, $a.pos, $a.text)}
     ;
 
@@ -214,10 +222,11 @@ type_qualifier
 	| 'volatile'
 	| 'IN'
 	| 'OUT'
+	| 'OPTIONAL'
 	;
 
 declarator
-	: pointer? direct_declarator
+	: ('EFIAPI')? pointer? direct_declarator
 	| pointer
 	;
 
@@ -245,11 +254,11 @@ parameter_type_list
 	;
 
 parameter_list
-	: parameter_declaration (',' parameter_declaration)*
+	: parameter_declaration (',' ('OPTIONAL')? parameter_declaration)*
 	;
 
 parameter_declaration
-	: declaration_specifiers (declarator|abstract_declarator)+
+	: declaration_specifiers (declarator|abstract_declarator)+ ('OPTIONAL')?
 	;
 
 identifier_list
@@ -349,7 +358,7 @@ constant
     |   OCTAL_LITERAL
     |   DECIMAL_LITERAL
     |	CHARACTER_LITERAL
-    |	STRING_LITERAL
+    |	STRING_LITERAL+
     |   FLOATING_POINT_LITERAL
     ;
 
@@ -431,6 +440,7 @@ statement
 	| iteration_statement
 	| jump_statement
 	| macro_statement
+	| declaration
 	;
 
 macro_statement
@@ -482,13 +492,13 @@ IDENTIFIER
 fragment
 LETTER
 	:	'$'
-	|	'A'..'Z'
-	|	'a'..'z'
+	|  'A'..'Z'
+	|  'a'..'z'
 	|	'_'
 	;
 
 CHARACTER_LITERAL
-    :   '\'' ( EscapeSequence | ~('\''|'\\') ) '\''
+    :   ('L')? '\'' ( EscapeSequence | ~('\''|'\\') ) '\''
     ;
 
 STRING_LITERAL
@@ -507,7 +517,7 @@ HexDigit : ('0'..'9'|'a'..'f'|'A'..'F') ;
 fragment
 IntegerTypeSuffix
 	:	('u'|'U')? ('l'|'L')
-	|	('u'|'U')  ('l'|'L')?
+	|	('u'|'U')  ('l'|'L')? ('l'|'L')?
 	;
 
 FLOATING_POINT_LITERAL
@@ -525,7 +535,7 @@ FloatTypeSuffix : ('f'|'F'|'d'|'D') ;
 
 fragment
 EscapeSequence
-    :   '\\' ('b'|'t'|'n'|'f'|'r'|'\"'|'\''|'\\')
+    :  '\\' ('b'|'t'|'n'|'f'|'r'|'\"'|'\''|'\\')
     |   OctalEscape
     ;
 
@@ -544,10 +554,14 @@ UnicodeEscape
 WS  :  (' '|'\r'|'\t'|'\u000C'|'\n') {$channel=HIDDEN;}
     ;
 
-//COMMENT[content]
-//@init{content = ''}
-//    :   '/*' c=( options {greedy=false;} : . )* {content += c} '*/' {$channel=HIDDEN; print content}
+// ingore '\' of line concatenation
+BS  : ('\\') {$channel=HIDDEN;}
+    ;
+    
+// ingore function modifiers
+//FUNC_MODIFIERS  : 'EFIAPI' {$channel=HIDDEN;}
 //    ;
+    	
 UnicodeVocabulary
     : '\u0003'..'\uFFFE'
     ;
