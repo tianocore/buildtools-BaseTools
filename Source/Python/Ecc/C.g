@@ -161,6 +161,9 @@ type_specifier
 	| 'signed'
 	| 'unsigned'
 	| 'BOOLEAN'
+	| 'CHAR8'
+	| 'CHAR16'
+	| 'VOID'
 	| s=struct_or_union_specifier {self.StoreStructUnionDefinition($s.start.line, $s.start.charPositionInLine, $s.stop.line, $s.stop.charPositionInLine, $s.text)}
 	| e=enum_specifier {self.StoreEnumerationDefinition($e.start.line, $e.start.charPositionInLine, $e.stop.line, $e.stop.charPositionInLine, $e.text)}
 	| (IDENTIFIER declarator)=> type_id
@@ -225,10 +228,13 @@ type_qualifier
 	| 'OUT'
 	| 'OPTIONAL'
 	| 'CONST'
+	| 'UNALIGNED'
+	| 'VOLATILE'
 	;
 
 declarator
-	: pointer? ('EFIAPI')? direct_declarator
+	: pointer? ('EFIAPI')? ('EFI_BOOTSERVICE')? ('EFI_RUNTIMESERVICE')? direct_declarator
+	| ('EFIAPI')? ('EFI_BOOTSERVICE')? ('EFI_RUNTIMESERVICE')? pointer? direct_declarator
 	| pointer
 	;
 
