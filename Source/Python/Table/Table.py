@@ -37,6 +37,7 @@ class Table(object):
     #
     def Create(self, SqlCommand):
         self.Cur.execute(SqlCommand)
+        self.ID = 0
         EdkLogger.verbose(SqlCommand + " ... DONE!")
 
     ## Insert table

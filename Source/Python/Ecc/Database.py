@@ -46,9 +46,7 @@ DATABASE_PATH = "Database/Ecc.db"
 #
 class Database(object):
     def __init__(self, DbPath):
-        print time.strftime('%H/%M/%S', time.localtime())
         self.Conn = sqlite3.connect(DbPath, isolation_level = 'DEFERRED')
-        #self.Conn = sqlite3.connect(DbPath)
         self.Cur = self.Conn.cursor()
         self.TblDataModel = TableDataModel(self.Cur)
         self.TblFile = TableFile(self.Cur)
@@ -83,11 +81,6 @@ class Database(object):
         self.TblIdentifier.Create()
         
         #
-        # Start a Transaction
-        #
-        #self.Cur.execute("""BEGIN""")
-        
-        #
         # Initialize table DataModel
         #
         self.TblDataModel.InitTable()
@@ -107,11 +100,6 @@ class Database(object):
     #
     def Close(self):
         #
-        # Start a Transaction
-        #
-        #self.Cur.execute("""END""")
-        
-        #
         # Commit to file
         #        
         self.Conn.commit()
@@ -121,7 +109,6 @@ class Database(object):
         #
         self.Cur.close()
         self.Conn.close()
-        print time.strftime('%H/%M/%S', time.localtime())
     
     ## Insert one file information
     #
@@ -137,44 +124,40 @@ class Database(object):
         #
         # Insert a record for file
         #
-        FileID = self.TblFile.GetCount() + 1
-        self.TblFile.Insert(FileID, File.Name, File.ExtName, File.Path, File.FullPath, Model = File.Model, TimeStamp = File.TimeStamp)
+        print self.TblFile.GetCount()
+        FileID = self.TblFile.Insert(File.Name, File.ExtName, File.Path, File.FullPath, Model = File.Model, TimeStamp = File.TimeStamp)
 
+        print FileID
         #
         # Insert function of file
         #
         for Function in File.FunctionList:
-            FunctionID = self.TblFunction.GetCount() + 1
-            self.TblFunction.Insert(FunctionID, Function.Header, Function.Modifier, Function.Name, Function.ReturnStatement, \
+            FunctionID = self.TblFunction.Insert(Function.Header, Function.Modifier, Function.Name, Function.ReturnStatement, \
                                     Function.StartLine, Function.StartColumn, Function.EndLine, Function.EndColumn, \
                                     Function.BodyStartLine, Function.BodyStartColumn, FileID)
             #
             # Insert Identifier of function
             #
             for Identifier in Function.IdentifierList:
-                IdentifierID = self.TblIdentifier.GetCount() + 1
-                self.TblIdentifier.Insert(IdentifierID, Identifier.Modifier, Identifier.Type, Identifier.Name, Identifier.Value, Identifier.Model, \
+                IdentifierID = self.TblIdentifier.Insert(Identifier.Modifier, Identifier.Type, Identifier.Name, Identifier.Value, Identifier.Model, \
                                         FileID, FunctionID, Identifier.StartLine, Identifier.StartColumn, Identifier.EndLine, Identifier.EndColumn)
             #
             # Insert Pcd of function
             #
             for Pcd in Function.PcdList:
-                PcdID = self.TblPcd.GetCount() + 1
-                self.TblPcd.Insert(PcdID, Pcd.CName, Pcd.TokenSpaceGuidCName, Pcd.Token, Pcd.DatumType, Pcd.Model, \
+                PcdID = self.TblPcd.Insert(Pcd.CName, Pcd.TokenSpaceGuidCName, Pcd.Token, Pcd.DatumType, Pcd.Model, \
                                    FileID, FunctionID, Pcd.StartLine, Pcd.StartColumn, Pcd.EndLine, Pcd.EndColumn)
         #
         # Insert Identifier of file
         #
         for Identifier in File.IdentifierList:
-            IdentifierID = self.TblIdentifier.GetCount() + 1
-            self.TblIdentifier.Insert(IdentifierID, Identifier.Modifier, Identifier.Type, Identifier.Name, Identifier.Value, Identifier.Model, \
+            IdentifierID = self.TblIdentifier.Insert(Identifier.Modifier, Identifier.Type, Identifier.Name, Identifier.Value, Identifier.Model, \
                                     FileID, -1, Identifier.StartLine, Identifier.StartColumn, Identifier.EndLine, Identifier.EndColumn)
         #
         # Insert Pcd of file
         #
         for Pcd in File.PcdList:
-            PcdID = self.TblPcd.GetCount() + 1
-            self.TblPcd.Insert(PcdID, Pcd.CName, Pcd.TokenSpaceGuidCName, Pcd.Token, Pcd.DatumType, Pcd.Model, \
+            PcdID = self.TblPcd.Insert(Pcd.CName, Pcd.TokenSpaceGuidCName, Pcd.Token, Pcd.DatumType, Pcd.Model, \
                                FileID, -1, Pcd.StartLine, Pcd.StartColumn, Pcd.EndLine, Pcd.EndColumn)
                 
         EdkLogger.verbose("Insert information of file %s ... DONE!" % File.FullPath)
@@ -238,7 +221,9 @@ class Database(object):
 #
 if __name__ == '__main__':
     EdkLogger.Initialize()
-    EdkLogger.SetLevel(EdkLogger.VERBOSE)
+    #EdkLogger.SetLevel(EdkLogger.VERBOSE)
+    EdkLogger.SetLevel(EdkLogger.DEBUG_0)
+    EdkLogger.verbose("Start at " + time.strftime('%H:%M:%S', time.localtime()))
     
     Db = Database(DATABASE_PATH)
     Db.InitDatabase()
@@ -259,4 +244,5 @@ if __name__ == '__main__':
     Db.QueryTable(Db.TblIdentifier)
     
     Db.Close()
+    EdkLogger.verbose("End at " + time.strftime('%H:%M:%S', time.localtime()))
     
