@@ -124,10 +124,8 @@ class Database(object):
         #
         # Insert a record for file
         #
-        print self.TblFile.GetCount()
         FileID = self.TblFile.Insert(File.Name, File.ExtName, File.Path, File.FullPath, Model = File.Model, TimeStamp = File.TimeStamp)
 
-        print FileID
         #
         # Insert function of file
         #
