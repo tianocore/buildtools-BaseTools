@@ -229,7 +229,7 @@ class Inf(InfObject):
     # Find the contents defined in all arches and merge them to all
     #
     def MergeAllArches(self):
-        if DataType.TAB_ARCH_COMMON.upper(self.Defines) in self.Defines:
+        if DataType.TAB_ARCH_COMMON.upper() in self.Defines:
             for Arch in DataType.ARCH_LIST:
                 if Arch not in self.Defines:
                     self.Defines[Arch] = InfDefines()
@@ -415,6 +415,8 @@ class Inf(InfObject):
     def InfToModule(self):
         File = self.Identification.FileFullPath
         for Arch in DataType.ARCH_LIST:
+            if Arch not in self.Defines:
+                continue
             ModuleHeader = ModuleHeaderClass()
             self.DefinesToModuleHeader(self.Defines[Arch], ModuleHeader, Arch)
             self.Module.Header[Arch] = ModuleHeader
