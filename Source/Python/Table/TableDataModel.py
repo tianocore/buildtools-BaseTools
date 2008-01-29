@@ -28,8 +28,9 @@ from Common.String import ConvertToSqlString
 #
 class TableDataModel(Table):
     def __init__(self, Cursor):
-        self.Cur = Cursor
+        Table.__init__(self, Cursor)
         self.Table = 'DataModel'
+        self.ID = self.GetCount()
     
     ## Create table
     #
@@ -57,11 +58,13 @@ class TableDataModel(Table):
     # @param Name:         Name of a ModelType
     # @param Description:  Description of a ModelType
     #
-    def Insert(self, ID, CrossIndex, Name, Description):
-        ID = self.GenerateID(ID)
+    def Insert(self, CrossIndex, Name, Description):
+        self.ID = self.ID + 1
         (Name, Description) = ConvertToSqlString((Name, Description))
-        SqlCommand = """insert into %s values(%s, %s, '%s', '%s')""" % (self.Table, ID, CrossIndex, Name, Description)
+        SqlCommand = """insert into %s values(%s, %s, '%s', '%s')""" % (self.Table, self.ID, CrossIndex, Name, Description)
         Table.Insert(self, SqlCommand)
+        
+        return self.ID
     
     ## Init table
     #
@@ -69,13 +72,11 @@ class TableDataModel(Table):
     #  
     def InitTable(self):
         EdkLogger.verbose("\nInitialize table DataModel started ...")
-        ID = 0
         for Item in DataClass.MODEL_LIST:
-            ID = ID + 1
             CrossIndex = Item[1]
             Name = Item[0]
             Description = Item[0]
-            self.Insert(ID, CrossIndex, Name, Description)
+            self.Insert(CrossIndex, Name, Description)
         EdkLogger.verbose("Initialize table DataModel ... DONE!")
     
     ## Get CrossIndex

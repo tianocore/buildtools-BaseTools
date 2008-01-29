@@ -27,8 +27,9 @@ from Table import Table
 #
 class TableIdentifier(Table):
     def __init__(self, Cursor):
-        self.Cur = Cursor
+        Table.__init__(self, Cursor)
         self.Table = 'Identifier'
+        self.ID = self.GetCount()
     
     ## Create table
     #
@@ -80,9 +81,11 @@ class TableIdentifier(Table):
     # @param EndLine:            EndLine of a Identifier
     # @param EndColumn:          EndColumn of a Identifier
     #
-    def Insert(self, ID, Modifier, Type, Name, Value, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn):
-        ID = self.GenerateID(ID)    
+    def Insert(self, Modifier, Type, Name, Value, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn):
+        self.ID = self.ID + 1
         (Modifier, Type, Name, Value) = ConvertToSqlString((Modifier, Type, Name, Value))
         SqlCommand = """insert into %s values(%s, '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s, %s, %s)""" \
-                                           % (self.Table, ID, Modifier, Type, Name, Value, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn)
+                                           % (self.Table, self.ID, Modifier, Type, Name, Value, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn)
         Table.Insert(self, SqlCommand)
+
+        return self.ID

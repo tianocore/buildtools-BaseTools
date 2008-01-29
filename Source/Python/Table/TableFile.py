@@ -26,8 +26,9 @@ from Common.String import ConvertToSqlString
 #
 class TableFile(Table):
     def __init__(self, Cursor):
-        self.Cur = Cursor
+        Table.__init__(self, Cursor)
         self.Table = 'File'
+        self.ID = self.GetCount()
     
     ## Create table
     #
@@ -64,9 +65,11 @@ class TableFile(Table):
     # @param Model:     Model of a File
     # @param TimeStamp: TimeStamp of a File
     #
-    def Insert(self, ID, Name, ExtName, Path, FullPath, Model, TimeStamp):
-        ID = self.GenerateID(ID)
+    def Insert(self, Name, ExtName, Path, FullPath, Model, TimeStamp):
+        self.ID = self.ID + 1
         (Name, ExtName, Path, FullPath) = ConvertToSqlString((Name, ExtName, Path, FullPath))
         SqlCommand = """insert into %s values(%s, '%s', '%s', '%s', '%s', %s, '%s')""" \
-                                           % (self.Table, ID, Name, ExtName, Path, FullPath, Model, TimeStamp)
+                                           % (self.Table, self.ID, Name, ExtName, Path, FullPath, Model, TimeStamp)
         Table.Insert(self, SqlCommand)
+        
+        return self.ID

@@ -27,8 +27,9 @@ from Common.String import ConvertToSqlString
 #
 class TablePcd(Table):
     def __init__(self, Cursor):
-        self.Cur = Cursor
+        Table.__init__(self, Cursor)
         self.Table = 'Pcd'
+        self.ID = self.GetCount()
     
     ## Create table
     #
@@ -80,9 +81,11 @@ class TablePcd(Table):
     # @param EndLine:              EndLine of a Pcd
     # @param EndColumn:            EndColumn of a Pcd
     #
-    def Insert(self, ID, CName, TokenSpaceGuidCName, Token, DatumType, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn):
-        ID = self.GenerateID(ID)
+    def Insert(self, CName, TokenSpaceGuidCName, Token, DatumType, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn):
+        self.ID = self.ID + 1
         (CName, TokenSpaceGuidCName, DatumType) = ConvertToSqlString((CName, TokenSpaceGuidCName, DatumType))
         SqlCommand = """insert into %s values(%s, '%s', '%s', %s, '%s', %s, %s, %s, %s, %s, %s, %s)""" \
-                                           % (self.Table, ID, CName, TokenSpaceGuidCName, Token, DatumType, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn)
+                                           % (self.Table, self.ID, CName, TokenSpaceGuidCName, Token, DatumType, Model, BelongsToFile, BelongsToFunction, StartLine, StartColumn, EndLine, EndColumn)
         Table.Insert(self, SqlCommand)
+
+        return self.ID

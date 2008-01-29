@@ -29,6 +29,7 @@ class Table(object):
     def __init__(self, Cursor):
         self.Cur = Cursor
         self.Table = ''
+        self.ID = 0
     
     ## Create table
     #
@@ -54,8 +55,8 @@ class Table(object):
         EdkLogger.verbose("\nQuery tabel %s started ..." % self.Table)
         SqlCommand = """select * from %s""" % self.Table
         self.Cur.execute(SqlCommand)
-#        for Rs in self.Cur:
-#            EdkLogger.verbose(Rs)
+        for Rs in self.Cur:
+            EdkLogger.verbose(str(Rs))
         
         TotalCount = self.GetCount()
         EdkLogger.verbose("*** Total %s records in table %s ***" % (TotalCount, self.Table) )
@@ -92,6 +93,6 @@ class Table(object):
     #
     def GenerateID(self, ID):
         if ID == -1:
-            ID = self.GetCount() + 1
-        
-        return ID
+            self.ID = self.ID + 1
+
+        return self.ID

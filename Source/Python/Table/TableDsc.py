@@ -28,8 +28,10 @@ from Common.String import ConvertToSqlString
 #
 class TableDsc(Table):
     def __init__(self, Cursor):
-        self.Cur = Cursor
+        Table.__init__(self, Cursor)
         self.Table = 'Dsc'
+        self.ID = self.GetCount()
+
     
     ## Create table
     #
@@ -47,6 +49,7 @@ class TableDsc(Table):
     # @param StartColumn:    StartColumn of a Dsc item
     # @param EndLine:        EndLine of a Dsc item
     # @param EndColumn:      EndColumn of a Dsc item
+    # @param Enabled:        If this item enabled
     #
     def Create(self):
         SqlCommand = """create table IF NOT EXISTS %s (ID SINGLE PRIMARY KEY,
@@ -60,7 +63,8 @@ class TableDsc(Table):
                                                        StartLine INTEGER NOT NULL,
                                                        StartColumn INTEGER NOT NULL,
                                                        EndLine INTEGER NOT NULL,
-                                                       EndColumn INTEGER NOT NULL
+                                                       EndColumn INTEGER NOT NULL,
+                                                       Enabled INTEGER DEFAULT 0
                                                       )""" % self.Table
         Table.Create(self, SqlCommand)
 
@@ -80,10 +84,13 @@ class TableDsc(Table):
     # @param StartColumn:    StartColumn of a Dsc item
     # @param EndLine:        EndLine of a Dsc item
     # @param EndColumn:      EndColumn of a Dsc item
+    # @param Enabled:        If this item enabled
     #
-    def Insert(self, ID, Model, Value1, Value2, Value3, Arch, BelongsToItem, BelongsToFile, StartLine, StartColumn, EndLine, EndColumn):
-        ID = self.GenerateID(ID)
+    def Insert(self, Model, Value1, Value2, Value3, Arch, BelongsToItem, BelongsToFile, StartLine, StartColumn, EndLine, EndColumn, Enabled):
+        self.ID = self.ID + 1
         #(Value1, Value2, Value3, Arch) = ConvertToSqlString((Value1, Value2, Value3, Arch))
-        SqlCommand = """insert into %s values(%s, %s, '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s, %s)""" \
-                     % (self.Table, ID, Model, Value1, Value2, Value3, Arch, BelongsToItem, BelongsToFile, StartLine, StartColumn, EndLine, EndColumn)
+        SqlCommand = """insert into %s values(%s, %s, '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s, %s, %s)""" \
+                     % (self.Table, self.ID, Model, Value1, Value2, Value3, Arch, BelongsToItem, BelongsToFile, StartLine, StartColumn, EndLine, EndColumn, Enabled)
         Table.Insert(self, SqlCommand)
+        
+        return self.ID

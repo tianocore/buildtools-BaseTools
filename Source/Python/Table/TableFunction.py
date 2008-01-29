@@ -26,8 +26,9 @@ from Common.String import ConvertToSqlString
 #
 class TableFunction(Table):
     def __init__(self, Cursor):
-        self.Cur = Cursor
+        Table.__init__(self, Cursor)
         self.Table = 'Function'
+        self.ID = self.GetCount()
     
     ## Create table
     #
@@ -79,9 +80,11 @@ class TableFunction(Table):
     # @param BodyStartColumn:  StartColumn of a Function body
     # @param BelongsToFile:    The Function belongs to which file
     #
-    def Insert(self, ID, Header, Modifier, Name, ReturnStatement, StartLine, StartColumn, EndLine, EndColumn, BodyStartLine, BodyStartColumn, BelongsToFile):
-        ID = self.GenerateID(ID)
+    def Insert(self, Header, Modifier, Name, ReturnStatement, StartLine, StartColumn, EndLine, EndColumn, BodyStartLine, BodyStartColumn, BelongsToFile):
+        self.ID = self.ID + 1
         (Header, Modifier, Name, ReturnStatement) = ConvertToSqlString((Header, Modifier, Name, ReturnStatement))
         SqlCommand = """insert into %s values(%s, '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s, %s, %s)""" \
-                                    % (self.Table, ID, Header, Modifier, Name, ReturnStatement, StartLine, StartColumn, EndLine, EndColumn, BodyStartLine, BodyStartColumn, BelongsToFile)
+                                    % (self.Table, self.ID, Header, Modifier, Name, ReturnStatement, StartLine, StartColumn, EndLine, EndColumn, BodyStartLine, BodyStartColumn, BelongsToFile)
         Table.Insert(self, SqlCommand)
+
+        return self.ID
