@@ -6,6 +6,9 @@ from CommonDataClass import DataClass
 import Database
 from Common import EdkLogger
 
+def GetIgnoredDirList():
+    return ('Build', 'IntelRestrictedPkg', 'IntelRestrictedTools')
+
 def GetIdType(Str):
     Type = DataClass.MODEL_UNKNOWN
     Str = Str.replace('#', '# ')
@@ -82,6 +85,8 @@ def GetFunctionList():
     for FuncDef in FileProfile.FunctionDefinitionList:
         ParamIdList = []
         DeclSplitList = FuncDef.Declarator.split('(')
+        if len(DeclSplitList) < 2:
+            continue
         FuncName = DeclSplitList[0]
         ParamStr = DeclSplitList[1].rstrip(')')
         FuncNameLine = FuncDef.NamePos[0]
@@ -135,7 +140,7 @@ if __name__ == '__main__':
 
     for dirpath, dirnames, filenames in tuple:
         for d in dirnames:
-            if d.startswith('.'):
+            if d.startswith('.') or d in GetIgnoredDirList():
                 dirnames.remove(d)
         for f in filenames:
             FullName = os.path.join(dirpath, f)
@@ -167,8 +172,8 @@ if __name__ == '__main__':
     
     for file in FileObjList:    
         Db.InsertOneFile(file)
-#        Db.UpdateIdentifierBelongsToFunction()
-        Db.QueryTable(Db.TblIdentifier)
+
+    Db.UpdateIdentifierBelongsToFunction()
     Db.Close()
         
     print 'Done!'

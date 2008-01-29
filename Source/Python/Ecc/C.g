@@ -166,7 +166,7 @@ type_specifier
 	| 'VOID'
 	| s=struct_or_union_specifier {self.StoreStructUnionDefinition($s.start.line, $s.start.charPositionInLine, $s.stop.line, $s.stop.charPositionInLine, $s.text)}
 	| e=enum_specifier {self.StoreEnumerationDefinition($e.start.line, $e.start.charPositionInLine, $e.stop.line, $e.stop.charPositionInLine, $e.text)}
-	| (IDENTIFIER declarator)=> type_id
+	| (IDENTIFIER type_qualifier* declarator)=> type_id
 	;
 
 type_id
