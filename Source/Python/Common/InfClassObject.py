@@ -229,18 +229,20 @@ class Inf(InfObject):
     # Find the contents defined in all arches and merge them to all
     #
     def MergeAllArches(self):
-        for Arch in DataType.ARCH_LIST:
-            if Arch not in self.Defines:
-                self.Defines[Arch] = InfDefines()
-            self.Defines[Arch].extend(self.Defines[DataType.TAB_ARCH_COMMON.upper()])
-            self._Macro.update(self.Defines[Arch].DefinesDictionary[TAB_INF_DEFINES_MACRO])
+        if DataType.TAB_ARCH_COMMON.upper(self.Defines) in self.Defines:
+            for Arch in DataType.ARCH_LIST:
+                if Arch not in self.Defines:
+                    self.Defines[Arch] = InfDefines()
+                self.Defines[Arch].extend(self.Defines[DataType.TAB_ARCH_COMMON.upper()])
+                self._Macro.update(self.Defines[Arch].DefinesDictionary[TAB_INF_DEFINES_MACRO])
         self._Macro.update(GlobalData.gGlobalDefines)
         # print "###",self._Macro
 
-        for Key in self.KeyList:
-            for Arch in DataType.ARCH_LIST:
-                Command = "self.Contents[Arch]." + Key + ".extend(" + "self.Contents['" + DataType.TAB_ARCH_COMMON + "']." + Key + ")"
-                eval(Command)     
+        if DataType.TAB_ARCH_COMMON in self.Contents:
+            for Key in self.KeyList:
+                for Arch in DataType.ARCH_LIST:
+                    Command = "self.Contents[Arch]." + Key + ".extend(" + "self.Contents['" + DataType.TAB_ARCH_COMMON + "']." + Key + ")"
+                    eval(Command)     
 
     ## Parse Inf file
     #
