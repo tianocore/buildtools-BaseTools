@@ -48,7 +48,7 @@ options {
 }
 
 translation_unit
-	: external_declaration+
+	: external_declaration*
 	;
 
 
@@ -160,10 +160,6 @@ type_specifier
 	| 'double'
 	| 'signed'
 	| 'unsigned'
-	| 'BOOLEAN'
-	| 'CHAR8'
-	| 'CHAR16'
-	| 'VOID'
 	| s=struct_or_union_specifier {self.StoreStructUnionDefinition($s.start.line, $s.start.charPositionInLine, $s.stop.line, $s.stop.charPositionInLine, $s.text)}
 	| e=enum_specifier {self.StoreEnumerationDefinition($e.start.line, $e.start.charPositionInLine, $e.stop.line, $e.stop.charPositionInLine, $e.text)}
 	| (IDENTIFIER type_qualifier* declarator)=> type_id
@@ -208,8 +204,8 @@ struct_declarator
 
 enum_specifier
 options {k=3;}
-	: 'enum' '{' enumerator_list '}'
-	| 'enum' IDENTIFIER '{' enumerator_list '}'
+	: 'enum' '{' enumerator_list ','? '}'
+	| 'enum' IDENTIFIER '{' enumerator_list ','? '}'
 	| 'enum' IDENTIFIER
 	;
 
@@ -230,6 +226,7 @@ type_qualifier
 	| 'CONST'
 	| 'UNALIGNED'
 	| 'VOLATILE'
+	| 'GLOBAL_REMOVE_IF_UNREFERENCED'
 	;
 
 declarator
@@ -258,7 +255,7 @@ pointer
 	;
 
 parameter_type_list
-	: parameter_list (',' '...')?
+	: parameter_list (',' ('OPTIONAL')? '...')?
 	;
 
 parameter_list
@@ -268,7 +265,7 @@ parameter_list
 parameter_declaration
 	: declaration_specifiers (declarator|abstract_declarator)* ('OPTIONAL')?
 	//accomerdate user-defined type only, no declarator follow.
-	| IDENTIFIER
+	| pointer* IDENTIFIER
 	;
 
 identifier_list
@@ -340,12 +337,17 @@ postfix_expression
         (   '[' expression ']'
         |   '(' a=')'{self.StoreFunctionCalling($p.start.line, $p.start.charPositionInLine, $a.line, $a.charPositionInLine, $p.text, '')}
         |   '(' c=argument_expression_list b=')' {self.StoreFunctionCalling($p.start.line, $p.start.charPositionInLine, $b.line, $b.charPositionInLine, $p.text, $c.text)}
+        |   '(' macro_parameter_list ')'
         |   '.' IDENTIFIER
         |   '*' IDENTIFIER
         |   '->' IDENTIFIER
         |   '++'
         |   '--'
         )*
+	;
+	
+macro_parameter_list
+	: parameter_declaration (',' parameter_declaration)*
 	;
 
 unary_operator
@@ -454,7 +456,7 @@ statement
 	;
 
 macro_statement
-	: IDENTIFIER '(' (IDENTIFIER | declaration*  statement_list?) ')'
+	: IDENTIFIER '(' declaration*  statement_list? expression? ')'
 	;
 	
 labeled_statement
@@ -526,9 +528,10 @@ HexDigit : ('0'..'9'|'a'..'f'|'A'..'F') ;
 
 fragment
 IntegerTypeSuffix
-	:	('u'|'U')? ('l'|'L')
-	|	('u'|'U')  ('l'|'L')?
-	| 'ULL'
+	: ('u'|'U')
+	| ('l'|'L')
+	| ('u'|'U')  ('l'|'L')
+	| ('u'|'U')  ('l'|'L') ('l'|'L')
 	;
 
 FLOATING_POINT_LITERAL
