@@ -1,13 +1,15 @@
 import sys
 import os
+import re
 import CodeFragmentCollector
 import FileProfile
 from CommonDataClass import DataClass
 import Database
 from Common import EdkLogger
 
-def GetIgnoredDirList():
-    return ('Build', 'IntelRestrictedPkg', 'IntelRestrictedTools')
+def GetIgnoredDirListPattern():
+    p = re.compile(r'.*[\\/](?:BUILD|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+    return p
 
 def GetIdType(Str):
     Type = DataClass.MODEL_UNKNOWN
@@ -135,13 +137,12 @@ if __name__ == '__main__':
 
     FileObjList = []
     tuple = os.walk(sys.argv[1])
-
+    IgnoredPattern = GetIgnoredDirListPattern()
     ParseErrorFileList = []
 
     for dirpath, dirnames, filenames in tuple:
-        for d in dirnames:
-            if d.startswith('.') or d in GetIgnoredDirList():
-                dirnames.remove(d)
+        if IgnoredPattern.match(dirpath.upper()):
+            continue
         for f in filenames:
             FullName = os.path.join(dirpath, f)
             
@@ -168,7 +169,6 @@ if __name__ == '__main__':
     EdkLogger.SetLevel(EdkLogger.QUIET)
     Db = Database.Database(Database.DATABASE_PATH)
     Db.InitDatabase()
-    Db.QueryTable(Db.TblDataModel)
     
     for file in FileObjList:    
         Db.InsertOneFile(file)

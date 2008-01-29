@@ -330,10 +330,10 @@ class CodeFragmentCollector:
             # check for */ comment end
             elif InComment and not DoubleSlashComment and not HashComment and self.__CurrentChar() == T_CHAR_STAR and self.__NextChar() == T_CHAR_SLASH:
                 CommentObj.Content += self.__CurrentChar()
-                self.__SetCurrentCharValue(T_CHAR_SPACE)
+#                self.__SetCurrentCharValue(T_CHAR_SPACE)
                 self.__GetOneChar()
                 CommentObj.Content += self.__CurrentChar()
-                self.__SetCurrentCharValue(T_CHAR_SPACE)
+#                self.__SetCurrentCharValue(T_CHAR_SPACE)
                 CommentObj.EndPos = (self.CurrentLineNumber, self.CurrentOffsetWithinLine)
                 FileProfile.CommentList.append(CommentObj)
                 CommentObj = None
@@ -352,9 +352,10 @@ class CodeFragmentCollector:
                         continue
                     else:
                         PPDirectiveObj.Content += self.__CurrentChar()
+                    self.__SetCurrentCharValue(T_CHAR_SPACE)
                 else:
                     CommentObj.Content += self.__CurrentChar()
-                self.__SetCurrentCharValue(T_CHAR_SPACE)
+#                self.__SetCurrentCharValue(T_CHAR_SPACE)
                 self.__GetOneChar()
             # check for // comment
             elif self.__CurrentChar() == T_CHAR_SLASH and self.__NextChar() == T_CHAR_SLASH:
@@ -364,19 +365,16 @@ class CodeFragmentCollector:
             # check for '#' comment
             elif self.__CurrentChar() == T_CHAR_HASH and not InString and not InCharLiteral:
                 InComment = True
-                HashComment = True
-                #insert ',' at hash line to workaround PP effects on C grammar check. C parser also adjusted to accomodate the inserted comma.
-                #self.__InsertComma(self.CurrentLineNumber) 
+                HashComment = True 
                 PPDirectiveObj = PP_Directive('', (self.CurrentLineNumber, self.CurrentOffsetWithinLine), None)
-                #self.CurrentOffsetWithinLine += 1
             # check for /* comment start
             elif self.__CurrentChar() == T_CHAR_SLASH and self.__NextChar() == T_CHAR_STAR:
                 CommentObj = Comment('', (self.CurrentLineNumber, self.CurrentOffsetWithinLine), None, T_COMMENT_SLASH_STAR)
                 CommentObj.Content += self.__CurrentChar()
-                self.__SetCurrentCharValue( T_CHAR_SPACE)
+#                self.__SetCurrentCharValue( T_CHAR_SPACE)
                 self.__GetOneChar()
                 CommentObj.Content += self.__CurrentChar()
-                self.__SetCurrentCharValue( T_CHAR_SPACE)
+#                self.__SetCurrentCharValue( T_CHAR_SPACE)
                 self.__GetOneChar()
                 InComment = True
             else:
