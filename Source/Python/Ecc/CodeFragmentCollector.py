@@ -352,7 +352,8 @@ class CodeFragmentCollector:
                         continue
                     else:
                         PPDirectiveObj.Content += self.__CurrentChar()
-                    self.__SetCurrentCharValue(T_CHAR_SPACE)
+                    if PPExtend:
+                        self.__SetCurrentCharValue(T_CHAR_SPACE)
                 else:
                     CommentObj.Content += self.__CurrentChar()
 #                self.__SetCurrentCharValue(T_CHAR_SPACE)
