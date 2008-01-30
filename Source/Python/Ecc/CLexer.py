@@ -1,4 +1,4 @@
-# $ANTLR 3.0.1 C.g 2008-01-29 19:00:50
+# $ANTLR 3.0.1 C.g 2008-01-30 14:26:38
 
 from antlr3 import *
 from antlr3.compat import set, frozenset
@@ -2182,11 +2182,11 @@ class CLexer(Lexer):
         try:
             self.type = IDENTIFIER
 
-            # C.g:501:2: ( LETTER ( LETTER | '0' .. '9' )* )
-            # C.g:501:4: LETTER ( LETTER | '0' .. '9' )*
+            # C.g:504:2: ( LETTER ( LETTER | '0' .. '9' )* )
+            # C.g:504:4: LETTER ( LETTER | '0' .. '9' )*
             self.mLETTER()
 
-            # C.g:501:11: ( LETTER | '0' .. '9' )*
+            # C.g:504:11: ( LETTER | '0' .. '9' )*
             while True: #loop1
                 alt1 = 2
                 LA1_0 = self.input.LA(1)
@@ -2228,7 +2228,7 @@ class CLexer(Lexer):
     def mLETTER(self, ):
 
         try:
-            # C.g:506:2: ( '$' | 'A' .. 'Z' | 'a' .. 'z' | '_' )
+            # C.g:509:2: ( '$' | 'A' .. 'Z' | 'a' .. 'z' | '_' )
             # C.g:
             if self.input.LA(1) == u'$' or (u'A' <= self.input.LA(1) <= u'Z') or self.input.LA(1) == u'_' or (u'a' <= self.input.LA(1) <= u'z'):
                 self.input.consume();
@@ -2257,16 +2257,16 @@ class CLexer(Lexer):
         try:
             self.type = CHARACTER_LITERAL
 
-            # C.g:513:5: ( ( 'L' )? '\\'' ( EscapeSequence | ~ ( '\\'' | '\\\\' ) ) '\\'' )
-            # C.g:513:9: ( 'L' )? '\\'' ( EscapeSequence | ~ ( '\\'' | '\\\\' ) ) '\\''
-            # C.g:513:9: ( 'L' )?
+            # C.g:516:5: ( ( 'L' )? '\\'' ( EscapeSequence | ~ ( '\\'' | '\\\\' ) ) '\\'' )
+            # C.g:516:9: ( 'L' )? '\\'' ( EscapeSequence | ~ ( '\\'' | '\\\\' ) ) '\\''
+            # C.g:516:9: ( 'L' )?
             alt2 = 2
             LA2_0 = self.input.LA(1)
 
             if (LA2_0 == u'L') :
                 alt2 = 1
             if alt2 == 1:
-                # C.g:513:10: 'L'
+                # C.g:516:10: 'L'
                 self.match(u'L')
 
 
@@ -2274,7 +2274,7 @@ class CLexer(Lexer):
 
             self.match(u'\'')
 
-            # C.g:513:21: ( EscapeSequence | ~ ( '\\'' | '\\\\' ) )
+            # C.g:516:21: ( EscapeSequence | ~ ( '\\'' | '\\\\' ) )
             alt3 = 2
             LA3_0 = self.input.LA(1)
 
@@ -2283,18 +2283,18 @@ class CLexer(Lexer):
             elif ((u'\u0000' <= LA3_0 <= u'&') or (u'(' <= LA3_0 <= u'[') or (u']' <= LA3_0 <= u'\uFFFE')) :
                 alt3 = 2
             else:
-                nvae = NoViableAltException("513:21: ( EscapeSequence | ~ ( '\\'' | '\\\\' ) )", 3, 0, self.input)
+                nvae = NoViableAltException("516:21: ( EscapeSequence | ~ ( '\\'' | '\\\\' ) )", 3, 0, self.input)
 
                 raise nvae
 
             if alt3 == 1:
-                # C.g:513:23: EscapeSequence
+                # C.g:516:23: EscapeSequence
                 self.mEscapeSequence()
 
 
 
             elif alt3 == 2:
-                # C.g:513:40: ~ ( '\\'' | '\\\\' )
+                # C.g:516:40: ~ ( '\\'' | '\\\\' )
                 if (u'\u0000' <= self.input.LA(1) <= u'&') or (u'(' <= self.input.LA(1) <= u'[') or (u']' <= self.input.LA(1) <= u'\uFFFE'):
                     self.input.consume();
 
@@ -2327,16 +2327,16 @@ class CLexer(Lexer):
         try:
             self.type = STRING_LITERAL
 
-            # C.g:517:5: ( ( 'L' )? '\"' ( EscapeSequence | ~ ( '\\\\' | '\"' ) )* '\"' )
-            # C.g:517:8: ( 'L' )? '\"' ( EscapeSequence | ~ ( '\\\\' | '\"' ) )* '\"'
-            # C.g:517:8: ( 'L' )?
+            # C.g:520:5: ( ( 'L' )? '\"' ( EscapeSequence | ~ ( '\\\\' | '\"' ) )* '\"' )
+            # C.g:520:8: ( 'L' )? '\"' ( EscapeSequence | ~ ( '\\\\' | '\"' ) )* '\"'
+            # C.g:520:8: ( 'L' )?
             alt4 = 2
             LA4_0 = self.input.LA(1)
 
             if (LA4_0 == u'L') :
                 alt4 = 1
             if alt4 == 1:
-                # C.g:517:9: 'L'
+                # C.g:520:9: 'L'
                 self.match(u'L')
 
 
@@ -2344,7 +2344,7 @@ class CLexer(Lexer):
 
             self.match(u'"')
 
-            # C.g:517:19: ( EscapeSequence | ~ ( '\\\\' | '\"' ) )*
+            # C.g:520:19: ( EscapeSequence | ~ ( '\\\\' | '\"' ) )*
             while True: #loop5
                 alt5 = 3
                 LA5_0 = self.input.LA(1)
@@ -2356,13 +2356,13 @@ class CLexer(Lexer):
 
 
                 if alt5 == 1:
-                    # C.g:517:21: EscapeSequence
+                    # C.g:520:21: EscapeSequence
                     self.mEscapeSequence()
 
 
 
                 elif alt5 == 2:
-                    # C.g:517:38: ~ ( '\\\\' | '\"' )
+                    # C.g:520:38: ~ ( '\\\\' | '\"' )
                     if (u'\u0000' <= self.input.LA(1) <= u'!') or (u'#' <= self.input.LA(1) <= u'[') or (u']' <= self.input.LA(1) <= u'\uFFFE'):
                         self.input.consume();
 
@@ -2398,8 +2398,8 @@ class CLexer(Lexer):
         try:
             self.type = HEX_LITERAL
 
-            # C.g:520:13: ( '0' ( 'x' | 'X' ) ( HexDigit )+ ( IntegerTypeSuffix )? )
-            # C.g:520:15: '0' ( 'x' | 'X' ) ( HexDigit )+ ( IntegerTypeSuffix )?
+            # C.g:523:13: ( '0' ( 'x' | 'X' ) ( HexDigit )+ ( IntegerTypeSuffix )? )
+            # C.g:523:15: '0' ( 'x' | 'X' ) ( HexDigit )+ ( IntegerTypeSuffix )?
             self.match(u'0')
 
             if self.input.LA(1) == u'X' or self.input.LA(1) == u'x':
@@ -2411,7 +2411,7 @@ class CLexer(Lexer):
                 raise mse
 
 
-            # C.g:520:29: ( HexDigit )+
+            # C.g:523:29: ( HexDigit )+
             cnt6 = 0
             while True: #loop6
                 alt6 = 2
@@ -2422,7 +2422,7 @@ class CLexer(Lexer):
 
 
                 if alt6 == 1:
-                    # C.g:520:29: HexDigit
+                    # C.g:523:29: HexDigit
                     self.mHexDigit()
 
 
@@ -2437,14 +2437,14 @@ class CLexer(Lexer):
                 cnt6 += 1
 
 
-            # C.g:520:39: ( IntegerTypeSuffix )?
+            # C.g:523:39: ( IntegerTypeSuffix )?
             alt7 = 2
             LA7_0 = self.input.LA(1)
 
             if (LA7_0 == u'L' or LA7_0 == u'U' or LA7_0 == u'l' or LA7_0 == u'u') :
                 alt7 = 1
             if alt7 == 1:
-                # C.g:520:39: IntegerTypeSuffix
+                # C.g:523:39: IntegerTypeSuffix
                 self.mIntegerTypeSuffix()
 
 
@@ -2468,9 +2468,9 @@ class CLexer(Lexer):
         try:
             self.type = DECIMAL_LITERAL
 
-            # C.g:522:17: ( ( '0' | '1' .. '9' ( '0' .. '9' )* ) ( IntegerTypeSuffix )? )
-            # C.g:522:19: ( '0' | '1' .. '9' ( '0' .. '9' )* ) ( IntegerTypeSuffix )?
-            # C.g:522:19: ( '0' | '1' .. '9' ( '0' .. '9' )* )
+            # C.g:525:17: ( ( '0' | '1' .. '9' ( '0' .. '9' )* ) ( IntegerTypeSuffix )? )
+            # C.g:525:19: ( '0' | '1' .. '9' ( '0' .. '9' )* ) ( IntegerTypeSuffix )?
+            # C.g:525:19: ( '0' | '1' .. '9' ( '0' .. '9' )* )
             alt9 = 2
             LA9_0 = self.input.LA(1)
 
@@ -2479,21 +2479,21 @@ class CLexer(Lexer):
             elif ((u'1' <= LA9_0 <= u'9')) :
                 alt9 = 2
             else:
-                nvae = NoViableAltException("522:19: ( '0' | '1' .. '9' ( '0' .. '9' )* )", 9, 0, self.input)
+                nvae = NoViableAltException("525:19: ( '0' | '1' .. '9' ( '0' .. '9' )* )", 9, 0, self.input)
 
                 raise nvae
 
             if alt9 == 1:
-                # C.g:522:20: '0'
+                # C.g:525:20: '0'
                 self.match(u'0')
 
 
 
             elif alt9 == 2:
-                # C.g:522:26: '1' .. '9' ( '0' .. '9' )*
+                # C.g:525:26: '1' .. '9' ( '0' .. '9' )*
                 self.matchRange(u'1', u'9')
 
-                # C.g:522:35: ( '0' .. '9' )*
+                # C.g:525:35: ( '0' .. '9' )*
                 while True: #loop8
                     alt8 = 2
                     LA8_0 = self.input.LA(1)
@@ -2503,7 +2503,7 @@ class CLexer(Lexer):
 
 
                     if alt8 == 1:
-                        # C.g:522:35: '0' .. '9'
+                        # C.g:525:35: '0' .. '9'
                         self.matchRange(u'0', u'9')
 
 
@@ -2515,14 +2515,14 @@ class CLexer(Lexer):
 
 
 
-            # C.g:522:46: ( IntegerTypeSuffix )?
+            # C.g:525:46: ( IntegerTypeSuffix )?
             alt10 = 2
             LA10_0 = self.input.LA(1)
 
             if (LA10_0 == u'L' or LA10_0 == u'U' or LA10_0 == u'l' or LA10_0 == u'u') :
                 alt10 = 1
             if alt10 == 1:
-                # C.g:522:46: IntegerTypeSuffix
+                # C.g:525:46: IntegerTypeSuffix
                 self.mIntegerTypeSuffix()
 
 
@@ -2546,11 +2546,11 @@ class CLexer(Lexer):
         try:
             self.type = OCTAL_LITERAL
 
-            # C.g:524:15: ( '0' ( '0' .. '7' )+ ( IntegerTypeSuffix )? )
-            # C.g:524:17: '0' ( '0' .. '7' )+ ( IntegerTypeSuffix )?
+            # C.g:527:15: ( '0' ( '0' .. '7' )+ ( IntegerTypeSuffix )? )
+            # C.g:527:17: '0' ( '0' .. '7' )+ ( IntegerTypeSuffix )?
             self.match(u'0')
 
-            # C.g:524:21: ( '0' .. '7' )+
+            # C.g:527:21: ( '0' .. '7' )+
             cnt11 = 0
             while True: #loop11
                 alt11 = 2
@@ -2561,7 +2561,7 @@ class CLexer(Lexer):
 
 
                 if alt11 == 1:
-                    # C.g:524:22: '0' .. '7'
+                    # C.g:527:22: '0' .. '7'
                     self.matchRange(u'0', u'7')
 
 
@@ -2576,14 +2576,14 @@ class CLexer(Lexer):
                 cnt11 += 1
 
 
-            # C.g:524:33: ( IntegerTypeSuffix )?
+            # C.g:527:33: ( IntegerTypeSuffix )?
             alt12 = 2
             LA12_0 = self.input.LA(1)
 
             if (LA12_0 == u'L' or LA12_0 == u'U' or LA12_0 == u'l' or LA12_0 == u'u') :
                 alt12 = 1
             if alt12 == 1:
-                # C.g:524:33: IntegerTypeSuffix
+                # C.g:527:33: IntegerTypeSuffix
                 self.mIntegerTypeSuffix()
 
 
@@ -2605,8 +2605,8 @@ class CLexer(Lexer):
     def mHexDigit(self, ):
 
         try:
-            # C.g:527:10: ( ( '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' ) )
-            # C.g:527:12: ( '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' )
+            # C.g:530:10: ( ( '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' ) )
+            # C.g:530:12: ( '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' )
             if (u'0' <= self.input.LA(1) <= u'9') or (u'A' <= self.input.LA(1) <= u'F') or (u'a' <= self.input.LA(1) <= u'f'):
                 self.input.consume();
 
@@ -2632,7 +2632,7 @@ class CLexer(Lexer):
     def mIntegerTypeSuffix(self, ):
 
         try:
-            # C.g:531:2: ( ( 'u' | 'U' ) | ( 'l' | 'L' ) | ( 'u' | 'U' ) ( 'l' | 'L' ) | ( 'u' | 'U' ) ( 'l' | 'L' ) ( 'l' | 'L' ) )
+            # C.g:534:2: ( ( 'u' | 'U' ) | ( 'l' | 'L' ) | ( 'u' | 'U' ) ( 'l' | 'L' ) | ( 'u' | 'U' ) ( 'l' | 'L' ) ( 'l' | 'L' ) )
             alt13 = 4
             LA13_0 = self.input.LA(1)
 
@@ -2651,12 +2651,12 @@ class CLexer(Lexer):
             elif (LA13_0 == u'L' or LA13_0 == u'l') :
                 alt13 = 2
             else:
-                nvae = NoViableAltException("529:1: fragment IntegerTypeSuffix : ( ( 'u' | 'U' ) | ( 'l' | 'L' ) | ( 'u' | 'U' ) ( 'l' | 'L' ) | ( 'u' | 'U' ) ( 'l' | 'L' ) ( 'l' | 'L' ) );", 13, 0, self.input)
+                nvae = NoViableAltException("532:1: fragment IntegerTypeSuffix : ( ( 'u' | 'U' ) | ( 'l' | 'L' ) | ( 'u' | 'U' ) ( 'l' | 'L' ) | ( 'u' | 'U' ) ( 'l' | 'L' ) ( 'l' | 'L' ) );", 13, 0, self.input)
 
                 raise nvae
 
             if alt13 == 1:
-                # C.g:531:4: ( 'u' | 'U' )
+                # C.g:534:4: ( 'u' | 'U' )
                 if self.input.LA(1) == u'U' or self.input.LA(1) == u'u':
                     self.input.consume();
 
@@ -2669,7 +2669,7 @@ class CLexer(Lexer):
 
 
             elif alt13 == 2:
-                # C.g:532:4: ( 'l' | 'L' )
+                # C.g:535:4: ( 'l' | 'L' )
                 if self.input.LA(1) == u'L' or self.input.LA(1) == u'l':
                     self.input.consume();
 
@@ -2682,7 +2682,7 @@ class CLexer(Lexer):
 
 
             elif alt13 == 3:
-                # C.g:533:4: ( 'u' | 'U' ) ( 'l' | 'L' )
+                # C.g:536:4: ( 'u' | 'U' ) ( 'l' | 'L' )
                 if self.input.LA(1) == u'U' or self.input.LA(1) == u'u':
                     self.input.consume();
 
@@ -2704,7 +2704,7 @@ class CLexer(Lexer):
 
 
             elif alt13 == 4:
-                # C.g:534:4: ( 'u' | 'U' ) ( 'l' | 'L' ) ( 'l' | 'L' )
+                # C.g:537:4: ( 'u' | 'U' ) ( 'l' | 'L' ) ( 'l' | 'L' )
                 if self.input.LA(1) == u'U' or self.input.LA(1) == u'u':
                     self.input.consume();
 
@@ -2749,12 +2749,12 @@ class CLexer(Lexer):
         try:
             self.type = FLOATING_POINT_LITERAL
 
-            # C.g:538:5: ( ( '0' .. '9' )+ '.' ( '0' .. '9' )* ( Exponent )? ( FloatTypeSuffix )? | '.' ( '0' .. '9' )+ ( Exponent )? ( FloatTypeSuffix )? | ( '0' .. '9' )+ Exponent ( FloatTypeSuffix )? | ( '0' .. '9' )+ ( Exponent )? FloatTypeSuffix )
+            # C.g:541:5: ( ( '0' .. '9' )+ '.' ( '0' .. '9' )* ( Exponent )? ( FloatTypeSuffix )? | '.' ( '0' .. '9' )+ ( Exponent )? ( FloatTypeSuffix )? | ( '0' .. '9' )+ Exponent ( FloatTypeSuffix )? | ( '0' .. '9' )+ ( Exponent )? FloatTypeSuffix )
             alt25 = 4
             alt25 = self.dfa25.predict(self.input)
             if alt25 == 1:
-                # C.g:538:9: ( '0' .. '9' )+ '.' ( '0' .. '9' )* ( Exponent )? ( FloatTypeSuffix )?
-                # C.g:538:9: ( '0' .. '9' )+
+                # C.g:541:9: ( '0' .. '9' )+ '.' ( '0' .. '9' )* ( Exponent )? ( FloatTypeSuffix )?
+                # C.g:541:9: ( '0' .. '9' )+
                 cnt14 = 0
                 while True: #loop14
                     alt14 = 2
@@ -2765,7 +2765,7 @@ class CLexer(Lexer):
 
 
                     if alt14 == 1:
-                        # C.g:538:10: '0' .. '9'
+                        # C.g:541:10: '0' .. '9'
                         self.matchRange(u'0', u'9')
 
 
@@ -2782,7 +2782,7 @@ class CLexer(Lexer):
 
                 self.match(u'.')
 
-                # C.g:538:25: ( '0' .. '9' )*
+                # C.g:541:25: ( '0' .. '9' )*
                 while True: #loop15
                     alt15 = 2
                     LA15_0 = self.input.LA(1)
@@ -2792,7 +2792,7 @@ class CLexer(Lexer):
 
 
                     if alt15 == 1:
-                        # C.g:538:26: '0' .. '9'
+                        # C.g:541:26: '0' .. '9'
                         self.matchRange(u'0', u'9')
 
 
@@ -2801,27 +2801,27 @@ class CLexer(Lexer):
                         break #loop15
 
 
-                # C.g:538:37: ( Exponent )?
+                # C.g:541:37: ( Exponent )?
                 alt16 = 2
                 LA16_0 = self.input.LA(1)
 
                 if (LA16_0 == u'E' or LA16_0 == u'e') :
                     alt16 = 1
                 if alt16 == 1:
-                    # C.g:538:37: Exponent
+                    # C.g:541:37: Exponent
                     self.mExponent()
 
 
 
 
-                # C.g:538:47: ( FloatTypeSuffix )?
+                # C.g:541:47: ( FloatTypeSuffix )?
                 alt17 = 2
                 LA17_0 = self.input.LA(1)
 
                 if (LA17_0 == u'D' or LA17_0 == u'F' or LA17_0 == u'd' or LA17_0 == u'f') :
                     alt17 = 1
                 if alt17 == 1:
-                    # C.g:538:47: FloatTypeSuffix
+                    # C.g:541:47: FloatTypeSuffix
                     self.mFloatTypeSuffix()
 
 
@@ -2830,10 +2830,10 @@ class CLexer(Lexer):
 
 
             elif alt25 == 2:
-                # C.g:539:9: '.' ( '0' .. '9' )+ ( Exponent )? ( FloatTypeSuffix )?
+                # C.g:542:9: '.' ( '0' .. '9' )+ ( Exponent )? ( FloatTypeSuffix )?
                 self.match(u'.')
 
-                # C.g:539:13: ( '0' .. '9' )+
+                # C.g:542:13: ( '0' .. '9' )+
                 cnt18 = 0
                 while True: #loop18
                     alt18 = 2
@@ -2844,7 +2844,7 @@ class CLexer(Lexer):
 
 
                     if alt18 == 1:
-                        # C.g:539:14: '0' .. '9'
+                        # C.g:542:14: '0' .. '9'
                         self.matchRange(u'0', u'9')
 
 
@@ -2859,27 +2859,27 @@ class CLexer(Lexer):
                     cnt18 += 1
 
 
-                # C.g:539:25: ( Exponent )?
+                # C.g:542:25: ( Exponent )?
                 alt19 = 2
                 LA19_0 = self.input.LA(1)
 
                 if (LA19_0 == u'E' or LA19_0 == u'e') :
                     alt19 = 1
                 if alt19 == 1:
-                    # C.g:539:25: Exponent
+                    # C.g:542:25: Exponent
                     self.mExponent()
 
 
 
 
-                # C.g:539:35: ( FloatTypeSuffix )?
+                # C.g:542:35: ( FloatTypeSuffix )?
                 alt20 = 2
                 LA20_0 = self.input.LA(1)
 
                 if (LA20_0 == u'D' or LA20_0 == u'F' or LA20_0 == u'd' or LA20_0 == u'f') :
                     alt20 = 1
                 if alt20 == 1:
-                    # C.g:539:35: FloatTypeSuffix
+                    # C.g:542:35: FloatTypeSuffix
                     self.mFloatTypeSuffix()
 
 
@@ -2888,8 +2888,8 @@ class CLexer(Lexer):
 
 
             elif alt25 == 3:
-                # C.g:540:9: ( '0' .. '9' )+ Exponent ( FloatTypeSuffix )?
-                # C.g:540:9: ( '0' .. '9' )+
+                # C.g:543:9: ( '0' .. '9' )+ Exponent ( FloatTypeSuffix )?
+                # C.g:543:9: ( '0' .. '9' )+
                 cnt21 = 0
                 while True: #loop21
                     alt21 = 2
@@ -2900,7 +2900,7 @@ class CLexer(Lexer):
 
 
                     if alt21 == 1:
-                        # C.g:540:10: '0' .. '9'
+                        # C.g:543:10: '0' .. '9'
                         self.matchRange(u'0', u'9')
 
 
@@ -2917,14 +2917,14 @@ class CLexer(Lexer):
 
                 self.mExponent()
 
-                # C.g:540:30: ( FloatTypeSuffix )?
+                # C.g:543:30: ( FloatTypeSuffix )?
                 alt22 = 2
                 LA22_0 = self.input.LA(1)
 
                 if (LA22_0 == u'D' or LA22_0 == u'F' or LA22_0 == u'd' or LA22_0 == u'f') :
                     alt22 = 1
                 if alt22 == 1:
-                    # C.g:540:30: FloatTypeSuffix
+                    # C.g:543:30: FloatTypeSuffix
                     self.mFloatTypeSuffix()
 
 
@@ -2933,8 +2933,8 @@ class CLexer(Lexer):
 
 
             elif alt25 == 4:
-                # C.g:541:9: ( '0' .. '9' )+ ( Exponent )? FloatTypeSuffix
-                # C.g:541:9: ( '0' .. '9' )+
+                # C.g:544:9: ( '0' .. '9' )+ ( Exponent )? FloatTypeSuffix
+                # C.g:544:9: ( '0' .. '9' )+
                 cnt23 = 0
                 while True: #loop23
                     alt23 = 2
@@ -2945,7 +2945,7 @@ class CLexer(Lexer):
 
 
                     if alt23 == 1:
-                        # C.g:541:10: '0' .. '9'
+                        # C.g:544:10: '0' .. '9'
                         self.matchRange(u'0', u'9')
 
 
@@ -2960,14 +2960,14 @@ class CLexer(Lexer):
                     cnt23 += 1
 
 
-                # C.g:541:21: ( Exponent )?
+                # C.g:544:21: ( Exponent )?
                 alt24 = 2
                 LA24_0 = self.input.LA(1)
 
                 if (LA24_0 == u'E' or LA24_0 == u'e') :
                     alt24 = 1
                 if alt24 == 1:
-                    # C.g:541:21: Exponent
+                    # C.g:544:21: Exponent
                     self.mExponent()
 
 
@@ -2990,8 +2990,8 @@ class CLexer(Lexer):
     def mExponent(self, ):
 
         try:
-            # C.g:545:10: ( ( 'e' | 'E' ) ( '+' | '-' )? ( '0' .. '9' )+ )
-            # C.g:545:12: ( 'e' | 'E' ) ( '+' | '-' )? ( '0' .. '9' )+
+            # C.g:548:10: ( ( 'e' | 'E' ) ( '+' | '-' )? ( '0' .. '9' )+ )
+            # C.g:548:12: ( 'e' | 'E' ) ( '+' | '-' )? ( '0' .. '9' )+
             if self.input.LA(1) == u'E' or self.input.LA(1) == u'e':
                 self.input.consume();
 
@@ -3001,7 +3001,7 @@ class CLexer(Lexer):
                 raise mse
 
 
-            # C.g:545:22: ( '+' | '-' )?
+            # C.g:548:22: ( '+' | '-' )?
             alt26 = 2
             LA26_0 = self.input.LA(1)
 
@@ -3021,7 +3021,7 @@ class CLexer(Lexer):
 
 
 
-            # C.g:545:33: ( '0' .. '9' )+
+            # C.g:548:33: ( '0' .. '9' )+
             cnt27 = 0
             while True: #loop27
                 alt27 = 2
@@ -3032,7 +3032,7 @@ class CLexer(Lexer):
 
 
                 if alt27 == 1:
-                    # C.g:545:34: '0' .. '9'
+                    # C.g:548:34: '0' .. '9'
                     self.matchRange(u'0', u'9')
 
 
@@ -3063,8 +3063,8 @@ class CLexer(Lexer):
     def mFloatTypeSuffix(self, ):
 
         try:
-            # C.g:548:17: ( ( 'f' | 'F' | 'd' | 'D' ) )
-            # C.g:548:19: ( 'f' | 'F' | 'd' | 'D' )
+            # C.g:551:17: ( ( 'f' | 'F' | 'd' | 'D' ) )
+            # C.g:551:19: ( 'f' | 'F' | 'd' | 'D' )
             if self.input.LA(1) == u'D' or self.input.LA(1) == u'F' or self.input.LA(1) == u'd' or self.input.LA(1) == u'f':
                 self.input.consume();
 
@@ -3090,7 +3090,7 @@ class CLexer(Lexer):
     def mEscapeSequence(self, ):
 
         try:
-            # C.g:552:5: ( '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' ) | OctalEscape )
+            # C.g:555:5: ( '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' ) | OctalEscape )
             alt28 = 2
             LA28_0 = self.input.LA(1)
 
@@ -3102,17 +3102,17 @@ class CLexer(Lexer):
                 elif ((u'0' <= LA28_1 <= u'7')) :
                     alt28 = 2
                 else:
-                    nvae = NoViableAltException("550:1: fragment EscapeSequence : ( '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' ) | OctalEscape );", 28, 1, self.input)
+                    nvae = NoViableAltException("553:1: fragment EscapeSequence : ( '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' ) | OctalEscape );", 28, 1, self.input)
 
                     raise nvae
 
             else:
-                nvae = NoViableAltException("550:1: fragment EscapeSequence : ( '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' ) | OctalEscape );", 28, 0, self.input)
+                nvae = NoViableAltException("553:1: fragment EscapeSequence : ( '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' ) | OctalEscape );", 28, 0, self.input)
 
                 raise nvae
 
             if alt28 == 1:
-                # C.g:552:8: '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' )
+                # C.g:555:8: '\\\\' ( 'b' | 't' | 'n' | 'f' | 'r' | '\\\"' | '\\'' | '\\\\' )
                 self.match(u'\\')
 
                 if self.input.LA(1) == u'"' or self.input.LA(1) == u'\'' or self.input.LA(1) == u'\\' or self.input.LA(1) == u'b' or self.input.LA(1) == u'f' or self.input.LA(1) == u'n' or self.input.LA(1) == u'r' or self.input.LA(1) == u't':
@@ -3127,7 +3127,7 @@ class CLexer(Lexer):
 
 
             elif alt28 == 2:
-                # C.g:553:9: OctalEscape
+                # C.g:556:9: OctalEscape
                 self.mOctalEscape()
 
 
@@ -3145,7 +3145,7 @@ class CLexer(Lexer):
     def mOctalEscape(self, ):
 
         try:
-            # C.g:558:5: ( '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) )
+            # C.g:561:5: ( '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) )
             alt29 = 3
             LA29_0 = self.input.LA(1)
 
@@ -3172,35 +3172,35 @@ class CLexer(Lexer):
                     else:
                         alt29 = 3
                 else:
-                    nvae = NoViableAltException("556:1: fragment OctalEscape : ( '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) );", 29, 1, self.input)
+                    nvae = NoViableAltException("559:1: fragment OctalEscape : ( '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) );", 29, 1, self.input)
 
                     raise nvae
 
             else:
-                nvae = NoViableAltException("556:1: fragment OctalEscape : ( '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) );", 29, 0, self.input)
+                nvae = NoViableAltException("559:1: fragment OctalEscape : ( '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) ( '0' .. '7' ) | '\\\\' ( '0' .. '7' ) );", 29, 0, self.input)
 
                 raise nvae
 
             if alt29 == 1:
-                # C.g:558:9: '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' )
+                # C.g:561:9: '\\\\' ( '0' .. '3' ) ( '0' .. '7' ) ( '0' .. '7' )
                 self.match(u'\\')
 
-                # C.g:558:14: ( '0' .. '3' )
-                # C.g:558:15: '0' .. '3'
+                # C.g:561:14: ( '0' .. '3' )
+                # C.g:561:15: '0' .. '3'
                 self.matchRange(u'0', u'3')
 
 
 
 
-                # C.g:558:25: ( '0' .. '7' )
-                # C.g:558:26: '0' .. '7'
+                # C.g:561:25: ( '0' .. '7' )
+                # C.g:561:26: '0' .. '7'
                 self.matchRange(u'0', u'7')
 
 
 
 
-                # C.g:558:36: ( '0' .. '7' )
-                # C.g:558:37: '0' .. '7'
+                # C.g:561:36: ( '0' .. '7' )
+                # C.g:561:37: '0' .. '7'
                 self.matchRange(u'0', u'7')
 
 
@@ -3209,18 +3209,18 @@ class CLexer(Lexer):
 
 
             elif alt29 == 2:
-                # C.g:559:9: '\\\\' ( '0' .. '7' ) ( '0' .. '7' )
+                # C.g:562:9: '\\\\' ( '0' .. '7' ) ( '0' .. '7' )
                 self.match(u'\\')
 
-                # C.g:559:14: ( '0' .. '7' )
-                # C.g:559:15: '0' .. '7'
+                # C.g:562:14: ( '0' .. '7' )
+                # C.g:562:15: '0' .. '7'
                 self.matchRange(u'0', u'7')
 
 
 
 
-                # C.g:559:25: ( '0' .. '7' )
-                # C.g:559:26: '0' .. '7'
+                # C.g:562:25: ( '0' .. '7' )
+                # C.g:562:26: '0' .. '7'
                 self.matchRange(u'0', u'7')
 
 
@@ -3229,11 +3229,11 @@ class CLexer(Lexer):
 
 
             elif alt29 == 3:
-                # C.g:560:9: '\\\\' ( '0' .. '7' )
+                # C.g:563:9: '\\\\' ( '0' .. '7' )
                 self.match(u'\\')
 
-                # C.g:560:14: ( '0' .. '7' )
-                # C.g:560:15: '0' .. '7'
+                # C.g:563:14: ( '0' .. '7' )
+                # C.g:563:15: '0' .. '7'
                 self.matchRange(u'0', u'7')
 
 
@@ -3254,8 +3254,8 @@ class CLexer(Lexer):
     def mUnicodeEscape(self, ):
 
         try:
-            # C.g:565:5: ( '\\\\' 'u' HexDigit HexDigit HexDigit HexDigit )
-            # C.g:565:9: '\\\\' 'u' HexDigit HexDigit HexDigit HexDigit
+            # C.g:568:5: ( '\\\\' 'u' HexDigit HexDigit HexDigit HexDigit )
+            # C.g:568:9: '\\\\' 'u' HexDigit HexDigit HexDigit HexDigit
             self.match(u'\\')
 
             self.match(u'u')
@@ -3286,8 +3286,8 @@ class CLexer(Lexer):
         try:
             self.type = WS
 
-            # C.g:568:5: ( ( ' ' | '\\r' | '\\t' | '\\u000C' | '\\n' ) )
-            # C.g:568:8: ( ' ' | '\\r' | '\\t' | '\\u000C' | '\\n' )
+            # C.g:571:5: ( ( ' ' | '\\r' | '\\t' | '\\u000C' | '\\n' ) )
+            # C.g:571:8: ( ' ' | '\\r' | '\\t' | '\\u000C' | '\\n' )
             if (u'\t' <= self.input.LA(1) <= u'\n') or (u'\f' <= self.input.LA(1) <= u'\r') or self.input.LA(1) == u' ':
                 self.input.consume();
 
@@ -3318,10 +3318,10 @@ class CLexer(Lexer):
         try:
             self.type = BS
 
-            # C.g:572:5: ( ( '\\\\' ) )
-            # C.g:572:7: ( '\\\\' )
-            # C.g:572:7: ( '\\\\' )
-            # C.g:572:8: '\\\\'
+            # C.g:575:5: ( ( '\\\\' ) )
+            # C.g:575:7: ( '\\\\' )
+            # C.g:575:7: ( '\\\\' )
+            # C.g:575:8: '\\\\'
             self.match(u'\\')
 
 
@@ -3348,8 +3348,8 @@ class CLexer(Lexer):
         try:
             self.type = UnicodeVocabulary
 
-            # C.g:580:5: ( '\\u0003' .. '\\uFFFE' )
-            # C.g:580:7: '\\u0003' .. '\\uFFFE'
+            # C.g:583:5: ( '\\u0003' .. '\\uFFFE' )
+            # C.g:583:7: '\\u0003' .. '\\uFFFE'
             self.matchRange(u'\u0003', u'\uFFFE')
 
 
@@ -3370,12 +3370,12 @@ class CLexer(Lexer):
         try:
             self.type = COMMENT
 
-            # C.g:583:5: ( '/*' ( options {greedy=false; } : . )* '*/' )
-            # C.g:583:9: '/*' ( options {greedy=false; } : . )* '*/'
+            # C.g:586:5: ( '/*' ( options {greedy=false; } : . )* '*/' )
+            # C.g:586:9: '/*' ( options {greedy=false; } : . )* '*/'
             self.match("/*")
 
 
-            # C.g:583:14: ( options {greedy=false; } : . )*
+            # C.g:586:14: ( options {greedy=false; } : . )*
             while True: #loop30
                 alt30 = 2
                 LA30_0 = self.input.LA(1)
@@ -3394,7 +3394,7 @@ class CLexer(Lexer):
 
 
                 if alt30 == 1:
-                    # C.g:583:42: .
+                    # C.g:586:42: .
                     self.matchAny()
 
 
@@ -3427,12 +3427,12 @@ class CLexer(Lexer):
         try:
             self.type = LINE_COMMENT
 
-            # C.g:588:5: ( '//' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n' )
-            # C.g:588:7: '//' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n'
+            # C.g:591:5: ( '//' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n' )
+            # C.g:591:7: '//' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n'
             self.match("//")
 
 
-            # C.g:588:12: (~ ( '\\n' | '\\r' ) )*
+            # C.g:591:12: (~ ( '\\n' | '\\r' ) )*
             while True: #loop31
                 alt31 = 2
                 LA31_0 = self.input.LA(1)
@@ -3442,7 +3442,7 @@ class CLexer(Lexer):
 
 
                 if alt31 == 1:
-                    # C.g:588:12: ~ ( '\\n' | '\\r' )
+                    # C.g:591:12: ~ ( '\\n' | '\\r' )
                     if (u'\u0000' <= self.input.LA(1) <= u'\t') or (u'\u000B' <= self.input.LA(1) <= u'\f') or (u'\u000E' <= self.input.LA(1) <= u'\uFFFE'):
                         self.input.consume();
 
@@ -3458,14 +3458,14 @@ class CLexer(Lexer):
                     break #loop31
 
 
-            # C.g:588:26: ( '\\r' )?
+            # C.g:591:26: ( '\\r' )?
             alt32 = 2
             LA32_0 = self.input.LA(1)
 
             if (LA32_0 == u'\r') :
                 alt32 = 1
             if alt32 == 1:
-                # C.g:588:26: '\\r'
+                # C.g:591:26: '\\r'
                 self.match(u'\r')
 
 
@@ -3494,11 +3494,11 @@ class CLexer(Lexer):
         try:
             self.type = LINE_COMMAND
 
-            # C.g:593:5: ( '#' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n' )
-            # C.g:593:7: '#' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n'
+            # C.g:596:5: ( '#' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n' )
+            # C.g:596:7: '#' (~ ( '\\n' | '\\r' ) )* ( '\\r' )? '\\n'
             self.match(u'#')
 
-            # C.g:593:11: (~ ( '\\n' | '\\r' ) )*
+            # C.g:596:11: (~ ( '\\n' | '\\r' ) )*
             while True: #loop33
                 alt33 = 2
                 LA33_0 = self.input.LA(1)
@@ -3508,7 +3508,7 @@ class CLexer(Lexer):
 
 
                 if alt33 == 1:
-                    # C.g:593:11: ~ ( '\\n' | '\\r' )
+                    # C.g:596:11: ~ ( '\\n' | '\\r' )
                     if (u'\u0000' <= self.input.LA(1) <= u'\t') or (u'\u000B' <= self.input.LA(1) <= u'\f') or (u'\u000E' <= self.input.LA(1) <= u'\uFFFE'):
                         self.input.consume();
 
@@ -3524,14 +3524,14 @@ class CLexer(Lexer):
                     break #loop33
 
 
-            # C.g:593:25: ( '\\r' )?
+            # C.g:596:25: ( '\\r' )?
             alt34 = 2
             LA34_0 = self.input.LA(1)
 
             if (LA34_0 == u'\r') :
                 alt34 = 1
             if alt34 == 1:
-                # C.g:593:25: '\\r'
+                # C.g:596:25: '\\r'
                 self.match(u'\r')
 
 

@@ -227,17 +227,20 @@ type_qualifier
 	| 'UNALIGNED'
 	| 'VOLATILE'
 	| 'GLOBAL_REMOVE_IF_UNREFERENCED'
+	| 'EFIAPI'
+	| 'EFI_BOOTSERVICE'
+	| 'EFI_RUNTIMESERVICE'
 	;
 
 declarator
 	: pointer? ('EFIAPI')? ('EFI_BOOTSERVICE')? ('EFI_RUNTIMESERVICE')? direct_declarator
-	| ('EFIAPI')? ('EFI_BOOTSERVICE')? ('EFI_RUNTIMESERVICE')? pointer? direct_declarator
+//	| ('EFIAPI')? ('EFI_BOOTSERVICE')? ('EFI_RUNTIMESERVICE')? pointer? direct_declarator
 	| pointer
 	;
 
 direct_declarator
 	: IDENTIFIER declarator_suffix*
-	| '(' declarator ')' declarator_suffix+
+	| '(' ('EFIAPI')? declarator ')' declarator_suffix+
 	;
 
 declarator_suffix
