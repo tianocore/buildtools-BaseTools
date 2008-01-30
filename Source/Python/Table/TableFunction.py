@@ -28,7 +28,6 @@ class TableFunction(Table):
     def __init__(self, Cursor):
         Table.__init__(self, Cursor)
         self.Table = 'Function'
-        self.ID = self.GetCount()
     
     ## Create table
     #

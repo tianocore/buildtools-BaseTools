@@ -29,7 +29,6 @@ class TableIdentifier(Table):
     def __init__(self, Cursor):
         Table.__init__(self, Cursor)
         self.Table = 'Identifier'
-        self.ID = self.GetCount()
     
     ## Create table
     #

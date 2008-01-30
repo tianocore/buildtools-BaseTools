@@ -28,7 +28,6 @@ class TableFile(Table):
     def __init__(self, Cursor):
         Table.__init__(self, Cursor)
         self.Table = 'File'
-        self.ID = self.GetCount()
     
     ## Create table
     #

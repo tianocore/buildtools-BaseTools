@@ -30,7 +30,6 @@ class TableDataModel(Table):
     def __init__(self, Cursor):
         Table.__init__(self, Cursor)
         self.Table = 'DataModel'
-        self.ID = self.GetCount()
     
     ## Create table
     #

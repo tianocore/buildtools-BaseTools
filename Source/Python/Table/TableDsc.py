@@ -30,8 +30,6 @@ class TableDsc(Table):
     def __init__(self, Cursor):
         Table.__init__(self, Cursor)
         self.Table = 'Dsc'
-        self.ID = self.GetCount()
-
     
     ## Create table
     #

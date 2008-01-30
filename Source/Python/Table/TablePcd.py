@@ -29,7 +29,6 @@ class TablePcd(Table):
     def __init__(self, Cursor):
         Table.__init__(self, Cursor)
         self.Table = 'Pcd'
-        self.ID = self.GetCount()
     
     ## Create table
     #
