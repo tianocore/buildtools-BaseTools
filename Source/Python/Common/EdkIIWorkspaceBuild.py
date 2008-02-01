@@ -571,6 +571,8 @@ class WorkspaceBuild(object):
                 for Item in Platform.Libraries.LibraryList:
                     for ItemArch in Item.SupArchList:
                         Library = self.InfDatabase[Item.FilePath]
+                        if ItemArch not in Library.Module.Header:
+                            continue
                         Pb.Libraries[Library.Module.Header[ItemArch].Name] = Item.FilePath
                 
                 #
