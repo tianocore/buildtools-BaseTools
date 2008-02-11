@@ -626,6 +626,7 @@ class Inf(InfObject):
                 List = GetSplitValueList(ItemNew)
                 if len(List) < 5 or len(List) > 9:
                     RaiseParserError(Item, 'Sources', File, '<Filename>[|<Family>[|<TagName>[|<ToolCode>[|<PcdFeatureFlag>]]]]')
+                List[0] = List[0].replace('\\', '/')
                 List[0] = NormPath(List[0], self._Macro)
                 CheckFileExist(self.Identification.FileRelativePath, List[0], File, 'Sources', Item)
                 CheckPcdTokenInfo(List[4], 'Sources', File)
