@@ -7,15 +7,15 @@ TOOL_BASENAME=`basename $0`
 if [ -n "$WORKSPACE" -a -e $WORKSPACE/Conf/BaseToolsCBinaries ]
 then
   exec $WORKSPACE/Conf/BaseToolsCBinaries/$TOOL_BASENAME
-elif [ -n "$WORKSPACE" -a -e $WORKSPACE/Conf/BaseToolsSource ]
+elif [ -n "$WORKSPACE" -a -e $EDK_TOOLS_PATH/Source/C ]
 then
-  if [ ! -e $WORKSPACE/Conf/BaseToolsSource/Source/C/bin/$TOOL_BASENAME ]
+  if [ ! -e $EDK_TOOLS_PATH/Source/C/bin/$TOOL_BASENAME ]
   then
     echo BaseTools C Tool binary was not found \($TOOL_BASENAME\)
     echo You may need to run:
     echo "  make -C $WORKSPACE/Conf/BaseToolsSource/Source/C"
   else
-    exec $WORKSPACE/Conf/BaseToolsSource/Source/C/bin/$TOOL_BASENAME $*
+    exec $EDK_TOOLS_PATH/Source/C/bin/$TOOL_BASENAME $*
   fi
 elif [ -e `dirname $0`/../../Source/C/bin/$TOOL_BASENAME ]
 then
