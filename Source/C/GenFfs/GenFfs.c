@@ -806,6 +806,7 @@ Returns:
   //
   // Open output file to write ffs data.
   //
+  remove(OutputFileName);
   FfsFile = fopen (OutputFileName, "wb");
   if (FfsFile == NULL) {
     Error (NULL, 0, 0001, "Error opening file", OutputFileName);

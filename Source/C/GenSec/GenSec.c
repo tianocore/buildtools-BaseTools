@@ -1094,6 +1094,7 @@ Returns:
   //
   // Open output file
   //
+  remove(OutputFileName);
   OutFile = fopen (OutputFileName, "wb");
   if (OutFile == NULL) {
     Error (NULL, 0, 0001, "Error opening file", OutputFileName);
