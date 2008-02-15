@@ -203,7 +203,11 @@ def main():
                 GenFdsGlobalVariable.ErrorLogger("No such an FV in FDF file.")
                 sys.exit(1)
        
+        # Disable output of parsing DSC/INF/DEC temporarily
+        OldLevel = EdkLogger.GetLevel()
+        EdkLogger.SetLevel(EdkLogger.QUIET)
         BuildWorkSpace.GenBuildDatabase({}, FdfParserObj.Profile.InfList)
+        EdkLogger.SetLevel(OldLevel)
         
         """Call GenFds"""
         GenFds.GenFd(OutputDir, FdfParserObj, BuildWorkSpace, ArchList)
