@@ -133,6 +133,8 @@ def GuidStructureStringToGuidValueName(GuidValue):
 #   @param      Directory   The directory name
 #
 def CreateDirectory(Directory):
+    if Directory == None or Directory.strip() == "":
+        return
     if not os.access(Directory, os.F_OK):
         os.makedirs(Directory)
 
