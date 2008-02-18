@@ -175,7 +175,6 @@ class DependencyExpression:
         while len(Stack) > 0:
             self.PostfixNotation.append(Stack.pop())
         self.PostfixNotation.append("END")
-        print self.PostfixNotation
 
     ## Validate the dependency expression
     def ValidateOpcode(self):
