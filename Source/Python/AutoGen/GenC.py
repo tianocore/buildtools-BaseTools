@@ -311,7 +311,6 @@ gAutoGenHPrologueString = """
 #ifndef _AUTOGENH_${Guid}
 #define _AUTOGENH_${Guid}
 
-extern int __make_me_compile_correctly;
 """
 
 gAutoGenHEpilogueString = """

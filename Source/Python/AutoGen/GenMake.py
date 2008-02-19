@@ -570,10 +570,18 @@ class Makefile(object):
             self.ModuleBuild = True
 
             self.BuildType = "mbuild"
-            self.BuildFileList = []
             self.TargetFileList = []
             self.ObjectFileList = []
-            self.ObjectBuildTargetList = []
+
+            self.ResultFileList = []
+            self.IntermediateDirectoryList = ["$(DEBUG_DIR)", "$(OUTPUT_DIR)"]
+        
+            self.SourceFileDatabase = {}  # {file type : file path}
+            self.DestFileDatabase = {}  # {file type : file path}
+            self.FileBuildTargetList = [] # [(src, target string)]
+            self.BuildTargetList = [] # [target string]
+            self.PendingBuildTargetList = [] # [FileBuildRule objects]
+            self.CommonFileDependency = []
 
             self.FileDependency = []
             self.LibraryBuildCommandList = []
@@ -734,7 +742,17 @@ class Makefile(object):
         else:
             self.PlatformBuildDirectory = "$(WORKSPACE)" + Separator + PlatformInfo.OutputDir
 
-        self.ProcessSourceFileList(MakeType)
+        # break build if no source files and binary files are found
+        if len(self.ModuleInfo.SourceFileList) == 0 and len(self.ModuleInfo.BinaryFileDict) == 0:
+            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No files to be built in module [%s, %s, %s]"
+                            % (self.ModuleInfo.BuildTarget, self.ModuleInfo.ToolChain, self.ModuleInfo.Arch),
+                            ExtraData=str(self.ModuleInfo.Module))
+        # convert source files and binary files to build target
+        if len(self.ModuleInfo.SourceFileList) > 0:
+            self.ProcessSourceFileList(MakeType)
+        if len(self.ModuleInfo.BinaryFileDict) > 0:
+            self.ProcessBinaryFileList(MakeType)
+        # convert dependent libaries to build command
         self.ProcessDependentLibrary(MakeType)
 
         if "DLINK" in PlatformInfo.ToolStaticLib:
@@ -835,8 +853,8 @@ class Makefile(object):
             "start_group_flag"          : gStartGroupFlag[PlatformInfo.ToolChainFamily["DLINK"]],
             "end_group_flag"            : gEndGroupFlag[PlatformInfo.ToolChainFamily["DLINK"]],
             "include_path"              : self.ModuleInfo.IncludePathList,
-            "target_file"               : self.TargetFileList,
-            "object_file"               : self.ObjectFileList,
+            #"target_file"               : self.TargetFileList,
+            #"object_file"               : self.ObjectFileList,
             "library_file"              : self.LibraryFileList,
             "remaining_build_target"    : self.ResultFileList,
             "system_library"            : self.SystemLibraryList,
@@ -949,28 +967,17 @@ class Makefile(object):
     def ProcessSourceFileList(self, MakeType=gMakeType):
         Separator = gDirectorySeparator[MakeType]
 
-        Family = self.PlatformInfo.ToolChainFamily["CC"]
-        BuildRule = self.PlatformInfo.BuildRule
-
-        self.ResultFileList = []
-        self.IntermediateDirectoryList = ["$(DEBUG_DIR)", "$(OUTPUT_DIR)"]
-
-        self.SourceFileDatabase = {}  # {file type : file path}
-        self.DestFileDatabase = {}  # {file type : file path}
-        self.FileBuildTargetList = [] # [(src, target string)]
-        self.BuildTargetList = [] # [target string]
-        self.PendingBuildTargetList = [] # [FileBuildRule objects]
-
         ForceIncludedFile = []
         SourceFileList = []
 
-        FileList = self.ModuleInfo.SourceFileList
-        if len(FileList) == 0:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No files to be built in module [%s, %s, %s]"
-                            % (self.ModuleInfo.BuildTarget, self.ModuleInfo.ToolChain, self.ModuleInfo.Arch),
+        if "CC" not in self.PlatformInfo.ToolChainFamily:
+            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No CC tool found",
                             ExtraData=str(self.ModuleInfo.Module))
+        Family = self.PlatformInfo.ToolChainFamily["CC"]
+        BuildRule = self.PlatformInfo.BuildRule
 
         CCodeFlag = False
+        FileList = self.ModuleInfo.SourceFileList
         for FileInfo in FileList:
             F, SrcFileType, SrcFileBuildRule = FileInfo
             if SrcFileType == "C-Code-File":
@@ -1165,6 +1172,28 @@ class Makefile(object):
             Template = TemplateString()
             Template.Append(TargetTemplate, {"deps" : self.FileDependency[File]})
             self.BuildTargetList.append(str(Template))
+
+
+    ## Process binary files to generate makefile targets and dependencies
+    #
+    # All binary files are just copied to $(OUTPUT_DIR)
+    # 
+    #   @param      MakeType    GNU makefile or MS makefile
+    #
+    def ProcessBinaryFileList(self, MakeType=gMakeType):
+        BinaryFiles = self.ModuleInfo.BinaryFileDict
+        BuildTargetString = "%(dst)s : %(src)s\n"\
+                            "\t$(CP) %(src)s %(dst)s\n"
+        for FileType in BinaryFiles:
+            if FileType not in self.DestFileDatabase:
+                self.DestFileDatabase[FileType] = []
+            for F in BinaryFiles[FileType]:
+                Src = os.path.join("$(MODULE_DIR)", F)
+                FileName = os.path.basename(F)
+                Dst = os.path.join("$(OUTPUT_DIR)", FileName)
+                self.DestFileDatabase[FileType].append(Dst)
+                self.ResultFileList.append(Dst)
+                self.BuildTargetList.append(BuildTargetString % {"dst":Dst, "src":Src})
 
     ## For creating makefile targets for dependent libraries
     #

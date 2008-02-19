@@ -84,6 +84,7 @@ class ModuleBuildInfo(BuildInfo):
         self.UnicodeFileList = []
         self.SourceFileList = []
         self.ObjectFileList = []
+        self.BinaryFileDict = {} # FileType : [File List]
 
         self.DependentPackageList = []
         self.DependentLibraryList = []

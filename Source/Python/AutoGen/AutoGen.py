@@ -269,7 +269,10 @@ class PlatformAutoGen:
     #   @retval     BuildRule object
     #
     def GetBuildRule(self):
-        return BuildRule(self.Workspace.WorkspaceFile(gBuildRuleFile))
+        BuildRuleFile = self.Workspace.TargetTxt.TargetTxtDictionary[TAB_TAT_DEFINES_BUILD_RULE_CONF]
+        if BuildRuleFile in [None, '']:
+            BuildRuleFile = gBuildRuleFile
+        return BuildRule(self.Workspace.WorkspaceFile(BuildRuleFile))
 
     ## Get tool chain definition
     #
@@ -734,7 +737,7 @@ class ModuleAutoGen(object):
         Info.BuildTarget = self.BuildTarget
         Info.ToolChain = self.ToolChain
         Info.Arch = self.Arch
-        Info.IsBinary = False
+        # Info.IsBinary = self.Module.BinaryModule
         Info.BaseName = self.Module.BaseName
         Info.FileBase, Info.FileExt = path.splitext(path.basename(self.Module.DescFilePath))
         Info.SourceDir = path.dirname(self.Module.DescFilePath)
@@ -781,8 +784,9 @@ class ModuleAutoGen(object):
         Info.IncludePathList = [Info.SourceDir, Info.DebugDir]
         Info.IncludePathList.extend(self.GetIncludePathList(Info.DependentPackageList))
 
-        Info.SourceFileList = self.GetBuildFileList(Info)
+        Info.SourceFileList = self.GetSourceFileList(Info)
         Info.AutoGenFileList = self.GetAutoGenFileList(Info)
+        Info.BinaryFileDict = self.GetBinaryFiles()
 
         return Info
 
@@ -905,7 +909,7 @@ class ModuleAutoGen(object):
 
         return OptionList
 
-    ## Return a list of files which can be built
+    ## Return a list of files which can be built from source
     #
     #  What kind of files can be built is determined by build rules in
     #  $(WORKSPACE)/Conf/build_rule.txt and toolchain family.
@@ -913,7 +917,7 @@ class ModuleAutoGen(object):
     #   @param      PlatformInfo    The object of PlatformBuildInfo
     #   @retval     list            The list of files which can be built later
     #
-    def GetBuildFileList(self, Info):
+    def GetSourceFileList(self, Info):
         # use toolchain family of CC as the primary toolchain family
         ToolChainFamily = Info.PlatformInfo.ToolChainFamily["CC"]
         BuildRule = Info.PlatformInfo.BuildRule
@@ -965,6 +969,23 @@ class ModuleAutoGen(object):
             BuildFileList.append([SourceFile, FileType, RuleObject])
 
         return BuildFileList
+
+    ## Return a list of files which can be built from binary
+    #
+    #  "Build" binary files are just to copy them to build directory.
+    #
+    #   @param      PlatformInfo    The object of PlatformBuildInfo
+    #   @retval     list            The list of files which can be built later
+    #
+    def GetBinaryFiles(self):
+        FileDict = {}
+        for F in self.Module.Binaries:
+            if F.Target != '*' and F.Target != self.BuildTarget:
+                continue
+            if F.FileType not in FileDict:
+                FileDict[F.FileType] = []
+            FileDict[F.FileType].append(F.BinaryFile)
+        return FileDict
 
     ## Get the list of package object the module depends on
     #

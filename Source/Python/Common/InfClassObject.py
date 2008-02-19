@@ -236,7 +236,6 @@ class Inf(InfObject):
                 self.Defines[Arch].extend(self.Defines[DataType.TAB_ARCH_COMMON.upper()])
                 self._Macro.update(self.Defines[Arch].DefinesDictionary[TAB_INF_DEFINES_MACRO])
         self._Macro.update(GlobalData.gGlobalDefines)
-        # print "###",self._Macro
 
         if DataType.TAB_ARCH_COMMON in self.Contents:
             for Key in self.KeyList:
@@ -278,7 +277,8 @@ class Inf(InfObject):
         #
         ModuleHeader.InfVersion = Defines.DefinesDictionary[TAB_INF_DEFINES_INF_VERSION][0]
         # R8 modules may use macro in base name
-        ModuleHeader.Name = ReplaceMacro(Defines.DefinesDictionary[TAB_INF_DEFINES_BASE_NAME][0], ModuleHeader.MacroDefines)
+        # ModuleHeader.Name = ReplaceMacro(Defines.DefinesDictionary[TAB_INF_DEFINES_BASE_NAME][0], ModuleHeader.MacroDefines)
+        ModuleHeader.Name = Defines.DefinesDictionary[TAB_INF_DEFINES_BASE_NAME][0]
         ModuleHeader.Guid = Defines.DefinesDictionary[TAB_INF_DEFINES_FILE_GUID][0]
         
         ModuleHeader.FileName = self.Identification.FileName

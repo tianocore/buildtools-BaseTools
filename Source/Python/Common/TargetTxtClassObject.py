@@ -39,7 +39,8 @@ class TargetTxtClassObject(object):
             DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER               : '',
             DataType.TAB_TAT_DEFINES_TARGET                                     : [],
             DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG                             : [],
-            DataType.TAB_TAT_DEFINES_TARGET_ARCH                                : []
+            DataType.TAB_TAT_DEFINES_TARGET_ARCH                                : [],
+            DataType.TAB_TAT_DEFINES_BUILD_RULE_CONF                            : '',
         }
         if Filename != None:
             self.LoadTargetTxtFile(Filename)
@@ -87,15 +88,15 @@ class TargetTxtClassObject(object):
                 else:
                     Value = ""
 
-                if Key == DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM or Key == DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF \
-                  or Key == DataType.TAB_TAT_DEFINES_MULTIPLE_THREAD or Key == DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER \
-                  or Key == DataType.TAB_TAT_DEFINES_ACTIVE_MODULE:
+                if Key in [DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM, DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF, \
+                           DataType.TAB_TAT_DEFINES_MULTIPLE_THREAD, DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER, \
+                           DataType.TAB_TAT_DEFINES_ACTIVE_MODULE, DataType.TAB_TAT_DEFINES_BUILD_RULE_CONF]:
                     self.TargetTxtDictionary[Key] = Value.replace('\\', '/')
-                elif Key == DataType.TAB_TAT_DEFINES_TARGET or Key == DataType.TAB_TAT_DEFINES_TARGET_ARCH \
-                  or Key == DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG:
+                elif Key in [DataType.TAB_TAT_DEFINES_TARGET, DataType.TAB_TAT_DEFINES_TARGET_ARCH, \
+                             DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG]:
                     self.TargetTxtDictionary[Key] = Value.split()
-                elif Key not in GlobalData.gGlobalDefines:
-                    GlobalData.gGlobalDefines[Key] = Value
+                #elif Key not in GlobalData.gGlobalDefines:
+                #    GlobalData.gGlobalDefines[Key] = Value
 
             F.close()
             return 0
@@ -153,3 +154,4 @@ if __name__ == '__main__':
     Target = TargetTxtDict(os.getenv("WORKSPACE"))
     print Target.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER]
     print Target.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET]
+    print Target.TargetTxtDictionary

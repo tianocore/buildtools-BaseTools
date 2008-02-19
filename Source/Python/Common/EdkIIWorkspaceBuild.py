@@ -1152,7 +1152,7 @@ class WorkspaceBuild(object):
                     PcdItemTypeUsed = Pcd.Type
                     DefaultValue = Pcd.DefaultValue
                     WrnMessage += '%s.%s: Defined in file %s, PcdItemType is Pcds%s, DefaultValue is %s\n' % (Guid, Name, Dec, PcdItemTypeUsed, DefaultValue)
-            EdkLogger.info(WrnMessage)
+            EdkLogger.verbose(WrnMessage)
         
     ## Create a full path with workspace dir
     #
@@ -1467,8 +1467,7 @@ class WorkspaceBuild(object):
         if Token in [None, '']:
             Token = Pcd.TokenValue
         if DatumType == "VOID*" and MaxDatumSize in ['', None]:
-            EdkLogger.warn("\nAutoGen", "No MaxDatumSize specified for PCD %s.%s" % (Guid, Name),
-                           ExtraData=ModuleName)
+            EdkLogger.verbose("No MaxDatumSize specified for PCD %s.%s in module [%s]" % (Guid, Name, ModuleName))
             if Value[0] == 'L':
                 MaxDatumSize = str(len(Value) * 2)
             elif Value[0] == '{':
