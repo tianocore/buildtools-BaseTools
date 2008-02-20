@@ -1,9 +1,8 @@
 #ifndef _VFRUTILITYLIB_H_
 #define _VFRUTILITYLIB_H_
 
-#include "Tiano.h"
 #include "string.h"
-#include "EfiTypes.h"
+#include "Common/UefiBaseTypes.h"
 #include "EfiVfr.h"
 #include "VfrError.h"
 

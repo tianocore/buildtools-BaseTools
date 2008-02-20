@@ -22,8 +22,10 @@ Abstract:
 #ifndef _EFIVFR_H_
 #define _EFIVFR_H_
 
-#include "Tiano.h"
-#include "TianoHii.h"
+#include "Common/UefiBaseTypes.h"
+#include "Protocol/DevicePath.h"
+#include "Common/UefiInternalFormRepresentation.h"
+#include "Common/MdeModuleHii.h"
 
 #define MAX_PATH                 255
 #define MAX_LINE_LEN             4096

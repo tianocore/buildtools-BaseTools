@@ -1,20 +1,24 @@
 !INCLUDE ..\Makefiles\ms.common
 
+CPPFLAGS = $(CPPFLAGS) /WX /D PCCTS_USE_NAMESPACE_STD
 APPNAME = VfrCompile
 
 LIBS = $(LIB_PATH)\Common.lib
 
-OBJECTS = VfrCompile.obj VfrServices.obj DLGLexer.obj EfiVfrParser.obj ATokenBuffer.obj DLexerBase.obj AParser.obj
+OBJECTS = AParser.obj DLexerBase.obj ATokenBuffer.obj EfiVfrParser.obj VfrSyntax.obj VfrLexer.obj \
+          VfrFormPkg.obj VfrError.obj VfrUtilityLib.obj VfrCompiler.obj
 
 INC = $(INC) -I $(BASE_TOOLS_PATH)\Source\C\VfrCompile\Pccts\h
 
 !INCLUDE ..\Makefiles\ms.app
 
-VfrCompile.cpp DLGLexer.cpp EfiVfrParser.cpp: VfrCompile.g
+VfrSyntax.cpp EfiVfrParser.cpp EfiVfrParser.h VfrParser.dlg VfrTokens.h: VfrSyntax.g
 	pushd . & cd Pccts & $(MAKE) & popd
-	antlr -CC -e3 -ck 3 -o . VfrCompile.g
-	dlg -C2 -i -CC -o . parser.dlg
-	pushd . & cd Pccts & $(MAKE) clean
+	antlr -CC -e3 -ck 3 -k 2 -fl VfrParser.dlg -ft VfrTokens.h -o . VfrSyntax.g
+#	pushd . & cd Pccts & $(MAKE) clean
+
+VfrLexer.cpp VfrLexer.h: VfrParser.dlg
+	dlg -C2 -i -CC -cl VfrLexer -o . VfrParser.dlg
 
 ATokenBuffer.obj: Pccts\h\ATokenBuffer.cpp
 	$(CXX) -c $(CPPFLAGS) $(INC) $? -Fo$@

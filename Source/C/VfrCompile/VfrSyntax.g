@@ -146,7 +146,7 @@ VfrParserStart (
 #token Uint16("UINT16")                         "UINT16"
 #token Char16("CHAR16")                         "CHAR16"
 #token Uint8("UINT8")                           "UINT8"
-#token GUID("guid")                             "guid"
+#token Uuid("guid")                             "guid"
 #token CheckBox("checkbox")                     "checkbox"
 #token EndCheckBox("endcheckbox")               "endcheckbox"
 #token Numeric("numeric")                       "numeric"
@@ -423,7 +423,7 @@ vfrFromSetDefinition :
      UINT16      C, SC;
   >>
   L:FormSet                                         << SET_LINE_INFO (FSObj, L); >>
-  GUID "=" guidDefinition[Guid] ","                 << FSObj.SetGuid (&Guid); >>
+  Uuid "=" guidDefinition[Guid] ","                 << FSObj.SetGuid (&Guid); >>
   Title "=" "STRING_TOKEN" "\(" S1:Number "\)" ","  << FSObj.SetFormSetTitle (_STOSID(S1->getText())); >>
   Help  "=" "STRING_TOKEN" "\(" S2:Number "\)" ","  << FSObj.SetHelp (_STOSID(S2->getText())); >>
   {
@@ -498,7 +498,7 @@ vfrStatementVarStoreLinear :
     VarId "=" ID:Number ","                         << VarStoreId = _STOU16(ID->getText()); >>
   }
   Name "=" SN:StringIdentifier ","
-  GUID "=" guidDefinition[Guid]
+  Uuid "=" guidDefinition[Guid]
                                                     <<
                                                        _PCATCH(mCVfrDataStorage.DeclareBufferVarStore (
                                                                                   SN->getText(), 
@@ -532,7 +532,7 @@ vfrStatementVarStoreEfi :
                                                     << VSEObj.SetAttributes (Attr); >>
   Name "=" "STRING_TOKEN" "\(" VN:Number "\)" ","
   VarSize "=" N:Number ","
-  GUID "=" guidDefinition[Guid]                     << mCVfrDataStorage.DeclareEfiVarStore (SN->getText(), &Guid, _STOSID(VN->getText()), _STOU32(N->getText())); >>
+  Uuid "=" guidDefinition[Guid]                     << mCVfrDataStorage.DeclareEfiVarStore (SN->getText(), &Guid, _STOSID(VN->getText()), _STOU32(N->getText())); >>
                                                     << 
                                                        VSEObj.SetGuid (&Guid);
                                                        _PCATCH(mCVfrDataStorage.GetVarStoreId(SN->getText(), &VarStoreId), SN);
@@ -556,7 +556,7 @@ vfrStatementVarStoreNameValue :
   (
     Name "=" "STRING_TOKEN" "\(" N:Number "\)" ","  << _PCATCH(mCVfrDataStorage.NameTableAddItem (_STOSID(N->getText())), SN); >>
   )+
-  GUID "=" guidDefinition[Guid]                     << _PCATCH(mCVfrDataStorage.DeclareNameVarStoreEnd (&Guid), SN); >>
+  Uuid "=" guidDefinition[Guid]                     << _PCATCH(mCVfrDataStorage.DeclareNameVarStoreEnd (&Guid), SN); >>
                                                     << 
                                                        VSNVObj.SetGuid (&Guid);
                                                        _PCATCH(mCVfrDataStorage.GetVarStoreId(SN->getText(), &VarStoreId), SN);
@@ -2228,7 +2228,7 @@ questionref13Exp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
         Path "=" "STRING_TOKEN" "\(" S:Number "\)"     << Type = 0x4; DevPath = _STOSID(S->getText()); >>
       }
       {
-        GUID "=" guidDefinition[Guid]                  << Type = 0x5; >>
+        Uuid "=" guidDefinition[Guid]                  << Type = 0x5; >>
       }
     )
     |

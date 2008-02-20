@@ -1,8 +1,7 @@
 #ifndef _VFRCOMPILER_H_
 #define _VFRCOMPILER_H_
 
-#include "Tiano.h"
-#include "EfiTypes.h"
+#include "Common/UefiBaseTypes.h"
 #include "EfiVfr.h"
 #include "VfrFormPkg.h"
 #include "VfrUtilityLib.h"

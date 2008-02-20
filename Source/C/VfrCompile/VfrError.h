@@ -1,8 +1,7 @@
 #ifndef _VFRERROR_H_
 #define _VFRERROR_H_
 
-#include "Tiano.h"
-#include "EfiTypes.h"
+#include "Common/UefiBaseTypes.h"
 
 typedef enum {
   VFR_RETURN_SUCCESS = 0,
