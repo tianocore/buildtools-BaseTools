@@ -311,9 +311,10 @@ class UniFileClassObject(object):
                         break
                     elif Lines[IndexJ].find(u'#string ') < 0 and Lines[IndexJ].find(u'#language ') >= 0:
                         StringItem = StringItem + Lines[IndexJ]
-                    elif Lines[IndexJ].find(u'\"') >= 2:
+                    elif Lines[IndexJ].count(u'\"') >= 2:
                         StringItem = StringItem[ : StringItem.rfind(u'\"')] + Lines[IndexJ][Lines[IndexJ].find(u'\"') + len(u'\"') : ]
                 self.GetStringObject(StringItem)
+                continue
 
     #
     # Load multiple .uni files
@@ -438,6 +439,7 @@ class UniFileClassObject(object):
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
 if __name__ == '__main__':
+    EdkLogger.Initialize()
     EdkLogger.SetLevel(EdkLogger.DEBUG_0)
     a = UniFileClassObject(['C:\\Edk\\Strings.uni', 'C:\\Edk\\Strings2.uni'])
     a.ReToken()
