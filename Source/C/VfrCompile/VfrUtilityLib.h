@@ -18,13 +18,13 @@
 
 class CVfrBinaryOutput {
 public:
-  virtual VOID WriteLine (IN FILE *, IN UINT32, IN INT8 *, IN INT8 *, IN UINT32);
-  virtual VOID WriteEnd (IN FILE *, IN UINT32, IN INT8 *, IN INT8 *, IN UINT32);
+  virtual VOID WriteLine (IN FILE *, IN UINT32, IN CHAR8 *, IN CHAR8 *, IN UINT32);
+  virtual VOID WriteEnd (IN FILE *, IN UINT32, IN CHAR8 *, IN CHAR8 *, IN UINT32);
 };
 
 UINT32
 _STR2U32 (
-  IN INT8 *Str
+  IN CHAR8 *Str
   );
 
 struct SConfigInfo {
@@ -38,14 +38,14 @@ struct SConfigInfo {
 };
 
 struct SConfigItem {
-  INT8          *mId;
-  INT8          *mInfo;
+  CHAR8         *mId;
+  CHAR8         *mInfo;
   SConfigInfo   *mInfoStrList;
   SConfigItem   *mNext;
 
 public:
-  SConfigItem (IN INT8 *, IN INT8 *);
-  SConfigItem (IN INT8 *, IN INT8 *, IN UINT8, IN UINT16, IN UINT16, IN EFI_IFR_TYPE_VALUE);
+  SConfigItem (IN CHAR8 *, IN CHAR8 *);
+  SConfigItem (IN CHAR8 *, IN CHAR8 *, IN UINT8, IN UINT16, IN UINT16, IN EFI_IFR_TYPE_VALUE);
   virtual ~SConfigItem ();
 };
 
@@ -59,16 +59,16 @@ public:
   CVfrBufferConfig (VOID);
   virtual ~CVfrBufferConfig (VOID);
 
-  virtual UINT8   Register (IN INT8 *, IN INT8 *Info = NULL);
+  virtual UINT8   Register (IN CHAR8 *, IN CHAR8 *Info = NULL);
   virtual VOID    Open (VOID);
   virtual BOOLEAN Eof(VOID);
-  virtual UINT8   Select (IN INT8 *, IN INT8 *Info = NULL);
-  virtual UINT8   Write (IN CONST CHAR8, IN INT8 *, IN INT8 *, IN UINT8, IN UINT16, IN UINT32, IN EFI_IFR_TYPE_VALUE);
+  virtual UINT8   Select (IN CHAR8 *, IN CHAR8 *Info = NULL);
+  virtual UINT8   Write (IN CONST CHAR8, IN CHAR8 *, IN CHAR8 *, IN UINT8, IN UINT16, IN UINT32, IN EFI_IFR_TYPE_VALUE);
 #if 0
-  virtual UINT8   Read (OUT INT8 **, OUT INT8 **, OUT INT8 **, OUT INT8 **, OUT INT8 **);
+  virtual UINT8   Read (OUT CHAR8 **, OUT CHAR8 **, OUT CHAR8 **, OUT CHAR8 **, OUT CHAR8 **);
 #endif
   virtual VOID    Close (VOID);
-  virtual VOID    OutputCFile (IN FILE *, IN INT8 *);
+  virtual VOID    OutputCFile (IN FILE *, IN CHAR8 *);
 };
 
 extern CVfrBufferConfig gCVfrBufferConfig;
@@ -79,7 +79,7 @@ extern CVfrBufferConfig gCVfrBufferConfig;
 struct SVfrDataType;
 
 struct SVfrDataField {
-  INT8                      mFieldName[MAX_NAME_LEN];
+  CHAR8                     mFieldName[MAX_NAME_LEN];
   SVfrDataType              *mFieldType;
   UINT32                    mOffset;
   UINT32                    mArrayNum;
@@ -87,7 +87,7 @@ struct SVfrDataField {
 };
 
 struct SVfrDataType {
-  INT8                      mTypeName[MAX_NAME_LEN];
+  CHAR8                     mTypeName[MAX_NAME_LEN];
   UINT8                     mType;
   UINT32                    mAlign;
   UINT32                    mTotalSize;
@@ -107,9 +107,9 @@ private:
   VOID InternalTypesListInit (VOID);
   VOID RegisterNewType (IN SVfrDataType *);
 
-  EFI_VFR_RETURN_CODE ExtractStructTypeName (IN INT8 *&, OUT INT8 *);
-  EFI_VFR_RETURN_CODE ExtractFieldNameAndArrary (IN INT8 *&, OUT INT8 *, OUT UINT32 &);
-  EFI_VFR_RETURN_CODE GetTypeField (IN INT8 *, IN SVfrDataType *, IN SVfrDataField *&);
+  EFI_VFR_RETURN_CODE ExtractStructTypeName (IN CHAR8 *&, OUT CHAR8 *);
+  EFI_VFR_RETURN_CODE ExtractFieldNameAndArrary (IN CHAR8 *&, OUT CHAR8 *, OUT UINT32 &);
+  EFI_VFR_RETURN_CODE GetTypeField (IN CHAR8 *, IN SVfrDataType *, IN SVfrDataField *&);
   EFI_VFR_RETURN_CODE GetFieldOffset (IN SVfrDataField *, IN UINT32, OUT UINT32 &);
   UINT8               GetFieldWidth (IN SVfrDataField *);
   UINT32              GetFieldSize (IN SVfrDataField *, IN UINT32);
@@ -121,16 +121,16 @@ public:
   EFI_VFR_RETURN_CODE Pack (IN UINT32 Align);
 
   VOID                DeclareDataTypeBegin (VOID);
-  EFI_VFR_RETURN_CODE SetNewTypeName (IN INT8 *);
-  EFI_VFR_RETURN_CODE DataTypeAddField (IN INT8 *, IN INT8 *, IN UINT32);
+  EFI_VFR_RETURN_CODE SetNewTypeName (IN CHAR8 *);
+  EFI_VFR_RETURN_CODE DataTypeAddField (IN CHAR8 *, IN CHAR8 *, IN UINT32);
   VOID                DeclareDataTypeEnd (VOID);
 
-  EFI_VFR_RETURN_CODE GetDataType (IN INT8 *, OUT SVfrDataType **);
-  EFI_VFR_RETURN_CODE GetDataTypeSize (IN INT8 *, OUT UINT32 *);
-  EFI_VFR_RETURN_CODE GetDataFieldInfo (IN INT8 *, OUT UINT16 &, OUT UINT8 &, OUT UINT32 &);
+  EFI_VFR_RETURN_CODE GetDataType (IN CHAR8 *, OUT SVfrDataType **);
+  EFI_VFR_RETURN_CODE GetDataTypeSize (IN CHAR8 *, OUT UINT32 *);
+  EFI_VFR_RETURN_CODE GetDataFieldInfo (IN CHAR8 *, OUT UINT16 &, OUT UINT8 &, OUT UINT32 &);
 
-  EFI_VFR_RETURN_CODE GetUserDefinedTypeNameList (OUT INT8 ***, OUT UINT32 *);
-  BOOLEAN             IsTypeNameDefined (IN INT8 *);
+  EFI_VFR_RETURN_CODE GetUserDefinedTypeNameList (OUT CHAR8 ***, OUT UINT32 *);
+  BOOLEAN             IsTypeNameDefined (IN CHAR8 *);
 
 #ifdef CVFR_VARDATATYPEDB_DEBUG
   VOID ParserDB ();
@@ -146,7 +146,7 @@ typedef enum {
 
 struct SVfrVarStorageNode {
   EFI_GUID                  mGuid;
-  INT8                      *mVarStoreName;
+  CHAR8                     *mVarStoreName;
   EFI_VARSTORE_ID           mVarStoreId;
   struct SVfrVarStorageNode *mNext;
 
@@ -169,9 +169,9 @@ struct SVfrVarStorageNode {
   } mStorageInfo;
 
 public:
-  SVfrVarStorageNode (IN EFI_GUID *, IN INT8 *, IN EFI_VARSTORE_ID, IN EFI_STRING_ID, IN UINT32);
-  SVfrVarStorageNode (IN EFI_GUID *, IN INT8 *, IN EFI_VARSTORE_ID, IN SVfrDataType *);
-  SVfrVarStorageNode (IN INT8 *, IN EFI_VARSTORE_ID);
+  SVfrVarStorageNode (IN EFI_GUID *, IN CHAR8 *, IN EFI_VARSTORE_ID, IN EFI_STRING_ID, IN UINT32);
+  SVfrVarStorageNode (IN EFI_GUID *, IN CHAR8 *, IN EFI_VARSTORE_ID, IN SVfrDataType *);
+  SVfrVarStorageNode (IN CHAR8 *, IN EFI_VARSTORE_ID);
   ~SVfrVarStorageNode (VOID);
 };
 
@@ -214,23 +214,23 @@ public:
   CVfrDataStorage ();
   ~CVfrDataStorage ();
 
-  EFI_VFR_RETURN_CODE DeclareNameVarStoreBegin (INT8 *);
+  EFI_VFR_RETURN_CODE DeclareNameVarStoreBegin (CHAR8 *);
   EFI_VFR_RETURN_CODE NameTableAddItem (EFI_STRING_ID);
   EFI_VFR_RETURN_CODE DeclareNameVarStoreEnd (EFI_GUID *);
 
-  EFI_VFR_RETURN_CODE DeclareEfiVarStore (IN INT8 *, IN EFI_GUID *, IN EFI_STRING_ID, IN UINT32);
+  EFI_VFR_RETURN_CODE DeclareEfiVarStore (IN CHAR8 *, IN EFI_GUID *, IN EFI_STRING_ID, IN UINT32);
 
-  EFI_VFR_RETURN_CODE DeclareBufferVarStore (IN INT8 *, IN EFI_GUID *, IN CVfrVarDataTypeDB *, IN INT8 *, IN EFI_VARSTORE_ID);
+  EFI_VFR_RETURN_CODE DeclareBufferVarStore (IN CHAR8 *, IN EFI_GUID *, IN CVfrVarDataTypeDB *, IN CHAR8 *, IN EFI_VARSTORE_ID);
 
-  EFI_VFR_RETURN_CODE GetVarStoreId (IN INT8 *, OUT EFI_VARSTORE_ID *);
-  EFI_VFR_RETURN_CODE GetVarStoreType (IN INT8 *, OUT EFI_VFR_VARSTORE_TYPE &);
-  EFI_VFR_RETURN_CODE GetVarStoreName (IN EFI_VARSTORE_ID, OUT INT8 **);
+  EFI_VFR_RETURN_CODE GetVarStoreId (IN CHAR8 *, OUT EFI_VARSTORE_ID *);
+  EFI_VFR_RETURN_CODE GetVarStoreType (IN CHAR8 *, OUT EFI_VFR_VARSTORE_TYPE &);
+  EFI_VFR_RETURN_CODE GetVarStoreName (IN EFI_VARSTORE_ID, OUT CHAR8 **);
 
-  EFI_VFR_RETURN_CODE GetBufferVarStoreDataTypeName (IN INT8 *, OUT INT8 **);
+  EFI_VFR_RETURN_CODE GetBufferVarStoreDataTypeName (IN CHAR8 *, OUT CHAR8 **);
   EFI_VFR_RETURN_CODE GetEfiVarStoreInfo (IN EFI_VARSTORE_INFO *);
   EFI_VFR_RETURN_CODE GetNameVarStoreInfo (IN EFI_VARSTORE_INFO *, IN UINT32);
 
-  EFI_VFR_RETURN_CODE BufferVarStoreRequestElementAdd (IN INT8 *, IN EFI_VARSTORE_INFO &);
+  EFI_VFR_RETURN_CODE BufferVarStoreRequestElementAdd (IN CHAR8 *, IN EFI_VARSTORE_INFO &);
 };
 
 #define EFI_QUESTION_ID_MAX              0xFFFF
@@ -245,13 +245,13 @@ public:
 #define TIME_SECOND_BITMASK              0x00FF0000
 
 struct SVfrQuestionNode {
-  INT8                      *mName;
-  INT8                      *mVarIdStr;
+  CHAR8                     *mName;
+  CHAR8                     *mVarIdStr;
   EFI_QUESTION_ID           mQuestionId;
   UINT32                    mBitMask;
   SVfrQuestionNode          *mNext;
 
-  SVfrQuestionNode (IN INT8 *, IN INT8 *, IN UINT32 BitMask = 0);
+  SVfrQuestionNode (IN CHAR8 *, IN CHAR8 *, IN UINT32 BitMask = 0);
   ~SVfrQuestionNode ();
 };
 
@@ -270,26 +270,26 @@ public:
   CVfrQuestionDB ();
   ~CVfrQuestionDB();
 
-  EFI_VFR_RETURN_CODE RegisterQuestion (IN INT8 *, IN INT8 *, IN OUT EFI_QUESTION_ID &);
-  VOID                RegisterOldDateQuestion (IN INT8 *, IN INT8 *, IN INT8 *, IN OUT EFI_QUESTION_ID &);
-  VOID                RegisterNewDateQuestion (IN INT8 *, IN INT8 *, IN OUT EFI_QUESTION_ID &);
-  VOID                RegisterOldTimeQuestion (IN INT8 *, IN INT8 *, IN INT8 *, IN OUT EFI_QUESTION_ID &);
-  VOID                RegisterNewTimeQuestion (IN INT8 *, IN INT8 *, IN OUT EFI_QUESTION_ID &);
+  EFI_VFR_RETURN_CODE RegisterQuestion (IN CHAR8 *, IN CHAR8 *, IN OUT EFI_QUESTION_ID &);
+  VOID                RegisterOldDateQuestion (IN CHAR8 *, IN CHAR8 *, IN CHAR8 *, IN OUT EFI_QUESTION_ID &);
+  VOID                RegisterNewDateQuestion (IN CHAR8 *, IN CHAR8 *, IN OUT EFI_QUESTION_ID &);
+  VOID                RegisterOldTimeQuestion (IN CHAR8 *, IN CHAR8 *, IN CHAR8 *, IN OUT EFI_QUESTION_ID &);
+  VOID                RegisterNewTimeQuestion (IN CHAR8 *, IN CHAR8 *, IN OUT EFI_QUESTION_ID &);
   EFI_VFR_RETURN_CODE UpdateQuestionId (IN EFI_QUESTION_ID, IN EFI_QUESTION_ID);
-  VOID                GetQuestionId (IN INT8 *, IN INT8 *, OUT EFI_QUESTION_ID &, OUT UINT32 &);
+  VOID                GetQuestionId (IN CHAR8 *, IN CHAR8 *, OUT EFI_QUESTION_ID &, OUT UINT32 &);
   EFI_VFR_RETURN_CODE FindQuestion (IN EFI_QUESTION_ID);
-  EFI_VFR_RETURN_CODE FindQuestion (IN INT8 *);
+  EFI_VFR_RETURN_CODE FindQuestion (IN CHAR8 *);
  };
 
 struct SVfrDefaultStoreNode {
   EFI_IFR_DEFAULTSTORE      *mObjBinAddr;
-  INT8                      *mRefName;
+  CHAR8                     *mRefName;
   EFI_STRING_ID             mDefaultStoreNameId;
   UINT16                    mDefaultId;
 
   SVfrDefaultStoreNode      *mNext;
 
-  SVfrDefaultStoreNode (IN EFI_IFR_DEFAULTSTORE *, IN INT8 *, IN EFI_STRING_ID, IN UINT16);
+  SVfrDefaultStoreNode (IN EFI_IFR_DEFAULTSTORE *, IN CHAR8 *, IN EFI_STRING_ID, IN UINT16);
   ~SVfrDefaultStoreNode();
 };
 
@@ -301,11 +301,11 @@ public:
   CVfrDefaultStore ();
   ~CVfrDefaultStore ();
 
-  EFI_VFR_RETURN_CODE RegisterDefaultStore (IN CHAR8 *, IN INT8 *, IN EFI_STRING_ID, IN UINT16);
-  EFI_VFR_RETURN_CODE ReRegisterDefaultStoreById (IN UINT16, IN INT8 *, IN EFI_STRING_ID);
+  EFI_VFR_RETURN_CODE RegisterDefaultStore (IN CHAR8 *, IN CHAR8 *, IN EFI_STRING_ID, IN UINT16);
+  EFI_VFR_RETURN_CODE ReRegisterDefaultStoreById (IN UINT16, IN CHAR8 *, IN EFI_STRING_ID);
   BOOLEAN             DefaultIdRegistered (IN UINT16);
-  EFI_VFR_RETURN_CODE GetDefaultId (IN INT8 *, OUT UINT16 *);
-  EFI_VFR_RETURN_CODE BufferVarStoreAltConfigAdd (IN EFI_VARSTORE_ID, IN EFI_VARSTORE_INFO &, IN INT8 *, IN UINT8, IN EFI_IFR_TYPE_VALUE);
+  EFI_VFR_RETURN_CODE GetDefaultId (IN CHAR8 *, OUT UINT16 *);
+  EFI_VFR_RETURN_CODE BufferVarStoreAltConfigAdd (IN EFI_VARSTORE_ID, IN EFI_VARSTORE_INFO &, IN CHAR8 *, IN UINT8, IN EFI_IFR_TYPE_VALUE);
 };
 
 #define EFI_RULE_ID_START    0x01
@@ -313,10 +313,10 @@ public:
 
 struct SVfrRuleNode {
   UINT8                     mRuleId;
-  INT8                      *mRuleName;
+  CHAR8                     *mRuleName;
   SVfrRuleNode              *mNext;
 
-  SVfrRuleNode(IN INT8 *, IN UINT8);
+  SVfrRuleNode(IN CHAR8 *, IN UINT8);
   ~SVfrRuleNode();
 };
 
@@ -329,8 +329,8 @@ public:
   CVfrRulesDB ();
   ~CVfrRulesDB();
 
-  VOID RegisterRule (IN INT8 *);
-  UINT8 GetRuleId (IN INT8 *);
+  VOID RegisterRule (IN CHAR8 *);
+  UINT8 GetRuleId (IN CHAR8 *);
 };
 
 #define MIN(v1, v2) (((v1) < (v2)) ? (v1) : (v2))

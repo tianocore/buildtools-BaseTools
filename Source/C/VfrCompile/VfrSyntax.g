@@ -41,12 +41,6 @@ VfrParserStart (
 }
 >>
 
-#lexaction
-<<
-#include <Error.h>
-
->>
-
 //
 // Define a lexical class for parsing quoted strings. Basically
 // starts with a double quote, and ends with a double quote that
@@ -478,7 +472,7 @@ vfrStatementVarStoreLinear :
   <<
      EFI_GUID        Guid; 
      CIfrVarStore    VSObj;
-     INT8            *TypeName;
+     CHAR8           *TypeName;
 	 UINT32          LineNum;
      EFI_VARSTORE_ID VarStoreId = EFI_VARSTORE_ID_INVALID;
      UINT32          Size;
@@ -616,8 +610,8 @@ vfrQuestionHeader[CIfrQuestionHeader & QHObj, EFI_QUESION_TYPE QType = QUESTION_
   <<
      EFI_VARSTORE_INFO Info; 
 	 EFI_QUESTION_ID   QId       = EFI_QUESTION_ID_INVALID;
-     INT8              *QName    = NULL;
-     INT8              *VarIdStr = NULL;
+     CHAR8             *QName    = NULL;
+     CHAR8             *VarIdStr = NULL;
   >>
   {
     Name "=" QN:StringIdentifier ","                <<
@@ -657,7 +651,7 @@ vfrQuestionHeader[CIfrQuestionHeader & QHObj, EFI_QUESION_TYPE QType = QUESTION_
 vfrQuestionHeaderWithNoStorage[CIfrQuestionHeader *QHObj] :
   <<
 	 EFI_QUESTION_ID   QId = EFI_QUESTION_ID_INVALID;
-     INT8              *QName = NULL;
+     CHAR8             *QName = NULL;
   >>
   {
     Name "=" QN:StringIdentifier ","                <<
@@ -685,15 +679,15 @@ questionheaderFlagsField[UINT8 & Flags] :
   | OptionOnlyFlag                                  << $Flags |= 0x80; >>
   ;
 
-vfrStorageVarId[EFI_VARSTORE_INFO & Info, INT8 *&QuestVarIdStr] :
+vfrStorageVarId[EFI_VARSTORE_INFO & Info, CHAR8 *&QuestVarIdStr] :
   <<
      UINT32                Idx;
      UINT32                LineNo;
      EFI_VFR_VARSTORE_TYPE VarStoreType = EFI_VFR_VARSTORE_INVALID;
-     INT8                  *VarIdStr    = NULL;
-     INT8                  *VarStr      = NULL;
-     INT8                  *SName       = NULL;
-     INT8                  *TName       = NULL;
+     CHAR8                 *VarIdStr    = NULL;
+     CHAR8                 *VarStr      = NULL;
+     CHAR8                 *SName       = NULL;
+     CHAR8                 *TName       = NULL;
   >>
   (
     SN1:StringIdentifier                            << SName = SN1->getText(); _STRCAT(&VarIdStr, SN1->getText()); >>
@@ -745,7 +739,7 @@ vfrStorageVarId[EFI_VARSTORE_INFO & Info, INT8 *&QuestVarIdStr] :
   )
   ;
 
-vfrQuestionDataFieldName [EFI_QUESTION_ID &QId, UINT32 &Mask, INT8 *&VarIdStr, UINT32 &LineNo] :
+vfrQuestionDataFieldName [EFI_QUESTION_ID &QId, UINT32 &Mask, CHAR8 *&VarIdStr, UINT32 &LineNo] :
                                                     << VarIdStr = NULL; LineNo = 0; >>
   (
     SN1:StringIdentifier                            << _STRCAT(&VarIdStr, SN1->getText()); LineNo = SN1->getLine(); >>
@@ -847,7 +841,7 @@ vfrStatementDefault :
      EFI_IFR_TYPE_VALUE    Val; 
      CIfrDefault           DObj;
      EFI_DEFAULT_ID        DefaultId     = EFI_HII_DEFAULT_CLASS_STANDARD;
-     INT8                  *VarStoreName = NULL;
+     CHAR8                 *VarStoreName = NULL;
      EFI_VFR_VARSTORE_TYPE VarStoreType  = EFI_VFR_VARSTORE_INVALID;
   >>
   D:Default                                         << DObj.SetLineNo(D->getLine()); >>
@@ -1214,7 +1208,7 @@ actionFlagsField[UINT8 & HFlags] :
 vfrStatementDate :
   <<
      EFI_QUESTION_ID    QId          = EFI_QUESTION_ID_INVALID;
-     INT8               *VarIdStr[3] = {NULL, };
+     CHAR8              *VarIdStr[3] = {NULL, };
      CIfrDate           DObj;
      EFI_IFR_TYPE_VALUE Val;
   >>
@@ -1500,7 +1494,7 @@ orderedlistFlagsField [UINT8 & HFlags, UINT8 & LFlags] :
 vfrStatementTime :
   <<
      EFI_QUESTION_ID    QId          = EFI_QUESTION_ID_INVALID;
-     INT8               *VarIdStr[3] = {NULL, };
+     CHAR8              *VarIdStr[3] = {NULL, };
      CIfrTime           TObj;
      EFI_IFR_TYPE_VALUE Val;
   >>
@@ -1726,7 +1720,7 @@ vfrStatementOneOfOption :
   <<
      EFI_IFR_TYPE_VALUE Val;
      CIfrOneOfOption    OOOObj;
-     INT8               *VarStoreName = NULL;
+     CHAR8              *VarStoreName = NULL;
      
   >>
   L:Option                                             << OOOObj.SetLineNo(L->getLine()); >>
@@ -2065,7 +2059,7 @@ ideqvalExp [UINT32 & RootLevel, UINT32 & ExpOpCount] :
      EFI_QUESTION_ID QId;
      UINT32          Mask;
      UINT16          ConstVal;
-     INT8            *VarIdStr;
+     CHAR8           *VarIdStr;
      UINT32          LineNo;
   >>
   L:IdEqVal
@@ -2117,7 +2111,7 @@ ideqidExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   <<
      EFI_QUESTION_ID QId[2];
      UINT32          Mask[2];
-     INT8            *VarIdStr[2];
+     CHAR8           *VarIdStr[2];
      UINT32          LineNo[2];
   >>
   L:IdEqId
@@ -2171,7 +2165,7 @@ ideqvallistExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
      EFI_QUESTION_ID QId;
      UINT32          Mask;
      UINT16          ValueList[EFI_IFR_MAX_LENGTH] = {0,};
-     INT8            *VarIdStr;
+     CHAR8           *VarIdStr;
      UINT32          LineNo;
   >>
   L:IdEqValList
@@ -2217,7 +2211,7 @@ questionref13Exp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
      EFI_GUID        Guid;
 	 EFI_QUESTION_ID QId = EFI_QUESTION_ID_INVALID;
      UINT32          BitMask;
-     INT8            *QName = NULL;
+     CHAR8           *QName = NULL;
      UINT32          LineNo = 0;
   >>
   L:QuestionRef
@@ -2470,38 +2464,38 @@ private:
   UINT32              _GET_CURRQEST_VARSIZE ();
 
 public:
-  VOID                _PCATCH (IN EFI_VFR_RETURN_CODE, IN EFI_VFR_RETURN_CODE, IN ANTLRTokenPtr, IN INT8 *);
+  VOID                _PCATCH (IN EFI_VFR_RETURN_CODE, IN EFI_VFR_RETURN_CODE, IN ANTLRTokenPtr, IN CHAR8 *);
   VOID                _PCATCH (IN EFI_VFR_RETURN_CODE);
   VOID                _PCATCH (IN EFI_VFR_RETURN_CODE, IN ANTLRTokenPtr);
   VOID                _PCATCH (IN EFI_VFR_RETURN_CODE, IN UINT32);
 
   VOID                syn     (ANTLRAbstractToken  *, ANTLRChar *, SetWordType *, ANTLRTokenType, INT32);
 
-  INT8 *              TrimHex (IN INT8 *, OUT BOOLEAN *);
-  UINT8               _STOU8  (IN INT8 *);
-  UINT16              _STOU16 (IN INT8 *);
-  UINT32              _STOU32 (IN INT8 *);
-  UINT64              _STOU64 (IN INT8 *);
-  EFI_HII_DATE        _STOD   (IN INT8 *, IN INT8 *, IN INT8 *);
-  EFI_HII_TIME        _STOT   (IN INT8 *, IN INT8 *, IN INT8 *);
+  CHAR8*              TrimHex (IN CHAR8 *, OUT BOOLEAN *);
+  UINT8               _STOU8  (IN CHAR8 *);
+  UINT16              _STOU16 (IN CHAR8 *);
+  UINT32              _STOU32 (IN CHAR8 *);
+  UINT64              _STOU64 (IN CHAR8 *);
+  EFI_HII_DATE        _STOD   (IN CHAR8 *, IN CHAR8 *, IN CHAR8 *);
+  EFI_HII_TIME        _STOT   (IN CHAR8 *, IN CHAR8 *, IN CHAR8 *);
 
-  EFI_STRING_ID       _STOSID (IN INT8 *);
-  EFI_FORM_ID         _STOFID (IN INT8 *);
-  EFI_QUESTION_ID     _STOQID (IN INT8 *);
+  EFI_STRING_ID       _STOSID (IN CHAR8 *);
+  EFI_FORM_ID         _STOFID (IN CHAR8 *);
+  EFI_QUESTION_ID     _STOQID (IN CHAR8 *);
 
-  VOID                _STRCAT (IN OUT INT8 **, IN INT8 *);
+  VOID                _STRCAT (IN OUT CHAR8 **, IN CHAR8 *);
 
-  VOID                _CRGUID (EFI_GUID *, INT8 *, INT8 *, INT8 *, INT8 *, INT8 *, INT8 *, INT8 *, INT8 *, INT8 *, INT8 *, INT8 *);
+  VOID                _CRGUID (EFI_GUID *, CHAR8 *, CHAR8 *, CHAR8 *, CHAR8 *, CHAR8 *, CHAR8 *, CHAR8 *, CHAR8 *, CHAR8 *, CHAR8 *, CHAR8 *);
   VOID                _DeclareDefaultLinearVarStore (IN UINT32);
   VOID                _DeclareStandardDefaultStorage (IN UINT32);
 
 
   VOID                AssignQuestionKey (IN CIfrQuestionHeader &, IN ANTLRTokenPtr);
 
-  VOID                ConvertIdExpr         (IN UINT32 &, IN UINT32, IN EFI_QUESTION_ID, IN INT8 *, IN UINT32);
-  VOID                IdEqValDoSpecial      (IN UINT32 &, IN UINT32, IN EFI_QUESTION_ID, IN INT8 *, IN UINT32, IN UINT16, IN EFI_COMPARE_TYPE);
-  VOID                IdEqIdDoSpecial       (IN UINT32 &, IN UINT32, IN EFI_QUESTION_ID, IN INT8 *, IN UINT32, IN EFI_QUESTION_ID, IN INT8 *, IN UINT32, IN EFI_COMPARE_TYPE);
-  VOID                IdEqListDoSpecial     (IN UINT32 &, IN UINT32, IN EFI_QUESTION_ID, IN INT8 *, IN UINT32, IN UINT16, IN UINT16 *);
+  VOID                ConvertIdExpr         (IN UINT32 &, IN UINT32, IN EFI_QUESTION_ID, IN CHAR8 *, IN UINT32);
+  VOID                IdEqValDoSpecial      (IN UINT32 &, IN UINT32, IN EFI_QUESTION_ID, IN CHAR8 *, IN UINT32, IN UINT16, IN EFI_COMPARE_TYPE);
+  VOID                IdEqIdDoSpecial       (IN UINT32 &, IN UINT32, IN EFI_QUESTION_ID, IN CHAR8 *, IN UINT32, IN EFI_QUESTION_ID, IN CHAR8 *, IN UINT32, IN EFI_COMPARE_TYPE);
+  VOID                IdEqListDoSpecial     (IN UINT32 &, IN UINT32, IN EFI_QUESTION_ID, IN CHAR8 *, IN UINT32, IN UINT16, IN UINT16 *);
 >>
 }
 
@@ -2593,7 +2587,7 @@ EfiVfrParser::_PCATCH (
   IN EFI_VFR_RETURN_CODE ReturnCode,
   IN EFI_VFR_RETURN_CODE ExpectCode,
   IN ANTLRTokenPtr       Tok,
-  IN INT8                *ErrorMsg
+  IN CHAR8               *ErrorMsg
   )
 {
   if (ReturnCode != ExpectCode) {
@@ -2642,9 +2636,9 @@ EfiVfrParser::syn (
   mParserStatus += 1;
 }
 
-INT8 *
+CHAR8 *
 EfiVfrParser::TrimHex (
-  IN  INT8    *Str,
+  IN  CHAR8   *Str,
   OUT BOOLEAN *IsHex
   )
 {
@@ -2666,12 +2660,12 @@ EfiVfrParser::TrimHex (
 
 UINT8
 EfiVfrParser::_STOU8 (
-  IN INT8 *Str
+  IN CHAR8*Str
   )
 {
   BOOLEAN IsHex;
   UINT8   Value;
-  INT8    c;
+  CHAR8   c;
 
   Str = TrimHex (Str, &IsHex);
   for (Value = 0; (c = *Str) != '\0'; Str++) {
@@ -2696,12 +2690,12 @@ EfiVfrParser::_STOU8 (
 
 UINT16
 EfiVfrParser::_STOU16 (
-  IN INT8 *Str
+  IN CHAR8*Str
   )
 {
   BOOLEAN IsHex;
   UINT16  Value;
-  INT8    c;
+  CHAR8   c;
 
   Str = TrimHex (Str, &IsHex);
   for (Value = 0; (c = *Str) != '\0'; Str++) {
@@ -2726,12 +2720,12 @@ EfiVfrParser::_STOU16 (
 
 UINT32
 EfiVfrParser::_STOU32 (
-  IN INT8 *Str
+  IN CHAR8*Str
   )
 {
   BOOLEAN IsHex;
   UINT32  Value;
-  INT8    c;
+  CHAR8   c;
 
   Str = TrimHex (Str, &IsHex);
   for (Value = 0; (c = *Str) != '\0'; Str++) {
@@ -2756,12 +2750,12 @@ EfiVfrParser::_STOU32 (
 
 UINT64
 EfiVfrParser::_STOU64 (
-  IN INT8 *Str
+  IN CHAR8*Str
   )
 { 
   BOOLEAN IsHex;
   UINT64  Value;
-  INT8    c;
+  CHAR8   c;
 
   Str = TrimHex (Str, &IsHex);
   for (Value = 0; (c = *Str) != '\0'; Str++) {
@@ -2786,9 +2780,9 @@ EfiVfrParser::_STOU64 (
 
 EFI_HII_DATE
 EfiVfrParser::_STOD (
-  IN INT8 *Year, 
-  IN INT8 *Month, 
-  IN INT8 *Day
+  IN CHAR8 *Year, 
+  IN CHAR8 *Month, 
+  IN CHAR8 *Day
   )
 {
   EFI_HII_DATE Date;
@@ -2802,9 +2796,9 @@ EfiVfrParser::_STOD (
 
 EFI_HII_TIME
 EfiVfrParser::_STOT (
-  IN INT8 *Hour, 
-  IN INT8 *Minute, 
-  IN INT8 *Second
+  IN CHAR8 *Hour, 
+  IN CHAR8 *Minute, 
+  IN CHAR8 *Second
   )
 {
   EFI_HII_TIME Time;
@@ -2818,7 +2812,7 @@ EfiVfrParser::_STOT (
 
 EFI_STRING_ID
 EfiVfrParser::_STOSID (
-  IN INT8 *Str
+  IN CHAR8 *Str
   )
 {
   return (EFI_STRING_ID)_STOU16(Str);
@@ -2826,7 +2820,7 @@ EfiVfrParser::_STOSID (
 
 EFI_FORM_ID
 EfiVfrParser::_STOFID (
-  IN INT8 *Str
+  IN CHAR8 *Str
   )
 {
   return (EFI_FORM_ID)_STOU16(Str);
@@ -2834,7 +2828,7 @@ EfiVfrParser::_STOFID (
 
 EFI_QUESTION_ID 
 EfiVfrParser::_STOQID (
-  IN INT8 *Str
+  IN CHAR8 *Str
   )
 {
   return (EFI_QUESTION_ID)_STOU16(Str);
@@ -2842,11 +2836,11 @@ EfiVfrParser::_STOQID (
 
 VOID
 EfiVfrParser::_STRCAT (
-  IN OUT INT8 **Dest,
-  IN INT8     *Src
+  IN OUT CHAR8 **Dest,
+  IN CHAR8     *Src
   )
 {
-  INT8   *NewStr;
+  CHAR8   *NewStr;
   UINT32 Len;
 
   if ((Dest == NULL) || (Src == NULL)) {
@@ -2855,7 +2849,7 @@ EfiVfrParser::_STRCAT (
 
   Len = (*Dest == NULL) ? 0 : strlen (*Dest);
   Len += strlen (Src);
-  if ((NewStr = new INT8[Len + 1]) == NULL) {
+  if ((NewStr = new CHAR8[Len + 1]) == NULL) {
     return;
   }
   NewStr[0] = '\0';
@@ -2870,17 +2864,17 @@ EfiVfrParser::_STRCAT (
 VOID
 EfiVfrParser::_CRGUID (
   IN EFI_GUID *Guid, 
-  IN INT8     *G1, 
-  IN INT8     *G2, 
-  IN INT8     *G3, 
-  IN INT8     *G4, 
-  IN INT8     *G5, 
-  IN INT8     *G6, 
-  IN INT8     *G7, 
-  IN INT8     *G8, 
-  IN INT8     *G9, 
-  IN INT8     *G10, 
-  IN INT8     *G11
+  IN CHAR8    *G1, 
+  IN CHAR8    *G2, 
+  IN CHAR8    *G3, 
+  IN CHAR8    *G4, 
+  IN CHAR8    *G5, 
+  IN CHAR8    *G6, 
+  IN CHAR8    *G7, 
+  IN CHAR8    *G8, 
+  IN CHAR8    *G9, 
+  IN CHAR8    *G10, 
+  IN CHAR8    *G11
   )
 {
   Guid->Data1 = _STOU32 (G1);
@@ -2902,7 +2896,7 @@ EfiVfrParser::_DeclareDefaultLinearVarStore (
   )
 {
   UINT32            Index;
-  INT8              **TypeNameList;
+  CHAR8             **TypeNameList;
   UINT32            ListSize;
   EFI_GUID          DefaultGuid =  { 0x9db3c415, 0xda00, 0x4233, { 0xae, 0xc6, 0x79, 0xb, 0x4f, 0x5b, 0x45, 0x66 } };
 
@@ -3013,7 +3007,7 @@ EfiVfrParser::ConvertIdExpr (
   IN UINT32          &ExpOpCount, 
   IN UINT32          LineNo,
   IN EFI_QUESTION_ID QId,
-  IN INT8            *VarIdStr,
+  IN CHAR8           *VarIdStr,
   IN UINT32          BitMask
   )
 {
@@ -3047,7 +3041,7 @@ EfiVfrParser::IdEqValDoSpecial (
   IN UINT32           &ExpOpCount, 
   IN UINT32           LineNo,
   IN EFI_QUESTION_ID  QId,
-  IN INT8             *VarIdStr,
+  IN CHAR8            *VarIdStr,
   IN UINT32           BitMask,
   IN UINT16           ConstVal,
   IN EFI_COMPARE_TYPE CompareType
@@ -3099,10 +3093,10 @@ EfiVfrParser::IdEqIdDoSpecial (
   IN UINT32           &ExpOpCount, 
   IN UINT32           LineNo,
   IN EFI_QUESTION_ID  QId1,
-  IN INT8             *VarId1Str,
+  IN CHAR8            *VarId1Str,
   IN UINT32           BitMask1,
   IN EFI_QUESTION_ID  QId2,
-  IN INT8             *VarId2Str,
+  IN CHAR8            *VarId2Str,
   IN UINT32           BitMask2,
   IN EFI_COMPARE_TYPE CompareType
   )
@@ -3146,7 +3140,7 @@ EfiVfrParser::IdEqListDoSpecial (
   IN UINT32          &ExpOpCount, 
   IN UINT32          LineNo,
   IN EFI_QUESTION_ID QId,
-  IN INT8            *VarIdStr,
+  IN CHAR8           *VarIdStr,
   IN UINT32          BitMask,
   IN UINT16          ListLen,
   IN UINT16          *ValueList

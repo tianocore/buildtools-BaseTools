@@ -6,14 +6,14 @@
  */
 
 SPendingAssign::SPendingAssign (
-  IN INT8   *Key, 
+  IN CHAR8  *Key, 
   IN VOID   *Addr, 
   IN UINT32 Len, 
   IN UINT32 LineNo
   )
 {
   if (Key != NULL) {
-    mKey = new INT8[strlen (Key) + 1];
+    mKey = new CHAR8[strlen (Key) + 1];
     if (mKey != NULL) {
       strcpy (mKey, Key);
     }
@@ -60,7 +60,7 @@ SPendingAssign::AssignValue (
   mFlag = ASSIGNED;
 }
 
-INT8 *
+CHAR8 *
 SPendingAssign::GetKey (
   VOID
   )
@@ -289,8 +289,8 @@ VOID
 CFormPkg::_WRITE_PKG_LINE (
   IN FILE   *pFile,
   IN UINT32 LineBytes,
-  IN INT8   *LineHeader,
-  IN INT8   *BlkBuf,
+  IN CHAR8  *LineHeader,
+  IN CHAR8  *BlkBuf,
   IN UINT32 BlkSize
   )
 {
@@ -312,8 +312,8 @@ VOID
 CFormPkg::_WRITE_PKG_END (
   IN FILE   *pFile,
   IN UINT32 LineBytes,
-  IN INT8   *LineHeader,
-  IN INT8   *BlkBuf,
+  IN CHAR8  *LineHeader,
+  IN CHAR8  *BlkBuf,
   IN UINT32 BlkSize
   )
 {
@@ -340,12 +340,12 @@ CFormPkg::_WRITE_PKG_END (
 
 EFI_VFR_RETURN_CODE 
 CFormPkg::GenCFile (
-  IN INT8 *BaseName,
+  IN CHAR8 *BaseName,
   IN FILE *pFile
   )
 {
   EFI_VFR_RETURN_CODE          Ret;
-  INT8                         Buffer[BYTES_PRE_LINE * 8];
+  CHAR8                        Buffer[BYTES_PRE_LINE * 8];
   EFI_HII_PACKAGE_HEADER       *PkgHdr;
   UINT32                       PkgLength  = 0;
   UINT32                       ReadSize   = 0;
@@ -362,10 +362,10 @@ CFormPkg::GenCFile (
 
   fprintf (pFile, "  // ARRAY LENGTH\n");
   PkgLength = PkgHdr->Length + sizeof (UINT32);
-  _WRITE_PKG_LINE(pFile, BYTES_PRE_LINE, "  ", (INT8 *)&PkgLength, sizeof (UINT32));
+  _WRITE_PKG_LINE(pFile, BYTES_PRE_LINE, "  ", (CHAR8 *)&PkgLength, sizeof (UINT32));
 
   fprintf (pFile, "\n\n  // PACKAGE HEADER\n");
-  _WRITE_PKG_LINE(pFile, BYTES_PRE_LINE, "  ", (INT8 *)PkgHdr, sizeof (EFI_HII_PACKAGE_HEADER));
+  _WRITE_PKG_LINE(pFile, BYTES_PRE_LINE, "  ", (CHAR8 *)PkgHdr, sizeof (EFI_HII_PACKAGE_HEADER));
   PkgLength = sizeof (EFI_HII_PACKAGE_HEADER);
 
   fprintf (pFile, "\n\n  // PACKAGE DATA\n");
@@ -388,7 +388,7 @@ CFormPkg::GenCFile (
 
 EFI_VFR_RETURN_CODE
 CFormPkg::AssignPending (
-  IN INT8   *Key, 
+  IN CHAR8  *Key, 
   IN VOID   *ValAddr, 
   IN UINT32 ValLen,
   IN UINT32 LineNo
@@ -408,7 +408,7 @@ CFormPkg::AssignPending (
 
 VOID
 CFormPkg::DoPendingAssign (
-  IN INT8   *Key, 
+  IN CHAR8  *Key, 
   IN VOID   *ValAddr, 
   IN UINT32 ValLen
   )
@@ -738,7 +738,7 @@ static struct {
 
 #ifdef CIFROBJ_DEUBG
 static struct {
-  INT8 *mIfrName;
+  CHAR8 *mIfrName;
 } gIfrObjPrintDebugTable[] = {
   "EFI_IFR_INVALID",    "EFI_IFR_FORM",                 "EFI_IFR_SUBTITLE",      "EFI_IFR_TEXT",            "EFI_IFR_IMAGE",         "EFI_IFR_ONE_OF",
   "EFI_IFR_CHECKBOX",   "EFI_IFR_NUMERIC",              "EFI_IFR_PASSWORD",      "EFI_IFR_ONE_OF_OPTION",   "EFI_IFR_SUPPRESS_IF",   "EFI_IFR_LOCKED",

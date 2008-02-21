@@ -51,19 +51,19 @@ typedef enum {
 } ASSIGN_FLAG;
 
 struct SPendingAssign {
-  INT8                    *mKey;  // key ! unique
+  CHAR8                   *mKey;  // key ! unique
   VOID                    *mAddr;
   UINT32                  mLen;
   ASSIGN_FLAG             mFlag;
   UINT32                  mLineNo;
   struct SPendingAssign   *mNext;
 
-  SPendingAssign (IN INT8 *, IN VOID *, IN UINT32, IN UINT32);
+  SPendingAssign (IN CHAR8 *, IN VOID *, IN UINT32, IN UINT32);
   ~SPendingAssign ();
 
   VOID   SetAddrAndLen (IN VOID *, IN UINT32);
   VOID   AssignValue (IN VOID *, IN UINT32);
-  INT8 * GetKey (VOID);
+  CHAR8 * GetKey (VOID);
 };
 
 struct SBufferNode {
@@ -85,8 +85,8 @@ private:
 
   UINT32              mPkgLength;
 
-  VOID                _WRITE_PKG_LINE (IN FILE *, IN UINT32 , IN INT8 *, IN INT8 *, IN UINT32);
-  VOID                _WRITE_PKG_END (IN FILE *, IN UINT32 , IN INT8 *, IN INT8 *, IN UINT32);
+  VOID                _WRITE_PKG_LINE (IN FILE *, IN UINT32 , IN CHAR8 *, IN CHAR8 *, IN UINT32);
+  VOID                _WRITE_PKG_END (IN FILE *, IN UINT32 , IN CHAR8 *, IN CHAR8 *, IN UINT32);
 
 private:
   SPendingAssign      *PendingAssignList;
@@ -104,11 +104,11 @@ public:
 
   EFI_VFR_RETURN_CODE BuildPkgHdr (OUT EFI_HII_PACKAGE_HEADER **);
   EFI_VFR_RETURN_CODE BuildPkg (IN FILE *);
-  EFI_VFR_RETURN_CODE GenCFile (IN INT8 *, IN FILE *);
+  EFI_VFR_RETURN_CODE GenCFile (IN CHAR8 *, IN FILE *);
 
 public:
-  EFI_VFR_RETURN_CODE AssignPending (IN INT8 *, IN VOID *, IN UINT32, IN UINT32);
-  VOID                DoPendingAssign (IN INT8 *, IN VOID *, IN UINT32);
+  EFI_VFR_RETURN_CODE AssignPending (IN CHAR8 *, IN VOID *, IN UINT32, IN UINT32);
+  VOID                DoPendingAssign (IN CHAR8 *, IN VOID *, IN UINT32);
   bool                HavePendingUnassigned (VOID);
   VOID                PendingAssignPrintAll (VOID);
 };
@@ -517,7 +517,7 @@ public:
     mVarStore->Size = Size;
   }
 
-  VOID SetName (IN INT8 *Name) {
+  VOID SetName (IN CHAR8 *Name) {
     UINT8 Len;
 
     if (Name != NULL) {
@@ -525,7 +525,7 @@ public:
       if (Len != 0) {
         if (ExpendObjBin (Len) == TRUE) {
           IncLength (Len);
-          strcpy ((INT8 *)(mVarStore->Name), Name);
+          strcpy ((CHAR8 *)(mVarStore->Name), Name);
         }
       }
     }
@@ -1403,7 +1403,7 @@ public:
 
   VOID SetQuestionId1 (
   IN EFI_QUESTION_ID QuestionId,
-  IN INT8            *VarIdStr,
+  IN CHAR8            *VarIdStr,
   IN UINT32          LineNo
   ) {
     if (QuestionId != EFI_QUESTION_ID_INVALID) {
@@ -1415,7 +1415,7 @@ public:
 
   VOID SetQuestionId2 (
   IN EFI_QUESTION_ID QuestionId,
-  IN INT8            *VarIdStr,
+  IN CHAR8            *VarIdStr,
   IN UINT32          LineNo
   ) {
     if (QuestionId != EFI_QUESTION_ID_INVALID) {
@@ -1441,7 +1441,7 @@ public:
 
   VOID SetQuestionId (
   IN EFI_QUESTION_ID QuestionId,
-  IN INT8            *VarIdStr,
+  IN CHAR8           *VarIdStr,
   IN UINT32          LineNo
   ) {
     if (QuestionId != EFI_QUESTION_ID_INVALID) {
@@ -1473,7 +1473,7 @@ public:
 
   VOID SetQuestionId (
   IN EFI_QUESTION_ID QuestionId,
-  IN INT8            *VarIdStr,
+  IN CHAR8           *VarIdStr,
   IN UINT32          LineNo
   ) {
     if (QuestionId != EFI_QUESTION_ID_INVALID) {
@@ -1515,7 +1515,7 @@ public:
 
   VOID SetQuestionId (
   IN EFI_QUESTION_ID QuestionId,
-  IN INT8            *VarIdStr,
+  IN CHAR8           *VarIdStr,
   IN UINT32          LineNo
   ) {
     if (QuestionId != EFI_QUESTION_ID_INVALID) {

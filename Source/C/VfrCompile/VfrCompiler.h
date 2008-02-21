@@ -26,18 +26,18 @@
 #define VFR_RECORDLIST_FILENAME_EXTENSION   ".lst"
 
 typedef struct {
-  INT8    VfrFileName[MAX_PATH];
-  INT8    RecordListFile[MAX_PATH];
-  INT8    PkgOutputFileName[MAX_PATH];
-  INT8    COutputFileName[MAX_PATH];
+  CHAR8   VfrFileName[MAX_PATH];
+  CHAR8   RecordListFile[MAX_PATH];
+  CHAR8   PkgOutputFileName[MAX_PATH];
+  CHAR8   COutputFileName[MAX_PATH];
   bool    CreateRecordListFile;
   bool    CreateIfrPkgFile;
-  INT8    OutputDirectory[MAX_PATH];
-  INT8    PreprocessorOutputFileName[MAX_PATH];
-  INT8    VfrBaseFileName[MAX_PATH];  // name of input VFR file with no path or extension
-  INT8    *IncludePaths;
+  CHAR8   OutputDirectory[MAX_PATH];
+  CHAR8   PreprocessorOutputFileName[MAX_PATH];
+  CHAR8   VfrBaseFileName[MAX_PATH];  // name of input VFR file with no path or extension
+  CHAR8   *IncludePaths;
   bool    SkipCPreprocessor;
-  INT8    *CPreprocessorOptions;
+  CHAR8   *CPreprocessorOptions;
 } OPTIONS;
 
 typedef enum {
@@ -54,12 +54,12 @@ class CVfrCompiler {
 private:
   COMPILER_RUN_STATUS  mRunStatus;
   OPTIONS              mOptions;
-  INT8                 *mPreProcessCmd;
-  INT8                 *mPreProcessOpt;
+  CHAR8                *mPreProcessCmd;
+  CHAR8                *mPreProcessOpt;
 
-  VOID    OptionInitialization (IN INT32 , IN INT8 **);
-  VOID    AppendIncludePath (IN INT8 *);
-  VOID    AppendCPreprocessorOptions (IN INT8 *);
+  VOID    OptionInitialization (IN INT32 , IN CHAR8 **);
+  VOID    AppendIncludePath (IN CHAR8 *);
+  VOID    AppendCPreprocessorOptions (IN CHAR8 *);
   INT8    SetBaseFileName (VOID);
   INT8    SetPkgOutputFileName (VOID);
   INT8    SetCOutputFileName(VOID);
@@ -75,7 +75,7 @@ public:
   }
 
 public:
-  CVfrCompiler (IN INT32 , IN INT8 **);
+  CVfrCompiler (IN INT32 , IN CHAR8 **);
   ~CVfrCompiler ();
 
   VOID                Usage (VOID);

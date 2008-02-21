@@ -1,6 +1,7 @@
 #include "stdio.h"
+#include "stdlib.h"
 #include "string.h"
-#include "process.h"
+//#include "process.h"
 #include "VfrCompiler.h"
 
 
@@ -23,7 +24,7 @@ CVfrCompiler::IS_RUN_STATUS (
 VOID
 CVfrCompiler::OptionInitialization (
   IN INT32      Argc, 
-  IN INT8       **Argv
+  IN CHAR8      **Argv
   )
 {
   INT32         Index;
@@ -42,14 +43,14 @@ CVfrCompiler::OptionInitialization (
   mOptions.CPreprocessorOptions          = NULL;
 
   for (Index = 1; (Index < Argc) && (Argv[Index][0] == '-'); Index++) {
-    if ((_stricmp(Argv[Index], "-h") == 0) || (_stricmp(Argv[Index], "--help") == 0)) {
+    if ((strcmp(Argv[Index], "-h") == 0) || (strcmp(Argv[Index], "--help") == 0)) {
       Usage ();
       SET_RUN_STATUS (STATUS_DEAD);
       return;
-    } else if (_stricmp(Argv[Index], "-l") == 0) {
+    } else if (strcmp(Argv[Index], "-l") == 0) {
       mOptions.CreateRecordListFile = TRUE;
       gCIfrRecordInfoDB.TurnOn ();
-    } else if (_stricmp(Argv[Index], "-i") == 0) {
+    } else if (strcmp(Argv[Index], "-i") == 0) {
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
         printf ("%s -i - missing path argument\n", PROGRAM_NAME);
@@ -57,7 +58,7 @@ CVfrCompiler::OptionInitialization (
       }
 
       AppendIncludePath(Argv[Index]);
-    } else if (_stricmp(Argv[Index], "-o") == 0 || _stricmp(Argv[Index], "--output-directory") == 0) {
+    } else if (strcmp(Argv[Index], "-o") == 0 || strcmp(Argv[Index], "--output-directory") == 0) {
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
         printf ("%s -od - missing output directory name\n", PROGRAM_NAME);
@@ -65,12 +66,12 @@ CVfrCompiler::OptionInitialization (
       }
       strcpy (mOptions.OutputDirectory, Argv[Index]);
       strcat (mOptions.OutputDirectory, "\\");
-    } else if (_stricmp(Argv[Index], "-b") == 0 || _stricmp(Argv[Index], "--create-ifr-package") == 0) {
+    } else if (strcmp(Argv[Index], "-b") == 0 || strcmp(Argv[Index], "--create-ifr-package") == 0) {
       mOptions.CreateIfrPkgFile = TRUE;
-    } else if (_stricmp(Argv[Index], "--no-strings") == 0) {
-    } else if (_stricmp(Argv[Index], "-n") == 0 || _stricmp(Argv[Index], "--no-preprocessing") == 0) {
+    } else if (strcmp(Argv[Index], "--no-strings") == 0) {
+    } else if (strcmp(Argv[Index], "-n") == 0 || strcmp(Argv[Index], "--no-preprocessing") == 0) {
       mOptions.SkipCPreprocessor = TRUE;
-    } else if (_stricmp(Argv[Index], "-f") == 0 || _stricmp(Argv[Index], "--preprocessing-flag") == 0) {
+    } else if (strcmp(Argv[Index], "-f") == 0 || strcmp(Argv[Index], "--preprocessing-flag") == 0) {
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
         printf ("%s -od - missing C-preprocessor argument\n", PROGRAM_NAME);
@@ -134,17 +135,17 @@ Fail:
 
 VOID
 CVfrCompiler::AppendIncludePath (
-  IN INT8       *PathStr
+  IN CHAR8      *PathStr
   )
 {
   UINT32  Len           = 0;
-  INT8    *IncludePaths = NULL;
+  CHAR8   *IncludePaths = NULL;
 
   Len = strlen (" -I ") + strlen (PathStr) + 1;
   if (mOptions.IncludePaths != NULL) {
     Len += strlen (mOptions.IncludePaths);
   }
-  IncludePaths = new INT8[Len];
+  IncludePaths = new CHAR8[Len];
   if (IncludePaths == NULL) {
     printf ("%s memory allocation failure\n", PROGRAM_NAME);
     return;
@@ -163,17 +164,17 @@ CVfrCompiler::AppendIncludePath (
 
 VOID
 CVfrCompiler::AppendCPreprocessorOptions (
-  IN INT8       *Options
+  IN CHAR8      *Options
   )
 {
   UINT32  Len           = 0;
-  INT8    *Opt          = NULL;
+  CHAR8   *Opt          = NULL;
 
   Len = strlen (Options) + strlen (" ") + 1;
   if (mOptions.CPreprocessorOptions != NULL) {
     Len += strlen (mOptions.CPreprocessorOptions);
   }
-  Opt = new INT8[Len];
+  Opt = new CHAR8[Len];
   if (Opt == NULL) {
     printf ("%s memory allocation failure\n", PROGRAM_NAME);
     return;
@@ -195,7 +196,7 @@ CVfrCompiler::SetBaseFileName (
   VOID
   )
 {
-  INT8          *pFileName, *pPath, *pExt;
+  CHAR8         *pFileName, *pPath, *pExt;
 
   if (mOptions.VfrFileName[0] == '\0') {
     return -1;
@@ -286,7 +287,7 @@ CVfrCompiler::SetRecordListFileName (
 
 CVfrCompiler::CVfrCompiler (
   IN INT32      Argc, 
-  IN INT8       **Argv
+  IN CHAR8      **Argv
   )
 {
   mPreProcessCmd = PREPROCESSOR_COMMAND;
@@ -324,7 +325,7 @@ CVfrCompiler::Usage (
   )
 {
   UINT32 Index;
-  CONST  INT8 *Help[] = {
+  CONST  CHAR8 *Help[] = {
     " ", 
     "VfrCompile version " VFR_COMPILER_VERSION,
     " ",
@@ -357,7 +358,7 @@ CVfrCompiler::PreProcess (
 {
   FILE    *pVfrFile      = NULL;
   UINT32  CmdLen         = 0;
-  INT8    *PreProcessCmd = NULL;
+  CHAR8   *PreProcessCmd = NULL;
 
   if (!IS_RUN_STATUS(STATUS_INITIALIZED)) {
     goto Fail;
@@ -382,7 +383,7 @@ CVfrCompiler::PreProcess (
     CmdLen += strlen (mOptions.IncludePaths);
   }
 
-  PreProcessCmd = new INT8[CmdLen + 10];
+  PreProcessCmd = new CHAR8[CmdLen + 10];
   if (PreProcessCmd == NULL) {
     printf ("%s could not allocate memory\n", PROGRAM_NAME);
     goto Fail;
@@ -423,8 +424,8 @@ CVfrCompiler::Compile (
   VOID
   )
 {
-  FILE *pInFile    = NULL;
-  INT8 *InFileName = NULL;
+  FILE  *pInFile    = NULL;
+  CHAR8 *InFileName = NULL;
 
   if (!IS_RUN_STATUS(STATUS_PREPROCESSED)) {
     goto Fail;
@@ -547,10 +548,10 @@ CVfrCompiler::GenRecordListFile (
   VOID
   )
 {
-  INT8   *InFileName = NULL;
+  CHAR8  *InFileName = NULL;
   FILE   *pInFile    = NULL;
   FILE   *pOutFile   = NULL;
-  INT8   LineBuf[MAX_LINE_LEN];
+  CHAR8  LineBuf[MAX_LINE_LEN];
   UINT32 LineNo;
 
   InFileName = (mOptions.SkipCPreprocessor == TRUE) ? mOptions.VfrFileName : mOptions.PreprocessorOutputFileName;
@@ -593,7 +594,7 @@ Err1:
 INT32
 main (
   IN INT32             Argc, 
-  IN INT8              **Argv
+  IN CHAR8             **Argv
   )
 {
   COMPILER_RUN_STATUS  Status;

@@ -62,23 +62,23 @@ CVfrErrorHandle::~CVfrErrorHandle (
 
 VOID
 CVfrErrorHandle::SetInputFile (
-  IN INT8     *InputFile
+  IN CHAR8    *InputFile
   )
 {
   if (InputFile != NULL) {
-    mInputFileName = new INT8[strlen(InputFile) + 1];
+    mInputFileName = new CHAR8[strlen(InputFile) + 1];
     strcpy (mInputFileName, InputFile);
   }
 }
 
 SVfrFileScopeRecord::SVfrFileScopeRecord (
-  IN INT8     *Record, 
+  IN CHAR8    *Record, 
   IN UINT32   LineNum
   )
 {
   UINT32      Index;
-  INT8        *FileName = NULL;
-  INT8        *Str      = NULL;
+  CHAR8       *FileName = NULL;
+  CHAR8       *Str      = NULL;
 
   mWholeScopeLine      = LineNum;
   mNext                = NULL;
@@ -92,7 +92,7 @@ SVfrFileScopeRecord::SVfrFileScopeRecord (
   while((Str = strstr (FileName, "\\\\")) != NULL) {
     FileName = Str + 2;
   }
-  if ((mFileName = new INT8[strlen(FileName)]) != NULL) {
+  if ((mFileName = new CHAR8[strlen(FileName)]) != NULL) {
     for (Index = 0; FileName[Index] != '\"'; Index++) {
       mFileName[Index] = FileName[Index];
     }
@@ -113,11 +113,11 @@ SVfrFileScopeRecord::~SVfrFileScopeRecord (
 
 VOID
 CVfrErrorHandle::ParseFileScopeRecord (
-  IN INT8      *Record, 
+  IN CHAR8     *Record, 
   IN UINT32    WholeScopeLine
   )
 {
-  INT8                *FullPathName = NULL;
+  CHAR8               *FullPathName = NULL;
   SVfrFileScopeRecord *pNode        = NULL;
 
   if (Record == NULL) {
@@ -139,7 +139,7 @@ CVfrErrorHandle::ParseFileScopeRecord (
 VOID
 CVfrErrorHandle::GetFileNameLineNum (
   IN  UINT32 LineNum,
-  OUT INT8   **FileName,
+  OUT CHAR8  **FileName,
   OUT UINT32 *FileLine
   )
 {
@@ -176,11 +176,11 @@ CVfrErrorHandle::GetFileNameLineNum (
 VOID
 CVfrErrorHandle::PrintError (
   IN UINT32               LineNum,
-  IN INT8                 *TokName,
-  IN INT8                 *ErrorMsg
+  IN CHAR8                *TokName,
+  IN CHAR8                *ErrorMsg
   )
 {
-  INT8                   *FileName = NULL;
+  CHAR8                  *FileName = NULL;
   UINT32                 FileLine;
 
   GetFileNameLineNum (LineNum, &FileName, &FileLine);
@@ -191,13 +191,13 @@ UINT8
 CVfrErrorHandle::HandleError (
   IN EFI_VFR_RETURN_CODE  ErrorCode,
   IN UINT32               LineNum,
-  IN INT8                 *TokName
+  IN CHAR8                *TokName
   )
 {
   UINT32                 Index;
-  INT8                   *FileName = NULL;
+  CHAR8                  *FileName = NULL;
   UINT32                 FileLine;
-  INT8                   *ErrorMsg = NULL;
+  CHAR8                  *ErrorMsg = NULL;
 
   if (mVfrErrorHandleTable == NULL) {
     return 1;

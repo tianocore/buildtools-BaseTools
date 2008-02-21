@@ -30,22 +30,22 @@ typedef enum {
 
 typedef struct _SVFR_ERROR_HANDLE {
   EFI_VFR_RETURN_CODE    mErrorCode;
-  INT8                   *mErrorMsg;
+  CHAR8                  *mErrorMsg;
 } SVFR_ERROR_HANDLE;
 
 struct SVfrFileScopeRecord {
-  INT8                  *mFileName;
+  CHAR8                 *mFileName;
   UINT32                mWholeScopeLine;
   UINT32                mScopeLineStart;
   SVfrFileScopeRecord *mNext;
 
-  SVfrFileScopeRecord (IN INT8 *, IN UINT32);
+  SVfrFileScopeRecord (IN CHAR8 *, IN UINT32);
   ~SVfrFileScopeRecord();
 };
 
 class CVfrErrorHandle {
 private:
-  INT8                *mInputFileName;
+  CHAR8               *mInputFileName;
   SVFR_ERROR_HANDLE   *mVfrErrorHandleTable;
   SVfrFileScopeRecord *mScopeRecordListHead;
   SVfrFileScopeRecord *mScopeRecordListTail;
@@ -54,11 +54,11 @@ public:
   CVfrErrorHandle (VOID);
   ~CVfrErrorHandle (VOID);
 
-  VOID  SetInputFile (IN INT8 *);
-  VOID  ParseFileScopeRecord (IN INT8 *, IN UINT32);
-  VOID  GetFileNameLineNum (IN UINT32, OUT INT8 **, OUT UINT32 *);
-  UINT8 HandleError (IN EFI_VFR_RETURN_CODE, IN UINT32 LineNum = 0, IN INT8 *TokName = "\0");
-  VOID  PrintError (IN UINT32 LineNum = 0, IN INT8 *TokName = "\0", IN INT8 *ErrorMsg = "\0");
+  VOID  SetInputFile (IN CHAR8 *);
+  VOID  ParseFileScopeRecord (IN CHAR8 *, IN UINT32);
+  VOID  GetFileNameLineNum (IN UINT32, OUT CHAR8 **, OUT UINT32 *);
+  UINT8 HandleError (IN EFI_VFR_RETURN_CODE, IN UINT32 LineNum = 0, IN CHAR8 *TokName = "\0");
+  VOID  PrintError (IN UINT32 LineNum = 0, IN CHAR8 *TokName = "\0", IN CHAR8 *ErrorMsg = "\0");
 };
 
 #define CHECK_ERROR_RETURN(f, v) do { EFI_VFR_RETURN_CODE r; if ((r = (f)) != (v)) { return r; } } while (0)

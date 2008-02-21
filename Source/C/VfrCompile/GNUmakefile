@@ -8,17 +8,21 @@ LIBS = -lCommon
 
 TOOL_INCLUDE = -I Pccts/h
 
-OBJECTS = VfrCompile.o VfrServices.o DLGLexer.o EfiVfrParser.o ATokenBuffer.o DLexerBase.o AParser.o
+#OBJECTS = VfrSyntax.o VfrServices.o DLGLexer.o EfiVfrParser.o ATokenBuffer.o DLexerBase.o AParser.o
+OBJECTS = AParser.o DLexerBase.o ATokenBuffer.o EfiVfrParser.o VfrLexer.o VfrSyntax.o \
+          VfrFormPkg.o VfrError.o VfrUtilityLib.o VfrCompiler.o
 
 LINKER = $(CXX)
 
-EXTRA_CLEAN_OBJECTS = EfiVfrParser.cpp parser.dlg EfiVfrParser.h DLGLexer.cpp VfrCompile.cpp tokens.h DLGLexer.h
+EXTRA_CLEAN_OBJECTS = EfiVfrParser.cpp VfrParser.dlg VfrTokens.h DLGLexer.cpp VfrSyntax.cpp tokens.h DLGLexer.h
 
 include $(MAKEROOT)/Makefiles/app.makefile
 
-VfrCompile.cpp DLGLexer.cpp EfiVfrParser.cpp: Pccts/antlr/antlr Pccts/dlg/dlg VfrCompile.g
-	Pccts/antlr/antlr -CC -e3 -ck 3 -o . VfrCompile.g
-	Pccts/dlg/dlg -C2 -i -CC -o . parser.dlg
+VfrSyntax.cpp EfiVfrParser.cpp EfiVfrParser.h VfrParser.dlg VfrTokens.h: Pccts/antlr/antlr VfrSyntax.g
+	Pccts/antlr/antlr -CC -e3 -ck 3 -k 2 -fl VfrParser.dlg -ft VfrTokens.h -o . VfrSyntax.g
+
+VfrLexer.cpp VfrLexer.h: Pccts/dlg/dlg VfrParser.dlg
+	Pccts/dlg/dlg -C2 -i -CC -cl VfrLexer -o . VfrParser.dlg
 
 Pccts/antlr/antlr:
 	BIN_DIR='.' make -C Pccts/antlr
