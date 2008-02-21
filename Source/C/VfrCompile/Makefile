@@ -5,8 +5,9 @@ APPNAME = VfrCompile
 
 LIBS = $(LIB_PATH)\Common.lib
 
-OBJECTS = AParser.obj DLexerBase.obj ATokenBuffer.obj EfiVfrParser.obj VfrSyntax.obj VfrLexer.obj \
-          VfrFormPkg.obj VfrError.obj VfrUtilityLib.obj VfrCompiler.obj
+OBJECTS = AParser.obj DLexerBase.obj ATokenBuffer.obj EfiVfrParser.obj \
+          VfrLexer.obj VfrSyntax.obj VfrFormPkg.obj VfrError.obj \
+	  VfrUtilityLib.obj VfrCompiler.obj
 
 INC = $(INC) -I $(BASE_TOOLS_PATH)\Source\C\VfrCompile\Pccts\h
 
@@ -29,7 +30,9 @@ DLexerBase.obj: Pccts\h\DLexerBase.cpp
 AParser.obj: Pccts\h\AParser.cpp
 	$(CXX) -c $(CPPFLAGS) $(INC) $? -Fo$@
 
-EXTRA_CLEAN_OBJECTS = EfiVfrParser.cpp parser.dlg EfiVfrParser.h DLGLexer.cpp VfrCompile.cpp tokens.h DLGLexer.h
+EXTRA_CLEAN_OBJECTS = VfrParser.dlg EfiVfrParser.cpp EfiVfrParser.h \
+                      VfrLexer.cpp VfrLexer.h \
+                      VfrSyntax.cpp VfrTokens.h
 
 clean: localClean
 cleanall: localClean localCleanall
