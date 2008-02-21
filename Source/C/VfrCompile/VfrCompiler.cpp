@@ -42,7 +42,7 @@ CVfrCompiler::OptionInitialization (
   mOptions.CPreprocessorOptions          = NULL;
 
   for (Index = 1; (Index < Argc) && (Argv[Index][0] == '-'); Index++) {
-    if ((_stricmp(Argv[Index], "-?") == 0) || (_stricmp(Argv[Index], "-h") == 0)) {
+    if ((_stricmp(Argv[Index], "-h") == 0) || (_stricmp(Argv[Index], "--help") == 0)) {
       Usage ();
       SET_RUN_STATUS (STATUS_DEAD);
       return;
@@ -57,7 +57,7 @@ CVfrCompiler::OptionInitialization (
       }
 
       AppendIncludePath(Argv[Index]);
-    } else if (_stricmp(Argv[Index], "-od") == 0) {
+    } else if (_stricmp(Argv[Index], "-o") == 0 || _stricmp(Argv[Index], "--output-directory") == 0) {
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
         printf ("%s -od - missing output directory name\n", PROGRAM_NAME);
@@ -65,12 +65,12 @@ CVfrCompiler::OptionInitialization (
       }
       strcpy (mOptions.OutputDirectory, Argv[Index]);
       strcat (mOptions.OutputDirectory, "\\");
-    } else if (_stricmp(Argv[Index], "-ibin") == 0) {
+    } else if (_stricmp(Argv[Index], "-b") == 0 || _stricmp(Argv[Index], "--create-ifr-package") == 0) {
       mOptions.CreateIfrPkgFile = TRUE;
-    } else if (_stricmp(Argv[Index], "-nostrings") == 0) {
-    } else if (_stricmp(Argv[Index], "-nopp") == 0) {
+    } else if (_stricmp(Argv[Index], "--no-strings") == 0) {
+    } else if (_stricmp(Argv[Index], "-n") == 0 || _stricmp(Argv[Index], "--no-preprocessing") == 0) {
       mOptions.SkipCPreprocessor = TRUE;
-    } else if (_stricmp(Argv[Index], "-ppflag") == 0) {
+    } else if (_stricmp(Argv[Index], "-f") == 0 || _stricmp(Argv[Index], "--preprocessing-flag") == 0) {
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
         printf ("%s -od - missing C-preprocessor argument\n", PROGRAM_NAME);
@@ -328,18 +328,20 @@ CVfrCompiler::Usage (
     " ", 
     "VfrCompile version " VFR_COMPILER_VERSION,
     " ",
-    "  Usage: VfrCompile {options} [VfrFile]",
+    "Usage: VfrCompile [options] VfrFile",
     " ",
-    "    where options include:",
-    "      -? or -h       prints this help",
-    "      -l             create an output IFR listing file",
-    "      -i IncPath     add IncPath to the search path for VFR included files",
-    "      -od OutputDir  deposit all output files to directory OutputDir (default=cwd)",
-    "      -ibin          create an IFR HII pack file",
-    "      -nopp          do not preprocess",
-    "      -ppflag        C-preprocessor argument",
-    "    where parameters include:",
-    "      VfrFile        name of the input VFR script file",
+    "Options:",
+    "  -h, --help     prints this help",
+    "  -l             create an output IFR listing file",
+    "  -i IncPath     add IncPath to the search path for VFR included files",
+    "  -o DIR, --output-directory DIR",
+    "                 deposit all output files to directory OutputDir (default=cwd)",
+    "  -b, --create-ifr-package",
+    "                 create an IFR HII pack file",
+    "  -n, --no-pre-processing",
+    "                 do not preprocessing input file",
+    "  -f, --pre-processing-flag",
+    "                 Preprocessing flags",
     " ",
     NULL
     };
