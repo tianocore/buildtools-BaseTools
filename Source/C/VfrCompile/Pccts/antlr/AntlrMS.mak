@@ -27,7 +27,7 @@ SUPPORT_OBJS = set.obj
 
 # Dependencies
 
-$(WORKSPACE)\Tools\bin\antlr.exe: $(ANTLR_OBJS) $(SUPPORT_OBJS)
+$(EDK_TOOLS_PATH)\Bin\Win32\antlr.exe: $(ANTLR_OBJS) $(SUPPORT_OBJS)
     $(CC) $(CFLAGS) -Feantlr.exe $(ANTLR_OBJS) $(SUPPORT_OBJS)
 		copy antlr.exe $(EDK_TOOLS_PATH)\Bin\Win32
 
@@ -235,4 +235,4 @@ cleanall:
     -del *.ilk
     -del *.pdb
 		-del *.exe
-    -del $(BASE_TOOLS_PATH)\Bin\Win32\antlr.exe
+    -del $(EDK_TOOLS_PATH)\Bin\Win32\antlr.exe

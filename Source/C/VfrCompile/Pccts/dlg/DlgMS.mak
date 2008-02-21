@@ -28,7 +28,7 @@ SUPPORT_OBJS = set.obj
 
 dlg.exe: $(DLG_OBJS) $(SUPPORT_OBJS)
     $(CC) $(CFLAGS) -Fedlg.exe $(DLG_OBJS) $(SUPPORT_OBJS)
-		copy dlg.exe $(BASE_TOOLS_PATH)\Bin\Win32
+		copy dlg.exe $(EDK_TOOLS_PATH)\Bin\Win32
 
 dlg_p.obj: $(DLG_SRC)\dlg_p.c \
 					$(PCCTS_H)\antlr.h \
@@ -121,5 +121,5 @@ cleanall:
     -del *.ilk
     -del *.pdb
 		-del *.exe
-    -del $(BASE_TOOLS_PATH)\Bin\Win32\dlg.exe
+    -del $(EDK_TOOLS_PATH)\Bin\Win32\dlg.exe
 
