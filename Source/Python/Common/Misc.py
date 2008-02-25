@@ -367,6 +367,7 @@ class Progressor:
             print self.ProgressChar,
             time.sleep(self.Interval)
         print self.CodaMessage
+        sys.stdout.flush()
 
     ## Abort the progress display
     @staticmethod
