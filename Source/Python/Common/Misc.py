@@ -22,6 +22,7 @@ import threading
 import time
 import re
 import cPickle
+from UserDict import IterableUserDict
 
 from Common import EdkLogger as EdkLogger
 from BuildToolError import *
@@ -225,7 +226,7 @@ def DataRestore(File):
         Fd = open(File, 'rb')
         Data = cPickle.load(Fd)
     except Exception, e:
-        EdkLogger.verbose("Failed to open [%s]" % File)
+        EdkLogger.verbose("Failed to load [%s]\n\t%s" % (File, str(e)))
         Data = None
     finally:
         if Fd != None:
@@ -384,21 +385,22 @@ class Progressor:
 #  accessed in the order they are added into the dict. It guarantees the order
 #  by making use of an internal list to keep a copy of keys.
 #
-class sdict(dict):
+class sdict(IterableUserDict):
     ## Constructor
     def __init__(self):
+        IterableUserDict.__init__(self)
         self._key_list = []
 
     ## [] operator
     def __setitem__(self, key, value):
         if key not in self._key_list:
             self._key_list.append(key)
-        dict.__setitem__(self, key, value)
+        IterableUserDict.__setitem__(self, key, value)
 
     ## del operator
     def __delitem__(self, key):
         self._key_list.remove(key)
-        dict.__delitem__(self, key)
+        IterableUserDict.__delitem__(self, key)
 
     ## used in "for k in dict" loop to ensure the correct order
     def __iter__(self):
@@ -418,7 +420,7 @@ class sdict(dict):
     ## Empty the dict
     def clear(self):
         self._key_list = []
-        dict.clear(self)
+        IterableUserDict.clear(self)
 
     ## Return a copy of keys
     def keys(self):
