@@ -69,9 +69,9 @@ CVfrCompiler::OptionInitialization (
     } else if (strcmp(Argv[Index], "-b") == 0 || strcmp(Argv[Index], "--create-ifr-package") == 0) {
       mOptions.CreateIfrPkgFile = TRUE;
     } else if (strcmp(Argv[Index], "--no-strings") == 0) {
-    } else if (strcmp(Argv[Index], "-n") == 0 || strcmp(Argv[Index], "--no-preprocessing") == 0) {
+    } else if (strcmp(Argv[Index], "-n") == 0 || strcmp(Argv[Index], "--no-pre-processing") == 0) {
       mOptions.SkipCPreprocessor = TRUE;
-    } else if (strcmp(Argv[Index], "-f") == 0 || strcmp(Argv[Index], "--preprocessing-flag") == 0) {
+    } else if (strcmp(Argv[Index], "-f") == 0 || strcmp(Argv[Index], "--pre-processing-flag") == 0) {
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
         printf ("%s -od - missing C-preprocessor argument\n", PROGRAM_NAME);
