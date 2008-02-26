@@ -65,7 +65,16 @@ CVfrCompiler::OptionInitialization (
         goto Fail;
       }
       strcpy (mOptions.OutputDirectory, Argv[Index]);
-      strcat (mOptions.OutputDirectory, "\\");
+      
+      CHAR8 lastChar = mOptions.OutputDirectory[strlen(mOptions.OutputDirectory) - 1];
+      if ((lastChar != '/') && (lastChar != '\\')) {
+        if (strchr(mOptions.OutputDirectory, '/') != NULL) {
+          strcat (mOptions.OutputDirectory, "/");
+        } else {
+          strcat (mOptions.OutputDirectory, "\\");
+        }
+      }
+      printf("Debug! %s\n", mOptions.OutputDirectory);
     } else if (strcmp(Argv[Index], "-b") == 0 || strcmp(Argv[Index], "--create-ifr-package") == 0) {
       mOptions.CreateIfrPkgFile = TRUE;
     } else if (strcmp(Argv[Index], "--no-strings") == 0) {
@@ -203,7 +212,11 @@ CVfrCompiler::SetBaseFileName (
   }
 
   pFileName = mOptions.VfrFileName;
-  while ((pPath = strchr (pFileName, '\\')) != NULL) {
+  while (
+    ((pPath = strchr (pFileName, '\\')) != NULL) ||
+    ((pPath = strchr (pFileName, '/')) != NULL)
+    )
+  {
     pFileName = pPath + 1;
   }
 
