@@ -45,8 +45,7 @@ class Table(object):
     # Insert a record into a table
     #
     def Insert(self, SqlCommand):
-        EdkLogger.debug(4, SqlCommand)
-        self.Cur.execute(SqlCommand)
+        self.Exec(SqlCommand)
     
     ## Query table
     #
@@ -79,7 +78,7 @@ class Table(object):
     # @retval Count:  Total count of all records
     #
     def GetCount(self):
-        SqlCommand = """select count(*) as Count from %s""" % self.Table
+        SqlCommand = """select count(ID) from %s""" % self.Table
         self.Cur.execute(SqlCommand)
         for Item in self.Cur:
             return Item[0]
@@ -97,3 +96,17 @@ class Table(object):
             self.ID = self.ID + 1
 
         return self.ID
+    ## Exec
+    #
+    # Exec Sql Command, return result
+    #
+    # @param SqlCommand:  The SqlCommand to be executed
+    #
+    # @retval RecordSet:  The result after executed
+    #
+    def Exec(self, SqlCommand):
+        EdkLogger.debug(4, "SqlCommand: %s" % SqlCommand)
+        self.Cur.execute(SqlCommand)
+        RecordSet = self.Cur.fetchall()
+        EdkLogger.debug(4, "RecordSet: %s" % RecordSet)
+        return RecordSet

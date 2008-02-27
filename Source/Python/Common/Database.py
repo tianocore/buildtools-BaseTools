@@ -41,10 +41,13 @@ from Table.TableFile import TableFile
 #
 class Database(object):
     def __init__(self, DbPath):
-        self.Conn = sqlite3.connect(DbPath)
+        if os.path.exists(DbPath):
+            os.remove(DbPath)
+        self.Conn = sqlite3.connect(DbPath, isolation_level = 'DEFERRED')
+        self.Conn.execute("PRAGMA page_size=8192")
+        self.Conn.execute("PRAGMA synchronous=OFF")
         self.Cur = self.Conn.cursor()
         self.TblDataModel = TableDataModel(self.Cur)
-        self.TblDsc = TableDsc(self.Cur)
         self.TblFile = TableFile(self.Cur)
     
     ## Initialize build database
@@ -58,15 +61,14 @@ class Database(object):
         #
         # Drop all old existing tables
         #
-        self.TblDataModel.Drop()
-        self.TblDsc.Drop()
-        self.TblFile.Drop()
+#        self.TblDataModel.Drop()
+#        self.TblDsc.Drop()
+#        self.TblFile.Drop()
         
         #
         # Create new tables
         #
         self.TblDataModel.Create()
-        self.TblDsc.Create()
         self.TblFile.Create()
         
         #

@@ -1,7 +1,7 @@
 ## @file
 # This file is used to create a database used by ECC tool
 #
-# Copyright (c) 2007, Intel Corporation
+# Copyright (c) 2007 ~ 2008, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -47,6 +47,8 @@ DATABASE_PATH = "Database/Ecc.db"
 class Database(object):
     def __init__(self, DbPath):
         self.Conn = sqlite3.connect(DbPath, isolation_level = 'DEFERRED')
+        self.Conn.execute("PRAGMA page_size=4096")
+        self.Conn.execute("PRAGMA synchronous=OFF")
         self.Cur = self.Conn.cursor()
         self.TblDataModel = TableDataModel(self.Cur)
         self.TblFile = TableFile(self.Cur)
@@ -125,6 +127,9 @@ class Database(object):
         # Insert a record for file
         #
         FileID = self.TblFile.Insert(File.Name, File.ExtName, File.Path, File.FullPath, Model = File.Model, TimeStamp = File.TimeStamp)
+        IdTable = TableIdentifier(self.Cur)
+        IdTable.Table = "file%s" % FileID
+        IdTable.Create()
 
         #
         # Insert function of file
@@ -137,7 +142,7 @@ class Database(object):
             # Insert Identifier of function
             #
             for Identifier in Function.IdentifierList:
-                IdentifierID = self.TblIdentifier.Insert(Identifier.Modifier, Identifier.Type, Identifier.Name, Identifier.Value, Identifier.Model, \
+                IdentifierID = IdTable.Insert(Identifier.Modifier, Identifier.Type, Identifier.Name, Identifier.Value, Identifier.Model, \
                                         FileID, FunctionID, Identifier.StartLine, Identifier.StartColumn, Identifier.EndLine, Identifier.EndColumn)
             #
             # Insert Pcd of function
@@ -149,7 +154,7 @@ class Database(object):
         # Insert Identifier of file
         #
         for Identifier in File.IdentifierList:
-            IdentifierID = self.TblIdentifier.Insert(Identifier.Modifier, Identifier.Type, Identifier.Name, Identifier.Value, Identifier.Model, \
+            IdentifierID = IdTable.Insert(Identifier.Modifier, Identifier.Type, Identifier.Name, Identifier.Value, Identifier.Model, \
                                     FileID, -1, Identifier.StartLine, Identifier.StartColumn, Identifier.EndLine, Identifier.EndColumn)
         #
         # Insert Pcd of file
@@ -165,7 +170,7 @@ class Database(object):
     # Update the field "BelongsToFunction" for each Indentifier
     #
     #
-    def UpdateIdentifierBelongsToFunction(self):
+    def UpdateIdentifierBelongsToFunction_disabled(self):
         EdkLogger.verbose("Update 'BelongsToFunction' for Identifiers started ...")
         
         SqlCommand = """select ID, BelongsToFile, StartLine, EndLine, Model from Identifier"""
@@ -211,6 +216,56 @@ class Database(object):
                     self.Cur.execute(SqlCommand)
         
         EdkLogger.verbose("Update 'BelongsToFunction' for Identifiers ... DONE")
+
+
+    ## UpdateIdentifierBelongsToFunction
+    #
+    # Update the field "BelongsToFunction" for each Indentifier
+    #
+    #
+    def UpdateIdentifierBelongsToFunction(self):
+        EdkLogger.verbose("Update 'BelongsToFunction' for Identifiers started ...")
+        
+        SqlCommand = """select ID, BelongsToFile, StartLine, EndLine from Function"""
+        EdkLogger.debug(4, "SqlCommand: %s" %SqlCommand)
+        self.Cur.execute(SqlCommand)
+        Records = self.Cur.fetchall()
+        Data1 = []
+        Data2 = []
+        for Record in Records:
+            FunctionID = Record[0]
+            BelongsToFile = Record[1]
+            StartLine = Record[2]
+            EndLine = Record[3]
+            #Data1.append(("'file%s'" % BelongsToFile, FunctionID, BelongsToFile, StartLine, EndLine))
+            #Data2.append(("'file%s'" % BelongsToFile, FunctionID, DataClass.MODEL_IDENTIFIER_FUNCTION_HEADER, BelongsToFile, DataClass.MODEL_IDENTIFIER_COMMENT, StartLine - 1))
+
+            SqlCommand = """Update file%s set BelongsToFunction = %s where BelongsToFile = %s and StartLine > %s and EndLine < %s""" % \
+                        (BelongsToFile, FunctionID, BelongsToFile, StartLine, EndLine)
+            self.Cur.execute(SqlCommand)
+
+            SqlCommand = """Update file%s set BelongsToFunction = %s, Model = %s where BelongsToFile = %s and Model = %s and EndLine = %s""" % \
+                         (BelongsToFile, FunctionID, DataClass.MODEL_IDENTIFIER_FUNCTION_HEADER, BelongsToFile, DataClass.MODEL_IDENTIFIER_COMMENT, StartLine - 1)
+            self.Cur.execute(SqlCommand)
+#       #
+#       # Check whether an identifier belongs to a function
+#       #
+#       print Data1
+#       SqlCommand = """Update ? set BelongsToFunction = ? where BelongsToFile = ? and StartLine > ? and EndLine < ?"""
+#       print SqlCommand
+#       EdkLogger.debug(4, "SqlCommand: %s" %SqlCommand)
+#       self.Cur.executemany(SqlCommand, Data1)
+#
+#       #
+#       # Check whether the identifier is a function header
+#       #
+#       EdkLogger.debug(4, "For function headers ... ")
+#       SqlCommand = """Update ? set BelongsToFunction = ?, Model = ? where BelongsToFile = ? and Model = ? and EndLine = ?"""
+#       EdkLogger.debug(4, "SqlCommand: %s" %SqlCommand)
+#       self.Cur.executemany(SqlCommand, Data2)
+#
+#       EdkLogger.verbose("Update 'BelongsToFunction' for Identifiers ... DONE")
+    
 
 ##
 #

@@ -389,7 +389,7 @@ class PlatformModuleClasses(IncludeStatementClass):
 # @param object:                    Inherited from object class
 #
 # @var Header:                      To store value for Header, it is a structure as
-#                                   PlatformHeaderClass
+#                                   {Arch : PlatformHeaderClass()}
 # @var SkuInfos:                    To store value for SkuInfos, it is a structure as
 #                                   SkuInfoListClass
 # @var Libraries:                   To store value for Libraries, it is a structure as
@@ -411,7 +411,7 @@ class PlatformModuleClasses(IncludeStatementClass):
 #
 class PlatformClass(object):
     def __init__(self):
-        self.Header = PlatformHeaderClass()
+        self.Header = {}
         self.SkuInfos = SkuInfoListClass()
         self.Libraries = PlatformLibraryClasses()
         self.LibraryClasses = PlatformLibraryClasses()

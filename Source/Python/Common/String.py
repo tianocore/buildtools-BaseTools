@@ -1,7 +1,7 @@
 ## @file
 # This file is used to define common string related functions used in parsing process 
 #
-# Copyright (c) 2007, Intel Corporation
+# Copyright (c) 2007 ~ 2008, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -100,149 +100,6 @@ def GenInclude(String, IncludeFiles, Arch):
         return True
     else:
         return False
-
-## GetExec
-#
-# Parse a string with format "InfFilename [EXEC = ExecFilename]"
-# Return (InfFilename, ExecFilename)
-#
-# @param String:  String with EXEC statement
-#
-# @retval truple() A pair as (InfFilename, ExecFilename)
-#
-def GetExec(String):
-    InfFilename = ''
-    ExecFilename = ''
-    if String.find('EXEC') > -1:
-        InfFilename = String[ : String.find('EXEC')].strip()
-        ExecFilename = String[String.find('EXEC') + len('EXEC') : ].strip()
-    else:
-        InfFilename = String.strip()
-
-    return (InfFilename, ExecFilename)
-
-## GetBuildOption
-#
-# Parse a string with format "[<Family>:]<ToolFlag>=Flag"
-# Return (Family, ToolFlag, Flag)
-#
-# @param String:  String with BuildOption statement
-# @param File:    The file which defines build option, used in error report
-#
-# @retval truple() A truple structure as (Family, ToolChain, Flag)
-#
-def GetBuildOption(String, File):
-    if String.find(DataType.TAB_EQUAL_SPLIT) < 0:
-        RaiseParserError(String, 'BuildOptions', File, '[<Family>:]<ToolFlag>=Flag')
-    (Family, ToolChain, Flag) = ('', '', '')
-    List = GetSplitValueList(String, DataType.TAB_EQUAL_SPLIT, MaxSplit = 1)
-    if List[0].find(':') > -1:
-        Family = CleanString(List[0][ : List[0].find(':')])
-        ToolChain = CleanString(List[0][List[0].find(':') + 1 : ])
-    else:
-        ToolChain = CleanString(List[0])
-    Flag = CleanString(List[1])
-
-    return (Family, ToolChain, Flag)
-
-## GetComponents
-#
-# Parse block of the components defined in dsc file
-# Set KeyValues as [ ['component name', [lib1, lib2, lib3], [bo1, bo2, bo3], [pcd1, pcd2, pcd3]], ...]
-#
-# @param Lines:             The content to be parsed
-# @param Key:               Reserved 
-# @param KeyValues:         To store data after parsing
-# @param CommentCharacter:  Comment char, used to ignore comment content
-#
-# @retval True Get component successfully
-#
-def GetComponents(Lines, Key, KeyValues, CommentCharacter):
-    if Lines.find(DataType.TAB_SECTION_END) > -1:
-        Lines = Lines.split(DataType.TAB_SECTION_END, 1)[1]
-    (findBlock, findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (False, False, False, False, False, False, False, False)
-    ListItem = None
-    LibraryClassItem = []
-    BuildOption = []
-    Pcd = []
-
-    LineList = Lines.split('\n')
-    for Line in LineList:
-        Line = CleanString(Line, CommentCharacter)
-        if Line == None or Line == '':
-            continue
-
-        if findBlock == False:
-            ListItem = Line
-            #
-            # find '{' at line tail
-            #
-            if Line.endswith('{'):
-                findBlock = True
-                ListItem = CleanString(Line.rsplit('{', 1)[0], CommentCharacter)
-
-        #
-        # Parse a block content
-        #
-        if findBlock:
-            if Line.find('<LibraryClasses>') != -1:
-                (findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (True, False, False, False, False, False, False)
-                continue
-            if Line.find('<BuildOptions>') != -1:
-                (findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (False, True, False, False, False, False, False)
-                continue
-            if Line.find('<PcdsFeatureFlag>') != -1:
-                (findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (False, False, True, False, False, False, False)
-                continue
-            if Line.find('<PcdsPatchableInModule>') != -1:
-                (findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (False, False, False, True, False, False, False)
-                continue
-            if Line.find('<PcdsFixedAtBuild>') != -1:
-                (findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (False, False, False, False, True, False, False)
-                continue
-            if Line.find('<PcdsDynamic>') != -1:
-                (findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (False, False, False, False, False, True, False)
-                continue
-            if Line.find('<PcdsDynamicEx>') != -1:
-                (findLibraryClass, findBuildOption, findPcdsFeatureFlag, findPcdsPatchableInModule, findPcdsFixedAtBuild, findPcdsDynamic, findPcdsDynamicEx) = (False, False, False, False, False, False, True)
-                continue
-            if Line.endswith('}'):
-                #
-                # find '}' at line tail
-                #
-                KeyValues.append([ListItem, LibraryClassItem, BuildOption, Pcd])
-                findBlock = False
-                findLibraryClass = False
-                findBuildOption = False
-                findPcdsFeatureFlag = False
-                findPcdsPatchableInModule = False
-                findPcdsFixedAtBuild = False
-                findPcdsDynamic = False
-                findPcdsDynamicEx = False
-                LibraryClassItem = []
-                BuildOption = []
-                Pcd = []
-                continue
-
-        if findBlock:
-            if findLibraryClass:
-                LibraryClassItem.append(Line)
-            elif findBuildOption:
-                BuildOption.append(Line)
-            elif findPcdsFeatureFlag:
-                Pcd.append((DataType.TAB_PCDS_FEATURE_FLAG, Line))
-            elif findPcdsPatchableInModule:
-                Pcd.append((DataType.TAB_PCDS_PATCHABLE_IN_MODULE, Line))
-            elif findPcdsFixedAtBuild:
-                Pcd.append((DataType.TAB_PCDS_FIXED_AT_BUILD, Line))
-            elif findPcdsDynamic:
-                Pcd.append((DataType.TAB_PCDS_DYNAMIC, Line))
-            elif findPcdsDynamicEx:
-                Pcd.append((DataType.TAB_PCDS_DYNAMIC_EX, Line))
-        else:
-            KeyValues.append([ListItem, [], [], []])
-
-    return True
 
 ## GetLibraryClassesWithModuleType
 #
@@ -560,20 +417,6 @@ def PreCheck(FileName, FileContent, SupSectionTag):
             #
             if not (Line.find('[') > -1 and Line.find(']') > -1):
                 EdkLogger.error("Parser", FORMAT_INVALID, Line=LineNo, File=FileName)
-
-            #
-            # Tag not in defined value
-            #
-            #TagList = GetSplitValueList(Line, DataType.TAB_COMMA_SPLIT)
-            #for Tag in TagList:
-            #    Tag = Tag.split(DataType.TAB_SPLIT, 1)[0].replace('[', '').replace(']', '').strip()
-            #    if Tag.upper() == DataType.TAB_COMMON_DEFINES.upper():
-            #        break
-            #    if Tag.upper() == DataType.TAB_USER_EXTENSIONS.upper():
-            #        break
-            #    if Tag.upper() not in map(lambda s: s.upper(), SupSectionTag):
-            #        ErrorMsg = "'%s' is not a supportted section name." % Tag
-            #        EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, File=FileName, Line=LineNo)
         
         #
         # Regenerate FileContent
@@ -599,12 +442,13 @@ def PreCheck(FileName, FileContent, SupSectionTag):
 #
 # @retval True The file type is correct
 #
-def CheckFileType(CheckFilename, ExtName, ContainerFilename, SectionName, Line):
+def CheckFileType(CheckFilename, ExtName, ContainerFilename, SectionName, Line, LineNo = -1):
     if CheckFilename != '' and CheckFilename != None:
         (Root, Ext) = os.path.splitext(CheckFilename)
         if Ext.upper() != ExtName.upper():
             ContainerFile = open(ContainerFilename, 'r').read()
-            LineNo = GetLineNo(ContainerFile, Line)
+            if LineNo == -1:
+                LineNo = GetLineNo(ContainerFile, Line)
             ErrorMsg = "Invalid %s. '%s' is found, but '%s' file is needed" % (SectionName, CheckFilename, ExtName)
             EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, Line=LineNo,
                             File=ContainerFilename)
@@ -623,38 +467,21 @@ def CheckFileType(CheckFilename, ExtName, ContainerFilename, SectionName, Line):
 # @param SectionName:        Used for error report
 # @param Line:               The line in container file which defines the file to be checked
 #
-# @retval True The file exists
+# @retval The file full path if the file exists
 #
-def CheckFileExist(WorkspaceDir, CheckFilename, ContainerFilename, SectionName, Line):
+def CheckFileExist(WorkspaceDir, CheckFilename, ContainerFilename, SectionName, Line, LineNo = -1):
+    CheckFile = ''
     if CheckFilename != '' and CheckFilename != None:
         CheckFile = WorkspaceFile(WorkspaceDir, CheckFilename)
         if not os.path.isfile(CheckFile):
             ContainerFile = open(ContainerFilename, 'r').read()
-            LineNo = GetLineNo(ContainerFile, Line)
+            if LineNo == -1:
+                LineNo = GetLineNo(ContainerFile, Line)
             ErrorMsg = "Can't find file '%s' defined in section '%s'" % (CheckFile, SectionName)
             EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg,
                             File=ContainerFilename, Line=LineNo)
 
-    return True
-
-## CheckPcdTokenInfo
-#
-# Check if PcdTokenInfo is following <TokenSpaceGuidCName>.<PcdCName>
-#
-# @param TokenInfoString:  String to be checked
-# @param Section:          Used for error report
-# @param File:             Used for error report
-#
-# @retval True PcdTokenInfo is in correct format
-#
-def CheckPcdTokenInfo(TokenInfoString, Section, File):
-    if TokenInfoString != '' and TokenInfoString != None:
-        Format = '<TokenSpaceGuidCName>.<PcdCName>'
-        TokenInfoList = GetSplitValueList(TokenInfoString, DataType.TAB_SPLIT)
-        if len(TokenInfoList) != 2:
-            RaiseParserError(TokenInfoString, Section, File, Format)
-
-    return True
+    return CheckFile
 
 ## GetLineNo
 #
@@ -732,6 +559,15 @@ def SplitString(String):
 #
 def ConvertToSqlString(StringList):
     return map(lambda s: s.replace("'", "''") , StringList)
+
+## Convert To Sql String
+#
+# 1. Replace "'" with "''" in the String
+# 
+# @param String:  A String to be converted
+#
+def ConvertToSqlString2(String):
+    return String.replace("'", "''")
 
 ##
 #

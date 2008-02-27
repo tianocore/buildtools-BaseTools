@@ -74,7 +74,7 @@ class PackageIncludePkgHeaderClass(object):
 # @param object:                  Inherited from object class
 #
 # @var Header:                    To store value for Header, it is a structure as
-#                                 PackageHeaderClass
+#                                 {Arch : PackageHeaderClass}
 # @var Includes:                  To store value for Includes, it is a list structure as
 #                                 [ IncludeClass, ...]
 # @var LibraryClassDeclarations:  To store value for LibraryClassDeclarations, it is a list structure as
@@ -98,7 +98,7 @@ class PackageIncludePkgHeaderClass(object):
 #
 class PackageClass(object):
     def __init__(self):
-        self.Header = PackageHeaderClass()
+        self.Header = {}
         self.Includes = []
         self.LibraryClassDeclarations = []
         self.IndustryStdHeaders = []

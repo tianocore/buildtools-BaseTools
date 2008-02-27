@@ -23,7 +23,9 @@ from DscClassObject import *
 from String import *
 from BuildToolError import *
 from Misc import sdict
-from CommonDataClass.CommonClass import *
+#from CommonDataClass.CommonClass import *
+import Database as Database
+import time as time
 
 ## PcdClassObject
 #
@@ -453,12 +455,18 @@ class WorkspaceBuild(object):
             self.Build[Arch] = ItemBuild(Arch)
 
         #
+        # Init build database
+        #
+        self.Db = Database.Database(DATABASE_PATH)
+        self.Db.InitDatabase()
+        
+        #
         # Get active platform
         #
         self.DscFileName = NormPath(ActivePlatform)
         File = self.WorkspaceFile(self.DscFileName)
         if os.path.exists(File) and os.path.isfile(File):
-            self.DscDatabase[self.DscFileName] = Dsc(File, True, True, self.WorkspaceDir)
+            self.DscDatabase[self.DscFileName] = Dsc(File, False, True, self.WorkspaceDir, self.Db)
         else:
             EdkLogger.error("AutoGen", FILE_NOT_FOUND, ExtraData = File)
 
@@ -471,9 +479,18 @@ class WorkspaceBuild(object):
             #
             # Get global information
             #
-            self.SupArchList = Platform.Header.SupArchList
-            self.BuildTarget = Platform.Header.BuildTargets
-            self.SkuId = Platform.Header.SkuIdName
+            Tmp = set()
+            for Arch in DataType.ARCH_LIST:
+                for Item in Platform.Header[Arch].SupArchList:
+                    Tmp.add(Item)
+            self.SupArchList = list(Tmp)
+            Tmp = set()
+            for Arch in DataType.ARCH_LIST:
+                for Item in Platform.Header[Arch].BuildTargets:
+                    Tmp.add(Item)
+            self.BuildTarget = list(Tmp)
+            for Arch in self.SupArchList:
+                self.SkuId = Platform.Header[Arch].SkuIdName
             self.Fdf = Platform.FlashDefinitionFile.FilePath
 
             #
@@ -528,13 +545,13 @@ class WorkspaceBuild(object):
                 # Defines
                 #
                 Pb.DescFilePath = Dsc
-                Pb.PlatformName = Platform.Header.Name
-                Pb.Guid = Platform.Header.Guid
-                Pb.Version = Platform.Header.Version
-                Pb.DscSpecification = Platform.Header.DscSpecification
-                Pb.OutputDirectory = Platform.Header.OutputDirectory
+                Pb.PlatformName = Platform.Header[Arch].Name
+                Pb.Guid = Platform.Header[Arch].Guid
+                Pb.Version = Platform.Header[Arch].Version
+                Pb.DscSpecification = Platform.Header[Arch].DscSpecification
+                Pb.OutputDirectory = Platform.Header[Arch].OutputDirectory
                 Pb.FlashDefinition = Platform.FlashDefinitionFile.FilePath
-                Pb.BuildNumber = Platform.Header.BuildNumber
+                Pb.BuildNumber = Platform.Header[Arch].BuildNumber
 
                 #
                 # SkuId
@@ -632,9 +649,9 @@ class WorkspaceBuild(object):
                 # Defines
                 #
                 Pb.DescFilePath = Dec
-                Pb.PackageName = Package.Header.Name
-                Pb.Guid = Package.Header.Guid
-                Pb.Version = Package.Header.Version
+                Pb.PackageName = Package.Header[Arch].Name
+                Pb.Guid = Package.Header[Arch].Guid
+                Pb.Version = Package.Header[Arch].Version
 
                 #
                 # Protocols
@@ -1124,6 +1141,8 @@ class WorkspaceBuild(object):
         self.GenPlatformDatabase(PcdsSet)
         self.GenModuleDatabase(InfList)
         
+        self.Db.Close()
+        
         #
         # Update Libraries Of Platform
         #
@@ -1227,7 +1246,7 @@ class WorkspaceBuild(object):
         File = self.WorkspaceFile(InfFileName)
         if os.path.exists(File) and os.path.isfile(File):
             if InfFileName not in self.InfDatabase:
-                self.InfDatabase[InfFileName] = Inf(File, True, True, self.WorkspaceDir)
+                self.InfDatabase[InfFileName] = Inf(File, False, True, self.WorkspaceDir, self.Db, self.SupArchList)
         else:
             EdkLogger.error("AutoGen", FILE_NOT_FOUND, ExtraData=File)
 
@@ -1241,7 +1260,7 @@ class WorkspaceBuild(object):
         File = self.WorkspaceFile(DecFileName)
         if os.path.exists(File) and os.path.isfile(File):
             if DecFileName not in self.DecDatabase:
-                self.DecDatabase[DecFileName] = Dec(File, True, True, self.WorkspaceDir)
+                self.DecDatabase[DecFileName] = Dec(File, False, True, self.WorkspaceDir, self.Db, self.SupArchList)
         else:
             EdkLogger.error("AutoGen", FILE_NOT_FOUND, ExtraData=File)
 
@@ -1646,7 +1665,12 @@ class WorkspaceBuild(object):
 # script.
 #
 if __name__ == '__main__':
+    print 'Start!', time.strftime('%H:%M:%S', time.localtime())
+    EdkLogger.Initialize()
+    EdkLogger.SetLevel(EdkLogger.QUIET)
+    
     W = os.getenv('WORKSPACE')
     Ewb = WorkspaceBuild('Nt32Pkg/Nt32Pkg.dsc', W)
-    Ewb.GenBuildDatabase({('PcdDevicePathSupportDevicePathFromText, gEfiMdeModulePkgTokenSpaceGuid') : 'KKKKKKKKKKKKKKKKKKKKK'}, ['Test.Inf'])
+    Ewb.GenBuildDatabase({('PcdDevicePathSupportDevicePathFromText', 'gEfiMdeModulePkgTokenSpaceGuid') : 'KKKKKKKKKKKKKKKKKKKKK'}, ['Test.Inf'])
+    print 'Done!', time.strftime('%H:%M:%S', time.localtime())
     Ewb.ShowWorkspaceBuild()

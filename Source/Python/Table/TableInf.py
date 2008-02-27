@@ -1,5 +1,5 @@
 ## @file
-# This file is used to create/update/query/erase table for dsc datas
+# This file is used to create/update/query/erase table for inf datas
 #
 # Copyright (c) 2008, Intel Corporation
 # All rights reserved. This program and the accompanying materials
@@ -19,34 +19,36 @@ import CommonDataClass.DataClass as DataClass
 from Table import Table
 from Common.String import ConvertToSqlString
 
-## TableDsc
+## TableInf
 #
 # This class defined a table used for data model
 # 
 # @param object:       Inherited from object class
 #
 #
-class TableDsc(Table):
+class TableInf(Table):
     def __init__(self, Cursor):
         Table.__init__(self, Cursor)
-        self.Table = 'Dsc'
+        self.Table = 'Inf'
     
     ## Create table
     #
-    # Create table Dsc
+    # Create table Inf
     #
-    # @param ID:             ID of a Dsc item
-    # @param Model:          Model of a Dsc item
-    # @param Value1:         Value1 of a Dsc item
-    # @param Value2:         Value2 of a Dsc item
-    # @param Value3:         Value3 of a Dsc item
-    # @param Arch:           Arch of a Dsc item
+    # @param ID:             ID of a Inf item
+    # @param Model:          Model of a Inf item
+    # @param Value1:         Value1 of a Inf item
+    # @param Value2:         Value2 of a Inf item
+    # @param Value3:         Value3 of a Inf item
+    # @param Value4:         Value4 of a Inf item
+    # @param Value5:         Value5 of a Inf item
+    # @param Arch:           Arch of a Inf item
     # @param BelongsToItem:  The item belongs to which another item
     # @param BelongsToFile:  The item belongs to which dsc file
-    # @param StartLine:      StartLine of a Dsc item
-    # @param StartColumn:    StartColumn of a Dsc item
-    # @param EndLine:        EndLine of a Dsc item
-    # @param EndColumn:      EndColumn of a Dsc item
+    # @param StartLine:      StartLine of a Inf item
+    # @param StartColumn:    StartColumn of a Inf item
+    # @param EndLine:        EndLine of a Inf item
+    # @param EndColumn:      EndColumn of a Inf item
     # @param Enabled:        If this item enabled
     #
     def Create(self):
@@ -55,6 +57,8 @@ class TableDsc(Table):
                                                        Value1 VARCHAR NOT NULL,
                                                        Value2 VARCHAR,
                                                        Value3 VARCHAR,
+                                                       Value4 VARCHAR,
+                                                       Value5 VARCHAR,
                                                        Arch VarCHAR,
                                                        BelongsToItem SINGLE NOT NULL,
                                                        BelongsToFile SINGLE NOT NULL,
@@ -68,27 +72,29 @@ class TableDsc(Table):
 
     ## Insert table
     #
-    # Insert a record into table Dsc
+    # Insert a record into table Inf
     #
-    # @param ID:             ID of a Dsc item
-    # @param Model:          Model of a Dsc item
-    # @param Value1:         Value1 of a Dsc item
-    # @param Value2:         Value2 of a Dsc item
-    # @param Value3:         Value3 of a Dsc item
-    # @param Arch:           Arch of a Dsc item
+    # @param ID:             ID of a Inf item
+    # @param Model:          Model of a Inf item
+    # @param Value1:         Value1 of a Inf item
+    # @param Value2:         Value2 of a Inf item
+    # @param Value3:         Value3 of a Inf item
+    # @param Value4:         Value4 of a Inf item
+    # @param Value5:         Value5 of a Inf item
+    # @param Arch:           Arch of a Inf item
     # @param BelongsToItem:  The item belongs to which another item
     # @param BelongsToFile:  The item belongs to which dsc file
-    # @param StartLine:      StartLine of a Dsc item
-    # @param StartColumn:    StartColumn of a Dsc item
-    # @param EndLine:        EndLine of a Dsc item
-    # @param EndColumn:      EndColumn of a Dsc item
+    # @param StartLine:      StartLine of a Inf item
+    # @param StartColumn:    StartColumn of a Inf item
+    # @param EndLine:        EndLine of a Inf item
+    # @param EndColumn:      EndColumn of a Inf item
     # @param Enabled:        If this item enabled
     #
-    def Insert(self, Model, Value1, Value2, Value3, Arch, BelongsToItem, BelongsToFile, StartLine, StartColumn, EndLine, EndColumn, Enabled):
+    def Insert(self, Model, Value1, Value2, Value3, Value4, Value5, Arch, BelongsToItem, BelongsToFile, StartLine, StartColumn, EndLine, EndColumn, Enabled):
         self.ID = self.ID + 1
-        (Value1, Value2, Value3, Arch) = ConvertToSqlString((Value1, Value2, Value3, Arch))
-        SqlCommand = """insert into %s values(%s, %s, '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s, %s, %s)""" \
-                     % (self.Table, self.ID, Model, Value1, Value2, Value3, Arch, BelongsToItem, BelongsToFile, StartLine, StartColumn, EndLine, EndColumn, Enabled)
+        (Value1, Value2, Value3, Value4, Value5, Arch) = ConvertToSqlString((Value1, Value2, Value3, Value4, Value5, Arch))
+        SqlCommand = """insert into %s values(%s, %s, '%s', '%s', '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s, %s, %s)""" \
+                     % (self.Table, self.ID, Model, Value1, Value2, Value3, Value4, Value5, Arch, BelongsToItem, BelongsToFile, StartLine, StartColumn, EndLine, EndColumn, Enabled)
         Table.Insert(self, SqlCommand)
         
         return self.ID

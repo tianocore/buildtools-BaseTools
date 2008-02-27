@@ -47,7 +47,7 @@ class TableFunction(Table):
     # @param BelongsToFile:    The Function belongs to which file
     #
     def Create(self):
-        SqlCommand = """create table IF NOT EXISTS %s (ID SINGLE PRIMARY KEY,
+        SqlCommand = """create table IF NOT EXISTS %s (ID INTEGER PRIMARY KEY,
                                                        Header TEXT,
                                                        Modifier VARCHAR,
                                                        Name VARCHAR NOT NULL,

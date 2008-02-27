@@ -48,7 +48,7 @@ class TablePcd(Table):
     # @param EndColumn:            EndColumn of a Pcd
     #
     def Create(self):
-        SqlCommand = """create table IF NOT EXISTS %s (ID SINGLE PRIMARY KEY,
+        SqlCommand = """create table IF NOT EXISTS %s (ID INTEGER PRIMARY KEY,
                                                        CName VARCHAR NOT NULL,
                                                        TokenSpaceGuidCName VARCHAR NOT NULL,
                                                        Token INTEGER,

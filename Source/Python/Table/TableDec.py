@@ -1,5 +1,5 @@
 ## @file
-# This file is used to create/update/query/erase table for dsc datas
+# This file is used to create/update/query/erase table for dec datas
 #
 # Copyright (c) 2008, Intel Corporation
 # All rights reserved. This program and the accompanying materials
@@ -19,34 +19,34 @@ import CommonDataClass.DataClass as DataClass
 from Table import Table
 from Common.String import ConvertToSqlString
 
-## TableDsc
+## TableDec
 #
 # This class defined a table used for data model
 # 
 # @param object:       Inherited from object class
 #
 #
-class TableDsc(Table):
+class TableDec(Table):
     def __init__(self, Cursor):
         Table.__init__(self, Cursor)
-        self.Table = 'Dsc'
+        self.Table = 'Dec'
     
     ## Create table
     #
-    # Create table Dsc
+    # Create table Dec
     #
-    # @param ID:             ID of a Dsc item
-    # @param Model:          Model of a Dsc item
-    # @param Value1:         Value1 of a Dsc item
-    # @param Value2:         Value2 of a Dsc item
-    # @param Value3:         Value3 of a Dsc item
-    # @param Arch:           Arch of a Dsc item
+    # @param ID:             ID of a Dec item
+    # @param Model:          Model of a Dec item
+    # @param Value1:         Value1 of a Dec item
+    # @param Value2:         Value2 of a Dec item
+    # @param Value3:         Value3 of a Dec item
+    # @param Arch:           Arch of a Dec item
     # @param BelongsToItem:  The item belongs to which another item
     # @param BelongsToFile:  The item belongs to which dsc file
-    # @param StartLine:      StartLine of a Dsc item
-    # @param StartColumn:    StartColumn of a Dsc item
-    # @param EndLine:        EndLine of a Dsc item
-    # @param EndColumn:      EndColumn of a Dsc item
+    # @param StartLine:      StartLine of a Dec item
+    # @param StartColumn:    StartColumn of a Dec item
+    # @param EndLine:        EndLine of a Dec item
+    # @param EndColumn:      EndColumn of a Dec item
     # @param Enabled:        If this item enabled
     #
     def Create(self):
@@ -68,20 +68,20 @@ class TableDsc(Table):
 
     ## Insert table
     #
-    # Insert a record into table Dsc
+    # Insert a record into table Dec
     #
-    # @param ID:             ID of a Dsc item
-    # @param Model:          Model of a Dsc item
-    # @param Value1:         Value1 of a Dsc item
-    # @param Value2:         Value2 of a Dsc item
-    # @param Value3:         Value3 of a Dsc item
-    # @param Arch:           Arch of a Dsc item
+    # @param ID:             ID of a Dec item
+    # @param Model:          Model of a Dec item
+    # @param Value1:         Value1 of a Dec item
+    # @param Value2:         Value2 of a Dec item
+    # @param Value3:         Value3 of a Dec item
+    # @param Arch:           Arch of a Dec item
     # @param BelongsToItem:  The item belongs to which another item
     # @param BelongsToFile:  The item belongs to which dsc file
-    # @param StartLine:      StartLine of a Dsc item
-    # @param StartColumn:    StartColumn of a Dsc item
-    # @param EndLine:        EndLine of a Dsc item
-    # @param EndColumn:      EndColumn of a Dsc item
+    # @param StartLine:      StartLine of a Dec item
+    # @param StartColumn:    StartColumn of a Dec item
+    # @param EndLine:        EndLine of a Dec item
+    # @param EndColumn:      EndColumn of a Dec item
     # @param Enabled:        If this item enabled
     #
     def Insert(self, Model, Value1, Value2, Value3, Arch, BelongsToItem, BelongsToFile, StartLine, StartColumn, EndLine, EndColumn, Enabled):

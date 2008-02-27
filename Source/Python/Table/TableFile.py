@@ -17,6 +17,8 @@
 import Common.EdkLogger as EdkLogger
 from Table import Table
 from Common.String import ConvertToSqlString
+import os
+from CommonDataClass.DataClass import FileClass
 
 ## TableFile
 #
@@ -42,7 +44,7 @@ class TableFile(Table):
     # @param TimeStamp: TimeStamp of a File
     #
     def Create(self):
-        SqlCommand = """create table IF NOT EXISTS %s (ID SINGLE PRIMARY KEY,
+        SqlCommand = """create table IF NOT EXISTS %s (ID INTEGER PRIMARY KEY,
                                                        Name VARCHAR NOT NULL,
                                                        ExtName VARCHAR,
                                                        Path VARCHAR,
@@ -72,3 +74,18 @@ class TableFile(Table):
         Table.Insert(self, SqlCommand)
         
         return self.ID
+    ## InsertFile
+    #
+    # Insert one file to table
+    #
+    # @param FileFullPath:  The full path of the file
+    # @param Model:         The model of the file 
+    # 
+    # @retval FileID:       The ID after record is inserted
+    #
+    def InsertFile(self, FileFullPath, Model):
+        (Filepath, Name) = os.path.split(FileFullPath)
+        (Root, Ext) = os.path.splitext(FileFullPath)
+        TimeStamp = os.stat(FileFullPath)[8]
+        File = FileClass(-1, Name, Ext, Filepath, FileFullPath, Model, '', [], [], [])
+        return self.Insert(File.Name, File.ExtName, File.Path, File.FullPath, File.Model, TimeStamp)

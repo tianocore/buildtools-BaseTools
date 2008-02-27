@@ -48,7 +48,7 @@ class TableIdentifier(Table):
     # @param EndColumn:          EndColumn of a Identifier
     #
     def Create(self):
-        SqlCommand = """create table IF NOT EXISTS %s(ID SINGLE PRIMARY KEY,
+        SqlCommand = """create table IF NOT EXISTS %s(ID INTEGER PRIMARY KEY,
                                                       Modifier VARCHAR,
                                                       Type VARCHAR,
                                                       Name VARCHAR NOT NULL,

@@ -41,7 +41,7 @@ class TableDataModel(Table):
     # @param Description:  Description of a ModelType
     #
     def Create(self):
-        SqlCommand = """create table IF NOT EXISTS %s (ID SINGLE PRIMARY KEY,
+        SqlCommand = """create table IF NOT EXISTS %s (ID INTEGER PRIMARY KEY,
                                                        CrossIndex INTEGER NOT NULL,
                                                        Name VARCHAR NOT NULL,
                                                        Description VARCHAR

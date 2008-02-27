@@ -358,7 +358,7 @@ class ModuleNmakeClass(CommonClass):
 # @param object:    Inherited from object class
 #
 # @var Header:               To store value for Header, it is a structure as
-#                            ModuleHeaderClass
+#                            {Arch : ModuleHeaderClass}
 # @var LibraryClasses:       To store value for LibraryClasses, it is a list structure as
 #                            [ LibraryClassClass, ...]
 # @var Libraries:            To store value for Libraries, it is a list structure as
@@ -414,7 +414,7 @@ class ModuleNmakeClass(CommonClass):
 #
 class ModuleClass(object):
     def __init__(self):
-        self.Header = {}            # {ARCH: ModuleHeaderClass()}
+        self.Header = {}
         self.LibraryClasses = []
         self.Libraries = []
         self.Sources = []
