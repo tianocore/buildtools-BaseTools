@@ -68,7 +68,7 @@ _WarningAsError = False
 #   @param  ExtraData   More information associated with "Message"
 # 
 def debug(Level, Message, ExtraData=None):
-    if _DebugLogger.getEffectiveLevel() > Level:
+    if _DebugLogger.level > Level:
         return
     if Level > DEBUG_9:
         return
@@ -107,7 +107,7 @@ def verbose(Message):
 #   @param  ExtraData   More information associated with "Message"
 # 
 def warn(ToolName, Message, File=None, Line=None, ExtraData=None):
-    if _InfoLogger.getEffectiveLevel() > WARN:
+    if _InfoLogger.level > WARN:
         return
 
     # if no tool name given, use caller's source file name as tool name
