@@ -218,9 +218,11 @@ class PlatformAutoGen:
         Info.WorkspaceDir = self.WorkspaceDir
         Info.SourceDir = path.dirname(Platform.DescFilePath)
         Info.OutputDir = Platform.OutputDirectory
-        Info.BuildDir = path.join(Info.OutputDir, self.BuildTarget + "_" + self.ToolChain)
+        if os.path.isabs(Info.OutputDir):
+            Info.BuildDir = path.join(path.abspath(Info.OutputDir), self.BuildTarget + "_" + self.ToolChain)
+        else:
+            Info.BuildDir = path.join(Info.WorkspaceDir, Info.OutputDir, self.BuildTarget + "_" + self.ToolChain)
         Info.MakeFileDir = Info.BuildDir
-
         if self.Workspace.Fdf != "":
             Info.FdfFile= path.join(self.WorkspaceDir, self.Workspace.Fdf)
 
@@ -240,7 +242,7 @@ class PlatformAutoGen:
     #   @retval     string  Makefile directory
     #
     def GetMakeFileDir(self):
-        return os.path.join(self.WorkspaceDir, self.BuildInfo[self.ArchList[0]].MakeFileDir)
+        return self.BuildInfo[self.ArchList[0]].MakeFileDir
 
     ## Return build command string
     #
@@ -504,16 +506,24 @@ class PlatformAutoGen:
     #   @param      Module  The module file
     #   @param      Arch    The arch the module will be built for
     #
-    def CheckModule(self, Module, Arch):
+    def IsValidModule(self, Module, Arch):
         if Arch not in self.Workspace.SupArchList:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "[%s] is not supported by active platform [%s] [%s]!"
-                                                      % (Arch, self.PlatformFile, self.Workspace.SupArchList))
+            return False
+            #EdkLogger.error("AutoGen", AUTOGEN_ERROR, "[%s] is not supported by active platform [%s] [%s]!"
+            #                                          % (Arch, self.PlatformFile, self.Workspace.SupArchList))
         if Arch not in self.ArchList:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "[%s] is not supported by current build configuration!" % Arch)
+            return False
+            #EdkLogger.error("AutoGen", AUTOGEN_ERROR, "[%s] is not supported by current build configuration!" % Arch)
 
-        if str(Module) not in self.ModuleDatabase[Arch]:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Module [%s] [%s] is not required by active platform [%s]!"
-                                                      % (Module, Arch, self.PlatformFile))
+        if Arch not in self.ModuleDatabase or str(Module) not in self.ModuleDatabase[Arch]:
+            for A in self.ModuleDatabase:
+                if str(Module) in self.ModuleDatabase[A]:
+                    break
+            else:
+                EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Module is not in active platform!",
+                                ExtraData=Module)
+            return False
+        return True
 
     ## Find the package containing the module
     #
@@ -634,9 +644,7 @@ class ModuleAutoGen(object):
         self.IsCodeFileCreated = False
 
         self.PlatformAutoGen = PlatformAutoGenObj
-        try:
-            self.PlatformAutoGen.CheckModule(ModuleFile, self.Arch)
-        except:
+        if not self.PlatformAutoGen.IsValidModule(ModuleFile, self.Arch):
             return False
 
         #
@@ -748,12 +756,11 @@ class ModuleAutoGen(object):
         Info.OutputDir = os.path.join(Info.BuildDir, "OUTPUT")
         Info.DebugDir = os.path.join(Info.BuildDir, "DEBUG")
         Info.MakeFileDir = Info.BuildDir
-        if os.path.isabs(Info.BuildDir):
-            CreateDirectory(Info.OutputDir)
-            CreateDirectory(Info.DebugDir)
-        else:
-            CreateDirectory(os.path.join(self.WorkspaceDir, Info.OutputDir))
-            CreateDirectory(os.path.join(self.WorkspaceDir, Info.DebugDir))
+        if not os.path.isabs(Info.BuildDir):
+            os.chdir(Info.PlatformInfo.BuildDir)
+        CreateDirectory(Info.OutputDir)
+        CreateDirectory(Info.DebugDir)
+        os.chdir(self.WorkspaceDir)
 
         for Type in self.Module.CustomMakefile:
             MakeType = gMakeTypeMap[Type]
@@ -781,8 +788,13 @@ class ModuleAutoGen(object):
         Info.Macro = self.GetMacroList()
         Info.DepexList = self.GetDepexTokenList(Info)
 
-        Info.IncludePathList = [Info.SourceDir, Info.DebugDir]
-        Info.IncludePathList.extend(self.GetIncludePathList(Info.DependentPackageList))
+        if Info.AutoGenVersion < 0x00010005:
+            # r8 module needs to put DEBUG_DIR at the end search path and not to use SOURCE_DIR all the time
+            Info.IncludePathList = self.GetIncludePathList(Info.DependentPackageList)
+            Info.IncludePathList.append(Info.DebugDir)
+        else:
+            Info.IncludePathList = [os.path.join(Info.WorkspaceDir, Info.SourceDir), Info.DebugDir]
+            Info.IncludePathList.extend(self.GetIncludePathList(Info.DependentPackageList))
 
         Info.SourceFileList = self.GetSourceFileList(Info)
         Info.AutoGenFileList = self.GetAutoGenFileList(Info)
@@ -795,7 +807,7 @@ class ModuleAutoGen(object):
     #   @retval     string  The directory string of module's makefile
     #
     def GetMakeFileDir(self):
-        return os.path.join(self.WorkspaceDir, self.BuildInfo.MakeFileDir)
+        return self.BuildInfo.MakeFileDir
 
     ## Return build command string
     #
@@ -938,7 +950,7 @@ class ModuleAutoGen(object):
             # add the file path into search path list for file including
             Dir = path.dirname(SourceFile)
             if Dir != "":
-                Dir = path.join(self.BuildInfo.SourceDir, Dir)
+                Dir = path.join(self.WorkspaceDir, self.BuildInfo.SourceDir, Dir)
                 if Dir not in self.BuildInfo.IncludePathList:
                     self.BuildInfo.IncludePathList.insert(0, Dir)
 
@@ -1118,16 +1130,19 @@ class ModuleAutoGen(object):
     #
     def GetIncludePathList(self, DependentPackageList):
         IncludePathList = []
-        for Inc in self.Module.Includes:
-            # '.' means "relative to module directory".
-            if Inc[0] == ".":
-                Inc = os.path.join(self.BuildInfo.SourceDir, Inc)
-            IncludePathList.append(Inc)
-            # for r8 modules
-            IncludePathList.append(os.path.join(Inc, self.Arch.capitalize()))
+        if self.BuildInfo.AutoGenVersion < 0x00010005:
+            for Inc in self.Module.Includes:
+                # '.' means "relative to module directory".
+                if Inc[0] == ".":
+                    Inc = os.path.join(self.WorkspaceDir, self.BuildInfo.SourceDir, Inc)
+                else:
+                    Inc = os.path.join(self.WorkspaceDir, Inc)
+                IncludePathList.append(Inc)
+                # for r8 modules
+                IncludePathList.append(os.path.join(Inc, self.Arch.capitalize()))
 
         for Package in DependentPackageList:
-            PackageDir = path.dirname(Package.DescFilePath)
+            PackageDir = os.path.join(self.WorkspaceDir, path.dirname(Package.DescFilePath))
             IncludePathList.append(PackageDir)
             for Inc in Package.Includes:
                 Inc = os.path.join(PackageDir, Inc)
@@ -1149,7 +1164,7 @@ class ModuleAutoGen(object):
             for Lib in self.BuildInfo.DependentLibraryList:
                 EdkLogger.debug(EdkLogger.DEBUG_1, "###" + str(Lib))
                 LibraryAutoGen = ModuleAutoGen.New(self.Workspace, self.Platform, Lib,
-                                                          self.BuildTarget, self.ToolChain, self.Arch)
+                                                   self.BuildTarget, self.ToolChain, self.Arch)
                 if LibraryAutoGen not in self.BuildInfo.LibraryAutoGenList:
                     self.BuildInfo.LibraryAutoGenList.append(LibraryAutoGen)
                 LibraryAutoGen.CreateMakeFile()
@@ -1182,26 +1197,26 @@ class ModuleAutoGen(object):
                     self.BuildInfo.LibraryAutoGenList.append(LibraryAutoGen)
                 LibraryAutoGen.CreateCodeFile()
 
+        os.chdir(self.BuildInfo.DebugDir)
         AutoGenList = []
         IgoredAutoGenList = []
         if self.AutoGenC.String != "":
-            if GenC.Generate(os.path.join(self.BuildInfo.WorkspaceDir, self.BuildInfo.DebugDir, gAutoGenCodeFileName),
-                             self.AutoGenC.String):
+            if GenC.Generate(gAutoGenCodeFileName, self.AutoGenC.String):
                 AutoGenList.append(gAutoGenCodeFileName)
             else:
                 IgoredAutoGenList.append(gAutoGenCodeFileName)
 
         if self.AutoGenH.String != "":
-            if GenC.Generate(os.path.join(self.BuildInfo.WorkspaceDir, self.BuildInfo.DebugDir, gAutoGenHeaderFileName),
-                             self.AutoGenH.String):
+            if GenC.Generate(gAutoGenHeaderFileName, self.AutoGenH.String):
                 AutoGenList.append(gAutoGenHeaderFileName)
             else:
                 IgoredAutoGenList.append(gAutoGenHeaderFileName)
 
+        os.chdir(self.BuildInfo.OutputDir)
         if self.BuildInfo.DepexList != []:
             Dpx = GenDepex.DependencyExpression(self.BuildInfo.DepexList, self.BuildInfo.ModuleType)
             DpxFile = gAutoGenDepexFileName % {"module_name" : self.BuildInfo.Name}
-            if Dpx.Generate(os.path.join(self.WorkspaceDir, self.BuildInfo.OutputDir, DpxFile)):
+            if Dpx.Generate(DpxFile):
                 AutoGenList.append(DpxFile)
             else:
                 IgoredAutoGenList.append(DpxFile)
@@ -1217,6 +1232,7 @@ class ModuleAutoGen(object):
                            (" ".join(AutoGenList), " ".join(IgoredAutoGenList), self.BuildInfo.Name, self.BuildInfo.Arch))
 
         self.IsCodeFileCreated = True
+        os.chdir(self.WorkspaceDir)
         return AutoGenList
 
 # Version and Copyright

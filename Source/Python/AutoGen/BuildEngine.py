@@ -121,7 +121,7 @@ class FileBuildRule:
                 if SrcFileDir == "":
                     SrcFileDir = "."
 
-                SrcFile = PathSeparator.join(["$(WORKSPACE)", RelativeToDir, SourceFile])
+                SrcFile = PathSeparator.join([RelativeToDir, SourceFile])
             else:
                 SrcFileDir = "."
                 SrcFile = SourceFile

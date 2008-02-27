@@ -158,8 +158,8 @@ TARGET = ${build_target}
 #
 # Build Directory Macro Definition
 #
-PLATFORM_BUILD_DIR = ${platform_build_directory}
-BUILD_DIR = ${platform_build_directory}${separator}${build_target}_${toolchain_tag}
+# PLATFORM_BUILD_DIR = ${platform_build_directory}
+BUILD_DIR = ${platform_build_directory}
 BIN_DIR = $(BUILD_DIR)${separator}${architecture}
 LIB_DIR = $(BIN_DIR)
 MODULE_BUILD_DIR = $(BUILD_DIR)${separator}${architecture}${separator}${module_relative_directory}${separator}${module_file_base_name}
@@ -266,8 +266,8 @@ TARGET = ${build_target}
 #
 # Build Directory Macro Definition
 #
-PLATFORM_BUILD_DIR = ${platform_build_directory}
-BUILD_DIR = ${platform_build_directory}${separator}${build_target}_${toolchain_tag}
+# PLATFORM_BUILD_DIR = ${platform_build_directory}
+BUILD_DIR = ${platform_build_directory}
 BIN_DIR = $(BUILD_DIR)${separator}${architecture}
 LIB_DIR = $(BIN_DIR)
 MODULE_BUILD_DIR = $(BUILD_DIR)${separator}${architecture}${separator}${module_relative_directory}${separator}${module_file_base_name}
@@ -327,7 +327,7 @@ SOURCE_FILES = ${BEGIN}${source_file_macro_name} ${END}
 
 TARGET_FILES = ${BEGIN}${target_file_macro_name} ${END}
 
-INC = ${BEGIN}${include_path_prefix}$(WORKSPACE)${separator}${include_path} \\
+INC = ${BEGIN}${include_path_prefix}${include_path} \\
       ${END}
 
 #OBJECTS = ${BEGIN}$(OUTPUT_DIR)${separator}${object_file} \\
@@ -337,7 +337,7 @@ LIBS = ${BEGIN}$(BUILD_DIR)${separator}$(ARCH)${separator}${library_file} \\
        ${END}${BEGIN}${system_library} \\
        ${END}
 
-COMMON_DEPS = ${BEGIN}$(WORKSPACE)${separator}${common_dependency_file} \\
+COMMON_DEPS = ${BEGIN}${common_dependency_file} \\
               ${END}
 
 IMAGE_ENTRY_POINT = ${module_entry_point}
@@ -419,15 +419,16 @@ clean:
 #
 
 cleanall:
-\t${BEGIN}${cleanall_command}
-\t${END}${remove_file_command} *.pdb *.idb > NUL 2>&1
+${BEGIN}\t${cleanall_command}
+${END}\t$(RM) *.pdb *.idb > NUL 2>&1
+\t$(RM) $(BIN_DIR)${separator}$(MODULE_NAME).efi
 
 #
 # clean pre-compiled header files
 #
 
 cleanpch:
-\t${remove_file_command} $(OUTPUT_DIR)\*.pch > NUL 2>&1
+\t$(RM) $(OUTPUT_DIR)\*.pch > NUL 2>&1
 
 #
 # clean all dependent libraries built
@@ -460,8 +461,14 @@ TARGET = ${build_target}
 #
 # Build Directory Macro Definition
 #
-BUILD_DIR = ${platform_build_directory}${separator}${build_target}_${toolchain_tag}
-FV_DIR = ${platform_build_directory}${separator}${build_target}_${toolchain_tag}${separator}FV
+BUILD_DIR = ${platform_build_directory}
+FV_DIR = ${platform_build_directory}${separator}FV
+
+#
+# Shell Command Macro
+#
+${BEGIN}${shell_command_code} = ${shell_command}
+${END}
 
 MAKE = ${make_path}
 MAKE_FLAGS = ${make_flag}
@@ -498,21 +505,21 @@ fds: init build_fds
 # Build all libraries:
 #
 build_libraries:
-${BEGIN}\tcd $(WORKSPACE)${separator}${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
+${BEGIN}\tcd ${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
 ${END}\tcd $(BUILD_DIR)
 
 #
 # Build all modules:
 #
 build_modules:
-${BEGIN}\tcd $(WORKSPACE)${separator}${module_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
+${BEGIN}\tcd ${module_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
 ${END}\tcd $(BUILD_DIR)
 
 #
 # Build Flash Device Image
 #
 build_fds:
-\t-@echo Generating flash image, if any ...
+\t-@cd $(FV_DIR)
 ${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -t $(TOOLCHAIN_TAG) -b $(TARGET) -p ${active_platform} -a ${build_architecture_list} ${log_level}${END}${BEGIN} -r ${fd} ${END}${BEGIN} -i ${fv} ${END}${BEGIN} -y ${macro} ${END}
 
 #
@@ -527,22 +534,22 @@ run:
 # Clean intermediate files
 #
 clean:
-\t${BEGIN}cd $(WORKSPACE)${separator}${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) clean
-\t${END}${BEGIN}cd $(WORKSPACE)${separator}${module_build_directory} && "$(MAKE)" $(MAKE_FLAGS) clean
+\t${BEGIN}cd ${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) clean
+\t${END}${BEGIN}cd ${module_build_directory} && "$(MAKE)" $(MAKE_FLAGS) clean
 \t${END}cd $(BUILD_DIR)
 
 #
 # Clean all generated files except to makefile
 #
 cleanall:
-\t${BEGIN}${cleanall_command}
-\t${END}
+${BEGIN}\t${cleanall_command}
+${END}
 
 #
 # Clean all library files
 #
 cleanlib:
-\t${BEGIN}cd $(WORKSPACE)${separator}${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) cleanall
+\t${BEGIN}cd ${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) cleanall
 \t${END}cd $(BUILD_DIR)
 
 '''
@@ -606,9 +613,9 @@ class Makefile(object):
     ## Create necessary directory for makefile generation
     def PrepareDirectory(self):
         if self.ModuleBuild:
-            CreateDirectory(path.join(self.ModuleInfo.WorkspaceDir, self.PlatformInfo.BuildDir))
-            CreateDirectory(path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.BuildDir))
-            CreateDirectory(path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.DebugDir))
+            CreateDirectory(self.PlatformInfo.BuildDir)
+            CreateDirectory(self.ModuleInfo.BuildDir)
+            CreateDirectory(self.ModuleInfo.DebugDir)
 
     ## Create the makefile
     #
@@ -644,15 +651,6 @@ class Makefile(object):
         if "MAKE" not in PlatformInfo.ToolPath:
             EdkLogger.error("GenMake", OPTION_MISSING, "No MAKE command defined. Please check your tools_def.txt!")
 
-        OutputDir = PlatformInfo.OutputDir
-        if os.path.isabs(OutputDir):
-            self.PlatformBuildDirectory = OutputDir
-            CreateDirectory(self.PlatformBuildDirectory)
-        else:
-            self.PlatformBuildDirectory = "$(WORKSPACE)" + Separator + OutputDir
-            CreateDirectory(os.path.join(PlatformInfo.WorkspaceDir, OutputDir))
-
-
         self.IntermediateDirectoryList = ["$(BUILD_DIR)%s%s" % (Separator, Arch) for Arch in self.PlatformInfo]
         self.IntermediateDirectoryList.append("$(FV_DIR)")
 
@@ -685,12 +683,14 @@ class Makefile(object):
             "platform_version"          : PlatformInfo.Version,
             "platform_relative_directory": PlatformInfo.SourceDir,
             "platform_output_directory" : PlatformInfo.OutputDir,
-            "platform_build_directory"  : self.PlatformBuildDirectory,
+            "platform_build_directory"  : PlatformInfo.BuildDir,
 
             "toolchain_tag"             : PlatformInfo.ToolChain,
             "build_target"              : PlatformInfo.BuildTarget,
             "make_path"                 : PlatformInfo.ToolPath["MAKE"],
             "make_flag"                 : PlatformInfo.ToolOption["MAKE"],
+            "shell_command_code"        : gShellCommand[MakeType].keys(),
+            "shell_command"             : gShellCommand[MakeType].values(),
             "build_architecture_list"   : ",".join(ArchList),
             "architecture"              : self.PlatformInfo.keys(),
             "separator"                 : Separator,
@@ -715,11 +715,14 @@ class Makefile(object):
 
         FilePath = ""
         if File == None:
-            FilePath = path.join(PlatformInfo.WorkspaceDir, PlatformInfo.MakeFileDir, MakefileName)
+            os.chdir(PlatformInfo.MakeFileDir)
+            FilePath = MakefileName
         else:
             FilePath = File
 
-        return SaveFileOnChange(FilePath, str(AutoGenMakefile))
+        Result = SaveFileOnChange(FilePath, str(AutoGenMakefile))
+        os.chdir(PlatformInfo.WorkspaceDir)
+        return Result
 
     ## Create makefile of a module
     #
@@ -736,11 +739,6 @@ class Makefile(object):
 
         Separator = gDirectorySeparator[MakeType]
         PlatformInfo = self.PlatformInfo
-
-        if os.path.isabs(PlatformInfo.OutputDir):
-            self.PlatformBuildDirectory = PlatformInfo.OutputDir
-        else:
-            self.PlatformBuildDirectory = "$(WORKSPACE)" + Separator + PlatformInfo.OutputDir
 
         # break build if no source files and binary files are found
         if len(self.ModuleInfo.SourceFileList) == 0 and len(self.ModuleInfo.BinaryFileDict) == 0:
@@ -833,7 +831,7 @@ class Makefile(object):
             "toolchain_tag"             : self.ModuleInfo.ToolChain,
             "build_target"              : self.ModuleInfo.BuildTarget,
 
-            "platform_build_directory"  : self.PlatformBuildDirectory,
+            "platform_build_directory"  : PlatformInfo.BuildDir,
 
             "separator"                 : Separator,
             "default_tool_flags"        : DefaultToolFlag,
@@ -882,11 +880,15 @@ class Makefile(object):
 
         FilePath = ""
         if File == None:
-            FilePath = path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.MakeFileDir, MakefileName)
+            os.chdir(self.ModuleInfo.PlatformInfo.BuildDir)
+            os.chdir(self.ModuleInfo.MakeFileDir)
+            FilePath = MakefileName
         else:
             FilePath = File
 
-        return SaveFileOnChange(FilePath, str(AutoGenMakefile))
+        Result = SaveFileOnChange(FilePath, str(AutoGenMakefile))
+        os.chdir(self.ModuleInfo.WorkspaceDir)
+        return Result
 
     ## Create customized makefile for a module
     #
@@ -899,12 +901,6 @@ class Makefile(object):
     #
     def GenerateCustomBuildMakefile(self, File=None, MakeType=gMakeType):
         Separator = gDirectorySeparator[MakeType]
-
-        if os.path.isabs(self.PlatformInfo.OutputDir):
-            self.PlatformBuildDirectory = self.PlatformInfo.OutputDir
-        else:
-            self.PlatformBuildDirectory = "$(WORKSPACE)" + Separator + self.PlatformInfo.OutputDir
-
         CustomMakefile = open(os.path.join(self.ModuleInfo.WorkspaceDir, self .ModuleInfo.CustomMakefile[MakeType]), 'r').read()
 
         MakefileName = gMakefileName[MakeType]
@@ -927,7 +923,7 @@ class Makefile(object):
             "toolchain_tag"             : self.ModuleInfo.ToolChain,
             "build_target"              : self.ModuleInfo.BuildTarget,
 
-            "platform_build_directory"  : self.PlatformBuildDirectory,
+            "platform_build_directory"  : self.PlatformInfo.BuildDir,
 
             "separator"                 : Separator,
             "default_tool_flags"        : self.PlatformInfo.ToolOption.values(),
@@ -978,6 +974,7 @@ class Makefile(object):
 
         CCodeFlag = False
         FileList = self.ModuleInfo.SourceFileList
+        SourceDir = os.path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.SourceDir)
         for FileInfo in FileList:
             F, SrcFileType, SrcFileBuildRule = FileInfo
             if SrcFileType == "C-Code-File":
@@ -991,10 +988,9 @@ class Makefile(object):
                 P = "$(OUTPUT_DIR)" + Separator + SrcFileDir
                 if P not in self.IntermediateDirectoryList:
                     self.IntermediateDirectoryList.append(P)
-            SrcFileRelativePath = os.path.join(self.ModuleInfo.SourceDir, F)
+            SrcFileRelativePath = os.path.join(SourceDir, F)
 
-            SrcFile, ExtraSrcFileList, DstFile, CommandList = SrcFileBuildRule.Apply(F, self.ModuleInfo.SourceDir, Separator)
-
+            SrcFile, ExtraSrcFileList, DstFile, CommandList = SrcFileBuildRule.Apply(F, SourceDir, Separator)
             if SrcFileType not in self.SourceFileDatabase:
                 self.SourceFileDatabase[SrcFileType] = []
             self.SourceFileDatabase[SrcFileType].append(SrcFile)
@@ -1079,6 +1075,7 @@ class Makefile(object):
                 break
             self.PendingBuildTargetList = TempBuildTargetList
 
+        # Build AutoGen files only if we have C source files
         if CCodeFlag == True:
             for F in self.ModuleInfo.AutoGenFileList:
                 SrcFileName = path.basename(F)
@@ -1143,8 +1140,8 @@ class Makefile(object):
         self.FileDependency = self.GetFileDependency(SourceFileList, ForceIncludedFile, self.ModuleInfo.IncludePathList)
         DepSet = None
         for File in self.FileDependency:
-            # skip AutoGen.c
-            if File.endswith("AutoGen.c") or not File.endswith(".c"):
+            # skip non-C files
+            if (not File.endswith(".c") and not File.endswith(".C")) or File.endswith("AutoGen.c"):
                 continue
             elif DepSet == None:
                 DepSet = set(self.FileDependency[File])
@@ -1160,10 +1157,8 @@ class Makefile(object):
         for F in self.FileDependency:
             NewDepSet = set(self.FileDependency[F])
             NewDepSet -= DepSet
-            if F.endswith("AutoGen.c") or not F.endswith(".c"):
-                self.FileDependency[F] = [Separator.join(["$(WORKSPACE)", dep]) for dep in self.FileDependency[F]]
-            else:
-                self.FileDependency[F] = ["$(COMMON_DEPS)"] + [Separator.join(["$(WORKSPACE)", dep]) for dep in NewDepSet]
+            if File.endswith(".c") or File.endswith(".C") or not File.endswith("AutoGen.c"):
+                self.FileDependency[F] = ["$(COMMON_DEPS)"] + list(NewDepSet)
 
         for File, TargetTemplate in self.FileBuildTargetList:
             if File not in self.FileDependency:
@@ -1209,10 +1204,7 @@ class Makefile(object):
 
     ## Determine the root directory for a platform build
     def GetPlatformBuildDirectory(self):
-        if os.path.isabs(self.PlatformInfo.OutputDir):
-            return self.PlatformInfo.OutputDir
-        else:
-            return os.path.join("$(WORKSPACE)", self.PlatformInfo.OutputDir)
+        return self.PlatformInfo.BuildDir
 
     ## Return a list containing source file's dependencies
     #
@@ -1223,12 +1215,9 @@ class Makefile(object):
     #   @retval     dict            The mapping between source file path and its dependencies
     #
     def GetFileDependency(self, FileList, ForceInculeList, SearchPathList):
-        WorkingDir = os.getcwd()
-        os.chdir(self.ModuleInfo.WorkspaceDir)
         Dependency = {}
         for F in FileList:
             Dependency[F] = self.GetDependencyList(F, ForceInculeList, SearchPathList)
-        os.chdir(WorkingDir)
         return Dependency
 
     ## Find dependencies for one source file
@@ -1244,9 +1233,6 @@ class Makefile(object):
     #   @retval     list            The list of files the given source file depends on
     #
     def GetDependencyList(self, File, ForceList, SearchPathList):
-        WorkingDir = os.getcwd()
-        os.chdir(self.ModuleInfo.WorkspaceDir)
-
         EdkLogger.debug(EdkLogger.DEBUG_1, "Try to get dependency files for %s" % File)
         EdkLogger.debug(EdkLogger.DEBUG_0, "Including %s" % " ".join(ForceList))
         FileStack = [File] + ForceList
@@ -1326,7 +1312,6 @@ class Makefile(object):
             DependencyList = list(DependencySet)  # remove duplicate ones
             DependencyList.append(File)
 
-        os.chdir(WorkingDir)
         return DependencyList
 
     ## Get the root directory list for intermediate files of all modules build

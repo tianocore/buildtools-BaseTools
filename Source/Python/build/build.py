@@ -867,51 +867,40 @@ class Build():
     #                                       for dependent modules/Libraries
     #
     def _Build(self, Target, Platform, Module, BuildTarget, ToolChain, Arch, CreateDepModuleCodeFile=True, CreateDepModuleMakeFile=True):
-        # skip file generation for some targets
-        if Target not in ['clean', 'cleanlib', 'cleanall', 'run']:
-            #
-            # no need to generate code/makefile for dependent modules/libraries
-            # if the target is 'fds'
-            #
-            if Target == 'fds':
-                CreateDepModuleCodeFile = False
-                CreateDepModuleMakeFile = False
-                CreateDepModuleAutoGenObject = True
-            else:
-                CreateDepModuleAutoGenObject = False
+        #
+        # no need to generate code/makefile for dependent modules/libraries
+        # if the target is 'fds'
+        #
+        if Target == 'fds':
+            CreateDepModuleCodeFile = False
+            CreateDepModuleMakeFile = False
+            CreateDepModuleAutoGenObject = True
+        else:
+            CreateDepModuleAutoGenObject = False
 
-            if Module != None:
-                self.Progress.Start("Generating code/makefile for module")
-                AutoGenResult = ModuleAutoGen.New(self.Ewb, Platform, Module, BuildTarget,
-                                                  ToolChain, Arch)
-            else:
-                self.Progress.Start("Generating code/makefile for platform")
-                AutoGenResult = PlatformAutoGen.New(self.Ewb, Platform, BuildTarget,
-                                                    ToolChain, Arch, CreateDepModuleAutoGenObject)
-            if AutoGenResult == None:
-                return
+        if Module != None:
+            AutoGenResult = ModuleAutoGen.New(self.Ewb, Platform, Module, BuildTarget,
+                                              ToolChain, Arch)
+        else:
+            AutoGenResult = PlatformAutoGen.New(self.Ewb, Platform, BuildTarget,
+                                                ToolChain, Arch, CreateDepModuleAutoGenObject)
+        if AutoGenResult == None:
+            return False
 
+        # skip file generation for cleanxxx targets and run target
+        if Target not in ['clean', 'cleanlib', 'cleanall', 'run']:    
+            self.Progress.Start("Generating code for " + str(AutoGenResult))
             # for target which must generate AutoGen code and makefile
             AutoGenResult.CreateCodeFile(CreateDepModuleCodeFile)
-            if Target == "genc":
-                self.Progress.Stop("done!")
-                return
-
-            AutoGenResult.CreateMakeFile(CreateDepModuleMakeFile)
-            if Target == "genmake":
-                self.Progress.Stop("done!")
-                return
-
             self.Progress.Stop("done!")
-        else:
-            if Module != None:
-                AutoGenResult = ModuleAutoGen.New(self.Ewb, Platform, Module, BuildTarget,
-                                                  ToolChain, Arch)
-            else:
-                AutoGenResult = PlatformAutoGen.New(self.Ewb, Platform, BuildTarget,
-                                                    ToolChain, Arch, False)
-            if AutoGenResult == None:
-                return
+            if Target == "genc":
+                return True
+    
+            self.Progress.Start("Generating makefile for " + str(AutoGenResult))
+            AutoGenResult.CreateMakeFile(CreateDepModuleMakeFile)
+            self.Progress.Stop("done!")
+            if Target == "genmake":
+                return True
 
         EdkLogger.info("")
         BuildCommand = AutoGenResult.GetBuildCommand()
@@ -920,6 +909,7 @@ class Build():
 
         BuildCommand = BuildCommand + (Target,)
         LaunchCommand(BuildCommand, os.path.join(self.WorkspaceDir, AutoGenResult.GetMakeFileDir()))
+        return True
 
     ## Build active platform for different build targets and different tool chains
     #
