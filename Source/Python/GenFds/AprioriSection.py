@@ -76,7 +76,7 @@ class AprioriSection (AprioriSectionClassObject):
                 
                 if Arch != None:
                     Dict['$(ARCH)'] = Arch
-                InfFileName = GenFdsGlobalVariable.MacroExtend(InfFileName, Dict)
+                InfFileName = GenFdsGlobalVariable.MacroExtend(InfFileName, Dict, Arch)
 
                 if Arch != None and InfFileName in GenFdsGlobalVariable.WorkSpace.Build[Arch].ModuleDatabase.keys():
                     Inf = GenFdsGlobalVariable.WorkSpace.Build[Arch].ModuleDatabase[InfFileName]

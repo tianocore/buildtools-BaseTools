@@ -26,7 +26,7 @@ from Common import EdkLogger
 #
 class GenFdsGlobalVariable:
     FvDir = ''
-    OutputDir = ''
+    OutputDirDict = {}
     BinDir = ''
     # will be FvDir + os.sep + 'Ffs'
     FfsDir = ''
@@ -35,7 +35,7 @@ class GenFdsGlobalVariable:
     WorkSpace = None
     WorkSpaceDir = ''
     EdkSourceDir = ''
-    OutputDirFromDsc = ''
+    OutputDirFromDscDict = {}
     TargetName = ''
     ToolChainTag = ''
     RuleDict = {}
@@ -57,10 +57,10 @@ class GenFdsGlobalVariable:
     #
     def SetDir (OutputDir, FdfParser, WorkSpace, ArchList):
         GenFdsGlobalVariable.VerboseLogger( "GenFdsGlobalVariable.OutputDir :%s" %OutputDir)
-        GenFdsGlobalVariable.OutputDir = os.path.normpath(OutputDir)
+#        GenFdsGlobalVariable.OutputDirDict = OutputDir
         GenFdsGlobalVariable.FdfParser = FdfParser
         GenFdsGlobalVariable.WorkSpace = WorkSpace
-        GenFdsGlobalVariable.FvDir = os.path.join(GenFdsGlobalVariable.OutputDir, 'FV')
+        GenFdsGlobalVariable.FvDir = os.path.join(GenFdsGlobalVariable.OutputDirDict[ArchList[0]], 'FV')
         if not os.path.exists(GenFdsGlobalVariable.FvDir) :
             os.makedirs(GenFdsGlobalVariable.FvDir)
         GenFdsGlobalVariable.FfsDir = os.path.join(GenFdsGlobalVariable.FvDir, 'Ffs')
@@ -80,20 +80,19 @@ class GenFdsGlobalVariable:
         #
         FvAddressFile.writelines("[options]" + T_CHAR_LF)
         BsAddress = '0'
-        if 'BsBaseAddress' in GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Defines.DefinesDictionary.keys():
-            BsAddressList = GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Defines.DefinesDictionary['BsBaseAddress']
-            if BsAddressList != []:
-                BsAddress = BsAddressList[0]
+        for Arch in ArchList:
+            if GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Platform.Header[Arch].BsBaseAddress:
+                BsAddress = GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Platform.Header[Arch].BsBaseAddress
+                break
         
         FvAddressFile.writelines("EFI_BOOT_DRIVER_BASE_ADDRESS = " + \
                                        BsAddress          + \
                                        T_CHAR_LF)
                                        
         RtAddress = '0'
-        if 'RtBaseAddress' in GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Defines.DefinesDictionary.keys():
-            RtAddressList = GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Defines.DefinesDictionary['RtBaseAddress']
-            if RtAddressList != []:
-                RtAddress = RtAddressList[0]
+        for Arch in ArchList:
+            if GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Platform.Header[Arch].RtBaseAddress:
+                RtAddress = GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Platform.Header[Arch].RtBaseAddress
                 
         FvAddressFile.writelines("EFI_RUNTIME_DRIVER_BASE_ADDRESS = " + \
                                        RtAddress          + \
@@ -163,16 +162,22 @@ class GenFdsGlobalVariable:
     #   @param  Str           String that may contain macro
     #   @param  MacroDict     Dictionary that contains macro value pair
     #
-    def MacroExtend (Str, MacroDict = {}):
+    def MacroExtend (Str, MacroDict = {}, Arch = 'COMMON'):
         if Str == None :
             return None
         
         Dict = {'$(WORKSPACE)'   : GenFdsGlobalVariable.WorkSpaceDir,
                 '$(EDK_SOURCE)'  : GenFdsGlobalVariable.EdkSourceDir,
-                '$(OUTPUT_DIRECTORY)': GenFdsGlobalVariable.OutputDirFromDsc,
+#                '$(OUTPUT_DIRECTORY)': GenFdsGlobalVariable.OutputDirFromDsc,
                 '$(TARGET)' : GenFdsGlobalVariable.TargetName,
                 '$(TOOL_CHAIN_TAG)' : GenFdsGlobalVariable.ToolChainTag
                }
+        OutputDir = GenFdsGlobalVariable.OutputDirFromDscDict[GenFdsGlobalVariable.ArchList[0]]
+        if Arch != 'COMMON' and Arch in GenFdsGlobalVariable.ArchList:
+            OutputDir = GenFdsGlobalVariable.OutputDirFromDscDict[Arch]
+            
+        Dict['$(OUTPUT_DIRECTORY)'] = OutputDir
+            
         if MacroDict != None  and len (MacroDict) != 0:
             Dict.update(MacroDict)
 

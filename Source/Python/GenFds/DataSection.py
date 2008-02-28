@@ -55,11 +55,11 @@ class DataSection (DataSectionClassObject):
 #            self.Alignment = FfsInf.__ExtendMacro__(self.Alignemnt)
 #            self.SecType = FfsInf.__ExtendMacro__(self.SecType)
             self.SectFileName = GenFdsGlobalVariable.ReplaceWorkspaceMacro(self.SectFileName)
+            self.SectFileName = GenFdsGlobalVariable.MacroExtend(self.SectFileName, Dict, FfsFile.CurrentArch)
         else:
 #            raise Exception ("Module %s GenDataSection for None!" %ModuleName)
             self.SectFileName = GenFdsGlobalVariable.ReplaceWorkspaceMacro(self.SectFileName)
-            
-        self.SectFileName = GenFdsGlobalVariable.MacroExtend(self.SectFileName, Dict)
+            self.SectFileName = GenFdsGlobalVariable.MacroExtend(self.SectFileName, Dict)
         
         """Check Section file exist or not !"""
 
@@ -106,7 +106,7 @@ class DataSection (DataSectionClassObject):
                  
         OutputFile = os.path.join (OutputPath, ModuleName + 'SEC' + SecNum + Ffs.SectionSuffix.get(self.SecType))
         OutputFile = os.path.normpath(OutputFile)
-
+        
         GenSectionCmd = (
             'GenSec',
              '-o', OutputFile,

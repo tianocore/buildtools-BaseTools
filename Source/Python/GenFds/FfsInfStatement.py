@@ -56,7 +56,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         #
 
         self.InfFileName = NormPath(self.InfFileName)
-        self.InfFileName = GenFdsGlobalVariable.MacroExtend(self.InfFileName, Dict)
+        self.InfFileName = GenFdsGlobalVariable.MacroExtend(self.InfFileName, Dict, self.CurrentArch)
         (self.SourceDir, InfName) = os.path.split(self.InfFileName)
         if self.CurrentArch != None and self.InfFileName in GenFdsGlobalVariable.WorkSpace.Build[self.CurrentArch].ModuleDatabase.keys():
             
@@ -306,7 +306,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         if self.CurrentArch != None:
             Arch = self.CurrentArch
         
-        OutputPath = os.path.join(GenFdsGlobalVariable.OutputDir,
+        OutputPath = os.path.join(GenFdsGlobalVariable.OutputDirDict[Arch],
                                   Arch ,
                                   ModulePath,
                                   FileName,
@@ -362,7 +362,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                         'GenFw',
                         '-l',
                         '-o', StrippedFile,
-                        GenFdsGlobalVariable.MacroExtend(File, Dict),
+                        GenFdsGlobalVariable.MacroExtend(File, Dict, self.CurrentArch),
                         )
                     GenFdsGlobalVariable.CallExternalTool(StripCmd, "Strip Failed !")
                     File = StrippedFile
@@ -373,7 +373,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                         'GenFw',
                         '-t',
                         '-o', TeFile,
-                        GenFdsGlobalVariable.MacroExtend(File, Dict),
+                        GenFdsGlobalVariable.MacroExtend(File, Dict, self.CurrentArch),
                         )
                     GenFdsGlobalVariable.CallExternalTool(GenTeCmd, "GenFw Failed !")
                     File = TeFile
@@ -403,7 +403,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                     'GenFw',
                     '-l',
                     '-o', StrippedFile,
-                    GenFdsGlobalVariable.MacroExtend(File, Dict),
+                    GenFdsGlobalVariable.MacroExtend(File, Dict, self.CurrentArch),
                     )
                 GenFdsGlobalVariable.CallExternalTool(StripCmd, "Strip Failed !")
                 File = StrippedFile
@@ -414,7 +414,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                     'GenFw',
                     '-t',
                     '-o', TeFile,
-                    GenFdsGlobalVariable.MacroExtend(File, Dict),
+                    GenFdsGlobalVariable.MacroExtend(File, Dict, self.CurrentArch),
                     )
                 GenFdsGlobalVariable.CallExternalTool(GenTeCmd, "GenFw Failed !")
                 GenSecInputFile = TeFile

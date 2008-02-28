@@ -158,24 +158,30 @@ def main():
         os.environ["WORKSPACE"] = Workspace
         BuildWorkSpace = Common.EdkIIWorkspaceBuild.WorkspaceBuild(GenFdsGlobalVariable.ActivePlatform, GenFdsGlobalVariable.WorkSpaceDir)
             
-        OutputDirFromDsc = BuildWorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Defines.DefinesDictionary['OUTPUT_DIRECTORY'][0]
-        GenFdsGlobalVariable.OutputDirFromDsc = NormPath(OutputDirFromDsc)
+#        OutputDirFromDsc = BuildWorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Defines.DefinesDictionary['OUTPUT_DIRECTORY'][0]
+        for Arch in ArchList:
+            GenFdsGlobalVariable.OutputDirFromDscDict[Arch] = NormPath(BuildWorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Platform.Header[Arch].OutputDirectory)
         
         if (Options.outputDir):
-            OutputDir = Options.outputDir
-            OutputDir = GenFdsGlobalVariable.ReplaceWorkspaceMacro(OutputDir)
+            OutputDirFromCommandLine = GenFdsGlobalVariable.ReplaceWorkspaceMacro(Options.outputDir)
+            for Arch in ArchList:
+                GenFdsGlobalVariable.OutputDirDict[Arch] = OutputDirFromCommandLine
         else:
-            OutputDir = os.path.join(GenFdsGlobalVariable.OutputDirFromDsc, GenFdsGlobalVariable.TargetName + '_' + GenFdsGlobalVariable.ToolChainTag)        
+            for Arch in ArchList:
+                GenFdsGlobalVariable.OutputDirDict[Arch] = os.path.join(GenFdsGlobalVariable.OutputDirFromDscDict[Arch], GenFdsGlobalVariable.TargetName + '_' + GenFdsGlobalVariable.ToolChainTag)        
     
-        if OutputDir[0:2] == '..':
-            OutputDir = os.path.realpath(OutputDir)
-            
-        if OutputDir[1] != ':':
-            OutputDir = os.path.join (GenFdsGlobalVariable.WorkSpaceDir, OutputDir)
-    
-        if not os.path.exists(OutputDir):
-            GenFdsGlobalVariable.ErrorLogger ("Directory %s not found" % (OutputDir))
-            sys.exit(1)
+        for Key in GenFdsGlobalVariable.OutputDirDict:
+            OutputDir = GenFdsGlobalVariable.OutputDirDict[Key]
+            if OutputDir[0:2] == '..':
+                OutputDir = os.path.realpath(OutputDir)
+                
+            if OutputDir[1] != ':':
+                OutputDir = os.path.join (GenFdsGlobalVariable.WorkSpaceDir, OutputDir)
+        
+            if not os.path.exists(OutputDir):
+                GenFdsGlobalVariable.ErrorLogger ("Directory %s not found" % (OutputDir))
+                sys.exit(1)
+            GenFdsGlobalVariable.OutputDirDict[Key] = OutputDir
                     
         """ Parse Fdf file, has to place after build Workspace as FDF may contain macros from DSC file """
         try:
@@ -210,7 +216,7 @@ def main():
         EdkLogger.SetLevel(OldLevel)
         
         """Call GenFds"""
-        GenFds.GenFd(OutputDir, FdfParserObj, BuildWorkSpace, ArchList)
+        GenFds.GenFd('', FdfParserObj, BuildWorkSpace, ArchList)
         print "\nDone!\n"
     except Exception, X:
         EdkLogger.error("GenFds", BuildToolError.GENFDS_ERROR, X, RaiseError = False)
@@ -264,7 +270,7 @@ class GenFds :
     #   @param  ArchList            The Arch list of platform
     #
     def GenFd (OutputDir, FdfParser, WorkSpace, ArchList):
-        GenFdsGlobalVariable.SetDir (OutputDir, FdfParser, WorkSpace, ArchList)
+        GenFdsGlobalVariable.SetDir ('', FdfParser, WorkSpace, ArchList)
 
         GenFdsGlobalVariable.VerboseLogger("   Gen Fd  !")
         if GenFds.OnlyGenerateThisFd != None and GenFds.OnlyGenerateThisFd.upper() in GenFdsGlobalVariable.FdfParser.Profile.FdDict.keys():
