@@ -254,7 +254,7 @@ def CleanString(Line, CommentCharacter = DataType.TAB_COMMENT_SPLIT):
     #
     # remove whitespace
     #
-    # Line = Line.strip();
+    Line = Line.strip();
     #
     # remove comments
     #

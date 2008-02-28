@@ -18,6 +18,70 @@ from String import *
 from CommonDataClass.DataClass import *
 from DataType import *
 
+## ParseContent
+#
+# Parse content of a DSC/INF/DEC file
+#
+def ParseContent(Lines, ):
+    for Line in Lines:
+        LineNo = LineNo + 1
+        #
+        # Remove comments at tail and remove spaces again
+        #
+        Line = CleanString(Line)
+        if Line == '':
+            continue
+        
+        #
+        # Find a new section tab
+        # First insert previous section items
+        # And then parse the content of the new section
+        #
+        if Line.startswith(TAB_SECTION_START) and Line.endswith(TAB_SECTION_END):
+            #
+            # Insert items data of previous section
+            #
+            self.InsertSectionItemsIntoDatabase(FileID, Filename, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList)
+            #
+            # Parse the new section
+            #
+            SectionItemList = []
+            ArchList = []
+            ThirdList = []
+            
+            LineList = GetSplitValueList(Line[len(TAB_SECTION_START):len(Line) - len(TAB_SECTION_END)], TAB_COMMA_SPLIT)
+            for Item in LineList:
+                ItemList = GetSplitValueList(Item, TAB_SPLIT)
+                CurrentSection = ItemList[0]
+                if CurrentSection.upper() not in self.KeyList:
+                    RaiseParserError(Line, CurrentSection, Filename, '', LineNo)
+                ItemList.append('')
+                ItemList.append('')
+                if len(ItemList) > 5:
+                    RaiseParserError(Line, CurrentSection, Filename, '', LineNo)
+                else:
+                    if ItemList[1] != '' and ItemList[1].upper() not in ARCH_LIST_FULL:
+                        EdkLogger.error("Parser", PARSER_ERROR, "Invalid Arch definition '%s' found" % ItemList[1], File=Filename, Line=LineNo)
+                    ArchList.append(ItemList[1].upper())
+                    ThirdList.append(ItemList[2])
+
+            continue
+        
+        #
+        # Not in any defined section
+        #
+        if CurrentSection == TAB_UNKNOWN:
+            ErrorMsg = "%s is not in any defined section" % Line
+            EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, File=Filename, Line=LineNo)
+
+        #
+        # Add a section item
+        #
+        SectionItemList.append([Line, LineNo])
+        # End of parse
+    #End of For
+
+
 ## ParseDefineMacro
 #
 # Search whole table to find all defined Macro and replaced them with the real values
@@ -137,6 +201,31 @@ def QueryDefinesItem(Table, Name, Arch):
                 for Item in Items:
                     RetVal.append(Item)
         return RetVal
+
+##QueryDefinesItem
+#
+# Search item of section [Defines] by name, return its values
+#
+# @param Table: The Table to be executed
+# @param Name:  The Name of item of section [Defines]
+# @param Arch:  The Arch of item of section [Defines]
+#
+# @retval RecordSet: A list of all matched records
+#
+def QueryDefinesItem2(Table, Arch):
+    SqlCommand = """select Value1, Value2, StartLine from %s
+                    where Model = %s
+                    and Arch = '%s'
+                    and Enabled > -1""" % (Table.Table, MODEL_META_DATA_HEADER, ConvertToSqlString2(Arch))
+    RecordSet = Table.Exec(SqlCommand)
+    if len(RecordSet) < 1:
+        SqlCommand = """select Value1, Value2, StartLine from %s
+                    where Model = %s
+                    and Arch = '%s'
+                    and Enabled > -1""" % (Table.Table, MODEL_META_DATA_HEADER, ConvertToSqlString2(TAB_ARCH_COMMON))
+        RecordSet = Table.Exec(SqlCommand)
+    
+    return RecordSet
 
 ##QueryDscItem
 #
@@ -609,3 +698,166 @@ def GetBinary(Item, ContainerFile, FileRelativePath, LineNo = -1):
             CheckPcdTokenInfo(List[3], 'Binaries', ContainerFile, LineNo)
     
     return (List[0], List[1], List[2], List[3])
+
+## Get Guids/Protocols/Ppis
+#
+# Get Guids/Protocols/Ppis of Inf as <GuidCName>[|<PcdFeatureFlag>]
+#
+# @param Item:           String as <GuidCName>[|<PcdFeatureFlag>]
+# @param Type:           Type of parsing string 
+# @param ContainerFile:  The file which describes the library class, used for error report
+#
+# @retval (List[0], List[1])
+#
+def GetGuidsProtocolsPpisOfInf(Item, Type, ContainerFile, LineNo = -1):
+    ItemNew = Item + TAB_VALUE_SPLIT
+    List = GetSplitValueList(ItemNew)
+    if List[1] != '':
+        CheckPcdTokenInfo(List[1], Type, ContainerFile, LineNo)
+    
+    return (List[0], List[1])
+
+## Get Guids/Protocols/Ppis
+#
+# Get Guids/Protocols/Ppis of Dec as <GuidCName>=<GuidValue>
+#
+# @param Item:           String as <GuidCName>=<GuidValue>
+# @param Type:           Type of parsing string 
+# @param ContainerFile:  The file which describes the library class, used for error report
+#
+# @retval (List[0], List[1])
+#
+def GetGuidsProtocolsPpisOfDec(Item, Type, ContainerFile, LineNo = -1):
+    List = GetSplitValueList(Item, DataType.TAB_EQUAL_SPLIT)
+    if len(List) != 2:
+        RaiseParserError(Item, Type, ContainerFile, '<CName>=<GuidValue>', LineNo)
+    
+    return (List[0], List[1])
+
+## GetPackage
+#
+# Get Package of Inf as <PackagePath>[|<PcdFeatureFlag>]
+#
+# @param Item:           String as <PackagePath>[|<PcdFeatureFlag>]
+# @param Type:           Type of parsing string 
+# @param ContainerFile:  The file which describes the library class, used for error report
+#
+# @retval (List[0], List[1])
+#
+def GetPackage(Item, ContainerFile, FileRelativePath, LineNo = -1):
+    ItemNew = Item + TAB_VALUE_SPLIT
+    List = GetSplitValueList(ItemNew)
+    CheckFileType(List[0], '.Dec', ContainerFile, 'package', List[0], LineNo)
+    CheckFileExist(FileRelativePath, List[0], ContainerFile, 'Packages', List[0], LineNo)
+    
+    if List[1] != '':
+        CheckPcdTokenInfo(List[1], 'Packages', ContainerFile, LineNo)
+    
+    return (List[0], List[1])
+
+## Get Pcd Values of Inf
+#
+# Get Pcd of Inf as <TokenSpaceGuidCName>.<PcdCName>[|<Value>]
+#
+# @param Item:  The string describes pcd
+# @param Type:  The type of Pcd
+# @param File:  The file which describes the pcd, used for error report
+#
+# @retval (TokenSpcCName, TokenCName, Value, ItemType) Formatted Pcd Item
+#
+def GetPcdOfInf(Item, Type, File, LineNo):
+    Format = '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'
+    InfType = ''
+    if Type == TAB_PCDS_FIXED_AT_BUILD:
+        InfType = TAB_INF_FIXED_PCD
+    elif Type == TAB_PCDS_PATCHABLE_IN_MODULE:
+        InfType = TAB_INF_PATCH_PCD
+    elif Type == TAB_PCDS_FEATURE_FLAG:
+        InfType = TAB_INF_FEATURE_PCD        
+    elif Type == TAB_PCDS_DYNAMIC_EX:
+        InfType = TAB_INF_PCD_EX        
+    elif Type == TAB_PCDS_DYNAMIC:
+        InfType = TAB_INF_PCD
+    List = GetSplitValueList(Item + DataType.TAB_VALUE_SPLIT)
+    if len(List) < 2 or len(List) > 3:
+        RaiseParserError(Item, InfType, File, Format, LineNo)
+    TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+    if len(TokenInfo) != 2:
+        RaiseParserError(Item, InfType, File, Format, LineNo)
+
+    return (TokenInfo[0], TokenInfo[1], List[1], Type)
+
+    
+## Get Pcd Values of Dec
+#
+# Get Pcd of Dec as <TokenSpcCName>.<TokenCName>|<Value>|<DatumType>|<Token>
+# @retval (TokenSpcCName, TokenCName, Value, DatumType, Token, ItemType) Formatted Pcd Item
+#
+def GetPcdOfDec(Item, Type, File, LineNo = -1):
+    Format = '<TokenSpaceGuidCName>.<PcdCName>|<Value>|<DatumType>|<Token>'
+    List = GetSplitValueList(Item)
+    if len(List) != 4:
+        RaiseParserError(Item, 'Pcds' + Type, File, Format, LineNo)
+    TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+    if len(TokenInfo) != 2:
+        RaiseParserError(Item, 'Pcds' + Type, File, Format, LineNo)
+    
+    return (TokenInfo[0], TokenInfo[1], List[1], List[2], List[3], Type)
+
+## Parse DEFINE statement
+#
+# Get DEFINE macros
+#
+# 1. Insert a record into TblDec
+# Value1: Macro Name
+# Value2: Macro Value
+#
+def ParseDefine(LineValue, StartLine, Table, FileID, Filename, SectionName, SectionModel, Arch):
+    EdkLogger.debug(EdkLogger.DEBUG_2, "DEFINE statement '%s' found in section %s" % (LineValue, SectionName))
+    Define = GetSplitValueList(CleanString(LineValue[LineValue.upper().find(DataType.TAB_DEFINE.upper() + ' ') + len(DataType.TAB_DEFINE + ' ') : ]), TAB_EQUAL_SPLIT, 1)
+    Table.Insert(MODEL_META_DATA_DEFINE, Define[0], Define[1], '', '', '', Arch, SectionModel, FileID, StartLine, -1, StartLine, -1, 0)
+
+## Insert records to database
+# 
+# Insert item data of a section to database
+# @param Table:            The Table to be inserted 
+# @param FileID:           The ID of belonging file
+# @param Filename:         The name of belonging file
+# @param CurrentSection:   The name of currect section
+# @param SectionItemList:  A list of items of the section
+# @param ArchList:         A list of arches
+# @param ThirdList:        A list of third parameters, ModuleType for LibraryClass and SkuId for Dynamic Pcds
+# @param IfDefList:        A list of all conditional statements
+# @param RecordSet:        A dict of all parsed records 
+#
+def InsertSectionItemsIntoDatabase(Table, FileID, Filename, Model, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList, RecordSet):
+    #
+    # Insert each item data of a section
+    #
+    for Index in range(0, len(ArchList)):
+        Arch = ArchList[Index]
+        Third = ThirdList[Index]
+        if Arch == '':
+            Arch = TAB_ARCH_COMMON
+
+        Records = RecordSet[Model]
+        for SectionItem in SectionItemList:
+            BelongsToItem, EndLine, EndColumn = -1, -1, -1
+            LineValue, StartLine, EndLine = SectionItem[0], SectionItem[1], SectionItem[1]
+            
+            EdkLogger.debug(4, "Parsing %s ..." %LineValue)
+            #
+            # And then parse DEFINE statement
+            #
+            if LineValue.upper().find(DataType.TAB_DEFINE.upper() + ' ') > -1:
+                ParseDefine(LineValue, StartLine, Table, FileID, Filename, CurrentSection, Model, Arch)
+                continue
+            
+            #
+            # At last parse other sections
+            #
+            ID = Table.Insert(Model, LineValue, Third, Third, '', '', Arch, -1, FileID, StartLine, -1, StartLine, -1, 0)
+            Records.append([LineValue, Arch, StartLine, ID, Third])
+        
+        if RecordSet != {}:
+            RecordSet[Model] = Records

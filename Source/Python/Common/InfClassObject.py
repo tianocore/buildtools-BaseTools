@@ -79,6 +79,56 @@ gNmakeFlagName2ToolCode = {
     "LINK"      :   "DLINK",
 }
 
+class InfHeader(ModuleHeaderClass):
+    _Mapping_ = {
+        #
+        # Required Fields
+        #
+        TAB_INF_DEFINES_BASE_NAME                   : "Name",
+        TAB_INF_DEFINES_FILE_GUID                   : "Guid",
+        TAB_INF_DEFINES_MODULE_TYPE                 : "ModuleType",
+        TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION   : "EfiSpecificationVersion",
+        TAB_INF_DEFINES_EDK_RELEASE_VERSION         : "EdkReleaseVersion",        
+        #
+        # Optional Fields
+        #
+        TAB_INF_DEFINES_INF_VERSION                 : "InfVersion",
+        TAB_INF_DEFINES_BINARY_MODULE               : "BinaryModule",
+        TAB_INF_DEFINES_COMPONENT_TYPE              : "ComponentType",
+        TAB_INF_DEFINES_MAKEFILE_NAME               : "MakefileName",
+        TAB_INF_DEFINES_BUILD_NUMBER                : "BuildNumber",
+        TAB_INF_DEFINES_BUILD_TYPE                  : "BuildType",
+        TAB_INF_DEFINES_FFS_EXT                     : "FfsExt",
+        TAB_INF_DEFINES_FV_EXT                      : "FvExt",
+        TAB_INF_DEFINES_SOURCE_FV                   : "SourceFv",
+        TAB_INF_DEFINES_VERSION_NUMBER              : "Version",
+        TAB_INF_DEFINES_VERSION_STRING              : "Version",
+        TAB_INF_DEFINES_VERSION                     : "Version",
+        TAB_INF_DEFINES_PCD_IS_DRIVER               : "PcdIsDriver",
+        TAB_INF_DEFINES_TIANO_R8_FLASHMAP_H         : "TianoR8FlashMap_h",
+        TAB_INF_DEFINES_SHADOW                      : "Shadow",
+#       TAB_INF_DEFINES_LIBRARY_CLASS               : "LibraryClass",
+#        TAB_INF_DEFINES_ENTRY_POINT                 : "ExternImages",
+#        TAB_INF_DEFINES_UNLOAD_IMAGE                : "ExternImages",
+#        TAB_INF_DEFINES_CONSTRUCTOR                 : ,
+#        TAB_INF_DEFINES_DESTRUCTOR                  : ,
+#        TAB_INF_DEFINES_DEFINE                      : "Define",
+#        TAB_INF_DEFINES_SPEC                        : "Specification",
+#        TAB_INF_DEFINES_CUSTOM_MAKEFILE             : "CustomMakefile",
+#        TAB_INF_DEFINES_MACRO                       : 
+    }
+
+    def __init__(self):
+        ModuleHeaderClass.__init__(self)
+        #print self.__dict__
+    def __setitem__(self, key, value):
+        self.__dict__[self._Mapping_[key]] = value
+    def __getitem__(self, key):
+        return self.__dict__[self._Mapping_[key]]
+    ## "in" test support
+    def __contains__(self, key):
+        return key in self._Mapping_
+
 ## InfObject
 #
 # This class defined basic Inf object which is used by inheriting
@@ -88,107 +138,6 @@ gNmakeFlagName2ToolCode = {
 class InfObject(object):
     def __init__(self):
         object.__init__()
-
-## InfDefines
-#
-# This class defined basic Defines used in Inf object
-# 
-# @param InfObject:        Inherited from InfObject class
-#
-# @var DefinesDictionary:  To store value for DefinesDictionary 
-#
-class InfDefines(InfObject):
-    def __init__(self):
-        self.DefinesDictionary = {
-            #
-            # Required Fields
-            #
-            TAB_INF_DEFINES_BASE_NAME                               : [''],
-            TAB_INF_DEFINES_FILE_GUID                               : [''],
-            TAB_INF_DEFINES_MODULE_TYPE                             : [''],
-            TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION               : [''],
-            TAB_INF_DEFINES_EDK_RELEASE_VERSION                     : [''],
-            
-            #
-            # Optional Fields
-            #
-            TAB_INF_DEFINES_INF_VERSION                             : [''],
-            TAB_INF_DEFINES_BINARY_MODULE                           : [''],
-            TAB_INF_DEFINES_LIBRARY_CLASS                           : [''],
-            TAB_INF_DEFINES_COMPONENT_TYPE                          : [''],
-            TAB_INF_DEFINES_MAKEFILE_NAME                           : [''],
-            TAB_INF_DEFINES_BUILD_NUMBER                            : [''],
-            TAB_INF_DEFINES_BUILD_TYPE                              : [''],
-            TAB_INF_DEFINES_FFS_EXT                                 : [''],
-            TAB_INF_DEFINES_FV_EXT                                  : [''],
-            TAB_INF_DEFINES_SOURCE_FV                               : [''],
-            TAB_INF_DEFINES_VERSION_NUMBER                          : [''],
-            TAB_INF_DEFINES_VERSION_STRING                          : [''],
-            TAB_INF_DEFINES_VERSION                                 : [''],
-            TAB_INF_DEFINES_PCD_IS_DRIVER                           : [''],
-            TAB_INF_DEFINES_TIANO_R8_FLASHMAP_H                     : [''],
-            TAB_INF_DEFINES_ENTRY_POINT                             : [''],
-            TAB_INF_DEFINES_UNLOAD_IMAGE                            : [''],
-            TAB_INF_DEFINES_CONSTRUCTOR                             : [''],
-            TAB_INF_DEFINES_DESTRUCTOR                              : [''],
-            TAB_INF_DEFINES_DEFINE                                  : [''],
-            TAB_INF_DEFINES_SPEC                                    : [''],
-            TAB_INF_DEFINES_CUSTOM_MAKEFILE                         : [''],
-            TAB_INF_DEFINES_SHADOW                                  : [''],
-            TAB_INF_DEFINES_MACRO                                   : {}
-        }
-
-    def extend(self, InfDefinesObj):
-        for Item in InfDefinesObj.DefinesDictionary:
-            if Item == TAB_INF_DEFINES_MACRO:
-                self.DefinesDictionary[Item].update(InfDefinesObj.DefinesDictionary[Item])
-            else:
-                if InfDefinesObj.DefinesDictionary[Item][0] != '':
-                    if self.DefinesDictionary[Item][0] == '':
-                        self.DefinesDictionary[Item] = []
-                    self.DefinesDictionary[Item].extend(InfDefinesObj.DefinesDictionary[Item])
-
-## InfContents
-#
-# This class defined basic Contents used in Inf object
-# 
-# @param InfObject:   Inherited from InfObject class
-#
-# @var Sources:       To store value for Sources
-# @var BuildOptions:  To store value for BuildOptions
-# @var Binaries:      To store value for Binaries
-# @var Includes:      To store value for Includes
-# @var Guids:         To store value for Guids
-# @var Protocols:     To store value for Protocols
-# @var Ppis:          To store value for Ppis
-# @var Libraries:     To store value for Libraries
-# @var Packages:      To store value for Packages
-# @var FixedPcd:      To store value for FixedPcd
-# @var PatchPcd:      To store value for PatchPcd
-# @var Pcd:           To store value for Pcd
-# @var PcdEx:         To store value for PcdEx
-# @var Depex:         To store value for Depex
-# @var Nmake:         To store value for Nmake
-#
-class InfContents(InfObject):
-    def __init__(self):
-        self.Sources = []
-        self.BuildOptions = []
-        self.Binaries = []
-        self.Includes = []
-        self.Guids = []
-        self.Protocols = []
-        self.Ppis = []
-        self.Libraries = []
-        self.LibraryClasses = []
-        self.Packages = []
-        self.FixedPcd = []
-        self.PatchPcd = []
-        self.FeaturePcd = []
-        self.Pcd = []
-        self.PcdEx = []
-        self.Depex = []
-        self.Nmake = []
 
 ## Inf
 #
@@ -207,30 +156,22 @@ class InfContents(InfObject):
 # @param WorkspaceDir:      Input value for current workspace directory, default is None
 #
 # @var Identification:      To store value for Identification, it is a structure as Identification
-# @var Defines:             To store value for Defines, it is a structure as InfDefines
 # @var UserExtensions:      To store value for UserExtensions
 # @var Module:              To store value for Module, it is a structure as ModuleClass
 # @var WorkspaceDir:        To store value for WorkspaceDir
-# @var Contents:            To store value for Contents, it is a structure as InfContents
 # @var KeyList:             To store value for KeyList, a list for all Keys used in Inf
 #
 class Inf(InfObject):
     def __init__(self, Filename = None, IsMergeAllArches = False, IsToModule = False, WorkspaceDir = None, Database = None, SupArchList = DataType.ARCH_LIST):
         self.Identification = Identification()
-        self.Defines = {} # InfDefines()
-        self.Contents = {}
-        self.UserExtensions = ''
         self.Module = ModuleClass()
+        self.UserExtensions = ''
         self.WorkspaceDir = WorkspaceDir
-        self._Macro = {}    # for inf file local replacement
+        self.SupArchList = SupArchList
+        
         self.Cur = Database.Cur
         self.TblFile = Database.TblFile
         self.TblInf = TableInf(Database.Cur)
-        self.SupArchList = SupArchList
-        
-        
-#        for Arch in DataType.ARCH_LIST_FULL:
-#            self.Contents[Arch] = InfContents()
 
         self.KeyList = [
             TAB_SOURCES, TAB_BUILD_OPTIONS, TAB_BINARIES, TAB_INCLUDES, TAB_GUIDS, 
@@ -257,51 +198,10 @@ class Inf(InfObject):
             self.LoadInfFile(Filename)
         
         #
-        # Merge contents of Inf from all arches if IsMergeAllArches is True
-        #        
-        if IsMergeAllArches:
-            self.MergeAllArches()
-
-        #
         # Transfer to Module Object if IsToModule is True
         #
         if IsToModule:
             self.InfToModule()
-
-    ## Merge contents of Inf from all arches
-    #
-    # Find the contents defined in all arches and merge them to all
-    #
-    def MergeAllArches(self):
-        if DataType.TAB_ARCH_COMMON in self.Defines:
-            for Arch in DataType.ARCH_LIST:
-                if Arch not in self.Defines:
-                    self.Defines[Arch] = InfDefines()
-                self.Defines[Arch].extend(self.Defines[DataType.TAB_ARCH_COMMON])
-                self._Macro.update(self.Defines[Arch].DefinesDictionary[TAB_INF_DEFINES_MACRO])
-        self._Macro.update(GlobalData.gGlobalDefines)
-
-        if DataType.TAB_ARCH_COMMON in self.Contents:
-            for Key in self.KeyList:
-                for Arch in DataType.ARCH_LIST:
-                    Command = "self.Contents[Arch]." + Key + ".extend(" + "self.Contents['" + DataType.TAB_ARCH_COMMON + "']." + Key + ")"
-                    eval(Command)     
-
-    ## Parse Inf file
-    #
-    # Go through input lines one by one to find the value defined in Key section.
-    # Save them to KeyField
-    #
-    # @param Lines:     Lines need to be parsed
-    # @param Key:       The key value of the section to be located
-    # @param KeyField:  To save the found contents
-    #
-    def ParseInf(self, Lines, Key, KeyField):
-        newKey = SplitModuleType(Key)
-        if newKey[0].upper().find(DataType.TAB_LIBRARY_CLASSES.upper()) != -1:
-            GetLibraryClassesWithModuleType(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
-        else:
-            GetMultipleValuesOfKeyFromLines(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
 
     ## Transfer to Module Object
     # 
@@ -366,17 +266,17 @@ class Inf(InfObject):
         #
         # Generate Guids
         #
-        self.GenGuids(ContainerFile)
+        self.GenGuidProtocolPpis(DataType.TAB_GUIDS, ContainerFile)
 
         #
         # Generate Protocols
         #
-        self.GenProtocols(ContainerFile)
+        self.GenGuidProtocolPpis(DataType.TAB_PROTOCOLS, ContainerFile)
 
         #
         # Generate Ppis
         #
-        self.GenPpis(ContainerFile)
+        self.GenGuidProtocolPpis(DataType.TAB_PPIS, ContainerFile)
         
         #
         # Generate Depexes
@@ -387,38 +287,6 @@ class Inf(InfObject):
         # Generate Binaries
         #
         self.GenBinaries(ContainerFile)
-        
-    ## Get Pcd Values of Inf
-    #
-    # Get Pcd of Inf as <TokenSpaceGuidCName>.<PcdCName>[|<Value>]
-    #
-    # @param Item:  The string describes pcd
-    # @param Type:  The type of Pcd
-    # @param File:  The file which describes the pcd, used for error report
-    #
-    # @retval (TokenSpcCName, TokenCName, Value, ItemType) Formatted Pcd Item
-    #
-    def GetPcdOfInf(self, Item, Type, File, LineNo):
-        Format = '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'
-        InfType = ''
-        if Type == TAB_PCDS_FIXED_AT_BUILD:
-            InfType = TAB_INF_FIXED_PCD
-        elif Type == TAB_PCDS_PATCHABLE_IN_MODULE:
-            InfType = TAB_INF_PATCH_PCD
-        elif Type == TAB_PCDS_FEATURE_FLAG:
-            InfType = TAB_INF_FEATURE_PCD        
-        elif Type == TAB_PCDS_DYNAMIC_EX:
-            InfType = TAB_INF_PCD_EX        
-        elif Type == TAB_PCDS_DYNAMIC:
-            InfType = TAB_INF_PCD
-        List = GetSplitValueList(Item + DataType.TAB_VALUE_SPLIT)
-        if len(List) < 2 or len(List) > 3:
-            RaiseParserError(Item, InfType, File, Format, LineNo)
-        TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
-        if len(TokenInfo) != 2:
-            RaiseParserError(Item, InfType, File, Format, LineNo)
-
-        return (TokenInfo[0], TokenInfo[1], List[1], Type)
 
     ## Parse [Defines] section
     #
@@ -442,54 +310,6 @@ class Inf(InfObject):
         GetSingleValueOfKeyFromLines(Lines, self.Defines[Arch].DefinesDictionary, 
                                      TAB_COMMENT_SPLIT, TAB_EQUAL_SPLIT, False, None)
 
-    ## First time to insert records to database
-    # 
-    # Insert item data of a section to database
-    # @param FileID:           The ID of belonging file
-    # @param Filename:         The name of belonging file
-    # @param CurrentSection:   The name of currect section
-    # @param SectionItemList:  A list of items of the section
-    # @param ArchList:         A list of arches
-    # @param ThirdList:        A list of third parameters, ModuleType for LibraryClass and SkuId for Dynamic Pcds
-    # @param IfDefList:        A list of all conditional statements
-    #
-    def InsertSectionItemsIntoDatabase(self, FileID, Filename, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList):
-        #
-        # Insert each item data of a section
-        #
-        for Index in range(0, len(ArchList)):
-            Arch = ArchList[Index]
-            Third = ThirdList[Index]
-            if Arch == '':
-                Arch = TAB_ARCH_COMMON
-
-            Model = Section[CurrentSection.upper()]
-            Records = self.RecordSet[Model]
-            for SectionItem in SectionItemList:
-                BelongsToItem, EndLine, EndColumn = -1, -1, -1
-                LineValue, StartLine, EndLine = SectionItem[0], SectionItem[1], SectionItem[1]
-                
-                EdkLogger.debug(4, "Parsing %s ..." %LineValue)
-                #
-                # And then parse DEFINE statement
-                #
-                if LineValue.upper().find(DataType.TAB_DEFINE.upper() + ' ') > -1:
-                    self.ParseDefine(LineValue, StartLine, self.TblInf, FileID, Filename, CurrentSection, MODEL_META_DATA_DEFINE, Arch)
-                    continue
-                
-                #
-                # At last parse other sections
-                #
-                if CurrentSection == TAB_LIBRARY_CLASSES or CurrentSection == TAB_INF_DEFINES:
-                    ID = self.TblInf.Insert(Model, LineValue, Third, Third, '', '', Arch, -1, FileID, StartLine, -1, StartLine, -1, 0)
-                    Records.append([LineValue, Arch, StartLine, ID, Third])
-                    continue
-                else:
-                    ID = self.TblInf.Insert(Model, LineValue, '', '', '', '', Arch, -1, FileID, StartLine, -1, StartLine, -1, 0)
-                    Records.append([LineValue, Arch, StartLine, ID, Third])
-                    continue
-            self.RecordSet[Model] = Records
-    
     ## Load Inf file
     #
     # Load the file if it exists
@@ -521,20 +341,8 @@ class Inf(InfObject):
         #
         # Parse file content
         #
-        FileContent = open(Filename, 'r').read()
-        for Line in FileContent.splitlines():
+        for Line in open(Filename, 'r'):
             LineNo = LineNo + 1
-            #
-            # Reomve spaces in head and tail
-            #
-            Line = Line.strip()
-            
-            #
-            # Ignore comments
-            #
-            if Line.startswith(TAB_COMMENT_SPLIT):
-                continue
-            
             #
             # Remove comments at tail and remove spaces again
             #
@@ -548,10 +356,11 @@ class Inf(InfObject):
             # And then parse the content of the new section
             #
             if Line.startswith(TAB_SECTION_START) and Line.endswith(TAB_SECTION_END):
+                Model = Section[CurrentSection.upper()]
                 #
                 # Insert items data of previous section
                 #
-                self.InsertSectionItemsIntoDatabase(FileID, Filename, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList)
+                InsertSectionItemsIntoDatabase(self.TblInf, FileID, Filename, Model, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList, self.RecordSet)
                 #
                 # Parse the new section
                 #
@@ -594,28 +403,13 @@ class Inf(InfObject):
         #
         # Insert items data of last section
         #
-        self.InsertSectionItemsIntoDatabase(FileID, Filename, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList)
+        Model = Section[CurrentSection.upper()]
+        InsertSectionItemsIntoDatabase(self.TblInf, FileID, Filename, Model, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList, self.RecordSet)
         
         #
         # Replace all DEFINE macros with its actual values
         #
         ParseDefineMacro2(self.TblInf, self.RecordSet, GlobalData.gGlobalDefines)
-
-    ## Show detailed information of Inf
-    #
-    # Print all members and their values of Inf class
-    #
-    def ShowInf(self):
-        print TAB_SECTION_START + TAB_INF_DEFINES + TAB_SECTION_END
-        printDict(self.Defines.DefinesDictionary)
-
-        for key in self.KeyList:
-            for arch in DataType.ARCH_LIST_FULL:
-                Command = "printList(TAB_SECTION_START + '" + \
-                          key + DataType.TAB_SPLIT + arch + \
-                          "' + TAB_SECTION_END, self.Contents[arch]." + key + ')'
-                eval(Command)
-        print ""
     
     ## Show detailed information of Module
     #
@@ -669,7 +463,7 @@ class Inf(InfObject):
             print Item.LibraryClass, Item.RecommendedInstance, Item.FeatureFlag, Item.SupModuleList, Item.SupArchList, Item.Define
         print '\nPackageDependencies =', M.PackageDependencies
         for Item in M.PackageDependencies:
-            print Item.FilePath, Item.SupArchList, Item.Define
+            print Item.FilePath, Item.SupArchList, Item.FeatureFlag
         print '\nNmake =', M.Nmake
         for Item in M.Nmake:
             print Item.Name, Item.Value, Item.SupArchList
@@ -684,13 +478,13 @@ class Inf(InfObject):
             print UserExtension.UserID, UserExtension.Identifier,UserExtension.Content
         print '\nGuids =', M.Guids
         for Item in M.Guids:
-            print Item.CName, Item.SupArchList
+            print Item.CName, Item.SupArchList, Item.FeatureFlag
         print '\nProtocols =', M.Protocols
         for Item in M.Protocols:
-            print Item.CName, Item.SupArchList
+            print Item.CName, Item.SupArchList, Item.FeatureFlag
         print '\nPpis =', M.Ppis
         for Item in M.Ppis:
-            print Item.CName, Item.SupArchList
+            print Item.CName, Item.SupArchList, Item.FeatureFlag
         print '\nDepex =', M.Depex
         for Item in M.Depex:
             print Item.Depex, Item.SupArchList, Item.Define
@@ -722,62 +516,28 @@ class Inf(InfObject):
             self.TblInf.Exec(SqlCommand)
         
         for Arch in DataType.ARCH_LIST:
-            ModuleHeader = ModuleHeaderClass()
-            ModuleHeader.Name = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_BASE_NAME, Arch)[0]
-            ModuleHeader.Guid = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_FILE_GUID, Arch)[0]
-            ModuleHeader.Version = QueryDefinesItem(self.TblInf, TAB_DEC_DEFINES_PACKAGE_VERSION, Arch)[0]
+            ModuleHeader = InfHeader()
             ModuleHeader.FileName = self.Identification.FileName
             ModuleHeader.FullPath = self.Identification.FileFullPath
-            ModuleHeader.InfVersion = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_INF_VERSION, Arch)[0]
-            
-            ModuleHeader.EfiSpecificationVersion = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION, Arch)[0]
-            ModuleHeader.EdkReleaseVersion = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_EDK_RELEASE_VERSION, Arch)[0]
-            
-            ModuleHeader.ModuleType = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_MODULE_TYPE, Arch)[0]
-            ModuleHeader.BinaryModule = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_BINARY_MODULE, Arch)[0]
-            ModuleHeader.ComponentType = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_COMPONENT_TYPE, Arch)[0]
-            ModuleHeader.MakefileName = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_MAKEFILE_NAME, Arch)[0]
-            ModuleHeader.BuildNumber = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_BUILD_NUMBER, Arch)[0]
-            ModuleHeader.BuildType = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_BUILD_TYPE, Arch)[0]
-            ModuleHeader.FfsExt = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_FFS_EXT, Arch)[0]
-            ModuleHeader.SourceFv = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_SOURCE_FV, Arch)[0]
-            ModuleHeader.PcdIsDriver = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_PCD_IS_DRIVER, Arch)[0]
-            ModuleHeader.TianoR8FlashMap_h = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_TIANO_R8_FLASHMAP_H, Arch)[0]
-            ModuleHeader.Shadow = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_SHADOW, Arch)[0]
-        
-            #
-            # Get version of INF
-            #
-            if ModuleHeader.InfVersion != "":
-                # R9 inf
-                VersionNumber = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_VERSION_NUMBER, Arch)[0]
-                VersionString = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_VERSION_STRING, Arch)[0]
-                if len(VersionNumber) > 0 and len(VersionString) == 0:
-                    EdkLogger.warn(2000, 'VERSION_NUMBER depricated; INF file %s should be modified to use VERSION_STRING instead.' % self.Identification.FileFullPath)
-                    ModuleHeader.Version = VersionNumber
-                if len(VersionString) > 0:
-                    if len(VersionNumber) > 0:
-                        EdkLogger.warn(2001, 'INF file %s defines both VERSION_NUMBER and VERSION_STRING, using VERSION_STRING' % self.Identification.FileFullPath)
-                    ModuleHeader.Version = VersionString
-            else:
-                # R8 inf
-                ModuleHeader.InfVersion = "0x00010000"
-                VersionNumber = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_VERSION, Arch)[0]
-                VersionString = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_VERSION_STRING, Arch)[0]
-                if VersionString == '' and VersionNumber != '':
-                    VersionString = VersionNumber
-                if ModuleHeader.ComponentType in gComponentType2ModuleType:
-                    ModuleHeader.ModuleType = gComponentType2ModuleType[ModuleHeader[Arch].ComponentType]
-                elif ModuleHeader.ComponentType != '':
-                    EdkLogger.error("Parser", PARSER_ERROR, "Unsupported R8 component type [%s]" % ModuleHeader[Arch].ComponentType,
-                                    ExtraData=ContainerFile)
-            #
-            # LibraryClass of Defines
-            #
-            RecordSet = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_LIBRARY_CLASS, Arch)
-            if RecordSet[0] != '':
-                for Item in RecordSet:
-                    List = GetSplitValueList(Item, DataType.TAB_VALUE_SPLIT, 1)
+            DefineList = QueryDefinesItem2(self.TblInf, Arch)
+
+            NotProcessedDefineList = []
+            for D in DefineList:
+                if D[0] in ModuleHeader:
+                    ModuleHeader[D[0]] = GetSplitValueList(D[1])[0]
+                else:
+                    NotProcessedDefineList.append(D)
+
+            if ModuleHeader.ComponentType == "LIBRARY":
+                Lib = LibraryClassClass()
+                Lib.LibraryClass = ModuleHeader.Name
+                Lib.SupModuleList = DataType.SUP_MODULE_LIST
+                ModuleHeader.LibraryClass.append(Lib)
+
+            # we need to make some key defines resolved first
+            for D in NotProcessedDefineList:
+                if D[0] == TAB_INF_DEFINES_LIBRARY_CLASS:
+                    List = GetSplitValueList(D[1], DataType.TAB_VALUE_SPLIT, 1)
                     Lib = LibraryClassClass()
                     Lib.LibraryClass = CleanString(List[0])
                     if len(List) == 1:
@@ -785,77 +545,38 @@ class Inf(InfObject):
                     elif len(List) == 2:
                         Lib.SupModuleList = GetSplitValueList(CleanString(List[1]), ' ')
                     ModuleHeader.LibraryClass.append(Lib)
-            elif ModuleHeader.ComponentType == "LIBRARY":
-                Lib = LibraryClassClass()
-                Lib.LibraryClass = ModuleHeader.Name
-                Lib.SupModuleList = DataType.SUP_MODULE_LIST
-                ModuleHeader.LibraryClass.append(Lib)
-            
-            #
-            # Custom makefile of Defines
-            #
-            RecordSet = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_CUSTOM_MAKEFILE, Arch)
-            if RecordSet[0] != '':
-                for Item in RecordSet:
-                    List = Item.split(DataType.TAB_VALUE_SPLIT)
+                elif D[0] == TAB_INF_DEFINES_CUSTOM_MAKEFILE:
+                    List = D[1].split(DataType.TAB_VALUE_SPLIT)
                     if len(List) == 2:
                         ModuleHeader.CustomMakefile[CleanString(List[0])] = CleanString(List[1])
                     else:
-                        RaiseParserError(Item, 'CUSTOM_MAKEFILE of Defines', File, 'CUSTOM_MAKEFILE=<Family>|<Filename>')
-            
-            #
-            # EntryPoint and UnloadImage of Defines
-            #
-            RecordSet = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_ENTRY_POINT, Arch)
-            if RecordSet[0] != '':
-                for Item in RecordSet:
+                        RaiseParserError(Item, 'CUSTOM_MAKEFILE of Defines', File, 'CUSTOM_MAKEFILE=<Family>|<Filename>', D[2])
+                elif D[0] == TAB_INF_DEFINES_ENTRY_POINT:
                     Image = ModuleExternImageClass()
-                    Image.ModuleEntryPoint = CleanString(Item)
+                    Image.ModuleEntryPoint = CleanString(D[1])
                     self.Module.ExternImages.append(Image)
-            RecordSet = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_UNLOAD_IMAGE, Arch)
-            if RecordSet[0] != '':
-                for Item in RecordSet:
+                elif D[0] == TAB_INF_DEFINES_UNLOAD_IMAGE:
                     Image = ModuleExternImageClass()
-                    Image.ModuleUnloadImage = CleanString(Item)
+                    Image.ModuleUnloadImage = CleanString(D[1])
                     self.Module.ExternImages.append(Image)
-            
-            #
-            # Constructor and Destructor of Defines
-            #
-            RecordSet = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_CONSTRUCTOR, Arch)
-            if RecordSet[0] != '':
-                for Item in RecordSet:
+                elif D[0] == TAB_INF_DEFINES_CONSTRUCTOR:
                     LibraryClass = ModuleExternLibraryClass()
-                    LibraryClass.Constructor = CleanString(Item)
+                    LibraryClass.Constructor = CleanString(D[1])
                     self.Module.ExternLibraries.append(LibraryClass)
-            RecordSet = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_DESTRUCTOR, Arch)
-            if RecordSet[0] != '':
-                for Item in RecordSet:
+                elif D[0] == TAB_INF_DEFINES_DESTRUCTOR:
                     LibraryClass = ModuleExternLibraryClass()
-                    LibraryClass.Destructor = CleanString(Item)
+                    LibraryClass.Destructor = CleanString(D[1])
                     self.Module.ExternLibraries.append(LibraryClass)
-            
-            #
-            # Define of Defines
-            #
-            RecordSet = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_DEFINE, Arch)
-            if RecordSet[0] != '':
-                for Item in RecordSet:
-                    List = Item.split(DataType.TAB_EQUAL_SPLIT)
+                elif D[0] == TAB_INF_DEFINES_DEFINE:
+                    List = D[1].split(DataType.TAB_EQUAL_SPLIT)
                     if len(List) != 2:
-                        RaiseParserError(Item, 'DEFINE of Defines', File, 'DEFINE <Word> = <Word>')
+                        RaiseParserError(Item, 'DEFINE of Defines', File, 'DEFINE <Word> = <Word>', D[2])
                     else:
                         ModuleHeader.Define[CleanString(List[0])] = CleanString(List[1])
-            
-            #
-            # Spec
-            #
-            RecordSet = QueryDefinesItem(self.TblInf, TAB_INF_DEFINES_SPEC, Arch)
-            if RecordSet[0] != '':
-                for Item in RecordSet:
-                    List = Item.split(DataType.TAB_EQUAL_SPLIT)
+                elif D[0] == TAB_INF_DEFINES_SPEC:
+                    List = D[1].split(DataType.TAB_EQUAL_SPLIT)
                     if len(List) != 2:
-                        RaiseParserError(Item, 'SPEC of Defines', File, 'SPEC <Word> = <Version>')
+                        RaiseParserError(Item, 'SPEC of Defines', File, 'SPEC <Word> = <Version>', D[2])
                     else:
                         ModuleHeader.Specification[CleanString(List[0])] = CleanString(List[1])
             
@@ -1017,14 +738,13 @@ class Inf(InfObject):
         for Arch in self.SupArchList:
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    CheckFileType(Record[0], '.Dec', ContainerFile, 'package', Record[0], Record[2])
-                    CheckFileExist(self.WorkspaceDir, Record[0], ContainerFile, 'Packages', Record[0], Record[2])
-                    MergeArches(Packages, Record[0], Arch)
+                    MergeArches(Packages, GetPackage(Record[0], ContainerFile, self.WorkspaceDir, Record[2]), Arch)
                     
         for Key in Packages.keys():
             Package = ModulePackageDependencyClass()
-            Package.FilePath = NormPath(Key)
+            Package.FilePath = NormPath(Key[0])
             Package.SupArchList = Packages[Key]
+            Package.FeatureFlag = Key[1]
             self.Module.PackageDependencies.append(Package)
 
     ## GenNmakes
@@ -1111,19 +831,19 @@ class Inf(InfObject):
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
                     if self.Module.Header[Arch].LibraryClass != {}:
                         pass
-                    MergeArches(Pcds, self.GetPcdOfInf(Record[0], TAB_PCDS_FIXED_AT_BUILD, ContainerFile, Record[2]), Arch)
+                    MergeArches(Pcds, GetPcdOfInf(Record[0], TAB_PCDS_FIXED_AT_BUILD, ContainerFile, Record[2]), Arch)
             for Record in RecordSet2:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Pcds, self.GetPcdOfInf(Record[0], TAB_PCDS_PATCHABLE_IN_MODULE, ContainerFile, Record[2]), Arch)
+                    MergeArches(Pcds, GetPcdOfInf(Record[0], TAB_PCDS_PATCHABLE_IN_MODULE, ContainerFile, Record[2]), Arch)
             for Record in RecordSet3:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Pcds, self.GetPcdOfInf(Record[0], TAB_PCDS_FEATURE_FLAG, ContainerFile, Record[2]), Arch)
+                    MergeArches(Pcds, GetPcdOfInf(Record[0], TAB_PCDS_FEATURE_FLAG, ContainerFile, Record[2]), Arch)
             for Record in RecordSet4:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Pcds, self.GetPcdOfInf(Record[0], TAB_PCDS_DYNAMIC_EX, ContainerFile, Record[2]), Arch)
+                    MergeArches(Pcds, GetPcdOfInf(Record[0], TAB_PCDS_DYNAMIC_EX, ContainerFile, Record[2]), Arch)
             for Record in RecordSet5:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Pcds, self.GetPcdOfInf(Record[0], "", ContainerFile, Record[2]), Arch)
+                    MergeArches(Pcds, GetPcdOfInf(Record[0], "", ContainerFile, Record[2]), Arch)
 
         for Key in Pcds.keys():
             Pcd = PcdClass()
@@ -1184,93 +904,6 @@ class Inf(InfObject):
 #            self.Module.UserExtensions.append(UserExtension)
         pass
 
-    ## GenGuids
-    #
-    # Gen Guids of Inf
-    # <CName>=<GuidValue>
-    #
-    # @param ContainerFile: The Inf file full path 
-    #
-    def GenGuids(self, ContainerFile):
-        EdkLogger.debug(2, "Generate %s ..." % TAB_GUIDS)
-        Guids = {}
-        #
-        # Get all Guids
-        #
-        RecordSet = self.RecordSet[MODEL_EFI_GUID]
-        
-        #
-        # Go through each arch
-        #
-        for Arch in self.SupArchList:
-            for Record in RecordSet:
-                if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Guids, Record[0], Arch)
-        
-        for Key in Guids.keys():
-            Guid = GuidClass()
-            Guid.CName = Key
-            Guid.SupArchList = Guids[Key]
-            self.Module.Guids.append(Guid)
-
-    ## GenProtocols
-    #
-    # Gen Protocols of Inf
-    # <CName>
-    #
-    # @param ContainerFile: The Inf file full path 
-    #
-    def GenProtocols(self, ContainerFile):
-        EdkLogger.debug(2, "Generate %s ..." % TAB_PROTOCOLS)
-        Protocols = {}
-        #
-        # Get all Guids
-        #
-        RecordSet = self.RecordSet[MODEL_EFI_PROTOCOL]
-        
-        #
-        # Go through each arch
-        #
-        for Arch in self.SupArchList:
-            for Record in RecordSet:
-                if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Protocols, Record[0], Arch)
-                
-        for Key in Protocols.keys():
-            Protocol = ProtocolClass()
-            Protocol.CName = Key
-            Protocol.SupArchList = Protocols[Key]
-            self.Module.Protocols.append(Protocol)
-    
-    ## GenPpis
-    #
-    # Gen Ppis of Inf
-    # <CName>
-    #
-    # @param ContainerFile: The Inf file full path 
-    #
-    def GenPpis(self, ContainerFile):
-        EdkLogger.debug(2, "Generate %s ..." % TAB_PPIS)
-        Ppis = {}
-        #
-        # Get all Guids
-        #
-        RecordSet = self.RecordSet[MODEL_EFI_PPI]
-        
-        #
-        # Go through each arch
-        #
-        for Arch in self.SupArchList:
-            for Record in RecordSet:
-                if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Ppis, Record[0], Arch)
-
-        for Key in Ppis.keys():
-            Ppi = PpiClass()
-            Ppi.CName = Key
-            Ppi.SupArchList = Ppis[Key]
-            self.Module.Ppis.append(Ppi)
-
     ## GenDepexes
     #
     # Gen Depex of Inf
@@ -1328,20 +961,44 @@ class Inf(InfObject):
         for Key in Binaries.keys():
             Binary = ModuleBinaryFileClass(NormPath(Key[1]), Key[0], Key[2], Key[3], Binaries[Key])
             self.Module.Binaries.append(Binary)
-
-    ## Parse DEFINE statement
+        
+    ## GenGuids
     #
-    # Get DEFINE macros
+    # Gen Guids of Inf
+    # <CName>=<GuidValue>
     #
-    # 1. Insert a record into TblDec
-    # Value1: Macro Name
-    # Value2: Macro Value
+    # @param ContainerFile: The Inf file full path 
     #
-    def ParseDefine(self, LineValue, StartLine, Table, FileID, Filename, SectionName, Model, Arch):
-        EdkLogger.debug(EdkLogger.DEBUG_2, "DEFINE statement '%s' found in section %s" % (LineValue, SectionName))
-        SectionModel = Section[SectionName.upper()]
-        Define = GetSplitValueList(CleanString(LineValue[LineValue.upper().find(DataType.TAB_DEFINE.upper() + ' ') + len(DataType.TAB_DEFINE + ' ') : ]), TAB_EQUAL_SPLIT, 1)
-        Table.Insert(Model, Define[0], Define[1], '', '', '', Arch, SectionModel, FileID, StartLine, -1, StartLine, -1, 0)
+    def GenGuidProtocolPpis(self, Type, ContainerFile):
+        EdkLogger.debug(2, "Generate %s ..." % Type)
+        Lists = {}
+        #
+        # Get all Items
+        #
+        RecordSet = self.RecordSet[Section[Type.upper()]]
+        
+        #
+        # Go through each arch
+        #
+        for Arch in self.SupArchList:
+            for Record in RecordSet:
+                if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
+                    MergeArches(Lists, GetGuidsProtocolsPpisOfInf(Record[0], Type, ContainerFile, Record[2]), Arch)
+        
+        ListMember = None
+        if Type == TAB_GUIDS:
+            ListMember = self.Module.Guids
+        elif Type == TAB_PROTOCOLS:
+            ListMember = self.Module.Protocols
+        elif Type == TAB_PPIS:
+            ListMember = self.Module.Ppis
+        
+        for Key in Lists.keys():
+            ListClass = GuidProtocolPpiCommonClass()
+            ListClass.CName = Key[0]
+            ListClass.SupArchList = Lists[Key]
+            ListClass.FeatureFlag = Key[1]
+            ListMember.append(ListClass)
 
 ##
 #

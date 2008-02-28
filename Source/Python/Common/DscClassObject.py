@@ -63,88 +63,6 @@ class DscObject(object):
     def __init__(self):
         object.__init__()
 
-## DscDefines
-#
-# This class defined basic Defines used in Dsc object
-# 
-# @param DscDefines:       Inherited from DscDefines class
-#
-# @var DefinesDictionary:  To store value for DefinesDictionary 
-#
-class DscDefines(DscObject):
-    def __init__(self):
-        self.DefinesDictionary = {
-            #
-            # Required Fields
-            #
-            TAB_DSC_DEFINES_PLATFORM_NAME                         : [''],
-            TAB_DSC_DEFINES_PLATFORM_GUID                         : [''],
-            TAB_DSC_DEFINES_PLATFORM_VERSION                      : [''],
-            TAB_DSC_DEFINES_DSC_SPECIFICATION                     : [''],
-            TAB_DSC_DEFINES_OUTPUT_DIRECTORY                      : [''],
-            TAB_DSC_DEFINES_SUPPORTED_ARCHITECTURES               : [''],
-            TAB_DSC_DEFINES_BUILD_TARGETS                         : [''],
-            TAB_DSC_DEFINES_SKUID_IDENTIFIER                      : [''],
-            TAB_DSC_DEFINES_FLASH_DEFINITION                      : [''],
-            TAB_DSC_DEFINES_BUILD_NUMBER                          : [''],
-            TAB_DSC_DEFINES_MAKEFILE_NAME                         : [''],
-            TAB_DSC_DEFINES_BS_BASE_ADDRESS                       : [''],
-            TAB_DSC_DEFINES_RT_BASE_ADDRESS                       : [''],
-            TAB_DSC_DEFINES_DEFINE                                : [''],
-            TAB_INF_DEFINES_MACRO                                 : {}
-        }
-
-## DscSkuId
-#
-# This class defined SkuId used in Dsc object
-# 
-# @param DscObject:  Inherited from DscObject class
-#
-# @var SkuId:        To store value for SkuId, it is a set structure as
-#                    { [skuid : skuname], [skuid : skuname], ...}
-#
-class DscSkuId(DscObject):
-    def __init__(self):
-        self.SkuId = {}
-
-## DscContents
-#
-# This class defined basic Contents used in Dsc object
-# 
-# @param DscObject:   Inherited from DscObject class
-#
-# @var SkuIds:                 To store value for SkuIds
-# @var Libraries:              To store value for Libraries
-# @var Components:             To store value for Components, it is a list structure as
-#                              [['component name', [lib1, lib2, lib3], [bo1, bo2, bo3]], ...]
-# @var LibraryClasses:         To store value for LibraryClasses
-# @var PcdsFixedAtBuild:       To store value for PcdsFixedAtBuild
-# @var PcdsPatchableInModule:  To store value for PcdsPatchableInModule
-# @var PcdsFeatureFlag:        To store value for PcdsFeatureFlag
-# @var PcdsDynamicDefault:     To store value for PcdsDynamicDefault
-# @var PcdsDynamicVpd:         To store value for PcdsDynamicVpd
-# @var PcdsDynamicHii:         To store value for PcdsDynamicHii
-# @var PcdsDynamicExDefault:   To store value for PcdsDynamicExDefault
-# @var PcdsDynamicExVpd:       To store value for PcdsDynamicExVpd
-# @var PcdsDynamicExHii:       To store value for PcdsDynamicExHii
-#
-class DscContents(DscObject):
-    def __init__(self):
-        self.SkuIds = []
-        self.Libraries = []
-        self.Components = []
-        self.LibraryClasses = []
-        self.PcdsFixedAtBuild = []
-        self.PcdsPatchableInModule = []
-        self.PcdsFeatureFlag = []
-        self.PcdsDynamicDefault = []
-        self.PcdsDynamicVpd = []
-        self.PcdsDynamicHii = []
-        self.PcdsDynamicExDefault = []
-        self.PcdsDynamicExVpd = []
-        self.PcdsDynamicExHii = []
-        self.BuildOptions = []
-
 ## Dsc
 #
 # This class defined the structure used in Dsc object
@@ -175,18 +93,14 @@ class Dsc(DscObject):
 
     def __init__(self, Filename = None, IsMergeAllArches = False, IsToPlatform = False, WorkspaceDir = None, Database = None):
         self.Identification = Identification()
-        self.Defines = DscDefines()
-        self.Contents = {}
-        self.UserExtensions = ''
         self.Platform = PlatformClass()
+        self.UserExtensions = ''
         self.WorkspaceDir = WorkspaceDir
+
         self.Cur = Database.Cur
         self.TblFile = Database.TblFile
         self.TblDsc = TableDsc(Database.Cur)
-        self._Macro = {}    # for inf file local replacement
 
-#        for Arch in DataType.ARCH_LIST_FULL:
-#            self.Contents[Arch] = DscContents()
 
         self.KeyList = [
             TAB_SKUIDS, TAB_LIBRARIES, TAB_LIBRARY_CLASSES, TAB_BUILD_OPTIONS, TAB_PCDS_FIXED_AT_BUILD_NULL, \
@@ -215,58 +129,16 @@ class Dsc(DscObject):
             self.LoadDscFile(Filename)
 
         #
-        # Merge contents of Dsc from all arches if IsMergeAllArches is True
-        #
-        if IsMergeAllArches:
-            self.MergeAllArches()
-
-        #
         # Transfer to Platform Object if IsToPlatform is True
         #
         if IsToPlatform:
             self.DscToPlatform()
-
-    ## Parse Dsc file
-    #
-    # Go through input lines one by one to find the value defined in Key section.
-    # Save them to KeyField
-    #
-    # @param Lines:     Lines need to be parsed
-    # @param Key:       The key value of the section to be located
-    # @param KeyField:  To save the found contents
-    #
-    def ParseDsc(self, Lines, Key, KeyField):
-        newKey = SplitModuleType(Key)
-        if newKey[0].upper().find(TAB_LIBRARY_CLASSES.upper()) != -1:
-            GetLibraryClassesWithModuleType(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
-        elif newKey[0].upper().find(TAB_COMPONENTS.upper()) != -1:
-            GetComponents(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
-        elif newKey[0].upper().find(TAB_PCDS_DYNAMIC.upper()) != -1:
-            GetDynamics(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
-        else:
-            GetMultipleValuesOfKeyFromLines(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
-
-    ## Merge contents of Dsc from all arches
-    #
-    # Find the contents defined in all arches and merge them to all
-    #
-    def MergeAllArches(self):
-        for Key in self.KeyList:
-            for Arch in DataType.ARCH_LIST:
-                Command = "self.Contents[Arch]." + Key + ".extend(" + "self.Contents['" + DataType.TAB_ARCH_COMMON + "']." + Key + ")"
-                eval(Command)
 
     ## Transfer to Platform Object
     # 
     # Transfer all contents of an Inf file to a standard Module Object
     #
     def DscToPlatform(self):
-        #
-        # Get Macro defined in GlobalDefines
-        #
-        self._Macro = self.Defines.DefinesDictionary[TAB_INF_DEFINES_MACRO]
-        self._Macro.update(GlobalData.gGlobalDefines)
-        
         #
         # Init global information for the file
         #
@@ -560,7 +432,7 @@ class Dsc(DscObject):
         for Key in LibraryClasses.keys():
             Library = PlatformLibraryClass()
             Library.Name = Key[0]
-            Library.FilePath = NormPath(Key[1], self._Macro)
+            Library.FilePath = NormPath(Key[1])
             Library.SupModuleList = GetSplitValueList(Key[2])
             Library.SupArchList = LibraryClasses[Key]
             self.Platform.LibraryClasses.LibraryList.append(Library)
@@ -910,8 +782,8 @@ class Dsc(DscObject):
         BuildOptions = Item[2]
         Pcds = Item[3]
         Component = PlatformModuleClass()
-        Component.FilePath = NormPath(InfFilename, self._Macro)
-        Component.ExecFilePath = NormPath(ExecFilename, self._Macro)
+        Component.FilePath = NormPath(InfFilename)
+        Component.ExecFilePath = NormPath(ExecFilename)
         CheckFileType(Component.FilePath, '.Inf', ContainerFile, 'component name', Item[0], LineNo)
         CheckFileExist(self.WorkspaceDir, Component.FilePath, ContainerFile, 'component', Item[0], LineNo)
         for Lib in LibraryClasses:
@@ -919,7 +791,7 @@ class Dsc(DscObject):
             if len(List) != 2:
                 RaiseParserError(Lib, 'LibraryClasses', ContainerFile, '<ClassName>|<InfFilename>')
             LibName = List[0]
-            LibFile = NormPath(List[1], self._Macro)
+            LibFile = NormPath(List[1])
             if LibName == "" or LibName == "NULL":
                 LibName = "NULL%d" % self._NullClassIndex
                 self._NullClassIndex += 1

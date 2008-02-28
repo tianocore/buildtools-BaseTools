@@ -57,56 +57,6 @@ class DecObject(object):
     def __init__(self):
         object.__init__()
 
-## DecDefines
-#
-# This class defined basic Defines used in Dec object
-# 
-# @param DecObject:        Inherited from DecObject class
-#
-# @var DefinesDictionary:  To store value for DefinesDictionary 
-#
-class DecDefines(DecObject):
-    def __init__(self):
-        self.DefinesDictionary = {
-            #
-            # Required Fields
-            #
-            TAB_DEC_DEFINES_DEC_SPECIFICATION           : [''],
-            TAB_DEC_DEFINES_PACKAGE_NAME                : [''],
-            TAB_DEC_DEFINES_PACKAGE_GUID                : [''],
-            TAB_DEC_DEFINES_PACKAGE_VERSION             : ['']
-        }
-
-## DecContents
-#
-# This class defined basic Contents used in Dec object
-# 
-# @param DecObject:            Inherited from DecObject class
-#
-# @var Includes:               To store value for Includes
-# @var Guids:                  To store value for Guids
-# @var Protocols:              To store value for Protocols
-# @var Ppis:                   To store value for Ppis
-# @var LibraryClasses:         To store value for LibraryClasses
-# @var PcdsFixedAtBuild:       To store value for PcdsFixedAtBuild
-# @var PcdsPatchableInModule:  To store value for PcdsPatchableInModule
-# @var PcdsFeatureFlag:        To store value for PcdsFeatureFlag
-# @var PcdsDynamic:            To store value for PcdsDynamic
-# @var PcdsDynamicEx:          To store value for PcdsDynamicEx
-#
-class DecContents(DecObject):
-    def __init__(self):
-        self.Includes = []
-        self.Guids = []
-        self.Protocols = []
-        self.Ppis = []
-        self.LibraryClasses = []
-        self.PcdsFixedAtBuild = []
-        self.PcdsPatchableInModule = []
-        self.PcdsFeatureFlag = []
-        self.PcdsDynamic = []
-        self.PcdsDynamicEx = []
-
 ## Dec
 #
 # This class defined the structure used in Dec object
@@ -134,25 +84,20 @@ class DecContents(DecObject):
 class Dec(DecObject):
     def __init__(self, Filename = None, IsMergeAllArches = False, IsToPackage = False, WorkspaceDir = None, Database = None, SupArchList = DataType.ARCH_LIST):
         self.Identification = Identification()
-        self.Defines = DecDefines()
-        self.UserExtensions = ''
         self.Package = PackageClass()
+        self.UserExtensions = ''
         self.WorkspaceDir = WorkspaceDir
+        self.SupArchList = SupArchList
+        
         self.Cur = Database.Cur
         self.TblFile = Database.TblFile
         self.TblDec = TableDec(Database.Cur)
-        self.SupArchList = SupArchList
-        
-        self.Contents = {}
-#        for Arch in DataType.ARCH_LIST_FULL:
-#            self.Contents[Arch] = DecContents()
-        
+
         self.KeyList = [
             TAB_INCLUDES, TAB_GUIDS, TAB_PROTOCOLS, TAB_PPIS, TAB_LIBRARY_CLASSES, \
             TAB_PCDS_FIXED_AT_BUILD_NULL, TAB_PCDS_PATCHABLE_IN_MODULE_NULL, TAB_PCDS_FEATURE_FLAG_NULL, \
             TAB_PCDS_DYNAMIC_NULL, TAB_PCDS_DYNAMIC_EX_NULL, TAB_DEC_DEFINES
         ]
-    
         #
         # Upper all KEYs to ignore case sensitive when parsing
         #
@@ -172,43 +117,11 @@ class Dec(DecObject):
             self.LoadDecFile(Filename)
         
         #
-        # Merge contents of Dec from all arches if IsMergeAllArches is True
-        #
-        if IsMergeAllArches:
-            self.MergeAllArches()
-        
-        #
         # Transfer to Package Object if IsToPackage is True
         #
         if IsToPackage:
             self.DecToPackage()
     
-    ## Parse Dec file
-    #
-    # Go through input lines one by one to find the value defined in Key section.
-    # Save them to KeyField
-    #
-    # @param Lines:     Lines need to be parsed
-    # @param Key:       The key value of the section to be located
-    # @param KeyField:  To save the found contents
-    #
-    def ParseDec(self, Lines, Key, KeyField):
-        newKey = SplitModuleType(Key)
-        if newKey[0].upper().find(DataType.TAB_LIBRARY_CLASSES.upper()) != -1:
-            GetLibraryClassesWithModuleType(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
-        else:
-            GetMultipleValuesOfKeyFromLines(Lines, Key, KeyField, TAB_COMMENT_SPLIT)
-
-    ## Merge contents of Dec from all arches
-    #
-    # Find the contents defined in all arches and merge them to all
-    #   
-    def MergeAllArches(self):
-        for Key in self.KeyList:
-            for Arch in DataType.ARCH_LIST:
-                Command = "self.Contents[Arch]." + Key + ".extend(" + "self.Contents['" + DataType.TAB_ARCH_COMMON + "']." + Key + ")"
-                eval(Command)
-
     ## Load Dec file
     #
     # Load the file if it exists
@@ -270,7 +183,9 @@ class Dec(DecObject):
                 #
                 # Insert items data of previous section
                 #
-                self.InsertSectionItemsIntoDatabase(FileID, Filename, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList)
+                Model = Section[CurrentSection.upper()]
+                InsertSectionItemsIntoDatabase(self.TblDec, FileID, Filename, Model, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList, self.RecordSet)
+
                 #
                 # Parse the new section
                 #
@@ -313,69 +228,13 @@ class Dec(DecObject):
         #
         # Insert items data of last section
         #
-        self.InsertSectionItemsIntoDatabase(FileID, Filename, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList)
+        Model = Section[CurrentSection.upper()]
+        InsertSectionItemsIntoDatabase(self.TblDec, FileID, Filename, Model, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList, self.RecordSet)
         
         #
         # Replace all DEFINE macros with its actual values
         #
         ParseDefineMacro2(self.TblDec, self.RecordSet, GlobalData.gGlobalDefines)
-
-    ## Parse DEFINE statement
-    #
-    # Get DEFINE macros
-    #
-    # 1. Insert a record into TblDec
-    # Value1: Macro Name
-    # Value2: Macro Value
-    #
-    def ParseDefine(self, LineValue, StartLine, Table, FileID, Filename, SectionName, Model, Arch):
-        EdkLogger.debug(EdkLogger.DEBUG_2, "DEFINE statement '%s' found in section %s" % (LineValue, SectionName))
-        SectionModel = Section[SectionName.upper()]
-        Define = GetSplitValueList(CleanString(LineValue[LineValue.upper().find(DataType.TAB_DEFINE.upper() + ' ') + len(DataType.TAB_DEFINE + ' ') : ]), TAB_EQUAL_SPLIT, 1)
-        Table.Insert(Model, Define[0], Define[1], '', Arch, SectionModel, FileID, StartLine, -1, StartLine, -1, 0)
-    
-    ## First time to insert records to database
-    # 
-    # Insert item data of a section to database
-    # @param FileID:           The ID of belonging file
-    # @param Filename:         The name of belonging file
-    # @param CurrentSection:   The name of currect section
-    # @param SectionItemList:  A list of items of the section
-    # @param ArchList:         A list of arches
-    # @param ThirdList:        A list of third parameters, ModuleType for LibraryClass and SkuId for Dynamic Pcds
-    # @param IfDefList:        A list of all conditional statements
-    #
-    def InsertSectionItemsIntoDatabase(self, FileID, Filename, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList):
-        #
-        # Insert each item data of a section
-        #
-        for Index in range(0, len(ArchList)):
-            Arch = ArchList[Index]
-            Third = ThirdList[Index]
-            if Arch == '':
-                Arch = TAB_ARCH_COMMON
-
-            Model = Section[CurrentSection.upper()]
-            Records = self.RecordSet[Model]
-            for SectionItem in SectionItemList:
-                BelongsToItem, EndLine, EndColumn = -1, -1, -1
-                LineValue, StartLine, EndLine = SectionItem[0], SectionItem[1], SectionItem[1]
-
-                EdkLogger.debug(4, "Parsing %s ..." %LineValue)
-                #
-                # And then parse DEFINE statement
-                #
-                if LineValue.upper().find(DataType.TAB_DEFINE.upper() + ' ') > -1:
-                    self.ParseDefine(LineValue, StartLine, self.TblDec, FileID, Filename, CurrentSection, MODEL_META_DATA_DEFINE, Arch)
-                    continue
-                
-                #
-                # At last parse other sections
-                #
-                ID = self.TblDec.Insert(Model, LineValue, '', '', Arch, -1, FileID, StartLine, -1, StartLine, -1, 0)
-                Records.append([LineValue, Arch, StartLine, ID, Third])
-            
-            self.RecordSet[Model] = Records
 
     ## Transfer to Package Object
     # 
@@ -400,17 +259,17 @@ class Dec(DecObject):
         #
         # Generate Guids
         #
-        self.GenGuids(ContainerFile)
+        self.GenGuidProtocolPpis(DataType.TAB_GUIDS, ContainerFile)
 
         #
         # Generate Protocols
         #
-        self.GenProtocols(ContainerFile)
+        self.GenGuidProtocolPpis(DataType.TAB_PROTOCOLS, ContainerFile)
 
         #
         # Generate Ppis
         #
-        self.GenPpis(ContainerFile)
+        self.GenGuidProtocolPpis(DataType.TAB_PPIS, ContainerFile)
         
         #
         # Generate LibraryClasses
@@ -487,74 +346,6 @@ class Dec(DecObject):
             Include.SupArchList = Includes[Key]
             self.Package.Includes.append(Include)
     
-    ## GenGuids
-    #
-    # Gen Guids of Dec
-    # <CName>=<GuidValue>
-    #
-    # @param ContainerFile: The Dec file full path 
-    #
-    def GenGuids(self, ContainerFile):
-        EdkLogger.debug(2, "Generate %s ..." % TAB_GUIDS)
-        Guids = {}
-        #
-        # Get all Guids
-        #
-        RecordSet = self.RecordSet[MODEL_EFI_GUID]
-        
-        #
-        # Go through each arch
-        #
-        for Arch in self.SupArchList:
-            for Record in RecordSet:
-                if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    List = GetSplitValueList(Record[0], DataType.TAB_EQUAL_SPLIT)
-                    if len(List) != 2:
-                        RaiseParserError(Record[0], 'Guids', ContainerFile, '<CName>=<GuidValue>', Record[2])
-                    else:
-                        MergeArches(Guids, (List[0], List[1]), Arch)
-                
-        for Key in Guids.keys():
-            Guid = GuidClass()
-            Guid.CName = Key[0]
-            Guid.Guid = Key[1]
-            Guid.SupArchList = Guids[Key]
-            self.Package.GuidDeclarations.append(Guid)
-
-    ## GenProtocols
-    #
-    # Gen Protocols of Dec
-    # <CName>=<GuidValue>
-    #
-    # @param ContainerFile: The Dec file full path 
-    #
-    def GenProtocols(self, ContainerFile):
-        EdkLogger.debug(2, "Generate %s ..." % TAB_PROTOCOLS)
-        Protocols = {}
-        #
-        # Get all Guids
-        #
-        RecordSet = self.RecordSet[MODEL_EFI_PROTOCOL]
-        
-        #
-        # Go through each arch
-        #
-        for Arch in self.SupArchList:
-            for Record in RecordSet:
-                if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    List = GetSplitValueList(Record[0], DataType.TAB_EQUAL_SPLIT)
-                    if len(List) != 2:
-                        RaiseParserError(Record[0], 'Protocols', ContainerFile, '<CName>=<GuidValue>', Record[2])
-                    else:
-                        MergeArches(Protocols, (List[0], List[1]), Arch)
-                
-        for Key in Protocols.keys():
-            Protocol = ProtocolClass()
-            Protocol.CName = Key[0]
-            Protocol.Guid = Key[1]
-            Protocol.SupArchList = Protocols[Key]
-            self.Package.ProtocolDeclarations.append(Protocol)
-    
     ## GenPpis
     #
     # Gen Ppis of Dec
@@ -562,13 +353,13 @@ class Dec(DecObject):
     #
     # @param ContainerFile: The Dec file full path 
     #
-    def GenPpis(self, ContainerFile):
-        EdkLogger.debug(2, "Generate %s ..." % TAB_PPIS)
-        Ppis = {}
+    def GenGuidProtocolPpis(self, Type, ContainerFile):
+        EdkLogger.debug(2, "Generate %s ..." % Type)
+        Lists = {}
         #
-        # Get all Guids
+        # Get all Items
         #
-        RecordSet = self.RecordSet[MODEL_EFI_PPI]
+        RecordSet = self.RecordSet[Section[Type.upper()]]
         
         #
         # Go through each arch
@@ -576,18 +367,23 @@ class Dec(DecObject):
         for Arch in self.SupArchList:
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    List = GetSplitValueList(Record[0], DataType.TAB_EQUAL_SPLIT)
-                    if len(List) != 2:
-                        RaiseParserError(Record[0], 'Ppis', ContainerFile, '<CName>=<GuidValue>', Record[2])
-                    else:
-                        MergeArches(Ppis, (List[0], List[1]), Arch)
+                    MergeArches(Lists, GetGuidsProtocolsPpisOfDec(Record[0], Type, ContainerFile, Record[2]), Arch)
         
-        for Key in Ppis.keys():
-            Ppi = PpiClass()
-            Ppi.CName = Key[0]
-            Ppi.Guid = Key[1]
-            Ppi.SupArchList = Ppis[Key]
-            self.Package.PpiDeclarations.append(Ppi)
+        ListMember = None
+        if Type == TAB_GUIDS:
+            ListMember = self.Package.GuidDeclarations
+        elif Type == TAB_PROTOCOLS:
+            ListMember = self.Package.ProtocolDeclarations
+        elif Type == TAB_PPIS:
+            ListMember = self.Package.PpiDeclarations
+        
+        for Key in Lists.keys():
+            ListClass = GuidProtocolPpiCommonClass()
+            ListClass.CName = Key[0]
+            ListClass.Guid = Key[1]
+            ListClass.SupArchList = Lists[Key]
+            ListMember.append(ListClass)
+            
     
     ## GenLibraryClasses
     #
@@ -650,19 +446,19 @@ class Dec(DecObject):
         for Arch in self.SupArchList:
             for Record in RecordSet1:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Pcds, self.GetPcdOfDec(Record[0], TAB_PCDS_FIXED_AT_BUILD, ContainerFile, Record[2]), Arch)
+                    MergeArches(Pcds, GetPcdOfDec(Record[0], TAB_PCDS_FIXED_AT_BUILD, ContainerFile, Record[2]), Arch)
             for Record in RecordSet2:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Pcds, self.GetPcdOfDec(Record[0], TAB_PCDS_PATCHABLE_IN_MODULE, ContainerFile, Record[2]), Arch)
+                    MergeArches(Pcds, GetPcdOfDec(Record[0], TAB_PCDS_PATCHABLE_IN_MODULE, ContainerFile, Record[2]), Arch)
             for Record in RecordSet3:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Pcds, self.GetPcdOfDec(Record[0], TAB_PCDS_FEATURE_FLAG, ContainerFile, Record[2]), Arch)
+                    MergeArches(Pcds, GetPcdOfDec(Record[0], TAB_PCDS_FEATURE_FLAG, ContainerFile, Record[2]), Arch)
             for Record in RecordSet4:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Pcds, self.GetPcdOfDec(Record[0], TAB_PCDS_DYNAMIC_EX, ContainerFile, Record[2]), Arch)
+                    MergeArches(Pcds, GetPcdOfDec(Record[0], TAB_PCDS_DYNAMIC_EX, ContainerFile, Record[2]), Arch)
             for Record in RecordSet5:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Pcds, self.GetPcdOfDec(Record[0], TAB_PCDS_DYNAMIC, ContainerFile, Record[2]), Arch)                    
+                    MergeArches(Pcds, GetPcdOfDec(Record[0], TAB_PCDS_DYNAMIC, ContainerFile, Record[2]), Arch)                    
 
         for Key in Pcds.keys():
             Pcd = PcdClass()
@@ -674,37 +470,6 @@ class Dec(DecObject):
             Pcd.ItemType = Key[5]
             Pcd.SupArchList = Pcds[Key]
             self.Package.PcdDeclarations.append(Pcd)
-    
-    ## Get Pcd Values of Dec
-    #
-    # Get Pcd of Dec as <TokenSpcCName>.<TokenCName>|<Value>|<DatumType>|<Token>
-    # @retval (TokenSpcCName, TokenCName, Value, DatumType, Token, ItemType) Formatted Pcd Item
-    #
-    def GetPcdOfDec(self, Item, Type, File, LineNo = -1):
-        Format = '<TokenSpaceGuidCName>.<PcdCName>|<Value>|<DatumType>|<Token>'
-        List = GetSplitValueList(Item)
-        if len(List) != 4:
-            RaiseParserError(Item, 'Pcds' + Type, File, Format, LineNo)
-        TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
-        if len(TokenInfo) != 2:
-            RaiseParserError(Item, 'Pcds' + Type, File, Format, LineNo)
-        
-        return (TokenInfo[0], TokenInfo[1], List[1], List[2], List[3], Type)
-    
-    ## Show detailed information of Dec
-    #
-    # Print all members and their values of Dec class
-    #
-    def ShowDec(self):
-        print TAB_SECTION_START + TAB_INF_DEFINES + TAB_SECTION_END
-        printDict(self.Defines.DefinesDictionary)
-
-        for key in self.KeyList:
-            for arch in DataType.ARCH_LIST_FULL:
-                Command = "printList(TAB_SECTION_START + '" + \
-                                    key + DataType.TAB_SPLIT + arch + \
-                                    "' + TAB_SECTION_END, self.Contents[arch]." + key + ')'
-                eval(Command)
     
     ## Show detailed information of Package
     #
@@ -749,8 +514,8 @@ if __name__ == '__main__':
     EdkLogger.SetLevel(EdkLogger.DEBUG_0)
     
     W = os.getenv('WORKSPACE')
-    #F = os.path.join(W, 'Nt32Pkg/Nt32Pkg.dec')
-    F = os.path.join(W, 'MdeModulePkg\MdeModulePkg.dec')
+    F = os.path.join(W, 'Nt32Pkg/Nt32Pkg.dec')
+
     Db = Database.Database(DATABASE_PATH)
     Db.InitDatabase()
     
