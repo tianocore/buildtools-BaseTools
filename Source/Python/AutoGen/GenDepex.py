@@ -223,8 +223,13 @@ class DependencyExpression:
             if Token in self.SupportedOpcode or Token in NewOperand:
                 continue
             NewOperand.append(Token)
-        Op = " " + Op + " "
-        self.TokenList = Op.join(NewOperand).split()
+
+        self.TokenList = []
+        while True:
+            self.TokenList.append(NewOperand.pop(0))
+            if NewOperand == []:
+                break
+            self.TokenList.append(Op)
         self.PostfixNotation = []
         self.GetPostfixNotation()
 

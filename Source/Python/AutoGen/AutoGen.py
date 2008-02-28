@@ -1214,7 +1214,7 @@ class ModuleAutoGen(object):
 
         os.chdir(self.BuildInfo.OutputDir)
         if self.BuildInfo.DepexList != []:
-            Dpx = GenDepex.DependencyExpression(self.BuildInfo.DepexList, self.BuildInfo.ModuleType)
+            Dpx = GenDepex.DependencyExpression(self.BuildInfo.DepexList, self.BuildInfo.ModuleType, True)
             DpxFile = gAutoGenDepexFileName % {"module_name" : self.BuildInfo.Name}
             if Dpx.Generate(DpxFile):
                 AutoGenList.append(DpxFile)
