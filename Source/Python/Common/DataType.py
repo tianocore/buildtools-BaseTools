@@ -352,4 +352,4 @@ TAB_UNKNOWN = 'UNKNOWN'
 #
 # Build database path
 #
-DATABASE_PATH = "BuildDatabase.db"
+DATABASE_PATH = ":memory:" #"BuildDatabase.db"
