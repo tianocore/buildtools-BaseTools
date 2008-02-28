@@ -78,8 +78,10 @@ class DependencyExpression:
         }
     }
 
-    # all supported op code
-    SupportedOpcode = ["BEFORE", "AFTER", "PUSH", "AND", "OR", "NOT", "TRUE", "FALSE", "END", "SOR"]
+    # all supported op codes and operands
+    SupportedOpcode = ["BEFORE", "AFTER", "PUSH", "AND", "OR", "NOT", "END", "SOR"]
+    SupportedOperand = ["TRUE", "FALSE"]
+
     # op code that should not be the last one
     NonEndingOpcode = ["AND", "OR", "NOT"]
     # op code must not present at the same time
@@ -141,14 +143,12 @@ class DependencyExpression:
                         break
                     self.PostfixNotation.append(Stack.pop())
             elif Token in self.OpcodePriority:
-                if Token == "NOT":
-                    if LastToken not in self.SupportedOpcode:
-                        EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid dependency expression: missing operator before NOT",
-                                        ExtraData=str(self))
-                else:
-                    if LastToken in self.SupportedOpcode:
-                        EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid dependency expression: missing operand before " + Token,
-                                        ExtraData=str(self))
+                if Token == "NOT" and LastToken not in self.SupportedOpcode:
+                    EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid dependency expression: missing operator before NOT",
+                                    ExtraData=str(self))
+                elif Token in self.SupportedOpcode and LastToken in self.SupportedOpcode:
+                    EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid dependency expression: missing operand before " + Token,
+                                    ExtraData=str(self))
 
                 while len(Stack) > 0:
                     if Stack[-1] == "(" or self.OpcodePriority[Token] >= self.OpcodePriority[Stack[-1]]:
@@ -163,7 +163,8 @@ class DependencyExpression:
                         EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid dependency expression: missing operator",
                                         ExtraData=str(self))
                     if len(self.OpcodeList) == 0 or self.OpcodeList[-1] not in self.ExclusiveOpcode:
-                        self.PostfixNotation.append("PUSH")
+                        if Token not in self.SupportedOperand:
+                            self.PostfixNotation.append("PUSH")
                 # check if OP is valid in this phase
                 elif Token in self.Opcode[self.Phase]:
                     if Token == "END":
@@ -222,6 +223,18 @@ class DependencyExpression:
         for Token in self.PostfixNotation:
             if Token in self.SupportedOpcode or Token in NewOperand:
                 continue
+            if Token == 'TRUE':
+                if Op == 'AND':
+                    continue
+                else:
+                    NewOperand.append(Token)
+                    break
+            elif Token == 'FALSE':
+                if Op == 'OR':
+                    continue
+                else:
+                    NewOperand.append(Token)
+                    break
             NewOperand.append(Token)
 
         self.TokenList = []

@@ -856,9 +856,8 @@ class ModuleAutoGen(object):
             if Token.endswith(".inf"):  # module file name
                 ModuleFile = os.path.normpath(Token)
                 Token = gModuleDatabase[ModuleFile].Guid
-            elif Token.upper() in GenDepex.DependencyExpression.SupportedOpcode: # Opcode name
-                Token = Token.upper()
-            elif Token not in ['(', ')']:   # GUID C Name
+            elif Token not in ['(', ')']+GenDepex.DependencyExpression.SupportedOpcode+\
+                 GenDepex.DependencyExpression.SupportedOperand:   # GUID C Name
                 GuidCName = Token
                 for P in Info.DerivedPackageList:
                     if GuidCName in P.Protocols:
