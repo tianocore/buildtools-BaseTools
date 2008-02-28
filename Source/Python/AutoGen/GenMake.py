@@ -336,6 +336,7 @@ INC = ${BEGIN}${include_path_prefix}${include_path} \\
 LIBS = ${BEGIN}$(BUILD_DIR)${separator}$(ARCH)${separator}${library_file} \\
        ${END}${BEGIN}${system_library} \\
        ${END}
+LIBS = $(LIBS) $(LIB_LIST)
 
 COMMON_DEPS = ${BEGIN}${common_dependency_file} \\
               ${END}
