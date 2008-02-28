@@ -41,6 +41,12 @@ VfrParserStart (
 }
 >>
 
+#lexaction
+<<
+#include <Error.h>
+
+>>
+
 //
 // Define a lexical class for parsing quoted strings. Basically
 // starts with a double quote, and ends with a double quote that
@@ -231,29 +237,58 @@ VfrParserStart (
 //
 
 vfrProgram > [UINT8 Return] :
-  << UINT32 PackAlign = DEFAULT_PACK_ALIGN; >>
   << mParserStatus = 0; >>
   (
-    (
-	  "\#pragma" "pack" "\(" 
-      { 
-        A:Number                                    << PackAlign = _STOU32(A->getText()); >>
-      }
-      "\)"                                          << _PCATCH(mCVfrVarDataTypeDB.Pack (PackAlign)); >>
-    )
-    |
-    (
-      vfrDataStructDefinition
-    )
+      vfrPragmaPackDefinition
+    | vfrDataStructDefinition
   )*
   vfrFromSetDefinition
   << $Return = mParserStatus; >>
   ;
 
-//*****************************************************************************
-//
-// the syntax of data struct definition
-//
+pragmaPackShowDef :
+  L:"show"                                          << mCVfrVarDataTypeDB.Pack (L->getLine(), VFR_PACK_SHOW); >>
+  ;
+
+pragmaPackStackDef :
+  <<
+     UINT32 LineNum;
+     UINT8  PackAction;
+     INT8   *Identifier = NULL;
+     UINT32 PackNumber  = DEFAULT_PACK_ALIGN;
+  >>
+  (
+      L1:"push"                                     << LineNum = L1->getLine(); PackAction = VFR_PACK_PUSH; >>
+    | L2:"pop"                                      << LineNum = L2->getLine(); PackAction = VFR_PACK_POP; >>
+  ) 
+  {
+    "," ID:StringIdentifier                         << Identifier = ID->getText(); >>
+  } 
+  {
+    "," N:Number                                    << PackAction |= VFR_PACK_ASSIGN; PackNumber = _STOU32(N->getText()); >>
+  }
+                                                    << mCVfrVarDataTypeDB.Pack (LineNum, PackAction, Identifier, PackNumber); >>
+  ;
+
+pragmaPackNumber :
+  <<
+     UINT32 LineNum;
+     UINT32 PackNumber = DEFAULT_PACK_ALIGN;
+  >>
+  N:Number                                          << LineNum = N->getLine(); PackNumber = _STOU32(N->getText()); >>
+                                                    << mCVfrVarDataTypeDB.Pack (LineNum, VFR_PACK_ASSIGN, NULL, PackNumber); >>
+  ;
+
+vfrPragmaPackDefinition :
+  "\#pragma" "pack" "\(" 
+  {
+      pragmaPackShowDef
+    | pragmaPackStackDef
+    | pragmaPackNumber
+  }
+  "\)"
+  ;
+
 vfrDataStructDefinition :
   { TypeDef } Struct                                << mCVfrVarDataTypeDB.DeclareDataTypeBegin (); >>
   { NonNVDataMap }
@@ -1739,7 +1774,6 @@ vfrStatementOneOfOption :
 																				        ), L->getLine());
                                                           }
                                                        >>
-  { "," Key "=" Number }                               // no use in UEFI2.1 VFR
   (
     "," vfrImageTag                                    << OOOObj.SetScope (1); CIfrEnd EOOOObj; >>
   )*
@@ -2592,7 +2626,7 @@ EfiVfrParser::_PCATCH (
 {
   if (ReturnCode != ExpectCode) {
     mParserStatus++;
-    gCVfrErrorHandle.PrintError (Tok->getLine(), Tok->getText(), ErrorMsg);
+    gCVfrErrorHandle.PrintMsg (Tok->getLine(), Tok->getText(), "Error", ErrorMsg);
   }
 }
 

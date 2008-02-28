@@ -9,22 +9,30 @@ SPendingAssign::SPendingAssign (
   IN CHAR8  *Key, 
   IN VOID   *Addr, 
   IN UINT32 Len, 
-  IN UINT32 LineNo
+  IN UINT32 LineNo,
+  IN CHAR8  *Msg
   )
 {
+  mKey    = NULL;
+  mAddr   = Addr;
+  mLen    = Len;
+  mFlag   = PENDING;
+  mLineNo = LineNo;
+  mMsg    = NULL;
+  mNext   = NULL;
   if (Key != NULL) {
     mKey = new CHAR8[strlen (Key) + 1];
     if (mKey != NULL) {
       strcpy (mKey, Key);
     }
-  } else {
-    mKey = NULL;
   }
-  mAddr   = Addr;
-  mLen    = Len;
-  mFlag   = PENDING;
-  mLineNo = LineNo;
-  mNext   = NULL;
+
+  if (Msg != NULL) {
+    mMsg = new CHAR8[strlen (Msg) + 1];
+    if (mMsg != NULL) {
+      strcpy (mMsg, Msg);
+    }
+  }
 }
 
 SPendingAssign::~SPendingAssign (
@@ -37,6 +45,9 @@ SPendingAssign::~SPendingAssign (
   mAddr   = NULL;
   mLen    = 0;
   mLineNo = 0;
+  if (mMsg != NULL) {
+    delete mMsg;
+  }
   mNext   = NULL;
 }
 
@@ -391,12 +402,13 @@ CFormPkg::AssignPending (
   IN CHAR8  *Key, 
   IN VOID   *ValAddr, 
   IN UINT32 ValLen,
-  IN UINT32 LineNo
+  IN UINT32 LineNo,
+  IN CHAR8  *Msg
   )
 {
   SPendingAssign *pNew;
 
-  pNew = new SPendingAssign (Key, ValAddr, ValLen, LineNo);
+  pNew = new SPendingAssign (Key, ValAddr, ValLen, LineNo, Msg);
   if (pNew == NULL) {
     return VFR_RETURN_OUT_FOR_RESOURCES;
   }
@@ -451,7 +463,7 @@ CFormPkg::PendingAssignPrintAll (
 
   for (pNode = PendingAssignList; pNode != NULL; pNode = pNode->mNext) {
     if (pNode->mFlag == PENDING) {
-      gCVfrErrorHandle.PrintError (pNode->mLineNo, pNode->mKey, "can not assign value because not defined");
+      gCVfrErrorHandle.PrintMsg (pNode->mLineNo, pNode->mKey, "Error", pNode->mMsg);
     }
   }
 }

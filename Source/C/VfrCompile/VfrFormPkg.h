@@ -6,6 +6,8 @@
 #include "VfrError.h"
 #include "VfrUtilityLib.h"
 
+#define NO_QST_REFED "no question refered"
+
 /*
  * The functions below are used for flags setting
  */
@@ -56,9 +58,10 @@ struct SPendingAssign {
   UINT32                  mLen;
   ASSIGN_FLAG             mFlag;
   UINT32                  mLineNo;
+  CHAR8                   *mMsg;
   struct SPendingAssign   *mNext;
 
-  SPendingAssign (IN CHAR8 *, IN VOID *, IN UINT32, IN UINT32);
+  SPendingAssign (IN CHAR8 *, IN VOID *, IN UINT32, IN UINT32, IN CHAR8 *);
   ~SPendingAssign ();
 
   VOID   SetAddrAndLen (IN VOID *, IN UINT32);
@@ -107,7 +110,7 @@ public:
   EFI_VFR_RETURN_CODE GenCFile (IN CHAR8 *, IN FILE *);
 
 public:
-  EFI_VFR_RETURN_CODE AssignPending (IN CHAR8 *, IN VOID *, IN UINT32, IN UINT32);
+  EFI_VFR_RETURN_CODE AssignPending (IN CHAR8 *, IN VOID *, IN UINT32, IN UINT32, IN CHAR8 *Msg = NULL);
   VOID                DoPendingAssign (IN CHAR8 *, IN VOID *, IN UINT32);
   bool                HavePendingUnassigned (VOID);
   VOID                PendingAssignPrintAll (VOID);
@@ -1409,7 +1412,7 @@ public:
     if (QuestionId != EFI_QUESTION_ID_INVALID) {
       mEqIdId->QuestionId1 = QuestionId;
     } else {
-      gCFormPkg.AssignPending (VarIdStr, (VOID *)(&mEqIdId->QuestionId1), sizeof (EFI_QUESTION_ID), LineNo);
+      gCFormPkg.AssignPending (VarIdStr, (VOID *)(&mEqIdId->QuestionId1), sizeof (EFI_QUESTION_ID), LineNo, NO_QST_REFED);
     }
   }
 
@@ -1421,7 +1424,7 @@ public:
     if (QuestionId != EFI_QUESTION_ID_INVALID) {
       mEqIdId->QuestionId2 = QuestionId;
     } else {
-      gCFormPkg.AssignPending (VarIdStr, (VOID *)(&mEqIdId->QuestionId2), sizeof (EFI_QUESTION_ID), LineNo);
+      gCFormPkg.AssignPending (VarIdStr, (VOID *)(&mEqIdId->QuestionId2), sizeof (EFI_QUESTION_ID), LineNo, NO_QST_REFED);
     }
   }
 };
@@ -1447,7 +1450,7 @@ public:
     if (QuestionId != EFI_QUESTION_ID_INVALID) {
       mEqIdVal->QuestionId = QuestionId;
     } else {
-      gCFormPkg.AssignPending (VarIdStr, (VOID *)(&mEqIdVal->QuestionId), sizeof (EFI_QUESTION_ID), LineNo);
+      gCFormPkg.AssignPending (VarIdStr, (VOID *)(&mEqIdVal->QuestionId), sizeof (EFI_QUESTION_ID), LineNo, NO_QST_REFED);
     }
   }
 
@@ -1479,7 +1482,7 @@ public:
     if (QuestionId != EFI_QUESTION_ID_INVALID) {
       mEqIdVList->QuestionId = QuestionId;
     } else {
-      gCFormPkg.AssignPending (VarIdStr, (VOID *)(&mEqIdVList->QuestionId), sizeof (EFI_QUESTION_ID), LineNo);
+      gCFormPkg.AssignPending (VarIdStr, (VOID *)(&mEqIdVList->QuestionId), sizeof (EFI_QUESTION_ID), LineNo, NO_QST_REFED);
     }
   }
 
@@ -1521,7 +1524,7 @@ public:
     if (QuestionId != EFI_QUESTION_ID_INVALID) {
       mQuestionRef1->QuestionId = QuestionId;
     } else {
-      gCFormPkg.AssignPending (VarIdStr, (VOID *)(&mQuestionRef1->QuestionId), sizeof (EFI_QUESTION_ID), LineNo);
+      gCFormPkg.AssignPending (VarIdStr, (VOID *)(&mQuestionRef1->QuestionId), sizeof (EFI_QUESTION_ID), LineNo, NO_QST_REFED);
     }
   }
 };

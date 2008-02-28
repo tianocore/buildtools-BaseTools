@@ -174,9 +174,10 @@ CVfrErrorHandle::GetFileNameLineNum (
 }
 
 VOID
-CVfrErrorHandle::PrintError (
+CVfrErrorHandle::PrintMsg (
   IN UINT32               LineNum,
   IN CHAR8                *TokName,
+  IN CHAR8                *MsgType,
   IN CHAR8                *ErrorMsg
   )
 {
@@ -184,7 +185,7 @@ CVfrErrorHandle::PrintError (
   UINT32                 FileLine;
 
   GetFileNameLineNum (LineNum, &FileName, &FileLine);
-  printf ("%s line %d: error %s %s\n", FileName, FileLine, TokName, ErrorMsg);
+  printf ("%s line %d: %s %s %s\n", FileName, FileLine, MsgType, TokName, ErrorMsg);
 }
 
 UINT8
