@@ -779,9 +779,13 @@ class Makefile(object):
                                     self.ModuleInfo.ToolChain, self.ModuleInfo.Arch))
 
         if self.ModuleInfo.IsLibrary:
-            self.ResultFileList = self.DestFileDatabase["Static-Library-File"]
+            if "Static-Library-File" in self.DestFileDatabase:
+                self.ResultFileList = self.DestFileDatabase["Static-Library-File"]
         elif self.ModuleInfo.ModuleType == "USER_DEFINED":
-            self.ResultFileList = self.DestFileDatabase["Dynamic-Library-File"]
+            if "Dynamic-Library-File" in self.DestFileDatabase:
+                self.ResultFileList = self.DestFileDatabase["Dynamic-Library-File"]
+        if len(self.ResultFileList) == 0:
+            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Don't know how to end the module build")
 
         SourceFileMacroNameList = []
         SourceFileMacroList = [] # macro name = file list
