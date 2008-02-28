@@ -243,10 +243,14 @@ class EfiSection (EfiSectionClassObject):
                         MapFile = File.replace('.efi', '.map')
                         if os.path.exists(MapFile):
                             CopyMapFile = os.path.join(OutputPath, ModuleName + '.map')
+                            if os.path.exists(CopyMapFile):
+                                os.remove(CopyMapFile)
                             shutil.copyfile(MapFile, CopyMapFile)
 
                     if not NoStrip:
                         FileBeforeStrip = os.path.join(OutputPath, ModuleName + '.efi')
+                        if os.path.exists(FileBeforeStrip):
+                            os.remove(FileBeforeStrip)
                         shutil.copyfile(File, FileBeforeStrip)
                         StrippedFile = os.path.join(OutputPath, ModuleName + '.stripped')
                         StripCmd = (

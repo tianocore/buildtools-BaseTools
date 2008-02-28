@@ -73,6 +73,8 @@ class DataSection (DataSectionClassObject):
             MapFile = Filename.replace('.efi', '.map')
             if os.path.exists(MapFile):
                 CopyMapFile = os.path.join(OutputPath, ModuleName + '.map')
+                if os.path.exists(CopyMapFile):
+                    os.remove(CopyMapFile)
                 shutil.copyfile(MapFile, CopyMapFile) 
         
         NoStrip = True
@@ -82,6 +84,8 @@ class DataSection (DataSectionClassObject):
         
         if not NoStrip:
             FileBeforeStrip = os.path.join(OutputPath, ModuleName + '.efi')
+            if os.path.exists(FileBeforeStrip):
+                os.remove(FileBeforeStrip)
             shutil.copyfile(self.SectFileName, FileBeforeStrip)
             StrippedFile = os.path.join(OutputPath, ModuleName + '.stripped')
             StripCmd = (

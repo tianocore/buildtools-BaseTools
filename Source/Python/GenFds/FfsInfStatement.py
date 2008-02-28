@@ -356,6 +356,8 @@ class FfsInfStatement(FfsInfStatementClassObject):
                 
                 if not NoStrip:
                     FileBeforeStrip = os.path.join(self.OutputPath, ModuleName + '.reloc')
+                    if os.path.exists(FileBeforeStrip):
+                        os.remove(FileBeforeStrip)
                     shutil.copyfile(File, FileBeforeStrip)
                     StrippedFile = os.path.join(self.OutputPath, ModuleName + '.stipped')
                     StripCmd = (
