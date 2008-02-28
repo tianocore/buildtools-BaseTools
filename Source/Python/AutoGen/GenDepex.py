@@ -97,7 +97,7 @@ class DependencyExpression:
     #   @param  Expression  The list or string of dependency expression
     #   @param  ModuleType  The type of the module using the dependency expression
     # 
-    def __init__(self, Expression, ModuleType):
+    def __init__(self, Expression, ModuleType, Optimize=False):
         self.Phase = gType2Phase[ModuleType]
         if type(Expression) == type([]):
             self.ExpressionString = " ".join(Expression)
@@ -111,6 +111,8 @@ class DependencyExpression:
 
         self.GetPostfixNotation()
         self.ValidateOpcode()
+        if Optimize:
+            self.Optimize()
 
     def __str__(self):
         return " ".join(self.TokenList)
@@ -139,9 +141,15 @@ class DependencyExpression:
                         break
                     self.PostfixNotation.append(Stack.pop())
             elif Token in self.OpcodePriority:
-                if Token == "NOT" and LastToken not in self.SupportedOpcode:
-                    EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid dependency expression: missing operator before NOT",
-                                    ExtraData=str(self))
+                if Token == "NOT":
+                    if LastToken not in self.SupportedOpcode:
+                        EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid dependency expression: missing operator before NOT",
+                                        ExtraData=str(self))
+                else:
+                    if LastToken in self.SupportedOpcode:
+                        EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid dependency expression: missing operand before " + Token,
+                                        ExtraData=str(self))
+
                 while len(Stack) > 0:
                     if Stack[-1] == "(" or self.OpcodePriority[Token] >= self.OpcodePriority[Stack[-1]]:
                         break
@@ -204,6 +212,23 @@ class DependencyExpression:
             EdkLogger.error("GenDepex", PARSER_ERROR, "Extra expressions after END", 
                             ExtraData=str(self))
 
+    ## Simply optimize the dependency expression by removing duplicated operands
+    def Optimize(self):
+        ValidOpcode = list(set(self.OpcodeList))
+        if len(ValidOpcode) != 1 or ValidOpcode[0] not in ['AND', 'OR']:
+            return
+        Op = ValidOpcode[0]
+        NewOperand = []
+        for Token in self.PostfixNotation:
+            if Token in self.SupportedOpcode or Token in NewOperand:
+                continue
+            NewOperand.append(Token)
+        Op = " " + Op + " "
+        self.TokenList = Op.join(NewOperand).split()
+        self.PostfixNotation = []
+        self.GetPostfixNotation()
+
+
     ## Convert a GUID value in C structure format into its binary form
     #
     #   @param  Guid    The GUID value in C structure format
@@ -263,6 +288,8 @@ def GetOptions():
                       help="The type of module for which the dependency expression serves")
     Parser.add_option("-e", "--dependency-expression", dest="Expression", default="",
                       help="The string of dependency expression. If this option presents, the input file will be ignored.")
+    Parser.add_option("-m", "--optimize", dest="Optimize", default=False, action="store_true",
+                      help="Do some simple optimization on the expression.")
     Parser.add_option("-v", "--verbose", dest="verbose", default=False, action="store_true",
                       help="build with verbose information")
     Parser.add_option("-d", "--debug", dest="debug", default=False, action="store_true",
@@ -299,7 +326,7 @@ def Main():
             print "No expression string or file given"
             return 1
 
-        Dpx = DependencyExpression(DxsString, Option.ModuleType)
+        Dpx = DependencyExpression(DxsString, Option.ModuleType, Option.Optimize)
 
         if Option.OutputFile != None:
             Dpx.Generate(Option.OutputFile)
