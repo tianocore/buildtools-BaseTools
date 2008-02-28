@@ -217,6 +217,10 @@ Returns:
   while (argc > 0) {
     if ((stricmp (argv[0], "-i") == 0) || (stricmp (argv[0], "--inputfile") == 0)) {
       InfFileName = argv[1];
+      if (InfFileName == NULL) {
+        Error (NULL, 0, 1003, "Invalid option value", "Input file can't be null");
+        return STATUS_ERROR;
+      }
       argc -= 2;
       argv += 2;
       continue; 
@@ -224,6 +228,10 @@ Returns:
 
     if ((stricmp (argv[0], "-a") == 0) || (stricmp (argv[0], "--addrfile") == 0)) {
       AddrFileName = argv[1];
+      if (AddrFileName == NULL) {
+        Error (NULL, 0, 1003, "Invalid option value", "Address file can't be null");
+        return STATUS_ERROR;
+      }
       argc -= 2;
       argv += 2;
       continue; 
@@ -231,6 +239,10 @@ Returns:
 
     if ((stricmp (argv[0], "-o") == 0) || (stricmp (argv[0], "--outputfile") == 0)) {
       OutFileName = argv[1];
+      if (OutFileName == NULL) {
+        Error (NULL, 0, 1003, "Invalid option value", "Output file can't be null");
+        return STATUS_ERROR;
+      }
       argc -= 2;
       argv += 2;
       continue; 
@@ -263,6 +275,10 @@ Returns:
 
     if ((stricmp (argv[0], "-m") == 0) || (stricmp (argv[0], "--map") == 0)) {
       MapFileName = argv[1];
+      if (MapFileName == NULL) {
+        Error (NULL, 0, 1003, "Invalid option value", "Map file can't be null");
+        return STATUS_ERROR;
+      }
       argc -= 2;
       argv += 2;
       continue; 

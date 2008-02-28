@@ -315,7 +315,7 @@ Returns:
 }
 
 
-EFI_STATUS
+VOID
 FreeStringList (
   IN STRING_LIST       *StringList
   )
@@ -331,14 +331,9 @@ Arguments:
 
 Returns:
 
-  EFI_STATUS
-
+  VOID
 --*/
 {
-  UINTN Count;
-  UINTN Length;
-  CHAR8 *NewString;
-
   while (StringList->Count > 0) {
     RemoveLastStringFromList (StringList);
   }
@@ -396,10 +391,12 @@ Returns:
     strcat (NewString, "\"");
   }
   strcat (NewString, "]");
+  
+  return NewString;
 }
 
 
-EFI_STATUS
+VOID
 PrintStringList (
   IN STRING_LIST       *StringList
   )

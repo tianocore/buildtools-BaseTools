@@ -73,7 +73,9 @@ STATIC CHAR8      *mSectionTypeName[] = {
 };
 
 STATIC CHAR8      *mCompressionTypeName[]    = { "PI_NONE", "PI_STD" };
-STATIC CHAR8      *mGUIDedSectionAttribue[]  = { NULL, "PROCESSING_REQUIRED", "AUTH_STATUS_VALID"};
+
+#define EFI_GUIDED_SECTION_NONE 0x80
+STATIC CHAR8      *mGUIDedSectionAttribue[]  = { "NONE", "PROCESSING_REQUIRED", "AUTH_STATUS_VALID"};
 
 //
 // Crc32 GUID section related definitions.
@@ -155,19 +157,20 @@ Returns:
                         EFI_SECTION_USER_INTERFACE, EFI_SECTION_VERSION,\n\
                         EFI_SECTION_FIRMWARE_VOLUME_IMAGE, EFI_SECTION_RAW,\n\
                         EFI_SECTION_FREEFORM_SUBTYPE_GUID,\n\
-                        EFI_SECTION_PEI_DEPEX. if sectiontype is not given, \n\
-                        EFI_SECTION_ALL is default type.\n");
+                        EFI_SECTION_PEI_DEPEX. if -s option is not given, \n\
+                        EFI_SECTION_ALL is default section type.\n");
   fprintf (stdout, "  -c [Type], --compress [Type]\n\
                         Compress method type can be PI_NONE or PI_STD.\n\
-                        if Type is not given, PI_STD is default type.\n"); 
+                        if -c option is not given, PI_STD is default type.\n"); 
   fprintf (stdout, "  -g GuidValue, --vendor GuidValue\n\
                         GuidValue is one specific vendor guid value.\n\
-                        Its format is 00000000-0000-0000-0000-000000000000\n");
+                        Its format is xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n");
   fprintf (stdout, "  -l GuidHeaderLength, --HeaderLength GuidHeaderLength\n\
                         GuidHeaderLength is the size of header of guided data\n");
   fprintf (stdout, "  -r GuidAttr, --attributes GuidAttr\n\
                         GuidAttr is guid section atttributes, which may be\n\
-                        PROCESSING_REQUIRED or AUTH_STATUS_VALID\n");
+                        PROCESSING_REQUIRED, AUTH_STATUS_VALID and NONE. \n\
+                        if -r option is not given, default PROCESSING_REQUIRED\n");
   fprintf (stdout, "  -n String, --name String\n\
                         String is a NULL terminated string used in Ui section.\n");
   fprintf (stdout, "  -j Number, --buildnumber Number\n\
@@ -826,6 +829,10 @@ Returns:
   while (argc > 0) {
     if ((stricmp (argv[0], "-s") == 0) || (stricmp (argv[0], "--SectionType") == 0)) {
       SectionName = argv[1];
+      if (SectionName == NULL) {
+        Error (NULL, 0, 1003, "Invalid option value", "Section Type can't be NULL");
+        goto Finish;
+      }
       argc -= 2;
       argv += 2;
       continue; 
@@ -833,6 +840,10 @@ Returns:
 
     if ((stricmp (argv[0], "-o") == 0) || (stricmp (argv[0], "--outputfile") == 0)) {
       OutputFileName = argv[1];
+      if (OutputFileName == NULL) {
+        Error (NULL, 0, 1003, "Invalid option value", "Output file can't be NULL");
+        goto Finish;
+      }
       argc -= 2;
       argv += 2;
       continue; 
@@ -840,6 +851,10 @@ Returns:
 
     if ((stricmp (argv[0], "-c") == 0) || (stricmp (argv[0], "--compress") == 0)) {
       CompressionName = argv[1];
+      if (CompressionName == NULL) {
+        Error (NULL, 0, 1003, "Invalid option value", "Compression Type can't be NULL");
+        goto Finish;
+      }
       argc -= 2;
       argv += 2;
       continue;
@@ -861,6 +876,11 @@ Returns:
         SectGuidAttribute |= EFI_GUIDED_SECTION_PROCESSING_REQUIRED;
       } else if (stricmp (argv[1], mGUIDedSectionAttribue[EFI_GUIDED_SECTION_AUTH_STATUS_VALID]) == 0) {
         SectGuidAttribute |= EFI_GUIDED_SECTION_AUTH_STATUS_VALID;
+      } else if (stricmp (argv[1], mGUIDedSectionAttribue[0]) == 0) {
+        //
+        // NONE attribute
+        //
+        SectGuidAttribute |= EFI_GUIDED_SECTION_NONE;
       } else {
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
         goto Finish;
@@ -883,12 +903,20 @@ Returns:
 
     if ((stricmp (argv[0], "-n") == 0) || (stricmp (argv[0], "--name") == 0)) {
       StringBuffer = argv[1];
+      if (StringBuffer == NULL) {
+        Error (NULL, 0, 1003, "Invalid option value", "Name can't be NULL");
+        goto Finish;
+      }
       argc -= 2;
       argv += 2;
       continue;
     }
 
     if ((stricmp (argv[0], "-j") == 0) || (stricmp (argv[0], "--buildnumber") == 0)) {
+      if (argv[1] == NULL) {
+        Error (NULL, 0, 1003, "Invalid option value", "build number can't be NULL");
+        goto Finish;
+      }
       //
       // Verify string is a integrator number
       //
@@ -1008,6 +1036,12 @@ Returns:
     if (SectGuidAttribute == 0) {
       SectGuidAttribute = EFI_GUIDED_SECTION_PROCESSING_REQUIRED;
     }
+    if ((SectGuidAttribute & EFI_GUIDED_SECTION_NONE) != 0) {
+      //
+      // NONE attribute, clear attribute value.
+      //
+      SectGuidAttribute = 0;
+    }
     VerboseMsg ("Vendor Guid is %08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X", 
                 VendorGuid.Data1,
                 VendorGuid.Data2,
@@ -1067,6 +1101,13 @@ Returns:
   }
   
   //
+  // GuidValue is only required by Guided section.
+  //
+  if ((SectType != EFI_SECTION_GUID_DEFINED) && (CompareGuid (&VendorGuid, &mZeroGuid) != 0)) {
+    fprintf (stdout, "Warning: the input guid value is not required for this section type %s\n", SectionName);
+  }
+  
+  //
   // Check whether there is input file
   //  
   if ((SectType != EFI_SECTION_VERSION) && (SectType != EFI_SECTION_USER_INTERFACE)) {
@@ -1094,7 +1135,6 @@ Returns:
   //
   // Open output file
   //
-  remove(OutputFileName);
   OutFile = fopen (OutputFileName, "wb");
   if (OutFile == NULL) {
     Error (NULL, 0, 0001, "Error opening file", OutputFileName);

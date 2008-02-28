@@ -387,6 +387,30 @@ Returns:
     return EFI_INVALID_PARAMETER;
   }
   //
+  // Check Guid Format strictly xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+  //
+  for (Index = 0; Index < 36; Index ++) {
+    if (Index == 8 || Index == 13 || Index == 18 || Index == 23) {
+      if (AsciiGuidBuffer[Index] != '-') {
+        break;
+      }
+    } else {
+      if (((AsciiGuidBuffer[Index] >= '0') && (AsciiGuidBuffer[Index] <= '9')) || 
+         ((AsciiGuidBuffer[Index] >= 'a') && (AsciiGuidBuffer[Index] <= 'f')) ||
+         ((AsciiGuidBuffer[Index] >= 'A') && (AsciiGuidBuffer[Index] <= 'F'))) {
+        continue;
+      } else {
+        break;
+      }
+    }
+  }
+  
+  if (Index < 36) {
+    Error (NULL, 0, 1003, "Invalid option value", "Incorrect GUID \"%s\"\n  Correct Format \"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\"", AsciiGuidBuffer);
+    return EFI_ABORTED;
+  }
+  
+  //
   // Scan the guid string into the buffer
   //
   Index = sscanf (
@@ -409,7 +433,7 @@ Returns:
   // Verify the correct number of items were scanned.
   //
   if (Index != 11) {
-    printf ("ERROR: Malformed GUID \"%s\".\n\n", AsciiGuidBuffer);
+    Error (NULL, 0, 1003, "Invalid option value", "Incorrect GUID \"%s\"\n  Correct Format \"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\"", AsciiGuidBuffer);
     return EFI_ABORTED;
   }
   //

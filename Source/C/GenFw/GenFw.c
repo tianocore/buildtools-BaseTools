@@ -104,7 +104,7 @@ typedef struct {
   UINTN  Reserved[3];
 } MICROCODE_IMAGE_HEADER;
 
-STATIC UINT8 *mInImageName;
+STATIC CHAR8 *mInImageName;
 
 STATIC
 EFI_STATUS
@@ -203,7 +203,8 @@ Returns:
   fprintf (stdout, "  -r, --replace         Overwrite the input file with the output content.\n");
   fprintf (stdout, "  -s timedate, --stamp timedate\n\
                         timedate format is \"yyyy-mm-dd 00:00:00\". if timedata \n\
-                        is set to NOW, current system time is used.\n");
+                        is set to NOW, current system time is used. The support\n\
+                        date scope is 1970-1-1 0:0:0 ~ 2038-1-19 3:14:07\n");
   fprintf (stdout, "  -m, --mcifile         Convert input microcode txt file to microcode bin file.\n");
   fprintf (stdout, "  -j, --join            Combine multi microcode bin files to one file.\n");
   fprintf (stdout, "  -a NUM, --align NUM   NUM is one HEX or DEC format alignment value.\n");
@@ -645,6 +646,7 @@ ScanSections(
   NtHdr->OptionalHeader.SizeOfInitializedData = RelocOffset - DataOffset;
   NtHdr->OptionalHeader.SizeOfUninitializedData = 0;
   NtHdr->OptionalHeader.AddressOfEntryPoint = CoffEntry;
+
   NtHdr->OptionalHeader.BaseOfCode = TextOffset;
 
   NtHdr->OptionalHeader.BaseOfData = DataOffset;
@@ -919,26 +921,32 @@ ConvertElf (
   if (!CheckElfHeader())
     return;
 
+  VerboseMsg ("Check Efl Image Header");
   //
   // Compute sections new address.
   //
   ScanSections();
+  
+  VerboseMsg ("Compute sections new address.");
 
   //
   // Write and relocate sections.
   //
   WriteSections(IsTextShdr);
   WriteSections(IsDataShdr);
+  VerboseMsg ("Write and relocate sections.");
 
   //
   // Translate and write relocations.
   //
   WriteRelocations();
+  VerboseMsg ("Translate and write relocations.");
 
   //
   // Write debug info.
   //
   WriteDebug();
+  VerboseMsg ("Write debug info.");
 
   NtHdr = (EFI_IMAGE_NT_HEADERS *)(CoffFile + NtHdrOffset);
   NtHdr->OptionalHeader.SizeOfImage = CoffOffset;
@@ -1069,6 +1077,10 @@ Returns:
   while (argc > 0) {
     if ((stricmp (argv[0], "-o") == 0) || (stricmp (argv[0], "--outputfile") == 0)) {
       OutImageName = argv[1];
+      if (OutImageName == NULL) {
+        Error (NULL, 0, 1003, "Invalid option value", "Output file name can't be NULL");
+        goto Finish;
+      }
       argc -= 2;
       argv += 2;
       continue; 
@@ -1076,6 +1088,10 @@ Returns:
 
     if ((stricmp (argv[0], "-e") == 0) || (stricmp (argv[0], "--efiImage") == 0)) {
       ModuleType   = argv[1];
+      if (ModuleType == NULL) {
+        Error (NULL, 0, 1003, "Invalid option value", "Module Type can't be NULL");
+        goto Finish;        
+      }
       if (OutImageType != FW_TE_IMAGE) {
         OutImageType = FW_EFI_IMAGE;
       }
@@ -1764,6 +1780,7 @@ Returns:
   if (OutImageType == FW_ZERO_DEBUG_IMAGE) {
     Status = ZeroDebugData (FileBuffer);
     if (EFI_ERROR (Status)) {
+      Error (NULL, 0, 3000, "Invalid", "Zero DebugData Error status is 0x%lx", (UINTN) Status);
       goto Finish;
     }
     
@@ -1783,6 +1800,7 @@ Returns:
   if (OutImageType == FW_SET_STAMP_IMAGE) {
     Status = SetStamp (FileBuffer, TimeStamp);
     if (EFI_ERROR (Status)) {
+      Error (NULL, 0, 3000, "Invalid", "SetStamp Error status is 0x%lx", (UINTN) Status);
       goto Finish;
     }
     
@@ -2076,6 +2094,19 @@ WriteFile:
   VerboseMsg ("the size of output file is %d bytes", FileLength);
 
 Finish:
+  if (fpInOut != NULL) {
+    if (GetUtilityStatus () != STATUS_SUCCESS) {
+      //
+      // when file updates failed, original file is still recoveried.
+      //
+      fwrite (FileBuffer, 1, FileLength, fpInOut);
+    }
+    //
+    // Write converted data into fpInOut file and close input file.
+    //
+    fclose (fpInOut);
+  }
+
   if (FileBuffer != NULL) {
     free (FileBuffer);
   }
@@ -2090,14 +2121,7 @@ Finish:
     //
     fclose (fpOut);
   }
-
-  if (fpInOut != NULL) {
-    //
-    // Write converted data into fpInOut file and close input file.
-    //
-    fclose (fpInOut);
-  }
-  
+ 
   VerboseMsg ("%s tool done with return code is 0x%x.", UTILITY_NAME, GetUtilityStatus ());
   
   return GetUtilityStatus ();
@@ -2271,13 +2295,17 @@ Returns:
             &stime.tm_min,
             &stime.tm_sec
             ) != 6) {
-      Error (NULL, 0, 3000, "Invalid", "%s Invalid date or time!", TimeStamp);
+      Error (NULL, 0, 3000, "Invalid", "%s Invalid or unsupported datetime!", TimeStamp);
       return EFI_INVALID_PARAMETER;
     }
 
     //
     // in struct, Month (0 - 11; Jan = 0). So decrease 1 from it
     //
+    if (stime.tm_mon <= 0 || stime.tm_mday <=0) {
+      Error (NULL, 0, 3000, "Invalid", "%s Invalid date!", TimeStamp);
+      return EFI_INVALID_PARAMETER;      
+    }
     stime.tm_mon -= 1;
   
     //
@@ -2287,13 +2315,14 @@ Returns:
     //
     // convert 0 -> 100 (2000), 1 -> 101 (2001), ..., 38 -> 138 (2038)
     //
-    if (stime.tm_year <= 38) {
-      stime.tm_year += 100;
-    } else if (stime.tm_year >= 1970) {
+    if (stime.tm_year >= 1970 && stime.tm_year <= 2038) {
       //
       // convert 1970 -> 70, 2000 -> 100, ...
       //
       stime.tm_year -= 1900;
+    } else {
+      Error (NULL, 0, 3000, "Invalid", "%s Invalid or unsupported datetime!", TimeStamp);
+      return EFI_INVALID_PARAMETER;
     }
 
     //
@@ -2301,7 +2330,7 @@ Returns:
     //
     newtime = mktime (&stime);
     if (newtime == (time_t) - 1) {
-      Error (NULL, 0, 3000, "Invalid", "%s Invalid date or time!", TimeStamp);
+      Error (NULL, 0, 3000, "Invalid", "%s Invalid or unsupported datetime!", TimeStamp);
       return EFI_INVALID_PARAMETER;
     }
   }

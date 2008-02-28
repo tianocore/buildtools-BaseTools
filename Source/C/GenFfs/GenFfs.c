@@ -134,13 +134,13 @@ Returns:
                         EFI_FV_FILETYPE_FIRMWARE_VOLUME_IMAGE.\n");
   fprintf (stdout, "  -g FileGuid, --fileguid FileGuid\n\
                         FileGuid is one module guid.\n\
-                        Its format is 00000000-0000-0000-0000-000000000000\n");
+                        Its format is xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n");
   fprintf (stdout, "  -x, --fixed           Indicates that the file may not be moved\n\
                         from its present location.\n");
   fprintf (stdout, "  -s, --checksum        Indicates to calculate file checksum.\n");
   fprintf (stdout, "  -a FileAlign, --align FileAlign\n\
                         FileAlign points to file alignment, which only support\n\
-                        the following align: 8,16,128,512,1K,4K,32K,64K\n");
+                        the following align: 1,2,4,8,16,128,512,1K,4K,32K,64K\n");
   fprintf (stdout, "  -i SectionFile, --sectionfile SectionFile\n\
                         Section file will be contained in this FFS file.\n");
   fprintf (stdout, "  -n SectionAlign, --sectionalign SectionAlign\n\
@@ -476,7 +476,7 @@ Returns:
     if ((stricmp (argv[0], "-t") == 0) || (stricmp (argv[0], "--filetype") == 0)) {
       FfsFiletype = StringToType (argv[1]);
       if (FfsFiletype == EFI_FV_FILETYPE_ALL) {
-        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        Error (NULL, 0, 1003, "Invalid option value", "file type can't be NULL");
         goto Finish;
       }
       argc -= 2;
@@ -486,6 +486,10 @@ Returns:
 
     if ((stricmp (argv[0], "-o") == 0) || (stricmp (argv[0], "--outputfile") == 0)) {
       OutputFileName = argv[1];
+      if (OutputFileName == NULL) {
+        Error (NULL, 0, 1003, "Invalid option value", "Output file can't be NULL");
+        goto Finish;
+      }
       argc -= 2;
       argv += 2;
       continue; 
@@ -517,14 +521,25 @@ Returns:
     }
 
     if ((stricmp (argv[0], "-a") == 0) || (stricmp (argv[0], "--align") == 0)) {
+      if (argv[1] == NULL) {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        goto Finish;
+      }
       for (Index = 0; Index < sizeof (mFfsValidAlignName) / sizeof (CHAR8 *); Index ++) {
         if (stricmp (argv[1], mFfsValidAlignName[Index]) == 0) {
           break;
         }
       }
       if (Index == sizeof (mFfsValidAlignName) / sizeof (CHAR8 *)) {
-        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
-        goto Finish;
+        if ((stricmp (argv[1], "1") == 0) || (stricmp (argv[1], "2") == 0) || (stricmp (argv[1], "4") == 0)) {
+          //
+          // 1, 2, 4 byte alignment same to 8 byte alignment
+          //
+          Index = 0;
+        } else {
+          Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+          goto Finish;
+        }
       }
       FfsAlign = Index;
       argc -= 2;
@@ -536,7 +551,11 @@ Returns:
       //
       // Get Input file name and its alignment
       //
-      
+      if (argv[1] == NULL) {
+        Error (NULL, 0, 1003, "Invalid option value", "input section file can't be null");
+        goto Finish;
+      }
+
       //
       // Allocate Input file name buffer and its alignment buffer.
       //

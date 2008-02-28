@@ -191,7 +191,7 @@ Returns:
 --*/
 
 
-EFI_STATUS
+VOID
 FreeStringList (
   IN STRING_LIST       *StringList
   )
@@ -236,7 +236,7 @@ Returns:
 --*/
 
 
-EFI_STATUS
+VOID
 PrintStringList (
   IN STRING_LIST       *StringList
   )
@@ -250,10 +250,6 @@ Routine Description:
 Arguments:
 
   StringList        The string list to print
-
-Returns:
-
-  EFI_STATUS
 
 --*/
 
