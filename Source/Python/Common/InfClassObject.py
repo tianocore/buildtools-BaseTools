@@ -341,8 +341,23 @@ class Inf(InfObject):
         #
         # Parse file content
         #
+        IsFindBlockComment = False
+        ReservedLine = ''
         for Line in open(Filename, 'r'):
             LineNo = LineNo + 1
+            #
+            # Remove comment block
+            #
+            if Line.find(TAB_COMMENT_R8_START) > -1:
+                ReservedLine = GetSplitValueList(Line, TAB_COMMENT_R8_START, 1)[0]
+                IsFindBlockComment = True
+            if Line.find(TAB_COMMENT_R8_END) > -1:
+                Line = ReservedLine + GetSplitValueList(Line, TAB_COMMENT_R8_END, 1)[1]
+                ReservedLine = ''
+                IsFindBlockComment = False
+            if IsFindBlockComment:
+                continue
+            
             #
             # Remove comments at tail and remove spaces again
             #

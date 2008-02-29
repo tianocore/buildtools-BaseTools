@@ -256,6 +256,10 @@ def CleanString(Line, CommentCharacter = DataType.TAB_COMMENT_SPLIT):
     #
     Line = Line.strip();
     #
+    # Replace R8's comment character
+    #
+    Line = Line.replace(DataType.TAB_COMMENT_R8_SPLIT, CommentCharacter)
+    #
     # remove comments
     #
     Line = Line.split(CommentCharacter, 1)[0];

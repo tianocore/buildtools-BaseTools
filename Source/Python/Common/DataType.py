@@ -14,6 +14,9 @@
 # Common Definitions
 #
 TAB_SPLIT = '.'
+TAB_COMMENT_R8_START = '/*'
+TAB_COMMENT_R8_END = '*/'
+TAB_COMMENT_R8_SPLIT = '//'
 TAB_COMMENT_SPLIT = '#'
 TAB_EQUAL_SPLIT = '='
 TAB_VALUE_SPLIT = '|'

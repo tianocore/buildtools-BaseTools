@@ -153,20 +153,23 @@ class Dec(DecObject):
         #
         # Parse file content
         #
-        FileContent = open(Filename, 'r').read()
-        for Line in FileContent.splitlines():
+        IsFindBlockComment = False
+        ReservedLine = ''
+        for Line in open(Filename, 'r'):
             LineNo = LineNo + 1
             #
-            # Reomve spaces in head and tail
+            # Remove comment block
             #
-            Line = Line.strip()
-            
-            #
-            # Ignore comments
-            #
-            if Line.startswith(TAB_COMMENT_SPLIT):
+            if Line.find(TAB_COMMENT_R8_START) > -1:
+                ReservedLine = GetSplitValueList(Line, TAB_COMMENT_R8_START, 1)[0]
+                IsFindBlockComment = True
+            if Line.find(TAB_COMMENT_R8_END) > -1:
+                Line = ReservedLine + GetSplitValueList(Line, TAB_COMMENT_R8_END, 1)[1]
+                ReservedLine = ''
+                IsFindBlockComment = False
+            if IsFindBlockComment:
                 continue
-            
+
             #
             # Remove comments at tail and remove spaces again
             #
