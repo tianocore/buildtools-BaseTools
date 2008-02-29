@@ -41,12 +41,6 @@ VfrParserStart (
 }
 >>
 
-#lexaction
-<<
-#include <Error.h>
-
->>
-
 //
 // Define a lexical class for parsing quoted strings. Basically
 // starts with a double quote, and ends with a double quote that
@@ -254,7 +248,7 @@ pragmaPackStackDef :
   <<
      UINT32 LineNum;
      UINT8  PackAction;
-     INT8   *Identifier = NULL;
+     CHAR8  *Identifier = NULL;
      UINT32 PackNumber  = DEFAULT_PACK_ALIGN;
   >>
   (

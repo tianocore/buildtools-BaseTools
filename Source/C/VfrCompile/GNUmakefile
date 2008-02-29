@@ -14,7 +14,7 @@ OBJECTS = AParser.o DLexerBase.o ATokenBuffer.o EfiVfrParser.o VfrLexer.o VfrSyn
 
 LINKER = $(CXX)
 
-EXTRA_CLEAN_OBJECTS = EfiVfrParser.cpp VfrParser.dlg VfrTokens.h DLGLexer.cpp VfrSyntax.cpp tokens.h DLGLexer.h
+EXTRA_CLEAN_OBJECTS = EfiVfrParser.cpp EfiVfrParser.h VfrParser.dlg VfrTokens.h VfrLexer.cpp VfrLexer.h VfrSyntax.cpp tokens.h
 
 include $(MAKEROOT)/Makefiles/app.makefile
 

@@ -107,13 +107,13 @@ struct SVfrPackStackNode {
   UINT32                    mNumber;
   SVfrPackStackNode         *mNext;
 
-  SVfrPackStackNode (IN INT8 *Identifier, IN UINT32 Number) {
+  SVfrPackStackNode (IN CHAR8 *Identifier, IN UINT32 Number) {
     mIdentifier = NULL;
     mNumber     = Number;
     mNext       = NULL;
 
     if (Identifier != NULL) {
-      mIdentifier = new INT8[strlen (Identifier) + 1];
+      mIdentifier = new CHAR8[strlen (Identifier) + 1];
       strcpy (mIdentifier, Identifier);
     }
   }
@@ -125,7 +125,7 @@ struct SVfrPackStackNode {
     mNext = NULL;
   }
 
-  bool Match (IN INT8 *Identifier) {
+  bool Match (IN CHAR8 *Identifier) {
     if (Identifier == NULL) {
       return TRUE;
     } else if (mIdentifier == NULL) {
