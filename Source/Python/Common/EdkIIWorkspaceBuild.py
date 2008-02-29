@@ -546,6 +546,8 @@ class WorkspaceBuild(object):
                 #
                 Pb.DescFilePath = Dsc
                 Pb.PlatformName = Platform.Header[Arch].Name
+                if Pb.PlatformName == '':
+                    EdkLogger.error("AutoGen", PARSER_ERROR, "The BaseName of platform %s is not defined for arch %s" % (Dsc, Arch))
                 Pb.Guid = Platform.Header[Arch].Guid
                 Pb.Version = Platform.Header[Arch].Version
                 Pb.DscSpecification = Platform.Header[Arch].DscSpecification
@@ -650,6 +652,9 @@ class WorkspaceBuild(object):
                 #
                 Pb.DescFilePath = Dec
                 Pb.PackageName = Package.Header[Arch].Name
+                if Pb.PackageName == '':
+                    EdkLogger.error("AutoGen", PARSER_ERROR, "The BaseName of package %s is not defined for arch %s" % (Dec, Arch))
+
                 Pb.Guid = Package.Header[Arch].Guid
                 Pb.Version = Package.Header[Arch].Version
 
@@ -729,6 +734,8 @@ class WorkspaceBuild(object):
                 #
                 Pb.DescFilePath = Inf
                 Pb.BaseName = ModuleHeader.Name
+                if Pb.BaseName == '':
+                    EdkLogger.error("AutoGen", PARSER_ERROR, "The BaseName of module %s is not defined for arch %s" % (Inf, Arch))                
                 Pb.Guid = ModuleHeader.Guid
                 Pb.Version = ModuleHeader.Version
                 Pb.ModuleType = ModuleHeader.ModuleType
@@ -1455,20 +1462,7 @@ class WorkspaceBuild(object):
                     break
 
         if not IsFoundInDec:
-            if NewType != '':
-                SupportedPcdTypeList = []
-                OwnerPackage = ''
-                for Dec in self.Build[Arch].PackageDatabase.keys():
-                    Pcds = self.Build[Arch].PackageDatabase[Dec].Pcds
-                    for PcdType in ["FixedAtBuild", "PatchableInModule", "FeatureFlag", "Dynamic", "DynamicEx"]:
-                        if (Name, Guid, PcdType) in Pcds:
-                            SupportedPcdTypeList.append(PcdType)
-                            OwnerPackage = Dec
-                ErrorMsg = "Only [%s] is supported for Pcd '%s.%s' in package\n\t%s\n\n"\
-                           "    But [%s] is specified in platform\n\t%s"\
-                           % (", ".join(SupportedPcdTypeList), Guid, Name, OwnerPackage, NewType, OwnerPlatform)
-            else:
-                ErrorMsg = "Pcd '%s.%s [%s]' defined in module '%s' is not found in any package" % (Guid, Name, NewType, ModuleName)
+            ErrorMsg = "Pcd '%s.%s [%s]' defined in module '%s' is not found in any package for Arch '%s'" % (Guid, Name, NewType, ModuleName, Arch)
             EdkLogger.error("AutoGen", PARSER_ERROR, ErrorMsg)
 
         #

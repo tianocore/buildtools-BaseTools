@@ -193,10 +193,15 @@ class Dec(DecObject):
                 ArchList = []
                 ThirdList = []
                 
+                CurrentSection = ''
                 LineList = GetSplitValueList(Line[len(TAB_SECTION_START):len(Line) - len(TAB_SECTION_END)], TAB_COMMA_SPLIT)
                 for Item in LineList:
                     ItemList = GetSplitValueList(Item, TAB_SPLIT)
-                    CurrentSection = ItemList[0]
+                    if CurrentSection == '':
+                        CurrentSection = ItemList[0]
+                    else:
+                        if CurrentSection != ItemList[0]:
+                            EdkLogger.error("Parser", PARSER_ERROR, "Different section names '%s' and '%s' are found in one section definition, this is not allowed." % (CurrentSection, ItemList[0]), File=Filename, Line=LineNo)
                     if CurrentSection.upper() not in self.KeyList:
                         RaiseParserError(Line, CurrentSection, Filename, '', LineNo)
                     ItemList.append('')

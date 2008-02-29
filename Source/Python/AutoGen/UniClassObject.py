@@ -17,6 +17,7 @@
 import os, codecs, re
 import Common.EdkLogger as EdkLogger
 from Common.BuildToolError import *
+from Common.String import GetLineNo
 
 ##
 # Static definitions
@@ -134,11 +135,13 @@ class UniFileClassObject(object):
     #
     # Get Language definition
     #
-    def GetLangDef(self, Line):
+    def GetLangDef(self, File, Line):
         Lang = Line.split()
         if len(Lang) != 3:
+            FileIn = codecs.open(File, mode='rb', encoding='utf-16').read()
+            LineNo = GetLineNo(FileIn, Line, False)
             EdkLogger.error("Unicode File Parser", PARSER_ERROR, "Wrong language definition",
-                            ExtraData="""%s\n\t*Correct format is '#langdef eng "English"'""" % Line)
+                            ExtraData="""%s\n\t*Correct format is like '#langdef eng "English"'""" % Line, File = File, Line = LineNo)
         else:
             LangName = ConvertISO639ToRFC3066(Lang[1])
             LangPrintName = Lang[2][1:-1]
@@ -258,7 +261,7 @@ class UniFileClassObject(object):
             # Get Language def information
             #
             if Line.find(u'#langdef ') >= 0:
-                self.GetLangDef(Line)
+                self.GetLangDef(File, Line)
                 continue
 
             Name = ''

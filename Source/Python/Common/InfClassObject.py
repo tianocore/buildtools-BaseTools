@@ -356,6 +356,8 @@ class Inf(InfObject):
             # And then parse the content of the new section
             #
             if Line.startswith(TAB_SECTION_START) and Line.endswith(TAB_SECTION_END):
+                if Line[1:3] == "--":
+                    continue
                 Model = Section[CurrentSection.upper()]
                 #
                 # Insert items data of previous section
@@ -368,10 +370,15 @@ class Inf(InfObject):
                 ArchList = []
                 ThirdList = []
                 
+                CurrentSection = ''
                 LineList = GetSplitValueList(Line[len(TAB_SECTION_START):len(Line) - len(TAB_SECTION_END)], TAB_COMMA_SPLIT)
                 for Item in LineList:
                     ItemList = GetSplitValueList(Item, TAB_SPLIT)
-                    CurrentSection = ItemList[0]
+                    if CurrentSection == '':
+                        CurrentSection = ItemList[0]
+                    else:
+                        if CurrentSection != ItemList[0]:
+                            EdkLogger.error("Parser", PARSER_ERROR, "Different section names '%s' and '%s' are found in one section definition, this is not allowed." % (CurrentSection, ItemList[0]), File=Filename, Line=LineNo)
                     if CurrentSection.upper() not in self.KeyList:
                         RaiseParserError(Line, CurrentSection, Filename, '', LineNo)
                     ItemList.append('')
@@ -926,7 +933,8 @@ class Inf(InfObject):
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
                     Line = Line + Record[0] + ' '
-            MergeArches(Depex, Line, Arch)
+            if Line != '':
+                MergeArches(Depex, Line, Arch)
 
         for Key in Depex.keys():
             Dep = ModuleDepexClass()

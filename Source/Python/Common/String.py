@@ -493,15 +493,16 @@ def CheckFileExist(WorkspaceDir, CheckFilename, ContainerFilename, SectionName, 
 # @retval int  Index of the line
 # @retval -1     The line is not found
 #
-def GetLineNo(FileContent, Line):
+def GetLineNo(FileContent, Line, IsIgnoreComment = True):
     LineList = FileContent.splitlines()
     for Index in range(len(LineList)):
         if LineList[Index].find(Line) > -1:
             #
             # Ignore statement in comment
             #
-            if LineList[Index].strip()[0] == DataType.TAB_COMMENT_SPLIT:
-                continue
+            if IsIgnoreComment:
+                if LineList[Index].strip()[0] == DataType.TAB_COMMENT_SPLIT:
+                    continue
             return Index + 1
 
     return -1
