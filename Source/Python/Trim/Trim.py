@@ -213,9 +213,9 @@ def Options():
 
     # error check
     if len(Args) == 0:
-        raise BuildToolError(OPTION_MISSING, name="Input file", usage=Parser.get_usage())
+        EdkLogger.error("Trim", OPTION_MISSING, ExtraData=Parser.get_usage())
     if len(Args) > 1:
-        raise BuildToolError(OPTION_NOT_SUPPORTED, name="Too many input files", usage=Parser.get_usage())
+        EdkLogger.error("Trim", OPTION_NOT_SUPPORTED, ExtraData=Parser.get_usage())
 
     InputFile = Args[0]
     if Options.OutputFile == None:
@@ -234,6 +234,7 @@ def Options():
 #
 def Main():
     try:
+        EdkLogger.Initialize()
         CommandOptions, InputFile = Options()
         if CommandOptions.LogLevel < EdkLogger.DEBUG_9:
             EdkLogger.SetLevel(CommandOptions.LogLevel + 1)
