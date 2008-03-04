@@ -101,8 +101,8 @@ class InfHeader(ModuleHeaderClass):
         TAB_INF_DEFINES_FFS_EXT                     : "FfsExt",
         TAB_INF_DEFINES_FV_EXT                      : "FvExt",
         TAB_INF_DEFINES_SOURCE_FV                   : "SourceFv",
-        TAB_INF_DEFINES_VERSION_NUMBER              : "Version",
-        TAB_INF_DEFINES_VERSION_STRING              : "Version",
+        TAB_INF_DEFINES_VERSION_NUMBER              : "VersionNumber",
+        TAB_INF_DEFINES_VERSION_STRING              : "VersionString",
         TAB_INF_DEFINES_VERSION                     : "Version",
         TAB_INF_DEFINES_PCD_IS_DRIVER               : "PcdIsDriver",
         TAB_INF_DEFINES_TIANO_R8_FLASHMAP_H         : "TianoR8FlashMap_h",
@@ -120,6 +120,8 @@ class InfHeader(ModuleHeaderClass):
 
     def __init__(self):
         ModuleHeaderClass.__init__(self)
+        self.VersionNumber = ''
+        self.VersionString = ''
         #print self.__dict__
     def __setitem__(self, key, value):
         self.__dict__[self._Mapping_[key]] = value
@@ -162,12 +164,13 @@ class InfObject(object):
 # @var KeyList:             To store value for KeyList, a list for all Keys used in Inf
 #
 class Inf(InfObject):
-    def __init__(self, Filename = None, IsMergeAllArches = False, IsToModule = False, WorkspaceDir = None, Database = None, SupArchList = DataType.ARCH_LIST):
+    def __init__(self, Filename = None, IsToDatabase = False, IsToModule = False, WorkspaceDir = None, Database = None, SupArchList = DataType.ARCH_LIST):
         self.Identification = Identification()
         self.Module = ModuleClass()
         self.UserExtensions = ''
         self.WorkspaceDir = WorkspaceDir
         self.SupArchList = SupArchList
+        self.IsToDatabase = IsToDatabase
         
         self.Cur = Database.Cur
         self.TblFile = Database.TblFile
@@ -602,6 +605,29 @@ class Inf(InfObject):
                     else:
                         ModuleHeader.Specification[CleanString(List[0])] = CleanString(List[1])
             
+            #
+            # Get version of INF
+            #
+            if ModuleHeader.InfVersion != "":
+                # R9 inf
+                VersionNumber = ModuleHeader.VersionNumber
+                VersionString = ModuleHeader.VersionString
+                if len(VersionNumber) > 0 and len(VersionString) == 0:
+                    EdkLogger.warn(2000, 'VERSION_NUMBER depricated; INF file %s should be modified to use VERSION_STRING instead.' % self.Identification.FileFullPath)
+                    ModuleHeader.Version = VersionNumber
+                if len(VersionString) > 0:
+                    if len(VersionNumber) > 0:
+                        EdkLogger.warn(2001, 'INF file %s defines both VERSION_NUMBER and VERSION_STRING, using VERSION_STRING' % self.Identification.FileFullPath)
+                    ModuleHeader.Version = VersionString
+            else:
+                # R8 inf
+                ModuleHeader.InfVersion = "0x00010000"
+                if ModuleHeader.ComponentType in gComponentType2ModuleType:
+                    ModuleHeader.ModuleType = gComponentType2ModuleType[ModuleHeader.ComponentType]
+                elif ModuleHeader.ComponentType != '':
+                    EdkLogger.error("Parser", PARSER_ERROR, "Unsupported R8 component type [%s]" % ModuleHeader.ComponentType,
+                                    ExtraData=File)
+                
             self.Module.Header[Arch] = ModuleHeader
     
     

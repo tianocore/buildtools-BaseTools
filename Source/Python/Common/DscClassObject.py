@@ -91,11 +91,12 @@ class DscObject(object):
 class Dsc(DscObject):
     _NullClassIndex = 0
 
-    def __init__(self, Filename = None, IsMergeAllArches = False, IsToPlatform = False, WorkspaceDir = None, Database = None):
+    def __init__(self, Filename = None, IsToDatabase = False, IsToPlatform = False, WorkspaceDir = None, Database = None):
         self.Identification = Identification()
         self.Platform = PlatformClass()
         self.UserExtensions = ''
         self.WorkspaceDir = WorkspaceDir
+        self.IsToDatabase = IsToDatabase
 
         self.Cur = Database.Cur
         self.TblFile = Database.TblFile
@@ -280,9 +281,10 @@ class Dsc(DscObject):
                     #
                     # Update to Database
                     #
-                    #SqlCommand = """update %s set Value1 = '%s', Value2 = '%s', Value3 = '%s'
-                    #                where ID = %s""" % (self.TblDsc.Table, ConvertToSqlString2(Family), ConvertToSqlString2(ToolChain), ConvertToSqlString2(Flag), Record[3])
-                    #self.TblDsc.Exec(SqlCommand)
+                    if self.IsToDatabase:
+                        SqlCommand = """update %s set Value1 = '%s', Value2 = '%s', Value3 = '%s'
+                                        where ID = %s""" % (self.TblDsc.Table, ConvertToSqlString2(Family), ConvertToSqlString2(ToolChain), ConvertToSqlString2(Flag), Record[3])
+                        self.TblDsc.Exec(SqlCommand)
 
         for Key in BuildOptions.keys():
             BuildOption = BuildOptionClass(Key[0], Key[1], Key[2])
@@ -340,9 +342,10 @@ class Dsc(DscObject):
                         #
                         # Update to Database
                         #
-                        #SqlCommand = """update %s set Value1 = '%s', Value2 = '%s'
-                        #                where ID = %s""" % (self.TblDsc.Table, ConvertToSqlString2(List[0]), ConvertToSqlString2(List[1]), Record[3])
-                        #self.TblDsc.Exec(SqlCommand)
+                        if self.IsToDatabase:
+                            SqlCommand = """update %s set Value1 = '%s', Value2 = '%s'
+                                            where ID = %s""" % (self.TblDsc.Table, ConvertToSqlString2(List[0]), ConvertToSqlString2(List[1]), Record[3])
+                            self.TblDsc.Exec(SqlCommand)
     
     ## GenLibraries
     #
@@ -425,9 +428,10 @@ class Dsc(DscObject):
                     #
                     # Update to Database
                     #
-                    #SqlCommand = """update %s set Value1 = '%s', Value2 = '%s', Value3 = '%s'
-                    #                where ID = %s""" % (self.TblDsc.Table, ConvertToSqlString2(LibClassName), ConvertToSqlString2(LibClassIns), ConvertToSqlString2(SupModelList), Record[3])
-                    #self.TblDsc.Exec(SqlCommand)
+                    if self.IsToDatabase:
+                        SqlCommand = """update %s set Value1 = '%s', Value2 = '%s', Value3 = '%s'
+                                        where ID = %s""" % (self.TblDsc.Table, ConvertToSqlString2(LibClassName), ConvertToSqlString2(LibClassIns), ConvertToSqlString2(SupModelList), Record[3])
+                        self.TblDsc.Exec(SqlCommand)
 
         for Key in LibraryClasses.keys():
             Library = PlatformLibraryClass()
@@ -1378,7 +1382,7 @@ if __name__ == '__main__':
     Db = Database.Database(DATABASE_PATH)
     Db.InitDatabase()
     
-    P = Dsc(os.path.normpath(F), False, True, W, Db)
+    P = Dsc(os.path.normpath(F), True, True, W, Db)
     P.ShowPlatform()
     
     Db.Close()

@@ -49,6 +49,7 @@ from CommonClass import *
 # @var CustomMakefile:           To store value for CustomMakefile, it is a set structure as
 #                                { Family : Filename, ... }
 # @var Shadow:                   To store value for Shadow
+# @var MacroDefines              To store the defined macros
 #
 class ModuleHeaderClass(IdentificationClass, CommonHeaderClass, DefineClass):
     def __init__(self):

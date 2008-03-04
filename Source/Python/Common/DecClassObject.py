@@ -82,12 +82,13 @@ class DecObject(object):
 # @var KeyList:             To store value for KeyList, a list for all Keys used in Dec
 #
 class Dec(DecObject):
-    def __init__(self, Filename = None, IsMergeAllArches = False, IsToPackage = False, WorkspaceDir = None, Database = None, SupArchList = DataType.ARCH_LIST):
+    def __init__(self, Filename = None, IsToDatabase = False, IsToPackage = False, WorkspaceDir = None, Database = None, SupArchList = DataType.ARCH_LIST):
         self.Identification = Identification()
         self.Package = PackageClass()
         self.UserExtensions = ''
         self.WorkspaceDir = WorkspaceDir
         self.SupArchList = SupArchList
+        self.IsToDatabase = IsToDatabase
         
         self.Cur = Database.Cur
         self.TblFile = Database.TblFile
