@@ -190,7 +190,7 @@ def SaveFileOnChange(File, Content, IsBinaryFile=True):
             Fd.close()
             return False
         Fd.close()
-        os.remove(File) # seems creating new file is faster than overwriting old one
+        # os.remove(File) # seems creating new file is faster than overwriting old one
     CreateDirectory(os.path.dirname(File))
     Fd = open(File, "w"+BinaryFlag)
     Fd.write(Content)
