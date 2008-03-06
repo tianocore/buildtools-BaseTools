@@ -46,6 +46,8 @@ DATABASE_PATH = "Database/Ecc.db"
 #
 class Database(object):
     def __init__(self, DbPath):
+        if os.path.exists(DbPath):
+            os.remove(DbPath)
         self.Conn = sqlite3.connect(DbPath, isolation_level = 'DEFERRED')
         self.Conn.execute("PRAGMA page_size=4096")
         self.Conn.execute("PRAGMA synchronous=OFF")
@@ -67,11 +69,11 @@ class Database(object):
         #
         # Drop all old existing tables
         #
-        self.TblDataModel.Drop()
-        self.TblFile.Drop()
-        self.TblFunction.Drop()
-        self.TblPcd.Drop()
-        self.TblIdentifier.Drop()
+#        self.TblDataModel.Drop()
+#        self.TblFile.Drop()
+#        self.TblFunction.Drop()
+#        self.TblPcd.Drop()
+#        self.TblIdentifier.Drop()
         
         #
         # Create new tables
