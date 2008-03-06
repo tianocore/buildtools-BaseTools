@@ -381,8 +381,6 @@ class CodeFragmentCollector:
             else:
                 self.__GetOneChar()
 
-        # restore from ListOfList to ListOfString
-        self.Profile.FileLinesList = ["".join(list) for list in self.Profile.FileLinesList]
         self.Rewind()
 
     ## ParseFile() method
@@ -394,6 +392,8 @@ class CodeFragmentCollector:
     #
     def ParseFile(self):
         self.PreprocessFile()
+        # restore from ListOfList to ListOfString
+        self.Profile.FileLinesList = ["".join(list) for list in self.Profile.FileLinesList]
         FileStringContents = ''
         for fileLine in self.Profile.FileLinesList:
             FileStringContents += fileLine

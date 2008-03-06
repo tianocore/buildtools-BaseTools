@@ -133,10 +133,9 @@ def GetFunctionList():
         
     return FuncObjList
 
-if __name__ == '__main__':
-
+def CollectSourceCodeDataIntoDB(RootDir):
     FileObjList = []
-    tuple = os.walk(sys.argv[1])
+    tuple = os.walk(RootDir)
     IgnoredPattern = GetIgnoredDirListPattern()
     ParseErrorFileList = []
 
@@ -175,5 +174,7 @@ if __name__ == '__main__':
 
     Db.UpdateIdentifierBelongsToFunction()
     Db.Close()
-        
+if __name__ == '__main__':
+
+    CollectSourceCodeDataIntoDB(sys.argv[1])       
     print 'Done!'
