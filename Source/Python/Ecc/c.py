@@ -151,9 +151,10 @@ def CollectSourceCodeDataIntoDB(RootDir):
                 collector = CodeFragmentCollector.CodeFragmentCollector(FullName)
                 try:
                     collector.ParseFile()
-                except:
+                except UnicodeError:
                     ParseErrorFileList.append(FullName)
-                    continue
+                    collector.CleanFileProfileBuffer()
+                    collector.ParseFileWithClearedPPDirective()
 #                collector.PrintFragments()
                 BaseName = os.path.basename(f)
                 DirName = os.path.dirname(FullName)
@@ -164,8 +165,6 @@ def CollectSourceCodeDataIntoDB(RootDir):
                 collector.CleanFileProfileBuffer()   
     print ParseErrorFileList
     
-    EdkLogger.Initialize()
-    EdkLogger.SetLevel(EdkLogger.QUIET)
     Db = Database.Database(Database.DATABASE_PATH)
     Db.InitDatabase()
     
@@ -176,5 +175,7 @@ def CollectSourceCodeDataIntoDB(RootDir):
     Db.Close()
 if __name__ == '__main__':
 
+    EdkLogger.Initialize()
+    EdkLogger.SetLevel(EdkLogger.QUIET)
     CollectSourceCodeDataIntoDB(sys.argv[1])       
     print 'Done!'

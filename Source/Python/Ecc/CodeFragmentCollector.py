@@ -67,7 +67,7 @@ class CodeFragmentCollector:
     #
     def __init__(self, FileName):
         self.Profile = FileProfile.FileProfile(FileName)
-        self.Profile.FileLinesList.append(list(T_CHAR_LF))
+        self.Profile.FileLinesList.append(T_CHAR_LF)
         self.FileName = FileName
         self.CurrentLineNumber = 1
         self.CurrentOffsetWithinLine = 0
@@ -285,7 +285,8 @@ class CodeFragmentCollector:
         # HashComment in quoted string " " is ignored.
         InString = False
         InCharLiteral = False 
-
+        
+        self.Profile.FileLinesList = [list(s) for s in self.Profile.FileLinesListFromFile]
         while not self.__EndOfFile():
             
             if self.__CurrentChar() == T_CHAR_DOUBLE_QUOTE and not InComment:
@@ -383,6 +384,117 @@ class CodeFragmentCollector:
 
         self.Rewind()
 
+    def PreprocessFileWithClear(self):
+
+        self.Rewind()
+        InComment = False
+        DoubleSlashComment = False
+        HashComment = False
+        PPExtend = False
+        CommentObj = None
+        PPDirectiveObj = None
+        # HashComment in quoted string " " is ignored.
+        InString = False
+        InCharLiteral = False 
+
+        self.Profile.FileLinesList = [list(s) for s in self.Profile.FileLinesListFromFile]
+        while not self.__EndOfFile():
+            
+            if self.__CurrentChar() == T_CHAR_DOUBLE_QUOTE and not InComment:
+                InString = not InString
+                
+            if self.__CurrentChar() == T_CHAR_SINGLE_QUOTE and not InComment:
+                InCharLiteral = not InCharLiteral
+            # meet new line, then no longer in a comment for // and '#'
+            if self.__CurrentChar() == T_CHAR_LF:
+                if HashComment and PPDirectiveObj != None:
+                    if PPDirectiveObj.Content.rstrip(T_CHAR_CR).endswith(T_CHAR_BACKSLASH):
+                        PPDirectiveObj.Content += T_CHAR_LF
+                        PPExtend = True
+                    else:
+                        PPExtend = False
+                        
+                EndLinePos = (self.CurrentLineNumber, self.CurrentOffsetWithinLine)
+                
+                if InComment and DoubleSlashComment:
+                    InComment = False
+                    DoubleSlashComment = False
+                    CommentObj.Content += T_CHAR_LF
+                    CommentObj.EndPos = EndLinePos
+                    FileProfile.CommentList.append(CommentObj)
+                    CommentObj = None
+                if InComment and HashComment and not PPExtend:
+                    InComment = False
+                    HashComment = False
+                    PPDirectiveObj.Content += T_CHAR_LF
+                    PPDirectiveObj.EndPos = EndLinePos
+                    FileProfile.PPDirectiveList.append(PPDirectiveObj)
+                    PPDirectiveObj = None
+                
+                if InString or InCharLiteral:
+                    CurrentLine = "".join(self.__CurrentLine())
+                    if CurrentLine.rstrip(T_CHAR_LF).rstrip(T_CHAR_CR).endswith(T_CHAR_BACKSLASH):
+                        SlashIndex = CurrentLine.rindex(T_CHAR_BACKSLASH)
+                        self.__SetCharValue(self.CurrentLineNumber, SlashIndex, T_CHAR_SPACE)
+                
+                self.CurrentLineNumber += 1
+                self.CurrentOffsetWithinLine = 0    
+            # check for */ comment end
+            elif InComment and not DoubleSlashComment and not HashComment and self.__CurrentChar() == T_CHAR_STAR and self.__NextChar() == T_CHAR_SLASH:
+                CommentObj.Content += self.__CurrentChar()
+                self.__SetCurrentCharValue(T_CHAR_SPACE)
+                self.__GetOneChar()
+                CommentObj.Content += self.__CurrentChar()
+                self.__SetCurrentCharValue(T_CHAR_SPACE)
+                CommentObj.EndPos = (self.CurrentLineNumber, self.CurrentOffsetWithinLine)
+                FileProfile.CommentList.append(CommentObj)
+                CommentObj = None
+                self.__GetOneChar()
+                InComment = False
+            # set comments to spaces
+            elif InComment:                   
+                if HashComment:
+                    # // follows hash PP directive
+                    if self.__CurrentChar() == T_CHAR_SLASH and self.__NextChar() == T_CHAR_SLASH:
+                        InComment = False
+                        HashComment = False
+                        PPDirectiveObj.EndPos = (self.CurrentLineNumber, self.CurrentOffsetWithinLine - 1)
+                        FileProfile.PPDirectiveList.append(PPDirectiveObj)
+                        PPDirectiveObj = None
+                        continue
+                    else:
+                        PPDirectiveObj.Content += self.__CurrentChar()
+#                    if PPExtend:
+#                        self.__SetCurrentCharValue(T_CHAR_SPACE)
+                else:
+                    CommentObj.Content += self.__CurrentChar()
+                self.__SetCurrentCharValue(T_CHAR_SPACE)
+                self.__GetOneChar()
+            # check for // comment
+            elif self.__CurrentChar() == T_CHAR_SLASH and self.__NextChar() == T_CHAR_SLASH:
+                InComment = True
+                DoubleSlashComment = True
+                CommentObj = Comment('', (self.CurrentLineNumber, self.CurrentOffsetWithinLine), None, T_COMMENT_TWO_SLASH)
+            # check for '#' comment
+            elif self.__CurrentChar() == T_CHAR_HASH and not InString and not InCharLiteral:
+                InComment = True
+                HashComment = True 
+                PPDirectiveObj = PP_Directive('', (self.CurrentLineNumber, self.CurrentOffsetWithinLine), None)
+            # check for /* comment start
+            elif self.__CurrentChar() == T_CHAR_SLASH and self.__NextChar() == T_CHAR_STAR:
+                CommentObj = Comment('', (self.CurrentLineNumber, self.CurrentOffsetWithinLine), None, T_COMMENT_SLASH_STAR)
+                CommentObj.Content += self.__CurrentChar()
+                self.__SetCurrentCharValue( T_CHAR_SPACE)
+                self.__GetOneChar()
+                CommentObj.Content += self.__CurrentChar()
+                self.__SetCurrentCharValue( T_CHAR_SPACE)
+                self.__GetOneChar()
+                InComment = True
+            else:
+                self.__GetOneChar()
+
+        self.Rewind()
+
     ## ParseFile() method
     #
     #   Parse the file profile buffer to extract fd, fv ... information
@@ -392,6 +504,19 @@ class CodeFragmentCollector:
     #
     def ParseFile(self):
         self.PreprocessFile()
+        # restore from ListOfList to ListOfString
+        self.Profile.FileLinesList = ["".join(list) for list in self.Profile.FileLinesList]
+        FileStringContents = ''
+        for fileLine in self.Profile.FileLinesList:
+            FileStringContents += fileLine
+        cStream = antlr3.StringStream(FileStringContents)
+        lexer = CLexer(cStream)
+        tStream = antlr3.CommonTokenStream(lexer)
+        parser = CParser(tStream)
+        parser.translation_unit()
+        
+    def ParseFileWithClearedPPDirective(self):
+        self.PreprocessFileWithClear()
         # restore from ListOfList to ListOfString
         self.Profile.FileLinesList = ["".join(list) for list in self.Profile.FileLinesList]
         FileStringContents = ''

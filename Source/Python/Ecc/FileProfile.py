@@ -43,11 +43,11 @@ class FileProfile :
     #
     def __init__(self, FileName):
         self.FileLinesList = []
+        self.FileLinesListFromFile = []
         try:
             fsock = open(FileName, "rb", 0)
             try:
-                self.FileLinesList = fsock.readlines()
-                self.FileLinesList = [list(s) for s in self.FileLinesList]
+                self.FileLinesListFromFile = fsock.readlines()
             finally:
                 fsock.close()
 
