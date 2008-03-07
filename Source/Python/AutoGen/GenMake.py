@@ -778,10 +778,6 @@ class Makefile(object):
         if  "DLINK" not in PlatformInfo.ToolChainFamily:
             EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Tool [DLINK] is not supported [%s, %s, %s]" % (self.ModuleInfo.BuildTarget,
                                     self.ModuleInfo.ToolChain, self.ModuleInfo.Arch))
-        else:
-            print 'dbg:', dir(PlatformInfo), PlatformInfo.ToolChainFamily
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Tool [DLINK] is not supported [%s, %s, %s]" % (self.ModuleInfo.BuildTarget,
-                                    self.ModuleInfo.ToolChain, self.ModuleInfo.Arch))
 
         if self.ModuleInfo.IsLibrary:
             if "Static-Library-File" in self.DestFileDatabase:
