@@ -335,8 +335,8 @@ INC = ${BEGIN}${include_path_prefix}${include_path} \\
 
 LIBS = ${BEGIN}$(BUILD_DIR)${separator}$(ARCH)${separator}${library_file} \\
        ${END}${BEGIN}${system_library} \\
-       ${END}
-LIBS = $(LIBS) $(LIB_LIST)
+       ${END} \\
+       $(LIB_LIST)
 
 COMMON_DEPS = ${BEGIN}${common_dependency_file} \\
               ${END}
@@ -776,6 +776,10 @@ class Makefile(object):
             EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Tool [CC] is not supported [%s, %s, %s]" % (self.ModuleInfo.BuildTarget,
                                     self.ModuleInfo.ToolChain, self.ModuleInfo.Arch))
         if  "DLINK" not in PlatformInfo.ToolChainFamily:
+            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Tool [DLINK] is not supported [%s, %s, %s]" % (self.ModuleInfo.BuildTarget,
+                                    self.ModuleInfo.ToolChain, self.ModuleInfo.Arch))
+        else:
+            print 'dbg:', dir(PlatformInfo), PlatformInfo.ToolChainFamily
             EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Tool [DLINK] is not supported [%s, %s, %s]" % (self.ModuleInfo.BuildTarget,
                                     self.ModuleInfo.ToolChain, self.ModuleInfo.Arch))
 
