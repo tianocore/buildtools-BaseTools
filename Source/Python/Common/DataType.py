@@ -356,3 +356,6 @@ TAB_UNKNOWN = 'UNKNOWN'
 # Build database path
 #
 DATABASE_PATH = ":memory:" #"BuildDatabase.db"
+
+# used by ECC
+MODIFIER_LIST = ['IN', 'OUT', 'OPTIONAL', 'UNALIGNED', 'EFI_RUNTIMESERVICE', 'EFI_BOOTSERVICE', 'EFIAPI']

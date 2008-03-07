@@ -82,7 +82,7 @@ class Database(object):
         self.TblFile.Create()
         self.TblFunction.Create()
         self.TblPcd.Create()
-        self.TblIdentifier.Create()
+        #self.TblIdentifier.Create()
         
         #
         # Initialize table DataModel
@@ -130,7 +130,7 @@ class Database(object):
         #
         FileID = self.TblFile.Insert(File.Name, File.ExtName, File.Path, File.FullPath, Model = File.Model, TimeStamp = File.TimeStamp)
         IdTable = TableIdentifier(self.Cur)
-        IdTable.Table = "file%s" % FileID
+        IdTable.Table = "Identifier%s" % FileID
         IdTable.Create()
 
         #
@@ -229,9 +229,7 @@ class Database(object):
         EdkLogger.verbose("Update 'BelongsToFunction' for Identifiers started ...")
         
         SqlCommand = """select ID, BelongsToFile, StartLine, EndLine from Function"""
-        EdkLogger.debug(4, "SqlCommand: %s" %SqlCommand)
-        self.Cur.execute(SqlCommand)
-        Records = self.Cur.fetchall()
+        Records = self.TblFunction.Exec(SqlCommand)
         Data1 = []
         Data2 = []
         for Record in Records:
@@ -242,13 +240,13 @@ class Database(object):
             #Data1.append(("'file%s'" % BelongsToFile, FunctionID, BelongsToFile, StartLine, EndLine))
             #Data2.append(("'file%s'" % BelongsToFile, FunctionID, DataClass.MODEL_IDENTIFIER_FUNCTION_HEADER, BelongsToFile, DataClass.MODEL_IDENTIFIER_COMMENT, StartLine - 1))
 
-            SqlCommand = """Update file%s set BelongsToFunction = %s where BelongsToFile = %s and StartLine > %s and EndLine < %s""" % \
+            SqlCommand = """Update Identifier%s set BelongsToFunction = %s where BelongsToFile = %s and StartLine > %s and EndLine < %s""" % \
                         (BelongsToFile, FunctionID, BelongsToFile, StartLine, EndLine)
-            self.Cur.execute(SqlCommand)
+            self.TblIdentifier.Exec(SqlCommand)
 
-            SqlCommand = """Update file%s set BelongsToFunction = %s, Model = %s where BelongsToFile = %s and Model = %s and EndLine = %s""" % \
+            SqlCommand = """Update Identifier%s set BelongsToFunction = %s, Model = %s where BelongsToFile = %s and Model = %s and EndLine = %s""" % \
                          (BelongsToFile, FunctionID, DataClass.MODEL_IDENTIFIER_FUNCTION_HEADER, BelongsToFile, DataClass.MODEL_IDENTIFIER_COMMENT, StartLine - 1)
-            self.Cur.execute(SqlCommand)
+            self.TblIdentifier.Exec(SqlCommand)
 #       #
 #       # Check whether an identifier belongs to a function
 #       #
