@@ -105,13 +105,12 @@ VfrParserStart (
 #token Title("title")                           "title"
 #token FormId("formid")                         "formid"
 #token OneOf("oneof")                           "oneof"
-#token EndoneOf("endoneof")                     "endoneof"
+#token EndOneOf("endoneof")                     "endoneof"
 #token Prompt("prompt")                         "prompt"
 #token OrderedList("orderedlist")               "orderedlist"
 #token MaxContainers("maxcontainers")           "maxcontainers"
 #token EndList("endlist")                       "endlist"
 #token EndForm("endform")                       "endform"
-#token EndOneOf("endoneof")                     "endoneof"
 #token Form("form")                             "form"
 #token Subtitle("subtitle")                     "subtitle"
 #token Help("help")                             "help"
@@ -236,7 +235,7 @@ vfrProgram > [UINT8 Return] :
       vfrPragmaPackDefinition
     | vfrDataStructDefinition
   )*
-  vfrFromSetDefinition
+  vfrFormSetDefinition
   << $Return = mParserStatus; >>
   ;
 
@@ -285,7 +284,7 @@ vfrPragmaPackDefinition :
 
 vfrDataStructDefinition :
   { TypeDef } Struct                                << mCVfrVarDataTypeDB.DeclareDataTypeBegin (); >>
-  { NonNVDataMap }
+  { NonNvDataMap }
   {
     N1:StringIdentifier                             << _PCATCH(mCVfrVarDataTypeDB.SetNewTypeName (N1->getText()), N1); >>
   }
@@ -437,9 +436,9 @@ guidDefinition [EFI_GUID &Guid] :
 
 //*****************************************************************************
 //
-// the syntax of from set definition
+// the syntax of form set definition
 //
-vfrFromSetDefinition :
+vfrFormSetDefinition :
   <<
      EFI_GUID    Guid;
      CIfrFormSet FSObj;
@@ -472,7 +471,7 @@ vfrFormSetList :
     vfrStatementVarStoreEfi       |
     vfrStatementVarStoreNameValue |
     vfrStatementDefaultStore      |
-    vfrStatementDisableIfFromSet
+    vfrStatementDisableIfFormSet
   )*
   ;
 
@@ -617,7 +616,7 @@ subclassDefinition[UINT16 & SubClass] :
   | N:Number                                        << $SubClass |= _STOU16(N->getText()); >>
   ;
 
-vfrStatementDisableIfFromSet :
+vfrStatementDisableIfFormSet :
   << CIfrDisableIf DIObj; >>
   D:DisableIf                                       << DIObj.SetLineNo(D->getLine()); >>
   vfrStatementExpression[0] ";"
