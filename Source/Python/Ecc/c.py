@@ -11,6 +11,10 @@ def GetIgnoredDirListPattern():
     p = re.compile(r'.*[\\/](?:BUILD|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
     return p
 
+def GetFuncDeclPattern():
+    p = re.compile(r'[^=]*\(.*\).*', re.DOTALL)
+    return p
+
 def GetIdType(Str):
     Type = DataClass.MODEL_UNKNOWN
     Str = Str.replace('#', '# ')
@@ -46,7 +50,17 @@ def GetIdentifierList():
         IdPE = DataClass.IdentifierClass(-1, '', '', '', pe.Content, DataClass.MODEL_IDENTIFIER_PREDICATE_EXPRESSION, -1, -1, pe.StartPos[0],pe.StartPos[1],pe.EndPos[0],pe.EndPos[1])
         IdList.append(IdPE)
         
+    FuncDeclPattern = GetFuncDeclPattern()
     for var in FileProfile.VariableDeclarationList:
+        DeclText = var.Declarator.strip()
+        while DeclText.startswith('*'):
+            var.Modifier += '*'
+            DeclText = DeclText.lstrip('*').strip()
+        var.Declarator = DeclText
+        if FuncDeclPattern.match(var.Declarator):
+            IdVar = DataClass.IdentifierClass(-1, var.Modifier, '', var.Declarator, '', DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION, -1, -1, var.StartPos[0],var.StartPos[1],var.EndPos[0],var.EndPos[1])
+            IdList.append(IdVar)
+            continue
         for decl in var.Declarator.split(','):
             DeclList = decl.split('=')
             IdVar = DataClass.IdentifierClass(-1, var.Modifier, '', DeclList[0].strip(), (len(DeclList) > 1 and [DeclList[1]]or [''])[0], DataClass.MODEL_IDENTIFIER_VARIABLE, -1, -1, var.StartPos[0],var.StartPos[1],var.EndPos[0],var.EndPos[1])
@@ -82,17 +96,13 @@ def GetIdentifierList():
         IdList.append(IdFC)
     return IdList
 
-def GetFunctionList():
-    FuncObjList = []
-    for FuncDef in FileProfile.FunctionDefinitionList:
+def GetParamList(FuncDeclarator, FuncNameLine = 0, FuncNameOffset = 0):
         ParamIdList = []
-        DeclSplitList = FuncDef.Declarator.split('(')
+        DeclSplitList = FuncDeclarator.split('(')
         if len(DeclSplitList) < 2:
-            continue
-        FuncName = DeclSplitList[0]
+            return None
+#    FuncName = DeclSplitList[0]
         ParamStr = DeclSplitList[1].rstrip(')')
-        FuncNameLine = FuncDef.NamePos[0]
-        FuncNameOffset = FuncDef.NamePos[1]
         LineSkipped = 0
         OffsetSkipped = 0
         Start = 0
@@ -128,6 +138,22 @@ def GetFunctionList():
             ParamBeginLine = ParamEndLine
             ParamBeginOffset = OffsetSkipped + 1 #skip ','
             
+    return ParamIdList
+    
+def GetFunctionList():
+    FuncObjList = []
+    for FuncDef in FileProfile.FunctionDefinitionList:
+        ParamIdList = []
+        DeclText = FuncDef.Declarator.strip()
+        while DeclText.startswith('*'):
+            FuncDef.Modifier += '*'
+            DeclText = DeclText.lstrip('*').strip()
+        FuncDef.Declarator = DeclText
+        DeclSplitList = FuncDef.Declarator.split('(')
+        if len(DeclSplitList) < 2:
+            continue
+        
+        FuncName = DeclSplitList[0]
         FuncObj = DataClass.FunctionClass(-1, FuncDef.Declarator, FuncDef.Modifier, FuncName.strip(), '', FuncDef.StartPos[0],FuncDef.StartPos[1],FuncDef.EndPos[0],FuncDef.EndPos[1], FuncDef.LeftBracePos[0], FuncDef.LeftBracePos[1], -1, ParamIdList, [])
         FuncObjList.append(FuncObj)
         
