@@ -97,47 +97,47 @@ def GetIdentifierList():
     return IdList
 
 def GetParamList(FuncDeclarator, FuncNameLine = 0, FuncNameOffset = 0):
-        ParamIdList = []
-        DeclSplitList = FuncDeclarator.split('(')
-        if len(DeclSplitList) < 2:
-            return None
+    ParamIdList = []
+    DeclSplitList = FuncDeclarator.split('(')
+    if len(DeclSplitList) < 2:
+        return None
 #    FuncName = DeclSplitList[0]
-        ParamStr = DeclSplitList[1].rstrip(')')
-        LineSkipped = 0
+    ParamStr = DeclSplitList[1].rstrip(')')
+    LineSkipped = 0
+    OffsetSkipped = 0
+    Start = 0
+    while FuncName.find('\n', Start) != -1:
+        LineSkipped += 1
         OffsetSkipped = 0
+        Start += FuncName.find('\n', Start)
+        Start += 1       
+    OffsetSkipped += len(FuncName[Start:])
+    OffsetSkipped += 1 #skip '('
+    ParamBeginLine = FuncNameLine + LineSkipped
+    ParamBeginOffset = OffsetSkipped
+    for p in ParamStr.split(','):
+        ListP = p.split()
+        if len(ListP) == 0:
+            continue
+        ParamName = ListP[-1]
+        RightSpacePos = p.rfind(ParamName)
+        ParamModifier = p[0:RightSpacePos]
+        
         Start = 0
-        while FuncName.find('\n', Start) != -1:
+        while p.find('\n', Start) != -1:
             LineSkipped += 1
             OffsetSkipped = 0
-            Start += FuncName.find('\n', Start)
-            Start += 1       
-        OffsetSkipped += len(FuncName[Start:])
-        OffsetSkipped += 1 #skip '('
-        ParamBeginLine = FuncNameLine + LineSkipped
-        ParamBeginOffset = OffsetSkipped
-        for p in ParamStr.split(','):
-            ListP = p.split()
-            if len(ListP) == 0:
-                continue
-            ParamName = ListP[-1]
-            RightSpacePos = p.rfind(ParamName)
-            ParamModifier = p[0:RightSpacePos]
-            
-            Start = 0
-            while p.find('\n', Start) != -1:
-                LineSkipped += 1
-                OffsetSkipped = 0
-                Start += p.find('\n', Start)
-                Start += 1
-            OffsetSkipped += len(p[Start:])
-            
-            ParamEndLine = ParamBeginLine + LineSkipped
-            ParamEndOffset = OffsetSkipped
-            IdParam = DataClass.IdentifierClass(-1, ParamModifier, '', ParamName, '', DataClass.MODEL_IDENTIFIER_PARAMETER, -1, -1, ParamBeginLine, ParamBeginOffset, ParamEndLine, ParamEndOffset)
-            ParamIdList.append(IdParam)
-            ParamBeginLine = ParamEndLine
-            ParamBeginOffset = OffsetSkipped + 1 #skip ','
-            
+            Start += p.find('\n', Start)
+            Start += 1
+        OffsetSkipped += len(p[Start:])
+        
+        ParamEndLine = ParamBeginLine + LineSkipped
+        ParamEndOffset = OffsetSkipped
+        IdParam = DataClass.IdentifierClass(-1, ParamModifier, '', ParamName, '', DataClass.MODEL_IDENTIFIER_PARAMETER, -1, -1, ParamBeginLine, ParamBeginOffset, ParamEndLine, ParamEndOffset)
+        ParamIdList.append(IdParam)
+        ParamBeginLine = ParamEndLine
+        ParamBeginOffset = OffsetSkipped + 1 #skip ','
+        
     return ParamIdList
     
 def GetFunctionList():

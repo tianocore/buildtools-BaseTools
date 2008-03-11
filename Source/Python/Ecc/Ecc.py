@@ -17,11 +17,12 @@
 import os
 from optparse import OptionParser
 import Common.EdkLogger as EdkLogger
+import Database
 from Configuration import Configuration
 from Check import Check
 import EccGlobalData
 import time
-import c
+#import c
 
 ## Ecc
 #
@@ -69,6 +70,11 @@ class Ecc(object):
         # Show report
         #
         self.GenReport()
+        
+        #
+        # Close Database
+        #
+        EccGlobalData.gDb.Close()
 
     ##
     #
@@ -76,7 +82,9 @@ class Ecc(object):
     #
     def BuildDatabase(self):
         EdkLogger.quiet("Parsing target ...")
-        c.CollectSourceCodeDataIntoDB(EccGlobalData.gTarget)
+        EccGlobalData.gDb = Database.Database(Database.DATABASE_PATH)
+        EccGlobalData.gDb.InitDatabase()
+        #c.CollectSourceCodeDataIntoDB(EccGlobalData.gTarget)
         EdkLogger.quiet("Parsing target done!")
 
     ##

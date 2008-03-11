@@ -19,3 +19,4 @@ import os
 gWorkspace = ''
 gTarget = ''
 gConfig = None
+gDb = None
