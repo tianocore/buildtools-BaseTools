@@ -86,6 +86,7 @@ class Ecc(object):
         EccGlobalData.gDb.InitDatabase()
         #c.CollectSourceCodeDataIntoDB(EccGlobalData.gTarget)
         EdkLogger.quiet("Parsing target done!")
+        #EccGlobalData.gDb.TblReport.ToCSV()
 
     ##
     #

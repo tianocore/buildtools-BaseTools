@@ -25,6 +25,7 @@ from Table.TableFile import TableFile
 from Table.TableFunction import TableFunction
 from Table.TablePcd import TablePcd
 from Table.TableIdentifier import TableIdentifier
+from Table.TableReport import TableReport
 
 ##
 # Static definitions
@@ -57,6 +58,7 @@ class Database(object):
         self.TblFunction = TableFunction(self.Cur)
         self.TblIdentifier = TableIdentifier(self.Cur)
         self.TblPcd = TablePcd(self.Cur)
+        self.TblReport = TableReport(self.Cur)
     
     ## Initialize ECC database
     #
@@ -82,6 +84,7 @@ class Database(object):
         self.TblFile.Create()
         self.TblFunction.Create()
         self.TblPcd.Create()
+        self.TblReport.Create()
         #self.TblIdentifier.Create()
         
         #

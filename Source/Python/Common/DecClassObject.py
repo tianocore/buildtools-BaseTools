@@ -376,7 +376,12 @@ class Dec(DecObject):
         for Arch in self.SupArchList:
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Lists, GetGuidsProtocolsPpisOfDec(Record[0], Type, ContainerFile, Record[2]), Arch)
+                    (Name, Value) = GetGuidsProtocolsPpisOfDec(Record[0], Type, ContainerFile, Record[2])
+                    MergeArches(Lists, (Name, Value), Arch)
+                    if self.IsToDatabase:
+                        SqlCommand = """update %s set Value1 = '%s', Value2 = '%s'
+                                        where ID = %s""" % (self.TblDec.Table, ConvertToSqlString2(Name), ConvertToSqlString2(Value), Record[3])
+                        self.TblDec.Exec(SqlCommand)
         
         ListMember = None
         if Type == TAB_GUIDS:
@@ -421,6 +426,11 @@ class Dec(DecObject):
                     else:
                         CheckFileExist(self.Identification.FileRelativePath, List[1], ContainerFile, 'LibraryClasses', Record[0])
                     MergeArches(LibraryClasses, (List[0], List[1]), Arch)
+                    if self.IsToDatabase:
+                        SqlCommand = """update %s set Value1 = '%s', Value2 = '%s', Value3 = '%s'
+                                        where ID = %s""" % (self.TblDec.Table, ConvertToSqlString2(List[0]), ConvertToSqlString2(List[1]), SUP_MODULE_LIST_STRING, Record[3])
+                        self.TblDec.Exec(SqlCommand)
+
         
         for Key in LibraryClasses.keys():
             LibraryClass = LibraryClassClass()
@@ -525,10 +535,10 @@ if __name__ == '__main__':
     W = os.getenv('WORKSPACE')
     F = os.path.join(W, 'Nt32Pkg/Nt32Pkg.dec')
 
-    Db = Database.Database(DATABASE_PATH)
+    Db = Database.Database('Dec.db')
     Db.InitDatabase()
     
-    P = Dec(os.path.normpath(F), False, True, W, Db)
+    P = Dec(os.path.normpath(F), True, True, W, Db)
     P.ShowPackage()
     
     Db.Close()

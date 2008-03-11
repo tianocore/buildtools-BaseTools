@@ -657,9 +657,10 @@ class Inf(InfObject):
                     #
                     # Update to Database
                     #
-                    #SqlCommand = """update %s set Value1 = '%s', Value2 = '%s', Value3 = '%s'
-                    #                where ID = %s""" % (self.TblInf.Table, ConvertToSqlString2(Family), ConvertToSqlString2(ToolChain), ConvertToSqlString2(Flag), Record[3])
-                    #self.TblInf.Exec(SqlCommand)
+                    if self.IsToDatabase:
+                        SqlCommand = """update %s set Value1 = '%s', Value2 = '%s', Value3 = '%s'
+                                        where ID = %s""" % (self.TblInf.Table, ConvertToSqlString2(Family), ConvertToSqlString2(ToolChain), ConvertToSqlString2(Flag), Record[3])
+                        self.TblInf.Exec(SqlCommand)
 
         for Key in BuildOptions.keys():
             BuildOption = BuildOptionClass(Key[0], Key[1], Key[2])
@@ -751,9 +752,10 @@ class Inf(InfObject):
                     #
                     # Update to Database
                     #
-                    #SqlCommand = """update %s set Value1 = '%s', Value2 = '%s', Value3 = '%s'
-                    #                where ID = %s""" % (self.TblInf.Table, ConvertToSqlString2(LibClassName), ConvertToSqlString2(LibClassIns), ConvertToSqlString2(SupModelList), Record[3])
-                    #self.TblInf.Exec(SqlCommand)
+                    if self.IsToDatabase:
+                        SqlCommand = """update %s set Value1 = '%s', Value2 = '%s', Value3 = '%s'
+                                        where ID = %s""" % (self.TblInf.Table, ConvertToSqlString2(LibClassName), ConvertToSqlString2(LibClassIns), ConvertToSqlString2(SupModelList), Record[3])
+                        self.TblInf.Exec(SqlCommand)
         
         for Key in LibraryClasses.keys():
             KeyList = Key[0].split(DataType.TAB_VALUE_SPLIT)
@@ -786,7 +788,13 @@ class Inf(InfObject):
         for Arch in self.SupArchList:
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Packages, GetPackage(Record[0], ContainerFile, self.WorkspaceDir, Record[2]), Arch)
+                    (Package, Pcd) = GetPackage(Record[0], ContainerFile, self.WorkspaceDir, Record[2])
+                    MergeArches(Packages, (Package, Pcd), Arch)
+                    if self.IsToDatabase:
+                        SqlCommand = """update %s set Value1 = '%s', Value2 = '%s'
+                                        where ID = %s""" % (self.TblInf.Table, ConvertToSqlString2(Package), ConvertToSqlString2(Pcd), Record[3])
+                        self.TblInf.Exec(SqlCommand)
+
                     
         for Key in Packages.keys():
             Package = ModulePackageDependencyClass()
@@ -924,7 +932,12 @@ class Inf(InfObject):
         for Arch in self.SupArchList:
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Sources, GetSource(Record[0], ContainerFile, self.Identification.FileRelativePath, Record[2]), Arch)
+                    (Filename, Family, TagName, ToolCode, Pcd) = GetSource(Record[0], ContainerFile, self.Identification.FileRelativePath, Record[2])
+                    MergeArches(Sources, (Filename, Family, TagName, ToolCode, Pcd), Arch)
+                    if self.IsToDatabase:
+                        SqlCommand = """update %s set Value1 = '%s', Value2 = '%s', Value3 = '%s', Value4 = '%s', Value5 = '%s'
+                                        where ID = %s""" % (self.TblInf.Table, ConvertToSqlString2(Filename), ConvertToSqlString2(Family), ConvertToSqlString2(TagName), ConvertToSqlString2(ToolCode), ConvertToSqlString2(Pcd), Record[3])
+                        self.TblInf.Exec(SqlCommand)
 
         for Key in Sources.keys():
             Source = ModuleSourceFileClass(Key[0], Key[2], Key[3], Key[1], Key[4], Sources[Key])
@@ -1005,7 +1018,12 @@ class Inf(InfObject):
         for Arch in self.SupArchList:
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Binaries, GetBinary(Record[0], ContainerFile, self.Identification.FileRelativePath, Record[2]), Arch)
+                    (FileType, Filename, Target, Pcd) = GetBinary(Record[0], ContainerFile, self.Identification.FileRelativePath, Record[2])
+                    MergeArches(Binaries, (FileType, Filename, Target, Pcd), Arch)
+                    if self.IsToDatabase:
+                        SqlCommand = """update %s set Value1 = '%s', Value2 = '%s', Value3 = '%s', Value4 = '%s'
+                                        where ID = %s""" % (self.TblInf.Table, ConvertToSqlString2(FileType), ConvertToSqlString2(Filename), ConvertToSqlString2(Target), ConvertToSqlString2(Pcd), Record[3])
+                        self.TblInf.Exec(SqlCommand)
 
         for Key in Binaries.keys():
             Binary = ModuleBinaryFileClass(NormPath(Key[1]), Key[0], Key[2], Key[3], Binaries[Key])
@@ -1032,7 +1050,12 @@ class Inf(InfObject):
         for Arch in self.SupArchList:
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Lists, GetGuidsProtocolsPpisOfInf(Record[0], Type, ContainerFile, Record[2]), Arch)
+                    (Name, Value) = GetGuidsProtocolsPpisOfInf(Record[0], Type, ContainerFile, Record[2])
+                    MergeArches(Lists, (Name, Value), Arch)
+                    if self.IsToDatabase:
+                        SqlCommand = """update %s set Value1 = '%s', Value2 = '%s'
+                                        where ID = %s""" % (self.TblInf.Table, ConvertToSqlString2(Name), ConvertToSqlString2(Value), Record[3])
+                        self.TblInf.Exec(SqlCommand)
         
         ListMember = None
         if Type == TAB_GUIDS:
@@ -1061,10 +1084,10 @@ if __name__ == '__main__':
     W = os.getenv('WORKSPACE')
     F = os.path.join(W, 'MdeModulePkg/Application/HelloWorld/HelloWorld.inf')
     
-    Db = Database.Database(DATABASE_PATH)
+    Db = Database.Database('Inf.db')
     Db.InitDatabase()
     
-    P = Inf(os.path.normpath(F), False, True, W, Db)
+    P = Inf(os.path.normpath(F), True, True, W, Db)
     P.ShowModule()
     
     Db.Close()

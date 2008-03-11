@@ -1379,7 +1379,7 @@ if __name__ == '__main__':
     W = os.getenv('WORKSPACE')
     F = os.path.join(W, 'Nt32Pkg/Nt32Pkg.dsc')
     
-    Db = Database.Database(DATABASE_PATH)
+    Db = Database.Database('Dsc.db')
     Db.InitDatabase()
     
     P = Dsc(os.path.normpath(F), True, True, W, Db)
