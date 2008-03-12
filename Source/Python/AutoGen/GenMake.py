@@ -111,7 +111,7 @@ gShellCommand = {
     },
 
     "gmake" : {
-        "CP"    :   "cp -u -f",
+        "CP"    :   "cp -f",
         "MV"    :   "mv -f",
         "RM"    :   "rm -f",
         "MD"    :   "mkdir -p",
