@@ -7,6 +7,8 @@ from CommonDataClass import DataClass
 import Database
 from Common import EdkLogger
 
+
+
 def GetIgnoredDirListPattern():
     p = re.compile(r'.*[\\/](?:BUILD|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
     return p
@@ -14,6 +16,10 @@ def GetIgnoredDirListPattern():
 def GetFuncDeclPattern():
     p = re.compile(r'[^=]*\(.*\).*', re.DOTALL)
     return p
+
+def GetDB():
+    DB = Database.Database(Database.DATABASE_PATH)
+    return DB
 
 def GetIdType(Str):
     Type = DataClass.MODEL_UNKNOWN
@@ -101,7 +107,7 @@ def GetParamList(FuncDeclarator, FuncNameLine = 0, FuncNameOffset = 0):
     DeclSplitList = FuncDeclarator.split('(')
     if len(DeclSplitList) < 2:
         return None
-#    FuncName = DeclSplitList[0]
+    FuncName = DeclSplitList[0]
     ParamStr = DeclSplitList[1].rstrip(')')
     LineSkipped = 0
     OffsetSkipped = 0
@@ -122,6 +128,11 @@ def GetParamList(FuncDeclarator, FuncNameLine = 0, FuncNameOffset = 0):
         ParamName = ListP[-1]
         RightSpacePos = p.rfind(ParamName)
         ParamModifier = p[0:RightSpacePos]
+        DeclText = ParamName.strip()
+        while DeclText.startswith('*'):
+            ParamModifier += '*'
+            DeclText = DeclText.lstrip('*').strip()
+        ParamName = DeclText
         
         Start = 0
         while p.find('\n', Start) != -1:
@@ -137,7 +148,7 @@ def GetParamList(FuncDeclarator, FuncNameLine = 0, FuncNameOffset = 0):
         ParamIdList.append(IdParam)
         ParamBeginLine = ParamEndLine
         ParamBeginOffset = OffsetSkipped + 1 #skip ','
-        
+    
     return ParamIdList
     
 def GetFunctionList():
@@ -191,17 +202,182 @@ def CollectSourceCodeDataIntoDB(RootDir):
                 collector.CleanFileProfileBuffer()   
     print ParseErrorFileList
     
-    Db = Database.Database(Database.DATABASE_PATH)
-    Db.InitDatabase()
-    
+    Db = GetDB()    
     for file in FileObjList:    
         Db.InsertOneFile(file)
 
     Db.UpdateIdentifierBelongsToFunction()
-    Db.Close()
+
+def CheckFuncHeaderDoxygenComments(FullFileName):
+    print FullFileName
+    ErrorMsgList = []
+    Db = GetDB()
+    DbCursor = Db.Cur
+    
+    SqlStatement = """ select ID
+                       from File
+                       where FullPath = '%s'
+                   """ % FullFileName
+    
+    ResultSet = DbCursor.execute(SqlStatement)
+    FileTable = 'file'
+    FileID = -1
+    for Result in ResultSet:
+        FileTable += str(Result[0])
+        FileID = Result[0]
+    if FileID == -1:
+        ErrorMsgList.append('NO file ID found in DB for file %s' % FullFileName)
+        return ErrorMsgList
+    
+    SqlStatement = """ select Value, StartLine, EndLine
+                       from %s
+                       where Model = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_COMMENT)
+    
+    ResultSet = DbCursor.execute(SqlStatement)
+    CommentSet = []
+    for Result in ResultSet:
+        CommentSet.append(Result)
+    
+    # Func Decl check
+    SqlStatement = """ select Modifier, Name, StartLine
+                       from %s
+                       where Model = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION)
+    ResultSet = DbCursor.execute(SqlStatement)
+    for Result in ResultSet:
+        FunctionHeaderComment = CheckCommentImmediatelyPrecedeFunctionHeader(Result[1], Result[2], CommentSet)
+        if FunctionHeaderComment:
+            CheckFunctionHeaderConsistentWithDoxygenComment(Result[0], Result[1], Result[2], FunctionHeaderComment[0], FunctionHeaderComment[1], ErrorMsgList)
+        else:
+            ErrorMsgList.append('Line %d :Function %s has NO comment immediately preceding it.' % (Result[2], Result[1]))
+    
+    # Func Def check
+    SqlStatement = """ select Value, StartLine, EndLine
+                       from %s
+                       where Model = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_HEADER)
+    
+    ResultSet = DbCursor.execute(SqlStatement)
+    CommentSet = []
+    for Result in ResultSet:
+        CommentSet.append(Result)
+    
+    
+    SqlStatement = """ select Modifier, Header, StartLine
+                       from Function
+                       where BelongsToFile = %d
+                   """ % (FileID)
+    ResultSet = DbCursor.execute(SqlStatement)
+    for Result in ResultSet:
+        FunctionHeaderComment = CheckCommentImmediatelyPrecedeFunctionHeader(Result[1], Result[2], CommentSet)
+        if FunctionHeaderComment:
+            CheckFunctionHeaderConsistentWithDoxygenComment(Result[0], Result[1], Result[2], FunctionHeaderComment[0], FunctionHeaderComment[1], ErrorMsgList)
+        else:
+            ErrorMsgList.append('Line %d :Function %s has NO comment immediately preceding it.' % (Result[2], Result[1]))
+    
+    return ErrorMsgList
+
+def CheckCommentImmediatelyPrecedeFunctionHeader(FuncName, FuncStartLine, CommentSet):
+
+    for Comment in CommentSet:
+        if Comment[2] == FuncStartLine - 1:
+            return Comment
+    return None
+
+def GetDoxygenStrFromComment(Str):
+    DoxygenStrList = []
+    ParamTagList = Str.split('@param')
+    if len(ParamTagList) > 1:
+        i = 1
+        while i < len(ParamTagList):
+            DoxygenStrList.append('@param' + ParamTagList[i])
+            i += 1
+        
+    RetvalTagList = ParamTagList[-1].split('@retval')
+    if len(RetvalTagList) > 1:
+        if len(ParamTagList) > 1:
+            DoxygenStrList[-1] = '@param' + RetvalTagList[0]
+        i = 1
+        while i < len(RetvalTagList):
+            DoxygenStrList.append('@retval' + RetvalTagList[i])
+            i += 1
+    DoxygenStrList[-1] = DoxygenStrList[-1].rstrip('--*/')
+    
+    return DoxygenStrList
+    
+def CheckGeneralDoxygenCommentLayout(Str, StartLine, ErrorMsgList):
+    #/** --*/ @retval after @param
+    if not Str.startswith('/**'):
+        ErrorMsgList.append('Line %d : Comment does NOT have prefix /** ' % StartLine)
+    if not Str.endswith('--*/'):
+        ErrorMsgList.append('Line %d : Comment does NOT have tail --*/ ' % StartLine)
+    FirstRetvalIndex = Str.find('@retval')
+    LastParamIndex = Str.rfind('@param')
+    if (FirstRetvalIndex > 0) and (LastParamIndex > 0) and (FirstRetvalIndex < LastParamIndex):
+        ErrorMsgList.append('Line %d : @retval appear before @param ' % StartLine)
+    
+def CheckFunctionHeaderConsistentWithDoxygenComment(FuncModifier, FuncHeader, FuncStartLine, CommentStr, CommentStartLine, ErrorMsgList):
+    
+    ParamList = GetParamList(FuncHeader) 
+    CheckGeneralDoxygenCommentLayout(CommentStr, CommentStartLine, ErrorMsgList)
+    DoxygenStrList = GetDoxygenStrFromComment(CommentStr)
+    DoxygenTagNumber = len(DoxygenStrList)
+    ParamNumber = len(ParamList)
+    Index = 0
+    if ParamNumber > 0 and DoxygenTagNumber > 0:
+        while Index < ParamNumber and Index < DoxygenTagNumber:
+            ParamModifier = ParamList[Index].Modifier
+            ParamName = ParamList[Index].Name
+            Tag = DoxygenStrList[Index].strip(' ')
+            if (not Tag[-1] == ('\n')) and (not Tag[-1] == ('\r')):
+                ErrorMsgList.append('Line %d : in Comment, \"%s\" does NOT end with new line ' % (CommentStartLine, Tag.replace('\n', '').replace('\r', '')))
+            TagPartList = Tag.split(' ')
+            if len(TagPartList) < 2:
+                ErrorMsgList.append('Line %d : in Comment, \"%s\" does NOT contain doxygen contents ' % (CommentStartLine, Tag.replace('\n', '').replace('\r', '')))
+                Index += 1
+                continue
+            if Tag.find('[') > 0:
+                InOutStr = ''
+                ModifierPartList = ParamModifier.split()
+                for Part in ModifierPartList:
+                    if Part.strip() == 'IN':
+                        InOutStr += 'in'
+                    if Part.strip() == 'OUT':
+                        if InOutStr != '':    
+                            InOutStr += ', out'
+                        else:
+                            InOutStr = 'out'
+                
+                if InOutStr != '':
+                    if Tag.find('['+InOutStr+']') == -1:
+                        ErrorMsgList.append('Line %d : in Comment, \"%s\" does NOT have %s ' % (CommentStartLine, (TagPartList[0] + ' ' +TagPartList[1]).replace('\n', '').replace('\r', ''), '['+InOutStr+']'))    
+            
+            if Tag.find(ParamName) == -1:
+                ErrorMsgList.append('Line %d : in Comment, \"%s\" does NOT consistent with parameter name %s ' % (CommentStartLine, (TagPartList[0] + ' ' +TagPartList[1]).replace('\n', '').replace('\r', ''), ParamName))    
+            Index += 1
+        
+        if Index < ParamNumber:
+            ErrorMsgList.append('Line %d : Number of doxygen tags in comment less than number of function parameters' % CommentStartLine)
+        
+        if FuncModifier.find('VOID') != -1 or FuncModifier.find('void') != -1:
+            if Index < DoxygenTagNumber - 1:
+                ErrorMsgList.append('Line %d : Excessive doxygen tags in comment' % CommentStartLine)
+        else:
+            if not DoxygenStrList[Index].startswith('@retval'): 
+                ErrorMsgList.append('Line %d : Number of @param doxygen tags in comment does NOT match number of function parameters' % CommentStartLine)
+    else:
+        if ParamNumber == 0 and DoxygenTagNumber != 0 and (FuncModifier.find('VOID') != -1 or FuncModifier.find('void') != -1):
+            ErrorMsgList.append('Line %d : Excessive doxygen tags in comment' % CommentStartLine)
+        if ParamNumber != 0 and DoxygenTagNumber == 0:
+            ErrorMsgList.append('Line %d : No doxygen tags in comment' % CommentStartLine)
+
 if __name__ == '__main__':
 
-    EdkLogger.Initialize()
-    EdkLogger.SetLevel(EdkLogger.QUIET)
-    CollectSourceCodeDataIntoDB(sys.argv[1])       
+#    EdkLogger.Initialize()
+#    EdkLogger.SetLevel(EdkLogger.QUIET)
+#    CollectSourceCodeDataIntoDB(sys.argv[1])       
+    MsgList = CheckFuncHeaderDoxygenComments('C:\\Combo\\R9\\LakeportX64Dev\\FlashDevicePkg\\Library\\SpiFlashChipM25P64\\SpiFlashChipM25P64.c')
+    for Msg in MsgList:
+        print Msg
     print 'Done!'
