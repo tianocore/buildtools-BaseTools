@@ -217,7 +217,7 @@ class Configuration(object):
         # Generate a list for all files defined in meta-data files
         self.MetaDataFileCheckGenerateFileList = 1
         # The path of log file
-        self.MetaDataFileCheckPathOfGenerateFileList = "C:\File.log"
+        self.MetaDataFileCheckPathOfGenerateFileList = 'File.log'
         # Check whether all Library Instances defined for a given module (or dependent library instance) match the module's type.  
         # Each Library Instance must specify the Supported Module Types in its INF file, 
         # and any module specifying the library instance must be one of the supported types.
@@ -266,6 +266,8 @@ class Configuration(object):
                     EdkLogger.error("Ecc", EdkLogger.ECC_ERROR, ErrorMsg, File = Filepath, Line = LineNo)
                 if List[0] == 'ModifierList':
                     List[1] = GetSplitValueList(List[1], TAB_COMMA_SPLIT)
+                if List[0] == 'MetaDataFileCheckPathOfGenerateFileList' and List[1] == "":
+                    continue
                 self.__dict__[List[0]] = List[1]
     
     def ShowMe(self):

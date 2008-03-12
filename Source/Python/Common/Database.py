@@ -24,6 +24,9 @@ from DataType import *
 
 from Table.TableDataModel import TableDataModel
 from Table.TableFile import TableFile
+from Table.TableInf import TableInf
+from Table.TableDec import TableDec
+from Table.TableDsc import TableDsc
 
 ## Database
 #
@@ -48,6 +51,9 @@ class Database(object):
         self.Cur = self.Conn.cursor()
         self.TblDataModel = TableDataModel(self.Cur)
         self.TblFile = TableFile(self.Cur)
+        self.TblInf = TableInf(self.Cur)
+        self.TblDec = TableDec(self.Cur)
+        self.TblDsc = TableDsc(self.Cur)
     
     ## Initialize build database
     #
@@ -69,6 +75,9 @@ class Database(object):
         #
         self.TblDataModel.Create()
         self.TblFile.Create()
+        self.TblInf.Create()
+        self.TblDec.Create()
+        self.TblDsc.Create()
         
         #
         # Initialize table DataModel

@@ -16,7 +16,7 @@
 #
 import os
 import EdkLogger as EdkLogger
-import Database as Database
+import Database
 from String import *
 from Parsing import *
 from DataType import *
@@ -100,7 +100,7 @@ class Dsc(DscObject):
 
         self.Cur = Database.Cur
         self.TblFile = Database.TblFile
-        self.TblDsc = TableDsc(Database.Cur)
+        self.TblDsc = Database.TblDsc
 
 
         self.KeyList = [
@@ -202,7 +202,8 @@ class Dsc(DscObject):
         #
         SqlCommand = """select ID, Value1, Arch, StartLine from %s
                         where Model = %s
-                        and Enabled > -1""" % (self.TblDsc.Table, MODEL_META_DATA_HEADER)
+                        and BelongsToFile = %s
+                        and Enabled > -1""" % (self.TblDsc.Table, MODEL_META_DATA_HEADER, self.FileID)
         RecordSet = self.TblDsc.Exec(SqlCommand)
         for Record in RecordSet:
             ValueList = GetSplitValueList(Record[1], TAB_EQUAL_SPLIT)
@@ -219,26 +220,26 @@ class Dsc(DscObject):
         for Arch in DataType.ARCH_LIST:
             PlatformHeader = PlatformHeaderClass()
             
-            PlatformHeader.Name = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_PLATFORM_NAME, Arch)[0]
-            PlatformHeader.Guid = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_PLATFORM_GUID, Arch)[0]
-            PlatformHeader.Version = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_PLATFORM_VERSION, Arch)[0]
+            PlatformHeader.Name = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_PLATFORM_NAME, Arch, self.FileID)[0]
+            PlatformHeader.Guid = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_PLATFORM_GUID, Arch, self.FileID)[0]
+            PlatformHeader.Version = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_PLATFORM_VERSION, Arch, self.FileID)[0]
             PlatformHeader.FileName = self.Identification.FileName
             PlatformHeader.FullPath = self.Identification.FileFullPath
-            PlatformHeader.DscSpecification = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_DSC_SPECIFICATION, Arch)[0]
+            PlatformHeader.DscSpecification = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_DSC_SPECIFICATION, Arch, self.FileID)[0]
     
-            PlatformHeader.SkuIdName = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_SKUID_IDENTIFIER, Arch)
-            PlatformHeader.SupArchList = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_SUPPORTED_ARCHITECTURES, Arch)
-            PlatformHeader.BuildTargets = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_BUILD_TARGETS, Arch)
-            PlatformHeader.OutputDirectory = NormPath(QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_OUTPUT_DIRECTORY, Arch)[0])
-            PlatformHeader.BuildNumber = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_BUILD_NUMBER, Arch)[0]
-            PlatformHeader.MakefileName = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_MAKEFILE_NAME, Arch)[0]
+            PlatformHeader.SkuIdName = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_SKUID_IDENTIFIER, Arch, self.FileID)
+            PlatformHeader.SupArchList = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_SUPPORTED_ARCHITECTURES, Arch, self.FileID)
+            PlatformHeader.BuildTargets = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_BUILD_TARGETS, Arch, self.FileID)
+            PlatformHeader.OutputDirectory = NormPath(QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_OUTPUT_DIRECTORY, Arch, self.FileID)[0])
+            PlatformHeader.BuildNumber = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_BUILD_NUMBER, Arch, self.FileID)[0]
+            PlatformHeader.MakefileName = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_MAKEFILE_NAME, Arch, self.FileID)[0]
     
-            PlatformHeader.BsBaseAddress = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_BS_BASE_ADDRESS, Arch)[0]
-            PlatformHeader.RtBaseAddress = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_RT_BASE_ADDRESS, Arch)[0]
+            PlatformHeader.BsBaseAddress = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_BS_BASE_ADDRESS, Arch, self.FileID)[0]
+            PlatformHeader.RtBaseAddress = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_RT_BASE_ADDRESS, Arch, self.FileID)[0]
 
             self.Platform.Header[Arch] = PlatformHeader
             Fdf = PlatformFlashDefinitionFileClass()
-            Fdf.FilePath = NormPath(QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_FLASH_DEFINITION, Arch)[0])
+            Fdf.FilePath = NormPath(QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_FLASH_DEFINITION, Arch, self.FileID)[0])
             self.Platform.FlashDefinitionFile = Fdf
 
     ## GenBuildOptions
@@ -254,12 +255,12 @@ class Dsc(DscObject):
         #
         # Get all include files
         #
-        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, MODEL_META_DATA_BUILD_OPTION)
+        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, MODEL_META_DATA_BUILD_OPTION, self.FileID)
         
         #
         # Get all BuildOptions
         #
-        RecordSet = QueryDscItem(self.TblDsc, MODEL_META_DATA_BUILD_OPTION, -1)
+        RecordSet = QueryDscItem(self.TblDsc, MODEL_META_DATA_BUILD_OPTION, -1, self.FileID)
         
         #
         # Go through each arch
@@ -309,12 +310,12 @@ class Dsc(DscObject):
         #
         # Get all include files
         #
-        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, MODEL_EFI_SKU_ID)
+        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, MODEL_EFI_SKU_ID, self.FileID)
         
         #
         # Get all SkuInfos
         #
-        RecordSet = QueryDscItem(self.TblDsc, MODEL_EFI_SKU_ID, -1)
+        RecordSet = QueryDscItem(self.TblDsc, MODEL_EFI_SKU_ID, -1, self.FileID)
         
         #
         # Go through each arch
@@ -360,12 +361,12 @@ class Dsc(DscObject):
         #
         # Get all include files
         #
-        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, MODEL_EFI_LIBRARY_INSTANCE)
+        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, MODEL_EFI_LIBRARY_INSTANCE, self.FileID)
         
         #
         # Get all Libraries
         #
-        RecordSet = QueryDscItem(self.TblDsc, MODEL_EFI_LIBRARY_INSTANCE, -1)
+        RecordSet = QueryDscItem(self.TblDsc, MODEL_EFI_LIBRARY_INSTANCE, -1, self.FileID)
         
         #
         # Go through each arch
@@ -402,12 +403,12 @@ class Dsc(DscObject):
         #
         # Get all include files
         #
-        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, MODEL_EFI_LIBRARY_CLASS)
+        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, MODEL_EFI_LIBRARY_CLASS, self.FileID)
         
         #
         # Get all LibraryClasses
         #
-        RecordSet = QueryDscItem(self.TblDsc, MODEL_EFI_LIBRARY_CLASS, -1)
+        RecordSet = QueryDscItem(self.TblDsc, MODEL_EFI_LIBRARY_CLASS, -1, self.FileID)
         
         #
         # Go through each arch
@@ -461,12 +462,12 @@ class Dsc(DscObject):
         #
         # Get all include files
         #
-        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, Model)
+        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, Model, self.FileID)
         
         #
         # Get all Pcds
         #
-        RecordSet = QueryDscItem(self.TblDsc, Model, -1)       
+        RecordSet = QueryDscItem(self.TblDsc, Model, -1, self.FileID)       
         
         #
         # Go through each arch
@@ -507,12 +508,12 @@ class Dsc(DscObject):
         #
         # Get all include files
         #
-        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, Model)
+        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, Model, self.FileID)
         
         #
         # Get all FeatureFlagPcds
         #
-        RecordSet = QueryDscItem(self.TblDsc, Model, -1)       
+        RecordSet = QueryDscItem(self.TblDsc, Model, -1, self.FileID)       
         
         #
         # Go through each arch
@@ -556,12 +557,12 @@ class Dsc(DscObject):
         #
         # Get all include files
         #
-        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, Model)
+        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, Model, self.FileID)
         
         #
         # Get all DynamicDefaultPcds
         #
-        RecordSet = QueryDscItem(self.TblDsc, Model, -1)       
+        RecordSet = QueryDscItem(self.TblDsc, Model, -1, self.FileID)       
         
         #
         # Go through each arch
@@ -611,12 +612,12 @@ class Dsc(DscObject):
         #
         # Get all include files
         #
-        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, Model)
+        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, Model, self.FileID)
         
         #
         # Get all DynamicHiiPcds
         #
-        RecordSet = QueryDscItem(self.TblDsc, Model, -1)       
+        RecordSet = QueryDscItem(self.TblDsc, Model, -1, self.FileID)       
         
         #
         # Go through each arch
@@ -666,12 +667,12 @@ class Dsc(DscObject):
         #
         # Get all include files
         #
-        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, Model)
+        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, Model, self.FileID)
         
         #
         # Get all DynamicVpdPcds
         #
-        RecordSet = QueryDscItem(self.TblDsc, Model, -1)       
+        RecordSet = QueryDscItem(self.TblDsc, Model, -1, self.FileID)       
         
         #
         # Go through each arch
@@ -715,12 +716,12 @@ class Dsc(DscObject):
         #
         # Get all include files
         #
-        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, MODEL_META_DATA_COMPONENT)
+        IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, MODEL_META_DATA_COMPONENT, self.FileID)
         
         #
         # Get all Components
         #
-        RecordSet = QueryDscItem(self.TblDsc, MODEL_META_DATA_COMPONENT, -1)  
+        RecordSet = QueryDscItem(self.TblDsc, MODEL_META_DATA_COMPONENT, -1, self.FileID)  
         
         #
         # Go through each arch
@@ -741,19 +742,19 @@ class Dsc(DscObject):
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON.upper():
                     Lib, Bo, Pcd = [], [], []
                     
-                    SubLibSet = QueryDscItem(self.TblDsc, MODEL_EFI_LIBRARY_CLASS, Record[3])
+                    SubLibSet = QueryDscItem(self.TblDsc, MODEL_EFI_LIBRARY_CLASS, Record[3], self.FileID)
                     for SubLib in SubLibSet:
                         Lib.append(SubLib[0])
                     
-                    SubBoSet = QueryDscItem(self.TblDsc, MODEL_META_DATA_BUILD_OPTION, Record[3])
+                    SubBoSet = QueryDscItem(self.TblDsc, MODEL_META_DATA_BUILD_OPTION, Record[3], self.FileID)
                     for SubBo in SubBoSet:
                         Bo.append(SubBo[0])
                     
-                    SubPcdSet1 = QueryDscItem(self.TblDsc, MODEL_PCD_FIXED_AT_BUILD, Record[3])
-                    SubPcdSet2 = QueryDscItem(self.TblDsc, MODEL_PCD_PATCHABLE_IN_MODULE, Record[3])
-                    SubPcdSet3 = QueryDscItem(self.TblDsc, MODEL_PCD_FEATURE_FLAG, Record[3])
-                    SubPcdSet4 = QueryDscItem(self.TblDsc, MODEL_PCD_DYNAMIC_EX_DEFAULT, Record[3])
-                    SubPcdSet5 = QueryDscItem(self.TblDsc, MODEL_PCD_DYNAMIC_DEFAULT, Record[3])
+                    SubPcdSet1 = QueryDscItem(self.TblDsc, MODEL_PCD_FIXED_AT_BUILD, Record[3], self.FileID)
+                    SubPcdSet2 = QueryDscItem(self.TblDsc, MODEL_PCD_PATCHABLE_IN_MODULE, Record[3], self.FileID)
+                    SubPcdSet3 = QueryDscItem(self.TblDsc, MODEL_PCD_FEATURE_FLAG, Record[3], self.FileID)
+                    SubPcdSet4 = QueryDscItem(self.TblDsc, MODEL_PCD_DYNAMIC_EX_DEFAULT, Record[3], self.FileID)
+                    SubPcdSet5 = QueryDscItem(self.TblDsc, MODEL_PCD_DYNAMIC_DEFAULT, Record[3], self.FileID)
                     for SubPcd in SubPcdSet1:
                         Pcd.append([DataType.TAB_PCDS_FIXED_AT_BUILD, SubPcd[0]])
                     for SubPcd in SubPcdSet2:
@@ -950,7 +951,7 @@ class Dsc(DscObject):
             if PreviousIf[2] in (MODEL_META_DATA_CONDITIONAL_STATEMENT_IFDEF, MODEL_META_DATA_CONDITIONAL_STATEMENT_IFNDEF):
                 Value1 = PreviousIf[0]
                 Model = PreviousIf[2]
-                self.TblDsc.Insert(Model, Value1, Value2, Value3, ArchList, BelongsToItem, FileID, PreviousIf[1], StartColumn, EndLine, EndColumn, Enabled)
+                self.TblDsc.Insert(Model, Value1, Value2, Value3, ArchList, BelongsToItem, self.FileID, PreviousIf[1], StartColumn, EndLine, EndColumn, Enabled)
             #
             # !if and !elseif
             #
@@ -961,14 +962,14 @@ class Dsc(DscObject):
                 Value3 = List[2]
                 Value3 = SplitString(Value3)
                 Model = PreviousIf[2]
-                self.TblDsc.Insert(Model, Value1, Value2, Value3, ArchList, BelongsToItem, FileID, PreviousIf[1], StartColumn, EndLine, EndColumn, Enabled)
+                self.TblDsc.Insert(Model, Value1, Value2, Value3, ArchList, BelongsToItem, self.FileID, PreviousIf[1], StartColumn, EndLine, EndColumn, Enabled)
             #
             # !else
             #
             elif PreviousIf[2] in (MODEL_META_DATA_CONDITIONAL_STATEMENT_ELSE, Model):
                 Value1 = PreviousIf[0].strip()
                 Model = PreviousIf[2]
-                self.TblDsc.Insert(Model, Value1, Value2, Value3, ArchList, BelongsToItem, FileID, PreviousIf[1], StartColumn, EndLine, EndColumn, Enabled)
+                self.TblDsc.Insert(Model, Value1, Value2, Value3, ArchList, BelongsToItem, self.FileID, PreviousIf[1], StartColumn, EndLine, EndColumn, Enabled)
 
     ## Load Dsc file
     #
@@ -983,13 +984,13 @@ class Dsc(DscObject):
         Filename = NormPath(Filename)
         self.Identification.FileFullPath = Filename
         (self.Identification.FileRelativePath, self.Identification.FileName) = os.path.split(Filename)
-        FileID = self.TblFile.InsertFile(Filename, MODEL_FILE_DSC)
+        self.FileID = self.TblFile.InsertFile(Filename, MODEL_FILE_DSC)
         
         #
         # Init DscTable
         #
-        self.TblDsc.Table = "Dsc%s" % FileID
-        self.TblDsc.Create()
+        #self.TblDsc.Table = "Dsc%s" % FileID
+        #self.TblDsc.Create()
         
         #
         # Init common datas
@@ -1034,7 +1035,7 @@ class Dsc(DscObject):
                 #
                 # Insert items data of previous section
                 #
-                self.InsertSectionItemsIntoDatabase(FileID, Filename, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList)
+                self.InsertSectionItemsIntoDatabase(self.FileID, Filename, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList)
                 #
                 # Parse the new section
                 #
@@ -1082,7 +1083,7 @@ class Dsc(DscObject):
         #
         # Insert items data of last section
         #
-        self.InsertSectionItemsIntoDatabase(FileID, Filename, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList)
+        self.InsertSectionItemsIntoDatabase(self.FileID, Filename, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList)
         
         #
         # Parse conditional statements
@@ -1107,6 +1108,7 @@ class Dsc(DscObject):
         SqlCommand = """select A.StartLine, A.EndLine from %s as A 
                         where A.Model in (%s, %s, %s)
                         and A.Enabled = 0
+                        and A.BelongsToFile = %s
                         and A.Value1 not in (select B.Value1 from %s as B 
                                              where B.Model = %s
                                              and B.Enabled = 0
@@ -1116,6 +1118,7 @@ class Dsc(DscObject):
                                              and A.BelongsToFile = B.BelongsToFile) """ % \
                         (self.TblDsc.Table, \
                          MODEL_META_DATA_CONDITIONAL_STATEMENT_IF, MODEL_META_DATA_CONDITIONAL_STATEMENT_ELSE, MODEL_META_DATA_CONDITIONAL_STATEMENT_IFDEF, \
+                         self.FileID, \
                          self.TblDsc.Table, \
                          MODEL_META_DATA_DEFINE)
         RecordSet = self.TblDsc.Exec(SqlCommand)
@@ -1129,6 +1132,7 @@ class Dsc(DscObject):
         SqlCommand = """select A.StartLine, A.EndLine from %s as A 
                         where A.Model = %s
                         and A.Enabled = 0
+                        and A.BelongsToFile = %s
                         and A.Value1 in (select B.Value1 from %s as B 
                                          where B.Model = %s
                                          and B.Enabled = 0
@@ -1138,6 +1142,7 @@ class Dsc(DscObject):
                                          and A.BelongsToFile = B.BelongsToFile)""" % \
                         (self.TblDsc.Table, \
                          MODEL_META_DATA_CONDITIONAL_STATEMENT_IFNDEF, \
+                         self.FileID, \
                          self.TblDsc.Table, \
                          MODEL_META_DATA_DEFINE)
         RecordSet = self.TblDsc.Exec(SqlCommand)
@@ -1152,6 +1157,7 @@ class Dsc(DscObject):
         SqlCommand = """select A.Model, A.Value1, A.Value2, A.Value3, A.StartLine, A.EndLine, B.Value2 from %s as A join %s as B
                         where A.Model in (%s, %s)
                         and A.Enabled = 0
+                        and A.BelongsToFile = %s
                         and B.Enabled = 0
                         and B.Model = %s
                         and A.Value1 = B.Value1
@@ -1160,7 +1166,7 @@ class Dsc(DscObject):
                         and A.BelongsToFile = B.BelongsToFile""" % \
                         (self.TblDsc.Table, self.TblDsc.Table, \
                          MODEL_META_DATA_CONDITIONAL_STATEMENT_IF, MODEL_META_DATA_CONDITIONAL_STATEMENT_ELSE, \
-                         MODEL_META_DATA_DEFINE)
+                         self.FileID, MODEL_META_DATA_DEFINE)
         RecordSet = self.TblDsc.Exec(SqlCommand)
         DisabledList = []
         for Record in RecordSet:

@@ -170,19 +170,21 @@ def ParseDefineMacro(Table, GlobalMacro):
 #
 # @retval RecordSet: A list of all matched records
 #
-def QueryDefinesItem(Table, Name, Arch):
+def QueryDefinesItem(Table, Name, Arch, BelongsToFile):
     SqlCommand = """select Value2 from %s
                     where Model = %s
                     and Value1 = '%s'
                     and Arch = '%s'
-                    and Enabled > -1""" % (Table.Table, MODEL_META_DATA_HEADER, ConvertToSqlString2(Name), ConvertToSqlString2(Arch))
+                    and BelongsToFile = %s
+                    and Enabled > -1""" % (Table.Table, MODEL_META_DATA_HEADER, ConvertToSqlString2(Name), ConvertToSqlString2(Arch), BelongsToFile)
     RecordSet = Table.Exec(SqlCommand)
     if len(RecordSet) < 1:
         SqlCommand = """select Value2 from %s
                     where Model = %s
                     and Value1 = '%s'
                     and Arch = '%s'
-                    and Enabled > -1""" % (Table.Table, MODEL_META_DATA_HEADER, ConvertToSqlString2(Name), ConvertToSqlString2(TAB_ARCH_COMMON.upper()))
+                    and BelongsToFile = %s
+                    and Enabled > -1""" % (Table.Table, MODEL_META_DATA_HEADER, ConvertToSqlString2(Name), ConvertToSqlString2(TAB_ARCH_COMMON.upper()), BelongsToFile)
         RecordSet = Table.Exec(SqlCommand)
     if len(RecordSet) == 1:
         if Name == TAB_INF_DEFINES_LIBRARY_CLASS:
@@ -212,17 +214,19 @@ def QueryDefinesItem(Table, Name, Arch):
 #
 # @retval RecordSet: A list of all matched records
 #
-def QueryDefinesItem2(Table, Arch):
+def QueryDefinesItem2(Table, Arch, BelongsToFile):
     SqlCommand = """select Value1, Value2, StartLine from %s
                     where Model = %s
                     and Arch = '%s'
-                    and Enabled > -1""" % (Table.Table, MODEL_META_DATA_HEADER, ConvertToSqlString2(Arch))
+                    and BelongsToFile = %s
+                    and Enabled > -1""" % (Table.Table, MODEL_META_DATA_HEADER, ConvertToSqlString2(Arch), BelongsToFile)
     RecordSet = Table.Exec(SqlCommand)
     if len(RecordSet) < 1:
         SqlCommand = """select Value1, Value2, StartLine from %s
                     where Model = %s
                     and Arch = '%s'
-                    and Enabled > -1""" % (Table.Table, MODEL_META_DATA_HEADER, ConvertToSqlString2(TAB_ARCH_COMMON))
+                    and BelongsToFile = %s
+                    and Enabled > -1""" % (Table.Table, MODEL_META_DATA_HEADER, ConvertToSqlString2(TAB_ARCH_COMMON), BelongsToFile)
         RecordSet = Table.Exec(SqlCommand)
     
     return RecordSet
@@ -236,11 +240,12 @@ def QueryDefinesItem2(Table, Arch):
 #
 # @retval RecordSet: A list of all matched records
 #
-def QueryDscItem(Table, Model, BelongsToItem):
+def QueryDscItem(Table, Model, BelongsToItem, BelongsToFile):
     SqlCommand = """select Value1, Arch, StartLine, ID, Value2 from %s
                     where Model = %s
                     and BelongsToItem = %s
-                    and Enabled > -1""" % (Table.Table, Model, BelongsToItem)
+                    and BelongsToFile = %s
+                    and Enabled > -1""" % (Table.Table, Model, BelongsToItem, BelongsToFile)
     return Table.Exec(SqlCommand)
 
 ##QueryDecItem

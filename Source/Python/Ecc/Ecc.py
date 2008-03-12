@@ -14,14 +14,17 @@
 ##
 # Import Modules
 #
-import os
+import os, time, glob
 from optparse import OptionParser
 import Common.EdkLogger as EdkLogger
 import Database
 from Configuration import Configuration
 from Check import Check
 import EccGlobalData
-import time
+from Common.InfClassObject import Inf
+from Common.DecClassObject import Dec
+from Common.DscClassObject import Dsc
+from Common.String import NormPath
 #import c
 
 ## Ecc
@@ -57,6 +60,12 @@ class Ecc(object):
         EccGlobalData.gConfig = Configuration(self.ConfigFile)
         
         #
+        # Init Ecc database
+        #
+        EccGlobalData.gDb = Database.Database(Database.DATABASE_PATH)
+        EccGlobalData.gDb.InitDatabase()
+        
+        #
         # Build ECC database
         #
         self.BuildDatabase()
@@ -76,18 +85,60 @@ class Ecc(object):
         #
         EccGlobalData.gDb.Close()
 
-    ##
+    ## BuildDatabase
     #
     # Build the database for target
     #
     def BuildDatabase(self):
-        EdkLogger.quiet("Parsing target ...")
-        EccGlobalData.gDb = Database.Database(Database.DATABASE_PATH)
-        EccGlobalData.gDb.InitDatabase()
+        EdkLogger.quiet("Building database for source code ...")
         #c.CollectSourceCodeDataIntoDB(EccGlobalData.gTarget)
-        EdkLogger.quiet("Parsing target done!")
-        #EccGlobalData.gDb.TblReport.ToCSV()
+        EdkLogger.quiet("Building database for source code done!")
+        
+        self.BuildMetaDataFileDatabase()
+    
+    ## BuildMetaDataFileDatabase
+    #
+    # Build the database for meta data files
+    #
+    def BuildMetaDataFileDatabase(self):
+        EdkLogger.quiet("Building database for meta data files ...")
+        Op = open(EccGlobalData.gConfig.MetaDataFileCheckPathOfGenerateFileList, 'w+')
+        for Root, Dirs, Files in os.walk(EccGlobalData.gTarget):
+            if "CVS" in Dirs:
+                Dirs.remove('CVS')
+            if ".svn" in Dirs:
+                Dirs.remove('.svn')
+            if "EdkCompatibilityPkg" in Dirs:
+                Dirs.remove('EdkCompatibilityPkg')
+            
+            for File in Files:
+                if len(File) > 4 and File[-4:].upper() == ".DEC":
+                    Filename = os.path.normpath(os.path.join(Root, File))
+                    EdkLogger.quiet("Parsing %s" % Filename)
+                    Op.write("%s\r" % Filename)
+                    Dec(Filename, True, True, EccGlobalData.gWorkspace, EccGlobalData.gDb)
+                    continue
+                if len(File) > 4 and File[-4:].upper() == ".DSC":
+                    Filename = os.path.normpath(os.path.join(Root, File))
+                    EdkLogger.quiet("Parsing %s" % Filename)
+                    Op.write("%s\r" % Filename)
+                    Dsc(Filename, True, True, EccGlobalData.gWorkspace, EccGlobalData.gDb)
+                    continue
+                if len(File) > 4 and File[-4:].upper() == ".INF":
+                    Filename = os.path.normpath(os.path.join(Root, File))
+                    EdkLogger.quiet("Parsing %s" % Filename)
+                    Op.write("%s\r" % Filename)
+                    Inf(Filename, True, True, EccGlobalData.gWorkspace, EccGlobalData.gDb)
+                    continue
+                if len(File) > 4 and File[-4:].upper() == ".FDF":
+                    Filename = os.path.normpath(os.path.join(Root, File))
+                    EdkLogger.quiet("Parsing %s" % Filename)
+                    Op.write("%s\r" % Filename)
+                    continue
+        Op.close()
 
+        EdkLogger.quiet("Building database for meta data files done!")
+    
     ##
     #
     # Check each checkpoint
@@ -104,6 +155,7 @@ class Ecc(object):
     #
     def GenReport(self):
         EdkLogger.quiet("Generating report ...")
+        EccGlobalData.gDb.TblReport.ToCSV()
         EdkLogger.quiet("Generating report done!")
     
     ## ParseOption
@@ -138,9 +190,10 @@ class Ecc(object):
         if Options.OutputFile != None:
             self.OutputFile = Options.OutputFile
         if Options.Target != None:
-            EccGlobalData.gTarget = Options.Target
+            EccGlobalData.gTarget = os.path.normpath(Options.Target)
         else:
-            EdkLogger.error("Ecc", EdkLogger.ECC_ERROR, "A target workspace must be specified!")
+            EdkLogger.warn("Ecc", EdkLogger.ECC_ERROR, "The target source tree is not specified, use current WORKSPACE instead.!")
+            EccGlobalData.gTarget = os.path.normpath(os.getenv("WORKSPACE"))
            
     ## SetLogLevel
     #
@@ -196,4 +249,4 @@ class Ecc(object):
 #
 if __name__ == '__main__':
     Ecc = Ecc()
-    
+

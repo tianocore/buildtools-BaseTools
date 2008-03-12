@@ -27,7 +27,7 @@ from BuildToolError import *
 from Misc import sdict
 import GlobalData
 from Table.TableInf import TableInf
-import Database as Database
+import Database
 from Parsing import *
 
 #
@@ -174,7 +174,9 @@ class Inf(InfObject):
         
         self.Cur = Database.Cur
         self.TblFile = Database.TblFile
-        self.TblInf = TableInf(Database.Cur)
+        self.TblInf = Database.TblInf
+        self.FileID = -1
+        #self.TblInf = TableInf(Database.Cur)
 
         self.KeyList = [
             TAB_SOURCES, TAB_BUILD_OPTIONS, TAB_BINARIES, TAB_INCLUDES, TAB_GUIDS, 
@@ -326,13 +328,13 @@ class Inf(InfObject):
         Filename = NormPath(Filename)
         self.Identification.FileFullPath = Filename
         (self.Identification.FileRelativePath, self.Identification.FileName) = os.path.split(Filename)
-        FileID = self.TblFile.InsertFile(Filename, MODEL_FILE_DSC)
+        self.FileID = self.TblFile.InsertFile(Filename, MODEL_FILE_INF)
         
         #
         # Init InfTable
         #
-        self.TblInf.Table = "Inf%s" % FileID
-        self.TblInf.Create()
+        #self.TblInf.Table = "Inf%s" % self.FileID
+        #self.TblInf.Create()
         
         #
         # Init common datas
@@ -380,7 +382,7 @@ class Inf(InfObject):
                 #
                 # Insert items data of previous section
                 #
-                InsertSectionItemsIntoDatabase(self.TblInf, FileID, Filename, Model, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList, self.RecordSet)
+                InsertSectionItemsIntoDatabase(self.TblInf, self.FileID, Filename, Model, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList, self.RecordSet)
                 #
                 # Parse the new section
                 #
@@ -429,7 +431,7 @@ class Inf(InfObject):
         # Insert items data of last section
         #
         Model = Section[CurrentSection.upper()]
-        InsertSectionItemsIntoDatabase(self.TblInf, FileID, Filename, Model, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList, self.RecordSet)
+        InsertSectionItemsIntoDatabase(self.TblInf, self.FileID, Filename, Model, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList, self.RecordSet)
         
         #
         # Replace all DEFINE macros with its actual values
@@ -544,7 +546,7 @@ class Inf(InfObject):
             ModuleHeader = InfHeader()
             ModuleHeader.FileName = self.Identification.FileName
             ModuleHeader.FullPath = self.Identification.FileFullPath
-            DefineList = QueryDefinesItem2(self.TblInf, Arch)
+            DefineList = QueryDefinesItem2(self.TblInf, Arch, self.FileID)
 
             NotProcessedDefineList = []
             for D in DefineList:

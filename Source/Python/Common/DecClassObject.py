@@ -23,7 +23,7 @@ from CommonDataClass.PackageClass import *
 from CommonDataClass.CommonClass import PcdClass
 from BuildToolError import *
 from Table.TableDec import TableDec
-import Database as Database
+import Database
 from Parsing import *
 import GlobalData
 
@@ -92,7 +92,8 @@ class Dec(DecObject):
         
         self.Cur = Database.Cur
         self.TblFile = Database.TblFile
-        self.TblDec = TableDec(Database.Cur)
+        self.TblDec = Database.TblDec
+        self.FileID = -1
 
         self.KeyList = [
             TAB_INCLUDES, TAB_GUIDS, TAB_PROTOCOLS, TAB_PPIS, TAB_LIBRARY_CLASSES, \
@@ -136,13 +137,13 @@ class Dec(DecObject):
         Filename = NormPath(Filename)
         self.Identification.FileFullPath = Filename
         (self.Identification.FileRelativePath, self.Identification.FileName) = os.path.split(Filename)
-        FileID = self.TblFile.InsertFile(Filename, MODEL_FILE_DSC)
+        self.FileID = self.TblFile.InsertFile(Filename, MODEL_FILE_DEC)
         
         #
         # Init DecTable
         #
-        self.TblDec.Table = "Dec%s" % FileID
-        self.TblDec.Create()
+        #self.TblDec.Table = "Dec%s" % self.FileID
+        #self.TblDec.Create()
         
         #
         # Init common datas
@@ -188,7 +189,7 @@ class Dec(DecObject):
                 # Insert items data of previous section
                 #
                 Model = Section[CurrentSection.upper()]
-                InsertSectionItemsIntoDatabase(self.TblDec, FileID, Filename, Model, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList, self.RecordSet)
+                InsertSectionItemsIntoDatabase(self.TblDec, self.FileID, Filename, Model, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList, self.RecordSet)
 
                 #
                 # Parse the new section
@@ -238,7 +239,7 @@ class Dec(DecObject):
         # Insert items data of last section
         #
         Model = Section[CurrentSection.upper()]
-        InsertSectionItemsIntoDatabase(self.TblDec, FileID, Filename, Model, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList, self.RecordSet)
+        InsertSectionItemsIntoDatabase(self.TblDec, self.FileID, Filename, Model, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList, self.RecordSet)
         
         #
         # Replace all DEFINE macros with its actual values
@@ -317,12 +318,12 @@ class Dec(DecObject):
         for Arch in self.SupArchList:
             PackageHeader = PackageHeaderClass()
             
-            PackageHeader.Name = QueryDefinesItem(self.TblDec, TAB_DEC_DEFINES_PACKAGE_NAME, Arch)[0]
-            PackageHeader.Guid = QueryDefinesItem(self.TblDec, TAB_DEC_DEFINES_PACKAGE_GUID, Arch)[0]
-            PackageHeader.Version = QueryDefinesItem(self.TblDec, TAB_DEC_DEFINES_PACKAGE_VERSION, Arch)[0]
+            PackageHeader.Name = QueryDefinesItem(self.TblDec, TAB_DEC_DEFINES_PACKAGE_NAME, Arch, self.FileID)[0]
+            PackageHeader.Guid = QueryDefinesItem(self.TblDec, TAB_DEC_DEFINES_PACKAGE_GUID, Arch, self.FileID)[0]
+            PackageHeader.Version = QueryDefinesItem(self.TblDec, TAB_DEC_DEFINES_PACKAGE_VERSION, Arch, self.FileID)[0]
             PackageHeader.FileName = self.Identification.FileName
             PackageHeader.FullPath = self.Identification.FileFullPath
-            PackageHeader.DecSpecification = QueryDefinesItem(self.TblDec, TAB_DEC_DEFINES_DEC_SPECIFICATION, Arch)[0]
+            PackageHeader.DecSpecification = QueryDefinesItem(self.TblDec, TAB_DEC_DEFINES_DEC_SPECIFICATION, Arch, self.FileID)[0]
             
             self.Package.Header[Arch] = PackageHeader
     
