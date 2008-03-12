@@ -52,6 +52,7 @@ class Check(object):
     #
     def MetaDataFileCheckPathName(self):
         if EccGlobalData.gConfig.MetaDataFileCheckPathName == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
+            # This item is covered when parsing INF/DEC/DSC files
             pass
     
     #
@@ -59,7 +60,7 @@ class Check(object):
     #
     def MetaDataFileCheckGenerateFileList(self):
         if EccGlobalData.gConfig.MetaDataFileCheckGenerateFileList == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
-            File = EccGlobalData.gConfig.MetaDataFileCheckPathOfGenerateFileList
+            # This item is covered when parsing INF/DEC/DSC files
             pass
     
     #

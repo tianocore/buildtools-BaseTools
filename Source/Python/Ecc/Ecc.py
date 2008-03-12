@@ -47,6 +47,7 @@ class Ecc(object):
         # Initialize log system
         #
         EdkLogger.Initialize()
+        EdkLogger.IsRaiseError = False
         EdkLogger.quiet(time.strftime("%H:%M:%S, %b.%d %Y ", time.localtime()) + "[00:00]" + "\n")
         
         #

@@ -410,7 +410,7 @@ def PreCheck(FileName, FileContent, SupSectionTag):
         #
         if Line.find('$') > -1:
             if Line.find('$(') < 0 or Line.find(')') < 0:
-                EdkLogger.error("Parser", FORMAT_INVALID, Line=LineNo, File=FileName)
+                EdkLogger.error("Parser", FORMAT_INVALID, Line=LineNo, File=FileName, RaiseError = EdkLogger.IsRaiseError)
 
         #
         # Check []
@@ -420,7 +420,7 @@ def PreCheck(FileName, FileContent, SupSectionTag):
             # Only get one '[' or one ']'
             #
             if not (Line.find('[') > -1 and Line.find(']') > -1):
-                EdkLogger.error("Parser", FORMAT_INVALID, Line=LineNo, File=FileName)
+                EdkLogger.error("Parser", FORMAT_INVALID, Line=LineNo, File=FileName, RaiseError = EdkLogger.IsRaiseError)
         
         #
         # Regenerate FileContent
@@ -428,7 +428,7 @@ def PreCheck(FileName, FileContent, SupSectionTag):
         NewFileContent = NewFileContent + Line + '\r\n'
 
     if IsFailed:
-       EdkLogger.error("Parser", FORMAT_INVALID, Line=LineNo, File=FileName)
+       EdkLogger.error("Parser", FORMAT_INVALID, Line=LineNo, File=FileName, RaiseError = EdkLogger.IsRaiseError)
     
     return NewFileContent
 
@@ -455,7 +455,7 @@ def CheckFileType(CheckFilename, ExtName, ContainerFilename, SectionName, Line, 
                 LineNo = GetLineNo(ContainerFile, Line)
             ErrorMsg = "Invalid %s. '%s' is found, but '%s' file is needed" % (SectionName, CheckFilename, ExtName)
             EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, Line=LineNo,
-                            File=ContainerFilename)
+                            File=ContainerFilename, RaiseError = EdkLogger.IsRaiseError)
 
     return True
 
@@ -483,7 +483,7 @@ def CheckFileExist(WorkspaceDir, CheckFilename, ContainerFilename, SectionName, 
                 LineNo = GetLineNo(ContainerFile, Line)
             ErrorMsg = "Can't find file '%s' defined in section '%s'" % (CheckFile, SectionName)
             EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg,
-                            File=ContainerFilename, Line=LineNo)
+                            File=ContainerFilename, Line = LineNo, RaiseError = EdkLogger.IsRaiseError)
 
     return CheckFile
 
@@ -526,7 +526,7 @@ def RaiseParserError(Line, Section, File, Format = '', LineNo = -1):
     ErrorMsg = "Invalid statement '%s' is found in section '%s'" % (Line, Section)
     if Format != '':
         Format = "Correct format is " + Format
-    EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, File=File, Line=LineNo, ExtraData=Format)
+    EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, File=File, Line=LineNo, ExtraData=Format, RaiseError = EdkLogger.IsRaiseError)
 
 ## WorkspaceFile
 #

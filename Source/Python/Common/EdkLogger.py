@@ -33,6 +33,8 @@ WARN    = 30
 QUIET   = 40
 ERROR   = 50
 
+IsRaiseError = True
+
 # For validation purpose
 _LogLevels = [DEBUG_0, DEBUG_1, DEBUG_2, DEBUG_3, DEBUG_4, DEBUG_5, DEBUG_6, DEBUG_7, DEBUG_8, DEBUG_9, VERBOSE, WARN, INFO, ERROR, QUIET]
 
