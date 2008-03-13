@@ -259,7 +259,7 @@ Returns:
     if ((stricmp (argv[0], "-f") == 0) || (stricmp (argv[0], "--filename") == 0)) {
       InputFileName = argv[1];
       if (InputFileName == NULL) {
-        Error (NULL, 0, 0, "NO Input file specified.", NULL);
+        Error (NULL, 0, 0x1001, "NO Input file specified.", NULL);
         return STATUS_ERROR;
       }
       argc -= 2;
@@ -270,7 +270,7 @@ Returns:
     if ((stricmp (argv[0], "-s") == 0) || (stricmp (argv[0], "--split") == 0)) {
       Status = GetSplitValue(argv[1], &SplitValue);
       if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 0, "Input split value is not one valid integer.", NULL);
+        Error (NULL, 0, 0x1003, "Input split value is not one valid integer.", NULL);
         return STATUS_ERROR;
       }
       argc -= 2;
@@ -310,7 +310,7 @@ Returns:
       if (strlen(argv[0]) > 2) {
         Status = CountVerboseLevel (&argv[0][2], strlen(argv[0]) - 2, &VerboseLevel);
         if (EFI_ERROR (Status)) {
-          Error (NULL, 0, 0, NULL, "%s is invaild paramter!", argv[0]);
+          Error (NULL, 0, 0x1003, NULL, "%s is invaild paramter!", argv[0]);
           return STATUS_ERROR;        
         }
       }
@@ -323,7 +323,7 @@ Returns:
     if ((stricmp (argv[0], "-d") == 0) || (stricmp (argv[0], "--debug") == 0)) {
       Status = AsciiStringToUint64 (argv[1], FALSE, &DebugLevel);
       if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 0, "Input debug level is not one valid integrator.", NULL);
+        Error (NULL, 0, 0x1003, "Input debug level is not one valid integrator.", NULL);
         return STATUS_ERROR;        
       }
       argc -= 2;
@@ -333,18 +333,19 @@ Returns:
     //
     // Don't recognize the paramter.
     //
-    Error (NULL, 0, 0, NULL, "%s is invaild paramter!", argv[0]);
+    Error (NULL, 0, 0x1003, NULL, "%s is invaild paramter!", argv[0]);
     return STATUS_ERROR;
   }
 
   if (InputFileName == NULL) {
-    Error (NULL, 0, 0, "NO Input file specified.", NULL);
+    Error (NULL, 0, 0x1001, "NO Input file specified.", NULL);
     return STATUS_ERROR;
   }
   
   In = fopen (InputFileName, "rb");
   if (In == NULL) {
-    printf ("Unable to open file \"%s\"\n", InputFileName);
+    // ("Unable to open file \"%s\"\n", InputFileName);
+    Error (InputFileName, 0, 1, "File open failure", NULL);
     return STATUS_ERROR;
   }
 
@@ -381,13 +382,13 @@ Returns:
   
   CurrentDir = (CHAR8*)getcwd((CHAR8*)0, 0);
   if (EFI_ERROR(CreateDir(&OutFileName1))) {
-      Error (NULL, 0, 0, "Create Dir for File1 Fail.", NULL);
+      Error (OutFileName1, 0, 5, "Create Dir for File1 Fail.", NULL);
       return STATUS_ERROR;
   }
   chdir(CurrentDir);
   
   if (EFI_ERROR(CreateDir(&OutFileName2))) {
-      Error (NULL, 0, 0, "Create Dir for File2 Fail.", NULL);
+      Error (OutFileName2, 0, 5, "Create Dir for File2 Fail.", NULL);
       return STATUS_ERROR;
   }
   chdir(CurrentDir);
@@ -395,13 +396,15 @@ Returns:
       
   Out1 = fopen (OutFileName1, "wb");
   if (Out1 == NULL) {
-    printf ("Unable to open file \"%s\"\n", OutFileName1);
+    // ("Unable to open file \"%s\"\n", OutFileName1);
+    Error (OutFileName1, 0, 1, "File open failure", NULL);
     return STATUS_ERROR;
   }
 
   Out2 = fopen (OutFileName2, "wb");
   if (Out2 == NULL) {
-    printf ("Unable to open file \"%s\"\n", OutFileName2);
+    // ("Unable to open file \"%s\"\n", OutFileName2);
+    Error (OutFileName2, 0, 1, "File open failure", NULL);
     return STATUS_ERROR;
   }
 

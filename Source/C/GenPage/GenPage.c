@@ -239,13 +239,15 @@ return:
   //
   PageFile = fopen (PageFileName, "w+b");
   if (PageFile == NULL) {
-    fprintf (stderr, "GenBinPage: Could not open file %s\n", PageFileName);
+    //fprintf (stderr, "GenBinPage: Could not open file %s\n", PageFileName);
+    Error (PageFileName, 0, 1, "File open failure", NULL);
     return -1;
   }
 
   NoPageFile = fopen (NoPageFileName, "r+b");
   if (NoPageFile == NULL) {
-    fprintf (stderr, "GenBinPage: Could not open file %s\n", NoPageFileName);
+    //fprintf (stderr, "GenBinPage: Could not open file %s\n", NoPageFileName);
+    Error (NoPageFileName, 0, 1, "File open failure", NULL);
     fclose (PageFile);
     return -1;
   }
@@ -257,7 +259,8 @@ return:
   FileSize = ftell (NoPageFile);
   fseek (NoPageFile, 0, SEEK_SET);
   if (FileSize > gPageTableOffsetInFile) {
-    fprintf (stderr, "GenBinPage: file size too large - 0x%x\n", FileSize);
+    //fprintf (stderr, "GenBinPage: file size too large - 0x%x\n", FileSize);
+    Error (NoPageFileName, 0, 0x4002, "file size too large", NULL);
     fclose (PageFile);
     fclose (NoPageFile);
     return -1;
@@ -296,6 +299,8 @@ main (
   char* OutputFile = NULL;
   char* InputFile = NULL;
 
+  SetUtilityName("GenPage");
+
   if (argc == 1) {
     Usage();
     return -1;
@@ -318,7 +323,7 @@ main (
     if ((stricmp (argv[0], "-o") == 0) || (stricmp (argv[0], "--output") == 0)) {
       OutputFile = argv[1];
       if (OutputFile == NULL) {
-        Error (NULL, 0, 0, "NO output file specified.", NULL);
+        Error (NULL, 0, 0x1001, "NO output file specified.", NULL);
         return -1;
       }
       argc -= 2;
@@ -329,7 +334,7 @@ main (
     if ((stricmp (argv[0], "-b") == 0) || (stricmp (argv[0], "--baseaddr") == 0)) {
       
       if (argv[1] == NULL) {
-        Error (NULL, 0, 0, "NO base address specified.", NULL);
+        Error (NULL, 0, 0x1001, "NO base address specified.", NULL);
         return STATUS_ERROR;
       }
       gPageTableBaseAddress  = xtoi (argv[1]);
@@ -340,7 +345,7 @@ main (
     
     if ((stricmp (argv[0], "-f") == 0) || (stricmp (argv[0], "--offset") == 0)) {
       if (argv[1] == NULL) {
-        Error (NULL, 0, 0, "NO offset specified.", NULL);
+        Error (NULL, 0, 0x1001, "NO offset specified.", NULL);
         return STATUS_ERROR;
       }
       gPageTableOffsetInFile  = xtoi (argv[1]);
@@ -391,7 +396,7 @@ main (
   }
   
   if (InputFile == NULL) {
-    Error (NULL, 0, 0, "NO Input file specified.", NULL);
+    Error (NULL, 0, 0x1001, "NO Input file specified.", NULL);
     return STATUS_ERROR;
   }
   
