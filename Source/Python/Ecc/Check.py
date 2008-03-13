@@ -101,7 +101,6 @@ class Check(object):
             pass
 
     #
-    # Not to report error and warning related OS include file such as "windows.h" and "stdio.h"
     # Check whether a PCD is set in a DSC file or the FDF file, but not in both.
     #
     def MetaDataFileCheckPcdDuplicate(self):
@@ -120,7 +119,18 @@ class Check(object):
     #
     def MetaDataFileCheckPcdNoUse(self):
         if EccGlobalData.gConfig.MetaDataFileCheckPcdNoUse == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
-            pass
+            EdkLogger.quiet("Checking no use pcds ...")
+            SqlCommand = """
+                         select ID, Value2, BelongsToFile from Inf as A 
+                         where A.Model >= %s and Model < %s
+                         and A.Enabled > -1
+                         and A.Value2 not in 
+                             (select Value2 from Dsc as B 
+                              where B.Model >= %s and B.Model < %s
+                              and B.Enabled > -1)""" % (MODEL_PCD, MODEL_META_DATA_HEADER, MODEL_PCD, MODEL_META_DATA_HEADER)
+            RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
+            for Record in RecordSet:
+                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_NO_USE, OtherMsg = "The pcd '%s' defined in INF file is not referenced by any DSC files" % (Record[1]), BelongsToTable = 'Inf', BelongsToItem = Record[0])
         
     #
     # Check whether having duplicate guids defined for Guid/Protocol/Ppi
@@ -139,15 +149,15 @@ class Check(object):
             #
             self.CheckGuidProtocolPpi(ERROR_META_DATA_FILE_CHECK_DUPLICATE_PROTOCOL, MODEL_EFI_PROTOCOL, EccGlobalData.gDb.TblDec)
             self.CheckGuidProtocolPpi(ERROR_META_DATA_FILE_CHECK_DUPLICATE_PROTOCOL, MODEL_EFI_PROTOCOL, EccGlobalData.gDb.TblDsc)
-            self.CheckGuidProtocolPpiValue(ERROR_META_DATA_FILE_CHECK_DUPLICATE_PROTOCOL, MODEL_EFI_GUID)
+            self.CheckGuidProtocolPpiValue(ERROR_META_DATA_FILE_CHECK_DUPLICATE_PROTOCOL, MODEL_EFI_PROTOCOL)
             #
             # Check ppi
             #
             self.CheckGuidProtocolPpi(ERROR_META_DATA_FILE_CHECK_DUPLICATE_PPI, MODEL_EFI_PPI, EccGlobalData.gDb.TblDec)
             self.CheckGuidProtocolPpi(ERROR_META_DATA_FILE_CHECK_DUPLICATE_PPI, MODEL_EFI_PPI, EccGlobalData.gDb.TblDsc)
-            self.CheckGuidProtocolPpiValue(ERROR_META_DATA_FILE_CHECK_DUPLICATE_PPI, MODEL_EFI_GUID)
+            self.CheckGuidProtocolPpiValue(ERROR_META_DATA_FILE_CHECK_DUPLICATE_PPI, MODEL_EFI_PPI)
 
-            EdkLogger.quiet("Checking duplicate guid/ppi/protocol done!")
+            #EdkLogger.quiet("Checking duplicate guid/ppi/protocol done!")
     
     #
     # Check whether these is duplicate Guid/Ppi/Protocol name
@@ -164,6 +174,8 @@ class Check(object):
                      select A.ID, A.Value1 from %s as A, %s as B 
                      where A.Model = %s and B.Model = %s 
                      and A.Value1 = B.Value1 and A.ID <> B.ID 
+                     and A.Enabled > -1
+                     and B.Enabled > -1
                      group by A.ID
                      """ % (Table.Table, Table.Table, Model, Model)
         RecordSet = Table.Exec(SqlCommand)
@@ -190,9 +202,7 @@ class Check(object):
                      """ % (Table.Table, Table.Table, Model, Model)
         RecordSet = Table.Exec(SqlCommand)
         for Record in RecordSet:
-            EccGlobalData.gDb.TblReport.Insert(ErrorID, OtherMsg = "The %s value '%s' is defined more than one time" % (Name, Record[1]), BelongsToTable = Table.Table, BelongsToItem = Record[0])
-
-
+            EccGlobalData.gDb.TblReport.Insert(ErrorID, OtherMsg = "The %s value '%s' is used more than one time" % (Name, Record[1]), BelongsToTable = Table.Table, BelongsToItem = Record[0])
 
 ##
 #

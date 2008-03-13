@@ -451,6 +451,7 @@ class Dec(DecObject):
     def GenPcds(self, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % TAB_PCDS)
         Pcds = {}
+        PcdToken = {}
         #
         # Get all Guids
         #
@@ -466,19 +467,36 @@ class Dec(DecObject):
         for Arch in self.SupArchList:
             for Record in RecordSet1:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Pcds, GetPcdOfDec(Record[0], TAB_PCDS_FIXED_AT_BUILD, ContainerFile, Record[2]), Arch)
+                    (TokenGuidCName, TokenName, Value, DatumType, Token, Type) = GetPcdOfDec(Record[0], TAB_PCDS_FIXED_AT_BUILD, ContainerFile, Record[2])
+                    MergeArches(Pcds, (TokenGuidCName, TokenName, Value, DatumType, Token, Type), Arch)
+                    PcdToken[Record[3]] = (TokenGuidCName, TokenName)
             for Record in RecordSet2:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Pcds, GetPcdOfDec(Record[0], TAB_PCDS_PATCHABLE_IN_MODULE, ContainerFile, Record[2]), Arch)
+                    (TokenGuidCName, TokenName, Value, DatumType, Token, Type) = GetPcdOfDec(Record[0], TAB_PCDS_PATCHABLE_IN_MODULE, ContainerFile, Record[2])
+                    MergeArches(Pcds, (TokenGuidCName, TokenName, Value, DatumType, Token, Type), Arch)
+                    PcdToken[Record[3]] = (TokenGuidCName, TokenName)
             for Record in RecordSet3:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Pcds, GetPcdOfDec(Record[0], TAB_PCDS_FEATURE_FLAG, ContainerFile, Record[2]), Arch)
+                    (TokenGuidCName, TokenName, Value, DatumType, Token, Type) = GetPcdOfDec(Record[0], TAB_PCDS_FEATURE_FLAG, ContainerFile, Record[2])
+                    MergeArches(Pcds, (TokenGuidCName, TokenName, Value, DatumType, Token, Type), Arch)
+                    PcdToken[Record[3]] = (TokenGuidCName, TokenName)
             for Record in RecordSet4:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Pcds, GetPcdOfDec(Record[0], TAB_PCDS_DYNAMIC_EX, ContainerFile, Record[2]), Arch)
+                    (TokenGuidCName, TokenName, Value, DatumType, Token, Type) = GetPcdOfDec(Record[0], TAB_PCDS_DYNAMIC_EX, ContainerFile, Record[2])
+                    MergeArches(Pcds, (TokenGuidCName, TokenName, Value, DatumType, Token, Type), Arch)
+                    PcdToken[Record[3]] = (TokenGuidCName, TokenName)
             for Record in RecordSet5:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
-                    MergeArches(Pcds, GetPcdOfDec(Record[0], TAB_PCDS_DYNAMIC, ContainerFile, Record[2]), Arch)                    
+                    (TokenGuidCName, TokenName, Value, DatumType, Token, Type) = GetPcdOfDec(Record[0], TAB_PCDS_DYNAMIC, ContainerFile, Record[2])
+                    MergeArches(Pcds, (TokenGuidCName, TokenName, Value, DatumType, Token, Type), Arch)
+                    PcdToken[Record[3]] = (TokenGuidCName, TokenName)
+        #
+        # Update to database
+        #
+        if self.IsToDatabase:
+            for Key in PcdToken.keys():
+                SqlCommand = """update %s set Value2 = '%s' where ID = %s""" % (self.TblDec.Table, ".".join((PcdToken[Key][0], PcdToken[Key][1])), Key)
+                self.TblDec.Exec(SqlCommand)
 
         for Key in Pcds.keys():
             Pcd = PcdClass()

@@ -111,6 +111,8 @@ class Dsc(DscObject):
             TAB_COMPONENTS, TAB_DSC_DEFINES
         ]
         
+        self.PcdToken = {}
+        
         #
         # Upper all KEYs to ignore case sensitive when parsing
         #
@@ -187,6 +189,14 @@ class Dsc(DscObject):
         # Generate Components
         #
         self.GenComponents(ContainerFile)
+        
+        #
+        # Update to database
+        #
+        if self.IsToDatabase:
+            for Key in self.PcdToken.keys():
+                SqlCommand = """update %s set Value2 = '%s' where ID = %s""" % (self.TblDsc.Table, ".".join((self.PcdToken[Key][0], self.PcdToken[Key][1])), Key)
+                self.TblDsc.Exec(SqlCommand)
     #End of DscToPlatform
 
     ## Get Platform Header
@@ -479,11 +489,15 @@ class Dsc(DscObject):
                     for NewItem in open(Filename, 'r').readlines():
                         if CleanString(NewItem) == '':
                             continue
-                        MergeArches(Pcds, GetPcd(NewItem, Type, Filename, -1), Arch)
+                        (TokenName, TokenGuidCName, Value, DatumType, MaxDatumSize, Type) = GetPcd(NewItem, Type, Filename, -1)
+                        MergeArches(Pcds, (TokenName, TokenGuidCName, Value, DatumType, MaxDatumSize, Type), Arch)
+                        self.PcdToken[Record[3]] = (TokenGuidCName, TokenName)
 
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON.upper():
-                    MergeArches(Pcds, GetPcd(Record[0], Type, ContainerFile, Record[2]), Arch)
+                    (TokenName, TokenGuidCName, Value, DatumType, MaxDatumSize, Type) = GetPcd(Record[0], Type, ContainerFile, Record[2])
+                    MergeArches(Pcds, (TokenName, TokenGuidCName, Value, DatumType, MaxDatumSize, Type), Arch)
+                    self.PcdToken[Record[3]] = (TokenGuidCName, TokenName)
                 
         for Key in Pcds:
             Pcd = PcdClass(Key[0], '', Key[1], Key[3], Key[4], Key[2], Key[5], [], {}, [])
@@ -525,11 +539,15 @@ class Dsc(DscObject):
                     for NewItem in open(Filename, 'r').readlines():
                         if CleanString(NewItem) == '':
                             continue
-                        MergeArches(Pcds, GetFeatureFlagPcd(NewItem, Type, Filename, -1), Arch)
+                        (TokenName, TokenGuidCName, Value, Type) = GetFeatureFlagPcd(NewItem, Type, Filename, -1)
+                        MergeArches(Pcds, (TokenName, TokenGuidCName, Value, Type), Arch)
+                        self.PcdToken[Record[3]] = (TokenGuidCName, TokenName)
 
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON.upper():
-                    MergeArches(Pcds, GetFeatureFlagPcd(Record[0], Type, ContainerFile, Record[2]), Arch)
+                    (TokenName, TokenGuidCName, Value, Type) = GetFeatureFlagPcd(Record[0], Type, ContainerFile, Record[2])
+                    MergeArches(Pcds, (TokenName, TokenGuidCName, Value, Type), Arch)
+                    self.PcdToken[Record[3]] = (TokenGuidCName, TokenName)
 
         for Key in Pcds:
             Pcd = PcdClass(Key[0], '', Key[1], '', '', Key[2], Key[3], [], {}, [])
@@ -576,11 +594,13 @@ class Dsc(DscObject):
                             continue
                         (K1, K2, K3, K4, K5, K6) = GetDynamicDefaultPcd(NewItem, Type, Filename, -1)
                         MergeArches(Pcds,  (K1, K2, K3, K4, K5, K6, IncludeFile[4]), Arch)
+                        self.PcdToken[Record[3]] = (K2, K1)
 
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON.upper():
                     (K1, K2, K3, K4, K5, K6) = GetDynamicDefaultPcd(Record[0], Type, ContainerFile, Record[2])
                     MergeArches(Pcds,  (K1, K2, K3, K4, K5, K6, Record[4]), Arch)
+                    self.PcdToken[Record[3]] = (K2, K1)
 
         for Key in Pcds:
             (Status, SkuInfoList) = self.GenSkuInfoList(Key[6], self.Platform.SkuInfos.SkuInfoList, '', '', '', '', '', Key[2])
@@ -631,11 +651,13 @@ class Dsc(DscObject):
                             continue
                         (K1, K2, K3, K4, K5, K6, K7, K8) = GetDynamicHiiPcd(NewItem, Type, Filename, -1)
                         MergeArches(Pcds,  (K1, K2, K3, K4, K5, K6, K7, K8, IncludeFile[4]), Arch)
+                        self.PcdToken[Record[3]] = (K2, K1)
 
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON.upper():
                     (K1, K2, K3, K4, K5, K6, K7, K8) = GetDynamicHiiPcd(Record[0], Type, ContainerFile, Record[2])
                     MergeArches(Pcds,  (K1, K2, K3, K4, K5, K6, K7, K8, Record[4]), Arch)
+                    self.PcdToken[Record[3]] = (K2, K1)
         
         for Key in Pcds:
             (Status, SkuInfoList) = self.GenSkuInfoList(Key[8], self.Platform.SkuInfos.SkuInfoList, Key[2], Key[3], Key[4], Key[5], '', '')
@@ -686,11 +708,13 @@ class Dsc(DscObject):
                             continue
                         (K1, K2, K3, K4, K5) = GetDynamicVpdPcd(NewItem, Type, Filename, -1)
                         MergeArches(Pcds,  (K1, K2, K3, K4, K5, IncludeFile[4]), Arch)
+                        self.PcdToken[Record[3]] = (K2, K1)
 
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON.upper():
                     (K1, K2, K3, K4, K5) = GetDynamicVpdPcd(Record[0], Type, ContainerFile, Record[2])
                     MergeArches(Pcds,  (K1, K2, K3, K4, K5, Record[4]), Arch)
+                    self.PcdToken[Record[3]] = (K2, K1)
 
         for Key in Pcds:
             (Status, SkuInfoList) = self.GenSkuInfoList(Key[5], self.Platform.SkuInfos.SkuInfoList, '', '', '', '', Key[2], '')
@@ -756,15 +780,15 @@ class Dsc(DscObject):
                     SubPcdSet4 = QueryDscItem(self.TblDsc, MODEL_PCD_DYNAMIC_EX_DEFAULT, Record[3], self.FileID)
                     SubPcdSet5 = QueryDscItem(self.TblDsc, MODEL_PCD_DYNAMIC_DEFAULT, Record[3], self.FileID)
                     for SubPcd in SubPcdSet1:
-                        Pcd.append([DataType.TAB_PCDS_FIXED_AT_BUILD, SubPcd[0]])
+                        Pcd.append([DataType.TAB_PCDS_FIXED_AT_BUILD, SubPcd[0], SubPcd[3]])
                     for SubPcd in SubPcdSet2:
-                        Pcd.append([DataType.TAB_PCDS_PATCHABLE_IN_MODULE, SubPcd[0]])
+                        Pcd.append([DataType.TAB_PCDS_PATCHABLE_IN_MODULE, SubPcd[0], SubPcd[3]])
                     for SubPcd in SubPcdSet3:
-                        Pcd.append([DataType.TAB_PCDS_FEATURE_FLAG, SubPcd[0]])
+                        Pcd.append([DataType.TAB_PCDS_FEATURE_FLAG, SubPcd[0], SubPcd[3]])
                     for SubPcd in SubPcdSet4:
-                        Pcd.append([DataType.TAB_PCDS_DYNAMIC_EX, SubPcd[0]])
+                        Pcd.append([DataType.TAB_PCDS_DYNAMIC_EX, SubPcd[0], SubPcd[3]])
                     for SubPcd in SubPcdSet5:
-                        Pcd.append([DataType.TAB_PCDS_DYNAMIC, SubPcd[0]])
+                        Pcd.append([DataType.TAB_PCDS_DYNAMIC, SubPcd[0], SubPcd[3]])
                     Item = [Record[0], Lib, Bo, Pcd]
                     MergeArches(Components, self.GenComponent(Item, ContainerFile), Arch)
 
@@ -809,7 +833,9 @@ class Dsc(DscObject):
         for Pcd in Pcds:
             Type = Pcd[0]
             List = GetSplitValueList(Pcd[1])
-
+            PcdId = Pcd[2]
+            
+            TokenInfo = None
             #
             # For FeatureFlag
             #
@@ -842,6 +868,11 @@ class Dsc(DscObject):
                 CheckPcdTokenInfo(List[0], 'Components', ContainerFile)
                 TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
                 Component.PcdBuildDefinitions.append(PcdClass(TokenInfo[1], '', TokenInfo[0], '', '', '', Type, [], {}, []))
+            
+            #
+            # Add to PcdToken
+            #
+            self.PcdToken[PcdId] = (TokenInfo[0], TokenInfo[1])
 
         return Component
     #End of GenComponent
