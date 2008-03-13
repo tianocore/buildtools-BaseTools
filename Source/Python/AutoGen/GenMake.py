@@ -614,9 +614,12 @@ class Makefile(object):
     ## Create necessary directory for makefile generation
     def PrepareDirectory(self):
         if self.ModuleBuild:
-            CreateDirectory(self.PlatformInfo.BuildDir)
-            CreateDirectory(self.ModuleInfo.BuildDir)
-            CreateDirectory(self.ModuleInfo.DebugDir)
+            if not CreateDirectory(self.PlatformInfo.BuildDir):
+                EdkLogger.error("AutoGen", FILE_CREATE_FAILURE, ExtraData=self.PlatformInfo.BuildDir)
+            if not CreateDirectory(self.ModuleInfo.BuildDir):
+                EdkLogger.error("AutoGen", FILE_CREATE_FAILURE, ExtraData=self.ModuleInfo.BuildDir)
+            if not CreateDirectory(self.ModuleInfo.DebugDir):
+                EdkLogger.error("AutoGen", FILE_CREATE_FAILURE, ExtraData=self.ModuleInfo.DebugDir)
 
     ## Create the makefile
     #
@@ -643,6 +646,8 @@ class Makefile(object):
     #                           since last time
     #
     def GeneratePlatformMakefile(self, File=None, MakeType=gMakeType):
+        if MakeType not in gDirectorySeparator:
+            EdkLogger.error("GenMake", PARAMETER_INVALID, "Invalid Makefile type", ExtraData=MakeType)
         Separator = gDirectorySeparator[MakeType]
 
         ArchList = self.PlatformInfo.keys()
@@ -659,6 +664,7 @@ class Makefile(object):
         MacroList = []
         if PlatformInfo.FdfFile != None and PlatformInfo.FdfFile != "":
             FdfFileList = [PlatformInfo.FdfFile]
+            # macros passed to GenFds
             for MacroName in GlobalData.gGlobalDefines:
                 MacroList.append('"%s=%s"' % (MacroName, GlobalData.gGlobalDefines[MacroName]))    
         else:
@@ -738,6 +744,8 @@ class Makefile(object):
         if MakeType in self.ModuleInfo.CustomMakefile and self.ModuleInfo.CustomMakefile[MakeType] != "":
             return self.GenerateCustomBuildMakefile(File, MakeType)
 
+        if MakeType not in gDirectorySeparator:
+            EdkLogger.error("GenMake", PARAMETER_INVALID, "Invalid Makefile type", ExtraData=MakeType)
         Separator = gDirectorySeparator[MakeType]
         PlatformInfo = self.PlatformInfo
 
@@ -769,6 +777,7 @@ class Makefile(object):
             EntryPoint = "_ModuleEntryPoint"
 
         DefaultToolFlag = PlatformInfo.ToolOption.values()
+        # USER_DEFINED modules should take care of tools definitions by its own
         if self.ModuleInfo.ModuleType == "USER_DEFINED":
             DefaultToolFlag = ["" for p in DefaultToolFlag]
 
@@ -905,8 +914,14 @@ class Makefile(object):
     #                           since last time
     #
     def GenerateCustomBuildMakefile(self, File=None, MakeType=gMakeType):
+        if MakeType not in gDirectorySeparator:
+            EdkLogger.error("GenMake", PARAMETER_INVALID, "Invalid Makefile type", ExtraData=MakeType)
         Separator = gDirectorySeparator[MakeType]
-        CustomMakefile = open(os.path.join(self.ModuleInfo.WorkspaceDir, self .ModuleInfo.CustomMakefile[MakeType]), 'r').read()
+
+        try:
+            CustomMakefile = open(os.path.join(self.ModuleInfo.WorkspaceDir, self .ModuleInfo.CustomMakefile[MakeType]), 'r').read()
+        except:
+            EdkLogger.error(None, FILE_OPEN_FAILURE, ExtraData=self .ModuleInfo.CustomMakefile[MakeType])
 
         MakefileName = gMakefileName[MakeType]
         MakefileTemplateDict = {

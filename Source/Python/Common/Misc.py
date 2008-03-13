@@ -135,9 +135,13 @@ def GuidStructureStringToGuidValueName(GuidValue):
 #
 def CreateDirectory(Directory):
     if Directory == None or Directory.strip() == "":
-        return
-    if not os.access(Directory, os.F_OK):
-        os.makedirs(Directory)
+        return True
+    try:
+        if not os.access(Directory, os.F_OK):
+            os.makedirs(Directory)
+    except:
+        return False
+    return True
 
 ## Check if given file is changed or not
 #
@@ -184,7 +188,10 @@ def SaveFileOnChange(File, Content, IsBinaryFile=True):
         BinaryFlag = ''
     Fd = None
     if os.path.exists(File):
-        Fd = open(File, "r"+BinaryFlag)
+        try:
+            Fd = open(File, "r"+BinaryFlag)
+        except:
+            EdkLogger.error(None, FILE_OPEN_FAILURE, ExtraData=File)
         FileSize = os.fstat(Fd.fileno()).st_size
         if len(Content) == FileSize and Content == Fd.read():
             Fd.close()
@@ -192,7 +199,10 @@ def SaveFileOnChange(File, Content, IsBinaryFile=True):
         Fd.close()
         # os.remove(File) # seems creating new file is faster than overwriting old one
     CreateDirectory(os.path.dirname(File))
-    Fd = open(File, "w"+BinaryFlag)
+    try:
+        Fd = open(File, "w"+BinaryFlag)
+    except:
+        EdkLogger.error(None, FILE_CREATE_FAILURE, ExtraData=File)
     Fd.write(Content)
     Fd.close()
     return True

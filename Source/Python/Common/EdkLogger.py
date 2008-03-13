@@ -204,8 +204,8 @@ quiet   = _ErrorLogger.error
 ## Initialize log system
 def Initialize():
     #
-    # Since we use different format to log different levels of message into differen
-    # place (stdout or stderr), we have to use different "Logger" object to do this.
+    # Since we use different format to log different levels of message into different
+    # place (stdout or stderr), we have to use different "Logger" objects to do this.
     # 
     # For DEBUG level (All DEBUG_0~9 are applicable)
     _DebugLogger.setLevel(INFO)

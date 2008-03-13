@@ -930,6 +930,9 @@ class ModuleAutoGen(object):
     #
     def GetSourceFileList(self, Info):
         # use toolchain family of CC as the primary toolchain family
+        if "CC" not in Info.PlatformInfo.ToolChainFamily:
+            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Tool [CC] is not supported for %s [%s, %s]" \
+                             % (Info.ToolChain, Info.BuildTarget, Info.Arch))
         ToolChainFamily = Info.PlatformInfo.ToolChainFamily["CC"]
         BuildRule = Info.PlatformInfo.BuildRule
         BuildFileList = []

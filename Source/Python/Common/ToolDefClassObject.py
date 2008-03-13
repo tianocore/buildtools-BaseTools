@@ -155,16 +155,16 @@ class ToolDefClassObject(object):
         EnvReference = gEnvRefPattern.findall(Value)
         for Ref in EnvReference:
             if Ref not in self.MacroDictionary:
-                EdkLogger.error("tools_def.txt parser", PARSER_ERROR,
-                                "Environment [%s] has not been defined" % Ref,
+                EdkLogger.error("tools_def.txt parser", RESOURCE_NOT_AVAILABLE,
+                                ExtraData="Environment [%s] has not been defined" % Ref,
                                 File=FileName, Line=Index+1)
             Value = Value.replace(Ref, self.MacroDictionary[Ref])
 
         MacroReference = gMacroRefPattern.findall(Value)
         for Ref in MacroReference:
             if Ref not in self.MacroDictionary:
-                EdkLogger.error("tools_def.txt parser", PARSER_ERROR,
-                                "Macro [%s] has not been defined" % Ref,
+                EdkLogger.error("tools_def.txt parser", RESOURCE_NOT_AVAILABLE,
+                                ExtraData="Macro [%s] has not been defined" % Ref,
                                 File=FileName, Line=Index+1)
             Value = Value.replace(Ref, self.MacroDictionary[Ref])
 

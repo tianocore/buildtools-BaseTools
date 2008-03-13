@@ -218,7 +218,7 @@ class BuildRule:
         elif Content != None:
             self.RuleContent = Content
         else:
-            EdkLogger.error("BuildRuleParser", PARSER_ERROR, "No rule file or string given")
+            EdkLogger.error("BuildRuleParser", PARAMETER_MISSING, ExtraData="No rule file or string given")
 
         self.SupportedToolChainFamilyList = SupportedFamily
         self.RuleDatabase = {}  # {version : {family : {file type : FileBuildRule object}}}
@@ -273,14 +273,14 @@ class BuildRule:
         TokenList = self.RuleContent[LineIndex].split("=", 1)
         # currently only BUILD_VERSION is supported
         if len(TokenList) != 2 or TokenList[0] != "BUILD_VERSION":
-            EdkLogger.error("BuildRuleParser", PARSER_ERROR, "Invalid definition",
-                            File=RuleFile, Line=LineIndex+1, ExtraData=self.RuleContent[LineIndex])
+            EdkLogger.error("BuildRuleParser", FORMAT_INVALID, File=RuleFile, Line=LineIndex+1, 
+                            ExtraData="Invalid definition: " + self.RuleContent[LineIndex])
 
         try:
             self._BuildVersion = int(TokenList[1].strip(), 0)
         except:
-            EdkLogger.error("BuildRuleParser", PARSER_ERROR, "Version is not a valid number",
-                            File=self.RuleFile, Line=LineIndex+1, ExtraData=self.RuleContent[LineIndex])
+            EdkLogger.error("BuildRuleParser", FORMAT_INVALID, File=self.RuleFile, Line=LineIndex+1, 
+                            ExtraData="Version is not a valid number: " + self.RuleContent[LineIndex])
 
     ## Parse definitions under a subsection
     #
@@ -339,12 +339,12 @@ class BuildRule:
             if self._InputFile in Rule:
                 Input = Rule[self._InputFile]
             else:
-                EdkLogger.error("BuildRuleParser", PARSER_ERROR, "No input files found for a rule")
+                EdkLogger.error("BuildRuleParser", FORMAT_INVALID, ExtraData="No input files found for a rule")
 
             if self._OutputFile in Rule:
                 Output = Rule[self._OutputFile]
             else:
-                EdkLogger.error("BuildRuleParser", PARSER_ERROR, "No output files found a rule")
+                EdkLogger.error("BuildRuleParser", FORMAT_INVALID, ExtraData="No output files found a rule")
 
             if self._Command in Rule:
                 Command = Rule[self._Command]
@@ -378,8 +378,8 @@ class BuildRule:
         for RuleName in RuleNameList:
             TokenList = RuleName.split('.')
             if len(TokenList) == 1:
-                EdkLogger.error("BuildRuleParser", PARSER_ERROR, "Invalid rule section",
-                                File=self.RuleFile, Line=LineIndex+1, ExtraData=self.RuleContent[LineIndex])
+                EdkLogger.error("BuildRuleParser", FORMAT_INVALID, File=self.RuleFile, Line=LineIndex+1, 
+                                ExtraData="Invalid rule section: " + self.RuleContent[LineIndex])
 
             Rule = TokenList[0].strip()
             if Rule.upper() != "BUILD":
@@ -388,8 +388,8 @@ class BuildRule:
 
             FileType = TokenList[1].strip()
             if FileType == '':
-                EdkLogger.error("BuildRuleParser", PARSER_ERROR, "No file type given",
-                                File=self.RuleFile, Line=LineIndex+1, ExtraData=Line)
+                EdkLogger.error("BuildRuleParser", FORMAT_INVALID, File=self.RuleFile, Line=LineIndex+1, 
+                                ExtraData="No file type given: " + Line)
             FileTypeList.append(FileType)
 
         self._FileTypeList = FileTypeList
@@ -411,8 +411,8 @@ class BuildRule:
             if SectionType == "":
                 SectionType = Type
             elif SectionType != Type:
-                EdkLogger.error("BuildRuleParser", PARSER_ERROR, "Two different section types are not allowed",
-                                File=self.RuleFile, Line=LineIndex+1, ExtraData=Line)
+                EdkLogger.error("BuildRuleParser", FORMAT_INVALID, File=self.RuleFile, Line=LineIndex+1, 
+                                ExtraData="Two different section types are not allowed: " + Line)
 
             if len(TokenList) > 1:
                 Family = TokenList[1].strip().upper()
@@ -436,14 +436,13 @@ class BuildRule:
         if len(TokenList) > 1:
             FileType = TokenList[0].strip()
             if FileType not in self._FileTypeList:
-                EdkLogger.error("BuildRuleParser", PARSER_ERROR,
-                                "File type must be one of %s: %s" % (self._FileTypeList, FileType),
-                                File=self.RuleFile, ExtraData=Line, Line=LineIndex+1)
+                EdkLogger.error("BuildRuleParser", FORMAT_INVALID, File=self.RuleFile,  Line=LineIndex+1,
+                                ExtraData="File type must be one of %s: %s" % (self._FileTypeList, FileType))
             FileString = TokenList[1]
         else:
             if len(self._FileTypeList) > 1:
-                EdkLogger.error("BuildRuleParser", PARSER_ERROR, "File type must be given",
-                                File=self.RuleFile, Line=LineIndex, ExtraData=Line)
+                EdkLogger.error("BuildRuleParser", FORMAT_INVALID, File=self.RuleFile, Line=LineIndex, 
+                                ExtraData="File type must be given: " + Line)
             else:
                 FileType = self._FileTypeList[0]
             FileString = TokenList[0]
