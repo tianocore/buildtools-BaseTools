@@ -20,7 +20,7 @@ from GenFdsGlobalVariable import GenFdsGlobalVariable
 import subprocess
 from Ffs import Ffs
 import os
-from CommonDataClass.FdfClassObject import DataSectionClassObject
+from CommonDataClass.FdfClass import DataSectionClassObject
 import shutil
 
 ## generate data section

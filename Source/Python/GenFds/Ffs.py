@@ -15,7 +15,7 @@
 ##
 # Import Modules
 #
-from CommonDataClass.FdfClassObject import FDClassObject
+from CommonDataClass.FdfClass import FDClassObject
 
 ## generate FFS
 #

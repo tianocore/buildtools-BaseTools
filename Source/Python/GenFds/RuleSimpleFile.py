@@ -16,7 +16,7 @@
 # Import Modules
 #
 import Rule
-from CommonDataClass.FdfClassObject import RuleSimpleFileClassObject
+from CommonDataClass.FdfClass import RuleSimpleFileClassObject
 
 ## simple rule
 #

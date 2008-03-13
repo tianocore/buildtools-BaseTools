@@ -15,7 +15,7 @@
 ##
 # Import Modules
 #
-from CommonDataClass.FdfClassObject import SectionClassObject
+from CommonDataClass.FdfClass import SectionClassObject
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import os
 

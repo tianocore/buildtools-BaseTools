@@ -20,7 +20,7 @@ import os
 import StringIO
 import FfsFileStatement
 from GenFdsGlobalVariable import GenFdsGlobalVariable
-from CommonDataClass.FdfClassObject import AprioriSectionClassObject
+from CommonDataClass.FdfClass import AprioriSectionClassObject
 from Common.String import *
 
 ## process APRIORI file data and generate PEI/DXE APRIORI file

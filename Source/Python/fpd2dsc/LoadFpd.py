@@ -16,7 +16,7 @@
 #
 import os
 from CommonDataClass.PlatformClass import *
-from CommonDataClass.FdfClassObject import *
+from CommonDataClass.FdfClass import *
 from Common.XmlRoutines import *
 from Common.MigrationUtilities import *
 from EdkIIWorkspaceGuidsInfo import gEdkIIWorkspaceGuidsInfo

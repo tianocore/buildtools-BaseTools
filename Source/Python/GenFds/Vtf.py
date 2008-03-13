@@ -17,7 +17,7 @@
 #
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import os
-from CommonDataClass.FdfClassObject import VtfClassObject
+from CommonDataClass.FdfClass import VtfClassObject
 T_CHAR_LF = '\n'
 
 ## generate VTF

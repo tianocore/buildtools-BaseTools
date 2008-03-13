@@ -20,7 +20,7 @@ from GenFdsGlobalVariable import GenFdsGlobalVariable
 import subprocess
 from Ffs import Ffs
 import os
-from CommonDataClass.FdfClassObject import EfiSectionClassObject
+from CommonDataClass.FdfClass import EfiSectionClassObject
 import shutil
 
 ## generate rule section

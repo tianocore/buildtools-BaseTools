@@ -20,7 +20,7 @@ import Section
 import subprocess
 import os
 from GenFdsGlobalVariable import GenFdsGlobalVariable
-from CommonDataClass.FdfClassObject import CompressSectionClassObject
+from CommonDataClass.FdfClass import CompressSectionClassObject
 
 ## generate compress section
 #

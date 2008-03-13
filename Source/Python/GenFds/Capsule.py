@@ -16,7 +16,7 @@
 # Import Modules
 #
 from GenFdsGlobalVariable import GenFdsGlobalVariable
-from CommonDataClass.FdfClassObject import CapsuleClassObject
+from CommonDataClass.FdfClass import CapsuleClassObject
 import os
 import subprocess
 

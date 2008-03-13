@@ -21,7 +21,7 @@ from Ffs import Ffs
 import subprocess
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import os
-from CommonDataClass.FdfClassObject import FvImageSectionClassObject
+from CommonDataClass.FdfClass import FvImageSectionClassObject
 
 ## generate FV image section
 #

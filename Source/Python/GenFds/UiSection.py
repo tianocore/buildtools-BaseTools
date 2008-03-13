@@ -20,7 +20,7 @@ from Ffs import Ffs
 import subprocess
 import os
 from GenFdsGlobalVariable import GenFdsGlobalVariable
-from CommonDataClass.FdfClassObject import UiSectionClassObject
+from CommonDataClass.FdfClass import UiSectionClassObject
 
 ## generate UI section
 #

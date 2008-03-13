@@ -15,7 +15,7 @@
 ##
 # Import Modules
 #
-from CommonDataClass.FdfClassObject import RuleClassObject
+from CommonDataClass.FdfClass import RuleClassObject
 
 ## Rule base class
 #

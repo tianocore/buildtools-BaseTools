@@ -16,7 +16,7 @@
 # Import Modules
 #
 import Rule
-from  CommonDataClass.FdfClassObject import RuleComplexFileClassObject
+from  CommonDataClass.FdfClass import RuleComplexFileClassObject
 
 ## complex rule
 #

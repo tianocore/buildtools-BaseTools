@@ -15,10 +15,10 @@
 ##
 # Import Modules
 #
-import CommonDataClass.FdfClassObject
-
 import re
 import os
+
+import CommonDataClass.FdfClass
 
 ##define T_CHAR_SPACE                ' '
 ##define T_CHAR_NULL                 '\0'
@@ -155,7 +155,7 @@ class FileProfile :
 # GetNext*** procedures mean these procedures will get next token first, then make judgement.
 # Get*** procedures mean these procedures will make judgement on current token only.
 #        
-class FdfParser:
+class FdfParser(object):
     ## The constructor
     #
     #   @param  self        The object pointer
@@ -275,10 +275,10 @@ class FdfParser:
     #  
     def __GetOneChar(self):
         if self.CurrentOffsetWithinLine == len(self.Profile.FileLinesList[self.CurrentLineNumber - 1]) - 1:
-                self.CurrentLineNumber += 1
-                self.CurrentOffsetWithinLine = 0
+            self.CurrentLineNumber += 1
+            self.CurrentOffsetWithinLine = 0
         else:
-                self.CurrentOffsetWithinLine += 1
+            self.CurrentOffsetWithinLine += 1
 
     ## __CurrentChar() method
     #
@@ -1204,7 +1204,7 @@ class FdfParser:
         if not self.__IsToken( "]"):
             raise Warning("expected ']' At Line ", self.FileName, self.CurrentLineNumber)
         
-        FdObj = CommonDataClass.FdfClassObject.FDClassObject()
+        FdObj = CommonDataClass.FdfClass.FDClassObject()
         FdObj.FdUiName = self.CurrentFdName
         self.Profile.FdDict[self.CurrentFdName] = FdObj
         Status = self.__GetCreateFile(FdObj)
@@ -1506,7 +1506,7 @@ class FdfParser:
         if not self.__GetNextHexNumber():
             return False
         
-        RegionObj = CommonDataClass.FdfClassObject.RegionClassObject()
+        RegionObj = CommonDataClass.FdfClass.RegionClassObject()
         RegionObj.Offset = long(self.__Token, 0)
         Fd.RegionList.append(RegionObj)
         
@@ -1718,7 +1718,7 @@ class FdfParser:
         if not self.__IsToken( "]"):
             raise Warning("expected ']' At Line ", self.FileName, self.CurrentLineNumber)
         
-        FvObj = CommonDataClass.FdfClassObject.FvClassObject()
+        FvObj = CommonDataClass.FdfClass.FvClassObject()
         FvObj.UiFvName = self.CurrentFvName
         self.Profile.FvDict[self.CurrentFvName] = FvObj
         
@@ -1830,7 +1830,7 @@ class FdfParser:
         if not self.__IsToken( "{"):
             raise Warning("expected '{' At Line ", self.FileName, self.CurrentLineNumber)
         
-        AprSectionObj = CommonDataClass.FdfClassObject.AprioriSectionClassObject()
+        AprSectionObj = CommonDataClass.FdfClass.AprioriSectionClassObject()
         AprSectionObj.AprioriType = AprType
         
         self.__GetDefineStatements(AprSectionObj)
@@ -1863,7 +1863,7 @@ class FdfParser:
         if not self.__IsKeyword( "INF"):
             return False
         
-        ffsInf = CommonDataClass.FdfClassObject.FfsInfStatementClassObject()
+        ffsInf = CommonDataClass.FdfClass.FfsInfStatementClassObject()
         self.__GetInfOptions( ffsInf)
         
         if not self.__GetNextToken():
@@ -1959,7 +1959,7 @@ class FdfParser:
         if not self.__IsKeyword( "FILE"):
             return False
         
-        FfsFileObj = CommonDataClass.FdfClassObject.FileStatementClassObject()
+        FfsFileObj = CommonDataClass.FdfClass.FileStatementClassObject()
         
         if not self.__GetNextWord():
             raise Warning("expected FFS type At Line ", self.FileName, self.CurrentLineNumber)
@@ -2184,7 +2184,7 @@ class FdfParser:
                 raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             if not self.__GetNextToken():
                 raise Warning("expected version At Line ", self.FileName, self.CurrentLineNumber)
-            VerSectionObj = CommonDataClass.FdfClassObject.VerSectionClassObject()
+            VerSectionObj = CommonDataClass.FdfClass.VerSectionClassObject()
             VerSectionObj.Alignment = AlignValue
             VerSectionObj.BuildNum = BuildNum
             if self.__GetStringData():
@@ -2198,7 +2198,7 @@ class FdfParser:
                 raise Warning("expected '=' At Line ", self.FileName, self.CurrentLineNumber)
             if not self.__GetNextToken():
                 raise Warning("expected UI At Line ", self.FileName, self.CurrentLineNumber)
-            UiSectionObj = CommonDataClass.FdfClassObject.UiSectionClassObject()
+            UiSectionObj = CommonDataClass.FdfClass.UiSectionClassObject()
             UiSectionObj.Alignment = AlignValue
             if self.__GetStringData():
                 UiSectionObj.StringData = self.__Token
@@ -2236,7 +2236,7 @@ class FdfParser:
                 if not self.__IsToken( "}"):
                     raise Warning("expected '}' At Line ", self.FileName, self.CurrentLineNumber)
             
-            FvImageSectionObj = CommonDataClass.FdfClassObject.FvImageSectionClassObject()
+            FvImageSectionObj = CommonDataClass.FdfClass.FvImageSectionClassObject()
             FvImageSectionObj.Alignment = AlignValue
             if FvObj != None:
                 FvImageSectionObj.Fv = FvObj
@@ -2247,7 +2247,7 @@ class FdfParser:
             Obj.SectionList.append(FvImageSectionObj) 
            
         elif self.__IsKeyword("PEI_DEPEX_EXP") or self.__IsKeyword("DXE_DEPEX_EXP"):
-            DepexSectionObj = CommonDataClass.FdfClassObject.DepexSectionClassObject()
+            DepexSectionObj = CommonDataClass.FdfClass.DepexSectionClassObject()
             DepexSectionObj.Alignment = AlignValue
             DepexSectionObj.DepexType = self.__Token
             
@@ -2275,7 +2275,7 @@ class FdfParser:
                                "UI", "VERSION", "PEI_DEPEX", "SUBTYPE_GUID"):
                 raise Warning("Unknown section type At Line ", self.FileName, self.CurrentLineNumber)
             # DataSection
-            DataSectionObj = CommonDataClass.FdfClassObject.DataSectionClassObject()
+            DataSectionObj = CommonDataClass.FdfClass.DataSectionClassObject()
             DataSectionObj.Alignment = AlignValue
             DataSectionObj.SecType = self.__Token
             
@@ -2320,7 +2320,7 @@ class FdfParser:
             if not self.__IsToken("{"):
                 raise Warning("expected '{' At Line ", self.FileName, self.CurrentLineNumber)
 
-            CompressSectionObj = CommonDataClass.FdfClassObject.CompressSectionClassObject()
+            CompressSectionObj = CommonDataClass.FdfClass.CompressSectionClassObject()
             CompressSectionObj.Alignment = AlignValue
             CompressSectionObj.CompType = type
             # Recursive sections...
@@ -2348,7 +2348,7 @@ class FdfParser:
             AttribDict = self.__GetGuidAttrib()
             if not self.__IsToken("{"):
                 raise Warning("expected '{' At Line ", self.FileName, self.CurrentLineNumber)
-            GuidSectionObj = CommonDataClass.FdfClassObject.GuidSectionClassObject()
+            GuidSectionObj = CommonDataClass.FdfClass.GuidSectionClassObject()
             GuidSectionObj.Alignment = AlignValue
             GuidSectionObj.NameGuid = GuidValue
             GuidSectionObj.SectionType = "GUIDED"
@@ -2458,7 +2458,7 @@ class FdfParser:
                     % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], FileLineTuple[0], FileLineTuple[1], self.CurrentOffsetWithinLine)
             raise Warning("expected [Capsule.] At Line ", self.FileName, self.CurrentLineNumber)        
             
-        CapsuleObj = CommonDataClass.FdfClassObject.CapsuleClassObject()
+        CapsuleObj = CommonDataClass.FdfClass.CapsuleClassObject()
 
         CapsuleName = self.__GetUiName()
         if not CapsuleName:

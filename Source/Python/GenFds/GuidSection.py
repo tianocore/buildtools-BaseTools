@@ -20,7 +20,7 @@ import subprocess
 from Ffs import Ffs
 import os
 from GenFdsGlobalVariable import GenFdsGlobalVariable
-from CommonDataClass.FdfClassObject import GuidSectionClassObject
+from CommonDataClass.FdfClass import GuidSectionClassObject
 from Common import ToolDefClassObject
 import sys
 

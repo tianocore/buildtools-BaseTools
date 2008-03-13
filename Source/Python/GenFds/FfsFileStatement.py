@@ -21,7 +21,7 @@ from GenFdsGlobalVariable import GenFdsGlobalVariable
 import os
 import StringIO
 import subprocess
-from CommonDataClass.FdfClassObject import FileStatementClassObject
+from CommonDataClass.FdfClass import FileStatementClassObject
 
 ## generate FFS from FILE
 #

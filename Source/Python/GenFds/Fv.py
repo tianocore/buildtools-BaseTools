@@ -21,7 +21,7 @@ from GenFdsGlobalVariable import GenFdsGlobalVariable
 from GenFds import GenFds
 import os
 import subprocess
-from CommonDataClass.FdfClassObject import FvClassObject
+from CommonDataClass.FdfClass import FvClassObject
 
 T_CHAR_LF = '\n'
 

@@ -23,7 +23,7 @@ import sys
 from struct import *
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 T_CHAR_LF = '\n'
-from CommonDataClass.FdfClassObject import FDClassObject
+from CommonDataClass.FdfClass import FDClassObject
 
 ## generate FD
 #

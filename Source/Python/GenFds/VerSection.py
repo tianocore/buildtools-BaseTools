@@ -20,7 +20,7 @@ import Section
 import os
 import subprocess
 from GenFdsGlobalVariable import GenFdsGlobalVariable
-from CommonDataClass.FdfClassObject import VerSectionClassObject
+from CommonDataClass.FdfClass import VerSectionClassObject
 
 ## generate version section
 #

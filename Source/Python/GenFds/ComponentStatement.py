@@ -15,7 +15,7 @@
 ##
 # Import Modules
 #
-from CommonDataClass.FdfClassObject import ComponentStatementClassObject
+from CommonDataClass.FdfClass import ComponentStatementClassObject
 
 ## VTF components
 #

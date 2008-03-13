@@ -20,7 +20,7 @@ from GenFdsGlobalVariable import GenFdsGlobalVariable
 import subprocess
 from Ffs import Ffs
 import os
-from CommonDataClass.FdfClassObject import DepexSectionClassObject
+from CommonDataClass.FdfClass import DepexSectionClassObject
 from AutoGen.GenDepex import DependencyExpression
 import shutil
 

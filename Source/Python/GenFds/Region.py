@@ -18,7 +18,7 @@
 from struct import *
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import StringIO
-from CommonDataClass.FdfClassObject import RegionClassObject
+from CommonDataClass.FdfClass import RegionClassObject
 import os
 
 

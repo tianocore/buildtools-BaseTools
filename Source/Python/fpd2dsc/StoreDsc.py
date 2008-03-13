@@ -16,7 +16,7 @@
 #
 from LoadFpd import LoadFpd
 from CommonDataClass.PlatformClass import *
-from CommonDataClass.FdfClassObject import *
+from CommonDataClass.FdfClass import *
 from Common.MigrationUtilities import *
 from Common.ToolDefClassObject import *
 from Common.TargetTxtClassObject import *

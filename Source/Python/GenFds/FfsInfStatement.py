@@ -25,7 +25,7 @@ import sys
 import Section
 import RuleSimpleFile
 import RuleComplexFile
-from CommonDataClass.FdfClassObject import FfsInfStatementClassObject
+from CommonDataClass.FdfClass import FfsInfStatementClassObject
 from Common.String import *
 
 ## generate FFS from INF
