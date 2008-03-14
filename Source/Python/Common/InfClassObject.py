@@ -529,6 +529,7 @@ class Inf(InfObject):
     #
     def GenModuleHeader(self, ContainerFile):
         EdkLogger.debug(2, "Generate ModuleHeader ...")
+        File = self.Identification.FileFullPath
         #
         # Update all defines item in database
         #
