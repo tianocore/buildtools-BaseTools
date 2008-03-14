@@ -141,6 +141,9 @@ class FileProfile :
         self.PcdDict = {}
         self.InfList = []
         
+        self.PcdFileLineDict = {}
+        self.InfFileLineList = []
+        
         self.FdDict = {}
         self.FvDict = {}
         self.CapsuleList = []
@@ -1286,6 +1289,8 @@ class FdfParser(object):
             pcdPair = self.__GetNextPcdName()
             Obj.BaseAddressPcd = pcdPair
             self.Profile.PcdDict[pcdPair] = long(Obj.BaseAddress, 0)
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            self.Profile.PcdFileLineDict[pcdPair] = FileLineTuple
             
         if not self.__IsKeyword( "Size"):
             raise Warning("Size missing At Line ", self.FileName, self.CurrentLineNumber)
@@ -1303,6 +1308,8 @@ class FdfParser(object):
             pcdPair = self.__GetNextPcdName()
             Obj.SizePcd = pcdPair
             self.Profile.PcdDict[pcdPair] = Obj.Size
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            self.Profile.PcdFileLineDict[pcdPair] = FileLineTuple
                     
         if not self.__IsKeyword( "ErasePolarity"):
             raise Warning("ErasePolarity missing At Line ", self.FileName, self.CurrentLineNumber)
@@ -1395,6 +1402,8 @@ class FdfParser(object):
             PcdPair = self.__GetNextPcdName()
             BlockSizePcd = PcdPair
             self.Profile.PcdDict[PcdPair] = BlockSize
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            self.Profile.PcdFileLineDict[pcdPair] = FileLineTuple
             
         BlockNumber = None
         if self.__IsKeyword( "NumBlocks"):
@@ -1489,6 +1498,8 @@ class FdfParser(object):
                 
             Obj.SetVarDict[PcdPair] = Value
             self.Profile.PcdDict[PcdPair] = Value
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            self.Profile.PcdFileLineDict[PcdPair] = FileLineTuple
             return True
 
         return False
@@ -1524,9 +1535,13 @@ class FdfParser(object):
             self.__UndoToken()
             RegionObj.PcdOffset = self.__GetNextPcdName()
             self.Profile.PcdDict[RegionObj.PcdOffset] = RegionObj.Offset + long(Fd.BaseAddress, 0)
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            self.Profile.PcdFileLineDict[RegionObj.PcdOffset] = FileLineTuple
             if self.__IsToken( "|"):
                 RegionObj.PcdSize = self.__GetNextPcdName()
                 self.Profile.PcdDict[RegionObj.PcdSize] = RegionObj.Size
+                FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+                self.Profile.PcdFileLineDict[RegionObj.PcdSize] = FileLineTuple
             
             if not self.__GetNextWord():
                 return True
@@ -1875,6 +1890,8 @@ class FdfParser(object):
             
         if not ffsInf.InfFileName in self.Profile.InfList:
             self.Profile.InfList.append(ffsInf.InfFileName)
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            self.Profile.InfFileLineList.append(FileLineTuple)
         
         if self.__IsToken('|'):
             if self.__IsKeyword('RELOCS_STRIPPED'):
@@ -2038,7 +2055,7 @@ class FdfParser(object):
 #                    raise Warning("File type %s could not have reloc strip flag At Line %d" % (FfsFileObj.FvFileType, self.CurrentLineNumber), self.FileName, self.CurrentLineNumber)
 #            
 #            if not self.__IsToken("{"):
-                raise Warning("expected '{' At Line ", self.FileName, self.CurrentLineNumber)
+            raise Warning("expected '{' At Line ", self.FileName, self.CurrentLineNumber)
             
         if not self.__GetNextToken():
             raise Warning("expected File name or section data At Line ", self.FileName, self.CurrentLineNumber)
@@ -3436,12 +3453,12 @@ class FdfParser(object):
             return CycleRefExists
         
 if __name__ == "__main__":
-    parser = FdfParser("..\RichfordPlatformPkg.fdf")
+    parser = FdfParser("..\LakeportX64Pkg.fdf")
     try:
         parser.ParseFile()
         parser.CycleReferenceCheck()
     except Warning, X:
-            print X.message
+        print X.message
     else:
         print "Success!"
 
