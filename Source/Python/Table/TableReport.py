@@ -18,8 +18,8 @@ import Common.EdkLogger as EdkLogger
 import os
 from Table import Table
 from Common.String import ConvertToSqlString2
-import EccToolError
-import EccGlobalData
+import EccToolError as EccToolError
+import EccGlobalData as EccGlobalData
 
 ## TableReport
 #

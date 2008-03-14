@@ -29,6 +29,7 @@ from Table.TableReport import TableReport
 from Table.TableInf import TableInf
 from Table.TableDec import TableDec
 from Table.TableDsc import TableDsc
+from Table.TableFdf import TableFdf
 
 ##
 # Static definitions
@@ -50,12 +51,39 @@ DATABASE_PATH = "Database/Ecc.db"
 #
 class Database(object):
     def __init__(self, DbPath):
-        if os.path.exists(DbPath):
-            os.remove(DbPath)
-        self.Conn = sqlite3.connect(DbPath, isolation_level = 'DEFERRED')
+        self.DbPath = DbPath
+        self.Conn = None
+        self.Cur = None
+        self.TblDataModel = None
+        self.TblFile = None
+        self.TblFunction = None
+        self.TblIdentifier = None
+        self.TblPcd = None
+        self.TblReport = None
+        self.TblInf = None
+        self.TblDec = None
+        self.TblDsc = None
+        self.TblFdf = None
+    
+    ## Initialize ECC database
+    #
+    # 1. Delete all old existing tables
+    # 2. Create new tables
+    # 3. Initialize table DataModel
+    #
+    def InitDatabase(self, NewDatabase = True):
+        EdkLogger.verbose("\nInitialize ECC database started ...")
+        #
+        # Drop all old existing tables
+        #
+        if NewDatabase:
+            if os.path.exists(self.DbPath):
+                os.remove(self.DbPath)
+        self.Conn = sqlite3.connect(self.DbPath, isolation_level = 'DEFERRED')
         self.Conn.execute("PRAGMA page_size=4096")
         self.Conn.execute("PRAGMA synchronous=OFF")
         self.Cur = self.Conn.cursor()
+        
         self.TblDataModel = TableDataModel(self.Cur)
         self.TblFile = TableFile(self.Cur)
         self.TblFunction = TableFunction(self.Cur)
@@ -65,41 +93,42 @@ class Database(object):
         self.TblInf = TableInf(self.Cur)
         self.TblDec = TableDec(self.Cur)
         self.TblDsc = TableDsc(self.Cur)
-    
-    ## Initialize ECC database
-    #
-    # 1. Delete all old existing tables
-    # 2. Create new tables
-    # 3. Initialize table DataModel
-    #
-    def InitDatabase(self):
-        EdkLogger.verbose("\nInitialize ECC database started ...")
-        #
-        # Drop all old existing tables
-        #
-#        self.TblDataModel.Drop()
-#        self.TblFile.Drop()
-#        self.TblFunction.Drop()
-#        self.TblPcd.Drop()
-#        self.TblIdentifier.Drop()
+        self.TblFdf = TableFdf(self.Cur)
         
         #
         # Create new tables
         #
-        self.TblDataModel.Create()
-        self.TblFile.Create()
-        self.TblFunction.Create()
-        self.TblPcd.Create()
-        self.TblReport.Create()
-        self.TblInf.Create()
-        self.TblDec.Create()
-        self.TblDsc.Create()
-        #self.TblIdentifier.Create()
+        if NewDatabase:
+            self.TblDataModel.Create()
+            self.TblFile.Create()
+            self.TblFunction.Create()
+            self.TblPcd.Create()
+            self.TblReport.Create()
+            self.TblInf.Create()
+            self.TblDec.Create()
+            self.TblDsc.Create()
+            self.TblFdf.Create()
+            #self.TblIdentifier.Create()
+        
+        #
+        # Init each table's ID
+        #
+        self.TblDataModel.InitID()
+        self.TblFile.InitID()
+        self.TblFunction.InitID()
+        self.TblPcd.InitID()
+        self.TblReport.InitID()
+        self.TblInf.InitID()
+        self.TblDec.InitID()
+        self.TblDsc.InitID()
+        self.TblFdf.InitID()
         
         #
         # Initialize table DataModel
         #
-        self.TblDataModel.InitTable()
+        if NewDatabase:
+            self.TblDataModel.InitTable()
+        
         EdkLogger.verbose("Initialize ECC database ... DONE!")
 
     ## Query a table

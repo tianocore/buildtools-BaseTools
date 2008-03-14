@@ -96,6 +96,14 @@ class Table(object):
             self.ID = self.ID + 1
 
         return self.ID
+    
+    ## Init the ID of the table
+    #
+    # Init the ID of the table
+    #
+    def InitID(self):
+        self.ID = self.GetCount()
+    
     ## Exec
     #
     # Exec Sql Command, return result

@@ -10,7 +10,7 @@
 # THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #
-
+import os
 from CommonDataClass.DataClass import *
 from EccToolError import *
 import EccGlobalData
@@ -30,6 +30,53 @@ class Check(object):
     #   
     def Check(self):
         self.MetaDataFileCheck()
+        self.DoxygenCheck()
+    
+    #
+    # Doxygen document checking
+    #
+    def DoxygenCheck(self):
+        self.DoxygenCheckFileHeader()
+        self.DoxygenCheckFunctionHeader()
+        self.DoxygenCheckCommentDescription()
+        self.DoxygenCheckCommentFormat()
+        self.DoxygenCheckCommand()
+    
+    #
+    # Check whether the file headers are followed Doxygen special documentation blocks in section 2.3.5
+    #
+    def DoxygenCheckFileHeader(self):
+        if EccGlobalData.gConfig.DoxygenCheckFileHeader == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1':
+            pass
+    
+    #
+    # Check whether the function headers are followed Doxygen special documentation blocks in section 2.3.5
+    #
+    def DoxygenCheckFunctionHeader(self):
+        if EccGlobalData.gConfig.DoxygenCheckFunctionHeader == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1':
+            pass
+    
+    #
+    # Check whether the first line of text in a comment block is a brief description of the element being documented. 
+    # The brief description must end with a period.
+    #
+    def DoxygenCheckCommentDescription(self):
+        if EccGlobalData.gConfig.DoxygenCheckCommentDescription == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1':
+            pass
+
+    #
+    # Check whether comment lines with '///< ... text ...' format, if it is used, it should be after the code section.
+    #
+    def DoxygenCheckCommentFormat(self):
+        if EccGlobalData.gConfig.DoxygenCheckCommentFormat == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1':
+            pass
+        
+    #
+    # Check whether only Doxygen commands allowed to mark the code are @bug and @todo.
+    #
+    def DoxygenCheckCommand(self):
+        if EccGlobalData.gConfig.DoxygenCheckCommand == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1':
+            pass
     
     #
     # Meta-Data File Processing Checking
@@ -52,7 +99,7 @@ class Check(object):
     #
     def MetaDataFileCheckPathName(self):
         if EccGlobalData.gConfig.MetaDataFileCheckPathName == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
-            # This item is covered when parsing INF/DEC/DSC files
+            # This item is covered when parsing Inf/Dec/Dsc files
             pass
     
     #
@@ -60,12 +107,12 @@ class Check(object):
     #
     def MetaDataFileCheckGenerateFileList(self):
         if EccGlobalData.gConfig.MetaDataFileCheckGenerateFileList == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
-            # This item is covered when parsing INF/DEC/DSC files
+            # This item is covered when parsing Inf/Dec/Dsc files
             pass
     
     #
     # Check whether all Library Instances defined for a given module (or dependent library instance) match the module's type.  
-    # Each Library Instance must specify the Supported Module Types in its INF file, 
+    # Each Library Instance must specify the Supported Module Types in its Inf file, 
     # and any module specifying the library instance must be one of the supported types.
     #
     def MetaDataFileCheckLibraryInstance(self):
@@ -87,35 +134,69 @@ class Check(object):
             pass
 
     #
-    # Check whether the unnecessary inclusion of library classes in the INF file
+    # Check whether the unnecessary inclusion of library classes in the Inf file
     #
     def MetaDataFileCheckLibraryNoUse(self):
         if EccGlobalData.gConfig.MetaDataFileCheckLibraryNoUse == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
             pass
 
     #
-    # Check whether an INF file is specified in the FDF file, but not in the DSC file, then the INF file must be for a Binary module only
+    # Check whether an Inf file is specified in the FDF file, but not in the Dsc file, then the Inf file must be for a Binary module only
     #
     def MetaDataFileCheckBinaryInfInFdf(self):
         if EccGlobalData.gConfig.MetaDataFileCheckBinaryInfInFdf == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
-            pass
+            SqlCommand = """select A.ID, A.Value1 from Fdf as A
+                         where A.Model = %s
+                         and A.Enabled > -1
+                         and A.Value1 not in 
+                         (select B.Value1 from Dsc as B
+                         where B.Model = %s
+                         and B.Enabled > -1)""" % (MODEL_META_DATA_COMPONENT, MODEL_META_DATA_COMPONENT)
+            RecordSet = EccGlobalData.gDb.TblFdf.Exec(SqlCommand)
+            for Record in RecordSet:
+                FdfID = Record[0]
+                FilePath = Record[1]
+                FilePath = os.path.normpath(os.path.join(EccGlobalData.gWorkspace, FilePath))
+                SqlCommand = """select * from Inf where BelongsToFile = (select ID from File where FullPath like '%s')""" % FilePath
+                NewRecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
 
     #
-    # Check whether a PCD is set in a DSC file or the FDF file, but not in both.
+    # Check whether a PCD is set in a Dsc file or the FDF file, but not in both.
     #
     def MetaDataFileCheckPcdDuplicate(self):
         if EccGlobalData.gConfig.MetaDataFileCheckPcdDuplicate == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
-            pass
+            EdkLogger.quiet("Checking duplicate pcd defined in both Dsc and Fdf files ...")
+            SqlCommand = """
+                         select A.ID, A.Value2, B.ID, B.Value2 from Dsc as A, Fdf as B 
+                         where A.Model >= %s and A.Model < %s 
+                         and B.Model >= %s and B.Model < %s 
+                         and A.Value2 = B.Value2
+                         and A.Enabled > -1
+                         and B.Enabled > -1
+                         """% (MODEL_PCD, MODEL_META_DATA_HEADER, MODEL_PCD, MODEL_META_DATA_HEADER)
+            RecordSet = EccGlobalData.gDb.TblDsc.Exec(SqlCommand)
+            for Record in RecordSet:
+                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_DUPLICATE, OtherMsg = "The pcd '%s' is defined in both Fdf file and Dsc file" % (Record[1]), BelongsToTable = 'Dsc', BelongsToItem = Record[0])
+                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_DUPLICATE, OtherMsg = "The pcd '%s' is defined in both Fdf file and Dsc file" % (Record[3]), BelongsToTable = 'Fdf', BelongsToItem = Record[2])
 
     #
     # Check whether PCD settings in the FDF file can only be related to flash.
     #
     def MetaDataFileCheckPcdFlash(self):
         if EccGlobalData.gConfig.MetaDataFileCheckPcdFlash == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
-            pass
+            EdkLogger.quiet("Checking only Flash related Pcd is used in FDF ...")
+            SqlCommand = """
+                         select ID, Value2, BelongsToFile from Fdf as A
+                         where A.Model >= %s and Model < %s
+                         and A.Enabled > -1
+                         and A.Value2 not like '%%Flash%%'
+                         """% (MODEL_PCD, MODEL_META_DATA_HEADER)
+            RecordSet = EccGlobalData.gDb.TblFdf.Exec(SqlCommand)
+            for Record in RecordSet:
+                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_FLASH, OtherMsg = "The pcd '%s' defined in Fdf file is not related to Flash" % (Record[1]), BelongsToTable = 'Fdf', BelongsToItem = Record[0])
         
     #
-    # Check whether PCDs used in INF files but not specified in DSC or FDF files
+    # Check whether PCDs used in Inf files but not specified in Dsc or FDF files
     #
     def MetaDataFileCheckPcdNoUse(self):
         if EccGlobalData.gConfig.MetaDataFileCheckPcdNoUse == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
@@ -127,10 +208,15 @@ class Check(object):
                          and A.Value2 not in 
                              (select Value2 from Dsc as B 
                               where B.Model >= %s and B.Model < %s
-                              and B.Enabled > -1)""" % (MODEL_PCD, MODEL_META_DATA_HEADER, MODEL_PCD, MODEL_META_DATA_HEADER)
+                              and B.Enabled > -1)
+                         and A.Value2 not in
+                             (select Value2 from Fdf as C 
+                              where C.Model >= %s and C.Model < %s
+                              and C.Enabled > -1)
+                         """% (MODEL_PCD, MODEL_META_DATA_HEADER, MODEL_PCD, MODEL_META_DATA_HEADER, MODEL_PCD, MODEL_META_DATA_HEADER)
             RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
             for Record in RecordSet:
-                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_NO_USE, OtherMsg = "The pcd '%s' defined in INF file is not referenced by any DSC files" % (Record[1]), BelongsToTable = 'Inf', BelongsToItem = Record[0])
+                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_NO_USE, OtherMsg = "The pcd '%s' defined in Inf file is not referenced by any Dsc of Fdf files" % (Record[1]), BelongsToTable = 'Inf', BelongsToItem = Record[0])
         
     #
     # Check whether having duplicate guids defined for Guid/Protocol/Ppi

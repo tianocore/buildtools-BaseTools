@@ -15,15 +15,16 @@
 # Import Modules
 #
 import os, time, glob
-from optparse import OptionParser
 import Common.EdkLogger as EdkLogger
 import Database
+import EccGlobalData
+from optparse import OptionParser
 from Configuration import Configuration
 from Check import Check
-import EccGlobalData
 from Common.InfClassObject import Inf
 from Common.DecClassObject import Dec
 from Common.DscClassObject import Dsc
+from Common.FdfClassObject import Fdf
 from Common.String import NormPath
 #import c
 
@@ -135,6 +136,7 @@ class Ecc(object):
                     Filename = os.path.normpath(os.path.join(Root, File))
                     EdkLogger.quiet("Parsing %s" % Filename)
                     Op.write("%s\r" % Filename)
+                    Fdf(Filename, True, EccGlobalData.gWorkspace, EccGlobalData.gDb)                    
                     continue
         Op.close()
 
