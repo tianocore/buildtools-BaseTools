@@ -43,6 +43,7 @@ class Ecc(object):
         
         self.ConfigFile = 'config.ini'
         self.OutputFile = 'output.txt'
+        self.IsInit = True
         
         #
         # Initialize log system
@@ -65,7 +66,7 @@ class Ecc(object):
         # Init Ecc database
         #
         EccGlobalData.gDb = Database.Database(Database.DATABASE_PATH)
-        EccGlobalData.gDb.InitDatabase()
+        EccGlobalData.gDb.InitDatabase(self.IsInit)
         
         #
         # Build ECC database
@@ -197,6 +198,8 @@ class Ecc(object):
         else:
             EdkLogger.warn("Ecc", EdkLogger.ECC_ERROR, "The target source tree is not specified, use current WORKSPACE instead.!")
             EccGlobalData.gTarget = os.path.normpath(os.getenv("WORKSPACE"))
+        if Options.keepdatabase != None:
+            self.IsInit = False
            
     ## SetLogLevel
     #
@@ -212,7 +215,7 @@ class Ecc(object):
         elif Option.debug != None:
             EdkLogger.SetLevel(Option.debug + 1)
         else:
-            EdkLogger.SetLevel(EdkLogger.INFO)    
+            EdkLogger.SetLevel(EdkLogger.INFO)
 
     ## Parse command line options
     #
@@ -230,6 +233,7 @@ class Ecc(object):
         Parser.add_option("-o", "--outfile filename", action="store", type="string", dest="OutputFile",
             help="Specify the name of an output file, if and only if one filename was specified.")
     
+        Parser.add_option("-k", "--keepdatabase", action="store_true", type=None, help="The existing Ecc database will not be cleaned if this option is specified.")
         Parser.add_option("-l", "--log filename", action="store", dest="LogFile", help="""If specified, the tool should emit the changes that 
                                                                                           were made by the tool after printing the result message. 
                                                                                           If filename, the emit to the file, otherwise emit to 
@@ -252,4 +256,3 @@ class Ecc(object):
 #
 if __name__ == '__main__':
     Ecc = Ecc()
-

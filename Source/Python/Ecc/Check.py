@@ -71,7 +71,7 @@ class Check(object):
                             print Msg
             print 'Done'                
                             
-    #        
+    #
     # Check whether the first line of text in a comment block is a brief description of the element being documented. 
     # The brief description must end with a period.
     #
@@ -172,8 +172,11 @@ class Check(object):
                 FdfID = Record[0]
                 FilePath = Record[1]
                 FilePath = os.path.normpath(os.path.join(EccGlobalData.gWorkspace, FilePath))
-                SqlCommand = """select * from Inf where BelongsToFile = (select ID from File where FullPath like '%s')""" % FilePath
+                SqlCommand = """select ID from Inf where Model = %s and BelongsToFile = (select ID from File where FullPath like '%s')
+                                """ % (MODEL_EFI_SOURCE_FILE, FilePath)
                 NewRecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
+                if NewRecordSet!= []:
+                    EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_BINARY_INF_IN_FDF, OtherMsg = "File %s defined in Fdf file but not in Dsc file should be a binary module" % (FilePath), BelongsToTable = 'Fdf', BelongsToItem = FdfID)
 
     #
     # Check whether a PCD is set in a Dsc file or the FDF file, but not in both.
