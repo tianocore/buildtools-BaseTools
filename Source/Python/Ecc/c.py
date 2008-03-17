@@ -6,7 +6,7 @@ import FileProfile
 from CommonDataClass import DataClass
 import Database
 from Common import EdkLogger
-
+import EccGlobalData
 
 
 def GetIgnoredDirListPattern():
@@ -18,8 +18,7 @@ def GetFuncDeclPattern():
     return p
 
 def GetDB():
-    DB = Database.Database(Database.DATABASE_PATH)
-    return DB
+    return EccGlobalData.gDb
 
 def GetIdType(Str):
     Type = DataClass.MODEL_UNKNOWN
@@ -220,10 +219,13 @@ def CheckFuncHeaderDoxygenComments(FullFileName):
                    """ % FullFileName
     
     ResultSet = DbCursor.execute(SqlStatement)
-    FileTable = 'file'
+    FileTable = 'Identifier'
     FileID = -1
     for Result in ResultSet:
         FileTable += str(Result[0])
+        if FileID != -1:
+            ErrorMsgList.append('Duplicate file ID found in DB for file %s' % FullFileName)
+            return ErrorMsgList
         FileID = Result[0]
     if FileID == -1:
         ErrorMsgList.append('NO file ID found in DB for file %s' % FullFileName)
@@ -236,8 +238,11 @@ def CheckFuncHeaderDoxygenComments(FullFileName):
     
     ResultSet = DbCursor.execute(SqlStatement)
     CommentSet = []
-    for Result in ResultSet:
-        CommentSet.append(Result)
+    try:
+        for Result in ResultSet:
+            CommentSet.append(Result)
+    except:
+        print 'Unrecognized chars in comment'
     
     # Func Decl check
     SqlStatement = """ select Modifier, Name, StartLine
@@ -260,9 +265,11 @@ def CheckFuncHeaderDoxygenComments(FullFileName):
     
     ResultSet = DbCursor.execute(SqlStatement)
     CommentSet = []
-    for Result in ResultSet:
-        CommentSet.append(Result)
-    
+    try:
+        for Result in ResultSet:
+            CommentSet.append(Result)
+    except:
+        print 'Unrecognized chars in comment %s' % Result
     
     SqlStatement = """ select Modifier, Header, StartLine
                        from Function
@@ -302,7 +309,9 @@ def GetDoxygenStrFromComment(Str):
         while i < len(RetvalTagList):
             DoxygenStrList.append('@retval' + RetvalTagList[i])
             i += 1
-    DoxygenStrList[-1] = DoxygenStrList[-1].rstrip('--*/')
+    
+    if len(DoxygenStrList) > 0:
+        DoxygenStrList[-1] = DoxygenStrList[-1].rstrip('--*/')
     
     return DoxygenStrList
     
@@ -364,7 +373,7 @@ def CheckFunctionHeaderConsistentWithDoxygenComment(FuncModifier, FuncHeader, Fu
             if Index < DoxygenTagNumber - 1:
                 ErrorMsgList.append('Line %d : Excessive doxygen tags in comment' % CommentStartLine)
         else:
-            if not DoxygenStrList[Index].startswith('@retval'): 
+            if Index < DoxygenTagNumber and not DoxygenStrList[Index].startswith('@retval'): 
                 ErrorMsgList.append('Line %d : Number of @param doxygen tags in comment does NOT match number of function parameters' % CommentStartLine)
     else:
         if ParamNumber == 0 and DoxygenTagNumber != 0 and (FuncModifier.find('VOID') != -1 or FuncModifier.find('void') != -1):

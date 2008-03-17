@@ -11,9 +11,11 @@
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #
 import os
+import re
 from CommonDataClass.DataClass import *
 from EccToolError import *
 import EccGlobalData
+import c
 
 ## Check
 #
@@ -54,9 +56,22 @@ class Check(object):
     #
     def DoxygenCheckFunctionHeader(self):
         if EccGlobalData.gConfig.DoxygenCheckFunctionHeader == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1':
-            pass
-    
-    #
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+#            ParseErrorFileList = []
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.h', '.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        MsgList = c.CheckFuncHeaderDoxygenComments(FullName)
+                        for Msg in MsgList:
+                            print Msg
+            print 'Done'                
+                            
+    #        
     # Check whether the first line of text in a comment block is a brief description of the element being documented. 
     # The brief description must end with a period.
     #
