@@ -997,6 +997,9 @@ class Makefile(object):
         SourceDir = os.path.join(self.ModuleInfo.WorkspaceDir, self.ModuleInfo.SourceDir)
         for FileInfo in FileList:
             F, SrcFileType, SrcFileBuildRule = FileInfo
+            # no rule, no build
+            if SrcFileBuildRule == None:
+                continue
             if SrcFileType == "C-Code-File":
                 CCodeFlag = True
             SrcFileName = path.basename(F)

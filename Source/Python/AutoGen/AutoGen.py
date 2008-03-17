@@ -935,7 +935,7 @@ class ModuleAutoGen(object):
                              % (Info.ToolChain, Info.BuildTarget, Info.Arch))
         ToolChainFamily = Info.PlatformInfo.ToolChainFamily["CC"]
         BuildRule = Info.PlatformInfo.BuildRule
-        BuildFileList = []
+        FileList = []
         for F in self.Module.Sources:
             SourceFile = F.SourceFile
             # match tool chain
@@ -961,28 +961,20 @@ class ModuleAutoGen(object):
 
             # skip file which needs a tool having no matching toolchain family
             FileType, RuleObject = BuildRule.Get(Ext, ToolChainFamily)
-            if FileType == None:
-                EdkLogger.verbose("Don't know how to process file [%s]." % SourceFile)
-                continue
-
             # unicode must be processed by AutoGen
             if FileType == "Unicode-Text-File":
                 self.BuildInfo.UnicodeFileList.append(os.path.join(self.WorkspaceDir, self.BuildInfo.SourceDir, SourceFile))
-                continue
 
             # if there's dxs file, don't use content in [depex] section to generate .depex file
             if FileType == "Dependency-Expression-File":
                 Info.DepexList = []
 
             # no command, no build
-            if RuleObject == None or RuleObject.CommandList == []:
-                Buildable = False
-                EdkLogger.verbose("No rule or command defined for building [%s], ignore file [%s]" % (FileType, SourceFile))
-                continue
+            if RuleObject != None and RuleObject.CommandList == []:
+                RuleObject = None
+            FileList.append([SourceFile, FileType, RuleObject])
 
-            BuildFileList.append([SourceFile, FileType, RuleObject])
-
-        return BuildFileList
+        return FileList
 
     ## Return a list of files which can be built from binary
     #

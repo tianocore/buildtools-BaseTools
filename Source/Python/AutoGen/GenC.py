@@ -1557,8 +1557,10 @@ def CreateUnicodeStringCode(Info, AutoGenC, AutoGenH):
     WorkingDir = os.getcwd()
     os.chdir(Info.WorkspaceDir)
 
-    IncList = [os.path.join(Info.WorkspaceDir, Inc) for Inc in Info.IncludePathList]
-    Header, Code = GetStringFiles(Info.UnicodeFileList, IncList, [], Info.Name)
+    #IncList = [os.path.join(Info.WorkspaceDir, Inc) for Inc in Info.IncludePathList]
+    IncList = [Info.SourceDir]
+    SrcList = [F[0] for F in Info.SourceFileList]
+    Header, Code = GetStringFiles(Info.UnicodeFileList, SrcList, IncList, ['.uni'], Info.Name)
     AutoGenC.Append("\n//\n//Unicode String Pack Definition\n//\n")
     AutoGenC.Append(Code)
     AutoGenC.Append("\n")

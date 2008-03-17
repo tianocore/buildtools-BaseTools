@@ -385,7 +385,7 @@ def CreateCFile(BaseName, UniObjectClass):
 #
 # @retval FileList:    A list of all files found
 #
-def GetFileList(IncludeList, SkipList):
+def GetFileList(SourceFileList, IncludeList, SkipList):
     if IncludeList == None:
         EdkLogger.error("UnicodeStringGather", AUTOGEN_ERROR, "Include path for unicode file is not defined")
 
@@ -393,10 +393,10 @@ def GetFileList(IncludeList, SkipList):
     if SkipList == None:
         SkipList = []
 
-    for Dir in IncludeList:
-        if not os.path.exists(Dir):
-            continue
-        for File in os.listdir(Dir):
+    for File in SourceFileList:
+        for Dir in IncludeList:
+            if not os.path.exists(Dir):
+                continue
             File = os.path.join(Dir, os.path.normcase(File))
             #
             # Ignore Dir
@@ -409,11 +409,13 @@ def GetFileList(IncludeList, SkipList):
             IsSkip = False
             for Skip in SkipList:
                 if os.path.splitext(File)[1].upper() == Skip.upper():
+                    EdkLogger.verbose("Skipped %s for string token uses search" % File)
                     IsSkip = True
                     break
 
             if not IsSkip:
                 FileList.append(File)
+            break
 
     return FileList
 
@@ -449,7 +451,7 @@ def SearchString(UniObjectClass, FileList):
 # This function is used for UEFI2.1 spec
 # 
 #
-def GetStringFiles(UniFilList, IncludeList, SkipList, BaseName):
+def GetStringFiles(UniFilList, SourceFileList, IncludeList, SkipList, BaseName):
     Status = True
     ErrorMessage = ''
 
@@ -458,7 +460,7 @@ def GetStringFiles(UniFilList, IncludeList, SkipList, BaseName):
     else:
         EdkLogger.error("UnicodeStringGather", AUTOGEN_ERROR, 'No unicode files given')
 
-    FileList = GetFileList(IncludeList, SkipList)
+    FileList = GetFileList(SourceFileList, IncludeList, SkipList)
 
     Uni = SearchString(Uni, FileList)
 
