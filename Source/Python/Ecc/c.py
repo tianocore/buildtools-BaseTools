@@ -10,7 +10,7 @@ import EccGlobalData
 
 
 def GetIgnoredDirListPattern():
-    p = re.compile(r'.*[\\/](?:BUILD|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+    p = re.compile(r'.*[\\/](?:BUILD|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG|PCCTS)[\\/].*')
     return p
 
 def GetFuncDeclPattern():
@@ -269,7 +269,7 @@ def CheckFuncHeaderDoxygenComments(FullFileName):
         for Result in ResultSet:
             CommentSet.append(Result)
     except:
-        print 'Unrecognized chars in comment %s' % Result
+        print 'Unrecognized chars in comment'
     
     SqlStatement = """ select Modifier, Header, StartLine
                        from Function
