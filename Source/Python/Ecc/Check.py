@@ -67,8 +67,8 @@ class Check(object):
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
                         MsgList = c.CheckFuncHeaderDoxygenComments(FullName)
-                        for Msg in MsgList:
-                            print Msg
+#                        for Msg in MsgList:
+#                            print Msg
             print 'Done'                
                             
     #

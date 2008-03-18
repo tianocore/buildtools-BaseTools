@@ -6,6 +6,7 @@ import FileProfile
 from CommonDataClass import DataClass
 import Database
 from Common import EdkLogger
+from EccToolError import *
 import EccGlobalData
 
 
@@ -19,6 +20,13 @@ def GetFuncDeclPattern():
 
 def GetDB():
     return EccGlobalData.gDb
+
+def GetConfig():
+    return EccGlobalData.gConfig
+
+def PrintErrorMsg(ErrorType, Msg, TableName, ItemId):
+    Msg = Msg.replace('\n', '').replace('\r', '')
+    GetDB().TblReport.Insert(ErrorType, OtherMsg = Msg, BelongsToTable = TableName, BelongsToItem = ItemId)
 
 def GetIdType(Str):
     Type = DataClass.MODEL_UNKNOWN
@@ -125,9 +133,19 @@ def GetParamList(FuncDeclarator, FuncNameLine = 0, FuncNameOffset = 0):
         if len(ListP) == 0:
             continue
         ParamName = ListP[-1]
+        DeclText = ParamName.strip()
         RightSpacePos = p.rfind(ParamName)
         ParamModifier = p[0:RightSpacePos]
-        DeclText = ParamName.strip()
+        if ParamName == 'OPTIONAL':
+            if ParamModifier == '':
+                ParamModifier += 'OPTIONAL'
+                DeclText = ''
+            else:
+                ParamName = ListP[-2]
+                DeclText = ParamName.strip()
+                RightSpacePos = p.rfind(ParamName)
+                ParamModifier = p[0:RightSpacePos]
+                ParamModifier += 'OPTIONAL'
         while DeclText.startswith('*'):
             ParamModifier += '*'
             DeclText = DeclText.lstrip('*').strip()
@@ -208,17 +226,16 @@ def CollectSourceCodeDataIntoDB(RootDir):
     Db.UpdateIdentifierBelongsToFunction()
 
 def CheckFuncHeaderDoxygenComments(FullFileName):
-    print FullFileName
+    print '\n' + FullFileName + '\n'
     ErrorMsgList = []
     Db = GetDB()
-    DbCursor = Db.Cur
     
     SqlStatement = """ select ID
                        from File
                        where FullPath = '%s'
                    """ % FullFileName
     
-    ResultSet = DbCursor.execute(SqlStatement)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
     FileTable = 'Identifier'
     FileID = -1
     for Result in ResultSet:
@@ -231,12 +248,12 @@ def CheckFuncHeaderDoxygenComments(FullFileName):
         ErrorMsgList.append('NO file ID found in DB for file %s' % FullFileName)
         return ErrorMsgList
     
-    SqlStatement = """ select Value, StartLine, EndLine
+    SqlStatement = """ select Value, StartLine, EndLine, ID
                        from %s
                        where Model = %d
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_COMMENT)
     
-    ResultSet = DbCursor.execute(SqlStatement)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
     CommentSet = []
     try:
         for Result in ResultSet:
@@ -245,25 +262,26 @@ def CheckFuncHeaderDoxygenComments(FullFileName):
         print 'Unrecognized chars in comment'
     
     # Func Decl check
-    SqlStatement = """ select Modifier, Name, StartLine
+    SqlStatement = """ select Modifier, Name, StartLine, ID
                        from %s
                        where Model = %d
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION)
-    ResultSet = DbCursor.execute(SqlStatement)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
         FunctionHeaderComment = CheckCommentImmediatelyPrecedeFunctionHeader(Result[1], Result[2], CommentSet)
         if FunctionHeaderComment:
-            CheckFunctionHeaderConsistentWithDoxygenComment(Result[0], Result[1], Result[2], FunctionHeaderComment[0], FunctionHeaderComment[1], ErrorMsgList)
+            CheckFunctionHeaderConsistentWithDoxygenComment(Result[0], Result[1], Result[2], FunctionHeaderComment[0], FunctionHeaderComment[1], ErrorMsgList, FunctionHeaderComment[3], FileTable)
         else:
             ErrorMsgList.append('Line %d :Function %s has NO comment immediately preceding it.' % (Result[2], Result[1]))
+            PrintErrorMsg(ERROR_HEADER_CHECK_FUNCTION, 'Function %s has NO comment immediately preceding it.' % (Result[1]), FileTable, Result[3])
     
     # Func Def check
-    SqlStatement = """ select Value, StartLine, EndLine
+    SqlStatement = """ select Value, StartLine, EndLine, ID
                        from %s
                        where Model = %d
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_HEADER)
     
-    ResultSet = DbCursor.execute(SqlStatement)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
     CommentSet = []
     try:
         for Result in ResultSet:
@@ -271,18 +289,18 @@ def CheckFuncHeaderDoxygenComments(FullFileName):
     except:
         print 'Unrecognized chars in comment'
     
-    SqlStatement = """ select Modifier, Header, StartLine
+    SqlStatement = """ select Modifier, Header, StartLine, ID
                        from Function
                        where BelongsToFile = %d
                    """ % (FileID)
-    ResultSet = DbCursor.execute(SqlStatement)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
         FunctionHeaderComment = CheckCommentImmediatelyPrecedeFunctionHeader(Result[1], Result[2], CommentSet)
         if FunctionHeaderComment:
-            CheckFunctionHeaderConsistentWithDoxygenComment(Result[0], Result[1], Result[2], FunctionHeaderComment[0], FunctionHeaderComment[1], ErrorMsgList)
+            CheckFunctionHeaderConsistentWithDoxygenComment(Result[0], Result[1], Result[2], FunctionHeaderComment[0], FunctionHeaderComment[1], ErrorMsgList, FunctionHeaderComment[3], FileTable)
         else:
             ErrorMsgList.append('Line %d :Function %s has NO comment immediately preceding it.' % (Result[2], Result[1]))
-    
+            PrintErrorMsg(ERROR_HEADER_CHECK_FUNCTION, 'Function %s has NO comment immediately preceding it.' % (Result[1]), 'Function', Result[3])
     return ErrorMsgList
 
 def CheckCommentImmediatelyPrecedeFunctionHeader(FuncName, FuncStartLine, CommentSet):
@@ -315,21 +333,24 @@ def GetDoxygenStrFromComment(Str):
     
     return DoxygenStrList
     
-def CheckGeneralDoxygenCommentLayout(Str, StartLine, ErrorMsgList):
+def CheckGeneralDoxygenCommentLayout(Str, StartLine, ErrorMsgList, CommentId = -1, TableName = ''):
     #/** --*/ @retval after @param
     if not Str.startswith('/**'):
         ErrorMsgList.append('Line %d : Comment does NOT have prefix /** ' % StartLine)
+        PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'Comment does NOT have prefix /** ', TableName, CommentId)
     if not Str.endswith('--*/'):
         ErrorMsgList.append('Line %d : Comment does NOT have tail --*/ ' % StartLine)
+        PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'Comment does NOT have tail --*/ ', TableName, CommentId)
     FirstRetvalIndex = Str.find('@retval')
     LastParamIndex = Str.rfind('@param')
     if (FirstRetvalIndex > 0) and (LastParamIndex > 0) and (FirstRetvalIndex < LastParamIndex):
         ErrorMsgList.append('Line %d : @retval appear before @param ' % StartLine)
+        PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'in Comment, @retval appear before @param  ', TableName, CommentId)
     
-def CheckFunctionHeaderConsistentWithDoxygenComment(FuncModifier, FuncHeader, FuncStartLine, CommentStr, CommentStartLine, ErrorMsgList):
+def CheckFunctionHeaderConsistentWithDoxygenComment(FuncModifier, FuncHeader, FuncStartLine, CommentStr, CommentStartLine, ErrorMsgList, CommentId = -1, TableName = ''):
     
     ParamList = GetParamList(FuncHeader) 
-    CheckGeneralDoxygenCommentLayout(CommentStr, CommentStartLine, ErrorMsgList)
+    CheckGeneralDoxygenCommentLayout(CommentStr, CommentStartLine, ErrorMsgList, CommentId, TableName)
     DoxygenStrList = GetDoxygenStrFromComment(CommentStr)
     DoxygenTagNumber = len(DoxygenStrList)
     ParamNumber = len(ParamList)
@@ -337,13 +358,15 @@ def CheckFunctionHeaderConsistentWithDoxygenComment(FuncModifier, FuncHeader, Fu
     if ParamNumber > 0 and DoxygenTagNumber > 0:
         while Index < ParamNumber and Index < DoxygenTagNumber:
             ParamModifier = ParamList[Index].Modifier
-            ParamName = ParamList[Index].Name
+            ParamName = ParamList[Index].Name.strip()
             Tag = DoxygenStrList[Index].strip(' ')
             if (not Tag[-1] == ('\n')) and (not Tag[-1] == ('\r')):
                 ErrorMsgList.append('Line %d : in Comment, \"%s\" does NOT end with new line ' % (CommentStartLine, Tag.replace('\n', '').replace('\r', '')))
+                PrintErrorMsg(ERROR_HEADER_CHECK_FUNCTION, 'in Comment, \"%s\" does NOT end with new line ' % (Tag.replace('\n', '').replace('\r', '')), TableName, CommentId)
             TagPartList = Tag.split(' ')
             if len(TagPartList) < 2:
                 ErrorMsgList.append('Line %d : in Comment, \"%s\" does NOT contain doxygen contents ' % (CommentStartLine, Tag.replace('\n', '').replace('\r', '')))
+                PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'in Comment, \"%s\" does NOT contain doxygen contents ' % (Tag.replace('\n', '').replace('\r', '')), TableName, CommentId)
                 Index += 1
                 continue
             if Tag.find('[') > 0:
@@ -361,25 +384,30 @@ def CheckFunctionHeaderConsistentWithDoxygenComment(FuncModifier, FuncHeader, Fu
                 if InOutStr != '':
                     if Tag.find('['+InOutStr+']') == -1:
                         ErrorMsgList.append('Line %d : in Comment, \"%s\" does NOT have %s ' % (CommentStartLine, (TagPartList[0] + ' ' +TagPartList[1]).replace('\n', '').replace('\r', ''), '['+InOutStr+']'))    
-            
-            if Tag.find(ParamName) == -1:
+                        PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'in Comment, \"%s\" does NOT have %s ' % ((TagPartList[0] + ' ' +TagPartList[1]).replace('\n', '').replace('\r', ''), '['+InOutStr+']'), TableName, CommentId)
+            if Tag.find(ParamName) == -1 and ParamName != 'VOID' and ParamName != 'void':
                 ErrorMsgList.append('Line %d : in Comment, \"%s\" does NOT consistent with parameter name %s ' % (CommentStartLine, (TagPartList[0] + ' ' +TagPartList[1]).replace('\n', '').replace('\r', ''), ParamName))    
+                PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'in Comment, \"%s\" does NOT consistent with parameter name %s ' % ((TagPartList[0] + ' ' +TagPartList[1]).replace('\n', '').replace('\r', ''), ParamName), TableName, CommentId)
             Index += 1
         
         if Index < ParamNumber:
             ErrorMsgList.append('Line %d : Number of doxygen tags in comment less than number of function parameters' % CommentStartLine)
-        
+            PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'Number of doxygen tags in comment less than number of function parameters ', TableName, CommentId)
         if FuncModifier.find('VOID') != -1 or FuncModifier.find('void') != -1:
             if Index < DoxygenTagNumber - 1:
                 ErrorMsgList.append('Line %d : Excessive doxygen tags in comment' % CommentStartLine)
+                PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'Excessive doxygen tags in comment ', TableName, CommentId)
         else:
             if Index < DoxygenTagNumber and not DoxygenStrList[Index].startswith('@retval'): 
                 ErrorMsgList.append('Line %d : Number of @param doxygen tags in comment does NOT match number of function parameters' % CommentStartLine)
+                PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'Number of @param doxygen tags in comment does NOT match number of function parameters ', TableName, CommentId)
     else:
         if ParamNumber == 0 and DoxygenTagNumber != 0 and (FuncModifier.find('VOID') != -1 or FuncModifier.find('void') != -1):
             ErrorMsgList.append('Line %d : Excessive doxygen tags in comment' % CommentStartLine)
+            PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'Excessive doxygen tags in comment ', TableName, CommentId)
         if ParamNumber != 0 and DoxygenTagNumber == 0:
             ErrorMsgList.append('Line %d : No doxygen tags in comment' % CommentStartLine)
+            PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'No doxygen tags in comment ', TableName, CommentId)
 
 if __name__ == '__main__':
 
