@@ -160,6 +160,7 @@ class Check(object):
     #
     def MetaDataFileCheckBinaryInfInFdf(self):
         if EccGlobalData.gConfig.MetaDataFileCheckBinaryInfInFdf == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
+            EdkLogger.quiet("Checking non-binary module defined in Fdf files ...")
             SqlCommand = """select A.ID, A.Value1 from Fdf as A
                          where A.Model = %s
                          and A.Enabled > -1

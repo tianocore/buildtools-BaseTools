@@ -34,7 +34,7 @@ from Table.TableFdf import TableFdf
 ##
 # Static definitions
 #
-DATABASE_PATH = "Database/Ecc.db"
+DATABASE_PATH = "Ecc.db"
 
 ## Database
 #
@@ -108,7 +108,6 @@ class Database(object):
             self.TblDec.Create()
             self.TblDsc.Create()
             self.TblFdf.Create()
-            #self.TblIdentifier.Create()
         
         #
         # Init each table's ID

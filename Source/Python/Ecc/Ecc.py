@@ -72,6 +72,7 @@ class Ecc(object):
         # Build ECC database
         #
         self.BuildDatabase()
+
         
         #
         # Start to check
@@ -93,11 +94,20 @@ class Ecc(object):
     # Build the database for target
     #
     def BuildDatabase(self):
-        EdkLogger.quiet("Building database for source code ...")
-        c.CollectSourceCodeDataIntoDB(EccGlobalData.gTarget)
-        EdkLogger.quiet("Building database for source code done!")
+        #
+        # Clean report table
+        #
+        EccGlobalData.gDb.TblReport.Drop()
+        EccGlobalData.gDb.TblReport.Create()
         
-        self.BuildMetaDataFileDatabase()
+        #
+        # Build database
+        #
+        if self.IsInit:
+            EdkLogger.quiet("Building database for source code ...")
+            c.CollectSourceCodeDataIntoDB(EccGlobalData.gTarget)
+            EdkLogger.quiet("Building database for source code done!")
+            self.BuildMetaDataFileDatabase()
     
     ## BuildMetaDataFileDatabase
     #
@@ -233,7 +243,7 @@ class Ecc(object):
         Parser.add_option("-o", "--outfile filename", action="store", type="string", dest="OutputFile",
             help="Specify the name of an output file, if and only if one filename was specified.")
     
-        Parser.add_option("-k", "--keepdatabase", action="store_true", type=None, help="The existing Ecc database will not be cleaned if this option is specified.")
+        Parser.add_option("-k", "--keepdatabase", action="store_true", type=None, help="The existing Ecc database will not be cleaned except report information if this option is specified.")
         Parser.add_option("-l", "--log filename", action="store", dest="LogFile", help="""If specified, the tool should emit the changes that 
                                                                                           were made by the tool after printing the result message. 
                                                                                           If filename, the emit to the file, otherwise emit to 
