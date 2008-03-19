@@ -26,7 +26,7 @@ from Common.DecClassObject import Dec
 from Common.DscClassObject import Dsc
 from Common.FdfClassObject import Fdf
 from Common.String import NormPath
-from Comm import BuildToolError
+from Common import BuildToolError
 import c
 
 ## Ecc

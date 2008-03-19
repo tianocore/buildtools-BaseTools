@@ -217,7 +217,8 @@ def CollectSourceCodeDataIntoDB(RootDir):
                 FileObj = DataClass.FileClass(-1, BaseName, Ext, DirName, FullName, model, ModifiedTime, GetFunctionList(), GetIdentifierList(), [])
                 FileObjList.append(FileObj)
                 collector.CleanFileProfileBuffer()   
-    EdkLogger.info("Found error during parsing:\n\t%s\n" % "\n\t".join(ParseErrorFileList))
+    if len(ParseErrorFileList) > 0:
+        EdkLogger.info("Found error during parsing:\n\t%s\n" % "\n\t".join(ParseErrorFileList))
     
     Db = GetDB()    
     for file in FileObjList:    
