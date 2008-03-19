@@ -82,6 +82,8 @@ class Database(object):
         self.Conn = sqlite3.connect(self.DbPath, isolation_level = 'DEFERRED')
         self.Conn.execute("PRAGMA page_size=4096")
         self.Conn.execute("PRAGMA synchronous=OFF")
+        # to avoid non-ascii charater conversion error
+        self.Conn.text_factory = str
         self.Cur = self.Conn.cursor()
         
         self.TblDataModel = TableDataModel(self.Cur)

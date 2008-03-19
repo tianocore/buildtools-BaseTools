@@ -46,13 +46,6 @@ class Ecc(object):
         self.IsInit = True
         
         #
-        # Initialize log system
-        #
-        EdkLogger.Initialize()
-        EdkLogger.IsRaiseError = False
-        EdkLogger.quiet(time.strftime("%H:%M:%S, %b.%d %Y ", time.localtime()) + "[00:00]" + "\n")
-        
-        #
         # Parse the options and args
         #
         self.ParseOption()
@@ -88,6 +81,8 @@ class Ecc(object):
         # Close Database
         #
         EccGlobalData.gDb.Close()
+
+
 
     ## BuildDatabase
     #
@@ -265,4 +260,17 @@ class Ecc(object):
 # script.
 #
 if __name__ == '__main__':
+    #
+    # Initialize log system
+    #
+    EdkLogger.Initialize()
+    EdkLogger.IsRaiseError = False
+    EdkLogger.quiet(time.strftime("%H:%M:%S, %b.%d %Y ", time.localtime()) + "[00:00]" + "\n")
+
+    StartTime = time.clock()
     Ecc = Ecc()
+    FinishTime = time.clock()
+
+    BuildDuration = time.strftime("%M:%S", time.gmtime(int(round(FinishTime - StartTime))))
+    EdkLogger.quiet("\n%s [%s]" % (time.strftime("%H:%M:%S, %b.%d %Y", time.localtime()), BuildDuration))
+

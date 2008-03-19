@@ -56,6 +56,7 @@ class Check(object):
     #
     def DoxygenCheckFunctionHeader(self):
         if EccGlobalData.gConfig.DoxygenCheckFunctionHeader == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1':
+            EdkLogger.quiet("Checking Doxygen function header ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
 #            ParseErrorFileList = []
@@ -69,7 +70,6 @@ class Check(object):
                         MsgList = c.CheckFuncHeaderDoxygenComments(FullName)
 #                        for Msg in MsgList:
 #                            print Msg
-            print 'Done'                
                             
     #
     # Check whether the first line of text in a comment block is a brief description of the element being documented. 

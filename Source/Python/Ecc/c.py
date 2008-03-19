@@ -200,7 +200,7 @@ def CollectSourceCodeDataIntoDB(RootDir):
             FullName = os.path.join(dirpath, f)
             
             if os.path.splitext(f)[1] in ('.h', '.c'):
-                print FullName
+                EdkLogger.info("Parsing " + FullName)
                 model = f.endswith('c') and DataClass.MODEL_FILE_C or DataClass.MODEL_FILE_H
                 collector = CodeFragmentCollector.CodeFragmentCollector(FullName)
                 try:
@@ -217,7 +217,7 @@ def CollectSourceCodeDataIntoDB(RootDir):
                 FileObj = DataClass.FileClass(-1, BaseName, Ext, DirName, FullName, model, ModifiedTime, GetFunctionList(), GetIdentifierList(), [])
                 FileObjList.append(FileObj)
                 collector.CleanFileProfileBuffer()   
-    print ParseErrorFileList
+    EdkLogger.info("Found error during parsing:\n\t%s\n" % "\n\t".join(ParseErrorFileList))
     
     Db = GetDB()    
     for file in FileObjList:    
@@ -226,7 +226,6 @@ def CollectSourceCodeDataIntoDB(RootDir):
     Db.UpdateIdentifierBelongsToFunction()
 
 def CheckFuncHeaderDoxygenComments(FullFileName):
-    print '\n' + FullFileName + '\n'
     ErrorMsgList = []
     Db = GetDB()
     
