@@ -26,6 +26,11 @@ def GetConfig():
 
 def PrintErrorMsg(ErrorType, Msg, TableName, ItemId):
     Msg = Msg.replace('\n', '').replace('\r', '')
+    MsgPartList = Msg.split()
+    Msg = ''
+    for Part in MsgPartList:
+        Msg += Part
+        Msg += ' '
     GetDB().TblReport.Insert(ErrorType, OtherMsg = Msg, BelongsToTable = TableName, BelongsToItem = ItemId)
 
 def GetIdType(Str):
@@ -338,9 +343,9 @@ def CheckGeneralDoxygenCommentLayout(Str, StartLine, ErrorMsgList, CommentId = -
     if not Str.startswith('/**'):
         ErrorMsgList.append('Line %d : Comment does NOT have prefix /** ' % StartLine)
         PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'Comment does NOT have prefix /** ', TableName, CommentId)
-    if not Str.endswith('--*/'):
-        ErrorMsgList.append('Line %d : Comment does NOT have tail --*/ ' % StartLine)
-        PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'Comment does NOT have tail --*/ ', TableName, CommentId)
+    if not Str.endswith('**/'):
+        ErrorMsgList.append('Line %d : Comment does NOT have tail **/ ' % StartLine)
+        PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'Comment does NOT have tail **/ ', TableName, CommentId)
     FirstRetvalIndex = Str.find('@retval')
     LastParamIndex = Str.rfind('@param')
     if (FirstRetvalIndex > 0) and (LastParamIndex > 0) and (FirstRetvalIndex < LastParamIndex):
@@ -363,7 +368,7 @@ def CheckFunctionHeaderConsistentWithDoxygenComment(FuncModifier, FuncHeader, Fu
             if (not Tag[-1] == ('\n')) and (not Tag[-1] == ('\r')):
                 ErrorMsgList.append('Line %d : in Comment, \"%s\" does NOT end with new line ' % (CommentStartLine, Tag.replace('\n', '').replace('\r', '')))
                 PrintErrorMsg(ERROR_HEADER_CHECK_FUNCTION, 'in Comment, \"%s\" does NOT end with new line ' % (Tag.replace('\n', '').replace('\r', '')), TableName, CommentId)
-            TagPartList = Tag.split(' ')
+            TagPartList = Tag.split()
             if len(TagPartList) < 2:
                 ErrorMsgList.append('Line %d : in Comment, \"%s\" does NOT contain doxygen contents ' % (CommentStartLine, Tag.replace('\n', '').replace('\r', '')))
                 PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'in Comment, \"%s\" does NOT contain doxygen contents ' % (Tag.replace('\n', '').replace('\r', '')), TableName, CommentId)

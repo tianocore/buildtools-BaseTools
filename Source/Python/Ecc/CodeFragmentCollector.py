@@ -326,6 +326,8 @@ class CodeFragmentCollector:
                         SlashIndex = CurrentLine.rindex(T_CHAR_BACKSLASH)
                         self.__SetCharValue(self.CurrentLineNumber, SlashIndex, T_CHAR_SPACE)
                 
+                if InComment and not DoubleSlashComment and not HashComment:
+                    CommentObj.Content += T_CHAR_LF
                 self.CurrentLineNumber += 1
                 self.CurrentOffsetWithinLine = 0    
             # check for */ comment end
@@ -437,6 +439,8 @@ class CodeFragmentCollector:
                         SlashIndex = CurrentLine.rindex(T_CHAR_BACKSLASH)
                         self.__SetCharValue(self.CurrentLineNumber, SlashIndex, T_CHAR_SPACE)
                 
+                if InComment and not DoubleSlashComment and not HashComment:
+                    CommentObj.Content += T_CHAR_LF
                 self.CurrentLineNumber += 1
                 self.CurrentOffsetWithinLine = 0    
             # check for */ comment end
@@ -543,11 +547,11 @@ class CodeFragmentCollector:
         
         print '################# ' + self.FileName + '#####################'
         
-#        print '/****************************************/'
-#        print '/*************** COMMENTS ***************/'
-#        print '/****************************************/'
-#        for comment in FileProfile.CommentList:
-#            print str(comment.StartPos) + comment.Content
+        print '/****************************************/'
+        print '/*************** COMMENTS ***************/'
+        print '/****************************************/'
+        for comment in FileProfile.CommentList:
+            print str(comment.StartPos) + comment.Content
         
         print '/****************************************/'
         print '/********* PREPROCESS DIRECTIVES ********/'
