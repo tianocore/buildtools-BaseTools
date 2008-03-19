@@ -767,7 +767,8 @@ Returns:
   //
   for (Index1 = 0; Index1 < Index; Index1 ++) {
     if (CompareGuid ((EFI_GUID *) FileBuffer, &mFileGuidArray [Index1]) == 0) {
-      Error (NULL, 0, 2000, "Invalid parameter", "the %dth file and %dth file have the same file GUID.", Index1, Index);
+      Error (NULL, 0, 2000, "Invalid parameter", "the %dth file and %dth file have the same file GUID.", Index1 + 1, Index + 1);
+      PrintGuid ((EFI_GUID *) FileBuffer);
       return EFI_INVALID_PARAMETER;
     }
   }

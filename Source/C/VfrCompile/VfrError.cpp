@@ -2,6 +2,7 @@
 #include "string.h"
 #include "stdlib.h"
 #include "VfrError.h"
+#include "EfiUtilityMsgs.h"
 
 static SVFR_ERROR_HANDLE VFR_ERROR_HANDLE_TABLE [] = {
   { VFR_RETURN_SUCCESS, NULL },
@@ -185,7 +186,7 @@ CVfrErrorHandle::PrintMsg (
   UINT32                 FileLine;
 
   GetFileNameLineNum (LineNum, &FileName, &FileLine);
-  printf ("%s line %d: %s %s %s\n", FileName, FileLine, MsgType, TokName, ErrorMsg);
+  Error (NULL, 0, 3000, MsgType, "%s line %d: %s %s", FileName, FileLine, TokName, ErrorMsg);
 }
 
 UINT8
@@ -213,7 +214,7 @@ CVfrErrorHandle::HandleError (
 
   if (ErrorMsg != NULL) {
     GetFileNameLineNum (LineNum, &FileName, &FileLine);
-    printf ("%s line %d: error %s %s\n", FileName, FileLine, TokName, ErrorMsg);
+    Error (NULL, 0, 3000, "Invalid", "%s line %d: error %s %s", FileName, FileLine, TokName, ErrorMsg);
     return 1;
   } else {
     return 0;

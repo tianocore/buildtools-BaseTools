@@ -205,12 +205,12 @@ Returns:
       //
       if ((argv[1][0] == '0') && (tolower (argv[1][1]) == 'x')) {
         if (sscanf (argv[1], "%x", &Offset) != 1) {
-          Error (NULL, 0, 0, argv[1], "invalid offset specified");
+          Error (NULL, 0, 1003, "Invalid option value", "Offset = %s", argv[1]);
           return GetUtilityStatus ();
         }
       } else {
         if (sscanf (argv[1], "%d", &Offset) != 1) {
-          Error (NULL, 0, 0, argv[1], "invalid offset specified");
+          Error (NULL, 0, 1003, "Invalid option value", "Offset = %s", argv[1]);
           return GetUtilityStatus ();
         }
         //
@@ -249,7 +249,7 @@ Returns:
   //
   InputFile = fopen (argv[0], "rb");
   if (InputFile == NULL) {
-    Error (NULL, 0, 0, argv[0], "failed to open input FV file");
+    Error (NULL, 0, 0001, "Error opening the input file", argv[0]);
     return GetUtilityStatus ();
   }
   //
@@ -264,7 +264,7 @@ Returns:
   //
   Status = ReadHeader (InputFile, &FvSize, &ErasePolarity);
   if (EFI_ERROR (Status)) {
-    Error (NULL, 0, 0, argv[0], "failed to parse FV header");
+    Error (NULL, 0, 0003, "error parsing FV image", "%s Header is invalid", argv[0]);
     fclose (InputFile);
     return GetUtilityStatus ();
   }
@@ -273,7 +273,7 @@ Returns:
   //
   FvImage = malloc (FvSize);
   if (FvImage == NULL) {
-    Error (__FILE__, __LINE__, 0, "application error", "memory allocation failed");
+    Error (NULL, 0, 4001, "Resource: Memory can't be allocated", NULL);
     fclose (InputFile);
     return GetUtilityStatus ();
   }
@@ -284,7 +284,7 @@ Returns:
   BytesRead = fread (FvImage, 1, FvSize, InputFile);
   fclose (InputFile);
   if ((unsigned int) BytesRead != FvSize) {
-    Error (NULL, 0, 0, argv[0], "failed to read FV from file");
+    Error (NULL, 0, 0004, "error reading FvImage from", argv[0]);
     free (FvImage);
     return GetUtilityStatus ();
   }
@@ -343,7 +343,7 @@ Returns:
   Key = 0;
   Status = FvBufFindNextFile (Fv, &Key, &CurrentFile);
   if (EFI_ERROR (Status)) {
-    Error (NULL, 0, 0, NULL, "cannot find the first file in the FV image");
+    Error (NULL, 0, 0003, "error parsing FV image", "cannot find the first file in the FV image");
     return GetUtilityStatus ();
   }
   //
@@ -360,7 +360,7 @@ Returns:
     //
     Status = PrintFileInfo (Fv, CurrentFile, ErasePolarity);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0, NULL, "failed to parse a file in the FV");
+      Error (NULL, 0, 0003, "error parsing FV image", "failed to parse a file in the FV");
       return GetUtilityStatus ();
     }
     //
@@ -370,7 +370,7 @@ Returns:
     if (Status == EFI_NOT_FOUND) {
       CurrentFile = NULL;
     } else if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0, NULL, "cannot find the next file in the FV image");
+      Error (NULL, 0, 0003, "error parsing FV image", "cannot find the next file in the FV image");
       return GetUtilityStatus ();
     }
   }
@@ -1045,7 +1045,7 @@ Returns:
     Checksum  = (UINT8) (Checksum - FileHeader->IntegrityCheck.Checksum.File);
     Checksum  = (UINT8) (Checksum - FileHeader->State);
     if (Checksum != 0) {
-      Error (NULL, 0, 0, "invalid header checksum", NULL);
+      Error (NULL, 0, 0003, "error parsing FFS file", "FFS file with Guid %s has invalid header checksum", GuidBuffer);
       return EFI_ABORTED;
     }
 
@@ -1058,12 +1058,12 @@ Returns:
       Checksum  = CalculateSum8 ((UINT8 *) FileHeader, FileLength);
       Checksum  = (UINT8) (Checksum - FileHeader->State);
       if (Checksum != 0) {
-        Error (NULL, 0, 0, "invalid file checksum", NULL);
+        Error (NULL, 0, 0003, "error parsing FFS file", "FFS file with Guid %s has invalid file checksum", GuidBuffer);
         return EFI_ABORTED;
       }
     } else {
       if (FileHeader->IntegrityCheck.Checksum.File != FFS_FIXED_CHECKSUM) {
-        Error (NULL, 0, 0, "invalid header checksum -- not set to fixed value of 0x5A", NULL);
+        Error (NULL, 0, 0003, "error parsing FFS file", "FFS file with Guid %s has invalid header checksum -- not set to fixed value of 0x5A", GuidBuffer);
         return EFI_ABORTED;
       }
     }
@@ -1077,7 +1077,8 @@ Returns:
       //
       Tail = (UINT16 *) ((UINTN) FileHeader + GetLength (FileHeader->Size) - sizeof (EFI_FFS_INTEGRITY_CHECK));
       if (FileHeader->IntegrityCheck.TailReference != (UINT16)~(*Tail)) {
-        Error (NULL, 0, 0, "integrity check failed", "tail is not the complement of the header field");
+        Error (NULL, 0, 0003, "error parsing FFS file", \
+        "FFS file with Guid %s failed in the integrity check, tail is not the complement of the header field", GuidBuffer);
         return EFI_ABORTED;
       }
     }
@@ -1085,7 +1086,7 @@ Returns:
     break;
 
   default:
-    Error (NULL, 0, 0, "invalid/unrecognized file state bits", NULL);
+    Error (NULL, 0, 0003, "error parsing FFS file", "FFS file with Guid %s has the invalid/unrecognized file state bits", GuidBuffer);
     return EFI_ABORTED;
   }
 
@@ -1260,7 +1261,7 @@ Returns:
     case EFI_SECTION_FIRMWARE_VOLUME_IMAGE:
       Status = PrintFvInfo (((EFI_FIRMWARE_VOLUME_IMAGE_SECTION*)Ptr) + 1);
       if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 0, "printing of FV section contents failed", NULL);
+        Error (NULL, 0, 0003, "printing of FV section contents failed", NULL);
         return EFI_SECTION_ERROR;
       }
       break;
@@ -1312,12 +1313,12 @@ Returns:
 
         Status            = GetInfoFunction (CompressedBuffer, CompressedLength, &DstSize, &ScratchSize);
         if (EFI_ERROR (Status)) {
-          Error (NULL, 0, 0, "error getting compression info for file", NULL);
+          Error (NULL, 0, 0003, "error getting compression info from compression section", NULL);
           return EFI_SECTION_ERROR;
         }
 
         if (DstSize != UncompressedLength) {
-          Error (NULL, 0, 0, "compression error in the compression section", NULL);
+          Error (NULL, 0, 0003, "compression error in the compression section", NULL);
           return EFI_SECTION_ERROR;
         }
 
@@ -1336,12 +1337,12 @@ Returns:
                   );
         free (ScratchBuffer);
         if (EFI_ERROR (Status)) {
-          Error (NULL, 0, 0, "decompress failed", NULL);
+          Error (NULL, 0, 0003, "decompress failed", NULL);
           free (UncompressedBuffer);
           return EFI_SECTION_ERROR;
         }
       } else {
-        Error (NULL, 0, 0, "unrecognized compression type", "type 0x%X", (UINT32) CompressionType);
+        Error (NULL, 0, 0003, "unrecognized compression type", "type 0x%X", (UINT32) CompressionType);
         return EFI_SECTION_ERROR;
       }
 
@@ -1355,7 +1356,7 @@ Returns:
       }
 
       if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 0, "failed to parse section", NULL);
+        Error (NULL, 0, 0003, "failed to parse section", NULL);
         return EFI_SECTION_ERROR;
       }
       break;
@@ -1418,7 +1419,7 @@ Returns:
         remove (ToolOutputFile);
         free (ToolOutputFile);
         if (EFI_ERROR (Status)) {
-          Error (NULL, 0, 0, "unable to read decoded GUIDED section", NULL);
+          Error (NULL, 0, 0004, "unable to read decoded GUIDED section", NULL);
           return EFI_SECTION_ERROR;
         }
 
@@ -1427,7 +1428,7 @@ Returns:
                   ToolOutputLength
                   );
         if (EFI_ERROR (Status)) {
-          Error (NULL, 0, 0, "parse of decoded GUIDED section failed", NULL);
+          Error (NULL, 0, 0003, "parse of decoded GUIDED section failed", NULL);
           return EFI_SECTION_ERROR;
         }
 
@@ -1447,16 +1448,15 @@ Returns:
                   BufferLength - ((EFI_GUID_DEFINED_SECTION *) Ptr)->DataOffset
                   );
         if (EFI_ERROR (Status)) {
-          Error (NULL, 0, 0, "parse of CRC32 GUIDED section failed", NULL);
+          Error (NULL, 0, 0003, "parse of CRC32 GUIDED section failed", NULL);
           return EFI_SECTION_ERROR;
         }
       } else {
         //
         // We don't know how to parse it now.
         //
-        Error (NULL, 0, 0, "EFI_SECTION_GUID_DEFINED cannot be parsed at this time.", NULL);
-        Error (NULL, 0, 0, "Tool to decode this section should have been defined", NULL);
-        Error (NULL, 0, 0, "in GuidedSectionTools.txt (built in the FV directory).", NULL);
+        Error (NULL, 0, 0003, "Error parsing section", \
+        "EFI_SECTION_GUID_DEFINED cannot be parsed at this time. Tool to decode this section should have been defined in GuidedSectionTools.txt (built in the FV directory).");
         return EFI_UNSUPPORTED;
       }
       break;
@@ -1465,7 +1465,7 @@ Returns:
       //
       // Unknown section, return error
       //
-      Error (NULL, 0, 0, "unrecognized section type found", "section type = 0x%X", (UINT32) Type);
+      Error (NULL, 0, 0003, "unrecognized section type found", "section type = 0x%X", (UINT32) Type);
       return EFI_SECTION_ERROR;
     }
 
@@ -1477,7 +1477,7 @@ Returns:
   }
 
   if (ParsedLength < BufferLength) {
-    Error (NULL, 0, 0, "sections do not completely fill the sectioned buffer being parsed", NULL);
+    Error (NULL, 0, 0003, "sections do not completely fill the sectioned buffer being parsed", NULL);
     return EFI_SECTION_ERROR;
   }
 

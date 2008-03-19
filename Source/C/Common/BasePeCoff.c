@@ -291,7 +291,7 @@ Returns:
   // Retrieve the base address of the image
   //
   if (!(ImageContext->IsTeImage)) {
-    if (ImageContext->Machine == EFI_IMAGE_MACHINE_IA32) {
+    if (PeHdr->OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
       ImageContext->ImageAddress = (PHYSICAL_ADDRESS) OptionHeader.Optional32->ImageBase;
     } else {
       ImageContext->ImageAddress = (PHYSICAL_ADDRESS) OptionHeader.Optional64->ImageBase;
@@ -332,7 +332,7 @@ Returns:
 
   if (!(ImageContext->IsTeImage)) {
 
-    if (ImageContext->Machine == EFI_IMAGE_MACHINE_IA32) {
+    if (PeHdr->OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
       ImageContext->ImageSize         = (UINT64) OptionHeader.Optional32->SizeOfImage;
       ImageContext->SectionAlignment  = OptionHeader.Optional32->SectionAlignment;
       ImageContext->SizeOfHeaders     = OptionHeader.Optional32->SizeOfHeaders;
@@ -624,7 +624,7 @@ Returns:
     PeHdr = (EFI_IMAGE_NT_HEADERS *)((UINTN)ImageContext->ImageAddress + 
                                             ImageContext->PeCoffHeaderOffset);
     OptionHeader.Header = (VOID *) &(PeHdr->OptionalHeader);
-    if (ImageContext->Machine == EFI_IMAGE_MACHINE_IA32) {
+    if (PeHdr->OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
       Adjust = (UINT64) BaseAddress - OptionHeader.Optional32->ImageBase;
       OptionHeader.Optional32->ImageBase = (UINT32) BaseAddress;
       MachineType = ImageContext->Machine;
@@ -1048,7 +1048,7 @@ Returns:
   // the optional header to verify a desired directory entry is there.
   //
   if (!(ImageContext->IsTeImage)) {
-    if (ImageContext->Machine == EFI_IMAGE_MACHINE_IA32) {
+    if (PeHdr->OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
       if (OptionHeader.Optional32->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
         DirectoryEntry = (EFI_IMAGE_DATA_DIRECTORY *)
           &OptionHeader.Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC];

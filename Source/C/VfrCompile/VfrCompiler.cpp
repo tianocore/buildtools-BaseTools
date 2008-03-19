@@ -3,7 +3,7 @@
 #include "string.h"
 //#include "process.h"
 #include "VfrCompiler.h"
-
+#include "EfiUtilityMsgs.h"
 
 VOID
 CVfrCompiler::SET_RUN_STATUS (
@@ -28,6 +28,8 @@ CVfrCompiler::OptionInitialization (
   )
 {
   INT32         Index;
+  
+  SetUtilityName (PROGRAM_NAME);
 
   mOptions.VfrFileName[0]                = '\0';
   mOptions.RecordListFile[0]             = '\0';
@@ -53,7 +55,7 @@ CVfrCompiler::OptionInitialization (
     } else if (strcmp(Argv[Index], "-i") == 0) {
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
-        printf ("%s -i - missing path argument\n", PROGRAM_NAME);
+        Error (NULL, 0, 1001, "Missing option", "-i missing path argument"); 
         goto Fail;
       }
 
@@ -61,7 +63,7 @@ CVfrCompiler::OptionInitialization (
     } else if (strcmp(Argv[Index], "-o") == 0 || strcmp(Argv[Index], "--output-directory") == 0) {
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
-        printf ("%s -od - missing output directory name\n", PROGRAM_NAME);
+        Error (NULL, 0, 1001, "Missing option", "-od missing output directory name");
         goto Fail;
       }
       strcpy (mOptions.OutputDirectory, Argv[Index]);
@@ -83,20 +85,20 @@ CVfrCompiler::OptionInitialization (
     } else if (strcmp(Argv[Index], "-f") == 0 || strcmp(Argv[Index], "--pre-processing-flag") == 0) {
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
-        printf ("%s -od - missing C-preprocessor argument\n", PROGRAM_NAME);
+        Error (NULL, 0, 1001, "Missing option", "-od - missing C-preprocessor argument");
         goto Fail;
       }
 
       AppendCPreprocessorOptions (Argv[Index]);
     } else {
-      printf ("%s unrecognized option %s\n", PROGRAM_NAME, Argv[Index]);
+      Error (NULL, 0, 1000, "Unknown option", "unrecognized option %s", Argv[Index]);
       Usage ();
       goto Fail;
     }
   }
 
   if (Index != Argc - 1) {
-    printf ("%s must specify VFR file name", PROGRAM_NAME);
+    Error (NULL, 0, 1001, "Missing option", "VFR file name is not specified.");
     Usage ();
     goto Fail;
   } else {
@@ -121,7 +123,7 @@ CVfrCompiler::OptionInitialization (
   return;
 
 Fail:
-  SET_RUN_STATUS (STATUS_FAILED);
+  SET_RUN_STATUS (STATUS_DEAD);
 
   mOptions.VfrFileName[0]                = '\0';
   mOptions.RecordListFile[0]             = '\0';
@@ -156,7 +158,7 @@ CVfrCompiler::AppendIncludePath (
   }
   IncludePaths = new CHAR8[Len];
   if (IncludePaths == NULL) {
-    printf ("%s memory allocation failure\n", PROGRAM_NAME);
+    Error (NULL, 0, 4001, "Resource: memory can't be allocated", NULL);
     return;
   }
   IncludePaths[0] = '\0';
@@ -185,7 +187,7 @@ CVfrCompiler::AppendCPreprocessorOptions (
   }
   Opt = new CHAR8[Len];
   if (Opt == NULL) {
-    printf ("%s memory allocation failure\n", PROGRAM_NAME);
+    Error (NULL, 0, 4001, "Resource: memory can't be allocated", NULL);
     return;
   }
   Opt[0] = 0;
@@ -356,7 +358,6 @@ CVfrCompiler::Usage (
     "                 do not preprocessing input file",
     "  -f, --pre-processing-flag",
     "                 Preprocessing flags",
-    " ",
     NULL
     };
   for (Index = 0; Help[Index] != NULL; Index++) {
@@ -382,7 +383,7 @@ CVfrCompiler::PreProcess (
   }
 
   if ((pVfrFile = fopen (mOptions.VfrFileName, "r")) == NULL) {
-    printf ("%s could not open input VFR file - %s\n", PROGRAM_NAME, mOptions.VfrFileName);
+    Error (NULL, 0, 0001, "Error opening the input VFR file", mOptions.VfrFileName);
     goto Fail;
   }
   fclose (pVfrFile);
@@ -398,7 +399,7 @@ CVfrCompiler::PreProcess (
 
   PreProcessCmd = new CHAR8[CmdLen + 10];
   if (PreProcessCmd == NULL) {
-    printf ("%s could not allocate memory\n", PROGRAM_NAME);
+    Error (NULL, 0, 4001, "Resource: memory can't be allocated", NULL);
     goto Fail;
   }
   strcpy (PreProcessCmd, mPreProcessCmd), strcat (PreProcessCmd, " ");
@@ -413,7 +414,7 @@ CVfrCompiler::PreProcess (
   strcat (PreProcessCmd, mOptions.PreprocessorOutputFileName);
 
   if (system (PreProcessCmd) != 0) {
-    printf ("%s failed to spawn C preprocessor on VFR file \n\t - %s\n", PROGRAM_NAME, PreProcessCmd);
+    Error (NULL, 0, 0003, "Error parsing file", "failed to spawn C preprocessor on VFR file %s\n", PreProcessCmd);
     goto Fail;
   }
 
@@ -449,7 +450,7 @@ CVfrCompiler::Compile (
   gCVfrErrorHandle.SetInputFile (InFileName);
 
   if ((pInFile = fopen (InFileName, "r")) == NULL) {
-    printf ("%s failed to open input file - %s\n", PROGRAM_NAME, InFileName);
+    Error (NULL, 0, 0001, "Error opening the input file", InFileName);
     goto Fail;
   }
 
@@ -469,7 +470,7 @@ CVfrCompiler::Compile (
 
 Fail:
   if (!IS_RUN_STATUS(STATUS_DEAD)) {
-    printf ("%s compile error!\n", PROGRAM_NAME);
+    Error (NULL, 0, 0003, "Error parsing", "compile error in file %s", InFileName);
     SET_RUN_STATUS (STATUS_FAILED);
   }
   if (pInFile != NULL) {
@@ -490,7 +491,7 @@ CVfrCompiler::GenBinary (
 
   if (mOptions.CreateIfrPkgFile == TRUE) {
     if ((pFile = fopen (mOptions.PkgOutputFileName, "wb")) == NULL) {
-      printf ("can not open %s\n", mOptions.PkgOutputFileName);
+      Error (NULL, 0, 0001, "Error opening file", mOptions.PkgOutputFileName);
       goto Fail;
     }
     if (gCFormPkg.BuildPkg (pFile) != VFR_RETURN_SUCCESS) {
@@ -531,7 +532,7 @@ CVfrCompiler::GenCFile (
   }
 
   if ((pFile = fopen (mOptions.COutputFileName, "w")) == NULL) {
-    printf ("failed to open output C file - %s\n", mOptions.COutputFileName);
+    Error (NULL, 0, 0001, "Error opening output C file", mOptions.COutputFileName);
     goto Fail;
   }
 
@@ -564,7 +565,7 @@ CVfrCompiler::GenRecordListFile (
   CHAR8  *InFileName = NULL;
   FILE   *pInFile    = NULL;
   FILE   *pOutFile   = NULL;
-  CHAR8  LineBuf[MAX_LINE_LEN];
+  CHAR8  LineBuf[MAX_VFR_LINE_LEN];
   UINT32 LineNo;
 
   InFileName = (mOptions.SkipCPreprocessor == TRUE) ? mOptions.VfrFileName : mOptions.PreprocessorOutputFileName;
@@ -575,19 +576,19 @@ CVfrCompiler::GenRecordListFile (
     }
 
     if ((pInFile = fopen (InFileName, "r")) == NULL) {
-      printf ("%s failed to open input VFR preprocessor output file - %s\n", PROGRAM_NAME, InFileName);
+      Error (NULL, 0, 0001, "Error opening the input VFR preprocessor output file", InFileName);
       return;
     }
 
     if ((pOutFile = fopen (mOptions.RecordListFile, "w")) == NULL) {
-      printf ("%s failed to open record list file for writing - %s\n", PROGRAM_NAME, mOptions.RecordListFile);
+      Error (NULL, 0, 0001, "Error opening the record list file", mOptions.RecordListFile);
       goto Err1;
     }
 
     fprintf (pOutFile, "//\n//  VFR compiler version " VFR_COMPILER_VERSION "\n//\n");
     LineNo = 0;
     while (!feof (pInFile)) {
-      if (fgets (LineBuf, MAX_LINE_LEN, pInFile) != NULL) {
+      if (fgets (LineBuf, MAX_VFR_LINE_LEN, pInFile) != NULL) {
         fprintf (pOutFile, "%s", LineBuf);
         LineNo++;
         gCIfrRecordInfoDB.IfrRecordOutput (pOutFile, LineNo);
@@ -612,7 +613,7 @@ main (
 {
   COMPILER_RUN_STATUS  Status;
   CVfrCompiler         Compiler(Argc, Argv);
-
+  
   Compiler.PreProcess();
   Compiler.Compile();
   Compiler.GenBinary();

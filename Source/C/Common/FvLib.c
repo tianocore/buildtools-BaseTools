@@ -252,6 +252,7 @@ Returns:
 {
   EFI_FFS_FILE_HEADER *CurrentFile;
   EFI_STATUS          Status;
+  CHAR8               FileGuidString[80];
 
   //
   // Verify library has been initialized.
@@ -266,6 +267,10 @@ Returns:
     return EFI_INVALID_PARAMETER;
   }
   //
+  // File Guid String Name
+  //
+  PrintGuidToBuffer (FileName, FileGuidString, sizeof (FileGuidString), TRUE);
+  //
   // Verify FV header
   //
   Status = VerifyFv (mFvHeader);
@@ -277,7 +282,7 @@ Returns:
   //
   Status = GetNextFile (NULL, &CurrentFile);
   if (EFI_ERROR (Status)) {
-    Error (NULL, 0, 0, "error parsing the FV", NULL);
+    Error (NULL, 0, 0003, "error parsing FV image", "FFS file with Guid %s can't be found", FileGuidString);
     return EFI_ABORTED;
   }
   //
@@ -291,7 +296,7 @@ Returns:
 
     Status = GetNextFile (CurrentFile, &CurrentFile);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0, "error parsing the FV", NULL);
+      Error (NULL, 0, 0003, "error parsing FV image", "FFS file with Guid %s can't be found", FileGuidString);
       return EFI_ABORTED;
     }
   }
@@ -363,7 +368,7 @@ Returns:
   //
   Status = GetNextFile (NULL, &CurrentFile);
   if (EFI_ERROR (Status)) {
-    Error (NULL, 0, 0, "error parsing FV", NULL);
+    Error (NULL, 0, 0003, "error parsing FV image", "FFS file with FileType 0x%x can't be found", FileType);
     return EFI_ABORTED;
   }
   //
@@ -381,7 +386,7 @@ Returns:
 
     Status = GetNextFile (CurrentFile, &CurrentFile);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0, "error parsing the FV", NULL);
+      Error (NULL, 0, 0003, "error parsing FV image", "FFS file with FileType 0x%x can't be found", FileType);
       return EFI_ABORTED;
     }
   }
@@ -521,7 +526,7 @@ Returns:
   //
   Status = VerifyFfsFile (File);
   if (EFI_ERROR (Status)) {
-    Error (NULL, 0, 0, "invalid FFS file", NULL);
+    Error (NULL, 0, 0006, "invalid FFS file", NULL);
     return EFI_ABORTED;
   }
   //
@@ -592,7 +597,7 @@ Returns:
   }
 
   if (FvHeader->Signature != EFI_FVH_SIGNATURE) {
-    Error (NULL, 0, 0, "invalid FV header signature", NULL);
+    Error (NULL, 0, 0006, "invalid FV header signature", NULL);
     return EFI_VOLUME_CORRUPTED;
   }
   //
@@ -601,7 +606,7 @@ Returns:
   Checksum = CalculateSum16 ((UINT16 *) FvHeader, FvHeader->HeaderLength / sizeof (UINT16));
 
   if (Checksum != 0) {
-    Error (NULL, 0, 0, "invalid FV header checksum", NULL);
+    Error (NULL, 0, 0006, "invalid FV header checksum", NULL);
     return EFI_ABORTED;
   }
 
@@ -687,7 +692,7 @@ Returns:
   FfsHeader->State = SavedState;
   FfsHeader->IntegrityCheck.Checksum.File = SavedChecksum;
   if (Checksum != 0) {
-    Error (NULL, 0, 0, FileGuidString, "invalid FFS file header checksum");
+    Error (NULL, 0, 0006, "invalid FFS file header checksum", "Ffs file with Guid %s", FileGuidString);
     return EFI_ABORTED;
   }
   //
@@ -701,7 +706,7 @@ Returns:
     Checksum            = CalculateSum8 ((UINT8 *) FfsHeader, FileLength);
     Checksum            = (UINT8) (Checksum - FfsHeader->State);
     if (Checksum != 0) {
-      Error (NULL, 0, 0, FileGuidString, "invalid FFS file checksum");
+      Error (NULL, 0, 0006, "invalid FFS file checksum", "Ffs file with Guid %s", FileGuidString);
       return EFI_ABORTED;
     }
   } else {
@@ -710,7 +715,7 @@ Returns:
     // Verify contents are 0x5A as spec'd
     //
     if (FfsHeader->IntegrityCheck.Checksum.File != FFS_FIXED_CHECKSUM) {
-      Error (NULL, 0, 0, FileGuidString, "invalid fixed FFS file header checksum");
+      Error (NULL, 0, 0006, "invalid fixed FFS file header checksum", "Ffs file with Guid %s", FileGuidString);
       return EFI_ABORTED;
     }
   }

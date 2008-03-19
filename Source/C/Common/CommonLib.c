@@ -196,14 +196,14 @@ Returns:
   //
   InputFile = fopen (InputFileName, "rb");
   if (InputFile == NULL) {
-    printf ("ERROR: E0001: Could not open input file \"%s\".\n", InputFileName);
+    Error (NULL, 0, 0001, "Error opening the input file", InputFileName);
     return EFI_ABORTED;
   }
   //
   // Go to the end so that we can determine the file size
   //
   if (fseek (InputFile, 0, SEEK_END)) {
-    printf ("ERROR: E0004: System error reading input file \"%s\".\n", InputFileName);
+    Error (NULL, 0, 0004, "Error reading the input file", InputFileName);
     fclose (InputFile);
     return EFI_ABORTED;
   }
@@ -212,7 +212,7 @@ Returns:
   //
   FileSize = ftell (InputFile);
   if (FileSize == -1) {
-    printf ("ERROR: E0003: System error parsing input file \"%s\".\n", InputFileName);
+    Error (NULL, 0, 0003, "Error parsing the input file", InputFileName);
     fclose (InputFile);
     return EFI_ABORTED;
   }
@@ -228,7 +228,7 @@ Returns:
   // Reset to the beginning of the file
   //
   if (fseek (InputFile, 0, SEEK_SET)) {
-    printf ("ERROR: E0004: System error reading input file \"%s\".\n", InputFileName);
+    Error (NULL, 0, 0004, "Error reading the input file", InputFileName);
     fclose (InputFile);
     free (*InputFileImage);
     *InputFileImage = NULL;
@@ -239,7 +239,7 @@ Returns:
   //
   *BytesRead = fread (*InputFileImage, sizeof (UINT8), FileSize, InputFile);
   if (*BytesRead != sizeof (UINT8) * FileSize) {
-    printf ("ERROR: E0004: Reading file \"%s\"%i.\n", InputFileName);
+    Error (NULL, 0, 0004, "Error reading the input file", InputFileName);
     fclose (InputFile);
     free (*InputFileImage);
     *InputFileImage = NULL;
@@ -297,7 +297,7 @@ Returns:
   //
   OutputFile = fopen (OutputFileName, "wb");
   if (OutputFile == NULL) {
-    printf ("ERROR: E0001: Could not open output file \"%s\".\n", OutputFileName);
+    Error (NULL, 0, 0001, "Error opening the output file", OutputFileName);
     return EFI_ABORTED;
   }
 
@@ -306,7 +306,7 @@ Returns:
   //
   BytesWrote = fwrite (OutputFileImage, sizeof (UINT8), BytesToWrite, OutputFile);
   if (BytesWrote != sizeof (UINT8) * BytesToWrite) {
-    printf ("ERROR: E0004: Writing file \"%s\"%i.\n", OutputFileName);
+    Error (NULL, 0, 0002, "Error writing the output file", OutputFileName);
     fclose (OutputFile);
     return EFI_ABORTED;
   }
@@ -464,7 +464,7 @@ Returns:
 --*/
 {
   if (Guid == NULL) {
-    printf ("ERROR: PrintGuid called with a NULL value.\n");
+    Error (NULL, 0, 2000, "Invalid parameter", "PrintGuidToBuffer() called with a NULL value");
     return EFI_INVALID_PARAMETER;
   }
 
@@ -514,12 +514,12 @@ Returns:
 --*/
 {
   if (Guid == NULL) {
-    printf ("ERROR: PrintGuidToBuffer() called with a NULL value\n");
+    Error (NULL, 0, 2000, "Invalid parameter", "PrintGuidToBuffer() called with a NULL value");
     return EFI_INVALID_PARAMETER;
   }
 
   if (BufferLen < PRINTED_GUID_BUFFER_SIZE) {
-    printf ("ERORR: PrintGuidToBuffer() called with invalid buffer size\n");
+    Error (NULL, 0, 2000, "Invalid parameter", "PrintGuidToBuffer() called with invalid buffer size");
     return EFI_BUFFER_TOO_SMALL;
   }
 

@@ -28,7 +28,7 @@ Abstract:
 #include "Common/MdeModuleHii.h"
 
 #define MAX_PATH                 255
-#define MAX_LINE_LEN             4096
+#define MAX_VFR_LINE_LEN         4096
 
 #define EFI_IFR_MAX_LENGTH       0xFF
 

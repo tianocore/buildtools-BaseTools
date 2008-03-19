@@ -1614,7 +1614,7 @@ Returns:
   //
   InputFile = fopen (InputFileName, "rb");
     if (InputFile == NULL) {
-      Error(NULL, 0, 0001, "Error opening file: %s", InputFileName);
+      Error (NULL, 0, 0001, "Error opening file: %s", InputFileName);
       return EFI_ABORTED;
     }
   
@@ -1626,7 +1626,7 @@ Returns:
     // 
     if (FileSize > 0 && FileBuffer != NULL) {
       if (fread (FileBuffer, FileSize, 1, InputFile) != 1) {
-        Error(NULL, 0, 0004, "Error reading contents of input file: %s", InputFileName);
+        Error (NULL, 0, 0004, "Error reading contents of input file: %s", InputFileName);
         fclose (InputFile);
         return EFI_ABORTED;
       }
@@ -1703,15 +1703,15 @@ Returns:
   fprintf (stdout, "  -o FileName, --output FileName\n\
             File will be created to store the ouput content.\n");
   fprintf (stdout, "  -v, --verbose\n\
-            Turn on verbose output with informational messages.\n");
-  fprintf (stdout, "  --version\n\
-            Show program's version number and exit.\n");
-  fprintf (stdout, "  -h, --help\n\
-            Show this help message and exit.\n");
+           Turn on verbose output with informational messages.\n");
   fprintf (stdout, "  -q, --quiet\n\
-         Disable all messages except FATAL ERRORS.\n");
-  fprintf (stdout, "  --debug [#,0-9]\n\
-         Enable debug messages at level #.\n");  
+           Disable all messages except key message and fatal error\n");
+  fprintf (stdout, "  --debug [0-9]\n\
+           Enable debug messages, at input debug level.\n");
+  fprintf (stdout, "  --version\n\
+           Show program's version number and exit.\n");
+  fprintf (stdout, "  -h, --help\n\
+           Show this help message and exit.\n");
 }
 
 
@@ -1756,6 +1756,7 @@ Returns:
   FileBuffer = NULL;
   Src = NULL;
   OutBuffer = NULL;
+  Scratch   = NULL;
   OrigSize = 0;
   InputLength = 0;
   InputFileName = NULL;
@@ -1768,6 +1769,7 @@ Returns:
   // Verify the correct number of arguments
   //
   if (argc == 1) {
+    Error (NULL, 0, 1001, "Missing options", "No input options specified.");
     Usage();
     return 0;
   }
@@ -1778,7 +1780,7 @@ Returns:
     return 0;
   }
   
-  if ( (strcmp(argv[1], "--version") == 0)) {
+  if ((strcmp(argv[1], "--version") == 0)) {
     Version();
     return 0;
   }
@@ -1805,6 +1807,7 @@ Returns:
   //
   // Error command line
   //
+  Error (NULL, 0, 1003, "Invalid option value", "the options specified are not recognized.");
   Usage();
   return 1;
   }
@@ -1821,7 +1824,7 @@ Returns:
      argv++;
      Status = AsciiStringToUint64(argv[0], FALSE, &DebugLevel);
      if (DebugLevel > 9 || DebugLevel < 0) {
-       Error(NULL, 0 ,2000, "Invalid parameter", "Unrecognized argument %s", argv[0]);
+       Error (NULL, 0 ,2000, "Invalid parameter", "Unrecognized argument %s", argv[0]);
        goto ERROR;
      }
      if (DebugLevel>=5 && DebugLevel <=9){
@@ -1832,19 +1835,22 @@ Returns:
      argv++;
      continue;
    }
-   if ((strcmp(argv[0], "-q") == 0) || (stricmp (argv[0], "--debug") == 0)) {
+   if ((strcmp(argv[0], "-q") == 0) || (stricmp (argv[0], "--quiet") == 0)) {
      QuietMode = TRUE;
      argc--;
      argv++;
      continue;
    }
    if ((strcmp(argv[0], "-o") == 0) || (stricmp (argv[0], "--output") == 0)) {
-    argc-=2;
-    argv++;
-    OutputFileName = argv[0];
-    argv++;
+    OutputFileName = argv[1];
+    if (OutputFileName == NULL) {
+      Error (NULL, 0, 1003, "Invalid option value", "Output File name can't be set NULL");
+      goto ERROR;
+    }   
+    argc -=2;
+    argv +=2;
     continue; 
-    }
+   }
    if (argv[0][0]!='-') {
    InputFileName = argv[0];
    argc--;
@@ -1856,9 +1862,8 @@ Returns:
   }
 
   if (InputFileName == NULL) {
-    Error(NULL, 0, 2000, " Invalid parameter");
-    Usage();
-    return 1;    
+    Error (NULL, 0, 1001, "Missing options", "No input files specified.");
+    goto ERROR;
   }
 
 //
@@ -1877,13 +1882,13 @@ Returns:
    }
   Scratch = (SCRATCH_DATA *)malloc(sizeof(SCRATCH_DATA));
   if (Scratch == NULL) {
-    Error(NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
+    Error (NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
     goto ERROR;
   }
     
   InputFile = fopen (InputFileName, "rb");
   if (InputFile == NULL) {
-    Error(NULL, 0, 0001, "Error opening input file", InputFileName);
+    Error (NULL, 0, 0001, "Error opening input file", InputFileName);
     goto ERROR;
   }
         
@@ -1895,7 +1900,7 @@ Returns:
   if (Status == EFI_BUFFER_TOO_SMALL) {
     FileBuffer = (UINT8 *) malloc (InputLength);
     if (FileBuffer == NULL) {
-      Error(NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
+      Error (NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
       return EFI_OUT_OF_RESOURCES;
     }
 
@@ -1914,7 +1919,7 @@ Returns:
   if (OutputFileName != NULL) {
     OutputFile = fopen (OutputFileName, "wb");
     if (OutputFile == NULL) {
-      Error(NULL, 0, 0001, "Error opening output file for writing", OutputFileName);
+      Error (NULL, 0, 0001, "Error opening output file for writing", OutputFileName);
     if (InputFile != NULL) {
       fclose (InputFile);
       }
@@ -1937,13 +1942,13 @@ Returns:
   if (Status == EFI_BUFFER_TOO_SMALL) {
     OutBuffer = (UINT8 *) malloc (DstSize);
     if (OutBuffer == NULL) {
-      Error(NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
+      Error (NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
       goto ERROR;
     }
   }
   Status = TianoCompress ((UINT8 *)FileBuffer, InputLength, OutBuffer, &DstSize);
   if (Status != EFI_SUCCESS) {
-    Error(NULL, 0, 0007, "Error compressing file");
+    Error (NULL, 0, 0007, "Error compressing file");
     goto ERROR;
   }
 
@@ -1975,7 +1980,7 @@ Returns:
   //
   OutBuffer = (UINT8 *)malloc(OrigSize);
   if (OutBuffer == NULL) {
-    Error(NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
+    Error (NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
     goto ERROR;
    }  
 
@@ -2007,9 +2012,16 @@ ERROR:
       DebugMsg(UTILITY_NAME, 0, DebugLevel, "Decoding Error\n");
     }
   }
-  free(Scratch);
-  free(FileBuffer);
-  free(OutBuffer);
+  if (Scratch != NULL) {
+    free(Scratch);
+  }
+  if (FileBuffer != NULL) {
+    free(FileBuffer);
+  }
+  if (OutBuffer != NULL) {
+    free(OutBuffer);
+  }
+    
   if (VerboseMode) {
     VerboseMsg("%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());
   }

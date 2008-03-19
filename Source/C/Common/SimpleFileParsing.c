@@ -653,7 +653,7 @@ Returns:
   // Make sure we didn't exceed our maximum nesting depth
   //
   if (NestDepth > MAX_NEST_DEPTH) {
-    Error (NULL, 0, 0, SourceFile->FileName, "max nesting depth (%d) exceeded", NestDepth);
+    Error (NULL, 0, 3001, "Not Supported", "%s exceeeds max nesting depth (%d)", SourceFile->FileName, NestDepth);
     Status = STATUS_ERROR;
     goto Finish;
   }
@@ -715,7 +715,7 @@ Returns:
   fseek (SourceFile->Fptr, 0, SEEK_SET);
   SourceFile->FileBuffer = (CHAR8  *) malloc (SourceFile->FileSize + sizeof (CHAR8 ));
   if (SourceFile->FileBuffer == NULL) {
-    Error (NULL, 0, 0, "memory allocation failure", NULL);
+    Error (NULL, 0, 4001, "Resource: memory cannot be allocated", NULL);
     return STATUS_ERROR;
   }
 
@@ -964,7 +964,7 @@ GetQuotedString (
   //
   String = (CHAR8  *) malloc ((Len + 1) * sizeof (CHAR8 ));
   if (String == NULL) {
-    Error (NULL, 0, 0, "memory allocation failed", NULL);
+    Error (NULL, 0, 4001, "Resource: memory cannot be allocated", NULL);
     return NULL;
   }
   //

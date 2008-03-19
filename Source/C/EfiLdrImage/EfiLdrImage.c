@@ -89,7 +89,7 @@ Usage (
   VOID
   )
 {
-  printf ("Usage: EfiLdrImage -o OutImage LoaderImage PeImage1 PeImage2 ... PeImageN");
+  printf ("Usage: EfiLdrImage -o OutImage LoaderImage PeImage1 PeImage2 ... PeImageN\n");
   exit (1);
 }
 
@@ -182,8 +182,10 @@ Returns:
   UINT64        DebugLevel = 0;
   UINT64        VerboseLevel = 0;
   EFI_STATUS Status = EFI_SUCCESS;
+  
+  SetUtilityName (UTILITY_NAME);
 
-  if (argc < 4) {
+  if (argc == 1) {
     Usage();
     return STATUS_ERROR;
   }
@@ -206,7 +208,7 @@ Returns:
     if ((stricmp (argv[0], "-o") == 0) || (stricmp (argv[0], "--output") == 0)) {
       OutputFileName = argv[1];
       if (OutputFileName == NULL) {
-        Error (NULL, 0, 0, "NO Output file specified.", NULL);
+        Error (NULL, 0, 1003, "Invalid option value", "Output file can't be null");
         return STATUS_ERROR;
       }
       argc -= 2;
@@ -226,7 +228,7 @@ Returns:
       if (strlen(argv[0]) > 2) {
         Status = CountVerboseLevel (&argv[0][2], strlen(argv[0]) - 2, &VerboseLevel);
         if (EFI_ERROR (Status)) {
-          Error (NULL, 0, 0, NULL, "%s is invaild paramter!", argv[0]);
+          Error (NULL, 0, 1003, "Invalid option value", argv[0]);
           return STATUS_ERROR;        
         }
       }
@@ -239,7 +241,7 @@ Returns:
     if ((stricmp (argv[0], "-d") == 0) || (stricmp (argv[0], "--debug") == 0)) {
       Status = AsciiStringToUint64 (argv[1], FALSE, &DebugLevel);
       if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 0, "Input debug level is not one valid integrator.", NULL);
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
         return STATUS_ERROR;        
       }
       argc -= 2;
@@ -247,7 +249,7 @@ Returns:
       continue; 
     }
     //
-    // Don't recognize the paramter.
+    // Don't recognize the paramter, should be regarded as the input file name.
     //
     InputFileNames[InputFileCount] = argv[0];
     InputFileCount++;
@@ -255,20 +257,29 @@ Returns:
     argv++;
   }
 
+  if (InputFileCount == 0) {
+    Error (NULL, 0, 1001, "Missing option", "No input file");
+    return STATUS_ERROR;
+  }
   //
   // Open output file for write
   //
+  if (OutputFileName == NULL) {
+    Error (NULL, 0, 1001, "Missing option", "No output file");
+    return STATUS_ERROR;
+  }
+
   fpOut = fopen(OutputFileName, "w+b");
   if (!fpOut) {
-    printf ("efildrimage: ERROR: E0001: Could not open output file %s\n", OutputFileName);
-    exit(1);
+    Error (NULL, 0, 0001, "Could not open output file", OutputFileName);
+    return STATUS_ERROR;
   }
 
   memset (&EfiLdrHeader, 0, sizeof (EfiLdrHeader));
-  memset (&EfiLdrImage, 0, sizeof (EFILDR_IMAGE) * (InputFileCount+1));
+  memset (&EfiLdrImage, 0, sizeof (EFILDR_IMAGE) * (InputFileCount));
 
   memcpy (&EfiLdrHeader.Signature, "EFIL", 4);
-  EfiLdrHeader.FileLength = sizeof(EFILDR_HEADER) + sizeof(EFILDR_IMAGE)*(InputFileCount+1);
+  EfiLdrHeader.FileLength = sizeof(EFILDR_HEADER) + sizeof(EFILDR_IMAGE)*(InputFileCount);
 
   //
   // Skip the file header first
@@ -278,14 +289,15 @@ Returns:
   //
   // copy all the input files to the output file
   //
-  for(i=0;i<= InputFileCount;i++) {
+  for(i=0;i<InputFileCount;i++) {
     //
     // Copy the content of PeImage file to output file
     //
     fpIn = fopen (InputFileNames[i], "rb");
     if (!fpIn) {
-      printf ("efildrimage: ERROR: E1001: Could not open input file %s\n", InputFileNames[i]);
-      exit(1);
+      Error (NULL, 0, 0001, "Could not open input file", InputFileNames[i]);
+      fclose (fpOut);
+      return STATUS_ERROR;
     }
     filesize = FCopyFile (fpIn, fpOut);
     fclose(fpIn);
@@ -305,7 +317,7 @@ Returns:
   //
   fseek (fpOut, 0, SEEK_SET);
   fwrite (&EfiLdrHeader, sizeof(EFILDR_HEADER)        , 1, fpOut);
-  fwrite (&EfiLdrImage , sizeof(EFILDR_IMAGE)*(InputFileCount+1), 1, fpOut);
+  fwrite (&EfiLdrImage , sizeof(EFILDR_IMAGE)*(InputFileCount), 1, fpOut);
 
   fclose (fpOut);
   printf ("Created %s\n", OutputFileName);
