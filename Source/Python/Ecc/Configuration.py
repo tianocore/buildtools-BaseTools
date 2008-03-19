@@ -262,7 +262,7 @@ class Configuration(object):
             if Line != '':
                 List = GetSplitValueList(Line, TAB_EQUAL_SPLIT)
                 if List[0] not in self.__dict__:
-                    ErrorMsg = "Invalid configuration option '%s' is found" % List[0]
+                    ErrorMsg = "Invalid configuration option '%s' was found" % List[0]
                     EdkLogger.error("Ecc", EdkLogger.ECC_ERROR, ErrorMsg, File = Filepath, Line = LineNo)
                 if List[0] == 'ModifierList':
                     List[1] = GetSplitValueList(List[1], TAB_COMMA_SPLIT)

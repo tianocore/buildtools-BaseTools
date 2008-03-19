@@ -160,7 +160,7 @@ class Check(object):
     #
     def MetaDataFileCheckBinaryInfInFdf(self):
         if EccGlobalData.gConfig.MetaDataFileCheckBinaryInfInFdf == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
-            EdkLogger.quiet("Checking non-binary module defined in Fdf files ...")
+            EdkLogger.quiet("Checking for non-binary modules defined in FDF files ...")
             SqlCommand = """select A.ID, A.Value1 from Fdf as A
                          where A.Model = %s
                          and A.Enabled > -1
@@ -177,14 +177,14 @@ class Check(object):
                                 """ % (MODEL_EFI_SOURCE_FILE, FilePath)
                 NewRecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
                 if NewRecordSet!= []:
-                    EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_BINARY_INF_IN_FDF, OtherMsg = "File %s defined in Fdf file but not in Dsc file should be a binary module" % (FilePath), BelongsToTable = 'Fdf', BelongsToItem = FdfID)
+                    EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_BINARY_INF_IN_FDF, OtherMsg = "File %s defined in FDF file and not in DSC file must be a binary module" % (FilePath), BelongsToTable = 'Fdf', BelongsToItem = FdfID)
 
     #
     # Check whether a PCD is set in a Dsc file or the FDF file, but not in both.
     #
     def MetaDataFileCheckPcdDuplicate(self):
         if EccGlobalData.gConfig.MetaDataFileCheckPcdDuplicate == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
-            EdkLogger.quiet("Checking duplicate pcd defined in both Dsc and Fdf files ...")
+            EdkLogger.quiet("Checking for duplicate PCDs defined in both DSC and FDF files ...")
             SqlCommand = """
                          select A.ID, A.Value2, B.ID, B.Value2 from Dsc as A, Fdf as B 
                          where A.Model >= %s and A.Model < %s 
@@ -195,15 +195,15 @@ class Check(object):
                          """% (MODEL_PCD, MODEL_META_DATA_HEADER, MODEL_PCD, MODEL_META_DATA_HEADER)
             RecordSet = EccGlobalData.gDb.TblDsc.Exec(SqlCommand)
             for Record in RecordSet:
-                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_DUPLICATE, OtherMsg = "The pcd '%s' is defined in both Fdf file and Dsc file" % (Record[1]), BelongsToTable = 'Dsc', BelongsToItem = Record[0])
-                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_DUPLICATE, OtherMsg = "The pcd '%s' is defined in both Fdf file and Dsc file" % (Record[3]), BelongsToTable = 'Fdf', BelongsToItem = Record[2])
+                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_DUPLICATE, OtherMsg = "The PCD '%s' is defined in both FDF file and DSC file" % (Record[1]), BelongsToTable = 'Dsc', BelongsToItem = Record[0])
+                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_DUPLICATE, OtherMsg = "The PCD '%s' is defined in both FDF file and DSC file" % (Record[3]), BelongsToTable = 'Fdf', BelongsToItem = Record[2])
 
     #
     # Check whether PCD settings in the FDF file can only be related to flash.
     #
     def MetaDataFileCheckPcdFlash(self):
         if EccGlobalData.gConfig.MetaDataFileCheckPcdFlash == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
-            EdkLogger.quiet("Checking only Flash related Pcd is used in FDF ...")
+            EdkLogger.quiet("Checking only Flash related PCDs are used in FDF ...")
             SqlCommand = """
                          select ID, Value2, BelongsToFile from Fdf as A
                          where A.Model >= %s and Model < %s
@@ -212,14 +212,14 @@ class Check(object):
                          """% (MODEL_PCD, MODEL_META_DATA_HEADER)
             RecordSet = EccGlobalData.gDb.TblFdf.Exec(SqlCommand)
             for Record in RecordSet:
-                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_FLASH, OtherMsg = "The pcd '%s' defined in Fdf file is not related to Flash" % (Record[1]), BelongsToTable = 'Fdf', BelongsToItem = Record[0])
+                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_FLASH, OtherMsg = "The PCD '%s' defined in FDF file is not related to Flash" % (Record[1]), BelongsToTable = 'Fdf', BelongsToItem = Record[0])
         
     #
     # Check whether PCDs used in Inf files but not specified in Dsc or FDF files
     #
     def MetaDataFileCheckPcdNoUse(self):
         if EccGlobalData.gConfig.MetaDataFileCheckPcdNoUse == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
-            EdkLogger.quiet("Checking no use pcds ...")
+            EdkLogger.quiet("Checking for non-specified PCDs ...")
             SqlCommand = """
                          select ID, Value2, BelongsToFile from Inf as A 
                          where A.Model >= %s and Model < %s
@@ -235,14 +235,14 @@ class Check(object):
                          """% (MODEL_PCD, MODEL_META_DATA_HEADER, MODEL_PCD, MODEL_META_DATA_HEADER, MODEL_PCD, MODEL_META_DATA_HEADER)
             RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
             for Record in RecordSet:
-                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_NO_USE, OtherMsg = "The pcd '%s' defined in Inf file is not referenced by any Dsc of Fdf files" % (Record[1]), BelongsToTable = 'Inf', BelongsToItem = Record[0])
+                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_NO_USE, OtherMsg = "The PCD '%s' defined in INF file is not specified in either DSC or FDF files" % (Record[1]), BelongsToTable = 'Inf', BelongsToItem = Record[0])
         
     #
     # Check whether having duplicate guids defined for Guid/Protocol/Ppi
     #
     def MetaDataFileCheckGuidDuplicate(self):
         if EccGlobalData.gConfig.MetaDataFileCheckGuidDuplicate == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
-            EdkLogger.quiet("Checking duplicate guid/ppi/protocol ...")
+            EdkLogger.quiet("Checking for duplicate GUID/PPI/PROTOCOL ...")
             #
             # Check Guid
             #
@@ -285,7 +285,7 @@ class Check(object):
                      """ % (Table.Table, Table.Table, Model, Model)
         RecordSet = Table.Exec(SqlCommand)
         for Record in RecordSet:
-            EccGlobalData.gDb.TblReport.Insert(ErrorID, OtherMsg = "The %s name '%s' is defined more than one time" % (Name, Record[1]), BelongsToTable = Table.Table, BelongsToItem = Record[0])
+            EccGlobalData.gDb.TblReport.Insert(ErrorID, OtherMsg = "The %s name '%s' is defined more than one time" % (Name.upper(), Record[1]), BelongsToTable = Table.Table, BelongsToItem = Record[0])
 
     #
     # Check whether these is duplicate Guid/Ppi/Protocol value
@@ -307,7 +307,7 @@ class Check(object):
                      """ % (Table.Table, Table.Table, Model, Model)
         RecordSet = Table.Exec(SqlCommand)
         for Record in RecordSet:
-            EccGlobalData.gDb.TblReport.Insert(ErrorID, OtherMsg = "The %s value '%s' is used more than one time" % (Name, Record[1]), BelongsToTable = Table.Table, BelongsToItem = Record[0])
+            EccGlobalData.gDb.TblReport.Insert(ErrorID, OtherMsg = "The %s value '%s' is used more than one time" % (Name.upper(), Record[1]), BelongsToTable = Table.Table, BelongsToItem = Record[0])
 
 ##
 #
@@ -317,3 +317,4 @@ class Check(object):
 if __name__ == '__main__':
     Check = Check()
     Check.Check()
+

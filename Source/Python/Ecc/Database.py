@@ -207,7 +207,7 @@ class Database(object):
             PcdID = self.TblPcd.Insert(Pcd.CName, Pcd.TokenSpaceGuidCName, Pcd.Token, Pcd.DatumType, Pcd.Model, \
                                FileID, -1, Pcd.StartLine, Pcd.StartColumn, Pcd.EndLine, Pcd.EndColumn)
                 
-        EdkLogger.verbose("Insert information of file %s ... DONE!" % File.FullPath)
+        EdkLogger.verbose("Insert information from file %s ... DONE!" % File.FullPath)
 
     ## UpdateIdentifierBelongsToFunction
     #

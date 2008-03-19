@@ -202,7 +202,7 @@ class Ecc(object):
         if Options.Target != None:
             EccGlobalData.gTarget = os.path.normpath(Options.Target)
         else:
-            EdkLogger.warn("Ecc", EdkLogger.ECC_ERROR, "The target source tree is not specified, use current WORKSPACE instead.!")
+            EdkLogger.warn("Ecc", EdkLogger.ECC_ERROR, "The target source tree was not specified, using current WORKSPACE instead!")
             EccGlobalData.gTarget = os.path.normpath(os.getenv("WORKSPACE"))
         if Options.keepdatabase != None:
             self.IsInit = False
