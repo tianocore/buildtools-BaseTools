@@ -15,7 +15,7 @@
 # Import Modules
 #
 import Common.EdkLogger as EdkLogger
-import os
+import os, time
 from Table import Table
 from Common.String import ConvertToSqlString2
 import EccToolError as EccToolError
@@ -103,14 +103,21 @@ class TableReport(Table):
                 BelongsToTable = Record[3]
                 BelongsToItem = Record[4]
                 IsCorrected = Record[5]
-                SqlCommand = """select A.StartLine, B.FullPath from %s as A, File as B
-                                where A.ID = %s and B.ID = A.BelongsToFile
+                SqlCommand = ''
+                if BelongsToTable == 'File':
+                    SqlCommand = """select 0, FullPath from %s where ID = %s
                              """ % (BelongsToTable, BelongsToItem)
+                else:
+                    SqlCommand = """select A.StartLine, B.FullPath from %s as A, File as B
+                                    where A.ID = %s and B.ID = A.BelongsToFile
+                                 """ % (BelongsToTable, BelongsToItem)
                 NewRecord = self.Exec(SqlCommand)
                 if NewRecord != []:
-                    File.write("""%s,%s,%s,%s,%s,"%s"\n""" % (Index, ErrorID, EccToolError.gEccErrorMessage[ErrorID], NewRecord[0][1], NewRecord[0][0], OtherMsg))
+                    File.write("""%s,%s,"%s",%s,%s,"%s"\n""" % (Index, ErrorID, EccToolError.gEccErrorMessage[ErrorID], NewRecord[0][1], NewRecord[0][0], OtherMsg))
             
             File.close()
         except IOError:
-            EdkLogger.error("ECC", EdkLogger.ECC_ERROR, "The report file %s is locked by other progress, access permission denied!" % Filename)
+            NewFilename = 'Report_' + time.strftime("%Y%m%d_%H%M%S.csv", time.localtime())
+            EdkLogger.warn("ECC", "The report file %s is locked by other progress, use %s instead!" % (Filename, NewFilename))
+            self.ToCSV(NewFilename)
 
