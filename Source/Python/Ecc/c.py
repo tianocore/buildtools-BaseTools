@@ -231,8 +231,7 @@ def CollectSourceCodeDataIntoDB(RootDir):
 
     Db.UpdateIdentifierBelongsToFunction()
 
-def CheckFuncHeaderDoxygenComments(FullFileName):
-    ErrorMsgList = []
+def GetTableID(FullFileName, ErrorMsgList):
     Db = GetDB()
     
     SqlStatement = """ select ID
@@ -241,18 +240,134 @@ def CheckFuncHeaderDoxygenComments(FullFileName):
                    """ % FullFileName
     
     ResultSet = Db.TblFile.Exec(SqlStatement)
-    FileTable = 'Identifier'
+
     FileID = -1
     for Result in ResultSet:
-        FileTable += str(Result[0])
         if FileID != -1:
             ErrorMsgList.append('Duplicate file ID found in DB for file %s' % FullFileName)
-            return ErrorMsgList
+            return -2
         FileID = Result[0]
     if FileID == -1:
         ErrorMsgList.append('NO file ID found in DB for file %s' % FullFileName)
+        return -1
+    return FileID
+
+def CheckDoxygenCommand(FullFileName):
+    ErrorMsgList = []
+    
+    FileID = GetTableID(FullFileName, ErrorMsgList)
+    if FileID < 0:
         return ErrorMsgList
     
+    Db = GetDB()
+    FileTable = 'Identifier' + str(FileID)
+    SqlStatement = """ select Value, ID
+                       from %s
+                       where Model = %d or Model = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_COMMENT, DataClass.MODEL_IDENTIFIER_FUNCTION_HEADER)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    DoxygenCommandList = ['bug', 'todo', 'example', 'file', 'attention', 'param', 'post', 'pre', 'retval', 'return', 'sa', 'since', 'test', 'note', 'par']
+    for Result in ResultSet:
+        CommentStr = Result[0]
+        CommentPartList = CommentStr.split()
+        for Part in CommentPartList:
+            if Part.upper() == 'BUGBUG':
+                PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMAND, 'Bug should be marked with doxygen tag @bug', FileTable, Result[1])
+            if Part.upper() == 'TODO':
+                PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMAND, 'ToDo should be marked with doxygen tag @todo', FileTable, Result[1])
+            if Part.startswith('@'):
+                if Part.lstrip('@').isalpha():
+                    if Part.lstrip('@') not in DoxygenCommandList:
+                        PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMAND, 'Unknown doxygen command %s' % Part, FileTable, Result[1])
+                else:
+                    Index = Part.find('[')
+                    if Index == -1:
+                        PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMAND, 'Unknown doxygen command %s' % Part, FileTable, Result[1])
+                    RealCmd = Part[1:Index]
+                    if RealCmd not in DoxygenCommandList:
+                        PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMAND, 'Unknown doxygen command %s' % Part, FileTable, Result[1])
+        
+    
+def CheckDoxygenTripleForwardSlash(FullFileName):
+    ErrorMsgList = []
+    
+    FileID = GetTableID(FullFileName, ErrorMsgList)
+    if FileID < 0:
+        return ErrorMsgList
+    
+    Db = GetDB()
+    FileTable = 'Identifier' + str(FileID)
+    SqlStatement = """ select Value, ID, StartLine
+                       from %s
+                       where Model = %d or Model = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_COMMENT, DataClass.MODEL_IDENTIFIER_FUNCTION_HEADER)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    CommentSet = []
+    try:
+        for Result in ResultSet:
+            CommentSet.append(Result)
+    except:
+        print 'Unrecognized chars in comment of file %s', FullFileName
+    
+    SqlStatement = """ select ID, StartLine, EndLine
+                       from %s
+                       where Model = %d or Model = %d or Model = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_STRUCTURE, DataClass.MODEL_IDENTIFIER_ENUMERATE, DataClass.MODEL_IDENTIFIER_UNION)
+    SUEResultSet = Db.TblFile.Exec(SqlStatement)
+    
+    for Result in CommentSet:
+        CommentStr = Result[0]
+        StartLine = Result[2]
+        if not CommentStr.startswith('///<'):
+            continue
+        if len(ResultSet) == 0:
+            PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMENT_FORMAT, '', FileTable, Result[1])
+            continue
+        Found = False
+        for SUE in SUEResultSet:
+            if StartLine > SUE[1] and StartLine < SUE[2]:
+                Found = True
+                break
+        if not Found:
+            PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMENT_FORMAT, '', FileTable, Result[1])
+
+
+def CheckFileHeaderDoxygenComments(FullFileName):
+    ErrorMsgList = []
+    
+    FileID = GetTableID(FullFileName, ErrorMsgList)
+    if FileID < 0:
+        return ErrorMsgList
+    
+    Db = GetDB()
+    FileTable = 'Identifier' + str(FileID)
+    SqlStatement = """ select Value, ID
+                       from %s
+                       where Model = %d and StartLine = 1 and StartColumn = 0
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_COMMENT)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    if len(ResultSet) == 0:
+        PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'No Comment appear at the very beginning of file.', 'File', FileID)
+        return ErrorMsgList
+    
+    for Result in ResultSet:
+        CommentStr = Result[0]
+        if not CommentStr.startswith('/** @file'):
+            PrintErrorMsg(ERROR_DOXYGEN_CHECK_FILE_HEADER, 'File header comment should begin with ""/** @file""', FileTable, Result[1])
+        if not CommentStr.endswith('**/'):
+            PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'File header comment should end with **/', FileTable, Result[1])
+        if CommentStr.find('.') == -1:
+            PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMENT_DESCRIPTION, 'Comment description should end with period \'.\'', FileTable, Result[1])
+
+def CheckFuncHeaderDoxygenComments(FullFileName):
+    ErrorMsgList = []
+    
+    FileID = GetTableID(FullFileName, ErrorMsgList)
+    if FileID < 0:
+        return ErrorMsgList
+    
+    Db = GetDB()
+    FileTable = 'Identifier' + str(FileID)
     SqlStatement = """ select Value, StartLine, EndLine, ID
                        from %s
                        where Model = %d
@@ -264,7 +379,7 @@ def CheckFuncHeaderDoxygenComments(FullFileName):
         for Result in ResultSet:
             CommentSet.append(Result)
     except:
-        print 'Unrecognized chars in comment'
+        print 'Unrecognized chars in comment of file %s', FullFileName
     
     # Func Decl check
     SqlStatement = """ select Modifier, Name, StartLine, ID
@@ -292,7 +407,7 @@ def CheckFuncHeaderDoxygenComments(FullFileName):
         for Result in ResultSet:
             CommentSet.append(Result)
     except:
-        print 'Unrecognized chars in comment'
+        print 'Unrecognized chars in comment of file %s', FullFileName
     
     SqlStatement = """ select Modifier, Header, StartLine, ID
                        from Function
@@ -323,7 +438,9 @@ def GetDoxygenStrFromComment(Str):
         while i < len(ParamTagList):
             DoxygenStrList.append('@param' + ParamTagList[i])
             i += 1
-        
+    
+    Str = ParamTagList[0]
+            
     RetvalTagList = ParamTagList[-1].split('@retval')
     if len(RetvalTagList) > 1:
         if len(ParamTagList) > 1:
@@ -356,7 +473,10 @@ def CheckFunctionHeaderConsistentWithDoxygenComment(FuncModifier, FuncHeader, Fu
     
     ParamList = GetParamList(FuncHeader) 
     CheckGeneralDoxygenCommentLayout(CommentStr, CommentStartLine, ErrorMsgList, CommentId, TableName)
-    DoxygenStrList = GetDoxygenStrFromComment(CommentStr)
+    DescriptionStr = CommentStr
+    DoxygenStrList = GetDoxygenStrFromComment(DescriptionStr)
+    if DescriptionStr.find('.') == -1:
+        PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMENT_DESCRIPTION, 'Comment description should end with period \'.\'', TableName, CommentId)
     DoxygenTagNumber = len(DoxygenStrList)
     ParamNumber = len(ParamList)
     Index = 0

@@ -49,7 +49,17 @@ class Check(object):
     #
     def DoxygenCheckFileHeader(self):
         if EccGlobalData.gConfig.DoxygenCheckFileHeader == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1':
-            pass
+            EdkLogger.quiet("Checking Doxygen file header ...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.h', '.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        MsgList = c.CheckFileHeaderDoxygenComments(FullName)
     
     #
     # Check whether the function headers are followed Doxygen special documentation blocks in section 2.3.5
@@ -69,7 +79,7 @@ class Check(object):
                         FullName = os.path.join(Dirpath, F)
                         MsgList = c.CheckFuncHeaderDoxygenComments(FullName)
 #                        for Msg in MsgList:
-#                            print Msg
+#                            print Msg                
                             
     #
     # Check whether the first line of text in a comment block is a brief description of the element being documented. 
@@ -84,14 +94,34 @@ class Check(object):
     #
     def DoxygenCheckCommentFormat(self):
         if EccGlobalData.gConfig.DoxygenCheckCommentFormat == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1':
-            pass
+            EdkLogger.quiet("Checking Doxygen comment ///< ...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.h', '.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        MsgList = c.CheckDoxygenTripleForwardSlash(FullName)
         
     #
     # Check whether only Doxygen commands allowed to mark the code are @bug and @todo.
     #
     def DoxygenCheckCommand(self):
         if EccGlobalData.gConfig.DoxygenCheckCommand == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1':
-            pass
+            EdkLogger.quiet("Checking Doxygen command ...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.h', '.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        MsgList = c.CheckDoxygenCommand(FullName)
     
     #
     # Meta-Data File Processing Checking
