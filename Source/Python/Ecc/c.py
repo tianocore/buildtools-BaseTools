@@ -79,8 +79,14 @@ def GetIdentifierList():
             IdVar = DataClass.IdentifierClass(-1, var.Modifier, '', var.Declarator, '', DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION, -1, -1, var.StartPos[0],var.StartPos[1],var.EndPos[0],var.EndPos[1])
             IdList.append(IdVar)
             continue
-        for decl in var.Declarator.split(','):
-            DeclList = decl.split('=')
+        
+        if var.Declarator.find('{') == -1:      
+            for decl in var.Declarator.split(','):
+                DeclList = decl.split('=')
+                IdVar = DataClass.IdentifierClass(-1, var.Modifier, '', DeclList[0].strip(), (len(DeclList) > 1 and [DeclList[1]]or [''])[0], DataClass.MODEL_IDENTIFIER_VARIABLE, -1, -1, var.StartPos[0],var.StartPos[1],var.EndPos[0],var.EndPos[1])
+                IdList.append(IdVar)
+        else:
+            DeclList = var.Declarator.split('=')
             IdVar = DataClass.IdentifierClass(-1, var.Modifier, '', DeclList[0].strip(), (len(DeclList) > 1 and [DeclList[1]]or [''])[0], DataClass.MODEL_IDENTIFIER_VARIABLE, -1, -1, var.StartPos[0],var.StartPos[1],var.EndPos[0],var.EndPos[1])
             IdList.append(IdVar)
             
@@ -251,6 +257,72 @@ def GetTableID(FullFileName, ErrorMsgList):
         ErrorMsgList.append('NO file ID found in DB for file %s' % FullFileName)
         return -1
     return FileID
+
+def CheckHeaderFileData(FullFileName):
+    ErrorMsgList = []
+    
+    FileID = GetTableID(FullFileName, ErrorMsgList)
+    if FileID < 0:
+        return ErrorMsgList
+    
+    Db = GetDB()
+    FileTable = 'Identifier' + str(FileID)
+    SqlStatement = """ select ID, Modifier
+                       from %s
+                       where Model = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_VARIABLE)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    for Result in ResultSet:
+        if not Result[1].startswith('extern'):
+            PrintErrorMsg(ERROR_INCLUDE_FILE_CHECK_DATA, 'Variable definition appears in header file', FileTable, Result[0])
+        
+    SqlStatement = """ select ID
+                       from Function
+                       where BelongsToFile = %d
+                   """ % FileID
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    for Result in ResultSet:
+        PrintErrorMsg(ERROR_INCLUDE_FILE_CHECK_DATA, 'Function definition appears in header file', 'Function', Result[0])
+
+    return ErrorMsgList
+
+def CheckHeaderFileIfndef(FullFileName):
+    ErrorMsgList = []
+    
+    FileID = GetTableID(FullFileName, ErrorMsgList)
+    if FileID < 0:
+        return ErrorMsgList
+    
+    Db = GetDB()
+    FileTable = 'Identifier' + str(FileID)
+    SqlStatement = """ select Value, StartLine
+                       from %s
+                       where Model = %d order by StartLine
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_MACRO_IFNDEF)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    if len(ResultSet) == 0:
+        PrintErrorMsg(ERROR_INCLUDE_FILE_CHECK_IFNDEF_STATEMENT_1, '', 'File', FileID)
+        return ErrorMsgList
+    for Result in ResultSet:
+        SqlStatement = """ select Value, EndLine
+                       from %s
+                       where EndLine < %d
+                   """ % (FileTable, Result[1])
+        ResultSet = Db.TblFile.Exec(SqlStatement)
+        for Result in ResultSet:
+            if not Result[0].startswith('/*') and not Result[0].startswith('//'):
+                PrintErrorMsg(ERROR_INCLUDE_FILE_CHECK_IFNDEF_STATEMENT_2, '', 'File', FileID)
+        break
+    
+    SqlStatement = """ select Value
+                       from %s
+                       where StartLine > (select max(EndLine) from %s where Model = %d)
+                   """ % (FileTable, FileTable, DataClass.MODEL_IDENTIFIER_MACRO_ENDIF)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    for Result in ResultSet:
+        if not Result[0].startswith('/*') and not Result[0].startswith('//'):
+            PrintErrorMsg(ERROR_INCLUDE_FILE_CHECK_IFNDEF_STATEMENT_3, '', 'File', FileID)
+    return ErrorMsgList
 
 def CheckDoxygenCommand(FullFileName):
     ErrorMsgList = []

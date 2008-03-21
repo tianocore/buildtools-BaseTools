@@ -33,7 +33,49 @@ class Check(object):
     def Check(self):
         self.MetaDataFileCheck()
         self.DoxygenCheck()
+        self.IncludeFileCheck()
     
+    #
+    # Include file checking
+    #
+    def IncludeFileCheck(self):
+        self.IncludeFileCheckIfndef()
+        self.IncludeFileCheckData()
+    
+    #
+    # Check whether all include file contents is guarded by a #ifndef statement.
+    #
+    def IncludeFileCheckIfndef(self):
+        if EccGlobalData.gConfig.IncludeFileCheckIfndefStatement == '1' or EccGlobalData.gConfig.IncludeFileCheckAll == '1':
+            EdkLogger.quiet("Checking header file ifndef ...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.h'):
+                        FullName = os.path.join(Dirpath, F)
+                        MsgList = c.CheckHeaderFileIfndef(FullName)
+    
+    #
+    # Check whether include files NOT contain code or define data variables
+    #
+    def IncludeFileCheckData(self):
+        if EccGlobalData.gConfig.IncludeFileCheckData == '1' or EccGlobalData.gConfig.IncludeFileCheckAll == '1':
+            EdkLogger.quiet("Checking header file data ...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.h'):
+                        FullName = os.path.join(Dirpath, F)
+                        MsgList = c.CheckHeaderFileData(FullName)
+        
     #
     # Doxygen document checking
     #

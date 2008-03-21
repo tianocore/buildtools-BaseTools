@@ -383,6 +383,15 @@ class CodeFragmentCollector:
                 InComment = True
             else:
                 self.__GetOneChar()
+        
+        EndLinePos = (self.CurrentLineNumber, self.CurrentOffsetWithinLine)
+                
+        if InComment and DoubleSlashComment:
+            CommentObj.EndPos = EndLinePos
+            FileProfile.CommentList.append(CommentObj)
+        if InComment and HashComment and not PPExtend:
+            PPDirectiveObj.EndPos = EndLinePos
+            FileProfile.PPDirectiveList.append(PPDirectiveObj)
 
         self.Rewind()
 
@@ -497,6 +506,14 @@ class CodeFragmentCollector:
             else:
                 self.__GetOneChar()
 
+        EndLinePos = (self.CurrentLineNumber, self.CurrentOffsetWithinLine)
+                
+        if InComment and DoubleSlashComment:
+            CommentObj.EndPos = EndLinePos
+            FileProfile.CommentList.append(CommentObj)
+        if InComment and HashComment and not PPExtend:
+            PPDirectiveObj.EndPos = EndLinePos
+            FileProfile.PPDirectiveList.append(PPDirectiveObj)
         self.Rewind()
 
     ## ParseFile() method
