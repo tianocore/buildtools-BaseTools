@@ -18,6 +18,7 @@ import os, time, glob
 import Common.EdkLogger as EdkLogger
 import Database
 import EccGlobalData
+from MetaDataParser import *
 from optparse import OptionParser
 from Configuration import Configuration
 from Check import Check
@@ -66,7 +67,6 @@ class Ecc(object):
         # Build ECC database
         #
         self.BuildDatabase()
-
         
         #
         # Start to check
@@ -104,6 +104,8 @@ class Ecc(object):
             c.CollectSourceCodeDataIntoDB(EccGlobalData.gTarget)
             EdkLogger.quiet("Building database for source code done!")
             self.BuildMetaDataFileDatabase()
+        
+        EccGlobalData.gIdentifierTableList = GetTableList((MODEL_FILE_C, MODEL_FILE_H), 'Identifier', EccGlobalData.gDb)
     
     ## BuildMetaDataFileDatabase
     #

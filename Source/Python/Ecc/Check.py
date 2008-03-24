@@ -34,6 +34,7 @@ class Check(object):
         self.MetaDataFileCheck()
         self.DoxygenCheck()
         self.IncludeFileCheck()
+        self.NamingConventionCheck()
     
     #
     # Include file checking
@@ -380,6 +381,103 @@ class Check(object):
         RecordSet = Table.Exec(SqlCommand)
         for Record in RecordSet:
             EccGlobalData.gDb.TblReport.Insert(ErrorID, OtherMsg = "The %s value '%s' is used more than one time" % (Name.upper(), Record[1]), BelongsToTable = Table.Table, BelongsToItem = Record[0])
+
+    #
+    # Naming Convention Check
+    #
+    def NamingConventionCheck(self):
+        self.NamingConventionCheckDefineStatement()
+        self.NamingConventionCheckTypedefStatement()
+        self.NamingConventionCheckIfndefStatement()
+        self.NamingConventionCheckPathName()
+        self.NamingConventionCheckVariableName()
+        self.NamingConventionCheckFunctionName()
+        self.NamingConventionCheckSingleCharacterVariable()
+        
+    #
+    # Check whether only capital letters are used for #define declarations
+    #
+    def NamingConventionCheckDefineStatement(self):
+        pass
+    
+    #
+    # Check whether only capital letters are used for typedef declarations
+    #
+    def NamingConventionCheckTypedefStatement(self):
+        pass
+    
+    #
+    # Check whether the #ifndef at the start of an include file uses both prefix and postfix underscore characters, '_'.
+    #
+    def NamingConventionCheckIfndefStatement(self):
+        pass
+    
+    #
+    # Rule for path name, variable name and function name
+    # 1. First character should be upper case
+    # 2. Existing lower case in a word
+    # 3. No space existence
+    # Check whether the path name followed the rule
+    #
+    def NamingConventionCheckPathName(self):
+        if EccGlobalData.gConfig.NamingConventionCheckPathName == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1':
+            EdkLogger.quiet("Checking naming covention of file path name ...")
+            Pattern = re.compile(r'^[A-Z]+\S*[a-z]\S*$')
+            SqlCommand = """select ID, Name from File"""
+            RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
+            for Record in RecordSet:
+                if not Pattern.match(Record[1]):
+                    EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_PATH_NAME, OtherMsg = "The file path '%s' does not follow the rules" % (Record[1]), BelongsToTable = 'File', BelongsToItem = Record[0])
+    
+    #
+    # Rule for path name, variable name and function name
+    # 1. First character should be upper case
+    # 2. Existing lower case in a word
+    # 3. No space existence
+    # 4. Global variable name must start with a 'g'
+    # Check whether the variable name followed the rule
+    #
+    def NamingConventionCheckVariableName(self):
+        if EccGlobalData.gConfig.NamingConventionCheckVariableName == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1':
+            EdkLogger.quiet("Checking naming covention of variable name ...")
+            Pattern = re.compile(r'^[A-Zgm]+\S*[a-z]\S*$')
+            for IdentifierTable in EccGlobalData.gIdentifierTableList:
+                SqlCommand = """select ID, Name from %s where Model = %s""" %(IdentifierTable, MODEL_IDENTIFIER_VARIABLE)
+                RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
+                for Record in RecordSet:
+                    if not Pattern.match(Record[1]):
+                        EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, OtherMsg = "The variable name '%s' does not follow the rules" % (Record[1]), BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
+
+
+    #
+    # Rule for path name, variable name and function name
+    # 1. First character should be upper case
+    # 2. Existing lower case in a word
+    # 3. No space existence
+    # Check whether the function name followed the rule
+    #
+    def NamingConventionCheckFunctionName(self):
+        if EccGlobalData.gConfig.NamingConventionCheckFunctionName == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1':
+            EdkLogger.quiet("Checking naming covention of function name ...")
+            Pattern = re.compile(r'^[A-Z]+\S*[a-z]\S*$')
+            SqlCommand = """select ID, Name from Function"""
+            RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
+            for Record in RecordSet:
+                if not Pattern.match(Record[1]):
+                    EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_FUNCTION_NAME, OtherMsg = "The function name '%s' does not follow the rules" % (Record[1]), BelongsToTable = 'Function', BelongsToItem = Record[0])
+
+    #
+    # Check whether NO use short variable name with single character
+    #
+    def NamingConventionCheckSingleCharacterVariable(self):
+        if EccGlobalData.gConfig.NamingConventionCheckSingleCharacterVariable == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1':
+            EdkLogger.quiet("Checking naming covention of single character variable name ...")
+            for IdentifierTable in EccGlobalData.gIdentifierTableList:
+                SqlCommand = """select ID, Name from %s where Model = %s""" %(IdentifierTable, MODEL_IDENTIFIER_VARIABLE)
+                RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
+                for Record in RecordSet:
+                    if len(Record[1]) == 1:
+                        EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_SINGLE_CHARACTER_VARIABLE, OtherMsg = "The variable name '%s' does not follow the rules" % (Record[1]), BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
 
 ##
 #

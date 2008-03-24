@@ -20,3 +20,4 @@ gWorkspace = ''
 gTarget = ''
 gConfig = None
 gDb = None
+gIdentifierTableList = []
