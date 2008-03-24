@@ -15,7 +15,7 @@ def GetIgnoredDirListPattern():
     return p
 
 def GetFuncDeclPattern():
-    p = re.compile(r'[^=]*\(.*\).*', re.DOTALL)
+    p = re.compile(r'[_\w]*\s*\(.*\).*', re.DOTALL)
     return p
 
 def GetDB():
@@ -257,6 +257,483 @@ def GetTableID(FullFileName, ErrorMsgList):
         ErrorMsgList.append('NO file ID found in DB for file %s' % FullFileName)
         return -1
     return FileID
+
+def GetIncludeFileList(FullFileName):
+    ErrorMsgList = []
+    
+    FileID = GetTableID(FullFileName, ErrorMsgList)
+    if FileID < 0:
+        return []
+    
+    Db = GetDB()
+    FileTable = 'Identifier' + str(FileID)
+    SqlStatement = """ select Value
+                       from %s
+                       where Model = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_INCLUDE)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    return ResultSet
+
+def GetFullPathOfIncludeFile(Str):
+    pass
+
+def GetAllIncludeFiles(FullFileName):
+
+    IncludeFileQueue = []
+    for IncludeFile in GetIncludeFileList(FullFileName):
+        FullPath = GetFullPathOfIncludeFile(IncludeFile[0])
+        IncludeFileQueue.append(FullPath)
+        
+    i = 0
+    while i < len(IncludeFileQueue):
+        for IncludeFile in GetIncludeFileList(IncludeFileQueue[i]):
+            FullPath = GetFullPathOfIncludeFile(IncludeFile[0])
+            if FullPath not in IncludeFileQueue:
+                IncludeFileQueue.insert(i + 1, FullPath)
+        i += 1
+    return IncludeFileQueue
+
+def GetPredicateListFromPredicateExpStr(PES):
+
+    PredicateList = []
+    i = 0
+    PredicateBegin = 0
+    #PredicateEnd = 0
+    LogicOpPos = 0
+    while i < len(PES) - 1:
+        if (PES[i].isalpha() or PES[i] == '_') and LogicOpPos >= PredicateBegin:
+            PredicateBegin = i
+        if (PES[i] == '&' and PES[i+1] == '&') or (PES[i] == '|' and PES[i+1] == '|'):
+            LogicOpPos = i
+            PredicateList.append(PES[PredicateBegin:i].strip())
+        i += 1
+    
+    if PredicateBegin > LogicOpPos:
+        PredicateList.append(PES[PredicateBegin:len(PES)].strip())
+    return PredicateList
+    
+def GetPredicateVariable(Lvalue):
+    i = 0
+    VarStart = -1
+    VarEnd = -1
+    while i < len(Lvalue):
+        if Lvalue[i].isalnum() or Lvalue[i] == '_':
+            if VarStart == -1:
+                VarStart = i
+            VarEnd = i
+            i += 1
+        elif VarEnd != -1:
+            break
+        else:
+            i += 1
+    
+    if VarStart != -1:
+        return Lvalue[VarStart:VarEnd+1]
+    
+    return None    
+
+def SplitPredicateByOp(Str, Op):
+
+    Name = Str.strip()
+    Value = None
+    
+    PredPartList = Str.split(Op)
+    if len(PredPartList) > 1:
+        Name = PredPartList[0].strip()
+        Value = PredPartList[1].strip()
+        return [Name, Value]
+    return [Name]
+
+def SplitPredicateStr(Str):
+    PredPartList = SplitPredicateByOp(Str, '==')
+    if len(PredPartList) > 1:
+        return [PredPartList, '==']
+    
+    PredPartList = SplitPredicateByOp(Str, '!=')
+    if len(PredPartList) > 1:
+        return [PredPartList, '!=']
+        
+    PredPartList = SplitPredicateByOp(Str, '>')
+    if len(PredPartList) > 1:
+        return [PredPartList, '>']
+        
+    PredPartList = SplitPredicateByOp(Str, '<')
+    if len(PredPartList) > 1:
+        return [PredPartList, '<']
+        
+    PredPartList = SplitPredicateByOp(Str, '>=')
+    if len(PredPartList) > 1:
+        return [PredPartList, '>=']
+        
+    PredPartList = SplitPredicateByOp(Str, '<=')
+    if len(PredPartList) > 1:
+        return [PredPartList, '<=']
+        
+    return [[Str, None], None]
+
+def GetFuncContainsPE(ExpLine, ResultSet):
+    for Result in ResultSet:
+        if Result[0] < ExpLine and Result[1] > ExpLine:
+            return Result
+    return None
+
+def PatternInModifier(Modifier, SubStr):
+    PartList = Modifier.split()
+    for Part in PartList:
+        if Part == SubStr:
+            return True
+    return False
+
+def CheckDeclArgModifier(FullFileName):
+    ErrorMsgList = []
+    
+    FileID = GetTableID(FullFileName, ErrorMsgList)
+    if FileID < 0:
+        return ErrorMsgList
+    
+    Db = GetDB()
+    FileTable = 'Identifier' + str(FileID)
+    SqlStatement = """ select Modifier, Name, ID
+                       from %s
+                       where Model = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_VARIABLE)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    ModifierTuple = ('IN', 'OUT', 'OPTIONAL', 'UNALIGNED')
+    MAX_MODIFIER_LENGTH = 100
+    for Result in ResultSet:
+        for Modifier in ModifierTuple:
+            if PatternInModifier(Result[0], Modifier) and len(Result[0]) < MAX_MODIFIER_LENGTH:
+                PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_IN_OUT_MODIFIER, 'Variable Modifier %s' % Result[0], FileTable, Result[2])
+                break
+    
+    SqlStatement = """ select Modifier, Name, ID
+                       from %s
+                       where Model = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    for Result in ResultSet:
+        for Modifier in ModifierTuple:
+            if PatternInModifier(Result[0], Modifier):
+                PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_IN_OUT_MODIFIER, 'Return Type Modifier %s' % Result[0], FileTable, Result[2])
+                break
+                    
+    SqlStatement = """ select Modifier, Header, ID
+                       from Function
+                       where BelongsToFile = %d
+                   """ % (FileID)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    for Result in ResultSet:
+        for Modifier in ModifierTuple:
+            if PatternInModifier(Result[0], Modifier):
+                PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_IN_OUT_MODIFIER, 'Return Type Modifier %s' % Result[0], FileTable, Result[2])
+                break
+
+def CheckDeclNoUseCType(FullFileName):
+    ErrorMsgList = []
+    
+    FileID = GetTableID(FullFileName, ErrorMsgList)
+    if FileID < 0:
+        return ErrorMsgList
+    
+    Db = GetDB()
+    FileTable = 'Identifier' + str(FileID)
+    SqlStatement = """ select Modifier, Name, ID
+                       from %s
+                       where Model = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_VARIABLE)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    CTypeTuple = ('int', 'unsigned', 'char', 'void', 'static', 'long')
+    for Result in ResultSet:
+        for Type in CTypeTuple:
+            if PatternInModifier(Result[0], Type):
+                PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE, 'Variable type %s' % Type, FileTable, Result[2])
+                break
+    
+    SqlStatement = """ select Modifier, Name, ID
+                       from %s
+                       where Model = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    for Result in ResultSet:
+        ParamList = GetParamList(Result[1])
+        for Type in CTypeTuple:
+            if PatternInModifier(Result[0], Type):
+                PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE, 'Return type %s' % Result[0], FileTable, Result[2])
+            
+            for Param in ParamList:
+                if PatternInModifier(Param.Modifier, Type):
+                    PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE, 'Parameter %s' % Param.Name, FileTable, Result[2])
+                    
+    SqlStatement = """ select Modifier, Header, ID
+                       from Function
+                       where BelongsToFile = %d
+                   """ % (FileID)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    for Result in ResultSet:
+        ParamList = GetParamList(Result[1])
+        for Type in CTypeTuple:
+            if PatternInModifier(Result[0], Type):
+                PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE, 'Return type %s' % Result[0], FileTable, Result[2])
+            
+            for Param in ParamList:
+                if PatternInModifier(Param.Modifier, Type):
+                    PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE, 'Parameter %s' % Param.Name, FileTable, Result[2])
+            
+
+def CheckPointerNullComparison(FullFileName):
+    ErrorMsgList = []
+    
+    FileID = GetTableID(FullFileName, ErrorMsgList)
+    if FileID < 0:
+        return ErrorMsgList
+    
+    Db = GetDB()
+    FileTable = 'Identifier' + str(FileID)
+    SqlStatement = """ select Value, StartLine, ID
+                       from %s
+                       where Model = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_PREDICATE_EXPRESSION)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    if len(ResultSet) == 0:
+        return
+    PSL = []
+    for Result in ResultSet:
+        PSL.append([Result[0], Result[1], Result[2]])
+    
+    SqlStatement = """ select BodyStartLine, EndLine, Header, Modifier, ID
+                       from Function
+                       where BelongsToFile = %d
+                   """ % (FileID)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    FL = []
+    for Result in ResultSet:
+        FL.append([Result[0], Result[1], Result[2], Result[3], Result[4]])
+    
+    for Str in PSL:
+        FuncRecord = GetFuncContainsPE(Str[1], FL)
+        if FuncRecord == None:
+            continue
+        
+        for Exp in GetPredicateListFromPredicateExpStr(Str[0]):
+            PredInfo = SplitPredicateStr(Exp)
+            if PredInfo[1] == None:
+                PredVar = GetPredicateVariable(PredInfo[0][0])
+                # No variable found, maybe value first? like (0 == VarName)
+                if PredVar == None:
+                    continue
+                # in the form of function call
+                if len(PredInfo[0][0]) - PredInfo[0][0].find(PredVar) > len(PredVar):
+                    RemainingPos = PredInfo[0][0].find(PredVar) + len(PredVar)
+                    if PredInfo[0][0][RemainingPos:].strip().startswith('('):
+                        continue
+                # really variable, search local variable first
+                SqlStatement = """ select Modifier, ID
+                       from %s
+                       where Model = %d and Name = \'%s\' and BelongsToFunction = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_VARIABLE, PredVar, FuncRecord[4])
+                ResultSet = Db.TblFile.Exec(SqlStatement)
+                VarFound = False
+                for Result in ResultSet:
+                    if Result[0].find('*') != -1:
+                        PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_COMPARISON_NULL_TYPE, 'Variable Name: %s' % PredVar, FileTable, Str[2])
+                    VarFound = True
+                if VarFound:
+                    continue
+                
+                # search function parameters second
+                ParamList = GetParamList(FuncRecord[2])
+                for Param in ParamList:
+                    if Param.Name.strip() == PredVar:
+                        if Param.Modifier.find('*') != -1:
+                            PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_COMPARISON_NULL_TYPE, 'Variable Name: %s' % PredVar, FileTable, Str[2])
+                        VarFound = True
+                if VarFound:
+                    continue            
+                # search global variable next
+                SqlStatement = """ select Modifier, ID
+                       from %s
+                       where Model = %d and Name = \'%s\' and BelongsToFunction = -1
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_VARIABLE, PredVar)
+                ResultSet = Db.TblFile.Exec(SqlStatement)
+
+                for Result in ResultSet:
+                    if Result[0].find('*') != -1:
+                        PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_COMPARISON_NULL_TYPE, 'Variable Name: %s' % PredVar, FileTable, Str[2])
+                    VarFound = True
+                if VarFound:
+                    continue
+                # search variable in include files
+
+
+def CheckNonBooleanValueComparison(FullFileName):
+    ErrorMsgList = []
+    
+    FileID = GetTableID(FullFileName, ErrorMsgList)
+    if FileID < 0:
+        return ErrorMsgList
+    
+    Db = GetDB()
+    FileTable = 'Identifier' + str(FileID)
+    SqlStatement = """ select Value, StartLine, ID
+                       from %s
+                       where Model = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_PREDICATE_EXPRESSION)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    if len(ResultSet) == 0:
+        return
+    PSL = []
+    for Result in ResultSet:
+        PSL.append([Result[0], Result[1], Result[2]])
+    
+    SqlStatement = """ select BodyStartLine, EndLine, Header, Modifier, ID
+                       from Function
+                       where BelongsToFile = %d
+                   """ % (FileID)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    FL = []
+    for Result in ResultSet:
+        FL.append([Result[0], Result[1], Result[2], Result[3], Result[4]])
+    
+    for Str in PSL:
+        FuncRecord = GetFuncContainsPE(Str[1], FL)
+        if FuncRecord == None:
+            continue
+        
+        for Exp in GetPredicateListFromPredicateExpStr(Str[0]):
+            PredInfo = SplitPredicateStr(Exp)
+            if PredInfo[1] == None:
+                PredVar = GetPredicateVariable(PredInfo[0][0])
+                # No variable found, maybe value first? like (0 == VarName)
+                if PredVar == None:
+                    continue
+                # in the form of function call
+                if len(PredInfo[0][0]) - PredInfo[0][0].find(PredVar) > len(PredVar):
+                    RemainingPos = PredInfo[0][0].find(PredVar) + len(PredVar)
+                    if PredInfo[0][0][RemainingPos:].strip().startswith('('):
+                        continue
+                # really variable, search local variable first
+                SqlStatement = """ select Modifier, ID
+                       from %s
+                       where Model = %d and Name = \'%s\' and BelongsToFunction = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_VARIABLE, PredVar, FuncRecord[4])
+                ResultSet = Db.TblFile.Exec(SqlStatement)
+                VarFound = False
+                for Result in ResultSet:
+                    if not PatternInModifier(Result[0], 'BOOLEAN'):
+                        PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_NO_BOOLEAN_OPERATOR, 'Variable Name: %s' % PredVar, FileTable, Str[2])
+                    VarFound = True
+                if VarFound:
+                    continue
+                
+                # search function parameters second
+                ParamList = GetParamList(FuncRecord[2])
+                for Param in ParamList:
+                    if Param.Name.strip() == PredVar:
+                        if not PatternInModifier(Param.Modifier, 'BOOLEAN'):
+                            PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_NO_BOOLEAN_OPERATOR, 'Variable Name: %s' % PredVar, FileTable, Str[2])
+                        VarFound = True
+                if VarFound:
+                    continue            
+                # search global variable next
+                SqlStatement = """ select Modifier, ID
+                       from %s
+                       where Model = %d and Name = \'%s\' and BelongsToFunction = -1
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_VARIABLE, PredVar)
+                ResultSet = Db.TblFile.Exec(SqlStatement)
+
+                for Result in ResultSet:
+                    if not PatternInModifier(Result[0], 'BOOLEAN'):
+                        PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_NO_BOOLEAN_OPERATOR, 'Variable Name: %s' % PredVar, FileTable, Str[2])
+                    VarFound = True
+                if VarFound:
+                    continue
+                # search variable in include files
+
+
+def CheckBooleanValueComparison(FullFileName):
+    ErrorMsgList = []
+    
+    FileID = GetTableID(FullFileName, ErrorMsgList)
+    if FileID < 0:
+        return ErrorMsgList
+    
+    Db = GetDB()
+    FileTable = 'Identifier' + str(FileID)
+    SqlStatement = """ select Value, StartLine, ID
+                       from %s
+                       where Model = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_PREDICATE_EXPRESSION)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    if len(ResultSet) == 0:
+        return
+    PSL = []
+    for Result in ResultSet:
+        PSL.append([Result[0], Result[1], Result[2]])
+    
+    SqlStatement = """ select BodyStartLine, EndLine, Header, Modifier, ID
+                       from Function
+                       where BelongsToFile = %d
+                   """ % (FileID)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    FL = []
+    for Result in ResultSet:
+        FL.append([Result[0], Result[1], Result[2], Result[3], Result[4]])
+    
+    for Str in PSL:
+        FuncRecord = GetFuncContainsPE(Str[1], FL)
+        if FuncRecord == None:
+            continue
+        
+        for Exp in GetPredicateListFromPredicateExpStr(Str[0]):
+            PredInfo = SplitPredicateStr(Exp)
+            if PredInfo[1] in ('==', '!=') and PredInfo[0][1] in ('TRUE', 'FALSE'):
+                PredVar = GetPredicateVariable(PredInfo[0][0])
+                # No variable found, maybe value first? like (0 == VarName)
+                if PredVar == None:
+                    continue
+                # in the form of function call
+                if len(PredInfo[0][0]) - PredInfo[0][0].find(PredVar) > len(PredVar):
+                    RemainingPos = PredInfo[0][0].find(PredVar) + len(PredVar)
+                    if PredInfo[0][0][RemainingPos:].strip().startswith('('):
+                        continue
+                # really variable, search local variable first
+                SqlStatement = """ select Modifier, ID
+                       from %s
+                       where Model = %d and Name = \'%s\' and BelongsToFunction = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_VARIABLE, PredVar, FuncRecord[4])
+                ResultSet = Db.TblFile.Exec(SqlStatement)
+                VarFound = False
+                for Result in ResultSet:
+                    if PatternInModifier(Result[0], 'BOOLEAN'):
+                        PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_BOOLEAN_VALUE, 'Variable Name: %s' % PredVar, FileTable, Str[2])
+                    VarFound = True
+                if VarFound:
+                    continue
+                
+                # search function parameters second
+                ParamList = GetParamList(FuncRecord[2])
+                for Param in ParamList:
+                    if Param.Name.strip() == PredVar:
+                        if PatternInModifier(Param.Modifier, 'BOOLEAN'):
+                            PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_BOOLEAN_VALUE, 'Variable Name: %s' % PredVar, FileTable, Str[2])
+                        VarFound = True
+                if VarFound:
+                    continue            
+                # search global variable next
+                SqlStatement = """ select Modifier, ID
+                       from %s
+                       where Model = %d and Name = \'%s\' and BelongsToFunction = -1
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_VARIABLE, PredVar)
+                ResultSet = Db.TblFile.Exec(SqlStatement)
+
+                for Result in ResultSet:
+                    if PatternInModifier(Result[0], 'BOOLEAN'):
+                        PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_BOOLEAN_VALUE, 'Variable Name: %s' % PredVar, FileTable, Str[2])
+                    VarFound = True
+                if VarFound:
+                    continue
+                # search variable in include files
+                
 
 def CheckHeaderFileData(FullFileName):
     ErrorMsgList = []

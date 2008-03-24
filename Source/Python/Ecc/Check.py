@@ -34,8 +34,121 @@ class Check(object):
         self.MetaDataFileCheck()
         self.DoxygenCheck()
         self.IncludeFileCheck()
-        self.NamingConventionCheck()
+        self.PredicateExpressionCheck()
+        self.DeclAndDataTypeCheck()
     
+    #
+    # Declarations and Data Types Checking
+    #
+    def DeclAndDataTypeCheck(self):
+        self.DeclCheckNoUseCType()
+        self.DeclCheckInOutModifier()
+        self.DeclCheckEFIAPIModifier()
+        self.DeclCheckEnumeratedType()
+        self.DeclCheckStructureDeclaration()
+        self.DeclCheckUnionType()
+    
+    
+    # Check whether no use of int, unsigned, char, void, static, long in any .c, .h or .asl files.
+    def DeclCheckNoUseCType(self):
+        if EccGlobalData.gConfig.DeclarationDataTypeCheckNoUseCType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1':
+            EdkLogger.quiet("Checking Declaration No use C type ...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.h', '.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        c.CheckDeclNoUseCType(FullName)
+    
+    # Check whether the modifiers IN, OUT, OPTIONAL, and UNALIGNED are used only to qualify arguments to a function and should not appear in a data type declaration
+    def DeclCheckInOutModifier(self):
+        if EccGlobalData.gConfig.DeclarationDataTypeCheckInOutModifier == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1':
+            EdkLogger.quiet("Checking Declaration argument modifier ...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.h', '.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        c.CheckDeclArgModifier(FullName)
+    
+    # Check whether the EFIAPI modifier should be used at the entry of drivers, events, and member functions of protocols
+    def DeclCheckEFIAPIModifier(self):
+        if EccGlobalData.gConfig.DeclarationDataTypeCheckEFIAPIModifier == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1':
+            pass
+    
+    # Check whether Enumerated Type has a 'typedef' and the name is capital
+    def DeclCheckEnumeratedType(self):
+        if EccGlobalData.gConfig.DeclarationDataTypeCheckEnumeratedType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1':
+            pass
+    
+    # Check whether Structure Type has a 'typedef' and the name is capital
+    def DeclCheckStructureDeclaration(self):
+        if EccGlobalData.gConfig.DeclarationDataTypeCheckStructureDeclaration == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1':
+            pass
+    
+    # Check whether Union Type has a 'typedef' and the name is capital
+    def DeclCheckUnionType(self):
+        if EccGlobalData.gConfig.DeclarationDataTypeCheckUnionType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1':
+            pass
+    
+    #
+    # Predicate Expression Checking
+    #
+    def PredicateExpressionCheck(self):
+        self.PredicateExpressionCheckBooleanValue()
+        self.PredicateExpressionCheckNonBooleanOperator()
+        self.PredicateExpressionCheckComparisonNullType()
+    
+    # Check whether Boolean values, variable type BOOLEAN not use explicit comparisons to TRUE or FALSE
+    def PredicateExpressionCheckBooleanValue(self):
+        if EccGlobalData.gConfig.PredicateExpressionCheckBooleanValue == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1':
+            EdkLogger.quiet("Checking predicate expression Boolean value ...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        c.CheckBooleanValueComparison(FullName)
+    # Check whether Non-Boolean comparisons use a compare operator (==, !=, >, < >=, <=). 
+    def PredicateExpressionCheckNonBooleanOperator(self):
+        if EccGlobalData.gConfig.PredicateExpressionCheckNonBooleanOperator == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1':
+            EdkLogger.quiet("Checking predicate expression Non-Boolean variable...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        c.CheckNonBooleanValueComparison(FullName)
+    # Check whether a comparison of any pointer to zero must be done via the NULL type
+    def PredicateExpressionCheckComparisonNullType(self):
+        if EccGlobalData.gConfig.PredicateExpressionCheckComparisonNullType == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1':
+            EdkLogger.quiet("Checking predicate expression NULL pointer ...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        c.CheckPointerNullComparison(FullName)
     #
     # Include file checking
     #
