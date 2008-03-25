@@ -36,6 +36,7 @@ class Check(object):
         self.IncludeFileCheck()
         self.PredicateExpressionCheck()
         self.DeclAndDataTypeCheck()
+        self.NamingConventionCheck()
     
     #
     # Declarations and Data Types Checking
@@ -511,19 +512,46 @@ class Check(object):
     # Check whether only capital letters are used for #define declarations
     #
     def NamingConventionCheckDefineStatement(self):
-        pass
+        if EccGlobalData.gConfig.NamingConventionCheckDefineStatement == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1':
+            EdkLogger.quiet("Checking naming covention of #define statement ...")
+            for IdentifierTable in EccGlobalData.gIdentifierTableList:
+                SqlCommand = """select ID, Value from %s where Model = %s""" %(IdentifierTable, MODEL_IDENTIFIER_MACRO_DEFINE)
+                RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
+                for Record in RecordSet:
+                    Name = Record[1].strip().split()[1]
+                    Name = Name[0:Name.find('(')]
+                    if Name.upper() != Name:
+                        EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_DEFINE_STATEMENT, OtherMsg = "The #define name '%s' does not follow the rules" % (Name), BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
     
     #
     # Check whether only capital letters are used for typedef declarations
     #
     def NamingConventionCheckTypedefStatement(self):
-        pass
+        if EccGlobalData.gConfig.NamingConventionCheckTypedefStatement == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1':
+            EdkLogger.quiet("Checking naming covention of #typedef statement ...")
+            for IdentifierTable in EccGlobalData.gIdentifierTableList:
+                SqlCommand = """select ID, Name from %s where Model = %s""" %(IdentifierTable, MODEL_IDENTIFIER_TYPEDEF)
+                RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
+                for Record in RecordSet:
+                    Name = Record[1].strip()
+                    if Name[0] == '(':
+                        Name = Name[1:Name.find(')')]
+                    if Name.upper() != Name:
+                        EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_TYPEDEF_STATEMENT, OtherMsg = "The #typedef name '%s' does not follow the rules" % (Name), BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
     
     #
     # Check whether the #ifndef at the start of an include file uses both prefix and postfix underscore characters, '_'.
     #
     def NamingConventionCheckIfndefStatement(self):
-        pass
+        if EccGlobalData.gConfig.NamingConventionCheckTypedefStatement == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1':
+            EdkLogger.quiet("Checking naming covention of #ifndef statement ...")
+            for IdentifierTable in EccGlobalData.gIdentifierTableList:
+                SqlCommand = """select ID, Value from %s where Model = %s""" %(IdentifierTable, MODEL_IDENTIFIER_MACRO_IFNDEF)
+                RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
+                for Record in RecordSet:
+                    Name = Record[1].replace('#ifndef', '').strip()
+                    if Name[0] != '_' or Name[-1] != '_':
+                        EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_IFNDEF_STATEMENT, OtherMsg = "The #ifndef name '%s' does not follow the rules" % (Name), BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
     
     #
     # Rule for path name, variable name and function name
@@ -561,7 +589,6 @@ class Check(object):
                     if not Pattern.match(Record[1]):
                         EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, OtherMsg = "The variable name '%s' does not follow the rules" % (Record[1]), BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
 
-
     #
     # Rule for path name, variable name and function name
     # 1. First character should be upper case
@@ -589,7 +616,8 @@ class Check(object):
                 SqlCommand = """select ID, Name from %s where Model = %s""" %(IdentifierTable, MODEL_IDENTIFIER_VARIABLE)
                 RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
                 for Record in RecordSet:
-                    if len(Record[1]) == 1:
+                    Variable = Record[1].replace('*', '')
+                    if len(Variable) == 1:
                         EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_SINGLE_CHARACTER_VARIABLE, OtherMsg = "The variable name '%s' does not follow the rules" % (Record[1]), BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
 
 ##
@@ -600,4 +628,3 @@ class Check(object):
 if __name__ == '__main__':
     Check = Check()
     Check.Check()
-
