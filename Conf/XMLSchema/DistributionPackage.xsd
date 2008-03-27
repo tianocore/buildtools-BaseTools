@@ -900,6 +900,42 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
     </xs:complexType>
   </xs:element>
 
+  <!-- The following attribute groups are used in various elements above. -->
+
+  <xs:attributeGroup name="RecommendedInf">
+    <xs:attribute name="RecommendedInf" type="xs:anyURI" use="optional"/>
+    <xs:attribute name="RecommendedInfGuid" type="RegistryFormatGuid" use="optional"/>
+    <xs:attribute name="RecommendedInfVer" type="xs:decimal" use="optional"/>
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="SupportedArchMod">
+    <xs:attribute name="SupArchList" type="ArchListType" use="optional"/>
+    <xs:attribute name="SupModList" type="ModListType" use="optional"/>
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="SurfaceAreaAttributes">
+    <xs:attribute name="RefName" type="xs:NCName" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This name can be used as the OutputFileBaseName for
+        Modules.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="Version" type="xs:decimal" use="required"/>
+    <xs:attribute name="Path" type="xs:anyURI" use="required"/>
+    <xs:attribute name="ReadOnly" type="xs:boolean" default="false" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If this is set, all content within this section should NOT
+          be modified.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="RePackage" type="xs:boolean" default="false" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If set, then the content can be repackaged into another
+          distribution package.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="Extracted" type="xs:anyURI" use="optional"/>
+  </xs:attributeGroup>
 
   <!-- The following data types are used to restrict content. -->
 
@@ -1130,42 +1166,5 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
       <xs:enumeration value="CONSUMES"/>
     </xs:restriction>
   </xs:simpleType>
-
-  <!-- The following attribute groups are used in various elements above. -->
-
-  <xs:attributeGroup name="RecommendedInf">
-    <xs:attribute name="RecommendedInf" type="xs:anyURI" use="optional"/>
-    <xs:attribute name="RecommendedInfGuid" type="RegistryFormatGuid" use="optional"/>
-    <xs:attribute name="RecommendedInfVer" type="xs:decimal" use="optional"/>
-  </xs:attributeGroup>
-
-  <xs:attributeGroup name="SupportedArchMod">
-    <xs:attribute name="SupArchList" type="ArchListType" use="optional"/>
-    <xs:attribute name="SupModList" type="ModListType" use="optional"/>
-  </xs:attributeGroup>
-
-  <xs:attributeGroup name="SurfaceAreaAttributes">
-    <xs:attribute name="RefName" type="xs:NCName" use="required">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">This name can be used as the OutputFileBaseName for
-        Modules.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="Version" type="xs:decimal" use="required"/>
-    <xs:attribute name="Path" type="xs:anyURI" use="required"/>
-    <xs:attribute name="ReadOnly" type="xs:boolean" default="false" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">If this is set, all content within this section should NOT
-          be modified.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="RePackage" type="xs:boolean" default="false" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">If set, then the content can be repackaged into another
-          distribution package.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="Extracted" type="xs:anyURI" use="optional"/>
-  </xs:attributeGroup>
 
 </xs:schema>
