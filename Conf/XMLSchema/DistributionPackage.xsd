@@ -1,0 +1,1140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Filename: DistributionPackage.xsd
+
+Copyright (c) 2008, Intel Corp.  All rights reserved.
+
+This program and the accompanying materials are licensed and made available 
+under the terms and conditions of the BSD License which may be found at 
+    http://opensource.org/licenses/bsd-license.php
+
+THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified"
+  targetNamespace="http://www.TianoCore.org/2008/Edk2.1"
+  xmlns="http://www.TianoCore.org/2008/Edk2.1">
+  <xs:element name="DistributionPackage">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"> This schema defines the EDK II Distribution Archive
+      description (PKG) file. It describes the content of: 1) Collection descriptions with
+      definitions and headers.  2) Modules in either source or binary format. (Note that
+      Binary format is for EFI Sections only' FFS files cannot be distributed using this
+      distribution format.) 3) The custom tools used to modify the binary images to create
+      UEFI/PI compliant images. 4) Finally, it can be used to distribute other 
+      miscellaneous content that is not specific to UEFI/PI images. </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="1" maxOccurs="1" ref="PkgHeader"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="CollectionSurfaceArea">
+          <xs:annotation>
+            <xs:documentation> The list of collection packages in this FAR. </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="ModuleSurfaceArea">
+          <xs:annotation>
+            <xs:documentation> The list of EDK II modules in this FAR. </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="Tools">
+          <xs:annotation>
+            <xs:documentation> The list of EDK II tools in this FAR. </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="Misc">
+          <xs:annotation>
+            <xs:documentation> The list of EDK II miscellaneous files in this FAR.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:annotation>
+    <xs:documentation xml:lang="en"> The following elements are references used
+    above.</xs:documentation>
+  </xs:annotation>
+  <xs:element name="PkgHeader">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"> This defines the EDK II Distribution Package Header.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="1" maxOccurs="1" name="Name">
+          <xs:annotation>
+            <xs:documentation>This is the User Interface Name for this Distribution
+            Archive</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:simpleContent>
+              <xs:extension base="xs:normalizedString">
+                <xs:attribute name="InstalledAs" type="xs:NCName" use="optional"/>
+              </xs:extension>
+            </xs:simpleContent>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="1" maxOccurs="1" name="GUID" type="RegistryFormatGuid"/>
+        <xs:element minOccurs="1" maxOccurs="1" name="Version" type="xs:decimal"/>
+        <xs:element minOccurs="1" maxOccurs="1" name="Vendor" type="xs:normalizedString"/>
+        <xs:element minOccurs="1" maxOccurs="1" name="Date" type="xs:dateTime"/>
+        <xs:element minOccurs="1" maxOccurs="1" name="Copyright" type="xs:string"/>
+        <xs:element minOccurs="1" maxOccurs="1" name="License" type="xs:string"/>
+        <xs:element minOccurs="1" maxOccurs="1" name="Abstract" type="xs:normalizedString"/>
+        <xs:element minOccurs="0" maxOccurs="1" name="Description" type="xs:string"/>
+        <xs:element minOccurs="1" maxOccurs="1" name="Signature">
+          <xs:complexType>
+            <xs:annotation>
+              <xs:documentation xml:lang="en">The FAR utilities will use this MD5 sum value of the
+                included ZIP file containing files and/or code.</xs:documentation>
+            </xs:annotation>
+            <xs:simpleContent>
+              <xs:extension base="xs:normalizedString">
+                <xs:attribute name="Type" type="SignType" use="required"/>
+              </xs:extension>
+            </xs:simpleContent>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="1" maxOccurs="1" name="XmlSpecification" type="xs:decimal">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">This version of the XML Schema is 2.1</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="RefName" type="xs:NCName" use="required">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">This is a Reference Name used to name this distribution
+            package file. It will be used to create PKG and manifest filenames in the Conf/PKG
+            directory. If InstalledAs attribute (to the Name element), then the InstalledAs value
+            will be used for creating the files.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="ReadOnly" type="xs:boolean" default="false" use="optional">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">If this is set, all content within this distribution
+            package should NOT be modified.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="RePackage" type="xs:boolean" default="false" use="optional">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">If set, then the content can be repackaged into another
+            distribution package.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="CollectionSurfaceArea">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="1" maxOccurs="1" name="Header">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="1" name="Name">
+                <xs:annotation>
+                  <xs:documentation xml:lang="en">This is the User Interface Name for this
+                    Distribution Archive</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:normalizedString">
+                      <xs:attribute name="InstalledAs" type="xs:NCName" use="optional"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="1" maxOccurs="1" name="GUID" type="RegistryFormatGuid"/>
+              <xs:element minOccurs="0" maxOccurs="1" name="Copyright" type="xs:string"/>
+              <xs:element minOccurs="0" maxOccurs="1" name="License" type="xs:string"/>
+              <xs:element minOccurs="1" maxOccurs="1" name="Abstract" type="xs:normalizedString"/>
+              <xs:element minOccurs="0" maxOccurs="1" name="Description" type="xs:string"/>
+              <xs:element minOccurs="0" maxOccurs="1" name="Signature">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:normalizedString">
+                      <xs:attribute name="Type" type="SignType" use="required"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="Lineage">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="Cloned">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:NCName">
+                      <xs:attribute name="HostGuid" type="RegistryFormatGuid" use="required"/>
+                      <xs:attribute name="HostVer" type="xs:decimal" use="required"/>
+                      <xs:attribute name="FarGuid" type="RegistryFormatGuid" use="optional"/>
+                      <xs:attribute name="FarVer" type="xs:decimal" use="optional"/>
+                      <xs:attribute name="Id" type="xs:positiveInteger" use="required"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="LibraryClassDeclarations">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="LibraryClass">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element minOccurs="1" maxOccurs="1" name="HeaderFile">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:anyURI">
+                            <xs:attribute name="Extracted" type="xs:anyURI" use="optional"/>
+                            <xs:attribute name="Signature" type="xs:normalizedString" use="optional"/>
+                            <xs:attribute name="Type" type="SignType" use="optional"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                  </xs:sequence>
+                  <xs:attribute name="Keyword" type="xs:NCName" use="required"/>
+                  <xs:attributeGroup ref="RecommendedInf"/>
+                  <xs:attributeGroup ref="SupportedArchMod"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="IndustryStdIncludes">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="IndustryStdHeader">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element minOccurs="1" maxOccurs="1" name="HeaderFile">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:anyURI">
+                            <xs:attribute name="Extracted" type="xs:anyURI" use="optional"/>
+
+                            <xs:attribute name="Signature" type="xs:normalizedString" use="optional"/>
+                            <xs:attribute name="Type" type="SignType" use="optional"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                  </xs:sequence>
+                  <xs:attributeGroup ref="SupportedArchMod"/>
+                </xs:complexType>
+              </xs:element>
+
+            </xs:sequence>
+
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="Components">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="Module" nillable="true">
+                <xs:complexType>
+                  <xs:attribute name="RefName" type="xs:NCName" use="required"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="CollectionHeaders">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="IncludePkgHeader">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:anyURI">
+                      <xs:attribute name="Extracted" type="xs:anyURI" use="optional"/>
+                      <xs:attribute name="Signature" type="xs:normalizedString" use="optional"/>
+                      <xs:attribute name="Type" type="SignType" use="optional"/>
+                      <xs:attributeGroup ref="SupportedArchMod"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="GuidDeclarations">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="0" maxOccurs="unbounded" name="Entry">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element minOccurs="1" maxOccurs="1" name="C_Name" type="xs:NCName"/>
+                    <xs:element minOccurs="1" maxOccurs="1" name="GuidValue" type="GuidCstruct"/>
+                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                  </xs:sequence>
+                  <xs:attribute name="GuidTypeList" type="GuidListType" use="optional"/>
+                  <xs:attributeGroup ref="SupportedArchMod"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="ProtocolDeclarations">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="Entry">
+                <xs:annotation>
+                  <xs:documentation xml:lang="en-us"> Individual Protocol
+                  Declarations</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element minOccurs="1" maxOccurs="1" name="C_Name" type="xs:NCName"/>
+                    <xs:element minOccurs="1" maxOccurs="1" name="GuidValue" type="GuidCstruct"/>
+                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                  </xs:sequence>
+                  <xs:attribute name="Notify" type="xs:boolean" default="false" use="optional"/>
+                  <xs:attributeGroup ref="SupportedArchMod"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="PpiDeclarations">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="Entry">
+                <xs:annotation>
+                  <xs:documentation xml:lang="en-us"> Used for Protocol and PPI
+                  Declarations</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element minOccurs="1" maxOccurs="1" name="C_Name" type="xs:NCName"/>
+                    <xs:element minOccurs="1" maxOccurs="1" name="GuidValue" type="GuidCstruct"/>
+                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                  </xs:sequence>
+                  <xs:attribute name="Notify" type="xs:boolean" default="false" use="optional"/>
+                  <xs:attributeGroup ref="SupportedArchMod"/>
+                  <xs:attribute name="FeatureFlag" type="xs:normalizedString" use="optional"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="PcdDeclarations">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="PcdEntry">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element minOccurs="1" maxOccurs="1" name="TokenSpaceGuidCname"
+                      type="xs:NCName"/>
+                    <xs:element minOccurs="1" maxOccurs="1" name="C_Name" type="xs:NCName"/>
+                    <xs:element minOccurs="1" maxOccurs="1" name="DatumType" type="PcdDatumType"/>
+                    <xs:element minOccurs="1" maxOccurs="1" name="ValidUsage" type="PcdTypeList"/>
+                    <xs:element minOccurs="1" maxOccurs="1" name="DefaultValue"
+                      type="xs:normalizedString"/>
+                    <xs:element minOccurs="0" maxOccurs="1" name="MaxDatumSize" type="Number"/>
+                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                    <xs:element minOccurs="0" maxOccurs="1" name="ErrorMessage" type="xs:string"/>
+                    <xs:element minOccurs="0" maxOccurs="1" name="ValidValues"
+                      type="xs:normalizedString"/>
+                  </xs:sequence>
+                  <xs:attribute name="Token" type="xs:hexBinary" use="required"/>
+                  <xs:attributeGroup ref="SupportedArchMod"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attributeGroup ref="SurfaceAreaAttributes"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="ModuleSurfaceArea">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="1" maxOccurs="1" name="Header">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="1" name="Name">
+                <xs:annotation>
+                  <xs:documentation xml:lang="en">This is the User Interface Name for this
+                    Distribution Archive</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:normalizedString">
+                      <xs:attribute name="InstalledAs" type="xs:NCName" use="optional"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="1" maxOccurs="1" name="GUID" type="RegistryFormatGuid"/>
+              <xs:element minOccurs="0" maxOccurs="1" name="Copyright" type="xs:string"/>
+              <xs:element minOccurs="0" maxOccurs="1" name="License" type="xs:string"/>
+              <xs:element minOccurs="1" maxOccurs="1" name="Abstract" type="xs:normalizedString"/>
+              <xs:element minOccurs="0" maxOccurs="1" name="Description" type="xs:string"/>
+              <xs:element minOccurs="0" maxOccurs="1" name="Signature">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:normalizedString">
+                      <xs:attribute name="Type" type="SignType" use="required"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="ModuleDefinitions">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="0" maxOccurs="1" name="PcdIsDriver">
+                <xs:simpleType>
+                  <xs:restriction base="xs:NCName">
+                    <xs:enumeration value="PEI_PCD_DRIVER"/>
+                    <xs:enumeration value="DXE_PCD_DRIVER"/>
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+              <xs:element minOccurs="0" maxOccurs="1" name="EfiSpecVersion" type="Number"/>
+              <xs:element minOccurs="0" maxOccurs="1" name="PiSpecVersion" type="Number"/>
+              <xs:element minOccurs="0" maxOccurs="unbounded" name="Specification">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:NCName">
+                      <xs:attribute name="Version" type="Number" use="required"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" maxOccurs="unbounded" name="CustomBuildFile">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:anyURI">
+                      <xs:attribute name="BuildType" type="BuildTypes" use="required"/>
+                      <xs:attribute name="Extracted" type="xs:anyURI" use="optional"/>
+                      <xs:attribute name="Signature" type="xs:normalizedString" use="optional"/>
+                      <xs:attribute name="Type" type="SignType" use="optional"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" maxOccurs="1" name="Lineage">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element minOccurs="1" maxOccurs="unbounded" name="Cloned">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:NCName">
+                            <xs:attribute name="HostGuid" type="RegistryFormatGuid" use="required"/>
+                            <xs:attribute name="HostVer" type="xs:decimal" use="required"/>
+                            <xs:attribute name="Id" type="xs:positiveInteger" use="required"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attributeGroup ref="SupportedArchMod"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="LibraryClassDefinitions">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="LibraryClass">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element minOccurs="1" maxOccurs="1" name="Keyword" type="xs:NCName"/>
+                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                  </xs:sequence>
+                  <xs:attribute name="Usage" type="LibUsageType" use="required"/>
+                  <xs:attributeGroup ref="RecommendedInf"/>
+                  <xs:attributeGroup ref="SupportedArchMod"/>
+                  <xs:attribute name="FeatureFlag" type="xs:normalizedString" use="optional"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="SourceFiles">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="Filename">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:anyURI">
+                      <xs:attribute name="Extracted" type="xs:anyURI" use="optional"/>
+                      <xs:attribute name="TagName" type="xs:NCName" use="optional"/>
+                      <xs:attribute name="ToolCode" type="xs:NCName" use="optional"/>
+                      <xs:attribute name="Family" type="FamilyType" use="optional"/>
+                      <xs:attribute name="Signature" type="xs:normalizedString" use="optional"/>
+                      <xs:attribute name="Type" type="SignType" use="optional"/>
+                      <xs:attribute name="SupArchList" type="ArchListType" use="optional"/>
+                      <xs:attribute name="FeatureFlag" type="xs:normalizedString" use="optional"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="BinaryFiles">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="Filename">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:anyURI">
+                      <xs:attribute name="Comment" type="xs:normalizedString" use="optional"/>
+                      <xs:attribute name="Extracted" type="xs:anyURI" use="optional"/>
+                      <xs:attribute name="FileType" type="BinFileType" use="optional"/>
+                      <xs:attribute name="TagName" type="xs:NCName" use="optional"/>
+                      <xs:attribute name="Target" type="xs:NCName" use="optional"/>
+                      <xs:attribute name="Signature" type="xs:normalizedString" use="optional"/>
+                      <xs:attribute name="Type" type="SignType" use="optional"/>
+                      <xs:attribute name="SupArchList" type="ArchListType" use="optional"/>
+                      <xs:attribute name="FeatureFlag" type="xs:normalizedString" use="optional"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="PackageDependencies">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="Package">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:anyURI">
+                      <xs:attribute name="RefName" type="xs:NCName" use="required"/>
+                      <xs:attribute name="PackageGuid" type="RegistryFormatGuid" use="required"/>
+                      <xs:attribute name="PackageVersion" type="xs:decimal" use="optional"/>
+                      <xs:attribute name="SupArchList" type="ArchListType" use="optional"/>
+                      <xs:attribute name="FeatureFlag" type="xs:normalizedString" use="optional"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="Guids">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="GuidCNames" nillable="true">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                  </xs:sequence>
+                  <xs:attribute name="CName" type="xs:NCName" use="required"/>
+                  <xs:attribute name="Usage" type="UsageType" use="required"/>
+                  <xs:attribute name="Type" type="GuidListType" use="required"/>
+                  <xs:attribute name="SupArchList" type="ArchListType" use="optional"/>
+                  <xs:attribute name="FeatureFlag" type="xs:normalizedString" use="optional"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="Protocols">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="Protocol" nillable="true">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                  </xs:sequence>
+                  <xs:attribute name="CName" type="xs:NCName" use="required"/>
+                  <xs:attribute name="Usage" type="ProtocolUsageType" use="required"/>
+                  <xs:attribute name="Notify" type="xs:boolean" use="optional"/>
+                  <xs:attribute name="SupArchList" type="ArchListType" use="optional"/>
+                  <xs:attribute name="FeatureFlag" type="xs:normalizedString" use="optional"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="PPIs">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="Ppi" nillable="true">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                  </xs:sequence>
+                  <xs:attribute name="CName" type="xs:NCName" use="required"/>
+                  <xs:attribute name="Usage" type="UsageType" use="required"/>
+                  <xs:attribute name="Notify" type="xs:boolean" use="optional"/>
+                  <xs:attribute name="SupArchList" type="ArchListType" use="optional"/>
+                  <xs:attribute name="FeatureFlag" type="xs:normalizedString" use="optional"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="Externs">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="Extern">
+                <xs:complexType>
+                  <xs:choice>
+                    <xs:sequence>
+                      <xs:element minOccurs="0" maxOccurs="1" name="EntryPoint" type="xs:NCName"/>
+                      <xs:element minOccurs="0" maxOccurs="1" name="UnloadImage" type="xs:NCName"/>
+                    </xs:sequence>
+                    <xs:sequence>
+                      <xs:element minOccurs="0" maxOccurs="1" name="Constructor" type="xs:NCName"/>
+                      <xs:element minOccurs="0" maxOccurs="1" name="Destructor" type="xs:NCName"/>
+                    </xs:sequence>
+                    <xs:sequence>
+                      <xs:element minOccurs="0" maxOccurs="1" name="DriverBinding" type="xs:NCName"/>
+                      <xs:element minOccurs="0" maxOccurs="1" name="ComponentName" type="xs:NCName"/>
+                      <xs:element minOccurs="0" maxOccurs="1" name="DriverConfig" type="xs:NCName"/>
+                      <xs:element minOccurs="0" maxOccurs="1" name="DriverDiag" type="xs:NCName"/>
+                    </xs:sequence>
+                    <xs:sequence>
+                      <xs:element minOccurs="0" maxOccurs="1" name="SetVirtAddrMapCallBack"
+                        type="xs:NCName"/>
+                      <xs:element minOccurs="0" maxOccurs="1" name="ExitBootServicesCallBack"
+                        type="xs:NCName"/>
+                    </xs:sequence>
+                  </xs:choice>
+                  <xs:attribute name="SupArchList" type="ArchListType" use="optional"/>
+                  <xs:attribute name="FeatureFlag" type="xs:normalizedString" use="optional"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="PcdCoded">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="PcdEntry">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element minOccurs="1" maxOccurs="1" name="C_Name" type="xs:NCName"/>
+                    <xs:element minOccurs="1" maxOccurs="1" name="TokenSpaceGuidCName"
+                      type="xs:NCName"/>
+                    <xs:element minOccurs="0" maxOccurs="1" name="DefaultValue"
+                      type="xs:normalizedString"/>
+                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                    <xs:element minOccurs="0" maxOccurs="1" name="ErrorMessage" type="xs:string"/>
+                    <xs:element minOccurs="0" maxOccurs="1" name="ValidValues"
+                      type="xs:normalizedString"/>
+                  </xs:sequence>
+                  <xs:attribute name="PcdItemType" type="PcdTypes" use="required"/>
+                  <xs:attribute name="SupArchList" type="ArchListType" use="optional"/>
+                  <xs:attribute name="FeatureFlag" type="xs:normalizedString" use="optional"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="ModuleBuildOptions">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="unbounded" name="Option">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:normalizedString">
+                      <xs:attribute name="BuildTargets" type="xs:normalizedString" use="optional"/>
+                      <xs:attribute name="TagName" type="xs:NCName" use="optional"/>
+                      <xs:attribute name="ToolCode" type="xs:NCName" use="optional"/>
+                      <xs:attribute name="Family" type="FamilyList" use="optional"/>
+                      <xs:attribute name="SupArchList" type="ArchListType" use="optional"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="AsBuilt">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">If this is a binary module distribution, this section
+              contains information about how the module was coded, such as Compiler Tools, Flags,
+              PCDs (only PatchPcd, Pcd and/or PcdEx) and Library Class Instances used to build the
+              binary.</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="0" maxOccurs="1" name="Comments" type="xs:string"/>
+              <xs:element minOccurs="0" maxOccurs="unbounded" name="PatchPcdValue">
+                <xs:annotation>
+                  <xs:documentation xml:lang="en">The element is the PCD Value that was used during
+                    the build.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:normalizedString">
+                      <xs:attribute name="TokenSpaceGuidCname" type="xs:NCName" use="required"/>
+                      <xs:attribute name="PcdC_Name" type="xs:NCName" use="required"/>
+                      <xs:attribute name="Token" type="Number" use="required"/>
+                      <xs:attribute name="MaxDataSize" type="Number" use="optional"/>
+                      <xs:attribute name="Offset" type="xs:hexBinary" use="optional"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" maxOccurs="unbounded" name="PcdValue">
+                <xs:annotation>
+                  <xs:documentation xml:lang="en">The element is the PCD Value that was used during
+                    the build.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:normalizedString">
+                      <xs:attribute name="TokenSpaceGuidCname" type="xs:NCName" use="required"/>
+                      <xs:attribute name="PcdC_Name" type="xs:NCName" use="required"/>
+                      <xs:attribute name="Token" type="Number" use="required"/>
+                      <xs:attribute name="MaxDataSize" type="Number" use="optional"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" maxOccurs="unbounded" name="PcdExValue">
+                <xs:annotation>
+                  <xs:documentation xml:lang="en">The element is the PCD Value that was used during
+                    the build.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:normalizedString">
+                      <xs:attribute name="TokenSpaceGuidCname" type="xs:NCName" use="required"/>
+                      <xs:attribute name="PcdC_Name" type="xs:NCName" use="required"/>
+                      <xs:attribute name="Token" type="Number" use="required"/>
+                      <xs:attribute name="MaxDataSize" type="Number" use="optional"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" maxOccurs="unbounded" name="LibraryInstance">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:anyURI">
+                      <xs:attribute name="Comment" type="xs:normalizedString" use="optional"/>
+                      <xs:attribute name="RefName" type="xs:NCName" use="required"/>
+                      <xs:attribute name="Inf" type="xs:anyURI" use="optional"/>
+                      <xs:attribute name="InfGuid" type="RegistryFormatGuid" use="required"/>
+                      <xs:attribute name="InfVer" type="xs:decimal" use="optional"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" maxOccurs="unbounded" name="BuildFlags">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:normalizedString">
+                      <xs:attribute name="Tool" type="xs:NCName" use="required"/>
+                      <xs:attribute name="SupArchList" type="ArchListType" use="required"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="1" name="UserExtensions">
+          <xs:complexType mixed="true">
+            <xs:sequence>
+              <xs:element minOccurs="0" maxOccurs="unbounded" name="Filename">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:normalizedString">
+                      <xs:attribute name="Comment" type="xs:string" use="required"/>
+                      <xs:attribute name="Extracted" type="xs:anyURI" use="optional"/>
+                      <xs:attribute name="Signature" type="xs:normalizedString" use="optional"/>
+                      <xs:attribute name="Type" type="SignType" use="optional"/>
+                      <xs:attribute name="Exec" type="xs:boolean" default="false" use="optional"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="UserId" type="xs:NCName" use="required"/>
+            <xs:attribute name="Identifier" type="xs:normalizedString" use="required"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attributeGroup ref="SurfaceAreaAttributes"/>
+      <xs:attribute name="Binary" type="xs:boolean" default="false" use="optional">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"> If set, then the binary section should be used, and the
+            files listed in the SourceFiles section do not have to be built, if they exist.
+            Additionally, the AsBuilt section must be included</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Tools">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="1" maxOccurs="1" name="Header">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="1" maxOccurs="1" name="Name">
+                <xs:annotation>
+                  <xs:documentation xml:lang="en">This is the User Interface Name for this
+                    Distribution Archive</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:normalizedString">
+                      <xs:attribute name="InstalledAs" type="xs:NCName" use="optional"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="1" maxOccurs="1" name="GUID" type="RegistryFormatGuid"/>
+              <xs:element minOccurs="0" maxOccurs="1" name="Copyright" type="xs:string"/>
+              <xs:element minOccurs="0" maxOccurs="1" name="License" type="xs:string"/>
+              <xs:element minOccurs="1" maxOccurs="1" name="Abstract" type="xs:normalizedString"/>
+              <xs:element minOccurs="0" maxOccurs="1" name="Description" type="xs:string"/>
+              <xs:element minOccurs="0" maxOccurs="1" name="Signature">
+                <xs:complexType>
+                  <xs:simpleContent>
+                    <xs:extension base="xs:normalizedString">
+                      <xs:attribute name="Type" type="SignType" use="required"/>
+                    </xs:extension>
+                  </xs:simpleContent>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="unbounded" name="Filename">
+          <xs:complexType>
+            <xs:simpleContent>
+              <xs:extension base="xs:anyURI">
+                <xs:attribute name="Extracted" type="xs:anyURI" use="optional"/>
+                <xs:attribute name="Copyright" type="xs:string" use="optional"/>
+                <xs:attribute name="License" type="xs:string" use="optional"/>
+                <xs:attribute name="Root" type="xs:boolean" default="false" use="optional"/>
+                <xs:attribute name="Revision" type="xs:nonNegativeInteger" use="optional"/>
+                <xs:attribute name="OS" type="SupportedOs" use="optional"/>
+                <xs:attribute name="Exec" type="xs:boolean" default="false" use="optional"/>
+                <xs:attribute name="Comment" type="xs:string" use="optional"/>
+              </xs:extension>
+            </xs:simpleContent>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attributeGroup ref="SurfaceAreaAttributes"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="Misc">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" name="Comments" type="xs:string"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" name="Filename">
+          <xs:complexType>
+            <xs:simpleContent>
+              <xs:extension base="xs:anyURI">
+                <xs:attribute name="Extracted" type="xs:anyURI" use="optional"/>
+                <xs:attribute name="Copyright" type="xs:string" use="optional"/>
+                <xs:attribute name="License" type="xs:string" use="optional"/>
+                <xs:attribute name="Root" type="xs:boolean" default="false" use="optional"/>
+                <xs:attribute name="Revision" type="xs:string" use="optional"/>
+                <xs:attribute name="Exec" type="xs:boolean" default="false" use="optional"/>
+                <xs:attribute name="Comment" type="xs:string" use="optional"/>
+              </xs:extension>
+            </xs:simpleContent>
+          </xs:complexType>
+        </xs:element>
+        <xs:element minOccurs="0" maxOccurs="unbounded" name="UserExtenstions">
+          <xs:complexType mixed="true">
+            <xs:sequence>
+              <xs:any minOccurs="0" maxOccurs="unbounded" processContents="lax"/>
+            </xs:sequence>
+            <xs:attribute name="Id" type="xs:nonNegativeInteger" use="optional"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="UserId" type="xs:NCName" use="required"/>
+      <xs:attribute name="Identification" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+
+  <!-- The following data types are used to restrict content. -->
+
+  <xs:simpleType name="ArchListType">
+    <xs:list itemType="Archs"/>
+  </xs:simpleType>
+
+  <xs:simpleType name="Archs">
+    <xs:restriction base="xs:NCName">
+      <xs:enumeration value="IA32"/>
+      <xs:enumeration value="X64"/>
+      <xs:enumeration value="IPF"/>
+      <xs:enumeration value="EBC"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="BinFileType">
+    <xs:restriction base="xs:NCName">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Not all of the types listed below make sense for
+          distribution.</xs:documentation>
+      </xs:annotation>
+      <xs:enumeration value="FW"/>
+      <xs:enumeration value="GUID"/>
+      <xs:enumeration value="FREEFORM"/>
+      <xs:enumeration value="UEFI_APP"/>
+      <xs:enumeration value="PE32"/>
+      <xs:enumeration value="PIC"/>
+      <xs:enumeration value="PEI_DEPEX"/>
+      <xs:enumeration value="DXE_DEPEX"/>
+      <xs:enumeration value="TE"/>
+      <xs:enumeration value="VER"/>
+      <xs:enumeration value="UI"/>
+      <xs:enumeration value="BIN"/>
+      <xs:enumeration value="FV"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="BuildTypes">
+    <xs:restriction base="xs:NCName">
+      <xs:enumeration value="Makefile"/>
+      <xs:enumeration value="GNUMakefile"/>
+      <xs:enumeration value="AntBuildXml"/>
+      <xs:enumeration value="GenericMakefile"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="GuidCstruct">
+    <xs:restriction base="xs:normalizedString">
+      <xs:pattern
+        value="\s*0x[a-fA-F0-9]{1,8},( )*0x[a-fA-F0-9]{1,4},( )*0x[a-fA-F0-9]{1,4}(,( )*\{)?(,?( )*0x[a-fA-F0-9]{1,2}){8}( )*(\})?\s*"
+      />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="GuidListType">
+    <xs:restriction base="PrimaryGuidListType">
+      <xs:minLength value="1"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="GuidTypes">
+    <xs:restriction base="xs:NCName">
+      <xs:enumeration value="BootModeFull"/>
+      <xs:enumeration value="BootModeMinimal"/>
+      <xs:enumeration value="BootModeNoChange"/>
+      <xs:enumeration value="BootModeDiagnostics"/>
+      <xs:enumeration value="BootModeDefault"/>
+      <xs:enumeration value="BootModeS2Resume"/>
+      <xs:enumeration value="BootModeS3Resume"/>
+      <xs:enumeration value="BootModeS4Resume"/>
+      <xs:enumeration value="BootModeS5Resume"/>
+      <xs:enumeration value="FlashUpdate"/>
+      <xs:enumeration value="BootModeFullRecovery"/>
+      <xs:enumeration value="BootModeMinimalRecovery"/>
+      <xs:enumeration value="BootModeNoChangeRecovery"/>
+      <xs:enumeration value="BootModeDiagnosticsRecovery"/>
+      <xs:enumeration value="BootModeDefaultRecovery"/>
+      <xs:enumeration value="BootModeRecoveryS2Resume"/>
+      <xs:enumeration value="BootModeRecoveryS3Resume"/>
+      <xs:enumeration value="BootModeRecoveryS4Resume"/>
+      <xs:enumeration value="BootModeRecoveryS5Resume"/>
+      <xs:enumeration value="BootModeRecoveryFlashUpdate"/>
+      <xs:enumeration value="DataHubRecord"/>
+      <xs:enumeration value="CreateEvent"/>
+      <xs:enumeration value="SignalEvent"/>
+      <xs:enumeration value="EventGroupGUID"/>
+      <xs:enumeration value="PeriodicTimerEvent"/>
+      <xs:enumeration value="RelativeTimerEvent"/>
+      <xs:enumeration value="SystemTable"/>
+      <xs:enumeration value="EfiVariable"/>
+      <xs:enumeration value="Formset"/>
+      <xs:enumeration value="GUID"/>
+      <xs:enumeration value="HiiPackageList"/>
+      <xs:enumeration value="HOB"/>
+      <xs:enumeration value="PhitHob"/>
+      <xs:enumeration value="MemAllocHob"/>
+      <xs:enumeration value="GuidExtHob"/>
+      <xs:enumeration value="FvHob"/>
+      <xs:enumeration value="CpuHob"/>
+      <xs:enumeration value="PoolHob"/>
+      <xs:enumeration value="CapsuleVolumeHob"/>
+      <xs:enumeration value="TokenSpaceGuid"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="PrimaryGuidListType">
+    <xs:list itemType="GuidTypes"/>
+  </xs:simpleType>
+
+  <xs:simpleType name="FamilyType">
+    <xs:restriction base="xs:NCName">
+      <xs:enumeration value="MSFT"/>
+      <xs:enumeration value="GCC"/>
+      <xs:enumeration value="INTEL"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="FamilyList">
+    <xs:list itemType="FamilyType"/>
+  </xs:simpleType>
+
+  <xs:simpleType name="LibUsageType">
+    <xs:restriction base="xs:NCName">
+      <xs:enumeration value="PRODUCES"/>
+      <xs:enumeration value="CONSUMES"/>
+      <xs:enumeration value="PRIVATE"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="ModListType">
+    <xs:list itemType="ModuleType"/>
+  </xs:simpleType>
+
+  <xs:simpleType name="ModuleType">
+    <xs:restriction base="xs:NCName">
+      <xs:enumeration value="BASE "/>
+      <xs:enumeration value="SEC"/>
+      <xs:enumeration value="PEI_CORE"/>
+      <xs:enumeration value="PEIM"/>
+      <xs:enumeration value="DXE_CORE"/>
+      <xs:enumeration value="DXE_DRIVER"/>
+      <xs:enumeration value="DXE_RUNTIME_DRIVER"/>
+      <xs:enumeration value="DXE_SAL_DRIVER"/>
+      <xs:enumeration value="DXE_SMM_DRIVER"/>
+      <xs:enumeration value="UEFI_DRIVER"/>
+      <xs:enumeration value="UEFI_APPLICATION"/>
+      <xs:enumeration value="USER_DEFINED"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="Number">
+    <xs:union memberTypes="xs:nonNegativeInteger xs:hexBinary"/>
+  </xs:simpleType>
+
+  <xs:simpleType name="PcdDatumType">
+    <xs:restriction base="xs:normalizedString">
+      <xs:enumeration value="UINT8"/>
+      <xs:enumeration value="UINT16"/>
+      <xs:enumeration value="UINT32"/>
+      <xs:enumeration value="UINT64"/>
+      <xs:enumeration value="BOOLEAN"/>
+      <xs:enumeration value="VOID*"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="PcdTypeList">
+    <xs:list itemType="PcdTypes"/>
+  </xs:simpleType>
+
+  <xs:simpleType name="PcdTypes">
+    <xs:restriction base="xs:NCName">
+      <xs:enumeration value="FeaturePcd"/>
+      <xs:enumeration value="FixedPcd"/>
+      <xs:enumeration value="PatchPcd"/>
+      <xs:enumeration value="Pcd"/>
+      <xs:enumeration value="PcdEx"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="ProtocolUsageType">
+    <xs:restriction base="xs:NCName">
+      <xs:enumeration value="PRODUCES"/>
+      <xs:enumeration value="CONSUMES"/>
+      <xs:enumeration value="TO_START"/>
+      <xs:enumeration value="BY_START"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="RegistryFormatGuid">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"> A GUID must contain five different Hexadecimal character sets
+        that are separated by a dash (-) character. </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern
+        value="\s*[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}\s*"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="SupportedOs">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Win32"/>
+      <xs:enumeration value="Win64"/>
+      <xs:enumeration value="Linux32"/>
+      <xs:enumeration value="Linux64"/>
+      <xs:enumeration value="OS/X32"/>
+      <xs:enumeration value="OS/X64"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="SignType">
+    <xs:restriction base="xs:NCName">
+      <xs:enumeration value="None"/>
+      <xs:enumeration value="MD5"/>
+      <xs:enumeration value="CRC32"/>
+      <!-- The following are not supported without additional tools -->
+      <xs:enumeration value="PGP"/>
+      <xs:enumeration value="RSA"/>
+      <xs:enumeration value="DES"/>
+      <xs:enumeration value="SHA"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="UsageType">
+    <xs:restriction base="xs:NCName">
+      <xs:enumeration value="PRODUCES"/>
+      <xs:enumeration value="CONSUMES"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- The following attribute groups are used in various elements above. -->
+
+  <xs:attributeGroup name="RecommendedInf">
+    <xs:attribute name="RecommendedInf" type="xs:anyURI" use="optional"/>
+    <xs:attribute name="RecommendedInfGuid" type="RegistryFormatGuid" use="optional"/>
+    <xs:attribute name="RecommendedInfVer" type="xs:decimal" use="optional"/>
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="SupportedArchMod">
+    <xs:attribute name="SupArchList" type="ArchListType" use="optional"/>
+    <xs:attribute name="SupModList" type="ModListType" use="optional"/>
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="SurfaceAreaAttributes">
+    <xs:attribute name="RefName" type="xs:NCName" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This name can be used as the OutputFileBaseName for
+        Modules.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="Version" type="xs:decimal" use="required"/>
+    <xs:attribute name="Path" type="xs:anyURI" use="required"/>
+    <xs:attribute name="ReadOnly" type="xs:boolean" default="false" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If this is set, all content within this section should NOT
+          be modified.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="RePackage" type="xs:boolean" default="false" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If set, then the content can be repackaged into another
+          distribution package.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="Extracted" type="xs:anyURI" use="optional"/>
+  </xs:attributeGroup>
+
+</xs:schema>
