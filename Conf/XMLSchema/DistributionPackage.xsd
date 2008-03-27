@@ -18,12 +18,12 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
   <xs:element name="DistributionPackage">
     <xs:annotation>
       <xs:documentation xml:lang="en"> This schema defines the EDK II Distribution Archive
-      description (PKG) file. It describes the content of: 1) Collection descriptions with
-      definitions and headers.  2) Modules in either source or binary format. (Note that
-      Binary format is for EFI Sections only' FFS files cannot be distributed using this
-      distribution format.) 3) The custom tools used to modify the binary images to create
-      UEFI/PI compliant images. 4) Finally, it can be used to distribute other 
-      miscellaneous content that is not specific to UEFI/PI images. </xs:documentation>
+        description (PKG) file. It describes the content of: 1) Collection descriptions with
+        definitions and headers. 2) Modules in either source or binary format. (Note that Binary
+        format is for EFI Sections only' FFS files cannot be distributed using this distribution
+        format.) 3) The custom tools used to modify the binary images to create UEFI/PI compliant
+        images. 4) Finally, it can be used to distribute other miscellaneous content that is not
+        specific to UEFI/PI images. </xs:documentation>
     </xs:annotation>
     <xs:complexType>
       <xs:sequence>
@@ -661,7 +661,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             </xs:sequence>
           </xs:complexType>
         </xs:element>
-        <xs:element minOccurs="0" maxOccurs="1" name="AsBuilt">
+        <xs:element minOccurs="0" maxOccurs="unbounded" name="AsBuilt">
           <xs:annotation>
             <xs:documentation xml:lang="en">If this is a binary module distribution, this section
               contains information about how the module was coded, such as Compiler Tools, Flags,
@@ -673,25 +673,30 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
               <xs:element minOccurs="0" maxOccurs="1" name="Comments" type="xs:string"/>
               <xs:element minOccurs="0" maxOccurs="unbounded" name="PatchPcdValue">
                 <xs:annotation>
-                  <xs:documentation xml:lang="en">The element is the PCD Value that was used during
-                    the build.</xs:documentation>
+                  <xs:documentation xml:lang="en">The element is the Patchable PCD Value that was
+                    used during the build.</xs:documentation>
                 </xs:annotation>
                 <xs:complexType>
                   <xs:simpleContent>
                     <xs:extension base="xs:normalizedString">
                       <xs:attribute name="TokenSpaceGuidCname" type="xs:NCName" use="required"/>
                       <xs:attribute name="PcdC_Name" type="xs:NCName" use="required"/>
-                      <xs:attribute name="Token" type="Number" use="required"/>
-                      <xs:attribute name="MaxDataSize" type="Number" use="optional"/>
-                      <xs:attribute name="Offset" type="xs:hexBinary" use="optional"/>
+                      <xs:attribute name="Token" type="xs:hexBinary" use="required"/>
+                      <xs:attribute name="Offset" type="xs:hexBinary" use="required"/>
+                      <xs:attribute name="MaxDataSize" type="Number" use="optional">
+                        <xs:annotation>
+                          <xs:documentation xml:lang="en">This field is required if the Pcd Datum
+                            Type is VOID*</xs:documentation>
+                        </xs:annotation>
+                      </xs:attribute>
                     </xs:extension>
                   </xs:simpleContent>
                 </xs:complexType>
               </xs:element>
               <xs:element minOccurs="0" maxOccurs="unbounded" name="PcdValue">
                 <xs:annotation>
-                  <xs:documentation xml:lang="en">The element is the PCD Value that was used during
-                    the build.</xs:documentation>
+                  <xs:documentation xml:lang="en">The element is the Dynamic PCD Value that was used
+                    during the build.</xs:documentation>
                 </xs:annotation>
                 <xs:complexType>
                   <xs:simpleContent>
@@ -699,15 +704,20 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
                       <xs:attribute name="TokenSpaceGuidCname" type="xs:NCName" use="required"/>
                       <xs:attribute name="PcdC_Name" type="xs:NCName" use="required"/>
                       <xs:attribute name="Token" type="Number" use="required"/>
-                      <xs:attribute name="MaxDataSize" type="Number" use="optional"/>
+                      <xs:attribute name="MaxDataSize" type="Number" use="optional">
+                        <xs:annotation>
+                          <xs:documentation xml:lang="en">This field is required if the Pcd Datum
+                            Type is VOID*</xs:documentation>
+                        </xs:annotation>
+                      </xs:attribute>
                     </xs:extension>
                   </xs:simpleContent>
                 </xs:complexType>
               </xs:element>
               <xs:element minOccurs="0" maxOccurs="unbounded" name="PcdExValue">
                 <xs:annotation>
-                  <xs:documentation xml:lang="en">The element is the PCD Value that was used during
-                    the build.</xs:documentation>
+                  <xs:documentation xml:lang="en">The element is the DynamicEx PCD Value that was
+                    used during the build.</xs:documentation>
                 </xs:annotation>
                 <xs:complexType>
                   <xs:simpleContent>
@@ -715,18 +725,26 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
                       <xs:attribute name="TokenSpaceGuidCname" type="xs:NCName" use="required"/>
                       <xs:attribute name="PcdC_Name" type="xs:NCName" use="required"/>
                       <xs:attribute name="Token" type="Number" use="required"/>
-                      <xs:attribute name="MaxDataSize" type="Number" use="optional"/>
+                      <xs:attribute name="MaxDataSize" type="Number" use="optional">
+                        <xs:annotation>
+                          <xs:documentation xml:lang="en">This field is required if the Pcd Datum
+                            Type is VOID*</xs:documentation>
+                        </xs:annotation>
+                      </xs:attribute>
                     </xs:extension>
                   </xs:simpleContent>
                 </xs:complexType>
               </xs:element>
               <xs:element minOccurs="0" maxOccurs="unbounded" name="LibraryInstance">
+                <xs:annotation>
+                  <xs:documentation xml:lang="en">This is the actual library instance that was used
+                    to link against the module.</xs:documentation>
+                </xs:annotation>
                 <xs:complexType>
                   <xs:simpleContent>
                     <xs:extension base="xs:anyURI">
                       <xs:attribute name="Comment" type="xs:normalizedString" use="optional"/>
-                      <xs:attribute name="RefName" type="xs:NCName" use="required"/>
-                      <xs:attribute name="Inf" type="xs:anyURI" use="optional"/>
+                      <xs:attribute name="LibraryClass" type="xs:NCName" use="required"/>
                       <xs:attribute name="InfGuid" type="RegistryFormatGuid" use="required"/>
                       <xs:attribute name="InfVer" type="xs:decimal" use="optional"/>
                     </xs:extension>
@@ -737,6 +755,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
                 <xs:complexType>
                   <xs:simpleContent>
                     <xs:extension base="xs:normalizedString">
+                      <xs:attribute name="Comment" type="xs:normalizedString" use="optional"/>
                       <xs:attribute name="Tool" type="xs:NCName" use="required"/>
                       <xs:attribute name="SupArchList" type="ArchListType" use="required"/>
                     </xs:extension>
@@ -744,12 +763,24 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
                 </xs:complexType>
               </xs:element>
             </xs:sequence>
+            <xs:attribute name="RefName" type="xs:NCName" use="required"/>
           </xs:complexType>
         </xs:element>
-        <xs:element minOccurs="0" maxOccurs="1" name="UserExtensions">
+        <xs:element minOccurs="0" maxOccurs="unbounded" name="UserExtensions">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">The EDK II Reference Build Process ingores this section.
+              The content is vendor specific.</xs:documentation>
+          </xs:annotation>
           <xs:complexType mixed="true">
             <xs:sequence>
               <xs:element minOccurs="0" maxOccurs="unbounded" name="Filename">
+                <xs:annotation>
+
+                  <xs:documentation xml:lang="en">Files listed in this section are files that do not
+                    fit the classification of either Source or Binary. This section can be used to
+                    list debug, symbol, makefiles or other files that the package distributor wants
+                    to make available.</xs:documentation>
+                </xs:annotation>
                 <xs:complexType>
                   <xs:simpleContent>
                     <xs:extension base="xs:normalizedString">
