@@ -768,7 +768,7 @@ class Dsc(DscObject):
                     
                     SubLibSet = QueryDscItem(self.TblDsc, MODEL_EFI_LIBRARY_CLASS, Record[3], self.FileID)
                     for SubLib in SubLibSet:
-                        Lib.append(SubLib[0])
+                        Lib.append(TAB_VALUE_SPLIT.join([SubLib[0],SubLib[4]]))
                     
                     SubBoSet = QueryDscItem(self.TblDsc, MODEL_META_DATA_BUILD_OPTION, Record[3], self.FileID)
                     for SubBo in SubBoSet:
@@ -1333,7 +1333,14 @@ class Dsc(DscObject):
                     EdkLogger.debug(4, "Parsing component %s ..." %Component)
                     DscItmeID = self.TblDsc.Insert(MODEL_META_DATA_COMPONENT, Component[0], '', '', Arch, -1, FileID, StartLine, -1, StartLine, -1, 0)
                     for Item in Component[1]:
-                        self.TblDsc.Insert(MODEL_EFI_LIBRARY_CLASS, Item, '', '', Arch, DscItmeID, FileID, StartLine, -1, StartLine, -1, 0)
+                        List = GetSplitValueList(Item, MaxSplit = 2)
+                        LibName, LibIns = '', ''
+                        if len(List) == 2:
+                            LibName = List[0]
+                            LibIns = List[1]
+                        else:
+                            LibName = List[0]
+                        self.TblDsc.Insert(MODEL_EFI_LIBRARY_CLASS, LibName, LibIns, '', Arch, DscItmeID, FileID, StartLine, -1, StartLine, -1, 0)
                     for Item in Component[2]:
                         self.TblDsc.Insert(MODEL_META_DATA_BUILD_OPTION, Item, '', '', Arch, DscItmeID, FileID, StartLine, -1, StartLine, -1, 0)
                     for Item in Component[3]:

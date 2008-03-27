@@ -319,20 +319,51 @@ class Check(object):
     #
     def MetaDataFileCheckLibraryInstance(self):
         if EccGlobalData.gConfig.MetaDataFileCheckLibraryInstance == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
-            pass
-
+            EdkLogger.quiet("Checking for library instance type issue ...")
+            SqlCommand = """select ID, Value2 from Inf where Value1 = 'LIBRARY_CLASS' and Model = %s group by BelongsToFile""" % MODEL_META_DATA_HEADER
+            RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
+            LibraryClasses = {}
+            for Record in RecordSet:
+                List = Record[1].split('|', 1)
+                if len(List) != 2:
+                    EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_LIBRARY_INSTANCE_2, OtherMsg = "The Library Class '%s' does not specify its supported module types" % (List[0]), BelongsToTable = 'Inf', BelongsToItem = Record[0])
+                else:
+                    LibraryClasses[List[0]] = List[1]
+            SqlCommand = """select A.ID, A.Value1, B.Value2 from Inf as A left join Inf as B 
+                            where A.Model = %s and B.Value1 = '%s' and B.Model = %s and B.BelongsToFile = A.BelongsToFile""" \
+                            % (MODEL_EFI_LIBRARY_CLASS, 'MODULE_TYPE', MODEL_META_DATA_HEADER)
+            RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
+            for Record in RecordSet:
+                if Record[1] in LibraryClasses and LibraryClasses[Record[1]].find(Record[2]) < 0:
+                    EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_LIBRARY_INSTANCE_1, OtherMsg = "The type of Library Class '%s' defined in Inf file does not match the type of the module" % (Record[1]), BelongsToTable = 'Inf', BelongsToItem = Record[0])
     #
     # Check whether a Library Instance has been defined for all dependent library classes
     #
     def MetaDataFileCheckLibraryInstanceDependent(self):
         if EccGlobalData.gConfig.MetaDataFileCheckLibraryInstanceDependent == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
-            pass
-
+            EdkLogger.quiet("Checking for library instance dependent issue ...")
+            SqlCommand = """select ID, Value1, Value2 from Dsc where Model = %s""" % MODEL_EFI_LIBRARY_CLASS
+            LibraryClasses = EccGlobalData.gDb.TblDsc.Exec(SqlCommand)
+            for LibraryClass in LibraryClasses:
+                if LibraryClass[1].upper() != 'NULL':
+                    LibraryIns = os.path.normpath(os.path.join(EccGlobalData.gWorkspace, LibraryClass[2]))
+                    SqlCommand = """select Value2 from Inf where BelongsToFile = 
+                                    (select ID from File where lower(FullPath) = lower('%s'))
+                                    and Value1 = '%s'""" % (LibraryIns, 'LIBRARY_CLASS')
+                    RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
+                    IsFound = False
+                    for Record in RecordSet:
+                        LibName = Record[0].split('|', 1)[0]
+                        if LibraryClass[1] == LibName:
+                            IsFound = True
+                    if not IsFound:
+                        EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_LIBRARY_INSTANCE_DEPENDENT, OtherMsg = "The Library Class '%s' is not specified in '%s'" % (LibraryClass[1], LibraryClass[2]), BelongsToTable = 'Dsc', BelongsToItem = LibraryClass[0])
     #
     # Check whether the Library Instances specified by the LibraryClasses sections are listed in order of dependencies
     #
     def MetaDataFileCheckLibraryInstanceOrder(self):
         if EccGlobalData.gConfig.MetaDataFileCheckLibraryInstanceOrder == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
+            # This checkpoint is not necessary for Ecc check
             pass
 
     #
@@ -340,7 +371,11 @@ class Check(object):
     #
     def MetaDataFileCheckLibraryNoUse(self):
         if EccGlobalData.gConfig.MetaDataFileCheckLibraryNoUse == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
-            pass
+            EdkLogger.quiet("Checking for library instance not used ...")
+            SqlCommand = """select ID, Value1 from Inf as A where A.Model = %s and A.Value1 not in (select B.Value1 from Dsc as B where Model = %s)""" % (MODEL_EFI_LIBRARY_CLASS, MODEL_EFI_LIBRARY_CLASS)
+            RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
+            for Record in RecordSet:
+                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_LIBRARY_NO_USE, OtherMsg = "The Library Class '%s' is not used in any platform" % (Record[1]), BelongsToTable = 'Inf', BelongsToItem = Record[0])
 
     #
     # Check whether an Inf file is specified in the FDF file, but not in the Dsc file, then the Inf file must be for a Binary module only
@@ -536,6 +571,10 @@ class Check(object):
                     Name = Record[1].strip()
                     if Name[0] == '(':
                         Name = Name[1:Name.find(')')]
+                    if Name.find('(') > -1:
+                        Name = Name[Name.find('(') + 1 : Name.find(')')]
+                    Name = Name.replace('WINAPI', '')
+                    Name = Name.replace('*', '').strip()
                     if Name.upper() != Name:
                         EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_TYPEDEF_STATEMENT, OtherMsg = "The #typedef name '%s' does not follow the rules" % (Name), BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
     
