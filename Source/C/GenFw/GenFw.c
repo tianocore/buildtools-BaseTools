@@ -1910,6 +1910,24 @@ Returns:
     }
 
     //
+    // Zero .pdata section data.
+    //
+    if (Optional32->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION &&
+        Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress != 0 && 
+        Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size != 0) {
+      SectionHeader = (EFI_IMAGE_SECTION_HEADER *)(FileBuffer + DosHdr->e_lfanew + sizeof(UINT32) + sizeof (EFI_IMAGE_FILE_HEADER) + PeHdr->FileHeader.SizeOfOptionalHeader);
+      for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index++, SectionHeader++) {
+        if (SectionHeader->VirtualAddress == Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress) {
+          memset (FileBuffer + SectionHeader->PointerToRawData, 0, SectionHeader->SizeOfRawData);
+          Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress = 0;
+          Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size           = 0;
+          DebugMsg (NULL, 0, 9, "Zero the .pdata section for PE image", NULL);
+          break;
+        }
+      }
+    }
+
+    //
     // Strip zero padding at the end of the .reloc section 
     //
     if (Optional32->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
@@ -1944,9 +1962,7 @@ Returns:
         }
       }
     }
-  } 
-
-  if (PeHdr->OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
+  } else if (PeHdr->OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
     Optional64 = (EFI_IMAGE_OPTIONAL_HEADER64 *)&PeHdr->OptionalHeader;
     Optional64->MajorLinkerVersion          = 0;
     Optional64->MinorLinkerVersion          = 0;
@@ -1978,35 +1994,36 @@ Returns:
     }
 
     //
-    // Zero the .pdata section if the machine type is X64 and the Debug Directory is empty
+    // Zero the .pdata section for X64 machine and don't check the Debug Directory is empty
+    // For Itaninum and X64 Image, remove .pdata section.
     //
-    if (PeHdr->FileHeader.Machine == IMAGE_FILE_MACHINE_X64) { // X64
-      if (Optional64->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION) {
-        if (Optional64->NumberOfRvaAndSizes <= EFI_IMAGE_DIRECTORY_ENTRY_DEBUG || (Optional64->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_DEBUG && Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].Size == 0)) {
-          SectionHeader = (EFI_IMAGE_SECTION_HEADER *)(FileBuffer + DosHdr->e_lfanew + sizeof(UINT32) + sizeof (EFI_IMAGE_FILE_HEADER) + PeHdr->FileHeader.SizeOfOptionalHeader);
-          for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index++, SectionHeader++) {
-            if (SectionHeader->VirtualAddress == Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress) {
-              RuntimeFunction = (RUNTIME_FUNCTION *)(FileBuffer + SectionHeader->PointerToRawData);
-              for (Index1 = 0; Index1 < Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size / sizeof (RUNTIME_FUNCTION); Index1++, RuntimeFunction++) {
-                SectionHeader = (EFI_IMAGE_SECTION_HEADER *)(FileBuffer + DosHdr->e_lfanew + sizeof(UINT32) + sizeof (EFI_IMAGE_FILE_HEADER) + PeHdr->FileHeader.SizeOfOptionalHeader);
-                for (Index2 = 0; Index2 < PeHdr->FileHeader.NumberOfSections; Index2++, SectionHeader++) {
-                  if (RuntimeFunction->UnwindInfoAddress > SectionHeader->VirtualAddress && RuntimeFunction->UnwindInfoAddress < (SectionHeader->VirtualAddress + SectionHeader->SizeOfRawData)) {
-                    UnwindInfo = (UNWIND_INFO *)(FileBuffer + SectionHeader->PointerToRawData + (RuntimeFunction->UnwindInfoAddress - SectionHeader->VirtualAddress));
-                    if (UnwindInfo->Version == 1) {
-                      memset (UnwindInfo + 1, 0, UnwindInfo->CountOfUnwindCodes * sizeof (UINT16));
-                      memset (UnwindInfo, 0, sizeof (UNWIND_INFO));
-                    }
+    if (PeHdr->FileHeader.Machine == IMAGE_FILE_MACHINE_X64 || PeHdr->FileHeader.Machine == IMAGE_FILE_MACHINE_IA64) {
+      if (Optional64->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION &&
+          Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress != 0 && 
+          Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size != 0) {
+        //if (Optional64->NumberOfRvaAndSizes <= EFI_IMAGE_DIRECTORY_ENTRY_DEBUG || (Optional64->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_DEBUG && Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].Size == 0)) {
+        SectionHeader = (EFI_IMAGE_SECTION_HEADER *)(FileBuffer + DosHdr->e_lfanew + sizeof(UINT32) + sizeof (EFI_IMAGE_FILE_HEADER) + PeHdr->FileHeader.SizeOfOptionalHeader);
+        for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index++, SectionHeader++) {
+          if (SectionHeader->VirtualAddress == Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress) {
+            RuntimeFunction = (RUNTIME_FUNCTION *)(FileBuffer + SectionHeader->PointerToRawData);
+            for (Index1 = 0; Index1 < Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size / sizeof (RUNTIME_FUNCTION); Index1++, RuntimeFunction++) {
+              SectionHeader = (EFI_IMAGE_SECTION_HEADER *)(FileBuffer + DosHdr->e_lfanew + sizeof(UINT32) + sizeof (EFI_IMAGE_FILE_HEADER) + PeHdr->FileHeader.SizeOfOptionalHeader);
+              for (Index2 = 0; Index2 < PeHdr->FileHeader.NumberOfSections; Index2++, SectionHeader++) {
+                if (RuntimeFunction->UnwindInfoAddress > SectionHeader->VirtualAddress && RuntimeFunction->UnwindInfoAddress < (SectionHeader->VirtualAddress + SectionHeader->SizeOfRawData)) {
+                  UnwindInfo = (UNWIND_INFO *)(FileBuffer + SectionHeader->PointerToRawData + (RuntimeFunction->UnwindInfoAddress - SectionHeader->VirtualAddress));
+                  if (UnwindInfo->Version == 1) {
+                    memset (UnwindInfo + 1, 0, UnwindInfo->CountOfUnwindCodes * sizeof (UINT16));
+                    memset (UnwindInfo, 0, sizeof (UNWIND_INFO));
                   }
                 }
-                memset (RuntimeFunction, 0, sizeof (RUNTIME_FUNCTION));
               }
-              DebugMsg (NULL, 0, 9, "Zero the .pdata section if the machine type is X64 and the Debug Directory is empty", NULL);
-
-              break;
+              memset (RuntimeFunction, 0, sizeof (RUNTIME_FUNCTION));
             }
+            Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size = 0;
+            Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress = 0;
+            DebugMsg (NULL, 0, 9, "Zero the .pdata section if the machine type is X64 for PE32+ image", NULL);
+            break;
           }
-          Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size = 0;
-          Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress = 0;
         }
       }
     }
@@ -2046,6 +2063,9 @@ Returns:
         }
       }
     }
+  } else {
+    Error (NULL, 0, 3000, "Invalid", "Magic 0x%x of PeImage %s is unknown.", PeHdr->OptionalHeader.Magic, mInImageName);
+    goto Finish;
   }
 
   if (OutImageType == FW_TE_IMAGE) {
