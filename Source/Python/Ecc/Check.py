@@ -36,7 +36,114 @@ class Check(object):
         self.IncludeFileCheck()
         self.PredicateExpressionCheck()
         self.DeclAndDataTypeCheck()
+        self.FunctionLayoutCheck()
         self.NamingConventionCheck()
+    
+    #
+    # C Function Layout Checking
+    #
+    def FunctionLayoutCheck(self):
+        self.FunctionLayoutCheckReturnType()
+        self.FunctionLayoutCheckModifier()
+        self.FunctionLayoutCheckName()
+        self.FunctionLayoutCheckPrototype()
+        self.FunctionLayoutCheckBody()
+        self.FunctionLayoutCheckLocalVariable()
+    
+    # Check whether return type exists and in the first line
+    def FunctionLayoutCheckReturnType(self):
+        if EccGlobalData.gConfig.CFunctionLayoutCheckReturnType == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1':
+            EdkLogger.quiet("Checking function layout return type ...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        c.CheckFuncLayoutReturnType(FullName)
+    
+    # Check whether any optional functional modifiers exist and next to the return type
+    def FunctionLayoutCheckModifier(self):
+        if EccGlobalData.gConfig.CFunctionLayoutCheckOptionalFunctionalModifier == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1':
+            EdkLogger.quiet("Checking function layout modifier ...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        c.CheckFuncLayoutModifier(FullName)
+                        
+    # Check whether the next line contains the function name, left justified, followed by the beginning of the parameter list
+    # Check whether the closing parenthesis is on its own line and also indented two spaces
+    def FunctionLayoutCheckName(self):
+        if EccGlobalData.gConfig.CFunctionLayoutCheckFunctionName == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1':
+            EdkLogger.quiet("Checking function layout function name ...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        c.CheckFuncLayoutName(FullName)
+    # Check whether the function prototypes in include files have the same form as function definitions
+    def FunctionLayoutCheckPrototype(self):
+        if EccGlobalData.gConfig.CFunctionLayoutCheckFunctionPrototype == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1':
+            EdkLogger.quiet("Checking function layout function prototype ...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        c.CheckFuncLayoutPrototype(FullName)
+
+    # Check whether the body of a function is contained by open and close braces that must be in the first column
+    def FunctionLayoutCheckBody(self):
+        if EccGlobalData.gConfig.CFunctionLayoutCheckFunctionBody == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1':
+            EdkLogger.quiet("Checking function layout function body ...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        c.CheckFuncLayoutBody(FullName)
+
+    # Check whether the data declarations is the first code in a module.
+    #self.CFunctionLayoutCheckDataDeclaration = 1
+    # Check whether no initialization of a variable as part of its declaration
+    def FunctionLayoutCheckLocalVariable(self):
+        if EccGlobalData.gConfig.CFunctionLayoutCheckNoInitOfVariable == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1':
+            EdkLogger.quiet("Checking function layout local variables ...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        c.CheckFuncLayoutLocalVariable(FullName)
+
+    # Check whether no use of STATIC for functions
+    #self.CFunctionLayoutCheckNoStatic = 1
     
     #
     # Declarations and Data Types Checking
@@ -88,17 +195,47 @@ class Check(object):
     # Check whether Enumerated Type has a 'typedef' and the name is capital
     def DeclCheckEnumeratedType(self):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckEnumeratedType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1':
-            pass
+            EdkLogger.quiet("Checking Declaration enum typedef ...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.h', '.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        c.CheckDeclEnumTypedef(FullName)
     
     # Check whether Structure Type has a 'typedef' and the name is capital
     def DeclCheckStructureDeclaration(self):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckStructureDeclaration == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1':
-            pass
+            EdkLogger.quiet("Checking Declaration struct typedef ...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.h', '.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        c.CheckDeclStructTypedef(FullName)
     
     # Check whether Union Type has a 'typedef' and the name is capital
     def DeclCheckUnionType(self):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckUnionType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1':
-            pass
+            EdkLogger.quiet("Checking Declaration union typedef ...")
+            Tuple = os.walk(EccGlobalData.gTarget)
+            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        
+            for Dirpath, Dirnames, Filenames in Tuple:
+                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                    continue
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.h', '.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        c.CheckDeclUnionTypedef(FullName)
     
     #
     # Predicate Expression Checking
