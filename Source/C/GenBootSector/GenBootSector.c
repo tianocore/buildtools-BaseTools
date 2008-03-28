@@ -570,6 +570,10 @@ main (
   FilePath      = NULL;
   VolumeLetter  = 0;
 
+  if (argc == 0) {
+    PrintUsage();
+  }
+  
   //
   // Parse command line
   //
