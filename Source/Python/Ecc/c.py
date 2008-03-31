@@ -13,6 +13,7 @@ import MetaDataParser
 IncludeFileListDict = {}
 IncludePathListDict = {}
 ComplexTypeDict = {}
+SUDict = {}
 
 def GetIgnoredDirListPattern():
     p = re.compile(r'.*[\\/](?:BUILD|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG|PCCTS)[\\/].*')
@@ -293,7 +294,7 @@ def CollectSourceCodeDataIntoDB(RootDir):
 
     Db.UpdateIdentifierBelongsToFunction()
 
-def GetTableID(FullFileName, ErrorMsgList):
+def GetTableID(FullFileName, ErrorMsgList = []):
     Db = GetDB()
     
     SqlStatement = """ select ID
@@ -377,20 +378,21 @@ def GetPredicateListFromPredicateExpStr(PES):
     i = 0
     PredicateBegin = 0
     #PredicateEnd = 0
-    LogicOpPos = 0
+    LogicOpPos = -1
     while i < len(PES) - 1:
-        if (PES[i].isalpha() or PES[i] == '_') and LogicOpPos >= PredicateBegin:
+        if (PES[i].isalpha() or PES[i] == '_') and LogicOpPos > PredicateBegin:
             PredicateBegin = i
         if (PES[i] == '&' and PES[i+1] == '&') or (PES[i] == '|' and PES[i+1] == '|'):
             LogicOpPos = i
-            PredicateList.append(PES[PredicateBegin:i].strip())
+            PredicateList.append(PES[PredicateBegin:i].rstrip(';').rstrip(')').strip())
         i += 1
     
     if PredicateBegin > LogicOpPos:
-        PredicateList.append(PES[PredicateBegin:len(PES)].strip())
+        PredicateList.append(PES[PredicateBegin:len(PES)].rstrip(';').rstrip(')').strip())
     return PredicateList
     
 def GetPredicateVariable(Lvalue):
+    Lvalue += ' '
     i = 0
     SearchBegin = 0
     VarStart = -1
@@ -412,6 +414,7 @@ def GetPredicateVariable(Lvalue):
         if VarEnd == -1:
             break
         
+        
         Index = Lvalue[VarEnd:].find('.')
         if Index > 0:
             SearchBegin += VarEnd + Index
@@ -432,12 +435,18 @@ def SplitPredicateByOp(Str, Op):
     Name = Str.strip()
     Value = None
     
-    PredPartList = Str.split(Op)
-    if len(PredPartList) > 1:
-        Name = PredPartList[0].strip()
-        Value = PredPartList[1].strip()
-        return [Name, Value]
-    return [Name]
+    TmpStr = Str.rstrip(';').rstrip(')')
+    while True:
+        Index = TmpStr.rfind(Op)
+        if Index == -1:
+            return [Name]
+        
+        if Str[Index - 1].isalnum() or Str[Index - 1].isspace():
+            Name = Str[0:Index].strip()
+            Value = Str[Index + len(Op):].strip()
+            return [Name, Value]   
+    
+        TmpStr = Str[0:Index - 1]
 
 def SplitPredicateStr(Str):
     PredPartList = SplitPredicateByOp(Str, '==')
@@ -447,6 +456,14 @@ def SplitPredicateStr(Str):
     PredPartList = SplitPredicateByOp(Str, '!=')
     if len(PredPartList) > 1:
         return [PredPartList, '!=']
+    
+    PredPartList = SplitPredicateByOp(Str, '>=')
+    if len(PredPartList) > 1:
+        return [PredPartList, '>=']
+        
+    PredPartList = SplitPredicateByOp(Str, '<=')
+    if len(PredPartList) > 1:
+        return [PredPartList, '<=']
         
     PredPartList = SplitPredicateByOp(Str, '>')
     if len(PredPartList) > 1:
@@ -455,14 +472,6 @@ def SplitPredicateStr(Str):
     PredPartList = SplitPredicateByOp(Str, '<')
     if len(PredPartList) > 1:
         return [PredPartList, '<']
-        
-    PredPartList = SplitPredicateByOp(Str, '>=')
-    if len(PredPartList) > 1:
-        return [PredPartList, '>=']
-        
-    PredPartList = SplitPredicateByOp(Str, '<=')
-    if len(PredPartList) > 1:
-        return [PredPartList, '<=']
         
     return [[Str, None], None]
 
@@ -504,7 +513,7 @@ def GetTypedefDict(FullFileName):
     if Dict != None:
         return Dict
     
-    FileID = GetTableID(FullFileName, ErrorMsgList)
+    FileID = GetTableID(FullFileName)
     FileTable = 'Identifier' + str(FileID)
     Db = GetDB()
     SqlStatement = """ select Modifier, Name, Value, ID
@@ -520,7 +529,7 @@ def GetTypedefDict(FullFileName):
         
     IncludeFileList = GetAllIncludeFiles(FullFileName)
     for F in IncludeFileList:
-        FileID = GetTableID(F, ErrorMsgList)
+        FileID = GetTableID(F)
         if FileID < 0:
             continue
     
@@ -531,7 +540,6 @@ def GetTypedefDict(FullFileName):
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_TYPEDEF)
         ResultSet = Db.TblFile.Exec(SqlStatement)
     
-        Dict = {}
         for Result in ResultSet:
             if len(Result[0]) == 0:
                 Dict[Result[1]] = Result[2]
@@ -539,9 +547,89 @@ def GetTypedefDict(FullFileName):
     ComplexTypeDict[FullFileName] = Dict
     return Dict
 
+def GetSUDict(FullFileName):
+    
+    Dict = SUDict.get(FullFileName)
+    if Dict != None:
+        return Dict
+    
+    FileID = GetTableID(FullFileName)
+    FileTable = 'Identifier' + str(FileID)
+    Db = GetDB()
+    SqlStatement = """ select Name, Value, ID
+                       from %s
+                       where Model = %d or Model = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_STRUCTURE, DataClass.MODEL_IDENTIFIER_UNION)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    
+    Dict = {}
+    for Result in ResultSet:
+        if len(Result[1]) > 0:
+            Dict[Result[0]] = Result[1]
+        
+    IncludeFileList = GetAllIncludeFiles(FullFileName)
+    for F in IncludeFileList:
+        FileID = GetTableID(F)
+        if FileID < 0:
+            continue
+    
+        FileTable = 'Identifier' + str(FileID)
+        SqlStatement = """ select Name, Value, ID
+                       from %s
+                       where Model = %d or Model = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_STRUCTURE, DataClass.MODEL_IDENTIFIER_UNION)
+        ResultSet = Db.TblFile.Exec(SqlStatement)
+    
+        for Result in ResultSet:
+            if len(Result[1]) > 0:
+                Dict[Result[0]] = Result[1]
+                
+    SUDict[FullFileName] = Dict
+    return Dict
+
+def GetFinalTypeValue(Type, FieldName, TypedefDict, SUDict):
+    Value = TypedefDict.get(Type)
+    if Value == None:
+        Value = SUDict.get(Type)
+    if Value == None:
+        return None
+    
+    LBPos = Value.find('{')
+    while LBPos == -1:
+        FTList = Value.split()
+        for FT in FTList:
+            if FT not in ('struct', 'union'):
+                Value = TypedefDict.get(FT)
+                if Value == None:
+                    Value = SUDict.get(FT)
+                break
+        
+        if Value == None:
+            return None
+     
+        LBPos = Value.find('{')
+     
+#    RBPos = Value.find('}')
+    Fields = Value[LBPos + 1:]
+    FieldsList = Fields.split(';')
+    for Field in FieldsList:
+        Field = Field.strip()
+        Index = Field.find(FieldName)
+        if Index < 1:
+            continue
+        if not Field[Index - 1].isalnum():
+            if Index + len(FieldName) == len(Field):
+                return GetPredicateVariable(Field[0:Index])[0]
+            else:
+                if not Field[Index + len(FieldName) + 1].isalnum():
+                    return GetPredicateVariable(Field[0:Index])[0]
+    return None
+    
+
 def GetTypeInfo(RefList, Modifier, FullFileName):
     TypedefDict = GetTypedefDict(FullFileName)
-    Type = GetReturnTypeFromModifier(Modifier)
+    SUDict = GetSUDict(FullFileName)
+    Type = GetReturnTypeFromModifier(Modifier).rstrip('*')
     Index = 0
     while Index < len(RefList):
         FieldName = RefList[Index]
@@ -551,19 +639,25 @@ def GetTypeInfo(RefList, Modifier, FullFileName):
         Type = FromType
         Index += 1
 
+    return Type
+
 def GetVarInfo(PredVarList, FuncRecord, FullFileName):
     
     PredVar = PredVarList[0]
+    FileID = GetTableID(FullFileName)
+    
+    Db = GetDB()
+    FileTable = 'Identifier' + str(FileID)
     # really variable, search local variable first
     SqlStatement = """ select Modifier, ID
                        from %s
-                       where Model = %d and Name = \'%s\' and BelongsToFunction = %d
-                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_VARIABLE, PredVar, FuncRecord[4])
+                       where Model = %d and Name = \'%s\' and StartLine >= %d and StartLine <= %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_VARIABLE, PredVar, FuncRecord[0], FuncRecord[1])
     ResultSet = Db.TblFile.Exec(SqlStatement)
     VarFound = False
     for Result in ResultSet:
         if len(PredVarList) > 1:
-            Type = GetTypeInfo(PredVarList[1:], Result[0])
+            Type = GetTypeInfo(PredVarList[1:], Result[0], FullFileName)
             return Type
                 
     # search function parameters second
@@ -571,7 +665,7 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName):
     for Param in ParamList:
         if Param.Name.strip() == PredVar:
             if len(PredVarList) > 1:
-                Type = GetTypeInfo(PredVarList[1:], Result[0])
+                Type = GetTypeInfo(PredVarList[1:], Param.Modifier, FullFileName)
                 return Type
           
     # search global variable next
@@ -583,26 +677,26 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName):
 
     for Result in ResultSet:
         if len(PredVarList) > 1:
-            Type = GetTypeInfo(PredVarList[1:], Result[0])
+            Type = GetTypeInfo(PredVarList[1:], Result[0], FullFileName)
             return Type
     
     # search variable in include files
     IncludeFileList = GetAllIncludeFiles(FullFileName)
     for F in IncludeFileList:
-        FileID = GetTableID(F, ErrorMsgList)
+        FileID = GetTableID(F)
         if FileID < 0:
             continue
     
         FileTable = 'Identifier' + str(FileID)
         SqlStatement = """ select Modifier, ID
                        from %s
-                       where Model = %d and BelongsToFunction = -1 and Name = %s
+                       where Model = %d and BelongsToFunction = -1 and Name = \'%s\'
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_VARIABLE, PredVar)
         ResultSet = Db.TblFile.Exec(SqlStatement)
 
         for Result in ResultSet:
             if len(PredVarList) > 1:
-                Type = GetTypeInfo(PredVarList[1:], Result[0])
+                Type = GetTypeInfo(PredVarList[1:], Result[0], FullFileName)
                 return Type
 
 def CheckFuncLayoutReturnType(FullFileName):
