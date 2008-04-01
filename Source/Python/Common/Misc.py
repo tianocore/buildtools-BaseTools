@@ -521,10 +521,138 @@ class rdict(dict):
     def popitem(self):
         EdkLogger.error("RestrictedDict", ATTRIBUTE_ACCESS_DENIED, ExtraData="popitem")
 
+## Dictionary using prioritized list as key
+#
+class tdict:
+    _ListType = type([])
+    _TupleType = type(())
+    _Wildcard = 'COMMON'
+    _ValidWildcardList = ['COMMON', 'DEFAULT', 'ALL', '', '*', 'PLATFORM']
+
+    def __init__(self, _Single_=False, _Level_=2):
+        self._Level_ = _Level_
+        self.data = {}
+        self._Single_ = _Single_
+    
+    # =[] operator
+    def __getitem__(self, key):
+        KeyType = type(key)
+        RestKeys = None
+        if KeyType == self._ListType or KeyType == self._TupleType:
+            FirstKey = key[0]
+            if len(key) > 1:
+                RestKeys = key[1:]
+            elif self._Level_ > 1:
+                RestKeys = [self._Wildcard for i in range(0, self._Level_-1)]
+        else:
+            FirstKey = key
+            if self._Level_ > 1:
+                RestKeys = [self._Wildcard for i in range(0, self._Level_-1)]
+
+        if FirstKey == None or str(FirstKey).upper() in self._ValidWildcardList:
+            FirstKey = self._Wildcard
+
+        if self._Single_:
+            return self._GetSingleValue(FirstKey, RestKeys)
+        else:
+            return self._GetAllValues(FirstKey, RestKeys)
+
+    def _GetSingleValue(self, FirstKey, RestKeys):
+        Value = None
+        #print "%s-%s" % (FirstKey, self._Level_) ,
+        if self._Level_ > 1:
+            if FirstKey == self._Wildcard:
+                for Key in self.data:
+                    Value = self.data[Key][RestKeys]
+                    if Value != None: break
+            else:
+                if FirstKey in self.data:
+                    Value = self.data[FirstKey][RestKeys]
+                if Value == None and self._Wildcard in self.data:
+                    #print "Value=None"
+                    Value = self.data[self._Wildcard][RestKeys]
+        else:
+            # "$"
+            if FirstKey == self._Wildcard:
+                for Key in self.data:
+                    Value = self.data[Key]
+                    if Value != None: break
+            else:
+                if FirstKey in self.data:
+                    Value = self.data[FirstKey]
+                elif self._Wildcard in self.data:
+                    Value = self.data[self._Wildcard]
+        return Value
+
+    def _GetAllValues(self, FirstKey, RestKeys):
+        Value = []
+        if self._Level_ > 1:
+            if FirstKey == self._Wildcard:
+                for Key in self.data:
+                    Value += self.data[Key][RestKeys]
+            else:
+                if FirstKey in self.data:
+                    Value += self.data[FirstKey][RestKeys]
+                if self._Wildcard in self.data:
+                    Value += self.data[self._Wildcard][RestKeys]
+        else:
+            if FirstKey == self._Wildcard:
+                for Key in self.data:
+                    Value.append(self.data[Key])
+            else:
+                if FirstKey in self.data:
+                    Value.append(self.data[FirstKey])
+                if self._Wildcard in self.data:
+                    Value.append(self.data[self._Wildcard])
+        return Value
+
+    ## []= operator
+    def __setitem__(self, key, value):
+        KeyType = type(key)
+        RestKeys = None
+        if KeyType == self._ListType or KeyType == self._TupleType:
+            FirstKey = key[0]
+            if len(key) > 1:
+                RestKeys = key[1:]
+            else:
+                RestKeys = [self._Wildcard for i in range(0, self._Level_-1)]
+        else:
+            FirstKey = key
+            if self._Level_ > 1:
+                RestKeys = [self._Wildcard for i in range(0, self._Level_-1)]
+
+        if FirstKey in self._ValidWildcardList:
+            FirstKey = self._Wildcard
+        
+        if FirstKey not in self.data and self._Level_ > 0:
+            self.data[FirstKey] = tdict(self._Single_, self._Level_ - 1)
+
+        if self._Level_ > 1:
+            self.data[FirstKey][RestKeys] = value
+        else:
+            self.data[FirstKey] = value
+
+    def SetGreedyMode(self):
+        self._Single_ = False
+        if self._Level_ > 1:
+            for Key in self.data:
+                self.data[Key].SetGreedyMode()
+
+    def SetSingleMode(self):
+        self._Single_ = True
+        if self._Level_ > 1:
+            for Key in self.data:
+                self.data[Key].SetSingleMode()
 ##
 #
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
 #
 if __name__ == '__main__':
-    pass
+    d = tdict(True, 3)
+    d['COMMON', 'PEIM', "A",] = 1
+    d['COMMON', 'DXE_CORE', 'B'] = 2
+    d['IA32', 'DXE_CORE', 'C'] = 3
+
+    print d['IA32', 'DXE_CORE', 'C']
+

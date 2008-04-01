@@ -16,7 +16,7 @@
 #
 import Common.EdkLogger as EdkLogger
 from MetaDataTable import Table
-from Common.String import ConvertToSqlString
+from MetaDataTable import ConvertToSqlString
 
 class ModuleTable(Table):
     _ID_STEP_ = 0.00000001

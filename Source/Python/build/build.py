@@ -28,11 +28,12 @@ from Common import Misc as Utils
 
 from Common.TargetTxtClassObject import *
 from Common.ToolDefClassObject import *
-from Common.EdkIIWorkspaceBuild import *
+#from Common.EdkIIWorkspaceBuild import *
 from Common.DataType import *
 from AutoGen.AutoGen import *
 from GenFds.FdfParser import *
 from Common.BuildToolError import *
+from Workspace.WorkspaceBuild import *
 
 import Common.EdkLogger
 import Common.GlobalData as GlobalData
@@ -653,17 +654,17 @@ class Build():
         self.Progress = Utils.Progressor()
 
         # parse target.txt, tools_def.txt, and platform file
-        self.Progress.Start("Loading build configuration")
+        #self.Progress.Start("Loading build configuration")
         self.RestoreBuildData()
         self.LoadConfiguration()
-        self.Progress.Stop("done!")
+        #self.Progress.Stop("done!")
 
-        self.Progress.Start("Parsing platform/modules/packages")
+        #self.Progress.Start("Parsing platform/modules/packages")
         self.InitBuild()
-        self.Progress.Stop("done!")
+        #self.Progress.Stop("done!")
 
         # print current build environment and configuration
-        EdkLogger.quiet('')
+        #EdkLogger.quiet('')
         EdkLogger.quiet("%-24s = %s" % ("WORKSPACE", os.environ["WORKSPACE"]))
         EdkLogger.quiet("%-24s = %s" % ("EDK_SOURCE", os.environ["EDK_SOURCE"]))
         EdkLogger.quiet("%-24s = %s" % ("EFI_SOURCE", os.environ["EFI_SOURCE"]))
@@ -687,7 +688,7 @@ class Build():
             EdkLogger.verbose('%-24s = %s' % ("Max Thread Number", self.ThreadNumber))
 
         # establish build database, INF/DEC files will be parsed in this stage
-        self.Progress.Start("\nEstablishing build database")
+        self.Progress.Start("\nParsing files")
         try:
             if self.Fdf != None and self.Fdf != "":
                 FdfFile = os.path.join(self.WorkspaceDir, self.Fdf)
@@ -889,14 +890,14 @@ class Build():
 
         # skip file generation for cleanxxx targets and run target
         if Target not in ['clean', 'cleanlib', 'cleanall', 'run']:    
-            self.Progress.Start("Generating code for " + str(AutoGenResult))
+            self.Progress.Start("Generating code")
             # for target which must generate AutoGen code and makefile
             AutoGenResult.CreateCodeFile(CreateDepModuleCodeFile)
             self.Progress.Stop("done!")
             if Target == "genc":
                 return True
     
-            self.Progress.Start("Generating makefile for " + str(AutoGenResult))
+            self.Progress.Start("Generating makefile")
             AutoGenResult.CreateMakeFile(CreateDepModuleMakeFile)
             self.Progress.Stop("done!")
             if Target == "genmake":
@@ -1241,6 +1242,9 @@ def Main():
         ReturnCode = 1
     finally:
         Utils.Progressor.Abort()
+
+    if MyBuild != None:
+        MyBuild.Ewb.Db.Close()
 
     FinishTime = time.clock()
     BuildDuration = time.strftime("%M:%S", time.gmtime(int(round(FinishTime - StartTime))))

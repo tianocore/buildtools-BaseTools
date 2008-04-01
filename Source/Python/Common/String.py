@@ -228,7 +228,7 @@ def NormPath(Path, Defines = {}):
         if len(Defines) > 0:
             Path = ReplaceMacro(Path, Defines)
             # Remove leading path separator
-            if len(Path) > 0 and Path[0] in [DataType.TAB_SLASH, DataType.TAB_BACK_SLASH] == 0:
+            if len(Path) > 0 and Path[0] in [DataType.TAB_SLASH, DataType.TAB_BACK_SLASH]:
                 Path = Path[1:]
         #
         # To local path format

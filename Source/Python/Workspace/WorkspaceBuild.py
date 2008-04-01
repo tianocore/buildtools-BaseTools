@@ -28,6 +28,8 @@ from Common.BuildToolError import *
 from Common.Misc import sdict
 from Common import GlobalData
 
+DATABASE_PATH = "Conf/.cache/build.db"
+
 ## ItemBuild
 #
 # This Class defines Module/Platform/Package databases for build system

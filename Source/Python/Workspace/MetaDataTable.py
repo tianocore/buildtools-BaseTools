@@ -17,9 +17,11 @@
 import os
 
 import Common.EdkLogger as EdkLogger
-from Common.String import ConvertToSqlString
 from CommonDataClass import DataClass
 from CommonDataClass.DataClass import FileClass
+
+def ConvertToSqlString(StringList):
+    return map(lambda s: "'" + s.replace("'", "''") + "'", StringList)
 
 ## TableFile
 #

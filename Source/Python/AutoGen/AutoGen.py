@@ -824,8 +824,9 @@ class ModuleAutoGen(object):
         PackageList = []
         for M in [self.Module] + self.BuildInfo.DependentLibraryList:
             for Package in M.Packages:
-                if Package not in PackageList:
-                    PackageList.append(self.PlatformAutoGen.GetPackageObject(Package, self.Arch))
+                if Package in PackageList:
+                    continue
+                PackageList.append(Package)
         return PackageList
 
     ## Parse dependency expression
@@ -972,7 +973,8 @@ class ModuleAutoGen(object):
             # no command, no build
             if RuleObject != None and RuleObject.CommandList == []:
                 RuleObject = None
-            FileList.append([SourceFile, FileType, RuleObject])
+            if [SourceFile, FileType, RuleObject] not in FileList:
+                FileList.append([SourceFile, FileType, RuleObject])
 
         return FileList
 
@@ -999,12 +1001,9 @@ class ModuleAutoGen(object):
     #
     def GetDependentPackageList(self):
         PackageList = []
-        for PackageFile in self.Module.Packages:
-            if PackageFile in PackageList:
+        for Package in self.Module.Packages:
+            if Package in PackageList:
                 continue
-            Package = self.PlatformAutoGen.GetPackageObject(PackageFile, self.Arch)
-            if Package == None:
-                EdkLogger.error("AutoGen", FILE_NOT_FOUND, ExtraData=PackageFile)
             PackageList.append(Package)
         return PackageList
 
@@ -1029,7 +1028,7 @@ class ModuleAutoGen(object):
     def GetSortedLibraryList(self):
         LibraryList = []
         for Key in self.Module.LibraryClasses:
-            Library = self.PlatformAutoGen.GetModuleObject(self.Module.LibraryClasses[Key], self.Arch)
+            Library = self.Module.LibraryClasses[Key]
             if Library not in LibraryList:
                 LibraryList.append(Library)
         return LibraryList
