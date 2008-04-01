@@ -148,7 +148,12 @@ class Ecc(object):
                     Fdf(Filename, True, EccGlobalData.gWorkspace, EccGlobalData.gDb)                    
                     continue
         Op.close()
-
+        
+        #
+        # Commit to database
+        #
+        EccGlobalData.gDb.Conn.commit()
+        
         EdkLogger.quiet("Building database for meta data files done!")
     
     ##
