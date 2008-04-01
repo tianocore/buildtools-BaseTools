@@ -16,6 +16,7 @@
 #
 import sqlite3
 import os
+import os.path
 
 import Common.EdkLogger as EdkLogger
 from CommonDataClass.DataClass import *
@@ -229,7 +230,10 @@ class DscBuildData(PlatformBuildClassObject):
     def _GetFdfFile(self):
         if self._FlashDefinition == None:
             RecordList = self._Table.Query(MODEL_META_DATA_HEADER, TAB_DSC_DEFINES_FLASH_DEFINITION, self.Arch)
-            self._FlashDefinition = NormPath(RecordList[0][0])
+            if len(RecordList) > 0:
+                self._FlashDefinition = NormPath(RecordList[0][0])
+            else:
+                self._FlashDefinition = ''
         return self._FlashDefinition
 
     def _GetBuildNumber(self):
@@ -327,7 +331,7 @@ class DscBuildData(PlatformBuildClassObject):
                     LibraryModule = self._Db.BuildObject[LibraryPath, MODEL_FILE_INF, self._Arch]
                     LibraryInstance[LibraryClassName] = LibraryModule
                     LibraryConsumerList.append(LibraryModule)
-                    EdkLogger.verbose("\t" + LibraryClassName + " : " + str(LibraryModule))
+                    EdkLogger.verbose("\t" + str(LibraryClassName) + " : " + str(LibraryModule))
                 else:
                     LibraryModule = LibraryInstance[LibraryClassName]
 
@@ -1677,6 +1681,11 @@ class WorkspaceDatabase(object):
 
     def __init__(self, DbPath, GlobalMacros={}):
         self._GlobalMacros = GlobalMacros
+
+        DbDir = os.path.split(DbPath)[0]
+        if not os.path.exists(DbDir):
+            os.makedirs(DbDir)
+
         self.Conn = sqlite3.connect(DbPath, isolation_level='DEFERRED')
         self.Conn.execute("PRAGMA synchronous=OFF")
         self.Conn.execute("PRAGMA temp_store=MEMORY")
