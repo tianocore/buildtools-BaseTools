@@ -236,7 +236,7 @@ def GetFunctionList():
             FuncDef.Modifier += '*'
             DeclText = DeclText.lstrip('*').strip()
         
-        FuncDef.Declarator = FuncDef.Declarator.replace('*', '')
+        FuncDef.Declarator = FuncDef.Declarator.lstrip('*')
         DeclSplitList = FuncDef.Declarator.split('(')
         if len(DeclSplitList) < 2:
             continue
@@ -255,6 +255,18 @@ def GetFunctionList():
         
     return FuncObjList
 
+def GetFileModificationTimeFromDB(FullFileName):
+    TimeValue = 0.0
+    Db = GetDB()
+    SqlStatement = """ select TimeStamp
+                       from File
+                       where FullPath = \'%s\'
+                   """ % (FullFileName)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    for Result in ResultSet:
+        TimeValue = Result[0]
+    return TimeValue
+
 def CollectSourceCodeDataIntoDB(RootDir):
     FileObjList = []
     tuple = os.walk(RootDir)
@@ -266,7 +278,6 @@ def CollectSourceCodeDataIntoDB(RootDir):
             continue
         for f in filenames:
             FullName = os.path.join(dirpath, f)
-            
             if os.path.splitext(f)[1] in ('.h', '.c'):
                 EdkLogger.info("Parsing " + FullName)
                 model = f.endswith('c') and DataClass.MODEL_FILE_C or DataClass.MODEL_FILE_H
@@ -285,8 +296,9 @@ def CollectSourceCodeDataIntoDB(RootDir):
                 FileObj = DataClass.FileClass(-1, BaseName, Ext, DirName, FullName, model, ModifiedTime, GetFunctionList(), GetIdentifierList(), [])
                 FileObjList.append(FileObj)
                 collector.CleanFileProfileBuffer()   
+    
     if len(ParseErrorFileList) > 0:
-        EdkLogger.info("Found error during parsing:\n\t%s\n" % "\n\t".join(ParseErrorFileList))
+        EdkLogger.info("Found unrecoverable error during parsing:\n\t%s\n" % "\n\t".join(ParseErrorFileList))
     
     Db = GetDB()    
     for file in FileObjList:    
@@ -294,9 +306,11 @@ def CollectSourceCodeDataIntoDB(RootDir):
 
     Db.UpdateIdentifierBelongsToFunction()
 
-def GetTableID(FullFileName, ErrorMsgList = []):
+def GetTableID(FullFileName, ErrorMsgList = None):
+    if ErrorMsgList == None:
+        ErrorMsgList = []
+        
     Db = GetDB()
-    
     SqlStatement = """ select ID
                        from File
                        where FullPath = '%s'
@@ -379,16 +393,25 @@ def GetPredicateListFromPredicateExpStr(PES):
     PredicateBegin = 0
     #PredicateEnd = 0
     LogicOpPos = -1
+    p = GetFuncDeclPattern()
     while i < len(PES) - 1:
         if (PES[i].isalpha() or PES[i] == '_') and LogicOpPos > PredicateBegin:
             PredicateBegin = i
         if (PES[i] == '&' and PES[i+1] == '&') or (PES[i] == '|' and PES[i+1] == '|'):
             LogicOpPos = i
-            PredicateList.append(PES[PredicateBegin:i].rstrip(';').rstrip(')').strip())
+            Exp = PES[PredicateBegin:i].strip()
+            if p.match(Exp):
+                PredicateList.append(Exp)
+            else:
+                PredicateList.append(Exp.rstrip(';').rstrip(')').strip())
         i += 1
     
     if PredicateBegin > LogicOpPos:
-        PredicateList.append(PES[PredicateBegin:len(PES)].rstrip(';').rstrip(')').strip())
+        Exp = PES[PredicateBegin:len(PES)].strip()
+        if p.match(Exp):
+            PredicateList.append(Exp)
+        else:
+            PredicateList.append(Exp.rstrip(';').rstrip(')').strip())
     return PredicateList
     
 def GetPredicateVariable(Lvalue):
@@ -441,7 +464,7 @@ def SplitPredicateByOp(Str, Op):
         if Index == -1:
             return [Name]
         
-        if Str[Index - 1].isalnum() or Str[Index - 1].isspace():
+        if Str[Index - 1].isalnum() or Str[Index - 1].isspace() or Str[Index - 1] == ')':
             Name = Str[0:Index].strip()
             Value = Str[Index + len(Op):].strip()
             return [Name, Value]   
@@ -619,17 +642,23 @@ def GetFinalTypeValue(Type, FieldName, TypedefDict, SUDict):
             continue
         if not Field[Index - 1].isalnum():
             if Index + len(FieldName) == len(Field):
-                return GetPredicateVariable(Field[0:Index])[0]
+                Type = GetPredicateVariable(Field[0:Index])
+                if len(Type) == 0:
+                    return Field[0:Index]
+                return Type[0]
             else:
                 if not Field[Index + len(FieldName) + 1].isalnum():
-                    return GetPredicateVariable(Field[0:Index])[0]
+                    Type = GetPredicateVariable(Field[0:Index])
+                    if len(Type) == 0:
+                        return Field[0:Index]
+                    return Type[0]
     return None
     
 
 def GetTypeInfo(RefList, Modifier, FullFileName):
     TypedefDict = GetTypedefDict(FullFileName)
     SUDict = GetSUDict(FullFileName)
-    Type = GetReturnTypeFromModifier(Modifier).rstrip('*')
+    Type = GetReturnTypeFromModifier(Modifier).rstrip('*').strip()
     Index = 0
     while Index < len(RefList):
         FieldName = RefList[Index]
@@ -1189,6 +1218,8 @@ def CheckNonBooleanValueComparison(FullFileName):
             continue
         
         for Exp in GetPredicateListFromPredicateExpStr(Str[0]):
+            if p.match(Exp):
+                continue
             PredInfo = SplitPredicateStr(Exp)
             if PredInfo[1] == None:
                 PredVarList = GetPredicateVariable(PredInfo[0][0])
