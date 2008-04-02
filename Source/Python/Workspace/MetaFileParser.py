@@ -156,14 +156,13 @@ class InfParser(MetaFileParser):
             if Line[0] == TAB_SECTION_START and Line[-1] == TAB_SECTION_END:
                 self._SectionHeaderParser()
                 continue
-            elif Line.startswith('DEFINE '):
+            elif Line.upper().startswith('DEFINE '):
                 self._MacroParser()
                 continue
 
             # section content
             self._ValueList = ['','','']
             self._SectionParser[self._SectionType](self)
-            EdkLogger.debug(EdkLogger.DEBUG_8, "Define: %s" % self._ValueList)
 
             # 
             # Model, Value1, Value2, Value3, Value4, Value5, Arch, Platform, BelongsToFile=-1, 
@@ -186,13 +185,6 @@ class InfParser(MetaFileParser):
                             )
         self._Done()
             
-    #def _DefineParser(self):
-    #    TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
-    #    self._ValueList[0] = TokenList[0]
-    #    if len(TokenList) == 2:
-    #        MoreValues = GetSplitValueList(TokenList[1], TAB_VALUE_SPLIT)
-    #        self._ValueList[1:1+len(MoreValues)] = MoreValues
-
     def _BuildOptionParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
         TokenList2 = GetSplitValueList(TokenList[0], ':', 1)
@@ -201,16 +193,13 @@ class InfParser(MetaFileParser):
             self._ValueList[1] = TokenList2[1]
         else:
             self._ValueList[1] = TokenList[0]
-        self._ValueList[2] = TokenList[1]
+        self._ValueList[2] = ReplaceMacro(TokenList[1], self._Macros)
 
     def _NmakeParser(self):
-        TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT, 1)
-        if len(TokenList) == 2:
-            self._ValueList[0] = TokenList[0]
-            TokenList = GetSplitValueList(TokenList[1], TAB_EQUAL_SPLIT, 1)
-        else:
-            TokenList = GetSplitValueList(TokenList[0], TAB_EQUAL_SPLIT, 1)
-        self._ValueList[1:1+len(TokenList)] = TokenList
+        TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
+        self._ValueList[0:len(TokenList)] = TokenList
+        # remove self-reference in macro setting
+        self._ValueList[1] = ReplaceMacro(self._ValueList[1], {self._ValueList[0]:''})
 
     def _PcdParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT, 1)
@@ -225,11 +214,11 @@ class InfParser(MetaFileParser):
         MODEL_UNKNOWN                   :   MetaFileParser._Skip,
         MODEL_META_DATA_HEADER          :   MetaFileParser._DefineParser,
         MODEL_META_DATA_BUILD_OPTION    :   _BuildOptionParser,
-        MODEL_EFI_INCLUDE               :   MetaFileParser._PathParser,
-        MODEL_EFI_LIBRARY_INSTANCE      :   MetaFileParser._PathParser,
+        MODEL_EFI_INCLUDE               :   MetaFileParser._PathParser,     # for R8.x modules
+        MODEL_EFI_LIBRARY_INSTANCE      :   MetaFileParser._CommonParser,   # for R8.x modules
         MODEL_EFI_LIBRARY_CLASS         :   MetaFileParser._PathParser,
         MODEL_META_DATA_PACKAGE         :   MetaFileParser._PathParser,
-        MODEL_META_DATA_NMAKE           :   _NmakeParser,
+        MODEL_META_DATA_NMAKE           :   _NmakeParser,                   # for R8.x modules
         MODEL_PCD_FIXED_AT_BUILD        :   _PcdParser,
         MODEL_PCD_PATCHABLE_IN_MODULE   :   _PcdParser,
         MODEL_PCD_FEATURE_FLAG          :   _PcdParser,
@@ -321,7 +310,7 @@ class DscParser(MetaFileParser):
             elif Line[0] == '!':
                 self._DirectiveParser()
                 continue
-            elif Line.startswith('DEFINE '):
+            elif Line.upper().startswith('DEFINE '):
                 self._MacroParser()
                 continue
 
@@ -382,7 +371,6 @@ class DscParser(MetaFileParser):
         self._ValueList = ['','','']
         TokenList = GetSplitValueList(self._CurrentLine, ' ', 1)
         self._ValueList[0:len(TokenList)] = TokenList
-        print self._ValueList
         DirectiveName = self._ValueList[0].upper()
         self._LastItem = self._Store(
             self._DataType[DirectiveName],
@@ -425,7 +413,7 @@ class DscParser(MetaFileParser):
             self._ValueList[1] = TokenList2[1]
         else:
             self._ValueList[1] = TokenList[0]
-        self._ValueList[2] = TokenList[1]
+        self._ValueList[2] = ReplaceMacro(TokenList[1], self._Macros)
 
     def _PcdParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT, 1)

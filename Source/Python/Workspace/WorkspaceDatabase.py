@@ -288,7 +288,10 @@ class DscBuildData(PlatformBuildClassObject):
                 Module = self._Db.BuildObject[ModuleFile, MODEL_FILE_INF, self._Arch]
                 # only merge library classes and PCD for non-library module
                 if Module.LibraryClass == None or Module.LibraryClass == []:
-                    self._MergeModuleInfo(Module, ModuleId)
+                    if Module.AutoGenVersion < 0x00010005:
+                        self._ResolveLibraryReference(Module)
+                    else:
+                        self._MergeModuleInfo(Module, ModuleId)
                 self._UpdateModulePcd(Module, ModuleId)
                 self._MergeModuleBuildOption(Module, ModuleId)
                 self._Modules.append(Module)
@@ -482,6 +485,30 @@ class DscBuildData(PlatformBuildClassObject):
                 if CName not in Module.Ppis:
                     Module.Ppis.append(CName)
 
+    ##
+    # for R8.x modules
+    # 
+    def _ResolveLibraryReference(self, Module):
+        EdkLogger.verbose("")
+        EdkLogger.verbose("Library instances of module [%s] [%s]:" % (str(Module), self._Arch))
+        LibraryConsumerList = [Module]
+
+        # "CompilerStub" is a must for R8 modules
+        Module.Libraries.append("CompilerStub")
+        while len(LibraryConsumerList) > 0:
+            M = LibraryConsumerList.pop()
+            for LibraryName in M.Libraries:
+                if LibraryName not in self.Libraries:
+                    EdkLogger.warn("AutoGen", "Library [%s] is not found" % LibraryName,
+                                    ExtraData="\t%s [%s]" % (str(Module), Arch))
+                    continue
+
+                Library = self.Libraries[LibraryName]
+                if (LibraryName, Module.ModuleType) not in Module.LibraryClasses:
+                    Module.LibraryClasses[LibraryName, Module.ModuleType] = Library
+                    LibraryConsumerList.append(Library)
+                    EdkLogger.verbose("\t" + LibraryName + " : " + str(Library))
+
     def _UpdateModulePcd(self, Module, ModuleId):
         for Name,Guid in Module.Pcds:
             PcdInModule = Module.Pcds[Name,Guid]
@@ -608,7 +635,7 @@ class DscBuildData(PlatformBuildClassObject):
 
     def _GetLibraries(self):
         if self._Libraries == None:
-            self._Libraries = []
+            self._Libraries = sdict()
             RecordList = self._Table.Query(MODEL_EFI_LIBRARY_INSTANCE, Scope1=self.Arch)
             for Record in RecordList:
                 File = NormPath(Record[0], self._Macros)
@@ -616,7 +643,8 @@ class DscBuildData(PlatformBuildClassObject):
                 if not ValidFile(File):
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                     File=self.DescFilePath, Line=LineNo)
-                self._Libraries.append(File)
+                Library = self._Db.BuildObject[File, MODEL_FILE_INF, self._Arch]
+                self._Libraries[Library.BaseName] = Library
         return self._Libraries
 
     def _GetPcds(self):
@@ -1057,6 +1085,7 @@ class InfBuildData(ModuleBuildClassObject):
         TAB_INF_DEFINES_INF_VERSION                 : "_AutoGenVersion",
         TAB_INF_DEFINES_COMPONENT_TYPE              : "_ComponentType",
         TAB_INF_DEFINES_MAKEFILE_NAME               : "_CustomMakefile",
+        TAB_INF_DEFINES_CUSTOM_MAKEFILE             : "_CustomMakefile",
         TAB_INF_DEFINES_VERSION_NUMBER              : "_Version",
         TAB_INF_DEFINES_VERSION_STRING              : "_Version",
         TAB_INF_DEFINES_VERSION                     : "_Version",
@@ -1064,6 +1093,31 @@ class InfBuildData(ModuleBuildClassObject):
         TAB_INF_DEFINES_SHADOW                      : "_Shadow",
         TAB_INF_DEFINES_CUSTOM_MAKEFILE             : "_CustomMakefile",
     }
+
+    _MODULE_TYPE_ = {
+        "LIBRARY"               :   "BASE",
+        "SECURITY_CORE"         :   "SEC",
+        "PEI_CORE"              :   "PEI_CORE",
+        "COMBINED_PEIM_DRIVER"  :   "PEIM",
+        "PIC_PEIM"              :   "PEIM",
+        "RELOCATABLE_PEIM"      :   "PEIM",
+        "PE32_PEIM"             :   "PEIM",
+        "BS_DRIVER"             :   "DXE_DRIVER",
+        "RT_DRIVER"             :   "DXE_RUNTIME_DRIVER",
+        "SAL_RT_DRIVER"         :   "DXE_SAL_DRIVER",
+    #    "BS_DRIVER"             :   "DXE_SMM_DRIVER",
+    #    "BS_DRIVER"             :   "UEFI_DRIVER",
+        "APPLICATION"           :   "UEFI_APPLICATION",
+        "LOGO"                  :   "BASE",
+    }
+    
+    _NMAKE_FLAG_PATTERN_ = re.compile("(?:EBC_)?([A-Z]+)_(?:STD_|PROJ_|ARCH_)?FLAGS(?:_DLL|_ASL|_EXE)?", re.UNICODE)
+    _TOOL_CODE_ = {
+        "C"         :   "CC",
+        "LIB"       :   "SLINK",
+        "LINK"      :   "DLINK",
+    }
+    
 
     def __init__(self, FilePath, Table, Db, Arch='COMMON', Macros={}):
         self.DescFilePath = FilePath
@@ -1237,6 +1291,49 @@ class InfBuildData(ModuleBuildClassObject):
                 if Record[1] == '':
                     continue
                 self._DestructorList.append(Record[1])
+
+        # 
+        # R8.x modules
+        # 
+        if self._AutoGenVersion < 0x00010005:
+            if self._ComponentType in self._MODULE_TYPE_:
+                self._ModuleType = self._MODULE_TYPE_[self._ComponentType]
+            if self._ComponentType == 'LIBRARY':
+                self._LibraryClass = [LibraryClassObject(self._BaseName, SUP_MODULE_LIST)]
+            # make use some [nmake] section macros
+            RecordList = self._Table.Query(MODEL_META_DATA_NMAKE, Arch=self._Arch, Platform=self._Platform)
+            for Name,Value,Dummy,Arch,Platform,ID,LineNo in RecordList:
+                if Name == "IMAGE_ENTRY_POINT":
+                    if self._ModuleEntryPointList == None:
+                        self._ModuleEntryPointList = []
+                    self._ModuleEntryPointList.append(Value)
+                elif Name == "DPX_SOURCE":
+                    File = NormPath(Value, self._Macros)
+                    if not ValidFile(Source, self._ModuleDir):
+                        EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
+                                        File=self.DescFilePath, Line=LineNo)
+                    self._Sources.append(ModuleSourceFileClass(File, "", "", "", ""))
+                else:
+                    ToolList = self._NMAKE_FLAG_PATTERN_.findall(Name)
+                    if len(ToolList) == 0 or len(ToolList) != 1:
+                        EdkLogger.warn("\nbuild", "Don't know how to do with MACRO: %s" % Name, 
+                                       ExtraData=ContainerFile)
+                    else:
+                        if self._BuildOptions == None:
+                            self._BuildOptions = sdict()
+
+                        if ToolList[0] in self._TOOL_CODE_:
+                            Tool = self._TOOL_CODE_[ToolList[0]]
+                        else:
+                            Tool = ToolList[0]
+                        ToolChain = "*_*_*_%s_FLAGS" % Tool
+                        ToolChainFamily = 'MSFT'    # R8.x only support MSFT tool chain
+                        if (ToolChainFamily, ToolChain) not in self._BuildOptions:
+                            self._BuildOptions[ToolChainFamily, ToolChain] = Value
+                        else:
+                            OptionString = self._BuildOptions[ToolChainFamily, ToolChain]
+                            self._BuildOptions[ToolChainFamily, ToolChain] = OptionString + " " + Value
+
         self._Header_ = 'DUMMY'
 
     def _GetInfVersion(self):
@@ -1448,9 +1545,14 @@ class InfBuildData(ModuleBuildClassObject):
             for Record in RecordList:
                 File = NormPath(Record[0], self._Macros)
                 LineNo = Record[-1]
-                if not ValidFile(File, self._ModuleDir):
-                    EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
-                                    File=self.DescFilePath, Line=LineNo)
+                #if File[0] == '.':
+                #    if not ValidFile(File, self._ModuleDir):
+                #        EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
+                #                        File=self.DescFilePath, Line=LineNo)
+                #else:
+                #    if not ValidFile(File):
+                #        EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
+                #                        File=self.DescFilePath, Line=LineNo)
                 self._Includes.append(File)
         return self._Includes
 
