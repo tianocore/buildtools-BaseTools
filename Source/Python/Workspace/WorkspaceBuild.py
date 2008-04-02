@@ -134,6 +134,8 @@ class WorkspaceBuild(object):
 
                 for Key in Module.LibraryClasses:
                     ModulePath = Module.LibraryClasses[Key]
+                    if ModulePath == None or ModulePath == '':
+                        continue
                     self.Build[Arch].ModuleDatabase[ModulePath] = self.Db.BuildObject[ModulePath, MODEL_FILE_INF, Arch]
 
                 for Package in Module.Packages:

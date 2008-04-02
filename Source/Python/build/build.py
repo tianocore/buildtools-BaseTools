@@ -688,7 +688,7 @@ class Build():
             EdkLogger.verbose('%-24s = %s' % ("Max Thread Number", self.ThreadNumber))
 
         # establish build database, INF/DEC files will be parsed in this stage
-        self.Progress.Start("\nParsing files")
+        self.Progress.Start("\nParsing meta-files")
         try:
             if self.Fdf != None and self.Fdf != "":
                 FdfFile = os.path.join(self.WorkspaceDir, self.Fdf)

@@ -286,7 +286,11 @@ class DscBuildData(PlatformBuildClassObject):
                 if ModuleFile in self._Modules:
                     continue
                 Module = self._Db.BuildObject[ModuleFile, MODEL_FILE_INF, self._Arch]
-                self._MergeModuleInfo(Module, ModuleId)
+                # only merge library classes and PCD for non-library module
+                if Module.LibraryClass == None or Module.LibraryClass == []:
+                    self._MergeModuleInfo(Module, ModuleId)
+                self._UpdateModulePcd(Module, ModuleId)
+                self._MergeModuleBuildOption(Module, ModuleId)
                 self._Modules.append(Module)
         return self._Modules
 
@@ -478,9 +482,6 @@ class DscBuildData(PlatformBuildClassObject):
                 if CName not in Module.Ppis:
                     Module.Ppis.append(CName)
 
-        self._UpdateModulePcd(Module, ModuleId)
-        self._MergeModuleBuildOption(Module, ModuleId)
-
     def _UpdateModulePcd(self, Module, ModuleId):
         for Name,Guid in Module.Pcds:
             PcdInModule = Module.Pcds[Name,Guid]
@@ -576,7 +577,7 @@ class DscBuildData(PlatformBuildClassObject):
             for Module in self.Modules:
                 for Key in Module.LibraryClasses:
                     Lib = Module.LibraryClasses[Key]
-                    if Lib in self._LibraryInstances:
+                    if Lib in [None, ''] or Lib in self._LibraryInstances:
                         continue
                     self._LibraryInstances.append(Lib)
         return self._LibraryInstances
