@@ -1,16 +1,18 @@
 /** @file
-  Guid used to define the Firmware File System. See PI spec volume 3 for more details.
+  Guid used to define the Firmware File System. See PI spec volume 3 for more
+  details.
 
-  Copyright (c) 2006, Intel Corporation                                                         
-  All rights reserved. This program and the accompanying materials                          
-  are licensed and made available under the terms and conditions of the BSD License         
-  which accompanies this distribution.  The full text of the license may be found at        
-  http://opensource.org/licenses/bsd-license.php                                            
+  Copyright (c) 2006 - 2008, Intel Corporation  All rights reserved.
 
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,                     
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.             
+  This program and the accompanying materials are licensed and made available
+  under the terms and conditions of the BSD License which accompanies this
+  distribution.  The full text of the license may be found at:
+    http://opensource.org/licenses/bsd-license.php
 
-  Module Name:  PiFirmwareFileSystem.h
+  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+
+  File Name:  PiFirmwareFileSystem.h
 
   @par Revision Reference:
   Guids defined in PI Spec Volume 3
