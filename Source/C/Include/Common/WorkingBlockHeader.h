@@ -1,26 +1,22 @@
-/*++
-
-Copyright (c) 2006, Intel Corporation
-All rights reserved. This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
-
-Module Name:
-
-  WorkingBlockHeader.h
-
-Abstract:
-
+/** @file
   Defines data structure that is the headers found at the runtime
   updatable firmware volumes, such as the FileSystemGuid of the
   working block, the header structure of the variable block, FTW
   working block, or event log block.
 
---*/
+  Copyright (c) 2006 - 2008, Intel Corporation.  All rights reserved.
+
+  This program and the accompanying materials are licensed and made available
+  under the terms and conditions of the BSD License which accompanies this
+  distribution.  The full text of the license may be found at:
+    http://opensource.org/licenses/bsd-license.php
+
+  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+
+  File Name: WorkingBlockHeader.h
+
+**/
 
 #ifndef __EFI_WORKING_BLOCK_HEADER_H__
 #define __EFI_WORKING_BLOCK_HEADER_H__
