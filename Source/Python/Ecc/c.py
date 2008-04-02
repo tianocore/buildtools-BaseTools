@@ -395,7 +395,7 @@ def GetPredicateListFromPredicateExpStr(PES):
     LogicOpPos = -1
     p = GetFuncDeclPattern()
     while i < len(PES) - 1:
-        if (PES[i].isalpha() or PES[i] == '_') and LogicOpPos > PredicateBegin:
+        if (PES[i].isalnum() or PES[i] == '_') and LogicOpPos > PredicateBegin:
             PredicateBegin = i
         if (PES[i] == '&' and PES[i+1] == '&') or (PES[i] == '|' and PES[i+1] == '|'):
             LogicOpPos = i
@@ -407,6 +407,10 @@ def GetPredicateListFromPredicateExpStr(PES):
         i += 1
     
     if PredicateBegin > LogicOpPos:
+        while PredicateBegin < len(PES):
+            if PES[PredicateBegin].isalnum() or PES[PredicateBegin] == '_':
+                break
+            PredicateBegin += 1
         Exp = PES[PredicateBegin:len(PES)].strip()
         if p.match(Exp):
             PredicateList.append(Exp)
@@ -414,7 +418,7 @@ def GetPredicateListFromPredicateExpStr(PES):
             PredicateList.append(Exp.rstrip(';').rstrip(')').strip())
     return PredicateList
     
-def GetPredicateVariable(Lvalue):
+def GetCNameList(Lvalue):
     Lvalue += ' '
     i = 0
     SearchBegin = 0
@@ -511,7 +515,7 @@ def PatternInModifier(Modifier, SubStr):
             return True
     return False
 
-def GetReturnTypeFromModifier(ModifierStr):
+def GetDataTypeFromModifier(ModifierStr):
     MList = ModifierStr.split()
     for M in MList:
         if M in EccGlobalData.gConfig.ModifierList:
@@ -642,13 +646,13 @@ def GetFinalTypeValue(Type, FieldName, TypedefDict, SUDict):
             continue
         if not Field[Index - 1].isalnum():
             if Index + len(FieldName) == len(Field):
-                Type = GetPredicateVariable(Field[0:Index])
+                Type = GetCNameList(Field[0:Index])
                 if len(Type) == 0:
                     return Field[0:Index]
                 return Type[0]
             else:
                 if not Field[Index + len(FieldName) + 1].isalnum():
-                    Type = GetPredicateVariable(Field[0:Index])
+                    Type = GetCNameList(Field[0:Index])
                     if len(Type) == 0:
                         return Field[0:Index]
                     return Type[0]
@@ -658,7 +662,7 @@ def GetFinalTypeValue(Type, FieldName, TypedefDict, SUDict):
 def GetTypeInfo(RefList, Modifier, FullFileName):
     TypedefDict = GetTypedefDict(FullFileName)
     SUDict = GetSUDict(FullFileName)
-    Type = GetReturnTypeFromModifier(Modifier).rstrip('*').strip()
+    Type = GetDataTypeFromModifier(Modifier).rstrip('*').strip()
     Index = 0
     while Index < len(RefList):
         FieldName = RefList[Index]
@@ -688,6 +692,9 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName):
         if len(PredVarList) > 1:
             Type = GetTypeInfo(PredVarList[1:], Result[0], FullFileName)
             return Type
+        else:
+            Type = GetDataTypeFromModifier(Result[0])
+            return Type
                 
     # search function parameters second
     ParamList = GetParamList(FuncRecord[2])
@@ -695,6 +702,9 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName):
         if Param.Name.strip() == PredVar:
             if len(PredVarList) > 1:
                 Type = GetTypeInfo(PredVarList[1:], Param.Modifier, FullFileName)
+                return Type
+            else:
+                Type = GetDataTypeFromModifier(Param.Modifier)
                 return Type
           
     # search global variable next
@@ -707,6 +717,9 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName):
     for Result in ResultSet:
         if len(PredVarList) > 1:
             Type = GetTypeInfo(PredVarList[1:], Result[0], FullFileName)
+            return Type
+        else:
+            Type = GetDataTypeFromModifier(Result[0])
             return Type
     
     # search variable in include files
@@ -727,6 +740,9 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName):
             if len(PredVarList) > 1:
                 Type = GetTypeInfo(PredVarList[1:], Result[0], FullFileName)
                 return Type
+            else:
+                Type = GetDataTypeFromModifier(Result[0])
+                return Type
 
 def CheckFuncLayoutReturnType(FullFileName):
     ErrorMsgList = []
@@ -743,7 +759,7 @@ def CheckFuncLayoutReturnType(FullFileName):
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
-        ReturnType = GetReturnTypeFromModifier(Result[0])
+        ReturnType = GetDataTypeFromModifier(Result[0])
         if len(ReturnType) == 0:
             PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '', FileTable, Result[1])
             continue
@@ -760,7 +776,7 @@ def CheckFuncLayoutReturnType(FullFileName):
                    """ % (FileID)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
-        ReturnType = GetReturnTypeFromModifier(Result[0])
+        ReturnType = GetDataTypeFromModifier(Result[0])
         if len(ReturnType) == 0:
             PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '', 'Function', Result[1])
             continue
@@ -786,7 +802,7 @@ def CheckFuncLayoutModifier(FullFileName):
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
-        ReturnType = GetReturnTypeFromModifier(Result[0])
+        ReturnType = GetDataTypeFromModifier(Result[0])
         if len(ReturnType) == 0:
             continue
         Index = Result[0].find(ReturnType)
@@ -799,7 +815,7 @@ def CheckFuncLayoutModifier(FullFileName):
                    """ % (FileID)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
-        ReturnType = GetReturnTypeFromModifier(Result[0])
+        ReturnType = GetDataTypeFromModifier(Result[0])
         if len(ReturnType) == 0:
             continue
         Index = Result[0].find(ReturnType)
@@ -1168,7 +1184,7 @@ def CheckPointerNullComparison(FullFileName):
         for Exp in GetPredicateListFromPredicateExpStr(Str[0]):
             PredInfo = SplitPredicateStr(Exp)
             if PredInfo[1] == None:
-                PredVarList = GetPredicateVariable(PredInfo[0][0])
+                PredVarList = GetCNameList(PredInfo[0][0])
                 # No variable found, maybe value first? like (0 == VarName)
                 if len(PredVarList) == 0:
                     continue
@@ -1222,7 +1238,7 @@ def CheckNonBooleanValueComparison(FullFileName):
                 continue
             PredInfo = SplitPredicateStr(Exp)
             if PredInfo[1] == None:
-                PredVarList = GetPredicateVariable(PredInfo[0][0])
+                PredVarList = GetCNameList(PredInfo[0][0])
                 # No variable found, maybe value first? like (0 == VarName)
                 if len(PredVarList) == 0:
                     continue
@@ -1274,7 +1290,7 @@ def CheckBooleanValueComparison(FullFileName):
         for Exp in GetPredicateListFromPredicateExpStr(Str[0]):
             PredInfo = SplitPredicateStr(Exp)
             if PredInfo[1] in ('==', '!=') and PredInfo[0][1] in ('TRUE', 'FALSE'):
-                PredVarList = GetPredicateVariable(PredInfo[0][0])
+                PredVarList = GetCNameList(PredInfo[0][0])
                 # No variable found, maybe value first? like (0 == VarName)
                 if len(PredVarList) == 0:
                     continue
