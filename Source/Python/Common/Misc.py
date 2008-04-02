@@ -375,8 +375,10 @@ class Progressor:
     ## Thread entry method
     def _ProgressThreadEntry(self):
         print self.PromptMessage,
+        sys.stdout.flush()
         while not Progressor._StopFlag.isSet():
             print self.ProgressChar,
+            sys.stdout.flush()
             time.sleep(self.Interval)
         print self.CodaMessage
         sys.stdout.flush()
