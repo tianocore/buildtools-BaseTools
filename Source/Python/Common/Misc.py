@@ -565,9 +565,12 @@ class tdict:
         #print "%s-%s" % (FirstKey, self._Level_) ,
         if self._Level_ > 1:
             if FirstKey == self._Wildcard:
-                for Key in self.data:
-                    Value = self.data[Key][RestKeys]
-                    if Value != None: break
+                if FirstKey in self.data:
+                    Value = self.data[FirstKey][RestKeys]
+                if Value == None:
+                    for Key in self.data:
+                        Value = self.data[Key][RestKeys]
+                        if Value != None: break
             else:
                 if FirstKey in self.data:
                     Value = self.data[FirstKey][RestKeys]
@@ -575,11 +578,13 @@ class tdict:
                     #print "Value=None"
                     Value = self.data[self._Wildcard][RestKeys]
         else:
-            # "$"
             if FirstKey == self._Wildcard:
-                for Key in self.data:
-                    Value = self.data[Key]
-                    if Value != None: break
+                if FirstKey in self.data:
+                    Value = self.data[FirstKey]
+                if Value == None:
+                    for Key in self.data:
+                        Value = self.data[Key]
+                        if Value != None: break
             else:
                 if FirstKey in self.data:
                     Value = self.data[FirstKey]
