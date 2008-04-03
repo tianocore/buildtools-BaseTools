@@ -1295,7 +1295,7 @@ class InfBuildData(ModuleBuildClassObject):
         # 
         # R8.x modules
         # 
-        if self._AutoGenVersion < 0x00010005:
+        if self._AutoGenVersion < 0x00010005:   # _AutoGenVersion may be None, which is less than anything
             if self._ComponentType in self._MODULE_TYPE_:
                 self._ModuleType = self._MODULE_TYPE_[self._ComponentType]
             if self._ComponentType == 'LIBRARY':
@@ -1853,6 +1853,9 @@ class WorkspaceDatabase(object):
     def GetTimeStamp(self, FileId):
         return self.TblFile.GetFileTimeStamp(FileId)
 
+    def SetTimeStamp(self, FileId, TimeStamp):
+        return self.TblFile.SetFileTimeStamp(FileId, TimeStamp)
+
     def CheckIntegrity(self, TableName):
         Result = self.Cur.execute("select min(ID) from %s" % (TableName)).fetchall()
         if Result[0][0] != -1:
@@ -1868,10 +1871,12 @@ class WorkspaceDatabase(object):
     def __setitem__(self, FilePath, FileType):
         FileId = self.GetFileId(FilePath)
         if FileId != None:
+            TimeStamp = os.stat(FilePath)[8]
             TableName = self.GetTableName(FileType, FileId)
-            if self.CheckIntegrity(TableName):
-                TimeStamp = os.stat(FilePath)[8]
-                if TimeStamp == self.GetTimeStamp(FileId):
+            if TimeStamp != self.GetTimeStamp(FileId):
+                self.SetTimeStamp(FileId, TimeStamp)
+            else:
+                if self.CheckIntegrity(TableName) == True:
                     return
         else:
             FileId = self.TblFile.InsertFile(FilePath, FileType)

@@ -23,6 +23,7 @@ import time
 import re
 import cPickle
 from UserDict import IterableUserDict
+from UserList import UserList
 
 from Common import EdkLogger as EdkLogger
 from BuildToolError import *
@@ -645,6 +646,26 @@ class tdict:
         if self._Level_ > 1:
             for Key in self.data:
                 self.data[Key].SetSingleMode()
+
+## Boolean chain list
+# 
+class Blist(UserList):
+    def __init__(self, initlist=None):
+        UserList.__init__(self, initlist)
+    def __setitem__(self, i, item):
+        if item not in [True, False]:
+            if item == 0:
+                item = False
+            else:
+                item = True
+        self.data[i] = item
+    def _GetResult(self):
+        Value = True
+        for item in self.data:
+            Value &= item
+        return Value
+    Result = property(_GetResult)
+
 ##
 #
 # This acts like the main() function for the script, unless it is 'import'ed into another

@@ -22,6 +22,7 @@ import Common.EdkLogger as EdkLogger
 from CommonDataClass.DataClass import *
 from Common.DataType import *
 from Common.String import *
+from Common.Misc import Blist
 
 class MetaFileParser(object):
     _DataType = {}
@@ -47,6 +48,7 @@ class MetaFileParser(object):
         self._SubsectionType = MODEL_UNKNOWN
         self._SubsectionName = ''
         self._LastItem = -1
+        self._Enabled = 0
 
     def _Store(self, *Args):
         return self._Table.Insert(*Args)
@@ -276,8 +278,22 @@ class DscParser(MetaFileParser):
         TAB_PCDS_DYNAMIC_EX_VPD_NULL.upper(),
         ]
 
+    _OP_ = {
+        "!"     :   lambda a:   not a,
+        "!="    :   lambda a,b: a!=b,
+        "=="    :   lambda a,b: a==b,
+        ">"     :   lambda a,b: a>b,
+        "<"     :   lambda a,b: a<b,
+        "=>"    :   lambda a,b: a>=b,
+        ">="    :   lambda a,b: a>=b,
+        "<="    :   lambda a,b: a<=b,
+        "=<"    :   lambda a,b: a<=b,
+    }
+
     def __init__(self, FilePath, FileId, FileType, Table, Macros={}, Owner=-1, From=-1):
         MetaFileParser.__init__(self, FilePath, FileType, Table, Macros, Owner, From)
+        # to store conditional directive evaluation result
+        self._Eval = Blist()
 
     def Start(self):
         try:
@@ -330,8 +346,8 @@ class DscParser(MetaFileParser):
                 continue
 
             # 
-            # Model, Value1, Value2, Value3, Value4, Value5, Arch, Platform, BelongsToFile=-1, 
-            # LineBegin=-1, ColumnBegin=-1, LineEnd=-1, ColumnEnd=-1, BelongsToItem=-1, FeatureFlag='', 
+            # Model, Value1, Value2, Value3, Arch, Platform, BelongsToFile=-1, 
+            # LineBegin=-1, ColumnBegin=-1, LineEnd=-1, ColumnEnd=-1, BelongsToItem=-1, 
             # Enabled=-1
             # 
             for Arch, ModuleType in self._Scope:
@@ -348,7 +364,7 @@ class DscParser(MetaFileParser):
                     -1,
                     self._LineIndex+1,
                     -1,
-                    0
+                    self._Enabled
                     )
         self._Done()
 
@@ -400,10 +416,60 @@ class DscParser(MetaFileParser):
                 Parser.Start()
             except:
                 EdkLogger.error("DscParser", PARSER_ERROR, File=self._FilePath, Line=self._LineIndex+1,
-                                ExtraData="'Failed to parse content in file %s" % IncludedFile)
+                                ExtraData="Failed to parse content in file %s" % IncludedFile)
             self._SectionName = Parser._SectionName
             self._SectionType = Parser._SectionType
             self._Scope       = Parser._Scope
+        else:
+            if DirectiveName in ["!IF", "!IFDEF", "!IFNDEF"]:
+                # evaluate the expression
+                Result = self._Evaluate(self._ValueList[1])
+                if DirectiveName == "!IFNDEF":
+                    Result = not Result
+                self._Eval.append(Result)
+            elif DirectiveName in ["!ELSEIF"]:
+                # evaluate the expression
+                self._Eval[-1] = (not self._Eval[-1]) & self._Evaluate(self._ValueList[1])
+            elif DirectiveName in ["!ELSE"]:
+                self._Eval[-1] = not self._Eval[-1]
+            elif DirectiveName in ["!ENDIF"]:
+                if len(self._Eval) > 0:
+                    self._Eval.pop()
+                else:
+                    EdkLogger.error("DscParser", FORMAT_INVALID, "!if..[!else]..!endif doesn't match",
+                                    File=self._FilePath, Line=self._LineIndex+1)
+            if self._Eval.Result == False:
+                self._Enabled = 0 - len(self._Eval)
+            else:
+                self._Enabled = len(self._Eval)
+
+    def _Evaluate(self, Expression):
+        TokenList = Expression.split()
+        TokenNumber = len(TokenList)
+        if TokenNumber == 1:
+            return TokenList[0] in self._Macros
+        elif TokenNumber == 2:
+            Op = TokenList[0]
+            if Op not in self._OP_:
+                EdkLogger.error('DscParser', FORMAT_INVALID, File=self._FilePath, 
+                                Line=self._LineIndex+1, ExtraData=Expression)
+            if TokenList[1].upper() == 'TRUE':
+                Value = True
+            else:
+                Value = False
+            return self._OP_[Op](Value)
+        elif TokenNumber == 3:
+            Name = TokenList[0]
+            if Name not in self._Macros:
+                return False
+            Value = TokenList[2]
+            if Value[0] in ["'", '"']:
+                Value = Value[1:-1]
+            Op = TokenList[1]
+            return self._OP_[Op](self._Macros[Macro], Value)
+        else:
+            EdkLogger.error('DscParser', FORMAT_INVALID, File=self._FilePath, Line=self._LineIndex+1,
+                            ExtraData=Expression)
 
     def _BuildOptionParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)

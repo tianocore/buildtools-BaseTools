@@ -85,7 +85,7 @@ class ModuleTable(Table):
     # @retval:       A recordSet of all found records 
     #
     def Query(self, Model, Value1=None, Arch=None, Platform=None):
-        ConditionString = "Model=%s" % Model
+        ConditionString = "Model=%s AND Enabled>=0" % Model
         if Value1 == None:
             ValueString = "Value1,Value2,Value3,Scope1,Scope2,ID,StartLine"
         else:
@@ -165,7 +165,7 @@ class PackageTable(Table):
     # @retval:       A recordSet of all found records 
     #
     def Query(self, Model, Value1=None, Arch=None):
-        ConditionString = "Model=%s" % Model
+        ConditionString = "Model=%s AND Enabled>=0" % Model
         if Value1 == None:
             ValueString = "Value1,Value2,Value3,Scope1,ID,StartLine"
         else:
@@ -245,7 +245,7 @@ class PlatformTable(Table):
     # @retval:       A recordSet of all found records 
     #
     def Query(self, Model, Value1=None, Scope1=None, Scope2=None, BelongsToItem=None, FromItem=None):
-        ConditionString = "Model=%s" % Model
+        ConditionString = "Model=%s AND Enabled>=0" % Model
         if Value1 == None:
             ValueString = "Value1,Value2,Value3,Scope1,Scope2,ID,StartLine"
         else:

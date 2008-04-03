@@ -230,6 +230,9 @@ class TableFile(Table):
             return None
         return RecordList[0][0]
 
+    def SetFileTimeStamp(self, FileId, TimeStamp):
+        self.Exec("update %s set TimeStamp=%s where ID='%s'" % (self.Table, TimeStamp, FileId))
+
 ## TableDataModel
 #
 # This class defined a table used for data model
