@@ -383,72 +383,60 @@ class DscBuildData(PlatformBuildClassObject):
                                     )
             if ConsumedByList[M] == []:
                 Q.insert(0, M)
-        #
-        # while Q is not empty do
-        #
-        while Q != []:
-            #
-            # remove node from Q
-            #
-            Node = Q.pop()
-            #
-            # output Node
-            #
-            SortedLibraryList.append(Node)
-            #
-            # for each node Item with an edge e from Node to Item do
-            #
-            for Item in LibraryList:
-                if Node not in ConsumedByList[Item]:
-                    continue
-                #
-                # remove edge e from the graph
-                #
-                ConsumedByList[Item].remove(Node)
-                #
-                # If Item has no other incoming edges then
-                #
-                if ConsumedByList[Item] == []:
-                    #
-                    # insert Item into Q
-                    #
-                    Q.insert(0, Item)
 
+        #
+        # start the  DAG algorithm
+        #
+        while True:
             EdgeRemoved = True
             while Q == [] and EdgeRemoved:
                 EdgeRemoved = False
-                #
                 # for each node Item with a Constructor
-                #
                 for Item in LibraryList:
-                    if Item in Constructor:
-                        #
-                        # for each Node without a constructor with an edge e from Item to Node
-                        #
-                        for Node in ConsumedByList[Item]:
-                            if Node not in Constructor:
-                                #
-                                # remove edge e from the graph
-                                #
-                                ConsumedByList[Item].remove(Node)
-                                EdgeRemoved = True
-                                if ConsumedByList[Item] == []:
-                                    #
-                                    # insert Item into Q
-                                    #
-                                    Q.insert(0, Item)
-                                    break
+                    if Item not in Constructor:
+                        continue
+                    # for each Node without a constructor with an edge e from Item to Node
+                    for Node in ConsumedByList[Item]:
+                        if Node in Constructor:
+                            continue
+                        # remove edge e from the graph if Node has no constructor
+                        ConsumedByList[Item].remove(Node)
+                        EdgeRemoved = True
+                        if ConsumedByList[Item] == []:
+                            # insert Item into Q
+                            Q.insert(0, Item)
+                            break
                     if Q != []:
                         break
+            # DAG is done if there's no more incoming edge for all nodes
+            if Q == []:
+                break
+
+            # remove node from Q
+            Node = Q.pop()
+            # output Node
+            SortedLibraryList.append(Node)
+
+            # for each node Item with an edge e from Node to Item do
+            for Item in LibraryList:
+                if Node not in ConsumedByList[Item]:
+                    continue
+                # remove edge e from the graph
+                ConsumedByList[Item].remove(Node)
+
+                if ConsumedByList[Item] != []:
+                    continue
+                # insert Item into Q, if Item has no other incoming edges
+                Q.insert(0, Item)
 
         #
         # if any remaining node Item in the graph has a constructor and an incoming edge, then the graph has a cycle
         #
         for Item in LibraryList:
             if ConsumedByList[Item] != [] and Item in Constructor and len(Constructor) > 1:
-                ErrorMessage = 'Library [%s] with constructors has a cycle' % str(Item)
-                EdkLogger.error("AutoGen", AUTOGEN_ERROR, ErrorMessage,
-                                "\tconsumed by " + "\n\tconsumed by ".join([str(L) for L in ConsumedByList[Item]]))
+                ErrorMessage = "\tconsumed by " + "\n\tconsumed by ".join([str(L) for L in ConsumedByList[Item]])
+                EdkLogger.error("build", AUTOGEN_ERROR, 'Library [%s] with constructors has a cycle' % str(Item),
+                                ExtraData=ErrorMessage)
             if Item not in SortedLibraryList:
                 SortedLibraryList.append(Item)
 
