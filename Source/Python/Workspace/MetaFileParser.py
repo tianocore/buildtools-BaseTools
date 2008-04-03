@@ -412,6 +412,7 @@ class DscParser(MetaFileParser):
             Parser._SectionName = self._SectionName
             Parser._SectionType = self._SectionType
             Parser._Scope = self._Scope
+            Parser._Enabled = self._Enabled
             try:
                 Parser.Start()
             except:
@@ -420,6 +421,7 @@ class DscParser(MetaFileParser):
             self._SectionName = Parser._SectionName
             self._SectionType = Parser._SectionType
             self._Scope       = Parser._Scope
+            self._Enabled     = Parser._Enabled
         else:
             if DirectiveName in ["!IF", "!IFDEF", "!IFNDEF"]:
                 # evaluate the expression
@@ -436,7 +438,7 @@ class DscParser(MetaFileParser):
                 if len(self._Eval) > 0:
                     self._Eval.pop()
                 else:
-                    EdkLogger.error("DscParser", FORMAT_INVALID, "!if..[!else]..!endif doesn't match",
+                    EdkLogger.error("DscParser", FORMAT_INVALID, "!IF..[!ELSE]..!ENDIF doesn't match",
                                     File=self._FilePath, Line=self._LineIndex+1)
             if self._Eval.Result == False:
                 self._Enabled = 0 - len(self._Eval)
