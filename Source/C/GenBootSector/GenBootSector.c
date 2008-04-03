@@ -540,7 +540,44 @@ PrintUsage (
      [-h, --help]\n");
 
 }
- 
+
+/**
+  Judget the type of file path and valid it.
+  
+  @param  FilePath  the string of file path, maybe a disk volume or file
+  
+  @retval -1  Invalid Path
+  @retval  0  Path is valid and is disk volume.
+  @retval  1  Path is valid and is file path.
+  
+**/
+INT
+ValidFilePath (
+  CHAR *FilePath
+  )
+{
+  INT   retval;
+  FILE  *f;
+  
+  if (FilePath == NULL) {
+    return -1;
+  }
+  
+  if (IsLetter(FilePath[0]) && (FilePath[1] == ':') && (FilePath[2] == '\0')) {
+    fprintf (stderr, "error E2003: File was not provided!\n");
+    return 0;
+  } 
+  
+  f = fopen (FilePath, "r");
+  if (f == NULL) {
+    fprintf (stderr, "error E2003: File was not provided!\n");
+    return -1;
+  }
+  
+  fclose(f);
+  return 1;
+}
+
 INT
 main (
   INT  argc,
@@ -551,7 +588,8 @@ main (
   INT           Index;
   BOOL          ProcessMbr;
   CHAR          VolumeLetter;
-  CHAR          *FilePath;
+  CHAR          *OutputFilePath;
+  CHAR          *InputFilePath;
   BOOL          WriteToDisk;
   DRIVE_INFO    DriveInfo;
   PATCH_TYPE    PatchType;
@@ -567,13 +605,15 @@ main (
   
   ProcessMbr    = FALSE;
   WriteToDisk   = TRUE;
-  FilePath      = NULL;
   VolumeLetter  = 0;
 
   if (argc == 0) {
     PrintUsage();
+    return 0;
   }
-  
+
+  InputFilePath = NULL;
+    
   //
   // Parse command line
   //
@@ -585,20 +625,14 @@ main (
     else if ((stricmp (argv[0], "-m") == 0) || (stricmp (argv[Index], "--mbr") == 0)) {
       ProcessMbr = TRUE;
     }
-    else if ((stricmp (argv[Index], "-i") == 0) || (stricmp (argv[Index], "--input") == 0)
-             || (stricmp (argv[Index], "-o") == 0) || (stricmp (argv[Index], "--output") == 0)
-             ) {
-      if (argv[Index + 1][2] == '\0' && argv[Index + 1][1] == ':' && IsLetter (argv[Index + 1][0])) {
-        VolumeLetter = argv[Index + 1][0];
-        if ((stricmp (argv[Index], "-i") == 0) || (stricmp (argv[Index], "--input") == 0)) {
-          WriteToDisk = FALSE;
-        }
-        ++Index;
-      }
-      else {
-        FilePath = argv[Index+1];
-        ++Index;
-      }
+    else if ((stricmp (argv[Index], "-i") == 0) || (stricmp (argv[Index], "--input") == 0)) {
+      InputFilePath = argv[Index + 1];
+	  WriteToDisk = FALSE;
+      ++Index;
+    }
+    else if ((stricmp (argv[Index], "-o") == 0) || (stricmp (argv[Index], "--output") == 0)) {
+      OutputFilePath = argv[Index + 1];
+      ++Index;
     }
     else {
       PrintUsage ();
@@ -606,23 +640,30 @@ main (
     }
   }
 
-  //
-  // Check parameter
-  //
-  if (VolumeLetter == 0) {
-    fprintf (stderr, "error E2003: Volume was not provided!\n");
-    return 1;
+  PatchType = PatchTypeUnknown;
+  
+  if (ValidFilePath (InputFilePath) == 0) {
+    VolumeLetter = InputFilePath[0];
+    
+    if (VolumeLetter == 0) {
+      fprintf (stderr, "error E2003: Volume was not provided!\n");
+      return 1;
+    }    
+  } else if (ValidFilePath(InputFilePath) == 1) {
+    strcpy (DiskPath, InputFilePath);
+    // 
+    // file simulated floppy
+    //
+    PatchType = PatchTypeFloppy;
   }
   
-  if (FilePath == NULL) {
-    fprintf (stderr, "error E2003: File was not provided!\n");
-    return 1;
-  }
+  //if (ValidFilePath(OutputFilePath) != 1) {
+  //  fprintf (stderr, "error E2003: File was not provided!\n");
+  //  return 1;
+  //}
     
-  PatchType = PatchTypeUnknown;
-
   if ((VolumeLetter == 'A') || (VolumeLetter == 'a') || 
-      (VolumeLetter == 'B') || (VolumeLetter == 'b') 
+      (VolumeLetter == 'B') || (VolumeLetter == 'b')
       ) {
     //
     // Floppy
@@ -630,7 +671,7 @@ main (
     sprintf (DiskPath, FloppyPathTemplate, VolumeLetter);
     PatchType = PatchTypeFloppy;
   }
-  else {
+  else if (PatchType != PatchTypeFloppy) {
     //
     // Hard/USB disk
     //
@@ -665,7 +706,7 @@ main (
   //
   // Process DBR (Patch or Read)
   //
-  Status = ProcessBsOrMbr (DiskPath, FilePath, WriteToDisk, PatchType, ProcessMbr);
+  Status = ProcessBsOrMbr (DiskPath, OutputFilePath, WriteToDisk, PatchType, ProcessMbr);
   if (Status == ErrorSuccess) {
     fprintf (
       stdout, 
