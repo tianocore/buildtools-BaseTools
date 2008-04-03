@@ -207,6 +207,8 @@ Returns:
                         date scope is 1970-1-1 0:0:0 ~ 2038-1-19 3:14:07\n");
   fprintf (stdout, "  -m, --mcifile         Convert input microcode txt file to microcode bin file.\n");
   fprintf (stdout, "  -j, --join            Combine multi microcode bin files to one file.\n");
+  fprintf (stdout, "  --keepexceptiontable  Don't clear exception table.\n");
+  fprintf (stdout, "  --keepzeropending     Don't strip zero pending of .reloc.\n");
   fprintf (stdout, "  -a NUM, --align NUM   NUM is one HEX or DEC format alignment value.\n");
   fprintf (stdout, "  -p NUM, --pad NUM     NUM is one HEX or DEC format padding value.\n");
   fprintf (stdout, "  -v, --verbose         Turn on verbose output with informational messages.\n");
@@ -1017,6 +1019,8 @@ Returns:
   UNWIND_INFO       *UnwindInfo;
   STATUS            Status;
   BOOLEAN           ReplaceFlag;
+  BOOLEAN           KeepExceptionTableFlag;
+  BOOLEAN           KeepZeroPendingFlag;
   UINT64            LogLevel;
   EFI_TE_IMAGE_HEADER          TEImageHeader;
   EFI_TE_IMAGE_HEADER          *TeHdr;
@@ -1053,6 +1057,8 @@ Returns:
   CheckSum          = 0;
   ReplaceFlag       = FALSE;
   LogLevel          = 0;
+  KeepExceptionTableFlag = FALSE;
+  KeepZeroPendingFlag    = FALSE;
 
   if (argc == 1) {
     Error (NULL, 0, 1001, "Missing options", "No input options.");
@@ -1152,6 +1158,20 @@ Returns:
 
     if ((stricmp (argv[0], "-r") == 0) || (stricmp (argv[0], "--replace") == 0)) {
       ReplaceFlag = TRUE;
+      argc --;
+      argv ++;
+      continue;
+    }
+
+    if (stricmp (argv[0], "--keepexceptiontable") == 0) {
+      KeepExceptionTableFlag = TRUE;
+      argc --;
+      argv ++;
+      continue;
+    }
+
+    if (stricmp (argv[0], "--keepzeropending") == 0) {
+      KeepZeroPendingFlag = TRUE;
       argc --;
       argv ++;
       continue;
@@ -1912,13 +1932,23 @@ Returns:
     //
     // Zero .pdata section data.
     //
-    if (Optional32->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION &&
+    if (!KeepExceptionTableFlag && Optional32->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION &&
         Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress != 0 && 
         Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size != 0) {
       SectionHeader = (EFI_IMAGE_SECTION_HEADER *)(FileBuffer + DosHdr->e_lfanew + sizeof(UINT32) + sizeof (EFI_IMAGE_FILE_HEADER) + PeHdr->FileHeader.SizeOfOptionalHeader);
       for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index++, SectionHeader++) {
         if (SectionHeader->VirtualAddress == Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress) {
+          //
+          // Zero .pdata Section data
+          //
           memset (FileBuffer + SectionHeader->PointerToRawData, 0, SectionHeader->SizeOfRawData);
+          //
+          // Zero .pdata Section header name
+          //
+          memset (SectionHeader->Name, 0, sizeof (SectionHeader->Name));
+          //
+          // Zero Execption Table
+          //
           Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress = 0;
           Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size           = 0;
           DebugMsg (NULL, 0, 9, "Zero the .pdata section for PE image", NULL);
@@ -1930,7 +1960,7 @@ Returns:
     //
     // Strip zero padding at the end of the .reloc section 
     //
-    if (Optional32->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
+    if (!KeepZeroPendingFlag && Optional32->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
       if (Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC].Size != 0) {
         SectionHeader = (EFI_IMAGE_SECTION_HEADER *)(FileBuffer + DosHdr->e_lfanew + sizeof(UINT32) + sizeof (EFI_IMAGE_FILE_HEADER) + PeHdr->FileHeader.SizeOfOptionalHeader);
         for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index++, SectionHeader++) {
@@ -1997,7 +2027,7 @@ Returns:
     // Zero the .pdata section for X64 machine and don't check the Debug Directory is empty
     // For Itaninum and X64 Image, remove .pdata section.
     //
-    if (PeHdr->FileHeader.Machine == IMAGE_FILE_MACHINE_X64 || PeHdr->FileHeader.Machine == IMAGE_FILE_MACHINE_IA64) {
+    if (!KeepExceptionTableFlag && PeHdr->FileHeader.Machine == IMAGE_FILE_MACHINE_X64 || PeHdr->FileHeader.Machine == IMAGE_FILE_MACHINE_IA64) {
       if (Optional64->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION &&
           Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress != 0 && 
           Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size != 0) {
@@ -2005,6 +2035,11 @@ Returns:
         SectionHeader = (EFI_IMAGE_SECTION_HEADER *)(FileBuffer + DosHdr->e_lfanew + sizeof(UINT32) + sizeof (EFI_IMAGE_FILE_HEADER) + PeHdr->FileHeader.SizeOfOptionalHeader);
         for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index++, SectionHeader++) {
           if (SectionHeader->VirtualAddress == Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress) {
+            //
+            // Zero .pdata Section header name
+            //
+            memset (SectionHeader->Name, 0, sizeof (SectionHeader->Name));
+
             RuntimeFunction = (RUNTIME_FUNCTION *)(FileBuffer + SectionHeader->PointerToRawData);
             for (Index1 = 0; Index1 < Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size / sizeof (RUNTIME_FUNCTION); Index1++, RuntimeFunction++) {
               SectionHeader = (EFI_IMAGE_SECTION_HEADER *)(FileBuffer + DosHdr->e_lfanew + sizeof(UINT32) + sizeof (EFI_IMAGE_FILE_HEADER) + PeHdr->FileHeader.SizeOfOptionalHeader);
@@ -2019,6 +2054,9 @@ Returns:
               }
               memset (RuntimeFunction, 0, sizeof (RUNTIME_FUNCTION));
             }
+            //
+            // Zero Execption Table
+            //
             Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size = 0;
             Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress = 0;
             DebugMsg (NULL, 0, 9, "Zero the .pdata section if the machine type is X64 for PE32+ image", NULL);
@@ -2031,7 +2069,7 @@ Returns:
     //
     // Strip zero padding at the end of the .reloc section 
     //
-    if (Optional64->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_DEBUG) {
+    if (!KeepZeroPendingFlag && Optional64->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_DEBUG) {
       if (Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC].Size != 0) {
         SectionHeader = (EFI_IMAGE_SECTION_HEADER *)(FileBuffer + DosHdr->e_lfanew + sizeof(UINT32) + sizeof (EFI_IMAGE_FILE_HEADER) + PeHdr->FileHeader.SizeOfOptionalHeader);
         for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index++, SectionHeader++) {

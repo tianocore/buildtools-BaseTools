@@ -610,7 +610,7 @@ Returns:
   //
   // Verify that we have enough space (including the padding
   //
-  if ((UINTN) (PadFile + PadFileSize) >= (UINTN) FvImage->Eof) {
+  if (((UINTN)PadFile + PadFileSize) >= (UINTN) FvImage->Eof) {
     return EFI_OUT_OF_RESOURCES;
   }
   //
