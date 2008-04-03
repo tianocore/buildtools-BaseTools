@@ -228,7 +228,7 @@ class PlatformAutoGen:
 
         Info.NonDynamicPcdList, Info.DynamicPcdList = self.GetPcdList(Platform, Arch)
         Info.PcdTokenNumber = self.GeneratePcdTokenNumber(Platform, Info.NonDynamicPcdList, Info.DynamicPcdList)
-        Info.PackageList = self.PackageDatabase[Arch].values()
+        Info.PackageList = self.GetPackageList(Platform, Arch)
 
         self.GetToolDefinition(Info)
         Info.BuildRule = self.GetBuildRule()
@@ -348,6 +348,22 @@ class PlatformAutoGen:
         for Tool in Info.ToolOption:
             if Tool not in Info.BuildOption:
                 Info.BuildOption[Tool] = ""
+
+    def GetPackageList(self, Platform, Arch):
+        PackageList = []
+        for F in Platform.Modules:
+            M = self.ModuleDatabase[Arch][F]
+            for P in M.Packages:
+                if P in PackageList:
+                    continue
+                PackageList.append(P)
+        for F in Platform.LibraryInstances:
+            M = self.ModuleDatabase[Arch][F]
+            for P in M.Packages:
+                if P in PackageList:
+                    continue
+                PackageList.append(P)
+        return PackageList
 
     ## Collect dynamic PCDs
     #

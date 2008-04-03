@@ -40,6 +40,16 @@ def ValidFile(File, Dir='.'):
     os.chdir(Wd)
     return True
 
+def ValidGuid(CName, PackageList):
+    for P in PackageList:
+        if CName in P.Guids:
+            return True
+        if CName in P.Protocols:
+            return True
+        if CName in P.Ppis:
+            return True
+    return False
+
 class DscBuildData(PlatformBuildClassObject):
     #_PROPERTY_ = {
     #    TAB_DSC_DEFINES_PLATFORM_NAME           : '_PlatformName'
@@ -363,7 +373,7 @@ class DscBuildData(PlatformBuildClassObject):
         for LibraryClassName in LibraryInstance:
             M = LibraryInstance[LibraryClassName]
             if M == None:
-                EdkLogger.error("AutoGen", AUTOGEN_ERROR,
+                EdkLogger.error("build", AUTOGEN_ERROR,
                                 "Library instance for library class [%s] is not found" % LibraryClassName,
                                 ExtraData="\t%s [%s]" % (str(Module), self.Arch))
             LibraryList.append(M)
@@ -372,12 +382,12 @@ class DscBuildData(PlatformBuildClassObject):
             #
             for Lc in M.LibraryClass:
                 if Lc.SupModList != None and ModuleType not in Lc.SupModList:
-                    EdkLogger.error("AutoGen", AUTOGEN_ERROR,
+                    EdkLogger.error("build", AUTOGEN_ERROR,
                                     "Module type [%s] is not supported by library instance [%s]" % (ModuleType, str(M)),
                                     ExtraData="\t%s" % str(Module))
 
                 if Lc.LibraryClass in LibraryInstance and str(M) != str(LibraryInstance[Lc.LibraryClass]):
-                    EdkLogger.error("AutoGen", AUTOGEN_ERROR,
+                    EdkLogger.error("build", AUTOGEN_ERROR,
                                     "More than one library instance found for library class [%s] in module [%s]" % (Lc.LibraryClass, Module),
                                     ExtraData="\t%s\n\t%s" % (LibraryInstance[Lc.LibraryClass], str(M))
                                     )
@@ -487,7 +497,7 @@ class DscBuildData(PlatformBuildClassObject):
             M = LibraryConsumerList.pop()
             for LibraryName in M.Libraries:
                 if LibraryName not in self.Libraries:
-                    EdkLogger.warn("AutoGen", "Library [%s] is not found" % LibraryName,
+                    EdkLogger.warn("build", "Library [%s] is not found" % LibraryName, File=str(M),
                                     ExtraData="\t%s [%s]" % (str(Module), self._Arch))
                     continue
 
@@ -1306,7 +1316,7 @@ class InfBuildData(ModuleBuildClassObject):
                 else:
                     ToolList = self._NMAKE_FLAG_PATTERN_.findall(Name)
                     if len(ToolList) == 0 or len(ToolList) != 1:
-                        EdkLogger.warn("\nbuild", "Don't know how to do with macro [%s]" % Name, 
+                        EdkLogger.warn("build", "Don't know how to do with macro [%s]" % Name, 
                                        File=self.DescFilePath, Line=LineNo)
                     else:
                         if self._BuildOptions == None:
@@ -1509,7 +1519,12 @@ class InfBuildData(ModuleBuildClassObject):
             self._Protocols = []
             RecordList = self._Table.Query(MODEL_EFI_PROTOCOL, Arch=self._Arch, Platform=self._Platform)
             for Record in RecordList:
-                self._Protocols.append(Record[0])
+                CName = Record[0]
+                if not ValidGuid(CName, self.Packages):
+                    PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
+                    EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Value of [%s] is not found in" % CName,
+                                    ExtraData=PackageList, File=self.DescFilePath, Line=Record[-1])
+                self._Protocols.append(CName)
         return self._Protocols
 
     def _GetPpis(self):
@@ -1517,7 +1532,12 @@ class InfBuildData(ModuleBuildClassObject):
             self._Ppis = []
             RecordList = self._Table.Query(MODEL_EFI_PPI, Arch=self._Arch, Platform=self._Platform)
             for Record in RecordList:
-                self._Ppis.append(Record[0])
+                CName = Record[0]
+                if not ValidGuid(CName, self.Packages):
+                    PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
+                    EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Value of [%s] is not found in " % CName,
+                                    ExtraData=PackageList, File=self.DescFilePath, Line=Record[-1])
+                self._Ppis.append(CName)
         return self._Ppis
 
     def _GetGuids(self):
@@ -1525,7 +1545,12 @@ class InfBuildData(ModuleBuildClassObject):
             self._Guids = []
             RecordList = self._Table.Query(MODEL_EFI_GUID, Arch=self._Arch, Platform=self._Platform)
             for Record in RecordList:
-                self._Guids.append(Record[0])
+                CName = Record[0]
+                if not ValidGuid(CName, self.Packages):
+                    PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
+                    EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Value of [%s] is not found in" % CName,
+                                    ExtraData=PackageList, File=self.DescFilePath, Line=Record[-1])
+                self._Guids.append(CName)
         return self._Guids
 
     def _GetIncludes(self):
