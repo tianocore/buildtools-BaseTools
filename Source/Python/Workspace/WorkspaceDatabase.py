@@ -500,7 +500,7 @@ class DscBuildData(PlatformBuildClassObject):
             for LibraryName in M.Libraries:
                 if LibraryName not in self.Libraries:
                     EdkLogger.warn("AutoGen", "Library [%s] is not found" % LibraryName,
-                                    ExtraData="\t%s [%s]" % (str(Module), Arch))
+                                    ExtraData="\t%s [%s]" % (str(Module), self._Arch))
                     continue
 
                 Library = self.Libraries[LibraryName]
@@ -1309,15 +1309,17 @@ class InfBuildData(ModuleBuildClassObject):
                     self._ModuleEntryPointList.append(Value)
                 elif Name == "DPX_SOURCE":
                     File = NormPath(Value, self._Macros)
-                    if not ValidFile(Source, self._ModuleDir):
+                    if not ValidFile(File, self._ModuleDir):
                         EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                         File=self.DescFilePath, Line=LineNo)
+                    if self._Sources == None:
+                        self._Sources = []
                     self._Sources.append(ModuleSourceFileClass(File, "", "", "", ""))
                 else:
                     ToolList = self._NMAKE_FLAG_PATTERN_.findall(Name)
                     if len(ToolList) == 0 or len(ToolList) != 1:
-                        EdkLogger.warn("\nbuild", "Don't know how to do with MACRO: %s" % Name, 
-                                       ExtraData=ContainerFile)
+                        EdkLogger.warn("\nbuild", "Don't know how to do with macro [%s]" % Name, 
+                                       File=self.DescFilePath, Line=LineNo)
                     else:
                         if self._BuildOptions == None:
                             self._BuildOptions = sdict()
