@@ -506,14 +506,14 @@ fds: init build_fds
 # Build all libraries:
 #
 build_libraries:
-${BEGIN}\tcd ${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
+${BEGIN}\t@cd ${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
 ${END}\tcd $(BUILD_DIR)
 
 #
 # Build all modules:
 #
 build_modules:
-${BEGIN}\tcd ${module_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
+${BEGIN}\t@cd ${module_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
 ${END}\tcd $(BUILD_DIR)
 
 #
@@ -535,8 +535,8 @@ run:
 # Clean intermediate files
 #
 clean:
-\t${BEGIN}cd ${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) clean
-\t${END}${BEGIN}cd ${module_build_directory} && "$(MAKE)" $(MAKE_FLAGS) clean
+\t${BEGIN}@cd ${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) clean
+\t${END}${BEGIN}@cd ${module_build_directory} && "$(MAKE)" $(MAKE_FLAGS) clean
 \t${END}cd $(BUILD_DIR)
 
 #
@@ -550,7 +550,7 @@ ${END}
 # Clean all library files
 #
 cleanlib:
-\t${BEGIN}cd ${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) cleanall
+\t${BEGIN}@cd ${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) cleanall
 \t${END}cd $(BUILD_DIR)
 
 '''

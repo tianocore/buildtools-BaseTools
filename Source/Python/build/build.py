@@ -28,7 +28,6 @@ from Common import Misc as Utils
 
 from Common.TargetTxtClassObject import *
 from Common.ToolDefClassObject import *
-#from Common.EdkIIWorkspaceBuild import *
 from Common.DataType import *
 from AutoGen.AutoGen import *
 from GenFds.FdfParser import *
@@ -630,7 +629,8 @@ class Build():
     #
     def __init__(self, Target, WorkspaceDir, Platform, Module, Arch, ToolChain, 
                  BuildTarget, FlashDefinition, FdList=[], FvList=[], 
-                 MakefileType="nmake", SpawnMode=False, ThreadNumber=2):
+                 MakefileType="nmake", SpawnMode=False, ThreadNumber=2,
+                 SkipAutoGen=False, Reparse=False):
 
         self.WorkspaceDir = WorkspaceDir
 
@@ -646,6 +646,8 @@ class Build():
         self.MakefileType   = MakefileType
         self.SpawnMode      = SpawnMode
         self.ThreadNumber   = ThreadNumber
+        self.SkipAutoGen    = SkipAutoGen
+        self.Reparse        = Reparse
 
         self.TargetTxt    = TargetTxtClassObject()
         self.ToolDef      = ToolDefClassObject()
@@ -798,7 +800,7 @@ class Build():
             EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE,
                             ExtraData="No active platform specified in target.txt or command line! Nothing can be built.\n")
 
-        Wb = WorkspaceBuild(self.PlatformFile, self.WorkspaceDir)
+        Wb = WorkspaceBuild(self.PlatformFile, self.WorkspaceDir, self.Reparse)
         PcdSet = {}
         if self.Fdf != None:
             self.Fdf = NormFile(self.Fdf, self.WorkspaceDir)
@@ -890,16 +892,18 @@ class Build():
 
         # skip file generation for cleanxxx targets and run target
         if Target not in ['clean', 'cleanlib', 'cleanall', 'run']:    
-            self.Progress.Start("Generating code")
             # for target which must generate AutoGen code and makefile
-            AutoGenResult.CreateCodeFile(CreateDepModuleCodeFile)
-            self.Progress.Stop("done!")
+            if not self.SkipAutoGen or Target == 'genc':
+                self.Progress.Start("Generating code")
+                AutoGenResult.CreateCodeFile(CreateDepModuleCodeFile)
+                self.Progress.Stop("done!")
             if Target == "genc":
                 return True
     
-            self.Progress.Start("Generating makefile")
-            AutoGenResult.CreateMakeFile(CreateDepModuleMakeFile)
-            self.Progress.Stop("done!")
+            if not self.SkipAutoGen or Target == 'genmake':
+                self.Progress.Start("Generating makefile")
+                AutoGenResult.CreateMakeFile(CreateDepModuleMakeFile)
+                self.Progress.Stop("done!")
             if Target == "genmake":
                 return True
 
@@ -961,11 +965,13 @@ class Build():
                         # Not to auto-gen for targets 'clean', 'cleanlib', 'cleanall', 'run', 'fds'
                         if self.Target not in ['clean', 'cleanlib', 'cleanall', 'run', 'fds']:
                             # for target which must generate AutoGen code and makefile
-                            Ma.CreateCodeFile(True)
+                            if not self.SkipAutoGen or self.Target == 'genc':
+                                Ma.CreateCodeFile(True)
                             if self.Target == "genc":
                                 continue
 
-                            Ma.CreateMakeFile(True)
+                            if not self.SkipAutoGen or self.Target == 'genmake':
+                                Ma.CreateMakeFile(True)
                             if self.Target == "genmake":
                                 continue
                         # Generate build task for the module
@@ -1138,6 +1144,10 @@ def MyOptionParser():
     Parser.add_option("-k", "--msft", action="store_const", dest="MakefileType", const="nmake", help="Make Option: Generate only NMAKE Makefiles: Makefile")
     Parser.add_option("-g", "--gcc", action="store_const", dest="MakefileType", const="gmake", help="Make Option: Generate only GMAKE Makefiles: GNUmakefile")
     Parser.add_option("-l", "--all", action="store_const", dest="MakefileType", const="all", help="Make Option: Generate both NMAKE and GMAKE makefiles.")
+
+    Parser.add_option("-u", "--skip-autogen", action="store_true", dest="SkipAutoGen", help="Skip AutoGen step.")
+    Parser.add_option("-e", "--re-parse", action="store_true", dest="Reparse", help="Re-parse all meta-data files.")
+
     # Parser.add_option("-D", action="append", dest="Defines", metavar="NAME[=[VALUE]]",
     #     help="Define global macro which can be used in DSC/DEC/INF files.")
 
@@ -1224,9 +1234,11 @@ def Main():
         if Option.FdfFile != None:
             Option.FdfFile = NormFile(Option.FdfFile, Workspace)
 
-        MyBuild = Build(Target, Workspace, Option.PlatformFile, Option.ModuleFile, Option.TargetArch,
-                        Option.ToolChain, Option.BuildTarget, Option.FdfFile, Option.RomImage, Option.FvImage,
-                        Option.MakefileType, Option.SpawnMode, Option.ThreadNumber)
+        MyBuild = Build(Target, Workspace, Option.PlatformFile, Option.ModuleFile, 
+                        Option.TargetArch, Option.ToolChain, Option.BuildTarget, 
+                        Option.FdfFile, Option.RomImage, Option.FvImage, 
+                        Option.MakefileType, Option.SpawnMode, Option.ThreadNumber, 
+                        Option.SkipAutoGen, Option.Reparse)
         MyBuild.Launch()
         MyBuild.DumpBuildData()
     except BaseException, X:

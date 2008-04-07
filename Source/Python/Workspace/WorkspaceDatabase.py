@@ -1833,12 +1833,15 @@ class WorkspaceDatabase(object):
         def __getitem__(self, Key):
             pass
 
-    def __init__(self, DbPath, GlobalMacros={}):
+    def __init__(self, DbPath, GlobalMacros={}, RenewDb=False):
         self._GlobalMacros = GlobalMacros
 
         DbDir = os.path.split(DbPath)[0]
         if not os.path.exists(DbDir):
             os.makedirs(DbDir)
+
+        if RenewDb and os.path.exists(DbPath):
+            os.remove(DbPath)
 
         self.Conn = sqlite3.connect(DbPath, isolation_level='DEFERRED')
         self.Conn.execute("PRAGMA synchronous=OFF")

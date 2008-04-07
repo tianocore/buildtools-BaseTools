@@ -56,7 +56,7 @@ class ItemBuild(object):
         self.ModuleDatabase          = {}
 
 class WorkspaceBuild(object):
-    def __init__(self, ActivePlatform, WorkspaceDir):
+    def __init__(self, ActivePlatform, WorkspaceDir, Reparse=False):
         self.WorkspaceDir            = NormPath(WorkspaceDir)
         self.SupArchList             = []
         self.BuildTarget             = []
@@ -84,7 +84,7 @@ class WorkspaceBuild(object):
         #
         # Init build database
         #
-        self.Db = WorkspaceDatabase(DATABASE_PATH, GlobalData.gGlobalDefines)
+        self.Db = WorkspaceDatabase(DATABASE_PATH, GlobalData.gGlobalDefines, Reparse)
         self.Db.InitDatabase()
         
         #
