@@ -52,7 +52,7 @@ class Config:
         Parser.add_option(
             "--arch",
             action = "store", type = "string",
-            default = None,
+            default = '',
             dest = "arch",
             help = "Processor architecture to build gcc for."
             )
@@ -89,8 +89,12 @@ class Config:
         (Opt, Args) = Parser.parse_args()
 
         self.arch = Opt.arch.lower()
-        if self.arch not in ('ia32', 'x64'):
-            Parser.error('Please use --arch to specify the architecture')
+        allowedArchs = ('ia32', 'x64')
+        if self.arch not in allowedArchs:
+            Parser.error(
+                'Please use --arch to specify one of: %s' %
+                    ', '.join(allowedArchs)
+                )
         self.target_arch = {'ia32': 'i686', 'x64': 'x86_64'}[self.arch]
 
         return (Opt, Args)
