@@ -100,11 +100,15 @@ class MetaFileParser(object):
     def _DefineParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
         self._ValueList[0:len(TokenList)] = TokenList
+        if self._ValueList[1] == '':
+            EdkLogger.error('Parser', FORMAT_INVALID, "No value specified",
+                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
 
     def _MacroParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, ' ', 1)
-        if len(TokenList) <= 1:
-            return
+        if len(TokenList) < 2 or TokenList[1] == '':
+            EdkLogger.error('Parser', FORMAT_INVALID, "No macro name/value given",
+                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
         TokenList = GetSplitValueList(TokenList[1], TAB_EQUAL_SPLIT, 1)
         if len(TokenList) < 1:
             return
@@ -145,7 +149,7 @@ class InfParser(MetaFileParser):
         try:
             self._Content = open(self._FilePath, 'r').readlines()
         except:
-            EdkLogger.error("InfParser", FILE_READ_FAILURE, ExtraData=self._FilePath)
+            EdkLogger.error("Parser", FILE_READ_FAILURE, ExtraData=self._FilePath)
 
         for Index in range(0, len(self._Content)):
             Line = CleanString(self._Content[Index])
@@ -165,7 +169,8 @@ class InfParser(MetaFileParser):
             # section content
             self._ValueList = ['','','']
             self._SectionParser[self._SectionType](self)
-
+            if self._ValueList == None:
+                continue
             # 
             # Model, Value1, Value2, Value3, Value4, Value5, Arch, Platform, BelongsToFile=-1, 
             # LineBegin=-1, ColumnBegin=-1, LineEnd=-1, ColumnEnd=-1, BelongsToItem=-1, FeatureFlag='', 
@@ -205,9 +210,12 @@ class InfParser(MetaFileParser):
 
     def _PcdParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT, 1)
-        self._ValueList[0:2] = GetSplitValueList(TokenList[0], TAB_SPLIT)
+        self._ValueList[0:1] = GetSplitValueList(TokenList[0], TAB_SPLIT)
         if len(TokenList) > 1:
             self._ValueList[2] = TokenList[1]
+        if self._ValueList[0] == '' or self._ValueList[1] == '':
+            EdkLogger.error('Parser', FORMAT_INVALID, "No token space GUID or PCD name specified",
+                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
 
     def _DepexParser(self):
         self._ValueList[0:1] = [self._CurrentLine]
@@ -300,7 +308,7 @@ class DscParser(MetaFileParser):
             if self._Content == None:
                 self._Content = open(self._FilePath, 'r').readlines()
         except:
-            EdkLogger.error("DscParser", FILE_READ_FAILURE, ExtraData=self._FilePath)
+            EdkLogger.error("Parser", FILE_READ_FAILURE, ExtraData=self._FilePath)
 
         for Index in range(0, len(self._Content)):
             Line = CleanString(self._Content[Index])
@@ -339,9 +347,8 @@ class DscParser(MetaFileParser):
             else:
                 SectionType = self._SectionType
                 SectionName = self._SectionName
-            self._ValueList = ['','','']
+            self._ValueList = ['', '', '']
             self._SectionParser[SectionType](self)
-            EdkLogger.debug(EdkLogger.DEBUG_8, "Define: %s" % self._ValueList)
             if self._ValueList == None:
                 continue
 
@@ -370,11 +377,12 @@ class DscParser(MetaFileParser):
 
     def _DefineParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
-        if len(TokenList) > 1:
-            if TokenList[0] in ['FLASH_DEFINITION', 'OUTPUT_DIRECTORY']:
-                TokenList[1] = NormPath(TokenList[1], self._Macros)
-        self._ValueList[0:len(TokenList)] = TokenList
-    
+        if len(TokenList) < 2:
+            EdkLogger.error('Parser', FORMAT_INVALID, "No value specified",
+                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+        if TokenList[0] in ['FLASH_DEFINITION', 'OUTPUT_DIRECTORY']:
+            TokenList[1] = NormPath(TokenList[1], self._Macros)
+        self._ValueList[0:len(TokenList)] = TokenList    
             
     def _SubsectionHeaderParser(self):
         self._SubsectionName = self._CurrentLine[1:-1].upper()
@@ -387,6 +395,10 @@ class DscParser(MetaFileParser):
         self._ValueList = ['','','']
         TokenList = GetSplitValueList(self._CurrentLine, ' ', 1)
         self._ValueList[0:len(TokenList)] = TokenList
+        if self._ValueList[1] == '':
+            EdkLogger.error("Parser", FORMAT_INVALID, "Missing expression", 
+                            File=self._FilePath, Line=self._LineIndex+1,
+                            ExtraData=self._CurrentLine)
         DirectiveName = self._ValueList[0].upper()
         self._LastItem = self._Store(
             self._DataType[DirectiveName],
@@ -402,10 +414,11 @@ class DscParser(MetaFileParser):
             -1,
             0
             )
+        # process the directive
         if DirectiveName == "!INCLUDE":
             if not self._SectionName in self._IncludeAllowedSection:
-                EdkLogger.error("DscParser", FORMAT_INVALID, File=self._FilePath, Line=self._LineIndex+1,
-                                ExtraData="'!include' is not allowed in section %s" % self._SectionName)
+                EdkLogger.error("Parser", FORMAT_INVALID, File=self._FilePath, Line=self._LineIndex+1,
+                                ExtraData="'!include' is not allowed under section [%s]" % self._SectionName)
             # the included file must be relative to the parsing file
             IncludedFile = os.path.join(self._FileDir, self._ValueList[1])
             Parser = DscParser(IncludedFile, self._FileType, self._Table, self._Macros, From=self._LastItem)
@@ -416,7 +429,7 @@ class DscParser(MetaFileParser):
             try:
                 Parser.Start()
             except:
-                EdkLogger.error("DscParser", PARSER_ERROR, File=self._FilePath, Line=self._LineIndex+1,
+                EdkLogger.error("Parser", PARSER_ERROR, File=self._FilePath, Line=self._LineIndex+1,
                                 ExtraData="Failed to parse content in file %s" % IncludedFile)
             self._SectionName = Parser._SectionName
             self._SectionType = Parser._SectionType
@@ -438,7 +451,7 @@ class DscParser(MetaFileParser):
                 if len(self._Eval) > 0:
                     self._Eval.pop()
                 else:
-                    EdkLogger.error("DscParser", FORMAT_INVALID, "!IF..[!ELSE]..!ENDIF doesn't match",
+                    EdkLogger.error("Parser", FORMAT_INVALID, "!IF..[!ELSE]..!ENDIF doesn't match",
                                     File=self._FilePath, Line=self._LineIndex+1)
             if self._Eval.Result == False:
                 self._Enabled = 0 - len(self._Eval)
@@ -453,7 +466,7 @@ class DscParser(MetaFileParser):
         elif TokenNumber == 2:
             Op = TokenList[0]
             if Op not in self._OP_:
-                EdkLogger.error('DscParser', FORMAT_INVALID, File=self._FilePath, 
+                EdkLogger.error('Parser', FORMAT_INVALID, "Unsupported operator", File=self._FilePath,
                                 Line=self._LineIndex+1, ExtraData=Expression)
             if TokenList[1].upper() == 'TRUE':
                 Value = True
@@ -470,7 +483,7 @@ class DscParser(MetaFileParser):
             Op = TokenList[1]
             return self._OP_[Op](self._Macros[Macro], Value)
         else:
-            EdkLogger.error('DscParser', FORMAT_INVALID, File=self._FilePath, Line=self._LineIndex+1,
+            EdkLogger.error('Parser', FORMAT_INVALID, File=self._FilePath, Line=self._LineIndex+1,
                             ExtraData=Expression)
 
     def _BuildOptionParser(self):
@@ -485,8 +498,14 @@ class DscParser(MetaFileParser):
 
     def _PcdParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT, 1)
-        self._ValueList[0:2] = GetSplitValueList(TokenList[0], TAB_SPLIT)
+        self._ValueList[0:1] = GetSplitValueList(TokenList[0], TAB_SPLIT)
         self._ValueList[2] = TokenList[1]
+        if self._ValueList[0] == '' or self._ValueList[1] == '':
+            EdkLogger.error('Parser', FORMAT_INVALID, "No token space GUID or PCD name specified",
+                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+        if self._ValueList[2] == '':
+            EdkLogger.error('Parser', FORMAT_INVALID, "No PCD value given",
+                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
 
     def _ComponentParser(self):        
         if self._CurrentLine[-1] == '{':
@@ -540,7 +559,7 @@ class DecParser(MetaFileParser):
             if self._Content == None:
                 self._Content = open(self._FilePath, 'r').readlines()
         except:
-            EdkLogger.error("DecParser", FILE_READ_FAILURE, ExtraData=self._FilePath)
+            EdkLogger.error("Parser", FILE_READ_FAILURE, ExtraData=self._FilePath)
 
         for Index in range(0, len(self._Content)):
             Line = CleanString(self._Content[Index])
@@ -561,7 +580,6 @@ class DecParser(MetaFileParser):
             # section content
             self._ValueList = ['','','']
             self._SectionParser[self._SectionType](self)
-            EdkLogger.debug(EdkLogger.DEBUG_8, "Define: %s" % self._ValueList)
             if self._ValueList == None:
                 continue
 
@@ -587,22 +605,24 @@ class DecParser(MetaFileParser):
                     )
         self._Done()
             
-    #def _DefineParser(self):
-    #    TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
-    #    self._ValueList[0] = TokenList[0]
-    #    if len(TokenList) == 2:
-    #        MoreValues = GetSplitValueList(TokenList[1], TAB_VALUE_SPLIT)
-    #        self._ValueList[1:1+len(MoreValues)] = MoreValues
-
     def _GuidParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
+        if len(TokenList) < 2:
+            EdkLogger.error('Parser', FORMAT_INVALID, "No value specified",
+                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
         self._ValueList[0] = TokenList[0]
         self._ValueList[1] = TokenList[1]
 
     def _PcdParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT, 1)
-        self._ValueList[0:2] = GetSplitValueList(TokenList[0], TAB_SPLIT)
+        self._ValueList[0:1] = GetSplitValueList(TokenList[0], TAB_SPLIT)
         self._ValueList[2] = TokenList[1]
+        if self._ValueList[0] == '' or self._ValueList[1] == '':
+            EdkLogger.error('Parser', FORMAT_INVALID, "No token space GUID or PCD name specified",
+                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+        if self._ValueList[2] == '':
+            EdkLogger.error('Parser', FORMAT_INVALID, "No PCD Datum information given",
+                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
 
     _SectionParser = {
         MODEL_META_DATA_HEADER          :   MetaFileParser._DefineParser,
@@ -620,92 +640,11 @@ class DecParser(MetaFileParser):
         MODEL_META_DATA_USER_EXTENSION  :   MetaFileParser._Skip,
     }
 
-class Timer(object):
-    def __init__(self):
-        self.StartTime = 0
-        self.EndTime = 0
-
-    def __str__(self):
-        if self.EndTime != 0:
-            return str(self.EndTime - self.StartTime)
-        return time.clock() - self.StartTime
-
-    def Start(self):
-        self.StartTime = time.clock()
-
-    def Stop(self):
-        self.EndTime = time.clock()
-
 ##
 #
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
 #
 if __name__ == '__main__':
-    from WorkspaceDatabase import WorkspaceDatabase as DB
+    pass
 
-    try:
-        import psyco
-        #psyco.profile()
-        #psyco.log()
-    except:
-        pass
-    timer = Timer()
-    timer.Start()
-
-    EdkLogger.Initialize()
-    if os.path.exists("test.db"):
-        os.remove("test.db")
-    Wks = DB("test.db")
-    Wks.InitDatabase()
-
-    os.chdir(r"H:\dev\AllPackagesDev")
-
-    #Gf = r"H:\dev\AllPackagesDev\LakeportX64Pkg\LakeportX64Pkg.dec"
-    ##Gf = r"H:\dev\AllPackagesDev\Nt32Pkg\Nt32Pkg.dec"
-    #Gb32 = Wks.BuildObject[Gf, MODEL_FILE_DEC, 'IA32']
-    #print repr(Gb32)
-
-    Pf = r"H:\dev\AllPackagesDev\LakeportX64Pkg\LakeportX64Pkg.dsc"
-    #Pf = r"H:\dev\AllPackagesDev\Nt32Pkg\Nt32Pkg.dsc"
-    Pb32 = Wks.BuildObject[Pf, MODEL_FILE_DSC, 'IA32']
-
-    print repr(Pb32)
-    for Mb in Pb32.Modules:
-        print repr(Mb)
-
-    Pb64 = Wks.BuildObject[Pf, MODEL_FILE_DSC, 'X64']
-
-    print repr(Pb64)
-    for Mb in Pb64.Modules:
-        print repr(Mb)
-
-    #LibList = []
-    #for Key in Pb32.LibraryClasses:
-    #    Inf = Pb32.LibraryClasses[Key]
-    #    if Inf  in LibList:
-    #        continue 
-    #    Wks[Inf] = MODEL_FILE_INF
-    #    Mb = Module(Inf, Wks[Inf], 'IA32')
-    #    print repr(Mb)
-    #    LibList.append(Inf)
-    #
-    #Pb64 = Platform(Pf, Dsc, 'X64')
-    #print repr(Pb64)
-    #for Inf in Pb64.Modules:
-    #    Wks[Inf] = MODEL_FILE_INF
-    #    Mb = Module(Inf, Wks[Inf], 'X64')
-    #    print repr(Mb)
-    #LibList = []
-    #for Key in Pb64.LibraryClasses:
-    #    Inf = Pb64.LibraryClasses[Key]
-    #    if Inf in LibList:
-    #        continue 
-    #    Wks[Inf] = MODEL_FILE_INF
-    #    Mb = Module(Inf, Wks[Inf], 'X64')
-    #    print repr(Mb)
-    #    LibList.append(Inf)
-
-    Wks.Close()
-    timer.Stop()
-    print "DONE [%s]" % str(timer)

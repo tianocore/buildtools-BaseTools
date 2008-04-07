@@ -185,45 +185,64 @@ class DscBuildData(PlatformBuildClassObject):
     def _GetPlatformName(self):
         if self._PlatformName == None:
             RecordList = self._Table.Query(MODEL_META_DATA_HEADER, TAB_DSC_DEFINES_PLATFORM_NAME, self.Arch)
+            if len(RecordList) == 0 or RecordList[0][0] == None:
+                EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No PLATFORM_NAME", File=self.DescFilePath)
             self._PlatformName = RecordList[0][0]
         return self._PlatformName
 
     def _GetFileGuid(self):
         if self._Guid == None:
             RecordList = self._Table.Query(MODEL_META_DATA_HEADER, TAB_DSC_DEFINES_PLATFORM_GUID, self.Arch)
+            if len(RecordList) == 0 or RecordList[0][0] == None:
+                EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No FILE_GUID", File=self.DescFilePath)
             self._Guid = RecordList[0][0]
         return self._Guid
 
     def _GetVersion(self):
         if self._Version == None:
             RecordList = self._Table.Query(MODEL_META_DATA_HEADER, TAB_DSC_DEFINES_PLATFORM_VERSION, self.Arch)
-            self._Version = RecordList[0][0]
+            if len(RecordList) == 0 or RecordList[0][0] == None:
+                self._Version = 0.0
+            else:
+                self._Version = RecordList[0][0]
         return self._Version
 
     def _GetDscSpec(self):
         if self._DscSpecification == None:
             RecordList = self._Table.Query(MODEL_META_DATA_HEADER, TAB_DSC_DEFINES_DSC_SPECIFICATION, self.Arch)
-            self._DscSpecification = RecordList[0][0]
+            if len(RecordList) == 0 or RecordList[0][0] == None:
+                self._DscSpecification = ''
+            else:
+                self._DscSpecification = RecordList[0][0]
         return self._DscSpecification
 
     def _GetOutpuDir(self):
         if self._OutputDirectory == None:
             RecordList = self._Table.Query(MODEL_META_DATA_HEADER, TAB_DSC_DEFINES_OUTPUT_DIRECTORY, self.Arch)
-            File = NormPath(RecordList[0][0], self._Macros)
-            LineNo = RecordList[0][-1]
-            self._OutputDirectory = File
+            if len(RecordList) == 0 or RecordList[0][0] == None:
+                self._OutputDirectory = os.path.join("Build", self.PlatformName)
+            else:
+                File = NormPath(RecordList[0][0], self._Macros)
+                LineNo = RecordList[0][-1]
+                self._OutputDirectory = File
         return self._OutputDirectory
 
     def _GetSupArch(self):
         if self._SupArchList == None:
             RecordList = self._Table.Query(MODEL_META_DATA_HEADER, TAB_DSC_DEFINES_SUPPORTED_ARCHITECTURES, self.Arch)
-            self._SupArchList = GetSplitValueList(RecordList[0][0], TAB_VALUE_SPLIT)
+            if len(RecordList) == 0 or RecordList[0][0] == None:
+                self._SupArchList = ARCH_LIST
+            else:
+                self._SupArchList = GetSplitValueList(RecordList[0][0], TAB_VALUE_SPLIT)
         return self._SupArchList
 
     def _GetBuildTarget(self):
         if self._BuildTargets == None:
             RecordList = self._Table.Query(MODEL_META_DATA_HEADER, TAB_DSC_DEFINES_BUILD_TARGETS, self.Arch)
-            self._BuildTargets = GetSplitValueList(RecordList[0][0])
+            if len(RecordList) == 0 or RecordList[0][0] == None:
+                self._BuildTargets = ['DEBUG', 'RELEASE']
+            else:
+                self._BuildTargets = GetSplitValueList(RecordList[0][0])
         return self._BuildTargets
 
     def _GetSkuName(self):
@@ -249,29 +268,37 @@ class DscBuildData(PlatformBuildClassObject):
     def _GetBuildNumber(self):
         if self._BuildNumber == None:
             RecordList = self._Table.Query(MODEL_META_DATA_HEADER, TAB_DSC_DEFINES_BUILD_NUMBER, self.Arch)
-            if len(RecordList) > 0:
+            if len(RecordList) > 0 and RecordList[0][0] != None:
                 self._BuildNumber = RecordList[0][0]
+            else:
+                self._BuildNumber = ''
         return self._BuildNumber
 
     def _GetMakefileName(self):
         if self._MakefileName == None:
             RecordList = self._Table.Query(MODEL_META_DATA_HEADER, TAB_DSC_DEFINES_MAKEFILE_NAME, self.Arch)
-            if len(RecordList):
+            if len(RecordList) > 0 and RecordList[0][0] != None:
                 self._MakefileName = RecordList[0][0]
+            else:
+                self._MakefileName = ''
         return self._MakefileName
 
     def _GetBsBaseAddress(self):
         if self._BsBaseAddress == None:
             RecordList = self._Table.Query(MODEL_META_DATA_HEADER, TAB_DSC_DEFINES_BS_BASE_ADDRESS, self.Arch)
-            if len(RecordList) != 0:
+            if len(RecordList) > 0 and RecordList[0][0] != None:
                 self._BsBaseAddress = RecordList[0][0]
+            else:
+                self._BsBaseAddress = ''
         return self._BsBaseAddress
 
     def _GetRtBaseAddress(self):
         if self._RtBaseAddress == None:
             RecordList = self._Table.Query(MODEL_META_DATA_HEADER, TAB_DSC_DEFINES_RT_BASE_ADDRESS, self.Arch)
-            if len(RecordList):
+            if len(RecordList) > 0 and RecordList[0][0] != None:
                 self._RtBaseAddress = RecordList[0][0]
+            else:
+                self._RtBaseAddress = ''
         return self._RtBaseAddress
 
     def _GetSkuIds(self):
@@ -279,6 +306,12 @@ class DscBuildData(PlatformBuildClassObject):
             self._SkuIds = {}
             RecordList = self._Table.Query(MODEL_EFI_SKU_ID)
             for Record in RecordList:
+                if Record[0] in [None, '']:
+                    EdkLogger.error('build', FORMAT_INVALID, 'No Sku ID number',
+                                    File=self.DescFilePath, Line=Record[-1])
+                if Record[1] in [None, '']:
+                    EdkLogger.error('build', FORMAT_INVALID, 'No Sku ID name',
+                                    File=self.DescFilePath, Line=Record[-1])
                 self._SkuIds[Record[1]] = Record[0]
         return self._SkuIds
 
@@ -373,22 +406,22 @@ class DscBuildData(PlatformBuildClassObject):
         for LibraryClassName in LibraryInstance:
             M = LibraryInstance[LibraryClassName]
             if M == None:
-                EdkLogger.error("build", AUTOGEN_ERROR,
-                                "Library instance for library class [%s] is not found" % LibraryClassName,
-                                ExtraData="\t%s [%s]" % (str(Module), self.Arch))
+                EdkLogger.error("build", RESOURCE_NOT_AVAILABLE,
+                                "\tLibrary instance of library class [%s] is not found" % LibraryClassName,
+                                File=self.DescFilePath, ExtraData="consumed by [%s] [%s]" % (str(Module), self._Arch))
             LibraryList.append(M)
             #
             # check if there're duplicate library classes
             #
             for Lc in M.LibraryClass:
                 if Lc.SupModList != None and ModuleType not in Lc.SupModList:
-                    EdkLogger.error("build", AUTOGEN_ERROR,
+                    EdkLogger.error("build", OPTION_MISSING,
                                     "Module type [%s] is not supported by library instance [%s]" % (ModuleType, str(M)),
-                                    ExtraData="\t%s" % str(Module))
+                                    File=self.DescFilePath, ExtraData="\tconsumed by [%s]" % str(Module))
 
                 if Lc.LibraryClass in LibraryInstance and str(M) != str(LibraryInstance[Lc.LibraryClass]):
-                    EdkLogger.error("build", AUTOGEN_ERROR,
-                                    "More than one library instance found for library class [%s] in module [%s]" % (Lc.LibraryClass, Module),
+                    EdkLogger.error("build", OPTION_CONFLICT,
+                                    "More than one library instance found for library class [%s] in module [%s]" % (Lc.LibraryClass, str(Module)),
                                     ExtraData="\t%s\n\t%s" % (LibraryInstance[Lc.LibraryClass], str(M))
                                     )
             if ConsumedByList[M] == []:
@@ -445,8 +478,8 @@ class DscBuildData(PlatformBuildClassObject):
         for Item in LibraryList:
             if ConsumedByList[Item] != [] and Item in Constructor and len(Constructor) > 1:
                 ErrorMessage = "\tconsumed by " + "\n\tconsumed by ".join([str(L) for L in ConsumedByList[Item]])
-                EdkLogger.error("build", AUTOGEN_ERROR, 'Library [%s] with constructors has a cycle' % str(Item),
-                                ExtraData=ErrorMessage)
+                EdkLogger.error("build", BUILD_ERROR, 'Library [%s] with constructors has a cycle' % str(Item),
+                                ExtraData=ErrorMessage, File=self.DescFilePath)
             if Item not in SortedLibraryList:
                 SortedLibraryList.append(Item)
 
@@ -913,7 +946,7 @@ class DecBuildData(PackageBuildClassObject):
         if self._PackageName == None:
             RecordList = self._Table.Query(MODEL_META_DATA_HEADER, TAB_DEC_DEFINES_PACKAGE_NAME)
             if len(RecordList) == 0:
-                EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "No PACKAGE_NAME", ExtraData=self.DescFilePath)
+                EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "No PACKAGE_NAME", File=self.DescFilePath)
             self._PackageName = RecordList[0][0]
         return self._PackageName
 
@@ -921,7 +954,7 @@ class DecBuildData(PackageBuildClassObject):
         if self._Guid == None:
             RecordList = self._Table.Query(MODEL_META_DATA_HEADER, TAB_DEC_DEFINES_PACKAGE_GUID)
             if len(RecordList) == 0:
-                EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "No PACKAGE_GUID", ExtraData=self.DescFilePath)
+                EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "No PACKAGE_GUID", File=self.DescFilePath)
             self._Guid = RecordList[0][0]
         return self._Guid
 
@@ -936,39 +969,42 @@ class DecBuildData(PackageBuildClassObject):
     def _GetProtocol(self):
         if self._Protocols == None:
             ProtocolDict = tdict(True)
-            NameSet = set()
+            NameList = []
             RecordList = self._Table.Query(MODEL_EFI_PROTOCOL, Arch=self.Arch)
             for Name, Guid, Dummy, Arch, ID, LineNo in RecordList:
-                NameSet.add(Name)
+                if Name not in NameList:
+                    NameList.append(Name)
                 ProtocolDict[Arch, Name] = Guid
             self._Protocols = sdict()
-            for Name in NameSet:
+            for Name in NameList:
                 self._Protocols[Name] = ProtocolDict[self.Arch, Name]
         return self._Protocols
 
     def _GetPpi(self):
         if self._Ppis == None:
             PpiDict = tdict(True)
-            NameSet = set()
+            NameList = []
             RecordList = self._Table.Query(MODEL_EFI_PPI, Arch=self.Arch)
             for Name, Guid, Dummy, Arch, ID, LineNo in RecordList:
-                NameSet.add(Name)
+                if Name not in NameList:
+                    NameList.append(Name)
                 PpiDict[Arch, Name] = Guid
             self._Ppis = sdict()
-            for Name in NameSet:
+            for Name in NameList:
                 self._Ppis[Name] = PpiDict[self.Arch, Name]
         return self._Ppis
 
     def _GetGuid(self):
         if self._Guids == None:
             GuidDict = tdict(True)
-            NameSet = set()
+            NameList = []
             RecordList = self._Table.Query(MODEL_EFI_GUID, Arch=self.Arch)
             for Name, Guid, Dummy, Arch, ID, LineNo in RecordList:
-                NameSet.add(Name)
+                if Name not in NameList:
+                    NameList.append(Name)
                 GuidDict[Arch, Name] = Guid
             self._Guids = sdict()
-            for Name in NameSet:
+            for Name in NameList:
                 self._Guids[Name] = GuidDict[self.Arch, Name]
         return self._Guids
 
@@ -1349,7 +1385,7 @@ class InfBuildData(ModuleBuildClassObject):
             if self._Header_ == None:
                 self._GetHeaderInfo()
             if self._BaseName == None:
-                self._BaseName = ''
+                EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No BASE_NAME name", File=self.DescFilePath)
         return self._BaseName
 
     def _GetModuleType(self):
@@ -1506,7 +1542,7 @@ class InfBuildData(ModuleBuildClassObject):
     def _SetLibraryClassUses(self, Value):
         self._LibraryClasses = Value
 
-    def _GetLibraryInstances(self):
+    def _GetLibraryNames(self):
         if self._Libraries == None:
             self._Libraries = []
             RecordList = self._Table.Query(MODEL_EFI_LIBRARY_INSTANCE, Arch=self._Arch, Platform=self._Platform)
@@ -1703,7 +1739,7 @@ class InfBuildData(ModuleBuildClassObject):
     Binaries                = property(_GetBinaryFiles)
     Sources                 = property(_GetSourceFiles)
     LibraryClasses          = property(_GetLibraryClassUses, _SetLibraryClassUses)
-    Libraries               = property(_GetLibraryInstances)
+    Libraries               = property(_GetLibraryNames)
     Protocols               = property(_GetProtocols)
     Ppis                    = property(_GetPpis)
     Guids                   = property(_GetGuids)
