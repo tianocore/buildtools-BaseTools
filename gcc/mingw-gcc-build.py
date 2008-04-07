@@ -162,6 +162,7 @@ class SourceFiles:
         'mingw_hdr': {
             'url': 'http://superb-west.dl.sourceforge.net/sourceforge/' + \
                    'mingw-w64/mingw-w64-snapshot-$version.tar.bz2',
+            'extract-dir': os.path.join('trunk', 'mingw-w64-headers'),
             'version': '20080310',
             'md5': '235b2d15c2411f7d213c0c0977b2162f',
             },
@@ -177,8 +178,15 @@ class SourceFiles:
             'md5': '27961d80e304f4ef32c980833c6e8e44',
             'configure-params': ('--with-gnu-as', '--with-gnu-ld', '--with-newlib',
                                  '--verbose', '--disable-libssp', '--disable-nls',
-                                 '--enable-languages=c'
+                                 '--enable-languages=c,c++'
                                 )
+            },
+        'mingw_hdr': {
+            'url': 'http://superb-west.dl.sourceforge.net/sourceforge/' + \
+                   'mingw/mingw-runtime-$version-src.tar.gz',
+            'extract-dir': 'mingw-runtime-$version',
+            'version': '3.14',
+            'md5': '7d049a8331efcfe34600c0cda6934ac6',
             },
         }
 
@@ -366,15 +374,19 @@ class Builder:
 
     def CopyIncludeDirectory(self):
         linkdst = os.path.join(self.config.prefix, 'mingw')
-        if self.config.arch == 'x64':
-            src = os.path.join(self.config.src_dir, 'trunk', 'mingw-w64-headers', 'include')
-            dst_parent = os.path.join(self.config.prefix, self.config.target_arch + '-pc-mingw32')
-            dst = os.path.join(dst_parent, 'include')
-            if not os.path.exists(dst):
-                if not os.path.exists(dst_parent):
-                    os.makedirs(dst_parent)
-                print 'Copying headers to', self.config.Relative(dst)
-                shutil.copytree(src, dst, True)
+        src = os.path.join(
+            self.config.src_dir,
+            self.config.arch,
+            self.source_files.GetExtractDirOf('mingw_hdr'),
+            'include'
+            )
+        dst_parent = os.path.join(self.config.prefix, self.config.target_arch + '-pc-mingw32')
+        dst = os.path.join(dst_parent, 'include')
+        if not os.path.exists(dst):
+            if not os.path.exists(dst_parent):
+                os.makedirs(dst_parent)
+            print 'Copying headers to', self.config.Relative(dst)
+            shutil.copytree(src, dst, True)
         if not os.path.lexists(linkdst):
             print 'Making symlink at', self.config.Relative(linkdst)
             os.symlink(self.config.target_arch + '-pc-mingw32', linkdst)
