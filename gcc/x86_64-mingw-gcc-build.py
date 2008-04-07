@@ -90,10 +90,10 @@ class Config:
         return (Opt, Args)
 
     def __init_dirs__(self):
-        self.src_dir = os.path.realpath(self.options.src_dir)
-        self.build_dir = os.path.realpath(self.options.build_dir)
-        self.prefix = os.path.realpath(self.options.prefix)
-        self.symlinks = os.path.realpath(self.options.symlinks)
+        self.src_dir = os.path.realpath(os.path.expanduser(self.options.src_dir))
+        self.build_dir = os.path.realpath(os.path.expanduser(self.options.build_dir))
+        self.prefix = os.path.realpath(os.path.expanduser(self.options.prefix))
+        self.symlinks = os.path.realpath(os.path.expanduser(self.options.symlinks))
 
     def IsConfigOk(self):
                 
@@ -134,22 +134,22 @@ class SourceFiles:
 
     source_files = {
         'gcc': {
-            'url': 'ftp://gd.tuwien.ac.at/gnu/gcc/snapshots/' + \
-                   '$version/gcc-$version.tar.bz2',
-            'version': '4.3-20071207',
-            'md5': 'b340fa520908cd195f3501e216d0036f'
+            'url': 'http://gcc-ca.internet.bs/releases/' + \
+                   'gcc-$version/gcc-$version.tar.bz2',
+            'version': '4.3.0',
+            'md5': '197ed8468b38db1d3481c3111691d85b'
             },
         'binutils': {
             'url': 'http://www.kernel.org/pub/linux/devel/binutils/' + \
                    'binutils-$version.tar.bz2',
-            'version': '2.18.50.0.3',
-            'md5': '4e0692b6ff63d51b7ae3529fabe290ce'
+            'version': '2.18.50.0.5',
+            'md5': 'daee18dbbf0a6ccfc186141bee18bf62'
             },
-        'mingw_hdr': {
+        'mingw_hdr': { # http://superb-east.dl.sourceforge.net/sourceforge/
             'url': 'http://superb-west.dl.sourceforge.net/sourceforge/' + \
-                   'mingw/mingw-w64-headers-$version.tar.bz2',
-            'version': '20070802',
-            'md5': 'b79e28f7685682cf9c9bf360c352ae7c'
+                   'mingw-w64/mingw-w64-snapshot-$version.tar.bz2',
+            'version': '20080310',
+            'md5': '235b2d15c2411f7d213c0c0977b2162f'
             },
         }
     for (fname, fdata) in source_files.items():
@@ -296,7 +296,7 @@ class Builder:
             ).close()
 
     def CopyIncludeDirectory(self):
-        src = os.path.join(self.config.src_dir, 'include')
+        src = os.path.join(self.config.src_dir, 'trunk', 'mingw-w64-headers', 'include')
         dst_parent = os.path.join(self.config.prefix, 'x86_64-pc-mingw32')
         dst = os.path.join(dst_parent, 'include')
         linkdst = os.path.join(self.config.prefix, 'mingw')
