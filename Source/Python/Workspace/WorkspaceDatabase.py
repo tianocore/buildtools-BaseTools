@@ -40,15 +40,15 @@ def ValidFile(File, Dir='.'):
     os.chdir(Wd)
     return True
 
-def ValidGuid(CName, PackageList):
+def GuidValue(CName, PackageList):
     for P in PackageList:
         if CName in P.Guids:
-            return True
+            return P.Guids[CName]
         if CName in P.Protocols:
-            return True
+            return P.Protocols[CName]
         if CName in P.Ppis:
-            return True
-    return False
+            return P.Ppis[CName]
+    return None
 
 class DscBuildData(PlatformBuildClassObject):
     #_PROPERTY_ = {
@@ -502,19 +502,19 @@ class DscBuildData(PlatformBuildClassObject):
             #
             for CName in L.Guids:
                 if CName not in Module.Guids:
-                    Module.Guids.append(CName)
+                    Module.Guids[CName] = L.Guids[CName]
             #
             # Merge Protocols from library instance
             #
             for CName in L.Protocols:
                 if CName not in Module.Protocols:
-                    Module.Protocols.append(CName)
+                    Module.Protocols[CName] = L.Protocols[CName]
             #
             # Merge Ppis from library instance
             #
             for CName in L.Ppis:
                 if CName not in Module.Ppis:
-                    Module.Ppis.append(CName)
+                    Module.Ppis[CName] = L.Ppis[CName]
 
     ##
     # for R8.x modules
@@ -1552,41 +1552,44 @@ class InfBuildData(ModuleBuildClassObject):
 
     def _GetProtocols(self):
         if self._Protocols == None:
-            self._Protocols = []
+            self._Protocols = sdict()
             RecordList = self._Table.Query(MODEL_EFI_PROTOCOL, Arch=self._Arch, Platform=self._Platform)
             for Record in RecordList:
                 CName = Record[0]
-                if not ValidGuid(CName, self.Packages):
+                Value = GuidValue(CName, self.Packages)
+                if Value == None:
                     PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
                     EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Value of [%s] is not found in" % CName,
                                     ExtraData=PackageList, File=self.DescFilePath, Line=Record[-1])
-                self._Protocols.append(CName)
+                self._Protocols[CName] = Value
         return self._Protocols
 
     def _GetPpis(self):
         if self._Ppis == None:
-            self._Ppis = []
+            self._Ppis = sdict()
             RecordList = self._Table.Query(MODEL_EFI_PPI, Arch=self._Arch, Platform=self._Platform)
             for Record in RecordList:
                 CName = Record[0]
-                if not ValidGuid(CName, self.Packages):
+                Value = GuidValue(CName, self.Packages)
+                if Value == None:
                     PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
                     EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Value of [%s] is not found in " % CName,
                                     ExtraData=PackageList, File=self.DescFilePath, Line=Record[-1])
-                self._Ppis.append(CName)
+                self._Ppis[CName] = Value
         return self._Ppis
 
     def _GetGuids(self):
         if self._Guids == None:
-            self._Guids = []
+            self._Guids = sdict()
             RecordList = self._Table.Query(MODEL_EFI_GUID, Arch=self._Arch, Platform=self._Platform)
             for Record in RecordList:
                 CName = Record[0]
-                if not ValidGuid(CName, self.Packages):
+                Value = GuidValue(CName, self.Packages)
+                if Value == None:
                     PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
                     EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Value of [%s] is not found in" % CName,
                                     ExtraData=PackageList, File=self.DescFilePath, Line=Record[-1])
-                self._Guids.append(CName)
+                self._Guids[CName] = Value
         return self._Guids
 
     def _GetIncludes(self):
@@ -1659,9 +1662,16 @@ class InfBuildData(ModuleBuildClassObject):
         PcdDict = tdict(True, 4)
         PcdSet = set()
         RecordList = self._Table.Query(Type, Arch=self.Arch, Platform=self.Platform)
-        for TokenSpaceGuid, PcdCName, Setting, Arch, Platform, Dummy1, Dummy2 in RecordList:
+        for TokenSpaceGuid, PcdCName, Setting, Arch, Platform, Dummy1, LineNo in RecordList:
             PcdDict[Arch, Platform, PcdCName, TokenSpaceGuid] = Setting
             PcdSet.add((PcdCName, TokenSpaceGuid))
+            if TokenSpaceGuid not in self.Guids:
+                Value = GuidValue(TokenSpaceGuid, self.Packages)
+                if Value == None:
+                    PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
+                    EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Value of [%s] is not found in" % CName,
+                                    ExtraData=PackageList, File=self.DescFilePath, Line=LineNo)
+                self._Guids[TokenSpaceGuid] = Value
 
         for PcdCName, TokenSpaceGuid in PcdSet:
             ValueList = ['', '']
@@ -1682,6 +1692,7 @@ class InfBuildData(ModuleBuildClassObject):
                     {},
                     True
                     )
+
             # get necessary info from package declaring this PCD
             for Package in self.Packages:
                 # 

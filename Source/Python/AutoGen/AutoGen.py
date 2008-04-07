@@ -226,7 +226,7 @@ class PlatformAutoGen:
         if self.Workspace.Fdf != "":
             Info.FdfFile= path.join(self.WorkspaceDir, self.Workspace.Fdf)
 
-        Info.NonDynamicPcdList, Info.DynamicPcdList = self.GetPcdList(Platform, Arch)
+        Info.NonDynamicPcdList, Info.DynamicPcdList, Info.GuidValue = self.GetPcdList(Platform, Arch)
         Info.PcdTokenNumber = self.GeneratePcdTokenNumber(Platform, Info.NonDynamicPcdList, Info.DynamicPcdList)
         Info.PackageList = self.GetPackageList(Platform, Arch)
 
@@ -382,7 +382,9 @@ class PlatformAutoGen:
         NotFoundPcdList = set()
         NoDatumTypePcdList = set()
 
+        GuidValue = {}
         for F in Platform.Modules:
+            GuidValue.update(F.Guids)
             M = self.ModuleDatabase[Arch][F]
             for Key in M.Pcds:
                 PcdFromModule = M.Pcds[Key]
@@ -412,7 +414,7 @@ class PlatformAutoGen:
                             ExtraData="\n\tPCD(s) not found in platform:\n\t\t%s"
                                       "\n\tPCD(s) without MaxDatumSize:\n\t\t%s\n"
                                       % (NotFoundPcdListString, NoDatumTypePcdListString))
-        return NonDynamicPcdList, DynamicPcdList
+        return NonDynamicPcdList, DynamicPcdList, GuidValue
 
     ## Generate Token Number for all PCD
     #
@@ -798,9 +800,9 @@ class ModuleAutoGen(object):
 
         Info.PcdIsDriver = self.Module.PcdIsDriver
         Info.PcdList = self.GetPcdList(Info.DependentLibraryList)
-        Info.GuidList = self.GetGuidList()
-        Info.ProtocolList = self.GetProtocolGuidList()
-        Info.PpiList = self.GetPpiGuidList()
+        Info.GuidList = self.Module.Guids
+        Info.ProtocolList = self.Module.Protocols
+        Info.PpiList = self.Module.Ppis
         Info.Macro = self.GetMacroList()
         Info.DepexList = self.GetDepexTokenList(Info)
 

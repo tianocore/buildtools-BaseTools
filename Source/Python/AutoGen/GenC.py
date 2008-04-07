@@ -794,7 +794,7 @@ def GetGuidValue(Packages, CName):
 #   @param      Pcd         The PCD object
 #
 def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
-    TokenSpaceGuidValue = GetGuidValue(Info.PlatformInfo.PackageList, Pcd.TokenSpaceGuidCName)
+    TokenSpaceGuidValue = Info.GuidList[Pcd.TokenSpaceGuidCName]
     PcdTokenNumber = Info.PlatformInfo.PcdTokenNumber
     #
     # Write PCDs
@@ -901,7 +901,7 @@ def CreateLibraryPcdCode(Info, AutoGenC, AutoGenH, Pcd):
     PcdTokenNumber = Info.PlatformInfo.PcdTokenNumber
     TokenSpaceGuidCName = Pcd.TokenSpaceGuidCName
     TokenCName  = Pcd.TokenCName
-    TokenSpaceGuidValue = GetGuidValue(Info.PlatformInfo.PackageList, TokenSpaceGuidCName)
+    TokenSpaceGuidValue = Info.GuidList[TokenSpaceGuidCName]
     if (Pcd.TokenCName, Pcd.TokenSpaceGuidCName) not in PcdTokenNumber:
         EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No generated token number for %s|%s\n" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
     TokenNumber = PcdTokenNumber[TokenCName, TokenSpaceGuidCName]
