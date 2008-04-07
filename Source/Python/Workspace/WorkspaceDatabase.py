@@ -1118,14 +1118,13 @@ class InfBuildData(ModuleBuildClassObject):
         #
         TAB_INF_DEFINES_INF_VERSION                 : "_AutoGenVersion",
         TAB_INF_DEFINES_COMPONENT_TYPE              : "_ComponentType",
-        TAB_INF_DEFINES_MAKEFILE_NAME               : "_CustomMakefile",
-        TAB_INF_DEFINES_CUSTOM_MAKEFILE             : "_CustomMakefile",
+        TAB_INF_DEFINES_MAKEFILE_NAME               : "_MakefileName",
+        #TAB_INF_DEFINES_CUSTOM_MAKEFILE             : "_CustomMakefile",
         TAB_INF_DEFINES_VERSION_NUMBER              : "_Version",
         TAB_INF_DEFINES_VERSION_STRING              : "_Version",
         TAB_INF_DEFINES_VERSION                     : "_Version",
         TAB_INF_DEFINES_PCD_IS_DRIVER               : "_PcdIsDriver",
         TAB_INF_DEFINES_SHADOW                      : "_Shadow",
-        TAB_INF_DEFINES_CUSTOM_MAKEFILE             : "_CustomMakefile",
     }
 
     _MODULE_TYPE_ = {
@@ -1244,6 +1243,7 @@ class InfBuildData(ModuleBuildClassObject):
         self._PcdIsDriver           = None
         self._BinaryModule          = None
         self._Shadow                = None
+        self._MakefileName          = None
         self._CustomMakefile        = None
         self._Specification         = None
         self._LibraryClass          = None
@@ -1325,7 +1325,18 @@ class InfBuildData(ModuleBuildClassObject):
                 if Record[1] == '':
                     continue
                 self._DestructorList.append(Record[1])
-
+            elif Name == TAB_INF_DEFINES_CUSTOM_MAKEFILE:
+                TokenList = GetSplitValueList(Record[1])
+                self._CustomMakefile = {}
+                if len(TokenList) < 2:
+                    self._CustomMakefile['MSFT'] = TokenList[0]
+                    self._CustomMakefile['GCC'] = TokenList[0]
+                else:
+                    if TokenList[0] not in ['MSFT', 'GCC']:
+                        EdkLogger.error("build", FORMAT_NOT_SUPPORTED,
+                                        "No supported family [%s]" % TokenList[0], 
+                                        File=self.DescFilePath, Line=Record[-1])
+                    self._CustomMakefile[TokenList[0]] = TokenList[1]
         # 
         # R8.x modules
         # 
@@ -1443,7 +1454,7 @@ class InfBuildData(ModuleBuildClassObject):
             if self._Header_ == None:
                 self._GetHeaderInfo()
             if self._CustomMakefile == None:
-                self._CustomMakefile = ''
+                self._CustomMakefile = {}
         return self._CustomMakefile
 
     def _GetSpec(self):

@@ -68,8 +68,8 @@ gMakefileHeader = '''#
 #
 '''
 
-gLibraryMakeCommand = '''cd %(makedir)s && "$(MAKE)" $(MAKE_FLAGS) %(target)s
-\tcd $(MODULE_BUILD_DIR)'''
+gLibraryMakeCommand = '''@cd %(makedir)s && "$(MAKE)" $(MAKE_FLAGS) %(target)s
+\t@cd $(MODULE_BUILD_DIR)'''
 
 gMakeType = ""
 if sys.platform == "win32":
@@ -181,21 +181,29 @@ ${BEGIN}PLATFORM_${tool_code}_FLAGS = ${platform_tool_flags}
 ${END}
 
 #
-# Platform Tools Flags Macro Definition (from platform description file)
+# Module Tools Flags Macro Definition (from platform/module description file)
 #
 ${BEGIN}MODULE_${tool_code}_FLAGS = ${module_tool_flags}
 ${END}
 
 #
-# ToolsFlagMacro
+# Tools Flag Macro
 #
 ${BEGIN}${tool_code}_FLAGS = $(DEFAULT_${tool_code}_FLAGS) $(PLATFORM_${tool_code}_FLAGS) $(MODULE_${tool_code}_FLAGS)
 ${END}
 
 #
-# ToolsPathMacro
+# Tools Path Macro
 #
 ${BEGIN}${tool_code} = ${tool_path}
+${END}
+
+MAKE_FILE = ${makefile_path}
+
+#
+# Shell Command Macro
+#
+${BEGIN}${shell_command_code} = ${shell_command}
 ${END}
 
 ${custom_makefile_content}
@@ -205,13 +213,6 @@ ${custom_makefile_content}
 #
 
 pbuild: init all
-
-
-#
-# Target used for library build, which will bypass the build of dependent libraries
-#
-
-lbuild: init all
 
 
 #
@@ -226,8 +227,7 @@ mbuild: init all
 #
 init:
 \t-@echo Building ... $(MODULE_NAME) $(MODULE_VERSION) [$(ARCH)] in platform $(PLATFORM_NAME) $(PLATFORM_VERSION)
-\t${BEGIN}-@${create_directory_command}
-\t${END}
+${BEGIN}\t-@${create_directory_command}\n${END}\
 
 '''
 
@@ -390,15 +390,15 @@ ${BEGIN}\t-@${copy_autogen_h}\n${END}
 # GenLibsTarget
 #
 gen_libs:
-\t${BEGIN}cd $(BUILD_DIR)${separator}$(ARCH)${separator}${dependent_library_build_directory} && "$(MAKE)" $(MAKE_FLAGS)
-\t${END}cd $(MODULE_BUILD_DIR)
+\t${BEGIN}@cd $(BUILD_DIR)${separator}$(ARCH)${separator}${dependent_library_build_directory} && "$(MAKE)" $(MAKE_FLAGS)
+\t${END}@cd $(MODULE_BUILD_DIR)
 
 #
 # Build Flash Device Image
 #
 gen_fds:
-\tcd $(BUILD_DIR) && "$(MAKE)" $(MAKE_FLAGS) fds
-\tcd $(MODULE_BUILD_DIR)
+\t@cd $(BUILD_DIR) && "$(MAKE)" $(MAKE_FLAGS) fds
+\t@cd $(MODULE_BUILD_DIR)
 
 #
 # Individual Object Build Targets
@@ -436,8 +436,8 @@ cleanpch:
 #
 
 cleanlib:
-\t${BEGIN}cd $(BUILD_DIR)${separator}$(ARCH)${separator}${dependent_library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) cleanall
-\t${END}cd $(MODULE_BUILD_DIR)
+\t${BEGIN}@cd $(BUILD_DIR)${separator}$(ARCH)${separator}${dependent_library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) cleanall
+\t${END}@cd $(MODULE_BUILD_DIR)
 
 '''
 
@@ -514,7 +514,7 @@ ${END}\tcd $(BUILD_DIR)
 #
 build_modules:
 ${BEGIN}\t@cd ${module_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
-${END}\tcd $(BUILD_DIR)
+${END}\t@$(BUILD_DIR)
 
 #
 # Build Flash Device Image
@@ -537,7 +537,7 @@ run:
 clean:
 \t${BEGIN}@cd ${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) clean
 \t${END}${BEGIN}@cd ${module_build_directory} && "$(MAKE)" $(MAKE_FLAGS) clean
-\t${END}cd $(BUILD_DIR)
+\t${END}@cd $(BUILD_DIR)
 
 #
 # Clean all generated files except to makefile
@@ -551,7 +551,7 @@ ${END}
 #
 cleanlib:
 \t${BEGIN}@cd ${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) cleanall
-\t${END}cd $(BUILD_DIR)
+\t${END}@cd $(BUILD_DIR)
 
 '''
 
@@ -925,6 +925,7 @@ class Makefile(object):
 
         MakefileName = gMakefileName[MakeType]
         MakefileTemplateDict = {
+            "makefile_path"             : os.path.join("$(MODULE_BUILD_DIR)", MakefileName),
             "makefile_header"           : gMakefileHeader % MakefileName,
             "platform_name"             : self.PlatformInfo.Name,
             "platform_guid"             : self.PlatformInfo.Guid,
@@ -949,6 +950,9 @@ class Makefile(object):
             "default_tool_flags"        : self.PlatformInfo.ToolOption.values(),
             "platform_tool_flags"       : self.PlatformInfo.BuildOption.values(),
             "module_tool_flags"         : self.ModuleInfo.BuildOption.values(),
+
+            "shell_command_code"        : gShellCommand[MakeType].keys(),
+            "shell_command"             : gShellCommand[MakeType].values(),
 
             "tool_code"                 : self.PlatformInfo.ToolPath.keys(),
             "tool_path"                 : self.PlatformInfo.ToolPath.values(),

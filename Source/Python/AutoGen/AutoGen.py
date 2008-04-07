@@ -782,7 +782,7 @@ class ModuleAutoGen(object):
 
         for Type in self.Module.CustomMakefile:
             MakeType = gMakeTypeMap[Type]
-            Info.CustomMakeFile[MakeType] = os.path.join(Info.SourceDir, self.Module.CustomMakefile[Type])
+            Info.CustomMakefile[MakeType] = os.path.join(Info.SourceDir, self.Module.CustomMakefile[Type])
 
         if self.Module.LibraryClass != None and self.Module.LibraryClass != []:
             Info.IsLibrary = True
