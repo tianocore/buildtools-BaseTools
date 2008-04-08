@@ -241,6 +241,8 @@ class FdfParser:
         SizeOfLastLine = len(self.Profile.FileLinesList[-1])
         if self.CurrentLineNumber == NumberOfLines and self.CurrentOffsetWithinLine >= SizeOfLastLine - 1:
             return True
+        elif self.CurrentLineNumber > NumberOfLines:
+            return True 
         else:
             return False
 

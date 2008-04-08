@@ -122,6 +122,8 @@ class CodeFragmentCollector:
         SizeOfLastLine = len(self.Profile.FileLinesList[-1])
         if self.CurrentLineNumber == NumberOfLines and self.CurrentOffsetWithinLine >= SizeOfLastLine - 1:
             return True
+        elif self.CurrentLineNumber > NumberOfLines:
+            return True
         else:
             return False
 
@@ -289,10 +291,10 @@ class CodeFragmentCollector:
         self.Profile.FileLinesList = [list(s) for s in self.Profile.FileLinesListFromFile]
         while not self.__EndOfFile():
             
-            if self.__CurrentChar() == T_CHAR_DOUBLE_QUOTE and not InComment:
+            if not InComment and self.__CurrentChar() == T_CHAR_DOUBLE_QUOTE:
                 InString = not InString
                 
-            if self.__CurrentChar() == T_CHAR_SINGLE_QUOTE and not InComment:
+            if not InComment and self.__CurrentChar() == T_CHAR_SINGLE_QUOTE:
                 InCharLiteral = not InCharLiteral
             # meet new line, then no longer in a comment for // and '#'
             if self.__CurrentChar() == T_CHAR_LF:
@@ -411,10 +413,10 @@ class CodeFragmentCollector:
         self.Profile.FileLinesList = [list(s) for s in self.Profile.FileLinesListFromFile]
         while not self.__EndOfFile():
             
-            if self.__CurrentChar() == T_CHAR_DOUBLE_QUOTE and not InComment:
+            if not InComment and self.__CurrentChar() == T_CHAR_DOUBLE_QUOTE:
                 InString = not InString
                 
-            if self.__CurrentChar() == T_CHAR_SINGLE_QUOTE and not InComment:
+            if not InComment and self.__CurrentChar() == T_CHAR_SINGLE_QUOTE:
                 InCharLiteral = not InCharLiteral
             # meet new line, then no longer in a comment for // and '#'
             if self.__CurrentChar() == T_CHAR_LF:

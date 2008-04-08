@@ -160,8 +160,16 @@ type_specifier
 	| 'double'
 	| 'signed'
 	| 'unsigned'
-	| s=struct_or_union_specifier {self.StoreStructUnionDefinition($s.start.line, $s.start.charPositionInLine, $s.stop.line, $s.stop.charPositionInLine, $s.text)}
-	| e=enum_specifier {self.StoreEnumerationDefinition($e.start.line, $e.start.charPositionInLine, $e.stop.line, $e.stop.charPositionInLine, $e.text)}
+	| s=struct_or_union_specifier
+	{
+	if s.stop != None:
+	  self.StoreStructUnionDefinition($s.start.line, $s.start.charPositionInLine, $s.stop.line, $s.stop.charPositionInLine, $s.text)
+	}
+	| e=enum_specifier
+	{
+	if e.stop != None:
+	  self.StoreEnumerationDefinition($e.start.line, $e.start.charPositionInLine, $e.stop.line, $e.stop.charPositionInLine, $e.text)
+	}
 	| (IDENTIFIER type_qualifier* declarator)=> type_id
 	;
 
@@ -336,14 +344,20 @@ unary_expression
 	;
 
 postfix_expression
-	:   p=primary_expression
+scope {
+  FuncCallText;
+}
+@init {
+  $postfix_expression::FuncCallText = '';
+}
+	:   p=primary_expression {$postfix_expression::FuncCallText += $p.text}
         (   '[' expression ']'
-        |   '(' a=')'{self.StoreFunctionCalling($p.start.line, $p.start.charPositionInLine, $a.line, $a.charPositionInLine, $p.text, '')}
-        |   '(' c=argument_expression_list b=')' {self.StoreFunctionCalling($p.start.line, $p.start.charPositionInLine, $b.line, $b.charPositionInLine, $p.text, $c.text)}
+        |   '(' a=')'{self.StoreFunctionCalling($p.start.line, $p.start.charPositionInLine, $a.line, $a.charPositionInLine, $postfix_expression::FuncCallText, '')}
+        |   '(' c=argument_expression_list b=')' {self.StoreFunctionCalling($p.start.line, $p.start.charPositionInLine, $b.line, $b.charPositionInLine, $postfix_expression::FuncCallText, $c.text)}
         |   '(' macro_parameter_list ')'
-        |   '.' IDENTIFIER
-        |   '*' IDENTIFIER
-        |   '->' IDENTIFIER
+        |   '.' x=IDENTIFIER {$postfix_expression::FuncCallText += '.' + $x.text}
+        |   '*' y=IDENTIFIER {$postfix_expression::FuncCallText = $y.text}
+        |   '->' z=IDENTIFIER {$postfix_expression::FuncCallText += '->' + $z.text}
         |   '++'
         |   '--'
         )*
