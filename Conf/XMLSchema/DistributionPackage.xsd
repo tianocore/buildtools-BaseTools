@@ -1038,6 +1038,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
       <xs:enumeration value="CpuHob"/>
       <xs:enumeration value="PoolHob"/>
       <xs:enumeration value="CapsuleVolumeHob"/>
+      <xs:enumeration value="File"/>
       <xs:enumeration value="TokenSpaceGuid"/>
     </xs:restriction>
   </xs:simpleType>
