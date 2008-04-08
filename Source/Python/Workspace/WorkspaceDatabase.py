@@ -1,7 +1,7 @@
 ## @file
-# This file is used to create a database used by ECC tool
+# This file is used to create a database used by build tool
 #
-# Copyright (c) 2007 ~ 2008, Intel Corporation
+# Copyright (c) 2008, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -31,6 +31,14 @@ from MetaFileTable import *
 from MetaFileParser import *
 from BuildClassObject import *
 
+## Check if gvien file exists or not
+# 
+#   @param      File    File name or path to be checked
+#   @param      Dir     The directory the file is relative to
+# 
+#   @retval     True    if file exists
+#   @retval     False   if file doesn't exists
+# 
 def ValidFile(File, Dir='.'):
     Wd = os.getcwd()
     os.chdir(Dir)
@@ -40,6 +48,14 @@ def ValidFile(File, Dir='.'):
     os.chdir(Wd)
     return True
 
+## Get GUID value from given packages
+# 
+#   @param      CName           The CName of the GUID
+#   @param      PackageList     List of packages looking-up in
+# 
+#   @retval     GuidValue   if the CName is found in any given package
+#   @retval     None        if the CName is not found in all given packages
+# 
 def GuidValue(CName, PackageList):
     for P in PackageList:
         if CName in P.Guids:
@@ -50,22 +66,12 @@ def GuidValue(CName, PackageList):
             return P.Ppis[CName]
     return None
 
+## Platform build information from DSC file
+#
+#  This class is used to retrieve information stored in database and convert them
+# into PlatformBuildClassObject form for easier use for AutoGen.
+#
 class DscBuildData(PlatformBuildClassObject):
-    #_PROPERTY_ = {
-    #    TAB_DSC_DEFINES_PLATFORM_NAME           : '_PlatformName'
-    #    TAB_DSC_DEFINES_PLATFORM_GUID           : '_Guid'
-    #    TAB_DSC_DEFINES_PLATFORM_VERSION        : '_Version'
-    #    TAB_DSC_DEFINES_DSC_SPECIFICATION       : '_DscSpecification'
-    #    TAB_DSC_DEFINES_OUTPUT_DIRECTORY        : '_OutputDirectory'
-    #    TAB_DSC_DEFINES_SUPPORTED_ARCHITECTURES : '_SupArchList'
-    #    TAB_DSC_DEFINES_BUILD_TARGETS           : '_BuildTargets'
-    #    TAB_DSC_DEFINES_SKUID_IDENTIFIER        : '_SkuId'
-    #    TAB_DSC_DEFINES_FLASH_DEFINITION        : '_FlashDefinition'
-    #    TAB_DSC_DEFINES_BUILD_NUMBER            : '_BuildNumber'
-    #    TAB_DSC_DEFINES_MAKEFILE_NAME           : '_MakefileName'
-    #    TAB_DSC_DEFINES_BS_BASE_ADDRESS         : '_BsBaseAddress'
-    #    TAB_DSC_DEFINES_RT_BASE_ADDRESS         : '_RtBaseAddress'
-    #}
     _PCD_TYPE_STRING_ = {
         MODEL_PCD_FIXED_AT_BUILD        :   "FixedAtBuild",
         MODEL_PCD_PATCHABLE_IN_MODULE   :   "PatchableInModule",
@@ -138,18 +144,6 @@ class DscBuildData(PlatformBuildClassObject):
         S += '  <Module>\n'
         S += "\t" + "\n\t".join([str(M) for M in self.Modules]) + '\n'
         return S
-
-    ## XXX[key] = value
-    #def __setitem__(self, key, value):
-    #    self.__dict__[self._PROPERTY_[key]] = value
-    #
-    ### variable = XXX[key]
-    #def __getitem__(self, key):
-    #    return self.__dict__[self._PROPERTY_[key]]
-    #
-    ### "in" test support
-    #def __contains__(self, key):
-    #    return key in self._PROPERTY_
 
     def _Clear(self):
         self._PlatformName      = None
@@ -313,6 +307,8 @@ class DscBuildData(PlatformBuildClassObject):
                     EdkLogger.error('build', FORMAT_INVALID, 'No Sku ID name',
                                     File=self.DescFilePath, Line=Record[-1])
                 self._SkuIds[Record[1]] = Record[0]
+            if 'DEFAULT' not in self._SkuIds:
+                self._SkuIds['DEFAULT'] = 0
         return self._SkuIds
 
     def _GetModules(self):
@@ -572,6 +568,17 @@ class DscBuildData(PlatformBuildClassObject):
                     PcdInModule.MaxDatumSize = str(len(Value.split(',')))
                 else:
                     PcdInModule.MaxDatumSize = str(len(Value))
+
+            # apply default SKU for dynamic PCDS if specified one is not available
+            if (PcdInModule.Type in PCD_DYNAMIC_TYPE_LIST or PcdInModule.Type in PCD_DYNAMIC_EX_TYPE_LIST) \
+                and PcdInModule.SkuInfoList in [None, {}, '']:
+                if self.SkuName in self.SkuIds:
+                    SkuName = self.SkuName
+                else:
+                    SkuName = 'DEFAULT'
+                PcdInModule.SkuInfoList = {
+                    SkuName : SkuInfoClass(SkuName, self.SkuIds[SkuName], '', '', '', '', '', PcdInModule.DefaultValue)
+                }
 
         RecordList = self._Table.Query(MODEL_PCD_FIXED_AT_BUILD, Scope1=self.Arch, BelongsToItem=ModuleId)
         for TokenSpaceGuid, PcdCName, Setting, Dummy1, Dummy2, Dummy3, Dummy4 in RecordList:
@@ -1018,7 +1025,8 @@ class DecBuildData(PackageBuildClassObject):
                 if not ValidFile(File, self._PackageDir):
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                     File=self.DescFilePath, Line=LineNo)
-                self._Includes.append(File)
+                if File not in self._Includes:
+                    self._Includes.append(File)
         return self._Includes
 
     def _GetLibraryClass(self):
