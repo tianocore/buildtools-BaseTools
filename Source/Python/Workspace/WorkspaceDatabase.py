@@ -1371,7 +1371,7 @@ class InfBuildData(ModuleBuildClassObject):
                     if not ValidFile(File, self._ModuleDir):
                         EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                         File=self.DescFilePath, Line=LineNo)
-                    if self._Sources == None:
+                    if self.Sources == None:
                         self._Sources = []
                     self._Sources.append(ModuleSourceFileClass(File, "", "", "", ""))
                 else:
