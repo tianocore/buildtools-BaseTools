@@ -74,35 +74,50 @@ class TargetTxtClassObject(object):
     # @retval 1 Open file failed
     #
     def ConvertTextFileToDict(self, FileName, CommentCharacter, KeySplitCharacter):
+        F = None
         try:
             F = open(FileName,'r')
-            for Line in F:
-                Line = Line.strip()
-                if Line.startswith(CommentCharacter) or Line == '':
-                    continue
-
-                LineList = Line.split(KeySplitCharacter, 1)
-                Key = LineList[0].strip()
-                if len(LineList) == 2:
-                    Value = LineList[1].strip()
-                else:
-                    Value = ""
-
-                if Key in [DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM, DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF, \
-                           DataType.TAB_TAT_DEFINES_MULTIPLE_THREAD, DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER, \
-                           DataType.TAB_TAT_DEFINES_ACTIVE_MODULE, DataType.TAB_TAT_DEFINES_BUILD_RULE_CONF]:
-                    self.TargetTxtDictionary[Key] = Value.replace('\\', '/')
-                elif Key in [DataType.TAB_TAT_DEFINES_TARGET, DataType.TAB_TAT_DEFINES_TARGET_ARCH, \
-                             DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG]:
-                    self.TargetTxtDictionary[Key] = Value.split()
-                #elif Key not in GlobalData.gGlobalDefines:
-                #    GlobalData.gGlobalDefines[Key] = Value
-
-            F.close()
-            return 0
         except:
-            EdkLogger.quiet('Open file failed')
-            return 1
+            EdkLogger.error("build", FILE_OPEN_FAILURE, ExtraData=FileName)
+            if F != None:
+                F.close()
+
+        for Line in F:
+            Line = Line.strip()
+            if Line.startswith(CommentCharacter) or Line == '':
+                continue
+
+            LineList = Line.split(KeySplitCharacter, 1)
+            Key = LineList[0].strip()
+            if len(LineList) == 2:
+                Value = LineList[1].strip()
+            else:
+                Value = ""
+
+            if Key in [DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM, DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF, \
+                       DataType.TAB_TAT_DEFINES_ACTIVE_MODULE, DataType.TAB_TAT_DEFINES_BUILD_RULE_CONF]:
+                self.TargetTxtDictionary[Key] = Value.replace('\\', '/')
+            elif Key in [DataType.TAB_TAT_DEFINES_TARGET, DataType.TAB_TAT_DEFINES_TARGET_ARCH, \
+                         DataType.TAB_TAT_DEFINES_TOOL_CHAIN_TAG]:
+                self.TargetTxtDictionary[Key] = Value.split()
+            elif Key == DataType.TAB_TAT_DEFINES_MULTIPLE_THREAD:
+                if Value not in ["Enable", "Disable"]:
+                    EdkLogger.error("build", FORMAT_INVALID, "Invalid setting of [%s]: %s." % (Key, Value),
+                                    ExtraData="\tSetting must be one of [Enable, Disable]",
+                                    File=FileName)
+                self.TargetTxtDictionary[Key] = Value
+            elif Key == DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER:
+                try:
+                    V = int(Value, 0)
+                except:
+                    EdkLogger.error("build", FORMAT_INVALID, "Invalid number of [%s]: %s." % (Key, Value),
+                                    File=FileName)
+                self.TargetTxtDictionary[Key] = Value
+            #elif Key not in GlobalData.gGlobalDefines:
+            #    GlobalData.gGlobalDefines[Key] = Value
+
+        F.close()
+        return 0
 
     ## Print the dictionary
     #
