@@ -19,7 +19,7 @@ and build the tools if necessary.
 Please also refer to the 'BuildNotes.txt' file for more information on
 building under Windows.
 
-=== 
+=== Unix-like operating systems ===
 
 To build on Unix-like operating systems, you only need to type 'make' in
 the base directory of the project.
@@ -31,4 +31,22 @@ packages to build all the C BaseTools:
 
   sudo apt-get install build-essentials uuid-dev
 
+=== Python antlr3 module ===
+
+Installation of the anltr3 python module is required to use the Python
+BaseTools code.  This module can be installed from:
+  http://www.antlr.org/download/Python/
+
+You make use of the python easy_install command to install the antlr3 module.
+To 'install' the easy_install python command:
+  On Ubuntu, install the python-setuptools package:
+    sudo apt-get install python-setuptools
+  Or, refer to this web page:
+    http://wiki.python.org/moin/EasyInstall
+
+After you have easy_install available, you can use it to install the
+antlr3 module (You may need to check http://www.antlr.org/download/Python
+to see if there is a newer version):
+  sudo easy_install \
+    http://www.antlr.org/download/Python/antlr_python_runtime-3.0.1-py2.5.egg
 
