@@ -56,11 +56,11 @@ class ItemBuild(object):
         self.ModuleDatabase          = {}
 
 class WorkspaceBuild(object):
-    def __init__(self, ActivePlatform, WorkspaceDir, Reparse=False):
+    def __init__(self, ActivePlatform, WorkspaceDir, Reparse=False, SkuId=''):
         self.WorkspaceDir            = NormPath(WorkspaceDir)
         self.SupArchList             = []
         self.BuildTarget             = []
-        self.SkuId                   = ''
+        self.SkuId                   = SkuId
         self.Fdf                     = ''
         self.FdTargetList            = []
         self.FvTargetList            = []
@@ -101,10 +101,13 @@ class WorkspaceBuild(object):
         Platform = self.Db.BuildObject[self.DscFileName, MODEL_FILE_DSC, 'COMMON']
         self.SupArchList = Platform.SupArchList
         self.BuildTarget = Platform.BuildTargets
-        self.SkuId = Platform.SkuName
         self.Fdf = Platform.FlashDefinition
+        if self.SkuId == '':
+            self.SkuId = Platform.SkuName
         for Arch in self.SupArchList:
-            self.Build[Arch].PlatformDatabase[self.DscFileName] = self.Db.BuildObject[self.DscFileName, MODEL_FILE_DSC, Arch]
+            Platform = self.Db.BuildObject[self.DscFileName, MODEL_FILE_DSC, Arch]
+            Platform.SkuName = self.SkuId
+            self.Build[Arch].PlatformDatabase[self.DscFileName] = Platform
     
     ## GenBuildDatabase
     #

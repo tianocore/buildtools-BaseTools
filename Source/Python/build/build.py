@@ -631,7 +631,7 @@ class Build():
     def __init__(self, Target, WorkspaceDir, Platform, Module, Arch, ToolChain, 
                  BuildTarget, FlashDefinition, FdList=[], FvList=[], 
                  MakefileType="nmake", SpawnMode=False, ThreadNumber=2,
-                 SkipAutoGen=False, Reparse=False):
+                 SkipAutoGen=False, Reparse=False, SkuId=None):
 
         self.WorkspaceDir = WorkspaceDir
 
@@ -649,6 +649,7 @@ class Build():
         self.ThreadNumber   = ThreadNumber
         self.SkipAutoGen    = SkipAutoGen
         self.Reparse        = Reparse
+        self.SkuId          = SkuId
 
         self.TargetTxt    = TargetTxtClassObject()
         self.ToolDef      = ToolDefClassObject()
@@ -801,7 +802,7 @@ class Build():
             EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE,
                             ExtraData="No active platform specified in target.txt or command line! Nothing can be built.\n")
 
-        Wb = WorkspaceBuild(self.PlatformFile, self.WorkspaceDir, self.Reparse)
+        Wb = WorkspaceBuild(self.PlatformFile, self.WorkspaceDir, self.Reparse, self.SkuId)
         PcdSet = {}
         if self.Fdf != None:
             self.Fdf = NormFile(self.Fdf, self.WorkspaceDir)
@@ -1125,23 +1126,28 @@ def MyOptionParser():
     Parser.add_option("-a", "--arch", action="append", type="choice", choices=['IA32','X64','IPF','EBC'], dest="TargetArch",
         help="ARCHS is one of list: IA32, X64, IPF or EBC, which overrides target.txt's TARGET_ARCH definition. To specify more archs, please repeat this option.")
     Parser.add_option("-p", "--platform", action="store", type="string", dest="PlatformFile",
-        help="Build the platform specified by the DSC file name argument, overrides target.txt's ACTIVE_PLATFORM definition.")
+        help="Build the platform specified by the DSC file name argument, overriding target.txt's ACTIVE_PLATFORM definition.")
     Parser.add_option("-m", "--module", action="store", type="string", dest="ModuleFile",
         help="Build the module specified by the INF file name argument.")
     Parser.add_option("-b", "--buildtarget", action="append", type="choice", choices=['DEBUG','RELEASE'], dest="BuildTarget",
         help="BuildTarget is one of list: DEBUG, RELEASE, which overrides target.txt's TARGET definition. To specify more TARGET, please repeat this option.")
     Parser.add_option("-t", "--tagname", action="append", type="string", dest="ToolChain",
-        help="Using the Tool Chain Tagname to build the platform, overrides target.txt's TOOL_CHAIN_TAG definition.")
+        help="Using the Tool Chain Tagname to build the platform, overriding target.txt's TOOL_CHAIN_TAG definition.")
+    Parser.add_option("-x", "--sku-id", action="store", type="string", dest="SkuId",
+        help="Using this name of SKU ID to build the platform, overriding SKUID_IDENTIFIER in DSC file.")
+
     Parser.add_option("-s", "--spawn", action="store_true", type=None, dest="SpawnMode",
         help="If this flag is specified, as soon as a module can be built, the build will start, without waiting for AutoGen to complete remaining modules. While this option provides feedback that looks fast, due to overhead of the AutoGen function, this option is slower than letting AutoGen complete before starting the MAKE phase.")
     Parser.add_option("-n", action="store", type="int", dest="ThreadNumber",
         help="Build the platform using multi-threaded compiler, this option must combine with spawn option. The value overrides target.txt's MULTIPLE_THREAD and MAX_CONCURRENT_THREAD_NUMBER, less than 2 will disable multi-thread builds.")
+
     Parser.add_option("-f", "--fdf", action="store", type="string", dest="FdfFile",
         help="The name of the FDF file to use, which overrides the setting in the DSC file.")
     Parser.add_option("-r", "--rom-image", action="append", type="string", dest="RomImage", default=[],
         help="The name of FD to be generated. The name must be from [FD] section in FDF file.")
     Parser.add_option("-i", "--fv-image", action="append", type="string", dest="FvImage", default=[],
         help="The name of FV to be generated. The name must be from [FV] section in FDF file.")
+
     Parser.add_option("-k", "--msft", action="store_const", dest="MakefileType", const="nmake", help="Make Option: Generate only NMAKE Makefiles: Makefile")
     Parser.add_option("-g", "--gcc", action="store_const", dest="MakefileType", const="gmake", help="Make Option: Generate only GMAKE Makefiles: GNUmakefile")
     Parser.add_option("-l", "--all", action="store_const", dest="MakefileType", const="all", help="Make Option: Generate both NMAKE and GMAKE makefiles.")
@@ -1243,7 +1249,7 @@ def Main():
                         Option.TargetArch, Option.ToolChain, Option.BuildTarget, 
                         Option.FdfFile, Option.RomImage, Option.FvImage, 
                         Option.MakefileType, Option.SpawnMode, Option.ThreadNumber, 
-                        Option.SkipAutoGen, Option.Reparse)
+                        Option.SkipAutoGen, Option.Reparse, Option.SkuId)
         MyBuild.Launch()
         MyBuild.DumpBuildData()
     except BaseException, X:

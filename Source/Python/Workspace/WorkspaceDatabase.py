@@ -252,6 +252,10 @@ class DscBuildData(PlatformBuildClassObject):
                 self._SkuName = 'DEFAULT'
         return self._SkuName
 
+    def _SetSkuName(self, Value):
+        if Value in self.SkuIds:
+            self._SkuName = Value
+
     def _GetFdfFile(self):
         if self._FlashDefinition == None:
             RecordList = self._Table.Query(MODEL_META_DATA_HEADER, TAB_DSC_DEFINES_FLASH_DEFINITION, self.Arch)
@@ -863,7 +867,7 @@ class DscBuildData(PlatformBuildClassObject):
     OutputDirectory     = property(_GetOutpuDir)
     SupArchList         = property(_GetSupArch)
     BuildTargets        = property(_GetBuildTarget)
-    SkuName             = property(_GetSkuName)
+    SkuName             = property(_GetSkuName, _SetSkuName)
     FlashDefinition     = property(_GetFdfFile)
     BuildNumber         = property(_GetBuildNumber)
     MakefileName        = property(_GetMakefileName)
