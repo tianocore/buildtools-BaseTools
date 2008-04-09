@@ -16,6 +16,7 @@
 # Import Modules
 #
 import os
+import re
 import sys
 import glob
 import time
@@ -38,7 +39,7 @@ import Common.EdkLogger
 import Common.GlobalData as GlobalData
 
 # Version and Copyright
-VersionNumber = "0.02"
+VersionNumber = "0.1"
 __version__ = "%prog Version " + VersionNumber
 __copyright__ = "Copyright (c) 2007, Intel Corporation  All rights reserved."
 
@@ -1182,14 +1183,6 @@ def Main():
     #
     (Option, Target) = MyOptionParser()
 
-    if len(Target) == 0:
-        Target = "all"
-    elif len(Target) >= 2:
-        EdkLogger.error("build", OPTION_NOT_SUPPORTED, "More than on targets are not supported.",
-                        ExtraData="Please select one of: %s" %(' '.join(gSupportedTarget)))
-    else:
-        Target = Target[0].lower()
-
     # Set log level
     if Option.verbose != None:
         EdkLogger.SetLevel(EdkLogger.VERBOSE)
@@ -1210,6 +1203,18 @@ def Main():
     ReturnCode = 0
     MyBuild = None
     try:
+        if len(Target) == 0:
+            Target = "all"
+        elif len(Target) >= 2:
+            EdkLogger.error("build", OPTION_NOT_SUPPORTED, "More than on targets is not supported.",
+                            ExtraData="Please select one of: %s" %(' '.join(gSupportedTarget)))
+        else:
+            Target = Target[0].lower()
+    
+        if Target not in gSupportedTarget:
+            EdkLogger.error("build", OPTION_NOT_SUPPORTED, "Not supported target [%s]." % Target,
+                            ExtraData="Please select one of: %s" %(' '.join(gSupportedTarget)))
+    
         # GlobalData.gGlobalDefines = ParseDefines(Option.Defines)
         #
         # Check environment variable: EDK_TOOLS_PATH, WORKSPACE, PATH

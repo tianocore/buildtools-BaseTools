@@ -78,8 +78,13 @@ class MetaFileParser(object):
 
     def _SectionHeaderParser(self):
         self._Scope = []
+        self._SectionName = ''
+        ArchList = set()
         for Item in GetSplitValueList(self._CurrentLine[1:-1], TAB_COMMA_SPLIT):
             ItemList = GetSplitValueList(Item, TAB_SPLIT)
+            if self._SectionName != '' and self._SectionName != ItemList[0].upper():
+                EdkLogger.error('Parser', FORMAT_INVALID, "Different section names in the same section",
+                                File=self._FilePath, Line=self._LineIndex+1, ExtraData=self._CurrentLine)
             self._SectionName = ItemList[0].upper()
             if self._SectionName in self._DataType:
                 self._SectionType = self._DataType[self._SectionName]
@@ -90,12 +95,18 @@ class MetaFileParser(object):
                 S1 = ItemList[1].upper()
             else:
                 S1 = 'COMMON'
+            ArchList.add(S1)
             # S2 may be Platform or ModuleType
             if len(ItemList) > 2:
                 S2 = ItemList[2].upper()
             else:
                 S2 = 'COMMON'
             self._Scope.append([S1, S2])
+
+        # 'COMMON' must not be used with specific ARCHs at the same section
+        if 'COMMON' in ArchList and len(ArchList) > 1:
+            EdkLogger.error('Parser', FORMAT_INVALID, "'common' ARCH must not be used with specific ARCHs",
+                            File=self._FilePath, Line=self._LineIndex+1, ExtraData=self._CurrentLine)
 
     def _DefineParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)

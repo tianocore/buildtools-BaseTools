@@ -72,6 +72,7 @@ def GuidValue(CName, PackageList):
 # into PlatformBuildClassObject form for easier use for AutoGen.
 #
 class DscBuildData(PlatformBuildClassObject):
+    # dict used to convert PCD type in database to string used by build tool
     _PCD_TYPE_STRING_ = {
         MODEL_PCD_FIXED_AT_BUILD        :   "FixedAtBuild",
         MODEL_PCD_PATCHABLE_IN_MODULE   :   "PatchableInModule",
@@ -86,6 +87,7 @@ class DscBuildData(PlatformBuildClassObject):
         MODEL_PCD_DYNAMIC_EX_VPD        :   "DynamicExVpd",
     }
 
+    # used to compose dummy library class name for those forced library instances
     _NullLibraryNumber = 0
 
     def __init__(self, FilePath, Table, Db, Arch='COMMON', Macros={}):
@@ -1566,7 +1568,10 @@ class InfBuildData(ModuleBuildClassObject):
             self._Libraries = []
             RecordList = self._Table.Query(MODEL_EFI_LIBRARY_INSTANCE, Arch=self._Arch, Platform=self._Platform)
             for Record in RecordList:
-                self._Libraries.append(Record[0])
+                # in case of name with '.lib' extension, which is unusual in R8.x inf
+                LibraryName = os.path.splitext(Record[0])[0]
+                if LibraryName not in self._Libraries:
+                    self._Libraries.append(LibraryName)
         return self._Libraries
 
     def _GetProtocols(self):
@@ -1615,6 +1620,10 @@ class InfBuildData(ModuleBuildClassObject):
         if self._Includes == None:
             self._Includes = []
             RecordList = self._Table.Query(MODEL_EFI_INCLUDE, Arch=self._Arch, Platform=self._Platform)
+            # [includes] section must be used only in old (R8.x) inf file
+            if self.AutoGenVersion >= 0x00010005 and len(RecordList) > 0:
+                EdkLogger.error('build', FORMAT_NOT_SUPPORTED, "No [include] section allowed",
+                                File=self.DescFilePath, Line=RecordList[0][-1]-1)
             for Record in RecordList:
                 File = NormPath(Record[0], self._Macros)
                 LineNo = Record[-1]
@@ -1626,6 +1635,8 @@ class InfBuildData(ModuleBuildClassObject):
                 #    if not ValidFile(File):
                 #        EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                 #                        File=self.DescFilePath, Line=LineNo)
+                if File in self._Includes:
+                    continue
                 self._Includes.append(File)
         return self._Includes
 

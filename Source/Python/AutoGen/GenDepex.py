@@ -15,12 +15,17 @@
 import sys
 import os
 import re
+import traceback
+
 from StringIO import StringIO
 from struct import pack
-from Common.EdkIIWorkspace import CreateDirectory
 from Common.BuildToolError import *
 from Common.Misc import SaveFileOnChange
 from Common import EdkLogger as EdkLogger
+
+import antlr3
+from DepexLexer import DepexLexer
+from DepexParser import DepexParser
 
 ## Mapping between module type and EFI phase
 gType2Phase = {
@@ -81,137 +86,42 @@ class DependencyExpression:
     # all supported op codes and operands
     SupportedOpcode = ["BEFORE", "AFTER", "PUSH", "AND", "OR", "NOT", "END", "SOR"]
     SupportedOperand = ["TRUE", "FALSE"]
-
-    # op code that should not be the last one
-    NonEndingOpcode = ["AND", "OR", "NOT"]
-    # op code must not present at the same time
-    ExclusiveOpcode = ["BEFORE", "AFTER"]
-    # op code that should be the first one if it presents
-    AboveAllOpcode = ["SOR", "BEFORE", "AFTER"]
-
-    #
-    # open and close brace must be taken as individual tokens
-    #
-    TokenPattern = re.compile("(\(|\)|\{[^{}]+\{?[^{}]+\}?[ ]*\}|\w+)")
-
     ## Constructor
     # 
     #   @param  Expression  The list or string of dependency expression
     #   @param  ModuleType  The type of the module using the dependency expression
     # 
-    def __init__(self, Expression, ModuleType, Optimize=False):
+    def __init__(self, Expression, ModuleType, Optimize=False, File=''):
         self.Phase = gType2Phase[ModuleType]
         if type(Expression) == type([]):
             self.ExpressionString = " ".join(Expression)
-            self.TokenList = Expression
         else:
             self.ExpressionString = Expression
-            self.GetExpressionTokenList()
+
+        self.File = File
+        self.Tokens = None
+        self.Parser = None
 
         self.PostfixNotation = []
+        self.TokenList = []
         self.OpcodeList = []
 
-        self.GetPostfixNotation()
-        self.ValidateOpcode()
+        self.Parse()
         if Optimize:
             self.Optimize()
 
     def __str__(self):
-        return " ".join(self.TokenList)
+        return " ".join(self.PostfixNotation)
 
-    ## Split the expression string into token list
-    def GetExpressionTokenList(self):
-        self.TokenList = self.TokenPattern.findall(self.ExpressionString)
+    def Parse(self):
+        self.Tokens = antlr3.CommonTokenStream(DepexLexer(antlr3.ANTLRStringStream(self.ExpressionString)))
+        self.Tokens.fillBuffer()
+        self.Parser = DepexParser(self.Tokens)
+        self.Parser.start(self.File)
 
-    ## Convert token list into postfix notation
-    def GetPostfixNotation(self):
-        Stack = []
-        LastToken = 'AND'
-        for Token in self.TokenList:
-            if Token == "(":
-                if LastToken not in self.SupportedOpcode:
-                    EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid dependency expression: missing operator",
-                                    ExtraData=str(self))
-                Stack.append(Token)
-            elif Token == ")":
-                if '(' not in Stack:
-                    EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid dependency expression: mismatched parentheses",
-                                    ExtraData=str(self))
-                while len(Stack) > 0:
-                    if Stack[-1] == '(':
-                        Stack.pop()
-                        break
-                    self.PostfixNotation.append(Stack.pop())
-            elif Token in self.OpcodePriority:
-                if Token == "NOT" and LastToken not in self.SupportedOpcode:
-                    EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid dependency expression: missing operator before NOT",
-                                    ExtraData=str(self))
-                elif Token in self.SupportedOpcode and LastToken in self.SupportedOpcode:
-                    EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid dependency expression: missing operand before " + Token,
-                                    ExtraData=str(self))
-
-                while len(Stack) > 0:
-                    if Stack[-1] == "(" or self.OpcodePriority[Token] >= self.OpcodePriority[Stack[-1]]:
-                        break
-                    self.PostfixNotation.append(Stack.pop())
-                Stack.append(Token)
-                self.OpcodeList.append(Token)
-            else:
-                # not OP, take it as GUID
-                if Token not in self.SupportedOpcode:
-                    if LastToken not in self.SupportedOpcode + ['(', ')']:
-                        EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid dependency expression: missing operator",
-                                        ExtraData=str(self))
-                    if len(self.OpcodeList) == 0 or self.OpcodeList[-1] not in self.ExclusiveOpcode:
-                        if Token not in self.SupportedOperand:
-                            self.PostfixNotation.append("PUSH")
-                # check if OP is valid in this phase
-                elif Token in self.Opcode[self.Phase]:
-                    if Token == "END":
-                        break
-                    self.OpcodeList.append(Token)
-                else:
-                    EdkLogger.error("GenDepex", PARSER_ERROR, 
-                                    "Opcode=%s doesn't supported in %s stage " % (Op, self.Phase),
-                                    ExtraData=str(self))
-                self.PostfixNotation.append(Token)
-            LastToken = Token
-
-        # there should not be parentheses in Stack
-        if '(' in Stack or ')' in Stack:
-            EdkLogger.error("GenDepex", PARSER_ERROR, "Invalid dependency expression: mismatched parentheses",
-                            ExtraData=str(self))
-        while len(Stack) > 0:
-            self.PostfixNotation.append(Stack.pop())
-        self.PostfixNotation.append("END")
-
-    ## Validate the dependency expression
-    def ValidateOpcode(self):
-        for Op in self.AboveAllOpcode:
-            if Op in self.PostfixNotation:
-                if Op != self.PostfixNotation[0]:
-                    EdkLogger.error("GenDepex", PARSER_ERROR, "Opcode=%s should be the first opcode in the expression" % Op,
-                                    ExtraData=str(self))
-                if len(self.PostfixNotation) < 3:
-                    EdkLogger.error("GenDepex", PARSER_ERROR, "Missing operand for %s" % Op,
-                                    ExtraData=str(self))
-        for Op in self.ExclusiveOpcode:
-            if Op in self.OpcodeList:
-                if len(self.OpcodeList) > 1:
-                    EdkLogger.error("GenDepex", PARSER_ERROR, "Opcode=%s should be the only opcode in the expression" % Op,
-                                    ExtraData=str(self))
-                if len(self.PostfixNotation) < 3:
-                    EdkLogger.error("GenDepex", PARSER_ERROR, "Missing operand for %s" % Op,
-                                    ExtraData=str(self))
-        if self.TokenList[-1] != 'END' and self.TokenList[-1] in self.NonEndingOpcode:
-            EdkLogger.error("GenDepex", PARSER_ERROR, "Extra %s at the end of the dependency expression" % self.TokenList[-1],
-                            ExtraData=str(self))
-        if self.TokenList[-1] == 'END' and self.TokenList[-2] in self.NonEndingOpcode:
-            EdkLogger.error("GenDepex", PARSER_ERROR, "Extra %s at the end of the dependency expression" % self.TokenList[-2],
-                            ExtraData=str(self))
-        if "END" in self.TokenList and "END" != self.TokenList[-1]:
-            EdkLogger.error("GenDepex", PARSER_ERROR, "Extra expressions after END", 
-                            ExtraData=str(self))
+        self.PostfixNotation = self.Parser.PostfixNotation
+        self.TokenList = self.Parser.TokenList
+        self.OpcodeList = self.Parser.OpcodeList
 
     ## Simply optimize the dependency expression by removing duplicated operands
     def Optimize(self):
@@ -244,8 +154,8 @@ class DependencyExpression:
                 break
             self.TokenList.append(Op)
         self.PostfixNotation = []
-        self.GetPostfixNotation()
-
+        self.ExpressionString = ' '.join(self.TokenList)
+        self.Parse()
 
     ## Convert a GUID value in C structure format into its binary form
     #
@@ -272,6 +182,10 @@ class DependencyExpression:
         for Item in self.PostfixNotation:
             if Item in self.Opcode[self.Phase]:
                 Buffer.write(pack("B", self.Opcode[self.Phase][Item]))
+            elif Item in self.SupportedOpcode:
+                EdkLogger.error("GenDepex", FORMAT_INVALID, 
+                                "Opcode [%s] is not expected in %s phase" % (Item, self.Phase),
+                                ExtraData=self.ExpressionString)
             else:
                 Buffer.write(self.GetGuidValue(Item))
 
@@ -286,9 +200,9 @@ class DependencyExpression:
         Buffer.close()
         return FileChangeFlag
 
-versionNumber = "0.02"
+versionNumber = "0.03"
 __version__ = "%prog Version " + versionNumber
-__copyright__ = "Copyright (c) 2007, Intel Corporation  All rights reserved."
+__copyright__ = "Copyright (c) 2007-2008, Intel Corporation  All rights reserved."
 __usage__ = "%prog [options] [dependency_expression_file]"
 
 ## Parse command line options
@@ -310,8 +224,7 @@ def GetOptions():
                       help="Do some simple optimization on the expression.")
     Parser.add_option("-v", "--verbose", dest="verbose", default=False, action="store_true",
                       help="build with verbose information")
-    Parser.add_option("-d", "--debug", dest="debug", default=False, action="store_true",
-                      help="build with debug information")
+    Parser.add_option("-d", "--debug", action="store", type="int", help="Enable debug messages at specified level.")
     Parser.add_option("-q", "--quiet", dest="quiet", default=False, action="store_true",
                       help="build with little information")
 
@@ -326,32 +239,46 @@ def GetOptions():
 def Main():
     EdkLogger.Initialize()
     Option, Input = GetOptions()
-    if Option.ModuleType == None or Option.ModuleType not in gType2Phase:
-        print "Module type is not specified or supported"
-        return 1
+
+    # Set log level
+    if Option.verbose != None:
+        EdkLogger.SetLevel(EdkLogger.VERBOSE)
+    elif Option.quiet != None:
+        EdkLogger.SetLevel(EdkLogger.QUIET)
+    elif Option.debug != None:
+        EdkLogger.SetLevel(Option.debug + 1)
+    else:
+        EdkLogger.SetLevel(EdkLogger.INFO)
 
     try:
+        if Option.ModuleType == None or Option.ModuleType not in gType2Phase:
+            EdkLogger.error("GenDepex", OPTION_MISSING, "Module type is not specified or supported")
+
+        DxsFile = ''
         if len(Input) > 0 and Option.Expression == "":
             DxsFile = Input[0]
-            DxsString = open(DxsFile, 'r').read().replace("\n", " ").replace("\r", " ")
-            DxsString = re.compile("DEPENDENCY_START(.+)DEPENDENCY_END").findall(DxsString)[0]
+            DxsString = open(DxsFile, 'r').read()
         elif Option.Expression != "":
             if Option.Expression[0] == '"':
                 DxsString = Option.Expression[1:-1]
             else:
                 DxsString = Option.Expression
         else:
-            print "No expression string or file given"
-            return 1
+            EdkLogger.error("GenDepex", OPTION_MISSING, "No expression string or file given")
 
-        Dpx = DependencyExpression(DxsString, Option.ModuleType, Option.Optimize)
+        DxsString += '\n'
+        Dpx = DependencyExpression(DxsString, Option.ModuleType, Option.Optimize, DxsFile)
 
         if Option.OutputFile != None:
             Dpx.Generate(Option.OutputFile)
         else:
             Dpx.Generate()
-    except Exception, e:
-        print e
+    except BaseException, X:
+        EdkLogger.quiet("")
+        if Option != None and Option.debug != None:
+            EdkLogger.quiet(traceback.format_exc())
+        else:
+            EdkLogger.quiet(str(X))
         return 1
 
     return 0
