@@ -1282,7 +1282,10 @@ Returns:
   VerboseMsg ("%s tool start.", UTILITY_NAME);
 
   if (OutImageType == FW_DUMMY_IMAGE) {
-    Error (NULL, 0, 1001, "Missing option", "No create action specified; specify -e, -c or -t!");
+    Error (NULL, 0, 1001, "Missing option", "No create file action specified; pls specify -e, -c or -t option to create efi image, or acpi table or TeImage!");
+    if (ReplaceFlag) {
+      Error (NULL, 0, 1001, "Missing option", "-r option is not supported as the independent option. It can be used together with other create file option specified at the above.");
+    }
     goto Finish;
   }
 
