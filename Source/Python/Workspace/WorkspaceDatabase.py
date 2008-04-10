@@ -1703,7 +1703,7 @@ class InfBuildData(ModuleBuildClassObject):
                 Value = GuidValue(TokenSpaceGuid, self.Packages)
                 if Value == None:
                     PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
-                    EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Value of [%s] is not found in" % CName,
+                    EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Value of [%s] is not found in" % PcdCName,
                                     ExtraData=PackageList, File=self.DescFilePath, Line=LineNo)
                 self._Guids[TokenSpaceGuid] = Value
 
