@@ -469,9 +469,19 @@ statement
 	| iteration_statement
 	| jump_statement
 	| macro_statement
+	| asm_statement
+	| asm1_statement
 	| declaration
 	;
 
+asm1_statement
+	: '_asm' '{' (~('}'))* '}'
+	;
+
+asm_statement
+	: '__asm' '{' (~('}'))* '}'
+	;
+	
 macro_statement
 	: IDENTIFIER '(' declaration*  statement_list? expression? ')'
 	;
