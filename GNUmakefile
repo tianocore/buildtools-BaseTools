@@ -17,3 +17,6 @@ $(CLEAN_SUBDIRS):
 
 clean:  $(CLEAN_SUBDIRS)
 
+test:
+	@$(MAKE) -C Tests
+
