@@ -20,7 +20,7 @@ def GetIgnoredDirListPattern():
     return p
 
 def GetFuncDeclPattern():
-    p = re.compile(r'[_\w]*\s*\(.*\).*', re.DOTALL)
+    p = re.compile(r'(EFIAPI|EFI_BOOT_SERVICE|EFI_RUNTIME_SERVICE)?\s*[_\w]+\s*\(.*\).*', re.DOTALL)
     return p
 
 def GetArrayPattern():
@@ -90,6 +90,16 @@ def GetIdentifierList():
             DeclText = DeclText.lstrip('*').strip()
         var.Declarator = DeclText
         if FuncDeclPattern.match(var.Declarator):
+            DeclSplitList = var.Declarator.split('(')     
+            FuncName = DeclSplitList[0]
+            FuncNamePartList = FuncName.split()
+            if len(FuncNamePartList) > 1:
+                FuncName = FuncNamePartList[-1]
+                Index = 0
+                while Index < len(FuncNamePartList) - 1:
+                    var.Modifier += ' ' + FuncNamePartList[Index]
+                    var.Declarator = var.Declarator.lstrip().lstrip(FuncNamePartList[Index])
+                    Index += 1
             IdVar = DataClass.IdentifierClass(-1, var.Modifier, '', var.Declarator, '', DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION, -1, -1, var.StartPos[0],var.StartPos[1],var.EndPos[0],var.EndPos[1])
             IdList.append(IdVar)
             continue
