@@ -507,14 +507,14 @@ fds: init build_fds
 #
 build_libraries:
 ${BEGIN}\t@cd ${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
-${END}\tcd $(BUILD_DIR)
+${END}\t@cd $(BUILD_DIR)
 
 #
 # Build all modules:
 #
 build_modules:
 ${BEGIN}\t@cd ${module_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
-${END}\t@$(BUILD_DIR)
+${END}\t@cd $(BUILD_DIR)
 
 #
 # Build Flash Device Image
