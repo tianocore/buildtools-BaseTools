@@ -187,7 +187,7 @@ def SplitModuleType(Key):
 #
 # @retval string            The string whose macros are replaced
 #
-def ReplaceMacro(String, MacroDefinitions={}):
+def ReplaceMacro(String, MacroDefinitions={}, SelfReplacement = False):
     LastString = String
     while MacroDefinitions != None and len(MacroDefinitions) > 0:
         MacroUsed = gMacroPattern.findall(String)
@@ -197,6 +197,8 @@ def ReplaceMacro(String, MacroDefinitions={}):
 
         for Macro in MacroUsed:
             if Macro not in MacroDefinitions:
+                if SelfReplacement:
+                    String = String.replace("$(%s)" % Macro, '')
                 continue
             String = String.replace("$(%s)" % Macro, MacroDefinitions[Macro])
         # in case there's macro not defined
