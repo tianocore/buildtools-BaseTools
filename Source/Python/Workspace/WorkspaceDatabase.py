@@ -32,13 +32,13 @@ from MetaFileParser import *
 from BuildClassObject import *
 
 ## Check if gvien file exists or not
-# 
+#
 #   @param      File    File name or path to be checked
 #   @param      Dir     The directory the file is relative to
-# 
+#
 #   @retval     True    if file exists
 #   @retval     False   if file doesn't exists
-# 
+#
 def ValidFile(File, Dir='.'):
     Wd = os.getcwd()
     os.chdir(Dir)
@@ -49,13 +49,13 @@ def ValidFile(File, Dir='.'):
     return True
 
 ## Get GUID value from given packages
-# 
+#
 #   @param      CName           The CName of the GUID
 #   @param      PackageList     List of packages looking-up in
-# 
+#
 #   @retval     GuidValue   if the CName is found in any given package
 #   @retval     None        if the CName is not found in all given packages
-# 
+#
 def GuidValue(CName, PackageList):
     for P in PackageList:
         if CName in P.Guids:
@@ -106,15 +106,15 @@ class DscBuildData(PlatformBuildClassObject):
         S += "\tVer = %s\n" % self.Version
         S += "\n"
         S += "\tSpecification = %s\n" % self.DscSpecification
-        S += "\tOutputDirectory = %s\n" % self.OutputDirectory 
-        S += "\tSupArchList = %s\n" % self.SupArchList     
-        S += "\tBuildTargets = %s\n" % self.BuildTargets    
-        S += "\tSkuName = %s\n" % self.SkuName           
-        S += "\tFlashDefinition = %s\n" % self.FlashDefinition 
-        S += "\tBuildNumber = %s\n" % self.BuildNumber     
-        S += "\tMakefileName = %s\n" % self.MakefileName    
-        S += "\tBsBaseAddress = %s\n" % self.BsBaseAddress   
-        S += "\tRtBaseAddress = %s\n" % self.RtBaseAddress   
+        S += "\tOutputDirectory = %s\n" % self.OutputDirectory
+        S += "\tSupArchList = %s\n" % self.SupArchList
+        S += "\tBuildTargets = %s\n" % self.BuildTargets
+        S += "\tSkuName = %s\n" % self.SkuName
+        S += "\tFlashDefinition = %s\n" % self.FlashDefinition
+        S += "\tBuildNumber = %s\n" % self.BuildNumber
+        S += "\tMakefileName = %s\n" % self.MakefileName
+        S += "\tBsBaseAddress = %s\n" % self.BsBaseAddress
+        S += "\tRtBaseAddress = %s\n" % self.RtBaseAddress
 
         S += '  <SkuId>\n'
         for SkuName in self.SkuIds:
@@ -133,13 +133,13 @@ class DscBuildData(PlatformBuildClassObject):
         #for LibraryClass in LibraryClassList:
         #    for ModuleType in ModuleTypeList:
         #        if not (LibraryClass,ModuleType) in self.LibraryClasses:
-        #            continue 
+        #            continue
         #        S += "\t%32s, %-24s = %s\n" % (LibraryClass, ModuleType, self.LibraryClasses[LibraryClass,ModuleType])
-        
+
         S += '  <PCD>\n'
         for Name, Guid in self.Pcds:
             S += "\t%s.%s\n\t\t%s\n" % (Guid, Name, str(self.Pcds[Name, Guid]))
-        
+
         S += '  <BuildOption>\n'
         for ToolChainFamily,ToolChain in self.BuildOptions:
             S += "\t%s:%s = %s\n" % (ToolChainFamily, ToolChain, self.BuildOptions[ToolChainFamily, ToolChain])
@@ -327,7 +327,7 @@ class DscBuildData(PlatformBuildClassObject):
                 ModuleId = Record[5]
                 LineNo = Record[6]
                 if not ValidFile(ModuleFile):
-                    EdkLogger.error('build', FILE_NOT_FOUND, File=self.DescFilePath, 
+                    EdkLogger.error('build', FILE_NOT_FOUND, File=self.DescFilePath,
                                     ExtraData=ModuleFile, Line=LineNo)
                 if ModuleFile in self._Modules:
                     continue
@@ -398,6 +398,7 @@ class DscBuildData(PlatformBuildClassObject):
                     EdkLogger.verbose("\t" + str(LibraryClassName) + " : " + str(LibraryModule))
                 else:
                     LibraryModule = LibraryInstance[LibraryClassName]
+                if LibraryModule == None: continue
 
                 if LibraryModule.ConstructorList != [] and LibraryModule not in Constructor:
                     Constructor.append(LibraryModule)
@@ -532,7 +533,7 @@ class DscBuildData(PlatformBuildClassObject):
 
     ##
     # for R8.x modules
-    # 
+    #
     def _ResolveLibraryReference(self, Module):
         EdkLogger.verbose("")
         EdkLogger.verbose("Library instances of module [%s] [%s]:" % (str(Module), self._Arch))
@@ -559,11 +560,11 @@ class DscBuildData(PlatformBuildClassObject):
             PcdInModule = Module.Pcds[Name,Guid]
             if (Name,Guid) in self.Pcds:
                 PcdInPlatform = self.Pcds[Name,Guid]
-                # 
+                #
                 # in case there's PCDs coming from FDF file, which have no type given.
                 # at this point, PcdInModule.Type has the type found from dependent
                 # package
-                # 
+                #
                 if PcdInPlatform.Type != None and PcdInPlatform.Type != '':
                     PcdInModule.Type = PcdInPlatform.Type
                 PcdInModule.MaxDatumSize = PcdInPlatform.MaxDatumSize
@@ -676,7 +677,7 @@ class DscBuildData(PlatformBuildClassObject):
                 ModuleTypeSet.add(ModuleType)
                 LibraryInstance = NormPath(LibraryInstance, self._Macros)
                 if not ValidFile(LibraryInstance):
-                    EdkLogger.error('build', FILE_NOT_FOUND, File=self.DescFilePath, 
+                    EdkLogger.error('build', FILE_NOT_FOUND, File=self.DescFilePath,
                                     ExtraData=LibraryInstance, Line=LineNo)
                 LibraryClassDict[Arch, ModuleType, LibraryClass] = LibraryInstance
 
@@ -1169,14 +1170,14 @@ class InfBuildData(ModuleBuildClassObject):
         "APPLICATION"           :   "UEFI_APPLICATION",
         "LOGO"                  :   "BASE",
     }
-    
+
     _NMAKE_FLAG_PATTERN_ = re.compile("(?:EBC_)?([A-Z]+)_(?:STD_|PROJ_|ARCH_)?FLAGS(?:_DLL|_ASL|_EXE)?", re.UNICODE)
     _TOOL_CODE_ = {
         "C"         :   "CC",
         "LIB"       :   "SLINK",
         "LINK"      :   "DLINK",
     }
-    
+
 
     def __init__(self, FilePath, Table, Db, Arch='COMMON', Macros={}):
         self.DescFilePath = FilePath
@@ -1360,12 +1361,12 @@ class InfBuildData(ModuleBuildClassObject):
                 else:
                     if TokenList[0] not in ['MSFT', 'GCC']:
                         EdkLogger.error("build", FORMAT_NOT_SUPPORTED,
-                                        "No supported family [%s]" % TokenList[0], 
+                                        "No supported family [%s]" % TokenList[0],
                                         File=self.DescFilePath, Line=Record[-1])
                     self._CustomMakefile[TokenList[0]] = TokenList[1]
-        # 
+        #
         # R8.x modules
-        # 
+        #
         if self._AutoGenVersion < 0x00010005:   # _AutoGenVersion may be None, which is less than anything
             if self._ComponentType in self._MODULE_TYPE_:
                 self._ModuleType = self._MODULE_TYPE_[self._ComponentType]
@@ -1389,7 +1390,7 @@ class InfBuildData(ModuleBuildClassObject):
                 else:
                     ToolList = self._NMAKE_FLAG_PATTERN_.findall(Name)
                     if len(ToolList) == 0 or len(ToolList) != 1:
-                        EdkLogger.warn("build", "Don't know how to do with macro [%s]" % Name, 
+                        EdkLogger.warn("build", "Don't know how to do with macro [%s]" % Name,
                                        File=self.DescFilePath, Line=LineNo)
                     else:
                         if self._BuildOptions == None:
@@ -1530,7 +1531,7 @@ class InfBuildData(ModuleBuildClassObject):
             if self._DestructorList == None:
                 self._DestructorList = []
         return self._DestructorList
-                        
+
     def _GetBinaryFiles(self):
         if self._Binaries == None:
             self._Binaries = []
@@ -1741,13 +1742,13 @@ class InfBuildData(ModuleBuildClassObject):
 
             # get necessary info from package declaring this PCD
             for Package in self.Packages:
-                # 
+                #
                 # 'dynamic' in INF means its type is determined by platform;
-                # if platform doesn't give its type, use 'lowest' one in the 
+                # if platform doesn't give its type, use 'lowest' one in the
                 # following order, if any
-                # 
+                #
                 #   "FixedAtBuild", "PatchableInModule", "FeatureFlag", "Dynamic", "DynamicEx"
-                # 
+                #
                 PcdType = self._PCD_TYPE_STRING_[Type]
                 if Type in [MODEL_PCD_DYNAMIC, MODEL_PCD_DYNAMIC_EX]:
                     for T in ["FixedAtBuild", "PatchableInModule", "FeatureFlag", "Dynamic", "DynamicEx"]:
@@ -1766,7 +1767,7 @@ class InfBuildData(ModuleBuildClassObject):
                     break
             else:
                 EdkLogger.error(
-                            'build', 
+                            'build',
                             PARSER_ERROR,
                             "PCD [%s.%s] in [%s] is not found in dependent packages:" % (TokenSpaceGuid, PcdCName, self.DescFilePath),
                             ExtraData="\t%s" % '\n\t'.join([str(P) for P in self.Packages])
@@ -1812,7 +1813,7 @@ class InfBuildData(ModuleBuildClassObject):
 # This class defined the build databse
 # During the phase of initialization, the database will create all tables and
 # insert all records of table DataModel
-# 
+#
 # @param object:      Inherited from object class
 # @param DbPath:      A string for the path of the ECC database
 #
@@ -1873,10 +1874,10 @@ class WorkspaceDatabase(object):
             # create temp table for current file
             Table = self.WorkspaceDb[FilePath]
             BuildObject = self._GENERATOR_[FileType](
-                                    FilePath, 
-                                    Table, 
-                                    self.WorkspaceDb, 
-                                    Arch, 
+                                    FilePath,
+                                    Table,
+                                    self.WorkspaceDb,
+                                    Arch,
                                     self.WorkspaceDb._GlobalMacros
                                     )
             self._CACHE_[Key] = BuildObject
@@ -1916,7 +1917,7 @@ class WorkspaceDatabase(object):
 
         self.BuildObject = WorkspaceDatabase.BuildObjectFactory(self)
         self.TransformObject = WorkspaceDatabase.TransformObjectFactory(self)
-    
+
     ## Initialize build database
     #
     # 1. Delete all old existing tables
@@ -1925,13 +1926,13 @@ class WorkspaceDatabase(object):
     #
     def InitDatabase(self):
         EdkLogger.verbose("\nInitialize ECC database started ...")
-        
+
         #
         # Create new tables
         #
         self.TblDataModel.Create(False)
         self.TblFile.Create(False)
-        
+
         #
         # Initialize table DataModel
         #
@@ -1944,10 +1945,10 @@ class WorkspaceDatabase(object):
     #
     def QueryTable(self, Table):
         Table.Query()
-    
+
     ## Close entire database
     #
-    # Commit all first 
+    # Commit all first
     # Close the connection and cursor
     #
     def Close(self):
@@ -1976,7 +1977,7 @@ class WorkspaceDatabase(object):
     def GetTableName(self, FileType, FileId):
         return "_%s_%s" % (FileType, FileId)
 
-    ## TRICK: 
+    ## TRICK:
     # Key = FilePath
     # Value = FileType
     def __setitem__(self, FilePath, FileType):
@@ -1999,7 +2000,7 @@ class WorkspaceDatabase(object):
         Parser.Start()
 
     ## Return a temp table containing all content of the given file
-    # 
+    #
     def __getitem__(self, FileInfo):
         if type(FileInfo) == type(''):
             FileId = self.GetFileId(FileInfo)
@@ -2027,11 +2028,10 @@ class WorkspaceDatabase(object):
 if __name__ == '__main__':
     EdkLogger.Initialize()
     EdkLogger.SetLevel(EdkLogger.DEBUG_0)
-    
+
     Db = WorkspaceDatabase(DATABASE_PATH)
     Db.InitDatabase()
-    Db.QueryTable(Db.TblDataModel)   
+    Db.QueryTable(Db.TblDataModel)
     Db.QueryTable(Db.TblFile)
     Db.QueryTable(Db.TblDsc)
     Db.Close()
-    
