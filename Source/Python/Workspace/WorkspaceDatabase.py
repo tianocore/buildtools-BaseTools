@@ -89,6 +89,7 @@ class DscBuildData(PlatformBuildClassObject):
 
     # used to compose dummy library class name for those forced library instances
     _NullLibraryNumber = 0
+    _NullLibraryClass = {}  # file : class
 
     def __init__(self, FilePath, Table, Db, Arch='COMMON', Macros={}):
         self.DescFilePath = FilePath
@@ -357,10 +358,20 @@ class DscBuildData(PlatformBuildClassObject):
                 EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=LibraryPath,
                                 File=self.DescFilePath, Line=LineNo)
             if LibraryClass == '' or LibraryClass == 'NULL':
-                self._NullLibraryNumber += 1
-                LibraryClass = 'NULL%d' % self._NullLibraryNumber
-                LibraryInstance = self._Db.BuildObject[LibraryPath, MODEL_FILE_INF, self._Arch]
-                LibraryInstance.LibraryClass.append(LibraryClassObject(LibraryClass, [ModuleType]))
+                if LibraryPath not in self._NullLibraryClass:
+                    self._NullLibraryNumber += 1
+                    LibraryClass = LibraryClassObject('NULL%d' % self._NullLibraryNumber, [ModuleType])
+                    LibraryInstance = self._Db.BuildObject[LibraryPath, MODEL_FILE_INF, self._Arch]
+                    LibraryInstance.LibraryClass.append(LibraryClass)
+                    self._NullLibraryClass[LibraryPath] = LibraryClass
+                else:
+                    LibraryClass = self._NullLibraryClass[LibraryPath]
+                    # add new supported module type
+                    if ModuleType not in LibraryClass.SupModList:
+                        LibraryClass.SupModList.append(ModuleType)
+                    LibraryInstance = self._Db.BuildObject[LibraryPath, MODEL_FILE_INF, self._Arch]
+                    LibraryInstance.LibraryClass.append(LibraryClass)
+
             Module.LibraryClasses[LibraryClass] = LibraryPath
 
         # R9 module
