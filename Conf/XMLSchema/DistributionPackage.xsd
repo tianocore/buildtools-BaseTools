@@ -17,56 +17,112 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
   xmlns="http://www.TianoCore.org/2008/Edk2.1">
   <xs:element name="DistributionPackage">
     <xs:annotation>
-      <xs:documentation xml:lang="en"> This schema defines the EDK II Distribution Archive
-        description (PKG) file. It describes the content of: 1) Collection descriptions with
-        definitions and headers. 2) Modules in either source or binary format. (Note that Binary
-        format is for EFI Sections only' FFS files cannot be distributed using this distribution
-        format.) 3) The custom tools used to modify the binary images to create UEFI/PI compliant
-        images. 4) Finally, it can be used to distribute other miscellaneous content that is not
-        specific to UEFI/PI images. </xs:documentation>
+      <xs:documentation xml:lang="en-us"> This schema defines the EDK II Distribution Archive
+        description (PKG) file. It describes the content of:</xs:documentation>
+      <xs:documentation xml:lang="en-us"> 1) Collection descriptions with definitions and headers.</xs:documentation>
+      <xs:documentation xml:lang="en-us">2) Modules in either source or binary format. (Note that
+        Binary format is for EFI Sections only, FFS files cannot be distributed using this
+        distribution format.) </xs:documentation>
+      <xs:documentation xml:lang="en-us">3) The distribution of custom tools used to modify the
+        binary images to create UEFI/PI compliant images. </xs:documentation>
+      <xs:documentation xml:lang="en-us">4) Finally, it can be used to distribute other
+        miscellaneous content that is not specific to UEFI/PI images. </xs:documentation>
+      <xs:documentation xml:lang="en-us"> The reference build system provided by EDK II uses
+        text-based meta-data files. The collection declaration files (.dec) are created from the
+        content in the Collections section of this document. The module description files, created
+        from the Module sections of this document can be for source and/or binary distributions.
+      </xs:documentation>
     </xs:annotation>
     <xs:complexType>
       <xs:sequence>
-        <xs:element minOccurs="1" maxOccurs="1" ref="PkgHeader"/>
+        <xs:element minOccurs="1" maxOccurs="1" ref="FarHeader"/>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="CollectionSurfaceArea">
           <xs:annotation>
-            <xs:documentation> The list of collection packages in this FAR. </xs:documentation>
+            <xs:documentation xml:lang="en-us"> The list of collection packages in this FAR. </xs:documentation>
+            <xs:documentation xml:lang="en-us"> Collections are groups of files and/or modules that
+              are similar in nature. The content of the EDK II provided collections is based on
+              UEFI/PI (MdePkg and MdeModulePkg) and Intel Framework specifications, however
+              collections may also be released based on individual hardware, such as video or
+              chipset drivers. Additionally, reference emulation platform collections (Nt32Pkg and
+              UnixPkg) have been provided. </xs:documentation>
+            <xs:documentation xml:lang="en-us"> A collection can declare public mappings of C names
+              to GUID values. </xs:documentation>
+            <xs:documentation xml:lang="en-us"> A collection can provide header files for library
+              classes and/or other industry standard definitions. </xs:documentation>
+            <xs:documentation xml:lang="en-us"> A collection can also declare public mappings of
+              platform configuration database (PCD) "knobs" to control features and operation of
+              modules within a platform. </xs:documentation>
+            <xs:documentation xml:lang="en-us"> Finally, a collection lists the library instances
+              and/or components that are provided in a distribution package. </xs:documentation>
           </xs:annotation>
         </xs:element>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="ModuleSurfaceArea">
           <xs:annotation>
-            <xs:documentation> The list of EDK II modules in this FAR. </xs:documentation>
+            <xs:documentation xml:lang="en-us"> The listing of EDK II modules in this FAR. </xs:documentation>
+            <xs:documentation xml:lang="en-us"> This section describes how each module in a
+              distribution is coded, or, in the case of a binary module distribution, how it was
+              built. </xs:documentation>
+            <xs:documentation xml:lang="en-us"> EDK II modules differ from the EDK components and
+              libraries in that they incorporate new features which give the platform integrator
+              more control, while reducing errors in copying of defined data (GUID values.) </xs:documentation>
+            <xs:documentation xml:lang="en-us"> Rather than coding a module against specific
+              libraries, the module can be coded against a public library class. The platform
+              integrator can then select a library instance that best meets the platform
+              requirements. </xs:documentation>
+            <xs:documentation xml:lang="en-us"> EDK II modules utilize platform configuration (PCD)
+              knobs for controlling functions and features of drivers included in a platform. </xs:documentation>
+            <xs:documentation xml:lang="en-us"> EDK II modules use data from a collection to provide
+              a single-point declaration of a C variable name to GUID values. </xs:documentation>
           </xs:annotation>
         </xs:element>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="Tools">
           <xs:annotation>
-            <xs:documentation> The list of EDK II tools in this FAR. </xs:documentation>
+            <xs:documentation xml:lang="en-us"> The list of EDK II tools and build configuration
+              files. Most tools are used to manipulate code and binaries in this FAR. Tools in this
+              section can:</xs:documentation>
+            <xs:documentation xml:lang="en-us"> 1) Parse build meta-data files to create C code
+              files and Makefiles. </xs:documentation>
+            <xs:documentation xml:lang="en-us"> 2) Modify image files to conform to UEFI/PI
+              specifications. </xs:documentation>
+            <xs:documentation xml:lang="en-us"> 3) Generate binary files from certain types of
+              text/unicode files. </xs:documentation>
+            <xs:documentation xml:lang="en-us"> 4) Generate PCI Option Roms or Firmware Device
+              images. </xs:documentation>
+            <xs:documentation xml:lang="en-us"> 5) Implement external
+              encoding/decoding/signature/GUIDed tools. </xs:documentation>
+            <xs:documentation xml:lang="en-us"> 6) Firmware Archive create/install/remove tools.
+            </xs:documentation>
           </xs:annotation>
         </xs:element>
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="Misc">
           <xs:annotation>
-            <xs:documentation> The list of EDK II miscellaneous files in this FAR.
-            </xs:documentation>
+            <xs:documentation xml:lang="en-us"> The list of miscellaneous files in this FAR. Any
+              files that are not listed in either the Collection, Module or Tools sections can be
+              listed here. This section can be used to distribute specifications for collections and
+              modules that are not "industry standards" such as a specification for a chipset or a
+              video device. </xs:documentation>
           </xs:annotation>
         </xs:element>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
-  <xs:annotation>
-    <xs:documentation xml:lang="en"> The following elements are references used
-    above.</xs:documentation>
-  </xs:annotation>
-  <xs:element name="PkgHeader">
+
+  <xs:element name="FarHeader">
     <xs:annotation>
-      <xs:documentation xml:lang="en"> This defines the EDK II Distribution Package Header.
-      </xs:documentation>
+      <xs:documentation xml:lang="en-us"> This defines the EDK II Firmware Archive (Distribution
+        Package) Header. This is the only required element of a Firmware Archive distribution
+        package. </xs:documentation>
     </xs:annotation>
     <xs:complexType>
       <xs:sequence>
         <xs:element minOccurs="1" maxOccurs="1" name="Name">
           <xs:annotation>
-            <xs:documentation>This is the User Interface Name for this Distribution
-            Archive</xs:documentation>
+            <xs:documentation xml:lang="en-us"> This is the User Interface Name for this
+              Distribution Archive. </xs:documentation>
+            <xs:documentation xml:lang="en-us"> Each Firmware Archive (FAR) is uniquely identified
+              by it's GUID and Version number. Backward compatible releases of a FAR need only
+              change the version number, while non-backward compatible changes require the GUID to
+              change (reseting the version number to 1.0 is optional.) </xs:documentation>
           </xs:annotation>
           <xs:complexType>
             <xs:simpleContent>
@@ -87,8 +143,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
         <xs:element minOccurs="1" maxOccurs="1" name="Signature">
           <xs:complexType>
             <xs:annotation>
-              <xs:documentation xml:lang="en">The FAR utilities will use this MD5 sum value of the
-                included ZIP file containing files and/or code.</xs:documentation>
+              <xs:documentation xml:lang="en-us">The FAR utilities will use this MD5 sum value of
+                the included ZIP file containing files and/or code.</xs:documentation>
             </xs:annotation>
             <xs:simpleContent>
               <xs:extension base="xs:normalizedString">
@@ -99,27 +155,28 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
         </xs:element>
         <xs:element minOccurs="1" maxOccurs="1" name="XmlSpecification" type="xs:decimal">
           <xs:annotation>
-            <xs:documentation xml:lang="en">This version of the XML Schema is 2.1</xs:documentation>
+            <xs:documentation xml:lang="en-us"> This version of the XML Schema is 2.1
+            </xs:documentation>
           </xs:annotation>
         </xs:element>
       </xs:sequence>
       <xs:attribute name="RefName" type="xs:NCName" use="required">
         <xs:annotation>
-          <xs:documentation xml:lang="en">This is a Reference Name used to name this distribution
+          <xs:documentation xml:lang="en-us">This is a Reference Name used to name this distribution
             package file. It will be used to create PKG and manifest filenames in the Conf/PKG
-            directory. If InstalledAs attribute (to the Name element), then the InstalledAs value
-            will be used for creating the files.</xs:documentation>
+            directory. If InstalledAs attribute (to the Name element) exists, then the InstalledAs
+            value will be used for creating the files.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="ReadOnly" type="xs:boolean" default="false" use="optional">
         <xs:annotation>
-          <xs:documentation xml:lang="en">If this is set, all content within this distribution
+          <xs:documentation xml:lang="en-us">If this is set, all content within this distribution
             package should NOT be modified.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="RePackage" type="xs:boolean" default="false" use="optional">
         <xs:annotation>
-          <xs:documentation xml:lang="en">If set, then the content can be repackaged into another
+          <xs:documentation xml:lang="en-us">If set, then the content can be repackaged into another
             distribution package.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
@@ -127,15 +184,34 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
   </xs:element>
 
   <xs:element name="CollectionSurfaceArea">
+    <xs:annotation>
+      <xs:documentation xml:lang="en-us"> A collection is a group of one or more: header files, and
+        zero or more library instances and/or modules. </xs:documentation>
+      <xs:documentation xml:lang="en-us"> The content in these sections is used to generate the EDK
+        II reference build implementation's "package" declaration (.dec) files. EDK II modules can
+        depend on different "packages" in order to build correctly. </xs:documentation>
+      <xs:documentation xml:lang="en-us"> Since multiple versions of a collection may exist within a
+        given WORKSPACE, the "package" declaration file is uniquely identified by the GUID and
+        Version number specified in the header of each collection. </xs:documentation>
+      <xs:documentation xml:lang="en-us"> Modules specify dependent declaration files using the
+        WORKSPACE relative path and file name. If using an alternate, InstalledAs name to create a
+        separate package with similar content (such as, when evaluating a new release) the module
+        description (.inf) files will need to be updated with the InstalledAs name. </xs:documentation>
+      <xs:documentation xml:lang="en-us"> Each collection is uniquely identified by it's GUID and
+        Version number. Backward compatible releases of a collection need only change the version
+        number, while non-backward compatible changes require the GUID to change (reseting the
+        version number to 1.0 is optional.) </xs:documentation>
+    </xs:annotation>
     <xs:complexType>
       <xs:sequence>
+
         <xs:element minOccurs="1" maxOccurs="1" name="Header">
           <xs:complexType>
             <xs:sequence>
               <xs:element minOccurs="1" maxOccurs="1" name="Name">
                 <xs:annotation>
-                  <xs:documentation xml:lang="en">This is the User Interface Name for this
-                    Distribution Archive</xs:documentation>
+                  <xs:documentation xml:lang="en-us">This is the User Interface Name for this
+                    Firmware Archive collection. </xs:documentation>
                 </xs:annotation>
                 <xs:complexType>
                   <xs:simpleContent>
@@ -145,7 +221,13 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
                   </xs:simpleContent>
                 </xs:complexType>
               </xs:element>
-              <xs:element minOccurs="1" maxOccurs="1" name="GUID" type="RegistryFormatGuid"/>
+              <xs:element minOccurs="1" maxOccurs="1" name="GUID" type="RegistryFormatGuid">
+                <xs:annotation>
+                  <xs:documentation xml:lang="en-us"> This GUID and the Version element, below,
+                    uniquely identify a given collection. The reference build system refers to the
+                    collection declarations as a "package" declaration file. </xs:documentation>
+                </xs:annotation>
+              </xs:element>
               <xs:element minOccurs="0" maxOccurs="1" name="Copyright" type="xs:string"/>
               <xs:element minOccurs="0" maxOccurs="1" name="License" type="xs:string"/>
               <xs:element minOccurs="1" maxOccurs="1" name="Abstract" type="xs:normalizedString"/>
@@ -162,6 +244,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="Lineage">
           <xs:complexType>
             <xs:sequence>
@@ -181,6 +264,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="LibraryClassDeclarations">
           <xs:complexType>
             <xs:sequence>
@@ -198,7 +282,18 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
                         </xs:simpleContent>
                       </xs:complexType>
                     </xs:element>
-                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" name="HelpText">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:string">
+                            <xs:attribute name="UCS2" type="xs:boolean" default="false"
+                              use="optional"/>
+                            <xs:attribute name="Lang" type="xs:language" default="en-us"
+                              use="optional"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
                   </xs:sequence>
                   <xs:attribute name="Keyword" type="xs:NCName" use="required"/>
                   <xs:attributeGroup ref="RecommendedInf"/>
@@ -208,6 +303,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="IndustryStdIncludes">
           <xs:complexType>
             <xs:sequence>
@@ -219,23 +315,32 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
                         <xs:simpleContent>
                           <xs:extension base="xs:anyURI">
                             <xs:attribute name="Extracted" type="xs:anyURI" use="optional"/>
-
                             <xs:attribute name="Signature" type="xs:normalizedString" use="optional"/>
                             <xs:attribute name="Type" type="SignType" use="optional"/>
                           </xs:extension>
                         </xs:simpleContent>
                       </xs:complexType>
                     </xs:element>
-                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" name="HelpText">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:string">
+                            <xs:attribute name="UCS2" type="xs:boolean" default="false"
+                              use="optional"/>
+                            <xs:attribute name="Lang" type="xs:language" default="en-us"
+                              use="optional"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
                   </xs:sequence>
                   <xs:attributeGroup ref="SupportedArchMod"/>
                 </xs:complexType>
               </xs:element>
-
             </xs:sequence>
-
           </xs:complexType>
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="Components">
           <xs:complexType>
             <xs:sequence>
@@ -247,6 +352,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="CollectionHeaders">
           <xs:complexType>
             <xs:sequence>
@@ -265,6 +371,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="GuidDeclarations">
           <xs:complexType>
             <xs:sequence>
@@ -273,7 +380,18 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
                   <xs:sequence>
                     <xs:element minOccurs="1" maxOccurs="1" name="C_Name" type="xs:NCName"/>
                     <xs:element minOccurs="1" maxOccurs="1" name="GuidValue" type="GuidCstruct"/>
-                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" name="HelpText">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:string">
+                            <xs:attribute name="UCS2" type="xs:boolean" default="false"
+                              use="optional"/>
+                            <xs:attribute name="Lang" type="xs:language" default="en-us"
+                              use="optional"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
                   </xs:sequence>
                   <xs:attribute name="GuidTypeList" type="GuidListType" use="optional"/>
                   <xs:attributeGroup ref="SupportedArchMod"/>
@@ -282,6 +400,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="ProtocolDeclarations">
           <xs:complexType>
             <xs:sequence>
@@ -294,7 +413,18 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
                   <xs:sequence>
                     <xs:element minOccurs="1" maxOccurs="1" name="C_Name" type="xs:NCName"/>
                     <xs:element minOccurs="1" maxOccurs="1" name="GuidValue" type="GuidCstruct"/>
-                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" name="HelpText">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:string">
+                            <xs:attribute name="UCS2" type="xs:boolean" default="false"
+                              use="optional"/>
+                            <xs:attribute name="Lang" type="xs:language" default="en-us"
+                              use="optional"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
                   </xs:sequence>
                   <xs:attribute name="Notify" type="xs:boolean" default="false" use="optional"/>
                   <xs:attributeGroup ref="SupportedArchMod"/>
@@ -303,6 +433,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="PpiDeclarations">
           <xs:complexType>
             <xs:sequence>
@@ -315,16 +446,29 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
                   <xs:sequence>
                     <xs:element minOccurs="1" maxOccurs="1" name="C_Name" type="xs:NCName"/>
                     <xs:element minOccurs="1" maxOccurs="1" name="GuidValue" type="GuidCstruct"/>
-                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" name="HelpText">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:string">
+                            <xs:attribute name="UCS2" type="xs:boolean" default="false"
+                              use="optional"/>
+                            <xs:attribute name="Lang" type="xs:language" default="en-us"
+                              use="optional"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
                   </xs:sequence>
                   <xs:attribute name="Notify" type="xs:boolean" default="false" use="optional"/>
                   <xs:attributeGroup ref="SupportedArchMod"/>
                   <xs:attribute name="FeatureFlag" type="xs:normalizedString" use="optional"/>
+                  <!-- CHECK IF FF is valid for DEC content here. -->
                 </xs:complexType>
               </xs:element>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="PcdDeclarations">
           <xs:complexType>
             <xs:sequence>
@@ -339,8 +483,33 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
                     <xs:element minOccurs="1" maxOccurs="1" name="DefaultValue"
                       type="xs:normalizedString"/>
                     <xs:element minOccurs="0" maxOccurs="1" name="MaxDatumSize" type="Number"/>
-                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
-                    <xs:element minOccurs="0" maxOccurs="1" name="ErrorMessage" type="xs:string"/>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" name="HelpText">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:string">
+                            <xs:attribute name="UCS2" type="xs:boolean" default="false"
+                              use="optional"/>
+                            <xs:attribute name="Lang" type="xs:language" default="en-us"
+                              use="optional"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" name="ErrorMessage">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:normalizedString">
+                            <xs:attribute name="ErrNo" use="required">
+                              <xs:simpleType>
+                                <xs:restriction base="xs:NCName">
+                                  <xs:pattern value="0x([a-fA-F0-9])+"/>
+                                </xs:restriction>
+                              </xs:simpleType>
+                            </xs:attribute>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
                     <xs:element minOccurs="0" maxOccurs="1" name="ValidValues"
                       type="xs:normalizedString"/>
                   </xs:sequence>
@@ -351,21 +520,29 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
       </xs:sequence>
       <xs:attributeGroup ref="SurfaceAreaAttributes"/>
     </xs:complexType>
   </xs:element>
 
   <xs:element name="ModuleSurfaceArea">
+    <xs:annotation>
+      <xs:documentation xml:lang="en-us"> Each module is uniquely identified by it's GUID and
+        Version number. Backward compatible releases of a module need only change the version
+        number, while non-backward compatible changes require the GUID to change (reseting the
+        version number to 1.0 is optional.) </xs:documentation>
+    </xs:annotation>
     <xs:complexType>
       <xs:sequence>
+
         <xs:element minOccurs="1" maxOccurs="1" name="Header">
           <xs:complexType>
             <xs:sequence>
               <xs:element minOccurs="1" maxOccurs="1" name="Name">
                 <xs:annotation>
-                  <xs:documentation xml:lang="en">This is the User Interface Name for this
-                    Distribution Archive</xs:documentation>
+                  <xs:documentation xml:lang="en-us"> This is the User Interface Name for this
+                    Module. </xs:documentation>
                 </xs:annotation>
                 <xs:complexType>
                   <xs:simpleContent>
@@ -392,6 +569,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="ModuleDefinitions">
           <xs:complexType>
             <xs:sequence>
@@ -447,6 +625,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             <xs:attributeGroup ref="SupportedArchMod"/>
           </xs:complexType>
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="LibraryClassDefinitions">
           <xs:complexType>
             <xs:sequence>
@@ -454,7 +633,18 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
                 <xs:complexType>
                   <xs:sequence>
                     <xs:element minOccurs="1" maxOccurs="1" name="Keyword" type="xs:NCName"/>
-                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" name="HelpText">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:string">
+                            <xs:attribute name="UCS2" type="xs:boolean" default="false"
+                              use="optional"/>
+                            <xs:attribute name="Lang" type="xs:language" default="en-us"
+                              use="optional"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
                   </xs:sequence>
                   <xs:attribute name="Usage" type="LibUsageType" use="required"/>
                   <xs:attributeGroup ref="RecommendedInf"/>
@@ -465,6 +655,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="SourceFiles">
           <xs:complexType>
             <xs:sequence>
@@ -487,6 +678,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="BinaryFiles">
           <xs:complexType>
             <xs:sequence>
@@ -509,8 +701,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
               </xs:element>
             </xs:sequence>
           </xs:complexType>
-
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="PackageDependencies">
           <xs:complexType>
             <xs:sequence>
@@ -530,13 +722,25 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="Guids">
           <xs:complexType>
             <xs:sequence>
               <xs:element minOccurs="1" maxOccurs="unbounded" name="GuidCNames" nillable="true">
                 <xs:complexType>
                   <xs:sequence>
-                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" name="HelpText">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:string">
+                            <xs:attribute name="UCS2" type="xs:boolean" default="false"
+                              use="optional"/>
+                            <xs:attribute name="Lang" type="xs:language" default="en-us"
+                              use="optional"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
                   </xs:sequence>
                   <xs:attribute name="CName" type="xs:NCName" use="required"/>
                   <xs:attribute name="Usage" type="UsageType" use="required"/>
@@ -548,13 +752,25 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="Protocols">
           <xs:complexType>
             <xs:sequence>
               <xs:element minOccurs="1" maxOccurs="unbounded" name="Protocol" nillable="true">
                 <xs:complexType>
                   <xs:sequence>
-                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" name="HelpText">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:string">
+                            <xs:attribute name="UCS2" type="xs:boolean" default="false"
+                              use="optional"/>
+                            <xs:attribute name="Lang" type="xs:language" default="en-us"
+                              use="optional"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
                   </xs:sequence>
                   <xs:attribute name="CName" type="xs:NCName" use="required"/>
                   <xs:attribute name="Usage" type="ProtocolUsageType" use="required"/>
@@ -566,13 +782,25 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="PPIs">
           <xs:complexType>
             <xs:sequence>
               <xs:element minOccurs="1" maxOccurs="unbounded" name="Ppi" nillable="true">
                 <xs:complexType>
                   <xs:sequence>
-                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" name="HelpText">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:string">
+                            <xs:attribute name="UCS2" type="xs:boolean" default="false"
+                              use="optional"/>
+                            <xs:attribute name="Lang" type="xs:language" default="en-us"
+                              use="optional"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
                   </xs:sequence>
                   <xs:attribute name="CName" type="xs:NCName" use="required"/>
                   <xs:attribute name="Usage" type="UsageType" use="required"/>
@@ -584,6 +812,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="Externs">
           <xs:complexType>
             <xs:sequence>
@@ -605,7 +834,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
                       <xs:element minOccurs="0" maxOccurs="1" name="DriverDiag" type="xs:NCName"/>
                     </xs:sequence>
                     <xs:sequence>
-                      <xs:element minOccurs="0" maxOccurs="1" name="SetVirtAddrMapCallBack"
+                      <xs:element minOccurs="0" maxOccurs="1" name="SetVirtualAddressMapCallBack"
                         type="xs:NCName"/>
                       <xs:element minOccurs="0" maxOccurs="1" name="ExitBootServicesCallBack"
                         type="xs:NCName"/>
@@ -618,6 +847,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             </xs:sequence>
           </xs:complexType>
         </xs:element>
+
         <xs:element minOccurs="0" maxOccurs="1" name="PcdCoded">
           <xs:complexType>
             <xs:sequence>
@@ -629,8 +859,33 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
                       type="xs:NCName"/>
                     <xs:element minOccurs="0" maxOccurs="1" name="DefaultValue"
                       type="xs:normalizedString"/>
-                    <xs:element minOccurs="0" maxOccurs="1" name="HelpText" type="xs:string"/>
-                    <xs:element minOccurs="0" maxOccurs="1" name="ErrorMessage" type="xs:string"/>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" name="HelpText">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:string">
+                            <xs:attribute name="UCS2" type="xs:boolean" default="false"
+                              use="optional"/>
+                            <xs:attribute name="Lang" type="xs:language" default="en-us"
+                              use="optional"/>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element minOccurs="0" maxOccurs="unbounded" name="ErrorMessage">
+                      <xs:complexType>
+                        <xs:simpleContent>
+                          <xs:extension base="xs:normalizedString">
+                            <xs:attribute name="ErrNo" use="required">
+                              <xs:simpleType>
+                                <xs:restriction base="xs:NCName">
+                                  <xs:pattern value="0x([a-fA-F0-9])+"/>
+                                </xs:restriction>
+                              </xs:simpleType>
+                            </xs:attribute>
+                          </xs:extension>
+                        </xs:simpleContent>
+                      </xs:complexType>
+                    </xs:element>
                     <xs:element minOccurs="0" maxOccurs="1" name="ValidValues"
                       type="xs:normalizedString"/>
                   </xs:sequence>
@@ -663,7 +918,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
         </xs:element>
         <xs:element minOccurs="0" maxOccurs="unbounded" name="AsBuilt">
           <xs:annotation>
-            <xs:documentation xml:lang="en">If this is a binary module distribution, this section
+            <xs:documentation xml:lang="en-us">If this is a binary module distribution, this section
               contains information about how the module was coded, such as Compiler Tools, Flags,
               PCDs (only PatchPcd, Pcd and/or PcdEx) and Library Class Instances used to build the
               binary.</xs:documentation>
@@ -673,7 +928,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
               <xs:element minOccurs="0" maxOccurs="1" name="Comments" type="xs:string"/>
               <xs:element minOccurs="0" maxOccurs="unbounded" name="PatchPcdValue">
                 <xs:annotation>
-                  <xs:documentation xml:lang="en">The element is the Patchable PCD Value that was
+                  <xs:documentation xml:lang="en-us">The element is the Patchable PCD Value that was
                     used during the build.</xs:documentation>
                 </xs:annotation>
                 <xs:complexType>
@@ -685,7 +940,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
                       <xs:attribute name="Offset" type="xs:hexBinary" use="required"/>
                       <xs:attribute name="MaxDataSize" type="Number" use="optional">
                         <xs:annotation>
-                          <xs:documentation xml:lang="en">This field is required if the Pcd Datum
+                          <xs:documentation xml:lang="en-us">This field is required if the Pcd Datum
                             Type is VOID*</xs:documentation>
                         </xs:annotation>
                       </xs:attribute>
@@ -695,18 +950,18 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
               </xs:element>
               <xs:element minOccurs="0" maxOccurs="unbounded" name="PcdValue">
                 <xs:annotation>
-                  <xs:documentation xml:lang="en">The element is the Dynamic PCD Value that was used
-                    during the build.</xs:documentation>
+                  <xs:documentation xml:lang="en-us">The element is the Dynamic PCD Value that was
+                    used during the build.</xs:documentation>
                 </xs:annotation>
                 <xs:complexType>
                   <xs:simpleContent>
                     <xs:extension base="xs:normalizedString">
                       <xs:attribute name="TokenSpaceGuidCname" type="xs:NCName" use="required"/>
                       <xs:attribute name="PcdC_Name" type="xs:NCName" use="required"/>
-                      <xs:attribute name="Token" type="Number" use="required"/>
+                      <xs:attribute name="Token" type="HexNumber" use="required"/>
                       <xs:attribute name="MaxDataSize" type="Number" use="optional">
                         <xs:annotation>
-                          <xs:documentation xml:lang="en">This field is required if the Pcd Datum
+                          <xs:documentation xml:lang="en-us">This field is required if the Pcd Datum
                             Type is VOID*</xs:documentation>
                         </xs:annotation>
                       </xs:attribute>
@@ -716,7 +971,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
               </xs:element>
               <xs:element minOccurs="0" maxOccurs="unbounded" name="PcdExValue">
                 <xs:annotation>
-                  <xs:documentation xml:lang="en">The element is the DynamicEx PCD Value that was
+                  <xs:documentation xml:lang="en-us">The element is the DynamicEx PCD Value that was
                     used during the build.</xs:documentation>
                 </xs:annotation>
                 <xs:complexType>
@@ -724,10 +979,10 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
                     <xs:extension base="xs:normalizedString">
                       <xs:attribute name="TokenSpaceGuidCname" type="xs:NCName" use="required"/>
                       <xs:attribute name="PcdC_Name" type="xs:NCName" use="required"/>
-                      <xs:attribute name="Token" type="Number" use="required"/>
+                      <xs:attribute name="Token" type="HexNumber" use="required"/>
                       <xs:attribute name="MaxDataSize" type="Number" use="optional">
                         <xs:annotation>
-                          <xs:documentation xml:lang="en">This field is required if the Pcd Datum
+                          <xs:documentation xml:lang="en-us">This field is required if the Pcd Datum
                             Type is VOID*</xs:documentation>
                         </xs:annotation>
                       </xs:attribute>
@@ -737,8 +992,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
               </xs:element>
               <xs:element minOccurs="0" maxOccurs="unbounded" name="LibraryInstance">
                 <xs:annotation>
-                  <xs:documentation xml:lang="en">This is the actual library instance that was used
-                    to link against the module.</xs:documentation>
+                  <xs:documentation xml:lang="en-us">This is the actual library instance that was
+                    used to link against the module.</xs:documentation>
                 </xs:annotation>
                 <xs:complexType>
                   <xs:simpleContent>
@@ -768,18 +1023,18 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
         </xs:element>
         <xs:element minOccurs="0" maxOccurs="unbounded" name="UserExtensions">
           <xs:annotation>
-            <xs:documentation xml:lang="en">The EDK II Reference Build Process ingores this section.
-              The content is vendor specific.</xs:documentation>
+            <xs:documentation xml:lang="en-us">The EDK II Reference Build Process ignores this
+              section. The content is vendor specific.</xs:documentation>
           </xs:annotation>
           <xs:complexType mixed="true">
             <xs:sequence>
               <xs:element minOccurs="0" maxOccurs="unbounded" name="Filename">
                 <xs:annotation>
 
-                  <xs:documentation xml:lang="en">Files listed in this section are files that do not
-                    fit the classification of either Source or Binary. This section can be used to
-                    list debug, symbol, makefiles or other files that the package distributor wants
-                    to make available.</xs:documentation>
+                  <xs:documentation xml:lang="en-us">Files listed in this section are files that do
+                    not fit the classification of either Source or Binary. This section can be used
+                    to list debug, symbol, makefiles or other files that the package distributor
+                    wants to make available.</xs:documentation>
                 </xs:annotation>
                 <xs:complexType>
                   <xs:simpleContent>
@@ -802,8 +1057,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
       <xs:attributeGroup ref="SurfaceAreaAttributes"/>
       <xs:attribute name="Binary" type="xs:boolean" default="false" use="optional">
         <xs:annotation>
-          <xs:documentation xml:lang="en"> If set, then the binary section should be used, and the
-            files listed in the SourceFiles section do not have to be built, if they exist.
+          <xs:documentation xml:lang="en-us"> If set, then the binary section should be used, and
+            the files listed in the SourceFiles section do not have to be built, if they exist.
             Additionally, the AsBuilt section must be included</xs:documentation>
         </xs:annotation>
       </xs:attribute>
@@ -818,7 +1073,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
             <xs:sequence>
               <xs:element minOccurs="1" maxOccurs="1" name="Name">
                 <xs:annotation>
-                  <xs:documentation xml:lang="en">This is the User Interface Name for this
+                  <xs:documentation xml:lang="en-us">This is the User Interface Name for this
                     Distribution Archive</xs:documentation>
                 </xs:annotation>
                 <xs:complexType>
@@ -916,25 +1171,54 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
   <xs:attributeGroup name="SurfaceAreaAttributes">
     <xs:attribute name="RefName" type="xs:NCName" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This name can be used as the OutputFileBaseName for
-        Modules.</xs:documentation>
+        <xs:documentation xml:lang="en-us"> This name can be used as the Output File BaseName for
+          Modules. </xs:documentation>
+        <xs:documentation xml:lang="en-us"> Unless otherwise specified in an "InstalledAs"
+          attribute, this attribute is used to create EDK II build meta-data description files.
+        </xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="Version" type="xs:decimal" use="required"/>
-    <xs:attribute name="Path" type="xs:anyURI" use="required"/>
+    <xs:attribute name="Version" type="xs:decimal" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en-us"> This value, along with the GUID, is used to uniquely
+          identify this object. </xs:documentation>
+        <xs:documentation xml:lang="en-us"> Backward compatible changes must make sure this number
+          is incremented from the most recent version. Non-backward compatible changes require a new
+          GUID, and the version can be reset. </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="Path" type="xs:anyURI" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en-us"> The standard installation location. </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="ReadOnly" type="xs:boolean" default="false" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">If this is set, all content within this section should NOT
-          be modified.</xs:documentation>
+        <xs:documentation xml:lang="en-us"> If this is set, all content within this section should
+          NOT be modified. </xs:documentation>
+        <xs:documentation xml:lang="en-us"> This value can be inherited from a collection and/or FAR
+          attribute. </xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="RePackage" type="xs:boolean" default="false" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">If set, then the content can be repackaged into another
+        <xs:documentation xml:lang="en-us">If set, then the content can be repackaged into another
           distribution package.</xs:documentation>
+        <xs:documentation xml:lang="en-us"> This value can be inherited from a collection and/or FAR
+          attribute. </xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="Extracted" type="xs:anyURI" use="optional"/>
+    <xs:attribute name="Extracted" type="xs:anyURI" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en-us"> This is used to track the actual installation location.
+          During an installation, the user may be presented with an option to relocate content from
+          the ZIP portion of the archive into a different location. </xs:documentation>
+        <xs:documentation> Any installation tools must modify this value if the location is
+          different from the default location. </xs:documentation>
+        <xs:documentation> Any removal tools must check this value to locate correctly, the items
+          that will be removed. </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:attributeGroup>
 
   <!-- The following data types are used to restrict content. -->
@@ -949,14 +1233,23 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
       <xs:enumeration value="X64"/>
       <xs:enumeration value="IPF"/>
       <xs:enumeration value="EBC"/>
+      <xs:enumeration value="ARM"/>
+      <xs:enumeration value="PPC"/>
+      <xs:pattern value="([A-Z])([a-zA-Z0-9])*">
+        <xs:annotation>
+          <xs:documentation xml:lang="en-us"> Any processor architecture not listed above. The
+            Architecture must be target architecture of one or more compiler tool chains.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:pattern>
     </xs:restriction>
   </xs:simpleType>
 
   <xs:simpleType name="BinFileType">
     <xs:restriction base="xs:NCName">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Not all of the types listed below make sense for
-          distribution.</xs:documentation>
+        <xs:documentation xml:lang="en-us"> Not all of the types listed below should be distributed,
+          such as a firmware volume (FV) file. </xs:documentation>
       </xs:annotation>
       <xs:enumeration value="FW"/>
       <xs:enumeration value="GUID"/>
@@ -975,12 +1268,63 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
   </xs:simpleType>
 
   <xs:simpleType name="BuildTypes">
+    <xs:annotation>
+      <xs:documentation xml:lang="en-us">The EDK II reference build uses Makefiles to generate
+        binary images from source code. The initial release of EDK II used Ant/Java build.xml files.
+        Other build implementations may use different command files to generate UEFI/PI images.
+      </xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:NCName">
-      <xs:enumeration value="Makefile"/>
-      <xs:enumeration value="GNUMakefile"/>
-      <xs:enumeration value="AntBuildXml"/>
-      <xs:enumeration value="GenericMakefile"/>
+      <xs:enumeration value="Makefile">
+        <xs:annotation>
+          <xs:documentation xml:lang="en-us"> The Makefile is used by the Microsoft Program
+            Maintenance Utility (NMAKE.) </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="GNUMakefile">
+        <xs:annotation>
+          <xs:documentation xml:lang="en-us"> The GNUmakefile is used by the GCC make or gmake
+            application. </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="AntBuildXml">
+        <xs:annotation>
+          <xs:documentation xml:lang="en-us"> The XML file is used by the Java/Ant build utility.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="GenericMakefile">
+        <xs:annotation>
+          <xs:documentation xml:lang="en-us"> The Makefile can be used by either nmake or one of the
+            GCC make utilities. </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:pattern value="([A-Z])([a-zA-Z0-9])*">
+        <xs:annotation>
+          <xs:documentation xml:lang="en-us"> Any other build utility file for which tools exist.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:pattern>
     </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="FamilyType">
+    <xs:restriction base="xs:NCName">
+      <xs:enumeration value="MSFT"/>
+      <xs:enumeration value="GCC"/>
+      <xs:enumeration value="INTEL"/>
+      <xs:enumeration value="MAC"/>
+      <xs:pattern value="[A-Z][a-zA-Z0-9]*">
+        <xs:annotation>
+          <xs:documentation xml:lang="en-us"> Any other family of build utilities for which compiler
+            tools exist. </xs:documentation>
+        </xs:annotation>
+      </xs:pattern>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="FamilyList">
+    <xs:list itemType="FamilyType"/>
   </xs:simpleType>
 
   <xs:simpleType name="GuidCstruct">
@@ -998,6 +1342,11 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
   </xs:simpleType>
 
   <xs:simpleType name="GuidTypes">
+    <xs:annotation>
+      <xs:documentation xml:lang="en-us"> Most of the GUID types are defined by the UEFI/PI
+        specifications, however, the BootModeRecovery types are a further refinement of GUIDs that
+        are specific to different recovery modes. </xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:NCName">
       <xs:enumeration value="BootModeFull"/>
       <xs:enumeration value="BootModeMinimal"/>
@@ -1047,22 +1396,23 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
     <xs:list itemType="GuidTypes"/>
   </xs:simpleType>
 
-  <xs:simpleType name="FamilyType">
+  <xs:simpleType name="HexNumber">
     <xs:restriction base="xs:NCName">
-      <xs:enumeration value="MSFT"/>
-      <xs:enumeration value="GCC"/>
-      <xs:enumeration value="INTEL"/>
+      <xs:pattern value="0x([a-fA-F0-9])+"/>
     </xs:restriction>
   </xs:simpleType>
 
-  <xs:simpleType name="FamilyList">
-    <xs:list itemType="FamilyType"/>
-  </xs:simpleType>
-
   <xs:simpleType name="LibUsageType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en-us"> Library instances can provide code for a library class, or
+        may require other library instances themselves. Since different execution paths in a library
+        (or module) may need different library classes based on some setting, library classes may
+        not alway be required. </xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:NCName">
       <xs:enumeration value="PRODUCES"/>
       <xs:enumeration value="CONSUMES"/>
+      <xs:enumeration value="SOMETIMES_CONSUMES"/>
       <xs:enumeration value="PRIVATE"/>
     </xs:restriction>
   </xs:simpleType>
@@ -1072,6 +1422,12 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
   </xs:simpleType>
 
   <xs:simpleType name="ModuleType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en-us"> The following module types are defined by EDK II
+        specifications. </xs:documentation>
+      <xs:documentation xml:lang="en-us"> Component types for EDK components and libraries are not
+        supported under the FAR distribution mechanism. </xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:NCName">
       <xs:enumeration value="BASE "/>
       <xs:enumeration value="SEC"/>
@@ -1089,10 +1445,14 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
   </xs:simpleType>
 
   <xs:simpleType name="Number">
-    <xs:union memberTypes="xs:nonNegativeInteger xs:hexBinary"/>
+    <xs:union memberTypes="xs:nonNegativeInteger xs:hexBinary HexNumber"/>
   </xs:simpleType>
 
   <xs:simpleType name="PcdDatumType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en-us"> The following data types are defined by the PCD
+        specification (or PCD section of the UEFI/PI specifications.) </xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:normalizedString">
       <xs:enumeration value="UINT8"/>
       <xs:enumeration value="UINT16"/>
@@ -1109,18 +1469,56 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
   <xs:simpleType name="PcdTypes">
     <xs:restriction base="xs:NCName">
-      <xs:enumeration value="FeaturePcd"/>
-      <xs:enumeration value="FixedPcd"/>
-      <xs:enumeration value="PatchPcd"/>
-      <xs:enumeration value="Pcd"/>
-      <xs:enumeration value="PcdEx"/>
+      <xs:enumeration value="FeaturePcd">
+        <xs:annotation>
+          <xs:documentation xml:lang="en-us"> The Feature PCD is a binary, evaluating to either true
+            or false. This is used during build to include/exclude content. It can also be used
+            during execution to force execution paths within drivers, or to enable/disable features
+            within a driver for a given platform. </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="FixedPcd">
+        <xs:annotation>
+          <xs:documentation xml:lang="en-us"> The Fixed PCD is a #define value that is set at build
+            time. </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="PatchPcd">
+        <xs:annotation>
+          <xs:documentation xml:lang="en-us"> The Patch PCD is a #define that is set at build time,
+            and that can be modified within a binary file. Additional information, such as the
+            offset location of the value, along with it's length may need to be
+          provided.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Pcd">
+        <xs:annotation>
+          <xs:documentation xml:lang="en-us"> This PCD type has an overloaded definition. Prior to
+            build, the platform integrator may choose to implement a PCD as Fixed, Patchable or a
+            Dynamic PCD. If the platform integrator choose to use the PCD as dynamic, then a PCD
+            driver is required in the platform (PEI/DXE/both) to track the PCD in some sort of
+            'database' of these items. For Dynamic PCDs, the PcdGet* must pass in the token space
+            guid and the token number to retrieve data (PcdSet* also needs these values.)
+          </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="PcdEx">
+        <xs:annotation>
+          <xs:documentation xml:lang="en-us"> The PCD can only be used as Dynamic, and the platform
+            firmware must contain a driver to maintain a 'database' of these items. For Dynamic
+            PCDs, the PcdGet* must pass in the token space guid and the token number to retrieve
+            data (PcdSet* also needs these values.) </xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
     </xs:restriction>
   </xs:simpleType>
 
   <xs:simpleType name="ProtocolUsageType">
     <xs:restriction base="xs:NCName">
       <xs:enumeration value="PRODUCES"/>
+      <xs:enumeration value="SOMETIMES_PRODUCES"/>
       <xs:enumeration value="CONSUMES"/>
+      <xs:enumeration value="SOMETIMES_CONSUMES"/>
       <xs:enumeration value="TO_START"/>
       <xs:enumeration value="BY_START"/>
     </xs:restriction>
@@ -1128,8 +1526,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
   <xs:simpleType name="RegistryFormatGuid">
     <xs:annotation>
-      <xs:documentation xml:lang="en"> A GUID must contain five different Hexadecimal character sets
-        that are separated by a dash (-) character. </xs:documentation>
+      <xs:documentation xml:lang="en-us"> A GUID must contain five different Hexadecimal character
+        sets that are separated by a dash (-) character. </xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:pattern
@@ -1138,6 +1536,11 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
   </xs:simpleType>
 
   <xs:simpleType name="SupportedOs">
+    <xs:annotation>
+      <xs:documentation xml:lang="en-us"> The EDK II build system supports workstations running one
+        of the following supported operating systems. This is the OS for the developer's
+        workstation, not the target platform. </xs:documentation>
+    </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="Win32"/>
       <xs:enumeration value="Win64"/>
@@ -1145,6 +1548,9 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
       <xs:enumeration value="Linux64"/>
       <xs:enumeration value="OS/X32"/>
       <xs:enumeration value="OS/X64"/>
+      <xs:enumeration value="Generic"/>
+      <xs:enumeration value="GenericWin"/>
+      <xs:enumeration value="GenericNix"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -1164,7 +1570,9 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
   <xs:simpleType name="UsageType">
     <xs:restriction base="xs:NCName">
       <xs:enumeration value="PRODUCES"/>
+      <xs:enumeration value="SOMETIMES_PRODUCES"/>
       <xs:enumeration value="CONSUMES"/>
+      <xs:enumeration value="SOMETIMES_CONSUMES"/>
     </xs:restriction>
   </xs:simpleType>
 
