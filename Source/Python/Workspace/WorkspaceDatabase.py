@@ -357,7 +357,8 @@ class DscBuildData(PlatformBuildClassObject):
                 EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=LibraryPath,
                                 File=self.DescFilePath, Line=LineNo)
             if LibraryClass == '' or LibraryClass == 'NULL':
-                LibraryClass = 'NULL%d' % (self._NullLibraryNumber + 1)
+                self._NullLibraryNumber += 1
+                LibraryClass = 'NULL%d' % self._NullLibraryNumber
                 LibraryInstance = self._Db.BuildObject[LibraryPath, MODEL_FILE_INF, self._Arch]
                 LibraryInstance.LibraryClass.append(LibraryClassObject(LibraryClass, [ModuleType]))
             Module.LibraryClasses[LibraryClass] = LibraryPath
