@@ -37,21 +37,20 @@ class TableEotReport(Table):
     #
     # Create table report
     #
-    # @param ID:             ID of an Error
-    # @param ErrorID:        ID of an Error TypeModel of a Report item
-    # @param OtherMsg:       Other error message besides the standard error message
-    # @param BelongsToItem:  The error belongs to which item
-    # @param Enabled:        If this error enabled
-    # @param Corrected:      if this error corrected
     #
     def Create(self):
         SqlCommand = """create table IF NOT EXISTS %s (ID INTEGER PRIMARY KEY,
-                                                       ErrorID INTEGER NOT NULL,
-                                                       OtherMsg TEXT,
-                                                       BelongsToTable TEXT NOT NULL,
-                                                       BelongsToItem SINGLE NOT NULL,
-                                                       Enabled INTEGER DEFAULT 0,
-                                                       Corrected INTEGER DEFAULT -1
+                                                       ModuleID INTEGER NOT NULL,
+                                                       ModuleName TEXT NOT NULL,
+                                                       SourceFileID INTEGER NOT NULL,
+                                                       SourceFileFullPath TEXT NOT NULL,
+                                                       ItemName TEXT NOT NULL,
+                                                       ItemType TEXT NOT NULL,
+                                                       ItemMode TEXT NOT NULL,
+                                                       GuidName TEXT NOT NULL,
+                                                       GuidMacro TEXT,
+                                                       GuidValue TEXT,
+                                                       Enabled INTEGER DEFAULT 0
                                                       )""" % self.Table
         Table.Create(self, SqlCommand)
 
@@ -59,65 +58,17 @@ class TableEotReport(Table):
     #
     # Insert a record into table report
     #
-    # @param ID:             ID of an Error
-    # @param ErrorID:        ID of an Error TypeModel of a report item
-    # @param OtherMsg:       Other error message besides the standard error message
-    # @param BelongsToTable: The error item belongs to which table
-    # @param BelongsToItem:  The error belongs to which item
-    # @param Enabled:        If this error enabled
-    # @param Corrected:      if this error corrected
     #
-    def Insert(self, ErrorID, OtherMsg = '', BelongsToTable = '', BelongsToItem = -1, Enabled = 0, Corrected = -1):
+    def Insert(self, ModuleID = -1, ModuleName = '', SourceFileID = -1, SourceFileFullPath = '', \
+               ItemName = '', ItemType = '', ItemMode = '', GuidName = '', GuidMacro = '', GuidValue = '', Enabled = 0):
         self.ID = self.ID + 1
-        SqlCommand = """insert into %s values(%s, %s, '%s', '%s', %s, %s, %s)""" \
-                     % (self.Table, self.ID, ErrorID, ConvertToSqlString2(OtherMsg), BelongsToTable, BelongsToItem, Enabled, Corrected)
+        SqlCommand = """insert into %s values(%s, %s, '%s', %s, '%s', '%s', '%s', '%s', '%s', '%s', '%s', %s)""" \
+                     % (self.Table, self.ID, ModuleID, ModuleName, SourceFileID, SourceFileFullPath, \
+                        ItemName, ItemType, ItemMode, GuidName, GuidMacro, GuidValue, Enabled)
         Table.Insert(self, SqlCommand)
         
-        return self.ID
-    
-    ## Query table
-    #
-    # @retval:       A recordSet of all found records 
-    #
-    def Query(self):
-        SqlCommand = """select ID, ErrorID, OtherMsg, BelongsToTable, BelongsToItem, Corrected from %s
-                        where Enabled > -1 order by ErrorID, BelongsToItem""" % (self.Table)
-        return self.Exec(SqlCommand)
-
-    ## Convert to CSV
-    #
-    # Get all enabled records from table report and save them to a .csv file
-    #
-    # @param Filename:  To filename to save the report content
-    #
-    def ToCSV(self, Filename = 'Report.csv'):
-        try:
-            File = open(Filename, 'w+')
-            File.write("""No, Error Code, Error Message, File, LineNo, Other Error Message\n""")
-            RecordSet = self.Query()
-            Index = 0
-            for Record in RecordSet:
-                Index = Index + 1
-                ErrorID = Record[1]
-                OtherMsg = Record[2]
-                BelongsToTable = Record[3]
-                BelongsToItem = Record[4]
-                IsCorrected = Record[5]
-                SqlCommand = ''
-                if BelongsToTable == 'File':
-                    SqlCommand = """select 0, FullPath from %s where ID = %s
-                             """ % (BelongsToTable, BelongsToItem)
-                else:
-                    SqlCommand = """select A.StartLine, B.FullPath from %s as A, File as B
-                                    where A.ID = %s and B.ID = A.BelongsToFile
-                                 """ % (BelongsToTable, BelongsToItem)
-                NewRecord = self.Exec(SqlCommand)
-                if NewRecord != []:
-                    File.write("""%s,%s,"%s",%s,%s,"%s"\n""" % (Index, ErrorID, EotToolError.gEotErrorMessage[ErrorID], NewRecord[0][1], NewRecord[0][0], OtherMsg))
-            
-            File.close()
-        except IOError:
-            NewFilename = 'Report_' + time.strftime("%Y%m%d_%H%M%S.csv", time.localtime())
-            EdkLogger.warn("ECC", "The report file %s is locked by other progress, use %s instead!" % (Filename, NewFilename))
-            self.ToCSV(NewFilename)
-
+    def GetMaxID(self):
+        SqlCommand = """select max(ID) from %s""" % self.Table
+        self.Cur.execute(SqlCommand)
+        for Item in self.Cur:
+            return Item[0]
