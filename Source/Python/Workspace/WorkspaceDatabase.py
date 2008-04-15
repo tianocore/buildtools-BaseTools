@@ -358,19 +358,21 @@ class DscBuildData(PlatformBuildClassObject):
                 EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=LibraryPath,
                                 File=self.DescFilePath, Line=LineNo)
             if LibraryClass == '' or LibraryClass == 'NULL':
-                if LibraryPath not in self._NullLibraryClass:
-                    self._NullLibraryNumber += 1
-                    LibraryClass = LibraryClassObject('NULL%d' % self._NullLibraryNumber, [ModuleType])
+                if LibraryPath not in DscBuildData._NullLibraryClass:
+                    DscBuildData._NullLibraryNumber += 1
+                    LibraryClass = 'NULL%d' % DscBuildData._NullLibraryNumber
+                    Lc = LibraryClassObject(LibraryClass, [ModuleType])
                     LibraryInstance = self._Db.BuildObject[LibraryPath, MODEL_FILE_INF, self._Arch]
-                    LibraryInstance.LibraryClass.append(LibraryClass)
-                    self._NullLibraryClass[LibraryPath] = LibraryClass
+                    LibraryInstance.LibraryClass.append(Lc)
+                    DscBuildData._NullLibraryClass[LibraryPath] = Lc
                 else:
-                    LibraryClass = self._NullLibraryClass[LibraryPath]
+                    Lc = DscBuildData._NullLibraryClass[LibraryPath]
+                    LibraryClass = Lc.LibraryClass
                     # add new supported module type
-                    if ModuleType not in LibraryClass.SupModList:
-                        LibraryClass.SupModList.append(ModuleType)
+                    if ModuleType not in Lc.SupModList:
+                        Lc.SupModList.append(ModuleType)
                     LibraryInstance = self._Db.BuildObject[LibraryPath, MODEL_FILE_INF, self._Arch]
-                    LibraryInstance.LibraryClass.append(LibraryClass)
+                    LibraryInstance.LibraryClass.append(Lc)
 
             Module.LibraryClasses[LibraryClass] = LibraryPath
 
