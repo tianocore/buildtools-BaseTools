@@ -261,7 +261,7 @@ class DscBuildData(PlatformBuildClassObject):
         if self._FlashDefinition == None:
             RecordList = self._Table.Query(MODEL_META_DATA_HEADER, TAB_DSC_DEFINES_FLASH_DEFINITION, self.Arch)
             if len(RecordList) > 0:
-                self._FlashDefinition = NormPath(RecordList[0][0])
+                self._FlashDefinition = NormPath(RecordList[0][0], self._Macros)
             else:
                 self._FlashDefinition = ''
         return self._FlashDefinition
