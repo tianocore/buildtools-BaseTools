@@ -1,6 +1,6 @@
-/*++
+/** @file
 
-Copyright (c) 2004, Intel Corporation                                                         
+Copyright (c) 2004 - 2008, Intel Corporation                                                         
 All rights reserved. This program and the accompanying materials                          
 are licensed and made available under the terms and conditions of the BSD License         
 which accompanies this distribution.  The full text of the license may be found at        
@@ -18,7 +18,7 @@ Abstract:
   This file contains describes the public interfaces to the GenFvImage Library.
   The basic purpose of the library is to create Firmware Volume images.
 
---*/
+**/
 
 #ifndef _EFI_GEN_FV_INTERNAL_LIB_H
 #define _EFI_GEN_FV_INTERNAL_LIB_H

@@ -1,5 +1,5 @@
 /** @file
-	Memory Only PE COFF loader
+	Function prototypes and defines on Memory Only PE COFF loader
 
 	Copyright (c) 2006, Intel Corporation                                                         
 	All rights reserved. This program and the accompanying materials                          

@@ -1,6 +1,6 @@
-/*++
+/**
 
-Copyright (c) 2007, Intel Corporation                                                         
+Copyright (c) 2007 - 2008, Intel Corporation                                                         
 All rights reserved. This program and the accompanying materials                          
 are licensed and made available under the terms and conditions of the BSD License         
 which accompanies this distribution.  The full text of the license may be found at        
@@ -15,9 +15,9 @@ Module Name:
 
 Abstract:
 
-  Header file for helper functions useful for accessing files.
+  String routines implementation.
 
---*/
+**/
 
 #ifndef _EFI_STRING_FUNCS_H
 #define _EFI_STRING_FUNCS_H
@@ -47,7 +47,7 @@ CloneString (
   IN CHAR8       *String
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -61,7 +61,7 @@ Returns:
 
   CHAR8* - NULL if there are not enough resources
 
---*/
+**/
 
 
 EFI_STATUS
@@ -69,7 +69,7 @@ StripInfDscStringInPlace (
   IN CHAR8       *String
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -83,7 +83,7 @@ Returns:
 
   EFI_STATUS
 
---*/
+**/
 
 
 STRING_LIST*
@@ -91,7 +91,7 @@ SplitStringByWhitespace (
   IN CHAR8       *String
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -106,14 +106,14 @@ Returns:
 
   EFI_STATUS
 
---*/
+**/
 
 
 STRING_LIST*
 NewStringList (
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -123,7 +123,7 @@ Returns:
 
   STRING_LIST* - Null if there is not enough resources to create the object.
 
---*/
+**/
 
 
 EFI_STATUS
@@ -132,7 +132,7 @@ AppendCopyOfStringToList (
   IN CHAR8       *String
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -143,7 +143,7 @@ Returns:
 
   EFI_STATUS
 
---*/
+**/
 
 
 EFI_STATUS
@@ -151,7 +151,7 @@ RemoveLastStringFromList (
   IN STRING_LIST       *StringList
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -166,7 +166,7 @@ Returns:
 
   EFI_STATUS
 
---*/
+**/
 
 
 STRING_LIST*
@@ -174,7 +174,7 @@ AllocateStringListStruct (
   IN UINTN StringCount
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -188,7 +188,7 @@ Returns:
 
   EFI_STATUS
 
---*/
+**/
 
 
 VOID
@@ -196,7 +196,7 @@ FreeStringList (
   IN STRING_LIST       *StringList
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -210,7 +210,7 @@ Returns:
 
   EFI_STATUS
 
---*/
+**/
 
 
 CHAR8*
@@ -218,7 +218,7 @@ StringListToString (
   IN STRING_LIST       *StringList
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -233,7 +233,7 @@ Returns:
   CHAR8* - The string list represented with a single string.  The returned
            string must be freed by the caller.
 
---*/
+**/
 
 
 VOID
@@ -241,7 +241,7 @@ PrintStringList (
   IN STRING_LIST       *StringList
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -251,7 +251,7 @@ Arguments:
 
   StringList        The string list to print
 
---*/
+**/
 
 
 #endif

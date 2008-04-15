@@ -1,6 +1,6 @@
-/*++
+/** @file
 
-Copyright (c) 1999 - 2007, Intel Corporation
+Copyright (c) 1999 - 2008, Intel Corporation
 All rights reserved. This program and the accompanying materials
 are licensed and made available under the terms and conditions of the BSD License
 which accompanies this distribution.  The full text of the license may be found at
@@ -20,7 +20,7 @@ Abstract:
   which is appropriate for the specific environment that they
   are running under.
 
---*/
+**/
 
 #ifndef BinderFuncs_h_INCLUDED
 #define BinderFuncs_h_INCLUDED

@@ -1,6 +1,6 @@
-/*++
+/** @file
 
-Copyright (c) 2004, Intel Corporation                                                         
+Copyright (c) 2004 - 2008, Intel Corporation                                                         
 All rights reserved. This program and the accompanying materials                          
 are licensed and made available under the terms and conditions of the BSD License         
 which accompanies this distribution.  The full text of the license may be found at        
@@ -17,7 +17,7 @@ Abstract:
 
   Common library assistance routines.
 
---*/
+**/
 
 #ifndef _EFI_COMMON_LIB_H
 #define _EFI_COMMON_LIB_H
@@ -98,7 +98,7 @@ Returns:
   EFI_ABORTED              An error occurred.
   EFI_OUT_OF_RESOURCES     No resource to complete operations.
 
---*/
+**/
 
 UINT8
 CalculateChecksum8 (

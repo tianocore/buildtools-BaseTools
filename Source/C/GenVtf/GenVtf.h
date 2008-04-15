@@ -1,6 +1,6 @@
-/*++
+/** @file
 
-Copyright (c) 1999 - 2007 Intel Corporation. All rights reserved
+Copyright (c) 1999 - 2008 Intel Corporation. All rights reserved
 This software and associated documentation (if any) is furnished
 under a license and may only be used or copied in accordance
 with the terms of the license. Except as permitted by such
@@ -19,7 +19,7 @@ Abstract:
   This file contains the relevant declarations required
   to generate Boot Strap File
 
---*/
+**/
 
 //
 // Module Coded to EFI 2.0 Coding Conventions

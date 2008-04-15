@@ -1,4 +1,4 @@
-/*++
+/** @file
 
 Copyright (c) 2004, Intel Corporation                                                         
 All rights reserved. This program and the accompanying materials                          
@@ -17,7 +17,7 @@ Abstract:
 
   CalcuateCrc32 routine.
   
---*/
+**/
 
 #include <stdlib.h>
 #include "Crc32.h"

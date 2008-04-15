@@ -1,6 +1,6 @@
-/*++
+/** @file
 
-Copyright (c) 2004 - 2007, Intel Corporation                                                         
+Copyright (c) 2004 - 2008, Intel Corporation                                                         
 All rights reserved. This program and the accompanying materials                          
 are licensed and made available under the terms and conditions of the BSD License         
 which accompanies this distribution.  The full text of the license may be found at        
@@ -17,7 +17,7 @@ Abstract:
 
   Header file for helper functions useful for accessing files.
 
---*/
+**/
 
 #ifndef _EFI_MEMORY_FILE_H
 #define _EFI_MEMORY_FILE_H
@@ -50,7 +50,7 @@ GetMemoryFile (
   OUT EFI_HANDLE *OutputMemoryFile
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -67,7 +67,7 @@ Returns:
   EFI_STATUS
   OutputMemoryFile is valid if !EFI_ERROR
 
---*/
+**/
 
 
 EFI_STATUS
@@ -75,7 +75,7 @@ FreeMemoryFile (
   IN EFI_HANDLE InputMemoryFile
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -89,7 +89,7 @@ Returns:
 
   EFI_STATUS
 
---*/
+**/
 
 
 CHAR8 *
@@ -97,7 +97,7 @@ ReadMemoryFileLine (
   IN EFI_HANDLE     InputMemoryFile
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -116,7 +116,7 @@ Returns:
   NULL if error or EOF
   NULL character termincated string otherwise (MUST BE FREED BY CALLER)
 
---*/
+**/
 
 
 #endif

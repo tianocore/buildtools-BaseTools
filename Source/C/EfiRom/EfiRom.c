@@ -1,6 +1,6 @@
-/*++
+/** @file
 
-Copyright (c)  1999-2007 Intel Corporation. All rights reserved
+Copyright (c)  1999-2008 Intel Corporation. All rights reserved
 This program and the accompanying materials are licensed and made available 
 under the terms and conditions of the BSD License which accompanies this 
 distribution.  The full text of the license may be found at
@@ -18,8 +18,7 @@ Abstract:
   Utility program to create an EFI option ROM image from binary and 
   EFI PE32 files.
 
-
---*/
+**/
 
 #include "EfiRom.h"
 

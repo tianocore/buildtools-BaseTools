@@ -1,6 +1,6 @@
-/*++
+/** @file
 
-Copyright (c) 2007, Intel Corporation                                                         
+Copyright (c) 2007 - 2008, Intel Corporation                                                         
 All rights reserved. This program and the accompanying materials                          
 are licensed and made available under the terms and conditions of the BSD License         
 which accompanies this distribution.  The full text of the license may be found at        
@@ -15,9 +15,10 @@ Module Name:
 
 Abstract:
 
-  Header file for helper functions useful for parsing INF files.
+  Header file for helper functions useful to operate file directories 
+  by parsing file path. 
 
---*/
+**/
 
 #ifndef _EFI_OS_PATH_H
 #define _EFI_OS_PATH_H
@@ -33,7 +34,7 @@ OsPathDirName (
   IN CHAR8    *FilePath
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -57,7 +58,7 @@ Returns:
 
   NULL if error
 
---*/
+**/
 
 
 VOID
@@ -65,7 +66,7 @@ OsPathNormPathInPlace (
   IN CHAR8    *Path
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -85,7 +86,7 @@ Returns:
 
   The string is altered in place.
 
---*/
+**/
 
 
 CHAR8*
@@ -94,7 +95,7 @@ OsPathPeerFilePath (
   IN CHAR8    *Peer
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -116,7 +117,7 @@ Returns:
 
   A CHAR8* string, which must be freed by the caller
 
---*/
+**/
 
 
 BOOLEAN
@@ -124,7 +125,7 @@ OsPathExists (
   IN CHAR8    *InputFileName
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -139,7 +140,7 @@ Returns:
   TRUE              The file exists
   FALSE             The file does not exist
 
---*/
+**/
 
 
 #endif

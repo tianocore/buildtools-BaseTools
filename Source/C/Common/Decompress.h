@@ -1,6 +1,6 @@
-/*++
+/** @file
 
-Copyright (c) 2006, Intel Corporation                                                         
+Copyright (c) 2006 - 2008, Intel Corporation                                                         
 All rights reserved. This program and the accompanying materials                          
 are licensed and made available under the terms and conditions of the BSD License         
 which accompanies this distribution.  The full text of the license may be found at        
@@ -17,7 +17,7 @@ Abstract:
 
   Header file for compression routine
   
---*/
+**/
 
 #ifndef _EFI_DECOMPRESS_H
 #define _EFI_DECOMPRESS_H
@@ -31,7 +31,7 @@ EfiGetInfo (
   OUT     UINT32  *DstSize,
   OUT     UINT32  *ScratchSize
   );
-/*++
+/**
 
 Routine Description:
 
@@ -49,7 +49,7 @@ Returns:
   EFI_SUCCESS           - The size of destination buffer and the size of scratch buffer are successull retrieved.
   EFI_INVALID_PARAMETER - The source data is corrupted
 
---*/
+**/
 
 EFI_STATUS
 EfiDecompress (
@@ -60,7 +60,7 @@ EfiDecompress (
   IN OUT  VOID    *Scratch,
   IN      UINT32  ScratchSize
   );
-/*++
+/**
 
 Routine Description:
 
@@ -80,7 +80,7 @@ Returns:
   EFI_SUCCESS           - Decompression is successfull
   EFI_INVALID_PARAMETER - The source data is corrupted
 
---*/
+**/
 
 EFI_STATUS
 TianoGetInfo (
@@ -89,7 +89,7 @@ TianoGetInfo (
   OUT     UINT32  *DstSize,
   OUT     UINT32  *ScratchSize
   );
-/*++
+/**
 
 Routine Description:
 
@@ -107,7 +107,7 @@ Returns:
   EFI_SUCCESS           - The size of destination buffer and the size of scratch buffer are successull retrieved.
   EFI_INVALID_PARAMETER - The source data is corrupted
 
---*/
+**/
 
 EFI_STATUS
 TianoDecompress (
@@ -118,7 +118,7 @@ TianoDecompress (
   IN OUT  VOID    *Scratch,
   IN      UINT32  ScratchSize
   );
-/*++
+/**
 
 Routine Description:
 
@@ -138,7 +138,7 @@ Returns:
   EFI_SUCCESS           - Decompression is successfull
   EFI_INVALID_PARAMETER - The source data is corrupted
 
---*/
+**/
 
 typedef
 EFI_STATUS

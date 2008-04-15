@@ -1,6 +1,6 @@
-/*++
+/** @file
 
-Copyright 2006 - 2007, Intel Corporation                                                         
+Copyright 2006 - 2008, Intel Corporation                                                         
 All rights reserved. This program and the accompanying materials                          
 are licensed and made available under the terms and conditions of the BSD License         
 which accompanies this distribution.  The full text of the license may be found at        
@@ -19,7 +19,7 @@ Abstract:
     If we write MBR to disk, we just update the MBR code and the partition table wouldn't be over written.
     If we process DBR, we will patch MBR to set first partition active if no active partition exists.
 
---*/
+**/
 
 #include <windows.h>
 #include <stdio.h>

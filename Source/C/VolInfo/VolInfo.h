@@ -1,6 +1,6 @@
-/*++
+/** @file
 
-Copyright (c) 1999 - 2007, Intel Corporation
+Copyright (c) 1999 - 2008, Intel Corporation
 All rights reserved. This program and the accompanying materials
 are licensed and made available under the terms and conditions of the BSD License
 which accompanies this distribution.  The full text of the license may be found at
@@ -17,7 +17,7 @@ Abstract:
 
   Local Definitions for the VolInfo utility
 
---*/
+**/
 
 #ifndef _VOLINFO_H_
 #define _VOLINFO_H_ 1

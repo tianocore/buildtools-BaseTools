@@ -1,6 +1,6 @@
-/*++
+/** @file
 
-Copyright (c) 2007, Intel Corporation                                                         
+Copyright (c) 2007 - 2008, Intel Corporation                                                         
 All rights reserved. This program and the accompanying materials                          
 are licensed and made available under the terms and conditions of the BSD License         
 which accompanies this distribution.  The full text of the license may be found at        
@@ -15,9 +15,9 @@ Module Name:
 
 Abstract:
 
-  Header file for helper functions useful for accessing files.
+  Function prototypes and defines for string routines.
 
---*/
+**/
 
 #include "StringFuncs.h"
 
@@ -99,7 +99,7 @@ Returns:
   // What about multiline comments?
   //
 
-  Pos = strstr (String, "//");
+  Pos = strstr (String,  "//");
   if (Pos != NULL) {
     *Pos = '\0';
   }

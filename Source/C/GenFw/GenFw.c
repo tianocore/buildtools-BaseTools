@@ -1,6 +1,6 @@
-/*++
+/** @file
 
-Copyright (c) 2004 - 2007, Intel Corporation                                                         
+Copyright (c) 2004 - 2008, Intel Corporation                                                         
 All rights reserved. This program and the accompanying materials                          
 are licensed and made available under the terms and conditions of the BSD License         
 which accompanies this distribution.  The full text of the license may be found at        
@@ -15,9 +15,9 @@ Module Name:
 
 Abstract:
 
-    Converts a pe32+ image to an FW image type
+    Converts a pe32+ image to an FW, Te image type, or other specific image. 
 
---*/
+**/
 
 #include "WinNtInclude.h"
 

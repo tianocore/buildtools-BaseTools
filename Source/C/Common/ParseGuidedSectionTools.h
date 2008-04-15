@@ -1,6 +1,6 @@
-/*++
+/** @file
 
-Copyright (c) 2007, Intel Corporation                                                         
+Copyright (c) 2007 - 2008, Intel Corporation                                                         
 All rights reserved. This program and the accompanying materials                          
 are licensed and made available under the terms and conditions of the BSD License         
 which accompanies this distribution.  The full text of the license may be found at        
@@ -17,7 +17,7 @@ Abstract:
 
   Header file for helper functions for parsing GuidedSectionTools.txt
 
---*/
+**/
 
 #ifndef _EFI_PARSE_GUIDED_SECTION_TOOLS_H
 #define _EFI_PARSE_GUIDED_SECTION_TOOLS_H
@@ -33,7 +33,7 @@ ParseGuidedSectionToolsFile (
   IN CHAR8    *InputFile
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -52,7 +52,7 @@ Returns:
   NULL if error parsing
   A non-NULL EFI_HANDLE otherwise
 
---*/
+**/
 
 
 EFI_HANDLE
@@ -60,7 +60,7 @@ ParseGuidedSectionToolsMemoryFile (
   IN EFI_HANDLE    InputFile
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -79,7 +79,7 @@ Returns:
   NULL if error parsing
   A non-NULL EFI_HANDLE otherwise
 
---*/
+**/
 
 CHAR8*
 LookupGuidedSectionToolPath (
@@ -87,7 +87,7 @@ LookupGuidedSectionToolPath (
   IN EFI_GUID   *SectionGuid
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -105,14 +105,14 @@ Returns:
   Non-NULL - The tool to use to access the section contents.  (The caller
              must free the memory associated with this string.)
 
---*/
+**/
 
 EFI_STATUS
 FreeParsedGuidedSectionToolsHandle (
   IN EFI_HANDLE ParsedGuidedSectionToolsHandle
   )
 ;
-/*++
+/**
 
 Routine Description:
 
@@ -128,6 +128,6 @@ Returns:
 
   EFI_STATUS
 
---*/
+**/
 
 #endif
