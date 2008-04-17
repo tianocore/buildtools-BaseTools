@@ -1181,11 +1181,13 @@ class Makefile(object):
         # Extract comman files list in the dependency files
         #
         self.CommonFileDependency = list(DepSet)
-        for F in self.FileDependency:
-            NewDepSet = set(self.FileDependency[F])
+        for File in self.FileDependency:
+            # skip non-C files
+            if (not File.endswith(".c") and not File.endswith(".C")) or File.endswith("AutoGen.c"):
+                continue
+            NewDepSet = set(self.FileDependency[File])
             NewDepSet -= DepSet
-            if File.endswith(".c") or File.endswith(".C") or not File.endswith("AutoGen.c"):
-                self.FileDependency[F] = ["$(COMMON_DEPS)"] + list(NewDepSet)
+            self.FileDependency[File] = ["$(COMMON_DEPS)"] + list(NewDepSet)
 
         for File, TargetTemplate in self.FileBuildTargetList:
             if File not in self.FileDependency:
