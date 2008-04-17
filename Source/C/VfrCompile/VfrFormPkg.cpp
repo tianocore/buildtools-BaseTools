@@ -634,7 +634,7 @@ CIfrRecordInfoDB::IfrRecordOutput (
       fprintf (File, ">%08X: ", pNode->mOffset);
       if (pNode->mIfrBinBuf != NULL) {
         for (Index = 0; Index < pNode->mBinBufLen; Index++) {
-          fprintf (File, "%02X ", pNode->mIfrBinBuf[Index]);
+          fprintf (File, "%02X ", (UINT8)(pNode->mIfrBinBuf[Index]));
         }
       }
       fprintf (File, "\n");
