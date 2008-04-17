@@ -80,7 +80,7 @@ def IsToolInPath(tool):
 def CheckEnvVariable():
     # check WORKSPACE
     if "WORKSPACE" not in os.environ:
-        EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Environment variable not found", 
+        EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Environment variable not found",
                         ExtraData="WORKSPACE")
 
     WorkspaceDir = os.path.normpath(os.environ["WORKSPACE"])
@@ -90,7 +90,7 @@ def CheckEnvVariable():
 
     #
     # Check EFI_SOURCE (R8 build convention). EDK_SOURCE will always point to ECP
-    # 
+    #
     os.environ["EDK_SOURCE"] = os.path.join(WorkspaceDir, GlobalData.gEdkCompatibilityPkg)
     if "EFI_SOURCE" not in os.environ:
         os.environ["EFI_SOURCE"] = os.environ["EDK_SOURCE"]
@@ -104,22 +104,22 @@ def CheckEnvVariable():
 
     # change absolute path to relative path to WORKSPACE
     if EfiSourceDir.upper().find(WorkspaceDir.upper()) != 0:
-        EdkLogger.error("build", PARAMETER_INVALID, "EFI_SOURCE is not under WORKSPACE", 
+        EdkLogger.error("build", PARAMETER_INVALID, "EFI_SOURCE is not under WORKSPACE",
                         ExtraData="WORKSPACE = %s\n    EFI_SOURCE = %s" % (WorkspaceDir, EfiSourceDir))
     if EdkSourceDir.upper().find(WorkspaceDir.upper()) != 0:
-        EdkLogger.error("build", PARAMETER_INVALID, "EDK_SOURCE is not under WORKSPACE", 
+        EdkLogger.error("build", PARAMETER_INVALID, "EDK_SOURCE is not under WORKSPACE",
                         ExtraData="WORKSPACE = %s\n    EDK_SOURCE = %s" % (WorkspaceDir, EdkSourceDir))
     EfiSourceDir = EfiSourceDir[len(WorkspaceDir)+1:]
     EdkSourceDir = EdkSourceDir[len(WorkspaceDir)+1:]
 
     # check EDK_TOOLS_PATH
     if "EDK_TOOLS_PATH" not in os.environ:
-        EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Environment variable not found", 
+        EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Environment variable not found",
                         ExtraData="EDK_TOOLS_PATH")
 
     # check PATH
     if "PATH" not in os.environ:
-        EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Environment variable not found", 
+        EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Environment variable not found",
                         ExtraData="PATH")
 
     PathString = os.environ["PATH"]
@@ -628,8 +628,8 @@ class Build():
     #   @param  SpawnMode           Indicate multi-thread build mode
     #   @param  ThreadNumber        The maximum number of thread if in multi-thread build mode
     #
-    def __init__(self, Target, WorkspaceDir, Platform, Module, Arch, ToolChain, 
-                 BuildTarget, FlashDefinition, FdList=[], FvList=[], 
+    def __init__(self, Target, WorkspaceDir, Platform, Module, Arch, ToolChain,
+                 BuildTarget, FlashDefinition, FdList=[], FvList=[],
                  MakefileType="nmake", SpawnMode=False, ThreadNumber=2,
                  SkipAutoGen=False, Reparse=False, SkuId=None):
 
@@ -659,7 +659,7 @@ class Build():
 
         # parse target.txt, tools_def.txt, and platform file
         #self.Progress.Start("Loading build configuration")
-        self.RestoreBuildData()
+        #self.RestoreBuildData()
         self.LoadConfiguration()
         #self.Progress.Stop("done!")
 
@@ -785,7 +785,7 @@ class Build():
                 FileList = glob.glob(os.path.normpath(os.path.join(WorkingDirectory, '*.dsc')))
                 FileNum = len(FileList)
                 if FileNum >= 2:
-                    EdkLogger.error("build", OPTION_MISSING, 
+                    EdkLogger.error("build", OPTION_MISSING,
                                     ExtraData="There are %d DSC files in %s. Use '-p' to specify one.\n" % (FileNum, WorkingDirectory))
                 elif FileNum == 1:
                     self.PlatformFile = NormFile(FileList[0], self.WorkspaceDir)
@@ -893,7 +893,7 @@ class Build():
             return False
 
         # skip file generation for cleanxxx targets and run target
-        if Target not in ['clean', 'cleanlib', 'cleanall', 'run']:    
+        if Target not in ['clean', 'cleanlib', 'cleanall', 'run']:
             # for target which must generate AutoGen code and makefile
             if not self.SkipAutoGen or Target == 'genc':
                 self.Progress.Start("Generating code")
@@ -901,7 +901,7 @@ class Build():
                 self.Progress.Stop("done!")
             if Target == "genc":
                 return True
-    
+
             if not self.SkipAutoGen or Target == 'genmake':
                 self.Progress.Start("Generating makefile")
                 AutoGenResult.CreateMakeFile(CreateDepModuleMakeFile)
@@ -1020,7 +1020,7 @@ class Build():
                                     'FV'
                                     )
                         if not os.path.exists(FvDir):
-                            continue 
+                            continue
                         # Build up the list of supported architectures for this build
                         prefix = '%s_%s_%s_' % (BuildTarget, ToolChain, Arch)
 
@@ -1079,7 +1079,7 @@ class Build():
 
     ## Do some clean-up works when error occurred
     def Relinquish(self):
-        self.DumpBuildData()
+        #self.DumpBuildData()
         Utils.Progressor.Abort()
         if self.SpawnMode == True:
             BuildTask.Abort()
@@ -1096,7 +1096,7 @@ class Build():
             Utils.gFileTimeStampCache = Utils.DataRestore(FilePath)
             if Utils.gFileTimeStampCache == None:
                 Utils.gFileTimeStampCache = {}
-        
+
         FilePath = os.path.join(self.WorkspaceDir, gBuildCacheDir, "gDependencyDatabase")
         if Utils.gDependencyDatabase == {} and os.path.isfile(FilePath):
             Utils.gDependencyDatabase = Utils.DataRestore(FilePath)
@@ -1216,11 +1216,11 @@ def Main():
                             ExtraData="Please select one of: %s" %(' '.join(gSupportedTarget)))
         else:
             Target = Target[0].lower()
-    
+
         if Target not in gSupportedTarget:
             EdkLogger.error("build", OPTION_NOT_SUPPORTED, "Not supported target [%s]." % Target,
                             ExtraData="Please select one of: %s" %(' '.join(gSupportedTarget)))
-    
+
         # GlobalData.gGlobalDefines = ParseDefines(Option.Defines)
         #
         # Check environment variable: EDK_TOOLS_PATH, WORKSPACE, PATH
@@ -1245,13 +1245,13 @@ def Main():
         if Option.FdfFile != None:
             Option.FdfFile = NormFile(Option.FdfFile, Workspace)
 
-        MyBuild = Build(Target, Workspace, Option.PlatformFile, Option.ModuleFile, 
-                        Option.TargetArch, Option.ToolChain, Option.BuildTarget, 
-                        Option.FdfFile, Option.RomImage, Option.FvImage, 
-                        Option.MakefileType, Option.SpawnMode, Option.ThreadNumber, 
+        MyBuild = Build(Target, Workspace, Option.PlatformFile, Option.ModuleFile,
+                        Option.TargetArch, Option.ToolChain, Option.BuildTarget,
+                        Option.FdfFile, Option.RomImage, Option.FvImage,
+                        Option.MakefileType, Option.SpawnMode, Option.ThreadNumber,
                         Option.SkipAutoGen, Option.Reparse, Option.SkuId)
         MyBuild.Launch()
-        MyBuild.DumpBuildData()
+        #MyBuild.DumpBuildData()
     except BaseException, X:
         EdkLogger.SetLevel(EdkLogger.QUIET)
         if MyBuild != None:
