@@ -28,10 +28,10 @@ from BuildEngine import *
 import Common.GlobalData as GlobalData
 
 ## Regular expression for finding header file inclusions
-gIncludePattern = re.compile("^[ #]*include[ ]+[\"<]*([^\"< >\s]+)[>\" ]*$", re.MULTILINE | re.UNICODE)
+gIncludePattern = re.compile("^[ #]*include[ \t]+[\"<]*([^\"<>\n\r]+)[>\" ]*$", re.MULTILINE | re.UNICODE)
 
 ## Regular expression for matching macro used in header file inclusion
-gMacroPattern = re.compile("([_A-Z][_A-Z0-9]*)\((.+)\)", re.UNICODE)
+gMacroPattern = re.compile("([_A-Z][_A-Z0-9]*)[ \t]*\((.+)\)", re.UNICODE)
 
 ##
 gProtocolDefinition = "Protocol/%(HeaderKey)s/%(HeaderKey)s.h"
@@ -583,7 +583,7 @@ class Makefile(object):
 
             self.ResultFileList = []
             self.IntermediateDirectoryList = ["$(DEBUG_DIR)", "$(OUTPUT_DIR)"]
-        
+
             self.SourceFileDatabase = {}  # {file type : file path}
             self.DestFileDatabase = {}  # {file type : file path}
             self.FileBuildTargetList = [] # [(src, target string)]
@@ -666,7 +666,7 @@ class Makefile(object):
             FdfFileList = [PlatformInfo.FdfFile]
             # macros passed to GenFds
             for MacroName in GlobalData.gGlobalDefines:
-                MacroList.append('"%s=%s"' % (MacroName, GlobalData.gGlobalDefines[MacroName]))    
+                MacroList.append('"%s=%s"' % (MacroName, GlobalData.gGlobalDefines[MacroName]))
         else:
             FdfFileList = []
 
@@ -1199,7 +1199,7 @@ class Makefile(object):
     ## Process binary files to generate makefile targets and dependencies
     #
     # All binary files are just copied to $(OUTPUT_DIR)
-    # 
+    #
     #   @param      MakeType    GNU makefile or MS makefile
     #
     def ProcessBinaryFileList(self, MakeType=gMakeType):
