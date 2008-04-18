@@ -824,11 +824,11 @@ CIfrObj::~CIfrObj (
   VOID
   )
 {
+  gCIfrRecordInfoDB.IfrRecordInfoUpdate (mRecordIdx, mLineNo, mObjBinBuf, mObjBinLen, mPkgOffset);
+
   if ((mDelayEmit == TRUE) && ((gCreateOp == TRUE))) {
     _EMIT_PENDING_OBJ ();
   }
-
-  gCIfrRecordInfoDB.IfrRecordInfoUpdate (mRecordIdx, mLineNo, mObjBinBuf, mObjBinLen, mPkgOffset);
 }
 
 /*
