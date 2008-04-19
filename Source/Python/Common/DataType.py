@@ -346,7 +346,6 @@ TAB_ELSE_IF = '!elseif'
 TAB_ELSE = '!else'
 TAB_IF_DEF = '!ifdef'
 TAB_IF_N_DEF = '!ifndef'
-TAB_IF_EXIST = '!if exist'
 
 #
 # Unknown section
@@ -360,3 +359,7 @@ DATABASE_PATH = ":memory:" #"BuildDatabase.db"
 
 # used by ECC
 MODIFIER_LIST = ['IN', 'OUT', 'OPTIONAL', 'UNALIGNED', 'EFI_RUNTIMESERVICE', 'EFI_BOOTSERVICE', 'EFIAPI']
+
+# Dependency Expression
+DEPEX_SUPPORTED_OPCODE = ["BEFORE", "AFTER", "PUSH", "AND", "OR", "NOT", "END", "SOR", "TRUE", "FALSE", '(', ')']
+

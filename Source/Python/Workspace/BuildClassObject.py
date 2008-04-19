@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #
 
+from Common.Misc import sdict
 
 ## PcdClassObject
 #
@@ -38,16 +39,16 @@
 # @var Phase:                To store value for Phase, default is "DXE"
 #
 class PcdClassObject(object):
-    def __init__(self, Name = None, Guid = None, Type = None, DatumType = None, Value = None, Token = None, MaxDatumSize = None, SkuInfoList = {}, IsOverrided = False):
+    def __init__(self, Name = None, Guid = None, Type = None, DatumType = None, Value = None, Token = None, MaxDatumSize = None, SkuInfoList = {}, GuidValue = None):
         self.TokenCName = Name
         self.TokenSpaceGuidCName = Guid
+        self.TokenSpaceGuidValue = GuidValue
         self.Type = Type
         self.DatumType = DatumType
         self.DefaultValue = Value
         self.TokenValue = Token
         self.MaxDatumSize = MaxDatumSize
         self.SkuInfoList = SkuInfoList
-        self.IsOverrided = IsOverrided
         self.Phase = "DXE"
 
     ## Convert the class to a string

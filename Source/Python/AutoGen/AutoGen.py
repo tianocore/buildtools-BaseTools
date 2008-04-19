@@ -26,7 +26,6 @@ import GenC
 import GenMake
 import GenDepex
 
-from BuildInfo import *
 from StrGather import *
 from BuildEngine import *
 
@@ -36,6 +35,7 @@ from Common.EdkIIWorkspace import *
 from Common.DataType import *
 from Common.Misc import *
 from Common.String import *
+from GenFds.FdfParser import *
 
 ## Regular expression for splitting Dependency Expression stirng into tokens
 gDepexTokenPattern = re.compile("(\(|\)|\w+| \S+\.inf)")
@@ -81,15 +81,198 @@ gAutoGenCodeFileName = "AutoGen.c"
 gAutoGenHeaderFileName = "AutoGen.h"
 gAutoGenDepexFileName = "%(module_name)s.depex"
 
+class AutoGen(object):
+    # database to maintain the objects of PlatformAutoGen
+    _CACHE_ = {}    # (platform file, BuildTarget, ToolChain) : {ARCH : AutoGen object}
+
+    def __new__(Class, Workspace, MetaFile, Target, Toolchain, Arch, *args, **kwargs):
+        # check if the object has been created
+        Key = (Target, Toolchain)
+        if Key not in Class._CACHE_ or Arch not in Class._CACHE_[Key] \
+           or MetaFile not in Class._CACHE_[Key][Arch]:
+            AutoGenObject = super(AutoGen, Class).__new__(Class)
+            if not AutoGenObject._Init(Workspace, MetaFile, Target, Toolchain, Arch, *args, **kwargs):
+                return None
+            if Key not in Class._CACHE_:
+                Class._CACHE_[Key] = {}
+            if Arch not in Class._CACHE_[Key]:
+                Class._CACHE_[Key][Arch] = {}
+            Class._CACHE_[Key][Arch][MetaFile] = AutoGenObject
+        else:
+            AutoGenObject = Class._CACHE_[Key][Arch][MetaFile]
+
+        return AutoGenObject
+
+    ## hash() operator
+    #
+    #  The file path of platform file will be used to represent hash value of this object
+    #
+    #   @retval int     Hash value of the file path of platform file
+    #
+    def __hash__(self):
+        return hash(self._MetaFile)
+
+    ## str() operator
+    #
+    #  The file path of platform file will be used to represent this object
+    #
+    #   @retval string  String of platform file path
+    #
+    def __str__(self):
+        return self._MetaFile
+
+    ## "==" operator
+    def __eq__(self, Other):
+        return Other != None and self._MetaFile == str(Other)
+
+class WorkspaceAutoGen(AutoGen):
+    def _Init(self, WorkspaceDir, ActivePlatform, Target, Toolchain, ArchList, MetaFileDb,
+              BuildConfig, ToolDefinition, FlashDefinitionFile='', Fds=[], Fvs=[], SkuId=''):
+        self._MetaFile      = str(ActivePlatform)
+        self.WorkspaceDir   = WorkspaceDir
+        self.Platform       = ActivePlatform
+        self.BuildTarget    = Target
+        self.ToolChain      = Toolchain
+        self.ArchList       = ArchList
+        self.SkuId          = SkuId
+
+        self.BuildDatabase  = MetaFileDb
+        self.TargetTxt      = BuildConfig
+        self.ToolDef        = ToolDefinition
+        self.FdfFile        = FlashDefinitionFile
+        self.FdTargetList   = Fds
+        self.FvTargetList   = Fvs
+        self.AutoGenObjectList = []
+
+        # there's many relative directory operation, so ...
+        os.chdir(self.WorkspaceDir)
+
+        # parse FDF file to get PCDs in it, if any
+        if self.FdfFile != None and self.FdfFile != '':
+            Fdf = FdfParser(os.path.join(self.WorkspaceDir, self.FdfFile))
+            Fdf.ParseFile()
+            PcdSet = Fdf.Profile.PcdDict
+            ModuleList = Fdf.Profile.InfList
+        else:
+            PcdSet = {}
+            ModuleList = []
+
+        # apply SKU and inject PCDs from Flash Definition file
+        for Arch in self.ArchList:
+            Platform = self.BuildDatabase[self._MetaFile, Arch]
+            Platform.SkuName = self.SkuId
+            for Name, Guid in PcdSet:
+                Platform.AddPcd(Name, Guid, PcdSet[Name, Guid])
+
+            Pa = PlatformAutoGen(self, self._MetaFile, Target, Toolchain, Arch)
+            self.AutoGenObjectList.append(Pa)
+            #for M in ModuleList:
+            #    Platform.AddModule(M)
+
+        self._BuildDir = None
+        self._FvDir = None
+        self._MakeFileDir = None
+        self._BuildCommand = None
+
+        return True
+
+    def _GetFvDir(self):
+        if self._FvDir == None:
+            self._FvDir = path.join(self.BuildDir, 'FV')
+        return self._FvDir
+            
+    def _GetBuildDir(self):
+        return self.AutoGenObjectList[0].BuildDir
+
+    def _GetOutputDir(self):
+        return self.Platform.OutputDirectory
+
+    def _GetName(self):
+        return self.Platform.PlatformName
+
+    def _GetGuid(self):
+        return self.Platform.Guid
+
+    def _GetVersion(self):
+        return self.Platform.Version
+
+    def _GetToolPaths(self):
+        return self.AutoGenObjectList[0].ToolPath
+
+    def _GetToolOptions(self):
+        return self.AutoGenObjectList[0].ToolOption
+
+    ## Return directory of platform makefile
+    #
+    #   @retval     string  Makefile directory
+    #
+    def _GetMakeFileDir(self):
+        if self._MakeFileDir == None:
+            self._MakeFileDir = self.BuildDir
+        return self._MakeFileDir
+
+    ## Return build command string
+    #
+    #   @retval     string  Build command string
+    #
+    def _GetBuildCommand(self):
+        if self._BuildCommand == None:
+            # BuildCommand should be all the same. So just get one from platform AutoGen
+            self._BuildCommand = self.AutoGenObjectList[0].BuildCommand
+        return self._BuildCommand
+
+    ## Create makefile for the platform and mdoules in it
+    #
+    #   @param      CreateLibraryCodeFile   Flag indicating if the makefile for
+    #                                       modules will be created as well
+    #
+    def CreateMakeFile(self, CreateDepsMakeFile=False):
+        # create makefile for platform
+        Makefile = GenMake.TopLevelMakefile(self)
+        if Makefile.Generate():
+            EdkLogger.verbose("Generated makefile for platform [%s] %s\n" %
+                           (self._MetaFile, self.ArchList))
+        else:
+            EdkLogger.verbose("Skipped the generation of makefile for platform [%s] %s\n" %
+                           (self._MetaFile, self.ArchList))
+
+        if CreateDepsMakeFile:
+            for Pa in self.AutoGenObjectList:
+                Pa.CreateMakeFile(CreateDepsMakeFile)
+
+    ## Create autogen code for platform and modules
+    #
+    #  Since there's no autogen code for platform, this method will do nothing
+    #  if CreateModuleCodeFile is set to False.
+    #
+    #   @param      CreateModuleCodeFile    Flag indicating if creating module's
+    #                                       autogen code file or not
+    #
+    def CreateCodeFile(self, CreateDepsCodeFile=False):
+        if not CreateDepsCodeFile:
+            return
+        for Pa in self.AutoGenObjectList:
+            Pa.CreateCodeFile(CreateDepsCodeFile)
+
+    Name                = property(_GetName)
+    Guid                = property(_GetGuid)
+    Version             = property(_GetVersion)                       
+    OutputDir           = property(_GetOutputDir)
+
+    ToolPath            = property(_GetToolPaths)    # toolcode : tool path
+    ToolOption          = property(_GetToolOptions)    # toolcode : tool option string
+
+    BuildDir            = property(_GetBuildDir)
+    FvDir               = property(_GetFvDir)
+    MakeFileDir         = property(_GetMakeFileDir)
+    BuildCommand        = property(_GetBuildCommand)
+
 ## AutoGen class for platform
 #
 #  PlatformAutoGen class will re-organize the original information in platform
 #  file in order to generate makefile for platform.
 #
-class PlatformAutoGen:
-    # database to maintain the objects of PlatformAutoGen
-    _Database = {}    # (platform file, BuildTarget, ToolChain) : PlatformAutoGen object
-
+class PlatformAutoGen(AutoGen):
     ## The real constructor of PlatformAutoGen
     #
     #  This method is not supposed to be called by users of PlatformAutoGen. It's
@@ -102,179 +285,169 @@ class PlatformAutoGen:
     #   @param      Toolchain       Name of tool chain
     #   @param      ArchList        List of arch the platform supports
     #
-    def _Init(self, Workspace, PlatformFile, Target, Toolchain, ArchList):
-        self.PlatformFile = str(PlatformFile)
+    def _Init(self, Workspace, PlatformFile, Target, Toolchain, Arch):
+        EdkLogger.verbose("\nAutoGen platform [%s] [%s]" % (PlatformFile, Arch))
+
+        self._MetaFile = str(PlatformFile)
         self.Workspace = Workspace
         self.WorkspaceDir = Workspace.WorkspaceDir
         self.ToolChain = Toolchain
         self.BuildTarget = Target
-        self.ArchList = ArchList
-
-        EdkLogger.verbose("\nAutoGen platform [%s] [%s]" % (self.PlatformFile, " ".join(self.ArchList)))
-
-        # get the original module/package/platform objects
-        self.ModuleDatabase = {}
-        for a in Workspace.Build:
-            self.ModuleDatabase[a] = Workspace.Build[a].ModuleDatabase
-
-        self.PackageDatabase = {}
-        for a in Workspace.Build:
-            self.PackageDatabase[a] = Workspace.Build[a].PackageDatabase
-
-        self.PlatformDatabase = {}
-        for a in Workspace.Build:
-            self.PlatformDatabase[a] = Workspace.Build[a].PlatformDatabase
+        self.Arch = Arch
+        self.SourceDir = path.dirname(PlatformFile)
+        self.FdTargetList = self.Workspace.FdTargetList
+        self.FvTargetList = self.Workspace.FvTargetList
 
         # flag indicating if the makefile/C-code file has been created or not
-        self.IsMakeFileCreated = False
-        self.IsCodeFileCreated = False
+        self.IsMakeFileCreated  = False
+        self.IsCodeFileCreated  = False
 
-        #
-        # collect build information for the platform
-        #
-        self.BuildInfo = {}     # arch : PlatformBuildInfo Object
-        self.Platform = {}
+        self._Platform   = None
+        self._Name       = None
+        self._Guid       = None
+        self._Version    = None
 
-        for Arch in self.ArchList:
-            if Arch not in self.PlatformDatabase or self.PlatformFile not in self.PlatformDatabase[Arch]:
-                EdkLogger.error("AutoGen", AUTOGEN_ERROR,
-                                "[%s] is not the active platform, or [%s] is not supported by the active platform!"
-                                % (PlatformFile, Arch))
-            Platform = self.PlatformDatabase[Arch][PlatformFile]
-            self.Platform[Arch] = Platform
-            self.BuildInfo[Arch] = self.CollectBuildInfo(Platform, Arch)
+        self._BuildRule = None
+        self._SourceDir = None
+        self._BuildDir = None
+        self._OutputDir = None
+        self._FvDir = None
+        self._MakeFileDir = None
+        self._FdfFile = None
 
-    ## hash() operator
-    #
-    #  The file path of platform file will be used to represent hash value of this object
-    #
-    #   @retval int     Hash value of the file path of platform file
-    #
-    def __hash__(self):
-        return hash(self.PlatformFile)
+        self._PcdTokenNumber = None    # (TokenCName, TokenSpaceGuidCName) : GeneratedTokenNumber
+        self._DynamicPcdList = None    # [(TokenCName1, TokenSpaceGuidCName1), (TokenCName2, TokenSpaceGuidCName2), ...]
+        self._NonDynamicPcdList = None # [(TokenCName1, TokenSpaceGuidCName1), (TokenCName2, TokenSpaceGuidCName2), ...]
 
-    ## str() operator
-    #
-    #  The file path of platform file will be used to represent this object
-    #
-    #   @retval string  String of platform file path
-    #
-    def __str__(self):
-        return self.PlatformFile
+        self._ToolPath = None          # toolcode : tool path
+        self._ToolDllPath = None       # toolcode : lib path
+        self._ToolStaticLib = None     # toolcode : lib path
+        self._ToolChainFamily = None   # toolcode : tool chain family
+        self._BuildOption = None       # toolcode : option
+        self._OutputFlag = None        # toolcode : output flag
+        self._IncludeFlag = None       # toolcode : include flag
+        self._ToolOption = None        # toolcode : tool option string
+        self._PackageList = None
+        self._ModuleAutoGenList  = None
+        self._LibraryAutoGenList = None
+        self._BuildCommand = None
 
-    ## Factory method to create a PlatformAutoGen object
+        # get the original module/package/platform objects
+        self.BuildDatabase = Workspace.BuildDatabase
+        return True
+
+    ## Create autogen code for platform and modules
     #
-    #   This method will check if an object of PlatformAutoGen has been created
-    #   for given platform. And if true, just return it. Otherwise it will create
-    #   a new PlatformAutoGen. That means there will be only one PlatformAutoGen
-    #   object for the same platform.
+    #  Since there's no autogen code for platform, this method will do nothing
+    #  if CreateModuleCodeFile is set to False.
     #
-    #   @param      Workspace           EdkIIWorkspaceBuild object
-    #   @param      Platform            Platform file (DSC file)
-    #   @param      Target              Build target (DEBUG, RELEASE)
-    #   @param      Toolchain           Name of tool chain
-    #   @param      ArchList            List of arch the platform supports
-    #   @param      ModuleAutoGenFlag   Flag indicating if creating ModuleAutoGen
-    #                                   objects for mdoules in the platform or not
+    #   @param      CreateModuleCodeFile    Flag indicating if creating module's
+    #                                       autogen code file or not
     #
-    #   @retval     PlatformAutoGen object
+    def CreateCodeFile(self, CreateModuleCodeFile=False):
+        # only module has code to be greated, so do nothing if CreateModuleCodeFile is False
+        if self.IsCodeFileCreated or not CreateModuleCodeFile:
+            return
+
+        for Ma in self.ModuleAutoGenList:
+            Ma.CreateCodeFile(True)
+
+        # don't do this twice
+        self.IsCodeFileCreated = True
+
+    ## Create makefile for the platform and mdoules in it
     #
-    @staticmethod
-    def New(Workspace, Platform, Target, Toolchain, ArchList, ModuleAutoGenFlag=False):
-        # check if the object for the platform has been created
-        Key = (Platform, Target, Toolchain)
-        if Key not in PlatformAutoGen._Database:
-            if ArchList == None or ArchList == []:
-                return None
-            AutoGenObject = PlatformAutoGen()
-            AutoGenObject._Init(Workspace, Platform, Target, Toolchain, ArchList)
-            PlatformAutoGen._Database[Key] = AutoGenObject
+    #   @param      CreateLibraryCodeFile   Flag indicating if the makefile for
+    #                                       modules will be created as well
+    #
+    def CreateMakeFile(self, CreateModuleMakeFile=False):
+        if CreateModuleMakeFile:
+            for ModuleFile in self.Platform.Modules:
+                Ma = ModuleAutoGen(self.Workspace, ModuleFile, 
+                                              self.BuildTarget, self.ToolChain,
+                                              self.Arch, self._MetaFile)
+                Ma.CreateMakeFile(True)
+
+        # no need to create makefile for the platform more than once
+        if self.IsMakeFileCreated:
+            return
+
+        # create makefile for platform
+        Makefile = GenMake.PlatformMakefile(self)
+        if Makefile.Generate():
+            EdkLogger.verbose("Generated makefile for platform [%s] [%s]\n" %
+                           (self._MetaFile, self.Arch))
         else:
-            AutoGenObject = PlatformAutoGen._Database[Key]
+            EdkLogger.verbose("Skipped the generation of makefile for platform [%s] [%s]\n" %
+                           (self._MetaFile, self.Arch))
+        self.IsMakeFileCreated = True
 
-        # create ModuleAutoGen objects for modules in the platform
-        if ModuleAutoGenFlag:
-            AutoGenObject.CreateModuleAutoGen()
+    def _GetPlatform(self):
+        if self._Platform == None:
+            self._Platform = self.BuildDatabase[self._MetaFile, self.Arch]
+        return self._Platform
 
-        return AutoGenObject
+    def _GetName(self):
+        return self.Platform.PlatformName
 
-    ## Collect build information for the platform
-    #
-    #  Collect build information, such as FDF file path, dynamic pcd list,
-    #  package list, tool chain configuration, build rules, etc.
-    #
-    #   @param      Platform            Platform file (DSC file)
-    #   @param      Arch                One of arch the platform supports
-    #
-    #   @retval     PlatformBuildInfo object
-    #
-    def CollectBuildInfo(self, Platform, Arch):
-        Info = PlatformBuildInfo(Platform)
+    def _GetGuid(self):
+        return self.Platform.Guid
 
-        Info.Arch = Arch
-        Info.ToolChain = self.ToolChain
-        Info.BuildTarget = self.BuildTarget
+    def _GetVersion(self):
+        return self.Platform.Version
 
-        Info.WorkspaceDir = self.WorkspaceDir
-        Info.SourceDir = path.dirname(Platform.DescFilePath)
-        Info.OutputDir = Platform.OutputDirectory
-        if os.path.isabs(Info.OutputDir):
-            Info.BuildDir = path.join(path.abspath(Info.OutputDir), self.BuildTarget + "_" + self.ToolChain)
-        else:
-            Info.BuildDir = path.join(Info.WorkspaceDir, Info.OutputDir, self.BuildTarget + "_" + self.ToolChain)
-        Info.MakeFileDir = Info.BuildDir
-        if self.Workspace.Fdf != "":
-            Info.FdfFile= path.join(self.WorkspaceDir, self.Workspace.Fdf)
+    def _GetFdfFile(self):
+        if self._FdfFile == None:
+            if self.Workspace.FdfFile != "":
+                self._FdfFile= path.join(self.WorkspaceDir, self.Workspace.FdfFile)
+            else:
+                self._FdfFile = ''
+        return self._FdfFile
 
-        Info.NonDynamicPcdList, Info.DynamicPcdList, Info.GuidValue = self.GetPcdList(Platform, Arch)
-        Info.PcdTokenNumber = self.GeneratePcdTokenNumber(Platform, Info.NonDynamicPcdList, Info.DynamicPcdList)
-        Info.PackageList = self.GetPackageList(Platform, Arch)
+    def _GetDebugDir(self):
+        return ''
 
-        self.GetToolDefinition(Info)
-        Info.BuildRule = self.GetBuildRule()
-        Info.FdTargetList = self.Workspace.FdTargetList
-        Info.FvTargetList = self.Workspace.FvTargetList
+    def _GetOutputDir(self):
+        return self.Platform.OutputDirectory
 
-        return Info
+    def _GetBuildDir(self):
+        if self._BuildDir == None:
+            if os.path.isabs(self.OutputDir):
+                self._BuildDir = path.join(
+                                            path.abspath(self.OutputDir), 
+                                            self.BuildTarget + "_" + self.ToolChain,
+                                            )
+            else:
+                self._BuildDir = path.join(
+                                            self.WorkspaceDir,
+                                            self.OutputDir,
+                                            self.BuildTarget + "_" + self.ToolChain,
+                                            )
+        return self._BuildDir
 
     ## Return directory of platform makefile
     #
     #   @retval     string  Makefile directory
     #
-    def GetMakeFileDir(self):
-        return self.BuildInfo[self.ArchList[0]].MakeFileDir
+    def _GetMakeFileDir(self):
+        if self._MakeFileDir == None:
+            self._MakeFileDir = path.join(self.BuildDir, self.Arch)
+        return self._MakeFileDir
 
     ## Return build command string
     #
     #   @retval     string  Build command string
     #
-    def GetBuildCommand(self, Arch=None):
-        if Arch != None:
-            Arch = [Arch]
-        else:
-            Arch = self.ArchList
-        Command = tuple()
-        for A in Arch:
-            if A in self.BuildInfo and "MAKE" in self.BuildInfo[A].ToolPath:
-                Command += (self.BuildInfo[A].ToolPath["MAKE"],)
-                if "MAKE" in self.BuildInfo[A].ToolOption:
-                    NewOption = self.BuildInfo[A].ToolOption["MAKE"].strip()
+    def _GetBuildCommand(self):
+        if self._BuildCommand == None:
+            self._BuildCommand = tuple()
+            if "MAKE" in self.ToolPath:
+                self._BuildCommand += (self.ToolPath["MAKE"],)
+                if "MAKE" in self.ToolOption:
+                    NewOption = self.ToolOption["MAKE"].strip()
                     if NewOption != '':
-                      Command += (NewOption,)
-                break
-        if len(Command) == 0:
-            EdkLogger.error("AutoGen", OPTION_MISSING, "No MAKE command defined. Please check your tools_def.txt!")
-        return Command
-
-    ## Parse build_rule.txt in $(WORKSPACE)/Conf/build_rule.txt
-    #
-    #   @retval     BuildRule object
-    #
-    def GetBuildRule(self):
-        BuildRuleFile = self.Workspace.TargetTxt.TargetTxtDictionary[TAB_TAT_DEFINES_BUILD_RULE_CONF]
-        if BuildRuleFile in [None, '']:
-            BuildRuleFile = gBuildRuleFile
-        return BuildRule(self.Workspace.WorkspaceFile(BuildRuleFile))
+                      self._BuildCommand += (NewOption,)
+        return self._BuildCommand
 
     ## Get tool chain definition
     #
@@ -282,11 +455,17 @@ class PlatformAutoGen:
     #
     #   @param      Info    PlatformBuildInfo object to store the definition
     #
-    def GetToolDefinition(self, Info):
+    def _GetToolDefinition(self):
         ToolDefinition = self.Workspace.ToolDef.ToolsDefTxtDictionary
         ToolCodeList = self.Workspace.ToolDef.ToolsDefTxtDatabase["COMMAND_TYPE"]
+        self._ToolPath = {}
+        self._ToolDllPath = {}
+        self._ToolChainFamily = {}
+        self._ToolOption = {}
+        self._OutputFlag = {}
+        self._IncludeFlag = {}
         for Tool in ToolCodeList:
-            KeyBaseString = "%s_%s_%s_%s" % (Info.BuildTarget, Info.ToolChain, Info.Arch, Tool)
+            KeyBaseString = "%s_%s_%s_%s" % (self.BuildTarget, self.ToolChain, self.Arch, Tool)
 
             Key = "%s_PATH" % KeyBaseString
             if Key not in ToolDefinition:
@@ -325,45 +504,73 @@ class PlatformAutoGen:
 
             InputFlag = gIncludeFlag[Family]
 
-            Info.ToolPath[Tool] = Path
-            Info.ToolDllPath[Tool] = Dll
-            Info.ToolChainFamily[Tool] = Family
-            Info.ToolOption[Tool] = Option
-            Info.OutputFlag[Tool] = OutputFlag
-            Info.IncludeFlag[Tool] = InputFlag
+            self._ToolPath[Tool] = Path
+            self._ToolDllPath[Tool] = Dll
+            self._ToolChainFamily[Tool] = Family
+            self._ToolOption[Tool] = Option
+            self._OutputFlag[Tool] = OutputFlag
+            self._IncludeFlag[Tool] = InputFlag
 
-        # get tool options from platform
-        BuildOptions = Info.Platform.BuildOptions
-        for Key in BuildOptions:
-            Family = Key[0]
-            Target, Tag, Arch, Tool, Attr = Key[1].split("_")
-            if Tool not in Info.ToolPath:
-                continue
-            if Family != None and Family != "" and Family != Info.ToolChainFamily[Tool]:
-                continue
-            if Target == "*" or Target == Info.BuildTarget:
-                if Tag == "*" or Tag == Info.ToolChain:
-                    if Arch == "*" or Arch == Info.Arch:
-                        Info.BuildOption[Tool] = BuildOptions[Key]
-        for Tool in Info.ToolOption:
-            if Tool not in Info.BuildOption:
-                Info.BuildOption[Tool] = ""
+    def _GetToolPaths(self):
+        if self._ToolPath == None:
+            self._GetToolDefinition()
+        return self._ToolPath
 
-    def GetPackageList(self, Platform, Arch):
-        PackageList = []
-        for F in Platform.Modules:
-            M = self.ModuleDatabase[Arch][F]
-            for P in M.Packages:
-                if P in PackageList:
-                    continue
-                PackageList.append(P)
-        for F in Platform.LibraryInstances:
-            M = self.ModuleDatabase[Arch][F]
-            for P in M.Packages:
-                if P in PackageList:
-                    continue
-                PackageList.append(P)
-        return PackageList
+    def _GetToolDllPaths(self):
+        if self._ToolDllPath == None:
+            self._GetToolDefinition()
+        return self._ToolDllPath
+
+    def _GetToolStaticLibs(self):
+        if self._ToolStaticLib == None:
+            self._GetToolDefinition()
+        return self._ToolStaticLib
+
+    def _GetToolChainFamilies(self):
+        if self._ToolChainFamily == None:
+            self._GetToolDefinition()
+        return self._ToolChainFamily
+
+    def _GetBuildOptions(self):
+        if self._BuildOption == None:
+            self._BuildOption = self._ExpandBuildOption(self.Platform.BuildOptions)
+        return self._BuildOption
+
+    def _GetOuputFlags(self):
+        if self._OutputFlag == None:
+            self._GetToolDefinition()
+        return self._OutputFlag
+
+    def _GetIncludeFlags(self):
+        if self._IncludeFlag == None:
+            self._GetToolDefinition()
+        return self._IncludeFlag
+
+    def _GetToolOptions(self):
+        if self._ToolOption == None:
+            self._GetToolDefinition()
+        return self._ToolOption
+
+    ## Parse build_rule.txt in $(WORKSPACE)/Conf/build_rule.txt
+    #
+    #   @retval     BuildRule object
+    #
+    def _GetBuildRule(self):
+        if self._BuildRule == None:
+            BuildRuleFile = self.Workspace.TargetTxt.TargetTxtDictionary[TAB_TAT_DEFINES_BUILD_RULE_CONF]
+            if BuildRuleFile in [None, '']:
+                BuildRuleFile = gBuildRuleFile
+            self._BuildRule = BuildRule(BuildRuleFile)
+        return self._BuildRule
+
+    def _GetPackageList(self):
+        if self._PackageList == None:
+            self._PackageList = set()
+            for La in self.LibraryAutoGenList:
+                self._PackageList.update(La.DependentPackageList)
+            for Ma in self.ModuleAutoGenList:
+                self._PackageList.update(Ma.DependentPackageList)
+        return self._PackageList
 
     ## Collect dynamic PCDs
     #
@@ -374,24 +581,23 @@ class PlatformAutoGen:
     #
     #   @retval     lsit        The list of dynamic PCD
     #
-    def GetPcdList(self, Platform, Arch):
-        NonDynamicPcdList = []
-        DynamicPcdList = []
+    def _GetPcdList(self):
+        self._NonDynamicPcdList = []
+        self._DynamicPcdList = []
 
         # for gathering error information
         NotFoundPcdList = set()
         NoDatumTypePcdList = set()
 
-        GuidValue = {}
-        for F in Platform.Modules:
-            GuidValue.update(F.Guids)
-            M = self.ModuleDatabase[Arch][F]
-            for Key in M.Pcds:
-                PcdFromModule = M.Pcds[Key]
+        self._GuidValue = {}
+        for F in self.Platform.Modules:
+            M = ModuleAutoGen(self.Workspace, F, self.BuildTarget, self.ToolChain, self.Arch, self._MetaFile)
+            #GuidValue.update(M.Guids)
+            for PcdFromModule in M.PcdList:
                 # check if the setting of the PCD is found in platform
-                if not PcdFromModule.IsOverrided:
-                    NotFoundPcdList.add("%s [%s]" % (" | ".join(Key), F))
-                    continue
+                #if not PcdFromModule.IsOverrided:
+                #    NotFoundPcdList.add("%s [%s]" % (" | ".join(Key), F))
+                #    continue
 
                 # make sure that the "VOID*" kind of datum has MaxDatumSize set
                 if PcdFromModule.DatumType == "VOID*" and PcdFromModule.MaxDatumSize == None:
@@ -401,20 +607,27 @@ class PlatformAutoGen:
                     # for autogen code purpose
                     if M.ModuleType in ["PEIM", "PEI_CORE"]:
                         PcdFromModule.Phase = "PEI"
-                    if PcdFromModule not in DynamicPcdList:
-                        DynamicPcdList.append(PcdFromModule)
-                elif PcdFromModule not in NonDynamicPcdList:
-                    NonDynamicPcdList.append(PcdFromModule)
+                    if PcdFromModule not in self._DynamicPcdList:
+                        self._DynamicPcdList.append(PcdFromModule)
+                elif PcdFromModule not in self._NonDynamicPcdList:
+                    self._NonDynamicPcdList.append(PcdFromModule)
 
         # print out error information and break the build, if error found
-        if len(NotFoundPcdList) > 0 or len(NoDatumTypePcdList) > 0:
-            NotFoundPcdListString = "\n\t\t".join(NotFoundPcdList)
+        if len(NoDatumTypePcdList) > 0:
             NoDatumTypePcdListString = "\n\t\t".join(NoDatumTypePcdList)
             EdkLogger.error("AutoGen", AUTOGEN_ERROR, "PCD setting error",
-                            ExtraData="\n\tPCD(s) not found in platform:\n\t\t%s"
-                                      "\n\tPCD(s) without MaxDatumSize:\n\t\t%s\n"
-                                      % (NotFoundPcdListString, NoDatumTypePcdListString))
-        return NonDynamicPcdList, DynamicPcdList, GuidValue
+                            ExtraData="\n\tPCD(s) without MaxDatumSize:\n\t\t%s\n"
+                                      % NoDatumTypePcdListString)
+
+    def _GetNonDynamicPcdList(self):
+        if self._NonDynamicPcdList == None:
+            self._GetPcdList()
+        return self._NonDynamicPcdList
+
+    def _GetDynamicPcdList(self):
+        if self._DynamicPcdList == None:
+            self._GetPcdList()
+        return self._DynamicPcdList
 
     ## Generate Token Number for all PCD
     #
@@ -423,98 +636,54 @@ class PlatformAutoGen:
     #
     #   @retval     dict            A dict object containing the PCD and its token number
     #
-    def GeneratePcdTokenNumber(self, Platform, NonDynamicPcdList, DynamicPcdList):
-        PcdTokenNumber = sdict()
-        TokenNumber = 1
-        for Pcd in DynamicPcdList:
-            if Pcd.Phase == "PEI":
-                EdkLogger.debug(EdkLogger.DEBUG_5, "%s %s (%s) -> %d" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Pcd.Phase, TokenNumber))
-                PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
+    def _GetPcdTokenNumbers(self):
+        if self._PcdTokenNumber == None:
+            self._PcdTokenNumber = sdict()
+            TokenNumber = 1
+            for Pcd in self.DynamicPcdList:
+                if Pcd.Phase == "PEI":
+                    EdkLogger.debug(EdkLogger.DEBUG_5, "%s %s (%s) -> %d" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Pcd.Phase, TokenNumber))
+                    self._PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
+                    TokenNumber += 1
+        
+            for Pcd in self.DynamicPcdList:
+                if Pcd.Phase == "DXE":
+                    EdkLogger.debug(EdkLogger.DEBUG_5, "%s %s (%s) -> %d" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Pcd.Phase, TokenNumber))
+                    self._PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
+                    TokenNumber += 1
+        
+            for Pcd in self.NonDynamicPcdList:
+                self._PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
                 TokenNumber += 1
+        return self._PcdTokenNumber
 
-        for Pcd in DynamicPcdList:
-            if Pcd.Phase == "DXE":
-                EdkLogger.debug(EdkLogger.DEBUG_5, "%s %s (%s) -> %d" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Pcd.Phase, TokenNumber))
-                PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
-                TokenNumber += 1
+    def _GetAutoGenObjectList(self):
+        self._ModuleAutoGenList = []
+        self._LibraryAutoGenList = []
+        for ModuleFile in self.Platform.Modules:
+            Ma = ModuleAutoGen(
+                    self.Workspace,
+                    ModuleFile,
+                    self.BuildTarget,
+                    self.ToolChain, 
+                    self.Arch, 
+                    self._MetaFile
+                    )
+            if Ma not in self._ModuleAutoGenList:
+                self._ModuleAutoGenList.append(Ma)
+            for La in Ma.LibraryAutoGenList:
+                if La not in self._LibraryAutoGenList:
+                    self._LibraryAutoGenList.append(La)
 
-        for Pcd in NonDynamicPcdList:
-            PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
-            TokenNumber += 1
-        return PcdTokenNumber
+    def _GetModuleAutoGenList(self):
+        if self._ModuleAutoGenList == None:
+            self._GetAutoGenObjectList()
+        return self._ModuleAutoGenList
 
-    ## Create autogen object for each module in platform
-    #
-    def CreateModuleAutoGen(self):
-        for Arch in self.BuildInfo:
-            Info = self.BuildInfo[Arch]
-            for ModuleFile in Info.Platform.LibraryInstances:
-                ModuleAutoGen.New(self.Workspace, Info.Platform, ModuleFile,
-                                         Info.BuildTarget, Info.ToolChain, Info.Arch)
-
-            for ModuleFile in Info.Platform.Modules:
-                ModuleAutoGen.New(self.Workspace, Info.Platform, ModuleFile,
-                                         Info.BuildTarget, Info.ToolChain, Info.Arch)
-
-    ## Create makefile for the platform and mdoules in it
-    #
-    #   @param      CreateLibraryCodeFile   Flag indicating if the makefile for
-    #                                       modules will be created as well
-    #
-    def CreateMakeFile(self, CreateModuleMakeFile=False):
-        if CreateModuleMakeFile:
-            for Arch in self.BuildInfo:
-                Info = self.BuildInfo[Arch]
-                for ModuleFile in Info.Platform.LibraryInstances:
-                    AutoGenObject = ModuleAutoGen.New(self.Workspace, Info.Platform, ModuleFile,
-                                                      Info.BuildTarget, Info.ToolChain, Info.Arch)
-                    AutoGenObject.CreateMakeFile(False)
-
-                for ModuleFile in Info.Platform.Modules:
-                    AutoGenObject = ModuleAutoGen.New(self.Workspace, Info.Platform, ModuleFile,
-                                                      Info.BuildTarget, Info.ToolChain, Info.Arch)
-                    AutoGenObject.CreateMakeFile(False)
-
-        # no need to create makefile for the platform more than once
-        if self.IsMakeFileCreated:
-            return
-
-        # create makefile for platform
-        Makefile = GenMake.Makefile(self.BuildInfo)
-        if Makefile.Generate():
-            EdkLogger.verbose("Generated makefile for platform [%s] [%s]\n" %
-                           (self.PlatformFile, " ".join(self.ArchList)))
-        else:
-            EdkLogger.verbose("Skipped the generation of makefile for platform [%s] [%s]\n" %
-                           (self.PlatformFile, " ".join(self.ArchList)))
-        self.IsMakeFileCreated = True
-
-    ## Create autogen code for platform and modules
-    #
-    #  Since there's no autogen code for platform, this method will do nothing
-    #  if CreateModuleCodeFile is set to False.
-    #
-    #   @param      CreateModuleCodeFile    Flag indicating if creating module's
-    #                                       autogen code file or not
-    #
-    def CreateCodeFile(self, CreateModuleCodeFile=False):
-        # only module has code to be greated, so do nothing if CreateModuleCodeFile is False
-        if self.IsCodeFileCreated or not CreateModuleCodeFile:
-            return
-
-        for Arch in self.BuildInfo:
-            Info = self.BuildInfo[Arch]
-            for ModuleFile in Info.Platform.LibraryInstances:
-                AutoGenObject = ModuleAutoGen.New(self.Workspace, Info.Platform, ModuleFile,
-                                                  Info.BuildTarget, Info.ToolChain, Info.Arch)
-                AutoGenObject.CreateCodeFile()
-
-            for ModuleFile in Info.Platform.Modules:
-                AutoGenObject = ModuleAutoGen.New(self.Workspace, Info.Platform, ModuleFile,
-                                                  Info.BuildTarget, Info.ToolChain, Info.Arch)
-                AutoGenObject.CreateCodeFile()
-        # don't do this twice
-        self.IsCodeFileCreated = True
+    def _GetLibraryAutoGenList(self):
+        if self._LibraryAutoGenList == None:
+            self._GetAutoGenObjectList()
+        return self._LibraryAutoGenList
 
     ## Test if a module is supported by the platform
     #
@@ -524,101 +693,349 @@ class PlatformAutoGen:
     #   @param      Module  The module file
     #   @param      Arch    The arch the module will be built for
     #
-    def IsValidModule(self, Module, Arch):
-        if Arch not in self.Workspace.SupArchList:
-            return False
-            #EdkLogger.error("AutoGen", AUTOGEN_ERROR, "[%s] is not supported by active platform [%s] [%s]!"
-            #                                          % (Arch, self.PlatformFile, self.Workspace.SupArchList))
-        if Arch not in self.ArchList:
-            return False
-            #EdkLogger.error("AutoGen", AUTOGEN_ERROR, "[%s] is not supported by current build configuration!" % Arch)
+    def ValidModule(self, Module):
+        #if Arch not in self.Workspace.SupArchList:
+        #    return False
+        #    #EdkLogger.error("AutoGen", AUTOGEN_ERROR, "[%s] is not supported by active platform [%s] [%s]!"
+        #    #                                          % (Arch, self._MetaFile, self.Workspace.SupArchList))
+        #if Arch not in self.ArchList:
+        #    return False
+        #    #EdkLogger.error("AutoGen", AUTOGEN_ERROR, "[%s] is not supported by current build configuration!" % Arch)
+        return Module in self.Platform.Modules or Module in self.Platform.LibraryInstances
 
-        if Arch not in self.ModuleDatabase or str(Module) not in self.ModuleDatabase[Arch]:
-            for A in self.ModuleDatabase:
-                if str(Module) in self.ModuleDatabase[A]:
-                    break
+    def ApplyLibraryInstance(self, Module):
+        ModuleType = Module.ModuleType
+        # apply library instances from platform
+        for LibraryClass in Module.LibraryClasses:
+            LibraryInstance = self.Platform.LibraryClasses[LibraryClass, ModuleType]
+            if LibraryInstance == None:
+                continue
+            Module.LibraryClasses[LibraryClass] = LibraryInstance
+
+        # override library instances with module specific setting
+        PlatformModule = self.Platform.Modules[str(Module)]
+        for LibraryClass in PlatformModule.LibraryClasses:
+            Module.LibraryClasses[LibraryClass] = PlatformModule.LibraryClasses[LibraryClass]
+
+        # R9 module
+        LibraryConsumerList = [Module]
+        Constructor         = []
+        ConsumedByList      = sdict()
+        LibraryInstance     = sdict()
+
+        EdkLogger.verbose("")
+        EdkLogger.verbose("Library instances of module [%s] [%s]:" % (str(Module), self.Arch))
+        while len(LibraryConsumerList) > 0:
+            M = LibraryConsumerList.pop()
+            for LibraryClassName in M.LibraryClasses:
+                LibraryPath = M.LibraryClasses[LibraryClassName]
+                if LibraryPath == None or LibraryPath == "":
+                    LibraryPath = self.Platform.LibraryClasses[LibraryClassName, ModuleType]
+                    if LibraryPath == None and LibraryClassName not in LibraryInstance:
+                        LibraryInstance[LibraryClassName] = None
+                        continue
+                if LibraryClassName not in LibraryInstance:
+                    LibraryModule = self.BuildDatabase[LibraryPath, self.Arch]
+                    # for those forced library instance (NULL library), add a fake library class
+                    if LibraryClassName.startswith("NULL"):
+                        LibraryModule.LibraryClass.append(LibraryClassObject(LibraryClassName, [ModuleType]))
+                    elif ModuleType not in LibraryModule.LibraryClass[0].SupModList:
+                        EdkLogger.error("build", OPTION_MISSING,
+                                        "Module type [%s] is not supported by library instance [%s]" \
+                                        % (ModuleType, LibraryPath), File=self._MetaFile, 
+                                        ExtraData="\tconsumed by [%s]" % str(Module))
+
+                    LibraryInstance[LibraryClassName] = LibraryModule
+                    LibraryConsumerList.append(LibraryModule)
+                    EdkLogger.verbose("\t" + str(LibraryClassName) + " : " + str(LibraryModule))
+                else:
+                    LibraryModule = LibraryInstance[LibraryClassName]
+
+                if LibraryModule == None:
+                    continue
+
+                if LibraryModule.ConstructorList != [] and LibraryModule not in Constructor:
+                    Constructor.append(LibraryModule)
+
+                if LibraryModule not in ConsumedByList:
+                    ConsumedByList[LibraryModule] = []
+                # don't add current module itself to consumer list
+                if M != Module:
+                    if M in ConsumedByList[LibraryModule]:
+                        continue
+                    ConsumedByList[LibraryModule].append(M)
+        #
+        # Initialize the sorted output list to the empty set
+        #
+        SortedLibraryList = []
+        #
+        # Q <- Set of all nodes with no incoming edges
+        #
+        LibraryList = [] #LibraryInstance.values()
+        Q = []
+        for LibraryClassName in LibraryInstance:
+            M = LibraryInstance[LibraryClassName]
+            if M == None:
+                EdkLogger.error("build", RESOURCE_NOT_AVAILABLE,
+                                "Library instance of library class [%s] is not found" % LibraryClassName,
+                                File=self._MetaFile, ExtraData="consumed by [%s] [%s]" % (str(Module), self._Arch))
+            LibraryList.append(M)
+            #
+            # check if there're library classes
+            #
+            #for Lc in M.LibraryClass:
+            #    if Lc.SupModList != None and ModuleType not in Lc.SupModList:
+            #        EdkLogger.error("build", OPTION_MISSING,
+            #                        "Module type [%s] is not supported by library instance [%s]" % (ModuleType, str(M)),
+            #                        File=self._MetaFile, ExtraData="\tconsumed by [%s]" % str(Module))
+
+                #if Lc.LibraryClass in LibraryInstance and str(M) != str(LibraryInstance[Lc.LibraryClass]):
+                #    EdkLogger.error("build", OPTION_CONFLICT,
+                #                    "More than one library instance found for library class [%s] in module [%s]" % (Lc.LibraryClass, str(Module)),
+                #                    ExtraData="\t%s\n\t%s" % (LibraryInstance[Lc.LibraryClass], str(M))
+                #                    )
+            if ConsumedByList[M] == []:
+                Q.insert(0, M)
+
+        #
+        # start the  DAG algorithm
+        #
+        while True:
+            EdgeRemoved = True
+            while Q == [] and EdgeRemoved:
+                EdgeRemoved = False
+                # for each node Item with a Constructor
+                for Item in LibraryList:
+                    if Item not in Constructor:
+                        continue
+                    # for each Node without a constructor with an edge e from Item to Node
+                    for Node in ConsumedByList[Item]:
+                        if Node in Constructor:
+                            continue
+                        # remove edge e from the graph if Node has no constructor
+                        ConsumedByList[Item].remove(Node)
+                        EdgeRemoved = True
+                        if ConsumedByList[Item] == []:
+                            # insert Item into Q
+                            Q.insert(0, Item)
+                            break
+                    if Q != []:
+                        break
+            # DAG is done if there's no more incoming edge for all nodes
+            if Q == []:
+                break
+
+            # remove node from Q
+            Node = Q.pop()
+            # output Node
+            SortedLibraryList.append(Node)
+
+            # for each node Item with an edge e from Node to Item do
+            for Item in LibraryList:
+                if Node not in ConsumedByList[Item]:
+                    continue
+                # remove edge e from the graph
+                ConsumedByList[Item].remove(Node)
+
+                if ConsumedByList[Item] != []:
+                    continue
+                # insert Item into Q, if Item has no other incoming edges
+                Q.insert(0, Item)
+
+        #
+        # if any remaining node Item in the graph has a constructor and an incoming edge, then the graph has a cycle
+        #
+        for Item in LibraryList:
+            if ConsumedByList[Item] != [] and Item in Constructor and len(Constructor) > 1:
+                ErrorMessage = "\tconsumed by " + "\n\tconsumed by ".join([str(L) for L in ConsumedByList[Item]])
+                EdkLogger.error("build", BUILD_ERROR, 'Library [%s] with constructors has a cycle' % str(Item),
+                                ExtraData=ErrorMessage, File=self._MetaFile)
+            if Item not in SortedLibraryList:
+                SortedLibraryList.append(Item)
+
+        #
+        # Build the list of constructor and destructir names
+        # The DAG Topo sort produces the destructor order, so the list of constructors must generated in the reverse order
+        #                
+        SortedLibraryList.reverse()
+        return SortedLibraryList
+    
+
+    def _OverridePcd(self, ToPcd, FromPcd):
+        # 
+        # in case there's PCDs coming from FDF file, which have no type given.
+        # at this point, PcdInModule.Type has the type found from dependent
+        # package
+        # 
+        if FromPcd != None:
+            if FromPcd.Type not in [None, '']:
+                ToPcd.Type = FromPcd.Type
+            if FromPcd.MaxDatumSize not in [None, '']:
+                ToPcd.MaxDatumSize = FromPcd.MaxDatumSize
+            if FromPcd.DefaultValue not in [None, '']:
+                ToPcd.DefaultValue = FromPcd.DefaultValue
+            if FromPcd.TokenValue not in [None, '']:
+                ToPcd.TokenValue = FromPcd.TokenValue
+            if FromPcd.MaxDatumSize not in [None, '']:
+                ToPcd.MaxDatumSize = FromPcd.MaxDatumSize
+            if FromPcd.DatumType not in [None, '']:
+                ToPcd.DatumType = FromPcd.DatumType
+            if FromPcd.SkuInfoList not in [None, '', []]:
+                ToPcd.SkuInfoList = FromPcd.SkuInfoList
+
+        if ToPcd.DatumType == "VOID*" and ToPcd.MaxDatumSize in ['', None]:
+            EdkLogger.verbose("No MaxDatumSize specified for PCD %s.%s" \
+                              % (ToPcd.TokenSpaceGuidCName, ToPcd.TokenCName))
+            Value = ToPcd.DefaultValue
+            if Value[0] == 'L':
+                ToPcd.MaxDatumSize = str(len(Value) * 2)
+            elif Value[0] == '{':
+                ToPcd.MaxDatumSize = str(len(Value.split(',')))
             else:
-                EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Module is not in active platform!",
-                                ExtraData=Module)
-            return False
-        return True
+                ToPcd.MaxDatumSize = str(len(Value))
 
-    ## Find the package containing the module
-    #
-    # Find out the package which contains the given module, according to the path
-    # of the module and the package.
-    #
-    # @param  Module            The module to be found for
-    #
-    # @retval package           Package object if found
-    # @retval None              None if not found
-    #
-    def GetModuleOwnerPackage(self, Module):
-        for Arch in self.PackageDatabase:
-            Pdb = self.PackageDatabase[Arch]
-            for PackagePath in Pdb:
-                PackageDir = path.dirname(PackagePath)
-                #
-                # if package's path is the first part of module's path, bingo!
-                #
-                if str(Module).find(PackageDir) == 0:
-                    return Pdb[PackagePath]
-        # nothing found
-        return None
+        # apply default SKU for dynamic PCDS if specified one is not available
+        if (ToPcd.Type in PCD_DYNAMIC_TYPE_LIST or ToPcd.Type in PCD_DYNAMIC_EX_TYPE_LIST) \
+            and ToPcd.SkuInfoList in [None, {}, '']:
+            if self.Platform.SkuName in self.Platform.SkuIds:
+                SkuName = self.Platform.SkuName
+            else:
+                SkuName = 'DEFAULT'
+            ToPcd.SkuInfoList = {
+                SkuName : SkuInfoClass(SkuName, self.Platform.SkuIds[SkuName], '', '', '', '', '', ToPcd.DefaultValue)
+            }
 
-    ## Get platform object
-    #
-    #   @param      PlatformFile    The file path of the platform
-    #   @param      Arch            One of the arch the platform supports
-    #
-    #   @retval     object          The object of the platform
-    #
-    def GetPlatformObject(self, PlatformFile, Arch):
-        if Arch not in self.PlatformDatabase or PlatformFile not in self.PlatformDatabase[Arch]:
-            return None
-        return self.PlatformDatabase[Arch][PlatformFile]
+    def ApplyPcdSetting(self, Module):
+        for Name,Guid in Module.Pcds:
+            PcdInModule = Module.Pcds[Name,Guid]
+            if (Name,Guid) in self.Platform.Pcds:
+                PcdInPlatform = self.Platform.Pcds[Name,Guid]
+            else:
+                PcdInPlatform = None
+            self._OverridePcd(PcdInModule, PcdInPlatform)
+            for SkuId in PcdInModule.SkuInfoList:
+                Sku = PcdInModule.SkuInfoList[SkuId]
+                if Sku.VariableGuid == '': continue
+                Sku.VariableGuidValue = GuidValue(Sku.VariableGuid, self.PackageList)
+                if Sku.VariableGuidValue == None:
+                    PackageList = '\t' + "\n\t".join([str(P) for P in Module.Packages])
+                    EdkLogger.error(
+                                'build',
+                                RESOURCE_NOT_AVAILABLE,
+                                "Value of [%s] is not found in" % Sku.VariableGuid,
+                                ExtraData=PackageList + "\n\t(used with %s.%s from module %s)" \
+                                                        % (Guid, Name, str(Module)),
+                                File=self._MetaFile
+                                )
 
-    ## Get package object
-    #
-    #   @param      PackageFile     The file path of the package
-    #   @param      Arch            One of the arch the package supports
-    #
-    #   @retval     object          The object of the package
-    #
-    def GetPackageObject(self, PackageFile, Arch):
-        if Arch not in self.PackageDatabase or PackageFile not in self.PackageDatabase[Arch]:
-            return None
-        return self.PackageDatabase[Arch][PackageFile]
+        # override PCD settings with module specific setting
+        if Module in self.Platform.Modules:
+            PlatformModule = self.Platform.Modules[str(Module)]
+            for Key  in PlatformModule.Pcds:
+                if Key in Module.Pcds:
+                    self._OverridePcd(Module.Pcds[Key], PlatformModule.Pcds[Key])
+        return Module.Pcds.values()
 
-    ## Get module object
-    #
-    #   @param      ModuleFile      The file path of the module
-    #   @param      Arch            One of the arch the module supports
-    #
-    #   @retval     object          The object of the module
-    #
-    def GetModuleObject(self, ModuleFile, Arch):
-        if Arch not in self.ModuleDatabase or ModuleFile not in self.ModuleDatabase[Arch]:
-            return None
-        return self.ModuleDatabase[Arch][ModuleFile]
+    ##
+    # for R8.x modules
+    # 
+    def ResolveLibraryReference(self, Module):
+        EdkLogger.verbose("")
+        EdkLogger.verbose("Library instances of module [%s] [%s]:" % (str(Module), self.Arch))
+        LibraryConsumerList = [Module]
 
-    ## Add ModuleAutoGen object for a module in platform build information
-    #
-    #   @param      ModuleAutoGen   The ModuleAutoGen object for a module
-    #   @param      Arch            The arch of the module
-    #
-    def AddModuleAutoGen(self, ModuleAutoGen, Arch):
-        if ModuleAutoGen not in self.BuildInfo[Arch].ModuleAutoGenList:
-            self.BuildInfo[Arch].ModuleAutoGenList.append(ModuleAutoGen)
+        # "CompilerStub" is a must for R8 modules
+        Module.Libraries.append("CompilerStub")
+        LibraryList = []
+        while len(LibraryConsumerList) > 0:
+            M = LibraryConsumerList.pop()
+            for LibraryName in M.Libraries:
+                Library = self.Platform.LibraryClasses[LibraryName, ':dummy:']
+                if Library == None:
+                    EdkLogger.warn("build", "Library [%s] is not found" % LibraryName, File=str(M),
+                                    ExtraData="\t%s [%s]" % (str(Module), self.Arch))
+                    continue
 
-    ## Add ModuleAutoGen object for a library in platform build information
-    #
-    #   @param      LibraryAutoGen  The ModuleAutoGen object for a library module
-    #   @param      Arch            The arch of the library
-    #
-    def AddLibraryAutoGen(self, LibraryAutoGen, Arch):
-        if LibraryAutoGen not in self.BuildInfo[Arch].LibraryAutoGenList:
-            self.BuildInfo[Arch].LibraryAutoGenList.append(LibraryAutoGen)
+                if Library not in LibraryList:
+                    LibraryList.append(Library)
+                    LibraryConsumerList.append(Library)
+                    EdkLogger.verbose("\t" + LibraryName + " : " + str(Library) + ' ' + str(type(Library)))
+        return LibraryList
+
+    def _ExpandBuildOption(self, Options):
+        BuildOptions = {}
+        for Key in Options:
+            Family = Key[0]
+            Target, Tag, Arch, Tool, Attr = Key[1].split("_")
+            # if no tool defined for the option, skip it
+            if Tool not in self.Workspace.ToolPath:
+                continue
+            # if tool chain family doesn't match, skip it
+            if Family != None and Family != "" and Family != self.ToolChainFamily[Tool]:
+                continue
+            # expand any wildcard
+            if Target == "*" or Target == self.BuildTarget:
+                if Tag == "*" or Tag == self.ToolChain:
+                    if Arch == "*" or Arch == self.Arch:
+                        if Tool not in BuildOptions:
+                            BuildOptions[Tool] = Options[Key]
+                        else:
+                            # append options for the same tool
+                            BuildOptions[Tool] += " " + Options[Key]
+        return BuildOptions
+
+    def ApplyBuildOption(self, Module):
+        PlatformOptions = self.BuildOption
+        ModuleOptions = self._ExpandBuildOption(Module.BuildOptions)
+        if Module in self.Platform.Modules:
+            PlatformModule = self.Platform.Modules[str(Module)]
+            PlatformModuleOptions = self._ExpandBuildOption(PlatformModule.BuildOptions)
+        else:
+            PlatformModuleOptions = {}
+
+        BuildOptions = {}
+        # for those tools that have no option in module file, give it a empty string
+        for Tool in self.Workspace.ToolPath:
+            if Tool in self.ToolOption and Module.ModuleType != 'USER_DEFINED':
+                BuildOptions[Tool] = self.ToolOption[Tool]
+            else:
+                BuildOptions[Tool] = ''
+            if Tool in ModuleOptions:
+                BuildOptions[Tool] += " " + ModuleOptions[Tool]
+            if Tool in PlatformOptions:
+                BuildOptions[Tool] += " " + PlatformOptions[Tool]
+            if Tool in PlatformModuleOptions:
+                BuildOptions[Tool] += " " + PlatformModuleOptions[Tool]
+        return BuildOptions
+
+    Platform            = property(_GetPlatform)
+    Name                = property(_GetName)
+    Guid                = property(_GetGuid)
+    Version             = property(_GetVersion)
+                       
+    OutputDir           = property(_GetOutputDir)
+    BuildDir            = property(_GetBuildDir)
+    MakeFileDir         = property(_GetMakeFileDir)
+    FdfFile             = property(_GetFdfFile)
+    
+    PcdTokenNumber      = property(_GetPcdTokenNumbers)    # (TokenCName, TokenSpaceGuidCName) : GeneratedTokenNumber
+    DynamicPcdList      = property(_GetDynamicPcdList)    # [(TokenCName1, TokenSpaceGuidCName1), (TokenCName2, TokenSpaceGuidCName2), ...]
+    NonDynamicPcdList   = property(_GetNonDynamicPcdList)    # [(TokenCName1, TokenSpaceGuidCName1), (TokenCName2, TokenSpaceGuidCName2), ...]
+    PackageList         = property(_GetPackageList)
+
+    ToolPath            = property(_GetToolPaths)    # toolcode : tool path
+    ToolDllPath         = property(_GetToolDllPaths)    # toolcode : lib path
+    ToolStaticLib       = property(_GetToolStaticLibs)    # toolcode : lib path
+    ToolChainFamily     = property(_GetToolChainFamilies)    # toolcode : tool chain family
+    BuildOption         = property(_GetBuildOptions)    # toolcode : option
+    OutputFlag          = property(_GetOuputFlags)    # toolcode : output flag
+    IncludeFlag         = property(_GetIncludeFlags)    # toolcode : include flag
+    ToolOption          = property(_GetToolOptions)    # toolcode : tool option string
+
+    BuildCommand        = property(_GetBuildCommand)
+    BuildRule           = property(_GetBuildRule)
+    ModuleAutoGenList   = property(_GetModuleAutoGenList)
+    LibraryAutoGenList  = property(_GetLibraryAutoGenList)
 
 ## AutoGen class
 #
@@ -627,12 +1044,7 @@ class PlatformAutoGen:
 # to the [depex] section in module's inf file. The result of parsing unicode file
 # has been incorporated either.
 #
-class ModuleAutoGen(object):
-    # The cache for the objects of ModuleAutoGen
-    _Database = {}
-    # The cache for the object of PlatformAutoGen
-    _PlatformAutoGen = None
-
+class ModuleAutoGen(AutoGen):
     ## The real constructor of ModuleAutoGen
     #
     #  This method is not supposed to be called by users of ModuleAutoGen. It's
@@ -646,12 +1058,21 @@ class ModuleAutoGen(object):
     #   @param      Toolchain           Name of tool chain
     #   @param      Arch                The arch the module supports
     #
-    def _Init(self, Workspace, PlatformAutoGenObj, ModuleFile, Target, Toolchain, Arch):
-        self.ModuleFile = str(ModuleFile)
-        self.PlatformFile = PlatformAutoGenObj.PlatformFile
+    def _Init(self, Workspace, ModuleFile, Target, Toolchain, Arch, PlatformFile):
+        EdkLogger.verbose("\nAutoGen module [%s] [%s]" % (ModuleFile, Arch))
 
         self.Workspace = Workspace
         self.WorkspaceDir = Workspace.WorkspaceDir
+
+        self._MetaFile = str(ModuleFile)
+        self.PlatformInfo = PlatformAutoGen(Workspace, PlatformFile, Target, Toolchain, Arch)
+        if not self.PlatformInfo.ValidModule(self._MetaFile):
+            EdkLogger.verbose("Module [%s] for [%s] is not employed by active platform\n" \
+                              % (self._MetaFile, Arch))
+            return False
+
+        self.SourceDir = path.dirname(self._MetaFile)
+        self.FileBase, self.FileExt = path.splitext(path.basename(self._MetaFile))
 
         self.ToolChain = Toolchain
         self.ToolChainFamily = "MSFT"
@@ -661,186 +1082,132 @@ class ModuleAutoGen(object):
         self.IsMakeFileCreated = False
         self.IsCodeFileCreated = False
 
-        self.PlatformAutoGen = PlatformAutoGenObj
-        if not self.PlatformAutoGen.IsValidModule(ModuleFile, self.Arch):
-            return False
+        self.BuildDatabase = self.Workspace.BuildDatabase
 
-        #
-        # autogen for module
-        #
-        EdkLogger.verbose("\nAutoGen module [%s] [%s]" % (ModuleFile, self.Arch))
+        self._Module          = None
+        self._Name            = None
+        self._Guid            = None
+        self._Version         = None
+        self._ModuleType      = None
+        self._ComponentType   = None
+        self._PcdIsDriver     = None
+        self._AutoGenVersion  = None
+        self._LibraryFlag     = None
+        self._CustomMakefile  = None
+        self._Macro           = None
 
-        self.Platform = self.PlatformAutoGen.GetPlatformObject(self.PlatformFile, self.Arch)
-        self.Module = self.PlatformAutoGen.GetModuleObject(self.ModuleFile, self.Arch)
+        self._BuildDir        = None
+        self._OutputDir       = None
+        self._DebugDir        = None
+        self._MakeFileDir     = None
 
-        self.Package = self.PlatformAutoGen.GetModuleOwnerPackage(self.Module)
+        self._IncludePathList = None
+        self._AutoGenFileList = None
+        self._UnicodeFileList = None
+        self._SourceFileList  = None
+        self._ObjectFileList  = None
+        self._BinaryFileDict  = None
 
-        self.AutoGenC = TemplateString()
-        self.AutoGenH = TemplateString()
+        self._DependentPackageList    = None
+        self._DependentLibraryList    = None
+        self._LibraryAutoGenList      = None
+        self._DerivedPackageList      = None
+        self._PcdList                 = None
+        self._GuidList                = None
+        self._ProtocolList            = None
+        self._PpiList                 = None
+        self._DepexList               = None
+        self._BuildOption             = None
 
-        self.BuildInfo = self.GetModuleBuildInfo()
         return True
 
-    ## "==" operator
-    #
-    #  Use module file path and arch to do the comparison
-    #
-    #   @retval True    if the file path and arch are equal
-    #   @retval False   if the file path or arch are different
-    #
-    def __eq__(self, Other):
-        return Other != None and self.ModuleFile == Other.ModuleFile and self.Arch == Other.Arch
 
-    ## hash() operator
-    #
-    #  The file path and arch of the module will be used to represent hash value of this object
-    #
-    #   @retval int     Hash value of the file path and arch name of the module
-    #
-    def __hash__(self):
-        return hash(self.ModuleFile) + hash(self.Arch)
+    def _GetModule(self):
+        if self._Module == None:
+            self._Module = self.Workspace.BuildDatabase[self._MetaFile, self.Arch]
+        return self._Module
 
-    ## String representation of this object
-    #
-    #   @retval     string  The string of file path and arch
-    #
-    def __str__(self):
-        return "%s [%s]" % (self.ModuleFile, self.Arch)
+    def _GetBaseName(self):
+        return self.Module.BaseName
 
-    ## Factory method to create a ModuleAutoGen object
-    #
-    #   This method will check if an object of ModuleAutoGen has been created
-    #   for given platform. And if true, just return it. Otherwise it will create
-    #   a new ModuleAutoGen. That means there will be only one ModuleAutoGen
-    #   object for the same platform.
-    #
-    #   @param      Workspace           EdkIIWorkspaceBuild object
-    #   @param      Platform            Platform file (DSC file)
-    #   @param      Module              Module file (INF file)
-    #   @param      Target              Build target (DEBUG, RELEASE)
-    #   @param      Toolchain           Name of tool chain
-    #   @param      Arch                The arch of the module
-    #
-    #   @retval     ModuleAutoGen object
-    #
-    @staticmethod
-    def New(Workspace, Platform, Module, Target, Toolchain, Arch):
-        # creating module autogen needs platform's autogen
-        _PlatformAutoGen = PlatformAutoGen.New(Workspace, Platform, Target, Toolchain, None)
-        if _PlatformAutoGen == None:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No platform AutoGen available!")
+    def _GetGuid(self):
+        return self.Module.Guid
 
-        # check if the autogen for the module has been created or not
-        Key = (Module, Target, Toolchain, Arch)
-        if Key not in ModuleAutoGen._Database:
-            if Arch == None or Arch == "":
-                return None
-            AutoGenObject = ModuleAutoGen()
-            if AutoGenObject._Init(Workspace, _PlatformAutoGen, Module, Target, Toolchain, Arch) == False:
-                return None
-            ModuleAutoGen._Database[Key] = AutoGenObject
+    def _GetVersion(self):
+        return self.Module.Version
 
-            # for new ModuleAutoGen object, put it in platform's AutoGen
-            if AutoGenObject.BuildInfo.IsLibrary:
-                _PlatformAutoGen.AddLibraryAutoGen(AutoGenObject, Arch)
+    def _GetModuleType(self):
+        return self.Module.ModuleType
+
+    def _GetComponentType(self):
+        return self.Module.ComponentType
+
+    def _GetPcdIsDriver(self):
+        return self.Module.PcdIsDriver
+
+    def _GetAutoGenVersion(self):
+        return self.Module.AutoGenVersion
+
+    def _IsLibrary(self):
+        if self._LibraryFlag == None:
+            if self.Module.LibraryClass != None and self.Module.LibraryClass != []:
+                self._LibraryFlag = True
             else:
-                _PlatformAutoGen.AddModuleAutoGen(AutoGenObject, Arch)
-            return AutoGenObject
+                self._LibraryFlag = False
+        return self._LibraryFlag
 
-        return ModuleAutoGen._Database[Key]
+    def _GetBuildDir(self):
+        if self._BuildDir == None:
+            self._BuildDir = path.join(
+                                    self.PlatformInfo.BuildDir,
+                                    self.Arch,
+                                    self.SourceDir,
+                                    self.FileBase
+                                    )
+        return self._BuildDir
 
-    ## Gather module build information
-    #
-    #   @retval     Info    The object of ModuleBuildInfo
-    #
-    def GetModuleBuildInfo(self):
-        Info = ModuleBuildInfo(self.Module)
-        self.BuildInfo = Info
-        Info.PlatformInfo = self.PlatformAutoGen.BuildInfo[self.Arch]
+    def _GetOutputDir(self):
+        if self._OutputDir == None:
+            self._OutputDir = path.join(self.BuildDir, "OUTPUT")
+        return self._OutputDir
 
-        # basic information
-        Info.WorkspaceDir = self.WorkspaceDir
-        Info.BuildTarget = self.BuildTarget
-        Info.ToolChain = self.ToolChain
-        Info.Arch = self.Arch
-        # Info.IsBinary = self.Module.BinaryModule
-        Info.BaseName = self.Module.BaseName
-        Info.FileBase, Info.FileExt = path.splitext(path.basename(self.Module.DescFilePath))
-        Info.SourceDir = path.dirname(self.Module.DescFilePath)
-        Info.BuildDir = os.path.join(Info.PlatformInfo.BuildDir,
-                                     Info.Arch,
-                                     Info.SourceDir,
-                                     Info.FileBase)
-        Info.OutputDir = os.path.join(Info.BuildDir, "OUTPUT")
-        Info.DebugDir = os.path.join(Info.BuildDir, "DEBUG")
-        Info.MakeFileDir = Info.BuildDir
-        if not os.path.isabs(Info.BuildDir):
-            os.chdir(Info.PlatformInfo.BuildDir)
-        CreateDirectory(Info.OutputDir)
-        CreateDirectory(Info.DebugDir)
-        os.chdir(self.WorkspaceDir)
+    def _GetDebugDir(self):
+        if self._DebugDir == None:
+            self._DebugDir = path.join(self.BuildDir, "DEBUG")
+        return self._DebugDir
 
-        for Type in self.Module.CustomMakefile:
-            MakeType = gMakeTypeMap[Type]
-            Info.CustomMakefile[MakeType] = os.path.join(Info.SourceDir, self.Module.CustomMakefile[Type])
+    def _GetMakeFileDir(self):
+        return path.join(PlatformInfo.BuildDir, self.BuildDir)
 
-        if self.Module.LibraryClass != None and self.Module.LibraryClass != []:
-            Info.IsLibrary = True
-            Info.DependentLibraryList = []
-        else:
-            Info.IsLibrary = False
-            Info.DependentLibraryList = self.GetSortedLibraryList()
-
-        Info.DependentPackageList = self.GetDependentPackageList()
-        Info.DerivedPackageList = self.GetDerivedPackageList()
-
-        Info.BuildOption = self.GetModuleBuildOption(Info.PlatformInfo)
-        if "DLINK" in Info.PlatformInfo.ToolStaticLib:
-            Info.SystemLibraryList = Info.PlatformInfo.ToolStaticLib["DLINK"]
-
-        Info.PcdIsDriver = self.Module.PcdIsDriver
-        Info.PcdList = self.GetPcdList(Info.DependentLibraryList)
-        Info.GuidList = self.Module.Guids
-        Info.ProtocolList = self.Module.Protocols
-        Info.PpiList = self.Module.Ppis
-        Info.Macro = self.GetMacroList()
-        Info.DepexList = self.GetDepexTokenList(Info)
-
-        if Info.AutoGenVersion < 0x00010005:
-            # r8 module needs to put DEBUG_DIR at the end search path and not to use SOURCE_DIR all the time
-            Info.IncludePathList = self.GetIncludePathList(Info.DependentPackageList)
-            Info.IncludePathList.append(Info.DebugDir)
-        else:
-            Info.IncludePathList = [os.path.join(Info.WorkspaceDir, Info.SourceDir), Info.DebugDir]
-            Info.IncludePathList.extend(self.GetIncludePathList(Info.DependentPackageList))
-
-        Info.SourceFileList = self.GetSourceFileList(Info)
-        Info.AutoGenFileList = self.GetAutoGenFileList(Info)
-        Info.BinaryFileDict = self.GetBinaryFiles()
-
-        return Info
+    def _GetCustomMakefile(self):
+        if self._CustomMakefile == None:
+            self._CustomMakefile = {}
+            for Type in self.Module.CustomMakefile:
+                MakeType = gMakeTypeMap[Type]
+                self._CustomMakefile[MakeType] = os.path.join(self.SourceDir, self.Module.CustomMakefile[Type])    
+        return self._CustomMakefile
 
     ## Return the directory of the makefile
     #
     #   @retval     string  The directory string of module's makefile
     #
-    def GetMakeFileDir(self):
-        return self.BuildInfo.MakeFileDir
+    def _GetMakeFileDir(self):
+        return self.BuildDir
 
     ## Return build command string
     #
     #   @retval     string  Build command string
     #
-    def GetBuildCommand(self):
-        return self.PlatformAutoGen.GetBuildCommand(self.Arch)
+    def _GetBuildCommand(self):
+        return self.PlatformInfo.BuildCommand
 
     ## Get object list of all packages the module and its dependent libraries belong to
     #
     #   @retval     list    The list of package object
     #
-    def GetDerivedPackageList(self):
+    def _GetDerivedPackageList(self):
         PackageList = []
-        for M in [self.Module] + self.BuildInfo.DependentLibraryList:
+        for M in [self.Module] + self.DependentLibraryList:
             for Package in M.Packages:
                 if Package in PackageList:
                     continue
@@ -852,58 +1219,34 @@ class ModuleAutoGen(object):
     #   @param      Info    The object of ModuleBuildInfo
     #   @retval     list    The token list of the dependency expression after parsed
     #
-    def GetDepexTokenList(self, Info):
-        Dxs = self.Module.Depex
-        EdkLogger.verbose("DEPEX string = %s" % Dxs)
-        #
-        # Append depex from dependent libraries
-        #
-        for Lib in Info.DependentLibraryList:
-            if Lib.Depex != None and Lib.Depex != "":
-                if Dxs == None or Dxs == "":
-                    Dxs = Lib.Depex
-                else:
-                    Dxs += " AND (" + Lib.Depex + ")"
-                EdkLogger.verbose("DEPEX string (+%s) = %s" % (Lib.BaseName, Dxs))
-        if Dxs == "":
-            return []
+    def _GetDepexTokenList(self):
+        if self._DepexList == None:
+            self._DepexList = self.Module.Depex
+            EdkLogger.verbose("DEPEX = %s" % self._DepexList)
+            #
+            # Append depex from dependent libraries
+            #
+            for Lib in self.DependentLibraryList:
+                if Lib.Depex != None and Lib.Depex != []:
+                    if self._DepexList != []:
+                        self._DepexList.append('AND')
+                    self._DepexList.append('(')
+                    self._DepexList.extend(Lib.Depex)
+                    self._DepexList.append(')')
+                    EdkLogger.verbose("DEPEX (+%s) = %s" % (Lib.BaseName, self._DepexList))
 
-        TokenList = gDepexTokenPattern.findall(Dxs)
-        EdkLogger.debug(EdkLogger.DEBUG_8, "TokenList(raw) = %s" % (TokenList))
-        for I in range(0, len(TokenList)):
-            Token = TokenList[I].strip()
-            if Token.endswith(".inf"):  # module file name
-                ModuleFile = os.path.normpath(Token)
-                Token = gModuleDatabase[ModuleFile].Guid
-            elif Token not in ['(', ')']+GenDepex.DependencyExpression.SupportedOpcode+\
-                 GenDepex.DependencyExpression.SupportedOperand:   # GUID C Name
-                GuidCName = Token
-                for P in Info.DerivedPackageList:
-                    if GuidCName in P.Protocols:
-                        Token = P.Protocols[GuidCName]
-                        break
-                    elif GuidCName in P.Ppis:
-                        Token = P.Ppis[GuidCName]
-                        break
-                    elif GuidCName in P.Guids:
-                        Token = P.Guids[GuidCName]
-                        break
-                else:
-                    PackageListString = "\n\t".join([str(P) for P in self.BuildInfo.DerivedPackageList])
-                    EdkLogger.error("AutoGen", AUTOGEN_ERROR,
-                                    "GUID [%s] used in module [%s] cannot be found in dependent packages!"
-                                    % (GuidCName, self.Module),
-                                    ExtraData=PackageListString)
-            TokenList[I] = Token
-        EdkLogger.debug(EdkLogger.DEBUG_8, "TokenList(guid) = %s" % " ".join(TokenList))
-        return TokenList
+            for I in range(0, len(self._DepexList)):
+                Token = self._DepexList[I]
+                if Token.endswith(".inf"):  # module file name
+                    ModuleFile = os.path.normpath(Token)
+                    self._DepexList[I] = self.BuildDatabase[ModuleFile].Guid
+        return self._DepexList
 
     ## Return the list of macro in module
     #
     #   @retval     list    The list of macro defined in module file
     #
-    def GetMacroList(self):
-        # return ["%s %s" % (Name, self.Module.Specification[Name]) for Name in self.Module.Specification]
+    def _GetMacroList(self):
         return self.Module.Specification
 
     ## Tool option for the module build
@@ -911,50 +1254,28 @@ class ModuleAutoGen(object):
     #   @param      PlatformInfo    The object of PlatformBuildInfo
     #   @retval     dict            The dict containing valid options
     #
-    def GetModuleBuildOption(self, PlatformInfo):
-        BuildOption = self.Module.BuildOptions
-        OptionList = {}
-        for Key in BuildOption:
-            Family = Key[0]
-            Target, Tag, Arch, Tool, Attr = Key[1].split("_")
-            # if no tool defined for the option, skip it
-            if Tool not in PlatformInfo.ToolPath:
-                continue
-            # if tool chain family doesn't match, skip it
-            if Family != None and Family != "" and Family != PlatformInfo.ToolChainFamily[Tool]:
-                continue
-            # expand any wildcard
-            if Target == "*" or Target == self.BuildTarget:
-                if Tag == "*" or Tag == self.ToolChain:
-                    if Arch == "*" or Arch == self.Arch:
-                        if Tool not in OptionList:
-                            OptionList[Tool] = BuildOption[Key]
-                        else:
-                            # append options for the same tool
-                            OptionList[Tool] = OptionList[Tool] + " " + BuildOption[Key]
-        # for those tools that have no option in module file, give it a empty string
-        for Tool in PlatformInfo.ToolOption:
-            if Tool not in OptionList:
-                OptionList[Tool] = ""
-
-        return OptionList
+    def _GetModuleBuildOption(self):
+        if self._BuildOption == None:
+            self._BuildOption = self.PlatformInfo.ApplyBuildOption(self.Module)
+        return self._BuildOption
 
     ## Return a list of files which can be built from source
     #
     #  What kind of files can be built is determined by build rules in
     #  $(WORKSPACE)/Conf/build_rule.txt and toolchain family.
     #
-    #   @param      PlatformInfo    The object of PlatformBuildInfo
-    #   @retval     list            The list of files which can be built later
-    #
-    def GetSourceFileList(self, Info):
+    def _GetSourceFileList(self):
+        if self._SourceFileList != None:
+            return self._SourceFileList
+
+        self._SourceFileList = []
+        self._UnicodeFileList = []
         # use toolchain family of CC as the primary toolchain family
-        if "CC" not in Info.PlatformInfo.ToolChainFamily:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Tool [CC] is not supported for %s [%s, %s]" \
-                             % (Info.ToolChain, Info.BuildTarget, Info.Arch))
-        ToolChainFamily = Info.PlatformInfo.ToolChainFamily["CC"]
-        BuildRule = Info.PlatformInfo.BuildRule
-        FileList = []
+        if "CC" not in self.PlatformInfo.ToolChainFamily:
+            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Tool [CC] is not defined for %s [%s, %s]" \
+                             % (self.ToolChain, self.BuildTarget, self.Arch))
+        ToolChainFamily = self.PlatformInfo.ToolChainFamily["CC"]
+        BuildRule = self.PlatformInfo.BuildRule
         for F in self.Module.Sources:
             SourceFile = F.SourceFile
             # match tool chain
@@ -971,9 +1292,9 @@ class ModuleAutoGen(object):
             # add the file path into search path list for file including
             Dir = path.dirname(SourceFile)
             if Dir != "":
-                Dir = path.join(self.WorkspaceDir, self.BuildInfo.SourceDir, Dir)
-                if Dir not in self.BuildInfo.IncludePathList:
-                    self.BuildInfo.IncludePathList.insert(0, Dir)
+                Dir = path.join(self.WorkspaceDir, self.SourceDir, Dir)
+                if Dir not in self.IncludePathList:
+                    self.IncludePathList.insert(0, Dir)
 
             # skip unknown file
             Base, Ext = path.splitext(SourceFile)
@@ -982,19 +1303,24 @@ class ModuleAutoGen(object):
             FileType, RuleObject = BuildRule.Get(Ext, ToolChainFamily)
             # unicode must be processed by AutoGen
             if FileType == "Unicode-Text-File":
-                self.BuildInfo.UnicodeFileList.append(os.path.join(self.WorkspaceDir, self.BuildInfo.SourceDir, SourceFile))
+                self._UnicodeFileList.append(os.path.join(self.WorkspaceDir, self.SourceDir, SourceFile))
 
             # if there's dxs file, don't use content in [depex] section to generate .depex file
             if FileType == "Dependency-Expression-File":
-                Info.DepexList = []
+                self._DepexList = []
 
             # no command, no build
             if RuleObject != None and RuleObject.CommandList == []:
                 RuleObject = None
-            if [SourceFile, FileType, RuleObject] not in FileList:
-                FileList.append([SourceFile, FileType, RuleObject])
+            if [SourceFile, FileType, RuleObject] not in self._SourceFileList:
+                self._SourceFileList.append([SourceFile, FileType, RuleObject])
 
-        return FileList
+        return self._SourceFileList
+
+    def _GetUnicodeFileList(self):
+        if self._UnicodeFileList == None:
+            self._GetSourceFileList()
+        return self._UnicodeFileList
 
     ## Return a list of files which can be built from binary
     #
@@ -1003,163 +1329,139 @@ class ModuleAutoGen(object):
     #   @param      PlatformInfo    The object of PlatformBuildInfo
     #   @retval     list            The list of files which can be built later
     #
-    def GetBinaryFiles(self):
-        FileDict = {}
-        for F in self.Module.Binaries:
-            if F.Target != '*' and F.Target != self.BuildTarget:
-                continue
-            if F.FileType not in FileDict:
-                FileDict[F.FileType] = []
-            FileDict[F.FileType].append(F.BinaryFile)
-        return FileDict
+    def _GetBinaryFiles(self):
+        if self._BinaryFileDict == None:
+            self._BinaryFileDict = sdict()
+            for F in self.Module.Binaries:
+                if F.Target != '*' and F.Target != self.BuildTarget:
+                    continue
+                if F.FileType not in self._BinaryFileDict:
+                    self._BinaryFileDict[F.FileType] = []
+                self._BinaryFileDict[F.FileType].append(F.BinaryFile)
+        return self._BinaryFileDict
 
     ## Get the list of package object the module depends on
     #
     #   @retval     list    The package object list
     #
-    def GetDependentPackageList(self):
-        PackageList = []
-        for Package in self.Module.Packages:
-            if Package in PackageList:
-                continue
-            PackageList.append(Package)
-        return PackageList
+    def _GetDependentPackageList(self):
+        return self.Module.Packages
 
     ## Return the list of auto-generated code file
     #
     #   @param      BuildInfo   The object ModuleBuildInfo
     #   @retval     list        The list of auto-generated file
     #
-    def GetAutoGenFileList(self, BuildInfo):
-        GenC.CreateCode(BuildInfo, self.AutoGenC, self.AutoGenH)
-        FileList = []
-        if self.AutoGenC.String != "":
-            FileList.append("AutoGen.c")
-        if self.AutoGenH.String != "":
-            FileList.append("AutoGen.h")
-        return FileList
+    def _GetAutoGenFileList(self):
+        if self._AutoGenFileList == None:
+            self._AutoGenFileList = {}
+            AutoGenC = TemplateString()
+            AutoGenH = TemplateString()
+            GenC.CreateCode(self, AutoGenC, AutoGenH)
+            if str(AutoGenC) != "":
+                self._AutoGenFileList[gAutoGenCodeFileName] = AutoGenC
+            if str(AutoGenH) != "":
+                self._AutoGenFileList[gAutoGenHeaderFileName] = AutoGenH
+        return self._AutoGenFileList
 
-    ## Get the list of library module object
-    #
-    #   @retval     list    The list of library module list
-    #
-    def GetSortedLibraryList(self):
-        LibraryList = []
-        for Key in self.Module.LibraryClasses:
-            Library = self.Module.LibraryClasses[Key]
-            if Library not in LibraryList:
-                LibraryList.append(Library)
-        return LibraryList
+    def _GetLibraryList(self):
+        if self._DependentLibraryList == None:
+            # only merge library classes and PCD for non-library module
+            if self.IsLibrary:
+                self._DependentLibraryList = []
+            else:
+                if self.AutoGenVersion < 0x00010005:
+                    self._DependentLibraryList = self.PlatformInfo.ResolveLibraryReference(self.Module)
+                else:
+                    self._DependentLibraryList = self.PlatformInfo.ApplyLibraryInstance(self.Module)
+        return self._DependentLibraryList
 
     ## Get the list of PCD
     #
     #   @param      DependentLibraryList    The list of dependent library
     #   @retval     list                    The list of PCD
     #
-    def GetPcdList(self, DependentLibraryList):
-        PcdList = []
-        for PcdKey in self.Module.Pcds:
-            PcdList.append(self.Module.Pcds[PcdKey])
-        return PcdList
+    def _GetPcdList(self):
+        if self._PcdList == None:
+            if not self.IsLibrary:
+                # derive PCDs from libraries first
+                for Library in self.DependentLibraryList:
+                    for Key in Library.Pcds:
+                        if Key in self.Module.Pcds:
+                            continue
+                        self.Module.Pcds[Key] = Library.Pcds[Key]
+                # apply PCD settings from platform            
+            self._PcdList = self.PlatformInfo.ApplyPcdSetting(self.Module)
+        return self._PcdList
 
     ## Get the GUID value mapping
     #
     #   @retval     dict    The mapping between GUID cname and its value
     #
-    def GetGuidList(self):
-        Guid = {}
-        Key = ""
-        for Key in self.Module.Guids:
-            for P in self.BuildInfo.DerivedPackageList:
-                if Key in P.Guids:
-                    Guid[Key] = P.Guids[Key]
-                    break
-                if Key in P.Protocols:
-                    Guid[Key] = P.Protocols[Key]
-                    break
-                if Key in P.Ppis:
-                    Guid[Key] = P.Ppis[Key]
-                    break
-            else:
-                PackageListString = "\t" + "\n\t".join([str(P) for P in self.BuildInfo.DerivedPackageList])
-                EdkLogger.error("AutoGen", AUTOGEN_ERROR, 'GUID [%s] used by [%s] cannot be found in dependent packages' % (Key, self.Module),
-                                ExtraData=PackageListString)
-        return Guid
+    def _GetGuidList(self):
+        if self._GuidList == None:
+            self._GuidList = self.Module.Guids
+            for Library in self.DependentLibraryList:
+                self._GuidList.update(Library.Guids)
+        return self._GuidList
 
     ## Get the protocol value mapping
     #
     #   @retval     dict    The mapping between protocol cname and its value
     #
-    def GetProtocolGuidList(self):
-        Guid = {}
-        Key = ""
-        for Key in self.Module.Protocols:
-            for P in self.BuildInfo.DerivedPackageList:
-                if Key in P.Guids:
-                    Guid[Key] = P.Guids[Key]
-                    break
-                if Key in P.Protocols:
-                    Guid[Key] = P.Protocols[Key]
-                    break
-                if Key in P.Ppis:
-                    Guid[Key] = P.Ppis[Key]
-                    break
-            else:
-                PackageListString = "\t" + "\n\t".join([str(P) for P in self.BuildInfo.DerivedPackageList])
-                EdkLogger.error("AutoGen", AUTOGEN_ERROR, 'Protocol [%s] used by [%s] cannot be found in dependent packages' % (Key, self.Module),
-                                ExtraData=PackageListString)
-        return Guid
+    def _GetProtocolList(self):
+        if self._ProtocolList == None:
+            self._ProtocolList = self.Module.Protocols
+            for Library in self.DependentLibraryList:
+                self._ProtocolList.update(Library.Protocols)
+        return self._ProtocolList
 
     ## Get the PPI value mapping
     #
     #   @retval     dict    The mapping between PPI cname and its value
     #
-    def GetPpiGuidList(self):
-        Guid = {}
-        Key = ""
-        for Key in self.Module.Ppis:
-            for P in self.BuildInfo.DerivedPackageList:
-                if Key in P.Guids:
-                    Guid[Key] = P.Guids[Key]
-                    break
-                if Key in P.Protocols:
-                    Guid[Key] = P.Protocols[Key]
-                    break
-                if Key in P.Ppis:
-                    Guid[Key] = P.Ppis[Key]
-                    break
-            else:
-                PackageListString = "\t" + "\n\t".join([str(P) for P in self.BuildInfo.DerivedPackageList])
-                EdkLogger.error("AutoGen", AUTOGEN_ERROR, 'PPI [%s] used by [%s] cannot be found in dependent packages' % (Key, self.Module),
-                                ExtraData=PackageListString)
-        return Guid
+    def _GetPpiList(self):
+        if self._PpiList == None:
+            self._PpiList = self.Module.Ppis
+            for Library in self.DependentLibraryList:
+                self._PpiList.update(Library.Ppis)
+        return self._PpiList
 
     ## Get the list of include search path
     #
     #   @param      DependentPackageList    The list of package object
     #   @retval     list                    The list path
     #
-    def GetIncludePathList(self, DependentPackageList):
-        IncludePathList = []
-        if self.BuildInfo.AutoGenVersion < 0x00010005:
-            for Inc in self.Module.Includes:
-                # '.' means "relative to module directory".
-                if Inc[0] == ".":
-                    Inc = os.path.join(self.WorkspaceDir, self.BuildInfo.SourceDir, Inc)
-                else:
-                    Inc = os.path.join(self.WorkspaceDir, Inc)
-                IncludePathList.append(Inc)
-                # for r8 modules
-                IncludePathList.append(os.path.join(Inc, self.Arch.capitalize()))
+    def _GetIncludePathList(self):
+        if self._IncludePathList == None:
+            self._IncludePathList = []
+            if self.AutoGenVersion < 0x00010005:
+                for Inc in self.Module.Includes:
+                    # '.' means "relative to module directory".
+                    if Inc[0] == ".":
+                        Inc = path.join(self.WorkspaceDir, self.SourceDir, Inc)
+                    else:
+                        Inc = path.join(self.WorkspaceDir, Inc)
+                    if Inc in self._IncludePathList:
+                        continue
+                    self._IncludePathList.append(Inc)
+                    # for r8 modules
+                    self._IncludePathList.append(path.join(Inc, self.Arch.capitalize()))
+                # r8 module needs to put DEBUG_DIR at the end search path and not to use SOURCE_DIR all the time
+                self._IncludePathList.append(self.DebugDir)
+            else:
+                self._IncludePathList.append(os.path.join(self.WorkspaceDir, self.SourceDir))
+                self._IncludePathList.append(self.DebugDir)
 
-        for Package in DependentPackageList:
-            PackageDir = os.path.join(self.WorkspaceDir, path.dirname(Package.DescFilePath))
-            IncludePathList.append(PackageDir)
-            for Inc in Package.Includes:
-                Inc = os.path.join(PackageDir, Inc)
-                if Inc not in IncludePathList:
-                    IncludePathList.append(Inc)
-        return IncludePathList
+            for Package in self.Module.Packages:
+                PackageDir = path.join(self.WorkspaceDir, path.dirname(str(Package)))
+                if PackageDir not in self._IncludePathList:
+                    self._IncludePathList.append(PackageDir)
+                for Inc in Package.Includes:
+                    Inc = path.join(PackageDir, Inc)
+                    if Inc not in self._IncludePathList:
+                        self._IncludePathList.append(Inc)
+        return self._IncludePathList
 
     ## Create makefile for the module and its dependent libraries
     #
@@ -1170,23 +1472,21 @@ class ModuleAutoGen(object):
         if self.IsMakeFileCreated:
             return
 
-        PlatformInfo = self.BuildInfo.PlatformInfo
-        if CreateLibraryMakeFile:
-            for Lib in self.BuildInfo.DependentLibraryList:
-                EdkLogger.debug(EdkLogger.DEBUG_1, "###" + str(Lib))
-                LibraryAutoGen = ModuleAutoGen.New(self.Workspace, self.Platform, Lib,
-                                                   self.BuildTarget, self.ToolChain, self.Arch)
-                if LibraryAutoGen not in self.BuildInfo.LibraryAutoGenList:
-                    self.BuildInfo.LibraryAutoGenList.append(LibraryAutoGen)
+        PlatformInfo = self.PlatformInfo
+        if not self.IsLibrary and CreateLibraryMakeFile:
+            for LibraryAutoGen in self.LibraryAutoGenList:
                 LibraryAutoGen.CreateMakeFile()
 
-        Makefile = GenMake.Makefile(self.BuildInfo)
+        if len(self.CustomMakefile) == 0:
+            Makefile = GenMake.ModuleMakefile(self)
+        else:
+            Makefile = GenMake.CustomMakefile(self)
         if Makefile.Generate():
             EdkLogger.verbose("Generated makefile for module %s [%s]" %
-                           (self.BuildInfo.Name, self.BuildInfo.Arch))
+                           (self.Name, self.Arch))
         else:
             EdkLogger.verbose("Skipped the generation of makefile for module %s [%s]" %
-                              (self.BuildInfo.Name, self.BuildInfo.Arch))
+                              (self.Name, self.Arch))
 
         self.IsMakeFileCreated = True
 
@@ -1199,145 +1499,103 @@ class ModuleAutoGen(object):
         if self.IsCodeFileCreated:
             return
 
-        PlatformInfo = self.BuildInfo.PlatformInfo
-        if CreateLibraryCodeFile:
-            for Lib in self.BuildInfo.DependentLibraryList:
-                LibraryAutoGen = ModuleAutoGen.New(self.Workspace, self.Platform, Lib,
-                                                          self.BuildTarget, self.ToolChain, self.Arch)
-                if LibraryAutoGen not in self.BuildInfo.LibraryAutoGenList:
-                    self.BuildInfo.LibraryAutoGenList.append(LibraryAutoGen)
+        PlatformInfo = self.PlatformInfo
+        if not self.IsLibrary and CreateLibraryCodeFile:
+            for LibraryAutoGen in self.LibraryAutoGenList:
                 LibraryAutoGen.CreateCodeFile()
 
-        os.chdir(self.BuildInfo.DebugDir)
         AutoGenList = []
         IgoredAutoGenList = []
-        if self.AutoGenC.String != "":
-            if GenC.Generate(gAutoGenCodeFileName, self.AutoGenC.String):
-                AutoGenList.append(gAutoGenCodeFileName)
+        for File in self.AutoGenFileList:
+            if GenC.Generate(path.join(self.DebugDir, File), str(self.AutoGenFileList[File])):
+                AutoGenList.append(File)
             else:
-                IgoredAutoGenList.append(gAutoGenCodeFileName)
+                IgoredAutoGenList.append(File)
 
-        if self.AutoGenH.String != "":
-            if GenC.Generate(gAutoGenHeaderFileName, self.AutoGenH.String):
-                AutoGenList.append(gAutoGenHeaderFileName)
-            else:
-                IgoredAutoGenList.append(gAutoGenHeaderFileName)
+        if self.DepexList != []:
+            Dpx = GenDepex.DependencyExpression(self.DepexList, self.ModuleType, True)
+            DpxFile = gAutoGenDepexFileName % {"module_name" : self.Name}
 
-        os.chdir(self.BuildInfo.OutputDir)
-        if self.BuildInfo.DepexList != []:
-            Dpx = GenDepex.DependencyExpression(self.BuildInfo.DepexList, self.BuildInfo.ModuleType, True)
-            DpxFile = gAutoGenDepexFileName % {"module_name" : self.BuildInfo.Name}
-            if Dpx.Generate(DpxFile):
+            if Dpx.Generate(path.join(self.OutputDir, DpxFile)):
                 AutoGenList.append(DpxFile)
             else:
                 IgoredAutoGenList.append(DpxFile)
 
         if IgoredAutoGenList == []:
             EdkLogger.verbose("Generated [%s] files for module %s [%s]" %
-                           (" ".join(AutoGenList), self.BuildInfo.Name, self.BuildInfo.Arch))
+                           (" ".join(AutoGenList), self.Name, self.Arch))
         elif AutoGenList == []:
             EdkLogger.verbose("Skipped the generation of [%s] files for module %s [%s]" %
-                           (" ".join(IgoredAutoGenList), self.BuildInfo.Name, self.BuildInfo.Arch))
+                           (" ".join(IgoredAutoGenList), self.Name, self.Arch))
         else:
             EdkLogger.verbose("Generated [%s] (skipped %s) files for module %s [%s]" %
-                           (" ".join(AutoGenList), " ".join(IgoredAutoGenList), self.BuildInfo.Name, self.BuildInfo.Arch))
+                           (" ".join(AutoGenList), " ".join(IgoredAutoGenList), self.Name, self.Arch))
 
         self.IsCodeFileCreated = True
-        os.chdir(self.WorkspaceDir)
         return AutoGenList
 
-# Version and Copyright
-__version_number__ = "0.01"
-__version__ = "%prog Version " + __version_number__
-__copyright__ = "Copyright (c) 2007, Intel Corporation. All rights reserved."
+    def _GetLibraryAutoGenList(self):
+        if self._LibraryAutoGenList == None:
+            self._LibraryAutoGenList = []
+            for Library in self.DependentLibraryList:
+                La = ModuleAutoGen(
+                        self.Workspace,
+                        str(Library),
+                        self.BuildTarget,
+                        self.ToolChain,
+                        self.Arch,
+                        str(self.PlatformInfo)
+                        )
+                if La not in self._LibraryAutoGenList:
+                    self._LibraryAutoGenList.append(La)
+        return self._LibraryAutoGenList
 
-## Parse command line options
-#
-# Using standard Python module optparse to parse command line option of this tool.
-#
-# @retval Options   A optparse.Values object containing the parsed options
-# @retval InputFile Path of file to be trimmed
-#
-def GetOptions():
-    OptionList = [
-        make_option("-a", "--arch", dest="Arch",
-                          help="The input file is preprocessed source code, including C or assembly code"),
-        make_option("-p", "--platform", dest="ActivePlatform",
-                          help="The input file is preprocessed VFR file"),
-        make_option("-m", "--module", dest="ActiveModule",
-                          help="Convert standard hex format (0xabcd) to MASM format (abcdh)"),
-        make_option("-f", "--FDF-file", dest="FdfFile",
-                          help="Convert standard hex format (0xabcd) to MASM format (abcdh)"),
-        make_option("-o", "--output", dest="OutputDirectory",
-                          help="File to store the trimmed content"),
-        make_option("-t", "--toolchain-tag", dest="ToolChain",
-                          help=""),
-        make_option("-k", "--msft", dest="MakefileType", action="store_const", const="nmake",
-                          help=""),
-        make_option("-g", "--gcc", dest="MakefileType", action="store_const", const="gmake",
-                          help=""),
-        make_option("-v", "--verbose", dest="LogLevel", action="store_const", const=EdkLogger.VERBOSE,
-                          help="Run verbosely"),
-        make_option("-d", "--debug", dest="LogLevel", type="int",
-                          help="Run with debug information"),
-        make_option("-q", "--quiet", dest="LogLevel", action="store_const", const=EdkLogger.QUIET,
-                          help="Run quietly"),
-        make_option("-?", action="help", help="show this help message and exit"),
-    ]
+    ## Return build command string
+    #
+    #   @retval     string  Build command string
+    #
+    def _GetBuildCommand(self):
+        return self.PlatformInfo.BuildCommand
 
-    # use clearer usage to override default usage message
-    UsageString = "%prog [-a ARCH] [-p PLATFORM] [-m MODULE] [-t TOOLCHAIN_TAG] [-k] [-g] [-v|-d <debug_level>|-q] [-o <output_directory>] [GenC|GenMake]"
 
-    Parser = OptionParser(description=__copyright__, version=__version__, option_list=OptionList, usage=UsageString)
-    Parser.set_defaults(Arch=[])
-    Parser.set_defaults(ActivePlatform=None)
-    Parser.set_defaults(ActiveModule=None)
-    Parser.set_defaults(OutputDirectory="build")
-    Parser.set_defaults(FdfFile=None)
-    Parser.set_defaults(ToolChain="MYTOOLS")
-    if sys.platform == "win32":
-        Parser.set_defaults(MakefileType="nmake")
-    else:
-        Parser.set_defaults(MakefileType="gmake")
-    Parser.set_defaults(LogLevel=EdkLogger.INFO)
+    Module          = property(_GetModule)
+    Name            = property(_GetBaseName)
+    Guid            = property(_GetGuid)
+    Version         = property(_GetVersion)
+    ModuleType      = property(_GetModuleType)
+    ComponentType   = property(_GetComponentType)
+    PcdIsDriver     = property(_GetPcdIsDriver)
+    AutoGenVersion  = property(_GetAutoGenVersion)
+    Macro           = property(_GetMacroList)
 
-    Options, Args = Parser.parse_args()
+    IsLibrary       = property(_IsLibrary)
 
-    # error check
-    if len(Args) == 0:
-        Options.Target = "genmake"
-        sys.argv.append("genmake")
-    elif len(Args) == 1:
-        Options.Target = Args[0].lower()
-        if Options.Target not in ["genc", "genmake"]:
-            EdkLogger.error("AutoGen", OPTION_NOT_SUPPORTED, "Not supported target",
-                            ExtraData="%s\n\n%s" % (Options.Target, Parser.get_usage()))
-    else:
-        EdkLogger.error("AutoGen", OPTION_NOT_SUPPORTED, "Too many targets",
-                        ExtraData=Parser.get_usage())
+    BuildDir        = property(_GetBuildDir)
+    OutputDir       = property(_GetOutputDir)
+    DebugDir        = property(_GetDebugDir)
+    MakeFileDir     = property(_GetMakeFileDir)
+    CustomMakefile  = property(_GetCustomMakefile)
 
-    return Options
+    IncludePathList = property(_GetIncludePathList)
+    AutoGenFileList = property(_GetAutoGenFileList)
+    UnicodeFileList = property(_GetUnicodeFileList)
+    SourceFileList  = property(_GetSourceFileList)
+    BinaryFileDict  = property(_GetBinaryFiles) # FileType : [File List]
 
-## Entrance method
-#
-# This method mainly dispatch specific methods per the command line options.
-# If no error found, return zero value so the caller of this tool can know
-# if it's executed successfully or not.
-#
-# @retval 0     Tool was successful
-# @retval 1     Tool failed
-#
-def Main():
-    from build import build
-    try:
-        Option = GetOptions()
-        build.main()
-    except Exception, e:
-        print e
-        return 1
+    DependentPackageList    = property(_GetDependentPackageList)
+    DependentLibraryList    = property(_GetLibraryList)
+    LibraryAutoGenList      = property(_GetLibraryAutoGenList)
+    DerivedPackageList      = property(_GetDerivedPackageList)
 
-    return 0
+    PcdList                 = property(_GetPcdList)
+    GuidList                = property(_GetGuidList)
+    ProtocolList            = property(_GetProtocolList)
+    PpiList                 = property(_GetPpiList)
+    DepexList               = property(_GetDepexTokenList)
+    BuildOption             = property(_GetModuleBuildOption)
+    BuildCommand            = property(_GetBuildCommand)
 
 # This acts like the main() function for the script, unless it is 'import'ed into another script.
 if __name__ == '__main__':
-    sys.exit(Main())
+    pass
+

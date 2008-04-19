@@ -766,26 +766,6 @@ gModuleTypeHeaderFile = {
     "USER_DEFINED"      :   [gBasicHeaderFile]
 }
 
-## Find value for the given GUID C name
-#
-#   @param      Packages    The list of package object
-#   @param      CName       The C name of the GUID
-#   @retval     string      The value string of given GUID
-#
-def GetGuidValue(Packages, CName):
-    for P in Packages:
-        if CName in P.Guids:
-            return P.Guids[CName]
-        if CName in P.Protocols:
-            return P.Protocols[CName]
-        if CName in P.Ppis:
-            return P.Ppis[CName]
-    else:
-        PackageListString = "\t" + "\n\t".join([str(P) for P in Packages])
-        EdkLogger.error("AutoGen", AUTOGEN_ERROR,
-                        "Cannot find GUID value for %s in all given packages" % CName,
-                        ExtraData=PackageListString)
-
 ## Create code for module PCDs
 #
 #   @param      Info        The ModuleBuildInfo object
@@ -794,7 +774,7 @@ def GetGuidValue(Packages, CName):
 #   @param      Pcd         The PCD object
 #
 def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
-    TokenSpaceGuidValue = Info.GuidList[Pcd.TokenSpaceGuidCName]
+    TokenSpaceGuidValue = Pcd.TokenSpaceGuidValue   #Info.GuidList[Pcd.TokenSpaceGuidCName]
     PcdTokenNumber = Info.PlatformInfo.PcdTokenNumber
     #
     # Write PCDs
@@ -901,7 +881,7 @@ def CreateLibraryPcdCode(Info, AutoGenC, AutoGenH, Pcd):
     PcdTokenNumber = Info.PlatformInfo.PcdTokenNumber
     TokenSpaceGuidCName = Pcd.TokenSpaceGuidCName
     TokenCName  = Pcd.TokenCName
-    TokenSpaceGuidValue = Info.GuidList[TokenSpaceGuidCName]
+    TokenSpaceGuidValue = Pcd.TokenSpaceGuidValue   #Info.GuidList[TokenSpaceGuidCName]
     if (Pcd.TokenCName, Pcd.TokenSpaceGuidCName) not in PcdTokenNumber:
         EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No generated token number for %s|%s\n" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
     TokenNumber = PcdTokenNumber[TokenCName, TokenSpaceGuidCName]
@@ -951,6 +931,7 @@ def CreateLibraryPcdCode(Info, AutoGenC, AutoGenH, Pcd):
         AutoGenH.Append('#define %s(Value)  (%s = (Value))\n' % (SetModeName, PcdVariableName))
     if PcdItemType == TAB_PCDS_FIXED_AT_BUILD or PcdItemType == TAB_PCDS_FEATURE_FLAG:
         AutoGenH.Append('extern const %s _gPcd_FixedAtBuild_%s%s;\n' %(DatumType, TokenCName, Array))
+        #AutoGenH.Append('#define _PCD_VALUE_%s  _gPcd_FixedAtBuild_%s\n' %(TokenCName, TokenCName))
         AutoGenH.Append('#define %s  %s_gPcd_FixedAtBuild_%s\n' %(GetModeName, Type, TokenCName))
         AutoGenH.Append('//#define %s  ASSERT(FALSE)  // It is not allowed to set value for a FIXED_AT_BUILD PCD\n' % SetModeName)
 
@@ -1051,7 +1032,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
         #
         # TODO: need GetGuidValue() definition
         #
-        TokenSpaceGuidStructure = GetGuidValue(Platform.PackageList, TokenSpaceGuidCName)
+        TokenSpaceGuidStructure = Pcd.TokenSpaceGuidValue
         TokenSpaceGuid = GuidStructureStringToGuidValueName(TokenSpaceGuidStructure)
         if Pcd.Type in gDynamicExPcd:
             if TokenSpaceGuid not in GuidList:
@@ -1106,7 +1087,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
                 for Index in range(Dict['STRING_TABLE_VALUE'].index(VariableNameStructure)):
                     VariableHeadStringIndex += Dict['STRING_TABLE_LENGTH'][Index]
 
-                VariableGuidStructure = GetGuidValue(Platform.PackageList, Sku.VariableGuid)
+                VariableGuidStructure = Sku.VariableGuidValue
                 VariableGuid = GuidStructureStringToGuidValueName(VariableGuidStructure)
                 if VariableGuid not in GuidList:
                     GuidList += [VariableGuid]
@@ -1212,7 +1193,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
         if Pcd.Phase != Phase:
             continue
 
-        TokenSpaceGuid = GuidStructureStringToGuidValueName(GetGuidValue(Platform.PackageList, TokenSpaceGuidCName))
+        TokenSpaceGuid = GuidStructureStringToGuidValueName(Pcd.TokenSpaceGuidValue) #(Platform.PackageList, TokenSpaceGuidCName))
         GeneratedTokenNumber = Platform.PcdTokenNumber[CName, TokenSpaceGuidCName] - 1
         if Phase == 'DXE':
             GeneratedTokenNumber -= NumberOfPeiLocalTokens

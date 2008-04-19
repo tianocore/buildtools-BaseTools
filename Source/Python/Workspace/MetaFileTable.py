@@ -84,13 +84,9 @@ class ModuleTable(Table):
     #
     # @retval:       A recordSet of all found records 
     #
-    def Query(self, Model, Value1=None, Arch=None, Platform=None):
+    def Query(self, Model, Arch=None, Platform=None):
         ConditionString = "Model=%s AND Enabled>=0" % Model
-        if Value1 == None:
-            ValueString = "Value1,Value2,Value3,Scope1,Scope2,ID,StartLine"
-        else:
-            ValueString = "Value2,Value3,Scope1,Scope2,ID,StartLine"
-            ConditionString = "Value1='%s'" % Value1
+        ValueString = "Value1,Value2,Value3,Scope1,Scope2,ID,StartLine"
 
         if Arch != None and Arch != 'COMMON':
             ConditionString += " AND (Scope1='%s' OR Scope1='COMMON')" % Arch
@@ -164,13 +160,9 @@ class PackageTable(Table):
     #
     # @retval:       A recordSet of all found records 
     #
-    def Query(self, Model, Value1=None, Arch=None):
+    def Query(self, Model, Arch=None):
         ConditionString = "Model=%s AND Enabled>=0" % Model
-        if Value1 == None:
-            ValueString = "Value1,Value2,Value3,Scope1,ID,StartLine"
-        else:
-            ValueString = "Value2,Value3,Scope1,ID,StartLine"
-            ConditionString = "Value1='%s'" % Value1
+        ValueString = "Value1,Value2,Value3,Scope1,ID,StartLine"
 
         if Arch != None and Arch != 'COMMON':
             ConditionString += " AND (Scope1='%s' OR Scope1='COMMON')" % Arch
@@ -244,13 +236,9 @@ class PlatformTable(Table):
     #
     # @retval:       A recordSet of all found records 
     #
-    def Query(self, Model, Value1=None, Scope1=None, Scope2=None, BelongsToItem=None, FromItem=None):
+    def Query(self, Model, Scope1=None, Scope2=None, BelongsToItem=None, FromItem=None):
         ConditionString = "Model=%s AND Enabled>=0" % Model
-        if Value1 == None:
-            ValueString = "Value1,Value2,Value3,Scope1,Scope2,ID,StartLine"
-        else:
-            ValueString = "Value2,Value3,Scope1,Scope2,ID,StartLine"
-            ConditionString = "Value1='%s'" % Value1
+        ValueString = "Value1,Value2,Value3,Scope1,Scope2,ID,StartLine"
 
         if Scope1 != None and Scope1 != 'COMMON':
             ConditionString += " AND (Scope1='%s' OR Scope1='COMMON')" % Scope1

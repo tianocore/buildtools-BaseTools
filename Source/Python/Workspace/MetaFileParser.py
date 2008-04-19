@@ -25,7 +25,7 @@ from Common.String import *
 from Common.Misc import Blist
 
 class MetaFileParser(object):
-    _DataType = {}
+    DataType = {}
     def __init__(self, FilePath, FileType, Table, Macros={}, Owner=-1, From=-1):
         self._Table = Table
         self._FileType = FileType
@@ -49,6 +49,7 @@ class MetaFileParser(object):
         self._SubsectionName = ''
         self._LastItem = -1
         self._Enabled = 0
+        self._Finished = False
 
     def _Store(self, *Args):
         return self._Table.Insert(*Args)
@@ -57,7 +58,25 @@ class MetaFileParser(object):
         raise NotImplementedError 
 
     def _Done(self):
+        self._Finished = True
         self._Table.SetEndFlag()
+
+    def _GetTable(self):
+        if not self._Finished:
+            self.Start()
+        return self._Table
+
+    def _GetFinished(self):
+        return self._Finished
+
+    def _SetFinished(self, Value):
+        self._Finished = Value
+
+    # DataType = [section_header_name, scope1(arch), scope2(platform,moduletype)]
+    def __getitem__(self, DataInfo):
+        if type(DataInfo) != type(()):
+            DataInfo = (DataInfo,)
+        return self.Table.Query(*DataInfo)
 
     def _CommonParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT)
@@ -86,8 +105,8 @@ class MetaFileParser(object):
                 EdkLogger.error('Parser', FORMAT_INVALID, "Different section names in the same section",
                                 File=self._FilePath, Line=self._LineIndex+1, ExtraData=self._CurrentLine)
             self._SectionName = ItemList[0].upper()
-            if self._SectionName in self._DataType:
-                self._SectionType = self._DataType[self._SectionName]
+            if self._SectionName in self.DataType:
+                self._SectionType = self.DataType[self._SectionName]
             else:
                 self._SectionType = MODEL_UNKNOWN
             # S1 is always Arch
@@ -127,10 +146,13 @@ class MetaFileParser(object):
             self._Macros = {}
         self._Macros[TokenList[0]] = TokenList[1]
 
-    _SectionParser = {}
+    _SectionParser  = {}
+    Table           = property(_GetTable)
+    Finished        = property(_GetFinished, _SetFinished)
+
 
 class InfParser(MetaFileParser):
-    _DataType = {
+    DataType = {
         TAB_UNKNOWN.upper() : MODEL_UNKNOWN,
         TAB_INF_DEFINES.upper() : MODEL_META_DATA_HEADER,
         TAB_BUILD_OPTIONS.upper() : MODEL_META_DATA_BUILD_OPTION,
@@ -252,10 +274,10 @@ class InfParser(MetaFileParser):
         MODEL_EFI_DEPEX                 :   _DepexParser,
         MODEL_EFI_BINARY_FILE           :   MetaFileParser._PathParser,
         MODEL_META_DATA_USER_EXTENSION  :   MetaFileParser._Skip,
-    }    
+    }
 
 class DscParser(MetaFileParser):
-    _DataType = {
+    DataType = {
         TAB_SKUIDS.upper()                          :   MODEL_EFI_SKU_ID,
         TAB_LIBRARIES.upper()                       :   MODEL_EFI_LIBRARY_INSTANCE,
         TAB_LIBRARY_CLASSES.upper()                 :   MODEL_EFI_LIBRARY_CLASS,
@@ -397,8 +419,8 @@ class DscParser(MetaFileParser):
             
     def _SubsectionHeaderParser(self):
         self._SubsectionName = self._CurrentLine[1:-1].upper()
-        if self._SubsectionName in self._DataType:
-            self._SubsectionType = self._DataType[self._SubsectionName]
+        if self._SubsectionName in self.DataType:
+            self._SubsectionType = self.DataType[self._SubsectionName]
         else:
             self._SubsectionType = MODEL_UNKNOWN
 
@@ -412,7 +434,7 @@ class DscParser(MetaFileParser):
                             ExtraData=self._CurrentLine)
         DirectiveName = self._ValueList[0].upper()
         self._LastItem = self._Store(
-            self._DataType[DirectiveName],
+            self.DataType[DirectiveName],
             self._ValueList[0],
             self._ValueList[1],
             self._ValueList[2],
@@ -548,7 +570,7 @@ class DscParser(MetaFileParser):
     }
 
 class DecParser(MetaFileParser):
-    _DataType = {
+    DataType = {
         TAB_DEC_DEFINES.upper()                     :   MODEL_META_DATA_HEADER,
         TAB_INCLUDES.upper()                        :   MODEL_EFI_INCLUDE,
         TAB_LIBRARY_CLASSES.upper()                 :   MODEL_EFI_LIBRARY_CLASS,

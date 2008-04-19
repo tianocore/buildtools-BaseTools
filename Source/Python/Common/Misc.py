@@ -245,6 +245,41 @@ def DataRestore(File):
             Fd.close()
     return Data
 
+## Check if gvien file exists or not
+# 
+#   @param      File    File name or path to be checked
+#   @param      Dir     The directory the file is relative to
+# 
+#   @retval     True    if file exists
+#   @retval     False   if file doesn't exists
+# 
+def ValidFile(File, Dir='.'):
+    Wd = os.getcwd()
+    os.chdir(Dir)
+    if not os.path.exists(File):
+        os.chdir(Wd)
+        return False
+    os.chdir(Wd)
+    return True
+
+## Get GUID value from given packages
+# 
+#   @param      CName           The CName of the GUID
+#   @param      PackageList     List of packages looking-up in
+# 
+#   @retval     GuidValue   if the CName is found in any given package
+#   @retval     None        if the CName is not found in all given packages
+# 
+def GuidValue(CName, PackageList):
+    for P in PackageList:
+        if CName in P.Guids:
+            return P.Guids[CName]
+        if CName in P.Protocols:
+            return P.Protocols[CName]
+        if CName in P.Ppis:
+            return P.Ppis[CName]
+    return None
+
 ## A string template class
 #
 #  This class implements a template for string replacement. A string template
@@ -485,6 +520,14 @@ class sdict(IterableUserDict):
         value = self[key]
         self.__delitem__(key)
         return key, value
+
+    def update(self, dict=None, **kwargs):
+        if dict != None:
+            for k, v in dict.items():
+                self[k] = v
+        if len(kwargs):
+            for k, v in kwargs.items():
+                self[k] = v
 
 ## Dictionary with restricted keys
 #
