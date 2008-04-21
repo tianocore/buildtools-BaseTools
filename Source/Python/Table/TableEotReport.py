@@ -40,16 +40,18 @@ class TableEotReport(Table):
     #
     def Create(self):
         SqlCommand = """create table IF NOT EXISTS %s (ID INTEGER PRIMARY KEY,
-                                                       ModuleID INTEGER NOT NULL,
-                                                       ModuleName TEXT NOT NULL,
-                                                       SourceFileID INTEGER NOT NULL,
-                                                       SourceFileFullPath TEXT NOT NULL,
-                                                       ItemName TEXT NOT NULL,
-                                                       ItemType TEXT NOT NULL,
-                                                       ItemMode TEXT NOT NULL,
-                                                       GuidName TEXT NOT NULL,
-                                                       GuidMacro TEXT,
-                                                       GuidValue TEXT,
+                                                       ModuleID INTEGER DEFAULT -1,
+                                                       ModuleName TEXT DEFAULT '',
+                                                       ModuleGuid TEXT DEFAULT '',
+                                                       SourceFileID INTEGER DEFAULT -1,
+                                                       SourceFileFullPath TEXT DEFAULT '',
+                                                       ItemName TEXT DEFAULT '',
+                                                       ItemType TEXT DEFAULT '',
+                                                       ItemMode TEXT DEFAULT '',
+                                                       GuidName TEXT DEFAULT '',
+                                                       GuidMacro TEXT DEFAULT '',
+                                                       GuidValue TEXT DEFAULT '',
+                                                       BelongsToFunction TEXT DEFAULT '',
                                                        Enabled INTEGER DEFAULT 0
                                                       )""" % self.Table
         Table.Create(self, SqlCommand)
@@ -59,12 +61,12 @@ class TableEotReport(Table):
     # Insert a record into table report
     #
     #
-    def Insert(self, ModuleID = -1, ModuleName = '', SourceFileID = -1, SourceFileFullPath = '', \
-               ItemName = '', ItemType = '', ItemMode = '', GuidName = '', GuidMacro = '', GuidValue = '', Enabled = 0):
+    def Insert(self, ModuleID = -1, ModuleName = '', ModuleGuid = '', SourceFileID = -1, SourceFileFullPath = '', \
+               ItemName = '', ItemType = '', ItemMode = '', GuidName = '', GuidMacro = '', GuidValue = '', BelongsToFunction = '', Enabled = 0):
         self.ID = self.ID + 1
-        SqlCommand = """insert into %s values(%s, %s, '%s', %s, '%s', '%s', '%s', '%s', '%s', '%s', '%s', %s)""" \
-                     % (self.Table, self.ID, ModuleID, ModuleName, SourceFileID, SourceFileFullPath, \
-                        ItemName, ItemType, ItemMode, GuidName, GuidMacro, GuidValue, Enabled)
+        SqlCommand = """insert into %s values(%s, %s, '%s', '%s', %s, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %s)""" \
+                     % (self.Table, self.ID, ModuleID, ModuleName, ModuleGuid, SourceFileID, SourceFileFullPath, \
+                        ItemName, ItemType, ItemMode, GuidName, GuidMacro, GuidValue, BelongsToFunction, Enabled)
         Table.Insert(self, SqlCommand)
         
     def GetMaxID(self):
