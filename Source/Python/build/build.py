@@ -32,6 +32,7 @@ from Common.ToolDefClassObject import *
 from Common.DataType import *
 from AutoGen.AutoGen import *
 from Common.BuildToolError import *
+from Workspace.WorkspaceDatabase import *
 
 import Common.EdkLogger
 import Common.GlobalData as GlobalData
