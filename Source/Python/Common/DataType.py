@@ -346,6 +346,7 @@ TAB_ELSE_IF = '!elseif'
 TAB_ELSE = '!else'
 TAB_IF_DEF = '!ifdef'
 TAB_IF_N_DEF = '!ifndef'
+TAB_IF_EXIST = '!if exist'
 
 #
 # Unknown section
