@@ -1829,13 +1829,10 @@ class WorkspaceDatabase(object):
 
     def _GetPackageList(self):
         PackageList = []
-        for PackageFile in self.TblFile.GetFileList(MODEL_FILE_DEC):
-            try:
-                Package = self.BuildObject[PackageFile, 'COMMON']
-            except:
-                Package = None
-            if Package != None:
-                PackageList.append(Package)
+        for Module in self.ModuleList:
+            for Package in Module.Packages:
+                if Package not in PackageList:
+                    PackageList.append(Package)
         return PackageList
 
     def _GetPlatformList(self):

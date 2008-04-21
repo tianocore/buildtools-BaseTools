@@ -74,6 +74,7 @@ def main():
                 GenFdsGlobalVariable.EdkSourceDir = os.environ['EDK_SOURCE']
             if (Options.debug):
                 GenFdsGlobalVariable.VerboseLogger( "Using Workspace:" + Workspace)
+        os.chdir(GenFdsGlobalVariable.WorkSpaceDir)
     
         if (Options.filename):
             FdfFilename = Options.filename
@@ -102,7 +103,7 @@ def main():
         if not os.path.exists(FdfFilename):
             GenFdsGlobalVariable.ErrorLogger ("File %s not found" % (FdfFilename))
             sys.exit(1)
-    
+
         if (Options.activePlatform):
             ActivePlatform = Options.activePlatform
             ActivePlatform = GenFdsGlobalVariable.ReplaceWorkspaceMacro(ActivePlatform)
@@ -156,11 +157,11 @@ def main():
             
         """call Workspace build create database"""
         os.environ["WORKSPACE"] = Workspace
-        BuildWorkSpace = WorkspaceDatabase('', GlobalData.gGlobalDefines)
+        BuildWorkSpace = WorkspaceDatabase(':memory:', GlobalData.gGlobalDefines)
         BuildWorkSpace.InitDatabase()
 
         for Arch in ArchList:
-            GenFdsGlobalVariable.OutputDirFromDscDict[Arch] = NormPath(BuildWorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, Arch].OutputDirectory)
+            GenFdsGlobalVariable.OutputDirFromDscDict[Arch] = NormPath(BuildWorkSpace.BuildObject[ActivePlatform, Arch].OutputDirectory)
         
         if (Options.outputDir):
             OutputDirFromCommandLine = GenFdsGlobalVariable.ReplaceWorkspaceMacro(Options.outputDir)
