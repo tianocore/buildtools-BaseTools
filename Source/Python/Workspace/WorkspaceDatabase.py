@@ -1611,6 +1611,8 @@ class WorkspaceDatabase(object):
         MODEL_FILE_DSC  :   PlatformTable,
     }
 
+    _DB_PATH_ = "Conf/.cache/build.db"
+
     class BuildObjectFactory(object):
         _FILE_TYPE_ = {
             ".INF"  : MODEL_FILE_INF,
@@ -1686,6 +1688,9 @@ class WorkspaceDatabase(object):
 
     def __init__(self, DbPath, GlobalMacros={}, RenewDb=False):
         self._GlobalMacros = GlobalMacros
+
+        if DbPath == None or DbPath == '':
+            DbPath = self._DB_PATH_
 
         if DbPath != ':memory:':
             DbDir = os.path.split(DbPath)[0]
@@ -1821,6 +1826,43 @@ class WorkspaceDatabase(object):
         Parser.Finished = Parsed
 
         return Parser
+
+    def _GetPackageList(self):
+        PackageList = []
+        for PackageFile in self.TblFile.GetFileList(MODEL_FILE_DEC):
+            try:
+                Package = self.BuildObject[PackageFile, 'COMMON']
+            except:
+                Package = None
+            if Package != None:
+                PackageList.append(Package)
+        return PackageList
+
+    def _GetPlatformList(self):
+        PlatformList = []
+        for PlatformFile in self.TblFile.GetFileList(MODEL_FILE_DSC):
+            try:
+                Platform = self.BuildObject[PlatformFile, 'COMMON']
+            except:
+                Platform = None
+            if Platform != None:
+                PlatformList.append(Platform)
+        return PlatformList
+
+    def _GetModuleList(self):
+        ModuleList = []
+        for ModuleFile in self.TblFile.GetFileList(MODEL_FILE_INF):
+            try:
+                Module = self.BuildObject[ModuleFile, 'COMMON']
+            except:
+                Module = None
+            if Module != None:
+                ModuleList.append(Module)
+        return ModuleList
+
+    PlatformList = property(_GetPlatformList)
+    PackageList = property(_GetPackageList)
+    ModuleList = property(_GetModuleList)
 
 ##
 #

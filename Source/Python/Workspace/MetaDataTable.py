@@ -233,6 +233,12 @@ class TableFile(Table):
     def SetFileTimeStamp(self, FileId, TimeStamp):
         self.Exec("update %s set TimeStamp=%s where ID='%s'" % (self.Table, TimeStamp, FileId))
 
+    def GetFileList(self, FileType):
+        RecordList = self.Exec("select FullPath from %s where Model=%s" % (self.Table, FileType))
+        if len(RecordList) == 0:
+            return []
+        return [R[0] for R in RecordList]
+
 ## TableDataModel
 #
 # This class defined a table used for data model

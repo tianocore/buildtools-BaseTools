@@ -21,7 +21,7 @@ import os
 import FdfParser
 from Common import BuildToolError
 from GenFdsGlobalVariable import GenFdsGlobalVariable
-import Common.EdkIIWorkspaceBuild
+from Workspace.WorkspaceDatabase import WorkspaceDatabase
 import RuleComplexFile
 from EfiSection import EfiSection
 import StringIO
@@ -156,11 +156,11 @@ def main():
             
         """call Workspace build create database"""
         os.environ["WORKSPACE"] = Workspace
-        BuildWorkSpace = Common.EdkIIWorkspaceBuild.WorkspaceBuild(GenFdsGlobalVariable.ActivePlatform, GenFdsGlobalVariable.WorkSpaceDir)
-            
-#        OutputDirFromDsc = BuildWorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Defines.DefinesDictionary['OUTPUT_DIRECTORY'][0]
+        BuildWorkSpace = WorkspaceDatabase('', GlobalData.gGlobalDefines)
+        BuildWorkSpace.InitDatabase()
+
         for Arch in ArchList:
-            GenFdsGlobalVariable.OutputDirFromDscDict[Arch] = NormPath(BuildWorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Platform.Header[Arch].OutputDirectory)
+            GenFdsGlobalVariable.OutputDirFromDscDict[Arch] = NormPath(BuildWorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, Arch].OutputDirectory)
         
         if (Options.outputDir):
             OutputDirFromCommandLine = GenFdsGlobalVariable.ReplaceWorkspaceMacro(Options.outputDir)
@@ -207,19 +207,16 @@ def main():
                 GenFds.currentFv = Options.uiFvName
             else:
                 GenFdsGlobalVariable.ErrorLogger("No such an FV in FDF file.")
-                sys.exit(1)
-       
-        # Disable output of parsing DSC/INF/DEC temporarily
-        OldLevel = EdkLogger.GetLevel()
-        EdkLogger.SetLevel(EdkLogger.QUIET)
-        BuildWorkSpace.GenBuildDatabase({}, FdfParserObj.Profile.InfList)
-        EdkLogger.SetLevel(OldLevel)
+                sys.exit(1)       
         
         """Call GenFds"""
         GenFds.GenFd('', FdfParserObj, BuildWorkSpace, ArchList)
         print "\nDone!\n"
     except Exception, X:
         EdkLogger.error("GenFds", BuildToolError.GENFDS_ERROR, X, RaiseError = False)
+        if Options.debug != None:
+            import traceback
+            EdkLogger.quiet(traceback.format_exc())
         sys.exit(1)
 
 ## Parse command line options

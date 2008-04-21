@@ -78,22 +78,18 @@ class AprioriSection (AprioriSectionClassObject):
                     Dict['$(ARCH)'] = Arch
                 InfFileName = GenFdsGlobalVariable.MacroExtend(InfFileName, Dict, Arch)
 
-                if Arch != None and InfFileName in GenFdsGlobalVariable.WorkSpace.Build[Arch].ModuleDatabase.keys():
-                    Inf = GenFdsGlobalVariable.WorkSpace.Build[Arch].ModuleDatabase[InfFileName]
+                if Arch != None:
+                    Inf = GenFdsGlobalVariable.WorkSpace.BuildObject[InfFileName, Arch]
                     Guid = Inf.Guid
         
-                elif InfFileName in GenFdsGlobalVariable.WorkSpace.InfDatabase.keys():
-                    Inf = GenFdsGlobalVariable.WorkSpace.InfDatabase[InfFileName]
-                    Guid = Inf.Module.Header[Arch].Guid
+                else:
+                    Inf = GenFdsGlobalVariable.WorkSpace.BuildObject[InfFileName, 'COMMON']
+                    Guid = Inf.Guid
                     
                     self.BinFileList = Inf.Module.Binaries
                     if self.BinFileList == []:
                         raise Exception ("INF %s not found in build ARCH %s!" % (InfFileName, GenFdsGlobalVariable.ArchList))
                         sys.exit(1)
-        
-                else:
-                    raise Exception ("INF %s not found in database!" % InfFileName)
-                    sys.exit(1)
             
                 
             GuidPart = Guid.split('-')

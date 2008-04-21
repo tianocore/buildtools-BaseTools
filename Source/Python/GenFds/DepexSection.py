@@ -37,7 +37,7 @@ class DepexSection (DepexSectionClassObject):
     
     def __FindGuidValue(self, CName):
         for Arch in GenFdsGlobalVariable.ArchList:
-            for PkgDb in GenFdsGlobalVariable.WorkSpace.Build[Arch].PackageDatabase.values():
+            for PkgDb in GenFdsGlobalVariable.WorkSpace.PackageList:
                 if CName in PkgDb.Ppis:
                     return PkgDb.Ppis[CName]
                 if CName in PkgDb.Protocols:

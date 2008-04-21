@@ -58,9 +58,9 @@ class FfsInfStatement(FfsInfStatementClassObject):
         self.InfFileName = NormPath(self.InfFileName)
         self.InfFileName = GenFdsGlobalVariable.MacroExtend(self.InfFileName, Dict, self.CurrentArch)
         (self.SourceDir, InfName) = os.path.split(self.InfFileName)
-        if self.CurrentArch != None and self.InfFileName in GenFdsGlobalVariable.WorkSpace.Build[self.CurrentArch].ModuleDatabase.keys():
+        if self.CurrentArch != None:
             
-            Inf = GenFdsGlobalVariable.WorkSpace.Build[self.CurrentArch].ModuleDatabase[self.InfFileName]
+            Inf = GenFdsGlobalVariable.WorkSpace.BuildObject[self.InfFileName, self.CurrentArch]
             #
             # Set Ffs BaseName, MdouleGuid, ModuleType, Version, OutputPath
             #
@@ -68,29 +68,22 @@ class FfsInfStatement(FfsInfStatementClassObject):
             self.ModuleGuid = Inf.Guid
             self.ModuleType = Inf.ModuleType
             if Inf.AutoGenVersion < 0x00010005:
-                self.ModuleType = GenFdsGlobalVariable.WorkSpace.InfDatabase[self.InfFileName].Module.Header[self.CurrentArch].ComponentType
+                self.ModuleType = Inf.ComponentType
             self.VersionString = Inf.Version
             self.BinFileList = Inf.Binaries
-            if self.KeepReloc == None and Inf.Shadow != '':
-                if Inf.Shadow.upper() == "TRUE":
-                    self.ShadowFromInfFile = True
-                else:
-                    self.ShadowFromInfFile = False 
+            if self.KeepReloc == None and Inf.Shadow:
+                self.ShadowFromInfFile = Inf.Shadow
         
-        elif self.InfFileName in GenFdsGlobalVariable.WorkSpace.InfDatabase.keys():
-            Inf = GenFdsGlobalVariable.WorkSpace.InfDatabase[self.InfFileName]
-            self.BaseName = Inf.Module.Header[self.CurrentArch].Name
-            self.ModuleGuid = Inf.Module.Header[self.CurrentArch].Guid
-            self.ModuleType = Inf.Module.Header[self.CurrentArch].ModuleType
-            self.VersionString = Inf.Module.Header[self.CurrentArch].Version
-            self.BinFileList = Inf.Module.Binaries
+        else:
+            Inf = GenFdsGlobalVariable.WorkSpace.BuildObject[self.InfFileName, 'COMMON']
+            self.BaseName = Inf.BaseName
+            self.ModuleGuid = Inf.Guid
+            self.ModuleType = Inf.ModuleType
+            self.VersionString = Inf.Version
+            self.BinFileList = Inf.Binaries
             if self.BinFileList == []:
                 raise Exception ("INF %s specified in FDF could not be found in build ARCH %s!" % (self.InfFileName, GenFdsGlobalVariable.ArchList))
                 sys.exit(1)
-        
-        else:
-            raise Exception ("INF %s specified in FDF could not be found in database!" % self.InfFileName)
-            sys.exit(1)
         
         GenFdsGlobalVariable.VerboseLogger( "BaseName : %s" %self.BaseName)
         GenFdsGlobalVariable.VerboseLogger("ModuleGuid : %s" %self.ModuleGuid)
@@ -233,23 +226,23 @@ class FfsInfStatement(FfsInfStatementClassObject):
     def __GetPlatformArchList__(self):
         TargetArchList = GenFdsGlobalVariable.ArchList
         if len(TargetArchList) == 0:
-            TargetArchList = GenFdsGlobalVariable.WorkSpace.SupArchList
+            TargetArchList = GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'COMMON'].SupArchList
         else:
-            TargetArchList = set(GenFdsGlobalVariable.WorkSpace.SupArchList) & set(TargetArchList)
+            TargetArchList = set(GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'COMMON'].SupArchList) & set(TargetArchList)
             
         InfFileKey = os.path.normpath(self.InfFileName)
         DscArchList = []
-        PlatformDataBase = GenFdsGlobalVariable.WorkSpace.Build.get('IA32').PlatformDatabase.get(GenFdsGlobalVariable.ActivePlatform)
+        PlatformDataBase = GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'IA32']
         if  PlatformDataBase != None:
             if InfFileKey in PlatformDataBase.Modules:
                 DscArchList.append ('IA32')
                 
-        PlatformDataBase = GenFdsGlobalVariable.WorkSpace.Build.get('X64').PlatformDatabase.get(GenFdsGlobalVariable.ActivePlatform)
+        PlatformDataBase = GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'X64']
         if  PlatformDataBase != None:
             if InfFileKey in PlatformDataBase.Modules:
                 DscArchList.append ('X64')
                 
-        PlatformDataBase = GenFdsGlobalVariable.WorkSpace.Build.get('IPF').PlatformDatabase.get(GenFdsGlobalVariable.ActivePlatform)
+        PlatformDataBase = GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'IPF']
         if PlatformDataBase != None:
             if InfFileKey in (PlatformDataBase.Modules):
                 DscArchList.append ('IPF')

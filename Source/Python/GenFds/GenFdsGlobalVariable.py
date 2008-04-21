@@ -81,8 +81,8 @@ class GenFdsGlobalVariable:
         FvAddressFile.writelines("[options]" + T_CHAR_LF)
         BsAddress = '0'
         for Arch in ArchList:
-            if GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Platform.Header[Arch].BsBaseAddress:
-                BsAddress = GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Platform.Header[Arch].BsBaseAddress
+            if GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, Arch].BsBaseAddress:
+                BsAddress = GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, Arch].BsBaseAddress
                 break
         
         FvAddressFile.writelines("EFI_BOOT_DRIVER_BASE_ADDRESS = " + \
@@ -91,8 +91,8 @@ class GenFdsGlobalVariable:
                                        
         RtAddress = '0'
         for Arch in ArchList:
-            if GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Platform.Header[Arch].RtBaseAddress:
-                RtAddress = GenFdsGlobalVariable.WorkSpace.DscDatabase[GenFdsGlobalVariable.ActivePlatform].Platform.Header[Arch].RtBaseAddress
+            if GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, Arch].RtBaseAddress:
+                RtAddress = GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, Arch].RtBaseAddress
                 
         FvAddressFile.writelines("EFI_RUNTIME_DRIVER_BASE_ADDRESS = " + \
                                        RtAddress          + \
