@@ -1010,6 +1010,13 @@ class Build():
                 ExitFlag.set()
                 BuildTask.WaitForComplete()
 
+                #
+                # Check for build error, and raise exception if one
+                # has been signaled.
+                #
+                if BuildTask.HasError():
+                    EdkLogger.error("build", BUILD_ERROR, BuildTask.GetErrorMessage())
+
                 # Generate FD image if there's a FDF file found
                 if self.Fdf != '' and self.Target in ["", "all", "fds"]:
                     LaunchCommand(Wa.BuildCommand + ("fds",), Wa.MakeFileDir)
