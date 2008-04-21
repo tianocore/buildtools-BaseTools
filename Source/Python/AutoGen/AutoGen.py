@@ -778,7 +778,7 @@ class PlatformAutoGen(AutoGen):
             if M == None:
                 EdkLogger.error("build", RESOURCE_NOT_AVAILABLE,
                                 "Library instance of library class [%s] is not found" % LibraryClassName,
-                                File=self._MetaFile, ExtraData="consumed by [%s] [%s]" % (str(Module), self._Arch))
+                                File=self._MetaFile, ExtraData="consumed by [%s] [%s]" % (str(Module), self.Arch))
             LibraryList.append(M)
             #
             # check if there're library classes
