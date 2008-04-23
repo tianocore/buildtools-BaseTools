@@ -1971,7 +1971,7 @@ class WorkspaceDatabase(object):
 
         FileTable = self._FILE_TABLE_[FileType](self.Cur, TableName, FileId)
         FileTable.Create(not Parsed)
-        Parser = self._FILE_PARSER_[FileType](FilePath, FileId, FileType, FileTable)
+        Parser = self._FILE_PARSER_[FileType](FilePath, FileType, FileTable)
         # set the "Finished" flag in parser in order to avoid re-parsing (if parsed)
         Parser.Finished = Parsed
         return Parser

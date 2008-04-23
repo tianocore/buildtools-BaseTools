@@ -1,5 +1,5 @@
 ## @file
-# This file is used to create/update/query/erase a common table
+# This file is used to create/update/query/erase a meta file table
 #
 # Copyright (c) 2008, Intel Corporation
 # All rights reserved. This program and the accompanying materials
@@ -18,7 +18,9 @@ import Common.EdkLogger as EdkLogger
 from MetaDataTable import Table
 from MetaDataTable import ConvertToSqlString
 
+## Python class representation of table storing module data
 class ModuleTable(Table):
+    # TRICK: use file ID as the part before '.'
     _ID_STEP_ = 0.00000001
     _ID_MAX_  = 0.99999999
     _COLUMN_ = '''
@@ -36,23 +38,22 @@ class ModuleTable(Table):
         EndColumn INTEGER NOT NULL,
         Enabled INTEGER DEFAULT 0
         '''
+    # used as table end flag, in case the changes to database is not committed to db file
     _DUMMY_ = "-1, -1, '====', '====', '====', '====', '====', -1, -1, -1, -1, -1, -1"
 
+    ## Constructor
     def __init__(self, Cursor, Name='Inf', IdBase=0, Temporary=False):
         Table.__init__(self, Cursor, Name, IdBase, Temporary)
 
-    #
-    # Insert a record into table Inf
+    ## Insert a record into table Inf
     #
     # @param Model:          Model of a Inf item
     # @param Value1:         Value1 of a Inf item
     # @param Value2:         Value2 of a Inf item
     # @param Value3:         Value3 of a Inf item
-    # @param Value4:         Value4 of a Inf item
-    # @param Value5:         Value5 of a Inf item
-    # @param Arch:           Arch of a Inf item
+    # @param Scope1:         Arch of a Inf item
+    # @param Scope2          Platform os a Inf item
     # @param BelongsToItem:  The item belongs to which another item
-    # @param BelongsToFile:  The item belongs to which dsc file
     # @param StartLine:      StartLine of a Inf item
     # @param StartColumn:    StartColumn of a Inf item
     # @param EndLine:        EndLine of a Inf item
@@ -80,7 +81,9 @@ class ModuleTable(Table):
 
     ## Query table
     #
-    # @param Model:  The Model of Record 
+    # @param    Model:      The Model of Record 
+    # @param    Arch:       The Arch attribute of Record 
+    # @param    Platform    The Platform attribute of Record 
     #
     # @retval:       A recordSet of all found records 
     #
@@ -96,9 +99,10 @@ class ModuleTable(Table):
         SqlCommand = "SELECT %s FROM %s WHERE %s" % (ValueString, self.Table, ConditionString)
         return self.Exec(SqlCommand)
 
+## Python class representation of table storing package data
 class PackageTable(Table):
     _ID_STEP_ = 0.00000001
-    _ID_MAX_ = 1
+    _ID_MAX_ = 0.99999999
     _COLUMN_ = '''
         ID REAL PRIMARY KEY,
         Model INTEGER NOT NULL,
@@ -114,7 +118,10 @@ class PackageTable(Table):
         EndColumn INTEGER NOT NULL,
         Enabled INTEGER DEFAULT 0
         '''
+    # used as table end flag, in case the changes to database is not committed to db file
     _DUMMY_ = "-1, -1, '====', '====', '====', '====', '====', -1, -1, -1, -1, -1, -1"
+
+    ## Constructor
     def __init__(self, Cursor, Name='Dec', IdBase=0, Temporary=False):
         Table.__init__(self, Cursor, Name, IdBase, Temporary)
 
@@ -126,9 +133,9 @@ class PackageTable(Table):
     # @param Value1:         Value1 of a Dec item
     # @param Value2:         Value2 of a Dec item
     # @param Value3:         Value3 of a Dec item
-    # @param Arch:           Arch of a Dec item
+    # @param Scope1:         Arch of a Dec item
+    # @param Scope2:         Module type of a Dec item
     # @param BelongsToItem:  The item belongs to which another item
-    # @param BelongsToFile:  The item belongs to which dsc file
     # @param StartLine:      StartLine of a Dec item
     # @param StartColumn:    StartColumn of a Dec item
     # @param EndLine:        EndLine of a Dec item
@@ -156,7 +163,8 @@ class PackageTable(Table):
 
     ## Query table
     #
-    # @param Model:  The Model of Record 
+    # @param    Model:  The Model of Record 
+    # @param    Arch:   The Arch attribute of Record 
     #
     # @retval:       A recordSet of all found records 
     #
@@ -170,9 +178,10 @@ class PackageTable(Table):
         SqlCommand = "SELECT %s FROM %s WHERE %s" % (ValueString, self.Table, ConditionString)
         return self.Exec(SqlCommand)
 
+## Python class representation of table storing platform data
 class PlatformTable(Table):
     _ID_STEP_ = 0.00000001
-    _ID_MAX_ = 1
+    _ID_MAX_ = 0.99999999
     _COLUMN_ = '''
         ID REAL PRIMARY KEY,
         Model INTEGER NOT NULL,
@@ -189,7 +198,10 @@ class PlatformTable(Table):
         EndColumn INTEGER NOT NULL,
         Enabled INTEGER DEFAULT 0
         '''
+    # used as table end flag, in case the changes to database is not committed to db file
     _DUMMY_ = "-1, -1, '====', '====', '====', '====', '====', -1, -1, -1, -1, -1, -1, -1"
+
+    ## Constructor
     def __init__(self, Cursor, Name='Dsc', IdBase=0, Temporary=False):
         Table.__init__(self, Cursor, Name, IdBase, Temporary)
 
@@ -201,9 +213,10 @@ class PlatformTable(Table):
     # @param Value1:         Value1 of a Dsc item
     # @param Value2:         Value2 of a Dsc item
     # @param Value3:         Value3 of a Dsc item
-    # @param Arch:           Arch of a Dsc item
+    # @param Scope1:         Arch of a Dsc item
+    # @param Scope2:         Module type of a Dsc item
     # @param BelongsToItem:  The item belongs to which another item
-    # @param BelongsToFile:  The item belongs to which dsc file
+    # @param FromItem:       The item belongs to which dsc file
     # @param StartLine:      StartLine of a Dsc item
     # @param StartColumn:    StartColumn of a Dsc item
     # @param EndLine:        EndLine of a Dsc item
@@ -232,7 +245,11 @@ class PlatformTable(Table):
 
     ## Query table
     #
-    # @param Model:  The Model of Record 
+    # @param Model:          The Model of Record 
+    # @param Scope1:         Arch of a Dsc item
+    # @param Scope2:         Module type of a Dsc item
+    # @param BelongsToItem:  The item belongs to which another item
+    # @param FromItem:       The item belongs to which dsc file
     #
     # @retval:       A recordSet of all found records 
     #
@@ -254,7 +271,5 @@ class PlatformTable(Table):
             ConditionString += " AND FromItem=%s" % FromItem
 
         SqlCommand = "SELECT %s FROM %s WHERE %s" % (ValueString, self.Table, ConditionString)
-        #print SqlCommand
         return self.Exec(SqlCommand)
-
 

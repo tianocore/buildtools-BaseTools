@@ -1,7 +1,7 @@
 ## @file
-# This file is used to create a database used by ECC tool
+# This file is used to parse meta files
 #
-# Copyright (c) 2007 ~ 2008, Intel Corporation
+# Copyright (c) 2008, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -14,7 +14,6 @@
 ##
 # Import Modules
 #
-import sqlite3
 import os
 import time
 
@@ -24,8 +23,33 @@ from Common.DataType import *
 from Common.String import *
 from Common.Misc import Blist
 
+## Base class of parser
+#
+#  This class is used for derivation purpose. The specific parser for one kind
+# type file must derive this class and implement some public interfaces.
+#
+#   @param      FilePath        The path of platform description file
+#   @param      FileType        The raw data of DSC file
+#   @param      Table           Database used to retrieve module/package information
+#   @param      Macros          Macros used for replacement in file
+#   @param      Owner           Owner ID (for sub-section parsing)
+#   @param      From            ID from which the data comes (for !INCLUDE directive)
+#
 class MetaFileParser(object):
+    # data type (file content) for specific file type
     DataType = {}
+
+    ## Constructor of MetaFileParser
+    #
+    #  Initialize object of MetaFileParser
+    #
+    #   @param      FilePath        The path of platform description file
+    #   @param      FileType        The raw data of DSC file
+    #   @param      Table           Database used to retrieve module/package information
+    #   @param      Macros          Macros used for replacement in file
+    #   @param      Owner           Owner ID (for sub-section parsing)
+    #   @param      From            ID from which the data comes (for !INCLUDE directive)
+    #
     def __init__(self, FilePath, FileType, Table, Macros={}, Owner=-1, From=-1):
         self._Table = Table
         self._FileType = FileType
@@ -36,7 +60,7 @@ class MetaFileParser(object):
         self._Owner = Owner
         self._From = From
 
-        # for parsing
+        # parsr status for parsing
         self._Content = None
         self._ValueList = ['', '', '', '', '']
         self._Scope = []
@@ -51,37 +75,60 @@ class MetaFileParser(object):
         self._Enabled = 0
         self._Finished = False
 
+    ## Store the parsed data in table
     def _Store(self, *Args):
         return self._Table.Insert(*Args)
 
+    ## Virtual method for starting parse
     def Start(self):
         raise NotImplementedError 
 
+    ## Set parsing complete flag in both class and table
     def _Done(self):
         self._Finished = True
         self._Table.SetEndFlag()
 
+    ## Return the table containg parsed data
+    #
+    #   If the parse complete flag is not set, this method will try to parse the
+    # file before return the table
+    # 
     def _GetTable(self):
         if not self._Finished:
             self.Start()
         return self._Table
 
+    ## Get the parse complete flag
     def _GetFinished(self):
         return self._Finished
 
+    ## Set the complete flag
     def _SetFinished(self, Value):
         self._Finished = Value
 
-    # DataType = [section_header_name, scope1(arch), scope2(platform,moduletype)]
+    ## Use [] style to query data in table, just for readability
+    # 
+    #   DataInfo = [data_type, scope1(arch), scope2(platform,moduletype)]
+    # 
     def __getitem__(self, DataInfo):
         if type(DataInfo) != type(()):
             DataInfo = (DataInfo,)
         return self.Table.Query(*DataInfo)
 
+    ## Data parser for the common format in different type of file
+    #
+    #   The common format in the meatfile is like
+    # 
+    #       xxx1 | xxx2 | xxx3
+    # 
     def _CommonParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT)
         self._ValueList[0:len(TokenList)] = TokenList
 
+    ## Data parser for the format in which there's path
+    #
+    #   Only path can have macro used. So we need to replace them before use.
+    # 
     def _PathParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT)
         self._ValueList[0:len(TokenList)] = TokenList
@@ -92,15 +139,23 @@ class MetaFileParser(object):
                     continue
                 self._ValueList[Index] = NormPath(Value, self._Macros)
 
+    ## Skip unsupported data
     def _Skip(self):
         self._ValueList[0:1] = [self._CurrentLine]
 
+    ## Section header parser
+    #
+    #   The section header is always in following format:
+    # 
+    #       [section_name.arch<.platform|module_type>]
+    # 
     def _SectionHeaderParser(self):
         self._Scope = []
         self._SectionName = ''
         ArchList = set()
         for Item in GetSplitValueList(self._CurrentLine[1:-1], TAB_COMMA_SPLIT):
             ItemList = GetSplitValueList(Item, TAB_SPLIT)
+            # different section should not mix in one section
             if self._SectionName != '' and self._SectionName != ItemList[0].upper():
                 EdkLogger.error('Parser', FORMAT_INVALID, "Different section names in the same section",
                                 File=self._FilePath, Line=self._LineIndex+1, ExtraData=self._CurrentLine)
@@ -127,6 +182,7 @@ class MetaFileParser(object):
             EdkLogger.error('Parser', FORMAT_INVALID, "'common' ARCH must not be used with specific ARCHs",
                             File=self._FilePath, Line=self._LineIndex+1, ExtraData=self._CurrentLine)
 
+    ## [defines] section parser
     def _DefineParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
         self._ValueList[0:len(TokenList)] = TokenList
@@ -134,6 +190,7 @@ class MetaFileParser(object):
             EdkLogger.error('Parser', FORMAT_INVALID, "No value specified",
                             ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
 
+    ## DEFINE name=value parser
     def _MacroParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, ' ', 1)
         if len(TokenList) < 2 or TokenList[1] == '':
@@ -144,6 +201,7 @@ class MetaFileParser(object):
             return
         if self._Macros == None:
             self._Macros = {}
+        # keep the macro definition for later use
         self._Macros[TokenList[0]] = TokenList[1]
 
     _SectionParser  = {}
@@ -151,7 +209,15 @@ class MetaFileParser(object):
     Finished        = property(_GetFinished, _SetFinished)
 
 
+## INF file parser class
+#
+#   @param      FilePath        The path of platform description file
+#   @param      FileType        The raw data of DSC file
+#   @param      Table           Database used to retrieve module/package information
+#   @param      Macros          Macros used for replacement in file
+#
 class InfParser(MetaFileParser):
+    # INF file supported data types (one type per section)
     DataType = {
         TAB_UNKNOWN.upper() : MODEL_UNKNOWN,
         TAB_INF_DEFINES.upper() : MODEL_META_DATA_HEADER,
@@ -175,15 +241,26 @@ class InfParser(MetaFileParser):
         TAB_USER_EXTENSIONS.upper() : MODEL_META_DATA_USER_EXTENSION
     }
 
-    def __init__(self, FilePath, FileId, FileType, Table, Macros={}):
+    ## Constructor of InfParser
+    #
+    #  Initialize object of InfParser
+    #
+    #   @param      FilePath        The path of module description file
+    #   @param      FileType        The raw data of DSC file
+    #   @param      Table           Database used to retrieve module/package information
+    #   @param      Macros          Macros used for replacement in file
+    #
+    def __init__(self, FilePath, FileType, Table, Macros={}):
         MetaFileParser.__init__(self, FilePath, FileType, Table, Macros)
 
+    ## Parser starter
     def Start(self):
         try:
             self._Content = open(self._FilePath, 'r').readlines()
         except:
             EdkLogger.error("Parser", FILE_READ_FAILURE, ExtraData=self._FilePath)
 
+        # parse the file line by line
         for Index in range(0, len(self._Content)):
             Line = CleanString(self._Content[Index])
             if Line == '':
@@ -196,18 +273,19 @@ class InfParser(MetaFileParser):
                 self._SectionHeaderParser()
                 continue
             elif Line.upper().startswith('DEFINE '):
+                # file private macros
                 self._MacroParser()
                 continue
 
             # section content
             self._ValueList = ['','','']
+            # parse current line, result will be put in self._ValueList
             self._SectionParser[self._SectionType](self)
             if self._ValueList == None:
                 continue
             # 
-            # Model, Value1, Value2, Value3, Value4, Value5, Arch, Platform, BelongsToFile=-1, 
-            # LineBegin=-1, ColumnBegin=-1, LineEnd=-1, ColumnEnd=-1, BelongsToItem=-1, FeatureFlag='', 
-            # Enabled=-1
+            # Model, Value1, Value2, Value3, Arch, Platform, BelongsToItem=-1, 
+            # LineBegin=-1, ColumnBegin=-1, LineEnd=-1, ColumnEnd=-1, Enabled=-1
             # 
             for Arch, Platform in self._Scope:
                 self._Store(self._SectionType,
@@ -224,7 +302,8 @@ class InfParser(MetaFileParser):
                             0
                             )
         self._Done()
-            
+
+    ## [BuildOptions] section parser
     def _BuildOptionParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
         TokenList2 = GetSplitValueList(TokenList[0], ':', 1)
@@ -235,12 +314,14 @@ class InfParser(MetaFileParser):
             self._ValueList[1] = TokenList[0]
         self._ValueList[2] = ReplaceMacro(TokenList[1], self._Macros)
 
+    ## [nmake] section parser (R8.x style only)
     def _NmakeParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
         self._ValueList[0:len(TokenList)] = TokenList
         # remove self-reference in macro setting
         self._ValueList[1] = ReplaceMacro(self._ValueList[1], {self._ValueList[0]:''})
 
+    ## [FixedPcd], [FeaturePcd], [PatchPcd], [Pcd] and [PcdEx] sections parser
     def _PcdParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT, 1)
         self._ValueList[0:1] = GetSplitValueList(TokenList[0], TAB_SPLIT)
@@ -250,6 +331,7 @@ class InfParser(MetaFileParser):
             EdkLogger.error('Parser', FORMAT_INVALID, "No token space GUID or PCD name specified",
                             ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
 
+    ## [depex] section parser
     def _DepexParser(self):
         self._ValueList[0:1] = [self._CurrentLine]
 
@@ -276,7 +358,17 @@ class InfParser(MetaFileParser):
         MODEL_META_DATA_USER_EXTENSION  :   MetaFileParser._Skip,
     }
 
+## DSC file parser class
+#
+#   @param      FilePath        The path of platform description file
+#   @param      FileType        The raw data of DSC file
+#   @param      Table           Database used to retrieve module/package information
+#   @param      Macros          Macros used for replacement in file
+#   @param      Owner           Owner ID (for sub-section parsing)
+#   @param      From            ID from which the data comes (for !INCLUDE directive)
+#
 class DscParser(MetaFileParser):
+    # DSC file supported data types (one type per section)
     DataType = {
         TAB_SKUIDS.upper()                          :   MODEL_EFI_SKU_ID,
         TAB_LIBRARIES.upper()                       :   MODEL_EFI_LIBRARY_INSTANCE,
@@ -302,6 +394,7 @@ class DscParser(MetaFileParser):
         TAB_END_IF.upper()                          :   MODEL_META_DATA_CONDITIONAL_STATEMENT_ENDIF,
     }
 
+    # sections which allow "!include" directive
     _IncludeAllowedSection = [
         TAB_LIBRARIES.upper(), 
         TAB_LIBRARY_CLASSES.upper(), 
@@ -319,6 +412,7 @@ class DscParser(MetaFileParser):
         TAB_PCDS_DYNAMIC_EX_VPD_NULL.upper(),
         ]
 
+    # operators which can be used in "!if/!ifdef/!ifndef" directives
     _OP_ = {
         "!"     :   lambda a:   not a,
         "!="    :   lambda a,b: a!=b,
@@ -331,11 +425,23 @@ class DscParser(MetaFileParser):
         "=<"    :   lambda a,b: a<=b,
     }
 
-    def __init__(self, FilePath, FileId, FileType, Table, Macros={}, Owner=-1, From=-1):
+    ## Constructor of DscParser
+    #
+    #  Initialize object of DscParser
+    #
+    #   @param      FilePath        The path of platform description file
+    #   @param      FileType        The raw data of DSC file
+    #   @param      Table           Database used to retrieve module/package information
+    #   @param      Macros          Macros used for replacement in file
+    #   @param      Owner           Owner ID (for sub-section parsing)
+    #   @param      From            ID from which the data comes (for !INCLUDE directive)
+    #
+    def __init__(self, FilePath, FileType, Table, Macros={}, Owner=-1, From=-1):
         MetaFileParser.__init__(self, FilePath, FileType, Table, Macros, Owner, From)
         # to store conditional directive evaluation result
         self._Eval = Blist()
 
+    ## Parser starter
     def Start(self):
         try:
             if self._Content == None:
@@ -347,7 +453,6 @@ class DscParser(MetaFileParser):
             Line = CleanString(self._Content[Index])
             # skip empty line
             if Line == '':
-                self._LineIndex += 1
                 continue
             self._CurrentLine = Line
             self._LineIndex = Index
@@ -356,10 +461,12 @@ class DscParser(MetaFileParser):
             if Line[0] == TAB_SECTION_START and Line[-1] == TAB_SECTION_END:
                 self._SectionHeaderParser()
                 continue
+            # subsection ending
             elif Line[0] == '}':
                 self._InSubsection = False
                 self._Owner = -1
                 continue
+            # subsection header
             elif Line[0] == TAB_OPTION_START and Line[-1] == TAB_OPTION_END:
                 self._SubsectionHeaderParser()
                 continue
@@ -367,6 +474,7 @@ class DscParser(MetaFileParser):
             elif Line[0] == '!':
                 self._DirectiveParser()
                 continue
+            # file private macros
             elif Line.upper().startswith('DEFINE '):
                 self._MacroParser()
                 continue
@@ -386,9 +494,8 @@ class DscParser(MetaFileParser):
                 continue
 
             # 
-            # Model, Value1, Value2, Value3, Arch, Platform, BelongsToFile=-1, 
-            # LineBegin=-1, ColumnBegin=-1, LineEnd=-1, ColumnEnd=-1, BelongsToItem=-1, 
-            # Enabled=-1
+            # Model, Value1, Value2, Value3, Arch, ModuleType, BelongsToItem=-1, BelongsToFile=-1, 
+            # LineBegin=-1, ColumnBegin=-1, LineEnd=-1, ColumnEnd=-1, Enabled=-1
             # 
             for Arch, ModuleType in self._Scope:
                 self._LastItem = self._Store(
@@ -408,15 +515,18 @@ class DscParser(MetaFileParser):
                     )
         self._Done()
 
+    ## [defines] section parser
     def _DefineParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
         if len(TokenList) < 2:
             EdkLogger.error('Parser', FORMAT_INVALID, "No value specified",
                             ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+        # 'FLASH_DEFINITION', 'OUTPUT_DIRECTORY' need special processing
         if TokenList[0] in ['FLASH_DEFINITION', 'OUTPUT_DIRECTORY']:
             TokenList[1] = NormPath(TokenList[1], self._Macros)
         self._ValueList[0:len(TokenList)] = TokenList    
-            
+
+    ## <subsection_header> parser
     def _SubsectionHeaderParser(self):
         self._SubsectionName = self._CurrentLine[1:-1].upper()
         if self._SubsectionName in self.DataType:
@@ -424,6 +534,7 @@ class DscParser(MetaFileParser):
         else:
             self._SubsectionType = MODEL_UNKNOWN
 
+    ## Directive statement parser
     def _DirectiveParser(self):
         self._ValueList = ['','','']
         TokenList = GetSplitValueList(self._CurrentLine, ' ', 1)
@@ -433,6 +544,7 @@ class DscParser(MetaFileParser):
                             File=self._FilePath, Line=self._LineIndex+1,
                             ExtraData=self._CurrentLine)
         DirectiveName = self._ValueList[0].upper()
+        # keep the directive in database first
         self._LastItem = self._Store(
             self.DataType[DirectiveName],
             self._ValueList[0],
@@ -455,6 +567,7 @@ class DscParser(MetaFileParser):
             # the included file must be relative to the parsing file
             IncludedFile = os.path.join(self._FileDir, self._ValueList[1])
             Parser = DscParser(IncludedFile, self._FileType, self._Table, self._Macros, From=self._LastItem)
+            # set the parser status with current status
             Parser._SectionName = self._SectionName
             Parser._SectionType = self._SectionType
             Parser._Scope = self._Scope
@@ -464,6 +577,7 @@ class DscParser(MetaFileParser):
             except:
                 EdkLogger.error("Parser", PARSER_ERROR, File=self._FilePath, Line=self._LineIndex+1,
                                 ExtraData="Failed to parse content in file %s" % IncludedFile)
+            # update current status with sub-parser's status
             self._SectionName = Parser._SectionName
             self._SectionType = Parser._SectionType
             self._Scope       = Parser._Scope
@@ -491,11 +605,14 @@ class DscParser(MetaFileParser):
             else:
                 self._Enabled = len(self._Eval)
 
+    ## Evaludate the value of expression in "if/ifdef/ifndef" directives
     def _Evaluate(self, Expression):
         TokenList = Expression.split()
         TokenNumber = len(TokenList)
+        # one operand, guess it's just a macro name
         if TokenNumber == 1:
             return TokenList[0] in self._Macros
+        # two operands, suppose it's "!xxx" format
         elif TokenNumber == 2:
             Op = TokenList[0]
             if Op not in self._OP_:
@@ -506,6 +623,7 @@ class DscParser(MetaFileParser):
             else:
                 Value = False
             return self._OP_[Op](Value)
+        # three operands
         elif TokenNumber == 3:
             Name = TokenList[0]
             if Name not in self._Macros:
@@ -519,6 +637,7 @@ class DscParser(MetaFileParser):
             EdkLogger.error('Parser', FORMAT_INVALID, File=self._FilePath, Line=self._LineIndex+1,
                             ExtraData=Expression)
 
+    ## [BuildOptions] section parser
     def _BuildOptionParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
         TokenList2 = GetSplitValueList(TokenList[0], ':', 1)
@@ -529,6 +648,20 @@ class DscParser(MetaFileParser):
             self._ValueList[1] = TokenList[0]
         self._ValueList[2] = ReplaceMacro(TokenList[1], self._Macros)
 
+    ## PCD sections parser 
+    # 
+    #   [PcdsFixedAtBuild]
+    #   [PcdsPatchableInModule]
+    #   [PcdsFeatureFlag]
+    #   [PcdsDynamicEx
+    #   [PcdsDynamicExDefault]
+    #   [PcdsDynamicExVpd]
+    #   [PcdsDynamicExHii]
+    #   [PcdsDynamic]
+    #   [PcdsDynamicDefault]
+    #   [PcdsDynamicVpd]
+    #   [PcdsDynamicHii]
+    # 
     def _PcdParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT, 1)
         self._ValueList[0:1] = GetSplitValueList(TokenList[0], TAB_SPLIT)
@@ -540,6 +673,7 @@ class DscParser(MetaFileParser):
             EdkLogger.error('Parser', FORMAT_INVALID, "No PCD value given",
                             ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
 
+    ## [components] section parser
     def _ComponentParser(self):        
         if self._CurrentLine[-1] == '{':
             self._InSubsection = True
@@ -569,7 +703,15 @@ class DscParser(MetaFileParser):
         MODEL_META_DATA_USER_EXTENSION  :   MetaFileParser._Skip,
     }
 
+## DEC file parser class
+#
+#   @param      FilePath        The path of platform description file
+#   @param      FileType        The raw data of DSC file
+#   @param      Table           Database used to retrieve module/package information
+#   @param      Macros          Macros used for replacement in file
+#
 class DecParser(MetaFileParser):
+    # DEC file supported data types (one type per section)
     DataType = {
         TAB_DEC_DEFINES.upper()                     :   MODEL_META_DATA_HEADER,
         TAB_INCLUDES.upper()                        :   MODEL_EFI_INCLUDE,
@@ -584,9 +726,19 @@ class DecParser(MetaFileParser):
         TAB_PCDS_DYNAMIC_EX_NULL.upper()            :   MODEL_PCD_DYNAMIC_EX,
     }
 
-    def __init__(self, FilePath, FileId, FileType, Table, Macro={}):
+    ## Constructor of DecParser
+    #
+    #  Initialize object of DecParser
+    #
+    #   @param      FilePath        The path of platform description file
+    #   @param      FileType        The raw data of DSC file
+    #   @param      Table           Database used to retrieve module/package information
+    #   @param      Macros          Macros used for replacement in file
+    #
+    def __init__(self, FilePath, FileType, Table, Macro={}):
         MetaFileParser.__init__(self, FilePath, FileType, Table, Macro, -1)
 
+    ## Parser starter
     def Start(self):
         try:
             if self._Content == None:
@@ -617,9 +769,8 @@ class DecParser(MetaFileParser):
                 continue
 
             # 
-            # Model, Value1, Value2, Value3, Value4, Value5, Arch, Platform, BelongsToFile=-1, 
-            # LineBegin=-1, ColumnBegin=-1, LineEnd=-1, ColumnEnd=-1, BelongsToItem=-1, FeatureFlag='', 
-            # Enabled=-1
+            # Model, Value1, Value2, Value3, Arch, BelongsToItem=-1, LineBegin=-1, 
+            # ColumnBegin=-1, LineEnd=-1, ColumnEnd=-1, FeatureFlag='', Enabled=-1
             # 
             for Arch, ModuleType in self._Scope:
                 self._LastItem = self._Store(
@@ -637,7 +788,8 @@ class DecParser(MetaFileParser):
                     0
                     )
         self._Done()
-            
+
+    ## [guids], [ppis] and [protocols] section parser
     def _GuidParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
         if len(TokenList) < 2:
@@ -646,6 +798,14 @@ class DecParser(MetaFileParser):
         self._ValueList[0] = TokenList[0]
         self._ValueList[1] = TokenList[1]
 
+    ## PCD sections parser 
+    # 
+    #   [PcdsFixedAtBuild]
+    #   [PcdsPatchableInModule]
+    #   [PcdsFeatureFlag]
+    #   [PcdsDynamicEx
+    #   [PcdsDynamic]
+    # 
     def _PcdParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT, 1)
         self._ValueList[0:1] = GetSplitValueList(TokenList[0], TAB_SPLIT)

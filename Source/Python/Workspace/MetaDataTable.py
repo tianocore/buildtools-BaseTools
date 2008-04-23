@@ -20,6 +20,7 @@ import Common.EdkLogger as EdkLogger
 from CommonDataClass import DataClass
 from CommonDataClass.DataClass import FileClass
 
+## Convert to SQL required string format
 def ConvertToSqlString(StringList):
     return map(lambda s: "'" + s.replace("'", "''") + "'", StringList)
 
@@ -209,6 +210,12 @@ class TableFile(Table):
             TimeStamp
             )
 
+    ## Get ID of a given file
+    #
+    #   @param  FilePath    Path of file
+    # 
+    #   @retval ID          ID value of given file in the table
+    # 
     def GetFileId(self, FilePath):
         QueryScript = "select ID from %s where FullPath = '%s'" % (self.Table, FilePath)
         RecordList = self.Exec(QueryScript)
@@ -216,6 +223,12 @@ class TableFile(Table):
             return None
         return RecordList[0][0]
 
+    ## Get type of a given file
+    #
+    #   @param  FileId      ID of a file
+    # 
+    #   @retval file_type   Model value of given file in the table
+    # 
     def GetFileType(self, FileId):
         QueryScript = "select Model from %s where ID = '%s'" % (self.Table, FileId)
         RecordList = self.Exec(QueryScript)
@@ -223,6 +236,12 @@ class TableFile(Table):
             return None
         return RecordList[0][0]
 
+    ## Get file timestamp of a given file
+    #
+    #   @param  FileId      ID of file
+    # 
+    #   @retval timestamp   TimeStamp value of given file in the table
+    # 
     def GetFileTimeStamp(self, FileId):
         QueryScript = "select TimeStamp from %s where ID = '%s'" % (self.Table, FileId)
         RecordList = self.Exec(QueryScript)
@@ -230,9 +249,20 @@ class TableFile(Table):
             return None
         return RecordList[0][0]
 
+    ## Update the timestamp of a given file
+    #
+    #   @param  FileId      ID of file
+    #   @param  TimeStamp   Time stamp of file
+    # 
     def SetFileTimeStamp(self, FileId, TimeStamp):
         self.Exec("update %s set TimeStamp=%s where ID='%s'" % (self.Table, TimeStamp, FileId))
 
+    ## Get list of file with given type
+    #
+    #   @param  FileType    Type value of file
+    # 
+    #   @retval file_list   List of files with the given type
+    # 
     def GetFileList(self, FileType):
         RecordList = self.Exec("select FullPath from %s where Model=%s" % (self.Table, FileType))
         if len(RecordList) == 0:
