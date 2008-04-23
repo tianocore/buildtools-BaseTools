@@ -462,6 +462,21 @@ class sdict(IterableUserDict):
     ## "in" test support
     def __contains__(self, key):
         return key in self._key_list
+    
+    ## indexof support
+    def index(self, key):
+        return self._key_list.index(key)
+    
+    ## insert support
+    def insert(self, key, newkey, newvalue, order):
+        index = self._key_list.index(key)
+        if order == 'BEFORE':
+            self._key_list.insert(index, newkey)
+            IterableUserDict.__setitem__(self, newkey, newvalue)
+        elif order == 'AFTER':
+            self._key_list.insert(index + 1, newkey)
+            IterableUserDict.__setitem__(self, newkey, newvalue)
+
 
     def has_key(self, key):
         return key in self._key_list
@@ -726,4 +741,19 @@ if __name__ == '__main__':
     d['IA32', 'DXE_CORE', 'C'] = 3
 
     print d['IA32', 'DXE_CORE', 'C']
+    
+    s = sdict()
+    s[1] = 1
+    s[3] = 3
+    s[4] = 4
+    s[6] = 6
+    print s.index(3)
+    s.insert(3, 2, 2, 'BEFORE')
+    print s.index(3)
+    print s.index(4)
+    s.insert(3, 5, 5, 'AFTER')
+    print s.keys()
+    print s.values()
+    for item in s:
+        print item, s[item]
 
