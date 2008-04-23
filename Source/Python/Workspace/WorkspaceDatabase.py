@@ -51,6 +51,7 @@ class DscBuildData(PlatformBuildClassObject):
         MODEL_PCD_DYNAMIC_EX_VPD        :   "DynamicExVpd",
     }
 
+    # dict used to convert part of [Defines] to members of DscBuildData directly
     _PROPERTY_ = {
         #
         # Required Fields
@@ -73,6 +74,17 @@ class DscBuildData(PlatformBuildClassObject):
     # used to compose dummy library class name for those forced library instances
     _NullLibraryNumber = 0
 
+    ## Constructor of DscBuildData
+    #
+    #  Initialize object of DscBuildData
+    #
+    #   @param      FilePath        The path of platform description file
+    #   @param      RawData         The raw data of DSC file
+    #   @param      BuildDataBase   Database used to retrieve module/package information
+    #   @param      Arch            The target architecture
+    #   @param      Platform        (not used for DscBuildData)
+    #   @param      Macros          Macros used for replacement in DSC file
+    #
     def __init__(self, FilePath, RawData, BuildDataBase, Arch='COMMON', Platform='DUMMY', Macros={}):
         self.DescFilePath = FilePath
         self._RawData = RawData
@@ -81,65 +93,19 @@ class DscBuildData(PlatformBuildClassObject):
         self._Macros = Macros
         self._Clear()
 
-    def __repr__(self):
-        S = '[Platform.%s]\n' % self.Arch
-        S += "\tName = %s\n" % self.PlatformName
-        S += "\tGuid = %s\n" % self.Guid
-        S += "\tVer = %s\n" % self.Version
-        S += "\n"
-        S += "\tSpecification = %s\n" % self.DscSpecification
-        S += "\tOutputDirectory = %s\n" % self.OutputDirectory 
-        S += "\tSupArchList = %s\n" % self.SupArchList     
-        S += "\tBuildTargets = %s\n" % self.BuildTargets    
-        S += "\tSkuName = %s\n" % self.SkuName           
-        S += "\tFlashDefinition = %s\n" % self.FlashDefinition 
-        S += "\tBuildNumber = %s\n" % self.BuildNumber     
-        S += "\tMakefileName = %s\n" % self.MakefileName    
-        S += "\tBsBaseAddress = %s\n" % self.BsBaseAddress   
-        S += "\tRtBaseAddress = %s\n" % self.RtBaseAddress   
-
-        S += '  <SkuId>\n'
-        for SkuName in self.SkuIds:
-            S += "\t%s = %s\n" % (SkuName, self.SkuIds[SkuName])
-
-        #S += '  <LibraryClass>\n'
-        #ModuleTypeList = set()
-        #LibraryClassList = set()
-        #for LibraryClass,ModuleType in self.LibraryClasses:
-        #    LibraryClassList.add(LibraryClass)
-        #    ModuleTypeList.add(ModuleType)
-        #LibraryClassList = list(LibraryClassList)
-        #ModuleTypeList = list(ModuleTypeList)
-        #LibraryClassList.sort()
-        #ModuleTypeList.sort()
-        #for LibraryClass in LibraryClassList:
-        #    for ModuleType in ModuleTypeList:
-        #        if not (LibraryClass,ModuleType) in self.LibraryClasses:
-        #            continue 
-        #        S += "\t%32s, %-24s = %s\n" % (LibraryClass, ModuleType, self.LibraryClasses[LibraryClass,ModuleType])
-        
-        S += '  <PCD>\n'
-        for Name, Guid in self.Pcds:
-            S += "\t%s.%s\n\t\t%s\n" % (Guid, Name, str(self.Pcds[Name, Guid]))
-        
-        S += '  <BuildOption>\n'
-        for ToolChainFamily,ToolChain in self.BuildOptions:
-            S += "\t%s:%s = %s\n" % (ToolChainFamily, ToolChain, self.BuildOptions[ToolChainFamily, ToolChain])
-
-        S += '  <Module>\n'
-        S += "\t" + "\n\t".join([str(M) for M in self.Modules]) + '\n'
-        return S
-
     ## XXX[key] = value
     def __setitem__(self, key, value):
         self.__dict__[self._PROPERTY_[key]] = value
+
     ## value = XXX[key]
     def __getitem__(self, key):
         return self.__dict__[self._PROPERTY_[key]]
+
     ## "in" test support
     def __contains__(self, key):
         return key in self._PROPERTY_
 
+    ## Set all internal used members of DscBuildData to None
     def _Clear(self):
         self._Header            = None
         self._PlatformName      = None
@@ -162,21 +128,37 @@ class DscBuildData(PlatformBuildClassObject):
         self._Pcds              = None
         self._BuildOptions      = None
 
+    ## Get architecture
     def _GetArch(self):
         return self._Arch
 
+    ## Set architecture
+    #   
+    #   Changing the default ARCH to another may affect all other information
+    # because all information in a platform may be ARCH-related. That's
+    # why we need to clear all internal used members, in order to cause all 
+    # information to be re-retrieved.
+    # 
+    #   @param  Value   The value of ARCH
+    # 
     def _SetArch(self, Value):
         if self._Arch == Value:
             return
         self._Arch = Value
         self._Clear()
 
+    ## Retrieve all information in [Defines] section
+    #
+    #   (Retriving all [Defines] information in one-shot is just to save time.)
+    # 
     def _GetHeaderInfo(self):
         RecordList = self._RawData[MODEL_META_DATA_HEADER, self._Arch]
         for Record in RecordList:
             Name = Record[0]
+            # items defined _PROPERTY_ don't need additional processing
             if Name in self:
                 self[Name] = Record[1]
+            # some special items in [Defines] section need special treatment
             elif Name == TAB_DSC_DEFINES_OUTPUT_DIRECTORY:
                 self._OutputDirectory = NormPath(Record[1], self._Macros)
             elif Name == TAB_DSC_DEFINES_FLASH_DEFINITION:
@@ -188,8 +170,10 @@ class DscBuildData(PlatformBuildClassObject):
             elif Name == TAB_DSC_DEFINES_SKUID_IDENTIFIER:
                 if self._SkuName == None:
                     self._SkuName = Record[1]
+        # set _Header to non-None in order to avoid database re-querying
         self._Header = 'DUMMY'
 
+    ## Retrieve platform name
     def _GetPlatformName(self):
         if self._PlatformName == None:
             if self._Header == None:
@@ -198,6 +182,7 @@ class DscBuildData(PlatformBuildClassObject):
                 EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No PLATFORM_NAME", File=self.DescFilePath)
         return self._PlatformName
 
+    ## Retrieve file guid
     def _GetFileGuid(self):
         if self._Guid == None:
             if self._Header == None:
@@ -206,6 +191,7 @@ class DscBuildData(PlatformBuildClassObject):
                 EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No FILE_GUID", File=self.DescFilePath)
         return self._Guid
 
+    ## Retrieve platform version
     def _GetVersion(self):
         if self._Version == None:
             if self._Header == None:
@@ -214,6 +200,7 @@ class DscBuildData(PlatformBuildClassObject):
                 self._Version = ''
         return self._Version
 
+    ## Retrieve platform description file version
     def _GetDscSpec(self):
         if self._DscSpecification == None:
             if self._Header == None:
@@ -222,6 +209,7 @@ class DscBuildData(PlatformBuildClassObject):
                 self._DscSpecification = ''
         return self._DscSpecification
 
+    ## Retrieve OUTPUT_DIRECTORY
     def _GetOutpuDir(self):
         if self._OutputDirectory == None:
             if self._Header == None:
@@ -230,6 +218,7 @@ class DscBuildData(PlatformBuildClassObject):
                 self._OutputDirectory = os.path.join("Build", self._PlatformName)
         return self._OutputDirectory
 
+    ## Retrieve SUPPORTED_ARCHITECTURES
     def _GetSupArch(self):
         if self._SupArchList == None:
             if self._Header == None:
@@ -238,6 +227,7 @@ class DscBuildData(PlatformBuildClassObject):
                 self._SupArchList = ARCH_LIST
         return self._SupArchList
 
+    ## Retrieve BUILD_TARGETS
     def _GetBuildTarget(self):
         if self._BuildTargets == None:
             if self._Header == None:
@@ -246,6 +236,7 @@ class DscBuildData(PlatformBuildClassObject):
                 self._BuildTargets = ['DEBUG', 'RELEASE']
         return self._BuildTargets
 
+    ## Retrieve SKUID_IDENTIFIER
     def _GetSkuName(self):
         if self._SkuName == None:
             if self._Header == None:
@@ -254,6 +245,7 @@ class DscBuildData(PlatformBuildClassObject):
                 self._SkuName = 'DEFAULT'
         return self._SkuName
 
+    ## Override SKUID_IDENTIFIER
     def _SetSkuName(self, Value):
         if Value in self.SkuIds:
             self._SkuName = Value
@@ -266,6 +258,7 @@ class DscBuildData(PlatformBuildClassObject):
                 self._FlashDefinition = ''
         return self._FlashDefinition
 
+    ## Retrieve FLASH_DEFINITION
     def _GetBuildNumber(self):
         if self._BuildNumber == None:
             if self._Header == None:
@@ -274,6 +267,7 @@ class DscBuildData(PlatformBuildClassObject):
                 self._BuildNumber = ''
         return self._BuildNumber
 
+    ## Retrieve MAKEFILE_NAME
     def _GetMakefileName(self):
         if self._MakefileName == None:
             if self._Header == None:
@@ -282,6 +276,7 @@ class DscBuildData(PlatformBuildClassObject):
                 self._MakefileName = ''
         return self._MakefileName
 
+    ## Retrieve BsBaseAddress
     def _GetBsBaseAddress(self):
         if self._BsBaseAddress == None:
             if self._Header == None:
@@ -290,6 +285,7 @@ class DscBuildData(PlatformBuildClassObject):
                 self._BsBaseAddress = ''
         return self._BsBaseAddress
 
+    ## Retrieve RtBaseAddress
     def _GetRtBaseAddress(self):
         if self._RtBaseAddress == None:
             if self._Header == None:
@@ -298,6 +294,7 @@ class DscBuildData(PlatformBuildClassObject):
                 self._RtBaseAddress = ''
         return self._RtBaseAddress
 
+    ## Retrieve [SkuIds] section information
     def _GetSkuIds(self):
         if self._SkuIds == None:
             self._SkuIds = {}
@@ -314,6 +311,7 @@ class DscBuildData(PlatformBuildClassObject):
                 self._SkuIds['DEFAULT'] = 0
         return self._SkuIds
 
+    ## Retrieve [Components] section information
     def _GetModules(self):
         if self._Modules != None:
             return self._Modules
@@ -324,6 +322,7 @@ class DscBuildData(PlatformBuildClassObject):
             ModuleFile = NormPath(Record[0], self._Macros)
             ModuleId = Record[5]
             LineNo = Record[6]
+            # check the file existence
             if not ValidFile(ModuleFile):
                 EdkLogger.error('build', FILE_NOT_FOUND, File=self.DescFilePath, 
                                 ExtraData=ModuleFile, Line=LineNo)
@@ -374,6 +373,7 @@ class DscBuildData(PlatformBuildClassObject):
                             )
                     Module.Pcds[PcdCName, TokenSpaceGuid] = Pcd
 
+            # get module private build options
             RecordList = self._RawData[MODEL_META_DATA_BUILD_OPTION, self._Arch, None, ModuleId]
             for ToolChainFamily, ToolChain, Option, Dummy1, Dummy2, Dummy3, Dummy4 in RecordList:
                 if (ToolChainFamily, ToolChain) not in Module.BuildOptions:
@@ -385,15 +385,22 @@ class DscBuildData(PlatformBuildClassObject):
             self._Modules[ModuleFile] = Module
         return self._Modules
 
+    ## Retrieve all possible library instances used in this platform
     def _GetLibraryInstances(self):
         if self._LibraryInstances == None:
             self._GetLibraryClasses()
         return self._LibraryInstances
 
+    ## Retrieve [LibraryClasses] information
     def _GetLibraryClasses(self):
         if self._LibraryClasses == None:
             self._LibraryInstances = []
+            # 
+            # tdict is a special dict kind of type, used for selecting correct 
+            # library instance for given library class and module type
+            # 
             LibraryClassDict = tdict(True, 3)
+            # track all library class names
             LibraryClassSet = set()
             RecordList = self._RawData[MODEL_EFI_LIBRARY_CLASS, self._Arch]
             for LibraryClass, LibraryInstance, Dummy, Arch, ModuleType, Dummy, LineNo in RecordList:
@@ -409,13 +416,14 @@ class DscBuildData(PlatformBuildClassObject):
             # resolve the specific library instance for each class and each module type 
             self._LibraryClasses = tdict(True)
             for LibraryClass in LibraryClassSet:
+                # try all possible module types
                 for ModuleType in SUP_MODULE_LIST:
                     LibraryInstance = LibraryClassDict[self._Arch, ModuleType, LibraryClass]
                     if LibraryInstance == None:
                         continue
                     self._LibraryClasses[LibraryClass, ModuleType] = LibraryInstance
 
-            # for R8 style library instances
+            # for R8 style library instances, which are listed in different section
             RecordList = self._RawData[MODEL_EFI_LIBRARY_INSTANCE, self._Arch]
             for Record in RecordList:
                 File = NormPath(Record[0], self._Macros)
@@ -427,12 +435,14 @@ class DscBuildData(PlatformBuildClassObject):
                     self._LibraryInstances.append(File)
                 # 
                 # we need the module name as the library class name, so we have
-                # to parse it here
+                # to parse it here. (self._Bdb[] will trigger a file parse if it
+                # hasn't been parsed)
                 # 
                 Library = self._Bdb[File, self._Arch]
                 self._LibraryClasses[Library.BaseName, ':dummy:'] = Library
         return self._LibraryClasses
 
+    ## Retrieve all PCD settings in platform
     def _GetPcds(self):
         if self._Pcds == None:
             self._Pcds = {}
@@ -447,6 +457,7 @@ class DscBuildData(PlatformBuildClassObject):
             self._Pcds.update(self._GetDynamicVpdPcd(MODEL_PCD_DYNAMIC_EX_VPD))
         return self._Pcds
 
+    ## Retrieve [BuildOptions]
     def _GetBuildOptions(self):
         if self._BuildOptions == None:
             self._BuildOptions = {}
@@ -455,8 +466,18 @@ class DscBuildData(PlatformBuildClassObject):
                 self._BuildOptions[ToolChainFamily, ToolChain] = Option
         return self._BuildOptions
 
+    ## Retrieve non-dynamic PCD settings
+    #
+    #   @param  Type    PCD type
+    # 
+    #   @retval a dict object contains settings of given PCD type
+    # 
     def _GetPcd(self, Type):
         Pcds = {}
+        # 
+        # tdict is a special dict kind of type, used for selecting correct 
+        # PCD settings for certain ARCH
+        # 
         PcdDict = tdict(True, 3)
         PcdSet = set()
         # Find out all possible PCD candidates for self._Arch
@@ -486,15 +507,26 @@ class DscBuildData(PlatformBuildClassObject):
                                                 )
         return Pcds
 
+    ## Retrieve dynamic PCD settings
+    #
+    #   @param  Type    PCD type
+    # 
+    #   @retval a dict object contains settings of given PCD type
+    # 
     def _GetDynamicPcd(self, Type):
         Pcds = {}
+        # 
+        # tdict is a special dict kind of type, used for selecting correct 
+        # PCD settings for certain ARCH and SKU
+        # 
         PcdDict = tdict(True, 4)
         PcdSet = set()
+        # Find out all possible PCD candidates for self._Arch
         RecordList = self._RawData[Type, self._Arch]
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
             PcdSet.add((PcdCName, TokenSpaceGuid))
             PcdDict[Arch, SkuName, PcdCName, TokenSpaceGuid] = Setting
-
+        # Remove redundant PCD candidates, per the ARCH and SKU
         for PcdCName, TokenSpaceGuid in PcdSet:
             ValueList = ['', '', '']
             Setting = PcdDict[self._Arch, self.SkuName, PcdCName, TokenSpaceGuid]
@@ -518,15 +550,26 @@ class DscBuildData(PlatformBuildClassObject):
                                                 )
         return Pcds
 
+    ## Retrieve dynamic HII PCD settings
+    #
+    #   @param  Type    PCD type
+    # 
+    #   @retval a dict object contains settings of given PCD type
+    # 
     def _GetDynamicHiiPcd(self, Type):
         Pcds = {}
+        # 
+        # tdict is a special dict kind of type, used for selecting correct 
+        # PCD settings for certain ARCH and SKU
+        # 
         PcdDict = tdict(True, 4)
         PcdSet = set()
         RecordList = self._RawData[Type, self._Arch]
+        # Find out all possible PCD candidates for self._Arch
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
             PcdSet.add((PcdCName, TokenSpaceGuid))
             PcdDict[Arch, SkuName, PcdCName, TokenSpaceGuid] = Setting
-
+        # Remove redundant PCD candidates, per the ARCH and SKU
         for PcdCName, TokenSpaceGuid in PcdSet:
             ValueList = ['', '', '', '']
             Setting = PcdDict[self._Arch, self.SkuName, PcdCName, TokenSpaceGuid]
@@ -549,15 +592,26 @@ class DscBuildData(PlatformBuildClassObject):
                                                 )
         return Pcds
 
+    ## Retrieve dynamic VPD PCD settings
+    #
+    #   @param  Type    PCD type
+    # 
+    #   @retval a dict object contains settings of given PCD type
+    # 
     def _GetDynamicVpdPcd(self, Type):
         Pcds = {}
+        # 
+        # tdict is a special dict kind of type, used for selecting correct 
+        # PCD settings for certain ARCH and SKU
+        # 
         PcdDict = tdict(True, 4)
         PcdSet = set()
+        # Find out all possible PCD candidates for self._Arch
         RecordList = self._RawData[Type, self._Arch]
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
             PcdSet.add((PcdCName, TokenSpaceGuid))
             PcdDict[Arch, SkuName, PcdCName, TokenSpaceGuid] = Setting
-
+        # Remove redundant PCD candidates, per the ARCH and SKU
         for PcdCName, TokenSpaceGuid in PcdSet:
             ValueList = ['', '']
             Setting = PcdDict[self._Arch, self.SkuName, PcdCName, TokenSpaceGuid]
@@ -581,6 +635,13 @@ class DscBuildData(PlatformBuildClassObject):
                                                 )
         return Pcds
 
+    ## Add external modules
+    #
+    #   The external modules are mostly those listed in FDF file, which don't 
+    # need "build".
+    # 
+    #   @param  FilePath    The path of module description file
+    # 
     def AddModule(self, FilePath):
         FilePath = NormPath(FilePath)
         if FilePath not in self.Modules:
@@ -588,6 +649,15 @@ class DscBuildData(PlatformBuildClassObject):
             Module.DescFilePath = FilePath
             self.Modules.append(Module)
 
+    ## Add external PCDs
+    #
+    #   The external PCDs are mostly those listed in FDF file to specify address
+    # or offset information.
+    # 
+    #   @param  Name    Name of the PCD
+    #   @param  Guid    Token space guid of the PCD
+    #   @param  Value   Value of the PCD
+    # 
     def AddPcd(self, Name, Guid, Value):
         if (Name, Guid) not in self.Pcds:
             self.Pcds[Name, Guid] = PcdClassObject(
@@ -626,7 +696,13 @@ class DscBuildData(PlatformBuildClassObject):
     Pcds                = property(_GetPcds)
     BuildOptions        = property(_GetBuildOptions)
 
+## Platform build information from DSC file
+#
+#  This class is used to retrieve information stored in database and convert them
+# into PackageBuildClassObject form for easier use for AutoGen.
+#
 class DecBuildData(PackageBuildClassObject):
+    # dict used to convert PCD type in database to string used by build tool
     _PCD_TYPE_STRING_ = {
         MODEL_PCD_FIXED_AT_BUILD        :   "FixedAtBuild",
         MODEL_PCD_PATCHABLE_IN_MODULE   :   "PatchableInModule",
@@ -641,6 +717,7 @@ class DecBuildData(PackageBuildClassObject):
         MODEL_PCD_DYNAMIC_EX_VPD        :   "DynamicExVpd",
     }
 
+    # dict used to convert part of [Defines] to members of DecBuildData directly
     _PROPERTY_ = {
         #
         # Required Fields
@@ -651,56 +728,39 @@ class DecBuildData(PackageBuildClassObject):
     }
 
 
-    def __init__(self, FilePath, RawData, BuildDataBase, Arch='COMMON', Platform='COMMON', Macros={}):
+    ## Constructor of DecBuildData
+    #
+    #  Initialize object of DecBuildData
+    #
+    #   @param      FilePath        The path of package description file
+    #   @param      RawData         The raw data of DEC file
+    #   @param      BuildDataBase   Database used to retrieve module information
+    #   @param      Arch            The target architecture
+    #   @param      Platform        (not used for DecBuildData)
+    #   @param      Macros          Macros used for replacement in DSC file
+    #
+    def __init__(self, FilePath, RawData, BuildDataBase, Arch='COMMON', Platform='DUMMY', Macros={}):
         self.DescFilePath = FilePath
         self._PackageDir = os.path.dirname(FilePath)
         self._RawData = RawData
         self._Bdb = BuildDataBase
         self._Arch = Arch
-        self._Platform = Platform
         self._Macros = Macros
         self._Clear()
-
-    def __repr__(self):
-        S = "[Package]\n"
-        S += "\tNAME = %s\n" % self.PackageName
-        S += "\tGUID = %s\n" % self.Guid
-        S += "\tVER  = %s\n" % self.Version
-
-        S += '  <Protocol>\n'
-        for Name in self.Protocols:
-            S += "\t%s = %s\n" % (Name, self.Protocols[Name])
-
-        S += '  <Ppi>\n'
-        for Name in self.Ppis:
-            S += "\t%s = %s\n" % (Name, self.Ppis[Name])
-
-        S += '  <Guid>\n'
-        for Name in self.Guids:
-            S += "\t%s = %s\n" % (Name, self.Guids[Name])
-
-        S += '  <Include>\n\t'
-        S += "\n\t".join(self.Includes) + '\n'
-
-        S += '  <LibraryClass>\n'
-        for LibraryClass in self.LibraryClasses:
-            S += "\t%s = %s\n" % (LibraryClass, self.LibraryClasses[LibraryClass])
-
-        S += '  <PCD>\n'
-        for Name,Guid,Type in self.Pcds:
-            S += "\t%s.%s-%s\n\t\t%s\n" % (Guid, Name, Type, str(self.Pcds[Name, Guid, Type]))
-        return S
 
     ## XXX[key] = value
     def __setitem__(self, key, value):
         self.__dict__[self._PROPERTY_[key]] = value
+
     ## value = XXX[key]
     def __getitem__(self, key):
         return self.__dict__[self._PROPERTY_[key]]
+
     ## "in" test support
     def __contains__(self, key):
         return key in self._PROPERTY_
 
+    ## Set all internal used members of DecBuildData to None
     def _Clear(self):
         self._Header            = None
         self._PackageName       = None
@@ -713,15 +773,29 @@ class DecBuildData(PackageBuildClassObject):
         self._LibraryClasses    = None
         self._Pcds              = None
 
+    ## Get architecture
     def _GetArch(self):
         return self._Arch
 
+    ## Set architecture
+    #   
+    #   Changing the default ARCH to another may affect all other information
+    # because all information in a platform may be ARCH-related. That's
+    # why we need to clear all internal used members, in order to cause all 
+    # information to be re-retrieved.
+    # 
+    #   @param  Value   The value of ARCH
+    # 
     def _SetArch(self, Value):
         if self._Arch == Value:
             return
         self._Arch = Value
         self._Clear()
 
+    ## Retrieve all information in [Defines] section
+    #
+    #   (Retriving all [Defines] information in one-shot is just to save time.)
+    # 
     def _GetHeaderInfo(self):
         RecordList = self._RawData[MODEL_META_DATA_HEADER]
         for Record in RecordList:
@@ -730,6 +804,7 @@ class DecBuildData(PackageBuildClassObject):
                 self[Name] = Record[1]
         self._Header = 'DUMMY'
 
+    ## Retrieve package name
     def _GetPackageName(self):
         if self._PackageName == None:
             if self._Header == None:
@@ -738,6 +813,7 @@ class DecBuildData(PackageBuildClassObject):
                 EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "No PACKAGE_NAME", File=self.DescFilePath)
         return self._PackageName
 
+    ## Retrieve file guid
     def _GetFileGuid(self):
         if self._Guid == None:
             if self._Header == None:
@@ -746,6 +822,7 @@ class DecBuildData(PackageBuildClassObject):
                 EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "No PACKAGE_GUID", File=self.DescFilePath)
         return self._Guid
 
+    ## Retrieve package version
     def _GetVersion(self):
         if self._Version == None:
             if self._Header == None:
@@ -754,48 +831,82 @@ class DecBuildData(PackageBuildClassObject):
                 self._Version = ''
         return self._Version
 
+    ## Retrieve protocol definitions (name/value pairs)
     def _GetProtocol(self):
         if self._Protocols == None:
+            # 
+            # tdict is a special kind of dict, used for selecting correct 
+            # protocol defition for given ARCH
+            # 
             ProtocolDict = tdict(True)
             NameList = []
+            # find out all protocol definitions for specific and 'common' arch
             RecordList = self._RawData[MODEL_EFI_PROTOCOL, self._Arch]
             for Name, Guid, Dummy, Arch, ID, LineNo in RecordList:
                 if Name not in NameList:
                     NameList.append(Name)
                 ProtocolDict[Arch, Name] = Guid
+            # use sdict to keep the order
             self._Protocols = sdict()
             for Name in NameList:
+                # 
+                # limit the ARCH to self._Arch, if no self._Arch found, tdict
+                # will automatically turn to 'common' ARCH for trying
+                # 
                 self._Protocols[Name] = ProtocolDict[self._Arch, Name]
         return self._Protocols
 
+    ## Retrieve PPI definitions (name/value pairs)
     def _GetPpi(self):
         if self._Ppis == None:
+            # 
+            # tdict is a special kind of dict, used for selecting correct 
+            # PPI defition for given ARCH
+            # 
             PpiDict = tdict(True)
             NameList = []
+            # find out all PPI definitions for specific arch and 'common' arch
             RecordList = self._RawData[MODEL_EFI_PPI, self._Arch]
             for Name, Guid, Dummy, Arch, ID, LineNo in RecordList:
                 if Name not in NameList:
                     NameList.append(Name)
                 PpiDict[Arch, Name] = Guid
+            # use sdict to keep the order
             self._Ppis = sdict()
             for Name in NameList:
+                # 
+                # limit the ARCH to self._Arch, if no self._Arch found, tdict
+                # will automatically turn to 'common' ARCH for trying
+                # 
                 self._Ppis[Name] = PpiDict[self._Arch, Name]
         return self._Ppis
 
+    ## Retrieve GUID definitions (name/value pairs)
     def _GetGuid(self):
         if self._Guids == None:
+            # 
+            # tdict is a special kind of dict, used for selecting correct 
+            # GUID defition for given ARCH
+            # 
             GuidDict = tdict(True)
             NameList = []
+            # find out all protocol definitions for specific and 'common' arch
             RecordList = self._RawData[MODEL_EFI_GUID, self._Arch]
             for Name, Guid, Dummy, Arch, ID, LineNo in RecordList:
                 if Name not in NameList:
                     NameList.append(Name)
                 GuidDict[Arch, Name] = Guid
+            # use sdict to keep the order
             self._Guids = sdict()
             for Name in NameList:
+                # 
+                # limit the ARCH to self._Arch, if no self._Arch found, tdict
+                # will automatically turn to 'common' ARCH for trying
+                # 
                 self._Guids[Name] = GuidDict[self._Arch, Name]
         return self._Guids
 
+    ## Retrieve public include paths declared in this package
     def _GetInclude(self):
         if self._Includes == None:
             self._Includes = []
@@ -803,15 +914,22 @@ class DecBuildData(PackageBuildClassObject):
             for Record in RecordList:
                 File = NormPath(Record[0], self._Macros)
                 LineNo = Record[-1]
+                # validate the path
                 if not ValidFile(File, self._PackageDir):
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                     File=self.DescFilePath, Line=LineNo)
+                # avoid duplicate include path
                 if File not in self._Includes:
                     self._Includes.append(File)
         return self._Includes
 
+    ## Retrieve library class declarations (not used in build at present)
     def _GetLibraryClass(self):
         if self._LibraryClasses == None:
+            # 
+            # tdict is a special kind of dict, used for selecting correct 
+            # library class declaration for given ARCH
+            # 
             LibraryClassDict = tdict(True)
             LibraryClassSet = set()
             RecordList = self._RawData[MODEL_EFI_LIBRARY_CLASS, self._Arch]
@@ -827,6 +945,7 @@ class DecBuildData(PackageBuildClassObject):
                 self._LibraryClasses[LibraryClass] = LibraryClassDict[self._Arch, LibraryClass]
         return self._LibraryClasses
 
+    ## Retrieve PCD declarations
     def _GetPcds(self):
         if self._Pcds == None:
             self._Pcds = {}
@@ -837,10 +956,17 @@ class DecBuildData(PackageBuildClassObject):
             self._Pcds.update(self._GetPcd(MODEL_PCD_DYNAMIC_EX))
         return self._Pcds
 
+    ## Retrieve PCD declarations for given type
     def _GetPcd(self, Type):
         Pcds = {}
+        # 
+        # tdict is a special kind of dict, used for selecting correct 
+        # PCD declaration for given ARCH
+        # 
         PcdDict = tdict(True, 3)
+        # for summarizing PCD
         PcdSet = set()
+        # find out all PCDs of the 'type'
         RecordList = self._RawData[Type, self._Arch]
         for TokenSpaceGuid, PcdCName, Setting, Arch, Dummy1, Dummy2 in RecordList:
             PcdDict[Arch, PcdCName, TokenSpaceGuid] = Setting
@@ -848,6 +974,10 @@ class DecBuildData(PackageBuildClassObject):
 
         for PcdCName, TokenSpaceGuid in PcdSet:
             ValueList = ['', '', '']
+            # 
+            # limit the ARCH to self._Arch, if no self._Arch found, tdict
+            # will automatically turn to 'common' ARCH and try again
+            # 
             Setting = PcdDict[self._Arch, PcdCName, TokenSpaceGuid]
             if Setting == None:
                 continue
@@ -880,7 +1010,13 @@ class DecBuildData(PackageBuildClassObject):
     LibraryClasses  = property(_GetLibraryClass)
     Pcds            = property(_GetPcds)
 
+## Module build information from INF file
+#
+#  This class is used to retrieve information stored in database and convert them
+# into ModuleBuildClassObject form for easier use for AutoGen.
+#
 class InfBuildData(ModuleBuildClassObject):
+    # dict used to convert PCD type in database to string used by build tool
     _PCD_TYPE_STRING_ = {
         MODEL_PCD_FIXED_AT_BUILD        :   "FixedAtBuild",
         MODEL_PCD_PATCHABLE_IN_MODULE   :   "PatchableInModule",
@@ -895,6 +1031,7 @@ class InfBuildData(ModuleBuildClassObject):
         MODEL_PCD_DYNAMIC_EX_VPD        :   "DynamicExVpd",
     }
 
+    # dict used to convert part of [Defines] to members of InfBuildData directly
     _PROPERTY_ = {
         #
         # Required Fields
@@ -916,6 +1053,7 @@ class InfBuildData(ModuleBuildClassObject):
         TAB_INF_DEFINES_SHADOW                      : "_Shadow",
     }
 
+    # dict used to convert Component type to Module type
     _MODULE_TYPE_ = {
         "LIBRARY"               :   "BASE",
         "SECURITY_CORE"         :   "SEC",
@@ -932,8 +1070,10 @@ class InfBuildData(ModuleBuildClassObject):
         "APPLICATION"           :   "UEFI_APPLICATION",
         "LOGO"                  :   "BASE",
     }
-    
+
+    # regular expression for converting XXX_FLAGS in [nmake] section to new type
     _NMAKE_FLAG_PATTERN_ = re.compile("(?:EBC_)?([A-Z]+)_(?:STD_|PROJ_|ARCH_)?FLAGS(?:_DLL|_ASL|_EXE)?", re.UNICODE)
+    # dict used to convert old tool name used in [nmake] section to new ones
     _TOOL_CODE_ = {
         "C"         :   "CC",
         "LIB"       :   "SLINK",
@@ -941,6 +1081,17 @@ class InfBuildData(ModuleBuildClassObject):
     }
     
 
+    ## Constructor of DscBuildData
+    #
+    #  Initialize object of DscBuildData
+    #
+    #   @param      FilePath        The path of platform description file
+    #   @param      RawData         The raw data of DSC file
+    #   @param      BuildDataBase   Database used to retrieve module/package information
+    #   @param      Arch            The target architecture
+    #   @param      Platform        The name of platform employing this module
+    #   @param      Macros          Macros used for replacement in DSC file
+    #
     def __init__(self, FilePath, RawData, BuildDatabase, Arch='COMMON', Platform='COMMON', Macros={}):
         self.DescFilePath = FilePath
         self._ModuleDir = os.path.dirname(FilePath)
@@ -951,75 +1102,19 @@ class InfBuildData(ModuleBuildClassObject):
         self._Macros = Macros
         self._Clear()
 
-    def Print(self):
-        S = '[%s.%s]\n' % (self.DescFilePath, self._Arch)
-        S += '\tName = ' + self.BaseName + '\n'
-        S += '\tGuid = ' + self.Guid + '\n'
-        S += '\tVer  = ' + self.Version + '\n'
-        S += '\tInfVersion = ' + self.AutoGenVersion + '\n'
-        S += '\tModuleType = ' + self.ModuleType + '\n'
-        S += '\tComponentType = ' + self.ComponentType + '\n'
-        S += '\tPcdIsDriver = ' + str(self.PcdIsDriver) + '\n'
-        S += '\tCustomMakefile = ' + self.CustomMakefile + '\n'
-        S += '\tSpecification = ' + str(self.Specification) + '\n'
-        S += '\tShadow = ' + str(self.Shadow) + '\n'
-        S += '\tPcdIsDriver = ' + str(self.PcdIsDriver) + '\n'
-        for Lib in self.LibraryClass:
-            S += '\tLibraryClassDefinition = ' + str(Lib.LibraryClass) + ' SupModList = ' + str(Lib.SupModList) + '\n'
-        S += '\tModuleEntryPointList = ' + str(self.ModuleEntryPointList) + '\n'
-        S += '\tModuleUnloadImageList = ' + str(self.ModuleUnloadImageList) + '\n'
-        S += '\tConstructorList = ' + str(self.ConstructorList) + '\n'
-        S += '\tDestructorList = ' + str(self.DestructorList) + '\n'
-
-        S += '  <Binaries>\n'
-        for item in self.Binaries:
-            S += "\t" + item.BinaryFile + item.FeatureFlag + item.SupArchList + '\n'
-
-        S += '  <Sources>\n'
-        for item in self.Sources:
-            S += "\t" + item.SourceFile + '\n'
-
-        S += '  <LibraryClasses>\n'
-        S += '\t' + '\n\t'.join([Key for Key in self.LibraryClasses]) + '\n'
-
-        S += '  <Protocols>\n'
-        S += '\t' + '\n\t'.join(self.Protocols) + '\n'
-
-        S += '  <Ppis>\n'
-        S += '\t' + '\n\t'.join(self.Ppis) + '\n'
-
-        S += '  <Guids>\n'
-        S += '\t' + '\n\t'.join(self.Guids) + '\n'
-
-        S += '  <Includes>\n'
-        S += '\t' + '\n\t'.join(self.Includes) + '\n'
-
-        S += '  <Packages>\n'
-        S += '\t' + '\n\t'.join([str(P) for P in self.Packages]) + '\n'
-
-        S += '  <Pcds>\n'
-        for Name,Guid in self.Pcds.keys():
-            S += "\t%s.%s\n\t\t%s\n" % (Guid, Name, str(self.Pcds[Name,Guid]))
-
-        S += '  <BuildOptions\n'
-        S += '\t' + '\n\t'.join(self.BuildOptions.values()) + '\n'
-
-        S += '  <Depex>\n'
-        S += '\t' + str(self.Depex) + '\n'
-
-        S += '\n'
-        return S
-
     ## XXX[key] = value
     def __setitem__(self, key, value):
         self.__dict__[self._PROPERTY_[key]] = value
+
     ## value = XXX[key]
     def __getitem__(self, key):
         return self.__dict__[self._PROPERTY_[key]]
+
     ## "in" test support
     def __contains__(self, key):
         return key in self._PROPERTY_
 
+    ## Set all internal used members of InfBuildData to None
     def _Clear(self):
         self._Header_               = None
         self._AutoGenVersion        = None
@@ -1053,27 +1148,53 @@ class InfBuildData(ModuleBuildClassObject):
         self._BuildOptions          = None
         self._Depex                 = None
 
+    ## Get architecture
     def _GetArch(self):
         return self._Arch
 
+    ## Set architecture
+    #   
+    #   Changing the default ARCH to another may affect all other information
+    # because all information in a platform may be ARCH-related. That's
+    # why we need to clear all internal used members, in order to cause all 
+    # information to be re-retrieved.
+    # 
+    #   @param  Value   The value of ARCH
+    # 
     def _SetArch(self, Value):
         if self._Arch == Value:
             return
         self._Arch = Value
         self._Clear()
 
+    ## Return the name of platform employing this module
     def _GetPlatform(self):
         return self._Platform
 
+    ## Change the name of platform employing this module
+    # 
+    #   Changing the default name of platform to another may affect some information
+    # because they may be PLATFORM-related. That's why we need to clear all internal
+    # used members, in order to cause all information to be re-retrieved.
+    # 
     def _SetPlatform(self, Value):
+        if self._Platform == Value:
+            return
         self._Platform = Value
+        self._Clear()
 
+    ## Retrieve all information in [Defines] section
+    #
+    #   (Retriving all [Defines] information in one-shot is just to save time.)
+    # 
     def _GetHeaderInfo(self):
         RecordList = self._RawData[MODEL_META_DATA_HEADER, self._Arch, self._Platform]
         for Record in RecordList:
             Name = Record[0]
+            # items defined _PROPERTY_ don't need additional processing
             if Name in self:
                 self[Name] = Record[1]
+            # some special items in [Defines] section need special treatment
             elif Name == 'EFI_SPECIFICATION_VERSION':
                 if self._Specification == None:
                     self._Specification = sdict()
@@ -1129,7 +1250,7 @@ class InfBuildData(ModuleBuildClassObject):
                     self._CustomMakefile[TokenList[0]] = TokenList[1]
 
         # 
-        # R8.x modules
+        # Retrieve information in sections specific to R8.x modules
         # 
         if self._AutoGenVersion < 0x00010005:   # _AutoGenVersion may be None, which is less than anything
             if self._ComponentType in self._MODULE_TYPE_:
@@ -1171,8 +1292,10 @@ class InfBuildData(ModuleBuildClassObject):
                         else:
                             OptionString = self._BuildOptions[ToolChainFamily, ToolChain]
                             self._BuildOptions[ToolChainFamily, ToolChain] = OptionString + " " + Value
+        # set _Header to non-None in order to avoid database re-querying
         self._Header_ = 'DUMMY'
 
+    ## Retrieve file version
     def _GetInfVersion(self):
         if self._AutoGenVersion == None:
             if self._Header_ == None:
@@ -1181,6 +1304,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._AutoGenVersion = 0x00010000
         return self._AutoGenVersion
 
+    ## Retrieve BASE_NAME
     def _GetBaseName(self):
         if self._BaseName == None:
             if self._Header_ == None:
@@ -1189,6 +1313,7 @@ class InfBuildData(ModuleBuildClassObject):
                 EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No BASE_NAME name", File=self.DescFilePath)
         return self._BaseName
 
+    ## Retrieve MODULE_TYPE
     def _GetModuleType(self):
         if self._ModuleType == None:
             if self._Header_ == None:
@@ -1197,6 +1322,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._ModuleType = 'BASE'
         return self._ModuleType
 
+    ## Retrieve COMPONENT_TYPE
     def _GetComponentType(self):
         if self._ComponentType == None:
             if self._Header_ == None:
@@ -1205,6 +1331,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._ComponentType = ''
         return self._ComponentType
 
+    ## Retrieve file guid
     def _GetFileGuid(self):
         if self._Guid == None:
             if self._Header_ == None:
@@ -1213,6 +1340,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._Guid = '00000000-0000-0000-000000000000'
         return self._Guid
 
+    ## Retrieve module version
     def _GetVersion(self):
         if self._Version == None:
             if self._Header_ == None:
@@ -1221,6 +1349,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._Version = '0.0'
         return self._Version
 
+    ## Retrieve PCD_IS_DRIVER
     def _GetPcdIsDriver(self):
         if self._PcdIsDriver == None:
             if self._Header_ == None:
@@ -1229,6 +1358,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._PcdIsDriver = ''
         return self._PcdIsDriver
 
+    ## Retrieve SHADOW
     def _GetShadow(self):
         if self._Shadow == None:
             if self._Header_ == None:
@@ -1239,6 +1369,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._Shadow = False
         return self._Shadow
 
+    ## Retrieve CUSTOM_MAKEFILE
     def _GetMakefile(self):
         if self._CustomMakefile == None:
             if self._Header_ == None:
@@ -1247,6 +1378,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._CustomMakefile = {}
         return self._CustomMakefile
 
+    ## Retrieve EFI_SPECIFICATION_VERSION
     def _GetSpec(self):
         if self._Specification == None:
             if self._Header_ == None:
@@ -1255,6 +1387,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._Specification = {}
         return self._Specification
 
+    ## Retrieve LIBRARY_CLASS
     def _GetLibraryClass(self):
         if self._LibraryClass == None:
             if self._Header_ == None:
@@ -1263,6 +1396,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._LibraryClass = []
         return self._LibraryClass
 
+    ## Retrieve ENTRY_POINT
     def _GetEntryPoint(self):
         if self._ModuleEntryPointList == None:
             if self._Header_ == None:
@@ -1271,6 +1405,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._ModuleEntryPointList = []
         return self._ModuleEntryPointList
 
+    ## Retrieve UNLOAD_IMAGE
     def _GetUnloadImage(self):
         if self._ModuleUnloadImageList == None:
             if self._Header_ == None:
@@ -1279,6 +1414,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._ModuleUnloadImageList = []
         return self._ModuleUnloadImageList
 
+    ## Retrieve CONSTRUCTOR
     def _GetConstructor(self):
         if self._ConstructorList == None:
             if self._Header_ == None:
@@ -1287,6 +1423,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._ConstructorList = []
         return self._ConstructorList
 
+    ## Retrieve DESTRUCTOR
     def _GetDestructor(self):
         if self._DestructorList == None:
             if self._Header_ == None:
@@ -1295,6 +1432,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._DestructorList = []
         return self._DestructorList
                         
+    ## Retrieve binary files
     def _GetBinaryFiles(self):
         if self._Binaries == None:
             self._Binaries = []
@@ -1311,6 +1449,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._Binaries.append(ModuleBinaryFileClass(File, FileType, Target, FeatureFlag, self._Arch))
         return self._Binaries
 
+    ## Retrieve source files
     def _GetSourceFiles(self):
         if self._Sources == None:
             self._Sources = []
@@ -1328,6 +1467,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._Sources.append(ModuleSourceFileClass(File, TagName, ToolCode, ToolChainFamily, FeatureFlag))
         return self._Sources
 
+    ## Retrieve library classes employed by this module
     def _GetLibraryClassUses(self):
         if self._LibraryClasses == None:
             self._LibraryClasses = sdict()
@@ -1340,9 +1480,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._LibraryClasses[Lib] = Instance
         return self._LibraryClasses
 
-    def _SetLibraryClassUses(self, Value):
-        self._LibraryClasses = Value
-
+    ## Retrieve library names (for R8.x style of modules)
     def _GetLibraryNames(self):
         if self._Libraries == None:
             self._Libraries = []
@@ -1354,6 +1492,7 @@ class InfBuildData(ModuleBuildClassObject):
                     self._Libraries.append(LibraryName)
         return self._Libraries
 
+    ## Retrieve protocols consumed/produced by this module
     def _GetProtocols(self):
         if self._Protocols == None:
             self._Protocols = sdict()
@@ -1368,6 +1507,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._Protocols[CName] = Value
         return self._Protocols
 
+    ## Retrieve PPIs consumed/produced by this module
     def _GetPpis(self):
         if self._Ppis == None:
             self._Ppis = sdict()
@@ -1382,6 +1522,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._Ppis[CName] = Value
         return self._Ppis
 
+    ## Retrieve GUIDs consumed/produced by this module
     def _GetGuids(self):
         if self._Guids == None:
             self._Guids = sdict()
@@ -1396,6 +1537,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._Guids[CName] = Value
         return self._Guids
 
+    ## Retrieve include paths necessary for this module (for R8.x style of modules)
     def _GetIncludes(self):
         if self._Includes == None:
             self._Includes = []
@@ -1420,6 +1562,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self._Includes.append(File)
         return self._Includes
 
+    ## Retrieve packages this module depends on
     def _GetPackages(self):
         if self._Packages == None:
             self._Packages = []
@@ -1430,10 +1573,12 @@ class InfBuildData(ModuleBuildClassObject):
                 if not ValidFile(File):
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                     File=self.DescFilePath, Line=LineNo)
+                # parse this package now. we need it to get protocol/ppi/guid value
                 Package = self._Bdb[File, self._Arch]
                 self._Packages.append(Package)
         return self._Packages
 
+    ## Retrieve PCDs used in this module
     def _GetPcds(self):
         if self._Pcds == None:
             self._Pcds = {}
@@ -1444,6 +1589,7 @@ class InfBuildData(ModuleBuildClassObject):
             self._Pcds.update(self._GetPcd(MODEL_PCD_DYNAMIC_EX))
         return self._Pcds
 
+    ## Retrieve build options specific to this module
     def _GetBuildOptions(self):
         if self._BuildOptions == None:
             self._BuildOptions = sdict()
@@ -1455,10 +1601,12 @@ class InfBuildData(ModuleBuildClassObject):
                 if (ToolChainFamily, ToolChain) not in self._BuildOptions:
                     self._BuildOptions[ToolChainFamily, ToolChain] = Option
                 else:
+                    # concatenate the option string if they're for the same tool 
                     OptionString = self._BuildOptions[ToolChainFamily, ToolChain]
                     self._BuildOptions[ToolChainFamily, ToolChain] = OptionString + " " + Option
         return self._BuildOptions
 
+    ## Retrieve depedency expression
     def _GetDepex(self):
         if self._Depex == None:
             self._Depex = []
@@ -1469,6 +1617,7 @@ class InfBuildData(ModuleBuildClassObject):
                     if Token in DEPEX_SUPPORTED_OPCODE or Token.endswith(".inf"):
                         self._Depex.append(Token)
                     else:
+                        # get the GUID value now
                         Value = GuidValue(Token, self.Packages)
                         if Value == None:
                             PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
@@ -1477,6 +1626,7 @@ class InfBuildData(ModuleBuildClassObject):
                         self._Depex.append(Value)
         return self._Depex
 
+    ## Retrieve PCD for given type
     def _GetPcd(self, Type):
         Pcds = {}
         PcdDict = tdict(True, 4)
@@ -1485,6 +1635,7 @@ class InfBuildData(ModuleBuildClassObject):
         for TokenSpaceGuid, PcdCName, Setting, Arch, Platform, Dummy1, LineNo in RecordList:
             PcdDict[Arch, Platform, PcdCName, TokenSpaceGuid] = (Setting, LineNo)
             PcdSet.add((PcdCName, TokenSpaceGuid))
+            # get the guid value
             if TokenSpaceGuid not in self.Guids:
                 Value = GuidValue(TokenSpaceGuid, self.Packages)
                 if Value == None:
@@ -1571,7 +1722,7 @@ class InfBuildData(ModuleBuildClassObject):
 
     Binaries                = property(_GetBinaryFiles)
     Sources                 = property(_GetSourceFiles)
-    LibraryClasses          = property(_GetLibraryClassUses, _SetLibraryClassUses)
+    LibraryClasses          = property(_GetLibraryClassUses)
     Libraries               = property(_GetLibraryNames)
     Protocols               = property(_GetProtocols)
     Ppis                    = property(_GetPpis)
@@ -1585,18 +1736,16 @@ class InfBuildData(ModuleBuildClassObject):
 
 ## Database
 #
-# This class defined the build databse
-# During the phase of initialization, the database will create all tables and
-# insert all records of table DataModel
+#   This class defined the build databse for all modules, packages and platform.
+# It will call corresponding parser for the given file if it cannot find it in
+# the database.
 # 
-# @param object:      Inherited from object class
-# @param DbPath:      A string for the path of the ECC database
-#
-# @var Conn:          Connection of the ECC database
-# @var Cur:           Cursor of the connection
-# @var TblDataModel:  Local instance for TableDataModel
+# @param DbPath             Path of database file
+# @param GlobalMacros       Global macros used for replacement during file parsing
+# @prarm RenewDb=False      Create new database file if it's already there
 #
 class WorkspaceDatabase(object):
+    # file parser
     _FILE_PARSER_ = {
         MODEL_FILE_INF  :   InfParser,
         MODEL_FILE_DEC  :   DecParser,
@@ -1605,14 +1754,20 @@ class WorkspaceDatabase(object):
         MODEL_FILE_CIF  :   None
     }
 
+    # file table
     _FILE_TABLE_ = {
         MODEL_FILE_INF  :   ModuleTable,
         MODEL_FILE_DEC  :   PackageTable,
         MODEL_FILE_DSC  :   PlatformTable,
     }
 
+    # default database file path
     _DB_PATH_ = "Conf/.cache/build.db"
 
+    # 
+    # internal class used for call corresponding file parser and caching the result
+    # to avoid unnecessary re-parsing
+    # 
     class BuildObjectFactory(object):
         _FILE_TYPE_ = {
             ".INF"  : MODEL_FILE_INF,
@@ -1621,7 +1776,8 @@ class WorkspaceDatabase(object):
             ".FDF"  : MODEL_FILE_FDF,
             ".CIF"  : MODEL_FILE_CIF,
         }
-    
+
+        # convert to xxxBuildData object
         _GENERATOR_ = {
             MODEL_FILE_INF  :   InfBuildData,
             MODEL_FILE_DEC  :   DecBuildData,
@@ -1629,8 +1785,9 @@ class WorkspaceDatabase(object):
             MODEL_FILE_FDF  :   None #FlashDefTable,
         }
 
-        _CACHE_ = {}    # FilePath  : <object>
+        _CACHE_ = {}    # (FilePath, Arch)  : <object>
 
+        # constructor
         def __init__(self, WorkspaceDb):
             self.WorkspaceDb = WorkspaceDb
 
@@ -1642,7 +1799,7 @@ class WorkspaceDatabase(object):
                 Arch = Key[1]
             return (FilePath, Arch) in self._CACHE_
 
-        # key = (FilePath, Arch='COMMON', Platform='COMMON')
+        # key = (FilePath, Arch='COMMON')
         def __getitem__(self, Key):
             FilePath = Key[0]
             Arch = 'COMMON'
@@ -1678,28 +1835,36 @@ class WorkspaceDatabase(object):
             self._CACHE_[Key] = BuildObject
             return BuildObject
 
+    # placeholder for file format conversion
     class TransformObjectFactory:
         def __init__(self, WorkspaceDb):
             self.WorkspaceDb = WorkspaceDb
 
-        # key = FilePath
+        # key = FilePath, Arch
         def __getitem__(self, Key):
             pass
 
+    ## Constructor of WorkspaceDatabase
+    # 
+    # @param DbPath             Path of database file
+    # @param GlobalMacros       Global macros used for replacement during file parsing
+    # @prarm RenewDb=False      Create new database file if it's already there
+    #
     def __init__(self, DbPath, GlobalMacros={}, RenewDb=False):
         self._GlobalMacros = GlobalMacros
 
         if DbPath == None or DbPath == '':
             DbPath = self._DB_PATH_
 
+        # don't create necessary path for db in memory
         if DbPath != ':memory:':
             DbDir = os.path.split(DbPath)[0]
             if not os.path.exists(DbDir):
                 os.makedirs(DbDir)
-
+        # remove db file in case inconsistency between db and file in file system
         if RenewDb and os.path.exists(DbPath):
             os.remove(DbPath)
-
+        # create db with optimized parameters
         self.Conn = sqlite3.connect(DbPath, isolation_level='DEFERRED')
         self.Conn.execute("PRAGMA synchronous=OFF")
         self.Conn.execute("PRAGMA temp_store=MEMORY")
@@ -1711,18 +1876,15 @@ class WorkspaceDatabase(object):
         self.Conn.text_factory = str
         self.Cur = self.Conn.cursor()
 
+        # create table for internal uses
         self.TblDataModel = TableDataModel(self.Cur)
         self.TblFile = TableFile(self.Cur)
 
+        # conversion object for build or file format conversion purpose
         self.BuildObject = WorkspaceDatabase.BuildObjectFactory(self)
         self.TransformObject = WorkspaceDatabase.TransformObjectFactory(self)
     
     ## Initialize build database
-    #
-    # 1. Delete all old existing tables
-    # 2. Create new tables
-    # 3. Initialize table DataModel
-    #
     def InitDatabase(self):
         EdkLogger.verbose("\nInitialize build database started ...")
         
@@ -1755,56 +1917,43 @@ class WorkspaceDatabase(object):
         self.Cur.close()
         self.Conn.close()
 
+    ## Get unique file ID for the gvien file
     def GetFileId(self, FilePath):
         return self.TblFile.GetFileId(FilePath)
 
+    ## Get file type value for the gvien file ID
     def GetFileType(self, FileId):
         return self.TblFile.GetFileType(FileId)
 
+    ## Get time stamp stored in file table
     def GetTimeStamp(self, FileId):
         return self.TblFile.GetFileTimeStamp(FileId)
 
+    ## Update time stamp in file table
     def SetTimeStamp(self, FileId, TimeStamp):
         return self.TblFile.SetFileTimeStamp(FileId, TimeStamp)
 
+    ## Check if a table integrity flag exists or not
     def CheckIntegrity(self, TableName):
         Result = self.Cur.execute("select min(ID) from %s" % (TableName)).fetchall()
         if Result[0][0] != -1:
             return False
         return True
 
+    ## Compose table name for given file type and file ID
     def GetTableName(self, FileType, FileId):
         return "_%s_%s" % (FileType, FileId)
 
-    ## TRICK: 
-    # Key = FilePath
-    # Value = FileType
-    #def __setitem__(self, FilePath, FileType):
-    #    FileId = self.GetFileId(FilePath)
-    #    if FileId != None:
-    #        TimeStamp = os.stat(FilePath)[8]
-    #        TableName = self.GetTableName(FileType, FileId)
-    #        if TimeStamp != self.GetTimeStamp(FileId):
-    #            self.SetTimeStamp(FileId, TimeStamp)
-    #        else:
-    #            if self.CheckIntegrity(TableName) == True:
-    #                return
-    #    else:
-    #        FileId = self.TblFile.InsertFile(FilePath, FileType)
-    #        TableName = self.GetTableName(FileType, FileId)
-    #
-    #    FileTable = self._FILE_TABLE_[FileType](self.Cur, TableName, FileId)
-    #    FileTable.Create()
-    #    Parser = self._FILE_PARSER_[FileType](FilePath, FileId, FileType, FileTable)
-    #    Parser.Start()
-
     ## Return a temp table containing all content of the given file
+    # 
+    #   @param  FileInfo    The tuple containing path and type of a file
     # 
     def __getitem__(self, FileInfo):
         FilePath, FileType = FileInfo
         if FileType not in self._FILE_TABLE_:
             return None
 
+        # flag used to indicate if it's parsed or not
         Parsed = False
         FileId = self.GetFileId(FilePath)
         if FileId != None:
@@ -1823,10 +1972,11 @@ class WorkspaceDatabase(object):
         FileTable = self._FILE_TABLE_[FileType](self.Cur, TableName, FileId)
         FileTable.Create(not Parsed)
         Parser = self._FILE_PARSER_[FileType](FilePath, FileId, FileType, FileTable)
+        # set the "Finished" flag in parser in order to avoid re-parsing (if parsed)
         Parser.Finished = Parsed
-
         return Parser
 
+    ## Summarize all packages in the database
     def _GetPackageList(self):
         PackageList = []
         for Module in self.ModuleList:
@@ -1835,6 +1985,7 @@ class WorkspaceDatabase(object):
                     PackageList.append(Package)
         return PackageList
 
+    ## Summarize all platforms in the database
     def _GetPlatformList(self):
         PlatformList = []
         for PlatformFile in self.TblFile.GetFileList(MODEL_FILE_DSC):
@@ -1846,6 +1997,7 @@ class WorkspaceDatabase(object):
                 PlatformList.append(Platform)
         return PlatformList
 
+    ## Summarize all modules in the database
     def _GetModuleList(self):
         ModuleList = []
         for ModuleFile in self.TblFile.GetFileList(MODEL_FILE_INF):
@@ -1868,3 +2020,4 @@ class WorkspaceDatabase(object):
 #
 if __name__ == '__main__':
     pass
+
