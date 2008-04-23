@@ -256,7 +256,7 @@ class FdfParser:
     #
     def __EndOfLine(self):
         SizeOfCurrentLine = len(self.Profile.FileLinesList[self.CurrentLineNumber - 1])
-        if self.CurrentOffsetWithinLine >= SizeOfCurrentLine - 1:
+        if self.CurrentOffsetWithinLine >= SizeOfCurrentLine:
             return True
         else:
             return False
