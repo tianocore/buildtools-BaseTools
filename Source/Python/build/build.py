@@ -48,7 +48,6 @@ gSupportedTarget = ['all', 'genc', 'genmake', 'modules', 'libraries', 'fds', 'cl
 ## build configuration file
 gBuildConfiguration = "Conf/target.txt"
 gBuildCacheDir = "Conf/.cache"
-gDatabaseFile = "Conf/.cache/build.db"
 
 ## Check environment PATH variable to make sure the specified tool is found
 #
@@ -655,7 +654,7 @@ class Build():
 
         self.TargetTxt      = TargetTxtClassObject()
         self.ToolDef        = ToolDefClassObject()
-        self.Db             = WorkspaceDatabase(gDatabaseFile, GlobalData.gGlobalDefines, self.Reparse)
+        self.Db             = WorkspaceDatabase(None, GlobalData.gGlobalDefines, self.Reparse)
         self.BuildDatabase  = self.Db.BuildObject
         self.Platform       = None
 
@@ -850,8 +849,8 @@ class Build():
         if AutoGenObject == None:
             return False
 
-        # skip file generation for cleanxxx targets and run target
-        if Target not in ['clean', 'cleanlib', 'cleanall', 'run']:    
+        # skip file generation for cleanxxx targets, run and fds target
+        if Target not in ['clean', 'cleanlib', 'cleanall', 'run', 'fds']:
             # for target which must generate AutoGen code and makefile
             if not self.SkipAutoGen or Target == 'genc':
                 self.Progress.Start("Generating code")

@@ -21,7 +21,6 @@ from Common.BuildToolError import *
 from Common.DataType import *
 from Common.EdkIIWorkspace import *
 from Common.Misc import *
-from BuildInfo import *
 from StrGather import *
 
 ## PCD type string
@@ -768,7 +767,7 @@ gModuleTypeHeaderFile = {
 
 ## Create code for module PCDs
 #
-#   @param      Info        The ModuleBuildInfo object
+#   @param      Info        The ModuleAutoGen object
 #   @param      AutoGenC    The TemplateString object for C code
 #   @param      AutoGenH    The TemplateString object for header file
 #   @param      Pcd         The PCD object
@@ -872,7 +871,7 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
 
 ## Create code for library module PCDs
 #
-#   @param      Info        The ModuleBuildInfo object
+#   @param      Info        The ModuleAutoGen object
 #   @param      AutoGenC    The TemplateString object for C code
 #   @param      AutoGenH    The TemplateString object for header file
 #   @param      Pcd         The PCD object
@@ -1264,7 +1263,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
 
 ## Create code for PCD database
 #
-#   @param      Info        The ModuleBuildInfo object
+#   @param      Info        The ModuleAutoGen object
 #   @param      AutoGenC    The TemplateString object for C code
 #   @param      AutoGenH    The TemplateString object for header file
 #
@@ -1290,7 +1289,7 @@ def CreatePcdDatabaseCode (Info, AutoGenC, AutoGenH):
 
 ## Create code for library constructor
 #
-#   @param      Info        The ModuleBuildInfo object
+#   @param      Info        The ModuleAutoGen object
 #   @param      AutoGenC    The TemplateString object for C code
 #   @param      AutoGenH    The TemplateString object for header file
 #
@@ -1339,7 +1338,7 @@ def CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH):
 
 ## Create code for library destructor
 #
-#   @param      Info        The ModuleBuildInfo object
+#   @param      Info        The ModuleAutoGen object
 #   @param      AutoGenC    The TemplateString object for C code
 #   @param      AutoGenH    The TemplateString object for header file
 #
@@ -1390,7 +1389,7 @@ def CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH):
 
 ## Create code for ModuleEntryPoint
 #
-#   @param      Info        The ModuleBuildInfo object
+#   @param      Info        The ModuleAutoGen object
 #   @param      AutoGenC    The TemplateString object for C code
 #   @param      AutoGenH    The TemplateString object for header file
 #
@@ -1430,7 +1429,7 @@ def CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH):
 
 ## Create code for ModuleUnloadImage
 #
-#   @param      Info        The ModuleBuildInfo object
+#   @param      Info        The ModuleAutoGen object
 #   @param      AutoGenC    The TemplateString object for C code
 #   @param      AutoGenH    The TemplateString object for header file
 #
@@ -1449,7 +1448,7 @@ def CreateModuleUnloadImageCode(Info, AutoGenC, AutoGenH):
 
 ## Create code for GUID
 #
-#   @param      Info        The ModuleBuildInfo object
+#   @param      Info        The ModuleAutoGen object
 #   @param      AutoGenC    The TemplateString object for C code
 #   @param      AutoGenH    The TemplateString object for header file
 #
@@ -1470,7 +1469,7 @@ def CreateGuidDefinitionCode(Info, AutoGenC, AutoGenH):
 
 ## Create code for protocol
 #
-#   @param      Info        The ModuleBuildInfo object
+#   @param      Info        The ModuleAutoGen object
 #   @param      AutoGenC    The TemplateString object for C code
 #   @param      AutoGenH    The TemplateString object for header file
 #
@@ -1491,7 +1490,7 @@ def CreateProtocolDefinitionCode(Info, AutoGenC, AutoGenH):
 
 ## Create code for PPI
 #
-#   @param      Info        The ModuleBuildInfo object
+#   @param      Info        The ModuleAutoGen object
 #   @param      AutoGenC    The TemplateString object for C code
 #   @param      AutoGenH    The TemplateString object for header file
 #
@@ -1512,7 +1511,7 @@ def CreatePpiDefinitionCode(Info, AutoGenC, AutoGenH):
 
 ## Create code for PCD
 #
-#   @param      Info        The ModuleBuildInfo object
+#   @param      Info        The ModuleAutoGen object
 #   @param      AutoGenC    The TemplateString object for C code
 #   @param      AutoGenH    The TemplateString object for header file
 #
@@ -1527,7 +1526,7 @@ def CreatePcdCode(Info, AutoGenC, AutoGenH):
 
 ## Create code for unicode string definition
 #
-#   @param      Info        The ModuleBuildInfo object
+#   @param      Info        The ModuleAutoGen object
 #   @param      AutoGenC    The TemplateString object for C code
 #   @param      AutoGenH    The TemplateString object for header file
 #
@@ -1552,7 +1551,7 @@ def CreateUnicodeStringCode(Info, AutoGenC, AutoGenH):
 
 ## Create common code
 #
-#   @param      Info        The ModuleBuildInfo object
+#   @param      Info        The ModuleAutoGen object
 #   @param      AutoGenC    The TemplateString object for C code
 #   @param      AutoGenH    The TemplateString object for header file
 #
@@ -1594,7 +1593,7 @@ def CreateHeaderCode(Info, AutoGenC, AutoGenH):
 
 ## Create common code for header file
 #
-#   @param      Info        The ModuleBuildInfo object
+#   @param      Info        The ModuleAutoGen object
 #   @param      AutoGenC    The TemplateString object for C code
 #   @param      AutoGenH    The TemplateString object for header file
 #
@@ -1603,7 +1602,7 @@ def CreateFooterCode(Info, AutoGenC, AutoGenH):
 
 ## Create code for a module
 #
-#   @param      Info        The ModuleBuildInfo object
+#   @param      Info        The ModuleAutoGen object
 #   @param      AutoGenC    The TemplateString object for C code
 #   @param      AutoGenH    The TemplateString object for header file
 #

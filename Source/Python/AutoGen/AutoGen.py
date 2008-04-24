@@ -81,16 +81,33 @@ gAutoGenCodeFileName = "AutoGen.c"
 gAutoGenHeaderFileName = "AutoGen.h"
 gAutoGenDepexFileName = "%(module_name)s.depex"
 
+## Base class for AutoGen
+#
+#   This class just implements the cache mechanism of AutoGen objects.
+# 
 class AutoGen(object):
-    # database to maintain the objects of PlatformAutoGen
-    _CACHE_ = {}    # (platform file, BuildTarget, ToolChain) : {ARCH : AutoGen object}
+    # database to maintain the objects of xxxAutoGen
+    _CACHE_ = {}    # (BuildTarget, ToolChain) : {ARCH : {platform file: AutoGen object}}}
 
+    ## Factory method
+    #
+    #   @param  Class           class object of real AutoGen class
+    #                           (WorkspaceAutoGen, ModuleAutoGen or PlatformAutoGen)
+    #   @param  Workspace       Workspace directory or WorkspaceAutoGen object
+    #   @param  MetaFile        The path of meta file
+    #   @param  Target          Build target
+    #   @param  Toolchain       Tool chain name
+    #   @param  Arch            Target arch
+    #   @param  *args           The specific class related parameters
+    #   @param  **kwargs        The specific class related dict parameters
+    # 
     def __new__(Class, Workspace, MetaFile, Target, Toolchain, Arch, *args, **kwargs):
         # check if the object has been created
         Key = (Target, Toolchain)
         if Key not in Class._CACHE_ or Arch not in Class._CACHE_[Key] \
            or MetaFile not in Class._CACHE_[Key][Arch]:
             AutoGenObject = super(AutoGen, Class).__new__(Class)
+            # call real constructor
             if not AutoGenObject._Init(Workspace, MetaFile, Target, Toolchain, Arch, *args, **kwargs):
                 return None
             if Key not in Class._CACHE_:
@@ -125,7 +142,30 @@ class AutoGen(object):
     def __eq__(self, Other):
         return Other != None and self._MetaFile == str(Other)
 
+## Workspace AutoGen class
+#
+#   This class is used mainly to control the whole platform build for different
+# architecture. This class will generate top level makefile.
+# 
 class WorkspaceAutoGen(AutoGen):
+    ## Real constructor of WorkspaceAutoGen
+    # 
+    # This method behaves the same as __init__ except that it needs explict invoke
+    # (in super class's __new__ method)
+    #
+    #   @param  WorkspaceDir            Root directory of workspace
+    #   @param  ActivePlatform          Meta-file of active platform
+    #   @param  Target                  Build target
+    #   @param  Toolchain               Tool chain name
+    #   @param  ArchList                List of architecture of current build
+    #   @param  MetaFileDb              Database containing meta-files
+    #   @param  BuildConfig             Configuration of build
+    #   @param  ToolDefinition          Tool chain definitions
+    #   @param  FlashDefinitionFile     File of flash definition
+    #   @param  Fds                     FD list to be generated
+    #   @param  Fvs                     FV list to be generated
+    #   @param  SkuId                   SKU id from command line
+    # 
     def _Init(self, WorkspaceDir, ActivePlatform, Target, Toolchain, ArchList, MetaFileDb,
               BuildConfig, ToolDefinition, FlashDefinitionFile='', Fds=[], Fvs=[], SkuId=''):
         self._MetaFile      = str(ActivePlatform)
@@ -144,7 +184,7 @@ class WorkspaceAutoGen(AutoGen):
         self.FvTargetList   = Fvs
         self.AutoGenObjectList = []
 
-        # there's many relative directory operation, so ...
+        # there's many relative directory operations, so ...
         os.chdir(self.WorkspaceDir)
 
         # parse FDF file to get PCDs in it, if any
@@ -166,8 +206,6 @@ class WorkspaceAutoGen(AutoGen):
 
             Pa = PlatformAutoGen(self, self._MetaFile, Target, Toolchain, Arch)
             self.AutoGenObjectList.append(Pa)
-            #for M in ModuleList:
-            #    Platform.AddModule(M)
 
         self._BuildDir = None
         self._FvDir = None
@@ -176,29 +214,37 @@ class WorkspaceAutoGen(AutoGen):
 
         return True
 
+    ## Return the directory to store FV files
     def _GetFvDir(self):
         if self._FvDir == None:
             self._FvDir = path.join(self.BuildDir, 'FV')
         return self._FvDir
             
+    ## Return the directory to store all intermediate and final files built
     def _GetBuildDir(self):
         return self.AutoGenObjectList[0].BuildDir
 
+    ## Return the build output directory platform specifies
     def _GetOutputDir(self):
         return self.Platform.OutputDirectory
 
+    ## Return platform name
     def _GetName(self):
         return self.Platform.PlatformName
 
+    ## Return meta-file GUID
     def _GetGuid(self):
         return self.Platform.Guid
 
+    ## Return platform version
     def _GetVersion(self):
         return self.Platform.Version
 
+    ## Return paths of tools
     def _GetToolPaths(self):
         return self.AutoGenObjectList[0].ToolPath
 
+    ## Return options of tools
     def _GetToolOptions(self):
         return self.AutoGenObjectList[0].ToolOption
 
@@ -223,7 +269,7 @@ class WorkspaceAutoGen(AutoGen):
 
     ## Create makefile for the platform and mdoules in it
     #
-    #   @param      CreateLibraryCodeFile   Flag indicating if the makefile for
+    #   @param      CreateDepsMakeFile      Flag indicating if the makefile for
     #                                       modules will be created as well
     #
     def CreateMakeFile(self, CreateDepsMakeFile=False):
@@ -245,7 +291,7 @@ class WorkspaceAutoGen(AutoGen):
     #  Since there's no autogen code for platform, this method will do nothing
     #  if CreateModuleCodeFile is set to False.
     #
-    #   @param      CreateModuleCodeFile    Flag indicating if creating module's
+    #   @param      CreateDepsCodeFile      Flag indicating if creating module's
     #                                       autogen code file or not
     #
     def CreateCodeFile(self, CreateDepsCodeFile=False):
@@ -259,8 +305,8 @@ class WorkspaceAutoGen(AutoGen):
     Version             = property(_GetVersion)                       
     OutputDir           = property(_GetOutputDir)
 
-    ToolPath            = property(_GetToolPaths)    # toolcode : tool path
-    ToolOption          = property(_GetToolOptions)    # toolcode : tool option string
+    ToolPath            = property(_GetToolPaths)       # toolcode : tool path
+    ToolOption          = property(_GetToolOptions)     # toolcode : tool option string
 
     BuildDir            = property(_GetBuildDir)
     FvDir               = property(_GetFvDir)
@@ -269,21 +315,21 @@ class WorkspaceAutoGen(AutoGen):
 
 ## AutoGen class for platform
 #
-#  PlatformAutoGen class will re-organize the original information in platform
+#  PlatformAutoGen class will process the original information in platform
 #  file in order to generate makefile for platform.
 #
 class PlatformAutoGen(AutoGen):
     ## The real constructor of PlatformAutoGen
     #
     #  This method is not supposed to be called by users of PlatformAutoGen. It's
-    #  only used by factory method New() to do real initialization work for an
+    #  only used by factory method __new__() to do real initialization work for an
     #  object of PlatformAutoGen
     #
     #   @param      Workspace       EdkIIWorkspaceBuild object
     #   @param      PlatformFile    Platform file (DSC file)
     #   @param      Target          Build target (DEBUG, RELEASE)
     #   @param      Toolchain       Name of tool chain
-    #   @param      ArchList        List of arch the platform supports
+    #   @param      Arch            arch of the platform supports
     #
     def _Init(self, Workspace, PlatformFile, Target, Toolchain, Arch):
         EdkLogger.verbose("\nAutoGen platform [%s] [%s]" % (PlatformFile, Arch))
@@ -357,7 +403,7 @@ class PlatformAutoGen(AutoGen):
 
     ## Create makefile for the platform and mdoules in it
     #
-    #   @param      CreateLibraryCodeFile   Flag indicating if the makefile for
+    #   @param      CreateModuleMakeFile    Flag indicating if the makefile for
     #                                       modules will be created as well
     #
     def CreateMakeFile(self, CreateModuleMakeFile=False):
@@ -382,20 +428,25 @@ class PlatformAutoGen(AutoGen):
                            (self._MetaFile, self.Arch))
         self.IsMakeFileCreated = True
 
+    ## Return the platform build data object
     def _GetPlatform(self):
         if self._Platform == None:
             self._Platform = self.BuildDatabase[self._MetaFile, self.Arch]
         return self._Platform
 
+    ## Return platform name
     def _GetName(self):
         return self.Platform.PlatformName
 
+    ## Return the meta file GUID
     def _GetGuid(self):
         return self.Platform.Guid
 
+    ## Return the platform version
     def _GetVersion(self):
         return self.Platform.Version
 
+    ## Return the FDF file name
     def _GetFdfFile(self):
         if self._FdfFile == None:
             if self.Workspace.FdfFile != "":
@@ -404,12 +455,11 @@ class PlatformAutoGen(AutoGen):
                 self._FdfFile = ''
         return self._FdfFile
 
-    def _GetDebugDir(self):
-        return ''
-
+    ## Return the build output directory platform specifies
     def _GetOutputDir(self):
         return self.Platform.OutputDirectory
 
+    ## Return the directory to store all intermediate and final files built
     def _GetBuildDir(self):
         if self._BuildDir == None:
             if os.path.isabs(self.OutputDir):
@@ -452,8 +502,6 @@ class PlatformAutoGen(AutoGen):
     ## Get tool chain definition
     #
     #  Get each tool defition for given tool chain from tools_def.txt and platform
-    #
-    #   @param      Info    PlatformBuildInfo object to store the definition
     #
     def _GetToolDefinition(self):
         ToolDefinition = self.Workspace.ToolDef.ToolsDefTxtDictionary
@@ -511,41 +559,49 @@ class PlatformAutoGen(AutoGen):
             self._OutputFlag[Tool] = OutputFlag
             self._IncludeFlag[Tool] = InputFlag
 
+    ## Return the paths of tools
     def _GetToolPaths(self):
         if self._ToolPath == None:
             self._GetToolDefinition()
         return self._ToolPath
 
+    ## Return the dll paths of tools
     def _GetToolDllPaths(self):
         if self._ToolDllPath == None:
             self._GetToolDefinition()
         return self._ToolDllPath
 
+    ## Return the static libraries of tools
     def _GetToolStaticLibs(self):
         if self._ToolStaticLib == None:
             self._GetToolDefinition()
         return self._ToolStaticLib
 
+    ## Return the families of tools
     def _GetToolChainFamilies(self):
         if self._ToolChainFamily == None:
             self._GetToolDefinition()
         return self._ToolChainFamily
 
+    ## Return the build options specific to this platform
     def _GetBuildOptions(self):
         if self._BuildOption == None:
             self._BuildOption = self._ExpandBuildOption(self.Platform.BuildOptions)
         return self._BuildOption
 
+    ## Return the output flag of tools
     def _GetOuputFlags(self):
         if self._OutputFlag == None:
             self._GetToolDefinition()
         return self._OutputFlag
 
+    ## Return the include flags of tools
     def _GetIncludeFlags(self):
         if self._IncludeFlag == None:
             self._GetToolDefinition()
         return self._IncludeFlag
 
+    ## Return the default options of tools
     def _GetToolOptions(self):
         if self._ToolOption == None:
             self._GetToolDefinition()
@@ -563,6 +619,7 @@ class PlatformAutoGen(AutoGen):
             self._BuildRule = BuildRule(BuildRuleFile)
         return self._BuildRule
 
+    ## Summarize the packages used by modules in this platform
     def _GetPackageList(self):
         if self._PackageList == None:
             self._PackageList = set()
@@ -575,11 +632,6 @@ class PlatformAutoGen(AutoGen):
     ## Collect dynamic PCDs
     #
     #  Gather dynamic PCDs list from each module and their settings from platform
-    #
-    #   @param      Platform    The object of the platform
-    #   @param      Arch        One of the arch the platform supports
-    #
-    #   @retval     lsit        The list of dynamic PCD
     #
     def _GetPcdList(self):
         self._NonDynamicPcdList = []
@@ -619,23 +671,19 @@ class PlatformAutoGen(AutoGen):
                             ExtraData="\n\tPCD(s) without MaxDatumSize:\n\t\t%s\n"
                                       % NoDatumTypePcdListString)
 
+    ## Get list of non-dynamic PCDs
     def _GetNonDynamicPcdList(self):
         if self._NonDynamicPcdList == None:
             self._GetPcdList()
         return self._NonDynamicPcdList
 
+    ## Get list of dynamic PCDs
     def _GetDynamicPcdList(self):
         if self._DynamicPcdList == None:
             self._GetPcdList()
         return self._DynamicPcdList
 
     ## Generate Token Number for all PCD
-    #
-    #   @param      Platform        The object of the platform
-    #   @param      DynamicPcdList  The list of all dynamic PCDs
-    #
-    #   @retval     dict            A dict object containing the PCD and its token number
-    #
     def _GetPcdTokenNumbers(self):
         if self._PcdTokenNumber == None:
             self._PcdTokenNumber = sdict()
@@ -657,6 +705,7 @@ class PlatformAutoGen(AutoGen):
                 TokenNumber += 1
         return self._PcdTokenNumber
 
+    ## Summarize ModuleAutoGen objects of all modules/libraries to be built for this platform
     def _GetAutoGenObjectList(self):
         self._ModuleAutoGenList = []
         self._LibraryAutoGenList = []
@@ -675,11 +724,13 @@ class PlatformAutoGen(AutoGen):
                 if La not in self._LibraryAutoGenList:
                     self._LibraryAutoGenList.append(La)
 
+    ## Summarize ModuleAutoGen objects of all modules to be built for this platform
     def _GetModuleAutoGenList(self):
         if self._ModuleAutoGenList == None:
             self._GetAutoGenObjectList()
         return self._ModuleAutoGenList
 
+    ## Summarize ModuleAutoGen objects of all libraries to be built for this platform
     def _GetLibraryAutoGenList(self):
         if self._LibraryAutoGenList == None:
             self._GetAutoGenObjectList()
@@ -690,19 +741,18 @@ class PlatformAutoGen(AutoGen):
     #  An error will be raised directly if the module or its arch is not supported
     #  by the platform or current configuration
     #
-    #   @param      Module  The module file
-    #   @param      Arch    The arch the module will be built for
-    #
     def ValidModule(self, Module):
-        #if Arch not in self.Workspace.SupArchList:
-        #    return False
-        #    #EdkLogger.error("AutoGen", AUTOGEN_ERROR, "[%s] is not supported by active platform [%s] [%s]!"
-        #    #                                          % (Arch, self._MetaFile, self.Workspace.SupArchList))
-        #if Arch not in self.ArchList:
-        #    return False
-        #    #EdkLogger.error("AutoGen", AUTOGEN_ERROR, "[%s] is not supported by current build configuration!" % Arch)
         return Module in self.Platform.Modules or Module in self.Platform.LibraryInstances
 
+    ## Resolve the library classes in a module to library instances
+    #
+    # This method will not only resolve library classes but also sort the library
+    # instances according to the dependency-ship.
+    # 
+    #   @param  Module      The module from which the library classes will be resolved
+    # 
+    #   @retval library_list    List of library instances sorted
+    # 
     def ApplyLibraryInstance(self, Module):
         ModuleType = Module.ModuleType
         # apply library instances from platform
@@ -861,6 +911,11 @@ class PlatformAutoGen(AutoGen):
         return SortedLibraryList
     
 
+    ## Override PCD setting (type, value, ...)
+    #
+    #   @param  ToPcd       The PCD to be overrided
+    #   @param  FromPcd     The PCD overrideing from
+    # 
     def _OverridePcd(self, ToPcd, FromPcd):
         # 
         # in case there's PCDs coming from FDF file, which have no type given.
@@ -905,14 +960,24 @@ class PlatformAutoGen(AutoGen):
                 SkuName : SkuInfoClass(SkuName, self.Platform.SkuIds[SkuName], '', '', '', '', '', ToPcd.DefaultValue)
             }
 
+    ## Apply PCD setting defined platform to a module
+    #
+    #   @param  Module  The module from which the PCD setting will be overrided
+    # 
+    #   @retval PCD_list    The list PCDs with settings from platform
+    # 
     def ApplyPcdSetting(self, Module):
+        # for each PCD in module
         for Name,Guid in Module.Pcds:
             PcdInModule = Module.Pcds[Name,Guid]
+            # find out the PCD setting in platform
             if (Name,Guid) in self.Platform.Pcds:
                 PcdInPlatform = self.Platform.Pcds[Name,Guid]
             else:
                 PcdInPlatform = None
+            # then override the settings if any
             self._OverridePcd(PcdInModule, PcdInPlatform)
+            # resolve the VariableGuid value
             for SkuId in PcdInModule.SkuInfoList:
                 Sku = PcdInModule.SkuInfoList[SkuId]
                 if Sku.VariableGuid == '': continue
@@ -936,8 +1001,13 @@ class PlatformAutoGen(AutoGen):
                     self._OverridePcd(Module.Pcds[Key], PlatformModule.Pcds[Key])
         return Module.Pcds.values()
 
-    ##
-    # for R8.x modules
+    ## Resolve library names to library modules
+    # 
+    # (for R8.x modules)
+    # 
+    #   @param  Module  The module from which the library names will be resolved
+    # 
+    #   @retval library_list    The list of library modules
     # 
     def ResolveLibraryReference(self, Module):
         EdkLogger.verbose("")
@@ -962,6 +1032,12 @@ class PlatformAutoGen(AutoGen):
                     EdkLogger.verbose("\t" + LibraryName + " : " + str(Library) + ' ' + str(type(Library)))
         return LibraryList
 
+    ## Expand * in build option key
+    #
+    #   @param  Options     Options to be expanded
+    # 
+    #   @retval options     Options expanded
+    # 
     def _ExpandBuildOption(self, Options):
         BuildOptions = {}
         for Key in Options:
@@ -984,6 +1060,12 @@ class PlatformAutoGen(AutoGen):
                             BuildOptions[Tool] += " " + Options[Key]
         return BuildOptions
 
+    ## Append build options in platform to a module
+    # 
+    #   @param  Module  The module to which the build options will be appened
+    # 
+    #   @retval options     The options appended with build options in platform
+    # 
     def ApplyBuildOption(self, Module):
         PlatformOptions = self.BuildOption
         ModuleOptions = self._ExpandBuildOption(Module.BuildOptions)
@@ -1037,26 +1119,25 @@ class PlatformAutoGen(AutoGen):
     ModuleAutoGenList   = property(_GetModuleAutoGenList)
     LibraryAutoGenList  = property(_GetLibraryAutoGenList)
 
-## AutoGen class
+## ModuleAutoGen class
 #
 # This class encapsules the AutoGen behaviors for the build tools. In addition to
-# the generation of AutoGen.h and AutoGen.c, it can generate *.depex file according
-# to the [depex] section in module's inf file. The result of parsing unicode file
-# has been incorporated either.
+# the generation of AutoGen.h and AutoGen.c, it will generate *.depex file according
+# to the [depex] section in module's inf file.
 #
 class ModuleAutoGen(AutoGen):
     ## The real constructor of ModuleAutoGen
     #
     #  This method is not supposed to be called by users of ModuleAutoGen. It's
-    #  only used by factory method New() to do real initialization work for an
+    #  only used by factory method __new__() to do real initialization work for an
     #  object of ModuleAutoGen
     #
     #   @param      Workspace           EdkIIWorkspaceBuild object
-    #   @param      PlatformAutoGenObj  Platform file (DSC file)
     #   @param      ModuleFile          The path of module file
     #   @param      Target              Build target (DEBUG, RELEASE)
     #   @param      Toolchain           Name of tool chain
     #   @param      Arch                The arch the module supports
+    #   @param      PlatformFile        Platform meta-file
     #
     def _Init(self, Workspace, ModuleFile, Target, Toolchain, Arch, PlatformFile):
         EdkLogger.verbose("\nAutoGen module [%s] [%s]" % (ModuleFile, Arch))
@@ -1066,6 +1147,7 @@ class ModuleAutoGen(AutoGen):
 
         self._MetaFile = str(ModuleFile)
         self.PlatformInfo = PlatformAutoGen(Workspace, PlatformFile, Target, Toolchain, Arch)
+        # check if this module is employed by active platform
         if not self.PlatformInfo.ValidModule(self._MetaFile):
             EdkLogger.verbose("Module [%s] for [%s] is not employed by active platform\n" \
                               % (self._MetaFile, Arch))
@@ -1122,32 +1204,41 @@ class ModuleAutoGen(AutoGen):
         return True
 
 
+    ## Return the module build data object
     def _GetModule(self):
         if self._Module == None:
             self._Module = self.Workspace.BuildDatabase[self._MetaFile, self.Arch]
         return self._Module
 
+    ## Return the module name
     def _GetBaseName(self):
         return self.Module.BaseName
 
+    ## Return the module meta-file GUID
     def _GetGuid(self):
         return self.Module.Guid
 
+    ## Return the module version
     def _GetVersion(self):
         return self.Module.Version
 
+    ## Return the module type
     def _GetModuleType(self):
         return self.Module.ModuleType
 
+    ## Return the component type (for R8.x style of module)
     def _GetComponentType(self):
         return self.Module.ComponentType
 
+    ## Return the PCD_IS_DRIVER setting
     def _GetPcdIsDriver(self):
         return self.Module.PcdIsDriver
 
+    ## Return the autogen version, i.e. module meta-file version
     def _GetAutoGenVersion(self):
         return self.Module.AutoGenVersion
 
+    ## Check if the module is library or not
     def _IsLibrary(self):
         if self._LibraryFlag == None:
             if self.Module.LibraryClass != None and self.Module.LibraryClass != []:
@@ -1156,6 +1247,7 @@ class ModuleAutoGen(AutoGen):
                 self._LibraryFlag = False
         return self._LibraryFlag
 
+    ## Return the directory to store intermediate files of the module
     def _GetBuildDir(self):
         if self._BuildDir == None:
             self._BuildDir = path.join(
@@ -1166,19 +1258,19 @@ class ModuleAutoGen(AutoGen):
                                     )
         return self._BuildDir
 
+    ## Return the directory to store the intermediate object files of the mdoule
     def _GetOutputDir(self):
         if self._OutputDir == None:
             self._OutputDir = path.join(self.BuildDir, "OUTPUT")
         return self._OutputDir
 
+    ## Return the directory to store auto-gened source files of the mdoule
     def _GetDebugDir(self):
         if self._DebugDir == None:
             self._DebugDir = path.join(self.BuildDir, "DEBUG")
         return self._DebugDir
 
-    def _GetMakeFileDir(self):
-        return path.join(PlatformInfo.BuildDir, self.BuildDir)
-
+    ## Return the path of custom file
     def _GetCustomMakefile(self):
         if self._CustomMakefile == None:
             self._CustomMakefile = {}
@@ -1214,9 +1306,8 @@ class ModuleAutoGen(AutoGen):
                 PackageList.append(Package)
         return PackageList
 
-    ## Parse dependency expression
+    ## Merge dependency expression
     #
-    #   @param      Info    The object of ModuleBuildInfo
     #   @retval     list    The token list of the dependency expression after parsed
     #
     def _GetDepexTokenList(self):
@@ -1317,6 +1408,7 @@ class ModuleAutoGen(AutoGen):
 
         return self._SourceFileList
 
+    ## Return the list of unicode files
     def _GetUnicodeFileList(self):
         if self._UnicodeFileList == None:
             self._GetSourceFileList()
@@ -1326,7 +1418,6 @@ class ModuleAutoGen(AutoGen):
     #
     #  "Build" binary files are just to copy them to build directory.
     #
-    #   @param      PlatformInfo    The object of PlatformBuildInfo
     #   @retval     list            The list of files which can be built later
     #
     def _GetBinaryFiles(self):
@@ -1349,7 +1440,6 @@ class ModuleAutoGen(AutoGen):
 
     ## Return the list of auto-generated code file
     #
-    #   @param      BuildInfo   The object ModuleBuildInfo
     #   @retval     list        The list of auto-generated file
     #
     def _GetAutoGenFileList(self):
@@ -1364,6 +1454,7 @@ class ModuleAutoGen(AutoGen):
                 self._AutoGenFileList[gAutoGenHeaderFileName] = AutoGenH
         return self._AutoGenFileList
 
+    ## Return the list of library modules explicitly or implicityly used by this module
     def _GetLibraryList(self):
         if self._DependentLibraryList == None:
             # only merge library classes and PCD for non-library module
@@ -1378,7 +1469,6 @@ class ModuleAutoGen(AutoGen):
 
     ## Get the list of PCD
     #
-    #   @param      DependentLibraryList    The list of dependent library
     #   @retval     list                    The list of PCD
     #
     def _GetPcdList(self):
@@ -1429,7 +1519,6 @@ class ModuleAutoGen(AutoGen):
 
     ## Get the list of include search path
     #
-    #   @param      DependentPackageList    The list of package object
     #   @retval     list                    The list path
     #
     def _GetIncludePathList(self):
@@ -1534,6 +1623,7 @@ class ModuleAutoGen(AutoGen):
         self.IsCodeFileCreated = True
         return AutoGenList
 
+    ## Summarize the ModuleAutoGen objects of all libraries used by this module
     def _GetLibraryAutoGenList(self):
         if self._LibraryAutoGenList == None:
             self._LibraryAutoGenList = []
