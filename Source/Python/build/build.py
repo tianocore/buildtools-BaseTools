@@ -260,12 +260,12 @@ class BuildUnit:
     #   @param  Dependency  The BuildUnit(s) which must be completed in advance
     #   @param  WorkingDir  The directory build command starts in
     #
-    def __init__(self, Obj, BuildComamnd, Target, Dependency, WorkingDir="."):
+    def __init__(self, Obj, BuildCommand, Target, Dependency, WorkingDir="."):
         self.BuildObject = Obj
         self.Dependency = Dependency
         self.WorkingDir = WorkingDir
         self.Target = Target
-        self.BuildCommand = BuildComamnd
+        self.BuildCommand = BuildCommand
         if BuildCommand == None or len(BuildCommand) == 0:
             EdkLogger.error("build", OPTION_MISSING, "No build command found for",
                             ExtraData=str(Obj))
