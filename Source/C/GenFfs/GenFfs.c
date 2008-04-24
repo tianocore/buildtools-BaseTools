@@ -238,7 +238,8 @@ GetSectionContents (
   IN  UINT32  InputFileNum,
   OUT UINT8   *FileBuffer,
   OUT UINT32  *BufferLength,
-  OUT UINT32  *MaxAlignment
+  OUT UINT32  *MaxAlignment,
+  OUT UINT8   *PESectionNum
   )
 /*++
         
@@ -261,6 +262,8 @@ Arguments:
                    On output, this is the actual length of the data.
 
   MaxAlignment   - The max alignment required by all the input file datas.
+  
+  PeSectionNum   - Calculate the number of Pe/Te Section in this FFS file.
 
 Returns:
                        
@@ -319,15 +322,18 @@ Returns:
               "the input section name is %s and the size is %d bytes", InputFileName[Index], FileSize); 
 
     //
-    // Check this section is Te section
+    // Check this section is Te/Pe section, and Calculate the numbers of Te/Pe section.
     //
     TeOffset = 0;
     fread (&TempSectHeader, 1, sizeof (TempSectHeader), InFile);
     if (TempSectHeader.Type == EFI_SECTION_TE) {
+      (*PESectionNum) ++;
       fread (&TeHeader, 1, sizeof (TeHeader), InFile);
       if (TeHeader.Signature == EFI_TE_IMAGE_HEADER_SIGNATURE) {
         TeOffset = TeHeader.StrippedSize - sizeof (TeHeader);
       }
+    } else if (TempSectHeader.Type == EFI_SECTION_PE32) {
+      (*PESectionNum) ++;
     }
     fseek (InFile, 0, SEEK_SET);
 
@@ -428,6 +434,7 @@ Returns:
   FILE                    *FfsFile;
   UINT32                  Index;
   UINT64                  LogLevel;
+  UINT8                   PeSectionNum;
   
   //
   // Init local variables
@@ -446,6 +453,7 @@ Returns:
   MaxAlignment   = 1;
   FfsFile        = NULL;
   Status         = EFI_SUCCESS;
+  PeSectionNum   = 0;
 
   SetUtilityName (UTILITY_NAME);
 
@@ -729,7 +737,7 @@ Returns:
     }
     VerboseMsg ("the %dth input section name is %s and section alignment is %d", Index, InputFileName[Index], InputFileAlign[Index]);
   }
-
+  
   //
   // Calculate the size of all input section files.
   //  
@@ -739,8 +747,24 @@ Returns:
              InputFileNum,
              FileBuffer,
              &FileSize,
-             &MaxAlignment
+             &MaxAlignment,
+             &PeSectionNum
              );
+  
+  if ((FfsFiletype == EFI_FV_FILETYPE_SECURITY_CORE || 
+      FfsFiletype == EFI_FV_FILETYPE_PEI_CORE ||
+      FfsFiletype == EFI_FV_FILETYPE_DXE_CORE) && (PeSectionNum != 1)) {
+    Error (NULL, 0, 2000, "Invalid parameter", "Fv File type %s must have one and only one Pe or Te section, but %d Pe/Te section are input", mFfsFileType [FfsFiletype], PeSectionNum);
+    goto Finish;
+  }
+  
+  if ((FfsFiletype == EFI_FV_FILETYPE_PEIM ||
+      FfsFiletype == EFI_FV_FILETYPE_DRIVER ||
+      FfsFiletype == EFI_FV_FILETYPE_COMBINED_PEIM_DRIVER ||
+      FfsFiletype == EFI_FV_FILETYPE_APPLICATION) && (PeSectionNum < 1)) {
+    Error (NULL, 0, 2000, "Invalid parameter", "Fv File type %s must have at least one Pe or Te section, but no Pe/Te section is input", mFfsFileType [FfsFiletype]);
+    goto Finish;   
+  }
 
   if (Status == EFI_BUFFER_TOO_SMALL) {
     FileBuffer = (UINT8 *) malloc (FileSize);
@@ -759,7 +783,8 @@ Returns:
                InputFileNum,
                FileBuffer,
                &FileSize,
-               &MaxAlignment
+               &MaxAlignment,
+               &PeSectionNum
                );
   }
 

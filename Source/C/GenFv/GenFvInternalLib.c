@@ -2690,19 +2690,23 @@ Returns:
     if (FunctionType == 1) {
       sscanf (Line, "%s %s %lx %s", KeyWord, FunctionName, &FunctionAddress, FunctionTypeName);
       if (FunctionTypeName [1] == '\0' && (FunctionTypeName [0] == 'f' || FunctionTypeName [0] == 'F')) {
-        fprintf (FvMapFile, "  %016lx F  ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "  %016lx ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "(%08lx) F  ", FunctionAddress - Offset);
         fprintf (FvMapFile, "%s\n", FunctionName);
     } else {
-        fprintf (FvMapFile, "  %016lx    ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "  %016lx ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "(%08lx)    ", FunctionAddress - Offset);
         fprintf (FvMapFile, "%s\n", FunctionName);
       }
     } else if (FunctionType == 2) {
       sscanf (Line, "%s %s %lx %s", KeyWord, FunctionName, &FunctionAddress, FunctionTypeName);
       if (FunctionTypeName [1] == '\0' && (FunctionTypeName [0] == 'f' || FunctionTypeName [0] == 'F')) {
-        fprintf (FvMapFile, "  %016lx FS ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "  %016lx ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "(%08lx) FS ", FunctionAddress - Offset);
         fprintf (FvMapFile, "%s\n", FunctionName);
       } else {
-        fprintf (FvMapFile, "  %016lx    ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "  %016lx ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "(%08lx)    ", FunctionAddress - Offset);
         fprintf (FvMapFile, "%s\n", FunctionName);
       }
     }

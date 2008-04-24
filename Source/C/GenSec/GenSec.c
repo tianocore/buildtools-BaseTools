@@ -184,9 +184,9 @@ Returns:
 }
 
 VOID
-Ascii2UnicodeWriteString (
+Ascii2UnicodeString (
   CHAR8    *String,
-  FILE     *OutFile
+  CHAR16   *UniString
   )
 /*++
 
@@ -196,8 +196,8 @@ Routine Description:
 
 Arguments:
 
-  String    - Pointer to string that is written to FILE.
-  OutFile   - Pointer to FILE
+  String      - Pointer to string that is written to FILE.
+  UniString   - Pointer to unicode string
 
 Returns:
 
@@ -205,19 +205,13 @@ Returns:
 
 --*/
 {
-  UINT32 Index;
-  UINT8  AsciiNull;
-
-  AsciiNull = 0;
-
+  while (*String != '\0') {
+    *(UniString++) = (CHAR16) *(String++);
+  }
   //
-  // Next, write out the string... Convert ASCII to Unicode in the process.
+  // End the UniString with a NULL.
   //
-  Index = 0;
-  do {
-    fwrite (&String[Index], 1, 1, OutFile);
-    fwrite (&AsciiNull, 1, 1, OutFile);
-  } while (String[Index++] != 0);
+  *UniString = '\0';
 } 
 
 STATUS
@@ -225,7 +219,7 @@ GenSectionCommonLeafSection (
   CHAR8   **InputFileName,
   UINT32  InputFileNum,
   UINT8   SectionType,
-  FILE    *OutFile
+  UINT8   **OutFileBuffer
   )
 /*++
         
@@ -245,7 +239,7 @@ Arguments:
 
   SectionType    - A valid section type string
 
-  OutFile        - Output file handle
+  OutFileBuffer  - Buffer pointer to Output file contents
 
 Returns:
                        
@@ -258,7 +252,7 @@ Returns:
   FILE                      *InFile;
   UINT8                     *Buffer;
   UINT32                    TotalLength;
-  EFI_COMMON_SECTION_HEADER CommonSect;
+  EFI_COMMON_SECTION_HEADER *CommonSect;
   STATUS                    Status;
 
   if (InputFileNum > 1) {
@@ -286,11 +280,7 @@ Returns:
   InputFileLength = ftell (InFile);
   fseek (InFile, 0, SEEK_SET);
   DebugMsg (NULL, 0, 9, "Input file", "File name is %s and File size is %d bytes", InputFileName[0], InputFileLength);
-  //
-  // Fill in the fields in the local section header structure
-  //
-  CommonSect.Type = (EFI_SECTION_TYPE) SectionType;
-  TotalLength     = sizeof (CommonSect) + InputFileLength;
+  TotalLength     = sizeof (EFI_COMMON_SECTION_HEADER) + InputFileLength;
   //
   // Size must fit in 3 bytes
   //
@@ -300,39 +290,37 @@ Returns:
   }
   VerboseMsg ("the size of the created section file is %d bytes", TotalLength);
   //
-  // Now copy the size into the section header and write out the section header
+  // Fill in the fields in the local section header structure
   //
-  memcpy (&CommonSect.Size, &TotalLength, 3);
-  fwrite (&CommonSect, sizeof (CommonSect), 1, OutFile);
+  Buffer = (UINT8 *) malloc ((size_t) TotalLength);
+  if (Buffer == NULL) {
+    Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated"); 
+    goto Done;
+  }
+  CommonSect = (EFI_COMMON_SECTION_HEADER *) Buffer;
+  CommonSect->Type     = SectionType;
+  CommonSect->Size[0]  = (UINT8) (TotalLength & 0xff);
+  CommonSect->Size[1]  = (UINT8) ((TotalLength & 0xff00) >> 8);
+  CommonSect->Size[2]  = (UINT8) ((TotalLength & 0xff0000) >> 16);
+  
   //
-  // Allocate a buffer to read in the contents of the input file. Then
-  // read it in as one block and write it to the output file.
+  // read data from the input file.
   //
   if (InputFileLength != 0) {
-    Buffer = (UINT8 *) malloc ((size_t) InputFileLength);
-    if (Buffer == NULL) {
-      Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated"); 
-      goto Done;
-    }
-
-    if (fread (Buffer, (size_t) InputFileLength, 1, InFile) != 1) {
+    if (fread (Buffer + sizeof (EFI_COMMON_SECTION_HEADER), (size_t) InputFileLength, 1, InFile) != 1) {
       Error (NULL, 0, 0004, "Error reading file", InputFileName[0]);
-      goto Done;
-    }
-
-    if (fwrite (Buffer, (size_t) InputFileLength, 1, OutFile) != 1) {
-      Error (NULL, 0, 0002, "Error writing file", NULL);
       goto Done;
     }
   }
 
+  //
+  // Set OutFileBuffer 
+  //
+  *OutFileBuffer = Buffer;
   Status = STATUS_SUCCESS;
 
 Done:
   fclose (InFile);
-  if (Buffer != NULL) {
-    free (Buffer);
-  }
 
   return Status;
 }
@@ -444,10 +432,10 @@ Returns:
 
 EFI_STATUS
 GenSectionCompressionSection (
-  CHAR8    **InputFileName,
+  CHAR8   **InputFileName,
   UINT32  InputFileNum,
   UINT8   SectCompSubType,
-  FILE    *OutFile
+  UINT8   **OutFileBuffer
   )
 /*++
         
@@ -466,7 +454,7 @@ Arguments:
 
   SectCompSubType - Specify the compression algorithm requested. 
   
-  OutFile        - Output file handle
+  OutFileBuffer   - Buffer pointer to Output file contents
 
 Returns:
                        
@@ -482,7 +470,7 @@ Returns:
   UINT8                   *FileBuffer;
   UINT8                   *OutputBuffer;
   EFI_STATUS              Status;
-  EFI_COMPRESSION_SECTION CompressionSect;
+  EFI_COMPRESSION_SECTION *CompressionSect;
   COMPRESS_FUNCTION       CompressFunction;
 
   InputLength       = 0;
@@ -548,13 +536,13 @@ Returns:
 
     Status = CompressFunction (FileBuffer, InputLength, OutputBuffer, &CompressedLength);
     if (Status == EFI_BUFFER_TOO_SMALL) {
-      OutputBuffer = malloc (CompressedLength);
+      OutputBuffer = malloc (CompressedLength + sizeof (EFI_COMPRESSION_SECTION));
       if (!OutputBuffer) {
         free (FileBuffer);
         return EFI_OUT_OF_RESOURCES;
       }
 
-      Status = CompressFunction (FileBuffer, InputLength, OutputBuffer, &CompressedLength);
+      Status = CompressFunction (FileBuffer, InputLength, OutputBuffer + sizeof (EFI_COMPRESSION_SECTION), &CompressedLength);
     }
 
     free (FileBuffer);
@@ -587,16 +575,20 @@ Returns:
   //
   // Add the section header for the compressed data
   //
-  CompressionSect.CommonHeader.Type     = EFI_SECTION_COMPRESSION;
-  CompressionSect.CommonHeader.Size[0]  = (UINT8) (TotalLength & 0xff);
-  CompressionSect.CommonHeader.Size[1]  = (UINT8) ((TotalLength & 0xff00) >> 8);
-  CompressionSect.CommonHeader.Size[2]  = (UINT8) ((TotalLength & 0xff0000) >> 16);
-  CompressionSect.CompressionType       = SectCompSubType;
-  CompressionSect.UncompressedLength    = InputLength;
+  CompressionSect = (EFI_COMPRESSION_SECTION *) FileBuffer;
+  
+  CompressionSect->CommonHeader.Type     = EFI_SECTION_COMPRESSION;
+  CompressionSect->CommonHeader.Size[0]  = (UINT8) (TotalLength & 0xff);
+  CompressionSect->CommonHeader.Size[1]  = (UINT8) ((TotalLength & 0xff00) >> 8);
+  CompressionSect->CommonHeader.Size[2]  = (UINT8) ((TotalLength & 0xff0000) >> 16);
+  CompressionSect->CompressionType       = SectCompSubType;
+  CompressionSect->UncompressedLength    = InputLength;
 
-  fwrite (&CompressionSect, sizeof (CompressionSect), 1, OutFile);
-  fwrite (FileBuffer, CompressedLength, 1, OutFile);
-  free (FileBuffer);
+  //
+  // Set OutFileBuffer 
+  //
+  *OutFileBuffer = FileBuffer;
+
   return EFI_SUCCESS;
 }
 
@@ -607,7 +599,7 @@ GenSectionGuidDefinedSection (
   EFI_GUID *VendorGuid,
   UINT16   DataAttribute,
   UINT32   DataHeaderSize,
-  FILE     *OutFile
+  UINT8    **OutFileBuffer
   )
 /*++
         
@@ -630,7 +622,7 @@ Arguments:
   
   DataHeaderSize- Guided Data Header Size
   
-  OutFile       - Output file handle
+  OutFileBuffer   - Buffer pointer to Output file contents
 
 Returns:
                        
@@ -643,14 +635,23 @@ Returns:
 {
   UINT32                TotalLength;
   UINT32                InputLength;
+  UINT32                Offset;
   UINT8                 *FileBuffer;
   UINT32                Crc32Checksum;
   EFI_STATUS            Status;
-  CRC32_SECTION_HEADER  Crc32GuidSect;
-  EFI_GUID_DEFINED_SECTION  VendorGuidSect;
+  CRC32_SECTION_HEADER  *Crc32GuidSect;
+  EFI_GUID_DEFINED_SECTION  *VendorGuidSect;
 
   InputLength = 0;
+  Offset      = 0;
   FileBuffer  = NULL;
+
+  if (CompareGuid (VendorGuid, &mEfiCrc32SectionGuid) == 0) {
+    Offset = sizeof (CRC32_SECTION_HEADER);
+  } else {
+    Offset = sizeof (EFI_GUID_DEFINED_SECTION);
+  }
+
   //
   // read all input file contents into a buffer
   // first get the size of all file contents
@@ -663,7 +664,7 @@ Returns:
             );
 
   if (Status == EFI_BUFFER_TOO_SMALL) {
-    FileBuffer = (UINT8 *) malloc (InputLength);
+    FileBuffer = (UINT8 *) malloc (InputLength + Offset);
     if (FileBuffer == NULL) {
       Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
       return EFI_OUT_OF_RESOURCES;
@@ -674,7 +675,7 @@ Returns:
     Status = GetSectionContents (
               InputFileName,
               InputFileNum,
-              FileBuffer,
+              FileBuffer + Offset,
               &InputLength
               );
   }
@@ -687,14 +688,14 @@ Returns:
   }
 
   //
-  // Now data is in FileBuffer
+  // Now data is in FileBuffer + Offset
   //
   if (CompareGuid (VendorGuid, &mEfiCrc32SectionGuid) == 0) {
     //
     // Default Guid section is CRC32.
     //
     Crc32Checksum = 0;
-    CalculateCrc32 (FileBuffer, InputLength, &Crc32Checksum);
+    CalculateCrc32 (FileBuffer + Offset, InputLength, &Crc32Checksum);
 
     TotalLength = InputLength + sizeof (CRC32_SECTION_HEADER);
     if (TotalLength >= MAX_SECTION_SIZE) {
@@ -702,16 +703,17 @@ Returns:
       free (FileBuffer);
       return STATUS_ERROR;
     }
-
-    Crc32GuidSect.GuidSectionHeader.CommonHeader.Type     = EFI_SECTION_GUID_DEFINED;
-    Crc32GuidSect.GuidSectionHeader.CommonHeader.Size[0]  = (UINT8) (TotalLength & 0xff);
-    Crc32GuidSect.GuidSectionHeader.CommonHeader.Size[1]  = (UINT8) ((TotalLength & 0xff00) >> 8);
-    Crc32GuidSect.GuidSectionHeader.CommonHeader.Size[2]  = (UINT8) ((TotalLength & 0xff0000) >> 16);
-    memcpy (&(Crc32GuidSect.GuidSectionHeader.SectionDefinitionGuid), &mEfiCrc32SectionGuid, sizeof (EFI_GUID));
-    Crc32GuidSect.GuidSectionHeader.Attributes  = EFI_GUIDED_SECTION_AUTH_STATUS_VALID;
-    Crc32GuidSect.GuidSectionHeader.DataOffset  = sizeof (CRC32_SECTION_HEADER);
-    Crc32GuidSect.CRC32Checksum                 = Crc32Checksum;
-    fwrite (&Crc32GuidSect, sizeof (Crc32GuidSect), 1, OutFile);  
+    
+    Crc32GuidSect = (CRC32_SECTION_HEADER *) FileBuffer;
+    Crc32GuidSect->GuidSectionHeader.CommonHeader.Type     = EFI_SECTION_GUID_DEFINED;
+    Crc32GuidSect->GuidSectionHeader.CommonHeader.Size[0]  = (UINT8) (TotalLength & 0xff);
+    Crc32GuidSect->GuidSectionHeader.CommonHeader.Size[1]  = (UINT8) ((TotalLength & 0xff00) >> 8);
+    Crc32GuidSect->GuidSectionHeader.CommonHeader.Size[2]  = (UINT8) ((TotalLength & 0xff0000) >> 16);
+    memcpy (&(Crc32GuidSect->GuidSectionHeader.SectionDefinitionGuid), &mEfiCrc32SectionGuid, sizeof (EFI_GUID));
+    Crc32GuidSect->GuidSectionHeader.Attributes  = EFI_GUIDED_SECTION_AUTH_STATUS_VALID;
+    Crc32GuidSect->GuidSectionHeader.DataOffset  = sizeof (CRC32_SECTION_HEADER);
+    Crc32GuidSect->CRC32Checksum                 = Crc32Checksum;
+    DebugMsg (NULL, 0, 9, "Guided section", "Data offset is %d", Crc32GuidSect->GuidSectionHeader.DataOffset);
 
   } else {
     TotalLength = InputLength + sizeof (EFI_GUID_DEFINED_SECTION);
@@ -721,21 +723,23 @@ Returns:
       return STATUS_ERROR;
     }
 
-    VendorGuidSect.CommonHeader.Type     = EFI_SECTION_GUID_DEFINED;
-    VendorGuidSect.CommonHeader.Size[0]  = (UINT8) (TotalLength & 0xff);
-    VendorGuidSect.CommonHeader.Size[1]  = (UINT8) ((TotalLength & 0xff00) >> 8);
-    VendorGuidSect.CommonHeader.Size[2]  = (UINT8) ((TotalLength & 0xff0000) >> 16);
-    memcpy (&(VendorGuidSect.SectionDefinitionGuid), VendorGuid, sizeof (EFI_GUID));
-    VendorGuidSect.Attributes  = DataAttribute;
-    VendorGuidSect.DataOffset  = sizeof (EFI_GUID_DEFINED_SECTION) + DataHeaderSize;
-    fwrite (&VendorGuidSect, sizeof (EFI_GUID_DEFINED_SECTION), 1, OutFile);  
-    DebugMsg (NULL, 0, 9, "Guided section", "Data offset is %d", VendorGuidSect.DataOffset);
+    VendorGuidSect = (EFI_GUID_DEFINED_SECTION *) FileBuffer;
+    VendorGuidSect->CommonHeader.Type     = EFI_SECTION_GUID_DEFINED;
+    VendorGuidSect->CommonHeader.Size[0]  = (UINT8) (TotalLength & 0xff);
+    VendorGuidSect->CommonHeader.Size[1]  = (UINT8) ((TotalLength & 0xff00) >> 8);
+    VendorGuidSect->CommonHeader.Size[2]  = (UINT8) ((TotalLength & 0xff0000) >> 16);
+    memcpy (&(VendorGuidSect->SectionDefinitionGuid), VendorGuid, sizeof (EFI_GUID));
+    VendorGuidSect->Attributes  = DataAttribute;
+    VendorGuidSect->DataOffset  = sizeof (EFI_GUID_DEFINED_SECTION) + DataHeaderSize;
+    DebugMsg (NULL, 0, 9, "Guided section", "Data offset is %d", VendorGuidSect->DataOffset);
   }
   VerboseMsg ("the size of the created section file is %d bytes", TotalLength);
-
-  fwrite (FileBuffer, InputLength, 1, OutFile);
-  free (FileBuffer);
   
+  //
+  // Set OutFileBuffer 
+  //
+  *OutFileBuffer = FileBuffer;
+
   return EFI_SUCCESS;
 }
 
@@ -777,9 +781,12 @@ Returns:
   UINT8                     SectCompSubType;
   UINT16                    SectGuidAttribute; 
   UINT64                    SectGuidHeaderLength;
-  EFI_COMMON_SECTION_HEADER CommonSect;
+  EFI_VERSION_SECTION       *VersionSect;
+  EFI_USER_INTERFACE_SECTION *UiSect;
   UINT32                    InputLength;
-  UINT8                     *FileBuffer;
+  UINT8                     *OutFileBuffer;
+  UINT8                     *TempBuffer;
+  UINT32                    TempLength;
   EFI_STATUS                Status;
   UINT64                    LogLevel;
   
@@ -795,11 +802,14 @@ Returns:
   SectType              = EFI_SECTION_ALL;
   SectCompSubType       = 0;
   SectGuidAttribute     = 0;
-  FileBuffer            = NULL;
+  OutFileBuffer         = NULL;
   InputLength           = 0;
   Status                = STATUS_SUCCESS;
   LogLevel              = 0;
   SectGuidHeaderLength  = 0;
+  VersionSect           = NULL;
+  UiSect                = NULL;
+  TempBuffer            = NULL;
   
   SetUtilityName (UTILITY_NAME);
   
@@ -1133,15 +1143,6 @@ Returns:
   VerboseMsg ("Output file name is %s", OutputFileName);
 
   //
-  // Open output file
-  //
-  OutFile = fopen (OutputFileName, "wb");
-  if (OutFile == NULL) {
-    Error (NULL, 0, 0001, "Error opening file", OutputFileName);
-    goto Finish;
-  }
-  
-  //
   // At this point, we've fully validated the command line, and opened appropriate
   // files, so let's go and do what we've been asked to do...
   //
@@ -1155,7 +1156,7 @@ Returns:
               InputFileName,
               InputFileNum,
               SectCompSubType,
-              OutFile
+              &OutFileBuffer
               );
     break;
 
@@ -1166,14 +1167,12 @@ Returns:
               &VendorGuid,
               SectGuidAttribute,
               (UINT32) SectGuidHeaderLength,
-              OutFile
+              &OutFileBuffer
               );
     break;
 
   case EFI_SECTION_VERSION:
-    CommonSect.Type = (EFI_SECTION_TYPE) SectType;
-
-    Index           = sizeof (CommonSect);
+    Index           = sizeof (EFI_COMMON_SECTION_HEADER);
     //
     // 2 bytes for the build number UINT16
     //
@@ -1182,25 +1181,40 @@ Returns:
     // StringBuffer is ascii.. unicode is 2X + 2 bytes for terminating unicode null.
     //
     Index += (strlen (StringBuffer) * 2) + 2;
-    memcpy (&CommonSect.Size, &Index, 3);
-    fwrite (&CommonSect, sizeof (CommonSect), 1, OutFile);
-    fwrite (&VersionNumber, sizeof (UINT16), 1, OutFile);
-    Ascii2UnicodeWriteString (StringBuffer, OutFile);
+    OutFileBuffer = (UINT8 *) malloc (Index);
+    if (OutFileBuffer == NULL) {
+      Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
+      goto Finish;
+    }
+    VersionSect = (EFI_VERSION_SECTION *) OutFileBuffer;
+    VersionSect->CommonHeader.Type     = SectType;
+    VersionSect->CommonHeader.Size[0]  = (UINT8) (Index & 0xff);
+    VersionSect->CommonHeader.Size[1]  = (UINT8) ((Index & 0xff00) >> 8);
+    VersionSect->CommonHeader.Size[2]  = (UINT8) ((Index & 0xff0000) >> 16);
+    VersionSect->BuildNumber           = (UINT16) VersionNumber;
+    Ascii2UnicodeString (StringBuffer, VersionSect->VersionString);
     VerboseMsg ("the size of the created section file is %d bytes", Index);
     break;
 
   case EFI_SECTION_USER_INTERFACE:
-    CommonSect.Type = (EFI_SECTION_TYPE) SectType;
-    Index           = sizeof (CommonSect);
+    Index           = sizeof (EFI_COMMON_SECTION_HEADER);
     //
     // StringBuffer is ascii.. unicode is 2X + 2 bytes for terminating unicode null.
     //
     Index += (strlen (StringBuffer) * 2) + 2;
-    memcpy (&CommonSect.Size, &Index, 3);
-    fwrite (&CommonSect, sizeof (CommonSect), 1, OutFile);
-    Ascii2UnicodeWriteString (StringBuffer, OutFile);
+    OutFileBuffer = (UINT8 *) malloc (Index);
+    if (OutFileBuffer == NULL) {
+      Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
+      goto Finish;
+    }
+    UiSect = (EFI_USER_INTERFACE_SECTION *) OutFileBuffer;
+    UiSect->CommonHeader.Type     = SectType;
+    UiSect->CommonHeader.Size[0]  = (UINT8) (Index & 0xff);
+    UiSect->CommonHeader.Size[1]  = (UINT8) ((Index & 0xff00) >> 8);
+    UiSect->CommonHeader.Size[2]  = (UINT8) ((Index & 0xff0000) >> 16);
+    Ascii2UnicodeString (StringBuffer, UiSect->FileNameString);
     VerboseMsg ("the size of the created section file is %d bytes", Index);
-    break;
+   break;
 
   case EFI_SECTION_ALL:
     //
@@ -1210,13 +1224,13 @@ Returns:
     Status = GetSectionContents (
               InputFileName,
               InputFileNum,
-              FileBuffer,
+              OutFileBuffer,
               &InputLength
               );
   
     if (Status == EFI_BUFFER_TOO_SMALL) {
-      FileBuffer = (UINT8 *) malloc (InputLength);
-      if (FileBuffer == NULL) {
+      OutFileBuffer = (UINT8 *) malloc (InputLength);
+      if (OutFileBuffer == NULL) {
         Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
         goto Finish;
       }
@@ -1226,17 +1240,9 @@ Returns:
       Status = GetSectionContents (
                 InputFileName,
                 InputFileNum,
-                FileBuffer,
+                OutFileBuffer,
                 &InputLength
                 );
-    }
-  
-    if (Status == EFI_SUCCESS) {
-      fwrite (FileBuffer, InputLength, 1, OutFile);
-    }
-
-    if (FileBuffer != NULL) {
-      free (FileBuffer);
     }
     VerboseMsg ("the size of the created section file is %d bytes", InputLength);
     break;
@@ -1248,14 +1254,86 @@ Returns:
               InputFileName,
               InputFileNum,
               SectType,
-              OutFile
+              &OutFileBuffer
               );
     break;
   }
+  
+  //
+  // Get output file length
+  //
+  if (SectType != EFI_SECTION_ALL) {
+    InputLength = SECTION_SIZE (OutFileBuffer);
+  }
+  //
+  // Write the Buffer to the Output file.
+  //
+  OutFile = fopen (OutputFileName, "rb");
+  if (OutFile != NULL) {
+    //
+    // the output file exists
+    // first compare the output buffer and the exist output file 
+    // if same, not to update output file
+    //
+    fseek (OutFile, 0, SEEK_END);
+    TempLength = ftell (OutFile);
+    fseek (OutFile, 0, SEEK_SET);
+
+    if (InputLength != TempLength) {
+      //
+      //  they can't be same because their size are different
+      //
+      goto WriteFile;
+    }
+    //
+    // read file data from output file
+    //
+    TempBuffer = (UINT8 *) malloc (TempLength);
+    if (TempBuffer == NULL) {
+      Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
+      goto Finish;
+    }
+    fread (TempBuffer, TempLength, 1, OutFile);
+    //
+    // Compare Data byte by byte
+    //
+    for (Index = 0; Index < InputLength; Index ++) {
+      if (OutFileBuffer [Index] != TempBuffer [Index]) {
+        break;
+      }
+    }
+    //
+    // Data is same, output file doesn't need to be updated.
+    //
+    if (Index >= InputLength) {
+      goto Finish;
+    }
+  }
+
+WriteFile:
+  if (OutFile != NULL) {
+    fclose (OutFile);
+  }
+
+  OutFile = fopen (OutputFileName, "wb");
+  if (OutFile == NULL) {
+    Error (NULL, 0, 0001, "Error opening file for writing", OutputFileName);
+    goto Finish;
+  }
+
+  fwrite (OutFileBuffer, InputLength, 1, OutFile);
 
 Finish:
   if (InputFileName != NULL) {
     free (InputFileName);
+  }
+  
+  if (TempBuffer != NULL) {
+    free (TempBuffer);
+  }
+
+  if (OutFileBuffer != NULL) {
+    free (OutFileBuffer);
   }
 
   if (OutFile != NULL) {
