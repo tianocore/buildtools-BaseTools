@@ -266,6 +266,9 @@ class BuildUnit:
         self.WorkingDir = WorkingDir
         self.Target = Target
         self.BuildCommand = BuildComamnd
+        if BuildCommand == None or len(BuildCommand) == 0:
+            EdkLogger.error("build", OPTION_MISSING, "No build command found for",
+                            ExtraData=str(Obj))
 
     ## str() method
     #

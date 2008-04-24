@@ -161,6 +161,8 @@ class BuildFile(object):
     #   @retval FALSE       The build file exists and is the same as the one to be generated
     # 
     def Generate(self, FileType=gMakeType):
+        if FileType not in self._FILE_NAME_:
+            EdkLogger.error("build", PARAMETER_INVALID, "Invalid build type [%s]" % FileType)
         self._FileType = FileType
         FileContent = TemplateString()
         FileContent.Append(self._TEMPLATE_, self._TemplateDict)
