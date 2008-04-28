@@ -8,23 +8,21 @@ STATIC
 PyObject*
 UefiDecompress(
   PyObject    *Self,
-  PyObject    *Args,
-  PyObject    *Keywords
+  PyObject    *Args
   ) 
 {
   PyTypeObject  *SrcData;
   UINT32        SrcDataSize;
   UINT32        DstDataSize;
-  UINT          Status;
+  UINTN         Status;
   UINT8         *SrcBuf;
   UINT8         *DstBuf;
   UINT8         *TmpBuf;
   Py_ssize_t    SegNum;
   Py_ssize_t    Index;
 
-  Status = PyArg_ParseTupleAndKeywords(
+  Status = PyArg_ParseTuple(
             Args,
-            Keywords,
             "0ii",
             &SrcData,
             &SrcDataSize,
@@ -48,13 +46,13 @@ UefiDecompress(
     goto ERROR;
   }
 
-  SegNum = SrcData->tp_as_buffer->bf_getsegcount(SrcData, NULL);
-  TmpBuf = SrcBuf
+  SegNum = SrcData->tp_as_buffer->bf_getsegcount((PyObject *)SrcData, NULL);
+  TmpBuf = SrcBuf;
   for (Index = 0; Index < SegNum; ++Index) {
     VOID *BufSeg;
     Py_ssize_t Len;
 
-    Len = SrcData->tp_as_buffer->bf_getreadbuffer(SrcData, Index, &BufSeg);
+    Len = SrcData->tp_as_buffer->bf_getreadbuffer((PyObject *)SrcData, Index, &BufSeg);
     if (Len < 0) {
       goto ERROR;
     }
@@ -85,23 +83,21 @@ STATIC
 PyObject*
 FrameworkDecompress(
   PyObject    *Self,
-  PyObject    *Args,
-  PyObject    *Keywords
+  PyObject    *Args
   )
 {
   PyTypeObject  *SrcData;
   UINT32        SrcDataSize;
   UINT32        DstDataSize;
-  UINT          Status;
+  UINTN         Status;
   UINT8         *SrcBuf;
   UINT8         *DstBuf;
   UINT8         *TmpBuf;
   Py_ssize_t    SegNum;
   Py_ssize_t    Index;
 
-  Status = PyArg_ParseTupleAndKeywords(
+  Status = PyArg_ParseTuple(
             Args,
-            Keywords,
             "0ii",
             &SrcData,
             &SrcDataSize,
@@ -125,13 +121,13 @@ FrameworkDecompress(
     goto ERROR;
   }
 
-  SegNum = SrcData->tp_as_buffer->bf_getsegcount(SrcData, NULL);
-  TmpBuf = SrcBuf
+  SegNum = SrcData->tp_as_buffer->bf_getsegcount((PyObject *)SrcData, NULL);
+  TmpBuf = SrcBuf;
   for (Index = 0; Index < SegNum; ++Index) {
     VOID *BufSeg;
     Py_ssize_t Len;
 
-    Len = SrcData->tp_as_buffer->bf_getreadbuffer(SrcData, Index, &BufSeg);
+    Len = SrcData->tp_as_buffer->bf_getreadbuffer((PyObject *)SrcData, Index, &BufSeg);
     if (Len < 0) {
       goto ERROR;
     }
@@ -161,8 +157,7 @@ STATIC
 PyObject*
 UefiCompress(
   PyObject    *Self,
-  PyObject    *Args,
-  PyObject    *Keywords
+  PyObject    *Args
   ) 
 {
   return NULL;
@@ -173,26 +168,25 @@ STATIC
 PyObject*
 FrameworkCompress(
   PyObject    *Self,
-  PyObject    *Args,
-  PyObject    *Keywords
+  PyObject    *Args
   )
 {
   return NULL;
 }
 
-STATIC CHAR DecompressDocs[] = "Decompress(): Decompress data using UEFI standard algorithm\n";
-STATIC CHAR CompressDocs[] = "Compress(): Compress data using UEFI standard algorithm\n";
+STATIC INT8 DecompressDocs[] = "Decompress(): Decompress data using UEFI standard algorithm\n";
+STATIC INT8 CompressDocs[] = "Compress(): Compress data using UEFI standard algorithm\n";
 
 STATIC PyMethodDef EfiCompressor_Funcs[] = {
-  {"UefiDecompress", (PyCFunction)UefiDecompress, METH_KEYWORDS, DecompressDocs},
-  {"UefiCompress", (PyCFunction)UefiCompress, METH_KEYWORDS, DecompressDocs},
-  {"FrameworkDecompress", (PyCFunction)FrameworkDecompress, METH_KEYWORDS, DecompressDocs},
-  {"FrameworkCompress", (PyCFunction)FrameworkCompress, METH_KEYWORDS, DecompressDocs},
+  {"UefiDecompress", (PyCFunction)UefiDecompress, METH_VARARGS, DecompressDocs},
+  {"UefiCompress", (PyCFunction)UefiCompress, METH_VARARGS, DecompressDocs},
+  {"FrameworkDecompress", (PyCFunction)FrameworkDecompress, METH_VARARGS, DecompressDocs},
+  {"FrameworkCompress", (PyCFunction)FrameworkCompress, METH_VARARGS, DecompressDocs},
   {NULL, NULL, 0, NULL}
 };
 
 PyMODINIT_FUNC
-InitEfiCompressor(VOID) {
+initEfiCompressor(VOID) {
   Py_InitModule3("EfiCompressor", EfiCompressor_Funcs, "EFI Compression Algorithm Extension Module");
 }
 

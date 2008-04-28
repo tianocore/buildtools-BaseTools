@@ -33,14 +33,18 @@ setup(
                 ],
             include_dirs=[
                 os.path.join(BaseToolsDir, 'Source', 'C', 'Include'),
+                os.path.join(BaseToolsDir, 'Source', 'C', 'Include', 'Ia32'),
                 os.path.join(BaseToolsDir, 'Source', 'C', 'Common')
                 ],
             library_dirs=[
                 os.path.join(os.environ['BASE_TOOLS_PATH'], 'Lib', 'Win32')
                 ],
             libraries=[
-                'Common.lib'
+                'Common'
                 ],
+            extra_link_args=[
+                "/NODEFAULTLIB:LIBCMTD"
+                ]
             )
         ],
   )
