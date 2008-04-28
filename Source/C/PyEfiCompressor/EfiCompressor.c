@@ -8,7 +8,7 @@ STATIC
 PyObject*
 UefiDecompress(
   PyObject    *Self,
-  PyObject    *Args,
+  PyObject    *Args
   ) 
 {
   PyObject      *SrcData;
