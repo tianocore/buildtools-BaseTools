@@ -8,10 +8,10 @@ STATIC
 PyObject*
 UefiDecompress(
   PyObject    *Self,
-  PyObject    *Args
+  PyObject    *Args,
   ) 
 {
-  PyTypeObject  *SrcData;
+  PyObject      *SrcData;
   UINT32        SrcDataSize;
   UINT32        DstDataSize;
   UINTN         Status;
@@ -23,7 +23,7 @@ UefiDecompress(
 
   Status = PyArg_ParseTuple(
             Args,
-            "0ii",
+            "Oii",
             &SrcData,
             &SrcDataSize,
             &DstDataSize
@@ -32,9 +32,10 @@ UefiDecompress(
     return NULL;
   }
 
-  if (SrcData->tp_as_buffer == NULL
-      || SrcData->tp_as_buffer->bf_getreadbuffer == NULL
-      || SrcData->tp_as_buffer->bf_getsegcount == NULL) {
+  if (SrcData->ob_type->tp_as_buffer == NULL
+      || SrcData->ob_type->tp_as_buffer->bf_getreadbuffer == NULL
+      || SrcData->ob_type->tp_as_buffer->bf_getsegcount == NULL) {
+    PyErr_SetString(PyExc_Exception, "First argument is not a buffer\n");
     return NULL;
   }
 
@@ -43,17 +44,19 @@ UefiDecompress(
   SrcBuf = malloc(SrcDataSize);
   DstBuf = malloc(DstDataSize);
   if (SrcBuf == NULL || DstBuf == NULL) {
+    PyErr_SetString(PyExc_Exception, "Not enough memory\n");
     goto ERROR;
   }
 
-  SegNum = SrcData->tp_as_buffer->bf_getsegcount((PyObject *)SrcData, NULL);
+  SegNum = SrcData->ob_type->tp_as_buffer->bf_getsegcount((PyObject *)SrcData, NULL);
   TmpBuf = SrcBuf;
   for (Index = 0; Index < SegNum; ++Index) {
     VOID *BufSeg;
     Py_ssize_t Len;
 
-    Len = SrcData->tp_as_buffer->bf_getreadbuffer((PyObject *)SrcData, Index, &BufSeg);
+    Len = SrcData->ob_type->tp_as_buffer->bf_getreadbuffer((PyObject *)SrcData, Index, &BufSeg);
     if (Len < 0) {
+      PyErr_SetString(PyExc_Exception, "Buffer segment is not available\n");
       goto ERROR;
     }
     memcpy(TmpBuf, BufSeg, Len);
@@ -62,6 +65,7 @@ UefiDecompress(
 
   Status = Extract((VOID *)SrcBuf, SrcDataSize, (VOID *)DstBuf, DstDataSize, 1);
   if (Status != EFI_SUCCESS) {
+    PyErr_SetString(PyExc_Exception, "Failed to decompress\n");
     goto ERROR;
   }
 
@@ -86,7 +90,7 @@ FrameworkDecompress(
   PyObject    *Args
   )
 {
-  PyTypeObject  *SrcData;
+  PyObject      *SrcData;
   UINT32        SrcDataSize;
   UINT32        DstDataSize;
   UINTN         Status;
@@ -98,7 +102,7 @@ FrameworkDecompress(
 
   Status = PyArg_ParseTuple(
             Args,
-            "0ii",
+            "Oii",
             &SrcData,
             &SrcDataSize,
             &DstDataSize
@@ -107,9 +111,10 @@ FrameworkDecompress(
     return NULL;
   }
 
-  if (SrcData->tp_as_buffer == NULL
-      || SrcData->tp_as_buffer->bf_getreadbuffer == NULL
-      || SrcData->tp_as_buffer->bf_getsegcount == NULL) {
+  if (SrcData->ob_type->tp_as_buffer == NULL
+      || SrcData->ob_type->tp_as_buffer->bf_getreadbuffer == NULL
+      || SrcData->ob_type->tp_as_buffer->bf_getsegcount == NULL) {
+    PyErr_SetString(PyExc_Exception, "First argument is not a buffer\n");
     return NULL;
   }
 
@@ -118,17 +123,19 @@ FrameworkDecompress(
   SrcBuf = malloc(SrcDataSize);
   DstBuf = malloc(DstDataSize);
   if (SrcBuf == NULL || DstBuf == NULL) {
+    PyErr_SetString(PyExc_Exception, "Not enough memory\n");
     goto ERROR;
   }
 
-  SegNum = SrcData->tp_as_buffer->bf_getsegcount((PyObject *)SrcData, NULL);
+  SegNum = SrcData->ob_type->tp_as_buffer->bf_getsegcount((PyObject *)SrcData, NULL);
   TmpBuf = SrcBuf;
   for (Index = 0; Index < SegNum; ++Index) {
     VOID *BufSeg;
     Py_ssize_t Len;
 
-    Len = SrcData->tp_as_buffer->bf_getreadbuffer((PyObject *)SrcData, Index, &BufSeg);
+    Len = SrcData->ob_type->tp_as_buffer->bf_getreadbuffer((PyObject *)SrcData, Index, &BufSeg);
     if (Len < 0) {
+      PyErr_SetString(PyExc_Exception, "Buffer segment is not available\n");
       goto ERROR;
     }
     memcpy(TmpBuf, BufSeg, Len);
@@ -137,10 +144,11 @@ FrameworkDecompress(
 
   Status = Extract((VOID *)SrcBuf, SrcDataSize, (VOID *)DstBuf, DstDataSize, 2);
   if (Status != EFI_SUCCESS) {
+    PyErr_SetString(PyExc_Exception, "Failed to decompress\n");
     goto ERROR;
   }
 
-  return PyBuffer_FromMemory(DstBuf, (Py_ssize_t)DstDataSize);
+  return PyString_FromStringAndSize((CONST INT8*)DstBuf, (Py_ssize_t)DstDataSize);
 
 ERROR:
   if (SrcBuf != NULL) {
@@ -152,6 +160,7 @@ ERROR:
   }
   return NULL;
 }
+
 
 STATIC
 PyObject*
