@@ -921,3 +921,37 @@ Returns:
   mPbit = MAXPBIT;
   return Decompress (Source, SrcSize, Destination, DstSize, Scratch, ScratchSize);
 }
+
+EFI_STATUS
+Extract (
+  IN      VOID    *Source,
+  IN      UINT32  SrcSize,
+  IN OUT  VOID    *Destination,
+  IN      UINT32  DstSize,
+  IN      UINT    Algorithm
+  )
+{
+  SCRATCH_DATA  Scratch;
+  EFI_STATUS    Status;
+
+  Status = EFI_SUCCESS;
+  switch (Algorithm) {
+  case 0:
+    if (SrcSize != DstSize) {
+      return EFI_INVALID_PARAMETER;
+    }
+    memcpy(Destination, Source, DstSize);
+    break;
+  case 1:
+    Status = EfiDecompress(Source, SrcSize, Destination, DstSize, &Scratch, sizeof(SCRATCH_DATA));
+    break;
+  case 2:
+    Status = TianoDecompress(Source, SrcSize, Destination, DstSize, &Scratch, sizeof(SCRATCH_DATA));
+    break;
+  default:
+    Status = EFI_INVALID_PARAMETER;    
+  }
+
+  return Status;
+}
+

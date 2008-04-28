@@ -159,4 +159,14 @@ EFI_STATUS
   IN OUT  VOID    *Scratch,
   IN      UINT32  ScratchSize
   );
+
+EFI_STATUS
+Extract (
+  IN      VOID    *Source,
+  IN      UINT32  SrcSize,
+  IN OUT  VOID    *Destination,
+  IN      UINT32  DstSize,
+  IN      UINT    Algorithm
+  );
+
 #endif
