@@ -928,7 +928,7 @@ Extract (
   IN      UINT32  SrcSize,
   IN OUT  VOID    *Destination,
   IN      UINT32  DstSize,
-  IN      UINT    Algorithm
+  IN      UINTN   Algorithm
   )
 {
   SCRATCH_DATA  Scratch;

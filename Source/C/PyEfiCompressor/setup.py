@@ -41,6 +41,7 @@ setup(
             libraries=[
                 'Common.lib'
                 ],
+            )
         ],
   )
 
