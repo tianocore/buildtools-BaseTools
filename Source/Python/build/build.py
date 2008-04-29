@@ -716,14 +716,10 @@ class Build():
         # if no ARCH given in command line, get it from target.txt
         if self.ArchList == None or len(self.ArchList) == 0:
             self.ArchList = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET_ARCH]
-            if len(self.ArchList) == 0:
-                self.ArchList = ARCH_LIST
 
         # if no build target given in command line, get it from target.txt
         if self.BuildTargetList == None or len(self.BuildTargetList) == 0:
             self.BuildTargetList = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TARGET]
-            if self.BuildTargetList == None or len(self.BuildTargetList) == 0:
-                self.BuildTargetList = ['DEBUG', 'RELEASE']
 
         # if no tool chain given in command line, get it from target.txt
         if self.ToolChainList == None or len(self.ToolChainList) == 0:
@@ -824,7 +820,7 @@ class Build():
 
         # Merge build target
         if self.BuildTargetList == None or len(self.BuildTargetList) == 0:
-            BuildTargetList = self.Platform.BuildTarget
+            BuildTargetList = self.Platform.BuildTargets
         else:
             BuildTargetList = list(set(self.BuildTargetList) & set(self.Platform.BuildTargets))
         if BuildTargetList == []:
