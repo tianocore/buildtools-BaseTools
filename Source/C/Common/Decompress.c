@@ -938,7 +938,7 @@ Extract (
   Status = EFI_SUCCESS;
   switch (Algorithm) {
   case 0:
-    *Destination = malloc(SrcSize)
+    *Destination = (VOID *)malloc(SrcSize);
     if (*Destination != NULL) {
       memcpy(*Destination, Source, SrcSize);
     } else {
@@ -948,10 +948,10 @@ Extract (
   case 1:
     Status = EfiGetInfo(Source, SrcSize, DstSize, &ScratchSize);
     if (Status == EFI_SUCCESS) {
-      Scratch = malloc(ScratchSize)
-      *Destination = malloc(*DstSize)
-      if (Scratch != NULL and *Destination != NULL) {
-        Status = EfiDecompress(Source, SrcSize, Destination, *DstSize, Scratch, ScratchSize);
+      Scratch = (VOID *)malloc(ScratchSize);
+      *Destination = (VOID *)malloc(*DstSize);
+      if (Scratch != NULL && *Destination != NULL) {
+        Status = EfiDecompress(Source, SrcSize, *Destination, *DstSize, Scratch, ScratchSize);
       } else {
         Status = EFI_OUT_OF_RESOURCES;
       }
@@ -960,9 +960,9 @@ Extract (
   case 2:
     Status = TianoGetInfo(Source, SrcSize, DstSize, &ScratchSize);
     if (Status == EFI_SUCCESS) {
-      Scratch = malloc(ScratchSize)
-      *Destination = malloc(*DstSize)
-      if (Scratch != NULL and *Destination != NULL) {
+      Scratch = (VOID *)malloc(ScratchSize);
+      *Destination = (VOID *)malloc(*DstSize);
+      if (Scratch != NULL && *Destination != NULL) {
         Status = TianoDecompress(Source, SrcSize, *Destination, *DstSize, Scratch, ScratchSize);
       } else {
         Status = EFI_OUT_OF_RESOURCES;

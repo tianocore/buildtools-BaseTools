@@ -23,10 +23,9 @@ UefiDecompress(
 
   Status = PyArg_ParseTuple(
             Args,
-            "Oii",
+            "Oi",
             &SrcData,
-            &SrcDataSize,
-            &DstDataSize
+            &SrcDataSize
             );
   if (Status == 0) {
     return NULL;
@@ -41,7 +40,7 @@ UefiDecompress(
 
   // Because some Python objects which support "buffer" protocol have more than one
   // memory segment, we have to copy them into a contiguous memory.
-  SrcBuf = malloc(SrcDataSize);
+  SrcBuf = PyMem_Malloc(SrcDataSize);
   if (SrcBuf == NULL) {
     PyErr_SetString(PyExc_Exception, "Not enough memory\n");
     goto ERROR;
@@ -101,10 +100,9 @@ FrameworkDecompress(
 
   Status = PyArg_ParseTuple(
             Args,
-            "Oii",
+            "Oi",
             &SrcData,
-            &SrcDataSize,
-            &DstDataSize
+            &SrcDataSize
             );
   if (Status == 0) {
     return NULL;
@@ -119,7 +117,7 @@ FrameworkDecompress(
 
   // Because some Python objects which support "buffer" protocol have more than one
   // memory segment, we have to copy them into a contiguous memory.
-  SrcBuf = malloc(SrcDataSize);
+  SrcBuf = PyMem_Malloc(SrcDataSize);
   if (SrcBuf == NULL) {
     PyErr_SetString(PyExc_Exception, "Not enough memory\n");
     goto ERROR;
