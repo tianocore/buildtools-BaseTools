@@ -9,7 +9,7 @@ PyObject*
 UefiDecompress(
   PyObject    *Self,
   PyObject    *Args
-  ) 
+  )
 {
   PyObject      *SrcData;
   UINT32        SrcDataSize;
@@ -42,8 +42,7 @@ UefiDecompress(
   // Because some Python objects which support "buffer" protocol have more than one
   // memory segment, we have to copy them into a contiguous memory.
   SrcBuf = malloc(SrcDataSize);
-  DstBuf = malloc(DstDataSize);
-  if (SrcBuf == NULL || DstBuf == NULL) {
+  if (SrcBuf == NULL) {
     PyErr_SetString(PyExc_Exception, "Not enough memory\n");
     goto ERROR;
   }
@@ -63,7 +62,7 @@ UefiDecompress(
     TmpBuf += Len;
   }
 
-  Status = Extract((VOID *)SrcBuf, SrcDataSize, (VOID *)DstBuf, DstDataSize, 1);
+  Status = Extract((VOID *)SrcBuf, SrcDataSize, (VOID **)&DstBuf, &DstDataSize, 1);
   if (Status != EFI_SUCCESS) {
     PyErr_SetString(PyExc_Exception, "Failed to decompress\n");
     goto ERROR;
@@ -121,8 +120,7 @@ FrameworkDecompress(
   // Because some Python objects which support "buffer" protocol have more than one
   // memory segment, we have to copy them into a contiguous memory.
   SrcBuf = malloc(SrcDataSize);
-  DstBuf = malloc(DstDataSize);
-  if (SrcBuf == NULL || DstBuf == NULL) {
+  if (SrcBuf == NULL) {
     PyErr_SetString(PyExc_Exception, "Not enough memory\n");
     goto ERROR;
   }
@@ -142,7 +140,7 @@ FrameworkDecompress(
     TmpBuf += Len;
   }
 
-  Status = Extract((VOID *)SrcBuf, SrcDataSize, (VOID *)DstBuf, DstDataSize, 2);
+  Status = Extract((VOID *)SrcBuf, SrcDataSize, (VOID **)&DstBuf, &DstDataSize, 2);
   if (Status != EFI_SUCCESS) {
     PyErr_SetString(PyExc_Exception, "Failed to decompress\n");
     goto ERROR;
@@ -167,7 +165,7 @@ PyObject*
 UefiCompress(
   PyObject    *Self,
   PyObject    *Args
-  ) 
+  )
 {
   return NULL;
 }

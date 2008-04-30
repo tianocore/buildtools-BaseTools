@@ -1,23 +1,23 @@
 /** @file
 
-Copyright (c) 2004 - 2008, Intel Corporation                                                         
-All rights reserved. This program and the accompanying materials                          
-are licensed and made available under the terms and conditions of the BSD License         
-which accompanies this distribution.  The full text of the license may be found at        
-http://opensource.org/licenses/bsd-license.php                                            
-                                                                                          
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,                     
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.             
+Copyright (c) 2004 - 2008, Intel Corporation
+All rights reserved. This program and the accompanying materials
+are licensed and made available under the terms and conditions of the BSD License
+which accompanies this distribution.  The full text of the license may be found at
+http://opensource.org/licenses/bsd-license.php
+
+THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 Module Name:
-  
+
   Decompress.c
 
 Abstract:
 
-  Decompressor. Algorithm Ported from OPSD code (Decomp.asm) 
+  Decompressor. Algorithm Ported from OPSD code (Decomp.asm)
   for Efi and Tiano compress algorithm.
-  
+
 --*/
 
 #include "Decompress.h"
@@ -71,7 +71,7 @@ typedef struct {
 } SCRATCH_DATA;
 
 STATIC UINT16 mPbit = EFIPBIT;
-  
+
 STATIC
 VOID
 FillBuf (
@@ -132,8 +132,8 @@ GetBits (
 
 Routine Description:
 
-  Get NumOfBits of bits out from mBitBuf. Fill mBitBuf with subsequent 
-  NumOfBits of bits from source. Returns NumOfBits of bits that are 
+  Get NumOfBits of bits out from mBitBuf. Fill mBitBuf with subsequent
+  NumOfBits of bits from source. Returns NumOfBits of bits that are
   popped out.
 
 Arguments:
@@ -178,9 +178,9 @@ Arguments:
   BitLen    - Code length array
   TableBits - The width of the mapping table
   Table     - The table
-  
+
 Returns:
-  
+
   0         - OK.
   BAD_TABLE - The table is corrupted.
 
@@ -363,7 +363,7 @@ Arguments:
   Sd        - The global scratch data
   nn        - Number of symbols
   nbit      - Number of bits needed to represent nn
-  Special   - The special symbol that needs to be taken care of 
+  Special   - The special symbol that needs to be taken care of
 
 Returns:
 
@@ -926,30 +926,51 @@ EFI_STATUS
 Extract (
   IN      VOID    *Source,
   IN      UINT32  SrcSize,
-  IN OUT  VOID    *Destination,
-  IN      UINT32  DstSize,
+     OUT  VOID    **Destination,
+     OUT  UINT32  *DstSize,
   IN      UINTN   Algorithm
   )
 {
-  SCRATCH_DATA  Scratch;
+  VOID          *Scratch;
+  UINT32        ScratchSize;
   EFI_STATUS    Status;
 
   Status = EFI_SUCCESS;
   switch (Algorithm) {
   case 0:
-    if (SrcSize != DstSize) {
-      return EFI_INVALID_PARAMETER;
+    *Destination = malloc(SrcSize)
+    if (*Destination != NULL) {
+      memcpy(*Destination, Source, SrcSize);
+    } else {
+      Status = EFI_OUT_OF_RESOURCES;
     }
-    memcpy(Destination, Source, DstSize);
     break;
   case 1:
-    Status = EfiDecompress(Source, SrcSize, Destination, DstSize, &Scratch, sizeof(SCRATCH_DATA));
+    Status = EfiGetInfo(Source, SrcSize, DstSize, &ScratchSize);
+    if (Status == EFI_SUCCESS) {
+      Scratch = malloc(ScratchSize)
+      *Destination = malloc(*DstSize)
+      if (Scratch != NULL and *Destination != NULL) {
+        Status = EfiDecompress(Source, SrcSize, Destination, *DstSize, Scratch, ScratchSize);
+      } else {
+        Status = EFI_OUT_OF_RESOURCES;
+      }
+    }
     break;
   case 2:
-    Status = TianoDecompress(Source, SrcSize, Destination, DstSize, &Scratch, sizeof(SCRATCH_DATA));
+    Status = TianoGetInfo(Source, SrcSize, DstSize, &ScratchSize);
+    if (Status == EFI_SUCCESS) {
+      Scratch = malloc(ScratchSize)
+      *Destination = malloc(*DstSize)
+      if (Scratch != NULL and *Destination != NULL) {
+        Status = TianoDecompress(Source, SrcSize, *Destination, *DstSize, Scratch, ScratchSize);
+      } else {
+        Status = EFI_OUT_OF_RESOURCES;
+      }
+    }
     break;
   default:
-    Status = EFI_INVALID_PARAMETER;    
+    Status = EFI_INVALID_PARAMETER;
   }
 
   return Status;
