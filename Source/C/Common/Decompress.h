@@ -164,8 +164,8 @@ EFI_STATUS
 Extract (
   IN      VOID    *Source,
   IN      UINT32  SrcSize,
-  IN OUT  VOID    *Destination,
-  IN      UINT32  DstSize,
+     OUT  VOID    **Destination,
+     OUT  UINT32  *DstSize,
   IN      UINTN   Algorithm
   );
 
