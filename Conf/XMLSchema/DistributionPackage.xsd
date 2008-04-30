@@ -116,6 +116,14 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 							specification for a chipset or a video device. </xs:documentation>
 					</xs:annotation>
 				</xs:element>
+				<xs:element minOccurs="0" maxOccurs="unbounded" ref="UserExtensions">
+					<xs:annotation>
+						<xs:documentation xml:lang="en-us"> This section is used for any
+							processing instructions that may be custom to the content provided
+							by the distribution that are common to all aspects of this
+							disribution. </xs:documentation>
+					</xs:annotation>
+				</xs:element>
 			</xs:sequence>
 
 		</xs:complexType>
@@ -194,11 +202,13 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 					type="xs:normalizedString"/>
 				<xs:element minOccurs="0" maxOccurs="1" name="Description"
 					type="xs:string"/>
-				<xs:element minOccurs="1" maxOccurs="1" name="Signature" type="Md5Sum">
+				<xs:element minOccurs="0" maxOccurs="1" name="Signature" type="Md5Sum">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> The packaging utilities will use
 							this MD5 sum value of the included ZIP file containing files
-							and/or code. </xs:documentation>
+							and/or code. If this element is not present, then installation
+							tools should assume that the content is correct, or that other
+							methods may be needed to verify content. </xs:documentation>
 					</xs:annotation>
 				</xs:element>
 				<xs:element minOccurs="1" maxOccurs="1" name="XmlSpecification"
@@ -312,7 +322,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 										license text paragraphs. </xs:documentation>
 								</xs:annotation>
 							</xs:element>
-							<xs:element minOccurs="1" maxOccurs="1" name="Abstract"
+							<xs:element minOccurs="0" maxOccurs="1" name="Abstract"
 								type="xs:normalizedString">
 								<xs:annotation>
 									<xs:documentation xml:lang="en-us"> A one line description of
@@ -324,6 +334,14 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 								<xs:annotation>
 									<xs:documentation xml:lang="en-us"> A more complete
 										description of this package. </xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element minOccurs="1" maxOccurs="1" name="PackagePath"
+								type="xs:anyURI">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> This element is the
+										location (in the ZIP file) for the root directory of a
+										package. </xs:documentation>
 								</xs:annotation>
 							</xs:element>
 						</xs:sequence>
@@ -394,7 +412,9 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 													library class. Modules can be coded against these
 													functions, using the definitions in this header,
 													without concerning themselves about the libraries'
-													implementation details. </xs:documentation>
+													implementation details. This is a PackagePath relative
+													path and filename for the include file.
+												</xs:documentation>
 											</xs:annotation>
 										</xs:element>
 										<xs:element minOccurs="0" maxOccurs="1"
@@ -425,14 +445,6 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 														</xs:complexType>
 													</xs:element>
 												</xs:sequence>
-												<xs:attribute name="BaseName" type="xs:NCName"
-													use="optional">
-													<xs:annotation>
-														<xs:documentation xml:lang="en-us"> This is the
-															BaseName of the Recommended Library Class
-															Instance. </xs:documentation>
-													</xs:annotation>
-												</xs:attribute>
 											</xs:complexType>
 										</xs:element>
 										<xs:element minOccurs="0" maxOccurs="unbounded"
@@ -453,7 +465,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 				</xs:element>
 				<!-- End of PackageSurfaceArea LibraryClassDeclarations element.  -->
 
-				<xs:element minOccurs="0" maxOccurs="1" name="IndustryStdIncludes">
+				<xs:element minOccurs="0" maxOccurs="1" name="IndustryStandardIncludes">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> This section is used to list
 							header files for industry standards not under the auspices of
@@ -463,7 +475,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 					<xs:complexType>
 						<xs:sequence>
 							<xs:element minOccurs="1" maxOccurs="unbounded"
-								name="IndustryStdHeader">
+								name="IndustryStandarddHeader">
 								<xs:complexType>
 									<xs:sequence>
 										<xs:element minOccurs="1" maxOccurs="1" name="HeaderFile"
@@ -486,10 +498,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 						<xs:documentation xml:lang="en-us"> 1) local to a module (module
 							specific.) </xs:documentation>
 						<xs:documentation xml:lang="en-us"> 2) an industry standard header. </xs:documentation>
-						<xs:documentation xml:lang="en-us"> 3) a library class header. </xs:documentation>
-						<xs:documentation xml:lang="en-us"> 4) a Guid header. </xs:documentation>
-						<xs:documentation xml:lang="en-us"> 5) a Protocol header. </xs:documentation>
-						<xs:documentation xml:lang="en-us"> 6) a Ppi header.
+						<xs:documentation xml:lang="en-us"> 3) a library class header.
 						</xs:documentation>
 					</xs:annotation>
 					<xs:complexType>
@@ -500,6 +509,11 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 									<xs:sequence>
 										<xs:element minOccurs="1" maxOccurs="unbounded"
 											name="HeaderFile">
+											<xs:annotation>
+												<xs:documentation xml:lang="en-us"> This is the path and
+													filename location within the ZIP file.
+												</xs:documentation>
+											</xs:annotation>
 											<xs:complexType>
 												<xs:simpleContent>
 													<xs:extension base="xs:anyURI">
@@ -537,7 +551,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 				<xs:element minOccurs="0" maxOccurs="1" name="GuidDeclarations">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> This section defines GUID C
-							names to GUID values in a C structure format. </xs:documentation>
+							names to GUID values as a Registry Format GUID. </xs:documentation>
 						<xs:documentation xml:lang="en-us"> Modules that use these GUIDs
 							must specify their dependency on this package. </xs:documentation>
 					</xs:annotation>
@@ -549,12 +563,12 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 										<xs:element minOccurs="1" maxOccurs="1" name="C_Name"
 											type="xs:NCName"/>
 										<xs:element minOccurs="1" maxOccurs="1" name="GuidValue"
-											type="GuidCstruct"/>
+											type="RegistryFormatGuid"/>
 										<xs:element minOccurs="0" maxOccurs="unbounded"
 											ref="HelpText"/>
 									</xs:sequence>
 									<xs:attribute name="UiName" type="xs:NCName" use="optional"/>
-									<xs:attribute name="GuidTypes" type="PkgGuidListType"
+									<xs:attribute name="GuidTypes" type="GuidListType"
 										use="optional"/>
 									<xs:attributeGroup ref="SupportedArchMod"/>
 								</xs:complexType>
@@ -567,7 +581,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 				<xs:element minOccurs="0" maxOccurs="1" name="ProtocolDeclarations">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> This section defines Protocol C
-							names to GUID values in a C structure format. </xs:documentation>
+							names to GUID values as a Registry Format GUID. </xs:documentation>
 						<xs:documentation xml:lang="en-us"> Modules that use these Protocols
 							must specify their dependency on this package. </xs:documentation>
 					</xs:annotation>
@@ -583,7 +597,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 										<xs:element minOccurs="1" maxOccurs="1" name="C_Name"
 											type="xs:NCName"/>
 										<xs:element minOccurs="1" maxOccurs="1" name="GuidValue"
-											type="GuidCstruct"/>
+											type="RegistryFormatGuid"/>
 										<xs:element minOccurs="0" maxOccurs="unbounded"
 											ref="HelpText"/>
 									</xs:sequence>
@@ -599,7 +613,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 				<xs:element minOccurs="0" maxOccurs="1" name="PpiDeclarations">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> This section defines Ppi C names
-							to GUID values in a C structure format. </xs:documentation>
+							to GUID values as a Registry Format GUID. </xs:documentation>
 						<xs:documentation xml:lang="en-us"> Modules that use these Ppis must
 							specify their dependency on this package. </xs:documentation>
 					</xs:annotation>
@@ -615,7 +629,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 										<xs:element minOccurs="1" maxOccurs="1" name="C_Name"
 											type="xs:NCName"/>
 										<xs:element minOccurs="1" maxOccurs="1" name="GuidValue"
-											type="GuidCstruct"/>
+											type="RegistryFormatGuid"/>
 										<xs:element minOccurs="0" maxOccurs="unbounded"
 											ref="HelpText"/>
 									</xs:sequence>
@@ -647,9 +661,9 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 										<xs:element minOccurs="1" maxOccurs="1" name="C_Name"
 											type="xs:NCName"/>
 										<xs:element minOccurs="1" maxOccurs="1" name="DatumType"
-											type="PcdDatumType"/>
+											type="PcdDatumTypes"/>
 										<xs:element minOccurs="1" maxOccurs="1" name="ValidUsage"
-											type="PcdTypeList"/>
+											type="PcdItemListType"/>
 										<xs:element minOccurs="1" maxOccurs="1" name="DefaultValue"
 											type="xs:normalizedString"/>
 										<xs:element minOccurs="0" maxOccurs="1" name="MaxDatumSize"
@@ -664,36 +678,77 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 										</xs:element>
 										<xs:element minOccurs="0" maxOccurs="unbounded"
 											ref="HelpText"/>
+
 										<xs:element minOccurs="0" maxOccurs="unbounded"
-											name="ErrorMessage">
+											name="PcdError">
 											<xs:annotation>
-												<xs:documentation xml:lang="en-us"> This string should
-													be defined by specifications. There are pre-defined
-													error number ranges in the PI specificaiton.
-												</xs:documentation>
+												<xs:documentation xml:lang="en-us"> Error information in
+													this section can be superceded by Error information in
+													Modules. </xs:documentation>
 											</xs:annotation>
 											<xs:complexType>
-												<xs:simpleContent>
-													<xs:extension base="xs:normalizedString">
-														<xs:attribute name="ErrNo" use="required"
-															type="HexNumber">
+												<xs:sequence>
+													<xs:choice>
+														<xs:annotation>
+															<xs:documentation xml:lang="en-us"> One of the
+																following types of comparisons, which must be
+																able to evaluate to either true or false.
+															</xs:documentation>
+														</xs:annotation>
+														<xs:element minOccurs="0" maxOccurs="1"
+															name="ValidValueList">
 															<xs:annotation>
-																<xs:documentation xml:lang="en-us"> This value
-																	should follow PI specifications.
+																<xs:documentation xml:lang="en-us"> The PCD
+																	Value must be one of the values listed.
 																</xs:documentation>
 															</xs:annotation>
-														</xs:attribute>
-													</xs:extension>
-												</xs:simpleContent>
+															<xs:simpleType>
+																<xs:list itemType="xs:NCName"/>
+															</xs:simpleType>
+														</xs:element>
+														<xs:element minOccurs="0" maxOccurs="1"
+															name="ValidValueRange" type="xs:normalizedString">
+															<xs:annotation>
+																<xs:documentation xml:lang="en-us"> The PCD must
+																	be within a specifed range of numeric values.
+																	Restricted to C style Relational, Equality and
+																	Logicial Operators and parenthesis are valid. </xs:documentation>
+																<xs:documentation xml:lang="en-us"> LValue (op
+																	RValue)+ </xs:documentation>
+															</xs:annotation>
+														</xs:element>
+														<xs:element minOccurs="0" maxOccurs="1"
+															name="Expression" type="xs:normalizedString">
+															<xs:annotation>
+																<xs:documentation xml:lang="en-us"> A in-fix
+																	logical expression using C style logical
+																	operators. </xs:documentation>
+															</xs:annotation>
+														</xs:element>
+													</xs:choice>
+													<xs:element minOccurs="0" maxOccurs="1"
+														name="ErrorNumber" type="HexNumber"/>
+													<xs:element minOccurs="0" maxOccurs="unbounded"
+														name="ErrorMessage">
+														<xs:annotation>
+															<xs:documentation xml:lang="en-us"> This string
+																should be defined by specifications. There are
+																pre-defined error number ranges in the UEFI/PI
+																specificaiton. </xs:documentation>
+														</xs:annotation>
+														<xs:complexType>
+															<xs:simpleContent>
+																<xs:extension base="xs:normalizedString">
+																	<xs:attribute name="UCS2" type="xs:boolean"
+																		default="false" use="optional"/>
+																	<xs:attribute name="Lang" type="xs:language"
+																		default="en-us" use="optional"/>
+																</xs:extension>
+															</xs:simpleContent>
+														</xs:complexType>
+													</xs:element>
+												</xs:sequence>
 											</xs:complexType>
-										</xs:element>
-										<xs:element minOccurs="0" maxOccurs="1" name="ValidValues"
-											type="xs:normalizedString">
-											<xs:annotation>
-												<xs:documentation xml:lang="en-us"> This specifies valid
-													values for PCDs that are limited to the content. This
-													is informational only. </xs:documentation>
-											</xs:annotation>
 										</xs:element>
 									</xs:sequence>
 									<xs:attributeGroup ref="SupportedArchMod"/>
@@ -706,19 +761,25 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 				<xs:element name="Misc">
 					<xs:annotation>
-						<xs:documentation xml:lang="en-us"> This section contains
-							information and/or files that are not part of the code distributed
-							with this package. </xs:documentation>
+						<xs:documentation xml:lang="en-us"> This section contains files that
+							are not part of the code distributed with this package.
+						</xs:documentation>
 					</xs:annotation>
 					<xs:complexType>
 						<xs:sequence>
-							<xs:element minOccurs="0" maxOccurs="unbounded" name="Description"
-								type="xs:string"/>
 							<xs:element minOccurs="0" maxOccurs="1" name="Copyright"
 								type="xs:string"/>
 							<xs:element minOccurs="0" maxOccurs="1" name="License"
 								type="xs:string"/>
+							<xs:element minOccurs="0" maxOccurs="1" name="Abstract"
+								type="xs:string"/>
+							<xs:element minOccurs="0" maxOccurs="unbounded" name="Description"
+								type="xs:string"/>
 							<xs:element minOccurs="0" maxOccurs="unbounded" name="Filename">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> This is the path and
+										filename location within the ZIP file. </xs:documentation>
+								</xs:annotation>
 								<xs:complexType>
 									<xs:simpleContent>
 										<xs:extension base="xs:anyURI">
@@ -740,26 +801,37 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 					</xs:complexType>
 				</xs:element>
 				<!-- End of PackageSurfaceArea Misc element.  -->
+
 				<xs:element minOccurs="0" maxOccurs="unbounded" name="UserExtensions">
-					<xs:complexType>
+					<xs:annotation>
+						<xs:documentation xml:lang="en-us"> This section is used for any
+							processing instructions that may be custom to the content provided
+							by the distribution that are common to package.
+						</xs:documentation>
+					</xs:annotation>
+					<xs:complexType mixed="true">
 						<xs:sequence>
 							<xs:any minOccurs="0" maxOccurs="1" processContents="lax"/>
 						</xs:sequence>
 						<xs:attribute name="UserId" type="xs:NCName" use="required">
 							<xs:annotation>
 								<xs:documentation xml:lang="en-us"> This is a single word
-									identifier for grouping similar content. For example,
-									ReferenceBuild might be used to identify non-PI compliant
-									build steps, with two different UserExtensions sections, one
-									with an Identifier of Prebuild, and another of PostBuild. Both
-									UserExtensions sections would use the same UserId.
+									identifier for grouping similar content that does not fit into
+									previously defined sections or other sections of the
+									Distribution. </xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="Identifier" type="xs:string" use="optional">
+							<xs:annotation>
+								<xs:documentation xml:lang="en-us"> This can be used to
+									differentiate multiple sections with a grouping.
 								</xs:documentation>
 							</xs:annotation>
 						</xs:attribute>
-						<xs:attribute name="Identifier" type="xs:string" use="required"/>
 					</xs:complexType>
 				</xs:element>
 				<!-- End of PackageSurfaceArea UserExtensions element. -->
+
 			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
@@ -832,7 +904,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 								type="xs:string"/>
 							<xs:element minOccurs="0" maxOccurs="1" name="License"
 								type="xs:string"/>
-							<xs:element minOccurs="1" maxOccurs="1" name="Abstract"
+							<xs:element minOccurs="0" maxOccurs="1" name="Abstract"
 								type="xs:normalizedString"/>
 							<xs:element minOccurs="0" maxOccurs="1" name="Description"
 								type="xs:string"/>
@@ -845,40 +917,29 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 					<xs:complexType>
 						<xs:sequence>
 							<xs:element minOccurs="1" maxOccurs="1" name="ModuleType"
-								type="ModuleType">
+								type="ModuleTypes">
 								<xs:annotation>
 									<xs:documentation xml:lang="en-us"> One of the Enumerated
 										module types that limit the use of a module.
 									</xs:documentation>
 								</xs:annotation>
 							</xs:element>
-							<xs:choice>
-								<xs:element minOccurs="0" maxOccurs="1" name="Path"
-									type="xs:anyURI">
-									<xs:annotation>
-										<xs:documentation xml:lang="en-us"> This element is only
-											required for stand-alone modules that are NOT part of any
-											package. Modules included in a package will use the
-											ModuleSurfaceArea PkgRelativePath element to provide the
-											location, relative to a package. </xs:documentation>
-									</xs:annotation>
-								</xs:element>
-								<xs:element minOccurs="0" maxOccurs="1" name="PkgRelativePath"
-									type="xs:anyURI">
-									<xs:annotation>
-										<xs:documentation xml:lang="en-us"> This element is required
-											for modules that are part of a package. </xs:documentation>
-										<xs:documentation xml:lang="en-us"> This is the package
-											relative path to the &amp;root&amp; directory of
-											the module. </xs:documentation>
-									</xs:annotation>
-								</xs:element>
-							</xs:choice>
+							<xs:element minOccurs="1" maxOccurs="1" name="Path"
+								type="xs:anyURI">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> For stand-alone modules
+										that are NOT part of any package, this is the path to the
+										root of the module as listed in the ZIP file. For modules
+										included in a package, this is the location, relative to the
+										root of the package this module belongs to.
+									</xs:documentation>
+								</xs:annotation>
+							</xs:element>
 							<xs:element minOccurs="0" maxOccurs="1" name="PcdIsDriver">
 								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> This is only required for
-										the PEI or DXE drivers that handle dynamic PCDs.
-									</xs:documentation>
+									<xs:documentation xml:lang="en-us"> This element is only
+										required for the PEIM that produces the PCD PPI or the DXE
+										Driver that produces the PCD Protocol. </xs:documentation>
 								</xs:annotation>
 								<xs:simpleType>
 									<xs:restriction base="xs:NCName">
@@ -913,271 +974,216 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 								</xs:complexType>
 							</xs:element>
 
-							<xs:element minOccurs="0" maxOccurs="1" name="BootModes">
+							<xs:element minOccurs="0" maxOccurs="unbounded" name="BootMode">
 								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> This section should be
-										completed by modules that will execute during boot or
-										recovery where the boot mode is restricted to one or more
-										execution paths. </xs:documentation>
+									<xs:documentation xml:lang="en-us"> 'Different firmware
+										execution paths may be taken based on a given state of the
+										hardware, firmware, or through feature settings. A BootMode
+										may be declared (PRODUCES) or discovered (CONSUMES) based on
+										these states and feature settings. These types map to the PI
+										specification Boot Modes. The boot modes listed with
+										Recovery are to indicate that the BootMode is valid during a
+										recovery boot. </xs:documentation>
 								</xs:annotation>
 								<xs:complexType>
-									<xs:sequence>
-										<xs:element minOccurs="1" maxOccurs="unbounded"
-											name="BootMode">
-											<xs:annotation>
-												<xs:documentation xml:lang="en-us"> Firmware execution
-													paths are divided into two main categories, a normal
-													boot and a recovery boot (in the case of potential
-													corruption.) Within these two paths, different paths
-													can be taken based on a given state of the firmware,
-													or through feature settings. A BootMode GUID can be
-													installed (PRODUCES) or located (CONSUMES) based on
-													these states and feature settings. The majority of
-													these types map to the PI specification Boot Mode
-													Services. The boot modes listed with Recovery are to
-													indicate that the GUID is only valid during a recovery
-													boot. </xs:documentation>
-											</xs:annotation>
-											<xs:complexType>
-												<xs:sequence minOccurs="0">
-													<xs:element minOccurs="1" maxOccurs="1"
-														name="SupportedBootModes" type="BootModeList"/>
-													<xs:element minOccurs="0" maxOccurs="unbounded"
-														ref="HelpText"/>
-												</xs:sequence>
-												<xs:attribute name="Usage" use="required">
+									<xs:sequence minOccurs="0">
+										<xs:element minOccurs="1" maxOccurs="1"
+											name="SupportedBootModes">
+											<xs:simpleType>
+												<xs:list>
 													<xs:simpleType>
 														<xs:restriction base="xs:NCName">
-															<xs:enumeration value="CONSUMES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		always supports the given boot modes.
-																	</xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="SOMETIMES_CONSUMES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		may support a given mode on some execution
-																		paths. </xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="PRODUCES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		will change the boot mode.
-																	</xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="SOMETIME_PRODUCES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		will change the boot mode on some exection
-																		paths. </xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
+															<xs:enumeration value="FULL"/>
+															<xs:enumeration value="MINIMAL"/>
+															<xs:enumeration value="NO_CHANGE"/>
+															<xs:enumeration value="DIAGNOSTICS"/>
+															<xs:enumeration value="DEFAULT"/>
+															<xs:enumeration value="S2_RESUME"/>
+															<xs:enumeration value="S3_RESUME"/>
+															<xs:enumeration value="S4_RESUME"/>
+															<xs:enumeration value="S5_RESUME"/>
+															<xs:enumeration value="FLASH_UPDATE"/>
+															<xs:enumeration value="RECOVERY_FULL"/>
+															<xs:enumeration value="RECOVERY_MINIMAL"/>
+															<xs:enumeration value="RECOVERY_NO_CHANGE"/>
+															<xs:enumeration value="RECOVERY_DIAGNOSTICS"/>
+															<xs:enumeration value="RECOVERY_DEFAULT"/>
+															<xs:enumeration value="RECOVERY_S2_RESUME"/>
+															<xs:enumeration value="RECOVERY_S3_RESUME"/>
+															<xs:enumeration value="RECOVERY_S4_RESUME"/>
+															<xs:enumeration value="RECOVERY_S5_RESUME"/>
+															<xs:enumeration value="RECOVERY_FLASH_UPDATE"/>
 														</xs:restriction>
 													</xs:simpleType>
-												</xs:attribute>
-												<xs:attribute name="SupArchList" type="ArchListType"
-													use="optional"/>
-												<xs:attribute name="FeatureFlag"
-													type="xs:normalizedString" use="optional"/>
-											</xs:complexType>
+												</xs:list>
+											</xs:simpleType>
 										</xs:element>
 
+										<xs:element minOccurs="0" maxOccurs="unbounded"
+											ref="HelpText"/>
 									</xs:sequence>
+									<xs:attribute name="Usage" use="required">
+										<xs:simpleType>
+											<xs:restriction base="xs:NCName">
+												<xs:enumeration value="CONSUMES">
+													<xs:annotation>
+														<xs:documentation xml:lang="en-us"> The module
+															always supports the given boot modes.
+														</xs:documentation>
+													</xs:annotation>
+												</xs:enumeration>
+												<xs:enumeration value="SOMETIMES_CONSUMES">
+													<xs:annotation>
+														<xs:documentation xml:lang="en-us"> The module may
+															support a given mode on some execution paths.
+														</xs:documentation>
+													</xs:annotation>
+												</xs:enumeration>
+												<xs:enumeration value="PRODUCES">
+													<xs:annotation>
+														<xs:documentation xml:lang="en-us"> The module will
+															change the boot mode. </xs:documentation>
+													</xs:annotation>
+												</xs:enumeration>
+												<xs:enumeration value="SOMETIME_PRODUCES">
+													<xs:annotation>
+														<xs:documentation xml:lang="en-us"> The module will
+															change the boot mode on some exection paths.
+														</xs:documentation>
+													</xs:annotation>
+												</xs:enumeration>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:attribute>
+									<xs:attribute name="SupArchList" type="ArchListType"
+										use="optional"/>
+									<xs:attribute name="FeatureFlag" type="xs:normalizedString"
+										use="optional"/>
 								</xs:complexType>
 							</xs:element>
 
-							<xs:element minOccurs="0" maxOccurs="1" name="SystemTables">
+							<xs:element minOccurs="0" maxOccurs="unbounded" name="Event">
 								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> This section should be
-										completed by modules that use, create, modify or delete
-										system table entries. </xs:documentation>
-									<xs:documentation xml:lang="en-us"> Any system table function
-										that has a named GUID associated should be listed in the
-										GUIDs section below, instead of here. </xs:documentation>
+									<xs:documentation xml:lang="en-us"> The functions that make up
+										the Event, Timer, and Task Priority Services are used during
+										preboot to create, close, signal, and wait for events; to
+										set timers; and to raise and restore task priority levels as
+										defined in the UEFI specification. </xs:documentation>
 								</xs:annotation>
 								<xs:complexType>
 									<xs:sequence>
-										<xs:element minOccurs="1" maxOccurs="unbounded"
-											name="SystemTable">
-											<xs:complexType>
-												<xs:sequence>
-													<xs:element minOccurs="1" maxOccurs="1" name="CName"
-														type="xs:NCName"/>
-													<xs:element minOccurs="0" maxOccurs="unbounded"
-														ref="HelpText"/>
-												</xs:sequence>
-												<xs:attribute name="Usage" use="required">
-													<xs:simpleType>
-														<xs:restriction base="xs:NCName">
-															<xs:enumeration value="CONSUMES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		always will use a GUIDed entry in a system
-																		table. </xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="SOMETIMES_CONSUMES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		will use a GUIDed etnry in a system table on
-																		some execution paths. </xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="PRODUCES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		will insert a GUIDed entry into a system
-																		table. </xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="SOMETIME_PRODUCES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		will insert a GUIDed entry into a system
-																		table on some exection paths.
-																	</xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-														</xs:restriction>
-													</xs:simpleType>
-												</xs:attribute>
-												<xs:attribute name="SupArchList" type="ArchListType"
-													use="optional"/>
-												<xs:attribute name="FeatureFlag"
-													type="xs:normalizedString" use="optional"/>
-											</xs:complexType>
-										</xs:element>
+										<xs:element minOccurs="0" maxOccurs="unbounded"
+											ref="HelpText"/>
 									</xs:sequence>
+									<xs:attribute name="Usage" use="required">
+										<xs:simpleType>
+											<xs:restriction base="xs:NCName">
+												<xs:enumeration value="CONSUMES">
+													<xs:annotation>
+														<xs:documentation xml:lang="en-us"> The module will
+															register a notification function and calls the
+															function when it is signaled. </xs:documentation>
+													</xs:annotation>
+												</xs:enumeration>
+												<xs:enumeration value="SOMETIMES_CONSUMES">
+													<xs:annotation>
+														<xs:documentation xml:lang="en-us"> The module will
+															register a notification function and calls the
+															function when it is signaled on some execution
+															paths. </xs:documentation>
+													</xs:annotation>
+												</xs:enumeration>
+												<xs:enumeration value="PRODUCES">
+													<xs:annotation>
+														<xs:documentation xml:lang="en-us"> The module will
+															signal all events in an event group.
+														</xs:documentation>
+													</xs:annotation>
+												</xs:enumeration>
+												<xs:enumeration value="SOMETIMES_PRODUCES">
+													<xs:annotation>
+														<xs:documentation xml:lang="en-us"> The module will
+															signal all events in an event group under some
+															execution paths. </xs:documentation>
+													</xs:annotation>
+												</xs:enumeration>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:attribute>
+									<xs:attribute name="EventType" use="required">
+										<xs:simpleType>
+											<xs:restriction base="xs:NCName">
+												<xs:enumeration value="EVENT_TYPE_PERIODIC_TIMER"/>
+												<xs:enumeration value="EVENT_TYPE_RELATIVE_TIMER"/>
+											</xs:restriction>
+										</xs:simpleType>
+
+
+									</xs:attribute>
+									<xs:attribute name="SupArchList" type="ArchListType"
+										use="optional"/>
+									<xs:attribute name="FeatureFlag" type="xs:normalizedString"
+										use="optional"/>
 								</xs:complexType>
 							</xs:element>
 
-							<xs:element minOccurs="0" maxOccurs="1" name="DataHubs">
-								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> Any DataHub function that
-										has a named GUID associated should be listed in the GUIDs
-										section below, rather than here. </xs:documentation>
-								</xs:annotation>
+							<xs:element minOccurs="0" maxOccurs="unbounded" name="HOB">
 								<xs:complexType>
 									<xs:sequence>
-										<xs:element minOccurs="1" maxOccurs="unbounded"
-											name="DataHubRecord">
-											<xs:complexType>
-												<xs:sequence>
-													<xs:element minOccurs="1" maxOccurs="1" name="CName"
-														type="xs:NCName"/>
-													<xs:element minOccurs="0" maxOccurs="unbounded"
-														ref="HelpText"/>
-												</xs:sequence>
-												<xs:attribute name="Usage" use="required">
-													<xs:simpleType>
-														<xs:restriction base="xs:NCName">
-															<xs:enumeration value="CONSUMES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		will consume a data hub entry via
-																		registering a filter driver.
-																	</xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="SOMETIMES_CONSUMES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		will consume a data hub entry via
-																		registering a filter driver on some
-																		execution paths. </xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="PRODUCES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		will always log data into the data hub.
-																	</xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="SOMETIMES_PRODUCES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		will log data into the data hub on some
-																		exection paths. </xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-														</xs:restriction>
-													</xs:simpleType>
-												</xs:attribute>
-												<xs:attribute name="SupArchList" type="ArchListType"
-													use="optional"/>
-												<xs:attribute name="FeatureFlag"
-													type="xs:normalizedString" use="optional"/>
-											</xs:complexType>
-										</xs:element>
+										<xs:element minOccurs="0" maxOccurs="unbounded"
+											ref="HelpText"/>
 									</xs:sequence>
+									<xs:attribute name="HobType" use="required">
+										<xs:simpleType>
+											<xs:restriction base="xs:NCName">
+												<xs:enumeration value="PHIT"/>
+												<xs:enumeration value="MEMORY_ALLOCATION"/>
+												<xs:enumeration value="RESOURCE_DESCRIPTOR"/>
+												<xs:enumeration value="FIRMWARE_VOLUME"/>
+												<xs:enumeration value="CPU"/>
+												<xs:enumeration value="POOL"/>
+												<xs:enumeration value="CAPSULE_VOLUME"/>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:attribute>
+									<xs:attribute name="Usage" use="required">
+										<xs:simpleType>
+											<xs:restriction base="xs:NCName">
+												<xs:enumeration value="CONSUMES">
+													<xs:annotation>
+														<xs:documentation xml:lang="en-us"> A HOB must be
+															present in the system. </xs:documentation>
+													</xs:annotation>
+												</xs:enumeration>
+												<xs:enumeration value="SOMETIMES_CONSUMES">
+													<xs:annotation>
+														<xs:documentation xml:lang="en-us"> If present, the
+															HOB will be used. </xs:documentation>
+													</xs:annotation>
+												</xs:enumeration>
+												<xs:enumeration value="PRODUCES">
+													<xs:annotation>
+														<xs:documentation xml:lang="en-us"> The HOB is
+															always produced by the module. </xs:documentation>
+													</xs:annotation>
+												</xs:enumeration>
+												<xs:enumeration value="SOMETIMES_PRODUCES">
+													<xs:annotation>
+														<xs:documentation xml:lang="en-us"> The HOB may be
+															procued by the module under some execution paths.
+														</xs:documentation>
+													</xs:annotation>
+												</xs:enumeration>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:attribute>
+									<xs:attribute name="SupArchList" type="ArchListType"
+										use="optional"/>
+									<xs:attribute name="FeatureFlag" type="xs:normalizedString"
+										use="optional"/>
 								</xs:complexType>
 							</xs:element>
 
-							<xs:element minOccurs="0" maxOccurs="1" name="HiiPackages">
-								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> Any HII function that has
-										a named GUID associated should be listed in the GUIDs
-										section below, rather than here. </xs:documentation>
-								</xs:annotation>
-								<xs:complexType>
-									<xs:sequence>
-										<xs:element minOccurs="1" maxOccurs="unbounded"
-											name="Formsets">
-											<xs:complexType>
-												<xs:sequence>
-													<xs:element minOccurs="1" maxOccurs="1" name="CName"
-														type="xs:NCName"/>
-													<xs:element minOccurs="0" maxOccurs="unbounded"
-														ref="HelpText"/>
-												</xs:sequence>
-												<xs:attribute name="Usage">
-													<xs:simpleType>
-														<xs:restriction base="xs:NCName">
-															<xs:enumeration value="PRODUCES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The
-																		formset will be registered into HII by this
-																		module. </xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="SOMETIMES_PRODUCES">
-																<xs:annotation>
-																	<xs:documentation> The formset will be
-																		registered into HII by this module under
-																		certain execution paths. </xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-														</xs:restriction>
-													</xs:simpleType>
-												</xs:attribute>
-											</xs:complexType>
-										</xs:element>
-									</xs:sequence>
-								</xs:complexType>
-							</xs:element>
-							<xs:choice minOccurs="0" maxOccurs="1">
-								<xs:sequence>
-									<xs:element minOccurs="0" maxOccurs="1" name="DriverBinding"
-										type="xs:NCName"/>
-									<xs:element minOccurs="0" maxOccurs="1" name="ComponentName"
-										type="xs:NCName"/>
-									<xs:element minOccurs="0" maxOccurs="1" name="DriverConfig"
-										type="xs:NCName"/>
-									<xs:element minOccurs="0" maxOccurs="1" name="DriverDiag"
-										type="xs:NCName"/>
-								</xs:sequence>
-								<xs:sequence>
-									<xs:element minOccurs="0" maxOccurs="1"
-										name="SetVirtualAddressMapCallBack" type="xs:NCName"/>
-									<xs:element minOccurs="0" maxOccurs="1"
-										name="ExitBootServicesCallBack" type="xs:NCName"/>
-								</xs:sequence>
-							</xs:choice>
 						</xs:sequence>
 						<xs:attributeGroup ref="SupportedArchMod"/>
 					</xs:complexType>
@@ -1260,7 +1266,24 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 										<xs:element minOccurs="0" maxOccurs="unbounded"
 											ref="HelpText"/>
 									</xs:sequence>
-									<xs:attribute name="Usage" type="LibUsageType" use="required"/>
+									<xs:attribute name="Usage" use="required">
+										<xs:simpleType>
+											<xs:annotation>
+												<xs:documentation xml:lang="en-us"> Library instances
+													can provide code for a library class, or may require
+													other library instances themselves. Since different
+													execution paths in a library (or module) may need
+													different library classes based on some setting,
+													library classes may not alway be required.
+												</xs:documentation>
+											</xs:annotation>
+											<xs:restriction base="xs:NCName">
+												<xs:enumeration value="PRODUCES"/>
+												<xs:enumeration value="CONSUMES"/>
+												<xs:enumeration value="SOMETIMES_CONSUMES"/>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:attribute>
 
 									<xs:attributeGroup ref="SupportedArchMod"/>
 									<xs:attribute name="FeatureFlag" type="xs:normalizedString"
@@ -1282,31 +1305,15 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 				<xs:element minOccurs="0" maxOccurs="1" name="SourceFiles">
 					<xs:complexType>
 						<xs:sequence>
-							<xs:element minOccurs="0" maxOccurs="unbounded" name="Description"
-								type="xs:string"/>
 							<xs:element minOccurs="1" maxOccurs="unbounded" name="Filename">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> This is the path and
+										filename location within the ZIP file. </xs:documentation>
+								</xs:annotation>
 								<xs:complexType>
 									<xs:simpleContent>
 										<xs:extension base="xs:anyURI">
-											<xs:attribute name="TagName" type="xs:NCName"
-												use="optional">
-												<xs:annotation>
-													<xs:documentation xml:lang="en-us"> This attribute can
-														be used to restrict usage based on tags that name a
-														tool chain configuration such as WINDDK, UNIXGCC,
-														MSVS2005, etc. </xs:documentation>
-												</xs:annotation>
-											</xs:attribute>
-											<xs:attribute name="ToolCode" type="xs:NCName"
-												use="optional">
-												<xs:annotation>
-													<xs:documentation xml:lang="en-us"> This attribute can
-														be used to identify a specific type of tool, such as
-														CC for a C compiler, SLINK for a static linker, etc.
-													</xs:documentation>
-												</xs:annotation>
-											</xs:attribute>
-											<xs:attribute name="Family" type="FamilyType"
+											<xs:attribute name="Family" type="FamilyTypes"
 												use="optional">
 												<xs:annotation>
 													<xs:documentation xml:lang="en-us"> The Family
@@ -1333,26 +1340,197 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 				<xs:element minOccurs="0" maxOccurs="1" name="BinaryFiles">
 					<xs:complexType>
 						<xs:sequence>
-							<xs:element minOccurs="0" maxOccurs="unbounded" name="Description"
-								type="xs:string"/>
-							<xs:element minOccurs="1" maxOccurs="unbounded" name="Filename">
+							<xs:element minOccurs="1" maxOccurs="unbounded" name="BinaryFile">
 								<xs:complexType>
-									<xs:simpleContent>
-										<xs:extension base="xs:anyURI">
-											<xs:attribute name="FileType" type="BinFileType"
-												use="optional"/>
-											<xs:attribute name="TagName" type="xs:NCName"
-												use="optional"/>
-											<xs:attribute name="Target" type="xs:NCName"
-												use="optional"/>
-											<xs:attribute name="SupArchList" type="ArchListType"
-												use="optional"/>
-											<xs:attribute name="FeatureFlag"
-												type="xs:normalizedString" use="optional"/>
-										</xs:extension>
-									</xs:simpleContent>
+									<xs:sequence>
+										<xs:element minOccurs="1" maxOccurs="unbounded"
+											name="Filename">
+											<xs:annotation>
+												<xs:documentation xml:lang="en-us"> This is the path and
+													filename location within the ZIP file.
+												</xs:documentation>
+											</xs:annotation>
+											<xs:complexType>
+												<xs:simpleContent>
+													<xs:extension base="xs:anyURI">
+														<xs:attribute name="FileType" use="optional">
+															<xs:simpleType>
+																<xs:restriction base="xs:NCName">
+																	<xs:annotation>
+																		<xs:documentation xml:lang="en-us"> Not all
+																			of the types listed below should be
+																			distributed, such as a firmware volume
+																			(FV) file. </xs:documentation>
+																	</xs:annotation>
+																	<xs:enumeration value="GUID"/>
+																	<xs:enumeration value="FREEFORM"/>
+																	<xs:enumeration value="UEFI_IMAGE"/>
+																	<xs:enumeration value="PE32">
+																		<xs:annotation>
+																			<xs:documentation xml:lang="en-us"> An EFI
+																				processed file, not a raw PE32 file.
+																			</xs:documentation>
+																		</xs:annotation>
+																	</xs:enumeration>
+																	<xs:enumeration value="PIC"/>
+																	<xs:enumeration value="PEI_DEPEX"/>
+																	<xs:enumeration value="DXE_DEPEX"/>
+																	<xs:enumeration value="TE"/>
+																	<xs:enumeration value="VER"/>
+																	<xs:enumeration value="UI"/>
+																	<xs:enumeration value="BIN"/>
+																	<xs:enumeration value="FV"/>
+																</xs:restriction>
+															</xs:simpleType>
+														</xs:attribute>
+														<xs:attribute name="SupArchList" type="ArchListType"
+															use="optional"/>
+														<xs:attribute name="FeatureFlag"
+															type="xs:normalizedString" use="optional"/>
+													</xs:extension>
+												</xs:simpleContent>
+											</xs:complexType>
+										</xs:element>
+										<xs:element minOccurs="0" maxOccurs="unbounded"
+											name="AsBuilt">
+											<xs:annotation>
+												<xs:documentation xml:lang="en-us"> This section
+													contains information about how the module was coded,
+													such as Compiler Tools, Flags, PCDs (only PatchPcd,
+													Pcd and/or PcdEx) and Library Class Instances used to
+													build the binary. </xs:documentation>
+											</xs:annotation>
+											<xs:complexType>
+												<xs:sequence>
+
+													<xs:element minOccurs="0" maxOccurs="unbounded"
+														name="PatchPcdValue">
+														<xs:annotation>
+															<xs:documentation xml:lang="en-us"> The element is
+																the Patchable PCD Value that was used during the
+																build. </xs:documentation>
+														</xs:annotation>
+														<xs:complexType>
+															<xs:sequence>
+																<xs:element minOccurs="1" maxOccurs="1"
+																	name="TokenSpaceGuidCname" type="xs:NCName"/>
+																<xs:element minOccurs="1" maxOccurs="1"
+																	name="PcdCName" type="xs:NCName"/>
+																<xs:element minOccurs="1" maxOccurs="1"
+																	name="Token" type="HexNumber"/>
+																<xs:element minOccurs="1" maxOccurs="1"
+																	name="DatumType" type="PcdDatumTypes"/>
+																<xs:element minOccurs="0" maxOccurs="1"
+																	name="MaxDatumSize" type="Number">
+																	<xs:annotation>
+																		<xs:documentation xml:lang="en-us"> This
+																			field is required if the Pcd Datum Type is
+																			VOID* </xs:documentation>
+																	</xs:annotation>
+																</xs:element>
+																<xs:element minOccurs="1" maxOccurs="1"
+																	name="Value" type="xs:normalizedString"/>
+																<xs:element minOccurs="1" maxOccurs="1"
+																	name="Offset" type="HexNumber"/>
+																<!-- PcdError Stuff Here! -->
+															</xs:sequence>
+														</xs:complexType>
+													</xs:element>
+
+													<xs:element minOccurs="0" maxOccurs="unbounded"
+														name="PcdExValue">
+														<xs:annotation>
+															<xs:documentation xml:lang="en-us"> The element is
+																the DynamicEx PCD Value that was used during the
+																build. </xs:documentation>
+														</xs:annotation>
+														<xs:complexType>
+															<xs:sequence>
+																<xs:element minOccurs="1" maxOccurs="1"
+																	name="TokenSpaceGuidValue"
+																	type="RegistryFormatGuid"/>
+																<xs:element minOccurs="1" maxOccurs="1"
+																	name="Token" type="HexNumber"/>
+																<xs:element minOccurs="1" maxOccurs="1"
+																	name="DatumType" type="PcdDatumTypes"/>
+																<xs:element minOccurs="0" maxOccurs="1"
+																	name="MaxDatumSize" type="Number">
+																	<xs:annotation>
+																		<xs:documentation xml:lang="en-us"> This
+																			field is required if the Pcd Datum Type is
+																			VOID* </xs:documentation>
+																	</xs:annotation>
+																</xs:element>
+																<xs:element minOccurs="1" maxOccurs="1"
+																	name="Value" type="xs:normalizedString"/>
+																<!-- Get Error Stuff & put here. -->
+															</xs:sequence>
+														</xs:complexType>
+													</xs:element>
+
+													<xs:element minOccurs="0" maxOccurs="1"
+														name="LibraryInstances">
+														<xs:annotation>
+															<xs:documentation xml:lang="en-us"> This is the
+																actual library instance that was used to link
+																against the module. </xs:documentation>
+														</xs:annotation>
+														<xs:complexType>
+															<xs:sequence>
+																<xs:element minOccurs="1" maxOccurs="unbounded"
+																	name="GUID">
+																	<xs:annotation>
+																		<xs:documentation xml:lang="en-us"> This
+																			GUID and the Version attribute uniquely
+																			identify the actual Library Instance
+																			linked in this module. </xs:documentation>
+																	</xs:annotation>
+																	<xs:complexType>
+																		<xs:simpleContent>
+																			<xs:extension base="RegistryFormatGuid">
+																				<xs:attribute name="Version"
+																				type="xs:decimal" use="required">
+																				<xs:annotation>
+																				<xs:documentation xml:lang="en-us">
+																				This value, along with the GUID,
+																				is used to uniquely identify this
+																				object. </xs:documentation>
+																				</xs:annotation>
+																				</xs:attribute>
+																			</xs:extension>
+																		</xs:simpleContent>
+																	</xs:complexType>
+																</xs:element>
+															</xs:sequence>
+														</xs:complexType>
+													</xs:element>
+
+													<xs:element minOccurs="0" maxOccurs="unbounded"
+														name="BuildFlags">
+														<xs:complexType mixed="true">
+															<xs:simpleContent>
+																<xs:annotation>
+																	<xs:documentation xml:lang="en-us"> Any
+																		description of OS, Tool, and flags for the
+																		individual tool can go in this section.
+																	</xs:documentation>
+																</xs:annotation>
+																<xs:extension base="xs:normalizedString">
+																	<xs:anyAttribute processContents="lax"/>
+																</xs:extension>
+															</xs:simpleContent>
+														</xs:complexType>
+													</xs:element>
+												</xs:sequence>
+											</xs:complexType>
+										</xs:element>
+										<!-- End of AsBuilt -->
+									</xs:sequence>
+									<xs:attribute name="SupArchList" type="ArchListType"
+										use="required"/>
 								</xs:complexType>
 							</xs:element>
+
 						</xs:sequence>
 					</xs:complexType>
 				</xs:element>
@@ -1376,7 +1554,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 												<xs:simpleContent>
 													<xs:extension base="RegistryFormatGuid">
 														<xs:attribute name="Version" type="xs:decimal"
-															use="required">
+															use="optional">
 															<xs:annotation>
 																<xs:documentation xml:lang="en-us"> This value,
 																	along with the GUID, is used to uniquely
@@ -1402,257 +1580,81 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 				<xs:element minOccurs="0" maxOccurs="1" name="Guids">
 					<xs:complexType>
 						<xs:sequence>
-
-							<xs:element minOccurs="0" maxOccurs="1" name="Events">
+							<xs:element minOccurs="1" maxOccurs="unbounded" name="GuidCName">
 								<xs:complexType>
 									<xs:sequence>
-										<xs:element minOccurs="1" maxOccurs="unbounded" name="Event">
+										<xs:element minOccurs="1" maxOccurs="1" name="CName"
+											type="xs:NCName"/>
+										<xs:element minOccurs="0" maxOccurs="unbounded"
+											name="VariableName">
 											<xs:annotation>
-												<xs:documentation xml:lang="en-us"> The functions that
-													make up the Event, Timer, and Task Priority Services
-													are used during preboot to create, close, signal, and
-													wait for events; to set timers; and to raise and
-													restore task priority levels as defined in the UEFI
-													specification. </xs:documentation>
+												<xs:documentation xml:lang="en-us"> Only valid for
+													Variable GUID types. </xs:documentation>
+												<xs:documentation> This can be either a Hex Array or
+													Unicode Data. </xs:documentation>
 											</xs:annotation>
 											<xs:complexType>
-												<xs:sequence>
-													<xs:element minOccurs="1" maxOccurs="1" name="CName"
-														type="xs:NCName"/>
-													<xs:element minOccurs="0" maxOccurs="unbounded"
-														ref="HelpText"/>
-												</xs:sequence>
-												<xs:attribute name="Usage" use="required">
-													<xs:simpleType>
-														<xs:restriction base="xs:NCName">
-															<xs:enumeration value="CONSUMES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		will register a notification function and
-																		calls the function when it is signaled.
-																	</xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="SOMETIMES_CONSUMES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		will register a notification function and
-																		calls the function when it is signaled on
-																		some execution paths. </xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="PRODUCES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		will signal all events in an event group.
-																	</xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="SOMETIMES_PRODUCES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		will signal all events in an event group
-																		under some execution paths.
-																	</xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-														</xs:restriction>
-													</xs:simpleType>
-												</xs:attribute>
-												<xs:attribute name="EventType" type="EventType"
-													use="required"/>
-												<xs:attribute name="SupArchList" type="ArchListType"
-													use="optional"/>
-												<xs:attribute name="FeatureFlag"
-													type="xs:normalizedString" use="optional"/>
+												<xs:simpleContent>
+													<xs:extension base="xs:normalizedString">
+														<xs:attribute name="UCS2" type="xs:boolean"
+															default="false" use="optional">
+															<xs:annotation>
+																<xs:documentation xml:lang="en-us"> If set to
+																	true, then the data between the tags is UCS2
+																	Unicode format, otherwise it is either HexData
+																	or an L"string" value. </xs:documentation>
+															</xs:annotation>
+														</xs:attribute>
+														<xs:attribute name="Lang" type="xs:language"
+															default="en-us" use="optional"/>
+													</xs:extension>
+												</xs:simpleContent>
 											</xs:complexType>
 										</xs:element>
-
+										<xs:element minOccurs="0" maxOccurs="unbounded"
+											ref="HelpText"/>
 									</xs:sequence>
+									<xs:attribute name="Usage" use="required">
+										<xs:simpleType>
+											<xs:restriction base="xs:NCName">
+												<xs:enumeration value="CONSUMES">
+													<xs:annotation>
+														<xs:documentation xml:lang="en-us">The module does
+															not install the GUID, and the GUID must be present
+															for the module to execute. </xs:documentation>
+													</xs:annotation>
+												</xs:enumeration>
+												<xs:enumeration value="SOMETIMES_CONSUMES">
+													<xs:annotation>
+														<xs:documentation xml:lang="en-us"> The module does
+															not install the GUID, however, the GUID will be
+															used if it is present. </xs:documentation>
+													</xs:annotation>
+												</xs:enumeration>
+												<xs:enumeration value="PRODUCES">
+													<xs:annotation>
+														<xs:documentation xml:lang="en-us"> The module
+															always installs the GUID. </xs:documentation>
+													</xs:annotation>
+												</xs:enumeration>
+												<xs:enumeration value="SOMETIMES_PRODUCES">
+													<xs:annotation>
+														<xs:documentation xml:lang="en-us"> The Module will
+															install the GUID under certain execution paths.
+														</xs:documentation>
+													</xs:annotation>
+												</xs:enumeration>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:attribute>
+									<xs:attribute name="GuidType" type="GuidListType"
+										use="required"/>
+									<xs:attribute name="SupArchList" type="ArchListType"
+										use="optional"/>
+									<xs:attribute name="FeatureFlag" type="xs:normalizedString"
+										use="optional"/>
 								</xs:complexType>
 							</xs:element>
-
-							<xs:element minOccurs="0" maxOccurs="1" name="Hobs">
-								<xs:complexType>
-									<xs:sequence>
-										<xs:element minOccurs="0" maxOccurs="unbounded" name="HOB">
-											<xs:complexType>
-												<xs:sequence>
-													<xs:element minOccurs="1" maxOccurs="1" name="CName"
-														type="xs:NCName"/>
-													<xs:element minOccurs="0" maxOccurs="unbounded"
-														ref="HelpText"/>
-												</xs:sequence>
-												<xs:attribute name="HobType" type="HobTypes"
-													use="required"/>
-												<xs:attribute name="Usage" use="required">
-													<xs:simpleType>
-														<xs:restriction base="xs:NCName">
-															<xs:enumeration value="CONSUMES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> A HOB must
-																		be present in the system.
-																	</xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="SOMETIMES_CONSUMES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> If
-																		present, the HOB will be used.
-																	</xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="PRODUCES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The HOB is
-																		always produced by the module.
-																	</xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="SOMETIMES_PRODUCES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The HOB
-																		may be procued by the module under some
-																		execution paths. </xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-														</xs:restriction>
-													</xs:simpleType>
-												</xs:attribute>
-												<xs:attribute name="SupArchList" type="ArchListType"
-													use="optional"/>
-												<xs:attribute name="FeatureFlag"
-													type="xs:normalizedString" use="optional"/>
-											</xs:complexType>
-										</xs:element>
-									</xs:sequence>
-								</xs:complexType>
-							</xs:element>
-
-							<xs:element minOccurs="0" maxOccurs="1" name="Variables">
-								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> Describes an EFI variable
-										via GUID Unicode string pair. It’s possible to describe an
-										entire variable or just a set of bits within a variable.
-									</xs:documentation>
-								</xs:annotation>
-								<xs:complexType>
-									<xs:sequence>
-										<xs:element minOccurs="1" maxOccurs="unbounded"
-											name="Variable">
-											<xs:complexType>
-												<xs:sequence>
-													<xs:element minOccurs="1" maxOccurs="1" name="CName"
-														type="xs:NCName"/>
-													<xs:element minOccurs="1" maxOccurs="1"
-														name="VariableName" type="HexArray"/>
-													<xs:element minOccurs="0" maxOccurs="unbounded"
-														ref="HelpText"/>
-												</xs:sequence>
-												<xs:attribute name="Usage" use="required">
-													<xs:simpleType>
-														<xs:restriction base="xs:NCName">
-															<xs:enumeration value="CONSUMES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		requires that the variable entry be set.
-																	</xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="SOMETIMES_CONSUMES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		will use the variable entry if it set.
-																	</xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="PRODUCES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		will always write the variable.
-																	</xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="SOMETIMES_PRODUCES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		will write the variable under certain
-																		execution paths. </xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-														</xs:restriction>
-													</xs:simpleType>
-												</xs:attribute>
-												<xs:attribute name="SupArchList" type="ArchListType"
-													use="optional"/>
-												<xs:attribute name="FeatureFlag"
-													type="xs:normalizedString" use="optional"/>
-											</xs:complexType>
-										</xs:element>
-									</xs:sequence>
-								</xs:complexType>
-							</xs:element>
-
-							<xs:element minOccurs="0" maxOccurs="1" name="GuidCNames">
-								<xs:complexType>
-									<xs:sequence>
-										<xs:element minOccurs="1" maxOccurs="unbounded"
-											name="GuidCName">
-											<xs:complexType>
-												<xs:sequence>
-													<xs:element minOccurs="1" maxOccurs="1" name="CName"
-														type="xs:NCName"/>
-													<xs:element minOccurs="0" maxOccurs="unbounded"
-														ref="HelpText"/>
-												</xs:sequence>
-												<xs:attribute name="Usage" use="required">
-													<xs:simpleType>
-														<xs:restriction base="xs:NCName">
-															<xs:enumeration value="CONSUMES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us">The module
-																		does not install the GUID, and the GUID must
-																		be present for the module to execute.
-																	</xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="SOMETIMES_CONSUMES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		does not install the GUID, however, the GUID
-																		will be used if it is present.
-																	</xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="PRODUCES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The module
-																		always installs the GUID.
-																	</xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-															<xs:enumeration value="SOMETIMES_PRODUCES">
-																<xs:annotation>
-																	<xs:documentation xml:lang="en-us"> The Module
-																		will install the GUID under certain
-																		execution paths. </xs:documentation>
-																</xs:annotation>
-															</xs:enumeration>
-														</xs:restriction>
-													</xs:simpleType>
-												</xs:attribute>
-												<xs:attribute name="GuidType" type="ModGuidListType"
-													use="required"/>
-												<xs:attribute name="SupArchList" type="ArchListType"
-													use="optional"/>
-												<xs:attribute name="FeatureFlag"
-													type="xs:normalizedString" use="optional"/>
-											</xs:complexType>
-										</xs:element>
-									</xs:sequence>
-								</xs:complexType>
-							</xs:element>
-
 						</xs:sequence>
 					</xs:complexType>
 				</xs:element>
@@ -1670,8 +1672,18 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 										<xs:element minOccurs="0" maxOccurs="unbounded"
 											ref="HelpText"/>
 									</xs:sequence>
-									<xs:attribute name="Usage" type="ProtocolUsageType"
-										use="required"/>
+									<xs:attribute name="Usage" use="required">
+										<xs:simpleType>
+											<xs:restriction base="xs:NCName">
+												<xs:enumeration value="PRODUCES"/>
+												<xs:enumeration value="SOMETIMES_PRODUCES"/>
+												<xs:enumeration value="CONSUMES"/>
+												<xs:enumeration value="SOMETIMES_CONSUMES"/>
+												<xs:enumeration value="TO_START"/>
+												<xs:enumeration value="BY_START"/>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:attribute>
 									<xs:attribute name="Notify" type="xs:boolean" use="optional"/>
 									<xs:attribute name="SupArchList" type="ArchListType"
 										use="optional"/>
@@ -1696,7 +1708,16 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 										<xs:element minOccurs="0" maxOccurs="unbounded"
 											ref="HelpText"/>
 									</xs:sequence>
-									<xs:attribute name="Usage" type="UsageType" use="required"/>
+									<xs:attribute name="Usage" use="required">
+										<xs:simpleType>
+											<xs:restriction base="xs:NCName">
+												<xs:enumeration value="PRODUCES"/>
+												<xs:enumeration value="SOMETIMES_PRODUCES"/>
+												<xs:enumeration value="CONSUMES"/>
+												<xs:enumeration value="SOMETIMES_CONSUMES"/>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:attribute>
 									<xs:attribute name="Notify" type="xs:boolean" use="optional"/>
 									<xs:attribute name="SupArchList" type="ArchListType"
 										use="optional"/>
@@ -1754,37 +1775,110 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 											name="TokenSpaceGuidCName" type="xs:NCName"/>
 										<xs:element minOccurs="0" maxOccurs="1" name="DefaultValue"
 											type="xs:normalizedString"/>
+										<xs:element minOccurs="0" maxOccurs="1" name="MinimumSize"
+											type="Number">
+											<xs:annotation>
+												<xs:documentation xml:lang="en-us"> Only valid for VOID*
+													data types. This allows a module developer to specify
+													a minimum size for holding the data. This value must
+													be less than or equal to the MaximumDatumSize
+													specified by the PCD's Package declaration. </xs:documentation>
+												<xs:documentation xml:lang="en-us"> This will permit a
+													platform integrator to allocate only the required
+													amount of space, based on the actual size of data, if
+													all modules using this PCD use less than the maximum
+													amount of storage. </xs:documentation>
+											</xs:annotation>
+										</xs:element>
 										<xs:element minOccurs="0" maxOccurs="unbounded"
 											ref="HelpText"/>
 										<xs:element minOccurs="0" maxOccurs="unbounded"
-											name="ErrorMessage">
+											name="PcdError">
 											<xs:annotation>
-												<xs:documentation xml:lang="en-us"> This string should
-													be defined by specifications. There are pre-defined
-													error number ranges in the PI specificaiton.
-												</xs:documentation>
+												<xs:documentation xml:lang="en-us"> Error information in
+													this section supercedes PcdError information in
+													Package declaration. </xs:documentation>
 											</xs:annotation>
 											<xs:complexType>
-												<xs:simpleContent>
-													<xs:extension base="xs:normalizedString">
-														<xs:attribute name="ErrNo" use="required"
-															type="HexNumber">
+												<xs:sequence>
+													<xs:choice>
+														<xs:annotation>
+															<xs:documentation xml:lang="en-us"> One of the
+																following types of comparisons, which must be
+																able to evaluate to either true or false.
+															</xs:documentation>
+														</xs:annotation>
+														<xs:element minOccurs="0" maxOccurs="1"
+															name="ValidValueList">
 															<xs:annotation>
-																<xs:documentation xml:lang="en-us"> This value
-																	should follow PI specifications.
+																<xs:documentation xml:lang="en-us"> The PCD
+																	Value must be one of the values listed.
 																</xs:documentation>
 															</xs:annotation>
-														</xs:attribute>
-													</xs:extension>
-												</xs:simpleContent>
+															<xs:simpleType>
+																<xs:list itemType="xs:NCName"/>
+															</xs:simpleType>
+														</xs:element>
+														<xs:element minOccurs="0" maxOccurs="1"
+															name="ValidValueRange" type="xs:normalizedString">
+															<xs:annotation>
+																<xs:documentation xml:lang="en-us"> The PCD must
+																	be within a specifed range of numeric values.
+																	Restricted to C style Relational, Equality and
+																	Logicial Operators and parenthesis are valid.
+																</xs:documentation>
+															</xs:annotation>
+														</xs:element>
+														<xs:element minOccurs="0" maxOccurs="1"
+															name="LogicalExpression"
+															type="xs:normalizedString">
+															<xs:annotation>
+																<xs:documentation xml:lang="en-us"> A in-fix
+																	logical expression using C style Relational,
+																	Equality and Logicial operators and
+																	parenthesis are valid. </xs:documentation>
+															</xs:annotation>
+														</xs:element>
+													</xs:choice>
+													<xs:element minOccurs="0" maxOccurs="1"
+														name="ErrorNumber" type="HexNumber"/>
+													<xs:element minOccurs="0" maxOccurs="unbounded"
+														name="ErrorMessage">
+														<xs:annotation>
+															<xs:documentation xml:lang="en-us"> This string
+																should be defined by specifications. There are
+																pre-defined error number ranges in the UEFI/PI
+																specificaiton. </xs:documentation>
+														</xs:annotation>
+														<xs:complexType>
+															<xs:simpleContent>
+																<xs:extension base="xs:normalizedString">
+																	<xs:attribute name="UCS2" type="xs:boolean"
+																		default="false" use="optional"/>
+																	<xs:attribute name="Lang" type="xs:language"
+																		default="en-us" use="optional"/>
+																</xs:extension>
+															</xs:simpleContent>
+														</xs:complexType>
+													</xs:element>
+												</xs:sequence>
 											</xs:complexType>
 										</xs:element>
-										<xs:element minOccurs="0" maxOccurs="1" name="ValidValues"
-											type="xs:normalizedString"/>
 									</xs:sequence>
-									<xs:attribute name="PcdItemType" type="PcdTypes"
+									<xs:attribute name="PcdItemType" type="PcdItemTypes"
 										use="required"/>
-									<xs:attribute name="PcdUsage" type="UsageType" use="required"/>
+									<xs:attribute name="PcdUsage" use="required">
+										<xs:simpleType>
+											<xs:restriction base="xs:NCName">
+												<xs:enumeration value="PRODUCES"/>
+												<xs:enumeration value="SOMETIMES_PRODUCES"/>
+												<xs:enumeration value="CONSUMES"/>
+												<xs:enumeration value="SOMETIMES_CONSUMES"/>
+											</xs:restriction>
+										</xs:simpleType>
+
+
+									</xs:attribute>
 									<xs:attribute name="SupArchList" type="ArchListType"
 										use="optional"/>
 									<xs:attribute name="FeatureFlag" type="xs:normalizedString"
@@ -1803,11 +1897,16 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 					</xs:annotation>
 					<xs:complexType>
 						<xs:sequence>
-							<xs:element minOccurs="0" maxOccurs="1" ref="HelpText"/>
-							<xs:element name="Define" type=" xs:normalizedString "
-								minOccurs="0" maxOccurs="unbounded"/>
 							<xs:element name="Expression" type=" xs:string " minOccurs="0"
-								maxOccurs="unbounded"/>
+								maxOccurs="unbounded">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> An in-fix expression, of C
+										identifiers and TRUE, FALSE, AND, OR, NOT, BEFORE, and AFTER
+										as well as parenthesis () in the in-fix notation.
+									</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element minOccurs="0" maxOccurs="1" ref="HelpText"/>
 						</xs:sequence>
 					</xs:complexType>
 				</xs:element>
@@ -1820,248 +1919,21 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 					</xs:annotation>
 					<xs:complexType>
 						<xs:sequence>
-							<xs:element minOccurs="0" maxOccurs="1" ref="HelpText"/>
-							<xs:element name="Define" type=" xs:normalizedString "
-								minOccurs="0" maxOccurs="unbounded"/>
 							<xs:element name="Expression" type=" xs:string " minOccurs="0"
-								maxOccurs="unbounded"/>
+								maxOccurs="unbounded">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> An in-fix expression, of C
+										identifiers and TRUE, FALSE, AND, OR, NOT, BEFORE, and AFTER
+										as well as parenthesis () in the in-fix notation.
+									</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element minOccurs="0" maxOccurs="1" ref="HelpText"/>
 						</xs:sequence>
 					</xs:complexType>
 				</xs:element>
 				<!-- End of DxeDepex Section -->
 
-				<xs:element minOccurs="0" maxOccurs="1" name="ModuleBuildOptions">
-					<xs:complexType>
-						<xs:sequence>
-							<xs:element minOccurs="0" maxOccurs="1" name="Options">
-								<xs:complexType>
-									<xs:sequence>
-										<xs:element minOccurs="1" maxOccurs="unbounded"
-											name="Option">
-											<xs:complexType>
-												<xs:simpleContent>
-													<xs:extension base="xs:normalizedString">
-														<xs:attribute name="BuildTargets"
-															type="xs:normalizedString" use="optional"/>
-														<xs:attribute name="TagName" type="xs:NCName"
-															use="optional"/>
-														<xs:attribute name="ToolCode" type="xs:NCName"
-															use="optional"/>
-														<xs:attribute name="Family" type="FamilyList"
-															use="optional"/>
-														<xs:attribute name="SupArchList" type="ArchListType"
-															use="optional"/>
-													</xs:extension>
-												</xs:simpleContent>
-											</xs:complexType>
-										</xs:element>
-									</xs:sequence>
-								</xs:complexType>
-							</xs:element>
-
-						</xs:sequence>
-					</xs:complexType>
-				</xs:element>
-				<!-- End of ModuleBuildOptions Section -->
-
-				<xs:element minOccurs="0" maxOccurs="unbounded" name="AsBuilt">
-					<xs:annotation>
-						<xs:documentation xml:lang="en-us"> If this is a binary module
-							distribution, this section contains information about how the
-							module was coded, such as Compiler Tools, Flags, PCDs (only
-							PatchPcd, Pcd and/or PcdEx) and Library Class Instances used to
-							build the binary. </xs:documentation>
-					</xs:annotation>
-					<xs:complexType>
-						<xs:sequence>
-							<xs:element minOccurs="0" maxOccurs="1" name="Description"
-								type="xs:string"/>
-
-							<xs:element minOccurs="0" maxOccurs="unbounded"
-								name="PatchPcdValue">
-								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> The element is the
-										Patchable PCD Value that was used during the build.
-									</xs:documentation>
-								</xs:annotation>
-								<xs:complexType>
-									<xs:sequence>
-										<xs:element minOccurs="1" maxOccurs="1"
-											name="TokenSpaceGuidCname" type="xs:NCName"/>
-										<xs:element minOccurs="1" maxOccurs="1" name="PcdCName"
-											type="xs:NCName"/>
-										<xs:element minOccurs="1" maxOccurs="1" name="Token"
-											type="HexNumber"/>
-										<xs:element minOccurs="1" maxOccurs="1" name="DatumType"
-											type="PcdDatumType"/>
-										<xs:element minOccurs="0" maxOccurs="1" name="MaxDatumSize"
-											type="Number">
-											<xs:annotation>
-												<xs:documentation xml:lang="en-us"> This field is
-													required if the Pcd Datum Type is VOID*
-												</xs:documentation>
-											</xs:annotation>
-										</xs:element>
-										<xs:element minOccurs="1" maxOccurs="1" name="Value"
-											type="xs:normalizedString"/>
-										<xs:element minOccurs="1" maxOccurs="1" name="Offset"
-											type="HexNumber"/>
-									</xs:sequence>
-								</xs:complexType>
-							</xs:element>
-
-							<xs:element minOccurs="0" maxOccurs="unbounded" name="PcdValue">
-								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> The element is the Dynamic
-										PCD Value that was used during the build.
-									</xs:documentation>
-								</xs:annotation>
-								<xs:complexType>
-									<xs:sequence>
-										<xs:element minOccurs="1" maxOccurs="1"
-											name="TokenSpaceGuidCname" type="xs:NCName"/>
-										<xs:element minOccurs="1" maxOccurs="1" name="PcdCName"
-											type="xs:NCName"/>
-										<xs:element minOccurs="1" maxOccurs="1" name="Token"
-											type="HexNumber"/>
-										<xs:element minOccurs="1" maxOccurs="1" name="DatumType"
-											type="PcdDatumType"/>
-										<xs:element minOccurs="0" maxOccurs="1" name="MaxDatumSize"
-											type="Number">
-											<xs:annotation>
-												<xs:documentation xml:lang="en-us"> This field is
-													required if the Pcd Datum Type is VOID*
-												</xs:documentation>
-											</xs:annotation>
-										</xs:element>
-										<xs:element minOccurs="1" maxOccurs="1" name="Value"
-											type="xs:normalizedString"/>
-									</xs:sequence>
-								</xs:complexType>
-							</xs:element>
-
-							<xs:element minOccurs="0" maxOccurs="unbounded" name="PcdExValue">
-								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> The element is the
-										DynamicEx PCD Value that was used during the build.
-									</xs:documentation>
-								</xs:annotation>
-								<xs:complexType>
-									<xs:sequence>
-										<xs:element minOccurs="1" maxOccurs="1"
-											name="TokenSpaceGuidCname" type="xs:NCName"/>
-										<xs:element minOccurs="1" maxOccurs="1" name="PcdCName"
-											type="xs:NCName"/>
-										<xs:element minOccurs="1" maxOccurs="1" name="Token"
-											type="HexNumber"/>
-										<xs:element minOccurs="1" maxOccurs="1" name="DatumType"
-											type="PcdDatumType"/>
-										<xs:element minOccurs="0" maxOccurs="1" name="MaxDatumSize"
-											type="Number">
-											<xs:annotation>
-												<xs:documentation xml:lang="en-us"> This field is
-													required if the Pcd Datum Type is VOID*
-												</xs:documentation>
-											</xs:annotation>
-										</xs:element>
-										<xs:element minOccurs="1" maxOccurs="1" name="Value"
-											type="xs:normalizedString"/>
-									</xs:sequence>
-								</xs:complexType>
-							</xs:element>
-
-							<xs:element minOccurs="0" maxOccurs="unbounded"
-								name="LibraryInstance">
-								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> This is the actual library
-										instance that was used to link against the module.
-									</xs:documentation>
-								</xs:annotation>
-								<xs:complexType>
-									<xs:all>
-										<xs:element minOccurs="0" maxOccurs="1" name="Description"
-											type="xs:string">
-											<xs:annotation>
-												<xs:documentation xml:lang="en-us"> This section can be
-													used to describe why a specific library instances was
-													used over other library instances. </xs:documentation>
-											</xs:annotation>
-										</xs:element>
-										<xs:element minOccurs="1" maxOccurs="1" name="GUID">
-											<xs:annotation>
-												<xs:documentation xml:lang="en-us"> This GUID and the
-													Version attribute uniquely identify the actual Library
-													Instance linked in this module. </xs:documentation>
-											</xs:annotation>
-											<xs:complexType>
-												<xs:simpleContent>
-													<xs:extension base="RegistryFormatGuid">
-														<xs:attribute name="Version" type="xs:decimal"
-															use="required">
-															<xs:annotation>
-																<xs:documentation xml:lang="en-us"> This value,
-																	along with the GUID, is used to uniquely
-																	identify this object. </xs:documentation>
-															</xs:annotation>
-														</xs:attribute>
-													</xs:extension>
-												</xs:simpleContent>
-											</xs:complexType>
-										</xs:element>
-									</xs:all>
-									<xs:attribute name="LibraryClass" type="xs:NCName"
-										use="required"/>
-								</xs:complexType>
-							</xs:element>
-
-							<xs:element minOccurs="0" maxOccurs="unbounded" name="BuildFlags">
-								<xs:complexType>
-									<xs:simpleContent>
-										<xs:extension base="xs:normalizedString">
-											<xs:attribute name="Comment" type="xs:normalizedString"
-												use="optional"/>
-											<xs:attribute name="Tool" type="xs:NCName" use="required"/>
-											<xs:attribute name="SupArchList" type="ArchListType"
-												use="required"/>
-										</xs:extension>
-									</xs:simpleContent>
-								</xs:complexType>
-							</xs:element>
-
-							<xs:element minOccurs="0" maxOccurs="unbounded"
-								name="UserExtenstions">
-								<xs:complexType mixed="true">
-									<xs:sequence>
-										<xs:any minOccurs="0" maxOccurs="unbounded"
-											processContents="lax"/>
-									</xs:sequence>
-									<xs:attribute name="UserId" type="xs:NCName" use="required">
-										<xs:annotation>
-											<xs:documentation xml:lang="en-us"> This is a single word
-												identifier for grouping similar content. For example,
-												ReferenceBuild might be used to identify non-PI
-												compliant build steps, with two different UserExtensions
-												sections, one with an Identifier of Prebuild, and
-												another of PostBuild. Both UserExtensions sections would
-												use the same UserId. </xs:documentation>
-										</xs:annotation>
-									</xs:attribute>
-									<xs:attribute name="Identifier" type="xs:normalizedString"
-										use="required"/>
-								</xs:complexType>
-							</xs:element>
-						</xs:sequence>
-						<xs:attribute name="Id" type="xs:string" use="optional">
-							<xs:annotation>
-								<xs:documentation xml:lang="en-us"> This attribute can be used
-									if different versions of a binary module are provided (say an
-									IPF and an X64 version) that may have used different flags,
-									Pcd Settings, library instances, etc. </xs:documentation>
-							</xs:annotation>
-						</xs:attribute>
-					</xs:complexType>
-				</xs:element>
-				<!-- End of AsBuilt Section -->
 
 				<xs:element minOccurs="0" maxOccurs="1" name="Misc">
 					<xs:annotation>
@@ -2074,6 +1946,10 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 							<xs:element minOccurs="0" maxOccurs="unbounded" name="Description"
 								type="xs:string"/>
 							<xs:element minOccurs="0" maxOccurs="unbounded" name="Filename">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> This is the path and
+										filename location within the ZIP file. </xs:documentation>
+								</xs:annotation>
 								<xs:complexType>
 									<xs:simpleContent>
 										<xs:extension base="xs:anyURI">
@@ -2098,6 +1974,9 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 				<xs:element minOccurs="0" maxOccurs="unbounded" name="UserExtensions">
 					<xs:annotation>
+						<xs:documentation xml:lang="en-us"> This section is used for any
+							processing instructions that may be custom to the content provided
+							by the distribution that are common to module. </xs:documentation>
 						<xs:documentation xml:lang="en-us"> The content is vendor specific. </xs:documentation>
 						<xs:documentation xml:lang="en-us"> The content can be plain text as
 							well as any user-defined, properly formatted XML structure.
@@ -2105,7 +1984,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 					</xs:annotation>
 					<xs:complexType>
 						<xs:sequence>
-							<xs:element minOccurs="0" maxOccurs="1" ref="HelpText"/>
+							<xs:element minOccurs="0" maxOccurs="unbounded" ref="HelpText"/>
 							<xs:element minOccurs="1" maxOccurs="unbounded" name="Extension">
 								<xs:complexType mixed="true">
 									<xs:sequence>
@@ -2130,7 +2009,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 										</xs:annotation>
 									</xs:attribute>
 									<xs:attribute name="Identifier" type="xs:normalizedString"
-										use="required">
+										use="optional">
 										<xs:annotation>
 											<xs:documentation xml:lang="en-us"> This can be any string
 												used to differentiate or identify this section from
@@ -2139,6 +2018,24 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 									</xs:attribute>
 								</xs:complexType>
 							</xs:element>
+							<xs:element minOccurs="0" maxOccurs="unbounded"
+								name="ModuleBuildOptions">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element minOccurs="1" maxOccurs="unbounded"
+											name="Option">
+											<xs:complexType mixed="true">
+												<xs:simpleContent>
+													<xs:extension base="xs:normalizedString">
+														<xs:anyAttribute processContents="lax"/>
+													</xs:extension>
+												</xs:simpleContent>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+
 						</xs:sequence>
 					</xs:complexType>
 				</xs:element>
@@ -2168,77 +2065,29 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 				<xs:element minOccurs="1" maxOccurs="1" name="Header">
 					<xs:complexType>
 						<xs:sequence>
-							<xs:element minOccurs="1" maxOccurs="1" name="Name">
+							<xs:element minOccurs="1" maxOccurs="1" name="Name"
+								type="xs:normalizedString">
 								<xs:annotation>
 									<xs:documentation xml:lang="en-us">This is the User Interface
-										Name for this Distribution Archive</xs:documentation>
+										Name for this Tools Distribution.</xs:documentation>
 								</xs:annotation>
-								<xs:complexType>
-									<xs:simpleContent>
-										<xs:extension base="xs:normalizedString">
-											<xs:attribute name="BaseName" type="xs:NCName"
-												use="optional">
-												<xs:annotation>
-													<xs:documentation xml:lang="en-us"> This is a single
-														word BaseName that can be used to create a directory
-														name. </xs:documentation>
-												</xs:annotation>
-											</xs:attribute>
-										</xs:extension>
-									</xs:simpleContent>
-								</xs:complexType>
-							</xs:element>
-							<xs:element minOccurs="1" maxOccurs="1" name="GUID">
-								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> This GUID and the Version
-										attribute uniquely identify a given tool set.
-									</xs:documentation>
-								</xs:annotation>
-								<xs:complexType>
-									<xs:simpleContent>
-										<xs:extension base="RegistryFormatGuid">
-											<xs:attribute name="Version" type="xs:decimal"
-												use="required">
-												<xs:annotation>
-													<xs:documentation xml:lang="en-us"> This value, along
-														with the GUID, is used to uniquely identify this
-														object. </xs:documentation>
-													<xs:documentation xml:lang="en-us"> Backward
-														compatible changes must make sure this number is
-														incremented from the most recent version.
-														Non-backward compatible changes require a new GUID,
-														and the version can be reset. </xs:documentation>
-												</xs:annotation>
-											</xs:attribute>
-										</xs:extension>
-									</xs:simpleContent>
-								</xs:complexType>
 							</xs:element>
 							<xs:element minOccurs="0" maxOccurs="1" name="Copyright"
 								type="xs:string"/>
 							<xs:element minOccurs="0" maxOccurs="1" name="License"
 								type="xs:string"/>
-							<xs:element minOccurs="1" maxOccurs="1" name="Abstract"
+							<xs:element minOccurs="0" maxOccurs="1" name="Abstract"
 								type="xs:normalizedString"/>
 							<xs:element minOccurs="0" maxOccurs="1" name="Description"
 								type="xs:string"/>
 						</xs:sequence>
 					</xs:complexType>
 				</xs:element>
-				<xs:element minOccurs="0" maxOccurs="1" name="ToolProperties">
-					<xs:complexType>
-						<xs:sequence>
-							<xs:element minOccurs="0" maxOccurs="1"
-								name="ValidOperatingSystems" type="ValidOses">
-								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> This is the list of valid
-										supported operating systems. </xs:documentation>
-								</xs:annotation>
-							</xs:element>
-						</xs:sequence>
-					</xs:complexType>
-				</xs:element>
 				<xs:element minOccurs="0" maxOccurs="unbounded" name="Filename">
+					<xs:annotation>
+						<xs:documentation xml:lang="en-us"> This is the path and filename
+							location within the ZIP file. </xs:documentation>
+					</xs:annotation>
 					<xs:complexType>
 						<xs:simpleContent>
 							<xs:extension base="xs:anyURI">
@@ -2258,7 +2107,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 										</xs:documentation>
 									</xs:annotation>
 								</xs:attribute>
-								<xs:attribute name="Comment" type="xs:string" use="optional"/>
+								<!-- How do we handle a required config file(s)? -->
 							</xs:extension>
 						</xs:simpleContent>
 					</xs:complexType>
@@ -2269,57 +2118,22 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 	<!-- End of the Tools element. -->
 
 	<xs:element name="Misc">
+		<xs:annotation>
+			<xs:documentation xml:lang="en-us"> This section contains files that are
+				not part of the code distributed with modules, packages or tools.
+			</xs:documentation>
+		</xs:annotation>
 		<xs:complexType>
 			<xs:sequence>
 				<xs:element minOccurs="1" maxOccurs="1" name="Header">
 					<xs:complexType>
 						<xs:sequence>
-							<xs:element minOccurs="0" maxOccurs="1" name="Name">
+							<xs:element minOccurs="0" maxOccurs="1" name="Name"
+								type="xs:normalizedString">
 								<xs:annotation>
 									<xs:documentation xml:lang="en-us"> The User interface name
 										for this content. </xs:documentation>
 								</xs:annotation>
-								<xs:complexType>
-									<xs:simpleContent>
-										<xs:extension base="xs:normalizedString">
-											<xs:attribute name="BaseName" type="xs:NCName"
-												use="optional">
-												<xs:annotation>
-													<xs:documentation xml:lang="en-us"> This is a single
-														word BaseName that can be used to create a directory
-														or file name. </xs:documentation>
-												</xs:annotation>
-											</xs:attribute>
-										</xs:extension>
-									</xs:simpleContent>
-								</xs:complexType>
-							</xs:element>
-							<xs:element minOccurs="1" maxOccurs="1" name="GUID">
-								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> This GUID and the Version
-										attribute uniquely identify this Misc Section.
-									</xs:documentation>
-								</xs:annotation>
-								<xs:complexType>
-									<xs:simpleContent>
-										<xs:extension base="RegistryFormatGuid">
-											<xs:attribute name="Version" type="xs:decimal"
-												use="required">
-												<xs:annotation>
-													<xs:documentation xml:lang="en-us"> This value, along
-														with the GUID, is used to uniquely identify this
-														object. </xs:documentation>
-													<xs:documentation xml:lang="en-us"> Backward
-														compatible releases of a distribution package need
-														only change the version number, while non-backward
-														compatible changes require the GUID to change
-														(resetting the version number to 1.0 is optional.)
-													</xs:documentation>
-												</xs:annotation>
-											</xs:attribute>
-										</xs:extension>
-									</xs:simpleContent>
-								</xs:complexType>
 							</xs:element>
 							<xs:element minOccurs="0" maxOccurs="1" name="Copyright"
 								type="xs:string"/>
@@ -2333,6 +2147,10 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 					</xs:complexType>
 				</xs:element>
 				<xs:element minOccurs="0" maxOccurs="unbounded" name="Filename">
+					<xs:annotation>
+						<xs:documentation xml:lang="en-us"> This is the path and filename
+							within the ZIP file. </xs:documentation>
+					</xs:annotation>
 					<xs:complexType>
 						<xs:simpleContent>
 							<xs:extension base="xs:anyURI">
@@ -2349,16 +2167,15 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 						</xs:simpleContent>
 					</xs:complexType>
 				</xs:element>
-				<xs:element minOccurs="0" maxOccurs="unbounded" name="UserExtenstions">
-					<xs:complexType mixed="true">
-						<xs:sequence>
-							<xs:any minOccurs="0" maxOccurs="unbounded" processContents="lax"
-							/>
-						</xs:sequence>
-						<xs:attribute name="Id" type="xs:nonNegativeInteger" use="optional"
-						/>
-					</xs:complexType>
-				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<!-- End of the Misc element. -->
+
+	<xs:element name="UserExtensions">
+		<xs:complexType mixed="true">
+			<xs:sequence>
+				<xs:any minOccurs="0" maxOccurs="unbounded" processContents="lax"/>
 			</xs:sequence>
 			<xs:attribute name="UserId" type="xs:NCName" use="required">
 				<xs:annotation>
@@ -2370,11 +2187,10 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 						same UserId. </xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="Identifier" type="xs:string" use="required"/>
+			<xs:attribute name="Identifier" type="xs:normalizedString" use="optional"
+			/>
 		</xs:complexType>
 	</xs:element>
-	<!-- End of the Misc element. -->
-
 	<!-- The following elsements are common definitions used with the ref attribute for elements. -->
 
 	<xs:element name="HelpText">
@@ -2394,16 +2210,16 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 	<xs:attributeGroup name="SupportedArchMod">
 		<xs:attribute name="SupArchList" type="ArchListType" use="optional"/>
-		<xs:attribute name="SupModList" type="ModListType" use="optional"/>
+		<xs:attribute name="SupModList" type="ModuleListType" use="optional"/>
 	</xs:attributeGroup>
 
 	<!-- The following data types are used to restrict content. -->
 
 	<xs:simpleType name="ArchListType">
-		<xs:list itemType="Archs"/>
+		<xs:list itemType="ArchTypes"/>
 	</xs:simpleType>
 
-	<xs:simpleType name="Archs">
+	<xs:simpleType name="ArchTypes">
 		<xs:restriction base="xs:NCName">
 			<xs:enumeration value="IA32"/>
 			<xs:enumeration value="X64"/>
@@ -2419,72 +2235,11 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 		</xs:restriction>
 	</xs:simpleType>
 
-	<xs:simpleType name="BinFileType">
-		<xs:restriction base="xs:NCName">
-			<xs:annotation>
-				<xs:documentation xml:lang="en-us"> Not all of the types listed below
-					should be distributed, such as a firmware volume (FV) file.
-				</xs:documentation>
-			</xs:annotation>
-			<xs:enumeration value="FW"/>
-			<xs:enumeration value="GUID"/>
-			<xs:enumeration value="FREEFORM"/>
-			<xs:enumeration value="UEFI_APP"/>
-			<xs:enumeration value="PE32"/>
-			<xs:enumeration value="PIC"/>
-			<xs:enumeration value="PEI_DEPEX"/>
-			<xs:enumeration value="DXE_DEPEX"/>
-			<xs:enumeration value="TE"/>
-			<xs:enumeration value="VER"/>
-			<xs:enumeration value="UI"/>
-			<xs:enumeration value="BIN"/>
-			<xs:enumeration value="FV"/>
-		</xs:restriction>
-	</xs:simpleType>
 
-	<xs:simpleType name="BootModeList">
-		<xs:list itemType="BootModes"/>
-	</xs:simpleType>
-
-	<xs:simpleType name="BootModes">
-		<xs:restriction base="xs:NCName">
-			<xs:enumeration value="FULL"/>
-			<xs:enumeration value="MINIMAL"/>
-			<xs:enumeration value="NO_CHANGE"/>
-			<xs:enumeration value="DIAGNOSTICS"/>
-			<xs:enumeration value="DEFAULT"/>
-			<xs:enumeration value="S2_RESUME"/>
-			<xs:enumeration value="S3_RESUME"/>
-			<xs:enumeration value="S4_RESUME"/>
-			<xs:enumeration value="S5_RESUME"/>
-			<xs:enumeration value="FLASH_UPDATE"/>
-			<xs:enumeration value="RECOVERY_FULL"/>
-			<xs:enumeration value="RECOVERY_MINIMAL"/>
-			<xs:enumeration value="RECOVERY_NO_CHANGE"/>
-			<xs:enumeration value="RECOVERY_DIAGNOSTICS"/>
-			<xs:enumeration value="RECOVERY_DEFAULT"/>
-			<xs:enumeration value="RECOVERY_S2_RESUME"/>
-			<xs:enumeration value="RECOVERY_S3_RESUME"/>
-			<xs:enumeration value="RECOVERY_S4_RESUME"/>
-			<xs:enumeration value="RECOVERY_S5_RESUME"/>
-			<xs:enumeration value="RECOVERY_FLASH_UPDATE"/>
-		</xs:restriction>
-	</xs:simpleType>
-
-	<xs:simpleType name="EventType">
-		<xs:restriction base="xs:NCName">
-			<xs:enumeration value="EVENT_GROUP_GUID"/>
-			<xs:enumeration value="EVENT_TYPE_PERIODIC_TIMER"/>
-			<xs:enumeration value="EVENT_TYPE_RELATIVE_TIMER"/>
-		</xs:restriction>
-	</xs:simpleType>
-
-	<xs:simpleType name="FamilyType">
+	<xs:simpleType name="FamilyTypes">
 		<xs:restriction base="xs:NCName">
 			<xs:enumeration value="MSFT"/>
 			<xs:enumeration value="GCC"/>
-			<xs:enumeration value="INTEL"/>
-			<xs:enumeration value="MAC"/>
 			<xs:pattern value="[A-Z][a-zA-Z0-9]*">
 				<xs:annotation>
 					<xs:documentation xml:lang="en-us"> Any other family of build
@@ -2494,30 +2249,22 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 		</xs:restriction>
 	</xs:simpleType>
 
-	<xs:simpleType name="FamilyList">
-		<xs:list itemType="FamilyType"/>
+	<xs:simpleType name="GuidListType">
+		<xs:list itemType="GuidTypes"/>
 	</xs:simpleType>
 
-	<xs:simpleType name="GuidCstruct">
-		<xs:restriction base="xs:normalizedString">
-			<xs:pattern
-				value="\s*0x[a-fA-F0-9]{1,8},( )*0x[a-fA-F0-9]{1,4},( )*0x[a-fA-F0-9]{1,4}(,( )*\{)?(,?( )*0x[a-fA-F0-9]{1,2}){8}( )*(\})?\s*"
-			/>
-		</xs:restriction>
-	</xs:simpleType>
-
-	<xs:simpleType name="ModGuidListType">
-		<xs:list itemType="ModGuidTypes"/>
-	</xs:simpleType>
-
-	<xs:simpleType name="ModGuidTypes">
+	<xs:simpleType name="GuidTypes">
 		<xs:restriction base="xs:NCName">
+			<xs:enumeration value="DataHub"/>
+			<xs:enumeration value="Event"/>
 			<xs:enumeration value="File"/>
 			<xs:enumeration value="FV"/>
 			<xs:enumeration value="GUID"/>
 			<xs:enumeration value="Hii"/>
+			<xs:enumeration value="HOB"/>
 			<xs:enumeration value="SystemTable"/>
 			<xs:enumeration value="TokenSpaceGuid"/>
+			<xs:enumeration value="Variable"/>
 		</xs:restriction>
 	</xs:simpleType>
 
@@ -2527,53 +2274,17 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 		</xs:restriction>
 	</xs:simpleType>
 
-	<xs:simpleType name="HexArray">
-		<xs:restriction base=" xs:normalizedString ">
-			<xs:minLength value="6"/>
-			<xs:pattern value="((\s)*0x([a-fA-F0-9]){4}(,)?(\s)*)+"/>
-		</xs:restriction>
-	</xs:simpleType>
-
-	<xs:simpleType name="HobTypes">
-		<xs:restriction base="xs:NCName">
-			<xs:enumeration value="PHIT"/>
-			<xs:enumeration value="MEMORY_ALLOCATION"/>
-			<xs:enumeration value="RESOURCE_DESCRIPTOR"/>
-			<xs:enumeration value="GUID_EXTENSION"/>
-			<xs:enumeration value="FIRMWARE_VOLUME"/>
-			<xs:enumeration value="CPU"/>
-			<xs:enumeration value="POOL"/>
-			<xs:enumeration value="CAPSULE_VOLUME"/>
-		</xs:restriction>
-	</xs:simpleType>
-
-	<xs:simpleType name="LibUsageType">
-		<xs:annotation>
-			<xs:documentation xml:lang="en-us"> Library instances can provide code for
-				a library class, or may require other library instances themselves.
-				Since different execution paths in a library (or module) may need
-				different library classes based on some setting, library classes may not
-				alway be required. </xs:documentation>
-		</xs:annotation>
-		<xs:restriction base="xs:NCName">
-			<xs:enumeration value="PRODUCES"/>
-			<xs:enumeration value="CONSUMES"/>
-			<xs:enumeration value="SOMETIMES_CONSUMES"/>
-			<xs:enumeration value="PRIVATE"/>
-		</xs:restriction>
-	</xs:simpleType>
-
 	<xs:simpleType name="Md5Sum">
 		<xs:restriction base="xs:normalizedString">
 			<xs:pattern value="[a-zA-Z0-9]{32}"/>
 		</xs:restriction>
 	</xs:simpleType>
 
-	<xs:simpleType name="ModListType">
-		<xs:list itemType="ModuleType"/>
+	<xs:simpleType name="ModuleListType">
+		<xs:list itemType="ModuleTypes"/>
 	</xs:simpleType>
 
-	<xs:simpleType name="ModuleType">
+	<xs:simpleType name="ModuleTypes">
 		<xs:annotation>
 			<xs:documentation xml:lang="en-us"> The following module types are defined
 				by specifications. </xs:documentation>
@@ -2661,7 +2372,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 			memberTypes=" xs:decimal xs:nonNegativeInteger xs:hexBinary HexNumber"/>
 	</xs:simpleType>
 
-	<xs:simpleType name="PcdDatumType">
+	<xs:simpleType name="PcdDatumTypes">
 		<xs:annotation>
 			<xs:documentation xml:lang="en-us"> The following data types are defined
 				by the PCD specification (or PCD section of the UEFI/PI specifications.)
@@ -2677,11 +2388,11 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 		</xs:restriction>
 	</xs:simpleType>
 
-	<xs:simpleType name="PcdTypeList">
-		<xs:list itemType="PcdTypes"/>
+	<xs:simpleType name="PcdItemListType">
+		<xs:list itemType="PcdItemTypes"/>
 	</xs:simpleType>
 
-	<xs:simpleType name="PcdTypes">
+	<xs:simpleType name="PcdItemTypes">
 		<xs:restriction base="xs:NCName">
 			<xs:enumeration value="FeaturePcd">
 				<xs:annotation>
@@ -2730,34 +2441,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 		</xs:restriction>
 	</xs:simpleType>
 
-	<xs:simpleType name="PkgGuidListType">
-		<xs:list itemType="PkgGuidTypes"/>
-	</xs:simpleType>
 
-	<xs:simpleType name="PkgGuidTypes">
-		<xs:restriction base="xs:NCName">
-			<xs:enumeration value="Event"/>
-			<xs:enumeration value="File"/>
-			<xs:enumeration value="FV"/>
-			<xs:enumeration value="GUID"/>
-			<xs:enumeration value="Hii"/>
-			<xs:enumeration value="HOB"/>
-			<xs:enumeration value="SystemTable"/>
-			<xs:enumeration value="TokenSpaceGuid"/>
-			<xs:enumeration value="Variable"/>
-		</xs:restriction>
-	</xs:simpleType>
-
-	<xs:simpleType name="ProtocolUsageType">
-		<xs:restriction base="xs:NCName">
-			<xs:enumeration value="PRODUCES"/>
-			<xs:enumeration value="SOMETIMES_PRODUCES"/>
-			<xs:enumeration value="CONSUMES"/>
-			<xs:enumeration value="SOMETIMES_CONSUMES"/>
-			<xs:enumeration value="TO_START"/>
-			<xs:enumeration value="BY_START"/>
-		</xs:restriction>
-	</xs:simpleType>
 
 	<xs:simpleType name="RegistryFormatGuid">
 		<xs:annotation>
@@ -2816,35 +2500,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 						valid for any Linux and Mac OS/X. </xs:documentation>
 				</xs:annotation>
 			</xs:enumeration>
-			<xs:enumeration value="Java">
-				<xs:annotation>
-					<xs:documentation xml:lang="en-us"> A Java script may be executed on
-						any operating system provided that a Java run time (JRE) environment
-						has been installed. </xs:documentation>
-				</xs:annotation>
-			</xs:enumeration>
-			<xs:enumeration value="Python">
-				<xs:annotation>
-					<xs:documentation xml:lang="en-us"> A python script may be executed on
-						any operating system provided that python interpreter has been
-						installed. </xs:documentation>
-				</xs:annotation>
-			</xs:enumeration>
 			<xs:pattern value="[a-zA-Z]([a-zA-Z0-9])*"/>
 		</xs:restriction>
-	</xs:simpleType>
-
-	<xs:simpleType name="UsageType">
-		<xs:restriction base="xs:NCName">
-			<xs:enumeration value="PRODUCES"/>
-			<xs:enumeration value="SOMETIMES_PRODUCES"/>
-			<xs:enumeration value="CONSUMES"/>
-			<xs:enumeration value="SOMETIMES_CONSUMES"/>
-		</xs:restriction>
-	</xs:simpleType>
-
-	<xs:simpleType name="ValidOses">
-		<xs:list itemType="SupportedOs"/>
 	</xs:simpleType>
 
 </xs:schema>
