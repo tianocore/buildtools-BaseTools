@@ -37,14 +37,14 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 		</xs:annotation>
 		<xs:complexType>
 			<xs:sequence>
-				<xs:element minOccurs="1" maxOccurs="1" ref="DistributionHeader">
+				<xs:element ref="DistributionHeader" minOccurs="1" maxOccurs="1">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> This header contains (legal)
 							information usually required for distributing both binary and/or
 							source code. </xs:documentation>
 					</xs:annotation>
 				</xs:element>
-				<xs:element minOccurs="0" maxOccurs="unbounded" ref="PackageSurfaceArea">
+				<xs:element ref="PackageSurfaceArea" minOccurs="0" maxOccurs="unbounded">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> The list of Package packages in
 							this distribution. </xs:documentation>
@@ -66,7 +66,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 							distribution package. </xs:documentation>
 					</xs:annotation>
 				</xs:element>
-				<xs:element minOccurs="0" maxOccurs="unbounded" ref="ModuleSurfaceArea">
+				<xs:element ref="ModuleSurfaceArea" minOccurs="0" maxOccurs="unbounded">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> The listing of UEFI/PI compliant
 							modules in this distribution that are NOT part of a Package. Every
@@ -85,7 +85,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 							additional files are provided. </xs:documentation>
 					</xs:annotation>
 				</xs:element>
-				<xs:element minOccurs="0" maxOccurs="unbounded" ref="Tools">
+				<xs:element ref="Tools" minOccurs="0" maxOccurs="unbounded">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> This section is for distributing
 							vendor specific tools for manipulating code and/or binaries. </xs:documentation>
@@ -106,7 +106,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 							create/install/remove tools. </xs:documentation>
 					</xs:annotation>
 				</xs:element>
-				<xs:element minOccurs="0" maxOccurs="unbounded" ref="Misc">
+				<xs:element ref="MiscellaneousFiles" minOccurs="0" maxOccurs="unbounded">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> The list of miscellaneous files
 							in this distribution. Any files that are not listed in either the
@@ -116,7 +116,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 							specification for a chipset or a video device. </xs:documentation>
 					</xs:annotation>
 				</xs:element>
-				<xs:element minOccurs="0" maxOccurs="unbounded" ref="UserExtensions">
+				<xs:element ref="UserExtensions" minOccurs="0" maxOccurs="unbounded">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> This section is used for any
 							processing instructions that may be custom to the content provided
@@ -264,7 +264,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 									<xs:simpleContent>
 										<xs:extension base="xs:normalizedString">
 											<xs:attribute name="BaseName" type="xs:NCName"
-												use="optional">
+												use="required">
 												<xs:annotation>
 													<xs:documentation xml:lang="en-us"> This is a single
 														word BaseName that can be used to create a package
@@ -432,7 +432,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 															<xs:simpleContent>
 																<xs:extension base="RegistryFormatGuid">
 																	<xs:attribute name="Version" type="xs:decimal"
-																		use="required">
+																		use="optional">
 																		<xs:annotation>
 																			<xs:documentation xml:lang="en-us"> This
 																				value, along with the GUID, is used to
@@ -447,8 +447,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 												</xs:sequence>
 											</xs:complexType>
 										</xs:element>
-										<xs:element minOccurs="0" maxOccurs="unbounded"
-											ref="HelpText"/>
+										<xs:element ref="HelpText" minOccurs="0"
+											maxOccurs="unbounded"/>
 									</xs:sequence>
 									<xs:attribute name="Keyword" type="xs:NCName" use="required">
 										<xs:annotation>
@@ -480,8 +480,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 									<xs:sequence>
 										<xs:element minOccurs="1" maxOccurs="1" name="HeaderFile"
 											type="xs:anyURI"/>
-										<xs:element minOccurs="0" maxOccurs="unbounded"
-											ref="HelpText"/>
+										<xs:element ref="HelpText" minOccurs="0"
+											maxOccurs="unbounded"/>
 									</xs:sequence>
 								</xs:complexType>
 							</xs:element>
@@ -507,8 +507,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 								name="PackageHeader">
 								<xs:complexType>
 									<xs:sequence>
-										<xs:element minOccurs="1" maxOccurs="unbounded"
-											name="HeaderFile">
+										<xs:element minOccurs="1" maxOccurs="1" name="HeaderFile">
 											<xs:annotation>
 												<xs:documentation xml:lang="en-us"> This is the path and
 													filename location within the ZIP file.
@@ -522,8 +521,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 												</xs:simpleContent>
 											</xs:complexType>
 										</xs:element>
-										<xs:element minOccurs="0" maxOccurs="unbounded"
-											ref="HelpText"/>
+										<xs:element ref="HelpText" minOccurs="0"
+											maxOccurs="unbounded"/>
 									</xs:sequence>
 								</xs:complexType>
 							</xs:element>
@@ -535,8 +534,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 				<xs:element minOccurs="0" maxOccurs="1" name="Modules">
 					<xs:complexType>
 						<xs:sequence>
-							<xs:element minOccurs="1" maxOccurs="unbounded"
-								ref="ModuleSurfaceArea">
+							<xs:element ref="ModuleSurfaceArea" minOccurs="1"
+								maxOccurs="unbounded">
 								<xs:annotation>
 									<xs:documentation xml:lang="en-us"> This section lists the
 										Module Surface Aarea for all modules provided with this
@@ -557,15 +556,15 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 					</xs:annotation>
 					<xs:complexType>
 						<xs:sequence>
-							<xs:element minOccurs="0" maxOccurs="unbounded" name="Entry">
+							<xs:element minOccurs="1" maxOccurs="unbounded" name="Entry">
 								<xs:complexType>
 									<xs:sequence>
-										<xs:element minOccurs="1" maxOccurs="1" name="C_Name"
+										<xs:element minOccurs="1" maxOccurs="1" name="CName"
 											type="xs:NCName"/>
 										<xs:element minOccurs="1" maxOccurs="1" name="GuidValue"
 											type="RegistryFormatGuid"/>
-										<xs:element minOccurs="0" maxOccurs="unbounded"
-											ref="HelpText"/>
+										<xs:element ref="HelpText" minOccurs="0"
+											maxOccurs="unbounded"/>
 									</xs:sequence>
 									<xs:attribute name="UiName" type="xs:NCName" use="optional"/>
 									<xs:attribute name="GuidTypes" type="GuidListType"
@@ -594,12 +593,12 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 								</xs:annotation>
 								<xs:complexType>
 									<xs:sequence>
-										<xs:element minOccurs="1" maxOccurs="1" name="C_Name"
+										<xs:element minOccurs="1" maxOccurs="1" name="CName"
 											type="xs:NCName"/>
 										<xs:element minOccurs="1" maxOccurs="1" name="GuidValue"
 											type="RegistryFormatGuid"/>
-										<xs:element minOccurs="0" maxOccurs="unbounded"
-											ref="HelpText"/>
+										<xs:element ref="HelpText" minOccurs="0"
+											maxOccurs="unbounded"/>
 									</xs:sequence>
 									<xs:attribute name="UiName" type="xs:NCName" use="optional"/>
 									<xs:attributeGroup ref="SupportedArchMod"/>
@@ -626,13 +625,14 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 								</xs:annotation>
 								<xs:complexType>
 									<xs:sequence>
-										<xs:element minOccurs="1" maxOccurs="1" name="C_Name"
+										<xs:element minOccurs="1" maxOccurs="1" name="CName"
 											type="xs:NCName"/>
 										<xs:element minOccurs="1" maxOccurs="1" name="GuidValue"
 											type="RegistryFormatGuid"/>
-										<xs:element minOccurs="0" maxOccurs="unbounded"
-											ref="HelpText"/>
+										<xs:element ref="HelpText" minOccurs="0"
+											maxOccurs="unbounded"/>
 									</xs:sequence>
+									<xs:attribute name="UiName" type="xs:NCName" use="optional"/>
 									<xs:attributeGroup ref="SupportedArchMod"/>
 								</xs:complexType>
 							</xs:element>
@@ -658,7 +658,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 											name="TokenSpaceGuidCname" type="xs:NCName"/>
 										<xs:element minOccurs="1" maxOccurs="1" name="Token"
 											type="HexNumber"/>
-										<xs:element minOccurs="1" maxOccurs="1" name="C_Name"
+										<xs:element minOccurs="1" maxOccurs="1" name="CName"
 											type="xs:NCName"/>
 										<xs:element minOccurs="1" maxOccurs="1" name="DatumType"
 											type="PcdDatumTypes"/>
@@ -676,8 +676,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 													types. </xs:documentation>
 											</xs:annotation>
 										</xs:element>
-										<xs:element minOccurs="0" maxOccurs="unbounded"
-											ref="HelpText"/>
+										<xs:element ref="HelpText" minOccurs="0"
+											maxOccurs="unbounded"/>
 
 										<xs:element minOccurs="0" maxOccurs="unbounded"
 											name="PcdError">
@@ -688,7 +688,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 											</xs:annotation>
 											<xs:complexType>
 												<xs:sequence>
-													<xs:choice>
+													<xs:choice minOccurs="1" maxOccurs="1">
 														<xs:annotation>
 															<xs:documentation xml:lang="en-us"> One of the
 																following types of comparisons, which must be
@@ -696,15 +696,12 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 															</xs:documentation>
 														</xs:annotation>
 														<xs:element minOccurs="0" maxOccurs="1"
-															name="ValidValueList">
+															name="ValidValueList" type="xs:normalizedString">
 															<xs:annotation>
 																<xs:documentation xml:lang="en-us"> The PCD
 																	Value must be one of the values listed.
 																</xs:documentation>
 															</xs:annotation>
-															<xs:simpleType>
-																<xs:list itemType="xs:NCName"/>
-															</xs:simpleType>
 														</xs:element>
 														<xs:element minOccurs="0" maxOccurs="1"
 															name="ValidValueRange" type="xs:normalizedString">
@@ -726,9 +723,9 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 															</xs:annotation>
 														</xs:element>
 													</xs:choice>
-													<xs:element minOccurs="0" maxOccurs="1"
+													<xs:element minOccurs="1" maxOccurs="1"
 														name="ErrorNumber" type="HexNumber"/>
-													<xs:element minOccurs="0" maxOccurs="unbounded"
+													<xs:element minOccurs="1" maxOccurs="unbounded"
 														name="ErrorMessage">
 														<xs:annotation>
 															<xs:documentation xml:lang="en-us"> This string
@@ -759,7 +756,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 				</xs:element>
 				<!-- End of PackageSurfaceArea PcdDeclarations element.  -->
 
-				<xs:element name="Misc">
+				<xs:element minOccurs="0" maxOccurs="unbounded"
+					name="MiscellaneousFiles">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> This section contains files that
 							are not part of the code distributed with this package.
@@ -775,7 +773,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 								type="xs:string"/>
 							<xs:element minOccurs="0" maxOccurs="unbounded" name="Description"
 								type="xs:string"/>
-							<xs:element minOccurs="0" maxOccurs="unbounded" name="Filename">
+							<xs:element minOccurs="1" maxOccurs="unbounded" name="Filename">
 								<xs:annotation>
 									<xs:documentation xml:lang="en-us"> This is the path and
 										filename location within the ZIP file. </xs:documentation>
@@ -811,7 +809,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 					</xs:annotation>
 					<xs:complexType mixed="true">
 						<xs:sequence>
-							<xs:any minOccurs="0" maxOccurs="1" processContents="lax"/>
+							<xs:any processContents="lax" minOccurs="0" maxOccurs="1"/>
 						</xs:sequence>
 						<xs:attribute name="UserId" type="xs:NCName" use="required">
 							<xs:annotation>
@@ -828,6 +826,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 								</xs:documentation>
 							</xs:annotation>
 						</xs:attribute>
+						<xs:anyAttribute processContents="lax"/>
 					</xs:complexType>
 				</xs:element>
 				<!-- End of PackageSurfaceArea UserExtensions element. -->
@@ -860,7 +859,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 									<xs:simpleContent>
 										<xs:extension base="xs:normalizedString">
 											<xs:attribute name="BaseName" type="xs:NCName"
-												use="optional">
+												use="required">
 												<xs:annotation>
 													<xs:documentation xml:lang="en-us"> This is a single
 														word BaseName that will be used to create a module
@@ -1019,8 +1018,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 											</xs:simpleType>
 										</xs:element>
 
-										<xs:element minOccurs="0" maxOccurs="unbounded"
-											ref="HelpText"/>
+										<xs:element ref="HelpText" minOccurs="0"
+											maxOccurs="unbounded"/>
 									</xs:sequence>
 									<xs:attribute name="Usage" use="required">
 										<xs:simpleType>
@@ -1062,7 +1061,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 								</xs:complexType>
 							</xs:element>
 
-							<xs:element minOccurs="0" maxOccurs="unbounded" name="Event">
+							<xs:element minOccurs="0" maxOccurs="unbounded" name="Event"
+								nillable="true">
 								<xs:annotation>
 									<xs:documentation xml:lang="en-us"> The functions that make up
 										the Event, Timer, and Task Priority Services are used during
@@ -1072,8 +1072,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 								</xs:annotation>
 								<xs:complexType>
 									<xs:sequence>
-										<xs:element minOccurs="0" maxOccurs="unbounded"
-											ref="HelpText"/>
+										<xs:element ref="HelpText" minOccurs="0"
+											maxOccurs="unbounded"/>
 									</xs:sequence>
 									<xs:attribute name="Usage" use="required">
 										<xs:simpleType>
@@ -1127,11 +1127,12 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 								</xs:complexType>
 							</xs:element>
 
-							<xs:element minOccurs="0" maxOccurs="unbounded" name="HOB">
+							<xs:element minOccurs="0" maxOccurs="unbounded" name="HOB"
+								nillable="false">
 								<xs:complexType>
 									<xs:sequence>
-										<xs:element minOccurs="0" maxOccurs="unbounded"
-											ref="HelpText"/>
+										<xs:element ref="HelpText" minOccurs="0"
+											maxOccurs="unbounded"/>
 									</xs:sequence>
 									<xs:attribute name="HobType" use="required">
 										<xs:simpleType>
@@ -1248,7 +1249,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 															<xs:simpleContent>
 																<xs:extension base="RegistryFormatGuid">
 																	<xs:attribute name="Version" type="xs:decimal"
-																		use="required">
+																		use="optional">
 																		<xs:annotation>
 																			<xs:documentation xml:lang="en-us"> This
 																				value, along with the GUID, is used to
@@ -1263,8 +1264,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 												</xs:all>
 											</xs:complexType>
 										</xs:element>
-										<xs:element minOccurs="0" maxOccurs="unbounded"
-											ref="HelpText"/>
+										<xs:element ref="HelpText" minOccurs="0"
+											maxOccurs="unbounded"/>
 									</xs:sequence>
 									<xs:attribute name="Usage" use="required">
 										<xs:simpleType>
@@ -1413,7 +1414,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 														<xs:complexType>
 															<xs:sequence>
 																<xs:element minOccurs="1" maxOccurs="1"
-																	name="TokenSpaceGuidCname" type="xs:NCName"/>
+																	name="TokenSpaceGuidValue"
+																	type="RegistryFormatGuid"/>
 																<xs:element minOccurs="1" maxOccurs="1"
 																	name="PcdCName" type="xs:NCName"/>
 																<xs:element minOccurs="1" maxOccurs="1"
@@ -1432,7 +1434,49 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 																	name="Value" type="xs:normalizedString"/>
 																<xs:element minOccurs="1" maxOccurs="1"
 																	name="Offset" type="HexNumber"/>
-																<!-- PcdError Stuff Here! -->
+																<xs:element ref="HelpText" minOccurs="0"
+																	maxOccurs="unbounded"/>
+
+																<xs:element minOccurs="0" maxOccurs="unbounded"
+																	name="PcdError">
+																	<xs:annotation>
+																		<xs:documentation xml:lang="en-us"> Error
+																			information in this section can be
+																			superceded by Error information in
+																			Modules. </xs:documentation>
+																	</xs:annotation>
+																	<xs:complexType>
+																		<xs:sequence>
+																			<xs:element minOccurs="1" maxOccurs="1"
+																				name="ErrorNumber" type="HexNumber"/>
+																			<xs:element minOccurs="0"
+																				maxOccurs="unbounded"
+																				name="ErrorMessage">
+																				<xs:annotation>
+																				<xs:documentation xml:lang="en-us">
+																				This string should be defined by
+																				specifications. There are
+																				pre-defined error number ranges in
+																				the UEFI/PI specificaiton.
+																				</xs:documentation>
+																				</xs:annotation>
+																				<xs:complexType>
+																				<xs:simpleContent>
+																				<xs:extension
+																				base="xs:normalizedString">
+																				<xs:attribute name="UCS2"
+																				type="xs:boolean"
+																				default="false" use="optional"/>
+																				<xs:attribute name="Lang"
+																				type="xs:language"
+																				default="en-us" use="optional"/>
+																				</xs:extension>
+																				</xs:simpleContent>
+																				</xs:complexType>
+																			</xs:element>
+																		</xs:sequence>
+																	</xs:complexType>
+																</xs:element>
 															</xs:sequence>
 														</xs:complexType>
 													</xs:element>
@@ -1463,7 +1507,49 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 																</xs:element>
 																<xs:element minOccurs="1" maxOccurs="1"
 																	name="Value" type="xs:normalizedString"/>
-																<!-- Get Error Stuff & put here. -->
+																<xs:element ref="HelpText" minOccurs="0"
+																	maxOccurs="unbounded"/>
+
+																<xs:element minOccurs="0" maxOccurs="unbounded"
+																	name="PcdError">
+																	<xs:annotation>
+																		<xs:documentation xml:lang="en-us"> Error
+																			information in this section can be
+																			superceded by Error information in
+																			Modules. </xs:documentation>
+																	</xs:annotation>
+																	<xs:complexType>
+																		<xs:sequence>
+																			<xs:element minOccurs="1" maxOccurs="1"
+																				name="ErrorNumber" type="HexNumber"/>
+																			<xs:element minOccurs="0"
+																				maxOccurs="unbounded"
+																				name="ErrorMessage">
+																				<xs:annotation>
+																				<xs:documentation xml:lang="en-us">
+																				This string should be defined by
+																				specifications. There are
+																				pre-defined error number ranges in
+																				the UEFI/PI specificaiton.
+																				</xs:documentation>
+																				</xs:annotation>
+																				<xs:complexType>
+																				<xs:simpleContent>
+																				<xs:extension
+																				base="xs:normalizedString">
+																				<xs:attribute name="UCS2"
+																				type="xs:boolean"
+																				default="false" use="optional"/>
+																				<xs:attribute name="Lang"
+																				type="xs:language"
+																				default="en-us" use="optional"/>
+																				</xs:extension>
+																				</xs:simpleContent>
+																				</xs:complexType>
+																			</xs:element>
+																		</xs:sequence>
+																	</xs:complexType>
+																</xs:element>
 															</xs:sequence>
 														</xs:complexType>
 													</xs:element>
@@ -1526,8 +1612,6 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 										</xs:element>
 										<!-- End of AsBuilt -->
 									</xs:sequence>
-									<xs:attribute name="SupArchList" type="ArchListType"
-										use="required"/>
 								</xs:complexType>
 							</xs:element>
 
@@ -1542,7 +1626,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 							<xs:element minOccurs="1" maxOccurs="unbounded" name="Package">
 								<xs:complexType>
 									<xs:all>
-										<xs:element minOccurs="0" maxOccurs="0" name="Description"
+										<xs:element minOccurs="0" maxOccurs="1" name="Description"
 											type="xs:string"/>
 										<xs:element minOccurs="1" maxOccurs="1" name="GUID">
 											<xs:annotation>
@@ -1585,8 +1669,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 									<xs:sequence>
 										<xs:element minOccurs="1" maxOccurs="1" name="CName"
 											type="xs:NCName"/>
-										<xs:element minOccurs="0" maxOccurs="unbounded"
-											name="VariableName">
+										<xs:element minOccurs="0" maxOccurs="1" name="VariableName">
 											<xs:annotation>
 												<xs:documentation xml:lang="en-us"> Only valid for
 													Variable GUID types. </xs:documentation>
@@ -1611,8 +1694,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 												</xs:simpleContent>
 											</xs:complexType>
 										</xs:element>
-										<xs:element minOccurs="0" maxOccurs="unbounded"
-											ref="HelpText"/>
+										<xs:element ref="HelpText" minOccurs="0"
+											maxOccurs="unbounded"/>
 									</xs:sequence>
 									<xs:attribute name="Usage" use="required">
 										<xs:simpleType>
@@ -1669,8 +1752,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 									<xs:sequence>
 										<xs:element minOccurs="1" maxOccurs="1" name="CName"
 											type="xs:NCName"/>
-										<xs:element minOccurs="0" maxOccurs="unbounded"
-											ref="HelpText"/>
+										<xs:element ref="HelpText" minOccurs="0"
+											maxOccurs="unbounded"/>
 									</xs:sequence>
 									<xs:attribute name="Usage" use="required">
 										<xs:simpleType>
@@ -1705,8 +1788,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 									<xs:sequence>
 										<xs:element minOccurs="1" maxOccurs="1" name="CName"
 											type="xs:NCName"/>
-										<xs:element minOccurs="0" maxOccurs="unbounded"
-											ref="HelpText"/>
+										<xs:element ref="HelpText" minOccurs="0"
+											maxOccurs="unbounded"/>
 									</xs:sequence>
 									<xs:attribute name="Usage" use="required">
 										<xs:simpleType>
@@ -1736,7 +1819,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 							<xs:element minOccurs="1" maxOccurs="unbounded" name="Extern">
 								<xs:complexType>
 									<xs:sequence>
-										<xs:choice>
+										<xs:choice minOccurs="1">
 											<xs:sequence>
 												<xs:element minOccurs="0" maxOccurs="1"
 													name="EntryPoint" type="xs:NCName"/>
@@ -1750,7 +1833,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 													name="Destructor" type="xs:NCName"/>
 											</xs:sequence>
 										</xs:choice>
-										<xs:element minOccurs="0" maxOccurs="1" ref="HelpText"/>
+										<xs:element ref="HelpText" minOccurs="0" maxOccurs="1"/>
 									</xs:sequence>
 									<xs:attribute name="SupArchList" type="ArchListType"
 										use="optional"/>
@@ -1769,101 +1852,14 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 							<xs:element minOccurs="1" maxOccurs="unbounded" name="PcdEntry">
 								<xs:complexType>
 									<xs:sequence>
-										<xs:element minOccurs="1" maxOccurs="1" name="C_Name"
+										<xs:element minOccurs="1" maxOccurs="1" name="CName"
 											type="xs:NCName"/>
 										<xs:element minOccurs="1" maxOccurs="1"
 											name="TokenSpaceGuidCName" type="xs:NCName"/>
 										<xs:element minOccurs="0" maxOccurs="1" name="DefaultValue"
 											type="xs:normalizedString"/>
-										<xs:element minOccurs="0" maxOccurs="1" name="MinimumSize"
-											type="Number">
-											<xs:annotation>
-												<xs:documentation xml:lang="en-us"> Only valid for VOID*
-													data types. This allows a module developer to specify
-													a minimum size for holding the data. This value must
-													be less than or equal to the MaximumDatumSize
-													specified by the PCD's Package declaration. </xs:documentation>
-												<xs:documentation xml:lang="en-us"> This will permit a
-													platform integrator to allocate only the required
-													amount of space, based on the actual size of data, if
-													all modules using this PCD use less than the maximum
-													amount of storage. </xs:documentation>
-											</xs:annotation>
-										</xs:element>
-										<xs:element minOccurs="0" maxOccurs="unbounded"
-											ref="HelpText"/>
-										<xs:element minOccurs="0" maxOccurs="unbounded"
-											name="PcdError">
-											<xs:annotation>
-												<xs:documentation xml:lang="en-us"> Error information in
-													this section supercedes PcdError information in
-													Package declaration. </xs:documentation>
-											</xs:annotation>
-											<xs:complexType>
-												<xs:sequence>
-													<xs:choice>
-														<xs:annotation>
-															<xs:documentation xml:lang="en-us"> One of the
-																following types of comparisons, which must be
-																able to evaluate to either true or false.
-															</xs:documentation>
-														</xs:annotation>
-														<xs:element minOccurs="0" maxOccurs="1"
-															name="ValidValueList">
-															<xs:annotation>
-																<xs:documentation xml:lang="en-us"> The PCD
-																	Value must be one of the values listed.
-																</xs:documentation>
-															</xs:annotation>
-															<xs:simpleType>
-																<xs:list itemType="xs:NCName"/>
-															</xs:simpleType>
-														</xs:element>
-														<xs:element minOccurs="0" maxOccurs="1"
-															name="ValidValueRange" type="xs:normalizedString">
-															<xs:annotation>
-																<xs:documentation xml:lang="en-us"> The PCD must
-																	be within a specifed range of numeric values.
-																	Restricted to C style Relational, Equality and
-																	Logicial Operators and parenthesis are valid.
-																</xs:documentation>
-															</xs:annotation>
-														</xs:element>
-														<xs:element minOccurs="0" maxOccurs="1"
-															name="LogicalExpression"
-															type="xs:normalizedString">
-															<xs:annotation>
-																<xs:documentation xml:lang="en-us"> A in-fix
-																	logical expression using C style Relational,
-																	Equality and Logicial operators and
-																	parenthesis are valid. </xs:documentation>
-															</xs:annotation>
-														</xs:element>
-													</xs:choice>
-													<xs:element minOccurs="0" maxOccurs="1"
-														name="ErrorNumber" type="HexNumber"/>
-													<xs:element minOccurs="0" maxOccurs="unbounded"
-														name="ErrorMessage">
-														<xs:annotation>
-															<xs:documentation xml:lang="en-us"> This string
-																should be defined by specifications. There are
-																pre-defined error number ranges in the UEFI/PI
-																specificaiton. </xs:documentation>
-														</xs:annotation>
-														<xs:complexType>
-															<xs:simpleContent>
-																<xs:extension base="xs:normalizedString">
-																	<xs:attribute name="UCS2" type="xs:boolean"
-																		default="false" use="optional"/>
-																	<xs:attribute name="Lang" type="xs:language"
-																		default="en-us" use="optional"/>
-																</xs:extension>
-															</xs:simpleContent>
-														</xs:complexType>
-													</xs:element>
-												</xs:sequence>
-											</xs:complexType>
-										</xs:element>
+										<xs:element ref="HelpText" minOccurs="0"
+											maxOccurs="unbounded"/>
 									</xs:sequence>
 									<xs:attribute name="PcdItemType" type="PcdItemTypes"
 										use="required"/>
@@ -1897,8 +1893,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 					</xs:annotation>
 					<xs:complexType>
 						<xs:sequence>
-							<xs:element name="Expression" type=" xs:string " minOccurs="0"
-								maxOccurs="unbounded">
+							<xs:element name="Expression" type=" xs:string " minOccurs="1"
+								maxOccurs="1">
 								<xs:annotation>
 									<xs:documentation xml:lang="en-us"> An in-fix expression, of C
 										identifiers and TRUE, FALSE, AND, OR, NOT, BEFORE, and AFTER
@@ -1906,7 +1902,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 									</xs:documentation>
 								</xs:annotation>
 							</xs:element>
-							<xs:element minOccurs="0" maxOccurs="1" ref="HelpText"/>
+							<xs:element ref="HelpText" minOccurs="0" maxOccurs="1"/>
 						</xs:sequence>
 					</xs:complexType>
 				</xs:element>
@@ -1919,8 +1915,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 					</xs:annotation>
 					<xs:complexType>
 						<xs:sequence>
-							<xs:element name="Expression" type=" xs:string " minOccurs="0"
-								maxOccurs="unbounded">
+							<xs:element name="Expression" type=" xs:string " minOccurs="1"
+								maxOccurs="1">
 								<xs:annotation>
 									<xs:documentation xml:lang="en-us"> An in-fix expression, of C
 										identifiers and TRUE, FALSE, AND, OR, NOT, BEFORE, and AFTER
@@ -1928,14 +1924,14 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 									</xs:documentation>
 								</xs:annotation>
 							</xs:element>
-							<xs:element minOccurs="0" maxOccurs="1" ref="HelpText"/>
+							<xs:element ref="HelpText" minOccurs="0" maxOccurs="1"/>
 						</xs:sequence>
 					</xs:complexType>
 				</xs:element>
 				<!-- End of DxeDepex Section -->
 
 
-				<xs:element minOccurs="0" maxOccurs="1" name="Misc">
+				<xs:element minOccurs="0" maxOccurs="1" name="MiscellaneousFiles">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> This section is used to provide
 							comments and/or list auxiliary files, such as pdb or map files.
@@ -1943,9 +1939,9 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 					</xs:annotation>
 					<xs:complexType>
 						<xs:sequence>
-							<xs:element minOccurs="0" maxOccurs="unbounded" name="Description"
+							<xs:element minOccurs="0" maxOccurs="1" name="Description"
 								type="xs:string"/>
-							<xs:element minOccurs="0" maxOccurs="unbounded" name="Filename">
+							<xs:element minOccurs="1" maxOccurs="unbounded" name="Filename">
 								<xs:annotation>
 									<xs:documentation xml:lang="en-us"> This is the path and
 										filename location within the ZIP file. </xs:documentation>
@@ -1982,61 +1978,27 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 							well as any user-defined, properly formatted XML structure.
 						</xs:documentation>
 					</xs:annotation>
-					<xs:complexType>
-						<xs:sequence>
-							<xs:element minOccurs="0" maxOccurs="unbounded" ref="HelpText"/>
-							<xs:element minOccurs="1" maxOccurs="unbounded" name="Extension">
-								<xs:complexType mixed="true">
-									<xs:sequence>
-										<xs:any minOccurs="0" maxOccurs="unbounded"
-											processContents="lax">
-											<xs:annotation>
-												<xs:documentation xml:lang="en-us"> Content will be
-													validated if and only if a schema is available.
-												</xs:documentation>
-											</xs:annotation>
-										</xs:any>
-									</xs:sequence>
-									<xs:attribute name="UserId" type="xs:NCName" use="required">
-										<xs:annotation>
-											<xs:documentation xml:lang="en-us"> This is a single word
-												identifier for grouping similar content. For example,
-												ReferenceBuild might be used to identify non-PI
-												compliant build steps, with two different UserExtensions
-												sections, one with an Identifier of Prebuild, and
-												another of PostBuild. Both UserExtensions sections would
-												use the same UserId. </xs:documentation>
-										</xs:annotation>
-									</xs:attribute>
-									<xs:attribute name="Identifier" type="xs:normalizedString"
-										use="optional">
-										<xs:annotation>
-											<xs:documentation xml:lang="en-us"> This can be any string
-												used to differentiate or identify this section from
-												other UserExtensions sections. </xs:documentation>
-										</xs:annotation>
-									</xs:attribute>
-								</xs:complexType>
-							</xs:element>
-							<xs:element minOccurs="0" maxOccurs="unbounded"
-								name="ModuleBuildOptions">
-								<xs:complexType>
-									<xs:sequence>
-										<xs:element minOccurs="1" maxOccurs="unbounded"
-											name="Option">
-											<xs:complexType mixed="true">
-												<xs:simpleContent>
-													<xs:extension base="xs:normalizedString">
-														<xs:anyAttribute processContents="lax"/>
-													</xs:extension>
-												</xs:simpleContent>
-											</xs:complexType>
-										</xs:element>
-									</xs:sequence>
-								</xs:complexType>
-							</xs:element>
-
-						</xs:sequence>
+					<xs:complexType mixed="true">
+						<xs:attribute name="UserId" type="xs:NCName" use="required">
+							<xs:annotation>
+								<xs:documentation xml:lang="en-us"> This is a single word
+									identifier for grouping similar content. For example,
+									ReferenceBuild might be used to identify non-PI compliant
+									build steps, with two different UserExtensions sections, one
+									with an Identifier of Prebuild, and another of PostBuild. Both
+									UserExtensions sections would use the same UserId.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="Identifier" type="xs:normalizedString"
+							use="optional">
+							<xs:annotation>
+								<xs:documentation xml:lang="en-us"> This can be any string used
+									to differentiate or identify this section from other
+									UserExtensions sections. </xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:anyAttribute processContents="lax"/>
 					</xs:complexType>
 				</xs:element>
 				<!-- End of Module Surface Area UserExtensions Section -->
@@ -2107,7 +2069,6 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 										</xs:documentation>
 									</xs:annotation>
 								</xs:attribute>
-								<!-- How do we handle a required config file(s)? -->
 							</xs:extension>
 						</xs:simpleContent>
 					</xs:complexType>
@@ -2117,7 +2078,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 	</xs:element>
 	<!-- End of the Tools element. -->
 
-	<xs:element name="Misc">
+	<xs:element name="MiscellaneousFiles">
 		<xs:annotation>
 			<xs:documentation xml:lang="en-us"> This section contains files that are
 				not part of the code distributed with modules, packages or tools.
@@ -2175,7 +2136,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 	<xs:element name="UserExtensions">
 		<xs:complexType mixed="true">
 			<xs:sequence>
-				<xs:any minOccurs="0" maxOccurs="unbounded" processContents="lax"/>
+				<xs:any processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 			</xs:sequence>
 			<xs:attribute name="UserId" type="xs:NCName" use="required">
 				<xs:annotation>
@@ -2187,8 +2148,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 						same UserId. </xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="Identifier" type="xs:normalizedString" use="optional"
-			/>
+			<xs:attribute name="Identifier" type="xs:normalizedString" use="optional"/>
+			<xs:anyAttribute processContents="lax"/>
 		</xs:complexType>
 	</xs:element>
 	<!-- The following elsements are common definitions used with the ref attribute for elements. -->
