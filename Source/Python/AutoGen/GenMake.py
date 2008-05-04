@@ -112,7 +112,7 @@ class BuildFile(object):
             "MD"    :   "mkdir",
             "RD"    :   "rmdir /s /q",
         },
-    
+
         "gmake" : {
             "CP"    :   "cp -f",
             "MV"    :   "mv -f",
@@ -124,7 +124,7 @@ class BuildFile(object):
 
     ## directory separator
     _SEP_ = {
-        "nmake" :   "\\", 
+        "nmake" :   "\\",
         "gmake" :   "/"
     }
 
@@ -137,18 +137,18 @@ class BuildFile(object):
     ## directory removal template
     _RD_TEMPLATE_ = {
         "nmake" :   'if exist %(dir)s $(RD) %(dir)s',
-        "gmake" :   "test -e %(dir)s && $(RD) %(dir)s"
+        "gmake" :   "$(RD) %(dir)s"
     }
 
     _INC_FLAG_ = {"MSFT" : "/I", "GCC" : "-I", "INTEL" : "-I"}
-    
+
     _LIB_GROUP_START_ = {"MSFT" : "", "GCC" : "-(", "INTEL" : ""}
-    _LIB_GROUP_END = {"MSFT" : "", "GCC" : "-)", "INTEL" : ""}    
+    _LIB_GROUP_END = {"MSFT" : "", "GCC" : "-)", "INTEL" : ""}
 
     ## Constructor of BuildFile
     #
     #   @param  AutoGenObject   Object of AutoGen class
-    # 
+    #
     def __init__(self, AutoGenObject):
         self._AutoGenObject = AutoGenObject
         self._FileType = gMakeType
@@ -156,10 +156,10 @@ class BuildFile(object):
     ## Create build file
     #
     #   @param  FileType    Type of build file. Only nmake and gmake are supported now.
-    # 
+    #
     #   @retval TRUE        The build file is created or re-created successfully
     #   @retval FALSE       The build file exists and is the same as the one to be generated
-    # 
+    #
     def Generate(self, FileType=gMakeType):
         if FileType not in self._FILE_NAME_:
             EdkLogger.error("build", PARAMETER_INVALID, "Invalid build type [%s]" % FileType)
@@ -389,14 +389,14 @@ cleanlib:
     ## Constructor of ModuleMakefile
     #
     #   @param  ModuleAutoGen   Object of ModuleAutoGen class
-    # 
+    #
     def __init__(self, ModuleAutoGen):
         BuildFile.__init__(self, ModuleAutoGen)
         self.PlatformInfo = self._AutoGenObject.PlatformInfo
 
         self.ResultFileList = []
         self.IntermediateDirectoryList = ["$(DEBUG_DIR)", "$(OUTPUT_DIR)"]
-    
+
         self.SourceFileDatabase = {}        # {file type : file path}
         self.DestFileDatabase = {}          # {file type : file path}
         self.FileBuildTargetList = []       # [(src, target string)]
@@ -768,7 +768,7 @@ cleanlib:
     ## Process binary files to generate makefile targets and dependencies
     #
     # All binary files are just copied to $(OUTPUT_DIR)
-    # 
+    #
     def ProcessBinaryFileList(self):
         BinaryFiles = self._AutoGenObject.BinaryFileDict
         BuildTargetString = "%(dst)s : %(src)s\n"\
@@ -803,7 +803,7 @@ cleanlib:
         for F in FileList:
             Dependency[F] = self.GetDependencyList(F, ForceInculeList, SearchPathList)
         return Dependency
-    
+
     ## Find dependencies for one source file
     #
     #  By searching recursively "#include" directive in file, find out all the
@@ -822,14 +822,14 @@ cleanlib:
         FileStack = [File] + ForceList
         DependencySet = set()
         MacroUsedByIncludedFile = False
-    
+
         if self._AutoGenObject.Arch not in gDependencyDatabase:
             gDependencyDatabase[self._AutoGenObject.Arch] = {}
         DepDb = gDependencyDatabase[self._AutoGenObject.Arch]
         while len(FileStack) > 0:
             EdkLogger.debug(EdkLogger.DEBUG_0, "Stack %s" % "\n\t".join(FileStack))
             F = FileStack.pop()
-    
+
             CurrentFileDependencyList = []
             if F in DepDb and not IsChanged(F):
                 CurrentFileDependencyList = DepDb[F]
@@ -841,16 +841,16 @@ cleanlib:
                     Fd = open(F, 'r')
                 except:
                     EdkLogger.error("AutoGen", FILE_OPEN_FAILURE, ExtraData=F)
-    
+
                 FileContent = Fd.read()
                 Fd.close()
                 if len(FileContent) == 0:
                     continue
-    
+
                 if FileContent[0] == 0xff or FileContent[0] == 0xfe:
                     FileContent = unicode(FileContent, "utf-16")
                 IncludedFileList = gIncludePattern.findall(FileContent)
-    
+
                 CurrentFilePath = os.path.dirname(F)
                 for Inc in IncludedFileList:
                     # if there's macro used to reference header file, expand it
@@ -875,7 +875,7 @@ cleanlib:
                         break
                     else:
                         EdkLogger.verbose("%s included by %s was not found in any given path:\n\t%s" % (Inc, F, "\n\t".join(SearchPathList)))
-    
+
                 if not MacroUsedByIncludedFile:
                     if F == File:
                         CurrentFileDependencyList += ForceList
@@ -885,7 +885,7 @@ cleanlib:
                     #
                     DepDb[F] = CurrentFileDependencyList
             DependencySet.update(CurrentFileDependencyList)
-    
+
         #
         # If there's macro used in included file, always build the file by
         # returning a empty dependency
@@ -895,8 +895,8 @@ cleanlib:
         else:
             DependencyList = list(DependencySet)  # remove duplicate ones
             DependencyList.append(File)
-    
-        return DependencyList        
+
+        return DependencyList
 
     _TemplateDict = property(_CreateTemplateDict)
 
@@ -999,7 +999,7 @@ ${BEGIN}\t-@${create_directory_command}\n${END}\
     ## Constructor of CustomMakefile
     #
     #   @param  ModuleAutoGen   Object of ModuleAutoGen class
-    # 
+    #
     def __init__(self, ModuleAutoGen):
         BuildFile.__init__(self, ModuleAutoGen)
         self.PlatformInfo = self._AutoGenObject.PlatformInfo
@@ -1013,7 +1013,7 @@ ${BEGIN}\t-@${create_directory_command}\n${END}\
                 EdkLogger.error('build', OPTION_NOT_SUPPORTED, "No custom makefile for %s" % self._FileType,
                                 ExtraData=str(self._AutoGenObject))
             MakefilePath = os.path.join(
-                                    self._AutoGenObject.WorkspaceDir, 
+                                    self._AutoGenObject.WorkspaceDir,
                                     self._AutoGenObject.CustomMakefile[self._FileType]
                                     )
             CustomMakefile = open(MakefilePath, 'r').read()
@@ -1062,7 +1062,7 @@ ${BEGIN}\t-@${create_directory_command}\n${END}\
 
 ## PlatformMakefile class
 #
-#  This class encapsules makefie and its generation for platform. It uses 
+#  This class encapsules makefie and its generation for platform. It uses
 # template to generate the content of makefile. The content of makefile will be
 # got from PlatformAutoGen object.
 #
@@ -1164,7 +1164,7 @@ cleanlib:
     ## Constructor of PlatformMakefile
     #
     #   @param  ModuleAutoGen   Object of PlatformAutoGen class
-    # 
+    #
     def __init__(self, PlatformAutoGen):
         BuildFile.__init__(self, PlatformAutoGen)
         self.ModuleBuildCommandList = []
@@ -1238,8 +1238,8 @@ cleanlib:
 
 ## TopLevelMakefile class
 #
-#  This class encapsules makefie and its generation for entrance makefile. It 
-# uses template to generate the content of makefile. The content of makefile 
+#  This class encapsules makefie and its generation for entrance makefile. It
+# uses template to generate the content of makefile. The content of makefile
 # will be got from WorkspaceAutoGen object.
 #
 class TopLevelMakefile(BuildFile):
@@ -1342,7 +1342,7 @@ ${END}\t@cd $(BUILD_DIR)\n
     ## Constructor of TopLevelMakefile
     #
     #   @param  Workspace   Object of WorkspaceAutoGen class
-    # 
+    #
     def __init__(self, Workspace):
         BuildFile.__init__(self, Workspace)
         self.IntermediateDirectoryList = []
@@ -1367,7 +1367,7 @@ ${END}\t@cd $(BUILD_DIR)\n
             FdfFileList = [PlatformInfo.FdfFile]
             # macros passed to GenFds
             for MacroName in GlobalData.gGlobalDefines:
-                MacroList.append('"%s=%s"' % (MacroName, GlobalData.gGlobalDefines[MacroName]))    
+                MacroList.append('"%s=%s"' % (MacroName, GlobalData.gGlobalDefines[MacroName]))
         else:
             FdfFileList = []
 
