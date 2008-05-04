@@ -1194,7 +1194,7 @@ def MyOptionParser():
 #   @retval 1     Tool failed
 #
 def Main():
-    StartTime = time.clock()
+    StartTime = time.time()
 
     # Initialize log system
     EdkLogger.Initialize()
@@ -1288,7 +1288,7 @@ def Main():
     if MyBuild != None:
         MyBuild.Db.Close()
 
-    FinishTime = time.clock()
+    FinishTime = time.time()
     BuildDuration = time.strftime("%M:%S", time.gmtime(int(round(FinishTime - StartTime))))
     EdkLogger.quiet("\n%s [%s]" % (time.strftime("%H:%M:%S, %b.%d %Y", time.localtime()), BuildDuration))
 
