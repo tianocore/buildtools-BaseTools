@@ -131,7 +131,7 @@ class BuildFile(object):
     ## directory creation template
     _MD_TEMPLATE_ = {
         "nmake" :   'if not exist %(dir)s $(MD) %(dir)s',
-        "gmake" :   "test ! -e %(dir)s && $(MD) %(dir)s"
+        "gmake" :   "$(MD) %(dir)s"
     }
 
     ## directory removal template
