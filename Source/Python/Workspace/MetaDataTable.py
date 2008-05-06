@@ -27,7 +27,7 @@ def ConvertToSqlString(StringList):
 ## TableFile
 #
 # This class defined a common table
-# 
+#
 # @param object:     Inherited from object class
 #
 # @param Cursor:     Cursor of the database
@@ -61,6 +61,7 @@ class Table(object):
             SqlCommand = """create temp table IF NOT EXISTS %s (%s)""" % (self.Table, self._COLUMN_)
         else:
             SqlCommand = """create table IF NOT EXISTS %s (%s)""" % (self.Table, self._COLUMN_)
+        EdkLogger.debug(EdkLogger.DEBUG_8, SqlCommand)
         self.Cur.execute(SqlCommand)
         self.ID = self.GetId()
 
@@ -74,18 +75,19 @@ class Table(object):
             self.ID = self.IdBase + self._ID_STEP_
         Values = ", ".join([str(Arg) for Arg in Args])
         SqlCommand = "insert into %s values(%s, %s)" % (self.Table, self.ID, Values)
+        EdkLogger.debug(EdkLogger.DEBUG_5, SqlCommand)
         self.Cur.execute(SqlCommand)
         return self.ID
-    
+
     ## Query table
     #
     # Query all records of the table
-    #  
+    #
     def Query(self):
         SqlCommand = """select * from %s""" % self.Table
         self.Cur.execute(SqlCommand)
         for Rs in self.Cur:
-            EdkLogger.verbose(str(Rs))        
+            EdkLogger.verbose(str(Rs))
         TotalCount = self.GetId()
 
     ## Drop a table
@@ -95,7 +97,7 @@ class Table(object):
     def Drop(self):
         SqlCommand = """drop table IF EXISTS %s""" % self.Table
         self.Cur.execute(SqlCommand)
-    
+
     ## Get count
     #
     # Get a count of all records of the table
@@ -103,25 +105,25 @@ class Table(object):
     # @retval Count:  Total count of all records
     #
     def GetCount(self):
-        SqlCommand = """select count(ID) from %s""" % self.Table        
+        SqlCommand = """select count(ID) from %s""" % self.Table
         Record = self.Cur.execute(SqlCommand).fetchall()
         return Record[0][0]
-        
+
     def GetId(self):
-        SqlCommand = """select max(ID) from %s""" % self.Table        
+        SqlCommand = """select max(ID) from %s""" % self.Table
         Record = self.Cur.execute(SqlCommand).fetchall()
         Id = Record[0][0]
         if Id == None:
             Id = self.IdBase
         return Id
-    
+
     ## Init the ID of the table
     #
     # Init the ID of the table
     #
     def InitID(self):
         self.ID = self.GetId()
-    
+
     ## Exec
     #
     # Exec Sql Command, return result
@@ -131,7 +133,7 @@ class Table(object):
     # @retval RecordSet:  The result after executed
     #
     def Exec(self, SqlCommand):
-        # "###", SqlCommand
+        EdkLogger.debug(EdkLogger.DEBUG_5, SqlCommand)
         self.Cur.execute(SqlCommand)
         RecordSet = self.Cur.fetchall()
         return RecordSet
@@ -148,7 +150,7 @@ class Table(object):
 ## TableFile
 #
 # This class defined a table used for file
-# 
+#
 # @param object:       Inherited from object class
 #
 class TableFile(Table):
@@ -163,7 +165,7 @@ class TableFile(Table):
         '''
     def __init__(self, Cursor):
         Table.__init__(self, Cursor, 'File')
-    
+
     ## Insert table
     #
     # Insert a record into table File
@@ -178,12 +180,12 @@ class TableFile(Table):
     def Insert(self, Name, ExtName, Path, FullPath, Model, TimeStamp):
         (Name, ExtName, Path, FullPath) = ConvertToSqlString((Name, ExtName, Path, FullPath))
         return Table.Insert(
-            self, 
+            self,
             Name,
-            ExtName, 
-            Path, 
-            FullPath, 
-            Model, 
+            ExtName,
+            Path,
+            FullPath,
+            Model,
             TimeStamp
             )
 
@@ -192,8 +194,8 @@ class TableFile(Table):
     # Insert one file to table
     #
     # @param FileFullPath:  The full path of the file
-    # @param Model:         The model of the file 
-    # 
+    # @param Model:         The model of the file
+    #
     # @retval FileID:       The ID after record is inserted
     #
     def InsertFile(self, FileFullPath, Model):
@@ -202,20 +204,20 @@ class TableFile(Table):
         TimeStamp = os.stat(FileFullPath)[8]
         File = FileClass(-1, Name, Ext, Filepath, FileFullPath, Model, '', [], [], [])
         return self.Insert(
-            Name, 
-            Ext, 
-            Filepath, 
-            FileFullPath, 
-            Model, 
+            Name,
+            Ext,
+            Filepath,
+            FileFullPath,
+            Model,
             TimeStamp
             )
 
     ## Get ID of a given file
     #
     #   @param  FilePath    Path of file
-    # 
+    #
     #   @retval ID          ID value of given file in the table
-    # 
+    #
     def GetFileId(self, FilePath):
         QueryScript = "select ID from %s where FullPath = '%s'" % (self.Table, FilePath)
         RecordList = self.Exec(QueryScript)
@@ -226,9 +228,9 @@ class TableFile(Table):
     ## Get type of a given file
     #
     #   @param  FileId      ID of a file
-    # 
+    #
     #   @retval file_type   Model value of given file in the table
-    # 
+    #
     def GetFileType(self, FileId):
         QueryScript = "select Model from %s where ID = '%s'" % (self.Table, FileId)
         RecordList = self.Exec(QueryScript)
@@ -239,9 +241,9 @@ class TableFile(Table):
     ## Get file timestamp of a given file
     #
     #   @param  FileId      ID of file
-    # 
+    #
     #   @retval timestamp   TimeStamp value of given file in the table
-    # 
+    #
     def GetFileTimeStamp(self, FileId):
         QueryScript = "select TimeStamp from %s where ID = '%s'" % (self.Table, FileId)
         RecordList = self.Exec(QueryScript)
@@ -253,16 +255,16 @@ class TableFile(Table):
     #
     #   @param  FileId      ID of file
     #   @param  TimeStamp   Time stamp of file
-    # 
+    #
     def SetFileTimeStamp(self, FileId, TimeStamp):
         self.Exec("update %s set TimeStamp=%s where ID='%s'" % (self.Table, TimeStamp, FileId))
 
     ## Get list of file with given type
     #
     #   @param  FileType    Type value of file
-    # 
+    #
     #   @retval file_list   List of files with the given type
-    # 
+    #
     def GetFileList(self, FileType):
         RecordList = self.Exec("select FullPath from %s where Model=%s" % (self.Table, FileType))
         if len(RecordList) == 0:
@@ -272,7 +274,7 @@ class TableFile(Table):
 ## TableDataModel
 #
 # This class defined a table used for data model
-# 
+#
 # @param object:       Inherited from object class
 #
 #
@@ -285,7 +287,7 @@ class TableDataModel(Table):
         """
     def __init__(self, Cursor):
         Table.__init__(self, Cursor, 'DataModel')
-    
+
     ## Insert table
     #
     # Insert a record into table DataModel
@@ -298,11 +300,11 @@ class TableDataModel(Table):
     def Insert(self, CrossIndex, Name, Description):
         (Name, Description) = ConvertToSqlString((Name, Description))
         return Table.Insert(self, CrossIndex, Name, Description)
-    
+
     ## Init table
     #
     # Create all default records of table DataModel
-    #  
+    #
     def InitTable(self):
         EdkLogger.verbose("\nInitialize table DataModel started ...")
         Count = self.GetCount()
@@ -314,7 +316,7 @@ class TableDataModel(Table):
             Description = Item[0]
             self.Insert(CrossIndex, Name, Description)
         EdkLogger.verbose("Initialize table DataModel ... DONE!")
-    
+
     ## Get CrossIndex
     #
     # Get a model's cross index from its name
@@ -328,6 +330,6 @@ class TableDataModel(Table):
         self.Cur.execute(SqlCommand)
         for Item in self.Cur:
             CrossIndex = Item[0]
-        
+
         return CrossIndex
 
