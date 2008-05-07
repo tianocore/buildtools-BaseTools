@@ -55,14 +55,24 @@ typedef enum {
   PatchTypeFloppy,
   PatchTypeIde,
   PatchTypeUsb,
+  PatchTypeFileImage   // input and output are all file image, patching action is same as PatchTypeFloppy
 } PATCH_TYPE;
+
+typedef enum {
+  PathUnknown,
+  PathFile,
+  PathFloppy,
+  PathUsb,
+  PathIde
+} PATH_TYPE;
 
 typedef enum {
   ErrorSuccess,
   ErrorFileCreate,
   ErrorFileReadWrite,
   ErrorNoMbr,
-  ErrorFatType
+  ErrorFatType,
+  ErrorPath,
 } ERROR_STATUS;
 
 CHAR *ErrorStatusDesc[] = {
@@ -70,7 +80,8 @@ CHAR *ErrorStatusDesc[] = {
   "Failed to create files",
   "Failed to read/write files",
   "No MBR exists",
-  "Failed to detect Fat type"
+  "Failed to detect Fat type",
+  "Inavlid path"
 };
 
 typedef struct _DRIVE_TYPE_DESC {
@@ -95,6 +106,13 @@ typedef struct _DRIVE_INFO {
   DRIVE_TYPE_DESC   *DriveType;
   UINT              DiskNumber;
 } DRIVE_INFO;
+
+typedef struct _PATH_INFO {
+  CHAR             *Path;
+  CHAR             PhysicalPath[260];
+  PATH_TYPE        Type;
+  BOOL             Input;
+} PATH_INFO;
 
 #define BOOT_SECTOR_LBA_OFFSET 0x1FA
 
@@ -256,8 +274,7 @@ Routine Description:
 INT
 GetBootSectorOffset (
   HANDLE     DiskHandle,
-  BOOL       WriteToDisk,
-  PATCH_TYPE PatchType
+  PATH_INFO  *PathInfo
   )
 /*++
 Description:
@@ -269,8 +286,8 @@ Description:
 
 Arguments:
   DiskHandle  : HANDLE of disk
+  PathInfo    : PATH_INFO structure.
   WriteToDisk : TRUE indicates writing
-  PatchType   : PatchTypeFloppy, PatchTypeIde, PatchTypeUsb
 
 Return:
   -1   : failed
@@ -331,7 +348,7 @@ Return:
     //
     if (Index == PARTITION_ENTRY_NUM) {
       DbrOffset = *(DWORD *)&DiskPartition[PARTITION_TABLE_OFFSET + PARTITION_ENTRY_STARTLBA_OFFSET];
-      if (WriteToDisk && (PatchType == PatchTypeUsb)) {
+      if (!PathInfo->Input && (PathInfo->Type == PathUsb)) {
         SetFilePointer(DiskHandle, 0, NULL, FILE_BEGIN);
         DiskPartition[PARTITION_TABLE_OFFSET] = 0x80;
         WriteFile (DiskHandle, DiskPartition, 0x200, &BytesReturn, NULL);
@@ -342,84 +359,51 @@ Return:
   return DbrOffset;
 }
 
+/**
+ * Get window file handle for input/ouput disk/file. 
+ *  
+ * @param PathInfo
+ * @param ProcessMbr
+ * @param FileHandle
+ * 
+ * @return ERROR_STATUS
+ */
 ERROR_STATUS
-ProcessBsOrMbr (
-  CHAR        *DiskName,
-  CHAR        *FileName,
-  BOOL        WriteToDisk,
-  PATCH_TYPE  PatchType,
-  BOOL        ProcessMbr
+GetFileHandle (
+  PATH_INFO  *PathInfo,
+  BOOL       ProcessMbr,
+  HANDLE     *FileHandle,
+  DWORD      *DbrOffset
   )
-/*++
-Routine Description:
-  Writing or reading boot sector or MBR according to the argument.
-
-Arguments:
-  DiskName    : Win32 API recognized string name of disk
-  FileName    : file name
-  WriteToDisk : TRUE is to write content of file to disk, otherwise, reading content of disk to file
-  PatchType   : PatchTypeFloppy, PatchTypeIde, PatchTypeUsb
-  ProcessMbr  : TRUE is to process MBR, otherwise, processing boot sector
-
-Return:
-  ErrorSuccess
-  ErrorFileCreate
-  ErrorFileReadWrite
-  ErrorNoMbr
-  ErrorFatType
---*/
 {
-  BYTE    DiskPartition[0x200];
-  BYTE    DiskPartitionBackup[0x200];
-  HANDLE  DiskHandle;
-  HANDLE  FileHandle;
-  DWORD   BytesReturn;
-  DWORD   DbrOffset;
-  INT     DrvNumOffset;
+  DWORD  OpenFlag;
 
-  DiskHandle = CreateFile (
-                 DiskName, 
-                 GENERIC_READ | GENERIC_WRITE, 
-                 FILE_SHARE_READ, 
-                 NULL, 
-                 OPEN_EXISTING, 
-                 FILE_ATTRIBUTE_NORMAL, 
-                 NULL
-                 );
-  if (DiskHandle == INVALID_HANDLE_VALUE) {
+  OpenFlag = OPEN_ALWAYS;
+  if (PathInfo->Input || PathInfo->Type != PathFile) {
+    OpenFlag = OPEN_EXISTING;
+  }
+
+  *FileHandle = CreateFile(
+                   PathInfo->PhysicalPath,
+                   GENERIC_READ | GENERIC_WRITE, 
+                   FILE_SHARE_READ, 
+                   NULL, 
+                   OpenFlag, 
+                   FILE_ATTRIBUTE_NORMAL, 
+                   NULL
+                   );
+  if (*FileHandle == INVALID_HANDLE_VALUE) {
     return ErrorFileCreate;
   }
 
-  FileHandle = CreateFile (
-                 FileName,
-                 GENERIC_READ | GENERIC_WRITE,
-                 0,
-                 NULL,
-                 OPEN_ALWAYS,
-                 FILE_ATTRIBUTE_NORMAL,
-                 NULL
-                 );
-  if (FileHandle == INVALID_HANDLE_VALUE) {
-    return ErrorFileCreate;
-  }
-
-  DbrOffset = 0;
-  //
-  // Skip potential MBR for Ide & USB disk
-  //
-  if ((PatchType == PatchTypeIde) || (PatchType == PatchTypeUsb)) {
-    //
-    // Even user just wants to process MBR, we get offset of boot sector here to validate the disk
-    //  if disk have MBR, DbrOffset should be greater than 0
-    //
-    DbrOffset = GetBootSectorOffset (DiskHandle, WriteToDisk, PatchType);
-
+  if ((PathInfo->Type == PathIde) || (PathInfo->Type == PathUsb)){
+    *DbrOffset = GetBootSectorOffset (*FileHandle, PathInfo);
     if (!ProcessMbr) {
       //
       // 1. Process boot sector, set file pointer to the beginning of boot sector
       //
-      SetFilePointer (DiskHandle, DbrOffset * 0x200, NULL, FILE_BEGIN);
-    } else if(DbrOffset == 0) {
+      SetFilePointer (*FileHandle, *DbrOffset * 0x200, NULL, FILE_BEGIN);
+    } else if(*DbrOffset == 0) {
       //
       // If user want to process Mbr, but no Mbr exists, simply return FALSE
       //
@@ -428,44 +412,65 @@ Return:
       //
       // 2. Process MBR, set file pointer to 0
       //
-      SetFilePointer (DiskHandle, 0, NULL, FILE_BEGIN);
+      SetFilePointer (*FileHandle, 0, NULL, FILE_BEGIN);
     }
   }
 
+  return ErrorSuccess;
+}
+
+/**
+  Writing or reading boot sector or MBR according to the argument. 
+   
+  @param InputInfo PATH_INFO instance for input path
+  @param OutputInfo PATH_INFO instance for output path
+  @param ProcessMbr TRUE is to process MBR, otherwise, processing boot sector
+  
+  @return ERROR_STATUS
+ **/
+ERROR_STATUS
+ProcessBsOrMbr (
+  PATH_INFO     *InputInfo,
+  PATH_INFO     *OutputInfo,
+  BOOL        	ProcessMbr
+  )
+{
+  BYTE              DiskPartition[0x200] = {0};
+  BYTE              DiskPartitionBackup[0x200] = {0};
+  DWORD             BytesReturn;
+  DWORD             DbrOffset;
+  INT               DrvNumOffset;
+  HANDLE            InputHandle;
+  HANDLE            OutputHandle;
+  BOOL              WriteToDisk;
+  ERROR_STATUS      Status;
+  DWORD             InputDbrOffset;
+  DWORD             OutputDbrOffset;
+
   //
-  // [File Pointer is pointed to beginning of Mbr or Dbr]
+  // Create file Handle and move file Pointer is pointed to beginning of Mbr or Dbr
   //
-  if (WriteToDisk) {
-    //
-    // Write
-    //
-    if (!ReadFile (FileHandle, DiskPartition, 0x200, &BytesReturn, NULL)) {
-      return ErrorFileReadWrite;
-    }
-    if (ProcessMbr) {
-      //
-      // Use original partition table
-      //
-      if (!ReadFile (DiskHandle, DiskPartitionBackup, 0x200, &BytesReturn, NULL)) {
-        return ErrorFileReadWrite;
-      }
-      memcpy (DiskPartition + 0x1BE, DiskPartitionBackup + 0x1BE, 0x40);
-      SetFilePointer (DiskHandle, 0, NULL, FILE_BEGIN);
-    }
+  Status =  GetFileHandle(InputInfo, ProcessMbr, &InputHandle, &InputDbrOffset);
+  if (Status != ErrorSuccess) {
+    return Status;
+  }
 
-    if (!WriteFile (DiskHandle, DiskPartition, 0x200, &BytesReturn, NULL)) {
-      return ErrorFileReadWrite;
-    }
+  //
+  // Create file Handle and move file Pointer is pointed to beginning of Mbr or Dbr
+  //
+  Status = GetFileHandle(OutputInfo, ProcessMbr, &OutputHandle, &OutputDbrOffset);
+  if (Status != ErrorSuccess) {
+    return Status;
+  }
 
-  } else {
-    //
-    // Read
-    //
-    if (!ReadFile (DiskHandle, DiskPartition, 0x200, &BytesReturn, NULL)) {
-      return ErrorFileReadWrite;
-    }
+  //
+  // Read boot sector from source disk/file
+  // 
+  if (!ReadFile (InputHandle, DiskPartition, 0x200, &BytesReturn, NULL)) {
+    return ErrorFileReadWrite;
+  }
 
-    if (PatchType == PatchTypeUsb) {
+  if (InputInfo->Type == PathUsb) {
       // Manually set BS_DrvNum to 0x80 as window's format.exe has a bug which will clear this field discarding USB disk's MBR. 
       // offset of BS_DrvNum is 0x24 for FAT12/16
       //                        0x40 for FAT32
@@ -478,22 +483,40 @@ Return:
       // Some legacy BIOS require 0x80 discarding MBR.
       // Question left here: is it needed to check Mbr before set 0x80?
       //
-      DiskPartition[DrvNumOffset] = ((DbrOffset > 0) ? 0x80 : 0);
+      DiskPartition[DrvNumOffset] = ((InputDbrOffset > 0) ? 0x80 : 0);
   }
 
-
-    if (PatchType == PatchTypeIde) {
+  if (InputInfo->Type == PathIde) {
       //
       // Patch LBAOffsetForBootSector
       //
-      *(DWORD *)&DiskPartition [BOOT_SECTOR_LBA_OFFSET] = DbrOffset;
-    }
-    if (!WriteFile (FileHandle, DiskPartition, 0x200, &BytesReturn, NULL)) {
-      return ErrorFileReadWrite;
+      *(DWORD *)&DiskPartition [BOOT_SECTOR_LBA_OFFSET] = InputDbrOffset;
+  }
+
+  if (OutputInfo->Type != PathFile) {
+    if (ProcessMbr) {
+      //
+      // Use original partition table
+      //
+      if (!ReadFile (OutputHandle, DiskPartitionBackup, 0x200, &BytesReturn, NULL)) {
+        return ErrorFileReadWrite;
+      }
+      memcpy (DiskPartition + 0x1BE, DiskPartitionBackup + 0x1BE, 0x40);
+      SetFilePointer (OutputHandle, 0, NULL, FILE_BEGIN);
+
     }
   }
-  CloseHandle (FileHandle);
-  CloseHandle (DiskHandle);
+
+  //
+  // Write boot sector to taget disk/file
+  // 
+  if (!WriteFile (OutputHandle, DiskPartition, 0x200, &BytesReturn, NULL)) {
+    return ErrorFileReadWrite;
+  }
+
+  CloseHandle (InputHandle);
+  CloseHandle (OutputHandle);
+
   return ErrorSuccess;
 }
 
@@ -542,41 +565,74 @@ PrintUsage (
 }
 
 /**
-  Judget the type of file path and valid it.
-  
-  @param  FilePath  the string of file path, maybe a disk volume or file
-  
-  @retval -1  Invalid Path
-  @retval  0  Path is valid and is disk volume.
-  @retval  1  Path is valid and is file path.
-  
+  Get path information, including physical path for windows platform.
+
+  @param PathInfo   Point to PATH_INFO structure.
+
+  @return whether path is valid.
 **/
-INT
-ValidFilePath (
-  CHAR *FilePath
+ERROR_STATUS
+GetPathInfo (
+  PATH_INFO   *PathInfo
   )
 {
-  INT   retval;
-  FILE  *f;
-  
-  if (FilePath == NULL) {
-    return -1;
-  }
-  
-  if (IsLetter(FilePath[0]) && (FilePath[1] == ':') && (FilePath[2] == '\0')) {
-    fprintf (stderr, "error E2003: File was not provided!\n");
-    return 0;
+  DRIVE_INFO  DriveInfo;
+  CHAR        VolumeLetter;
+  CHAR        DiskPathTemplate[]   = "\\\\.\\PHYSICALDRIVE%u";
+  CHAR        FloppyPathTemplate[] = "\\\\.\\%c:";
+  FILE        *f;
+
+  //
+  // If path is disk path
+  //
+  if (IsLetter(PathInfo->Path[0]) && (PathInfo->Path[1] == ':') && (PathInfo->Path[2] == '\0')) {
+    VolumeLetter = PathInfo->Path[0];
+    if ((VolumeLetter == 'A') || (VolumeLetter == 'a') || 
+        (VolumeLetter == 'B') || (VolumeLetter == 'b')) {
+      PathInfo->Type = PathFloppy;
+      sprintf (PathInfo->PhysicalPath, FloppyPathTemplate, VolumeLetter);
+      return ErrorSuccess;
+    }
+
+    if (!GetDriveInfo(VolumeLetter, &DriveInfo)) {
+      fprintf (stderr, "ERROR: GetDriveInfo - 0x%x\n", GetLastError ());
+      return ErrorPath;
+    }
+
+    if (!PathInfo->Input && (DriveInfo.DriveType->Type == DRIVE_FIXED)) {
+      fprintf (stderr, "ERROR: Could patch own IDE disk!\n");
+      return ErrorPath;
+    }
+
+    sprintf(PathInfo->PhysicalPath, DiskPathTemplate, DriveInfo.DiskNumber);
+    if (DriveInfo.DriveType->Type == DRIVE_REMOVABLE) {
+      PathInfo->Type = PathUsb;
+    } else if (DriveInfo.DriveType->Type == DRIVE_FIXED) {
+      PathInfo->Type = PathIde;
+    } else {
+      fprintf (stderr, "ERROR, Invalid disk path - %s", PathInfo->Path);
+      return ErrorPath;
+    }
+
+	return ErrorSuccess;
   } 
-  
-  f = fopen (FilePath, "r");
-  if (f == NULL) {
-    fprintf (stderr, "error E2003: File was not provided!\n");
-    return -1;
+
+  PathInfo->Type = PathFile;
+  if (PathInfo->Input) {
+    //
+    // If path is file path, check whether file is valid.
+    //
+    f = fopen (PathInfo->Path, "r");
+    if (f == NULL) {
+      fprintf (stderr, "error E2003: File was not provided!\n");
+      return ErrorPath;
+    }  
   }
-  
-  fclose(f);
-  return 1;
-}
+  PathInfo->Type = PathFile;
+  strcpy(PathInfo->PhysicalPath, PathInfo->Path);
+
+  return ErrorSuccess;
+}    
 
 INT
 main (
@@ -587,33 +643,21 @@ main (
   CHAR          *AppName;
   INT           Index;
   BOOL          ProcessMbr;
-  CHAR          VolumeLetter;
-  CHAR          *OutputFilePath;
-  CHAR          *InputFilePath;
-  BOOL          WriteToDisk;
-  DRIVE_INFO    DriveInfo;
-  PATCH_TYPE    PatchType;
   ERROR_STATUS  Status;
-
-  CHAR        FloppyPathTemplate[] = "\\\\.\\%c:";
-  CHAR        DiskPathTemplate[]   = "\\\\.\\PHYSICALDRIVE%u";
-  CHAR        DiskPath[MAX_PATH];
+  PATH_INFO     InputPathInfo = {0};
+  PATH_INFO     OutputPathInfo = {0};
 
   AppName = *argv;
   argv ++;
   argc --;
   
   ProcessMbr    = FALSE;
-  WriteToDisk   = TRUE;
-  VolumeLetter  = 0;
 
   if (argc == 0) {
     PrintUsage();
     return 0;
   }
-
-  InputFilePath = NULL;
-    
+   
   //
   // Parse command line
   //
@@ -622,16 +666,17 @@ main (
       ListDrive ();
       return 0;
     }
-    else if ((stricmp (argv[0], "-m") == 0) || (stricmp (argv[Index], "--mbr") == 0)) {
+    else if ((stricmp (argv[Index], "-m") == 0) || (stricmp (argv[Index], "--mbr") == 0)) {
       ProcessMbr = TRUE;
     }
     else if ((stricmp (argv[Index], "-i") == 0) || (stricmp (argv[Index], "--input") == 0)) {
-      InputFilePath = argv[Index + 1];
-	  WriteToDisk = FALSE;
+      InputPathInfo.Path  = argv[Index + 1];
+      InputPathInfo.Input = TRUE;
       ++Index;
     }
     else if ((stricmp (argv[Index], "-o") == 0) || (stricmp (argv[Index], "--output") == 0)) {
-      OutputFilePath = argv[Index + 1];
+      OutputPathInfo.Path  = argv[Index + 1];
+      OutputPathInfo.Input = FALSE;
       ++Index;
     }
     else {
@@ -640,78 +685,22 @@ main (
     }
   }
 
-  PatchType = PatchTypeUnknown;
-  
-  if (ValidFilePath (InputFilePath) == 0) {
-    VolumeLetter = InputFilePath[0];
-    
-    if (VolumeLetter == 0) {
-      fprintf (stderr, "error E2003: Volume was not provided!\n");
-      return 1;
-    }    
-  } else if (ValidFilePath(InputFilePath) == 1) {
-    strcpy (DiskPath, InputFilePath);
-    // 
-    // file simulated floppy
-    //
-    PatchType = PatchTypeFloppy;
-  }
-  
-  //if (ValidFilePath(OutputFilePath) != 1) {
-  //  fprintf (stderr, "error E2003: File was not provided!\n");
-  //  return 1;
-  //}
-    
-  if ((VolumeLetter == 'A') || (VolumeLetter == 'a') || 
-      (VolumeLetter == 'B') || (VolumeLetter == 'b')
-      ) {
-    //
-    // Floppy
-    //
-    sprintf (DiskPath, FloppyPathTemplate, VolumeLetter);
-    PatchType = PatchTypeFloppy;
-  }
-  else if (PatchType != PatchTypeFloppy) {
-    //
-    // Hard/USB disk
-    //
-    if (!GetDriveInfo (VolumeLetter, &DriveInfo)) {
-      fprintf (stderr, "error E2004: GetDriveInfo - 0x%x\n", GetLastError ());
-      return 1;
-    }
 
-    //
-    // Shouldn't patch my own hard disk, but can read it.
-    // very safe then:)
-    //
-    if (DriveInfo.DriveType->Type == DRIVE_FIXED && WriteToDisk) {
-      fprintf (stderr, "error E0002: Error writing to local harddisk - permission denied!\n");
-      return 1;
-    }
-    
-    sprintf (DiskPath, DiskPathTemplate, DriveInfo.DiskNumber);
-    if (DriveInfo.DriveType->Type == DRIVE_REMOVABLE) {
-      PatchType = PatchTypeUsb;
-    }
-    else if (DriveInfo.DriveType->Type == DRIVE_FIXED) {
-      PatchType = PatchTypeIde;
-    }
-  }
-
-  if (PatchType == PatchTypeUnknown) {
-    fprintf (stderr, "error E3002: PatchType unknown!\n");
+  if ((GetPathInfo(&InputPathInfo)  != ErrorSuccess) ||
+      (GetPathInfo(&OutputPathInfo) != ErrorSuccess)) {
     return 1;
   }
-
+  
   //
   // Process DBR (Patch or Read)
   //
-  Status = ProcessBsOrMbr (DiskPath, OutputFilePath, WriteToDisk, PatchType, ProcessMbr);
+  Status = ProcessBsOrMbr (&InputPathInfo, &OutputPathInfo, ProcessMbr);
+
   if (Status == ErrorSuccess) {
     fprintf (
       stdout, 
       "%s %s: successful!\n", 
-      WriteToDisk ? "Write" : "Read", 
+      (OutputPathInfo.Type != PathFile) ? "Write" : "Read", 
       ProcessMbr ? "MBR" : "DBR"
       );
     return 0;
@@ -720,7 +709,7 @@ main (
       stderr, 
       "%s: %s %s: failed - %s (LastError: 0x%x)!\n",
       (Status == ErrorNoMbr) ? "WARNING" : "ERROR",
-      WriteToDisk ? "Write" : "Read", 
+      (OutputPathInfo.Type != PathFile) ? "Write" : "Read", 
       ProcessMbr ? "MBR" : "DBR", 
       ErrorStatusDesc[Status],
       GetLastError ()
