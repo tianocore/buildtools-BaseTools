@@ -1,0 +1,556 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Filename: FirmwareDatabase.xsd
+    
+    Copyright (c) 2008, Intel Corp.  All rights reserved.
+    
+    This program and the accompanying materials are licensed and made available 
+    under the terms and conditions of the BSD License which may be found at 
+    http://opensource.org/licenses/bsd-license.php
+    
+    THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+    WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+    
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	elementFormDefault="qualified"
+	targetNamespace="http://www.TianoCore.org/2008/Edk2.1"
+	xmlns="http://www.TianoCore.org/2008/Edk2.1">
+	<xs:annotation>
+		<xs:documentation xml:lang="en-us">This document covers the
+			FirmwareDatabase.db file that tracks what has been installed into the EDK
+			II development WORKSPACE.</xs:documentation>
+	</xs:annotation>
+	<xs:element name="WorkspaceContent">
+		<xs:annotation>
+			<xs:documentation xml:lang="en-us"> This file describes the distribution,
+				package and stand-alone (non-package) module content in this WORKSPACE.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element minOccurs="1" maxOccurs="1" ref="Header">
+					<xs:annotation>
+						<xs:documentation xml:lang="en-us"> This section tracks required
+							information about this file. </xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element minOccurs="1" maxOccurs="1" ref="DistributionPackageList">
+					<xs:annotation>
+						<xs:documentation xml:lang="en-us"> The list of distribution
+							packages that have been installed in the WORKSPACE.
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element minOccurs="0" maxOccurs="1" ref="PackageList">
+					<xs:annotation>
+						<xs:documentation xml:lang="en-us"> This is the listing of packages
+							that have been installed as part of a distribution.
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element minOccurs="0" maxOccurs="1" ref="ModuleList">
+					<xs:annotation>
+						<xs:documentation xml:lang="en-us"> This is a list of the
+							stand-alone modules that have been installed as part of a
+							distribution. </xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element minOccurs="0" maxOccurs="1" ref="ToolsList">
+					<xs:annotation>
+						<xs:documentation xml:lang="en-us"> This is the list of tools that
+							have been installed as part of a distribution. </xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element minOccurs="0" maxOccurs="1" ref="MiscellaneousFilesList">
+					<xs:annotation>
+						<xs:documentation xml:lang="en-us"> This is the list of files from
+							either the UserExtensions or Misc sections of a distribution.
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element minOccurs="0" maxOccurs="1" ref="UserExtensionsList">
+					<xs:annotation>
+						<xs:documentation xml:lang="en-us"> This is the list of files from
+							either the UserExtensions or Misc sections of a distribution.
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="Header">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element minOccurs="0" maxOccurs="1" name="Name"
+					type="xs:normalizedString">
+					<xs:annotation>
+						<xs:documentation xml:lang="en-us"> This User Interface Name can be
+							entered during initialization of a WORKSPACE to permit a developer
+							to uniquely identify a WORKSPACE. </xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element minOccurs="1" maxOccurs="1" name="AbsolutePath"
+					type="xs:anyURI">
+					<xs:annotation>
+						<xs:documentation xml:lang="en-us"> When the workspace is first
+							initialized, this is the absolute path to this file.
+						</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element minOccurs="1" maxOccurs="1" name="LastModifiedDate"
+					type="xs:dateTime"/>
+				<xs:element minOccurs="1" maxOccurs="1" name="XmlSpecification"
+					default="2.1" type="xs:decimal"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+
+
+	<xs:element name="PackageList">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="Package" minOccurs="1" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Name" minOccurs="1" maxOccurs="1">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> The User Interface Name of
+										the package. </xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="xs:normalizedString">
+											<xs:attribute name="BaseName" type="xs:NCName"
+												use="optional"/>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="PackageGuid" minOccurs="1" maxOccurs="1">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> This is the GUID of the
+										package, backward compatible versions of a package can use
+										the same GUID, however the version attribute must be changed
+										(incrementally.) Non-backward compatible versions of a
+										package must also provide a new GUID, while resetting the
+										version attribute is optional. </xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="RegistryFormatGuid">
+											<xs:attribute name="Version" type="xs:decimal"
+												use="required"/>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="DistributionPackageGuid" minOccurs="1"
+								maxOccurs="1">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> This is the GUID and
+										Version of the Distribution Package that provided this
+										package. </xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="RegistryFormatGuid">
+											<xs:attribute name="Version" type="xs:decimal"
+												use="required"/>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="PackageInstalledFolder" type="xs:anyURI"
+								minOccurs="1" maxOccurs="1">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> This is used to track the
+										actual installation location, relative to the WORKSPACE.
+										During an installation, the user may be presented with an
+										option to relocate package content from the ZIP portion of
+										the archive into a different location. </xs:documentation>
+									<xs:documentation> Any installation tools must modify this
+										value if the location is different from the default
+										location. </xs:documentation>
+									<xs:documentation> Any removal tools must check this value to
+										locate correctly, the items that will be removed.
+									</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element name="PackageDeclarationFilename" minOccurs="1"
+								maxOccurs="1" type="xs:anyURI">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> The WORKSPACE relative
+										path and filename of the DEC file. </xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element minOccurs="0" maxOccurs="1" name="ModuleList">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> Every module that is part
+										of this package must be listed here. </xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element minOccurs="1" maxOccurs="unbounded"
+											name="Module">
+											<xs:complexType>
+												<xs:sequence>
+													<xs:element minOccurs="1" maxOccurs="1"
+														name="ModuleGuid">
+														<xs:annotation>
+															<xs:documentation xml:lang="en-us"> This is the
+																GUID and Version of a module that is part of a
+																package. </xs:documentation>
+														</xs:annotation>
+														<xs:complexType>
+															<xs:simpleContent>
+																<xs:extension base="RegistryFormatGuid">
+																	<xs:attribute name="Version" type="xs:decimal"
+																		use="required"/>
+																</xs:extension>
+															</xs:simpleContent>
+														</xs:complexType>
+													</xs:element>
+													<xs:element minOccurs="1" maxOccurs="1"
+														name="ModuleInstalledFolder" type="xs:anyURI">
+														<xs:annotation>
+															<xs:documentation xml:lang="en-us"> This is used
+																to track the actual installation location,
+																relative to the WORKSPACE. During an
+																installation, the user may be presented with an
+																option to relocate module content from the ZIP
+																portion of the archive into a different
+																location. </xs:documentation>
+															<xs:documentation> Any installation tools must
+																modify this value if the location is different
+																from the default location. </xs:documentation>
+															<xs:documentation> Any removal tools must check
+																this value to locate correctly, the items that
+																will be removed. </xs:documentation>
+														</xs:annotation>
+													</xs:element>
+												</xs:sequence>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+
+	<xs:element name="ModuleList">
+		<xs:annotation>
+			<xs:documentation xml:lang="en-us"> This section is used to record
+				distribution packages that contain modules that are not part of a
+				package. Modules that are part of packages are listed under the package. </xs:documentation>
+			<xs:documentation xml:lang="en-us"> Module only distribution will
+				typically be for binary only modules, like the enhanced FAT driver.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element minOccurs="1" maxOccurs="unbounded" name="Module">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element minOccurs="1" maxOccurs="1" name="Name">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> The User Interface Name of
+										the stand-alone Module. </xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element name="ModuleGuid" minOccurs="1" maxOccurs="1">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> This is the GUID of the
+										module. Backward compatible versions of a module can use the
+										same GUID, however the version attribute must be changed
+										(incrementally.) Non-backward compatible versions of a
+										module must also provide a new GUID, while resetting the
+										version attribute is optional. </xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="RegistryFormatGuid">
+											<xs:attribute name="Version" type="xs:decimal"
+												use="required"/>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+							<xs:element minOccurs="1" maxOccurs="1"
+								name="DistributionPackageGuid">
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="RegistryFormatGuid">
+											<xs:attribute name="Version" type="xs:decimal"
+												use="required"/>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="ModuleInstalledFolder" type="xs:anyURI">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> This is used to track the
+										actual installation location, relative to the WORKSPACE.
+										During an installation, the user may be presented with an
+										option to relocate a stand-alone module's content from the
+										ZIP portion of the archive into a different location. </xs:documentation>
+									<xs:documentation> Any installation tools must modify this
+										value if the location is different from the default
+										location. </xs:documentation>
+									<xs:documentation> Any removal tools must check this value to
+										locate correctly, the items that will be removed.
+									</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element name="ModuleInformationFile" minOccurs="1"
+								maxOccurs="1" type="xs:anyURI">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> This is the WORKSPACE
+										relative path and filename of the INF file.
+									</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="DistributionPackageList">
+		<xs:annotation>
+			<xs:documentation xml:lang="en-us"> This is a list of the Distribution
+				Packages that have been installed in the WORKSPACE. </xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element minOccurs="1" maxOccurs="unbounded" name="DistPkg">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element minOccurs="1" maxOccurs="1" name="Name">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> The User Interface Name of
+										the distribution. </xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="xs:normalizedString">
+											<xs:attribute name="BaseName" type="xs:NCName"
+												use="required"/>
+											<xs:attribute name="DistPkgInstalledBaseName"
+												type="xs:NCName" use="optional">
+												<xs:annotation>
+													<xs:documentation xml:lang="en-us"> If, during
+														installation, the user changes this reference name
+														(used when installing different versions of a
+														Distribution package that has the same BaseName, the
+														value is recorded here. This is only used by
+														installation and removal tools. </xs:documentation>
+												</xs:annotation>
+											</xs:attribute>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+							<xs:element minOccurs="1" maxOccurs="1" name="GUID">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> This is the GUID of the
+										distribution, backward compatible versions of a distribution
+										can use the same GUID, however the version attribute must be
+										changed (incrementally.) Non-backward compatible versions of
+										a distribution must also provide a new GUID, while resetting
+										the version attribute is optional. </xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="RegistryFormatGuid">
+											<xs:attribute name="Version" type="xs:decimal"
+												use="required"/>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+							<xs:element minOccurs="1" maxOccurs="1"
+								name="DistributionPackageFilename" type="xs:anyURI">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> This is the filename of
+										the XML distribution package surface area that was stored in
+										the Conf/Pkgs folder of the WORKSPACE for this distribution
+										package. </xs:documentation>
+									<xs:documentation xml:lang="en-us"> The InstallPkg tool must
+										create this file (or, alternatively, the user can create the
+										file by redirecting the output of the zip -Tv Contents.zip
+										file. </xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element minOccurs="1" maxOccurs="1"
+								name="DistributionManifestFilename" type="xs:anyURI">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> This is the filename of
+										the distribution package manifest file that was stored in
+										the Conf/Pkgs folder of the WORKSPACE for this distribution
+										package. </xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element minOccurs="1" maxOccurs="1" name="InstalledDate"
+								type="xs:dateTime"/>
+						</xs:sequence>
+						<xs:attribute name="ReadOnly" type="xs:boolean" default="false"
+							use="optional">
+							<xs:annotation>
+								<xs:documentation xml:lang="en-us">If set to true, all content
+									within this distribution package should NOT be
+								modified.</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="RePackage" type="xs:boolean" default="false"
+							use="optional">
+							<xs:annotation>
+								<xs:documentation xml:lang="en-us">If set to true, then the
+									content can be repackaged into another distribution
+								package.</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="ToolsList">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element minOccurs="1" maxOccurs="unbounded" name="ToolPackage">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element minOccurs="1" maxOccurs="1" name="Name"
+								type="xs:normalizedString">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> The User Interface Name of
+										the Tools. </xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element minOccurs="1" maxOccurs="1"
+								name="DistributionPackageGuid">
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="RegistryFormatGuid">
+											<xs:attribute name="Version" type="xs:decimal"
+												use="required"/>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+							<xs:element minOccurs="1" maxOccurs="unbounded" name="File"
+								type="xs:anyURI">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> This is used to track the
+										actual installation location of the Tools Section files.
+										During an installation, the user may change in the
+										installation location, so that it is different from the
+										location in the ZIP file. </xs:documentation>
+									<xs:documentation xml:lang="en-us"> Any removal tools must
+										check this value to locate correctly, the items that will be
+										removed. </xs:documentation>
+								</xs:annotation>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="MiscellaneousFilesList">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="MiscellaneousFiles" minOccurs="1"
+					maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="DistributionPackageGuid" minOccurs="1"
+								maxOccurs="1">
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="RegistryFormatGuid">
+											<xs:attribute name="Version" type="xs:decimal"
+												use="required"/>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="File" minOccurs="1" maxOccurs="unbounded"
+								type="xs:anyURI">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> This is used to track the
+										actual installation location of MISC section files. During
+										an installation, the user may change in the installation
+										location, so that it is different from the location in the
+										ZIP file. </xs:documentation>
+									<xs:documentation xml:lang="en-us"> Any removal tools must
+										check this value to locate correctly, the items that will be
+										removed. </xs:documentation>
+								</xs:annotation>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="UserExtensionsList">
+		<xs:annotation>
+			<xs:documentation xml:lang="en-us"> If a Distribution Package contains a
+				UserExtensions section, then the Distribution Package GUID must be
+				recorded here. </xs:documentation>
+			<xs:documentation xml:lang="en-us"> We don't track the content of the
+				UserExtension section, just the Distribution Package. The InstallPkg
+				tool will process these sections during the installation, so just
+				recording what distribution has this section is enough.
+			</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element minOccurs="1" maxOccurs="unbounded" name="Extensions">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element minOccurs="1" maxOccurs="1"
+								name="DistributionPackageGuid">
+								<xs:complexType>
+									<xs:simpleContent>
+										<xs:extension base="RegistryFormatGuid">
+											<xs:attribute name="Version" type="xs:decimal"
+												use="required"/>
+										</xs:extension>
+									</xs:simpleContent>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<!-- Simple Types that further restrict allowed content. -->
+
+	<xs:simpleType name="RegistryFormatGuid">
+		<xs:annotation>
+			<xs:documentation xml:lang="en-us"> A Registry format GUID must contain
+				five different Hexadecimal character sets that are separated by a dash
+				(-) character. </xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern
+				value="\s*[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}\s*"
+			/>
+		</xs:restriction>
+	</xs:simpleType>
+
+</xs:schema>
