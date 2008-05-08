@@ -1608,6 +1608,9 @@ def CheckFunctionHeaderConsistentWithDoxygenComment(FuncModifier, FuncHeader, Fu
         PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMENT_DESCRIPTION, 'Comment description should end with period \'.\'', TableName, CommentId)
     DoxygenTagNumber = len(DoxygenStrList)
     ParamNumber = len(ParamList)
+    for Param in ParamList:
+        if Param.Name.upper() == 'VOID':
+            ParamNumber -= 1
     Index = 0
     if ParamNumber > 0 and DoxygenTagNumber > 0:
         while Index < ParamNumber and Index < DoxygenTagNumber:
