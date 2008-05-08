@@ -51,24 +51,24 @@ _ErrorLogger = logging.getLogger("tool_error")
 _ErrorFormatter = logging.Formatter("%(message)s")
 
 # String templates for ERROR/WARN/DEBUG log message
-_ErrorMessageTemplate = '\n%(tool)s...\n%(file)s(%(line)s): error %(errorcode)X: %(msg)s\n    %(extra)s'
-_ErrorMessageTemplateWithoutFile = '\n%(tool)s...\n : error %(errorcode)04X: %(msg)s\n    %(extra)s'
+_ErrorMessageTemplate = '\n\n%(tool)s...\n%(file)s(%(line)s): error %(errorcode)04X: %(msg)s\n    %(extra)s'
+_ErrorMessageTemplateWithoutFile = '\n\n%(tool)s...\n : error %(errorcode)04X: %(msg)s\n    %(extra)s'
 _WarningMessageTemplate = '%(tool)s...\n%(file)s(%(line)s): warning: %(msg)s'
 _WarningMessageTemplateWithoutFile = '%(tool)s: : warning: %(msg)s'
 _DebugMessageTemplate = '%(file)s(%(line)s): debug: %(msg)s'
 
-# 
-# Flag used to take WARN as ERROR. 
+#
+# Flag used to take WARN as ERROR.
 # By default, only ERROR message will break the tools execution.
-# 
+#
 _WarningAsError = False
 
 ## Log debug message
-# 
+#
 #   @param  Level       DEBUG level (DEBUG0~9)
 #   @param  Message     Debug information
 #   @param  ExtraData   More information associated with "Message"
-# 
+#
 def debug(Level, Message, ExtraData=None):
     if _DebugLogger.level > Level:
         return
@@ -91,23 +91,23 @@ def debug(Level, Message, ExtraData=None):
     _DebugLogger.log(Level, LogText)
 
 ## Log verbose message
-# 
+#
 #   @param  Message     Verbose information
-# 
+#
 def verbose(Message):
     return _InfoLogger.log(VERBOSE, Message)
 
 ## Log warning message
 #
 #   Warning messages are those which might be wrong but won't fail the tool.
-# 
+#
 #   @param  ToolName    The name of the tool. If not given, the name of caller
 #                       method will be used.
 #   @param  Message     Warning information
 #   @param  File        The name of file which caused the warning.
 #   @param  Line        The line number in the "File" which caused the warning.
 #   @param  ExtraData   More information associated with "Message"
-# 
+#
 def warn(ToolName, Message, File=None, Line=None, ExtraData=None):
     if _InfoLogger.level > WARN:
         return
@@ -140,7 +140,7 @@ def warn(ToolName, Message, File=None, Line=None, ExtraData=None):
 
     # Raise an execption if indicated
     if _WarningAsError == True:
-        raise FatalError("%s failed by warning!" % ToolName)
+        raise FatalError(WARNING_AS_ERROR)
 
 ## Log INFO message
 info    = _InfoLogger.info
@@ -150,7 +150,7 @@ info    = _InfoLogger.info
 #   Once an error messages is logged, the tool's execution will be broken by raising
 # an execption. If you don't want to break the execution later, you can give
 # "RaiseError" with "False" value.
-# 
+#
 #   @param  ToolName    The name of the tool. If not given, the name of caller
 #                       method will be used.
 #   @param  ErrorCode   The error code
@@ -158,9 +158,9 @@ info    = _InfoLogger.info
 #   @param  File        The name of file which caused the error.
 #   @param  Line        The line number in the "File" which caused the warning.
 #   @param  ExtraData   More information associated with "Message"
-#   @param  RaiseError  Raise an exception to break the tool's executuion if 
+#   @param  RaiseError  Raise an exception to break the tool's executuion if
 #                       it's True. This is the default behavior.
-# 
+#
 def error(ToolName, ErrorCode, Message=None, File=None, Line=None, ExtraData=None, RaiseError=True):
     # if no tool name given, use caller's source file name as tool name
     if ToolName == None or ToolName == "":
@@ -196,7 +196,7 @@ def error(ToolName, ErrorCode, Message=None, File=None, Line=None, ExtraData=Non
 
     _ErrorLogger.log(ERROR, LogText)
     if RaiseError:
-        raise FatalError("%s failed!" % ToolName)
+        raise FatalError(ErrorCode)
 
 # Log information which should be always put out
 quiet   = _ErrorLogger.error
@@ -206,25 +206,25 @@ def Initialize():
     #
     # Since we use different format to log different levels of message into different
     # place (stdout or stderr), we have to use different "Logger" objects to do this.
-    # 
+    #
     # For DEBUG level (All DEBUG_0~9 are applicable)
     _DebugLogger.setLevel(INFO)
     _DebugChannel = logging.StreamHandler(sys.stdout)
     _DebugChannel.setFormatter(_DebugFormatter)
     _DebugLogger.addHandler(_DebugChannel)
-    
+
     # For VERBOSE, INFO, WARN level
     _InfoLogger.setLevel(INFO)
     _InfoChannel = logging.StreamHandler(sys.stdout)
     _InfoChannel.setFormatter(_InfoFormatter)
     _InfoLogger.addHandler(_InfoChannel)
-    
+
     # For ERROR level
     _ErrorLogger.setLevel(INFO)
     _ErrorCh = logging.StreamHandler(sys.stderr)
     _ErrorCh.setFormatter(_ErrorFormatter)
     _ErrorLogger.addHandler(_ErrorCh)
-    
+
 ## Set log level
 #
 #   @param  Level   One of log level in _LogLevel
@@ -248,7 +248,7 @@ def SetWarningAsError():
 ## Specify a file to store the log message as well as put on console
 #
 #   @param  LogFile     The file path used to store the log message
-# 
+#
 def SetLogFile(LogFile):
     if os.path.exists(LogFile):
         os.remove(LogFile)

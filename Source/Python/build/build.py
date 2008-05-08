@@ -1272,25 +1272,51 @@ def Main():
         if MyBuild != None:
             # for multi-thread build exits safely
             MyBuild.Relinquish()
-        EdkLogger.quiet("")
+        if Option != None and Option.debug != None:
+            EdkLogger.quiet(traceback.format_exc())
+        ReturnCode = X.args[0]
+    except Warning, X:
+        # error from Fdf parser
+        EdkLogger.SetLevel(EdkLogger.QUIET)
+        if MyBuild != None:
+            # for multi-thread build exits safely
+            MyBuild.Relinquish()
         if Option != None and Option.debug != None:
             EdkLogger.quiet(traceback.format_exc())
         else:
-            EdkLogger.quiet(str(X))
-        ReturnCode = 1
-    except BaseException, X:
-        EdkLogger.quiet("\n\nPython...")
+            EdkLogger.error(X.ToolName, FORMAT_INVALID, File=X.FileName, Line=X.LineNumber, ExtraData=X.Message, RaiseError = False)
+        ReturnCode = FORMAT_INVALID
+    except KeyboardInterrupt:
+        ReturnCode = ABORT_ERROR
+    except:
+        EdkLogger.SetLevel(EdkLogger.QUIET)
+        if MyBuild != None:
+            # for multi-thread build exits safely
+            MyBuild.Relinquish()
+        EdkLogger.error(
+                    "\nPython",
+                    CODE_ERROR,
+                    "Tools code failure",
+                    ExtraData="Please submit bug report in www.TianoCore.org, attaching following call stack trace!\n",
+                    RaiseError=False
+                    )
         EdkLogger.quiet(traceback.format_exc())
-        ReturnCode = 1
+        ReturnCode = CODE_ERROR
     finally:
         Utils.Progressor.Abort()
 
     if MyBuild != None:
         MyBuild.Db.Close()
 
+    if ReturnCode == 0:
+        Conclusion = "Done"
+    elif ReturnCode == ABORT_ERROR:
+        Conclusion = "Aborted"
+    else:
+        Conclusion = "Failed"
     FinishTime = time.time()
     BuildDuration = time.strftime("%M:%S", time.gmtime(int(round(FinishTime - StartTime))))
-    EdkLogger.quiet("\n%s [%s]" % (time.strftime("%H:%M:%S, %b.%d %Y", time.localtime()), BuildDuration))
+    EdkLogger.quiet("\n- %s -\n%s [%s]" % (Conclusion, time.strftime("%H:%M:%S, %b.%d %Y", time.localtime()), BuildDuration))
 
     return ReturnCode
 

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #
 
-FILE_NOT_FOUND = 0
 FILE_OPEN_FAILURE = 1
 FILE_WRITE_FAILURE = 2
 FILE_PARSE_FAILURE = 3
@@ -25,6 +24,7 @@ FILE_DELETE_FAILURE = 10
 FILE_COPY_FAILURE = 11
 FILE_POSITIONING_FAILURE = 12
 FILE_ALREADY_EXIST = 13
+FILE_NOT_FOUND = 14
 FILE_UNKNOWN_ERROR = 0x0FFF
 
 OPTION_UNKNOWN = 0x1000
@@ -65,13 +65,17 @@ IO_UNKNOWN_ERROR = 0x6FFF
 
 COMMAND_FAILURE = 0x7000
 
+CODE_ERROR = 0xC0DE
+
 AUTOGEN_ERROR = 0xF000
 PARSER_ERROR = 0xF001
 BUILD_ERROR = 0xF002
 GENFDS_ERROR = 0xF003
 ECC_ERROR = 0xF004
 EOT_ERROR = 0xF005
+WARNING_AS_ERROR = 0xF006
 MIGRATION_ERROR = 0xF010
+ABORT_ERROR = 0xFFFE
 UNKNOWN_ERROR = 0xFFFF
 
 ## Error message of each error code
@@ -104,10 +108,10 @@ gErrorMessage = {
     PARAMETER_MISSING       :   "Missing parameter",
     PARAMETER_UNKNOWN_ERROR :   "Unknown error in parameters",
 
-    FORMAT_INVALID          :   "Invalid sytax/format",
-    FORMAT_NOT_SUPPORTED    :   "Not supported sytax/format",
+    FORMAT_INVALID          :   "Invalid syntax/format",
+    FORMAT_NOT_SUPPORTED    :   "Not supported syntax/format",
     FORMAT_UNKNOWN          :   "Unknown format",
-    FORMAT_UNKNOWN_ERROR    :   "Unknown error in sytax/format ",
+    FORMAT_UNKNOWN_ERROR    :   "Unknown error in syntax/format ",
 
     RESOURCE_NOT_AVAILABLE  :   "Not available",
     RESOURCE_ALLOCATE_FAILURE :   "Allocate failure",
