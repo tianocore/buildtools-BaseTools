@@ -18,6 +18,8 @@
 from CommonDataClass.FdfClass import SectionClassObject
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import os
+from Common import EdkLogger
+from Common.BuildToolError import *
 
 ## section base class
 #
@@ -68,19 +70,19 @@ class Section (SectionClassObject):
         'SEC_COMPAT16'  : '.sec',
         'SEC_BIN'       : '.sec'
     }
-    
+
     ToolGuid = {
         '0xa31280ad-0x481e-0x41b6-0x95e8-0x127f-0x4c984779' : 'TianoCompress',
         '0xee4e5898-0x3914-0x4259-0x9d6e-0xdc7b-0xd79403cf' : 'LzmaCompress'
     }
-    
+
     ## The constructor
     #
     #   @param  self        The object pointer
     #
     def __init__(self):
         SectionClassObject.__init__(self)
-        
+
     ## GenSection() method
     #
     #   virtual function
@@ -112,7 +114,7 @@ class Section (SectionClassObject):
             IsSect = True
         else :
             IsSect = False
-            
+
         if FileExtension != None:
             Suffix = FileExtension
         elif IsSect :
@@ -120,8 +122,8 @@ class Section (SectionClassObject):
         else:
             Suffix = Section.BinFileType.get(FileType)
         if FfsInf == None:
-            raise Exception ('Inf File does not exist!')
-        
+            EdkLogger.error("GenFds", GENFDS_ERROR, 'Inf File does not exist!')
+
         FileList = []
         if FileType != None:
             for File in FfsInf.BinFileList:
@@ -135,12 +137,12 @@ class Section (SectionClassObject):
                         GenFdsGlobalVariable.InfLogger ("\nFile Type \'%s\' of File %s in %s is not same with file type \'%s\' from Rule in FDF" %(File.FileType, File.BinaryFile, FfsInf.InfFileName, FileType))
                 else:
                         GenFdsGlobalVariable.InfLogger ("\nCurrent ARCH \'%s\' of File %s is not in the Support Arch Scope of %s specified by INF %s in FDF" %(FfsInf.CurrentArch, File.BinaryFile, File.SupArchList, FfsInf.InfFileName))
-            
+
         if os.path.exists(FfsInf.EfiOutputPath):
             for FileName in os.listdir(FfsInf.EfiOutputPath):
                 Name, Ext = os.path.splitext(FileName)
                 if Ext == Suffix:
                    FileList.append(os.path.join(FfsInf.EfiOutputPath, FileName))
-                   
-        return FileList, IsSect 
+
+        return FileList, IsSect
     GetFileList = staticmethod(GetFileList)

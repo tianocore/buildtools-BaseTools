@@ -23,6 +23,8 @@ import os
 from CommonDataClass.FdfClass import DepexSectionClassObject
 from AutoGen.GenDepex import DependencyExpression
 import shutil
+from Common import EdkLogger
+from Common.BuildToolError import *
 
 ## generate data section
 #
@@ -34,7 +36,7 @@ class DepexSection (DepexSectionClassObject):
     #
     def __init__(self):
         DepexSectionClassObject.__init__(self)
-    
+
     def __FindGuidValue(self, CName):
         for Arch in GenFdsGlobalVariable.ArchList:
             for PkgDb in GenFdsGlobalVariable.WorkSpace.PackageList:
@@ -45,7 +47,7 @@ class DepexSection (DepexSectionClassObject):
                 if CName in PkgDb.Guids:
                     return PkgDb.Guids[CName]
         return None
-    
+
     ## GenSection() method
     #
     #   Generate compressed section
@@ -58,48 +60,48 @@ class DepexSection (DepexSectionClassObject):
     #   @param  FfsInf      FfsInfStatement object that contains this section data
     #   @param  Dict        dictionary contains macro and its value
     #   @retval tuple       (Generated file name list, section alignment)
-    #    
+    #
     def GenSection(self, OutputPath, ModuleName, SecNum, keyStringList, FfsFile = None, Dict = {}):
-        
+
         self.Expression = self.Expression.replace("\n", " ").replace("\r", " ")
         ExpList = self.Expression.split()
         ExpGuidDict = {}
-        
+
         for Exp in ExpList:
             if Exp.upper() not in ('AND', 'OR', 'NOT', 'TRUE', 'FALSE', 'SOR', 'BEFORE', 'AFTER', 'END'):
                 GuidStr = self.__FindGuidValue(Exp)
                 if GuidStr == None:
-                    raise Exception ("Depex GUID %s could not be found in build DB! (ModuleName: %s)" % (Exp, ModuleName))
-                    sys.exit(1)
-                    
+                    EdkLogger.error("GenFds", RESOURCE_NOT_AVAILABLE,
+                                    "Depex GUID %s could not be found in build DB! (ModuleName: %s)" % (Exp, ModuleName))
+
                 ExpGuidDict[Exp] = GuidStr
-                
+
         for Item in ExpGuidDict:
             self.Expression = self.Expression.replace(Item, ExpGuidDict[Item])
-            
+
         self.Expression = self.Expression.strip()
         ModuleType = (self.DepexType.startswith('PEI') and ['PEIM'] or ['DXE_DRIVER'])[0]
         InputFile = os.path.join (OutputPath, ModuleName + 'SEC' + SecNum + '.dpx')
         InputFile = os.path.normpath(InputFile)
-        
+
         Dpx = DependencyExpression(self.Expression, ModuleType)
         Dpx.Generate(InputFile)
-        
+
         OutputFile = os.path.join (OutputPath, ModuleName + 'SEC' + SecNum + '.depex')
         OutputFile = os.path.normpath(OutputFile)
         SecType = (self.DepexType.startswith('PEI') and ['PEI_DEPEX'] or ['DXE_DEPEX'])[0]
-        
+
         GenSectionCmd = (
             'GenSec',
              '-o', OutputFile,
              '-s', Section.Section.SectionType.get (SecType),
              InputFile,
             )
-                         
+
         #
         # Call GenSection
         #
-        
+
         GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
         FileList = [OutputFile]
         return FileList, self.Alignment

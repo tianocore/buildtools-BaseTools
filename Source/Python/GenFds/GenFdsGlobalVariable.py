@@ -68,8 +68,8 @@ class GenFdsGlobalVariable:
             os.makedirs(GenFdsGlobalVariable.FfsDir)
         if ArchList != None:
             GenFdsGlobalVariable.ArchList = ArchList
-        
-        T_CHAR_LF = '\n'    
+
+        T_CHAR_LF = '\n'
         #
         # Create FV Address inf file
         #
@@ -84,20 +84,20 @@ class GenFdsGlobalVariable:
             if GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, Arch].BsBaseAddress:
                 BsAddress = GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, Arch].BsBaseAddress
                 break
-        
+
         FvAddressFile.writelines("EFI_BOOT_DRIVER_BASE_ADDRESS = " + \
                                        BsAddress          + \
                                        T_CHAR_LF)
-                                       
+
         RtAddress = '0'
         for Arch in ArchList:
             if GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, Arch].RtBaseAddress:
                 RtAddress = GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, Arch].RtBaseAddress
-                
+
         FvAddressFile.writelines("EFI_RUNTIME_DRIVER_BASE_ADDRESS = " + \
                                        RtAddress          + \
                                        T_CHAR_LF)
-        
+
         FvAddressFile.close()
 
     ## ReplaceWorkspaceMacro()
@@ -112,16 +112,16 @@ class GenFdsGlobalVariable:
         else:
             Str = os.path.join(GenFdsGlobalVariable.WorkSpaceDir, String)
         return os.path.normpath(Str)
-    
+
     def CallExternalTool (cmd, errorMess):
-        
+
         if type(cmd) not in (tuple, list):
             GenFdsGlobalVariable.ErrorLogger("ToolError!  Invalid parameter type in call to CallExternalTool")
 
         if GenFdsGlobalVariable.DebugLevel != -1:
             cmd += ('-d', str(GenFdsGlobalVariable.DebugLevel))
             GenFdsGlobalVariable.InfLogger (cmd)
-            
+
         if GenFdsGlobalVariable.VerboseMode:
             cmd += ('-v',)
             GenFdsGlobalVariable.InfLogger (cmd)
@@ -142,15 +142,14 @@ class GenFdsGlobalVariable:
             GenFdsGlobalVariable.InfLogger (out)
             GenFdsGlobalVariable.InfLogger (error)
             if PopenObject.returncode != 0:
-                GenFdsGlobalVariable.InfLogger (errorMess)
-                sys.exit(1)
+                EdkLogger.error("GenFds", BuildToolError.COMMAND_FAILURE, errorMess)
 
     def VerboseLogger (msg):
         EdkLogger.verbose(msg)
 
     def InfLogger (msg):
         EdkLogger.info(msg)
-        
+
     def ErrorLogger (msg, File = None, Line = None, ExtraData = None):
         EdkLogger.error('GenFds', BuildToolError.GENFDS_ERROR, msg, File, Line, ExtraData)
 
@@ -165,7 +164,7 @@ class GenFdsGlobalVariable:
     def MacroExtend (Str, MacroDict = {}, Arch = 'COMMON'):
         if Str == None :
             return None
-        
+
         Dict = {'$(WORKSPACE)'   : GenFdsGlobalVariable.WorkSpaceDir,
                 '$(EDK_SOURCE)'  : GenFdsGlobalVariable.EdkSourceDir,
 #                '$(OUTPUT_DIRECTORY)': GenFdsGlobalVariable.OutputDirFromDsc,
@@ -175,23 +174,22 @@ class GenFdsGlobalVariable:
         OutputDir = GenFdsGlobalVariable.OutputDirFromDscDict[GenFdsGlobalVariable.ArchList[0]]
         if Arch != 'COMMON' and Arch in GenFdsGlobalVariable.ArchList:
             OutputDir = GenFdsGlobalVariable.OutputDirFromDscDict[Arch]
-            
+
         Dict['$(OUTPUT_DIRECTORY)'] = OutputDir
-            
+
         if MacroDict != None  and len (MacroDict) != 0:
             Dict.update(MacroDict)
 
         for key in Dict.keys():
             if Str.find(key) >= 0 :
                 Str = Str.replace (key, Dict[key])
-        
+
         if Str.find('$(ARCH)') >= 0:
             if len(GenFdsGlobalVariable.ArchList) == 1:
                 Str = Str.replace('$(ARCH)', GenFdsGlobalVariable.ArchList[0])
             else:
-                GenFdsGlobalVariable.InfLogger ("\nNo way to determine $(ARCH) for %s\n" % Str)
-                sys.exit(1)
-            
+                EdkLogger.error("GenFds", GENFDS_ERROR, "No way to determine $(ARCH) for %s" % Str)
+
         return Str
 
 

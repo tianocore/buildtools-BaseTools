@@ -23,19 +23,21 @@ from GenFdsGlobalVariable import GenFdsGlobalVariable
 from CommonDataClass.FdfClass import GuidSectionClassObject
 from Common import ToolDefClassObject
 import sys
+from Common import EdkLogger
+from Common.BuildToolError import *
 
 ## generate GUIDed section
 #
 #
 class GuidSection(GuidSectionClassObject) :
-    
+
     ## The constructor
     #
     #   @param  self        The object pointer
     #
     def __init__(self):
         GuidSectionClassObject.__init__(self)
-    
+
     ## GenSection() method
     #
     #   Generate GUIDed section
@@ -48,18 +50,18 @@ class GuidSection(GuidSectionClassObject) :
     #   @param  FfsInf      FfsInfStatement object that contains this section data
     #   @param  Dict        dictionary contains macro and its value
     #   @retval tuple       (Generated file name, section alignment)
-    #    
+    #
     def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None, Dict = {}):
         #
         # Generate all section
         #
         self.KeyStringList = KeyStringList
-        
+
         if FfsInf != None:
             self.Alignment = FfsInf.__ExtendMacro__(self.Alignment)
             self.NameGuid = FfsInf.__ExtendMacro__(self.NameGuid)
             self.SectionType = FfsInf.__ExtendMacro__(self.SectionType)
-            
+
         SectFile = tuple()
         Index = 0
         for Sect in self.SectionList:
@@ -69,7 +71,7 @@ class GuidSection(GuidSectionClassObject) :
             if ReturnSectList != []:
                 for file in ReturnSectList:
                     SectFile += (file,)
-                       
+
 
         OutputFile = OutputPath + \
                      os.sep     + \
@@ -78,7 +80,7 @@ class GuidSection(GuidSectionClassObject) :
                      SecNum     + \
                      Ffs.SectionSuffix['GUIDED']
         OutputFile = os.path.normpath(OutputFile)
-        
+
         ExternalTool = None
         if self.NameGuid != None:
             ExternalTool = self.__FindExtendTool__()
@@ -93,15 +95,14 @@ class GuidSection(GuidSectionClassObject) :
                  '-o', OutputFile,
                  '-s', Section.Section.SectionType[self.SectionType],
                 ) + SectFile
-                             
+
             GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
             OutputFileList = []
             OutputFileList.append(OutputFile)
             return OutputFileList, self.Alignment
         #or GUID not in External Tool List
         elif ExternalTool == None:
-            print "No tool found with GUID %s" % self.NameGuid
-            sys.exit(1)
+            EdkLogger.error("GenFds", GENFDS_ERROR, "No tool found with GUID %s" % self.NameGuid)
         else:
             #
             # Call GenSection with DUMMY section type.
@@ -110,7 +111,7 @@ class GuidSection(GuidSectionClassObject) :
                 'GenSec',
                 '-o', OutputFile,
                 ) + SectFile
-        
+
             GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
             #
             # Use external tool process the Output
@@ -123,7 +124,7 @@ class GuidSection(GuidSectionClassObject) :
                        SecNum     + \
                        '.tmp'
             TempFile = os.path.normpath(TempFile)
-            
+
             ExternalToolCmd = (
                 ExternalTool,
                 '-e',
@@ -156,13 +157,13 @@ class GuidSection(GuidSectionClassObject) :
             OutputFileList = []
             OutputFileList.append(OutputFile)
             return OutputFileList, self.Alignment
-    
+
     ## __FindExtendTool()
     #
     #    Find location of tools to process section data
     #
     #   @param  self        The object pointer
-    #    
+    #
     def __FindExtendTool__(self):
         Tool = None
         if self.KeyStringList == None or self.KeyStringList == []:
@@ -187,4 +188,4 @@ class GuidSection(GuidSectionClassObject) :
         return Tool
 
 
-                
+

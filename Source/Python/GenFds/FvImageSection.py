@@ -22,19 +22,21 @@ import subprocess
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import os
 from CommonDataClass.FdfClass import FvImageSectionClassObject
+from Common import EdkLogger
+from Common.BuildToolError import *
 
 ## generate FV image section
 #
 #
 class FvImageSection(FvImageSectionClassObject):
-    
+
     ## The constructor
     #
     #   @param  self        The object pointer
     #
     def __init__(self):
         FvImageSectionClassObject.__init__(self)
-    
+
     ## GenSection() method
     #
     #   Generate FV image section
@@ -47,17 +49,17 @@ class FvImageSection(FvImageSectionClassObject):
     #   @param  FfsInf      FfsInfStatement object that contains this section data
     #   @param  Dict        dictionary contains macro and its value
     #   @retval tuple       (Generated file name, section alignment)
-    #    
+    #
     def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None, Dict = {}):
-        
+
         OutputFileList = []
         if self.FvFileType != None:
             FileList, IsSect = Section.Section.GetFileList(FfsInf, self.FvFileType, self.FvFileExtension)
             if IsSect :
                 return FileList, self.Alignment
-            
+
             Num = SecNum
-            
+
             for FileName in FileList:
                 OutputFile = os.path.join(OutputPath, ModuleName + 'SEC' + Num + Ffs.SectionSuffix.get("FV_IMAGE"))
                 GenSectionCmd = (
@@ -79,7 +81,7 @@ class FvImageSection(FvImageSectionClassObject):
             if Fv != None:
                 self.Fv = Fv
             else:
-                raise Exception("FvImageSection Failed! %s NOT found in FDF" % self.FvName)
+                EdkLogger.error("GenFds", GENFDS_ERROR, "FvImageSection Failed! %s NOT found in FDF" % self.FvName)
 
             FvFileName = self.Fv.AddToBuffer(Buffer, MacroDict = Dict)
 
@@ -97,5 +99,5 @@ class FvImageSection(FvImageSectionClassObject):
 
             GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
             OutputFileList.append(OutputFile)
-                
+
             return OutputFileList, self.Alignment

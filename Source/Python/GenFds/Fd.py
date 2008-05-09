@@ -22,8 +22,9 @@ import StringIO
 import sys
 from struct import *
 from GenFdsGlobalVariable import GenFdsGlobalVariable
-T_CHAR_LF = '\n'
 from CommonDataClass.FdfClass import FDClassObject
+from Common import EdkLogger
+from Common.BuildToolError import *
 
 ## generate FD
 #
@@ -53,22 +54,26 @@ class FD(FDClassObject):
         for item in self.BlockSizeList:
             Offset = Offset + item[0]  * item[1]
         if Offset != self.Size:
-            raise Exception ('FD %s Size not consistent with block array', self.FdUiName)
+            EdkLogger.error("GenFds", GENFDS_ERROR, 'FD %s Size not consistent with block array' % self.FdUiName)
         GenFdsGlobalVariable.VerboseLogger('Following Fv will be add to Fd !!!')
         for FvObj in GenFdsGlobalVariable.FdfParser.Profile.FvDict:
             GenFdsGlobalVariable.VerboseLogger(FvObj)
 
         GenFdsGlobalVariable.VerboseLogger('################### Gen VTF ####################')
         self.GenVtfFile()
-        
+
         FdBuffer = StringIO.StringIO('')
         PreviousRegionStart = -1
         PreviousRegionSize = 1
         for RegionObj in self.RegionList :
             if RegionObj.Offset + RegionObj.Size <= PreviousRegionStart:
-                raise Exception ('Region offset 0x%X in wrong order with Region starting from 0x%X, size 0x%X\nRegions in FDF must have offsets appear in ascending order.' % (RegionObj.Offset, PreviousRegionStart, PreviousRegionSize))
+                EdkLogger.error("GenFds", GENFDS_ERROR,
+                                'Region offset 0x%X in wrong order with Region starting from 0x%X, size 0x%X\nRegions in FDF must have offsets appear in ascending order.'\
+                                % (RegionObj.Offset, PreviousRegionStart, PreviousRegionSize))
             elif RegionObj.Offset <= PreviousRegionStart or (RegionObj.Offset >=PreviousRegionStart and RegionObj.Offset < PreviousRegionStart + PreviousRegionSize):
-                raise Exception ('Region offset 0x%X overlaps with Region starting from 0x%X, size 0x%X' % (RegionObj.Offset, PreviousRegionStart, PreviousRegionSize))
+                EdkLogger.error("GenFds", GENFDS_ERROR,
+                                'Region offset 0x%X overlaps with Region starting from 0x%X, size 0x%X' \
+                                % (RegionObj.Offset, PreviousRegionStart, PreviousRegionSize))
             elif RegionObj.Offset > PreviousRegionStart + PreviousRegionSize:
                 GenFdsGlobalVariable.InfLogger('Padding region starting from offset 0x%X, with size 0x%X' %(PreviousRegionStart + PreviousRegionSize, RegionObj.Offset - (PreviousRegionStart + PreviousRegionSize)))
                 PadRegion = Region.Region()
@@ -78,10 +83,10 @@ class FD(FDClassObject):
             PreviousRegionStart = RegionObj.Offset
             PreviousRegionSize = RegionObj.Size
             #
-            # Call each region's AddToBuffer function 
+            # Call each region's AddToBuffer function
             #
             if PreviousRegionSize > self.Size:
-                raise Exception ('FD %s size too small' % self.FdUiName)
+                EdkLogger.error("GenFds", GENFDS_ERROR, 'FD %s size too small' % self.FdUiName)
             GenFdsGlobalVariable.VerboseLogger('Call each region\'s AddToBuffer function')
             RegionObj.AddToBuffer (FdBuffer, self.BaseAddress, self.BlockSizeList, self.ErasePolarity, FvBinDict, self.vtfRawDict, self.DefineVarDict)
         #
@@ -91,7 +96,7 @@ class FD(FDClassObject):
         FdFileName = os.path.join(GenFdsGlobalVariable.FvDir,
                                   self.FdUiName + '.fd')
         FdFile = open(FdFileName, 'wb')
-       
+
         #
         # Write the buffer contents to Fd file
         #
@@ -100,11 +105,11 @@ class FD(FDClassObject):
         FdFile.close();
         FdBuffer.close();
         return FdFileName
-    
+
     ## generate VTF
     #
     #   @param  self        The object pointer
-    #    
+    #
     def GenVtfFile (self) :
         #
         # Get this Fd's all Fv name
@@ -124,7 +129,9 @@ class FD(FDClassObject):
                         FvList.append(RegionData.upper())
                         FvObj = GenFdsGlobalVariable.FdfParser.Profile.FvDict.get(RegionData.upper())
                         if len(FvObj.BlockSizeList) < 1:
-                            raise Exception ('FV.%s must point out FVs blocksize and Fv BlockNum' %FvObj.UiFvName)
+                            EdkLogger.error("GenFds", GENFDS_ERROR,
+                                            'FV.%s must point out FVs blocksize and Fv BlockNum' \
+                                            % FvObj.UiFvName)
                         else:
                             Size = 0
                             for blockStatement in FvObj.BlockSizeList:
@@ -147,14 +154,14 @@ class FD(FDClassObject):
     ## generate flash map file
     #
     #   @param  self        The object pointer
-    #  
+    #
     def GenFlashMap (self):
         pass
-        
-        
 
 
 
-                
-                
-            
+
+
+
+
+

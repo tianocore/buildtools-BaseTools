@@ -113,17 +113,17 @@ def main():
                 ActivePlatform = os.path.join(GenFdsGlobalVariable.WorkSpaceDir, ActivePlatform)
 
             if not os.path.exists(ActivePlatform)  :
-                raise Exception ("ActivePlatform doesn't exist!")
+                EdkLogger.error("GenFds", BuildToolError.FILE_NOT_FOUND, "ActivePlatform doesn't exist!")
 
             if ActivePlatform.find(Workspace) == -1:
-                raise Exception ("ActivePlatform doesn't exist in Workspace!")
+                EdkLogger.error("GenFds", BuildToolError.FILE_NOT_FOUND, "ActivePlatform doesn't exist in Workspace!")
 
             ActivePlatform = ActivePlatform.replace(Workspace, '')
             if len(ActivePlatform) > 0 :
                 if ActivePlatform[0] == '\\' or ActivePlatform[0] == '/':
                     ActivePlatform = ActivePlatform[1:]
             else:
-                raise Exception ("ActivePlatform doesn't exist!")
+                EdkLogger.error("GenFds", BuildToolError.FILE_NOT_FOUND, "ActivePlatform doesn't exist!")
         else :
             EdkLogger.error("GenFds", BuildToolError.OPTION_MISSING, "Missing active platform")
 

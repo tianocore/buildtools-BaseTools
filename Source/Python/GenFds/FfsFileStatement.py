@@ -22,6 +22,8 @@ import os
 import StringIO
 import subprocess
 from CommonDataClass.FdfClass import FileStatementClassObject
+from Common import EdkLogger
+from Common.BuildToolError import *
 
 ## generate FFS from FILE
 #
@@ -33,7 +35,7 @@ class FileStatement (FileStatementClassObject) :
     #
     def __init__(self):
         FileStatementClassObject.__init__(self)
-    
+
     ## GenFfs() method
     #
     #   Generate FFS
@@ -41,34 +43,34 @@ class FileStatement (FileStatementClassObject) :
     #   @param  self        The object pointer
     #   @param  Dict        dictionary contains macro and value pair
     #   @retval string      Generated FFS file name
-    #    
+    #
     def GenFfs(self, Dict = {}):
         OutputDir = os.path.join(GenFdsGlobalVariable.FfsDir, self.NameGuid)
         if not os.path.exists(OutputDir):
              os.makedirs(OutputDir)
 
         Dict.update(self.DefineVarDict)
-        
+
         if self.FvName != None :
             Buffer = StringIO.StringIO('')
             if self.FvName.upper() not in GenFdsGlobalVariable.FdfParser.Profile.FvDict.keys():
-                raise Exception ("FV (%s) is NOT described in FDF file!" % (self.FvName))
+                EdkLogger.error("GenFds", GENFDS_ERROR, "FV (%s) is NOT described in FDF file!" % (self.FvName))
             Fv = GenFdsGlobalVariable.FdfParser.Profile.FvDict.get(self.FvName.upper())
             FileName = Fv.AddToBuffer(Buffer)
             SectionFiles = ('-i', FileName)
-            
+
         elif self.FdName != None:
             if self.FdName.upper() not in GenFdsGlobalVariable.FdfParser.Profile.FdDict.keys():
-                raise Exception ("FD (%s) is NOT described in FDF file!" % (self.FdName))
+                EdkLogger.error("GenFds", GENFDS_ERROR, "FD (%s) is NOT described in FDF file!" % (self.FdName))
             Fd = GenFdsGlobalVariable.FdfParser.Profile.FdDict.get(self.FdName.upper())
             FvBin = {}
             FileName = Fd.GenFd(FvBin)
             SectionFiles = ('-i', FileName)
-        
+
         elif self.FileName != None:
             self.FileName = GenFdsGlobalVariable.ReplaceWorkspaceMacro(self.FileName)
             SectionFiles = ('-i', GenFdsGlobalVariable.MacroExtend(self.FileName, Dict))
-            
+
         else:
             SectionFiles = tuple()
             Index = 0
@@ -81,7 +83,7 @@ class FileStatement (FileStatementClassObject) :
                         SectionFiles += ('-i', sect)
                         if align != None:
                             SectionFiles += ('-n', align)
-                               
+
         #
         # Prepare the parameter
         #
@@ -106,6 +108,6 @@ class FileStatement (FileStatementClassObject) :
 
         GenFdsGlobalVariable.CallExternalTool(GenFfsCmd,"GenFfs Failed !")
         return FfsFileOutput
-        
+
 
 
