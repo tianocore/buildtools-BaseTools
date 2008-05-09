@@ -170,17 +170,20 @@ class Region(RegionClassObject):
                         Buffer.write(pack('B', int(item, 16)))
             if DataSize < Size:
                 if (ErasePolarity == '1'):
-                    Buffer.write(pack(str(Size -DataSize)+'B', *(int('0xFF', 16) for i in range(Size - DataSize))))
+                    PadData = 0xFF
                 else:
-                    Buffer.write(pack(str(Size - DataSize)+'B', *(int('0x00', 16) for i in range(Size - DataSize))))
-
+                    PadData = 0
+                for i in range(Size - DataSize):
+                    Buffer.write(pack('B', PadData))
 
         if self.RegionType == None:
             GenFdsGlobalVariable.InfLogger('   Region Name = None')
             if (ErasePolarity == '1') :
-                Buffer.write(pack(str(Size)+'B', *(int('0xFF', 16) for i in range(0, Size))))
+                PadData = 0xFF
             else :
-                Buffer.write(pack(str(Size)+'B', *(int('0x00', 16) for i in range(0, Size))))
+                PadData = 0
+            for i in range(0, Size):
+                Buffer.write(pack('B', PadData))
 
     def GetFvAlignValue(self, Str):
         AlignValue = 1

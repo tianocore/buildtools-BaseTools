@@ -17,7 +17,7 @@
 #
 from CommonDataClass.FdfClass import SectionClassObject
 from GenFdsGlobalVariable import GenFdsGlobalVariable
-import os
+import os, glob
 from Common import EdkLogger
 from Common.BuildToolError import *
 
@@ -138,11 +138,8 @@ class Section (SectionClassObject):
                 else:
                         GenFdsGlobalVariable.InfLogger ("\nCurrent ARCH \'%s\' of File %s is not in the Support Arch Scope of %s specified by INF %s in FDF" %(FfsInf.CurrentArch, File.BinaryFile, File.SupArchList, FfsInf.InfFileName))
 
-        if os.path.exists(FfsInf.EfiOutputPath):
-            for FileName in os.listdir(FfsInf.EfiOutputPath):
-                Name, Ext = os.path.splitext(FileName)
-                if Ext == Suffix:
-                   FileList.append(os.path.join(FfsInf.EfiOutputPath, FileName))
+        if Suffix != None and os.path.exists(FfsInf.EfiOutputPath):
+            FileList.extend(glob.glob(os.path.join(FfsInf.EfiOutputPath, "*" + Suffix)))
 
         return FileList, IsSect
     GetFileList = staticmethod(GetFileList)

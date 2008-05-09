@@ -91,17 +91,6 @@ class DepexSection (DepexSectionClassObject):
         OutputFile = os.path.normpath(OutputFile)
         SecType = (self.DepexType.startswith('PEI') and ['PEI_DEPEX'] or ['DXE_DEPEX'])[0]
 
-        GenSectionCmd = (
-            'GenSec',
-             '-o', OutputFile,
-             '-s', Section.Section.SectionType.get (SecType),
-             InputFile,
-            )
-
-        #
-        # Call GenSection
-        #
-
-        GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
+        GenFdsGlobalVariable.GenerateSection(OutputFile, [InputFile], Section.Section.SectionType.get (SecType))
         FileList = [OutputFile]
         return FileList, self.Alignment

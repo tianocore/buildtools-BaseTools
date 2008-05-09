@@ -90,13 +90,7 @@ class GuidSection(GuidSectionClassObject) :
         #
         if self.NameGuid == None :
             GenFdsGlobalVariable.VerboseLogger( "Use GenSection function Generate CRC32 Section")
-            GenSectionCmd = (
-                'GenSec',
-                 '-o', OutputFile,
-                 '-s', Section.Section.SectionType[self.SectionType],
-                ) + SectFile
-
-            GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
+            GenFdsGlobalVariable.GenerateSection(OutputFile, SectFile, Section.Section.SectionType[self.SectionType])
             OutputFileList = []
             OutputFileList.append(OutputFile)
             return OutputFileList, self.Alignment
@@ -107,16 +101,11 @@ class GuidSection(GuidSectionClassObject) :
             #
             # Call GenSection with DUMMY section type.
             #
-            GenSectionCmd = (
-                'GenSec',
-                '-o', OutputFile,
-                ) + SectFile
-
-            GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
+            GenFdsGlobalVariable.GenerateSection(OutputFile+".dummy", SectFile)
             #
             # Use external tool process the Output
             #
-            InputFile = OutputFile
+            InputFile = OutputFile+".dummy"
             TempFile = OutputPath + \
                        os.sep     + \
                        ModuleName + \
@@ -135,25 +124,18 @@ class GuidSection(GuidSectionClassObject) :
             #
             # Call external tool
             #
-            GenFdsGlobalVariable.CallExternalTool(ExternalToolCmd, "Gensec Failed!")
+            GenFdsGlobalVariable.GuidTool(TempFile, [InputFile], ExternalTool, '-e')
+
             #
             # Call Gensection Add Secntion Header
             #
-            AttributeTuple = tuple()
+            Attribute = None
             if self.ProcessRequired == True:
-                AttributeTuple += ('-a', 'PROCSSING_REQUIRED')
+                Attribute = 'PROCSSING_REQUIRED'
             if self.AuthStatusValid == True:
-                AttributeTuple += ('-a', 'AUTH_STATUS_VALID')
-            GenSectionCmd = (
-                'GenSec',
-                '-o', OutputFile,
-                '-s', Section.Section.SectionType['GUIDED'],
-                '-g', self.NameGuid,
-                ) + AttributeTuple + (
-                TempFile,
-                )
-
-            GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
+                Attribute = 'AUTH_STATUS_VALID'
+            GenFdsGlobalVariable.GenerateSection(OutputFile, [TempFile], Section.Section.SectionType['GUIDED'],
+                                                 Guid=self.NameGuid, GuidAttr=Attribute)
             OutputFileList = []
             OutputFileList.append(OutputFile)
             return OutputFileList, self.Alignment

@@ -33,10 +33,10 @@ class Capsule (CapsuleClassObject) :
     def __init__(self):
         CapsuleClassObject.__init__(self)
         # For GenFv
-        self.BlockSize = None          
+        self.BlockSize = None
         # For GenFv
-        self.BlockNum = None           
-        
+        self.BlockNum = None
+
     ## Generate capsule
     #
     #   @param  self        The object pointer
@@ -44,7 +44,7 @@ class Capsule (CapsuleClassObject) :
     def GenCapsule(self):
         CapInfFile = self.GenCapInf()
         CapInfFile.writelines("[files]" + T_CHAR_LF)
-        
+
         for CapsuleDataObj in self.CapsuleDataList :
             FileName = CapsuleDataObj.GenCapsuleSubItem()
             CapInfFile.writelines("EFI_FILE_NAME = " + \
@@ -56,13 +56,11 @@ class Capsule (CapsuleClassObject) :
         #
         CapOutputFile = os.path.join(GenFdsGlobalVariable.FvDir, self.UiCapsuleName)
         CapOutputFile = CapOutputFile + '.Cap'
-        Cmd = (
-            'GenFv',
-            '-i', self.CapInfFileName,
-            '-o', CapOutputFile,
-            '-c',
-            )
-        GenFdsGlobalVariable.CallExternalTool(Cmd, "GefFv GenCapsule Failed!")
+        GenFdsGlobalVariable.GenerateFirmwareVolume(
+                                CapOutputFile,
+                                [self.CapInfFileName],
+                                Capsule=True
+                                )
         GenFdsGlobalVariable.SharpCounter = 0
 
     ## Generate inf file for capsule
@@ -74,9 +72,9 @@ class Capsule (CapsuleClassObject) :
         self.CapInfFileName = os.path.join(GenFdsGlobalVariable.FvDir,
                                    self.UiCapsuleName +  "_Cap" + '.inf')
         CapInfFile = open (self.CapInfFileName , 'w+')
-        
+
         CapInfFile.writelines("[options]" + T_CHAR_LF)
-                              
+
         for Item in self.TokensDict.keys():
             CapInfFile.writelines("EFI_"                    + \
                                   Item                      + \

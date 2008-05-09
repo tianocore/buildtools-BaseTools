@@ -56,16 +56,16 @@ class FV (FvClassObject):
     #   @retval string      Generated FV file path
     #
     def AddToBuffer (self, Buffer, BaseAddress=None, BlockSize= None, BlockNum=None, ErasePloarity='1', VtfDict=None, MacroDict = {}) :
-        
+
         if self.UiFvName.upper() in GenFds.FvBinDict.keys():
             return GenFds.FvBinDict[self.UiFvName.upper()]
-        
+
         self.__InitializeInf__(BaseAddress, BlockSize, BlockNum, ErasePloarity, VtfDict)
         #
         # First Process the Apriori section
         #
         MacroDict.update(self.DefineVarDict)
-        
+
         GenFdsGlobalVariable.VerboseLogger('First generate Apriori file !')
         for AprSection in self.AprioriSectionList:
             FileName = AprSection.GenFfs (self.UiFvName, MacroDict)
@@ -73,49 +73,44 @@ class FV (FvClassObject):
             self.FvInfFile.writelines("EFI_FILE_NAME = " + \
                                        FileName          + \
                                            T_CHAR_LF)
-        
+
         # Process Modules in FfsList
-        
+
         for FfsFile in self.FfsList :
             FileName = FfsFile.GenFfs(MacroDict)
             self.FvInfFile.writelines("EFI_FILE_NAME = " + \
                                        FileName          + \
                                        T_CHAR_LF)
-            
+
         self.FvInfFile.close()
         #
-        # Call GenFv tool 
+        # Call GenFv tool
         #
-        
+
         FvOutputFile = os.path.join(GenFdsGlobalVariable.FvDir, self.UiFvName)
         FvOutputFile = FvOutputFile + '.Fv'
         # BUGBUG: FvOutputFile could be specified from FDF file (FV section, CreateFile statement)
         if self.CreateFileName != None:
             FvOutputFile = self.CreateFileName
+        GenFdsGlobalVariable.GenerateFirmwareVolume(
+                                FvOutputFile,
+                                [self.InfFileName],
+                                AddressFile=GenFdsGlobalVariable.FvAddressFileName
+                                )
 
-        GenFvCmd = (
-            'GenFv',
-             '-i', self.InfFileName,
-             '-o', FvOutputFile,
-             '-a', GenFdsGlobalVariable.FvAddressFileName,
-            )
-        #
-        # Call GenFv Tools
-        #
-        GenFdsGlobalVariable.CallExternalTool(GenFvCmd, "GenFv Failed!")
         #
         # Write the Fv contents to Buffer
         #
         FvFileObj = open ( FvOutputFile,'r+b')
-                   
+
         GenFdsGlobalVariable.InfLogger( "\nGenerate %s Fv Successfully" %self.UiFvName)
         GenFdsGlobalVariable.SharpCounter = 0
-              
+
         Buffer.write(FvFileObj.read())
         FvFileObj.close()
         GenFds.FvBinDict[self.UiFvName.upper()] = FvOutputFile
         return FvOutputFile
-    
+
     ## __InitializeInf__()
     #
     #   Initilize the inf file to create FV
@@ -134,7 +129,7 @@ class FV (FvClassObject):
         self.InfFileName = os.path.join(GenFdsGlobalVariable.FvDir,
                                    self.UiFvName + '.inf')
         self.FvInfFile = open (self.InfFileName, 'w')
-        
+
         #
         # Add [Options]
         #
@@ -143,7 +138,7 @@ class FV (FvClassObject):
             self.FvInfFile.writelines("EFI_BASE_ADDRESS = " + \
                                        BaseAddress          + \
                                        T_CHAR_LF)
-                                       
+
         if BlockSize != None:
             self.FvInfFile.writelines("EFI_BLOCK_SIZE = " + \
                                       '0x%X' %BlockSize    + \
@@ -158,12 +153,12 @@ class FV (FvClassObject):
                     self.FvInfFile.writelines("EFI_BLOCK_SIZE  = "  + \
                                           '0x%X' %BlockSize[0]    + \
                                           T_CHAR_LF)
-                
-                if BlockSize[1] != None:                  
+
+                if BlockSize[1] != None:
                     self.FvInfFile.writelines("EFI_NUM_BLOCKS   = "  + \
                                           ' 0x%X' %BlockSize[1]    + \
                                           T_CHAR_LF)
-                                          
+
         if self.BsBaseAddress != None:
             self.FvInfFile.writelines('EFI_BOOT_DRIVER_BASE_ADDRESS = ' + \
                                        '0x%X' %self.BsBaseAddress)
@@ -174,7 +169,7 @@ class FV (FvClassObject):
         # Add attribute
         #
         self.FvInfFile.writelines("[attributes]" + T_CHAR_LF)
-        
+
         self.FvInfFile.writelines("EFI_ERASE_POLARITY   = "       + \
                                           ' %s' %ErasePloarity    + \
                                           T_CHAR_LF)
@@ -193,11 +188,11 @@ class FV (FvClassObject):
         #
         # Add [Files]
         #
-            
+
         self.FvInfFile.writelines("[files]" + T_CHAR_LF)
         if VtfDict != None and self.UiFvName in VtfDict.keys():
             self.FvInfFile.writelines("EFI_FILE_NAME = "                   + \
                                        VtfDict.get(self.UiFvName)          + \
                                        T_CHAR_LF)
 
-        
+

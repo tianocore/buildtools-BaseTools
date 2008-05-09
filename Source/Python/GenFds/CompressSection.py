@@ -26,20 +26,20 @@ from CommonDataClass.FdfClass import CompressSectionClassObject
 #
 #
 class CompressSection (CompressSectionClassObject) :
-    
-    ## compress types: PI standard and non PI standard    
+
+    ## compress types: PI standard and non PI standard
     CompTypeDict = {
         'PI_STD'     : 'PI_STD',
         'NON_PI_STD' : 'NON_PI_STD'
     }
-    
+
     ## The constructor
     #
     #   @param  self        The object pointer
     #
     def __init__(self):
         CompressSectionClassObject.__init__(self)
-        
+
     ## GenSection() method
     #
     #   Generate compressed section
@@ -54,11 +54,11 @@ class CompressSection (CompressSectionClassObject) :
     #   @retval tuple       (Generated file name, section alignment)
     #
     def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None, Dict = {}):
-        
+
         if FfsInf != None:
             self.CompType = FfsInf.__ExtendMacro__(self.CompType)
             self.Alignment = FfsInf.__ExtendMacro__(self.Alignment)
-            
+
         SectFiles = tuple()
         Index = 0
         for Sect in self.SectionList:
@@ -68,7 +68,7 @@ class CompressSection (CompressSectionClassObject) :
             if ReturnSectList != []:
                 for FileData in ReturnSectList:
                    SectFiles += (FileData,)
-                        
+
 
         OutputFile = OutputPath + \
                      os.sep     + \
@@ -77,19 +77,11 @@ class CompressSection (CompressSectionClassObject) :
                      SecNum     + \
                      Ffs.SectionSuffix['COMPRESS']
         OutputFile = os.path.normpath(OutputFile)
-        
-        GenSectionCmd = (
-            'GenSec',
-             '-o', OutputFile,
-             '-s', Section.Section.SectionType['COMPRESS'],
-             '-c', self.CompTypeDict[self.CompType],
-            ) + SectFiles
-        #
-        # Call GenSection
-        #
-        GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
+
+        GenFdsGlobalVariable.GenerateSection(OutputFile, SectFiles, Section.Section.SectionType['COMPRESS'],
+                                             CompressionType=self.CompTypeDict[self.CompType])
         OutputFileList = []
         OutputFileList.append(OutputFile)
         return OutputFileList, self.Alignment
 
-        
+

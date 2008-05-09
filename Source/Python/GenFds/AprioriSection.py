@@ -22,6 +22,7 @@ import FfsFileStatement
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 from CommonDataClass.FdfClass import AprioriSectionClassObject
 from Common.String import *
+from Common.Misc import SaveFileOnChange
 from Common import EdkLogger
 from Common.BuildToolError import *
 
@@ -64,10 +65,7 @@ class AprioriSection (AprioriSectionClassObject):
         AprFfsFileName = os.path.join (OutputAprFilePath,\
                                     AprioriFileGuid + FvName + '.Ffs')
 
-        OutputAprFile = open(OutputAprFileName, 'w+b')
-
         Dict.update(self.DefineVarDict)
-
         for FfsObj in self.FfsList :
             Guid = ""
             if isinstance(FfsObj, FfsFileStatement.FileStatement):
@@ -108,28 +106,13 @@ class AprioriSection (AprioriSectionClassObject):
                 Char = GuidPart[4][Num*2:Num*2+2]
                 Buffer.write(pack('B', int(Char, 16)))
 
-        OutputAprFile.write(Buffer.getvalue())
-        OutputAprFile.close()
+        SaveFileOnChange(OutputAprFileName, Buffer.getvalue())
+
         RawSectionFileName = os.path.join( OutputAprFilePath, \
                                        AprioriFileGuid + FvName + '.raw' )
+        GenFdsGlobalVariable.GenerateSection(RawSectionFileName, [OutputAprFileName], 'EFI_SECTION_RAW')
+        GenFdsGlobalVariable.GenerateFfs(AprFfsFileName, [RawSectionFileName],
+                                         'EFI_FV_FILETYPE_FREEFORM', AprioriFileGuid)
 
-        GenSectionCmd = (
-            'GenSec',
-            '-o', RawSectionFileName,
-            '-s', 'EFI_SECTION_RAW',
-            OutputAprFileName,
-            )
-
-        GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
-
-        GenFfsCmd = (
-            'GenFfs',
-            '-t', 'EFI_FV_FILETYPE_FREEFORM',
-            '-g', AprioriFileGuid,
-            '-o', AprFfsFileName,
-            '-i', RawSectionFileName,
-            )
-
-        GenFdsGlobalVariable.CallExternalTool(GenFfsCmd,"GenFfs Failed !")
         return AprFfsFileName
 

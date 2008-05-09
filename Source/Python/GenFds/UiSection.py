@@ -26,7 +26,7 @@ from CommonDataClass.FdfClass import UiSectionClassObject
 #
 #
 class UiSection (UiSectionClassObject):
-    
+
     ## The constructor
     #
     #   @param  self        The object pointer
@@ -55,9 +55,9 @@ class UiSection (UiSectionClassObject):
             self.Alignment = FfsInf.__ExtendMacro__(self.Alignment)
             self.StringData = FfsInf.__ExtendMacro__(self.StringData)
             self.FileName = FfsInf.__ExtendMacro__(self.FileName)
-            
+
         OutputFile = os.path.join(OutputPath, ModuleName + 'SEC' + SecNum + Ffs.SectionSuffix.get('UI'))
-                     
+
         if self.StringData != None :
             NameString = self.StringData
         elif self.FileName != None:
@@ -69,18 +69,9 @@ class UiSection (UiSectionClassObject):
             FileObj.close()
         else:
             NameString = ''
-            
-            
-        GenSectionCmd = (
-            'GenSec',
-            '-o', OutputFile,
-            '-s', 'EFI_SECTION_USER_INTERFACE',
-            '-n', NameString,
-            )
-        #
-        # Call GenSection
-        #
-        GenFdsGlobalVariable.CallExternalTool(GenSectionCmd,"GenSection Failed!")
+
+        GenFdsGlobalVariable.GenerateSection(OutputFile, None, 'EFI_SECTION_USER_INTERFACE', Ui=NameString)
+
         OutputFileList = []
         OutputFileList.append(OutputFile)
         return OutputFileList, self.Alignment

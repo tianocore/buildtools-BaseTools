@@ -62,14 +62,7 @@ class FvImageSection(FvImageSectionClassObject):
 
             for FileName in FileList:
                 OutputFile = os.path.join(OutputPath, ModuleName + 'SEC' + Num + Ffs.SectionSuffix.get("FV_IMAGE"))
-                GenSectionCmd = (
-                    'GenSec',
-                    '-o', OutputFile,
-                    '-s', 'EFI_SECTION_FIRMWARE_VOLUME_IMAGE',
-                    FvFileName,
-                    )
-
-                GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
+                GenFdsGlobalVariable.GenerateSection(OutputFile, [FvFileName], 'EFI_SECTION_FIRMWARE_VOLUME_IMAGE')
                 OutputFileList.append(OutputFile)
             return OutputFileList, self.Alignment
         #
@@ -89,15 +82,7 @@ class FvImageSection(FvImageSectionClassObject):
             # Prepare the parameter of GenSection
             #
             OutputFile = os.path.join(OutputPath, ModuleName + 'SEC' + SecNum + Ffs.SectionSuffix.get("FV_IMAGE"))
-
-            GenSectionCmd = (
-                'GenSec',
-                '-o', OutputFile,
-                '-s', 'EFI_SECTION_FIRMWARE_VOLUME_IMAGE',
-                FvFileName,
-                )
-
-            GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
+            GenFdsGlobalVariable.GenerateSection(OutputFile, [FvFileName], 'EFI_SECTION_FIRMWARE_VOLUME_IMAGE')
             OutputFileList.append(OutputFile)
 
             return OutputFileList, self.Alignment

@@ -50,14 +50,14 @@ class FileStatement (FileStatementClassObject) :
              os.makedirs(OutputDir)
 
         Dict.update(self.DefineVarDict)
-
+        SectionAlignments = None
         if self.FvName != None :
             Buffer = StringIO.StringIO('')
             if self.FvName.upper() not in GenFdsGlobalVariable.FdfParser.Profile.FvDict.keys():
                 EdkLogger.error("GenFds", GENFDS_ERROR, "FV (%s) is NOT described in FDF file!" % (self.FvName))
             Fv = GenFdsGlobalVariable.FdfParser.Profile.FvDict.get(self.FvName.upper())
             FileName = Fv.AddToBuffer(Buffer)
-            SectionFiles = ('-i', FileName)
+            SectionFiles = [FileName]
 
         elif self.FdName != None:
             if self.FdName.upper() not in GenFdsGlobalVariable.FdfParser.Profile.FdDict.keys():
@@ -65,48 +65,38 @@ class FileStatement (FileStatementClassObject) :
             Fd = GenFdsGlobalVariable.FdfParser.Profile.FdDict.get(self.FdName.upper())
             FvBin = {}
             FileName = Fd.GenFd(FvBin)
-            SectionFiles = ('-i', FileName)
+            SectionFiles = [FileName]
 
         elif self.FileName != None:
             self.FileName = GenFdsGlobalVariable.ReplaceWorkspaceMacro(self.FileName)
-            SectionFiles = ('-i', GenFdsGlobalVariable.MacroExtend(self.FileName, Dict))
+            SectionFiles = [GenFdsGlobalVariable.MacroExtend(self.FileName, Dict)]
 
         else:
-            SectionFiles = tuple()
+            SectionFiles = []
             Index = 0
+            SectionAlignments = []
             for section in self.SectionList :
                 Index = Index + 1
                 SecIndex = '%d' %Index
                 sectList, align = section.GenSection(OutputDir, self.NameGuid, SecIndex, self.KeyStringList, None, Dict)
                 if sectList != []:
                     for sect in sectList:
-                        SectionFiles += ('-i', sect)
-                        if align != None:
-                            SectionFiles += ('-n', align)
+                        SectionFiles.append(sect)
+                        SectionAlignments.append(align)
 
         #
         # Prepare the parameter
         #
-        CmdParams = tuple()
-        if self.Fixed != False:
-            CmdParams += ('-x',)
-        if self.CheckSum != False :
-            CmdParams += ('-s',)
-        if self.Alignment != None and self.Alignment !='':
-            CmdParams += ('-a', self.Alignment)
-
-        if not (self.FvFileType == None):
-            CmdParams += ('-t', Ffs.Ffs.FdfFvFileTypeToFileType.get(self.FvFileType))
-
         FfsFileOutput = os.path.join(OutputDir, self.NameGuid + '.ffs')
+        GenFdsGlobalVariable.GenerateFfs(FfsFileOutput, SectionFiles,
+                                         Ffs.Ffs.FdfFvFileTypeToFileType.get(self.FvFileType),
+                                         self.NameGuid,
+                                         Fixed=self.Fixed,
+                                         CheckSum=self.CheckSum,
+                                         Align=self.Alignment,
+                                         SectionAlign=SectionAlignments
+                                        )
 
-        GenFfsCmd = (
-            'GenFfs',
-             '-g', self.NameGuid,
-             '-o', FfsFileOutput,
-            ) + CmdParams + SectionFiles
-
-        GenFdsGlobalVariable.CallExternalTool(GenFfsCmd,"GenFfs Failed !")
         return FfsFileOutput
 
 

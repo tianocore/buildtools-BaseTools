@@ -18,8 +18,11 @@
 import os
 import sys
 import subprocess
+import struct
+import array
 from Common import BuildToolError
 from Common import EdkLogger
+from Common.Misc import SaveFileOnChange
 
 ## Global variables
 #
@@ -47,6 +50,8 @@ class GenFdsGlobalVariable:
     DebugLevel = -1
     SharpCounter = 0
     SharpNumberPerLine = 40
+
+    SectionHeader = struct.Struct("3B 1B")
 
     ## SetDir()
     #
@@ -113,6 +118,182 @@ class GenFdsGlobalVariable:
             Str = os.path.join(GenFdsGlobalVariable.WorkSpaceDir, String)
         return os.path.normpath(Str)
 
+    ## Check if the input files are newer than output files
+    #
+    #   @param  Output          Path of output file
+    #   @param  Input           Path list of input files
+    #
+    #   @retval True            if Output doesn't exist, or any Input is newer
+    #   @retval False           if all Input is older than Output
+    #
+    @staticmethod
+    def NeedsUpdate(Output, Input):
+        if not os.path.exists(Output):
+            return True
+        # always update "Output" if no "Input" given
+        if Input == None or len(Input) == 0:
+            return True
+        OutputTime = os.path.getmtime(Output)
+        for F in Input:
+            # always update "Output" if any "Input" doesn't exist
+            if not os.path.exists(F):
+                return True
+            # always update "Output" if any "Input" is newer than "Output"
+            if os.path.getmtime(F) > OutputTime:
+                return True
+        return False
+
+    @staticmethod
+    def GenerateSection(Output, Input, Type=None, CompressionType=None, Guid=None,
+                        GuidHdrLen=None, GuidAttr=None, Ui=None, Ver=None):
+        if not GenFdsGlobalVariable.NeedsUpdate(Output, Input):
+            return
+        GenFdsGlobalVariable.DebugLogger(EdkLogger.DEBUG_5, "%s needs update because of newer %s" % (Output, Input))
+
+        Cmd = ["GenSec"]
+        if Type not in [None, '']:
+            Cmd += ["-s", Type]
+        if CompressionType not in [None, '']:
+            Cmd += ["-c", CompressionType]
+        if Guid != None:
+            Cmd += ["-g", Guid]
+        if GuidHdrLen not in [None, '']:
+            Cmd += ["-l", GuidHdrLen]
+        if GuidAttr not in [None, '']:
+            Cmd += ["-r", GuidAttr]
+
+        if Ui not in [None, '']:
+            #Cmd += ["-n", '"' + Ui + '"']
+            SectionData = array.array('B', [0,0,0,0])
+            SectionData.fromstring(Ui.encode("utf_16_le"))
+            SectionData.append(0)
+            SectionData.append(0)
+            Len = len(SectionData)
+            GenFdsGlobalVariable.SectionHeader.pack_into(SectionData, 0, Len & 0xff, (Len >> 8) & 0xff, (Len >> 16) & 0xff, 0x15)
+            SaveFileOnChange(Output,  SectionData.tostring())
+        elif Ver not in [None, '']:
+            #Cmd += ["-j", Ver]
+            SectionData = array.array('B', [0,0,0,0])
+            SectionData.fromstring(Ver.encode("utf_16_le"))
+            SectionData.append(0)
+            SectionData.append(0)
+            Len = len(SectionData)
+            GenFdsGlobalVariable.SectionHeader.pack_into(SectionData, 0, Len & 0xff, (Len >> 8) & 0xff, (Len >> 16) & 0xff, 0x15)
+            SaveFileOnChange(Output,  SectionData.tostring())
+        else:
+            Cmd += ["-o", Output]
+            Cmd += Input
+            GenFdsGlobalVariable.CallExternalTool(Cmd, "Failed to generate section")
+
+    @staticmethod
+    def GenerateFfs(Output, Input, Type, Guid, Fixed=False, CheckSum=False, Align=None,
+                    SectionAlign=None):
+        if not GenFdsGlobalVariable.NeedsUpdate(Output, Input):
+            return
+        GenFdsGlobalVariable.DebugLogger(EdkLogger.DEBUG_5, "%s needs update because of newer %s" % (Output, Input))
+
+        Cmd = ["GenFfs", "-t", Type, "-g", Guid]
+        if Fixed == True:
+            Cmd += ["-x"]
+        if CheckSum:
+            Cmd += ["-s"]
+        if Align not in [None, '']:
+            Cmd += ["-a", Align]
+
+        Cmd += ["-o", Output]
+        for I in range(0, len(Input)):
+            Cmd += ("-i", Input[I])
+            if SectionAlign not in [None, '', []] and SectionAlign[I] not in [None, '']:
+                Cmd += ("-n", SectionAlign[I])
+        GenFdsGlobalVariable.CallExternalTool(Cmd, "Failed to generate FFS")
+
+    @staticmethod
+    def GenerateFirmwareVolume(Output, Input, BaseAddress=None, Capsule=False, Dump=False,
+                               AddressFile=None, MapFile=None):
+        if not GenFdsGlobalVariable.NeedsUpdate(Output, Input):
+            return
+        GenFdsGlobalVariable.DebugLogger(EdkLogger.DEBUG_5, "%s needs update because of newer %s" % (Output, Input))
+
+        Cmd = ["GenFv"]
+        if BaseAddress not in [None, '']:
+            Cmd += ["-r", BaseAddress]
+        if Capsule:
+            Cmd += ["-c"]
+        if Dump:
+            Cmd += ["-p"]
+        if AddressFile not in [None, '']:
+            Cmd += ["-a", AddressFile]
+        if MapFile not in [None, '']:
+            Cmd += ["-m", MapFile]
+        Cmd += ["-o", Output]
+        for I in Input:
+            Cmd += ["-i", I]
+
+        GenFdsGlobalVariable.CallExternalTool(Cmd, "Failed to generate FV")
+
+    @staticmethod
+    def GenerateVtf(Output, Input, BaseAddress=None, FvSize=None):
+        if not GenFdsGlobalVariable.NeedsUpdate(Output, Input):
+            return
+        GenFdsGlobalVariable.DebugLogger(EdkLogger.DEBUG_5, "%s needs update because of newer %s" % (Output, Input))
+
+        Cmd = ["GenVtf"]
+        if BaseAddress not in [None, ''] and FvSize not in [None, ''] \
+            and len(BaseAddress) == len(FvSize):
+            for I in range(0, len(BaseAddress)):
+                Cmd += ["-r", BaseAddress[i], "-s", FvSize[I]]
+        Cmd += ["-o", Output]
+        for F in Input:
+            Cmd += ["-f", F]
+
+        GenFdsGlobalVariable.CallExternalTool(Cmd, "Failed to generate VTF")
+
+    @staticmethod
+    def GenerateFirmwareImage(Output, Input, Type="efi", SubType=None, Zero=False,
+                              Strip=False, Replace=False, TimeStamp=None, Join=False,
+                              Align=None, Padding=None, Convert=False):
+        if not GenFdsGlobalVariable.NeedsUpdate(Output, Input):
+            return
+        GenFdsGlobalVariable.DebugLogger(EdkLogger.DEBUG_5, "%s needs update because of newer %s" % (Output, Input))
+
+        Cmd = ["GenFw"]
+        if Type.lower() == "te":
+            Cmd += ["-t"]
+        if SubType not in [None, '']:
+            Cmd += ["-e", SubType]
+        if TimeStamp not in [None, '']:
+            Cmd += ["-s", TimeStamp]
+        if Align not in [None, '']:
+            Cmd += ["-a", Align]
+        if Padding not in [None, '']:
+            Cmd += ["-p", Padding]
+        if Zero:
+            Cmd += ["-z"]
+        if Strip:
+            Cmd += ["-l"]
+        if Replace:
+            Cmd += ["-r"]
+        if Join:
+            Cmd += ["-j"]
+        if Convert:
+            Cmd += ["-m"]
+        Cmd += ["-o", Output]
+        Cmd += Input
+
+        GenFdsGlobalVariable.CallExternalTool(Cmd, "Failed to generate firmware image")
+
+    @staticmethod
+    def GuidTool(Output, Input, ToolPath, Options=''):
+        if not GenFdsGlobalVariable.NeedsUpdate(Output, Input):
+            return
+        GenFdsGlobalVariable.DebugLogger(EdkLogger.DEBUG_5, "%s needs update because of newer %s" % (Output, Input))
+
+        Cmd = [ToolPath, Options]
+        Cmd += ["-o", Output]
+        Cmd += Input
+
+        GenFdsGlobalVariable.CallExternalTool(Cmd, "Failed to call " + ToolPath)
+
     def CallExternalTool (cmd, errorMess):
 
         if type(cmd) not in (tuple, list):
@@ -131,7 +312,7 @@ class GenFdsGlobalVariable:
             GenFdsGlobalVariable.SharpCounter = GenFdsGlobalVariable.SharpCounter + 1
             if GenFdsGlobalVariable.SharpCounter % GenFdsGlobalVariable.SharpNumberPerLine == 0:
                 sys.stdout.write('\n')
-        #GenFdsGlobalVariable.VerboseLogger(cmd)
+
         PopenObject = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr= subprocess.PIPE)
         (out, error) = PopenObject.communicate()
 

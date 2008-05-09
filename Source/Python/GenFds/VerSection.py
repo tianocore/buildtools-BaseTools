@@ -26,14 +26,14 @@ from CommonDataClass.FdfClass import VerSectionClassObject
 #
 #
 class VerSection (VerSectionClassObject):
-    
+
     ## The constructor
     #
     #   @param  self        The object pointer
     #
     def __init__(self):
         VerSectionClassObject.__init__(self)
-        
+
     ## GenSection() method
     #
     #   Generate version section
@@ -56,16 +56,11 @@ class VerSection (VerSectionClassObject):
             self.BuildNum = FfsInf.__ExtendMacro__(self.BuildNum)
             self.StringData = FfsInf.__ExtendMacro__(self.StringData)
             self.FileName = FfsInf.__ExtendMacro__(self.FileName)
-            
+
         OutputFile = os.path.join(OutputPath,
                                   ModuleName + 'SEC' + SecNum + Ffs.SectionSuffix.get('VERSION'))
         OutputFile = os.path.normpath(OutputFile)
-        
-        # Get Build Num
-        BuildNum = tuple()
-        if not (self.BuildNum == None) :
-            BuildNum = ('-j', ('%d' % self.BuildNum))
- 
+
         # Get String Data
         StringData = ''
         if self.StringData != None:
@@ -80,17 +75,8 @@ class VerSection (VerSectionClassObject):
         else:
             StringData = ''
 
-        GenSectionCmd = (
-            'GenSec',
-            '-o', OutputFile,
-            '-s', 'EFI_SECTION_VERSION',
-            '-n', StringData,
-            ) + BuildNum
-
-        #
-        # Call GenSection
-        #
-        GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "Gensection Failed!")
+        GenFdsGlobalVariable.GenerateSection(OutputFile, None, 'EFI_SECTION_VERSION',
+                                             Ui=StringData, Ver=self.BuildNum)
         OutputFileList = []
         OutputFileList.append(OutputFile)
         return OutputFileList, self.Alignment

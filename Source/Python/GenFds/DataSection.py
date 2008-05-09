@@ -52,8 +52,6 @@ class DataSection (DataSectionClassObject):
         # Prepare the parameter of GenSection
         #
         if FfsFile != None:
-#            self.Alignment = FfsInf.__ExtendMacro__(self.Alignemnt)
-#            self.SecType = FfsInf.__ExtendMacro__(self.SecType)
             self.SectFileName = GenFdsGlobalVariable.ReplaceWorkspaceMacro(self.SectFileName)
             self.SectFileName = GenFdsGlobalVariable.MacroExtend(self.SectFileName, Dict, FfsFile.CurrentArch)
         else:
@@ -72,9 +70,9 @@ class DataSection (DataSectionClassObject):
             MapFile = Filename.replace('.efi', '.map')
             if os.path.exists(MapFile):
                 CopyMapFile = os.path.join(OutputPath, ModuleName + '.map')
-                if os.path.exists(CopyMapFile):
-                    os.remove(CopyMapFile)
-                shutil.copyfile(MapFile, CopyMapFile)
+                if not os.path.exists(CopyMapFile) or \
+                    (os.path.getmtime(MapFile) > os.path.getmtime(CopyMapFile)):
+                    shutil.copyfile(MapFile, CopyMapFile)
 
         NoStrip = True
         if self.SecType in ('TE', 'PE32'):
@@ -83,44 +81,29 @@ class DataSection (DataSectionClassObject):
 
         if not NoStrip:
             FileBeforeStrip = os.path.join(OutputPath, ModuleName + '.efi')
-            if os.path.exists(FileBeforeStrip):
-                os.remove(FileBeforeStrip)
-            shutil.copyfile(self.SectFileName, FileBeforeStrip)
+            if not os.path.exists(FileBeforeStrip) or \
+                (os.path.getmtime(self.SectFileName) > os.path.getmtime(FileBeforeStrip)):
+                shutil.copyfile(self.SectFileName, FileBeforeStrip)
             StrippedFile = os.path.join(OutputPath, ModuleName + '.stripped')
-            StripCmd = (
-                'GenFw',
-                '-l',
-                '-o', StrippedFile,
-                GenFdsGlobalVariable.MacroExtend(self.SectFileName, Dict),
-                )
-            GenFdsGlobalVariable.CallExternalTool(StripCmd, "Strip Failed !")
+            GenFdsGlobalVariable.GenerateFirmwareImage(
+                                    StrippedFile,
+                                    [GenFdsGlobalVariable.MacroExtend(self.SectFileName, Dict)],
+                                    Strip=True
+                                    )
             self.SectFileName = StrippedFile
 
         if self.SecType == 'TE':
             TeFile = os.path.join( OutputPath, ModuleName + 'Te.raw')
-            GenTeCmd = (
-                'GenFw',
-                '-t',
-                '-o', TeFile,
-                GenFdsGlobalVariable.MacroExtend(self.SectFileName, Dict),
-                )
-            GenFdsGlobalVariable.CallExternalTool(GenTeCmd, "GenFw Failed !")
+            GenFdsGlobalVariable.GenerateFirmwareImage(
+                                    TeFile,
+                                    [GenFdsGlobalVariable.MacroExtend(self.SectFileName, Dict)],
+                                    Type='te'
+                                    )
             self.SectFileName = TeFile
 
         OutputFile = os.path.join (OutputPath, ModuleName + 'SEC' + SecNum + Ffs.SectionSuffix.get(self.SecType))
         OutputFile = os.path.normpath(OutputFile)
 
-        GenSectionCmd = (
-            'GenSec',
-             '-o', OutputFile,
-             '-s', Section.Section.SectionType.get (self.SecType),
-             self.SectFileName,
-            )
-
-        #
-        # Call GenSection
-        #
-
-        GenFdsGlobalVariable.CallExternalTool(GenSectionCmd, "GenSection Failed!")
+        GenFdsGlobalVariable.GenerateSection(OutputFile, [self.SectFileName], Section.Section.SectionType.get(self.SecType))
         FileList = [OutputFile]
         return FileList, self.Alignment
