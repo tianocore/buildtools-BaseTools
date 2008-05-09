@@ -16,7 +16,7 @@ Module Name:
 
 Abstract:
 
-  This file contains functions required to generate a boot strap file (BSF) 
+  This file contains functions required to generate a boot strap file (BSF)
   also known as the Volume Top File (VTF)
 
 **/
@@ -44,6 +44,7 @@ BOOLEAN     QuietMode = FALSE;
 BOOLEAN     VTF_OUTPUT = FALSE;
 CHAR8       *OutFileName1;
 CHAR8       *OutFileName2;
+CHAR8       *SymFileName;
 
 CHAR8           **TokenStr;
 CHAR8           **OrgStrTokPtr;
@@ -90,7 +91,7 @@ UINT32          BufferToTop           = 0;
 // IA32 Reset Vector Bin name
 //
 CHAR8           IA32BinFile[FILE_NAME_SIZE];
-  
+
 //
 // Function Implementations
 //
@@ -153,7 +154,7 @@ TrimLine (
 /*++
 Routine Description:
 
-  This function cleans up the line by removing all whitespace and 
+  This function cleans up the line by removing all whitespace and
   comments
 
 Arguments:
@@ -171,7 +172,7 @@ Returns:
   CHAR8 *Ptr0;
   UINTN Index;
   UINTN Index2;
-  
+
   //
   // Change '#' to '//' for Comment style
   //
@@ -205,7 +206,7 @@ ValidLineCount (
 Routine Description:
 
   This function calculated number of valid lines in a input file.
-  
+
 Arguments:
 
   Fp    - Pointer to a file handle which has been opened.
@@ -231,15 +232,15 @@ ParseInputFile (
   IN  FILE *Fp
   )
 /*++
-  
+
 Routine Description:
 
   This function parses the input file and tokenize the string
-  
+
 Arguments:
 
   Fp    - Pointer to a file handle which has been opened.
-  
+
 Returns:
 
   None
@@ -279,7 +280,7 @@ Routine Description:
   This function intializes the relevant global variable which is being
   used to store the information retrieved from INF file.  This also initializes
   the VTF symbol file.
-  
+
 Arguments:
 
   None
@@ -302,7 +303,7 @@ Returns:
   memset (FileListPtr, 0, sizeof (PARSED_VTF_INFO));
   FileListPtr->NextVtfInfo = NULL;
 
-  remove (VTF_SYM_FILE);
+  remove (SymFileName);
   return EFI_SUCCESS;
 }
 
@@ -316,11 +317,11 @@ Routine Description:
 
   This function intializes the relevant global variable which is being
   used to store the information retrieved from INF file.
-  
+
 Arguments:
 
   VtfInfo  - A pointer to the VTF Info Structure
-  
+
 
 Returns:
 
@@ -424,7 +425,7 @@ Returns:
   SectionOptionFlag = 0;
   SectionCompFlag   = 0;
   TokenStr          = OrgStrTokPtr;
-  
+
   while (*TokenStr != NULL) {
     if (strnicmp (*TokenStr, "[OPTIONS]", 9) == 0) {
       SectionOptionFlag = 1;
@@ -480,22 +481,22 @@ GetVtfRelatedInfoFromInfFile (
   IN FILE *FilePointer
   )
 /*++
-  
+
 Routine Description:
 
   This function reads the input file, parse it and create a list of tokens
   which is parsed and used, to intialize the data related to VTF
-  
+
 Arguments:
 
   FileName  - FileName which needed to be read to parse data
 
 Returns:
-   
+
   EFI_ABORTED           - Error in opening file
   EFI_INVALID_PARAMETER - File doesn't contain any valid information
   EFI_OUT_OF_RESOURCES  - Malloc Failed
-  EFI_SUCCESS           - The function completed successfully 
+  EFI_SUCCESS           - The function completed successfully
 
 --*/
 {
@@ -503,7 +504,7 @@ Returns:
   UINTN       Index;
   UINTN       Index1;
   EFI_STATUS  Status;
-  
+
   Status = EFI_SUCCESS;
   Fp = FilePointer;
   if (Fp == NULL) {
@@ -541,18 +542,18 @@ Returns:
 
   TokenStr  = OrgStrTokPtr;
   fseek (Fp, 0L, SEEK_SET);
- 
+
   Status = InitializeComps ();
 
   if (Status != EFI_SUCCESS) {
     goto ParseFileError;
   }
-  
+
   Status = ParseInputFile (Fp);
   if (Status != EFI_SUCCESS) {
     goto ParseFileError;
   }
-  
+
   InitializeInFileInfo ();
 
 ParseFileError:
@@ -573,14 +574,14 @@ GetRelativeAddressInVtfBuffer (
   IN      LOC_TYPE   LocType
   )
 /*++
-  
+
 Routine Description:
 
   This function checks for the address alignmnet for specified data boundary. In
-  case the address is not aligned, it returns FALSE and the amount of data in 
-  terms of byte needed to adjust to get the boundary alignmnet. If data is 
+  case the address is not aligned, it returns FALSE and the amount of data in
+  terms of byte needed to adjust to get the boundary alignmnet. If data is
   aligned, TRUE will be returned.
-  
+
 Arguments:
 
   Address             - The address of the flash map space
@@ -590,7 +591,7 @@ Arguments:
 
 Returns:
 
-    
+
 --*/
 {
   UINT64  TempAddress;
@@ -616,17 +617,17 @@ GetComponentVersionInfo (
 Routine Description:
 
   This function will extract the version information from File
-  
+
 Arguments:
 
   VtfInfo  - A Pointer to the VTF Info Structure
-  Buffer   - A Pointer to type UINT8 
+  Buffer   - A Pointer to type UINT8
 
 Returns:
- 
+
    EFI_SUCCESS           - The function completed successfully
    EFI_INVALID_PARAMETER - The parameter is invalid
-    
+
 --*/
 {
   UINT16      VersionInfo;
@@ -657,14 +658,14 @@ CheckAddressAlignment (
   IN OUT  UINT64  *AlignAdjustByte
   )
 /*++
-  
+
 Routine Description:
 
   This function checks for the address alignmnet for specified data boundary. In
-  case the address is not aligned, it returns FALSE and the amount of data in 
-  terms of byte needed to adjust to get the boundary alignmnet. If data is 
+  case the address is not aligned, it returns FALSE and the amount of data in
+  terms of byte needed to adjust to get the boundary alignmnet. If data is
   aligned, TRUE will be returned.
-  
+
 Arguments:
 
   Address              - Pointer to buffer containing byte data of component.
@@ -676,7 +677,7 @@ Returns:
   TRUE                 - Address is aligned to specific data size boundary
   FALSE                - Address in not aligned to specified data size boundary
                        - Add/Subtract AlignAdjustByte to aling the address.
-    
+
 --*/
 {
   //
@@ -698,19 +699,19 @@ GetFitTableStartAddress (
   IN OUT  FIT_TABLE   **FitTable
   )
 /*++
-  
+
 Routine Description:
 
   Get the FIT table start address in VTF Buffer
-  
+
 Arguments:
 
   FitTable    - Pointer to available fit table where new component can be added
-  
+
 Returns:
 
   EFI_SUCCESS - The function completed successfully
-    
+
 --*/
 {
   UINT64  FitTableAdd;
@@ -736,7 +737,7 @@ Returns:
   // Buffer.
   //
   GetRelativeAddressInVtfBuffer (FitTableAdd, &RelativeAddress, FIRST_VTF);
-  
+
   *FitTable = (FIT_TABLE *) RelativeAddress;
 
   return EFI_SUCCESS;
@@ -747,24 +748,24 @@ GetNextAvailableFitPtr (
   IN  FIT_TABLE   **FitPtr
   )
 /*++
-  
+
 Routine Description:
 
   Get the FIT table address and locate the free space in fit where we can add
   new component. In this process, this function locates the fit table using
-  Fit pointer in Itanium-based address map (as per Intel?Itanium(TM) SAL spec) 
-  and locate the available location in FIT table to be used by new components. 
-  If there are any Fit table which areg not being used contains ComponentType 
+  Fit pointer in Itanium-based address map (as per Intel?Itanium(TM) SAL spec)
+  and locate the available location in FIT table to be used by new components.
+  If there are any Fit table which areg not being used contains ComponentType
   field as 0x7F. If needed we can change this and spec this out.
-  
+
 Arguments:
 
   FitPtr    - Pointer to available fit table where new component can be added
-  
+
 Returns:
 
   EFI_SUCCESS  - The function completed successfully
-    
+
 --*/
 {
   FIT_TABLE *TmpFitPtr;
@@ -822,10 +823,10 @@ Routine Description:
     Type in their incresing order.
 
 Arguments:
-    
+
     Arg1  -   Pointer to Arg1
     Arg2  -   Pointer to Arg2
-    
+
 Returns:
 
     None
@@ -853,7 +854,7 @@ Routine Description:
     Type in their incresing order.
 
 Arguments:
-    
+
     VOID
 
 Returns:
@@ -884,19 +885,19 @@ UpdateFitEntryForFwVolume (
   IN  UINT64  Size
   )
 /*++
-  
+
 Routine Description:
 
   This function updates the information about Firmware Volume  in FIT TABLE.
   This FIT table has to be immediately below the PAL_A Start and it contains
   component type and address information. Other information can't be
   created this time so we would need to fix it up..
-  
-  
+
+
 Arguments:
 
   Size   - Firmware Volume Size
-  
+
 Returns:
 
   VOID
@@ -956,21 +957,21 @@ UpdateFitEntryForNonVTFComp (
   IN  PARSED_VTF_INFO   *VtfInfo
   )
 /*++
-  
+
 Routine Description:
 
   This function updates the information about non VTF component in FIT TABLE.
   Since non VTF componets binaries are not part of VTF binary, we would still
   be required to update its location information in Firmware Volume, inside
   FIT table.
-  
+
 Arguments:
 
   VtfInfo    - Pointer to VTF Info Structure
-  
+
 Returns:
 
-  EFI_ABORTED  - The function fails to update the component in FIT  
+  EFI_ABORTED  - The function fails to update the component in FIT
   EFI_SUCCESS  - The function completed successfully
 
 --*/
@@ -1031,16 +1032,16 @@ UpdateEntryPoint (
   IN  UINT64            *CompStartAddress
   )
 /*++
-  
+
 Routine Description:
 
   This function updated the architectural entry point in IPF, SALE_ENTRY.
-  
+
 Arguments:
 
-  VtfInfo            - Pointer to VTF Info Structure 
+  VtfInfo            - Pointer to VTF Info Structure
   CompStartAddress   - Pointer to Component Start Address
-  
+
 Returns:
 
   EFI_INVALID_PARAMETER  - The parameter is invalid
@@ -1094,7 +1095,7 @@ Returns:
   GetRelativeAddressInVtfBuffer (SalEntryAdd, &RelativeAddress, FIRST_VTF);
 
   memcpy ((VOID *) RelativeAddress, (VOID *) CompStartAddress, sizeof (UINT64));
-  
+
   if (Fp != NULL) {
     fclose (Fp);
   }
@@ -1107,27 +1108,27 @@ CreateAndUpdateComponent (
   IN  PARSED_VTF_INFO   *VtfInfo
   )
 /*++
-  
+
 Routine Description:
 
   This function reads the binary file for each components and update them
   in VTF Buffer as well as in FIT table. If the component is located in non
   VTF area, only the FIT table address will be updated
-  
+
 Arguments:
 
   VtfInfo    - Pointer to Parsed Info
-  
+
 Returns:
 
   EFI_SUCCESS      - The function completed successful
   EFI_ABORTED      - Aborted due to one of the many reasons like:
                       (a) Component Size greater than the specified size.
                       (b) Error opening files.
-            
+
   EFI_INVALID_PARAMETER     Value returned from call to UpdateEntryPoint()
   EFI_OUT_OF_RESOURCES      Memory allocation failure.
-  
+
 --*/
 {
   EFI_STATUS  Status;
@@ -1221,7 +1222,7 @@ Returns:
   if (!Aligncheck) {
     CompStartAddress -= NumAdjustByte;
   }
-  
+
   if (VtfInfo->LocationType == SECOND_VTF && SecondVTF == TRUE) {
     Vtf2LastStartAddress = CompStartAddress;
     Vtf2TotalSize += (UINT32) (FileSize + NumAdjustByte);
@@ -1265,7 +1266,7 @@ Returns:
   //
   // Update the SYM file for this component based on it's start address.
   //
-  Status = UpdateSymFile (CompStartAddress, VTF_SYM_FILE, VtfInfo->CompSymName);
+  Status = UpdateSymFile (CompStartAddress, SymFileName, VtfInfo->CompSymName);
   if (EFI_ERROR (Status)) {
 
     //
@@ -1292,28 +1293,28 @@ CreateAndUpdatePAL_A (
   IN  PARSED_VTF_INFO   *VtfInfo
   )
 /*++
-  
+
 Routine Description:
 
   This function reads the binary file for each components and update them
   in VTF Buffer as well as FIT table
-  
+
 Arguments:
 
   VtfInfo    - Pointer to Parsed Info
-  
+
 Returns:
 
   EFI_ABORTED           - Due to one of the following reasons:
                            (a)Error Opening File
                            (b)The PAL_A Size is more than specified size status
-                              One of the values mentioned below returned from 
+                              One of the values mentioned below returned from
                               call to UpdateSymFile
   EFI_SUCCESS           - The function completed successfully.
   EFI_INVALID_PARAMETER - One of the input parameters was invalid.
   EFI_ABORTED           - An error occurred.UpdateSymFile
   EFI_OUT_OF_RESOURCES  - Memory allocation failed.
-   
+
 --*/
 {
   EFI_STATUS  Status;
@@ -1388,7 +1389,7 @@ Returns:
     Error (NULL, 0, 2000, "Invalid parameter", "Binary FileSize must be a multiple of 16.");
     return EFI_INVALID_PARAMETER;
   }
-  
+
   PalFitPtr->CompSize     = (UINT32) (FileSize / 16);
   PalFitPtr->CompVersion  = MAKE_VERSION (VtfInfo->MajorVer, VtfInfo->MinorVer);
   PalFitPtr->CvAndType    = CV_N_TYPE (VtfInfo->CheckSumRequired, VtfInfo->CompType);
@@ -1404,7 +1405,7 @@ Returns:
   //
   // Update the SYM file for this component based on it's start address.
   //
-  Status = UpdateSymFile (PalStartAddress, VTF_SYM_FILE, VtfInfo->CompSymName);
+  Status = UpdateSymFile (PalStartAddress, SymFileName, VtfInfo->CompSymName);
   if (EFI_ERROR (Status)) {
 
     //
@@ -1420,16 +1421,16 @@ CreateFitTableAndInitialize (
   IN  PARSED_VTF_INFO   *VtfInfo
   )
 /*++
-  
+
 Routine Description:
 
   This function creates and intializes FIT table which would be used to
   add component info inside this
-  
+
 Arguments:
 
   VtfInfo    - Pointer to Parsed Info
-  
+
 Returns:
 
   EFI_ABORTED  - Aborted due to no size information
@@ -1471,7 +1472,7 @@ Returns:
   // Update Fit Table with FIT Signature and FIT info in first 16 bytes.
   //
   FitStartPtr = (FIT_TABLE *) RelativeAddress;
-  
+
   strncpy ((CHAR8 *) &FitStartPtr->CompAddress, FIT_SIGNATURE, 8);  // "_FIT_   "
   assert (((VtfInfo->CompSize & 0x00FFFFFF) % 16) == 0);
   FitStartPtr->CompSize     = (VtfInfo->CompSize & 0x00FFFFFF) / 16;
@@ -1516,13 +1517,13 @@ WriteVtfBinary (
 Routine Description:
 
   Write Firmware Volume from memory to a file.
-  
+
 Arguments:
 
   FileName     - Output File Name which needed to be created/
   VtfSize      - FileSize
   LocType      - The type of the VTF
-  
+
 Returns:
 
   EFI_ABORTED - Returned due to one of the following resons:
@@ -1577,18 +1578,18 @@ UpdateVtfBuffer (
 Routine Description:
 
   Update the Firmware Volume Buffer with requested buffer data
-  
+
 Arguments:
 
   StartAddress   - StartAddress in buffer. This number will automatically
-                  point to right address in buffer where data needed 
+                  point to right address in buffer where data needed
                   to be updated.
   Buffer         - Buffer pointer from data will be copied to memory mapped buffer.
   DataSize       - Size of the data needed to be copied.
   LocType        - The type of the VTF: First or Second
 
 Returns:
-  
+
   EFI_ABORTED  - The input parameter is error
   EFI_SUCCESS  - The function completed successfully
 
@@ -1615,7 +1616,7 @@ Returns:
     LocalBufferPtrToWrite = (UINT8 *) Vtf2EndBuffer;
     LocalBufferPtrToWrite -= (Fv2EndAddress - StartAddress);
   }
-  
+
   memcpy (LocalBufferPtrToWrite, Buffer, (UINTN) DataSize);
 
   return EFI_SUCCESS;
@@ -1624,14 +1625,14 @@ Returns:
 EFI_STATUS
 UpdateFfsHeader (
   IN UINT32         TotalVtfSize,
-  IN LOC_TYPE       LocType  
+  IN LOC_TYPE       LocType
   )
 /*++
 
 Routine Description:
 
   Update the Firmware Volume Buffer with requested buffer data
-  
+
 Arguments:
 
   TotalVtfSize     - Size of the VTF
@@ -1639,7 +1640,7 @@ Arguments:
   LocType          - The type of the VTF
 
 Returns:
-  
+
   EFI_SUCCESS            - The function completed successfully
   EFI_INVALID_PARAMETER  - The Ffs File Header Pointer is NULL
 
@@ -1702,15 +1703,15 @@ ValidateAddressAndSize (
 Routine Description:
 
   Update the Firmware Volume Buffer with requested buffer data
-  
+
 Arguments:
 
   BaseAddress    - Base address for the Fw Volume.
-  
+
   FwVolSize      - Total Size of the FwVolume to which VTF will be attached..
 
 Returns:
-  
+
   EFI_SUCCESS     - The function completed successfully
   EFI_UNSUPPORTED - The input parameter is error
 
@@ -1733,14 +1734,14 @@ UpdateIA32ResetVector (
 Routine Description:
 
   Update the 16 byte IA32 Reset vector to maintain the compatibility
-  
+
 Arguments:
 
   FileName     - Binary file name which contains the IA32 Reset vector info..
   FirstFwVSize - Total Size of the FwVolume to which VTF will be attached..
 
 Returns:
-  
+
   EFI_SUCCESS            - The function completed successfully
   EFI_ABORTED            - Invalid File Size
   EFI_INVALID_PARAMETER  - Bad File Name
@@ -1800,13 +1801,13 @@ CleanUpMemory (
 Routine Description:
 
   This function cleans up any allocated buffer
-  
+
 Arguments:
 
   NONE
 
 Returns:
-  
+
   NONE
 
 --*/
@@ -1842,15 +1843,15 @@ Routine Description:
 
   This function process the link list created during INF file parsing
   and create component in VTF and updates its info in FIT table
-  
+
 Arguments:
 
   Size   - Size of the Firmware Volume of which, this VTF belongs to.
 
 Returns:
-  
+
   EFI_UNSUPPORTED - Unknown FIT type
-  EFI_SUCCESS     - The function completed successfully                 
+  EFI_SUCCESS     - The function completed successfully
 
 --*/
 {
@@ -1935,23 +1936,23 @@ Routine Description:
 
 Arguments:
 
-  StartAddress1  - The start address of the first VTF      
+  StartAddress1  - The start address of the first VTF
   Size1          - The size of the first VTF
-  StartAddress2  - The start address of the second VTF      
+  StartAddress2  - The start address of the second VTF
   Size2          - The size of the second VTF
   fp             - The pointer to BSF inf file
 
 Returns:
- 
+
   EFI_OUT_OF_RESOURCES - Can not allocate memory
-  The return value can be any of the values 
+  The return value can be any of the values
   returned by the calls to following functions:
       GetVtfRelatedInfoFromInfFile
       ProcessAndCreateVtf
       UpdateIA32ResetVector
       UpdateFfsHeader
       WriteVtfBinary
-  
+
 --*/
 {
   EFI_STATUS  Status;
@@ -1959,13 +1960,13 @@ Returns:
 
   Status          = EFI_UNSUPPORTED;
   VtfFP = fp;
-  
+
   if (StartAddress2 == 0) {
     SecondVTF = FALSE;
   } else {
     SecondVTF = TRUE;
   }
-  
+
   Fv1BaseAddress        = StartAddress1;
   Fv1EndAddress         = Fv1BaseAddress + Size1;
   if (Fv1EndAddress != 0x100000000 || Size1 < 0x100000) {
@@ -1977,7 +1978,7 @@ Returns:
     }
     Usage();
     return EFI_INVALID_PARAMETER;
-  }  
+  }
 
   //
   // The image buffer for the First VTF
@@ -1990,7 +1991,7 @@ Returns:
   memset (Vtf1Buffer, 0x00, (UINTN) Size1);
   Vtf1EndBuffer         = (UINT8 *) Vtf1Buffer + Size1;
   Vtf1LastStartAddress  = Fv1EndAddress | IPF_CACHE_BIT;
-  
+
   if (SecondVTF) {
     Fv2BaseAddress        = StartAddress2;
     Fv2EndAddress         = Fv2BaseAddress + Size2;
@@ -2002,7 +2003,7 @@ Returns:
       }
       Usage();
       return EFI_INVALID_PARAMETER;
-    }    
+    }
 
     //
     // The image buffer for the second VTF
@@ -2016,9 +2017,9 @@ Returns:
     Vtf2EndBuffer         = (UINT8 *) Vtf2Buffer + Size2;
     Vtf2LastStartAddress  = Fv2EndAddress | IPF_CACHE_BIT;
   }
-  
+
   Status = GetVtfRelatedInfoFromInfFile (VtfFP);
-   
+
   if (Status != EFI_SUCCESS) {
     Error (NULL, 0, 0003, "Error parsing file", "the input file.");
     CleanUpMemory ();
@@ -2030,7 +2031,7 @@ Returns:
     CleanUpMemory ();
     return Status;
   }
-  
+
   if (SectionOptionFlag) {
     Status = UpdateIA32ResetVector (IA32BinFile, Vtf1TotalSize);
     if (Status != EFI_SUCCESS) {
@@ -2043,7 +2044,7 @@ Returns:
   // Re arrange the FIT Table for Ascending order of their FIT Type..
   //
   SortFitTable ();
-  
+
   //
   // All components have been updated in FIT table. Now perform the FIT table
   // checksum. The following function will check if Checksum is required,
@@ -2075,13 +2076,13 @@ Returns:
       CleanUpMemory ();
       return Status;
     }
-    
+
     //
     // Update the VTF buffer into specified VTF binary file
     //
     Status  = WriteVtfBinary (OutFileName2, Vtf2TotalSize, SECOND_VTF);
   }
-  
+
   CleanUpMemory ();
 
   return Status;
@@ -2100,9 +2101,9 @@ Routine Description:
 Arguments:
 
   StartAddress - StartAddress for PEIM.....
-    
+
 Returns:
- 
+
   EFI_SUCCESS          - The function completed successfully
   EFI_ABORTED          - Error Opening File
   EFI_OUT_OF_RESOURCES - System out of resources for memory allocation.
@@ -2293,22 +2294,22 @@ CalculateFitTableChecksum (
   VOID
   )
 /*++
-  
+
 Routine Description:
 
   This function will perform byte checksum on the FIT table, if the the checksum required
   field is set to CheckSum required. If the checksum is not required then checksum byte
   will have value as 0;.
-  
+
 Arguments:
 
   NONE
-  
+
 Returns:
 
   Status       - Value returned by call to CalculateChecksum8 ()
   EFI_SUCCESS  - The function completed successfully
-    
+
 --*/
 {
   FIT_TABLE *TmpFitPtr;
@@ -2392,10 +2393,10 @@ Returns:
   // Summary usage
   //
   fprintf (stdout, "Usage: %s [options] <-f input_file> <-r BaseAddress> <-s FwVolumeSize>\n\n", UTILITY_NAME);
-  
+
   //
   // Copyright declaration
-  // 
+  //
   fprintf (stdout, "Copyright (c) 2007, Intel Corporation. All rights reserved.\n\n");
 
   fprintf (stdout, "  -f  input_file\n\
@@ -2419,7 +2420,7 @@ Returns:
   fprintf (stdout, "  -q\n\
             Disable all messages except FATAL ERRORS.\n");
   fprintf (stdout, "  -d [#, 0-9]\n\
-            Enable debug messages at level #.\n");  
+            Enable debug messages at level #.\n");
 }
 
 EFI_STATUS
@@ -2444,7 +2445,7 @@ Returns:
 
   0   - No error conditions detected.
   1   - One or more of the input parameters is invalid.
-  2   - A resource required by the utility was unavailable.  
+  2   - A resource required by the utility was unavailable.
       - Most commonly this will be memory allocation or file creation.
   3   - GenFvImage.dll could not be loaded.
   4   - Error executing the GenFvImage dll.
@@ -2491,13 +2492,13 @@ Returns:
     Usage();
     return 0;
   }
-  
-  if ((strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0) || 
+
+  if ((strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0) ||
       (strcmp(argv[1], "-?") == 0) || (strcmp(argv[1], "/?") == 0)) {
     Usage();
     return 0;
   }
-  
+
   if ((strcmp(argv[1], "--version") == 0)) {
     Version();
     return 0;
@@ -2528,7 +2529,7 @@ Returns:
     // Determine argument to read
     //
     switch (argv[Index][1]) {
-    
+
     case 'O':
     case 'o':
     //
@@ -2549,12 +2550,12 @@ Returns:
     OutFileName2 = (CHAR8 *)argv[Index+1];
     }
     break;
-    
+
     case 'F':
     case 'f':
     //
     // Get the input VTF file name
-    // 
+    //
     VtfFileName = argv[Index+1];
     VtfFP = fopen(VtfFileName, "rb");
     if (VtfFP == NULL) {
@@ -2562,7 +2563,7 @@ Returns:
       goto ERROR;
     }
     break;
-    
+
     case 'R':
     case 'r':
       if (FirstRoundB) {
@@ -2641,7 +2642,7 @@ Returns:
   } else if (DebugMode) {
     SetPrintLevel(DebugLevel);
   }
-  
+
   if (VerboseMode) {
     VerboseMsg("%s tool start.\n", UTILITY_NAME);
   }
@@ -2652,6 +2653,28 @@ Returns:
       OutFileName2 = VTF_OUTPUT_FILE2;
 	  } else {
       OutFileName1 = VTF_OUTPUT_FILE1;
+    }
+    SymFileName = VTF_SYM_FILE;
+  } else {
+    INTN OutFileNameLen = strlen(OutFileName1);
+    INTN Index;
+
+    for (Index = OutFileNameLen; Index > 0; --Index) {
+      if (OutFileName1[Index] == '/' || OutFileName1[Index] == '\\') {
+        break;
+      }
+    }
+    if (Index == 0) {
+      SymFileName = VTF_SYM_FILE;
+    } else {
+      INTN SymFileNameLen = Index + 1 + strlen(VTF_SYM_FILE);
+      SymFileName = malloc(SymFileNameLen + 1);
+      memcpy(SymFileName, OutFileName1, Index + 1);
+      memcpy(SymFileName + Index + 1, VTF_SYM_FILE, strlen(VTF_SYM_FILE));
+      SymFileName[SymFileNameLen] = '\0';
+    }
+    if (DebugMode) {
+      DebugMsg(UTILITY_NAME, 0, DebugLevel, SymFileName);
     }
   }
 
