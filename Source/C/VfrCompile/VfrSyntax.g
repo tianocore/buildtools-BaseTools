@@ -58,12 +58,6 @@ VfrParserStart (
 }
 >>
 
-#lexaction
-<<
-#include <Error.h>
-
->>
-
 //
 // Define a lexical class for parsing quoted strings. Basically
 // starts with a double quote, and ends with a double quote that
