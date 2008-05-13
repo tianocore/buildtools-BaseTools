@@ -87,7 +87,7 @@ def GuidStringToGuidStructureString(Guid):
 #   @retval     string      The GUID value in xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx format
 #
 def GuidStructureStringToGuidString(GuidValue):
-    guidValueString = GuidValue.lower().replace("{", "").replace("}", "").replace(" ", "")
+    guidValueString = GuidValue.lower().replace("{", "").replace("}", "").replace(" ", "").replace(";", "")
     guidValueList = guidValueString.split(",")
     if len(guidValueList) != 11:
         EdkLogger.error(None, None, "Invalid GUID value string %s" % GuidValue)
@@ -477,7 +477,13 @@ class sdict(IterableUserDict):
             self._key_list.insert(index + 1, newkey)
             IterableUserDict.__setitem__(self, newkey, newvalue)
 
-
+    ## append support
+    def append(self, sdict):
+        for key in sdict:
+            if key not in self._key_list:
+                self._key_list.append(key)
+            IterableUserDict.__setitem__(self, key, sdict[key])
+        
     def has_key(self, key):
         return key in self._key_list
 
@@ -729,31 +735,43 @@ class Blist(UserList):
         return Value
     Result = property(_GetResult)
 
+def ParseConsoleLog(Filename):
+    Opr = open(os.path.normpath(Filename), 'r')
+    Opw = open(os.path.normpath(Filename + '.New'), 'w+')
+    for Line in Opr.readlines():
+        if Line.find('.efi') > -1:
+            Opw.write('%s' % Line)
+    
+    Opr.close()
+    Opw.close()
+
 ##
 #
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
 #
 if __name__ == '__main__':
-    d = tdict(True, 3)
-    d['COMMON', 'PEIM', "A",] = 1
-    d['COMMON', 'DXE_CORE', 'B'] = 2
-    d['IA32', 'DXE_CORE', 'C'] = 3
-
-    print d['IA32', 'DXE_CORE', 'C']
-    
-    s = sdict()
-    s[1] = 1
-    s[3] = 3
-    s[4] = 4
-    s[6] = 6
-    print s.index(3)
-    s.insert(3, 2, 2, 'BEFORE')
-    print s.index(3)
-    print s.index(4)
-    s.insert(3, 5, 5, 'AFTER')
-    print s.keys()
-    print s.values()
-    for item in s:
-        print item, s[item]
+    ParseConsoleLog('C:\\1.log')
+    #print GuidStringToGuidStructureString('9EA5DF0F-A35C-48C1-BAC9-F63452B47C3E')
+#    d = tdict(True, 3)
+#    d['COMMON', 'PEIM', "A",] = 1
+#    d['COMMON', 'DXE_CORE', 'B'] = 2
+#    d['IA32', 'DXE_CORE', 'C'] = 3
+#
+#    print d['IA32', 'DXE_CORE', 'C']
+#    
+#    s = sdict()
+#    s[1] = 1
+#    s[3] = 3
+#    s[4] = 4
+#    s[6] = 6
+#    print s.index(3)
+#    s.insert(3, 2, 2, 'BEFORE')
+#    print s.index(3)
+#    print s.index(4)
+#    s.insert(3, 5, 5, 'AFTER')
+#    print s.keys()
+#    print s.values()
+#    for item in s:
+#        print item, s[item]
 
