@@ -1,23 +1,23 @@
 /** @file
 
-Copyright (c) 2004 - 2008, Intel Corporation                                                         
-All rights reserved. This program and the accompanying materials                          
-are licensed and made available under the terms and conditions of the BSD License         
-which accompanies this distribution.  The full text of the license may be found at        
-http://opensource.org/licenses/bsd-license.php                                            
-                                                                                          
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,                     
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.             
+Copyright (c) 2004 - 2008, Intel Corporation
+All rights reserved. This program and the accompanying materials
+are licensed and made available under the terms and conditions of the BSD License
+which accompanies this distribution.  The full text of the license may be found at
+http://opensource.org/licenses/bsd-license.php
 
-Module Name:  
+THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+
+Module Name:
 
   EfiUtilityMsgs.c
-  
+
 Abstract:
 
   EFI tools utility functions to display warning, error, and informational
   messages.
-  
+
 --*/
 
 #include <stdio.h>
@@ -75,33 +75,33 @@ Error (
 
 Routine Description:
   Prints an error message.
-  
+
 Arguments:
   All arguments are optional, though the printed message may be useless if
   at least something valid is not specified.
-  
+
   FileName - name of the file or application. If not specified, then the
              utilty name (as set by the utility calling SetUtilityName()
              earlier) is used. Otherwise "Unknown utility" is used.
-  
+
   LineNumber - the line number of error, typically used by parsers. If the
                utility is not a parser, then 0 should be specified. Otherwise
                the FileName and LineNumber info can be used to cause
                MS Visual Studio to jump to the error.
-               
+
   MessageCode - an application-specific error code that can be referenced in
-              other documentation. 
+              other documentation.
 
   Text        - the text in question, typically used by parsers.
-  
+
   MsgFmt - the format string for the error message. Can contain formatting
            controls for use with the varargs.
-           
+
 Returns:
   None.
-  
+
 Notes:
-  We print the following (similar to the Warn() and Debug() 
+  We print the following (similar to the Warn() and Debug()
   W
   Typical error/warning message format:
 
@@ -111,7 +111,7 @@ Notes:
   should be modified to share code.
 
   Visual Studio does not find error messages with:
-  
+
      " error :"
      " error 1:"
      " error c1:"
@@ -119,7 +119,7 @@ Notes:
      " error c100:"
 
   It does find:
-     " error c1000:"     
+     " error c1000:"
 --*/
 {
   va_list List;
@@ -296,25 +296,25 @@ Routine Description:
 Arguments:
   FileName    - name of the file where the warning was detected, or the name
                 of the application that detected the warning
-  
+
   LineNumber  - the line number where the warning was detected (parsers).
                 0 should be specified if the utility is not a parser.
-               
+
   MessageCode - an application-specific warning code that can be referenced in
-                other documentation. 
+                other documentation.
 
   Text        - the text in question (parsers)
-  
+
   MsgFmt      - the format string for the warning message. Can contain formatting
                 controls for use with varargs.
-           
+
 Returns:
   None.
 
 --*/
 {
   va_list List;
-  
+
   //
   // Current Print Level not output warning information.
   //
@@ -368,16 +368,16 @@ Routine Description:
 Arguments:
   FileName    - typically the name of the utility printing the debug message, but
                 can be the name of a file being parsed.
-  
-  LineNumber  - the line number in FileName (parsers) 
-               
+
+  LineNumber  - the line number in FileName (parsers)
+
   MsgLevel    - Debug message print level (0~9)
 
   Text        - the text in question (parsers)
-  
+
   MsgFmt      - the format string for the debug message. Can contain formatting
                 controls for use with varargs.
-           
+
 Returns:
   None.
 
@@ -421,25 +421,25 @@ Arguments:
 
   FileName    - name of the file where the warning was detected, or the name
                 of the application that detected the warning
-  
+
   LineNumber  - the line number where the warning was detected (parsers).
                 0 should be specified if the utility is not a parser.
-               
+
   MessageCode - an application-specific warning code that can be referenced in
-                other documentation. 
+                other documentation.
 
   Text        - part of the message to print
-  
+
   MsgFmt      - the format string for the message. Can contain formatting
                 controls for use with varargs.
   List        - the variable list.
-           
+
 Returns:
   None.
 
 Notes:
-  If FileName == NULL then this utility will use the string passed into SetUtilityName(). 
-  
+  If FileName == NULL then this utility will use the string passed into SetUtilityName().
+
   LineNumber is only used if the caller is a parser, in which case FileName refers to the
   file being parsed.
 
@@ -451,7 +451,7 @@ Notes:
 
     Parser (LineNumber != 0)
       VfrCompile.cpp(330) : error E2660: AddVfrDataStructField : function does not take 2 parameters
-    Generic utility (LineNumber == 0) 
+    Generic utility (LineNumber == 0)
       UtilityName : error E1234 : Text string : MsgFmt string and args
 
 --*/
@@ -467,7 +467,7 @@ Notes:
   //
   Line[0] = '\0';
   Line2[0] = '\0';
-  
+
   //
   // If given a filename, then add it (and the line number) to the string.
   // If there's no filename, then use the program name if provided.
@@ -477,14 +477,14 @@ Notes:
   } else {
     Cptr = NULL;
   }
-  
+
   if (strcmp (Type, "DEBUG") == 0) {
     //
     // Debug Message requires current time.
     //
     time (&CurrentTime);
     NewTime = localtime (&CurrentTime);
-    fprintf (stdout, "%04d-%02d-%02d %02d:%02d:%02d", 
+    fprintf (stdout, "%04d-%02d-%02d %02d:%02d:%02d",
                      NewTime->tm_year + 1900,
                      NewTime->tm_mon + 1,
                      NewTime->tm_mday,
@@ -524,7 +524,7 @@ Notes:
   // message for you. It has to be decimal digits too.
   //
   if (MessageCode != 0) {
-    sprintf (Line2, ": %s: %c%04d", Type, toupper (Type[0]), MessageCode);
+    sprintf (Line2, ": %s %04X", Type, MessageCode);
   } else {
     sprintf (Line2, ": %s", Type);
   }
@@ -556,12 +556,12 @@ PrintSimpleMessage (
 /*++
 Routine Description:
   Print message into stdout.
- 
+
 Arguments:
   MsgFmt      - the format string for the message. Can contain formatting
                 controls for use with varargs.
   List        - the variable list.
-           
+
 Returns:
   None.
 --*/
@@ -584,7 +584,7 @@ ParserSetPosition (
 /*++
 
 Routine Description:
-  Set the position in a file being parsed. This can be used to 
+  Set the position in a file being parsed. This can be used to
   print error messages deeper down in a parser.
 
 Arguments:
@@ -612,14 +612,14 @@ Routine Description:
   text. However if a filename is not passed to the print routines, then
   they'll print the utility name if you call this function early in your
   app to set the utility name.
-  
+
 Arguments:
   UtilityName  -  name of the utility, which will be printed with all
                   error/warning/debug messags.
 
 Returns:
   NA
-  
+
 --*/
 {
   //
@@ -651,13 +651,13 @@ Routine Description:
   sets a local mStatus to STATUS_ERROR or STATUS_WARNING. When the utility
   exits, it can call this function to get the status and use it as a return
   value.
-  
+
 Arguments:
   None.
 
 Returns:
   Worst-case status reported, as defined by which print function was called.
-  
+
 --*/
 {
   return mStatus;
@@ -798,7 +798,7 @@ Routine Description:
 Arguments:
   MaxErrors       - maximum number of error messages to print
   MaxWarnings     - maximum number of warning messages to print
-  MaxWarningsPlusErrors 
+  MaxWarningsPlusErrors
                   - maximum number of errors+warnings to print
 
 Returns:
