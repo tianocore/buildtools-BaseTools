@@ -89,94 +89,7 @@
 		</xs:complexType>
 	</xs:element>
 
-	<xs:element name="PackageList">
-		<xs:annotation>
-			<xs:documentation xml:lang="en-us"> This section tracks individual
-				packages (collections of related items.) Each package listed in this
-				section must have a DEC file associated with it. </xs:documentation>
-		</xs:annotation>
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element name="Package" minOccurs="1" maxOccurs="unbounded">
-					<xs:complexType>
-						<xs:sequence>
-							<xs:element name="Name" minOccurs="1" maxOccurs="1">
-								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> The User Interface Name of
-										the package. </xs:documentation>
-								</xs:annotation>
-								<xs:complexType>
-									<xs:simpleContent>
-										<xs:extension base="xs:normalizedString">
-											<xs:attribute name="BaseName" type="xs:NCName"
-												use="required">
-												<xs:annotation>
-													<xs:documentation xml:lang="en-us"> The BaseName is
-														used to create files and folders during a build, and
-														is used by packaging tools as a keyword to create
-														the DEC file. </xs:documentation>
-												</xs:annotation>
-											</xs:attribute>
-										</xs:extension>
-									</xs:simpleContent>
-								</xs:complexType>
-							</xs:element>
-							<xs:element ref="GUID" minOccurs="1" maxOccurs="1">
-								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> This is the GUID of the
-										package, backward compatible versions of a package can use
-										the same GUID, however the version attribute must be changed
-										(incrementally.) Non-backward compatible versions of a
-										package must also provide a new GUID, while resetting the
-										version attribute is optional. </xs:documentation>
-								</xs:annotation>
-							</xs:element>
-							<xs:element name="InstalledFolder" type="xs:anyURI" minOccurs="1"
-								maxOccurs="1">
-								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> This is used to track the
-										actual installation location, relative to the WORKSPACE.
-										During an installation, the user may be presented with an
-										option to relocate package content from the ZIP portion of
-										the archive into a different location. </xs:documentation>
-									<xs:documentation> Any installation tools must modify this
-										value if the location is different from the default
-										location. </xs:documentation>
-									<xs:documentation> Any removal tools must check this value to
-										locate correctly, the items that will be removed.
-									</xs:documentation>
-								</xs:annotation>
-							</xs:element>
-							<xs:element name="DecFilename" minOccurs="1" maxOccurs="1"
-								type="xs:anyURI">
-								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> The WORKSPACE relative
-										path and filename of the DEC file. </xs:documentation>
-								</xs:annotation>
-							</xs:element>
-							<xs:element ref="ModuleList" minOccurs="0" maxOccurs="1">
-								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> This section is used to
-										track the actual installation location, relative to the
-										WORKSPACE. Every module that is part of this package must be
-										listed here. During an installation, the user may be
-										presented with an option to relocate module content from the
-										ZIP portion of the archive into a different location, the
-										installation tools must modify this value if the location is
-										different from the default location. Any removal tools must
-										check this value to locate correctly, the items that will be
-										removed. </xs:documentation>
-									<xs:documentation xml:lang="en-us"> The name of any INF files
-										that were created during the installation of a distribution
-										must also be listed in this section. </xs:documentation>
-								</xs:annotation>
-							</xs:element>
-						</xs:sequence>
-					</xs:complexType>
-				</xs:element>
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
+
 
 	<xs:element name="ModuleList">
 		<xs:complexType>
@@ -226,9 +139,9 @@
 							<xs:element name="InfFilename" minOccurs="1" maxOccurs="1"
 								type="xs:anyURI">
 								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> This is the WORKSPACE
-										relative path and filename of the INF file created during
-										installation. </xs:documentation>
+									<xs:documentation xml:lang="en-us"> This is filename of the
+										INF file created in the InstalledFolder (listed above)
+										during installation. </xs:documentation>
 								</xs:annotation>
 							</xs:element>
 						</xs:sequence>
@@ -287,22 +200,66 @@
 						<xs:documentation xml:lang="en-us"> This is the filename of the
 							distribution package manifest (.manifest) file that was created
 							and stored in the Conf/Pkgs folder of the WORKSPACE for this
-							distribution package. </xs:documentation>
-						<xs:documentation xml:lang="en-us"> The InstallPkg tool must create
-							this file using the extracted locations of the content zip file
-							(or, alternatively, the user can create the file by redirecting
-							the output of the zip -Tv Contents.zip.) </xs:documentation>
+							distribution package. The InstallPkg tool must create this file
+							using the extracted locations of the content zip file (or,
+							alternatively, the user can create the file by redirecting the
+							output of the zip -Tv Contents.zip.) </xs:documentation>
 					</xs:annotation>
 				</xs:element>
 				<xs:element minOccurs="1" maxOccurs="1" name="InstalledDate"
 					type="xs:dateTime" />
 				<xs:element name="DistributionProperties" minOccurs="0" maxOccurs="1"
 					nillable="true">
+					<xs:annotation>
+						<xs:documentation xml:lang="en-us"> This section tracks information
+							and content that is not associated with either packages or
+							modules, or is not required for building packages or modules.
+						</xs:documentation>
+					</xs:annotation>
 					<xs:complexType>
 						<xs:sequence>
-							<xs:element ref="ToolsList" minOccurs="0" maxOccurs="1" />
-							<xs:element ref="MiscellaneousFilesList" minOccurs="0"
-								maxOccurs="1" />
+							<xs:element name="ToolsList" minOccurs="0" maxOccurs="1">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element minOccurs="1" maxOccurs="unbounded"
+											name="Filename" type="xs:anyURI">
+											<xs:annotation>
+												<xs:documentation xml:lang="en-us"> This is used to
+													track the actual installation location of the Tools
+													Section files. During an installation, the user may
+													change in the installation location, so that it is
+													different from the location in the ZIP file. The
+													location is not WORKSPACE relative, but the full path
+													and filename. </xs:documentation>
+												<xs:documentation xml:lang="en-us"> Any removal tools
+													must check this value to locate correctly, the items
+													that will be removed. </xs:documentation>
+											</xs:annotation>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="MiscellaneousFilesList" minOccurs="0"
+								maxOccurs="1">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="Filename" minOccurs="1"
+											maxOccurs="unbounded">
+											<xs:annotation>
+												<xs:documentation xml:lang="en-us"> This is used to
+													track the actual installation location of files from
+													MiscellaneousFiles sections. During an installation,
+													the user may change in the installation location, so
+													that it is different from the location in the ZIP
+													file. </xs:documentation>
+												<xs:documentation xml:lang="en-us"> Any removal tools
+													must check this value to locate correctly, the items
+													that will be removed. </xs:documentation>
+											</xs:annotation>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
 						</xs:sequence>
 						<xs:attribute name="ReadOnly" type="xs:boolean" default="false"
 							use="optional">
@@ -331,12 +288,101 @@
 						</xs:attribute>
 					</xs:complexType>
 				</xs:element>
-				<xs:element ref="PackageList" minOccurs="0" maxOccurs="1">
+				<xs:element name="PackageList" minOccurs="0" maxOccurs="1">
 					<xs:annotation>
-						<xs:documentation xml:lang="en-us"> This is the listing of packages
-							that have been installed as part of a distribution in this
-							WORKSPACE. </xs:documentation>
+						<xs:documentation xml:lang="en-us"> This section tracks individual
+							packages (collections of related items.) Each package listed in
+							this section must have a DEC file associated with it.
+						</xs:documentation>
 					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Package" minOccurs="1" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="Name" minOccurs="1" maxOccurs="1">
+											<xs:annotation>
+												<xs:documentation xml:lang="en-us"> The User Interface
+													Name of the package. </xs:documentation>
+											</xs:annotation>
+											<xs:complexType>
+												<xs:simpleContent>
+													<xs:extension base="xs:normalizedString">
+														<xs:attribute name="BaseName" type="xs:NCName"
+															use="required">
+															<xs:annotation>
+																<xs:documentation xml:lang="en-us"> The BaseName
+																	is used to create files and folders during a
+																	build, and is used by packaging tools as a
+																	keyword to create the DEC file.
+																</xs:documentation>
+															</xs:annotation>
+														</xs:attribute>
+													</xs:extension>
+												</xs:simpleContent>
+											</xs:complexType>
+										</xs:element>
+										<xs:element ref="GUID" minOccurs="1" maxOccurs="1">
+											<xs:annotation>
+												<xs:documentation xml:lang="en-us"> This is the GUID of
+													the package, backward compatible versions of a package
+													can use the same GUID, however the version attribute
+													must be changed (incrementally.) Non-backward
+													compatible versions of a package must also provide a
+													new GUID, while resetting the version attribute is
+													optional. </xs:documentation>
+											</xs:annotation>
+										</xs:element>
+										<xs:element name="InstalledFolder" type="xs:anyURI"
+											minOccurs="1" maxOccurs="1">
+											<xs:annotation>
+												<xs:documentation xml:lang="en-us"> This is used to
+													track the actual installation location, relative to
+													the WORKSPACE. During an installation, the user may be
+													presented with an option to relocate package content
+													from the ZIP portion of the archive into a different
+													location. </xs:documentation>
+												<xs:documentation> Any installation tools must modify
+													this value if the location is different from the
+													default location. </xs:documentation>
+												<xs:documentation> Any removal tools must check this
+													value to locate correctly, the items that will be
+													removed. </xs:documentation>
+											</xs:annotation>
+										</xs:element>
+										<xs:element name="DecFilename" minOccurs="1" maxOccurs="1"
+											type="xs:anyURI">
+											<xs:annotation>
+												<xs:documentation xml:lang="en-us"> This is the filename
+													of the package declaration (DEC) filename created
+													during installation in the InstalledFolder listed
+													above. </xs:documentation>
+											</xs:annotation>
+										</xs:element>
+										<xs:element ref="ModuleList" minOccurs="0" maxOccurs="1">
+											<xs:annotation>
+												<xs:documentation xml:lang="en-us"> This section is used
+													to track the actual installation location, relative to
+													the WORKSPACE. Every module that is part of this
+													package must be listed here. During an installation,
+													the user may be presented with an option to relocate
+													module content from the ZIP portion of the archive
+													into a different location, the installation tools must
+													modify this value if the location is different from
+													the default location. Any removal tools must check
+													this value to locate correctly, the items that will be
+													removed. </xs:documentation>
+												<xs:documentation xml:lang="en-us"> The name of any INF
+													files that were created during the installation of a
+													distribution must also be listed in this section.
+												</xs:documentation>
+											</xs:annotation>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
 				</xs:element>
 				<xs:element ref="ModuleList" minOccurs="0" maxOccurs="1">
 					<xs:annotation>
@@ -347,46 +393,6 @@
 						<xs:documentation xml:lang="en-us"> Module only distribution will
 							typically be for binary only modules, like the enhanced FAT
 							driver. </xs:documentation>
-					</xs:annotation>
-				</xs:element>
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
-
-	<xs:element name="ToolsList">
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element minOccurs="1" maxOccurs="unbounded" name="Filename"
-					type="xs:anyURI">
-					<xs:annotation>
-						<xs:documentation xml:lang="en-us"> This is used to track the actual
-							installation location of the Tools Section files. During an
-							installation, the user may change in the installation location, so
-							that it is different from the location in the ZIP file. The
-							location is not WORKSPACE relative, but the full path and
-							filename. </xs:documentation>
-						<xs:documentation xml:lang="en-us"> Any removal tools must check
-							this value to locate correctly, the items that will be removed.
-						</xs:documentation>
-					</xs:annotation>
-				</xs:element>
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
-
-	<xs:element name="MiscellaneousFilesList">
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element name="Filename" minOccurs="1" maxOccurs="unbounded">
-					<xs:annotation>
-						<xs:documentation xml:lang="en-us"> This is used to track the actual
-							installation location of files from MiscellaneousFiles sections.
-							During an installation, the user may change in the installation
-							location, so that it is different from the location in the ZIP
-							file. </xs:documentation>
-						<xs:documentation xml:lang="en-us"> Any removal tools must check
-							this value to locate correctly, the items that will be removed.
-						</xs:documentation>
 					</xs:annotation>
 				</xs:element>
 			</xs:sequence>
@@ -411,7 +417,7 @@
 				five different Hexadecimal character sets that are separated by a dash
 				(-) character. </xs:documentation>
 		</xs:annotation>
-		<xs:restriction base="xs:string">
+		<xs:restriction base="xs:normalizedString">
 			<xs:pattern
 				value="\s*[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}\s*"
 			 />
