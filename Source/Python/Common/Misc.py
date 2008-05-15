@@ -90,20 +90,24 @@ def GuidStructureStringToGuidString(GuidValue):
     guidValueString = GuidValue.lower().replace("{", "").replace("}", "").replace(" ", "").replace(";", "")
     guidValueList = guidValueString.split(",")
     if len(guidValueList) != 11:
-        EdkLogger.error(None, None, "Invalid GUID value string %s" % GuidValue)
-    return "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x" % (
-            int(guidValueList[0], 16),
-            int(guidValueList[1], 16),
-            int(guidValueList[2], 16),
-            int(guidValueList[3], 16),
-            int(guidValueList[4], 16),
-            int(guidValueList[5], 16),
-            int(guidValueList[6], 16),
-            int(guidValueList[7], 16),
-            int(guidValueList[8], 16),
-            int(guidValueList[9], 16),
-            int(guidValueList[10], 16)
-            )
+        return ''
+        #EdkLogger.error(None, None, "Invalid GUID value string %s" % GuidValue)
+    try:
+        return "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x" % (
+                int(guidValueList[0], 16),
+                int(guidValueList[1], 16),
+                int(guidValueList[2], 16),
+                int(guidValueList[3], 16),
+                int(guidValueList[4], 16),
+                int(guidValueList[5], 16),
+                int(guidValueList[6], 16),
+                int(guidValueList[7], 16),
+                int(guidValueList[8], 16),
+                int(guidValueList[9], 16),
+                int(guidValueList[10], 16)
+                )
+    except:
+        return ''
 
 ## Convert GUID string in C structure style to xxxxxxxx_xxxx_xxxx_xxxx_xxxxxxxxxxxx
 #
@@ -740,7 +744,8 @@ def ParseConsoleLog(Filename):
     Opw = open(os.path.normpath(Filename + '.New'), 'w+')
     for Line in Opr.readlines():
         if Line.find('.efi') > -1:
-            Opw.write('%s' % Line)
+            Line = Line[Line.rfind(' ') : Line.rfind('.efi')].strip()
+            Opw.write('%s\n' % Line)
     
     Opr.close()
     Opw.close()
@@ -751,15 +756,15 @@ def ParseConsoleLog(Filename):
 # script.
 #
 if __name__ == '__main__':
-    ParseConsoleLog('C:\\1.log')
-    #print GuidStringToGuidStructureString('9EA5DF0F-A35C-48C1-BAC9-F63452B47C3E')
+    ParseConsoleLog('C:\\R861\\Log\\Tiger.log')
+#    print GuidStringToGuidStructureString('6441F818-6362-4E44-B570-7DBA31DD2453')
 #    d = tdict(True, 3)
 #    d['COMMON', 'PEIM', "A",] = 1
 #    d['COMMON', 'DXE_CORE', 'B'] = 2
 #    d['IA32', 'DXE_CORE', 'C'] = 3
 #
 #    print d['IA32', 'DXE_CORE', 'C']
-#    
+    
 #    s = sdict()
 #    s[1] = 1
 #    s[3] = 3
@@ -769,7 +774,7 @@ if __name__ == '__main__':
 #    s.insert(3, 2, 2, 'BEFORE')
 #    print s.index(3)
 #    print s.index(4)
-#    s.insert(3, 5, 5, 'AFTER')
+#    s.insert(4, 5, 5, 'AFTER')
 #    print s.keys()
 #    print s.values()
 #    for item in s:
