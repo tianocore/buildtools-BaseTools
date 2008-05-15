@@ -2551,7 +2551,7 @@ private:
   UINT32              _GET_CURRQEST_VARSIZE ();
 
 public:
-  VOID                _PCATCH (IN EFI_VFR_RETURN_CODE, IN EFI_VFR_RETURN_CODE, IN ANTLRTokenPtr, IN CHAR8 *);
+  VOID                _PCATCH (IN INTN, IN INTN, IN ANTLRTokenPtr, IN CHAR8 *);
   VOID                _PCATCH (IN EFI_VFR_RETURN_CODE);
   VOID                _PCATCH (IN EFI_VFR_RETURN_CODE, IN ANTLRTokenPtr);
   VOID                _PCATCH (IN EFI_VFR_RETURN_CODE, IN UINT32);
