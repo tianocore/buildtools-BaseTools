@@ -534,7 +534,14 @@ vfrStatementVarStoreLinear :
   )
   { Key "=" Number "," }                            // Key is used to assign Varid in Framework VFR but no use in UEFI2.1 VFR
   {
-    VarId "=" ID:Number ","                         << VarStoreId = _STOU16(ID->getText()); >>
+    VarId "=" ID:Number ","                         <<
+                                                       _PCATCH(
+                                                         (INTN)(VarStoreId = _STOU16(ID->getText())) != 0,
+                                                         (INTN)TRUE,
+                                                         ID,
+                                                         "varid 0 is not allowed."
+                                                         );
+                                                    >>
   }
   Name "=" SN:StringIdentifier ","
   Uuid "=" guidDefinition[Guid]
@@ -2664,8 +2671,8 @@ EfiVfrParser::_GET_CURRQEST_VARSIZE (
 
 VOID
 EfiVfrParser::_PCATCH (
-  IN EFI_VFR_RETURN_CODE ReturnCode,
-  IN EFI_VFR_RETURN_CODE ExpectCode,
+  IN INTN                ReturnCode,
+  IN INTN                ExpectCode,
   IN ANTLRTokenPtr       Tok,
   IN CHAR8               *ErrorMsg
   )
