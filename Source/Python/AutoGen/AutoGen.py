@@ -18,6 +18,7 @@ import os
 import re
 import os.path as path
 import imp
+import copy
 from optparse import OptionParser
 from optparse import make_option
 
@@ -84,7 +85,7 @@ gAutoGenDepexFileName = "%(module_name)s.depex"
 ## Base class for AutoGen
 #
 #   This class just implements the cache mechanism of AutoGen objects.
-# 
+#
 class AutoGen(object):
     # database to maintain the objects of xxxAutoGen
     _CACHE_ = {}    # (BuildTarget, ToolChain) : {ARCH : {platform file: AutoGen object}}}
@@ -100,7 +101,7 @@ class AutoGen(object):
     #   @param  Arch            Target arch
     #   @param  *args           The specific class related parameters
     #   @param  **kwargs        The specific class related dict parameters
-    # 
+    #
     def __new__(Class, Workspace, MetaFile, Target, Toolchain, Arch, *args, **kwargs):
         # check if the object has been created
         Key = (Target, Toolchain)
@@ -146,10 +147,10 @@ class AutoGen(object):
 #
 #   This class is used mainly to control the whole platform build for different
 # architecture. This class will generate top level makefile.
-# 
+#
 class WorkspaceAutoGen(AutoGen):
     ## Real constructor of WorkspaceAutoGen
-    # 
+    #
     # This method behaves the same as __init__ except that it needs explict invoke
     # (in super class's __new__ method)
     #
@@ -165,7 +166,7 @@ class WorkspaceAutoGen(AutoGen):
     #   @param  Fds                     FD list to be generated
     #   @param  Fvs                     FV list to be generated
     #   @param  SkuId                   SKU id from command line
-    # 
+    #
     def _Init(self, WorkspaceDir, ActivePlatform, Target, Toolchain, ArchList, MetaFileDb,
               BuildConfig, ToolDefinition, FlashDefinitionFile='', Fds=[], Fvs=[], SkuId=''):
         self._MetaFile      = str(ActivePlatform)
@@ -219,7 +220,7 @@ class WorkspaceAutoGen(AutoGen):
         if self._FvDir == None:
             self._FvDir = path.join(self.BuildDir, 'FV')
         return self._FvDir
-            
+
     ## Return the directory to store all intermediate and final files built
     def _GetBuildDir(self):
         return self.AutoGenObjectList[0].BuildDir
@@ -302,7 +303,7 @@ class WorkspaceAutoGen(AutoGen):
 
     Name                = property(_GetName)
     Guid                = property(_GetGuid)
-    Version             = property(_GetVersion)                       
+    Version             = property(_GetVersion)
     OutputDir           = property(_GetOutputDir)
 
     ToolPath            = property(_GetToolPaths)       # toolcode : tool path
@@ -409,7 +410,7 @@ class PlatformAutoGen(AutoGen):
     def CreateMakeFile(self, CreateModuleMakeFile=False):
         if CreateModuleMakeFile:
             for ModuleFile in self.Platform.Modules:
-                Ma = ModuleAutoGen(self.Workspace, ModuleFile, 
+                Ma = ModuleAutoGen(self.Workspace, ModuleFile,
                                               self.BuildTarget, self.ToolChain,
                                               self.Arch, self._MetaFile)
                 Ma.CreateMakeFile(True)
@@ -464,7 +465,7 @@ class PlatformAutoGen(AutoGen):
         if self._BuildDir == None:
             if os.path.isabs(self.OutputDir):
                 self._BuildDir = path.join(
-                                            path.abspath(self.OutputDir), 
+                                            path.abspath(self.OutputDir),
                                             self.BuildTarget + "_" + self.ToolChain,
                                             )
             else:
@@ -693,13 +694,13 @@ class PlatformAutoGen(AutoGen):
                     EdkLogger.debug(EdkLogger.DEBUG_5, "%s %s (%s) -> %d" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Pcd.Phase, TokenNumber))
                     self._PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
                     TokenNumber += 1
-        
+
             for Pcd in self.DynamicPcdList:
                 if Pcd.Phase == "DXE":
                     EdkLogger.debug(EdkLogger.DEBUG_5, "%s %s (%s) -> %d" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Pcd.Phase, TokenNumber))
                     self._PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
                     TokenNumber += 1
-        
+
             for Pcd in self.NonDynamicPcdList:
                 self._PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName] = TokenNumber
                 TokenNumber += 1
@@ -714,8 +715,8 @@ class PlatformAutoGen(AutoGen):
                     self.Workspace,
                     ModuleFile,
                     self.BuildTarget,
-                    self.ToolChain, 
-                    self.Arch, 
+                    self.ToolChain,
+                    self.Arch,
                     self._MetaFile
                     )
             if Ma not in self._ModuleAutoGenList:
@@ -748,11 +749,11 @@ class PlatformAutoGen(AutoGen):
     #
     # This method will not only resolve library classes but also sort the library
     # instances according to the dependency-ship.
-    # 
+    #
     #   @param  Module      The module from which the library classes will be resolved
-    # 
+    #
     #   @retval library_list    List of library instances sorted
-    # 
+    #
     def ApplyLibraryInstance(self, Module):
         ModuleType = Module.ModuleType
         # apply library instances from platform
@@ -792,7 +793,7 @@ class PlatformAutoGen(AutoGen):
                     elif ModuleType not in LibraryModule.LibraryClass[0].SupModList:
                         EdkLogger.error("build", OPTION_MISSING,
                                         "Module type [%s] is not supported by library instance [%s]" \
-                                        % (ModuleType, LibraryPath), File=self._MetaFile, 
+                                        % (ModuleType, LibraryPath), File=self._MetaFile,
                                         ExtraData="\tconsumed by [%s]" % str(Module))
 
                     LibraryInstance[LibraryClassName] = LibraryModule
@@ -906,22 +907,22 @@ class PlatformAutoGen(AutoGen):
         #
         # Build the list of constructor and destructir names
         # The DAG Topo sort produces the destructor order, so the list of constructors must generated in the reverse order
-        #                
+        #
         SortedLibraryList.reverse()
         return SortedLibraryList
-    
+
 
     ## Override PCD setting (type, value, ...)
     #
     #   @param  ToPcd       The PCD to be overrided
     #   @param  FromPcd     The PCD overrideing from
-    # 
+    #
     def _OverridePcd(self, ToPcd, FromPcd):
-        # 
+        #
         # in case there's PCDs coming from FDF file, which have no type given.
         # at this point, PcdInModule.Type has the type found from dependent
         # package
-        # 
+        #
         if FromPcd != None:
             if FromPcd.Type not in [None, '']:
                 ToPcd.Type = FromPcd.Type
@@ -963,9 +964,9 @@ class PlatformAutoGen(AutoGen):
     ## Apply PCD setting defined platform to a module
     #
     #   @param  Module  The module from which the PCD setting will be overrided
-    # 
+    #
     #   @retval PCD_list    The list PCDs with settings from platform
-    # 
+    #
     def ApplyPcdSetting(self, Module):
         # for each PCD in module
         for Name,Guid in Module.Pcds:
@@ -1002,13 +1003,13 @@ class PlatformAutoGen(AutoGen):
         return Module.Pcds.values()
 
     ## Resolve library names to library modules
-    # 
+    #
     # (for R8.x modules)
-    # 
+    #
     #   @param  Module  The module from which the library names will be resolved
-    # 
+    #
     #   @retval library_list    The list of library modules
-    # 
+    #
     def ResolveLibraryReference(self, Module):
         EdkLogger.verbose("")
         EdkLogger.verbose("Library instances of module [%s] [%s]:" % (str(Module), self.Arch))
@@ -1035,9 +1036,9 @@ class PlatformAutoGen(AutoGen):
     ## Expand * in build option key
     #
     #   @param  Options     Options to be expanded
-    # 
+    #
     #   @retval options     Options expanded
-    # 
+    #
     def _ExpandBuildOption(self, Options):
         BuildOptions = {}
         for Key in Options:
@@ -1061,11 +1062,11 @@ class PlatformAutoGen(AutoGen):
         return BuildOptions
 
     ## Append build options in platform to a module
-    # 
+    #
     #   @param  Module  The module to which the build options will be appened
-    # 
+    #
     #   @retval options     The options appended with build options in platform
-    # 
+    #
     def ApplyBuildOption(self, Module):
         PlatformOptions = self.BuildOption
         ModuleOptions = self._ExpandBuildOption(Module.BuildOptions)
@@ -1094,12 +1095,12 @@ class PlatformAutoGen(AutoGen):
     Name                = property(_GetName)
     Guid                = property(_GetGuid)
     Version             = property(_GetVersion)
-                       
+
     OutputDir           = property(_GetOutputDir)
     BuildDir            = property(_GetBuildDir)
     MakeFileDir         = property(_GetMakeFileDir)
     FdfFile             = property(_GetFdfFile)
-    
+
     PcdTokenNumber      = property(_GetPcdTokenNumbers)    # (TokenCName, TokenSpaceGuidCName) : GeneratedTokenNumber
     DynamicPcdList      = property(_GetDynamicPcdList)    # [(TokenCName1, TokenSpaceGuidCName1), (TokenCName2, TokenSpaceGuidCName2), ...]
     NonDynamicPcdList   = property(_GetNonDynamicPcdList)    # [(TokenCName1, TokenSpaceGuidCName1), (TokenCName2, TokenSpaceGuidCName2), ...]
@@ -1276,7 +1277,7 @@ class ModuleAutoGen(AutoGen):
             self._CustomMakefile = {}
             for Type in self.Module.CustomMakefile:
                 MakeType = gMakeTypeMap[Type]
-                self._CustomMakefile[MakeType] = os.path.join(self.SourceDir, self.Module.CustomMakefile[Type])    
+                self._CustomMakefile[MakeType] = os.path.join(self.SourceDir, self.Module.CustomMakefile[Type])
         return self._CustomMakefile
 
     ## Return the directory of the makefile
@@ -1479,8 +1480,8 @@ class ModuleAutoGen(AutoGen):
                     for Key in Library.Pcds:
                         if Key in self.Module.Pcds:
                             continue
-                        self.Module.Pcds[Key] = Library.Pcds[Key]
-                # apply PCD settings from platform            
+                        self.Module.Pcds[Key] = copy.copy(Library.Pcds[Key])
+                # apply PCD settings from platform
             self._PcdList = self.PlatformInfo.ApplyPcdSetting(self.Module)
         return self._PcdList
 
