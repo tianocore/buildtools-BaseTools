@@ -1250,7 +1250,8 @@ def Main():
             FileList = glob.glob(os.path.normpath(os.path.join(WorkingDirectory, '*.inf')))
             FileNum = len(FileList)
             if FileNum >= 2:
-                EdkLogger.error("build", None, "There are %d INF files in %s.\n" % (FileNum, WorkingDirectory))
+                EdkLogger.error("build", OPTION_NOT_SUPPORTED, "There are %d INF files in %s." % (FileNum, WorkingDirectory),
+                                ExtraData="Please use '-m <INF_FILE_PATH>' switch to choose one.")
             elif FileNum == 1:
                 Option.ModuleFile = NormFile(FileList[0], Workspace)
 
