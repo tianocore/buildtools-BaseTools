@@ -133,14 +133,14 @@ class DscBuildData(PlatformBuildClassObject):
         return self._Arch
 
     ## Set architecture
-    #   
+    #
     #   Changing the default ARCH to another may affect all other information
     # because all information in a platform may be ARCH-related. That's
-    # why we need to clear all internal used members, in order to cause all 
+    # why we need to clear all internal used members, in order to cause all
     # information to be re-retrieved.
-    # 
+    #
     #   @param  Value   The value of ARCH
-    # 
+    #
     def _SetArch(self, Value):
         if self._Arch == Value:
             return
@@ -150,7 +150,7 @@ class DscBuildData(PlatformBuildClassObject):
     ## Retrieve all information in [Defines] section
     #
     #   (Retriving all [Defines] information in one-shot is just to save time.)
-    # 
+    #
     def _GetHeaderInfo(self):
         RecordList = self._RawData[MODEL_META_DATA_HEADER, self._Arch]
         for Record in RecordList:
@@ -323,9 +323,9 @@ class DscBuildData(PlatformBuildClassObject):
             ModuleId = Record[5]
             LineNo = Record[6]
             # check the file existence
-            if not ValidFile(ModuleFile):
-                EdkLogger.error('build', FILE_NOT_FOUND, File=self.DescFilePath, 
-                                ExtraData=ModuleFile, Line=LineNo)
+            if not ValidFile(ModuleFile, '.inf'):
+                EdkLogger.error('build', FORMAT_INVALID, "Invalid or non-existent module",
+                                File=self.DescFilePath, ExtraData=ModuleFile, Line=LineNo)
             if ModuleFile in self._Modules:
                 continue
             Module = ModuleBuildClassObject()
@@ -337,7 +337,7 @@ class DscBuildData(PlatformBuildClassObject):
                 LibraryClass = Record[0]
                 LibraryPath = NormPath(Record[1], self._Macros)
                 LineNo = Record[-1]
-                if not ValidFile(LibraryPath):
+                if not ValidFile(LibraryPath, '.inf'):
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=LibraryPath,
                                     File=self.DescFilePath, Line=LineNo)
                 if LibraryClass == '' or LibraryClass == 'NULL':
@@ -395,10 +395,10 @@ class DscBuildData(PlatformBuildClassObject):
     def _GetLibraryClasses(self):
         if self._LibraryClasses == None:
             self._LibraryInstances = []
-            # 
-            # tdict is a special dict kind of type, used for selecting correct 
+            #
+            # tdict is a special dict kind of type, used for selecting correct
             # library instance for given library class and module type
-            # 
+            #
             LibraryClassDict = tdict(True, 3)
             # track all library class names
             LibraryClassSet = set()
@@ -406,14 +406,14 @@ class DscBuildData(PlatformBuildClassObject):
             for LibraryClass, LibraryInstance, Dummy, Arch, ModuleType, Dummy, LineNo in RecordList:
                 LibraryClassSet.add(LibraryClass)
                 LibraryInstance = NormPath(LibraryInstance, self._Macros)
-                if not ValidFile(LibraryInstance):
-                    EdkLogger.error('build', FILE_NOT_FOUND, File=self.DescFilePath, 
+                if not ValidFile(LibraryInstance, '.inf'):
+                    EdkLogger.error('build', FILE_NOT_FOUND, File=self.DescFilePath,
                                     ExtraData=LibraryInstance, Line=LineNo)
                 LibraryClassDict[Arch, ModuleType, LibraryClass] = LibraryInstance
                 if LibraryInstance not in self._LibraryInstances:
                     self._LibraryInstances.append(LibraryInstance)
 
-            # resolve the specific library instance for each class and each module type 
+            # resolve the specific library instance for each class and each module type
             self._LibraryClasses = tdict(True)
             for LibraryClass in LibraryClassSet:
                 # try all possible module types
@@ -428,16 +428,16 @@ class DscBuildData(PlatformBuildClassObject):
             for Record in RecordList:
                 File = NormPath(Record[0], self._Macros)
                 LineNo = Record[-1]
-                if not ValidFile(File):
+                if not ValidFile(File, '.inf'):
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                     File=self.DescFilePath, Line=LineNo)
                 if File not in self._LibraryInstances:
                     self._LibraryInstances.append(File)
-                # 
+                #
                 # we need the module name as the library class name, so we have
                 # to parse it here. (self._Bdb[] will trigger a file parse if it
                 # hasn't been parsed)
-                # 
+                #
                 Library = self._Bdb[File, self._Arch]
                 self._LibraryClasses[Library.BaseName, ':dummy:'] = Library
         return self._LibraryClasses
@@ -469,15 +469,15 @@ class DscBuildData(PlatformBuildClassObject):
     ## Retrieve non-dynamic PCD settings
     #
     #   @param  Type    PCD type
-    # 
+    #
     #   @retval a dict object contains settings of given PCD type
-    # 
+    #
     def _GetPcd(self, Type):
         Pcds = {}
-        # 
-        # tdict is a special dict kind of type, used for selecting correct 
+        #
+        # tdict is a special dict kind of type, used for selecting correct
         # PCD settings for certain ARCH
-        # 
+        #
         PcdDict = tdict(True, 3)
         PcdSet = set()
         # Find out all possible PCD candidates for self._Arch
@@ -510,15 +510,15 @@ class DscBuildData(PlatformBuildClassObject):
     ## Retrieve dynamic PCD settings
     #
     #   @param  Type    PCD type
-    # 
+    #
     #   @retval a dict object contains settings of given PCD type
-    # 
+    #
     def _GetDynamicPcd(self, Type):
         Pcds = {}
-        # 
-        # tdict is a special dict kind of type, used for selecting correct 
+        #
+        # tdict is a special dict kind of type, used for selecting correct
         # PCD settings for certain ARCH and SKU
-        # 
+        #
         PcdDict = tdict(True, 4)
         PcdSet = set()
         # Find out all possible PCD candidates for self._Arch
@@ -553,15 +553,15 @@ class DscBuildData(PlatformBuildClassObject):
     ## Retrieve dynamic HII PCD settings
     #
     #   @param  Type    PCD type
-    # 
+    #
     #   @retval a dict object contains settings of given PCD type
-    # 
+    #
     def _GetDynamicHiiPcd(self, Type):
         Pcds = {}
-        # 
-        # tdict is a special dict kind of type, used for selecting correct 
+        #
+        # tdict is a special dict kind of type, used for selecting correct
         # PCD settings for certain ARCH and SKU
-        # 
+        #
         PcdDict = tdict(True, 4)
         PcdSet = set()
         RecordList = self._RawData[Type, self._Arch]
@@ -595,15 +595,15 @@ class DscBuildData(PlatformBuildClassObject):
     ## Retrieve dynamic VPD PCD settings
     #
     #   @param  Type    PCD type
-    # 
+    #
     #   @retval a dict object contains settings of given PCD type
-    # 
+    #
     def _GetDynamicVpdPcd(self, Type):
         Pcds = {}
-        # 
-        # tdict is a special dict kind of type, used for selecting correct 
+        #
+        # tdict is a special dict kind of type, used for selecting correct
         # PCD settings for certain ARCH and SKU
-        # 
+        #
         PcdDict = tdict(True, 4)
         PcdSet = set()
         # Find out all possible PCD candidates for self._Arch
@@ -637,11 +637,11 @@ class DscBuildData(PlatformBuildClassObject):
 
     ## Add external modules
     #
-    #   The external modules are mostly those listed in FDF file, which don't 
+    #   The external modules are mostly those listed in FDF file, which don't
     # need "build".
-    # 
+    #
     #   @param  FilePath    The path of module description file
-    # 
+    #
     def AddModule(self, FilePath):
         FilePath = NormPath(FilePath)
         if FilePath not in self.Modules:
@@ -653,11 +653,11 @@ class DscBuildData(PlatformBuildClassObject):
     #
     #   The external PCDs are mostly those listed in FDF file to specify address
     # or offset information.
-    # 
+    #
     #   @param  Name    Name of the PCD
     #   @param  Guid    Token space guid of the PCD
     #   @param  Value   Value of the PCD
-    # 
+    #
     def AddPcd(self, Name, Guid, Value):
         if (Name, Guid) not in self.Pcds:
             self.Pcds[Name, Guid] = PcdClassObject(
@@ -778,14 +778,14 @@ class DecBuildData(PackageBuildClassObject):
         return self._Arch
 
     ## Set architecture
-    #   
+    #
     #   Changing the default ARCH to another may affect all other information
     # because all information in a platform may be ARCH-related. That's
-    # why we need to clear all internal used members, in order to cause all 
+    # why we need to clear all internal used members, in order to cause all
     # information to be re-retrieved.
-    # 
+    #
     #   @param  Value   The value of ARCH
-    # 
+    #
     def _SetArch(self, Value):
         if self._Arch == Value:
             return
@@ -795,7 +795,7 @@ class DecBuildData(PackageBuildClassObject):
     ## Retrieve all information in [Defines] section
     #
     #   (Retriving all [Defines] information in one-shot is just to save time.)
-    # 
+    #
     def _GetHeaderInfo(self):
         RecordList = self._RawData[MODEL_META_DATA_HEADER]
         for Record in RecordList:
@@ -834,10 +834,10 @@ class DecBuildData(PackageBuildClassObject):
     ## Retrieve protocol definitions (name/value pairs)
     def _GetProtocol(self):
         if self._Protocols == None:
-            # 
-            # tdict is a special kind of dict, used for selecting correct 
+            #
+            # tdict is a special kind of dict, used for selecting correct
             # protocol defition for given ARCH
-            # 
+            #
             ProtocolDict = tdict(True)
             NameList = []
             # find out all protocol definitions for specific and 'common' arch
@@ -849,20 +849,20 @@ class DecBuildData(PackageBuildClassObject):
             # use sdict to keep the order
             self._Protocols = sdict()
             for Name in NameList:
-                # 
+                #
                 # limit the ARCH to self._Arch, if no self._Arch found, tdict
                 # will automatically turn to 'common' ARCH for trying
-                # 
+                #
                 self._Protocols[Name] = ProtocolDict[self._Arch, Name]
         return self._Protocols
 
     ## Retrieve PPI definitions (name/value pairs)
     def _GetPpi(self):
         if self._Ppis == None:
-            # 
-            # tdict is a special kind of dict, used for selecting correct 
+            #
+            # tdict is a special kind of dict, used for selecting correct
             # PPI defition for given ARCH
-            # 
+            #
             PpiDict = tdict(True)
             NameList = []
             # find out all PPI definitions for specific arch and 'common' arch
@@ -874,20 +874,20 @@ class DecBuildData(PackageBuildClassObject):
             # use sdict to keep the order
             self._Ppis = sdict()
             for Name in NameList:
-                # 
+                #
                 # limit the ARCH to self._Arch, if no self._Arch found, tdict
                 # will automatically turn to 'common' ARCH for trying
-                # 
+                #
                 self._Ppis[Name] = PpiDict[self._Arch, Name]
         return self._Ppis
 
     ## Retrieve GUID definitions (name/value pairs)
     def _GetGuid(self):
         if self._Guids == None:
-            # 
-            # tdict is a special kind of dict, used for selecting correct 
+            #
+            # tdict is a special kind of dict, used for selecting correct
             # GUID defition for given ARCH
-            # 
+            #
             GuidDict = tdict(True)
             NameList = []
             # find out all protocol definitions for specific and 'common' arch
@@ -899,10 +899,10 @@ class DecBuildData(PackageBuildClassObject):
             # use sdict to keep the order
             self._Guids = sdict()
             for Name in NameList:
-                # 
+                #
                 # limit the ARCH to self._Arch, if no self._Arch found, tdict
                 # will automatically turn to 'common' ARCH for trying
-                # 
+                #
                 self._Guids[Name] = GuidDict[self._Arch, Name]
         return self._Guids
 
@@ -915,7 +915,7 @@ class DecBuildData(PackageBuildClassObject):
                 File = NormPath(Record[0], self._Macros)
                 LineNo = Record[-1]
                 # validate the path
-                if not ValidFile(File, self._PackageDir):
+                if not ValidFile(File, Dir=self._PackageDir):
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                     File=self.DescFilePath, Line=LineNo)
                 # avoid duplicate include path
@@ -926,16 +926,16 @@ class DecBuildData(PackageBuildClassObject):
     ## Retrieve library class declarations (not used in build at present)
     def _GetLibraryClass(self):
         if self._LibraryClasses == None:
-            # 
-            # tdict is a special kind of dict, used for selecting correct 
+            #
+            # tdict is a special kind of dict, used for selecting correct
             # library class declaration for given ARCH
-            # 
+            #
             LibraryClassDict = tdict(True)
             LibraryClassSet = set()
             RecordList = self._RawData[MODEL_EFI_LIBRARY_CLASS, self._Arch]
             for LibraryClass, File, Dummy, Arch, ID, LineNo in RecordList:
                 File = NormPath(File, self._Macros)
-                if not ValidFile(File, self._PackageDir):
+                if not ValidFile(File, Dir=self._PackageDir):
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                     File=self.DescFilePath, Line=LineNo)
                 LibraryClassSet.add(LibraryClass)
@@ -959,10 +959,10 @@ class DecBuildData(PackageBuildClassObject):
     ## Retrieve PCD declarations for given type
     def _GetPcd(self, Type):
         Pcds = {}
-        # 
-        # tdict is a special kind of dict, used for selecting correct 
+        #
+        # tdict is a special kind of dict, used for selecting correct
         # PCD declaration for given ARCH
-        # 
+        #
         PcdDict = tdict(True, 3)
         # for summarizing PCD
         PcdSet = set()
@@ -974,10 +974,10 @@ class DecBuildData(PackageBuildClassObject):
 
         for PcdCName, TokenSpaceGuid in PcdSet:
             ValueList = ['', '', '']
-            # 
+            #
             # limit the ARCH to self._Arch, if no self._Arch found, tdict
             # will automatically turn to 'common' ARCH and try again
-            # 
+            #
             Setting = PcdDict[self._Arch, PcdCName, TokenSpaceGuid]
             if Setting == None:
                 continue
@@ -1079,7 +1079,7 @@ class InfBuildData(ModuleBuildClassObject):
         "LIB"       :   "SLINK",
         "LINK"      :   "DLINK",
     }
-    
+
 
     ## Constructor of DscBuildData
     #
@@ -1153,14 +1153,14 @@ class InfBuildData(ModuleBuildClassObject):
         return self._Arch
 
     ## Set architecture
-    #   
+    #
     #   Changing the default ARCH to another may affect all other information
     # because all information in a platform may be ARCH-related. That's
-    # why we need to clear all internal used members, in order to cause all 
+    # why we need to clear all internal used members, in order to cause all
     # information to be re-retrieved.
-    # 
+    #
     #   @param  Value   The value of ARCH
-    # 
+    #
     def _SetArch(self, Value):
         if self._Arch == Value:
             return
@@ -1172,11 +1172,11 @@ class InfBuildData(ModuleBuildClassObject):
         return self._Platform
 
     ## Change the name of platform employing this module
-    # 
+    #
     #   Changing the default name of platform to another may affect some information
     # because they may be PLATFORM-related. That's why we need to clear all internal
     # used members, in order to cause all information to be re-retrieved.
-    # 
+    #
     def _SetPlatform(self, Value):
         if self._Platform == Value:
             return
@@ -1186,7 +1186,7 @@ class InfBuildData(ModuleBuildClassObject):
     ## Retrieve all information in [Defines] section
     #
     #   (Retriving all [Defines] information in one-shot is just to save time.)
-    # 
+    #
     def _GetHeaderInfo(self):
         RecordList = self._RawData[MODEL_META_DATA_HEADER, self._Arch, self._Platform]
         for Record in RecordList:
@@ -1245,13 +1245,13 @@ class InfBuildData(ModuleBuildClassObject):
                 else:
                     if TokenList[0] not in ['MSFT', 'GCC']:
                         EdkLogger.error("build", FORMAT_NOT_SUPPORTED,
-                                        "No supported family [%s]" % TokenList[0], 
+                                        "No supported family [%s]" % TokenList[0],
                                         File=self.DescFilePath, Line=Record[-1])
                     self._CustomMakefile[TokenList[0]] = TokenList[1]
 
-        # 
+        #
         # Retrieve information in sections specific to R8.x modules
-        # 
+        #
         if self._AutoGenVersion < 0x00010005:   # _AutoGenVersion may be None, which is less than anything
             if self._ComponentType in self._MODULE_TYPE_:
                 self._ModuleType = self._MODULE_TYPE_[self._ComponentType]
@@ -1266,7 +1266,7 @@ class InfBuildData(ModuleBuildClassObject):
                     self._ModuleEntryPointList.append(Value)
                 elif Name == "DPX_SOURCE":
                     File = NormPath(Value, self._Macros)
-                    if not ValidFile(File, self._ModuleDir):
+                    if not ValidFile(File, Dir=self._ModuleDir):
                         EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                         File=self.DescFilePath, Line=LineNo)
                     if self.Sources == None:
@@ -1275,7 +1275,7 @@ class InfBuildData(ModuleBuildClassObject):
                 else:
                     ToolList = self._NMAKE_FLAG_PATTERN_.findall(Name)
                     if len(ToolList) == 0 or len(ToolList) != 1:
-                        EdkLogger.warn("build", "Don't know how to do with macro [%s]" % Name, 
+                        EdkLogger.warn("build", "Don't know how to do with macro [%s]" % Name,
                                        File=self.DescFilePath, Line=LineNo)
                     else:
                         if self._BuildOptions == None:
@@ -1431,7 +1431,7 @@ class InfBuildData(ModuleBuildClassObject):
             if self._DestructorList == None:
                 self._DestructorList = []
         return self._DestructorList
-                        
+
     ## Retrieve binary files
     def _GetBinaryFiles(self):
         if self._Binaries == None:
@@ -1441,7 +1441,7 @@ class InfBuildData(ModuleBuildClassObject):
                 FileType = Record[0]
                 File = NormPath(Record[1], self._Macros)
                 LineNo = Record[-1]
-                if not ValidFile(File, self._ModuleDir):
+                if not ValidFile(File, Dir=self._ModuleDir):
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                     File=self.DescFilePath, Line=LineNo)
                 Target = Record[2]
@@ -1457,7 +1457,7 @@ class InfBuildData(ModuleBuildClassObject):
             for Record in RecordList:
                 File = NormPath(Record[0], self._Macros)
                 LineNo = Record[-1]
-                if not ValidFile(File, self._ModuleDir):
+                if not ValidFile(File, Dir=self._ModuleDir):
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                     File=self.DescFilePath, Line=LineNo)
                 ToolChainFamily = Record[1]
@@ -1550,7 +1550,7 @@ class InfBuildData(ModuleBuildClassObject):
                 File = NormPath(Record[0], self._Macros)
                 LineNo = Record[-1]
                 #if File[0] == '.':
-                #    if not ValidFile(File, self._ModuleDir):
+                #    if not ValidFile(File, Dir=self._ModuleDir):
                 #        EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                 #                        File=self.DescFilePath, Line=LineNo)
                 #else:
@@ -1570,7 +1570,7 @@ class InfBuildData(ModuleBuildClassObject):
             for Record in RecordList:
                 File = NormPath(Record[0], self._Macros)
                 LineNo = Record[-1]
-                if not ValidFile(File):
+                if not ValidFile(File, '.dec'):
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                     File=self.DescFilePath, Line=LineNo)
                 # parse this package now. we need it to get protocol/ppi/guid value
@@ -1601,7 +1601,7 @@ class InfBuildData(ModuleBuildClassObject):
                 if (ToolChainFamily, ToolChain) not in self._BuildOptions:
                     self._BuildOptions[ToolChainFamily, ToolChain] = Option
                 else:
-                    # concatenate the option string if they're for the same tool 
+                    # concatenate the option string if they're for the same tool
                     OptionString = self._BuildOptions[ToolChainFamily, ToolChain]
                     self._BuildOptions[ToolChainFamily, ToolChain] = OptionString + " " + Option
         return self._BuildOptions
@@ -1667,13 +1667,13 @@ class InfBuildData(ModuleBuildClassObject):
 
             # get necessary info from package declaring this PCD
             for Package in self.Packages:
-                # 
+                #
                 # 'dynamic' in INF means its type is determined by platform;
-                # if platform doesn't give its type, use 'lowest' one in the 
+                # if platform doesn't give its type, use 'lowest' one in the
                 # following order, if any
-                # 
+                #
                 #   "FixedAtBuild", "PatchableInModule", "FeatureFlag", "Dynamic", "DynamicEx"
-                # 
+                #
                 PcdType = self._PCD_TYPE_STRING_[Type]
                 if Type in [MODEL_PCD_DYNAMIC, MODEL_PCD_DYNAMIC_EX]:
                     for T in ["FixedAtBuild", "PatchableInModule", "FeatureFlag", "Dynamic", "DynamicEx"]:
@@ -1692,7 +1692,7 @@ class InfBuildData(ModuleBuildClassObject):
                     break
             else:
                 EdkLogger.error(
-                            'build', 
+                            'build',
                             PARSER_ERROR,
                             "PCD [%s.%s] in [%s] is not found in dependent packages:" % (TokenSpaceGuid, PcdCName, self.DescFilePath),
                             File =self.DescFilePath, Line=LineNo,
@@ -1739,7 +1739,7 @@ class InfBuildData(ModuleBuildClassObject):
 #   This class defined the build databse for all modules, packages and platform.
 # It will call corresponding parser for the given file if it cannot find it in
 # the database.
-# 
+#
 # @param DbPath             Path of database file
 # @param GlobalMacros       Global macros used for replacement during file parsing
 # @prarm RenewDb=False      Create new database file if it's already there
@@ -1764,10 +1764,10 @@ class WorkspaceDatabase(object):
     # default database file path
     _DB_PATH_ = "Conf/.cache/build.db"
 
-    # 
+    #
     # internal class used for call corresponding file parser and caching the result
     # to avoid unnecessary re-parsing
-    # 
+    #
     class BuildObjectFactory(object):
         _FILE_TYPE_ = {
             ".INF"  : MODEL_FILE_INF,
@@ -1825,8 +1825,8 @@ class WorkspaceDatabase(object):
             # get table for current file
             MetaFile = self.WorkspaceDb[FilePath, FileType]
             BuildObject = self._GENERATOR_[FileType](
-                                    FilePath, 
-                                    MetaFile, 
+                                    FilePath,
+                                    MetaFile,
                                     self,
                                     Arch,
                                     Platform,
@@ -1845,7 +1845,7 @@ class WorkspaceDatabase(object):
             pass
 
     ## Constructor of WorkspaceDatabase
-    # 
+    #
     # @param DbPath             Path of database file
     # @param GlobalMacros       Global macros used for replacement during file parsing
     # @prarm RenewDb=False      Create new database file if it's already there
@@ -1883,17 +1883,17 @@ class WorkspaceDatabase(object):
         # conversion object for build or file format conversion purpose
         self.BuildObject = WorkspaceDatabase.BuildObjectFactory(self)
         self.TransformObject = WorkspaceDatabase.TransformObjectFactory(self)
-    
+
     ## Initialize build database
     def InitDatabase(self):
         EdkLogger.verbose("\nInitialize build database started ...")
-        
+
         #
         # Create new tables
         #
         self.TblDataModel.Create(False)
         self.TblFile.Create(False)
-        
+
         #
         # Initialize table DataModel
         #
@@ -1906,10 +1906,10 @@ class WorkspaceDatabase(object):
     #
     def QueryTable(self, Table):
         Table.Query()
-    
+
     ## Close entire database
     #
-    # Commit all first 
+    # Commit all first
     # Close the connection and cursor
     #
     def Close(self):
@@ -1945,9 +1945,9 @@ class WorkspaceDatabase(object):
         return "_%s_%s" % (FileType, FileId)
 
     ## Return a temp table containing all content of the given file
-    # 
+    #
     #   @param  FileInfo    The tuple containing path and type of a file
-    # 
+    #
     def __getitem__(self, FileInfo):
         FilePath, FileType = FileInfo
         if FileType not in self._FILE_TABLE_:

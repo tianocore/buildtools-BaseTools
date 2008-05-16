@@ -250,14 +250,18 @@ def DataRestore(File):
     return Data
 
 ## Check if gvien file exists or not
-# 
+#
 #   @param      File    File name or path to be checked
 #   @param      Dir     The directory the file is relative to
-# 
+#
 #   @retval     True    if file exists
 #   @retval     False   if file doesn't exists
-# 
-def ValidFile(File, Dir='.'):
+#
+def ValidFile(File, Ext=None, Dir='.'):
+    if Ext != None:
+        Dummy, FileExt = os.path.splitext(File)
+        if FileExt.lower() != Ext.lower():
+            return False
     Wd = os.getcwd()
     os.chdir(Dir)
     if not os.path.exists(File):
@@ -267,13 +271,13 @@ def ValidFile(File, Dir='.'):
     return True
 
 ## Get GUID value from given packages
-# 
+#
 #   @param      CName           The CName of the GUID
 #   @param      PackageList     List of packages looking-up in
-# 
+#
 #   @retval     GuidValue   if the CName is found in any given package
 #   @retval     None        if the CName is not found in all given packages
-# 
+#
 def GuidValue(CName, PackageList):
     for P in PackageList:
         if CName in P.Guids:
@@ -466,11 +470,11 @@ class sdict(IterableUserDict):
     ## "in" test support
     def __contains__(self, key):
         return key in self._key_list
-    
+
     ## indexof support
     def index(self, key):
         return self._key_list.index(key)
-    
+
     ## insert support
     def insert(self, key, newkey, newvalue, order):
         index = self._key_list.index(key)
@@ -487,7 +491,7 @@ class sdict(IterableUserDict):
             if key not in self._key_list:
                 self._key_list.append(key)
             IterableUserDict.__setitem__(self, key, sdict[key])
-        
+
     def has_key(self, key):
         return key in self._key_list
 
@@ -565,7 +569,7 @@ class rdict(dict):
     ## []= operator
     def __setitem__(self, key, value):
         if key not in self:
-            EdkLogger.error("RestrictedDict", ATTRIBUTE_SET_FAILURE, "Key [%s] is not allowed" % key, 
+            EdkLogger.error("RestrictedDict", ATTRIBUTE_SET_FAILURE, "Key [%s] is not allowed" % key,
                             ExtraData=", ".join(dict.keys(self)))
         dict.__setitem__(self, key, value)
 
@@ -604,7 +608,7 @@ class tdict:
         self._Level_ = _Level_
         self.data = {}
         self._Single_ = _Single_
-    
+
     # =[] operator
     def __getitem__(self, key):
         KeyType = type(key)
@@ -699,7 +703,7 @@ class tdict:
 
         if FirstKey in self._ValidWildcardList:
             FirstKey = self._Wildcard
-        
+
         if FirstKey not in self.data and self._Level_ > 0:
             self.data[FirstKey] = tdict(self._Single_, self._Level_ - 1)
 
@@ -721,7 +725,7 @@ class tdict:
                 self.data[Key].SetSingleMode()
 
 ## Boolean chain list
-# 
+#
 class Blist(UserList):
     def __init__(self, initlist=None):
         UserList.__init__(self, initlist)
@@ -746,7 +750,7 @@ def ParseConsoleLog(Filename):
         if Line.find('.efi') > -1:
             Line = Line[Line.rfind(' ') : Line.rfind('.efi')].strip()
             Opw.write('%s\n' % Line)
-    
+
     Opr.close()
     Opw.close()
 
@@ -764,7 +768,7 @@ if __name__ == '__main__':
 #    d['IA32', 'DXE_CORE', 'C'] = 3
 #
 #    print d['IA32', 'DXE_CORE', 'C']
-    
+
 #    s = sdict()
 #    s[1] = 1
 #    s[3] = 3
