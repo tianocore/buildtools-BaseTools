@@ -43,10 +43,10 @@ gType2Phase = {
 }
 
 ## Convert dependency expression string into EFI internal representation
-# 
+#
 #   DependencyExpression class is used to parse dependency expression string and
 # convert it into its binary form.
-# 
+#
 class DependencyExpression:
 
     OpcodePriority = {
@@ -87,10 +87,10 @@ class DependencyExpression:
     SupportedOpcode = ["BEFORE", "AFTER", "PUSH", "AND", "OR", "NOT", "END", "SOR"]
     SupportedOperand = ["TRUE", "FALSE"]
     ## Constructor
-    # 
+    #
     #   @param  Expression  The list or string of dependency expression
     #   @param  ModuleType  The type of the module using the dependency expression
-    # 
+    #
     def __init__(self, Expression, ModuleType, Optimize=False, File=''):
         self.Phase = gType2Phase[ModuleType]
         if type(Expression) == type([]):
@@ -130,9 +130,11 @@ class DependencyExpression:
             return
         Op = ValidOpcode[0]
         NewOperand = []
+        AllOperand = set()
         for Token in self.PostfixNotation:
             if Token in self.SupportedOpcode or Token in NewOperand:
                 continue
+            AllOperand.add(Token)
             if Token == 'TRUE':
                 if Op == 'AND':
                     continue
@@ -147,12 +149,15 @@ class DependencyExpression:
                     break
             NewOperand.append(Token)
 
-        self.TokenList = []
-        while True:
-            self.TokenList.append(NewOperand.pop(0))
-            if NewOperand == []:
-                break
-            self.TokenList.append(Op)
+        if len(NewOperand) == 0:
+            self.TokenList = list(AllOperand)
+        else:
+            self.TokenList = []
+            while True:
+                self.TokenList.append(NewOperand.pop(0))
+                if NewOperand == []:
+                    break
+                self.TokenList.append(Op)
         self.PostfixNotation = []
         self.ExpressionString = ' '.join(self.TokenList)
         self.Parse()
@@ -160,9 +165,9 @@ class DependencyExpression:
     ## Convert a GUID value in C structure format into its binary form
     #
     #   @param  Guid    The GUID value in C structure format
-    # 
+    #
     #   @retval array   The byte array representing the GUID value
-    # 
+    #
     def GetGuidValue(self, Guid):
         GuidValueString = Guid.replace("{", "").replace("}", "").replace(" ", "")
         GuidValueList = GuidValueString.split(",")
@@ -173,17 +178,17 @@ class DependencyExpression:
     ## Save the binary form of dependency expression in file
     #
     #   @param  File    The path of file. If None is given, put the data on console
-    # 
+    #
     #   @retval True    If the file doesn't exist or file is changed
     #   @retval False   If file exists and is not changed.
-    # 
+    #
     def Generate(self, File=None):
         Buffer = StringIO()
         for Item in self.PostfixNotation:
             if Item in self.Opcode[self.Phase]:
                 Buffer.write(pack("B", self.Opcode[self.Phase][Item]))
             elif Item in self.SupportedOpcode:
-                EdkLogger.error("GenDepex", FORMAT_INVALID, 
+                EdkLogger.error("GenDepex", FORMAT_INVALID,
                                 "Opcode [%s] is not expected in %s phase" % (Item, self.Phase),
                                 ExtraData=self.ExpressionString)
             else:
@@ -208,7 +213,7 @@ __usage__ = "%prog [options] [dependency_expression_file]"
 ## Parse command line options
 #
 #   @retval OptionParser
-# 
+#
 def GetOptions():
     from optparse import OptionParser
 
