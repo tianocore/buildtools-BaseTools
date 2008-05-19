@@ -16,7 +16,7 @@ from Common.Misc import sdict
 ## PcdClassObject
 #
 # This Class is used for PcdObject
-# 
+#
 # @param object:             Inherited from object class
 # @param Name:               Input value for Name of Pcd, default is None
 # @param Guid:               Input value for Guid of Pcd, default is None
@@ -50,6 +50,7 @@ class PcdClassObject(object):
         self.MaxDatumSize = MaxDatumSize
         self.SkuInfoList = SkuInfoList
         self.Phase = "DXE"
+        self.Pending = False
 
     ## Convert the class to a string
     #
@@ -94,7 +95,7 @@ class PcdClassObject(object):
 ## LibraryClassObject
 #
 # This Class defines LibraryClassObject used in BuildDatabase
-# 
+#
 # @param object:      Inherited from object class
 # @param Name:        Input value for LibraryClassName, default is None
 # @param SupModList:  Input value for SupModList, default is []
@@ -114,7 +115,7 @@ class LibraryClassObject(object):
 ## ModuleBuildClassObject
 #
 # This Class defines ModuleBuildClass
-# 
+#
 # @param object:               Inherited from object class
 #
 # @var DescFilePath:           To store value for DescFilePath
@@ -218,7 +219,7 @@ class ModuleBuildClassObject(object):
 ## PackageBuildClassObject
 #
 # This Class defines PackageBuildClass
-# 
+#
 # @param object:        Inherited from object class
 #
 # @var DescFilePath:    To store value for DescFilePath
@@ -283,7 +284,7 @@ class PackageBuildClassObject(object):
 ## PlatformBuildClassObject
 #
 # This Class defines PlatformBuildClass
-# 
+#
 # @param object:          Inherited from object class
 #
 # @var DescFilePath:      To store value for DescFilePath

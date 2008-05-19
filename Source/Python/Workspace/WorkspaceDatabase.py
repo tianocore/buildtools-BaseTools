@@ -359,7 +359,7 @@ class DscBuildData(PlatformBuildClassObject):
                         MaxDatumSize = TokenList[1]
                     else:
                         MaxDatumSize = ''
-                    Type = self._PCD_TYPE_STRING_[MODEL_PCD_FIXED_AT_BUILD]
+                    Type = self._PCD_TYPE_STRING_[Type]
                     Pcd = PcdClassObject(
                             PcdCName,
                             TokenSpaceGuid,
@@ -1676,10 +1676,13 @@ class InfBuildData(ModuleBuildClassObject):
                 #
                 PcdType = self._PCD_TYPE_STRING_[Type]
                 if Type in [MODEL_PCD_DYNAMIC, MODEL_PCD_DYNAMIC_EX]:
+                    Pcd.Pending = True
                     for T in ["FixedAtBuild", "PatchableInModule", "FeatureFlag", "Dynamic", "DynamicEx"]:
                         if (PcdCName, TokenSpaceGuid, T) in Package.Pcds:
                             PcdType = T
                             break
+                else:
+                    Pcd.Pending = False
 
                 if (PcdCName, TokenSpaceGuid, PcdType) in Package.Pcds:
                     PcdInPackage = Package.Pcds[PcdCName, TokenSpaceGuid, PcdType]

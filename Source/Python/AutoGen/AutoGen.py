@@ -917,15 +917,23 @@ class PlatformAutoGen(AutoGen):
     #   @param  ToPcd       The PCD to be overrided
     #   @param  FromPcd     The PCD overrideing from
     #
-    def _OverridePcd(self, ToPcd, FromPcd):
+    def _OverridePcd(self, ToPcd, FromPcd, Module=""):
         #
         # in case there's PCDs coming from FDF file, which have no type given.
-        # at this point, PcdInModule.Type has the type found from dependent
+        # at this point, ToPcd.Type has the type found from dependent
         # package
         #
         if FromPcd != None:
-            if FromPcd.Type not in [None, '']:
+            if ToPcd.Pending and FromPcd.Type not in [None, '']:
                 ToPcd.Type = FromPcd.Type
+            elif ToPcd.Type not in [None, ''] and FromPcd.Type not in [None, ''] \
+                and ToPcd.Type != FromPcd.Type:
+                EdkLogger.error("build", OPTION_CONFLICT, "Mismatched PCD type",
+                                ExtraData="%s.%s is defined as [%s] in module %s, but as [%s] in platform."\
+                                          % (ToPcd.TokenSpaceGuidCName, ToPcd.TokenCName,
+                                             ToPcd.Type, Module, FromPcd.Type),
+                                          File=self._MetaFile)
+
             if FromPcd.MaxDatumSize not in [None, '']:
                 ToPcd.MaxDatumSize = FromPcd.MaxDatumSize
             if FromPcd.DefaultValue not in [None, '']:
@@ -977,7 +985,7 @@ class PlatformAutoGen(AutoGen):
             else:
                 PcdInPlatform = None
             # then override the settings if any
-            self._OverridePcd(PcdInModule, PcdInPlatform)
+            self._OverridePcd(PcdInModule, PcdInPlatform, Module)
             # resolve the VariableGuid value
             for SkuId in PcdInModule.SkuInfoList:
                 Sku = PcdInModule.SkuInfoList[SkuId]
@@ -999,7 +1007,7 @@ class PlatformAutoGen(AutoGen):
             PlatformModule = self.Platform.Modules[str(Module)]
             for Key  in PlatformModule.Pcds:
                 if Key in Module.Pcds:
-                    self._OverridePcd(Module.Pcds[Key], PlatformModule.Pcds[Key])
+                    self._OverridePcd(Module.Pcds[Key], PlatformModule.Pcds[Key], Module)
         return Module.Pcds.values()
 
     ## Resolve library names to library modules
