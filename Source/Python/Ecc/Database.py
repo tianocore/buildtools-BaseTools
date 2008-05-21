@@ -182,7 +182,7 @@ class Database(object):
             FunctionID = self.TblFunction.Insert(Function.Header, Function.Modifier, Function.Name, Function.ReturnStatement, \
                                     Function.StartLine, Function.StartColumn, Function.EndLine, Function.EndColumn, \
                                     Function.BodyStartLine, Function.BodyStartColumn, FileID, \
-                                    Function.FunNameStartLine, Function.FunNameStartLine)
+                                    Function.FunNameStartLine, Function.FunNameStartColumn)
             #
             # Insert Identifier of function
             #
