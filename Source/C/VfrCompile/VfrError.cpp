@@ -42,6 +42,7 @@ static SVFR_ERROR_HANDLE VFR_ERROR_HANDLE_TABLE [] = {
   { VFR_RETURN_FLAGS_UNSUPPORTED, "flags unsupported" },
   { VFR_RETURN_ERROR_ARRARY_NUM, "array number error" },
   { VFR_RETURN_DATA_STRING_ERROR, "data field string error or not support"},
+  { VFR_RETURN_DEFAULT_VALUE_REDEFINED, "Default value re-defined with different value"},
   { VFR_RETURN_CODEUNDEFINED, "Undefined Error Code" }
 };
 

@@ -915,7 +915,7 @@ vfrStatementDefault :
 																					 _GET_CURRQEST_VARTINFO(),
 																					 VarStoreName,
 																					 _GET_CURRQEST_DATATYPE (),
-																					 Val), D->getLine());
+																					 Val), D);
 													   }
 													>>
   )
