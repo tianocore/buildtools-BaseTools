@@ -181,7 +181,8 @@ class Database(object):
         for Function in File.FunctionList:
             FunctionID = self.TblFunction.Insert(Function.Header, Function.Modifier, Function.Name, Function.ReturnStatement, \
                                     Function.StartLine, Function.StartColumn, Function.EndLine, Function.EndColumn, \
-                                    Function.BodyStartLine, Function.BodyStartColumn, FileID)
+                                    Function.BodyStartLine, Function.BodyStartColumn, FileID, \
+                                    Function.FunNameStartLine, Function.FunNameStartLine)
             #
             # Insert Identifier of function
             #

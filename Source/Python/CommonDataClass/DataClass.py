@@ -196,7 +196,8 @@ class FunctionClass(object):
     def __init__(self, ID = -1, Header = '', Modifier = '', Name = '', ReturnStatement = '', \
                  StartLine = -1, StartColumn = -1, EndLine = -1, EndColumn = -1, \
                  BodyStartLine = -1, BodyStartColumn = -1, BelongsToFile = -1, \
-                 IdentifierList = [], PcdList = []):
+                 IdentifierList = [], PcdList = [], \
+                 FunNameStartLine = -1, FunNameStartColumn = -1):
         self.ID = ID
         self.Header = Header
         self.Modifier = Modifier                    
@@ -209,6 +210,8 @@ class FunctionClass(object):
         self.BodyStartLine = BodyStartLine
         self.BodyStartColumn = BodyStartColumn
         self.BelongsToFile = BelongsToFile
+        self.FunNameStartLine = FunNameStartLine
+        self.FunNameStartColumn = FunNameStartColumn
         
         self.IdentifierList = IdentifierList
         self.PcdList = PcdList

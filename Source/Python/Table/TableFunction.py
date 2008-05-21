@@ -33,18 +33,20 @@ class TableFunction(Table):
     #
     # Create table Function
     #
-    # @param ID:               ID of a Function
-    # @param Header:           Header of a Function
-    # @param Modifier:         Modifier of a Function 
-    # @param Name:             Name of a Function
-    # @param ReturnStatement:  ReturnStatement of a Funciont
-    # @param StartLine:        StartLine of a Function
-    # @param StartColumn:      StartColumn of a Function
-    # @param EndLine:          EndLine of a Function
-    # @param EndColumn:        EndColumn of a Function
-    # @param BodyStartLine:    StartLine of a Function body
-    # @param BodyStartColumn:  StartColumn of a Function body
-    # @param BelongsToFile:    The Function belongs to which file
+    # @param ID:                  ID of a Function
+    # @param Header:              Header of a Function
+    # @param Modifier:            Modifier of a Function 
+    # @param Name:                Name of a Function
+    # @param ReturnStatement:     ReturnStatement of a Funciont
+    # @param StartLine:           StartLine of a Function
+    # @param StartColumn:         StartColumn of a Function
+    # @param EndLine:             EndLine of a Function
+    # @param EndColumn:           EndColumn of a Function
+    # @param BodyStartLine:       StartLine of a Function body
+    # @param BodyStartColumn:     StartColumn of a Function body
+    # @param BelongsToFile:       The Function belongs to which file
+    # @param FunNameStartLine:    StartLine of a Function name
+    # @param FunNameStartColumn:  StartColumn of a Function name
     #
     def Create(self):
         SqlCommand = """create table IF NOT EXISTS %s (ID INTEGER PRIMARY KEY,
@@ -58,7 +60,9 @@ class TableFunction(Table):
                                                        EndColumn INTEGER NOT NULL,
                                                        BodyStartLine INTEGER NOT NULL,
                                                        BodyStartColumn INTEGER NOT NULL,
-                                                       BelongsToFile SINGLE NOT NULL
+                                                       BelongsToFile SINGLE NOT NULL,
+                                                       FunNameStartLine INTEGER NOT NULL,
+                                                       FunNameStartColumn INTEGER NOT NULL
                                                       )""" % self.Table
         Table.Create(self, SqlCommand)
 
@@ -66,24 +70,26 @@ class TableFunction(Table):
     #
     # Insert a record into table Function
     #
-    # @param ID:               ID of a Function
-    # @param Header:           Header of a Function
-    # @param Modifier:         Modifier of a Function 
-    # @param Name:             Name of a Function
-    # @param ReturnStatement:  ReturnStatement of a Funciont
-    # @param StartLine:        StartLine of a Function
-    # @param StartColumn:      StartColumn of a Function
-    # @param EndLine:          EndLine of a Function
-    # @param EndColumn:        EndColumn of a Function
-    # @param BodyStartLine:    StartLine of a Function body
-    # @param BodyStartColumn:  StartColumn of a Function body
-    # @param BelongsToFile:    The Function belongs to which file
+    # @param ID:                  ID of a Function
+    # @param Header:              Header of a Function
+    # @param Modifier:            Modifier of a Function 
+    # @param Name:                Name of a Function
+    # @param ReturnStatement:     ReturnStatement of a Funciont
+    # @param StartLine:           StartLine of a Function
+    # @param StartColumn:         StartColumn of a Function
+    # @param EndLine:             EndLine of a Function
+    # @param EndColumn:           EndColumn of a Function
+    # @param BodyStartLine:       StartLine of a Function body
+    # @param BodyStartColumn:     StartColumn of a Function body
+    # @param BelongsToFile:       The Function belongs to which file
+    # @param FunNameStartLine:    StartLine of a Function name
+    # @param FunNameStartColumn:  StartColumn of a Function name
     #
-    def Insert(self, Header, Modifier, Name, ReturnStatement, StartLine, StartColumn, EndLine, EndColumn, BodyStartLine, BodyStartColumn, BelongsToFile):
+    def Insert(self, Header, Modifier, Name, ReturnStatement, StartLine, StartColumn, EndLine, EndColumn, BodyStartLine, BodyStartColumn, BelongsToFile, FunNameStartLine, FunNameStartColumn):
         self.ID = self.ID + 1
         (Header, Modifier, Name, ReturnStatement) = ConvertToSqlString((Header, Modifier, Name, ReturnStatement))
-        SqlCommand = """insert into %s values(%s, '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s, %s, %s)""" \
-                                    % (self.Table, self.ID, Header, Modifier, Name, ReturnStatement, StartLine, StartColumn, EndLine, EndColumn, BodyStartLine, BodyStartColumn, BelongsToFile)
+        SqlCommand = """insert into %s values(%s, '%s', '%s', '%s', '%s', %s, %s, %s, %s, %s, %s, %s, %s, %s)""" \
+                                    % (self.Table, self.ID, Header, Modifier, Name, ReturnStatement, StartLine, StartColumn, EndLine, EndColumn, BodyStartLine, BodyStartColumn, BelongsToFile, FunNameStartLine, FunNameStartColumn)
         Table.Insert(self, SqlCommand)
 
         return self.ID

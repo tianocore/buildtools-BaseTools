@@ -119,6 +119,8 @@ class Ecc(object):
                 Dirs.remove('CVS')
             if ".svn" in Dirs:
                 Dirs.remove('.svn')
+            if "Build" in Dirs:
+                Dirs.remove('Build')
             if "EdkCompatibilityPkg" in Dirs:
                 Dirs.remove('EdkCompatibilityPkg')
             
