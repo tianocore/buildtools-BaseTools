@@ -52,7 +52,7 @@ class Check(object):
     
     # Check whether return type exists and in the first line
     def FunctionLayoutCheckReturnType(self):
-        if EccGlobalData.gConfig.CFunctionLayoutCheckReturnType == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1':
+        if EccGlobalData.gConfig.CFunctionLayoutCheckReturnType == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout return type ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -67,7 +67,7 @@ class Check(object):
     
     # Check whether any optional functional modifiers exist and next to the return type
     def FunctionLayoutCheckModifier(self):
-        if EccGlobalData.gConfig.CFunctionLayoutCheckOptionalFunctionalModifier == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1':
+        if EccGlobalData.gConfig.CFunctionLayoutCheckOptionalFunctionalModifier == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout modifier ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -83,7 +83,7 @@ class Check(object):
     # Check whether the next line contains the function name, left justified, followed by the beginning of the parameter list
     # Check whether the closing parenthesis is on its own line and also indented two spaces
     def FunctionLayoutCheckName(self):
-        if EccGlobalData.gConfig.CFunctionLayoutCheckFunctionName == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1':
+        if EccGlobalData.gConfig.CFunctionLayoutCheckFunctionName == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout function name ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -97,7 +97,7 @@ class Check(object):
                         c.CheckFuncLayoutName(FullName)
     # Check whether the function prototypes in include files have the same form as function definitions
     def FunctionLayoutCheckPrototype(self):
-        if EccGlobalData.gConfig.CFunctionLayoutCheckFunctionPrototype == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1':
+        if EccGlobalData.gConfig.CFunctionLayoutCheckFunctionPrototype == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout function prototype ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -112,7 +112,7 @@ class Check(object):
 
     # Check whether the body of a function is contained by open and close braces that must be in the first column
     def FunctionLayoutCheckBody(self):
-        if EccGlobalData.gConfig.CFunctionLayoutCheckFunctionBody == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1':
+        if EccGlobalData.gConfig.CFunctionLayoutCheckFunctionBody == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout function body ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -129,7 +129,7 @@ class Check(object):
     #self.CFunctionLayoutCheckDataDeclaration = 1
     # Check whether no initialization of a variable as part of its declaration
     def FunctionLayoutCheckLocalVariable(self):
-        if EccGlobalData.gConfig.CFunctionLayoutCheckNoInitOfVariable == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1':
+        if EccGlobalData.gConfig.CFunctionLayoutCheckNoInitOfVariable == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout local variables ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -159,7 +159,7 @@ class Check(object):
     
     # Check whether no use of int, unsigned, char, void, static, long in any .c, .h or .asl files.
     def DeclCheckNoUseCType(self):
-        if EccGlobalData.gConfig.DeclarationDataTypeCheckNoUseCType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1':
+        if EccGlobalData.gConfig.DeclarationDataTypeCheckNoUseCType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration No use C type ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -174,7 +174,7 @@ class Check(object):
     
     # Check whether the modifiers IN, OUT, OPTIONAL, and UNALIGNED are used only to qualify arguments to a function and should not appear in a data type declaration
     def DeclCheckInOutModifier(self):
-        if EccGlobalData.gConfig.DeclarationDataTypeCheckInOutModifier == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1':
+        if EccGlobalData.gConfig.DeclarationDataTypeCheckInOutModifier == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration argument modifier ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -189,12 +189,12 @@ class Check(object):
     
     # Check whether the EFIAPI modifier should be used at the entry of drivers, events, and member functions of protocols
     def DeclCheckEFIAPIModifier(self):
-        if EccGlobalData.gConfig.DeclarationDataTypeCheckEFIAPIModifier == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1':
+        if EccGlobalData.gConfig.DeclarationDataTypeCheckEFIAPIModifier == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             pass
     
     # Check whether Enumerated Type has a 'typedef' and the name is capital
     def DeclCheckEnumeratedType(self):
-        if EccGlobalData.gConfig.DeclarationDataTypeCheckEnumeratedType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1':
+        if EccGlobalData.gConfig.DeclarationDataTypeCheckEnumeratedType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration enum typedef ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -209,7 +209,7 @@ class Check(object):
     
     # Check whether Structure Type has a 'typedef' and the name is capital
     def DeclCheckStructureDeclaration(self):
-        if EccGlobalData.gConfig.DeclarationDataTypeCheckStructureDeclaration == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1':
+        if EccGlobalData.gConfig.DeclarationDataTypeCheckStructureDeclaration == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration struct typedef ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -224,7 +224,7 @@ class Check(object):
     
     # Check whether Union Type has a 'typedef' and the name is capital
     def DeclCheckUnionType(self):
-        if EccGlobalData.gConfig.DeclarationDataTypeCheckUnionType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1':
+        if EccGlobalData.gConfig.DeclarationDataTypeCheckUnionType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration union typedef ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -247,7 +247,7 @@ class Check(object):
     
     # Check whether Boolean values, variable type BOOLEAN not use explicit comparisons to TRUE or FALSE
     def PredicateExpressionCheckBooleanValue(self):
-        if EccGlobalData.gConfig.PredicateExpressionCheckBooleanValue == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1':
+        if EccGlobalData.gConfig.PredicateExpressionCheckBooleanValue == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking predicate expression Boolean value ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -261,7 +261,7 @@ class Check(object):
                         c.CheckBooleanValueComparison(FullName)
     # Check whether Non-Boolean comparisons use a compare operator (==, !=, >, < >=, <=). 
     def PredicateExpressionCheckNonBooleanOperator(self):
-        if EccGlobalData.gConfig.PredicateExpressionCheckNonBooleanOperator == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1':
+        if EccGlobalData.gConfig.PredicateExpressionCheckNonBooleanOperator == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking predicate expression Non-Boolean variable...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -275,7 +275,7 @@ class Check(object):
                         c.CheckNonBooleanValueComparison(FullName)
     # Check whether a comparison of any pointer to zero must be done via the NULL type
     def PredicateExpressionCheckComparisonNullType(self):
-        if EccGlobalData.gConfig.PredicateExpressionCheckComparisonNullType == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1':
+        if EccGlobalData.gConfig.PredicateExpressionCheckComparisonNullType == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking predicate expression NULL pointer ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -298,7 +298,7 @@ class Check(object):
     # Check whether all include file contents is guarded by a #ifndef statement.
     #
     def IncludeFileCheckIfndef(self):
-        if EccGlobalData.gConfig.IncludeFileCheckIfndefStatement == '1' or EccGlobalData.gConfig.IncludeFileCheckAll == '1':
+        if EccGlobalData.gConfig.IncludeFileCheckIfndefStatement == '1' or EccGlobalData.gConfig.IncludeFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking header file ifndef ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -315,7 +315,7 @@ class Check(object):
     # Check whether include files NOT contain code or define data variables
     #
     def IncludeFileCheckData(self):
-        if EccGlobalData.gConfig.IncludeFileCheckData == '1' or EccGlobalData.gConfig.IncludeFileCheckAll == '1':
+        if EccGlobalData.gConfig.IncludeFileCheckData == '1' or EccGlobalData.gConfig.IncludeFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking header file data ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -342,7 +342,7 @@ class Check(object):
     # Check whether the file headers are followed Doxygen special documentation blocks in section 2.3.5
     #
     def DoxygenCheckFileHeader(self):
-        if EccGlobalData.gConfig.DoxygenCheckFileHeader == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1':
+        if EccGlobalData.gConfig.DoxygenCheckFileHeader == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen file header ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -359,7 +359,7 @@ class Check(object):
     # Check whether the function headers are followed Doxygen special documentation blocks in section 2.3.5
     #
     def DoxygenCheckFunctionHeader(self):
-        if EccGlobalData.gConfig.DoxygenCheckFunctionHeader == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1':
+        if EccGlobalData.gConfig.DoxygenCheckFunctionHeader == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen function header ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -380,14 +380,14 @@ class Check(object):
     # The brief description must end with a period.
     #
     def DoxygenCheckCommentDescription(self):
-        if EccGlobalData.gConfig.DoxygenCheckCommentDescription == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1':
+        if EccGlobalData.gConfig.DoxygenCheckCommentDescription == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             pass
 
     #
     # Check whether comment lines with '///< ... text ...' format, if it is used, it should be after the code section.
     #
     def DoxygenCheckCommentFormat(self):
-        if EccGlobalData.gConfig.DoxygenCheckCommentFormat == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1':
+        if EccGlobalData.gConfig.DoxygenCheckCommentFormat == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen comment ///< ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -404,7 +404,7 @@ class Check(object):
     # Check whether only Doxygen commands allowed to mark the code are @bug and @todo.
     #
     def DoxygenCheckCommand(self):
-        if EccGlobalData.gConfig.DoxygenCheckCommand == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1':
+        if EccGlobalData.gConfig.DoxygenCheckCommand == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen command ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
@@ -437,7 +437,7 @@ class Check(object):
     # Check whether each file defined in meta-data exists
     #
     def MetaDataFileCheckPathName(self):
-        if EccGlobalData.gConfig.MetaDataFileCheckPathName == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
+        if EccGlobalData.gConfig.MetaDataFileCheckPathName == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             # This item is covered when parsing Inf/Dec/Dsc files
             pass
     
@@ -445,7 +445,7 @@ class Check(object):
     # Generate a list for all files defined in meta-data files
     #
     def MetaDataFileCheckGenerateFileList(self):
-        if EccGlobalData.gConfig.MetaDataFileCheckGenerateFileList == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
+        if EccGlobalData.gConfig.MetaDataFileCheckGenerateFileList == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             # This item is covered when parsing Inf/Dec/Dsc files
             pass
     
@@ -455,7 +455,7 @@ class Check(object):
     # and any module specifying the library instance must be one of the supported types.
     #
     def MetaDataFileCheckLibraryInstance(self):
-        if EccGlobalData.gConfig.MetaDataFileCheckLibraryInstance == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
+        if EccGlobalData.gConfig.MetaDataFileCheckLibraryInstance == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking for library instance type issue ...")
             SqlCommand = """select ID, Value2 from Inf where Value1 = 'LIBRARY_CLASS' and Model = %s group by BelongsToFile""" % MODEL_META_DATA_HEADER
             RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
@@ -477,7 +477,7 @@ class Check(object):
     # Check whether a Library Instance has been defined for all dependent library classes
     #
     def MetaDataFileCheckLibraryInstanceDependent(self):
-        if EccGlobalData.gConfig.MetaDataFileCheckLibraryInstanceDependent == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
+        if EccGlobalData.gConfig.MetaDataFileCheckLibraryInstanceDependent == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking for library instance dependent issue ...")
             SqlCommand = """select ID, Value1, Value2 from Dsc where Model = %s""" % MODEL_EFI_LIBRARY_CLASS
             LibraryClasses = EccGlobalData.gDb.TblDsc.Exec(SqlCommand)
@@ -499,7 +499,7 @@ class Check(object):
     # Check whether the Library Instances specified by the LibraryClasses sections are listed in order of dependencies
     #
     def MetaDataFileCheckLibraryInstanceOrder(self):
-        if EccGlobalData.gConfig.MetaDataFileCheckLibraryInstanceOrder == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
+        if EccGlobalData.gConfig.MetaDataFileCheckLibraryInstanceOrder == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             # This checkpoint is not necessary for Ecc check
             pass
 
@@ -507,7 +507,7 @@ class Check(object):
     # Check whether the unnecessary inclusion of library classes in the Inf file
     #
     def MetaDataFileCheckLibraryNoUse(self):
-        if EccGlobalData.gConfig.MetaDataFileCheckLibraryNoUse == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
+        if EccGlobalData.gConfig.MetaDataFileCheckLibraryNoUse == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking for library instance not used ...")
             SqlCommand = """select ID, Value1 from Inf as A where A.Model = %s and A.Value1 not in (select B.Value1 from Dsc as B where Model = %s)""" % (MODEL_EFI_LIBRARY_CLASS, MODEL_EFI_LIBRARY_CLASS)
             RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
@@ -518,7 +518,7 @@ class Check(object):
     # Check whether an Inf file is specified in the FDF file, but not in the Dsc file, then the Inf file must be for a Binary module only
     #
     def MetaDataFileCheckBinaryInfInFdf(self):
-        if EccGlobalData.gConfig.MetaDataFileCheckBinaryInfInFdf == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
+        if EccGlobalData.gConfig.MetaDataFileCheckBinaryInfInFdf == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking for non-binary modules defined in FDF files ...")
             SqlCommand = """select A.ID, A.Value1 from Fdf as A
                          where A.Model = %s
@@ -542,7 +542,7 @@ class Check(object):
     # Check whether a PCD is set in a Dsc file or the FDF file, but not in both.
     #
     def MetaDataFileCheckPcdDuplicate(self):
-        if EccGlobalData.gConfig.MetaDataFileCheckPcdDuplicate == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
+        if EccGlobalData.gConfig.MetaDataFileCheckPcdDuplicate == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking for duplicate PCDs defined in both DSC and FDF files ...")
             SqlCommand = """
                          select A.ID, A.Value2, B.ID, B.Value2 from Dsc as A, Fdf as B 
@@ -561,7 +561,7 @@ class Check(object):
     # Check whether PCD settings in the FDF file can only be related to flash.
     #
     def MetaDataFileCheckPcdFlash(self):
-        if EccGlobalData.gConfig.MetaDataFileCheckPcdFlash == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
+        if EccGlobalData.gConfig.MetaDataFileCheckPcdFlash == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking only Flash related PCDs are used in FDF ...")
             SqlCommand = """
                          select ID, Value2, BelongsToFile from Fdf as A
@@ -577,7 +577,7 @@ class Check(object):
     # Check whether PCDs used in Inf files but not specified in Dsc or FDF files
     #
     def MetaDataFileCheckPcdNoUse(self):
-        if EccGlobalData.gConfig.MetaDataFileCheckPcdNoUse == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
+        if EccGlobalData.gConfig.MetaDataFileCheckPcdNoUse == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking for non-specified PCDs ...")
             SqlCommand = """
                          select ID, Value2, BelongsToFile from Inf as A 
@@ -600,7 +600,7 @@ class Check(object):
     # Check whether having duplicate guids defined for Guid/Protocol/Ppi
     #
     def MetaDataFileCheckGuidDuplicate(self):
-        if EccGlobalData.gConfig.MetaDataFileCheckGuidDuplicate == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1':
+        if EccGlobalData.gConfig.MetaDataFileCheckGuidDuplicate == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking for duplicate GUID/PPI/PROTOCOL ...")
             #
             # Check Guid
@@ -684,7 +684,7 @@ class Check(object):
     # Check whether only capital letters are used for #define declarations
     #
     def NamingConventionCheckDefineStatement(self):
-        if EccGlobalData.gConfig.NamingConventionCheckDefineStatement == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1':
+        if EccGlobalData.gConfig.NamingConventionCheckDefineStatement == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking naming covention of #define statement ...")
             for IdentifierTable in EccGlobalData.gIdentifierTableList:
                 SqlCommand = """select ID, Value from %s where Model = %s""" %(IdentifierTable, MODEL_IDENTIFIER_MACRO_DEFINE)
@@ -699,7 +699,7 @@ class Check(object):
     # Check whether only capital letters are used for typedef declarations
     #
     def NamingConventionCheckTypedefStatement(self):
-        if EccGlobalData.gConfig.NamingConventionCheckTypedefStatement == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1':
+        if EccGlobalData.gConfig.NamingConventionCheckTypedefStatement == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking naming covention of #typedef statement ...")
             for IdentifierTable in EccGlobalData.gIdentifierTableList:
                 SqlCommand = """select ID, Name from %s where Model = %s""" %(IdentifierTable, MODEL_IDENTIFIER_TYPEDEF)
@@ -719,7 +719,7 @@ class Check(object):
     # Check whether the #ifndef at the start of an include file uses both prefix and postfix underscore characters, '_'.
     #
     def NamingConventionCheckIfndefStatement(self):
-        if EccGlobalData.gConfig.NamingConventionCheckTypedefStatement == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1':
+        if EccGlobalData.gConfig.NamingConventionCheckTypedefStatement == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking naming covention of #ifndef statement ...")
             for IdentifierTable in EccGlobalData.gIdentifierTableList:
                 SqlCommand = """select ID, Value from %s where Model = %s""" %(IdentifierTable, MODEL_IDENTIFIER_MACRO_IFNDEF)
@@ -737,7 +737,7 @@ class Check(object):
     # Check whether the path name followed the rule
     #
     def NamingConventionCheckPathName(self):
-        if EccGlobalData.gConfig.NamingConventionCheckPathName == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1':
+        if EccGlobalData.gConfig.NamingConventionCheckPathName == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking naming covention of file path name ...")
             Pattern = re.compile(r'^[A-Z]+\S*[a-z]\S*$')
             SqlCommand = """select ID, Name from File"""
@@ -755,7 +755,7 @@ class Check(object):
     # Check whether the variable name followed the rule
     #
     def NamingConventionCheckVariableName(self):
-        if EccGlobalData.gConfig.NamingConventionCheckVariableName == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1':
+        if EccGlobalData.gConfig.NamingConventionCheckVariableName == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking naming covention of variable name ...")
             Pattern = re.compile(r'^[A-Zgm]+\S*[a-z]\S*$')
             for IdentifierTable in EccGlobalData.gIdentifierTableList:
@@ -773,7 +773,7 @@ class Check(object):
     # Check whether the function name followed the rule
     #
     def NamingConventionCheckFunctionName(self):
-        if EccGlobalData.gConfig.NamingConventionCheckFunctionName == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1':
+        if EccGlobalData.gConfig.NamingConventionCheckFunctionName == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking naming covention of function name ...")
             Pattern = re.compile(r'^[A-Z]+\S*[a-z]\S*$')
             SqlCommand = """select ID, Name from Function"""
@@ -786,7 +786,7 @@ class Check(object):
     # Check whether NO use short variable name with single character
     #
     def NamingConventionCheckSingleCharacterVariable(self):
-        if EccGlobalData.gConfig.NamingConventionCheckSingleCharacterVariable == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1':
+        if EccGlobalData.gConfig.NamingConventionCheckSingleCharacterVariable == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking naming covention of single character variable name ...")
             for IdentifierTable in EccGlobalData.gIdentifierTableList:
                 SqlCommand = """select ID, Name from %s where Model = %s""" %(IdentifierTable, MODEL_IDENTIFIER_VARIABLE)
