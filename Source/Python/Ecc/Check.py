@@ -61,7 +61,7 @@ class Check(object):
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
                 for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.c'):
+                    if os.path.splitext(F)[1] in ('.c', '.h'):
                         FullName = os.path.join(Dirpath, F)
                         c.CheckFuncLayoutReturnType(FullName)
     
@@ -76,7 +76,7 @@ class Check(object):
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
                 for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.c'):
+                    if os.path.splitext(F)[1] in ('.c', '.h'):
                         FullName = os.path.join(Dirpath, F)
                         c.CheckFuncLayoutModifier(FullName)
                         
@@ -92,7 +92,7 @@ class Check(object):
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
                 for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.c'):
+                    if os.path.splitext(F)[1] in ('.c', '.h'):
                         FullName = os.path.join(Dirpath, F)
                         c.CheckFuncLayoutName(FullName)
     # Check whether the function prototypes in include files have the same form as function definitions

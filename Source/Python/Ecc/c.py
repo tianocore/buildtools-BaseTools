@@ -112,6 +112,7 @@ def GetIdentifierList():
                 VarNameStartColumn += 8
             else:
                 DeclText = DeclText[1:]
+                VarNameStartColumn += 1
             FirstChar = DeclText[0]
             
         var.Declarator = DeclText
@@ -151,6 +152,7 @@ def GetIdentifierList():
                             VarNameStartColumn += 8
                         else:
                             Index += 1
+                            VarNameStartColumn += 1
                         PreChar = FirstChar
             IdVar = DataClass.IdentifierClass(-1, var.Modifier, '', var.Declarator, '', DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION, -1, -1, var.StartPos[0], var.StartPos[1], VarNameStartLine, VarNameStartColumn)
             IdList.append(IdVar)
@@ -239,16 +241,29 @@ def GetParamList(FuncDeclarator, FuncNameLine = 0, FuncNameOffset = 0):
     ParamStr = DeclSplitList[1].rstrip(')')
     LineSkipped = 0
     OffsetSkipped = 0
-    Start = 0
-    while FuncName.find('\n', Start) != -1:
-        LineSkipped += 1
-        OffsetSkipped = 0
-        Start += FuncName.find('\n', Start)
-        Start += 1       
-    OffsetSkipped += len(FuncName[Start:])
+    TailChar = FuncName[-1]
+    while not TailChar.isalpha() and TailChar != '_':
+        
+        if TailChar == '\n':
+            FuncName = FuncName.rstrip('\r\n').rstrip('\n')
+            LineSkipped += 1
+            OffsetSkipped = 0
+        elif TailChar == '\r':
+            FuncName = FuncName.rstrip('\r')
+            LineSkipped += 1
+            OffsetSkipped = 0
+        elif TailChar == ' ':
+            FuncName = FuncName.rstrip(' ')
+            OffsetSkipped += 1
+        elif TailChar == '\t':
+            FuncName = FuncName.rstrip('\t')
+            OffsetSkipped += 8
+        else:
+            FuncName = FuncName[:-1]
+        TailChar = FuncName[-1]
+               
     OffsetSkipped += 1 #skip '('
-    ParamBeginLine = FuncNameLine + LineSkipped
-    ParamBeginOffset = OffsetSkipped
+    
     for p in ParamStr.split(','):
         ListP = p.split()
         if len(ListP) == 0:
@@ -272,20 +287,67 @@ def GetParamList(FuncDeclarator, FuncNameLine = 0, FuncNameOffset = 0):
             DeclText = DeclText.lstrip('*').strip()
         ParamName = DeclText
         
-        Start = 0
-        while p.find('\n', Start) != -1:
-            LineSkipped += 1
-            OffsetSkipped = 0
-            Start += p.find('\n', Start)
-            Start += 1
-        OffsetSkipped += len(p[Start:])
+        Start = RightSpacePos
+        Index = 0
+        PreChar = ''
+        while Index < Start:
+            FirstChar = p[Index]
+                
+            if FirstChar == '\r':
+                Index += 1
+                LineSkipped += 1
+                OffsetSkipped = 0
+            elif FirstChar == '\n':
+                Index += 1
+                if PreChar != '\r':
+                    LineSkipped += 1
+                    OffsetSkipped = 0
+            elif FirstChar == ' ':
+                Index += 1
+                OffsetSkipped += 1
+            elif FirstChar == '\t':
+                Index += 1
+                OffsetSkipped += 8
+            else:
+                Index += 1
+                OffsetSkipped += 1
+            PreChar = FirstChar
+            
+        ParamBeginLine = FuncNameLine + LineSkipped
+        ParamBeginOffset = FuncNameOffset + OffsetSkipped
         
-        ParamEndLine = ParamBeginLine + LineSkipped
-        ParamEndOffset = OffsetSkipped
+        Index = Start + len(ParamName)
+        PreChar = ''
+        while Index < len(p):
+            FirstChar = p[Index]
+                
+            if FirstChar == '\r':
+                Index += 1
+                LineSkipped += 1
+                OffsetSkipped = 0
+            elif FirstChar == '\n':
+                Index += 1
+                if PreChar != '\r':
+                    LineSkipped += 1
+                    OffsetSkipped = 0
+            elif FirstChar == ' ':
+                Index += 1
+                OffsetSkipped += 1
+            elif FirstChar == '\t':
+                Index += 1
+                OffsetSkipped += 8
+            else:
+                Index += 1
+                OffsetSkipped += 1
+            PreChar = FirstChar
+        
+        ParamEndLine = FuncNameLine + LineSkipped
+        ParamEndOffset = FuncNameOffset + OffsetSkipped
+        
         IdParam = DataClass.IdentifierClass(-1, ParamModifier, '', ParamName, '', DataClass.MODEL_IDENTIFIER_PARAMETER, -1, -1, ParamBeginLine, ParamBeginOffset, ParamEndLine, ParamEndOffset)
         ParamIdList.append(IdParam)
-        ParamBeginLine = ParamEndLine
-        ParamBeginOffset = OffsetSkipped + 1 #skip ','
+        
+        OffsetSkipped += 1 #skip ','
     
     return ParamIdList
     
@@ -318,6 +380,7 @@ def GetFunctionList():
                 FuncNameStartColumn += 8
             else:
                 DeclText = DeclText[1:]
+                FuncNameStartColumn += 1
             FirstChar = DeclText[0]
         
         FuncDef.Declarator = DeclText
@@ -358,6 +421,7 @@ def GetFunctionList():
                         FuncNameStartColumn += 8
                     else:
                         Index += 1
+                        FuncNameStartColumn += 1
                     PreChar = FirstChar
                 
         FuncObj = DataClass.FunctionClass(-1, FuncDef.Declarator, FuncDef.Modifier, FuncName.strip(), '', FuncDef.StartPos[0],FuncDef.StartPos[1],FuncDef.EndPos[0],FuncDef.EndPos[1], FuncDef.LeftBracePos[0], FuncDef.LeftBracePos[1], -1, ParamIdList, [], FuncNameStartLine, FuncNameStartColumn)
@@ -634,7 +698,11 @@ def GetDataTypeFromModifier(ModifierStr):
     ReturnType = ''
     for M in MList:
         ReturnType += M + ' '
-    return ReturnType.strip()    
+        
+    ReturnType = ReturnType.strip()
+    if len(ReturnType) == 0:
+        ReturnType = 'VOID'
+    return ReturnType
 
 def DiffModifier(Str1, Str2):
     PartList1 = Str1.split()
@@ -773,6 +841,8 @@ def GetTypeInfo(RefList, Modifier, FullFileName):
     TypedefDict = GetTypedefDict(FullFileName)
     SUDict = GetSUDict(FullFileName)
     Type = GetDataTypeFromModifier(Modifier).rstrip('*').strip()
+    
+    Type = Type.split()[-1]
     Index = 0
     while Index < len(RefList):
         FieldName = RefList[Index]
@@ -803,7 +873,7 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName):
             Type = GetTypeInfo(PredVarList[1:], Result[0], FullFileName)
             return Type
         else:
-            Type = GetDataTypeFromModifier(Result[0])
+            Type = GetDataTypeFromModifier(Result[0]).split()[-1]
             return Type
                 
     # search function parameters second
@@ -814,7 +884,7 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName):
                 Type = GetTypeInfo(PredVarList[1:], Param.Modifier, FullFileName)
                 return Type
             else:
-                Type = GetDataTypeFromModifier(Param.Modifier)
+                Type = GetDataTypeFromModifier(Param.Modifier).split()[-1]
                 return Type
           
     # search global variable next
@@ -829,7 +899,7 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName):
             Type = GetTypeInfo(PredVarList[1:], Result[0], FullFileName)
             return Type
         else:
-            Type = GetDataTypeFromModifier(Result[0])
+            Type = GetDataTypeFromModifier(Result[0]).split()[-1]
             return Type
     
     # search variable in include files
@@ -851,7 +921,7 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName):
                 Type = GetTypeInfo(PredVarList[1:], Result[0], FullFileName)
                 return Type
             else:
-                Type = GetDataTypeFromModifier(Result[0])
+                Type = GetDataTypeFromModifier(Result[0]).split()[-1]
                 return Type
 
 def CheckFuncLayoutReturnType(FullFileName):
@@ -869,7 +939,7 @@ def CheckFuncLayoutReturnType(FullFileName):
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
-        ReturnType = GetDataTypeFromModifier(Result[0])
+        ReturnType = GetDataTypeFromModifier(Result[0]).split()[-1]
         if len(ReturnType) == 0:
             PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Function has No Return Type', FileTable, Result[1])
             continue
@@ -886,7 +956,7 @@ def CheckFuncLayoutReturnType(FullFileName):
                    """ % (FileID)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
-        ReturnType = GetDataTypeFromModifier(Result[0])
+        ReturnType = GetDataTypeFromModifier(Result[0]).split()[-1]
         if len(ReturnType) == 0:
             PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Function has No Return Type', 'Function', Result[1])
             continue
@@ -912,7 +982,7 @@ def CheckFuncLayoutModifier(FullFileName):
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
-        ReturnType = GetDataTypeFromModifier(Result[0])
+        ReturnType = GetDataTypeFromModifier(Result[0]).split()[-1]
         if len(ReturnType) == 0:
             continue
         Index = Result[0].find(ReturnType)
@@ -925,12 +995,12 @@ def CheckFuncLayoutModifier(FullFileName):
                    """ % (FileID)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
-        ReturnType = GetDataTypeFromModifier(Result[0])
+        ReturnType = GetDataTypeFromModifier(Result[0]).split()[-1]
         if len(ReturnType) == 0:
             continue
         Index = Result[0].find(ReturnType)
         if Index != 0:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_OPTIONAL_FUNCTIONAL_MODIFIER, '', FileTable, Result[1])
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_OPTIONAL_FUNCTIONAL_MODIFIER, '', 'Function', Result[1])
 
 def CheckFuncLayoutName(FullFileName):
     ErrorMsgList = []
@@ -956,9 +1026,12 @@ def CheckFuncLayoutName(FullFileName):
         for Param in ParamList:
             if Param.StartLine <= StartLine:
                 PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Parameter %s should be in its own line.' % Param.Name, FileTable, Result[1])
+            if Param.StartLine - StartLine > 1:
+                PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Empty line appears before Parameter %s.' % Param.Name, FileTable, Result[1])
             StartLine = Param.StartLine
-            if not Result[0].endswith('\n  )') and not Result[0].endswith('\r  )'):
-                PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, '\')\' should be on a new line and indented two spaces', FileTable, Result[1])
+            
+        if not Result[0].endswith('\n  )') and not Result[0].endswith('\r  )'):
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, '\')\' should be on a new line and indented two spaces', FileTable, Result[1])
             
     SqlStatement = """ select Modifier, ID, FunNameStartColumn
                        from Function
@@ -967,7 +1040,7 @@ def CheckFuncLayoutName(FullFileName):
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
         if Result[2] != 0:
-                PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Function name should appear at the start of a line', FileTable, Result[1])
+                PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Function name should appear at the start of a line', 'Function', Result[1])
         ParamList = GetParamList(Result[0])
         if len(ParamList) == 0:
             continue
@@ -975,9 +1048,11 @@ def CheckFuncLayoutName(FullFileName):
         for Param in ParamList:
             if Param.StartLine <= StartLine:
                 PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Parameter %s should be in its own line.' % Param.Name, 'Function', Result[1])
+            if Param.StartLine - StartLine > 1:
+                PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Empty line appears before Parameter %s.' % Param.Name, 'Function', Result[1])
             StartLine = Param.StartLine
-            if not Result[0].endswith('\n  )') and not Result[0].endswith('\r  )'):
-                PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, '\')\' should be on a new line and indented two spaces', 'Function', Result[1])
+        if not Result[0].endswith('\n  )') and not Result[0].endswith('\r  )'):
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, '\')\' should be on a new line and indented two spaces', 'Function', Result[1])
 
 def CheckFuncLayoutPrototype(FullFileName):
     ErrorMsgList = []
