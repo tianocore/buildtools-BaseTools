@@ -123,7 +123,7 @@ declaration
 	| s=declaration_specifiers t=init_declarator_list? e=';' 
 	{
 	if t != None:
-	  self.StoreVariableDeclaration($s.start.line, $s.start.charPositionInLine, $e.line, $e.charPositionInLine, $s.text, $t.text)
+	  self.StoreVariableDeclaration($s.start.line, $s.start.charPositionInLine, $t.start.line, $t.start.charPositionInLine, $s.text, $t.text)
 	}
 	;
 
@@ -318,7 +318,7 @@ initializer_list
 // E x p r e s s i o n s
 
 argument_expression_list
-	:   assignment_expression (',' assignment_expression)*
+	:   assignment_expression ('OPTIONAL')? (',' assignment_expression ('OPTIONAL')?)*
 	;
 
 additive_expression

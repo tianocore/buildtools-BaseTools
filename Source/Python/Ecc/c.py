@@ -84,10 +84,36 @@ def GetIdentifierList():
     FuncDeclPattern = GetFuncDeclPattern()
     ArrayPattern = GetArrayPattern()
     for var in FileProfile.VariableDeclarationList:
-        DeclText = var.Declarator.strip()
-        while DeclText.startswith('*'):
-            var.Modifier += '*'
-            DeclText = DeclText.lstrip('*').strip()
+        DeclText = var.Declarator.lstrip()
+        FuncPointerPattern = GetTypedefFuncPointerPattern()
+        if FuncPointerPattern.match(DeclText):
+            continue
+        VarNameStartLine = var.NameStartPos[0]
+        VarNameStartColumn = var.NameStartPos[1]
+        FirstChar = DeclText[0]
+        while not FirstChar.isalpha() and FirstChar != '_':
+            if FirstChar == '*':
+                var.Modifier += '*'
+                VarNameStartColumn += 1
+                DeclText = DeclText.lstrip('*')
+            elif FirstChar == '\r':
+                DeclText = DeclText.lstrip('\r\n').lstrip('\r')
+                VarNameStartLine += 1
+                VarNameStartColumn = 0
+            elif FirstChar == '\n':
+                DeclText = DeclText.lstrip('\n')
+                VarNameStartLine += 1
+                VarNameStartColumn = 0
+            elif FirstChar == ' ':
+                DeclText = DeclText.lstrip(' ')
+                VarNameStartColumn += 1
+            elif FirstChar == '\t':
+                DeclText = DeclText.lstrip('\t')
+                VarNameStartColumn += 8
+            else:
+                DeclText = DeclText[1:]
+            FirstChar = DeclText[0]
+            
         var.Declarator = DeclText
         if FuncDeclPattern.match(var.Declarator):
             DeclSplitList = var.Declarator.split('(')     
@@ -95,12 +121,38 @@ def GetIdentifierList():
             FuncNamePartList = FuncName.split()
             if len(FuncNamePartList) > 1:
                 FuncName = FuncNamePartList[-1]
-                Index = 0
-                while Index < len(FuncNamePartList) - 1:
-                    var.Modifier += ' ' + FuncNamePartList[Index]
-                    var.Declarator = var.Declarator.lstrip().lstrip(FuncNamePartList[Index])
-                    Index += 1
-            IdVar = DataClass.IdentifierClass(-1, var.Modifier, '', var.Declarator, '', DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION, -1, -1, var.StartPos[0],var.StartPos[1],var.EndPos[0],var.EndPos[1])
+                NameStart = DeclSplitList[0].rfind(FuncName)
+                var.Declarator = var.Declarator[NameStart:]
+                if NameStart > 0:
+                    var.Modifier += ' ' + DeclSplitList[0][0:NameStart]
+                    Index = 0
+                    PreChar = ''
+                    while Index < NameStart:
+                        FirstChar = DeclSplitList[0][Index]
+                        if DeclSplitList[0][Index:].startswith('EFIAPI'):
+                            Index += 6
+                            VarNameStartColumn += 6
+                            PreChar = ''
+                            continue
+                        elif FirstChar == '\r':
+                            Index += 1
+                            VarNameStartLine += 1
+                            VarNameStartColumn = 0
+                        elif FirstChar == '\n':
+                            Index += 1
+                            if PreChar != '\r':
+                                VarNameStartLine += 1
+                                VarNameStartColumn = 0
+                        elif FirstChar == ' ':
+                            Index += 1
+                            VarNameStartColumn += 1
+                        elif FirstChar == '\t':
+                            Index += 1
+                            VarNameStartColumn += 8
+                        else:
+                            Index += 1
+                        PreChar = FirstChar
+            IdVar = DataClass.IdentifierClass(-1, var.Modifier, '', var.Declarator, '', DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION, -1, -1, var.StartPos[0], var.StartPos[1], VarNameStartLine, VarNameStartColumn)
             IdList.append(IdVar)
             continue
         
@@ -113,7 +165,7 @@ def GetIdentifierList():
                     var.Modifier += ' ' + Name[LSBPos:]
                     Name = Name[0:LSBPos]
             
-                IdVar = DataClass.IdentifierClass(-1, var.Modifier, '', Name, (len(DeclList) > 1 and [DeclList[1]]or [''])[0], DataClass.MODEL_IDENTIFIER_VARIABLE, -1, -1, var.StartPos[0],var.StartPos[1],var.EndPos[0],var.EndPos[1])
+                IdVar = DataClass.IdentifierClass(-1, var.Modifier, '', Name, (len(DeclList) > 1 and [DeclList[1]]or [''])[0], DataClass.MODEL_IDENTIFIER_VARIABLE, -1, -1, var.StartPos[0],var.StartPos[1], VarNameStartLine, VarNameStartColumn)
                 IdList.append(IdVar)
         else:
             DeclList = var.Declarator.split('=')
@@ -122,7 +174,7 @@ def GetIdentifierList():
                 LSBPos = var.Declarator.find('[')
                 var.Modifier += ' ' + Name[LSBPos:]
                 Name = Name[0:LSBPos]
-            IdVar = DataClass.IdentifierClass(-1, var.Modifier, '', Name, (len(DeclList) > 1 and [DeclList[1]]or [''])[0], DataClass.MODEL_IDENTIFIER_VARIABLE, -1, -1, var.StartPos[0],var.StartPos[1],var.EndPos[0],var.EndPos[1])
+            IdVar = DataClass.IdentifierClass(-1, var.Modifier, '', Name, (len(DeclList) > 1 and [DeclList[1]]or [''])[0], DataClass.MODEL_IDENTIFIER_VARIABLE, -1, -1, var.StartPos[0],var.StartPos[1], VarNameStartLine, VarNameStartColumn)
             IdList.append(IdVar)
             
     for enum in FileProfile.EnumerationDefinitionList:
@@ -241,12 +293,34 @@ def GetFunctionList():
     FuncObjList = []
     for FuncDef in FileProfile.FunctionDefinitionList:
         ParamIdList = []
-        DeclText = FuncDef.Declarator.strip()
-        while DeclText.startswith('*'):
-            FuncDef.Modifier += '*'
-            DeclText = DeclText.lstrip('*').strip()
+        DeclText = FuncDef.Declarator.lstrip()
+        FuncNameStartLine = FuncDef.NamePos[0]
+        FuncNameStartColumn = FuncDef.NamePos[1]
+        FirstChar = DeclText[0]
+        while not FirstChar.isalpha() and FirstChar != '_':
+            if FirstChar == '*':
+                FuncDef.Modifier += '*'
+                FuncNameStartColumn += 1
+                DeclText = DeclText.lstrip('*')
+            elif FirstChar == '\r':
+                DeclText = DeclText.lstrip('\r\n').lstrip('\r')
+                FuncNameStartLine += 1
+                FuncNameStartColumn = 0
+            elif FirstChar == '\n':
+                DeclText = DeclText.lstrip('\n')
+                FuncNameStartLine += 1
+                FuncNameStartColumn = 0
+            elif FirstChar == ' ':
+                DeclText = DeclText.lstrip(' ')
+                FuncNameStartColumn += 1
+            elif FirstChar == '\t':
+                DeclText = DeclText.lstrip('\t')
+                FuncNameStartColumn += 8
+            else:
+                DeclText = DeclText[1:]
+            FirstChar = DeclText[0]
         
-        FuncDef.Declarator = FuncDef.Declarator.lstrip('*')
+        FuncDef.Declarator = DeclText
         DeclSplitList = FuncDef.Declarator.split('(')
         if len(DeclSplitList) < 2:
             continue
@@ -255,12 +329,38 @@ def GetFunctionList():
         FuncNamePartList = FuncName.split()
         if len(FuncNamePartList) > 1:
             FuncName = FuncNamePartList[-1]
-            Index = 0
-            while Index < len(FuncNamePartList) - 1:
-                FuncDef.Modifier += ' ' + FuncNamePartList[Index]
-                Index += 1
+            NameStart = DeclSplitList[0].rfind(FuncName)
+            if NameStart > 0:
+                FuncDef.Modifier += ' ' + DeclSplitList[0][0:NameStart]
+                Index = 0
+                PreChar = ''
+                while Index < NameStart:
+                    FirstChar = DeclSplitList[0][Index]
+                    if DeclSplitList[0][Index:].startswith('EFIAPI'):
+                        Index += 6
+                        FuncNameStartColumn += 6
+                        PreChar = ''
+                        continue
+                    elif FirstChar == '\r':
+                        Index += 1
+                        FuncNameStartLine += 1
+                        FuncNameStartColumn = 0
+                    elif FirstChar == '\n':
+                        Index += 1
+                        if PreChar != '\r':
+                            FuncNameStartLine += 1
+                            FuncNameStartColumn = 0
+                    elif FirstChar == ' ':
+                        Index += 1
+                        FuncNameStartColumn += 1
+                    elif FirstChar == '\t':
+                        Index += 1
+                        FuncNameStartColumn += 8
+                    else:
+                        Index += 1
+                    PreChar = FirstChar
                 
-        FuncObj = DataClass.FunctionClass(-1, FuncDef.Declarator, FuncDef.Modifier, FuncName.strip(), '', FuncDef.StartPos[0],FuncDef.StartPos[1],FuncDef.EndPos[0],FuncDef.EndPos[1], FuncDef.LeftBracePos[0], FuncDef.LeftBracePos[1], -1, ParamIdList, [])
+        FuncObj = DataClass.FunctionClass(-1, FuncDef.Declarator, FuncDef.Modifier, FuncName.strip(), '', FuncDef.StartPos[0],FuncDef.StartPos[1],FuncDef.EndPos[0],FuncDef.EndPos[1], FuncDef.LeftBracePos[0], FuncDef.LeftBracePos[1], -1, ParamIdList, [], FuncNameStartLine, FuncNameStartColumn)
         FuncObjList.append(FuncObj)
         
     return FuncObjList
@@ -763,7 +863,7 @@ def CheckFuncLayoutReturnType(FullFileName):
     
     Db = GetDB()
     FileTable = 'Identifier' + str(FileID)
-    SqlStatement = """ select Modifier, ID
+    SqlStatement = """ select Modifier, ID, StartLine, StartColumn, EndLine 
                        from %s
                        where Model = %d
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION)
@@ -771,16 +871,16 @@ def CheckFuncLayoutReturnType(FullFileName):
     for Result in ResultSet:
         ReturnType = GetDataTypeFromModifier(Result[0])
         if len(ReturnType) == 0:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '', FileTable, Result[1])
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Function has No Return Type', FileTable, Result[1])
             continue
         Index = Result[0].find(ReturnType)
-        if Index != 0:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '', FileTable, Result[1])
+        if Index != 0 or Result[3] != 0:
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Return Type should appear at the start of line', FileTable, Result[1])
             
-        if Result[0].find('\n') == -1 or Result[0].find('\r') == -1:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '', FileTable, Result[1])
+        if Result[2] == Result[4]:
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Return Type should appear on its own line', FileTable, Result[1])
             
-    SqlStatement = """ select Modifier, ID
+    SqlStatement = """ select Modifier, ID, StartLine, StartColumn, FunNameStartLine
                        from Function
                        where BelongsToFile = %d
                    """ % (FileID)
@@ -788,14 +888,14 @@ def CheckFuncLayoutReturnType(FullFileName):
     for Result in ResultSet:
         ReturnType = GetDataTypeFromModifier(Result[0])
         if len(ReturnType) == 0:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '', 'Function', Result[1])
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Function has No Return Type', 'Function', Result[1])
             continue
         Index = Result[0].find(ReturnType)
-        if Index != 0:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '', 'Function', Result[1])
+        if Index != 0 or Result[3] != 0:
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Return Type should appear at the start of line', 'Function', Result[1])
             
-#        if Result[0].find('\n') == -1 or Result[0].find('\r') == -1:
-#            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '', 'Function', Result[1])
+        if Result[2] == Result[4]:
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Return Type should appear on its own line', 'Function', Result[1])
     
 def CheckFuncLayoutModifier(FullFileName):
     ErrorMsgList = []
@@ -841,12 +941,14 @@ def CheckFuncLayoutName(FullFileName):
     
     Db = GetDB()
     FileTable = 'Identifier' + str(FileID)
-    SqlStatement = """ select Name, ID
+    SqlStatement = """ select Name, ID, EndColumn
                        from %s
                        where Model = %d
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
+        if Result[2] != 0:
+                PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Function name should appear at the start of a line', FileTable, Result[1])
         ParamList = GetParamList(Result[0])
         if len(ParamList) == 0:
             continue
@@ -858,12 +960,14 @@ def CheckFuncLayoutName(FullFileName):
             if not Result[0].endswith('\n  )') and not Result[0].endswith('\r  )'):
                 PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, '\')\' should be on a new line and indented two spaces', FileTable, Result[1])
             
-    SqlStatement = """ select Modifier, ID
+    SqlStatement = """ select Modifier, ID, FunNameStartColumn
                        from Function
                        where BelongsToFile = %d
                    """ % (FileID)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
+        if Result[2] != 0:
+                PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Function name should appear at the start of a line', FileTable, Result[1])
         ParamList = GetParamList(Result[0])
         if len(ParamList) == 0:
             continue

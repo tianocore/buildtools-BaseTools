@@ -92,13 +92,13 @@ class VariableDeclaration :
     #   @param  self        The object pointer
     #   @param  Str         The message to record
     #   @param  Begin       The start position tuple.
-    #   @param  End         The end position tuple.
+    #   @param  NamePos     The name position tuple.
     #
-    def __init__(self, ModifierStr, DeclStr, Begin, End):
+    def __init__(self, ModifierStr, DeclStr, Begin, NamePos):
         self.Modifier = ModifierStr
         self.Declarator = DeclStr
         self.StartPos = Begin
-        self.EndPos = End
+        self.NameStartPos = NamePos
 
 ## The description of enum definition and start & end position
 #
