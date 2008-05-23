@@ -257,10 +257,10 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 					</xs:annotation>
 				</xs:element>
 				<xs:element minOccurs="1" maxOccurs="1" name="XmlSpecification"
-					type="xs:decimal" default="2.1">
+					type="xs:decimal" default="1.0">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> This version of this XML Schema
-							is 2.1 </xs:documentation>
+							is 1.0 </xs:documentation>
 					</xs:annotation>
 				</xs:element>
 			</xs:sequence>
@@ -2287,7 +2287,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 		</xs:annotation>
 		<xs:complexType>
 			<xs:sequence>
-				<xs:element minOccurs="1" maxOccurs="1" name="Header">
+				<xs:element minOccurs="0" maxOccurs="1" name="Header">
 					<xs:complexType>
 						<xs:sequence>
 							<xs:element minOccurs="0" maxOccurs="1" name="Name"
