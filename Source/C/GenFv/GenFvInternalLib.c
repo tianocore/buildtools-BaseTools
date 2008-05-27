@@ -1997,12 +1997,12 @@ Returns:
   if (FvInfo->RuntimeBaseAddress != 0) {
     Flags  |= REBASE_RUNTIME_FILE;
   }
+
   //
-  // Don't Rebase this FFS.
+  //  Don't Rebase this FFS.
+  //  Only copy the original map file into the FvMap file 
+  //  for the image that is not required to be relocated.
   //
-  if (Flags == 0) {
-    return EFI_SUCCESS;
-  }
 
   //
   // We only process files potentially containing PE32 sections.
@@ -2058,7 +2058,7 @@ Returns:
           //
           // We aren't relocating XIP code, so skip it.
           //
-          return EFI_SUCCESS;
+          goto WritePeMap;
         }
         
         //
@@ -2137,7 +2137,7 @@ Returns:
               //
               // RT drivers aren't supposed to be relocated
               //
-              continue;
+              goto WritePeMap;
             }
             //
             // make sure image base address at the section alignment
@@ -2156,7 +2156,7 @@ Returns:
               //
               // Skip all BS_DRIVER's
               //
-              continue;
+              goto WritePeMap;
             }
             //
             // make sure image base address at the Section and Page alignment
@@ -2174,7 +2174,7 @@ Returns:
           //
           // Skip DXE core, DxeCore only contain one PE image.
           //
-          return EFI_SUCCESS;
+          goto WritePeMap;
         }
         //
         // make sure image base address at the Section and Page alignment
@@ -2286,18 +2286,17 @@ Returns:
     //
     // Get this module function address from ModulePeMapFile and add them into FvMap file
     //
+WritePeMap:
     WriteMapFile (FvMapFile, FileName, ImageContext.DestinationAddress, PeHdr->OptionalHeader.AddressOfEntryPoint, 0);
   }
 
-  if ((Flags & 1) == 0 || (
-      FfsFile->Type != EFI_FV_FILETYPE_SECURITY_CORE &&
+  if (FfsFile->Type != EFI_FV_FILETYPE_SECURITY_CORE &&
       FfsFile->Type != EFI_FV_FILETYPE_PEI_CORE &&
-
       FfsFile->Type != EFI_FV_FILETYPE_PEIM &&
       FfsFile->Type != EFI_FV_FILETYPE_COMBINED_PEIM_DRIVER
-      )) {
+      ) {
     //
-    // Only XIP code may have a TE section
+    // Only Peim code may have a TE section
     //
     return EFI_SUCCESS;
   }
@@ -2329,6 +2328,13 @@ Returns:
     if (EFI_ERROR (Status)) {
       Error (NULL, 0, 3000, "Invalid", "GetImageInfo() call failed on rebase of TE image %s", FileName);
       return Status;
+    }
+    
+    if ((Flags & REBASE_XIP_FILE) == 0) {
+      //
+      // For none XIP PEIM module, their map info also are collected.
+      //
+      goto WriteTeMap;
     }
     //
     // if reloc is stripped, try to get the original efi image to get reloc info.
@@ -2466,6 +2472,7 @@ Returns:
     //
     // Get this module function address from ModulePeMapFile and add them into FvMap file
     //
+WriteTeMap:
     WriteMapFile (
       FvMapFile, 
       FileName, 
@@ -2645,16 +2652,18 @@ Returns:
   //
   // module information output
   //
-  if (FileGuidName != NULL) {
-    fprintf (FvMapFile, "%s (", KeyWord);
-    fprintf (FvMapFile, "BaseAddress=%08lx, ", ImageBaseAddress + Offset);
-    fprintf (FvMapFile, "EntryPoint=%08lx, ", ImageBaseAddress + AddressOfEntryPoint);
-    fprintf (FvMapFile, "GUID=%s)\n\n", FileGuidName);
+  if (ImageBaseAddress == 0) {
+    fprintf (FvMapFile, "%s (dummy) (", KeyWord);
+    fprintf (FvMapFile, "BaseAddress=%08lx, ", ImageBaseAddress);
   } else {
     fprintf (FvMapFile, "%s (", KeyWord);
     fprintf (FvMapFile, "BaseAddress=%08lx, ", ImageBaseAddress + Offset);
-    fprintf (FvMapFile, "EntryPoint=%08lx)", ImageBaseAddress + AddressOfEntryPoint);
   }
+  fprintf (FvMapFile, "EntryPoint=%08lx, ", ImageBaseAddress + AddressOfEntryPoint);
+  if (FileGuidName != NULL) {
+    fprintf (FvMapFile, "GUID=%s", FileGuidName);
+  }
+  fprintf (FvMapFile, ")\n\n");
 
   while (fgets (Line, MAX_LINE_LEN, PeMapFile) != NULL) {
     //
