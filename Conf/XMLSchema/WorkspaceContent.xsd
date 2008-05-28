@@ -258,6 +258,16 @@
 									installed in a WORKSPACE. </xs:documentation>
 							</xs:annotation>
 						</xs:attribute>
+						<xs:attribute name="UnknownUserExtensions" type="xs:boolean"
+							default="false" use="optional">
+							<xs:annotation>
+								<xs:documentation xml:lang="en-us"> This is used to identify a
+									distribution that has a UserExtensions section at the
+									Distribution, Package or Module level that uses an Identifier
+									other than BuildOptions, ToolsDef or DistributionPackage.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
 					</xs:complexType>
 				</xs:element>
 				<xs:element name="PackageList" minOccurs="0" maxOccurs="1">
