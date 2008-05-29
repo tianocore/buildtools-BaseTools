@@ -459,7 +459,7 @@ cleanlib:
             if "Dynamic-Library-File" in self.DestFileDatabase:
                 self.ResultFileList = self.DestFileDatabase["Dynamic-Library-File"]
         if len(self.ResultFileList) == 0:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Don't know how to end the module build")
+            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Nothing found for build", ExtraData=str(self._AutoGenObject))
 
         SourceFileMacroNameList = []
         SourceFileMacroList = [] # macro name = file list
@@ -756,6 +756,7 @@ cleanlib:
             NewDepSet -= DepSet
             self.FileDependency[File] = ["$(COMMON_DEPS)"] + list(NewDepSet)
 
+        # EdkLogger.verbose("Files to be built in %s :\n\t %s\n" % (str(self._AutoGenObject), "\n\t".join(self.FileDependency.keys())))
         for File, TargetTemplate in self.FileBuildTargetList:
             if File not in self.FileDependency:
                 self.BuildTargetList.append(TargetTemplate)
