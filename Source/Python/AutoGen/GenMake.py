@@ -556,6 +556,7 @@ cleanlib:
 
         ForceIncludedFile = []
         SourceFileList = []
+        ExtraDenpendencies = {}
 
         if "CC" not in self.PlatformInfo.ToolChainFamily:
             EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No CC tool found",
@@ -589,6 +590,7 @@ cleanlib:
                 self.SourceFileDatabase[SrcFileType] = []
             self.SourceFileDatabase[SrcFileType].append(SrcFile)
             SourceFileList.append(SrcFileRelativePath)
+            ExtraDenpendencies[SrcFileRelativePath] = ExtraSrcFileList
 
             BuildTargetTemplate = "${BEGIN}%s : ${deps}\n"\
                                   "${END}\t%s\n" % (DstFile, "\n\t".join(CommandList))
@@ -696,6 +698,7 @@ cleanlib:
                     self.SourceFileDatabase[SrcFileType] = []
                 self.SourceFileDatabase[SrcFileType].append(SrcFile)
                 SourceFileList.append(SrcFileRelativePath)
+                ExtraDenpendencies[SrcFileRelativePath] = ExtraSrcFileList
 
                 BuildTargetTemplate = "${BEGIN}%s : ${deps}\n"\
                                       "${END}\t%s\n" % (DstFile, "\n\t".join(CommandList))
@@ -734,6 +737,8 @@ cleanlib:
         self.FileDependency = self.GetFileDependency(SourceFileList, ForceIncludedFile, self._AutoGenObject.IncludePathList)
         DepSet = None
         for File in self.FileDependency:
+            if File in ExtraDenpendencies:
+                self.FileDependency[File] += ExtraDenpendencies[File]
             # skip non-C files
             if (not File.endswith(".c") and not File.endswith(".C")) or File.endswith("AutoGen.c"):
                 continue
