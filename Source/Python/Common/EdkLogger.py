@@ -161,7 +161,7 @@ info    = _InfoLogger.info
 #   @param  RaiseError  Raise an exception to break the tool's executuion if
 #                       it's True. This is the default behavior.
 #
-def error(ToolName, ErrorCode, Message=None, File=None, Line=None, ExtraData=None, RaiseError=True):
+def error(ToolName, ErrorCode, Message=None, File=None, Line=None, ExtraData=None, RaiseError=IsRaiseError):
     # if no tool name given, use caller's source file name as tool name
     if ToolName == None or ToolName == "":
         ToolName = os.path.basename(traceback.extract_stack()[-2][0])

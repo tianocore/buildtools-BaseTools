@@ -380,13 +380,20 @@ def CheckPcdTokenInfo(TokenInfoString, Section, File, LineNo = -1):
 # @retval (TokenInfo[1], TokenInfo[0], List[1], List[2], List[3], Type)
 #
 def GetPcd(Item, Type, ContainerFile, LineNo = -1):
+    TokenGuid, TokenName, Value, MaximumDatumSize, Token = '', '', '', '', ''
     List = GetSplitValueList(Item + TAB_VALUE_SPLIT * 2)
+    
     if len(List) < 4 or len(List) > 6:
         RaiseParserError(Item, 'Pcds' + Type, ContainerFile, '<PcdTokenSpaceGuidCName>.<TokenCName>|<Value>[|<Type>|<MaximumDatumSize>]', LineNo)
-    CheckPcdTokenInfo(List[0], 'Pcds' + Type, ContainerFile, LineNo)
-    TokenInfo = GetSplitValueList(List[0], TAB_SPLIT)
+    else:
+        Value = List[1]
+        MaximumDatumSize = List[2]
+        Token = List[3]
+        
+    if CheckPcdTokenInfo(List[0], 'Pcds' + Type, ContainerFile, LineNo):
+        (TokenGuid, TokenName) = GetSplitValueList(List[0], TAB_SPLIT)
     
-    return (TokenInfo[1], TokenInfo[0], List[1], List[2], List[3], Type)
+    return (TokenName, TokenGuid, Value, MaximumDatumSize, Token, Type)
 
 ## Get FeatureFlagPcd
 #
@@ -398,14 +405,16 @@ def GetPcd(Item, Type, ContainerFile, LineNo = -1):
 # @retval (TokenInfo[1], TokenInfo[0], List[1], Type)
 #
 def GetFeatureFlagPcd(Item, Type, ContainerFile, LineNo = -1):
+    TokenGuid, TokenName, Value = '', '', ''
     List = GetSplitValueList(Item)
     if len(List) != 2:
         RaiseParserError(Item, 'Pcds' + Type, ContainerFile, '<PcdTokenSpaceGuidCName>.<TokenCName>|TRUE/FALSE', LineNo)
-
-    CheckPcdTokenInfo(List[0], 'Pcds' + Type, ContainerFile, LineNo)
-    TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+    else:
+        Value = List[1]
+    if CheckPcdTokenInfo(List[0], 'Pcds' + Type, ContainerFile, LineNo):
+        (TokenGuid, TokenName) = GetSplitValueList(List[0], DataType.TAB_SPLIT)
     
-    return (TokenInfo[1], TokenInfo[0], List[1], Type)
+    return (TokenName, TokenGuid, Value, Type)
 
 ## Get DynamicDefaultPcd
 #
@@ -417,14 +426,18 @@ def GetFeatureFlagPcd(Item, Type, ContainerFile, LineNo = -1):
 # @retval (TokenInfo[1], TokenInfo[0], List[1], List[2], List[3], Type)
 #
 def GetDynamicDefaultPcd(Item, Type, ContainerFile, LineNo = -1):
+    TokenGuid, TokenName, Value, DatumTyp, MaxDatumSize = '', '', '', '', ''
     List = GetSplitValueList(Item + TAB_VALUE_SPLIT * 2)
     if len(List) < 4 or len(List) > 8:
         RaiseParserError(Item, 'Pcds' + Type, ContainerFile, '<PcdTokenSpaceGuidCName>.<TokenCName>|<Value>[|<DatumTyp>[|<MaxDatumSize>]]', LineNo)
-
-    CheckPcdTokenInfo(List[0], 'Pcds' + Type, ContainerFile, LineNo)
-    TokenInfo = GetSplitValueList(List[0], TAB_SPLIT)
+    else:
+        Value = List[1]
+        DatumTyp = List[2]
+        MaxDatumSize = List[3]
+    if CheckPcdTokenInfo(List[0], 'Pcds' + Type, ContainerFile, LineNo):
+        (TokenGuid, TokenName) = GetSplitValueList(List[0], TAB_SPLIT)
     
-    return (TokenInfo[1], TokenInfo[0], List[1], List[2], List[3], Type)
+    return (TokenName, TokenGuid, Value, DatumTyp, MaxDatumSize, Type)
 
 ## Get DynamicHiiPcd
 #
@@ -436,14 +449,16 @@ def GetDynamicDefaultPcd(Item, Type, ContainerFile, LineNo = -1):
 # @retval (TokenInfo[1], TokenInfo[0], List[1], List[2], List[3], List[4], List[5], Type)
 #
 def GetDynamicHiiPcd(Item, Type, ContainerFile, LineNo = -1):
+    TokenGuid, TokenName, L1, L2, L3, L4, L5 = '', '', '', '', '', '', ''
     List = GetSplitValueList(Item + TAB_VALUE_SPLIT * 2)
     if len(List) < 6 or len(List) > 8:
         RaiseParserError(Item, 'Pcds' + Type, ContainerFile, '<PcdTokenSpaceGuidCName>.<TokenCName>|<String>|<VariableGuidCName>|<VariableOffset>[|<DefaultValue>[|<MaximumDatumSize>]]', LineNo)
-
-    CheckPcdTokenInfo(List[0], 'Pcds' + Type, ContainerFile, LineNo)
-    TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+    else:
+        L1, L2, L3, L4, L5 = List[1], List[2], List[3], List[4], List[5]
+    if CheckPcdTokenInfo(List[0], 'Pcds' + Type, ContainerFile, LineNo):
+        (TokenGuid, TokenName) = GetSplitValueList(List[0], DataType.TAB_SPLIT)
     
-    return (TokenInfo[1], TokenInfo[0], List[1], List[2], List[3], List[4], List[5], Type)
+    return (TokenName, TokenGuid, L1, L2, L3, L4, L5, Type)
 
 ## Get DynamicVpdPcd
 #
@@ -455,14 +470,16 @@ def GetDynamicHiiPcd(Item, Type, ContainerFile, LineNo = -1):
 # @retval (TokenInfo[1], TokenInfo[0], List[1], List[2], Type)
 #
 def GetDynamicVpdPcd(Item, Type, ContainerFile, LineNo = -1):
+    TokenGuid, TokenName, L1, L2 = '', '', '', ''
     List = GetSplitValueList(Item + TAB_VALUE_SPLIT)
     if len(List) < 3 or len(List) > 4:
         RaiseParserError(Item, 'Pcds' + Type, ContainerFile, '<PcdTokenSpaceGuidCName>.<TokenCName>|<VpdOffset>[|<MaximumDatumSize>]', LineNo)
-
-    CheckPcdTokenInfo(List[0], 'Pcds' + Type, ContainerFile, LineNo)
-    TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
+    else:
+        L1, L2 = List[1], List[2]
+    if CheckPcdTokenInfo(List[0], 'Pcds' + Type, ContainerFile, LineNo):
+        (TokenGuid, TokenName) = GetSplitValueList(List[0], DataType.TAB_SPLIT)
     
-    return (TokenInfo[1], TokenInfo[0], List[1], List[2], Type)
+    return (TokenName, TokenGuid, L1, L2, Type)
 
 ## GetComponent
 #
@@ -772,7 +789,8 @@ def GetPackage(Item, ContainerFile, FileRelativePath, LineNo = -1):
 #
 def GetPcdOfInf(Item, Type, File, LineNo):
     Format = '<TokenSpaceGuidCName>.<PcdCName>[|<Value>]'
-    InfType = ''
+    TokenGuid, TokenName, Value, InfType = '', '', '', ''
+    
     if Type == TAB_PCDS_FIXED_AT_BUILD:
         InfType = TAB_INF_FIXED_PCD
     elif Type == TAB_PCDS_PATCHABLE_IN_MODULE:
@@ -786,11 +804,16 @@ def GetPcdOfInf(Item, Type, File, LineNo):
     List = GetSplitValueList(Item + DataType.TAB_VALUE_SPLIT)
     if len(List) < 2 or len(List) > 3:
         RaiseParserError(Item, InfType, File, Format, LineNo)
+    else:
+        Value = List[1]
     TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
     if len(TokenInfo) != 2:
         RaiseParserError(Item, InfType, File, Format, LineNo)
+    else:
+        TokenGuid = TokenInfo[0]
+        TokenName = TokenInfo[1]
 
-    return (TokenInfo[0], TokenInfo[1], List[1], Type)
+    return (TokenGuid, TokenName, Value, Type)
 
     
 ## Get Pcd Values of Dec
@@ -800,14 +823,22 @@ def GetPcdOfInf(Item, Type, File, LineNo):
 #
 def GetPcdOfDec(Item, Type, File, LineNo = -1):
     Format = '<TokenSpaceGuidCName>.<PcdCName>|<Value>|<DatumType>|<Token>'
+    TokenGuid, TokenName, Value, DatumType, Token = '', '', '', '', ''
     List = GetSplitValueList(Item)
     if len(List) != 4:
         RaiseParserError(Item, 'Pcds' + Type, File, Format, LineNo)
+    else:
+        Value = List[1]
+        DatumType = List[2]
+        Token = List[3]
     TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
     if len(TokenInfo) != 2:
         RaiseParserError(Item, 'Pcds' + Type, File, Format, LineNo)
+    else:
+        TokenGuid = TokenInfo[0]
+        TokenName = TokenInfo[1]
     
-    return (TokenInfo[0], TokenInfo[1], List[1], List[2], List[3], Type)
+    return (TokenGuid, TokenName, Value, DatumType, Token, Type)
 
 ## Parse DEFINE statement
 #

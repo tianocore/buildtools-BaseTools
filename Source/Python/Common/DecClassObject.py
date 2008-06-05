@@ -206,7 +206,7 @@ class Dec(DecObject):
                         CurrentSection = ItemList[0]
                     else:
                         if CurrentSection != ItemList[0]:
-                            EdkLogger.error("Parser", PARSER_ERROR, "Different section names '%s' and '%s' are found in one section definition, this is not allowed." % (CurrentSection, ItemList[0]), File=Filename, Line=LineNo)
+                            EdkLogger.error("Parser", PARSER_ERROR, "Different section names '%s' and '%s' are found in one section definition, this is not allowed." % (CurrentSection, ItemList[0]), File=Filename, Line=LineNo, RaiseError = EdkLogger.IsRaiseError)
                     if CurrentSection.upper() not in self.KeyList:
                         RaiseParserError(Line, CurrentSection, Filename, '', LineNo)
                     ItemList.append('')
@@ -215,7 +215,7 @@ class Dec(DecObject):
                         RaiseParserError(Line, CurrentSection, Filename, '', LineNo)
                     else:
                         if ItemList[1] != '' and ItemList[1].upper() not in ARCH_LIST_FULL:
-                            EdkLogger.error("Parser", PARSER_ERROR, "Invalid Arch definition '%s' found" % ItemList[1], File=Filename, Line=LineNo)
+                            EdkLogger.error("Parser", PARSER_ERROR, "Invalid Arch definition '%s' found" % ItemList[1], File=Filename, Line=LineNo, RaiseError = EdkLogger.IsRaiseError)
                         ArchList.append(ItemList[1].upper())
                         ThirdList.append(ItemList[2])
 
@@ -226,7 +226,7 @@ class Dec(DecObject):
             #
             if CurrentSection == TAB_UNKNOWN:
                 ErrorMsg = "%s is not in any defined section" % Line
-                EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, File=Filename, Line=LineNo)
+                EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, File=Filename, Line=LineNo, RaiseError = EdkLogger.IsRaiseError)
 
             #
             # Add a section item

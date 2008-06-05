@@ -45,7 +45,10 @@ class Ecc(object):
         
         self.ConfigFile = 'config.ini'
         self.OutputFile = 'output.txt'
+        self.ReportFile = 'Report.csv'
         self.IsInit = True
+        self.ScanSourceCode = True
+        self.ScanMetaData = True
         
         #
         # Parse the options and args
@@ -100,10 +103,12 @@ class Ecc(object):
         # Build database
         #
         if self.IsInit:
-            EdkLogger.quiet("Building database for source code ...")
-            c.CollectSourceCodeDataIntoDB(EccGlobalData.gTarget)
-            EdkLogger.quiet("Building database for source code done!")
-            self.BuildMetaDataFileDatabase()
+            if self.ScanSourceCode:
+                EdkLogger.quiet("Building database for source code ...")
+                c.CollectSourceCodeDataIntoDB(EccGlobalData.gTarget)
+            if self.ScanMetaData:
+                EdkLogger.quiet("Building database for source code done!")
+                self.BuildMetaDataFileDatabase()
         
         EccGlobalData.gIdentifierTableList = GetTableList((MODEL_FILE_C, MODEL_FILE_H), 'Identifier', EccGlobalData.gDb)
     
@@ -174,7 +179,7 @@ class Ecc(object):
     #
     def GenReport(self):
         EdkLogger.quiet("Generating report ...")
-        EccGlobalData.gDb.TblReport.ToCSV()
+        EccGlobalData.gDb.TblReport.ToCSV(self.ReportFile)
         EdkLogger.quiet("Generating report done!")
     
     ## ParseOption
@@ -208,6 +213,8 @@ class Ecc(object):
             self.ConfigFile = Options.ConfigFile
         if Options.OutputFile != None:
             self.OutputFile = Options.OutputFile
+        if Options.ReportFile != None:
+            self.ReportFile = Options.ReportFile
         if Options.Target != None:
             EccGlobalData.gTarget = os.path.normpath(Options.Target)
         else:
@@ -215,6 +222,12 @@ class Ecc(object):
             EccGlobalData.gTarget = os.path.normpath(os.getenv("WORKSPACE"))
         if Options.keepdatabase != None:
             self.IsInit = False
+        if Options.metadata != None and Options.sourcecode != None:
+            EdkLogger.error("ECC", BuildToolError.OPTION_CONFLICT, ExtraData="-m and -s can't be specified at one time")
+        if Options.metadata != None:
+            self.ScanSourceCode = False
+        if Options.sourcecode != None:
+            self.ScanMetaData = False
            
     ## SetLogLevel
     #
@@ -247,7 +260,10 @@ class Ecc(object):
             help="Specify a configuration file. Defaultly use config.ini under ECC tool directory.")
         Parser.add_option("-o", "--outfile filename", action="store", type="string", dest="OutputFile",
             help="Specify the name of an output file, if and only if one filename was specified.")
-    
+        Parser.add_option("-r", "--reportfile filename", action="store", type="string", dest="ReportFile",
+            help="Specify the name of an report file, if and only if one filename was specified.")
+        Parser.add_option("-m", "--metadata", action="store_true", type=None, help="Only scan meta-data files information if this option is specified.")
+        Parser.add_option("-s", "--sourcecode", action="store_true", type=None, help="Only scan source code files information if this option is specified.")
         Parser.add_option("-k", "--keepdatabase", action="store_true", type=None, help="The existing Ecc database will not be cleaned except report information if this option is specified.")
         Parser.add_option("-l", "--log filename", action="store", dest="LogFile", help="""If specified, the tool should emit the changes that 
                                                                                           were made by the tool after printing the result message. 

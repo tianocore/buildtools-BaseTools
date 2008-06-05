@@ -457,13 +457,18 @@ class Check(object):
     def MetaDataFileCheckLibraryInstance(self):
         if EccGlobalData.gConfig.MetaDataFileCheckLibraryInstance == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking for library instance type issue ...")
-            SqlCommand = """select ID, Value2 from Inf where Value1 = 'LIBRARY_CLASS' and Model = %s group by BelongsToFile""" % MODEL_META_DATA_HEADER
+            #SqlCommand = """select ID, Value2 from Inf where Value1 = 'LIBRARY_CLASS' and Model = %s group by BelongsToFile""" % MODEL_META_DATA_HEADER
+            SqlCommand = """select A.ID, A.Value2, B.Value2 from Inf as A left join Inf as B
+                            where A.Value1 = 'LIBRARY_CLASS' and A.Model = %s 
+                            and B.Value1 = 'MODULE_TYPE' and B.Model = %s and A.BelongsToFile = B.BelongsToFile 
+                            group by A.BelongsToFile""" % (MODEL_META_DATA_HEADER, MODEL_META_DATA_HEADER)
             RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
             LibraryClasses = {}
             for Record in RecordSet:
                 List = Record[1].split('|', 1)
                 if len(List) != 2:
-                    EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_LIBRARY_INSTANCE_2, OtherMsg = "The Library Class '%s' does not specify its supported module types" % (List[0]), BelongsToTable = 'Inf', BelongsToItem = Record[0])
+                    if Record[2] != 'BASE':
+                        EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_LIBRARY_INSTANCE_2, OtherMsg = "The Library Class '%s' does not specify its supported module types" % (List[0]), BelongsToTable = 'Inf', BelongsToItem = Record[0])
                 else:
                     LibraryClasses[List[0]] = List[1]
             SqlCommand = """select A.ID, A.Value1, B.Value2 from Inf as A left join Inf as B 
@@ -471,7 +476,7 @@ class Check(object):
                             % (MODEL_EFI_LIBRARY_CLASS, 'MODULE_TYPE', MODEL_META_DATA_HEADER)
             RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
             for Record in RecordSet:
-                if Record[1] in LibraryClasses and LibraryClasses[Record[1]].find(Record[2]) < 0:
+                if Record[1] in LibraryClasses and LibraryClasses[Record[1]].find(Record[2]) < 0 and Record[2] != 'BASE':
                     EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_LIBRARY_INSTANCE_1, OtherMsg = "The type of Library Class '%s' defined in Inf file does not match the type of the module" % (Record[1]), BelongsToTable = 'Inf', BelongsToItem = Record[0])
     #
     # Check whether a Library Instance has been defined for all dependent library classes

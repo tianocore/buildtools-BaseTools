@@ -606,7 +606,7 @@ class Dsc(DscObject):
             (Status, SkuInfoList) = self.GenSkuInfoList(Key[6], self.Platform.SkuInfos.SkuInfoList, '', '', '', '', '', Key[2])
             if Status == False:
                 ErrorMsg = "The SKUID '%s' used in section '%s' is not defined in section [SkuIds]" % (SkuInfoList, Type)
-                EdkLogger.error("DSC File Parser", PARSER_ERROR, ErrorMsg, ContainerFile)
+                EdkLogger.error("DSC File Parser", PARSER_ERROR, ErrorMsg, ContainerFile, RaiseError = EdkLogger.IsRaiseError)
             Pcd = PcdClass(Key[0], '', Key[1], Key[3], Key[4], Key[2], Key[5], [], SkuInfoList, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
@@ -663,7 +663,7 @@ class Dsc(DscObject):
             (Status, SkuInfoList) = self.GenSkuInfoList(Key[8], self.Platform.SkuInfos.SkuInfoList, Key[2], Key[3], Key[4], Key[5], '', '')
             if Status == False:
                 ErrorMsg = "The SKUID '%s' used in section '%s' is not defined in section [SkuIds]" % (SkuInfoList, Type)
-                EdkLogger.error("DSC File Parser", PARSER_ERROR, ErrorMsg, ContainerFile)
+                EdkLogger.error("DSC File Parser", PARSER_ERROR, ErrorMsg, ContainerFile, RaiseError = EdkLogger.IsRaiseError)
             Pcd = PcdClass(Key[0], '', Key[1], '', Key[6], Key[5], Key[7], [], SkuInfoList, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
@@ -720,7 +720,7 @@ class Dsc(DscObject):
             (Status, SkuInfoList) = self.GenSkuInfoList(Key[5], self.Platform.SkuInfos.SkuInfoList, '', '', '', '', Key[2], '')
             if Status == False:
                 ErrorMsg = "The SKUID '%s' used in section '%s' is not defined in section [SkuIds]" % (SkuInfoList, Type)
-                EdkLogger.error("DSC File Parser", PARSER_ERROR, ErrorMsg, ContainerFile)
+                EdkLogger.error("DSC File Parser", PARSER_ERROR, ErrorMsg, ContainerFile, RaiseError = EdkLogger.IsRaiseError)
             Pcd = PcdClass(Key[0], '', Key[1], '', Key[3], '', Key[4], [], SkuInfoList, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
@@ -963,7 +963,7 @@ class Dsc(DscObject):
         (Value1, Value2, Value3, Model, StartColumn, EndColumn, Enabled) = ('', '', '', -1, -1, -1, 0)
         if IfDefList == []:
             ErrorMsg = 'Not suited conditional statement in file %s' % Filename
-            EdkLogger.error("DSC File Parser", PARSER_ERROR, ErrorMsg, Filename)
+            EdkLogger.error("DSC File Parser", PARSER_ERROR, ErrorMsg, Filename, RaiseError = EdkLogger.IsRaiseError)
         else:
             #
             # Get New Dsc item ID
@@ -1082,7 +1082,7 @@ class Dsc(DscObject):
                         CurrentSection = ItemList[0]
                     else:
                         if CurrentSection != ItemList[0]:
-                            EdkLogger.error("Parser", PARSER_ERROR, "Different section names '%s' and '%s' are found in one section definition, this is not allowed." % (CurrentSection, ItemList[0]), File=Filename, Line=LineNo)
+                            EdkLogger.error("Parser", PARSER_ERROR, "Different section names '%s' and '%s' are found in one section definition, this is not allowed." % (CurrentSection, ItemList[0]), File=Filename, Line=LineNo, RaiseError = EdkLogger.IsRaiseError)
                     if CurrentSection.upper() not in self.KeyList:
                         RaiseParserError(Line, CurrentSection, Filename, '', LineNo)
                     ItemList.append('')
@@ -1091,7 +1091,7 @@ class Dsc(DscObject):
                         RaiseParserError(Line, CurrentSection, Filename, '', LineNo)
                     else:
                         if ItemList[1] != '' and ItemList[1].upper() not in ARCH_LIST_FULL:
-                            EdkLogger.error("Parser", PARSER_ERROR, "Invalid Arch definition '%s' found" % ItemList[1], File=Filename, Line=LineNo)
+                            EdkLogger.error("Parser", PARSER_ERROR, "Invalid Arch definition '%s' found" % ItemList[1], File=Filename, Line=LineNo, RaiseError = EdkLogger.IsRaiseError)
                         ArchList.append(ItemList[1].upper())
                         ThirdList.append(ItemList[2])
 
@@ -1102,7 +1102,7 @@ class Dsc(DscObject):
             #
             if CurrentSection == TAB_UNKNOWN:
                 ErrorMsg = "%s is not in any defined section" % Line
-                EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, File=Filename, Line=LineNo)
+                EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, File=Filename, Line=LineNo, RaiseError = EdkLogger.IsRaiseError)
 
             #
             # Add a section item
