@@ -37,6 +37,8 @@ def GetIncludeListOfFile(WorkSpace, Filepath, Db):
                            (select ID from File where FullPath = '%s') and Model = %s""" \
                     % (DecFullPath, MODEL_EFI_INCLUDE)
         NewRecordSet = Db.TblDec.Exec(SqlCommand)
+        if DecPath not in IncludeList:
+            IncludeList.append(DecPath)
         for NewRecord in NewRecordSet:
             IncludePath = os.path.normpath(os.path.join(DecPath, NewRecord[0]))
             if IncludePath not in IncludeList:
