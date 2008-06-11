@@ -101,6 +101,8 @@ def main():
 
         if not os.path.exists(FdfFilename):
             EdkLogger.error("GenFds", BuildToolError.FILE_NOT_FOUND, ExtraData=FdfFilename)
+        GenFdsGlobalVariable.FdfFile = FdfFilename
+        GenFdsGlobalVariable.FdfFileTimeStamp = os.path.getmtime(FdfFilename)
 
         if (Options.activePlatform):
             ActivePlatform = Options.activePlatform

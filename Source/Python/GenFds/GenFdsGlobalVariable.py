@@ -50,6 +50,8 @@ class GenFdsGlobalVariable:
     DebugLevel = -1
     SharpCounter = 0
     SharpNumberPerLine = 40
+    FdfFile = ''
+    FdfFileTimeStamp = 0
 
     SectionHeader = struct.Struct("3B 1B")
 
@@ -133,7 +135,12 @@ class GenFdsGlobalVariable:
         # always update "Output" if no "Input" given
         if Input == None or len(Input) == 0:
             return True
+
+        # if fdf file is changed after the 'Output" is generated, update the 'Output'
         OutputTime = os.path.getmtime(Output)
+        if GenFdsGlobalVariable.FdfFileTimeStamp > OutputTime:
+            return True
+
         for F in Input:
             # always update "Output" if any "Input" doesn't exist
             if not os.path.exists(F):
