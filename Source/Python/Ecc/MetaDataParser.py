@@ -25,20 +25,23 @@ def GetIncludeListOfFile(WorkSpace, Filepath, Db):
     IncludeList = []
     Filepath = os.path.normpath(Filepath)
     SqlCommand = """
-                select Value1 from Inf where Model = %s and BelongsToFile in(
+                select Value1, FullPath from Inf, File where Inf.Model = %s and Inf.BelongsToFile in(
                     select distinct B.BelongsToFile from File as A left join Inf as B 
-                        where A.ID = B.BelongsToFile and B.Model = %s and (A.Path || '%s' || B.Value1) = '%s')""" \
+                        where A.ID = B.BelongsToFile and B.Model = %s and (A.Path || '%s' || B.Value1) = '%s')
+                        and Inf.BelongsToFile = File.ID""" \
                 % (MODEL_META_DATA_PACKAGE, MODEL_EFI_SOURCE_FILE, '\\', Filepath)
     RecordSet = Db.TblFile.Exec(SqlCommand)
     for Record in RecordSet:
         DecFullPath = os.path.normpath(os.path.join(WorkSpace, Record[0]))
+        InfFullPath = os.path.normpath(os.path.join(WorkSpace, Record[1]))
         (DecPath, DecName) = os.path.split(DecFullPath)
+        (InfPath, InfName) = os.path.split(InfFullPath)
         SqlCommand = """select Value1 from Dec where BelongsToFile = 
                            (select ID from File where FullPath = '%s') and Model = %s""" \
                     % (DecFullPath, MODEL_EFI_INCLUDE)
         NewRecordSet = Db.TblDec.Exec(SqlCommand)
-        if DecPath not in IncludeList:
-            IncludeList.append(DecPath)
+        if InfPath not in IncludeList:
+            IncludeList.append(InfPath)
         for NewRecord in NewRecordSet:
             IncludePath = os.path.normpath(os.path.join(DecPath, NewRecord[0]))
             if IncludePath not in IncludeList:
