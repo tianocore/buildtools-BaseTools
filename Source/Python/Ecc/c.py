@@ -66,6 +66,12 @@ def GetIdType(Str):
         Type = DataClass.MODEL_UNKNOWN
     return Type
 
+def SuOccurInTypedef (Su, TdList):
+    for Td in TdList:
+        if Su.StartPos[0] >= Td.StartPos[0] and Su.EndPos[0] <= Td.EndPos[0]:
+            return True
+    return False
+
 def GetIdentifierList():
     IdList = []
     for comment in FileProfile.CommentList:
@@ -188,6 +194,8 @@ def GetIdentifierList():
         IdList.append(IdEnum)
         
     for su in FileProfile.StructUnionDefinitionList:
+        if SuOccurInTypedef(su, FileProfile.TypedefDefinitionList):
+            continue
         Type = DataClass.MODEL_IDENTIFIER_STRUCTURE
         SkipLen = 6
         if su.Content.startswith('union'):
@@ -217,13 +225,16 @@ def GetIdentifierList():
             if StarPos != -1:
                 Modifier += ' ' + TmpStr[0:StarPos]
             while TmpStr[StarPos] == '*':
-                Modifier += ' ' + '*'
+#                Modifier += ' ' + '*'
                 StarPos += 1
             TmpStr = TmpStr[StarPos:].strip()
             RBPos = TmpStr.find(')')
             Name = TmpStr[0:RBPos]
             Value = 'FP' + TmpStr[RBPos + 1:]
-            
+        else:
+            while Name.startswith('*'):
+                Value += ' ' + '*'
+                Name = Name.lstrip('*').strip()
         IdTd = DataClass.IdentifierClass(-1, Modifier, '', Name, Value, DataClass.MODEL_IDENTIFIER_TYPEDEF, -1, -1, td.StartPos[0],td.StartPos[1],td.EndPos[0],td.EndPos[1])
         IdList.append(IdTd)
         
@@ -487,7 +498,7 @@ def GetTableID(FullFileName, ErrorMsgList = None):
     Db = GetDB()
     SqlStatement = """ select ID
                        from File
-                       where FullPath = '%s'
+                       where FullPath like '%s'
                    """ % FullFileName
     
     ResultSet = Db.TblFile.Exec(SqlStatement)
@@ -508,9 +519,7 @@ def GetIncludeFileList(FullFileName):
     if IFList != None:
         return IFList
     
-    ErrorMsgList = []
-    
-    FileID = GetTableID(FullFileName, ErrorMsgList)
+    FileID = GetTableID(FullFileName)
     if FileID < 0:
         return []
     
@@ -527,6 +536,7 @@ def GetIncludeFileList(FullFileName):
 def GetFullPathOfIncludeFile(Str, IncludePathList):
     for IncludePath in IncludePathList:
         FullPath = os.path.join(IncludePath, Str)
+        FullPath = os.path.normpath(FullPath)
         if os.path.exists(FullPath):
             return FullPath
     return None
@@ -574,7 +584,9 @@ def GetPredicateListFromPredicateExpStr(PES):
         if (PES[i] == '&' and PES[i+1] == '&') or (PES[i] == '|' and PES[i+1] == '|'):
             LogicOpPos = i
             Exp = PES[PredicateBegin:i].strip()
-            if p.match(Exp):
+            # Exp may contain '.' or '->'
+            TmpExp = Exp.replace('.', '').replace('->', '')
+            if p.match(TmpExp):
                 PredicateList.append(Exp)
             else:
                 PredicateList.append(Exp.rstrip(';').rstrip(')').strip())
@@ -586,7 +598,9 @@ def GetPredicateListFromPredicateExpStr(PES):
                 break
             PredicateBegin += 1
         Exp = PES[PredicateBegin:len(PES)].strip()
-        if p.match(Exp):
+        # Exp may contain '.' or '->'
+        TmpExp = Exp.replace('.', '').replace('->', '')
+        if p.match(TmpExp):
             PredicateList.append(Exp)
         else:
             PredicateList.append(Exp.rstrip(';').rstrip(')').strip())
@@ -616,15 +630,17 @@ def GetCNameList(Lvalue):
             break
         
         
-        Index = Lvalue[VarEnd:].find('.')
-        if Index > 0:
-            SearchBegin += VarEnd + Index
-        else:
-            Index = Lvalue[VarEnd:].find('->')
-            if Index > 0:
-                SearchBegin += VarEnd + Index
-            else:
+        DotIndex = Lvalue[VarEnd:].find('.')
+        ArrowIndex = Lvalue[VarEnd:].find('->')
+        if DotIndex == -1 and ArrowIndex == -1:
                 break
+        elif DotIndex == -1 and ArrowIndex != -1:
+            SearchBegin = VarEnd + ArrowIndex
+        elif ArrowIndex == -1 and DotIndex != -1:
+            SearchBegin = VarEnd + DotIndex
+        else:
+            SearchBegin = VarEnd + ((DotIndex < ArrowIndex) and DotIndex or ArrowIndex) 
+            
         i = SearchBegin
         VarStart = -1
         VarEnd = -1
@@ -650,6 +666,11 @@ def SplitPredicateByOp(Str, Op):
         TmpStr = Str[0:Index - 1]
 
 def SplitPredicateStr(Str):
+    p = GetFuncDeclPattern()
+    TmpStr = Str.replace('.', '').replace('->', '')
+    if p.match(TmpStr):
+        return [[Str, None], None]
+    
     PredPartList = SplitPredicateByOp(Str, '==')
     if len(PredPartList) > 1:
         return [PredPartList, '==']
