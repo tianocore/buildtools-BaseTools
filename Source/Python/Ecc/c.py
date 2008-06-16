@@ -14,13 +14,14 @@ IncludeFileListDict = {}
 IncludePathListDict = {}
 ComplexTypeDict = {}
 SUDict = {}
+IgnoredKeywordList = ['EFI_ERROR']
 
 def GetIgnoredDirListPattern():
     p = re.compile(r'.*[\\/](?:BUILD|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG|PCCTS)[\\/].*')
     return p
 
 def GetFuncDeclPattern():
-    p = re.compile(r'(EFIAPI|EFI_BOOT_SERVICE|EFI_RUNTIME_SERVICE)?\s*[_\w]+\s*\(.*\).*', re.DOTALL)
+    p = re.compile(r'(EFIAPI|EFI_BOOT_SERVICE|EFI_RUNTIME_SERVICE)?\s*[_\w]+\s*\(.*\)$', re.DOTALL)
     return p
 
 def GetArrayPattern():
@@ -124,10 +125,10 @@ def GetIdentifierList():
         var.Declarator = DeclText
         if FuncDeclPattern.match(var.Declarator):
             DeclSplitList = var.Declarator.split('(')     
-            FuncName = DeclSplitList[0]
+            FuncName = DeclSplitList[0].strip()
             FuncNamePartList = FuncName.split()
             if len(FuncNamePartList) > 1:
-                FuncName = FuncNamePartList[-1]
+                FuncName = FuncNamePartList[-1].strip()
                 NameStart = DeclSplitList[0].rfind(FuncName)
                 var.Declarator = var.Declarator[NameStart:]
                 if NameStart > 0:
@@ -160,7 +161,7 @@ def GetIdentifierList():
                             Index += 1
                             VarNameStartColumn += 1
                         PreChar = FirstChar
-            IdVar = DataClass.IdentifierClass(-1, var.Modifier, '', var.Declarator, '', DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION, -1, -1, var.StartPos[0], var.StartPos[1], VarNameStartLine, VarNameStartColumn)
+            IdVar = DataClass.IdentifierClass(-1, var.Modifier, '', var.Declarator, FuncName, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION, -1, -1, var.StartPos[0], var.StartPos[1], VarNameStartLine, VarNameStartColumn)
             IdList.append(IdVar)
             continue
         
@@ -208,7 +209,7 @@ def GetIdentifierList():
             Value = ''
         else:
             Name = su.Content[SkipLen:LBPos].strip()
-            Value = su.Content[LBPos+1:RBPos]
+            Value = su.Content[LBPos:RBPos+1]
         IdPE = DataClass.IdentifierClass(-1, '', '', Name, Value, Type, -1, -1, su.StartPos[0],su.StartPos[1],su.EndPos[0],su.EndPos[1])
         IdList.append(IdPE)
     
@@ -633,7 +634,7 @@ def GetCNameList(Lvalue):
         DotIndex = Lvalue[VarEnd:].find('.')
         ArrowIndex = Lvalue[VarEnd:].find('->')
         if DotIndex == -1 and ArrowIndex == -1:
-                break
+            break
         elif DotIndex == -1 and ArrowIndex != -1:
             SearchBegin = VarEnd + ArrowIndex
         elif ArrowIndex == -1 and DotIndex != -1:
@@ -767,8 +768,13 @@ def GetTypedefDict(FullFileName):
         ResultSet = Db.TblFile.Exec(SqlStatement)
     
         for Result in ResultSet:
-            if len(Result[0]) == 0:
+            if not Result[2].startswith('FP ('):
                 Dict[Result[1]] = Result[2]
+            else:
+                if len(Result[0]) == 0:
+                    Dict[Result[1]] = 'VOID'
+                else:
+                    Dict[Result[1]] = GetDataTypeFromModifier(Result[0])
                 
     ComplexTypeDict[FullFileName] = Dict
     return Dict
@@ -845,20 +851,26 @@ def GetFinalTypeValue(Type, FieldName, TypedefDict, SUDict):
             continue
         if not Field[Index - 1].isalnum():
             if Index + len(FieldName) == len(Field):
-                Type = GetCNameList(Field[0:Index])
-                if len(Type) == 0:
-                    return Field[0:Index]
-                return Type[0]
-            else:
-                if not Field[Index + len(FieldName) + 1].isalnum():
-                    Type = GetCNameList(Field[0:Index])
-                    if len(Type) == 0:
-                        return Field[0:Index]
-                    return Type[0]
+                Type = GetDataTypeFromModifier(Field[0:Index])
+                return Type.split()[-1]
+#            else:
+#                if not Field[Index + len(FieldName) + 1].isalnum():
+#                    Type = GetCNameList(Field[0:Index])
+#                    if len(Type) == 0:
+#                        return Field[0:Index]
+#                    return Type[0]
     return None
     
+def GetRealType(Type, TypedefDict, TargetType = None):
+    if TargetType != None and Type == TargetType:
+            return Type
+    while TypedefDict.get(Type):
+        Type = TypedefDict.get(Type)
+        if TargetType != None and Type == TargetType:
+            return Type
+    return Type
 
-def GetTypeInfo(RefList, Modifier, FullFileName):
+def GetTypeInfo(RefList, Modifier, FullFileName, TargetType = None):
     TypedefDict = GetTypedefDict(FullFileName)
     SUDict = GetSUDict(FullFileName)
     Type = GetDataTypeFromModifier(Modifier).rstrip('*').strip()
@@ -873,15 +885,84 @@ def GetTypeInfo(RefList, Modifier, FullFileName):
         Type = FromType
         Index += 1
 
+    Type = GetRealType(Type, TypedefDict, TargetType)
+
     return Type
 
-def GetVarInfo(PredVarList, FuncRecord, FullFileName):
+def GetVarInfo(PredVarList, FuncRecord, FullFileName, IsFuncCall = False, TargetType = None):
     
     PredVar = PredVarList[0]
     FileID = GetTableID(FullFileName)
     
     Db = GetDB()
     FileTable = 'Identifier' + str(FileID)
+    # search variable in include files
+    IncludeFileList = GetAllIncludeFiles(FullFileName)
+    # it is a function call, search function declarations and definitions
+    if IsFuncCall:
+        SqlStatement = """ select Modifier, ID
+                       from %s
+                       where Model = %d and Value = \'%s\'
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION, PredVar)
+        ResultSet = Db.TblFile.Exec(SqlStatement)
+    
+        for Result in ResultSet:        
+            Type = GetDataTypeFromModifier(Result[0]).split()[-1]
+            TypedefDict = GetTypedefDict(FullFileName)
+            Type = GetRealType(Type, TypedefDict, TargetType)
+            return Type
+        
+        for F in IncludeFileList:
+            FileID = GetTableID(F)
+            if FileID < 0:
+                continue
+        
+            FileTable = 'Identifier' + str(FileID)
+            SqlStatement = """ select Modifier, ID
+                           from %s
+                           where Model = %d and Value = \'%s\'
+                       """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION, PredVar)
+            ResultSet = Db.TblFile.Exec(SqlStatement)
+    
+            for Result in ResultSet:
+                Type = GetDataTypeFromModifier(Result[0]).split()[-1]
+                TypedefDict = GetTypedefDict(FullFileName)
+                Type = GetRealType(Type, TypedefDict, TargetType)
+                return Type
+    
+        FileID = GetTableID(FullFileName)
+        SqlStatement = """ select Modifier, ID
+                       from Function
+                       where BelongsToFile = %d and Name = \'%s\'
+                   """ % (FileID, PredVar)
+        ResultSet = Db.TblFile.Exec(SqlStatement)
+    
+        for Result in ResultSet:        
+            Type = GetDataTypeFromModifier(Result[0]).split()[-1]
+            TypedefDict = GetTypedefDict(FullFileName)
+            Type = GetRealType(Type, TypedefDict, TargetType)
+            return Type
+        
+        for F in IncludeFileList:
+            FileID = GetTableID(F)
+            if FileID < 0:
+                continue
+        
+            FileTable = 'Identifier' + str(FileID)
+            SqlStatement = """ select Modifier, ID
+                           from Function
+                           where BelongsToFile = %d and Name = \'%s\'
+                       """ % (FileID, PredVar)
+            ResultSet = Db.TblFile.Exec(SqlStatement)
+    
+            for Result in ResultSet:
+                Type = GetDataTypeFromModifier(Result[0]).split()[-1]
+                TypedefDict = GetTypedefDict(FullFileName)
+                Type = GetRealType(Type, TypedefDict, TargetType)
+                return Type
+         
+        return None
+       
     # really variable, search local variable first
     SqlStatement = """ select Modifier, ID
                        from %s
@@ -891,10 +972,12 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName):
     VarFound = False
     for Result in ResultSet:
         if len(PredVarList) > 1:
-            Type = GetTypeInfo(PredVarList[1:], Result[0], FullFileName)
+            Type = GetTypeInfo(PredVarList[1:], Result[0], FullFileName, TargetType)
             return Type
         else:
             Type = GetDataTypeFromModifier(Result[0]).split()[-1]
+            TypedefDict = GetTypedefDict(FullFileName)
+            Type = GetRealType(Type, TypedefDict, TargetType)
             return Type
                 
     # search function parameters second
@@ -902,10 +985,12 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName):
     for Param in ParamList:
         if Param.Name.strip() == PredVar:
             if len(PredVarList) > 1:
-                Type = GetTypeInfo(PredVarList[1:], Param.Modifier, FullFileName)
+                Type = GetTypeInfo(PredVarList[1:], Param.Modifier, FullFileName, TargetType)
                 return Type
             else:
                 Type = GetDataTypeFromModifier(Param.Modifier).split()[-1]
+                TypedefDict = GetTypedefDict(FullFileName)
+                Type = GetRealType(Type, TypedefDict, TargetType)
                 return Type
           
     # search global variable next
@@ -917,14 +1002,14 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName):
 
     for Result in ResultSet:
         if len(PredVarList) > 1:
-            Type = GetTypeInfo(PredVarList[1:], Result[0], FullFileName)
+            Type = GetTypeInfo(PredVarList[1:], Result[0], FullFileName, TargetType)
             return Type
         else:
             Type = GetDataTypeFromModifier(Result[0]).split()[-1]
+            TypedefDict = GetTypedefDict(FullFileName)
+            Type = GetRealType(Type, TypedefDict, TargetType)
             return Type
     
-    # search variable in include files
-    IncludeFileList = GetAllIncludeFiles(FullFileName)
     for F in IncludeFileList:
         FileID = GetTableID(F)
         if FileID < 0:
@@ -939,10 +1024,12 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName):
 
         for Result in ResultSet:
             if len(PredVarList) > 1:
-                Type = GetTypeInfo(PredVarList[1:], Result[0], FullFileName)
+                Type = GetTypeInfo(PredVarList[1:], Result[0], FullFileName, TargetType)
                 return Type
             else:
                 Type = GetDataTypeFromModifier(Result[0]).split()[-1]
+                TypedefDict = GetTypedefDict(FullFileName)
+                Type = GetRealType(Type, TypedefDict, TargetType)
                 return Type
 
 def CheckFuncLayoutReturnType(FullFileName):
@@ -1415,6 +1502,9 @@ def CheckNonBooleanValueComparison(FullFileName):
     if FileID < 0:
         return ErrorMsgList
     
+    # cache the found function return type to accelerate later checking in this file.
+    FuncReturnTypeDict = {}
+    
     Db = GetDB()
     FileTable = 'Identifier' + str(FileID)
     SqlStatement = """ select Value, StartLine, ID
@@ -1444,23 +1534,46 @@ def CheckNonBooleanValueComparison(FullFileName):
             continue
         
         for Exp in GetPredicateListFromPredicateExpStr(Str[0]):
-            if p.match(Exp):
-                continue
+#            if p.match(Exp):
+#                continue
             PredInfo = SplitPredicateStr(Exp)
             if PredInfo[1] == None:
-                PredVarList = GetCNameList(PredInfo[0][0])
+                PredVarStr = PredInfo[0][0].strip()
+                IsFuncCall = False
+                SearchInCache = False
+                # PredVarStr may contain '.' or '->'
+                TmpStr = PredVarStr.replace('.', '').replace('->', '')
+                if p.match(TmpStr):
+                    PredVarStr = PredVarStr[0:PredVarStr.find('(')]
+                    SearchInCache = True
+                    
+                if PredVarStr.strip() in IgnoredKeywordList:
+                    continue
+                PredVarList = GetCNameList(PredVarStr)
                 # No variable found, maybe value first? like (0 == VarName)
                 if len(PredVarList) == 0:
                     continue
-                # in the form of function call
-                if p.match(PredInfo[0][0]):
-                    continue
-                
-                Type = GetVarInfo(PredVarList, FuncRecord, FullFileName)
+                # Only direct function call using IsFuncCall branch. Multi-level ref. function call is considered a variable.
+                if len(PredVarList) == 1:    
+                    IsFuncCall = True   
+                if SearchInCache:
+                    Type = FuncReturnTypeDict.get(PredVarStr)
+                    if Type != None:
+                        if Type.find('BOOLEAN') == -1:
+                            PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_NO_BOOLEAN_OPERATOR, 'Predicate Expression: %s' % Exp, FileTable, Str[2])
+                        continue
+                    
+                    if PredVarStr in FuncReturnTypeDict:
+                        continue
+                    
+                Type = GetVarInfo(PredVarList, FuncRecord, FullFileName, IsFuncCall, 'BOOLEAN')
+                if SearchInCache:
+                    FuncReturnTypeDict[PredVarStr] = Type
                 if Type == None:
                     continue
                 if Type.find('BOOLEAN') == -1:
                     PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_NO_BOOLEAN_OPERATOR, 'Predicate Expression: %s' % Exp, FileTable, Str[2])
+            
 
 def CheckBooleanValueComparison(FullFileName):
     ErrorMsgList = []
@@ -1468,6 +1581,9 @@ def CheckBooleanValueComparison(FullFileName):
     FileID = GetTableID(FullFileName, ErrorMsgList)
     if FileID < 0:
         return ErrorMsgList
+    
+    # cache the found function return type to accelerate later checking in this file.
+    FuncReturnTypeDict = {}
     
     Db = GetDB()
     FileTable = 'Identifier' + str(FileID)
@@ -1501,14 +1617,37 @@ def CheckBooleanValueComparison(FullFileName):
             PredInfo = SplitPredicateStr(Exp)
             if PredInfo[1] in ('==', '!=') and PredInfo[0][1] in ('TRUE', 'FALSE'):
                 PredVarList = GetCNameList(PredInfo[0][0])
+                IsFuncCall = False
+                SearchInCache = False
+                # PredVarStr may contain '.' or '->'
+                TmpStr = PredVarStr.replace('.', '').replace('->', '')
+                if p.match(TmpStr):
+                    PredVarStr = PredVarStr[0:PredVarStr.find('(')]
+                    SearchInCache = True
+                    
+                if PredVarStr.strip() in IgnoredKeywordList:
+                    continue
+                PredVarList = GetCNameList(PredVarStr)
                 # No variable found, maybe value first? like (0 == VarName)
                 if len(PredVarList) == 0:
                     continue
-                # in the form of function call
-                if p.match(PredInfo[0][0]):
-                    continue
                 
-                Type = GetVarInfo(PredVarList, FuncRecord, FullFileName)
+                # Only direct function call using IsFuncCall branch. Multi-level ref. function call is considered a variable.
+                if len(PredVarList) == 1:    
+                    IsFuncCall = True   
+                if SearchInCache:
+                    Type = FuncReturnTypeDict.get(PredVarStr)
+                    if Type != None:
+                        if Type.find('BOOLEAN') != -1:
+                            PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_NO_BOOLEAN_OPERATOR, 'Predicate Expression: %s' % Exp, FileTable, Str[2])
+                        continue
+                    
+                    if PredVarStr in FuncReturnTypeDict:
+                        continue
+                
+                Type = GetVarInfo(PredVarList, FuncRecord, FullFileName, IsFuncCall, 'BOOLEAN')
+                if SearchInCache:
+                    FuncReturnTypeDict[PredVarStr] = Type
                 if Type == None:
                     continue
                 if Type.find('BOOLEAN') != -1:
