@@ -79,7 +79,7 @@ class ToolDefClassObject(object):
                 continue
             NameValuePair = Line.split("=", 1)
             if len(NameValuePair) != 2:
-                EdkLogger.warn("Line %d: not correct assignment statement, skipped" % (Index + 1))
+                EdkLogger.warn("tools_def.txt parser", "Line %d: not correct assignment statement, skipped" % (Index + 1))
                 continue
 
             Name = NameValuePair[0].strip()
