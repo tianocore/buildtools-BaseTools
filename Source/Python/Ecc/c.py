@@ -648,10 +648,54 @@ def GetCNameList(Lvalue):
     
     return VarList    
 
-def SplitPredicateByOp(Str, Op):
+def SplitPredicateByOp(Str, Op, IsFuncCalling = False):
 
     Name = Str.strip()
     Value = None
+    
+    if IsFuncCalling:
+        Index = 0
+        LBFound = False
+        UnmatchedLBCount = 0
+        while Index < len(Str):
+            while not LBFound and Str[Index] != '_' and not Str[Index].isalnum():
+                Index += 1
+            
+            while not LBFound and (Str[Index].isalnum() or Str[Index] == '_'):
+                Index += 1
+            # maybe type-cast at the begining, skip it.
+            RemainingStr = Str[Index:].lstrip()
+            if RemainingStr.startswith(')') and not LBFound:
+                Index += 1
+                continue
+            
+            if RemainingStr.startswith('(') and not LBFound:
+                LBFound = True
+                
+            if Str[Index] == '(':
+                UnmatchedLBCount += 1
+                Index += 1
+                continue
+                
+            if Str[Index] == ')':
+                UnmatchedLBCount -= 1
+                Index += 1
+                if UnmatchedLBCount == 0:
+                    break
+                continue
+            
+            Index += 1
+                
+        if UnmatchedLBCount > 0:
+            return [Name]
+            
+        IndexInRemainingStr = Str[Index:].find(Op)
+        if IndexInRemainingStr == -1:
+            return [Name]
+        
+        Name = Str[0:Index + IndexInRemainingStr].strip()
+        Value = Str[Index+IndexInRemainingStr+len(Op):].strip()
+        return [Name, Value]
     
     TmpStr = Str.rstrip(';').rstrip(')')
     while True:
@@ -667,32 +711,33 @@ def SplitPredicateByOp(Str, Op):
         TmpStr = Str[0:Index - 1]
 
 def SplitPredicateStr(Str):
+    IsFuncCalling = False
     p = GetFuncDeclPattern()
     TmpStr = Str.replace('.', '').replace('->', '')
     if p.match(TmpStr):
-        return [[Str, None], None]
+        IsFuncCalling = True
     
-    PredPartList = SplitPredicateByOp(Str, '==')
+    PredPartList = SplitPredicateByOp(Str, '==', IsFuncCalling)
     if len(PredPartList) > 1:
         return [PredPartList, '==']
     
-    PredPartList = SplitPredicateByOp(Str, '!=')
+    PredPartList = SplitPredicateByOp(Str, '!=', IsFuncCalling)
     if len(PredPartList) > 1:
         return [PredPartList, '!=']
     
-    PredPartList = SplitPredicateByOp(Str, '>=')
+    PredPartList = SplitPredicateByOp(Str, '>=', IsFuncCalling)
     if len(PredPartList) > 1:
         return [PredPartList, '>=']
         
-    PredPartList = SplitPredicateByOp(Str, '<=')
+    PredPartList = SplitPredicateByOp(Str, '<=', IsFuncCalling)
     if len(PredPartList) > 1:
         return [PredPartList, '<=']
         
-    PredPartList = SplitPredicateByOp(Str, '>')
+    PredPartList = SplitPredicateByOp(Str, '>', IsFuncCalling)
     if len(PredPartList) > 1:
         return [PredPartList, '>']
         
-    PredPartList = SplitPredicateByOp(Str, '<')
+    PredPartList = SplitPredicateByOp(Str, '<', IsFuncCalling)
     if len(PredPartList) > 1:
         return [PredPartList, '<']
         
@@ -819,6 +864,29 @@ def GetSUDict(FullFileName):
     SUDict[FullFileName] = Dict
     return Dict
 
+def StripComments(Str):
+    StrippedStr = ''
+    List = Str.splitlines()
+    InComment = False
+    for StrPart in List:
+        if StrPart.lstrip().startswith('//'):
+            continue
+        Index = StrPart.find('/*')
+        if Index != -1:
+            InComment = True
+            StrippedStr += StrPart[0:Index]
+        
+        Index = StrPart.find('*/')
+        if Index != -1:
+            StrippedStr += StrPart[Index+2:]
+            InComment = False
+            continue
+        
+        if not InComment:
+            StrippedStr += StrPart
+             
+    return StrippedStr
+
 def GetFinalTypeValue(Type, FieldName, TypedefDict, SUDict):
     Value = TypedefDict.get(Type)
     if Value == None:
@@ -843,22 +911,23 @@ def GetFinalTypeValue(Type, FieldName, TypedefDict, SUDict):
      
 #    RBPos = Value.find('}')
     Fields = Value[LBPos + 1:]
+    Fields = StripComments(Fields)
     FieldsList = Fields.split(';')
     for Field in FieldsList:
         Field = Field.strip()
-        Index = Field.find(FieldName)
+        Index = Field.rfind(FieldName)
         if Index < 1:
             continue
         if not Field[Index - 1].isalnum():
             if Index + len(FieldName) == len(Field):
                 Type = GetDataTypeFromModifier(Field[0:Index])
                 return Type.split()[-1]
-#            else:
-#                if not Field[Index + len(FieldName) + 1].isalnum():
-#                    Type = GetCNameList(Field[0:Index])
-#                    if len(Type) == 0:
-#                        return Field[0:Index]
-#                    return Type[0]
+            else:
+            # For the condition that the field in struct is an array with [] sufixes...               
+                if not Field[Index + len(FieldName)].isalnum():
+                    Type = GetDataTypeFromModifier(Field[0:Index])
+                    return Type.split()[-1]
+                
     return None
     
 def GetRealType(Type, TypedefDict, TargetType = None):
@@ -1450,6 +1519,9 @@ def CheckPointerNullComparison(FullFileName):
     if FileID < 0:
         return ErrorMsgList
     
+    # cache the found function return type to accelerate later checking in this file.
+    FuncReturnTypeDict = {}
+    
     Db = GetDB()
     FileTable = 'Identifier' + str(FileID)
     SqlStatement = """ select Value, StartLine, ID
@@ -1481,15 +1553,37 @@ def CheckPointerNullComparison(FullFileName):
         for Exp in GetPredicateListFromPredicateExpStr(Str[0]):
             PredInfo = SplitPredicateStr(Exp)
             if PredInfo[1] == None:
-                PredVarList = GetCNameList(PredInfo[0][0])
+                PredVarStr = PredInfo[0][0].strip()
+                IsFuncCall = False
+                SearchInCache = False
+                # PredVarStr may contain '.' or '->'
+                TmpStr = PredVarStr.replace('.', '').replace('->', '')
+                if p.match(TmpStr):
+                    PredVarStr = PredVarStr[0:PredVarStr.find('(')]
+                    SearchInCache = True
+                    # Only direct function call using IsFuncCall branch. Multi-level ref. function call is considered a variable.
+                    if TmpStr.startswith(PredVarStr):    
+                        IsFuncCall = True
+                    
+                if PredVarStr.strip() in IgnoredKeywordList:
+                    continue
+                PredVarList = GetCNameList(PredVarStr)
                 # No variable found, maybe value first? like (0 == VarName)
                 if len(PredVarList) == 0:
                     continue
-                # in the form of function call
-                if p.match(PredInfo[0][0]):
-                    continue
+                if SearchInCache:
+                    Type = FuncReturnTypeDict.get(PredVarStr)
+                    if Type != None:
+                        if Type.find('*') == -1:
+                            PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_NO_BOOLEAN_OPERATOR, 'Predicate Expression: %s' % Exp, FileTable, Str[2])
+                        continue
+                    
+                    if PredVarStr in FuncReturnTypeDict:
+                        continue
                 
                 Type = GetVarInfo(PredVarList, FuncRecord, FullFileName)
+                if SearchInCache:
+                    FuncReturnTypeDict[PredVarStr] = Type
                 if Type == None:
                     continue
                 if Type.find('*') != -1:
@@ -1546,6 +1640,9 @@ def CheckNonBooleanValueComparison(FullFileName):
                 if p.match(TmpStr):
                     PredVarStr = PredVarStr[0:PredVarStr.find('(')]
                     SearchInCache = True
+                    # Only direct function call using IsFuncCall branch. Multi-level ref. function call is considered a variable.
+                    if TmpStr.startswith(PredVarStr):    
+                        IsFuncCall = True
                     
                 if PredVarStr.strip() in IgnoredKeywordList:
                     continue
@@ -1553,9 +1650,7 @@ def CheckNonBooleanValueComparison(FullFileName):
                 # No variable found, maybe value first? like (0 == VarName)
                 if len(PredVarList) == 0:
                     continue
-                # Only direct function call using IsFuncCall branch. Multi-level ref. function call is considered a variable.
-                if len(PredVarList) == 1:    
-                    IsFuncCall = True   
+                   
                 if SearchInCache:
                     Type = FuncReturnTypeDict.get(PredVarStr)
                     if Type != None:
@@ -1616,7 +1711,7 @@ def CheckBooleanValueComparison(FullFileName):
         for Exp in GetPredicateListFromPredicateExpStr(Str[0]):
             PredInfo = SplitPredicateStr(Exp)
             if PredInfo[1] in ('==', '!=') and PredInfo[0][1] in ('TRUE', 'FALSE'):
-                PredVarList = GetCNameList(PredInfo[0][0])
+                PredVarStr = PredInfo[0][0].strip()
                 IsFuncCall = False
                 SearchInCache = False
                 # PredVarStr may contain '.' or '->'
@@ -1624,6 +1719,9 @@ def CheckBooleanValueComparison(FullFileName):
                 if p.match(TmpStr):
                     PredVarStr = PredVarStr[0:PredVarStr.find('(')]
                     SearchInCache = True
+                    # Only direct function call using IsFuncCall branch. Multi-level ref. function call is considered a variable.
+                    if TmpStr.startswith(PredVarStr):    
+                        IsFuncCall = True
                     
                 if PredVarStr.strip() in IgnoredKeywordList:
                     continue
@@ -1631,10 +1729,7 @@ def CheckBooleanValueComparison(FullFileName):
                 # No variable found, maybe value first? like (0 == VarName)
                 if len(PredVarList) == 0:
                     continue
-                
-                # Only direct function call using IsFuncCall branch. Multi-level ref. function call is considered a variable.
-                if len(PredVarList) == 1:    
-                    IsFuncCall = True   
+          
                 if SearchInCache:
                     Type = FuncReturnTypeDict.get(PredVarStr)
                     if Type != None:
