@@ -139,6 +139,8 @@ class Configuration(object):
         #
         self.IncludeFileCheckAll = 0
         
+        #Check whether having include files with same name
+        self.IncludeFileCheckSameName = 1
         # Check whether all include file contents is guarded by a #ifndef statement.
         # the #ifndef must be the first line of code following the file header comment
         # the #endif must appear on the last line in the file
@@ -162,6 +164,8 @@ class Configuration(object):
         self.DeclarationDataTypeCheckEnumeratedType = 1
         # Check whether Structure Type has a 'typedef' and the name is capital
         self.DeclarationDataTypeCheckStructureDeclaration = 1
+        # Check whether having same Structure
+        self.DeclarationDataTypeCheckSameStructure = 1
         # Check whether Union Type has a 'typedef' and the name is capital
         self.DeclarationDataTypeCheckUnionType = 1
         

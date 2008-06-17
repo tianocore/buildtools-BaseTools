@@ -154,6 +154,7 @@ class Check(object):
         self.DeclCheckEFIAPIModifier()
         self.DeclCheckEnumeratedType()
         self.DeclCheckStructureDeclaration()
+        self.DeclCheckSameStructure()
         self.DeclCheckUnionType()
     
     
@@ -221,6 +222,27 @@ class Check(object):
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
                         c.CheckDeclStructTypedef(FullName)
+    
+    # Check whether having same Structure
+    def DeclCheckSameStructure(self):
+        if EccGlobalData.gConfig.DeclarationDataTypeCheckSameStructure == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
+            EdkLogger.quiet("Checking same struct ...")
+            AllStructure = {}
+            for IdentifierTable in EccGlobalData.gIdentifierTableList:
+                SqlCommand = """select ID, Name, BelongsToFile from %s where Model = %s""" %(IdentifierTable, MODEL_IDENTIFIER_STRUCTURE)
+                RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
+                for Record in RecordSet:
+                    if Record[1] != '':
+                        if Record[1] not in AllStructure.keys():
+                            AllStructure[Record[1]] = Record[2]
+                        else:
+                            ID = AllStructure[Record[1]]
+                            SqlCommand = """select FullPath from File where ID = %s """ % ID
+                            NewRecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
+                            OtherMsg = "The structure name '%s' is duplicate" % Record[1]
+                            if NewRecordSet != []:
+                                OtherMsg = "The structure name '%s' is duplicate with the one defined in %s" % (Record[1], NewRecordSet[0][0])
+                            EccGlobalData.gDb.TblReport.Insert(ERROR_DECLARATION_DATA_TYPE_CHECK_SAME_STRUCTURE, OtherMsg = OtherMsg, BelongsToTable = IdentifierTable, BelongsToItem = Record[0])   
     
     # Check whether Union Type has a 'typedef' and the name is capital
     def DeclCheckUnionType(self):
@@ -293,7 +315,21 @@ class Check(object):
     def IncludeFileCheck(self):
         self.IncludeFileCheckIfndef()
         self.IncludeFileCheckData()
+        self.IncludeFileCheckSameName()
     
+    #
+    # Check whether having include files with same name
+    #
+    def IncludeFileCheckSameName(self):
+        if EccGlobalData.gConfig.IncludeFileCheckSameName == '1' or EccGlobalData.gConfig.IncludeFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
+            EdkLogger.quiet("Checking same header file name ...")
+            SqlCommand = """select ID, FullPath from File 
+                            where Name in (select Name from File group by Name having count(*) > 1) 
+                            and Model = 1002
+                            order by Name """
+            RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
+            for Record in RecordSet:
+                EccGlobalData.gDb.TblReport.Insert(ERROR_INCLUDE_FILE_CHECK_NAME, OtherMsg = "The file name for '%s' is duplicate" % (Record[1]), BelongsToTable = 'File', BelongsToItem = Record[0])
     #
     # Check whether all include file contents is guarded by a #ifndef statement.
     #

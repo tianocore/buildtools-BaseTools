@@ -46,6 +46,7 @@ ERROR_INCLUDE_FILE_CHECK_IFNDEF_STATEMENT_1 = 6001
 ERROR_INCLUDE_FILE_CHECK_IFNDEF_STATEMENT_2 = 6002
 ERROR_INCLUDE_FILE_CHECK_IFNDEF_STATEMENT_3 = 6003
 ERROR_INCLUDE_FILE_CHECK_DATA = 6004
+ERROR_INCLUDE_FILE_CHECK_NAME = 6005
 
 ERROR_DECLARATION_DATA_TYPE_CHECK_ALL = 7000
 ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE = 7001
@@ -53,6 +54,7 @@ ERROR_DECLARATION_DATA_TYPE_CHECK_IN_OUT_MODIFIER = 7002
 ERROR_DECLARATION_DATA_TYPE_CHECK_EFI_API_MODIFIER = 7003
 ERROR_DECLARATION_DATA_TYPE_CHECK_ENUMERATED_TYPE = 7004
 ERROR_DECLARATION_DATA_TYPE_CHECK_STRUCTURE_DECLARATION = 7005
+ERROR_DECLARATION_DATA_TYPE_CHECK_SAME_STRUCTURE = 7007
 ERROR_DECLARATION_DATA_TYPE_CHECK_UNION_TYPE = 7006
 
 ERROR_NAMING_CONVENTION_CHECK_ALL = 8000
@@ -124,6 +126,7 @@ gEccErrorMessage = {
     ERROR_INCLUDE_FILE_CHECK_IFNDEF_STATEMENT_2 : "The #ifndef must be the first line of code following the file header comment",
     ERROR_INCLUDE_FILE_CHECK_IFNDEF_STATEMENT_3 : "The #endif must appear on the last line in the file",
     ERROR_INCLUDE_FILE_CHECK_DATA : "Include files should contain only public or only private data and cannot contain code or define data variables",
+    ERROR_INCLUDE_FILE_CHECK_NAME : "No permission for the inlcude file with same names",
     
     ERROR_DECLARATION_DATA_TYPE_CHECK_ALL : "",
     ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE : "There should be no use of int, unsigned, char, void, static, long in any .c, .h or .asl files",
@@ -131,6 +134,7 @@ gEccErrorMessage = {
     ERROR_DECLARATION_DATA_TYPE_CHECK_EFI_API_MODIFIER : "The EFIAPI modifier should be used at the entry of drivers, events, and member functions of protocols",
     ERROR_DECLARATION_DATA_TYPE_CHECK_ENUMERATED_TYPE : "Enumerated Type should have a 'typedef' and the name must be in capital letters",
     ERROR_DECLARATION_DATA_TYPE_CHECK_STRUCTURE_DECLARATION : "Structure Type should have a 'typedef' and the name must be in capital letters",
+    ERROR_DECLARATION_DATA_TYPE_CHECK_SAME_STRUCTURE : "No permission for the structure with same names",
     ERROR_DECLARATION_DATA_TYPE_CHECK_UNION_TYPE : "Union Type should have a 'typedef' and the name must be in capital letters",
     
     ERROR_NAMING_CONVENTION_CHECK_ALL : "",
