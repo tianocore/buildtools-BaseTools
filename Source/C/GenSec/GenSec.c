@@ -1259,6 +1259,10 @@ Returns:
     break;
   }
   
+  if (Status != EFI_SUCCESS || OutFileBuffer == NULL) {
+	  goto Finish;
+  }
+
   //
   // Get output file length
   //

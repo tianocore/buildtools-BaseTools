@@ -334,7 +334,15 @@ Returns:
       }
     } else if (TempSectHeader.Type == EFI_SECTION_PE32) {
       (*PESectionNum) ++;
+    } else if (TempSectHeader.Type == EFI_SECTION_COMPRESSION || 
+               TempSectHeader.Type == EFI_SECTION_GUID_DEFINED ||
+               TempSectHeader.Type == EFI_SECTION_FIRMWARE_VOLUME_IMAGE) {
+      //
+      // for the encapsulated section, assume it contains Pe/Te section 
+      //
+      (*PESectionNum) ++;
     }
+
     fseek (InFile, 0, SEEK_SET);
 
     //
