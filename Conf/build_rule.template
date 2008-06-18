@@ -78,7 +78,7 @@
 
 ## Reserved File-Type
 #
-# Dont't change following names of file types and their associated files,
+# Don't change following names of file types and their associated files,
 # which are also used in tools' code
 #
 #   C-Code-File
@@ -98,6 +98,7 @@
         ?.cpp
         ?.Cpp
         ?.CPP
+        $(MAKE_FILE)
 
     <OutputFile>
         $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.obj
@@ -122,9 +123,11 @@
 [Build.Assembly-Code-File]
     <InputFile.MSFT, InputFile.INTEL>
         Assembly-Code-File = ?.asm, ?.Asm, ?.ASM
+        $(MAKE_FILE)
 
     <InputFile.GCC>
         ?.S
+        $(MAKE_FILE)
 
     <OutputFile>
         $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.obj
@@ -135,11 +138,14 @@
         "$(ASM)" /Fo${dst} $(ASM_FLAGS) $(INC) ${d_path}(+)${s_base}.iii
 
     <Command.GCC>
-        "$(ASM)" -o ${dst} $(ASM_FLAGS) $(INC) ${src}
+        "$(PP)" $(PP_FLAGS) $(INC) ${src} > ${d_path}(+)${s_base}.i
+        Trim --source-code -o ${d_path}(+)${s_base}.iii ${d_path}(+)${s_base}.i
+        "$(ASM)" -o ${dst} $(ASM_FLAGS) $(INC) ${d_path}(+)${s_base}.iii
 
 [Build.Iasm-Code-File]
     <InputFile>
         ?.s
+        $(MAKE_FILE)
 
     <OutputFile>
         $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.obj
@@ -154,6 +160,7 @@
         ?.vfr
         ?.Vfr
         ?.VFR
+        $(MAKE_FILE)
 
     <OutputFile>
         $(DEBUG_DIR)(+)${s_dir}(+)${s_base}.c
@@ -162,7 +169,7 @@
         "$(PP)" $(VFRPP_FLAGS) $(INC) ${src} > $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i
         Trim --vfr-file -o $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.iii $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i
         -mkdir ${d_path} > NUL 2>&1
-        VfrCompile -od ${d_path} $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.iii
+        VfrCompile -l --no-pre-processing --output-directory ${d_path} $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.iii
 
 [Build.Object-File]
     <InputFile>
@@ -195,9 +202,15 @@
 #        "$(SLINK)" -cr ${dst} $(SLINK_FLAGS) ${src1} -( ${src2} -)
 #
 [Build.Static-Library-File]
-    <InputFile>
+    <InputFile.MSFT, InputFile.Intel>
         ?.lib
         $(LIBS)
+        $(MAKE_FILE)
+
+    <InputFile.GCC>
+        ?.lib
+        $(LIBS)
+        $(MAKE_FILE)
 
     <OutputFile>
         $(DEBUG_DIR)(+)$(MODULE_NAME).dll
@@ -206,16 +219,11 @@
         "$(DLINK)" /OUT:${dst} $(DLINK_FLAGS) $(DLINK_SPATH) $(LIBS) ${src}
 
     <Command.GCC>
-        "$(DLINK)" -o ${dst} $(DLINK_FLAGS) -( $(DLINK_SPATH) $(LIBS) ${src} -)
+        "$(DLINK)" -o ${dst} $(DLINK_FLAGS) -\( $(DLINK_SPATH) $(LIBS) ${src} -\)
 
 [Build.Dynamic-Library-File]
-    <InputFile.MSFT, InputFile.INTEL>
+    <InputFile>
         ?.dll
-        $(MODULE_BUILD_DIR)\Makefile
-
-    <InputFile.GCC>
-        ?.dll
-        $(MODULE_BUILD_DIR)\Makefile
 
     <OutputFile>
         $(DEBUG_DIR)(+)$(MODULE_NAME).efi
@@ -234,7 +242,9 @@
         $(OUTPUT_DIR)(+)$(MODULE_NAME).depex
 
     <Command>
-#       GenDepex -o ${dst} ${src}
+        "$(PP)" $(CC_FLAGS) $(APP_FLAGS) $(INC) ${src} > $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i
+        Trim --source-code -o $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.iii $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i
+        GenDepex -t $(MODULE_TYPE) -o ${dst} $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.iii
 
 [Build.Acpi-Source-Language-File]
     <InputFile>
@@ -245,7 +255,7 @@
 
     <Command.MSFT, Command.INTEL>
         "$(PP)" $(APP_FLAGS) $(INC) ${src} > ${d_path}(+)${s_base}.i
-        "$(ASL)" -p ${dst} ${d_path}(+)${s_base}.i
+        "$(ASL)" -p ${dst} $(ASL_FLAGS) ${d_path}(+)${s_base}.i
 
 [Build.Acpi-Table-Code-File]
     <InputFile>
@@ -264,13 +274,12 @@
         ?.asm16, ?.Asm16, ?.ASM16
 
     <OutputFile>
-        $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.com
+        $(OUTPUT_DIR)(+)${s_base}.com
 
     <Command.MSFT, Command.INTEL>
-        pushd .
         cd $(OUTPUT_DIR)(+)${s_dir}
-        "$(ASM)" /nologo /omf ${src} /Bl"$(ASMLINK)" $(ASMLINK_FLAGS)
-        -$(CP) ${dst} $(OUTPUT_DIR) & popd
+        "$(ASM)" /nologo /c /omf /Fo$(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.obj ${src}
+        "$(ASMLINK)" $(ASMLINK_FLAGS) $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.obj,${dst},,,,
 
 [Build.Microcode-File]
     <InputFile>
@@ -291,6 +300,7 @@
 
     <Command>
         GenFw -o ${dst} -j ${src}
+        -$(CP) ${dst} $(BIN_DIR)
 
 [Build.Unicode-Text-File]
     <InputFile>
