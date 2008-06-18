@@ -921,12 +921,12 @@ def GetFinalTypeValue(Type, FieldName, TypedefDict, SUDict):
         if not Field[Index - 1].isalnum():
             if Index + len(FieldName) == len(Field):
                 Type = GetDataTypeFromModifier(Field[0:Index])
-                return Type.split()[-1]
+                return Type.strip()
             else:
             # For the condition that the field in struct is an array with [] sufixes...               
                 if not Field[Index + len(FieldName)].isalnum():
                     Type = GetDataTypeFromModifier(Field[0:Index])
-                    return Type.split()[-1]
+                    return Type.strip()
                 
     return None
     
@@ -942,7 +942,7 @@ def GetRealType(Type, TypedefDict, TargetType = None):
 def GetTypeInfo(RefList, Modifier, FullFileName, TargetType = None):
     TypedefDict = GetTypedefDict(FullFileName)
     SUDict = GetSUDict(FullFileName)
-    Type = GetDataTypeFromModifier(Modifier).rstrip('*').strip()
+    Type = GetDataTypeFromModifier(Modifier).replace('*', '').strip()
     
     Type = Type.split()[-1]
     Index = 0
@@ -951,7 +951,16 @@ def GetTypeInfo(RefList, Modifier, FullFileName, TargetType = None):
         FromType = GetFinalTypeValue(Type, FieldName, TypedefDict, SUDict)
         if FromType == None:
             return None
-        Type = FromType
+        # we want to determine the exact type.
+        if TargetType != None:
+            Type = FromType.split()[0]
+        # we only want to check if it is a pointer
+        else:
+            Type = FromType
+            if Type.find('*') != -1 and Index == len(RefList)-1:
+                return Type
+            Type = FromType.split()[0]
+            
         Index += 1
 
     Type = GetRealType(Type, TypedefDict, TargetType)
@@ -1734,7 +1743,7 @@ def CheckBooleanValueComparison(FullFileName):
                     Type = FuncReturnTypeDict.get(PredVarStr)
                     if Type != None:
                         if Type.find('BOOLEAN') != -1:
-                            PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_NO_BOOLEAN_OPERATOR, 'Predicate Expression: %s' % Exp, FileTable, Str[2])
+                            PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_BOOLEAN_VALUE, 'Predicate Expression: %s' % Exp, FileTable, Str[2])
                         continue
                     
                     if PredVarStr in FuncReturnTypeDict:
@@ -1746,7 +1755,7 @@ def CheckBooleanValueComparison(FullFileName):
                 if Type == None:
                     continue
                 if Type.find('BOOLEAN') != -1:
-                    PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_NO_BOOLEAN_OPERATOR, 'Predicate Expression: %s' % Exp, FileTable, Str[2])
+                    PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_BOOLEAN_VALUE, 'Predicate Expression: %s' % Exp, FileTable, Str[2])
                 
 
 def CheckHeaderFileData(FullFileName):
