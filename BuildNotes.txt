@@ -47,7 +47,7 @@ Tools in Python
   no MyBuild Python project in the BaseTools\Python tree.
 
     set PYTHONPATH=<BaseToolsDirPath>\Source\Python
-  	c:\cx_Freeze-3.0.3\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8 --install-dir=.\mybuild MyBuild.py
+  	c:\cx_Freeze-3.0.3\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_16_le,encodings.utf_8 --install-dir=.\mybuild MyBuild.py
 
 	The generated .exe (and .dll) files are put in "mybuild" subdirectory.
 
