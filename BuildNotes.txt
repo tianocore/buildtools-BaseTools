@@ -56,7 +56,7 @@ Tools in Python
 
   
   C:\Work\BaseTools\Source\Python> set PYTHONPATH=C:\Work\BaseTools\Source\Python
-  C:\Work\BaseTools\Source\Python> c:\cx_Freeze-3.0.3\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8 --install-dir=C:\Work\BaseTools\Bin\Win32 build\build.py
+  C:\Work\BaseTools\Source\Python> c:\cx_Freeze-3.0.3\FreezePython.exe --include-modules=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_16_le,encodings.utf_8 --install-dir=C:\Work\BaseTools\Bin\Win32 build\build.py
 
 ---------------
 * Execute tools written in Python without conversion
