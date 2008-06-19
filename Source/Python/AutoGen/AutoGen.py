@@ -1053,7 +1053,7 @@ class PlatformAutoGen(AutoGen):
             Family = Key[0]
             Target, Tag, Arch, Tool, Attr = Key[1].split("_")
             # if no tool defined for the option, skip it
-            if Tool not in self.Workspace.ToolPath:
+            if Tool not in self.ToolPath:
                 continue
             # if tool chain family doesn't match, skip it
             if Family != None and Family != "" and Family != self.ToolChainFamily[Tool]:
