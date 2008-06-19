@@ -108,6 +108,7 @@ class Check(object):
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.c'):
                         FullName = os.path.join(Dirpath, F)
+                        EdkLogger.quiet("[PROTOTYPE]" + FullName)
                         c.CheckFuncLayoutPrototype(FullName)
 
     # Check whether the body of a function is contained by open and close braces that must be in the first column
@@ -280,6 +281,7 @@ class Check(object):
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.c'):
                         FullName = os.path.join(Dirpath, F)
+                        EdkLogger.quiet("[BOOLEAN]" + FullName)
                         c.CheckBooleanValueComparison(FullName)
     # Check whether Non-Boolean comparisons use a compare operator (==, !=, >, < >=, <=). 
     def PredicateExpressionCheckNonBooleanOperator(self):
@@ -294,6 +296,7 @@ class Check(object):
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.c'):
                         FullName = os.path.join(Dirpath, F)
+                        EdkLogger.quiet("[NON-BOOLEAN]" + FullName)
                         c.CheckNonBooleanValueComparison(FullName)
     # Check whether a comparison of any pointer to zero must be done via the NULL type
     def PredicateExpressionCheckComparisonNullType(self):
@@ -308,6 +311,7 @@ class Check(object):
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.c'):
                         FullName = os.path.join(Dirpath, F)
+                        EdkLogger.quiet("[POINTER]" + FullName)
                         c.CheckPointerNullComparison(FullName)
     #
     # Include file checking

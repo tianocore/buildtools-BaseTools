@@ -11,6 +11,7 @@ import EccGlobalData
 import MetaDataParser
 
 IncludeFileListDict = {}
+AllIncludeFileListDict = {}
 IncludePathListDict = {}
 ComplexTypeDict = {}
 SUDict = {}
@@ -543,6 +544,9 @@ def GetFullPathOfIncludeFile(Str, IncludePathList):
     return None
 
 def GetAllIncludeFiles(FullFileName):
+    if AllIncludeFileListDict.get(FullFileName) != None:
+        return AllIncludeFileListDict.get(FullFileName)
+    
     IncludePathList = IncludePathListDict.get(os.path.dirname(FullFileName))
     if IncludePathList == None:
         IncludePathList = MetaDataParser.GetIncludeListOfFile(EccGlobalData.gWorkspace, FullFileName, GetDB())
@@ -569,6 +573,8 @@ def GetAllIncludeFiles(FullFileName):
             if FullPath != None and FullPath not in IncludeFileQueue:
                 IncludeFileQueue.insert(i + 1, FullPath)
         i += 1
+    
+    AllIncludeFileListDict[FullFileName] = IncludeFileQueue
     return IncludeFileQueue
 
 def GetPredicateListFromPredicateExpStr(PES):
