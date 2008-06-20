@@ -751,14 +751,15 @@ class Check(object):
                 RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
                 for Record in RecordSet:
                     Name = Record[1].strip()
-                    if Name[0] == '(':
-                        Name = Name[1:Name.find(')')]
-                    if Name.find('(') > -1:
-                        Name = Name[Name.find('(') + 1 : Name.find(')')]
-                    Name = Name.replace('WINAPI', '')
-                    Name = Name.replace('*', '').strip()
-                    if Name.upper() != Name:
-                        EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_TYPEDEF_STATEMENT, OtherMsg = "The #typedef name '%s' does not follow the rules" % (Name), BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
+                    if Name != '' and Name != None:
+                        if Name[0] == '(':
+                            Name = Name[1:Name.find(')')]
+                        if Name.find('(') > -1:
+                            Name = Name[Name.find('(') + 1 : Name.find(')')]
+                        Name = Name.replace('WINAPI', '')
+                        Name = Name.replace('*', '').strip()
+                        if Name.upper() != Name:
+                            EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_TYPEDEF_STATEMENT, OtherMsg = "The #typedef name '%s' does not follow the rules" % (Name), BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
     
     #
     # Check whether the #ifndef at the start of an include file uses both prefix and postfix underscore characters, '_'.
