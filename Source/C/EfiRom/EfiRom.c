@@ -54,23 +54,12 @@ Returns:
   UINT32    TotalSize;
   UINT32    Size;
   CHAR8     *Ptr0;
-  FILE_LIST *OutFileList;
-
 
   SetUtilityName(UTILITY_NAME);
 
   Status  = STATUS_SUCCESS;
   FptrOut = NULL;
 
-  //
-  // Create a new out file structure
-  //
-  OutFileList = (FILE_LIST *) malloc (sizeof (FILE_LIST));
-  if (OutFileList == NULL) {
-    Error (stdout, 0, 4001, "Resource", "memory cannot be allocated!");
-    return STATUS_ERROR;
-  }  
-  memset ((char *) OutFileList, 0, sizeof (FILE_LIST));
   //
   // Parse the command line arguments
   //
@@ -88,21 +77,27 @@ Returns:
   
   if (mOptions.Verbose) {
     VerboseMsg("%s tool start.\n", UTILITY_NAME);
-    }  
+  }
+  
+  if (mOptions.FileList == NULL) {
+    Error (NULL, 0, 1002, "No input file", NULL);
+    goto BailOut;
+  }
   //
   // If dumping an image, then do that and quit
   //
-//  if (mOptions.DumpOption) {
-//    for (FList = mOptions.FileList; FList != NULL; FList = FList->Next) {
-//    if ((Ptr0 = strstr ((CONST CHAR8 *)FList->FileName, DEFAULT_OUTPUT_EXTENSION)) != NULL) {
-//    DumpImage (mOptions.FileList);
-//    goto BailOut;
-//    }
-//    }
-//    else
-//    printf("\n *.rom file has not been generated, so -p option should be used //after the *.rom Option Rom binary generated!");
-//    goto BailOut;
-//  }
+  if (mOptions.DumpOption) {
+    for (FList = mOptions.FileList; FList != NULL; FList = FList->Next) {
+      if ((Ptr0 = strstr ((CONST CHAR8 *)FList->FileName, DEFAULT_OUTPUT_EXTENSION)) != NULL) {
+        DumpImage (mOptions.FileList);
+        goto BailOut;
+      } else {
+        Error (NULL, 0, 1002, "No PciRom input file", "No *.rom input file");
+        //printf("\n *.rom file has not been generated, so -d option should be used after the *.rom Option Rom binary generated!");
+        goto BailOut;
+      }
+    }
+  }
   //
   // Determine the output filename. Either what they specified on
   // the command line, or the first input filename with a different extension.
@@ -133,7 +128,7 @@ Returns:
   for (FList = mOptions.FileList; FList != NULL; FList = FList->Next) {
     if (stricmp (mOptions.OutFileName, FList->FileName) == 0) {
       Status = STATUS_ERROR;
-      Error (NULL, 0, 1002, "Input and output file names must be different - %s = %s.", FList->FileName, mOptions.OutFileName);
+      Error (NULL, 0, 1002, "Invalid input paramter", "Input and output file names must be different - %s = %s.", FList->FileName, mOptions.OutFileName);
       goto BailOut;
     }
   }
@@ -181,29 +176,25 @@ Returns:
   // Check total size
   //
   if (TotalSize > MAX_OPTION_ROM_SIZE) {
-    Error (NULL, 0, 2000, "Option ROM image size exceeds limit of 0x%X bytes.", MAX_OPTION_ROM_SIZE);
+    Error (NULL, 0, 2000, "Invalid paramter", "Option ROM image size exceeds limit of 0x%X bytes.", MAX_OPTION_ROM_SIZE);
     Status = STATUS_ERROR;
   }
 
 BailOut:
   if (Status == STATUS_SUCCESS) {
-  if (mOptions.DumpOption) {
-    OutFileList->FileName = mOptions.OutFileName;
-    DumpImage(OutFileList);
+    if (FptrOut != NULL) {
+      fclose (FptrOut);
+    }
+    //
+    // Clean up our file list
+    //
+    while (mOptions.FileList != NULL) {
+      FList = mOptions.FileList->Next;
+      free (mOptions.FileList);
+      mOptions.FileList = FList;
+    }
   }
-  } else {
-  if (FptrOut != NULL) {
-    fclose (FptrOut);
-  }
-  //
-  // Clean up our file list
-  //
-  while (mOptions.FileList != NULL) {
-    FList = mOptions.FileList->Next;
-    free (mOptions.FileList);
-    mOptions.FileList = FList;
-  }
-  }
+
   if (mOptions.Verbose) {
     VerboseMsg("%s tool done with return code is 0x%x.\n", UTILITY_NAME, GetUtilityStatus ());
   }
@@ -290,7 +281,7 @@ Returns:
   }
 
   if (TotalSize > MAX_OPTION_ROM_SIZE) {
-    Error (NULL, 0, 3001, "Option ROM image %s size exceeds limit of 0x%X bytes.", InFile->FileName, MAX_OPTION_ROM_SIZE);
+    Error (NULL, 0, 3001, "Invalid", "Option ROM image %s size exceeds limit of 0x%X bytes.", InFile->FileName, MAX_OPTION_ROM_SIZE);
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -399,7 +390,7 @@ BailOut:
   // Print the file name if errors occurred
   //
   if (Status != STATUS_SUCCESS) {
-    Error (NULL, 0, 0003, "Error parsing file: %s", InFile->FileName);
+    Error (NULL, 0, 0003, "Error", "Error parsing file: %s", InFile->FileName);
   }
 
   return Status;
@@ -454,7 +445,7 @@ Returns:
   // Try to open the input file
   //
   if ((InFptr = fopen (InFile->FileName, "rb")) == NULL) {
-    Error (NULL, 0, 0001, "Error opening file: %s", InFile->FileName);
+    Error (NULL, 0, 0001, "Open file error", "Error opening file: %s", InFile->FileName);
     return STATUS_ERROR;
   }
   //
@@ -554,7 +545,7 @@ Returns:
   // Check size
   //
   if (TotalSize > MAX_OPTION_ROM_SIZE) {
-    Error (NULL, 0, 2000, "Option ROM image %s size exceeds limit of 0x%X bytes.", InFile->FileName, MAX_OPTION_ROM_SIZE);	
+    Error (NULL, 0, 2000, "Invalid", "Option ROM image %s size exceeds limit of 0x%X bytes.", InFile->FileName, MAX_OPTION_ROM_SIZE);	
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -725,7 +716,7 @@ BailOut:
   // Print the file name if errors occurred
   //
   if (Status != STATUS_SUCCESS) {
-    Error (NULL, 0, 0003, "Error parsing file: %s", InFile->FileName);
+    Error (NULL, 0, 0003, "Error parsing", "Error parsing file: %s", InFile->FileName);
   }
 
   return Status;
@@ -1195,7 +1186,7 @@ Returns:
   //
   // Summary usage
   //
-  fprintf (stdout, "Usage: %s [options] <-e input_file>|<-b input_file> \n\n", UTILITY_NAME);
+  fprintf (stdout, "Usage: %s [options] [file name<s>] \n\n", UTILITY_NAME);
   
   //
   // Copyright declaration
