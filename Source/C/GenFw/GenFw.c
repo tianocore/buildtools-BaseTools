@@ -485,7 +485,7 @@ CheckElfHeader(
     return 0;
   if (Ehdr->e_ident[EI_DATA] != ELFDATA2LSB)
     return 0;
-  if (Ehdr->e_type != ET_EXEC)
+  if ((Ehdr->e_type != ET_EXEC) && (Ehdr->e_type != ET_DYN))
     return 0;
   if (Ehdr->e_machine != EM_386)
     return 0;
@@ -508,7 +508,28 @@ IsTextShdr(
   Elf_Shdr *Shdr
   )
 {
-  return (Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == SHF_ALLOC;
+  int Status;
+  int NotText = 1;
+  Status = (int)((Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == SHF_ALLOC);
+  if (Ehdr->e_type == ET_EXEC)
+    return Status;
+  else {
+    //
+    // this is a shared object file.
+    //
+    switch (Shdr->sh_type) {
+      case SHT_HASH:
+      case SHT_DYNSYM:
+      case SHT_STRTAB:
+      case SHT_REL:
+      case SHT_GNU_HASH:
+        NotText = 0;
+        break;
+      default:
+        break;
+    }
+    return Status && NotText;
+  }
 }
 
 int
@@ -516,7 +537,9 @@ IsDataShdr(
   Elf_Shdr *Shdr
   )
 {
-  return (Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == (SHF_ALLOC | SHF_WRITE);
+  int Status;
+  Status = (Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == (SHF_ALLOC | SHF_WRITE);
+  return Status && !(Shdr->sh_type == (SHT_DYNAMIC));
 }
 
 VOID
