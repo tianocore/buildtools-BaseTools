@@ -166,7 +166,7 @@ def IsChanged(File):
     FileState = os.stat(File)
     TimeStamp = FileState[-2]
 
-    if File in gFileTimeStampCache and TimeStamp <= gFileTimeStampCache[File]:
+    if File in gFileTimeStampCache and TimeStamp == gFileTimeStampCache[File]:
         FileChanged = False
     else:
         FileChanged = True

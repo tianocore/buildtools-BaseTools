@@ -294,6 +294,7 @@ ENTRYPOINT = ${module_entry_point}
 #
 # Overridable Target Macro Definitions
 #
+FORCE_REBUILD = force_build
 INIT_TARGET = init
 PCH_TARGET =
 CODA_TARGET = ${BEGIN}${remaining_build_target} \\
@@ -318,6 +319,11 @@ pbuild: $(INIT_TARGET) $(PCH_TARGET) $(CODA_TARGET)
 
 mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) $(CODA_TARGET)
 
+#
+# Phony target which is used to force executing commands for a target
+#
+force_build:
+\t-@
 
 #
 # Target to update the FD
@@ -737,7 +743,9 @@ cleanlib:
         self.FileDependency = self.GetFileDependency(SourceFileList, ForceIncludedFile, self._AutoGenObject.IncludePathList)
         DepSet = None
         for File in self.FileDependency:
-            if File in ExtraDenpendencies:
+            if self.FileDependency[File] == []:
+                self.FileDependency[File] = ['$(FORCE_REBUILD)']
+            elif File in ExtraDenpendencies:
                 self.FileDependency[File] += ExtraDenpendencies[File]
             # skip non-C files
             if (not File.endswith(".c") and not File.endswith(".C")) or File.endswith("AutoGen.c"):
@@ -897,7 +905,7 @@ cleanlib:
         # returning a empty dependency
         #
         if MacroUsedByIncludedFile:
-            DependencyList = [""]
+            DependencyList = []
         else:
             DependencyList = list(DependencySet)  # remove duplicate ones
             DependencyList.append(File)
