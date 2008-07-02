@@ -1322,4 +1322,6 @@ def Main():
     return ReturnCode
 
 if __name__ == '__main__':
-    sys.exit(Main())
+    r = Main()
+    if r < 0 or r > 127: r = 127
+    sys.exit(r)
