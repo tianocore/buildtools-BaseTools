@@ -596,12 +596,30 @@ class Check(object):
                          and A.Value2 = B.Value2
                          and A.Enabled > -1
                          and B.Enabled > -1
+                         group by A.ID
                          """% (MODEL_PCD, MODEL_META_DATA_HEADER, MODEL_PCD, MODEL_META_DATA_HEADER)
             RecordSet = EccGlobalData.gDb.TblDsc.Exec(SqlCommand)
             for Record in RecordSet:
                 EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_DUPLICATE, OtherMsg = "The PCD '%s' is defined in both FDF file and DSC file" % (Record[1]), BelongsToTable = 'Dsc', BelongsToItem = Record[0])
                 EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_DUPLICATE, OtherMsg = "The PCD '%s' is defined in both FDF file and DSC file" % (Record[3]), BelongsToTable = 'Fdf', BelongsToItem = Record[2])
 
+            EdkLogger.quiet("Checking for duplicate PCDs defined in DEC files ...")
+            SqlCommand = """
+                         select A.ID, A.Value2 from Dec as A, Dec as B 
+                         where A.Model >= %s and A.Model < %s 
+                         and B.Model >= %s and B.Model < %s 
+                         and A.Value2 = B.Value2
+                         and ((A.Model != 'COMMON' 
+                         and B.Model = 'COMMON') or (A.Model = B.Model))
+                         and A.ID != B.ID
+                         and A.Enabled > -1
+                         and B.Enabled > -1
+                         and A.BelongsToFile = B.BelongsToFile
+                         group by A.ID
+                         """% (MODEL_PCD, MODEL_META_DATA_HEADER, MODEL_PCD, MODEL_META_DATA_HEADER)
+            RecordSet = EccGlobalData.gDb.TblDsc.Exec(SqlCommand)
+            for Record in RecordSet:
+                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_DUPLICATE, OtherMsg = "The PCD '%s' is defined duplicated in DEC file" % (Record[1]), BelongsToTable = 'Dec', BelongsToItem = Record[0])
     #
     # Check whether PCD settings in the FDF file can only be related to flash.
     #

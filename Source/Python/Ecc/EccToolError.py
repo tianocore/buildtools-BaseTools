@@ -161,7 +161,7 @@ gEccErrorMessage = {
     ERROR_META_DATA_FILE_CHECK_LIBRARY_INSTANCE_ORDER : "The library Instances specified by the LibraryClasses sections should be listed in order of dependencies",
     ERROR_META_DATA_FILE_CHECK_LIBRARY_NO_USE : "There should be no unnecessary inclusion of library classes in the INF file",
     ERROR_META_DATA_FILE_CHECK_BINARY_INF_IN_FDF : "An INF file is specified in the FDF file, but not in the DSC file, therefore the INF file must be for a Binary module only",
-    ERROR_META_DATA_FILE_CHECK_PCD_DUPLICATE : "Duplicate PCDs found in both FDF and DSC files",
+    ERROR_META_DATA_FILE_CHECK_PCD_DUPLICATE : "Duplicate PCDs found",
     ERROR_META_DATA_FILE_CHECK_PCD_FLASH : "PCD settings in the FDF file should only be related to flash",
     ERROR_META_DATA_FILE_CHECK_PCD_NO_USE : "There should be no PCDs declared in INF files that are not specified in in either a DSC or FDF file",
     ERROR_META_DATA_FILE_CHECK_DUPLICATE_GUID : "Duplicate GUID found",
