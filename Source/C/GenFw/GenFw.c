@@ -508,28 +508,7 @@ IsTextShdr(
   Elf_Shdr *Shdr
   )
 {
-  int Status;
-  int NotText = 1;
-  Status = (int)((Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == SHF_ALLOC);
-  if (Ehdr->e_type == ET_EXEC)
-    return Status;
-  else {
-    //
-    // this is a shared object file.
-    //
-    switch (Shdr->sh_type) {
-      case SHT_HASH:
-      case SHT_DYNSYM:
-      case SHT_STRTAB:
-      case SHT_REL:
-      case SHT_GNU_HASH:
-        NotText = 0;
-        break;
-      default:
-        break;
-    }
-    return Status && NotText;
-  }
+  return (Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == SHF_ALLOC;
 }
 
 int
@@ -537,9 +516,7 @@ IsDataShdr(
   Elf_Shdr *Shdr
   )
 {
-  int Status;
-  Status = (Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == (SHF_ALLOC | SHF_WRITE);
-  return Status && !(Shdr->sh_type == (SHT_DYNAMIC));
+  return (Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == (SHF_ALLOC | SHF_WRITE);
 }
 
 VOID
@@ -720,8 +697,12 @@ WriteSections(
   memset(CoffFile + CoffSectionsOffset[Idx], 0, Shdr->sh_size);
   break;
       default:
-  Error (NULL, 0, 3000, "Invalid", "%s unhandled section type %x.", mInImageName, (UINTN)Shdr->sh_type);
-      }
+  //
+  //  Ignore for unkown section type.
+  //    
+  VerboseMsg ("%s unknown section type %x. We directly copy this section into Coff file", mInImageName, (UINTN)Shdr->sh_type);
+  break;
+     }
     }
   }
 
