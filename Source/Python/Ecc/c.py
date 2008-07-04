@@ -22,7 +22,7 @@ def GetIgnoredDirListPattern():
     return p
 
 def GetFuncDeclPattern():
-    p = re.compile(r'(EFIAPI|EFI_BOOT_SERVICE|EFI_RUNTIME_SERVICE)?\s*[_\w]+\s*\(.*\)$', re.DOTALL)
+    p = re.compile(r'(?:EFIAPI|EFI_BOOT_SERVICE|EFI_RUNTIME_SERVICE)?\s*[_\w]+\s*\(.*\)$', re.DOTALL)
     return p
 
 def GetArrayPattern():
