@@ -162,7 +162,8 @@ class BuildFile(object):
     #
     def Generate(self, FileType=gMakeType):
         if FileType not in self._FILE_NAME_:
-            EdkLogger.error("build", PARAMETER_INVALID, "Invalid build type [%s]" % FileType)
+            EdkLogger.error("build", PARAMETER_INVALID, "Invalid build type [%s]" % FileType,
+                            ExtraData="[%s]" % str(self._AutoGenObject))
         self._FileType = FileType
         FileContent = TemplateString()
         FileContent.Append(self._TEMPLATE_, self._TemplateDict)
@@ -420,14 +421,15 @@ cleanlib:
     # Compose a dict object containing information used to do replacement in template
     def _CreateTemplateDict(self):
         if self._FileType not in self._SEP_:
-            EdkLogger.error("build", PARAMETER_INVALID, "Invalid Makefile type", ExtraData=self._FileType)
+            EdkLogger.error("build", PARAMETER_INVALID, "Invalid Makefile type [%s]" % self._FileType,
+                            ExtraData="[%s]" % str(self._AutoGenObject))
         Separator = self._SEP_[self._FileType]
 
         # break build if no source files and binary files are found
         if len(self._AutoGenObject.SourceFileList) == 0 and len(self._AutoGenObject.BinaryFileDict) == 0:
             EdkLogger.error("build", AUTOGEN_ERROR, "No files to be built in module [%s, %s, %s]"
                             % (self._AutoGenObject.BuildTarget, self._AutoGenObject.ToolChain, self._AutoGenObject.Arch),
-                            ExtraData=str(self._AutoGenObject))
+                            ExtraData="[%s]" % str(self._AutoGenObject))
         # convert source files and binary files to build target
         if len(self._AutoGenObject.SourceFileList) > 0:
             self.ProcessSourceFileList()
@@ -452,11 +454,19 @@ cleanlib:
             DefaultToolFlag = ["" for p in DefaultToolFlag]
 
         if "CC" not in self.PlatformInfo.ToolChainFamily:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Tool [CC] is not supported [%s, %s, %s]" % (self._AutoGenObject.BuildTarget,
-                                    self._AutoGenObject.ToolChain, self._AutoGenObject.Arch))
+            EdkLogger.error(
+                "build",
+                AUTOGEN_ERROR,
+                "Tool [CC] is not supported [%s, %s, %s]" \
+                    % (self._AutoGenObject.BuildTarget, self._AutoGenObject.ToolChain, self._AutoGenObject.Arch),
+                ExtraData="[%s]" % str(self._AutoGenObject))
         if  "DLINK" not in self.PlatformInfo.ToolChainFamily:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Tool [DLINK] is not supported [%s, %s, %s]" % (self._AutoGenObject.BuildTarget,
-                                    self._AutoGenObject.ToolChain, self._AutoGenObject.Arch))
+            EdkLogger.error(
+                "build",
+                AUTOGEN_ERROR,
+                "Tool [DLINK] is not supported [%s, %s, %s]" \
+                    % (self._AutoGenObject.BuildTarget, self._AutoGenObject.ToolChain, self._AutoGenObject.Arch),
+                ExtraData="[%s]" % str(self._AutoGenObject))
 
         if self._AutoGenObject.IsLibrary:
             if "Static-Library-File" in self.DestFileDatabase:
@@ -465,7 +475,8 @@ cleanlib:
             if "Dynamic-Library-File" in self.DestFileDatabase:
                 self.ResultFileList = self.DestFileDatabase["Dynamic-Library-File"]
         if len(self.ResultFileList) == 0:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Nothing found for build", ExtraData=str(self._AutoGenObject))
+            EdkLogger.error("build", AUTOGEN_ERROR, "Nothing to build",
+                            ExtraData="[%s]" % str(self._AutoGenObject))
 
         SourceFileMacroNameList = []
         SourceFileMacroList = [] # macro name = file list
@@ -565,8 +576,8 @@ cleanlib:
         ExtraDenpendencies = {}
 
         if "CC" not in self.PlatformInfo.ToolChainFamily:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No CC tool found",
-                            ExtraData=str(self._AutoGenObject.Module))
+            EdkLogger.error("build", AUTOGEN_ERROR, "No CC tool found",
+                            ExtraData="[%s]" % str(self._AutoGenObject))
         Family = self.PlatformInfo.ToolChainFamily["CC"]
         BuildRule = self.PlatformInfo.BuildRule
 
@@ -854,7 +865,7 @@ cleanlib:
                 try:
                     Fd = open(F, 'r')
                 except:
-                    EdkLogger.error("AutoGen", FILE_OPEN_FAILURE, ExtraData=F)
+                    EdkLogger.error("build", FILE_OPEN_FAILURE, ExtraData=F)
 
                 FileContent = Fd.read()
                 Fd.close()
@@ -1025,14 +1036,15 @@ ${BEGIN}\t-@${create_directory_command}\n${END}\
         try:
             if self._FileType not in self._AutoGenObject.CustomMakefile:
                 EdkLogger.error('build', OPTION_NOT_SUPPORTED, "No custom makefile for %s" % self._FileType,
-                                ExtraData=str(self._AutoGenObject))
+                                ExtraData="[%s]" % str(self._AutoGenObject))
             MakefilePath = os.path.join(
                                     self._AutoGenObject.WorkspaceDir,
                                     self._AutoGenObject.CustomMakefile[self._FileType]
                                     )
             CustomMakefile = open(MakefilePath, 'r').read()
         except:
-            EdkLogger.error('build', FILE_OPEN_FAILURE, ExtraData=self._AutoGenObject.CustomMakefile[self._FileType])
+            EdkLogger.error('build', FILE_OPEN_FAILURE, File=str(self._AutoGenObject),
+                            ExtraData=self._AutoGenObject.CustomMakefile[self._FileType])
 
         MakefileName = self._FILE_NAME_[self._FileType]
         MakefileTemplateDict = {
@@ -1193,7 +1205,8 @@ cleanlib:
 
         PlatformInfo = self._AutoGenObject
         if "MAKE" not in PlatformInfo.ToolPath:
-            EdkLogger.error("GenMake", OPTION_MISSING, "No MAKE command defined. Please check your tools_def.txt!")
+            EdkLogger.error("build", OPTION_MISSING, "No MAKE command defined. Please check your tools_def.txt!",
+                            ExtraData="[%s]" % str(self._AutoGenObject))
 
         self.IntermediateDirectoryList = ["$(BUILD_DIR)"]
         self.ModuleBuildDirectoryList = self.GetModuleBuildDirectoryList()
@@ -1369,7 +1382,8 @@ ${END}\t@cd $(BUILD_DIR)\n
         PlatformInfo = self._AutoGenObject
 
         if "MAKE" not in PlatformInfo.ToolPath:
-            EdkLogger.error("GenMake", OPTION_MISSING, "No MAKE command defined. Please check your tools_def.txt!")
+            EdkLogger.error("build", OPTION_MISSING, "No MAKE command defined. Please check your tools_def.txt!",
+                            ExtraData="[%s]" % str(self._AutoGenObject))
 
         for Arch in PlatformInfo.ArchList:
             self.IntermediateDirectoryList.append(Separator.join(["$(BUILD_DIR)", Arch]))

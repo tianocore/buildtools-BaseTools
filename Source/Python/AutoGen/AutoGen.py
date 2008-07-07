@@ -506,6 +506,9 @@ class PlatformAutoGen(AutoGen):
     #
     def _GetToolDefinition(self):
         ToolDefinition = self.Workspace.ToolDef.ToolsDefTxtDictionary
+        if "COMMAND_TYPE" not in self.Workspace.ToolDef.ToolsDefTxtDatabase:
+            EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "No tools found in configuration",
+                            ExtraData="[%s]" % self._MetaFile)
         ToolCodeList = self.Workspace.ToolDef.ToolsDefTxtDatabase["COMMAND_TYPE"]
         self._ToolPath = {}
         self._ToolDllPath = {}
@@ -551,7 +554,10 @@ class PlatformAutoGen(AutoGen):
             else:
                 OutputFlag = gDefaultOutputFlag
 
-            InputFlag = gIncludeFlag[Family]
+            if Family in gIncludeFlag:
+                InputFlag = gIncludeFlag[Family]
+            else:
+                InputFlag = '-I'
 
             self._ToolPath[Tool] = Path
             self._ToolDllPath[Tool] = Dll
@@ -668,7 +674,8 @@ class PlatformAutoGen(AutoGen):
         # print out error information and break the build, if error found
         if len(NoDatumTypePcdList) > 0:
             NoDatumTypePcdListString = "\n\t\t".join(NoDatumTypePcdList)
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "PCD setting error",
+            EdkLogger.error("build", AUTOGEN_ERROR, "PCD setting error",
+                            File=self._MetaFile,
                             ExtraData="\n\tPCD(s) without MaxDatumSize:\n\t\t%s\n"
                                       % NoDatumTypePcdListString)
 
@@ -782,9 +789,10 @@ class PlatformAutoGen(AutoGen):
                 LibraryPath = M.LibraryClasses[LibraryClassName]
                 if LibraryPath == None or LibraryPath == "":
                     LibraryPath = self.Platform.LibraryClasses[LibraryClassName, ModuleType]
-                    if LibraryPath == None and LibraryClassName not in LibraryInstance:
-                        LibraryInstance[LibraryClassName] = None
-                        continue
+                    if LibraryPath == None:
+                        EdkLogger.error("build", RESOURCE_NOT_AVAILABLE,
+                                        "Instance of library class [%s] is not found" % LibraryClassName,
+                                        File=self._MetaFile, ExtraData="consumed by [%s] [%s]" % (str(M), self.Arch))
                 if LibraryClassName not in LibraryInstance:
                     LibraryModule = self.BuildDatabase[LibraryPath, self.Arch]
                     # for those forced library instance (NULL library), add a fake library class
@@ -826,10 +834,10 @@ class PlatformAutoGen(AutoGen):
         Q = []
         for LibraryClassName in LibraryInstance:
             M = LibraryInstance[LibraryClassName]
-            if M == None:
-                EdkLogger.error("build", RESOURCE_NOT_AVAILABLE,
-                                "Library instance of library class [%s] is not found" % LibraryClassName,
-                                File=self._MetaFile, ExtraData="consumed by [%s] [%s]" % (str(Module), self.Arch))
+            #if M == None:
+            #    EdkLogger.error("build", RESOURCE_NOT_AVAILABLE,
+            #                    "Library instance of library class [%s] is not found" % LibraryClassName,
+            #                    File=self._MetaFile, ExtraData="consumed by [%s] [%s]" % (str(Module), self.Arch))
             LibraryList.append(M)
             #
             # check if there're library classes
@@ -996,7 +1004,7 @@ class PlatformAutoGen(AutoGen):
                     EdkLogger.error(
                                 'build',
                                 RESOURCE_NOT_AVAILABLE,
-                                "Value of [%s] is not found in" % Sku.VariableGuid,
+                                "Value of GUID [%s] is not found in" % Sku.VariableGuid,
                                 ExtraData=PackageList + "\n\t(used with %s.%s from module %s)" \
                                                         % (Guid, Name, str(Module)),
                                 File=self._MetaFile
@@ -1284,7 +1292,10 @@ class ModuleAutoGen(AutoGen):
         if self._CustomMakefile == None:
             self._CustomMakefile = {}
             for Type in self.Module.CustomMakefile:
-                MakeType = gMakeTypeMap[Type]
+                if Type in gMakeTypeMap:
+                    MakeType = gMakeTypeMap[Type]
+                else:
+                    MakeType = 'nmake'
                 self._CustomMakefile[MakeType] = os.path.join(self.SourceDir, self.Module.CustomMakefile[Type])
         return self._CustomMakefile
 
@@ -1372,8 +1383,9 @@ class ModuleAutoGen(AutoGen):
         self._UnicodeFileList = []
         # use toolchain family of CC as the primary toolchain family
         if "CC" not in self.PlatformInfo.ToolChainFamily:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Tool [CC] is not defined for %s [%s, %s]" \
-                             % (self.ToolChain, self.BuildTarget, self.Arch))
+            EdkLogger.error("build", AUTOGEN_ERROR, "Tool [CC] is not defined for %s [%s, %s]" \
+                             % (self.ToolChain, self.BuildTarget, self.Arch),
+                            ExtraData="[%s]" % self._MetaFile)
         ToolChainFamily = self.PlatformInfo.ToolChainFamily["CC"]
         BuildRule = self.PlatformInfo.BuildRule
         for F in self.Module.Sources:
@@ -1545,7 +1557,7 @@ class ModuleAutoGen(AutoGen):
                     self._IncludePathList.append(Inc)
                     # for r8 modules
                     self._IncludePathList.append(path.join(Inc, self.Arch.capitalize()))
-                # r8 module needs to put DEBUG_DIR at the end search path and not to use SOURCE_DIR all the time
+                # r8 module needs to put DEBUG_DIR at the end of search path and not to use SOURCE_DIR all the time
                 self._IncludePathList.append(self.DebugDir)
             else:
                 self._IncludePathList.append(os.path.join(self.WorkspaceDir, self.SourceDir))

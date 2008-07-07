@@ -48,6 +48,7 @@ gSupportedTarget = ['all', 'genc', 'genmake', 'modules', 'libraries', 'fds', 'cl
 ## build configuration file
 gBuildConfiguration = "Conf/target.txt"
 gBuildCacheDir = "Conf/.cache"
+gToolsDefinition = "Conf/tools_def.txt"
 
 ## Check environment PATH variable to make sure the specified tool is found
 #
@@ -708,6 +709,8 @@ class Build():
             StatusCode = self.TargetTxt.LoadTargetTxtFile(BuildConfigurationFile)
 
             ToolDefinitionFile = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF]
+            if ToolDefinitionFile == '':
+                ToolDefinitionFile = gToolsDefinition
             ToolDefinitionFile = os.path.normpath(os.path.join(self.WorkspaceDir, ToolDefinitionFile))
             if os.path.isfile(ToolDefinitionFile) == True:
                 StatusCode = self.ToolDef.LoadToolDefFile(ToolDefinitionFile)
@@ -1137,7 +1140,7 @@ def ParseDefines(DefineList=[]):
 #   @retval Args  Target of build command
 #
 def MyOptionParser():
-    Parser = OptionParser(description=__copyright__,version=__version__,prog="build.exe",usage="%prog [options] [target]")
+    Parser = OptionParser(description=__copyright__,version=__version__,prog="build.exe",usage="%prog [options] [all|fds|genc|genmake|clean|cleanall|cleanlib|modules|libraries|run]")
     Parser.add_option("-a", "--arch", action="append", type="choice", choices=['IA32','X64','IPF','EBC'], dest="TargetArch",
         help="ARCHS is one of list: IA32, X64, IPF or EBC, which overrides target.txt's TARGET_ARCH definition. To specify more archs, please repeat this option.")
     Parser.add_option("-p", "--platform", action="store", type="string", dest="PlatformFile",
@@ -1295,7 +1298,7 @@ def Main():
             # for multi-thread build exits safely
             MyBuild.Relinquish()
         EdkLogger.error(
-                    "\nPython",
+                    "\nbuild",
                     CODE_ERROR,
                     "Tools code failure",
                     ExtraData="Please submit bug report in www.TianoCore.org, attaching following call stack trace!\n",

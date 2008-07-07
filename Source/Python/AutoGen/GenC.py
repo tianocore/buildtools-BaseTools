@@ -783,15 +783,21 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
         TokenNumber = int(Pcd.TokenValue, 0)
     else:
         if (Pcd.TokenCName, Pcd.TokenSpaceGuidCName) not in PcdTokenNumber:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No generated token number for %s|%s\n" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
+            EdkLogger.error("build", AUTOGEN_ERROR,
+                            "No generated token number for %s.%s\n" % (Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
+                            ExtraData="[%s]" % str(Info))
         TokenNumber = PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName]
     AutoGenH.Append('#define %s  %d\n' % (PcdTokenName, TokenNumber))
 
     EdkLogger.debug(EdkLogger.DEBUG_3, "Creating code for " + Pcd.TokenCName + "|" + Pcd.TokenSpaceGuidCName)
     if Pcd.Type not in gItemTypeStringDatabase:
-        EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Unknown PCD type [%s] of PCD %s|%s" % (Pcd.Type, Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
+        EdkLogger.error("build", AUTOGEN_ERROR,
+                        "Unknown PCD type [%s] of PCD %s.%s" % (Pcd.Type, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
+                        ExtraData="[%s]" % str(Info))
     if Pcd.DatumType not in gDatumSizeStringDatabase:
-        EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Unknown datum type [%s] of PCD %s|%s" % (Pcd.DatumType, Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
+        EdkLogger.error("build", AUTOGEN_ERROR,
+                        "Unknown datum type [%s] of PCD %s.%s" % (Pcd.DatumType, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
+                        ExtraData="[%s]" % str(Info))
 
     DatumSize = gDatumSizeStringDatabase[Pcd.DatumType]
     DatumSizeLib = gDatumSizeStringDatabaseLib[Pcd.DatumType]
@@ -823,7 +829,9 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
                 Value += 'ULL'
         if Pcd.DatumType == 'VOID*':
             if Pcd.MaxDatumSize == None or Pcd.MaxDatumSize == '':
-                EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Unknown [MaxDatumSize] of PCD [%s.%s]" % (Pcd.TokenSpaceGuidCName, Pcd.TokenCName))
+                EdkLogger.error("build", AUTOGEN_ERROR,
+                                "Unknown [MaxDatumSize] of PCD [%s.%s]" % (Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
+                                ExtraData="[%s]" % str(Info))
 
             ArraySize = int(Pcd.MaxDatumSize, 0)
             if Value[0] == '{':
@@ -882,13 +890,19 @@ def CreateLibraryPcdCode(Info, AutoGenC, AutoGenH, Pcd):
     TokenCName  = Pcd.TokenCName
     TokenSpaceGuidValue = Pcd.TokenSpaceGuidValue   #Info.GuidList[TokenSpaceGuidCName]
     if (Pcd.TokenCName, Pcd.TokenSpaceGuidCName) not in PcdTokenNumber:
-        EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No generated token number for %s|%s\n" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
+        EdkLogger.error("build", AUTOGEN_ERROR,
+                        "No generated token number for %s|%s\n" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName),
+                        ExtraData="[%s]" % str(Info))
     TokenNumber = PcdTokenNumber[TokenCName, TokenSpaceGuidCName]
 
     if Pcd.Type not in gItemTypeStringDatabase:
-        EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Unknown PCD type [%s] of PCD %s|%s" % (Pcd.Type, Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
+        EdkLogger.error("build", AUTOGEN_ERROR,
+                        "Unknown PCD type [%s] of PCD %s.%s" % (Pcd.Type, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
+                        ExtraData="[%s]" % str(Info))
     if Pcd.DatumType not in gDatumSizeStringDatabase:
-        EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Unknown datum type [%s] of PCD %s|%s" % (Pcd.DatumType, Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
+        EdkLogger.error("build", AUTOGEN_ERROR,
+                        "Unknown datum type [%s] of PCD %s.%s" % (Pcd.DatumType, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
+                        ExtraData="[%s]" % str(Info))
 
     DatumType   = Pcd.DatumType
     DatumSize   = gDatumSizeStringDatabaseH[DatumType]
@@ -1019,7 +1033,9 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
 
         EdkLogger.debug(EdkLogger.DEBUG_3, "PCD: %s %s (%s : %s)" % (CName, TokenSpaceGuidCName, Pcd.Phase, Phase))
         if Pcd.DatumType not in gDatumSizeStringDatabase:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Unknown datum type [%s] of PCD %s|%s" % (Pcd.DatumType, Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
+            EdkLogger.error("build", AUTOGEN_ERROR,
+                            "Unknown datum type [%s] of PCD %s.%s" % (Pcd.DatumType, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
+                            ExtraData="[%s]" % str(Info))
 
         if Pcd.Phase == 'PEI':
             NumberOfPeiLocalTokens += 1
@@ -1271,7 +1287,8 @@ def CreatePcdDatabaseCode (Info, AutoGenC, AutoGenH):
     if Info.PcdIsDriver == "":
         return
     if Info.PcdIsDriver not in gPcdPhaseMap:
-        EdkLogger.error("AutoGen", AUTOGEN_ERROR, "Not supported PcdIsDriver type:%s\n" % Info.PcdIsDriver)
+        EdkLogger.error("build", AUTOGEN_ERROR, "Not supported PcdIsDriver type:%s" % Info.PcdIsDriver,
+                        ExtraData="[%s]" % str(Info))
 
     AutoGenH.Append(gPcdDatabaseCommonAutoGenH)
     AdditionalAutoGenH, AdditionalAutoGenC = CreatePcdDatabasePhaseSpecificAutoGen (Info.PlatformInfo, 'PEI')
@@ -1404,8 +1421,13 @@ def CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH):
 
     if Info.ModuleType in ['PEI_CORE', 'DXE_CORE']:
         if NumEntryPoints != 1:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, '%s must have exactly one entry point' % Info.ModuleType,
-                            ExtraData=", ".join(Info.Module.ModuleEntryPointList))
+            EdkLogger.error(
+                "build",
+                AUTOGEN_ERROR,
+                '%s must have exactly one entry point' % Info.ModuleType,
+                File=str(Info),
+                ExtraData= ", ".join(Info.Module.ModuleEntryPointList)
+                )
     if Info.ModuleType == 'PEI_CORE':
         AutoGenC.Append(gPeiCoreEntryPointString, Dict)
     elif Info.ModuleType == 'DXE_CORE':
@@ -1562,26 +1584,29 @@ def CreateHeaderCode(Info, AutoGenC, AutoGenH):
     AutoGenH.Append(gAutoGenHPrologueString,{'Guid':Info.Guid.replace('-','_')})
     if Info.AutoGenVersion >= 0x00010005:
         # specification macros
-        AutoGenH.Append(gSpecificationString,   {'SpecificationName':Info.Macro.keys(), 
+        AutoGenH.Append(gSpecificationString,   {'SpecificationName':Info.Macro.keys(),
                                                  'SpecificationValue':Info.Macro.values()})
         # header files includes
         AutoGenH.Append("#include <%s>\n\n" % gBasicHeaderFile)
         AutoGenH.Append('\nextern GUID  gEfiCallerIdGuid;\n\n')
-    
+
         if Info.IsLibrary:
             return
-    
+
         AutoGenH.Append("#define EFI_CALLER_ID_GUID \\\n  %s\n" % GuidStringToGuidStructureString(Info.Guid))
-    
+
     if Info.IsLibrary:
         return
     # C file header
     AutoGenC.Append(gAutoGenHeaderString, {'FileName':'AutoGen.c'})
     if Info.AutoGenVersion >= 0x00010005:
         # C file header files includes
-        for Inc in gModuleTypeHeaderFile[Info.ModuleType]:
-            AutoGenC.Append("#include <%s>\n" % Inc)
-    
+        if Info.ModuleType in gModuleTypeHeaderFile:
+            for Inc in gModuleTypeHeaderFile[Info.ModuleType]:
+                AutoGenC.Append("#include <%s>\n" % Inc)
+        else:
+            AutoGenC.Append("#include <%s>\n" % gBasicHeaderFile)
+
         #
         # Publish the CallerId Guid
         #
