@@ -770,10 +770,8 @@ class PlatformAutoGen(AutoGen):
                 continue
             Module.LibraryClasses[LibraryClass] = LibraryInstance
 
-        # override library instances with module specific setting
+        # to override library instances with module specific setting
         PlatformModule = self.Platform.Modules[str(Module)]
-        for LibraryClass in PlatformModule.LibraryClasses:
-            Module.LibraryClasses[LibraryClass] = PlatformModule.LibraryClasses[LibraryClass]
 
         # R9 module
         LibraryConsumerList = [Module]
@@ -786,14 +784,20 @@ class PlatformAutoGen(AutoGen):
         while len(LibraryConsumerList) > 0:
             M = LibraryConsumerList.pop()
             for LibraryClassName in M.LibraryClasses:
-                LibraryPath = M.LibraryClasses[LibraryClassName]
-                if LibraryPath == None or LibraryPath == "":
-                    LibraryPath = self.Platform.LibraryClasses[LibraryClassName, ModuleType]
-                    if LibraryPath == None:
-                        EdkLogger.error("build", RESOURCE_NOT_AVAILABLE,
-                                        "Instance of library class [%s] is not found" % LibraryClassName,
-                                        File=self._MetaFile, ExtraData="consumed by [%s] [%s]" % (str(M), self.Arch))
                 if LibraryClassName not in LibraryInstance:
+                    # overrided library instance for this module
+                    if LibraryClassName in PlatformModule.LibraryClasses:
+                        LibraryPath = PlatformModule.LibraryClasses[LibraryClassName]
+                    else:
+                        LibraryPath = M.LibraryClasses[LibraryClassName]
+                    if LibraryPath == None or LibraryPath == "":
+                        LibraryPath = self.Platform.LibraryClasses[LibraryClassName, ModuleType]
+                        if LibraryPath == None:
+                            EdkLogger.error("build", RESOURCE_NOT_AVAILABLE,
+                                            "Instance of library class [%s] is not found" % LibraryClassName,
+                                            File=self._MetaFile,
+                                            ExtraData="consumed by [%s] [%s]\n\t[%s]" % (str(M), self.Arch, str(Module)))
+
                     LibraryModule = self.BuildDatabase[LibraryPath, self.Arch]
                     # for those forced library instance (NULL library), add a fake library class
                     if LibraryClassName.startswith("NULL"):
