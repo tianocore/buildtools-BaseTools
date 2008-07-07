@@ -1300,8 +1300,8 @@ def Main():
         EdkLogger.error(
                     "\nbuild",
                     CODE_ERROR,
-                    "Tools code failure",
-                    ExtraData="Please submit bug report in www.TianoCore.org, attaching following call stack trace!\n",
+                    "Unknown fatal error",
+                    ExtraData="Please send email to dev@buildtools.tianocore.org for help, attaching following call stack trace!\n",
                     RaiseError=False
                     )
         EdkLogger.quiet(traceback.format_exc())
