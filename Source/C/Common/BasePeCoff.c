@@ -183,7 +183,8 @@ Returns:
   
   if (ImageContext->Machine != EFI_IMAGE_MACHINE_IA32 && \
       ImageContext->Machine != EFI_IMAGE_MACHINE_IA64 && \
-      ImageContext->Machine != EFI_IMAGE_MACHINE_X64) {
+      ImageContext->Machine != EFI_IMAGE_MACHINE_X64  && \
+      ImageContext->Machine != EFI_IMAGE_MACHINE_EBC) {
     //
     // upsupported PeImage machine type 
     // 
