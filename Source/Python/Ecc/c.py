@@ -299,6 +299,10 @@ def GetParamList(FuncDeclarator, FuncNameLine = 0, FuncNameOffset = 0):
             ParamModifier += ' ' + '*'
             DeclText = DeclText.lstrip('*').strip()
         ParamName = DeclText
+        # ignore array length if exists.
+        LBIndex = ParamName.find('[')
+        if LBIndex != -1:
+            ParamName = ParamName[0:LBIndex]
         
         Start = RightSpacePos
         Index = 0
