@@ -771,6 +771,9 @@ def GetDataTypeFromModifier(ModifierStr):
     for M in MList:
         if M in EccGlobalData.gConfig.ModifierList:
             MList.remove(M)
+        # remove array sufix
+        if M.startswith('['):
+            MList.remove(M)
             
     ReturnType = ''
     for M in MList:
