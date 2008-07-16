@@ -882,8 +882,11 @@ def StripComments(Str):
     List = Str.splitlines()
     InComment = False
     for StrPart in List:
-        if StrPart.lstrip().startswith('//'):
+        Index = StrPart.find('//')
+        if Index != -1 and not InComment:
+            StrippedStr += StrPart[0:Index]
             continue
+        
         Index = StrPart.find('/*')
         if Index != -1:
             InComment = True
