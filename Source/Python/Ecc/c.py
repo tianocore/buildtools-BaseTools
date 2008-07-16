@@ -2038,6 +2038,17 @@ def GetDoxygenStrFromComment(Str):
             DoxygenStrList.append('@retval' + RetvalTagList[i])
             i += 1
     
+    ReturnTagList = RetvalTagList[-1].split('@return')
+    if len(ReturnTagList) > 1:
+        if len(RetvalTagList) > 1:
+            DoxygenStrList[-1] = '@retval' + ReturnTagList[0]
+        elif len(ParamTagList) > 1:
+            DoxygenStrList[-1] = '@param' + ReturnTagList[0]
+        i = 1
+        while i < len(ReturnTagList):
+            DoxygenStrList.append('@return' + ReturnTagList[i])
+            i += 1
+    
     if len(DoxygenStrList) > 0:
         DoxygenStrList[-1] = DoxygenStrList[-1].rstrip('--*/')
     
@@ -2109,16 +2120,18 @@ def CheckFunctionHeaderConsistentWithDoxygenComment(FuncModifier, FuncHeader, Fu
         if Index < ParamNumber:
             ErrorMsgList.append('Line %d : Number of doxygen tags in comment less than number of function parameters' % CommentStartLine)
             PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'Number of doxygen tags in comment less than number of function parameters ', TableName, CommentId)
-        if FuncModifier.find('VOID') != -1 or FuncModifier.find('void') != -1:
-            if Index < DoxygenTagNumber - 1:
+        if (FuncModifier.find('VOID') != -1 or FuncModifier.find('void') != -1) and FuncModifier.find('*') == -1:
+            
+            # assume we allow a return description tag for void func. return. that's why 'DoxygenTagNumber - 1' is used instead of 'DoxygenTagNumber'
+            if Index < DoxygenTagNumber - 1 or (Index < DoxygenTagNumber and DoxygenStrList[Index].startswith('@retval')):
                 ErrorMsgList.append('Line %d : Excessive doxygen tags in comment' % CommentStartLine)
                 PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'Excessive doxygen tags in comment ', TableName, CommentId)
         else:
-            if Index < DoxygenTagNumber and not DoxygenStrList[Index].startswith('@retval'): 
+            if Index < DoxygenTagNumber and not DoxygenStrList[Index].startswith('@retval') and not DoxygenStrList[Index].startswith('@return'): 
                 ErrorMsgList.append('Line %d : Number of @param doxygen tags in comment does NOT match number of function parameters' % CommentStartLine)
                 PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'Number of @param doxygen tags in comment does NOT match number of function parameters ', TableName, CommentId)
     else:
-        if ParamNumber == 0 and DoxygenTagNumber != 0 and (FuncModifier.find('VOID') != -1 or FuncModifier.find('void') != -1):
+        if ParamNumber == 0 and DoxygenTagNumber != 0 and ((FuncModifier.find('VOID') != -1 or FuncModifier.find('void') != -1) and FuncModifier.find('*') == -1):
             ErrorMsgList.append('Line %d : Excessive doxygen tags in comment' % CommentStartLine)
             PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'Excessive doxygen tags in comment ', TableName, CommentId)
         if ParamNumber != 0 and DoxygenTagNumber == 0:
