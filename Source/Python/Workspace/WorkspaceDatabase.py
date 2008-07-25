@@ -1939,8 +1939,11 @@ class WorkspaceDatabase(object):
 
     ## Check if a table integrity flag exists or not
     def CheckIntegrity(self, TableName):
-        Result = self.Cur.execute("select min(ID) from %s" % (TableName)).fetchall()
-        if Result[0][0] != -1:
+        try:
+            Result = self.Cur.execute("select min(ID) from %s" % (TableName)).fetchall()
+            if Result[0][0] != -1:
+                return False
+        except:
             return False
         return True
 

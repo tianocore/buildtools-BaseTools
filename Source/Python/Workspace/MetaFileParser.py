@@ -22,6 +22,7 @@ from CommonDataClass.DataClass import *
 from Common.DataType import *
 from Common.String import *
 from Common.Misc import Blist
+from Common.Misc import GuidStructureStringToGuidString
 
 ## Base class of parser
 #
@@ -349,7 +350,8 @@ class InfParser(MetaFileParser):
             self._ValueList[2] = TokenList[1]
         if self._ValueList[0] == '' or self._ValueList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No token space GUID or PCD name specified",
-                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+                            ExtraData=self._CurrentLine + " (<TokenSpaceGuidCName>.<PcdCName>)",
+                            File=self._FilePath, Line=self._LineIndex+1)
 
     ## [depex] section parser
     def _DepexParser(self):
@@ -691,10 +693,12 @@ class DscParser(MetaFileParser):
             self._ValueList[2] = TokenList[1]
         if self._ValueList[0] == '' or self._ValueList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No token space GUID or PCD name specified",
-                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+                            ExtraData=self._CurrentLine + " (<TokenSpaceGuidCName>.<TokenCName>|<PcdValue>)",
+                            File=self._FilePath, Line=self._LineIndex+1)
         if self._ValueList[2] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No PCD value given",
-                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+                            ExtraData=self._CurrentLine + " (<TokenSpaceGuidCName>.<TokenCName>|<PcdValue>)",
+                            File=self._FilePath, Line=self._LineIndex+1)
 
     ## [components] section parser
     def _ComponentParser(self):
@@ -710,13 +714,16 @@ class DscParser(MetaFileParser):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT)
         if len(TokenList) < 2:
             EdkLogger.error('Parser', FORMAT_INVALID, "No library class or instance specified",
-                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+                            ExtraData=self._CurrentLine + " (<LibraryClassName>|<LibraryInstancePath>)",
+                            File=self._FilePath, Line=self._LineIndex+1)
         if TokenList[0] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No library class specified",
-                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+                            ExtraData=self._CurrentLine + " (<LibraryClassName>|<LibraryInstancePath>)",
+                            File=self._FilePath, Line=self._LineIndex+1)
         if TokenList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No library instance specified",
-                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+                            ExtraData=self._CurrentLine + " (<LibraryClassName>|<LibraryInstancePath>)",
+                            File=self._FilePath, Line=self._LineIndex+1)
         self._ValueList[0:len(TokenList)] = TokenList
         if len(self._Macros) > 0:
             self._ValueList[1] = NormPath(self._ValueList[1], self._Macros)
@@ -832,13 +839,21 @@ class DecParser(MetaFileParser):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
         if len(TokenList) < 2:
             EdkLogger.error('Parser', FORMAT_INVALID, "No GUID name or value specified",
-                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+                            ExtraData=self._CurrentLine + " (<CName> = <GuidValueInCFormat>)",
+                            File=self._FilePath, Line=self._LineIndex+1)
         if TokenList[0] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No GUID name specified",
-                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+                            ExtraData=self._CurrentLine + " (<CName> = <GuidValueInCFormat>)",
+                            File=self._FilePath, Line=self._LineIndex+1)
         if TokenList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No GUID value specified",
-                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+                            ExtraData=self._CurrentLine + " (<CName> = <GuidValueInCFormat>)",
+                            File=self._FilePath, Line=self._LineIndex+1)
+        if TokenList[1][0] != '{' or TokenList[1][-1] != '}' or GuidStructureStringToGuidString(TokenList[1]) == '':
+            EdkLogger.error('Parser', FORMAT_INVALID, "Invalid GUID value format",
+                            ExtraData=self._CurrentLine + \
+                                      " (<CName> = <GuidValueInCFormat:{8,4,4,{2,2,2,2,2,2,2,2}}>)",
+                            File=self._FilePath, Line=self._LineIndex+1)
         self._ValueList[0] = TokenList[0]
         self._ValueList[1] = TokenList[1]
 
@@ -855,10 +870,35 @@ class DecParser(MetaFileParser):
         self._ValueList[0:1] = GetSplitValueList(TokenList[0], TAB_SPLIT)
         if self._ValueList[0] == '' or self._ValueList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No token space GUID or PCD name specified",
-                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+                            ExtraData=self._CurrentLine + \
+                                      " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
+                            File=self._FilePath, Line=self._LineIndex+1)
         if len(TokenList) < 2 or TokenList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No PCD Datum information given",
-                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+                            ExtraData=self._CurrentLine + \
+                                      " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
+                            File=self._FilePath, Line=self._LineIndex+1)
+        ValueList = GetSplitValueList(TokenList[1])
+        if len(ValueList) != 3:
+            EdkLogger.error('Parser', FORMAT_INVALID, "Invalid PCD Datum information given",
+                            ExtraData=self._CurrentLine + \
+                                      " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
+                            File=self._FilePath, Line=self._LineIndex+1)
+        if ValueList[0] == '':
+            EdkLogger.error('Parser', FORMAT_INVALID, "Missing DefaultValue in PCD Datum information",
+                            ExtraData=self._CurrentLine + \
+                                      " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
+                            File=self._FilePath, Line=self._LineIndex+1)
+        if ValueList[1] == '':
+            EdkLogger.error('Parser', FORMAT_INVALID, "Missing DatumType in PCD Datum information",
+                            ExtraData=self._CurrentLine + \
+                                      " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
+                            File=self._FilePath, Line=self._LineIndex+1)
+        if ValueList[2] == '':
+            EdkLogger.error('Parser', FORMAT_INVALID, "Missing Token in PCD Datum information",
+                            ExtraData=self._CurrentLine + \
+                                      " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
+                            File=self._FilePath, Line=self._LineIndex+1)
         self._ValueList[2] = TokenList[1]
 
     _SectionParser = {
