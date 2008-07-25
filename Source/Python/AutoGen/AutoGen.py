@@ -763,15 +763,14 @@ class PlatformAutoGen(AutoGen):
     #
     def ApplyLibraryInstance(self, Module):
         ModuleType = Module.ModuleType
-        # apply library instances from platform
-        for LibraryClass in Module.LibraryClasses:
-            LibraryInstance = self.Platform.LibraryClasses[LibraryClass, ModuleType]
-            if LibraryInstance == None:
-                continue
-            Module.LibraryClasses[LibraryClass] = LibraryInstance
 
-        # to override library instances with module specific setting
+        # for overridding library instances with module specific setting
         PlatformModule = self.Platform.Modules[str(Module)]
+
+        # add forced library instance
+        for LibraryClass in PlatformModule.LibraryClasses:
+            if LibraryClass.startswith("NULL"):
+                Module.LibraryClasses[LibraryClass] = PlatformModule.LibraryClasses[LibraryClass]
 
         # R9 module
         LibraryConsumerList = [Module]
@@ -785,13 +784,13 @@ class PlatformAutoGen(AutoGen):
             M = LibraryConsumerList.pop()
             for LibraryClassName in M.LibraryClasses:
                 if LibraryClassName not in LibraryInstance:
-                    # overrided library instance for this module
+                    # override library instance for this module
                     if LibraryClassName in PlatformModule.LibraryClasses:
                         LibraryPath = PlatformModule.LibraryClasses[LibraryClassName]
                     else:
-                        LibraryPath = M.LibraryClasses[LibraryClassName]
-                    if LibraryPath == None or LibraryPath == "":
                         LibraryPath = self.Platform.LibraryClasses[LibraryClassName, ModuleType]
+                    if LibraryPath == None or LibraryPath == "":
+                        LibraryPath = M.LibraryClasses[LibraryClassName]
                         if LibraryPath == None:
                             EdkLogger.error("build", RESOURCE_NOT_AVAILABLE,
                                             "Instance of library class [%s] is not found" % LibraryClassName,
@@ -1401,8 +1400,8 @@ class ModuleAutoGen(AutoGen):
                 continue
             # match tool chain family
             if F.ToolChainFamily != "" and F.ToolChainFamily != ToolChainFamily:
-                EdkLogger.verbose("The file [%s] must be built by tools of [%s], "
-                                  "but current toolchain family is [%s]" % (SourceFile, F.ToolChainFamily, ToolChainFamily))
+                EdkLogger.debug(EdkLogger.DEBUG_0, "The file [%s] must be built by tools of [%s], "
+                                "but current toolchain family is [%s]" % (SourceFile, F.ToolChainFamily, ToolChainFamily))
                 continue
 
             # add the file path into search path list for file including
