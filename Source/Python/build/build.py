@@ -20,6 +20,7 @@ import re
 import sys
 import glob
 import time
+import platform
 import traceback
 
 from threading import *
@@ -1223,7 +1224,7 @@ def Main():
     if Option.WarningAsError == True:
         EdkLogger.SetWarningAsError()
 
-    EdkLogger.quiet(time.strftime("%H:%M:%S, %b.%d %Y ", time.localtime()) + "[00:00]" + "\n")
+    EdkLogger.quiet(time.strftime("%H:%M:%S, %b.%d %Y ", time.localtime()) + "[%s]\n" % platform.platform())
     ReturnCode = 0
     MyBuild = None
     try:
@@ -1277,7 +1278,7 @@ def Main():
             # for multi-thread build exits safely
             MyBuild.Relinquish()
         if Option != None and Option.debug != None:
-            EdkLogger.quiet(traceback.format_exc())
+            EdkLogger.quiet("(Python %s on %s) " % (platform.python_version(), sys.platform) + traceback.format_exc())
         ReturnCode = X.args[0]
     except Warning, X:
         # error from Fdf parser
@@ -1286,7 +1287,7 @@ def Main():
             # for multi-thread build exits safely
             MyBuild.Relinquish()
         if Option != None and Option.debug != None:
-            EdkLogger.quiet(traceback.format_exc())
+            EdkLogger.quiet("(Python %s on %s) " % (platform.python_version(), sys.platform) + traceback.format_exc())
         else:
             EdkLogger.error(X.ToolName, FORMAT_INVALID, File=X.FileName, Line=X.LineNumber, ExtraData=X.Message, RaiseError = False)
         ReturnCode = FORMAT_INVALID
@@ -1304,7 +1305,7 @@ def Main():
                     ExtraData="Please send email to dev@buildtools.tianocore.org for help, attaching following call stack trace!\n",
                     RaiseError=False
                     )
-        EdkLogger.quiet(traceback.format_exc())
+        EdkLogger.quiet("(Python %s on %s) " % (platform.python_version(), sys.platform) + traceback.format_exc())
         ReturnCode = CODE_ERROR
     finally:
         Utils.Progressor.Abort()

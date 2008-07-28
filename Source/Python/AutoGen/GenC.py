@@ -840,7 +840,8 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
                 Unicode = False
                 if Value[0] == 'L':
                     Unicode = True
-                Value = Value.lstrip('L').strip('"')
+                Value = Value.lstrip('L')   #.strip('"')
+                Value = eval(Value)         # translate escape character
                 NewValue = '{'
                 for Index in range(0,len(Value)):
                     NewValue = NewValue + str(ord(Value[Index]) % 0x100) + ', '
