@@ -36,6 +36,7 @@ from Common.EdkIIWorkspace import *
 from Common.DataType import *
 from Common.Misc import *
 from Common.String import *
+import Common.GlobalData as GlobalData
 from GenFds.FdfParser import *
 
 ## Regular expression for splitting Dependency Expression stirng into tokens
@@ -334,6 +335,7 @@ class PlatformAutoGen(AutoGen):
     #
     def _Init(self, Workspace, PlatformFile, Target, Toolchain, Arch):
         EdkLogger.verbose("\nAutoGen platform [%s] [%s]" % (PlatformFile, Arch))
+        GlobalData.gProcessingFile = "%s [%s, %s, %s]" % (PlatformFile, Arch, Toolchain, Target)
 
         self._MetaFile = str(PlatformFile)
         self.Workspace = Workspace
@@ -620,7 +622,9 @@ class PlatformAutoGen(AutoGen):
     #
     def _GetBuildRule(self):
         if self._BuildRule == None:
-            BuildRuleFile = self.Workspace.TargetTxt.TargetTxtDictionary[TAB_TAT_DEFINES_BUILD_RULE_CONF]
+            BuildRuleFile = None
+            if TAB_TAT_DEFINES_BUILD_RULE_CONF in self.Workspace.TargetTxt.TargetTxtDictionary:
+                BuildRuleFile = self.Workspace.TargetTxt.TargetTxtDictionary[TAB_TAT_DEFINES_BUILD_RULE_CONF]
             if BuildRuleFile in [None, '']:
                 BuildRuleFile = gBuildRuleFile
             self._BuildRule = BuildRule(BuildRuleFile)
@@ -791,21 +795,22 @@ class PlatformAutoGen(AutoGen):
                         LibraryPath = self.Platform.LibraryClasses[LibraryClassName, ModuleType]
                     if LibraryPath == None or LibraryPath == "":
                         LibraryPath = M.LibraryClasses[LibraryClassName]
-                        if LibraryPath == None:
+                        if LibraryPath == None or LibraryPath == "":
                             EdkLogger.error("build", RESOURCE_NOT_AVAILABLE,
                                             "Instance of library class [%s] is not found" % LibraryClassName,
                                             File=self._MetaFile,
-                                            ExtraData="consumed by [%s] [%s]\n\t[%s]" % (str(M), self.Arch, str(Module)))
+                                            ExtraData="in [%s] [%s]\n\tconsumed by module [%s]" % (str(M), self.Arch, str(Module)))
 
                     LibraryModule = self.BuildDatabase[LibraryPath, self.Arch]
                     # for those forced library instance (NULL library), add a fake library class
                     if LibraryClassName.startswith("NULL"):
                         LibraryModule.LibraryClass.append(LibraryClassObject(LibraryClassName, [ModuleType]))
-                    elif ModuleType not in LibraryModule.LibraryClass[0].SupModList:
+                    elif LibraryModule.LibraryClass == None or len(LibraryModule.LibraryClass) == 0 \
+                         or ModuleType not in LibraryModule.LibraryClass[0].SupModList:
                         EdkLogger.error("build", OPTION_MISSING,
                                         "Module type [%s] is not supported by library instance [%s]" \
                                         % (ModuleType, LibraryPath), File=self._MetaFile,
-                                        ExtraData="\tconsumed by [%s]" % str(Module))
+                                        ExtraData="consumed by [%s]" % str(Module))
 
                     LibraryInstance[LibraryClassName] = LibraryModule
                     LibraryConsumerList.append(LibraryModule)
@@ -837,25 +842,7 @@ class PlatformAutoGen(AutoGen):
         Q = []
         for LibraryClassName in LibraryInstance:
             M = LibraryInstance[LibraryClassName]
-            #if M == None:
-            #    EdkLogger.error("build", RESOURCE_NOT_AVAILABLE,
-            #                    "Library instance of library class [%s] is not found" % LibraryClassName,
-            #                    File=self._MetaFile, ExtraData="consumed by [%s] [%s]" % (str(Module), self.Arch))
             LibraryList.append(M)
-            #
-            # check if there're library classes
-            #
-            #for Lc in M.LibraryClass:
-            #    if Lc.SupModList != None and ModuleType not in Lc.SupModList:
-            #        EdkLogger.error("build", OPTION_MISSING,
-            #                        "Module type [%s] is not supported by library instance [%s]" % (ModuleType, str(M)),
-            #                        File=self._MetaFile, ExtraData="\tconsumed by [%s]" % str(Module))
-
-                #if Lc.LibraryClass in LibraryInstance and str(M) != str(LibraryInstance[Lc.LibraryClass]):
-                #    EdkLogger.error("build", OPTION_CONFLICT,
-                #                    "More than one library instance found for library class [%s] in module [%s]" % (Lc.LibraryClass, str(Module)),
-                #                    ExtraData="\t%s\n\t%s" % (LibraryInstance[Lc.LibraryClass], str(M))
-                #                    )
             if ConsumedByList[M] == []:
                 Q.insert(0, M)
 
@@ -962,7 +949,9 @@ class PlatformAutoGen(AutoGen):
             EdkLogger.verbose("No MaxDatumSize specified for PCD %s.%s" \
                               % (ToPcd.TokenSpaceGuidCName, ToPcd.TokenCName))
             Value = ToPcd.DefaultValue
-            if Value[0] == 'L':
+            if Value in [None, '']:
+                ToPcd.MaxDatumSize = 1
+            elif Value[0] == 'L':
                 ToPcd.MaxDatumSize = str(len(Value) * 2)
             elif Value[0] == '{':
                 ToPcd.MaxDatumSize = str(len(Value.split(',')))
@@ -1040,7 +1029,9 @@ class PlatformAutoGen(AutoGen):
         while len(LibraryConsumerList) > 0:
             M = LibraryConsumerList.pop()
             for LibraryName in M.Libraries:
-                Library = self.Platform.LibraryClasses[LibraryName, ':dummy:']
+                Library = None
+                if (LibraryName, ':dummy:') in self.Platform.LibraryClasses:
+                    Library = self.Platform.LibraryClasses[LibraryName, ':dummy:']
                 if Library == None:
                     EdkLogger.warn("build", "Library [%s] is not found" % LibraryName, File=str(M),
                                     ExtraData="\t%s [%s]" % (str(Module), self.Arch))
@@ -1161,6 +1152,7 @@ class ModuleAutoGen(AutoGen):
     #
     def _Init(self, Workspace, ModuleFile, Target, Toolchain, Arch, PlatformFile):
         EdkLogger.verbose("\nAutoGen module [%s] [%s]" % (ModuleFile, Arch))
+        GlobalData.gProcessingFile = "%s [%s, %s, %s]" % (ModuleFile, Arch, Toolchain, Target)
 
         self.Workspace = Workspace
         self.WorkspaceDir = Workspace.WorkspaceDir

@@ -409,6 +409,9 @@ class DscBuildData(PlatformBuildClassObject):
                 if not ValidFile(LibraryInstance, '.inf'):
                     EdkLogger.error('build', FILE_NOT_FOUND, File=self.DescFilePath,
                                     ExtraData=LibraryInstance, Line=LineNo)
+                if ModuleType != 'COMMON' and ModuleType not in SUP_MODULE_LIST:
+                    EdkLogger.error('build', OPTION_UNKNOWN, "Unknown module type [%s]" % ModuleType,
+                                    File=self.DescFilePath, ExtraData=LibraryInstance, Line=LineNo)
                 LibraryClassDict[Arch, ModuleType, LibraryClass] = LibraryInstance
                 if LibraryInstance not in self._LibraryInstances:
                     self._LibraryInstances.append(LibraryInstance)

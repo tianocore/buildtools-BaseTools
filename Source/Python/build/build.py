@@ -587,6 +587,12 @@ class BuildTask:
             # TRICK: hide the output of threads left runing, so that the user can
             #        catch the error message easily
             #
+            if not BuildTask._ErrorFlag.isSet():
+                GlobalData.gBuildingModule = "%s [%s, %s, %s]" % (str(self.BuildItem.BuildObject),
+                                                                  self.BuildItem.BuildObject.Arch,
+                                                                  self.BuildItem.BuildObject.ToolChain,
+                                                                  self.BuildItem.BuildObject.BuildTarget
+                                                                 )
             EdkLogger.SetLevel(EdkLogger.QUIET)
             BuildTask._ErrorFlag.set()
             BuildTask._ErrorMessage = "%s broken\n    %s [%s]" % \
@@ -998,7 +1004,7 @@ class Build():
                             ExitFlag.set()
                             BuildTask.WaitForComplete()
                             Pa.CreateMakeFile(False)
-                            EdkLogger.error("build", BUILD_ERROR, BuildTask.GetErrorMessage())
+                            EdkLogger.error("build", BUILD_ERROR, "Failed to build module", ExtraData=GlobalData.gBuildingModule)
                         # Start task scheduler
                         if not BuildTask.IsOnGoing():
                             BuildTask.StartScheduler(self.ThreadNumber, ExitFlag)
@@ -1006,7 +1012,7 @@ class Build():
                     # in case there's an interruption. we need a full version of makefile for platform
                     Pa.CreateMakeFile(False)
                     if BuildTask.HasError():
-                        EdkLogger.error("build", BUILD_ERROR, BuildTask.GetErrorMessage())
+                        EdkLogger.error("build", BUILD_ERROR, "Failed to build module", ExtraData=GlobalData.gBuildingModule)
 
                 #
                 # All modules have been put in build tasks queue. Tell task scheduler
@@ -1020,7 +1026,7 @@ class Build():
                 # has been signaled.
                 #
                 if BuildTask.HasError():
-                    EdkLogger.error("build", BUILD_ERROR, BuildTask.GetErrorMessage())
+                    EdkLogger.error("build", BUILD_ERROR, "Failed to build module", ExtraData=GlobalData.gBuildingModule)
 
                 # Generate FD image if there's a FDF file found
                 if self.Fdf != '' and self.Target in ["", "all", "fds"]:
@@ -1301,8 +1307,8 @@ def Main():
         EdkLogger.error(
                     "\nbuild",
                     CODE_ERROR,
-                    "Unknown fatal error",
-                    ExtraData="Please send email to dev@buildtools.tianocore.org for help, attaching following call stack trace!\n",
+                    "Unknown fatal error when processing [%s]" % GlobalData.gProcessingFile,
+                    ExtraData="\n(Please send email to dev@buildtools.tianocore.org for help, attaching following call stack trace!)\n",
                     RaiseError=False
                     )
         EdkLogger.quiet("(Python %s on %s) " % (platform.python_version(), sys.platform) + traceback.format_exc())
