@@ -15,3 +15,7 @@ gEdkSource = "Edk"
 
 gGlobalDefines = {}
 
+# for debug trace purpose when problem occurs
+gProcessingFile = ''
+gBuildingModule = ''
+
