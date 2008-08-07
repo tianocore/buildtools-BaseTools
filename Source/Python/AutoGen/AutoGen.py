@@ -1029,9 +1029,7 @@ class PlatformAutoGen(AutoGen):
         while len(LibraryConsumerList) > 0:
             M = LibraryConsumerList.pop()
             for LibraryName in M.Libraries:
-                Library = None
-                if (LibraryName, ':dummy:') in self.Platform.LibraryClasses:
-                    Library = self.Platform.LibraryClasses[LibraryName, ':dummy:']
+                Library = self.Platform.LibraryClasses[LibraryName, ':dummy:']
                 if Library == None:
                     EdkLogger.warn("build", "Library [%s] is not found" % LibraryName, File=str(M),
                                     ExtraData="\t%s [%s]" % (str(Module), self.Arch))
