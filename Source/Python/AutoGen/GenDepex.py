@@ -27,6 +27,9 @@ import antlr3
 from DepexLexer import DepexLexer
 from DepexParser import DepexParser
 
+## Regular expression for matching "DEPENDENCY_START ... DEPENDENCY_END"
+gStartClosePattern = re.compile(".*DEPENDENCY_START(.+)DEPENDENCY_END.*", re.S)
+
 ## Mapping between module type and EFI phase
 gType2Phase = {
     "BASE"              :   None,
@@ -263,6 +266,7 @@ def Main():
         if len(Input) > 0 and Option.Expression == "":
             DxsFile = Input[0]
             DxsString = open(DxsFile, 'r').read()
+            DxsString = gStartClosePattern.sub("\\1", DxsString)
         elif Option.Expression != "":
             if Option.Expression[0] == '"':
                 DxsString = Option.Expression[1:-1]
