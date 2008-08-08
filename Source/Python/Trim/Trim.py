@@ -37,6 +37,8 @@ gTypedefPattern = re.compile("^\s*typedef\s+struct\s+[{]*$", re.MULTILINE)
 gPragmaPattern = re.compile("^\s*#pragma\s+pack", re.MULTILINE)
 ## Regular expression for matching HEX number
 gHexNumberPattern = re.compile("0[xX]([0-9a-fA-F]+)", re.MULTILINE)
+## Regular expression for matching "Include ()" in asl file
+gAslIncludePattern = re.compile("^\s*Include\s*\(([^\(\)]+)\)\s*$", re.MULTILINE)
 
 ## Trim preprocessed source code
 #
@@ -175,6 +177,27 @@ def TrimPreprocessedVfr(Source, Target):
     f.writelines(Lines)
     f.close()
 
+## Trim ASL file
+#
+# Replace ASL include style with C include style.
+#
+#   Include ("header.h") => #include "header.h"
+#
+# @param  Source    File to be trimmed
+# @param  Target    File to store the trimmed content
+#
+def TrimAslFile(Source, Target):
+    f = open (Source,'r')
+    # read whole file
+    Lines = f.read()
+    f.close()
+    Lines = gAslIncludePattern.sub("#include \\1", Lines)
+
+    # save all lines trimmed
+    f = open (Target,'w')
+    f.write(Lines)
+    f.close()
+
 ## Parse command line options
 #
 # Using standard Python module optparse to parse command line option of this tool.
@@ -188,8 +211,12 @@ def Options():
                           help="The input file is preprocessed source code, including C or assembly code"),
         make_option("-r", "--vfr-file", dest="FileType", const="Vfr", action="store_const",
                           help="The input file is preprocessed VFR file"),
+        make_option("-a", "--asl-file", dest="FileType", const="Asl", action="store_const",
+                          help="The input file is ASL file"),
+
         make_option("-c", "--convert-hex", dest="ConvertHex", action="store_true",
                           help="Convert standard hex format (0xabcd) to MASM format (abcdh)"),
+
         make_option("-o", "--output", dest="OutputFile",
                           help="File to store the trimmed content"),
         make_option("-v", "--verbose", dest="LogLevel", action="store_const", const=EdkLogger.VERBOSE,
@@ -243,6 +270,8 @@ def Main():
 
         if CommandOptions.FileType == "Vfr":
             TrimPreprocessedVfr(InputFile, CommandOptions.OutputFile)
+        elif CommandOptions.FileType == "Asl":
+            TrimAslFile(InputFile, CommandOptions.OutputFile)
         else :
             TrimPreprocessedFile(InputFile, CommandOptions.OutputFile, CommandOptions.ConvertHex)
     except Exception, e:
