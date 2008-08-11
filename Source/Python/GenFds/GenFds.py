@@ -18,6 +18,7 @@
 from optparse import OptionParser
 import sys
 import os
+import linecache
 import FdfParser
 from Common import BuildToolError
 from GenFdsGlobalVariable import GenFdsGlobalVariable
@@ -203,6 +204,10 @@ def main():
 
         """Call GenFds"""
         GenFds.GenFd('', FdfParserObj, BuildWorkSpace, ArchList)
+        
+        """Display FV space info."""
+        GenFds.DisplayFvSpaceInfo(FdfParserObj)
+        
     except FdfParser.Warning, X:
         EdkLogger.error(X.ToolName, BuildToolError.FORMAT_INVALID, File=X.FileName, Line=X.LineNumber, ExtraData=X.Message, RaiseError = False)
         ReturnCode = BuildToolError.FORMAT_INVALID
@@ -337,9 +342,51 @@ class GenFds :
                                     return ElementRegion.BlockSizeOfRegion(ElementFd.BlockSizeList)
             return 0x10000
 
+    
+    def DisplayFvSpaceInfo(FdfParser):
+        
+        FvSpaceInfoList = []
+        MaxFvNameLength = 0
+        for FvName in FdfParser.Profile.FvDict:
+            if len(FvName) > MaxFvNameLength:
+                MaxFvNameLength = len(FvName)
+            FvSpaceInfoFileName = os.path.join(GenFdsGlobalVariable.FfsDir, FvName.upper() + '.inf')
+            if os.path.exists(FvSpaceInfoFileName):
+                FileLinesList = linecache.getlines(FvSpaceInfoFileName)
+                TotalFound = False
+                Total = ''
+                UsedFound = False
+                Used = ''
+                FreeFound = False
+                Free = ''
+                for Line in FileLinesList:
+                    NameValue = Line.split('=')
+                    if len(NameValue) == 2:
+                        if NameValue[0].strip() == 'EFI_FV_TOTAL_SIZE':
+                            TotalFound = True
+                            Total = NameValue[1].strip()
+                        if NameValue[0].strip() == 'EFI_FV_TAKEN_SIZE':
+                            UsedFound = True
+                            Used = NameValue[1].strip()
+                        if NameValue[0].strip() == 'EFI_FV_SPACE_SIZE':
+                            FreeFound = True
+                            Free = NameValue[1].strip()
+                
+                if TotalFound and UsedFound and FreeFound:
+                    FvSpaceInfoList.append((FvName, Total, Used, Free))
+                
+        GenFdsGlobalVariable.InfLogger('\nFV Space Information')
+        for FvSpaceInfo in FvSpaceInfoList:
+            Name = FvSpaceInfo[0]
+            TotalSizeValue = long(FvSpaceInfo[1], 0)
+            UsedSizeValue = long(FvSpaceInfo[2], 0)
+            FreeSizeValue = long(FvSpaceInfo[3], 0)
+            GenFdsGlobalVariable.InfLogger(Name + ' ' + '[' + str((UsedSizeValue+0.0)/TotalSizeValue)[0:4].lstrip('0.') + '%Full] ' + str(TotalSizeValue) + ' total, ' + str(UsedSizeValue) + ' used, ' + str(FreeSizeValue) + ' free')
+
     ##Define GenFd as static function
     GenFd = staticmethod(GenFd)
     GetFvBlockSize = staticmethod(GetFvBlockSize)
+    DisplayFvSpaceInfo = staticmethod(DisplayFvSpaceInfo)
 
 if __name__ == '__main__':
     sys.exit(main())

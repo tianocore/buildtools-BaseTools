@@ -20,6 +20,7 @@ import AprioriSection
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 from GenFds import GenFds
 import os
+import shutil
 import subprocess
 from CommonDataClass.FdfClass import FvClassObject
 
@@ -60,6 +61,8 @@ class FV (FvClassObject):
         if self.UiFvName.upper() in GenFds.FvBinDict.keys():
             return GenFds.FvBinDict[self.UiFvName.upper()]
 
+        GenFdsGlobalVariable.InfLogger( "\nGenerating %s FV ..." %self.UiFvName)
+
         self.__InitializeInf__(BaseAddress, BlockSize, BlockNum, ErasePloarity, VtfDict)
         #
         # First Process the Apriori section
@@ -92,10 +95,13 @@ class FV (FvClassObject):
         # BUGBUG: FvOutputFile could be specified from FDF file (FV section, CreateFile statement)
         if self.CreateFileName != None:
             FvOutputFile = self.CreateFileName
+        
+        FvInfoFileName = os.path.join(GenFdsGlobalVariable.FfsDir, self.UiFvName + '.inf')
+        shutil.copy(GenFdsGlobalVariable.FvAddressFileName, FvInfoFileName)
         GenFdsGlobalVariable.GenerateFirmwareVolume(
                                 FvOutputFile,
                                 [self.InfFileName],
-                                AddressFile=GenFdsGlobalVariable.FvAddressFileName
+                                AddressFile=FvInfoFileName
                                 )
 
         #
@@ -103,7 +109,7 @@ class FV (FvClassObject):
         #
         FvFileObj = open ( FvOutputFile,'r+b')
 
-        GenFdsGlobalVariable.InfLogger( "\nGenerate %s Fv Successfully" %self.UiFvName)
+        GenFdsGlobalVariable.InfLogger( "\nGenerate %s FV Successfully" %self.UiFvName)
         GenFdsGlobalVariable.SharpCounter = 0
 
         Buffer.write(FvFileObj.read())
