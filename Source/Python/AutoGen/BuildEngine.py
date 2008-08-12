@@ -19,6 +19,7 @@ import re
 import string
 
 from Common.BuildToolError import *
+from Common.Misc import tdict
 import Common.EdkLogger as EdkLogger
 
 ## Convert file type to makefile macro name
@@ -43,40 +44,45 @@ class FileBuildRule:
     #   @param  Output      The list represeting output file(s) for a rule
     #   @param  Command     The list containing commands to generate the output from input
     #
-    def __init__(self, Input, Output, Command):
+    def __init__(self, Type, Input, Output, Command, ExtraDependency=None):
         # The Input should not be empty
-        if Input == {}:
+        if Input == None or len(Input) == 0:
             EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No input files for a build rule")
-        # The Output should not be empty
-        if Output == []:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No output files for a build rule")
+        if Output == None:
+            Output = []
 
-        self.SourceFileType = {}
+        self.SourceFileType = [Type]
         self.SourceFileExtList = []
         # source files listed not in "*" or "?" pattern format
-        self.ExtraSourceFileList = []
+        if ExtraDependency == None:
+            self.ExtraSourceFileList = []
+        else:
+            self.ExtraSourceFileList = ExtraDependency
         self.IsMultipleInput = False
-        for FileType in Input:
-            if FileType not in self.SourceFileType:
-                self.SourceFileType[FileType] = []
-            for File in Input[FileType]:
-                Base, Ext = os.path.splitext(File)
-                if Base.find("*") >= 0:
-                    # There's "*" in the file name
-                    self.IsMultipleInput = True
-                elif Base.find("?") < 0:
-                    # There's no "*" and "?" in file name
-                    self.ExtraSourceFileList.append(File)
-                    continue
-                self.SourceFileType[FileType].append(Ext)
+        for File in Input:
+            Base, Ext = os.path.splitext(File)
+            if Base.find("*") >= 0:
+                # There's "*" in the file name
+                self.IsMultipleInput = True
+            elif Base.find("?") < 0:
+                # There's no "*" and "?" in file name
+                self.ExtraSourceFileList.append(File)
+                continue
+            if Ext not in self.SourceFileExtList:
                 self.SourceFileExtList.append(Ext)
 
         if len(self.SourceFileType) > 1:
             self.IsMultipleInput = True
 
+        if len(Command) == 0:
+            self.IsMultipleInput = False
+
         self.DestFileList = Output
         self.DestFile = ""
-        self.DestFileExt = os.path.splitext(Output[0])[1]
+        if len(Output) > 0:
+            self.DestFileExt = os.path.splitext(Output[0])[1]
+        else:
+            self.DestFileExt = ''
         self.DestPath = ""
         self.DestFileName = ""
         self.DestFileBase = ""
@@ -88,8 +94,7 @@ class FileBuildRule:
     #
     def __str__(self):
         SourceString = ""
-        for FileType in self.SourceFileType:
-            SourceString += " %s(%s)" % (FileType, " ".join(self.SourceFileType[FileType]))
+        SourceString += " %s %s %s" % (self.SourceFileType, " ".join(self.SourceFileExtList), self.ExtraSourceFileList)
         DestString = ", ".join(self.DestFileList)
         CommandString = "\n\t".join(self.CommandList)
         return "%s : %s\n\t%s" % (DestString, SourceString, CommandString)
@@ -146,7 +151,7 @@ class FileBuildRule:
         for Index in range(len(self.CommandList)):
             self.CommandList[Index] = self.CommandList[Index].replace("(+)", PathSeparator)
 
-        if self.DestFile == "":
+        if self.DestFile == "" and len(self.DestFileList) > 0:
             self.DestFile = self.DestFileList[0]
         if self.DestPath == "":
             self.DestPath = os.path.dirname(self.DestFile)
@@ -171,18 +176,18 @@ class FileBuildRule:
             "d_ext"     :   self.DestFileExt,
         }
 
-        DstFileList = []
-        for FileString in self.DestFileList:
-            FileString = string.Template(FileString).safe_substitute(BuildRulePlaceholderDict)
-            FileString = string.Template(FileString).safe_substitute(BuildRulePlaceholderDict)
-            DstFileList.append(FileString)
+        DstFile = ''
+        if len(self.DestFileList) > 0:
+            DstFile = self.DestFileList[0]
+            DstFile = string.Template(DstFile).safe_substitute(BuildRulePlaceholderDict)
+            DstFile = string.Template(DstFile).safe_substitute(BuildRulePlaceholderDict)
         CommandList = []
         for CommandString in self.CommandList:
             CommandString = string.Template(CommandString).safe_substitute(BuildRulePlaceholderDict)
             CommandString = string.Template(CommandString).safe_substitute(BuildRulePlaceholderDict)
             CommandList.append(CommandString)
 
-        return SrcFile, self.ExtraSourceFileList, DstFileList[0], CommandList
+        return SrcFile, self.ExtraSourceFileList, DstFile, CommandList
 
 ## Class for build rules
 #
@@ -196,6 +201,7 @@ class BuildRule:
     _SubSection = "SUBSECTION"
     _InputFile = "INPUTFILE"
     _OutputFile = "OUTPUTFILE"
+    _ExtraDependency = "EXTRADEPENDENCY"
     _Command = "COMMAND"
     _UnknownSection = "UNKNOWNSECTION"
 
@@ -224,15 +230,17 @@ class BuildRule:
             EdkLogger.error("build", PARAMETER_MISSING, ExtraData="No rule file or string given")
 
         self.SupportedToolChainFamilyList = SupportedFamily
-        self.RuleDatabase = {}  # {version : {family : {file type : FileBuildRule object}}}
+        self.RuleDatabase = tdict(True, 4)  # {FileExt, ModuleType, Arch, Family : FileBuildRule object}
         self.FileTypeDict = {}  # {ext : file-type}
 
         self._LineIndex = LineIndex
-        self._BuildVersion = "*"
-        self._RuleInfo = {}     # {toolchain family : {"InputFile": {}, "OutputFile" : [], "Command" : []}}
-        self._FileTypeList = []
-        self._FamilyList = []
         self._State = ""
+        self._RuleInfo = tdict(True, 2)     # {toolchain family : {"InputFile": {}, "OutputFile" : [], "Command" : []}}
+        self._FileType = ''
+        self._BuildTypeList = []
+        self._ArchList = []
+        self._FamilyList = []
+        self._TotalToolChainFamilySet = set()
         self._RuleObjectList = [] # FileBuildRule object list
 
         self.Parse()
@@ -273,17 +281,7 @@ class BuildRule:
     #   @param  LineIndex   The line index of build rule text
     #
     def ParseSection(self, LineIndex):
-        TokenList = self.RuleContent[LineIndex].split("=", 1)
-        # currently only BUILD_VERSION is supported
-        if len(TokenList) != 2 or TokenList[0] != "BUILD_VERSION":
-            EdkLogger.error("build", FORMAT_INVALID, File=self.RuleFile, Line=LineIndex+1,
-                            ExtraData="Invalid definition: " + self.RuleContent[LineIndex])
-
-        try:
-            self._BuildVersion = int(TokenList[1].strip(), 0)
-        except:
-            EdkLogger.error("build", FORMAT_INVALID, File=self.RuleFile, Line=LineIndex+1,
-                            ExtraData="Version is not a valid number: " + self.RuleContent[LineIndex])
+        pass
 
     ## Parse definitions under a subsection
     #
@@ -302,106 +300,94 @@ class BuildRule:
 
     ## Merge section information just got into rule database
     def EndOfSection(self):
-        if self._FileTypeList == [] or self._RuleInfo == {}:
-            return
-
         Database = self.RuleDatabase
-        if self._BuildVersion not in Database:
-            Database[self._BuildVersion] = {}
-        Database = self.RuleDatabase[self._BuildVersion]
-
-        # expand *
-        FamilyList = self._RuleInfo.keys()
-        if "*" in FamilyList and len(FamilyList) > 1:
-            FamilyList.remove("*")
-
-        NewRuleInfo = {}
-        for Family in self._RuleInfo:
-            Rule = self._RuleInfo[Family]
-            if Family == "*" and Family not in FamilyList:
-                NewFamilyList = FamilyList
-            else:
-                NewFamilyList = [Family]
-
-            for NewFamily in NewFamilyList:
-                if NewFamily not in NewRuleInfo:
-                    NewRuleInfo[NewFamily] = {}
-
-                if self._InputFile in Rule:
-                    NewRuleInfo[NewFamily][self._InputFile] = Rule[self._InputFile]
-                if self._OutputFile in Rule:
-                    NewRuleInfo[NewFamily][self._OutputFile] = Rule[self._OutputFile]
-                if self._Command in Rule:
-                    NewRuleInfo[NewFamily][self._Command] = Rule[self._Command]
-
-        for NewFamily in FamilyList:
-            Rule = NewRuleInfo[NewFamily]
-            if NewFamily not in Database:
-                Database[NewFamily] = {}
-
-            if self._InputFile in Rule:
-                Input = Rule[self._InputFile]
-            else:
+        # if there's specific toochain family, 'COMMON' doesnt make any sense any more
+        if len(self._TotalToolChainFamilySet) > 1 and 'COMMON' in self._TotalToolChainFamilySet:
+            self._TotalToolChainFamilySet.remove('COMMON')
+        for Family in self._TotalToolChainFamilySet:
+            Input = self._RuleInfo[Family, self._InputFile]
+            if Input == None or len(Input) == 0:
                 EdkLogger.error("build", FORMAT_INVALID, File=self.RuleFile,
-                                ExtraData="No input files found for rule %s" % self._FileTypeList)
+                                ExtraData="No input files found for rule %s" % self._FileType)
 
-            if self._OutputFile in Rule:
-                Output = Rule[self._OutputFile]
-            else:
-                EdkLogger.error("build", FORMAT_INVALID, File=self.RuleFile,
-                                ExtraData="No output files found for rule %s" % self._FileTypeList)
+            Output = self._RuleInfo[Family, self._OutputFile]
+            if Output == None:
+                Output = []
 
-            if self._Command in Rule:
-                Command = Rule[self._Command]
-            else:
+            Command = self._RuleInfo[Family, self._Command]
+            if Command == None:
                 Command = []
 
-            if NewFamily == "*":
-                for Family in self.SupportedToolChainFamilyList:
-                    if Family not in Database:
-                        Database[Family] = {}
-                    RuleObject = FileBuildRule(Input, Output, Command)
-                    self._RuleObjectList.append(RuleObject)
-                    for FileType in RuleObject.SourceFileType:
-                        Database[Family][FileType] = RuleObject
-            else:
-                RuleObject = FileBuildRule(Input, Output, Command)
-                self._RuleObjectList.append(RuleObject)
-                for FileType in RuleObject.SourceFileType:
-                    Database[NewFamily][FileType] = RuleObject
-        # for new section
-        self._RuleInfo = {}
+            ExtraDependency = self._RuleInfo[Family, self._ExtraDependency]
+            if ExtraDependency == None:
+                ExtraDependency = []
+
+            BuildRule = FileBuildRule(self._FileType, Input, Output, Command, ExtraDependency)
+            for BuildType in self._BuildTypeList:
+                for Arch in self._ArchList:
+                    for FileExt in BuildRule.SourceFileExtList:
+                        Database[FileExt, BuildType, Arch, Family] = BuildRule
 
     ## Parse section header
     #
     #   @param  LineIndex   The line index of build rule text
     #
     def ParseSectionHeader(self, LineIndex):
-        BuildVersion = ""
-        FileTypeList = []
+        self._RuleInfo = tdict(True, 2)
+        self._BuildTypeList = []
+        self._ArchList = []
+        self._FamilyList = []
+        self._TotalToolChainFamilySet = set()
+        FileType = ''
         RuleNameList = self.RuleContent[LineIndex][1:-1].split(',')
         for RuleName in RuleNameList:
-            TokenList = RuleName.split('.')
-            if len(TokenList) == 1:
-                EdkLogger.error("build", FORMAT_INVALID, File=self.RuleFile, Line=LineIndex+1,
-                                ExtraData="Invalid rule section: " + self.RuleContent[LineIndex])
+            Arch = 'COMMON'
+            BuildType = 'COMMON'
+            TokenList = [Token.strip().upper() for Token in RuleName.split('.')]
+            # old format: Build.File-Type
+            if TokenList[0] == "BUILD":
+                if len(TokenList) == 1:
+                    EdkLogger.error("build", FORMAT_INVALID, "Invalid rule section",
+                                    File=self.RuleFile, Line=LineIndex+1,
+                                    ExtraData=self.RuleContent[LineIndex])
 
-            Rule = TokenList[0].strip()
-            if Rule.upper() != "BUILD":
-                self._State = self._UnknownSection
-                return
+                FileType = TokenList[1]
+                if FileType == '':
+                    EdkLogger.error("build", FORMAT_INVALID, File=self.RuleFile, Line=LineIndex+1,
+                                    ExtraData="No file type given: " + Line)
+                if self._FileTypePattern.match(FileType) == None:
+                    EdkLogger.error("build", FORMAT_INVALID, File=self.RuleFile, Line=LineIndex+1,
+                                    ExtraData="Only character, number (non-first character), '_' and '-' are allowed in file type")
+            # new format: File-Type.Build-Type.Arch
+            else:
+                if FileType == '':
+                    FileType = TokenList[0]
+                elif FileType != TokenList[0]:
+                    EdkLogger.error("build", FORMAT_INVALID,
+                                    "Different file types are not allowed in the same rule section",
+                                    File=self.RuleFile, Line=LineIndex+1,
+                                    ExtraData=self.RuleContent[LineIndex])
+                if len(TokenList) > 1:
+                    BuildType = TokenList[1]
+                if len(TokenList) > 2:
+                    Arch = TokenList[2]
+            if BuildType not in self._BuildTypeList:
+                self._BuildTypeList.append(BuildType)
+            if Arch not in self._ArchList:
+                self._ArchList.append(Arch)
 
-            FileType = TokenList[1].strip()
-            if FileType == '':
-                EdkLogger.error("build", FORMAT_INVALID, File=self.RuleFile, Line=LineIndex+1,
-                                ExtraData="No file type given: " + Line)
-            if self._FileTypePattern.match(FileType) == None:
-                EdkLogger.error("build", FORMAT_INVALID, File=self.RuleFile, Line=LineIndex+1,
-                                ExtraData="Only character, number (non-first character), '_' and '-' are allowed in file type")
-            FileTypeList.append(FileType)
+        if 'COMMON' in self._BuildTypeList and len(self._BuildTypeList) > 1:
+            EdkLogger.error("build", FORMAT_INVALID,
+                            "Specific build types must not be mixed with common one",
+                            File=self.RuleFile, Line=LineIndex+1,
+                            ExtraData=self.RuleContent[LineIndex])
+        if 'COMMON' in self._ArchList and len(self._ArchList) > 1:
+            EdkLogger.error("build", FORMAT_INVALID,
+                            "Specific ARCH must not be mixed with common one",
+                            File=self.RuleFile, Line=LineIndex+1,
+                            ExtraData=self.RuleContent[LineIndex])
 
-        self._FileTypeList = FileTypeList
-        self._BuildVersion = "*"
+        self._FileType = FileType
         self._State = self._Section
 
     ## Parse sub-section header
@@ -419,19 +405,27 @@ class BuildRule:
             if SectionType == "":
                 SectionType = Type
             elif SectionType != Type:
-                EdkLogger.error("build", FORMAT_INVALID, File=self.RuleFile, Line=LineIndex+1,
-                                ExtraData="Two different section types are not allowed: " + Line)
+                EdkLogger.error("build", FORMAT_INVALID,
+                                "Two different section types are not allowed in the same sub-section",
+                                File=self.RuleFile, Line=LineIndex+1,
+                                ExtraData=self.RuleContent[LineIndex])
 
             if len(TokenList) > 1:
                 Family = TokenList[1].strip().upper()
             else:
-                Family = "*"
+                Family = "COMMON"
 
             if Family not in FamilyList:
                 FamilyList.append(Family)
 
         self._FamilyList = FamilyList
+        self._TotalToolChainFamilySet.update(FamilyList)
         self._State = SectionType.upper()
+        if 'COMMON' in FamilyList and len(FamilyList) > 1:
+            EdkLogger.error("build", FORMAT_INVALID,
+                            "Specific tool chain family should not be mixed with general one",
+                            File=self.RuleFile, Line=LineIndex+1,
+                            ExtraData=self.RuleContent[LineIndex])
         if self._State not in self._StateHandler:
             EdkLogger.error("build", FORMAT_INVALID, File=self.RuleFile, Line=LineIndex+1,
                             ExtraData="Unknown subsection: %s" % self.RuleContent[LineIndex])
@@ -440,66 +434,27 @@ class BuildRule:
     #   @param  LineIndex   The line index of build rule text
     #
     def ParseInputFile(self, LineIndex):
-        Line = self.RuleContent[LineIndex]
-        TokenList = Line.split("=")
-        FileType = ""
-        if len(TokenList) > 1:
-            FileType = TokenList[0].strip()
-            if FileType not in self._FileTypeList:
-                EdkLogger.error("build", FORMAT_INVALID, File=self.RuleFile,  Line=LineIndex+1,
-                                ExtraData="File type must be one of %s: %s" % (self._FileTypeList, FileType))
-            FileString = TokenList[1]
-        else:
-            if len(self._FileTypeList) > 1:
-                EdkLogger.error("build", FORMAT_INVALID, File=self.RuleFile, Line=LineIndex,
-                                ExtraData="File type must be given: " + Line)
-            else:
-                FileType = self._FileTypeList[0]
-            FileString = TokenList[0]
+        FileList = [File.strip() for File in self.RuleContent[LineIndex].split(",")]
+        for ToolChainFamily in self._FamilyList:
+            InputFiles = self._RuleInfo[ToolChainFamily, self._State]
+            if InputFiles == None:
+                InputFiles = []
+                self._RuleInfo[ToolChainFamily, self._State] = InputFiles
+            InputFiles.extend(FileList)
 
-        FileList = FileString.split(",")
-        for File in FileList:
-            File = File.strip()
-            for Family in self._FamilyList:
-                if Family not in self._RuleInfo:
-                    self._RuleInfo[Family] = {}
-                if self._State not in self._RuleInfo[Family]:
-                    self._RuleInfo[Family][self._State] = {}
-                if FileType not in self._RuleInfo[Family][self._State]:
-                    self._RuleInfo[Family][self._State][FileType] = []
-                self._RuleInfo[Family][self._State][FileType].append(File)
-
-    ## Parse <OutputFile> sub-section
+    ## Parse <ExtraDependency> sub-section
     #
     #   @param  LineIndex   The line index of build rule text
     #
-    def ParseOutputFile(self, LineIndex):
-        FileList = self.RuleContent[LineIndex].split(",")
-        for File in FileList:
-            File = File.strip()
-            for Family in self._FamilyList:
-                if Family not in self._RuleInfo:
-                    self._RuleInfo[Family] = {}
-                    self._RuleInfo[Family][self._State] = []
-                if self._State not in self._RuleInfo[Family]:
-                    self._RuleInfo[Family][self._State] = []
-                self._RuleInfo[Family][self._State].append(File)
+    def ParseCommon(self, LineIndex):
+        for ToolChainFamily in self._FamilyList:
+            Items = self._RuleInfo[ToolChainFamily, self._State]
+            if Items == None:
+                Items = []
+                self._RuleInfo[ToolChainFamily, self._State] = Items
+            Items.append(self.RuleContent[LineIndex])
 
-    ## Parse <Command> sub-section
-    #
-    #   @param  LineIndex   The line index of build rule text
-    #
-    def ParseCommand(self, LineIndex):
-        Command = self.RuleContent[LineIndex]
-        for Family in self._FamilyList:
-            if Family not in self._RuleInfo:
-                self._RuleInfo[Family] = {}
-                self._RuleInfo[Family][self._State] = []
-            if self._State not in self._RuleInfo[Family]:
-                self._RuleInfo[Family][self._State] = []
-            self._RuleInfo[Family][self._State].append(Command)
-
-    ## Get a build rule
+    ## Get a build rule via [] operator
     #
     #   @param  FileExt             The extension of a file
     #   @param  ToolChainFamily     The tool chain family name
@@ -509,39 +464,12 @@ class BuildRule:
     #   @retval FileType        The file type string
     #   @retval FileBuildRule   The object of FileBuildRule
     #
-    def Get(self, FileExt, ToolChainFamily, BuildVersion="*"):
-        if FileExt not in self.FileTypeDict:
+    # Key = (FileExt, ModuleType, Arch, ToolChainFamily)
+    def __getitem__(self, Key):
+        RuleObj = self.RuleDatabase[Key]
+        if RuleObj == None:
             return None, None
-        FileType = self.FileTypeDict[FileExt]
-        Database = {}
-        BuildRuleObject = None
-        if BuildVersion in self.RuleDatabase:
-            Database = self.RuleDatabase[BuildVersion]
-        elif BuildVersion != "*":
-            if "*" not in self.RuleDatabase:
-                return FileType, None
-            Database = self.RuleDatabase["*"]
-        else:
-            # BuildVersion == "*" and "*" not in self.RuleDatabase
-            # try to match ToolChainFamily
-            for Ver in self.RuleDatabase:
-                Database = self.RuleDatabase[Ver]
-                if ToolChainFamily not in Database:
-                    continue
-                if FileType not in Database[ToolChainFamily]:
-                    continue
-                break
-            else:
-                return FileType, None
-
-        if ToolChainFamily not in Database:
-            return FileType, None
-        if FileType not in Database[ToolChainFamily]:
-            return FileType, None
-        if not Database[ToolChainFamily][FileType].IsSupported(FileExt):
-            return FileType, None
-
-        return FileType, Database[ToolChainFamily][FileType]
+        return RuleObj.SourceFileType[0], RuleObj
 
     _StateHandler = {
         _SectionHeader     : ParseSectionHeader,
@@ -549,13 +477,32 @@ class BuildRule:
         _SubSectionHeader  : ParseSubSectionHeader,
         _SubSection        : ParseSubSection,
         _InputFile         : ParseInputFile,
-        _OutputFile        : ParseOutputFile,
-        _Command           : ParseCommand,
+        _OutputFile        : ParseCommon,
+        _ExtraDependency   : ParseCommon,
+        _Command           : ParseCommon,
         _UnknownSection    : SkipSection,
     }
 
 # This acts like the main() function for the script, unless it is 'import'ed into another
 # script.
 if __name__ == '__main__':
-    pass
+    import sys
+    EdkLogger.Initialize()
+    if len(sys.argv) > 1:
+        Br = BuildRule(sys.argv[1])
+        print str(Br[".c", "DXE_DRIVER", "IA32", "MSFT"][1])
+        print
+        print str(Br[".c", "DXE_DRIVER", "IA32", "INTEL"][1])
+        print
+        print str(Br[".c", "DXE_DRIVER", "IA32", "GCC"][1])
+        print
+        print str(Br[".ac", "ACPI_TABLE", "IA32", "MSFT"][1])
+        print
+        print str(Br[".h", "ACPI_TABLE", "IA32", "INTEL"][1])
+        print
+        print str(Br[".ac", "ACPI_TABLE", "IA32", "MSFT"][1])
+        print
+        print str(Br[".s", "SEC", "IPF", "COMMON"][1])
+        print
+        print str(Br[".s", "SEC"][1])
 

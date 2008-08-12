@@ -1125,6 +1125,7 @@ class InfBuildData(ModuleBuildClassObject):
         self._BaseName              = None
         self._ModuleType            = None
         self._ComponentType         = None
+        self._BuildType             = None
         self._Guid                  = None
         self._Version               = None
         self._PcdIsDriver           = None
@@ -1323,6 +1324,9 @@ class InfBuildData(ModuleBuildClassObject):
                 self._GetHeaderInfo()
             if self._ModuleType == None:
                 self._ModuleType = 'BASE'
+            self._BuildType = self._ModuleType
+            if self._ModuleType not in SUP_MODULE_LIST:
+                self._ModuleType = "USER_DEFINED"
         return self._ModuleType
 
     ## Retrieve COMPONENT_TYPE
@@ -1331,8 +1335,22 @@ class InfBuildData(ModuleBuildClassObject):
             if self._Header_ == None:
                 self._GetHeaderInfo()
             if self._ComponentType == None:
-                self._ComponentType = ''
+                self._ComponentType = 'USER_DEFINED'
+            self._BuildType = self._ComponentType
         return self._ComponentType
+
+    ## Retrieve "BUILD_TYPE"
+    def _GetBuildType(self):
+        if self._BuildType == None:
+            if self._Header_ == None:
+                self._GetHeaderInfo()
+            if self._ComponentType != None:
+                self._BuildType = self._ComponentType
+            elif self._ModuleType != None:
+                self._BuildType = self._ModuleType
+            else:
+                self._BuildType = 'USER_DEFINED'
+        return self._BuildType
 
     ## Retrieve file guid
     def _GetFileGuid(self):
@@ -1715,6 +1733,7 @@ class InfBuildData(ModuleBuildClassObject):
     BaseName                = property(_GetBaseName)
     ModuleType              = property(_GetModuleType)
     ComponentType           = property(_GetComponentType)
+    BuildType               = property(_GetBuildType)
     Guid                    = property(_GetFileGuid)
     Version                 = property(_GetVersion)
     PcdIsDriver             = property(_GetPcdIsDriver)

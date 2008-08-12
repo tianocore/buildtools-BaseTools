@@ -1240,6 +1240,10 @@ class ModuleAutoGen(AutoGen):
     def _GetComponentType(self):
         return self.Module.ComponentType
 
+    ## Return the build type
+    def _GetBuildType(self):
+        return self.Module.BuildType
+
     ## Return the PCD_IS_DRIVER setting
     def _GetPcdIsDriver(self):
         return self.Module.PcdIsDriver
@@ -1405,17 +1409,17 @@ class ModuleAutoGen(AutoGen):
             Base, Ext = path.splitext(SourceFile)
 
             # skip file which needs a tool having no matching toolchain family
-            FileType, RuleObject = BuildRule.Get(Ext, ToolChainFamily)
+            FileType, RuleObject = BuildRule[Ext, self.BuildType, self.Arch, ToolChainFamily]
             # unicode must be processed by AutoGen
-            if FileType == "Unicode-Text-File":
+            if FileType == "UNICODE-TEXT-FILE":
                 self._UnicodeFileList.append(os.path.join(self.WorkspaceDir, self.SourceDir, SourceFile))
 
             # if there's dxs file, don't use content in [depex] section to generate .depex file
-            if FileType == "Dependency-Expression-File":
+            if FileType == "DEPENDENCY-EXPRESSION-FILE":
                 self._DepexList = []
 
             # no command, no build
-            if RuleObject != None and RuleObject.CommandList == []:
+            if RuleObject != None and len(RuleObject.CommandList) == 0:
                 RuleObject = None
             if [SourceFile, FileType, RuleObject] not in self._SourceFileList:
                 self._SourceFileList.append([SourceFile, FileType, RuleObject])
@@ -1668,6 +1672,7 @@ class ModuleAutoGen(AutoGen):
     Version         = property(_GetVersion)
     ModuleType      = property(_GetModuleType)
     ComponentType   = property(_GetComponentType)
+    BuildType       = property(_GetBuildType)
     PcdIsDriver     = property(_GetPcdIsDriver)
     AutoGenVersion  = property(_GetAutoGenVersion)
     Macro           = property(_GetMacroList)

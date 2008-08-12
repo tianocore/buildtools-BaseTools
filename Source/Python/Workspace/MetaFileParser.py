@@ -145,6 +145,8 @@ class MetaFileParser(object):
 
     ## Skip unsupported data
     def _Skip(self):
+        EdkLogger.warn("Parser", "Unrecognized content", File=self._FilePath,
+                        Line=self._LineIndex+1, ExtraData=self._CurrentLine);
         self._ValueList[0:1] = [self._CurrentLine]
 
     ## Section header parser

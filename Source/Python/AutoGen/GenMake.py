@@ -469,11 +469,11 @@ cleanlib:
                 ExtraData="[%s]" % str(self._AutoGenObject))
 
         if self._AutoGenObject.IsLibrary:
-            if "Static-Library-File" in self.DestFileDatabase:
-                self.ResultFileList = self.DestFileDatabase["Static-Library-File"]
+            if "STATIC-LIBRARY-FILE" in self.DestFileDatabase:
+                self.ResultFileList = self.DestFileDatabase["STATIC-LIBRARY-FILE"]
         elif self._AutoGenObject.ModuleType == "USER_DEFINED":
-            if "Dynamic-Library-File" in self.DestFileDatabase:
-                self.ResultFileList = self.DestFileDatabase["Dynamic-Library-File"]
+            if "DYNAMIC-LIBRARY-FILE" in self.DestFileDatabase:
+                self.ResultFileList = self.DestFileDatabase["DYNAMIC-LIBRARY-FILE"]
         if len(self.ResultFileList) == 0:
             EdkLogger.error("build", AUTOGEN_ERROR, "Nothing to build",
                             ExtraData="[%s]" % str(self._AutoGenObject))
@@ -580,6 +580,8 @@ cleanlib:
                             ExtraData="[%s]" % str(self._AutoGenObject))
         Family = self.PlatformInfo.ToolChainFamily["CC"]
         BuildRule = self.PlatformInfo.BuildRule
+        Arch = self._AutoGenObject.Arch
+        BuildType = self._AutoGenObject.BuildType
 
         CCodeFlag = False
         FileList = self._AutoGenObject.SourceFileList
@@ -589,7 +591,7 @@ cleanlib:
             # no rule, no build
             if SrcFileBuildRule == None:
                 continue
-            if SrcFileType == "C-Code-File":
+            if SrcFileType == "C-CODE-FILE":
                 CCodeFlag = True
             SrcFileName = path.basename(F)
             SrcFileBase, SrcFileExt = path.splitext(SrcFileName)
@@ -615,9 +617,9 @@ cleanlib:
 
             while True:
                 # next target
-                DstFileType, DstFileBuildRule = BuildRule.Get(SrcFileBuildRule.DestFileExt, Family)
+                DstFileType, DstFileBuildRule = BuildRule[SrcFileBuildRule.DestFileExt, BuildType, Arch, Family]
                 if DstFileType == None:
-                    DstFileType = "Unknown-Type-File"
+                    DstFileType = "UNKNOWN-TYPE-FILE"
 
                 if DstFileType  in self.SourceFileDatabase:
                     self.SourceFileDatabase[DstFileType].append(DstFile)
@@ -630,7 +632,7 @@ cleanlib:
                     if DstFileBuildRule not in self.PendingBuildTargetList:
                         self.PendingBuildTargetList.append(DstFileBuildRule)
                     break
-                elif DstFileBuildRule == None or DstFileBuildRule.CommandList == []:
+                elif DstFileBuildRule == None or len(DstFileBuildRule.CommandList) == 0:
                     self.ResultFileList.append(DstFile)
                     break
 
@@ -661,11 +663,11 @@ cleanlib:
 
                 # try to find next target
                 while True:
-                    DstFileType, DstFileBuildRule = BuildRule.Get(SrcFileBuildRule.DestFileExt, Family)
+                    DstFileType, DstFileBuildRule = BuildRule[SrcFileBuildRule.DestFileExt, BuildType, Arch, Family]
                     if DstFileType == None:
-                        DstFileType = "Unknown-Type-File"
+                        DstFileType = "UNKNOWN-TYPE-FILE"
 
-                    if DstFileType  in self.SourceFileDatabase:
+                    if DstFileType in self.SourceFileDatabase:
                         self.SourceFileDatabase[DstFileType].append(DstFile)
                     else:
                         if DstFileType not in self.DestFileDatabase:
@@ -675,7 +677,7 @@ cleanlib:
                     if DstFileBuildRule != None and DstFileBuildRule.IsMultipleInput:
                         TempBuildTargetList.append(DstFileBuildRule)
                         break
-                    elif DstFileBuildRule == None or DstFileBuildRule.CommandList == []:
+                    elif DstFileBuildRule == None or len(DstFileBuildRule.CommandList) == 0:
                         self.ResultFileList.append(DstFile)
                         break
 
@@ -703,10 +705,10 @@ cleanlib:
 
                 SrcFileRelativePath = os.path.join(self._AutoGenObject.DebugDir, F)
 
-                SrcFileType, SrcFileBuildRule = BuildRule.Get(SrcFileExt, Family)
-                if SrcFileType != None and SrcFileType == "C-Header-File":
+                SrcFileType, SrcFileBuildRule = BuildRule[SrcFileExt, BuildType, Arch, Family]
+                if SrcFileType != None and SrcFileType == "C-HEADER-FILE":
                     ForceIncludedFile.append(SrcFileRelativePath)
-                if SrcFileBuildRule == None or SrcFileBuildRule.CommandList == []:
+                if SrcFileBuildRule == None or len(SrcFileBuildRule.CommandList) == 0:
                     continue
 
                 SrcFile, ExtraSrcFileList, DstFile, CommandList = SrcFileBuildRule.Apply(F, self._AutoGenObject.DebugDir, Separator)
@@ -723,9 +725,9 @@ cleanlib:
 
                 while True:
                     # next target
-                    DstFileType, DstFileBuildRule = BuildRule.Get(SrcFileBuildRule.DestFileExt, Family)
+                    DstFileType, DstFileBuildRule = BuildRule[SrcFileBuildRule.DestFileExt, BuildType, Arch, Family]
                     if DstFileType == None:
-                        DstFileType = "Unknown-Type-File"
+                        DstFileType = "UNKNOWN-TYPE-FILE"
 
                     if DstFileType  in self.SourceFileDatabase:
                         self.SourceFileDatabase[DstFileType].append(DstFile)
@@ -738,7 +740,7 @@ cleanlib:
                         if DstFileBuildRule not in self.PendingBuildTargetList:
                             self.PendingBuildTargetList.append(DstFileBuildRule)
                         break
-                    elif DstFileBuildRule == None or DstFileBuildRule.CommandList == []:
+                    elif DstFileBuildRule == None or len(DstFileBuildRule.CommandList) == 0:
                         self.ResultFileList.append(DstFile)
                         break
 
@@ -788,7 +790,6 @@ cleanlib:
             Template = TemplateString()
             Template.Append(TargetTemplate, {"deps" : self.FileDependency[File]})
             self.BuildTargetList.append(str(Template))
-
 
     ## Process binary files to generate makefile targets and dependencies
     #

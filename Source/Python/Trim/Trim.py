@@ -21,13 +21,14 @@ import re
 from optparse import OptionParser
 from optparse import make_option
 from Common.BuildToolError import *
+from Common.Misc import *
 
 import Common.EdkLogger as EdkLogger
 
 # Version and Copyright
-__version_number__ = "0.02"
+__version_number__ = "0.04"
 __version__ = "%prog Version " + __version_number__
-__copyright__ = "Copyright (c) 2007, Intel Corporation. All rights reserved."
+__copyright__ = "Copyright (c) 2007-2008, Intel Corporation. All rights reserved."
 
 ## Regular expression for matching Line Control directive like "#line xxx"
 gLineControlDirective = re.compile('^\s*(#line|#)\s+([0-9]+)\s+"*([^"]*)"*')
@@ -39,6 +40,57 @@ gPragmaPattern = re.compile("^\s*#pragma\s+pack", re.MULTILINE)
 gHexNumberPattern = re.compile("0[xX]([0-9a-fA-F]+)", re.MULTILINE)
 ## Regular expression for matching "Include ()" in asl file
 gAslIncludePattern = re.compile("^\s*Include\s*\(([^\(\)]+)\)\s*$", re.MULTILINE)
+## Patterns used to convert EDK conventions to EDK2 ECP conventions
+gImportCodePatterns = [
+    [
+        re.compile('^(\s*)\(\*\*PeiServices\)\.PciCfg\s*=\s*([^;\s]+);', re.MULTILINE),
+        '''\\1{
+\\1  STATIC EFI_PEI_PPI_DESCRIPTOR gEcpPeiPciCfgPpiList = {
+\\1    (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST,
+\\1    &gEcpPeiPciCfgPpiGuid,
+\\1    \\2
+\\1  };
+\\1  (**PeiServices).InstallPpi (PeiServices, gEcpPeiPciCfgPpiList);
+\\1}'''
+    ],
+
+    [
+        re.compile('^(\s*)\(\*PeiServices\)->PciCfg\s*=\s*([^;\s]+);', re.MULTILINE),
+        '''\\1{
+\\1  STATIC EFI_PEI_PPI_DESCRIPTOR gEcpPeiPciCfgPpiList = {
+\\1    (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST,
+\\1    &gEcpPeiPciCfgPpiGuid,
+\\1    \\2
+\\1  };
+\\1  (**PeiServices).InstallPpi (PeiServices, gEcpPeiPciCfgPpiList);
+\\1}'''
+    ],
+
+    [
+        re.compile("(\s*).+->Modify[\s\n]*\(", re.MULTILINE),
+        '\\1PeiLibPciCfgModify ('
+    ],
+
+    [
+        re.compile("(\W*)gRT->ReportStatusCode[\s\n]*\(", re.MULTILINE),
+        '\\1EfiLibReportStatusCode ('
+    ],
+
+    [
+        re.compile('#include\s+["<]LoadFile\.h[">]', re.MULTILINE),
+        '#include <FvLoadFile.h>'
+    ],
+
+    [
+        re.compile("(\s*)\S*CreateEvent\s*\([\s\n]*EFI_EVENT_SIGNAL_READY_TO_BOOT[^,]*,((?:[^;]+\n)+)(\s*\));", re.MULTILINE),
+        '\\1EfiCreateEventReadyToBoot (\\2\\3;'
+    ],
+
+    [
+        re.compile("(\s*)\S*CreateEvent\s*\([\s\n]*EFI_EVENT_SIGNAL_LEGACY_BOOT[^,]*,((?:[^;]+\n)+)(\s*\));", re.MULTILINE),
+        '\\1EfiCreateEventLegacyBoot (\\2\\3;'
+    ]
+]
 
 ## Trim preprocessed source code
 #
@@ -198,6 +250,85 @@ def TrimAslFile(Source, Target):
     f.write(Lines)
     f.close()
 
+## Trim EDK source code file(s)
+#
+#
+# @param  Source    File or directory to be trimmed
+# @param  Target    File or directory to store the trimmed content
+#
+def TrimR8Sources(Source, Target):
+    if os.path.isdir(Source):
+        for CurrentDir, Dirs, Files in os.walk(Source):
+            if '.svn' in Dirs:
+                Dirs.remove('.svn')
+            elif "CVS" in Dirs:
+                Dirs.remove("CVS")
+
+            for FileName in Files:
+                Dummy, Ext = os.path.splitext(FileName)
+                if Ext.upper() not in ['.C', '.H']: continue
+                if Target == None or Target == '':
+                    TrimR8SourceCode(
+                        os.path.join(CurrentDir, FileName),
+                        os.path.join(CurrentDir, FileName)
+                        )
+                else:
+                    TrimR8SourceCode(
+                        os.path.join(CurrentDir, FileName),
+                        os.path.join(Target, CurrentDir[len(Source)+1:], FileName)
+                        )
+    else:
+        TrimR8SourceCode(Source, Target)
+
+## Trim one EDK source code file
+#
+# Do following replacement:
+#
+#   (**PeiServices\).PciCfg = <*>;
+#   =>  {
+#         STATIC EFI_PEI_PPI_DESCRIPTOR gEcpPeiPciCfgPpiList = {
+#         (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST,
+#         &gEcpPeiPciCfgPpiGuid,
+#         <*>
+#       };
+#       (**PeiServices).InstallPpi (PeiServices, gEcpPeiPciCfgPpiList);
+#
+#   <*>Modify(<*>)
+#   =>  PeiLibPciCfgModify (<*>)
+#
+#   gRT->ReportStatusCode (<*>)
+#   => EfiLibReportStatusCode (<*>)
+#
+#   #include <LoadFile\.h>
+#   =>  #include <FvLoadFile.h>
+#
+#   CreateEvent (EFI_EVENT_SIGNAL_READY_TO_BOOT, <*>)
+#   => EfiCreateEventReadyToBoot (<*>)
+#
+#   CreateEvent (EFI_EVENT_SIGNAL_LEGACY_BOOT, <*>)
+#   =>  EfiCreateEventLegacyBoot (<*>)
+#
+# @param  Source    File to be trimmed
+# @param  Target    File to store the trimmed content
+#
+def TrimR8SourceCode(Source, Target):
+    EdkLogger.verbose("\t%s -> %s" % (Source, Target))
+    CreateDirectory(os.path.dirname(Target))
+
+    f = open (Source,'r')
+    # read whole file
+    Lines = f.read()
+    f.close()
+
+    for Re,Repl in gImportCodePatterns:
+        Lines = Re.sub(Repl, Lines)
+
+    # save all lines trimmed
+    f = open (Target,'w')
+    f.write(Lines)
+    f.close()
+
+
 ## Parse command line options
 #
 # Using standard Python module optparse to parse command line option of this tool.
@@ -213,6 +344,8 @@ def Options():
                           help="The input file is preprocessed VFR file"),
         make_option("-a", "--asl-file", dest="FileType", const="Asl", action="store_const",
                           help="The input file is ASL file"),
+        make_option("-8", "--r8-source-code", dest="FileType", const="R8SourceCode", action="store_const",
+                          help="The input file is source code for R8 to be trimmed for ECP"),
 
         make_option("-c", "--convert-hex", dest="ConvertHex", action="store_true",
                           help="Convert standard hex format (0xabcd) to MASM format (abcdh)"),
@@ -229,7 +362,7 @@ def Options():
     ]
 
     # use clearer usage to override default usage message
-    UsageString = "%prog [-s|-r] [-c] [-v|-d <debug_level>|-q] [-o <output_file>] <input_file>"
+    UsageString = "%prog [-s|-r|-a] [-c] [-v|-d <debug_level>|-q] [-o <output_file>] <input_file>"
 
     Parser = OptionParser(description=__copyright__, version=__version__, option_list=OptionList, usage=UsageString)
     Parser.set_defaults(FileType="Vfr")
@@ -245,9 +378,6 @@ def Options():
         EdkLogger.error("Trim", OPTION_NOT_SUPPORTED, ExtraData=Parser.get_usage())
 
     InputFile = Args[0]
-    if Options.OutputFile == None:
-        Options.OutputFile = os.path.splitext(InputFile)[0] + '.iii'
-
     return Options, InputFile
 
 ## Entrance method
@@ -269,10 +399,18 @@ def Main():
             EdkLogger.SetLevel(CommandOptions.LogLevel)
 
         if CommandOptions.FileType == "Vfr":
+            if CommandOptions.OutputFile == None:
+                CommandOptions.OutputFile = os.path.splitext(InputFile)[0] + '.iii'
             TrimPreprocessedVfr(InputFile, CommandOptions.OutputFile)
         elif CommandOptions.FileType == "Asl":
+            if CommandOptions.OutputFile == None:
+                CommandOptions.OutputFile = os.path.splitext(InputFile)[0] + '.iii'
             TrimAslFile(InputFile, CommandOptions.OutputFile)
+        elif CommandOptions.FileType == "R8SourceCode":
+            TrimR8Sources(InputFile, CommandOptions.OutputFile)
         else :
+            if CommandOptions.OutputFile == None:
+                CommandOptions.OutputFile = os.path.splitext(InputFile)[0] + '.iii'
             TrimPreprocessedFile(InputFile, CommandOptions.OutputFile, CommandOptions.ConvertHex)
     except Exception, e:
         print e

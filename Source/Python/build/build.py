@@ -1299,6 +1299,8 @@ def Main():
         ReturnCode = FORMAT_INVALID
     except KeyboardInterrupt:
         ReturnCode = ABORT_ERROR
+        if Option != None and Option.debug != None:
+            EdkLogger.quiet("(Python %s on %s) " % (platform.python_version(), sys.platform) + traceback.format_exc())
     except:
         EdkLogger.SetLevel(EdkLogger.QUIET)
         if MyBuild != None:
