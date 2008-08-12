@@ -105,6 +105,15 @@ Returns:
   fprintf (stdout, "  -i FileName, --inputfile FileName\n\
                         File is the input FV.inf or Cap.inf to specify\n\
                         how to construct FvImage or CapImage.\n");
+  fprintf (stdout, "  -b BlockSize, --blocksize BlockSize\n\
+                        BlockSize is one HEX or DEC format value\n\
+                        BlockSize is required by Fv Image.\n");
+  fprintf (stdout, "  -n NumberBlock, --numberblock NumberBlock\n\
+                        NumberBlock is one HEX or DEC format value\n\
+                        NumberBlock is one optional parameter.\n");
+  fprintf (stdout, "  -f FfsFile, --ffsfile FfsFile\n\
+                        FfsFile is placed into Fv Image\n\
+                        multi files can input one by one\n");
   fprintf (stdout, "  -r Address, --baseaddr Address\n\
                         Address is the rebase start address for drivers that\n\
                         run in Flash. It supports DEC or HEX digital format.\n");
@@ -117,6 +126,15 @@ Returns:
   fprintf (stdout, "  -m logfile, --map logfile\n\
                         Logfile is the output fv map file name. if it is not\n\
                         given, the FvName.map will be the default map file name\n"); 
+  fprintf (stdout, "  --capguid GuidValue\n\
+                        GuidValue is one specific capsule vendor guid value.\n\
+                        Its format is xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n");
+  fprintf (stdout, "  --capflag CapFlag\n\
+                        Capsule Reset Flag can be PersistAcrossReset,\n\
+                        or PopulateSystemTable or not set.\n");
+  fprintf (stdout, "  --capheadsize HeadSize\n\
+                        HeadSize is one HEX or DEC format value\n\
+                        HeadSize is required by Capsule Image.\n");                        
   fprintf (stdout, "  -c, --capsule         Create Capsule Image.\n");
   fprintf (stdout, "  -p, --dump            Dump Capsule Image header.\n");
   fprintf (stdout, "  -v, --verbose         Turn on verbose output with informational messages.\n");
@@ -125,6 +143,9 @@ Returns:
   fprintf (stdout, "  --version             Show program's version number and exit.\n");
   fprintf (stdout, "  -h, --help            Show this help message and exit.\n");
 }
+
+UINT32 mFvTotalSize;
+UINT32 mFvTakenSize;
 
 int
 main (
@@ -172,7 +193,8 @@ Returns:
   MEMORY_FILE           AddrMemoryFile;
   FILE                  *FpFile;
   EFI_CAPSULE_HEADER    *CapsuleHeader;
-  UINT64                LogLevel;
+  UINT64                LogLevel, TempNumber;
+  UINT32                Index;
 
   InfFileName   = NULL;
   AddrFileName  = NULL;
@@ -188,6 +210,10 @@ Returns:
   FpFile        = NULL;
   CapsuleHeader = NULL;
   LogLevel      = 0;
+  TempNumber    = 0;
+  Index         = 0;
+  mFvTotalSize  = 0;
+  mFvTakenSize  = 0;
 
   SetUtilityName (UTILITY_NAME);
 
@@ -197,6 +223,12 @@ Returns:
     return STATUS_ERROR;
   }
 
+  //
+  // Init global data to Zero
+  //
+  memset (&gFvDataInfo, 0, sizeof (FV_INFO));
+  memset (&gCapDataInfo, 0, sizeof (CAP_INFO)); 
+   
   //
   // Parse command line
   //
@@ -259,10 +291,101 @@ Returns:
       continue; 
     }
 
+    if ((stricmp (argv[0], "-b") == 0) || (stricmp (argv[0], "--blocksize") == 0)) {
+      Status = AsciiStringToUint64 (argv[1], FALSE, &TempNumber);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        return STATUS_ERROR;        
+      }
+      gFvDataInfo.FvBlocks[0].Length = (UINT32) TempNumber;
+      DebugMsg (NULL, 0, 9, "FV Block Size", "%s = 0x%x", EFI_BLOCK_SIZE_STRING, TempNumber);
+      argc -= 2;
+      argv += 2;
+      continue; 
+    }
+
+    if ((stricmp (argv[0], "-n") == 0) || (stricmp (argv[0], "--numberblock") == 0)) {
+      Status = AsciiStringToUint64 (argv[1], FALSE, &TempNumber);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        return STATUS_ERROR;        
+      }
+      gFvDataInfo.FvBlocks[0].NumBlocks = (UINT32) TempNumber;
+      DebugMsg (NULL, 0, 9, "FV Number Block", "%s = 0x%x", EFI_NUM_BLOCKS_STRING, TempNumber);
+      argc -= 2;
+      argv += 2;
+      continue; 
+    }
+
+    if ((stricmp (argv[0], "-f") == 0) || (stricmp (argv[0], "--ffsfile") == 0)) {
+      if (argv[1] == NULL) {
+        Error (NULL, 0, 1003, "Invalid option value", "Input Ffsfile can't be null");
+        return STATUS_ERROR;
+      }
+      strcpy (gFvDataInfo.FvFiles[Index++], argv[1]);
+      DebugMsg (NULL, 0, 9, "FV component file", "the %dth name is %s", Index - 1, argv[1]);
+      argc -= 2;
+      argv += 2;
+      continue; 
+    }
+
     if ((stricmp (argv[0], "-c") == 0) || (stricmp (argv[0], "--capsule") == 0)) {
       CapsuleFlag = TRUE;
       argc --;
       argv ++;
+      continue; 
+    }
+
+    if (stricmp (argv[0], "--capheadsize") == 0) {
+      //
+      // Get Capsule Image Header Size
+      //
+      Status = AsciiStringToUint64 (argv[1], FALSE, &TempNumber);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        return STATUS_ERROR;        
+      }
+      gCapDataInfo.HeaderSize = (UINT32) TempNumber;
+      DebugMsg (NULL, 0, 9, "Capsule Header size", "%s = 0x%x", EFI_CAPSULE_HEADER_SIZE_STRING, TempNumber);
+      argc -= 2;
+      argv += 2;
+      continue; 
+    }
+
+    if (stricmp (argv[0], "--capflag") == 0) {
+      //
+      // Get Capsule Header
+      //
+      if (argv[1] == NULL) {
+        Error (NULL, 0, 1003, "Option value is not set", "%s = %s", argv[0], argv[1]);
+        return STATUS_ERROR;
+      }
+      if (strcmp (argv[1], "PopulateSystemTable") == 0) {
+        gCapDataInfo.Flags |= CAPSULE_FLAGS_PERSIST_ACROSS_RESET | CAPSULE_FLAGS_POPULATE_SYSTEM_TABLE;
+      } else if (strcmp (argv[1], "PersistAcrossReset") == 0) {
+        gCapDataInfo.Flags |= CAPSULE_FLAGS_PERSIST_ACROSS_RESET;
+      } else {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        return STATUS_ERROR;
+      }
+      DebugMsg (NULL, 0, 9, "Capsule Flag", argv[1]);
+      argc -= 2;
+      argv += 2;
+      continue; 
+    }
+
+    if (stricmp (argv[0], "--capguid") == 0) {
+      //
+      // Get the Capsule Guid
+      //
+      Status = StringToGuid (argv[1], &gCapDataInfo.CapGuid);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", EFI_CAPSULE_GUID_STRING, argv[1]);
+        return EFI_ABORTED;
+      }
+      DebugMsg (NULL, 0, 9, "Capsule Guid", "%s = %s", EFI_CAPSULE_GUID_STRING, argv[1]);
+      argc -= 2;
+      argv += 2;
       continue; 
     }
 
@@ -327,10 +450,10 @@ Returns:
   VerboseMsg ("%s tool start.", UTILITY_NAME);
   
   //
-  // check input parameter
+  // check input parameter, InfFileName can be NULL
   //
-  if (InfFileName == NULL) {
-    Error (NULL, 0, 1001, "Missing option", "Input File");
+  if (InfFileName == NULL && DumpCapsule) {
+    Error (NULL, 0, 1001, "Missing option", "Input Capsule Image");
     return STATUS_ERROR;
   }
   VerboseMsg ("the input file name is %s", InfFileName);
@@ -393,14 +516,18 @@ Returns:
     // free the allocated memory space for addr file.
     //
     free (InfFileImage);
+    InfFileImage = NULL;
+    InfFileSize  = 0;
   }
 
   //
   // Read the INF file image
   //
-  Status = GetFileImage (InfFileName, &InfFileImage, &InfFileSize);
-  if (EFI_ERROR (Status)) {
-    return STATUS_ERROR;
+  if (InfFileName != NULL) {
+    Status = GetFileImage (InfFileName, &InfFileImage, &InfFileSize);
+    if (EFI_ERROR (Status)) {
+      return STATUS_ERROR;
+    }
   }
   
   if (DumpCapsule) {
@@ -440,11 +567,15 @@ Returns:
     //
     // Call the GenerateCapImage to generate Capsule Image
     //
-    GenerateCapImage (
-      InfFileImage, 
-      InfFileSize,
-      OutFileName
-      );
+    for (Index = 0; gFvDataInfo.FvFiles[Index][0] != '\0'; Index ++) {
+      strcpy (gCapDataInfo.CapFiles[Index], gFvDataInfo.FvFiles[Index]);
+    }
+
+    Status = GenerateCapImage (
+              InfFileImage, 
+              InfFileSize,
+              OutFileName
+              );
   } else {
     VerboseMsg ("Create Fv image and its map file");
     if (XipBase != 0) {
@@ -453,15 +584,15 @@ Returns:
     //
     // Call the GenerateFvImage to generate Fv Image
     //
-    GenerateFvImage (
-      InfFileImage,
-      InfFileSize,
-      OutFileName,
-      MapFileName,
-      XipBase,
-      &BtBase,
-      &RtBase
-      );
+    Status = GenerateFvImage (
+              InfFileImage,
+              InfFileSize,
+              OutFileName,
+              MapFileName,
+              XipBase,
+              &BtBase,
+              &RtBase
+              );
   }
 
   //
@@ -474,7 +605,7 @@ Returns:
   //
   //  update boot driver address and runtime driver address in address file
   //
-  if (AddrFileName != NULL) {
+  if (Status == EFI_SUCCESS && AddrFileName != NULL) {
     FpFile = fopen (AddrFileName, "w");
     if (FpFile == NULL) {
       Error (NULL, 0, 0001, "Error opening file", AddrFileName);
@@ -491,6 +622,21 @@ Returns:
       fprintf (FpFile, EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING);
       fprintf (FpFile, " = 0x%x\n", RtBase);
       DebugMsg (NULL, 0, 9, "Updated runtime driver base address", "%s = 0x%x", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, RtBase);
+    }
+    if (mFvTotalSize != 0) {
+      fprintf (FpFile, EFI_FV_TOTAL_SIZE_STRING);
+      fprintf (FpFile, " = 0x%x\n", mFvTotalSize);
+      DebugMsg (NULL, 0, 9, "The Total Fv Size", "%s = 0x%x", EFI_FV_TOTAL_SIZE_STRING, mFvTotalSize);
+    }
+    if (mFvTakenSize != 0) {
+      fprintf (FpFile, EFI_FV_TAKEN_SIZE_STRING);
+      fprintf (FpFile, " = 0x%x\n", mFvTakenSize);
+      DebugMsg (NULL, 0, 9, "The used Fv Size", "%s = 0x%x", EFI_FV_TAKEN_SIZE_STRING, mFvTakenSize);
+    }
+    if (mFvTotalSize != 0 && mFvTakenSize != 0) {
+      fprintf (FpFile, EFI_FV_SPACE_SIZE_STRING);
+      fprintf (FpFile, " = 0x%x\n", mFvTotalSize - mFvTakenSize);
+      DebugMsg (NULL, 0, 9, "The space Fv size", "%s = 0x%x", EFI_FV_SPACE_SIZE_STRING, mFvTotalSize - mFvTakenSize);
     }
     fclose (FpFile);
   }

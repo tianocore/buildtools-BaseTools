@@ -40,16 +40,12 @@ Abstract:
 #include "ParseInf.h"
 #include "EfiUtilityMsgs.h"
 
+extern UINT32 mFvTotalSize;
+extern UINT32 mFvTakenSize;
 //
 // Different file separater for Linux and Windows
 //
-#ifdef __GNUC__
 #define FILE_SEP_CHAR '/'
-#define FILE_SEP_STRING "/"
-#else
-#define FILE_SEP_CHAR '\\'
-#define FILE_SEP_STRING "\\"
-#endif
 
 //
 // The maximum number of Pad file guid entries.
@@ -89,6 +85,10 @@ Abstract:
 #define EFI_CAPSULE_VERSION_STRING        "EFI_CAPSULE_VERSION"
 #define EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING    "EFI_BOOT_DRIVER_BASE_ADDRESS"
 #define EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING "EFI_RUNTIME_DRIVER_BASE_ADDRESS"
+
+#define EFI_FV_TOTAL_SIZE_STRING    "EFI_FV_TOTAL_SIZE"
+#define EFI_FV_TAKEN_SIZE_STRING    "EFI_FV_TAKEN_SIZE"
+#define EFI_FV_SPACE_SIZE_STRING    "EFI_FV_SPACE_SIZE"
 
 //
 // Attributes section
@@ -246,6 +246,9 @@ typedef struct {
 
 #pragma pack()
 
+#define FV_DEFAULT_ATTRIBUTE  0x0004FEFF
+extern FV_INFO    gFvDataInfo;
+extern CAP_INFO   gCapDataInfo;
 //
 // Local function prototypes
 //
@@ -406,4 +409,13 @@ Returns:
 --*/
 ;
 
+EFI_STATUS
+WriteMapFile (
+  IN OUT FILE                  *FvMapFile,
+  IN     CHAR8                 *FileName,
+  IN     EFI_GUID              *FileGuidPtr, 
+  IN     EFI_PHYSICAL_ADDRESS  ImageBaseAddress,
+  IN     UINT32                AddressOfEntryPoint,
+  IN     UINT32                Offset
+  );
 #endif

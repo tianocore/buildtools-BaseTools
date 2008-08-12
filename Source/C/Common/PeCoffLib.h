@@ -128,4 +128,10 @@ PeCoffLoaderLoadImage (
   )
 ;
 
+VOID *
+EFIAPI
+PeCoffLoaderGetPdbPointer (
+  IN VOID  *Pe32Data
+  )
+;
 #endif

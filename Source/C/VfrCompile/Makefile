@@ -1,13 +1,13 @@
 !INCLUDE ..\Makefiles\ms.common
 
-CPPFLAGS = $(CPPFLAGS) /WX /D PCCTS_USE_NAMESPACE_STD
+CPPFLAGS = $(CPPFLAGS) /WX /D PCCTS_USE_NAMESPACE_STD /D VFREXP_DEBUG
 APPNAME = VfrCompile
 
 LIBS = $(LIB_PATH)\Common.lib
 
-OBJECTS = AParser.obj DLexerBase.obj ATokenBuffer.obj EfiVfrParser.obj \
-          VfrLexer.obj VfrSyntax.obj VfrFormPkg.obj VfrError.obj \
-	  VfrUtilityLib.obj VfrCompiler.obj
+OBJECTS = AParser.obj DLexerBase.obj ATokenBuffer.obj \
+          EfiVfrParser.obj VfrLexer.obj VfrSyntax.obj \
+          VfrFormPkg.obj VfrError.obj VfrUtilityLib.obj VfrCompiler.obj
 
 INC = $(INC) -I $(BASE_TOOLS_PATH)\Source\C\VfrCompile\Pccts\h
 
