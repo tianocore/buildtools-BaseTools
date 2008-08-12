@@ -89,13 +89,16 @@ class Config:
         (Opt, Args) = Parser.parse_args()
 
         self.arch = Opt.arch.lower()
-        allowedArchs = ('ia32', 'x64')
+        allowedArchs = ('ia32', 'x64', 'ipf')
         if self.arch not in allowedArchs:
             Parser.error(
                 'Please use --arch to specify one of: %s' %
                     ', '.join(allowedArchs)
                 )
-        self.target_arch = {'ia32': 'i686', 'x64': 'x86_64'}[self.arch]
+        self.target_arch = {'ia32': 'i686', 'x64': 'x86_64', 'ipf': 'ia64'}[self.arch]
+        self.target_sys = {'ia32': 'pc', 'x64': 'pc', 'ipf': 'pc'}[self.arch]
+        self.target_bin = {'ia32': 'mingw32', 'x64': 'mingw32', 'ipf': 'elf'}[self.arch]
+        self.target_combo = '-'.join((self.target_arch, self.target_sys, self.target_bin))
 
         return (Opt, Args)
 
@@ -119,7 +122,18 @@ class Config:
             print
             print "Please try using --help and then change the configuration."
             return False
-        
+
+        if self.arch.lower() == 'ipf':
+            print
+            print 'Please note that the IPF compiler built by this script has'
+            print 'not yet been validated!'
+            print
+            answer = raw_input("Are you sure you want to build it? (default = no): ")
+            if (answer.lower() not in ('y', 'yes')):
+                print
+                print "Please try using --help and then change the configuration."
+                return False
+
         print
         return True
 
@@ -190,9 +204,17 @@ class SourceFiles:
             },
         }
 
+    source_files_ipf = source_files_x64.copy()
+    source_files_ipf['gcc']['configure-params'] = (
+        '--with-gnu-as', '--with-gnu-ld', '--with-newlib',
+        '--verbose', '--disable-libssp', '--disable-nls',
+        '--enable-languages=c,c++'
+        )
+
     source_files = {
         'ia32': [source_files_common, source_files_ia32],
         'x64': [source_files_common, source_files_x64],
+        'ipf': [source_files_common, source_files_ipf],
         }
 
     for arch in source_files:
@@ -233,46 +255,61 @@ class SourceFiles:
                     sys.stdout.flush()
                     self.dots += 1
 
+        maxRetries = 3
         for (fname, fdata) in self.source_files.items():
-            self.dots = 0
-            local_file = os.path.join(self.config.src_dir, fdata['filename'])
-            url = fdata['url']
-            print 'Downloading %s:' % fname,
-            sys.stdout.flush()
+            for retries in range(maxRetries):
+                try:
+                    self.dots = 0
+                    local_file = os.path.join(self.config.src_dir, fdata['filename'])
+                    url = fdata['url']
+                    print 'Downloading %s:' % fname,
+                    if retries > 0:
+                        print '(retry)',
+                    sys.stdout.flush()
 
-            completed = False
-            if os.path.exists(local_file):
-                md5_pass = self.checkHash(fdata)
-                if md5_pass:
-                    print '[md5 match]',
-                else:
-                    print '[md5 mismatch]',
-                sys.stdout.flush()
-                completed = md5_pass
+                    completed = False
+                    if os.path.exists(local_file):
+                        md5_pass = self.checkHash(fdata)
+                        if md5_pass:
+                            print '[md5 match]',
+                        else:
+                            print '[md5 mismatch]',
+                        sys.stdout.flush()
+                        completed = md5_pass
 
-            if not completed:
-                urllib.urlretrieve(url, local_file, progress)
+                    if not completed:
+                        urllib.urlretrieve(url, local_file, progress)
 
-            #
-            # BUGBUG: Suggest proxy to user if download fails.
-            #
-            # export http_proxy=http://proxyservername.mycompany.com:911
-            # export ftp_proxy=http://proxyservername.mycompany.com:911
+                    #
+                    # BUGBUG: Suggest proxy to user if download fails.
+                    #
+                    # export http_proxy=http://proxyservername.mycompany.com:911
+                    # export ftp_proxy=http://proxyservername.mycompany.com:911
 
-            if not completed and os.path.exists(local_file):
-                md5_pass = self.checkHash(fdata)
-                if md5_pass:
-                    print '[md5 match]',
-                else:
-                    print '[md5 mismatch]',
-                sys.stdout.flush()
-                completed = md5_pass
+                    if not completed and os.path.exists(local_file):
+                        md5_pass = self.checkHash(fdata)
+                        if md5_pass:
+                            print '[md5 match]',
+                        else:
+                            print '[md5 mismatch]',
+                        sys.stdout.flush()
+                        completed = md5_pass
 
-            if completed:
-                print '[done]'
-            else:
-                print '[failed]'
-                return False
+                    if completed:
+                        print '[done]'
+                        break
+                    else:
+                        print '[failed]'
+                        raise Exception()
+                
+                except KeyboardInterrupt:
+                    print '[KeyboardInterrupt]'
+                    return False
+
+                except:
+                    pass
+
+            if not completed: return False
 
         return True
 
@@ -380,7 +417,7 @@ class Builder:
             self.source_files.GetExtractDirOf('mingw_hdr'),
             'include'
             )
-        dst_parent = os.path.join(self.config.prefix, self.config.target_arch + '-pc-mingw32')
+        dst_parent = os.path.join(self.config.prefix, self.config.target_combo)
         dst = os.path.join(dst_parent, 'include')
         if not os.path.exists(dst):
             if not os.path.exists(dst_parent):
@@ -389,7 +426,7 @@ class Builder:
             shutil.copytree(src, dst, True)
         if not os.path.lexists(linkdst):
             print 'Making symlink at', self.config.Relative(linkdst)
-            os.symlink(self.config.target_arch + '-pc-mingw32', linkdst)
+            os.symlink(self.config.target_combo, linkdst)
 
     def BuildModule(self, module):
         base_dir = os.getcwd()
@@ -404,12 +441,13 @@ class Builder:
 
         cmd = (
             configure,
-            '--target=%s-pc-mingw32' % self.config.target_arch,
+            '--target=%s' % self.config.target_combo,
             '--prefix=' + prefix,
             '--with-sysroot=' + prefix,
             )
         if os.path.exists('/opt/local/include/gmp.h'):
             cmd += ('--with-gmp=/opt/local',)
+        if module == 'gcc': cmd += ('--oldincludedir=/opt/local/include',)
         cmd += self.source_files.GetAdditionalParameters(module, 'configure')
         self.RunCommand(cmd, module, 'config', skipable=True)
 
@@ -468,7 +506,7 @@ class Builder:
         startPrinted = False
         for link in ('ar', 'ld', 'gcc'):
             src = os.path.join(
-                self.config.prefix, 'bin', self.config.target_arch + '-pc-mingw32-' + link
+                self.config.prefix, 'bin', self.config.target_combo + '-' + link
                 )
             linkdst = os.path.join(links_dir, link)
             if not os.path.lexists(linkdst):

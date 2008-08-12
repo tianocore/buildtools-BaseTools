@@ -49,7 +49,7 @@ To use this script, you will need:
 On Ubuntu, the following command should install all the necessary build
 packages to utilize the x86_64-mingw-gcc-build.py script:
 
-  sudo apt-get install build-essentials texinfo bison flex libgmp3-dev libmpfr-dev
+  sudo apt-get install build-essential texinfo bison flex libgmp3-dev libmpfr-dev
 
 === CYGWIN Notes ===
 
