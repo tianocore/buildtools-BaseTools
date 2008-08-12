@@ -132,11 +132,6 @@ def main():
 
         GenFdsGlobalVariable.ActivePlatform = NormPath(ActivePlatform)
 
-        if (Options.archList) :
-            ArchList = Options.archList.split(',')
-        else:
-            EdkLogger.error("GenFds", BuildToolError.OPTION_MISSING, "Missing build ARCH")
-
         BuildConfigurationFile = os.path.normpath(os.path.join(GenFdsGlobalVariable.WorkSpaceDir, "Conf/target.txt"))
         if os.path.isfile(BuildConfigurationFile) == True:
             TargetTxtClassObject.TargetTxtClassObject(BuildConfigurationFile)
@@ -158,6 +153,16 @@ def main():
         BuildWorkSpace = WorkspaceDatabase(':memory:', GlobalData.gGlobalDefines)
         BuildWorkSpace.InitDatabase()
 
+        if (Options.archList) :
+            ArchList = Options.archList.split(',')
+        else:
+#            EdkLogger.error("GenFds", BuildToolError.OPTION_MISSING, "Missing build ARCH")
+            ArchList = BuildWorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'COMMON'].SupArchList
+
+        TargetArchList = set(BuildWorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'COMMON'].SupArchList) & set(ArchList)
+        if len(TargetArchList) == 0:
+            EdkLogger.error("GenFds", GENFDS_ERROR, "Target ARCH %s not in platform supported ARCH %s" % (str(ArchList), str(BuildWorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'COMMON'].SupArchList)))
+        
         for Arch in ArchList:
             GenFdsGlobalVariable.OutputDirFromDscDict[Arch] = NormPath(BuildWorkSpace.BuildObject[ActivePlatform, Arch].OutputDirectory)
 

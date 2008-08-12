@@ -227,12 +227,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
     #   @retval list        Arch list
     #
     def __GetPlatformArchList__(self):
-        TargetArchList = GenFdsGlobalVariable.ArchList
-        if len(TargetArchList) == 0:
-            TargetArchList = GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'COMMON'].SupArchList
-        else:
-            TargetArchList = set(GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'COMMON'].SupArchList) & set(TargetArchList)
-
+        
         InfFileKey = os.path.normpath(self.InfFileName)
         DscArchList = []
         PlatformDataBase = GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'IA32']
@@ -250,11 +245,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
             if InfFileKey in (PlatformDataBase.Modules):
                 DscArchList.append ('IPF')
 
-        CurArchList = TargetArchList
-        if DscArchList != []:
-            CurArchList = set (TargetArchList) & set (DscArchList)
-        GenFdsGlobalVariable.VerboseLogger ("Valid target architecture(s) is : " + " ".join(CurArchList))
-        return list(CurArchList)
+        return DscArchList
 
     ## GetCurrentArch() method
     #
@@ -264,7 +255,16 @@ class FfsInfStatement(FfsInfStatementClassObject):
     #   @retval list        Arch list
     #
     def GetCurrentArch(self) :
-        CurArchList = self.__GetPlatformArchList__()
+        
+        TargetArchList = GenFdsGlobalVariable.ArchList
+            
+        PlatformArchList = self.__GetPlatformArchList__()
+        
+        CurArchList = TargetArchList
+        if PlatformArchList != []:
+            CurArchList = list(set (TargetArchList) & set (PlatformArchList))
+        GenFdsGlobalVariable.VerboseLogger ("Valid target architecture(s) is : " + " ".join(CurArchList))
+        
         ArchList = []
         if self.KeyStringList != []:
             for Key in self.KeyStringList:
@@ -281,9 +281,9 @@ class FfsInfStatement(FfsInfStatementClassObject):
             Arch = ArchList[0]
             return Arch
         elif len(ArchList) > 1:
-            EdkLogger.error("GenFds", GENFDS_ERROR, "Not able to determine ARCH for Module %s !" % self.InfFileName)
+            EdkLogger.error("GenFds", GENFDS_ERROR, "Module built under multiple ARCHs %s. Not able to determine which output to put into flash for Module %s !" % (str(ArchList), self.InfFileName))
         else:
-            EdkLogger.error("GenFds", GENFDS_ERROR, "Don't find legal ARCH in Module %s !" % self.InfFileName)
+            EdkLogger.error("GenFds", GENFDS_ERROR, "Module %s appears under ARCH %s in platform %s, but current target ARCH is %s, so NO build output could be put into flash." % (self.InfFileName, str(PlatformArchList), GenFdsGlobalVariable.ActivePlatform, str(TargetArchList)))
 
     ## __GetEFIOutPutPath__() method
     #
