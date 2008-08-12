@@ -23,6 +23,11 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 #define NO_QST_REFED "no question refered"
 
+struct PACKAGE_DATA {
+  CHAR8   *Buffer;
+  UINT32  Size;
+};
+
 /*
  * The functions below are used for flags setting
  */
@@ -121,14 +126,21 @@ public:
   VOID                Close ();
 
   EFI_VFR_RETURN_CODE BuildPkgHdr (OUT EFI_HII_PACKAGE_HEADER **);
-  EFI_VFR_RETURN_CODE BuildPkg (IN FILE *);
-  EFI_VFR_RETURN_CODE GenCFile (IN CHAR8 *, IN FILE *);
+  EFI_VFR_RETURN_CODE BuildPkg (IN FILE *, IN PACKAGE_DATA *PkgData = NULL);
+  EFI_VFR_RETURN_CODE BuildPkg (OUT PACKAGE_DATA &);
+  EFI_VFR_RETURN_CODE GenCFile (IN CHAR8 *, IN FILE *, IN PACKAGE_DATA *PkgData = NULL);
 
 public:
   EFI_VFR_RETURN_CODE AssignPending (IN CHAR8 *, IN VOID *, IN UINT32, IN UINT32, IN CHAR8 *Msg = NULL);
   VOID                DoPendingAssign (IN CHAR8 *, IN VOID *, IN UINT32);
   bool                HavePendingUnassigned (VOID);
   VOID                PendingAssignPrintAll (VOID);
+  EFI_VFR_RETURN_CODE   DeclarePendingQuestion (
+    IN CVfrVarDataTypeDB   &lCVfrVarDataTypeDB,
+    IN CVfrDataStorage     &lCVfrDataStorage,
+    IN CVfrQuestionDB      &lCVfrQuestionDB,
+    IN UINT32 LineNo
+    );
 };
 
 extern CFormPkg gCFormPkg;
@@ -155,6 +167,9 @@ private:
   SIfrRecord *mIfrRecordListTail;
 
   SIfrRecord * GetRecordInfoFromIdx (IN UINT32);
+  BOOLEAN          CheckQuestionOpCode (IN UINT8);
+  BOOLEAN          CheckIdOpCode (IN UINT8);
+  EFI_QUESTION_ID  GetOpcodeQuestionId (IN EFI_IFR_OP_HEADER *);
 public:
   CIfrRecordInfoDB (VOID);
   ~CIfrRecordInfoDB (VOID);
@@ -170,6 +185,8 @@ public:
   UINT32      IfrRecordRegister (IN UINT32, IN CHAR8 *, IN UINT8, IN UINT32);
   VOID        IfrRecordInfoUpdate (IN UINT32, IN UINT32, IN CHAR8*, IN UINT8, IN UINT32);
   VOID        IfrRecordOutput (IN FILE *, IN UINT32 LineNo);
+  VOID        IfrRecordOutput (OUT PACKAGE_DATA &);
+  EFI_VFR_RETURN_CODE  IfrRecordAdjust (VOID);   
 };
 
 extern CIfrRecordInfoDB gCIfrRecordInfoDB;
@@ -189,12 +206,12 @@ private:
   UINT32  mRecordIdx;
   UINT32  mPkgOffset;
 
-  VOID    _EMIT_PENDING_OBJ (VOID);
-
 public:
   CIfrObj (IN UINT8 OpCode, OUT CHAR8 **IfrObj = NULL, IN UINT8 ObjBinLen = 0, IN BOOLEAN DelayEmit = FALSE);
   virtual ~CIfrObj(VOID);
 
+  VOID    _EMIT_PENDING_OBJ (VOID);
+  
   inline VOID    SetLineNo (IN UINT32 LineNo) {
     mLineNo = LineNo;
   }
@@ -336,7 +353,7 @@ public:
 
   VOID SetVarStoreInfo (IN EFI_VARSTORE_INFO *Info) {
     mHeader->VarStoreId             = Info->mVarStoreId;
-	mHeader->VarStoreInfo.VarName   = Info->mInfo.mVarName;
+	  mHeader->VarStoreInfo.VarName   = Info->mInfo.mVarName;
     mHeader->VarStoreInfo.VarOffset = Info->mInfo.mVarOffset;
   }
 
@@ -350,14 +367,23 @@ public:
     if (_FLAG_TEST_AND_CLEAR (Flags, EFI_IFR_FLAG_CALLBACK)) {
       mHeader->Flags |= EFI_IFR_FLAG_CALLBACK;
     }
-
+    
+    //
+    // ignore NVAccessFlag
+    //
     _FLAG_CLEAR (Flags, 0x08);
 
     if (_FLAG_TEST_AND_CLEAR (Flags, EFI_IFR_FLAG_RESET_REQUIRED)) {
       mHeader->Flags |= EFI_IFR_FLAG_RESET_REQUIRED;
     }
-
-    _FLAG_CLEAR (Flags, 0x20);
+    
+    //
+    //  Set LateCheck Flag to compatible for framework flag
+    //  but it uses 0x20 as its flag, if in the future UEFI may take this flag
+    //
+    if (_FLAG_TEST_AND_CLEAR (Flags, 0x20)) {
+      mHeader->Flags |= 0x20;
+    }
 
     if (_FLAG_TEST_AND_CLEAR (Flags, EFI_IFR_FLAG_OPTIONS_ONLY)) {
       mHeader->Flags |= EFI_IFR_FLAG_OPTIONS_ONLY;
@@ -648,7 +674,7 @@ public:
     ) : CIfrObj (EFI_IFR_DEFAULT_OP, (CHAR8 **)&mDefault),
         CIfrOpHeader (EFI_IFR_DEFAULT_OP, &mDefault->Header) {
     mDefault->Type      = Type;
-	mDefault->Value     = Value;
+	  mDefault->Value     = Value;
     mDefault->DefaultId = DefaultId;
   }
 
@@ -1303,7 +1329,8 @@ public:
   }
 };
 
-static EFI_GUID IfrTianoGuid = EFI_IFR_TIANO_GUID;
+static EFI_GUID IfrTianoGuid     = EFI_IFR_TIANO_GUID;
+static EFI_GUID IfrFrameworkGuid = EFI_IFR_FRAMEWORK_GUID;
 
 class CIfrClass : public CIfrObj, public CIfrOpHeader {
 private:
@@ -1376,6 +1403,42 @@ public:
 
   VOID SetAlign (IN UINT8 Align) {
     mBanner->Alignment = Align;
+  }
+};
+
+class CIfrOptionKey : public CIfrObj, public CIfrOpHeader {
+private:
+  EFI_IFR_GUID_OPTIONKEY *mOptionKey;
+
+public:
+  CIfrOptionKey (
+    IN EFI_QUESTION_ID QuestionId,
+    IN EFI_IFR_TYPE_VALUE &OptionValue,
+    IN EFI_QUESTION_ID KeyValue
+  ) : CIfrObj (EFI_IFR_GUID_OP, (CHAR8 **)&mOptionKey, sizeof (EFI_IFR_GUID_OPTIONKEY)),
+      CIfrOpHeader (EFI_IFR_GUID_OP, &mOptionKey->Header, sizeof (EFI_IFR_GUID_OPTIONKEY)) {
+    mOptionKey->ExtendOpCode = EFI_IFR_EXTEND_OP_OPTIONKEY;
+    mOptionKey->Guid         = IfrFrameworkGuid;
+    mOptionKey->QuestionId   = QuestionId;
+    mOptionKey->OptionValue  = OptionValue;
+    mOptionKey->KeyValue     = KeyValue;
+  }
+};
+
+class CIfrVarEqName : public CIfrObj, public CIfrOpHeader {
+private:
+  EFI_IFR_GUID_VAREQNAME *mVarEqName;
+
+public:
+  CIfrVarEqName (
+    IN EFI_QUESTION_ID QuestionId,
+    IN EFI_STRING_ID   NameId
+  ) : CIfrObj (EFI_IFR_GUID_OP, (CHAR8 **)&mVarEqName, sizeof (EFI_IFR_GUID_VAREQNAME)),
+      CIfrOpHeader (EFI_IFR_GUID_OP, &mVarEqName->Header, sizeof (EFI_IFR_GUID_VAREQNAME)) {
+    mVarEqName->ExtendOpCode = EFI_IFR_EXTEND_OP_VAREQNAME;
+    mVarEqName->Guid         = IfrFrameworkGuid;
+    mVarEqName->QuestionId   = QuestionId;
+    mVarEqName->NameId       = NameId;
   }
 };
 
@@ -1491,6 +1554,12 @@ public:
     mEqIdVList->QuestionId   = EFI_QUESTION_ID_INVALID;
     mEqIdVList->ListLength   = 0;
     mEqIdVList->ValueList[0] = 0;
+  }
+  
+  VOID UpdateIfrBuffer ( 
+  ) {
+    _EMIT_PENDING_OBJ();
+    mEqIdVList = (EFI_IFR_EQ_ID_LIST *) GetObjBinAddr();
   }
 
   VOID SetQuestionId (

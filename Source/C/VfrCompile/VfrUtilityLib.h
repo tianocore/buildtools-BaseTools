@@ -1,15 +1,15 @@
 /** @file
-
+  
   Vfr common library functions.
 
-Copyright (c) 2004 - 2008, Intel Corporation
-All rights reserved. This program and the accompanying materials
-are licensed and made available under the terms and conditions of the BSD License
-which accompanies this distribution.  The full text of the license may be found at
-http://opensource.org/licenses/bsd-license.php
-
-THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+Copyright (c) 2004 - 2008, Intel Corporation                                                         
+All rights reserved. This program and the accompanying materials                          
+are licensed and made available under the terms and conditions of the BSD License         
+which accompanies this distribution.  The full text of the license may be found at        
+http://opensource.org/licenses/bsd-license.php                                            
+                                                                                          
+THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,                     
+WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.             
 
 **/
 
@@ -172,7 +172,6 @@ private:
   VOID RegisterNewType (IN SVfrDataType *);
 
   EFI_VFR_RETURN_CODE ExtractStructTypeName (IN CHAR8 *&, OUT CHAR8 *);
-  EFI_VFR_RETURN_CODE ExtractFieldNameAndArrary (IN CHAR8 *&, OUT CHAR8 *, OUT UINT32 &);
   EFI_VFR_RETURN_CODE GetTypeField (IN CHAR8 *, IN SVfrDataType *, IN SVfrDataField *&);
   EFI_VFR_RETURN_CODE GetFieldOffset (IN SVfrDataField *, IN UINT32, OUT UINT32 &);
   UINT8               GetFieldWidth (IN SVfrDataField *);
@@ -192,6 +191,8 @@ public:
   EFI_VFR_RETURN_CODE GetDataFieldInfo (IN CHAR8 *, OUT UINT16 &, OUT UINT8 &, OUT UINT32 &);
 
   EFI_VFR_RETURN_CODE GetUserDefinedTypeNameList (OUT CHAR8 ***, OUT UINT32 *);
+  EFI_VFR_RETURN_CODE ExtractFieldNameAndArrary (IN CHAR8 *&, OUT CHAR8 *, OUT UINT32 &);
+
   BOOLEAN             IsTypeNameDefined (IN CHAR8 *);
 
 #ifdef CVFR_VARDATATYPEDB_DEBUG
@@ -210,6 +211,7 @@ struct SVfrVarStorageNode {
   EFI_GUID                  mGuid;
   CHAR8                     *mVarStoreName;
   EFI_VARSTORE_ID           mVarStoreId;
+  BOOLEAN                   mAssignedFlag; //Create varstore opcode
   struct SVfrVarStorageNode *mNext;
 
   EFI_VFR_VARSTORE_TYPE     mVarStoreType;
@@ -231,8 +233,8 @@ struct SVfrVarStorageNode {
   } mStorageInfo;
 
 public:
-  SVfrVarStorageNode (IN EFI_GUID *, IN CHAR8 *, IN EFI_VARSTORE_ID, IN EFI_STRING_ID, IN UINT32);
-  SVfrVarStorageNode (IN EFI_GUID *, IN CHAR8 *, IN EFI_VARSTORE_ID, IN SVfrDataType *);
+  SVfrVarStorageNode (IN EFI_GUID *, IN CHAR8 *, IN EFI_VARSTORE_ID, IN EFI_STRING_ID, IN UINT32, IN BOOLEAN Flag = TRUE);
+  SVfrVarStorageNode (IN EFI_GUID *, IN CHAR8 *, IN EFI_VARSTORE_ID, IN SVfrDataType *, IN BOOLEAN Flag = TRUE);
   SVfrVarStorageNode (IN CHAR8 *, IN EFI_VARSTORE_ID);
   ~SVfrVarStorageNode (VOID);
 };
@@ -275,14 +277,20 @@ private:
 public:
   CVfrDataStorage ();
   ~CVfrDataStorage ();
-
+  
+  SVfrVarStorageNode * GetBufferVarStoreList () {
+    return mBufferVarStoreList;
+  }
+  SVfrVarStorageNode * GetEfiVarStoreList () {
+    return mEfiVarStoreList;
+  }
   EFI_VFR_RETURN_CODE DeclareNameVarStoreBegin (CHAR8 *);
   EFI_VFR_RETURN_CODE NameTableAddItem (EFI_STRING_ID);
   EFI_VFR_RETURN_CODE DeclareNameVarStoreEnd (EFI_GUID *);
 
-  EFI_VFR_RETURN_CODE DeclareEfiVarStore (IN CHAR8 *, IN EFI_GUID *, IN EFI_STRING_ID, IN UINT32);
+  EFI_VFR_RETURN_CODE DeclareEfiVarStore (IN CHAR8 *, IN EFI_GUID *, IN EFI_STRING_ID, IN UINT32, IN BOOLEAN Flag = TRUE);
 
-  EFI_VFR_RETURN_CODE DeclareBufferVarStore (IN CHAR8 *, IN EFI_GUID *, IN CVfrVarDataTypeDB *, IN CHAR8 *, IN EFI_VARSTORE_ID);
+  EFI_VFR_RETURN_CODE DeclareBufferVarStore (IN CHAR8 *, IN EFI_GUID *, IN CVfrVarDataTypeDB *, IN CHAR8 *, IN EFI_VARSTORE_ID, IN BOOLEAN Flag = TRUE);
 
   EFI_VFR_RETURN_CODE GetVarStoreId (IN CHAR8 *, OUT EFI_VARSTORE_ID *);
   EFI_VFR_RETURN_CODE GetVarStoreType (IN CHAR8 *, OUT EFI_VFR_VARSTORE_TYPE &);
@@ -321,6 +329,7 @@ class CVfrQuestionDB {
 private:
   SVfrQuestionNode          *mQuestionList;
   UINT32                    mFreeQIdBitMap[EFI_FREE_QUESTION_ID_BITMAP_SIZE];
+  BOOLEAN                   mCompatibleMode;
 
 private:
   EFI_QUESTION_ID GetFreeQuestionId (VOID);
@@ -341,7 +350,13 @@ public:
   VOID                GetQuestionId (IN CHAR8 *, IN CHAR8 *, OUT EFI_QUESTION_ID &, OUT UINT32 &);
   EFI_VFR_RETURN_CODE FindQuestion (IN EFI_QUESTION_ID);
   EFI_VFR_RETURN_CODE FindQuestion (IN CHAR8 *);
- };
+  VOID                PrintAllQuestion (IN VOID);
+  VOID                ResetInit (IN VOID); 
+
+  VOID SetCompatibleMode (IN BOOLEAN Mode) {
+    mCompatibleMode = Mode;
+  }
+};
 
 struct SVfrDefaultStoreNode {
   EFI_IFR_DEFAULTSTORE      *mObjBinAddr;

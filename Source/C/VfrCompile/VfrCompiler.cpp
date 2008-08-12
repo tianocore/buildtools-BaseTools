@@ -18,7 +18,17 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include "string.h"
 //#include "process.h"
 #include "VfrCompiler.h"
+#include "CommonLib.h"
 #include "EfiUtilityMsgs.h"
+
+PACKAGE_DATA  gCBuffer;
+PACKAGE_DATA  gRBuffer;
+
+VOID 
+CVfrCompiler::DebugError () {
+  Error (NULL, 0, 0001, "Error parsing vfr file", " %s", mOptions.VfrFileName);
+  //_asm int 3;
+}
 
 VOID
 CVfrCompiler::SET_RUN_STATUS (
@@ -58,16 +68,17 @@ CVfrCompiler::OptionInitialization (
   mOptions.IncludePaths                  = NULL;
   mOptions.SkipCPreprocessor             = FALSE;
   mOptions.CPreprocessorOptions          = NULL;
+  mOptions.CompatibleMode                = FALSE;
 
   for (Index = 1; (Index < Argc) && (Argv[Index][0] == '-'); Index++) {
-    if ((strcmp(Argv[Index], "-h") == 0) || (strcmp(Argv[Index], "--help") == 0)) {
+    if ((stricmp(Argv[Index], "-h") == 0) || (stricmp(Argv[Index], "--help") == 0)) {
       Usage ();
       SET_RUN_STATUS (STATUS_DEAD);
       return;
-    } else if (strcmp(Argv[Index], "-l") == 0) {
+    } else if (stricmp(Argv[Index], "-l") == 0) {
       mOptions.CreateRecordListFile = TRUE;
       gCIfrRecordInfoDB.TurnOn ();
-    } else if (strcmp(Argv[Index], "-i") == 0) {
+    } else if (stricmp(Argv[Index], "-i") == 0) {
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
         Error (NULL, 0, 1001, "Missing option", "-i missing path argument"); 
@@ -75,10 +86,10 @@ CVfrCompiler::OptionInitialization (
       }
 
       AppendIncludePath(Argv[Index]);
-    } else if (strcmp(Argv[Index], "-o") == 0 || strcmp(Argv[Index], "--output-directory") == 0) {
+    } else if (stricmp(Argv[Index], "-o") == 0 || stricmp(Argv[Index], "--output-directory") == 0 || stricmp(Argv[Index], "-od") == 0) {
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
-        Error (NULL, 0, 1001, "Missing option", "-od missing output directory name");
+        Error (NULL, 0, 1001, "Missing option", "-o missing output directory name");
         goto Fail;
       }
       strcpy (mOptions.OutputDirectory, Argv[Index]);
@@ -91,13 +102,12 @@ CVfrCompiler::OptionInitialization (
           strcat (mOptions.OutputDirectory, "\\");
         }
       }
-      printf("Debug! %s\n", mOptions.OutputDirectory);
-    } else if (strcmp(Argv[Index], "-b") == 0 || strcmp(Argv[Index], "--create-ifr-package") == 0) {
+      DebugMsg (NULL, 0, 9, "Output Directory", mOptions.OutputDirectory);
+    } else if (stricmp(Argv[Index], "-b") == 0 || stricmp(Argv[Index], "--create-ifr-package") == 0 || stricmp(Argv[Index], "-ibin") == 0) {
       mOptions.CreateIfrPkgFile = TRUE;
-    } else if (strcmp(Argv[Index], "--no-strings") == 0) {
-    } else if (strcmp(Argv[Index], "-n") == 0 || strcmp(Argv[Index], "--no-pre-processing") == 0) {
+    } else if (stricmp(Argv[Index], "-n") == 0 || stricmp(Argv[Index], "--no-pre-processing") == 0 || stricmp(Argv[Index], "-nopp") == 0) {
       mOptions.SkipCPreprocessor = TRUE;
-    } else if (strcmp(Argv[Index], "-f") == 0 || strcmp(Argv[Index], "--pre-processing-flag") == 0) {
+    } else if (stricmp(Argv[Index], "-f") == 0 || stricmp(Argv[Index], "--pre-processing-flag") == 0 || stricmp(Argv[Index], "-ppflag") == 0) {
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
         Error (NULL, 0, 1001, "Missing option", "-od - missing C-preprocessor argument");
@@ -105,6 +115,8 @@ CVfrCompiler::OptionInitialization (
       }
 
       AppendCPreprocessorOptions (Argv[Index]);
+    } else if (stricmp(Argv[Index], "-c") == 0 || stricmp(Argv[Index], "--compatible-framework") == 0) {
+      mOptions.CompatibleMode = TRUE;
     } else {
       Error (NULL, 0, 1000, "Unknown option", "unrecognized option %s", Argv[Index]);
       Usage ();
@@ -373,6 +385,8 @@ CVfrCompiler::Usage (
     "                 do not preprocessing input file",
     "  -f, --pre-processing-flag",
     "                 Preprocessing flags",
+    "  -c, --compatible-framework",
+    "                 compatible framework vfr file",
     NULL
     };
   for (Index = 0; Help[Index] != NULL; Index++) {
@@ -446,7 +460,7 @@ Fail:
   delete PreProcessCmd;
 }
 
-extern UINT8 VfrParserStart (IN FILE *);
+extern UINT8 VfrParserStart (IN FILE *, IN BOOLEAN);
 
 VOID
 CVfrCompiler::Compile (
@@ -469,7 +483,7 @@ CVfrCompiler::Compile (
     goto Fail;
   }
 
-  if (VfrParserStart (pInFile) != 0) {
+  if (VfrParserStart (pInFile, mOptions.CompatibleMode) != 0) {
     goto Fail;
   }
 
@@ -494,6 +508,69 @@ Fail:
 }
 
 VOID
+CVfrCompiler::AdjustBin (
+  VOID
+  )
+{
+  EFI_VFR_RETURN_CODE Status;
+  //
+  // Check Binary Code consistent between Form and IfrRecord
+  //
+
+  //
+  // Get Package Data and IfrRecord Data
+  //
+  gCFormPkg.BuildPkg (gCBuffer);
+  gCIfrRecordInfoDB.IfrRecordOutput (gRBuffer); 
+
+  //
+  // Compare Form and Record data
+  //
+  if (gCBuffer.Buffer != NULL && gRBuffer.Buffer != NULL) {
+    UINT32 Index;
+    if (gCBuffer.Size != gRBuffer.Size) {
+      Error (NULL, 0, 0001, "Error parsing vfr file", " %s. FormBinary Size 0x%X is not same to RecordBuffer Size 0x%X", mOptions.VfrFileName, gCBuffer.Size, gRBuffer.Size);
+    }
+    for (Index = 0; Index < gCBuffer.Size; Index ++) {
+      if (gCBuffer.Buffer[Index] != gRBuffer.Buffer[Index]) {
+        break;
+      }
+    }
+    if (Index != gCBuffer.Size) {
+      Error (NULL, 0, 0001, "Error parsing vfr file", " %s. the 0x%X byte is different between Form and Record", mOptions.VfrFileName, Index);
+    }
+    DebugMsg (NULL, 0, 9, "IFR Buffer", "Form Buffer same to Record Buffer and Size is 0x%X", Index);
+  } else if (gCBuffer.Buffer == NULL && gRBuffer.Buffer == NULL) {
+    //ok
+  } else {
+    Error (NULL, 0, 0001, "Error parsing vfr file", " %s.Buffer not allocated.", mOptions.VfrFileName);
+  }
+
+  //
+  // For UEFI mode, not do OpCode Adjust
+  //
+  if (mOptions.CompatibleMode) {
+    //
+    // Adjust Opcode to be compatible with framework vfr
+    //
+    Status = gCIfrRecordInfoDB.IfrRecordAdjust ();
+    if (Status != VFR_RETURN_SUCCESS) {
+      //
+      // Record List Adjust Failed
+      //
+      SET_RUN_STATUS (STATUS_FAILED);
+      return;
+    }
+    //
+    // Re get the IfrRecord Buffer.
+    //
+    gCIfrRecordInfoDB.IfrRecordOutput (gRBuffer); 
+  }
+
+  return;
+}
+
+VOID
 CVfrCompiler::GenBinary (
   VOID
   )
@@ -509,7 +586,7 @@ CVfrCompiler::GenBinary (
       Error (NULL, 0, 0001, "Error opening file", mOptions.PkgOutputFileName);
       goto Fail;
     }
-    if (gCFormPkg.BuildPkg (pFile) != VFR_RETURN_SUCCESS) {
+    if (gCFormPkg.BuildPkg (pFile, &gRBuffer) != VFR_RETURN_SUCCESS) {
       fclose (pFile);
       goto Fail;
     }
@@ -517,6 +594,7 @@ CVfrCompiler::GenBinary (
   }
 
   SET_RUN_STATUS (STATUS_GENBINARY);
+
   return;
 
 Fail:
@@ -557,7 +635,7 @@ CVfrCompiler::GenCFile (
 
   gCVfrBufferConfig.OutputCFile (pFile, mOptions.VfrBaseFileName);
 
-  if (gCFormPkg.GenCFile (mOptions.VfrBaseFileName, pFile) != VFR_RETURN_SUCCESS) {
+  if (gCFormPkg.GenCFile (mOptions.VfrBaseFileName, pFile, &gRBuffer) != VFR_RETURN_SUCCESS) {
     fclose (pFile);
     goto Fail;
   }
@@ -609,6 +687,9 @@ CVfrCompiler::GenRecordListFile (
         gCIfrRecordInfoDB.IfrRecordOutput (pOutFile, LineNo);
       }
     }
+    
+    fprintf (pOutFile, "\n//\n// All Opcode Record List \n//\n");
+    gCIfrRecordInfoDB.IfrRecordOutput (pOutFile, 0);
 
     fclose (pOutFile);
     fclose (pInFile);
@@ -631,6 +712,7 @@ main (
   
   Compiler.PreProcess();
   Compiler.Compile();
+  Compiler.AdjustBin();
   Compiler.GenBinary();
   Compiler.GenCFile();
   Compiler.GenRecordListFile ();
@@ -640,6 +722,14 @@ main (
     return 2;
   }
 
-  return 0;
+  if (gCBuffer.Buffer != NULL) {
+    delete gCBuffer.Buffer;
+  }
+  
+  if (gRBuffer.Buffer != NULL) {
+    delete gRBuffer.Buffer;
+  }
+
+  return GetUtilityStatus ();
 }
 

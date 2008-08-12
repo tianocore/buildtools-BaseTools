@@ -279,12 +279,47 @@ CFormPkg::BuildPkgHdr (
 
   (*PkgHdr)->Type = EFI_HII_PACKAGE_FORM;
   (*PkgHdr)->Length = mPkgLength + sizeof (EFI_HII_PACKAGE_HEADER);
+
   return VFR_RETURN_SUCCESS;
 }
 
 EFI_VFR_RETURN_CODE
 CFormPkg::BuildPkg (
-  IN FILE  *Output
+  OUT PACKAGE_DATA &TBuffer
+  )
+{
+  
+  CHAR8  *Temp;
+  UINT32 Size;
+  CHAR8  Buffer[1024];
+
+  if (TBuffer.Buffer != NULL) {
+    delete TBuffer.Buffer;
+  }
+
+  TBuffer.Size = mPkgLength;
+  TBuffer.Buffer = NULL;
+  if (TBuffer.Size != 0) {
+    TBuffer.Buffer = new CHAR8[TBuffer.Size];
+  } else {
+    return VFR_RETURN_SUCCESS;
+  }
+
+  Temp = TBuffer.Buffer;
+  Open ();
+  while ((Size = Read (Buffer, 1024)) != 0) {
+    memcpy (Temp, Buffer, Size);
+    Temp += Size;
+  }
+  Close ();
+  return VFR_RETURN_SUCCESS;
+}
+
+
+EFI_VFR_RETURN_CODE
+CFormPkg::BuildPkg (
+  IN FILE  *Output,
+  IN PACKAGE_DATA *PkgData
   )
 {
   EFI_VFR_RETURN_CODE     Ret;
@@ -301,12 +336,16 @@ CFormPkg::BuildPkg (
   }
   fwrite (PkgHdr, sizeof (EFI_HII_PACKAGE_HEADER), 1, Output);
   delete PkgHdr;
-
-  Open ();
-  while ((Size = Read (Buffer, 1024)) != 0) {
-    fwrite (Buffer, Size, 1, Output);
+  
+  if (PkgData == NULL) {
+    Open ();
+    while ((Size = Read (Buffer, 1024)) != 0) {
+      fwrite (Buffer, Size, 1, Output);
+    }
+    Close ();
+  } else {
+    fwrite (PkgData->Buffer, PkgData->Size, 1, Output);
   }
-  Close ();
 
   return VFR_RETURN_SUCCESS;
 }
@@ -367,7 +406,8 @@ CFormPkg::_WRITE_PKG_END (
 EFI_VFR_RETURN_CODE 
 CFormPkg::GenCFile (
   IN CHAR8 *BaseName,
-  IN FILE *pFile
+  IN FILE *pFile,
+  IN PACKAGE_DATA *PkgData
   )
 {
   EFI_VFR_RETURN_CODE          Ret;
@@ -395,16 +435,29 @@ CFormPkg::GenCFile (
   PkgLength = sizeof (EFI_HII_PACKAGE_HEADER);
 
   fprintf (pFile, "\n\n  // PACKAGE DATA\n");
-  Open ();
-  while ((ReadSize = Read ((CHAR8 *)Buffer, BYTES_PRE_LINE * 8)) != 0) {
-    PkgLength += ReadSize;
-    if (PkgLength < PkgHdr->Length) {
-      _WRITE_PKG_LINE (pFile, BYTES_PRE_LINE, "  ", Buffer, ReadSize);
+  
+  if (PkgData == NULL) {
+    Open ();
+    while ((ReadSize = Read ((CHAR8 *)Buffer, BYTES_PRE_LINE * 8)) != 0) {
+      PkgLength += ReadSize;
+      if (PkgLength < PkgHdr->Length) {
+        _WRITE_PKG_LINE (pFile, BYTES_PRE_LINE, "  ", Buffer, ReadSize);
+      } else {
+        _WRITE_PKG_END (pFile, BYTES_PRE_LINE, "  ", Buffer, ReadSize);
+      }
+    }
+    Close ();
+  } else {
+    if (PkgData->Size % BYTES_PRE_LINE != 0) {
+      PkgLength = PkgData->Size - (PkgData->Size % BYTES_PRE_LINE);
+      _WRITE_PKG_LINE (pFile, BYTES_PRE_LINE, "  ", PkgData->Buffer, PkgLength);
+      _WRITE_PKG_END (pFile, BYTES_PRE_LINE, "  ", PkgData->Buffer + PkgLength, PkgData->Size % BYTES_PRE_LINE);
     } else {
-      _WRITE_PKG_END (pFile, BYTES_PRE_LINE, "  ", Buffer, ReadSize);
+      PkgLength = PkgData->Size - BYTES_PRE_LINE;
+      _WRITE_PKG_LINE (pFile, BYTES_PRE_LINE, "  ", PkgData->Buffer, PkgLength);
+      _WRITE_PKG_END (pFile, BYTES_PRE_LINE, "  ", PkgData->Buffer + PkgLength, BYTES_PRE_LINE);
     }
   }
-  Close ();
 
   delete PkgHdr;
   fprintf (pFile, "\n};\n");
@@ -483,6 +536,104 @@ CFormPkg::PendingAssignPrintAll (
   }
 }
 
+EFI_VFR_RETURN_CODE
+CFormPkg::DeclarePendingQuestion (
+  IN CVfrVarDataTypeDB   &lCVfrVarDataTypeDB,
+  IN CVfrDataStorage     &lCVfrDataStorage,
+  IN CVfrQuestionDB      &lCVfrQuestionDB,
+  IN UINT32 LineNo
+  )
+{
+  SPendingAssign *pNode;
+  CHAR8          *VarStr;
+  UINT32         ArrayIdx;
+  CHAR8          FName[MAX_NAME_LEN];
+  EFI_VFR_RETURN_CODE  ReturnCode;
+  EFI_VFR_VARSTORE_TYPE VarStoreType  = EFI_VFR_VARSTORE_INVALID;
+
+  for (pNode = PendingAssignList; pNode != NULL; pNode = pNode->mNext) {
+    if (pNode->mFlag == PENDING) {
+      //
+      //  declare this question as checkbox in SuppressIf True
+      //
+      // SuppressIf
+      CIfrSuppressIf SIObj;
+      SIObj.SetLineNo (LineNo);
+      
+      //TrueOpcode
+      CIfrTrue TObj (LineNo);
+      
+      //CheckBox qeustion
+      CIfrCheckBox CBObj;
+      EFI_VARSTORE_INFO Info; 
+  	  EFI_QUESTION_ID   QId   = EFI_QUESTION_ID_INVALID;
+
+      CBObj.SetLineNo (LineNo);
+      CBObj.SetPrompt (0x0);
+      CBObj.SetHelp (0x0);
+
+      //
+      // Register this question, assume it is normal question, not date or time question
+      //
+      VarStr = pNode->mKey;
+      ReturnCode = lCVfrQuestionDB.RegisterQuestion (NULL, VarStr, QId);
+      if (ReturnCode != VFR_RETURN_SUCCESS) {
+        return ReturnCode;
+      }
+ 
+#ifdef VFREXP_DEBUG
+      printf ("Undefined Question name is %s and Id is 0x%x\n", VarStr, QId);
+#endif
+      //
+      // Get Question Info, framework vfr VarName == StructName
+      //
+      ReturnCode = lCVfrVarDataTypeDB.ExtractFieldNameAndArrary (VarStr, FName, ArrayIdx);
+      if (ReturnCode != VFR_RETURN_SUCCESS) {
+        return ReturnCode;
+      }
+      lCVfrDataStorage.GetVarStoreType (FName, VarStoreType);
+      lCVfrDataStorage.GetVarStoreId (FName, &Info.mVarStoreId);
+
+      if (*VarStr == '\0' && ArrayIdx != INVALID_ARRAY_INDEX) {
+        lCVfrDataStorage.GetNameVarStoreInfo (&Info, ArrayIdx);
+      } else {
+        if (VarStoreType == EFI_VFR_VARSTORE_EFI) {
+          lCVfrDataStorage.GetEfiVarStoreInfo (&Info);
+        } else if (VarStoreType == EFI_VFR_VARSTORE_BUFFER) {
+          VarStr = pNode->mKey;
+          lCVfrVarDataTypeDB.GetDataFieldInfo (VarStr, Info.mInfo.mVarOffset, Info.mVarType, Info.mVarTotalSize);
+        } else {
+          return VFR_RETURN_UNSUPPORTED;
+        }
+      }
+
+      CBObj.SetQuestionId (QId);
+      CBObj.SetVarStoreInfo (&Info);
+
+      //
+      // For undefined Efi VarStore type question
+      // Append the extended guided opcode to contain VarName
+      //
+      if (VarStoreType == EFI_VFR_VARSTORE_EFI) {
+        CIfrVarEqName CVNObj (QId, Info.mInfo.mVarName);
+        CVNObj.SetLineNo (LineNo);
+      }
+      
+      //
+      // End for checkbox
+      //
+      CIfrEnd CEObj; 
+      CEObj.SetLineNo (LineNo);
+      //
+      // End for SuppressIf
+      //
+      CIfrEnd SEObj;
+      SEObj.SetLineNo (LineNo);
+    }
+  }
+  return VFR_RETURN_SUCCESS;
+}
+
 CFormPkg gCFormPkg;
 
 SIfrRecord::SIfrRecord (
@@ -501,7 +652,9 @@ SIfrRecord::~SIfrRecord (
   )
 {
   if (mIfrBinBuf != NULL) {
-    delete mIfrBinBuf;
+    //
+    // IfrRecord to point to form data buffer.
+    //
     mIfrBinBuf = NULL;
   }
   mLineNo      = 0xFFFFFFFF;
@@ -514,7 +667,7 @@ CIfrRecordInfoDB::CIfrRecordInfoDB (
   VOID
   )
 {
-  mSwitch            = FALSE;
+  mSwitch            = TRUE;
   mRecordCount       = EFI_IFR_RECORDINFO_IDX_START;
   mIfrRecordListHead = NULL;
   mIfrRecordListTail = NULL;
@@ -601,16 +754,51 @@ CIfrRecordInfoDB::IfrRecordInfoUpdate (
   pNode->mLineNo    = LineNo;
   pNode->mOffset    = Offset;
   pNode->mBinBufLen = BinBufLen;
-  if (BinBuf != NULL) {
+  pNode->mIfrBinBuf = BinBuf;
+
+}
+
+VOID
+CIfrRecordInfoDB::IfrRecordOutput (
+  OUT PACKAGE_DATA &TBuffer
+  )
+{
+  CHAR8      *Temp;
+  SIfrRecord *pNode; 
+
+  if (TBuffer.Buffer != NULL) {
+    delete TBuffer.Buffer;
+  }
+
+  TBuffer.Size = 0;
+  TBuffer.Buffer = NULL;
+
+
+  if (mSwitch == FALSE) {
+    return;
+  } 
+   
+  for (pNode = mIfrRecordListHead; pNode != NULL; pNode = pNode->mNext) {
+    TBuffer.Size += pNode->mBinBufLen;
+  }
+  
+  if (TBuffer.Size != 0) {
+    TBuffer.Buffer = new CHAR8[TBuffer.Size];
+  } else {
+    return;
+  }
+  
+  Temp = TBuffer.Buffer;
+
+  for (pNode = mIfrRecordListHead; pNode != NULL; pNode = pNode->mNext) {
     if (pNode->mIfrBinBuf != NULL) {
-      delete pNode->mIfrBinBuf;
-    }
-    pNode->mIfrBinBuf = new CHAR8[BinBufLen];
-    if (pNode->mIfrBinBuf != NULL) {
-      memcpy (pNode->mIfrBinBuf, BinBuf, BinBufLen);
+      memcpy (Temp, pNode->mIfrBinBuf, pNode->mBinBufLen);
+      Temp += pNode->mBinBufLen;
     }
   }
-}
+
+  return;   
+}   
 
 VOID
 CIfrRecordInfoDB::IfrRecordOutput (
@@ -620,6 +808,7 @@ CIfrRecordInfoDB::IfrRecordOutput (
 {
   SIfrRecord *pNode;
   UINT8      Index;
+  UINT32     TotalSize;
 
   if (mSwitch == FALSE) {
     return;
@@ -629,17 +818,296 @@ CIfrRecordInfoDB::IfrRecordOutput (
     return;
   }
 
+  TotalSize = 0;
+
   for (pNode = mIfrRecordListHead; pNode != NULL; pNode = pNode->mNext) {
-    if (pNode->mLineNo == LineNo) {
+    if (pNode->mLineNo == LineNo || LineNo == 0) {
       fprintf (File, ">%08X: ", pNode->mOffset);
+      TotalSize += pNode->mBinBufLen;
       if (pNode->mIfrBinBuf != NULL) {
         for (Index = 0; Index < pNode->mBinBufLen; Index++) {
-          fprintf (File, "%02X ", (UINT8)(pNode->mIfrBinBuf[Index]));
+          fprintf (File, "%02X ", (UINT8) pNode->mIfrBinBuf[Index]);
         }
       }
       fprintf (File, "\n");
     }
   }
+  
+  if (LineNo == 0) {
+    fprintf (File, "\nTotal Size of all record is 0x%08X\n", TotalSize);
+  }
+}
+
+//
+// for framework vfr file
+// adjust opcode sequence for uefi IFR format
+// adjust inconsistent and varstore into the right position.
+//
+BOOLEAN
+CIfrRecordInfoDB::CheckQuestionOpCode (
+  IN UINT8 OpCode
+  )
+{
+  switch (OpCode) {
+  case EFI_IFR_CHECKBOX_OP:
+  case EFI_IFR_NUMERIC_OP:
+  case EFI_IFR_PASSWORD_OP:
+  case EFI_IFR_ONE_OF_OP:
+  case EFI_IFR_ACTION_OP:
+  case EFI_IFR_STRING_OP:
+  case EFI_IFR_DATE_OP:
+  case EFI_IFR_TIME_OP:
+  case EFI_IFR_ORDERED_LIST_OP:
+    return TRUE;
+  default:
+    return FALSE;
+  }
+}
+
+BOOLEAN
+CIfrRecordInfoDB::CheckIdOpCode (
+  IN UINT8 OpCode
+  )
+{
+  switch (OpCode) {
+  case EFI_IFR_EQ_ID_VAL_OP:
+  case EFI_IFR_EQ_ID_ID_OP:
+  case EFI_IFR_EQ_ID_LIST_OP:
+  case EFI_IFR_QUESTION_REF1_OP:
+    return TRUE;
+  default:
+    return FALSE;
+  }
+} 
+
+EFI_QUESTION_ID
+CIfrRecordInfoDB::GetOpcodeQuestionId (
+  IN EFI_IFR_OP_HEADER *OpHead
+  )
+{
+  EFI_IFR_QUESTION_HEADER *QuestionHead;
+  
+  QuestionHead = (EFI_IFR_QUESTION_HEADER *) (OpHead + 1);
+  
+  return QuestionHead->QuestionId;
+}
+
+EFI_VFR_RETURN_CODE
+CIfrRecordInfoDB::IfrRecordAdjust (
+  VOID
+  )
+{
+  SIfrRecord *pNode, *preNode;
+  SIfrRecord *uNode, *tNode;
+  EFI_IFR_OP_HEADER  *OpHead, *tOpHead;
+  EFI_QUESTION_ID    QuestionId;
+  UINT32             StackCount;
+  UINT32             QuestionScope;
+  UINT32             OpcodeOffset;
+  EFI_VFR_RETURN_CODE  Status;
+
+  //
+  // Init local variable
+  //
+  Status = VFR_RETURN_SUCCESS;
+  pNode = mIfrRecordListHead;
+  preNode = pNode;
+  QuestionScope = 0;
+  while (pNode != NULL) {
+    OpHead = (EFI_IFR_OP_HEADER *) pNode->mIfrBinBuf;
+    
+    //
+    // make sure the inconsistent opcode in question scope
+    //
+    if (QuestionScope > 0) {
+      QuestionScope += OpHead->Scope;
+      if (OpHead->OpCode == EFI_IFR_END_OP) {
+        QuestionScope --;
+      }
+    }
+    
+    if (CheckQuestionOpCode (OpHead->OpCode)) {
+      QuestionScope = 1;
+    }
+    //
+    // for the inconsistent opcode not in question scope, adjust it
+    //
+    if (OpHead->OpCode == EFI_IFR_INCONSISTENT_IF_OP && QuestionScope == 0) {
+      //
+      // for inconsistent opcode not in question scope
+      //
+
+      //
+      // Count inconsistent opcode Scope 
+      //
+      StackCount = OpHead->Scope;
+      QuestionId = EFI_QUESTION_ID_INVALID;
+      tNode = pNode;
+      while (tNode != NULL && StackCount > 0) {
+        tNode = tNode->mNext;
+        tOpHead = (EFI_IFR_OP_HEADER *) tNode->mIfrBinBuf;
+        //
+        // Calculate Scope Number
+        //
+        StackCount += tOpHead->Scope;
+        if (tOpHead->OpCode == EFI_IFR_END_OP) {
+          StackCount --;
+        }
+        //
+        // by IdEqual opcode to get QuestionId
+        //
+        if (QuestionId == EFI_QUESTION_ID_INVALID && 
+            CheckIdOpCode (tOpHead->OpCode)) {
+          QuestionId = *(EFI_QUESTION_ID *) (tOpHead + 1);
+        }
+      }
+      if (tNode == NULL || QuestionId == EFI_QUESTION_ID_INVALID) {
+        //
+        // report error; not found
+        //
+        printf ("Inconsistent OpCode Record list invalid QuestionId is 0x%X\n", QuestionId);
+        Status = VFR_RETURN_MISMATCHED;
+        break;
+      }
+      //
+      // extract inconsistent opcode list
+      // pNode is Incosistent opcode, tNode is End Opcode
+      //
+      
+      //
+      // insert inconsistent opcode list into the right question scope by questionid
+      //
+      for (uNode = mIfrRecordListHead; uNode != NULL; uNode = uNode->mNext) {
+        tOpHead = (EFI_IFR_OP_HEADER *) uNode->mIfrBinBuf;
+        if (CheckQuestionOpCode (tOpHead->OpCode) && 
+            (QuestionId == GetOpcodeQuestionId (tOpHead))) {
+          break;
+        }
+      }
+      //
+      // insert inconsistent opcode list and check LATE_CHECK flag
+      //
+      if (uNode != NULL) {
+        if ((((EFI_IFR_QUESTION_HEADER *)(tOpHead + 1))->Flags & 0x20) != 0) {
+          //
+          // if LATE_CHECK flag is set, change inconsistent to nosumbit
+          //
+          OpHead->OpCode = EFI_IFR_NO_SUBMIT_IF_OP;
+        }
+        
+        //
+        // skip the default storage for Date and Time
+        //
+        if ((uNode->mNext != NULL) && (*uNode->mNext->mIfrBinBuf == EFI_IFR_DEFAULT_OP)) {
+          uNode = uNode->mNext;
+        }
+
+        preNode->mNext = tNode->mNext;
+        tNode->mNext = uNode->mNext;
+        uNode->mNext = pNode;
+        //
+        // reset pNode to head list, scan the whole list again.
+        //
+        pNode = mIfrRecordListHead;
+        preNode = pNode;
+        QuestionScope = 0;
+        continue;
+      } else {
+        //
+        // not found matched question id, report error
+        //
+        printf ("QuestionId required by Inconsistent OpCode is not found. QuestionId is 0x%X\n", QuestionId);
+        Status = VFR_RETURN_MISMATCHED;
+        break;
+      }
+    } else if (OpHead->OpCode == EFI_IFR_VARSTORE_OP || 
+               OpHead->OpCode == EFI_IFR_VARSTORE_EFI_OP) {
+      //
+      // for new added group of varstore opcode
+      //
+      tNode = pNode;
+      while (tNode->mNext != NULL) {
+        tOpHead = (EFI_IFR_OP_HEADER *) tNode->mNext->mIfrBinBuf;
+        if (tOpHead->OpCode != EFI_IFR_VARSTORE_OP && 
+            tOpHead->OpCode != EFI_IFR_VARSTORE_EFI_OP) {
+          break;    
+        }
+        tNode = tNode->mNext;
+      }
+
+      if (tNode->mNext == NULL) {
+        //
+        // invalid IfrCode, IfrCode end by EndOpCode
+        // 
+        printf ("No found End Opcode in the end\n");
+        Status = VFR_RETURN_MISMATCHED;
+        break;
+      }
+      
+      if (tOpHead->OpCode != EFI_IFR_END_OP) {
+          //
+          // not new added varstore, which are not needed to be adjust.
+          //
+          preNode = tNode;
+          pNode   = tNode->mNext;
+          continue;        
+      } else {
+        //
+        // move new added varstore opcode to the position befor form opcode 
+        // varstore opcode between pNode and tNode
+        //
+
+        //
+        // search form opcode from begin
+        //
+        for (uNode = mIfrRecordListHead; uNode->mNext != NULL; uNode = uNode->mNext) {
+          tOpHead = (EFI_IFR_OP_HEADER *) uNode->mNext->mIfrBinBuf;
+          if (tOpHead->OpCode == EFI_IFR_FORM_OP) {
+            break;
+          }
+        }
+        //
+        // Insert varstore opcode beform form opcode if form opcode is found
+        //
+        if (uNode->mNext != NULL) {
+          preNode->mNext = tNode->mNext;
+          tNode->mNext = uNode->mNext;
+          uNode->mNext = pNode;
+          //
+          // reset pNode to head list, scan the whole list again.
+          //
+          pNode = mIfrRecordListHead;
+          preNode = pNode;
+          QuestionScope = 0;
+          continue;
+        } else {
+          //
+          // not found form, continue scan IfrRecord list
+          //
+          preNode = tNode;
+          pNode   = tNode->mNext;
+          continue;
+        }
+      }
+    }
+    //
+    // next node
+    //
+    preNode = pNode;
+    pNode = pNode->mNext; 
+  }
+  
+  //
+  // Update Ifr Opcode Offset
+  //
+  if (Status == VFR_RETURN_SUCCESS) {
+    OpcodeOffset = 0;
+    for (pNode = mIfrRecordListHead; pNode != NULL; pNode = pNode->mNext) {
+      pNode->mOffset = OpcodeOffset;
+      OpcodeOffset += pNode->mBinBufLen;
+    }
+  }
+  return Status;
 }
 
 CIfrRecordInfoDB gCIfrRecordInfoDB;
@@ -650,15 +1118,32 @@ CIfrObj::_EMIT_PENDING_OBJ (
   )
 {
   CHAR8  *ObjBinBuf = NULL;
+  
+  //
+  // do nothing
+  //
+  if (!mDelayEmit || !gCreateOp) {
+    return;
+  }
 
-  ObjBinBuf = gCFormPkg.IfrBinBufferGet (mObjBinLen);
+  mPkgOffset = gCFormPkg.GetPkgLength ();
+  //
+  // update data buffer to package data
+  //
+  ObjBinBuf  = gCFormPkg.IfrBinBufferGet (mObjBinLen);
   if (ObjBinBuf != NULL) {
     memcpy (ObjBinBuf, mObjBinBuf, mObjBinLen);
   }
-
+  
+  //
+  // update bin buffer to package data buffer
+  //
   if (mObjBinBuf != NULL) {
     delete mObjBinBuf;
+    mObjBinBuf = ObjBinBuf;
   }
+  
+  mDelayEmit = FALSE;
 }
 
 /*
@@ -824,11 +1309,11 @@ CIfrObj::~CIfrObj (
   VOID
   )
 {
-  gCIfrRecordInfoDB.IfrRecordInfoUpdate (mRecordIdx, mLineNo, mObjBinBuf, mObjBinLen, mPkgOffset);
-
   if ((mDelayEmit == TRUE) && ((gCreateOp == TRUE))) {
     _EMIT_PENDING_OBJ ();
   }
+
+  gCIfrRecordInfoDB.IfrRecordInfoUpdate (mRecordIdx, mLineNo, mObjBinBuf, mObjBinLen, mPkgOffset);
 }
 
 /*
