@@ -226,6 +226,7 @@ MODULE_DIR = $(WORKSPACE)${separator}${module_relative_directory}
 # Build Configuration Macro Definition
 #
 ARCH = ${architecture}
+TOOLCHAIN = ${toolchain_tag}
 TOOLCHAIN_TAG = ${toolchain_tag}
 TARGET = ${build_target}
 
@@ -962,6 +963,7 @@ MODULE_DIR = $(WORKSPACE)${separator}${module_relative_directory}
 # Build Configuration Macro Definition
 #
 ARCH = ${architecture}
+TOOLCHAIN = ${toolchain_tag}
 TOOLCHAIN_TAG = ${toolchain_tag}
 TARGET = ${build_target}
 
@@ -1110,6 +1112,7 @@ PLATFORM_OUTPUT_DIR = ${platform_output_directory}
 #
 # Build Configuration Macro Definition
 #
+TOOLCHAIN = ${toolchain_tag}
 TOOLCHAIN_TAG = ${toolchain_tag}
 TARGET = ${build_target}
 
@@ -1285,6 +1288,7 @@ PLATFORM_VERSION = ${platform_version}
 #
 # Build Configuration Macro Definition
 #
+TOOLCHAIN = ${toolchain_tag}
 TOOLCHAIN_TAG = ${toolchain_tag}
 TARGET = ${build_target}
 
@@ -1335,7 +1339,7 @@ ${END}\t@cd $(BUILD_DIR)
 #
 fds: init
 \t-@cd $(FV_DIR)
-${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -t $(TOOLCHAIN_TAG) -b $(TARGET) -p ${active_platform} -a ${build_architecture_list} ${log_level}${END}${BEGIN} -r ${fd} ${END}${BEGIN} -i ${fv} ${END}${BEGIN} -y ${macro} ${END}
+${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -t $(TOOLCHAIN) -b $(TARGET) -p ${active_platform} -a ${build_architecture_list} ${log_level}${END}${BEGIN} -r ${fd} ${END}${BEGIN} -i ${fv} ${END}${BEGIN} -y ${macro} ${END}
 
 #
 # run command for emulator platform only
