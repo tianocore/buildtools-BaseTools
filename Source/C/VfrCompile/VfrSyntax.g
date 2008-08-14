@@ -3453,12 +3453,25 @@ EfiVfrParser::_DeclareStandardDefaultStorage (
   IN UINT32 LineNo
   )
 {
+  //
+  // Default Store is declared.
+  //
   CIfrDefaultStore DSObj; 
 
   mCVfrDefaultStore.RegisterDefaultStore (DSObj.GetObjBinAddr(), "Standard Defaults", EFI_STRING_ID_INVALID, EFI_HII_DEFAULT_CLASS_STANDARD);
   DSObj.SetLineNo (LineNo);
   DSObj.SetDefaultName (EFI_STRING_ID_INVALID);
   DSObj.SetDefaultId (EFI_HII_DEFAULT_CLASS_STANDARD);
+  
+  //
+  // Default MANUFACTURING Store is declared.
+  //
+  CIfrDefaultStore DSObjMF; 
+
+  mCVfrDefaultStore.RegisterDefaultStore (DSObjMF.GetObjBinAddr(), "Standard ManuFacturing", EFI_STRING_ID_INVALID, EFI_HII_DEFAULT_CLASS_MANUFACTURING);
+  DSObjMF.SetLineNo (LineNo);
+  DSObjMF.SetDefaultName (EFI_STRING_ID_INVALID);
+  DSObjMF.SetDefaultId (EFI_HII_DEFAULT_CLASS_MANUFACTURING);
 }
 
 VOID
