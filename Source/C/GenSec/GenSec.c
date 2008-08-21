@@ -684,7 +684,13 @@ Returns:
     if (FileBuffer != NULL) {
       free (FileBuffer);
     }
+    Error (NULL, 0, 0001, "Error opening file for reading", InputFileName[0]);
     return Status;
+  }
+
+  if (InputLength == 0) {
+    Error (NULL, 0, 2000, "Invalid parameter", "the size of input file %s can't be zero", InputFileName);
+    return EFI_NOT_FOUND;
   }
 
   //
@@ -1260,6 +1266,7 @@ Returns:
   }
   
   if (Status != EFI_SUCCESS || OutFileBuffer == NULL) {
+    Error (NULL, 0, 2000, "Status is not successful", "Status value is 0x%X", (UINTN) Status);
 	  goto Finish;
   }
 
