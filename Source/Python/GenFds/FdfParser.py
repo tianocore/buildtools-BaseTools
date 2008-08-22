@@ -3000,7 +3000,7 @@ class FdfParser:
     #   @retval False       section never optional
     #
     def __RuleSectionCouldBeOptional(self, SectionType):
-        if SectionType in ("DXE_DEPEX", "UI", "VERSION", "PEI_DEPEX"):
+        if SectionType in ("DXE_DEPEX", "UI", "VERSION", "PEI_DEPEX", "RAW"):
             return True
         else:
             return False
