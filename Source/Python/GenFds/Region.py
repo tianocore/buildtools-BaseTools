@@ -83,7 +83,7 @@ class Region(RegionClassObject):
                     FvBuffer.write(BinFile.read())
                     if FvBuffer.len > Size:
                         EdkLogger.error("GenFds", GENFDS_ERROR,
-                                        "Size of FV File (%s) is larger than Region Size 0x%X" \
+                                        "Size of FV File (%s) is larger than Region Size 0x%X specified." \
                                         % (RegionData, Size))
                     break
 
@@ -116,7 +116,7 @@ class Region(RegionClassObject):
 
                     if FvBuffer.len > Size:
                         EdkLogger.error("GenFds", GENFDS_ERROR,
-                                        "Size of FV (%s) is larger than Region Size 0x%X" % (RegionData, Size))
+                                        "Size of FV (%s) is larger than Region Size 0x%X specified." % (RegionData, Size))
                 else:
                     EdkLogger.error("GenFds", GENFDS_ERROR, "FV (%s) is NOT described in FDF file!" % (RegionData))
 
@@ -164,7 +164,7 @@ class Region(RegionClassObject):
                 Data = RegionData.split(',')
                 DataSize = DataSize + len(Data)
                 if DataSize > Size:
-                   EdkLogger.error("GenFds", GENFDS_ERROR, "Size of DATA large than Region Size ")
+                   EdkLogger.error("GenFds", GENFDS_ERROR, "Size of DATA is larger than Region Size ")
                 else:
                     for item in Data :
                         Buffer.write(pack('B', int(item, 16)))
@@ -233,7 +233,7 @@ class Region(RegionClassObject):
     #
     def BlockNumOfRegion (self, BlockSize):
         if BlockSize == 0 :
-            EdkLogger.error("GenFds", GENFDS_ERROR, "Region: %s doesn't in Fd address scope !" % self.Offset)
+            EdkLogger.error("GenFds", GENFDS_ERROR, "Region: %s is not in the FD address scope!" % self.Offset)
         BlockNum = self.Size / BlockSize
         GenFdsGlobalVariable.VerboseLogger ("BlockNum = 0x%X" %BlockNum)
         return BlockNum
