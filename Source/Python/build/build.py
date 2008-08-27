@@ -1180,7 +1180,7 @@ def MyOptionParser():
     Parser.add_option("-u", "--skip-autogen", action="store_true", dest="SkipAutoGen", help="Skip AutoGen step.")
     Parser.add_option("-e", "--re-parse", action="store_true", dest="Reparse", help="Re-parse all meta-data files.")
 
-    # Parser.add_option("-D", action="append", dest="Defines", metavar="NAME[=[VALUE]]",
+    # Parser.add_option("-D", "--define", action="append", dest="Defines", metavar="NAME[=[VALUE]]",
     #     help="Define global macro which can be used in DSC/DEC/INF files.")
 
     Parser.add_option("-w", "--warning-as-error", action="store_true", dest="WarningAsError", help="Treat warning in tools as error.")
