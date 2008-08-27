@@ -256,7 +256,7 @@ def myOptionParser():
     Parser.add_option("-i", "--FvImage", dest="uiFvName", help="Buld the FV image using the [FV] section named by UiFvName")
     Parser.add_option("-b", "--buildtarget", action="store", type="choice", choices=['DEBUG','RELEASE'], dest="BuildTarget", help="Build TARGET is one of list: DEBUG, RELEASE.")
     Parser.add_option("-t", "--tagname", action="store", type="string", dest="ToolChain", help="Using the tools: TOOL_CHAIN_TAG name to build the platform.")
-    Parser.add_option("-y", "--define", action="append", type="string", dest="Macros", help="Macro: \"Name [= Value]\".")
+    Parser.add_option("-D", "--define", action="append", type="string", dest="Macros", help="Macro: \"Name [= Value]\".")
     (Options, args) = Parser.parse_args()
     return Options
 
