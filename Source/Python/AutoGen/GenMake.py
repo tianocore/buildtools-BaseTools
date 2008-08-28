@@ -1339,7 +1339,7 @@ ${END}\t@cd $(BUILD_DIR)
 #
 fds: init
 \t-@cd $(FV_DIR)
-${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -t $(TOOLCHAIN) -b $(TARGET) -p ${active_platform} -a ${build_architecture_list} ${log_level}${END}${BEGIN} -r ${fd} ${END}${BEGIN} -i ${fv} ${END}${BEGIN} -y ${macro} ${END}
+${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -t $(TOOLCHAIN) -b $(TARGET) -p ${active_platform} -a ${build_architecture_list} ${log_level}${END}${BEGIN} -r ${fd} ${END}${BEGIN} -i ${fv} ${END}${BEGIN} -D ${macro} ${END}
 
 #
 # run command for emulator platform only
