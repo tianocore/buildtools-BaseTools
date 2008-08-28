@@ -5,7 +5,7 @@
 
 FREEZE=$(PYTHON_FREEZER_PATH)\FreezePython.exe
 
-MODULES=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8
+MODULES=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8,encodings.utf_16_le,encodings.latin_1
 
 BIN_DIR=$(EDK_TOOLS_PATH)\Bin\Win32
 
