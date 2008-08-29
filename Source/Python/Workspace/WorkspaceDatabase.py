@@ -1345,9 +1345,9 @@ class InfBuildData(ModuleBuildClassObject):
             if self._Header_ == None:
                 self._GetHeaderInfo()
             if self._ComponentType != None:
-                self._BuildType = self._ComponentType
+                self._BuildType = self._ComponentType.upper()
             elif self._ModuleType != None:
-                self._BuildType = self._ModuleType
+                self._BuildType = self._ModuleType.upper()
             else:
                 self._BuildType = 'USER_DEFINED'
         return self._BuildType
