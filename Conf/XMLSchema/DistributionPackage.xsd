@@ -783,24 +783,34 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 															</xs:documentation>
 														</xs:annotation>
 														<xs:element minOccurs="0" maxOccurs="1"
-															name="ValidValueList" type="xs:normalizedString">
+															name="ValidValueList">
 															<xs:annotation>
 																<xs:documentation xml:lang="en-us"> The PCD
 																	Value must be space separated list of values.
 																	Values are restricted to the data type of this
-																	PCD. </xs:documentation>
+																	PCD. Use of the L"string" syntax for
+																	specifying UTF-8 text that will be coded as
+																	UNICODE (UCS2) format is permitted.
+																</xs:documentation>
 															</xs:annotation>
+															<xs:complexType>
+																<xs:attribute name="USC2" type="xs:boolean"
+																	default="false" use="optional" />
+																<xs:attribute name="Lang" type="xs:language"
+																	default="en-us" use="optional" />
+															</xs:complexType>
 														</xs:element>
 														<xs:element minOccurs="0" maxOccurs="1"
 															name="ValidValueRange" type="xs:normalizedString">
 															<xs:annotation>
 																<xs:documentation xml:lang="en-us"> The PCD must
-																	be within a specifed range of numeric values.
-																	Restricted to C style Relational, Equality and
-																	Logicial Operators and parenthesis are valid.
-																	Only the CName for this PCD is permitted in
-																	the ValidValueRange expression. All other
-																	values must be numeric.</xs:documentation>
+																	be within a specified range of numeric values.
+																	Restricted to Relational, Equality and Logical
+																	Operators (NOT, AND, OR, GT, GE, EQ, LE, LT
+																	and XOR) and parenthesis are valid. Only the
+																	PcdCName for PCD is permitted in the
+																	ValidValueRange expression. All other values
+																	must be numeric.</xs:documentation>
 																<xs:documentation xml:lang="en-us"> LValue (op
 																	RValue)+ </xs:documentation>
 															</xs:annotation>
@@ -809,8 +819,15 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 															name="Expression" type="xs:normalizedString">
 															<xs:annotation>
 																<xs:documentation xml:lang="en-us"> A in-fix
-																	logical expression using C style logical
-																	operators. </xs:documentation>
+																	logical expression using Relational, Equality
+																	and Logical Operators (NOT, AND, OR, GT, GE,
+																	EQ, LE, LT and XOR) and parenthesis are
+																	recommended. The forms PcdCName and/or
+																	PcdTokenSpaceGuidCName.PcdCName are permitted;
+																	if only the PcdCName is specified, then the
+																	PcdTokenSpaceGuidCName is the same as this
+																	PCD's TokenSpaceGuidCName. The expression must
+																	evaluate to true or false. </xs:documentation>
 															</xs:annotation>
 														</xs:element>
 													</xs:choice>
@@ -827,8 +844,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 														<xs:annotation>
 															<xs:documentation xml:lang="en-us"> This string
 																should be defined by specifications. There are
-																pre-defined error number ranges in the UEFI/PI
-																specificaiton. </xs:documentation>
+																predefined error number ranges in the UEFI/PI
+																specification. </xs:documentation>
 														</xs:annotation>
 														<xs:complexType>
 															<xs:simpleContent>
@@ -852,6 +869,30 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 					</xs:complexType>
 				</xs:element>
 				<!-- End of PackageSurfaceArea PcdDeclarations element.  -->
+
+				<xs:element minOccurs="0" maxOccurs="1" name="PcdRelationshipChecks">
+					<xs:annotation>
+						<xs:documentation xml:lang="en-us"> This section is used to describe
+							any PCD interdependencies or relationships. </xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element minOccurs="1" maxOccurs="unbounded" name="PcdCheck"
+								type="xs:normalizedString">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> This entry must used
+										TokenSpaceGuidCName.PcdCname for every named PCD. Restricted
+										to Relational, Equality and Logical Operators (NOT, AND, OR,
+										GT, GE, EQ, LE, LT and XOR) and parenthesis are valid. Only
+										the TokenSpaceGuidCName.PcdCname us permitted to name PCDs
+										in the expression. All other values must be numeric. </xs:documentation>
+									<xs:documentation xml:lang="en-us"> LValue (op RValue)+
+									</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
 
 				<xs:element minOccurs="0" maxOccurs="unbounded"
 					name="MiscellaneousFiles">
@@ -886,7 +927,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 							<xs:element minOccurs="0" maxOccurs="unbounded" name="Description"
 								type="xs:string">
 								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> A complete descriptoin of
+									<xs:documentation xml:lang="en-us"> A complete description of
 										the files in this section. </xs:documentation>
 								</xs:annotation>
 							</xs:element>
@@ -1107,10 +1148,9 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 							<xs:element minOccurs="0" maxOccurs="unbounded"
 								name="Specification">
 								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> This is a list of other
-										specifications that this module is written against. These
-										entries can be used in #define statements (depending on the
-										build system implementation, they may be autogenerated.)
+									<xs:documentation xml:lang="en-us"> One or more of these
+										elements indicate that the module has been coded to conform
+										to the specified Industry Standard Specifications.
 									</xs:documentation>
 								</xs:annotation>
 								<xs:complexType>
@@ -1216,7 +1256,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 								<xs:annotation>
 									<xs:documentation xml:lang="en-us"> The functions that make up
 										the Event, Timer, and Task Priority Services are used during
-										preboot to create, close, signal, and wait for events; to
+										pre-boot to create, close, signal, and wait for events; to
 										set timers; and to raise and restore task priority levels as
 										defined in the UEFI specification. GUIDed events should be
 										listed in the Guids section. </xs:documentation>
@@ -1327,7 +1367,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 												<xs:enumeration value="SOMETIMES_PRODUCES">
 													<xs:annotation>
 														<xs:documentation xml:lang="en-us"> The HOB may be
-															procued by the module under some execution paths.
+															produced by the module under some execution paths.
 														</xs:documentation>
 													</xs:annotation>
 												</xs:enumeration>
@@ -1578,7 +1618,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 														name="PatchPcdValue">
 														<xs:annotation>
 															<xs:documentation xml:lang="en-us"> The element is
-																the Patchable PCD Value that was used during the
+																the Patch PCD Value that was used during the
 																build. </xs:documentation>
 														</xs:annotation>
 														<xs:complexType>
@@ -1827,7 +1867,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 											<xs:annotation>
 												<xs:documentation xml:lang="en-us"> Only valid for
 													Variable GUID types. This can be either a Hex Array or
-													Unicode Data. </xs:documentation>
+													UNICODE Data. </xs:documentation>
 											</xs:annotation>
 											<xs:complexType>
 												<xs:simpleContent>
@@ -1837,7 +1877,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 															<xs:annotation>
 																<xs:documentation xml:lang="en-us"> If set to
 																	true, then the data between the tags is UCS2
-																	Unicode format, otherwise it is either a Hex
+																	UNICODE format, otherwise it is either a Hex
 																	data array or an L"string" value.
 																</xs:documentation>
 															</xs:annotation>
@@ -2104,6 +2144,29 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 				</xs:element>
 				<!-- End of DxeDepex Section -->
 
+				<xs:element minOccurs="0" maxOccurs="1" name="SmmDepex">
+					<xs:annotation>
+						<xs:documentation xml:lang="en-us"> This is the SMM dependency
+							expression for a Dependency Section. </xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Expression" type=" xs:string " minOccurs="1"
+								maxOccurs="1">
+								<xs:annotation>
+									<xs:documentation xml:lang="en-us"> An in-fix expression, of C
+										identifiers and TRUE, FALSE, AND, OR, NOT, BEFORE, and AFTER
+										as well as parenthesis () in the in-fix notation. The
+										operators are restricted to grammar defined in the PI
+										specification. </xs:documentation>
+								</xs:annotation>
+							</xs:element>
+							<xs:element ref="HelpText" minOccurs="0" maxOccurs="1" />
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<!-- End of SmmDepex Section -->
+
 
 				<xs:element minOccurs="0" maxOccurs="1" name="MiscellaneousFiles">
 					<xs:annotation>
@@ -2201,7 +2264,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 	<xs:element name="Tools">
 		<xs:complexType>
 			<xs:sequence>
-				<xs:element minOccurs="1" maxOccurs="1" name="Header">
+				<xs:element minOccurs="0" maxOccurs="1" name="Header">
 					<xs:complexType>
 						<xs:sequence>
 							<xs:element minOccurs="1" maxOccurs="1" name="Name"
@@ -2246,7 +2309,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 						</xs:sequence>
 					</xs:complexType>
 				</xs:element>
-				<xs:element minOccurs="0" maxOccurs="unbounded" name="Filename">
+				<xs:element minOccurs="1" maxOccurs="unbounded" name="Filename">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> This is the path and filename
 							location within the ZIP file. </xs:documentation>
