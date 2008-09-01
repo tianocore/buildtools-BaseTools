@@ -117,7 +117,7 @@ class FileBuildRule:
     #
     #   @retval     tuple       (Source file in full path, List of individual sourcefiles, Destionation file, List of build commands)
     #
-    def Apply(self, SourceFile, RelativeToDir, PathSeparator):
+    def Apply(self, SourceFile, RelativeToDir, PathSeparator, OverrideDestDir=None):
         # source file
         if not self.IsMultipleInput:
             SrcFileName = os.path.basename(SourceFile)
@@ -131,6 +131,9 @@ class FileBuildRule:
             else:
                 SrcFileDir = "."
                 SrcFile = SourceFile
+            # Force src dir = current module dir
+            if OverrideDestDir != None:
+                SrcFileDir = "."
             SrcPath = os.path.dirname(SrcFile)
         else:
             SrcFileName = ""

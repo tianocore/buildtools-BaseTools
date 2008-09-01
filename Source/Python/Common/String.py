@@ -177,6 +177,27 @@ def SplitModuleType(Key):
 
     return ReturnValue
 
+## Replace macro in strings list
+#
+# This method replace macros used in a given string list. The macros are 
+# given in a dictionary.
+# 
+# @param StringList         StringList to be processed
+# @param MacroDefinitions   The macro definitions in the form of dictionary
+# @param SelfReplacement    To decide whether replace un-defined macro to '' 
+#
+# @retval NewList           A new string list whose macros are replaced
+#
+def ReplaceMacros(StringList, MacroDefinitions={}, SelfReplacement = False):
+    NewList = []
+    for String in StringList:
+        if type(String) == type(''):
+            NewList.append(ReplaceMacro(String, MacroDefinitions, SelfReplacement))
+        else:
+            NewList.append(String)
+    
+    return NewList
+
 ## Replace macro in string
 #
 # This method replace macros used in given string. The macros are given in a
@@ -184,6 +205,7 @@ def SplitModuleType(Key):
 # 
 # @param String             String to be processed
 # @param MacroDefinitions   The macro definitions in the form of dictionary
+# @param SelfReplacement    To decide whether replace un-defined macro to ''
 #
 # @retval string            The string whose macros are replaced
 #
@@ -575,6 +597,34 @@ def ConvertToSqlString(StringList):
 #
 def ConvertToSqlString2(String):
     return String.replace("'", "''")
+
+#
+# Remove comment block
+#
+def RemoveBlockComment(Lines):
+    IsFindBlockComment = False
+    IsFindBlockCode = False
+    ReservedLine = ''
+    NewLines = []
+    
+    for Line in Lines:
+        Line = Line.strip()
+        #
+        # Remove comment block
+        #
+        if Line.find(DataType.TAB_COMMENT_R8_START) > -1:
+            ReservedLine = GetSplitValueList(Line, DataType.TAB_COMMENT_R8_START, 1)[0]
+            IsFindBlockComment = True
+        if Line.find(DataType.TAB_COMMENT_R8_END) > -1:
+            Line = ReservedLine + GetSplitValueList(Line, DataType.TAB_COMMENT_R8_END, 1)[1]
+            ReservedLine = ''
+            IsFindBlockComment = False
+        if IsFindBlockComment:
+            NewLines.append('')
+            continue
+        
+        NewLines.append(Line)
+    return NewLines
 
 ##
 #

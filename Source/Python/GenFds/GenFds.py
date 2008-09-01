@@ -23,6 +23,8 @@ import FdfParser
 from Common import BuildToolError
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 from Workspace.WorkspaceDatabase import WorkspaceDatabase
+from Workspace.BuildClassObject import PcdClassObject
+from Workspace.BuildClassObject import ModuleBuildClassObject
 import RuleComplexFile
 from EfiSection import EfiSection
 import StringIO
@@ -59,6 +61,10 @@ def main():
         if Options.verbose != None:
             EdkLogger.SetLevel(EdkLogger.VERBOSE)
             GenFdsGlobalVariable.VerboseMode = True
+            
+        if Options.FixedAddress != None:
+            GenFdsGlobalVariable.FixedLoadAddress = True
+            
         if Options.quiet != None:
             EdkLogger.SetLevel(EdkLogger.QUIET)
         if Options.debug != None:
@@ -144,7 +150,12 @@ def main():
                 List = Pair.split('=')
                 if len(List) == 2:
                     FdfParser.InputMacroDict[List[0].strip()] = List[1].strip()
-                    GlobalData.gGlobalDefines[List[0].strip()] = List[1].strip()
+                    if List[0].strip() == "EFI_SOURCE":
+                        GlobalData.gEfiSource = List[1].strip()
+                    elif List[0].strip() == "EDK_SOURCE":
+                        GlobalData.gEdkSource = List[1].strip()
+                    else:
+                        GlobalData.gEdkGlobal[List[0].strip()] = List[1].strip()
                 else:
                     FdfParser.InputMacroDict[List[0].strip()] = None
 
@@ -152,6 +163,25 @@ def main():
         os.environ["WORKSPACE"] = Workspace
         BuildWorkSpace = WorkspaceDatabase(':memory:', GlobalData.gGlobalDefines)
         BuildWorkSpace.InitDatabase()
+        
+        #
+        # Get all files in workspace dir
+        #
+        for Root, Dirs, Files in os.walk(Workspace):
+            if "CVS" in Dirs:
+                Dirs.remove('CVS')
+            if ".svn" in Dirs:
+                Dirs.remove('.svn')
+            if "Build" in Dirs:
+                Dirs.remove('Build')
+            
+            for Dir in Dirs:
+                Dir = os.path.normpath(os.path.join(Root, Dir))
+                GlobalData.gAllFiles[Dir.upper()] = Dir
+            for File in Files:
+                File = os.path.normpath(os.path.join(Root, File))
+                GlobalData.gAllFiles[File.upper()] = File
+        GlobalData.gWorkspace = Workspace
 
         if (Options.archList) :
             ArchList = Options.archList.split(',')
@@ -207,6 +237,9 @@ def main():
                 EdkLogger.error("GenFds", BuildToolError.OPTION_VALUE_INVALID,
                                 "No such an FV in FDF file: %s" % Options.uiFvName)
 
+        """Modify images from build output if the feature of loading driver at fixed address is on."""
+        if GenFdsGlobalVariable.FixedLoadAddress:
+            GenFds.PreprocessImage(BuildWorkSpace, GenFdsGlobalVariable.ActivePlatform)
         """Call GenFds"""
         GenFds.GenFd('', FdfParserObj, BuildWorkSpace, ArchList)
         
@@ -257,6 +290,7 @@ def myOptionParser():
     Parser.add_option("-b", "--buildtarget", action="store", type="choice", choices=['DEBUG','RELEASE'], dest="BuildTarget", help="Build TARGET is one of list: DEBUG, RELEASE.")
     Parser.add_option("-t", "--tagname", action="store", type="string", dest="ToolChain", help="Using the tools: TOOL_CHAIN_TAG name to build the platform.")
     Parser.add_option("-D", "--define", action="append", type="string", dest="Macros", help="Macro: \"Name [= Value]\".")
+    Parser.add_option("-s", "--specifyaddress", dest="FixedAddress", action="store_true", type=None, help="Specify driver load address.")
     (Options, args) = Parser.parse_args()
     return Options
 
@@ -347,7 +381,11 @@ class GenFds :
                                     return ElementRegion.BlockSizeOfRegion(ElementFd.BlockSizeList)
             return 0x10000
 
-    
+    ## DisplayFvSpaceInfo()
+    #
+    #   @param  FvObj           Whose block size to get
+    #   @retval None
+    #
     def DisplayFvSpaceInfo(FdfParser):
         
         FvSpaceInfoList = []
@@ -388,10 +426,39 @@ class GenFds :
             FreeSizeValue = long(FvSpaceInfo[3], 0)
             GenFdsGlobalVariable.InfLogger(Name + ' ' + '[' + str((UsedSizeValue+0.0)/TotalSizeValue)[0:4].lstrip('0.') + '%Full] ' + str(TotalSizeValue) + ' total, ' + str(UsedSizeValue) + ' used, ' + str(FreeSizeValue) + ' free')
 
+    ## PreprocessImage()
+    #
+    #   @param  BuildDb         Database from build meta data files
+    #   @param  DscFile         modules from dsc file will be preprocessed
+    #   @retval None
+    #
+    def PreprocessImage(BuildDb, DscFile):
+        PcdDict = BuildDb.BuildObject[DscFile, 'COMMON'].Pcds
+        PcdValue = ''
+        for Key in PcdDict:
+            PcdObj = PcdDict[Key]
+            if PcdObj.TokenCName == 'PcdBsBaseAddress':
+                PcdValue = PcdObj.DefaultValue
+                break
+        
+        Int64PcdValue = long(PcdValue, 0)
+        if Int64PcdValue == 0 or Int64PcdValue < -1:    
+            return
+                
+        TopAddress = 0
+        if Int64PcdValue > 0:
+            TopAddress = Int64PcdValue
+            
+        ModuleDict = BuildDb.BuildObject[DscFile, 'COMMON'].Modules
+        for Key in ModuleDict:
+            ModuleObj = BuildDb.BuildObject[Key, 'COMMON']
+            print ModuleObj.BaseName + ' ' + ModuleObj.ModuleType
+
     ##Define GenFd as static function
     GenFd = staticmethod(GenFd)
     GetFvBlockSize = staticmethod(GetFvBlockSize)
     DisplayFvSpaceInfo = staticmethod(DisplayFvSpaceInfo)
+    PreprocessImage = staticmethod(PreprocessImage)
 
 if __name__ == '__main__':
     sys.exit(main())

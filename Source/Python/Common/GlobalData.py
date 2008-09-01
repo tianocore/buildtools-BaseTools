@@ -11,9 +11,15 @@
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 gEdkCompatibilityPkg = "EdkCompatibilityPkg"
+gWorkspace = "."
 gEdkSource = "Edk"
+gEfiSource = "Efi"
 
 gGlobalDefines = {}
+gAllFiles = {}
+
+gEdkGlobal = {}
+gOverrideDir = {}
 
 # for debug trace purpose when problem occurs
 gProcessingFile = ''

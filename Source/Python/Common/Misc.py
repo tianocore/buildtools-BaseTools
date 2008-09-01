@@ -257,18 +257,132 @@ def DataRestore(File):
 #   @retval     True    if file exists
 #   @retval     False   if file doesn't exists
 #
-def ValidFile(File, Ext=None, Dir='.'):
+def ValidFile(File, Ext=None, Dir='.', OverrideDir = ''):
     if Ext != None:
         Dummy, FileExt = os.path.splitext(File)
         if FileExt.lower() != Ext.lower():
             return False
     Wd = os.getcwd()
-    os.chdir(Dir)
-    if not os.path.exists(File):
-        os.chdir(Wd)
-        return False
+    if OverrideDir != '' and OverrideDir != None:
+        os.chdir(OverrideDir)
+        if not os.path.exists(File):
+            os.chdir(Dir)
+            if not os.path.exists(File):
+                os.chdir(Wd)
+                return False
     os.chdir(Wd)
     return True
+
+## Check if gvien file exists or not
+#
+#
+def ValidFile2(AllFiles, File, Ext=None, Workspace='', EfiSource='', EdkSource='', Dir='.', OverrideDir=''):
+    NewFile = File
+    if Ext != None:
+        Dummy, FileExt = os.path.splitext(File)
+        if FileExt.lower() != Ext.lower():
+            return False, File
+    
+    # Replace the R8 macros
+    if OverrideDir != '' and OverrideDir != None:
+        if OverrideDir.find('$(EFI_SOURCE)') > -1:
+            OverrideDir = OverrideDir.replace('$(EFI_SOURCE)', EfiSource)
+        if OverrideDir.find('$(EDK_SOURCE)') > -1:
+            OverrideDir = OverrideDir.replace('$(EDK_SOURCE)', EdkSource)
+    
+    # Replace the default dir to current dir
+    if Dir == '.':
+        Dir = os.getcwd()
+        Dir = Dir[len(Workspace)+1:]
+    
+    # First check if File has R8 definition itself
+    if File.find('$(EFI_SOURCE)') > -1 or File.find('$(EDK_SOURCE)') > -1:
+        File = File.replace('$(EFI_SOURCE)', EfiSource)
+        File = File.replace('$(EDK_SOURCE)', EdkSource)
+        NewFile = os.path.normpath(os.path.join(Workspace, File))
+        if NewFile.upper() in AllFiles:
+            return True, AllFiles[NewFile.upper()]
+    
+    # Second check the path with override value
+    if OverrideDir != '' and OverrideDir != None:
+        NewFile = os.path.normpath(os.path.join(Workspace, OverrideDir, File))
+        if NewFile.upper() in AllFiles:
+            return True, AllFiles[NewFile.upper()]
+    
+    # Last check the path with normal definitions
+    NewFile = os.path.normpath(os.path.join(Workspace, Dir, File))
+    if NewFile.upper() in AllFiles:
+        return True, AllFiles[NewFile.upper()]
+    
+    return False, NewFile
+
+## Check if gvien file exists or not
+#
+#
+def ValidFile3(AllFiles, File, Workspace='', EfiSource='', EdkSource='', Dir='.', OverrideDir=''):
+    # Replace the R8 macros
+    if OverrideDir != '' and OverrideDir != None:
+        if OverrideDir.find('$(EFI_SOURCE)') > -1:
+            OverrideDir = OverrideDir.replace('$(EFI_SOURCE)', EfiSource)
+        if OverrideDir.find('$(EDK_SOURCE)') > -1:
+            OverrideDir = OverrideDir.replace('$(EDK_SOURCE)', EdkSource)
+    
+    # Replace the default dir to current dir
+    # Dir is current module dir related to workspace
+    if Dir == '.':
+        Dir = os.getcwd()
+        Dir = Dir[len(Workspace)+1:]
+    
+    NewFile = File
+    RelaPath = AllFiles[os.path.normpath(os.path.join(Workspace, Dir)).upper()]
+    NewRelaPath = RelaPath
+    
+    while(True):
+        # First check if File has R8 definition itself
+        if File.find('$(EFI_SOURCE)') > -1 or File.find('$(EDK_SOURCE)') > -1:
+            File = File.replace('$(EFI_SOURCE)', EfiSource)
+            File = File.replace('$(EDK_SOURCE)', EdkSource)
+            NewFile = os.path.normpath(os.path.join(Workspace, File))
+            if NewFile.upper() in AllFiles:
+                NewFile = AllFiles[NewFile.upper()]
+                NewRelaPath = os.path.dirname(NewFile)
+                File = os.path.basename(NewFile)
+                #NewRelaPath = NewFile[:len(NewFile) - len(File.replace("..\\", '').replace("../", '')) - 1]
+                break
+        
+        # Second check the path with override value
+        if OverrideDir != '' and OverrideDir != None:
+            NewFile = os.path.normpath(os.path.join(Workspace, OverrideDir, File))
+            if NewFile.upper() in AllFiles:
+                NewFile = AllFiles[NewFile.upper()]
+                #NewRelaPath = os.path.dirname(NewFile)
+                NewRelaPath = NewFile[:len(NewFile) - len(File.replace("..\\", '').replace("../", '')) - 1]
+                break
+        
+        # Last check the path with normal definitions
+        NewFile = os.path.normpath(os.path.join(Workspace, Dir, File))
+        if NewFile.upper() in AllFiles:
+            NewFile = AllFiles[NewFile.upper()]
+            break
+        
+        # No file found
+        break
+
+    return NewRelaPath, RelaPath, File
+
+
+def GetRelPath(Path1, Path2):
+    FileName = os.path.basename(Path2)
+    L1 = os.path.normpath(Path1).split(os.path.normpath('/'))
+    L2 = os.path.normpath(Path2).split(os.path.normpath('/'))
+    for Index in range(0, len(L1)):
+        if L1[Index] != L2[Index]:
+            FileName = '../' * (len(L1) - Index)
+            for Index2 in range(Index, len(L2)):
+                FileName = os.path.join(FileName, L2[Index2])
+            break
+    return os.path.normpath(FileName)
+
 
 ## Get GUID value from given packages
 #
@@ -760,7 +874,9 @@ def ParseConsoleLog(Filename):
 # script.
 #
 if __name__ == '__main__':
-    ParseConsoleLog('C:\\R861\\Log\\Tiger.log')
+    #ParseConsoleLog('C:\\R861\\Log\\Tiger.log')
+    print os.path.normpath(GetRelPath('C:/WK/AA', 'C:\\WK\\BB\\CC\\2.txt'))
+    print os.path.normpath(GetRelPath('C:\\WK\\AA', 'C:/WK//AAAA/CC\\2.txt'))
 #    print GuidStringToGuidStructureString('6441F818-6362-4E44-B570-7DBA31DD2453')
 #    d = tdict(True, 3)
 #    d['COMMON', 'PEIM', "A",] = 1

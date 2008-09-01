@@ -367,6 +367,7 @@ class PlatformModuleClass(CommonClass, DefineClass, IncludeStatementClass):
         self.PcdBuildDefinitions = []
         self.ModuleSaBuildOption = PlatformBuildOptionClasses()
         self.Specifications = []
+        self.SourceOverridePath = ''
 
 ## PlatformModuleClasses
 #

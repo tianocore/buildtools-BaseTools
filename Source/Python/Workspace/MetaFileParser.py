@@ -18,6 +18,7 @@ import os
 import time
 
 import Common.EdkLogger as EdkLogger
+import Common.GlobalData as GlobalData
 from CommonDataClass.DataClass import *
 from Common.DataType import *
 from Common.String import *
@@ -56,10 +57,8 @@ class MetaFileParser(object):
         self._FileType = FileType
         self._FilePath = FilePath
         self._FileDir = os.path.dirname(self._FilePath)
-        if Macros == None:
-            self._Macros = {}
-        else:
-            self._Macros = Macros
+        self._Macros = {}
+
         # for recursive parsing
         self._Owner = Owner
         self._From = From
@@ -203,6 +202,7 @@ class MetaFileParser(object):
     ## DEFINE name=value parser
     def _MacroParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, ' ', 1)
+        MacroType = TokenList[0]
         if len(TokenList) < 2 or TokenList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No macro name/value given",
                             ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
@@ -214,7 +214,9 @@ class MetaFileParser(object):
             self._Macros[TokenList[0]] = ''
         else:
             # keep the macro definition for later use
-            self._Macros[TokenList[0]] = TokenList[1]
+            self._Macros[TokenList[0]] = ReplaceMacro(TokenList[1], self._Macros, False)
+        
+        return TokenList[0], self._Macros[TokenList[0]]
 
     ## [BuildOptions] section parser
     def _BuildOptionParser(self):
@@ -289,23 +291,44 @@ class InfParser(MetaFileParser):
 
     ## Parser starter
     def Start(self):
+        NmakeLine = ''
         try:
             self._Content = open(self._FilePath, 'r').readlines()
         except:
             EdkLogger.error("Parser", FILE_READ_FAILURE, ExtraData=self._FilePath)
 
         # parse the file line by line
+        IsFindBlockComment = False
+
         for Index in range(0, len(self._Content)):
+            # skip empty, commented, block commented lines
             Line = CleanString(self._Content[Index])
             if Line == '':
                 continue
-            self._CurrentLine = Line
+            if Line.find(DataType.TAB_COMMENT_R8_START) > -1:
+                IsFindBlockComment = True
+                continue
+            if Line.find(DataType.TAB_COMMENT_R8_END) > -1:
+                IsFindBlockComment = False
+                continue
+            if IsFindBlockComment:
+                continue
+            
             self._LineIndex = Index
+            self._CurrentLine = Line
 
             # section header
             if Line[0] == TAB_SECTION_START and Line[-1] == TAB_SECTION_END:
                 self._SectionHeaderParser()
                 continue
+            # merge two lines specified by '\' in section NMAKE
+            elif self._SectionType == MODEL_META_DATA_NMAKE:
+                if Line[-1] == '\\':
+                    NmakeLine = NmakeLine + ' ' + self._CurrentLine[0:-1]
+                    continue
+                else:
+                    self._CurrentLine = NmakeLine + self._CurrentLine
+                    NmakeLine = ''
             elif Line.upper().startswith('DEFINE '):
                 # file private macros
                 self._MacroParser()
@@ -337,12 +360,61 @@ class InfParser(MetaFileParser):
                             )
         self._Done()
 
+    ## Data parser for the format in which there's path
+    #
+    #   Only path can have macro used. So we need to replace them before use.
+    #
+    def _IncludeParser(self):
+        TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT)
+        self._ValueList[0:len(TokenList)] = TokenList
+        if len(self._Macros) > 0:
+            for Index in range(0, len(self._ValueList)):
+                Value = self._ValueList[Index]
+                if Value.find('$(EFI_SOURCE)') > -1:
+                    Value = Value.replace('$(EFI_SOURCE)', GlobalData.gEfiSource)
+                if Value.find('$(EDK_SOURCE)') > -1:
+                    Value = Value.replace('$(EDK_SOURCE)', GlobalData.gEdkSource)
+                if Value == None or Value == '':
+                    continue
+                self._ValueList[Index] = NormPath(Value, self._Macros)
+
+    ## Data parser for the format in which there's path
+    #
+    #   Only path can have macro used. So we need to replace them before use.
+    #
+    def _SourceFileParser(self):
+        TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT)
+        self._ValueList[0:len(TokenList)] = TokenList
+        # For Acpi tables, remove macro like ' TABLE_NAME=Sata1'
+        if 'COMPONENT_TYPE' in self._Macros:
+            if self._Macros['COMPONENT_TYPE'].upper() == 'ACPITABLE':
+                self._ValueList[0] = GetSplitValueList(self._ValueList[0], ' ', 1)[0]
+        if self._Macros['BASE_NAME'] == 'Microcode':
+            pass
+        if len(self._Macros) > 0:
+            for Index in range(0, len(self._ValueList)):
+                Value = self._ValueList[Index]
+                if Value == None or Value == '':
+                    continue
+                self._ValueList[Index] = NormPath(Value, self._Macros)
+
+    ## [defines] section parser
+    def _DefineParser(self):
+        TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
+        self._ValueList[0:len(TokenList)] = TokenList
+        self._Macros[TokenList[0]] = ReplaceMacro(TokenList[1], self._Macros, False)
+        if self._ValueList[1] == '':
+            EdkLogger.error('Parser', FORMAT_INVALID, "No value specified",
+                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+
     ## [nmake] section parser (R8.x style only)
     def _NmakeParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
         self._ValueList[0:len(TokenList)] = TokenList
+        # remove macros
+        self._ValueList[1] = ReplaceMacro(self._ValueList[1], self._Macros, False)
         # remove self-reference in macro setting
-        self._ValueList[1] = ReplaceMacro(self._ValueList[1], {self._ValueList[0]:''})
+        #self._ValueList[1] = ReplaceMacro(self._ValueList[1], {self._ValueList[0]:''})
 
     ## [FixedPcd], [FeaturePcd], [PatchPcd], [Pcd] and [PcdEx] sections parser
     def _PcdParser(self):
@@ -361,9 +433,9 @@ class InfParser(MetaFileParser):
 
     _SectionParser = {
         MODEL_UNKNOWN                   :   MetaFileParser._Skip,
-        MODEL_META_DATA_HEADER          :   MetaFileParser._DefineParser,
+        MODEL_META_DATA_HEADER          :   _DefineParser,
         MODEL_META_DATA_BUILD_OPTION    :   MetaFileParser._BuildOptionParser,
-        MODEL_EFI_INCLUDE               :   MetaFileParser._PathParser,     # for R8.x modules
+        MODEL_EFI_INCLUDE               :   _IncludeParser,                 # for R8.x modules
         MODEL_EFI_LIBRARY_INSTANCE      :   MetaFileParser._CommonParser,   # for R8.x modules
         MODEL_EFI_LIBRARY_CLASS         :   MetaFileParser._PathParser,
         MODEL_META_DATA_PACKAGE         :   MetaFileParser._PathParser,
@@ -373,7 +445,7 @@ class InfParser(MetaFileParser):
         MODEL_PCD_FEATURE_FLAG          :   _PcdParser,
         MODEL_PCD_DYNAMIC_EX            :   _PcdParser,
         MODEL_PCD_DYNAMIC               :   _PcdParser,
-        MODEL_EFI_SOURCE_FILE           :   MetaFileParser._PathParser,
+        MODEL_EFI_SOURCE_FILE           :   _SourceFileParser,
         MODEL_EFI_GUID                  :   MetaFileParser._CommonParser,
         MODEL_EFI_PROTOCOL              :   MetaFileParser._CommonParser,
         MODEL_EFI_PPI                   :   MetaFileParser._CommonParser,
@@ -408,6 +480,7 @@ class DscParser(MetaFileParser):
         TAB_PCDS_DYNAMIC_EX_HII_NULL.upper()        :   MODEL_PCD_DYNAMIC_EX_HII,
         TAB_PCDS_DYNAMIC_EX_VPD_NULL.upper()        :   MODEL_PCD_DYNAMIC_EX_VPD,
         TAB_COMPONENTS.upper()                      :   MODEL_META_DATA_COMPONENT,
+        TAB_COMPONENTS_SOURCE_OVERRIDE_PATH.upper() :   MODEL_META_DATA_COMPONENT_SOURCE_OVERRIDE_PATH,
         TAB_DSC_DEFINES.upper()                     :   MODEL_META_DATA_HEADER,
         TAB_INCLUDE.upper()                         :   MODEL_META_DATA_INCLUDE,
         TAB_IF.upper()                              :   MODEL_META_DATA_CONDITIONAL_STATEMENT_IF,
@@ -503,6 +576,25 @@ class DscParser(MetaFileParser):
             # file private macros
             elif Line.upper().startswith('DEFINE '):
                 self._MacroParser()
+                continue
+            elif Line.upper().startswith('EDK_GLOBAL '):
+                (Name, Value) = self._MacroParser()
+                for Arch, ModuleType in self._Scope:
+                    self._LastItem = self._Store(
+                    MODEL_META_DATA_DEFINE,
+                    Name,
+                    Value,
+                    '',
+                    Arch,
+                    'COMMON',
+                    self._Owner,
+                    self._From,
+                    self._LineIndex+1,
+                    -1,
+                    self._LineIndex+1,
+                    -1,
+                    self._Enabled
+                    )
                 continue
 
             # section content
@@ -730,24 +822,29 @@ class DscParser(MetaFileParser):
         if len(self._Macros) > 0:
             self._ValueList[1] = NormPath(self._ValueList[1], self._Macros)
 
+    def _CompponentSourceOverridePathParser(self):
+        if len(self._Macros) > 0:
+            self._ValueList[0] = NormPath(self._CurrentLine, self._Macros)
+
     _SectionParser = {
-        MODEL_META_DATA_HEADER          :   MetaFileParser._DefineParser,
-        MODEL_EFI_SKU_ID                :   MetaFileParser._CommonParser,
-        MODEL_EFI_LIBRARY_INSTANCE      :   MetaFileParser._PathParser,
-        MODEL_EFI_LIBRARY_CLASS         :   _LibraryClassParser,
-        MODEL_PCD_FIXED_AT_BUILD        :   _PcdParser,
-        MODEL_PCD_PATCHABLE_IN_MODULE   :   _PcdParser,
-        MODEL_PCD_FEATURE_FLAG          :   _PcdParser,
-        MODEL_PCD_DYNAMIC_DEFAULT       :   _PcdParser,
-        MODEL_PCD_DYNAMIC_HII           :   _PcdParser,
-        MODEL_PCD_DYNAMIC_VPD           :   _PcdParser,
-        MODEL_PCD_DYNAMIC_EX_DEFAULT    :   _PcdParser,
-        MODEL_PCD_DYNAMIC_EX_HII        :   _PcdParser,
-        MODEL_PCD_DYNAMIC_EX_VPD        :   _PcdParser,
-        MODEL_META_DATA_COMPONENT       :   _ComponentParser,
-        MODEL_META_DATA_BUILD_OPTION    :   MetaFileParser._BuildOptionParser,
-        MODEL_UNKNOWN                   :   MetaFileParser._Skip,
-        MODEL_META_DATA_USER_EXTENSION  :   MetaFileParser._Skip,
+        MODEL_META_DATA_HEADER                         :   _DefineParser,
+        MODEL_EFI_SKU_ID                               :   MetaFileParser._CommonParser,
+        MODEL_EFI_LIBRARY_INSTANCE                     :   MetaFileParser._PathParser,
+        MODEL_EFI_LIBRARY_CLASS                        :   _LibraryClassParser,
+        MODEL_PCD_FIXED_AT_BUILD                       :   _PcdParser,
+        MODEL_PCD_PATCHABLE_IN_MODULE                  :   _PcdParser,
+        MODEL_PCD_FEATURE_FLAG                         :   _PcdParser,
+        MODEL_PCD_DYNAMIC_DEFAULT                      :   _PcdParser,
+        MODEL_PCD_DYNAMIC_HII                          :   _PcdParser,
+        MODEL_PCD_DYNAMIC_VPD                          :   _PcdParser,
+        MODEL_PCD_DYNAMIC_EX_DEFAULT                   :   _PcdParser,
+        MODEL_PCD_DYNAMIC_EX_HII                       :   _PcdParser,
+        MODEL_PCD_DYNAMIC_EX_VPD                       :   _PcdParser,
+        MODEL_META_DATA_COMPONENT                      :   _ComponentParser,
+        MODEL_META_DATA_COMPONENT_SOURCE_OVERRIDE_PATH :   _CompponentSourceOverridePathParser,
+        MODEL_META_DATA_BUILD_OPTION                   :   MetaFileParser._BuildOptionParser,
+        MODEL_UNKNOWN                                  :   MetaFileParser._Skip,
+        MODEL_META_DATA_USER_EXTENSION                 :   MetaFileParser._Skip,
     }
 
 ## DEC file parser class

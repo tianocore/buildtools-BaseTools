@@ -52,6 +52,7 @@ class GenFdsGlobalVariable:
     SharpNumberPerLine = 40
     FdfFile = ''
     FdfFileTimeStamp = 0
+    FixedLoadAddress = False
 
     SectionHeader = struct.Struct("3B 1B")
 

@@ -77,6 +77,7 @@ class ModuleHeaderClass(IdentificationClass, CommonHeaderClass, DefineClass):
         self.CustomMakefile = {}
         self.Shadow = ''
         self.MacroDefines = {}
+        self.SourceOverridePath = ''
 
 ## ModuleSourceFileClass
 #

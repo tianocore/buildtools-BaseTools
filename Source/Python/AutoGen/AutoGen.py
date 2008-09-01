@@ -344,6 +344,7 @@ class PlatformAutoGen(AutoGen):
         self.BuildTarget = Target
         self.Arch = Arch
         self.SourceDir = path.dirname(PlatformFile)
+        self.SourceOverrideDir = None
         self.FdTargetList = self.Workspace.FdTargetList
         self.FvTargetList = self.Workspace.FvTargetList
 
@@ -1031,9 +1032,14 @@ class PlatformAutoGen(AutoGen):
             for LibraryName in M.Libraries:
                 Library = self.Platform.LibraryClasses[LibraryName, ':dummy:']
                 if Library == None:
-                    EdkLogger.warn("build", "Library [%s] is not found" % LibraryName, File=str(M),
-                                    ExtraData="\t%s [%s]" % (str(Module), self.Arch))
-                    continue
+                    for Key in self.Platform.LibraryClasses.data.keys():
+                        if LibraryName.upper() == Key.upper():
+                            Library = self.Platform.LibraryClasses[Key, ':dummy:']
+                            break
+                    if Library == None:
+                        EdkLogger.warn("build", "Library [%s] is not found" % LibraryName, File=str(M),
+                            ExtraData="\t%s [%s]" % (str(Module), self.Arch))
+                        continue
 
                 if Library not in LibraryList:
                     LibraryList.append(Library)
@@ -1164,6 +1170,11 @@ class ModuleAutoGen(AutoGen):
             return False
 
         self.SourceDir = path.dirname(self._MetaFile)
+        self.SourceOverrideDir = None
+        # use overrided path defined in DSC file
+        if self._MetaFile.upper() in GlobalData.gOverrideDir:
+            self.SourceOverrideDir = GlobalData.gOverrideDir[self._MetaFile.upper()]
+        
         self.FileBase, self.FileExt = path.splitext(path.basename(self._MetaFile))
 
         self.ToolChain = Toolchain
@@ -1223,6 +1234,10 @@ class ModuleAutoGen(AutoGen):
     ## Return the module name
     def _GetBaseName(self):
         return self.Module.BaseName
+    
+    ## Return the module SourceOverridePath
+    def _GetSourceOverridePath(self):
+        return self.Module.SourceOverridePath
 
     ## Return the module meta-file GUID
     def _GetGuid(self):
@@ -1293,7 +1308,10 @@ class ModuleAutoGen(AutoGen):
                     MakeType = gMakeTypeMap[Type]
                 else:
                     MakeType = 'nmake'
-                self._CustomMakefile[MakeType] = os.path.join(self.SourceDir, self.Module.CustomMakefile[Type])
+                File = os.path.join(self.SourceOverrideDir, self.Module.CustomMakefile[Type])
+                if not os.path.exists(File):
+                    File = os.path.join(self.SourceDir, self.Module.CustomMakefile[Type])
+                self._CustomMakefile[MakeType] = File
         return self._CustomMakefile
 
     ## Return the directory of the makefile
@@ -1385,6 +1403,21 @@ class ModuleAutoGen(AutoGen):
                             ExtraData="[%s]" % self._MetaFile)
         ToolChainFamily = self.PlatformInfo.ToolChainFamily["CC"]
         BuildRule = self.PlatformInfo.BuildRule
+        
+        # Add source override path to include
+        if self.SourceOverrideDir != '' and self.SourceOverrideDir != None:
+            Status, FullPath = ValidFile2(GlobalData.gAllFiles, 
+                                          '', 
+                                          Ext=None,
+                                          Workspace=GlobalData.gWorkspace,
+                                          EfiSource=GlobalData.gEfiSource,
+                                          EdkSource=GlobalData.gEdkSource,
+                                          Dir=self.SourceDir,
+                                          OverrideDir=self.SourceOverrideDir
+                                         )
+            if Status and FullPath not in self.IncludePathList:
+                    self.IncludePathList.insert(0, FullPath)
+
         for F in self.Module.Sources:
             SourceFile = F.SourceFile
             # match tool chain
@@ -1402,7 +1435,7 @@ class ModuleAutoGen(AutoGen):
             Dir = path.dirname(SourceFile)
             if Dir != "":
                 Dir = path.join(self.WorkspaceDir, self.SourceDir, Dir)
-                if Dir not in self.IncludePathList:
+                if Dir not in self.IncludePathList and self.AutoGenVersion >= 0x00010005:
                     self.IncludePathList.insert(0, Dir)
 
             # skip unknown file
@@ -1412,7 +1445,17 @@ class ModuleAutoGen(AutoGen):
             FileType, RuleObject = BuildRule[Ext, self.BuildType, self.Arch, ToolChainFamily]
             # unicode must be processed by AutoGen
             if FileType == "UNICODE-TEXT-FILE":
-                self._UnicodeFileList.append(os.path.join(self.WorkspaceDir, self.SourceDir, SourceFile))
+                Status, FullPath = ValidFile2(GlobalData.gAllFiles, 
+                                          SourceFile, 
+                                          Ext=None,
+                                          Workspace=GlobalData.gWorkspace,
+                                          EfiSource=GlobalData.gEfiSource,
+                                          EdkSource=GlobalData.gEdkSource,
+                                          Dir=self.SourceDir,
+                                          OverrideDir=self.SourceOverrideDir
+                                         )
+                if Status:
+                    self._UnicodeFileList.append(FullPath)
 
             # if there's dxs file, don't use content in [depex] section to generate .depex file
             if FileType == "DEPENDENCY-EXPRESSION-FILE":
@@ -1613,8 +1656,13 @@ class ModuleAutoGen(AutoGen):
 
         AutoGenList = []
         IgoredAutoGenList = []
+
         for File in self.AutoGenFileList:
             if GenC.Generate(path.join(self.DebugDir, File), str(self.AutoGenFileList[File])):
+                #Ignore R8 AutoGen.c
+                if self.AutoGenVersion < 0x00010005 and File.find('AutoGen.c') > -1:
+                        continue
+
                 AutoGenList.append(File)
             else:
                 IgoredAutoGenList.append(File)

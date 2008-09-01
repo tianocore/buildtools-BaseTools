@@ -138,6 +138,10 @@ def CheckEnvVariable():
     # for macro replacement in R8 INF file
     GlobalData.gGlobalDefines["EFI_SOURCE"] = EfiSourceDir
     GlobalData.gGlobalDefines["EDK_SOURCE"] = EdkSourceDir
+    
+    GlobalData.gWorkspace = WorkspaceDir
+    GlobalData.gEfiSource = EfiSourceDir
+    GlobalData.gEdkSource = EdkSourceDir
 
 ## Get normalized file path
 #
@@ -649,7 +653,7 @@ class Build():
 
         self.WorkspaceDir = WorkspaceDir
         os.chdir(self.WorkspaceDir)
-
+        
         self.Target         = Target
         self.PlatformFile   = Platform
         self.ModuleFile     = Module
@@ -668,7 +672,8 @@ class Build():
 
         self.TargetTxt      = TargetTxtClassObject()
         self.ToolDef        = ToolDefClassObject()
-        self.Db             = WorkspaceDatabase(None, GlobalData.gGlobalDefines, self.Reparse)
+        #self.Db             = WorkspaceDatabase(None, GlobalData.gGlobalDefines, self.Reparse)
+        self.Db             = WorkspaceDatabase(None, {}, self.Reparse)
         self.BuildDatabase  = self.Db.BuildObject
         self.Platform       = None
 
@@ -702,6 +707,24 @@ class Build():
             EdkLogger.verbose('%-24s = %s' % ("Max Thread Number", self.ThreadNumber))
 
         self.Progress.Start("\nProcessing meta-data")
+        
+        #
+        # Get all files in workspace dir
+        #
+        for Root, Dirs, Files in os.walk(self.WorkspaceDir):
+            if "CVS" in Dirs:
+                Dirs.remove('CVS')
+            if ".svn" in Dirs:
+                Dirs.remove('.svn')
+            if "Build" in Dirs:
+                Dirs.remove('Build')
+            
+            for Dir in Dirs:
+                Dir = os.path.normpath(os.path.join(Root, Dir))
+                GlobalData.gAllFiles[Dir.upper()] = Dir
+            for File in Files:
+                File = os.path.normpath(os.path.join(Root, File))
+                GlobalData.gAllFiles[File.upper()] = File
 
     ## Load configuration
     #
@@ -791,6 +814,9 @@ class Build():
                             ExtraData="No active platform specified in target.txt or command line! Nothing can be built.\n")
         if not os.path.isfile(self.PlatformFile):
             EdkLogger.error("AutoGen", FILE_NOT_FOUND, ExtraData = self.PlatformFile)
+        Dummy, FileExt = os.path.splitext(self.PlatformFile)
+        if FileExt.lower() != '.dsc':
+            EdkLogger.error("AutoGen", PARAMETER_INVALID, ExtraData = '%s is not a valid platform' %self.PlatformFile)
 
         # create metafile database
         self.Db.InitDatabase()

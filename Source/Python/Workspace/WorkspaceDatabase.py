@@ -19,6 +19,8 @@ import os
 import os.path
 
 import Common.EdkLogger as EdkLogger
+import Common.GlobalData as GlobalData
+
 from CommonDataClass.DataClass import *
 from CommonDataClass.ModuleClass import *
 from Common.String import *
@@ -92,6 +94,9 @@ class DscBuildData(PlatformBuildClassObject):
         self._Arch = Arch
         self._Macros = Macros
         self._Clear()
+        RecordList = self._RawData[MODEL_META_DATA_DEFINE, self._Arch]
+        for Record in RecordList:
+            GlobalData.gEdkGlobal[Record[0]] = Record[1]
 
     ## XXX[key] = value
     def __setitem__(self, key, value):
@@ -323,21 +328,44 @@ class DscBuildData(PlatformBuildClassObject):
             ModuleId = Record[5]
             LineNo = Record[6]
             # check the file existence
-            if not ValidFile(ModuleFile, '.inf'):
+            #if not ValidFile(ModuleFile, '.inf'):
+            Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
+                                       ModuleFile, 
+                                       '.inf', 
+                                       GlobalData.gWorkspace,
+                                       GlobalData.gEfiSource,
+                                       GlobalData.gEdkSource,
+                                      )
+            if not Status:
                 EdkLogger.error('build', FORMAT_INVALID, "Invalid or non-existent module",
                                 File=self.DescFilePath, ExtraData=ModuleFile, Line=LineNo)
             if ModuleFile in self._Modules:
                 continue
             Module = ModuleBuildClassObject()
             Module.DescFilePath = ModuleFile
-
+            
+            # get module override path
+            RecordList = self._RawData[MODEL_META_DATA_COMPONENT_SOURCE_OVERRIDE_PATH, self._Arch, None, ModuleId]
+            if RecordList != []:
+                Module.SourceOverridePath = RecordList[0][0]
+                #Add to GlobalData Variables
+                GlobalData.gOverrideDir[ModuleFile.upper()] = Module.SourceOverridePath
+            
             # get module private library instance
             RecordList = self._RawData[MODEL_EFI_LIBRARY_CLASS, self._Arch, None, ModuleId]
             for Record in RecordList:
                 LibraryClass = Record[0]
                 LibraryPath = NormPath(Record[1], self._Macros)
                 LineNo = Record[-1]
-                if not ValidFile(LibraryPath, '.inf'):
+                #if not ValidFile(LibraryPath, '.inf'):
+                Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
+                                           LibraryPath, 
+                                           '.inf', 
+                                           GlobalData.gWorkspace,
+                                           GlobalData.gEfiSource,
+                                           GlobalData.gEdkSource,
+                                          )
+                if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=LibraryPath,
                                     File=self.DescFilePath, Line=LineNo)
                 if LibraryClass == '' or LibraryClass == 'NULL':
@@ -406,7 +434,15 @@ class DscBuildData(PlatformBuildClassObject):
             for LibraryClass, LibraryInstance, Dummy, Arch, ModuleType, Dummy, LineNo in RecordList:
                 LibraryClassSet.add(LibraryClass)
                 LibraryInstance = NormPath(LibraryInstance, self._Macros)
-                if not ValidFile(LibraryInstance, '.inf'):
+                #if not ValidFile(LibraryInstance, '.inf'):
+                Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
+                                           LibraryInstance, 
+                                           '.inf', 
+                                           GlobalData.gWorkspace,
+                                           GlobalData.gEfiSource,
+                                           GlobalData.gEdkSource,
+                                          )
+                if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, File=self.DescFilePath,
                                     ExtraData=LibraryInstance, Line=LineNo)
                 if ModuleType != 'COMMON' and ModuleType not in SUP_MODULE_LIST:
@@ -431,7 +467,15 @@ class DscBuildData(PlatformBuildClassObject):
             for Record in RecordList:
                 File = NormPath(Record[0], self._Macros)
                 LineNo = Record[-1]
-                if not ValidFile(File, '.inf'):
+                #if not ValidFile(File, '.inf'):
+                Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
+                                           File, 
+                                           '.inf', 
+                                           GlobalData.gWorkspace,
+                                           GlobalData.gEfiSource,
+                                           GlobalData.gEdkSource,
+                                          )
+                if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                     File=self.DescFilePath, Line=LineNo)
                 if File not in self._LibraryInstances:
@@ -918,7 +962,16 @@ class DecBuildData(PackageBuildClassObject):
                 File = NormPath(Record[0], self._Macros)
                 LineNo = Record[-1]
                 # validate the path
-                if not ValidFile(File, Dir=self._PackageDir):
+                #if not ValidFile(File, Dir=self._PackageDir):
+                Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
+                                           File, 
+                                           Ext=None,
+                                           Workspace=GlobalData.gWorkspace,
+                                           EfiSource=GlobalData.gEfiSource,
+                                           EdkSource=GlobalData.gEdkSource,
+                                           Dir=self._PackageDir
+                                          )
+                if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                     File=self.DescFilePath, Line=LineNo)
                 # avoid duplicate include path
@@ -938,7 +991,16 @@ class DecBuildData(PackageBuildClassObject):
             RecordList = self._RawData[MODEL_EFI_LIBRARY_CLASS, self._Arch]
             for LibraryClass, File, Dummy, Arch, ID, LineNo in RecordList:
                 File = NormPath(File, self._Macros)
-                if not ValidFile(File, Dir=self._PackageDir):
+                #if not ValidFile(File, Dir=self._PackageDir):
+                Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
+                                           File, 
+                                           Ext=None, 
+                                           Workspace=GlobalData.gWorkspace,
+                                           EfiSource=GlobalData.gEfiSource,
+                                           EdkSource=GlobalData.gEdkSource,
+                                           Dir=self._PackageDir
+                                          )
+                if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                     File=self.DescFilePath, Line=LineNo)
                 LibraryClassSet.add(LibraryClass)
@@ -1054,6 +1116,8 @@ class InfBuildData(ModuleBuildClassObject):
         TAB_INF_DEFINES_VERSION                     : "_Version",
         TAB_INF_DEFINES_PCD_IS_DRIVER               : "_PcdIsDriver",
         TAB_INF_DEFINES_SHADOW                      : "_Shadow",
+        
+        TAB_COMPONENTS_SOURCE_OVERRIDE_PATH         : "_SourceOverridePath",
     }
 
     # dict used to convert Component type to Module type
@@ -1103,6 +1167,9 @@ class InfBuildData(ModuleBuildClassObject):
         self._Arch = Arch
         self._Platform = 'COMMON'
         self._Macros = Macros
+        self._SourceOverridePath = None
+        if FilePath.upper() in GlobalData.gOverrideDir:
+            self._SourceOverridePath = GlobalData.gOverrideDir[FilePath.upper()]
         self._Clear()
 
     ## XXX[key] = value
@@ -1151,6 +1218,7 @@ class InfBuildData(ModuleBuildClassObject):
         self._Pcds                  = None
         self._BuildOptions          = None
         self._Depex                 = None
+        #self._SourceOverridePath    = None
 
     ## Get architecture
     def _GetArch(self):
@@ -1194,6 +1262,7 @@ class InfBuildData(ModuleBuildClassObject):
     def _GetHeaderInfo(self):
         RecordList = self._RawData[MODEL_META_DATA_HEADER, self._Arch, self._Platform]
         for Record in RecordList:
+            Record = ReplaceMacros(Record, GlobalData.gEdkGlobal, False)
             Name = Record[0]
             # items defined _PROPERTY_ don't need additional processing
             if Name in self:
@@ -1204,6 +1273,10 @@ class InfBuildData(ModuleBuildClassObject):
                     self._Specification = sdict()
                 self._Specification[Name] = Record[1]
             elif Name == 'EDK_RELEASE_VERSION':
+                if self._Specification == None:
+                    self._Specification = sdict()
+                self._Specification[Name] = Record[1]
+            elif Name == 'PI_SPECIFICATION_VERSION':
                 if self._Specification == None:
                     self._Specification = sdict()
                 self._Specification[Name] = Record[1]
@@ -1264,13 +1337,23 @@ class InfBuildData(ModuleBuildClassObject):
             # make use some [nmake] section macros
             RecordList = self._RawData[MODEL_META_DATA_NMAKE, self._Arch, self._Platform]
             for Name,Value,Dummy,Arch,Platform,ID,LineNo in RecordList:
+                Name, Value = ReplaceMacros((Name, Value), GlobalData.gEdkGlobal, True)
                 if Name == "IMAGE_ENTRY_POINT":
                     if self._ModuleEntryPointList == None:
                         self._ModuleEntryPointList = []
                     self._ModuleEntryPointList.append(Value)
                 elif Name == "DPX_SOURCE":
                     File = NormPath(Value, self._Macros)
-                    if not ValidFile(File, Dir=self._ModuleDir):
+                    #if not ValidFile(File, Dir=self._ModuleDir):
+                    Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
+                                               File, 
+                                               Ext=None,
+                                               Workspace=GlobalData.gWorkspace,
+                                               EfiSource=GlobalData.gEfiSource,
+                                               EdkSource=GlobalData.gEdkSource,
+                                               Dir=self._ModuleDir
+                                              )
+                    if not Status:
                         EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                         File=self.DescFilePath, Line=LineNo)
                     if self.Sources == None:
@@ -1459,10 +1542,21 @@ class InfBuildData(ModuleBuildClassObject):
             self._Binaries = []
             RecordList = self._RawData[MODEL_EFI_BINARY_FILE, self._Arch, self._Platform]
             for Record in RecordList:
+                Record = ReplaceMacros(Record, GlobalData.gEdkGlobal, False)
+                Record[1] = Record[1].replace('$(PROCESSOR)', self._Arch)
                 FileType = Record[0]
                 File = NormPath(Record[1], self._Macros)
                 LineNo = Record[-1]
-                if not ValidFile(File, Dir=self._ModuleDir):
+                #if not ValidFile(File, Dir=self._ModuleDir):
+                Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
+                                           File, 
+                                           Ext=None,
+                                           Workspace=GlobalData.gWorkspace,
+                                           EfiSource=GlobalData.gEfiSource,
+                                           EdkSource=GlobalData.gEdkSource,
+                                           Dir=self._ModuleDir
+                                          )
+                if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                     File=self.DescFilePath, Line=LineNo)
                 Target = Record[2]
@@ -1476,11 +1570,24 @@ class InfBuildData(ModuleBuildClassObject):
             self._Sources = []
             RecordList = self._RawData[MODEL_EFI_SOURCE_FILE, self._Arch, self._Platform]
             for Record in RecordList:
+                Record = ReplaceMacros(Record, GlobalData.gEdkGlobal, False)
+                Record[0] = Record[0].replace('$(PROCESSOR)', self._Arch)
                 File = NormPath(Record[0], self._Macros)
                 LineNo = Record[-1]
-                if not ValidFile(File, Dir=self._ModuleDir):
-                    EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
+                #if not ValidFile(File, Dir=self._ModuleDir, OverrideDir=self._SourceOverridePath):
+                Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
+                                           File, 
+                                           Ext=None, 
+                                           Workspace=GlobalData.gWorkspace,
+                                           EfiSource=GlobalData.gEfiSource,
+                                           EdkSource=GlobalData.gEdkSource,
+                                           Dir=self._ModuleDir,
+                                           OverrideDir=self._SourceOverridePath
+                                          )
+                if not Status:
+                    EdkLogger.error('build', FILE_NOT_FOUND, ExtraData = (Dir + ' ' + File),
                                     File=self.DescFilePath, Line=LineNo)
+                
                 ToolChainFamily = Record[1]
                 TagName = Record[2]
                 ToolCode = Record[3]
@@ -1494,6 +1601,7 @@ class InfBuildData(ModuleBuildClassObject):
             self._LibraryClasses = sdict()
             RecordList = self._RawData[MODEL_EFI_LIBRARY_CLASS, self._Arch, self._Platform]
             for Record in RecordList:
+                Record = ReplaceMacros(Record, GlobalData.gEdkGlobal, False)
                 Lib = Record[0]
                 Instance = Record[1]
                 if Instance != None and Instance != '':
@@ -1508,6 +1616,7 @@ class InfBuildData(ModuleBuildClassObject):
             RecordList = self._RawData[MODEL_EFI_LIBRARY_INSTANCE, self._Arch, self._Platform]
             for Record in RecordList:
                 # in case of name with '.lib' extension, which is unusual in R8.x inf
+                Record = ReplaceMacros(Record, GlobalData.gEdkGlobal, False)
                 LibraryName = os.path.splitext(Record[0])[0]
                 if LibraryName not in self._Libraries:
                     self._Libraries.append(LibraryName)
@@ -1568,6 +1677,9 @@ class InfBuildData(ModuleBuildClassObject):
                 EdkLogger.error('build', FORMAT_NOT_SUPPORTED, "No [include] section allowed",
                                 File=self.DescFilePath, Line=RecordList[0][-1]-1)
             for Record in RecordList:
+                Record = ReplaceMacros(Record, GlobalData.gEdkGlobal, False)
+                Record[0] = ReplaceMacro(Record[0], {'EFI_SOURCE' : GlobalData.gEfiSource}, False)
+                Record[0] = ReplaceMacro(Record[0], {'EDK_SOURCE' : GlobalData.gEdkSource}, False)
                 File = NormPath(Record[0], self._Macros)
                 LineNo = Record[-1]
                 #if File[0] == '.':
@@ -1591,7 +1703,15 @@ class InfBuildData(ModuleBuildClassObject):
             for Record in RecordList:
                 File = NormPath(Record[0], self._Macros)
                 LineNo = Record[-1]
-                if not ValidFile(File, '.dec'):
+                #if not ValidFile(File, '.dec'):
+                Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
+                                           File, 
+                                           '.dec', 
+                                           GlobalData.gWorkspace,
+                                           GlobalData.gEfiSource,
+                                           GlobalData.gEdkSource
+                                          )
+                if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                     File=self.DescFilePath, Line=LineNo)
                 # parse this package now. we need it to get protocol/ppi/guid value
@@ -1633,6 +1753,7 @@ class InfBuildData(ModuleBuildClassObject):
             self._Depex = []
             RecordList = self._RawData[MODEL_EFI_DEPEX, self._Arch, self._Platform]
             for Record in RecordList:
+                Record = ReplaceMacros(Record, GlobalData.gEdkGlobal, False)
                 TokenList = Record[0].split()
                 for Token in TokenList:
                     if Token in DEPEX_SUPPORTED_OPCODE or Token.endswith(".inf"):
@@ -1646,7 +1767,7 @@ class InfBuildData(ModuleBuildClassObject):
                                             ExtraData=PackageList, File=self.DescFilePath, Line=Record[-1])
                         self._Depex.append(Value)
         return self._Depex
-
+    
     ## Retrieve PCD for given type
     def _GetPcd(self, Type):
         Pcds = {}
@@ -1759,7 +1880,6 @@ class InfBuildData(ModuleBuildClassObject):
     BuildOptions            = property(_GetBuildOptions)
     Depex                   = property(_GetDepex)
 
-
 ## Database
 #
 #   This class defined the build databse for all modules, packages and platform.
@@ -1849,14 +1969,14 @@ class WorkspaceDatabase(object):
                 return None
 
             # get table for current file
-            MetaFile = self.WorkspaceDb[FilePath, FileType]
+            MetaFile = self.WorkspaceDb[FilePath, FileType, self.WorkspaceDb._GlobalMacros]
             BuildObject = self._GENERATOR_[FileType](
                                     FilePath,
                                     MetaFile,
                                     self,
                                     Arch,
                                     Platform,
-                                    self.WorkspaceDb._GlobalMacros
+                                    self.WorkspaceDb._GlobalMacros,
                                     )
             self._CACHE_[Key] = BuildObject
             return BuildObject
@@ -1978,7 +2098,7 @@ class WorkspaceDatabase(object):
     #   @param  FileInfo    The tuple containing path and type of a file
     #
     def __getitem__(self, FileInfo):
-        FilePath, FileType = FileInfo
+        FilePath, FileType, Macros = FileInfo
         if FileType not in self._FILE_TABLE_:
             return None
 
@@ -2000,7 +2120,7 @@ class WorkspaceDatabase(object):
 
         FileTable = self._FILE_TABLE_[FileType](self.Cur, TableName, FileId)
         FileTable.Create(not Parsed)
-        Parser = self._FILE_PARSER_[FileType](FilePath, FileType, FileTable)
+        Parser = self._FILE_PARSER_[FileType](FilePath, FileType, FileTable, Macros)
         # set the "Finished" flag in parser in order to avoid re-parsing (if parsed)
         Parser.Finished = Parsed
         return Parser

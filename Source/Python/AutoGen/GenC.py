@@ -1634,7 +1634,7 @@ def CreateFooterCode(Info, AutoGenC, AutoGenH):
 #
 def CreateCode(Info, AutoGenC, AutoGenH):
     CreateHeaderCode(Info, AutoGenC, AutoGenH)
-
+   
     if Info.AutoGenVersion >= 0x00010005:
         CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH)
         CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH)
@@ -1647,6 +1647,9 @@ def CreateCode(Info, AutoGenC, AutoGenH):
     CreateUnicodeStringCode(Info, AutoGenC, AutoGenH)
 
     CreateFooterCode(Info, AutoGenC, AutoGenH)
+    
+    if Info.AutoGenVersion < 0x00010005 and Info.ComponentType.upper() == 'ACPITABLE':
+        AutoGenC.String = ''
 
 ## Create the code file
 #

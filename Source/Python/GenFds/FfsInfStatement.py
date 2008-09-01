@@ -281,7 +281,10 @@ class FfsInfStatement(FfsInfStatementClassObject):
             Arch = ArchList[0]
             return Arch
         elif len(ArchList) > 1:
-            EdkLogger.error("GenFds", GENFDS_ERROR, "Module built under multiple ARCHs %s. Not able to determine which output to put into flash for Module %s !" % (str(ArchList), self.InfFileName))
+            if len(PlatformArchList) == 0:
+                EdkLogger.error("GenFds", GENFDS_ERROR, "GenFds command line option has multiple ARCHs %s. Not able to determine which ARCH is valid for Module %s !" % (str(ArchList), self.InfFileName))
+            else:
+                EdkLogger.error("GenFds", GENFDS_ERROR, "Module built under multiple ARCHs %s. Not able to determine which output to put into flash for Module %s !" % (str(ArchList), self.InfFileName))
         else:
             EdkLogger.error("GenFds", GENFDS_ERROR, "Module %s appears under ARCH %s in platform %s, but current target ARCH is %s, so NO build output could be put into flash." % (self.InfFileName, str(PlatformArchList), GenFdsGlobalVariable.ActivePlatform, str(TargetArchList)))
 

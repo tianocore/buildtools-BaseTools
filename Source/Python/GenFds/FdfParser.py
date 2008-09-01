@@ -2663,7 +2663,7 @@ class FdfParser:
                              "DXE_SMM_DRIVER", "DXE_RUNTIME_DRIVER", \
                              "UEFI_DRIVER", "UEFI_APPLICATION", "USER_DEFINED", "DEFAULT", "BASE", \
                              "SECURITY_CORE", "COMBINED_PEIM_DRIVER", "PIC_PEIM", "RELOCATABLE_PEIM", \
-                             "PE32_PEIM", "BS_DRIVER", "RT_DRIVER", "SAL_RT_DRIVER", "APPLICATION"):
+                             "PE32_PEIM", "BS_DRIVER", "RT_DRIVER", "SAL_RT_DRIVER", "APPLICATION", "ACPITABLE"):
             raise Warning("Unknown Module type '%s'" % self.__Token, self.FileName, self.CurrentLineNumber)
         return self.__Token
 
