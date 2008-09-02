@@ -21,7 +21,10 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include "EfiVfr.h"
 #include "VfrError.h"
 
+extern BOOLEAN  VfrCompatibleMode;
+
 #define MAX_NAME_LEN                       64
+#define MAX_STRING_LEN                     0x100
 #define DEFAULT_ALIGN                      1
 #define DEFAULT_PACK_ALIGN                 0x8
 #define DEFAULT_NAME_TABLE_ITEMS           1024
@@ -188,13 +191,17 @@ public:
 
   EFI_VFR_RETURN_CODE GetDataType (IN CHAR8 *, OUT SVfrDataType **);
   EFI_VFR_RETURN_CODE GetDataTypeSize (IN CHAR8 *, OUT UINT32 *);
+  EFI_VFR_RETURN_CODE GetDataTypeSize (IN UINT8, OUT UINT32 *);
   EFI_VFR_RETURN_CODE GetDataFieldInfo (IN CHAR8 *, OUT UINT16 &, OUT UINT8 &, OUT UINT32 &);
 
   EFI_VFR_RETURN_CODE GetUserDefinedTypeNameList (OUT CHAR8 ***, OUT UINT32 *);
   EFI_VFR_RETURN_CODE ExtractFieldNameAndArrary (IN CHAR8 *&, OUT CHAR8 *, OUT UINT32 &);
 
   BOOLEAN             IsTypeNameDefined (IN CHAR8 *);
-
+  //
+  // First the declared 
+  //
+  CHAR8               *mFirstNewDataTypeName;
 #ifdef CVFR_VARDATATYPEDB_DEBUG
   VOID ParserDB ();
 #endif
@@ -269,7 +276,7 @@ private:
 
 private:
 
-  EFI_VARSTORE_ID GetFreeVarStoreId (VOID);
+  EFI_VARSTORE_ID GetFreeVarStoreId (EFI_VFR_VARSTORE_TYPE VarType = EFI_VFR_VARSTORE_BUFFER);
   BOOLEAN         ChekVarStoreIdFree (IN EFI_VARSTORE_ID);
   VOID            MarkVarStoreIdUsed (IN EFI_VARSTORE_ID);
   VOID            MarkVarStoreIdUnused (IN EFI_VARSTORE_ID);
@@ -329,7 +336,6 @@ class CVfrQuestionDB {
 private:
   SVfrQuestionNode          *mQuestionList;
   UINT32                    mFreeQIdBitMap[EFI_FREE_QUESTION_ID_BITMAP_SIZE];
-  BOOLEAN                   mCompatibleMode;
 
 private:
   EFI_QUESTION_ID GetFreeQuestionId (VOID);
@@ -354,7 +360,7 @@ public:
   VOID                ResetInit (IN VOID); 
 
   VOID SetCompatibleMode (IN BOOLEAN Mode) {
-    mCompatibleMode = Mode;
+    VfrCompatibleMode = Mode;
   }
 };
 

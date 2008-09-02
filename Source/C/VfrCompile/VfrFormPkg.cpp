@@ -541,6 +541,7 @@ CFormPkg::DeclarePendingQuestion (
   IN CVfrVarDataTypeDB   &lCVfrVarDataTypeDB,
   IN CVfrDataStorage     &lCVfrDataStorage,
   IN CVfrQuestionDB      &lCVfrQuestionDB,
+  IN EFI_GUID            *LocalFormSetGuid,
   IN UINT32 LineNo
   )
 {
@@ -554,7 +555,7 @@ CFormPkg::DeclarePendingQuestion (
   for (pNode = PendingAssignList; pNode != NULL; pNode = pNode->mNext) {
     if (pNode->mFlag == PENDING) {
       //
-      //  declare this question as checkbox in SuppressIf True
+      //  declare this question as Numeric in SuppressIf True
       //
       // SuppressIf
       CIfrSuppressIf SIObj;
@@ -563,14 +564,14 @@ CFormPkg::DeclarePendingQuestion (
       //TrueOpcode
       CIfrTrue TObj (LineNo);
       
-      //CheckBox qeustion
-      CIfrCheckBox CBObj;
+      //Numeric qeustion
+      CIfrNumeric CNObj;
       EFI_VARSTORE_INFO Info; 
   	  EFI_QUESTION_ID   QId   = EFI_QUESTION_ID_INVALID;
 
-      CBObj.SetLineNo (LineNo);
-      CBObj.SetPrompt (0x0);
-      CBObj.SetHelp (0x0);
+      CNObj.SetLineNo (LineNo);
+      CNObj.SetPrompt (0x0);
+      CNObj.SetHelp (0x0);
 
       //
       // Register this question, assume it is normal question, not date or time question
@@ -578,6 +579,7 @@ CFormPkg::DeclarePendingQuestion (
       VarStr = pNode->mKey;
       ReturnCode = lCVfrQuestionDB.RegisterQuestion (NULL, VarStr, QId);
       if (ReturnCode != VFR_RETURN_SUCCESS) {
+        gCVfrErrorHandle.HandleError (ReturnCode, pNode->mLineNo, pNode->mKey);
         return ReturnCode;
       }
  
@@ -589,26 +591,55 @@ CFormPkg::DeclarePendingQuestion (
       //
       ReturnCode = lCVfrVarDataTypeDB.ExtractFieldNameAndArrary (VarStr, FName, ArrayIdx);
       if (ReturnCode != VFR_RETURN_SUCCESS) {
+        gCVfrErrorHandle.PrintMsg (pNode->mLineNo, pNode->mKey, "Error", "Var string is not the valid C variable");
         return ReturnCode;
       }
-      lCVfrDataStorage.GetVarStoreType (FName, VarStoreType);
-      lCVfrDataStorage.GetVarStoreId (FName, &Info.mVarStoreId);
-
-      if (*VarStr == '\0' && ArrayIdx != INVALID_ARRAY_INDEX) {
-        lCVfrDataStorage.GetNameVarStoreInfo (&Info, ArrayIdx);
-      } else {
-        if (VarStoreType == EFI_VFR_VARSTORE_EFI) {
-          lCVfrDataStorage.GetEfiVarStoreInfo (&Info);
-        } else if (VarStoreType == EFI_VFR_VARSTORE_BUFFER) {
-          VarStr = pNode->mKey;
-          lCVfrVarDataTypeDB.GetDataFieldInfo (VarStr, Info.mInfo.mVarOffset, Info.mVarType, Info.mVarTotalSize);
-        } else {
-          return VFR_RETURN_UNSUPPORTED;
-        }
+      //
+      // Get VarStoreType
+      //
+      ReturnCode = lCVfrDataStorage.GetVarStoreType (FName, VarStoreType);
+      if (ReturnCode == VFR_RETURN_UNDEFINED) {
+        lCVfrDataStorage.DeclareBufferVarStore (
+                           FName, 
+                           LocalFormSetGuid, 
+                           &lCVfrVarDataTypeDB, 
+                           FName,
+                           EFI_VARSTORE_ID_INVALID,
+                           FALSE
+                           );
+        ReturnCode = lCVfrDataStorage.GetVarStoreType (FName, VarStoreType);  
+      }
+      if (ReturnCode != VFR_RETURN_SUCCESS) {
+        gCVfrErrorHandle.PrintMsg (pNode->mLineNo, FName, "Error", "Var Store Type is not defined");
+        return ReturnCode;
+      }
+      
+      ReturnCode = lCVfrDataStorage.GetVarStoreId (FName, &Info.mVarStoreId);
+      if (ReturnCode != VFR_RETURN_SUCCESS) {
+        gCVfrErrorHandle.PrintMsg (pNode->mLineNo, FName, "Error", "Var Store Type is not defined");
+        return ReturnCode;
       }
 
-      CBObj.SetQuestionId (QId);
-      CBObj.SetVarStoreInfo (&Info);
+      if (*VarStr == '\0' && ArrayIdx != INVALID_ARRAY_INDEX) {
+        ReturnCode = lCVfrDataStorage.GetNameVarStoreInfo (&Info, ArrayIdx);
+      } else {
+        if (VarStoreType == EFI_VFR_VARSTORE_EFI) {
+          ReturnCode = lCVfrDataStorage.GetEfiVarStoreInfo (&Info);
+        } else if (VarStoreType == EFI_VFR_VARSTORE_BUFFER) {
+          VarStr = pNode->mKey;
+          ReturnCode = lCVfrVarDataTypeDB.GetDataFieldInfo (VarStr, Info.mInfo.mVarOffset, Info.mVarType, Info.mVarTotalSize);
+        } else {
+          ReturnCode = VFR_RETURN_UNSUPPORTED;
+        }
+      }
+      if (ReturnCode != VFR_RETURN_SUCCESS) {
+        gCVfrErrorHandle.HandleError (ReturnCode, pNode->mLineNo, pNode->mKey);
+        return ReturnCode;
+      }
+
+      CNObj.SetQuestionId (QId);
+      CNObj.SetVarStoreInfo (&Info);
+      CNObj.SetFlags (0, Info.mVarType);
 
       //
       // For undefined Efi VarStore type question
@@ -620,7 +651,7 @@ CFormPkg::DeclarePendingQuestion (
       }
       
       //
-      // End for checkbox
+      // End for Numeric
       //
       CIfrEnd CEObj; 
       CEObj.SetLineNo (LineNo);
@@ -904,6 +935,7 @@ CIfrRecordInfoDB::IfrRecordAdjust (
   UINT32             StackCount;
   UINT32             QuestionScope;
   UINT32             OpcodeOffset;
+  CHAR8              ErrorMsg[MAX_STRING_LEN] = {0, };
   EFI_VFR_RETURN_CODE  Status;
 
   //
@@ -965,7 +997,8 @@ CIfrRecordInfoDB::IfrRecordAdjust (
         //
         // report error; not found
         //
-        printf ("Inconsistent OpCode Record list invalid QuestionId is 0x%X\n", QuestionId);
+        sprintf (ErrorMsg, "Inconsistent OpCode Record list invalid QuestionId is 0x%X", QuestionId);
+        gCVfrErrorHandle.PrintMsg (0, NULL, "Error", ErrorMsg);
         Status = VFR_RETURN_MISMATCHED;
         break;
       }
@@ -1016,7 +1049,8 @@ CIfrRecordInfoDB::IfrRecordAdjust (
         //
         // not found matched question id, report error
         //
-        printf ("QuestionId required by Inconsistent OpCode is not found. QuestionId is 0x%X\n", QuestionId);
+        sprintf (ErrorMsg, "QuestionId required by Inconsistent OpCode is not found. QuestionId is 0x%X", QuestionId);
+        gCVfrErrorHandle.PrintMsg (0, NULL, "Error", ErrorMsg);
         Status = VFR_RETURN_MISMATCHED;
         break;
       }
@@ -1039,7 +1073,7 @@ CIfrRecordInfoDB::IfrRecordAdjust (
         //
         // invalid IfrCode, IfrCode end by EndOpCode
         // 
-        printf ("No found End Opcode in the end\n");
+        gCVfrErrorHandle.PrintMsg (0, NULL, "Error", "No found End Opcode in the end");
         Status = VFR_RETURN_MISMATCHED;
         break;
       }

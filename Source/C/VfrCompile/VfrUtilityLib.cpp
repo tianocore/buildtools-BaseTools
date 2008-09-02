@@ -645,10 +645,32 @@ CVfrVarDataTypeDB::GetFieldOffset (
   if (Field == NULL) {
     return VFR_RETURN_FATAL_ERROR;
   }
+  
+  //
+  // Framework Vfr file Array Index is from 1.
+  // But Uefi Vfr file Array Index is from 0.
+  //
+  if (VfrCompatibleMode && ArrayIdx != INVALID_ARRAY_INDEX) {
+    if (ArrayIdx == 0) {
+      return VFR_RETURN_ERROR_ARRARY_NUM;
+    }
+    ArrayIdx = ArrayIdx - 1;
+  }
 
   if ((ArrayIdx != INVALID_ARRAY_INDEX) && ((Field->mArrayNum == 0) || (Field->mArrayNum <= ArrayIdx))) {
     return VFR_RETURN_ERROR_ARRARY_NUM;
   }
+  
+  //
+  // Be compatible with the current usage
+  // If ArraryIdx is not specified, the first one is used.
+  //
+  // if ArrayNum is larger than zero, ArraryIdx must be specified.
+  //
+  // if ((ArrayIdx == INVALID_ARRAY_INDEX) && (Field->mArrayNum > 0)) {
+  //   return VFR_RETURN_ERROR_ARRARY_NUM;
+  // }
+  //
 
   Offset = Field->mOffset + Field->mFieldType->mTotalSize * ((ArrayIdx == INVALID_ARRAY_INDEX) ? 0 : ArrayIdx);
   return VFR_RETURN_SUCCESS;
@@ -765,6 +787,7 @@ CVfrVarDataTypeDB::CVfrVarDataTypeDB (
   mCurrDataField = NULL;
   mPackAlign     = DEFAULT_PACK_ALIGN;
   mPackStack     = NULL;
+  mFirstNewDataTypeName = NULL;
 
   InternalTypesListInit ();
 }
@@ -808,7 +831,7 @@ CVfrVarDataTypeDB::Pack (
   )
 {
   UINT32            PackAlign;
-  CHAR8             Msg[64] = {0, };
+  CHAR8             Msg[MAX_STRING_LEN] = {0, };
 
   if (Action & VFR_PACK_SHOW) {
     sprintf (Msg, "value of pragma pack(show) == %d", mPackAlign);
@@ -964,6 +987,10 @@ CVfrVarDataTypeDB::DeclareDataTypeEnd (
   }
 
   RegisterNewType (mNewDataType);
+  if (mFirstNewDataTypeName == NULL) {
+    mFirstNewDataTypeName = mNewDataType->mTypeName;
+  }
+
   mNewDataType             = NULL;
 }
 
@@ -971,7 +998,6 @@ EFI_VFR_RETURN_CODE
 CVfrVarDataTypeDB::GetDataType (
   IN  CHAR8         *TypeName,
   OUT SVfrDataType **DataType
-
   )
 {
   SVfrDataType *pDataType = NULL;
@@ -989,6 +1015,38 @@ CVfrVarDataTypeDB::GetDataType (
   for (pDataType = mDataTypeList; pDataType != NULL; pDataType = pDataType->mNext) {
     if (strcmp (TypeName, pDataType->mTypeName) == 0) {
       *DataType = pDataType;
+      return VFR_RETURN_SUCCESS;
+    }
+  }
+
+  return VFR_RETURN_UNDEFINED;
+}
+
+EFI_VFR_RETURN_CODE
+CVfrVarDataTypeDB::GetDataTypeSize (
+  IN  UINT8   DataType,
+  OUT UINT32 *Size
+  )
+{
+  SVfrDataType *pDataType = NULL;
+
+  if (Size == NULL) {
+    return VFR_RETURN_FATAL_ERROR;
+  }
+
+  *Size    = 0;
+  DataType = DataType & 0x0F;
+
+  //
+  // For user defined data type, the size can't be got by this function.
+  //
+  if (DataType == EFI_IFR_TYPE_OTHER) {
+    return VFR_RETURN_SUCCESS;
+  }
+
+  for (pDataType = mDataTypeList; pDataType != NULL; pDataType = pDataType->mNext) {
+    if (DataType == pDataType->mType) {
+      *Size = pDataType->mTotalSize;
       return VFR_RETURN_SUCCESS;
     }
   }
@@ -1274,12 +1332,23 @@ CVfrDataStorage::~CVfrDataStorage (
 
 EFI_VARSTORE_ID
 CVfrDataStorage::GetFreeVarStoreId (
-  VOID
+  EFI_VFR_VARSTORE_TYPE VarType
   )
 {
   UINT32  Index, Mask, Offset;
+  
+  //
+  // Assign the different ID range for the different type VarStore to support Framework Vfr
+  //
+  if ((!VfrCompatibleMode) || (VarType == EFI_VFR_VARSTORE_BUFFER)) {
+    Index = 0;
+  } else if (VarType == EFI_VFR_VARSTORE_EFI) {
+    Index = 1;
+  } else if (VarType == EFI_VFR_VARSTORE_NAME) {
+    Index = 2;
+  }
 
-  for (Index = 0; Index < EFI_FREE_VARSTORE_ID_BITMAP_SIZE; Index++) {
+  for (; Index < EFI_FREE_VARSTORE_ID_BITMAP_SIZE; Index++) {
     if (mFreeVarStoreIdBitMap[Index] != 0xFFFFFFFF) {
       break;
     }
@@ -1346,7 +1415,7 @@ CVfrDataStorage::DeclareNameVarStoreBegin (
     }
   }
 
-  VarStoreId = GetFreeVarStoreId ();
+  VarStoreId = GetFreeVarStoreId (EFI_VFR_VARSTORE_NAME);
   if ((pNode = new SVfrVarStorageNode (StoreName, VarStoreId)) == NULL) {
     return VFR_RETURN_UNDEFINED;
   }
@@ -1421,7 +1490,7 @@ CVfrDataStorage::DeclareEfiVarStore (
     }
   }
 
-  VarStoreId = GetFreeVarStoreId ();
+  VarStoreId = GetFreeVarStoreId (EFI_VFR_VARSTORE_EFI);
   if ((pNode = new SVfrVarStorageNode (Guid, StoreName, VarStoreId, NameStrId, VarSize, Flag)) == NULL) {
     return VFR_RETURN_OUT_FOR_RESOURCES;
   }
@@ -1452,7 +1521,7 @@ CVfrDataStorage::DeclareBufferVarStore (
   CHECK_ERROR_RETURN(DataTypeDB->GetDataType (TypeName, &pDataType), VFR_RETURN_SUCCESS);
 
   if (VarStoreId == EFI_VARSTORE_ID_INVALID) {
-    VarStoreId = GetFreeVarStoreId ();
+    VarStoreId = GetFreeVarStoreId (EFI_VFR_VARSTORE_BUFFER);
   } else {
     if (ChekVarStoreIdFree (VarStoreId) == FALSE) {
       return VFR_RETURN_VARSTOREID_REDEFINED;
@@ -1662,6 +1731,16 @@ CVfrDataStorage::GetNameVarStoreInfo (
 
   if (mCurrVarStorageNode == NULL) {
     return VFR_RETURN_GET_NVVARSTORE_ERROR;
+  }
+  
+  //
+  // Framework Vfr file Index is from 1, but Uefi Vfr file Index is from 0.
+  //
+  if (VfrCompatibleMode) {
+    if (Index == 0) {
+      return VFR_RETURN_ERROR_ARRARY_NUM;
+    }
+    Index --;
   }
 
   Info->mInfo.mVarName = mCurrVarStorageNode->mStorageInfo.mNameSpace.mNameTable[Index];
@@ -2293,7 +2372,7 @@ CVfrQuestionDB::RegisterQuestion (
     //
     // For Framework Vfr, don't check question ID conflict.
     //
-    if (!mCompatibleMode && ChekQuestionIdFree (QuestionId) == FALSE) {
+    if (!VfrCompatibleMode && ChekQuestionIdFree (QuestionId) == FALSE) {
       delete pNode;
       return VFR_RETURN_QUESTIONID_REDEFINED;
     }
@@ -2609,7 +2688,7 @@ CVfrQuestionDB::UpdateQuestionId (
   //
   // For Framework Vfr, don't check question ID conflict.
   //  
-  if (!mCompatibleMode && ChekQuestionIdFree (NewQId) == FALSE) {
+  if (!VfrCompatibleMode && ChekQuestionIdFree (NewQId) == FALSE) {
     return VFR_RETURN_REDEFINED;
   }
 
@@ -2710,3 +2789,4 @@ CVfrQuestionDB::FindQuestion (
   return VFR_RETURN_UNDEFINED;
 }
 
+BOOLEAN  VfrCompatibleMode = FALSE;

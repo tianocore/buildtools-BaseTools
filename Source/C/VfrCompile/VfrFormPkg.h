@@ -139,6 +139,7 @@ public:
     IN CVfrVarDataTypeDB   &lCVfrVarDataTypeDB,
     IN CVfrDataStorage     &lCVfrDataStorage,
     IN CVfrQuestionDB      &lCVfrQuestionDB,
+    IN EFI_GUID            *LocalFormSetGuid,
     IN UINT32 LineNo
     );
 };

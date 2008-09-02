@@ -768,12 +768,16 @@ vfrStorageVarId[EFI_VARSTORE_INFO & Info, CHAR8 *&QuestVarIdStr] :
      CHAR8                 *VarStr      = NULL;
      CHAR8                 *SName       = NULL;
      CHAR8                 *TName       = NULL;
-     CHAR8                 *SValue      = NULL;
      EFI_VFR_RETURN_CODE   VfrReturnCode = VFR_RETURN_SUCCESS;
   >>
   (
     SN1:StringIdentifier                            << SName = SN1->getText(); _STRCAT(&VarIdStr, SN1->getText()); >>
-    OpenBracket I1:Number CloseBracket              << Idx = _STOU32(I1->getText()); if (mCompatibleMode) Idx--; SValue = _U32TOS (Idx); _STRCAT(&VarIdStr, "["); _STRCAT(&VarIdStr, SValue); _STRCAT(&VarIdStr, "]"); delete SValue; >>
+    OpenBracket I1:Number CloseBracket              << 
+                                                       Idx = _STOU32(I1->getText()); 
+                                                       _STRCAT(&VarIdStr, "["); 
+                                                       _STRCAT(&VarIdStr, I1->getText()); 
+                                                       _STRCAT(&VarIdStr, "]"); 
+                                                    >>
                                                     <<
                                                        VfrReturnCode = mCVfrDataStorage.GetVarStoreType (SName, VarStoreType);
                                                        if (mCompatibleMode && VfrReturnCode == VFR_RETURN_UNDEFINED) {
@@ -823,8 +827,22 @@ vfrStorageVarId[EFI_VARSTORE_INFO & Info, CHAR8 *&QuestVarIdStr] :
                           													>>
       SF:StringIdentifier                           << _STRCAT(&VarIdStr, SF->getText()); _STRCAT(&VarStr, SF->getText()); >>
       {
-        OpenBracket I2:Number CloseBracket          << Idx = _STOU32(I2->getText()); if (mCompatibleMode) Idx--; SValue = _U32TOS (Idx); _STRCAT(&VarIdStr, "["); _STRCAT(&VarIdStr, SValue); _STRCAT(&VarIdStr, "]"); delete SValue; >>
-                                                    << _STRCAT(&VarStr, "["); _STRCAT(&VarStr, I2->getText()); _STRCAT(&VarStr, "]"); >>
+        OpenBracket I2:Number CloseBracket          << 
+                                                       Idx = _STOU32(I2->getText()); 
+                                                       if (mCompatibleMode) Idx --;
+                                                       if (Idx > 0) {
+                                                         //
+                                                         // Idx == 0, [0] can be ignored.
+                                                         // Array[0] is same to Array for unify the varid name to cover [0]
+                                                         //
+                                                         _STRCAT(&VarIdStr, "["); 
+                                                         _STRCAT(&VarIdStr, I2->getText()); 
+                                                         _STRCAT(&VarIdStr, "]"); 
+                                                       }
+                                                       _STRCAT(&VarStr, "["); 
+                                                       _STRCAT(&VarStr, I2->getText()); 
+                                                       _STRCAT(&VarStr, "]"); 
+                                                    >>
       }
     )*                                              << 
                                                        switch (VarStoreType) {
@@ -846,13 +864,16 @@ vfrStorageVarId[EFI_VARSTORE_INFO & Info, CHAR8 *&QuestVarIdStr] :
 
 vfrQuestionDataFieldName [EFI_QUESTION_ID &QId, UINT32 &Mask, CHAR8 *&VarIdStr, UINT32 &LineNo] :
                                                     << 
-                                                      CHAR8   *SValue      = NULL;
                                                       UINT32  Idx;
                                                       VarIdStr = NULL; LineNo = 0; 
                                                     >>
   (
     SN1:StringIdentifier                            << _STRCAT(&VarIdStr, SN1->getText()); LineNo = SN1->getLine(); >>
-    OpenBracket I1:Number CloseBracket              << Idx = _STOU32(I1->getText()); if (mCompatibleMode) Idx--; SValue = _U32TOS (Idx); _STRCAT(&VarIdStr, "["); _STRCAT(&VarIdStr, SValue); _STRCAT(&VarIdStr, "]"); delete SValue; >>
+    OpenBracket I1:Number CloseBracket              << 
+                                                       _STRCAT(&VarIdStr, "["); 
+                                                       _STRCAT(&VarIdStr, I1->getText()); 
+                                                       _STRCAT(&VarIdStr, "]"); 
+                                                    >>
                                                     << mCVfrQuestionDB.GetQuestionId (NULL, VarIdStr, $QId, $Mask); >>
   )
   |
@@ -862,7 +883,19 @@ vfrQuestionDataFieldName [EFI_QUESTION_ID &QId, UINT32 &Mask, CHAR8 *&VarIdStr, 
       "."                                           << _STRCAT (&VarIdStr, "."); >>
       SF:StringIdentifier                           << _STRCAT (&VarIdStr, SF->getText()); >>
       {
-        OpenBracket I2:Number CloseBracket          << Idx = _STOU32(I2->getText());if (mCompatibleMode) Idx--;  SValue = _U32TOS (Idx); _STRCAT(&VarIdStr, "["); _STRCAT(&VarIdStr, SValue); _STRCAT(&VarIdStr, "]"); delete SValue; >>
+        OpenBracket I2:Number CloseBracket          << 
+                                                       Idx = _STOU32(I2->getText()); 
+                                                       if (mCompatibleMode) Idx --;
+                                                       if (Idx > 0) {
+                                                         //
+                                                         // Idx == 0, [0] can be ignored.
+                                                         // Array[0] is same to Array
+                                                         //
+                                                         _STRCAT(&VarIdStr, "["); 
+                                                         _STRCAT(&VarIdStr, I2->getText()); 
+                                                         _STRCAT(&VarIdStr, "]");
+                                                       }
+                                                    >>
       }
     )*
                                                     << mCVfrQuestionDB.GetQuestionId (NULL, VarIdStr, $QId, $Mask); >>
@@ -944,6 +977,7 @@ vfrFormDefinition :
                                                                       mCVfrVarDataTypeDB, 
                                                                       mCVfrDataStorage, 
                                                                       mCVfrQuestionDB,
+                                                                      &mFormsetGuid,
                                                                       E->getLine()
                                                                     );
                                                         }
@@ -1298,9 +1332,17 @@ vfrStatementCheckBox :
      CIfrCheckBox       CBObj;
      EFI_IFR_TYPE_VALUE Val;
      CHAR8              *VarStoreName = NULL;
+     UINT32             DataTypeSize;
   >>
   L:CheckBox                                           << CBObj.SetLineNo(L->getLine()); >>
-  vfrQuestionHeader[CBObj] ","
+  vfrQuestionHeader[CBObj] ","                         << //check data type
+                                                          _PCATCH (mCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize), L->getLine(), "CheckBox varid is not the valid data type");
+                                                          if (DataTypeSize != 0 && DataTypeSize != _GET_CURRQEST_VARSIZE()) {
+                                                            _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "CheckBox varid doesn't support array");
+                                                          } else if (_GET_CURRQEST_VARSIZE() != sizeof (BOOLEAN)) {
+                                                            _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "CheckBox varid only support BOOLEAN data type");
+                                                          }
+                                                       >>
   {
     F:FLAGS "=" vfrCheckBoxFlags[CBObj, F->getLine()] ","
                                                        <<
@@ -1536,9 +1578,16 @@ vfrSetMinMaxStep[CIfrMinMaxStepData & MMSDObj] :
 vfrStatementNumeric :
   <<
      CIfrNumeric NObj;
+     UINT32 DataTypeSize;
   >>
   L:Numeric                                            << NObj.SetLineNo(L->getLine()); >>
-  vfrQuestionHeader[NObj] ","                          << _PCATCH(NObj.SetFlags (NObj.FLAGS(), _GET_CURRQEST_DATATYPE()), L->getLine()); >>
+  vfrQuestionHeader[NObj] ","                          << // check data type
+                                                          _PCATCH (mCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize), L->getLine(), "Numeric varid is not the valid data type");
+                                                          if (DataTypeSize != 0 && DataTypeSize != _GET_CURRQEST_VARSIZE()) {
+                                                            _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "Numeric varid doesn't support array");
+                                                          }
+                                                          _PCATCH(NObj.SetFlags (NObj.FLAGS(), _GET_CURRQEST_DATATYPE()), L->getLine()); 
+                                                       >>
   { F:FLAGS "=" vfrNumericFlags[NObj, F->getLine()] "," }
   {
     Key   "=" KN:Number ","                            << AssignQuestionKey (NObj, KN); >>
@@ -1569,9 +1618,16 @@ numericFlagsField [UINT8 & HFlags, UINT8 & LFlags] :
 vfrStatementOneOf :
   <<
      CIfrOneOf OObj;
+     UINT32    DataTypeSize;
   >>
   L:OneOf                                              << OObj.SetLineNo(L->getLine()); >>
-  vfrQuestionHeader[OObj] ","                          << _PCATCH(OObj.SetFlags (OObj.FLAGS(), _GET_CURRQEST_DATATYPE()), L->getLine()); >>
+  vfrQuestionHeader[OObj] ","                          << //check data type
+                                                          _PCATCH (mCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize), L->getLine(), "OneOf varid is not the valid data type");
+                                                          if (DataTypeSize != 0 && DataTypeSize != _GET_CURRQEST_VARSIZE()) {
+                                                            _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "OneOf varid doesn't support array");
+                                                          }
+                                                          _PCATCH(OObj.SetFlags (OObj.FLAGS(), _GET_CURRQEST_DATATYPE()), L->getLine());
+                                                       >>
   { F:FLAGS "=" vfrOneofFlagsField[OObj, F->getLine()] "," }
   { 
     vfrSetMinMaxStep[OObj]
@@ -3331,25 +3387,42 @@ EfiVfrParser::_DeclareDefaultFrameworkVarStore (
   )
 {
   SVfrVarStorageNode    *pNode; 
+  UINT32                TypeSize;
 
   pNode = mCVfrDataStorage.GetBufferVarStoreList();
-  for (; pNode != NULL; pNode = pNode->mNext) {
+  if (pNode == NULL && mCVfrVarDataTypeDB.mFirstNewDataTypeName != NULL) {
     //
-    // create the default varstore opcode for not exist varstore
+    // Create the default Buffer Var Store when no VarStore is defined.
     //
-    if (!pNode->mAssignedFlag) {
-      CIfrVarStore      VSObj;
-      VSObj.SetLineNo (LineNo);
-      VSObj.SetVarStoreId (pNode->mVarStoreId);
-      VSObj.SetSize (pNode->mStorageInfo.mDataType->mTotalSize);
-      VSObj.SetName (pNode->mVarStoreName);
-      VSObj.SetGuid (&pNode->mGuid);
+    mCVfrVarDataTypeDB.GetDataTypeSize (mCVfrVarDataTypeDB.mFirstNewDataTypeName, &TypeSize);
+    CIfrVarStore      VSObj;
+    VSObj.SetLineNo (LineNo);
+    VSObj.SetVarStoreId (0x1); //the first and only one Buffer Var Store
+    VSObj.SetSize (TypeSize);
+    VSObj.SetName (mCVfrVarDataTypeDB.mFirstNewDataTypeName);
+    VSObj.SetGuid (&mFormsetGuid);
 #ifdef VFREXP_DEBUG
-      printf ("undefined VarStoreName is %s\n", pNode->mVarStoreName);
+    printf ("Create the default VarStoreName is %s\n", mCVfrVarDataTypeDB.mFirstNewDataTypeName);
 #endif
+  } else {
+    for (; pNode != NULL; pNode = pNode->mNext) {
+      //
+      // create the default varstore opcode for not declared varstore
+      //
+      if (!pNode->mAssignedFlag) {
+        CIfrVarStore      VSObj;
+        VSObj.SetLineNo (LineNo);
+        VSObj.SetVarStoreId (pNode->mVarStoreId);
+        VSObj.SetSize (pNode->mStorageInfo.mDataType->mTotalSize);
+        VSObj.SetName (pNode->mVarStoreName);
+        VSObj.SetGuid (&pNode->mGuid);
+#ifdef VFREXP_DEBUG
+        printf ("undefined VarStoreName is %s and Id is 0x%x\n", pNode->mVarStoreName, pNode->mVarStoreId);
+#endif
+      }
     }
   }
-
+  
   pNode = mCVfrDataStorage.GetEfiVarStoreList();
   for (; pNode != NULL; pNode = pNode->mNext) {
     //
@@ -3362,7 +3435,7 @@ EfiVfrParser::_DeclareDefaultFrameworkVarStore (
       VSEObj.SetGuid (&pNode->mGuid);
       VSEObj.SetVarStoreId (pNode->mVarStoreId); 
 #ifdef VFREXP_DEBUG
-      printf ("undefined Efi VarStoreName is %s\n", pNode->mVarStoreName);
+      printf ("undefined Efi VarStoreName is %s and Id is 0x%x\n", pNode->mVarStoreName, pNode->mVarStoreId);
 #endif
     }
   }
