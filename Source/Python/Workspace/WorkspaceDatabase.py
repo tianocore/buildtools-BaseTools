@@ -1585,7 +1585,7 @@ class InfBuildData(ModuleBuildClassObject):
                                            OverrideDir=self._SourceOverridePath
                                           )
                 if not Status:
-                    EdkLogger.error('build', FILE_NOT_FOUND, ExtraData = (Dir + ' ' + File),
+                    EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                                     File=self.DescFilePath, Line=LineNo)
                 
                 ToolChainFamily = Record[1]
