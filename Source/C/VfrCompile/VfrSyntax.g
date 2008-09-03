@@ -1339,7 +1339,8 @@ vfrStatementCheckBox :
                                                           _PCATCH (mCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize), L->getLine(), "CheckBox varid is not the valid data type");
                                                           if (DataTypeSize != 0 && DataTypeSize != _GET_CURRQEST_VARSIZE()) {
                                                             _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "CheckBox varid doesn't support array");
-                                                          } else if (_GET_CURRQEST_VARSIZE() != sizeof (BOOLEAN)) {
+                                                          } else if ((mCVfrDataStorage.GetVarStoreType (_GET_CURRQEST_VARTINFO().mVarStoreId) == EFI_VFR_VARSTORE_BUFFER) &&
+                                                                    (_GET_CURRQEST_VARSIZE() != sizeof (BOOLEAN))) {
                                                             _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "CheckBox varid only support BOOLEAN data type");
                                                           }
                                                        >>

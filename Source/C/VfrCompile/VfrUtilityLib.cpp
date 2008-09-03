@@ -1647,6 +1647,44 @@ CVfrDataStorage::GetVarStoreType (
   return VFR_RETURN_UNDEFINED;
 }
 
+EFI_VFR_VARSTORE_TYPE
+CVfrDataStorage::GetVarStoreType (
+  IN  EFI_VARSTORE_ID        VarStoreId
+  )
+{
+  SVfrVarStorageNode    *pNode;
+  EFI_VFR_VARSTORE_TYPE VarStoreType;
+
+  VarStoreType = EFI_VFR_VARSTORE_INVALID;
+
+  if (VarStoreId == EFI_VARSTORE_ID_INVALID) {
+    return VarStoreType;
+  }
+
+  for (pNode = mBufferVarStoreList; pNode != NULL; pNode = pNode->mNext) {
+    if (pNode->mVarStoreId == VarStoreId) {
+      VarStoreType = pNode->mVarStoreType;
+      return VarStoreType;
+    }
+  }
+
+  for (pNode = mEfiVarStoreList; pNode != NULL; pNode = pNode->mNext) {
+    if (pNode->mVarStoreId == VarStoreId) {
+      VarStoreType = pNode->mVarStoreType;
+      return VarStoreType;
+    }
+  }
+
+  for (pNode = mNameVarStoreList; pNode != NULL; pNode = pNode->mNext) {
+    if (pNode->mVarStoreId == VarStoreId) {
+      VarStoreType = pNode->mVarStoreType;
+      return VarStoreType;
+    }
+  }
+
+  return VarStoreType;
+}
+
 EFI_VFR_RETURN_CODE
 CVfrDataStorage::GetVarStoreName (
   IN  EFI_VARSTORE_ID VarStoreId, 

@@ -369,7 +369,7 @@ CVfrCompiler::Usage (
   UINT32 Index;
   CONST  CHAR8 *Help[] = {
     " ", 
-    "VfrCompile version " VFR_COMPILER_VERSION,
+    "VfrCompile version " VFR_COMPILER_VERSION VFR_COMPILER_UPDATE_TIME,
     " ",
     "Usage: VfrCompile [options] VfrFile",
     " ",
