@@ -1174,7 +1174,7 @@ class ModuleAutoGen(AutoGen):
         # use overrided path defined in DSC file
         if self._MetaFile.upper() in GlobalData.gOverrideDir:
             self.SourceOverrideDir = GlobalData.gOverrideDir[self._MetaFile.upper()]
-        
+
         self.FileBase, self.FileExt = path.splitext(path.basename(self._MetaFile))
 
         self.ToolChain = Toolchain
@@ -1234,7 +1234,7 @@ class ModuleAutoGen(AutoGen):
     ## Return the module name
     def _GetBaseName(self):
         return self.Module.BaseName
-    
+
     ## Return the module SourceOverridePath
     def _GetSourceOverridePath(self):
         return self.Module.SourceOverridePath
@@ -1348,18 +1348,19 @@ class ModuleAutoGen(AutoGen):
     def _GetDepexTokenList(self):
         if self._DepexList == None:
             self._DepexList = self.Module.Depex
-            EdkLogger.verbose("DEPEX = %s" % self._DepexList)
-            #
-            # Append depex from dependent libraries
-            #
-            for Lib in self.DependentLibraryList:
-                if Lib.Depex != None and Lib.Depex != []:
-                    if self._DepexList != []:
-                        self._DepexList.append('AND')
-                    self._DepexList.append('(')
-                    self._DepexList.extend(Lib.Depex)
-                    self._DepexList.append(')')
-                    EdkLogger.verbose("DEPEX (+%s) = %s" % (Lib.BaseName, self._DepexList))
+            EdkLogger.verbose("DEPEX (%s) = %s" % (self.Name, self._DepexList))
+            if len(self._DepexList) == 0 or self._DepexList[0] not in ['BEFORE', 'AFTER']:
+                #
+                # Append depex from dependent libraries, if not "BEFORE", "AFTER" expresion
+                #
+                for Lib in self.DependentLibraryList:
+                    if Lib.Depex != None and Lib.Depex != []:
+                        if self._DepexList != []:
+                            self._DepexList.append('AND')
+                        self._DepexList.append('(')
+                        self._DepexList.extend(Lib.Depex)
+                        self._DepexList.append(')')
+                        EdkLogger.verbose("DEPEX (+%s) = %s" % (Lib.BaseName, self._DepexList))
 
             for I in range(0, len(self._DepexList)):
                 Token = self._DepexList[I]
@@ -1403,11 +1404,11 @@ class ModuleAutoGen(AutoGen):
                             ExtraData="[%s]" % self._MetaFile)
         ToolChainFamily = self.PlatformInfo.ToolChainFamily["CC"]
         BuildRule = self.PlatformInfo.BuildRule
-        
+
         # Add source override path to include
         if self.SourceOverrideDir != '' and self.SourceOverrideDir != None:
-            Status, FullPath = ValidFile2(GlobalData.gAllFiles, 
-                                          '', 
+            Status, FullPath = ValidFile2(GlobalData.gAllFiles,
+                                          '',
                                           Ext=None,
                                           Workspace=GlobalData.gWorkspace,
                                           EfiSource=GlobalData.gEfiSource,
@@ -1445,8 +1446,8 @@ class ModuleAutoGen(AutoGen):
             FileType, RuleObject = BuildRule[Ext, self.BuildType, self.Arch, ToolChainFamily]
             # unicode must be processed by AutoGen
             if FileType == "UNICODE-TEXT-FILE":
-                Status, FullPath = ValidFile2(GlobalData.gAllFiles, 
-                                          SourceFile, 
+                Status, FullPath = ValidFile2(GlobalData.gAllFiles,
+                                          SourceFile,
                                           Ext=None,
                                           Workspace=GlobalData.gWorkspace,
                                           EfiSource=GlobalData.gEfiSource,
