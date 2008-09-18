@@ -588,7 +588,7 @@ cleanlib:
         FileList = self._AutoGenObject.SourceFileList
         SourceDir = os.path.join(self._AutoGenObject.WorkspaceDir, self._AutoGenObject.SourceDir)
         #SourceOverrideDir = os.path.join(self._AutoGenObject.WorkspaceDir, self._AutoGenObject.SourceOverrideDir)
-        
+
         for FileInfo in FileList:
             F, SrcFileType, SrcFileBuildRule = FileInfo
             # no rule, no build
@@ -596,10 +596,10 @@ cleanlib:
                 continue
             if SrcFileType == "C-CODE-FILE":
                 CCodeFlag = True
-            
+
             NewDestDir = None
-            NewSourceDir, SourceDir, F = ValidFile3(GlobalData.gAllFiles, 
-                                                    F, 
+            NewSourceDir, SourceDir, F = ValidFile3(GlobalData.gAllFiles,
+                                                    F,
                                                     Workspace=GlobalData.gWorkspace,
                                                     EfiSource=GlobalData.gEfiSource,
                                                     EdkSource=GlobalData.gEdkSource,
@@ -609,7 +609,7 @@ cleanlib:
             if SourceDir != NewSourceDir:
                 NewDestDir = SourceDir
                 SourceDir = NewSourceDir
-            
+
             SrcFileName = path.basename(F)
             SrcFileBase, SrcFileExt = path.splitext(SrcFileName)
             SrcFileDir = path.dirname(F)
@@ -619,7 +619,7 @@ cleanlib:
                 P = "$(OUTPUT_DIR)" + Separator + SrcFileDir
                 if P not in self.IntermediateDirectoryList:
                     self.IntermediateDirectoryList.append(P)
-            
+
             SrcFileRelativePath = os.path.join(SourceDir, F)
 
             SrcFile, ExtraSrcFileList, DstFile, CommandList = SrcFileBuildRule.Apply(F, SourceDir, Separator, OverrideDestDir=NewDestDir)
@@ -1363,7 +1363,7 @@ ${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -t $(TOOLCHAIN) -b $(TARGET) -p 
 #
 run:
 \tcd $(BUILD_DIR)${separator}IA32
-\tSecMain
+\t.${separator}SecMain
 \tcd $(BUILD_DIR)
 
 #
