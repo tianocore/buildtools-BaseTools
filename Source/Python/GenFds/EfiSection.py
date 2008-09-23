@@ -92,11 +92,12 @@ class EfiSection (EfiSectionClassObject):
 
             InfOverrideVerString = False
             if FfsInf.Version != None:
-                StringData = FfsInf.Version
+                #StringData = FfsInf.Version
+                BuildNum = FfsInf.Version
                 InfOverrideVerString = True
 
             if InfOverrideVerString:
-                VerTuple = ('-n', '"' + StringData + '"')
+                #VerTuple = ('-n', '"' + StringData + '"')
                 if BuildNum != None and BuildNum != '':
                     BuildNumTuple = ('-j', BuildNum)
                 else:
@@ -105,7 +106,8 @@ class EfiSection (EfiSectionClassObject):
                 Num = SecNum
                 OutputFile = os.path.join( OutputPath, ModuleName + 'SEC' + str(Num) + Ffs.SectionSuffix.get(SectionType))
                 GenFdsGlobalVariable.GenerateSection(OutputFile, [], 'EFI_SECTION_VERSION',
-                                                     Ui=StringData, Ver=BuildNum)
+                                                     #Ui=StringData, 
+                                                     Ver=BuildNum)
                 OutputFileList.append(OutputFile)
 
             elif FileList != []:
@@ -116,27 +118,30 @@ class EfiSection (EfiSectionClassObject):
                     f = open(File, 'r')
                     VerString = f.read()
                     f.close()
-                    VerTuple = ('-n', '"' + VerString + '"')
+#                    VerTuple = ('-n', '"' + VerString + '"')
+                    BuildNum = VerString
                     if BuildNum != None and BuildNum != '':
                         BuildNumTuple = ('-j', BuildNum)
                     GenFdsGlobalVariable.GenerateSection(OutputFile, [], 'EFI_SECTION_VERSION',
-                                                         Ui=VerString, Ver=BuildNum)
+                                                         #Ui=VerString, 
+                                                         Ver=BuildNum)
                     OutputFileList.append(OutputFile)
 
             else:
-                if StringData != None and len(StringData) > 0:
-                    VerTuple = ('-n', '"' + StringData + '"')
-                else:
-                    VerTuple = tuple()
-                VerString = ' ' + ' '.join(VerTuple)
-
+#                if StringData != None and len(StringData) > 0:
+#                    VerTuple = ('-n', '"' + StringData + '"')
+#                else:
+#                    VerTuple = tuple()
+#                VerString = ' ' + ' '.join(VerTuple)
+                BuildNum = StringData
                 if BuildNum != None and BuildNum != '':
                     BuildNumTuple = ('-j', BuildNum)
                 else:
                     BuildNumTuple = tuple()
                 BuildNumString = ' ' + ' '.join(BuildNumTuple)
 
-                if VerString == '' and BuildNumString == '':
+                #if VerString == '' and 
+                if BuildNumString == '':
                     if self.Optional == True :
                         GenFdsGlobalVariable.VerboseLogger( "Optional Section don't exist!")
                         return [], None
@@ -145,7 +150,8 @@ class EfiSection (EfiSectionClassObject):
                 Num = SecNum
                 OutputFile = os.path.join( OutputPath, ModuleName + 'SEC' + str(Num) + Ffs.SectionSuffix.get(SectionType))
                 GenFdsGlobalVariable.GenerateSection(OutputFile, [], 'EFI_SECTION_VERSION',
-                                                     Ui=StringData, Ver=BuildNum)
+                                                     #Ui=VerString, 
+                                                     Ver=BuildNum)
                 OutputFileList.append(OutputFile)
 
         #

@@ -186,7 +186,7 @@ class GenFdsGlobalVariable:
             SectionData.append(0)
             SectionData.append(0)
             Len = len(SectionData)
-            GenFdsGlobalVariable.SectionHeader.pack_into(SectionData, 0, Len & 0xff, (Len >> 8) & 0xff, (Len >> 16) & 0xff, 0x15)
+            GenFdsGlobalVariable.SectionHeader.pack_into(SectionData, 0, Len & 0xff, (Len >> 8) & 0xff, (Len >> 16) & 0xff, 0x14)
             SaveFileOnChange(Output,  SectionData.tostring())
         else:
             Cmd += ["-o", Output]
