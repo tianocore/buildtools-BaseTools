@@ -334,7 +334,7 @@ class DscBuildData(PlatformBuildClassObject):
                                        '.inf', 
                                        GlobalData.gWorkspace,
                                        GlobalData.gEfiSource,
-                                       GlobalData.gEdkSource,
+                                       GlobalData.gEcpSource,
                                       )
             if not Status:
                 EdkLogger.error('build', FORMAT_INVALID, "Invalid or non-existent module",
@@ -363,7 +363,7 @@ class DscBuildData(PlatformBuildClassObject):
                                            '.inf', 
                                            GlobalData.gWorkspace,
                                            GlobalData.gEfiSource,
-                                           GlobalData.gEdkSource,
+                                           GlobalData.gEcpSource,
                                           )
                 if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=LibraryPath,
@@ -440,7 +440,7 @@ class DscBuildData(PlatformBuildClassObject):
                                            '.inf', 
                                            GlobalData.gWorkspace,
                                            GlobalData.gEfiSource,
-                                           GlobalData.gEdkSource,
+                                           GlobalData.gEcpSource,
                                           )
                 if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, File=self.DescFilePath,
@@ -473,7 +473,7 @@ class DscBuildData(PlatformBuildClassObject):
                                            '.inf', 
                                            GlobalData.gWorkspace,
                                            GlobalData.gEfiSource,
-                                           GlobalData.gEdkSource,
+                                           GlobalData.gEcpSource,
                                           )
                 if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
@@ -968,7 +968,7 @@ class DecBuildData(PackageBuildClassObject):
                                            Ext=None,
                                            Workspace=GlobalData.gWorkspace,
                                            EfiSource=GlobalData.gEfiSource,
-                                           EdkSource=GlobalData.gEdkSource,
+                                           EdkSource=GlobalData.gEcpSource,
                                            Dir=self._PackageDir
                                           )
                 if not Status:
@@ -997,7 +997,7 @@ class DecBuildData(PackageBuildClassObject):
                                            Ext=None, 
                                            Workspace=GlobalData.gWorkspace,
                                            EfiSource=GlobalData.gEfiSource,
-                                           EdkSource=GlobalData.gEdkSource,
+                                           EdkSource=GlobalData.gEcpSource,
                                            Dir=self._PackageDir
                                           )
                 if not Status:
@@ -1344,13 +1344,16 @@ class InfBuildData(ModuleBuildClassObject):
                     self._ModuleEntryPointList.append(Value)
                 elif Name == "DPX_SOURCE":
                     File = NormPath(Value, self._Macros)
+                    if File.startswith(os.path.normpath('/')):
+                        File = File[1:]
+                    
                     #if not ValidFile(File, Dir=self._ModuleDir):
                     Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
                                                File, 
                                                Ext=None,
                                                Workspace=GlobalData.gWorkspace,
                                                EfiSource=GlobalData.gEfiSource,
-                                               EdkSource=GlobalData.gEdkSource,
+                                               EdkSource=GlobalData.gEcpSource,
                                                Dir=self._ModuleDir
                                               )
                     if not Status:
@@ -1362,8 +1365,9 @@ class InfBuildData(ModuleBuildClassObject):
                 else:
                     ToolList = self._NMAKE_FLAG_PATTERN_.findall(Name)
                     if len(ToolList) == 0 or len(ToolList) != 1:
-                        EdkLogger.warn("build", "Don't know how to do with macro [%s]" % Name,
-                                       File=self.DescFilePath, Line=LineNo)
+                        pass
+#                        EdkLogger.warn("build", "Don't know how to do with macro [%s]" % Name,
+#                                       File=self.DescFilePath, Line=LineNo)
                     else:
                         if self._BuildOptions == None:
                             self._BuildOptions = sdict()
@@ -1374,6 +1378,14 @@ class InfBuildData(ModuleBuildClassObject):
                             Tool = ToolList[0]
                         ToolChain = "*_*_*_%s_FLAGS" % Tool
                         ToolChainFamily = 'MSFT'    # R8.x only support MSFT tool chain
+                        #ignore not replaced macros in value
+                        ValueList = GetSplitValueList(' ' + Value, '/D')
+                        Dummy = ValueList[0]
+                        for Index in range(1, len(ValueList)):
+                            if ValueList[Index][-1] == '=' or ValueList[Index] == '':
+                                continue
+                            Dummy = Dummy + ' /D ' + ValueList[Index]
+                        Value = Dummy.strip()
                         if (ToolChainFamily, ToolChain) not in self._BuildOptions:
                             self._BuildOptions[ToolChainFamily, ToolChain] = Value
                         else:
@@ -1553,7 +1565,7 @@ class InfBuildData(ModuleBuildClassObject):
                                            Ext=None,
                                            Workspace=GlobalData.gWorkspace,
                                            EfiSource=GlobalData.gEfiSource,
-                                           EdkSource=GlobalData.gEdkSource,
+                                           EdkSource=GlobalData.gEcpSource,
                                            Dir=self._ModuleDir
                                           )
                 if not Status:
@@ -1580,13 +1592,18 @@ class InfBuildData(ModuleBuildClassObject):
                                            Ext=None, 
                                            Workspace=GlobalData.gWorkspace,
                                            EfiSource=GlobalData.gEfiSource,
-                                           EdkSource=GlobalData.gEdkSource,
+                                           EdkSource=GlobalData.gEcpSource,
                                            Dir=self._ModuleDir,
                                            OverrideDir=self._SourceOverridePath
                                           )
                 if not Status:
-                    EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
-                                    File=self.DescFilePath, Line=LineNo)
+                    if self._AutoGenVersion < 0x00010005 and os.path.splitext(Dummy)[1].lower() == '.h':
+                        EdkLogger.warn('build', 'Include file not found', ExtraData=File,
+                                        File=self.DescFilePath, Line=LineNo)
+                        continue
+                    else:
+                        EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
+                                        File=self.DescFilePath, Line=LineNo)
                 
                 ToolChainFamily = Record[1]
                 TagName = Record[2]
@@ -1678,10 +1695,18 @@ class InfBuildData(ModuleBuildClassObject):
                                 File=self.DescFilePath, Line=RecordList[0][-1]-1)
             for Record in RecordList:
                 Record = ReplaceMacros(Record, GlobalData.gEdkGlobal, False)
+                Record[0] = Record[0].replace('$(PROCESSOR)', self._Arch)
                 Record[0] = ReplaceMacro(Record[0], {'EFI_SOURCE' : GlobalData.gEfiSource}, False)
-                Record[0] = ReplaceMacro(Record[0], {'EDK_SOURCE' : GlobalData.gEdkSource}, False)
+                if Record[0].find('EDK_SOURCE') > -1:
+                    File = NormPath(ReplaceMacro(Record[0], {'EDK_SOURCE' : GlobalData.gEcpSource}, False), self._Macros)
+                    if File not in self._Includes:
+                        self._Includes.append(File)
+                    File = NormPath(ReplaceMacro(Record[0], {'EDK_SOURCE' : GlobalData.gEdkSource}, False), self._Macros)
+                    if File not in self._Includes:
+                        self._Includes.append(File)
+                    continue
                 File = NormPath(Record[0], self._Macros)
-                LineNo = Record[-1]
+                #LineNo = Record[-1]
                 #if File[0] == '.':
                 #    if not ValidFile(File, Dir=self._ModuleDir):
                 #        EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
@@ -1709,7 +1734,7 @@ class InfBuildData(ModuleBuildClassObject):
                                            '.dec', 
                                            GlobalData.gWorkspace,
                                            GlobalData.gEfiSource,
-                                           GlobalData.gEdkSource
+                                           GlobalData.gEcpSource
                                           )
                 if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,

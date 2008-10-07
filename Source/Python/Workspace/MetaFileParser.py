@@ -18,7 +18,6 @@ import os
 import time
 
 import Common.EdkLogger as EdkLogger
-import Common.GlobalData as GlobalData
 from CommonDataClass.DataClass import *
 from Common.DataType import *
 from Common.String import *
@@ -303,6 +302,9 @@ class InfParser(MetaFileParser):
         for Index in range(0, len(self._Content)):
             # skip empty, commented, block commented lines
             Line = CleanString(self._Content[Index])
+            NextLine = ''
+            if Index + 1 < len(self._Content):
+                NextLine = CleanString(self._Content[Index + 1])
             if Line == '':
                 continue
             if Line.find(DataType.TAB_COMMENT_R8_START) > -1:
@@ -324,10 +326,18 @@ class InfParser(MetaFileParser):
             # merge two lines specified by '\' in section NMAKE
             elif self._SectionType == MODEL_META_DATA_NMAKE:
                 if Line[-1] == '\\':
-                    NmakeLine = NmakeLine + ' ' + self._CurrentLine[0:-1]
-                    continue
+                    if NextLine == '':
+                        self._CurrentLine = NmakeLine + Line[0:-1]
+                        NmakeLine = ''
+                    else:
+                        if NextLine[0] == TAB_SECTION_START and NextLine[-1] == TAB_SECTION_END:
+                            self._CurrentLine = NmakeLine + Line[0:-1]
+                            NmakeLine = ''
+                        else:
+                            NmakeLine = NmakeLine + ' ' + Line[0:-1]
+                            continue
                 else:
-                    self._CurrentLine = NmakeLine + self._CurrentLine
+                    self._CurrentLine = NmakeLine + Line
                     NmakeLine = ''
             elif Line.upper().startswith('DEFINE '):
                 # file private macros
@@ -370,10 +380,17 @@ class InfParser(MetaFileParser):
         if len(self._Macros) > 0:
             for Index in range(0, len(self._ValueList)):
                 Value = self._ValueList[Index]
-                if Value.find('$(EFI_SOURCE)') > -1:
-                    Value = Value.replace('$(EFI_SOURCE)', GlobalData.gEfiSource)
-                if Value.find('$(EDK_SOURCE)') > -1:
-                    Value = Value.replace('$(EDK_SOURCE)', GlobalData.gEdkSource)
+                if Value.upper().find('$(EFI_SOURCE)\Edk'.upper()) > -1 or Value.upper().find('$(EFI_SOURCE)/Edk'.upper()) > -1:
+                    Value = '$(EDK_SOURCE)' + Value[17:]
+                if Value.find('$(EFI_SOURCE)') > -1 or Value.find('$(EDK_SOURCE)') > -1:
+                    pass
+                elif Value.startswith('.'):
+                    pass
+                elif Value.startswith('$('):
+                    pass
+                else:
+                    Value = '$(EFI_SOURCE)/' + Value
+                    
                 if Value == None or Value == '':
                     continue
                 self._ValueList[Index] = NormPath(Value, self._Macros)

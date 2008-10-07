@@ -92,12 +92,17 @@ def CheckEnvVariable():
     #
     # Check EFI_SOURCE (R8 build convention). EDK_SOURCE will always point to ECP
     #
-    os.environ["EDK_SOURCE"] = os.path.join(WorkspaceDir, GlobalData.gEdkCompatibilityPkg)
+    os.environ["ECP_SOURCE"] = os.path.join(WorkspaceDir, GlobalData.gEdkCompatibilityPkg)
     if "EFI_SOURCE" not in os.environ:
-        os.environ["EFI_SOURCE"] = os.environ["EDK_SOURCE"]
+        os.environ["EFI_SOURCE"] = os.environ["ECP_SOURCE"]
+    if "EDK_SOURCE" not in os.environ:
+        os.environ["EDK_SOURCE"] = os.environ["ECP_SOURCE"]
 
     EfiSourceDir = os.path.normpath(os.environ["EFI_SOURCE"])
     EdkSourceDir = os.path.normpath(os.environ["EDK_SOURCE"])
+    EcpSourceDir = os.path.normpath(os.environ["ECP_SOURCE"])
+    if not os.path.exists(EcpSourceDir):
+        EdkLogger.verbose("ECP_SOURCE = %s doesn't exist. R8 modules could not be built." % EcpSourceDir)
     if not os.path.exists(EdkSourceDir):
         EdkLogger.verbose("EDK_SOURCE = %s doesn't exist. R8 modules could not be built." % EdkSourceDir)
     if not os.path.exists(EfiSourceDir):
@@ -110,8 +115,12 @@ def CheckEnvVariable():
     if EdkSourceDir.upper().find(WorkspaceDir.upper()) != 0:
         EdkLogger.error("build", PARAMETER_INVALID, "EDK_SOURCE is not under WORKSPACE",
                         ExtraData="WORKSPACE = %s\n    EDK_SOURCE = %s" % (WorkspaceDir, EdkSourceDir))
+    if EcpSourceDir.upper().find(WorkspaceDir.upper()) != 0:
+        EdkLogger.error("build", PARAMETER_INVALID, "ECP_SOURCE is not under WORKSPACE",
+                        ExtraData="WORKSPACE = %s\n    ECP_SOURCE = %s" % (WorkspaceDir, EcpSourceDir))
     EfiSourceDir = EfiSourceDir[len(WorkspaceDir)+1:]
     EdkSourceDir = EdkSourceDir[len(WorkspaceDir)+1:]
+    EcpSourceDir = EcpSourceDir[len(WorkspaceDir)+1:]
 
     # check EDK_TOOLS_PATH
     if "EDK_TOOLS_PATH" not in os.environ:
@@ -142,6 +151,7 @@ def CheckEnvVariable():
     GlobalData.gWorkspace = WorkspaceDir
     GlobalData.gEfiSource = EfiSourceDir
     GlobalData.gEdkSource = EdkSourceDir
+    GlobalData.gEcpSource = EcpSourceDir
 
 ## Get normalized file path
 #
@@ -687,6 +697,7 @@ class Build():
 
         # print current build environment and configuration
         EdkLogger.quiet("%-24s = %s" % ("WORKSPACE", os.environ["WORKSPACE"]))
+        EdkLogger.quiet("%-24s = %s" % ("ECP_SOURCE", os.environ["ECP_SOURCE"]))
         EdkLogger.quiet("%-24s = %s" % ("EDK_SOURCE", os.environ["EDK_SOURCE"]))
         EdkLogger.quiet("%-24s = %s" % ("EFI_SOURCE", os.environ["EFI_SOURCE"]))
         EdkLogger.quiet("%-24s = %s" % ("EDK_TOOLS_PATH", os.environ["EDK_TOOLS_PATH"]))

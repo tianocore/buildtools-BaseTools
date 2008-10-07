@@ -12,8 +12,9 @@
 
 gEdkCompatibilityPkg = "EdkCompatibilityPkg"
 gWorkspace = "."
-gEdkSource = "Edk"
-gEfiSource = "Efi"
+gEdkSource = "EdkCompatibilityPkg"
+gEfiSource = "."
+gEcpSource = "EdkCompatibilityPkg"
 
 gGlobalDefines = {}
 gAllFiles = {}
