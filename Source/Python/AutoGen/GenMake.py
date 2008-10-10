@@ -602,7 +602,7 @@ cleanlib:
                                                     F,
                                                     Workspace=GlobalData.gWorkspace,
                                                     EfiSource=GlobalData.gEfiSource,
-                                                    EdkSource=GlobalData.gEdkSource,
+                                                    EdkSource=GlobalData.gEcpSource,
                                                     Dir=self._AutoGenObject.SourceDir,
                                                     OverrideDir=self._AutoGenObject.SourceOverrideDir
                                                     )

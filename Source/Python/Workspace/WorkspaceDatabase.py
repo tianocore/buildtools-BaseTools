@@ -1338,6 +1338,8 @@ class InfBuildData(ModuleBuildClassObject):
             RecordList = self._RawData[MODEL_META_DATA_NMAKE, self._Arch, self._Platform]
             for Name,Value,Dummy,Arch,Platform,ID,LineNo in RecordList:
                 Name, Value = ReplaceMacros((Name, Value), GlobalData.gEdkGlobal, True)
+                Value = Value.replace('$(PROCESSOR)', self._Arch)
+                Name = Name.replace('$(PROCESSOR)', self._Arch)
                 if Name == "IMAGE_ENTRY_POINT":
                     if self._ModuleEntryPointList == None:
                         self._ModuleEntryPointList = []
