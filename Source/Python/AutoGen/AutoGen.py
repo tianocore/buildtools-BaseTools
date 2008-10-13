@@ -1596,11 +1596,14 @@ class ModuleAutoGen(AutoGen):
                         Inc = path.join(self.WorkspaceDir, self.SourceDir, Inc)
                     else:
                         Inc = path.join(self.WorkspaceDir, Inc)
-                    if Inc in self._IncludePathList:
+                    if not os.path.exists(Inc) or Inc in self._IncludePathList:
                         continue
                     self._IncludePathList.append(Inc)
                     # for r8 modules
-                    self._IncludePathList.append(path.join(Inc, self.Arch.capitalize()))
+                    Inc = path.join(Inc, self.Arch.capitalize())
+                    if not os.path.exists(Inc) or Inc in self._IncludePathList:
+                        continue 
+                    self._IncludePathList.append(Inc)
                 # r8 module needs to put DEBUG_DIR at the end of search path and not to use SOURCE_DIR all the time
                 self._IncludePathList.append(self.DebugDir)
             else:
