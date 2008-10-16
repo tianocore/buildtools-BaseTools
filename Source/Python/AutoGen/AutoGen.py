@@ -1350,7 +1350,11 @@ class ModuleAutoGen(AutoGen):
     #
     def _GetDepexTokenList(self):
         if self._DepexList == None:
-            self._DepexList = self.Module.Depex
+            if self.IsLibrary:
+                self._DepexList = []
+                return self._DepexList
+            else:
+                self._DepexList = self.Module.Depex
             EdkLogger.verbose("DEPEX (%s) = %s" % (self.Name, self._DepexList))
             if len(self._DepexList) == 0 or self._DepexList[0] not in ['BEFORE', 'AFTER']:
                 #

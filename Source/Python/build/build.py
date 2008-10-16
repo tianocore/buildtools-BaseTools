@@ -1347,9 +1347,7 @@ def Main():
         # try to get the meta-file from the object causing exception
         Tb = sys.exc_info()[-1]
         MetaFile = GlobalData.gProcessingFile
-        while True:
-            if Tb.tb_next == None:
-                break
+        while Tb != None:
             if 'self' in Tb.tb_frame.f_locals and hasattr(Tb.tb_frame.f_locals['self'], '_MetaFile'):
                 MetaFile = Tb.tb_frame.f_locals['self']._MetaFile
             Tb = Tb.tb_next
