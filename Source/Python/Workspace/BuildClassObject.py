@@ -118,7 +118,7 @@ class LibraryClassObject(object):
 #
 # @param object:               Inherited from object class
 #
-# @var DescFilePath:           To store value for DescFilePath
+# @var _MetaFile:              To store value for module meta file path
 # @var BaseName:               To store value for BaseName
 # @var ModuleType:             To store value for ModuleType
 # @var Guid:                   To store value for Guid
@@ -159,7 +159,7 @@ class LibraryClassObject(object):
 class ModuleBuildClassObject(object):
     def __init__(self):
         self.AutoGenVersion          = 0
-        self.DescFilePath            = ''
+        self._MetaFile               = ''
         self.BaseName                = ''
         self.ModuleType              = ''
         self.Guid                    = ''
@@ -191,12 +191,12 @@ class ModuleBuildClassObject(object):
 
     ## Convert the class to a string
     #
-    #  Convert member DescFilePath of the class to a string
+    #  Convert member _MetaFile of the class to a string
     #
     #  @retval string Formatted String
     #
     def __str__(self):
-        return self.DescFilePath
+        return self._MetaFile
 
     ## Override __eq__ function
     #
@@ -206,16 +206,16 @@ class ModuleBuildClassObject(object):
     # @retval True  The two ModuleBuildClassObjects are the same
     #
     def __eq__(self, Other):
-        return self.DescFilePath == str(Other)
+        return self._MetaFile == str(Other)
 
     ## Override __hash__ function
     #
-    # Use DescFilePath as key in hash table
+    # Use _MetaFile as key in hash table
     #
     # @retval string Key for hash table
     #
     def __hash__(self):
-        return hash(self.DescFilePath)
+        return hash(self._MetaFile)
 
 ## PackageBuildClassObject
 #
@@ -223,7 +223,7 @@ class ModuleBuildClassObject(object):
 #
 # @param object:        Inherited from object class
 #
-# @var DescFilePath:    To store value for DescFilePath
+# @var _MetaFile:       To store value for package meta file path
 # @var PackageName:     To store value for PackageName
 # @var Guid:            To store value for Guid
 # @var Version:         To store value for Version
@@ -242,7 +242,7 @@ class ModuleBuildClassObject(object):
 #
 class PackageBuildClassObject(object):
     def __init__(self):
-        self.DescFilePath            = ''
+        self._MetaFile               = ''
         self.PackageName             = ''
         self.Guid                    = ''
         self.Version                 = ''
@@ -256,12 +256,12 @@ class PackageBuildClassObject(object):
 
     ## Convert the class to a string
     #
-    #  Convert member DescFilePath of the class to a string
+    #  Convert member _MetaFile of the class to a string
     #
     #  @retval string Formatted String
     #
     def __str__(self):
-        return self.DescFilePath
+        return self._MetaFile
 
     ## Override __eq__ function
     #
@@ -271,16 +271,16 @@ class PackageBuildClassObject(object):
     # @retval True  The two PackageBuildClassObjects are the same
     #
     def __eq__(self, Other):
-        return self.DescFilePath == str(Other)
+        return self._MetaFile == str(Other)
 
     ## Override __hash__ function
     #
-    # Use DescFilePath as key in hash table
+    # Use _MetaFile as key in hash table
     #
     # @retval string Key for hash table
     #
     def __hash__(self):
-        return hash(self.DescFilePath)
+        return hash(self._MetaFile)
 
 ## PlatformBuildClassObject
 #
@@ -288,7 +288,7 @@ class PackageBuildClassObject(object):
 #
 # @param object:          Inherited from object class
 #
-# @var DescFilePath:      To store value for DescFilePath
+# @var _MetaFile:         To store value for platform meta-file path
 # @var PlatformName:      To store value for PlatformName
 # @var Guid:              To store value for Guid
 # @var Version:           To store value for Version
@@ -312,7 +312,7 @@ class PackageBuildClassObject(object):
 #
 class PlatformBuildClassObject(object):
     def __init__(self):
-        self.DescFilePath            = ''
+        self._MetaFile               = ''
         self.PlatformName            = ''
         self.Guid                    = ''
         self.Version                 = ''
@@ -332,12 +332,12 @@ class PlatformBuildClassObject(object):
 
     ## Convert the class to a string
     #
-    #  Convert member DescFilePath of the class to a string
+    #  Convert member _MetaFile of the class to a string
     #
     #  @retval string Formatted String
     #
     def __str__(self):
-        return self.DescFilePath
+        return self._MetaFile
 
     ## Override __eq__ function
     #
@@ -347,15 +347,15 @@ class PlatformBuildClassObject(object):
     # @retval True  The two PlatformBuildClassObjects are the same
     #
     def __eq__(self, other):
-        return self.DescFilePath == str(other)
+        return self._MetaFile == str(other)
 
     ## Override __hash__ function
     #
-    # Use DescFilePath as key in hash table
+    # Use _MetaFile as key in hash table
     #
     # @retval string Key for hash table
     #
     def __hash__(self):
-        return hash(self.DescFilePath)
+        return hash(self._MetaFile)
 
 

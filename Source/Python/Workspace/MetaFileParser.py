@@ -54,8 +54,8 @@ class MetaFileParser(object):
     def __init__(self, FilePath, FileType, Table, Macros=None, Owner=-1, From=-1):
         self._Table = Table
         self._FileType = FileType
-        self._FilePath = FilePath
-        self._FileDir = os.path.dirname(self._FilePath)
+        self._MetaFile = FilePath
+        self._FileDir = os.path.dirname(self._MetaFile)
         self._Macros = {}
 
         # for recursive parsing
@@ -143,7 +143,7 @@ class MetaFileParser(object):
 
     ## Skip unsupported data
     def _Skip(self):
-        EdkLogger.warn("Parser", "Unrecognized content", File=self._FilePath,
+        EdkLogger.warn("Parser", "Unrecognized content", File=self._MetaFile,
                         Line=self._LineIndex+1, ExtraData=self._CurrentLine);
         self._ValueList[0:1] = [self._CurrentLine]
 
@@ -164,13 +164,13 @@ class MetaFileParser(object):
             # different section should not mix in one section
             if self._SectionName != '' and self._SectionName != ItemList[0].upper():
                 EdkLogger.error('Parser', FORMAT_INVALID, "Different section names in the same section",
-                                File=self._FilePath, Line=self._LineIndex+1, ExtraData=self._CurrentLine)
+                                File=self._MetaFile, Line=self._LineIndex+1, ExtraData=self._CurrentLine)
             self._SectionName = ItemList[0].upper()
             if self._SectionName in self.DataType:
                 self._SectionType = self.DataType[self._SectionName]
             else:
                 self._SectionType = MODEL_UNKNOWN
-                EdkLogger.warn("Parser", "Unrecognized section", File=self._FilePath,
+                EdkLogger.warn("Parser", "Unrecognized section", File=self._MetaFile,
                                 Line=self._LineIndex+1, ExtraData=self._CurrentLine)
             # S1 is always Arch
             if len(ItemList) > 1:
@@ -188,7 +188,7 @@ class MetaFileParser(object):
         # 'COMMON' must not be used with specific ARCHs at the same section
         if 'COMMON' in ArchList and len(ArchList) > 1:
             EdkLogger.error('Parser', FORMAT_INVALID, "'common' ARCH must not be used with specific ARCHs",
-                            File=self._FilePath, Line=self._LineIndex+1, ExtraData=self._CurrentLine)
+                            File=self._MetaFile, Line=self._LineIndex+1, ExtraData=self._CurrentLine)
 
     ## [defines] section parser
     def _DefineParser(self):
@@ -196,7 +196,7 @@ class MetaFileParser(object):
         self._ValueList[0:len(TokenList)] = TokenList
         if self._ValueList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No value specified",
-                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+                            ExtraData=self._CurrentLine, File=self._MetaFile, Line=self._LineIndex+1)
 
     ## DEFINE name=value parser
     def _MacroParser(self):
@@ -204,11 +204,11 @@ class MetaFileParser(object):
         MacroType = TokenList[0]
         if len(TokenList) < 2 or TokenList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No macro name/value given",
-                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+                            ExtraData=self._CurrentLine, File=self._MetaFile, Line=self._LineIndex+1)
         TokenList = GetSplitValueList(TokenList[1], TAB_EQUAL_SPLIT, 1)
         if TokenList[0] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No macro name given",
-                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+                            ExtraData=self._CurrentLine, File=self._MetaFile, Line=self._LineIndex+1)
         if len(TokenList) == 1:
             self._Macros[TokenList[0]] = ''
         else:
@@ -235,7 +235,7 @@ class MetaFileParser(object):
                 FORMAT_INVALID,
                 "'%s' must be in format of TARGET_TOOLCHAIN_ARCH_TOOL_ATTR" % self._ValueList[1],
                 ExtraData=self._CurrentLine,
-                File=self._FilePath,
+                File=self._MetaFile,
                 Line=self._LineIndex+1
                 )
 
@@ -292,9 +292,9 @@ class InfParser(MetaFileParser):
     def Start(self):
         NmakeLine = ''
         try:
-            self._Content = open(self._FilePath, 'r').readlines()
+            self._Content = open(self._MetaFile, 'r').readlines()
         except:
-            EdkLogger.error("Parser", FILE_READ_FAILURE, ExtraData=self._FilePath)
+            EdkLogger.error("Parser", FILE_READ_FAILURE, ExtraData=self._MetaFile)
 
         # parse the file line by line
         IsFindBlockComment = False
@@ -422,7 +422,7 @@ class InfParser(MetaFileParser):
         self._Macros[TokenList[0]] = ReplaceMacro(TokenList[1], self._Macros, False)
         if self._ValueList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No value specified",
-                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+                            ExtraData=self._CurrentLine, File=self._MetaFile, Line=self._LineIndex+1)
 
     ## [nmake] section parser (R8.x style only)
     def _NmakeParser(self):
@@ -442,7 +442,7 @@ class InfParser(MetaFileParser):
         if self._ValueList[0] == '' or self._ValueList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No token space GUID or PCD name specified",
                             ExtraData=self._CurrentLine + " (<TokenSpaceGuidCName>.<PcdCName>)",
-                            File=self._FilePath, Line=self._LineIndex+1)
+                            File=self._MetaFile, Line=self._LineIndex+1)
 
     ## [depex] section parser
     def _DepexParser(self):
@@ -559,9 +559,9 @@ class DscParser(MetaFileParser):
     def Start(self):
         try:
             if self._Content == None:
-                self._Content = open(self._FilePath, 'r').readlines()
+                self._Content = open(self._MetaFile, 'r').readlines()
         except:
-            EdkLogger.error("Parser", FILE_READ_FAILURE, ExtraData=self._FilePath)
+            EdkLogger.error("Parser", FILE_READ_FAILURE, ExtraData=self._MetaFile)
 
         for Index in range(0, len(self._Content)):
             Line = CleanString(self._Content[Index])
@@ -656,7 +656,7 @@ class DscParser(MetaFileParser):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
         if len(TokenList) < 2:
             EdkLogger.error('Parser', FORMAT_INVALID, "No value specified",
-                            ExtraData=self._CurrentLine, File=self._FilePath, Line=self._LineIndex+1)
+                            ExtraData=self._CurrentLine, File=self._MetaFile, Line=self._LineIndex+1)
         # 'FLASH_DEFINITION', 'OUTPUT_DIRECTORY' need special processing
         if TokenList[0] in ['FLASH_DEFINITION', 'OUTPUT_DIRECTORY']:
             TokenList[1] = NormPath(TokenList[1], self._Macros)
@@ -669,7 +669,7 @@ class DscParser(MetaFileParser):
             self._SubsectionType = self.DataType[self._SubsectionName]
         else:
             self._SubsectionType = MODEL_UNKNOWN
-            EdkLogger.warn("Parser", "Unrecognized sub-section", File=self._FilePath,
+            EdkLogger.warn("Parser", "Unrecognized sub-section", File=self._MetaFile,
                             Line=self._LineIndex+1, ExtraData=self._CurrentLine)
 
     ## Directive statement parser
@@ -680,10 +680,10 @@ class DscParser(MetaFileParser):
         DirectiveName = self._ValueList[0].upper()
         if DirectiveName not in self.DataType:
             EdkLogger.error("Parser", FORMAT_INVALID, "Unknown directive [%s]" % DirectiveName,
-                            File=self._FilePath, Line=self._LineIndex+1)
+                            File=self._MetaFile, Line=self._LineIndex+1)
         if DirectiveName in ['!IF', '!IFDEF', '!INCLUDE', '!IFNDEF', '!ELSEIF'] and self._ValueList[1] == '':
             EdkLogger.error("Parser", FORMAT_INVALID, "Missing expression",
-                            File=self._FilePath, Line=self._LineIndex+1,
+                            File=self._MetaFile, Line=self._LineIndex+1,
                             ExtraData=self._CurrentLine)
         # keep the directive in database first
         self._LastItem = self._Store(
@@ -705,7 +705,7 @@ class DscParser(MetaFileParser):
         # process the directive
         if DirectiveName == "!INCLUDE":
             if not self._SectionName in self._IncludeAllowedSection:
-                EdkLogger.error("Parser", FORMAT_INVALID, File=self._FilePath, Line=self._LineIndex+1,
+                EdkLogger.error("Parser", FORMAT_INVALID, File=self._MetaFile, Line=self._LineIndex+1,
                                 ExtraData="'!include' is not allowed under section [%s]" % self._SectionName)
             # the included file must be relative to the parsing file
             IncludedFile = os.path.join(self._FileDir, self._ValueList[1])
@@ -718,7 +718,7 @@ class DscParser(MetaFileParser):
             try:
                 Parser.Start()
             except:
-                EdkLogger.error("Parser", PARSER_ERROR, File=self._FilePath, Line=self._LineIndex+1,
+                EdkLogger.error("Parser", PARSER_ERROR, File=self._MetaFile, Line=self._LineIndex+1,
                                 ExtraData="Failed to parse content in file %s" % IncludedFile)
             # update current status with sub-parser's status
             self._SectionName = Parser._SectionName
@@ -742,7 +742,7 @@ class DscParser(MetaFileParser):
                     self._Eval.pop()
                 else:
                     EdkLogger.error("Parser", FORMAT_INVALID, "!IF..[!ELSE]..!ENDIF doesn't match",
-                                    File=self._FilePath, Line=self._LineIndex+1)
+                                    File=self._MetaFile, Line=self._LineIndex+1)
             if self._Eval.Result == False:
                 self._Enabled = 0 - len(self._Eval)
             else:
@@ -759,7 +759,7 @@ class DscParser(MetaFileParser):
         elif TokenNumber == 2:
             Op = TokenList[0]
             if Op not in self._OP_:
-                EdkLogger.error('Parser', FORMAT_INVALID, "Unsupported operator [%s]" % Op, File=self._FilePath,
+                EdkLogger.error('Parser', FORMAT_INVALID, "Unsupported operator [%s]" % Op, File=self._MetaFile,
                                 Line=self._LineIndex+1, ExtraData=Expression)
             if TokenList[1].upper() == 'TRUE':
                 Value = True
@@ -776,11 +776,11 @@ class DscParser(MetaFileParser):
                 Value = Value[1:-1]
             Op = TokenList[1]
             if Op not in self._OP_:
-                EdkLogger.error('Parser', FORMAT_INVALID, "Unsupported operator [%s]" % Op, File=self._FilePath,
+                EdkLogger.error('Parser', FORMAT_INVALID, "Unsupported operator [%s]" % Op, File=self._MetaFile,
                                 Line=self._LineIndex+1, ExtraData=Expression)
             return self._OP_[Op](self._Macros[Name], Value)
         else:
-            EdkLogger.error('Parser', FORMAT_INVALID, File=self._FilePath, Line=self._LineIndex+1,
+            EdkLogger.error('Parser', FORMAT_INVALID, File=self._MetaFile, Line=self._LineIndex+1,
                             ExtraData=Expression)
 
     ## PCD sections parser
@@ -805,11 +805,11 @@ class DscParser(MetaFileParser):
         if self._ValueList[0] == '' or self._ValueList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No token space GUID or PCD name specified",
                             ExtraData=self._CurrentLine + " (<TokenSpaceGuidCName>.<TokenCName>|<PcdValue>)",
-                            File=self._FilePath, Line=self._LineIndex+1)
+                            File=self._MetaFile, Line=self._LineIndex+1)
         if self._ValueList[2] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No PCD value given",
                             ExtraData=self._CurrentLine + " (<TokenSpaceGuidCName>.<TokenCName>|<PcdValue>)",
-                            File=self._FilePath, Line=self._LineIndex+1)
+                            File=self._MetaFile, Line=self._LineIndex+1)
 
     ## [components] section parser
     def _ComponentParser(self):
@@ -826,15 +826,15 @@ class DscParser(MetaFileParser):
         if len(TokenList) < 2:
             EdkLogger.error('Parser', FORMAT_INVALID, "No library class or instance specified",
                             ExtraData=self._CurrentLine + " (<LibraryClassName>|<LibraryInstancePath>)",
-                            File=self._FilePath, Line=self._LineIndex+1)
+                            File=self._MetaFile, Line=self._LineIndex+1)
         if TokenList[0] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No library class specified",
                             ExtraData=self._CurrentLine + " (<LibraryClassName>|<LibraryInstancePath>)",
-                            File=self._FilePath, Line=self._LineIndex+1)
+                            File=self._MetaFile, Line=self._LineIndex+1)
         if TokenList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No library instance specified",
                             ExtraData=self._CurrentLine + " (<LibraryClassName>|<LibraryInstancePath>)",
-                            File=self._FilePath, Line=self._LineIndex+1)
+                            File=self._MetaFile, Line=self._LineIndex+1)
         self._ValueList[0:len(TokenList)] = TokenList
         if len(self._Macros) > 0:
             self._ValueList[1] = NormPath(self._ValueList[1], self._Macros)
@@ -903,9 +903,9 @@ class DecParser(MetaFileParser):
     def Start(self):
         try:
             if self._Content == None:
-                self._Content = open(self._FilePath, 'r').readlines()
+                self._Content = open(self._MetaFile, 'r').readlines()
         except:
-            EdkLogger.error("Parser", FILE_READ_FAILURE, ExtraData=self._FilePath)
+            EdkLogger.error("Parser", FILE_READ_FAILURE, ExtraData=self._MetaFile)
 
         for Index in range(0, len(self._Content)):
             Line = CleanString(self._Content[Index])
@@ -956,20 +956,20 @@ class DecParser(MetaFileParser):
         if len(TokenList) < 2:
             EdkLogger.error('Parser', FORMAT_INVALID, "No GUID name or value specified",
                             ExtraData=self._CurrentLine + " (<CName> = <GuidValueInCFormat>)",
-                            File=self._FilePath, Line=self._LineIndex+1)
+                            File=self._MetaFile, Line=self._LineIndex+1)
         if TokenList[0] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No GUID name specified",
                             ExtraData=self._CurrentLine + " (<CName> = <GuidValueInCFormat>)",
-                            File=self._FilePath, Line=self._LineIndex+1)
+                            File=self._MetaFile, Line=self._LineIndex+1)
         if TokenList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No GUID value specified",
                             ExtraData=self._CurrentLine + " (<CName> = <GuidValueInCFormat>)",
-                            File=self._FilePath, Line=self._LineIndex+1)
+                            File=self._MetaFile, Line=self._LineIndex+1)
         if TokenList[1][0] != '{' or TokenList[1][-1] != '}' or GuidStructureStringToGuidString(TokenList[1]) == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "Invalid GUID value format",
                             ExtraData=self._CurrentLine + \
                                       " (<CName> = <GuidValueInCFormat:{8,4,4,{2,2,2,2,2,2,2,2}}>)",
-                            File=self._FilePath, Line=self._LineIndex+1)
+                            File=self._MetaFile, Line=self._LineIndex+1)
         self._ValueList[0] = TokenList[0]
         self._ValueList[1] = TokenList[1]
 
@@ -988,33 +988,33 @@ class DecParser(MetaFileParser):
             EdkLogger.error('Parser', FORMAT_INVALID, "No token space GUID or PCD name specified",
                             ExtraData=self._CurrentLine + \
                                       " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
-                            File=self._FilePath, Line=self._LineIndex+1)
+                            File=self._MetaFile, Line=self._LineIndex+1)
         if len(TokenList) < 2 or TokenList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No PCD Datum information given",
                             ExtraData=self._CurrentLine + \
                                       " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
-                            File=self._FilePath, Line=self._LineIndex+1)
+                            File=self._MetaFile, Line=self._LineIndex+1)
         ValueList = GetSplitValueList(TokenList[1])
         if len(ValueList) != 3:
             EdkLogger.error('Parser', FORMAT_INVALID, "Invalid PCD Datum information given",
                             ExtraData=self._CurrentLine + \
                                       " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
-                            File=self._FilePath, Line=self._LineIndex+1)
+                            File=self._MetaFile, Line=self._LineIndex+1)
         if ValueList[0] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "Missing DefaultValue in PCD Datum information",
                             ExtraData=self._CurrentLine + \
                                       " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
-                            File=self._FilePath, Line=self._LineIndex+1)
+                            File=self._MetaFile, Line=self._LineIndex+1)
         if ValueList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "Missing DatumType in PCD Datum information",
                             ExtraData=self._CurrentLine + \
                                       " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
-                            File=self._FilePath, Line=self._LineIndex+1)
+                            File=self._MetaFile, Line=self._LineIndex+1)
         if ValueList[2] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "Missing Token in PCD Datum information",
                             ExtraData=self._CurrentLine + \
                                       " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
-                            File=self._FilePath, Line=self._LineIndex+1)
+                            File=self._MetaFile, Line=self._LineIndex+1)
         self._ValueList[2] = TokenList[1]
 
     _SectionParser = {

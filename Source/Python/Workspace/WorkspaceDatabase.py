@@ -88,7 +88,7 @@ class DscBuildData(PlatformBuildClassObject):
     #   @param      Macros          Macros used for replacement in DSC file
     #
     def __init__(self, FilePath, RawData, BuildDataBase, Arch='COMMON', Platform='DUMMY', Macros={}):
-        self.DescFilePath = FilePath
+        self._MetaFile = FilePath
         self._RawData = RawData
         self._Bdb = BuildDataBase
         self._Arch = Arch
@@ -184,7 +184,7 @@ class DscBuildData(PlatformBuildClassObject):
             if self._Header == None:
                 self._GetHeaderInfo()
             if self._PlatformName == None:
-                EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No PLATFORM_NAME", File=self.DescFilePath)
+                EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No PLATFORM_NAME", File=self._MetaFile)
         return self._PlatformName
 
     ## Retrieve file guid
@@ -193,7 +193,7 @@ class DscBuildData(PlatformBuildClassObject):
             if self._Header == None:
                 self._GetHeaderInfo()
             if self._Guid == None:
-                EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No FILE_GUID", File=self.DescFilePath)
+                EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No FILE_GUID", File=self._MetaFile)
         return self._Guid
 
     ## Retrieve platform version
@@ -307,10 +307,10 @@ class DscBuildData(PlatformBuildClassObject):
             for Record in RecordList:
                 if Record[0] in [None, '']:
                     EdkLogger.error('build', FORMAT_INVALID, 'No Sku ID number',
-                                    File=self.DescFilePath, Line=Record[-1])
+                                    File=self._MetaFile, Line=Record[-1])
                 if Record[1] in [None, '']:
                     EdkLogger.error('build', FORMAT_INVALID, 'No Sku ID name',
-                                    File=self.DescFilePath, Line=Record[-1])
+                                    File=self._MetaFile, Line=Record[-1])
                 self._SkuIds[Record[1]] = Record[0]
             if 'DEFAULT' not in self._SkuIds:
                 self._SkuIds['DEFAULT'] = 0
@@ -338,11 +338,11 @@ class DscBuildData(PlatformBuildClassObject):
                                       )
             if not Status:
                 EdkLogger.error('build', FORMAT_INVALID, "Invalid or non-existent module",
-                                File=self.DescFilePath, ExtraData=ModuleFile, Line=LineNo)
+                                File=self._MetaFile, ExtraData=ModuleFile, Line=LineNo)
             if ModuleFile in self._Modules:
                 continue
             Module = ModuleBuildClassObject()
-            Module.DescFilePath = ModuleFile
+            Module._MetaFile = ModuleFile
             
             # get module override path
             RecordList = self._RawData[MODEL_META_DATA_COMPONENT_SOURCE_OVERRIDE_PATH, self._Arch, None, ModuleId]
@@ -367,7 +367,7 @@ class DscBuildData(PlatformBuildClassObject):
                                           )
                 if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=LibraryPath,
-                                    File=self.DescFilePath, Line=LineNo)
+                                    File=self._MetaFile, Line=LineNo)
                 if LibraryClass == '' or LibraryClass == 'NULL':
                     self._NullLibraryNumber += 1
                     LibraryClass = 'NULL%d' % self._NullLibraryNumber
@@ -443,11 +443,11 @@ class DscBuildData(PlatformBuildClassObject):
                                            GlobalData.gEcpSource,
                                           )
                 if not Status:
-                    EdkLogger.error('build', FILE_NOT_FOUND, File=self.DescFilePath,
+                    EdkLogger.error('build', FILE_NOT_FOUND, File=self._MetaFile,
                                     ExtraData=LibraryInstance, Line=LineNo)
                 if ModuleType != 'COMMON' and ModuleType not in SUP_MODULE_LIST:
                     EdkLogger.error('build', OPTION_UNKNOWN, "Unknown module type [%s]" % ModuleType,
-                                    File=self.DescFilePath, ExtraData=LibraryInstance, Line=LineNo)
+                                    File=self._MetaFile, ExtraData=LibraryInstance, Line=LineNo)
                 LibraryClassDict[Arch, ModuleType, LibraryClass] = LibraryInstance
                 if LibraryInstance not in self._LibraryInstances:
                     self._LibraryInstances.append(LibraryInstance)
@@ -477,7 +477,7 @@ class DscBuildData(PlatformBuildClassObject):
                                           )
                 if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
-                                    File=self.DescFilePath, Line=LineNo)
+                                    File=self._MetaFile, Line=LineNo)
                 if File not in self._LibraryInstances:
                     self._LibraryInstances.append(File)
                 #
@@ -693,7 +693,7 @@ class DscBuildData(PlatformBuildClassObject):
         FilePath = NormPath(FilePath)
         if FilePath not in self.Modules:
             Module = ModuleBuildClassObject()
-            Module.DescFilePath = FilePath
+            Module._MetaFile = FilePath
             self.Modules.append(Module)
 
     ## Add external PCDs
@@ -787,7 +787,7 @@ class DecBuildData(PackageBuildClassObject):
     #   @param      Macros          Macros used for replacement in DSC file
     #
     def __init__(self, FilePath, RawData, BuildDataBase, Arch='COMMON', Platform='DUMMY', Macros={}):
-        self.DescFilePath = FilePath
+        self._MetaFile = FilePath
         self._PackageDir = os.path.dirname(FilePath)
         self._RawData = RawData
         self._Bdb = BuildDataBase
@@ -857,7 +857,7 @@ class DecBuildData(PackageBuildClassObject):
             if self._Header == None:
                 self._GetHeaderInfo()
             if self._PackageName == None:
-                EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "No PACKAGE_NAME", File=self.DescFilePath)
+                EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "No PACKAGE_NAME", File=self._MetaFile)
         return self._PackageName
 
     ## Retrieve file guid
@@ -866,7 +866,7 @@ class DecBuildData(PackageBuildClassObject):
             if self._Header == None:
                 self._GetHeaderInfo()
             if self._Guid == None:
-                EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "No PACKAGE_GUID", File=self.DescFilePath)
+                EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "No PACKAGE_GUID", File=self._MetaFile)
         return self._Guid
 
     ## Retrieve package version
@@ -973,7 +973,7 @@ class DecBuildData(PackageBuildClassObject):
                                           )
                 if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
-                                    File=self.DescFilePath, Line=LineNo)
+                                    File=self._MetaFile, Line=LineNo)
                 # avoid duplicate include path
                 if File not in self._Includes:
                     self._Includes.append(File)
@@ -1002,7 +1002,7 @@ class DecBuildData(PackageBuildClassObject):
                                           )
                 if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
-                                    File=self.DescFilePath, Line=LineNo)
+                                    File=self._MetaFile, Line=LineNo)
                 LibraryClassSet.add(LibraryClass)
                 LibraryClassDict[Arch, LibraryClass] = File
             self._LibraryClasses = sdict()
@@ -1160,7 +1160,7 @@ class InfBuildData(ModuleBuildClassObject):
     #   @param      Macros          Macros used for replacement in DSC file
     #
     def __init__(self, FilePath, RawData, BuildDatabase, Arch='COMMON', Platform='COMMON', Macros={}):
-        self.DescFilePath = FilePath
+        self._MetaFile = FilePath
         self._ModuleDir = os.path.dirname(FilePath)
         self._RawData = RawData
         self._Bdb = BuildDatabase
@@ -1188,7 +1188,7 @@ class InfBuildData(ModuleBuildClassObject):
     def _Clear(self):
         self._Header_               = None
         self._AutoGenVersion        = None
-        self._DescFilePath          = None
+        self.__MetaFile          = None
         self._BaseName              = None
         self._ModuleType            = None
         self._ComponentType         = None
@@ -1323,7 +1323,7 @@ class InfBuildData(ModuleBuildClassObject):
                     if TokenList[0] not in ['MSFT', 'GCC']:
                         EdkLogger.error("build", FORMAT_NOT_SUPPORTED,
                                         "No supported family [%s]" % TokenList[0],
-                                        File=self.DescFilePath, Line=Record[-1])
+                                        File=self._MetaFile, Line=Record[-1])
                     self._CustomMakefile[TokenList[0]] = TokenList[1]
 
         #
@@ -1360,7 +1360,7 @@ class InfBuildData(ModuleBuildClassObject):
                                               )
                     if not Status:
                         EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
-                                        File=self.DescFilePath, Line=LineNo)
+                                        File=self._MetaFile, Line=LineNo)
                     if self.Sources == None:
                         self._Sources = []
                     self._Sources.append(ModuleSourceFileClass(File, "", "", "", ""))
@@ -1369,7 +1369,7 @@ class InfBuildData(ModuleBuildClassObject):
                     if len(ToolList) == 0 or len(ToolList) != 1:
                         pass
 #                        EdkLogger.warn("build", "Don't know how to do with macro [%s]" % Name,
-#                                       File=self.DescFilePath, Line=LineNo)
+#                                       File=self._MetaFile, Line=LineNo)
                     else:
                         if self._BuildOptions == None:
                             self._BuildOptions = sdict()
@@ -1411,7 +1411,7 @@ class InfBuildData(ModuleBuildClassObject):
             if self._Header_ == None:
                 self._GetHeaderInfo()
             if self._BaseName == None:
-                EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No BASE_NAME name", File=self.DescFilePath)
+                EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No BASE_NAME name", File=self._MetaFile)
         return self._BaseName
 
     ## Retrieve MODULE_TYPE
@@ -1572,7 +1572,7 @@ class InfBuildData(ModuleBuildClassObject):
                                           )
                 if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
-                                    File=self.DescFilePath, Line=LineNo)
+                                    File=self._MetaFile, Line=LineNo)
                 Target = Record[2]
                 FeatureFlag = Record[3]
                 self._Binaries.append(ModuleBinaryFileClass(File, FileType, Target, FeatureFlag, self._Arch))
@@ -1601,11 +1601,11 @@ class InfBuildData(ModuleBuildClassObject):
                 if not Status:
                     if self._AutoGenVersion < 0x00010005 and os.path.splitext(Dummy)[1].lower() == '.h':
                         EdkLogger.warn('build', 'Include file not found', ExtraData=File,
-                                        File=self.DescFilePath, Line=LineNo)
+                                        File=self._MetaFile, Line=LineNo)
                         continue
                     else:
                         EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
-                                        File=self.DescFilePath, Line=LineNo)
+                                        File=self._MetaFile, Line=LineNo)
                 
                 ToolChainFamily = Record[1]
                 TagName = Record[2]
@@ -1652,7 +1652,7 @@ class InfBuildData(ModuleBuildClassObject):
                 if Value == None:
                     PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
                     EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Value of [%s] is not found in" % CName,
-                                    ExtraData=PackageList, File=self.DescFilePath, Line=Record[-1])
+                                    ExtraData=PackageList, File=self._MetaFile, Line=Record[-1])
                 self._Protocols[CName] = Value
         return self._Protocols
 
@@ -1667,7 +1667,7 @@ class InfBuildData(ModuleBuildClassObject):
                 if Value == None:
                     PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
                     EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Value of [%s] is not found in " % CName,
-                                    ExtraData=PackageList, File=self.DescFilePath, Line=Record[-1])
+                                    ExtraData=PackageList, File=self._MetaFile, Line=Record[-1])
                 self._Ppis[CName] = Value
         return self._Ppis
 
@@ -1682,7 +1682,7 @@ class InfBuildData(ModuleBuildClassObject):
                 if Value == None:
                     PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
                     EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Value of [%s] is not found in" % CName,
-                                    ExtraData=PackageList, File=self.DescFilePath, Line=Record[-1])
+                                    ExtraData=PackageList, File=self._MetaFile, Line=Record[-1])
                 self._Guids[CName] = Value
         return self._Guids
 
@@ -1694,7 +1694,7 @@ class InfBuildData(ModuleBuildClassObject):
             # [includes] section must be used only in old (R8.x) inf file
             if self.AutoGenVersion >= 0x00010005 and len(RecordList) > 0:
                 EdkLogger.error('build', FORMAT_NOT_SUPPORTED, "No [include] section allowed",
-                                File=self.DescFilePath, Line=RecordList[0][-1]-1)
+                                File=self._MetaFile, Line=RecordList[0][-1]-1)
             for Record in RecordList:
                 Record = ReplaceMacros(Record, GlobalData.gEdkGlobal, False)
                 Record[0] = Record[0].replace('$(PROCESSOR)', self._Arch)
@@ -1712,11 +1712,11 @@ class InfBuildData(ModuleBuildClassObject):
                 #if File[0] == '.':
                 #    if not ValidFile(File, Dir=self._ModuleDir):
                 #        EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
-                #                        File=self.DescFilePath, Line=LineNo)
+                #                        File=self._MetaFile, Line=LineNo)
                 #else:
                 #    if not ValidFile(File):
                 #        EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
-                #                        File=self.DescFilePath, Line=LineNo)
+                #                        File=self._MetaFile, Line=LineNo)
                 if File in self._Includes:
                     continue
                 self._Includes.append(File)
@@ -1740,7 +1740,7 @@ class InfBuildData(ModuleBuildClassObject):
                                           )
                 if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
-                                    File=self.DescFilePath, Line=LineNo)
+                                    File=self._MetaFile, Line=LineNo)
                 # parse this package now. we need it to get protocol/ppi/guid value
                 Package = self._Bdb[File, self._Arch]
                 self._Packages.append(Package)
@@ -1791,7 +1791,7 @@ class InfBuildData(ModuleBuildClassObject):
                         if Value == None:
                             PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
                             EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Value of [%s] is not found in" % Token,
-                                            ExtraData=PackageList, File=self.DescFilePath, Line=Record[-1])
+                                            ExtraData=PackageList, File=self._MetaFile, Line=Record[-1])
                         self._Depex.append(Value)
         return self._Depex
     
@@ -1811,7 +1811,7 @@ class InfBuildData(ModuleBuildClassObject):
                     PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
                     EdkLogger.error('build', RESOURCE_NOT_AVAILABLE,
                                     "Value of GUID [%s] is not found in" % TokenSpaceGuid,
-                                    ExtraData=PackageList, File=self.DescFilePath, Line=LineNo)
+                                    ExtraData=PackageList, File=self._MetaFile, Line=LineNo)
                 self.Guids[TokenSpaceGuid] = Value
 
         # resolve PCD type, value, datum info, etc. by getting its definition from package
@@ -1867,8 +1867,8 @@ class InfBuildData(ModuleBuildClassObject):
                 EdkLogger.error(
                             'build',
                             PARSER_ERROR,
-                            "PCD [%s.%s] in [%s] is not found in dependent packages:" % (TokenSpaceGuid, PcdCName, self.DescFilePath),
-                            File =self.DescFilePath, Line=LineNo,
+                            "PCD [%s.%s] in [%s] is not found in dependent packages:" % (TokenSpaceGuid, PcdCName, self._MetaFile),
+                            File =self._MetaFile, Line=LineNo,
                             ExtraData="\t%s" % '\n\t'.join([str(P) for P in self.Packages])
                             )
             Pcds[PcdCName, TokenSpaceGuid] = Pcd
