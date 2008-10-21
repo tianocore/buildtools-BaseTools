@@ -118,9 +118,12 @@ def CheckEnvVariable():
     if EcpSourceDir.upper().find(WorkspaceDir.upper()) != 0:
         EdkLogger.error("build", PARAMETER_INVALID, "ECP_SOURCE is not under WORKSPACE",
                         ExtraData="WORKSPACE = %s\n    ECP_SOURCE = %s" % (WorkspaceDir, EcpSourceDir))
-    EfiSourceDir = EfiSourceDir[len(WorkspaceDir)+1:]
-    EdkSourceDir = EdkSourceDir[len(WorkspaceDir)+1:]
-    EcpSourceDir = EcpSourceDir[len(WorkspaceDir)+1:]
+    WorkspaceDirLen = len(WorkspaceDir)
+    if WorkspaceDir[-1] not in ['/', '\\']:
+        WorkspaceDirLen += 1
+    EfiSourceDir = EfiSourceDir[WorkspaceDirLen:]
+    EdkSourceDir = EdkSourceDir[WorkspaceDirLen:]
+    EcpSourceDir = EcpSourceDir[WorkspaceDirLen:]
 
     # check EDK_TOOLS_PATH
     if "EDK_TOOLS_PATH" not in os.environ:
