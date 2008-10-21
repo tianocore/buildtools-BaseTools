@@ -1717,6 +1717,8 @@ class InfBuildData(ModuleBuildClassObject):
                 #    if not ValidFile(File):
                 #        EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
                 #                        File=self._MetaFile, Line=LineNo)
+                if File == '':
+                    File = '.'
                 if File in self._Includes:
                     continue
                 self._Includes.append(File)
