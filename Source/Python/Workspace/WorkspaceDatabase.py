@@ -1708,17 +1708,8 @@ class InfBuildData(ModuleBuildClassObject):
                         self._Includes.append(File)
                     continue
                 File = NormPath(Record[0], self._Macros)
-                #LineNo = Record[-1]
-                #if File[0] == '.':
-                #    if not ValidFile(File, Dir=self._ModuleDir):
-                #        EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
-                #                        File=self._MetaFile, Line=LineNo)
-                #else:
-                #    if not ValidFile(File):
-                #        EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
-                #                        File=self._MetaFile, Line=LineNo)
-                if File == '':
-                    File = '.'
+                if File.startswith('/') or File.startswith('\\'):
+                    File = File[1:]
                 if File in self._Includes:
                     continue
                 self._Includes.append(File)

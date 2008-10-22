@@ -1596,7 +1596,9 @@ class ModuleAutoGen(AutoGen):
             if self.AutoGenVersion < 0x00010005:
                 for Inc in self.Module.Includes:
                     # '.' means "relative to module directory".
-                    if Inc[0] == ".":
+                    if Inc == '':
+                        Inc = path.join(self.WorkspaceDir, Inc)
+                    elif Inc[0] == ".":
                         Inc = path.join(self.WorkspaceDir, self.SourceDir, Inc)
                     else:
                         Inc = path.join(self.WorkspaceDir, Inc)
