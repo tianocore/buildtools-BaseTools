@@ -1141,11 +1141,12 @@ def CheckFuncLayoutReturnType(FullFileName):
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
-        ReturnType = GetDataTypeFromModifier(Result[0]).split()[-1]
-        if len(ReturnType) == 0:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Function has No Return Type', FileTable, Result[1])
-            continue
-        Index = Result[0].find(ReturnType)
+        ReturnType = GetDataTypeFromModifier(Result[0])
+        TypeStart = ReturnType.split()[0]
+#        if len(ReturnType) == 0:
+#            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Function has No Return Type', FileTable, Result[1])
+#            continue
+        Index = Result[0].find(TypeStart)
         if Index != 0 or Result[3] != 0:
             PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Return Type should appear at the start of line', FileTable, Result[1])
             
@@ -1158,10 +1159,11 @@ def CheckFuncLayoutReturnType(FullFileName):
                    """ % (FileID)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
-        ReturnType = GetDataTypeFromModifier(Result[0]).split()[-1]
-        if len(ReturnType) == 0:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Function has No Return Type', 'Function', Result[1])
-            continue
+        ReturnType = GetDataTypeFromModifier(Result[0])
+        TypeStart = ReturnType.split()[0]
+#        if len(ReturnType) == 0:
+#            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Function has No Return Type', 'Function', Result[1])
+#            continue
         Index = Result[0].find(ReturnType)
         if Index != 0 or Result[3] != 0:
             PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Return Type should appear at the start of line', 'Function', Result[1])
@@ -1184,10 +1186,11 @@ def CheckFuncLayoutModifier(FullFileName):
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
-        ReturnType = GetDataTypeFromModifier(Result[0]).split()[-1]
-        if len(ReturnType) == 0:
-            continue
-        Index = Result[0].find(ReturnType)
+        ReturnType = GetDataTypeFromModifier(Result[0])
+        TypeStart = ReturnType.split()[0]
+#        if len(ReturnType) == 0:
+#            continue
+        Index = Result[0].find(TypeStart)
         if Index != 0:
             PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_OPTIONAL_FUNCTIONAL_MODIFIER, '', FileTable, Result[1])
             
@@ -1197,10 +1200,11 @@ def CheckFuncLayoutModifier(FullFileName):
                    """ % (FileID)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
-        ReturnType = GetDataTypeFromModifier(Result[0]).split()[-1]
-        if len(ReturnType) == 0:
-            continue
-        Index = Result[0].find(ReturnType)
+        ReturnType = GetDataTypeFromModifier(Result[0])
+        TypeStart = ReturnType.split()[0]
+#        if len(ReturnType) == 0:
+#            continue
+        Index = Result[0].find(TypeStart)
         if Index != 0:
             PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_OPTIONAL_FUNCTIONAL_MODIFIER, '', 'Function', Result[1])
 
@@ -1884,11 +1888,26 @@ def CheckDoxygenTripleForwardSlash(FullFileName):
         return ErrorMsgList
     
     Db = GetDB()
+    
+    SqlStatement = """ select ID, BodyStartLine, BodyStartColumn, EndLine, EndColumn
+                       from Function
+                       where BelongsToFile = %d
+                   """ % (FileID)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    if len(ResultSet) == 0:
+        return
+    
+    FuncDefSet = []    
+    for Result in ResultSet:
+        FuncDefSet.append(Result)
+    
+    
     FileTable = 'Identifier' + str(FileID)
-    SqlStatement = """ select Value, ID, StartLine
+    SqlStatement = """ select Value, ID, StartLine, StartColumn, EndLine, EndColumn
                        from %s
-                       where Model = %d or Model = %d
-                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_COMMENT, DataClass.MODEL_IDENTIFIER_FUNCTION_HEADER)
+                       where Model = %d 
+                       
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_COMMENT)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     CommentSet = []
     try:
@@ -1897,26 +1916,31 @@ def CheckDoxygenTripleForwardSlash(FullFileName):
     except:
         print 'Unrecognized chars in comment of file %s', FullFileName
     
-    SqlStatement = """ select ID, StartLine, EndLine
-                       from %s
-                       where Model = %d or Model = %d or Model = %d
-                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_STRUCTURE, DataClass.MODEL_IDENTIFIER_ENUMERATE, DataClass.MODEL_IDENTIFIER_UNION)
-    SUEResultSet = Db.TblFile.Exec(SqlStatement)
     
     for Result in CommentSet:
         CommentStr = Result[0]
         StartLine = Result[2]
+        StartColumn = Result[3]
+        EndLine = Result[4]
+        EndColumn = Result[5]
         if not CommentStr.startswith('///<'):
             continue
-        if len(ResultSet) == 0:
-            PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMENT_FORMAT, '', FileTable, Result[1])
-            continue
+        
         Found = False
-        for SUE in SUEResultSet:
-            if StartLine > SUE[1] and StartLine < SUE[2]:
+        for FuncDef in FuncDefSet:
+            if StartLine == FuncDef[1] and StartColumn > FuncDef[2] and EndLine == FuncDef[3] and EndColumn < FuncDef[4]:
                 Found = True
                 break
-        if not Found:
+            if StartLine > FuncDef[1] and EndLine < FuncDef[3]:
+                Found = True
+                break
+            if StartLine == FuncDef[1] and StartColumn > FuncDef[2] and EndLine < FuncDef[3]:
+                Found = True
+                break
+            if StartLine > FuncDef[1] and EndLine == FuncDef[3] and EndColumn < FuncDef[4]:
+                Found = True
+                break
+        if Found:
             PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMENT_FORMAT, '', FileTable, Result[1])
 
 
