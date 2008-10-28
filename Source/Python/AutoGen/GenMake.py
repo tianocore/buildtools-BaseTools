@@ -217,6 +217,7 @@ MODULE_NAME = ${module_name}
 MODULE_GUID = ${module_guid}
 MODULE_VERSION = ${module_version}
 MODULE_TYPE = ${module_type}
+MODULE_FILE = ${module_file}
 MODULE_FILE_BASE_NAME = ${module_file_base_name}
 BASE_NAME = $(MODULE_NAME)
 MODULE_RELATIVE_DIR = ${module_relative_directory}
@@ -237,9 +238,9 @@ TARGET = ${build_target}
 BUILD_DIR = ${platform_build_directory}
 BIN_DIR = $(BUILD_DIR)${separator}${architecture}
 LIB_DIR = $(BIN_DIR)
-MODULE_BUILD_DIR = $(BUILD_DIR)${separator}${architecture}${separator}${module_relative_directory}${separator}${module_file_base_name}
-OUTPUT_DIR = $(MODULE_BUILD_DIR)${separator}OUTPUT
-DEBUG_DIR = $(MODULE_BUILD_DIR)${separator}DEBUG
+MODULE_BUILD_DIR = ${module_build_directory}
+OUTPUT_DIR = ${module_output_directory}
+DEBUG_DIR = ${module_debug_directory}
 DEST_DIR_OUTPUT = $(OUTPUT_DIR)
 DEST_DIR_DEBUG = $(DEBUG_DIR)
 
@@ -322,6 +323,12 @@ pbuild: $(INIT_TARGET) $(PCH_TARGET) $(CODA_TARGET)
 mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) $(CODA_TARGET)
 
 #
+# Build Target used in multi-thread build mode, which will bypass the init and gen_libs targets
+#
+
+tbuild: $(PCH_TARGET) $(CODA_TARGET)
+
+#
 # Phony target which is used to force executing commands for a target
 #
 force_build:
@@ -337,7 +344,7 @@ fds: mbuild gen_fds
 # Initialization target: print build information and create necessary directories
 #
 init:
-\t-@echo Building ... $(MODULE_NAME) [$(ARCH)]
+\t-@echo Building ... $(MODULE_FILE) [$(ARCH)]
 ${BEGIN}\t-@${create_directory_command}\n${END}\
 ${BEGIN}\t-@${copy_autogen_h}\n${END}
 
@@ -520,6 +527,7 @@ cleanlib:
             "module_guid"               : self._AutoGenObject.Guid,
             "module_version"            : self._AutoGenObject.Version,
             "module_type"               : self._AutoGenObject.ModuleType,
+            "module_file"               : self._AutoGenObject._MetaFile,
             "module_file_base_name"     : self._AutoGenObject.FileBase,
             "module_relative_directory" : self._AutoGenObject.SourceDir,
 
@@ -528,6 +536,9 @@ cleanlib:
             "build_target"              : self._AutoGenObject.BuildTarget,
 
             "platform_build_directory"  : self.PlatformInfo.BuildDir,
+            "module_build_directory"    : self._AutoGenObject.BuildDir,
+            "module_output_directory"   : self._AutoGenObject.OutputDir,
+            "module_debug_directory"    : self._AutoGenObject.DebugDir,
 
             "separator"                 : Separator,
             "module_tool_flags"         : [self._AutoGenObject.BuildOption[tool] for tool in self.PlatformInfo.ToolPath],
@@ -619,6 +630,7 @@ cleanlib:
                 P = "$(OUTPUT_DIR)" + Separator + SrcFileDir
                 if P not in self.IntermediateDirectoryList:
                     self.IntermediateDirectoryList.append(P)
+                    CreateDirectory(os.path.join(self._AutoGenObject.OutputDir, SrcFileDir))
 
             SrcFileRelativePath = os.path.join(SourceDir, F)
 
@@ -720,6 +732,7 @@ cleanlib:
                     P = "$(DEBUG_DIR)" + Separator + SrcFileDir
                     if P not in self.IntermediateDirectoryList:
                         self.IntermediateDirectoryList.append(P)
+                        CreateDirectory(os.path.join(self._AutoGenObject.DebugDir, SrcFileDir))
 
                 SrcFileRelativePath = os.path.join(self._AutoGenObject.DebugDir, F)
 
@@ -971,6 +984,7 @@ MODULE_NAME = ${module_name}
 MODULE_GUID = ${module_guid}
 MODULE_VERSION = ${module_version}
 MODULE_TYPE = ${module_type}
+MODULE_FILE = ${module_file}
 MODULE_FILE_BASE_NAME = ${module_file_base_name}
 BASE_NAME = $(MODULE_NAME)
 MODULE_RELATIVE_DIR = ${module_relative_directory}
@@ -991,9 +1005,9 @@ TARGET = ${build_target}
 BUILD_DIR = ${platform_build_directory}
 BIN_DIR = $(BUILD_DIR)${separator}${architecture}
 LIB_DIR = $(BIN_DIR)
-MODULE_BUILD_DIR = $(BUILD_DIR)${separator}${architecture}${separator}${module_relative_directory}${separator}${module_file_base_name}
-OUTPUT_DIR = $(MODULE_BUILD_DIR)${separator}OUTPUT
-DEBUG_DIR = $(MODULE_BUILD_DIR)${separator}DEBUG
+MODULE_BUILD_DIR = ${module_build_directory}
+OUTPUT_DIR = ${module_output_directory}
+DEBUG_DIR = ${module_debug_directory}
 DEST_DIR_OUTPUT = $(OUTPUT_DIR)
 DEST_DIR_DEBUG = $(DEBUG_DIR)
 
@@ -1032,12 +1046,17 @@ pbuild: init all
 
 mbuild: init all
 
+#
+# Build Target used in multi-thread build mode, which no init target is needed
+#
+
+tbuild: all
 
 #
 # Initialization target: print build information and create necessary directories
 #
 init:
-\t-@echo Building ... $(MODULE_NAME) [$(ARCH)]
+\t-@echo Building ... $(MODULE_FILE) [$(ARCH)]
 ${BEGIN}\t-@${create_directory_command}\n${END}\
 
 '''
@@ -1080,6 +1099,7 @@ ${BEGIN}\t-@${create_directory_command}\n${END}\
             "module_guid"               : self._AutoGenObject.Guid,
             "module_version"            : self._AutoGenObject.Version,
             "module_type"               : self._AutoGenObject.ModuleType,
+            "module_file"               : self._AutoGenObject._MetaFile,
             "module_file_base_name"     : self._AutoGenObject.FileBase,
             "module_relative_directory" : self._AutoGenObject.SourceDir,
 
@@ -1088,6 +1108,9 @@ ${BEGIN}\t-@${create_directory_command}\n${END}\
             "build_target"              : self._AutoGenObject.BuildTarget,
 
             "platform_build_directory"  : self.PlatformInfo.BuildDir,
+            "module_build_directory"    : self._AutoGenObject.BuildDir,
+            "module_output_directory"   : self._AutoGenObject.OutputDir,
+            "module_debug_directory"    : self._AutoGenObject.DebugDir,
 
             "separator"                 : Separator,
             "module_tool_flags"         : [self._AutoGenObject.BuildOption[tool] for tool in self.PlatformInfo.ToolPath],
@@ -1123,6 +1146,7 @@ ${makefile_header}
 PLATFORM_NAME = ${platform_name}
 PLATFORM_GUID = ${platform_guid}
 PLATFORM_VERSION = ${platform_version}
+PLATFORM_FILE = ${platform_file}
 PLATFORM_DIR = $(WORKSPACE)${separator}${platform_relative_directory}
 PLATFORM_OUTPUT_DIR = ${platform_output_directory}
 
@@ -1158,7 +1182,7 @@ all: init build_libraries build_modules
 # Initialization target: print build information and create necessary directories
 #
 init:
-\t-@echo Building ... $(PLATFORM_NAME) [${build_architecture_list}]
+\t-@echo Building ... $(PLATFORM_FILE) [${build_architecture_list}]
 \t${BEGIN}-@${create_directory_command}
 \t${END}
 #
@@ -1240,6 +1264,7 @@ cleanlib:
             "platform_name"             : PlatformInfo.Name,
             "platform_guid"             : PlatformInfo.Guid,
             "platform_version"          : PlatformInfo.Version,
+            "platform_file"             : self._AutoGenObject._MetaFile,
             "platform_relative_directory": PlatformInfo.SourceDir,
             "platform_output_directory" : PlatformInfo.OutputDir,
             "platform_build_directory"  : PlatformInfo.BuildDir,
@@ -1334,7 +1359,7 @@ all: modules fds
 # Initialization target: print build information and create necessary directories
 #
 init:
-\t-@echo Building ... $(PLATFORM_NAME) [${build_architecture_list}]
+\t-@
 \t${BEGIN}-@${create_directory_command}
 \t${END}
 #

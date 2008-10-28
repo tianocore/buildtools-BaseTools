@@ -148,6 +148,24 @@ def CreateDirectory(Directory):
         return False
     return True
 
+## Remove directories, including files and sub-directories in it
+#
+#   @param      Directory   The directory name
+#
+def RemoveDirectory(Directory, Recursively=False):
+    if Directory == None or Directory.strip() == "" or not os.path.exists(Directory):
+        return
+    if Recursively:
+        CurrentDirectory = os.getcwd()
+        os.chdir(Directory)
+        for File in os.listdir("."):
+            if os.path.isdir(File):
+                RemoveDirectory(File, Recursively)
+            else:
+                os.remove(File)    
+        os.chdir(CurrentDirectory)
+    os.rmdir(Directory)
+
 ## Check if given file is changed or not
 #
 #  This method is used to check if a file is changed or not between two build
@@ -874,29 +892,5 @@ def ParseConsoleLog(Filename):
 # script.
 #
 if __name__ == '__main__':
-    #ParseConsoleLog('C:\\R861\\Log\\Tiger.log')
-    print os.path.normpath(GetRelPath('C:/WK/AA', 'C:\\WK\\BB\\CC\\2.txt'))
-    print os.path.normpath(GetRelPath('C:\\WK\\AA', 'C:/WK//AAAA/CC\\2.txt'))
-#    print GuidStringToGuidStructureString('6441F818-6362-4E44-B570-7DBA31DD2453')
-#    d = tdict(True, 3)
-#    d['COMMON', 'PEIM', "A",] = 1
-#    d['COMMON', 'DXE_CORE', 'B'] = 2
-#    d['IA32', 'DXE_CORE', 'C'] = 3
-#
-#    print d['IA32', 'DXE_CORE', 'C']
-
-#    s = sdict()
-#    s[1] = 1
-#    s[3] = 3
-#    s[4] = 4
-#    s[6] = 6
-#    print s.index(3)
-#    s.insert(3, 2, 2, 'BEFORE')
-#    print s.index(3)
-#    print s.index(4)
-#    s.insert(4, 5, 5, 'AFTER')
-#    print s.keys()
-#    print s.values()
-#    for item in s:
-#        print item, s[item]
+    pass
 

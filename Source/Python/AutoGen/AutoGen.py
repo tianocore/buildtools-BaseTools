@@ -216,6 +216,9 @@ class WorkspaceAutoGen(AutoGen):
 
         return True
 
+    def __repr__(self):
+        return "%s [%s]" % (self._MetaFile, ", ".join(self.ArchList))
+
     ## Return the directory to store FV files
     def _GetFvDir(self):
         if self._FvDir == None:
@@ -385,6 +388,9 @@ class PlatformAutoGen(AutoGen):
         # get the original module/package/platform objects
         self.BuildDatabase = Workspace.BuildDatabase
         return True
+
+    def __repr__(self):
+        return "%s [%s]" % (self._MetaFile, self.Arch)
 
     ## Create autogen code for platform and modules
     #
@@ -668,11 +674,20 @@ class PlatformAutoGen(AutoGen):
                     NoDatumTypePcdList.add("%s [%s]" % (" | ".join(Key), F))
 
                 if PcdFromModule.Type in GenC.gDynamicPcd or PcdFromModule.Type in GenC.gDynamicExPcd:
-                    # for autogen code purpose
+                    # 
+                    # If a dynamic PCD used by a PEM module/PEI module & DXE module, 
+                    # it should be stored in Pcd PEI database, If a dynamic only 
+                    # used by DXE module, it should be stored in DXE PCD database.
+                    # The default Phase is DXE
+                    # 
                     if M.ModuleType in ["PEIM", "PEI_CORE"]:
                         PcdFromModule.Phase = "PEI"
                     if PcdFromModule not in self._DynamicPcdList:
                         self._DynamicPcdList.append(PcdFromModule)
+                    elif PcdFromModule.Phase == 'PEI':
+                        # overwrite any the same PCD existing, if Phase is PEI
+                        Index = self._DynamicPcdList.index(PcdFromModule)
+                        self._DynamicPcdList[Index] = PcdFromModule
                 elif PcdFromModule not in self._NonDynamicPcdList:
                     self._NonDynamicPcdList.append(PcdFromModule)
 
@@ -1224,6 +1239,8 @@ class ModuleAutoGen(AutoGen):
 
         return True
 
+    def __repr__(self):
+        return "%s [%s]" % (self._MetaFile, self.Arch)
 
     ## Return the module build data object
     def _GetModule(self):
@@ -1285,18 +1302,21 @@ class ModuleAutoGen(AutoGen):
                                     self.SourceDir,
                                     self.FileBase
                                     )
+            CreateDirectory(self._BuildDir)
         return self._BuildDir
 
     ## Return the directory to store the intermediate object files of the mdoule
     def _GetOutputDir(self):
         if self._OutputDir == None:
             self._OutputDir = path.join(self.BuildDir, "OUTPUT")
+            CreateDirectory(self._OutputDir)
         return self._OutputDir
 
     ## Return the directory to store auto-gened source files of the mdoule
     def _GetDebugDir(self):
         if self._DebugDir == None:
             self._DebugDir = path.join(self.BuildDir, "DEBUG")
+            CreateDirectory(self._DebugDir)
         return self._DebugDir
 
     ## Return the path of custom file

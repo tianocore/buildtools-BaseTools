@@ -166,6 +166,10 @@ class DscBuildData(PlatformBuildClassObject):
             # some special items in [Defines] section need special treatment
             elif Name == TAB_DSC_DEFINES_OUTPUT_DIRECTORY:
                 self._OutputDirectory = NormPath(Record[1], self._Macros)
+                if ' ' in self._OutputDirectory:
+                    EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in OUTPUT_DIRECTORY", 
+                                    File=self._MetaFile, Line=Record[-1],
+                                    ExtraData=self._OutputDirectory)
             elif Name == TAB_DSC_DEFINES_FLASH_DEFINITION:
                 self._FlashDefinition = NormPath(Record[1], self._Macros)
             elif Name == TAB_DSC_DEFINES_SUPPORTED_ARCHITECTURES:

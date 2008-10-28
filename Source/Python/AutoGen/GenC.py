@@ -326,7 +326,7 @@ ${Function} (
   IN VOID                           *OldCoreData
   );
 
-EFI_STATUS
+VOID
 EFIAPI
 ProcessModuleEntryPointList (
   IN CONST  EFI_SEC_PEI_HAND_OFF    *SecCoreData,
@@ -335,7 +335,7 @@ ProcessModuleEntryPointList (
   )
 
 {
-  return ${Function} (SecCoreData, PpiList, OldCoreData);
+  ${Function} (SecCoreData, PpiList, OldCoreData);
 }
 ${END}
 """
@@ -370,8 +370,8 @@ GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = 0;
 EFI_STATUS
 EFIAPI
 ProcessModuleEntryPointList (
-  IN EFI_PEI_FILE_HANDLE  FileHandle,
-  IN EFI_PEI_SERVICES     **PeiServices
+  IN       EFI_PEI_FILE_HANDLE  FileHandle,
+  IN CONST EFI_PEI_SERVICES     **PeiServices
   )
 
 {
@@ -383,15 +383,15 @@ GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = 0;
 ${BEGIN}
 EFI_STATUS
 ${Function} (
-  IN EFI_PEI_FILE_HANDLE  FileHandle,
-  IN EFI_PEI_SERVICES     **PeiServices
+  IN       EFI_PEI_FILE_HANDLE  FileHandle,
+  IN CONST EFI_PEI_SERVICES     **PeiServices
   );
 
 EFI_STATUS
 EFIAPI
 ProcessModuleEntryPointList (
-  IN EFI_PEI_FILE_HANDLE  FileHandle,
-  IN EFI_PEI_SERVICES     **PeiServices
+  IN       EFI_PEI_FILE_HANDLE  FileHandle,
+  IN CONST EFI_PEI_SERVICES     **PeiServices
   )
 
 {
@@ -405,16 +405,16 @@ GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = 0;
 ${BEGIN}
 EFI_STATUS
 ${Function} (
-  IN EFI_PEI_FILE_HANDLE  FileHandle,
-  IN EFI_PEI_SERVICES     **PeiServices
+  IN       EFI_PEI_FILE_HANDLE  FileHandle,
+  IN CONST EFI_PEI_SERVICES     **PeiServices
   );
 ${END}
 
 EFI_STATUS
 EFIAPI
 ProcessModuleEntryPointList (
-  IN EFI_PEI_FILE_HANDLE  FileHandle,
-  IN EFI_PEI_SERVICES     **PeiServices
+  IN       EFI_PEI_FILE_HANDLE  FileHandle,
+  IN CONST EFI_PEI_SERVICES     **PeiServices
   )
 
 {
@@ -716,8 +716,8 @@ ${BEGIN}${FunctionPrototype}${END}
 VOID
 EFIAPI
 ProcessLibrary${Type}List (
-  IN EFI_PEI_FILE_HANDLE       FileHandle,
-  IN EFI_PEI_SERVICES          **PeiServices
+  IN       EFI_PEI_FILE_HANDLE       FileHandle,
+  IN CONST EFI_PEI_SERVICES          **PeiServices
   )
 {
 ${BEGIN}  EFI_STATUS  Status;
@@ -753,15 +753,15 @@ gBasicHeaderFile = "Base.h"
 gModuleTypeHeaderFile = {
     "BASE"              :   [gBasicHeaderFile],
     "SEC"               :   ["PiPei.h", "Library/DebugLib.h"],
-    "PEI_CORE"          :   ["PiPei.h", "Library/DebugLib.h"],
-    "PEIM"              :   ["PiPei.h", "Library/DebugLib.h"],
-    "DXE_CORE"          :   ["PiDxe.h", "Library/DebugLib.h"],
-    "DXE_DRIVER"        :   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"],
-    "DXE_SMM_DRIVER"    :   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"],
-    "DXE_RUNTIME_DRIVER":   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"],
-    "DXE_SAL_DRIVER"    :   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"],
-    "UEFI_DRIVER"       :   ["Uefi.h",  "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"],
-    "UEFI_APPLICATION"  :   ["Uefi.h",  "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h"],
+    "PEI_CORE"          :   ["PiPei.h", "Library/DebugLib.h", "Library/PeiCoreEntryPoint.h"],
+    "PEIM"              :   ["PiPei.h", "Library/DebugLib.h", "Library/PeimEntryPoint.h"],
+    "DXE_CORE"          :   ["PiDxe.h", "Library/DebugLib.h", "Library/DxeCoreEntryPoint.h"],
+    "DXE_DRIVER"        :   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h", "Library/UefiDriverEntryPoint.h"],
+    "DXE_SMM_DRIVER"    :   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h", "Library/DxeSmmDriverEntryPoint.h"],
+    "DXE_RUNTIME_DRIVER":   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h", "Library/UefiDriverEntryPoint.h"],
+    "DXE_SAL_DRIVER"    :   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h", "Library/UefiDriverEntryPoint.h"],
+    "UEFI_DRIVER"       :   ["Uefi.h",  "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h", "Library/UefiDriverEntryPoint.h"],
+    "UEFI_APPLICATION"  :   ["Uefi.h",  "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h", "Library/UefiApplicationEntryPoint.h"],
     "USER_DEFINED"      :   [gBasicHeaderFile]
 }
 

@@ -86,7 +86,10 @@ def CheckEnvVariable():
 
     WorkspaceDir = os.path.normpath(os.environ["WORKSPACE"])
     if not os.path.exists(WorkspaceDir):
-        EdkLogger.error("build", FILE_NOT_FOUND, ExtraData="WORKSPACE = %s" % WorkspaceDir)
+        EdkLogger.error("build", FILE_NOT_FOUND, "WORKSPACE doesn't exist", ExtraData="%s" % WorkspaceDir)
+    elif ' ' in WorkspaceDir:
+        EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in WORKSPACE path", 
+                        ExtraData=WorkspaceDir)
     os.environ["WORKSPACE"] = WorkspaceDir
 
     #
@@ -103,10 +106,19 @@ def CheckEnvVariable():
     EcpSourceDir = os.path.normpath(os.environ["ECP_SOURCE"])
     if not os.path.exists(EcpSourceDir):
         EdkLogger.verbose("ECP_SOURCE = %s doesn't exist. R8 modules could not be built." % EcpSourceDir)
+    elif ' ' in EcpSourceDir:
+        EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in ECP_SOURCE path", 
+                        ExtraData=EcpSourceDir)
     if not os.path.exists(EdkSourceDir):
         EdkLogger.verbose("EDK_SOURCE = %s doesn't exist. R8 modules could not be built." % EdkSourceDir)
+    elif ' ' in EdkSourceDir:
+        EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in EDK_SOURCE path", 
+                        ExtraData=EdkSourceDir)
     if not os.path.exists(EfiSourceDir):
         EdkLogger.verbose("EFI_SOURCE = %s doesn't exist. R8 modules could not be built." % EfiSourceDir)
+    elif ' ' in EfiSourceDir:
+        EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in EFI_SOURCE path", 
+                        ExtraData=EfiSourceDir)
 
     # change absolute path to relative path to WORKSPACE
     if EfiSourceDir.upper().find(WorkspaceDir.upper()) != 0:
@@ -319,6 +331,9 @@ class BuildUnit:
     def __hash__(self):
         return hash(self.BuildObject) + hash(self.BuildObject.Arch)
 
+    def __repr__(self):
+        return repr(self.BuildObject)
+
 ## The smallest module unit that can be built by nmake/make command in multi-thread build mode
 #
 # This class is for module build by nmake/make build system. The "Obj" parameter
@@ -338,7 +353,7 @@ class ModuleMakeUnit(BuildUnit):
         Dependency = [ModuleMakeUnit(La, Target) for La in Obj.LibraryAutoGenList]
         BuildUnit.__init__(self, Obj, Obj.BuildCommand, Target, Dependency, Obj.MakeFileDir)
         if Target in [None, "", "all"]:
-            self.Target = "pbuild"
+            self.Target = "tbuild"
 
 ## The smallest platform unit that can be built by nmake/make command in multi-thread build mode
 #
@@ -480,7 +495,7 @@ class BuildTask:
             # TRICK: hide the output of threads left runing, so that the user can
             #        catch the error message easily
             #
-            EdkLogger.SetLevel(EdkLogger.QUIET)
+            EdkLogger.SetLevel(EdkLogger.ERROR)
             BuildTask._ErrorFlag.set()
             BuildTask._ErrorMessage = "build thread scheduler error\n\t%s" % str(X)
 
@@ -610,7 +625,7 @@ class BuildTask:
                                                                   self.BuildItem.BuildObject.ToolChain,
                                                                   self.BuildItem.BuildObject.BuildTarget
                                                                  )
-            EdkLogger.SetLevel(EdkLogger.QUIET)
+            EdkLogger.SetLevel(EdkLogger.ERROR)
             BuildTask._ErrorFlag.set()
             BuildTask._ErrorMessage = "%s broken\n    %s [%s]" % \
                                       (threading.currentThread().getName(), Command, WorkingDir)
@@ -623,6 +638,7 @@ class BuildTask:
     ## Start build task thread
     #
     def Start(self):
+        EdkLogger.quiet("Building ... %s" % repr(self.BuildItem))
         Command = self.BuildItem.BuildCommand + (self.BuildItem.Target,)
         self.BuildTread = Thread(target=self._CommandThread, args=(Command, self.BuildItem.WorkingDir))
         self.BuildTread.setName("build thread")
@@ -921,12 +937,21 @@ class Build():
             # always recreate top/platform makefile when clean, just in case of inconsistency
             AutoGenObject.CreateMakeFile(False)
 
+        if EdkLogger.GetLevel() == EdkLogger.QUIET:
+            EdkLogger.quiet("Building ... %s" % repr(AutoGenObject))
+
         BuildCommand = AutoGenObject.BuildCommand
         if BuildCommand == None or len(BuildCommand) == 0:
             EdkLogger.error("build", OPTION_MISSING, ExtraData="No MAKE command found for [%s, %s, %s]" % Key)
 
         BuildCommand = BuildCommand + (Target,)
         LaunchCommand(BuildCommand, AutoGenObject.MakeFileDir)
+        if Target == 'cleanall':
+            try:
+                #os.rmdir(AutoGenObject.BuildDir)
+                RemoveDirectory(AutoGenObject.BuildDir, True)
+            except WindowsError, X:
+                EdkLogger.error("build", FILE_DELETE_FAILURE, ExtraData=str(X))
         return True
 
     ## Build active platform for different build targets and different tool chains
@@ -986,7 +1011,10 @@ class Build():
                     EdkLogger.error(
                                 'build',
                                 BUILD_ERROR,
-                                "Module for [%s] is not employed by active platform" % ', '.join(self.ArchList),
+                                "Module for [%s] is not a component of active platform."\
+                                " Please make sure that the ARCH and inf file path are"\
+                                " given in the same as in [%s]" %\
+                                    (', '.join(self.ArchList), self.Platform),
                                 ExtraData=self.ModuleFile
                                 )
 
@@ -1144,10 +1172,13 @@ class Build():
 
     ## Do some clean-up works when error occurred
     def Relinquish(self):
+        OldLogLevel = EdkLogger.GetLevel()
+        EdkLogger.SetLevel(EdkLogger.ERROR)
         self.DumpBuildData()
         Utils.Progressor.Abort()
         if self.SpawnMode == True:
             BuildTask.Abort()
+        EdkLogger.SetLevel(OldLogLevel)
 
     def DumpBuildData(self):
         CacheDirectory = os.path.join(self.WorkspaceDir, gBuildCacheDir)
@@ -1319,7 +1350,6 @@ def Main():
         MyBuild.Launch()
         MyBuild.DumpBuildData()
     except FatalError, X:
-        EdkLogger.SetLevel(EdkLogger.QUIET)
         if MyBuild != None:
             # for multi-thread build exits safely
             MyBuild.Relinquish()
@@ -1328,7 +1358,6 @@ def Main():
         ReturnCode = X.args[0]
     except Warning, X:
         # error from Fdf parser
-        EdkLogger.SetLevel(EdkLogger.QUIET)
         if MyBuild != None:
             # for multi-thread build exits safely
             MyBuild.Relinquish()
@@ -1342,7 +1371,6 @@ def Main():
         if Option != None and Option.debug != None:
             EdkLogger.quiet("(Python %s on %s) " % (platform.python_version(), sys.platform) + traceback.format_exc())
     except:
-        EdkLogger.SetLevel(EdkLogger.QUIET)
         if MyBuild != None:
             # for multi-thread build exits safely
             MyBuild.Relinquish()
@@ -1377,6 +1405,7 @@ def Main():
         Conclusion = "Failed"
     FinishTime = time.time()
     BuildDuration = time.strftime("%M:%S", time.gmtime(int(round(FinishTime - StartTime))))
+    EdkLogger.SetLevel(EdkLogger.QUIET)
     EdkLogger.quiet("\n- %s -\n%s [%s]" % (Conclusion, time.strftime("%H:%M:%S, %b.%d %Y", time.localtime()), BuildDuration))
 
     return ReturnCode
