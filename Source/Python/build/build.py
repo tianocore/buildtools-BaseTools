@@ -739,22 +739,9 @@ class Build():
         self.Progress.Start("\nProcessing meta-data")
         
         #
-        # Get all files in workspace dir
+        # Get files real name in workspace dir
         #
-        for Root, Dirs, Files in os.walk(self.WorkspaceDir):
-            if "CVS" in Dirs:
-                Dirs.remove('CVS')
-            if ".svn" in Dirs:
-                Dirs.remove('.svn')
-            if "Build" in Dirs:
-                Dirs.remove('Build')
-            
-            for Dir in Dirs:
-                Dir = os.path.normpath(os.path.join(Root, Dir))
-                GlobalData.gAllFiles[Dir.upper()] = Dir
-            for File in Files:
-                File = os.path.normpath(os.path.join(Root, File))
-                GlobalData.gAllFiles[File.upper()] = File
+        GlobalData.gAllFiles = Utils.DirCache(self.WorkspaceDir)
 
     ## Load configuration
     #
@@ -1174,7 +1161,7 @@ class Build():
     def Relinquish(self):
         OldLogLevel = EdkLogger.GetLevel()
         EdkLogger.SetLevel(EdkLogger.ERROR)
-        self.DumpBuildData()
+        #self.DumpBuildData()
         Utils.Progressor.Abort()
         if self.SpawnMode == True:
             BuildTask.Abort()

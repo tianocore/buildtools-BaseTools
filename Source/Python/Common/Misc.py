@@ -267,6 +267,107 @@ def DataRestore(File):
             Fd.close()
     return Data
 
+## Retrieve the real path name in file system (for Windows only)
+#
+#   @param      Root    The root directory of path relative to
+#
+#   @retval     str     The path string if the path exists
+#   @retval     None    If path doesn't exist
+#
+class rpath:
+    def __init__(self, Root):
+        self._Root = Root
+        self._Data = {}
+
+    # =[] operator
+    def __getitem__(self, Path):
+        Cwd = os.getcwd()
+        RealPath =  None
+
+        SepIndex = Path.find(os.path.sep)
+        if SepIndex > -1:
+            Parent = Path[0:SepIndex]
+            ParentKey = Parent.upper()
+            os.chdir(self._Root)
+            if ParentKey not in self._Data:
+                for F in os.listdir("."):
+                    if os.path.isfile(F):
+                        self._Data[F.upper()] = F
+                    else:
+                        self._Data[F.upper()] = rpath(F)
+            if ParentKey in self._Data:
+                RealPath = self._Data[ParentKey][Path[SepIndex+1:]]
+        else:
+            PathKey = Path.upper()
+            os.chdir(self._Root)
+            if PathKey not in self._Data:
+                for F in os.listdir("."):
+                    if os.path.isfile(F):
+                        self._Data[F.upper()] = F
+                    else:
+                        self._Data[F.upper()] = rpath(F)
+            if PathKey in self._Data:
+                RealPath = str(self._Data[PathKey])
+
+        os.chdir(Cwd)
+        if RealPath == None:
+            return None
+        return os.path.join(self._Root, RealPath)
+
+    def __str__(self):
+        return self._Root
+
+## Retrieve and cache the real path name in file system (for Windows only)
+#
+#   @param      Root    The root directory of path relative to
+#
+#   @retval     str     The path string if the path exists
+#   @retval     None    If path doesn't exist
+#
+class DirCache:
+    _CACHE_ = {}
+
+    def __init__(self, Root):
+        self._Root = Root
+        for F in os.listdir(Root):
+            self._CACHE_[F.upper()] = F
+
+    # =[] operator
+    def __getitem__(self, Path):
+        Path = Path.upper()
+        if Path in self._CACHE_:
+            return os.path.join(self._Root, self._CACHE_[Path])
+
+        IndexList = []
+        LastSepIndex = -1
+        SepIndex = Path.find(os.path.sep)
+        while SepIndex > -1:
+            Parent = Path[:SepIndex]
+            if Parent not in self._CACHE_:
+                break
+            LastSepIndex = SepIndex
+            SepIndex = Path.find(os.path.sep, LastSepIndex + 1)
+
+        if LastSepIndex == -1:
+            return None
+
+        SepIndex = LastSepIndex
+        while SepIndex > -1:
+            ParentKey = Path[:SepIndex]
+            if ParentKey not in self._CACHE_:
+                return None
+
+            ParentDir = self._CACHE_[ParentKey]
+            for F in os.listdir(ParentDir):
+                Dir = os.path.join(ParentDir, F)
+                self._CACHE_[Dir.upper()] = Dir
+
+            SepIndex = Path.find(os.path.sep, SepIndex + 1)
+
+        if Path not in self._CACHE_:
+            return None
+        return os.path.join(self._Root, self._CACHE_[Path])
+
 ## Check if gvien file exists or not
 #
 #   @param      File    File name or path to be checked
@@ -317,21 +418,21 @@ def ValidFile2(AllFiles, File, Ext=None, Workspace='', EfiSource='', EdkSource='
     if File.find('$(EFI_SOURCE)') > -1 or File.find('$(EDK_SOURCE)') > -1:
         File = File.replace('$(EFI_SOURCE)', EfiSource)
         File = File.replace('$(EDK_SOURCE)', EdkSource)
-        NewFile = os.path.normpath(os.path.join(Workspace, File))
-        if NewFile.upper() in AllFiles:
-            return True, AllFiles[NewFile.upper()]
+        NewFile = AllFiles[os.path.normpath(File)]
+        if NewFile != None:
+            return True, NewFile
     
     # Second check the path with override value
     if OverrideDir != '' and OverrideDir != None:
-        NewFile = os.path.normpath(os.path.join(Workspace, OverrideDir, File))
-        if NewFile.upper() in AllFiles:
-            return True, AllFiles[NewFile.upper()]
+        NewFile = AllFiles[os.path.normpath(os.path.join(OverrideDir, File))]
+        if NewFile != None:
+            return True, NewFile
     
     # Last check the path with normal definitions
-    NewFile = os.path.normpath(os.path.join(Workspace, Dir, File))
-    if NewFile.upper() in AllFiles:
-        return True, AllFiles[NewFile.upper()]
-    
+    NewFile = AllFiles[os.path.normpath(os.path.join(Dir, File))]    
+    if NewFile != None:
+        return True, NewFile
+
     return False, NewFile
 
 ## Check if gvien file exists or not
@@ -352,7 +453,7 @@ def ValidFile3(AllFiles, File, Workspace='', EfiSource='', EdkSource='', Dir='.'
         Dir = Dir[len(Workspace)+1:]
     
     NewFile = File
-    RelaPath = AllFiles[os.path.normpath(os.path.join(Workspace, Dir)).upper()]
+    RelaPath = AllFiles[os.path.normpath(Dir)]
     NewRelaPath = RelaPath
     
     while(True):
@@ -360,9 +461,8 @@ def ValidFile3(AllFiles, File, Workspace='', EfiSource='', EdkSource='', Dir='.'
         if File.find('$(EFI_SOURCE)') > -1 or File.find('$(EDK_SOURCE)') > -1:
             File = File.replace('$(EFI_SOURCE)', EfiSource)
             File = File.replace('$(EDK_SOURCE)', EdkSource)
-            NewFile = os.path.normpath(os.path.join(Workspace, File))
-            if NewFile.upper() in AllFiles:
-                NewFile = AllFiles[NewFile.upper()]
+            NewFile = AllFiles[os.path.normpath(File)]
+            if NewFile != None:
                 NewRelaPath = os.path.dirname(NewFile)
                 File = os.path.basename(NewFile)
                 #NewRelaPath = NewFile[:len(NewFile) - len(File.replace("..\\", '').replace("../", '')) - 1]
@@ -370,17 +470,15 @@ def ValidFile3(AllFiles, File, Workspace='', EfiSource='', EdkSource='', Dir='.'
         
         # Second check the path with override value
         if OverrideDir != '' and OverrideDir != None:
-            NewFile = os.path.normpath(os.path.join(Workspace, OverrideDir, File))
-            if NewFile.upper() in AllFiles:
-                NewFile = AllFiles[NewFile.upper()]
+            NewFile = AllFiles[os.path.normpath(os.path.join(OverrideDir, File))]
+            if NewFile != None:
                 #NewRelaPath = os.path.dirname(NewFile)
                 NewRelaPath = NewFile[:len(NewFile) - len(File.replace("..\\", '').replace("../", '')) - 1]
                 break
         
         # Last check the path with normal definitions
-        NewFile = os.path.normpath(os.path.join(Workspace, Dir, File))
-        if NewFile.upper() in AllFiles:
-            NewFile = AllFiles[NewFile.upper()]
+        NewFile = AllFiles[os.path.normpath(os.path.join(Dir, File))]
+        if NewFile != None:
             break
         
         # No file found

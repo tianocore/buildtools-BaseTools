@@ -17,7 +17,7 @@ gEfiSource = "."
 gEcpSource = "EdkCompatibilityPkg"
 
 gGlobalDefines = {}
-gAllFiles = {}
+gAllFiles = None
 
 gEdkGlobal = {}
 gOverrideDir = {}

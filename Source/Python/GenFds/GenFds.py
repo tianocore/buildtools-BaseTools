@@ -33,6 +33,7 @@ import Common.DataType
 import Common.GlobalData as GlobalData
 from Common import EdkLogger
 from Common.String import *
+from Common.Misc import DirCache
 
 ## Version and Copyright
 versionNumber = "1.0"
@@ -165,22 +166,9 @@ def main():
         BuildWorkSpace.InitDatabase()
         
         #
-        # Get all files in workspace dir
+        # Get files real name in workspace dir
         #
-        for Root, Dirs, Files in os.walk(Workspace):
-            if "CVS" in Dirs:
-                Dirs.remove('CVS')
-            if ".svn" in Dirs:
-                Dirs.remove('.svn')
-            if "Build" in Dirs:
-                Dirs.remove('Build')
-            
-            for Dir in Dirs:
-                Dir = os.path.normpath(os.path.join(Root, Dir))
-                GlobalData.gAllFiles[Dir.upper()] = Dir
-            for File in Files:
-                File = os.path.normpath(os.path.join(Root, File))
-                GlobalData.gAllFiles[File.upper()] = File
+        GlobalData.gAllFiles = DirCache(Workspace)
         GlobalData.gWorkspace = Workspace
 
         if (Options.archList) :

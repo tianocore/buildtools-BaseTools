@@ -351,7 +351,7 @@ class DscBuildData(PlatformBuildClassObject):
             # get module override path
             RecordList = self._RawData[MODEL_META_DATA_COMPONENT_SOURCE_OVERRIDE_PATH, self._Arch, None, ModuleId]
             if RecordList != []:
-                Module.SourceOverridePath = RecordList[0][0]
+                Module.SourceOverridePath = NormPath(RecordList[0][0])
                 #Add to GlobalData Variables
                 GlobalData.gOverrideDir[ModuleFile.upper()] = Module.SourceOverridePath
             
@@ -1603,7 +1603,7 @@ class InfBuildData(ModuleBuildClassObject):
                                            OverrideDir=self._SourceOverridePath
                                           )
                 if not Status:
-                    if self._AutoGenVersion < 0x00010005 and os.path.splitext(Dummy)[1].lower() == '.h':
+                    if self._AutoGenVersion < 0x00010005 and os.path.splitext(File)[1].lower() == '.h':
                         EdkLogger.warn('build', 'Include file not found', ExtraData=File,
                                         File=self._MetaFile, Line=LineNo)
                         continue
