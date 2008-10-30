@@ -280,9 +280,6 @@ TARGET_FILES = ${BEGIN}${target_file_macro_name} ${END}
 INC = ${BEGIN}${include_path_prefix}${include_path} \\
       ${END}
 
-#OBJECTS = ${BEGIN}$(OUTPUT_DIR)${separator}${object_file} \\
-#          ${END}
-
 LIBS = ${BEGIN}${library_file} \\
        ${END}${BEGIN}${system_library} \\
        ${END} \\
@@ -300,6 +297,7 @@ ENTRYPOINT = ${module_entry_point}
 FORCE_REBUILD = force_build
 INIT_TARGET = init
 PCH_TARGET =
+BC_TARGET = ${BEGIN}${backward_compatible_target} ${END}
 CODA_TARGET = ${BEGIN}${remaining_build_target} \\
               ${END}
 
@@ -314,19 +312,19 @@ all: mbuild
 # Target used when called from platform makefile, which will bypass the build of dependent libraries
 #
 
-pbuild: $(INIT_TARGET) $(PCH_TARGET) $(CODA_TARGET)
+pbuild: $(INIT_TARGET) $(BC_TARGET) $(PCH_TARGET) $(CODA_TARGET)
 
 #
 # ModuleTarget
 #
 
-mbuild: $(INIT_TARGET) gen_libs $(PCH_TARGET) $(CODA_TARGET)
+mbuild: $(INIT_TARGET) $(BC_TARGET) gen_libs $(PCH_TARGET) $(CODA_TARGET)
 
 #
 # Build Target used in multi-thread build mode, which will bypass the init and gen_libs targets
 #
 
-tbuild: $(PCH_TARGET) $(CODA_TARGET)
+tbuild: $(BC_TARGET) $(PCH_TARGET) $(CODA_TARGET)
 
 #
 # Phony target which is used to force executing commands for a target
@@ -343,10 +341,16 @@ fds: mbuild gen_fds
 #
 # Initialization target: print build information and create necessary directories
 #
-init:
+init: info dirs
+
+info:
 \t-@echo Building ... $(MODULE_FILE) [$(ARCH)]
-${BEGIN}\t-@${create_directory_command}\n${END}\
-${BEGIN}\t-@${copy_autogen_h}\n${END}
+
+dirs:
+${BEGIN}\t-@${create_directory_command}\n${END}
+
+strdefs:
+\t-@$(CP) $(DEBUG_DIR)${separator}AutoGen.h $(DEBUG_DIR)${separator}$(MODULE_NAME)StrDefs.h
 
 #
 # GenLibsTarget
@@ -492,7 +496,7 @@ cleanlib:
             Macro = "%s_LIST" % FileType.replace("-", "_").upper()
             SourceFileMacroNameList.append("$(%s)" % Macro)
             Template = TemplateString()
-            Template.Append("%s = ${BEGIN}${source_file} \\\n\t${END}" % Macro,
+            Template.Append("%s = ${BEGIN} \\\n    ${source_file}${END}\n" % Macro,
                             {"source_file" : self.SourceFileDatabase[FileType]})
             SourceFileMacroList.append(str(Template))
         TargetFileMacroList = []
@@ -501,17 +505,15 @@ cleanlib:
             Macro = "%s_LIST" % FileType.replace("-", "_").upper()
             TargetFileMacroNameList.append("$(%s)" % Macro)
             Template = TemplateString()
-            Template.Append("%s = ${BEGIN}${target_file} \\\n\t${END}" % Macro,
+            Template.Append("%s = ${BEGIN} \\\n    ${target_file}${END}\n" % Macro,
                             {"target_file" : self.DestFileDatabase[FileType]})
             TargetFileMacroList.append(str(Template))
 
         # R8 modules need <BaseName>StrDefs.h for string ID
         if self._AutoGenObject.AutoGenVersion < 0x00010005 and len(self._AutoGenObject.UnicodeFileList) > 0:
-            AutoGenHeaderFile = os.path.join("$(DEBUG_DIR)", "AutoGen.h")
-            StringHeaderFile = os.path.join("$(DEBUG_DIR)", "%sStrDefs.h" % self._AutoGenObject.Name)
-            CopyAutoGenHeaderFile = ["$(CP) %s %s" % (AutoGenHeaderFile, StringHeaderFile)]
+            BcTargetList = ['strdefs']
         else:
-            CopyAutoGenHeaderFile = []
+            BcTargetList = []
 
         MakefileName = self._FILE_NAME_[self._FileType]
         MakefileTemplateDict = {
@@ -569,7 +571,7 @@ cleanlib:
             "source_file_macro_name"    : SourceFileMacroNameList,
             "target_file_macro_name"    : TargetFileMacroNameList,
             "file_build_target"         : self.BuildTargetList,
-            "copy_autogen_h"            : CopyAutoGenHeaderFile,
+            "backward_compatible_target": BcTargetList,
         }
 
         return MakefileTemplateDict
