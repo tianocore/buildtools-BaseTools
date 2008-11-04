@@ -40,8 +40,10 @@ EFI_HII_SIBT_EXT4 = '0x32'
 EFI_HII_SIBT_FONT = '0x40'
 
 EFI_HII_PACKAGE_STRINGS = '0x04'
+EFI_HII_PACKAGE_FORM = '0x02'
 
 StringPackageType = EFI_HII_PACKAGE_STRINGS
+StringPackageForm = EFI_HII_PACKAGE_FORM
 StringBlockType = EFI_HII_SIBT_STRING_UCS2
 StringSkipType = EFI_HII_SIBT_SKIP2
 
@@ -257,7 +259,7 @@ def CreateCFileStringValue(Value):
 #
 # @retval Str:           A string of .c file content 
 #
-def CreateCFileContent(BaseName, UniObjectClass):
+def CreateCFileContent(BaseName, UniObjectClass, IsCompatibleMode):
     #
     # Init array length
     #
@@ -305,9 +307,21 @@ def CreateCFileContent(BaseName, UniObjectClass):
         #
         # EFI_HII_PACKAGE_HEADER
         #
-        Str = WriteLine(Str, '// PACKAGE HEADER\n')
         Offset = EFI_HII_STRING_PACKAGE_HDR_LENGTH + len(Language) + 1
         ArrayLength = Offset + ArrayLength + 1
+        
+        #
+        # Create STRGATHER_OUTPUT_HEADER in compatible mode
+        #
+        if IsCompatibleMode:
+            Str = WriteLine(Str, '// STRGATHER_OUTPUT_HEADER\n')
+            List = DecToHexList(ArrayLength + 6, 6) + [StringPackageForm]
+            Str = WriteLine(Str, CreateArrayItem(List) + '\n')
+        
+        #
+        # Create PACKAGE HEADER
+        #
+        Str = WriteLine(Str, '// PACKAGE HEADER\n')
         TotalLength = TotalLength + ArrayLength
         
         List = DecToHexList(ArrayLength, 6) + \
@@ -321,7 +335,7 @@ def CreateCFileContent(BaseName, UniObjectClass):
         Str = WriteLine(Str, CreateArrayItem(List, 16) + '\n')
         
         #
-        # PACKAGE DATA
+        # Create PACKAGE DATA
         #
         Str = WriteLine(Str, '// PACKAGE DATA\n')
         Str = Write(Str, StrStringValue)
@@ -338,10 +352,11 @@ def CreateCFileContent(BaseName, UniObjectClass):
     AllStr = WriteLine('', CHAR_ARRAY_DEFIN + ' ' + BaseName + COMMON_FILE_NAME + '[] = {\n' )
     
     #
-    # Create whole array length
+    # Create whole array length in UEFI mode
     #
-    AllStr = WriteLine(AllStr, '// STRING ARRAY LENGTH\n')
-    AllStr = WriteLine(AllStr, CreateArrayItem(DecToHexList(TotalLength)))
+    if not IsCompatibleMode:
+        AllStr = WriteLine(AllStr, '// STRING ARRAY LENGTH\n')
+        AllStr = WriteLine(AllStr, CreateArrayItem(DecToHexList(TotalLength)))
     
     #
     # Join package data
@@ -369,10 +384,10 @@ def CreateCFileEnd():
 #
 # @retval CFile:         A string of complete .c file
 #
-def CreateCFile(BaseName, UniObjectClass):
+def CreateCFile(BaseName, UniObjectClass, IsCompatibleMode):
     CFile = ''
     #CFile = WriteLine(CFile, CreateCFileHeader())
-    CFile = WriteLine(CFile, CreateCFileContent(BaseName, UniObjectClass))
+    CFile = WriteLine(CFile, CreateCFileContent(BaseName, UniObjectClass, IsCompatibleMode))
     CFile = WriteLine(CFile, CreateCFileEnd())
     return CFile
 
@@ -415,6 +430,7 @@ def GetFileList(SourceFileList, IncludeList, SkipList):
 
             if not IsSkip:
                 FileList.append(File)
+                
             break
 
     return FileList
@@ -451,7 +467,7 @@ def SearchString(UniObjectClass, FileList):
 # This function is used for UEFI2.1 spec
 # 
 #
-def GetStringFiles(UniFilList, SourceFileList, IncludeList, SkipList, BaseName):
+def GetStringFiles(UniFilList, SourceFileList, IncludeList, SkipList, BaseName, IsCompatibleMode = False):
     Status = True
     ErrorMessage = ''
 
@@ -465,7 +481,7 @@ def GetStringFiles(UniFilList, SourceFileList, IncludeList, SkipList, BaseName):
     Uni = SearchString(Uni, FileList)
 
     HFile = CreateHFile(BaseName, Uni)
-    CFile = CreateCFile(BaseName, Uni)
+    CFile = CreateCFile(BaseName, Uni, IsCompatibleMode)
 
     return HFile, CFile
 
@@ -487,17 +503,22 @@ if __name__ == '__main__':
     EdkLogger.info('start')
 
     UniFileList = [
-         r'C:\\Edk\\Strings2.uni',
-         r'C:\\Edk\\Strings.uni'
+                   r'C:\\Edk\\Strings2.uni',
+                   r'C:\\Edk\\Strings.uni'
     ]
+    
+    SrcFileList = []
+    for Root, Dirs, Files in os.walk('C:\\Edk'):
+        for File in Files:
+            SrcFileList.append(File)
 
     IncludeList = [
-        r'C:\\Edk'
+                   r'C:\\Edk'
     ]
 
     SkipList = ['.inf', '.uni']
     BaseName = 'DriverSample'
-    (h, c) = GetStringFiles(UniFileList, IncludeList, SkipList, BaseName)
+    (h, c) = GetStringFiles(UniFileList, SrcFileList, IncludeList, SkipList, BaseName, True)
     hfile = open('unistring.h', 'w')
     cfile = open('unistring.c', 'w')
     hfile.write(h)
