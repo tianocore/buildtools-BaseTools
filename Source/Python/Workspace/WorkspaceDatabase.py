@@ -1604,11 +1604,11 @@ class InfBuildData(ModuleBuildClassObject):
                                           )
                 if not Status:
                     if self._AutoGenVersion < 0x00010005 and os.path.splitext(File)[1].lower() == '.h':
-                        EdkLogger.warn('build', 'Include file not found', ExtraData=File,
+                        EdkLogger.warn('build', 'Include file not found', ExtraData=Dummy,
                                         File=self._MetaFile, Line=LineNo)
                         continue
                     else:
-                        EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
+                        EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=Dummy,
                                         File=self._MetaFile, Line=LineNo)
                 
                 ToolChainFamily = Record[1]
