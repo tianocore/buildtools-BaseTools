@@ -267,7 +267,7 @@ def DataRestore(File):
             Fd.close()
     return Data
 
-## Retrieve the real path name in file system (for Windows only)
+## Retrieve the real path name in file system
 #
 #   @param      Root    The root directory of path relative to
 #
@@ -317,7 +317,7 @@ class rpath:
     def __str__(self):
         return self._Root
 
-## Retrieve and cache the real path name in file system (for Windows only)
+## Retrieve and cache the real path name in file system
 #
 #   @param      Root    The root directory of path relative to
 #
@@ -424,16 +424,18 @@ def ValidFile2(AllFiles, File, Ext=None, Workspace='', EfiSource='', EdkSource='
     
     # Second check the path with override value
     if OverrideDir != '' and OverrideDir != None:
-        NewFile = AllFiles[os.path.normpath(os.path.join(OverrideDir, File))]
+        File = os.path.join(OverrideDir, File)
+        NewFile = AllFiles[os.path.normpath(File)]
         if NewFile != None:
             return True, NewFile
     
     # Last check the path with normal definitions
-    NewFile = AllFiles[os.path.normpath(os.path.join(Dir, File))]    
+    File = os.path.join(Dir, File)
+    NewFile = AllFiles[os.path.normpath(File)]    
     if NewFile != None:
         return True, NewFile
 
-    return False, NewFile
+    return False, File
 
 ## Check if gvien file exists or not
 #
