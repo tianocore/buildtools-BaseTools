@@ -22,7 +22,7 @@ from CommonDataClass.FdfClass import FDClassObject
 #
 class Ffs(FDClassObject):
     
-    # mapping between module type in FDF and file type for GenFfs
+    # mapping between MODULE type in FDF (from INF) and file type for GenFfs
     ModuleTypeToFileType = {
         'SEC'               : 'EFI_FV_FILETYPE_SECURITY_CORE',
         'PEI_CORE'          : 'EFI_FV_FILETYPE_PEI_CORE',
@@ -33,10 +33,12 @@ class Ffs(FDClassObject):
         'DXE_SMM_DRIVER'    : 'EFI_FV_FILETYPE_DRIVER',
         'DXE_RUNTIME_DRIVER': 'EFI_FV_FILETYPE_DRIVER',
         'UEFI_DRIVER'       : 'EFI_FV_FILETYPE_DRIVER',
-        'UEFI_APPLICATION'  : 'EFI_FV_FILETYPE_APPLICATION'
+        'UEFI_APPLICATION'  : 'EFI_FV_FILETYPE_APPLICATION',
+        'SMM_DRIVER'        : 'EFI_FV_FILETYPE_SMM',
+        'SMM_CORE'          : 'EFI_FV_FILETYPE_SMM_CORE'
     }
     
-    # mapping between fv type in FDF and file type for GenFfs
+    # mapping between FILE type in FDF and file type for GenFfs
     FdfFvFileTypeToFileType = {
         'SEC'               : 'EFI_FV_FILETYPE_SECURITY_CORE',
         'PEI_CORE'          : 'EFI_FV_FILETYPE_PEI_CORE',
@@ -47,7 +49,10 @@ class Ffs(FDClassObject):
         'APPLICATION'       : 'EFI_FV_FILETYPE_APPLICATION',
         'FV_IMAGE'          : 'EFI_FV_FILETYPE_FIRMWARE_VOLUME_IMAGE',
         'RAW'               : 'EFI_FV_FILETYPE_RAW',
-        'PEI_DXE_COMBO'     : 'EFI_FV_FILETYPE_COMBINED_PEIM_DRIVER'
+        'PEI_DXE_COMBO'     : 'EFI_FV_FILETYPE_COMBINED_PEIM_DRIVER',
+        'SMM_DXE_COMBO'     : 'EFI_FV_FILETYPE_COMBINED_SMM_DXE',
+        'SMM'               : 'EFI_FV_FILETYPE_SMM',
+        'SMM_CORE'          : 'EFI_FV_FILETYPE_SMM_CORE'
     }
     
     # mapping between section type in FDF and file suffix
@@ -64,7 +69,8 @@ class Ffs(FDClassObject):
         'FV_IMAGE'             : 'fv.sec',
         'COMPRESS'             : '.com',
         'GUIDED'               : '.guided',
-        'PEI_DEPEX'            : '.dpx'
+        'PEI_DEPEX'            : '.dpx',
+        'SMM_DEPEX'            : '.smm'
     }
     
     ## The constructor

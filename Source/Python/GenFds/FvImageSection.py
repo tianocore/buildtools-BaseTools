@@ -73,10 +73,12 @@ class FvImageSection(FvImageSectionClassObject):
             Fv = GenFdsGlobalVariable.FdfParser.Profile.FvDict.get(self.FvName)
             if Fv != None:
                 self.Fv = Fv
+                FvFileName = self.Fv.AddToBuffer(Buffer, MacroDict = Dict)
             else:
-                EdkLogger.error("GenFds", GENFDS_ERROR, "FvImageSection Failed! %s NOT found in FDF" % self.FvName)
-
-            FvFileName = self.Fv.AddToBuffer(Buffer, MacroDict = Dict)
+                if self.FvFileName != None:
+                    FvFileName = GenFdsGlobalVariable.ReplaceWorkspaceMacro(self.FvFileName)
+                else:
+                    EdkLogger.error("GenFds", GENFDS_ERROR, "FvImageSection Failed! %s NOT found in FDF" % self.FvName)
 
             #
             # Prepare the parameter of GenSection

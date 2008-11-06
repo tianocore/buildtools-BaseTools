@@ -124,6 +124,12 @@ class FfsInfStatement(FfsInfStatementClassObject):
         if self.InfFileName[0] == '\\' or self.InfFileName[0] == '/' :
             self.InfFileName = self.InfFileName[1:]
 
+        if self.InfFileName.find('$') == -1:
+            InfPath = NormPath(self.InfFileName)
+            if not os.path.exists(InfPath):
+                InfPath = GenFdsGlobalVariable.ReplaceWorkspaceMacro(InfPath)
+                if not os.path.exists(InfPath):
+                    EdkLogger.error("GenFds", GENFDS_ERROR, "Non-existant Module %s !" % (self.InfFileName))
 
         self.__InfParse__(Dict)
         #

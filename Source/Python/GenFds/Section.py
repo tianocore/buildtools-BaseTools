@@ -36,7 +36,8 @@ class Section (SectionClassObject):
         'PEI_DEPEX' : 'EFI_SECTION_PEI_DEPEX',
         'GUIDED'    : 'EFI_SECTION_GUID_DEFINED',
         'COMPRESS'  : 'EFI_SECTION_COMPRESSION',
-        'UI'        : 'EFI_SECTION_USER_INTERFACE'
+        'UI'        : 'EFI_SECTION_USER_INTERFACE',
+        'SMM_DEPEX' : 'EFI_SECTION_SMM_DEPEX'
     }
 
     BinFileType = {

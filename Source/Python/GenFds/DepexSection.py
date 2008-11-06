@@ -81,6 +81,8 @@ class DepexSection (DepexSectionClassObject):
 
         self.Expression = self.Expression.strip()
         ModuleType = (self.DepexType.startswith('PEI') and ['PEIM'] or ['DXE_DRIVER'])[0]
+        if self.DepexType.startswith('SMM'):
+            ModuleType = 'SMM_DRIVER'
         InputFile = os.path.join (OutputPath, ModuleName + 'SEC' + SecNum + '.dpx')
         InputFile = os.path.normpath(InputFile)
 
@@ -88,9 +90,13 @@ class DepexSection (DepexSectionClassObject):
         Dpx.Generate(InputFile)
 
         OutputFile = os.path.join (OutputPath, ModuleName + 'SEC' + SecNum + '.depex')
+        if self.DepexType.startswith('SMM'):
+            OutputFile = os.path.join (OutputPath, ModuleName + 'SEC' + SecNum + '.smm')
         OutputFile = os.path.normpath(OutputFile)
         SecType = (self.DepexType.startswith('PEI') and ['PEI_DEPEX'] or ['DXE_DEPEX'])[0]
-
+        if self.DepexType.startswith('SMM'):
+            SecType = 'SMM_DEPEX'
+        
         GenFdsGlobalVariable.GenerateSection(OutputFile, [InputFile], Section.Section.SectionType.get (SecType))
         FileList = [OutputFile]
         return FileList, self.Alignment

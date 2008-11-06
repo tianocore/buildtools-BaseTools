@@ -2238,15 +2238,15 @@ class FdfParser:
         elif self.__IsKeyword( "FV_IMAGE"):
             if not self.__IsToken( "="):
                 raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
-            if not self.__GetNextWord():
-                raise Warning("expected FV name", self.FileName, self.CurrentLineNumber)
+            if not self.__GetNextToken():
+                raise Warning("expected FV name or FV file path", self.FileName, self.CurrentLineNumber)
 
-            FvName = self.__Token.upper()
+            FvName = self.__Token
             FvObj = None
 
             if self.__IsToken( "{"):
                 FvObj = Fv.FV()
-                FvObj.UiFvName = FvName
+                FvObj.UiFvName = FvName.upper()
                 self.__GetDefineStatements(FvObj)
                 MacroDict.update(FvObj.DefineVarDict)
                 self.__GetBlockStatement(FvObj)
@@ -2271,11 +2271,12 @@ class FdfParser:
                 FvImageSectionObj.Fv = FvObj
                 FvImageSectionObj.FvName = None
             else:
-                FvImageSectionObj.FvName = FvName
+                FvImageSectionObj.FvName = FvName.upper()
+                FvImageSectionObj.FvFileName = FvName
 
             Obj.SectionList.append(FvImageSectionObj)
 
-        elif self.__IsKeyword("PEI_DEPEX_EXP") or self.__IsKeyword("DXE_DEPEX_EXP"):
+        elif self.__IsKeyword("PEI_DEPEX_EXP") or self.__IsKeyword("DXE_DEPEX_EXP") or self.__IsKeyword("SMM_DEPEX_EXP"):
             DepexSectionObj = DepexSection.DepexSection()
             DepexSectionObj.Alignment = AlignValue
             DepexSectionObj.DepexType = self.__Token
@@ -2301,7 +2302,7 @@ class FdfParser:
                 return False
 
             if self.__Token not in ("COMPAT16", "PE32", "PIC", "TE", "FV_IMAGE", "RAW", "DXE_DEPEX",\
-                               "UI", "VERSION", "PEI_DEPEX", "SUBTYPE_GUID"):
+                               "UI", "VERSION", "PEI_DEPEX", "SUBTYPE_GUID", "SMM_DEPEX"):
                 raise Warning("Unknown section type '%s'" % self.__Token, self.FileName, self.CurrentLineNumber)
             # DataSection
             DataSectionObj = DataSection.DataSection()
@@ -2663,7 +2664,7 @@ class FdfParser:
                              "DXE_SMM_DRIVER", "DXE_RUNTIME_DRIVER", \
                              "UEFI_DRIVER", "UEFI_APPLICATION", "USER_DEFINED", "DEFAULT", "BASE", \
                              "SECURITY_CORE", "COMBINED_PEIM_DRIVER", "PIC_PEIM", "RELOCATABLE_PEIM", \
-                             "PE32_PEIM", "BS_DRIVER", "RT_DRIVER", "SAL_RT_DRIVER", "APPLICATION", "ACPITABLE"):
+                             "PE32_PEIM", "BS_DRIVER", "RT_DRIVER", "SAL_RT_DRIVER", "APPLICATION", "ACPITABLE", "SMM_DRIVER", "SMM_CORE"):
             raise Warning("Unknown Module type '%s'" % self.__Token, self.FileName, self.CurrentLineNumber)
         return self.__Token
 
@@ -2707,7 +2708,7 @@ class FdfParser:
 
         Type = self.__Token.strip().upper()
         if Type not in ("RAW", "FREEFORM", "SEC", "PEI_CORE", "PEIM",\
-                             "PEI_DXE_COMBO", "DRIVER", "DXE_CORE", "APPLICATION", "FV_IMAGE"):
+                             "PEI_DXE_COMBO", "DRIVER", "DXE_CORE", "APPLICATION", "FV_IMAGE", "SMM_DXE_COMBO", "SMM", "SMM_CORE"):
             raise Warning("Unknown FV type '%s'" % self.__Token, self.FileName, self.CurrentLineNumber)
 
         if not self.__IsToken("="):
@@ -2805,7 +2806,7 @@ class FdfParser:
             SectionName = self.__Token
 
             if SectionName not in ("COMPAT16", "PE32", "PIC", "TE", "FV_IMAGE", "RAW", "DXE_DEPEX",\
-                                    "UI", "PEI_DEPEX", "VERSION", "SUBTYPE_GUID"):
+                                    "UI", "PEI_DEPEX", "VERSION", "SUBTYPE_GUID", "SMM_DEPEX"):
                 raise Warning("Unknown leaf section name '%s'" % SectionName, self.FileName, self.CurrentLineNumber)
 
 
@@ -2852,7 +2853,7 @@ class FdfParser:
         SectionName = self.__Token
 
         if SectionName not in ("COMPAT16", "PE32", "PIC", "TE", "FV_IMAGE", "RAW", "DXE_DEPEX",\
-                               "UI", "VERSION", "PEI_DEPEX", "GUID"):
+                               "UI", "VERSION", "PEI_DEPEX", "GUID", "SMM_DEPEX"):
             self.__UndoToken()
             return False
 
@@ -2903,7 +2904,7 @@ class FdfParser:
                     FvImageSectionObj.FvFileExtension = self.__GetFileExtension()
                 elif self.__GetNextToken():
                     if self.__Token not in ("}", "COMPAT16", "PE32", "PIC", "TE", "FV_IMAGE", "RAW", "DXE_DEPEX",\
-                               "UI", "VERSION", "PEI_DEPEX", "GUID"):
+                               "UI", "VERSION", "PEI_DEPEX", "GUID", "SMM_DEPEX"):
                         FvImageSectionObj.FvFileName = self.__Token
                     else:
                         self.__UndoToken()
@@ -2980,7 +2981,7 @@ class FdfParser:
             EfiSectionObj.FileExtension = self.__GetFileExtension()
         elif self.__GetNextToken():
             if self.__Token not in ("}", "COMPAT16", "PE32", "PIC", "TE", "FV_IMAGE", "RAW", "DXE_DEPEX",\
-                       "UI", "VERSION", "PEI_DEPEX", "GUID"):
+                       "UI", "VERSION", "PEI_DEPEX", "GUID", "SMM_DEPEX"):
                 EfiSectionObj.FileName = self.__Token
             else:
                 self.__UndoToken()
@@ -3000,7 +3001,7 @@ class FdfParser:
     #   @retval False       section never optional
     #
     def __RuleSectionCouldBeOptional(self, SectionType):
-        if SectionType in ("DXE_DEPEX", "UI", "VERSION", "PEI_DEPEX", "RAW"):
+        if SectionType in ("DXE_DEPEX", "UI", "VERSION", "PEI_DEPEX", "RAW", "SMM_DEPEX"):
             return True
         else:
             return False
