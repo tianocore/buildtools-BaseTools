@@ -246,6 +246,7 @@ def GetIdentifierList():
     return IdList
 
 def GetParamList(FuncDeclarator, FuncNameLine = 0, FuncNameOffset = 0):
+    FuncDeclarator = StripComments(FuncDeclarator)
     ParamIdList = []
     DeclSplitList = FuncDeclarator.split('(')
     if len(DeclSplitList) < 2:
@@ -590,7 +591,7 @@ def GetPredicateListFromPredicateExpStr(PES):
     LogicOpPos = -1
     p = GetFuncDeclPattern()
     while i < len(PES) - 1:
-        if (PES[i].isalnum() or PES[i] == '_') and LogicOpPos > PredicateBegin:
+        if (PES[i].isalnum() or PES[i] == '_' or PES[i] == '*') and LogicOpPos > PredicateBegin:
             PredicateBegin = i
         if (PES[i] == '&' and PES[i+1] == '&') or (PES[i] == '|' and PES[i+1] == '|'):
             LogicOpPos = i
@@ -605,7 +606,7 @@ def GetPredicateListFromPredicateExpStr(PES):
     
     if PredicateBegin > LogicOpPos:
         while PredicateBegin < len(PES):
-            if PES[PredicateBegin].isalnum() or PES[PredicateBegin] == '_':
+            if PES[PredicateBegin].isalnum() or PES[PredicateBegin] == '_' or PES[PredicateBegin] == '*':
                 break
             PredicateBegin += 1
         Exp = PES[PredicateBegin:len(PES)].strip()
@@ -617,13 +618,14 @@ def GetPredicateListFromPredicateExpStr(PES):
             PredicateList.append(Exp.rstrip(';').rstrip(')').strip())
     return PredicateList
     
-def GetCNameList(Lvalue):
+def GetCNameList(Lvalue, StarList = []):
     Lvalue += ' '
     i = 0
     SearchBegin = 0
     VarStart = -1
     VarEnd = -1
     VarList = []
+    
     while SearchBegin < len(Lvalue):
         while i < len(Lvalue):
             if Lvalue[i].isalnum() or Lvalue[i] == '_':
@@ -636,6 +638,8 @@ def GetCNameList(Lvalue):
                 i += 1
                 break
             else:
+                if VarStart == -1 and Lvalue[i] == '*':
+                    StarList.append('*')
                 i += 1
         if VarEnd == -1:
             break
@@ -983,7 +987,7 @@ def GetTypeInfo(RefList, Modifier, FullFileName, TargetType = None):
 
     return Type
 
-def GetVarInfo(PredVarList, FuncRecord, FullFileName, IsFuncCall = False, TargetType = None):
+def GetVarInfo(PredVarList, FuncRecord, FullFileName, IsFuncCall = False, TargetType = None, StarList = None):
     
     PredVar = PredVarList[0]
     FileID = GetTableID(FullFileName)
@@ -1069,7 +1073,16 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName, IsFuncCall = False, Target
             Type = GetTypeInfo(PredVarList[1:], Result[0], FullFileName, TargetType)
             return Type
         else:
-            Type = GetDataTypeFromModifier(Result[0]).split()[-1]
+#            Type = GetDataTypeFromModifier(Result[0]).split()[-1]
+            TypeList = GetDataTypeFromModifier(Result[0]).split()
+            Type = TypeList[-1]
+            if len(TypeList) > 1 and StarList != None:
+                for Star in StarList:
+                    Type = Type.strip()
+                    Type = Type.rstrip(Star)
+                # Get real type after de-reference pointers.
+                if len(Type.strip()) == 0:
+                    Type = TypeList[-2]
             TypedefDict = GetTypedefDict(FullFileName)
             Type = GetRealType(Type, TypedefDict, TargetType)
             return Type
@@ -1082,7 +1095,15 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName, IsFuncCall = False, Target
                 Type = GetTypeInfo(PredVarList[1:], Param.Modifier, FullFileName, TargetType)
                 return Type
             else:
-                Type = GetDataTypeFromModifier(Param.Modifier).split()[-1]
+                TypeList = GetDataTypeFromModifier(Param.Modifier).split()
+                Type = TypeList[-1]
+                if len(TypeList) > 1 and StarList != None:
+                    for Star in StarList:
+                        Type = Type.strip()
+                        Type = Type.rstrip(Star)
+                    # Get real type after de-reference pointers.
+                    if len(Type.strip()) == 0:
+                        Type = TypeList[-2]
                 TypedefDict = GetTypedefDict(FullFileName)
                 Type = GetRealType(Type, TypedefDict, TargetType)
                 return Type
@@ -1099,7 +1120,15 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName, IsFuncCall = False, Target
             Type = GetTypeInfo(PredVarList[1:], Result[0], FullFileName, TargetType)
             return Type
         else:
-            Type = GetDataTypeFromModifier(Result[0]).split()[-1]
+            TypeList = GetDataTypeFromModifier(Result[0]).split()
+            Type = TypeList[-1]
+            if len(TypeList) > 1 and StarList != None:
+                for Star in StarList:
+                    Type = Type.strip()
+                    Type = Type.rstrip(Star)
+                # Get real type after de-reference pointers.
+                if len(Type.strip()) == 0:
+                    Type = TypeList[-2]
             TypedefDict = GetTypedefDict(FullFileName)
             Type = GetRealType(Type, TypedefDict, TargetType)
             return Type
@@ -1121,7 +1150,15 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName, IsFuncCall = False, Target
                 Type = GetTypeInfo(PredVarList[1:], Result[0], FullFileName, TargetType)
                 return Type
             else:
-                Type = GetDataTypeFromModifier(Result[0]).split()[-1]
+                TypeList = GetDataTypeFromModifier(Result[0]).split()
+                Type = TypeList[-1]
+                if len(TypeList) > 1 and StarList != None:
+                    for Star in StarList:
+                        Type = Type.strip()
+                        Type = Type.rstrip(Star)
+                    # Get real type after de-reference pointers.
+                    if len(Type.strip()) == 0:
+                        Type = TypeList[-2]
                 TypedefDict = GetTypedefDict(FullFileName)
                 Type = GetRealType(Type, TypedefDict, TargetType)
                 return Type
@@ -1596,7 +1633,8 @@ def CheckPointerNullComparison(FullFileName):
                     
                 if PredVarStr.strip() in IgnoredKeywordList:
                     continue
-                PredVarList = GetCNameList(PredVarStr)
+                StarList = []
+                PredVarList = GetCNameList(PredVarStr, StarList)
                 # No variable found, maybe value first? like (0 == VarName)
                 if len(PredVarList) == 0:
                     continue
@@ -1610,7 +1648,7 @@ def CheckPointerNullComparison(FullFileName):
                     if PredVarStr in FuncReturnTypeDict:
                         continue
                 
-                Type = GetVarInfo(PredVarList, FuncRecord, FullFileName)
+                Type = GetVarInfo(PredVarList, FuncRecord, FullFileName, IsFuncCall, None, StarList)
                 if SearchInCache:
                     FuncReturnTypeDict[PredVarStr] = Type
                 if Type == None:
@@ -1675,7 +1713,8 @@ def CheckNonBooleanValueComparison(FullFileName):
                     
                 if PredVarStr.strip() in IgnoredKeywordList:
                     continue
-                PredVarList = GetCNameList(PredVarStr)
+                StarList = []
+                PredVarList = GetCNameList(PredVarStr, StarList)
                 # No variable found, maybe value first? like (0 == VarName)
                 if len(PredVarList) == 0:
                     continue
@@ -1690,7 +1729,7 @@ def CheckNonBooleanValueComparison(FullFileName):
                     if PredVarStr in FuncReturnTypeDict:
                         continue
                     
-                Type = GetVarInfo(PredVarList, FuncRecord, FullFileName, IsFuncCall, 'BOOLEAN')
+                Type = GetVarInfo(PredVarList, FuncRecord, FullFileName, IsFuncCall, 'BOOLEAN', StarList)
                 if SearchInCache:
                     FuncReturnTypeDict[PredVarStr] = Type
                 if Type == None:
@@ -1754,7 +1793,8 @@ def CheckBooleanValueComparison(FullFileName):
                     
                 if PredVarStr.strip() in IgnoredKeywordList:
                     continue
-                PredVarList = GetCNameList(PredVarStr)
+                StarList = []
+                PredVarList = GetCNameList(PredVarStr, StarList)
                 # No variable found, maybe value first? like (0 == VarName)
                 if len(PredVarList) == 0:
                     continue
@@ -1769,7 +1809,7 @@ def CheckBooleanValueComparison(FullFileName):
                     if PredVarStr in FuncReturnTypeDict:
                         continue
                 
-                Type = GetVarInfo(PredVarList, FuncRecord, FullFileName, IsFuncCall, 'BOOLEAN')
+                Type = GetVarInfo(PredVarList, FuncRecord, FullFileName, IsFuncCall, 'BOOLEAN', StarList)
                 if SearchInCache:
                     FuncReturnTypeDict[PredVarStr] = Type
                 if Type == None:
