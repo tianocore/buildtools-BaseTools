@@ -882,30 +882,50 @@ def GetSUDict(FullFileName):
     return Dict
 
 def StripComments(Str):
-    StrippedStr = ''
-    List = Str.splitlines()
+    Str += '   '
+    ListFromStr = list(Str)
+    
     InComment = False
-    for StrPart in List:
-        Index = StrPart.find('//')
-        if Index != -1 and not InComment:
-            StrippedStr += StrPart[0:Index]
-            continue
-        
-        Index = StrPart.find('/*')
-        if Index != -1:
-            InComment = True
-            StrippedStr += StrPart[0:Index]
-        
-        Index = StrPart.find('*/')
-        if Index != -1:
-            StrippedStr += StrPart[Index+2:]
+    DoubleSlashComment = False
+    Index = 0
+    while Index < len(ListFromStr):
+        # meet new line, then no longer in a comment for //
+        if ListFromStr[Index] == '\n':
+            if InComment and DoubleSlashComment:
+                InComment = False
+                DoubleSlashComment = False
+            Index += 1
+        # check for */ comment end
+        elif InComment and not DoubleSlashComment and ListFromStr[Index] == '*' and ListFromStr[Index+1] == '/':
+            ListFromStr[Index] = ' '
+            Index += 1
+            ListFromStr[Index] = ' '
+            Index += 1
             InComment = False
-            continue
+        # set comments to spaces
+        elif InComment:
+            ListFromStr[Index] = ' '
+            Index += 1
+        # check for // comment
+        elif ListFromStr[Index] == '/' and ListFromStr[Index+1] == '/' and ListFromStr[Index+2] != '\n':
+            InComment = True
+            DoubleSlashComment = True
         
-        if not InComment:
-            StrippedStr += StrPart
+        # check for /* comment start
+        elif ListFromStr[Index] == '/' and ListFromStr[Index+1] == '*':
+            ListFromStr[Index] = ' '
+            Index += 1
+            ListFromStr[Index] = ' '
+            Index += 1
+            InComment = True
+        else:
+            Index += 1
+
+    # restore from List to String
+    Str = "".join(ListFromStr)
+    Str = Str.rstrip(' ')
              
-    return StrippedStr
+    return Str
 
 def GetFinalTypeValue(Type, FieldName, TypedefDict, SUDict):
     Value = TypedefDict.get(Type)
@@ -1641,8 +1661,8 @@ def CheckPointerNullComparison(FullFileName):
                 if SearchInCache:
                     Type = FuncReturnTypeDict.get(PredVarStr)
                     if Type != None:
-                        if Type.find('*') == -1:
-                            PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_NO_BOOLEAN_OPERATOR, 'Predicate Expression: %s' % Exp, FileTable, Str[2])
+                        if Type.find('*') != -1:
+                            PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_COMPARISON_NULL_TYPE, 'Predicate Expression: %s' % Exp, FileTable, Str[2])
                         continue
                     
                     if PredVarStr in FuncReturnTypeDict:
@@ -2160,7 +2180,10 @@ def CheckFunctionHeaderConsistentWithDoxygenComment(FuncModifier, FuncHeader, Fu
                 PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'in Comment, \"%s\" does NOT contain doxygen contents ' % (Tag.replace('\n', '').replace('\r', '')), TableName, CommentId)
                 Index += 1
                 continue
-            if Tag.find('[') > 0:
+            LBPos = Tag.find('[')
+            RBPos = Tag.find(']')
+            ParamToLBContent = Tag[len('@param'):LBPos].strip()
+            if LBPos > 0 and len(ParamToLBContent)==0 and RBPos > LBPos:
                 InOutStr = ''
                 ModifierPartList = ParamModifier.split()
                 for Part in ModifierPartList:
