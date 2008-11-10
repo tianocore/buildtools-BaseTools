@@ -416,16 +416,15 @@ def ValidFile2(AllFiles, File, Ext=None, Workspace='', EfiSource='', EdkSource='
     
     # First check if File has R8 definition itself
     if File.find('$(EFI_SOURCE)') > -1 or File.find('$(EDK_SOURCE)') > -1:
-        File = File.replace('$(EFI_SOURCE)', EfiSource)
-        File = File.replace('$(EDK_SOURCE)', EdkSource)
-        NewFile = AllFiles[os.path.normpath(File)]
+        NewFile = File.replace('$(EFI_SOURCE)', EfiSource)
+        NewFile = NewFile.replace('$(EDK_SOURCE)', EdkSource)
+        NewFile = AllFiles[os.path.normpath(NewFile)]
         if NewFile != None:
             return True, NewFile
     
     # Second check the path with override value
     if OverrideDir != '' and OverrideDir != None:
-        File = os.path.join(OverrideDir, File)
-        NewFile = AllFiles[os.path.normpath(File)]
+        NewFile = AllFiles[os.path.normpath(os.path.join(OverrideDir, File))]
         if NewFile != None:
             return True, NewFile
     
