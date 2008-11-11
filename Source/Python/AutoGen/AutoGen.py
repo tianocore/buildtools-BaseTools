@@ -1112,7 +1112,8 @@ class PlatformAutoGen(AutoGen):
         # for those tools that have no option in module file, give it a empty string
         for Tool in ToolSet:
             BuildOptions[Tool] = ''
-            if Tool in self.ToolOption:
+            # no default options for USER_DEFINED module
+            if Module.ModuleType != 'USER_DEFINED' and Tool in self.ToolOption:
                 BuildOptions[Tool] += self.ToolOption[Tool]
             if Tool in ModuleOptions:
                 BuildOptions[Tool] += " " + ModuleOptions[Tool]

@@ -461,11 +461,8 @@ cleanlib:
             EntryPoint = "_ModuleEntryPoint"
 
         # USER_DEFINED modules should take care of tools definitions by its own
-        if self._AutoGenObject.ModuleType != "USER_DEFINED":
-            ToolsFlag = ["%s_FLAGS = %s" % (tool, self._AutoGenObject.BuildOption[tool]) \
-                         for tool in self._AutoGenObject.BuildOption]
-        else:
-            ToolsFlag = []
+        ToolsFlag = ["%s_FLAGS = %s" % (tool, self._AutoGenObject.BuildOption[tool]) \
+                     for tool in self._AutoGenObject.BuildOption]
 
         if "CC" not in self.PlatformInfo.ToolChainFamily:
             EdkLogger.error(
@@ -1089,12 +1086,8 @@ ${BEGIN}\t-@${create_directory_command}\n${END}\
             EdkLogger.error('build', FILE_OPEN_FAILURE, File=str(self._AutoGenObject),
                             ExtraData=self._AutoGenObject.CustomMakefile[self._FileType])
 
-        # USER_DEFINED modules should take care of tools definitions by its own
-        if self._AutoGenObject.ModuleType != "USER_DEFINED":
-            ToolsFlag = ["%s_FLAGS = %s" % (tool, self._AutoGenObject.BuildOption[tool]) \
-                         for tool in self._AutoGenObject.BuildOption]
-        else:
-            ToolsFlag = []
+        ToolsFlag = ["%s_FLAGS = %s" % (tool, self._AutoGenObject.BuildOption[tool]) \
+                     for tool in self._AutoGenObject.BuildOption]
 
         MakefileName = self._FILE_NAME_[self._FileType]
         MakefileTemplateDict = {
