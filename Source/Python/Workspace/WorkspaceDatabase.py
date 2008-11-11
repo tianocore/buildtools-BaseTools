@@ -342,7 +342,7 @@ class DscBuildData(PlatformBuildClassObject):
                                       )
             if not Status:
                 EdkLogger.error('build', FORMAT_INVALID, "Invalid or non-existent module",
-                                File=self._MetaFile, ExtraData=ModuleFile, Line=LineNo)
+                                File=self._MetaFile, ExtraData=Dummy, Line=LineNo)
             if ModuleFile in self._Modules:
                 continue
             Module = ModuleBuildClassObject()
@@ -370,7 +370,7 @@ class DscBuildData(PlatformBuildClassObject):
                                            GlobalData.gEcpSource,
                                           )
                 if not Status:
-                    EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=LibraryPath,
+                    EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=Dummy,
                                     File=self._MetaFile, Line=LineNo)
                 if LibraryClass == '' or LibraryClass == 'NULL':
                     self._NullLibraryNumber += 1
@@ -448,7 +448,7 @@ class DscBuildData(PlatformBuildClassObject):
                                           )
                 if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, File=self._MetaFile,
-                                    ExtraData=LibraryInstance, Line=LineNo)
+                                    ExtraData=Dummy, Line=LineNo)
                 if ModuleType != 'COMMON' and ModuleType not in SUP_MODULE_LIST:
                     EdkLogger.error('build', OPTION_UNKNOWN, "Unknown module type [%s]" % ModuleType,
                                     File=self._MetaFile, ExtraData=LibraryInstance, Line=LineNo)
@@ -480,7 +480,7 @@ class DscBuildData(PlatformBuildClassObject):
                                            GlobalData.gEcpSource,
                                           )
                 if not Status:
-                    EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
+                    EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=Dummy,
                                     File=self._MetaFile, Line=LineNo)
                 if File not in self._LibraryInstances:
                     self._LibraryInstances.append(File)
@@ -976,7 +976,7 @@ class DecBuildData(PackageBuildClassObject):
                                            Dir=self._PackageDir
                                           )
                 if not Status:
-                    EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
+                    EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=Dummy,
                                     File=self._MetaFile, Line=LineNo)
                 # avoid duplicate include path
                 if File not in self._Includes:
@@ -1005,7 +1005,7 @@ class DecBuildData(PackageBuildClassObject):
                                            Dir=self._PackageDir
                                           )
                 if not Status:
-                    EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
+                    EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=Dummy,
                                     File=self._MetaFile, Line=LineNo)
                 LibraryClassSet.add(LibraryClass)
                 LibraryClassDict[Arch, LibraryClass] = File
@@ -1341,9 +1341,9 @@ class InfBuildData(ModuleBuildClassObject):
             # make use some [nmake] section macros
             RecordList = self._RawData[MODEL_META_DATA_NMAKE, self._Arch, self._Platform]
             for Name,Value,Dummy,Arch,Platform,ID,LineNo in RecordList:
-                Name, Value = ReplaceMacros((Name, Value), GlobalData.gEdkGlobal, True)
                 Value = Value.replace('$(PROCESSOR)', self._Arch)
                 Name = Name.replace('$(PROCESSOR)', self._Arch)
+                Name, Value = ReplaceMacros((Name, Value), GlobalData.gEdkGlobal, True)
                 if Name == "IMAGE_ENTRY_POINT":
                     if self._ModuleEntryPointList == None:
                         self._ModuleEntryPointList = []
@@ -1363,7 +1363,7 @@ class InfBuildData(ModuleBuildClassObject):
                                                Dir=self._ModuleDir
                                               )
                     if not Status:
-                        EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
+                        EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=Dummy,
                                         File=self._MetaFile, Line=LineNo)
                     if self.Sources == None:
                         self._Sources = []
@@ -1575,7 +1575,7 @@ class InfBuildData(ModuleBuildClassObject):
                                            Dir=self._ModuleDir
                                           )
                 if not Status:
-                    EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
+                    EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=Dummy,
                                     File=self._MetaFile, Line=LineNo)
                 Target = Record[2]
                 FeatureFlag = Record[3]
@@ -1736,7 +1736,7 @@ class InfBuildData(ModuleBuildClassObject):
                                            GlobalData.gEcpSource
                                           )
                 if not Status:
-                    EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=File,
+                    EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=Dummy,
                                     File=self._MetaFile, Line=LineNo)
                 # parse this package now. we need it to get protocol/ppi/guid value
                 Package = self._Bdb[File, self._Arch]
