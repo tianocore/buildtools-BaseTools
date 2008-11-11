@@ -1335,7 +1335,7 @@ def Main():
                         Option.MakefileType, Option.SpawnMode, Option.ThreadNumber,
                         Option.SkipAutoGen, Option.Reparse, Option.SkuId)
         MyBuild.Launch()
-        MyBuild.DumpBuildData()
+        #MyBuild.DumpBuildData()
     except FatalError, X:
         if MyBuild != None:
             # for multi-thread build exits safely

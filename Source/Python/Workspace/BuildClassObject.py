@@ -187,7 +187,7 @@ class ModuleBuildClassObject(object):
         self.Packages                = []
         self.Pcds                    = {}
         self.BuildOptions            = {}
-        self.Depex                   = ''
+        self.Depex                   = {}
 
     ## Convert the class to a string
     #

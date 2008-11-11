@@ -82,6 +82,7 @@ gBuildRuleFile = 'Conf/build_rule.txt'
 gAutoGenCodeFileName = "AutoGen.c"
 gAutoGenHeaderFileName = "AutoGen.h"
 gAutoGenDepexFileName = "%(module_name)s.depex"
+gAutoGenSmmDepexFileName = "%(module_name)s.smm"
 
 ## Base class for AutoGen
 #
@@ -821,8 +822,11 @@ class PlatformAutoGen(AutoGen):
                     # for those forced library instance (NULL library), add a fake library class
                     if LibraryClassName.startswith("NULL"):
                         LibraryModule.LibraryClass.append(LibraryClassObject(LibraryClassName, [ModuleType]))
-                    elif LibraryModule.LibraryClass == None or len(LibraryModule.LibraryClass) == 0 \
-                         or ModuleType not in LibraryModule.LibraryClass[0].SupModList:
+                    elif LibraryModule.LibraryClass == None \
+                         or len(LibraryModule.LibraryClass) == 0 \
+                         or (ModuleType != 'USER_DEFINED'
+                             and ModuleType not in LibraryModule.LibraryClass[0].SupModList):
+                        # only USER_DEFINED can link against any library instance despite of its SupModList
                         EdkLogger.error("build", OPTION_MISSING,
                                         "Module type [%s] is not supported by library instance [%s]" \
                                         % (ModuleType, LibraryPath), File=self._MetaFile,
@@ -1073,11 +1077,8 @@ class PlatformAutoGen(AutoGen):
         for Key in Options:
             Family = Key[0]
             Target, Tag, Arch, Tool, Attr = Key[1].split("_")
-            # if no tool defined for the option, skip it
-            if Tool not in self.ToolPath:
-                continue
             # if tool chain family doesn't match, skip it
-            if Family != None and Family != "" and Family != self.ToolChainFamily[Tool]:
+            if Tool in self.ToolChainFamily and Family not in [None, ""] and Family != self.ToolChainFamily[Tool]:
                 continue
             # expand any wildcard
             if Target == "*" or Target == self.BuildTarget:
@@ -1106,12 +1107,13 @@ class PlatformAutoGen(AutoGen):
             PlatformModuleOptions = {}
 
         BuildOptions = {}
+        ToolSet = set(self.Workspace.ToolPath.keys() + ModuleOptions.keys() + PlatformOptions.keys()
+                      + PlatformModuleOptions.keys())
         # for those tools that have no option in module file, give it a empty string
-        for Tool in self.Workspace.ToolPath:
-            if Tool in self.ToolOption and Module.ModuleType != 'USER_DEFINED':
-                BuildOptions[Tool] = self.ToolOption[Tool]
-            else:
-                BuildOptions[Tool] = ''
+        for Tool in ToolSet:
+            BuildOptions[Tool] = ''
+            if Tool in self.ToolOption:
+                BuildOptions[Tool] += self.ToolOption[Tool]
             if Tool in ModuleOptions:
                 BuildOptions[Tool] += " " + ModuleOptions[Tool]
             if Tool in PlatformOptions:
@@ -1370,37 +1372,41 @@ class ModuleAutoGen(AutoGen):
     #
     def _GetDepexTokenList(self):
         if self._DepexList == None:
+            self._DepexList = {}
             if self.IsLibrary:
-                self._DepexList = []
                 return self._DepexList
+
+            if self.ModuleType == "DXE_SMM_DRIVER":
+                self._DepexList["DXE_DRIVER"] = []
+                self._DepexList["SMM_DRIVER"] = []
             else:
-                self._DepexList = self.Module.Depex
-            EdkLogger.verbose("DEPEX (%s) = %s" % (self.Name, self._DepexList))
-            if len(self._DepexList) == 0 or self._DepexList[0] not in ['BEFORE', 'AFTER']:
+                self._DepexList[self.ModuleType] = []
+
+            for ModuleType in self._DepexList:
+                DepexList = self._DepexList[ModuleType]
+                if len(DepexList) > 0 and DepexList[0] in ['BEFORE', 'AFTER']:
+                    continue
                 #
                 # Append depex from dependent libraries, if not "BEFORE", "AFTER" expresion
                 #
-                for Lib in self.DependentLibraryList:
-                    if Lib.Depex != None and Lib.Depex != []:
-                        if self._DepexList != []:
-                            self._DepexList.append('AND')
-                        self._DepexList.append('(')
-                        self._DepexList.extend(Lib.Depex)
-                        self._DepexList.append(')')
-                        EdkLogger.verbose("DEPEX (+%s) = %s" % (Lib.BaseName, self._DepexList))
-
-            for I in range(0, len(self._DepexList)):
-                Token = self._DepexList[I]
-                if Token.endswith(".inf"):  # module file name
-                    ModuleFile = os.path.normpath(Token)
-                    self._DepexList[I] = self.BuildDatabase[ModuleFile].Guid
+                for M in [self.Module] + self.DependentLibraryList:
+                    Inherited = False
+                    for D in M.Depex[self.Arch, ModuleType]:
+                        if DepexList != []:
+                            DepexList.append('AND')
+                        DepexList.append('(')
+                        DepexList.extend(D)
+                        DepexList.append(')')
+                        Inherited = True
+                    if Inherited:
+                        EdkLogger.verbose("DEPEX[%s] (+%s) = %s" % (ModuleType, M.BaseName, DepexList))
         return self._DepexList
 
-    ## Return the list of macro in module
+    ## Return the list of specification version required for the module
     #
-    #   @retval     list    The list of macro defined in module file
+    #   @retval     list    The list of specification defined in module file
     #
-    def _GetMacroList(self):
+    def _GetSpecification(self):
         return self.Module.Specification
 
     ## Tool option for the module build
@@ -1487,7 +1493,7 @@ class ModuleAutoGen(AutoGen):
 
             # if there's dxs file, don't use content in [depex] section to generate .depex file
             if FileType == "DEPENDENCY-EXPRESSION-FILE":
-                self._DepexList = []
+                self._DepexList = {}
 
             # no command, no build
             if RuleObject != None and len(RuleObject.CommandList) == 0:
@@ -1700,9 +1706,14 @@ class ModuleAutoGen(AutoGen):
             else:
                 IgoredAutoGenList.append(File)
 
-        if self.DepexList != []:
-            Dpx = GenDepex.DependencyExpression(self.DepexList, self.ModuleType, True)
-            DpxFile = gAutoGenDepexFileName % {"module_name" : self.Name}
+        for ModuleType in self.DepexList:
+            if len(self.DepexList[ModuleType]) == 0:
+                continue
+            Dpx = GenDepex.DependencyExpression(self.DepexList[ModuleType], ModuleType, True)
+            if ModuleType == 'SMM_DRIVER':
+                DpxFile = gAutoGenSmmDepexFileName % {"module_name" : self.Name}
+            else:
+                DpxFile = gAutoGenDepexFileName % {"module_name" : self.Name}
 
             if Dpx.Generate(path.join(self.OutputDir, DpxFile)):
                 AutoGenList.append(DpxFile)
@@ -1756,7 +1767,8 @@ class ModuleAutoGen(AutoGen):
     BuildType       = property(_GetBuildType)
     PcdIsDriver     = property(_GetPcdIsDriver)
     AutoGenVersion  = property(_GetAutoGenVersion)
-    Macro           = property(_GetMacroList)
+    Macro           = property(_GetSpecification)
+    Specification   = property(_GetSpecification)
 
     IsLibrary       = property(_IsLibrary)
 

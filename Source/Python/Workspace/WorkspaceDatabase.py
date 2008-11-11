@@ -333,9 +333,9 @@ class DscBuildData(PlatformBuildClassObject):
             LineNo = Record[6]
             # check the file existence
             #if not ValidFile(ModuleFile, '.inf'):
-            Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
-                                       ModuleFile, 
-                                       '.inf', 
+            Status, Dummy = ValidFile2(GlobalData.gAllFiles,
+                                       ModuleFile,
+                                       '.inf',
                                        GlobalData.gWorkspace,
                                        GlobalData.gEfiSource,
                                        GlobalData.gEcpSource,
@@ -362,9 +362,9 @@ class DscBuildData(PlatformBuildClassObject):
                 LibraryPath = NormPath(Record[1], self._Macros)
                 LineNo = Record[-1]
                 #if not ValidFile(LibraryPath, '.inf'):
-                Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
-                                           LibraryPath, 
-                                           '.inf', 
+                Status, Dummy = ValidFile2(GlobalData.gAllFiles,
+                                           LibraryPath,
+                                           '.inf',
                                            GlobalData.gWorkspace,
                                            GlobalData.gEfiSource,
                                            GlobalData.gEcpSource,
@@ -439,9 +439,9 @@ class DscBuildData(PlatformBuildClassObject):
                 LibraryClassSet.add(LibraryClass)
                 LibraryInstance = NormPath(LibraryInstance, self._Macros)
                 #if not ValidFile(LibraryInstance, '.inf'):
-                Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
-                                           LibraryInstance, 
-                                           '.inf', 
+                Status, Dummy = ValidFile2(GlobalData.gAllFiles,
+                                           LibraryInstance,
+                                           '.inf',
                                            GlobalData.gWorkspace,
                                            GlobalData.gEfiSource,
                                            GlobalData.gEcpSource,
@@ -472,9 +472,9 @@ class DscBuildData(PlatformBuildClassObject):
                 File = NormPath(Record[0], self._Macros)
                 LineNo = Record[-1]
                 #if not ValidFile(File, '.inf'):
-                Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
-                                           File, 
-                                           '.inf', 
+                Status, Dummy = ValidFile2(GlobalData.gAllFiles,
+                                           File,
+                                           '.inf',
                                            GlobalData.gWorkspace,
                                            GlobalData.gEfiSource,
                                            GlobalData.gEcpSource,
@@ -967,8 +967,8 @@ class DecBuildData(PackageBuildClassObject):
                 LineNo = Record[-1]
                 # validate the path
                 #if not ValidFile(File, Dir=self._PackageDir):
-                Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
-                                           File, 
+                Status, Dummy = ValidFile2(GlobalData.gAllFiles,
+                                           File,
                                            Ext=None,
                                            Workspace=GlobalData.gWorkspace,
                                            EfiSource=GlobalData.gEfiSource,
@@ -996,9 +996,9 @@ class DecBuildData(PackageBuildClassObject):
             for LibraryClass, File, Dummy, Arch, ID, LineNo in RecordList:
                 File = NormPath(File, self._Macros)
                 #if not ValidFile(File, Dir=self._PackageDir):
-                Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
-                                           File, 
-                                           Ext=None, 
+                Status, Dummy = ValidFile2(GlobalData.gAllFiles,
+                                           File,
+                                           Ext=None,
                                            Workspace=GlobalData.gWorkspace,
                                            EfiSource=GlobalData.gEfiSource,
                                            EdkSource=GlobalData.gEcpSource,
@@ -1192,7 +1192,7 @@ class InfBuildData(ModuleBuildClassObject):
     def _Clear(self):
         self._Header_               = None
         self._AutoGenVersion        = None
-        self.__MetaFile          = None
+        self.__MetaFile             = None
         self._BaseName              = None
         self._ModuleType            = None
         self._ComponentType         = None
@@ -1354,8 +1354,8 @@ class InfBuildData(ModuleBuildClassObject):
                         File = File[1:]
                     
                     #if not ValidFile(File, Dir=self._ModuleDir):
-                    Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
-                                               File, 
+                    Status, Dummy = ValidFile2(GlobalData.gAllFiles,
+                                               File,
                                                Ext=None,
                                                Workspace=GlobalData.gWorkspace,
                                                EfiSource=GlobalData.gEfiSource,
@@ -1566,8 +1566,8 @@ class InfBuildData(ModuleBuildClassObject):
                 File = NormPath(Record[1], self._Macros)
                 LineNo = Record[-1]
                 #if not ValidFile(File, Dir=self._ModuleDir):
-                Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
-                                           File, 
+                Status, Dummy = ValidFile2(GlobalData.gAllFiles,
+                                           File,
                                            Ext=None,
                                            Workspace=GlobalData.gWorkspace,
                                            EfiSource=GlobalData.gEfiSource,
@@ -1593,9 +1593,9 @@ class InfBuildData(ModuleBuildClassObject):
                 File = NormPath(Record[0], self._Macros)
                 LineNo = Record[-1]
                 #if not ValidFile(File, Dir=self._ModuleDir, OverrideDir=self._SourceOverridePath):
-                Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
-                                           File, 
-                                           Ext=None, 
+                Status, Dummy = ValidFile2(GlobalData.gAllFiles,
+                                           File,
+                                           Ext=None,
                                            Workspace=GlobalData.gWorkspace,
                                            EfiSource=GlobalData.gEfiSource,
                                            EdkSource=GlobalData.gEcpSource,
@@ -1728,9 +1728,9 @@ class InfBuildData(ModuleBuildClassObject):
                 File = NormPath(Record[0], self._Macros)
                 LineNo = Record[-1]
                 #if not ValidFile(File, '.dec'):
-                Status, Dummy = ValidFile2(GlobalData.gAllFiles, 
-                                           File, 
-                                           '.dec', 
+                Status, Dummy = ValidFile2(GlobalData.gAllFiles,
+                                           File,
+                                           '.dec',
                                            GlobalData.gWorkspace,
                                            GlobalData.gEfiSource,
                                            GlobalData.gEcpSource
@@ -1774,14 +1774,27 @@ class InfBuildData(ModuleBuildClassObject):
     ## Retrieve depedency expression
     def _GetDepex(self):
         if self._Depex == None:
-            self._Depex = []
-            RecordList = self._RawData[MODEL_EFI_DEPEX, self._Arch, self._Platform]
+            self._Depex = tdict(False, 2)
+            RecordList = self._RawData[MODEL_EFI_DEPEX, self._Arch]
+            Depex = {}
             for Record in RecordList:
                 Record = ReplaceMacros(Record, GlobalData.gEdkGlobal, False)
+                Arch = Record[3]
+                ModuleType = Record[4]
                 TokenList = Record[0].split()
+                if (Arch, ModuleType) not in Depex:
+                    Depex[Arch, ModuleType] = []
+                DepexList = Depex[Arch, ModuleType]
                 for Token in TokenList:
-                    if Token in DEPEX_SUPPORTED_OPCODE or Token.endswith(".inf"):
-                        self._Depex.append(Token)
+                    if Token in DEPEX_SUPPORTED_OPCODE:
+                        DepexList.append(Token)
+                    elif Token.endswith(".inf"):    # module file name
+                        ModuleFile = os.path.normpath(Token)
+                        Module = self.BuildDatabase[ModuleFile]
+                        if Module == None:
+                            EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Module is not found in active platform",
+                                            ExtraData=Token, File=self._MetaFile, Line=Record[-1])
+                        DepexList.append(Module.Guid)
                     else:
                         # get the GUID value now
                         Value = GuidValue(Token, self.Packages)
@@ -1789,7 +1802,9 @@ class InfBuildData(ModuleBuildClassObject):
                             PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
                             EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Value of [%s] is not found in" % Token,
                                             ExtraData=PackageList, File=self._MetaFile, Line=Record[-1])
-                        self._Depex.append(Value)
+                        DepexList.append(Value)
+            for Arch, ModuleType in Depex:
+                self._Depex[Arch, ModuleType] = Depex[Arch, ModuleType]
         return self._Depex
     
     ## Retrieve PCD for given type

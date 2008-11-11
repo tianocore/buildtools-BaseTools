@@ -21,6 +21,7 @@ from StringIO import StringIO
 from struct import pack
 from Common.BuildToolError import *
 from Common.Misc import SaveFileOnChange
+from Common.Misc import GuidStructureStringToGuidString
 from Common import EdkLogger as EdkLogger
 
 
@@ -40,6 +41,7 @@ gType2Phase = {
     "DXE_SAL_DRIVER"    :   "DXE",
     "UEFI_DRIVER"       :   "DXE",
     "UEFI_APPLICATION"  :   "DXE",
+    "SMM_DRIVER"        :   "DXE",
 }
 
 ## Convert dependency expression string into EFI internal representation
@@ -48,6 +50,22 @@ gType2Phase = {
 # convert it into its binary form.
 #
 class DependencyExpression:
+
+    ArchProtocols = set([
+                        '665e3ff6-46cc-11d4-9a38-0090273fc14d',     #   'gEfiBdsArchProtocolGuid'
+                        '26baccb1-6f42-11d4-bce7-0080c73c8881',     #   'gEfiCpuArchProtocolGuid'
+                        '26baccb2-6f42-11d4-bce7-0080c73c8881',     #   'gEfiMetronomeArchProtocolGuid'
+                        '1da97072-bddc-4b30-99f1-72a0b56fff2a',     #   'gEfiMonotonicCounterArchProtocolGuid'
+                        '27cfac87-46cc-11d4-9a38-0090273fc14d',     #   'gEfiRealTimeClockArchProtocolGuid'
+                        '27cfac88-46cc-11d4-9a38-0090273fc14d',     #   'gEfiResetArchProtocolGuid'
+                        'b7dfb4e1-052f-449f-87be-9818fc91b733',     #   'gEfiRuntimeArchProtocolGuid'
+                        'a46423e3-4617-49f1-b9ff-d1bfa9115839',     #   'gEfiSecurityArchProtocolGuid'
+                        '26baccb3-6f42-11d4-bce7-0080c73c8881',     #   'gEfiTimerArchProtocolGuid'
+                        '6441f818-6362-4e44-b570-7dba31dd2453',     #   'gEfiVariableWriteArchProtocolGuid'
+                        '1e5668e2-8481-11d4-bcf1-0080c73c8881',     #   'gEfiVariableArchProtocolGuid'
+                        '665e3ff5-46cc-11d4-9a38-0090273fc14d'      #   'gEfiWatchdogTimerArchProtocolGuid'
+                        ]
+                    )
 
     OpcodePriority = {
         "AND"   :   1,
@@ -108,6 +126,7 @@ class DependencyExpression:
     #   @param  ModuleType  The type of the module using the dependency expression
     #
     def __init__(self, Expression, ModuleType, Optimize=False):
+        self.ModuleType = ModuleType
         self.Phase = gType2Phase[ModuleType]
         if type(Expression) == type([]):
             self.ExpressionString = " ".join(Expression)
@@ -264,6 +283,18 @@ class DependencyExpression:
                     break
             NewOperand.append(Token)
 
+        # don't generate depex if only TRUE operand left
+        if self.ModuleType == 'PEIM' and len(NewOperand) == 1 and NewOperand[0] == 'TRUE':
+            self.PostfixNotation = []
+            return            
+
+        # don't generate depex if all operands are architecture protocols
+        if self.ModuleType in ['UEFI_DRIVER', 'DXE_DRIVER', 'DXE_RUNTIME_DRIVER', 'DXE_SAL_DRIVER', 'DXE_SMM_DRIVER'] and \
+           Op == 'AND' and \
+           self.ArchProtocols == set([GuidStructureStringToGuidString(Guid) for Guid in AllOperand]):
+            self.PostfixNotation = []
+            return
+
         if len(NewOperand) == 0:
             self.TokenList = list(AllOperand)
         else:
@@ -299,6 +330,9 @@ class DependencyExpression:
     #
     def Generate(self, File=None):
         Buffer = StringIO()
+        if len(self.PostfixNotation) == 0:
+            return False
+
         for Item in self.PostfixNotation:
             if Item in self.Opcode[self.Phase]:
                 Buffer.write(pack("B", self.Opcode[self.Phase][Item]))

@@ -247,7 +247,7 @@ DEST_DIR_DEBUG = $(DEBUG_DIR)
 #
 # Tools Flag Macro (from platform/module description file, tools_def.txt)
 #
-${BEGIN}${tool_code}_FLAGS = ${module_tool_flags}
+${BEGIN}${module_tool_flags}
 ${END}
 
 #
@@ -460,10 +460,12 @@ cleanlib:
             # R9 modules always use "_ModuleEntryPoint" as entry point
             EntryPoint = "_ModuleEntryPoint"
 
-        DefaultToolFlag = self.PlatformInfo.ToolOption.values()
         # USER_DEFINED modules should take care of tools definitions by its own
-        if self._AutoGenObject.ModuleType == "USER_DEFINED":
-            DefaultToolFlag = ["" for p in DefaultToolFlag]
+        if self._AutoGenObject.ModuleType != "USER_DEFINED":
+            ToolsFlag = ["%s_FLAGS = %s" % (tool, self._AutoGenObject.BuildOption[tool]) \
+                         for tool in self._AutoGenObject.BuildOption]
+        else:
+            ToolsFlag = []
 
         if "CC" not in self.PlatformInfo.ToolChainFamily:
             EdkLogger.error(
@@ -543,7 +545,7 @@ cleanlib:
             "module_debug_directory"    : self._AutoGenObject.DebugDir,
 
             "separator"                 : Separator,
-            "module_tool_flags"         : [self._AutoGenObject.BuildOption[tool] for tool in self.PlatformInfo.ToolPath],
+            "module_tool_flags"         : ToolsFlag,
 
             "tool_code"                 : self.PlatformInfo.ToolPath.keys(),
             "tool_path"                 : self.PlatformInfo.ToolPath.values(),
@@ -1016,7 +1018,7 @@ DEST_DIR_DEBUG = $(DEBUG_DIR)
 #
 # Tools Flag Macro (from platform/module description file, tools_def.txt)
 #
-${BEGIN}${tool_code}_FLAGS = ${module_tool_flags}
+${BEGIN}${module_tool_flags}
 ${END}
 
 #
@@ -1087,6 +1089,13 @@ ${BEGIN}\t-@${create_directory_command}\n${END}\
             EdkLogger.error('build', FILE_OPEN_FAILURE, File=str(self._AutoGenObject),
                             ExtraData=self._AutoGenObject.CustomMakefile[self._FileType])
 
+        # USER_DEFINED modules should take care of tools definitions by its own
+        if self._AutoGenObject.ModuleType != "USER_DEFINED":
+            ToolsFlag = ["%s_FLAGS = %s" % (tool, self._AutoGenObject.BuildOption[tool]) \
+                         for tool in self._AutoGenObject.BuildOption]
+        else:
+            ToolsFlag = []
+
         MakefileName = self._FILE_NAME_[self._FileType]
         MakefileTemplateDict = {
             "makefile_header"           : self._FILE_HEADER_[self._FileType],
@@ -1115,7 +1124,7 @@ ${BEGIN}\t-@${create_directory_command}\n${END}\
             "module_debug_directory"    : self._AutoGenObject.DebugDir,
 
             "separator"                 : Separator,
-            "module_tool_flags"         : [self._AutoGenObject.BuildOption[tool] for tool in self.PlatformInfo.ToolPath],
+            "module_tool_flags"         : ToolsFlag,
 
             "shell_command_code"        : self._SHELL_CMD_[self._FileType].keys(),
             "shell_command"             : self._SHELL_CMD_[self._FileType].values(),
