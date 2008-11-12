@@ -282,11 +282,11 @@ class WorkspaceAutoGen(AutoGen):
         # create makefile for platform
         Makefile = GenMake.TopLevelMakefile(self)
         if Makefile.Generate():
-            EdkLogger.verbose("Generated makefile for platform [%s] %s\n" %
-                           (self._MetaFile, self.ArchList))
+            EdkLogger.debug(EdkLogger.DEBUG_9, "Generated makefile for platform [%s] %s\n" %
+                            (self._MetaFile, self.ArchList))
         else:
-            EdkLogger.verbose("Skipped the generation of makefile for platform [%s] %s\n" %
-                           (self._MetaFile, self.ArchList))
+            EdkLogger.debug(EdkLogger.DEBUG_9, "Skipped the generation of makefile for platform [%s] %s\n" %
+                            (self._MetaFile, self.ArchList))
 
         if CreateDepsMakeFile:
             for Pa in self.AutoGenObjectList:
@@ -338,7 +338,7 @@ class PlatformAutoGen(AutoGen):
     #   @param      Arch            arch of the platform supports
     #
     def _Init(self, Workspace, PlatformFile, Target, Toolchain, Arch):
-        EdkLogger.verbose("\nAutoGen platform [%s] [%s]" % (PlatformFile, Arch))
+        EdkLogger.debug(EdkLogger.DEBUG_9, "AutoGen platform [%s] [%s]" % (PlatformFile, Arch))
         GlobalData.gProcessingFile = "%s [%s, %s, %s]" % (PlatformFile, Arch, Toolchain, Target)
 
         self._MetaFile = str(PlatformFile)
@@ -432,11 +432,11 @@ class PlatformAutoGen(AutoGen):
         # create makefile for platform
         Makefile = GenMake.PlatformMakefile(self)
         if Makefile.Generate():
-            EdkLogger.verbose("Generated makefile for platform [%s] [%s]\n" %
-                           (self._MetaFile, self.Arch))
+            EdkLogger.debug(EdkLogger.DEBUG_9, "Generated makefile for platform [%s] [%s]\n" %
+                            (self._MetaFile, self.Arch))
         else:
-            EdkLogger.verbose("Skipped the generation of makefile for platform [%s] [%s]\n" %
-                           (self._MetaFile, self.Arch))
+            EdkLogger.debug(EdkLogger.DEBUG_9, "Skipped the generation of makefile for platform [%s] [%s]\n" %
+                            (self._MetaFile, self.Arch))
         self.IsMakeFileCreated = True
 
     ## Return the platform build data object
@@ -966,8 +966,8 @@ class PlatformAutoGen(AutoGen):
                 ToPcd.SkuInfoList = FromPcd.SkuInfoList
 
         if ToPcd.DatumType == "VOID*" and ToPcd.MaxDatumSize in ['', None]:
-            EdkLogger.verbose("No MaxDatumSize specified for PCD %s.%s" \
-                              % (ToPcd.TokenSpaceGuidCName, ToPcd.TokenCName))
+            EdkLogger.debug(EdkLogger.DEBUG_9, "No MaxDatumSize specified for PCD %s.%s" \
+                            % (ToPcd.TokenSpaceGuidCName, ToPcd.TokenCName))
             Value = ToPcd.DefaultValue
             if Value in [None, '']:
                 ToPcd.MaxDatumSize = 1
@@ -1173,7 +1173,7 @@ class ModuleAutoGen(AutoGen):
     #   @param      PlatformFile        Platform meta-file
     #
     def _Init(self, Workspace, ModuleFile, Target, Toolchain, Arch, PlatformFile):
-        EdkLogger.verbose("\nAutoGen module [%s] [%s]" % (ModuleFile, Arch))
+        EdkLogger.debug(EdkLogger.DEBUG_9, "AutoGen module [%s] [%s]" % (ModuleFile, Arch))
         GlobalData.gProcessingFile = "%s [%s, %s, %s]" % (ModuleFile, Arch, Toolchain, Target)
 
         self.Workspace = Workspace
@@ -1385,8 +1385,6 @@ class ModuleAutoGen(AutoGen):
 
             for ModuleType in self._DepexList:
                 DepexList = self._DepexList[ModuleType]
-                if len(DepexList) > 0 and DepexList[0] in ['BEFORE', 'AFTER']:
-                    continue
                 #
                 # Append depex from dependent libraries, if not "BEFORE", "AFTER" expresion
                 #
@@ -1400,7 +1398,11 @@ class ModuleAutoGen(AutoGen):
                         DepexList.append(')')
                         Inherited = True
                     if Inherited:
-                        EdkLogger.verbose("DEPEX[%s] (+%s) = %s" % (ModuleType, M.BaseName, DepexList))
+                        if DepexList[0] in ['BEFORE', 'AFTER']:
+                            break
+                        EdkLogger.verbose("DEPEX[%s] (+%s) = %s" % (self.Name, M.BaseName, DepexList))
+                if len(DepexList) > 0:
+                    EdkLogger.verbose('')
         return self._DepexList
 
     ## Return the list of specification version required for the module
@@ -1457,8 +1459,8 @@ class ModuleAutoGen(AutoGen):
             SourceFile = F.SourceFile
             # match tool chain
             if F.TagName != "" and F.TagName != self.ToolChain:
-                EdkLogger.verbose("The toolchain [%s] for processing file [%s] is found, "
-                                  "but [%s] is needed" % (F.TagName, F.SourceFile, self.ToolChain))
+                EdkLogger.debug(EdkLogger.DEBUG_9, "The toolchain [%s] for processing file [%s] is found, "
+                                "but [%s] is needed" % (F.TagName, F.SourceFile, self.ToolChain))
                 continue
             # match tool chain family
             if F.ToolChainFamily != "" and F.ToolChainFamily != ToolChainFamily:
@@ -1672,11 +1674,11 @@ class ModuleAutoGen(AutoGen):
         else:
             Makefile = GenMake.CustomMakefile(self)
         if Makefile.Generate():
-            EdkLogger.verbose("Generated makefile for module %s [%s]" %
-                           (self.Name, self.Arch))
+            EdkLogger.debug(EdkLogger.DEBUG_9, "Generated makefile for module %s [%s]" %
+                            (self.Name, self.Arch))
         else:
-            EdkLogger.verbose("Skipped the generation of makefile for module %s [%s]" %
-                              (self.Name, self.Arch))
+            EdkLogger.debug(EdkLogger.DEBUG_9, "Skipped the generation of makefile for module %s [%s]" %
+                            (self.Name, self.Arch))
 
         self.IsMakeFileCreated = True
 
@@ -1722,14 +1724,14 @@ class ModuleAutoGen(AutoGen):
                 IgoredAutoGenList.append(DpxFile)
 
         if IgoredAutoGenList == []:
-            EdkLogger.verbose("Generated [%s] files for module %s [%s]" %
-                           (" ".join(AutoGenList), self.Name, self.Arch))
+            EdkLogger.debug(EdkLogger.DEBUG_9, "Generated [%s] files for module %s [%s]" %
+                            (" ".join(AutoGenList), self.Name, self.Arch))
         elif AutoGenList == []:
-            EdkLogger.verbose("Skipped the generation of [%s] files for module %s [%s]" %
-                           (" ".join(IgoredAutoGenList), self.Name, self.Arch))
+            EdkLogger.debug(EdkLogger.DEBUG_9, "Skipped the generation of [%s] files for module %s [%s]" %
+                            (" ".join(IgoredAutoGenList), self.Name, self.Arch))
         else:
-            EdkLogger.verbose("Generated [%s] (skipped %s) files for module %s [%s]" %
-                           (" ".join(AutoGenList), " ".join(IgoredAutoGenList), self.Name, self.Arch))
+            EdkLogger.debug(EdkLogger.DEBUG_9, "Generated [%s] (skipped %s) files for module %s [%s]" %
+                            (" ".join(AutoGenList), " ".join(IgoredAutoGenList), self.Name, self.Arch))
 
         self.IsCodeFileCreated = True
         return AutoGenList

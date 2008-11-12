@@ -932,7 +932,8 @@ cleanlib:
                             FileStack.append(FilePath)
                         break
                     else:
-                        EdkLogger.verbose("%s included by %s was not found in any given path:\n\t%s" % (Inc, F, "\n\t".join(SearchPathList)))
+                        EdkLogger.debug(EdkLogger.DEBUG_9, "%s included by %s was not found"\
+                                        "in any given path:\n\t%s" % (Inc, F, "\n\t".join(SearchPathList)))
 
                 if not MacroUsedByIncludedFile:
                     if F == File:
