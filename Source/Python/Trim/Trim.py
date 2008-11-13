@@ -328,7 +328,7 @@ def TrimR8SourceCode(Source, Target):
             NewLines = Re.sub(Repl, NewLines)
 
     # save all lines if trimmed
-    if NewLines == Lines:
+    if Source == Target and NewLines == Lines:
         return
     f = open (Target,'wb')
     f.write(NewLines)
