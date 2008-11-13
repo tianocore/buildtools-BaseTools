@@ -39,7 +39,7 @@ gPragmaPattern = re.compile("^\s*#pragma\s+pack", re.MULTILINE)
 ## Regular expression for matching HEX number
 gHexNumberPattern = re.compile("0[xX]([0-9a-fA-F]+)", re.MULTILINE)
 ## Regular expression for matching "Include ()" in asl file
-gAslIncludePattern = re.compile("^\s*Include\s*\(([^\(\)]+)\)\s*$", re.MULTILINE)
+gAslIncludePattern = re.compile("^\s*[iI]nclude\s*\(([^\(\)]+)\)", re.MULTILINE)
 ## Patterns used to convert EDK conventions to EDK2 ECP conventions
 gImportCodePatterns = [
     [
@@ -320,10 +320,16 @@ def TrimR8SourceCode(Source, Target):
     Lines = f.read()
     f.close()
 
+    NewLines = None
     for Re,Repl in gImportCodePatterns:
-        Lines = Re.sub(Repl, Lines)
+        if NewLines == None:
+            NewLines = Re.sub(Repl, Lines)
+        else:
+            NewLines = Re.sub(Repl, NewLines)
 
-    # save all lines trimmed
+    # save all lines if trimmed
+    if NewLines == Lines:
+        return
     f = open (Target,'w')
     f.write(Lines)
     f.close()
