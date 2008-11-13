@@ -48,7 +48,7 @@ gImportCodePatterns = [
 \\1  STATIC EFI_PEI_PPI_DESCRIPTOR gEcpPeiPciCfgPpiList = {
 \\1    (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST,
 \\1    &gEcpPeiPciCfgPpiGuid,
-\\1    &\\2
+\\1    \\2
 \\1  };
 \\1  (**PeiServices).InstallPpi (PeiServices, gEcpPeiPciCfgPpiList);
 \\1}'''
@@ -60,7 +60,7 @@ gImportCodePatterns = [
 \\1  STATIC EFI_PEI_PPI_DESCRIPTOR gEcpPeiPciCfgPpiList = {
 \\1    (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST,
 \\1    &gEcpPeiPciCfgPpiGuid,
-\\1    &\\2
+\\1    \\2
 \\1  };
 \\1  (**PeiServices).InstallPpi (PeiServices, gEcpPeiPciCfgPpiList);
 \\1}'''
@@ -91,8 +91,8 @@ gImportCodePatterns = [
         '\\1EfiCreateEventLegacyBoot (\\2\\3;'
     ],
     [
-        re.compile("(PEI_PCI_CFG_PPI)", re.MULTILINE),
-        'ECP_\\1'
+        re.compile("(\W)(PEI_PCI_CFG_PPI)(\W)", re.MULTILINE),
+        '\\1ECP_\\2\\3'
     ]
 ]
 
@@ -109,7 +109,11 @@ gIncludedAslFile = []
 # @param  Convert   If True, convert standard HEX format to MASM format
 #
 def TrimPreprocessedFile(Source, Target, Convert):
-    f = open (Source, 'r')
+    try:
+        f = open (Source, 'r')
+    except:
+        EdkLogger.error("Trim", FILE_OPEN_FAILURE, ExtraData=Source)
+
     # read whole file
     Lines = f.readlines()
     f.close()
@@ -173,7 +177,10 @@ def TrimPreprocessedFile(Source, Target, Convert):
         NewLines = Lines
 
     # save to file
-    f = open (Target, 'w')
+    try:
+        f = open (Target, 'w')
+    except:
+        EdkLogger.error("Trim", FILE_OPEN_FAILURE, ExtraData=Target)
     f.writelines(NewLines)
     f.close()
 
@@ -186,7 +193,10 @@ def TrimPreprocessedFile(Source, Target, Convert):
 # @param  Target    File to store the trimmed content
 #
 def TrimPreprocessedVfr(Source, Target):
-    f = open (Source,'r')
+    try:
+        f = open (Source,'r')
+    except:
+        EdkLogger.error("Trim", FILE_OPEN_FAILURE, ExtraData=Source)
     # read whole file
     Lines = f.readlines()
     f.close()
@@ -232,7 +242,10 @@ def TrimPreprocessedVfr(Source, Target):
                     Lines[i] = "\n"
 
     # save all lines trimmed
-    f = open (Target,'w')
+    try:
+        f = open (Target,'w')
+    except:
+        EdkLogger.error("Trim", FILE_OPEN_FAILURE, ExtraData=Target)
     f.writelines(Lines)
     f.close()
 
@@ -245,16 +258,23 @@ def DoInclude(Source, Indent=''):
         return []
     gIncludedAslFile.append(Source)
 
-    for Line in open(Source,'r'):
+    try:
+        F = open(Source,'r')
+    except:
+        EdkLogger.error("Trim", FILE_OPEN_FAILURE, ExtraData=Source)
+
+    for Line in F:
         Result = gAslIncludePattern.findall(Line)
         if len(Result) == 0:
             NewFileContent.append("%s%s" % (Indent, Line))
             continue
         CurrentIndent = Indent + Result[0][0]
         IncludedFile = Result[0][1]
-        print IncludedFile
         NewFileContent.extend(DoInclude(IncludedFile, CurrentIndent))
+
     gIncludedAslFile.pop()
+    F.close()
+
     return NewFileContent
 
 
@@ -278,7 +298,11 @@ def TrimAslFile(Source, Target):
     #    EdkLogger.error("Trim", FILE_OPEN_FAILURE, ExtraData=str(X))
 
     # save all lines trimmed
-    f = open (Target,'w')
+    try:
+        f = open (Target,'w')
+    except:
+        EdkLogger.error("Trim", FILE_OPEN_FAILURE, ExtraData=Target)
+
     f.writelines(Lines)
     f.close()
 
@@ -347,7 +371,10 @@ def TrimR8SourceCode(Source, Target):
     EdkLogger.verbose("\t%s -> %s" % (Source, Target))
     CreateDirectory(os.path.dirname(Target))
 
-    f = open (Source,'rb')
+    try:
+        f = open (Source,'rb')
+    except:
+        EdkLogger.error("Trim", FILE_OPEN_FAILURE, ExtraData=Source)
     # read whole file
     Lines = f.read()
     f.close()
@@ -362,7 +389,11 @@ def TrimR8SourceCode(Source, Target):
     # save all lines if trimmed
     if Source == Target and NewLines == Lines:
         return
-    f = open (Target,'wb')
+
+    try:
+        f = open (Target,'wb')
+    except:
+        EdkLogger.error("Trim", FILE_OPEN_FAILURE, ExtraData=Target)
     f.write(NewLines)
     f.close()
 
@@ -450,9 +481,23 @@ def Main():
             if CommandOptions.OutputFile == None:
                 CommandOptions.OutputFile = os.path.splitext(InputFile)[0] + '.iii'
             TrimPreprocessedFile(InputFile, CommandOptions.OutputFile, CommandOptions.ConvertHex)
-    except Exception, e:
+    except FatalError, X:
+        import platform
         import traceback
-        print traceback.format_exc()
+        if CommandOptions != None and CommandOptions.LogLevel <= EdkLogger.DEBUG_9:
+            EdkLogger.quiet("(Python %s on %s) " % (platform.python_version(), sys.platform) + traceback.format_exc())
+        return 1
+    except:
+        import traceback
+        import platform
+        EdkLogger.error(
+                    "\nTrim",
+                    CODE_ERROR,
+                    "Unknown fatal error when trimming [%s]" % InputFile,
+                    ExtraData="\n(Please send email to dev@buildtools.tianocore.org for help, attaching following call stack trace!)\n",
+                    RaiseError=False
+                    )
+        EdkLogger.quiet("(Python %s on %s) " % (platform.python_version(), sys.platform) + traceback.format_exc())
         return 1
 
     return 0
