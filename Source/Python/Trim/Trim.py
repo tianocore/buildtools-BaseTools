@@ -90,10 +90,10 @@ gImportCodePatterns = [
         re.compile("(\s*)\S*CreateEvent\s*\([\s\n]*EFI_EVENT_SIGNAL_LEGACY_BOOT[^,]*,((?:[^;]+\n)+)(\s*\));", re.MULTILINE),
         '\\1EfiCreateEventLegacyBoot (\\2\\3;'
     ],
-    [
-        re.compile("(\W)(PEI_PCI_CFG_PPI)(\W)", re.MULTILINE),
-        '\\1ECP_\\2\\3'
-    ]
+#    [
+#        re.compile("(\W)(PEI_PCI_CFG_PPI)(\W)", re.MULTILINE),
+#        '\\1ECP_\\2\\3'
+#    ]
 ]
 
 ## file cache to avoid circular include in ASL file
