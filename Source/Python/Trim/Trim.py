@@ -315,7 +315,7 @@ def TrimR8SourceCode(Source, Target):
     EdkLogger.verbose("\t%s -> %s" % (Source, Target))
     CreateDirectory(os.path.dirname(Target))
 
-    f = open (Source,'r')
+    f = open (Source,'rb')
     # read whole file
     Lines = f.read()
     f.close()
@@ -330,8 +330,8 @@ def TrimR8SourceCode(Source, Target):
     # save all lines if trimmed
     if NewLines == Lines:
         return
-    f = open (Target,'w')
-    f.write(Lines)
+    f = open (Target,'wb')
+    f.write(NewLines)
     f.close()
 
 
