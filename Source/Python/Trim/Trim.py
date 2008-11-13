@@ -26,7 +26,7 @@ from Common.Misc import *
 import Common.EdkLogger as EdkLogger
 
 # Version and Copyright
-__version_number__ = "0.04"
+__version_number__ = "0.10"
 __version__ = "%prog Version " + __version_number__
 __copyright__ = "Copyright (c) 2007-2008, Intel Corporation. All rights reserved."
 
@@ -249,6 +249,11 @@ def TrimPreprocessedVfr(Source, Target):
     f.writelines(Lines)
     f.close()
 
+## Read the content  ASL file, including ASL included, recursively
+#
+# @param  Source    File to be read
+# @param  Indent    Spaces before the Include() statement
+#
 def DoInclude(Source, Indent=''):
     NewFileContent = []
     # avoid A "include" B and B "include" A
@@ -280,9 +285,7 @@ def DoInclude(Source, Indent=''):
 
 ## Trim ASL file
 #
-# Replace ASL include style with C include style.
-#
-#   Include ("header.h") => #include "header.h"
+# Replace ASL include statement with the content the included file
 #
 # @param  Source    File to be trimmed
 # @param  Target    File to store the trimmed content
@@ -294,8 +297,7 @@ def TrimAslFile(Source, Target):
         SourceDir = '.'
     os.chdir(SourceDir)
     Lines = DoInclude(Source)
-    #except BaseException, X:
-    #    EdkLogger.error("Trim", FILE_OPEN_FAILURE, ExtraData=str(X))
+    os.chdir(Cwd)
 
     # save all lines trimmed
     try:

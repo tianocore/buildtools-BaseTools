@@ -1395,6 +1395,8 @@ class ModuleAutoGen(AutoGen):
                             DepexList.append('AND')
                         DepexList.append('(')
                         DepexList.extend(D)
+                        if DepexList[-1] == 'END':  # no need of a END at this time
+                            DepexList.pop()
                         DepexList.append(')')
                         Inherited = True
                     if Inherited:
