@@ -58,11 +58,11 @@ gImportCodePatterns = [
         re.compile('^(\s*)\(\*PeiServices\)->PciCfg\s*=\s*([^;\s]+);', re.MULTILINE),
         '''\\1{
 \\1  STATIC EFI_PEI_PPI_DESCRIPTOR gEcpPeiPciCfgPpiList = {
-\\1    (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST,
+\\1    (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST),
 \\1    &gEcpPeiPciCfgPpiGuid,
 \\1    \\2
 \\1  };
-\\1  (**PeiServices).InstallPpi (PeiServices, gEcpPeiPciCfgPpiList);
+\\1  (**PeiServices).InstallPpi (PeiServices, &gEcpPeiPciCfgPpiList);
 \\1}'''
     ],
 
@@ -345,11 +345,11 @@ def TrimR8Sources(Source, Target):
 #   (**PeiServices\).PciCfg = <*>;
 #   =>  {
 #         STATIC EFI_PEI_PPI_DESCRIPTOR gEcpPeiPciCfgPpiList = {
-#         (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST,
+#         (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST),
 #         &gEcpPeiPciCfgPpiGuid,
 #         <*>
 #       };
-#       (**PeiServices).InstallPpi (PeiServices, gEcpPeiPciCfgPpiList);
+#       (**PeiServices).InstallPpi (PeiServices, &gEcpPeiPciCfgPpiList);
 #
 #   <*>Modify(<*>)
 #   =>  PeiLibPciCfgModify (<*>)
