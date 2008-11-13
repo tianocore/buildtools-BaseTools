@@ -39,7 +39,7 @@ gPragmaPattern = re.compile("^\s*#pragma\s+pack", re.MULTILINE)
 ## Regular expression for matching HEX number
 gHexNumberPattern = re.compile("0[xX]([0-9a-fA-F]+)", re.MULTILINE)
 ## Regular expression for matching "Include ()" in asl file
-gAslIncludePattern = re.compile("^\s*[iI]nclude\s*\(([^\(\)]+)\)", re.MULTILINE)
+gAslIncludePattern = re.compile("^(\s*)[iI]nclude\s*\(\"?([^\"\(\)]+)\"\)", re.MULTILINE)
 ## Patterns used to convert EDK conventions to EDK2 ECP conventions
 gImportCodePatterns = [
     [
@@ -48,7 +48,7 @@ gImportCodePatterns = [
 \\1  STATIC EFI_PEI_PPI_DESCRIPTOR gEcpPeiPciCfgPpiList = {
 \\1    (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST,
 \\1    &gEcpPeiPciCfgPpiGuid,
-\\1    \\2
+\\1    &\\2
 \\1  };
 \\1  (**PeiServices).InstallPpi (PeiServices, gEcpPeiPciCfgPpiList);
 \\1}'''
@@ -60,7 +60,7 @@ gImportCodePatterns = [
 \\1  STATIC EFI_PEI_PPI_DESCRIPTOR gEcpPeiPciCfgPpiList = {
 \\1    (EFI_PEI_PPI_DESCRIPTOR_PPI | EFI_PEI_PPI_DESCRIPTOR_TERMINATE_LIST,
 \\1    &gEcpPeiPciCfgPpiGuid,
-\\1    \\2
+\\1    &\\2
 \\1  };
 \\1  (**PeiServices).InstallPpi (PeiServices, gEcpPeiPciCfgPpiList);
 \\1}'''
@@ -89,8 +89,15 @@ gImportCodePatterns = [
     [
         re.compile("(\s*)\S*CreateEvent\s*\([\s\n]*EFI_EVENT_SIGNAL_LEGACY_BOOT[^,]*,((?:[^;]+\n)+)(\s*\));", re.MULTILINE),
         '\\1EfiCreateEventLegacyBoot (\\2\\3;'
+    ],
+    [
+        re.compile("(PEI_PCI_CFG_PPI)", re.MULTILINE),
+        'ECP_\\1'
     ]
 ]
+
+## file cache to avoid circular include in ASL file
+gIncludedAslFile = []
 
 ## Trim preprocessed source code
 #
@@ -229,6 +236,28 @@ def TrimPreprocessedVfr(Source, Target):
     f.writelines(Lines)
     f.close()
 
+def DoInclude(Source, Indent=''):
+    NewFileContent = []
+    # avoid A "include" B and B "include" A
+    if Source in gIncludedAslFile:
+        EdkLogger.warn("Trim", "Circular include", 
+                       ExtraData= "%s -> %s" % (" -> ".join(gIncludedAslFile), Source))
+        return []
+    gIncludedAslFile.append(Source)
+
+    for Line in open(Source,'r'):
+        Result = gAslIncludePattern.findall(Line)
+        if len(Result) == 0:
+            NewFileContent.append("%s%s" % (Indent, Line))
+            continue
+        CurrentIndent = Indent + Result[0][0]
+        IncludedFile = Result[0][1]
+        print IncludedFile
+        NewFileContent.extend(DoInclude(IncludedFile, CurrentIndent))
+    gIncludedAslFile.pop()
+    return NewFileContent
+
+
 ## Trim ASL file
 #
 # Replace ASL include style with C include style.
@@ -239,15 +268,18 @@ def TrimPreprocessedVfr(Source, Target):
 # @param  Target    File to store the trimmed content
 #
 def TrimAslFile(Source, Target):
-    f = open (Source,'r')
-    # read whole file
-    Lines = f.read()
-    f.close()
-    Lines = gAslIncludePattern.sub("#include \\1", Lines)
+    Cwd = os.getcwd()
+    SourceDir = os.path.dirname(Source)
+    if SourceDir == '':
+        SourceDir = '.'
+    os.chdir(SourceDir)
+    Lines = DoInclude(Source)
+    #except BaseException, X:
+    #    EdkLogger.error("Trim", FILE_OPEN_FAILURE, ExtraData=str(X))
 
     # save all lines trimmed
     f = open (Target,'w')
-    f.write(Lines)
+    f.writelines(Lines)
     f.close()
 
 ## Trim EDK source code file(s)
@@ -419,7 +451,8 @@ def Main():
                 CommandOptions.OutputFile = os.path.splitext(InputFile)[0] + '.iii'
             TrimPreprocessedFile(InputFile, CommandOptions.OutputFile, CommandOptions.ConvertHex)
     except Exception, e:
-        print e
+        import traceback
+        print traceback.format_exc()
         return 1
 
     return 0
