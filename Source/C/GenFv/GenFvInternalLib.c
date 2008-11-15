@@ -1170,7 +1170,7 @@ Returns:
     SecCoreEntryAddressPtr  = (EFI_PHYSICAL_ADDRESS *) ((UINTN) FvImage->Eof - IPF_SALE_ENTRY_ADDRESS_OFFSET);
     *SecCoreEntryAddressPtr = SecCorePhysicalAddress;
 
-  } else if (MachineType == EFI_IMAGE_MACHINE_IA32) {
+  } else if (MachineType == EFI_IMAGE_MACHINE_IA32 || MachineType == EFI_IMAGE_MACHINE_X64) {
     //
     // Get the location to update
     //
