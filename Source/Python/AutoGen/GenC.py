@@ -968,6 +968,11 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
             AutoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED %s UINT8 %s%s = %s;\n' % (Const, PcdVariableName, Array, Value))
             AutoGenH.Append('extern %s UINT8 %s%s;\n' %(Const, PcdVariableName, Array))
             AutoGenH.Append('#define %s  %s%s\n' %(GetModeName, Type, PcdVariableName))
+        elif Pcd.Type == TAB_PCDS_PATCHABLE_IN_MODULE:
+            AutoGenH.Append('#define %s  %s\n' %(PcdValueName, Value))
+            AutoGenC.Append('%s %s %s = %s;\n' %(Const, Pcd.DatumType, PcdVariableName, PcdValueName))
+            AutoGenH.Append('extern %s  %s  %s%s;\n' % (Const, Pcd.DatumType, PcdVariableName, Array))
+            AutoGenH.Append('#define %s  %s%s\n' % (GetModeName, Type, PcdVariableName))
         else:
             AutoGenH.Append('#define %s  %s\n' %(PcdValueName, Value))
             AutoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED %s %s %s = %s;\n' %(Const, Pcd.DatumType, PcdVariableName, PcdValueName))
