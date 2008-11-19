@@ -253,6 +253,8 @@ CVfrBufferConfig::Select (
         if (p->mId == NULL || strcmp (p->mId, Id) != 0) {
           continue;
         }
+      } else if (p->mId != NULL) {
+        continue;
       }
 
       mItemListPos = p;
@@ -278,6 +280,10 @@ CVfrBufferConfig::Write (
   SConfigItem   *pItem;
   SConfigInfo   *pInfo;
 
+  if ((Ret = Select (Name)) != 0) {
+    return Ret;
+  }
+
   switch (Mode) {
   case 'a' : // add
     if (Select (Name, Id) != 0) {
@@ -297,7 +303,7 @@ CVfrBufferConfig::Write (
       for (pInfo = mItemListPos->mInfoStrList; pInfo != NULL; pInfo = pInfo->mNext) {
         if (pInfo->mOffset == Offset) {
           // check if the value and width are the same; return error if not
-          if (pInfo->mWidth != Width || memcmp(pInfo->mValue, &Value, Width) != 0) {
+          if ((Id != NULL) && (pInfo->mWidth != Width || memcmp(pInfo->mValue, &Value, Width) != 0)) {
             return VFR_RETURN_DEFAULT_VALUE_REDEFINED;
           }
           return 0;
@@ -312,10 +318,6 @@ CVfrBufferConfig::Write (
     break;
 
   case 'd' : // delete
-    if ((Ret = Select (Name, Id)) != 0) {
-      return Ret;
-    }
-
     if (mItemListHead == mItemListPos) {
       mItemListHead = mItemListPos->mNext;
       delete mItemListPos;
@@ -334,10 +336,6 @@ CVfrBufferConfig::Write (
     break;
 
   case 'i' : // set info
-    if ((Ret = Select (Name, Id)) != 0) {
-      return Ret;
-    }
-
     if (mItemListPos->mId != NULL) {
       delete mItemListPos->mId;
     }
@@ -384,6 +382,26 @@ CVfrBufferConfig::OutputCFile (
   }
 
   for (Item = mItemListHead; Item != NULL; Item = Item->mNext) {
+    if (Item->mId != NULL || Item->mInfoStrList == NULL) {
+      continue;
+    }
+    fprintf (pFile, "\nunsigned char %s%sBlockName[] = {", BaseName, Item->mName);
+
+    TotalLen = sizeof (UINT32);
+    for (Info = Item->mInfoStrList; Info != NULL; Info = Info->mNext) {
+      TotalLen += sizeof (UINT16) * 2;
+    }
+    Output.WriteLine (pFile, BYTES_PRE_LINE, "  ", (CHAR8 *)&TotalLen, sizeof (UINT32));
+
+    for (Info = Item->mInfoStrList; Info != NULL; Info = Info->mNext) {
+      fprintf (pFile, "\n");
+      Output.WriteLine (pFile, BYTES_PRE_LINE, "  ", (CHAR8 *)&Info->mOffset, sizeof (UINT16));
+      Output.WriteLine (pFile, BYTES_PRE_LINE, "  ", (CHAR8 *)&Info->mWidth, sizeof (UINT16));
+    }
+    fprintf (pFile, "\n};\n");
+  }
+
+  for (Item = mItemListHead; Item != NULL; Item = Item->mNext) {
     if (Item->mId != NULL && Item->mInfoStrList != NULL) {
       fprintf (pFile, "\nunsigned char %s%sDefault%s[] = {", BaseName, Item->mName, Item->mId);
 
@@ -394,6 +412,7 @@ CVfrBufferConfig::OutputCFile (
       Output.WriteLine (pFile, BYTES_PRE_LINE, "  ", (CHAR8 *)&TotalLen, sizeof (UINT32));
 
       for (Info = Item->mInfoStrList; Info != NULL; Info = Info->mNext) {
+        fprintf (pFile, "\n");
         Output.WriteLine (pFile, BYTES_PRE_LINE, "  ", (CHAR8 *)&Info->mOffset, sizeof (UINT16));
         Output.WriteLine (pFile, BYTES_PRE_LINE, "  ", (CHAR8 *)&Info->mWidth, sizeof (UINT16));
         if (Info->mNext == NULL) {
@@ -401,9 +420,8 @@ CVfrBufferConfig::OutputCFile (
         } else {
           Output.WriteLine (pFile, BYTES_PRE_LINE, "  ", (CHAR8 *)Info->mValue, Info->mWidth);
         }
-        fprintf (pFile, "\n"); 
       }
-      fprintf (pFile, "};\n"); 
+      fprintf (pFile, "\n};\n");
     }
   }
 }
@@ -521,7 +539,7 @@ _STR2U32 (
     }
     if (c >= '0' && c <= '9') {
       Value += (c - '0');
-    } 
+    }
   }
 
   return Value;
@@ -538,7 +556,7 @@ CVfrVarDataTypeDB::RegisterNewType (
 
 EFI_VFR_RETURN_CODE
 CVfrVarDataTypeDB::ExtractStructTypeName (
-  IN  CHAR8 *&VarStr, 
+  IN  CHAR8 *&VarStr,
   OUT CHAR8 *TName
   )
 {
@@ -561,7 +579,7 @@ CVfrVarDataTypeDB::ExtractStructTypeName (
 
 EFI_VFR_RETURN_CODE
 CVfrVarDataTypeDB::ExtractFieldNameAndArrary (
-  IN  CHAR8   *&VarStr, 
+  IN  CHAR8   *&VarStr,
   IN  CHAR8   *FName,
   OUT UINT32 &ArrayIdx
   )
@@ -569,15 +587,15 @@ CVfrVarDataTypeDB::ExtractFieldNameAndArrary (
   UINT32 Idx;
   CHAR8   ArrayStr[MAX_NAME_LEN + 1];
 
-  ArrayIdx = INVALID_ARRAY_INDEX; 
+  ArrayIdx = INVALID_ARRAY_INDEX;
 
   if (FName == NULL) {
     return VFR_RETURN_FATAL_ERROR;
   }
 
   while((*VarStr != '\0') &&
-        (*VarStr != '.') && 
-        (*VarStr != '[') && 
+        (*VarStr != '.') &&
+        (*VarStr != '[') &&
         (*VarStr != ']')) {
     *FName = *VarStr;
     VarStr++;
@@ -614,8 +632,8 @@ CVfrVarDataTypeDB::ExtractFieldNameAndArrary (
 
 EFI_VFR_RETURN_CODE
 CVfrVarDataTypeDB::GetTypeField (
-  IN  CHAR8          *FName, 
-  IN  SVfrDataType  *Type, 
+  IN  CHAR8          *FName,
+  IN  SVfrDataType  *Type,
   OUT SVfrDataField *&Field
   )
 {
@@ -637,7 +655,7 @@ CVfrVarDataTypeDB::GetTypeField (
 
 EFI_VFR_RETURN_CODE
 CVfrVarDataTypeDB::GetFieldOffset (
-  IN  SVfrDataField *Field, 
+  IN  SVfrDataField *Field,
   IN  UINT32        ArrayIdx,
   OUT UINT32        &Offset
   )
@@ -767,7 +785,7 @@ CVfrVarDataTypeDB::InternalTypesListInit (
         pSecondsField->mNext     = NULL;
         pSecondsField->mArrayNum = 0;
 
-        New->mMembers            = pHoursField;      
+        New->mMembers            = pHoursField;
       } else {
         New->mMembers            = NULL;
       }
@@ -825,8 +843,8 @@ CVfrVarDataTypeDB::~CVfrVarDataTypeDB (
 EFI_VFR_RETURN_CODE
 CVfrVarDataTypeDB::Pack (
   IN UINT32         LineNum,
-  IN UINT8          Action, 
-  IN CHAR8          *Identifier, 
+  IN UINT8          Action,
+  IN CHAR8           *Identifier,
   IN UINT32         Number
   )
 {
@@ -922,8 +940,8 @@ CVfrVarDataTypeDB::SetNewTypeName (
 
 EFI_VFR_RETURN_CODE
 CVfrVarDataTypeDB::DataTypeAddField (
-  IN CHAR8   *FieldName, 
-  IN CHAR8   *TypeName, 
+  IN CHAR8   *FieldName,
+  IN CHAR8   *TypeName,
   IN UINT32 ArrayNum
   )
 {
@@ -961,7 +979,7 @@ CVfrVarDataTypeDB::DataTypeAddField (
     mNewDataType->mMembers = pNewField;
     pNewField->mNext       = NULL;
   } else {
-    for (pTmp = mNewDataType->mMembers; pTmp->mNext != NULL; pTmp = pTmp->mNext) 
+    for (pTmp = mNewDataType->mMembers; pTmp->mNext != NULL; pTmp = pTmp->mNext)
       ;
     pTmp->mNext            = pNewField;
     pNewField->mNext       = NULL;
@@ -1080,9 +1098,9 @@ CVfrVarDataTypeDB::GetDataTypeSize (
 
 EFI_VFR_RETURN_CODE
 CVfrVarDataTypeDB::GetDataFieldInfo (
-  IN  CHAR8     *VarStr, 
-  OUT UINT16   &Offset, 
-  OUT UINT8    &Type, 
+  IN  CHAR8     *VarStr,
+  OUT UINT16   &Offset,
+  OUT UINT8    &Type,
   OUT UINT32   &Size
   )
 {
@@ -1118,7 +1136,7 @@ CVfrVarDataTypeDB::GetDataFieldInfo (
 
 EFI_VFR_RETURN_CODE
 CVfrVarDataTypeDB::GetUserDefinedTypeNameList  (
-  OUT CHAR8     ***NameList, 
+  OUT CHAR8      ***NameList,
   OUT UINT32    *ListSize
   )
 {
@@ -1993,9 +2011,9 @@ AltCfgItemPrintToBuffer (
 
   if (NewAltCfg != NULL) {
     Count = sprintf (
-              NewAltCfg, 
-              "&OFFSET=%x&WIDTH=%x&VALUE=", 
-              Info.mInfo.mVarOffset, 
+              NewAltCfg,
+              "&OFFSET=%x&WIDTH=%x&VALUE=",
+              Info.mInfo.mVarOffset,
               Info.mVarTotalSize
               );
     NewAltCfg += Count;
@@ -2054,7 +2072,7 @@ AltCfgItemPrintToBuffer (
 	}
   }
 
-  return VFR_RETURN_FATAL_ERROR;    
+  return VFR_RETURN_FATAL_ERROR;
 }
 
 EFI_VFR_RETURN_CODE
@@ -2103,7 +2121,7 @@ WriteError:
 }
 
 SVfrRuleNode::SVfrRuleNode (
-  IN CHAR8       *RuleName, 
+  IN CHAR8        *RuleName,
   IN UINT8       RuleId
   )
 {
@@ -2209,7 +2227,7 @@ EFI_VARSTORE_INFO::EFI_VARSTORE_INFO (
   mVarTotalSize    = Info.mVarTotalSize;
 }
 
-BOOLEAN 
+BOOLEAN
 EFI_VARSTORE_INFO::operator == (
   IN EFI_VARSTORE_INFO  *Info
   )
@@ -2261,7 +2279,7 @@ CVfrQuestionDB::ChekQuestionIdFree (
   return (mFreeQIdBitMap[Index] & (0x80000000 >> Offset)) == 0;
 }
 
-VOID 
+VOID
 CVfrQuestionDB::MarkQuestionIdUsed (
   IN EFI_QUESTION_ID QId
   )
@@ -2272,7 +2290,7 @@ CVfrQuestionDB::MarkQuestionIdUsed (
   mFreeQIdBitMap[Index] |= (0x80000000 >> Offset);
 }
 
-VOID 
+VOID
 CVfrQuestionDB::MarkQuestionIdUnused (
   IN EFI_QUESTION_ID QId
   )
@@ -2336,7 +2354,7 @@ CVfrQuestionDB::CVfrQuestionDB ()
   // Question ID 0 is reserved.
   mFreeQIdBitMap[0] = 0x80000000;
   mQuestionList     = NULL;
-} 
+}
 
 CVfrQuestionDB::~CVfrQuestionDB ()
 {
@@ -2428,9 +2446,9 @@ CVfrQuestionDB::RegisterQuestion (
 
 VOID
 CVfrQuestionDB::RegisterOldDateQuestion (
-  IN     CHAR8           *YearVarId, 
-  IN     CHAR8           *MonthVarId, 
-  IN     CHAR8           *DayVarId, 
+  IN     CHAR8            *YearVarId,
+  IN     CHAR8            *MonthVarId,
+  IN     CHAR8            *DayVarId,
   IN OUT EFI_QUESTION_ID &QuestionId
   )
 {
@@ -2485,15 +2503,15 @@ Err:
 
 VOID
 CVfrQuestionDB::RegisterNewDateQuestion (
-  IN     CHAR8           *Name,
-  IN     CHAR8           *BaseVarId, 
+  IN     CHAR8            *Name,
+  IN     CHAR8            *BaseVarId,
   IN OUT EFI_QUESTION_ID &QuestionId
   )
 {
   SVfrQuestionNode     *pNode[3] = {NULL, };
   UINT32               Len;
   CHAR8                *VarIdStr[3] = {NULL, };
-  INT8                 Index;
+  CHAR8                 Index;
 
   if (BaseVarId == NULL) {
     return;
@@ -2570,9 +2588,9 @@ Err:
 
 VOID
 CVfrQuestionDB::RegisterOldTimeQuestion (
-  IN     CHAR8           *HourVarId, 
-  IN     CHAR8           *MinuteVarId, 
-  IN     CHAR8           *SecondVarId, 
+  IN     CHAR8            *HourVarId,
+  IN     CHAR8            *MinuteVarId,
+  IN     CHAR8            *SecondVarId,
   IN OUT EFI_QUESTION_ID &QuestionId
   )
 {
@@ -2635,7 +2653,7 @@ CVfrQuestionDB::RegisterNewTimeQuestion (
   SVfrQuestionNode     *pNode[3] = {NULL, };
   UINT32               Len;
   CHAR8                *VarIdStr[3] = {NULL, };
-  INT8                 Index;
+  CHAR8                 Index;
 
   if (BaseVarId == NULL) {
     return;
@@ -2749,7 +2767,7 @@ CVfrQuestionDB::UpdateQuestionId (
   return VFR_RETURN_SUCCESS;
 }
 
-VOID 
+VOID
 CVfrQuestionDB::GetQuestionId (
   IN  CHAR8             *Name,
   IN  CHAR8             *VarIdStr,
@@ -2787,7 +2805,7 @@ CVfrQuestionDB::GetQuestionId (
   return ;
 }
 
-EFI_VFR_RETURN_CODE 
+EFI_VFR_RETURN_CODE
 CVfrQuestionDB::FindQuestion (
   IN EFI_QUESTION_ID QuestionId
   )
@@ -2807,7 +2825,7 @@ CVfrQuestionDB::FindQuestion (
   return VFR_RETURN_UNDEFINED;
 }
 
-EFI_VFR_RETURN_CODE 
+EFI_VFR_RETURN_CODE
 CVfrQuestionDB::FindQuestion (
   IN CHAR8 *Name
   )

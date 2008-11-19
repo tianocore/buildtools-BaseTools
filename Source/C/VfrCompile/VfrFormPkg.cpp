@@ -683,9 +683,7 @@ SIfrRecord::~SIfrRecord (
   )
 {
   if (mIfrBinBuf != NULL) {
-    //
-    // IfrRecord to point to form data buffer.
-    //
+    //delete mIfrBinBuf;
     mIfrBinBuf = NULL;
   }
   mLineNo      = 0xFFFFFFFF;
@@ -729,8 +727,8 @@ CIfrRecordInfoDB::GetRecordInfoFromIdx (
     return NULL;
   }
 
-  for (Idx = (EFI_IFR_RECORDINFO_IDX_START + 1), pNode = mIfrRecordListHead; 
-       (Idx != RecordIdx) && (pNode != NULL); 
+  for (Idx = (EFI_IFR_RECORDINFO_IDX_START + 1), pNode = mIfrRecordListHead;
+       (Idx != RecordIdx) && (pNode != NULL);
        Idx++, pNode = pNode->mNext)
   ;
 
@@ -739,8 +737,8 @@ CIfrRecordInfoDB::GetRecordInfoFromIdx (
 
 UINT32
 CIfrRecordInfoDB::IfrRecordRegister (
-  IN UINT32 LineNo, 
-  IN CHAR8  *IfrBinBuf, 
+  IN UINT32 LineNo,
+  IN CHAR8  *IfrBinBuf,
   IN UINT8  BinBufLen,
   IN UINT32 Offset
   )
@@ -769,7 +767,7 @@ CIfrRecordInfoDB::IfrRecordRegister (
 
 VOID
 CIfrRecordInfoDB::IfrRecordInfoUpdate (
-  IN UINT32 RecordIdx, 
+  IN UINT32 RecordIdx,
   IN UINT32 LineNo,
   IN CHAR8  *BinBuf,
   IN UINT8  BinBufLen,
@@ -857,7 +855,7 @@ CIfrRecordInfoDB::IfrRecordOutput (
       TotalSize += pNode->mBinBufLen;
       if (pNode->mIfrBinBuf != NULL) {
         for (Index = 0; Index < pNode->mBinBufLen; Index++) {
-          fprintf (File, "%02X ", (UINT8) pNode->mIfrBinBuf[Index]);
+          fprintf (File, "%02X ", (UINT8)(pNode->mIfrBinBuf[Index]));
         }
       }
       fprintf (File, "\n");
@@ -1356,10 +1354,10 @@ CIfrObj::~CIfrObj (
 UINT8 gScopeCount = 0;
 
 CIfrOpHeader::CIfrOpHeader (
-  IN UINT8 OpCode, 
+  IN UINT8 OpCode,
   IN VOID *StartAddr,
-  IN UINT8 Length 
-  ) : mHeader ((EFI_IFR_OP_HEADER *)StartAddr) 
+  IN UINT8 Length
+  ) : mHeader ((EFI_IFR_OP_HEADER *)StartAddr)
 {
   mHeader->OpCode = OpCode;
   mHeader->Length = (Length == 0) ? gOpcodeSizesScopeTable[OpCode].mSize : Length;
