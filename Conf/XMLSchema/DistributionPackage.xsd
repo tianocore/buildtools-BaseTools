@@ -91,7 +91,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 							vendor specific executable tools, tool source code and/or
 							configuration files. These tools are primarily for manipulating
 							code and/or binary images. </xs:documentation>
-						<xs:documentation xml:lang="en-us"> Tools in this section can:</xs:documentation>
+						<xs:documentation xml:lang="en-us"> Tools in this section
+							can:</xs:documentation>
 						<xs:documentation xml:lang="en-us"> 1) Parse build meta-data files
 							to create source code files and build scripts. </xs:documentation>
 						<xs:documentation xml:lang="en-us"> 2) Modify image files to conform
@@ -143,7 +144,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 				<xs:element minOccurs="1" maxOccurs="1" name="Name">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> This is the User Interface Name
-							for this Distribution Package. Each Distribution Package is
+							for this Distribution Package. </xs:documentation>
+						<xs:documentation xml:lang="en-us"> Each Distribution Package is
 							uniquely identified by it's GUID and Version number.
 						</xs:documentation>
 					</xs:annotation>
@@ -155,9 +157,10 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 										<xs:documentation xml:lang="en-us"> The reference name of
 											the Distribution Package file. This single word name can
 											be used by tools as a keyword or for directory and/or file
-											creation. White space and special characters (dash and
-											underscore characters may be used) are not permitted in
-											this name. </xs:documentation>
+											creation. </xs:documentation>
+										<xs:documentation xml:lang="en-us"> White space and special
+											characters (dash and underscore characters may be used)
+											are not permitted in this name. </xs:documentation>
 									</xs:annotation>
 								</xs:attribute>
 							</xs:extension>
@@ -167,11 +170,12 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 				<xs:element minOccurs="1" maxOccurs="1" name="GUID">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> This 128-bit GUID and the
-							Version attribute uniquely identify this Distribution Package.
-							Backward compatible releases of a distribution package need only
-							change the version number, while non-backward compatible changes
-							require the GUID to change (resetting the version number to 1.0 is
-							optional.) </xs:documentation>
+							Version attribute uniquely identify this Distribution Package. </xs:documentation>
+						<xs:documentation xml:lang="en-us"> Backward compatible releases of
+							a distribution package need only change the version number, while
+							non-backward compatible changes require the GUID to change
+							(resetting the version number to 1.0 is optional.)
+						</xs:documentation>
 					</xs:annotation>
 					<xs:complexType>
 						<xs:simpleContent>
@@ -287,11 +291,12 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 	<xs:element name="PackageSurfaceArea">
 		<xs:annotation>
 			<xs:documentation xml:lang="en-us"> A package is a collection of related
-				objects - Includes, Libraries and Modules. Each package is uniquely
-				identified by it's GUID and Version number. Backward compatible releases
-				of a package need only change the version number, while non-backward
-				compatible changes require the GUID to change (resetting the version
-				number to 1.0 is optional.) </xs:documentation>
+				objects - Includes, Libraries and Modules. </xs:documentation>
+			<xs:documentation xml:lang="en-us"> Each package is uniquely identified by
+				it's GUID and Version number. Backward compatible releases of a package
+				need only change the version number, while non-backward compatible
+				changes require the GUID to change (resetting the version number to 1.0
+				is optional.) </xs:documentation>
 		</xs:annotation>
 		<xs:complexType>
 			<xs:sequence>
@@ -334,11 +339,12 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 												<xs:annotation>
 													<xs:documentation xml:lang="en-us"> This value, along
 														with the GUID, is used to uniquely identify this
-														object. Backward compatible changes must make sure
-														this number is incremented from the most recent
-														version. Non-backward compatible changes require a
-														new GUID, and the version can be reset.
-													</xs:documentation>
+														object. </xs:documentation>
+													<xs:documentation xml:lang="en-us"> Backward
+														compatible changes must make sure this number is
+														incremented from the most recent version.
+														Non-backward compatible changes require a new GUID,
+														and the version can be reset. </xs:documentation>
 												</xs:annotation>
 											</xs:attribute>
 										</xs:extension>
@@ -520,7 +526,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 					<xs:complexType>
 						<xs:sequence>
 							<xs:element minOccurs="1" maxOccurs="unbounded"
-								name="IndustryStandarddHeader">
+								name="IndustryStandardHeader">
 								<xs:complexType>
 									<xs:sequence>
 										<xs:element minOccurs="1" maxOccurs="1" name="HeaderFile"
@@ -635,9 +641,9 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 				<xs:element minOccurs="0" maxOccurs="1" name="ProtocolDeclarations">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> This section defines the mapping
-							of Protocol C names to GUID values as a Registry Format GUID.
-							Modules that use these Protocols must specify their dependency on
-							this package. </xs:documentation>
+							of Protocol C names to GUID values as a Registry Format GUID. </xs:documentation>
+						<xs:documentation xml:lang="en-us"> Modules that use these Protocols
+							must specify their dependency on this package. </xs:documentation>
 					</xs:annotation>
 					<xs:complexType>
 						<xs:sequence>
@@ -667,9 +673,9 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 				<xs:element minOccurs="0" maxOccurs="1" name="PpiDeclarations">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> This section defines the mapping
-							of Ppi C names to GUID values as a Registry Format GUID. Modules
-							that use these Ppis must specify their dependency on this package.
-						</xs:documentation>
+							of Ppi C names to GUID values as a Registry Format GUID. </xs:documentation>
+						<xs:documentation xml:lang="en-us"> Modules that use these Ppis must
+							specify their dependency on this package. </xs:documentation>
 					</xs:annotation>
 					<xs:complexType>
 						<xs:sequence>
@@ -699,9 +705,10 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 				<xs:element minOccurs="0" maxOccurs="1" name="PcdDeclarations">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> This section is used to declare
-							platform configuration knobs that are defined by this package.
-							Modules that use these PCD values must specify their dependency on
-							this package. </xs:documentation>
+							platform configuration knobs that are defined by this package. </xs:documentation>
+						<xs:documentation xml:lang="en-us"> Modules that use these PCD
+							values must specify their dependency on this package.
+						</xs:documentation>
 					</xs:annotation>
 					<xs:complexType>
 						<xs:sequence>
@@ -718,14 +725,21 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 													assigned to a GUID value. </xs:documentation>
 											</xs:annotation>
 										</xs:element>
-										<xs:element minOccurs="1" maxOccurs="1" name="Token"
-											type="HexNumber">
+										<xs:element minOccurs="1" maxOccurs="1" name="Token">
 											<xs:annotation>
 												<xs:documentation xml:lang="en-us"> Specifies the 32-bit
 													token value for this PCD Entry. The Token number must
-													be unique to the Token Space that declares the PCD.
-												</xs:documentation>
+													be unique to the Token Space that declares the PCD. </xs:documentation>
+												<xs:documentation xml:lang="en-us"> The minLength of 3
+													is required to handle the "0x" prefix to the hex
+													number. </xs:documentation>
 											</xs:annotation>
+											<xs:simpleType>
+												<xs:restriction base="HexNumber">
+													<xs:minLength value="3" />
+													<xs:maxLength value="10" />
+												</xs:restriction>
+											</xs:simpleType>
 										</xs:element>
 										<xs:element minOccurs="1" maxOccurs="1" name="CName"
 											type="xs:NCName" />
@@ -751,15 +765,23 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 										</xs:element>
 										<xs:element minOccurs="1" maxOccurs="1" name="DefaultValue"
 											type="xs:normalizedString" />
-										<xs:element minOccurs="0" maxOccurs="1" name="MaxDatumSize"
-											type="Number">
+										<xs:element minOccurs="0" maxOccurs="1" name="MaxDatumSize">
 											<xs:annotation>
 												<xs:documentation xml:lang="en-us"> This is a
 													recommended maximum data size for VOID* data types,
 													the actual value should be defined by the Platform
 													Integrator. It is not required for the other data
 													types. </xs:documentation>
+												<xs:documentation xml:lang="en-us"> The minLength of 3
+													is required to handle the "0x" prefix to the hex
+													number. </xs:documentation>
+
 											</xs:annotation>
+											<xs:simpleType>
+												<xs:restriction base="HexNumber">
+													<xs:minLength value="3" />
+												</xs:restriction>
+											</xs:simpleType>
 										</xs:element>
 										<xs:element ref="HelpText" minOccurs="0"
 											maxOccurs="unbounded" />
@@ -788,29 +810,27 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 																<xs:documentation xml:lang="en-us"> The PCD
 																	Value must be space separated list of values.
 																	Values are restricted to the data type of this
-																	PCD. Use of the L"string" syntax for
-																	specifying UTF-8 text that will be coded as
-																	UNICODE (UCS2) format is permitted.
-																</xs:documentation>
+																	PCD. </xs:documentation>
 															</xs:annotation>
 															<xs:complexType>
-																<xs:attribute name="USC2" type="xs:boolean"
-																	default="false" use="optional" />
-																<xs:attribute name="Lang" type="xs:language"
-																	default="en-us" use="optional" />
+																<xs:simpleContent>
+																	<xs:extension base="xs:normalizedString">
+																		<xs:attribute name="Lang" type="xs:language"
+																			use="optional" />
+																	</xs:extension>
+																</xs:simpleContent>
 															</xs:complexType>
 														</xs:element>
 														<xs:element minOccurs="0" maxOccurs="1"
 															name="ValidValueRange" type="xs:normalizedString">
 															<xs:annotation>
 																<xs:documentation xml:lang="en-us"> The PCD must
-																	be within a specified range of numeric values.
-																	Restricted to Relational, Equality and Logical
-																	Operators (NOT, AND, OR, GT, GE, EQ, LE, LT
-																	and XOR) and parenthesis are valid. Only the
-																	PcdCName for PCD is permitted in the
-																	ValidValueRange expression. All other values
-																	must be numeric.</xs:documentation>
+																	be within a specifed range of numeric values.
+																	Restricted to C style Relational, Equality and
+																	Logicial Operators and parenthesis are valid.
+																	Only the CName for this PCD is permitted in
+																	the ValidValueRange expression. All other
+																	values must be numeric.</xs:documentation>
 																<xs:documentation xml:lang="en-us"> LValue (op
 																	RValue)+ </xs:documentation>
 															</xs:annotation>
@@ -819,39 +839,39 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 															name="Expression" type="xs:normalizedString">
 															<xs:annotation>
 																<xs:documentation xml:lang="en-us"> A in-fix
-																	logical expression using Relational, Equality
-																	and Logical Operators (NOT, AND, OR, GT, GE,
-																	EQ, LE, LT and XOR) and parenthesis are
-																	recommended. The forms PcdCName and/or
-																	PcdTokenSpaceGuidCName.PcdCName are permitted;
-																	if only the PcdCName is specified, then the
-																	PcdTokenSpaceGuidCName is the same as this
-																	PCD's TokenSpaceGuidCName. The expression must
-																	evaluate to true or false. </xs:documentation>
+																	logical expression using C style logical
+																	operators. </xs:documentation>
 															</xs:annotation>
 														</xs:element>
 													</xs:choice>
 													<xs:element minOccurs="1" maxOccurs="1"
-														name="ErrorNumber" type="HexNumber">
+														name="ErrorNumber">
 														<xs:annotation>
 															<xs:documentation xml:lang="en-us"> A hexadecimal
 																value for the error message as defined by
 																specifications. </xs:documentation>
+															<xs:documentation xml:lang="en-us"> The minLength
+																of 3 is required to handle the "0x" prefix to
+																the hex number. </xs:documentation>
+
 														</xs:annotation>
+														<xs:simpleType>
+															<xs:restriction base="HexNumber">
+																<xs:minLength value="3" />
+															</xs:restriction>
+														</xs:simpleType>
 													</xs:element>
 													<xs:element minOccurs="1" maxOccurs="unbounded"
 														name="ErrorMessage">
 														<xs:annotation>
 															<xs:documentation xml:lang="en-us"> This string
 																should be defined by specifications. There are
-																predefined error number ranges in the UEFI/PI
-																specification. </xs:documentation>
+																pre-defined error number ranges in the UEFI/PI
+																specificaiton. </xs:documentation>
 														</xs:annotation>
 														<xs:complexType>
 															<xs:simpleContent>
-																<xs:extension base="xs:normalizedString">
-																	<xs:attribute name="UCS2" type="xs:boolean"
-																		default="false" use="optional" />
+																<xs:extension base="xs:string">
 																	<xs:attribute name="Lang" type="xs:language"
 																		default="en-us" use="optional" />
 																</xs:extension>
@@ -981,12 +1001,13 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 						<xs:attribute name="Identifier" type="xs:string" use="optional">
 							<xs:annotation>
 								<xs:documentation xml:lang="en-us"> This can be used to
-									differentiate multiple sections with a grouping. For example,
-									a PRE_PROCESS Identifier might indicate specific steps and
-									tools required before processing module content, while a
-									different UserExtensions section with a POST_PROCESS
-									Identifier might describe steps that need to be executed after
-									operations on the modules in this package. </xs:documentation>
+									differentiate multiple sections with a grouping. </xs:documentation>
+								<xs:documentation xml:lang="en-us"> For example, a PRE_PROCESS
+									Identifier might indicate specific steps and tools required
+									before processing module content, while a different
+									UserExtensions section with a POST_PROCESS Identifier might
+									describe steps that need to be executed after operations on
+									the modules in this package. </xs:documentation>
 							</xs:annotation>
 						</xs:attribute>
 						<xs:anyAttribute processContents="lax" />
@@ -1026,9 +1047,10 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 												<xs:annotation>
 													<xs:documentation xml:lang="en-us"> This is a single
 														word BaseName that will be used to create a module
-														meta-data file. This name should also be used to
-														create output file names and directories.
-													</xs:documentation>
+														meta-data file. </xs:documentation>
+													<xs:documentation xml:lang="en-us"> This name should
+														also be used to create output file names and
+														directories. </xs:documentation>
 												</xs:annotation>
 											</xs:attribute>
 										</xs:extension>
@@ -1049,11 +1071,12 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 												<xs:annotation>
 													<xs:documentation xml:lang="en-us"> This value, along
 														with the GUID, is used to uniquely identify this
-														object. Backward compatible changes must make sure
-														this number is incremented from the most recent
-														version. Non-backward compatible changes require a
-														new GUID, and the version can be reset.
-													</xs:documentation>
+														object. </xs:documentation>
+													<xs:documentation xml:lang="en-us"> Backward
+														compatible changes must make sure this number is
+														incremented from the most recent version.
+														Non-backward compatible changes require a new GUID,
+														and the version can be reset. </xs:documentation>
 												</xs:annotation>
 											</xs:attribute>
 										</xs:extension>
@@ -1097,7 +1120,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 				</xs:element>
 				<!-- End of Module Surface Area Header Section -->
 
-				<xs:element minOccurs="1" maxOccurs="1" name="ModuleProperties">
+				<xs:element minOccurs="0" maxOccurs="1" name="ModuleProperties">
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> List general information about a
 							module, including the Supported Architectures, this module's type,
@@ -1140,24 +1163,25 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 							</xs:element>
 
 							<xs:element minOccurs="0" maxOccurs="1"
-								name="UefiSpecificationVersion" type="Number" />
+								name="UefiSpecificationVersion" type="xs:decimal" />
 
 							<xs:element minOccurs="0" maxOccurs="1"
-								name="PiSpecificationVersion" type="Number" />
+								name="PiSpecificationVersion" type="xs:decimal" />
 
 							<xs:element minOccurs="0" maxOccurs="unbounded"
 								name="Specification">
 								<xs:annotation>
-									<xs:documentation xml:lang="en-us"> One or more of these
-										elements indicate that the module has been coded to conform
-										to the specified Industry Standard Specifications.
+									<xs:documentation xml:lang="en-us"> This is a list of other
+										specifications that this module is written against. These
+										entries can be used in #define statements (depending on the
+										build system implementation, they may be autogenerated.)
 									</xs:documentation>
 								</xs:annotation>
 								<xs:complexType>
 									<xs:simpleContent>
 										<xs:extension base="xs:NCName">
-											<xs:attribute name="Version" type="Number" use="required"
-											 />
+											<xs:attribute name="Version" type="xs:decimal"
+												use="required" />
 										</xs:extension>
 									</xs:simpleContent>
 								</xs:complexType>
@@ -1256,7 +1280,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 								<xs:annotation>
 									<xs:documentation xml:lang="en-us"> The functions that make up
 										the Event, Timer, and Task Priority Services are used during
-										pre-boot to create, close, signal, and wait for events; to
+										preboot to create, close, signal, and wait for events; to
 										set timers; and to raise and restore task priority levels as
 										defined in the UEFI specification. GUIDed events should be
 										listed in the Guids section. </xs:documentation>
@@ -1337,9 +1361,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 												<xs:enumeration value="MEMORY_ALLOCATION" />
 												<xs:enumeration value="RESOURCE_DESCRIPTOR" />
 												<xs:enumeration value="FIRMWARE_VOLUME" />
-												<xs:enumeration value="CPU" />
-												<xs:enumeration value="POOL" />
-												<xs:enumeration value="CAPSULE_VOLUME" />
+												<xs:enumeration value="LOAD_PEIM" />
 											</xs:restriction>
 										</xs:simpleType>
 									</xs:attribute>
@@ -1618,7 +1640,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 														name="PatchPcdValue">
 														<xs:annotation>
 															<xs:documentation xml:lang="en-us"> The element is
-																the Patch PCD Value that was used during the
+																the Patchable PCD Value that was used during the
 																build. </xs:documentation>
 														</xs:annotation>
 														<xs:complexType>
@@ -1629,21 +1651,55 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 																<xs:element minOccurs="1" maxOccurs="1"
 																	name="PcdCName" type="xs:NCName" />
 																<xs:element minOccurs="1" maxOccurs="1"
-																	name="Token" type="HexNumber" />
+																	name="Token">
+																	<xs:annotation>
+																		<xs:documentation xml:lang="en-us"> The
+																			minLength of 3 is required to handle the
+																			"0x" prefix to the hex number.
+																		</xs:documentation>
+																	</xs:annotation>
+																	<xs:simpleType>
+																		<xs:restriction base="HexNumber">
+																			<xs:minLength value="3" />
+																			<xs:maxLength value="10" />
+																		</xs:restriction>
+																	</xs:simpleType>
+																</xs:element>
 																<xs:element minOccurs="1" maxOccurs="1"
 																	name="DatumType" type="PcdDatumTypes" />
 																<xs:element minOccurs="0" maxOccurs="1"
-																	name="MaxDatumSize" type="Number">
+																	name="MaxDatumSize">
 																	<xs:annotation>
 																		<xs:documentation xml:lang="en-us"> This
 																			field is required if the Pcd Datum Type is
 																			VOID* </xs:documentation>
+																		<xs:documentation xml:lang="en-us"> The
+																			minLength of 3 is required to handle the
+																			"0x" prefix to the hex number.
+																		</xs:documentation>
 																	</xs:annotation>
+																	<xs:simpleType>
+																		<xs:restriction base="HexNumber">
+																			<xs:minLength value="3" />
+																		</xs:restriction>
+																	</xs:simpleType>
 																</xs:element>
 																<xs:element minOccurs="1" maxOccurs="1"
 																	name="Value" type="xs:normalizedString" />
 																<xs:element minOccurs="1" maxOccurs="1"
-																	name="Offset" type="HexNumber" />
+																	name="Offset">
+																	<xs:annotation>
+																		<xs:documentation xml:lang="en-us"> The
+																			minLength of 3 is required to handle the
+																			"0x" prefix to the hex number.
+																		</xs:documentation>
+																	</xs:annotation>
+																	<xs:simpleType>
+																		<xs:restriction base="HexNumber">
+																			<xs:minLength value="3" />
+																		</xs:restriction>
+																	</xs:simpleType>
+																</xs:element>
 																<xs:element ref="HelpText" minOccurs="0"
 																	maxOccurs="unbounded" />
 																<xs:element minOccurs="0" maxOccurs="unbounded"
@@ -1656,21 +1712,28 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 																	<xs:complexType>
 																		<xs:sequence>
 																			<xs:element minOccurs="1" maxOccurs="1"
-																				name="ErrorNumber" type="HexNumber" />
+																				name="ErrorNumber">
+																				<xs:annotation>
+																				<xs:documentation xml:lang="en-us"> The
+																				minLength of 3 is required to handle the
+																				"0x" prefix to the hex number.
+																				</xs:documentation>
+																				</xs:annotation>
+																				<xs:simpleType>
+																				<xs:restriction base="HexNumber">
+																				<xs:minLength value="3" />
+																				</xs:restriction>
+																				</xs:simpleType>
+																			</xs:element>
 																			<xs:element minOccurs="0"
 																				maxOccurs="unbounded"
 																				name="ErrorMessage">
 																				<xs:complexType>
 																				<xs:simpleContent>
-																				<xs:extension
-																				base="xs:normalizedString">
-																				<xs:attribute name="UCS2"
-																				type="xs:boolean"
-																				default="false" use="optional" />
+																				<xs:extension base="xs:string">
 																				<xs:attribute name="Lang"
-																				type="xs:language"
-																				default="en-us" use="optional"
-																				 />
+																				type="xs:language" default="en-us"
+																				use="optional" />
 																				</xs:extension>
 																				</xs:simpleContent>
 																				</xs:complexType>
@@ -1695,16 +1758,34 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 																	name="TokenSpaceGuidValue"
 																	type="RegistryFormatGuid" />
 																<xs:element minOccurs="1" maxOccurs="1"
-																	name="Token" type="HexNumber" />
+																	name="Token">
+																	<xs:annotation>
+																		<xs:documentation xml:lang="en-us"> The
+																			minLength of 3 is required to handle the
+																			"0x" prefix to the hex number.
+																		</xs:documentation>
+																	</xs:annotation>
+																	<xs:simpleType>
+																		<xs:restriction base="HexNumber">
+																			<xs:minLength value="3" />
+																			<xs:maxLength value="10" />
+																		</xs:restriction>
+																	</xs:simpleType>
+																</xs:element>
 																<xs:element minOccurs="1" maxOccurs="1"
 																	name="DatumType" type="PcdDatumTypes" />
 																<xs:element minOccurs="0" maxOccurs="1"
-																	name="MaxDatumSize" type="Number">
+																	name="MaxDatumSize">
 																	<xs:annotation>
 																		<xs:documentation xml:lang="en-us"> This
 																			field is required if the Pcd Datum Type is
 																			VOID* </xs:documentation>
 																	</xs:annotation>
+																	<xs:simpleType>
+																		<xs:restriction base="HexNumber">
+																			<xs:minLength value="3" />
+																		</xs:restriction>
+																	</xs:simpleType>
 																</xs:element>
 																<xs:element minOccurs="1" maxOccurs="1"
 																	name="Value" type="xs:normalizedString" />
@@ -1720,21 +1801,28 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 																	<xs:complexType>
 																		<xs:sequence>
 																			<xs:element minOccurs="1" maxOccurs="1"
-																				name="ErrorNumber" type="HexNumber" />
+																				name="ErrorNumber">
+																				<xs:annotation>
+																				<xs:documentation xml:lang="en-us"> The
+																				minLength of 3 is required to handle the
+																				"0x" prefix to the hex number.
+																				</xs:documentation>
+																				</xs:annotation>
+																				<xs:simpleType>
+																				<xs:restriction base="HexNumber">
+																				<xs:minLength value="3" />
+																				</xs:restriction>
+																				</xs:simpleType>
+																			</xs:element>
 																			<xs:element minOccurs="0"
 																				maxOccurs="unbounded"
 																				name="ErrorMessage">
 																				<xs:complexType>
 																				<xs:simpleContent>
-																				<xs:extension
-																				base="xs:normalizedString">
-																				<xs:attribute name="UCS2"
-																				type="xs:boolean"
-																				default="false" use="optional" />
+																				<xs:extension base="xs:string">
 																				<xs:attribute name="Lang"
-																				type="xs:language"
-																				default="en-us" use="optional"
-																				 />
+																				type="xs:language" default="en-us"
+																				use="optional" />
 																				</xs:extension>
 																				</xs:simpleContent>
 																				</xs:complexType>
@@ -1769,10 +1857,10 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 																				<xs:attribute name="Version"
 																				type="xs:decimal" use="required">
 																				<xs:annotation>
-																				<xs:documentation xml:lang="en-us">
-																				This value, along with the GUID,
-																				is used to uniquely identify this
-																				object. </xs:documentation>
+																				<xs:documentation xml:lang="en-us"> This
+																				value, along with the GUID, is used to
+																				uniquely identify this object.
+																				</xs:documentation>
 																				</xs:annotation>
 																				</xs:attribute>
 																			</xs:extension>
@@ -1863,30 +1951,14 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 									<xs:sequence>
 										<xs:element minOccurs="1" maxOccurs="1" name="CName"
 											type="xs:NCName" />
-										<xs:element minOccurs="0" maxOccurs="1" name="VariableName">
+										<xs:element minOccurs="0" maxOccurs="1" name="VariableName"
+											type="xs:normalizedString">
 											<xs:annotation>
 												<xs:documentation xml:lang="en-us"> Only valid for
-													Variable GUID types. This can be either a Hex Array or
-													UNICODE Data. </xs:documentation>
+													Variable GUID types. </xs:documentation>
+												<xs:documentation> This can be either a Hex Array or
+													Unicode Data. </xs:documentation>
 											</xs:annotation>
-											<xs:complexType>
-												<xs:simpleContent>
-													<xs:extension base="xs:normalizedString">
-														<xs:attribute name="UCS2" type="xs:boolean"
-															default="false" use="optional">
-															<xs:annotation>
-																<xs:documentation xml:lang="en-us"> If set to
-																	true, then the data between the tags is UCS2
-																	UNICODE format, otherwise it is either a Hex
-																	data array or an L"string" value.
-																</xs:documentation>
-															</xs:annotation>
-														</xs:attribute>
-														<xs:attribute name="Lang" type="xs:language"
-															default="en-us" use="optional" />
-													</xs:extension>
-												</xs:simpleContent>
-											</xs:complexType>
 										</xs:element>
 										<xs:element ref="HelpText" minOccurs="0"
 											maxOccurs="unbounded" />
@@ -2105,7 +2177,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 					</xs:annotation>
 					<xs:complexType>
 						<xs:sequence>
-							<xs:element name="Expression" type=" xs:string " minOccurs="1"
+							<xs:element name="Expression" type="xs:string" minOccurs="1"
 								maxOccurs="1">
 								<xs:annotation>
 									<xs:documentation xml:lang="en-us"> An in-fix expression, of C
@@ -2195,7 +2267,6 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 														execution. </xs:documentation>
 												</xs:annotation>
 											</xs:attribute>
-											<xs:attributeGroup ref="SupportedArchMod" />
 										</xs:extension>
 									</xs:simpleContent>
 								</xs:complexType>
@@ -2209,9 +2280,10 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 					<xs:annotation>
 						<xs:documentation xml:lang="en-us"> This section is used for any
 							processing instructions that may be custom to the content provided
-							by the distribution that are common to module. The content is
-							vendor specific. The content can be plain text as well as any
-							user-defined, properly formatted XML structure.
+							by the distribution that are common to module. </xs:documentation>
+						<xs:documentation xml:lang="en-us"> The content is vendor specific. </xs:documentation>
+						<xs:documentation xml:lang="en-us"> The content can be plain text as
+							well as any user-defined, properly formatted XML structure.
 						</xs:documentation>
 					</xs:annotation>
 					<xs:complexType mixed="true">
@@ -2221,22 +2293,22 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 									identifier for grouping similar content. For example,
 									ReferenceBuild might be used to identify non-PI compliant
 									build steps, with two different UserExtensions sections, one
-									with an Identifier of ToolsDef, and another of BuildOptions.
-									Both UserExtensions sections would use the same UserId.
+									with an Identifier of Prebuild, and another of PostBuild. Both
+									UserExtensions sections would use the same UserId.
 								</xs:documentation>
 							</xs:annotation>
 						</xs:attribute>
-						<xs:attribute name="Identifier" type="xs:normalizedString"
-							use="optional">
+						<xs:attribute name="Identifier" type="xs:string" use="optional">
 							<xs:annotation>
 								<xs:documentation xml:lang="en-us"> This can be any string used
 									to differentiate or identify this section from other
-									UserExtensions sections. For example, a PRE_PROCESS Identifier
-									might indicate specific steps and tools required before
-									processing module content, while a different UserExtensions
-									section with a POST_PROCESS Identifier might describe steps
-									that need to be executed after operations on this module.
-								</xs:documentation>
+									UserExtensions sections. </xs:documentation>
+								<xs:documentation xml:lang="en-us"> For example, a PRE_PROCESS
+									Identifier might indicate specific steps and tools required
+									before processing module content, while a different
+									UserExtensions section with a POST_PROCESS Identifier might
+									describe steps that need to be executed after operations on
+									this module. </xs:documentation>
 							</xs:annotation>
 						</xs:attribute>
 						<xs:anyAttribute processContents="lax" />
@@ -2424,15 +2496,17 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 						same UserId. </xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
-			<xs:attribute name="Identifier" type="xs:normalizedString" use="optional">
+			<xs:attribute name="Identifier" type="xs:string" use="optional">
 				<xs:annotation>
 					<xs:documentation xml:lang="en-us"> This can be any string used to
 						differentiate or identify this section from other UserExtensions
-						sections. For example, a PRE_PROCESS Identifier might indicate
-						specific steps and tools required before processing distribution
-						package content, while a different UserExtensions section with a
-						POST_PROCESS Identifier might describe steps that need to be
-						executed after operations on this content. </xs:documentation>
+						sections. </xs:documentation>
+					<xs:documentation xml:lang="en-us"> For example, a PRE_PROCESS
+						Identifier might indicate specific steps and tools required before
+						processing distribution package content, while a different
+						UserExtensions section with a POST_PROCESS Identifier might describe
+						steps that need to be executed after operations on this content.
+					</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
 			<xs:anyAttribute processContents="lax" />
@@ -2444,8 +2518,6 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 		<xs:complexType>
 			<xs:simpleContent>
 				<xs:extension base="xs:string">
-					<xs:attribute name="UCS2" type="xs:boolean" default="false"
-						use="optional" />
 					<xs:attribute name="Lang" type="xs:language" default="en-us"
 						use="optional" />
 				</xs:extension>
@@ -2502,7 +2574,6 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 	<xs:simpleType name="GuidTypes">
 		<xs:restriction base="xs:NCName">
-			<xs:enumeration value="DataHub" />
 			<xs:enumeration value="Event" />
 			<xs:enumeration value="File" />
 			<xs:enumeration value="FV" />
@@ -2516,7 +2587,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 	</xs:simpleType>
 
 	<xs:simpleType name="HexNumber">
-		<xs:restriction base="xs:NCName">
+		<xs:restriction base="xs:hexBinary">
 			<xs:pattern value="0x([a-fA-F0-9])+" />
 		</xs:restriction>
 	</xs:simpleType>
@@ -2533,9 +2604,10 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 	<xs:simpleType name="ModuleTypes">
 		<xs:annotation>
-			<xs:documentation xml:lang="en-us"> The following Module types for
-				components and libraries defined for this distribution are defined by
-				specifications. </xs:documentation>
+			<xs:documentation xml:lang="en-us"> The following module types are defined
+				by specifications. </xs:documentation>
+			<xs:documentation xml:lang="en-us"> Module types for components and
+				libraries defined for this distribution mechanism. </xs:documentation>
 		</xs:annotation>
 		<xs:restriction base="xs:NCName">
 			<xs:enumeration value="BASE ">
@@ -2598,6 +2670,12 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 						drivers. </xs:documentation>
 				</xs:annotation>
 			</xs:enumeration>
+			<xs:enumeration value="UEFI_RUNTIME_DRIVER">
+				<xs:annotation>
+					<xs:documentation xml:lang="en-us"> This module is only valid for UEFI
+						runtime drivers.</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
 			<xs:enumeration value="UEFI_APPLICATION">
 				<xs:annotation>
 					<xs:documentation xml:lang="en-us"> This module is only valid for UEFI
@@ -2611,11 +2689,6 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 				</xs:annotation>
 			</xs:enumeration>
 		</xs:restriction>
-	</xs:simpleType>
-
-	<xs:simpleType name="Number">
-		<xs:union memberTypes=" xs:decimal xs:nonNegativeInteger xs:hexBinary
-			HexNumber" />
 	</xs:simpleType>
 
 	<xs:simpleType name="PcdDatumTypes">
@@ -2722,18 +2795,10 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 						Windows Vista. </xs:documentation>
 				</xs:annotation>
 			</xs:enumeration>
-			<xs:enumeration value="RedHat32" />
-			<xs:enumeration value="RedHat64" />
-			<xs:enumeration value="SuSE32" />
-			<xs:enumeration value="SuSE64" />
+			<xs:enumeration value="Linux32" />
+			<xs:enumeration value="Linux64" />
 			<xs:enumeration value="OS/X32" />
 			<xs:enumeration value="OS/X64" />
-			<xs:enumeration value="Generic">
-				<xs:annotation>
-					<xs:documentation xml:lang="en-us"> Valid for any operating system.
-					</xs:documentation>
-				</xs:annotation>
-			</xs:enumeration>
 			<xs:enumeration value="GenericWin">
 				<xs:annotation>
 					<xs:documentation xml:lang="en-us"> Typically, this is used for
