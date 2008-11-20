@@ -169,7 +169,7 @@ class BuildFile(object):
         FileContent.Append(self._TEMPLATE_, self._TemplateDict)
 
         FileName = self._FILE_NAME_[FileType]
-        return SaveFileOnChange(os.path.join(self._AutoGenObject.MakeFileDir, FileName), str(FileContent))
+        return SaveFileOnChange(os.path.join(self._AutoGenObject.MakeFileDir, FileName), str(FileContent), False)
 
     ## Return a list of directory creation command string
     #

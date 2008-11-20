@@ -1795,4 +1795,5 @@ def CreateCode(Info, AutoGenC, AutoGenH):
 #   @retval     False       If the file exists and the content is not changed
 #
 def Generate(FilePath, Content):
-    return SaveFileOnChange(FilePath, Content)
+    return SaveFileOnChange(FilePath, Content, False)
+
