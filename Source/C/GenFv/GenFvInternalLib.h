@@ -40,8 +40,6 @@ Abstract:
 #include "ParseInf.h"
 #include "EfiUtilityMsgs.h"
 
-extern UINT32 mFvTotalSize;
-extern UINT32 mFvTakenSize;
 //
 // Different file separater for Linux and Windows
 //
@@ -78,6 +76,7 @@ extern UINT32 mFvTakenSize;
 #define EFI_FV_FILE_NAME_STRING           "EFI_FILE_NAME"
 #define EFI_NUM_BLOCKS_STRING             "EFI_NUM_BLOCKS"
 #define EFI_BLOCK_SIZE_STRING             "EFI_BLOCK_SIZE"
+#define EFI_GUID_STRING                   "EFI_GUID"
 #define EFI_FV_GUID_STRING                "EFI_FV_GUID"
 #define EFI_CAPSULE_GUID_STRING           "EFI_CAPSULE_GUID"
 #define EFI_CAPSULE_HEADER_SIZE_STRING    "EFI_CAPSULE_HEADER_SIZE"
@@ -220,10 +219,12 @@ typedef struct {
   EFI_PHYSICAL_ADDRESS    RuntimeBaseAddress;  
   EFI_GUID                FvGuid;
   UINTN                   Size;
+  EFI_FVB_ATTRIBUTES      FvAttributes;
   CHAR8                   FvName[_MAX_PATH];
   EFI_FV_BLOCK_MAP_ENTRY  FvBlocks[MAX_NUMBER_OF_FV_BLOCKS];
-  EFI_FVB_ATTRIBUTES      FvAttributes;
   CHAR8                   FvFiles[MAX_NUMBER_OF_FILES_IN_FV][_MAX_PATH];
+  UINT32                  SizeofFvFiles[MAX_NUMBER_OF_FILES_IN_FV];
+  BOOLEAN                 IsPiFvImage;
 } FV_INFO;
 
 typedef struct {
@@ -247,8 +248,11 @@ typedef struct {
 #pragma pack()
 
 #define FV_DEFAULT_ATTRIBUTE  0x0004FEFF
-extern FV_INFO    gFvDataInfo;
-extern CAP_INFO   gCapDataInfo;
+extern FV_INFO    mFvDataInfo;
+extern CAP_INFO   mCapDataInfo;
+extern EFI_GUID   mEfiFirmwareFileSystem2Guid;
+extern UINT32     mFvTotalSize;
+extern UINT32     mFvTakenSize;
 //
 // Local function prototypes
 //
@@ -409,13 +413,4 @@ Returns:
 --*/
 ;
 
-EFI_STATUS
-WriteMapFile (
-  IN OUT FILE                  *FvMapFile,
-  IN     CHAR8                 *FileName,
-  IN     EFI_GUID              *FileGuidPtr, 
-  IN     EFI_PHYSICAL_ADDRESS  ImageBaseAddress,
-  IN     UINT32                AddressOfEntryPoint,
-  IN     UINT32                Offset
-  );
 #endif

@@ -38,7 +38,6 @@ Abstract:
 
 STATIC UINT32   MaxFfsAlignment = 0;
 
-EFI_GUID  mEfiFirmwareFileSystem2Guid = EFI_FIRMWARE_FILE_SYSTEM2_GUID;
 EFI_GUID  mEfiFirmwareVolumeTopFileGuid = EFI_FFS_VOLUME_TOP_FILE_GUID;
 EFI_GUID  mFileGuidArray [MAX_NUMBER_OF_FILES_IN_FV] = {0};
 EFI_GUID  mZeroGuid                 = {0x0, 0x0, 0x0, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}};
@@ -155,8 +154,8 @@ UINT8                                   m64kRecoveryStartupApDataArray[SIZEOF_ST
   0x00
 };
 
-FV_INFO                     gFvDataInfo;
-CAP_INFO                    gCapDataInfo;
+FV_INFO                     mFvDataInfo;
+CAP_INFO                    mCapDataInfo;
 
 EFI_STATUS
 ParseFvInf (
@@ -218,12 +217,7 @@ Returns:
     //
     // Get the guid value
     //
-    Status = StringToGuid (Value, &FvInfo->FvGuid);
-    if (EFI_ERROR (Status)) {
-      memcpy (&FvInfo->FvGuid, &mEfiFirmwareFileSystem2Guid, sizeof (EFI_GUID));
-    }
-  } else {
-    memcpy (&FvInfo->FvGuid, &mEfiFirmwareFileSystem2Guid, sizeof (EFI_GUID));
+    StringToGuid (Value, &FvInfo->FvGuid);
   }
   DebugMsg (NULL, 0, 9, "FV File Guid", "%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X", 
                 FvInfo->FvGuid.Data1,
@@ -657,6 +651,226 @@ Returns:
 }
 
 EFI_STATUS
+WriteMapFile (
+  IN OUT FILE                  *FvMapFile,
+  IN     CHAR8                 *FileName,
+  IN     EFI_GUID              *FileGuidPtr, 
+  IN     EFI_PHYSICAL_ADDRESS  ImageBaseAddress,
+  IN     PE_COFF_LOADER_IMAGE_CONTEXT *pImageContext
+  )
+/*++
+
+Routine Description:
+
+  This function gets the basic debug information (entrypoint, baseaddress, .text, .data section base address)
+  from PE/COFF image and abstracts Pe Map file information and add them into FvMap file for Debug.
+
+Arguments:
+
+  FvMapFile             A pointer to FvMap File
+  FileName              Ffs File PathName
+  FileGuidPtr           Guid Value of Ffs file
+  ImageBaseAddress      PeImage Base Address.
+  pImageContext         Image Context Information.
+
+Returns:
+
+  EFI_SUCCESS           Added required map information.
+
+--*/
+{
+  CHAR8           PeMapFileName [_MAX_PATH];
+  CHAR8           *Cptr, *Cptr2;
+  CHAR8           FileGuidName [MAX_LINE_LEN];
+  FILE            *PeMapFile;
+  CHAR8           Line [MAX_LINE_LEN];
+  CHAR8           KeyWord [MAX_LINE_LEN];
+  CHAR8                 FunctionName [MAX_LINE_LEN];
+  EFI_PHYSICAL_ADDRESS  FunctionAddress;
+  UINT32                FunctionType;
+  CHAR8                 FunctionTypeName [MAX_LINE_LEN];
+  UINT32                Index;
+  UINT32                AddressOfEntryPoint;
+  UINT32                Offset;
+  EFI_IMAGE_NT_HEADERS                  *PeHdr;
+  EFI_TE_IMAGE_HEADER                   *TEImageHeader;
+  EFI_IMAGE_SECTION_HEADER              *SectionHeader;
+  
+  //
+  // Init local variable
+  //
+  FunctionType = 0;
+  //
+  // Print FileGuid to string buffer. 
+  //
+  PrintGuidToBuffer (FileGuidPtr, FileGuidName, MAX_LINE_LEN, TRUE);
+  
+  //
+  // Construct Map file Name 
+  //
+  strcpy (PeMapFileName, FileName);
+  
+  //
+  // Change '\\' to '/', unified path format.
+  //
+  Cptr = PeMapFileName;
+  while (*Cptr != '\0') {
+    if (*Cptr == '\\') {
+      *Cptr = FILE_SEP_CHAR;
+    }
+    Cptr ++;
+  }
+  
+  //
+  // Get Map file
+  // 
+  Cptr = PeMapFileName + strlen (PeMapFileName);
+  while ((*Cptr != '.') && (Cptr >= PeMapFileName)) {
+    Cptr --;
+  }
+  if (Cptr < PeMapFileName) {
+    return EFI_NOT_FOUND;
+  } else {
+    *(Cptr + 1) = 'm';
+    *(Cptr + 2) = 'a';
+    *(Cptr + 3) = 'p';
+    *(Cptr + 4) = '\0';
+  }
+
+  //
+  // Get module Name
+  //
+  Cptr2 = Cptr;
+  while ((*Cptr != FILE_SEP_CHAR) && (Cptr >= PeMapFileName)) {
+    Cptr --;
+  }
+	*Cptr2 = '\0';
+	strcpy (KeyWord, Cptr + 1);
+	*Cptr2 = '.';
+
+  //
+  // AddressOfEntryPoint and Offset in Image
+  //
+  if (!pImageContext->IsTeImage) {
+  	PeHdr = (EFI_IMAGE_NT_HEADERS *) ((UINT8 *) pImageContext->Handle + pImageContext->PeCoffHeaderOffset);
+  	AddressOfEntryPoint = PeHdr->OptionalHeader.AddressOfEntryPoint;
+  	Offset = 0;
+    SectionHeader = (EFI_IMAGE_SECTION_HEADER *) (
+                       (UINT8 *) PeHdr +
+                       sizeof (UINT32) + 
+                       sizeof (EFI_IMAGE_FILE_HEADER) +  
+                       PeHdr->FileHeader.SizeOfOptionalHeader
+                       );
+    Index = PeHdr->FileHeader.NumberOfSections;
+  } else {
+  	TEImageHeader = (EFI_TE_IMAGE_HEADER *) pImageContext->Handle;
+    AddressOfEntryPoint = TEImageHeader->AddressOfEntryPoint;
+    Offset = TEImageHeader->StrippedSize - sizeof (EFI_TE_IMAGE_HEADER);
+    SectionHeader = (EFI_IMAGE_SECTION_HEADER *) (TEImageHeader + 1);
+    Index = TEImageHeader->NumberOfSections;
+  }
+  
+  //
+  // module information output
+  //
+  if (ImageBaseAddress == 0) {
+    fprintf (FvMapFile, "%s (dummy) (", KeyWord);
+    fprintf (FvMapFile, "BaseAddress=%08lx, ", ImageBaseAddress);
+  } else {
+    fprintf (FvMapFile, "%s (", KeyWord);
+    fprintf (FvMapFile, "BaseAddress=%08lx, ", ImageBaseAddress + Offset);
+  }
+  fprintf (FvMapFile, "EntryPoint=%08lx, ", ImageBaseAddress + AddressOfEntryPoint);
+  fprintf (FvMapFile, "GUID=%s", FileGuidName);
+  fprintf (FvMapFile, ")\n"); 
+  
+  for (Index; Index > 0;Index --, SectionHeader ++) {
+  	if (stricmp (SectionHeader->Name, ".text") == 0) {
+  		fprintf (FvMapFile, ".textbaseaddress=%08lx ",ImageBaseAddress + SectionHeader->VirtualAddress);
+  	} else if (stricmp (SectionHeader->Name, ".data") == 0) {
+  	  fprintf (FvMapFile, ".databaseaddress=%08lx ",ImageBaseAddress + SectionHeader->VirtualAddress);
+  	}
+  }
+  fprintf (FvMapFile, "\n\n"); 
+   
+  //
+  // Open PeMapFile
+  //
+  PeMapFile = fopen (PeMapFileName, "r");
+  if (PeMapFile == NULL) {
+    // fprintf (stdout, "can't open %s file to reading\n", PeMapFileName);
+    return EFI_ABORTED;
+  }
+  VerboseMsg ("The map file is %s", PeMapFileName);
+  
+  //
+  // Output Functions information into Fv Map file
+  //
+  while (fgets (Line, MAX_LINE_LEN, PeMapFile) != NULL) {
+    //
+    // Skip blank line
+    //
+    if (Line[0] == 0x0a) {
+      FunctionType = 0;
+      continue;
+    }
+    //
+    // By Address and Static keyword
+    //  
+    if (FunctionType == 0) {
+      sscanf (Line, "%s", KeyWord);
+      if (stricmp (KeyWord, "Address") == 0) {
+        //
+        // function list
+        //
+        FunctionType = 1;
+        fgets (Line, MAX_LINE_LEN, PeMapFile);
+      } else if (stricmp (KeyWord, "Static") == 0) {
+        //
+        // static function list
+        //
+        FunctionType = 2;
+        fgets (Line, MAX_LINE_LEN, PeMapFile);
+      }
+      continue;
+    }
+    //
+    // Printf Function Information
+    //
+    if (FunctionType == 1) {
+      sscanf (Line, "%s %s %lx %s", KeyWord, FunctionName, &FunctionAddress, FunctionTypeName);
+      if (FunctionTypeName [1] == '\0' && (FunctionTypeName [0] == 'f' || FunctionTypeName [0] == 'F')) {
+        fprintf (FvMapFile, "  %016lx ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "(%08lx) F  ", FunctionAddress - Offset);
+        fprintf (FvMapFile, "%s\n", FunctionName);
+    } else {
+        fprintf (FvMapFile, "  %016lx ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "(%08lx)    ", FunctionAddress - Offset);
+        fprintf (FvMapFile, "%s\n", FunctionName);
+      }
+    } else if (FunctionType == 2) {
+      sscanf (Line, "%s %s %lx %s", KeyWord, FunctionName, &FunctionAddress, FunctionTypeName);
+      if (FunctionTypeName [1] == '\0' && (FunctionTypeName [0] == 'f' || FunctionTypeName [0] == 'F')) {
+        fprintf (FvMapFile, "  %016lx ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "(%08lx) FS ", FunctionAddress - Offset);
+        fprintf (FvMapFile, "%s\n", FunctionName);
+      } else {
+        fprintf (FvMapFile, "  %016lx ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "(%08lx)    ", FunctionAddress - Offset);
+        fprintf (FvMapFile, "%s\n", FunctionName);
+      }
+    }
+  }
+  //
+  // Close PeMap file
+  //
+  fprintf (FvMapFile, "\n\n");
+  fclose (PeMapFile);
+  
+  return EFI_SUCCESS;
+}
+
+EFI_STATUS
 AddFile (
   IN OUT MEMORY_FILE          *FvImage,
   IN FV_INFO                  *FvInfo,
@@ -748,6 +962,19 @@ Returns:
     free  (FileBuffer);
     Error (NULL, 0, 0004, "Error reading file", FvInfo->FvFiles[Index]);
     return EFI_ABORTED;
+  }
+  
+  //
+  // For None PI Ffs file, directly add them into FvImage.
+  //
+  if (!FvInfo->IsPiFvImage) {
+    memcpy (FvImage->CurrentFilePointer, FileBuffer, FileSize);
+    if (FvInfo->SizeofFvFiles[Index] > FileSize) {
+    	FvImage->CurrentFilePointer += FvInfo->SizeofFvFiles[Index];
+    } else {
+    	FvImage->CurrentFilePointer += FileSize;
+    }
+    goto Done;
   }
   
   //
@@ -874,6 +1101,7 @@ Returns:
     FvImage->CurrentFilePointer++;
   }
 
+Done: 
   //
   // Free allocated memory.
   //
@@ -1442,7 +1670,7 @@ Returns:
     //
     // Parse the FV inf file for header information
     //
-    Status = ParseFvInf (&InfMemoryFile, &gFvDataInfo);
+    Status = ParseFvInf (&InfMemoryFile, &mFvDataInfo);
     if (EFI_ERROR (Status)) {
       Error (NULL, 0, 0003, "Error parsing file", "the input INF file.");
       return Status;
@@ -1452,8 +1680,8 @@ Returns:
   //
   // Update the file name return values
   //
-  if (FvFileName == NULL && gFvDataInfo.FvName[0] != '\0') {
-    FvFileName = gFvDataInfo.FvName;
+  if (FvFileName == NULL && mFvDataInfo.FvName[0] != '\0') {
+    FvFileName = mFvDataInfo.FvName;
   }
 
   if (FvFileName == NULL) {
@@ -1461,11 +1689,15 @@ Returns:
     return EFI_ABORTED;
   }
   
-  if (gFvDataInfo.FvBlocks[0].Length == 0) {
+  if (mFvDataInfo.FvBlocks[0].Length == 0) {
     Error (NULL, 0, 1001, "Missing required argument", "Block Size");
     return EFI_ABORTED;
   }
-  
+
+  if (CompareGuid (&mFvDataInfo.FvGuid, &mEfiFirmwareFileSystem2Guid) == 0) {
+    mFvDataInfo.IsPiFvImage = TRUE;
+  } 
+
   //
   // FvMap file to log the function address of all modules in one Fvimage
   //
@@ -1481,29 +1713,29 @@ Returns:
   // Update FvImage Base Address, XipBase not same to BtBase, RtBase address.
   //
   if (XipBaseAddress != 0) {
-    gFvDataInfo.BaseAddress = XipBaseAddress;
+    mFvDataInfo.BaseAddress = XipBaseAddress;
   }
   if (*BtBaseAddress != 0) {
-    gFvDataInfo.BootBaseAddress = *BtBaseAddress;
+    mFvDataInfo.BootBaseAddress = *BtBaseAddress;
   }
   if (*RtBaseAddress != 0) {
-    gFvDataInfo.RuntimeBaseAddress = *RtBaseAddress;
+    mFvDataInfo.RuntimeBaseAddress = *RtBaseAddress;
   }
 
   //
   // Calculate the FV size and Update Fv Size based on the actual FFS files.
-  // And Update gFvDataInfo data.
+  // And Update mFvDataInfo data.
   //
-  Status = CalculateFvSize (&gFvDataInfo);
+  Status = CalculateFvSize (&mFvDataInfo);
   if (EFI_ERROR (Status)) {
     return Status;    
   }
-  VerboseMsg ("the generated FV image size is %d bytes", gFvDataInfo.Size);
+  VerboseMsg ("the generated FV image size is %d bytes", mFvDataInfo.Size);
   
   //
   // support fv image and empty fv image
   //
-  FvImageSize = gFvDataInfo.Size;
+  FvImageSize = mFvDataInfo.Size;
 
   //
   // Allocate the FV, assure FvImage Header 8 byte alignment
@@ -1517,13 +1749,13 @@ Returns:
   //
   // Initialize the FV to the erase polarity
   //
-  if (gFvDataInfo.FvAttributes == 0) {
+  if (mFvDataInfo.FvAttributes == 0) {
     //
     // Set Default Fv Attribute 
     //
-    gFvDataInfo.FvAttributes = FV_DEFAULT_ATTRIBUTE;
+    mFvDataInfo.FvAttributes = FV_DEFAULT_ATTRIBUTE;
   }
-  if (gFvDataInfo.FvAttributes & EFI_FVB2_ERASE_POLARITY) {
+  if (mFvDataInfo.FvAttributes & EFI_FVB2_ERASE_POLARITY) {
     memset (FvImage, -1, FvImageSize);
   } else {
     memset (FvImage, 0, FvImageSize);
@@ -1542,11 +1774,11 @@ Returns:
   //
   // Copy the FFS GUID
   //
-  memcpy (&FvHeader->FileSystemGuid, &gFvDataInfo.FvGuid, sizeof (EFI_GUID));
+  memcpy (&FvHeader->FileSystemGuid, &mFvDataInfo.FvGuid, sizeof (EFI_GUID));
 
   FvHeader->FvLength        = FvImageSize;
   FvHeader->Signature       = EFI_FVH_SIGNATURE;
-  FvHeader->Attributes      = gFvDataInfo.FvAttributes;
+  FvHeader->Attributes      = mFvDataInfo.FvAttributes;
   FvHeader->Revision        = EFI_FVH_REVISION;
   FvHeader->ExtHeaderOffset = 0;
   FvHeader->Reserved[0]     = 0;
@@ -1554,9 +1786,9 @@ Returns:
   //
   // Copy firmware block map
   //
-  for (Index = 0; gFvDataInfo.FvBlocks[Index].Length != 0; Index++) {
-    FvHeader->BlockMap[Index].NumBlocks   = gFvDataInfo.FvBlocks[Index].NumBlocks;
-    FvHeader->BlockMap[Index].Length      = gFvDataInfo.FvBlocks[Index].Length;
+  for (Index = 0; mFvDataInfo.FvBlocks[Index].Length != 0; Index++) {
+    FvHeader->BlockMap[Index].NumBlocks   = mFvDataInfo.FvBlocks[Index].NumBlocks;
+    FvHeader->BlockMap[Index].Length      = mFvDataInfo.FvBlocks[Index].Length;
   }
 
   //
@@ -1575,7 +1807,7 @@ Returns:
   //
   // If there is no FFS file, generate one empty FV
   //
-  if (gFvDataInfo.FvFiles[0][0] == 0) {
+  if (mFvDataInfo.FvFiles[0][0] == 0) {
     goto WriteFile;
   }
 
@@ -1608,11 +1840,11 @@ Returns:
   //
   // Add files to FV
   //
-  for (Index = 0; gFvDataInfo.FvFiles[Index][0] != 0; Index++) {
+  for (Index = 0; mFvDataInfo.FvFiles[Index][0] != 0; Index++) {
     //
     // Add the file
     //
-    Status = AddFile (&FvImageMemoryFile, &gFvDataInfo, Index, &VtfFileImage, FvMapFile);
+    Status = AddFile (&FvImageMemoryFile, &mFvDataInfo, Index, &VtfFileImage, FvMapFile);
 
     //
     // Exit if error detected while adding the file
@@ -1642,8 +1874,8 @@ Returns:
     // reset vector. If the PEI Core is found, the VTF file will probably get  
     // corrupted by updating the entry point.                                  
     //
-    if ((gFvDataInfo.BaseAddress + gFvDataInfo.Size) == FV_IMAGES_TOP_ADDRESS) {       
-      Status = UpdateResetVector (&FvImageMemoryFile, &gFvDataInfo, VtfFileImage);
+    if ((mFvDataInfo.BaseAddress + mFvDataInfo.Size) == FV_IMAGES_TOP_ADDRESS) {       
+      Status = UpdateResetVector (&FvImageMemoryFile, &mFvDataInfo, VtfFileImage);
       if (EFI_ERROR(Status)) {                                               
         Error (NULL, 0, 3000, "Invalid", "Could not update the reset vector.");
         goto Finish;                                              
@@ -1697,8 +1929,8 @@ Finish:
   //
   // Update BootAddress and RuntimeAddress
   //
-  *BtBaseAddress = gFvDataInfo.BootBaseAddress;
-  *RtBaseAddress = gFvDataInfo.RuntimeBaseAddress;
+  *BtBaseAddress = mFvDataInfo.BootBaseAddress;
+  *RtBaseAddress = mFvDataInfo.RuntimeBaseAddress;
 
   return Status;
 }
@@ -1848,43 +2080,54 @@ Returns:
     // close file
     //
     fclose (fpin);
-    //
-    // Check whether this ffs file is vtf file
-    //
-    if (IsVtfFile (&FfsHeader)) {
-      if (VtfFileFlag) {
-        //
-        // One Fv image can't have two vtf files.
-        //
-        return EFI_ABORTED;
-      }
-      VtfFileFlag = TRUE;
-      //
-      // The space between Vft File and the latest file must be able to contain 
-      // one ffs file header in order to add one pad file.
-      //
-      CurrentOffset += sizeof (EFI_FFS_FILE_HEADER);
-    }
-    //
-    // Get the alignment of FFS file 
-    //
-    ReadFfsAlignment (&FfsHeader, &FfsAlignment);
-    FfsAlignment = 1 << FfsAlignment;
-    //
-    // Add Pad file
-    //
-    if (((CurrentOffset + sizeof (EFI_FFS_FILE_HEADER)) % FfsAlignment) != 0) {
-      CurrentOffset = (CurrentOffset + sizeof (EFI_FFS_FILE_HEADER) * 2 + FfsAlignment - 1) & ~(FfsAlignment - 1);
-      CurrentOffset -= sizeof (EFI_FFS_FILE_HEADER);
-    }
+    
+    if (FvInfoPtr->IsPiFvImage) {
+	    //
+	    // Check whether this ffs file is vtf file
+	    //
+	    if (IsVtfFile (&FfsHeader)) {
+	      if (VtfFileFlag) {
+	        //
+	        // One Fv image can't have two vtf files.
+	        //
+	        return EFI_ABORTED;
+	      }
+	      VtfFileFlag = TRUE;
+	      //
+	      // The space between Vft File and the latest file must be able to contain 
+	      // one ffs file header in order to add one pad file.
+	      //
+	      CurrentOffset += sizeof (EFI_FFS_FILE_HEADER);
+	    }
+	    //
+	    // Get the alignment of FFS file 
+	    //
+	    ReadFfsAlignment (&FfsHeader, &FfsAlignment);
+	    FfsAlignment = 1 << FfsAlignment;
+	    //
+	    // Add Pad file
+	    //
+	    if (((CurrentOffset + sizeof (EFI_FFS_FILE_HEADER)) % FfsAlignment) != 0) {
+	      CurrentOffset = (CurrentOffset + sizeof (EFI_FFS_FILE_HEADER) * 2 + FfsAlignment - 1) & ~(FfsAlignment - 1);
+	      CurrentOffset -= sizeof (EFI_FFS_FILE_HEADER);
+	    }
+	  }
+
     //
     // Add ffs file size
     //
-    CurrentOffset += FfsFileSize;    
+    if (FvInfoPtr->SizeofFvFiles[Index] > FfsFileSize) {
+    	CurrentOffset += FvInfoPtr->SizeofFvFiles[Index];
+    } else {
+    	CurrentOffset += FfsFileSize;
+    }
+    	
     //
     // Make next ffs file start at QWord Boundry
     //
-    CurrentOffset = (CurrentOffset + EFI_FFS_FILE_HEADER_ALIGNMENT - 1) & ~(EFI_FFS_FILE_HEADER_ALIGNMENT - 1);
+    if (FvInfoPtr->IsPiFvImage) {
+    	CurrentOffset = (CurrentOffset + EFI_FFS_FILE_HEADER_ALIGNMENT - 1) & ~(EFI_FFS_FILE_HEADER_ALIGNMENT - 1);
+    }
   }
   
   DebugMsg (NULL, 0, 9, "FvImage size", "The caculated fv image size is 0x%x and the current set fv image size is 0x%x", CurrentOffset, FvInfoPtr->Size);
@@ -1992,6 +2235,7 @@ Returns:
 {
   EFI_STATUS                            Status;
   PE_COFF_LOADER_IMAGE_CONTEXT          ImageContext;
+  PE_COFF_LOADER_IMAGE_CONTEXT          OrigImageContext;  
   EFI_PHYSICAL_ADDRESS                  XipBase;
   EFI_PHYSICAL_ADDRESS                  NewPe32BaseAddress;
   EFI_PHYSICAL_ADDRESS                  *BaseToUpdate;
@@ -2086,9 +2330,13 @@ Returns:
     ImageContext.ImageRead  = (PE_COFF_LOADER_READ_FILE) FfsRebaseImageRead;
     Status                  = PeCoffLoaderGetImageInfo (&ImageContext);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 3000, "Invalid", "GetImageInfo() call failed on rebase %s.", FileName);
+      Error (NULL, 0, 3000, "Invalid PeImage", "The input file is %s and the return status is %x", FileName, Status);
       return Status;
     }
+    //
+    // Keep Image Context for PE image in FV
+    //
+    memcpy (&OrigImageContext, &ImageContext, sizeof (ImageContext));
     
     //
     // Get File PdbPointer
@@ -2176,7 +2424,7 @@ Returns:
           ImageContext.Handle = PeFileBuffer;
           Status              = PeCoffLoaderGetImageInfo (&ImageContext);
           if (EFI_ERROR (Status)) {
-            Error (NULL, 0, 3000, "Invalid", "GetImageInfo() call failed on rebase of %s", FileName);
+            Error (NULL, 0, 3000, "Invalid PeImage", "The input file is %s and the return status is %x", FileName, Status);
             return Status;
           }
           ImageContext.RelocationsStripped = FALSE;
@@ -2187,58 +2435,71 @@ Returns:
         break;
 
       case EFI_FV_FILETYPE_DRIVER:
+      case EFI_FV_FILETYPE_DXE_CORE:
         switch (PeHdr->OptionalHeader.Subsystem) {
           case EFI_IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER:
-            if ((Flags & REBASE_RUNTIME_FILE) == 0) {
+						if ((Flags & REBASE_XIP_FILE) == REBASE_XIP_FILE) {
+			        //
+			        // Check if section-alignment and file-alignment match or not
+			        //
+			        if ((PeHdr->OptionalHeader.SectionAlignment != PeHdr->OptionalHeader.FileAlignment)) {
+			          //
+			          // Xip module has the same section alignment and file alignment.
+			          //
+			          Error (NULL, 0, 3000, "Invalid", "Section-Alignment and File-Alignment do not match : %s.", FileName);
+			          return EFI_ABORTED;
+			        }
+			        NewPe32BaseAddress = XipBase + (UINTN) CurrentPe32Section.Pe32Section + sizeof (EFI_PE32_SECTION) - (UINTN)FfsFile;
+			        BaseToUpdate = &XipBase;	          	
+	          } else if ((Flags & REBASE_RUNTIME_FILE) == REBASE_RUNTIME_FILE) {
+	            //
+	            // make sure image base address at the section alignment
+	            //
+	            FvInfo->RuntimeBaseAddress = (FvInfo->RuntimeBaseAddress - ImageContext.ImageSize) & (~(ImageContext.SectionAlignment - 1));
+	            FvInfo->RuntimeBaseAddress = FvInfo->RuntimeBaseAddress & (~(EFI_PAGE_SIZE - 1));
+	            NewPe32BaseAddress = FvInfo->RuntimeBaseAddress;
+	            BaseToUpdate = &(FvInfo->RuntimeBaseAddress);
+	          } else {
               //
               // RT drivers aren't supposed to be relocated
               //
               goto WritePeMap;
             }
-            //
-            // make sure image base address at the section alignment
-            //
-            FvInfo->RuntimeBaseAddress = (FvInfo->RuntimeBaseAddress - ImageContext.ImageSize) & (~(ImageContext.SectionAlignment - 1));
-            FvInfo->RuntimeBaseAddress = FvInfo->RuntimeBaseAddress & (~(EFI_PAGE_SIZE - 1));
-            NewPe32BaseAddress = FvInfo->RuntimeBaseAddress;
-            BaseToUpdate = &(FvInfo->RuntimeBaseAddress);
             break;
 
           default:
             //
             // We treat all other subsystems the same as BS_DRIVER
             //
-            if ((Flags & REBASE_BOOTTIME_FILE) == 0) {
+						if ((Flags & REBASE_XIP_FILE) == REBASE_XIP_FILE) {
+			        //
+			        // Check if section-alignment and file-alignment match or not
+			        //
+			        if ((PeHdr->OptionalHeader.SectionAlignment != PeHdr->OptionalHeader.FileAlignment)) {
+			          //
+			          // Xip module has the same section alignment and file alignment.
+			          //
+			          Error (NULL, 0, 3000, "Invalid", "Section-Alignment and File-Alignment do not match : %s.", FileName);
+			          return EFI_ABORTED;
+			        }
+			        NewPe32BaseAddress = XipBase + (UINTN) CurrentPe32Section.Pe32Section + sizeof (EFI_PE32_SECTION) - (UINTN)FfsFile;
+			        BaseToUpdate = &XipBase;	          	
+	          } else if ((Flags & REBASE_BOOTTIME_FILE) == REBASE_BOOTTIME_FILE) {
+	            //
+	            // make sure image base address at the Section and Page alignment
+	            //
+	            FvInfo->BootBaseAddress = (FvInfo->BootBaseAddress - ImageContext.ImageSize) & (~(ImageContext.SectionAlignment - 1));
+	            FvInfo->BootBaseAddress = FvInfo->BootBaseAddress & (~(EFI_PAGE_SIZE - 1));
+	            NewPe32BaseAddress = FvInfo->BootBaseAddress;
+	            BaseToUpdate = &(FvInfo->BootBaseAddress);
+	          } else {
               //
               // Skip all BS_DRIVER's
               //
               goto WritePeMap;
             }
-            //
-            // make sure image base address at the Section and Page alignment
-            //
-            FvInfo->BootBaseAddress = (FvInfo->BootBaseAddress - ImageContext.ImageSize) & (~(ImageContext.SectionAlignment - 1));
-            FvInfo->BootBaseAddress = FvInfo->BootBaseAddress & (~(EFI_PAGE_SIZE - 1));
-            NewPe32BaseAddress = FvInfo->BootBaseAddress;
-            BaseToUpdate = &(FvInfo->BootBaseAddress);
             break;
         }
-        break;
-
-      case EFI_FV_FILETYPE_DXE_CORE:
-        if ((Flags & REBASE_BOOTTIME_FILE) == 0) {
-          //
-          // Skip DxeCore Driver
-          //
-          goto WritePeMap;
-        }
-        //
-        // make sure image base address at the Section and Page alignment
-        //
-        FvInfo->BootBaseAddress = (FvInfo->BootBaseAddress - ImageContext.ImageSize) & (~(ImageContext.SectionAlignment - 1));
-        FvInfo->BootBaseAddress = FvInfo->BootBaseAddress & (~(EFI_PAGE_SIZE - 1));
-        NewPe32BaseAddress = FvInfo->BootBaseAddress;
-        BaseToUpdate = &(FvInfo->BootBaseAddress);
         break;
 
       default:
@@ -2356,7 +2617,8 @@ WritePeMap:
     if (PdbPointer == NULL) {
       PdbPointer = FileName;
     }
-    WriteMapFile (FvMapFile, PdbPointer, (EFI_GUID *) FfsFile, NewPe32BaseAddress, PeHdr->OptionalHeader.AddressOfEntryPoint, 0);
+
+    WriteMapFile (FvMapFile, PdbPointer, (EFI_GUID *) FfsFile, NewPe32BaseAddress, &OrigImageContext);
   }
 
   if (FfsFile->Type != EFI_FV_FILETYPE_SECURITY_CORE &&
@@ -2398,9 +2660,13 @@ WritePeMap:
     ImageContext.ImageRead  = (PE_COFF_LOADER_READ_FILE) FfsRebaseImageRead;
     Status                  = PeCoffLoaderGetImageInfo (&ImageContext);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 3000, "Invalid", "GetImageInfo() call failed on rebase of TE image %s", FileName);
+      Error (NULL, 0, 3000, "Invalid TeImage", "The input file is %s and the return status is %x", FileName, Status);
       return Status;
     }
+    //
+    // Keep Image Context for TE image in FV
+    //
+    memcpy (&OrigImageContext, &ImageContext, sizeof (ImageContext));
 
     //
     // Get File PdbPointer
@@ -2472,7 +2738,7 @@ WritePeMap:
         ImageContext.Handle = PeFileBuffer;
         Status              = PeCoffLoaderGetImageInfo (&ImageContext);
         if (EFI_ERROR (Status)) {
-          Error (NULL, 0, 3000, "Invalid", "GetImageInfo() call failed on rebase of TE image %s", FileName);
+          Error (NULL, 0, 3000, "Invalid TeImage", "The input file is %s and the return status is %x", FileName, Status);
           return Status;
         }
         ImageContext.RelocationsStripped = FALSE;
@@ -2575,13 +2841,13 @@ WriteTeMap:
     if (PdbPointer == NULL) {
       PdbPointer = FileName;
     }
+
     WriteMapFile (
       FvMapFile, 
       PdbPointer, 
       (EFI_GUID *) FfsFile,
       NewPe32BaseAddress, 
-      TEImageHeader->AddressOfEntryPoint, 
-      TEImageHeader->StrippedSize - sizeof (EFI_TE_IMAGE_HEADER)
+      &OrigImageContext
       );
   }
  
@@ -2663,179 +2929,6 @@ Returns:
   }
   
   return EFI_NOT_FOUND;
-}
-
-EFI_STATUS
-WriteMapFile (
-  IN OUT FILE                  *FvMapFile,
-  IN     CHAR8                 *FileName,
-  IN     EFI_GUID              *FileGuidPtr, 
-  IN     EFI_PHYSICAL_ADDRESS  ImageBaseAddress,
-  IN     UINT32                AddressOfEntryPoint,
-  IN     UINT32                Offset
-  )
-/*++
-
-Routine Description:
-
-  This function abstracts Pe Map file information and add them into FvMap file for Debug.
-
-Arguments:
-
-  FvMapFile             A pointer to FvMap File
-  FileName              Ffs File PathName
-  ImageBaseAddress      PeImage Base Address.
-  AddressOfEntryPoint   EntryPoint address relative to PeBase Address
-  Offset                Offset between TeImage address and original PeImage.
-
-Returns:
-
-  EFI_SUCCESS           Added required map information.
-
---*/
-{
-  CHAR8           PeMapFileName [_MAX_PATH];
-  CHAR8           *Cptr;
-  CHAR8           FileGuidName [MAX_LINE_LEN];
-  FILE            *PeMapFile;
-  CHAR8           Line [MAX_LINE_LEN];
-  CHAR8           KeyWord [MAX_LINE_LEN];
-  CHAR8                 FunctionName [MAX_LINE_LEN];
-  EFI_PHYSICAL_ADDRESS  FunctionAddress;
-  UINT32                FunctionType;
-  CHAR8                 FunctionTypeName [MAX_LINE_LEN];
-  
-  //
-  // Init local variable
-  //
-  FunctionType = 0;
-  //
-  // Print FileGuid to string buffer. 
-  //
-  PrintGuidToBuffer (FileGuidPtr, FileGuidName, MAX_LINE_LEN, TRUE);
-  
-  //
-  // Construct Map file Name 
-  //
-  strcpy (PeMapFileName, FileName);
-  
-  //
-  // Change '\\' to '/', unified path format.
-  //
-  Cptr = PeMapFileName;
-  while (*Cptr != '\0') {
-    if (*Cptr == '\\') {
-      *Cptr = FILE_SEP_CHAR;
-    }
-    Cptr ++;
-  }
-  
-  //
-  // Get Map file
-  // 
-  Cptr = PeMapFileName + strlen (PeMapFileName);
-  while (*Cptr != '.') {
-    Cptr --;
-  }
-  if (*Cptr != '.') {
-    return EFI_NOT_FOUND;
-  } else {
-    *(Cptr + 1) = 'm';
-    *(Cptr + 2) = 'a';
-    *(Cptr + 3) = 'p';
-    *(Cptr + 4) = '\0';
-  }
-  //
-  // Open PeMapFile
-  //
-  PeMapFile = fopen (PeMapFileName, "r");
-  if (PeMapFile == NULL) {
-    // fprintf (stdout, "can't open %s file to reading\n", PeMapFileName);
-    return EFI_ABORTED;
-  }
-  VerboseMsg ("The map file is %s", PeMapFileName);
-  
-  //
-  // Output Functions information into Fv Map file
-  //
-  fgets (Line, MAX_LINE_LEN, PeMapFile);
-  sscanf (Line, "%s", KeyWord);
-  //
-  // module information output
-  //
-  if (ImageBaseAddress == 0) {
-    fprintf (FvMapFile, "%s (dummy) (", KeyWord);
-    fprintf (FvMapFile, "BaseAddress=%08lx, ", ImageBaseAddress);
-  } else {
-    fprintf (FvMapFile, "%s (", KeyWord);
-    fprintf (FvMapFile, "BaseAddress=%08lx, ", ImageBaseAddress + Offset);
-  }
-  fprintf (FvMapFile, "EntryPoint=%08lx, ", ImageBaseAddress + AddressOfEntryPoint);
-  fprintf (FvMapFile, "GUID=%s", FileGuidName);
-  fprintf (FvMapFile, ")\n\n");
-
-  while (fgets (Line, MAX_LINE_LEN, PeMapFile) != NULL) {
-    //
-    // Skip blank line
-    //
-    if (Line[0] == 0x0a) {
-      FunctionType = 0;
-      continue;
-    }
-    //
-    // By Address and Static keyword
-    //  
-    if (FunctionType == 0) {
-      sscanf (Line, "%s", KeyWord);
-      if (stricmp (KeyWord, "Address") == 0) {
-        //
-        // function list
-        //
-        FunctionType = 1;
-        fgets (Line, MAX_LINE_LEN, PeMapFile);
-      } else if (stricmp (KeyWord, "Static") == 0) {
-        //
-        // static function list
-        //
-        FunctionType = 2;
-        fgets (Line, MAX_LINE_LEN, PeMapFile);
-      }
-      continue;
-    }
-    //
-    // Printf Function Information
-    //
-    if (FunctionType == 1) {
-      sscanf (Line, "%s %s %lx %s", KeyWord, FunctionName, &FunctionAddress, FunctionTypeName);
-      if (FunctionTypeName [1] == '\0' && (FunctionTypeName [0] == 'f' || FunctionTypeName [0] == 'F')) {
-        fprintf (FvMapFile, "  %016lx ", ImageBaseAddress + FunctionAddress);
-        fprintf (FvMapFile, "(%08lx) F  ", FunctionAddress - Offset);
-        fprintf (FvMapFile, "%s\n", FunctionName);
-    } else {
-        fprintf (FvMapFile, "  %016lx ", ImageBaseAddress + FunctionAddress);
-        fprintf (FvMapFile, "(%08lx)    ", FunctionAddress - Offset);
-        fprintf (FvMapFile, "%s\n", FunctionName);
-      }
-    } else if (FunctionType == 2) {
-      sscanf (Line, "%s %s %lx %s", KeyWord, FunctionName, &FunctionAddress, FunctionTypeName);
-      if (FunctionTypeName [1] == '\0' && (FunctionTypeName [0] == 'f' || FunctionTypeName [0] == 'F')) {
-        fprintf (FvMapFile, "  %016lx ", ImageBaseAddress + FunctionAddress);
-        fprintf (FvMapFile, "(%08lx) FS ", FunctionAddress - Offset);
-        fprintf (FvMapFile, "%s\n", FunctionName);
-      } else {
-        fprintf (FvMapFile, "  %016lx ", ImageBaseAddress + FunctionAddress);
-        fprintf (FvMapFile, "(%08lx)    ", FunctionAddress - Offset);
-        fprintf (FvMapFile, "%s\n", FunctionName);
-      }
-    }
-  }
-  //
-  // Close PeMap file
-  //
-  fprintf (FvMapFile, "\n\n");
-  fclose (PeMapFile);
-  
-  return EFI_SUCCESS;
 }
 
 EFI_STATUS
@@ -3007,27 +3100,27 @@ Returns:
     //
     // Parse the Cap inf file for header information
     //
-    Status = ParseCapInf (&InfMemoryFile, &gCapDataInfo);
+    Status = ParseCapInf (&InfMemoryFile, &mCapDataInfo);
     if (Status != EFI_SUCCESS) {
       return Status;
     }
   }
   
-  if (gCapDataInfo.HeaderSize == 0) {
+  if (mCapDataInfo.HeaderSize == 0) {
     //
     // make header size align 16 bytes.
     //
-    gCapDataInfo.HeaderSize = sizeof (EFI_CAPSULE_HEADER);
-    gCapDataInfo.HeaderSize = (gCapDataInfo.HeaderSize + 0xF) & ~0xF;
+    mCapDataInfo.HeaderSize = sizeof (EFI_CAPSULE_HEADER);
+    mCapDataInfo.HeaderSize = (mCapDataInfo.HeaderSize + 0xF) & ~0xF;
   }
 
-  if (gCapDataInfo.HeaderSize < sizeof (EFI_CAPSULE_HEADER)) {
+  if (mCapDataInfo.HeaderSize < sizeof (EFI_CAPSULE_HEADER)) {
     Error (NULL, 0, 2000, "Invalid parameter", "The specified HeaderSize cannot be less than the size of EFI_CAPSULE_HEADER.");
     return EFI_INVALID_PARAMETER;
   }
   
-  if (CapFileName == NULL && gCapDataInfo.CapName[0] != '\0') {
-    CapFileName = gCapDataInfo.CapName;
+  if (CapFileName == NULL && mCapDataInfo.CapName[0] != '\0') {
+    CapFileName = mCapDataInfo.CapName;
   }
   
   if (CapFileName == NULL) {
@@ -3038,19 +3131,19 @@ Returns:
   //
   // Set Default Capsule Guid value
   //
-  if (CompareGuid (&gCapDataInfo.CapGuid, &mZeroGuid) == 0) {
-    memcpy (&gCapDataInfo.CapGuid, &mDefaultCapsuleGuid, sizeof (EFI_GUID));
+  if (CompareGuid (&mCapDataInfo.CapGuid, &mZeroGuid) == 0) {
+    memcpy (&mCapDataInfo.CapGuid, &mDefaultCapsuleGuid, sizeof (EFI_GUID));
   }
   //
   // Calculate the size of capsule image.
   //
   Index    = 0;
   FileSize = 0;
-  CapSize  = gCapDataInfo.HeaderSize;
-  while (gCapDataInfo.CapFiles [Index][0] != '\0') {
-    fpin = fopen (gCapDataInfo.CapFiles[Index], "rb");
+  CapSize  = mCapDataInfo.HeaderSize;
+  while (mCapDataInfo.CapFiles [Index][0] != '\0') {
+    fpin = fopen (mCapDataInfo.CapFiles[Index], "rb");
     if (fpin == NULL) {
-      Error (NULL, 0, 0001, "Error opening file", gCapDataInfo.CapFiles[Index]);
+      Error (NULL, 0, 0001, "Error opening file", mCapDataInfo.CapFiles[Index]);
       return EFI_ABORTED;
     }
     FileSize  = _filelength (fileno (fpin));
@@ -3071,24 +3164,24 @@ Returns:
   //
   // Initialize the capsule header to zero
   //
-  memset (CapBuffer, 0, gCapDataInfo.HeaderSize);
+  memset (CapBuffer, 0, mCapDataInfo.HeaderSize);
   
   //
   // create capsule header and get capsule body
   //
   CapsuleHeader = (EFI_CAPSULE_HEADER *) CapBuffer;
-  memcpy (&CapsuleHeader->CapsuleGuid, &gCapDataInfo.CapGuid, sizeof (EFI_GUID));
-  CapsuleHeader->HeaderSize       = gCapDataInfo.HeaderSize;
-  CapsuleHeader->Flags            = gCapDataInfo.Flags;
+  memcpy (&CapsuleHeader->CapsuleGuid, &mCapDataInfo.CapGuid, sizeof (EFI_GUID));
+  CapsuleHeader->HeaderSize       = mCapDataInfo.HeaderSize;
+  CapsuleHeader->Flags            = mCapDataInfo.Flags;
   CapsuleHeader->CapsuleImageSize = CapSize;
 
   Index    = 0;
   FileSize = 0;
   CapSize  = CapsuleHeader->HeaderSize;
-  while (gCapDataInfo.CapFiles [Index][0] != '\0') {
-    fpin = fopen (gCapDataInfo.CapFiles[Index], "rb");
+  while (mCapDataInfo.CapFiles [Index][0] != '\0') {
+    fpin = fopen (mCapDataInfo.CapFiles[Index], "rb");
     if (fpin == NULL) {
-      Error (NULL, 0, 0001, "Error opening file", gCapDataInfo.CapFiles[Index]);
+      Error (NULL, 0, 0001, "Error opening file", mCapDataInfo.CapFiles[Index]);
       free (CapBuffer);
       return EFI_ABORTED;
     }
