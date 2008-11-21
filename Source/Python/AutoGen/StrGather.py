@@ -280,8 +280,6 @@ def CreateCFileContent(BaseName, UniObjectClass, IsCompatibleMode):
         Index = 0
         for IndexJ in range(1, len(UniObjectClass.OrderedStringList[UniObjectClass.LanguageDef[IndexI][0]])):
             Item = UniObjectClass.FindByToken(IndexJ, Language)
-            #Item = UniObjectClass.OrderedStringList[UniObjectClass.LanguageDef[IndexI][0]][IndexJ]
-        #for Item in UniObjectClass.OrderedStringList[Language]:
             Name = Item.StringName
             Value = Item.StringValueByteList
             Referenced = Item.Referenced
@@ -309,14 +307,6 @@ def CreateCFileContent(BaseName, UniObjectClass, IsCompatibleMode):
         #
         Offset = EFI_HII_STRING_PACKAGE_HDR_LENGTH + len(Language) + 1
         ArrayLength = Offset + ArrayLength + 1
-        
-        #
-        # Create STRGATHER_OUTPUT_HEADER in compatible mode
-        #
-        if IsCompatibleMode:
-            Str = WriteLine(Str, '// STRGATHER_OUTPUT_HEADER\n')
-            List = DecToHexList(ArrayLength + 6, 6) + [StringPackageForm]
-            Str = WriteLine(Str, CreateArrayItem(List) + '\n')
         
         #
         # Create PACKAGE HEADER
@@ -352,11 +342,20 @@ def CreateCFileContent(BaseName, UniObjectClass, IsCompatibleMode):
     AllStr = WriteLine('', CHAR_ARRAY_DEFIN + ' ' + BaseName + COMMON_FILE_NAME + '[] = {\n' )
     
     #
+    # Create FRAMEWORK_EFI_HII_PACK_HEADER in compatible mode
+    #
+    if IsCompatibleMode:
+        AllStr = WriteLine(AllStr, '// FRAMEWORK PACKAGE HEADER Length')
+        AllStr = WriteLine(AllStr, CreateArrayItem(DecToHexList(TotalLength + 2)) + '\n')
+        AllStr = WriteLine(AllStr, '// FRAMEWORK PACKAGE HEADER Type')
+        AllStr = WriteLine(AllStr, CreateArrayItem(DecToHexList(2, 4)) + '\n')
+    
+    #
     # Create whole array length in UEFI mode
     #
     if not IsCompatibleMode:
-        AllStr = WriteLine(AllStr, '// STRING ARRAY LENGTH\n')
-        AllStr = WriteLine(AllStr, CreateArrayItem(DecToHexList(TotalLength)))
+        AllStr = WriteLine(AllStr, '// STRGATHER_OUTPUT_HEADER')
+        AllStr = WriteLine(AllStr, CreateArrayItem(DecToHexList(TotalLength)) + '\n')
     
     #
     # Join package data
