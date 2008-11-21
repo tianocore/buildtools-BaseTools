@@ -1239,12 +1239,14 @@ PeCoffLoaderGetPdbPointer (
       for (Index1 = 0; Index1 < Index; Index1 ++) {
       	if ((DirectoryEntry->VirtualAddress >= SectionHeader[Index1].VirtualAddress) && 
       		 (DirectoryEntry->VirtualAddress < (SectionHeader[Index1].VirtualAddress + SectionHeader[Index1].Misc.VirtualSize))) {
+          DebugEntry = (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY *)((UINTN) Hdr.Te +
+                        DirectoryEntry->VirtualAddress - 
+                        SectionHeader [Index1].VirtualAddress + 
+                        SectionHeader [Index1].PointerToRawData + 
+                        TEImageAdjust);
           break;
         }
       }
-      DebugEntry = (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY *)((UINTN) Hdr.Te +
-                    DirectoryEntry->VirtualAddress - SectionHeader [Index1].VirtualAddress + SectionHeader [Index1].PointerToRawData + 
-                    TEImageAdjust);
     }
   } else if (EFI_IMAGE_NT_SIGNATURE == Hdr.Pe32->Signature) {
     //
@@ -1295,7 +1297,7 @@ PeCoffLoaderGetPdbPointer (
       DirectoryEntry = (EFI_IMAGE_DATA_DIRECTORY *)&(Hdr.Pe32Plus->OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG]);
     }
 
-    if (NumberOfRvaAndSizes <= EFI_IMAGE_DIRECTORY_ENTRY_DEBUG) {
+    if (NumberOfRvaAndSizes <= EFI_IMAGE_DIRECTORY_ENTRY_DEBUG || DirectoryEntry->VirtualAddress == 0) {
       DirectoryEntry = NULL;
       DebugEntry = NULL;
     } else {
@@ -1305,10 +1307,14 @@ PeCoffLoaderGetPdbPointer (
       for (Index1 = 0; Index1 < Index; Index1 ++) {
       	if ((DirectoryEntry->VirtualAddress >= SectionHeader[Index1].VirtualAddress) && 
       		 (DirectoryEntry->VirtualAddress < (SectionHeader[Index1].VirtualAddress + SectionHeader[Index1].Misc.VirtualSize))) {
+          DebugEntry = (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY *) (
+                       (UINTN) Pe32Data + 
+                       DirectoryEntry->VirtualAddress - 
+                       SectionHeader[Index1].VirtualAddress + 
+                       SectionHeader[Index1].PointerToRawData);
           break;
         }
       }
-      DebugEntry = (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY *) ((UINTN) Pe32Data + DirectoryEntry->VirtualAddress - SectionHeader[Index1].VirtualAddress + SectionHeader[Index1].PointerToRawData);
     }
   } else {
     return NULL;
@@ -1330,10 +1336,21 @@ PeCoffLoaderGetPdbPointer (
 	      for (Index1 = 0; Index1 < Index; Index1 ++) {
 	      	if ((DebugEntry->RVA >= SectionHeader[Index1].VirtualAddress) && 
 	      		 (DebugEntry->RVA < (SectionHeader[Index1].VirtualAddress + SectionHeader[Index1].Misc.VirtualSize))) {
+	          CodeViewEntryPointer = (VOID *) (
+	                                 ((UINTN)Pe32Data) + 
+	                                 (UINTN) DebugEntry->RVA - 
+	                                 SectionHeader[Index1].VirtualAddress + 
+	                                 SectionHeader[Index1].PointerToRawData + 
+	                                 (UINTN)TEImageAdjust);
 	          break;
 	        }
 	      }
-        CodeViewEntryPointer = (VOID *) (((UINTN)Pe32Data) + (UINTN) DebugEntry->RVA - SectionHeader[Index1].VirtualAddress + SectionHeader[Index1].PointerToRawData + (UINTN)TEImageAdjust);
+	      if (Index1 >= Index) {
+	        //
+	        // Can't find CodeViewEntryPointer in raw PE/COFF image.
+	        //
+	        continue;
+	      }
         switch (* (UINT32 *) CodeViewEntryPointer) {
         case CODEVIEW_SIGNATURE_NB10:
           return (VOID *) ((CHAR8 *)CodeViewEntryPointer + sizeof (EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY));
