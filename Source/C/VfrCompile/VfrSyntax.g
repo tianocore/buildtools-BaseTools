@@ -1427,6 +1427,26 @@ checkboxFlagsField[UINT8 & LFlags, UINT8 & HFlags] :
                                                             _PCATCH(_STOU8(N->getText()) == 0 ? VFR_RETURN_SUCCESS : VFR_RETURN_UNSUPPORTED, N->getLine());
                                                           }
                                                        >>
+  | D:"DEFAULT"                                        <<
+                                                          if (mCompatibleMode) {
+                                                            //
+                                                            // set question Default flag
+                                                            //
+                                                            $LFlags |= 0x01;
+                                                          } else {
+                                                            _PCATCH (VFR_RETURN_UNSUPPORTED, D);
+                                                          }
+                                                       >>
+  | M:"MANUFACTURING"                                  <<
+                                                          if (mCompatibleMode) {
+                                                            //
+                                                            // set question MFG flag
+                                                            //
+                                                            $LFlags |= 0x02;
+                                                          } else {
+                                                            _PCATCH (VFR_RETURN_UNSUPPORTED, M);
+                                                          }
+                                                       >>
   | "CHECKBOX_DEFAULT"                                 << $LFlags |= 0x01; >>
   | "CHECKBOX_DEFAULT_MFG"                             << $LFlags |= 0x02; >>
   | questionheaderFlagsField[HFlags]
@@ -3410,18 +3430,22 @@ EfiVfrParser::_DeclareDefaultFrameworkVarStore (
 {
   SVfrVarStorageNode    *pNode;
   UINT32                TypeSize;
-
+  BOOLEAN               FirstNode;
+  
+  FirstNode = TRUE; 
   pNode = mCVfrDataStorage.GetBufferVarStoreList();
   if (pNode == NULL && mCVfrVarDataTypeDB.mFirstNewDataTypeName != NULL) {
     //
     // Create the default Buffer Var Store when no VarStore is defined.
+    // its name should be "Setup"
     //
     mCVfrVarDataTypeDB.GetDataTypeSize (mCVfrVarDataTypeDB.mFirstNewDataTypeName, &TypeSize);
     CIfrVarStore      VSObj;
     VSObj.SetLineNo (LineNo);
     VSObj.SetVarStoreId (0x1); //the first and only one Buffer Var Store
     VSObj.SetSize (TypeSize);
-    VSObj.SetName (mCVfrVarDataTypeDB.mFirstNewDataTypeName);
+    //VSObj.SetName (mCVfrVarDataTypeDB.mFirstNewDataTypeName);
+    VSObj.SetName ("Setup");
     VSObj.SetGuid (&mFormsetGuid);
 #ifdef VFREXP_DEBUG
     printf ("Create the default VarStoreName is %s\n", mCVfrVarDataTypeDB.mFirstNewDataTypeName);
@@ -3430,13 +3454,19 @@ EfiVfrParser::_DeclareDefaultFrameworkVarStore (
     for (; pNode != NULL; pNode = pNode->mNext) {
       //
       // create the default varstore opcode for not declared varstore
+      // the first varstore name should be "Setup"
       //
       if (!pNode->mAssignedFlag) {
         CIfrVarStore      VSObj;
         VSObj.SetLineNo (LineNo);
         VSObj.SetVarStoreId (pNode->mVarStoreId);
         VSObj.SetSize (pNode->mStorageInfo.mDataType->mTotalSize);
-        VSObj.SetName (pNode->mVarStoreName);
+        if (FirstNode) {
+        	VSObj.SetName ("Setup");
+        	FirstNode = FALSE;
+        } else {
+          VSObj.SetName (pNode->mVarStoreName);
+        }
         VSObj.SetGuid (&pNode->mGuid);
 #ifdef VFREXP_DEBUG
         printf ("undefined VarStoreName is %s and Id is 0x%x\n", pNode->mVarStoreName, pNode->mVarStoreId);
