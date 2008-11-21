@@ -215,8 +215,7 @@ def SaveFileOnChange(File, Content, IsBinaryFile=True):
             Fd = open(File, "r"+BinaryFlag)
         except:
             EdkLogger.error(None, FILE_OPEN_FAILURE, ExtraData=File)
-        FileSize = os.fstat(Fd.fileno()).st_size
-        if len(Content) == FileSize and Content == Fd.read():
+        if Content.splitlines() == Fd.read().splitlines():
             Fd.close()
             return False
         Fd.close()
