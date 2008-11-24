@@ -2295,13 +2295,39 @@ vfrStatementInvalidSaveRestoreDefaults :
 #token QuestionRefVal("questionrefval")         "questionrefval"
 #token StringRefVal("stringrefval")             "stringrefval"
 
+//
+// Root expression extension function called by other function.
+//
 vfrStatementExpression [UINT32 RootLevel, UINT32 ExpOpCount = 0] :
-                             << if ($RootLevel == 0) {_CLEAR_SAVED_OPHDR ();} >>
+  << if ($RootLevel == 0) {_CLEAR_SAVED_OPHDR ();} >>
   andTerm[$RootLevel, $ExpOpCount]
   (
     L:OR andTerm[$RootLevel, $ExpOpCount]              << $ExpOpCount++; CIfrOr OObj(L->getLine()); >>
   )*
-                                                       << if ($ExpOpCount > 1) {_SET_SAVED_OPHDR_SCOPE(); CIfrEnd EObj;} >>
+                                                       << 
+                                                          //
+                                                          // Extend OpCode Scope only for the root expression.
+                                                          // 
+                                                          if ($ExpOpCount > 1 && $RootLevel == 0) {
+                                                            if (_SET_SAVED_OPHDR_SCOPE()) { 
+                                                              CIfrEnd EObj;
+                                                              if (mCIfrOpHdrLineNo != 0) { 
+                                                                EObj.SetLineNo (mCIfrOpHdrLineNo);
+                                                              }
+                                                            }
+                                                          }
+                                                       >>
+  ;
+
+//
+// Add new sub function for the sub expression extension to remember the ExpOpCount
+// This funciton is only called by sub expression.
+//
+vfrStatementExpressionSub [UINT32 RootLevel, UINT32 & ExpOpCount] :
+  andTerm[$RootLevel, $ExpOpCount]
+  (
+    L:OR andTerm[$RootLevel, $ExpOpCount]              << $ExpOpCount++; CIfrOr OObj(L->getLine()); >>
+  )*
   ;
 
 andTerm[UINT32 & RootLevel, UINT32 & ExpOpCount] :
@@ -2441,24 +2467,24 @@ atomTerm [UINT32 & RootLevel, UINT32 & ExpOpCount]:
 vfrExpressionCatenate [UINT32 & RootLevel, UINT32 & ExpOpCount]:
   L:Catenate
   "\("
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   ","
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   "\)"                                                 << { CIfrCatenate CObj(L->getLine()); $ExpOpCount++; } >>
   ;
 
 vfrExpressionMatch [UINT32 & RootLevel, UINT32 & ExpOpCount]:
   L:Match
   "\("
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   ","
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   "\)"                                                 << { CIfrMatch MObj(L->getLine()); $ExpOpCount++; } >>
   ;
 
 vfrExpressionParen [UINT32 & RootLevel, UINT32 & ExpOpCount]:
   "\("
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   "\)"
   ;
 
@@ -2475,7 +2501,7 @@ vfrExpressionBuildInFunction [UINT32 & RootLevel, UINT32 & ExpOpCount] :
   ;
 
 dupExp [UINT32 & RootLevel, UINT32 & ExpOpCount] :
-  L:Dup                                                << { CIfrDup DObj(L->getLine()); _SAVE_OPHDR_COND(DObj, ($ExpOpCount == 0)); $ExpOpCount++; } >>
+  L:Dup                                                << { CIfrDup DObj(L->getLine()); _SAVE_OPHDR_COND(DObj, ($ExpOpCount == 0), L->getLine()); $ExpOpCount++; } >>
   ;
 
 vareqvalExp [UINT32 & RootLevel, UINT32 & ExpOpCount] :
@@ -2520,7 +2546,7 @@ vareqvalExp [UINT32 & RootLevel, UINT32 & ExpOpCount] :
                                                        <<
                                                           if (Mask == 0) {
                                                             CIfrEqIdVal EIVObj (L->getLine());
-                                                            _SAVE_OPHDR_COND (EIVObj, ($ExpOpCount == 0));
+                                                            _SAVE_OPHDR_COND (EIVObj, ($ExpOpCount == 0), L->getLine());
                                                             EIVObj.SetQuestionId (QId, VarIdStr, LineNo);
                                                             EIVObj.SetValue (ConstVal);
                                                             $ExpOpCount++;
@@ -2573,7 +2599,7 @@ ideqvalExp [UINT32 & RootLevel, UINT32 & ExpOpCount] :
                                                        <<
                                                           if (Mask == 0) {
                                                             CIfrEqIdVal EIVObj (L->getLine());
-                                                            _SAVE_OPHDR_COND (EIVObj, ($ExpOpCount == 0));
+                                                            _SAVE_OPHDR_COND (EIVObj, ($ExpOpCount == 0), L->getLine());
                                                             EIVObj.SetQuestionId (QId, VarIdStr, LineNo);
                                                             EIVObj.SetValue (ConstVal);
                                                             $ExpOpCount++;
@@ -2627,7 +2653,7 @@ ideqidExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
                                   IdEqIdDoSpecial ($ExpOpCount, L->getLine(), QId[0], VarIdStr[0], Mask[0], QId[1], VarIdStr[1], Mask[1], EQUAL);
                                 } else {
                                   CIfrEqIdId      EIIObj(L->getLine());
-                                  _SAVE_OPHDR_COND (EIIObj, ($ExpOpCount == 0));
+                                  _SAVE_OPHDR_COND (EIIObj, ($ExpOpCount == 0), L->getLine());
                                   EIIObj.SetQuestionId1 (QId[0], VarIdStr[0], LineNo[0]);
                                   EIIObj.SetQuestionId2 (QId[1], VarIdStr[1], LineNo[1]);
                                   $ExpOpCount++;
@@ -2682,7 +2708,7 @@ ideqvallistExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
                                                           } else {
                                                             UINT16       Index;
                                                             CIfrEqIdList EILObj(L->getLine());
-                                                            _SAVE_OPHDR_COND (EILObj, ($ExpOpCount == 0));
+                                                            _SAVE_OPHDR_COND (EILObj, ($ExpOpCount == 0), L->getLine());
                                                             if (QId != EFI_QUESTION_ID_INVALID) {
                                                               EILObj.SetQuestionId (QId, VarIdStr, LineNo);
                                                             }
@@ -2736,10 +2762,10 @@ questionref13Exp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   )
                                                        <<
                                                           switch (Type) {
-                                                          case 0x1: {CIfrQuestionRef1 QR1Obj(L->getLine()); _SAVE_OPHDR_COND (QR1Obj, ($ExpOpCount == 0)); QR1Obj.SetQuestionId (QId, QName, LineNo); break;}
-                                                          case 0x3: {CIfrQuestionRef3 QR3Obj(L->getLine()); _SAVE_OPHDR_COND (QR3Obj, ($ExpOpCount == 0)); break;}
-                                                          case 0x4: {CIfrQuestionRef3_2 QR3_2Obj(L->getLine()); _SAVE_OPHDR_COND (QR3_2Obj, ($ExpOpCount == 0)); QR3_2Obj.SetDevicePath (DevPath); break;}
-                                                          case 0x5: {CIfrQuestionRef3_3 QR3_3Obj(L->getLine()); _SAVE_OPHDR_COND (QR3_3Obj, ($ExpOpCount == 0)); QR3_3Obj.SetDevicePath (DevPath); QR3_3Obj.SetGuid (&Guid); break;}
+                                                          case 0x1: {CIfrQuestionRef1 QR1Obj(L->getLine()); _SAVE_OPHDR_COND (QR1Obj, ($ExpOpCount == 0), L->getLine()); QR1Obj.SetQuestionId (QId, QName, LineNo); break;}
+                                                          case 0x3: {CIfrQuestionRef3 QR3Obj(L->getLine()); _SAVE_OPHDR_COND (QR3Obj, ($ExpOpCount == 0), L->getLine()); break;}
+                                                          case 0x4: {CIfrQuestionRef3_2 QR3_2Obj(L->getLine()); _SAVE_OPHDR_COND (QR3_2Obj, ($ExpOpCount == 0), L->getLine()); QR3_2Obj.SetDevicePath (DevPath); break;}
+                                                          case 0x5: {CIfrQuestionRef3_3 QR3_3Obj(L->getLine()); _SAVE_OPHDR_COND (QR3_3Obj, ($ExpOpCount == 0), L->getLine()); QR3_3Obj.SetDevicePath (DevPath); QR3_3Obj.SetGuid (&Guid); break;}
                                                           }
                                                           $ExpOpCount++;
                                                        >>
@@ -2747,7 +2773,7 @@ questionref13Exp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
 
 rulerefExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   L:RuleRef
-  "\(" RN:StringIdentifier "\)"                        << { CIfrRuleRef RRObj(L->getLine()); _SAVE_OPHDR_COND (RRObj, ($ExpOpCount == 0)); RRObj.SetRuleId (mCVfrRulesDB.GetRuleId (RN->getText())); } $ExpOpCount++; >>
+  "\(" RN:StringIdentifier "\)"                        << { CIfrRuleRef RRObj(L->getLine()); _SAVE_OPHDR_COND (RRObj, ($ExpOpCount == 0), L->getLine()); RRObj.SetRuleId (mCVfrRulesDB.GetRuleId (RN->getText())); } $ExpOpCount++; >>
   ;
 
 //******************************************************
@@ -2756,22 +2782,22 @@ rulerefExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
 //
 stringref1Exp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   L:StringRef
-  "\(" S:Number "\)"                                   << { CIfrStringRef1 SR1Obj(L->getLine()); _SAVE_OPHDR_COND (SR1Obj, ($ExpOpCount == 0)); SR1Obj.SetStringId (_STOSID(S->getText())); $ExpOpCount++; } >>
+  "\(" S:Number "\)"                                   << { CIfrStringRef1 SR1Obj(L->getLine()); _SAVE_OPHDR_COND (SR1Obj, ($ExpOpCount == 0), L->getLine()); SR1Obj.SetStringId (_STOSID(S->getText())); $ExpOpCount++; } >>
   ;
 
 pushthisExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
-  L:PushThis                                           << { CIfrThis TObj(L->getLine()); _SAVE_OPHDR_COND (TObj, ($ExpOpCount == 0)); $ExpOpCount++; } >>
+  L:PushThis                                           << { CIfrThis TObj(L->getLine()); _SAVE_OPHDR_COND (TObj, ($ExpOpCount == 0), L->getLine()); $ExpOpCount++; } >>
   ;
 
 vfrExpressionConstant[UINT32 & RootLevel, UINT32 & ExpOpCount] :
-    L1:True                                            << CIfrTrue TObj(L1->getLine()); _SAVE_OPHDR_COND (TObj, ($ExpOpCount == 0)); $ExpOpCount++; >>
-  | L2:False                                           << CIfrFalse FObj(L2->getLine()); _SAVE_OPHDR_COND (FObj, ($ExpOpCount == 0)); $ExpOpCount++; >>
-  | L3:One                                             << CIfrOne OObj(L3->getLine()); _SAVE_OPHDR_COND (OObj, ($ExpOpCount == 0)); $ExpOpCount++; >>
-  | L4:Ones                                            << CIfrOnes OObj(L4->getLine()); _SAVE_OPHDR_COND (OObj, ($ExpOpCount == 0)); $ExpOpCount++; >>
-  | L5:Zero                                            << CIfrZero ZObj(L5->getLine()); _SAVE_OPHDR_COND (ZObj, ($ExpOpCount == 0)); $ExpOpCount++; >>
-  | L6:Undefined                                       << CIfrUndefined UObj(L6->getLine()); _SAVE_OPHDR_COND (UObj, ($ExpOpCount == 0)); $ExpOpCount++; >>
-  | L7:Version                                         << CIfrVersion VObj(L7->getLine()); _SAVE_OPHDR_COND (VObj, ($ExpOpCount == 0)); $ExpOpCount++; >>
-  | V:Number                                           << CIfrUint64 U64Obj(V->getLine()); U64Obj.SetValue (_STOU64(V->getText())); _SAVE_OPHDR_COND (U64Obj, ($ExpOpCount == 0)); $ExpOpCount++; >>
+    L1:True                                            << CIfrTrue TObj(L1->getLine()); _SAVE_OPHDR_COND (TObj, ($ExpOpCount == 0), L1->getLine()); $ExpOpCount++; >>
+  | L2:False                                           << CIfrFalse FObj(L2->getLine()); _SAVE_OPHDR_COND (FObj, ($ExpOpCount == 0), L2->getLine()); $ExpOpCount++; >>
+  | L3:One                                             << CIfrOne OObj(L3->getLine()); _SAVE_OPHDR_COND (OObj, ($ExpOpCount == 0), L3->getLine()); $ExpOpCount++; >>
+  | L4:Ones                                            << CIfrOnes OObj(L4->getLine()); _SAVE_OPHDR_COND (OObj, ($ExpOpCount == 0), L4->getLine()); $ExpOpCount++; >>
+  | L5:Zero                                            << CIfrZero ZObj(L5->getLine()); _SAVE_OPHDR_COND (ZObj, ($ExpOpCount == 0), L5->getLine()); $ExpOpCount++; >>
+  | L6:Undefined                                       << CIfrUndefined UObj(L6->getLine()); _SAVE_OPHDR_COND (UObj, ($ExpOpCount == 0), L6->getLine()); $ExpOpCount++; >>
+  | L7:Version                                         << CIfrVersion VObj(L7->getLine()); _SAVE_OPHDR_COND (VObj, ($ExpOpCount == 0), L7->getLine()); $ExpOpCount++; >>
+  | V:Number                                           << CIfrUint64 U64Obj(V->getLine()); U64Obj.SetValue (_STOU64(V->getText())); _SAVE_OPHDR_COND (U64Obj, ($ExpOpCount == 0), V->getLine()); $ExpOpCount++; >>
   ;
 
 vfrExpressionUnaryOp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
@@ -2787,31 +2813,31 @@ vfrExpressionUnaryOp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
 
 lengthExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   L:Length
-  "\(" vfrStatementExpression[$RootLevel + 1, $ExpOpCount] "\)"
+  "\(" vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount] "\)"
                                                        << { CIfrLength LObj(L->getLine()); $ExpOpCount++; } >>
   ;
 
 bitwisenotExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   L:BitWiseNot
-  "\(" vfrStatementExpression[$RootLevel + 1, $ExpOpCount] "\)"
+  "\(" vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount] "\)"
                                                        << { CIfrBitWiseNot BWNObj(L->getLine()); $ExpOpCount++; } >>
   ;
 
 question2refExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   L:QuestionRefVal
-  "\(" vfrStatementExpression[$RootLevel + 1, $ExpOpCount] "\)"
+  "\(" vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount] "\)"
                                                        << { CIfrQuestionRef2 QR2Obj(L->getLine()); $ExpOpCount++; } >>
   ;
 
 stringref2Exp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   L:StringRefVal
-  "\(" vfrStatementExpression[$RootLevel + 1, $ExpOpCount] "\)"
+  "\(" vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount] "\)"
                                                        << { CIfrStringRef2 SR2Obj(L->getLine()); $ExpOpCount++; } >>
   ;
 
 toboolExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   L:BoolVal
-  "\(" vfrStatementExpression[$RootLevel + 1, $ExpOpCount] "\)"
+  "\(" vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount] "\)"
                                                        << { CIfrToBoolean TBObj(L->getLine()); $ExpOpCount++; } >>
   ;
 
@@ -2821,25 +2847,25 @@ tostringExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   {
     Format "=" F:Number ","                            << Fmt = _STOU8(F->getText()); >>
   }
-  "\(" vfrStatementExpression[$RootLevel + 1, $ExpOpCount] "\)"
+  "\(" vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount] "\)"
                                                        << { CIfrToString TSObj(L->getLine()); TSObj.SetFormat (Fmt); $ExpOpCount++; } >>
   ;
 
 unintExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   L:UnIntVal
-  "\(" vfrStatementExpression[$RootLevel + 1, $ExpOpCount] "\)"
+  "\(" vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount] "\)"
                                                        << { CIfrToUint TUObj(L->getLine()); $ExpOpCount++; } >>
   ;
 
 toupperExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   L:ToUpper
-  "\(" vfrStatementExpression[$RootLevel + 1, $ExpOpCount] "\)"
+  "\(" vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount] "\)"
                                                        << { CIfrToUpper TUObj(L->getLine()); $ExpOpCount++; } >>
   ;
 
 tolwerExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   L:ToLower
-  "\(" vfrStatementExpression[$RootLevel + 1, $ExpOpCount] "\)"
+  "\(" vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount] "\)"
                                                        << { CIfrToLower TLObj(L->getLine()); $ExpOpCount++; } >>
   ;
 
@@ -2859,11 +2885,11 @@ vfrExpressionTernaryOp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
 
 conditionalExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   L:Cond "\("
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   "?"
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   ":"
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   "\)"                                                 << { CIfrConditional CObj(L->getLine()); $ExpOpCount++; } >>
   ;
 
@@ -2872,11 +2898,11 @@ findExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   L:Find "\("
   findFormat[Format] ( "\|" findFormat[Format] )*
   ","
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   ","
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   ","
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   "\)"                                                 << { CIfrFind FObj(L->getLine()); FObj.SetFormat (Format); $ExpOpCount++; } >>
   ;
 
@@ -2887,21 +2913,21 @@ findFormat [UINT8 & Format] :
 
 midExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   L:Mid "\("
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   ","
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   ","
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   "\)"                                                 << { CIfrMid MObj(L->getLine()); $ExpOpCount++; } >>
   ;
 
 tokenExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   L:Tok "\("
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   ","
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   ","
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   "\)"                                                 << { CIfrToken TObj(L->getLine()); $ExpOpCount++; } >>
   ;
 
@@ -2910,11 +2936,11 @@ spanExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   S:Span "\("
   FLAGS "=" spanFlags[Flags] ( "\|" spanFlags[Flags] )*
   ","
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   ","
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   ","
-  vfrStatementExpression[$RootLevel + 1, $ExpOpCount]
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]
   "\)"                                                 << { CIfrSpan SObj(S->getLine()); SObj.SetFlags(Flags); $ExpOpCount++; } >>
   ;
 
@@ -2944,9 +2970,10 @@ private:
   CVfrRulesDB         mCVfrRulesDB;
 
   CIfrOpHeader        *mCIfrOpHdr;
-  VOID                _SAVE_OPHDR_COND (IN CIfrOpHeader &, IN BOOLEAN);
+  UINT32              mCIfrOpHdrLineNo;
+  VOID                _SAVE_OPHDR_COND (IN CIfrOpHeader &, IN BOOLEAN, UINT32 LineNo = 0);
   VOID                _CLEAR_SAVED_OPHDR (VOID);
-  VOID                _SET_SAVED_OPHDR_SCOPE (VOID);
+  BOOLEAN             _SET_SAVED_OPHDR_SCOPE (VOID);
 
 
   EFI_VARSTORE_INFO   mCurrQestVarInfo;
@@ -3011,7 +3038,8 @@ public:
 VOID
 EfiVfrParser::_SAVE_OPHDR_COND (
   IN CIfrOpHeader &OpHdr,
-  IN BOOLEAN      Cond
+  IN BOOLEAN      Cond,
+  IN UINT32       LineNo
   )
 {
   if (Cond == TRUE) {
@@ -3024,7 +3052,8 @@ EfiVfrParser::_SAVE_OPHDR_COND (
 #endif
       return ;
     }
-  mCIfrOpHdr = new CIfrOpHeader(OpHdr);
+    mCIfrOpHdr       = new CIfrOpHeader(OpHdr);
+    mCIfrOpHdrLineNo = LineNo;
   }
 }
 
@@ -3036,10 +3065,11 @@ EfiVfrParser::_CLEAR_SAVED_OPHDR (
 #if 0
   printf ("######_CLEAR_SAVED_OPHDR\n");
 #endif
-  mCIfrOpHdr = NULL;
+  mCIfrOpHdr       = NULL;
+  mCIfrOpHdrLineNo = 0;
 }
 
-VOID
+BOOLEAN
 EfiVfrParser::_SET_SAVED_OPHDR_SCOPE (
   VOID
   )
@@ -3047,7 +3077,14 @@ EfiVfrParser::_SET_SAVED_OPHDR_SCOPE (
 #if 0
   printf ("#######_SET_SAVED_OPHDR_SCOPE\n");
 #endif
-  mCIfrOpHdr->SetScope (1);
+  if (mCIfrOpHdr != NULL) {
+    mCIfrOpHdr->SetScope (1);
+    return TRUE;
+  }
+  //
+  // IfrOpHdr is not set, FALSE is return.
+  //
+  return FALSE;
 }
 
 VOID

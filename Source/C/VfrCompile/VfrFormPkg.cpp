@@ -426,9 +426,21 @@ CFormPkg::GenCFile (
     return Ret;
   }
 
-  fprintf (pFile, "  // ARRAY LENGTH\n");
-  PkgLength = PkgHdr->Length + sizeof (UINT32);
-  _WRITE_PKG_LINE(pFile, BYTES_PRE_LINE, "  ", (CHAR8 *)&PkgLength, sizeof (UINT32));
+  //
+  // For framework vfr file, the extension framework header will be added.
+  //
+  if (VfrCompatibleMode) {
+	  fprintf (pFile, "  // FRAMEWORK PACKAGE HEADER Length\n");
+	  PkgLength = PkgHdr->Length + sizeof (UINT32) + 2;
+	  _WRITE_PKG_LINE(pFile, BYTES_PRE_LINE, "  ", (CHAR8 *)&PkgLength, sizeof (UINT32));	
+	  fprintf (pFile, "\n\n  // FRAMEWORK PACKAGE HEADER Type\n");
+	  PkgLength = 3;
+	  _WRITE_PKG_LINE(pFile, BYTES_PRE_LINE, "  ", (CHAR8 *)&PkgLength, sizeof (UINT16));	
+	} else {
+	  fprintf (pFile, "  // ARRAY LENGTH\n");
+	  PkgLength = PkgHdr->Length + sizeof (UINT32);
+	  _WRITE_PKG_LINE(pFile, BYTES_PRE_LINE, "  ", (CHAR8 *)&PkgLength, sizeof (UINT32));	
+	}
 
   fprintf (pFile, "\n\n  // PACKAGE HEADER\n");
   _WRITE_PKG_LINE(pFile, BYTES_PRE_LINE, "  ", (CHAR8 *)PkgHdr, sizeof (EFI_HII_PACKAGE_HEADER));
