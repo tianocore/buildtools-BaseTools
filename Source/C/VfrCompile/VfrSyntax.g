@@ -321,13 +321,13 @@ vfrDataStructDefinition :
 vfrDataStructFields :
   (
      dataStructField64     |
-   dataStructField32     |
-   dataStructField16     |
-   dataStructField8      |
+     dataStructField32     |
+     dataStructField16     |
+     dataStructField8      |
      dataStructFieldBool   |
-   dataStructFieldString |
-   dataStructFieldDate   |
-   dataStructFieldTime   |
+     dataStructFieldString |
+     dataStructFieldDate   |
+     dataStructFieldTime   |
      dataStructFieldUser
   )*
   ;
@@ -429,14 +429,14 @@ dataStructFieldUser :
 guidSubDefinition [EFI_GUID &Guid] :
   G4:Number "," G5:Number "," G6:Number "," G7:Number "," G8:Number "," G9:Number "," G10:Number "," G11:Number
                                                     <<
-                             Guid.Data4[0] = _STOU8(G4->getText());
-                             Guid.Data4[1] = _STOU8(G5->getText());
-                             Guid.Data4[2] = _STOU8(G6->getText());
-                             Guid.Data4[3] = _STOU8(G7->getText());
-                             Guid.Data4[4] = _STOU8(G8->getText());
-                             Guid.Data4[5] = _STOU8(G9->getText());
-                             Guid.Data4[6] = _STOU8(G10->getText());
-                             Guid.Data4[7] = _STOU8(G11->getText());
+                                                       Guid.Data4[0] = _STOU8(G4->getText());
+                                                       Guid.Data4[1] = _STOU8(G5->getText());
+                                                       Guid.Data4[2] = _STOU8(G6->getText());
+                                                       Guid.Data4[3] = _STOU8(G7->getText());
+                                                       Guid.Data4[4] = _STOU8(G8->getText());
+                                                       Guid.Data4[5] = _STOU8(G9->getText());
+                                                       Guid.Data4[6] = _STOU8(G10->getText());
+                                                       Guid.Data4[7] = _STOU8(G11->getText());
                                                     >>
   ;
 
@@ -522,12 +522,12 @@ vfrStatementDefaultStore :
                                                        if (mCVfrDefaultStore.DefaultIdRegistered (DefaultId) == FALSE) {
                                                          CIfrDefaultStore DSObj;
                                                          _PCATCH(mCVfrDefaultStore.RegisterDefaultStore (DSObj.GetObjBinAddr(), N->getText(), _STOSID(S->getText()), DefaultId)), D->getLine();
-                             DSObj.SetLineNo(D->getLine());
+                                                         DSObj.SetLineNo(D->getLine());
                                                          DSObj.SetDefaultName (_STOSID(S->getText()));
                                                          DSObj.SetDefaultId (DefaultId);
-                             } else {
+                                                       } else {
                                                          _PCATCH(mCVfrDefaultStore.ReRegisterDefaultStoreById (DefaultId, N->getText(), _STOSID(S->getText()))), D->getLine();
-                             }
+                                                       }
                                                     >>
   ";"
   ;
@@ -545,18 +545,18 @@ vfrStatementVarStoreLinear :
   V:Varstore                                        << VSObj.SetLineNo(V->getLine()); >>
   (
       TN:StringIdentifier ","                       << TypeName = TN->getText(); LineNum = TN->getLine(); >>
-  | U8:"UINT8" ","                                << TypeName = "UINT8"; LineNum = U8->getLine(); >>
-  | U16:"UINT16" ","                              << TypeName = "UINT16"; LineNum = U16->getLine(); >>
-  | U32:"UINT32" ","                              << TypeName = "UINT32"; LineNum = U32->getLine(); >>
-  | U64:"UINT64" ","                              << TypeName = "UINT64"; LineNum = U64->getLine(); >>
-  | D:"EFI_HII_DATE" ","                          << TypeName = "EFI_HII_DATE"; LineNum = D->getLine(); >>
-  | T:"EFI_HII_TIME" ","                          << TypeName = "EFI_HII_TIME"; LineNum = T->getLine(); >>
+    | U8:"UINT8" ","                                << TypeName = "UINT8"; LineNum = U8->getLine(); >>
+    | U16:"UINT16" ","                              << TypeName = "UINT16"; LineNum = U16->getLine(); >>
+    | U32:"UINT32" ","                              << TypeName = "UINT32"; LineNum = U32->getLine(); >>
+    | U64:"UINT64" ","                              << TypeName = "UINT64"; LineNum = U64->getLine(); >>
+    | D:"EFI_HII_DATE" ","                          << TypeName = "EFI_HII_DATE"; LineNum = D->getLine(); >>
+    | T:"EFI_HII_TIME" ","                          << TypeName = "EFI_HII_TIME"; LineNum = T->getLine(); >>
   )
-  { Key "=" FID:Number ","                       << // Key is used to assign Varid in Framework VFR but no use in UEFI2.1 VFR
-                                                     if (mCompatibleMode) {
-                                                       VarStoreId = _STOU16(FID->getText());
-                                                     }
-                                                  >>
+  { Key "=" FID:Number ","                          << // Key is used to assign Varid in Framework VFR but no use in UEFI2.1 VFR
+                                                       if (mCompatibleMode) {
+                                                         VarStoreId = _STOU16(FID->getText());
+                                                       }
+                                                    >>
   }
   {
     VarId "=" ID:Number ","                         <<
@@ -715,26 +715,26 @@ vfrQuestionHeader[CIfrQuestionHeader & QHObj, EFI_QUESION_TYPE QType = QUESTION_
                                                        case QUESTION_NORMAL:
                                                          mCVfrQuestionDB.RegisterQuestion (QName, VarIdStr, QId);
                                                          break;
-                             case QUESTION_DATE:
-                             mCVfrQuestionDB.RegisterNewDateQuestion (QName, VarIdStr, QId);
-                             break;
-                             case QUESTION_TIME:
-                             mCVfrQuestionDB.RegisterNewTimeQuestion (QName, VarIdStr, QId);
-                             break;
-                             default:
-                             _PCATCH(VFR_RETURN_FATAL_ERROR);
-                             }
+                                                       case QUESTION_DATE:
+                                                       mCVfrQuestionDB.RegisterNewDateQuestion (QName, VarIdStr, QId);
+                                                       break;
+                                                       case QUESTION_TIME:
+                                                       mCVfrQuestionDB.RegisterNewTimeQuestion (QName, VarIdStr, QId);
+                                                       break;
+                                                       default:
+                                                       _PCATCH(VFR_RETURN_FATAL_ERROR);
+                                                       }
                                                        $QHObj.SetQuestionId (QId);
                                                        $QHObj.SetVarStoreInfo (&Info);
                                                     >>
   vfrStatementHeader[&$QHObj]
                                                     << _SAVE_CURRQEST_VARINFO (Info); >>
-                          << if (VarIdStr != NULL) delete VarIdStr; >>
+                                                    << if (VarIdStr != NULL) delete VarIdStr; >>
   ;
 
 vfrQuestionHeaderWithNoStorage[CIfrQuestionHeader *QHObj] :
   <<
-   EFI_QUESTION_ID   QId = EFI_QUESTION_ID_INVALID;
+     EFI_QUESTION_ID   QId = EFI_QUESTION_ID_INVALID;
      CHAR8             *QName = NULL;
   >>
   {
@@ -1054,7 +1054,7 @@ vfrStatementDefault :
                                                                    D->getLine()
                                                                    );
                                                        }
-                          >>
+                                                    >>
   )
   ;
 
@@ -1397,7 +1397,7 @@ vfrStatementCheckBox :
                                                               "No manufacturing default storage found"
                                                               );
                                                           }
-                                                         >>
+                                                        >>
   }
   {
     Key "=" KN:Number  ","                             << AssignQuestionKey (CBObj, KN); >>
@@ -1526,7 +1526,7 @@ vfrStatementDate :
                                                           DObj.SetHelp (_STOSID(YH->getText()));
                                                           if (VarIdStr[0] != NULL) { delete VarIdStr[0]; } if (VarIdStr[1] != NULL) { delete VarIdStr[1]; } if (VarIdStr[2] != NULL) { delete VarIdStr[2]; }
                                                        >>
-                                                     << {CIfrDefault DefaultObj(EFI_HII_DEFAULT_CLASS_STANDARD, EFI_IFR_TYPE_DATE, Val); DefaultObj.SetLineNo(L->getLine());} >>
+                                                       << {CIfrDefault DefaultObj(EFI_HII_DEFAULT_CLASS_STANDARD, EFI_IFR_TYPE_DATE, Val); DefaultObj.SetLineNo(L->getLine());} >>
     )
     ( vfrStatementInconsistentIf )*
   )
@@ -1544,7 +1544,7 @@ minMaxDateStepDefault[EFI_HII_DATE & D, UINT8 KeyValue] :
                                                           case 0: D.Year  = _STOU16(N->getText()); break;
                                                           case 1: D.Month = _STOU8(N->getText()); break;
                                                           case 2: D.Day   = _STOU8(N->getText()); break;
-                              }
+                                                          }
                                                        >>
   }
   ;
@@ -1585,7 +1585,7 @@ vfrSetMinMaxStep[CIfrMinMaxStepData & MMSDObj] :
                                                           case EFI_IFR_TYPE_NUM_SIZE_16 : MinU2 = _STOU16(I->getText()); break;
                                                           case EFI_IFR_TYPE_NUM_SIZE_8 :  MinU1 = _STOU8(I->getText());  break;
                                                           }
-                             >>
+                                                       >>
   Maximum   "=" A:Number ","
                                                        <<
                                                           switch (_GET_CURRQEST_DATATYPE ()) {
@@ -1594,7 +1594,7 @@ vfrSetMinMaxStep[CIfrMinMaxStepData & MMSDObj] :
                                                           case EFI_IFR_TYPE_NUM_SIZE_16 : MaxU2 = _STOU16(A->getText()); break;
                                                           case EFI_IFR_TYPE_NUM_SIZE_8 :  MaxU1 = _STOU8(A->getText());  break;
                                                           }
-                             >>
+                                                       >>
   {
     STEP    "=" S:Number ","
                                                        <<
@@ -1604,7 +1604,7 @@ vfrSetMinMaxStep[CIfrMinMaxStepData & MMSDObj] :
                                                           case EFI_IFR_TYPE_NUM_SIZE_16 : StepU2 = _STOU16(S->getText()); break;
                                                           case EFI_IFR_TYPE_NUM_SIZE_8 :  StepU1 = _STOU8(S->getText());  break;
                                                           }
-                             >>
+                                                       >>
   }
                                                        <<
                                                           switch (_GET_CURRQEST_DATATYPE ()) {
@@ -1613,7 +1613,7 @@ vfrSetMinMaxStep[CIfrMinMaxStepData & MMSDObj] :
                                                           case EFI_IFR_TYPE_NUM_SIZE_16 : $MMSDObj.SetMinMaxStepData (MinU2, MaxU2, StepU2); break;
                                                           case EFI_IFR_TYPE_NUM_SIZE_8 :  $MMSDObj.SetMinMaxStepData (MinU1, MaxU1, StepU1);  break;
                                                           }
-                             >>
+                                                       >>
   ;
 
 vfrStatementNumeric :
@@ -1844,7 +1844,7 @@ minMaxTimeStepDefault[EFI_HII_TIME & T, UINT8 KeyValue] :
                                                           case 0: T.Hour   = _STOU8(N->getText()); break;
                                                           case 1: T.Minute = _STOU8(N->getText()); break;
                                                           case 2: T.Second = _STOU8(N->getText()); break;
-                              }
+                                                          }
                                                        >>
   }
   ;
@@ -2421,7 +2421,7 @@ castTerm [UINT32 & RootLevel, UINT32 & ExpOpCount]:
                                                            case 0: { CIfrToBoolean TBObj(L->getLine()); $ExpOpCount++; } break;
                                                            case 1: { CIfrToUint TUObj(L->getLine()); $ExpOpCount++; } break;
                                                            }
-                            >>
+                                                        >>
   ;
 
 atomTerm [UINT32 & RootLevel, UINT32 & ExpOpCount]:
@@ -2704,7 +2704,7 @@ questionref13Exp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
      UINT8           Type = 0x1;
      EFI_STRING_ID   DevPath;
      EFI_GUID        Guid;
-   EFI_QUESTION_ID QId = EFI_QUESTION_ID_INVALID;
+     EFI_QUESTION_ID QId = EFI_QUESTION_ID_INVALID;
      UINT32          BitMask;
      CHAR8           *QName = NULL;
      UINT32          LineNo = 0;
@@ -3201,7 +3201,7 @@ EfiVfrParser::_STOU8 (
     //
     // BUG: does not handle overflow here
     //
-  (IsHex == TRUE) ? (Value <<= 4) : (Value *= 10);
+    (IsHex == TRUE) ? (Value <<= 4) : (Value *= 10);
 
     if ((IsHex == TRUE) && (c >= 'a') && (c <= 'f')) {
       Value += (c - 'a' + 10);
@@ -3231,7 +3231,7 @@ EfiVfrParser::_STOU16 (
     //
     // BUG: does not handle overflow here
     //
-  (IsHex == TRUE) ? (Value <<= 4) : (Value *= 10);
+    (IsHex == TRUE) ? (Value <<= 4) : (Value *= 10);
 
     if ((IsHex == TRUE) && (c >= 'a') && (c <= 'f')) {
       Value += (c - 'a' + 10);
@@ -3261,7 +3261,7 @@ EfiVfrParser::_STOU32 (
     //
     // BUG: does not handle overflow here
     //
-  (IsHex == TRUE) ? (Value <<= 4) : (Value *= 10);
+    (IsHex == TRUE) ? (Value <<= 4) : (Value *= 10);
 
     if ((IsHex == TRUE) && (c >= 'a') && (c <= 'f')) {
       Value += (c - 'a' + 10);
@@ -3291,7 +3291,7 @@ EfiVfrParser::_STOU64 (
     //
     // BUG: does not handle overflow here
     //
-  (IsHex == TRUE) ? (Value <<= 4) : (Value *= 10);
+    (IsHex == TRUE) ? (Value <<= 4) : (Value *= 10);
 
     if ((IsHex == TRUE) && (c >= 'a') && (c <= 'f')) {
       Value += (c - 'a' + 10);
