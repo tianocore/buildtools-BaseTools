@@ -970,8 +970,8 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
             AutoGenH.Append('#define %s  %s%s\n' %(GetModeName, Type, PcdVariableName))
         elif Pcd.Type == TAB_PCDS_PATCHABLE_IN_MODULE:
             AutoGenH.Append('#define %s  %s\n' %(PcdValueName, Value))
-            AutoGenC.Append('%s %s %s = %s;\n' %(Const, Pcd.DatumType, PcdVariableName, PcdValueName))
-            AutoGenH.Append('extern %s  %s  %s%s;\n' % (Const, Pcd.DatumType, PcdVariableName, Array))
+            AutoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED volatile %s %s %s = %s;\n' %(Const, Pcd.DatumType, PcdVariableName, PcdValueName))
+            AutoGenH.Append('extern volatile %s  %s  %s%s;\n' % (Const, Pcd.DatumType, PcdVariableName, Array))
             AutoGenH.Append('#define %s  %s%s\n' % (GetModeName, Type, PcdVariableName))
         else:
             AutoGenH.Append('#define %s  %s\n' %(PcdValueName, Value))
