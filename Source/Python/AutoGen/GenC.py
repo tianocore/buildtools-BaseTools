@@ -317,7 +317,7 @@ gAutoGenHEpilogueString = """
 """
 
 ## PEI Core Entry Point Templates
-gPeiCoreEntryPointString = """
+gPeiCoreEntryPointPrototype = """
 ${BEGIN}
 EFI_STATUS
 ${Function} (
@@ -325,7 +325,11 @@ ${Function} (
   IN CONST  EFI_PEI_PPI_DESCRIPTOR  *PpiList,
   IN VOID                           *OldCoreData
   );
+${END}
+"""
 
+gPeiCoreEntryPointString = """
+${BEGIN}
 VOID
 EFIAPI
 ProcessModuleEntryPointList (
@@ -342,13 +346,17 @@ ${END}
 
 
 ## DXE Core Entry Point Templates
-gDxeCoreEntryPointString = """
+gDxeCoreEntryPointPrototype = """
 ${BEGIN}
 VOID
 ${Function} (
   IN VOID  *HobStart
   );
+${END}
+"""
 
+gDxeCoreEntryPointString = """
+${BEGIN}
 VOID
 EFIAPI
 ProcessModuleEntryPointList (
@@ -362,6 +370,16 @@ ${END}
 """
 
 ## PEIM Entry Point Templates
+gPeimEntryPointPrototype = """
+${BEGIN}
+EFI_STATUS
+${Function} (
+  IN       EFI_PEI_FILE_HANDLE  FileHandle,
+  IN CONST EFI_PEI_SERVICES     **PeiServices
+  );
+${END}
+"""
+
 gPeimEntryPointString = [
 """
 GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = ${PiSpecVersion};
@@ -381,12 +399,6 @@ ProcessModuleEntryPointList (
 GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = ${PiSpecVersion};
 ${BEGIN}
 EFI_STATUS
-${Function} (
-  IN       EFI_PEI_FILE_HANDLE  FileHandle,
-  IN CONST EFI_PEI_SERVICES     **PeiServices
-  );
-
-EFI_STATUS
 EFIAPI
 ProcessModuleEntryPointList (
   IN       EFI_PEI_FILE_HANDLE  FileHandle,
@@ -400,14 +412,6 @@ ${END}
 """,
 """
 GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = ${PiSpecVersion};
-
-${BEGIN}
-EFI_STATUS
-${Function} (
-  IN       EFI_PEI_FILE_HANDLE  FileHandle,
-  IN CONST EFI_PEI_SERVICES     **PeiServices
-  );
-${END}
 
 EFI_STATUS
 EFIAPI
@@ -433,6 +437,16 @@ ${END}
 ]
 
 ## DXE SMM Entry Point Templates
+gDxeSmmEntryPointPrototype = """
+${BEGIN}
+EFI_STATUS
+${Function} (
+  IN EFI_HANDLE        ImageHandle,
+  IN EFI_SYSTEM_TABLE  *SystemTable
+  );
+${END}
+"""
+
 gDxeSmmEntryPointString = [
 """
 const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
@@ -452,14 +466,6 @@ ProcessModuleEntryPointList (
 """
 const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
 const UINT32 _gDxeRevision = ${PiSpecVersion};
-
-${BEGIN}
-EFI_STATUS
-${Function} (
-  IN EFI_HANDLE        ImageHandle,
-  IN EFI_SYSTEM_TABLE  *SystemTable
-  );
-${END}
 
 static BASE_LIBRARY_JUMP_BUFFER  mJumpContext;
 static EFI_STATUS  mDriverEntryPointStatus = EFI_LOAD_ERROR;
@@ -498,6 +504,16 @@ ${END}
 ]
 
 ## UEFI Driver Entry Point Templates
+gUefiDriverEntryPointPrototype = """
+${BEGIN}
+EFI_STATUS
+${Function} (
+  IN EFI_HANDLE        ImageHandle,
+  IN EFI_SYSTEM_TABLE  *SystemTable
+  );
+${END}
+"""
+
 gUefiDriverEntryPointString = [
 """
 const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
@@ -518,12 +534,6 @@ const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
 const UINT32 _gDxeRevision = ${PiSpecVersion};
 
 ${BEGIN}
-EFI_STATUS
-${Function} (
-  IN EFI_HANDLE        ImageHandle,
-  IN EFI_SYSTEM_TABLE  *SystemTable
-  );
-
 EFI_STATUS
 EFIAPI
 ProcessModuleEntryPointList (
@@ -550,14 +560,6 @@ ExitDriver (
 """
 const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
 const UINT32 _gDxeRevision = ${PiSpecVersion};
-
-${BEGIN}
-EFI_STATUS
-${Function} (
-  IN EFI_HANDLE        ImageHandle,
-  IN EFI_SYSTEM_TABLE  *SystemTable
-  );
-${END}
 
 EFI_STATUS
 EFIAPI
@@ -596,6 +598,16 @@ ExitDriver (
 
 
 ## UEFI Application Entry Point Templates
+gUefiApplicationEntryPointPrototype = """
+${BEGIN}
+EFI_STATUS
+${Function} (
+  IN EFI_HANDLE        ImageHandle,
+  IN EFI_SYSTEM_TABLE  *SystemTable
+  );
+${END}
+"""
+
 gUefiApplicationEntryPointString = [
 """
 const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
@@ -614,12 +626,6 @@ ProcessModuleEntryPointList (
 const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
 
 ${BEGIN}
-EFI_STATUS
-${Function} (
-  IN EFI_HANDLE        ImageHandle,
-  IN EFI_SYSTEM_TABLE  *SystemTable
-  );
-
 EFI_STATUS
 EFIAPI
 ProcessModuleEntryPointList (
@@ -645,14 +651,6 @@ ExitDriver (
 """,
 """
 const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
-
-${BEGIN}
-EFI_STATUS
-${Function} (
-  IN EFI_HANDLE        ImageHandle,
-  IN EFI_SYSTEM_TABLE  *SystemTable
-  );
-${END}
 
 EFI_STATUS
 EFIAPI
@@ -690,6 +688,15 @@ ExitDriver (
 ]
 
 ## UEFI Unload Image Templates
+gUefiUnloadImagePrototype = """
+${BEGIN}
+EFI_STATUS
+${Function} (
+  IN EFI_HANDLE        ImageHandle
+  );
+${END}
+"""
+
 gUefiUnloadImageString = [
 """
 GLOBAL_REMOVE_IF_UNREFERENCED const UINT8 _gDriverUnloadImageCount = ${Count};
@@ -708,11 +715,6 @@ GLOBAL_REMOVE_IF_UNREFERENCED const UINT8 _gDriverUnloadImageCount = ${Count};
 
 ${BEGIN}
 EFI_STATUS
-${Function} (
-  IN EFI_HANDLE        ImageHandle
-  );
-
-EFI_STATUS
 EFIAPI
 ProcessModuleUnloadList (
   IN EFI_HANDLE        ImageHandle
@@ -724,13 +726,6 @@ ${END}
 """,
 """
 GLOBAL_REMOVE_IF_UNREFERENCED const UINT8 _gDriverUnloadImageCount = ${Count};
-
-${BEGIN}
-EFI_STATUS
-${Function} (
-  IN EFI_HANDLE        ImageHandle
-  );
-${END}
 
 EFI_STATUS
 EFIAPI
@@ -1421,14 +1416,16 @@ def CreatePcdDatabaseCode (Info, AutoGenC, AutoGenH):
 #   @param      AutoGenH    The TemplateString object for header file
 #
 def CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH):
-    if Info.IsLibrary:
-        return
     #
     # Library Constructors
     #
     ConstructorPrototypeString = TemplateString()
     ConstructorCallingString = TemplateString()
-    for Lib in Info.DependentLibraryList:
+    if Info.IsLibrary:
+        DependentLibraryList = [Info.Module]
+    else:
+        DependentLibraryList = Info.DependentLibraryList
+    for Lib in DependentLibraryList:
         if len(Lib.ConstructorList) <= 0:
             continue
         Dict = {'Function':Lib.ConstructorList}
@@ -1457,13 +1454,16 @@ def CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH):
         'FunctionPrototype' :   ConstructorPrototypeList,
         'FunctionCall'      :   ConstructorCallingList
     }
-    if Info.ModuleType == 'BASE':
-        AutoGenC.Append(gLibraryString['BASE'], Dict)
-    elif Info.ModuleType in ['PEI_CORE','PEIM']:
-        AutoGenC.Append(gLibraryString['PEI'], Dict)
-    elif Info.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER',
-                             'DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
-        AutoGenC.Append(gLibraryString['DXE'], Dict)
+    if Info.IsLibrary:
+        AutoGenH.Append("${BEGIN}${FunctionPrototype}${END}", Dict)
+    else:
+        if Info.ModuleType == 'BASE':
+            AutoGenC.Append(gLibraryString['BASE'], Dict)
+        elif Info.ModuleType in ['PEI_CORE','PEIM']:
+            AutoGenC.Append(gLibraryString['PEI'], Dict)
+        elif Info.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER',
+                                 'DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
+            AutoGenC.Append(gLibraryString['DXE'], Dict)
 
 ## Create code for library destructor
 #
@@ -1472,15 +1472,17 @@ def CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH):
 #   @param      AutoGenH    The TemplateString object for header file
 #
 def CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH):
-    if Info.IsLibrary:
-        return
     #
     # Library Destructors
     #
     DestructorPrototypeString = TemplateString()
     DestructorCallingString = TemplateString()
-    for Index in range(len(Info.DependentLibraryList)-1, -1, -1):
-        Lib = Info.DependentLibraryList[Index]
+    if Info.IsLibrary:
+        DependentLibraryList = [Info.Module]
+    else:
+        DependentLibraryList = Info.DependentLibraryList
+    for Index in range(len(DependentLibraryList)-1, -1, -1):
+        Lib = DependentLibraryList[Index]
         if len(Lib.DestructorList) <= 0:
             continue
         Dict = {'Function':Lib.DestructorList}
@@ -1509,13 +1511,16 @@ def CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH):
         'FunctionPrototype' :   DestructorPrototypeList,
         'FunctionCall'      :   DestructorCallingList
     }
-    if Info.ModuleType == 'BASE':
-        AutoGenC.Append(gLibraryString['BASE'], Dict)
-    elif Info.ModuleType in ['PEI_CORE','PEIM']:
-        AutoGenC.Append(gLibraryString['PEI'], Dict)
-    elif Info.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER',
-                             'DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
-        AutoGenC.Append(gLibraryString['DXE'], Dict)
+    if Info.IsLibrary:
+        AutoGenH.Append("${BEGIN}${FunctionPrototype}${END}", Dict)
+    else:
+        if Info.ModuleType == 'BASE':
+            AutoGenC.Append(gLibraryString['BASE'], Dict)
+        elif Info.ModuleType in ['PEI_CORE','PEIM']:
+            AutoGenC.Append(gLibraryString['PEI'], Dict)
+        elif Info.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER',
+                                 'DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
+            AutoGenC.Append(gLibraryString['DXE'], Dict)
 
 
 ## Create code for ModuleEntryPoint
@@ -1556,13 +1561,16 @@ def CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH):
                 )
     if Info.ModuleType == 'PEI_CORE':
         AutoGenC.Append(gPeiCoreEntryPointString, Dict)
+        AutoGenH.Append(gPeiCoreEntryPointPrototype, Dict)
     elif Info.ModuleType == 'DXE_CORE':
         AutoGenC.Append(gDxeCoreEntryPointString, Dict)
+        AutoGenH.Append(gDxeCoreEntryPointPrototype, Dict)
     elif Info.ModuleType == 'PEIM':
         if NumEntryPoints < 2:
             AutoGenC.Append(gPeimEntryPointString[NumEntryPoints], Dict)
         else:
             AutoGenC.Append(gPeimEntryPointString[2], Dict)
+        AutoGenH.Append(gPeimEntryPointPrototype, Dict)
     elif Info.ModuleType in ['DXE_RUNTIME_DRIVER','DXE_DRIVER','DXE_SMM_DRIVER',
                              'DXE_SAL_DRIVER','UEFI_DRIVER']:
         if Info.ModuleType == 'DXE_SMM_DRIVER':
@@ -1570,17 +1578,19 @@ def CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH):
                 AutoGenC.Append(gDxeSmmEntryPointString[0], Dict)
             else:
                 AutoGenC.Append(gDxeSmmEntryPointString[1], Dict)
+            AutoGenH.Append(gDxeSmmEntryPointPrototype, Dict)
         else:
             if NumEntryPoints < 2:
                 AutoGenC.Append(gUefiDriverEntryPointString[NumEntryPoints], Dict)
             else:
                 AutoGenC.Append(gUefiDriverEntryPointString[2], Dict)
+            AutoGenH.Append(gUefiDriverEntryPointPrototype, Dict)
     elif Info.ModuleType == 'UEFI_APPLICATION':
         if NumEntryPoints < 2:
             AutoGenC.Append(gUefiApplicationEntryPointString[NumEntryPoints], Dict)
         else:
             AutoGenC.Append(gUefiApplicationEntryPointString[2], Dict)
-
+        AutoGenH.Append(gUefiApplicationEntryPointPrototype, Dict)
 ## Create code for ModuleUnloadImage
 #
 #   @param      Info        The ModuleAutoGen object
@@ -1599,6 +1609,7 @@ def CreateModuleUnloadImageCode(Info, AutoGenC, AutoGenH):
         AutoGenC.Append(gUefiUnloadImageString[NumUnloadImage], Dict)
     else:
         AutoGenC.Append(gUefiUnloadImageString[2], Dict)
+    AutoGenH.Append(gUefiUnloadImagePrototype, Dict)
 
 ## Create code for GUID
 #
@@ -1723,7 +1734,10 @@ def CreateHeaderCode(Info, AutoGenC, AutoGenH):
         AutoGenH.Append(gSpecificationString,   {'SpecificationName':Info.Macro.keys(),
                                                  'SpecificationValue':Info.Macro.values()})
         # header files includes
-        AutoGenH.Append("#include <%s>\n\n" % gBasicHeaderFile)
+        AutoGenH.Append("#include <%s>\n" % gBasicHeaderFile)
+        if Info.ModuleType in gModuleTypeHeaderFile \
+           and gModuleTypeHeaderFile[Info.ModuleType][0] != gBasicHeaderFile:
+            AutoGenH.Append("#include <%s>\n" % gModuleTypeHeaderFile[Info.ModuleType][0])
         AutoGenH.Append('\nextern GUID  gEfiCallerIdGuid;\n\n')
 
         if Info.IsLibrary:
@@ -1769,7 +1783,7 @@ def CreateFooterCode(Info, AutoGenC, AutoGenH):
 #
 def CreateCode(Info, AutoGenC, AutoGenH):
     CreateHeaderCode(Info, AutoGenC, AutoGenH)
-   
+
     if Info.AutoGenVersion >= 0x00010005:
         CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH)
         CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH)
@@ -1782,7 +1796,7 @@ def CreateCode(Info, AutoGenC, AutoGenH):
     CreateUnicodeStringCode(Info, AutoGenC, AutoGenH)
 
     CreateFooterCode(Info, AutoGenC, AutoGenH)
-    
+
     if Info.AutoGenVersion < 0x00010005 and Info.ComponentType.upper() == 'ACPITABLE':
         AutoGenC.String = ''
 
