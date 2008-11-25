@@ -167,7 +167,7 @@ class DscBuildData(PlatformBuildClassObject):
             elif Name == TAB_DSC_DEFINES_OUTPUT_DIRECTORY:
                 self._OutputDirectory = NormPath(Record[1], self._Macros)
                 if ' ' in self._OutputDirectory:
-                    EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in OUTPUT_DIRECTORY", 
+                    EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in OUTPUT_DIRECTORY",
                                     File=self._MetaFile, Line=Record[-1],
                                     ExtraData=self._OutputDirectory)
             elif Name == TAB_DSC_DEFINES_FLASH_DEFINITION:
@@ -347,14 +347,14 @@ class DscBuildData(PlatformBuildClassObject):
                 continue
             Module = ModuleBuildClassObject()
             Module._MetaFile = ModuleFile
-            
+
             # get module override path
             RecordList = self._RawData[MODEL_META_DATA_COMPONENT_SOURCE_OVERRIDE_PATH, self._Arch, None, ModuleId]
             if RecordList != []:
                 Module.SourceOverridePath = NormPath(RecordList[0][0])
                 #Add to GlobalData Variables
                 GlobalData.gOverrideDir[ModuleFile.upper()] = Module.SourceOverridePath
-            
+
             # get module private library instance
             RecordList = self._RawData[MODEL_EFI_LIBRARY_CLASS, self._Arch, None, ModuleId]
             for Record in RecordList:
@@ -391,11 +391,11 @@ class DscBuildData(PlatformBuildClassObject):
                         MaxDatumSize = TokenList[1]
                     else:
                         MaxDatumSize = ''
-                    Type = self._PCD_TYPE_STRING_[Type]
+                    TypeString = self._PCD_TYPE_STRING_[Type]
                     Pcd = PcdClassObject(
                             PcdCName,
                             TokenSpaceGuid,
-                            Type,
+                            TypeString,
                             '',
                             DefaultValue,
                             '',
@@ -1120,7 +1120,7 @@ class InfBuildData(ModuleBuildClassObject):
         TAB_INF_DEFINES_VERSION                     : "_Version",
         TAB_INF_DEFINES_PCD_IS_DRIVER               : "_PcdIsDriver",
         TAB_INF_DEFINES_SHADOW                      : "_Shadow",
-        
+
         TAB_COMPONENTS_SOURCE_OVERRIDE_PATH         : "_SourceOverridePath",
     }
 
@@ -1352,7 +1352,7 @@ class InfBuildData(ModuleBuildClassObject):
                     File = NormPath(Value, self._Macros)
                     if File.startswith(os.path.normpath('/')):
                         File = File[1:]
-                    
+
                     #if not ValidFile(File, Dir=self._ModuleDir):
                     Status, Dummy = ValidFile2(GlobalData.gAllFiles,
                                                File,
@@ -1610,7 +1610,7 @@ class InfBuildData(ModuleBuildClassObject):
                     else:
                         EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=Dummy,
                                         File=self._MetaFile, Line=LineNo)
-                
+
                 ToolChainFamily = Record[1]
                 TagName = Record[2]
                 ToolCode = Record[3]
@@ -1806,7 +1806,7 @@ class InfBuildData(ModuleBuildClassObject):
             for Arch, ModuleType in Depex:
                 self._Depex[Arch, ModuleType] = Depex[Arch, ModuleType]
         return self._Depex
-    
+
     ## Retrieve PCD for given type
     def _GetPcd(self, Type):
         Pcds = {}
