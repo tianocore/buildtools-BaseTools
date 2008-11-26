@@ -750,7 +750,7 @@ ${END}
 
 gLibraryStructorPrototype = {
 'BASE'  : """${BEGIN}
-EFI_STATUS
+RETURN_STATUS
 EFIAPI
 ${Function} (
   VOID
