@@ -81,6 +81,7 @@ gBuildRuleFile = 'Conf/build_rule.txt'
 ## default file name for AutoGen
 gAutoGenCodeFileName = "AutoGen.c"
 gAutoGenHeaderFileName = "AutoGen.h"
+gAutoGenStringFileName = "%(module_name)sStrDefs.h"
 gAutoGenDepexFileName = "%(module_name)s.depex"
 gAutoGenSmmDepexFileName = "%(module_name)s.smm"
 
@@ -675,12 +676,12 @@ class PlatformAutoGen(AutoGen):
                     NoDatumTypePcdList.add("%s [%s]" % (" | ".join(Key), F))
 
                 if PcdFromModule.Type in GenC.gDynamicPcd or PcdFromModule.Type in GenC.gDynamicExPcd:
-                    # 
-                    # If a dynamic PCD used by a PEM module/PEI module & DXE module, 
-                    # it should be stored in Pcd PEI database, If a dynamic only 
+                    #
+                    # If a dynamic PCD used by a PEM module/PEI module & DXE module,
+                    # it should be stored in Pcd PEI database, If a dynamic only
                     # used by DXE module, it should be stored in DXE PCD database.
                     # The default Phase is DXE
-                    # 
+                    #
                     if M.ModuleType in ["PEIM", "PEI_CORE"]:
                         PcdFromModule.Phase = "PEI"
                     if PcdFromModule not in self._DynamicPcdList:
@@ -1547,11 +1548,14 @@ class ModuleAutoGen(AutoGen):
             self._AutoGenFileList = {}
             AutoGenC = TemplateString()
             AutoGenH = TemplateString()
-            GenC.CreateCode(self, AutoGenC, AutoGenH)
+            StringH = TemplateString()
+            GenC.CreateCode(self, AutoGenC, AutoGenH, StringH)
             if str(AutoGenC) != "":
-                self._AutoGenFileList[gAutoGenCodeFileName] = AutoGenC
+                self._AutoGenFileList[gAutoGenCodeFileName] = str(AutoGenC)
             if str(AutoGenH) != "":
-                self._AutoGenFileList[gAutoGenHeaderFileName] = AutoGenH
+                self._AutoGenFileList[gAutoGenHeaderFileName] = str(AutoGenH)
+            if str(StringH) != "":
+                self._AutoGenFileList[gAutoGenStringFileName % {"module_name":self.Name}] = str(StringH)
         return self._AutoGenFileList
 
     ## Return the list of library modules explicitly or implicityly used by this module
@@ -1639,7 +1643,7 @@ class ModuleAutoGen(AutoGen):
                     # for r8 modules
                     Inc = path.join(Inc, self.Arch.capitalize())
                     if not os.path.exists(Inc) or Inc in self._IncludePathList:
-                        continue 
+                        continue
                     self._IncludePathList.append(Inc)
                 # r8 module needs to put DEBUG_DIR at the end of search path and not to use SOURCE_DIR all the time
                 self._IncludePathList.append(self.DebugDir)
@@ -1702,7 +1706,7 @@ class ModuleAutoGen(AutoGen):
         IgoredAutoGenList = []
 
         for File in self.AutoGenFileList:
-            if GenC.Generate(path.join(self.DebugDir, File), str(self.AutoGenFileList[File])):
+            if GenC.Generate(path.join(self.DebugDir, File), self.AutoGenFileList[File]):
                 #Ignore R8 AutoGen.c
                 if self.AutoGenVersion < 0x00010005 and File.find('AutoGen.c') > -1:
                         continue

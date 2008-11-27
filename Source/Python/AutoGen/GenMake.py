@@ -509,10 +509,11 @@ cleanlib:
             TargetFileMacroList.append(str(Template))
 
         # R8 modules need <BaseName>StrDefs.h for string ID
-        if self._AutoGenObject.AutoGenVersion < 0x00010005 and len(self._AutoGenObject.UnicodeFileList) > 0:
-            BcTargetList = ['strdefs']
-        else:
-            BcTargetList = []
+        #if self._AutoGenObject.AutoGenVersion < 0x00010005 and len(self._AutoGenObject.UnicodeFileList) > 0:
+        #    BcTargetList = ['strdefs']
+        #else:
+        #    BcTargetList = []
+        BcTargetList = []
 
         MakefileName = self._FILE_NAME_[self._FileType]
         MakefileTemplateDict = {

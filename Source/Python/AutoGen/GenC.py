@@ -319,7 +319,8 @@ gAutoGenHEpilogueString = """
 ## PEI Core Entry Point Templates
 gPeiCoreEntryPointPrototype = """
 ${BEGIN}
-EFI_STATUS
+VOID
+EFIAPI
 ${Function} (
   IN CONST  EFI_SEC_PEI_HAND_OFF    *SecCoreData,
   IN CONST  EFI_PEI_PPI_DESCRIPTOR  *PpiList,
@@ -349,6 +350,7 @@ ${END}
 gDxeCoreEntryPointPrototype = """
 ${BEGIN}
 VOID
+EFIAPI
 ${Function} (
   IN VOID  *HobStart
   );
@@ -373,6 +375,7 @@ ${END}
 gPeimEntryPointPrototype = """
 ${BEGIN}
 EFI_STATUS
+EFIAPI
 ${Function} (
   IN       EFI_PEI_FILE_HANDLE  FileHandle,
   IN CONST EFI_PEI_SERVICES     **PeiServices
@@ -440,6 +443,7 @@ ${END}
 gDxeSmmEntryPointPrototype = """
 ${BEGIN}
 EFI_STATUS
+EFIAPI
 ${Function} (
   IN EFI_HANDLE        ImageHandle,
   IN EFI_SYSTEM_TABLE  *SystemTable
@@ -507,6 +511,7 @@ ${END}
 gUefiDriverEntryPointPrototype = """
 ${BEGIN}
 EFI_STATUS
+EFIAPI
 ${Function} (
   IN EFI_HANDLE        ImageHandle,
   IN EFI_SYSTEM_TABLE  *SystemTable
@@ -601,6 +606,7 @@ ExitDriver (
 gUefiApplicationEntryPointPrototype = """
 ${BEGIN}
 EFI_STATUS
+EFIAPI
 ${Function} (
   IN EFI_HANDLE        ImageHandle,
   IN EFI_SYSTEM_TABLE  *SystemTable
@@ -691,6 +697,7 @@ ExitDriver (
 gUefiUnloadImagePrototype = """
 ${BEGIN}
 EFI_STATUS
+EFIAPI
 ${Function} (
   IN EFI_HANDLE        ImageHandle
   );
@@ -1781,19 +1788,21 @@ def CreateFooterCode(Info, AutoGenC, AutoGenH):
 #   @param      AutoGenC    The TemplateString object for C code
 #   @param      AutoGenH    The TemplateString object for header file
 #
-def CreateCode(Info, AutoGenC, AutoGenH):
+def CreateCode(Info, AutoGenC, AutoGenH, StringH):
     CreateHeaderCode(Info, AutoGenC, AutoGenH)
 
     if Info.AutoGenVersion >= 0x00010005:
-        CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH)
-        CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH)
-        CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH)
-        CreateModuleUnloadImageCode(Info, AutoGenC, AutoGenH)
         CreateGuidDefinitionCode(Info, AutoGenC, AutoGenH)
         CreateProtocolDefinitionCode(Info, AutoGenC, AutoGenH)
         CreatePpiDefinitionCode(Info, AutoGenC, AutoGenH)
         CreatePcdCode(Info, AutoGenC, AutoGenH)
-    CreateUnicodeStringCode(Info, AutoGenC, AutoGenH)
+        CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH)
+        CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH)
+        CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH)
+        CreateModuleUnloadImageCode(Info, AutoGenC, AutoGenH)
+    CreateUnicodeStringCode(Info, AutoGenC, StringH)
+    if str(StringH) != '':
+        AutoGenH.Append('#include "%sStrDefs.h"\n' % Info.Name)
 
     CreateFooterCode(Info, AutoGenC, AutoGenH)
 
