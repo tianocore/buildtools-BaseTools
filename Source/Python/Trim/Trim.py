@@ -33,7 +33,7 @@ __copyright__ = "Copyright (c) 2007-2008, Intel Corporation. All rights reserved
 ## Regular expression for matching Line Control directive like "#line xxx"
 gLineControlDirective = re.compile('^\s*(#line|#)\s+([0-9]+)\s+"*([^"]*)"*')
 ## Regular expression for matching "typedef struct"
-gTypedefPattern = re.compile("^\s*typedef\s+struct\s+[{]*$", re.MULTILINE)
+gTypedefPattern = re.compile("^\s*typedef\s+struct\s*[{]*$", re.MULTILINE)
 ## Regular expression for matching "#pragma pack"
 gPragmaPattern = re.compile("^\s*#pragma\s+pack", re.MULTILINE)
 ## Regular expression for matching HEX number
@@ -258,7 +258,7 @@ def DoInclude(Source, Indent=''):
     NewFileContent = []
     # avoid A "include" B and B "include" A
     if Source in gIncludedAslFile:
-        EdkLogger.warn("Trim", "Circular include", 
+        EdkLogger.warn("Trim", "Circular include",
                        ExtraData= "%s -> %s" % (" -> ".join(gIncludedAslFile), Source))
         return []
     gIncludedAslFile.append(Source)
