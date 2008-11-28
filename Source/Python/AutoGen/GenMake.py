@@ -223,6 +223,10 @@ BASE_NAME = $(MODULE_NAME)
 MODULE_RELATIVE_DIR = ${module_relative_directory}
 MODULE_DIR = $(WORKSPACE)${separator}${module_relative_directory}
 
+MODULE_ENTRY_POINT = ${module_entry_point}
+ARCH_ENTRY_POINT = ${arch_entry_point}
+IMAGE_ENTRY_POINT = ${image_entry_point}
+
 #
 # Build Configuration Macro Definition
 #
@@ -287,9 +291,6 @@ LIBS = ${BEGIN}${library_file} \\
 
 COMMON_DEPS = ${BEGIN}${common_dependency_file} \\
               ${END}
-
-IMAGE_ENTRY_POINT = ${module_entry_point}
-ENTRYPOINT = ${module_entry_point}
 
 #
 # Overridable Target Macro Definitions
@@ -450,15 +451,26 @@ cleanlib:
 
         # convert dependent libaries to build command
         self.ProcessDependentLibrary()
+        if len(self._AutoGenObject.Module.ModuleEntryPointList) > 0:
+            ModuleEntryPoint = self._AutoGenObject.Module.ModuleEntryPointList[0]
+        else:
+            ModuleEntryPoint = "_ModuleEntryPoint"
+
+        # Intel EBC compiler enforces EfiMain
+        if self._AutoGenObject.AutoGenVersion < 0x00010005 and self._AutoGenObject.Arch == "EBC":
+            ArchEntryPoint = "EfiMain"
+        else:
+            ArchEntryPoint = ModuleEntryPoint
+
         if self._AutoGenObject.Arch == "EBC":
-            # EBC compiler always use "EfiStart" as entry point
-            EntryPoint = "EfiStart"
-        elif self._AutoGenObject.AutoGenVersion < 0x00010005 and len(self._AutoGenObject.Module.ModuleEntryPointList) > 0:
-            # R8 modules use different entry point functions
-            EntryPoint = self._AutoGenObject.Module.ModuleEntryPointList[0]
+            # EBC compiler always use "EfiStart" as entry point. Only applies to R9 modules
+            ImageEntryPoint = "EfiStart"
+        elif self._AutoGenObject.AutoGenVersion < 0x00010005:
+            # R8 modules use entry point specified in INF file
+            ImageEntryPoint = ModuleEntryPoint
         else:
             # R9 modules always use "_ModuleEntryPoint" as entry point
-            EntryPoint = "_ModuleEntryPoint"
+            ImageEntryPoint = "_ModuleEntryPoint"
 
         # USER_DEFINED modules should take care of tools definitions by its own
         ToolsFlag = ["%s_FLAGS = %s" % (tool, self._AutoGenObject.BuildOption[tool]) \
@@ -551,7 +563,9 @@ cleanlib:
             "shell_command_code"        : self._SHELL_CMD_[self._FileType].keys(),
             "shell_command"             : self._SHELL_CMD_[self._FileType].values(),
 
-            "module_entry_point"        : EntryPoint,
+            "module_entry_point"        : ModuleEntryPoint,
+            "image_entry_point"         : ImageEntryPoint,
+            "arch_entry_point"          : ArchEntryPoint,
             "include_path_prefix"       : self._INC_FLAG_[self.PlatformInfo.ToolChainFamily["CC"]],
             "dlink_output_flag"         : self.PlatformInfo.OutputFlag["DLINK"],
             "slink_output_flag"         : self.PlatformInfo.OutputFlag["SLINK"],
