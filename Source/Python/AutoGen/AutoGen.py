@@ -1401,9 +1401,9 @@ class ModuleAutoGen(AutoGen):
                         DepexList.append(')')
                         Inherited = True
                     if Inherited:
-                        if DepexList[0] in ['BEFORE', 'AFTER']:
-                            break
                         EdkLogger.verbose("DEPEX[%s] (+%s) = %s" % (self.Name, M.BaseName, DepexList))
+                    if 'BEFORE' in DepexList or 'AFTER' in DepexList:
+                        break
                 if len(DepexList) > 0:
                     EdkLogger.verbose('')
         return self._DepexList
