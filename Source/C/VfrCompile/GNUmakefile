@@ -12,6 +12,8 @@ TOOL_INCLUDE = -I Pccts/h
 OBJECTS = AParser.o DLexerBase.o ATokenBuffer.o EfiVfrParser.o VfrLexer.o VfrSyntax.o \
           VfrFormPkg.o VfrError.o VfrUtilityLib.o VfrCompiler.o
 
+VFR_CPPFLAGS = -DPCCTS_USE_NAMESPACE_STD $(CPPFLAGS)
+
 LINKER = $(CXX)
 
 EXTRA_CLEAN_OBJECTS = EfiVfrParser.cpp EfiVfrParser.h VfrParser.dlg VfrTokens.h VfrLexer.cpp VfrLexer.h VfrSyntax.cpp tokens.h
@@ -31,14 +33,17 @@ Pccts/dlg/dlg:
 	BIN_DIR='.' make -C Pccts/dlg
 
 ATokenBuffer.o: Pccts/h/ATokenBuffer.cpp
-	$(CXX) -c $(CPPFLAGS) $(INC) $? -o $@
+	$(CXX) -c $(VFR_CPPFLAGS) $(INC) $? -o $@
 
 DLexerBase.o: Pccts/h/DLexerBase.cpp
-	$(CXX) -c $(CPPFLAGS) $(INC) $? -o $@
+	$(CXX) -c $(VFR_CPPFLAGS) $(INC) $? -o $@
 
 AParser.o: Pccts/h/AParser.cpp
-	$(CXX) -c $(CPPFLAGS) $(INC) $? -o $@
+	$(CXX) -c $(VFR_CPPFLAGS) $(INC) $? -o $@
 
+VfrSyntax.o: VfrSyntax.cpp
+	$(CXX) -c $(VFR_CPPFLAGS) $(INC) $? -o $@
+	
 clean: localClean
 
 localClean:
