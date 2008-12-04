@@ -690,6 +690,7 @@ CVfrCompiler::GenRecordListFile (
     
     fprintf (pOutFile, "\n//\n// All Opcode Record List \n//\n");
     gCIfrRecordInfoDB.IfrRecordOutput (pOutFile, 0);
+    gCVfrVarDataTypeDB.Dump(pOutFile);
 
     fclose (pOutFile);
     fclose (pInFile);

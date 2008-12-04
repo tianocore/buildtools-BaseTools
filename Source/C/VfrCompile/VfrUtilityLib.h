@@ -198,6 +198,8 @@ public:
   EFI_VFR_RETURN_CODE ExtractFieldNameAndArrary (IN CHAR8 *&, OUT CHAR8 *, OUT UINT32 &);
 
   BOOLEAN             IsTypeNameDefined (IN CHAR8 *);
+
+  VOID                Dump(IN FILE *);
   //
   // First the declared 
   //
@@ -206,6 +208,8 @@ public:
   VOID ParserDB ();
 #endif
 };
+
+extern CVfrVarDataTypeDB  gCVfrVarDataTypeDB;
 
 typedef enum {
   EFI_VFR_VARSTORE_INVALID,

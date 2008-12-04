@@ -1193,6 +1193,34 @@ CVfrVarDataTypeDB::IsTypeNameDefined (
   return FALSE;
 }
 
+VOID
+CVfrVarDataTypeDB::Dump (
+  IN FILE         *File
+  )
+{
+  SVfrDataType  *pTNode;
+  SVfrDataField *pFNode;
+
+  fprintf (File, "\n\n***************************************************************\n");
+  fprintf (File, "\t\tmPackAlign = %x\n", mPackAlign);
+  for (pTNode = mDataTypeList; pTNode != NULL; pTNode = pTNode->mNext) {
+    fprintf (File, "\t\tstruct %s : mAlign [%d] mTotalSize [0x%x]\n\n", pTNode->mTypeName, pTNode->mAlign, pTNode->mTotalSize);
+    fprintf (File, "\t\tstruct %s {\n", pTNode->mTypeName);
+    for (pFNode = pTNode->mMembers; pFNode != NULL; pFNode = pFNode->mNext) {
+      if (pFNode->mArrayNum > 0) {
+        fprintf (File, "\t\t\t+%08d[%08x] %s[%d] <%s>\n", pFNode->mOffset, pFNode->mOffset, 
+                  pFNode->mFieldName, pFNode->mArrayNum, pFNode->mFieldType->mTypeName);
+      } else {
+        fprintf (File, "\t\t\t+%08d[%08x] %s <%s>\n", pFNode->mOffset, pFNode->mOffset, 
+                  pFNode->mFieldName, pFNode->mFieldType->mTypeName);
+      }
+    }
+    fprintf (File, "\t\t};\n");
+  fprintf (File, "---------------------------------------------------------------\n");
+  }
+  fprintf (File, "***************************************************************\n");
+}
+
 #ifdef CVFR_VARDATATYPEDB_DEBUG
 VOID
 CVfrVarDataTypeDB::ParserDB (
@@ -2846,3 +2874,6 @@ CVfrQuestionDB::FindQuestion (
 }
 
 BOOLEAN  VfrCompatibleMode = FALSE;
+
+CVfrVarDataTypeDB gCVfrVarDataTypeDB;
+

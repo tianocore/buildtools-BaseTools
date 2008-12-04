@@ -261,7 +261,7 @@ vfrProgram > [UINT8 Return] :
   ;
 
 pragmaPackShowDef :
-  L:"show"                                          << mCVfrVarDataTypeDB.Pack (L->getLine(), VFR_PACK_SHOW); >>
+  L:"show"                                          << gCVfrVarDataTypeDB.Pack (L->getLine(), VFR_PACK_SHOW); >>
   ;
 
 pragmaPackStackDef :
@@ -281,7 +281,7 @@ pragmaPackStackDef :
   {
     "," N:Number                                    << PackAction |= VFR_PACK_ASSIGN; PackNumber = _STOU32(N->getText()); >>
   }
-                                                    << mCVfrVarDataTypeDB.Pack (LineNum, PackAction, Identifier, PackNumber); >>
+                                                    << gCVfrVarDataTypeDB.Pack (LineNum, PackAction, Identifier, PackNumber); >>
   ;
 
 pragmaPackNumber :
@@ -290,7 +290,7 @@ pragmaPackNumber :
      UINT32 PackNumber = DEFAULT_PACK_ALIGN;
   >>
   N:Number                                          << LineNum = N->getLine(); PackNumber = _STOU32(N->getText()); >>
-                                                    << mCVfrVarDataTypeDB.Pack (LineNum, VFR_PACK_ASSIGN, NULL, PackNumber); >>
+                                                    << gCVfrVarDataTypeDB.Pack (LineNum, VFR_PACK_ASSIGN, NULL, PackNumber); >>
   ;
 
 vfrPragmaPackDefinition :
@@ -304,18 +304,18 @@ vfrPragmaPackDefinition :
   ;
 
 vfrDataStructDefinition :
-  { TypeDef } Struct                                << mCVfrVarDataTypeDB.DeclareDataTypeBegin (); >>
+  { TypeDef } Struct                                << gCVfrVarDataTypeDB.DeclareDataTypeBegin (); >>
   { NonNvDataMap }
   {
-    N1:StringIdentifier                             << _PCATCH(mCVfrVarDataTypeDB.SetNewTypeName (N1->getText()), N1); >>
+    N1:StringIdentifier                             << _PCATCH(gCVfrVarDataTypeDB.SetNewTypeName (N1->getText()), N1); >>
   }
   OpenBrace
     vfrDataStructFields
   CloseBrace
   {
-    N2:StringIdentifier                             << _PCATCH(mCVfrVarDataTypeDB.SetNewTypeName (N2->getText()), N2); >>
+    N2:StringIdentifier                             << _PCATCH(gCVfrVarDataTypeDB.SetNewTypeName (N2->getText()), N2); >>
   }
-  ";"                                               << mCVfrVarDataTypeDB.DeclareDataTypeEnd (); >>
+  ";"                                               << gCVfrVarDataTypeDB.DeclareDataTypeEnd (); >>
   ;
 
 vfrDataStructFields :
@@ -339,7 +339,7 @@ dataStructField64 :
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
   }
-  ";"                                               << _PCATCH(mCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "UINT64", ArrayNum), N); >>
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "UINT64", ArrayNum), N); >>
   ;
 
 dataStructField32 :
@@ -349,7 +349,7 @@ dataStructField32 :
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
   }
-  ";"                                               << _PCATCH(mCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "UINT32", ArrayNum), N); >>
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "UINT32", ArrayNum), N); >>
   ;
 
 dataStructField16 :
@@ -359,7 +359,7 @@ dataStructField16 :
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
   }
-  ";"                                               << _PCATCH(mCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "UINT16", ArrayNum), N); >>
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "UINT16", ArrayNum), N); >>
   ;
 
 dataStructField8 :
@@ -369,7 +369,7 @@ dataStructField8 :
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
   }
-  ";"                                               << _PCATCH(mCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "UINT8", ArrayNum), N); >>
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "UINT8", ArrayNum), N); >>
   ;
 
 dataStructFieldBool :
@@ -379,7 +379,7 @@ dataStructFieldBool :
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
   }
-  ";"                                               << _PCATCH(mCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "BOOLEAN", ArrayNum), N); >>
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "BOOLEAN", ArrayNum), N); >>
   ;
 
 dataStructFieldString :
@@ -389,7 +389,7 @@ dataStructFieldString :
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
   }
-  ";"                                               << _PCATCH(mCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "EFI_STRING_ID", ArrayNum), N); >>
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "EFI_STRING_ID", ArrayNum), N); >>
   ;
 
 dataStructFieldDate :
@@ -399,7 +399,7 @@ dataStructFieldDate :
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
   }
-  ";"                                               << _PCATCH(mCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "EFI_HII_DATE", ArrayNum), N); >>
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "EFI_HII_DATE", ArrayNum), N); >>
   ;
 
 dataStructFieldTime :
@@ -409,7 +409,7 @@ dataStructFieldTime :
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
   }
-  ";"                                               << _PCATCH(mCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "EFI_HII_TIME", ArrayNum), N); >>
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "EFI_HII_TIME", ArrayNum), N); >>
   ;
 
 dataStructFieldUser :
@@ -419,7 +419,7 @@ dataStructFieldUser :
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
   }
-  ";"                                               << _PCATCH(mCVfrVarDataTypeDB.DataTypeAddField (N->getText(), T->getText(), ArrayNum), T); >>
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), T->getText(), ArrayNum), T); >>
   ;
 
 //*****************************************************************************
@@ -579,7 +579,7 @@ vfrStatementVarStoreLinear :
                                                        _PCATCH(mCVfrDataStorage.DeclareBufferVarStore (
                                                                                   StoreName,
                                                                                   &Guid,
-                                                                                  &mCVfrVarDataTypeDB,
+                                                                                  &gCVfrVarDataTypeDB,
                                                                                   TypeName,
                                                                                   VarStoreId
                                                                                   ), LineNum);
@@ -588,7 +588,7 @@ vfrStatementVarStoreLinear :
                                                        VSObj.SetGuid (&Guid);
                                                        _PCATCH(mCVfrDataStorage.GetVarStoreId(StoreName, &VarStoreId), SN);
                                                        VSObj.SetVarStoreId (VarStoreId);
-                                                       _PCATCH(mCVfrVarDataTypeDB.GetDataTypeSize(TypeName, &Size), LineNum);
+                                                       _PCATCH(gCVfrVarDataTypeDB.GetDataTypeSize(TypeName, &Size), LineNum);
                                                        VSObj.SetSize (Size);
                                                        VSObj.SetName (StoreName);
                                                     >>
@@ -791,7 +791,7 @@ vfrStorageVarId[EFI_VARSTORE_INFO & Info, CHAR8 *&QuestVarIdStr] :
                                                           mCVfrDataStorage.DeclareBufferVarStore (
                                                                              SName,
                                                                              &mFormsetGuid,
-                                                                             &mCVfrVarDataTypeDB,
+                                                                             &gCVfrVarDataTypeDB,
                                                                              SName,
                                                                              EFI_VARSTORE_ID_INVALID,
                                                                              FALSE
@@ -812,7 +812,7 @@ vfrStorageVarId[EFI_VARSTORE_INFO & Info, CHAR8 *&QuestVarIdStr] :
                                                           mCVfrDataStorage.DeclareBufferVarStore (
                                                                              SName,
                                                                              &mFormsetGuid,
-                                                                             &mCVfrVarDataTypeDB,
+                                                                             &gCVfrVarDataTypeDB,
                                                                              SName,
                                                                              EFI_VARSTORE_ID_INVALID,
                                                                              FALSE
@@ -857,7 +857,7 @@ vfrStorageVarId[EFI_VARSTORE_INFO & Info, CHAR8 *&QuestVarIdStr] :
                                                          _PCATCH(mCVfrDataStorage.GetEfiVarStoreInfo (&$Info), SN2);
                                                          break;
                                                        case EFI_VFR_VARSTORE_BUFFER:
-                                                         _PCATCH(mCVfrVarDataTypeDB.GetDataFieldInfo (VarStr, $Info.mInfo.mVarOffset, $Info.mVarType, $Info.mVarTotalSize), SN2->getLine(), VarStr);
+                                                         _PCATCH(gCVfrVarDataTypeDB.GetDataFieldInfo (VarStr, $Info.mInfo.mVarOffset, $Info.mVarType, $Info.mVarTotalSize), SN2->getLine(), VarStr);
                                                          _PCATCH((EFI_VFR_RETURN_CODE)gCVfrBufferConfig.Register (
                                                                     SName,
                                                                     NULL),
@@ -994,7 +994,7 @@ vfrFormDefinition :
                                                         //
                                                         if (gCFormPkg.HavePendingUnassigned()) {
                                                           gCFormPkg.DeclarePendingQuestion (
-                                                                      mCVfrVarDataTypeDB,
+                                                                      gCVfrVarDataTypeDB,
                                                                       mCVfrDataStorage,
                                                                       mCVfrQuestionDB,
                                                                       &mFormsetGuid,
@@ -1356,7 +1356,7 @@ vfrStatementCheckBox :
   >>
   L:CheckBox                                           << CBObj.SetLineNo(L->getLine()); >>
   vfrQuestionHeader[CBObj] ","                         << //check data type
-                                                          _PCATCH (mCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize), L->getLine(), "CheckBox varid is not the valid data type");
+                                                          _PCATCH (gCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize), L->getLine(), "CheckBox varid is not the valid data type");
                                                           if (DataTypeSize != 0 && DataTypeSize != _GET_CURRQEST_VARSIZE()) {
                                                             _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "CheckBox varid doesn't support array");
                                                           } else if ((mCVfrDataStorage.GetVarStoreType (_GET_CURRQEST_VARTINFO().mVarStoreId) == EFI_VFR_VARSTORE_BUFFER) &&
@@ -1623,7 +1623,7 @@ vfrStatementNumeric :
   >>
   L:Numeric                                            << NObj.SetLineNo(L->getLine()); >>
   vfrQuestionHeader[NObj] ","                          << // check data type
-                                                          _PCATCH (mCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize), L->getLine(), "Numeric varid is not the valid data type");
+                                                          _PCATCH (gCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize), L->getLine(), "Numeric varid is not the valid data type");
                                                           if (DataTypeSize != 0 && DataTypeSize != _GET_CURRQEST_VARSIZE()) {
                                                             _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "Numeric varid doesn't support array");
                                                           }
@@ -1663,7 +1663,7 @@ vfrStatementOneOf :
   >>
   L:OneOf                                              << OObj.SetLineNo(L->getLine()); >>
   vfrQuestionHeader[OObj] ","                          << //check data type
-                                                          _PCATCH (mCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize), L->getLine(), "OneOf varid is not the valid data type");
+                                                          _PCATCH (gCVfrVarDataTypeDB.GetDataTypeSize (_GET_CURRQEST_DATATYPE(), &DataTypeSize), L->getLine(), "OneOf varid is not the valid data type");
                                                           if (DataTypeSize != 0 && DataTypeSize != _GET_CURRQEST_VARSIZE()) {
                                                             _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "OneOf varid doesn't support array");
                                                           }
@@ -2304,14 +2304,14 @@ vfrStatementExpression [UINT32 RootLevel, UINT32 ExpOpCount = 0] :
   (
     L:OR andTerm[$RootLevel, $ExpOpCount]              << $ExpOpCount++; CIfrOr OObj(L->getLine()); >>
   )*
-                                                       << 
+                                                       <<
                                                           //
                                                           // Extend OpCode Scope only for the root expression.
-                                                          // 
+                                                          //
                                                           if ($ExpOpCount > 1 && $RootLevel == 0) {
-                                                            if (_SET_SAVED_OPHDR_SCOPE()) { 
+                                                            if (_SET_SAVED_OPHDR_SCOPE()) {
                                                               CIfrEnd EObj;
-                                                              if (mCIfrOpHdrLineNo != 0) { 
+                                                              if (mCIfrOpHdrLineNo != 0) {
                                                                 EObj.SetLineNo (mCIfrOpHdrLineNo);
                                                               }
                                                             }
@@ -2964,7 +2964,6 @@ private:
   BOOLEAN             mConstantOnlyInExpression;
 
   CVfrDefaultStore    mCVfrDefaultStore;
-  CVfrVarDataTypeDB   mCVfrVarDataTypeDB;
   CVfrDataStorage     mCVfrDataStorage;
   CVfrQuestionDB      mCVfrQuestionDB;
   CVfrRulesDB         mCVfrRulesDB;
@@ -3468,24 +3467,24 @@ EfiVfrParser::_DeclareDefaultFrameworkVarStore (
   SVfrVarStorageNode    *pNode;
   UINT32                TypeSize;
   BOOLEAN               FirstNode;
-  
-  FirstNode = TRUE; 
+
+  FirstNode = TRUE;
   pNode = mCVfrDataStorage.GetBufferVarStoreList();
-  if (pNode == NULL && mCVfrVarDataTypeDB.mFirstNewDataTypeName != NULL) {
+  if (pNode == NULL && gCVfrVarDataTypeDB.mFirstNewDataTypeName != NULL) {
     //
     // Create the default Buffer Var Store when no VarStore is defined.
     // its name should be "Setup"
     //
-    mCVfrVarDataTypeDB.GetDataTypeSize (mCVfrVarDataTypeDB.mFirstNewDataTypeName, &TypeSize);
+    gCVfrVarDataTypeDB.GetDataTypeSize (gCVfrVarDataTypeDB.mFirstNewDataTypeName, &TypeSize);
     CIfrVarStore      VSObj;
     VSObj.SetLineNo (LineNo);
     VSObj.SetVarStoreId (0x1); //the first and only one Buffer Var Store
     VSObj.SetSize (TypeSize);
-    //VSObj.SetName (mCVfrVarDataTypeDB.mFirstNewDataTypeName);
+    //VSObj.SetName (gCVfrVarDataTypeDB.mFirstNewDataTypeName);
     VSObj.SetName ("Setup");
     VSObj.SetGuid (&mFormsetGuid);
 #ifdef VFREXP_DEBUG
-    printf ("Create the default VarStoreName is %s\n", mCVfrVarDataTypeDB.mFirstNewDataTypeName);
+    printf ("Create the default VarStoreName is %s\n", gCVfrVarDataTypeDB.mFirstNewDataTypeName);
 #endif
   } else {
     for (; pNode != NULL; pNode = pNode->mNext) {
@@ -3540,7 +3539,7 @@ EfiVfrParser::_DeclareDefaultLinearVarStore (
   CHAR8             **TypeNameList;
   UINT32            ListSize;
 
-  mCVfrVarDataTypeDB.GetUserDefinedTypeNameList (&TypeNameList, &ListSize);
+  gCVfrVarDataTypeDB.GetUserDefinedTypeNameList (&TypeNameList, &ListSize);
 
   for (Index = 0; Index < ListSize; Index++) {
     UINT32            Size;
@@ -3551,13 +3550,13 @@ EfiVfrParser::_DeclareDefaultLinearVarStore (
     mCVfrDataStorage.DeclareBufferVarStore (
                        TypeNameList[Index],
                        &mFormsetGuid,
-                       &mCVfrVarDataTypeDB,
+                       &gCVfrVarDataTypeDB,
                        TypeNameList[Index],
                        EFI_VARSTORE_ID_INVALID
                        );
     mCVfrDataStorage.GetVarStoreId(TypeNameList[Index], &VarStoreId);
     VSObj.SetVarStoreId (VarStoreId);
-    mCVfrVarDataTypeDB.GetDataTypeSize(TypeNameList[Index], &Size);
+    gCVfrVarDataTypeDB.GetDataTypeSize(TypeNameList[Index], &Size);
     VSObj.SetSize (Size);
     VSObj.SetName (TypeNameList[Index]);
     VSObj.SetGuid (&mFormsetGuid);
@@ -3567,7 +3566,7 @@ EfiVfrParser::_DeclareDefaultLinearVarStore (
 // not required to declare Date and Time VarStore,
 // because code to support old format Data and Time
 //
-  if (mCVfrVarDataTypeDB.IsTypeNameDefined ("Date") == FALSE) {
+  if (gCVfrVarDataTypeDB.IsTypeNameDefined ("Date") == FALSE) {
     UINT32            Size;
     EFI_VARSTORE_ID   VarStoreId;
     CIfrVarStore      VSObj;
@@ -3576,19 +3575,19 @@ EfiVfrParser::_DeclareDefaultLinearVarStore (
     mCVfrDataStorage.DeclareBufferVarStore (
                        "Date",
                        &mFormsetGuid,
-                       &mCVfrVarDataTypeDB,
+                       &gCVfrVarDataTypeDB,
                        "EFI_HII_DATE",
                        EFI_VARSTORE_ID_INVALID
                        );
     mCVfrDataStorage.GetVarStoreId("Date", &VarStoreId);
     VSObj.SetVarStoreId (VarStoreId);
-    mCVfrVarDataTypeDB.GetDataTypeSize("EFI_HII_DATE", &Size);
+    gCVfrVarDataTypeDB.GetDataTypeSize("EFI_HII_DATE", &Size);
     VSObj.SetSize (Size);
     VSObj.SetName ("Date");
     VSObj.SetGuid (&mFormsetGuid);
   }
 
-  if (mCVfrVarDataTypeDB.IsTypeNameDefined ("Time") == FALSE) {
+  if (gCVfrVarDataTypeDB.IsTypeNameDefined ("Time") == FALSE) {
     UINT32            Size;
     EFI_VARSTORE_ID   VarStoreId;
     CIfrVarStore      VSObj;
@@ -3597,13 +3596,13 @@ EfiVfrParser::_DeclareDefaultLinearVarStore (
     mCVfrDataStorage.DeclareBufferVarStore (
                        "Time",
                        &mFormsetGuid,
-                       &mCVfrVarDataTypeDB,
+                       &gCVfrVarDataTypeDB,
                        "EFI_HII_TIME",
                        EFI_VARSTORE_ID_INVALID
                        );
     mCVfrDataStorage.GetVarStoreId("Time", &VarStoreId);
     VSObj.SetVarStoreId (VarStoreId);
-    mCVfrVarDataTypeDB.GetDataTypeSize("EFI_HII_TIME", &Size);
+    gCVfrVarDataTypeDB.GetDataTypeSize("EFI_HII_TIME", &Size);
     VSObj.SetSize (Size);
     VSObj.SetName ("Time");
     VSObj.SetGuid (&mFormsetGuid);
