@@ -1768,10 +1768,6 @@ def CreateHeaderCode(Info, AutoGenC, AutoGenH):
         # Publish the CallerId Guid
         #
         AutoGenC.Append('\nGLOBAL_REMOVE_IF_UNREFERENCED GUID gEfiCallerIdGuid = %s;\n' % GuidStringToGuidStructureString(Info.Guid))
-    else:
-        # R8 modules my have nothing in the AutoGen.c. So it needs following line
-        AutoGenC.Append('\nextern int __make_me_compile_correctly;\n\n')
-
 
 ## Create common code for header file
 #
@@ -1806,7 +1802,8 @@ def CreateCode(Info, AutoGenC, AutoGenH, StringH):
 
     CreateFooterCode(Info, AutoGenC, AutoGenH)
 
-    if Info.AutoGenVersion < 0x00010005:
+    # no generation of AutoGen.c for R8 modules without unicode file
+    if Info.AutoGenVersion < 0x00010005 and len(Info.UnicodeFileList) == 0:
         AutoGenC.String = ''
 
 ## Create the code file
