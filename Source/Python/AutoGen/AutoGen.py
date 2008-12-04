@@ -1111,17 +1111,21 @@ class PlatformAutoGen(AutoGen):
         ToolSet = set(self.Workspace.ToolPath.keys() + ModuleOptions.keys() + PlatformOptions.keys()
                       + PlatformModuleOptions.keys())
         # for those tools that have no option in module file, give it a empty string
-        for Tool in ToolSet:
-            BuildOptions[Tool] = ''
+        for Tool in ToolSet:            
             # no default options for USER_DEFINED module
             if Module.ModuleType != 'USER_DEFINED' and Tool in self.ToolOption:
-                BuildOptions[Tool] += self.ToolOption[Tool]
-            if Tool in ModuleOptions:
-                BuildOptions[Tool] += " " + ModuleOptions[Tool]
-            if Tool in PlatformOptions:
-                BuildOptions[Tool] += " " + PlatformOptions[Tool]
-            if Tool in PlatformModuleOptions:
-                BuildOptions[Tool] += " " + PlatformModuleOptions[Tool]
+                BuildOptions[Tool] = self.ToolOption[Tool]
+            else:
+                BuildOptions[Tool] = ''
+
+            for Options in [ModuleOptions, PlatformOptions, PlatformModuleOptions]:
+                if Tool not in Options:
+                    continue 
+                # check if override is indicated
+                if Options[Tool].startswith('='):
+                    BuildOptions[Tool] = Options[Tool][1:]
+                else:
+                    BuildOptions[Tool] += " " + Options[Tool]
         return BuildOptions
 
     Platform            = property(_GetPlatform)

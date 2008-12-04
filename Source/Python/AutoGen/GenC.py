@@ -1806,7 +1806,7 @@ def CreateCode(Info, AutoGenC, AutoGenH, StringH):
 
     CreateFooterCode(Info, AutoGenC, AutoGenH)
 
-    if Info.AutoGenVersion < 0x00010005 and Info.ComponentType.upper() == 'ACPITABLE':
+    if Info.AutoGenVersion < 0x00010005:
         AutoGenC.String = ''
 
 ## Create the code file
