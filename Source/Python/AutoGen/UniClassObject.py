@@ -138,7 +138,12 @@ class UniFileClassObject(object):
     def GetLangDef(self, File, Line):
         Lang = Line.split()
         if len(Lang) != 3:
-            FileIn = codecs.open(File, mode='rb', encoding='utf-16').read()
+            try:
+                FileIn = codecs.open(File, mode='rb', encoding='utf-16').read()
+            except UnicodeError, X:
+                EdkLogger.error("build", FILE_READ_FAILURE, "File read failure: %s" % str(X), ExtraData=File);
+            except:
+                EdkLogger.error("build", FILE_OPEN_FAILURE, ExtraData=File);
             LineNo = GetLineNo(FileIn, Line, False)
             EdkLogger.error("Unicode File Parser", PARSER_ERROR, "Wrong language definition",
                             ExtraData="""%s\n\t*Correct format is like '#langdef eng "English"'""" % Line, File = File, Line = LineNo)
@@ -196,7 +201,13 @@ class UniFileClassObject(object):
             EdkLogger.error("Unicode File Parser", FILE_NOT_FOUND, ExtraData=File)
 
         Dir = os.path.dirname(File)
-        FileIn = codecs.open(File, mode='rb', encoding='utf-16').readlines()
+        try:
+            FileIn = codecs.open(File, mode='rb', encoding='utf-16').readlines()
+        except UnicodeError, X:
+            EdkLogger.error("build", FILE_READ_FAILURE, "File read failure: %s" % str(X), ExtraData=File);
+        except:
+            EdkLogger.error("build", FILE_OPEN_FAILURE, ExtraData=File);
+
         Lines = []
         #
         # Use unique identifier
