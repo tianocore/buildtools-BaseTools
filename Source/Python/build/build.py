@@ -922,6 +922,7 @@ class Build():
                 return True
         else:
             # always recreate top/platform makefile when clean, just in case of inconsistency
+            AutoGenObject.CreateCodeFile(False)
             AutoGenObject.CreateMakeFile(False)
 
         if EdkLogger.GetLevel() == EdkLogger.QUIET:
