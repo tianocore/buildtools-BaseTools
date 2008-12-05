@@ -2279,7 +2279,7 @@ vfrStatementInvalidSaveRestoreDefaults :
 #token Ones("ONES")                             "ONES"
 #token Zero("ZERO")                             "ZERO"
 #token Undefined("UNDEFINED")                   "UNDEFINED"
-#token Version("VERSOPM")                       "VERSION"
+#token Version("VERSION")                       "VERSION"
 #token Length("length")                         "length"
 #token AND("AND")                               "AND"
 #token OR("OR")                                 "OR"
