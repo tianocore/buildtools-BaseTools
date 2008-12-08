@@ -21,8 +21,7 @@ import Common.EdkLogger as EdkLogger
 from CommonDataClass.DataClass import *
 from Common.DataType import *
 from Common.String import *
-from Common.Misc import Blist
-from Common.Misc import GuidStructureStringToGuidString
+from Common.Misc import Blist, GuidStructureStringToGuidString, CheckPcdDatum
 
 ## Base class of parser
 #
@@ -984,36 +983,48 @@ class DecParser(MetaFileParser):
     def _PcdParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT, 1)
         self._ValueList[0:1] = GetSplitValueList(TokenList[0], TAB_SPLIT)
+        # check PCD information
         if self._ValueList[0] == '' or self._ValueList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No token space GUID or PCD name specified",
                             ExtraData=self._CurrentLine + \
                                       " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
                             File=self._MetaFile, Line=self._LineIndex+1)
+        # check PCD datum information
         if len(TokenList) < 2 or TokenList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No PCD Datum information given",
                             ExtraData=self._CurrentLine + \
                                       " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
                             File=self._MetaFile, Line=self._LineIndex+1)
+
         ValueList = GetSplitValueList(TokenList[1])
+        # check if there's enough datum information given
         if len(ValueList) != 3:
             EdkLogger.error('Parser', FORMAT_INVALID, "Invalid PCD Datum information given",
                             ExtraData=self._CurrentLine + \
                                       " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
                             File=self._MetaFile, Line=self._LineIndex+1)
+        # check default value
         if ValueList[0] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "Missing DefaultValue in PCD Datum information",
                             ExtraData=self._CurrentLine + \
                                       " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
                             File=self._MetaFile, Line=self._LineIndex+1)
+        # check datum type
         if ValueList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "Missing DatumType in PCD Datum information",
                             ExtraData=self._CurrentLine + \
                                       " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
                             File=self._MetaFile, Line=self._LineIndex+1)
+        # check token of the PCD
         if ValueList[2] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "Missing Token in PCD Datum information",
                             ExtraData=self._CurrentLine + \
                                       " (<TokenSpaceGuidCName>.<PcdCName>|<DefaultValue>|<DatumType>|<Token>)",
+                            File=self._MetaFile, Line=self._LineIndex+1)
+        # check format of default value against the datum type
+        IsValid, Cause = CheckPcdDatum(ValueList[1], ValueList[0])
+        if not IsValid:
+            EdkLogger.error('Parser', FORMAT_INVALID, Cause, ExtraData=self._CurrentLine,
                             File=self._MetaFile, Line=self._LineIndex+1)
         self._ValueList[2] = TokenList[1]
 

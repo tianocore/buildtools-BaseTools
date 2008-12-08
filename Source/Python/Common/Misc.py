@@ -984,6 +984,42 @@ def ParseConsoleLog(Filename):
     Opr.close()
     Opw.close()
 
+## check format of default value against the datum type
+#
+# For PCD value setting
+# 
+def CheckPcdDatum(Type, Value):
+    if Type == "VOID*":
+        if not ((Value.startswith('L"') or Value.startswith('"') and Value.endswith('"'))
+                or (Value.startswith('{') and Value.endswith('}'))
+               ):
+            return False, "Invalid value [%s] of type [%s]; must be in the form of {...} for array"\
+                          ", or \"...\" for string, or L\"...\" for unicode string" % (Value, Type)
+    elif Type == 'BOOLEAN':
+        if Value not in ['TRUE', 'FALSE']:
+            return False, "Invalid value [%s] of type [%s]; must be TRUE or FALSE" % (Value, Type)
+    elif type(Value) == type(""):
+        IsInteger = True
+        if Value.startswith("0x") or Value.startswith("0X"):
+            try:
+                Value = long(Value, 16)
+            except:
+                IsInteger = False
+        elif Value.startswith("0"):
+            try:
+                Value = long(Value, 8)
+            except:
+                IsInteger = False
+        elif not Value.isdigit():
+            IsInteger = False
+
+        if not IsInteger:
+            return False, "Invalid value [%s] of type [%s];"\
+                          " must be a hexadecimal, decimal or octal in C language format."\
+                            % (Value, Type)
+
+    return True, ""
+
 ##
 #
 # This acts like the main() function for the script, unless it is 'import'ed into another

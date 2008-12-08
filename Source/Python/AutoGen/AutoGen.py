@@ -966,6 +966,12 @@ class PlatformAutoGen(AutoGen):
             if FromPcd.SkuInfoList not in [None, '', []]:
                 ToPcd.SkuInfoList = FromPcd.SkuInfoList
 
+            # check the validation of datum
+            IsValid, Cause = CheckPcdDatum(ToPcd.DatumType, ToPcd.DefaultValue)
+            if not IsValid:
+                EdkLogger.error('build', FORMAT_INVALID, Cause, File=self._MetaFile,
+                                ExtraData="%s.%s" % (ToPcd.TokenSpaceGuidCName, ToPcd.TokenCName))
+
         if ToPcd.DatumType == "VOID*" and ToPcd.MaxDatumSize in ['', None]:
             EdkLogger.debug(EdkLogger.DEBUG_9, "No MaxDatumSize specified for PCD %s.%s" \
                             % (ToPcd.TokenSpaceGuidCName, ToPcd.TokenCName))
