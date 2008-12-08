@@ -2183,9 +2183,14 @@ def CheckFunctionHeaderConsistentWithDoxygenComment(FuncModifier, FuncHeader, Fu
             LBPos = Tag.find('[')
             RBPos = Tag.find(']')
             ParamToLBContent = Tag[len('@param'):LBPos].strip()
+            
+            ModifierPartList = ParamModifier.split()
+            if ParamName != '...' and ('IN' not in ModifierPartList) and ('OUT' not in ModifierPartList):
+                ErrorMsgList.append('Line %d : Parameter \"%s\" does NOT have %s ' % (FuncStartLine, ParamName, 'Param modifier' + '(IN, OUT or IN OUT)'))    
+                PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'Parameter \"%s\" does NOT have %s ' % (ParamName, 'Param modifier'+'(IN, OUT or IN OUT)'), TableName, CommentId)
+            
             if LBPos > 0 and len(ParamToLBContent)==0 and RBPos > LBPos:
                 InOutStr = ''
-                ModifierPartList = ParamModifier.split()
                 for Part in ModifierPartList:
                     if Part.strip() == 'IN':
                         InOutStr += 'in'
@@ -2199,6 +2204,12 @@ def CheckFunctionHeaderConsistentWithDoxygenComment(FuncModifier, FuncHeader, Fu
                     if Tag.find('['+InOutStr+']') == -1:
                         ErrorMsgList.append('Line %d : in Comment, \"%s\" does NOT have %s ' % (CommentStartLine, (TagPartList[0] + ' ' +TagPartList[1]).replace('\n', '').replace('\r', ''), '['+InOutStr+']'))    
                         PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'in Comment, \"%s\" does NOT have %s ' % ((TagPartList[0] + ' ' +TagPartList[1]).replace('\n', '').replace('\r', ''), '['+InOutStr+']'), TableName, CommentId)
+            
+            elif TagPartList[1] != '...':
+                ErrorMsgList.append('Line %d : in Comment, \"%s\" does NOT have %s ' % (CommentStartLine, (TagPartList[0] + ' ' +TagPartList[1]).replace('\n', '').replace('\r', ''), 'Param modifier'+'['+'in or out'+']'))    
+                PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'in Comment, \"%s\" does NOT have %s ' % ((TagPartList[0] + ' ' +TagPartList[1]).replace('\n', '').replace('\r', ''), 'Param modifier'+'['+'in or out'+']'), TableName, CommentId)
+            
+            
             if Tag.find(ParamName) == -1 and ParamName != 'VOID' and ParamName != 'void':
                 ErrorMsgList.append('Line %d : in Comment, \"%s\" does NOT consistent with parameter name %s ' % (CommentStartLine, (TagPartList[0] + ' ' +TagPartList[1]).replace('\n', '').replace('\r', ''), ParamName))    
                 PrintErrorMsg(ERROR_DOXYGEN_CHECK_FUNCTION_HEADER, 'in Comment, \"%s\" does NOT consistent with parameter name %s ' % ((TagPartList[0] + ' ' +TagPartList[1]).replace('\n', '').replace('\r', ''), ParamName), TableName, CommentId)
