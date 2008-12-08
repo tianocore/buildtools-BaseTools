@@ -144,7 +144,7 @@
     <Command.MSFT, Command.INTEL>
         "$(PP)" $(PP_FLAGS) $(INC) ${src} > ${d_path}(+)${s_base}.i
         Trim --source-code --convert-hex -o ${d_path}(+)${s_base}.iii ${d_path}(+)${s_base}.i
-        "$(ASM)" /Fo${dst} $(ASM_FLAGS) $(INC) ${d_path}(+)${s_base}.iii
+        "$(ASM)" /Fo${dst} $(ASM_FLAGS) /I${s_path} $(INC) ${d_path}(+)${s_base}.iii
 
     <Command.GCC>
         "$(PP)" $(PP_FLAGS) $(INC) ${src} > ${d_path}(+)${s_base}.i
@@ -179,7 +179,7 @@
         $(DEBUG_DIR)(+)${s_dir}(+)${s_base}.c
 
     <Command>
-        "$(PP)" $(VFRPP_FLAGS) $(INC) ${src} > $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i
+        "$(VFRPP)" $(VFRPP_FLAGS) $(INC) ${src} > $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i
         Trim --vfr-file -o $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.iii $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i
         -mkdir ${d_path} > NUL 2>&1
         "$(VFR)" $(VFR_FLAGS) --output-directory ${d_path} $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.iii
@@ -245,28 +245,44 @@
         ?.asl, ?.Asl, ?.ASL
 
     <OutputFile>
-        $(OUTPUT_DIR)(+)${s_base}.aml
+        $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.aml
 
     <ExtraDependency>
         $(MAKE_FILE)
 
     <Command.MSFT, Command.INTEL>
-        "$(PP)" $(APP_FLAGS) $(INC) ${src} > ${d_path}(+)${s_base}.i
-        "$(ASL)" -p ${dst} $(ASL_FLAGS) ${d_path}(+)${s_base}.i
+        Trim --asl-file -o $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i ${src}
+        "$(ASLPP)" $(ASLPP_FLAGS) $(INC) /I${s_path} $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i > $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.iii
+        "$(ASL)" -p ${dst} $(ASL_FLAGS) $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.iii
+
+[C-Code-File.AcpiTable]
+    <InputFile>
+        ?.c
+
+    <OutputFile>
+        $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.acpi
+
+    <ExtraDependency>
+        $(MAKE_FILE)
+
+    <Command.MSFT, Command.INTEL>
+        "$(ASLCC)" /Fo$(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.obj $(CC_FLAGS) $(ASLCC_FLAGS) $(INC) ${src}
+        "$(ASLDLINK)" /OUT:$(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.dll $(ASLDLINK_FLAGS) $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.obj
+        GenFw -o ${dst} -c $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.dll
 
 [Acpi-Table-Code-File]
     <InputFile>
-        ?.aslc
+        ?.aslc, ?.act
 
     <OutputFile>
-        $(OUTPUT_DIR)(+)${s_base}.acpi
+        $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.acpi
 
     <ExtraDependency>
         $(MAKE_FILE)
 
     <Command.MSFT, Command.INTEL>
-        "$(CC)" /Fo$(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.obj $(CC_FLAGS) $(INC) ${src}
-        "$(DLINK)" /OUT:$(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.dll $(SLINK_FLAGS) $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.obj
+        "$(ASLCC)" /Fo$(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.obj $(CC_FLAGS) $(ASLCC_FLAGS) $(INC) ${src}
+        "$(ASLDLINK)" /OUT:$(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.dll $(ASLDLINK_FLAGS) $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.obj
         GenFw -o ${dst} -c $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.dll
 
 [Masm16-Code-File]
@@ -286,7 +302,7 @@
 
 [Microcode-File]
     <InputFile>
-        ?.txt, ?.TXT, ?.Txt
+        ?.txt, ?.TXT, ?.Txt, ?.mut
 
     <OutputFile>
         $(OUTPUT_DIR)(+)${s_base}.mcb
