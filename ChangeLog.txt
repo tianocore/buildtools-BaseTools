@@ -39,6 +39,31 @@ EDK_0000: Compatible: owner
 ##########################################################################################
 
 ==========================================================================================
+basetools_1396: Non-Compatible: jwang36
+
+      Class_BuildTool:
+        1) Separate the AutoGen code for PCDs between module and its library instances.
+           Only macros for module's PCDs will be put in AutoGen.h. Others will be put
+           in AutoGen.c. This is intended to catch missed PCDs in inf file more easily.
+        2) For better compatibile between C standards or C compiler, add type cast for
+           PCD constants in AutoGen.h according to the PCD datum type.
+        3) Add incremental generation capability for FV in GenFds tool.
+
+        Code Change :
+           /trunk/BaseTools/Source/Python/AutoGen/AutoGen.py
+           /trunk/BaseTools/Source/Python/AutoGen/GenC.py
+           /trunk/BaseTools/Source/Python/Common/Misc.py
+           /trunk/BaseTools/Source/Python/GenFds/FdfParser.py
+           /trunk/BaseTools/Source/Python/GenFds/Fv.py
+           /trunk/BaseTools/Source/Python/GenFds/GenFdsGlobalVariable.py
+
+        Possible Impacts:
+        1) If there're PCDs used in a module but not declared in the module's inf file,
+           and occasionally they are declared in the library instances, there must be
+           a build break. Adding necessary PCDs declarations in the module's inf file
+           will solve it.
+
+==========================================================================================
 basetools_1381: Compatible: jwang36
 
       Class_BuildTool:
