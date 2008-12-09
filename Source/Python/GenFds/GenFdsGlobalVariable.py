@@ -217,8 +217,8 @@ class GenFdsGlobalVariable:
 
     @staticmethod
     def GenerateFirmwareVolume(Output, Input, BaseAddress=None, Capsule=False, Dump=False,
-                               AddressFile=None, MapFile=None):
-        if not GenFdsGlobalVariable.NeedsUpdate(Output, Input):
+                               AddressFile=None, MapFile=None, FfsList=[]):
+        if not GenFdsGlobalVariable.NeedsUpdate(Output, Input+FfsList):
             return
         GenFdsGlobalVariable.DebugLogger(EdkLogger.DEBUG_5, "%s needs update because of newer %s" % (Output, Input))
 

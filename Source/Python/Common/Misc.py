@@ -984,7 +984,7 @@ def ParseConsoleLog(Filename):
     Opr.close()
     Opw.close()
 
-## check format of default value against the datum type
+## check format of PCD value against its the datum type
 #
 # For PCD value setting
 # 
@@ -999,21 +999,9 @@ def CheckPcdDatum(Type, Value):
         if Value not in ['TRUE', 'FALSE']:
             return False, "Invalid value [%s] of type [%s]; must be TRUE or FALSE" % (Value, Type)
     elif type(Value) == type(""):
-        IsInteger = True
-        if Value.startswith("0x") or Value.startswith("0X"):
-            try:
-                Value = long(Value, 16)
-            except:
-                IsInteger = False
-        elif Value.startswith("0"):
-            try:
-                Value = long(Value, 8)
-            except:
-                IsInteger = False
-        elif not Value.isdigit():
-            IsInteger = False
-
-        if not IsInteger:
+        try:
+            Value = long(Value, 0)
+        except:
             return False, "Invalid value [%s] of type [%s];"\
                           " must be a hexadecimal, decimal or octal in C language format."\
                             % (Value, Type)

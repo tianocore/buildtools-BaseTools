@@ -665,7 +665,7 @@ class PlatformAutoGen(AutoGen):
         for F in self.Platform.Modules:
             M = ModuleAutoGen(self.Workspace, F, self.BuildTarget, self.ToolChain, self.Arch, self._MetaFile)
             #GuidValue.update(M.Guids)
-            for PcdFromModule in M.PcdList:
+            for PcdFromModule in M.ModulePcdList+M.LibraryPcdList:
                 # check if the setting of the PCD is found in platform
                 #if not PcdFromModule.IsOverrided:
                 #    NotFoundPcdList.add("%s [%s]" % (" | ".join(Key), F))
@@ -1002,10 +1002,10 @@ class PlatformAutoGen(AutoGen):
     #
     #   @retval PCD_list    The list PCDs with settings from platform
     #
-    def ApplyPcdSetting(self, Module):
+    def ApplyPcdSetting(self, Module, Pcds):
         # for each PCD in module
-        for Name,Guid in Module.Pcds:
-            PcdInModule = Module.Pcds[Name,Guid]
+        for Name,Guid in Pcds:
+            PcdInModule = Pcds[Name,Guid]
             # find out the PCD setting in platform
             if (Name,Guid) in self.Platform.Pcds:
                 PcdInPlatform = self.Platform.Pcds[Name,Guid]
@@ -1019,7 +1019,7 @@ class PlatformAutoGen(AutoGen):
                 if Sku.VariableGuid == '': continue
                 Sku.VariableGuidValue = GuidValue(Sku.VariableGuid, self.PackageList)
                 if Sku.VariableGuidValue == None:
-                    PackageList = '\t' + "\n\t".join([str(P) for P in Module.Packages])
+                    PackageList = '\t' + "\n\t".join([str(P) for P in self.PackageList])
                     EdkLogger.error(
                                 'build',
                                 RESOURCE_NOT_AVAILABLE,
@@ -1033,9 +1033,9 @@ class PlatformAutoGen(AutoGen):
         if Module in self.Platform.Modules:
             PlatformModule = self.Platform.Modules[str(Module)]
             for Key  in PlatformModule.Pcds:
-                if Key in Module.Pcds:
-                    self._OverridePcd(Module.Pcds[Key], PlatformModule.Pcds[Key], Module)
-        return Module.Pcds.values()
+                if Key in Pcds:
+                    self._OverridePcd(Pcds[Key], PlatformModule.Pcds[Key], Module)
+        return Pcds.values()
 
     ## Resolve library names to library modules
     #
@@ -1244,7 +1244,8 @@ class ModuleAutoGen(AutoGen):
         self._DependentLibraryList    = None
         self._LibraryAutoGenList      = None
         self._DerivedPackageList      = None
-        self._PcdList                 = None
+        self._ModulePcdList           = None
+        self._LibraryPcdList          = None
         self._GuidList                = None
         self._ProtocolList            = None
         self._PpiList                 = None
@@ -1581,22 +1582,36 @@ class ModuleAutoGen(AutoGen):
                     self._DependentLibraryList = self.PlatformInfo.ApplyLibraryInstance(self.Module)
         return self._DependentLibraryList
 
-    ## Get the list of PCD
+    ## Get the list of PCDs from current module
     #
     #   @retval     list                    The list of PCD
     #
-    def _GetPcdList(self):
-        if self._PcdList == None:
+    def _GetModulePcdList(self):
+        if self._ModulePcdList == None:
+            # apply PCD settings from platform
+            self._ModulePcdList = self.PlatformInfo.ApplyPcdSetting(self.Module, self.Module.Pcds)
+        return self._ModulePcdList
+
+    ## Get the list of PCDs from dependent libraries
+    #
+    #   @retval     list                    The list of PCD
+    #
+    def _GetLibraryPcdList(self):
+        if self._LibraryPcdList == None:
+            Pcds = {}
             if not self.IsLibrary:
-                # derive PCDs from libraries first
+                # get PCDs from dependent libraries
                 for Library in self.DependentLibraryList:
                     for Key in Library.Pcds:
-                        if Key in self.Module.Pcds:
+                        # skip duplicated PCDs
+                        if Key in self.Module.Pcds or Key in Pcds:
                             continue
-                        self.Module.Pcds[Key] = copy.copy(Library.Pcds[Key])
+                        Pcds[Key] = copy.copy(Library.Pcds[Key])
                 # apply PCD settings from platform
-            self._PcdList = self.PlatformInfo.ApplyPcdSetting(self.Module)
-        return self._PcdList
+                self._LibraryPcdList = self.PlatformInfo.ApplyPcdSetting(self.Module, Pcds)
+            else:
+                self._LibraryPcdList = []
+        return self._LibraryPcdList
 
     ## Get the GUID value mapping
     #
@@ -1808,7 +1823,8 @@ class ModuleAutoGen(AutoGen):
     LibraryAutoGenList      = property(_GetLibraryAutoGenList)
     DerivedPackageList      = property(_GetDerivedPackageList)
 
-    PcdList                 = property(_GetPcdList)
+    ModulePcdList           = property(_GetModulePcdList)
+    LibraryPcdList          = property(_GetLibraryPcdList)
     GuidList                = property(_GetGuidList)
     ProtocolList            = property(_GetProtocolList)
     PpiList                 = property(_GetPpiList)

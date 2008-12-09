@@ -15,14 +15,17 @@
 ##
 # Import Modules
 #
+import os
+import shutil
+import subprocess
+import StringIO
+
 import Ffs
 import AprioriSection
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 from GenFds import GenFds
-import os
-import shutil
-import subprocess
 from CommonDataClass.FdfClass import FvClassObject
+from Common.Misc import SaveFileOnChange
 
 T_CHAR_LF = '\n'
 
@@ -70,26 +73,28 @@ class FV (FvClassObject):
         MacroDict.update(self.DefineVarDict)
 
         GenFdsGlobalVariable.VerboseLogger('First generate Apriori file !')
+        FfsFileList = []
         for AprSection in self.AprioriSectionList:
             FileName = AprSection.GenFfs (self.UiFvName, MacroDict)
+            FfsFileList.append(FileName)
             # Add Apriori file name to Inf file
             self.FvInfFile.writelines("EFI_FILE_NAME = " + \
                                        FileName          + \
                                            T_CHAR_LF)
 
         # Process Modules in FfsList
-
         for FfsFile in self.FfsList :
             FileName = FfsFile.GenFfs(MacroDict)
+            FfsFileList.append(FileName)
             self.FvInfFile.writelines("EFI_FILE_NAME = " + \
                                        FileName          + \
                                        T_CHAR_LF)
 
-        self.FvInfFile.close()
+        SaveFileOnChange(self.InfFileName, self.FvInfFile.getvalue(), False)
+
         #
         # Call GenFv tool
         #
-
         FvOutputFile = os.path.join(GenFdsGlobalVariable.FvDir, self.UiFvName)
         FvOutputFile = FvOutputFile + '.Fv'
         # BUGBUG: FvOutputFile could be specified from FDF file (FV section, CreateFile statement)
@@ -101,7 +106,8 @@ class FV (FvClassObject):
         GenFdsGlobalVariable.GenerateFirmwareVolume(
                                 FvOutputFile,
                                 [self.InfFileName],
-                                AddressFile=FvInfoFileName
+                                AddressFile=FvInfoFileName,
+                                FfsList=FfsFileList
                                 )
 
         #
@@ -134,7 +140,7 @@ class FV (FvClassObject):
         #
         self.InfFileName = os.path.join(GenFdsGlobalVariable.FvDir,
                                    self.UiFvName + '.inf')
-        self.FvInfFile = open (self.InfFileName, 'w')
+        self.FvInfFile = StringIO.StringIO()
 
         #
         # Add [Options]

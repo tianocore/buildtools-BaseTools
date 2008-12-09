@@ -1314,7 +1314,7 @@ class FdfParser:
         if self.__IsToken( "|"):
             pcdPair = self.__GetNextPcdName()
             Obj.BaseAddressPcd = pcdPair
-            self.Profile.PcdDict[pcdPair] = long(Obj.BaseAddress, 0)
+            self.Profile.PcdDict[pcdPair] = Obj.BaseAddress
 
         if not self.__IsKeyword( "Size"):
             raise Warning("Size missing", self.FileName, self.CurrentLineNumber)
@@ -1326,12 +1326,12 @@ class FdfParser:
             raise Warning("expected Hex size", self.FileName, self.CurrentLineNumber)
 
 
-        Obj.Size = long(self.__Token, 0)
-
+        Size = self.__Token
         if self.__IsToken( "|"):
             pcdPair = self.__GetNextPcdName()
             Obj.SizePcd = pcdPair
-            self.Profile.PcdDict[pcdPair] = Obj.Size
+            self.Profile.PcdDict[pcdPair] = Size
+        Obj.Size = long(Size, 0)
 
         if not self.__IsKeyword( "ErasePolarity"):
             raise Warning("ErasePolarity missing", self.FileName, self.CurrentLineNumber)
@@ -1418,12 +1418,13 @@ class FdfParser:
         if not self.__GetNextHexNumber() and not self.__GetNextDecimalNumber():
             raise Warning("expected Hex block size", self.FileName, self.CurrentLineNumber)
 
-        BlockSize = long(self.__Token, 0)
+        BlockSize = self.__Token
         BlockSizePcd = None
         if self.__IsToken( "|"):
             PcdPair = self.__GetNextPcdName()
             BlockSizePcd = PcdPair
             self.Profile.PcdDict[PcdPair] = BlockSize
+        BlockSize = long(self.__Token, 0)
 
         BlockNumber = None
         if self.__IsKeyword( "NumBlocks"):
@@ -1552,10 +1553,10 @@ class FdfParser:
         if not self.__Token in ("SET", "FV", "FILE", "DATA"):
             self.__UndoToken()
             RegionObj.PcdOffset = self.__GetNextPcdName()
-            self.Profile.PcdDict[RegionObj.PcdOffset] = RegionObj.Offset + long(Fd.BaseAddress, 0)
+            self.Profile.PcdDict[RegionObj.PcdOffset] = "0x%08X" % (RegionObj.Offset + long(Fd.BaseAddress, 0))
             if self.__IsToken( "|"):
                 RegionObj.PcdSize = self.__GetNextPcdName()
-                self.Profile.PcdDict[RegionObj.PcdSize] = RegionObj.Size
+                self.Profile.PcdDict[RegionObj.PcdSize] = "0x%08X" % RegionObj.Size
 
             if not self.__GetNextWord():
                 return True

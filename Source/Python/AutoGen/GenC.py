@@ -893,7 +893,7 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
                             "No generated token number for %s.%s\n" % (Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
                             ExtraData="[%s]" % str(Info))
         TokenNumber = PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName]
-    AutoGenH.Append('#define %s  %d\n' % (PcdTokenName, TokenNumber))
+    AutoGenH.Append('\n#define %s  %d\n' % (PcdTokenName, TokenNumber))
 
     EdkLogger.debug(EdkLogger.DEBUG_3, "Creating code for " + Pcd.TokenCName + "|" + Pcd.TokenSpaceGuidCName)
     if Pcd.Type not in gItemTypeStringDatabase:
@@ -962,6 +962,8 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
                         ArraySize = len(Value) + 1
                 Value = NewValue + '0 }'
             Array = '[%d]' % ArraySize
+        else:
+            Value = "((%s)%s)" % (Pcd.DatumType, Value)
 
         PcdValueName = '_PCD_VALUE_' + Pcd.TokenCName
         if Pcd.DatumType == 'VOID*' and Value[0] == '{':
@@ -1689,11 +1691,13 @@ def CreatePpiDefinitionCode(Info, AutoGenC, AutoGenH):
 #
 def CreatePcdCode(Info, AutoGenC, AutoGenH):
     if Info.IsLibrary:
-        for Pcd in Info.PcdList:
+        for Pcd in Info.ModulePcdList:
             CreateLibraryPcdCode(Info, AutoGenC, AutoGenH, Pcd)
     else:
-        for Pcd in Info.PcdList:
+        for Pcd in Info.ModulePcdList:
             CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd)
+        for Pcd in Info.LibraryPcdList:
+            CreateModulePcdCode(Info, AutoGenC, AutoGenC, Pcd)
     CreatePcdDatabaseCode(Info, AutoGenC, AutoGenH)
 
 ## Create code for unicode string definition
