@@ -28,11 +28,16 @@
 # @var HelpText:       To store value for HelpText
 #
 class CommonClass(object):
-    def __init__(self, Usage = [], FeatureFlag = '', SupArchList = [], HelpText = ''):
-        self.Usage = Usage                                   
+    def __init__(self, Usage = None, FeatureFlag = '', SupArchList = None, HelpText = ''):
+        self.Usage = Usage
+        if self.Usage == None:
+            self.Usage = []
         self.FeatureFlag = FeatureFlag
-        self.SupArchList = SupArchList                    
+        self.SupArchList = SupArchList
+        if self.SupArchList == None:
+            self.SupArchList = []
         self.HelpText = HelpText
+        self.HelpTextList = []
 
 ## CommonClass
 #
@@ -52,7 +57,21 @@ class CommonHeaderClass(object):
         self.Description = ''
         self.Copyright = ''
         self.License = ''
-        self.Specification = {}                           
+        self.Specification = {}
+
+## HelpTextClass
+#
+# This class defined HelpText item used in PKG file
+# 
+# @param object:     Inherited from object class
+#
+# @var Lang:         To store value for Lang
+# @var String:       To store value for String
+#
+class HelpTextClass(object):
+    def __init__(self):
+        self.Lang = ''
+        self.String = ''
 
 ## DefineClass
 #
@@ -105,10 +124,12 @@ class ClonedRecordClass(object):
 class IdentificationClass(object):
     def __init__(self):
         self.Name = ''
+        self.BaseName = ''
         self.Guid = ''
         self.Version = ''
         self.FileName = ''
         self.FullPath = ''
+        self.RelaPath = ''
 
 ## IncludeStatementClass
 #
@@ -143,8 +164,10 @@ class GuidProtocolPpiCommonClass(CommonClass):
         self.Name = ''
         self.CName = ''
         self.Guid = ''
+        self.VariableName = ''
         self.Notify = False
         self.GuidTypeList = []
+        self.GuidTypeLists = []
         self.SupModuleList = []                           
         CommonClass.__init__(self)
 
@@ -270,6 +293,18 @@ class SkuInfoClass(object):
                     'VpdOffset = ' + str(self.VpdOffset) + "," + \
                     'DefaultValue = ' + str(self.DefaultValue) + ","
         return Rtn
+## PcdErrorClass
+#
+#
+#
+class PcdErrorClass(object):
+    def __init__(self):
+        self.ValidValueList = ''
+        self.ValidValueListLang = ''
+        self.ValidValueRange = ''
+        self.Expression = ''
+        self.ErrorNumber = ''
+        self.ErrorMessage = []
 
 ## PcdClass
 #
@@ -304,7 +339,7 @@ class SkuInfoClass(object):
 #                              BASE | SEC | PEI_CORE | PEIM | DXE_CORE | DXE_DRIVER | DXE_RUNTIME_DRIVER | DXE_SAL_DRIVER | DXE_SMM_DRIVER | UEFI_DRIVER | UEFI_APPLICATION | USER_DEFINED
 #
 class PcdClass(CommonClass):
-    def __init__(self, CName = '', Token = '', TokenSpaceGuidCName = '', DatumType = '', MaxDatumSize = '', DefaultValue = '', ItemType = '', ValidUsage = [], SkuInfoList = {}, SupModuleList = []):
+    def __init__(self, CName = '', Token = '', TokenSpaceGuidCName = '', DatumType = '', MaxDatumSize = '', DefaultValue = '', ItemType = '', ValidUsage = None, SkuInfoList = None, SupModuleList = None):
         self.CName = CName
         self.Token = Token
         self.TokenSpaceGuidCName = TokenSpaceGuidCName
@@ -313,9 +348,21 @@ class PcdClass(CommonClass):
         self.DefaultValue = DefaultValue
         self.ItemType = ItemType
         self.ValidUsage = ValidUsage
+        self.PcdItemType = ''
+        self.TokenSpaceGuidValue = ''
+        self.PcdUsage = ''
+        self.Value = ''
+        self.Offset = ''
+        if self.ValidUsage == None:
+            self.ValidUsage = []
         self.SkuInfoList = SkuInfoList
+        if self.SkuInfoList  == None:
+            self.SkuInfoList  = {}
         self.SupModuleList = SupModuleList
+        if self.SupModuleList == None:
+            self.SupModuleList = []
         CommonClass.__init__(self)
+        self.PcdErrors = []
 
 ## BuildOptionClass
 #
@@ -363,8 +410,31 @@ class IncludeClass(CommonClass):
     def __init__(self):
         self.FilePath = ''
         self.ModuleType = ''
+        self.SupModuleList = []
         self.Comment = ''
         CommonClass.__init__(self)        
+
+## FileClass
+#
+#
+class FileClass(CommonClass):
+    def __init__(self):
+        self.Filename = ''
+        self.Executable = ''
+        self.Family = ''
+        self.FileType = ''
+        CommonClass.__init__(self)
+        
+
+## MiscFileClass
+#
+#
+class MiscFileClass(CommonHeaderClass):
+    def __init__(self):
+        CommonHeaderClass.__init__(self)
+        self.Name = ''
+        self.Files = []
+    
 
 ## UserExtensionsClass
 #
@@ -381,3 +451,5 @@ class UserExtensionsClass(object):
         self.UserID = ''
         self.Identifier = 0
         self.Content = ''
+        self.Defines = []
+        self.BuildOptions = []

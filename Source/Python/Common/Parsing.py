@@ -853,6 +853,42 @@ def ParseDefine(LineValue, StartLine, Table, FileID, Filename, SectionName, Sect
     Define = GetSplitValueList(CleanString(LineValue[LineValue.upper().find(DataType.TAB_DEFINE.upper() + ' ') + len(DataType.TAB_DEFINE + ' ') : ]), TAB_EQUAL_SPLIT, 1)
     Table.Insert(MODEL_META_DATA_DEFINE, Define[0], Define[1], '', '', '', Arch, SectionModel, FileID, StartLine, -1, StartLine, -1, 0)
 
+## InsertSectionItems
+# 
+# Insert item data of a section to a dict
+#
+def InsertSectionItems(Model, CurrentSection, SectionItemList, ArchList, ThirdList, RecordSet):
+    #
+    # Insert each item data of a section
+    #
+    for Index in range(0, len(ArchList)):
+        Arch = ArchList[Index]
+        Third = ThirdList[Index]
+        if Arch == '':
+            Arch = TAB_ARCH_COMMON
+
+        Records = RecordSet[Model]
+        for SectionItem in SectionItemList:
+            BelongsToItem, EndLine, EndColumn = -1, -1, -1
+            LineValue, StartLine, EndLine = SectionItem[0], SectionItem[1], SectionItem[1]
+            
+            EdkLogger.debug(4, "Parsing %s ..." %LineValue)
+            #
+            # And then parse DEFINE statement
+            #
+            if LineValue.upper().find(DataType.TAB_DEFINE.upper() + ' ') > -1:
+                #ParseDefine(LineValue, StartLine, Table, FileID, Filename, CurrentSection, Model, Arch)
+                continue
+            
+            #
+            # At last parse other sections
+            #
+            ID = -1
+            Records.append([LineValue, Arch, StartLine, ID, Third])
+        
+        if RecordSet != {}:
+            RecordSet[Model] = Records
+
 ## Insert records to database
 # 
 # Insert item data of a section to database

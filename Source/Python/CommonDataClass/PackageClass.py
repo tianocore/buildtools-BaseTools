@@ -14,6 +14,7 @@
 # Import Modules
 #
 from CommonClass import *
+from Common.Misc import sdict
 
 ## PackageHeaderClass
 #
@@ -35,6 +36,7 @@ class PackageHeaderClass(IdentificationClass, CommonHeaderClass):
         self.DecSpecification = ''
         self.ReadOnly = False
         self.RePackage = False
+        self.PackagePath = ''
         self.ClonedFrom = []
 
 ## PackageIndustryStdHeaderClass
@@ -98,17 +100,23 @@ class PackageIncludePkgHeaderClass(object):
 #
 class PackageClass(object):
     def __init__(self):
+        self.PackageHeader = PackageHeaderClass()
         self.Header = {}
         self.Includes = []
         self.LibraryClassDeclarations = []
         self.IndustryStdHeaders = []
         self.ModuleFiles = []
+        # {[Guid, Value, Path(relative to WORKSPACE)]: ModuleClassObj}
+        self.Modules = sdict()
         self.PackageIncludePkgHeaders = []
         self.GuidDeclarations = []
         self.ProtocolDeclarations = []
         self.PpiDeclarations = []
         self.PcdDeclarations = []
-        self.UserExtensions = []
+        self.PcdChecks = []
+        self.UserExtensions = UserExtensionsClass()
+        self.MiscFiles = MiscFileClass()
+        self.FileList = []
 
 ##
 #

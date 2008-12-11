@@ -626,6 +626,15 @@ def RemoveBlockComment(Lines):
         NewLines.append(Line)
     return NewLines
 
+#
+# Get String of a List
+#
+def GetStringOfList(List, Split = ' '):
+    Str = ''
+    for Item in List:
+        Str = Str + Item + Split
+
+    return Str.strip()
 ##
 #
 # This acts like the main() function for the script, unless it is 'import'ed into another

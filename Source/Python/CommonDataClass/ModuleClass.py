@@ -57,6 +57,7 @@ class ModuleHeaderClass(IdentificationClass, CommonHeaderClass, DefineClass):
         CommonHeaderClass.__init__(self)
         DefineClass.__init__(self)
         self.ModuleType = ''
+        self.SupModuleList = []
         self.SupArchList = []
         self.BinaryModule = False
         self.OutputFileBasename = ''
@@ -65,6 +66,8 @@ class ModuleHeaderClass(IdentificationClass, CommonHeaderClass, DefineClass):
         self.TianoR8FlashMap_h = False
         self.InfVersion = ''
         self.EfiSpecificationVersion = ''
+        self.PiSpecificationVersion = ''
+        self.UefiSpecificationVersion = ''
         self.EdkReleaseVersion = ''
         self.LibraryClass = []
         self.ComponentType = ''
@@ -78,6 +81,7 @@ class ModuleHeaderClass(IdentificationClass, CommonHeaderClass, DefineClass):
         self.Shadow = ''
         self.MacroDefines = {}
         self.SourceOverridePath = ''
+        self.Specification = []
 
 ## ModuleSourceFileClass
 #
@@ -126,6 +130,11 @@ class ModuleBinaryFileClass(CommonClass):
         self.FileType = FileType
         self.Target = Target
         CommonClass.__init__(self, FeatureFlag = FeatureFlag, SupArchList = SupArchList)
+        self.Filenames = []
+        self.PatchPcdValues = []
+        self.PcdExValues = []
+        self.LibraryInstances = []
+        self.BuildFlags = []
 
 ## ModulePackageDependencyClass
 #
@@ -145,6 +154,7 @@ class ModulePackageDependencyClass(CommonClass, DefineClass):
         self.PackageName = ''
         self.PackageVersion = ''
         self.PackageGuid = ''
+        self.Description = ''
         CommonClass.__init__(self)
         DefineClass.__init__(self)       
 
@@ -323,6 +333,21 @@ class ModuleExternCallBackClass(object):
         self.SetVirtualAddressMapCallBack = ''
         self.ExitBootServicesCallBack = ''
 
+## ModuleExternClass
+#
+# This class defined Extern used in Module file
+# 
+# @param object:                      Inherited from object class
+#
+#
+class ModuleExternClass(CommonClass):
+    def __init__(self):
+        self.EntryPoint = ''
+        self.ModuleUnloadImage = ''
+        self.Constructor = ''
+        self.Destructor = ''
+        CommonClass.__init__(self)
+
 ## ModuleDepexClass
 #
 # This class defined depex item used in Module file
@@ -417,6 +442,7 @@ class ModuleNmakeClass(CommonClass):
 class ModuleClass(object):
     def __init__(self):
         self.Header = {}
+        self.ModuleHeader = ModuleHeaderClass()
         self.LibraryClasses = []
         self.Libraries = []
         self.Sources = []
@@ -425,6 +451,9 @@ class ModuleClass(object):
         self.PackageDependencies = []
         self.Nmake = []
         self.Depex = []
+        self.PeiDepex = ModuleDepexClass()
+        self.DxeDepex = ModuleDepexClass()
+        self.SmmDepex = ModuleDepexClass()
         self.Includes = []
         self.Protocols = []
         self.Ppis = []
@@ -441,8 +470,11 @@ class ModuleClass(object):
         self.ExternLibraries = []
         self.ExternDrivers = []
         self.ExternCallBacks = []
+        self.Externs = []
         self.BuildOptions = []
-        self.UserExtensions = []
+        self.UserExtensions = UserExtensionsClass()
+        self.MiscFiles = MiscFileClass()
+        self.FileList = []
 
 ##
 #

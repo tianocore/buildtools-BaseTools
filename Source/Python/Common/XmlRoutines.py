@@ -17,6 +17,39 @@
 #
 import xml.dom.minidom
 
+## Create a element of XML
+#
+# @param Name
+# @param String
+# @param NodeList
+# @param AttributeList
+#
+# @revel Element
+#
+def CreateXmlElement(Name, String, NodeList, AttributeList):
+    Doc = xml.dom.minidom.Document()
+    Element = Doc.createElement(Name)
+    if String != '' and String != None:
+        Element.appendChild(Doc.createTextNode(String))
+    
+    for Item in NodeList:
+        if type(Item) == type([]):
+            Key = Item[0]
+            Value = Item[1]
+            if Key != '' and Key != None and Value != '' and Value != None:
+                Node = Doc.createElement(Key)
+                Node.appendChild(Doc.createTextNode(Value))
+                Element.appendChild(Node)
+        else:
+            Element.appendChild(Item)
+    for Item in AttributeList:
+        Key = Item[0]
+        Value = Item[1]
+        if Key != '' and Key != None and Value != '' and Value != None:
+            Element.setAttribute(Key, Value)
+    
+    return Element
+
 ## Get a list of XML nodes using XPath style syntax.
 #
 # Return a list of XML DOM nodes from the root Dom specified by XPath String.
@@ -183,9 +216,12 @@ def XmlParseFile(FileName):
     except:
         return ""
 
-
 # This acts like the main() function for the script, unless it is 'import'ed
 # into another script.
 if __name__ == '__main__':
     # Nothing to do here. Could do some unit tests.
+    A = CreateXmlElement('AAA', 'CCC',  [['AAA', '111'], ['BBB', '222']], [['A', '1'], ['B', '2']])
+    B = CreateXmlElement('ZZZ', 'CCC',  [['XXX', '111'], ['YYY', '222']], [['A', '1'], ['B', '2']])
+    C = CreateXmlList('DDD', 'EEE', [A, B], ['FFF', 'GGG'])
+    print C.toprettyxml(indent = " ")
     pass
