@@ -39,6 +39,23 @@ EDK_0000: Compatible: owner
 ##########################################################################################
 
 ==========================================================================================
+basetools_1400: Non-Compatible: jwang36
+
+      Class_BuildTool:
+        1) Search value of Guid/Protocol/PPI in inf file only in the same category in dec file.
+        2) Pass all files in a module's directory to StrGather for R8 modules.
+
+        Code Change :
+           /trunk/BaseTools/Source/Python/AutoGen/GenC.py
+           /trunk/BaseTools/Source/Python/Common/Misc.py
+           /trunk/BaseTools/Source/Python/Workspace/MetaFileParser.py
+           /trunk/BaseTools/Source/Python/Workspace/WorkspaceDatabase.py
+
+        Possible Impacts:
+        1) Those inf files in which the PPI/Protocol/Guid are put in incorrect
+           section will encounter build break.
+
+==========================================================================================
 basetools_1396: Non-Compatible: jwang36
 
       Class_BuildTool:
