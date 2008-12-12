@@ -213,14 +213,14 @@ def main():
 
         if (Options.uiFdName) :
             if Options.uiFdName.upper() in FdfParserObj.Profile.FdDict.keys():
-                GenFds.currentFd = Options.uiFdName
+                GenFds.OnlyGenerateThisFd = Options.uiFdName
             else:
                 EdkLogger.error("GenFds", BuildToolError.OPTION_VALUE_INVALID,
                                 "No such an FD in FDF file: %s" % Options.uiFdName)
 
         if (Options.uiFvName) :
             if Options.uiFvName.upper() in FdfParserObj.Profile.FvDict.keys():
-                GenFds.currentFv = Options.uiFvName
+                GenFds.OnlyGenerateThisFv = Options.uiFvName
             else:
                 EdkLogger.error("GenFds", BuildToolError.OPTION_VALUE_INVALID,
                                 "No such an FV in FDF file: %s" % Options.uiFvName)
@@ -381,7 +381,7 @@ class GenFds :
         for FvName in FdfParser.Profile.FvDict:
             if len(FvName) > MaxFvNameLength:
                 MaxFvNameLength = len(FvName)
-            FvSpaceInfoFileName = os.path.join(GenFdsGlobalVariable.FfsDir, FvName.upper() + '.inf')
+            FvSpaceInfoFileName = os.path.join(GenFdsGlobalVariable.FvDir, FvName.upper() + '.Fv.map')
             if os.path.exists(FvSpaceInfoFileName):
                 FileLinesList = linecache.getlines(FvSpaceInfoFileName)
                 TotalFound = False

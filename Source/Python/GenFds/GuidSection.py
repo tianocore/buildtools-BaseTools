@@ -148,8 +148,8 @@ class GuidSection(GuidSectionClassObject) :
     #
     def __FindExtendTool__(self):
         Tool = None
-        if self.KeyStringList == None or self.KeyStringList == []:
-            return Tool
+#        if self.KeyStringList == None or self.KeyStringList == []:
+#            return Tool
         ToolDefinition = ToolDefClassObject.ToolDefDict(GenFdsGlobalVariable.WorkSpaceDir).ToolsDefTxtDictionary
         for ToolDef in ToolDefinition.items():
             if self.NameGuid == ToolDef[1]:
