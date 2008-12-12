@@ -1652,10 +1652,11 @@ class InfBuildData(ModuleBuildClassObject):
             RecordList = self._RawData[MODEL_EFI_PROTOCOL, self._Arch, self._Platform]
             for Record in RecordList:
                 CName = Record[0]
-                Value = GuidValue(CName, self.Packages)
+                Value = ProtocolValue(CName, self.Packages)
                 if Value == None:
-                    PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
-                    EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Value of [%s] is not found in" % CName,
+                    PackageList = "\n\t".join([str(P) for P in self.Packages])
+                    EdkLogger.error('build', RESOURCE_NOT_AVAILABLE,
+                                    "Value of Protocol [%s] is not found under [Protocols] section in" % CName,
                                     ExtraData=PackageList, File=self._MetaFile, Line=Record[-1])
                 self._Protocols[CName] = Value
         return self._Protocols
@@ -1667,10 +1668,11 @@ class InfBuildData(ModuleBuildClassObject):
             RecordList = self._RawData[MODEL_EFI_PPI, self._Arch, self._Platform]
             for Record in RecordList:
                 CName = Record[0]
-                Value = GuidValue(CName, self.Packages)
+                Value = PpiValue(CName, self.Packages)
                 if Value == None:
-                    PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
-                    EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Value of [%s] is not found in " % CName,
+                    PackageList = "\n\t".join([str(P) for P in self.Packages])
+                    EdkLogger.error('build', RESOURCE_NOT_AVAILABLE,
+                                    "Value of PPI [%s] is not found under [Ppis] section in " % CName,
                                     ExtraData=PackageList, File=self._MetaFile, Line=Record[-1])
                 self._Ppis[CName] = Value
         return self._Ppis
@@ -1684,8 +1686,9 @@ class InfBuildData(ModuleBuildClassObject):
                 CName = Record[0]
                 Value = GuidValue(CName, self.Packages)
                 if Value == None:
-                    PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
-                    EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Value of [%s] is not found in" % CName,
+                    PackageList = "\n\t".join([str(P) for P in self.Packages])
+                    EdkLogger.error('build', RESOURCE_NOT_AVAILABLE,
+                                    "Value of Guid [%s] is not found under [Guids] section in" % CName,
                                     ExtraData=PackageList, File=self._MetaFile, Line=Record[-1])
                 self._Guids[CName] = Value
         return self._Guids
@@ -1797,10 +1800,15 @@ class InfBuildData(ModuleBuildClassObject):
                         DepexList.append(Module.Guid)
                     else:
                         # get the GUID value now
-                        Value = GuidValue(Token, self.Packages)
+                        Value = ProtocolValue(Token, self.Packages)
                         if Value == None:
-                            PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
-                            EdkLogger.error('build', RESOURCE_NOT_AVAILABLE, "Value of [%s] is not found in" % Token,
+                            Value = PpiValue(Token, self.Packages)
+                            if Value == None:
+                                Value = GuidValue(Token, self.Packages)
+                        if Value == None:
+                            PackageList = "\n\t".join([str(P) for P in self.Packages])
+                            EdkLogger.error('build', RESOURCE_NOT_AVAILABLE,
+                                            "Value of [%s] is not found in" % Token,
                                             ExtraData=PackageList, File=self._MetaFile, Line=Record[-1])
                         DepexList.append(Value)
             for Arch, ModuleType in Depex:
@@ -1820,9 +1828,9 @@ class InfBuildData(ModuleBuildClassObject):
             if TokenSpaceGuid not in self.Guids:
                 Value = GuidValue(TokenSpaceGuid, self.Packages)
                 if Value == None:
-                    PackageList = '\t' + "\n\t".join([str(P) for P in self.Packages])
+                    PackageList = "\n\t".join([str(P) for P in self.Packages])
                     EdkLogger.error('build', RESOURCE_NOT_AVAILABLE,
-                                    "Value of GUID [%s] is not found in" % TokenSpaceGuid,
+                                    "Value of Guid [%s] is not found under [Guids] section in" % TokenSpaceGuid,
                                     ExtraData=PackageList, File=self._MetaFile, Line=LineNo)
                 self.Guids[TokenSpaceGuid] = Value
 

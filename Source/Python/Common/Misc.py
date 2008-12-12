@@ -512,8 +512,32 @@ def GuidValue(CName, PackageList):
     for P in PackageList:
         if CName in P.Guids:
             return P.Guids[CName]
+    return None
+
+## Get Protocol value from given packages
+#
+#   @param      CName           The CName of the GUID
+#   @param      PackageList     List of packages looking-up in
+#
+#   @retval     GuidValue   if the CName is found in any given package
+#   @retval     None        if the CName is not found in all given packages
+#
+def ProtocolValue(CName, PackageList):
+    for P in PackageList:
         if CName in P.Protocols:
             return P.Protocols[CName]
+    return None
+
+## Get PPI value from given packages
+#
+#   @param      CName           The CName of the GUID
+#   @param      PackageList     List of packages looking-up in
+#
+#   @retval     GuidValue   if the CName is found in any given package
+#   @retval     None        if the CName is not found in all given packages
+#
+def PpiValue(CName, PackageList):
+    for P in PackageList:
         if CName in P.Ppis:
             return P.Ppis[CName]
     return None

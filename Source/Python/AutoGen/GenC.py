@@ -307,8 +307,8 @@ gAutoGenHeaderString = """\
 """
 
 gAutoGenHPrologueString = """
-#ifndef _AUTOGENH_${Guid}
-#define _AUTOGENH_${Guid}
+#ifndef _${File}_${Guid}
+#define _${File}_${Guid}
 
 """
 
@@ -1600,6 +1600,7 @@ def CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH):
         else:
             AutoGenC.Append(gUefiApplicationEntryPointString[2], Dict)
         AutoGenH.Append(gUefiApplicationEntryPointPrototype, Dict)
+
 ## Create code for ModuleUnloadImage
 #
 #   @param      Info        The ModuleAutoGen object
@@ -1635,6 +1636,8 @@ def CreateGuidDefinitionCode(Info, AutoGenC, AutoGenH):
     else:
         GuidType = "EFI_GUID"
 
+    if Info.GuidList:
+        AutoGenC.Append("\n// Guids\n")
     #
     # GUIDs
     #
@@ -1656,6 +1659,8 @@ def CreateProtocolDefinitionCode(Info, AutoGenC, AutoGenH):
     else:
         GuidType = "EFI_GUID"
 
+    if Info.ProtocolList:
+        AutoGenC.Append("\n// Protocols\n")
     #
     # Protocol GUIDs
     #
@@ -1677,6 +1682,8 @@ def CreatePpiDefinitionCode(Info, AutoGenC, AutoGenH):
     else:
         GuidType = "EFI_GUID"
 
+    if Info.PpiList:
+        AutoGenC.Append("\n// PPIs\n")
     #
     # PPI GUIDs
     #
@@ -1691,11 +1698,20 @@ def CreatePpiDefinitionCode(Info, AutoGenC, AutoGenH):
 #
 def CreatePcdCode(Info, AutoGenC, AutoGenH):
     if Info.IsLibrary:
+        if Info.ModulePcdList:
+            AutoGenH.Append("\n// PCD definitions\n")
         for Pcd in Info.ModulePcdList:
             CreateLibraryPcdCode(Info, AutoGenC, AutoGenH, Pcd)
     else:
+        if Info.ModulePcdList:
+            AutoGenH.Append("\n// Definition of PCDs used in this module\n")
+            AutoGenC.Append("\n// Definition of PCDs used in this module\n")
         for Pcd in Info.ModulePcdList:
             CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd)
+
+        if Info.LibraryPcdList:
+            AutoGenH.Append("\n// Definition of PCDs used in libraries is in AutoGen.c\n")
+            AutoGenC.Append("\n// Definition of PCDs used in libraries\n")
         for Pcd in Info.LibraryPcdList:
             CreateModulePcdCode(Info, AutoGenC, AutoGenC, Pcd)
     CreatePcdDatabaseCode(Info, AutoGenC, AutoGenH)
@@ -1707,20 +1723,33 @@ def CreatePcdCode(Info, AutoGenC, AutoGenH):
 #   @param      AutoGenH    The TemplateString object for header file
 #
 def CreateUnicodeStringCode(Info, AutoGenC, AutoGenH):
-    if len(Info.UnicodeFileList) == 0:
-        return
-
     WorkingDir = os.getcwd()
     os.chdir(Info.WorkspaceDir)
 
-    #IncList = [os.path.join(Info.WorkspaceDir, Inc) for Inc in Info.IncludePathList]
     IncList = [Info.SourceDir]
-    SrcList = [F[0] for F in Info.SourceFileList]
+    if Info.AutoGenVersion >= 0x00010005:
+        # Get all files under [Sources] section in inf file for EDK-II module
+        SrcList = [F[0] for F in Info.SourceFileList]
+    else:
+        # Get all files under the module directory for EDK-I module
+        SrcList = []
+        Cwd = os.getcwd()
+        os.chdir(Info.SourceDir)
+        for Root, Dirs, Files in os.walk("."):
+            if 'CVS' in Dirs:
+                Dirs.remove('CVS')
+            if '.svn' in Dirs:
+                Dirs.remove('.svn')
+            for File in Files:
+                SrcList.append(os.path.join(Root, File))
+        os.chdir(Cwd)
+
     if 'BUILD' in Info.BuildOption and Info.BuildOption['BUILD'].find('-c') > -1:
         CompatibleMode = True
     else:
         CompatibleMode = False
-    Header, Code = GetStringFiles(Info.UnicodeFileList, SrcList, IncList, ['.uni'], Info.Name, CompatibleMode)
+
+    Header, Code = GetStringFiles(Info.UnicodeFileList, SrcList, IncList, ['.uni', '.inf'], Info.Name, CompatibleMode)
     AutoGenC.Append("\n//\n//Unicode String Pack Definition\n//\n")
     AutoGenC.Append(Code)
     AutoGenC.Append("\n")
@@ -1739,7 +1768,7 @@ def CreateHeaderCode(Info, AutoGenC, AutoGenH):
     # file header
     AutoGenH.Append(gAutoGenHeaderString,   {'FileName':'AutoGen.h'})
     # header file Prologue
-    AutoGenH.Append(gAutoGenHPrologueString,{'Guid':Info.Guid.replace('-','_')})
+    AutoGenH.Append(gAutoGenHPrologueString,{'File':'AUTOGENH','Guid':Info.Guid.replace('-','_')})
     if Info.AutoGenVersion >= 0x00010005:
         # specification macros
         AutoGenH.Append(gSpecificationString,   {'SpecificationName':Info.Macro.keys(),
@@ -1800,9 +1829,14 @@ def CreateCode(Info, AutoGenC, AutoGenH, StringH):
         CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH)
         CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH)
         CreateModuleUnloadImageCode(Info, AutoGenC, AutoGenH)
-    CreateUnicodeStringCode(Info, AutoGenC, StringH)
-    if str(StringH) != '':
-        AutoGenH.Append('#include "%sStrDefs.h"\n' % Info.Name)
+
+    if Info.UnicodeFileList:
+        FileName = "%sStrDefs.h" % Info.Name
+        StringH.Append(gAutoGenHeaderString, {'FileName':FileName})
+        StringH.Append(gAutoGenHPrologueString,{'File':'STRDEFS', 'Guid':Info.Guid.replace('-','_')})
+        CreateUnicodeStringCode(Info, AutoGenC, StringH)
+        StringH.Append("\n#endif\n")
+        AutoGenH.Append('#include "%s"\n' % FileName)
 
     CreateFooterCode(Info, AutoGenC, AutoGenH)
 

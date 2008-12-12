@@ -232,7 +232,16 @@ class MetaFileParser(object):
             EdkLogger.error(
                 'Parser',
                 FORMAT_INVALID,
-                "'%s' must be in format of TARGET_TOOLCHAIN_ARCH_TOOL_ATTR" % self._ValueList[1],
+                "'%s' must be in format of <TARGET>_<TOOLCHAIN>_<ARCH>_<TOOL>_FLAGS" % self._ValueList[1],
+                ExtraData=self._CurrentLine,
+                File=self._MetaFile,
+                Line=self._LineIndex+1
+                )
+        if not self._ValueList[1].endswith("_FLAGS"):
+            EdkLogger.error(
+                'Parser',
+                FORMAT_INVALID,
+                "Only <TARGET>_<TOOLCHAIN>_<ARCH>_<TOOL>_FLAGS is allowed",
                 ExtraData=self._CurrentLine,
                 File=self._MetaFile,
                 Line=self._LineIndex+1
