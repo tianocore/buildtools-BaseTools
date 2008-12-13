@@ -19,6 +19,9 @@ from GenFdsGlobalVariable import GenFdsGlobalVariable
 from CommonDataClass.FdfClass import CapsuleClassObject
 import os
 import subprocess
+import StringIO
+from Common.Misc import SaveFileOnChange
+
 
 T_CHAR_LF = '\n'
 
@@ -50,6 +53,7 @@ class Capsule (CapsuleClassObject) :
             CapInfFile.writelines("EFI_FILE_NAME = " + \
                                    FileName      + \
                                    T_CHAR_LF)
+        SaveFileOnChange(self.CapInfFileName, CapInfFile.getvalue(), False)
         CapInfFile.close()
         #
         # Call GenFv tool to generate capsule
@@ -71,7 +75,7 @@ class Capsule (CapsuleClassObject) :
     def GenCapInf(self):
         self.CapInfFileName = os.path.join(GenFdsGlobalVariable.FvDir,
                                    self.UiCapsuleName +  "_Cap" + '.inf')
-        CapInfFile = open (self.CapInfFileName , 'w+')
+        CapInfFile = StringIO.StringIO() #open (self.CapInfFileName , 'w+')
 
         CapInfFile.writelines("[options]" + T_CHAR_LF)
 

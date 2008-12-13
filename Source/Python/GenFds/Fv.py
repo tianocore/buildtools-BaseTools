@@ -91,7 +91,7 @@ class FV (FvClassObject):
                                        T_CHAR_LF)
 
         SaveFileOnChange(self.InfFileName, self.FvInfFile.getvalue(), False)
-
+        self.FvInfFile.close()
         #
         # Call GenFv tool
         #
@@ -100,7 +100,7 @@ class FV (FvClassObject):
         # BUGBUG: FvOutputFile could be specified from FDF file (FV section, CreateFile statement)
         if self.CreateFileName != None:
             FvOutputFile = self.CreateFileName
-        
+
         FvInfoFileName = os.path.join(GenFdsGlobalVariable.FfsDir, self.UiFvName + '.inf')
         shutil.copy(GenFdsGlobalVariable.FvAddressFileName, FvInfoFileName)
         GenFdsGlobalVariable.GenerateFirmwareVolume(

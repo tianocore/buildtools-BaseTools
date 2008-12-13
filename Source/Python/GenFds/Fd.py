@@ -25,6 +25,7 @@ from GenFdsGlobalVariable import GenFdsGlobalVariable
 from CommonDataClass.FdfClass import FDClassObject
 from Common import EdkLogger
 from Common.BuildToolError import *
+from Common.Misc import SaveFileOnChange
 
 ## generate FD
 #
@@ -95,14 +96,15 @@ class FD(FDClassObject):
         GenFdsGlobalVariable.VerboseLogger ('Create an empty Fd file')
         FdFileName = os.path.join(GenFdsGlobalVariable.FvDir,
                                   self.FdUiName + '.fd')
-        FdFile = open(FdFileName, 'wb')
+        #FdFile = open(FdFileName, 'wb')
 
         #
         # Write the buffer contents to Fd file
         #
         GenFdsGlobalVariable.VerboseLogger('Write the buffer contents to Fd file')
-        FdFile.write(FdBuffer.getvalue());
-        FdFile.close();
+        SaveFileOnChange(FdFileName, FdBuffer.getvalue())
+        #FdFile.write(FdBuffer.getvalue());
+        #FdFile.close();
         FdBuffer.close();
         return FdFileName
 
