@@ -56,11 +56,12 @@ class GuidSection(GuidSectionClassObject) :
         # Generate all section
         #
         self.KeyStringList = KeyStringList
-
+        self.CurrentArchList = GenFdsGlobalVariable.ArchList
         if FfsInf != None:
             self.Alignment = FfsInf.__ExtendMacro__(self.Alignment)
             self.NameGuid = FfsInf.__ExtendMacro__(self.NameGuid)
             self.SectionType = FfsInf.__ExtendMacro__(self.SectionType)
+            self.CurrentArchList = [FfsInf.CurrentArch]
 
         SectFile = tuple()
         Index = 0
@@ -147,10 +148,17 @@ class GuidSection(GuidSectionClassObject) :
     #   @param  self        The object pointer
     #
     def __FindExtendTool__(self):
-        Tool = None
-#        if self.KeyStringList == None or self.KeyStringList == []:
-#            return Tool
+        # if user not specify filter, try to deduce it from global data.
+        if self.KeyStringList == None or self.KeyStringList == []:
+            Target = GenFdsGlobalVariable.TargetName
+            ToolChain = GenFdsGlobalVariable.ToolChainTag
+            self.KeyStringList = [Target+'_'+ToolChain+'_'+self.CurrentArchList[0]]
+            for Arch in self.CurrentArchList:
+                if Target+'_'+ToolChain+'_'+Arch not in self.KeyStringList:
+                    self.KeyStringList.append(Target+'_'+ToolChain+'_'+Arch)
+                    
         ToolDefinition = ToolDefClassObject.ToolDefDict(GenFdsGlobalVariable.WorkSpaceDir).ToolsDefTxtDictionary
+        ToolPathTmp = None
         for ToolDef in ToolDefinition.items():
             if self.NameGuid == ToolDef[1]:
                 KeyList = ToolDef[0].split('_')
@@ -166,8 +174,14 @@ class GuidSection(GuidSectionClassObject) :
                                                    KeyList[3] + \
                                                    '_'        + \
                                                    'PATH')
-                    return ToolPath
-        return Tool
+                    if ToolPathTmp == None:
+                        ToolPathTmp = ToolPath
+                    else:
+                        if ToolPathTmp != ToolPath:
+                            EdkLogger.error("GenFds", GENFDS_ERROR, "Don't know which tool to use, %s or %s ?" % (ToolPathTmp, ToolPath))
+                            
+                    
+        return ToolPathTmp
 
 
 
