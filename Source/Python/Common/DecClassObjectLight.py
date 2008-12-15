@@ -238,6 +238,91 @@ class Dec(DecObject):
         #
         #ParseDefineMacro2(self.TblDec, self.RecordSet, GlobalData.gGlobalDefines)
 
+    ## Package Object to DEC file
+    #
+    #
+    def PackageToDec(self, Package):
+        Dec = ''
+        DecList = sdict()
+        if Package == None:
+            return Dec
+        
+        PackageHeader = Package.PackageHeader
+        TmpList = []
+        TmpList.append(TAB_DEC_DEFINES_PACKAGE_NAME + ' = ' + PackageHeader.Name)
+        TmpList.append(TAB_DEC_DEFINES_PACKAGE_GUID + ' = ' + PackageHeader.Guid)
+        TmpList.append(TAB_DEC_DEFINES_PACKAGE_VERSION + ' = ' + PackageHeader.Version)
+        TmpList.append(TAB_DEC_DEFINES_DEC_SPECIFICATION + ' = ' + PackageHeader.DecSpecification)
+        if Package.UserExtensions != None:
+            for Item in Package.UserExtensions.Defines:
+                TmpList.append(Item)
+        DecList['Defines'] =TmpList
+        
+        for Item in Package.Includes:
+            Key = 'Includes.' + Item.SupArchList
+            Value = Item.FilePath
+            if Key not in DecList:
+                DecList[Key] = [Value]
+            else:
+                DecList[Key].append(Value)
+        
+        for Item in Package.GuidDeclarations:
+            Key = 'Guids.' + Item.SupArchList
+            Value = Item.CName + '=' + Item.Guid
+            if Key not in DecList:
+                DecList[Key] = [Value]
+            else:
+                DecList[Key].append(Value)
+        
+        for Item in Package.ProtocolDeclarations:
+            Key = 'Protocols.' + Item.SupArchList
+            Value = Item.CName + '=' + Item.Guid
+            if Key not in DecList:
+                DecList[Key] = [Value]
+            else:
+                DecList[Key].append(Value)
+        
+        for Item in Package.PpiDeclarations:
+            Key = 'Ppis.' + Item.SupArchList
+            Value = Item.CName + '=' + Item.Guid
+            if Key not in DecList:
+                DecList[Key] = [Value]
+            else:
+                DecList[Key].append(Value)
+        
+        for Item in Package.LibraryClassDeclarations:
+            Key = 'LibraryClasses.' + Item.SupArchList
+            Value = Item.LibraryClass + '|' + Item.RecommendedInstance
+            if Key not in DecList:
+                DecList[Key] = [Value]
+            else:
+                DecList[Key].append(Value)
+
+        for Item in Package.PcdDeclarations:
+            Key = 'Pcds' + Item.ItemType + '.' + Item.SupArchList
+            Value = Item.TokenSpaceGuidCName + '.' + Item.CName
+            if Item.DefaultValue != '':
+                Value = Value + '|' + Item.DefaultValue
+            if Item.DatumType != '':
+                Value = Value + '|' + Item.DatumType
+            if Item.Token != '':
+                Value = Value + '|' + Item.Token
+            if Key not in DecList:
+                DecList[Key] = [Value]
+            else:
+                DecList[Key].append(Value)
+
+        #
+        # Transfer Package to Dec
+        #
+        for Item in DecList:
+            Dec = Dec + '[' + Item + ']' + '\n'
+            for SubItem in DecList[Item]:
+                Dec = Dec + '  ' + SubItem + '\n'
+            Dec = Dec + '\n'
+        
+        return Dec
+
     ## Transfer to Package Object
     # 
     # Transfer all contents of a Dec file to a standard Package Object
@@ -322,7 +407,7 @@ class Dec(DecObject):
         self.Package.PackageHeader = PackageHeader
         UE = UserExtensionsClass()
         UE.Defines = OtherDefines
-        self.Package.UserExtensions.append(UE)
+        self.Package.UserExtensions = UE
         
     
     ## GenIncludes
@@ -457,19 +542,19 @@ class Dec(DecObject):
             self.AddPcd(TokenName, Token, TokenGuidCName, DatumType, DefaultValue, ItemType, Arch)
         for Record in RecordSet2:
             Arch = Record[1]
-            (TokenGuidCName, TokenName, Value, DatumType, Token, Type) = GetPcdOfDec(Record[0], TAB_PCDS_PATCHABLE_IN_MODULE, ContainerFile, Record[2])
+            (TokenGuidCName, TokenName, DefaultValue, DatumType, Token, ItemType) = GetPcdOfDec(Record[0], TAB_PCDS_PATCHABLE_IN_MODULE, ContainerFile, Record[2])
             self.AddPcd(TokenName, Token, TokenGuidCName, DatumType, DefaultValue, ItemType, Arch)
         for Record in RecordSet3:
             Arch = Record[1]
-            (TokenGuidCName, TokenName, Value, DatumType, Token, Type) = GetPcdOfDec(Record[0], TAB_PCDS_FEATURE_FLAG, ContainerFile, Record[2])
+            (TokenGuidCName, TokenName, DefaultValue, DatumType, Token, ItemType) = GetPcdOfDec(Record[0], TAB_PCDS_FEATURE_FLAG, ContainerFile, Record[2])
             self.AddPcd(TokenName, Token, TokenGuidCName, DatumType, DefaultValue, ItemType, Arch)
         for Record in RecordSet4:
             Arch = Record[1]
-            (TokenGuidCName, TokenName, Value, DatumType, Token, Type) = GetPcdOfDec(Record[0], TAB_PCDS_DYNAMIC_EX, ContainerFile, Record[2])
+            (TokenGuidCName, TokenName, DefaultValue, DatumType, Token, ItemType) = GetPcdOfDec(Record[0], TAB_PCDS_DYNAMIC_EX, ContainerFile, Record[2])
             self.AddPcd(TokenName, Token, TokenGuidCName, DatumType, DefaultValue, ItemType, Arch)
         for Record in RecordSet5:
             Arch = Record[1]
-            (TokenGuidCName, TokenName, Value, DatumType, Token, Type) = GetPcdOfDec(Record[0], TAB_PCDS_DYNAMIC, ContainerFile, Record[2])
+            (TokenGuidCName, TokenName, DefaultValue, DatumType, Token, ItemType) = GetPcdOfDec(Record[0], TAB_PCDS_DYNAMIC, ContainerFile, Record[2])
             self.AddPcd(TokenName, Token, TokenGuidCName, DatumType, DefaultValue, ItemType, Arch)
             
     ## Show detailed information of Package
@@ -511,9 +596,7 @@ class Dec(DecObject):
         print '\nPcds ='#, M.PcdDeclarations
         for Item in M.PcdDeclarations:
             print 'CName=', Item.CName, 'TokenSpaceGuidCName=', Item.TokenSpaceGuidCName, 'DefaultValue=', Item.DefaultValue, 'ItemType=', Item.ItemType, 'Token=', Item.Token, 'DatumType=', Item.DatumType, Item.SupArchList
-        print '\nUserExtensions ='
-        for Item in M.UserExtensions:
-            print Item.Defines
+        print '\nUserExtensions =', M.UserExtensions.Defines
 
 ##
 #
@@ -528,4 +611,6 @@ if __name__ == '__main__':
     F = os.path.join(W, 'Nt32Pkg/Nt32Pkg.dec')
 
     P = Dec(os.path.normpath(F), True, W)
-    P.ShowPackage()
+    #P.ShowPackage()
+    print P.PackageToDec(P.Package)
+    

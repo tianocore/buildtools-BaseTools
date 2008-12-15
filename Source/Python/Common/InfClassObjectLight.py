@@ -201,9 +201,142 @@ class Inf(InfObject):
         if IsToModule:
             self.InfToModule()
 
-    def ModuleToInf(self, Filename, ModuleObj):
-        SectionList = sdict()
+    ## Module Object to INF file
+    #
+    #
+    def ModuleToInf(self, Module):
+        Inf = ''
+        InfList = sdict()
+        if Module == None:
+            return Inf
+
+        ModuleHeader = Module.ModuleHeader
+        TmpList = []
+        TmpList.append(TAB_INF_DEFINES_BASE_NAME + ' = ' + ModuleHeader.Name)
+        TmpList.append(TAB_INF_DEFINES_FILE_GUID + ' = ' + ModuleHeader.Guid)
+        TmpList.append(TAB_INF_DEFINES_VERSION + ' = ' + ModuleHeader.Version)
+        TmpList.append(TAB_INF_DEFINES_PCD_IS_DRIVER + ' = ' + ModuleHeader.PcdIsDriver)
+        if Module.UserExtensions != None:
+            for Item in Module.UserExtensions.Defines:
+                TmpList.append(Item)
+        InfList['Defines'] = TmpList
         
+        if Module.UserExtensions != None:
+            InfList['BuildOptions'] = Module.UserExtensions.BuildOptions
+        
+        for Item in Module.Includes:
+            Key = 'Includes.' + Item.SupArchList
+            Value = Item.FilePath
+            if Key not in InfList:
+                InfList[Key] = [Value]
+            else:
+                InfList[Key].append(Value)
+        
+        for Item in Module.LibraryClasses:
+            Key = 'LibraryClasses.' + Item.SupArchList
+            Value = Item.LibraryClass
+            if Item.FeatureFlag != '':
+                Value = Value + '|' + Item.FeatureFlag
+            if Key not in InfList:
+                InfList[Key] = [Value]
+            else:
+                InfList[Key].append(Value)
+        
+        for Item in Module.PackageDependencies:
+            Key = 'Packages.' + Item.SupArchList
+            Value = Item.FilePath
+            if Key not in InfList:
+                InfList[Key] = [Value]
+            else:
+                InfList[Key].append(Value)
+        
+        for Item in Module.PcdCodes:
+            Key = 'Pcds' + Item.ItemType + '.' + Item.SupArchList
+            Value = Item.TokenSpaceGuidCName + '.' + Item.CName
+            if Item.DefaultValue != '':
+                Value = Value + '|' + Item.DefaultValue
+            if Key not in InfList:
+                InfList[Key] = [Value]
+            else:
+                InfList[Key].append(Value)
+        
+        for Item in Module.Sources:
+            Key = 'Sources.' + Item.SupArchList
+            Value = Item.SourceFile
+            if Item.ToolChainFamily != '':
+                Value = Value + '|' + Item.ToolChainFamily
+            if Item.TagName != '':
+                Value = Value + '|' + Item.TagName
+            if Item.ToolCode != '':
+                Value = Value + '|' + Item.ToolCode
+            if Item.FeatureFlag != '':
+                Value = Value + '|' + Item.FeatureFlag
+            if Key not in InfList:
+                InfList[Key] = [Value]
+            else:
+                InfList[Key].append(Value)
+        
+        for Item in Module.Guids:
+            Key = 'Guids.' + Item.SupArchList
+            Value = Item.CName
+            if Key not in InfList:
+                InfList[Key] = [Value]
+            else:
+                InfList[Key].append(Value)
+        
+        for Item in Module.Protocols:
+            Key = 'Protocols.' + Item.SupArchList
+            Value = Item.CName
+            if Key not in InfList:
+                InfList[Key] = [Value]
+            else:
+                InfList[Key].append(Value)
+        
+        for Item in Module.Ppis:
+            Key = 'Ppis.' + Item.SupArchList
+            Value = Item.CName
+            if Key not in InfList:
+                InfList[Key] = [Value]
+            else:
+                InfList[Key].append(Value)
+        
+        for Item in Module.Ppis:
+            Key = 'Ppis.' + Item.SupArchList
+            Value = Item.CName
+            if Key not in InfList:
+                InfList[Key] = [Value]
+            else:
+                InfList[Key].append(Value)
+        
+        for Item in Module.Depex:
+            Key = 'Depex.' + Item.SupArchList
+            Value = Item.Depex
+            if Key not in InfList:
+                InfList[Key] = [Value]
+            else:
+                InfList[Key].append(Value)
+
+        for Item in Module.Binaries:
+            Key = 'Binaries.' + Item.SupArchList
+            Value = Item.FileType + '|' + Item.BinaryFile + '|' + Item.Target
+            if Item.FeatureFlag != '':
+                Value = Value + '|' + Item.FeatureFlag
+            if Key not in InfList:
+                InfList[Key] = [Value]
+            else:
+                InfList[Key].append(Value)
+
+        #
+        # Transfer Module to Inf
+        #
+        for Item in InfList:
+            Inf = Inf + '[' + Item + ']' + '\n'
+            for SubItem in InfList[Item]:
+                Inf = Inf + '  ' + SubItem + '\n'
+            Inf = Inf + '\n'
+        
+        return Inf
+    
     
     ## Transfer to Module Object
     # 
@@ -216,7 +349,7 @@ class Inf(InfObject):
         ContainerFile = self.Identification.FileFullPath
         
         #
-        # Generate Package Header
+        # Generate Module Header
         #
         self.GenModuleHeader(ContainerFile)
         
@@ -503,8 +636,8 @@ class Inf(InfObject):
         for Source in M.Sources:
             print Source.SourceFile, 'Fam=', Source.ToolChainFamily, 'Pcd=', Source.FeatureFlag, 'Tag=', Source.TagName, 'ToolCode=', Source.ToolCode, Source.SupArchList
         print '\nUserExtensions ='#, M.UserExtensions
-        for UserExtension in M.UserExtensions:
-            print UserExtension.UserID, UserExtension.Identifier,UserExtension.Content, '\nDefines', UserExtension.Defines, '\nBuildOptions', UserExtension.BuildOptions
+        if M.UserExtensions != None:
+            print M.UserExtensions.UserID, M.UserExtensions.Identifier,M.UserExtensions.Content, '\nDefines', M.UserExtensions.Defines, '\nBuildOptions', M.UserExtensions.BuildOptions            
         print '\nGuids ='#, M.Guids
         for Item in M.Guids:
             print Item.CName, Item.SupArchList, Item.FeatureFlag
@@ -559,9 +692,11 @@ class Inf(InfObject):
         ModuleHeader.FileName = self.Identification.FileName
         ModuleHeader.FullPath = self.Identification.FileFullPath
         self.Module.ModuleHeader = ModuleHeader
-        UE = UserExtensionsClass()
+        UE = self.Module.UserExtensions
+        if UE == None:
+            UE = UserExtensionsClass()
         UE.Defines = OtherDefines
-        self.Module.UserExtensions.append(UE)
+        self.Module.UserExtensions = UE
     
     ## GenBuildOptions
     #
@@ -577,10 +712,12 @@ class Inf(InfObject):
         # Get all BuildOptions
         #
         RecordSet = self.RecordSet[MODEL_META_DATA_BUILD_OPTION]
-        UE = UserExtensionsClass()
+        UE = self.Module.UserExtensions
+        if UE == None:
+            UE = UserExtensionsClass()
         for Record in RecordSet:
-            UE.BuildOptions.append(Record)
-        self.Module.UserExtensions.append(UE)
+            UE.BuildOptions.append(Record[0])
+        self.Module.UserExtensions = UE
         
     ## GenIncludes
     #
@@ -684,7 +821,6 @@ class Inf(InfObject):
         #
         RecordSet = self.RecordSet[MODEL_META_DATA_NMAKE]
 
-        
         #
         # Go through each arch
         #
@@ -898,3 +1034,4 @@ if __name__ == '__main__':
     
     P = Inf(os.path.normpath(F), True, W)
     P.ShowModule()
+    print P.ModuleToInf(P.Module)

@@ -472,8 +472,8 @@ class ModuleClass(object):
         self.ExternCallBacks = []
         self.Externs = []
         self.BuildOptions = []
-        self.UserExtensions = UserExtensionsClass()
-        self.MiscFiles = MiscFileClass()
+        self.UserExtensions = None
+        self.MiscFiles = None
         self.FileList = []
 
 ##
