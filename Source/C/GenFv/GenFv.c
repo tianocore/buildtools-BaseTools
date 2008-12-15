@@ -670,18 +670,6 @@ Returns:
       fprintf (FpFile, " = 0x%x\n", RtBase);
       DebugMsg (NULL, 0, 9, "Updated runtime driver base address", "%s = 0x%x", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, RtBase);
     }
-    if (mFvTotalSize != 0) {
-      fprintf (FpFile, EFI_FV_TOTAL_SIZE_STRING);
-      fprintf (FpFile, " = 0x%x\n", mFvTotalSize);
-    }
-    if (mFvTakenSize != 0) {
-      fprintf (FpFile, EFI_FV_TAKEN_SIZE_STRING);
-      fprintf (FpFile, " = 0x%x\n", mFvTakenSize);
-    }
-    if (mFvTotalSize != 0 && mFvTakenSize != 0) {
-      fprintf (FpFile, EFI_FV_SPACE_SIZE_STRING);
-      fprintf (FpFile, " = 0x%x\n", mFvTotalSize - mFvTakenSize);
-    }
     fclose (FpFile);
   }
   

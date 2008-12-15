@@ -1836,6 +1836,22 @@ Returns:
     Error (NULL, 0, 0001, "Error opening file", FvMapName);
     return EFI_ABORTED;
   }
+  
+  //
+  // record FV size information into FvMap file.
+  //
+  if (mFvTotalSize != 0) {
+    fprintf (FvMapFile, EFI_FV_TOTAL_SIZE_STRING);
+    fprintf (FvMapFile, " = 0x%x\n", mFvTotalSize);
+  }
+  if (mFvTakenSize != 0) {
+    fprintf (FvMapFile, EFI_FV_TAKEN_SIZE_STRING);
+    fprintf (FvMapFile, " = 0x%x\n", mFvTakenSize);
+  }
+  if (mFvTotalSize != 0 && mFvTakenSize != 0) {
+    fprintf (FvMapFile, EFI_FV_SPACE_SIZE_STRING);
+    fprintf (FvMapFile, " = 0x%x\n\n", mFvTotalSize - mFvTakenSize);
+  }
 
   //
   // Add files to FV
