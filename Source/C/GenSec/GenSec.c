@@ -791,8 +791,6 @@ Returns:
   EFI_USER_INTERFACE_SECTION *UiSect;
   UINT32                    InputLength;
   UINT8                     *OutFileBuffer;
-  UINT8                     *TempBuffer;
-  UINT32                    TempLength;
   EFI_STATUS                Status;
   UINT64                    LogLevel;
   
@@ -815,7 +813,6 @@ Returns:
   SectGuidHeaderLength  = 0;
   VersionSect           = NULL;
   UiSect                = NULL;
-  TempBuffer            = NULL;
   
   SetUtilityName (UTILITY_NAME);
   
@@ -1276,56 +1273,10 @@ Returns:
   if (SectType != EFI_SECTION_ALL) {
     InputLength = SECTION_SIZE (OutFileBuffer);
   }
+  
   //
-  // Write the Buffer to the Output file.
+  // Write the output file
   //
-  OutFile = fopen (OutputFileName, "rb");
-  if (OutFile != NULL) {
-    //
-    // the output file exists
-    // first compare the output buffer and the exist output file 
-    // if same, not to update output file
-    //
-    fseek (OutFile, 0, SEEK_END);
-    TempLength = ftell (OutFile);
-    fseek (OutFile, 0, SEEK_SET);
-
-    if (InputLength != TempLength) {
-      //
-      //  they can't be same because their size are different
-      //
-      goto WriteFile;
-    }
-    //
-    // read file data from output file
-    //
-    TempBuffer = (UINT8 *) malloc (TempLength);
-    if (TempBuffer == NULL) {
-      Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
-      goto Finish;
-    }
-    fread (TempBuffer, TempLength, 1, OutFile);
-    //
-    // Compare Data byte by byte
-    //
-    for (Index = 0; Index < InputLength; Index ++) {
-      if (OutFileBuffer [Index] != TempBuffer [Index]) {
-        break;
-      }
-    }
-    //
-    // Data is same, output file doesn't need to be updated.
-    //
-    if (Index >= InputLength) {
-      goto Finish;
-    }
-  }
-
-WriteFile:
-  if (OutFile != NULL) {
-    fclose (OutFile);
-  }
-
   OutFile = fopen (OutputFileName, "wb");
   if (OutFile == NULL) {
     Error (NULL, 0, 0001, "Error opening file for writing", OutputFileName);
@@ -1337,10 +1288,6 @@ WriteFile:
 Finish:
   if (InputFileName != NULL) {
     free (InputFileName);
-  }
-  
-  if (TempBuffer != NULL) {
-    free (TempBuffer);
   }
 
   if (OutFileBuffer != NULL) {
