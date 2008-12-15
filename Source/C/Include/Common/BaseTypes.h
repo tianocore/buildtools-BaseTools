@@ -138,10 +138,10 @@ typedef struct {
 #define OFFSET_OF(TYPE, Field) ((UINTN) &(((TYPE *)0)->Field))
 
 ///
-///  BASE_CR - returns a pointer to the structure
+///  _CR - returns a pointer to the structure
 ///      from one of it's elements.
 ///
-#define BASE_CR(Record, TYPE, Field)  ((TYPE *) ((CHAR8 *) (Record) - (CHAR8 *) &(((TYPE *) 0)->Field)))
+#define _CR(Record, TYPE, Field)  ((TYPE *) ((CHAR8 *) (Record) - (CHAR8 *) &(((TYPE *) 0)->Field)))
 
 ///
 ///  ALIGN_POINTER - aligns a pointer to the lowest boundry

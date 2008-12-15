@@ -118,6 +118,9 @@
       typedef char            INT8;
     #endif
   #endif
+
+  #define UINT8_MAX 0xff
+
 #else
   //
   // Use ANSI C 2000 stdint.h integer width declarations
