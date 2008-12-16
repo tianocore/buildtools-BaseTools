@@ -1727,12 +1727,10 @@ def CreateUnicodeStringCode(Info, AutoGenC, AutoGenH):
     os.chdir(Info.WorkspaceDir)
 
     IncList = [Info.SourceDir]
-    if Info.AutoGenVersion >= 0x00010005:
-        # Get all files under [Sources] section in inf file for EDK-II module
-        SrcList = [F[0] for F in Info.SourceFileList]
-    else:
+    # Get all files under [Sources] section in inf file for EDK-II module
+    SrcList = [F[0] for F in Info.SourceFileList]
+    if Info.AutoGenVersion < 0x00010005:
         # Get all files under the module directory for EDK-I module
-        SrcList = []
         Cwd = os.getcwd()
         os.chdir(Info.SourceDir)
         for Root, Dirs, Files in os.walk("."):
@@ -1741,7 +1739,10 @@ def CreateUnicodeStringCode(Info, AutoGenC, AutoGenH):
             if '.svn' in Dirs:
                 Dirs.remove('.svn')
             for File in Files:
-                SrcList.append(os.path.join(Root, File))
+                File = os.path.join(Root, File)
+                if File in SrcList:
+                    continue 
+                SrcList.append(File)
         os.chdir(Cwd)
 
     if 'BUILD' in Info.BuildOption and Info.BuildOption['BUILD'].find('-c') > -1:
