@@ -233,9 +233,13 @@ def LaunchCommand(Command, WorkingDir):
 
     Proc = None
     EndOfProcedure = None
+    if isinstance(Command, str):
+        CommandString = Command
+    else:
+        CommandString = " ".join(Command)
     try:
         # launch the command
-        Proc = Popen(Command, stdout=PIPE, stderr=PIPE, env=os.environ, cwd=WorkingDir)
+        Proc = Popen(CommandString, stdout=PIPE, stderr=PIPE, env=os.environ, cwd=WorkingDir)
 
         # launch two threads to read the STDOUT and STDERR
         EndOfProcedure = Event()
@@ -259,9 +263,8 @@ def LaunchCommand(Command, WorkingDir):
         if EndOfProcedure != None:
             EndOfProcedure.set()
         if Proc == None:
-            if type(Command) != type(""):
-                Command = " ".join(Command)
-            EdkLogger.error("build", COMMAND_FAILURE, "Failed to start command", ExtraData="%s [%s]" % (Command, WorkingDir))
+            EdkLogger.error("build", COMMAND_FAILURE, "Failed to start command", ExtraData="%s [%s]" \
+                                                        % (CommandString, WorkingDir))
 
     if Proc.stdout:
         StdOutThread.join()
@@ -270,9 +273,7 @@ def LaunchCommand(Command, WorkingDir):
 
     # check the return code of the program
     if Proc.returncode != 0:
-        if type(Command) != type(""):
-            Command = " ".join(Command)
-        EdkLogger.error("build", COMMAND_FAILURE, ExtraData="%s [%s]" % (Command, WorkingDir))
+        EdkLogger.error("build", COMMAND_FAILURE, ExtraData="%s [%s]" % (CommandString, WorkingDir))
 
 ## The smallest unit that can be built in multi-thread build mode
 #
