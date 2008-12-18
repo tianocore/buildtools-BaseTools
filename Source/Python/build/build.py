@@ -234,12 +234,19 @@ def LaunchCommand(Command, WorkingDir):
     Proc = None
     EndOfProcedure = None
     if isinstance(Command, str):
-        CommandString = Command
+        CommandString = ""
+        ArgString = Command
     else:
-        CommandString = " ".join(Command)
+        if len(Command) == 1:
+            ArgString = " ".join(Command)
+            CommandString = ""
+        else:
+            ArgString = " ".join(Command[1:])
+            CommandString = Command[0]
+
     try:
         # launch the command
-        Proc = Popen(CommandString, stdout=PIPE, stderr=PIPE, env=os.environ, cwd=WorkingDir)
+        Proc = Popen(ArgString, executable=CommandString, stdout=PIPE, stderr=PIPE, env=os.environ, cwd=WorkingDir)
 
         # launch two threads to read the STDOUT and STDERR
         EndOfProcedure = Event()
