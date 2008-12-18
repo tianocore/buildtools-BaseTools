@@ -502,13 +502,13 @@ class PlatformAutoGen(AutoGen):
     #
     def _GetBuildCommand(self):
         if self._BuildCommand == None:
-            self._BuildCommand = tuple()
+            self._BuildCommand = []
             if "MAKE" in self.ToolPath:
-                self._BuildCommand += (self.ToolPath["MAKE"],)
+                self._BuildCommand += SplitOption(self.ToolPath["MAKE"])
                 if "MAKE" in self.ToolOption:
                     NewOption = self.ToolOption["MAKE"].strip()
                     if NewOption != '':
-                      self._BuildCommand += (NewOption,)
+                      self._BuildCommand += SplitOption(NewOption)
         return self._BuildCommand
 
     ## Get tool chain definition

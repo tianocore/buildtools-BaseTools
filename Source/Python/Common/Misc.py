@@ -1032,6 +1032,35 @@ def CheckPcdDatum(Type, Value):
 
     return True, ""
 
+## Split command line option string to list
+# 
+# subprocess.Popen needs the args to be a sequence. Otherwise there's problem
+# in non-windows platform to launch command
+# 
+def SplitOption(OptionString):
+    OptionList = []
+    LastChar = " "
+    OptionStart = 0
+    QuotationMark = ""
+    for Index in range(0, len(OptionString)):
+        CurrentChar = OptionString[Index]
+        if CurrentChar in ['"', "'"]:
+            if QuotationMark == CurrentChar:
+                QuotationMark = ""
+            elif QuotationMark == "":
+                QuotationMark = CurrentChar
+            continue
+        elif QuotationMark:
+            continue
+
+        if CurrentChar in ["/", "-"] and LastChar in [" ", "\t", "\r", "\n"]:
+            if Index > OptionStart:
+                OptionList.append(OptionString[OptionStart:Index-1])
+            OptionStart = Index
+        LastChar = CurrentChar
+    OptionList.append(OptionString[OptionStart:])
+    return OptionList
+        
 ##
 #
 # This acts like the main() function for the script, unless it is 'import'ed into another

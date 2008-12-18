@@ -233,20 +233,9 @@ def LaunchCommand(Command, WorkingDir):
 
     Proc = None
     EndOfProcedure = None
-    if isinstance(Command, str):
-        CommandString = ""
-        ArgString = Command
-    else:
-        if len(Command) == 1:
-            ArgString = " ".join(Command)
-            CommandString = ""
-        else:
-            ArgString = " ".join(Command[1:])
-            CommandString = Command[0]
-
     try:
         # launch the command
-        Proc = Popen(ArgString, executable=CommandString, stdout=PIPE, stderr=PIPE, env=os.environ, cwd=WorkingDir)
+        Proc = Popen(Command, stdout=PIPE, stderr=PIPE, env=os.environ, cwd=WorkingDir)
 
         # launch two threads to read the STDOUT and STDERR
         EndOfProcedure = Event()
@@ -270,8 +259,9 @@ def LaunchCommand(Command, WorkingDir):
         if EndOfProcedure != None:
             EndOfProcedure.set()
         if Proc == None:
-            EdkLogger.error("build", COMMAND_FAILURE, "Failed to start command", ExtraData="%s [%s]" \
-                                                        % (CommandString, WorkingDir))
+            if type(Command) != type(""):
+                Command = " ".join(Command)
+            EdkLogger.error("build", COMMAND_FAILURE, "Failed to start command", ExtraData="%s [%s]" % (Command, WorkingDir))
 
     if Proc.stdout:
         StdOutThread.join()
@@ -280,7 +270,9 @@ def LaunchCommand(Command, WorkingDir):
 
     # check the return code of the program
     if Proc.returncode != 0:
-        EdkLogger.error("build", COMMAND_FAILURE, ExtraData="%s [%s]" % (CommandString, WorkingDir))
+        if type(Command) != type(""):
+            Command = " ".join(Command)
+        EdkLogger.error("build", COMMAND_FAILURE, ExtraData="%s [%s]" % (Command, WorkingDir))
 
 ## The smallest unit that can be built in multi-thread build mode
 #
@@ -647,7 +639,7 @@ class BuildTask:
     #
     def Start(self):
         EdkLogger.quiet("Building ... %s" % repr(self.BuildItem))
-        Command = self.BuildItem.BuildCommand + (self.BuildItem.Target,)
+        Command = self.BuildItem.BuildCommand + [self.BuildItem.Target]
         self.BuildTread = Thread(target=self._CommandThread, args=(Command, self.BuildItem.WorkingDir))
         self.BuildTread.setName("build thread")
         self.BuildTread.setDaemon(False)
@@ -940,7 +932,7 @@ class Build():
         if BuildCommand == None or len(BuildCommand) == 0:
             EdkLogger.error("build", OPTION_MISSING, ExtraData="No MAKE command found for [%s, %s, %s]" % Key)
 
-        BuildCommand = BuildCommand + (Target,)
+        BuildCommand = BuildCommand + [Target]
         LaunchCommand(BuildCommand, AutoGenObject.MakeFileDir)
         if Target == 'cleanall':
             try:
@@ -1094,7 +1086,7 @@ class Build():
 
                 # Generate FD image if there's a FDF file found
                 if self.Fdf != '' and self.Target in ["", "all", "fds"]:
-                    LaunchCommand(Wa.BuildCommand + ("fds",), Wa.MakeFileDir)
+                    LaunchCommand(Wa.BuildCommand + ["fds"], Wa.MakeFileDir)
 
     ## Generate GuidedSectionTools.txt in the FV directories.
     #
