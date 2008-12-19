@@ -10,6 +10,20 @@
 # THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
+
+#
+# Generate help text
+#
+def GenerateHelpText(Text, Lang):
+    if Text:
+        Ht = HelpTextClass()
+        Ht.Lang = Lang
+        Ht.Text = Text
+    
+        return Ht
+    
+    return None
+
 ## CommonClass
 #
 # This class defined common items used in Module/Platform/Package files
@@ -72,7 +86,7 @@ class HelpTextClass(object):
     def __init__(self):
         self.Lang = ''
         self.String = ''
-
+    
 ## DefineClass
 #
 # This class defined item DEFINE used in Module/Platform/Package files
@@ -351,6 +365,7 @@ class PcdClass(CommonClass):
         self.PcdItemType = ''
         self.TokenSpaceGuidValue = ''
         self.PcdUsage = ''
+        self.PcdCName = ''
         self.Value = ''
         self.Offset = ''
         if self.ValidUsage == None:

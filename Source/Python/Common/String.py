@@ -630,11 +630,27 @@ def RemoveBlockComment(Lines):
 # Get String of a List
 #
 def GetStringOfList(List, Split = ' '):
+    if type(List) != type([]):
+        return List
     Str = ''
     for Item in List:
         Str = Str + Item + Split
 
     return Str.strip()
+
+#
+# Get HelpTextList from HelpTextClassList
+#
+def GetHelpTextList(HelpTextClassList):
+    List = []
+    if HelpTextClassList:
+        for HelpText in HelpTextClassList:
+            if HelpText.Text.endswith('\n'):
+                HelpText.Text = HelpText.Text[0: len(HelpText.Text) - len('\n')]
+                List.extend(HelpText.Text.split('\n'))
+    
+    return List
+
 ##
 #
 # This acts like the main() function for the script, unless it is 'import'ed into another

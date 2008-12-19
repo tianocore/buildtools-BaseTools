@@ -870,7 +870,7 @@ def InsertSectionItems(Model, CurrentSection, SectionItemList, ArchList, ThirdLi
         Records = RecordSet[Model]
         for SectionItem in SectionItemList:
             BelongsToItem, EndLine, EndColumn = -1, -1, -1
-            LineValue, StartLine, EndLine = SectionItem[0], SectionItem[1], SectionItem[1]
+            LineValue, StartLine, EndLine, Comment = SectionItem[0], SectionItem[1], SectionItem[1], SectionItem[2]
             
             EdkLogger.debug(4, "Parsing %s ..." %LineValue)
             #
@@ -884,7 +884,7 @@ def InsertSectionItems(Model, CurrentSection, SectionItemList, ArchList, ThirdLi
             # At last parse other sections
             #
             ID = -1
-            Records.append([LineValue, Arch, StartLine, ID, Third])
+            Records.append([LineValue, Arch, StartLine, ID, Third, Comment])
         
         if RecordSet != {}:
             RecordSet[Model] = Records

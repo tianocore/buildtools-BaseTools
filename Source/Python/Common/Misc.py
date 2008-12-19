@@ -367,6 +367,26 @@ class DirCache:
             return None
         return os.path.join(self._Root, self._CACHE_[Path])
 
+## Get all files of a directory
+#
+# @param Root:       Root dir 
+# @param SkipList :  The files need be skipped
+# 
+# @retval  A list of all files
+#
+def GetFiles(Root, SkipList=None):
+    FileList = []
+    for Root, Dirs, Files in os.walk(Root):
+        if SkipList:
+            for Item in SkipList:
+                if Item in Dirs:
+                    Dirs.remove(Item)
+        
+        for File in Files:
+            FileList.append(os.path.normpath(os.path.join(Root, File)))
+    
+    return FileList
+
 ## Check if gvien file exists or not
 #
 #   @param      File    File name or path to be checked

@@ -127,7 +127,7 @@ class DistributionPackageHeaderXml(object):
     def ToXml(self, DistributionPackageHeader, Key):
         Element1 = CreateXmlElement('Name', DistributionPackageHeader.Name, [], [['BaseName', DistributionPackageHeader.BaseName]])
         Element2 = CreateXmlElement('GUID', DistributionPackageHeader.Guid, [], [['Version', DistributionPackageHeader.Version]])
-        AttributeList = [['ReadOnly', DistributionPackageHeader.ReadOnly], ['RePackage', DistributionPackageHeader.RePackage]]
+        AttributeList = [['ReadOnly', str(DistributionPackageHeader.ReadOnly)], ['RePackage', str(DistributionPackageHeader.RePackage)]]
         NodeList = [Element1,
                     Element2,
                     ['Vendor', DistributionPackageHeader.Vendor],
@@ -199,6 +199,9 @@ class ClonedFromXml(object):
     def FromXml(self, Item, Key):
         self.GUID = XmlElement(Item, '%s/GUID' % Key)
         self.Version = XmlAttribute(XmlNode(Item, '%s/GUID' % Key), 'Version')
+        
+        if self.GUID == '' and self.Version == '':
+            return None
         
         ClonedFrom = ClonedRecordClass()
         ClonedFrom.PackageGuid = self.GUID
@@ -292,8 +295,8 @@ class LibraryClassXml(object):
         Element1 = CreateXmlElement('GUID', LibraryClass.RecommendedInstanceGuid, [], [['Version', LibraryClass.RecommendedInstanceVersion]])
         Element2 = CreateXmlElement('RecommendedInstance', '', [Element1], [])
         AttributeList = [['Keyword', LibraryClass.LibraryClass], 
-                         ['SupArchList', LibraryClass.SupArchList],
-                         ['SupModList', LibraryClass.SupModuleList]
+                         ['SupArchList', GetStringOfList(LibraryClass.SupArchList)],
+                         ['SupModList', GetStringOfList(LibraryClass.SupModuleList)]
                         ]
         NodeList = [['HeaderFile', LibraryClass.IncludeHeader],
                     Element2
@@ -431,13 +434,13 @@ class GuidProtocolPpiXml(object):
         return GuidProtocolPpi
 
     def ToXml(self, GuidProtocolPpi, Key):
-        AttributeList = [['Usage', GuidProtocolPpi.Usage],
+        AttributeList = [['Usage', GetStringOfList(GuidProtocolPpi.Usage)],
                          ['UiName', GuidProtocolPpi.Name],
-                         ['GuidTypes', GuidProtocolPpi.GuidTypeLists],
-                         ['GuidType', GuidProtocolPpi.GuidTypeList],
-                         ['Notify', GuidProtocolPpi.Notify],
-                         ['SupArchList', GuidProtocolPpi.SupArchList],
-                         ['SupModList', GuidProtocolPpi.SupModuleList],
+                         ['GuidTypes', GetStringOfList(GuidProtocolPpi.GuidTypeLists)],
+                         ['GuidType', GetStringOfList(GuidProtocolPpi.GuidTypeList)],
+                         ['Notify', str(GuidProtocolPpi.Notify)],
+                         ['SupArchList', GetStringOfList(GuidProtocolPpi.SupArchList)],
+                         ['SupModList', GetStringOfList(GuidProtocolPpi.SupModuleList)],
                          ['FeatureFlag', GuidProtocolPpi.FeatureFlag]
                         ]
         NodeList = [['CName', GuidProtocolPpi.CName], 
@@ -576,11 +579,11 @@ class PcdEntryXml(object):
         return PcdEntry
 
     def ToXml(self, PcdEntry, Key):
-        AttributeList = [['SupArchList', PcdEntry.SupArchList],
+        AttributeList = [['SupArchList', GetStringOfList(PcdEntry.SupArchList)],
                          ['PcdUsage', PcdEntry.PcdUsage],
                          ['PcdItemType', PcdEntry.PcdItemType],
                          ['FeatureFlag', PcdEntry.FeatureFlag],
-                         ['SupModList', PcdEntry.SupModuleList]
+                         ['SupModList', GetStringOfList(PcdEntry.SupModuleList)]
                         ]
         NodeList = [['TokenSpaceGuidCName', PcdEntry.TokenSpaceGuidCName],
                     ['TokenSpaceGuidValue', PcdEntry.TokenSpaceGuidValue],
@@ -588,7 +591,7 @@ class PcdEntryXml(object):
                     ['CName', PcdEntry.CName],
                     ['PcdCName', PcdEntry.PcdCName],
                     ['DatumType', PcdEntry.DatumType],
-                    ['ValidUsage', PcdEntry.ValidUsage],
+                    ['ValidUsage', GetStringOfList(PcdEntry.ValidUsage)],
                     ['DefaultValue', PcdEntry.DefaultValue],
                     ['Value', PcdEntry.Value],
                     ['Offset', PcdEntry.Offset],
@@ -685,20 +688,21 @@ class MiscellaneousFileXml(object):
 
 
     def ToXml(self, MiscFile, Key):
-        NodeList = [['Copyright', MiscFile.Copyright],
-                    ['License', MiscFile.License],
-                    ['Abstract', MiscFile.Abstract],
-                    ['Description', MiscFile.Description],
-                   ]
-        if MiscFile != None:
-            for File in MiscFile.Files:
-                NodeList.append(CreateXmlElement('Filename', File.Filename, [], [['Executable', File.Executable]]))
-            Root = CreateXmlElement('%s' % Key, '', NodeList, [])
-        
-            return Root
+        if MiscFile:
+            NodeList = [['Copyright', MiscFile.Copyright],
+                        ['License', MiscFile.License],
+                        ['Abstract', MiscFile.Abstract],
+                        ['Description', MiscFile.Description],
+                       ]
+            if MiscFile != None:
+                for File in MiscFile.Files:
+                    NodeList.append(CreateXmlElement('Filename', File.Filename, [], [['Executable', File.Executable]]))
+                Root = CreateXmlElement('%s' % Key, '', NodeList, [])
+            
+                return Root
     
     def ToXml2(self, MiscFile, Key):
-        if MiscFile != None:
+        if MiscFile:
             NodeList = [['Name', MiscFile.Name],
                         ['Copyright', MiscFile.Copyright],
                         ['License', MiscFile.License],
@@ -745,8 +749,8 @@ class UserExtensionsXml(object):
         return UserExtension
 
     def ToXml(self, UserExtension, Key):
-        AttributeList = [['UserId', UserExtension.UserID],
-                         ['Identifier', UserExtension.Identifier]
+        AttributeList = [['UserId', str(UserExtension.UserID)],
+                         ['Identifier', str(UserExtension.Identifier)]
                         ]
         NodeList = []
         for Item in UserExtension.Defines:
@@ -789,7 +793,7 @@ class BootModeXml(object):
 
     def ToXml(self, BootMode, Key):
         AttributeList = [['Usage', BootMode.Usage],
-                         ['SupArchList', BootMode.SupArchList],
+                         ['SupArchList', GetStringOfList(BootMode.SupArchList)],
                          ['FeatureFlag', BootMode.FeatureFlag],
                         ]
         NodeList = [['SupportedBootModes', BootMode.Name]]
@@ -836,7 +840,7 @@ class EventXml(object):
     def ToXml(self, Event, Key):
         AttributeList = [['EventType', Event.Type],
                          ['Usage', Event.Usage],
-                         ['SupArchList', Event.SupArchList],
+                         ['SupArchList', GetStringOfList(Event.SupArchList)],
                          ['FeatureFlag', Event.FeatureFlag],
                         ]
         NodeList = []
@@ -883,7 +887,7 @@ class HobXml(object):
     def ToXml(self, Hob, Key):
         AttributeList = [['EventType', Hob.Type],
                          ['Usage', Hob.Usage],
-                         ['SupArchList', Hob.SupArchList],
+                         ['SupArchList', GetStringOfList(Hob.SupArchList)],
                          ['FeatureFlag', Hob.FeatureFlag],
                         ]
         NodeList = []
@@ -952,8 +956,8 @@ class ModulePropertyXml(object):
         
     
     def ToXml(self, Header, BootModes, Events, Hobs, Key):
-        AttributeList = [['SupArchList', Header.SupArchList],
-                         ['SupModList', Header.SupModuleList],
+        AttributeList = [['SupArchList', GetStringOfList(Header.SupArchList)],
+                         ['SupModList', GetStringOfList(Header.SupModuleList)],
                         ]
         NodeList = [['ModuleType', Header.ModuleType],
                     ['Path', Header.FileName],
@@ -986,6 +990,39 @@ class ModulePropertyXml(object):
             Str = Str + '\n\t' + str(Item)
         return Str
 
+# SourceFileXml
+class SourceFileXml(object):
+    def __init__(self):
+        self.SourceFile = ''
+        self.ToolChainFamily = ''
+        self.FileType = ''
+        self.CommonDefines = CommonDefinesXml()
+
+    def FromXml(self, Item, Key):
+        self.ToolChainFamily = XmlAttribute(Item, 'Family')
+        self.FileType = XmlAttribute(Item, 'FileType')
+        self.SourceFile = XmlElement(Item, 'Filename')
+        self.CommonDefines.FromXml(Item, Key)
+        
+        SourceFile = ModuleSourceFileClass()
+        SourceFile.SourceFile = self.SourceFile
+        SourceFile.FileType = self.FileType
+        SourceFile.ToolChainFamily = self.ToolChainFamily
+        SourceFile.SupArchList = self.CommonDefines.SupArchList
+        SourceFile.FeatureFlag = self.CommonDefines.FeatureFlag
+        
+        return SourceFile
+    
+    def ToXml(self, SourceFile, Key):
+        AttributeList = [['SupArchList', GetStringOfList(SourceFile.SupArchList)],
+                         ['Family', SourceFile.ToolChainFamily],
+                         ['FileType', SourceFile.FileType],
+                         ['FeatureFlag', SourceFile.FeatureFlag],
+                        ]
+        Root = CreateXmlElement('%s' % Key, SourceFile.SourceFile, [], AttributeList)
+        
+        return Root
+
 # FilenameXml
 class FilenameXml(object):
     def __init__(self):
@@ -1015,7 +1052,7 @@ class FilenameXml(object):
         return Filename
     
     def ToXml(self, Filename, Key):
-        AttributeList = [['SupArchList', Filename.SupArchList],
+        AttributeList = [['SupArchList', GetStringOfList(Filename.SupArchList)],
                          ['Family', Filename.Family],
                          ['FileType', Filename.FileType],
                          ['Executable', Filename.Executable],
@@ -1078,7 +1115,7 @@ class BinaryFileXml(object):
         for Item in BinaryFile.LibraryInstances:
             LibNode = CreateXmlElement('GUID', Item[0], [], [['Version', Item[1]]])
             LibNodeList.append(LibNode)
-        if LibNode != []:
+        if LibNodeList:
             AsBuiltNodeList.append(CreateXmlElement('LibraryInstances', '', LibNodeList, []))
         for Item in BinaryFile.BuildFlags:
             AsBuiltNodeList.append(CreateXmlElement('BuildFlags', Item, [], []))
@@ -1127,7 +1164,7 @@ class PackageXml(object):
         return PackageDependency
 
     def ToXml(self, PackageDependency, Key):
-        AttributeList = [['SupArchList', PackageDependency.SupArchList],
+        AttributeList = [['SupArchList', GetStringOfList(PackageDependency.SupArchList)],
                          ['FeatureFlag', PackageDependency.FeatureFlag],
                         ]
         Element1 = CreateXmlElement('GUID', PackageDependency.PackageGuid, [], [['Version', PackageDependency.PackageVersion]])
@@ -1177,7 +1214,7 @@ class ExternXml(object):
         return Extern
     
     def ToXml(self, Extern, Key):
-        AttributeList = [['SupArchList', Extern.SupArchList],
+        AttributeList = [['SupArchList', GetStringOfList(Extern.SupArchList)],
                          ['FeatureFlag', Extern.FeatureFlag],
                         ]
         NodeList = [['EntryPoint', Extern.EntryPoint],
@@ -1254,7 +1291,8 @@ class PackageSurfaceAreaXml(object):
         # ClonedFrom
         Tmp = ClonedFromXml()
         ClonedFrom = Tmp.FromXml(XmlNode(Item, '/PackageSurfaceArea/ClonedFrom'), 'ClonedFrom')
-        Package.PackageHeader.ClonedFrom.append(ClonedFrom)
+        if ClonedFrom:
+            Package.PackageHeader.ClonedFrom.append(ClonedFrom)
         
         # LibraryClass
         for SubItem in XmlList(Item, '/PackageSurfaceArea/LibraryClassDeclarations/LibraryClass'):
@@ -1377,7 +1415,7 @@ class PackageSurfaceAreaXml(object):
         DomPackage.appendChild(GuidProtocolPpiNode)
         
         # PcdEntry
-        PcdEntryNode = CreateXmlElement('PcdEntry', '', [], [])
+        PcdEntryNode = CreateXmlElement('PcdDeclarations', '', [], [])
         for PcdEntry in Package.PcdDeclarations:
             Tmp = PcdEntryXml()
             PcdEntryNode.appendChild(Tmp.ToXml(PcdEntry, 'PcdEntry'))
@@ -1427,88 +1465,89 @@ class ModuleSurfaceAreaXml(object):
         Module.ModuleHeader = Header
         Module.BootModes = BootModes
         Module.Events = Events
-        Module.HOBs = HOBs
+        Module.Hobs = HOBs
         
         # ClonedFrom
         Tmp = ClonedFromXml()
         ClonedFrom = Tmp.FromXml(XmlNode(Item, '/ModuleSurfaceArea/ClonedFrom'), 'ClonedFrom')
-        Module.ModuleHeader.ClonedFrom.append(ClonedFrom)
+        if ClonedFrom:
+            Module.ModuleHeader.ClonedFrom.append(ClonedFrom)
         
         # LibraryClass
-        LibraryClassNode = CreateXmlElement('LibraryClassDeclarations', '', [], [])
+        #LibraryClassNode = CreateXmlElement('LibraryClassDefinitions', '', [], [])
         for SubItem in XmlList(Item, '/ModuleSurfaceArea/LibraryClassDefinitions/LibraryClass'):
             Tmp = LibraryClassXml()
             LibraryClass = Tmp.FromXml(SubItem, 'LibraryClass')
             Module.LibraryClasses.append(LibraryClass)
         
         # SourceFile
-        SourceFileNode = CreateXmlElement('SourceFiles', '', [], [])
+        #SourceFileNode = CreateXmlElement('SourceFiles', '', [], [])
         for SubItem in XmlList(Item, '/ModuleSurfaceArea/SourceFiles/Filename'):
-            Tmp = FilenameXml()
+            Tmp = SourceFileXml()
             SourceFile = Tmp.FromXml(SubItem, 'Filename')
             Module.Sources.append(SourceFile)
         
         # BinaryFile
-        BinaryFileNode = CreateXmlElement('BinaryFiles', '', [], [])
+        #BinaryFileNode = CreateXmlElement('BinaryFiles', '', [], [])
         for SubItem in XmlList(Item, '/ModuleSurfaceArea/BinaryFiles/BinaryFile'):
             Tmp = BinaryFileXml()
             BinaryFile = Tmp.FromXml(SubItem, 'BinaryFile')
             Module.Binaries.append(BinaryFile)
         
         # PackageDependencies
-        PackageDependencyNode = CreateXmlElement('PackageDependencies', '', [], [])
+        #PackageDependencyNode = CreateXmlElement('PackageDependencies', '', [], [])
         for SubItem in XmlList(Item, '/ModuleSurfaceArea/PackageDependencies/Package'):
             Tmp = PackageXml()
             PackageDependency = Tmp.FromXml(SubItem, 'Package')
             Module.PackageDependencies.append(PackageDependency)
 
         # Guid
-        GuidProtocolPpiNode = CreateXmlElement('Guids', '', [], [])
+        #GuidProtocolPpiNode = CreateXmlElement('Guids', '', [], [])
         for SubItem in XmlList(Item, '/ModuleSurfaceArea/Guids/GuidCName'):
             Tmp = GuidProtocolPpiXml()
             GuidProtocolPpi = Tmp.FromXml(SubItem, 'GuidCName')
             Module.Guids.append(GuidProtocolPpi)
     
         # Protocol
-        GuidProtocolPpiNode = CreateXmlElement('Protocols', '', [], [])
+        #GuidProtocolPpiNode = CreateXmlElement('Protocols', '', [], [])
         for SubItem in XmlList(Item, '/ModuleSurfaceArea/Protocols/Protocol'):
             Tmp = GuidProtocolPpiXml()
             GuidProtocolPpi = Tmp.FromXml(SubItem, 'Protocol')
             Module.Protocols.append(GuidProtocolPpi)
 
         # Ppi
-        GuidProtocolPpiNode = CreateXmlElement('PPIs', '', [], [])
+        #GuidProtocolPpiNode = CreateXmlElement('PPIs', '', [], [])
         for SubItem in XmlList(Item, '/ModuleSurfaceArea/PPIs/Ppi'):
             Tmp = GuidProtocolPpiXml()
             GuidProtocolPpi = Tmp.FromXml(SubItem, 'Ppi')
             Module.Ppis.append(GuidProtocolPpi)
         
         # Extern
-        ExternNode = CreateXmlElement('Externs', '', [], [])
+        #ExternNode = CreateXmlElement('Externs', '', [], [])
         for SubItem in XmlList(Item, '/ModuleSurfaceArea/Externs/Extern'):
             Tmp = ExternXml()
             Extern = Tmp.FromXml(SubItem, 'Extern')
             Module.Externs.append(Extern)
         
         # PcdCoded
-        PcdEntryNode = CreateXmlElement('PcdCoded', '', [], [])
+        #PcdEntryNode = CreateXmlElement('PcdCoded', '', [], [])
         for SubItem in XmlList(Item, '/ModuleSurfaceArea/PcdCoded/PcdEntry'):
             Tmp = PcdEntryXml()
             PcdEntry = Tmp.FromXml(SubItem, 'PcdEntry')
             Module.PcdCodes.append(PcdEntry)
 
         # PeiDepex
-        DepexNode = CreateXmlElement('PeiDepex', '', [], [])
+        #DepexNode = CreateXmlElement('PeiDepex', '', [], [])
         Tmp = DepexXml()
         Module.PeiDepex = Tmp.FromXml(XmlNode(Item, '/ModuleSurfaceArea/PeiDepex'), 'PeiDepex')
 
         # DxeDepex
-        DepexNode = CreateXmlElement('DxeDepex', '', [], [])
+        #DepexNode = CreateXmlElement('DxeDepex', '', [], [])
         Tmp = DepexXml()
         Module.DxeDepex = Tmp.FromXml(XmlNode(Item, '/ModuleSurfaceArea/DxeDepex'), 'DxeDepex')
         
         # SmmDepex
-        DepexNode = CreateXmlElement('SmmDepex', '', [], [])
+        #DepexNode = CreateXmlElement('SmmDepex', '', [], [])
         Tmp = DepexXml()
         Module.SmmDepex = Tmp.FromXml(XmlNode(Item, '/ModuleSurfaceArea/DxeDepex'), 'SmmDepex')
 
@@ -1534,7 +1573,7 @@ class ModuleSurfaceAreaXml(object):
         
         # ModuleProperties
         Tmp = ModulePropertyXml()
-        DomModule.appendChild(Tmp.ToXml(Module.ModuleHeader, Module.BootModes, Module.Events, Module.HOBs, 'ModuleProperties'))
+        DomModule.appendChild(Tmp.ToXml(Module.ModuleHeader, Module.BootModes, Module.Events, Module.Hobs, 'ModuleProperties'))
         
         # ClonedFrom
         Tmp = ClonedFromXml()
@@ -1542,7 +1581,7 @@ class ModuleSurfaceAreaXml(object):
             DomModule.appendChild(Tmp.ToXml(Module.ModuleHeader.ClonedFrom[0], 'ClonedFrom'))
         
         # LibraryClass
-        LibraryClassNode = CreateXmlElement('LibraryClassDeclarations', '', [], [])
+        LibraryClassNode = CreateXmlElement('LibraryClassDefinitions', '', [], [])
         for LibraryClass in Module.LibraryClasses:
             Tmp = LibraryClassXml()
             LibraryClassNode.appendChild(Tmp.ToXml(LibraryClass, 'LibraryClass'))
@@ -1551,7 +1590,7 @@ class ModuleSurfaceAreaXml(object):
         # SourceFile
         SourceFileNode = CreateXmlElement('SourceFiles', '', [], [])
         for SourceFile in Module.Sources:
-            Tmp = FilenameXml()
+            Tmp = SourceFileXml()
             SourceFileNode.appendChild(Tmp.ToXml(SourceFile, 'Filename'))
         DomModule.appendChild(SourceFileNode)
         
@@ -1680,26 +1719,26 @@ class DistributionPackageXml(object):
             Root.appendChild(Tmp.ToXml(Dp.Header, 'DistributionHeader'))
             
             # Parse each PackageSurfaceArea
-            for Package in self.Dp.PackageSurfaceArea.values():
+            for Package in Dp.PackageSurfaceArea.values():
                 Psa = PackageSurfaceAreaXml()
                 DomPackage = Psa.ToXml(Package)
                 Root.appendChild(DomPackage)
             
             # Parse each ModuleSurfaceArea
-            for Module in self.Dp.ModuleSurfaceArea.values():
+            for Module in Dp.ModuleSurfaceArea.values():
                 Msa = ModuleSurfaceAreaXml()
                 DomModule = Msa.ToXml(Module)
                 Root.appendChild(DomModule)
                 
             # Parse Tools
             Tmp = MiscellaneousFileXml()
-            Tools = Tmp.FromXml2(XmlNode(self.Pkg, '/DistributionPackage/Tools'), 'Tools')
-            Root.appendChild(Tmp.ToXml2(Tools, 'Tools'))
+            #Tools = Tmp.FromXml2(XmlNode(self.Pkg, '/DistributionPackage/Tools'), 'Tools')
+            Root.appendChild(Tmp.ToXml2(Dp.Tools, 'Tools'))
             
             # Parse MiscFiles
             Tmp = MiscellaneousFileXml()
-            Tools = Tmp.FromXml2(XmlNode(self.Pkg, '/DistributionPackage/MiscellaneousFiles'), 'MiscellaneousFiles')
-            Root.appendChild(Tmp.ToXml2(Tools, 'MiscellaneousFiles'))
+            #Tools = Tmp.FromXml2(XmlNode(self.Pkg, '/DistributionPackage/MiscellaneousFiles'), 'MiscellaneousFiles')
+            Root.appendChild(Tmp.ToXml2(Dp.MiscellaneousFiles, 'MiscellaneousFiles'))
             
             return Root.toprettyxml(indent = '  ')
         

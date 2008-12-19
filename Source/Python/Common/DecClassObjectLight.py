@@ -15,6 +15,7 @@
 # Import Modules
 #
 import os
+from Misc import GetFiles
 from String import *
 from DataType import *
 from Identification import *
@@ -107,6 +108,11 @@ class Dec(DecObject):
             self.RecordSet[Section[Key]] = []
         
         #
+        #
+        #
+        self.SectionHeaderCommentDict = {}
+        
+        #
         # Load Dec file if filename is not None
         #
         if Filename != None:
@@ -131,12 +137,10 @@ class Dec(DecObject):
         Filename = NormPath(Filename)
         self.Identification.FileFullPath = Filename
         (self.Identification.FileRelativePath, self.Identification.FileName) = os.path.split(Filename)
-        
-        #
-        # Init DecTable
-        #
-        #self.TblDec.Table = "Dec%s" % self.FileID
-        #self.TblDec.Create()
+        if self.Identification.FileRelativePath.find(self.WorkspaceDir) > -1:
+           self.Identification.PackagePath = self.Identification.FileRelativePath[len(self.WorkspaceDir) + 1:]
+        else:
+           self.Identification.PackagePath = self.Identification.FileRelativePath
         
         #
         # Init common datas
@@ -150,24 +154,27 @@ class Dec(DecObject):
         #
         IsFindBlockComment = False
         ReservedLine = ''
+        Comment = ''
         for Line in open(Filename, 'r'):
             LineNo = LineNo + 1
             #
             # Remove comment block
             #
-            if Line.find(TAB_COMMENT_R8_START) > -1:
-                ReservedLine = GetSplitValueList(Line, TAB_COMMENT_R8_START, 1)[0]
-                IsFindBlockComment = True
-            if Line.find(TAB_COMMENT_R8_END) > -1:
-                Line = ReservedLine + GetSplitValueList(Line, TAB_COMMENT_R8_END, 1)[1]
-                ReservedLine = ''
-                IsFindBlockComment = False
-            if IsFindBlockComment:
-                continue
+#            if Line.find(TAB_COMMENT_R8_START) > -1:
+#                ReservedLine = GetSplitValueList(Line, TAB_COMMENT_R8_START, 1)[0]
+#                IsFindBlockComment = True
+#            if Line.find(TAB_COMMENT_R8_END) > -1:
+#                Line = ReservedLine + GetSplitValueList(Line, TAB_COMMENT_R8_END, 1)[1]
+#                ReservedLine = ''
+#                IsFindBlockComment = False
+#            if IsFindBlockComment:
+#                continue
 
             #
             # Remove comments at tail and remove spaces again
             #
+            if Line.strip().startswith(TAB_COMMENT_SPLIT):
+                Comment = Comment + Line.strip() + '\n'
             Line = CleanString(Line)
             if Line == '':
                 continue
@@ -210,7 +217,10 @@ class Dec(DecObject):
                             EdkLogger.error("Parser", PARSER_ERROR, "Invalid Arch definition '%s' found" % ItemList[1], File=Filename, Line=LineNo, RaiseError = EdkLogger.IsRaiseError)
                         ArchList.append(ItemList[1].upper())
                         ThirdList.append(ItemList[2])
-
+                
+                if Comment:
+                    self.SectionHeaderCommentDict[Section[CurrentSection.upper()]] = Comment
+                    Comment = ''
                 continue
             
             #
@@ -223,7 +233,8 @@ class Dec(DecObject):
             #
             # Add a section item
             #
-            SectionItemList.append([Line, LineNo])
+            SectionItemList.append([Line, LineNo, Comment])
+            Comment = ''
             # End of parse
         #End of For
         
@@ -232,7 +243,9 @@ class Dec(DecObject):
         #
         Model = Section[CurrentSection.upper()]
         InsertSectionItems(Model, CurrentSection, SectionItemList, ArchList, ThirdList, self.RecordSet)
-        
+        if Comment != '':
+            self.SectionHeaderCommentDict[Model] = Comment
+            Comment = ''
         #
         # Replace all DEFINE macros with its actual values
         #
@@ -368,6 +381,11 @@ class Dec(DecObject):
         # Generate Pcds
         #
         self.GenPcds(ContainerFile)
+        
+        #
+        # Init MiscFiles
+        #
+        self.Package.MiscFiles = MiscFileClass()
     
     ## Get Package Header
     #
@@ -435,6 +453,7 @@ class Dec(DecObject):
             Include.FilePath = NormPath(Key)
             Include.SupArchList = Arch
             self.Package.Includes.append(Include)
+            #self.Package.FileList.extend(GetFiles(os.path.normpath(os.path.join(self.Identification.FileRelativePath, Include.FilePath)), ['CVS', '.svn']))
     
     ## GenPpis
     #

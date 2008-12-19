@@ -106,6 +106,7 @@ class ModuleSourceFileClass(CommonClass):
         self.TagName = TagName
         self.ToolCode = ToolCode
         self.ToolChainFamily = ToolChainFamily
+        self.FileType = ''
         CommonClass.__init__(self, FeatureFlag = FeatureFlag, SupArchList = SupArchList)
 
 ## ModuleBinaryFileClass

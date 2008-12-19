@@ -26,6 +26,7 @@ class Identification(object):
         self.FileName = ''
         self.FileFullPath = ''
         self.FileRelativePath = ''
+        self.PackagePath = ''
 
     ## GetFileName
     #
