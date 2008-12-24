@@ -114,7 +114,6 @@ class PackageFile:
             if '.svn' in Dirs:
                 Dirs.remove('.svn')
             for F in Files:
-                print "packing ...", Root, F
                 FilesToPack.append(os.path.join(Root, F))
         self.PackFiles(FilesToPack)
         os.chdir(Cwd)
@@ -128,9 +127,9 @@ class PackageFile:
                 EdkLogger.error("PackagingTool", FILE_COMPRESS_FAILURE, 
                                 ExtraData="%s (%s)" % (F, str(X)))
 
-    def PackFile(self, File, ArcName=''):
+    def PackFile(self, File, ArcName=None):
         try:
-            self._ZipFile.write(File, ArchName)
+            self._ZipFile.write(File, ArcName)
         except BaseException, X:
             EdkLogger.error("PackagingTool", FILE_COMPRESS_FAILURE,
                             ExtraData="%s (%s)" % (File, str(X)))

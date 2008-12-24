@@ -15,17 +15,24 @@
 # Import Modules
 #
 import os
+import os.path
 import sys
 import glob
 import shutil
 import traceback
 import platform
 from optparse import OptionParser
+import md5
+import time
 
+from PackageFile import *
 import Common.EdkLogger as EdkLogger
 from Common.BuildToolError import *
 from Common.Misc import *
 from Common.XmlParser import *
+from CommonDataClass.DistributionPackageClass import *
+from Common.DecClassObjectLight import Dec
+from Common.InfClassObjectLight import Inf
 
 from PackageFile import *
 
@@ -107,12 +114,15 @@ def MyOptionParser():
 
     (Opt, Args)=Parser.parse_args()
     # error check
-    if len(Args) == 0:
-        EdkLogger.error("MkPkg", OPTION_MISSING, ExtraData=Parser.get_usage())
-    if len(Args) > 1:
-        EdkLogger.error("MkPkg", OPTION_NOT_SUPPORTED, ExtraData="Only one distribution package can be installed")
-
-    Opt.PackageFile = Args[0]
+    if not Opt.ModuleFileList and not Opt.PackageFileList:
+        EdkLogger.error("MkPkg", OPTION_NOT_SUPPORTED, ExtraData="At least one package file or module file must be specified")
+    if Opt.TemplateFile:
+        if not os.path.exists(Opt.TemplateFile):
+            EdkLogger.error(
+                            "\nMkPkg",
+                            FILE_NOT_FOUND,
+                            "Template file [%s] not found" % Opt.TemplateFile
+                            )
     return Opt
 
 ## Tool entrance method
@@ -126,9 +136,8 @@ def MyOptionParser():
 #
 def Main():
     EdkLogger.Initialize()
-    Options = None
+    Options = MyOptionParser()
     try:
-        Options = MyOptionParser()
         if Options.LogLevel < EdkLogger.DEBUG_9:
             EdkLogger.SetLevel(Options.LogLevel + 1)
         else:
@@ -136,32 +145,71 @@ def Main():
 
         CheckEnvVariable()
         WorkspaceDir = os.environ["WORKSPACE"]
-        if not Options.InstallDir:
-            Options.InstallDir = WorkspaceDir
-
-
-        ContentFile = PackageFile("content.zip", "w")
-        DistPkg = DistributionPackageXml()
+        
+        #Check package file existing and valid
         if Options.PackageFileList:
-            for PackageFile in Options.PackageFileList:
-                TODO: Add PackageFile
-                ContentFile.Pack(os.path.dirname(PackageFile))
-
+            for Item in Options.PackageFileList:
+                (Name, Ext) = os.path.splitext(Item)
+                if Ext.upper() != '.DEC':
+                    EdkLogger.error(
+                    "\nMkPkg",
+                    OPTION_VALUE_INVALID,
+                    "[%s] is not a valid package name" % Item
+                    )
+                Path = os.path.normpath(os.path.join(WorkspaceDir, Item))
+                if not os.path.exists(Path):
+                    EdkLogger.error(
+                        "\nMkPkg",
+                        FILE_NOT_FOUND,
+                        "[%s] not found" % Item
+                        )
+        #Check module file existing and valid
         if Options.ModuleFileList:
-            for ModuleFile in Options.ModuleFileList:
-                TODO: Add ModuleFile
-                ContentFile.Pack(os.path.dirname(ModuleFile))
-
+            for Item in Options.ModuleFileList:
+                (Name, Ext) = os.path.splitext(Item)
+                if Ext.upper() != '.INF':
+                    EdkLogger.error(
+                    "\nMkPkg",
+                    OPTION_VALUE_INVALID,
+                    "[%s] is not a valid module name" % Item
+                    )
+                Path = os.path.normpath(os.path.join(WorkspaceDir, Item))
+                if not os.path.exists(Path):
+                    EdkLogger.error(
+                        "\nMkPkg",
+                        FILE_NOT_FOUND,
+                        "[%s] not found" % Item
+                        )
+        #Check module file ex
+        ContentFile = PackageFile("content.zip", "w")
+        DistPkg = DistributionPackageClass()
+        DistPkg.GetDistributionPackage(WorkspaceDir, Options.PackageFileList, Options.ModuleFileList)
+        DistPkgXml = DistributionPackageXml()
+        for Item in DistPkg.PackageSurfaceArea:
+            ContentFile.Pack(os.path.dirname(Item[2]))
+        for Item in DistPkg.ModuleSurfaceArea:
+            ContentFile.Pack(os.path.dirname(Item[2]))
+        
+        print "Creating Distribution Package File ..."
         ContentFile.Close()
-        Md5Sigature = md5.new(open(ContentFile).read())
+        # Add temp distribution header
+        if Options.TemplateFile:
+            TempXML = DistributionPackageXml()
+            DistPkg.Header = TempXML.FromXml(Options.TemplateFile).Header
+        # Add Md5Sigature
+        Md5Sigature = md5.new(open(str(ContentFile)).read())
         DistPkg.Header.Signature = Md5Sigature.hexdigest()
+        # Add current Date
+        DistPkg.Header.Date = str(time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime()))
 
+        # Finish final dp file
         if not Options.DistributionFile:
             Options.DistributionFile = "DistributionPackage.zip"
         DistPkgFile = PackageFile(Options.DistributionFile, "w")
-        DistPkgFile.PackFile(ContentFile)
-        DistPkgFile.PackData(DistPkg.ToXml(), "dist.pkg")
+        DistPkgFile.PackFile(str(ContentFile))
+        DistPkgFile.PackData(DistPkgXml.ToXml(DistPkg), "dist.pkg")
         DistPkgFile.Close()
+        print "DONE"
 
     except FatalError, X:
         if Options and Options.LogLevel < EdkLogger.DEBUG_9:
@@ -175,7 +223,7 @@ def Main():
         EdkLogger.error(
                     "\nMkPkg",
                     CODE_ERROR,
-                    "Unknown fatal error when installing [%s]" % Args,
+                    "Unknown fatal error when creating [%s]" % Options.DistributionFile,
                     ExtraData="\n(Please send email to dev@buildtools.tianocore.org for help, attaching following call stack trace!)\n",
                     RaiseError=False
                     )

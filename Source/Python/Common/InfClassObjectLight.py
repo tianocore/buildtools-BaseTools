@@ -188,7 +188,6 @@ class Inf(InfObject):
         
         # Load Inf file if filename is not None
         if Filename != None:
-            print Filename
             self.LoadInfFile(Filename)
         
         # Transfer to Module Object if IsToModule is True
