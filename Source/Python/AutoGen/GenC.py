@@ -324,7 +324,7 @@ EFIAPI
 ${Function} (
   IN CONST  EFI_SEC_PEI_HAND_OFF    *SecCoreData,
   IN CONST  EFI_PEI_PPI_DESCRIPTOR  *PpiList,
-  IN VOID                           *OldCoreData
+  IN VOID                           *Context
   );
 ${END}
 """
@@ -336,11 +336,11 @@ EFIAPI
 ProcessModuleEntryPointList (
   IN CONST  EFI_SEC_PEI_HAND_OFF    *SecCoreData,
   IN CONST  EFI_PEI_PPI_DESCRIPTOR  *PpiList,
-  IN VOID                           *OldCoreData
+  IN VOID                           *Context
   )
 
 {
-  ${Function} (SecCoreData, PpiList, OldCoreData);
+  ${Function} (SecCoreData, PpiList, Context);
 }
 ${END}
 """
