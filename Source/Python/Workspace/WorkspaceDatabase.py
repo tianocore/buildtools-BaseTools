@@ -1577,8 +1577,14 @@ class InfBuildData(ModuleBuildClassObject):
                 if not Status:
                     EdkLogger.error('build', FILE_NOT_FOUND, ExtraData=Dummy,
                                     File=self._MetaFile, Line=LineNo)
-                Target = Record[2]
-                FeatureFlag = Record[3]
+                Target = 'COMMON'
+                FeatureFlag = []
+                if Record[2]:
+                    TokenList = GetSplitValueList(Record[2], TAB_VALUE_SPLIT)
+                    if TokenList:
+                        Target = TokenList[0]
+                    if len(TokenList) > 1:
+                        FeatureFlag = Record[1:]
                 self._Binaries.append(ModuleBinaryFileClass(File, FileType, Target, FeatureFlag, self._Arch))
         return self._Binaries
 

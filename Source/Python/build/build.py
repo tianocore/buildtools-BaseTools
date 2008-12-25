@@ -1296,7 +1296,7 @@ def Main():
         if len(Target) == 0:
             Target = "all"
         elif len(Target) >= 2:
-            EdkLogger.error("build", OPTION_NOT_SUPPORTED, "More than on targets is not supported.",
+            EdkLogger.error("build", OPTION_NOT_SUPPORTED, "More than one targets are not supported.",
                             ExtraData="Please select one of: %s" %(' '.join(gSupportedTarget)))
         else:
             Target = Target[0].lower()

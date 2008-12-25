@@ -403,7 +403,7 @@ class InfParser(MetaFileParser):
                     continue
                 self._ValueList[Index] = NormPath(Value, self._Macros)
 
-    ## Data parser for the format in which there's path
+    ## Parse [Sources] section
     #
     #   Only path can have macro used. So we need to replace them before use.
     #
@@ -422,6 +422,27 @@ class InfParser(MetaFileParser):
                 if Value == None or Value == '':
                     continue
                 self._ValueList[Index] = NormPath(Value, self._Macros)
+
+    ## Parse [Binaries] section
+    #
+    #   Only path can have macro used. So we need to replace them before use.
+    #
+    def _BinaryFileParser(self):
+        TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT, 2)
+        if len(TokenList) < 2:
+            EdkLogger.error('Parser', FORMAT_INVALID, "No file type or path specified",
+                            ExtraData=self._CurrentLine + " (<FileType> | <FilePath> [| <Target>])",
+                            File=self._MetaFile, Line=self._LineIndex+1)
+        if not TokenList[0]:
+            EdkLogger.error('Parser', FORMAT_INVALID, "No file type specified",
+                            ExtraData=self._CurrentLine + " (<FileType> | <FilePath> [| <Target>])",
+                            File=self._MetaFile, Line=self._LineIndex+1)
+        if not TokenList[1]:
+            EdkLogger.error('Parser', FORMAT_INVALID, "No file path specified",
+                            ExtraData=self._CurrentLine + " (<FileType> | <FilePath> [| <Target>])",
+                            File=self._MetaFile, Line=self._LineIndex+1)
+        self._ValueList[0:len(TokenList)] = TokenList
+        self._ValueList[1] = NormPath(self._ValueList[1], self._Macros)
 
     ## [defines] section parser
     def _DefineParser(self):
@@ -475,7 +496,7 @@ class InfParser(MetaFileParser):
         MODEL_EFI_PROTOCOL              :   MetaFileParser._CommonParser,
         MODEL_EFI_PPI                   :   MetaFileParser._CommonParser,
         MODEL_EFI_DEPEX                 :   _DepexParser,
-        MODEL_EFI_BINARY_FILE           :   MetaFileParser._PathParser,
+        MODEL_EFI_BINARY_FILE           :   _BinaryFileParser,
         MODEL_META_DATA_USER_EXTENSION  :   MetaFileParser._Skip,
     }
 

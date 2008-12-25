@@ -1238,7 +1238,7 @@ class ModuleAutoGen(AutoGen):
         self._UnicodeFileList = None
         self._SourceFileList  = None
         self._ObjectFileList  = None
-        self._BinaryFileDict  = None
+        self._BinaryFileList  = None
 
         self._DependentPackageList    = None
         self._DependentLibraryList    = None
@@ -1453,7 +1453,6 @@ class ModuleAutoGen(AutoGen):
                              % (self.ToolChain, self.BuildTarget, self.Arch),
                             ExtraData="[%s]" % self._MetaFile)
         ToolChainFamily = self.PlatformInfo.ToolChainFamily["CC"]
-        BuildRule = self.PlatformInfo.BuildRule
 
         # Add source override path to include
         if self.SourceOverrideDir != '' and self.SourceOverrideDir != None:
@@ -1467,7 +1466,7 @@ class ModuleAutoGen(AutoGen):
                                           OverrideDir=self.SourceOverrideDir
                                          )
             if Status and FullPath not in self.IncludePathList:
-                    self.IncludePathList.insert(0, FullPath)
+                self.IncludePathList.insert(0, FullPath)
 
         for F in self.Module.Sources:
             SourceFile = F.SourceFile
@@ -1493,7 +1492,7 @@ class ModuleAutoGen(AutoGen):
             Base, Ext = path.splitext(SourceFile)
 
             # skip file which needs a tool having no matching toolchain family
-            FileType, RuleObject = BuildRule[Ext, self.BuildType, self.Arch, ToolChainFamily]
+            FileType, RuleObject = self.PlatformInfo.BuildRule[Ext, self.BuildType, self.Arch, ToolChainFamily]
             # unicode must be processed by AutoGen
             if FileType == "UNICODE-TEXT-FILE":
                 Status, FullPath = ValidFile2(GlobalData.gAllFiles,
@@ -1533,15 +1532,32 @@ class ModuleAutoGen(AutoGen):
     #   @retval     list            The list of files which can be built later
     #
     def _GetBinaryFiles(self):
-        if self._BinaryFileDict == None:
-            self._BinaryFileDict = sdict()
+        if self._BinaryFileList == None:
+            if "CC" not in self.PlatformInfo.ToolChainFamily:
+                EdkLogger.error("build", AUTOGEN_ERROR, "Tool [CC] is not defined for %s [%s, %s]" \
+                                 % (self.ToolChain, self.BuildTarget, self.Arch),
+                                ExtraData="[%s]" % self._MetaFile)
+            ToolChainFamily = self.PlatformInfo.ToolChainFamily["CC"]
+            self._BinaryFileList = []
             for F in self.Module.Binaries:
-                if F.Target != '*' and F.Target != self.BuildTarget:
+                if F.Target not in ['COMMON', '*'] and F.Target != self.BuildTarget:
                     continue
-                if F.FileType not in self._BinaryFileDict:
-                    self._BinaryFileDict[F.FileType] = []
-                self._BinaryFileDict[F.FileType].append(F.BinaryFile)
-        return self._BinaryFileDict
+
+                BinaryFile = F.BinaryFile
+                # skip unknown file
+                Base, Ext = path.splitext(BinaryFile)
+
+                # skip file which needs a tool having no matching toolchain family
+                FileType, RuleObject = self.PlatformInfo.BuildRule[Ext, self.BuildType, self.Arch, ToolChainFamily]
+
+                # no command, no build
+                if RuleObject != None and len(RuleObject.CommandList) == 0:
+                    RuleObject = None
+                if FileType == None:
+                    FileType = F.FileType.upper()
+                if [BinaryFile, FileType, RuleObject] not in self._BinaryFileList:
+                    self._BinaryFileList.append([BinaryFile, FileType, RuleObject])
+        return self._BinaryFileList
 
     ## Get the list of package object the module depends on
     #
@@ -1816,7 +1832,7 @@ class ModuleAutoGen(AutoGen):
     AutoGenFileList = property(_GetAutoGenFileList)
     UnicodeFileList = property(_GetUnicodeFileList)
     SourceFileList  = property(_GetSourceFileList)
-    BinaryFileDict  = property(_GetBinaryFiles) # FileType : [File List]
+    BinaryFileList  = property(_GetBinaryFiles) # FileType : [File List]
 
     DependentPackageList    = property(_GetDependentPackageList)
     DependentLibraryList    = property(_GetLibraryList)

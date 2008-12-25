@@ -439,14 +439,14 @@ cleanlib:
         Separator = self._SEP_[self._FileType]
 
         # break build if no source files and binary files are found
-        if len(self._AutoGenObject.SourceFileList) == 0 and len(self._AutoGenObject.BinaryFileDict) == 0:
+        if len(self._AutoGenObject.SourceFileList) == 0 and len(self._AutoGenObject.BinaryFileList) == 0:
             EdkLogger.error("build", AUTOGEN_ERROR, "No files to be built in module [%s, %s, %s]"
                             % (self._AutoGenObject.BuildTarget, self._AutoGenObject.ToolChain, self._AutoGenObject.Arch),
                             ExtraData="[%s]" % str(self._AutoGenObject))
         # convert source files and binary files to build target
         if len(self._AutoGenObject.SourceFileList) > 0:
             self.ProcessSourceFileList()
-        if len(self._AutoGenObject.BinaryFileDict) > 0:
+        if len(self._AutoGenObject.BinaryFileList) > 0:
             self.ProcessBinaryFileList()
 
         # convert dependent libaries to build command
@@ -504,22 +504,33 @@ cleanlib:
         SourceFileMacroNameList = []
         SourceFileMacroList = [] # macro name = file list
         for FileType in self.SourceFileDatabase:
+            ListFileName = "%s.lst" % FileType.replace("-", "_").lower()
             Macro = "%s_LIST" % FileType.replace("-", "_").upper()
             SourceFileMacroNameList.append("$(%s)" % Macro)
             Template = TemplateString()
             Template.Append("%s = ${BEGIN} \\\n    ${source_file}${END}\n" % Macro,
                             {"source_file" : self.SourceFileDatabase[FileType]})
             SourceFileMacroList.append(str(Template))
+            SaveFileOnChange(
+                os.path.join(self._AutoGenObject.OutputDir,  ListFileName),
+                "\n".join(self.SourceFileDatabase[FileType]),
+                False
+                )
         TargetFileMacroList = []
         TargetFileMacroNameList = []
         for FileType in self.DestFileDatabase:
+            ListFileName = "%s.lst" % FileType.replace("-", "_").lower()
             Macro = "%s_LIST" % FileType.replace("-", "_").upper()
             TargetFileMacroNameList.append("$(%s)" % Macro)
             Template = TemplateString()
             Template.Append("%s = ${BEGIN} \\\n    ${target_file}${END}\n" % Macro,
                             {"target_file" : self.DestFileDatabase[FileType]})
             TargetFileMacroList.append(str(Template))
-
+            SaveFileOnChange(
+                os.path.join(self._AutoGenObject.OutputDir,  ListFileName),
+                "\n".join(self.DestFileDatabase[FileType]),
+                False
+                )
         # R8 modules need <BaseName>StrDefs.h for string ID
         #if self._AutoGenObject.AutoGenVersion < 0x00010005 and len(self._AutoGenObject.UnicodeFileList) > 0:
         #    BcTargetList = ['strdefs']
@@ -843,19 +854,18 @@ cleanlib:
     # All binary files are just copied to $(OUTPUT_DIR)
     #
     def ProcessBinaryFileList(self):
-        BinaryFiles = self._AutoGenObject.BinaryFileDict
+        BinaryFiles = self._AutoGenObject.BinaryFileList
         BuildTargetString = "%(dst)s : %(src)s\n"\
                             "\t$(CP) %(src)s %(dst)s\n"
-        for FileType in BinaryFiles:
+        for File,FileType,FileBuildRule in BinaryFiles:
             if FileType not in self.DestFileDatabase:
                 self.DestFileDatabase[FileType] = []
-            for F in BinaryFiles[FileType]:
-                Src = os.path.join("$(MODULE_DIR)", F)
-                FileName = os.path.basename(F)
-                Dst = os.path.join("$(OUTPUT_DIR)", FileName)
-                self.DestFileDatabase[FileType].append(Dst)
-                self.ResultFileList.append(Dst)
-                self.BuildTargetList.append(BuildTargetString % {"dst":Dst, "src":Src})
+            Src = os.path.join("$(MODULE_DIR)", File)
+            FileName = os.path.basename(File)
+            Dst = os.path.join("$(OUTPUT_DIR)", FileName)
+            self.DestFileDatabase[FileType].append(Dst)
+            self.ResultFileList.append(Dst)
+            self.BuildTargetList.append(BuildTargetString % {"dst":Dst, "src":Src})
 
     ## For creating makefile targets for dependent libraries
     def ProcessDependentLibrary(self):
