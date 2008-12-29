@@ -947,7 +947,7 @@ class ModulePropertyXml(object):
         Header.ModuleType = self.ModuleType
         Header.SupArchList = self.CommonDefines.SupArchList
         Header.SupModuleList = self.CommonDefines.SupModList
-        Header.FileName = self.Path
+        Header.ModulePath = self.Path
         Header.PcdIsDriver = self.PcdIsDriver
         Header.UefiSpecificationVersion = self.UefiSpecificationVersion
         Header.PiSpecificationVersion = self.PiSpecificationVersion
@@ -960,7 +960,7 @@ class ModulePropertyXml(object):
                          ['SupModList', GetStringOfList(Header.SupModuleList)],
                         ]
         NodeList = [['ModuleType', Header.ModuleType],
-                    ['Path', Header.FileName],
+                    ['Path', Header.ModulePath],
                     ['PcdIsDriver', Header.PcdIsDriver],
                     ['UefiSpecificationVersion', Header.UefiSpecificationVersion],
                     ['PiSpecificationVersion', Header.PiSpecificationVersion],
@@ -1149,13 +1149,13 @@ class PackageXml(object):
         self.CommonDefines = CommonDefinesXml()
         
     def FromXml(self, Item, Key):
-        self.Description = XmlElement(Item, '%s/Description' % Key)
+        self.Description = XmlElement(Item, '%s/Description' % Key)                                              
         self.Guid = XmlElement(Item, '%s/GUID' % Key)
         self.Version = XmlAttribute(XmlNode(Item, '%s/GUID' % Key), 'Version')
         self.CommonDefines.FromXml(XmlNode(Item, '%s' % Key), Key)
         
         PackageDependency = ModulePackageDependencyClass()
-        PackageDependency.Description = self.Description
+        PackageDependency.FilePath = self.Description
         PackageDependency.PackageGuid = self.Guid
         PackageDependency.PackageVersion = self.Version
         PackageDependency.FeatureFlag = self.CommonDefines.FeatureFlag
@@ -1168,7 +1168,7 @@ class PackageXml(object):
                          ['FeatureFlag', PackageDependency.FeatureFlag],
                         ]
         Element1 = CreateXmlElement('GUID', PackageDependency.PackageGuid, [], [['Version', PackageDependency.PackageVersion]])
-        NodeList = [['Description', PackageDependency.Description],
+        NodeList = [['Description', PackageDependency.FilePath],
                     Element1,
                    ]
 
@@ -1644,19 +1644,22 @@ class ModuleSurfaceAreaXml(object):
         DomModule.appendChild(PcdEntryNode)
 
         # PeiDepex
-        DepexNode = CreateXmlElement('PeiDepex', '', [], [])
-        Tmp = DepexXml()
-        DomModule.appendChild(Tmp.ToXml(Module.PeiDepex, 'PeiDepex'))
+        if Module.PeiDepex:
+            DepexNode = CreateXmlElement('PeiDepex', '', [], [])
+            Tmp = DepexXml()
+            DomModule.appendChild(Tmp.ToXml(Module.PeiDepex, 'PeiDepex'))
 
         # DxeDepex
-        DepexNode = CreateXmlElement('DxeDepex', '', [], [])
-        Tmp = DepexXml()
-        DomModule.appendChild(Tmp.ToXml(Module.DxeDepex, 'DxeDepex'))
+        if Module.DxeDepex:
+            DepexNode = CreateXmlElement('DxeDepex', '', [], [])
+            Tmp = DepexXml()
+            DomModule.appendChild(Tmp.ToXml(Module.DxeDepex, 'DxeDepex'))
         
         # SmmDepex
-        DepexNode = CreateXmlElement('SmmDepex', '', [], [])
-        Tmp = DepexXml()
-        DomModule.appendChild(Tmp.ToXml(Module.SmmDepex, 'SmmDepex'))
+        if Module.SmmDepex:
+            DepexNode = CreateXmlElement('SmmDepex', '', [], [])
+            Tmp = DepexXml()
+            DomModule.appendChild(Tmp.ToXml(Module.SmmDepex, 'SmmDepex'))
         
         # MiscellaneousFile
         Tmp = MiscellaneousFileXml()

@@ -28,6 +28,9 @@ from Common.Misc import *
 from Common.XmlParser import *
 
 from PackageFile import *
+from IpiDb import *
+from DependencyRules import *
+import md5
 
 # Version and Copyright
 VersionNumber = "0.1"
@@ -85,15 +88,6 @@ def MyOptionParser():
     Parser.add_option("-t", "--test", action="store_true", type=None, dest="TestMode",
             help="Try run the installation in order to find out dependency and collision issues.")
 
-#    Parser.add_option("-o", "--module", action="append", type="string", dest="ModuleFile",
-#        help="The inf file of module to be distributed standalone.")
-#    Parser.add_option("-m", "--module", action="append", type="string", dest="ModuleFile",
-#        help="The inf file of module to be distributed standalone.")
-#    Parser.add_option("-p", "--module", action="append", type="string", dest="ModuleFile",
-#        help="The inf file of module to be distributed standalone.")
-#    Parser.add_option("-l", "--module", action="append", type="string", dest="ModuleFile",
-#        help="The inf file of module to be distributed standalone.")
-
     Parser.add_option("-q", "--quiet", action="store_const", dest="LogLevel", const=EdkLogger.QUIET,
             help="Disable all messages except FATAL ERRORS.")
 
@@ -141,7 +135,7 @@ def Main():
 
         # unzip to WORKSPACE/Build/<dist_pkg_file_name>
         DistFile = PackageFile(Options.PackageFile)
-        UnpackDir = os.path.join(WorkspaceDir, "Build", os.path.basename(Options.PackageFile))
+        UnpackDir = os.path.join(WorkspaceDir, "Build", os.path.dirname(Options.PackageFile))
         DistFile.Unpack(UnpackDir)
         DistPkgFile = glob.glob(os.path.join(UnpackDir, "*.pkg"))
         if not DistPkgFile:
@@ -152,12 +146,14 @@ def Main():
         DistPkgFile = DistPkgFile[0]
         ContentFile = ContentFile[0]
 
-        ContentFileDir = os.path.join(UnpackDir, os.path.basename(ContentFile))
-        ContentZipFile = PackageFile(ContentFile)
-        ContentZipFile.Unpack(ContentFileDir)
+        #ContentFileDir = os.path.join(UnpackDir, os.path.dirname(ContentFile))
+        #ContentZipFile = PackageFile(ContentFile)
+        #ContentZipFile.Unpack(ContentFileDir)
 
         # prepare check dependency
-        Db = IpiDb(os.path.join(WorkspaceDir, "Conf/.cache/build.db"))
+        #Db = IpiDb(DbPath)
+        Db = IpiDatabase(os.path.normpath(os.path.join(WorkspaceDir, "Conf/.cache/build.db")))
+        Db.InitDatabase()
         Dep = DependencyRules(Db)
 
         # retrieve the content and copy files to the installation directory
@@ -217,7 +213,7 @@ def Main():
         EdkLogger.error(
                     "\nInstallPkg",
                     CODE_ERROR,
-                    "Unknown fatal error when installing [%s]" % Args,
+                    "Unknown fatal error when installing [%s]" % Options.PackageFile,
                     ExtraData="\n(Please send email to dev@buildtools.tianocore.org for help, attaching following call stack trace!)\n",
                     RaiseError=False
                     )

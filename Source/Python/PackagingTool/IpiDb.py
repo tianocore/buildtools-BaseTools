@@ -17,7 +17,7 @@
 import sqlite3
 import os
 import time
-import EdkLogger as EdkLogger
+import Common.EdkLogger as EdkLogger
 
 from CommonDataClass import DistributionPackageClass
 
@@ -33,7 +33,7 @@ from CommonDataClass import DistributionPackageClass
 # @var Conn:          Connection of the database
 # @var Cur:           Cursor of the connection
 #
-class IpiDb(object):
+class IpiDatabase(object):
     def __init__(self, DbPath):
         self.Conn = sqlite3.connect(DbPath)
         self.Cur = self.Conn.cursor()
@@ -219,7 +219,7 @@ class IpiDb(object):
     # @param Version:
     # @param PkgFileName:
     #
-    def AddStandaloneModule(self, Guid, Version, DpGuid = None, DpVersion = None, Path):
+    def AddStandaloneModule(self, Guid, Version, DpGuid = None, DpVersion = None, Path = ''):
         
         if Version == None or len(Version.strip()) == 0:
             Version = 'N/A'
@@ -523,8 +523,8 @@ class IpiDb(object):
 if __name__ == '__main__':
     EdkLogger.Initialize()
     EdkLogger.SetLevel(EdkLogger.DEBUG_0)
-    
-    Db = IpiDb(DATABASE_PATH)
+    DATABASE_PATH = "C://MyWork//Conf//.cache//XML.db"
+    Db = IpiDatabase(DATABASE_PATH)
     Db.InitDatabase()
 
     

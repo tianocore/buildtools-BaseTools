@@ -858,9 +858,7 @@ def ParseDefine(LineValue, StartLine, Table, FileID, Filename, SectionName, Sect
 # Insert item data of a section to a dict
 #
 def InsertSectionItems(Model, CurrentSection, SectionItemList, ArchList, ThirdList, RecordSet):
-    #
     # Insert each item data of a section
-    #
     for Index in range(0, len(ArchList)):
         Arch = ArchList[Index]
         Third = ThirdList[Index]
@@ -873,16 +871,11 @@ def InsertSectionItems(Model, CurrentSection, SectionItemList, ArchList, ThirdLi
             LineValue, StartLine, EndLine, Comment = SectionItem[0], SectionItem[1], SectionItem[1], SectionItem[2]
             
             EdkLogger.debug(4, "Parsing %s ..." %LineValue)
-            #
             # And then parse DEFINE statement
-            #
             if LineValue.upper().find(DataType.TAB_DEFINE.upper() + ' ') > -1:
-                #ParseDefine(LineValue, StartLine, Table, FileID, Filename, CurrentSection, Model, Arch)
                 continue
             
-            #
             # At last parse other sections
-            #
             ID = -1
             Records.append([LineValue, Arch, StartLine, ID, Third, Comment])
         
@@ -933,3 +926,10 @@ def InsertSectionItemsIntoDatabase(Table, FileID, Filename, Model, CurrentSectio
         
         if RecordSet != {}:
             RecordSet[Model] = Records
+
+## GenMetaDatSectionItem
+def GenMetaDatSectionItem(Key, Value, List):
+    if Key not in List:
+        List[Key] = [Value]
+    else:
+        List[Key].append(Value) 

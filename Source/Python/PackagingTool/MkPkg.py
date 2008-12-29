@@ -190,7 +190,7 @@ def Main():
         for Item in DistPkg.ModuleSurfaceArea:
             ContentFile.Pack(os.path.dirname(Item[2]))
         
-        print "Creating Distribution Package File ..."
+        print "Compressing Distribution Package File ..."
         ContentFile.Close()
         # Add temp distribution header
         if Options.TemplateFile:

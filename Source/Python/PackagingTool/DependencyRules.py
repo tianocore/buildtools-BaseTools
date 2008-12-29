@@ -17,7 +17,7 @@
 import sqlite3
 import os
 
-import EdkLogger as EdkLogger
+import Common.EdkLogger as EdkLogger
 import IpiDb
 
 (DEPEX_CHECK_SUCCESS, DEPEX_CHECK_MODULE_NOT_FOUND, \
@@ -126,7 +126,8 @@ class DependencyRules(object):
     def CheckDpExists(self, Guid, Version, ReturnCode = DEPEX_CHECK_SUCCESS):
         EdkLogger.verbose("\nCheck DP exists in workspace started ...")
         DpList = []
-        DpList = self.IpiDb.GetDp(self.IpiDb, Guid, Version)
+        #DpList = self.IpiDb.GetDp(self.IpiDb, Guid, Version)
+        DpList = self.IpiDb.GetDp(Guid, Version)
         if len(DpList) > 0:
             return True
         else:

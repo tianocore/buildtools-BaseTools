@@ -344,7 +344,7 @@ class ModuleExternCallBackClass(object):
 class ModuleExternClass(CommonClass):
     def __init__(self):
         self.EntryPoint = ''
-        self.ModuleUnloadImage = ''
+        self.UnloadImage = ''
         self.Constructor = ''
         self.Destructor = ''
         CommonClass.__init__(self)
@@ -452,9 +452,9 @@ class ModuleClass(object):
         self.PackageDependencies = []
         self.Nmake = []
         self.Depex = []
-        self.PeiDepex = ModuleDepexClass()
-        self.DxeDepex = ModuleDepexClass()
-        self.SmmDepex = ModuleDepexClass()
+        self.PeiDepex = None
+        self.DxeDepex = None
+        self.SmmDepex = None
         self.Includes = []
         self.Protocols = []
         self.Ppis = []

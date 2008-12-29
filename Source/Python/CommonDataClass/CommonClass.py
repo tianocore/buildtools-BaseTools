@@ -144,6 +144,8 @@ class IdentificationClass(object):
         self.FileName = ''
         self.FullPath = ''
         self.RelaPath = ''
+        self.PackagePath = ''
+        self.ModulePath = ''
 
 ## IncludeStatementClass
 #

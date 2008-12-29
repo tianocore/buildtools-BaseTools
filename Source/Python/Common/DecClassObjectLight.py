@@ -26,11 +26,8 @@ from BuildToolError import *
 from Table.TableDec import TableDec
 import Database
 from Parsing import *
-import GlobalData
 
-#
 # Global variable
-#
 Section = {TAB_UNKNOWN.upper() : MODEL_UNKNOWN,
            TAB_DEC_DEFINES.upper() : MODEL_META_DATA_HEADER,
            TAB_INCLUDES.upper() : MODEL_EFI_INCLUDE,
@@ -83,44 +80,37 @@ class DecObject(object):
 # @var KeyList:             To store value for KeyList, a list for all Keys used in Dec
 #
 class Dec(DecObject):
-    def __init__(self, Filename = None, IsToPackage = False, WorkspaceDir = None, SupArchList = DataType.ARCH_LIST):
-        self.Identification = Identification()
+    def __init__(self, Filename = None, IsToPackage = False, WorkspaceDir = None, AllGuidVersionDict = None, SupArchList = DataType.ARCH_LIST):
+        self.Identification = IdentificationClass()
         self.Package = PackageClass()
         self.UserExtensions = ''
         self.WorkspaceDir = WorkspaceDir
         self.SupArchList = SupArchList
+        self.AllGuidVersionDict = {}
+        if AllGuidVersionDict:
+            self.AllGuidVersionDict = AllGuidVersionDict
 
         self.KeyList = [
             TAB_INCLUDES, TAB_GUIDS, TAB_PROTOCOLS, TAB_PPIS, TAB_LIBRARY_CLASSES, \
             TAB_PCDS_FIXED_AT_BUILD_NULL, TAB_PCDS_PATCHABLE_IN_MODULE_NULL, TAB_PCDS_FEATURE_FLAG_NULL, \
             TAB_PCDS_DYNAMIC_NULL, TAB_PCDS_DYNAMIC_EX_NULL, TAB_DEC_DEFINES
         ]
-        #
         # Upper all KEYs to ignore case sensitive when parsing
-        #
         self.KeyList = map(lambda c: c.upper(), self.KeyList)
         
-        #
         # Init RecordSet
-        #
         self.RecordSet = {}        
         for Key in self.KeyList:
             self.RecordSet[Section[Key]] = []
         
-        #
-        #
-        #
+        # Init Comment
         self.SectionHeaderCommentDict = {}
         
-        #
         # Load Dec file if filename is not None
-        #
         if Filename != None:
             self.LoadDecFile(Filename)
         
-        #
         # Transfer to Package Object if IsToPackage is True
-        #
         if IsToPackage:
             self.DecToPackage()
     
@@ -131,68 +121,60 @@ class Dec(DecObject):
     # @param Filename:  Input value for filename of Dec file
     #
     def LoadDecFile(self, Filename):
-        #
         # Insert a record for file
-        #
         Filename = NormPath(Filename)
-        self.Identification.FileFullPath = Filename
-        (self.Identification.FileRelativePath, self.Identification.FileName) = os.path.split(Filename)
-        if self.Identification.FileRelativePath.find(self.WorkspaceDir) > -1:
-           self.Identification.PackagePath = self.Identification.FileRelativePath[len(self.WorkspaceDir) + 1:]
-        else:
-           self.Identification.PackagePath = self.Identification.FileRelativePath
-        
-        #
+        self.Identification.FullPath = Filename
+        (self.Identification.RelaPath, self.Identification.FileName) = os.path.split(Filename)
+        if self.Identification.FullPath.find(self.WorkspaceDir) > -1:
+            self.Identification.PackagePath = os.path.dirname(self.Identification.FullPath[len(self.WorkspaceDir) + 1:])        
+       
         # Init common datas
-        #
         IfDefList, SectionItemList, CurrentSection, ArchList, ThirdList, IncludeFiles = \
         [], [], TAB_UNKNOWN, [], [], []
         LineNo = 0
         
-        #
         # Parse file content
-        #
         IsFindBlockComment = False
         ReservedLine = ''
         Comment = ''
         for Line in open(Filename, 'r'):
             LineNo = LineNo + 1
-            #
             # Remove comment block
-            #
-#            if Line.find(TAB_COMMENT_R8_START) > -1:
-#                ReservedLine = GetSplitValueList(Line, TAB_COMMENT_R8_START, 1)[0]
-#                IsFindBlockComment = True
-#            if Line.find(TAB_COMMENT_R8_END) > -1:
-#                Line = ReservedLine + GetSplitValueList(Line, TAB_COMMENT_R8_END, 1)[1]
-#                ReservedLine = ''
-#                IsFindBlockComment = False
-#            if IsFindBlockComment:
-#                continue
+            if Line.find(TAB_COMMENT_R8_START) > -1:
+                ReservedLine = GetSplitValueList(Line, TAB_COMMENT_R8_START, 1)[0]
+                if ReservedLine.strip().startswith(TAB_COMMENT_SPLIT):
+                    Comment = Comment + Line.strip() + '\n'
+                    ReservedLine = ''
+                else:
+                    Comment = Comment + Line[len(ReservedLine):] + '\n'
+                IsFindBlockComment = True
+                if not ReservedLine:
+                    continue
+            if Line.find(TAB_COMMENT_R8_END) > -1:
+                Comment = Comment + Line[:Line.find(TAB_COMMENT_R8_END) + len(TAB_COMMENT_R8_END)] + '\n'
+                Line = ReservedLine + GetSplitValueList(Line, TAB_COMMENT_R8_END, 1)[1]
+                ReservedLine = ''
+                IsFindBlockComment = False
+            if IsFindBlockComment:
+                Comment = Comment + Line.strip() + '\n'
+                continue
 
-            #
             # Remove comments at tail and remove spaces again
-            #
-            if Line.strip().startswith(TAB_COMMENT_SPLIT):
+            if Line.strip().startswith(TAB_COMMENT_SPLIT) or Line.strip().startswith('--/'):
                 Comment = Comment + Line.strip() + '\n'
             Line = CleanString(Line)
             if Line == '':
                 continue
             
-            #
-            # Find a new section tab
+            ## Find a new section tab
             # First insert previous section items
             # And then parse the content of the new section
             #
             if Line.startswith(TAB_SECTION_START) and Line.endswith(TAB_SECTION_END):
-                #
                 # Insert items data of previous section
-                #
                 Model = Section[CurrentSection.upper()]
                 InsertSectionItems(Model, CurrentSection, SectionItemList, ArchList, ThirdList, self.RecordSet)
-                #
                 # Parse the new section
-                #
                 SectionItemList = []
                 ArchList = []
                 ThirdList = []
@@ -219,20 +201,18 @@ class Dec(DecObject):
                         ThirdList.append(ItemList[2])
                 
                 if Comment:
+                    if Comment.endswith('\n'):
+                        Comment = Comment[:len(Comment) - len('\n')]
                     self.SectionHeaderCommentDict[Section[CurrentSection.upper()]] = Comment
                     Comment = ''
                 continue
             
-            #
             # Not in any defined section
-            #
             if CurrentSection == TAB_UNKNOWN:
                 ErrorMsg = "%s is not in any defined section" % Line
                 EdkLogger.error("Parser", PARSER_ERROR, ErrorMsg, File=Filename, Line=LineNo, RaiseError = EdkLogger.IsRaiseError)
 
-            #
             # Add a section item
-            #
             SectionItemList.append([Line, LineNo, Comment])
             Comment = ''
             # End of parse
@@ -246,70 +226,56 @@ class Dec(DecObject):
         if Comment != '':
             self.SectionHeaderCommentDict[Model] = Comment
             Comment = ''
-        #
-        # Replace all DEFINE macros with its actual values
-        #
-        #ParseDefineMacro2(self.TblDec, self.RecordSet, GlobalData.gGlobalDefines)
 
     ## Package Object to DEC file
-    #
-    #
     def PackageToDec(self, Package):
         Dec = ''
         DecList = sdict()
+        SectionHeaderCommentDict = {}
         if Package == None:
             return Dec
         
         PackageHeader = Package.PackageHeader
         TmpList = []
-        TmpList.append(TAB_DEC_DEFINES_PACKAGE_NAME + ' = ' + PackageHeader.Name)
-        TmpList.append(TAB_DEC_DEFINES_PACKAGE_GUID + ' = ' + PackageHeader.Guid)
-        TmpList.append(TAB_DEC_DEFINES_PACKAGE_VERSION + ' = ' + PackageHeader.Version)
-        TmpList.append(TAB_DEC_DEFINES_DEC_SPECIFICATION + ' = ' + PackageHeader.DecSpecification)
+        if PackageHeader.Name:
+            TmpList.append(TAB_DEC_DEFINES_PACKAGE_NAME + ' = ' + PackageHeader.Name)
+        if PackageHeader.Guid:
+            TmpList.append(TAB_DEC_DEFINES_PACKAGE_GUID + ' = ' + PackageHeader.Guid)
+        if PackageHeader.Version:
+            TmpList.append(TAB_DEC_DEFINES_PACKAGE_VERSION + ' = ' + PackageHeader.Version)
+        if PackageHeader.DecSpecification:
+            TmpList.append(TAB_DEC_DEFINES_DEC_SPECIFICATION + ' = ' + PackageHeader.DecSpecification)
         if Package.UserExtensions != None:
             for Item in Package.UserExtensions.Defines:
                 TmpList.append(Item)
         DecList['Defines'] =TmpList
+        if PackageHeader.Description != '':
+            SectionHeaderCommentDict['Defines'] = PackageHeader.Description
         
         for Item in Package.Includes:
             Key = 'Includes.' + Item.SupArchList
             Value = Item.FilePath
-            if Key not in DecList:
-                DecList[Key] = [Value]
-            else:
-                DecList[Key].append(Value)
+            GenMetaDatSectionItem(Key, Value, DecList)
         
         for Item in Package.GuidDeclarations:
             Key = 'Guids.' + Item.SupArchList
             Value = Item.CName + '=' + Item.Guid
-            if Key not in DecList:
-                DecList[Key] = [Value]
-            else:
-                DecList[Key].append(Value)
+            GenMetaDatSectionItem(Key, Value, DecList)
         
         for Item in Package.ProtocolDeclarations:
             Key = 'Protocols.' + Item.SupArchList
             Value = Item.CName + '=' + Item.Guid
-            if Key not in DecList:
-                DecList[Key] = [Value]
-            else:
-                DecList[Key].append(Value)
+            GenMetaDatSectionItem(Key, Value, DecList)
         
         for Item in Package.PpiDeclarations:
             Key = 'Ppis.' + Item.SupArchList
             Value = Item.CName + '=' + Item.Guid
-            if Key not in DecList:
-                DecList[Key] = [Value]
-            else:
-                DecList[Key].append(Value)
+            GenMetaDatSectionItem(Key, Value, DecList)
         
         for Item in Package.LibraryClassDeclarations:
             Key = 'LibraryClasses.' + Item.SupArchList
             Value = Item.LibraryClass + '|' + Item.RecommendedInstance
-            if Key not in DecList:
-                DecList[Key] = [Value]
-            else:
-                DecList[Key].append(Value)
+            GenMetaDatSectionItem(Key, Value, DecList)
 
         for Item in Package.PcdDeclarations:
             Key = 'Pcds' + Item.ItemType + '.' + Item.SupArchList
@@ -320,18 +286,21 @@ class Dec(DecObject):
                 Value = Value + '|' + Item.DatumType
             if Item.Token != '':
                 Value = Value + '|' + Item.Token
-            if Key not in DecList:
-                DecList[Key] = [Value]
-            else:
-                DecList[Key].append(Value)
+            GenMetaDatSectionItem(Key, Value, DecList)
 
-        #
-        # Transfer Package to Dec
-        #
-        for Item in DecList:
-            Dec = Dec + '[' + Item + ']' + '\n'
-            for SubItem in DecList[Item]:
-                Dec = Dec + '  ' + SubItem + '\n'
+        # Transfer Package to Inf
+        for Key in DecList:
+            if Key in SectionHeaderCommentDict:
+                List = SectionHeaderCommentDict[Key].split('\r')
+                for Item in List:
+                    Dec = Dec + Item + '\n'
+            Dec = Dec + '[' + Key + ']' + '\n'
+            for Value in DecList[Key]:
+                if type(Value) == type([]):
+                    for SubValue in Value:
+                        Dec = Dec + '  ' + SubValue + '\n'
+                else:
+                    Dec = Dec + '  ' + Value + '\n'
             Dec = Dec + '\n'
         
         return Dec
@@ -341,50 +310,32 @@ class Dec(DecObject):
     # Transfer all contents of a Dec file to a standard Package Object
     #
     def DecToPackage(self):
-        #
         # Init global information for the file
-        #
-        ContainerFile = self.Identification.FileFullPath
+        ContainerFile = self.Identification.FullPath
         
-        #
         # Generate Package Header
-        #
         self.GenPackageHeader(ContainerFile)
         
-        #
         # Generate Includes
         # Only for R8
-        #
         self.GenIncludes(ContainerFile)
 
-        #
         # Generate Guids
-        #
         self.GenGuidProtocolPpis(DataType.TAB_GUIDS, ContainerFile)
 
-        #
         # Generate Protocols
-        #
         self.GenGuidProtocolPpis(DataType.TAB_PROTOCOLS, ContainerFile)
 
-        #
         # Generate Ppis
-        #
         self.GenGuidProtocolPpis(DataType.TAB_PPIS, ContainerFile)
         
-        #
         # Generate LibraryClasses
-        #
         self.GenLibraryClasses(ContainerFile)
         
-        #
         # Generate Pcds
-        #
         self.GenPcds(ContainerFile)
         
-        #
         # Init MiscFiles
-        #
         self.Package.MiscFiles = MiscFileClass()
     
     ## Get Package Header
@@ -420,8 +371,14 @@ class Dec(DecObject):
                     OtherDefines.append(Record[0])
             
         PackageHeader.FileName = self.Identification.FileName
-        PackageHeader.FullPath = self.Identification.FileFullPath
-        #PackageHeader.SupArchList = Record[1]
+        PackageHeader.FullPath = self.Identification.FullPath
+        PackageHeader.RelaPath = self.Identification.RelaPath
+        PackageHeader.PackagePath = self.Identification.PackagePath
+        PackageHeader.ModulePath = self.Identification.ModulePath
+        
+        if MODEL_META_DATA_HEADER in self.SectionHeaderCommentDict:
+            PackageHeader.Description = self.SectionHeaderCommentDict[MODEL_META_DATA_HEADER]
+        
         self.Package.PackageHeader = PackageHeader
         UE = UserExtensionsClass()
         UE.Defines = OtherDefines
@@ -432,20 +389,15 @@ class Dec(DecObject):
     #
     # Gen Includes of Dec
     # 
-    #
     # @param ContainerFile: The Dec file full path 
     #
     def GenIncludes(self, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % TAB_INCLUDES)
         Includes = {}
-        #
         # Get all Includes
-        #
         RecordSet = self.RecordSet[MODEL_EFI_INCLUDE]
         
-        #
         # Go through each arch
-        #
         for Record in RecordSet:
             Arch = Record[1]
             Key = Record[0]
@@ -453,7 +405,6 @@ class Dec(DecObject):
             Include.FilePath = NormPath(Key)
             Include.SupArchList = Arch
             self.Package.Includes.append(Include)
-            #self.Package.FileList.extend(GetFiles(os.path.normpath(os.path.join(self.Identification.FileRelativePath, Include.FilePath)), ['CVS', '.svn']))
     
     ## GenPpis
     #
@@ -465,14 +416,10 @@ class Dec(DecObject):
     def GenGuidProtocolPpis(self, Type, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % Type)
         Lists = {}
-        #
         # Get all Items
-        #
         RecordSet = self.RecordSet[Section[Type.upper()]]
         
-        #
         # Go through each arch
-        #
         for Record in RecordSet:
             Arch = Record[1]
             (Name, Value) = GetGuidsProtocolsPpisOfDec(Record[0], Type, ContainerFile, Record[2])
@@ -501,14 +448,10 @@ class Dec(DecObject):
     def GenLibraryClasses(self, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % TAB_LIBRARY_CLASSES)
         LibraryClasses = {}
-        #
         # Get all Guids
-        #
         RecordSet = self.RecordSet[MODEL_EFI_LIBRARY_CLASS]
         
-        #
         # Go through each arch
-        #
         for Record in RecordSet:
             Arch = Record[1]
             List = GetSplitValueList(Record[0], DataType.TAB_VALUE_SPLIT)
@@ -517,7 +460,6 @@ class Dec(DecObject):
             LibraryClass = LibraryClassClass()
             LibraryClass.LibraryClass = List[0]
             LibraryClass.RecommendedInstance = NormPath(List[1])
-            #LibraryClass.SupModuleList = SUP_MODULE_LIST
             LibraryClass.SupArchList = Arch
             self.Package.LibraryClassDeclarations.append(LibraryClass)
     
@@ -543,18 +485,14 @@ class Dec(DecObject):
         EdkLogger.debug(2, "Generate %s ..." % TAB_PCDS)
         Pcds = {}
         PcdToken = {}
-        #
-        # Get all Guids
-        #
+        # Get all Pcds
         RecordSet1 = self.RecordSet[MODEL_PCD_FIXED_AT_BUILD]
         RecordSet2 = self.RecordSet[MODEL_PCD_PATCHABLE_IN_MODULE]
         RecordSet3 = self.RecordSet[MODEL_PCD_FEATURE_FLAG]
         RecordSet4 = self.RecordSet[MODEL_PCD_DYNAMIC_EX]
         RecordSet5 = self.RecordSet[MODEL_PCD_DYNAMIC]
         
-        #
-        # Go through each arch
-        #
+        # Go through each pcd
         for Record in RecordSet1:
             Arch = Record[1]
             (TokenGuidCName, TokenName, DefaultValue, DatumType, Token, ItemType) = GetPcdOfDec(Record[0], TAB_PCDS_FIXED_AT_BUILD, ContainerFile, Record[2])
@@ -584,19 +522,15 @@ class Dec(DecObject):
         M = self.Package
         print 'Filename =', M.PackageHeader.FileName
         print 'FullPath =', M.PackageHeader.FullPath
+        print 'RelaPath =', M.PackageHeader.RelaPath
+        print 'PackagePath =', M.PackageHeader.PackagePath
+        print 'ModulePath =', M.PackageHeader.ModulePath
+        
         print 'BaseName =', M.PackageHeader.Name
         print 'Guid =', M.PackageHeader.Guid
         print 'Version =', M.PackageHeader.Version
         print 'DecSpecification =', M.PackageHeader.DecSpecification
-        
-#        for Arch in M.Header.keys():
-#            print '\nArch =', Arch
-#            print 'Filename =', M.Header[Arch].FileName
-#            print 'FullPath =', M.Header[Arch].FullPath
-#            print 'BaseName =', M.Header[Arch].Name
-#            print 'Guid =', M.Header[Arch].Guid
-#            print 'Version =', M.Header[Arch].Version
-#            print 'DecSpecification =', M.Header[Arch].DecSpecification
+
         print '\nIncludes ='#, M.Includes
         for Item in M.Includes:
             print Item.FilePath, Item.SupArchList
@@ -630,6 +564,8 @@ if __name__ == '__main__':
     F = os.path.join(W, 'Nt32Pkg/Nt32Pkg.dec')
 
     P = Dec(os.path.normpath(F), True, W)
-    #P.ShowPackage()
+    P.ShowPackage()
     print P.PackageToDec(P.Package)
+    for Item in P.AllGuidVersionDict:
+        print Item, P.AllGuidVersionDict[Item]
     
