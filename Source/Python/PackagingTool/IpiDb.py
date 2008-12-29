@@ -41,6 +41,7 @@ class IpiDb(object):
         self.PkgTable = 'PkgInfo'
         self.ModInPkgTable = 'ModInPkgInfo'
         self.StandaloneModTable = 'StandaloneModInfo'
+        self.ModDepexTable = 'ModDepexInfo'
     
     ## Initialize build database
     #
@@ -64,8 +65,8 @@ class IpiDb(object):
                                                        InstallTime REAL NOT NULL,
                                                        DpGuid TEXT,
                                                        DpVersion TEXT,
-                                                       InstallPath TEXT,
-                                                       PRIMARY KEY (PackageGuid, PackageVersion)
+                                                       InstallPath TEXT NOT NULL,
+                                                       PRIMARY KEY (PackageGuid, PackageVersion, InstallPath)
                                                       )""" % self.PkgTable
         self.Cur.execute(SqlCommand)
         
@@ -74,8 +75,8 @@ class IpiDb(object):
                                                        InstallTime REAL NOT NULL,
                                                        PackageGuid TEXT,
                                                        PackageVersion TEXT,
-                                                       InstallPath TEXT,
-                                                       PRIMARY KEY (ModuleGuid, ModuleVersion)
+                                                       InstallPath TEXT NOT NULL,
+                                                       PRIMARY KEY (ModuleGuid, ModuleVersion, InstallPath)
                                                       )""" % self.ModInPkgTable
         self.Cur.execute(SqlCommand)
         
@@ -84,9 +85,17 @@ class IpiDb(object):
                                                        InstallTime REAL NOT NULL,
                                                        DpGuid TEXT,
                                                        DpVersion TEXT,
-                                                       InstallPath TEXT,
-                                                       PRIMARY KEY (ModuleGuid, ModuleVersion)
+                                                       InstallPath TEXT NOT NULL,
+                                                       PRIMARY KEY (ModuleGuid, ModuleVersion, InstallPath)
                                                       )""" % self.StandaloneModTable
+        self.Cur.execute(SqlCommand)
+        
+        SqlCommand = """create table IF NOT EXISTS %s (ModuleGuid TEXT NOT NULL,
+                                                       ModuleVersion TEXT NOT NULL,
+                                                       InstallPath TEXT NOT NULL,
+                                                       DepexGuid TEXT,
+                                                       DepexVersion TEXT
+                                                      )""" % self.ModDepexTable
         self.Cur.execute(SqlCommand)
         
         self.Conn.commit()
@@ -110,13 +119,22 @@ class IpiDb(object):
                 ModVersion = ModKey[1]
                 ModInstallPath = ModKey[2]
                 self.AddModuleInPackage(ModGuid, ModVersion, PkgGuid, PkgVersion, ModInstallPath)
+                ModObj = PkgObj.Modules[ModKey]
+                for Dep in ModObj.PackageDependencies:
+                    DepexGuid = Dep.PackageGuid
+                    DepexVersion = Dep.PackageVersion
+                    self.AddModuleDepex(ModGuid, ModVersion, ModInstallPath, DepexGuid, DepexVersion)
 
         for ModKey in DpObj.ModuleSurfaceArea.keys():
             ModGuid = ModKey[0]
             ModVersion = ModKey[1]
             ModInstallPath = ModKey[2]
             self.AddStandaloneModule(ModGuid, ModVersion, DpObj.Header.Guid, DpObj.Header.Version, ModInstallPath)
-            
+            ModObj = DpObj.ModuleSurfaceArea[ModKey]
+            for Dep in ModObj.PackageDependencies:
+                DepexGuid = Dep.PackageGuid
+                DepexVersion = Dep.PackageVersion
+                self.AddModuleDepex(ModGuid, ModVersion, ModInstallPath, DepexGuid, DepexVersion)
             
     ## Add a distribution install information
     #
@@ -220,6 +238,29 @@ class IpiDb(object):
         SqlCommand = """insert into %s values('%s', '%s', %s, '%s', '%s', '%s')""" % (self.StandaloneModTable, Guid, Version, CurrentTime, DpGuid, DpVersion, Path)
         self.Cur.execute(SqlCommand)
         self.Conn.commit()
+    
+    ## Add a module depex
+    #
+    # @param Guid:  
+    # @param Version:
+    # @param DepexGuid:
+    # @param DepexVersion:
+    #
+    def AddModuleDepex(self, Guid, Version, Path, DepexGuid = None, DepexVersion = None):
+                
+        if DepexGuid == None or len(DepexGuid.strip()) == 0:
+            DepexGuid = 'N/A'
+        
+        if DepexVersion == None or len(DepexVersion.strip()) == 0:
+            DepexVersion = 'N/A'
+        
+        #
+        # Add module depex information to DB.
+        #
+        
+        SqlCommand = """insert into %s values('%s', '%s', %s, '%s', '%s', '%s')""" % (self.ModDepexTable, Guid, Version, Path, DepexGuid, DepexVersion)
+        self.Cur.execute(SqlCommand)
+        self.Conn.commit()
         
     ## Remove a distribution install information, if no version specified, remove all DPs with this Guid.
     #
@@ -233,11 +274,16 @@ class IpiDb(object):
         SqlCommand = """delete from %s where DpGuid ='%s' and DpVersion = '%s'""" % (self.DpTable, DpGuid, DpVersion)
         self.Cur.execute(SqlCommand)
         
-        SqlCommand = """delete from %s where DpGuid ='%s' and DpVersion = '%s'""" % (self.StandaloneModTable, DpGuid, DpVersion)
+        SqlCommand = """delete from %s as t1, %s as t2 where t1.DpGuid ='%s' and t1.DpVersion = '%s' and 
+                        t1.ModuleGuid = t2.ModuleGuid and t1.ModuleVersion = t2.ModuleVersion and 
+                        t1.InstallPath = t2.InstallPath""" % (self.StandaloneModTable, self.ModDepexTable, DpGuid, DpVersion)
         self.Cur.execute(SqlCommand)
         
-        SqlCommand = """delete from %s as t1, %s as t2 where 
-                        t1.PackageGuid = t2.PackageGuid and t1.PackageVersion = t2.PackageVersion and t2.DpGuid ='%s' and t2.DpVersion = '%s')""" % (self.ModInPkgTable, self.PkgTable, DpGuid, DpVersion)
+        SqlCommand = """delete from %s as t1, %s as t2, %s as t3 where 
+                        t1.PackageGuid = t2.PackageGuid and t1.PackageVersion = t2.PackageVersion and 
+                        t2.DpGuid ='%s' and t2.DpVersion = '%s' and 
+                        t1.ModuleGuid = t3.ModuleGuid and t1.ModuleVersion = t3.ModuleVersion and 
+                        t1.InstallPath = t3.InstallPath)""" % (self.ModInPkgTable, self.PkgTable, self.ModDepexTable, DpGuid, DpVersion)
         self.Cur.execute(SqlCommand)
         
         
@@ -365,6 +411,92 @@ class IpiDb(object):
             ModList.append((ModGuid, ModVersion, InstallTime, DpGuid, DpVersion, InstallPath))
         
         return ModList
+    
+    ## Get a list of package information.
+    #
+    # @param DpGuid:  
+    # @param DpVersion:  
+    #
+    def GetPackageListFromDp(self, DpGuid, DpVersion):
+        
+
+        SqlCommand = """select * from %s where DpGuid ='%s' and DpVersion = '%s'
+                        """ % (self.PkgTable, DpGuid, DpVersion)
+        self.Cur.execute(SqlCommand)
+
+        PkgList = []
+        for PkgInfo in self.Cur:
+            PkgGuid = PkgInfo[0]
+            PkgVersion = PkgInfo[1]
+            InstallPath = PkgInfo[5]
+            PkgList.append((PkgGuid, PkgVersion, InstallPath))
+        
+        return PkgList
+    
+    ## Get a list of modules that depends on package information from a DP.
+    #
+    # @param DpGuid:  
+    # @param DpVersion:  
+    #
+    def GetDpDependentModuleList(self, DpGuid, DpVersion):
+        
+        ModList = []
+        PkgList = self.GetPackageListFromDp(DpGuid, DpVersion)
+        if len(PkgList) > 0:
+            return ModList
+        
+        for Pkg in PkgList:
+            SqlCommand = """select t1.ModuleGuid, t1.ModuleVersion, t1.InstallPath 
+                            from %s as t1, %s as t2, where t1.ModuleGuid = t2.ModuleGuid and 
+                            t1.ModuleVersion = t2.ModuleVersion and t2.DepexGuid ='%s' and (t2.DepexVersion = '%s' or t2.DepexVersion = 'N/A') and
+                            t1.PackageGuid != '%s' and t1.PackageVersion != '%s'
+                        """ % (self.ModInPkgTable, self.ModDepexTable, Pkg[0], Pkg[1], Pkg[0], Pkg[1])
+            self.Cur.execute(SqlCommand)
+            for ModInfo in self.Cur:
+                ModGuid = ModInfo[0]
+                ModVersion = ModInfo[1]
+                InstallPath = ModInfo[2]
+                ModList.append((ModGuid, ModVersion, InstallPath))
+
+            SqlCommand = """select t1.ModuleGuid, t1.ModuleVersion, t1.InstallPath 
+                            from %s as t1, %s as t2, where t1.ModuleGuid = t2.ModuleGuid and 
+                            t1.ModuleVersion = t2.ModuleVersion and t2.DepexGuid ='%s' and (t2.DepexVersion = '%s' or t2.DepexVersion = 'N/A') and
+                            t1.DpGuid != '%s' and t1.DpVersion != '%s'
+                        """ % (self.StandaloneModTable, self.ModDepexTable, Pkg[0], Pkg[1], DpGuid, DpVersion)
+            self.Cur.execute(SqlCommand)
+            for ModInfo in self.Cur:
+                ModGuid = ModInfo[0]
+                ModVersion = ModInfo[1]
+                InstallPath = ModInfo[2]
+                ModList.append((ModGuid, ModVersion, InstallPath))
+        
+        
+        return ModList
+    
+    ## Get a module depex
+    #
+    # @param Guid:  
+    # @param Version:
+    # @param Path:
+    #
+    def GetModuleDepex(self, Guid, Version, Path):
+                
+        #
+        # Get module depex information to DB.
+        #
+        
+        SqlCommand = """select * from %s where ModuleGuid ='%s' and ModuleVersion = '%s' and InstallPath ='%s'
+                            """ % (self.ModDepexTable, Guid, Version, Path)
+        self.Cur.execute(SqlCommand)
+        self.Conn.commit()
+        
+        DepexList = []
+        for DepInfo in self.Cur:
+            DepexGuid = DepInfo[3]
+            DepexVersion = DepInfo[4]
+            DepexList.append((DepexGuid, DepexVersion))
+        
+        return DepexList
     
     ## Close entire database
     #

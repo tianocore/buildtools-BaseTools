@@ -59,16 +59,29 @@ class DependencyRules(object):
 
     ## Check whether a module depex satified by current workspace.
     #
-    # @param Guid:  
-    # @param Version:
+    # @param ModuleObj:  
+    # @param DpObj:
     #
-    def CheckModuleDepexSatisfied(self, GuidVersionList, ReturnCode = DEPEX_CHECK_SUCCESS):
+    def CheckModuleDepexSatisfied(self, ModuleObj, DpObj = None, ReturnCode = DEPEX_CHECK_SUCCESS):
         EdkLogger.verbose("\nCheck module depex met by workspace started ...")
-        for GuidVerPair in GuidVersionList:
-            Exist = self.CheckPackageExists(GuidVerPair[0], GuidVerPair[1], ReturnCode)
+        for Dep in ModuleObj.PackageDependencies:
+            Exist = self.CheckPackageExists(Dep.PackageGuid, Dep.PackageVersion, ReturnCode)
             if not Exist:
-                return False
-            
+                if DpObj == None:
+                    ReturnCode = DEPEX_CHECK_PACKAGE_NOT_FOUND
+                    return False
+                for GuidVerPair in DpObj.PackageSurfaceArea.keys():
+                    if Dep.PackageGuid == GuidVerPair[0]:
+                        if Dep.PackageVersion == None or len(Dep.PackageVersion) == 0:
+                            break
+                        if Dep.PackageVersion == GuidVerPair[1]:
+                            break
+                        else:
+                            ReturnCode = DEPEX_CHECK_PACKAGE_NOT_FOUND
+                            return False
+                else:
+                    ReturnCode = DEPEX_CHECK_PACKAGE_NOT_FOUND
+                    return False
         return True
         
         EdkLogger.verbose("Check module depex met by workspace ... DONE!")
@@ -90,6 +103,21 @@ class DependencyRules(object):
         
         EdkLogger.verbose("Check package exists in workspace ... DONE!")
         
+    ## Check whether a package depex satified by current workspace.
+    #
+    # @param ModuleObj:  
+    # @param DpObj:
+    #
+    def CheckPackageDepexSatisfied(self, PkgObj, DpObj = None, ReturnCode = DEPEX_CHECK_SUCCESS):
+        
+        for ModKey in PkgObj.Modules.keys():
+            ModObj = PkgObj.Modules[ModKey]
+            if self.CheckModuleDepexSatisfied(ModObj, DpObj, ReturnCode):
+                continue
+            else:
+                return False
+        return True
+        
     ## Check whether a DP exists in current workspace.
     #
     # @param Guid:  
@@ -106,6 +134,44 @@ class DependencyRules(object):
             return False
         
         EdkLogger.verbose("Check DP exists in workspace ... DONE!")
+        
+    ## Check whether a DP depex satified by current workspace.
+    #
+    # @param ModuleObj:  
+    # @param DpObj:
+    #
+    def CheckDpDepexSatisfied(self, DpObj, ReturnCode = DEPEX_CHECK_SUCCESS):
+        
+        for PkgKey in DpObj.PackageSurfaceArea.keys():
+            PkgObj = DpObj.PackageSurfaceArea[PkgKey]
+            if self.CheckPackageDepexSatisfied(PkgObj, DpObj, ReturnCode):
+                continue
+            else:
+                return False
+            
+        for ModKey in DpObj.ModuleSurfaceArea.keys():
+            ModObj = PkgObj.ModuleSurfaceArea[ModKey]
+            if self.CheckModuleDepexSatisfied(ModObj, DpObj, ReturnCode):
+                continue
+            else:
+                return False
+        
+        return True
+    
+    ## Check whether a DP depex satified by current workspace.
+    #
+    # @param ModuleObj:  
+    # @param DpObj:
+    #
+    def CheckDpDepexForRemove(self, DpGuid, DpVersion, ReturnCode = DEPEX_CHECK_SUCCESS):
+        
+        # Get mod list that is dependent on pkg installed from this DP.
+        ModList = self.IpiDb.GetDpDependentModuleList(DpGuid, DpVersion)
+        
+        if len(ModList) > 0:
+            return False
+        
+        return True
 ##
 #
 # This acts like the main() function for the script, unless it is 'import'ed into another
