@@ -473,23 +473,12 @@ cleanlib:
             ImageEntryPoint = "_ModuleEntryPoint"
 
         # USER_DEFINED modules should take care of tools definitions by its own
-        ToolsFlag = ["%s_FLAGS = %s" % (tool, self._AutoGenObject.BuildOption[tool]) \
-                     for tool in self._AutoGenObject.BuildOption]
-
-        if "CC" not in self.PlatformInfo.ToolChainFamily:
-            EdkLogger.error(
-                "build",
-                AUTOGEN_ERROR,
-                "Tool [CC] is not supported [%s, %s, %s]" \
-                    % (self._AutoGenObject.BuildTarget, self._AutoGenObject.ToolChain, self._AutoGenObject.Arch),
-                ExtraData="[%s]" % str(self._AutoGenObject))
-        if  "DLINK" not in self.PlatformInfo.ToolChainFamily:
-            EdkLogger.error(
-                "build",
-                AUTOGEN_ERROR,
-                "Tool [DLINK] is not supported [%s, %s, %s]" \
-                    % (self._AutoGenObject.BuildTarget, self._AutoGenObject.ToolChain, self._AutoGenObject.Arch),
-                ExtraData="[%s]" % str(self._AutoGenObject))
+        ToolsFlag = []
+        for tool in self._AutoGenObject.BuildOption:
+            # Don't generate MAKE_FLAGS in makefile. It's put in environment variable.
+            if tool == "MAKE":
+                continue 
+            ToolsFlag.append("%s_FLAGS = %s" % (tool, self._AutoGenObject.BuildOption[tool]))
 
         if self._AutoGenObject.IsLibrary:
             if "STATIC-LIBRARY-FILE" in self.DestFileDatabase:
@@ -577,11 +566,7 @@ cleanlib:
             "module_entry_point"        : ModuleEntryPoint,
             "image_entry_point"         : ImageEntryPoint,
             "arch_entry_point"          : ArchEntryPoint,
-            "include_path_prefix"       : self._INC_FLAG_[self.PlatformInfo.ToolChainFamily["CC"]],
-            "dlink_output_flag"         : self.PlatformInfo.OutputFlag["DLINK"],
-            "slink_output_flag"         : self.PlatformInfo.OutputFlag["SLINK"],
-            "start_group_flag"          : self._LIB_GROUP_START_[self.PlatformInfo.ToolChainFamily["DLINK"]],
-            "end_group_flag"            : self._LIB_GROUP_END[self.PlatformInfo.ToolChainFamily["DLINK"]],
+            "include_path_prefix"       : self._INC_FLAG_[self._AutoGenObject.ToolChainFamily],
             "include_path"              : self._AutoGenObject.IncludePathList,
             "library_file"              : self.LibraryFileList,
             "remaining_build_target"    : self.ResultFileList,
@@ -614,10 +599,7 @@ cleanlib:
         SourceFileList = []
         ExtraDenpendencies = {}
 
-        if "CC" not in self.PlatformInfo.ToolChainFamily:
-            EdkLogger.error("build", AUTOGEN_ERROR, "No CC tool found",
-                            ExtraData="[%s]" % str(self._AutoGenObject))
-        Family = self.PlatformInfo.ToolChainFamily["CC"]
+        Family = self._AutoGenObject.ToolChainFamily
         BuildRule = self.PlatformInfo.BuildRule
         Arch = self._AutoGenObject.Arch
         BuildType = self._AutoGenObject.BuildType
@@ -1112,8 +1094,12 @@ ${BEGIN}\t-@${create_directory_command}\n${END}\
             EdkLogger.error('build', FILE_OPEN_FAILURE, File=str(self._AutoGenObject),
                             ExtraData=self._AutoGenObject.CustomMakefile[self._FileType])
 
-        ToolsFlag = ["%s_FLAGS = %s" % (tool, self._AutoGenObject.BuildOption[tool]) \
-                     for tool in self._AutoGenObject.BuildOption]
+        ToolsFlag = []
+        for tool in self._AutoGenObject.BuildOption:
+            # Don't generate MAKE_FLAGS in makefile. It's put in environment variable.
+            if tool == "MAKE":
+                continue 
+            ToolsFlag.append("%s_FLAGS = %s" % (tool, self._AutoGenObject.BuildOption[tool]))
 
         MakefileName = self._FILE_NAME_[self._FileType]
         MakefileTemplateDict = {

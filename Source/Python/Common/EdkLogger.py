@@ -35,6 +35,9 @@ ERROR   = 50
 
 IsRaiseError = True
 
+# Tool name
+_ToolName = os.path.basename(sys.argv[0])
+
 # For validation purpose
 _LogLevels = [DEBUG_0, DEBUG_1, DEBUG_2, DEBUG_3, DEBUG_4, DEBUG_5, DEBUG_6, DEBUG_7, DEBUG_8, DEBUG_9, VERBOSE, WARN, INFO, ERROR, QUIET]
 
@@ -162,10 +165,6 @@ info    = _InfoLogger.info
 #                       it's True. This is the default behavior.
 #
 def error(ToolName, ErrorCode, Message=None, File=None, Line=None, ExtraData=None, RaiseError=IsRaiseError):
-    # if no tool name given, use caller's source file name as tool name
-    if ToolName == None or ToolName == "":
-        ToolName = os.path.basename(traceback.extract_stack()[-2][0])
-
     if Line == None:
         Line = "..."
     else:
@@ -181,7 +180,7 @@ def error(ToolName, ErrorCode, Message=None, File=None, Line=None, ExtraData=Non
         ExtraData = ""
 
     TemplateDict = {
-        "tool"      : ToolName,
+        "tool"      : _ToolName,
         "file"      : File,
         "line"      : Line,
         "errorcode" : ErrorCode,

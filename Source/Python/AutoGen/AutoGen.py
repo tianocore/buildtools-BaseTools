@@ -547,6 +547,9 @@ class PlatformAutoGen(AutoGen):
             else:
                 Option = ""
 
+            if Tool == "MAKE" and GlobalData.gOptions.SilentMode:
+                Option += " -s"
+
             Key = "%s_DLL" % KeyBaseString
             if Key in ToolDefinition:
                 Dll = ToolDefinition[Key]
@@ -576,6 +579,10 @@ class PlatformAutoGen(AutoGen):
             self._ToolOption[Tool] = Option
             self._OutputFlag[Tool] = OutputFlag
             self._IncludeFlag[Tool] = InputFlag
+
+        if "MAKE" in self._ToolPath:
+            os.environ["MAKE"] = self._ToolPath["MAKE"]
+            os.environ["MAKE_FLAGS"] = self._ToolOption["MAKE"]
 
     ## Return the paths of tools
     def _GetToolPaths(self):
@@ -1019,7 +1026,7 @@ class PlatformAutoGen(AutoGen):
                 if Sku.VariableGuid == '': continue
                 Sku.VariableGuidValue = GuidValue(Sku.VariableGuid, self.PackageList)
                 if Sku.VariableGuidValue == None:
-                    PackageList = '\t' + "\n\t".join([str(P) for P in self.PackageList])
+                    PackageList = "\n\t".join([str(P) for P in self.PackageList])
                     EdkLogger.error(
                                 'build',
                                 RESOURCE_NOT_AVAILABLE,
@@ -1207,9 +1214,13 @@ class ModuleAutoGen(AutoGen):
         self.FileBase, self.FileExt = path.splitext(path.basename(self._MetaFile))
 
         self.ToolChain = Toolchain
-        self.ToolChainFamily = "MSFT"
         self.BuildTarget = Target
         self.Arch = Arch
+        # use toolchain family of CC as the primary toolchain family
+        if "CC" not in self.PlatformInfo.ToolChainFamily:
+            self.ToolChainFamily = "MSFT"
+        else:
+            self.ToolChainFamily = self.PlatformInfo.ToolChainFamily["CC"]
 
         self.IsMakeFileCreated = False
         self.IsCodeFileCreated = False
@@ -1447,12 +1458,6 @@ class ModuleAutoGen(AutoGen):
 
         self._SourceFileList = []
         self._UnicodeFileList = []
-        # use toolchain family of CC as the primary toolchain family
-        if "CC" not in self.PlatformInfo.ToolChainFamily:
-            EdkLogger.error("build", AUTOGEN_ERROR, "Tool [CC] is not defined for %s [%s, %s]" \
-                             % (self.ToolChain, self.BuildTarget, self.Arch),
-                            ExtraData="[%s]" % self._MetaFile)
-        ToolChainFamily = self.PlatformInfo.ToolChainFamily["CC"]
 
         # Add source override path to include
         if self.SourceOverrideDir != '' and self.SourceOverrideDir != None:
@@ -1476,9 +1481,9 @@ class ModuleAutoGen(AutoGen):
                                 "but [%s] is needed" % (F.TagName, F.SourceFile, self.ToolChain))
                 continue
             # match tool chain family
-            if F.ToolChainFamily != "" and F.ToolChainFamily != ToolChainFamily:
+            if F.ToolChainFamily != "" and F.ToolChainFamily != self.ToolChainFamily:
                 EdkLogger.debug(EdkLogger.DEBUG_0, "The file [%s] must be built by tools of [%s], "
-                                "but current toolchain family is [%s]" % (SourceFile, F.ToolChainFamily, ToolChainFamily))
+                                "but current toolchain family is [%s]" % (SourceFile, F.ToolChainFamily, self.ToolChainFamily))
                 continue
 
             # add the file path into search path list for file including
@@ -1492,7 +1497,7 @@ class ModuleAutoGen(AutoGen):
             Base, Ext = path.splitext(SourceFile)
 
             # skip file which needs a tool having no matching toolchain family
-            FileType, RuleObject = self.PlatformInfo.BuildRule[Ext, self.BuildType, self.Arch, ToolChainFamily]
+            FileType, RuleObject = self.PlatformInfo.BuildRule[Ext, self.BuildType, self.Arch, self.ToolChainFamily]
             # unicode must be processed by AutoGen
             if FileType == "UNICODE-TEXT-FILE":
                 Status, FullPath = ValidFile2(GlobalData.gAllFiles,
@@ -1533,11 +1538,6 @@ class ModuleAutoGen(AutoGen):
     #
     def _GetBinaryFiles(self):
         if self._BinaryFileList == None:
-            if "CC" not in self.PlatformInfo.ToolChainFamily:
-                EdkLogger.error("build", AUTOGEN_ERROR, "Tool [CC] is not defined for %s [%s, %s]" \
-                                 % (self.ToolChain, self.BuildTarget, self.Arch),
-                                ExtraData="[%s]" % self._MetaFile)
-            ToolChainFamily = self.PlatformInfo.ToolChainFamily["CC"]
             self._BinaryFileList = []
             for F in self.Module.Binaries:
                 if F.Target not in ['COMMON', '*'] and F.Target != self.BuildTarget:
@@ -1548,7 +1548,7 @@ class ModuleAutoGen(AutoGen):
                 Base, Ext = path.splitext(BinaryFile)
 
                 # skip file which needs a tool having no matching toolchain family
-                FileType, RuleObject = self.PlatformInfo.BuildRule[Ext, self.BuildType, self.Arch, ToolChainFamily]
+                FileType, RuleObject = self.PlatformInfo.BuildRule[Ext, self.BuildType, self.Arch, self.ToolChainFamily]
 
                 # no command, no build
                 if RuleObject != None and len(RuleObject.CommandList) == 0:

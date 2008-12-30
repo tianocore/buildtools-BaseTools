@@ -677,7 +677,7 @@ class Build():
     #
     def __init__(self, Target, WorkspaceDir, Platform, Module, Arch, ToolChain,
                  BuildTarget, FlashDefinition, FdList=[], FvList=[],
-                 MakefileType="nmake", SpawnMode=False, ThreadNumber=2,
+                 MakefileType="nmake", SilentMode=False, ThreadNumber=2,
                  SkipAutoGen=False, Reparse=False, SkuId=None):
 
         self.WorkspaceDir = WorkspaceDir
@@ -693,7 +693,7 @@ class Build():
         self.FdList         = FdList
         self.FvList         = FvList
         self.MakefileType   = MakefileType
-        self.SpawnMode      = SpawnMode
+        self.SilentMode     = SilentMode
         self.ThreadNumber   = ThreadNumber
         self.SkipAutoGen    = SkipAutoGen
         self.Reparse        = Reparse
@@ -733,11 +733,8 @@ class Build():
         if self.ModuleFile != None and self.ModuleFile != "":
             EdkLogger.info('%-24s = %s' % ("Active Module", self.ModuleFile))
 
-        if self.SpawnMode:
-            EdkLogger.verbose('%-24s = %s' % ("Max Thread Number", self.ThreadNumber))
-
         self.Progress.Start("\nProcessing meta-data")
-        
+
         #
         # Get files real name in workspace dir
         #
@@ -794,7 +791,7 @@ class Build():
         else:
             self.ToolChainList = NewToolChainList
 
-        if self.ThreadNumber == None or self.ThreadNumber == "":
+        if self.ThreadNumber == None:
             self.ThreadNumber = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER]
             if self.ThreadNumber == '':
                 self.ThreadNumber = 0
@@ -802,9 +799,8 @@ class Build():
                 self.ThreadNumber = int(self.ThreadNumber, 0)
 
         if self.ThreadNumber == 0:
-            self.SpawnMode = False
-        elif self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_MULTIPLE_THREAD].lower() in ["enable", "true"]:
-            self.SpawnMode = True
+            self.ThreadNumber = 1
+        self.SpawnMode = True
 
         if self.PlatformFile == None:
             self.PlatformFile = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM]
@@ -830,10 +826,10 @@ class Build():
             EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE,
                             ExtraData="No active platform specified in target.txt or command line! Nothing can be built.\n")
         if not os.path.isfile(self.PlatformFile):
-            EdkLogger.error("AutoGen", FILE_NOT_FOUND, ExtraData = self.PlatformFile)
+            EdkLogger.error("build", FILE_NOT_FOUND, ExtraData = self.PlatformFile)
         Dummy, FileExt = os.path.splitext(self.PlatformFile)
         if FileExt.lower() != '.dsc':
-            EdkLogger.error("AutoGen", PARAMETER_INVALID, ExtraData = '%s is not a valid platform' %self.PlatformFile)
+            EdkLogger.error("build", PARAMETER_INVALID, ExtraData = '%s is not a valid platform' %self.PlatformFile)
 
         # create metafile database
         self.Db.InitDatabase()
@@ -1220,10 +1216,8 @@ def MyOptionParser():
     Parser.add_option("-x", "--sku-id", action="store", type="string", dest="SkuId",
         help="Using this name of SKU ID to build the platform, overriding SKUID_IDENTIFIER in DSC file.")
 
-    Parser.add_option("-s", "--spawn", action="store_true", type=None, dest="SpawnMode",
-        help="If this flag is specified, as soon as a module can be built, the build will start, without waiting for AutoGen to complete remaining modules. While this option provides feedback that looks fast, due to overhead of the AutoGen function, this option is slower than letting AutoGen complete before starting the MAKE phase.")
     Parser.add_option("-n", action="store", type="int", dest="ThreadNumber",
-        help="Build the platform using multi-threaded compiler, this option must combine with spawn option. The value overrides target.txt's MULTIPLE_THREAD and MAX_CONCURRENT_THREAD_NUMBER, less than 2 will disable multi-thread builds.")
+        help="Build the platform using multi-threaded compiler. The value overrides target.txt's MAX_CONCURRENT_THREAD_NUMBER. Less than 2 will disable multi-thread builds.")
 
     Parser.add_option("-f", "--fdf", action="store", type="string", dest="FdfFile",
         help="The name of the FDF file to use, which overrides the setting in the DSC file.")
@@ -1232,9 +1226,9 @@ def MyOptionParser():
     Parser.add_option("-i", "--fv-image", action="append", type="string", dest="FvImage", default=[],
         help="The name of FV to be generated. The name must be from [FV] section in FDF file.")
 
-    Parser.add_option("-k", "--msft", action="store_const", dest="MakefileType", const="nmake", help="Make Option: Generate only NMAKE Makefiles: Makefile")
-    Parser.add_option("-g", "--gcc", action="store_const", dest="MakefileType", const="gmake", help="Make Option: Generate only GMAKE Makefiles: GNUmakefile")
-    Parser.add_option("-l", "--all", action="store_const", dest="MakefileType", const="all", help="Make Option: Generate both NMAKE and GMAKE makefiles.")
+    #Parser.add_option("-k", "--msft", action="store_const", dest="MakefileType", const="nmake", help="Make Option: Generate only NMAKE Makefiles: Makefile")
+    #Parser.add_option("-g", "--gcc", action="store_const", dest="MakefileType", const="gmake", help="Make Option: Generate only GMAKE Makefiles: GNUmakefile")
+    #Parser.add_option("-l", "--all", action="store_const", dest="MakefileType", const="all", help="Make Option: Generate both NMAKE and GMAKE makefiles.")
 
     Parser.add_option("-u", "--skip-autogen", action="store_true", dest="SkipAutoGen", help="Skip AutoGen step.")
     Parser.add_option("-e", "--re-parse", action="store_true", dest="Reparse", help="Re-parse all meta-data files.")
@@ -1244,6 +1238,9 @@ def MyOptionParser():
 
     Parser.add_option("-w", "--warning-as-error", action="store_true", dest="WarningAsError", help="Treat warning in tools as error.")
     Parser.add_option("-j", "--log", action="store", dest="LogFile", help="Putlog in specified file as well as on console.")
+
+    Parser.add_option("-s", "--silent", action="store_true", type=None, dest="SilentMode",
+        help="Make use of silent mode of (n)make.")
     Parser.add_option("-q", "--quiet", action="store_true", type=None, help="Disable all messages except FATAL ERRORS.")
     Parser.add_option("-v", "--verbose", action="store_true", type=None, help="Turn on verbose output with informational messages printed, "\
                                                                                "including library instances selected, final dependency expression, "\
@@ -1272,6 +1269,7 @@ def Main():
     # Parse the options and args
     #
     (Option, Target) = MyOptionParser()
+    GlobalData.gOptions = Option
 
     # Set log level
     if Option.verbose != None:
@@ -1313,16 +1311,17 @@ def Main():
         Workspace = os.getenv("WORKSPACE")
 
         WorkingDirectory = os.getcwd()
-        if Option.ModuleFile != None:
-            Option.ModuleFile = NormFile(Option.ModuleFile, Workspace)
-        else:
+        if not Option.ModuleFile:
             FileList = glob.glob(os.path.normpath(os.path.join(WorkingDirectory, '*.inf')))
             FileNum = len(FileList)
             if FileNum >= 2:
                 EdkLogger.error("build", OPTION_NOT_SUPPORTED, "There are %d INF files in %s." % (FileNum, WorkingDirectory),
                                 ExtraData="Please use '-m <INF_FILE_PATH>' switch to choose one.")
             elif FileNum == 1:
-                Option.ModuleFile = NormFile(FileList[0], Workspace)
+                Option.ModuleFile = FileList[0]
+
+        if Option.ModuleFile:
+            Option.ModuleFile = NormFile(Option.ModuleFile, Workspace)
 
         if Option.PlatformFile != None:
             Option.PlatformFile = NormFile(Option.PlatformFile, Workspace)
@@ -1333,7 +1332,7 @@ def Main():
         MyBuild = Build(Target, Workspace, Option.PlatformFile, Option.ModuleFile,
                         Option.TargetArch, Option.ToolChain, Option.BuildTarget,
                         Option.FdfFile, Option.RomImage, Option.FvImage,
-                        Option.MakefileType, Option.SpawnMode, Option.ThreadNumber,
+                        None, Option.SilentMode, Option.ThreadNumber,
                         Option.SkipAutoGen, Option.Reparse, Option.SkuId)
         MyBuild.Launch()
         #MyBuild.DumpBuildData()
