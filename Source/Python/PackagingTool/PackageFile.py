@@ -52,6 +52,16 @@ class PackageFile:
             print F, "->", ToFile
             self.Extract(F, ToFile)
     
+    def UnpackFile(self, File, ToFile):
+        File = File.replace('\\', '/')
+        if File in self._ZipFile.namelist():
+            print File, "->", ToFile
+            self.Extract(File, ToFile)
+            
+            return ToFile
+        
+        return ''
+    
     def Extract(self, Which, To):
         Which = os.path.normpath(Which)
         if Which not in self._Files:

@@ -27,7 +27,8 @@ from Common.BuildToolError import *
 from Common.Misc import *
 from Common.XmlParser import *
 
-from PackageFile import *
+from IpiDb import *
+from DependencyRules import *
 
 # Version and Copyright
 VersionNumber = "0.1"
@@ -73,11 +74,8 @@ def MyOptionParser():
 
     Parser.add_option("-?", action="help", help="show this help message and exit")
 
-    Parser.add_option("-o", "--output-file", action="store", type="string", dest="DistributionFile",
-            help="The distribution file to be created.")
-
-    Parser.add_option("-f", "--force", action="store_true", type=None, dest="ForceRemove",
-            help="Force creation - overwrite existing one.")
+#    Parser.add_option("-f", "--force", action="store_true", type=None, dest="ForceRemove",
+#            help="Force creation - overwrite existing one.")
 
     Parser.add_option("-n", "--package-version", action="store", type="string", dest="PackageVersion",
             help="The version of distribution package to be removed.")
@@ -131,9 +129,12 @@ def Main():
             Options.InstallDir = WorkspaceDir
 
         # prepare check dependency
-        Db = IpiDb(os.path.join(WorkspaceDir, "Conf/.cache/build.db"))
+        Db = IpiDatabase(os.path.normpath(os.path.join(WorkspaceDir, "Conf/.cache/XML.db")))
+        Db.InitDatabase()
         Dep = DependencyRules(Db)
-
+        
+        if not Dep.CheckDpDepexForRemove(Options.PackageGuid, Optins.PackageVersion):
+            pass
         DistPkg = Db.GetDp(Options.PackageGuid, Optins.PackageVersion)
         TODO: Remove package from DB
         TODO: Remove installation directory
@@ -151,7 +152,7 @@ def Main():
         EdkLogger.error(
                     "\nRmPkg",
                     CODE_ERROR,
-                    "Unknown fatal error when installing [%s]" % Args,
+                    "Unknown fatal error when removing package",
                     ExtraData="\n(Please send email to dev@buildtools.tianocore.org for help, attaching following call stack trace!)\n",
                     RaiseError=False
                     )

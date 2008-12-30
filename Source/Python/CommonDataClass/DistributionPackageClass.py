@@ -15,7 +15,6 @@
 #
 import os.path
 from CommonClass import *
-from CommonDataClass.CommonClass import FileClass
 from Common.Misc import sdict
 from Common.Misc import GetFiles
 from Common.DecClassObjectLight import Dec
@@ -63,19 +62,12 @@ class DistributionPackageClass(object):
                 PackageObj = DecObj.Package
                 AllGuidVersionDict[PackageFileFullPath] = [PackageObj.PackageHeader.Guid, PackageObj.PackageHeader.Version]
                 
-                # Get all files under the package
-                PackageFileList = GetFiles(DecObj.Identification.RelaPath, ['CVS', '.svn'])
-                # Remove dec file itself
-                PackageFileList.remove(PackageFileFullPath)
-                # Remove files found in dec parser
-                for File in PackageObj.FileList:
-                    if File in PackageFileList:
-                        PackageFileList.remove(File)
                 # Parser inf file one bye one
-                for File in PackageFileList:
-                    (Name, ExtName) = os.path.splitext(File)
+                for File in PackageObj.MiscFiles.Files:
+                    Filename = os.path.normpath(os.path.join(PackageObj.PackageHeader.RelaPath, File.Filename))
+                    (Name, ExtName) = os.path.splitext(Filename)
                     if ExtName.upper() == '.INF':
-                        InfObj = Inf(File, True, WorkspaceDir, DecObj.Identification.PackagePath)
+                        InfObj = Inf(Filename, True, WorkspaceDir, DecObj.Identification.PackagePath)
                         ModuleObj = InfObj.Module
                         AllGuidVersionDict[File] = [ModuleObj.ModuleHeader.Guid, ModuleObj.ModuleHeader.Version]
                         # Find and update Guid/Version of LibraryClass
@@ -110,16 +102,8 @@ class DistributionPackageClass(object):
                                 Item.PackageVersion = Version
 
                         # Add module to package
-                        PackageObj.Modules[(ModuleObj.ModuleHeader.Guid, ModuleObj.ModuleHeader.Version, ModuleObj.ModuleHeader.RelaPath)] = ModuleObj
-                        PackageFileList.remove(File)
-                        for ModuleFile in ModuleObj.FileList:
-                            if ModuleFile in PackageFileList:
-                                PackageFileList.remove(ModuleFile)
-                for File in PackageFileList:
-                    FileObj = FileClass()
-                    FileObj.Filename = File[len(DecObj.Identification.RelaPath) + 1:]
-                    PackageObj.MiscFiles.Files.append(FileObj)
-                self.PackageSurfaceArea[(PackageObj.PackageHeader.Guid, PackageObj.PackageHeader.Version, PackageObj.PackageHeader.FullPath)] = PackageObj
+                        PackageObj.Modules[(ModuleObj.ModuleHeader.Guid, ModuleObj.ModuleHeader.Version, ModuleObj.ModuleHeader.CombinePath)] = ModuleObj
+                self.PackageSurfaceArea[(PackageObj.PackageHeader.Guid, PackageObj.PackageHeader.Version, PackageObj.PackageHeader.CombinePath)] = PackageObj
 
         # Get Modules
         if ModuleList:
@@ -127,7 +111,7 @@ class DistributionPackageClass(object):
                 ModuleFileFullPath = os.path.normpath(os.path.join(WorkspaceDir, ModuleFile))
                 InfObj = Inf(ModuleFileFullPath, True, WorkspaceDir)
                 ModuleObj = InfObj.Module
-                AllGuidVersionDict[File] = [ModuleObj.ModuleHeader.Guid, ModuleObj.ModuleHeader.Version]
+                AllGuidVersionDict[ModuleFileFullPath] = [ModuleObj.ModuleHeader.Guid, ModuleObj.ModuleHeader.Version]
                 # Find and update Guid/Version of LibraryClass
                 for Item in ModuleObj.LibraryClasses:
                     if Item.RecommendedInstance:
@@ -158,19 +142,7 @@ class DistributionPackageClass(object):
                             AllGuidVersionDict[PackageFilePath] = [Guid, Version]
                         Item.PackageGuid = Guid
                         Item.PackageVersion = Version
-                # Get all files under the module
-                ModuleFileList = GetFiles(InfObj.Identification.RelaPath, ['CVS', '.svn'])
-                # Remove dec file itself
-                ModuleFileList.remove(ModuleFileFullPath)
-                # Remove files found in dec parser
-                for File in ModuleObj.FileList:
-                    if File in ModuleFileList:
-                        ModuleFileList.remove(File)
-                for File in ModuleFileList:
-                    FileObj = FileClass()
-                    FileObj.Filename = File[len(InfObj.Identification.RelaPath) + 1:]
-                    ModuleObj.MiscFiles.Files.append(FileObj)
-                self.ModuleSurfaceArea[(ModuleObj.ModuleHeader.Guid, ModuleObj.ModuleHeader.Version, ModuleObj.ModuleHeader.FullPath)] = ModuleObj
+                self.ModuleSurfaceArea[(ModuleObj.ModuleHeader.Guid, ModuleObj.ModuleHeader.Version, ModuleObj.ModuleHeader.CombinePath)] = ModuleObj
 
 ##
 #

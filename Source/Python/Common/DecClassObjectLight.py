@@ -18,13 +18,9 @@ import os
 from Misc import GetFiles
 from String import *
 from DataType import *
-from Identification import *
-from Dictionary import *
 from CommonDataClass.PackageClass import *
-from CommonDataClass.CommonClass import PcdClass
+from CommonDataClass import CommonClass
 from BuildToolError import *
-from Table.TableDec import TableDec
-import Database
 from Parsing import *
 
 # Global variable
@@ -43,7 +39,6 @@ Section = {TAB_UNKNOWN.upper() : MODEL_UNKNOWN,
            TAB_PCDS_DYNAMIC_NULL.upper() : MODEL_PCD_DYNAMIC,
            TAB_USER_EXTENSIONS.upper() : MODEL_META_DATA_USER_EXTENSION
            }
-
 
 ## DecObject
 #
@@ -336,7 +331,18 @@ class Dec(DecObject):
         self.GenPcds(ContainerFile)
         
         # Init MiscFiles
-        self.Package.MiscFiles = MiscFileClass()
+        self.GenMiscFiles(ContainerFile)
+    
+    ## GenMiscFiles
+    #
+    def GenMiscFiles(self, ContainerFile):
+        MiscFiles = MiscFileClass()
+        MiscFiles.Name = 'ModuleFiles'
+        for Item in GetFiles(os.path.dirname(ContainerFile), ['CVS', '.svn'], False):
+            File = CommonClass.FileClass()
+            File.Filename = Item
+            MiscFiles.Files.append(File)
+        self.Package.MiscFiles = MiscFiles
     
     ## Get Package Header
     #
@@ -375,6 +381,7 @@ class Dec(DecObject):
         PackageHeader.RelaPath = self.Identification.RelaPath
         PackageHeader.PackagePath = self.Identification.PackagePath
         PackageHeader.ModulePath = self.Identification.ModulePath
+        PackageHeader.CombinePath = os.path.normpath(os.path.join(PackageHeader.PackagePath, PackageHeader.ModulePath, PackageHeader.FileName))
         
         if MODEL_META_DATA_HEADER in self.SectionHeaderCommentDict:
             PackageHeader.Description = self.SectionHeaderCommentDict[MODEL_META_DATA_HEADER]
@@ -464,7 +471,7 @@ class Dec(DecObject):
             self.Package.LibraryClassDeclarations.append(LibraryClass)
     
     def AddPcd(self, CName, Token, TokenSpaceGuidCName, DatumType, DefaultValue, ItemType, Arch):
-        Pcd = PcdClass()
+        Pcd = CommonClass.PcdClass()
         Pcd.CName = CName
         Pcd.Token = Token
         Pcd.TokenSpaceGuidCName = TokenSpaceGuidCName
@@ -525,6 +532,7 @@ class Dec(DecObject):
         print 'RelaPath =', M.PackageHeader.RelaPath
         print 'PackagePath =', M.PackageHeader.PackagePath
         print 'ModulePath =', M.PackageHeader.ModulePath
+        print 'CombinePath =', M.PackageHeader.CombinePath
         
         print 'BaseName =', M.PackageHeader.Name
         print 'Guid =', M.PackageHeader.Guid
@@ -550,6 +558,10 @@ class Dec(DecObject):
         for Item in M.PcdDeclarations:
             print 'CName=', Item.CName, 'TokenSpaceGuidCName=', Item.TokenSpaceGuidCName, 'DefaultValue=', Item.DefaultValue, 'ItemType=', Item.ItemType, 'Token=', Item.Token, 'DatumType=', Item.DatumType, Item.SupArchList
         print '\nUserExtensions =', M.UserExtensions.Defines
+        print '\n*** FileList ***'
+        for Item in M.MiscFiles.Files:
+            print Item.Filename
+        print '****************\n'
 
 ##
 #
@@ -561,11 +573,8 @@ if __name__ == '__main__':
     EdkLogger.SetLevel(EdkLogger.QUIET)
     
     W = os.getenv('WORKSPACE')
-    F = os.path.join(W, 'Nt32Pkg/Nt32Pkg.dec')
+    F = os.path.join(W, 'MdeModulePkg/MdeModulePkg.dec')
 
     P = Dec(os.path.normpath(F), True, W)
     P.ShowPackage()
     print P.PackageToDec(P.Package)
-    for Item in P.AllGuidVersionDict:
-        print Item, P.AllGuidVersionDict[Item]
-    

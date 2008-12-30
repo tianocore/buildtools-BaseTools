@@ -182,7 +182,7 @@ class IpiDatabase(object):
         #
         # Add newly installed package information to DB.
         #
-        (Path) = self.__ConvertToSqlString((Path))
+        #(Path) = self.__ConvertToSqlString((Path))
         CurrentTime = time.time()
         SqlCommand = """insert into %s values('%s', '%s', %s, '%s', '%s', '%s')""" % (self.PkgTable, Guid, Version, CurrentTime, DpGuid, DpVersion, Path)
         self.Cur.execute(SqlCommand)
@@ -208,7 +208,7 @@ class IpiDatabase(object):
         #
         # Add module from package information to DB.
         #
-        (Path) = self.__ConvertToSqlString((Path))
+        #(Path) = self.__ConvertToSqlString((Path))
         CurrentTime = time.time()
         SqlCommand = """insert into %s values('%s', '%s', %s, '%s', '%s', '%s')""" % (self.ModInPkgTable, Guid, Version, CurrentTime, PkgGuid, PkgVersion, Path)
         self.Cur.execute(SqlCommand)
@@ -234,7 +234,7 @@ class IpiDatabase(object):
         #
         # Add module standalone information to DB.
         #
-        (Path) = self.__ConvertToSqlString((Path))
+        #(Path) = self.__ConvertToSqlString((Path))
         CurrentTime = time.time()
         SqlCommand = """insert into %s values('%s', '%s', %s, '%s', '%s', '%s')""" % (self.StandaloneModTable, Guid, Version, CurrentTime, DpGuid, DpVersion, Path)
         self.Cur.execute(SqlCommand)

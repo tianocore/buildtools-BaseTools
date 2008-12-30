@@ -146,6 +146,7 @@ class IdentificationClass(object):
         self.RelaPath = ''
         self.PackagePath = ''
         self.ModulePath = ''
+        self.CombinePath = ''
 
 ## IncludeStatementClass
 #

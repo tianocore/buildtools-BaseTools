@@ -72,24 +72,27 @@ def CheckEnvVariable():
 #   @retval Args  Target of build command
 #
 def MyOptionParser():
-    UsageString = "%prog [-f] [-r] [-t] [-q | -v | -d <debug_level>] [-o <install_directory>] <distribution_package>"
+    #UsageString = "%prog [-f] [-r] [-t] [-q | -v | -d <debug_level>] [-o <install_directory>] -i <distribution_package>"
+    UsageString = "%prog [-q | -v | -d <debug_level>] -i <distribution_package>"
 
     Parser = OptionParser(description=__copyright__,version=__version__,prog="InstallPkg",usage=UsageString)
 
     Parser.add_option("-?", action="help", help="show this help message and exit")
 
-    Parser.add_option("-o", "--install-directory", action="store", type="string", dest="InstallDir",
-            help="Install the distribution in $(WORKSPACE)/INSTALLDIR")
-
-    Parser.add_option("-f", "--force", action="store_true", type=None, dest="ForceInstall",
-            help="Force installation - ignore all rules.")
-
-    Parser.add_option("-r", "--reinstall", action="store_true", type=None, dest="ReInstall",
-            help="Reinstall the distribution.")
-
-    Parser.add_option("-t", "--test", action="store_true", type=None, dest="TestMode",
-            help="Try run the installation in order to find out dependency and collision issues.")
-
+    Parser.add_option("-i", "--distribution-package", action="store", type="string", dest="PackageFile",
+            help="The distribution package to be installed")
+#    Parser.add_option("-o", "--install-directory", action="store", type="string", dest="InstallDir",
+#            help="Install the distribution in $(WORKSPACE)/INSTALLDIR")
+#
+#    Parser.add_option("-f", "--force", action="store_true", type=None, dest="ForceInstall",
+#            help="Force installation - ignore all rules.")
+#
+#    Parser.add_option("-r", "--reinstall", action="store_true", type=None, dest="ReInstall",
+#            help="Reinstall the distribution.")
+#
+#    Parser.add_option("-t", "--test", action="store_true", type=None, dest="TestMode",
+#            help="Try run the installation in order to find out dependency and collision issues.")
+#
     Parser.add_option("-q", "--quiet", action="store_const", dest="LogLevel", const=EdkLogger.QUIET,
             help="Disable all messages except FATAL ERRORS.")
 
@@ -103,13 +106,26 @@ def MyOptionParser():
 
     (Opt, Args)=Parser.parse_args()
     # error check
-    if len(Args) == 0:
-        EdkLogger.error("InstallPkg", OPTION_MISSING, ExtraData=Parser.get_usage())
-    if len(Args) > 1:
-        EdkLogger.error("InstallPkg", OPTION_NOT_SUPPORTED, ExtraData="Only one distribution package can be installed")
+#    if len(Args) == 0:
+#        EdkLogger.error("InstallPkg", OPTION_MISSING, ExtraData=Parser.get_usage())
+#    if len(Args) > 1:
+#        EdkLogger.error("InstallPkg", OPTION_NOT_SUPPORTED, ExtraData="Only one distribution package can be installed")
 
-    Opt.PackageFile = Args[0]
+    #Opt.PackageFile = Args[0]
     return Opt
+
+def InstallNewPackage(WorkspaceDir, Path):
+    FullPath = os.path.normpath(os.path.join(WorkspaceDir, Path))
+    if os.path.exists(FullPath):
+        print "Directory [%s] already exists, please select another location, press [Enter] with no input to quit:" %Path
+        Input = sys.stdin.readline()
+        Input = Input.replace('\r', '').replace('\n', '')
+        if Input == '':
+            EdkLogger.error("InstallPkg", UNKNOWN_ERROR, "User interrupt")
+        Input = Input.replace('\r', '').replace('\n', '')
+        return InstallNewPackage(WorkspaceDir, Input)
+    else:
+        return Path
 
 ## Tool entrance method
 #
@@ -123,8 +139,12 @@ def MyOptionParser():
 def Main():
     EdkLogger.Initialize()
     Options = None
+    DistFileName = 'dist.pkg'
+    ContentFileName = 'content.zip'
+    DistFile, ContentZipFile, UnpackDir = None, None, None
+    
+    Options = MyOptionParser()
     try:
-        Options = MyOptionParser()
         if Options.LogLevel < EdkLogger.DEBUG_9:
             EdkLogger.SetLevel(Options.LogLevel + 1)
         else:
@@ -132,80 +152,108 @@ def Main():
 
         CheckEnvVariable()
         WorkspaceDir = os.environ["WORKSPACE"]
-        if not Options.InstallDir:
-            Options.InstallDir = WorkspaceDir
+        if not Options.PackageFile:
+            EdkLogger.error("InstallPkg", OPTION_NOT_SUPPORTED, ExtraData="Must specify one distribution package")
 
-        # unzip to WORKSPACE/Build/<dist_pkg_file_name>
+        # unzip dist.pkg file
         DistFile = PackageFile(Options.PackageFile)
-        UnpackDir = os.path.join(WorkspaceDir, "Build", os.path.dirname(Options.PackageFile))
-        DistFile.Unpack(UnpackDir)
-        DistPkgFile = glob.glob(os.path.join(UnpackDir, "*.pkg"))
+        UnpackDir = os.path.normpath(os.path.join(WorkspaceDir, ".tmp"))
+        DistPkgFile = DistFile.UnpackFile(DistFileName, os.path.normpath(os.path.join(UnpackDir, DistFileName)))
         if not DistPkgFile:
-            EdkLogger.error("InstallPkg", FILE_NOT_FOUND, "No .pkg file found in distribution package")
-        ContentFile = glob.glob(os.path.join(UnpackDir, "*.zip"))
-        if not ContentFile:
-            EdkLogger.error("InstallPkg", FILE_NOT_FOUND, "No .zip file found in distribution package")
-        DistPkgFile = DistPkgFile[0]
-        ContentFile = ContentFile[0]
-
-        ContentFileDir = os.path.join(UnpackDir, os.path.dirname(ContentFile))
-        #ContentZipFile = PackageFile(ContentFile)
-        #ContentZipFile.Unpack(ContentFileDir)
-
-        # prepare check dependency
-        #Db = IpiDb(DbPath)
-        Db = IpiDatabase(os.path.normpath(os.path.join(WorkspaceDir, "Conf/.cache/build.db")))
-        Db.InitDatabase()
-        Dep = DependencyRules(Db)
-
-        # retrieve the content and copy files to the installation directory
+            EdkLogger.error("InstallPkg", FILE_NOT_FOUND, "File [%s] is broken in distribution package" %DistFileName)
+        
+        # Generate distpkg
         DistPkgObj = DistributionPackageXml()
         DistPkg = DistPkgObj.FromXml(DistPkgFile)
+
+        # prepare check dependency
+        Db = IpiDatabase(os.path.normpath(os.path.join(WorkspaceDir, "Conf/.cache/XML.db")))
+        Db.InitDatabase()
+        Dep = DependencyRules(Db)
+        
+        # Check distribution package exist
+        if Dep.CheckDpExists(DistPkg.Header.Guid, DistPkg.Header.Version):
+            EdkLogger.error("InstallPkg", UNKNOWN_ERROR, "This distribution package has been installed", ExtraData=DistPkg.Header.Name)
+        
+        # unzip contents.zip file
+        ContentFile = DistFile.UnpackFile(ContentFileName, os.path.normpath(os.path.join(UnpackDir, ContentFileName)))
+        ContentZipFile = PackageFile(ContentFile)
+        if not ContentFile:
+            EdkLogger.error("InstallPkg", FILE_NOT_FOUND, "File [%s] is broken in distribution package" %ContentFileName)
         
         # verify MD5 signature
         Md5Sigature = md5.new(open(ContentFile).read())
         if DistPkg.Header.Signature != Md5Sigature.hexdigest():
             EdkLogger.error("InstallPkg", FILE_CHECKSUM_FAILURE, ExtraData=ContentFile)
-
-        if Dep.CheckDpExists(DistPkg.Header.Guid, DistPkg.Header.Version):
-            EdkLogger.error("InstallPkg", UNKNOWN_ERROR, "Distribution has been installed", ExtraData=DistFile)
         
-        # check whether DP dependent packages exist in current workspace.    
-        if not Dep.CheckDpDepexSatisfied(DistPkg):
-            EdkLogger.error("InstallPkg", UNKNOWN_ERROR, "Distribution Dependency not satified", ExtraData=DistFile)
-
-        InfObj = Inf()
-        #Dec = DecObject()
+        # Check package exist and install
         for Guid,Version,Path in DistPkg.PackageSurfaceArea:
-            if Dep.CheckPackageExists(Guid, Version):
-                EdkLogger.error("InstallPkg", UNKNOWN_ERROR, "Package has been installed", ExtraData=Path)
+            PackagePath = os.path.dirname(Path)
+            NewPackagePath = PackagePath
             Package = DistPkg.PackageSurfaceArea[Guid,Version,Path]
-            for ModuleGuid,ModuleVersion,ModulePath in Package.Modules:
-                Module = Package.Modules[ModuleGuid,ModuleVersion,ModulePath]
-                if Dep.CheckModuleExists(ModuleGuid, ModuleVersion):
-                    EdkLogger.error("InstallPkg", UNKNOWN_ERROR, "Module has been installed", ExtraData=ModulePath)
-                SaveFileOnChange(os.path.join(Options.InstallDir, ModulePath, Module.ModuleHeader.Name, ".inf"), InfObj.ModuleToInf(Module), False)
             EdkLogger.info("Installing package ... %s" % Package.PackageHeader.Name)
-            #shutil.copytree(os.path.join(ContentFileDir, Path), Options.InstallDir)
-            #SaveFileOnChange(os.path.join(Options.InstallDir, Path, Package.Header.Name, ".dec"), Dec.PackageToDec(Package), False)
+            if Dep.CheckPackageExists(Guid, Version):
+                EdkLogger.quiet("Package [%s] has been installed" %Path)
+            NewPackagePath = InstallNewPackage(WorkspaceDir, PackagePath)
+            Package.FileList = []
+            for Item in Package.MiscFiles.Files:
+                FromFile = os.path.join(PackagePath, Item.Filename)
+                ToFile = os.path.normpath(os.path.join(WorkspaceDir, NewPackagePath, Item.Filename))
+                ContentZipFile.UnpackFile(FromFile, ToFile)
+                Package.FileList.append(ToFile)
+            
+            # Update package
+            Package.PackageHeader.CombinePath = Package.PackageHeader.CombinePath.replace(PackagePath, NewPackagePath, 1)
+            del DistPkg.PackageSurfaceArea[Guid,Version,Path]
+            DistPkg.PackageSurfaceArea[Guid,Version,Package.PackageHeader.CombinePath] = Package
 
-        # install standalone modules
+#            SaveFileOnChange(os.path.join(Options.InstallDir, ModulePath, Module.Header.Name, ".inf"), Inf.ModuleToInf(Module), False)
+#            EdkLogger.info("Installing package ... %s" % Package.Header.Name)
+#            shutil.copytree(os.path.join(ContentFileDir, Path), Options.InstallDir)
+#            SaveFileOnChange(os.path.join(Options.InstallDir, Path, Package.Header.Name, ".dec"), Dec.PackageToDec(Package), False)
+
+        # Check module exist and install
         for Guid,Version,Path in DistPkg.ModuleSurfaceArea:
-            if Dep.CheckModuleExists(Guid, Version):
-                EdkLogger.error("InstallPkg", UNKNOWN_ERROR, "Module has been installed", ExtraData=ModulePath)
+            ModulePath = os.path.dirname(Path)
+            NewModulePath = ModulePath
             Module = DistPkg.ModuleSurfaceArea[Guid,Version,Path]
             EdkLogger.info("Installing module ... %s" % Module.ModuleHeader.Name)
-            #shutil.copytree(os.path.join(ContentFileDir, Path), Options.InstallDir)
-            #SaveFileOnChange(os.path.join(Options.InstallDir, Path, Module.Header.Name, ".inf"), Inf.ModuleToInf(Module), False)
+            if Dep.CheckModuleExists(Guid, Version):
+                EdkLogger.quiet("Module [%s] has been installed" %Path)
+            NewModulePath = InstallNewPackage(WorkspaceDir, ModulePath)
+            Module.FileList = []
+            for Item in Module.MiscFiles.Files:
+                ModulePath = ModulePath[os.path.normpath(ModulePath).rfind(os.path.normpath('/'))+1:]
+                FromFile = os.path.join(ModulePath, Item.Filename)
+                ToFile = os.path.normpath(os.path.join(WorkspaceDir, NewModulePath, Item.Filename))
+                ContentZipFile.UnpackFile(FromFile, ToFile)
+                Module.FileList.append(ToFile)
+            
+#            EdkLogger.info("Installing module ... %s" % Module.Header.Name)
+#            shutil.copytree(os.path.join(ContentFileDir, Path), Options.InstallDir)
+#            SaveFileOnChange(os.path.join(Options.InstallDir, Path, Module.Header.Name, ".inf"), Inf.ModuleToInf(Module), False)
+            
+            # Update module
+            Module.ModuleHeader.CombinePath = Module.ModuleHeader.CombinePath.replace(ModulePath, NewModulePath, 1)
+            del DistPkg.ModuleSurfaceArea[Guid,Version,Path]
+            DistPkg.ModuleSurfaceArea[Guid,Version,Module.ModuleHeader.CombinePath] = Module
+#            
+#        
+#        for Guid,Version,Path in DistPkg.PackageSurfaceArea:
+#            print Guid,Version,Path
+#            for item in DistPkg.PackageSurfaceArea[Guid,Version,Path].FileList:
+#                print item
+#        for Guid,Version,Path in DistPkg.ModuleSurfaceArea:
+#            print Guid,Version,Path
+#            for item in DistPkg.ModuleSurfaceArea[Guid,Version,Path].FileList:
+#                print item
 
-        for File in DistPkg.Tools.Files:
-            pass
-            #shutil.copyfile(os.path.join(ContentFileDir, File), os.path.join(Options.InstallDir, File))
-
-        for File in DistPkg.MiscellaneousFiles.Files:
-            pass
-            #shutil.copyfile(os.path.join(ContentFileDir, File), os.path.join(Options.InstallDir, File))
-
+#        for File in DistPkg.Tools.Files:
+#            shutil.copyfile(os.path.join(ContentFileDir, File), os.path.join(Options.InstallDir, File))
+#
+#        for File in DistPkg.MiscellaneousFiles.Files:
+#            shutil.copyfile(os.path.join(ContentFileDir, File), os.path.join(Options.InstallDir, File))
+#
         # update database
         Db.AddDPObject(DistPkg)
 
@@ -228,8 +276,13 @@ def Main():
         EdkLogger.quiet("(Python %s on %s) " % (platform.python_version(), sys.platform) + traceback.format_exc())
         ReturnCode = CODE_ERROR
     finally:
+        if DistFile:
+            DistFile.Close()
+        if ContentZipFile:
+            ContentZipFile.Close()
+        if UnpackDir:
+            shutil.rmtree(UnpackDir)
         Progressor.Abort()
 
 if __name__ == '__main__':
     sys.exit(Main())
-

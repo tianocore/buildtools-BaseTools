@@ -374,7 +374,8 @@ class DirCache:
 # 
 # @retval  A list of all files
 #
-def GetFiles(Root, SkipList=None):
+def GetFiles(Root, SkipList=None, FullPath = True):
+    OriPath = Root
     FileList = []
     for Root, Dirs, Files in os.walk(Root):
         if SkipList:
@@ -383,7 +384,10 @@ def GetFiles(Root, SkipList=None):
                     Dirs.remove(Item)
         
         for File in Files:
-            FileList.append(os.path.normpath(os.path.join(Root, File)))
+            File = os.path.normpath(os.path.join(Root, File))
+            if not FullPath:
+                File = File[len(OriPath) + 1:]
+            FileList.append(File)
     
     return FileList
 

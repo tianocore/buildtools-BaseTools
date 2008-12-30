@@ -166,7 +166,7 @@ class PackageHeaderXml(object):
         PackageHeader.License = self.Header.License
         PackageHeader.Abstract = self.Header.Abstract
         PackageHeader.Description = self.Header.Description
-        PackageHeader.PackagePath = self.PackagePath
+        PackageHeader.CombinePath = self.PackagePath
 
         return PackageHeader
     
@@ -180,7 +180,7 @@ class PackageHeaderXml(object):
                     ['License', PackageHeader.License],
                     ['Abstract', PackageHeader.Abstract],
                     ['Description', PackageHeader.Description],
-                    ['PackagePath', PackageHeader.PackagePath],
+                    ['PackagePath', PackageHeader.CombinePath],
                     ]
         Root = CreateXmlElement('%s' % Key, '', NodeList, AttributeList)
         
@@ -947,7 +947,7 @@ class ModulePropertyXml(object):
         Header.ModuleType = self.ModuleType
         Header.SupArchList = self.CommonDefines.SupArchList
         Header.SupModuleList = self.CommonDefines.SupModList
-        Header.ModulePath = self.Path
+        Header.CombinePath = self.Path
         Header.PcdIsDriver = self.PcdIsDriver
         Header.UefiSpecificationVersion = self.UefiSpecificationVersion
         Header.PiSpecificationVersion = self.PiSpecificationVersion
@@ -960,7 +960,7 @@ class ModulePropertyXml(object):
                          ['SupModList', GetStringOfList(Header.SupModuleList)],
                         ]
         NodeList = [['ModuleType', Header.ModuleType],
-                    ['Path', Header.ModulePath],
+                    ['Path', Header.CombinePath],
                     ['PcdIsDriver', Header.PcdIsDriver],
                     ['UefiSpecificationVersion', Header.UefiSpecificationVersion],
                     ['PiSpecificationVersion', Header.PiSpecificationVersion],
@@ -1692,13 +1692,13 @@ class DistributionPackageXml(object):
             for Item in XmlList(self.Pkg, '/DistributionPackage/PackageSurfaceArea'):
                 Psa = PackageSurfaceAreaXml()
                 Package = Psa.FromXml(Item, 'PackageSurfaceArea')
-                self.Dp.PackageSurfaceArea[(Package.PackageHeader.Guid, Package.PackageHeader.Version, Package.PackageHeader.RelaPath)] = Package
+                self.Dp.PackageSurfaceArea[(Package.PackageHeader.Guid, Package.PackageHeader.Version, Package.PackageHeader.CombinePath)] = Package
             
             # Parse each ModuleSurfaceArea
             for Item in XmlList(self.Pkg, '/DistributionPackage/ModuleSurfaceArea'):
                 Msa = ModuleSurfaceAreaXml()
                 Module = Msa.FromXml(Item, 'ModuleSurfaceArea')
-                self.Dp.ModuleSurfaceArea[(Module.ModuleHeader.Guid, Module.ModuleHeader.Version, Module.ModuleHeader.RelaPath)] = Module
+                self.Dp.ModuleSurfaceArea[(Module.ModuleHeader.Guid, Module.ModuleHeader.Version, Module.ModuleHeader.CombinePath)] = Module
                 
             # Parse Tools
             Tmp = MiscellaneousFileXml()

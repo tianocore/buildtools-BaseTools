@@ -17,18 +17,14 @@
 import os
 import re
 import EdkLogger
-from CommonDataClass.CommonClass import LibraryClassClass
+
 from CommonDataClass.ModuleClass import *
+from CommonDataClass import CommonClass
 from String import *
 from DataType import *
-from Identification import *
-from Dictionary import *
 from BuildToolError import *
 from Misc import sdict
 from Misc import GetFiles
-import GlobalData
-from Table.TableInf import TableInf
-import Database
 from Parsing import *
 
 # Global variable
@@ -217,13 +213,13 @@ class Inf(InfObject):
             InfList['BuildOptions'] = Module.UserExtensions.BuildOptions
         
         for Item in Module.Includes:
-            Key = 'Includes.' + Item.SupArchList
+            Key = 'Includes.' + GetStringOfList(Item.SupArchList)
             Value = GetHelpTextList(Item.HelpTextList)
             Value.append(Item.FilePath)
             GenMetaDatSectionItem(Key, Value, InfList)
         
         for Item in Module.LibraryClasses:
-            Key = 'LibraryClasses.' + Item.SupArchList
+            Key = 'LibraryClasses.' + GetStringOfList(Item.SupArchList)
             Value = GetHelpTextList(Item.HelpTextList)
             NewValue = Item.LibraryClass
             if Item.RecommendedInstance:
@@ -234,13 +230,13 @@ class Inf(InfObject):
             GenMetaDatSectionItem(Key, Value, InfList)
         
         for Item in Module.PackageDependencies:
-            Key = 'Packages.' + Item.SupArchList
+            Key = 'Packages.' + GetStringOfList(Item.SupArchList)
             Value = GetHelpTextList(Item.HelpTextList)
             Value.append(Item.FilePath)
             GenMetaDatSectionItem(Key, Value, InfList)
         
         for Item in Module.PcdCodes:
-            Key = 'Pcds' + Item.ItemType + '.' + Item.SupArchList
+            Key = 'Pcds' + Item.ItemType + '.' + GetStringOfList(Item.SupArchList)
             Value = GetHelpTextList(Item.HelpTextList)
             NewValue = Item.TokenSpaceGuidCName + '.' + Item.CName
             if Item.DefaultValue != '':
@@ -249,7 +245,7 @@ class Inf(InfObject):
             GenMetaDatSectionItem(Key, Value, InfList)
                
         for Item in Module.Sources:
-            Key = 'Sources.' + Item.SupArchList
+            Key = 'Sources.' + GetStringOfList(Item.SupArchList)
             Value = GetHelpTextList(Item.HelpTextList)
             NewValue = Item.SourceFile
             if Item.ToolChainFamily != '':
@@ -266,19 +262,13 @@ class Inf(InfObject):
             GenMetaDatSectionItem(Key, Value, InfList)
         
         for Item in Module.Guids:
-            Key = 'Guids.' + Item.SupArchList
+            Key = 'Guids.' + GetStringOfList(Item.SupArchList)
             Value = GetHelpTextList(Item.HelpTextList)
             Value.append(Item.CName)
             GenMetaDatSectionItem(Key, Value, InfList)
         
         for Item in Module.Protocols:
-            Key = 'Protocols.' + Item.SupArchList
-            Value = GetHelpTextList(Item.HelpTextList)
-            Value.append(Item.CName)
-            GenMetaDatSectionItem(Key, Value, InfList)
-        
-        for Item in Module.Ppis:
-            Key = 'Ppis.' + Item.SupArchList
+            Key = 'Protocols.' + GetStringOfList(Item.SupArchList)
             Value = GetHelpTextList(Item.HelpTextList)
             Value.append(Item.CName)
             GenMetaDatSectionItem(Key, Value, InfList)
@@ -296,20 +286,14 @@ class Inf(InfObject):
         
         if Module.DxeDepex:
             Key = 'Depex'
-            Value = Module.PeiDepex.Depex
+            Value = Module.DxeDepex.Depex
             GenMetaDatSectionItem(Key, Value, InfList)
         
         if Module.SmmDepex:
             Key = 'Depex'
-            Value = Module.PeiDepex.Depex
+            Value = Module.SmmDepex.Depex
             GenMetaDatSectionItem(Key, Value, InfList)
         
-#        for Item in Module.Depex:
-#            Key = 'Depex.' + Item.SupArchList
-#            Value = GetHelpTextList(Item.HelpTextList)
-#            Value.append(Item.Depex)
-#            GenMetaDatSectionItem(Key, Value, InfList)
-
         for Item in Module.Binaries:
             Key = 'Binaries.' + GetStringOfList(Item.SupArchList)
             Value = GetHelpTextList(Item.HelpTextList)
@@ -382,7 +366,18 @@ class Inf(InfObject):
         self.GenBinaries(ContainerFile)
         
         # Init MiscFiles
-        self.Module.MiscFiles = MiscFileClass()
+        self.GenMiscFiles(ContainerFile)
+
+    ## GenMiscFiles
+    #
+    def GenMiscFiles(self, ContainerFile):
+        MiscFiles = MiscFileClass()
+        MiscFiles.Name = 'ModuleFiles'
+        for Item in GetFiles(os.path.dirname(ContainerFile), ['CVS', '.svn'], False):
+            File = CommonClass.FileClass()
+            File.Filename = Item
+            MiscFiles.Files.append(File)
+        self.Module.MiscFiles = MiscFiles
 
     ## Load Inf file
     #
@@ -513,6 +508,7 @@ class Inf(InfObject):
         print 'RelaPath =', M.ModuleHeader.RelaPath
         print 'PackagePath =', M.ModuleHeader.PackagePath
         print 'ModulePath =', M.ModuleHeader.ModulePath
+        print 'CombinePath =', M.ModuleHeader.CombinePath
         
         print 'BaseName =', M.ModuleHeader.Name
         print 'Guid =', M.ModuleHeader.Guid
@@ -548,8 +544,10 @@ class Inf(InfObject):
         print '\nBinaries ='
         for Binary in M.Binaries:
             print 'Type=', Binary.FileType, 'Target=', Binary.Target, 'Name=', Binary.BinaryFile, 'FeatureFlag=', Binary.FeatureFlag, 'SupArchList=', Binary.SupArchList
-        for Item in M.FileList:
-            print Item
+        print '\n*** FileList ***'
+        for Item in M.MiscFiles.Files:
+            print Item.Filename
+        print '****************\n'
 
     ## Convert [Defines] section content to ModuleHeaderClass
     #
@@ -604,6 +602,7 @@ class Inf(InfObject):
         ModuleHeader.RelaPath = self.Identification.RelaPath
         ModuleHeader.PackagePath = self.Identification.PackagePath
         ModuleHeader.ModulePath = self.Identification.ModulePath
+        ModuleHeader.CombinePath = os.path.normpath(os.path.join(ModuleHeader.PackagePath, ModuleHeader.ModulePath, ModuleHeader.FileName))
 
         if MODEL_META_DATA_HEADER in self.SectionHeaderCommentDict:
             ModuleHeader.Description = self.SectionHeaderCommentDict[MODEL_META_DATA_HEADER]
@@ -668,7 +667,7 @@ class Inf(InfObject):
         RecordSet = self.RecordSet[MODEL_EFI_LIBRARY_CLASS]
         for Record in RecordSet:
             (LibClassName, LibClassIns, Pcd, SupModelList) = GetLibraryClassOfInf([Record[0], Record[4]], ContainerFile, self.WorkspaceDir, Record[2])            
-            LibraryClass = LibraryClassClass()
+            LibraryClass = CommonClass.LibraryClassClass()
             LibraryClass.LibraryClass = LibClassName
             LibraryClass.RecommendedInstance = LibClassIns
             LibraryClass.FeatureFlag = Pcd
@@ -767,7 +766,7 @@ class Inf(InfObject):
             if MODEL_EFI_SOURCE_FILE in self.SectionHeaderCommentDict:
                 Source.HelpText = self.SectionHeaderCommentDict[MODEL_EFI_SOURCE_FILE]
             self.Module.Sources.append(Source)
-            self.Module.FileList.append(os.path.normpath(os.path.join(self.Identification.RelaPath, Filename)))
+            #self.Module.FileList.append(os.path.normpath(os.path.join(self.Identification.RelaPath, Filename)))
 
     ## GenDepexes
     #
@@ -829,7 +828,7 @@ class Inf(InfObject):
             if GenerateHelpText(Record[5], ''):
                 Binary.HelpTextList.append(GenerateHelpText(Record[5], ''))
             self.Module.Binaries.append(Binary)
-            self.Module.FileList.append(os.path.normpath(os.path.join(self.Identification.RelaPath, Filename)))
+            #self.Module.FileList.append(os.path.normpath(os.path.join(self.Identification.RelaPath, Filename)))
         
     ## GenGuids
     #
@@ -872,6 +871,6 @@ if __name__ == '__main__':
     W = os.getenv('WORKSPACE')
     F = os.path.join(W, 'MdeModulePkg/Application/HelloWorld/HelloWorld.inf')
     
-    P = Inf(os.path.normpath(F), True, W)
+    P = Inf(os.path.normpath(F), True, W, 'MdeModulePkg')
     P.ShowModule()
     print P.ModuleToInf(P.Module)

@@ -74,7 +74,8 @@ def CheckEnvVariable():
 #   @retval Args  Target of build command
 #
 def MyOptionParser():
-    UsageString = "%prog [-f] [-t template-file] [-q | -v | -d debug_level] [-o distribution_file] [-m module_file] [-p package_file]"
+    #UsageString = "%prog [-f] [-t template-file] [-q | -v | -d debug_level] [-o distribution_file] [-m module_file] [-p package_file]"
+    UsageString = "%prog [-t template-file] [-q | -v | -d debug_level] [-o distribution_file] [-m module_file] [-p package_file]"
 
     Parser = OptionParser(description=__copyright__,version=__version__,prog="MkPkg",usage=UsageString)
 
@@ -83,8 +84,8 @@ def MyOptionParser():
     Parser.add_option("-o", "--output-file", action="store", type="string", dest="DistributionFile",
             help="The distribution file to be created.")
 
-    Parser.add_option("-f", "--force", action="store_true", type=None, dest="ForceCreate",
-            help="Force creation - overwrite existing one.")
+#    Parser.add_option("-f", "--force", action="store_true", type=None, dest="ForceCreate",
+#            help="Force creation - overwrite existing one.")
 
     Parser.add_option("-t", "--template-file", action="store", type=None, dest="TemplateFile",
             help="The name of the FAR template to be used for creating the distribution file.")
@@ -186,9 +187,9 @@ def Main():
         DistPkg.GetDistributionPackage(WorkspaceDir, Options.PackageFileList, Options.ModuleFileList)
         DistPkgXml = DistributionPackageXml()
         for Item in DistPkg.PackageSurfaceArea:
-            ContentFile.Pack(os.path.dirname(Item[2]))
+            ContentFile.Pack(os.path.dirname(os.path.normpath(os.path.join(WorkspaceDir,Item[2]))))
         for Item in DistPkg.ModuleSurfaceArea:
-            ContentFile.Pack(os.path.dirname(Item[2]))
+            ContentFile.Pack(os.path.dirname(os.path.normpath(os.path.join(WorkspaceDir,Item[2]))))
         
         print "Compressing Distribution Package File ..."
         ContentFile.Close()
