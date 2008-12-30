@@ -302,7 +302,7 @@ class IpiDatabase(object):
             Version = 'N/A'
             EdkLogger.verbose("\nGetting list of DP install information started ...")
             (DpGuid, DpVersion) = self.__ConvertToSqlString((Guid, Version))
-            SqlCommand = """select * from %s where DpGuid ='%s'""" % (self.Table, DpGuid)
+            SqlCommand = """select * from %s where DpGuid ='%s'""" % (self.DpTable, DpGuid)
             self.Cur.execute(SqlCommand)
         
         else:
