@@ -47,8 +47,8 @@ class DependencyRules(object):
     def CheckModuleExists(self, Guid, Version, ReturnCode = DEPEX_CHECK_SUCCESS):
         EdkLogger.verbose("\nCheck module exists in workspace started ...")
         ModuleList = []
-        ModuleList = self.IpiDb.GetModInPackage(self.IpiDb, Guid, Version)
-        ModuleList.extend(self.IpiDb.GetStandaloneModule(self.IpiDb, Guid, Version))
+        ModuleList = self.IpiDb.GetModInPackage(Guid, Version)
+        ModuleList.extend(self.IpiDb.GetStandaloneModule(Guid, Version))
         EdkLogger.verbose("Check module exists in workspace ... DONE!")
         if len(ModuleList) > 0:
             return True
@@ -94,7 +94,7 @@ class DependencyRules(object):
     def CheckPackageExists(self, Guid, Version, ReturnCode = DEPEX_CHECK_SUCCESS):
         EdkLogger.verbose("\nCheck package exists in workspace started ...")
         PkgList = []
-        PkgList = self.IpiDb.GetPackage(self.IpiDb, Guid, Version)
+        PkgList = self.IpiDb.GetPackage(Guid, Version)
         if len(PkgList) > 0:
             return True
         else:
@@ -126,7 +126,6 @@ class DependencyRules(object):
     def CheckDpExists(self, Guid, Version, ReturnCode = DEPEX_CHECK_SUCCESS):
         EdkLogger.verbose("\nCheck DP exists in workspace started ...")
         DpList = []
-        #DpList = self.IpiDb.GetDp(self.IpiDb, Guid, Version)
         DpList = self.IpiDb.GetDp(Guid, Version)
         if len(DpList) > 0:
             return True

@@ -107,7 +107,7 @@ class IpiDatabase(object):
     # @param DpObj:
     #
     def AddDPObject(self, DpObj):
-        self.AddDp(DpObj.Header.Guid, DpObj.Header.Version, DpObj.Header.FileName)
+        
         for PkgKey in DpObj.PackageSurfaceArea.keys():
             PkgGuid = PkgKey[0]
             PkgVersion = PkgKey[1]
@@ -135,7 +135,8 @@ class IpiDatabase(object):
                 DepexGuid = Dep.PackageGuid
                 DepexVersion = Dep.PackageVersion
                 self.AddModuleDepex(ModGuid, ModVersion, ModInstallPath, DepexGuid, DepexVersion)
-            
+                
+        self.AddDp(DpObj.Header.Guid, DpObj.Header.Version, DpObj.Header.FileName)    
     ## Add a distribution install information
     #
     # @param Guid:  
@@ -258,7 +259,7 @@ class IpiDatabase(object):
         # Add module depex information to DB.
         #
         
-        SqlCommand = """insert into %s values('%s', '%s', %s, '%s', '%s', '%s')""" % (self.ModDepexTable, Guid, Version, Path, DepexGuid, DepexVersion)
+        SqlCommand = """insert into %s values('%s', '%s', '%s', '%s', '%s')""" % (self.ModDepexTable, Guid, Version, Path, DepexGuid, DepexVersion)
         self.Cur.execute(SqlCommand)
         self.Conn.commit()
         
@@ -390,7 +391,7 @@ class IpiDatabase(object):
     #
     def GetStandaloneModule(self, Guid, Version, DpGuid = '', DpVersion = ''):
         
-        if PkgVersion == '' or PkgGuid == '':
+        if DpGuid == '':
 
             (ModuleGuid, ModuleVersion) = self.__ConvertToSqlString((Guid, Version))
             SqlCommand = """select * from %s where ModuleGuid ='%s' and ModuleVersion = '%s'""" % (self.StandaloneModTable, ModuleGuid, ModuleVersion)

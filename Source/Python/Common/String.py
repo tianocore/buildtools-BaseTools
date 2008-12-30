@@ -645,9 +645,9 @@ def GetHelpTextList(HelpTextClassList):
     List = []
     if HelpTextClassList:
         for HelpText in HelpTextClassList:
-            if HelpText.Text.endswith('\n'):
-                HelpText.Text = HelpText.Text[0: len(HelpText.Text) - len('\n')]
-                List.extend(HelpText.Text.split('\n'))
+            if HelpText.String.endswith('\n'):
+                HelpText.String = HelpText.String[0: len(HelpText.String) - len('\n')]
+                List.extend(HelpText.String.split('\n'))
     
     return List
 

@@ -284,7 +284,7 @@ class Inf(InfObject):
             GenMetaDatSectionItem(Key, Value, InfList)
         
         for Item in Module.Ppis:
-            Key = 'Ppis.' + Item.SupArchList
+            Key = 'Ppis.' + GetStringOfList(Item.SupArchList)
             Value = GetHelpTextList(Item.HelpTextList)
             Value.append(Item.CName)
             GenMetaDatSectionItem(Key, Value, InfList)
@@ -311,7 +311,7 @@ class Inf(InfObject):
 #            GenMetaDatSectionItem(Key, Value, InfList)
 
         for Item in Module.Binaries:
-            Key = 'Binaries.' + Item.SupArchList
+            Key = 'Binaries.' + GetStringOfList(Item.SupArchList)
             Value = GetHelpTextList(Item.HelpTextList)
             NewValue = Item.FileType + '|' + Item.BinaryFile + '|' + Item.Target
             if Item.FeatureFlag != '':

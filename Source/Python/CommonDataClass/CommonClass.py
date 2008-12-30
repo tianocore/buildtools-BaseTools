@@ -18,7 +18,7 @@ def GenerateHelpText(Text, Lang):
     if Text:
         Ht = HelpTextClass()
         Ht.Lang = Lang
-        Ht.Text = Text
+        Ht.String = Text
     
         return Ht
     

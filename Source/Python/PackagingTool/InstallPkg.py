@@ -26,6 +26,8 @@ import Common.EdkLogger as EdkLogger
 from Common.BuildToolError import *
 from Common.Misc import *
 from Common.XmlParser import *
+from Common.InfClassObjectLight import Inf
+from Common.DecClassObjectLight import Dec
 
 from PackageFile import *
 from IpiDb import *
@@ -146,7 +148,7 @@ def Main():
         DistPkgFile = DistPkgFile[0]
         ContentFile = ContentFile[0]
 
-        #ContentFileDir = os.path.join(UnpackDir, os.path.dirname(ContentFile))
+        ContentFileDir = os.path.join(UnpackDir, os.path.dirname(ContentFile))
         #ContentZipFile = PackageFile(ContentFile)
         #ContentZipFile.Unpack(ContentFileDir)
 
@@ -159,7 +161,7 @@ def Main():
         # retrieve the content and copy files to the installation directory
         DistPkgObj = DistributionPackageXml()
         DistPkg = DistPkgObj.FromXml(DistPkgFile)
-
+        
         # verify MD5 signature
         Md5Sigature = md5.new(open(ContentFile).read())
         if DistPkg.Header.Signature != Md5Sigature.hexdigest():
@@ -167,9 +169,13 @@ def Main():
 
         if Dep.CheckDpExists(DistPkg.Header.Guid, DistPkg.Header.Version):
             EdkLogger.error("InstallPkg", UNKNOWN_ERROR, "Distribution has been installed", ExtraData=DistFile)
+        
+        # check whether DP dependent packages exist in current workspace.    
+        if not Dep.CheckDpDepexSatisfied(DistPkg):
+            EdkLogger.error("InstallPkg", UNKNOWN_ERROR, "Distribution Dependency not satified", ExtraData=DistFile)
 
-        Inf = InfObject()
-        Dec = DecObject()
+        InfObj = Inf()
+        #Dec = DecObject()
         for Guid,Version,Path in DistPkg.PackageSurfaceArea:
             if Dep.CheckPackageExists(Guid, Version):
                 EdkLogger.error("InstallPkg", UNKNOWN_ERROR, "Package has been installed", ExtraData=Path)
@@ -178,28 +184,30 @@ def Main():
                 Module = Package.Modules[ModuleGuid,ModuleVersion,ModulePath]
                 if Dep.CheckModuleExists(ModuleGuid, ModuleVersion):
                     EdkLogger.error("InstallPkg", UNKNOWN_ERROR, "Module has been installed", ExtraData=ModulePath)
-                SaveFileOnChange(os.path.join(Options.InstallDir, ModulePath, Module.Header.Name, ".inf"), Inf.ModuleToInf(Module), False)
-            EdkLogger.info("Installing package ... %s" % Package.Header.Name)
-            shutil.copytree(os.path.join(ContentFileDir, Path), Options.InstallDir)
-            SaveFileOnChange(os.path.join(Options.InstallDir, Path, Package.Header.Name, ".dec"), Dec.PackageToDec(Package), False)
+                SaveFileOnChange(os.path.join(Options.InstallDir, ModulePath, Module.ModuleHeader.Name, ".inf"), InfObj.ModuleToInf(Module), False)
+            EdkLogger.info("Installing package ... %s" % Package.PackageHeader.Name)
+            #shutil.copytree(os.path.join(ContentFileDir, Path), Options.InstallDir)
+            #SaveFileOnChange(os.path.join(Options.InstallDir, Path, Package.Header.Name, ".dec"), Dec.PackageToDec(Package), False)
 
         # install standalone modules
         for Guid,Version,Path in DistPkg.ModuleSurfaceArea:
             if Dep.CheckModuleExists(Guid, Version):
                 EdkLogger.error("InstallPkg", UNKNOWN_ERROR, "Module has been installed", ExtraData=ModulePath)
             Module = DistPkg.ModuleSurfaceArea[Guid,Version,Path]
-            EdkLogger.info("Installing module ... %s" % Module.Header.Name)
-            shutil.copytree(os.path.join(ContentFileDir, Path), Options.InstallDir)
-            SaveFileOnChange(os.path.join(Options.InstallDir, Path, Module.Header.Name, ".inf"), Inf.ModuleToInf(Module), False)
+            EdkLogger.info("Installing module ... %s" % Module.ModuleHeader.Name)
+            #shutil.copytree(os.path.join(ContentFileDir, Path), Options.InstallDir)
+            #SaveFileOnChange(os.path.join(Options.InstallDir, Path, Module.Header.Name, ".inf"), Inf.ModuleToInf(Module), False)
 
         for File in DistPkg.Tools.Files:
-            shutil.copyfile(os.path.join(ContentFileDir, File), os.path.join(Options.InstallDir, File))
+            pass
+            #shutil.copyfile(os.path.join(ContentFileDir, File), os.path.join(Options.InstallDir, File))
 
         for File in DistPkg.MiscellaneousFiles.Files:
-            shutil.copyfile(os.path.join(ContentFileDir, File), os.path.join(Options.InstallDir, File))
+            pass
+            #shutil.copyfile(os.path.join(ContentFileDir, File), os.path.join(Options.InstallDir, File))
 
         # update database
-        Dep.AddDPObject(DistPkg)
+        Db.AddDPObject(DistPkg)
 
     except FatalError, X:
         if Options and Options.LogLevel < EdkLogger.DEBUG_9:

@@ -101,7 +101,7 @@ class ModuleHeaderClass(IdentificationClass, CommonHeaderClass, DefineClass):
 # @var ToolChainFamily:    To store value for ToolChainFamily
 #
 class ModuleSourceFileClass(CommonClass):
-    def __init__(self, SourceFile = '', TagName = '', ToolCode = '', ToolChainFamily = '', FeatureFlag = '', SupArchList = []):
+    def __init__(self, SourceFile = '', TagName = '', ToolCode = '', ToolChainFamily = '', FeatureFlag = '', SupArchList = None):
         self.SourceFile = SourceFile
         self.TagName = TagName
         self.ToolCode = ToolCode
@@ -126,7 +126,7 @@ class ModuleSourceFileClass(CommonClass):
 # @var ToolChainFamily:  To store value for ToolChainFamily
 #
 class ModuleBinaryFileClass(CommonClass):
-    def __init__(self, BinaryFile = '', FileType = '', Target = '', FeatureFlag = '', SupArchList = []):
+    def __init__(self, BinaryFile = '', FileType = '', Target = '', FeatureFlag = '', SupArchList = None):
         self.BinaryFile = BinaryFile
         self.FileType = FileType
         self.Target = Target
