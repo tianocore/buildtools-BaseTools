@@ -161,7 +161,7 @@ def Main():
         DistPkg = DistPkgObj.FromXml(DistPkgFile)
 
         # prepare check dependency
-        Db = IpiDatabase(os.path.normpath(os.path.join(WorkspaceDir, "Conf", "DistributionPackageDatabase.db")))
+        Db = IpiDatabase(os.path.normpath(os.path.join(WorkspaceDir, "Conf/DistributionPackageDatabase.db")))
         Db.InitDatabase()
         Dep = DependencyRules(Db)
         
@@ -188,7 +188,6 @@ def Main():
             EdkLogger.info("Installing package ... %s" % Package.PackageHeader.Name)
             if Dep.CheckPackageExists(Guid, Version):
                 EdkLogger.quiet("Package [%s] has been installed" %Path)
-            print PackagePath
             NewPackagePath = InstallNewPackage(WorkspaceDir, PackagePath)
             Package.FileList = []
             for Item in Package.MiscFiles.Files:
@@ -237,7 +236,7 @@ def Main():
 #            SaveFileOnChange(os.path.join(Options.InstallDir, Path, Module.Header.Name, ".inf"), Inf.ModuleToInf(Module), False)
             
             # Update module
-            Module.ModuleHeader.CombinePath = Module.ModuleHeader.CombinePath.replace(ModulePath, NewModulePath, 1)
+            Module.ModuleHeader.CombinePath = Module.ModuleHeader.CombinePath.replace(os.path.dirname(Path), NewModulePath, 1)
             del DistPkg.ModuleSurfaceArea[Guid,Version,Path]
             DistPkg.ModuleSurfaceArea[Guid,Version,Module.ModuleHeader.CombinePath] = Module
 #            

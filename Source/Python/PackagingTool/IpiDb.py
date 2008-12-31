@@ -298,18 +298,35 @@ class IpiDatabase(object):
         PkgList = self.GetPackageListFromDp(DpGuid, DpVersion)
         
         # delete from ModDepex the standalone module's dependency
-        SqlCommand = """delete from %s where %s.DpGuid ='%s' and %s.DpVersion = '%s' and 
-                        %s.ModuleGuid = %s.ModuleGuid and %s.ModuleVersion = %s.ModuleVersion and 
-                        %s.InstallPath = %s.InstallPath""" \
-                        % (self.ModDepexTable, self.StandaloneModTable, DpGuid, self.StandaloneModTable, DpVersion, self.ModDepexTable, self.StandaloneModTable, self.ModDepexTable, self.StandaloneModTable, self.ModDepexTable, self.StandaloneModTable)
+        SqlCommand = """delete from ModDepexInfo where ModDepexInfo.ModuleGuid in 
+                        (select ModuleGuid from StandaloneModInfo as B where B.DpGuid = '%s' and B.DpVersion = '%s')
+                         and ModDepexInfo.ModuleVersion in
+                        (select ModuleVersion from StandaloneModInfo as B where B.DpGuid = '%s' and B.DpVersion = '%s')
+                         and ModDepexInfo.InstallPath in
+                        (select InstallPath from StandaloneModInfo as B where B.DpGuid = '%s' and B.DpVersion = '%s') """ \
+                        %(DpGuid, DpVersion, DpGuid, DpVersion, DpGuid, DpVersion)
+
+#        SqlCommand = """delete from %s where %s.DpGuid ='%s' and %s.DpVersion = '%s' and 
+#                        %s.ModuleGuid = %s.ModuleGuid and %s.ModuleVersion = %s.ModuleVersion and 
+#                        %s.InstallPath = %s.InstallPath""" \
+#                        % (self.ModDepexTable, self.StandaloneModTable, DpGuid, self.StandaloneModTable, DpVersion, self.ModDepexTable, self.StandaloneModTable, self.ModDepexTable, self.StandaloneModTable, self.ModDepexTable, self.StandaloneModTable)
+#        print SqlCommand
         self.Cur.execute(SqlCommand)
         
         # delete from ModDepex the from pkg module's dependency
         for Pkg in PkgList:
-            SqlCommand = """delete from %s where %s.PackageGuid ='%s' and %s.PackageVersion = '%s' and 
-                        %s.ModuleGuid = %s.ModuleGuid and %s.ModuleVersion = %s.ModuleVersion and 
-                        %s.InstallPath = %s.InstallPath""" \
-                        % (self.ModDepexTable, self.ModInPkgTable, Pkg[0], self.ModInPkgTable, Pkg[1], self.ModDepexTable, self.ModInPkgTable, self.ModDepexTable, self.ModInPkgTable, self.ModDepexTable, self.ModInPkgTable)
+#            SqlCommand = """delete from %s where %s.PackageGuid ='%s' and %s.PackageVersion = '%s' and 
+#                        %s.ModuleGuid = %s.ModuleGuid and %s.ModuleVersion = %s.ModuleVersion and 
+#                        %s.InstallPath = %s.InstallPath""" \
+#                        % (self.ModDepexTable, self.ModInPkgTable, Pkg[0], self.ModInPkgTable, Pkg[1], self.ModDepexTable, self.ModInPkgTable, self.ModDepexTable, self.ModInPkgTable, self.ModDepexTable, self.ModInPkgTable)
+            SqlCommand = """delete from ModDepexInfo where ModDepexInfo.ModuleGuid in 
+                            (select ModuleGuid from ModInPkgInfo where ModInPkgInfo.PackageGuid ='%s' and ModInPkgInfo.PackageVersion = '%s')
+                            and ModDepexInfo.ModuleVersion in
+                            (select ModuleVersion from ModInPkgInfo where ModInPkgInfo.PackageGuid ='%s' and ModInPkgInfo.PackageVersion = '%s')
+                            and ModDepexInfo.InstallPath in
+                            (select InstallPath from ModInPkgInfo where ModInPkgInfo.PackageGuid ='%s' and ModInPkgInfo.PackageVersion = '%s')""" \
+                            % (Pkg[0], Pkg[1],Pkg[0], Pkg[1],Pkg[0], Pkg[1])
+            
             self.Cur.execute(SqlCommand)
         
         # delete the standalone module
@@ -335,7 +352,6 @@ class IpiDatabase(object):
         self.Cur.execute(SqlCommand)
         
         self.Conn.commit()
-        
         
     ## Get a list of distribution install information.
     #

@@ -16,12 +16,9 @@
 #
 import os
 import sys
-import glob
-import shutil
 import traceback
 import platform
 from optparse import OptionParser
-import shutil
 
 import Common.EdkLogger as EdkLogger
 from Common.BuildToolError import *
@@ -104,6 +101,7 @@ def MyOptionParser():
 
 ## Remove all empty dirs under the path
 def RemoveEmptyDirs(Path):
+    # Remove all sub dirs
     for Root, Dirs, Files in os.walk(Path):
         for Dir in Dirs:
             FullPath = os.path.normpath(os.path.join(Root, Dir))
@@ -112,9 +110,13 @@ def RemoveEmptyDirs(Path):
                     os.rmdir(FullPath)
                 else:
                     RemoveEmptyDirs(FullPath)
-            if os.path.isdir(FullPath):
-                if os.listdir(FullPath) == []:
-                    os.rmdir(FullPath)
+#            if os.path.isdir(FullPath):
+#                if os.listdir(FullPath) == []:
+#                    os.rmdir(FullPath)
+    # Remove itself
+    if os.path.isdir(Path) and os.listdir(Path) == []:
+        os.rmdir(Path)
+        
 
 ## Tool entrance method
 #
@@ -147,6 +149,7 @@ def Main():
         
         Guid = Options.PackageGuid
         Version = Options.PackageVersion
+        
         # Check Dp existing
         if not Dep.CheckDpExists(Guid, Version):
             EdkLogger.error("RmPkg", UNKNOWN_ERROR, "This distribution package are not installed!")
@@ -161,40 +164,37 @@ def Main():
                 EdkLogger.error("RmPkg", UNKNOWN_ERROR, "User interrupt")
 
         # Remove all files
-        PackagePathList = []
-        for Pkg in Db.GetPackageListFromDp(Guid, Version):
-            PackagePathList.append(Pkg[2])
-            print Pkg[2]
-            
-        ModulePathList = Db.GetStandaloneModuleInstallPathListFromDp(Guid, Version)
-        for Item in ModulePathList:
-            print Item
-        
-        FilePathList = Db.GetDpFileList(Options.PackageGuid, Options.PackageVersion)
-        for Item in FilePathList:
-            print Item
-#        TODO: Remove package from DB
-#        TODO: Remove installation directory
-        #RemoveDirectory(PackagePath, True)
-        #Db.RemoveDpObj(Options.PackageGuid, Options.PackageVersion)
-
         print "All files of the distribution package will be removed, do you want to continue?"
         print "Press Y to remove all files or press other keys to quit:"
         Input = Input = sys.stdin.readline()
         Input = Input.replace('\r', '').replace('\n', '')
         if Input.upper() != 'Y':
             EdkLogger.error("RmPkg", UNKNOWN_ERROR, "User interrupt")
-        #DistPkg = Db.GetDp(Options.PackageGuid, Optins.PackageVersion)
-        #TODO: Remove package from DB
-        #TODO: Remove installation directory
-        #RemoveDirectory(PackagePath, True)
-        #shutil.rmtree('C:\\MyWork\\FFF\\X64\\VirtualMemory.h')
-        #os.remove('C:\\MyWork\\FFF\\X64\\VirtualMemory.h')
-        #os.rmdir(path)
-       # print os.listdir('C:\\MyWork\\FFF\\X64\\AAA')
-        #RemoveEmptyDirs('C:\\MyWork\\FFF')
-        #os.removedirs('C:\\MyWork\\FFF')
+        
+        # Remove all files
+        MissingFileList = []
+        for Item in Db.GetDpFileList(Guid, Version):
+            if os.path.isfile(Item):
+                print "Removing file [%s] ..." % Item
+                os.remove(Item)
+            else:
+                MissingFileList.append(Item)
+        
+        # Remove all empty dirs of package
+        for Item in Db.GetPackageListFromDp(Guid, Version):
+            Dir = os.path.dirname(Item[2])
+            RemoveEmptyDirs(Dir)
 
+        # Remove all empty dirs of module
+        for Item in Db.GetStandaloneModuleInstallPathListFromDp(Guid, Version):
+            Dir = os.path.dirname(Item)
+            RemoveEmptyDirs(Dir)
+        
+        # update database
+        EdkLogger.quiet("Update Distribution Package Database ...")
+        Db.RemoveDpObj(Guid, Version)
+        EdkLogger.quiet("DONE")
+        
     except FatalError, X:
         if Options and Options.LogLevel < EdkLogger.DEBUG_9:
             EdkLogger.quiet("(Python %s on %s) " % (platform.python_version(), sys.platform) + traceback.format_exc())
@@ -218,4 +218,3 @@ def Main():
 
 if __name__ == '__main__':
     sys.exit(Main())
-
