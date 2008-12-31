@@ -35,6 +35,9 @@ from CommonDataClass import DistributionPackageClass
 #
 class IpiDatabase(object):
     def __init__(self, DbPath):
+        Dir = os.path.dirname(DbPath)
+        if not os.path.isdir(Dir):
+            os.mkdir(Dir)
         self.Conn = sqlite3.connect(DbPath, isolation_level = 'DEFERRED')
         self.Conn.execute("PRAGMA page_size=4096")
         self.Conn.execute("PRAGMA synchronous=OFF")
@@ -479,20 +482,9 @@ class IpiDatabase(object):
     # @param DpGuid:  
     # @param DpVersion:  
     #
-    def GetModuleInstallPathListFromDp(self, DpGuid, DpVersion):
-        
-
-        SqlCommand = """select t1.InstallPath from %s t1, %s t2, %s t3 where t3.DpGuid ='%s' and t3.DpVersion = '%s' and
-                        t1.PackageGuid = t2.PackageGuid and t1.PackageVersion = t2.PackageVersion and
-                        t2.DpGuid = t3.DpGuid and t2.DpVersion = t3.DpVersion
-                        """ % (self.ModInPkgTable, self.PkgTable, self.DpTable, DpGuid, DpVersion)
-        self.Cur.execute(SqlCommand)
+    def GetStandaloneModuleInstallPathListFromDp(self, DpGuid, DpVersion):
 
         PathList = []
-        for Result in self.Cur:
-            InstallPath = Result[0]
-            PathList.append(InstallPath)
-            
         SqlCommand = """select t1.InstallPath from %s t1 where t1.DpGuid ='%s' and t1.DpVersion = '%s'
                         """ % (self.StandaloneModTable, DpGuid, DpVersion)
         self.Cur.execute(SqlCommand)

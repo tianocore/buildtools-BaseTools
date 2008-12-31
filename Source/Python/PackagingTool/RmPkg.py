@@ -166,7 +166,7 @@ def Main():
             PackagePathList.append(Pkg[2])
             print Pkg[2]
             
-        ModulePathList = Db.GetModuleInstallPathListFromDp(Guid, Version)
+        ModulePathList = Db.GetStandaloneModuleInstallPathListFromDp(Guid, Version)
         for Item in ModulePathList:
             print Item
         
