@@ -1233,7 +1233,7 @@ def MyOptionParser():
     #     help="Define global macro which can be used in DSC/DEC/INF files.")
 
     Parser.add_option("-w", "--warning-as-error", action="store_true", dest="WarningAsError", help="Treat warning in tools as error.")
-    Parser.add_option("-j", "--log", action="store", dest="LogFile", help="Putlog in specified file as well as on console.")
+    Parser.add_option("-j", "--log", action="store", dest="LogFile", help="Put log in specified file as well as on console.")
 
     Parser.add_option("-s", "--silent", action="store_true", type=None, dest="SilentMode",
         help="Make use of silent mode of (n)make.")
