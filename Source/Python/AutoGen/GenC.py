@@ -1772,8 +1772,8 @@ def CreateHeaderCode(Info, AutoGenC, AutoGenH):
     AutoGenH.Append(gAutoGenHPrologueString,{'File':'AUTOGENH','Guid':Info.Guid.replace('-','_')})
     if Info.AutoGenVersion >= 0x00010005:
         # specification macros
-        AutoGenH.Append(gSpecificationString,   {'SpecificationName':Info.Macro.keys(),
-                                                 'SpecificationValue':Info.Macro.values()})
+        AutoGenH.Append(gSpecificationString,   {'SpecificationName':Info.Specification.keys(),
+                                                 'SpecificationValue':Info.Specification.values()})
         # header files includes
         AutoGenH.Append("#include <%s>\n" % gBasicHeaderFile)
         if Info.ModuleType in gModuleTypeHeaderFile \

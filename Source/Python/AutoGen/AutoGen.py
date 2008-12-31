@@ -1268,6 +1268,38 @@ class ModuleAutoGen(AutoGen):
     def __repr__(self):
         return "%s [%s]" % (self._MetaFile, self.Arch)
 
+    # Macros could be used in build_rule.txt (also Makefile)
+    def _GetMacros(self):
+        if self._Macro == None:
+            self._Macro = sdict()
+            self._Macro["WORKSPACE"             ] = self.WorkspaceDir
+            self._Macro["MODULE_NAME"           ] = self.Name
+            self._Macro["MODULE_GUID"           ] = self.Guid
+            self._Macro["MODULE_VERSION"        ] = self.Version
+            self._Macro["MODULE_TYPE"           ] = self.ModuleType
+            self._Macro["MODULE_FILE"           ] = self._MetaFile
+            self._Macro["MODULE_FILE_BASE_NAME" ] = self.FileBase
+            self._Macro["MODULE_RELATIVE_DIR"   ] = self.SourceDir
+            self._Macro["MODULE_DIR"            ] = os.path.join(self.WorkspaceDir, self.SourceDir)
+
+            self._Macro["BASE_NAME"             ] = self.Name
+
+            self._Macro["ARCH"                  ] = self.Arch
+            self._Macro["TOOLCHAIN"             ] = self.ToolChain
+            self._Macro["TOOLCHAIN_TAG"         ] = self.ToolChain
+            self._Macro["TARGET"                ] = self.BuildTarget
+
+            self._Macro["BUILD_DIR"             ] = self.PlatformInfo.BuildDir
+            self._Macro["BIN_DIR"               ] = os.path.join(self.PlatformInfo.BuildDir, self.Arch)
+            self._Macro["LIB_DIR"               ] = os.path.join(self.PlatformInfo.BuildDir, self.Arch)
+            self._Macro["MODULE_BUILD_DIR"      ] = self.BuildDir
+            self._Macro["OUTPUT_DIR"            ] = self.OutputDir
+            self._Macro["DEBUG_DIR"             ] = self.DebugDir
+
+            self._Macro["DEST_DIR_OUTPUT"       ] = "$(OUTPUT_DIR)"
+            self._Macro["DEST_DIR_DEBUG"        ] = "$(DEBUG_DIR)"
+        return self._Macro
+
     ## Return the module build data object
     def _GetModule(self):
         if self._Module == None:
@@ -1817,7 +1849,7 @@ class ModuleAutoGen(AutoGen):
     BuildType       = property(_GetBuildType)
     PcdIsDriver     = property(_GetPcdIsDriver)
     AutoGenVersion  = property(_GetAutoGenVersion)
-    Macro           = property(_GetSpecification)
+    Macros          = property(_GetMacros)
     Specification   = property(_GetSpecification)
 
     IsLibrary       = property(_IsLibrary)

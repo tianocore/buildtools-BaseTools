@@ -20,10 +20,8 @@ import os.path
 import string
 import EdkLogger as EdkLogger
 
+from GlobalData import *
 from BuildToolError import *
-
-## Regular expression for matching macro used in DSC/DEC/INF file inclusion
-gMacroPattern = re.compile("\$\(([_A-Z][_A-Z0-9]*)\)", re.UNICODE)
 
 ## GetSplitValueList
 #

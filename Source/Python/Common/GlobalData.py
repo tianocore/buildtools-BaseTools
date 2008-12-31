@@ -10,12 +10,15 @@
 # THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
+import re
+
 gEdkCompatibilityPkg = "EdkCompatibilityPkg"
 gWorkspace = "."
 gEdkSource = "EdkCompatibilityPkg"
 gEfiSource = "."
 gEcpSource = "EdkCompatibilityPkg"
 
+gOptions = None
 gGlobalDefines = {}
 gAllFiles = None
 
@@ -25,4 +28,7 @@ gOverrideDir = {}
 # for debug trace purpose when problem occurs
 gProcessingFile = ''
 gBuildingModule = ''
+
+## Regular expression for matching macro used in DSC/DEC/INF file inclusion
+gMacroPattern = re.compile("\$\(([_A-Z][_A-Z0-9]*)\)", re.UNICODE)
 

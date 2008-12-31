@@ -18,18 +18,28 @@ import os
 import re
 import string
 
+from Common.GlobalData import *
 from Common.BuildToolError import *
 from Common.Misc import tdict
 import Common.EdkLogger as EdkLogger
 
-## Convert file type to makefile macro name
+## Convert file type to file list macro name
 #
 #   @param      FileType    The name of file type
 #
 #   @retval     string      The name of macro
 #
-def FileType2Macro(FileType):
-    return "$(%s_LIST)" % FileType.replace("-", "_").upper()
+def FileListMacro(FileType):
+    return "%sS" % FileType.replace("-", "_").upper()
+
+## Convert file type to list file macro name
+#
+#   @param      FileType    The name of file type
+#
+#   @retval     string      The name of macro
+#
+def ListFileMacro(FileType):
+    return "%sS_LIST" % FileType.replace("-", "_").upper()
 
 ## Class for one build rule
 #
@@ -38,6 +48,8 @@ def FileType2Macro(FileType):
 # target for makefile.
 #
 class FileBuildRule:
+    IncListMacro = "INC_LIST"
+
     ## constructor
     #
     #   @param  Input       The dictionary represeting input file(s) for a rule
@@ -50,6 +62,9 @@ class FileBuildRule:
             EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No input files for a build rule")
         if Output == None:
             Output = []
+
+        self.FileListMacro = FileListMacro(Type)
+        self.ListFileMacro = ListFileMacro(Type)
 
         self.SourceFileType = [Type]
         self.SourceFileExtList = []
@@ -74,8 +89,27 @@ class FileBuildRule:
         if len(self.SourceFileType) > 1:
             self.IsMultipleInput = True
 
+        # 
+        # Search macros used in command lines for <FILE_TYPE>_LIST and INC_LIST.
+        # If found, generate a file to keep the input files used to get over the
+        # limitation of command line length
+        # 
+        self.MacroList = []
         if len(Command) == 0:
             self.IsMultipleInput = False
+        else:
+            for CmdLine in Command:
+                self.MacroList.extend(gMacroPattern.findall(CmdLine))
+
+        if self.ListFileMacro in self.MacroList:
+            self.GenerateListFile = True
+        else:
+            self.GenerateListFile = False
+
+        if self.IncListMacro in self.MacroList:
+            self.GenerateIncListFile = True
+        else:
+            self.GenerateIncListFile = False
 
         self.DestFileList = Output
         self.DestFile = ""
@@ -142,11 +176,7 @@ class FileBuildRule:
             SrcFileDir = ""
             SrcPath = ""
             # SourceFile must be a list
-            SrcFileList = []
-            for FileType in self.SourceFileType:
-                Macro = FileType2Macro(FileType)
-                SrcFileList.append(Macro)
-            SrcFile = " ".join(SrcFileList)
+            SrcFile = "$(%s)" % self.FileListMacro
 
         # destination file
         for Index in range(len(self.DestFileList)):

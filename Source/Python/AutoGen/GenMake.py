@@ -23,6 +23,7 @@ from Common.EdkIIWorkspaceBuild import *
 from Common.EdkIIWorkspace import *
 from Common.BuildToolError import *
 from Common.Misc import *
+from Common.String import *
 from BuildEngine import *
 import Common.GlobalData as GlobalData
 
@@ -141,9 +142,6 @@ class BuildFile(object):
     }
 
     _INC_FLAG_ = {"MSFT" : "/I", "GCC" : "-I", "INTEL" : "-I"}
-
-    _LIB_GROUP_START_ = {"MSFT" : "", "GCC" : "-(", "INTEL" : ""}
-    _LIB_GROUP_END = {"MSFT" : "", "GCC" : "-)", "INTEL" : ""}
 
     ## Constructor of BuildFile
     #
@@ -271,23 +269,8 @@ ${END}
 #
 # Build Macro
 #
-${BEGIN}${source_file_macro}
+${BEGIN}${file_macro}
 ${END}
-
-${BEGIN}${target_file_macro}
-${END}
-
-SOURCE_FILES = ${BEGIN}${source_file_macro_name} ${END}
-
-TARGET_FILES = ${BEGIN}${target_file_macro_name} ${END}
-
-INC = ${BEGIN}${include_path_prefix}${include_path} \\
-      ${END}
-
-LIBS = ${BEGIN}${library_file} \\
-       ${END}${BEGIN}${system_library} \\
-       ${END} \\
-       $(LIB_LIST)
 
 COMMON_DEPS = ${BEGIN}${common_dependency_file} \\
               ${END}
@@ -423,6 +406,8 @@ cleanlib:
         self.BuildTargetList = []           # [target string]
         self.PendingBuildTargetList = []    # [FileBuildRule objects]
         self.CommonFileDependency = []
+        self.FileDatabase = {}
+        self.ListFileSet = set()
 
         self.FileDependency = []
         self.LibraryBuildCommandList = []
@@ -481,45 +466,45 @@ cleanlib:
             ToolsFlag.append("%s_FLAGS = %s" % (tool, self._AutoGenObject.BuildOption[tool]))
 
         if self._AutoGenObject.IsLibrary:
-            if "STATIC-LIBRARY-FILE" in self.DestFileDatabase:
-                self.ResultFileList = self.DestFileDatabase["STATIC-LIBRARY-FILE"]
+            if "STATIC_LIBRARY_FILES" in self.FileDatabase:
+                self.ResultFileList = self.FileDatabase["STATIC_LIBRARY_FILES"]
         elif self._AutoGenObject.ModuleType == "USER_DEFINED":
-            if "DYNAMIC-LIBRARY-FILE" in self.DestFileDatabase:
-                self.ResultFileList = self.DestFileDatabase["DYNAMIC-LIBRARY-FILE"]
+            if "DYNAMIC_LIBRARY_FILES" in self.FileDatabase:
+                self.ResultFileList = self.FileDatabase["DYNAMIC_LIBRARY_FILES"]
         if len(self.ResultFileList) == 0:
             EdkLogger.error("build", AUTOGEN_ERROR, "Nothing to build",
                             ExtraData="[%s]" % str(self._AutoGenObject))
 
-        SourceFileMacroNameList = []
-        SourceFileMacroList = [] # macro name = file list
-        for FileType in self.SourceFileDatabase:
-            ListFileName = "%s.lst" % FileType.replace("-", "_").lower()
-            Macro = "%s_LIST" % FileType.replace("-", "_").upper()
-            SourceFileMacroNameList.append("$(%s)" % Macro)
-            Template = TemplateString()
-            Template.Append("%s = ${BEGIN} \\\n    ${source_file}${END}\n" % Macro,
-                            {"source_file" : self.SourceFileDatabase[FileType]})
-            SourceFileMacroList.append(str(Template))
-            SaveFileOnChange(
-                os.path.join(self._AutoGenObject.OutputDir,  ListFileName),
-                "\n".join(self.SourceFileDatabase[FileType]),
-                False
-                )
-        TargetFileMacroList = []
-        TargetFileMacroNameList = []
-        for FileType in self.DestFileDatabase:
-            ListFileName = "%s.lst" % FileType.replace("-", "_").lower()
-            Macro = "%s_LIST" % FileType.replace("-", "_").upper()
-            TargetFileMacroNameList.append("$(%s)" % Macro)
-            Template = TemplateString()
-            Template.Append("%s = ${BEGIN} \\\n    ${target_file}${END}\n" % Macro,
-                            {"target_file" : self.DestFileDatabase[FileType]})
-            TargetFileMacroList.append(str(Template))
-            SaveFileOnChange(
-                os.path.join(self._AutoGenObject.OutputDir,  ListFileName),
-                "\n".join(self.DestFileDatabase[FileType]),
-                False
-                )
+        FileMacroList = [] # macro name = file list
+        for FileListMacro in self.FileDatabase:
+            FileMacroTemplate = TemplateString()
+            if FileListMacro in self.ListFileSet:
+                ListFileName = os.path.join(self._AutoGenObject.OutputDir, "%s.lst" % FileListMacro.lower())
+                ListFileMacro = "%s_LIST" % FileListMacro
+                FileMacroTemplate.Append("%s = %s\n" % (ListFileMacro, ListFileName))
+                SaveFileOnChange(
+                    ListFileName,
+                    "\n".join(ReplaceMacros(self.FileDatabase[FileListMacro], self._AutoGenObject.Macros)),
+                    False
+                    )
+            FileMacroTemplate.Append("%s = ${BEGIN} \\\n    ${source_file}${END}\n" % FileListMacro,
+                            {"source_file" : self.FileDatabase[FileListMacro]})
+            FileMacroList.append(str(FileMacroTemplate))
+
+        # INC_LIST is special
+        FileMacroTemplate = TemplateString()
+        IncPrefix = self._INC_FLAG_[self._AutoGenObject.ToolChainFamily]
+        IncludePathList = [IncPrefix+P for P in  self._AutoGenObject.IncludePathList]
+        if FileBuildRule.IncListMacro in self.ListFileSet:
+            ListFileName = os.path.join(self._AutoGenObject.OutputDir, "%s.lst" % FileBuildRule.IncListMacro.lower())
+            SaveFileOnChange(ListFileName, "\n".join(IncludePathList), False)
+            FileMacroTemplate.Append("%s = %s\n" % (FileBuildRule.IncListMacro, ListFileName))
+        FileMacroTemplate.Append(
+                            "INC = ${BEGIN}${include_path} \\\n      ${END}",
+                            {"include_path" : IncludePathList,}
+                            )
+        FileMacroList.append(str(FileMacroTemplate))
+
         # R8 modules need <BaseName>StrDefs.h for string ID
         #if self._AutoGenObject.AutoGenVersion < 0x00010005 and len(self._AutoGenObject.UnicodeFileList) > 0:
         #    BcTargetList = ['strdefs']
@@ -566,20 +551,13 @@ cleanlib:
             "module_entry_point"        : ModuleEntryPoint,
             "image_entry_point"         : ImageEntryPoint,
             "arch_entry_point"          : ArchEntryPoint,
-            "include_path_prefix"       : self._INC_FLAG_[self._AutoGenObject.ToolChainFamily],
-            "include_path"              : self._AutoGenObject.IncludePathList,
-            "library_file"              : self.LibraryFileList,
             "remaining_build_target"    : self.ResultFileList,
-            "system_library"            : self.SystemLibraryList,
             "common_dependency_file"    : self.CommonFileDependency,
             "create_directory_command"  : self.GetCreateDirectoryCommand(self.IntermediateDirectoryList),
             "clean_command"             : self.GetRemoveDirectoryCommand(["$(OUTPUT_DIR)"]),
             "cleanall_command"          : self.GetRemoveDirectoryCommand(["$(DEBUG_DIR)", "$(OUTPUT_DIR)"]),
             "dependent_library_build_directory" : self.LibraryBuildDirectoryList,
-            "source_file_macro"         : SourceFileMacroList,
-            "target_file_macro"         : TargetFileMacroList,
-            "source_file_macro_name"    : SourceFileMacroNameList,
-            "target_file_macro_name"    : TargetFileMacroNameList,
+            "file_macro"                : FileMacroList,
             "file_build_target"         : self.BuildTargetList,
             "backward_compatible_target": BcTargetList,
         }
@@ -644,9 +622,16 @@ cleanlib:
             SrcFileRelativePath = os.path.join(SourceDir, F)
 
             SrcFile, ExtraSrcFileList, DstFile, CommandList = SrcFileBuildRule.Apply(F, SourceDir, Separator, OverrideDestDir=NewDestDir)
-            if SrcFileType not in self.SourceFileDatabase:
-                self.SourceFileDatabase[SrcFileType] = []
-            self.SourceFileDatabase[SrcFileType].append(SrcFile)
+
+            if SrcFileBuildRule.FileListMacro not in self.FileDatabase:
+                self.FileDatabase[SrcFileBuildRule.FileListMacro] = []
+            self.FileDatabase[SrcFileBuildRule.FileListMacro].append(SrcFile)
+
+            if SrcFileBuildRule.GenerateListFile:
+                self.ListFileSet.add(SrcFileBuildRule.FileListMacro)
+            if SrcFileBuildRule.GenerateIncListFile:
+                self.ListFileSet.add(SrcFileBuildRule.IncListMacro)
+
             SourceFileList.append(SrcFileRelativePath)
             ExtraDenpendencies[SrcFileRelativePath] = ExtraSrcFileList
 
@@ -660,12 +645,15 @@ cleanlib:
                 if DstFileType == None:
                     DstFileType = "UNKNOWN-TYPE-FILE"
 
-                if DstFileType  in self.SourceFileDatabase:
-                    self.SourceFileDatabase[DstFileType].append(DstFile)
-                else:
-                    if DstFileType not in self.DestFileDatabase:
-                        self.DestFileDatabase[DstFileType] = []
-                    self.DestFileDatabase[DstFileType].append(DstFile)
+                if DstFileBuildRule:
+                    if DstFileBuildRule.FileListMacro not in self.FileDatabase:
+                        self.FileDatabase[DstFileBuildRule.FileListMacro] = []
+                    self.FileDatabase[DstFileBuildRule.FileListMacro].append(DstFile)
+
+                    if DstFileBuildRule.GenerateListFile:
+                        self.ListFileSet.add(DstFileBuildRule.FileListMacro)
+                    if DstFileBuildRule.GenerateIncListFile:
+                        self.ListFileSet.add(DstFileBuildRule.IncListMacro)
 
                 if DstFileBuildRule != None and DstFileBuildRule.IsMultipleInput:
                     if DstFileBuildRule not in self.PendingBuildTargetList:
@@ -687,14 +675,10 @@ cleanlib:
             while len(self.PendingBuildTargetList) > 0:
                 SrcFileBuildRule = self.PendingBuildTargetList.pop()
                 SrcFileList = []
-                for FileType in SrcFileBuildRule.SourceFileType:
-                    if FileType not in self.SourceFileDatabase:
-                        if FileType not in self.DestFileDatabase:
-                            continue
-                        else:
-                            SrcFileList.extend(self.DestFileDatabase[FileType])
-                    else:
-                        SrcFileList.extend(self.SourceFileDatabase[FileType])
+                if SrcFileBuildRule.FileListMacro not in self.FileDatabase:
+                    continue 
+                SrcFileList.extend(self.FileDatabase[SrcFileBuildRule.FileListMacro])
+
                 SrcFile, ExtraSrcFileList, DstFile, CommandList = SrcFileBuildRule.Apply(SrcFileList, None, Separator)
                 BuildTargetString = "%s : %s %s\n"\
                                     "\t%s\n" % (DstFile, SrcFile, " ".join(ExtraSrcFileList), "\n\t".join(CommandList))
@@ -706,12 +690,15 @@ cleanlib:
                     if DstFileType == None:
                         DstFileType = "UNKNOWN-TYPE-FILE"
 
-                    if DstFileType in self.SourceFileDatabase:
-                        self.SourceFileDatabase[DstFileType].append(DstFile)
-                    else:
-                        if DstFileType not in self.DestFileDatabase:
-                            self.DestFileDatabase[DstFileType] = []
-                        self.DestFileDatabase[DstFileType].append(DstFile)
+                    if DstFileBuildRule:
+                        if DstFileBuildRule.FileListMacro not in self.FileDatabase:
+                            self.FileDatabase[DstFileBuildRule.FileListMacro] = []
+                        self.FileDatabase[DstFileBuildRule.FileListMacro].append(DstFile)
+    
+                        if DstFileBuildRule.GenerateListFile:
+                            self.ListFileSet.add(DstFileBuildRule.FileListMacro)
+                        if DstFileBuildRule.GenerateIncListFile:
+                            self.ListFileSet.add(DstFileBuildRule.IncListMacro)
 
                     if DstFileBuildRule != None and DstFileBuildRule.IsMultipleInput:
                         TempBuildTargetList.append(DstFileBuildRule)
@@ -753,9 +740,15 @@ cleanlib:
 
                 SrcFile, ExtraSrcFileList, DstFile, CommandList = SrcFileBuildRule.Apply(F, self._AutoGenObject.DebugDir, Separator)
 
-                if SrcFileType not in self.SourceFileDatabase:
-                    self.SourceFileDatabase[SrcFileType] = []
-                self.SourceFileDatabase[SrcFileType].append(SrcFile)
+                if SrcFileBuildRule.FileListMacro not in self.FileDatabase:
+                    self.FileDatabase[SrcFileBuildRule.FileListMacro] = []
+                self.FileDatabase[SrcFileBuildRule.FileListMacro].append(SrcFile)
+
+                if SrcFileBuildRule.GenerateListFile:
+                    self.ListFileSet.add(SrcFileBuildRule.FileListMacro)
+                if SrcFileBuildRule.GenerateIncListFile:
+                    self.ListFileSet.add(SrcFileBuildRule.IncListMacro)
+
                 SourceFileList.append(SrcFileRelativePath)
                 ExtraDenpendencies[SrcFileRelativePath] = ExtraSrcFileList
 
@@ -769,12 +762,15 @@ cleanlib:
                     if DstFileType == None:
                         DstFileType = "UNKNOWN-TYPE-FILE"
 
-                    if DstFileType  in self.SourceFileDatabase:
-                        self.SourceFileDatabase[DstFileType].append(DstFile)
-                    else:
-                        if DstFileType not in self.DestFileDatabase:
-                            self.DestFileDatabase[DstFileType] = []
-                        self.DestFileDatabase[DstFileType].append(DstFile)
+                    if DstFileBuildRule:
+                        if DstFileBuildRule.FileListMacro not in self.FileDatabase:
+                            self.FileDatabase[DstFileBuildRule.FileListMacro] = []
+                        self.FileDatabase[DstFileBuildRule.FileListMacro].append(DstFile)
+    
+                        if DstFileBuildRule.GenerateListFile:
+                            self.ListFileSet.add(DstFileBuildRule.FileListMacro)
+                        if DstFileBuildRule.GenerateIncListFile:
+                            self.ListFileSet.add(DstFileBuildRule.IncListMacro)
 
                     if DstFileBuildRule != None and DstFileBuildRule.IsMultipleInput:
                         if DstFileBuildRule not in self.PendingBuildTargetList:
@@ -840,12 +836,17 @@ cleanlib:
         BuildTargetString = "%(dst)s : %(src)s\n"\
                             "\t$(CP) %(src)s %(dst)s\n"
         for File,FileType,FileBuildRule in BinaryFiles:
-            if FileType not in self.DestFileDatabase:
-                self.DestFileDatabase[FileType] = []
+            if FileBuildRule and FileBuildRule.FileListMacro not in self.FileDatabase:
+                self.FileDatabase[FileBuildRule.FileListMacro] = []
             Src = os.path.join("$(MODULE_DIR)", File)
             FileName = os.path.basename(File)
             Dst = os.path.join("$(OUTPUT_DIR)", FileName)
-            self.DestFileDatabase[FileType].append(Dst)
+            if FileBuildRule:
+                self.FileDatabase[FileBuildRule.FileListMacro].append(Dst)
+            elif FileType == "LIB":
+                if "STATIC_LIBRARY_FILES" not in self.FileDatabase:
+                    self.FileDatabase["STATIC_LIBRARY_FILES"] = []
+                self.FileDatabase["STATIC_LIBRARY_FILES"].append(Dst)
             self.ResultFileList.append(Dst)
             self.BuildTargetList.append(BuildTargetString % {"dst":Dst, "src":Src})
 
@@ -853,7 +854,11 @@ cleanlib:
     def ProcessDependentLibrary(self):
         for LibraryAutoGen in self._AutoGenObject.LibraryAutoGenList:
             self.LibraryBuildDirectoryList.append(LibraryAutoGen.BuildDir)
-            self.LibraryFileList.append(os.path.join(LibraryAutoGen.OutputDir, LibraryAutoGen.Name + ".lib"))
+            File = os.path.join(LibraryAutoGen.OutputDir, LibraryAutoGen.Name + ".lib")
+            self.LibraryFileList.append(File)
+            if "STATIC_LIBRARY_FILES" not in self.FileDatabase:
+                self.FileDatabase["STATIC_LIBRARY_FILES"] = []
+            self.FileDatabase["STATIC_LIBRARY_FILES"].append(File)
 
     ## Return a list containing source file's dependencies
     #
