@@ -75,7 +75,7 @@ def MyOptionParser():
 #    Parser.add_option("-f", "--force", action="store_true", type=None, dest="ForceRemove",
 #            help="Force creation - overwrite existing one.")
 
-    Parser.add_option("-y", "--yes", action="store_const", dest="Yes",
+    Parser.add_option("-y", "--yes", action="store_true", dest="Yes",
             help="Not asking question when deleting files.")
 
     Parser.add_option("-n", "--package-version", action="store", type="string", dest="PackageVersion",
@@ -110,9 +110,6 @@ def RemoveEmptyDirs(Path):
                     os.rmdir(FullPath)
                 else:
                     RemoveEmptyDirs(FullPath)
-#            if os.path.isdir(FullPath):
-#                if os.listdir(FullPath) == []:
-#                    os.rmdir(FullPath)
     # Remove itself
     if os.path.isdir(Path) and os.listdir(Path) == []:
         os.rmdir(Path)
@@ -164,12 +161,13 @@ def Main():
                 EdkLogger.error("RmPkg", UNKNOWN_ERROR, "User interrupt")
 
         # Remove all files
-        print "All files of the distribution package will be removed, do you want to continue?"
-        print "Press Y to remove all files or press other keys to quit:"
-        Input = Input = sys.stdin.readline()
-        Input = Input.replace('\r', '').replace('\n', '')
-        if Input.upper() != 'Y':
-            EdkLogger.error("RmPkg", UNKNOWN_ERROR, "User interrupt")
+        if not Options.Yes:
+            print "All files of the distribution package will be removed, do you want to continue?"
+            print "Press Y to remove all files or press other keys to quit:"
+            Input = Input = sys.stdin.readline()
+            Input = Input.replace('\r', '').replace('\n', '')
+            if Input.upper() != 'Y':
+                EdkLogger.error("RmPkg", UNKNOWN_ERROR, "User interrupt")
         
         # Remove all files
         MissingFileList = []
