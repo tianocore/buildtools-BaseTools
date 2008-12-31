@@ -21,6 +21,7 @@ import shutil
 import traceback
 import platform
 from optparse import OptionParser
+import shutil
 
 import Common.EdkLogger as EdkLogger
 from Common.BuildToolError import *
@@ -68,7 +69,7 @@ def CheckEnvVariable():
 #   @retval Args  Target of build command
 #
 def MyOptionParser():
-    UsageString = "%prog [-f] [-t template-file] [-q | -v | -d debug_level] <dist_package1> <dist_package2> ..."
+    UsageString = "%prog [-y] [-q | -v | -d debug_level] -g guid -n version "
 
     Parser = OptionParser(description=__copyright__,version=__version__,prog="RmPkg",usage=UsageString)
 
@@ -76,6 +77,9 @@ def MyOptionParser():
 
 #    Parser.add_option("-f", "--force", action="store_true", type=None, dest="ForceRemove",
 #            help="Force creation - overwrite existing one.")
+
+    Parser.add_option("-y", "--yes", action="store_const", dest="Yes",
+            help="Not asking question when deleting files.")
 
     Parser.add_option("-n", "--package-version", action="store", type="string", dest="PackageVersion",
             help="The version of distribution package to be removed.")
@@ -95,14 +99,22 @@ def MyOptionParser():
     Parser.set_defaults(LogLevel=EdkLogger.INFO)
 
     (Opt, Args)=Parser.parse_args()
-    # error check
-    if len(Args) == 0:
-        EdkLogger.error("RmPkg", OPTION_MISSING, ExtraData=Parser.get_usage())
-    if len(Args) > 1:
-        EdkLogger.error("RmPkg", OPTION_NOT_SUPPORTED, ExtraData="Only one distribution package can be removed at one time.")
 
-    Opt.DistPackage = Args[0]
     return Opt
+
+## Remove all empty dirs under the path
+def RemoveEmptyDirs(Path):
+    for Root, Dirs, Files in os.walk(Path):
+        for Dir in Dirs:
+            FullPath = os.path.normpath(os.path.join(Root, Dir))
+            if os.path.isdir(FullPath):
+                if os.listdir(FullPath) == []:
+                    os.rmdir(FullPath)
+                else:
+                    RemoveEmptyDirs(FullPath)
+            if os.path.isdir(FullPath):
+                if os.listdir(FullPath) == []:
+                    os.rmdir(FullPath)
 
 ## Tool entrance method
 #
@@ -115,9 +127,11 @@ def MyOptionParser():
 #
 def Main():
     EdkLogger.Initialize()
-    Options = None
+    Options = MyOptionParser()
     try:
-        Options = MyOptionParser()
+        if not Options.PackageGuid and not Options.PackageVersion:
+            EdkLogger.error("RmPkg", OPTION_MISSING, ExtraData="The GUID and Version of distribution package must be specified")
+        
         if Options.LogLevel < EdkLogger.DEBUG_9:
             EdkLogger.SetLevel(Options.LogLevel + 1)
         else:
@@ -125,29 +139,61 @@ def Main():
 
         CheckEnvVariable()
         WorkspaceDir = os.environ["WORKSPACE"]
-        if not Options.InstallDir:
-            Options.InstallDir = WorkspaceDir
 
-        # prepare check dependency
-        Db = IpiDatabase(os.path.normpath(os.path.join(WorkspaceDir, "Conf/.cache/XML.db")))
+        # Prepare check dependency
+        Db = IpiDatabase(os.path.normpath(os.path.join(WorkspaceDir, "Conf/DistributionPackageDatabase.db")))
         Db.InitDatabase()
         Dep = DependencyRules(Db)
         
-        if not Dep.CheckDpDepexForRemove(Options.PackageGuid, Optins.PackageVersion):
-            pass
-#        DistPkg = Db.GetDp(Options.PackageGuid, Options.PackageVersion)
+        Guid = Options.PackageGuid
+        Version = Options.PackageVersion
+        # Check Dp existing
+        if not Dep.CheckDpExists(Guid, Version):
+            EdkLogger.error("RmPkg", UNKNOWN_ERROR, "This distribution package are not installed!")
         
+        # Check Dp depex
+        if not Dep.CheckDpDepexForRemove(Guid, Version):
+            print "Some packages/modules are depending on this distribution package, do you really want to remove it?"
+            print "Press Y to delete all files or press other keys to quit:"
+            Input = Input = sys.stdin.readline()
+            Input = Input.replace('\r', '').replace('\n', '')
+            if Input.upper() != 'Y':
+                EdkLogger.error("RmPkg", UNKNOWN_ERROR, "User interrupt")
+
+        # Remove all files
         PackagePathList = []
-        for Pkg in Db.GetPackageListFromDp(Options.PackageGuid, Options.PackageVersion):
+        for Pkg in Db.GetPackageListFromDp(Guid, Version):
             PackagePathList.append(Pkg[2])
+            print Pkg[2]
             
-        ModulePathList = Db.GetModuleInstallPathListFromDp(Options.PackageGuid, Options.PackageVersion)
+        ModulePathList = Db.GetModuleInstallPathListFromDp(Guid, Version)
+        for Item in ModulePathList:
+            print Item
         
         FilePathList = Db.GetDpFileList(Options.PackageGuid, Options.PackageVersion)
+        for Item in FilePathList:
+            print Item
 #        TODO: Remove package from DB
 #        TODO: Remove installation directory
         #RemoveDirectory(PackagePath, True)
-        Db.RemoveDpObj(Options.PackageGuid, Options.PackageVersion)
+        #Db.RemoveDpObj(Options.PackageGuid, Options.PackageVersion)
+
+        print "All files of the distribution package will be removed, do you want to continue?"
+        print "Press Y to remove all files or press other keys to quit:"
+        Input = Input = sys.stdin.readline()
+        Input = Input.replace('\r', '').replace('\n', '')
+        if Input.upper() != 'Y':
+            EdkLogger.error("RmPkg", UNKNOWN_ERROR, "User interrupt")
+        #DistPkg = Db.GetDp(Options.PackageGuid, Optins.PackageVersion)
+        #TODO: Remove package from DB
+        #TODO: Remove installation directory
+        #RemoveDirectory(PackagePath, True)
+        #shutil.rmtree('C:\\MyWork\\FFF\\X64\\VirtualMemory.h')
+        #os.remove('C:\\MyWork\\FFF\\X64\\VirtualMemory.h')
+        #os.rmdir(path)
+       # print os.listdir('C:\\MyWork\\FFF\\X64\\AAA')
+        #RemoveEmptyDirs('C:\\MyWork\\FFF')
+        #os.removedirs('C:\\MyWork\\FFF')
 
     except FatalError, X:
         if Options and Options.LogLevel < EdkLogger.DEBUG_9:

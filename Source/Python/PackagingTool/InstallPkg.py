@@ -105,13 +105,7 @@ def MyOptionParser():
     Parser.set_defaults(LogLevel=EdkLogger.INFO)
 
     (Opt, Args)=Parser.parse_args()
-    # error check
-#    if len(Args) == 0:
-#        EdkLogger.error("InstallPkg", OPTION_MISSING, ExtraData=Parser.get_usage())
-#    if len(Args) > 1:
-#        EdkLogger.error("InstallPkg", OPTION_NOT_SUPPORTED, ExtraData="Only one distribution package can be installed")
 
-    #Opt.PackageFile = Args[0]
     return Opt
 
 def InstallNewPackage(WorkspaceDir, Path):
@@ -167,7 +161,7 @@ def Main():
         DistPkg = DistPkgObj.FromXml(DistPkgFile)
 
         # prepare check dependency
-        Db = IpiDatabase(os.path.normpath(os.path.join(WorkspaceDir, "Conf/.cache/XML.db")))
+        Db = IpiDatabase(os.path.normpath(os.path.join(WorkspaceDir, "Conf/DistributionPackageDatabase.db")))
         Db.InitDatabase()
         Dep = DependencyRules(Db)
         
@@ -204,6 +198,13 @@ def Main():
             
             # Update package
             Package.PackageHeader.CombinePath = Package.PackageHeader.CombinePath.replace(PackagePath, NewPackagePath, 1)
+            # Update modules of package
+            Module = None
+            for ModuleGuid, ModuleVersion, ModulePath in Package.Modules:
+                Module = Package.Modules[ModuleGuid, ModuleVersion, ModulePath]
+                NewModulePath = ModulePath.replace(PackagePath, NewPackagePath, 1)
+                del Package.Modules[ModuleGuid, ModuleVersion, ModulePath]
+                Package.Modules[ModuleGuid, ModuleVersion, NewModulePath] = Module
             del DistPkg.PackageSurfaceArea[Guid,Version,Path]
             DistPkg.PackageSurfaceArea[Guid,Version,Package.PackageHeader.CombinePath] = Package
 
@@ -213,6 +214,7 @@ def Main():
 #            SaveFileOnChange(os.path.join(Options.InstallDir, Path, Package.Header.Name, ".dec"), Dec.PackageToDec(Package), False)
 
         # Check module exist and install
+        Module = None
         for Guid,Version,Path in DistPkg.ModuleSurfaceArea:
             ModulePath = os.path.dirname(Path)
             NewModulePath = ModulePath
@@ -255,7 +257,9 @@ def Main():
 #            shutil.copyfile(os.path.join(ContentFileDir, File), os.path.join(Options.InstallDir, File))
 #
         # update database
+        EdkLogger.quiet("Update Distribution Package Database ...")
         Db.AddDPObject(DistPkg)
+        EdkLogger.quiet("DONE")
 
     except FatalError, X:
         if Options and Options.LogLevel < EdkLogger.DEBUG_9:

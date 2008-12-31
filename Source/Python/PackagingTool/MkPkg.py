@@ -24,6 +24,7 @@ import platform
 from optparse import OptionParser
 import md5
 import time
+import uuid
 
 from PackageFile import *
 import Common.EdkLogger as EdkLogger
@@ -181,7 +182,7 @@ def Main():
                         FILE_NOT_FOUND,
                         "[%s] not found" % Item
                         )
-        #Check module file ex
+
         ContentFile = PackageFile("content.zip", "w")
         DistPkg = DistributionPackageClass()
         DistPkg.GetDistributionPackage(WorkspaceDir, Options.PackageFileList, Options.ModuleFileList)
@@ -197,6 +198,11 @@ def Main():
         if Options.TemplateFile:
             TempXML = DistributionPackageXml()
             DistPkg.Header = TempXML.FromXml(Options.TemplateFile).Header
+        # Add init dp information
+        else:
+            DistPkg.Header.Name = 'Distribution Package'
+            DistPkg.Header.Guid = str(uuid.uuid4())
+            DistPkg.Header.Version = '1.0'
         # Add Md5Sigature
         Md5Sigature = md5.new(open(str(ContentFile)).read())
         DistPkg.Header.Signature = Md5Sigature.hexdigest()

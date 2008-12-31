@@ -1354,7 +1354,7 @@ class PackageSurfaceAreaXml(object):
         for SubItem in XmlList(Item, '/PackageSurfaceArea/Modules/ModuleSurfaceArea'):
             Tmp = ModuleSurfaceAreaXml()
             Module = Tmp.FromXml(SubItem, 'ModuleSurfaceArea')
-            Package.Modules[(Module.ModuleHeader.Guid, Module.ModuleHeader.Version, Module.ModuleHeader.RelaPath)] = Module
+            Package.Modules[(Module.ModuleHeader.Guid, Module.ModuleHeader.Version, Module.ModuleHeader.CombinePath)] = Module
         
         self.Package = Package
         return self.Package

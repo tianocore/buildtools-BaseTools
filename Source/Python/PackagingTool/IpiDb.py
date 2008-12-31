@@ -35,7 +35,9 @@ from CommonDataClass import DistributionPackageClass
 #
 class IpiDatabase(object):
     def __init__(self, DbPath):
-        self.Conn = sqlite3.connect(DbPath)
+        self.Conn = sqlite3.connect(DbPath, isolation_level = 'DEFERRED')
+        self.Conn.execute("PRAGMA page_size=4096")
+        self.Conn.execute("PRAGMA synchronous=OFF")
         self.Cur = self.Conn.cursor()
         self.DpTable = 'DpInfo'
         self.PkgTable = 'PkgInfo'
