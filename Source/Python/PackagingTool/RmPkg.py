@@ -135,10 +135,19 @@ def Main():
         
         if not Dep.CheckDpDepexForRemove(Options.PackageGuid, Optins.PackageVersion):
             pass
-        DistPkg = Db.GetDp(Options.PackageGuid, Optins.PackageVersion)
-        TODO: Remove package from DB
-        TODO: Remove installation directory
+#        DistPkg = Db.GetDp(Options.PackageGuid, Options.PackageVersion)
+        
+        PackagePathList = []
+        for Pkg in Db.GetPackageListFromDp(Options.PackageGuid, Options.PackageVersion):
+            PackagePathList.append(Pkg[2])
+            
+        ModulePathList = Db.GetModuleInstallPathListFromDp(Options.PackageGuid, Options.PackageVersion)
+        
+        FilePathList = Db.GetDpFileList(Options.PackageGuid, Options.PackageVersion)
+#        TODO: Remove package from DB
+#        TODO: Remove installation directory
         #RemoveDirectory(PackagePath, True)
+        Db.RemoveDpObj(Options.PackageGuid, Options.PackageVersion)
 
     except FatalError, X:
         if Options and Options.LogLevel < EdkLogger.DEBUG_9:
