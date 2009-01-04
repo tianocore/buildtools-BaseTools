@@ -119,7 +119,10 @@ class CodeFragmentCollector:
     #
     def __EndOfFile(self):
         NumberOfLines = len(self.Profile.FileLinesList)
-        SizeOfLastLine = len(self.Profile.FileLinesList[-1])
+        SizeOfLastLine = NumberOfLines
+        if NumberOfLines > 0:
+            SizeOfLastLine = len(self.Profile.FileLinesList[-1])
+            
         if self.CurrentLineNumber == NumberOfLines and self.CurrentOffsetWithinLine >= SizeOfLastLine - 1:
             return True
         elif self.CurrentLineNumber > NumberOfLines:
