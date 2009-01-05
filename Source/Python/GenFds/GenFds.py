@@ -344,6 +344,7 @@ class GenFds :
     #   @retval int             Block size value
     #
     def GetFvBlockSize(FvObj):
+        DefaultBlockSize = 0x10000
         FdObj = None
         if GenFds.OnlyGenerateThisFd != None and GenFds.OnlyGenerateThisFd.upper() in GenFdsGlobalVariable.FdfParser.Profile.FdDict.keys():
             FdObj = GenFdsGlobalVariable.FdfParser.Profile.FdDict[GenFds.OnlyGenerateThisFd.upper()]
@@ -357,7 +358,9 @@ class GenFds :
                                     return FvObj.BlockSizeList[0][0]
                                 else:
                                     return ElementRegion.BlockSizeOfRegion(ElementFd.BlockSizeList)
-            return 0x10000
+            if FvObj.BlockSizeList != []:
+                return FvObj.BlockSizeList[0][0]
+            return DefaultBlockSize
         else:
             for ElementRegion in FdObj.RegionList:
                     if ElementRegion.RegionType == 'FV':
@@ -367,7 +370,7 @@ class GenFds :
                                     return FvObj.BlockSizeList[0][0]
                                 else:
                                     return ElementRegion.BlockSizeOfRegion(ElementFd.BlockSizeList)
-            return 0x10000
+            return DefaultBlockSize
 
     ## DisplayFvSpaceInfo()
     #
