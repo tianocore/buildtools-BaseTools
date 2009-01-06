@@ -1086,14 +1086,14 @@ ${BEGIN}\t-@${create_directory_command}\n${END}\
     # Compose a dict object containing information used to do replacement in template
     def _CreateTemplateDict(self):
         Separator = self._SEP_[self._FileType]
+        if self._FileType not in self._AutoGenObject.CustomMakefile:
+            EdkLogger.error('build', OPTION_NOT_SUPPORTED, "No custom makefile for %s" % self._FileType,
+                            ExtraData="[%s]" % str(self._AutoGenObject))
+        MakefilePath = os.path.join(
+                                self._AutoGenObject.WorkspaceDir,
+                                self._AutoGenObject.CustomMakefile[self._FileType]
+                                )
         try:
-            if self._FileType not in self._AutoGenObject.CustomMakefile:
-                EdkLogger.error('build', OPTION_NOT_SUPPORTED, "No custom makefile for %s" % self._FileType,
-                                ExtraData="[%s]" % str(self._AutoGenObject))
-            MakefilePath = os.path.join(
-                                    self._AutoGenObject.WorkspaceDir,
-                                    self._AutoGenObject.CustomMakefile[self._FileType]
-                                    )
             CustomMakefile = open(MakefilePath, 'r').read()
         except:
             EdkLogger.error('build', FILE_OPEN_FAILURE, File=str(self._AutoGenObject),
