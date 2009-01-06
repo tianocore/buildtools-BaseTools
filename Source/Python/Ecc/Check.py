@@ -13,7 +13,7 @@
 import os
 import re
 from CommonDataClass.DataClass import *
-from Common.DataType import SUP_MODULE_LIST
+from Common.DataType import SUP_MODULE_LIST_STRING, TAB_VALUE_SPLIT
 from EccToolError import *
 import EccGlobalData
 import c
@@ -411,9 +411,7 @@ class Check(object):
         if EccGlobalData.gConfig.DoxygenCheckCommentDescription == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             pass
 
-    #
     # Check whether comment lines with '///< ... text ...' format, if it is used, it should be after the code section.
-    #
     def DoxygenCheckCommentFormat(self):
         if EccGlobalData.gConfig.DoxygenCheckCommentFormat == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen comment ///< ...")
@@ -428,9 +426,7 @@ class Check(object):
                         FullName = os.path.join(Dirpath, F)
                         MsgList = c.CheckDoxygenTripleForwardSlash(FullName)
         
-    #
     # Check whether only Doxygen commands allowed to mark the code are @bug and @todo.
-    #
     def DoxygenCheckCommand(self):
         if EccGlobalData.gConfig.DoxygenCheckCommand == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen command ...")
@@ -485,16 +481,18 @@ class Check(object):
             LibraryClasses = {}
             for Record in RecordSet:
                 List = Record[1].split('|', 1)
-                SupModType = SUP_MODULE_LIST
+                SupModType = []
                 if len(List) == 1:
-                    SupModType = SupModType
+                    SupModType = SUP_MODULE_LIST_STRING.split(TAB_VALUE_SPLIT)
                 elif len(List) == 2:
                     SupModType = List[1].split()
                 
                 if List[0] not in LibraryClasses:
                     LibraryClasses[List[0]] = SupModType
                 else:
-                    LibraryClasses[List[0]].extend(SupModType)
+                    for Item in SupModType:
+                        if Item not in LibraryClasses[List[0]]:
+                            LibraryClasses[List[0]].append(Item)
                 
                 if Record[2] != 'BASE' and Record[2] not in SupModType:
                     EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_LIBRARY_INSTANCE_2, OtherMsg = "The Library Class '%s' does not specify its supported module types" % (List[0]), BelongsToTable = 'Inf', BelongsToItem = Record[0])
