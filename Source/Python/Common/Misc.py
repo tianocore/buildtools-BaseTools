@@ -227,6 +227,9 @@ def SaveFileOnChange(File, Content, IsBinaryFile=True):
         EdkLogger.error(None, FILE_CREATE_FAILURE, ExtraData=File)
     Fd.write(Content)
     Fd.close()
+    # just in case
+    while not Fd.closed:
+        pass
     return True
 
 ## Make a Python object persistent on file system
