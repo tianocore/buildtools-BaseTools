@@ -672,8 +672,11 @@ class Build():
     #   @param  FdList=[]           The FD names to be individually built
     #   @param  FvList=[]           The FV names to be individually built
     #   @param  MakefileType        The type of makefile (for MSFT make or GNU make)
-    #   @param  SpawnMode           Indicate multi-thread build mode
+    #   @param  SilentMode          Indicate multi-thread build mode
     #   @param  ThreadNumber        The maximum number of thread if in multi-thread build mode
+    #   @param  SkipAutoGen         Skip AutoGen step
+    #   @param  Reparse             Re-parse all meta files
+    #   @param  SkuId               SKU id from command line
     #
     def __init__(self, Target, WorkspaceDir, Platform, Module, Arch, ToolChain,
                  BuildTarget, FlashDefinition, FdList=[], FvList=[],
@@ -698,6 +701,7 @@ class Build():
         self.SkipAutoGen    = SkipAutoGen
         self.Reparse        = Reparse
         self.SkuId          = SkuId
+        self.SpawnMode      = True
 
         self.TargetTxt      = TargetTxtClassObject()
         self.ToolDef        = ToolDefClassObject()
@@ -800,7 +804,6 @@ class Build():
 
         if self.ThreadNumber == 0:
             self.ThreadNumber = 1
-        self.SpawnMode = True
 
         if self.PlatformFile == None:
             self.PlatformFile = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM]
