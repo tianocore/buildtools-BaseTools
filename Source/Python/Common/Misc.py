@@ -228,7 +228,7 @@ def SaveFileOnChange(File, Content, IsBinaryFile=True):
     Fd.write(Content)
     Fd.close()
     # just in case
-    while not Fd.closed:
+    while not os.path.exists(File):
         pass
     return True
 
