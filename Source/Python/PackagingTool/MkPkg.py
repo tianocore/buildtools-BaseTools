@@ -76,32 +76,29 @@ def CheckEnvVariable():
 #
 def MyOptionParser():
     #UsageString = "%prog [-f] [-t template-file] [-q | -v | -d debug_level] [-o distribution_file] [-m module_file] [-p package_file]"
-    UsageString = "%prog [-t template-file] [-q | -v | -d debug_level] [-o distribution_file] [-m module_file] [-p package_file]"
+    UsageString = "%prog [-x xml-file-header] [-t tools-directory] [-f misc-files] [-q | -v | -d debug_level] [-o distribution_file] [-m module_file] [-p package_file]"
 
     Parser = OptionParser(description=__copyright__,version=__version__,prog="MkPkg",usage=UsageString)
 
     Parser.add_option("-?", action="help", help="show this help message and exit")
 
     Parser.add_option("-o", "--output-file", action="store", type="string", dest="DistributionFile",
-            help="The distribution file to be created.")
+            help="Specify the distribution file to be created.")
 
-#    Parser.add_option("-f", "--force", action="store_true", type=None, dest="ForceCreate",
-#            help="Force creation - overwrite existing one.")
+    Parser.add_option("-f", "--misc-files", action="append", type="string", dest="MiscFiles",
+            help="Specify any misc files.")
 
-    Parser.add_option("-t", "--template-file", action="store", type=None, dest="TemplateFile",
-            help="The name of the FAR template to be used for creating the distribution file.")
+    Parser.add_option("-x", "--xml-file-header", action="store", type=None, dest="TemplateFile",
+            help="Specify the xml file which includes header information for creating the distribution file.")
+
+    Parser.add_option("-t", "--tools-directory", action="store", type=None, dest="ToolsDir",
+            help="Specify the directory name of tools.")
 
     Parser.add_option("-m", "--module", action="append", type="string", dest="ModuleFileList",
             help="The inf file of module to be distributed standalone.")
 
     Parser.add_option("-p", "--package", action="append", type="string", dest="PackageFileList",
             help="The inf file of package to be distributed.")
-
-    #Parser.add_option("-s", "--scan", action="store_true", dest="Scan",
-    #    help="The application will scan the workspace to locate INF and/or DEC"\
-    #         "files that do not have an associated MSA or SPD file.  It will "\
-    #         "provide an output report displaying these files. Using -si will "\
-    #         "prompt the user to create any missing MSA and/or SPD files for the workspace.")
 
     Parser.add_option("-q", "--quiet", action="store_const", dest="LogLevel", const=EdkLogger.QUIET,
             help="Disable all messages except FATAL ERRORS.")
@@ -148,6 +145,30 @@ def Main():
         CheckEnvVariable()
         WorkspaceDir = os.environ["WORKSPACE"]
         
+        # Init DistributionFile
+        if not Options.DistributionFile:
+            Options.DistributionFile = "DistributionPackage.zip"
+        
+        # Check Tools Dir
+        if Options.ToolsDir:
+            if not os.path.isdir(os.path.normpath(os.path.join(WorkspaceDir, Options.ToolsDir))):
+                EdkLogger.error(
+                                "\nMkPkg",
+                                FILE_NOT_FOUND,
+                                "Tools directory [%s] not found" % Options.ToolsDir
+                                )
+        
+        # Check misc files
+        if Options.MiscFiles:
+            for Item in Options.MiscFiles:
+                FullPath = os.path.normpath(os.path.join(WorkspaceDir, Item))
+                if not os.path.isfile(FullPath):
+                    EdkLogger.error(
+                                    "\nMkPkg",
+                                    FILE_NOT_FOUND,
+                                    "Misc file [%s] not found" % Item
+                                    )
+        
         #Check package file existing and valid
         if Options.PackageFileList:
             for Item in Options.PackageFileList:
@@ -191,9 +212,39 @@ def Main():
             ContentFile.Pack(os.path.dirname(os.path.normpath(os.path.join(WorkspaceDir,Item[2]))))
         for Item in DistPkg.ModuleSurfaceArea:
             ContentFile.Pack(os.path.dirname(os.path.normpath(os.path.join(WorkspaceDir,Item[2]))))
+
+        # Add tools files and information
+        if Options.ToolsDir:
+            ToolsFiles = MiscFileClass()
+            ToolsRoot = os.path.normpath(os.path.join(WorkspaceDir, Options.ToolsDir))
+            ContentFile.Pack(ToolsRoot)
+            ToolsFileList = GetFiles(ToolsRoot, ['CVS', '.svn'])
+            for Item in ToolsFileList:
+                OriPath = Item[len(WorkspaceDir)+1:]
+                FileObj = FileClass()
+                FileObj.Filename = OriPath
+                (Name, Ext) = os.path.splitext(OriPath)
+                if Ext.upper() in ['EXE', 'COM', 'EFI']:
+                    FileObj.Executable = 'True'
+                ToolsFiles.Files.append(FileObj)
+            DistPkg.Tools = ToolsFiles
         
+        # Add misc files and information
+        if Options.MiscFiles:
+            MiscFiles = MiscFileClass()
+            for Item in Options.MiscFiles:
+                ContentFile.PackFile(Item)
+                FileObj = FileClass()
+                FileObj.Filename = Item
+                (Name, Ext) = os.path.splitext(Item)
+                if Ext.upper() in ['EXE', 'COM', 'EFI']:
+                    FileObj.Executable = 'True'
+                MiscFiles.Files.append(FileObj)
+            DistPkg.MiscellaneousFiles = MiscFiles
+                
         print "Compressing Distribution Package File ..."
         ContentFile.Close()
+        
         # Add temp distribution header
         if Options.TemplateFile:
             TempXML = DistributionPackageXml()
@@ -203,6 +254,7 @@ def Main():
             DistPkg.Header.Name = 'Distribution Package'
             DistPkg.Header.Guid = str(uuid.uuid4())
             DistPkg.Header.Version = '1.0'
+        
         # Add Md5Sigature
         Md5Sigature = md5.new(open(str(ContentFile)).read())
         DistPkg.Header.Signature = Md5Sigature.hexdigest()
@@ -210,8 +262,6 @@ def Main():
         DistPkg.Header.Date = str(time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime()))
 
         # Finish final dp file
-        if not Options.DistributionFile:
-            Options.DistributionFile = "DistributionPackage.zip"
         DistPkgFile = PackageFile(Options.DistributionFile, "w")
         DistPkgFile.PackFile(str(ContentFile))
         DistPkgFile.PackData(DistPkgXml.ToXml(DistPkg), "dist.pkg")

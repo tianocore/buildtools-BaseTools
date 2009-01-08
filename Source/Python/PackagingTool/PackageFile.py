@@ -111,7 +111,7 @@ class PackageFile:
 
     def Pack(self, Top):
         if not os.path.isdir(Top):
-            EdkLogger.error("PackagingTool", FILE_UNKNOWN_ERROR, "%s is not a directory!")
+            EdkLogger.error("PackagingTool", FILE_UNKNOWN_ERROR, "%s is not a directory!" %Top)
 
         FilesToPack = []
         ParentDir = os.path.dirname(Top)
@@ -139,6 +139,7 @@ class PackageFile:
 
     def PackFile(self, File, ArcName=None):
         try:
+            print "packing ...", File
             self._ZipFile.write(File, ArcName)
         except BaseException, X:
             EdkLogger.error("PackagingTool", FILE_COMPRESS_FAILURE,

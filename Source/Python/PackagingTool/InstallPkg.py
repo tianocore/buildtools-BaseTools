@@ -73,7 +73,7 @@ def CheckEnvVariable():
 #
 def MyOptionParser():
     #UsageString = "%prog [-f] [-r] [-t] [-q | -v | -d <debug_level>] [-o <install_directory>] -i <distribution_package>"
-    UsageString = "%prog [-q | -v | -d <debug_level>] -i <distribution_package>"
+    UsageString = "%prog [-q | -v | -d <debug_level>] -i <distribution_package> -t -f"
 
     Parser = OptionParser(description=__copyright__,version=__version__,prog="InstallPkg",usage=UsageString)
 
@@ -81,18 +81,13 @@ def MyOptionParser():
 
     Parser.add_option("-i", "--distribution-package", action="store", type="string", dest="PackageFile",
             help="The distribution package to be installed")
-#    Parser.add_option("-o", "--install-directory", action="store", type="string", dest="InstallDir",
-#            help="Install the distribution in $(WORKSPACE)/INSTALLDIR")
-#
-#    Parser.add_option("-f", "--force", action="store_true", type=None, dest="ForceInstall",
-#            help="Force installation - ignore all rules.")
-#
-#    Parser.add_option("-r", "--reinstall", action="store_true", type=None, dest="ReInstall",
-#            help="Reinstall the distribution.")
-#
-#    Parser.add_option("-t", "--test", action="store_true", type=None, dest="TestMode",
-#            help="Try run the installation in order to find out dependency and collision issues.")
-#
+
+    Parser.add_option("-t", "--install-tools", action="store_true", type=None, dest="Tools",
+            help="To install tools or ignore tools of distribution package.")
+    
+    Parser.add_option("-f", "--misc-files", action="store_true", type=None, dest="MiscFiles",
+            help="To install misc file or ignore misc files of distribution package.")
+
     Parser.add_option("-q", "--quiet", action="store_const", dest="LogLevel", const=EdkLogger.QUIET,
             help="Disable all messages except FATAL ERRORS.")
 
@@ -120,6 +115,19 @@ def InstallNewPackage(WorkspaceDir, Path):
         return InstallNewPackage(WorkspaceDir, Input)
     else:
         return Path
+
+def InstallNewFile(WorkspaceDir, File):
+    FullPath = os.path.normpath(os.path.join(WorkspaceDir, File))
+    if os.path.exists(FullPath):
+        print "File [%s] already exists, please select another path, press [Enter] with no input to quit:" %File
+        Input = sys.stdin.readline()
+        Input = Input.replace('\r', '').replace('\n', '')
+        if Input == '':
+            EdkLogger.error("InstallPkg", UNKNOWN_ERROR, "User interrupt")
+        Input = Input.replace('\r', '').replace('\n', '')
+        return InstallNewFile(WorkspaceDir, Input)
+    else:
+        return File
 
 ## Tool entrance method
 #
@@ -150,6 +158,7 @@ def Main():
             EdkLogger.error("InstallPkg", OPTION_NOT_SUPPORTED, ExtraData="Must specify one distribution package")
 
         # unzip dist.pkg file
+        EdkLogger.quiet("Unzipping and parsing distribution package XML file ... ")
         DistFile = PackageFile(Options.PackageFile)
         UnpackDir = os.path.normpath(os.path.join(WorkspaceDir, ".tmp"))
         DistPkgFile = DistFile.UnpackFile(DistFileName, os.path.normpath(os.path.join(UnpackDir, DistFileName)))
@@ -250,16 +259,22 @@ def Main():
 #            for item in DistPkg.ModuleSurfaceArea[Guid,Version,Path].FileList:
 #                print item
 
-#        for File in DistPkg.Tools.Files:
-#            shutil.copyfile(os.path.join(ContentFileDir, File), os.path.join(Options.InstallDir, File))
-#
-#        for File in DistPkg.MiscellaneousFiles.Files:
-#            shutil.copyfile(os.path.join(ContentFileDir, File), os.path.join(Options.InstallDir, File))
-#
+        if Options.Tools:
+            EdkLogger.info("Installing tools ... ")
+            for File in DistPkg.Tools.Files:
+                FromFile = File.Filename
+                ToFile = InstallNewFile(WorkspaceDir, FromFile)
+                ContentZipFile.UnpackFile(FromFile, ToFile)
+        if Options.MiscFiles:
+            EdkLogger.info("Installing misc files ... ")
+            for File in DistPkg.MiscellaneousFiles.Files:
+                FromFile = File.Filename
+                ToFile = InstallNewFile(WorkspaceDir, FromFile)
+                ContentZipFile.UnpackFile(FromFile, ToFile)
+
         # update database
         EdkLogger.quiet("Update Distribution Package Database ...")
         Db.AddDPObject(DistPkg)
-        EdkLogger.quiet("DONE")
 
     except FatalError, X:
         if Options and Options.LogLevel < EdkLogger.DEBUG_9:
@@ -280,12 +295,15 @@ def Main():
         EdkLogger.quiet("(Python %s on %s) " % (platform.python_version(), sys.platform) + traceback.format_exc())
         ReturnCode = CODE_ERROR
     finally:
+        EdkLogger.quiet("Removing temp files ... ")
         if DistFile:
             DistFile.Close()
         if ContentZipFile:
             ContentZipFile.Close()
         if UnpackDir:
             shutil.rmtree(UnpackDir)
+        
+        EdkLogger.quiet("DONE")
         Progressor.Abort()
 
 if __name__ == '__main__':
