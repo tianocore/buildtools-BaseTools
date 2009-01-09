@@ -209,27 +209,49 @@ def SaveFileOnChange(File, Content, IsBinaryFile=True):
         BinaryFlag = 'b'
     else:
         BinaryFlag = ''
-    Fd = None
+
     if os.path.exists(File):
         try:
-            Fd = open(File, "r"+BinaryFlag)
+            if Content.splitlines() == open(File, "r"+BinaryFlag).read().splitlines():
+                return False
         except:
             EdkLogger.error(None, FILE_OPEN_FAILURE, ExtraData=File)
-        if Content.splitlines() == Fd.read().splitlines():
-            Fd.close()
-            return False
-        Fd.close()
-        # os.remove(File) # seems creating new file is faster than overwriting old one
+
     CreateDirectory(os.path.dirname(File))
     try:
-        Fd = open(File, "w"+BinaryFlag)
+        #
+        # There's a potential issue here in Windows system or Python during multi-thread
+        # build, which, sometimes, the created  file won't be availabe for a while
+        # for other processes even it's flushed/closed. Adding time.sleep(0.0001) 
+        # in method _MultiThreadBuildPlatform in build.py after makefile generated
+        # will make it happen very often.
+        # 
+        # Seems following ways solve this problem or reduce its occurrences:
+        # 
+        #   1. Use built-in function open() with bufsize=1. flush() and close()
+        #       can be used.
+        # 
+        #       Fd = open(File, "w"+BinaryFlag, bufsize=1)
+        #       Fd.write(Content)
+        #       Fd.close()
+        # 
+        #   2. Use built-in function open() to create file but don't assign the
+        #       file object to a temporary variable. Let garbage collection
+        #       mechanism to do cleanup works immediately.
+        # 
+        #       open(File, "w"+BinaryFlag).write(Content)
+        # 
+        #   3. Use os.open() to create file. os.close() can be used but don't 
+        #       use os.fsync() (don't know why).
+        # 
+        #       Fd = os.open(File, os.O_WRONLY|os.O_CREAT)
+        #       os.write(Fd, Content)
+        #       os.close(Fd)
+        # 
+        open(File, "w"+BinaryFlag).write(Content)
     except:
         EdkLogger.error(None, FILE_CREATE_FAILURE, ExtraData=File)
-    Fd.write(Content)
-    Fd.close()
-    # just in case
-    while not os.path.exists(File):
-        pass
+
     return True
 
 ## Make a Python object persistent on file system

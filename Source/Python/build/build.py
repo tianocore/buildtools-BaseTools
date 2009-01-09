@@ -235,7 +235,7 @@ def LaunchCommand(Command, WorkingDir):
     EndOfProcedure = None
     try:
         # launch the command
-        Proc = Popen(Command, stdout=PIPE, stderr=PIPE, env=os.environ, cwd=WorkingDir)
+        Proc = Popen(Command, stdout=PIPE, stderr=PIPE, env=os.environ, cwd=WorkingDir, bufsize=-1)
 
         # launch two threads to read the STDOUT and STDERR
         EndOfProcedure = Event()
@@ -442,11 +442,10 @@ class BuildTask:
                    or not ExitFlag.isSet()) and not BuildTask._ErrorFlag.isSet():
                 EdkLogger.debug(EdkLogger.DEBUG_8, "Pending Queue (%d), Ready Queue (%d)"
                                 % (len(BuildTask._PendingQueue), len(BuildTask._ReadyQueue)))
+
                 # get all pending tasks
                 BuildTask._PendingQueueLock.acquire()
                 BuildObjectList = BuildTask._PendingQueue.keys()
-                BuildTask._PendingQueueLock.release()
-
                 #
                 # check if their dependency is resolved, and if true, move them
                 # into ready queue
@@ -454,9 +453,8 @@ class BuildTask:
                 for BuildObject in BuildObjectList:
                     Bt = BuildTask._PendingQueue[BuildObject]
                     if Bt.IsReady():
-                        BuildTask._PendingQueueLock.acquire()
                         BuildTask._ReadyQueue[BuildObject] = BuildTask._PendingQueue.pop(BuildObject)
-                        BuildTask._PendingQueueLock.release()
+                BuildTask._PendingQueueLock.release()
 
                 # launch build thread until the maximum number of threads is reached
                 while not BuildTask._ErrorFlag.isSet():
@@ -477,6 +475,8 @@ class BuildTask:
                     BuildTask._RunningQueueLock.release()
 
                     Bt.Start()
+                    # avoid tense loop
+                    time.sleep(0.01)
 
                 # avoid tense loop
                 time.sleep(0.01)
