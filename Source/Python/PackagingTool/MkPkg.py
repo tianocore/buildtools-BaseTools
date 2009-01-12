@@ -75,8 +75,8 @@ def CheckEnvVariable():
 #   @retval Args  Target of build command
 #
 def MyOptionParser():
-    #UsageString = "%prog [-f] [-t template-file] [-q | -v | -d debug_level] [-o distribution_file] [-m module_file] [-p package_file]"
-    UsageString = "%prog [-x xml-file-header] [-t tools-directory] [-f misc-files] [-q | -v | -d debug_level] [-o distribution_file] [-m module_file] [-p package_file]"
+    UsageString = "%prog -m <module_file> -p <package_file> [-o distribution_file]
+                   [-x xml-file-header] [-t tools-directory] [-f misc-files] [-q | -v] [-h]"
 
     Parser = OptionParser(description=__copyright__,version=__version__,prog="MkPkg",usage=UsageString)
 
@@ -98,7 +98,7 @@ def MyOptionParser():
             help="The inf file of module to be distributed standalone.")
 
     Parser.add_option("-p", "--package", action="append", type="string", dest="PackageFileList",
-            help="The inf file of package to be distributed.")
+            help="The dec file of package to be distributed.")
 
     Parser.add_option("-q", "--quiet", action="store_const", dest="LogLevel", const=EdkLogger.QUIET,
             help="Disable all messages except FATAL ERRORS.")

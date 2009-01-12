@@ -72,8 +72,7 @@ def CheckEnvVariable():
 #   @retval Args  Target of build command
 #
 def MyOptionParser():
-    #UsageString = "%prog [-f] [-r] [-t] [-q | -v | -d <debug_level>] [-o <install_directory>] -i <distribution_package>"
-    UsageString = "%prog [-q | -v | -d <debug_level>] -i <distribution_package> -t -f"
+    UsageString = "%prog -i <distribution_package> [-t] [-f] [-q | -v] [-h]"
 
     Parser = OptionParser(description=__copyright__,version=__version__,prog="InstallPkg",usage=UsageString)
 
@@ -83,10 +82,10 @@ def MyOptionParser():
             help="The distribution package to be installed")
 
     Parser.add_option("-t", "--install-tools", action="store_true", type=None, dest="Tools",
-            help="To install tools or ignore tools of distribution package.")
+            help="Specify it to install tools or ignore the tools of the distribution package.")
     
     Parser.add_option("-f", "--misc-files", action="store_true", type=None, dest="MiscFiles",
-            help="To install misc file or ignore misc files of distribution package.")
+            help="Specify it to install misc file or ignore the misc files of the distribution package.")
 
     Parser.add_option("-q", "--quiet", action="store_const", dest="LogLevel", const=EdkLogger.QUIET,
             help="Disable all messages except FATAL ERRORS.")

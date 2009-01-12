@@ -66,7 +66,7 @@ def CheckEnvVariable():
 #   @retval Args  Target of build command
 #
 def MyOptionParser():
-    UsageString = "%prog [-y] [-q | -v | -d debug_level] -g guid -n version "
+    UsageString = "%prog -g <guid> -n <version> [-y] [-q | -v] [-h]"
 
     Parser = OptionParser(description=__copyright__,version=__version__,prog="RmPkg",usage=UsageString)
 
@@ -76,7 +76,7 @@ def MyOptionParser():
 #            help="Force creation - overwrite existing one.")
 
     Parser.add_option("-y", "--yes", action="store_true", dest="Yes",
-            help="Not asking question when deleting files.")
+            help="Not asking for confirmation when deleting files.")
 
     Parser.add_option("-n", "--package-version", action="store", type="string", dest="PackageVersion",
             help="The version of distribution package to be removed.")
