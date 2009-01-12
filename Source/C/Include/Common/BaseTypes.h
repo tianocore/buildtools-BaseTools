@@ -25,13 +25,15 @@
 #include <ProcessorBind.h>
 #include <stdarg.h>
 
+#ifndef GUID_DEFINED
+#define GUID_DEFINED
 typedef struct {
   UINT32  Data1;
   UINT16  Data2;
   UINT16  Data3;
   UINT8   Data4[8];
 } GUID;
-
+#endif 
 
 //
 // Modifiers to absract standard types to aid in debug of problems
