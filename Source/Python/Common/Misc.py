@@ -208,7 +208,7 @@ def IsChanged(File):
 #
 def SaveFileOnChange(File, Content, IsBinaryFile=True):
     if not IsBinaryFile:
-        Content = Content.replace("\n", "\r\n")
+        Content = Content.replace("\n", os.linesep)
 
     if os.path.exists(File):
         try:
@@ -226,8 +226,6 @@ def SaveFileOnChange(File, Content, IsBinaryFile=True):
         else:
             Fd = open(File, "wb")
             Fd.write(Content)
-            Fd.flush()
-            os.fsync(Fd.fileno())
             Fd.close()
     except:
         EdkLogger.error(None, FILE_CREATE_FAILURE, ExtraData=File)
