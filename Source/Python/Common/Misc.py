@@ -208,7 +208,7 @@ def IsChanged(File):
 #
 def SaveFileOnChange(File, Content, IsBinaryFile=True):
     if not IsBinaryFile:
-        Content = "\r\n".join(Content.splitlines())
+        Content = Content.replace("\n", "\r\n")
 
     if os.path.exists(File):
         try:
@@ -221,8 +221,8 @@ def SaveFileOnChange(File, Content, IsBinaryFile=True):
     try:
         if GlobalData.gIsWindows:
             from PyUtility import SaveFileToDisk
-            while not SaveFileToDisk(File, Content):
-                pass
+            if not SaveFileToDisk(File, Content):
+                EdkLogger.error(None, FILE_CREATE_FAILURE, ExtraData=File)
         else:
             Fd = open(File, "wb")
             Fd.write(Content)
