@@ -29,7 +29,6 @@ from Common import EdkLogger as EdkLogger
 from Common import GlobalData as GlobalData
 
 from BuildToolError import *
-from PyUtility import SaveFileToDisk
 
 ## Regular expression used to find out place holders in string template
 gPlaceholderPattern = re.compile("\$\{([^$()\s]+)\}", re.MULTILINE|re.UNICODE)
@@ -221,6 +220,7 @@ def SaveFileOnChange(File, Content, IsBinaryFile=True):
     CreateDirectory(os.path.dirname(File))
     try:
         if GlobalData.gIsWindows:
+            from PyUtility import SaveFileToDisk
             while not SaveFileToDisk(File, Content):
                 pass
         else:
