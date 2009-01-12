@@ -12,6 +12,8 @@
 
 import re
 
+gIsWindows = None
+
 gEdkCompatibilityPkg = "EdkCompatibilityPkg"
 gWorkspace = "."
 gEdkSource = "EdkCompatibilityPkg"

@@ -26,7 +26,10 @@ from UserDict import IterableUserDict
 from UserList import UserList
 
 from Common import EdkLogger as EdkLogger
+from Common import GlobalData as GlobalData
+
 from BuildToolError import *
+from PyUtility import SaveFileToDisk
 
 ## Regular expression used to find out place holders in string template
 gPlaceholderPattern = re.compile("\$\{([^$()\s]+)\}", re.MULTILINE|re.UNICODE)
@@ -205,50 +208,27 @@ def IsChanged(File):
 #   @retval     False           If the file content is the same
 #
 def SaveFileOnChange(File, Content, IsBinaryFile=True):
-    if IsBinaryFile:
-        BinaryFlag = 'b'
-    else:
-        BinaryFlag = ''
+    if not IsBinaryFile:
+        Content = "\r\n".join(Content.splitlines())
 
     if os.path.exists(File):
         try:
-            if Content.splitlines() == open(File, "r"+BinaryFlag).read().splitlines():
+            if Content == open(File, "rb").read():
                 return False
         except:
             EdkLogger.error(None, FILE_OPEN_FAILURE, ExtraData=File)
 
     CreateDirectory(os.path.dirname(File))
     try:
-        #
-        # There's a potential issue here in Windows system or Python during multi-thread
-        # build, which, sometimes, the created  file won't be availabe for a while
-        # for other processes even it's flushed/closed. Adding time.sleep(0.0001) 
-        # in method _MultiThreadBuildPlatform in build.py after makefile generated
-        # will make it happen very often.
-        # 
-        # Seems following ways solve this problem or reduce its occurrences:
-        # 
-        #   1. Use built-in function open() with bufsize=1. flush() and close()
-        #       can be used.
-        # 
-        #       Fd = open(File, "w"+BinaryFlag, bufsize=1)
-        #       Fd.write(Content)
-        #       Fd.close()
-        # 
-        #   2. Use built-in function open() to create file but don't assign the
-        #       file object to a temporary variable. Let garbage collection
-        #       mechanism to do cleanup works immediately.
-        # 
-        #       open(File, "w"+BinaryFlag).write(Content)
-        # 
-        #   3. Use os.open() to create file. os.close() can be used but don't 
-        #       use os.fsync() (don't know why).
-        # 
-        #       Fd = os.open(File, os.O_WRONLY|os.O_CREAT)
-        #       os.write(Fd, Content)
-        #       os.close(Fd)
-        # 
-        open(File, "w"+BinaryFlag).write(Content)
+        if GlobalData.gIsWindows:
+            while not SaveFileToDisk(File, Content):
+                pass
+        else:
+            Fd = open(File, "wb")
+            Fd.write(Content)
+            Fd.flush()
+            os.fsync(Fd.fileno())
+            Fd.close()
     except:
         EdkLogger.error(None, FILE_CREATE_FAILURE, ExtraData=File)
 

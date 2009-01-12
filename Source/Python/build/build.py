@@ -1286,6 +1286,11 @@ def Main():
     if Option.WarningAsError == True:
         EdkLogger.SetWarningAsError()
 
+    if platform.platform().find("Windows") >= 0:
+        GlobalData.gIsWindows = True
+    else:
+        GlobalData.gIsWindows = False
+
     EdkLogger.quiet(time.strftime("%H:%M:%S, %b.%d %Y ", time.localtime()) + "[%s]\n" % platform.platform())
     ReturnCode = 0
     MyBuild = None
