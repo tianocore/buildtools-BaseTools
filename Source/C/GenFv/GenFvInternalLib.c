@@ -33,6 +33,7 @@ Abstract:
 #include <assert.h>
 
 #include "GenFvInternalLib.h"
+#include "FvLib.h"
 #include "PeCoffLib.h"
 #include "WinNtInclude.h"
 
@@ -1398,6 +1399,16 @@ Returns:
     SecCoreEntryAddressPtr  = (EFI_PHYSICAL_ADDRESS *) ((UINTN) FvImage->Eof - IPF_SALE_ENTRY_ADDRESS_OFFSET);
     *SecCoreEntryAddressPtr = SecCorePhysicalAddress;
 
+  } else if (
+    (MachineType == EFI_IMAGE_MACHINE_IA32 ||
+     MachineType == EFI_IMAGE_MACHINE_X64) &&
+    (((UINTN)FvImage->Eof - (UINTN)FvImage->FileImage) >= IA32_X64_VTF_SIGNATURE_OFFSET) &&
+    (*(UINT32 *)(VOID*)((UINTN) FvImage->Eof - IA32_X64_VTF_SIGNATURE_OFFSET) ==
+      IA32_X64_VTF0_SIGNATURE)
+    ) {
+    //
+    // If VTF-0 signature is found, then no modifications are needed.
+    //
   } else if (MachineType == EFI_IMAGE_MACHINE_IA32 || MachineType == EFI_IMAGE_MACHINE_X64) {
     //
     // Get the location to update
