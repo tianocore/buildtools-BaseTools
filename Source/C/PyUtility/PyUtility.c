@@ -34,7 +34,7 @@ SaveFileToDisk (
   FileHandle = CreateFile(
                 File,
                 GENERIC_WRITE,
-                0,
+                FILE_SHARE_WRITE|FILE_SHARE_READ|FILE_SHARE_DELETE,
                 NULL,
                 CREATE_ALWAYS,
                 FILE_ATTRIBUTE_NORMAL,
@@ -61,10 +61,13 @@ SaveFileToDisk (
     goto Done;
   }
 
-  if (!FlushFileBuffers(FileHandle)) {
-    PyErr_SetString(PyExc_Exception, "File flush failure");
-    goto Done;
-  }
+  // 
+  // Flush buffer may slow down the whole build performance (average 10s slower)
+  // 
+  //if (!FlushFileBuffers(FileHandle)) {
+  //  PyErr_SetString(PyExc_Exception, "File flush failure");
+  //  goto Done;
+  //}
 
   // success!
   ReturnValue = Py_True;
