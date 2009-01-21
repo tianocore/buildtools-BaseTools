@@ -651,7 +651,9 @@ ScanSections(
 
   NtHdr->OptionalHeader.BaseOfCode = TextOffset;
 
+#if   defined (MDE_CPU_IA32)
   NtHdr->OptionalHeader.BaseOfData = DataOffset;
+#endif
   NtHdr->OptionalHeader.ImageBase = 0;
   NtHdr->OptionalHeader.SectionAlignment = CoffAlignment;
   NtHdr->OptionalHeader.FileAlignment = CoffAlignment;
