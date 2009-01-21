@@ -838,7 +838,7 @@ Returns:
 BOOLEAN
 SFPGetQuotedString (
   CHAR8       *Str,
-  int         Length
+  INTN         Length
   )
 /*++
 
@@ -1194,7 +1194,7 @@ UINTN
 t_strncmp (
   CHAR8  *Str1,
   CHAR8  *Str2,
-  int    Len
+  INTN    Len
   )
 {
   while (Len > 0) {
@@ -1272,7 +1272,7 @@ GetHexChars (
 
 BOOLEAN
 SFPGetGuid (
-  int         GuidStyle,
+  INTN         GuidStyle,
   EFI_GUID    *Value
   )
 /*++
