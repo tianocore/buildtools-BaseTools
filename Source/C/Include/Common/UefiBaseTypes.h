@@ -23,7 +23,13 @@
 //
 // Basical data type definitions introduced in UEFI.
 // 
-typedef GUID                      EFI_GUID;
+typedef struct {
+  UINT32  Data1;
+  UINT16  Data2;
+  UINT16  Data3;
+  UINT8   Data4[8];
+} EFI_GUID;
+
 typedef RETURN_STATUS             EFI_STATUS;
 typedef VOID                      *EFI_HANDLE;
 
