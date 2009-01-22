@@ -26,7 +26,6 @@
 #include <stdarg.h>
 
 #ifndef GUID_DEFINED
-#define GUID_DEFINED
 typedef struct {
   UINT32  Data1;
   UINT16  Data2;
