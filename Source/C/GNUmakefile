@@ -21,11 +21,14 @@ ifndef ARCH
   $(info Attempting to detect ARCH from 'uname -m': $(uname_m))
   ifeq ($(uname_m),x86_64)
     ARCH=X64
-  else ifeq ($(uname_m),i386)
+  endif
+  ifeq ($(uname_m),i386)
     ARCH=IA32
-  else ifeq ($(uname_m),i686)
+  endif
+  ifeq ($(uname_m),i686)
     ARCH=IA32
-  else
+  endif
+  ifndef ARCH
     $(info Could not detected ARCH from uname results)
     $(error ARCH is not defined!)
   endif
