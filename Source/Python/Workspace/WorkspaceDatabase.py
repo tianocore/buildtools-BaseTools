@@ -711,17 +711,7 @@ class DscBuildData(PlatformBuildClassObject):
     #
     def AddPcd(self, Name, Guid, Value):
         if (Name, Guid) not in self.Pcds:
-            self.Pcds[Name, Guid] = PcdClassObject(
-                                        Name,
-                                        Guid,
-                                        '',
-                                        '',
-                                        '',
-                                        '',
-                                        '',
-                                        {},
-                                        None
-                                        )
+            self.Pcds[Name, Guid] = PcdClassObject(Name, Guid, '', '', '', '', '', {}, None)
         self.Pcds[Name, Guid].DefaultValue = Value
 
     Arch                = property(_GetArch, _SetArch)
