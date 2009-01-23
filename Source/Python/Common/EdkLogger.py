@@ -58,7 +58,7 @@ _ErrorMessageTemplate = '\n\n%(tool)s...\n%(file)s(%(line)s): error %(errorcode)
 _ErrorMessageTemplateWithoutFile = '\n\n%(tool)s...\n : error %(errorcode)04X: %(msg)s\n\t%(extra)s'
 _WarningMessageTemplate = '%(tool)s...\n%(file)s(%(line)s): warning: %(msg)s'
 _WarningMessageTemplateWithoutFile = '%(tool)s: : warning: %(msg)s'
-_DebugMessageTemplate = '%(file)s(%(line)s): debug: %(msg)s'
+_DebugMessageTemplate = '%(file)s(%(line)s): debug: \n    %(msg)s'
 
 #
 # Flag used to take WARN as ERROR.
