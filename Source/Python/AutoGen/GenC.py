@@ -1341,7 +1341,16 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
             Dict['EXMAPPING_TABLE_EXTOKEN'].append(Pcd.TokenValue)
             if Phase == 'DXE':
                 GeneratedTokenNumber += NumberOfPeiLocalTokens
-            Dict['EXMAPPING_TABLE_LOCAL_TOKEN'].append(GeneratedTokenNumber)
+            #
+            # Per, PCD architecture specification, PCD Token Number is 1 based and 0 is defined as invalid token number.
+            # For each EX type PCD, a PCD Token Number is assigned. When the
+            # PCD Driver/PEIM map EX_GUID and EX_TOKEN_NUMBER to the PCD Token Number,
+            # the non-EX Protocol/PPI interface can be called to get/set the value. This assumption is made by
+            # Pcd Driver/PEIM in MdeModulePkg.
+            # Therefore, 1 is added to GeneratedTokenNumber to generate a PCD Token Number before being inserted
+            # to the EXMAPPING_TABLE. 
+            #
+            Dict['EXMAPPING_TABLE_LOCAL_TOKEN'].append(GeneratedTokenNumber + 1)
             Dict['EXMAPPING_TABLE_GUID_INDEX'].append(GuidList.index(TokenSpaceGuid))
 
     if GuidList != []:
