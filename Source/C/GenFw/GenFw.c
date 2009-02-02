@@ -92,16 +92,16 @@ Abstract:
 // Structure definition for a microcode header
 //
 typedef struct {
-  UINTN  HeaderVersion;
-  UINTN  PatchId;
-  UINTN  Date;
-  UINTN  CpuId;
-  UINTN  Checksum;
-  UINTN  LoaderVersion;
-  UINTN  PlatformId;
-  UINTN  DataSize;   // if 0, then TotalSize = 2048, and TotalSize field is invalid
-  UINTN  TotalSize;  // number of bytes
-  UINTN  Reserved[3];
+  UINT32  HeaderVersion;
+  UINT32  PatchId;
+  UINT32  Date;
+  UINT32  CpuId;
+  UINT32  Checksum;
+  UINT32  LoaderVersion;
+  UINT32  PlatformId;
+  UINT32  DataSize;   // if 0, then TotalSize = 2048, and TotalSize field is invalid
+  UINT32  TotalSize;  // number of bytes
+  UINT32  Reserved[3];
 } MICROCODE_IMAGE_HEADER;
 
 STATIC CHAR8 *mInImageName;
@@ -123,7 +123,7 @@ STATIC
 STATUS
 MicrocodeReadData (
   FILE          *InFptr,
-  UINTN         *Data
+  UINT32        *Data
   );
 
 STATIC
@@ -643,7 +643,6 @@ ScanSections(
     | EFI_IMAGE_FILE_LOCAL_SYMS_STRIPPED
     | EFI_IMAGE_FILE_32BIT_MACHINE;
   
-  NtHdr->OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC;
   NtHdr->OptionalHeader.SizeOfCode = DataOffset - TextOffset;
   NtHdr->OptionalHeader.SizeOfInitializedData = RelocOffset - DataOffset;
   NtHdr->OptionalHeader.SizeOfUninitializedData = 0;
@@ -651,8 +650,16 @@ ScanSections(
 
   NtHdr->OptionalHeader.BaseOfCode = TextOffset;
 
-#if   defined (MDE_CPU_IA32)
+#if defined (MDE_CPU_IA32)
   NtHdr->OptionalHeader.BaseOfData = DataOffset;
+  NtHdr->OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC;
+  NtHdr->FileHeader.Machine = EFI_IMAGE_MACHINE_IA32;
+#elif defined (MDE_CPU_X64)
+  NtHdr->OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC;
+  NtHdr->FileHeader.Machine = EFI_IMAGE_MACHINE_X64;
+#elif defined (MDE_CPU_IPF)
+  NtHdr->OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC;
+  NtHdr->FileHeader.Machine = EFI_IMAGE_MACHINE_IPF;
 #endif
   NtHdr->OptionalHeader.ImageBase = 0;
   NtHdr->OptionalHeader.SectionAlignment = CoffAlignment;
@@ -917,7 +924,7 @@ WriteDebug(
 VOID
 ConvertElf (
   UINT8  **FileBuffer,
-  UINTN *FileLength
+  UINT32 *FileLength
   )
 {
   EFI_IMAGE_NT_HEADERS *NtHdr;
@@ -1141,10 +1148,10 @@ Returns:
   FILE              *fpIn;
   FILE              *fpOut;
   FILE              *fpInOut;
-  UINTN             Data;
-  UINTN             *DataPointer;
-  UINTN             *OldDataPointer;
-  UINTN             CheckSum;
+  UINT32            Data;
+  UINT32            *DataPointer;
+  UINT32            *OldDataPointer;
+  UINT32            CheckSum;
   UINT32            Index;
   UINT32            Index1;
   UINT32            Index2;
@@ -1602,7 +1609,7 @@ Returns:
     // Re-read the file, storing the data into our buffer
     //
     fseek (fpIn, 0, SEEK_SET);
-    DataPointer = (UINTN *) FileBuffer;
+    DataPointer = (UINT32 *) FileBuffer;
     OldDataPointer = DataPointer;
     do {
       OldDataPointer = DataPointer;
@@ -1638,13 +1645,13 @@ Returns:
     //
     // Checksum the contents
     //
-    DataPointer = (UINTN *) FileBuffer;
+    DataPointer = (UINT32 *) FileBuffer;
     CheckSum  = 0;
     Index     = 0;
     while (Index < FileLength) {
       CheckSum    += *DataPointer;
       DataPointer ++;
-      Index       += sizeof (UINTN);
+      Index       += sizeof (*DataPointer);
     }
     if (CheckSum != 0) {
       Error (NULL, 0, 3000, "Invalid", "checksum (0x%x) failed on file %s.", CheckSum, mInImageName);
@@ -2353,9 +2360,9 @@ Returns:
 
 --*/
 {
-  UINTN                           Index;
-  UINTN                           DebugDirectoryEntryRva;
-  UINTN                           DebugDirectoryEntryFileOffset;
+  UINT32                           Index;
+  UINT32                           DebugDirectoryEntryRva;
+  UINT32                           DebugDirectoryEntryFileOffset;
   EFI_IMAGE_DOS_HEADER            *DosHdr;
   EFI_IMAGE_FILE_HEADER           *FileHdr;
   EFI_IMAGE_OPTIONAL_HEADER32     *Optional32Hdr;
@@ -2451,13 +2458,13 @@ Returns:
   struct tm                       stime;
   struct tm                       *ptime;
   time_t                          newtime;
-  UINTN                           Index;
-  UINTN                           DebugDirectoryEntryRva;
-  UINTN                           DebugDirectoryEntryFileOffset;
-  UINTN                           ExportDirectoryEntryRva;
-  UINTN                           ExportDirectoryEntryFileOffset;
-  UINTN                           ResourceDirectoryEntryRva;
-  UINTN                           ResourceDirectoryEntryFileOffset;
+  UINT32                           Index;
+  UINT32                           DebugDirectoryEntryRva;
+  UINT32                           DebugDirectoryEntryFileOffset;
+  UINT32                           ExportDirectoryEntryRva;
+  UINT32                           ExportDirectoryEntryFileOffset;
+  UINT32                           ResourceDirectoryEntryRva;
+  UINT32                           ResourceDirectoryEntryFileOffset;
   EFI_IMAGE_DOS_HEADER            *DosHdr;
   EFI_IMAGE_FILE_HEADER           *FileHdr;
   EFI_IMAGE_OPTIONAL_HEADER32     *Optional32Hdr;
@@ -2632,7 +2639,7 @@ STATIC
 STATUS
 MicrocodeReadData (
   FILE          *InFptr,
-  UINTN         *Data
+  UINT32        *Data
   )
 /*++
 
