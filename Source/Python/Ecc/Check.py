@@ -15,6 +15,7 @@ import re
 from CommonDataClass.DataClass import *
 from Common.DataType import SUP_MODULE_LIST_STRING, TAB_VALUE_SPLIT
 from EccToolError import *
+from Exception import *
 import EccGlobalData
 import c
 
@@ -26,7 +27,7 @@ import c
 #
 class Check(object):
     def __init__(self):
-        pass
+        self.Exception = ExceptionCheck('exception.xml')
      
     # Check all required checkpoints
     def Check(self):
@@ -552,6 +553,7 @@ class Check(object):
             SqlCommand = """select ID, Value1 from Inf as A where A.Model = %s and A.Value1 not in (select B.Value1 from Dsc as B where Model = %s)""" % (MODEL_EFI_LIBRARY_CLASS, MODEL_EFI_LIBRARY_CLASS)
             RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
             for Record in RecordSet:
+                
                 EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_LIBRARY_NO_USE, OtherMsg = "The Library Class '%s' is not used in any platform" % (Record[1]), BelongsToTable = 'Inf', BelongsToItem = Record[0])
 
     # Check whether an Inf file is specified in the FDF file, but not in the Dsc file, then the Inf file must be for a Binary module only
@@ -804,7 +806,8 @@ class Check(object):
             RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
             for Record in RecordSet:
                 if not Pattern.match(Record[1]):
-                    EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_FUNCTION_NAME, OtherMsg = "The function name '%s' does not follow the rules" % (Record[1]), BelongsToTable = 'Function', BelongsToItem = Record[0])
+                    if not self.Exception.IsException(ERROR_NAMING_CONVENTION_CHECK_FUNCTION_NAME, Record[1]):
+                        EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_FUNCTION_NAME, OtherMsg = "The function name '%s' does not follow the rules" % (Record[1]), BelongsToTable = 'Function', BelongsToItem = Record[0])
 
     # Check whether NO use short variable name with single character
     def NamingConventionCheckSingleCharacterVariable(self):

@@ -60,30 +60,20 @@ class Ecc(object):
         #
         EccGlobalData.gConfig = Configuration(self.ConfigFile)
         
-        #
         # Init Ecc database
-        #
         EccGlobalData.gDb = Database.Database(Database.DATABASE_PATH)
         EccGlobalData.gDb.InitDatabase(self.IsInit)
         
-        #
         # Build ECC database
-        #
         self.BuildDatabase()
         
-        #
         # Start to check
-        #
         self.Check()
         
-        #
         # Show report
-        #
         self.GenReport()
         
-        #
         # Close Database
-        #
         EccGlobalData.gDb.Close()
 
 
@@ -93,15 +83,11 @@ class Ecc(object):
     # Build the database for target
     #
     def BuildDatabase(self):
-        #
         # Clean report table
-        #
         EccGlobalData.gDb.TblReport.Drop()
         EccGlobalData.gDb.TblReport.Create()
         
-        #
         # Build database
-        #
         if self.IsInit:
             if self.ScanSourceCode:
                 EdkLogger.quiet("Building database for source code ...")
@@ -156,9 +142,7 @@ class Ecc(object):
                     continue
         Op.close()
         
-        #
         # Commit to database
-        #
         EccGlobalData.gDb.Conn.commit()
         
         EdkLogger.quiet("Building database for meta data files done!")
@@ -190,9 +174,7 @@ class Ecc(object):
         EdkLogger.quiet("Loading ECC configuration ... done")
         (Options, Target) = self.EccOptionParser()
         
-        #
         # Check workspace envirnoment
-        #
         if "WORKSPACE" not in os.environ:
             EdkLogger.error("ECC", BuildToolError.ATTRIBUTE_NOT_AVAILABLE, "Environment variable not found", 
                             ExtraData="WORKSPACE")
@@ -201,14 +183,10 @@ class Ecc(object):
             if not os.path.exists(EccGlobalData.gWorkspace):
                 EdkLogger.error("ECC", BuildToolError.FILE_NOT_FOUND, ExtraData="WORKSPACE = %s" % EccGlobalData.gWorkspace)
             os.environ["WORKSPACE"] = EccGlobalData.gWorkspace
-        #
         # Set log level
-        #
         self.SetLogLevel(Options)
         
-        #
         # Set other options
-        #
         if Options.ConfigFile != None:
             self.ConfigFile = Options.ConfigFile
         if Options.OutputFile != None:
@@ -286,9 +264,7 @@ class Ecc(object):
 # script.
 #
 if __name__ == '__main__':
-    #
     # Initialize log system
-    #
     EdkLogger.Initialize()
     EdkLogger.IsRaiseError = False
     EdkLogger.quiet(time.strftime("%H:%M:%S, %b.%d %Y ", time.localtime()) + "[00:00]" + "\n")

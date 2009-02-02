@@ -1,0 +1,6 @@
+<ExceptionList xmlns="http://www.uefi.org/2008/2.1" xmlns:xsi="http:/www.w3.org/2001/XMLSchema-instance">
+  <Execption>
+    <KeyWord>_DriverUnloadHandler</KeyWord>
+    <ErrorID>8006</ErrorID>
+  </Execption>
+</ExceptionList>
