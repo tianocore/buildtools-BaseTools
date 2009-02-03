@@ -3,4 +3,12 @@
     <KeyWord>_DriverUnloadHandler</KeyWord>
     <ErrorID>8006</ErrorID>
   </Execption>
+  <Execption>
+    <KeyWord>__debugbreak ()</KeyWord>
+    <ErrorID>4002</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>__readmsr (int register)</KeyWord>
+    <ErrorID>4002</ErrorID>
+  </Execption>
 </ExceptionList>

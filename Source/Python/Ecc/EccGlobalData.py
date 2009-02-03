@@ -21,3 +21,4 @@ gTarget = ''
 gConfig = None
 gDb = None
 gIdentifierTableList = []
+gException = None

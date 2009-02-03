@@ -28,7 +28,7 @@ import c
 class Check(object):
     def __init__(self):
         self.Exception = ExceptionCheck('exception.xml')
-     
+        EccGlobalData.gException = self.Exception
     # Check all required checkpoints
     def Check(self):
         self.MetaDataFileCheck()
@@ -404,6 +404,8 @@ class Check(object):
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
+                        if FullName.find('MdePkg\Include\Protocol') != -1 or FullName.find('MdePkg/Include/Protocol') != -1 or FullName.find('MdePkg\Include\Ppi') != -1 or FullName.find('MdePkg/Include/Ppi') != -1: 
+                            continue                        
                         MsgList = c.CheckFuncHeaderDoxygenComments(FullName)
                             
     # Check whether the first line of text in a comment block is a brief description of the element being documented. 

@@ -2065,6 +2065,8 @@ def CheckFuncHeaderDoxygenComments(FullFileName):
             CheckFunctionHeaderConsistentWithDoxygenComment(Result[0], Result[1], Result[2], FunctionHeaderComment[0], FunctionHeaderComment[1], ErrorMsgList, FunctionHeaderComment[3], FileTable)
         else:
             ErrorMsgList.append('Line %d :Function %s has NO comment immediately preceding it.' % (Result[2], Result[1]))
+            if EccGlobalData.gException.IsException(ERROR_HEADER_CHECK_FUNCTION, Result[1]):
+                continue
             PrintErrorMsg(ERROR_HEADER_CHECK_FUNCTION, 'Function %s has NO comment immediately preceding it.' % (Result[1]), FileTable, Result[3])
     
     # Func Def check
