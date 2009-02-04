@@ -1274,14 +1274,17 @@ def CheckFuncLayoutName(FullFileName):
     
     Db = GetDB()
     FileTable = 'Identifier' + str(FileID)
-    SqlStatement = """ select Name, ID, EndColumn
+    SqlStatement = """ select Name, ID, EndColumn, Value
                        from %s
                        where Model = %d
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
+        FuncName = Result[3]
+        if EccGlobalData.gException.IsException(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, FuncName):
+            continue
         if Result[2] != 0:
-                PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Function name should appear at the start of a line', FileTable, Result[1])
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Function name should appear at the start of a line', FileTable, Result[1])
         ParamList = GetParamList(Result[0])
         if len(ParamList) == 0:
             continue
@@ -1296,14 +1299,17 @@ def CheckFuncLayoutName(FullFileName):
         if not Result[0].endswith('\n  )') and not Result[0].endswith('\r  )'):
             PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, '\')\' should be on a new line and indented two spaces', FileTable, Result[1])
             
-    SqlStatement = """ select Modifier, ID, FunNameStartColumn
+    SqlStatement = """ select Modifier, ID, FunNameStartColumn, Name
                        from Function
                        where BelongsToFile = %d
                    """ % (FileID)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
+        FuncName = Result[3]
+        if EccGlobalData.gException.IsException(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, FuncName):
+            continue
         if Result[2] != 0:
-                PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Function name should appear at the start of a line', 'Function', Result[1])
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Function name should appear at the start of a line', 'Function', Result[1])
         ParamList = GetParamList(Result[0])
         if len(ParamList) == 0:
             continue

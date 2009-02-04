@@ -137,6 +137,62 @@
   </Execption>
   <Execption>
     <KeyWord>__debugbreak</KeyWord>
+    <ErrorID>5003</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>__readmsr</KeyWord>
+    <ErrorID>5003</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>__writemsr</KeyWord>
+    <ErrorID>5003</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>_InterlockedCompareExchange</KeyWord>
+    <ErrorID>5003</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>_InterlockedCompareExchange64</KeyWord>
+    <ErrorID>5003</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>_InterlockedDecrement</KeyWord>
+    <ErrorID>5003</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>_InterlockedIncrement</KeyWord>
+    <ErrorID>5003</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>_inp</KeyWord>
+    <ErrorID>5003</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>_inpw</KeyWord>
+    <ErrorID>5003</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>_inpd</KeyWord>
+    <ErrorID>5003</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>_outp</KeyWord>
+    <ErrorID>5003</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>_outpw</KeyWord>
+    <ErrorID>5003</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>_outpd</KeyWord>
+    <ErrorID>5003</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>_ReadWriteBarrier</KeyWord>
+    <ErrorID>5003</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>__debugbreak</KeyWord>
     <ErrorID>7001</ErrorID>
   </Execption>
   <Execption>
