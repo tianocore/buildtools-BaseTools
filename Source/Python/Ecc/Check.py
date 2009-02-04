@@ -238,7 +238,7 @@ class Check(object):
                             NewRecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
                             OtherMsg = "The structure name '%s' is duplicate" % Record[1]
                             if NewRecordSet != []:
-                                OtherMsg = "The structure name '%s' is duplicate with the one defined in %s" % (Record[1], NewRecordSet[0][0])
+                                OtherMsg = "The structure name '%s' is duplicate with the one defined in %s, maybe struct NOT typedefed or the typedef new type NOT used to qualify variables" % (Record[1], NewRecordSet[0][0])
                             EccGlobalData.gDb.TblReport.Insert(ERROR_DECLARATION_DATA_TYPE_CHECK_SAME_STRUCTURE, OtherMsg = OtherMsg, BelongsToTable = IdentifierTable, BelongsToItem = Record[0])   
     
     # Check whether Union Type has a 'typedef' and the name is capital

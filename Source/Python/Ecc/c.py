@@ -1567,31 +1567,37 @@ def CheckDeclNoUseCType(FullFileName):
                 PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE, 'Variable type %s' % Type, FileTable, Result[2])
                 break
     
-    SqlStatement = """ select Modifier, Name, ID
+    SqlStatement = """ select Modifier, Name, ID, Value
                        from %s
                        where Model = %d
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
         ParamList = GetParamList(Result[1])
+        FuncName = Result[3]
+        if EccGlobalData.gException.IsException(ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE, FuncName):
+            continue
         for Type in CTypeTuple:
             if PatternInModifier(Result[0], Type):
-                PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE, 'Return type %s' % Result[0], FileTable, Result[2])
+                PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE, '%s Return type %s' % (FuncName, Result[0]), FileTable, Result[2])
             
             for Param in ParamList:
                 if PatternInModifier(Param.Modifier, Type):
                     PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE, 'Parameter %s' % Param.Name, FileTable, Result[2])
                     
-    SqlStatement = """ select Modifier, Header, ID
+    SqlStatement = """ select Modifier, Header, ID, Name
                        from Function
                        where BelongsToFile = %d
                    """ % (FileID)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
         ParamList = GetParamList(Result[1])
+        FuncName = Result[3]
+        if EccGlobalData.gException.IsException(ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE, FuncName):
+            continue
         for Type in CTypeTuple:
             if PatternInModifier(Result[0], Type):
-                PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE, 'Return type %s' % Result[0], FileTable, Result[2])
+                PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE, '%s Return type %s' % (FuncName, Result[0]), FileTable, Result[2])
             
             for Param in ParamList:
                 if PatternInModifier(Param.Modifier, Type):
