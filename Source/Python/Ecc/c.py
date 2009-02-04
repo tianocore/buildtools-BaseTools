@@ -1192,7 +1192,7 @@ def CheckFuncLayoutReturnType(FullFileName):
     
     Db = GetDB()
     FileTable = 'Identifier' + str(FileID)
-    SqlStatement = """ select Modifier, ID, StartLine, StartColumn, EndLine 
+    SqlStatement = """ select Modifier, ID, StartLine, StartColumn, EndLine, Value 
                        from %s
                        where Model = %d
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION)
@@ -1200,17 +1200,17 @@ def CheckFuncLayoutReturnType(FullFileName):
     for Result in ResultSet:
         ReturnType = GetDataTypeFromModifier(Result[0])
         TypeStart = ReturnType.split()[0]
-#        if len(ReturnType) == 0:
-#            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Function has No Return Type', FileTable, Result[1])
-#            continue
+        FuncName = Result[5]
+        if EccGlobalData.gException.IsException(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, FuncName):
+            continue
         Index = Result[0].find(TypeStart)
         if Index != 0 or Result[3] != 0:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Return Type should appear at the start of line', FileTable, Result[1])
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '%s Return Type should appear at the start of line' % FuncName, FileTable, Result[1])
             
         if Result[2] == Result[4]:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Return Type should appear on its own line', FileTable, Result[1])
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '%s Return Type should appear on its own line' % FuncName, FileTable, Result[1])
             
-    SqlStatement = """ select Modifier, ID, StartLine, StartColumn, FunNameStartLine
+    SqlStatement = """ select Modifier, ID, StartLine, StartColumn, FunNameStartLine, Name
                        from Function
                        where BelongsToFile = %d
                    """ % (FileID)
@@ -1218,15 +1218,15 @@ def CheckFuncLayoutReturnType(FullFileName):
     for Result in ResultSet:
         ReturnType = GetDataTypeFromModifier(Result[0])
         TypeStart = ReturnType.split()[0]
-#        if len(ReturnType) == 0:
-#            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Function has No Return Type', 'Function', Result[1])
-#            continue
+        FuncName = Result[5]
+        if EccGlobalData.gException.IsException(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, FuncName):
+            continue
         Index = Result[0].find(ReturnType)
         if Index != 0 or Result[3] != 0:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Return Type should appear at the start of line', 'Function', Result[1])
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '%s Return Type should appear at the start of line' % FuncName, 'Function', Result[1])
             
         if Result[2] == Result[4]:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, 'Return Type should appear on its own line', 'Function', Result[1])
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '%s Return Type should appear on its own line' % FuncName, 'Function', Result[1])
     
 def CheckFuncLayoutModifier(FullFileName):
     ErrorMsgList = []
@@ -2054,20 +2054,21 @@ def CheckFuncHeaderDoxygenComments(FullFileName):
         print 'Unrecognized chars in comment of file %s', FullFileName
     
     # Func Decl check
-    SqlStatement = """ select Modifier, Name, StartLine, ID
+    SqlStatement = """ select Modifier, Name, StartLine, ID, Value
                        from %s
                        where Model = %d
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_FUNCTION_DECLARATION)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
+        FuncName = Result[4]
         FunctionHeaderComment = CheckCommentImmediatelyPrecedeFunctionHeader(Result[1], Result[2], CommentSet)
         if FunctionHeaderComment:
             CheckFunctionHeaderConsistentWithDoxygenComment(Result[0], Result[1], Result[2], FunctionHeaderComment[0], FunctionHeaderComment[1], ErrorMsgList, FunctionHeaderComment[3], FileTable)
         else:
-            ErrorMsgList.append('Line %d :Function %s has NO comment immediately preceding it.' % (Result[2], Result[1]))
-            if EccGlobalData.gException.IsException(ERROR_HEADER_CHECK_FUNCTION, Result[1]):
+            if EccGlobalData.gException.IsException(ERROR_HEADER_CHECK_FUNCTION, FuncName):
                 continue
-            PrintErrorMsg(ERROR_HEADER_CHECK_FUNCTION, 'Function %s has NO comment immediately preceding it.' % (Result[1]), FileTable, Result[3])
+            ErrorMsgList.append('Line %d :Function %s has NO comment immediately preceding it.' % (Result[2], Result[1]))
+            PrintErrorMsg(ERROR_HEADER_CHECK_FUNCTION, 'Function %s has NO comment immediately preceding it.' % (FuncName), FileTable, Result[3])
     
     # Func Def check
     SqlStatement = """ select Value, StartLine, EndLine, ID
@@ -2083,18 +2084,21 @@ def CheckFuncHeaderDoxygenComments(FullFileName):
     except:
         print 'Unrecognized chars in comment of file %s', FullFileName
     
-    SqlStatement = """ select Modifier, Header, StartLine, ID
+    SqlStatement = """ select Modifier, Header, StartLine, ID, Name
                        from Function
                        where BelongsToFile = %d
                    """ % (FileID)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     for Result in ResultSet:
+        FuncName = Result[4]
         FunctionHeaderComment = CheckCommentImmediatelyPrecedeFunctionHeader(Result[1], Result[2], CommentSet)
         if FunctionHeaderComment:
             CheckFunctionHeaderConsistentWithDoxygenComment(Result[0], Result[1], Result[2], FunctionHeaderComment[0], FunctionHeaderComment[1], ErrorMsgList, FunctionHeaderComment[3], FileTable)
         else:
+            if EccGlobalData.gException.IsException(ERROR_HEADER_CHECK_FUNCTION, FuncName):
+                continue
             ErrorMsgList.append('Line %d :Function %s has NO comment immediately preceding it.' % (Result[2], Result[1]))
-            PrintErrorMsg(ERROR_HEADER_CHECK_FUNCTION, 'Function %s has NO comment immediately preceding it.' % (Result[1]), 'Function', Result[3])
+            PrintErrorMsg(ERROR_HEADER_CHECK_FUNCTION, 'Function %s has NO comment immediately preceding it.' % (FuncName), 'Function', Result[3])
     return ErrorMsgList
 
 def CheckCommentImmediatelyPrecedeFunctionHeader(FuncName, FuncStartLine, CommentSet):
