@@ -322,17 +322,6 @@ typedef EFI_IMAGE_NT_HEADERS64          EFI_IMAGE_NT_HEADERS;
 #error Unknown Processor Type
 #endif
 
-
-#define EFI_IMAGE_FIRST_SECTION(ntheader) \
-    ( \
-      (EFI_IMAGE_SECTION_HEADER *) \
-        ( \
-          (UINT32) ntheader + \
-          FIELD_OFFSET (EFI_IMAGE_NT_HEADERS, OptionalHeader) + \
-          ((EFI_IMAGE_NT_HEADERS *) (ntheader))->FileHeader.SizeOfOptionalHeader \
-        ) \
-    )
-
 //
 // Subsystem Values
 //
