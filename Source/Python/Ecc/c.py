@@ -1267,7 +1267,9 @@ def CheckFuncLayoutModifier(FullFileName):
 
 def CheckFuncLayoutName(FullFileName):
     ErrorMsgList = []
-    
+    # Parameter variable format pattern.
+    Pattern = re.compile(r'^[A-Z]+\S*[a-z]\S*$')
+    ParamIgnoreList = ('VOID', '...')
     FileID = GetTableID(FullFileName, ErrorMsgList)
     if FileID < 0:
         return ErrorMsgList
@@ -1293,7 +1295,9 @@ def CheckFuncLayoutName(FullFileName):
             if Param.StartLine <= StartLine:
                 PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Parameter %s should be in its own line.' % Param.Name, FileTable, Result[1])
             if Param.StartLine - StartLine > 1:
-                PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Empty line appears before Parameter %s.' % Param.Name, FileTable, Result[1])
+                PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Empty line appears before Parameter %s.' % Param.Name, FileTable, Result[1])    
+            if not Pattern.match(Param.Name) and not Param.Name in ParamIgnoreList and not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, Param.Name):
+                PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Parameter %s NOT follow naming convention.' % Param.Name, FileTable, Result[1])
             StartLine = Param.StartLine
             
         if not Result[0].endswith('\n  )') and not Result[0].endswith('\r  )'):
@@ -1319,6 +1323,8 @@ def CheckFuncLayoutName(FullFileName):
                 PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Parameter %s should be in its own line.' % Param.Name, 'Function', Result[1])
             if Param.StartLine - StartLine > 1:
                 PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Empty line appears before Parameter %s.' % Param.Name, 'Function', Result[1])
+            if not Pattern.match(Param.Name) and not Param.Name in ParamIgnoreList and not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, Param.Name):
+                PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Parameter %s NOT follow naming convention.' % Param.Name, FileTable, Result[1])
             StartLine = Param.StartLine
         if not Result[0].endswith('\n  )') and not Result[0].endswith('\r  )'):
             PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, '\')\' should be on a new line and indented two spaces', 'Function', Result[1])
@@ -1448,6 +1454,44 @@ def CheckFuncLayoutLocalVariable(FullFileName):
             if len(Result[1]) > 0:
                 PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_NO_INIT_OF_VARIABLE, 'Variable Name: %s' % Result[0], FileTable, Result[2])
         
+def CheckMemberVariableFormat(Value, ModelId):
+    ErrMsgList = []
+    # Member variable format pattern.
+    Pattern = re.compile(r'^[A-Z]+\S*[a-z]\S*$')
+    
+    LBPos = Value.find('{')
+    RBPos = Value.find('}')
+    Fields = Value[LBPos + 1 : RBPos]
+    Fields = StripComments(Fields)
+    if ModelId == DataClass.MODEL_IDENTIFIER_ENUMERATE:
+        FieldsList = Fields.split(',')
+    else:
+        FieldsList = Fields.split(';')
+    
+    for Field in FieldsList:
+        Field = Field.strip()
+        if Field == '':
+            continue
+        # For the condition that the field in struct is an array with [] sufixes...               
+        if Field[-1] == ']':
+            LBPos = Field.find('[')
+            Field = Field[0:LBPos]
+        # For the condition that bit field ": Number"
+        if Field.find(':') != -1:
+            ColonPos = Field.find(':')
+            Field = Field[0:ColonPos]
+            
+        Field = Field.strip()
+        if Field == '':
+            continue
+        # Enum could directly assign value to variable
+        Field = Field.split('=')[0].strip()
+        TokenList = Field.split() 
+        # Remove pointers before variable
+        if not Pattern.match(TokenList[-1].lstrip('*')):
+            ErrMsgList.append(TokenList[-1])
+        
+    return ErrMsgList
 
 def CheckDeclTypedefFormat(FullFileName, ModelId):
     ErrorMsgList = []
@@ -1458,7 +1502,7 @@ def CheckDeclTypedefFormat(FullFileName, ModelId):
     
     Db = GetDB()
     FileTable = 'Identifier' + str(FileID)
-    SqlStatement = """ select Name, StartLine, EndLine, ID
+    SqlStatement = """ select Name, StartLine, EndLine, ID, Value
                        from %s
                        where Model = %d
                    """ % (FileTable, ModelId)
@@ -1482,6 +1526,13 @@ def CheckDeclTypedefFormat(FullFileName, ModelId):
     TdSet = Db.TblFile.Exec(SqlStatement)
     
     for Result in ResultList:
+        # Check member variable format.
+        ErrMsgList = CheckMemberVariableFormat(Result[4], ModelId)
+        for ErrMsg in ErrMsgList:
+            if EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, ErrMsg):
+                continue
+            PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Member variable %s NOT follow naming convention.' % ErrMsg, FileTable, Result[3])
+        # Check whether it is typedefed.
         Found = False
         for Td in TdSet:
             if len(Td[0]) > 0:
