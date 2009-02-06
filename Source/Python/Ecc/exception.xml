@@ -248,6 +248,26 @@
     <ErrorID>7001</ErrorID>
   </Execption>
   <Execption>
+    <KeyWord>@</KeyWord>
+    <ErrorID>9005</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>@R1</KeyWord>
+    <ErrorID>9005</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>@R2</KeyWord>
+    <ErrorID>9005</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>@Rx</KeyWord>
+    <ErrorID>9005</ErrorID>
+  </Execption>
+  <Execption>
+    <KeyWord>@R2.</KeyWord>
+    <ErrorID>9005</ErrorID>
+  </Execption>
+  <Execption>
     <KeyWord>_DriverUnloadHandler</KeyWord>
     <ErrorID>8006</ErrorID>
   </Execption>

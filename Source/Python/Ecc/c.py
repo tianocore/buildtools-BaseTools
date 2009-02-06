@@ -245,14 +245,25 @@ def GetIdentifierList():
         IdList.append(IdFC)
     return IdList
 
+def StripNonAlnumChars(Str):
+    StrippedStr = ''
+    for Char in Str:
+        if Char.isalnum():
+            StrippedStr += Char
+    return StrippedStr
+
 def GetParamList(FuncDeclarator, FuncNameLine = 0, FuncNameOffset = 0):
     FuncDeclarator = StripComments(FuncDeclarator)
     ParamIdList = []
-    DeclSplitList = FuncDeclarator.split('(')
-    if len(DeclSplitList) < 2:
+    #DeclSplitList = FuncDeclarator.split('(')
+    LBPos = FuncDeclarator.find('(')
+    #if len(DeclSplitList) < 2:
+    if LBPos == -1:
         return ParamIdList
-    FuncName = DeclSplitList[0]
-    ParamStr = DeclSplitList[1].rstrip(')')
+    #FuncName = DeclSplitList[0]
+    FuncName = FuncDeclarator[0:LBPos]
+    #ParamStr = DeclSplitList[1].rstrip(')')
+    ParamStr = FuncDeclarator[LBPos + 1:].rstrip(')')
     LineSkipped = 0
     OffsetSkipped = 0
     TailChar = FuncName[-1]
@@ -361,7 +372,7 @@ def GetParamList(FuncDeclarator, FuncNameLine = 0, FuncNameOffset = 0):
         
         ParamEndLine = FuncNameLine + LineSkipped
         ParamEndOffset = FuncNameOffset + OffsetSkipped
-        
+        ParamName = StripNonAlnumChars(ParamName)
         IdParam = DataClass.IdentifierClass(-1, ParamModifier, '', ParamName, '', DataClass.MODEL_IDENTIFIER_PARAMETER, -1, -1, ParamBeginLine, ParamBeginOffset, ParamEndLine, ParamEndOffset)
         ParamIdList.append(IdParam)
         
@@ -1991,6 +2002,8 @@ def CheckDoxygenCommand(FullFileName):
             if Part.upper() == 'TODO':
                 PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMAND, 'ToDo should be marked with doxygen tag @todo', FileTable, Result[1])
             if Part.startswith('@'):
+                if EccGlobalData.gException.IsException(ERROR_DOXYGEN_CHECK_COMMAND, Part):
+                    continue
                 if Part.lstrip('@').isalpha():
                     if Part.lstrip('@') not in DoxygenCommandList:
                         PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMAND, 'Unknown doxygen command %s' % Part, FileTable, Result[1])
@@ -2232,7 +2245,7 @@ def CheckFunctionHeaderConsistentWithDoxygenComment(FuncModifier, FuncHeader, Fu
     DoxygenTagNumber = len(DoxygenStrList)
     ParamNumber = len(ParamList)
     for Param in ParamList:
-        if Param.Name.upper() == 'VOID':
+        if Param.Name.upper() == 'VOID' and ParamNumber == 1:
             ParamNumber -= 1
     Index = 0
     if ParamNumber > 0 and DoxygenTagNumber > 0:
