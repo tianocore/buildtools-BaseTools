@@ -24,6 +24,9 @@ Abstract:
 #include <ctype.h>
 #include <stdlib.h>
 #include "MemoryFile.h"
+#include "CommonLib.h"
+#include "EfiUtilityMsgs.h"
+#include "ParseInf.h"
 #include "ParseGuidedSectionTools.h"
 #include "StringFuncs.h"
 

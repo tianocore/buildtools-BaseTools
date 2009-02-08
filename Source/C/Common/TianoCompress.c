@@ -28,6 +28,7 @@ Abstract:
 //
 // Macro Definitions
 //
+#undef  UINT8_MAX
 typedef INT32 NODE;
 #define UINT8_MAX     0xff
 #define UINT8_BIT     8
@@ -262,7 +263,7 @@ STATIC UINT32 mBufSiz = 0, mOutputPos, mOutputMask, mSubBitBuf, mCrc;
 STATIC UINT32 mCompSize, mOrigSize;
 
 STATIC UINT16 *mFreq, *mSortPtr, mLenCnt[17], mLeft[2 * NC - 1], mRight[2 * NC - 1], mCrcTable[UINT8_MAX + 1],
-  mCFreq[2 * NC - 1], mCTable[4096], mCCode[NC], mPFreq[2 * NP - 1], mPTCode[NPT], mTFreq[2 * NT - 1];
+  mCFreq[2 * NC - 1], mCCode[NC], mPFreq[2 * NP - 1], mPTCode[NPT], mTFreq[2 * NT - 1];
 
 STATIC NODE   mPos, mMatchPos, mAvail, *mPosition, *mParent, *mPrev, *mNext = NULL;
 

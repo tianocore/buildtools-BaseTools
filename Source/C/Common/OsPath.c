@@ -241,7 +241,6 @@ Returns:
 --*/
 {
   CHAR8 *Result;
-  CHAR8 *Ptr;
   INTN    Offset;
 
   Result = malloc (strlen (OldPath) + strlen (Peer) + 1);

@@ -14,6 +14,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 **/
 
 #include <Common/UefiBaseTypes.h>
+#include <Common/CommonLib.h>
 #include <IndustryStandard/PeImage.h>
 #include "PeCoffLib.h"
 

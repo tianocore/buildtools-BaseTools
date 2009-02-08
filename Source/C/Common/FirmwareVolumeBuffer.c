@@ -86,7 +86,7 @@ Returns:
   Status = FvBufFindFileByName(
     Fv,
     Name,
-    &FileToRm
+    (VOID **)&FileToRm
     );
   if (EFI_ERROR (Status)) {
     return Status;
@@ -150,7 +150,7 @@ Returns:
   }
 
   TempFv = NULL;
-  Status = FvBufDuplicate (Fv, &TempFv);
+  Status = FvBufDuplicate (Fv, (VOID **)&TempFv);
   if (EFI_ERROR (Status)) {
     return Status;
   }
@@ -166,7 +166,7 @@ Returns:
   FileKey = 0;
   while (TRUE) {
 
-    Status = FvBufFindNextFile (Fv, &FileKey, &NextFile);
+    Status = FvBufFindNextFile (Fv, &FileKey, (VOID **)&NextFile);
     if (Status == EFI_NOT_FOUND) {
       break;
     } else if (EFI_ERROR (Status)) {
@@ -738,7 +738,7 @@ Returns:
   LastFile = NULL;
   LastFileSize = 0;
   do {
-    Status = FvBufFindNextFile (Fv, &Key, &LastFile);
+    Status = FvBufFindNextFile (Fv, &Key, (VOID **)&LastFile);
     LastFileSize = FvBufExpand3ByteSize (((EFI_FFS_FILE_HEADER*)File)->Size);
   } while (!EFI_ERROR (Status));
 
@@ -979,7 +979,7 @@ Returns:
 
   Key = 0;
   while (TRUE) {
-    Status = FvBufFindNextFile (Fv, &Key, &NextFile);
+    Status = FvBufFindNextFile (Fv, &Key, (VOID **)&NextFile);
     if (EFI_ERROR (Status)) {
       return Status;
     }
@@ -1031,7 +1031,7 @@ Returns:
 
   Key = 0;
   while (TRUE) {
-    Status = FvBufFindNextFile (Fv, &Key, &NextFile);
+    Status = FvBufFindNextFile (Fv, &Key, (VOID **)&NextFile);
     if (EFI_ERROR (Status)) {
       return Status;
     }
@@ -1097,7 +1097,7 @@ Returns:
   //
   // Within the file, we now need to find the EFI_SECTION_RAW section.
   //
-  Status = FvBufFindSectionByType (File, EFI_SECTION_RAW, &Section);
+  Status = FvBufFindSectionByType (File, EFI_SECTION_RAW, (VOID **)&Section);
   if (EFI_ERROR (Status)) {
     return Status;
   }
@@ -1144,7 +1144,6 @@ Returns:
   UINT32 NewFileSize;
   EFI_RAW_SECTION* NewSection;
   UINT32 NewSectionSize;
-  UINT16* Tail;
 
   //
   // The section size is the DataSize + the size of the section header
@@ -1299,7 +1298,7 @@ Returns:
                SectionStart,
                TotalSectionsSize,
                &Key,
-               &NextSection
+               (VOID **)&NextSection
                );
     if (Status == EFI_NOT_FOUND) {
       return EFI_SUCCESS;
@@ -1363,7 +1362,7 @@ Returns:
                SectionStart,
                TotalSectionsSize,
                &Key,
-               &NextSection
+               (VOID **)&NextSection
                );
     if (EFI_ERROR (Status)) {
       return Status;
@@ -1435,7 +1434,7 @@ Returns:
   //
   Key = 0;
   EndOfLastFile = (UINT8*)FvHdr + FvHdr->FvLength;
-  while (!EFI_ERROR (FvBufFindNextFile (Fv, &Key, &FileIt))) {
+  while (!EFI_ERROR (FvBufFindNextFile (Fv, &Key, (VOID **)&FileIt))) {
     EndOfLastFile =
       (VOID*)((UINT8*)FileIt + FvBufExpand3ByteSize (FileIt->Size));
   }
