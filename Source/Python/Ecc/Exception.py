@@ -39,9 +39,9 @@ class ExceptionListXml(object):
     
     def FromXmlFile(self, FilePath):
         XmlContent = XmlParseFile(FilePath)
-        for Item in XmlList(XmlContent, '/ExceptionList/Execption'):
+        for Item in XmlList(XmlContent, '/ExceptionList/Exception'):
             Exp = ExceptionXml()
-            Exp.FromXml(Item, 'Execption')
+            Exp.FromXml(Item, 'Exception')
             self.List.append(Exp)
     
     def ToList(self):
@@ -64,7 +64,6 @@ class ExceptionCheck(object):
     def __init__(self, FilePath = None):
         self.ExceptionList = []
         self.ExceptionListXml = ExceptionListXml()
-
         self.LoadExceptionListXml(FilePath)
 
     def LoadExceptionListXml(self, FilePath):

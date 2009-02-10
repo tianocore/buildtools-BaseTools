@@ -29,6 +29,7 @@ from Common.FdfClassObject import Fdf
 from Common.String import NormPath
 from Common import BuildToolError
 import c
+from Exception import *
 
 ## Ecc
 #
@@ -46,19 +47,19 @@ class Ecc(object):
         self.ConfigFile = 'config.ini'
         self.OutputFile = 'output.txt'
         self.ReportFile = 'Report.csv'
+        self.ExceptionFile = 'exception.xml'
         self.IsInit = True
         self.ScanSourceCode = True
         self.ScanMetaData = True
         
-        #
         # Parse the options and args
-        #
         self.ParseOption()
 
-        #
         # Generate checkpoints list
-        #
         EccGlobalData.gConfig = Configuration(self.ConfigFile)
+        
+        # Generate exception list
+        EccGlobalData.gException = ExceptionCheck(self.ExceptionFile)
         
         # Init Ecc database
         EccGlobalData.gDb = Database.Database(Database.DATABASE_PATH)
@@ -75,8 +76,6 @@ class Ecc(object):
         
         # Close Database
         EccGlobalData.gDb.Close()
-
-
 
     ## BuildDatabase
     #
@@ -194,7 +193,10 @@ class Ecc(object):
         if Options.ReportFile != None:
             self.ReportFile = Options.ReportFile
         if Options.Target != None:
-            EccGlobalData.gTarget = os.path.normpath(Options.Target)
+            if not os.path.isdir(Options.Target):
+                EdkLogger.error("ECC", BuildToolError.OPTION_VALUE_INVALID, ExtraData="Target [%s] does NOT exist" % Options.Target)
+            else:
+                EccGlobalData.gTarget = os.path.normpath(Options.Target)
         else:
             EdkLogger.warn("Ecc", EdkLogger.ECC_ERROR, "The target source tree was not specified, using current WORKSPACE instead!")
             EccGlobalData.gTarget = os.path.normpath(os.getenv("WORKSPACE"))
@@ -206,7 +208,7 @@ class Ecc(object):
             self.ScanSourceCode = False
         if Options.sourcecode != None:
             self.ScanMetaData = False
-           
+        
     ## SetLogLevel
     #
     # Set current log level of the tool based on args

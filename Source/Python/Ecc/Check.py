@@ -15,7 +15,6 @@ import re
 from CommonDataClass.DataClass import *
 from Common.DataType import SUP_MODULE_LIST_STRING, TAB_VALUE_SPLIT
 from EccToolError import *
-from Exception import *
 import EccGlobalData
 import c
 
@@ -27,8 +26,8 @@ import c
 #
 class Check(object):
     def __init__(self):
-        self.Exception = ExceptionCheck('exception.xml')
-        EccGlobalData.gException = self.Exception
+        pass
+
     # Check all required checkpoints
     def Check(self):
         self.MetaDataFileCheck()
@@ -106,7 +105,7 @@ class Check(object):
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.c'):
                         FullName = os.path.join(Dirpath, F)
-                        EdkLogger.quiet("[PROTOTYPE]" + FullName)
+                        #EdkLogger.quiet("[PROTOTYPE]" + FullName)
                         c.CheckFuncLayoutPrototype(FullName)
 
     # Check whether the body of a function is contained by open and close braces that must be in the first column
@@ -275,7 +274,7 @@ class Check(object):
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.c'):
                         FullName = os.path.join(Dirpath, F)
-                        EdkLogger.quiet("[BOOLEAN]" + FullName)
+                        #EdkLogger.quiet("[BOOLEAN]" + FullName)
                         c.CheckBooleanValueComparison(FullName)
 
     # Check whether Non-Boolean comparisons use a compare operator (==, !=, >, < >=, <=). 
@@ -291,7 +290,7 @@ class Check(object):
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.c'):
                         FullName = os.path.join(Dirpath, F)
-                        EdkLogger.quiet("[NON-BOOLEAN]" + FullName)
+                        #EdkLogger.quiet("[NON-BOOLEAN]" + FullName)
                         c.CheckNonBooleanValueComparison(FullName)
     # Check whether a comparison of any pointer to zero must be done via the NULL type
     def PredicateExpressionCheckComparisonNullType(self):
@@ -306,7 +305,7 @@ class Check(object):
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.c'):
                         FullName = os.path.join(Dirpath, F)
-                        EdkLogger.quiet("[POINTER]" + FullName)
+                        #EdkLogger.quiet("[POINTER]" + FullName)
                         c.CheckPointerNullComparison(FullName)
     # Include file checking
     def IncludeFileCheck(self):
@@ -808,7 +807,7 @@ class Check(object):
             RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
             for Record in RecordSet:
                 if not Pattern.match(Record[1]):
-                    if not self.Exception.IsException(ERROR_NAMING_CONVENTION_CHECK_FUNCTION_NAME, Record[1]):
+                    if not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_FUNCTION_NAME, Record[1]):
                         EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_FUNCTION_NAME, OtherMsg = "The function name '%s' does not follow the rules" % (Record[1]), BelongsToTable = 'Function', BelongsToItem = Record[0])
 
     # Check whether NO use short variable name with single character

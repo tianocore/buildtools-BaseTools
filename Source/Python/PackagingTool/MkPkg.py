@@ -75,8 +75,8 @@ def CheckEnvVariable():
 #   @retval Args  Target of build command
 #
 def MyOptionParser():
-    UsageString = "%prog -m <module_file> -p <package_file> [-o distribution_file]
-                   [-x xml-file-header] [-t tools-directory] [-f misc-files] [-q | -v] [-h]"
+    UsageString = "%prog -m <module_file> -p <package_file> [-o distribution_file] " + \
+                   "[-x xml-file-header] [-t tools-directory] [-f misc-files] [-q | -v] [-h]"
 
     Parser = OptionParser(description=__copyright__,version=__version__,prog="MkPkg",usage=UsageString)
 

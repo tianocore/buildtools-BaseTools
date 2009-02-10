@@ -213,7 +213,8 @@ def XmlParseFile(FileName):
         Dom = xml.dom.minidom.parse(XmlFile)
         XmlFile.close()
         return Dom
-    except:
+    except Exception, X:
+        print X
         return ""
 
 # This acts like the main() function for the script, unless it is 'import'ed
