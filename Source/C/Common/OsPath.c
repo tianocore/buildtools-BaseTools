@@ -20,6 +20,8 @@ Abstract:
 **/
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "OsPath.h"
 
 //
@@ -300,5 +302,6 @@ Returns:
     return TRUE;
   }
 }
+
 
 

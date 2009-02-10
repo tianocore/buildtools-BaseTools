@@ -148,20 +148,6 @@ ProcessIncludeFile (
 
 STATIC
 STATUS
-ParseFile (
-  SOURCE_FILE *SourceFile
-  );
-
-STATIC
-FILE    *
-FindFile (
-  CHAR8           *FileName,
-  CHAR8           *FoundFileName,
-  UINTN           FoundFileNameLen
-  );
-
-STATIC
-STATUS
 ProcessFile (
   SOURCE_FILE *SourceFile
   );
@@ -550,6 +536,8 @@ Returns:
 
 --*/
 {
+  UINT32 Val;
+
   SkipWhiteSpace (&mGlobals.SourceFile);
   if (EndOfFile (&mGlobals.SourceFile)) {
     return FALSE;
@@ -565,7 +553,8 @@ Returns:
       }
 
       mGlobals.SourceFile.FileBufferPtr += 2;
-      sscanf (mGlobals.SourceFile.FileBufferPtr, "%x", Value);
+      sscanf (mGlobals.SourceFile.FileBufferPtr, "%x", &Val);
+      *Value = Val;
       while (isxdigit (mGlobals.SourceFile.FileBufferPtr[0])) {
         mGlobals.SourceFile.FileBufferPtr++;
       }
@@ -645,8 +634,8 @@ Returns:
   // depth.
   //
   if (mGlobals.VerboseFile) {
-    fprintf (stdout, "%*cProcessing file '%s'\n", NestDepth * 2, ' ', SourceFile->FileName);
-    fprintf (stdout, "Parent source file = '%s'\n", ParentSourceFile);
+    fprintf (stdout, "%*cProcessing file '%s'\n", (INT32)NestDepth * 2, ' ', SourceFile->FileName);
+    fprintf (stdout, "Parent source file = '%s'\n", ParentSourceFile->FileName);
   }
 
   //
@@ -709,7 +698,7 @@ Returns:
   fseek (SourceFile->Fptr, 0, SEEK_END);
   SourceFile->FileSize = ftell (SourceFile->Fptr);
   if (mGlobals.VerboseFile) {
-    printf ("FileSize = %d (0x%X)\n", SourceFile->FileSize, SourceFile->FileSize);
+    printf ("FileSize = %d (0x%X)\n", (INT32)SourceFile->FileSize, (UINT32)SourceFile->FileSize);
   }
 
   fseek (SourceFile->Fptr, 0, SEEK_SET);
@@ -830,7 +819,7 @@ Returns:
     }
 
     printf ("'\n");
-    printf ("FileSize = %d (0x%X)\n", SourceFile->FileSize, SourceFile->FileSize);
+    printf ("FileSize = %d (0x%X)\n", (INT32)SourceFile->FileSize, (UINT32)SourceFile->FileSize);
     RewindFile (SourceFile);
   }
 }

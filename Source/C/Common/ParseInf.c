@@ -23,6 +23,7 @@ Abstract:
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include "EfiUtilityMsgs.h"
 #include "ParseInf.h"
 
 CHAR8 *
@@ -378,10 +379,10 @@ Returns:
 --*/
 {
   INT32 Index;
-  UINTN Data1;
-  UINTN Data2;
-  UINTN Data3;
-  UINTN Data4[8];
+  UINT32 Data1;
+  UINT32 Data2;
+  UINT32 Data3;
+  UINT16 Data4[8];
 
   if (AsciiGuidBuffer == NULL || GuidBuffer == NULL) {
     return EFI_INVALID_PARAMETER;
@@ -415,7 +416,7 @@ Returns:
   //
   Index = sscanf (
             AsciiGuidBuffer,
-            "%08x-%04x-%04x-%02x%02x-%02hx%02hx%02hx%02hx%02hx%02hx",
+            "%08x-%04x-%04x-%02hx%02hx-%02hx%02hx%02hx%02hx%02hx%02hx",
             &Data1,
             &Data2,
             &Data3,

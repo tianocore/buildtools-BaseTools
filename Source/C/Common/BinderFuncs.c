@@ -20,6 +20,9 @@ Abstract:
 **/
 
 #include "BinderFuncs.h"
+#include "CommonLib.h"
+#include <stdlib.h>
+#include <string.h>
 
 //
 // Binder Function Implementations
@@ -79,5 +82,6 @@ CommonLibBinderCompareGuid (
 {
   return CompareGuid (Guid1, Guid2) ? FALSE : TRUE;
 }
+
 
 

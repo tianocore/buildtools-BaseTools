@@ -19,6 +19,8 @@ Abstract:
 
 **/
 
+#include <string.h>
+#include <ctype.h>
 #include "StringFuncs.h"
 
 //
@@ -77,7 +79,6 @@ Returns:
 --*/
 {
   CHAR8 *Pos;
-  int   Ipos;
 
   if (String == NULL) {
     return EFI_INVALID_PARAMETER;
@@ -144,13 +145,11 @@ Returns:
 
 --*/
 {
-  EFI_STATUS  Status;
   CHAR8       *Pos;
   CHAR8       *EndOfSubString;
   CHAR8       *EndOfString;
   STRING_LIST *Output;
   UINTN       Item;
-  BOOLEAN     FoundEquals;
 
   String = CloneString (String);
   if (String == NULL) {
@@ -423,4 +422,5 @@ Returns:
     free (String);
   }
 }
+
 

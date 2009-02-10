@@ -269,7 +269,7 @@ Returns:
   //
   // File Guid String Name
   //
-  PrintGuidToBuffer (FileName, FileGuidString, sizeof (FileGuidString), TRUE);
+  PrintGuidToBuffer (FileName, (UINT8 *)FileGuidString, sizeof (FileGuidString), TRUE);
   //
   // Verify FV header
   //

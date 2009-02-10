@@ -23,6 +23,7 @@ Abstract:
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include "CommonLib.h"
 #include "MemoryFile.h"
 
 
@@ -155,7 +156,6 @@ Returns:
 
 --*/
 {
-  CHAR8       *CharPtr;
   CHAR8       *EndOfLine;
   UINTN       CharsToCopy;
   MEMORY_FILE *InputFile;
@@ -256,4 +256,5 @@ CheckMemoryFileState (
   assert (MemoryFile->CurrentFilePointer >= MemoryFile->FileImage);
   assert (MemoryFile->CurrentFilePointer <= MemoryFile->Eof);
 }
+
 
