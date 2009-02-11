@@ -321,7 +321,10 @@ class GenFdsGlobalVariable:
             if GenFdsGlobalVariable.SharpCounter % GenFdsGlobalVariable.SharpNumberPerLine == 0:
                 sys.stdout.write('\n')
 
-        PopenObject = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr= subprocess.PIPE)
+        try:
+            PopenObject = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr= subprocess.PIPE)
+        except BaseException, X:
+            EdkLogger.error("GenFds", BuildToolError.COMMAND_FAILURE, ExtraData="%s: %s" % (str(X), cmd[0]))
         (out, error) = PopenObject.communicate()
 
         while PopenObject.returncode == None :
