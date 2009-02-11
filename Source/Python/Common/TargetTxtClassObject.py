@@ -20,10 +20,12 @@ import DataType
 from BuildToolError import *
 import GlobalData
 
+gDefaultTargetTxtFile = "Conf/target.txt"
+
 ## TargetTxtClassObject
 #
 # This class defined content used in file target.txt
-# 
+#
 # @param object:             Inherited from object class
 # @param Filename:           Input value for full path of target.txt
 #
@@ -156,7 +158,7 @@ class TargetTxtClassObject(object):
 #
 def TargetTxtDict(WorkSpace):
     Target = TargetTxtClassObject()
-    Target.LoadTargetTxtFile(WorkSpace + '\\Conf\\target.txt')
+    Target.LoadTargetTxtFile(os.path.normpath(os.path.join(WorkSpace, gDefaultTargetTxtFile)))
     return Target
 
 ##

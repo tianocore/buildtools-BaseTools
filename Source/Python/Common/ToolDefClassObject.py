@@ -28,6 +28,7 @@ from TargetTxtClassObject import *
 gMacroRefPattern = re.compile('(DEF\([^\(\)]+\))')
 gEnvRefPattern = re.compile('(ENV\([^\(\)]+\))')
 gMacroDefPattern = re.compile("DEFINE\s+([^\s]+)")
+gDefaultToolsDefFile = "Conf/tools_def.txt"
 
 ## ToolDefClassObject
 #
@@ -183,10 +184,11 @@ class ToolDefClassObject(object):
 # @retval ToolDef An instance of ToolDefClassObject() with loaded tools_def.txt
 #
 def ToolDefDict(WorkSpace):
-    Target = TargetTxtClassObject()
-    Target.LoadTargetTxtFile(WorkSpace + '\\Conf\\target.txt')
+    Target = TargetTxtDict(WorkSpace)
     ToolDef = ToolDefClassObject()
-    ToolDef.LoadToolDefFile(WorkSpace + '\\' + Target.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF])
+    if DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF in Target.TargetTxtDictionary:
+        gDefaultToolsDefFile = Target.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_TOOL_CHAIN_CONF]
+    ToolDef.LoadToolDefFile(os.path.normpath(os.path.join(WorkSpace, gDefaultToolsDefFile)))
     return ToolDef
 
 ##
