@@ -215,7 +215,7 @@ class DependencyExpression:
                     self.OpcodeList.append(Token)
                 else:
                     EdkLogger.error("GenDepex", PARSER_ERROR,
-                                    "Opcode=%s doesn't supported in %s stage " % (Op, self.Phase),
+                                    "Opcode=%s doesn't supported in %s stage " % (Token, self.Phase),
                                     ExtraData=str(self))
                 self.PostfixNotation.append(Token)
             LastToken = Token

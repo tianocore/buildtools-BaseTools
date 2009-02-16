@@ -2789,7 +2789,7 @@ class FdfParser:
             Rule = RuleSimpleFile.RuleSimpleFile()
 
             Rule.FvFileType = Type
-            Rule.Alignment = Alignment
+            Rule.Alignment = AlignValue
             Rule.CheckSum = CheckSum
             Rule.Fixed = Fixed
             Rule.FileExtension = Ext

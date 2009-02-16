@@ -25,6 +25,9 @@ FILE_COPY_FAILURE = 11
 FILE_POSITIONING_FAILURE = 12
 FILE_ALREADY_EXIST = 13
 FILE_NOT_FOUND = 14
+FILE_TYPE_MISMATCH = 15
+FILE_CASE_MISMATCH = 16
+FILE_DUPLICATED = 17
 FILE_UNKNOWN_ERROR = 0x0FFF
 
 OPTION_UNKNOWN = 0x1000
@@ -95,6 +98,9 @@ gErrorMessage = {
     FILE_COPY_FAILURE       :   "File copy failure",
     FILE_POSITIONING_FAILURE:   "Failed to seeking position",
     FILE_ALREADY_EXIST      :   "File or directory already exists",
+    FILE_TYPE_MISMATCH      :   "Incorrect file type",
+    FILE_CASE_MISMATCH      :   "File name case mismatch",
+    FILE_DUPLICATED         :   "Duplicated file found",
     FILE_UNKNOWN_ERROR      :   "Unknown error encountered on file",
 
     OPTION_UNKNOWN          :   "Unknown option",

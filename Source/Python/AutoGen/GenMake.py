@@ -69,7 +69,9 @@ else:
 #
 class BuildFile(object):
     ## template used to generate the build file (i.e. makefile if using make)
-    _TEMPLATE_ = ''
+    _TEMPLATE_ = TemplateString('')
+
+    _DEFAULT_FILE_NAME_ = "Makefile"
 
     ## default file name for each type of build file
     _FILE_NAME_ = {
@@ -141,6 +143,21 @@ class BuildFile(object):
         "gmake" :   "$(RD) %(dir)s"
     }
 
+    _CD_TEMPLATE_ = {
+        "nmake" :   'if exist %(dir)s cd %(dir)s',
+        "gmake" :   "test -e %(dir)s && cd %(dir)s"
+    }
+
+    _MAKE_TEMPLATE_ = {
+        "nmake" :   'if exist %(file)s $(MAKE) $(MAKE_FLAGS) -f %(file)s',
+        "gmake" :   "test -e %(file)s && $(MAKE) $(MAKE_FLAGS) -f %(file)s"
+    }
+
+    _INCLUDE_CMD_ = {
+        "nmake" :   '!INCLUDE',
+        "gmake" :   "include"
+    }
+
     _INC_FLAG_ = {"MSFT" : "/I", "GCC" : "-I", "INTEL" : "-I"}
 
     ## Constructor of BuildFile
@@ -163,11 +180,9 @@ class BuildFile(object):
             EdkLogger.error("build", PARAMETER_INVALID, "Invalid build type [%s]" % FileType,
                             ExtraData="[%s]" % str(self._AutoGenObject))
         self._FileType = FileType
-        FileContent = TemplateString()
-        FileContent.Append(self._TEMPLATE_, self._TemplateDict)
-
+        FileContent = self._TEMPLATE_.Replace(self._TemplateDict)
         FileName = self._FILE_NAME_[FileType]
-        return SaveFileOnChange(os.path.join(self._AutoGenObject.MakeFileDir, FileName), str(FileContent), False)
+        return SaveFileOnChange(os.path.join(self._AutoGenObject.MakeFileDir, FileName), FileContent, False)
 
     ## Return a list of directory creation command string
     #
@@ -187,6 +202,18 @@ class BuildFile(object):
     def GetRemoveDirectoryCommand(self, DirList):
         return [self._RD_TEMPLATE_[self._FileType] % {'dir':Dir} for Dir in DirList]
 
+    def PlaceMacro(self, Path, MacroDefinitions={}):
+        if Path.startswith("$("):
+            return Path
+        else:
+            PathLength = len(Path)
+            for MacroName in MacroDefinitions:
+                MacroValue = MacroDefinitions[MacroName]
+                MacroValueLength = len(MacroValue)
+                if MacroValueLength <= PathLength and Path.startswith(MacroValue):
+                    Path = "$(%s)%s" % (MacroName, Path[MacroValueLength:])
+                    break
+            return Path
 
 ## ModuleMakefile class
 #
@@ -195,7 +222,7 @@ class BuildFile(object):
 #
 class ModuleMakefile(BuildFile):
     ## template used to generate the makefile for module
-    _TEMPLATE_ = '''\
+    _TEMPLATE_ = TemplateString('''\
 ${makefile_header}
 
 #
@@ -247,24 +274,17 @@ DEST_DIR_OUTPUT = $(OUTPUT_DIR)
 DEST_DIR_DEBUG = $(DEBUG_DIR)
 
 #
-# Tools Flag Macro (from platform/module description file, tools_def.txt)
-#
-${BEGIN}${module_tool_flags}
-${END}
-
-#
-# Tools Path Macro
-#
-${BEGIN}${tool_code} = ${tool_path}
-${END}
-
-MAKE_FILE = ${makefile_path}
-
-#
 # Shell Command Macro
 #
 ${BEGIN}${shell_command_code} = ${shell_command}
 ${END}
+
+#
+# Tools definitions specific to this module
+#
+${BEGIN}${module_tool_definitions}
+${END}
+MAKE_FILE = ${makefile_path}
 
 #
 # Build Macro
@@ -328,7 +348,7 @@ fds: mbuild gen_fds
 init: info dirs
 
 info:
-\t-@echo Building ... $(MODULE_FILE) [$(ARCH)]
+\t-@echo Building ... $(MODULE_DIR)${separator}$(MODULE_FILE) [$(ARCH)]
 
 dirs:
 ${BEGIN}\t-@${create_directory_command}\n${END}
@@ -340,14 +360,14 @@ strdefs:
 # GenLibsTarget
 #
 gen_libs:
-\t${BEGIN}@cd ${dependent_library_build_directory} && "$(MAKE)" $(MAKE_FLAGS)
+\t${BEGIN}@$(MAKE) $(MAKE_FLAGS) -f ${dependent_library_build_directory}${separator}${makefile_name}
 \t${END}@cd $(MODULE_BUILD_DIR)
 
 #
 # Build Flash Device Image
 #
 gen_fds:
-\t@cd $(BUILD_DIR) && "$(MAKE)" $(MAKE_FLAGS) fds
+\t@$(MAKE) $(MAKE_FLAGS) -f $(BUILD_DIR)${separator}${makefile_name} fds
 \t@cd $(MODULE_BUILD_DIR)
 
 #
@@ -356,11 +376,9 @@ gen_fds:
 ${BEGIN}${file_build_target}
 ${END}
 
-
 #
 # clean all intermediate files
 #
-
 clean:
 \t${BEGIN}${clean_command}
 \t${END}
@@ -368,26 +386,20 @@ clean:
 #
 # clean all generated files
 #
-
 cleanall:
 ${BEGIN}\t${cleanall_command}
 ${END}\t$(RM) *.pdb *.idb > NUL 2>&1
 \t$(RM) $(BIN_DIR)${separator}$(MODULE_NAME).efi
 
 #
-# clean pre-compiled header files
-#
-
-cleanpch:
-\t$(RM) $(OUTPUT_DIR)\*.pch > NUL 2>&1
-
-#
 # clean all dependent libraries built
 #
-
 cleanlib:
-\t${BEGIN}@cd ${dependent_library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) cleanall
-\t${END}@cd $(MODULE_BUILD_DIR)\n'''
+\t${BEGIN}-@${library_build_command} cleanall
+\t${END}@cd $(MODULE_BUILD_DIR)\n\n''')
+
+    _FILE_MACRO_TEMPLATE = TemplateString("${macro_name} = ${BEGIN} \\\n    ${source_file}${END}\n")
+    _BUILD_TARGET_TEMPLATE = TemplateString("${BEGIN}${target} : ${deps}\n${END}\t${cmd}\n")
 
     ## Constructor of ModuleMakefile
     #
@@ -406,8 +418,8 @@ cleanlib:
         self.BuildTargetList = []           # [target string]
         self.PendingBuildTargetList = []    # [FileBuildRule objects]
         self.CommonFileDependency = []
-        self.FileDatabase = {}
-        self.ListFileSet = set()
+        self.FileListMacros = {}
+        self.ListFileMacros = {}
 
         self.FileDependency = []
         self.LibraryBuildCommandList = []
@@ -415,6 +427,13 @@ cleanlib:
         self.LibraryMakefileList = []
         self.LibraryBuildDirectoryList = []
         self.SystemLibraryList = []
+        self.Macros = sdict()
+        self.Macros["OUTPUT_DIR"      ] = self._AutoGenObject.Macros["OUTPUT_DIR"]
+        self.Macros["DEBUG_DIR"       ] = self._AutoGenObject.Macros["DEBUG_DIR"]
+        self.Macros["MODULE_BUILD_DIR"] = self._AutoGenObject.Macros["MODULE_BUILD_DIR"]
+        self.Macros["BIN_DIR"         ] = self._AutoGenObject.Macros["BIN_DIR"]
+        self.Macros["BUILD_DIR"       ] = self._AutoGenObject.Macros["BUILD_DIR"]
+        self.Macros["WORKSPACE"       ] = self._AutoGenObject.Macros["WORKSPACE"]
 
     # Compose a dict object containing information used to do replacement in template
     def _CreateTemplateDict(self):
@@ -428,11 +447,6 @@ cleanlib:
             EdkLogger.error("build", AUTOGEN_ERROR, "No files to be built in module [%s, %s, %s]"
                             % (self._AutoGenObject.BuildTarget, self._AutoGenObject.ToolChain, self._AutoGenObject.Arch),
                             ExtraData="[%s]" % str(self._AutoGenObject))
-        # convert source files and binary files to build target
-        if len(self._AutoGenObject.SourceFileList) > 0:
-            self.ProcessSourceFileList()
-        if len(self._AutoGenObject.BinaryFileList) > 0:
-            self.ProcessBinaryFileList()
 
         # convert dependent libaries to build command
         self.ProcessDependentLibrary()
@@ -457,53 +471,66 @@ cleanlib:
             # R9 modules always use "_ModuleEntryPoint" as entry point
             ImageEntryPoint = "_ModuleEntryPoint"
 
-        # USER_DEFINED modules should take care of tools definitions by its own
-        ToolsFlag = []
-        for tool in self._AutoGenObject.BuildOption:
+        # tools definitions
+        ToolsDef = []
+        for Tool in self._AutoGenObject.BuildOption:
             # Don't generate MAKE_FLAGS in makefile. It's put in environment variable.
-            if tool == "MAKE":
-                continue 
-            ToolsFlag.append("%s_FLAGS = %s" % (tool, self._AutoGenObject.BuildOption[tool]))
+            if Tool == "MAKE":
+                continue
 
-        if self._AutoGenObject.IsLibrary:
-            if "STATIC_LIBRARY_FILES" in self.FileDatabase:
-                self.ResultFileList = self.FileDatabase["STATIC_LIBRARY_FILES"]
-        elif self._AutoGenObject.ModuleType == "USER_DEFINED":
-            if "DYNAMIC_LIBRARY_FILES" in self.FileDatabase:
-                self.ResultFileList = self.FileDatabase["DYNAMIC_LIBRARY_FILES"]
+            for Attr in self._AutoGenObject.BuildOption[Tool]:
+                if Attr == "FAMILY":
+                    continue
+                elif Attr == "PATH":
+                    ToolsDef.append("%s = %s" % (Tool, self._AutoGenObject.BuildOption[Tool][Attr]))
+                else:
+                    ToolsDef.append("%s_%s = %s" % (Tool, Attr, self._AutoGenObject.BuildOption[Tool][Attr]))
+            ToolsDef.append("")
+
+        # convert source files and binary files to build targets
+        self.ResultFileList = [str(T.Target) for T in self._AutoGenObject.CodaTargetList]
         if len(self.ResultFileList) == 0:
             EdkLogger.error("build", AUTOGEN_ERROR, "Nothing to build",
                             ExtraData="[%s]" % str(self._AutoGenObject))
 
+        self.ProcessBuildTargetList()
+
+        # Generate macros used to represent input files
         FileMacroList = [] # macro name = file list
-        for FileListMacro in self.FileDatabase:
-            FileMacroTemplate = TemplateString()
-            if FileListMacro in self.ListFileSet:
-                ListFileName = os.path.join(self._AutoGenObject.OutputDir, "%s.lst" % FileListMacro.lower())
-                ListFileMacro = "%s_LIST" % FileListMacro
-                FileMacroTemplate.Append("%s = %s\n" % (ListFileMacro, ListFileName))
-                SaveFileOnChange(
-                    ListFileName,
-                    "\n".join(ReplaceMacros(self.FileDatabase[FileListMacro], self._AutoGenObject.Macros)),
-                    False
-                    )
-            FileMacroTemplate.Append("%s = ${BEGIN} \\\n    ${source_file}${END}\n" % FileListMacro,
-                            {"source_file" : self.FileDatabase[FileListMacro]})
-            FileMacroList.append(str(FileMacroTemplate))
+        for FileListMacro in self.FileListMacros:
+            FileMacro = self._FILE_MACRO_TEMPLATE.Replace(
+                                                    {
+                                                        "macro_name"  : FileListMacro,
+                                                        "source_file" : self.FileListMacros[FileListMacro]
+                                                    }
+                                                    )
+            FileMacroList.append(FileMacro)
 
         # INC_LIST is special
-        FileMacroTemplate = TemplateString()
+        FileMacro = ""
         IncPrefix = self._INC_FLAG_[self._AutoGenObject.ToolChainFamily]
-        IncludePathList = [IncPrefix+P for P in  self._AutoGenObject.IncludePathList]
-        if FileBuildRule.IncListMacro in self.ListFileSet:
-            ListFileName = os.path.join(self._AutoGenObject.OutputDir, "%s.lst" % FileBuildRule.IncListMacro.lower())
-            SaveFileOnChange(ListFileName, "\n".join(IncludePathList), False)
-            FileMacroTemplate.Append("%s = %s\n" % (FileBuildRule.IncListMacro, ListFileName))
-        FileMacroTemplate.Append(
-                            "INC = ${BEGIN}${include_path} \\\n      ${END}",
-                            {"include_path" : IncludePathList,}
-                            )
-        FileMacroList.append(str(FileMacroTemplate))
+        IncludePathList = []
+        for P in  self._AutoGenObject.IncludePathList:
+            IncludePathList.append(IncPrefix+self.PlaceMacro(P, self.Macros))
+            if FileBuildRule.INC_LIST_MACRO in self.ListFileMacros:
+                self.ListFileMacros[FileBuildRule.INC_LIST_MACRO].append(IncPrefix+P)
+        FileMacro += self._FILE_MACRO_TEMPLATE.Replace(
+                                                {
+                                                    "macro_name"   : "INC",
+                                                    "source_file" : IncludePathList
+                                                }
+                                                )
+        FileMacroList.append(FileMacro)
+
+        # Generate macros used to represent files containing list of input files
+        for ListFileMacro in self.ListFileMacros:
+            ListFileName = os.path.join(self._AutoGenObject.OutputDir, "%s.lst" % ListFileMacro.lower()[:len(ListFileMacro)-5])
+            FileMacroList.append("%s = %s" % (ListFileMacro, ListFileName))
+            SaveFileOnChange(
+                ListFileName,
+                "\n".join(self.ListFileMacros[ListFileMacro]),
+                False
+                )
 
         # R8 modules need <BaseName>StrDefs.h for string ID
         #if self._AutoGenObject.AutoGenVersion < 0x00010005 and len(self._AutoGenObject.UnicodeFileList) > 0:
@@ -513,9 +540,15 @@ cleanlib:
         BcTargetList = []
 
         MakefileName = self._FILE_NAME_[self._FileType]
+        LibraryMakeCommandList = []
+        for D in self.LibraryBuildDirectoryList:
+            Command = self._MAKE_TEMPLATE_[self._FileType] % {"file":os.path.join(D, MakefileName)}
+            LibraryMakeCommandList.append(Command)
+
         MakefileTemplateDict = {
             "makefile_header"           : self._FILE_HEADER_[self._FileType],
             "makefile_path"             : os.path.join("$(MODULE_BUILD_DIR)", MakefileName),
+            "makefile_name"             : MakefileName,
             "platform_name"             : self.PlatformInfo.Name,
             "platform_guid"             : self.PlatformInfo.Guid,
             "platform_version"          : self.PlatformInfo.Version,
@@ -526,8 +559,8 @@ cleanlib:
             "module_guid"               : self._AutoGenObject.Guid,
             "module_version"            : self._AutoGenObject.Version,
             "module_type"               : self._AutoGenObject.ModuleType,
-            "module_file"               : self._AutoGenObject._MetaFile,
-            "module_file_base_name"     : self._AutoGenObject.FileBase,
+            "module_file"               : self._AutoGenObject.MetaFile.Name,
+            "module_file_base_name"     : self._AutoGenObject.MetaFile.BaseName,
             "module_relative_directory" : self._AutoGenObject.SourceDir,
 
             "architecture"              : self._AutoGenObject.Arch,
@@ -540,10 +573,7 @@ cleanlib:
             "module_debug_directory"    : self._AutoGenObject.DebugDir,
 
             "separator"                 : Separator,
-            "module_tool_flags"         : ToolsFlag,
-
-            "tool_code"                 : self.PlatformInfo.ToolPath.keys(),
-            "tool_path"                 : self.PlatformInfo.ToolPath.values(),
+            "module_tool_definitions"   : ToolsDef,
 
             "shell_command_code"        : self._SHELL_CMD_[self._FileType].keys(),
             "shell_command"             : self._SHELL_CMD_[self._FileType].values(),
@@ -557,6 +587,7 @@ cleanlib:
             "clean_command"             : self.GetRemoveDirectoryCommand(["$(OUTPUT_DIR)"]),
             "cleanall_command"          : self.GetRemoveDirectoryCommand(["$(DEBUG_DIR)", "$(OUTPUT_DIR)"]),
             "dependent_library_build_directory" : self.LibraryBuildDirectoryList,
+            "library_build_command"     : LibraryMakeCommandList,
             "file_macro"                : FileMacroList,
             "file_build_target"         : self.BuildTargetList,
             "backward_compatible_target": BcTargetList,
@@ -564,240 +595,30 @@ cleanlib:
 
         return MakefileTemplateDict
 
-    ## Process source files to generate makefile targets and dependencies
-    #
-    #  The intermediate and final targets and dependencies are controlled by
-    #  build rules in $(WORKSPACE)/Conf/build_rule.txt. The dependencies of source
-    #  file are figured out by search included files in the source file.
-    #
-    def ProcessSourceFileList(self):
-        Separator = self._SEP_[self._FileType]
-
-        ForceIncludedFile = []
-        SourceFileList = []
-        ExtraDenpendencies = {}
-
-        Family = self._AutoGenObject.ToolChainFamily
-        BuildRule = self.PlatformInfo.BuildRule
-        Arch = self._AutoGenObject.Arch
-        BuildType = self._AutoGenObject.BuildType
-
-        CCodeFlag = False
-        FileList = self._AutoGenObject.SourceFileList
-        SourceDir = os.path.join(self._AutoGenObject.WorkspaceDir, self._AutoGenObject.SourceDir)
-        #SourceOverrideDir = os.path.join(self._AutoGenObject.WorkspaceDir, self._AutoGenObject.SourceOverrideDir)
-
-        for FileInfo in FileList:
-            F, SrcFileType, SrcFileBuildRule = FileInfo
-            # no rule, no build
-            if SrcFileBuildRule == None:
-                continue
-            if SrcFileType == "C-CODE-FILE":
-                CCodeFlag = True
-
-            NewDestDir = None
-            NewSourceDir, SourceDir, F = ValidFile3(GlobalData.gAllFiles,
-                                                    F,
-                                                    Workspace=GlobalData.gWorkspace,
-                                                    EfiSource=GlobalData.gEfiSource,
-                                                    EdkSource=GlobalData.gEcpSource,
-                                                    Dir=self._AutoGenObject.SourceDir,
-                                                    OverrideDir=self._AutoGenObject.SourceOverrideDir
-                                                    )
-            if SourceDir != NewSourceDir:
-                NewDestDir = SourceDir
-                SourceDir = NewSourceDir
-
-            SrcFileName = path.basename(F)
-            SrcFileBase, SrcFileExt = path.splitext(SrcFileName)
-            SrcFileDir = path.dirname(F)
-            if SrcFileDir == "":
-                SrcFileDir = "."
-            else:
-                P = "$(OUTPUT_DIR)" + Separator + SrcFileDir
-                if P not in self.IntermediateDirectoryList:
-                    self.IntermediateDirectoryList.append(P)
-                    CreateDirectory(os.path.join(self._AutoGenObject.OutputDir, SrcFileDir))
-
-            SrcFileRelativePath = os.path.join(SourceDir, F)
-
-            SrcFile, ExtraSrcFileList, DstFile, CommandList = SrcFileBuildRule.Apply(F, SourceDir, Separator, OverrideDestDir=NewDestDir)
-
-            if SrcFileBuildRule.FileListMacro not in self.FileDatabase:
-                self.FileDatabase[SrcFileBuildRule.FileListMacro] = []
-            self.FileDatabase[SrcFileBuildRule.FileListMacro].append(SrcFile)
-
-            if SrcFileBuildRule.GenerateListFile:
-                self.ListFileSet.add(SrcFileBuildRule.FileListMacro)
-            if SrcFileBuildRule.GenerateIncListFile:
-                self.ListFileSet.add(SrcFileBuildRule.IncListMacro)
-
-            SourceFileList.append(SrcFileRelativePath)
-            ExtraDenpendencies[SrcFileRelativePath] = ExtraSrcFileList
-
-            BuildTargetTemplate = "${BEGIN}%s : ${deps}\n"\
-                                  "${END}\t%s\n" % (DstFile, "\n\t".join(CommandList))
-            self.FileBuildTargetList.append((SrcFileRelativePath, BuildTargetTemplate))
-
-            while True:
-                # next target
-                DstFileType, DstFileBuildRule = BuildRule[SrcFileBuildRule.DestFileExt, BuildType, Arch, Family]
-                if DstFileType == None:
-                    DstFileType = "UNKNOWN-TYPE-FILE"
-
-                if DstFileBuildRule:
-                    if DstFileBuildRule.FileListMacro not in self.FileDatabase:
-                        self.FileDatabase[DstFileBuildRule.FileListMacro] = []
-                    self.FileDatabase[DstFileBuildRule.FileListMacro].append(DstFile)
-
-                    if DstFileBuildRule.GenerateListFile:
-                        self.ListFileSet.add(DstFileBuildRule.FileListMacro)
-                    if DstFileBuildRule.GenerateIncListFile:
-                        self.ListFileSet.add(DstFileBuildRule.IncListMacro)
-
-                if DstFileBuildRule != None and DstFileBuildRule.IsMultipleInput:
-                    if DstFileBuildRule not in self.PendingBuildTargetList:
-                        self.PendingBuildTargetList.append(DstFileBuildRule)
-                    break
-                elif DstFileBuildRule == None or len(DstFileBuildRule.CommandList) == 0:
-                    self.ResultFileList.append(DstFile)
-                    break
-
-                SrcFile, ExtraSrcFileList, DstFile, CommandList = DstFileBuildRule.Apply(DstFile, None, Separator)
-                BuildTargetString = "%s : %s %s\n"\
-                                    "\t%s\n" % (DstFile, SrcFile, " ".join(ExtraSrcFileList), "\n\t".join(CommandList))
-                self.FileBuildTargetList.append((SrcFile, BuildTargetString))
-                SrcFileBuildRule = DstFileBuildRule
-
-        # handle pending targets
-        TempBuildTargetList = []
-        while True:
-            while len(self.PendingBuildTargetList) > 0:
-                SrcFileBuildRule = self.PendingBuildTargetList.pop()
-                SrcFileList = []
-                if SrcFileBuildRule.FileListMacro not in self.FileDatabase:
-                    continue 
-                SrcFileList.extend(self.FileDatabase[SrcFileBuildRule.FileListMacro])
-
-                SrcFile, ExtraSrcFileList, DstFile, CommandList = SrcFileBuildRule.Apply(SrcFileList, None, Separator)
-                BuildTargetString = "%s : %s %s\n"\
-                                    "\t%s\n" % (DstFile, SrcFile, " ".join(ExtraSrcFileList), "\n\t".join(CommandList))
-                self.FileBuildTargetList.append((SrcFile, BuildTargetString))
-
-                # try to find next target
-                while True:
-                    DstFileType, DstFileBuildRule = BuildRule[SrcFileBuildRule.DestFileExt, BuildType, Arch, Family]
-                    if DstFileType == None:
-                        DstFileType = "UNKNOWN-TYPE-FILE"
-
-                    if DstFileBuildRule:
-                        if DstFileBuildRule.FileListMacro not in self.FileDatabase:
-                            self.FileDatabase[DstFileBuildRule.FileListMacro] = []
-                        self.FileDatabase[DstFileBuildRule.FileListMacro].append(DstFile)
-    
-                        if DstFileBuildRule.GenerateListFile:
-                            self.ListFileSet.add(DstFileBuildRule.FileListMacro)
-                        if DstFileBuildRule.GenerateIncListFile:
-                            self.ListFileSet.add(DstFileBuildRule.IncListMacro)
-
-                    if DstFileBuildRule != None and DstFileBuildRule.IsMultipleInput:
-                        TempBuildTargetList.append(DstFileBuildRule)
-                        break
-                    elif DstFileBuildRule == None or len(DstFileBuildRule.CommandList) == 0:
-                        self.ResultFileList.append(DstFile)
-                        break
-
-                    SrcFile, ExtraSrcFileList, DstFile, CommandList = DstFileBuildRule.Apply(DstFile, None, Separator)
-                    BuildTargetString = "%s : %s %s\n"\
-                                        "\t%s\n" % (DstFile, SrcFile, " ".join(ExtraSrcFileList), "\n\t".join(CommandList))
-                    self.FileBuildTargetList.append((SrcFile, BuildTargetString))
-                    SrcFileBuildRule = DstFileBuildRule
-            if len(TempBuildTargetList) == 0:
-                break
-            self.PendingBuildTargetList = TempBuildTargetList
-
-        # Build AutoGen files only if we have C source files
-        if CCodeFlag == True:
-            for F in self._AutoGenObject.AutoGenFileList:
-                SrcFileName = path.basename(F)
-                SrcFileBase, SrcFileExt = path.splitext(SrcFileName)
-                SrcFileDir = path.dirname(F)
-                if SrcFileDir == "":
-                    SrcFileDir = "."
-                else:
-                    P = "$(DEBUG_DIR)" + Separator + SrcFileDir
-                    if P not in self.IntermediateDirectoryList:
-                        self.IntermediateDirectoryList.append(P)
-                        CreateDirectory(os.path.join(self._AutoGenObject.DebugDir, SrcFileDir))
-
-                SrcFileRelativePath = os.path.join(self._AutoGenObject.DebugDir, F)
-
-                SrcFileType, SrcFileBuildRule = BuildRule[SrcFileExt, BuildType, Arch, Family]
-                if SrcFileType != None and SrcFileType == "C-HEADER-FILE":
-                    ForceIncludedFile.append(SrcFileRelativePath)
-                if SrcFileBuildRule == None or len(SrcFileBuildRule.CommandList) == 0:
-                    continue
-
-                SrcFile, ExtraSrcFileList, DstFile, CommandList = SrcFileBuildRule.Apply(F, self._AutoGenObject.DebugDir, Separator)
-
-                if SrcFileBuildRule.FileListMacro not in self.FileDatabase:
-                    self.FileDatabase[SrcFileBuildRule.FileListMacro] = []
-                self.FileDatabase[SrcFileBuildRule.FileListMacro].append(SrcFile)
-
-                if SrcFileBuildRule.GenerateListFile:
-                    self.ListFileSet.add(SrcFileBuildRule.FileListMacro)
-                if SrcFileBuildRule.GenerateIncListFile:
-                    self.ListFileSet.add(SrcFileBuildRule.IncListMacro)
-
-                SourceFileList.append(SrcFileRelativePath)
-                ExtraDenpendencies[SrcFileRelativePath] = ExtraSrcFileList
-
-                BuildTargetTemplate = "${BEGIN}%s : ${deps}\n"\
-                                      "${END}\t%s\n" % (DstFile, "\n\t".join(CommandList))
-                self.FileBuildTargetList.append((SrcFileRelativePath, BuildTargetTemplate))
-
-                while True:
-                    # next target
-                    DstFileType, DstFileBuildRule = BuildRule[SrcFileBuildRule.DestFileExt, BuildType, Arch, Family]
-                    if DstFileType == None:
-                        DstFileType = "UNKNOWN-TYPE-FILE"
-
-                    if DstFileBuildRule:
-                        if DstFileBuildRule.FileListMacro not in self.FileDatabase:
-                            self.FileDatabase[DstFileBuildRule.FileListMacro] = []
-                        self.FileDatabase[DstFileBuildRule.FileListMacro].append(DstFile)
-    
-                        if DstFileBuildRule.GenerateListFile:
-                            self.ListFileSet.add(DstFileBuildRule.FileListMacro)
-                        if DstFileBuildRule.GenerateIncListFile:
-                            self.ListFileSet.add(DstFileBuildRule.IncListMacro)
-
-                    if DstFileBuildRule != None and DstFileBuildRule.IsMultipleInput:
-                        if DstFileBuildRule not in self.PendingBuildTargetList:
-                            self.PendingBuildTargetList.append(DstFileBuildRule)
-                        break
-                    elif DstFileBuildRule == None or len(DstFileBuildRule.CommandList) == 0:
-                        self.ResultFileList.append(DstFile)
-                        break
-
-                    SrcFile, ExtraSrcFileList, DstFile, CommandList = DstFileBuildRule.Apply(DstFile, None, Separator)
-                    BuildTargetString = "%s : %s %s\n"\
-                                        "\t%s\n" % (DstFile, SrcFile, " ".join(ExtraSrcFileList), "\n\t".join(CommandList))
-                    self.FileBuildTargetList.append((SrcFile, BuildTargetString))
-                    SrcFileBuildRule = DstFileBuildRule
-
+    def ProcessBuildTargetList(self):
         #
         # Search dependency file list for each source file
         #
-        self.FileDependency = self.GetFileDependency(SourceFileList, ForceIncludedFile, self._AutoGenObject.IncludePathList)
+        ForceIncludedFile = []
+        for File in self._AutoGenObject.AutoGenFileList:
+            if File.Ext == '.h':
+                ForceIncludedFile.append(File)
+        SourceFileList = []
+        for Target in self._AutoGenObject.IntroTargetList:
+            SourceFileList.extend(Target.Inputs)
+
+        self.FileDependency = self.GetFileDependency(
+                                    SourceFileList,
+                                    ForceIncludedFile,
+                                    self._AutoGenObject.IncludePathList
+                                    )
         DepSet = None
         for File in self.FileDependency:
-            if self.FileDependency[File] == []:
+            if not self.FileDependency[File]:
                 self.FileDependency[File] = ['$(FORCE_REBUILD)']
-            elif File in ExtraDenpendencies:
-                self.FileDependency[File] += ExtraDenpendencies[File]
+                continue
             # skip non-C files
-            if (not File.endswith(".c") and not File.endswith(".C")) or File.endswith("AutoGen.c"):
+            if File.Ext not in [".c", ".C"] or File.Name == "AutoGen.c":
                 continue
             elif DepSet == None:
                 DepSet = set(self.FileDependency[File])
@@ -809,56 +630,63 @@ cleanlib:
         #
         # Extract comman files list in the dependency files
         #
-        self.CommonFileDependency = list(DepSet)
+        for File in DepSet:
+            self.CommonFileDependency.append(self.PlaceMacro(File.Path, self.Macros))
+
         for File in self.FileDependency:
             # skip non-C files
-            if (not File.endswith(".c") and not File.endswith(".C")) or File.endswith("AutoGen.c"):
+            if File.Ext not in [".c", ".C"] or File.Name == "AutoGen.c":
                 continue
             NewDepSet = set(self.FileDependency[File])
             NewDepSet -= DepSet
             self.FileDependency[File] = ["$(COMMON_DEPS)"] + list(NewDepSet)
 
-        # EdkLogger.verbose("Files to be built in %s :\n\t %s\n" % (str(self._AutoGenObject), "\n\t".join(self.FileDependency.keys())))
-        for File, TargetTemplate in self.FileBuildTargetList:
-            if File not in self.FileDependency:
-                self.BuildTargetList.append(TargetTemplate)
-                continue
-            Template = TemplateString()
-            Template.Append(TargetTemplate, {"deps" : self.FileDependency[File]})
-            self.BuildTargetList.append(str(Template))
+        # Convert target description object to target string in makefile
+        for Type in self._AutoGenObject.Targets:
+            for T in self._AutoGenObject.Targets[Type]:
+                # Generate related macros if needed
+                if T.GenFileListMacro and T.FileListMacro not in self.FileListMacros:
+                    self.FileListMacros[T.FileListMacro] = []
+                if T.GenListFile and T.ListFileMacro not in self.ListFileMacros:
+                    self.ListFileMacros[T.ListFileMacro] = []
+                if T.GenIncListFile and T.IncListFileMacro not in self.ListFileMacros:
+                    self.ListFileMacros[T.IncListFileMacro] = []
 
-    ## Process binary files to generate makefile targets and dependencies
-    #
-    # All binary files are just copied to $(OUTPUT_DIR)
-    #
-    def ProcessBinaryFileList(self):
-        BinaryFiles = self._AutoGenObject.BinaryFileList
-        BuildTargetString = "%(dst)s : %(src)s\n"\
-                            "\t$(CP) %(src)s %(dst)s\n"
-        for File,FileType,FileBuildRule in BinaryFiles:
-            if FileBuildRule and FileBuildRule.FileListMacro not in self.FileDatabase:
-                self.FileDatabase[FileBuildRule.FileListMacro] = []
-            Src = os.path.join("$(MODULE_DIR)", File)
-            FileName = os.path.basename(File)
-            Dst = os.path.join("$(OUTPUT_DIR)", FileName)
-            if FileBuildRule:
-                self.FileDatabase[FileBuildRule.FileListMacro].append(Dst)
-            elif FileType == "LIB":
-                if "STATIC_LIBRARY_FILES" not in self.FileDatabase:
-                    self.FileDatabase["STATIC_LIBRARY_FILES"] = []
-                self.FileDatabase["STATIC_LIBRARY_FILES"].append(Dst)
-            self.ResultFileList.append(Dst)
-            self.BuildTargetList.append(BuildTargetString % {"dst":Dst, "src":Src})
+                Deps = []
+                # Add force-dependencies
+                for Dep in T.Dependencies:
+                    Deps.append(self.PlaceMacro(str(Dep), self.Macros))
+                # Add inclusion-dependencies
+                if len(T.Inputs) == 1 and T.Inputs[0] in self.FileDependency:
+                    for F in self.FileDependency[T.Inputs[0]]:
+                        Deps.append(self.PlaceMacro(str(F), self.Macros))
+                # Add source-dependencies
+                for F in T.Inputs:
+                    NewFile = self.PlaceMacro(str(F), self.Macros)
+                    # In order to use file list macro as dependency
+                    if T.GenListFile:
+                        self.ListFileMacros[T.ListFileMacro].append(str(F))
+                        self.FileListMacros[T.FileListMacro].append(NewFile)
+                    elif T.GenFileListMacro:
+                        self.FileListMacros[T.FileListMacro].append(NewFile)
+                    else:
+                        Deps.append(NewFile)
+
+                # Use file list macro as dependency
+                if T.GenFileListMacro:
+                    Deps.append("$(%s)" % T.FileListMacro)
+
+                TargetDict = {
+                    "target"    :   self.PlaceMacro(T.Target.Path, self.Macros),
+                    "cmd"       :   "\n\t".join(T.Commands),
+                    "deps"      :   Deps
+                }
+                self.BuildTargetList.append(self._BUILD_TARGET_TEMPLATE.Replace(TargetDict))
 
     ## For creating makefile targets for dependent libraries
     def ProcessDependentLibrary(self):
         for LibraryAutoGen in self._AutoGenObject.LibraryAutoGenList:
-            self.LibraryBuildDirectoryList.append(LibraryAutoGen.BuildDir)
-            File = os.path.join(LibraryAutoGen.OutputDir, LibraryAutoGen.Name + ".lib")
-            self.LibraryFileList.append(File)
-            if "STATIC_LIBRARY_FILES" not in self.FileDatabase:
-                self.FileDatabase["STATIC_LIBRARY_FILES"] = []
-            self.FileDatabase["STATIC_LIBRARY_FILES"].append(File)
+            self.LibraryBuildDirectoryList.append(self.PlaceMacro(LibraryAutoGen.BuildDir, self.Macros))
 
     ## Return a list containing source file's dependencies
     #
@@ -888,7 +716,6 @@ cleanlib:
     #
     def GetDependencyList(self, File, ForceList, SearchPathList):
         EdkLogger.debug(EdkLogger.DEBUG_1, "Try to get dependency files for %s" % File)
-        EdkLogger.debug(EdkLogger.DEBUG_0, "Including %s" % " ".join(ForceList))
         FileStack = [File] + ForceList
         DependencySet = set()
         MacroUsedByIncludedFile = False
@@ -896,21 +723,21 @@ cleanlib:
         if self._AutoGenObject.Arch not in gDependencyDatabase:
             gDependencyDatabase[self._AutoGenObject.Arch] = {}
         DepDb = gDependencyDatabase[self._AutoGenObject.Arch]
+
         while len(FileStack) > 0:
-            EdkLogger.debug(EdkLogger.DEBUG_0, "Stack %s" % "\n\t".join(FileStack))
             F = FileStack.pop()
 
             CurrentFileDependencyList = []
-            if F in DepDb and not IsChanged(F):
+            if F in DepDb:
                 CurrentFileDependencyList = DepDb[F]
                 for Dep in CurrentFileDependencyList:
                     if Dep not in FileStack and Dep not in DependencySet:
                         FileStack.append(Dep)
             else:
                 try:
-                    Fd = open(F, 'r')
-                except:
-                    EdkLogger.error("build", FILE_OPEN_FAILURE, ExtraData=F)
+                    Fd = open(F.Path, 'r')
+                except BaseException, X:
+                    EdkLogger.error("build", FILE_OPEN_FAILURE, ExtraData=F.Path+"\n\t"+str(X))
 
                 FileContent = Fd.read()
                 Fd.close()
@@ -921,7 +748,7 @@ cleanlib:
                     FileContent = unicode(FileContent, "utf-16")
                 IncludedFileList = gIncludePattern.findall(FileContent)
 
-                CurrentFilePath = os.path.dirname(F)
+                CurrentFilePath = F.Dir
                 for Inc in IncludedFileList:
                     # if there's macro used to reference header file, expand it
                     HeaderList = gMacroPattern.findall(Inc)
@@ -939,6 +766,7 @@ cleanlib:
                         FilePath = os.path.join(SearchPath, Inc)
                         if not os.path.exists(FilePath) or FilePath in CurrentFileDependencyList:
                             continue
+                        FilePath = PathClass(FilePath)
                         CurrentFileDependencyList.append(FilePath)
                         if FilePath not in FileStack and FilePath not in DependencySet:
                             FileStack.append(FilePath)
@@ -965,7 +793,6 @@ cleanlib:
             DependencyList = []
         else:
             DependencyList = list(DependencySet)  # remove duplicate ones
-            DependencyList.append(File)
 
         return DependencyList
 
@@ -978,7 +805,7 @@ cleanlib:
 #
 class CustomMakefile(BuildFile):
     ## template used to generate the makefile for module with custom makefile
-    _TEMPLATE_ = '''\
+    _TEMPLATE_ = TemplateString('''\
 ${makefile_header}
 
 #
@@ -1026,17 +853,10 @@ DEST_DIR_OUTPUT = $(OUTPUT_DIR)
 DEST_DIR_DEBUG = $(DEBUG_DIR)
 
 #
-# Tools Flag Macro (from platform/module description file, tools_def.txt)
+# Tools definitions specific to this module
 #
-${BEGIN}${module_tool_flags}
+${BEGIN}${module_tool_definitions}
 ${END}
-
-#
-# Tools Path Macro
-#
-${BEGIN}${tool_code} = ${tool_path}
-${END}
-
 MAKE_FILE = ${makefile_path}
 
 #
@@ -1070,10 +890,11 @@ tbuild: all
 # Initialization target: print build information and create necessary directories
 #
 init:
-\t-@echo Building ... $(MODULE_FILE) [$(ARCH)]
+\t-@echo Building ... $(MODULE_DIR)${separator}$(MODULE_FILE) [$(ARCH)]
 ${BEGIN}\t-@${create_directory_command}\n${END}\
 
-'''
+''')
+
     ## Constructor of CustomMakefile
     #
     #   @param  ModuleAutoGen   Object of ModuleAutoGen class
@@ -1099,12 +920,20 @@ ${BEGIN}\t-@${create_directory_command}\n${END}\
             EdkLogger.error('build', FILE_OPEN_FAILURE, File=str(self._AutoGenObject),
                             ExtraData=self._AutoGenObject.CustomMakefile[self._FileType])
 
-        ToolsFlag = []
-        for tool in self._AutoGenObject.BuildOption:
+        # tools definitions
+        ToolsDef = []
+        for Tool in self._AutoGenObject.BuildOption:
             # Don't generate MAKE_FLAGS in makefile. It's put in environment variable.
-            if tool == "MAKE":
-                continue 
-            ToolsFlag.append("%s_FLAGS = %s" % (tool, self._AutoGenObject.BuildOption[tool]))
+            if Tool == "MAKE":
+                continue
+            for Attr in self._AutoGenObject.BuildOption[Tool]:
+                if Attr == "FAMILY":
+                    continue
+                elif Attr == "PATH":
+                    ToolsDef.append("%s = %s" % (Tool, self._AutoGenObject.BuildOption[Tool][Attr]))
+                else:
+                    ToolsDef.append("%s_%s = %s" % (Tool, Attr, self._AutoGenObject.BuildOption[Tool][Attr]))
+            ToolsDef.append("")
 
         MakefileName = self._FILE_NAME_[self._FileType]
         MakefileTemplateDict = {
@@ -1120,7 +949,7 @@ ${BEGIN}\t-@${create_directory_command}\n${END}\
             "module_guid"               : self._AutoGenObject.Guid,
             "module_version"            : self._AutoGenObject.Version,
             "module_type"               : self._AutoGenObject.ModuleType,
-            "module_file"               : self._AutoGenObject._MetaFile,
+            "module_file"               : self._AutoGenObject.MetaFile,
             "module_file_base_name"     : self._AutoGenObject.FileBase,
             "module_relative_directory" : self._AutoGenObject.SourceDir,
 
@@ -1134,13 +963,10 @@ ${BEGIN}\t-@${create_directory_command}\n${END}\
             "module_debug_directory"    : self._AutoGenObject.DebugDir,
 
             "separator"                 : Separator,
-            "module_tool_flags"         : ToolsFlag,
+            "module_tool_definitions"   : ToolsDef,
 
             "shell_command_code"        : self._SHELL_CMD_[self._FileType].keys(),
             "shell_command"             : self._SHELL_CMD_[self._FileType].values(),
-
-            "tool_code"                 : self.PlatformInfo.ToolPath.keys(),
-            "tool_path"                 : self.PlatformInfo.ToolPath.values(),
 
             "create_directory_command"  : self.GetCreateDirectoryCommand(self.IntermediateDirectoryList),
             "custom_makefile_content"   : CustomMakefile
@@ -1158,7 +984,7 @@ ${BEGIN}\t-@${create_directory_command}\n${END}\
 #
 class PlatformMakefile(BuildFile):
     ## template used to generate the makefile for platform
-    _TEMPLATE_ = '''\
+    _TEMPLATE_ = TemplateString('''\
 ${makefile_header}
 
 #
@@ -1190,8 +1016,6 @@ FV_DIR = ${platform_build_directory}${separator}FV
 ${BEGIN}${shell_command_code} = ${shell_command}
 ${END}
 
-MAKE = ${make_path}
-MAKE_FLAGS = ${make_flag}
 MAKE_FILE = ${makefile_path}
 
 #
@@ -1220,22 +1044,22 @@ modules: init build_libraries build_modules
 # Build all libraries:
 #
 build_libraries:
-${BEGIN}\t@cd ${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
+${BEGIN}\t@$(MAKE) $(MAKE_FLAGS) -f ${library_makefile_list} pbuild
 ${END}\t@cd $(BUILD_DIR)
 
 #
 # Build all modules:
 #
 build_modules:
-${BEGIN}\t@cd ${module_build_directory} && "$(MAKE)" $(MAKE_FLAGS) pbuild
+${BEGIN}\t@$(MAKE) $(MAKE_FLAGS) -f ${module_makefile_list} pbuild
 ${END}\t@cd $(BUILD_DIR)
 
 #
 # Clean intermediate files
 #
 clean:
-\t${BEGIN}@cd ${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) clean
-\t${END}${BEGIN}@cd ${module_build_directory} && "$(MAKE)" $(MAKE_FLAGS) clean
+\t${BEGIN}-@${library_build_command} clean
+\t${END}${BEGIN}-@${module_build_command} clean
 \t${END}@cd $(BUILD_DIR)
 
 #
@@ -1249,9 +1073,9 @@ ${END}
 # Clean all library files
 #
 cleanlib:
-\t${BEGIN}@cd ${library_build_directory} && "$(MAKE)" $(MAKE_FLAGS) cleanall
+\t${BEGIN}-@${library_build_command} cleanall
 \t${END}@cd $(BUILD_DIR)\n
-'''
+''')
 
     ## Constructor of PlatformMakefile
     #
@@ -1270,7 +1094,7 @@ cleanlib:
         Separator = self._SEP_[self._FileType]
 
         PlatformInfo = self._AutoGenObject
-        if "MAKE" not in PlatformInfo.ToolPath:
+        if "MAKE" not in PlatformInfo.ToolDefinition:
             EdkLogger.error("build", OPTION_MISSING, "No MAKE command defined. Please check your tools_def.txt!",
                             ExtraData="[%s]" % str(self._AutoGenObject))
 
@@ -1279,21 +1103,38 @@ cleanlib:
         self.LibraryBuildDirectoryList = self.GetLibraryBuildDirectoryList()
 
         MakefileName = self._FILE_NAME_[self._FileType]
+        LibraryMakefileList = []
+        LibraryMakeCommandList = []
+        for D in self.LibraryBuildDirectoryList:
+            D = self.PlaceMacro(D, {"BUILD_DIR":PlatformInfo.BuildDir})
+            Makefile = os.path.join(D, MakefileName)
+            Command = self._MAKE_TEMPLATE_[self._FileType] % {"file":Makefile}
+            LibraryMakefileList.append(Makefile)
+            LibraryMakeCommandList.append(Command)
+
+        ModuleMakefileList = []
+        ModuleMakeCommandList = []
+        for D in self.ModuleBuildDirectoryList:
+            D = self.PlaceMacro(D, {"BUILD_DIR":PlatformInfo.BuildDir})
+            Makefile = os.path.join(D, MakefileName)
+            Command = self._MAKE_TEMPLATE_[self._FileType] % {"file":Makefile}
+            ModuleMakefileList.append(Makefile)
+            ModuleMakeCommandList.append(Command)
+
         MakefileTemplateDict = {
             "makefile_header"           : self._FILE_HEADER_[self._FileType],
             "makefile_path"             : os.path.join("$(BUILD_DIR)", MakefileName),
+            "makefile_name"             : MakefileName,
             "platform_name"             : PlatformInfo.Name,
             "platform_guid"             : PlatformInfo.Guid,
             "platform_version"          : PlatformInfo.Version,
-            "platform_file"             : self._AutoGenObject._MetaFile,
+            "platform_file"             : self._AutoGenObject.MetaFile,
             "platform_relative_directory": PlatformInfo.SourceDir,
             "platform_output_directory" : PlatformInfo.OutputDir,
             "platform_build_directory"  : PlatformInfo.BuildDir,
 
             "toolchain_tag"             : PlatformInfo.ToolChain,
             "build_target"              : PlatformInfo.BuildTarget,
-            "make_path"                 : PlatformInfo.ToolPath["MAKE"],
-            "make_flag"                 : PlatformInfo.ToolOption["MAKE"],
             "shell_command_code"        : self._SHELL_CMD_[self._FileType].keys(),
             "shell_command"             : self._SHELL_CMD_[self._FileType].values(),
             "build_architecture_list"   : self._AutoGenObject.Arch,
@@ -1301,9 +1142,10 @@ cleanlib:
             "separator"                 : Separator,
             "create_directory_command"  : self.GetCreateDirectoryCommand(self.IntermediateDirectoryList),
             "cleanall_command"          : self.GetRemoveDirectoryCommand(self.IntermediateDirectoryList),
-            "library_build_directory"   : self.LibraryBuildDirectoryList,
-            "module_build_directory"    : self.ModuleBuildDirectoryList,
-            "active_platform"           : PlatformInfo.WorkspaceDir + Separator + str(PlatformInfo),
+            "library_makefile_list"     : LibraryMakefileList,
+            "module_makefile_list"      : ModuleMakefileList,
+            "library_build_command"     : LibraryMakeCommandList,
+            "module_build_command"      : ModuleMakeCommandList,
         }
 
         return MakefileTemplateDict
@@ -1338,7 +1180,7 @@ cleanlib:
 #
 class TopLevelMakefile(BuildFile):
     ## template used to generate toplevel makefile
-    _TEMPLATE_ = '''\
+    _TEMPLATE_ = TemplateString('''\
 ${makefile_header}
 
 #
@@ -1367,8 +1209,6 @@ FV_DIR = ${platform_build_directory}${separator}FV
 ${BEGIN}${shell_command_code} = ${shell_command}
 ${END}
 
-MAKE = ${make_path}
-MAKE_FLAGS = ${make_flag}
 MAKE_FILE = ${makefile_path}
 
 #
@@ -1387,14 +1227,14 @@ init:
 # library build target
 #
 libraries: init
-${BEGIN}\t@cd $(BUILD_DIR)${separator}${arch} && "$(MAKE)" $(MAKE_FLAGS) libraries
+${BEGIN}\t@cd $(BUILD_DIR)${separator}${arch} && $(MAKE) $(MAKE_FLAGS) libraries
 ${END}\t@cd $(BUILD_DIR)
 
 #
 # module build target
 #
 modules: init
-${BEGIN}\t@cd $(BUILD_DIR)${separator}${arch} && "$(MAKE)" $(MAKE_FLAGS) modules
+${BEGIN}\t@cd $(BUILD_DIR)${separator}${arch} && $(MAKE) $(MAKE_FLAGS) modules
 ${END}\t@cd $(BUILD_DIR)
 
 #
@@ -1402,7 +1242,7 @@ ${END}\t@cd $(BUILD_DIR)
 #
 fds: init
 \t-@cd $(FV_DIR)
-${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -t $(TOOLCHAIN) -b $(TARGET) -p ${active_platform} -a ${build_architecture_list} ${log_level}${END}${BEGIN} -r ${fd} ${END}${BEGIN} -i ${fv} ${END}${BEGIN} -D ${macro} ${END}
+${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -t $(TOOLCHAIN) -b $(TARGET) -p ${active_platform} -a ${build_architecture_list} ${extra_options}${END}${BEGIN} -r ${fd} ${END}${BEGIN} -i ${fv} ${END}${BEGIN} -D ${macro} ${END}
 
 #
 # run command for emulator platform only
@@ -1416,7 +1256,7 @@ run:
 # Clean intermediate files
 #
 clean:
-${BEGIN}\t@cd $(BUILD_DIR)${separator}${arch} && "$(MAKE)" $(MAKE_FLAGS) clean
+${BEGIN}\t-@${sub_build_command} clean
 ${END}\t@cd $(BUILD_DIR)
 
 #
@@ -1430,9 +1270,9 @@ ${END}
 # Clean all library files
 #
 cleanlib:
-${BEGIN}\t@cd $(BUILD_DIR)${separator}${arch} && "$(MAKE)" $(MAKE_FLAGS) cleanlib
+${BEGIN}\t-@${sub_build_command} cleanlib
 ${END}\t@cd $(BUILD_DIR)\n
-'''
+''')
 
     ## Constructor of TopLevelMakefile
     #
@@ -1449,7 +1289,7 @@ ${END}\t@cd $(BUILD_DIR)\n
         # any platform autogen object is ok because we just need common information
         PlatformInfo = self._AutoGenObject
 
-        if "MAKE" not in PlatformInfo.ToolPath:
+        if "MAKE" not in PlatformInfo.ToolDefinition:
             EdkLogger.error("build", OPTION_MISSING, "No MAKE command defined. Please check your tools_def.txt!",
                             ExtraData="[%s]" % str(self._AutoGenObject))
 
@@ -1467,18 +1307,25 @@ ${END}\t@cd $(BUILD_DIR)\n
         else:
             FdfFileList = []
 
-        # pass log level to external program called in makefile, currently GenFds.exe
+        # pass extra common options to external program called in makefile, currently GenFds.exe
+        ExtraOption = ''
         LogLevel = EdkLogger.GetLevel()
         if LogLevel == EdkLogger.VERBOSE:
-            LogOption = "-v"
+            ExtraOption += " -v"
         elif LogLevel <= EdkLogger.DEBUG_9:
-            LogOption = "-d %d" % (LogLevel - 1)
+            ExtraOption += " -d %d" % (LogLevel - 1)
         elif LogLevel == EdkLogger.QUIET:
-            LogOption = "-q"
-        else:
-            LogOption = ""
+            ExtraOption += " -q"
+
+        if GlobalData.gCaseInsensitive:
+            ExtraOption += " -c"
 
         MakefileName = self._FILE_NAME_[self._FileType]
+        SubBuildCommandList = []
+        for A in PlatformInfo.ArchList:
+            Command = self._MAKE_TEMPLATE_[self._FileType] % {"file":os.path.join("$(BUILD_DIR)", A, MakefileName)}
+            SubBuildCommandList.append(Command)
+
         MakefileTemplateDict = {
             "makefile_header"           : self._FILE_HEADER_[self._FileType],
             "makefile_path"             : os.path.join("$(BUILD_DIR)", MakefileName),
@@ -1489,8 +1336,6 @@ ${END}\t@cd $(BUILD_DIR)\n
 
             "toolchain_tag"             : PlatformInfo.ToolChain,
             "build_target"              : PlatformInfo.BuildTarget,
-            "make_path"                 : PlatformInfo.ToolPath["MAKE"],
-            "make_flag"                 : PlatformInfo.ToolOption["MAKE"],
             "shell_command_code"        : self._SHELL_CMD_[self._FileType].keys(),
             "shell_command"             : self._SHELL_CMD_[self._FileType].values(),
             'arch'                      : list(PlatformInfo.ArchList),
@@ -1498,11 +1343,12 @@ ${END}\t@cd $(BUILD_DIR)\n
             "separator"                 : Separator,
             "create_directory_command"  : self.GetCreateDirectoryCommand(self.IntermediateDirectoryList),
             "cleanall_command"          : self.GetRemoveDirectoryCommand(self.IntermediateDirectoryList),
+            "sub_build_command"         : SubBuildCommandList,
             "fdf_file"                  : FdfFileList,
-            "active_platform"           : PlatformInfo.WorkspaceDir + Separator + str(PlatformInfo),
+            "active_platform"           : str(PlatformInfo),
             "fd"                        : PlatformInfo.FdTargetList,
             "fv"                        : PlatformInfo.FvTargetList,
-            "log_level"                 : LogOption,
+            "extra_options"             : ExtraOption,
             "macro"                     : MacroList,
         }
 

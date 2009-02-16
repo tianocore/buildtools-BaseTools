@@ -22,7 +22,7 @@ import FfsFileStatement
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 from CommonDataClass.FdfClass import AprioriSectionClassObject
 from Common.String import *
-from Common.Misc import SaveFileOnChange
+from Common.Misc import SaveFileOnChange,PathClass
 from Common import EdkLogger
 from Common.BuildToolError import *
 
@@ -79,11 +79,11 @@ class AprioriSection (AprioriSectionClassObject):
                 InfFileName = GenFdsGlobalVariable.MacroExtend(InfFileName, Dict, Arch)
 
                 if Arch != None:
-                    Inf = GenFdsGlobalVariable.WorkSpace.BuildObject[InfFileName, Arch]
+                    Inf = GenFdsGlobalVariable.WorkSpace.BuildObject[PathClass(InfFileName, GenFdsGlobalVariable.WorkSpaceDir), Arch]
                     Guid = Inf.Guid
 
                 else:
-                    Inf = GenFdsGlobalVariable.WorkSpace.BuildObject[InfFileName, 'COMMON']
+                    Inf = GenFdsGlobalVariable.WorkSpace.BuildObject[PathClass(InfFileName, GenFdsGlobalVariable.WorkSpaceDir), 'COMMON']
                     Guid = Inf.Guid
 
                     self.BinFileList = Inf.Module.Binaries

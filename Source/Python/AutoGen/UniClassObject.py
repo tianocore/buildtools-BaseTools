@@ -18,6 +18,7 @@ import os, codecs, re
 import Common.EdkLogger as EdkLogger
 from Common.BuildToolError import *
 from Common.String import GetLineNo
+from Common.Misc import PathClass
 
 ##
 # Static definitions
@@ -46,7 +47,7 @@ gIncludePattern = re.compile("^#include +[\"<]+([^\"< >]+)[>\"]+$", re.MULTILINE
 #
 # @param Uni:  The python unicode string
 #
-# @retval:     The formatted normal string 
+# @retval:     The formatted normal string
 #
 def UniToStr(Uni):
     return repr(Uni)[2:-1]
@@ -58,7 +59,7 @@ def UniToStr(Uni):
 #
 # @param Uni:    The python unicode string
 #
-# @retval List:  The formatted hex list 
+# @retval List:  The formatted hex list
 #
 def UniToHexList(Uni):
     List = []
@@ -83,7 +84,7 @@ def ConvertISO639ToRFC3066(LangName):
         LangName = 'fr-FR'
     if LangName == 'spa':
         LangName = 'es-ES'
-        
+
     return LangName
 
 ## StringDefClassObject
@@ -150,13 +151,13 @@ class UniFileClassObject(object):
         else:
             LangName = ConvertISO639ToRFC3066(Lang[1])
             LangPrintName = Lang[2][1:-1]
-        
+
         IsLangInDef = False
         for Item in self.LanguageDef:
             if Item[0] == LangName:
                 IsLangInDef = True
                 break;
-        
+
         if not IsLangInDef:
             self.LanguageDef.append([LangName, LangPrintName])
 
@@ -185,7 +186,7 @@ class UniFileClassObject(object):
                 Language = LanguageList[IndexI].split()[0]
                 Value = LanguageList[IndexI][LanguageList[IndexI].find(u'\"') + len(u'\"') : LanguageList[IndexI].rfind(u'\"')] #.replace(u'\r\n', u'')
                 self.AddStringToList(Name, Language, Value)
-    
+
     #
     # Get include file list and load them
     #
@@ -197,16 +198,16 @@ class UniFileClassObject(object):
     # Pre-process before parse .uni file
     #
     def PreProcess(self, File):
-        if not os.path.exists(File) or not os.path.isfile(File):
-            EdkLogger.error("Unicode File Parser", FILE_NOT_FOUND, ExtraData=File)
+        if not os.path.exists(File.Path) or not os.path.isfile(File.Path):
+            EdkLogger.error("Unicode File Parser", FILE_NOT_FOUND, ExtraData=File.Path)
 
-        Dir = os.path.dirname(File)
+        Dir = File.Dir
         try:
-            FileIn = codecs.open(File, mode='rb', encoding='utf-16').readlines()
+            FileIn = codecs.open(File.Path, mode='rb', encoding='utf-16').readlines()
         except UnicodeError, X:
-            EdkLogger.error("build", FILE_READ_FAILURE, "File read failure: %s" % str(X), ExtraData=File);
+            EdkLogger.error("build", FILE_READ_FAILURE, "File read failure: %s" % str(X), ExtraData=File.Path);
         except:
-            EdkLogger.error("build", FILE_OPEN_FAILURE, ExtraData=File);
+            EdkLogger.error("build", FILE_OPEN_FAILURE, ExtraData=File.Path);
 
         Lines = []
         #
@@ -240,7 +241,7 @@ class UniFileClassObject(object):
 
             IncList = gIncludePattern.findall(Line)
             if len(IncList) == 1:
-                Lines.extend(self.PreProcess(os.path.join(Dir, IncList[0])))
+                Lines.extend(self.PreProcess(PathClass(str(IncList[0]), Dir)))
                 continue
 
             Lines.append(Line)
@@ -357,7 +358,7 @@ class UniFileClassObject(object):
                 self.OrderedStringList[Language].append(StringDefClassObject(Name, Value, Referenced, Token, UseOtherLangDef))
             else:
                 self.OrderedStringList[Language].insert(Index, StringDefClassObject(Name, Value, Referenced, Token, UseOtherLangDef))
-                
+
     #
     # Set the string as referenced
     #
@@ -376,7 +377,7 @@ class UniFileClassObject(object):
                 return Item
 
         return None
-    
+
     #
     # Search the string in language definition by Token
     #
@@ -428,7 +429,7 @@ class UniFileClassObject(object):
         for Index in range(len(NotReferencedStringList)):
             NotReferencedStringList[Index].Token = Token + Index
             self.OrderedStringList[LangName].append(NotReferencedStringList[Index])
-            
+
         #
         # Adjust the orders of other languages
         #

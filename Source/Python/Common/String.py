@@ -209,7 +209,7 @@ def ReplaceMacros(StringList, MacroDefinitions={}, SelfReplacement = False):
 #
 def ReplaceMacro(String, MacroDefinitions={}, SelfReplacement = False):
     LastString = String
-    while MacroDefinitions != None and len(MacroDefinitions) > 0:
+    while MacroDefinitions:
         MacroUsed = gMacroPattern.findall(String)
         # no macro found in String, stop replacing
         if len(MacroUsed) == 0:
@@ -240,18 +240,14 @@ def ReplaceMacro(String, MacroDefinitions={}, SelfReplacement = False):
 #
 def NormPath(Path, Defines = {}):
     IsRelativePath = False
-    if Path != '':
+    if Path:
         if Path[0] == '.':
-            IsRelativePath = True
-    
+            IsRelativePath = True    
         #
         # Replace with Define
         #
-        if len(Defines) > 0:
+        if Defines:
             Path = ReplaceMacro(Path, Defines)
-            # Remove leading path separator
-            if len(Path) > 0 and Path[0] in [DataType.TAB_SLASH, DataType.TAB_BACK_SLASH]:
-                Path = Path[1:]
         #
         # To local path format
         #
@@ -655,9 +651,5 @@ def GetHelpTextList(HelpTextClassList):
 # script.
 #
 if __name__ == '__main__':
-    print SplitModuleType('LibraryClasses.common.DXE_RUNTIME_DRIVER')
-    print SplitModuleType('Library.common')
-    print SplitModuleType('Librarsdsfwe')
-    print NormPath('sdfas//dsfsadf//dsfsd')
-    print NormPath('\\dsfsdf\\\\sd\\fsd\\dsfsdfsdf\\\\')
-    print ConvertToSqlString(("'sdf,'sdf'", "aaaaa'bbbbb"))
+    pass
+

@@ -14,7 +14,7 @@
 ## Import modules
 import sys, os, logging
 import traceback
-from  Common.BuildToolError import *
+from  BuildToolError import *
 
 ## Log level constants
 DEBUG_0 = 1

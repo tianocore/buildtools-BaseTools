@@ -128,16 +128,16 @@ class Section (SectionClassObject):
         FileList = []
         if FileType != None:
             for File in FfsInf.BinFileList:
-                if File.SupArchList == [] or FfsInf.CurrentArch in File.SupArchList:
-                    if File.FileType == FileType:
+                if File.Arch == "COMMON" or FfsInf.CurrentArch == File.Arch:
+                    if File.Type == FileType:
                         if '*' in FfsInf.TargetOverrideList or File.Target == '*' or File.Target in FfsInf.TargetOverrideList or FfsInf.TargetOverrideList == []:
-                            FileList.append(os.path.join(GenFdsGlobalVariable.WorkSpaceDir, FfsInf.SourceDir, File.BinaryFile))
+                            FileList.append(File.Path)
                         else:
-                            GenFdsGlobalVariable.InfLogger ("\nBuild Target \'%s\' of File %s is not in the Scope of %s specified by INF %s in FDF" %(File.Target, File.BinaryFile, FfsInf.TargetOverrideList, FfsInf.InfFileName))
+                            GenFdsGlobalVariable.InfLogger ("\nBuild Target \'%s\' of File %s is not in the Scope of %s specified by INF %s in FDF" %(File.Target, File.File, FfsInf.TargetOverrideList, FfsInf.InfFileName))
                     else:
-                        GenFdsGlobalVariable.InfLogger ("\nFile Type \'%s\' of File %s in %s is not same with file type \'%s\' from Rule in FDF" %(File.FileType, File.BinaryFile, FfsInf.InfFileName, FileType))
+                        GenFdsGlobalVariable.InfLogger ("\nFile Type \'%s\' of File %s in %s is not same with file type \'%s\' from Rule in FDF" %(File.Type, File.File, FfsInf.InfFileName, FileType))
                 else:
-                        GenFdsGlobalVariable.InfLogger ("\nCurrent ARCH \'%s\' of File %s is not in the Support Arch Scope of %s specified by INF %s in FDF" %(FfsInf.CurrentArch, File.BinaryFile, File.SupArchList, FfsInf.InfFileName))
+                    GenFdsGlobalVariable.InfLogger ("\nCurrent ARCH \'%s\' of File %s is not in the Support Arch Scope of %s specified by INF %s in FDF" %(FfsInf.CurrentArch, File.File, File.Arch, FfsInf.InfFileName))
 
         if Suffix != None and os.path.exists(FfsInf.EfiOutputPath):
 #            FileList.extend(glob.glob(os.path.join(FfsInf.EfiOutputPath, "*" + Suffix)))

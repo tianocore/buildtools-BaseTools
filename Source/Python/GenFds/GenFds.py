@@ -33,7 +33,7 @@ import Common.DataType
 import Common.GlobalData as GlobalData
 from Common import EdkLogger
 from Common.String import *
-from Common.Misc import DirCache
+from Common.Misc import DirCache,PathClass
 
 ## Version and Copyright
 versionNumber = "1.0"
@@ -52,6 +52,8 @@ __copyright__ = "Copyright (c) 2007, Intel Corporation  All rights reserved."
 def main():
     global Options
     Options = myOptionParser()
+    GlobalData.gCaseInsensitive = Options.CaseInsensitive
+
     global Workspace
     Workspace = ""
     ArchList = None
@@ -137,13 +139,13 @@ def main():
         else :
             EdkLogger.error("GenFds", BuildToolError.OPTION_MISSING, "Missing active platform")
 
-        GenFdsGlobalVariable.ActivePlatform = NormPath(ActivePlatform)
+        GenFdsGlobalVariable.ActivePlatform = PathClass(NormPath(ActivePlatform), Workspace)
 
         BuildConfigurationFile = os.path.normpath(os.path.join(GenFdsGlobalVariable.WorkSpaceDir, "Conf/target.txt"))
         if os.path.isfile(BuildConfigurationFile) == True:
             TargetTxtClassObject.TargetTxtClassObject(BuildConfigurationFile)
         else:
-            EdkLogger.error("GenFds", BuildToolError.FILE_NOT_FOUND, ExtraData=BuildConfigrationFile)
+            EdkLogger.error("GenFds", BuildToolError.FILE_NOT_FOUND, ExtraData=BuildConfigurationFile)
 
         if Options.Macros:
             for Pair in Options.Macros:
@@ -182,7 +184,7 @@ def main():
             EdkLogger.error("GenFds", GENFDS_ERROR, "Target ARCH %s not in platform supported ARCH %s" % (str(ArchList), str(BuildWorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'COMMON'].SupArchList)))
         
         for Arch in ArchList:
-            GenFdsGlobalVariable.OutputDirFromDscDict[Arch] = NormPath(BuildWorkSpace.BuildObject[ActivePlatform, Arch].OutputDirectory)
+            GenFdsGlobalVariable.OutputDirFromDscDict[Arch] = NormPath(BuildWorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, Arch].OutputDirectory)
 
         if (Options.outputDir):
             OutputDirFromCommandLine = GenFdsGlobalVariable.ReplaceWorkspaceMacro(Options.outputDir)
@@ -279,6 +281,7 @@ def myOptionParser():
     Parser.add_option("-t", "--tagname", action="store", type="string", dest="ToolChain", help="Using the tools: TOOL_CHAIN_TAG name to build the platform.")
     Parser.add_option("-D", "--define", action="append", type="string", dest="Macros", help="Macro: \"Name [= Value]\".")
     Parser.add_option("-s", "--specifyaddress", dest="FixedAddress", action="store_true", type=None, help="Specify driver load address.")
+    Parser.add_option("-c", "--case-insensitive", dest="CaseInsensitive", action="store_true", type=None, help="Don't check case of file name.")
     (Options, args) = Parser.parse_args()
     return Options
 

@@ -164,7 +164,7 @@ def RemoveDirectory(Directory, Recursively=False):
             if os.path.isdir(File):
                 RemoveDirectory(File, Recursively)
             else:
-                os.remove(File)    
+                os.remove(File)
         os.chdir(CurrentDirectory)
     os.rmdir(Directory)
 
@@ -269,56 +269,6 @@ def DataRestore(File):
             Fd.close()
     return Data
 
-## Retrieve the real path name in file system
-#
-#   @param      Root    The root directory of path relative to
-#
-#   @retval     str     The path string if the path exists
-#   @retval     None    If path doesn't exist
-#
-class rpath:
-    def __init__(self, Root):
-        self._Root = Root
-        self._Data = {}
-
-    # =[] operator
-    def __getitem__(self, Path):
-        Cwd = os.getcwd()
-        RealPath =  None
-
-        SepIndex = Path.find(os.path.sep)
-        if SepIndex > -1:
-            Parent = Path[0:SepIndex]
-            ParentKey = Parent.upper()
-            os.chdir(self._Root)
-            if ParentKey not in self._Data:
-                for F in os.listdir("."):
-                    if os.path.isfile(F):
-                        self._Data[F.upper()] = F
-                    else:
-                        self._Data[F.upper()] = rpath(F)
-            if ParentKey in self._Data:
-                RealPath = self._Data[ParentKey][Path[SepIndex+1:]]
-        else:
-            PathKey = Path.upper()
-            os.chdir(self._Root)
-            if PathKey not in self._Data:
-                for F in os.listdir("."):
-                    if os.path.isfile(F):
-                        self._Data[F.upper()] = F
-                    else:
-                        self._Data[F.upper()] = rpath(F)
-            if PathKey in self._Data:
-                RealPath = str(self._Data[PathKey])
-
-        os.chdir(Cwd)
-        if RealPath == None:
-            return None
-        return os.path.join(self._Root, RealPath)
-
-    def __str__(self):
-        return self._Root
-
 ## Retrieve and cache the real path name in file system
 #
 #   @param      Root    The root directory of path relative to
@@ -336,6 +286,9 @@ class DirCache:
 
     # =[] operator
     def __getitem__(self, Path):
+        Path = Path[len(os.path.commonprefix([Path, self._Root])):]
+        if Path and Path[0] == os.path.sep:
+            Path = Path[1:]
         Path = Path.upper()
         if Path in self._CACHE_:
             return os.path.join(self._Root, self._CACHE_[Path])
@@ -372,9 +325,9 @@ class DirCache:
 
 ## Get all files of a directory
 #
-# @param Root:       Root dir 
+# @param Root:       Root dir
 # @param SkipList :  The files need be skipped
-# 
+#
 # @retval  A list of all files
 #
 def GetFiles(Root, SkipList=None, FullPath = True):
@@ -385,13 +338,13 @@ def GetFiles(Root, SkipList=None, FullPath = True):
             for Item in SkipList:
                 if Item in Dirs:
                     Dirs.remove(Item)
-        
+
         for File in Files:
             File = os.path.normpath(os.path.join(Root, File))
             if not FullPath:
                 File = File[len(OriPath) + 1:]
             FileList.append(File)
-    
+
     return FileList
 
 ## Check if gvien file exists or not
@@ -402,21 +355,39 @@ def GetFiles(Root, SkipList=None, FullPath = True):
 #   @retval     True    if file exists
 #   @retval     False   if file doesn't exists
 #
-def ValidFile(File, Ext=None, Dir='.', OverrideDir = ''):
+def ValidFile(File, Ext=None):
     if Ext != None:
         Dummy, FileExt = os.path.splitext(File)
         if FileExt.lower() != Ext.lower():
             return False
-    Wd = os.getcwd()
-    if OverrideDir != '' and OverrideDir != None:
-        os.chdir(OverrideDir)
-        if not os.path.exists(File):
-            os.chdir(Dir)
-            if not os.path.exists(File):
-                os.chdir(Wd)
-                return False
-    os.chdir(Wd)
+    if not os.path.exists(File):
+        return False
     return True
+
+def RealPath(File, Dir='', OverrideDir=''):
+    NewFile = os.path.normpath(os.path.join(Dir, File))
+    NewFile = GlobalData.gAllFiles[NewFile]
+    if not NewFile and OverrideDir:
+        NewFile = os.path.normpath(os.path.join(OverrideDir, File))
+        NewFile = GlobalData.gAllFiles[NewFile]
+    return NewFile
+
+def RealPath2(File, Dir='', OverrideDir=''):
+    NewFile = GlobalData.gAllFiles[os.path.normpath(os.path.join(Dir, File))]
+    if NewFile:
+        if Dir:
+            if Dir[-1] == os.path.sep:
+                return NewFile[len(Dir):], NewFile[0:len(Dir)]
+            else:
+                return NewFile[len(Dir)+1:], NewFile[0:len(Dir)]
+        else:
+            return NewFile, ''
+
+    if OverrideDir:
+        NewFile = GlobalData.gAllFiles[os.path.normpath(os.path.join(OverrideDir, File))]
+        if NewFile:
+            return NewFile[len(OverrideDir)+1:], NewFile[0:len(OverrideDir)]
+    return None, None
 
 ## Check if gvien file exists or not
 #
@@ -427,19 +398,19 @@ def ValidFile2(AllFiles, File, Ext=None, Workspace='', EfiSource='', EdkSource='
         Dummy, FileExt = os.path.splitext(File)
         if FileExt.lower() != Ext.lower():
             return False, File
-    
+
     # Replace the R8 macros
     if OverrideDir != '' and OverrideDir != None:
         if OverrideDir.find('$(EFI_SOURCE)') > -1:
             OverrideDir = OverrideDir.replace('$(EFI_SOURCE)', EfiSource)
         if OverrideDir.find('$(EDK_SOURCE)') > -1:
             OverrideDir = OverrideDir.replace('$(EDK_SOURCE)', EdkSource)
-    
+
     # Replace the default dir to current dir
     if Dir == '.':
         Dir = os.getcwd()
         Dir = Dir[len(Workspace)+1:]
-    
+
     # First check if File has R8 definition itself
     if File.find('$(EFI_SOURCE)') > -1 or File.find('$(EDK_SOURCE)') > -1:
         NewFile = File.replace('$(EFI_SOURCE)', EfiSource)
@@ -447,16 +418,16 @@ def ValidFile2(AllFiles, File, Ext=None, Workspace='', EfiSource='', EdkSource='
         NewFile = AllFiles[os.path.normpath(NewFile)]
         if NewFile != None:
             return True, NewFile
-    
+
     # Second check the path with override value
     if OverrideDir != '' and OverrideDir != None:
         NewFile = AllFiles[os.path.normpath(os.path.join(OverrideDir, File))]
         if NewFile != None:
             return True, NewFile
-    
+
     # Last check the path with normal definitions
     File = os.path.join(Dir, File)
-    NewFile = AllFiles[os.path.normpath(File)]    
+    NewFile = AllFiles[os.path.normpath(File)]
     if NewFile != None:
         return True, NewFile
 
@@ -472,17 +443,17 @@ def ValidFile3(AllFiles, File, Workspace='', EfiSource='', EdkSource='', Dir='.'
             OverrideDir = OverrideDir.replace('$(EFI_SOURCE)', EfiSource)
         if OverrideDir.find('$(EDK_SOURCE)') > -1:
             OverrideDir = OverrideDir.replace('$(EDK_SOURCE)', EdkSource)
-    
+
     # Replace the default dir to current dir
     # Dir is current module dir related to workspace
     if Dir == '.':
         Dir = os.getcwd()
         Dir = Dir[len(Workspace)+1:]
-    
+
     NewFile = File
     RelaPath = AllFiles[os.path.normpath(Dir)]
     NewRelaPath = RelaPath
-    
+
     while(True):
         # First check if File has R8 definition itself
         if File.find('$(EFI_SOURCE)') > -1 or File.find('$(EDK_SOURCE)') > -1:
@@ -494,7 +465,7 @@ def ValidFile3(AllFiles, File, Workspace='', EfiSource='', EdkSource='', Dir='.'
                 File = os.path.basename(NewFile)
                 #NewRelaPath = NewFile[:len(NewFile) - len(File.replace("..\\", '').replace("../", '')) - 1]
                 break
-        
+
         # Second check the path with override value
         if OverrideDir != '' and OverrideDir != None:
             NewFile = AllFiles[os.path.normpath(os.path.join(OverrideDir, File))]
@@ -502,12 +473,12 @@ def ValidFile3(AllFiles, File, Workspace='', EfiSource='', EdkSource='', Dir='.'
                 #NewRelaPath = os.path.dirname(NewFile)
                 NewRelaPath = NewFile[:len(NewFile) - len(File.replace("..\\", '').replace("../", '')) - 1]
                 break
-        
+
         # Last check the path with normal definitions
         NewFile = AllFiles[os.path.normpath(os.path.join(Dir, File))]
         if NewFile != None:
             break
-        
+
         # No file found
         break
 
@@ -583,9 +554,88 @@ def PpiValue(CName, PackageList):
 #  will just be replaced once.
 #
 class TemplateString(object):
+    _REPEAT_START_FLAG = "BEGIN"
+    _REPEAT_END_FLAG = "END"
+
+    class Section(object):
+        _LIST_TYPES = [type([]), type(set()), type((0,))]
+
+        def __init__(self, TemplateSection, PlaceHolderList):
+            self._Template = TemplateSection
+            self._PlaceHolderList = []
+
+            # Split the section into sub-sections according to the position of placeholders
+            if PlaceHolderList:
+                self._SubSectionList = []
+                SubSectionStart = 0
+                #
+                # The placeholders passed in must be in the format of
+                #
+                #   PlaceHolderName, PlaceHolderStartPoint, PlaceHolderEndPoint
+                #
+                for PlaceHolder,Start,End in PlaceHolderList:
+                    self._SubSectionList.append(TemplateSection[SubSectionStart:Start])
+                    self._SubSectionList.append(TemplateSection[Start:End])
+                    self._PlaceHolderList.append(PlaceHolder)
+                    SubSectionStart = End
+                if SubSectionStart < len(TemplateSection):
+                    self._SubSectionList.append(TemplateSection[SubSectionStart:])
+            else:
+                self._SubSectionList = [TemplateSection]
+
+        def __str__(self):
+            return self._Template + " : " + str(self._PlaceHolderList)
+
+        def Instantiate(self, PlaceHolderValues):
+            RepeatTime = -1
+            RepeatPlaceHolders = {}
+            NonRepeatPlaceHolders = {}
+
+            for PlaceHolder in self._PlaceHolderList:
+                if PlaceHolder not in PlaceHolderValues:
+                    continue
+                Value = PlaceHolderValues[PlaceHolder]
+                if type(Value) in self._LIST_TYPES:
+                    if RepeatTime < 0:
+                        RepeatTime = len(Value)
+                    elif RepeatTime != len(Value):
+                        EdkLogger.error(
+                                    "TemplateString",
+                                    PARAMETER_INVALID,
+                                    "${%s} has different repeat time from others!" % PlaceHolder,
+                                    ExtraData=str(self._Template)
+                                    )
+                    RepeatPlaceHolders["${%s}" % PlaceHolder] = Value
+                else:
+                    NonRepeatPlaceHolders["${%s}" % PlaceHolder] = Value
+
+            if NonRepeatPlaceHolders:
+                StringList = []
+                for S in self._SubSectionList:
+                    if S not in NonRepeatPlaceHolders:
+                        StringList.append(S)
+                    else:
+                        StringList.append(str(NonRepeatPlaceHolders[S]))
+            else:
+                StringList = self._SubSectionList
+
+            if RepeatPlaceHolders:
+                TempStringList = []
+                for Index in range(RepeatTime):
+                    for S in StringList:
+                        if S not in RepeatPlaceHolders:
+                            TempStringList.append(S)
+                        else:
+                            TempStringList.append(str(RepeatPlaceHolders[S][Index]))
+                StringList = TempStringList
+
+            return "".join(StringList)
+
     ## Constructor
-    def __init__(self):
+    def __init__(self, Template=None):
         self.String = ''
+        self._Template = Template
+        self._TemplateSectionList = self._Parse(Template)
 
     ## str() operator
     #
@@ -594,61 +644,64 @@ class TemplateString(object):
     def __str__(self):
         return self.String
 
-    ## Replace the string template with dictionary of placeholders
+    ## Split the template string into fragments per the ${BEGIN} and ${END} flags
+    #
+    #   @retval     list    A list of TemplateString.Section objects
+    #
+    def _Parse(self, Template):
+        SectionStart = 0
+        SearchFrom = 0
+        MatchEnd = 0
+        PlaceHolderList = []
+        TemplateSectionList = []
+        while Template:
+            MatchObj = gPlaceholderPattern.search(Template, SearchFrom)
+            if not MatchObj:
+                if MatchEnd < len(Template):
+                    TemplateSection = TemplateString.Section(Template[SectionStart:], PlaceHolderList)
+                    TemplateSectionList.append(TemplateSection)
+                break
+
+            MatchString = MatchObj.group(1)
+            MatchStart = MatchObj.start()
+            MatchEnd = MatchObj.end()
+
+            if MatchString == self._REPEAT_START_FLAG:
+                if MatchStart > SectionStart:
+                    TemplateSection = TemplateString.Section(Template[SectionStart:MatchStart], PlaceHolderList)
+                    TemplateSectionList.append(TemplateSection)
+                SectionStart = MatchEnd
+                PlaceHolderList = []
+            elif MatchString == self._REPEAT_END_FLAG:
+                TemplateSection = TemplateString.Section(Template[SectionStart:MatchStart], PlaceHolderList)
+                TemplateSectionList.append(TemplateSection)
+                SectionStart = MatchEnd
+                PlaceHolderList = []
+            else:
+                PlaceHolderList.append((MatchString, MatchStart - SectionStart, MatchEnd - SectionStart))
+            SearchFrom = MatchEnd
+        return TemplateSectionList
+
+    ## Replace the string template with dictionary of placeholders and append it to previous one
     #
     #   @param      AppendString    The string template to append
     #   @param      Dictionary      The placeholder dictionaries
     #
     def Append(self, AppendString, Dictionary=None):
-        if Dictionary == None:
+        if Dictionary:
+            SectionList = self._Parse(AppendString)
+            self.String += "".join([S.Instantiate(Dictionary) for S in SectionList])
+        else:
             self.String += AppendString
-            return
 
-        # replace repeat ones, enclosed by ${BEGIN} and $(END)
-        while True:
-            Start = AppendString.find('${BEGIN}')
-            if Start < 0:
-                break
-            End   = AppendString.find('${END}')
-
-            # exclude the ${BEGIN} and ${END}
-            SubString = AppendString[Start + 8 : End]
-
-            RepeatTime = -1
-            SubDict = {}
-            PlaceholderList = gPlaceholderPattern.findall(SubString)
-            for Key in PlaceholderList:
-                if Key not in Dictionary:
-                    continue
-
-                Value = Dictionary[Key]
-                if type(Value) != type([]):
-                    continue
-
-                SubDict[Key] = ""
-                if RepeatTime < 0:
-                    RepeatTime = len(Value)
-                elif RepeatTime != len(Value):
-                    EdkLogger.error("TemplateString", PARAMETER_INVALID, Key + " has different repeat time from others!",
-                                    ExtraData=str(Dictionary))
-
-            NewString = ''
-            for Index in range(0, RepeatTime):
-                for Key in SubDict:
-                    SubDict[Key] = Dictionary[Key][Index]
-                NewString += string.Template(SubString).safe_substitute(SubDict)
-            AppendString = AppendString[0:Start] + NewString + AppendString[End + 6:]
-
-        # replace single ones
-        SubDict = {}
-        for Key in Dictionary:
-            Value = Dictionary[Key]
-            if type(Value) == type([]):
-                continue
-            SubDict[Key] = Value
-        AppendString = string.Template(AppendString).safe_substitute(SubDict)
-
-        self.String += AppendString
+    ## Replace the string template with dictionary of placeholders
+    #
+    #   @param      Dictionary      The placeholder dictionaries
+    #
+    #   @retval     str             The string replaced with placeholder values
+    #
+    def Replace(self, Dictionary=None):
+        return "".join([S.Instantiate(Dictionary) for S in self._TemplateSectionList])
 
 ## Progress indicator class
 #
@@ -658,6 +711,8 @@ class Progressor:
     # for avoiding deadloop
     _StopFlag = None
     _ProgressThread = None
+    _CheckInterval = 0.25
+
     ## Constructor
     #
     #   @param      OpenMessage     The string printed before progress charaters
@@ -665,7 +720,7 @@ class Progressor:
     #   @param      ProgressChar    The charater used to indicate the progress
     #   @param      Interval        The interval in seconds between two progress charaters
     #
-    def __init__(self, OpenMessage="", CloseMessage="", ProgressChar='.', Interval=1):
+    def __init__(self, OpenMessage="", CloseMessage="", ProgressChar='.', Interval=1.0):
         self.PromptMessage = OpenMessage
         self.CodaMessage = CloseMessage
         self.ProgressChar = ProgressChar
@@ -699,13 +754,17 @@ class Progressor:
 
     ## Thread entry method
     def _ProgressThreadEntry(self):
-        print self.PromptMessage,
+        sys.stdout.write(self.PromptMessage + " ")
         sys.stdout.flush()
+        TimeUp = 0.0
         while not Progressor._StopFlag.isSet():
-            print self.ProgressChar,
-            sys.stdout.flush()
-            time.sleep(self.Interval)
-        print self.CodaMessage
+            if TimeUp <= 0.0:
+                sys.stdout.write(self.ProgressChar)
+                sys.stdout.flush()
+                TimeUp = self.Interval
+            time.sleep(self._CheckInterval)
+            TimeUp -= self._CheckInterval
+        sys.stdout.write(" " + self.CodaMessage + "\n")
         sys.stdout.flush()
 
     ## Abort the progress display
@@ -1038,7 +1097,7 @@ def ParseConsoleLog(Filename):
 ## check format of PCD value against its the datum type
 #
 # For PCD value setting
-# 
+#
 def CheckPcdDatum(Type, Value):
     if Type == "VOID*":
         if not ((Value.startswith('L"') or Value.startswith('"') and Value.endswith('"'))
@@ -1060,10 +1119,10 @@ def CheckPcdDatum(Type, Value):
     return True, ""
 
 ## Split command line option string to list
-# 
+#
 # subprocess.Popen needs the args to be a sequence. Otherwise there's problem
 # in non-windows platform to launch command
-# 
+#
 def SplitOption(OptionString):
     OptionList = []
     LastChar = " "
@@ -1087,7 +1146,125 @@ def SplitOption(OptionString):
         LastChar = CurrentChar
     OptionList.append(OptionString[OptionStart:])
     return OptionList
-        
+
+def CommonPath(PathList):
+    P1 = min(PathList).split(os.path.sep)
+    P2 = max(PathList).split(os.path.sep)
+    for Index in xrange(min(len(P1), len(P2))):
+        if P1[Index] != P2[Index]:
+            return os.path.sep.join(P1[:Index])
+    return os.path.sep.join(P1)
+
+class PathClass(object):
+    def __init__(self, File='', Root='', AlterRoot='', Type='', IsBinary=False,
+                 Arch='COMMON', ToolChainFamily='', Target='', TagName='', ToolCode=''):
+        self.Arch = Arch
+        self.File = str(File)
+        if os.path.isabs(self.File):
+            self.Root = ''
+            self.AlterRoot = ''
+        else:
+            self.Root = str(Root)
+            self.AlterRoot = str(AlterRoot)
+
+        # Remove any '.' and '..' in path
+        if self.Root:
+            self.Path = os.path.normpath(os.path.join(self.Root, self.File))
+            self.Root = os.path.normpath(CommonPath([self.Root, self.Path]))
+            if self.Root[-1] == os.path.sep:
+                self.File = self.Path[len(self.Root):]
+            else:
+                self.File = self.Path[len(self.Root)+1:]
+        else:
+            self.Path = os.path.normpath(self.File)
+
+        self.SubDir, self.Name = os.path.split(self.File)
+        self.BaseName, self.Ext = os.path.splitext(self.Name)
+
+        if self.Root:
+            if self.SubDir:
+                self.Dir = os.path.join(self.Root, self.SubDir)
+            else:
+                self.Dir = self.Root
+        else:
+            self.Dir = self.SubDir
+
+        if IsBinary:
+            self.Type = Type
+        else:
+            self.Type = self.Ext.lower()
+
+        self.IsBinary = IsBinary
+        self.Target = Target
+        self.TagName = TagName
+        self.ToolCode = ToolCode
+        self.ToolChainFamily = ToolChainFamily
+
+        self._Key = None
+
+    ## Convert the object of this class to a string
+    #
+    #  Convert member Path of the class to a string
+    #
+    #  @retval string Formatted String
+    #
+    def __str__(self):
+        return self.Path
+
+    ## Override __eq__ function
+    #
+    # Check whether PathClass are the same
+    #
+    # @retval False The two PathClass are different
+    # @retval True  The two PathClass are the same
+    #
+    def __eq__(self, Other):
+        if type(Other) == type(self):
+            return self.Path == Other.Path
+        else:
+            return self.Path == str(Other)
+
+    ## Override __hash__ function
+    #
+    # Use Path as key in hash table
+    #
+    # @retval string Key for hash table
+    #
+    def __hash__(self):
+        return hash(self.Path)
+
+    def _GetFileKey(self):
+        if self._Key == None:
+            self._Key = self.Path.upper()   # + self.ToolChainFamily + self.TagName + self.ToolCode + self.Target
+        return self._Key
+
+    def Validate(self, Type='', CaseSensitive=True):
+        if GlobalData.gCaseInsensitive:
+            CaseSensitive = False
+        if Type and Type.lower() != self.Type:
+            return FILE_TYPE_MISMATCH
+
+        RealFile, RealRoot = RealPath2(self.File, self.Root, self.AlterRoot)
+        if not RealRoot and not RealFile:
+            return FILE_NOT_FOUND
+
+        if RealRoot != self.Root or RealFile != self.File:
+            if CaseSensitive and (RealFile != self.File or (RealRoot != self.Root and RealRoot != self.AlterRoot)):
+                return FILE_CASE_MISMATCH
+
+            self.SubDir, self.Name = os.path.split(RealFile)
+            self.BaseName, self.Ext = os.path.splitext(self.Name)
+            if self.SubDir:
+                self.Dir = os.path.join(RealRoot, self.SubDir)
+            else:
+                self.Dir = RealRoot 
+            self.File = RealFile
+            self.Root = RealRoot
+            self.Path = os.path.join(RealRoot, RealFile)
+        return 0
+
+    Key = property(_GetFileKey)
+
 ##
 #
 # This acts like the main() function for the script, unless it is 'import'ed into another

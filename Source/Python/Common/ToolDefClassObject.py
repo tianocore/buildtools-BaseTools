@@ -126,6 +126,13 @@ class ToolDefClassObject(object):
                     self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TARGET_ARCH] += [List[2]]
                 if List[3] != '*':
                     self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_COMMAND_TYPE] += [List[3]]
+                if List[4] == TAB_TOD_DEFINES_FAMILY and List[2] == '*' and List[3] == '*':
+                    if TAB_TOD_DEFINES_FAMILY not in self.ToolsDefTxtDatabase:
+                        self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_FAMILY] = {}
+                    elif List[1] not in self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_FAMILY]:
+                        self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_FAMILY][List[1]] = Value
+                    elif self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_FAMILY][List[1]] != Value:
+                        EdkLogger.verbose("Line %d: No override allowed for the family of a tool chain: %s" % ((Index + 1), Name))
 
         self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TARGET] = list(set(self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TARGET]))
         self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TOOL_CHAIN_TAG] = list(set(self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TOOL_CHAIN_TAG]))

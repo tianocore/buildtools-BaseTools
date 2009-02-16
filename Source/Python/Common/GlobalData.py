@@ -21,6 +21,7 @@ gEfiSource = "."
 gEcpSource = "EdkCompatibilityPkg"
 
 gOptions = None
+gCaseInsensitive = False
 gGlobalDefines = {}
 gAllFiles = None
 

@@ -91,7 +91,7 @@ PRINTABLE_LANGUAGE_NAME_STRING_NAME = '$PRINTABLE_LANGUAGE_NAME'
 # @param Dec:    The number in dec format
 # @param Digit:  The needed digit of hex string
 #
-# @retval:       The formatted hex string  
+# @retval:       The formatted hex string
 #
 def DecToHexStr(Dec, Digit = 8):
     return eval("'0x%0" + str(Digit) + "X' % int(Dec)")
@@ -128,7 +128,7 @@ def AscToHexList(Ascii):
     List = []
     for Item in Ascii:
         List.append('0x%2X' % ord(Item))
-    
+
     return List
 
 ## Create header of .h file
@@ -152,9 +152,9 @@ def CreateHFileHeader(BaseName):
 # Create content of .h file
 #
 # @param BaseName:       The basename of strings
-# @param UniObjectClass: A UniObjectClass instance 
+# @param UniObjectClass: A UniObjectClass instance
 #
-# @retval Str:           A string of .h file content 
+# @retval Str:           A string of .h file content
 #
 def CreateHFileContent(BaseName, UniObjectClass):
     Str = ''
@@ -185,9 +185,9 @@ def CreateHFileContent(BaseName, UniObjectClass):
 # Create a complet .h file with file header and file content
 #
 # @param BaseName:       The basename of strings
-# @param UniObjectClass: A UniObjectClass instance 
+# @param UniObjectClass: A UniObjectClass instance
 #
-# @retval Str:           A string of complete .h file 
+# @retval Str:           A string of complete .h file
 #
 def CreateHFile(BaseName, UniObjectClass):
     HFile = WriteLine('', CreateHFileContent(BaseName, UniObjectClass))
@@ -255,9 +255,9 @@ def CreateCFileStringValue(Value):
 # Create content of .c file
 #
 # @param BaseName:       The basename of strings
-# @param UniObjectClass: A UniObjectClass instance 
+# @param UniObjectClass: A UniObjectClass instance
 #
-# @retval Str:           A string of .c file content 
+# @retval Str:           A string of .c file content
 #
 def CreateCFileContent(BaseName, UniObjectClass, IsCompatibleMode):
     #
@@ -266,14 +266,14 @@ def CreateCFileContent(BaseName, UniObjectClass, IsCompatibleMode):
     TotalLength = EFI_HII_ARRAY_SIZE_LENGTH
     Str = ''
     Offset = 0
-    
+
     #
     # Create lines for each language's strings
     #
     for IndexI in range(len(UniObjectClass.LanguageDef)):
         Language = UniObjectClass.LanguageDef[IndexI][0]
         LangPrintName = UniObjectClass.LanguageDef[IndexI][1]
-        
+
         StrStringValue = ''
         ArrayLength = 0
         NumberOfUseOhterLangDef = 0
@@ -286,7 +286,7 @@ def CreateCFileContent(BaseName, UniObjectClass, IsCompatibleMode):
             Token = Item.Token
             Length = Item.Length
             UseOtherLangDef = Item.UseOtherLangDef
-            
+
             if UseOtherLangDef != '' and Referenced:
                 NumberOfUseOhterLangDef = NumberOfUseOhterLangDef + 1
                 Index = Index + 1
@@ -300,20 +300,20 @@ def CreateCFileContent(BaseName, UniObjectClass, IsCompatibleMode):
                     StrStringValue = WriteLine(StrStringValue, "// %s: %s:%s" % (DecToHexStr(Index, 4), Name, DecToHexStr(Token, 4)))
                     StrStringValue = Write(StrStringValue, CreateCFileStringValue(Value))
                     Offset = Offset + Length
-                    ArrayLength = ArrayLength + Item.Length + 1 # 1 is for the length of string type        
+                    ArrayLength = ArrayLength + Item.Length + 1 # 1 is for the length of string type
 
         #
         # EFI_HII_PACKAGE_HEADER
         #
         Offset = EFI_HII_STRING_PACKAGE_HDR_LENGTH + len(Language) + 1
         ArrayLength = Offset + ArrayLength + 1
-        
+
         #
         # Create PACKAGE HEADER
         #
         Str = WriteLine(Str, '// PACKAGE HEADER\n')
         TotalLength = TotalLength + ArrayLength
-        
+
         List = DecToHexList(ArrayLength, 6) + \
                [StringPackageType] + \
                DecToHexList(Offset) + \
@@ -323,24 +323,24 @@ def CreateCFileContent(BaseName, UniObjectClass, IsCompatibleMode):
                AscToHexList(Language) + \
                DecToHexList(0, 2)
         Str = WriteLine(Str, CreateArrayItem(List, 16) + '\n')
-        
+
         #
         # Create PACKAGE DATA
         #
         Str = WriteLine(Str, '// PACKAGE DATA\n')
         Str = Write(Str, StrStringValue)
-        
+
         #
         # Add an EFI_HII_SIBT_END at last
         #
         Str = WriteLine(Str, '  ' + EFI_HII_SIBT_END + ",")
-        
+
     #
     # Create line for string variable name
     # "unsigned char $(BaseName)Strings[] = {"
     #
     AllStr = WriteLine('', CHAR_ARRAY_DEFIN + ' ' + BaseName + COMMON_FILE_NAME + '[] = {\n' )
-    
+
     #
     # Create FRAMEWORK_EFI_HII_PACK_HEADER in compatible mode
     #
@@ -349,26 +349,26 @@ def CreateCFileContent(BaseName, UniObjectClass, IsCompatibleMode):
         AllStr = WriteLine(AllStr, CreateArrayItem(DecToHexList(TotalLength + 2)) + '\n')
         AllStr = WriteLine(AllStr, '// FRAMEWORK PACKAGE HEADER Type')
         AllStr = WriteLine(AllStr, CreateArrayItem(DecToHexList(2, 4)) + '\n')
-    
+
     #
     # Create whole array length in UEFI mode
     #
     if not IsCompatibleMode:
         AllStr = WriteLine(AllStr, '// STRGATHER_OUTPUT_HEADER')
         AllStr = WriteLine(AllStr, CreateArrayItem(DecToHexList(TotalLength)) + '\n')
-    
+
     #
     # Join package data
     #
     AllStr = Write(AllStr, Str)
-    
+
     return AllStr
 
 ## Create end of .c file
 #
 # Create end of .c file
 #
-# @retval Str:           A string of .h file end 
+# @retval Str:           A string of .h file end
 #
 def CreateCFileEnd():
     Str = Write('', '};')
@@ -379,7 +379,7 @@ def CreateCFileEnd():
 # Create a complete .c file
 #
 # @param BaseName:       The basename of strings
-# @param UniObjectClass: A UniObjectClass instance 
+# @param UniObjectClass: A UniObjectClass instance
 #
 # @retval CFile:         A string of complete .c file
 #
@@ -395,7 +395,7 @@ def CreateCFile(BaseName, UniObjectClass, IsCompatibleMode):
 # Get a list for all files
 #
 # @param IncludeList:  A list of all path to be searched
-# @param SkipList:     A list of all types of file could be skipped 
+# @param SkipList:     A list of all types of file could be skipped
 #
 # @retval FileList:    A list of all files found
 #
@@ -411,7 +411,7 @@ def GetFileList(SourceFileList, IncludeList, SkipList):
         for Dir in IncludeList:
             if not os.path.exists(Dir):
                 continue
-            File = os.path.join(Dir, os.path.normcase(File))
+            File = os.path.join(Dir, File.File)
             #
             # Ignore Dir
             #
@@ -429,7 +429,7 @@ def GetFileList(SourceFileList, IncludeList, SkipList):
 
             if not IsSkip:
                 FileList.append(File)
-                
+
             break
 
     return FileList
@@ -464,7 +464,7 @@ def SearchString(UniObjectClass, FileList):
 ## GetStringFiles
 #
 # This function is used for UEFI2.1 spec
-# 
+#
 #
 def GetStringFiles(UniFilList, SourceFileList, IncludeList, SkipList, BaseName, IsCompatibleMode = False):
     Status = True
@@ -505,7 +505,7 @@ if __name__ == '__main__':
                    r'C:\\Edk\\Strings2.uni',
                    r'C:\\Edk\\Strings.uni'
     ]
-    
+
     SrcFileList = []
     for Root, Dirs, Files in os.walk('C:\\Edk'):
         for File in Files:

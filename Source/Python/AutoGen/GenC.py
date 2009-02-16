@@ -131,7 +131,7 @@ typedef struct {
 
 """
 
-gPcdDatabaseAutoGenH = """
+gPcdDatabaseAutoGenH = TemplateString("""
 #define ${PHASE}_GUID_TABLE_SIZE                ${GUID_TABLE_SIZE}
 #define ${PHASE}_STRING_TABLE_SIZE              ${STRING_TABLE_SIZE}
 #define ${PHASE}_SKUID_TABLE_SIZE               ${SKUID_TABLE_SIZE}
@@ -205,9 +205,9 @@ typedef struct {
 } ${PHASE}_PCD_DATABASE;
 
 #define ${PHASE}_NEX_TOKEN_NUMBER (${PHASE}_LOCAL_TOKEN_NUMBER - ${PHASE}_EX_TOKEN_NUMBER)
-"""
+""")
 
-gEmptyPcdDatabaseAutoGenC = """
+gEmptyPcdDatabaseAutoGenC = TemplateString("""
 ${PHASE}_PCD_DATABASE_INIT g${PHASE}PcdDbInit = {
   /* ExMapTable */
   {
@@ -231,9 +231,9 @@ ${PHASE}_PCD_DATABASE_INIT g${PHASE}PcdDbInit = {
   { 0 },
   ${SYSTEM_SKU_ID_VALUE}
 };
-"""
+""")
 
-gPcdDatabaseAutoGenC = """
+gPcdDatabaseAutoGenC = TemplateString("""
 ${PHASE}_PCD_DATABASE_INIT g${PHASE}PcdDbInit = {
 ${BEGIN}  { ${INIT_VALUE_UINT64} }, /*  ${INIT_CNAME_DECL_UINT64}_${INIT_GUID_DECL_UINT64}[${INIT_NUMSKUS_DECL_UINT64}] */
 ${END}
@@ -292,32 +292,32 @@ ${END}
   { ${BEGIN}${SKUID_VALUE}, ${END} },
   ${SYSTEM_SKU_ID_VALUE}
 };
-"""
+""")
 
 
 ## AutoGen File Header Templates
-gAutoGenHeaderString = """\
+gAutoGenHeaderString = TemplateString("""\
 /**
   DO NOT EDIT
   FILE auto-generated
   Module name:
-    $FileName
-  Abstract:       Auto-generated $FileName for building module or library.
+    ${FileName}
+  Abstract:       Auto-generated ${FileName} for building module or library.
 **/
-"""
+""")
 
-gAutoGenHPrologueString = """
+gAutoGenHPrologueString = TemplateString("""
 #ifndef _${File}_${Guid}
 #define _${File}_${Guid}
 
-"""
+""")
 
 gAutoGenHEpilogueString = """
 #endif
 """
 
 ## PEI Core Entry Point Templates
-gPeiCoreEntryPointPrototype = """
+gPeiCoreEntryPointPrototype = TemplateString("""
 ${BEGIN}
 VOID
 EFIAPI
@@ -327,9 +327,9 @@ ${Function} (
   IN VOID                           *Context
   );
 ${END}
-"""
+""")
 
-gPeiCoreEntryPointString = """
+gPeiCoreEntryPointString = TemplateString("""
 ${BEGIN}
 VOID
 EFIAPI
@@ -343,11 +343,11 @@ ProcessModuleEntryPointList (
   ${Function} (SecCoreData, PpiList, Context);
 }
 ${END}
-"""
+""")
 
 
 ## DXE Core Entry Point Templates
-gDxeCoreEntryPointPrototype = """
+gDxeCoreEntryPointPrototype = TemplateString("""
 ${BEGIN}
 VOID
 EFIAPI
@@ -355,9 +355,9 @@ ${Function} (
   IN VOID  *HobStart
   );
 ${END}
-"""
+""")
 
-gDxeCoreEntryPointString = """
+gDxeCoreEntryPointString = TemplateString("""
 ${BEGIN}
 VOID
 EFIAPI
@@ -369,10 +369,10 @@ ProcessModuleEntryPointList (
   ${Function} (HobStart);
 }
 ${END}
-"""
+""")
 
 ## PEIM Entry Point Templates
-gPeimEntryPointPrototype = """
+gPeimEntryPointPrototype = TemplateString("""
 ${BEGIN}
 EFI_STATUS
 EFIAPI
@@ -381,10 +381,10 @@ ${Function} (
   IN CONST EFI_PEI_SERVICES     **PeiServices
   );
 ${END}
-"""
+""")
 
 gPeimEntryPointString = [
-"""
+TemplateString("""
 GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = ${PiSpecVersion};
 
 EFI_STATUS
@@ -397,8 +397,8 @@ ProcessModuleEntryPointList (
 {
   return EFI_SUCCESS;
 }
-""",
-"""
+"""),
+TemplateString("""
 GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = ${PiSpecVersion};
 ${BEGIN}
 EFI_STATUS
@@ -412,8 +412,8 @@ ProcessModuleEntryPointList (
   return ${Function} (FileHandle, PeiServices);
 }
 ${END}
-""",
-"""
+"""),
+TemplateString("""
 GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = ${PiSpecVersion};
 
 EFI_STATUS
@@ -436,11 +436,11 @@ ${BEGIN}
 ${END}
   return CombinedStatus;
 }
-"""
+""")
 ]
 
 ## DXE SMM Entry Point Templates
-gDxeSmmEntryPointPrototype = """
+gDxeSmmEntryPointPrototype = TemplateString("""
 ${BEGIN}
 EFI_STATUS
 EFIAPI
@@ -449,10 +449,10 @@ ${Function} (
   IN EFI_SYSTEM_TABLE  *SystemTable
   );
 ${END}
-"""
+""")
 
 gDxeSmmEntryPointString = [
-"""
+TemplateString("""
 const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
 const UINT32 _gDxeRevision = ${PiSpecVersion};
 
@@ -466,8 +466,8 @@ ProcessModuleEntryPointList (
 {
   return EFI_SUCCESS;
 }
-""",
-"""
+"""),
+TemplateString("""
 const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
 const UINT32 _gDxeRevision = ${PiSpecVersion};
 
@@ -504,11 +504,11 @@ ${END}
 
   return mDriverEntryPointStatus;
 }
-"""
+""")
 ]
 
 ## UEFI Driver Entry Point Templates
-gUefiDriverEntryPointPrototype = """
+gUefiDriverEntryPointPrototype = TemplateString("""
 ${BEGIN}
 EFI_STATUS
 EFIAPI
@@ -517,10 +517,10 @@ ${Function} (
   IN EFI_SYSTEM_TABLE  *SystemTable
   );
 ${END}
-"""
+""")
 
 gUefiDriverEntryPointString = [
-"""
+TemplateString("""
 const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
 const UINT32 _gDxeRevision = ${PiSpecVersion};
 
@@ -533,8 +533,8 @@ ProcessModuleEntryPointList (
 {
   return EFI_SUCCESS;
 }
-""",
-"""
+"""),
+TemplateString("""
 const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
 const UINT32 _gDxeRevision = ${PiSpecVersion};
 
@@ -561,8 +561,8 @@ ExitDriver (
   }
   gBS->Exit (gImageHandle, Status, 0, NULL);
 }
-""",
-"""
+"""),
+TemplateString("""
 const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
 const UINT32 _gDxeRevision = ${PiSpecVersion};
 
@@ -598,12 +598,12 @@ ExitDriver (
   LongJump (&mJumpContext, (UINTN)-1);
   ASSERT (FALSE);
 }
-"""
+""")
 ]
 
 
 ## UEFI Application Entry Point Templates
-gUefiApplicationEntryPointPrototype = """
+gUefiApplicationEntryPointPrototype = TemplateString("""
 ${BEGIN}
 EFI_STATUS
 EFIAPI
@@ -612,10 +612,10 @@ ${Function} (
   IN EFI_SYSTEM_TABLE  *SystemTable
   );
 ${END}
-"""
+""")
 
 gUefiApplicationEntryPointString = [
-"""
+TemplateString("""
 const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
 
 EFI_STATUS
@@ -627,8 +627,8 @@ ProcessModuleEntryPointList (
 {
   return EFI_SUCCESS;
 }
-""",
-"""
+"""),
+TemplateString("""
 const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
 
 ${BEGIN}
@@ -654,8 +654,8 @@ ExitDriver (
   }
   gBS->Exit (gImageHandle, Status, 0, NULL);
 }
-""",
-"""
+"""),
+TemplateString("""
 const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
 
 EFI_STATUS
@@ -690,11 +690,11 @@ ExitDriver (
   LongJump (&mJumpContext, (UINTN)-1);
   ASSERT (FALSE);
 }
-"""
+""")
 ]
 
 ## UEFI Unload Image Templates
-gUefiUnloadImagePrototype = """
+gUefiUnloadImagePrototype = TemplateString("""
 ${BEGIN}
 EFI_STATUS
 EFIAPI
@@ -702,10 +702,10 @@ ${Function} (
   IN EFI_HANDLE        ImageHandle
   );
 ${END}
-"""
+""")
 
 gUefiUnloadImageString = [
-"""
+TemplateString("""
 GLOBAL_REMOVE_IF_UNREFERENCED const UINT8 _gDriverUnloadImageCount = ${Count};
 
 EFI_STATUS
@@ -716,8 +716,8 @@ ProcessModuleUnloadList (
 {
   return EFI_SUCCESS;
 }
-""",
-"""
+"""),
+TemplateString("""
 GLOBAL_REMOVE_IF_UNREFERENCED const UINT8 _gDriverUnloadImageCount = ${Count};
 
 ${BEGIN}
@@ -730,8 +730,8 @@ ProcessModuleUnloadList (
   return ${Function} (ImageHandle);
 }
 ${END}
-""",
-"""
+"""),
+TemplateString("""
 GLOBAL_REMOVE_IF_UNREFERENCED const UINT8 _gDriverUnloadImageCount = ${Count};
 
 EFI_STATUS
@@ -752,57 +752,57 @@ ${BEGIN}
 ${END}
   return Status;
 }
-"""
+""")
 ]
 
 gLibraryStructorPrototype = {
-'BASE'  : """${BEGIN}
+'BASE'  : TemplateString("""${BEGIN}
 RETURN_STATUS
 EFIAPI
 ${Function} (
   VOID
   );${END}
-""",
+"""),
 
-'PEI'   : """${BEGIN}
+'PEI'   : TemplateString("""${BEGIN}
 EFI_STATUS
 EFIAPI
 ${Function} (
   IN       EFI_PEI_FILE_HANDLE       FileHandle,
   IN CONST EFI_PEI_SERVICES          **PeiServices
   );${END}
-""",
+"""),
 
-'DXE'   : """${BEGIN}
+'DXE'   : TemplateString("""${BEGIN}
 EFI_STATUS
 EFIAPI
 ${Function} (
   IN EFI_HANDLE        ImageHandle,
   IN EFI_SYSTEM_TABLE  *SystemTable
   );${END}
-""",
+"""),
 }
 
 gLibraryStructorCall = {
-'BASE'  : """${BEGIN}
+'BASE'  : TemplateString("""${BEGIN}
   Status = ${Function} ();
   ASSERT_EFI_ERROR (Status);${END}
-""",
+"""),
 
-'PEI'   : """${BEGIN}
+'PEI'   : TemplateString("""${BEGIN}
   Status = ${Function} (FileHandle, PeiServices);
   ASSERT_EFI_ERROR (Status);${END}
-""",
+"""),
 
-'DXE'   : """${BEGIN}
+'DXE'   : TemplateString("""${BEGIN}
   Status = ${Function} (ImageHandle, SystemTable);
   ASSERT_EFI_ERROR (Status);${END}
-""",
+"""),
 }
 
 ## Library Constructor and Destructor Templates
 gLibraryString = {
-'BASE'  :   """
+'BASE'  :   TemplateString("""
 ${BEGIN}${FunctionPrototype}${END}
 
 VOID
@@ -814,9 +814,9 @@ ProcessLibrary${Type}List (
 ${BEGIN}  EFI_STATUS  Status;
 ${FunctionCall}${END}
 }
-""",
+"""),
 
-'PEI'   :   """
+'PEI'   :   TemplateString("""
 ${BEGIN}${FunctionPrototype}${END}
 
 VOID
@@ -829,9 +829,9 @@ ProcessLibrary${Type}List (
 ${BEGIN}  EFI_STATUS  Status;
 ${FunctionCall}${END}
 }
-""",
+"""),
 
-'DXE'   :   """
+'DXE'   :   TemplateString("""
 ${BEGIN}${FunctionPrototype}${END}
 
 VOID
@@ -844,15 +844,15 @@ ProcessLibrary${Type}List (
 ${BEGIN}  EFI_STATUS  Status;
 ${FunctionCall}${END}
 }
-""",
+"""),
 }
 
-gSpecificationString = """
+gSpecificationString = TemplateString("""
 ${BEGIN}
 #undef ${SpecificationName}
 #define ${SpecificationName} ${SpecificationValue}
 ${END}
-"""
+""")
 
 gBasicHeaderFile = "Base.h"
 
@@ -1149,7 +1149,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
         if Pcd.DatumType not in gDatumSizeStringDatabase:
             EdkLogger.error("build", AUTOGEN_ERROR,
                             "Unknown datum type [%s] of PCD %s.%s" % (Pcd.DatumType, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
-                            ExtraData="[%s]" % str(Info))
+                            ExtraData="[%s]" % str(Platform))
 
         if Pcd.Phase == 'PEI':
             NumberOfPeiLocalTokens += 1
@@ -1223,8 +1223,9 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
                     Dict['GUID_STRUCTURE'].append(VariableGuidStructure)
                 VariableHeadGuidIndex = GuidList.index(VariableGuid)
 
-                VariableHeadValueList.append('%d, %d, %s, offsetof(${PHASE}_PCD_DATABASE, Init.%s_%s_VariableDefault_%s)' %
-                                             (VariableHeadGuidIndex, VariableHeadStringIndex, Sku.VariableOffset, CName, TokenSpaceGuid, SkuIdIndex))
+                VariableHeadValueList.append('%d, %d, %s, offsetof(%s_PCD_DATABASE, Init.%s_%s_VariableDefault_%s)' %
+                                             (VariableHeadGuidIndex, VariableHeadStringIndex, Sku.VariableOffset,
+                                              Phase, CName, TokenSpaceGuid, SkuIdIndex))
                 Dict['VARDEF_CNAME_'+Pcd.DatumType].append(CName)
                 Dict['VARDEF_GUID_'+Pcd.DatumType].append(TokenSpaceGuid)
                 Dict['VARDEF_SKUID_'+Pcd.DatumType].append(SkuIdIndex)
@@ -1348,7 +1349,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
             # the non-EX Protocol/PPI interface can be called to get/set the value. This assumption is made by
             # Pcd Driver/PEIM in MdeModulePkg.
             # Therefore, 1 is added to GeneratedTokenNumber to generate a PCD Token Number before being inserted
-            # to the EXMAPPING_TABLE. 
+            # to the EXMAPPING_TABLE.
             #
             Dict['EXMAPPING_TABLE_LOCAL_TOKEN'].append(GeneratedTokenNumber + 1)
             Dict['EXMAPPING_TABLE_GUID_INDEX'].append(GuidList.index(TokenSpaceGuid))
@@ -1392,11 +1393,11 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
     if NumberOfSizeItems != 0:
         Dict['SIZE_TABLE_SIZE'] = NumberOfSizeItems * 2
 
-    AutoGenH.Append(gPcdDatabaseAutoGenH, Dict)
+    AutoGenH.Append(gPcdDatabaseAutoGenH.Replace(Dict))
     if NumberOfLocalTokens == 0:
-        AutoGenC.Append(gEmptyPcdDatabaseAutoGenC, Dict)
+        AutoGenC.Append(gEmptyPcdDatabaseAutoGenC.Replace(Dict))
     else:
-        AutoGenC.Append(gPcdDatabaseAutoGenC, Dict)
+        AutoGenC.Append(gPcdDatabaseAutoGenC.Replace(Dict))
 
     return AutoGenH, AutoGenC
 
@@ -1448,15 +1449,15 @@ def CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH):
             continue
         Dict = {'Function':Lib.ConstructorList}
         if Lib.ModuleType == 'BASE':
-            ConstructorPrototypeString.Append(gLibraryStructorPrototype['BASE'], Dict)
-            ConstructorCallingString.Append(gLibraryStructorCall['BASE'], Dict)
+            ConstructorPrototypeString.Append(gLibraryStructorPrototype['BASE'].Replace(Dict))
+            ConstructorCallingString.Append(gLibraryStructorCall['BASE'].Replace(Dict))
         elif Lib.ModuleType in ['PEI_CORE','PEIM']:
-            ConstructorPrototypeString.Append(gLibraryStructorPrototype['PEI'], Dict)
-            ConstructorCallingString.Append(gLibraryStructorCall['PEI'], Dict)
+            ConstructorPrototypeString.Append(gLibraryStructorPrototype['PEI'].Replace(Dict))
+            ConstructorCallingString.Append(gLibraryStructorCall['PEI'].Replace(Dict))
         elif Lib.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER',
                                 'DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
-            ConstructorPrototypeString.Append(gLibraryStructorPrototype['DXE'], Dict)
-            ConstructorCallingString.Append(gLibraryStructorCall['DXE'], Dict)
+            ConstructorPrototypeString.Append(gLibraryStructorPrototype['DXE'].Replace(Dict))
+            ConstructorCallingString.Append(gLibraryStructorCall['DXE'].Replace(Dict))
 
     if str(ConstructorPrototypeString) == '':
         ConstructorPrototypeList = []
@@ -1476,12 +1477,12 @@ def CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH):
         AutoGenH.Append("${BEGIN}${FunctionPrototype}${END}", Dict)
     else:
         if Info.ModuleType == 'BASE':
-            AutoGenC.Append(gLibraryString['BASE'], Dict)
+            AutoGenC.Append(gLibraryString['BASE'].Replace(Dict))
         elif Info.ModuleType in ['PEI_CORE','PEIM']:
-            AutoGenC.Append(gLibraryString['PEI'], Dict)
+            AutoGenC.Append(gLibraryString['PEI'].Replace(Dict))
         elif Info.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER',
                                  'DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
-            AutoGenC.Append(gLibraryString['DXE'], Dict)
+            AutoGenC.Append(gLibraryString['DXE'].Replace(Dict))
 
 ## Create code for library destructor
 #
@@ -1505,15 +1506,15 @@ def CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH):
             continue
         Dict = {'Function':Lib.DestructorList}
         if Lib.ModuleType == 'BASE':
-            DestructorPrototypeString.Append(gLibraryStructorPrototype['BASE'], Dict)
-            DestructorCallingString.Append(gLibraryStructorCall['BASE'], Dict)
+            DestructorPrototypeString.Append(gLibraryStructorPrototype['BASE'].Replace(Dict))
+            DestructorCallingString.Append(gLibraryStructorCall['BASE'].Replace(Dict))
         elif Lib.ModuleType in ['PEI_CORE','PEIM']:
-            DestructorPrototypeString.Append(gLibraryStructorPrototype['PEI'], Dict)
-            DestructorCallingString.Append(gLibraryStructorCall['PEI'], Dict)
+            DestructorPrototypeString.Append(gLibraryStructorPrototype['PEI'].Replace(Dict))
+            DestructorCallingString.Append(gLibraryStructorCall['PEI'].Replace(Dict))
         elif Lib.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER',
                                 'DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
-            DestructorPrototypeString.Append(gLibraryStructorPrototype['DXE'], Dict)
-            DestructorCallingString.Append(gLibraryStructorCall['DXE'], Dict)
+            DestructorPrototypeString.Append(gLibraryStructorPrototype['DXE'].Replace(Dict))
+            DestructorCallingString.Append(gLibraryStructorCall['DXE'].Replace(Dict))
 
     if str(DestructorPrototypeString) == '':
         DestructorPrototypeList = []
@@ -1533,12 +1534,12 @@ def CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH):
         AutoGenH.Append("${BEGIN}${FunctionPrototype}${END}", Dict)
     else:
         if Info.ModuleType == 'BASE':
-            AutoGenC.Append(gLibraryString['BASE'], Dict)
+            AutoGenC.Append(gLibraryString['BASE'].Replace(Dict))
         elif Info.ModuleType in ['PEI_CORE','PEIM']:
-            AutoGenC.Append(gLibraryString['PEI'], Dict)
+            AutoGenC.Append(gLibraryString['PEI'].Replace(Dict))
         elif Info.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER',
                                  'DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
-            AutoGenC.Append(gLibraryString['DXE'], Dict)
+            AutoGenC.Append(gLibraryString['DXE'].Replace(Dict))
 
 
 ## Create code for ModuleEntryPoint
@@ -1578,37 +1579,37 @@ def CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH):
                 ExtraData= ", ".join(Info.Module.ModuleEntryPointList)
                 )
     if Info.ModuleType == 'PEI_CORE':
-        AutoGenC.Append(gPeiCoreEntryPointString, Dict)
-        AutoGenH.Append(gPeiCoreEntryPointPrototype, Dict)
+        AutoGenC.Append(gPeiCoreEntryPointString.Replace(Dict))
+        AutoGenH.Append(gPeiCoreEntryPointPrototype.Replace(Dict))
     elif Info.ModuleType == 'DXE_CORE':
-        AutoGenC.Append(gDxeCoreEntryPointString, Dict)
-        AutoGenH.Append(gDxeCoreEntryPointPrototype, Dict)
+        AutoGenC.Append(gDxeCoreEntryPointString.Replace(Dict))
+        AutoGenH.Append(gDxeCoreEntryPointPrototype.Replace(Dict))
     elif Info.ModuleType == 'PEIM':
         if NumEntryPoints < 2:
-            AutoGenC.Append(gPeimEntryPointString[NumEntryPoints], Dict)
+            AutoGenC.Append(gPeimEntryPointString[NumEntryPoints].Replace(Dict))
         else:
-            AutoGenC.Append(gPeimEntryPointString[2], Dict)
-        AutoGenH.Append(gPeimEntryPointPrototype, Dict)
+            AutoGenC.Append(gPeimEntryPointString[2].Replace(Dict))
+        AutoGenH.Append(gPeimEntryPointPrototype.Replace(Dict))
     elif Info.ModuleType in ['DXE_RUNTIME_DRIVER','DXE_DRIVER','DXE_SMM_DRIVER',
                              'DXE_SAL_DRIVER','UEFI_DRIVER']:
         if Info.ModuleType == 'DXE_SMM_DRIVER':
             if NumEntryPoints == 0:
-                AutoGenC.Append(gDxeSmmEntryPointString[0], Dict)
+                AutoGenC.Append(gDxeSmmEntryPointString[0].Replace(Dict))
             else:
-                AutoGenC.Append(gDxeSmmEntryPointString[1], Dict)
-            AutoGenH.Append(gDxeSmmEntryPointPrototype, Dict)
+                AutoGenC.Append(gDxeSmmEntryPointString[1].Replace(Dict))
+            AutoGenH.Append(gDxeSmmEntryPointPrototype.Replace(Dict))
         else:
             if NumEntryPoints < 2:
-                AutoGenC.Append(gUefiDriverEntryPointString[NumEntryPoints], Dict)
+                AutoGenC.Append(gUefiDriverEntryPointString[NumEntryPoints].Replace(Dict))
             else:
-                AutoGenC.Append(gUefiDriverEntryPointString[2], Dict)
-            AutoGenH.Append(gUefiDriverEntryPointPrototype, Dict)
+                AutoGenC.Append(gUefiDriverEntryPointString[2].Replace(Dict))
+            AutoGenH.Append(gUefiDriverEntryPointPrototype.Replace(Dict))
     elif Info.ModuleType == 'UEFI_APPLICATION':
         if NumEntryPoints < 2:
-            AutoGenC.Append(gUefiApplicationEntryPointString[NumEntryPoints], Dict)
+            AutoGenC.Append(gUefiApplicationEntryPointString[NumEntryPoints].Replace(Dict))
         else:
-            AutoGenC.Append(gUefiApplicationEntryPointString[2], Dict)
-        AutoGenH.Append(gUefiApplicationEntryPointPrototype, Dict)
+            AutoGenC.Append(gUefiApplicationEntryPointString[2].Replace(Dict))
+        AutoGenH.Append(gUefiApplicationEntryPointPrototype.Replace(Dict))
 
 ## Create code for ModuleUnloadImage
 #
@@ -1625,10 +1626,10 @@ def CreateModuleUnloadImageCode(Info, AutoGenC, AutoGenH):
     NumUnloadImage = len(Info.Module.ModuleUnloadImageList)
     Dict = {'Count':NumUnloadImage, 'Function':Info.Module.ModuleUnloadImageList}
     if NumUnloadImage < 2:
-        AutoGenC.Append(gUefiUnloadImageString[NumUnloadImage], Dict)
+        AutoGenC.Append(gUefiUnloadImageString[NumUnloadImage].Replace(Dict))
     else:
-        AutoGenC.Append(gUefiUnloadImageString[2], Dict)
-    AutoGenH.Append(gUefiUnloadImagePrototype, Dict)
+        AutoGenC.Append(gUefiUnloadImageString[2].Replace(Dict))
+    AutoGenH.Append(gUefiUnloadImagePrototype.Replace(Dict))
 
 ## Create code for GUID
 #
@@ -1735,26 +1736,26 @@ def CreateUnicodeStringCode(Info, AutoGenC, AutoGenH):
     WorkingDir = os.getcwd()
     os.chdir(Info.WorkspaceDir)
 
-    IncList = [Info.SourceDir]
+    IncList = [Info.MetaFile.Dir]
     # Get all files under [Sources] section in inf file for EDK-II module
-    SrcList = [F[0] for F in Info.SourceFileList]
+    SrcList = [F for F in Info.SourceFileList]
     if Info.AutoGenVersion < 0x00010005:
         # Get all files under the module directory for EDK-I module
         Cwd = os.getcwd()
-        os.chdir(Info.SourceDir)
+        os.chdir(Info.MetaFile.Dir)
         for Root, Dirs, Files in os.walk("."):
             if 'CVS' in Dirs:
                 Dirs.remove('CVS')
             if '.svn' in Dirs:
                 Dirs.remove('.svn')
             for File in Files:
-                File = os.path.join(Root, File)
+                File = PathClass(os.path.join(Root, File), Info.MetaFile.Dir)
                 if File in SrcList:
-                    continue 
+                    continue
                 SrcList.append(File)
         os.chdir(Cwd)
 
-    if 'BUILD' in Info.BuildOption and Info.BuildOption['BUILD'].find('-c') > -1:
+    if 'BUILD' in Info.BuildOption and Info.BuildOption['BUILD']['FLAGS'].find('-c') > -1:
         CompatibleMode = True
     else:
         CompatibleMode = False
@@ -1776,13 +1777,13 @@ def CreateUnicodeStringCode(Info, AutoGenC, AutoGenH):
 #
 def CreateHeaderCode(Info, AutoGenC, AutoGenH):
     # file header
-    AutoGenH.Append(gAutoGenHeaderString,   {'FileName':'AutoGen.h'})
+    AutoGenH.Append(gAutoGenHeaderString.Replace({'FileName':'AutoGen.h'}))
     # header file Prologue
-    AutoGenH.Append(gAutoGenHPrologueString,{'File':'AUTOGENH','Guid':Info.Guid.replace('-','_')})
+    AutoGenH.Append(gAutoGenHPrologueString.Replace({'File':'AUTOGENH','Guid':Info.Guid.replace('-','_')}))
     if Info.AutoGenVersion >= 0x00010005:
         # specification macros
-        AutoGenH.Append(gSpecificationString,   {'SpecificationName':Info.Specification.keys(),
-                                                 'SpecificationValue':Info.Specification.values()})
+        AutoGenH.Append(gSpecificationString.Replace({'SpecificationName':Info.Specification.keys(),
+                                                      'SpecificationValue':Info.Specification.values()}))
         # header files includes
         AutoGenH.Append("#include <%s>\n" % gBasicHeaderFile)
         if Info.ModuleType in gModuleTypeHeaderFile \
@@ -1798,7 +1799,7 @@ def CreateHeaderCode(Info, AutoGenC, AutoGenH):
     if Info.IsLibrary:
         return
     # C file header
-    AutoGenC.Append(gAutoGenHeaderString, {'FileName':'AutoGen.c'})
+    AutoGenC.Append(gAutoGenHeaderString.Replace({'FileName':'AutoGen.c'}))
     if Info.AutoGenVersion >= 0x00010005:
         # C file header files includes
         if Info.ModuleType in gModuleTypeHeaderFile:
@@ -1842,8 +1843,8 @@ def CreateCode(Info, AutoGenC, AutoGenH, StringH):
 
     if Info.UnicodeFileList:
         FileName = "%sStrDefs.h" % Info.Name
-        StringH.Append(gAutoGenHeaderString, {'FileName':FileName})
-        StringH.Append(gAutoGenHPrologueString,{'File':'STRDEFS', 'Guid':Info.Guid.replace('-','_')})
+        StringH.Append(gAutoGenHeaderString.Replace({'FileName':FileName}))
+        StringH.Append(gAutoGenHPrologueString.Replace({'File':'STRDEFS', 'Guid':Info.Guid.replace('-','_')}))
         CreateUnicodeStringCode(Info, AutoGenC, StringH)
         StringH.Append("\n#endif\n")
         AutoGenH.Append('#include "%s"\n' % FileName)

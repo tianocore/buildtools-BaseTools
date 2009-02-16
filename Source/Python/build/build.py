@@ -88,7 +88,7 @@ def CheckEnvVariable():
     if not os.path.exists(WorkspaceDir):
         EdkLogger.error("build", FILE_NOT_FOUND, "WORKSPACE doesn't exist", ExtraData="%s" % WorkspaceDir)
     elif ' ' in WorkspaceDir:
-        EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in WORKSPACE path", 
+        EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in WORKSPACE path",
                         ExtraData=WorkspaceDir)
     os.environ["WORKSPACE"] = WorkspaceDir
 
@@ -107,17 +107,17 @@ def CheckEnvVariable():
     if not os.path.exists(EcpSourceDir):
         EdkLogger.verbose("ECP_SOURCE = %s doesn't exist. R8 modules could not be built." % EcpSourceDir)
     elif ' ' in EcpSourceDir:
-        EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in ECP_SOURCE path", 
+        EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in ECP_SOURCE path",
                         ExtraData=EcpSourceDir)
     if not os.path.exists(EdkSourceDir):
         EdkLogger.verbose("EDK_SOURCE = %s doesn't exist. R8 modules could not be built." % EdkSourceDir)
     elif ' ' in EdkSourceDir:
-        EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in EDK_SOURCE path", 
+        EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in EDK_SOURCE path",
                         ExtraData=EdkSourceDir)
     if not os.path.exists(EfiSourceDir):
         EdkLogger.verbose("EFI_SOURCE = %s doesn't exist. R8 modules could not be built." % EfiSourceDir)
     elif ' ' in EfiSourceDir:
-        EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in EFI_SOURCE path", 
+        EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in EFI_SOURCE path",
                         ExtraData=EfiSourceDir)
 
     # change absolute path to relative path to WORKSPACE
@@ -130,12 +130,12 @@ def CheckEnvVariable():
     if EcpSourceDir.upper().find(WorkspaceDir.upper()) != 0:
         EdkLogger.error("build", PARAMETER_INVALID, "ECP_SOURCE is not under WORKSPACE",
                         ExtraData="WORKSPACE = %s\n    ECP_SOURCE = %s" % (WorkspaceDir, EcpSourceDir))
-    WorkspaceDirLen = len(WorkspaceDir)
-    if WorkspaceDir[-1] not in ['/', '\\']:
-        WorkspaceDirLen += 1
-    EfiSourceDir = EfiSourceDir[WorkspaceDirLen:]
-    EdkSourceDir = EdkSourceDir[WorkspaceDirLen:]
-    EcpSourceDir = EcpSourceDir[WorkspaceDirLen:]
+    #WorkspaceDirLen = len(WorkspaceDir)
+    #if WorkspaceDir[-1] not in ['/', '\\']:
+    #    WorkspaceDirLen += 1
+    #EfiSourceDir = EfiSourceDir[WorkspaceDirLen:]
+    #EdkSourceDir = EdkSourceDir[WorkspaceDirLen:]
+    #EcpSourceDir = EcpSourceDir[WorkspaceDirLen:]
 
     # check EDK_TOOLS_PATH
     if "EDK_TOOLS_PATH" not in os.environ:
@@ -162,7 +162,7 @@ def CheckEnvVariable():
     # for macro replacement in R8 INF file
     GlobalData.gGlobalDefines["EFI_SOURCE"] = EfiSourceDir
     GlobalData.gGlobalDefines["EDK_SOURCE"] = EdkSourceDir
-    
+
     GlobalData.gWorkspace = WorkspaceDir
     GlobalData.gEfiSource = EfiSourceDir
     GlobalData.gEdkSource = EdkSourceDir
@@ -685,7 +685,7 @@ class Build():
 
         self.WorkspaceDir = WorkspaceDir
         os.chdir(self.WorkspaceDir)
-        
+
         self.Target         = Target
         self.PlatformFile   = Platform
         self.ModuleFile     = Module
@@ -729,7 +729,7 @@ class Build():
         EdkLogger.info('%-24s = %s' % ("TARGET", ' '.join(self.BuildTargetList)))
         EdkLogger.info('%-24s = %s' % ("TOOL_CHAIN_TAG", ' '.join(self.ToolChainList)))
 
-        EdkLogger.info('\n%-24s = %s' % ("Active Platform", self.PlatformFile))
+        EdkLogger.info('\n%-24s = %s' % ("Active Platform", self.PlatformFile.File))
 
         if self.Fdf != None and self.Fdf != "":
             EdkLogger.info('%-24s = %s' % ("Flash Image Definition", self.Fdf))
@@ -738,11 +738,6 @@ class Build():
             EdkLogger.info('%-24s = %s' % ("Active Module", self.ModuleFile))
 
         self.Progress.Start("\nProcessing meta-data")
-
-        #
-        # Get files real name in workspace dir
-        #
-        GlobalData.gAllFiles = Utils.DirCache(self.WorkspaceDir)
 
     ## Load configuration
     #
@@ -805,9 +800,10 @@ class Build():
         if self.ThreadNumber == 0:
             self.ThreadNumber = 1
 
-        if self.PlatformFile == None:
-            self.PlatformFile = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM]
-            if self.PlatformFile == None or self.PlatformFile == "":
+        if not self.PlatformFile:
+            PlatformFile = self.TargetTxt.TargetTxtDictionary[DataType.TAB_TAT_DEFINES_ACTIVE_PLATFORM]
+            if not PlatformFile:
+                # Try to find one in current directory
                 WorkingDirectory = os.getcwd()
                 FileList = glob.glob(os.path.normpath(os.path.join(WorkingDirectory, '*.dsc')))
                 FileNum = len(FileList)
@@ -815,9 +811,15 @@ class Build():
                     EdkLogger.error("build", OPTION_MISSING,
                                     ExtraData="There are %d DSC files in %s. Use '-p' to specify one.\n" % (FileNum, WorkingDirectory))
                 elif FileNum == 1:
-                    self.PlatformFile = NormFile(FileList[0], self.WorkspaceDir)
-            else:
-                self.PlatformFile = NormFile(self.PlatformFile, self.WorkspaceDir)
+                    PlatformFile = FileList[0]
+                else:
+                    EdkLogger.error("build", RESOURCE_NOT_AVAILABLE,
+                                    ExtraData="No active platform specified in target.txt or command line! Nothing can be built.\n")
+
+            self.PlatformFile = PathClass(os.path.normpath(PlatformFile), self.WorkspaceDir)
+            ErrorCode = self.PlatformFile.Validate(".dsc", False)
+            if ErrorCode != 0:
+                EdkLogger.error("build", ErrorCode, ExtraData=str(self.PlatformFile))
 
     ## Initialize build configuration
     #
@@ -825,14 +827,9 @@ class Build():
     #   command line and target.txt, then get the final build configurations.
     #
     def InitBuild(self):
-        if self.PlatformFile == None or self.PlatformFile == "":
-            EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE,
-                            ExtraData="No active platform specified in target.txt or command line! Nothing can be built.\n")
-        if not os.path.isfile(self.PlatformFile):
-            EdkLogger.error("build", FILE_NOT_FOUND, ExtraData = self.PlatformFile)
-        Dummy, FileExt = os.path.splitext(self.PlatformFile)
-        if FileExt.lower() != '.dsc':
-            EdkLogger.error("build", PARAMETER_INVALID, ExtraData = '%s is not a valid platform' %self.PlatformFile)
+        ErrorCode = self.PlatformFile.Validate(".dsc")
+        if ErrorCode != 0:
+            EdkLogger.error("build", ErrorCode, ExtraData=str(self.PlatformFile))
 
         # create metafile database
         self.Db.InitDatabase()
@@ -1232,6 +1229,8 @@ def MyOptionParser():
     Parser.add_option("-u", "--skip-autogen", action="store_true", dest="SkipAutoGen", help="Skip AutoGen step.")
     Parser.add_option("-e", "--re-parse", action="store_true", dest="Reparse", help="Re-parse all meta-data files.")
 
+    Parser.add_option("-c", "--case-insensitive", action="store_true", dest="CaseInsensitive", help="Don't check case of file name.")
+
     # Parser.add_option("-D", "--define", action="append", dest="Defines", metavar="NAME[=[VALUE]]",
     #     help="Define global macro which can be used in DSC/DEC/INF files.")
 
@@ -1269,6 +1268,7 @@ def Main():
     #
     (Option, Target) = MyOptionParser()
     GlobalData.gOptions = Option
+    GlobalData.gCaseInsensitive = Option.CaseInsensitive
 
     # Set log level
     if Option.verbose != None:
@@ -1313,6 +1313,10 @@ def Main():
         #
         CheckEnvVariable()
         Workspace = os.getenv("WORKSPACE")
+        #
+        # Get files real name in workspace dir
+        #
+        GlobalData.gAllFiles = Utils.DirCache(Workspace)
 
         WorkingDirectory = os.getcwd()
         if not Option.ModuleFile:
@@ -1325,13 +1329,22 @@ def Main():
                 Option.ModuleFile = FileList[0]
 
         if Option.ModuleFile:
-            Option.ModuleFile = NormFile(Option.ModuleFile, Workspace)
+            Option.ModuleFile = PathClass(Option.ModuleFile, Workspace)
+            ErrorCode = Option.ModuleFile.Validate(".inf", False)
+            if ErrorCode != 0:
+                EdkLogger.error("build", ErrorCode, ExtraData=str(Option.ModuleFile))
 
         if Option.PlatformFile != None:
-            Option.PlatformFile = NormFile(Option.PlatformFile, Workspace)
+            Option.PlatformFile = PathClass(Option.PlatformFile, Workspace)
+            ErrorCode = Option.PlatformFile.Validate(".dsc", False)
+            if ErrorCode != 0:
+                EdkLogger.error("build", ErrorCode, ExtraData=str(Option.PlatformFile))
 
         if Option.FdfFile != None:
-            Option.FdfFile = NormFile(Option.FdfFile, Workspace)
+            Option.FdfFile = PathClass(Option.FdfFile, Workspace)
+            ErrorCode = Option.FdfFile.Validate(".fdf", False)
+            if ErrorCode != 0:
+                EdkLogger.error("build", ErrorCode, ExtraData=str(Option.FdfFile))
 
         MyBuild = Build(Target, Workspace, Option.PlatformFile, Option.ModuleFile,
                         Option.TargetArch, Option.ToolChain, Option.BuildTarget,
@@ -1370,8 +1383,8 @@ def Main():
         Tb = sys.exc_info()[-1]
         MetaFile = GlobalData.gProcessingFile
         while Tb != None:
-            if 'self' in Tb.tb_frame.f_locals and hasattr(Tb.tb_frame.f_locals['self'], '_MetaFile'):
-                MetaFile = Tb.tb_frame.f_locals['self']._MetaFile
+            if 'self' in Tb.tb_frame.f_locals and hasattr(Tb.tb_frame.f_locals['self'], 'MetaFile'):
+                MetaFile = Tb.tb_frame.f_locals['self'].MetaFile
             Tb = Tb.tb_next
         EdkLogger.error(
                     "\nbuild",

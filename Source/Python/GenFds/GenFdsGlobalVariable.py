@@ -249,7 +249,7 @@ class GenFdsGlobalVariable:
         if BaseAddress not in [None, ''] and FvSize not in [None, ''] \
             and len(BaseAddress) == len(FvSize):
             for I in range(0, len(BaseAddress)):
-                Cmd += ["-r", BaseAddress[i], "-s", FvSize[I]]
+                Cmd += ["-r", BaseAddress[I], "-s", FvSize[I]]
         Cmd += ["-o", Output]
         for F in Input:
             Cmd += ["-f", F]
@@ -334,6 +334,7 @@ class GenFdsGlobalVariable:
             GenFdsGlobalVariable.InfLogger (out)
             GenFdsGlobalVariable.InfLogger (error)
             if PopenObject.returncode != 0:
+                print "###", cmd
                 EdkLogger.error("GenFds", BuildToolError.COMMAND_FAILURE, errorMess)
 
     def VerboseLogger (msg):

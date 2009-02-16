@@ -27,6 +27,7 @@ import RuleSimpleFile
 import RuleComplexFile
 from CommonDataClass.FdfClass import FfsInfStatementClassObject
 from Common.String import *
+from Common.Misc import PathClass
 from Common import EdkLogger
 from Common.BuildToolError import *
 
@@ -62,7 +63,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         (self.SourceDir, InfName) = os.path.split(self.InfFileName)
         if self.CurrentArch != None:
 
-            Inf = GenFdsGlobalVariable.WorkSpace.BuildObject[self.InfFileName, self.CurrentArch]
+            Inf = GenFdsGlobalVariable.WorkSpace.BuildObject[PathClass(self.InfFileName, GenFdsGlobalVariable.WorkSpaceDir), self.CurrentArch]
             #
             # Set Ffs BaseName, MdouleGuid, ModuleType, Version, OutputPath
             #
@@ -77,7 +78,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                 self.ShadowFromInfFile = Inf.Shadow
 
         else:
-            Inf = GenFdsGlobalVariable.WorkSpace.BuildObject[self.InfFileName, 'COMMON']
+            Inf = GenFdsGlobalVariable.WorkSpace.BuildObject[PathClass(self.InfFileName, GenFdsGlobalVariable.WorkSpaceDir), 'COMMON']
             self.BaseName = Inf.BaseName
             self.ModuleGuid = Inf.Guid
             self.ModuleType = Inf.ModuleType
@@ -234,7 +235,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
     #
     def __GetPlatformArchList__(self):
         
-        InfFileKey = os.path.normpath(self.InfFileName)
+        InfFileKey = os.path.normpath(os.path.join(GenFdsGlobalVariable.WorkSpaceDir, self.InfFileName))
         DscArchList = []
         PlatformDataBase = GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'IA32']
         if  PlatformDataBase != None:

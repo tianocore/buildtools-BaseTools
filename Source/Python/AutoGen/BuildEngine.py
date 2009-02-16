@@ -16,11 +16,15 @@
 #
 import os
 import re
+import copy
 import string
 
 from Common.GlobalData import *
 from Common.BuildToolError import *
-from Common.Misc import tdict
+from Common.Misc import tdict, PathClass
+from Common.String import NormPath
+from Common.DataType import *
+
 import Common.EdkLogger as EdkLogger
 
 ## Convert file type to file list macro name
@@ -39,7 +43,55 @@ def FileListMacro(FileType):
 #   @retval     string      The name of macro
 #
 def ListFileMacro(FileType):
-    return "%sS_LIST" % FileType.replace("-", "_").upper()
+    return "%s_LIST" % FileListMacro(FileType)
+
+class TargetDescBlock(object):
+    _Cache_ = {}    # {TargetFile : TargetDescBlock object}
+
+    # Factory method
+    def __new__(Class, Inputs, Outputs, Commands, Dependencies):
+        if Outputs[0] in Class._Cache_:
+            Tdb = Class._Cache_[Outputs[0]]
+            for File in Inputs:
+                Tdb.AddInput(File)
+        else:
+            Tdb = super(TargetDescBlock, Class).__new__(Class)
+            Tdb._Init(Inputs, Outputs, Commands, Dependencies)
+            #Class._Cache_[Outputs[0]] = Tdb
+        return Tdb
+
+    def _Init(self, Inputs, Outputs, Commands, Dependencies):
+        self.Inputs = Inputs
+        self.Outputs = Outputs
+        self.Commands = Commands
+        self.Dependencies = Dependencies
+        if self.Outputs:
+            self.Target = self.Outputs[0]
+        else:
+            self.Target = None
+
+    def __str__(self):
+        return self.Target.Path
+
+    def __hash__(self):
+        return hash(self.Target.Path)
+
+    def __eq__(self, Other):
+        if type(Other) == type(self):
+            return Other.Target.Path == self.Target.Path
+        else:
+            return str(Other) == self.Target.Path
+
+    def AddInput(self, Input):
+        if Input not in self.Inputs:
+            self.Inputs.append(Input)
+
+    def IsMultipleInput(self):
+        return len(self.Inputs) > 1
+
+    @staticmethod
+    def Renew():
+        TargetDescBlock._Cache_ = {}
 
 ## Class for one build rule
 #
@@ -48,7 +100,8 @@ def ListFileMacro(FileType):
 # target for makefile.
 #
 class FileBuildRule:
-    IncListMacro = "INC_LIST"
+    INC_LIST_MACRO = "INC_LIST"
+    INC_MACRO = "INC"
 
     ## constructor
     #
@@ -58,27 +111,62 @@ class FileBuildRule:
     #
     def __init__(self, Type, Input, Output, Command, ExtraDependency=None):
         # The Input should not be empty
-        if Input == None or len(Input) == 0:
-            EdkLogger.error("AutoGen", AUTOGEN_ERROR, "No input files for a build rule")
-        if Output == None:
+        if not Input:
+            Input = []
+        if not Output:
             Output = []
+        if not Command:
+            Command = []
 
         self.FileListMacro = FileListMacro(Type)
         self.ListFileMacro = ListFileMacro(Type)
+        self.IncListFileMacro = self.INC_LIST_MACRO
 
-        self.SourceFileType = [Type]
-        self.SourceFileExtList = []
+        self.SourceFileType = Type
         # source files listed not in "*" or "?" pattern format
-        if ExtraDependency == None:
+        if not ExtraDependency:
             self.ExtraSourceFileList = []
         else:
             self.ExtraSourceFileList = ExtraDependency
+
+        #
+        # Search macros used in command lines for <FILE_TYPE>_LIST and INC_LIST.
+        # If found, generate a file to keep the input files used to get over the
+        # limitation of command line length
+        #
+        self.MacroList = []
+        self.CommandList = []
+        for CmdLine in Command:
+            self.MacroList.extend(gMacroPattern.findall(CmdLine))
+            # replace path separator with native one
+            self.CommandList.append(CmdLine)
+
+        # Indicate what should be generated
+        if self.FileListMacro in self.MacroList:
+            self.GenFileListMacro = True
+        else:
+            self.GenFileListMacro = False
+
+        if self.ListFileMacro in self.MacroList:
+            self.GenListFile = True
+            self.GenFileListMacro = True
+        else:
+            self.GenListFile = False
+
+        if self.INC_LIST_MACRO in self.MacroList:
+            self.GenIncListFile = True
+        else:
+            self.GenIncListFile = False
+
+        # Check input files
         self.IsMultipleInput = False
+        self.SourceFileExtList = []
         for File in Input:
             Base, Ext = os.path.splitext(File)
             if Base.find("*") >= 0:
                 # There's "*" in the file name
                 self.IsMultipleInput = True
+                self.GenFileListMacro = True
             elif Base.find("?") < 0:
                 # There's no "*" and "?" in file name
                 self.ExtraSourceFileList.append(File)
@@ -86,41 +174,13 @@ class FileBuildRule:
             if Ext not in self.SourceFileExtList:
                 self.SourceFileExtList.append(Ext)
 
-        if len(self.SourceFileType) > 1:
-            self.IsMultipleInput = True
+        # Check output files
+        self.DestFileList = []
+        for File in Output:
+            self.DestFileList.append(File)
 
-        # 
-        # Search macros used in command lines for <FILE_TYPE>_LIST and INC_LIST.
-        # If found, generate a file to keep the input files used to get over the
-        # limitation of command line length
-        # 
-        self.MacroList = []
-        if len(Command) == 0:
-            self.IsMultipleInput = False
-        else:
-            for CmdLine in Command:
-                self.MacroList.extend(gMacroPattern.findall(CmdLine))
-
-        if self.ListFileMacro in self.MacroList:
-            self.GenerateListFile = True
-        else:
-            self.GenerateListFile = False
-
-        if self.IncListMacro in self.MacroList:
-            self.GenerateIncListFile = True
-        else:
-            self.GenerateIncListFile = False
-
-        self.DestFileList = Output
-        self.DestFile = ""
-        if len(Output) > 0:
-            self.DestFileExt = os.path.splitext(Output[0])[1]
-        else:
-            self.DestFileExt = ''
-        self.DestPath = ""
-        self.DestFileName = ""
-        self.DestFileBase = ""
-        self.CommandList = Command
+        # All build targets generated by this rule for a module
+        self.BuildTargets = {}
 
     ## str() function support
     #
@@ -143,6 +203,14 @@ class FileBuildRule:
     def IsSupported(self, FileExt):
         return FileExt in self.SourceFileExtList
 
+    def Instantiate(self, Macros={}):
+        NewRuleObject = copy.copy(self)
+        NewRuleObject.BuildTargets = {}
+        NewRuleObject.DestFileList = []
+        for File in self.DestFileList:
+            NewRuleObject.DestFileList.append(PathClass(NormPath(File, Macros)))
+        return NewRuleObject
+
     ## Apply the rule to given source file(s)
     #
     #   @param  SourceFile      One file or a list of files to be built
@@ -151,25 +219,12 @@ class FileBuildRule:
     #
     #   @retval     tuple       (Source file in full path, List of individual sourcefiles, Destionation file, List of build commands)
     #
-    def Apply(self, SourceFile, RelativeToDir, PathSeparator, OverrideDestDir=None):
-        # source file
-        if not self.IsMultipleInput:
-            SrcFileName = os.path.basename(SourceFile)
-            SrcFileBase, SrcFileExt = os.path.splitext(SrcFileName)
-            if RelativeToDir != None:
-                SrcFileDir = os.path.dirname(SourceFile)
-                if SrcFileDir == "":
-                    SrcFileDir = "."
+    def Apply(self, SourceFile):
+        if not self.CommandList or not self.DestFileList:
+            return None
 
-                SrcFile = PathSeparator.join([RelativeToDir, SourceFile])
-            else:
-                SrcFileDir = "."
-                SrcFile = SourceFile
-            # Force src dir = current module dir
-            if OverrideDestDir != None:
-                SrcFileDir = "."
-            SrcPath = os.path.dirname(SrcFile)
-        else:
+        # source file
+        if self.IsMultipleInput:
             SrcFileName = ""
             SrcFileBase = ""
             SrcFileExt = ""
@@ -177,21 +232,29 @@ class FileBuildRule:
             SrcPath = ""
             # SourceFile must be a list
             SrcFile = "$(%s)" % self.FileListMacro
+        else:
+            SrcFileName, SrcFileBase, SrcFileExt = SourceFile.Name, SourceFile.BaseName, SourceFile.Ext
+            if SourceFile.Root:
+                SrcFileDir = SourceFile.SubDir
+                if SrcFileDir == "":
+                    SrcFileDir = "."
+            else:
+                SrcFileDir = "."
+            SrcFile = SourceFile.Path
+            SrcPath = SourceFile.Dir
 
-        # destination file
-        for Index in range(len(self.DestFileList)):
-            self.DestFileList[Index] = self.DestFileList[Index].replace("(+)", PathSeparator)
-        for Index in range(len(self.CommandList)):
-            self.CommandList[Index] = self.CommandList[Index].replace("(+)", PathSeparator)
-
-        if self.DestFile == "" and len(self.DestFileList) > 0:
-            self.DestFile = self.DestFileList[0]
-        if self.DestPath == "":
-            self.DestPath = os.path.dirname(self.DestFile)
-        if self.DestFileName == "":
-            self.DestFileName = os.path.basename(self.DestFile)
-        if self.DestFileBase == "":
-            self.DestFileBase = os.path.splitext(self.DestFileName)[0]
+        # destination file (the first one)
+        if self.DestFileList:
+            DestFile = self.DestFileList[0].Path
+            DestPath = self.DestFileList[0].Dir
+            DestFileName = self.DestFileList[0].Name
+            DestFileBase, DestFileExt = self.DestFileList[0].BaseName, self.DestFileList[0].Ext
+        else:
+            DestFile = ""
+            DestPath = ""
+            DestFileName = ""
+            DestFileBase = ""
+            DestFileExt = ""
 
         BuildRulePlaceholderDict = {
             # source file
@@ -202,25 +265,37 @@ class FileBuildRule:
             "s_base"    :   SrcFileBase,
             "s_ext"     :   SrcFileExt,
             # destination file
-            "dst"       :   self.DestFile,
-            "d_path"    :   self.DestPath,
-            "d_name"    :   self.DestFileName,
-            "d_base"    :   self.DestFileBase,
-            "d_ext"     :   self.DestFileExt,
+            "dst"       :   DestFile,
+            "d_path"    :   DestPath,
+            "d_name"    :   DestFileName,
+            "d_base"    :   DestFileBase,
+            "d_ext"     :   DestFileExt,
         }
 
-        DstFile = ''
-        if len(self.DestFileList) > 0:
-            DstFile = self.DestFileList[0]
-            DstFile = string.Template(DstFile).safe_substitute(BuildRulePlaceholderDict)
-            DstFile = string.Template(DstFile).safe_substitute(BuildRulePlaceholderDict)
-        CommandList = []
-        for CommandString in self.CommandList:
-            CommandString = string.Template(CommandString).safe_substitute(BuildRulePlaceholderDict)
-            CommandString = string.Template(CommandString).safe_substitute(BuildRulePlaceholderDict)
-            CommandList.append(CommandString)
+        DstFile = []
+        for File in self.DestFileList:
+            File = string.Template(str(File)).safe_substitute(BuildRulePlaceholderDict)
+            File = string.Template(str(File)).safe_substitute(BuildRulePlaceholderDict)
+            DstFile.append(PathClass(File, IsBinary=True))
 
-        return SrcFile, self.ExtraSourceFileList, DstFile, CommandList
+        if DstFile[0] in self.BuildTargets:
+            TargetDesc = self.BuildTargets[DstFile[0]]
+            TargetDesc.AddInput(SourceFile)
+        else:
+            CommandList = []
+            for CommandString in self.CommandList:
+                CommandString = string.Template(CommandString).safe_substitute(BuildRulePlaceholderDict)
+                CommandString = string.Template(CommandString).safe_substitute(BuildRulePlaceholderDict)
+                CommandList.append(CommandString)
+            TargetDesc = TargetDescBlock([SourceFile], DstFile, CommandList, self.ExtraSourceFileList)
+            TargetDesc.ListFileMacro = self.ListFileMacro
+            TargetDesc.FileListMacro = self.FileListMacro
+            TargetDesc.IncListFileMacro = self.IncListFileMacro
+            TargetDesc.GenFileListMacro = self.GenFileListMacro
+            TargetDesc.GenListFile = self.GenListFile
+            TargetDesc.GenIncListFile = self.GenIncListFile
+            self.BuildTargets[DstFile[0]] = TargetDesc
+        return TargetDesc
 
 ## Class for build rules
 #
@@ -240,7 +315,10 @@ class BuildRule:
 
     _SubSectionList = [_InputFile, _OutputFile, _Command]
 
+    _PATH_SEP = "(+)"
     _FileTypePattern = re.compile("^[_a-zA-Z][_\-0-9a-zA-Z]*$")
+    _BinaryFileRule = FileBuildRule(TAB_DEFAULT_BINARY_FILE, [], [os.path.join("$(OUTPUT_DIR)", "${s_name}")],
+                                    ["$(CP) ${src} ${dst}"], [])
 
     ## Constructor
     #
@@ -264,7 +342,8 @@ class BuildRule:
 
         self.SupportedToolChainFamilyList = SupportedFamily
         self.RuleDatabase = tdict(True, 4)  # {FileExt, ModuleType, Arch, Family : FileBuildRule object}
-        self.FileTypeDict = {}  # {ext : file-type}
+        self.Ext2FileType = {}  # {ext : file-type}
+        self.FileTypeList = set()
 
         self._LineIndex = LineIndex
         self._State = ""
@@ -278,11 +357,16 @@ class BuildRule:
 
         self.Parse()
 
+        # some intrinsic rules
+        self.RuleDatabase[TAB_DEFAULT_BINARY_FILE, "COMMON", "COMMON", "COMMON"] = self._BinaryFileRule
+        self.FileTypeList.add(TAB_DEFAULT_BINARY_FILE)
+
     ## Parse the build rule strings
     def Parse(self):
         self._State = self._Section
         for Index in range(self._LineIndex, len(self.RuleContent)):
-            Line = self.RuleContent[Index].strip()
+            # Clean up the line and replace path separator with native one
+            Line = self.RuleContent[Index].strip().replace(self._PATH_SEP, os.path.sep)
             self.RuleContent[Index] = Line
 
             # skip empty or comment line
@@ -298,16 +382,11 @@ class BuildRule:
             elif Line[0] == '<' and Line[-1] == '>':
                 if self._State != self._UnknownSection:
                     self._State = self._SubSectionHeader
+
             # call section handler to parse each (sub)section
             self._StateHandler[self._State](self, Index)
         # merge last section information into rule database
         self.EndOfSection()
-
-        # setup the relationship between file extension and file type
-        for RuleObject in self._RuleObjectList:
-            for FileType in RuleObject.SourceFileType:
-                for FileExt in RuleObject.SourceFileType[FileType]:
-                    self.FileTypeDict[FileExt] = FileType
 
     ## Parse definitions under a section
     #
@@ -334,32 +413,21 @@ class BuildRule:
     ## Merge section information just got into rule database
     def EndOfSection(self):
         Database = self.RuleDatabase
-        # if there's specific toochain family, 'COMMON' doesnt make any sense any more
+        # if there's specific toochain family, 'COMMON' doesn't make sense any more
         if len(self._TotalToolChainFamilySet) > 1 and 'COMMON' in self._TotalToolChainFamilySet:
             self._TotalToolChainFamilySet.remove('COMMON')
         for Family in self._TotalToolChainFamilySet:
             Input = self._RuleInfo[Family, self._InputFile]
-            if Input == None or len(Input) == 0:
-                EdkLogger.error("build", FORMAT_INVALID, File=self.RuleFile,
-                                ExtraData="No input files found for rule %s" % self._FileType)
-
             Output = self._RuleInfo[Family, self._OutputFile]
-            if Output == None:
-                Output = []
-
             Command = self._RuleInfo[Family, self._Command]
-            if Command == None:
-                Command = []
-
             ExtraDependency = self._RuleInfo[Family, self._ExtraDependency]
-            if ExtraDependency == None:
-                ExtraDependency = []
 
             BuildRule = FileBuildRule(self._FileType, Input, Output, Command, ExtraDependency)
             for BuildType in self._BuildTypeList:
                 for Arch in self._ArchList:
+                    Database[self._FileType, BuildType, Arch, Family] = BuildRule
                     for FileExt in BuildRule.SourceFileExtList:
-                        Database[FileExt, BuildType, Arch, Family] = BuildRule
+                        self.Ext2FileType[FileExt] = self._FileType
 
     ## Parse section header
     #
@@ -386,8 +454,9 @@ class BuildRule:
 
                 FileType = TokenList[1]
                 if FileType == '':
-                    EdkLogger.error("build", FORMAT_INVALID, File=self.RuleFile, Line=LineIndex+1,
-                                    ExtraData="No file type given: " + Line)
+                    EdkLogger.error("build", FORMAT_INVALID, "No file type given",
+                                    File=self.RuleFile, Line=LineIndex+1,
+                                    ExtraData=self.RuleContent[LineIndex])
                 if self._FileTypePattern.match(FileType) == None:
                     EdkLogger.error("build", FORMAT_INVALID, File=self.RuleFile, Line=LineIndex+1,
                                     ExtraData="Only character, number (non-first character), '_' and '-' are allowed in file type")
@@ -422,6 +491,7 @@ class BuildRule:
 
         self._FileType = FileType
         self._State = self._Section
+        self.FileTypeList.add(FileType)
 
     ## Parse sub-section header
     #
@@ -499,10 +569,21 @@ class BuildRule:
     #
     # Key = (FileExt, ModuleType, Arch, ToolChainFamily)
     def __getitem__(self, Key):
-        RuleObj = self.RuleDatabase[Key]
-        if RuleObj == None:
-            return None, None
-        return RuleObj.SourceFileType[0], RuleObj
+        if not Key:
+            return None
+
+        if Key[0] in self.Ext2FileType:
+            Type = self.Ext2FileType[Key[0]]
+        elif Key[0].upper() in self.FileTypeList:
+            Type = Key[0].upper()
+        else:
+            return None
+
+        if len(Key) > 1:
+            Key = (Type,) + Key[1:]
+        else:
+            Key = (Type,)
+        return self.RuleDatabase[Key]
 
     _StateHandler = {
         _SectionHeader     : ParseSectionHeader,

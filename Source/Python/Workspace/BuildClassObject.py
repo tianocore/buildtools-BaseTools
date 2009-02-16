@@ -11,7 +11,11 @@
 # WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #
 
+import os
+
 from Common.Misc import sdict
+from Common.Misc import RealPath2
+from Common.BuildToolError import *
 
 ## PcdClassObject
 #
@@ -81,7 +85,7 @@ class PcdClassObject(object):
     # @retval True  The two pcds are the same
     #
     def __eq__(self, Other):
-        return Other != None and self.TokenCName == Other.TokenCName and self.TokenSpaceGuidCName == Other.TokenSpaceGuidCName
+        return Other and self.TokenCName == Other.TokenCName and self.TokenSpaceGuidCName == Other.TokenSpaceGuidCName
 
     ## Override __hash__ function
     #
@@ -118,7 +122,7 @@ class LibraryClassObject(object):
 #
 # @param object:               Inherited from object class
 #
-# @var _MetaFile:              To store value for module meta file path
+# @var MetaFile:              To store value for module meta file path
 # @var BaseName:               To store value for BaseName
 # @var ModuleType:             To store value for ModuleType
 # @var Guid:                   To store value for Guid
@@ -159,7 +163,7 @@ class LibraryClassObject(object):
 class ModuleBuildClassObject(object):
     def __init__(self):
         self.AutoGenVersion          = 0
-        self._MetaFile               = ''
+        self.MetaFile                = ''
         self.BaseName                = ''
         self.ModuleType              = ''
         self.Guid                    = ''
@@ -191,12 +195,12 @@ class ModuleBuildClassObject(object):
 
     ## Convert the class to a string
     #
-    #  Convert member _MetaFile of the class to a string
+    #  Convert member MetaFile of the class to a string
     #
     #  @retval string Formatted String
     #
     def __str__(self):
-        return self._MetaFile
+        return str(self.MetaFile)
 
     ## Override __eq__ function
     #
@@ -206,16 +210,16 @@ class ModuleBuildClassObject(object):
     # @retval True  The two ModuleBuildClassObjects are the same
     #
     def __eq__(self, Other):
-        return self._MetaFile == str(Other)
+        return self.MetaFile == Other
 
     ## Override __hash__ function
     #
-    # Use _MetaFile as key in hash table
+    # Use MetaFile as key in hash table
     #
     # @retval string Key for hash table
     #
     def __hash__(self):
-        return hash(self._MetaFile)
+        return hash(self.MetaFile)
 
 ## PackageBuildClassObject
 #
@@ -223,7 +227,7 @@ class ModuleBuildClassObject(object):
 #
 # @param object:        Inherited from object class
 #
-# @var _MetaFile:       To store value for package meta file path
+# @var MetaFile:       To store value for package meta file path
 # @var PackageName:     To store value for PackageName
 # @var Guid:            To store value for Guid
 # @var Version:         To store value for Version
@@ -242,7 +246,7 @@ class ModuleBuildClassObject(object):
 #
 class PackageBuildClassObject(object):
     def __init__(self):
-        self._MetaFile               = ''
+        self.MetaFile                = ''
         self.PackageName             = ''
         self.Guid                    = ''
         self.Version                 = ''
@@ -256,12 +260,12 @@ class PackageBuildClassObject(object):
 
     ## Convert the class to a string
     #
-    #  Convert member _MetaFile of the class to a string
+    #  Convert member MetaFile of the class to a string
     #
     #  @retval string Formatted String
     #
     def __str__(self):
-        return self._MetaFile
+        return str(self.MetaFile)
 
     ## Override __eq__ function
     #
@@ -271,16 +275,16 @@ class PackageBuildClassObject(object):
     # @retval True  The two PackageBuildClassObjects are the same
     #
     def __eq__(self, Other):
-        return self._MetaFile == str(Other)
+        return self.MetaFile == Other
 
     ## Override __hash__ function
     #
-    # Use _MetaFile as key in hash table
+    # Use MetaFile as key in hash table
     #
     # @retval string Key for hash table
     #
     def __hash__(self):
-        return hash(self._MetaFile)
+        return hash(self.MetaFile)
 
 ## PlatformBuildClassObject
 #
@@ -288,7 +292,7 @@ class PackageBuildClassObject(object):
 #
 # @param object:          Inherited from object class
 #
-# @var _MetaFile:         To store value for platform meta-file path
+# @var MetaFile:         To store value for platform meta-file path
 # @var PlatformName:      To store value for PlatformName
 # @var Guid:              To store value for Guid
 # @var Version:           To store value for Version
@@ -312,7 +316,7 @@ class PackageBuildClassObject(object):
 #
 class PlatformBuildClassObject(object):
     def __init__(self):
-        self._MetaFile               = ''
+        self.MetaFile                = ''
         self.PlatformName            = ''
         self.Guid                    = ''
         self.Version                 = ''
@@ -332,12 +336,12 @@ class PlatformBuildClassObject(object):
 
     ## Convert the class to a string
     #
-    #  Convert member _MetaFile of the class to a string
+    #  Convert member MetaFile of the class to a string
     #
     #  @retval string Formatted String
     #
     def __str__(self):
-        return self._MetaFile
+        return str(self.MetaFile)
 
     ## Override __eq__ function
     #
@@ -346,16 +350,15 @@ class PlatformBuildClassObject(object):
     # @retval False The two PlatformBuildClassObjects are different
     # @retval True  The two PlatformBuildClassObjects are the same
     #
-    def __eq__(self, other):
-        return self._MetaFile == str(other)
+    def __eq__(self, Other):
+        return self.MetaFile == Other
 
     ## Override __hash__ function
     #
-    # Use _MetaFile as key in hash table
+    # Use MetaFile as key in hash table
     #
     # @retval string Key for hash table
     #
     def __hash__(self):
-        return hash(self._MetaFile)
-
+        return hash(self.MetaFile)
 
