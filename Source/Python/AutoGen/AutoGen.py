@@ -527,8 +527,8 @@ class PlatformAutoGen(AutoGen):
             ToolsDef = ''
             MakePath = ''
             if GlobalData.gOptions.SilentMode and "MAKE" in self._ToolDefinitions:
-	        if "FLAGS" not in self._ToolDefinitions["MAKE"]:
-		    self._ToolDefinitions["MAKE"]["FLAGS"] = ""
+                if "FLAGS" not in self._ToolDefinitions["MAKE"]:
+                    self._ToolDefinitions["MAKE"]["FLAGS"] = ""
                 self._ToolDefinitions["MAKE"]["FLAGS"] += " -s"
             MakeFlags = ''
             for Tool in self._ToolDefinitions:
