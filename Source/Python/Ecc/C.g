@@ -469,11 +469,16 @@ statement
 	| iteration_statement
 	| jump_statement
 	| macro_statement
-	| asm_statement
+	| asm2_statement
 	| asm1_statement
+	| asm_statement
 	| declaration
 	;
 
+asm2_statement
+	: '__asm__'? IDENTIFIER '(' (~(';'))* ')' ';'
+	;
+	
 asm1_statement
 	: '_asm' '{' (~('}'))* '}'
 	;
