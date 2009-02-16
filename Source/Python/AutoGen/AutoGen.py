@@ -520,15 +520,16 @@ class PlatformAutoGen(AutoGen):
                     DllPathList.add(Value)
                     continue
 
-                if GlobalData.gOptions.SilentMode and Tool == "MAKE" and Attr == "FLAGS":
-                    Value += " -s"
-
                 if Tool not in self._ToolDefinitions:
                     self._ToolDefinitions[Tool] = {}
                 self._ToolDefinitions[Tool][Attr] = Value
 
             ToolsDef = ''
             MakePath = ''
+            if GlobalData.gOptions.SilentMode and "MAKE" in self._ToolDefinitions:
+	        if "FLAGS" not in self._ToolDefinitions["MAKE"]:
+		    self._ToolDefinitions["MAKE"]["FLAGS"] = ""
+                self._ToolDefinitions["MAKE"]["FLAGS"] += " -s"
             MakeFlags = ''
             for Tool in self._ToolDefinitions:
                 for Attr in self._ToolDefinitions[Tool]:
@@ -558,7 +559,6 @@ class PlatformAutoGen(AutoGen):
             SaveFileOnChange(self.ToolDefinitionFile, ToolsDef)
             for DllPath in DllPathList:
                 os.environ["PATH"] = DllPath + os.pathsep + os.environ["PATH"]
-            #os.environ["MAKE"] = MakePath
             os.environ["MAKE_FLAGS"] = MakeFlags
 
         return self._ToolDefinitions
