@@ -950,7 +950,7 @@ ${BEGIN}\t-@${create_directory_command}\n${END}\
             "module_version"            : self._AutoGenObject.Version,
             "module_type"               : self._AutoGenObject.ModuleType,
             "module_file"               : self._AutoGenObject.MetaFile,
-            "module_file_base_name"     : self._AutoGenObject.FileBase,
+            "module_file_base_name"     : self._AutoGenObject.MetaFile.BaseName,
             "module_relative_directory" : self._AutoGenObject.SourceDir,
 
             "architecture"              : self._AutoGenObject.Arch,
