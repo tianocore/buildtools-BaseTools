@@ -136,6 +136,26 @@
     <ErrorID>5001</ErrorID>
   </Exception>
   <Exception>
+    <KeyWord>IoWrite8</KeyWord>
+    <ErrorID>5001</ErrorID>
+  </Exception>
+  <Exception>
+    <KeyWord>IoRead16</KeyWord>
+    <ErrorID>5001</ErrorID>
+  </Exception>
+  <Exception>
+    <KeyWord>IoWrite16</KeyWord>
+    <ErrorID>5001</ErrorID>
+  </Exception>
+  <Exception>
+    <KeyWord>IoRead32</KeyWord>
+    <ErrorID>5001</ErrorID>
+  </Exception>
+  <Exception>
+    <KeyWord>IoWrite32</KeyWord>
+    <ErrorID>5001</ErrorID>
+  </Exception>
+  <Exception>
     <KeyWord>__debugbreak</KeyWord>
     <ErrorID>5003</ErrorID>
   </Exception>

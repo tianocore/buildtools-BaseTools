@@ -372,7 +372,8 @@ def GetParamList(FuncDeclarator, FuncNameLine = 0, FuncNameOffset = 0):
         
         ParamEndLine = FuncNameLine + LineSkipped
         ParamEndOffset = FuncNameOffset + OffsetSkipped
-        ParamName = StripNonAlnumChars(ParamName)
+        if ParamName != '...':
+            ParamName = StripNonAlnumChars(ParamName)
         IdParam = DataClass.IdentifierClass(-1, ParamModifier, '', ParamName, '', DataClass.MODEL_IDENTIFIER_PARAMETER, -1, -1, ParamBeginLine, ParamBeginOffset, ParamEndLine, ParamEndOffset)
         ParamIdList.append(IdParam)
         
