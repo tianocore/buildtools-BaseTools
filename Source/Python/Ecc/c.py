@@ -70,7 +70,7 @@ def GetIdType(Str):
 
 def SuOccurInTypedef (Su, TdList):
     for Td in TdList:
-        if Su.StartPos[0] >= Td.StartPos[0] and Su.EndPos[0] <= Td.EndPos[0]:
+        if Su.StartPos[0] == Td.StartPos[0] and Su.EndPos[0] == Td.EndPos[0]:
             return True
     return False
 
@@ -1472,11 +1472,40 @@ def CheckMemberVariableFormat(Value, ModelId):
     Pattern = re.compile(r'^[A-Z]+\S*[a-z]\S*$')
     
     LBPos = Value.find('{')
-    RBPos = Value.find('}')
+    RBPos = Value.rfind('}')
+    if LBPos == -1 or RBPos == -1:
+        return ErrMsgList
+    
     Fields = Value[LBPos + 1 : RBPos]
-    Fields = StripComments(Fields)
+    Fields = StripComments(Fields).strip()
     if ModelId == DataClass.MODEL_IDENTIFIER_ENUMERATE:
         FieldsList = Fields.split(',')
+        # deal with enum is pre-assigned a value by function call ( , , , ...)
+        QuoteCount = 0
+        Index = 0
+        RemoveCurrentElement = False
+        while Index < len(FieldsList):
+            Field = FieldsList[Index]
+                
+            if Field.find('(') != -1:
+                QuoteCount += 1
+                RemoveCurrentElement = True
+                Index += 1
+                continue
+                
+            if Field.find(')') != -1 and QuoteCount > 0:
+                QuoteCount -= 1
+
+            if RemoveCurrentElement:    
+                FieldsList.remove(Field)
+                if QuoteCount == 0:
+                    RemoveCurrentElement = False
+                continue
+                
+            if QuoteCount == 0:
+                RemoveCurrentElement = False
+                
+            Index += 1
     else:
         FieldsList = Fields.split(';')
     
@@ -1501,7 +1530,7 @@ def CheckMemberVariableFormat(Value, ModelId):
         TokenList = Field.split() 
         # Remove pointers before variable
         if not Pattern.match(TokenList[-1].lstrip('*')):
-            ErrMsgList.append(TokenList[-1])
+            ErrMsgList.append(TokenList[-1].lstrip('*'))
         
     return ErrMsgList
 
@@ -1536,7 +1565,23 @@ def CheckDeclTypedefFormat(FullFileName, ModelId):
                        where Model = %d
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_TYPEDEF)
     TdSet = Db.TblFile.Exec(SqlStatement)
-    
+    for Td in TdSet:
+        Value = Td[2].strip()
+        if Value.startswith('enum'):
+            ModelId = DataClass.MODEL_IDENTIFIER_ENUMERATE
+        elif Value.startswith('struct'):
+            ModelId = DataClass.MODEL_IDENTIFIER_STRUCTURE
+        elif Value.startswith('union'):
+            ModelId == DataClass.MODEL_IDENTIFIER_UNION
+        else:
+            pass
+        # Check member variable format.
+        ErrMsgList = CheckMemberVariableFormat(Value, ModelId)
+        for ErrMsg in ErrMsgList:
+            if EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, ErrMsg):
+                continue
+            PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Member variable %s NOT follow naming convention.' % ErrMsg, FileTable, Td[5])
+            
     for Result in ResultList:
         # Check member variable format.
         ErrMsgList = CheckMemberVariableFormat(Result[4], ModelId)
@@ -1547,6 +1592,7 @@ def CheckDeclTypedefFormat(FullFileName, ModelId):
         # Check whether it is typedefed.
         Found = False
         for Td in TdSet:
+            
             if len(Td[0]) > 0:
                 continue
             if Result[1] >= Td[3] and Td[4] >= Result[2]:
