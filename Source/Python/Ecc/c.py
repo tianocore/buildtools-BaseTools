@@ -1565,7 +1565,11 @@ def CheckDeclTypedefFormat(FullFileName, ModelId):
                        where Model = %d
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_TYPEDEF)
     TdSet = Db.TblFile.Exec(SqlStatement)
+    TdList = []
     for Td in TdSet:
+        TdList.append(Td)
+    # Check member variable name format that from typedefs of ONLY this file.
+    for Td in TdList:
         Value = Td[2].strip()
         if Value.startswith('enum'):
             ModelId = DataClass.MODEL_IDENTIFIER_ENUMERATE
@@ -1581,6 +1585,20 @@ def CheckDeclTypedefFormat(FullFileName, ModelId):
             if EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, ErrMsg):
                 continue
             PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Member variable %s NOT follow naming convention.' % ErrMsg, FileTable, Td[5])
+    
+    IncludeFileList = GetAllIncludeFiles(FullFileName)
+    for F in IncludeFileList:
+        FileID = GetTableID(F, ErrorMsgList)
+        if FileID < 0:
+            continue
+    
+        IncludeFileTable = 'Identifier' + str(FileID)
+        SqlStatement = """ select Modifier, Name, Value, StartLine, EndLine, ID
+                       from %s
+                       where Model = %d
+                   """ % (IncludeFileTable, DataClass.MODEL_IDENTIFIER_TYPEDEF)
+        ResultSet = Db.TblFile.Exec(SqlStatement)
+        TdList.extend(ResultSet)
             
     for Result in ResultList:
         # Check member variable format.
@@ -1591,7 +1609,7 @@ def CheckDeclTypedefFormat(FullFileName, ModelId):
             PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Member variable %s NOT follow naming convention.' % ErrMsg, FileTable, Result[3])
         # Check whether it is typedefed.
         Found = False
-        for Td in TdSet:
+        for Td in TdList:
             
             if len(Td[0]) > 0:
                 continue
