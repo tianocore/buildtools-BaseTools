@@ -189,7 +189,7 @@ class WorkspaceAutoGen(AutoGen):
 
         # parse FDF file to get PCDs in it, if any
         if self.FdfFile != None and self.FdfFile != '':
-            Fdf = FdfParser(os.path.join(self.WorkspaceDir, self.FdfFile))
+            Fdf = FdfParser(self.FdfFile.Path)
             Fdf.ParseFile()
             PcdSet = Fdf.Profile.PcdDict
             ModuleList = Fdf.Profile.InfList

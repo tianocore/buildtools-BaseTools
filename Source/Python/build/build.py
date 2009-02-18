@@ -732,7 +732,7 @@ class Build():
         EdkLogger.info('\n%-24s = %s' % ("Active Platform", self.PlatformFile.File))
 
         if self.Fdf != None and self.Fdf != "":
-            EdkLogger.info('%-24s = %s' % ("Flash Image Definition", self.Fdf))
+            EdkLogger.info('%-24s = %s' % ("Flash Image Definition", self.Fdf.File))
 
         if self.ModuleFile != None and self.ModuleFile != "":
             EdkLogger.info('%-24s = %s' % ("Active Module", self.ModuleFile))
@@ -836,9 +836,7 @@ class Build():
 
         # we need information in platform description file to determine how to build
         self.Platform = self.BuildDatabase[self.PlatformFile, 'COMMON']
-        if self.Fdf != None:
-            self.Fdf = NormFile(self.Fdf, self.WorkspaceDir)
-        else:
+        if not self.Fdf:
             self.Fdf = self.Platform.FlashDefinition
 
         if self.SkuId == None or self.SkuId == '':
