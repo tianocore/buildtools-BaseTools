@@ -402,9 +402,7 @@ class Check(object):
                     continue
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.h', '.c'):
-                        FullName = os.path.join(Dirpath, F)
-                        if FullName.find('MdePkg\Include\Protocol') != -1 or FullName.find('MdePkg/Include/Protocol') != -1 or FullName.find('MdePkg\Include\Ppi') != -1 or FullName.find('MdePkg/Include/Ppi') != -1: 
-                            continue                        
+                        FullName = os.path.join(Dirpath, F)                        
                         MsgList = c.CheckFuncHeaderDoxygenComments(FullName)
                             
     # Check whether the first line of text in a comment block is a brief description of the element being documented. 
