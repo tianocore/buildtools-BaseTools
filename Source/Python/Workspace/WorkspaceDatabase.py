@@ -171,7 +171,11 @@ class DscBuildData(PlatformBuildClassObject):
                                     File=self.MetaFile, Line=Record[-1],
                                     ExtraData=self._OutputDirectory)
             elif Name == TAB_DSC_DEFINES_FLASH_DEFINITION:
-                self._FlashDefinition = NormPath(Record[1], self._Macros)
+                self._FlashDefinition = PathClass(NormPath(Record[1], self._Macros), GlobalData.gWorkspace)
+                ErrorCode = self._FlashDefinition.Validate('.fdf')
+                if ErrorCode != 0:
+                    EdkLogger.error('build', ErrorCode, File=self.MetaFile, 
+                                    ExtraData=self._FlashDefinition.File, Line=Record[-1])
             elif Name == TAB_DSC_DEFINES_SUPPORTED_ARCHITECTURES:
                 self._SupArchList = GetSplitValueList(Record[1], TAB_VALUE_SPLIT)
             elif Name == TAB_DSC_DEFINES_BUILD_TARGETS:
