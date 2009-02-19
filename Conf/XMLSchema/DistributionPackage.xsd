@@ -627,7 +627,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 										<xs:element ref="HelpText" minOccurs="0"
 											maxOccurs="unbounded" />
 									</xs:sequence>
-									<xs:attribute name="UiName" type="xs:NCName" use="optional" />
+									<xs:attribute name="UiName" type="xs:normalizedString" use="optional" />
 									<xs:attribute name="GuidTypes" type="GuidListType"
 										use="optional" />
 									<xs:attributeGroup ref="SupportedArchMod" />
@@ -661,7 +661,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 										<xs:element ref="HelpText" minOccurs="0"
 											maxOccurs="unbounded" />
 									</xs:sequence>
-									<xs:attribute name="UiName" type="xs:NCName" use="optional" />
+									<xs:attribute name="UiName" type="xs:normalizedString" use="optional" />
 									<xs:attributeGroup ref="SupportedArchMod" />
 								</xs:complexType>
 							</xs:element>
@@ -693,7 +693,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 										<xs:element ref="HelpText" minOccurs="0"
 											maxOccurs="unbounded" />
 									</xs:sequence>
-									<xs:attribute name="UiName" type="xs:NCName" use="optional" />
+									<xs:attribute name="UiName" type="xs:normalizedString" use="optional" />
 									<xs:attributeGroup ref="SupportedArchMod" />
 								</xs:complexType>
 							</xs:element>
