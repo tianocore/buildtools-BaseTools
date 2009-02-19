@@ -1570,21 +1570,25 @@ def CheckDeclTypedefFormat(FullFileName, ModelId):
         TdList.append(Td)
     # Check member variable name format that from typedefs of ONLY this file.
     for Td in TdList:
+        Name = Td[1].strip()
         Value = Td[2].strip()
         if Value.startswith('enum'):
-            ModelId = DataClass.MODEL_IDENTIFIER_ENUMERATE
+            ValueModelId = DataClass.MODEL_IDENTIFIER_ENUMERATE
         elif Value.startswith('struct'):
-            ModelId = DataClass.MODEL_IDENTIFIER_STRUCTURE
+            ValueModelId = DataClass.MODEL_IDENTIFIER_STRUCTURE
         elif Value.startswith('union'):
-            ModelId == DataClass.MODEL_IDENTIFIER_UNION
+            ValueModelId = DataClass.MODEL_IDENTIFIER_UNION
         else:
-            pass
+            continue
+        
+        if ValueModelId != ModelId:
+            continue
         # Check member variable format.
         ErrMsgList = CheckMemberVariableFormat(Value, ModelId)
         for ErrMsg in ErrMsgList:
-            if EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, ErrMsg):
+            if EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, Name+'.'+ErrMsg):
                 continue
-            PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Member variable %s NOT follow naming convention.' % ErrMsg, FileTable, Td[5])
+            PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Member variable %s NOT follow naming convention.' % (Name+'.'+ErrMsg), FileTable, Td[5])
     
     IncludeFileList = GetAllIncludeFiles(FullFileName)
     for F in IncludeFileList:
@@ -1604,9 +1608,9 @@ def CheckDeclTypedefFormat(FullFileName, ModelId):
         # Check member variable format.
         ErrMsgList = CheckMemberVariableFormat(Result[4], ModelId)
         for ErrMsg in ErrMsgList:
-            if EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, ErrMsg):
+            if EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, Result[0]+'.'+ErrMsg):
                 continue
-            PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Member variable %s NOT follow naming convention.' % ErrMsg, FileTable, Result[3])
+            PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Member variable %s NOT follow naming convention.' % (Result[0]+'.'+ErrMsg), FileTable, Result[3])
         # Check whether it is typedefed.
         Found = False
         for Td in TdList:
