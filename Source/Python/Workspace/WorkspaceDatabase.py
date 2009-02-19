@@ -2010,7 +2010,7 @@ class WorkspaceDatabase(object):
         self._GlobalMacros = GlobalMacros
 
         if DbPath == None or DbPath == '':
-            DbPath = self._DB_PATH_
+            DbPath = os.path.normpath(os.path.join(GlobalData.gWorkspace, self._DB_PATH_))
 
         # don't create necessary path for db in memory
         if DbPath != ':memory:':

@@ -306,10 +306,13 @@ class DirCache:
         if LastSepIndex == -1:
             return None
 
+        Cwd = os.getcwd()
+        os.chdir(self._Root)
         SepIndex = LastSepIndex
         while SepIndex > -1:
             ParentKey = Path[:SepIndex]
             if ParentKey not in self._CACHE_:
+                os.chdir(Cwd)
                 return None
 
             ParentDir = self._CACHE_[ParentKey]
@@ -319,6 +322,7 @@ class DirCache:
 
             SepIndex = Path.find(os.path.sep, SepIndex + 1)
 
+        os.chdir(Cwd)
         if Path not in self._CACHE_:
             return None
         return os.path.join(self._Root, self._CACHE_[Path])

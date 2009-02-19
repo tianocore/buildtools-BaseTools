@@ -684,8 +684,6 @@ class Build():
                  SkipAutoGen=False, Reparse=False, SkuId=None):
 
         self.WorkspaceDir = WorkspaceDir
-        os.chdir(self.WorkspaceDir)
-
         self.Target         = Target
         self.PlatformFile   = Platform
         self.ModuleFile     = Module
@@ -729,14 +727,15 @@ class Build():
         EdkLogger.info('%-24s = %s' % ("TARGET", ' '.join(self.BuildTargetList)))
         EdkLogger.info('%-24s = %s' % ("TOOL_CHAIN_TAG", ' '.join(self.ToolChainList)))
 
-        EdkLogger.info('\n%-24s = %s' % ("Active Platform", self.PlatformFile.File))
+        EdkLogger.info('\n%-24s = %s' % ("Active Platform", self.PlatformFile))
 
         if self.Fdf != None and self.Fdf != "":
-            EdkLogger.info('%-24s = %s' % ("Flash Image Definition", self.Fdf.File))
+            EdkLogger.info('%-24s = %s' % ("Flash Image Definition", self.Fdf))
 
         if self.ModuleFile != None and self.ModuleFile != "":
             EdkLogger.info('%-24s = %s' % ("Active Module", self.ModuleFile))
 
+        os.chdir(self.WorkspaceDir)
         self.Progress.Start("\nProcessing meta-data")
 
     ## Load configuration
@@ -816,7 +815,7 @@ class Build():
                     EdkLogger.error("build", RESOURCE_NOT_AVAILABLE,
                                     ExtraData="No active platform specified in target.txt or command line! Nothing can be built.\n")
 
-            self.PlatformFile = PathClass(os.path.normpath(PlatformFile), self.WorkspaceDir)
+            self.PlatformFile = PathClass(NormFile(PlatformFile, self.WorkspaceDir), self.WorkspaceDir)
             ErrorCode = self.PlatformFile.Validate(".dsc", False)
             if ErrorCode != 0:
                 EdkLogger.error("build", ErrorCode, ExtraData=str(self.PlatformFile))
@@ -1324,7 +1323,7 @@ def Main():
                 EdkLogger.error("build", OPTION_NOT_SUPPORTED, "There are %d INF files in %s." % (FileNum, WorkingDirectory),
                                 ExtraData="Please use '-m <INF_FILE_PATH>' switch to choose one.")
             elif FileNum == 1:
-                Option.ModuleFile = FileList[0]
+                Option.ModuleFile = NormFile(FileList[0], Workspace)
 
         if Option.ModuleFile:
             Option.ModuleFile = PathClass(Option.ModuleFile, Workspace)
