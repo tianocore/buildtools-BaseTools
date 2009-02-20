@@ -31,15 +31,13 @@ class Configuration(object):
         
         self.Version = 0.1
 
-        #
-        # Identify to if check all items
+        ## Identify to if check all items
         # 1 - Check all items and ignore all other detailed items
         # 0 - Not check all items, the tool will go through all other detailed items to decide to check or not
-        # 
+        #
         self.CheckAll = 0
 
-        #
-        # Identify to if automatically correct mistakes
+        ## Identify to if automatically correct mistakes
         # 1 - Automatically correct
         # 0 - Not automatically correct
         # Only the following check points can be automatically corrected, others not listed below are not supported even it is 1
@@ -52,15 +50,11 @@ class Configuration(object):
         #
         self.AutoCorrect = 0
         
-        #
         # List customized Modifer here, split with ','
         # Defaultly use the definition in class DataType
-        #
         self.ModifierList = MODIFIER_LIST
         
-        #
-        # General Checking
-        #
+        ## General Checking
         self.GeneralCheckAll = 0
         
         # Check whether NO Tab is used, replaced with spaces
@@ -84,14 +78,10 @@ class Configuration(object):
         # Check whether the file exists
         self.GeneralCheckFileExistence = 1
         
-        #
-        # Space Checking
-        #
+        ## Space Checking
         self.SpaceCheckAll = 1
         
-        #
-        # Predicate Expression Checking
-        #
+        ## Predicate Expression Checking
         self.PredicateExpressionCheckAll = 0
         
         # Check whether Boolean values, variable type BOOLEAN not use explicit comparisons to TRUE or FALSE
@@ -101,9 +91,7 @@ class Configuration(object):
         # Check whether a comparison of any pointer to zero must be done via the NULL type
         self.PredicateExpressionCheckComparisonNullType = 1
         
-        #
-        # Headers Checking
-        #
+        ## Headers Checking
         self.HeaderCheckAll = 0
         
         # Check whether File header exists
@@ -111,9 +99,7 @@ class Configuration(object):
         # Check whether Function header exists
         self.HeaderCheckFunction = 1
         
-        #
-        # C Function Layout Checking
-        #
+        ## C Function Layout Checking
         self.CFunctionLayoutCheckAll = 0
         
         # Check whether return type exists and in the first line
@@ -134,9 +120,7 @@ class Configuration(object):
         # Check whether no use of STATIC for functions
         self.CFunctionLayoutCheckNoStatic = 1
         
-        #
-        # Include Files Checking
-        #
+        ## Include Files Checking
         self.IncludeFileCheckAll = 0
         
         #Check whether having include files with same name
@@ -149,9 +133,7 @@ class Configuration(object):
         # Check whether include files NOT contain code or define data variables
         self.IncludeFileCheckData = 1
         
-        #
-        # Declarations and Data Types Checking
-        #
+        ## Declarations and Data Types Checking
         self.DeclarationDataTypeCheckAll = 0
         
         # Check whether no use of int, unsigned, char, void, static, long in any .c, .h or .asl files.
@@ -169,10 +151,7 @@ class Configuration(object):
         # Check whether Union Type has a 'typedef' and the name is capital
         self.DeclarationDataTypeCheckUnionType = 1
         
-        
-        #
-        # Naming Conventions Checking
-        #
+        ## Naming Conventions Checking
         self.NamingConventionCheckAll = 0
         
         # Check whether only capital letters are used for #define declarations
@@ -194,9 +173,7 @@ class Configuration(object):
         # Check whether NO use short variable name with single character
         self.NamingConventionCheckSingleCharacterVariable = 1
         
-        #
-        # Doxygen Checking
-        #
+        ## Doxygen Checking
         self.DoxygenCheckAll = 0
         
         # Check whether the file headers are followed Doxygen special documentation blocks in section 2.3.5
@@ -211,9 +188,7 @@ class Configuration(object):
         # Check whether only Doxygen commands allowed to mark the code are @bug and @todo.
         self.DoxygenCheckCommand = 1
         
-        #
-        # Meta-Data File Processing Checking
-        #
+        ## Meta-Data File Processing Checking
         self.MetaDataFileCheckAll = 0
         
         # Check whether each file defined in meta-data exists
@@ -243,6 +218,10 @@ class Configuration(object):
         self.MetaDataFileCheckPcdNoUse = 1
         # Check whether having duplicate guids defined for Guid/Protocol/Ppi
         self.MetaDataFileCheckGuidDuplicate = 1
+        # Check whether all files under module directory are described in INF files
+        self.MetaDataFileCheckModuleFileNoUse = 1
+        # Check whether the PCD is correctly used in C function via its type
+        self.MetaDataFileCheckPcdType = 1
         
         #
         # The check points in this section are reserved
