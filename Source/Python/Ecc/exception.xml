@@ -291,4 +291,20 @@
     <KeyWord>_DriverUnloadHandler</KeyWord>
     <ErrorID>8006</ErrorID>
   </Exception>
+  <Exception>
+    <KeyWord>ASSERT</KeyWord>
+    <ErrorID>10015</ErrorID>
+  </Exception>
+  <Exception>
+    <KeyWord>REPORT_STATUS_CODE</KeyWord>
+    <ErrorID>10015</ErrorID>
+  </Exception>
+  <Exception>
+    <KeyWord>REPORT_STATUS_CODE_WITH_EXTENDED_DATA</KeyWord>
+    <ErrorID>10015</ErrorID>
+  </Exception>
+  <Exception>
+    <KeyWord>REPORT_STATUS_CODE_WITH_DEVICE_PATH</KeyWord>
+    <ErrorID>10015</ErrorID>
+  </Exception>
 </ExceptionList>
