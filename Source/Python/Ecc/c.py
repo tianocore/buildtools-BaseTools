@@ -1217,10 +1217,10 @@ def CheckFuncLayoutReturnType(FullFileName):
             continue
         Index = Result[0].find(TypeStart)
         if Index != 0 or Result[3] != 0:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '%s Return Type should appear at the start of line' % FuncName, FileTable, Result[1])
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '[%s] Return Type should appear at the start of line' % FuncName, FileTable, Result[1])
             
         if Result[2] == Result[4]:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '%s Return Type should appear on its own line' % FuncName, FileTable, Result[1])
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '[%s] Return Type should appear on its own line' % FuncName, FileTable, Result[1])
             
     SqlStatement = """ select Modifier, ID, StartLine, StartColumn, FunNameStartLine, Name
                        from Function
@@ -1235,10 +1235,10 @@ def CheckFuncLayoutReturnType(FullFileName):
             continue
         Index = Result[0].find(ReturnType)
         if Index != 0 or Result[3] != 0:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '%s Return Type should appear at the start of line' % FuncName, 'Function', Result[1])
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '[%s] Return Type should appear at the start of line' % FuncName, 'Function', Result[1])
             
         if Result[2] == Result[4]:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '%s Return Type should appear on its own line' % FuncName, 'Function', Result[1])
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_RETURN_TYPE, '[%s] Return Type should appear on its own line' % FuncName, 'Function', Result[1])
     
 def CheckFuncLayoutModifier(FullFileName):
     ErrorMsgList = []
@@ -1309,7 +1309,7 @@ def CheckFuncLayoutName(FullFileName):
             if Param.StartLine - StartLine > 1:
                 PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Empty line appears before Parameter %s.' % Param.Name, FileTable, Result[1])    
             if not Pattern.match(Param.Name) and not Param.Name in ParamIgnoreList and not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, Param.Name):
-                PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Parameter %s NOT follow naming convention.' % Param.Name, FileTable, Result[1])
+                PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Parameter [%s] NOT follow naming convention.' % Param.Name, FileTable, Result[1])
             StartLine = Param.StartLine
             
         if not Result[0].endswith('\n  )') and not Result[0].endswith('\r  )'):
@@ -1336,7 +1336,7 @@ def CheckFuncLayoutName(FullFileName):
             if Param.StartLine - StartLine > 1:
                 PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Empty line appears before Parameter %s.' % Param.Name, 'Function', Result[1])
             if not Pattern.match(Param.Name) and not Param.Name in ParamIgnoreList and not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, Param.Name):
-                PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Parameter %s NOT follow naming convention.' % Param.Name, FileTable, Result[1])
+                PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Parameter [%s] NOT follow naming convention.' % Param.Name, FileTable, Result[1])
             StartLine = Param.StartLine
         if not Result[0].endswith('\n  )') and not Result[0].endswith('\r  )'):
             PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, '\')\' should be on a new line and indented two spaces', 'Function', Result[1])
@@ -1588,7 +1588,7 @@ def CheckDeclTypedefFormat(FullFileName, ModelId):
         for ErrMsg in ErrMsgList:
             if EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, Name+'.'+ErrMsg):
                 continue
-            PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Member variable %s NOT follow naming convention.' % (Name+'.'+ErrMsg), FileTable, Td[5])
+            PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Member variable [%s] NOT follow naming convention.' % (Name+'.'+ErrMsg), FileTable, Td[5])
     
     IncludeFileList = GetAllIncludeFiles(FullFileName)
     for F in IncludeFileList:
@@ -1610,7 +1610,7 @@ def CheckDeclTypedefFormat(FullFileName, ModelId):
         for ErrMsg in ErrMsgList:
             if EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, Result[0]+'.'+ErrMsg):
                 continue
-            PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Member variable %s NOT follow naming convention.' % (Result[0]+'.'+ErrMsg), FileTable, Result[3])
+            PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Member variable [%s] NOT follow naming convention.' % (Result[0]+'.'+ErrMsg), FileTable, Result[3])
         # Check whether it is typedefed.
         Found = False
         for Td in TdList:
@@ -1734,7 +1734,7 @@ def CheckDeclNoUseCType(FullFileName):
             continue
         for Type in CTypeTuple:
             if PatternInModifier(Result[0], Type):
-                PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE, '%s Return type %s' % (FuncName, Result[0]), FileTable, Result[2])
+                PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE, '[%s] Return type %s' % (FuncName, Result[0]), FileTable, Result[2])
             
             for Param in ParamList:
                 if PatternInModifier(Param.Modifier, Type):
@@ -2213,7 +2213,7 @@ def CheckFuncHeaderDoxygenComments(FullFileName):
             if EccGlobalData.gException.IsException(ERROR_HEADER_CHECK_FUNCTION, FuncName):
                 continue
             ErrorMsgList.append('Line %d :Function %s has NO comment immediately preceding it.' % (Result[2], Result[1]))
-            PrintErrorMsg(ERROR_HEADER_CHECK_FUNCTION, 'Function %s has NO comment immediately preceding it.' % (FuncName), FileTable, Result[3])
+            PrintErrorMsg(ERROR_HEADER_CHECK_FUNCTION, 'Function [%s] has NO comment immediately preceding it.' % (FuncName), FileTable, Result[3])
     
     # Func Def check
     SqlStatement = """ select Value, StartLine, EndLine, ID
@@ -2242,8 +2242,8 @@ def CheckFuncHeaderDoxygenComments(FullFileName):
         else:
             if EccGlobalData.gException.IsException(ERROR_HEADER_CHECK_FUNCTION, FuncName):
                 continue
-            ErrorMsgList.append('Line %d :Function %s has NO comment immediately preceding it.' % (Result[2], Result[1]))
-            PrintErrorMsg(ERROR_HEADER_CHECK_FUNCTION, 'Function %s has NO comment immediately preceding it.' % (FuncName), 'Function', Result[3])
+            ErrorMsgList.append('Line %d :Function [%s] has NO comment immediately preceding it.' % (Result[2], Result[1]))
+            PrintErrorMsg(ERROR_HEADER_CHECK_FUNCTION, 'Function [%s] has NO comment immediately preceding it.' % (FuncName), 'Function', Result[3])
     return ErrorMsgList
 
 def CheckCommentImmediatelyPrecedeFunctionHeader(FuncName, FuncStartLine, CommentSet):
