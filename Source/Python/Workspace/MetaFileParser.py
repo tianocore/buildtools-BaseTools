@@ -309,7 +309,7 @@ class InfParser(MetaFileParser):
 
         for Index in range(0, len(self._Content)):
             # skip empty, commented, block commented lines
-            Line = CleanString(self._Content[Index])
+            Line = CleanString(self._Content[Index], AllowCppStyleComment=True)
             NextLine = ''
             if Index + 1 < len(self._Content):
                 NextLine = CleanString(self._Content[Index + 1])

@@ -164,8 +164,8 @@ class UniFileClassObject(object):
         #
         # Add language string
         #
-        self.AddStringToList(u'$LANGUAGE_NAME', LangName, LangName, 0, True)
-        self.AddStringToList(u'$PRINTABLE_LANGUAGE_NAME', LangName, LangPrintName, 1, True)
+        self.AddStringToList(u'$LANGUAGE_NAME', LangName, LangName, 0, True, Index=0)
+        self.AddStringToList(u'$PRINTABLE_LANGUAGE_NAME', LangName, LangPrintName, 1, True, Index=1)
 
         return True
 

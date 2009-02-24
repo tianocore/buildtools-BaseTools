@@ -268,7 +268,7 @@ def NormPath(Path, Defines = {}):
 #
 # @retval Path Formatted path
 #
-def CleanString(Line, CommentCharacter = DataType.TAB_COMMENT_SPLIT):
+def CleanString(Line, CommentCharacter = DataType.TAB_COMMENT_SPLIT, AllowCppStyleComment=False):
     #
     # remove whitespace
     #
@@ -276,7 +276,8 @@ def CleanString(Line, CommentCharacter = DataType.TAB_COMMENT_SPLIT):
     #
     # Replace R8's comment character
     #
-    Line = Line.replace(DataType.TAB_COMMENT_R8_SPLIT, CommentCharacter)
+    if AllowCppStyleComment:
+        Line = Line.replace(DataType.TAB_COMMENT_R8_SPLIT, CommentCharacter)
     #
     # remove comments
     #
