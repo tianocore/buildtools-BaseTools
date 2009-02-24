@@ -37,7 +37,7 @@ class Check(object):
         self.DeclAndDataTypeCheck()
         self.FunctionLayoutCheck()
         self.NamingConventionCheck()
-    
+
     # C Function Layout Checking
     def FunctionLayoutCheck(self):
         self.FunctionLayoutCheckReturnType()
@@ -46,14 +46,14 @@ class Check(object):
         self.FunctionLayoutCheckPrototype()
         self.FunctionLayoutCheckBody()
         self.FunctionLayoutCheckLocalVariable()
-    
+
     # Check whether return type exists and in the first line
     def FunctionLayoutCheckReturnType(self):
         if EccGlobalData.gConfig.CFunctionLayoutCheckReturnType == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout return type ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -61,14 +61,14 @@ class Check(object):
                     if os.path.splitext(F)[1] in ('.c', '.h'):
                         FullName = os.path.join(Dirpath, F)
                         c.CheckFuncLayoutReturnType(FullName)
-    
+
     # Check whether any optional functional modifiers exist and next to the return type
     def FunctionLayoutCheckModifier(self):
         if EccGlobalData.gConfig.CFunctionLayoutCheckOptionalFunctionalModifier == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout modifier ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -76,7 +76,7 @@ class Check(object):
                     if os.path.splitext(F)[1] in ('.c', '.h'):
                         FullName = os.path.join(Dirpath, F)
                         c.CheckFuncLayoutModifier(FullName)
-                        
+
     # Check whether the next line contains the function name, left justified, followed by the beginning of the parameter list
     # Check whether the closing parenthesis is on its own line and also indented two spaces
     def FunctionLayoutCheckName(self):
@@ -84,7 +84,7 @@ class Check(object):
             EdkLogger.quiet("Checking function layout function name ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -98,7 +98,7 @@ class Check(object):
             EdkLogger.quiet("Checking function layout function prototype ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -114,7 +114,7 @@ class Check(object):
             EdkLogger.quiet("Checking function layout function body ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -131,7 +131,7 @@ class Check(object):
             EdkLogger.quiet("Checking function layout local variables ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -142,7 +142,7 @@ class Check(object):
 
     # Check whether no use of STATIC for functions
     # self.CFunctionLayoutCheckNoStatic = 1
-    
+
     # Declarations and Data Types Checking
     def DeclAndDataTypeCheck(self):
         self.DeclCheckNoUseCType()
@@ -152,15 +152,15 @@ class Check(object):
         self.DeclCheckStructureDeclaration()
         self.DeclCheckSameStructure()
         self.DeclCheckUnionType()
-    
-    
+
+
     # Check whether no use of int, unsigned, char, void, static, long in any .c, .h or .asl files.
     def DeclCheckNoUseCType(self):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckNoUseCType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration No use C type ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -168,14 +168,14 @@ class Check(object):
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
                         c.CheckDeclNoUseCType(FullName)
-    
+
     # Check whether the modifiers IN, OUT, OPTIONAL, and UNALIGNED are used only to qualify arguments to a function and should not appear in a data type declaration
     def DeclCheckInOutModifier(self):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckInOutModifier == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration argument modifier ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -183,19 +183,19 @@ class Check(object):
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
                         c.CheckDeclArgModifier(FullName)
-    
+
     # Check whether the EFIAPI modifier should be used at the entry of drivers, events, and member functions of protocols
     def DeclCheckEFIAPIModifier(self):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckEFIAPIModifier == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             pass
-    
+
     # Check whether Enumerated Type has a 'typedef' and the name is capital
     def DeclCheckEnumeratedType(self):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckEnumeratedType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration enum typedef ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -203,14 +203,14 @@ class Check(object):
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
                         c.CheckDeclEnumTypedef(FullName)
-    
+
     # Check whether Structure Type has a 'typedef' and the name is capital
     def DeclCheckStructureDeclaration(self):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckStructureDeclaration == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration struct typedef ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -218,7 +218,7 @@ class Check(object):
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
                         c.CheckDeclStructTypedef(FullName)
-    
+
     # Check whether having same Structure
     def DeclCheckSameStructure(self):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckSameStructure == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
@@ -239,15 +239,15 @@ class Check(object):
                             if NewRecordSet != []:
                                 OtherMsg = "The structure name [%s] is duplicate with the one defined in %s, maybe struct NOT typedefed or the typedef new type NOT used to qualify variables" % (Record[1], NewRecordSet[0][0])
                             if not EccGlobalData.gException.IsException(ERROR_DECLARATION_DATA_TYPE_CHECK_SAME_STRUCTURE, Record[1]):
-                                EccGlobalData.gDb.TblReport.Insert(ERROR_DECLARATION_DATA_TYPE_CHECK_SAME_STRUCTURE, OtherMsg = OtherMsg, BelongsToTable = IdentifierTable, BelongsToItem = Record[0])   
-    
+                                EccGlobalData.gDb.TblReport.Insert(ERROR_DECLARATION_DATA_TYPE_CHECK_SAME_STRUCTURE, OtherMsg = OtherMsg, BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
+
     # Check whether Union Type has a 'typedef' and the name is capital
     def DeclCheckUnionType(self):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckUnionType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration union typedef ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -255,20 +255,20 @@ class Check(object):
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
                         c.CheckDeclUnionTypedef(FullName)
-    
+
     # Predicate Expression Checking
     def PredicateExpressionCheck(self):
         self.PredicateExpressionCheckBooleanValue()
         self.PredicateExpressionCheckNonBooleanOperator()
         self.PredicateExpressionCheckComparisonNullType()
-    
+
     # Check whether Boolean values, variable type BOOLEAN not use explicit comparisons to TRUE or FALSE
     def PredicateExpressionCheckBooleanValue(self):
         if EccGlobalData.gConfig.PredicateExpressionCheckBooleanValue == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking predicate expression Boolean value ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -278,13 +278,13 @@ class Check(object):
                         EdkLogger.quiet("[BOOLEAN]" + FullName)
                         c.CheckBooleanValueComparison(FullName)
 
-    # Check whether Non-Boolean comparisons use a compare operator (==, !=, >, < >=, <=). 
+    # Check whether Non-Boolean comparisons use a compare operator (==, !=, >, < >=, <=).
     def PredicateExpressionCheckNonBooleanOperator(self):
         if EccGlobalData.gConfig.PredicateExpressionCheckNonBooleanOperator == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking predicate expression Non-Boolean variable...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -299,7 +299,7 @@ class Check(object):
             EdkLogger.quiet("Checking predicate expression NULL pointer ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -313,12 +313,12 @@ class Check(object):
         self.IncludeFileCheckIfndef()
         self.IncludeFileCheckData()
         self.IncludeFileCheckSameName()
-    
+
     # Check whether having include files with same name
     def IncludeFileCheckSameName(self):
         if EccGlobalData.gConfig.IncludeFileCheckSameName == '1' or EccGlobalData.gConfig.IncludeFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking same header file name ...")
-            SqlCommand = """select ID, FullPath from File 
+            SqlCommand = """select ID, FullPath from File
                             where Model = 1002 order by Name """
             RecordDict = {}
             RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
@@ -332,7 +332,7 @@ class Check(object):
                     RecordDict[Key] = [Record]
                 else:
                     RecordDict[Key].append(Record)
-            
+
             for Key in RecordDict:
                 if len(RecordDict[Key]) > 1:
                     for Item in RecordDict[Key]:
@@ -344,7 +344,7 @@ class Check(object):
             EdkLogger.quiet("Checking header file ifndef ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -352,14 +352,14 @@ class Check(object):
                     if os.path.splitext(F)[1] in ('.h'):
                         FullName = os.path.join(Dirpath, F)
                         MsgList = c.CheckHeaderFileIfndef(FullName)
-    
+
     # Check whether include files NOT contain code or define data variables
     def IncludeFileCheckData(self):
         if EccGlobalData.gConfig.IncludeFileCheckData == '1' or EccGlobalData.gConfig.IncludeFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking header file data ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -367,7 +367,7 @@ class Check(object):
                     if os.path.splitext(F)[1] in ('.h'):
                         FullName = os.path.join(Dirpath, F)
                         MsgList = c.CheckHeaderFileData(FullName)
-        
+
     # Doxygen document checking
     def DoxygenCheck(self):
         self.DoxygenCheckFileHeader()
@@ -375,14 +375,14 @@ class Check(object):
         self.DoxygenCheckCommentDescription()
         self.DoxygenCheckCommentFormat()
         self.DoxygenCheckCommand()
-    
+
     # Check whether the file headers are followed Doxygen special documentation blocks in section 2.3.5
     def DoxygenCheckFileHeader(self):
         if EccGlobalData.gConfig.DoxygenCheckFileHeader == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen file header ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -390,23 +390,23 @@ class Check(object):
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
                         MsgList = c.CheckFileHeaderDoxygenComments(FullName)
-    
+
     # Check whether the function headers are followed Doxygen special documentation blocks in section 2.3.5
     def DoxygenCheckFunctionHeader(self):
         if EccGlobalData.gConfig.DoxygenCheckFunctionHeader == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen function header ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.h', '.c'):
-                        FullName = os.path.join(Dirpath, F)                        
+                        FullName = os.path.join(Dirpath, F)
                         MsgList = c.CheckFuncHeaderDoxygenComments(FullName)
-                            
-    # Check whether the first line of text in a comment block is a brief description of the element being documented. 
+
+    # Check whether the first line of text in a comment block is a brief description of the element being documented.
     # The brief description must end with a period.
     def DoxygenCheckCommentDescription(self):
         if EccGlobalData.gConfig.DoxygenCheckCommentDescription == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
@@ -418,7 +418,7 @@ class Check(object):
             EdkLogger.quiet("Checking Doxygen comment ///< ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -426,14 +426,14 @@ class Check(object):
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
                         MsgList = c.CheckDoxygenTripleForwardSlash(FullName)
-        
+
     # Check whether only Doxygen commands allowed to mark the code are @bug and @todo.
     def DoxygenCheckCommand(self):
         if EccGlobalData.gConfig.DoxygenCheckCommand == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen command ...")
             Tuple = os.walk(EccGlobalData.gTarget)
             IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-        
+
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
                     continue
@@ -441,7 +441,7 @@ class Check(object):
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
                         MsgList = c.CheckDoxygenCommand(FullName)
-    
+
     # Meta-Data File Processing Checking
     def MetaDataFileCheck(self):
         self.MetaDataFileCheckPathName()
@@ -463,22 +463,22 @@ class Check(object):
         if EccGlobalData.gConfig.MetaDataFileCheckPathName == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             # This item is covered when parsing Inf/Dec/Dsc files
             pass
-    
+
     # Generate a list for all files defined in meta-data files
     def MetaDataFileCheckGenerateFileList(self):
         if EccGlobalData.gConfig.MetaDataFileCheckGenerateFileList == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             # This item is covered when parsing Inf/Dec/Dsc files
             pass
-    
-    # Check whether all Library Instances defined for a given module (or dependent library instance) match the module's type.  
-    # Each Library Instance must specify the Supported Module Types in its Inf file, 
+
+    # Check whether all Library Instances defined for a given module (or dependent library instance) match the module's type.
+    # Each Library Instance must specify the Supported Module Types in its Inf file,
     # and any module specifying the library instance must be one of the supported types.
     def MetaDataFileCheckLibraryInstance(self):
         if EccGlobalData.gConfig.MetaDataFileCheckLibraryInstance == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking for library instance type issue ...")
             SqlCommand = """select A.ID, A.Value2, B.Value2 from Inf as A left join Inf as B
-                            where A.Value1 = 'LIBRARY_CLASS' and A.Model = %s 
-                            and B.Value1 = 'MODULE_TYPE' and B.Model = %s and A.BelongsToFile = B.BelongsToFile 
+                            where A.Value1 = 'LIBRARY_CLASS' and A.Model = %s
+                            and B.Value1 = 'MODULE_TYPE' and B.Model = %s and A.BelongsToFile = B.BelongsToFile
                             group by A.BelongsToFile""" % (MODEL_META_DATA_HEADER, MODEL_META_DATA_HEADER)
             RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
             LibraryClasses = {}
@@ -489,19 +489,19 @@ class Check(object):
                     SupModType = SUP_MODULE_LIST_STRING.split(TAB_VALUE_SPLIT)
                 elif len(List) == 2:
                     SupModType = List[1].split()
-                
+
                 if List[0] not in LibraryClasses:
                     LibraryClasses[List[0]] = SupModType
                 else:
                     for Item in SupModType:
                         if Item not in LibraryClasses[List[0]]:
                             LibraryClasses[List[0]].append(Item)
-                
+
                 if Record[2] != 'BASE' and Record[2] not in SupModType:
                     EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_LIBRARY_INSTANCE_2, OtherMsg = "The Library Class '%s' does not specify its supported module types" % (List[0]), BelongsToTable = 'Inf', BelongsToItem = Record[0])
-            
-            SqlCommand = """select A.ID, A.Value1, B.Value2 from Inf as A left join Inf as B 
-                            where A.Model = %s and B.Value1 = '%s' and B.Model = %s 
+
+            SqlCommand = """select A.ID, A.Value1, B.Value2 from Inf as A left join Inf as B
+                            where A.Model = %s and B.Value1 = '%s' and B.Model = %s
                             and B.BelongsToFile = A.BelongsToFile""" \
                             % (MODEL_EFI_LIBRARY_CLASS, 'MODULE_TYPE', MODEL_META_DATA_HEADER)
             RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
@@ -513,7 +513,7 @@ class Check(object):
                 else:
                     if Record[2] not in RecordDict[Record[1]]:
                         RecordDict[Record[1]].append(Record[2])
-            
+
             for Record in RecordSet:
                 if Record[1] in LibraryClasses:
                     if Record[2] not in LibraryClasses[Record[1]] and 'BASE' not in RecordDict[Record[1]]:
@@ -532,7 +532,7 @@ class Check(object):
             for LibraryClass in LibraryClasses:
                 if LibraryClass[1].upper() != 'NULL':
                     LibraryIns = os.path.normpath(os.path.join(EccGlobalData.gWorkspace, LibraryClass[2]))
-                    SqlCommand = """select Value2 from Inf where BelongsToFile = 
+                    SqlCommand = """select Value2 from Inf where BelongsToFile =
                                     (select ID from File where lower(FullPath) = lower('%s'))
                                     and Value1 = '%s'""" % (LibraryIns, 'LIBRARY_CLASS')
                     RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
@@ -568,7 +568,7 @@ class Check(object):
             SqlCommand = """select A.ID, A.Value1 from Fdf as A
                          where A.Model = %s
                          and A.Enabled > -1
-                         and A.Value1 not in 
+                         and A.Value1 not in
                          (select B.Value1 from Dsc as B
                          where B.Model = %s
                          and B.Enabled > -1)""" % (MODEL_META_DATA_COMPONENT, MODEL_META_DATA_COMPONENT)
@@ -589,9 +589,9 @@ class Check(object):
         if EccGlobalData.gConfig.MetaDataFileCheckPcdDuplicate == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking for duplicate PCDs defined in both DSC and FDF files ...")
             SqlCommand = """
-                         select A.ID, A.Value2, B.ID, B.Value2 from Dsc as A, Fdf as B 
-                         where A.Model >= %s and A.Model < %s 
-                         and B.Model >= %s and B.Model < %s 
+                         select A.ID, A.Value2, B.ID, B.Value2 from Dsc as A, Fdf as B
+                         where A.Model >= %s and A.Model < %s
+                         and B.Model >= %s and B.Model < %s
                          and A.Value2 = B.Value2
                          and A.Enabled > -1
                          and B.Enabled > -1
@@ -606,9 +606,9 @@ class Check(object):
 
             EdkLogger.quiet("Checking for duplicate PCDs defined in DEC files ...")
             SqlCommand = """
-                         select A.ID, A.Value2 from Dec as A, Dec as B 
-                         where A.Model >= %s and A.Model < %s 
-                         and B.Model >= %s and B.Model < %s 
+                         select A.ID, A.Value2 from Dec as A, Dec as B
+                         where A.Model >= %s and A.Model < %s
+                         and B.Model >= %s and B.Model < %s
                          and A.Value2 = B.Value2
                          and ((A.Arch = B.Arch) and (A.Arch != 'COMMON' or B.Arch != 'COMMON'))
                          and A.ID != B.ID
@@ -636,21 +636,21 @@ class Check(object):
             for Record in RecordSet:
                 if not EccGlobalData.gException.IsException(ERROR_META_DATA_FILE_CHECK_PCD_FLASH, Record[1]):
                     EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_FLASH, OtherMsg = "The PCD [%s] defined in FDF file is not related to Flash" % (Record[1]), BelongsToTable = 'Fdf', BelongsToItem = Record[0])
-        
+
     # Check whether PCDs used in Inf files but not specified in Dsc or FDF files
     def MetaDataFileCheckPcdNoUse(self):
         if EccGlobalData.gConfig.MetaDataFileCheckPcdNoUse == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking for non-specified PCDs ...")
             SqlCommand = """
-                         select ID, Value2, BelongsToFile from Inf as A 
+                         select ID, Value2, BelongsToFile from Inf as A
                          where A.Model >= %s and Model < %s
                          and A.Enabled > -1
-                         and A.Value2 not in 
-                             (select Value2 from Dsc as B 
+                         and A.Value2 not in
+                             (select Value2 from Dsc as B
                               where B.Model >= %s and B.Model < %s
                               and B.Enabled > -1)
                          and A.Value2 not in
-                             (select Value2 from Fdf as C 
+                             (select Value2 from Fdf as C
                               where C.Model >= %s and C.Model < %s
                               and C.Enabled > -1)
                          """% (MODEL_PCD, MODEL_META_DATA_HEADER, MODEL_PCD, MODEL_META_DATA_HEADER, MODEL_PCD, MODEL_META_DATA_HEADER)
@@ -658,7 +658,7 @@ class Check(object):
             for Record in RecordSet:
                 if not EccGlobalData.gException.IsException(ERROR_META_DATA_FILE_CHECK_PCD_NO_USE, Record[1]):
                     EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_NO_USE, OtherMsg = "The PCD [%s] defined in INF file is not specified in either DSC or FDF files" % (Record[1]), BelongsToTable = 'Inf', BelongsToItem = Record[0])
-        
+
     # Check whether having duplicate guids defined for Guid/Protocol/Ppi
     def MetaDataFileCheckGuidDuplicate(self):
         if EccGlobalData.gConfig.MetaDataFileCheckGuidDuplicate == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
@@ -675,10 +675,10 @@ class Check(object):
             self.CheckGuidProtocolPpi(ERROR_META_DATA_FILE_CHECK_DUPLICATE_PPI, MODEL_EFI_PPI, EccGlobalData.gDb.TblDec)
             self.CheckGuidProtocolPpi(ERROR_META_DATA_FILE_CHECK_DUPLICATE_PPI, MODEL_EFI_PPI, EccGlobalData.gDb.TblDsc)
             self.CheckGuidProtocolPpiValue(ERROR_META_DATA_FILE_CHECK_DUPLICATE_PPI, MODEL_EFI_PPI)
-    
+
     # Check whether all files under module directory are described in INF files
     def MetaDataFileCheckModuleFileNoUse(self):
-        if EccGlobalData.gConfig.MetaDataFileCheckModuleFileNoUse == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1': 
+        if EccGlobalData.gConfig.MetaDataFileCheckModuleFileNoUse == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking for no used module files ...")
             SqlCommand = """
                          select upper(Path) from File where ID in (select BelongsToFile from INF where BelongsToFile != -1)
@@ -689,8 +689,8 @@ class Check(object):
                 if Item[0] not in InfPathList:
                     InfPathList.append(Item[0])
             SqlCommand = """
-                         select ID, Path, FullPath from File where upper(FullPath) not in 
-                            (select upper(A.Path) || '\\' || upper(B.Value1) from File as A, INF as B 
+                         select ID, Path, FullPath from File where upper(FullPath) not in
+                            (select upper(A.Path) || '\\' || upper(B.Value1) from File as A, INF as B
                             where A.ID in (select BelongsToFile from INF where Model = %s group by BelongsToFile) and
                             B.BelongsToFile = A.ID and B.Model = %s)
                             and (Model = %s or Model = %s)
@@ -702,10 +702,10 @@ class Check(object):
                 if Path in InfPathList:
                     if not EccGlobalData.gException.IsException(ERROR_META_DATA_FILE_CHECK_MODULE_FILE_NO_USE, Record[2]):
                         EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_MODULE_FILE_NO_USE, OtherMsg = "The source file [%s] is existing in module directory but it is not described in INF file." % (Record[2]), BelongsToTable = 'File', BelongsToItem = Record[0])
-                        
+
     # Check whether the PCD is correctly used in C function via its type
     def MetaDataFileCheckPcdType(self):
-        if EccGlobalData.gConfig.MetaDataFileCheckPcdType == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1': 
+        if EccGlobalData.gConfig.MetaDataFileCheckPcdType == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking for pcd type in c code function usage ...")
             SqlCommand = """
                          select ID, Model, Value1, BelongsToFile from INF where Model > %s and Model < %s
@@ -717,25 +717,32 @@ class Check(object):
                 if len(Pcd[2].split(".")) > 1:
                     PcdName = Pcd[2].split(".")[1]
                 BelongsToFile = Pcd[3]
-                for Tbl in EccGlobalData.gIdentifierTableList:
+                SqlCommand = """
+                             select ID from File where FullPath in
+                            (select B.Path || '\\' || A.Value1 from INF as A, File as B where A.Model = %s and A.BelongsToFile = %s
+                             and B.ID = %s)
+                             """ %(MODEL_EFI_SOURCE_FILE, BelongsToFile, BelongsToFile)
+                TableSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
+                for Tbl in TableSet:
+                    TblName = 'Identifier' + str(Tbl[0])
                     SqlCommand = """
                                  select Name, ID from %s where value like '%%%s%%' and Model = %s
-                                 """ % (Tbl, PcdName, MODEL_IDENTIFIER_FUNCTION_CALLING)
+                                 """ % (TblName, PcdName, MODEL_IDENTIFIER_FUNCTION_CALLING)
                     RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
-                    TblNumber = Tbl.replace('Identifier', '')
+                    TblNumber = TblName.replace('Identifier', '')
                     for Record in RecordSet:
                         FunName = Record[0]
                         if not EccGlobalData.gException.IsException(ERROR_META_DATA_FILE_CHECK_PCD_TYPE, FunName):
                             if Model in [MODEL_PCD_FIXED_AT_BUILD] and not FunName.startswith('FixedPcdGet'):
-                                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_TYPE, OtherMsg = "The pcd '%s' is defined as a FixPcd but now it is called by c function [%s]" % (PcdName, FunName), BelongsToTable = Tbl, BelongsToItem = Record[1])
+                                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_TYPE, OtherMsg = "The pcd '%s' is defined as a FixPcd but now it is called by c function [%s]" % (PcdName, FunName), BelongsToTable = TblName, BelongsToItem = Record[1])
                             if Model in [MODEL_PCD_FEATURE_FLAG] and (not FunName.startswith('FeaturePcdGet') and not FunName.startswith('FeaturePcdSet')):
-                                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_TYPE, OtherMsg = "The pcd '%s' is defined as a FeaturePcd but now it is called by c function [%s]" % (PcdName, FunName), BelongsToTable = Tbl, BelongsToItem = Record[1])
+                                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_TYPE, OtherMsg = "The pcd '%s' is defined as a FeaturePcd but now it is called by c function [%s]" % (PcdName, FunName), BelongsToTable = TblName, BelongsToItem = Record[1])
                             if Model in [MODEL_PCD_PATCHABLE_IN_MODULE] and (not FunName.startswith('PatchablePcdGet') and not FunName.startswith('PatchablePcdSet')):
-                                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_TYPE, OtherMsg = "The pcd '%s' is defined as a PatchablePcd but now it is called by c function [%s]" % (PcdName, FunName), BelongsToTable = Tbl, BelongsToItem = Record[1])
-            
+                                EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_TYPE, OtherMsg = "The pcd '%s' is defined as a PatchablePcd but now it is called by c function [%s]" % (PcdName, FunName), BelongsToTable = TblName, BelongsToItem = Record[1])
+
             #ERROR_META_DATA_FILE_CHECK_PCD_TYPE
         pass
-    
+
     # Check whether these is duplicate Guid/Ppi/Protocol name
     def CheckGuidProtocolPpi(self, ErrorID, Model, Table):
         Name = ''
@@ -746,9 +753,9 @@ class Check(object):
         if Model == MODEL_EFI_PPI:
             Name = 'ppi'
         SqlCommand = """
-                     select A.ID, A.Value1 from %s as A, %s as B 
-                     where A.Model = %s and B.Model = %s 
-                     and A.Value1 = B.Value1 and A.ID <> B.ID 
+                     select A.ID, A.Value1 from %s as A, %s as B
+                     where A.Model = %s and B.Model = %s
+                     and A.Value1 = B.Value1 and A.ID <> B.ID
                      and A.Enabled > -1
                      and B.Enabled > -1
                      group by A.ID
@@ -769,9 +776,9 @@ class Check(object):
         if Model == MODEL_EFI_PPI:
             Name = 'ppi'
         SqlCommand = """
-                     select A.ID, A.Value2 from %s as A, %s as B 
-                     where A.Model = %s and B.Model = %s 
-                     and A.Value2 = B.Value2 and A.ID <> B.ID 
+                     select A.ID, A.Value2 from %s as A, %s as B
+                     where A.Model = %s and B.Model = %s
+                     and A.Value2 = B.Value2 and A.ID <> B.ID
                      group by A.ID
                      """ % (Table.Table, Table.Table, Model, Model)
         RecordSet = Table.Exec(SqlCommand)
@@ -788,7 +795,7 @@ class Check(object):
         self.NamingConventionCheckVariableName()
         self.NamingConventionCheckFunctionName()
         self.NamingConventionCheckSingleCharacterVariable()
-        
+
     # Check whether only capital letters are used for #define declarations
     def NamingConventionCheckDefineStatement(self):
         if EccGlobalData.gConfig.NamingConventionCheckDefineStatement == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
@@ -802,7 +809,7 @@ class Check(object):
                     if Name.upper() != Name:
                         if not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_DEFINE_STATEMENT, Name):
                             EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_DEFINE_STATEMENT, OtherMsg = "The #define name [%s] does not follow the rules" % (Name), BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
-    
+
     # Check whether only capital letters are used for typedef declarations
     def NamingConventionCheckTypedefStatement(self):
         if EccGlobalData.gConfig.NamingConventionCheckTypedefStatement == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
@@ -822,7 +829,7 @@ class Check(object):
                         if Name.upper() != Name:
                             if not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_TYPEDEF_STATEMENT, Name):
                                 EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_TYPEDEF_STATEMENT, OtherMsg = "The #typedef name [%s] does not follow the rules" % (Name), BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
-    
+
     # Check whether the #ifndef at the start of an include file uses both prefix and postfix underscore characters, '_'.
     def NamingConventionCheckIfndefStatement(self):
         if EccGlobalData.gConfig.NamingConventionCheckTypedefStatement == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
@@ -835,7 +842,7 @@ class Check(object):
                     if Name[0] != '_' or Name[-1] != '_':
                         if not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_IFNDEF_STATEMENT, Name):
                             EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_IFNDEF_STATEMENT, OtherMsg = "The #ifndef name [%s] does not follow the rules" % (Name), BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
-    
+
     # Rule for path name, variable name and function name
     # 1. First character should be upper case
     # 2. Existing lower case in a word
@@ -851,7 +858,7 @@ class Check(object):
                 if not Pattern.match(Record[1]):
                     if not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_PATH_NAME, Record[1]):
                         EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_PATH_NAME, OtherMsg = "The file path [%s] does not follow the rules" % (Record[1]), BelongsToTable = 'File', BelongsToItem = Record[0])
-    
+
     # Rule for path name, variable name and function name
     # 1. First character should be upper case
     # 2. Existing lower case in a word
