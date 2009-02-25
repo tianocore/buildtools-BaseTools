@@ -211,27 +211,38 @@ Returns:
   }
 
   //
-  // Read the FV Guid
+  // Read the FV File System Guid
   //
-  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_FV_GUID_STRING, 0, Value);
+  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_FV_FILESYSTEMGUID_STRING, 0, Value);
   if (Status == EFI_SUCCESS) {
     //
     // Get the guid value
     //
-    StringToGuid (Value, &FvInfo->FvGuid);
+    StringToGuid (Value, &FvInfo->FvFileSystemGuid);
   }
-  DebugMsg (NULL, 0, 9, "FV File Guid", "%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X", 
-                FvInfo->FvGuid.Data1,
-                FvInfo->FvGuid.Data2,
-                FvInfo->FvGuid.Data3,
-                FvInfo->FvGuid.Data4[0],
-                FvInfo->FvGuid.Data4[1],
-                FvInfo->FvGuid.Data4[2],
-                FvInfo->FvGuid.Data4[3],
-                FvInfo->FvGuid.Data4[4],
-                FvInfo->FvGuid.Data4[5],
-                FvInfo->FvGuid.Data4[6],
-                FvInfo->FvGuid.Data4[7]);
+
+  //
+  // Read the FV Name Guid
+  //
+  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_FV_NAMEGUID_STRING, 0, Value);
+  if (Status == EFI_SUCCESS) {
+    //
+    // Get the guid value
+    //
+    StringToGuid (Value, &FvInfo->FvNameGuid);
+    DebugMsg (NULL, 0, 9, "FV Name Guid", "%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X", 
+                FvInfo->FvNameGuid.Data1,
+                FvInfo->FvNameGuid.Data2,
+                FvInfo->FvNameGuid.Data3,
+                FvInfo->FvNameGuid.Data4[0],
+                FvInfo->FvNameGuid.Data4[1],
+                FvInfo->FvNameGuid.Data4[2],
+                FvInfo->FvNameGuid.Data4[3],
+                FvInfo->FvNameGuid.Data4[4],
+                FvInfo->FvNameGuid.Data4[5],
+                FvInfo->FvNameGuid.Data4[6],
+                FvInfo->FvNameGuid.Data4[7]);
+  }
 
   //
   // Read the FV file name
@@ -499,7 +510,8 @@ Returns:
 EFI_STATUS
 AddPadFile (
   IN OUT MEMORY_FILE  *FvImage,
-  IN UINT32           DataAlignment
+  IN UINT32           DataAlignment,
+  IN EFI_FIRMWARE_VOLUME_EXT_HEADER *ExtHeader
   )
 /*++
 
@@ -513,6 +525,7 @@ Arguments:
   FvImage         The memory image of the FV to add it to.  The current offset
                   must be valid.
   DataAlignment   The data alignment of the next FFS file.
+  ExtHeader       PI FvExtHeader Optional 
 
 Returns:
 
@@ -536,7 +549,7 @@ Returns:
   //
   // Check if a pad file is necessary
   //
-  if (((UINTN) FvImage->CurrentFilePointer - (UINTN) FvImage->FileImage + sizeof (EFI_FFS_FILE_HEADER)) % DataAlignment == 0) {
+  if ((ExtHeader == NULL) && (((UINTN) FvImage->CurrentFilePointer - (UINTN) FvImage->FileImage + sizeof (EFI_FFS_FILE_HEADER)) % DataAlignment == 0)) {
     return EFI_SUCCESS;
   }
 
@@ -548,8 +561,14 @@ Returns:
   //
   // Verify that we have enough space for the file header
   //
-  if ((UINTN) (PadFile + sizeof (EFI_FFS_FILE_HEADER)) >= (UINTN) FvImage->Eof) {
-    return EFI_OUT_OF_RESOURCES;
+  if (ExtHeader != NULL) {
+    if ((UINTN) (PadFile + sizeof (EFI_FFS_FILE_HEADER) + ExtHeader->ExtHeaderSize) >= (UINTN) FvImage->Eof) {
+      return EFI_OUT_OF_RESOURCES;
+    }    
+  } else {
+    if ((UINTN) (PadFile + sizeof (EFI_FFS_FILE_HEADER)) >= (UINTN) FvImage->Eof) {
+      return EFI_OUT_OF_RESOURCES;
+    }
   }
 
   //
@@ -565,7 +584,11 @@ Returns:
   // This is the earliest possible valid offset (current plus pad file header
   // plus the next file header)
   //
-  PadFileSize = (UINTN) FvImage->CurrentFilePointer - (UINTN) FvImage->FileImage + (sizeof (EFI_FFS_FILE_HEADER) * 2);
+  if (ExtHeader != NULL) {
+    PadFileSize = (UINTN) FvImage->CurrentFilePointer - (UINTN) FvImage->FileImage + (sizeof (EFI_FFS_FILE_HEADER) * 2) + ExtHeader->ExtHeaderSize;
+  } else {
+    PadFileSize = (UINTN) FvImage->CurrentFilePointer - (UINTN) FvImage->FileImage + (sizeof (EFI_FFS_FILE_HEADER) * 2);
+  }
 
   //
   // Add whatever it takes to get to the next aligned address
@@ -597,20 +620,24 @@ Returns:
   PadFile->IntegrityCheck.Checksum.File   = 0;
   PadFile->State                          = 0;
   PadFile->IntegrityCheck.Checksum.Header = CalculateChecksum8 ((UINT8 *) PadFile, sizeof (EFI_FFS_FILE_HEADER));
-  if (PadFile->Attributes & FFS_ATTRIB_CHECKSUM) {
-    PadFile->IntegrityCheck.Checksum.File = CalculateChecksum8 ((UINT8 *) PadFile, PadFileSize);
-  } else {
-    PadFile->IntegrityCheck.Checksum.File = FFS_FIXED_CHECKSUM;
-  }
+  PadFile->IntegrityCheck.Checksum.File   = FFS_FIXED_CHECKSUM;
 
   PadFile->State = EFI_FILE_HEADER_CONSTRUCTION | EFI_FILE_HEADER_VALID | EFI_FILE_DATA_VALID;
   UpdateFfsFileState (
     (EFI_FFS_FILE_HEADER *) PadFile,
     (EFI_FIRMWARE_VOLUME_HEADER *) FvImage->FileImage
     );
+  
+  if (ExtHeader != NULL) {
+    //
+    // Copy Fv Extension Header and Set Fv Extension header offset
+    //
+    memcpy (PadFile + 1, ExtHeader, ExtHeader->ExtHeaderSize);
+    ((EFI_FIRMWARE_VOLUME_HEADER *) FvImage->FileImage)->ExtHeaderOffset = (UINT16) ((UINTN) (PadFile + 1) - (UINTN) FvImage->FileImage);
+  }
 
   //
-  // Verify that we have enough space (including the padding
+  // Verify that we have enough space (including the padding)
   //
   if (((UINTN)PadFile + PadFileSize) >= (UINTN) FvImage->Eof) {
     return EFI_OUT_OF_RESOURCES;
@@ -1070,7 +1097,7 @@ Returns:
   //
   // Add pad file if necessary
   //
-  Status = AddPadFile (FvImage, 1 << CurrentFileAlignment);
+  Status = AddPadFile (FvImage, 1 << CurrentFileAlignment, NULL);
   if (EFI_ERROR (Status)) {
     Error (NULL, 0, 4002, "Resource", "FV space is full, could not add pad file for data alignment property.");
     free (FileBuffer);
@@ -1174,11 +1201,7 @@ Returns:
   PadFile->IntegrityCheck.Checksum.File   = 0;
   PadFile->State                          = 0;
   PadFile->IntegrityCheck.Checksum.Header = CalculateChecksum8 ((UINT8 *) PadFile, sizeof (EFI_FFS_FILE_HEADER));
-  if (PadFile->Attributes & FFS_ATTRIB_CHECKSUM) {
-    PadFile->IntegrityCheck.Checksum.File = CalculateChecksum8 ((UINT8 *) PadFile, FileSize);
-  } else {
-    PadFile->IntegrityCheck.Checksum.File = FFS_FIXED_CHECKSUM;
-  }
+  PadFile->IntegrityCheck.Checksum.File   = FFS_FIXED_CHECKSUM;
 
   PadFile->State = EFI_FILE_HEADER_CONSTRUCTION | EFI_FILE_HEADER_VALID | EFI_FILE_DATA_VALID;
 
@@ -1665,6 +1688,7 @@ Returns:
   FILE                        *FvFile;
   CHAR8                       FvMapName [_MAX_PATH];
   FILE                        *FvMapFile;
+  EFI_FIRMWARE_VOLUME_EXT_HEADER FvExtHeader;
 
   FvBufferHeader = NULL;
   FvFile         = NULL;
@@ -1704,10 +1728,26 @@ Returns:
     Error (NULL, 0, 1001, "Missing required argument", "Block Size");
     return EFI_ABORTED;
   }
+  
+  //
+  // Debug message Fv File System Guid
+  //
+  DebugMsg (NULL, 0, 9, "FV File System Guid", "%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X", 
+                mFvDataInfo.FvFileSystemGuid.Data1,
+                mFvDataInfo.FvFileSystemGuid.Data2,
+                mFvDataInfo.FvFileSystemGuid.Data3,
+                mFvDataInfo.FvFileSystemGuid.Data4[0],
+                mFvDataInfo.FvFileSystemGuid.Data4[1],
+                mFvDataInfo.FvFileSystemGuid.Data4[2],
+                mFvDataInfo.FvFileSystemGuid.Data4[3],
+                mFvDataInfo.FvFileSystemGuid.Data4[4],
+                mFvDataInfo.FvFileSystemGuid.Data4[5],
+                mFvDataInfo.FvFileSystemGuid.Data4[6],
+                mFvDataInfo.FvFileSystemGuid.Data4[7]);
 
-  if (CompareGuid (&mFvDataInfo.FvGuid, &mEfiFirmwareFileSystem2Guid) == 0) {
+  if (CompareGuid (&mFvDataInfo.FvFileSystemGuid, &mEfiFirmwareFileSystem2Guid) == 0) {
     mFvDataInfo.IsPiFvImage = TRUE;
-  } 
+  }
 
   //
   // FvMap file to log the function address of all modules in one Fvimage
@@ -1783,9 +1823,9 @@ Returns:
   memset (FvHeader->ZeroVector, 0, 16);
 
   //
-  // Copy the FFS GUID
+  // Copy the Fv file system GUID
   //
-  memcpy (&FvHeader->FileSystemGuid, &mFvDataInfo.FvGuid, sizeof (EFI_GUID));
+  memcpy (&FvHeader->FileSystemGuid, &mFvDataInfo.FvFileSystemGuid, sizeof (EFI_GUID));
 
   FvHeader->FvLength        = FvImageSize;
   FvHeader->Signature       = EFI_FVH_SIGNATURE;
@@ -1862,6 +1902,20 @@ Returns:
   if (mFvTotalSize != 0 && mFvTakenSize != 0) {
     fprintf (FvMapFile, EFI_FV_SPACE_SIZE_STRING);
     fprintf (FvMapFile, " = 0x%x\n\n", mFvTotalSize - mFvTakenSize);
+  }
+
+  //
+  // Set PI FV extension header
+  //
+  if (CompareGuid (&mFvDataInfo.FvNameGuid, &mZeroGuid) != 0) {
+    memcpy (&FvExtHeader.FvName, &mFvDataInfo.FvNameGuid, sizeof (EFI_GUID));
+    FvExtHeader.ExtHeaderSize = sizeof (EFI_FIRMWARE_VOLUME_EXT_HEADER);
+    AddPadFile (&FvImageMemoryFile, 8, &FvExtHeader);
+    //
+    // Fv Extension header change update Fv Header Check sum
+    //
+    FvHeader->Checksum      = 0;
+    FvHeader->Checksum      = CalculateChecksum16 ((UINT16 *) FvHeader, FvHeader->HeaderLength / sizeof (UINT16));
   }
 
   //
@@ -2080,6 +2134,14 @@ Returns:
     if (FvInfoPtr->FvBlocks[Index].NumBlocks == 0 || FvInfoPtr->FvBlocks[Index].Length == 0) {
       break;
     }
+  }
+  
+  //
+  // Calculate PI extension header
+  //
+  if (CompareGuid (&mFvDataInfo.FvNameGuid, &mZeroGuid) != 0) {
+    CurrentOffset += sizeof (EFI_FFS_FILE_HEADER) + sizeof (EFI_FIRMWARE_VOLUME_EXT_HEADER);
+    CurrentOffset = (CurrentOffset + 7) & (~7);
   }
 
   //

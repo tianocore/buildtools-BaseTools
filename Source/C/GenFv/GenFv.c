@@ -134,7 +134,10 @@ Returns:
                         Logfile is the output fv map file name. if it is not\n\
                         given, the FvName.map will be the default map file name\n"); 
   fprintf (stdout, "  -g Guid, --capguid GuidValue\n\
-                        GuidValue is one specific capsule or fv vendor guid value.\n\
+                        GuidValue is one specific capsule or fv file system guid value.\n\
+                        Its format is xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n");
+  fprintf (stdout, "  --FvnameGuid\n\
+                        GuidValue is the Fv Name Guid value.\n\
                         Its format is xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n");
   fprintf (stdout, "  --capflag CapFlag\n\
                         Capsule Reset Flag can be PersistAcrossReset,\n\
@@ -238,7 +241,7 @@ Returns:
 	//
 	// Set the default FvGuid
 	//
-	memcpy (&mFvDataInfo.FvGuid, &mEfiFirmwareFileSystem2Guid, sizeof (EFI_GUID));
+	memcpy (&mFvDataInfo.FvFileSystemGuid, &mEfiFirmwareFileSystem2Guid, sizeof (EFI_GUID));
    
   //
   // Parse command line
@@ -428,9 +431,24 @@ Returns:
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", EFI_GUID_STRING, argv[1]);
         return EFI_ABORTED;
       }
-      memcpy (&mFvDataInfo.FvGuid, &mCapDataInfo.CapGuid, sizeof (EFI_GUID));
+      memcpy (&mFvDataInfo.FvFileSystemGuid, &mCapDataInfo.CapGuid, sizeof (EFI_GUID));
       DebugMsg (NULL, 0, 9, "Capsule Guid", "%s = %s", EFI_CAPSULE_GUID_STRING, argv[1]);
-      DebugMsg (NULL, 0, 9, "FV Guid", "%s = %s", EFI_FV_GUID_STRING, argv[1]);
+      DebugMsg (NULL, 0, 9, "FV Guid", "%s = %s", EFI_FV_FILESYSTEMGUID_STRING, argv[1]);
+      argc -= 2;
+      argv += 2;
+      continue; 
+    }
+
+    if (stricmp (argv[0], "--FvnameGuid") == 0) {
+      //
+      // Get Fv Name Guid
+      //
+      Status = StringToGuid (argv[1], &mFvDataInfo.FvNameGuid);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", EFI_GUID_STRING, argv[1]);
+        return EFI_ABORTED;
+      }
+      DebugMsg (NULL, 0, 9, "FV Name Guid", "%s = %s", EFI_FV_NAMEGUID_STRING, argv[1]);
       argc -= 2;
       argv += 2;
       continue; 

@@ -77,7 +77,8 @@ Abstract:
 #define EFI_NUM_BLOCKS_STRING             "EFI_NUM_BLOCKS"
 #define EFI_BLOCK_SIZE_STRING             "EFI_BLOCK_SIZE"
 #define EFI_GUID_STRING                   "EFI_GUID"
-#define EFI_FV_GUID_STRING                "EFI_FV_GUID"
+#define EFI_FV_FILESYSTEMGUID_STRING      "EFI_FV_GUID"
+#define EFI_FV_NAMEGUID_STRING            "EFI_FVNAME_GUID" 
 #define EFI_CAPSULE_GUID_STRING           "EFI_CAPSULE_GUID"
 #define EFI_CAPSULE_HEADER_SIZE_STRING    "EFI_CAPSULE_HEADER_SIZE"
 #define EFI_CAPSULE_FLAGS_STRING          "EFI_CAPSULE_FLAGS"
@@ -223,7 +224,8 @@ typedef struct {
   EFI_PHYSICAL_ADDRESS    BaseAddress;
   EFI_PHYSICAL_ADDRESS    BootBaseAddress;
   EFI_PHYSICAL_ADDRESS    RuntimeBaseAddress;  
-  EFI_GUID                FvGuid;
+  EFI_GUID                FvFileSystemGuid;
+  EFI_GUID                FvNameGuid;
   UINTN                   Size;
   EFI_FVB_ATTRIBUTES      FvAttributes;
   CHAR8                   FvName[_MAX_PATH];
