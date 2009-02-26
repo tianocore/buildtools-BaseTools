@@ -474,16 +474,15 @@ cleanlib:
         # tools definitions
         ToolsDef = []
         for Tool in self._AutoGenObject.BuildOption:
-            # Don't generate MAKE_FLAGS in makefile. It's put in environment variable.
-            if Tool == "MAKE":
-                continue
-
             for Attr in self._AutoGenObject.BuildOption[Tool]:
                 if Attr == "FAMILY":
                     continue
                 elif Attr == "PATH":
                     ToolsDef.append("%s = %s" % (Tool, self._AutoGenObject.BuildOption[Tool][Attr]))
                 else:
+                    # Don't generate MAKE_FLAGS in makefile. It's put in environment variable.
+                    if Tool == "MAKE":
+                        continue
                     ToolsDef.append("%s_%s = %s" % (Tool, Attr, self._AutoGenObject.BuildOption[Tool][Attr]))
             ToolsDef.append("")
 
@@ -1016,6 +1015,7 @@ FV_DIR = ${platform_build_directory}${separator}FV
 ${BEGIN}${shell_command_code} = ${shell_command}
 ${END}
 
+MAKE = ${make_path}
 MAKE_FILE = ${makefile_path}
 
 #
@@ -1094,7 +1094,7 @@ cleanlib:
         Separator = self._SEP_[self._FileType]
 
         PlatformInfo = self._AutoGenObject
-        if "MAKE" not in PlatformInfo.ToolDefinition:
+        if "MAKE" not in PlatformInfo.ToolDefinition or "PATH" not in PlatformInfo.ToolDefinition["MAKE"]:
             EdkLogger.error("build", OPTION_MISSING, "No MAKE command defined. Please check your tools_def.txt!",
                             ExtraData="[%s]" % str(self._AutoGenObject))
 
@@ -1124,6 +1124,7 @@ cleanlib:
         MakefileTemplateDict = {
             "makefile_header"           : self._FILE_HEADER_[self._FileType],
             "makefile_path"             : os.path.join("$(BUILD_DIR)", MakefileName),
+            "make_path"                 : PlatformInfo.ToolDefinition["MAKE"]["PATH"],
             "makefile_name"             : MakefileName,
             "platform_name"             : PlatformInfo.Name,
             "platform_guid"             : PlatformInfo.Guid,
@@ -1209,6 +1210,7 @@ FV_DIR = ${platform_build_directory}${separator}FV
 ${BEGIN}${shell_command_code} = ${shell_command}
 ${END}
 
+MAKE = ${make_path}
 MAKE_FILE = ${makefile_path}
 
 #
@@ -1289,7 +1291,7 @@ ${END}\t@cd $(BUILD_DIR)\n
         # any platform autogen object is ok because we just need common information
         PlatformInfo = self._AutoGenObject
 
-        if "MAKE" not in PlatformInfo.ToolDefinition:
+        if "MAKE" not in PlatformInfo.ToolDefinition or "PATH" not in PlatformInfo.ToolDefinition["MAKE"]:
             EdkLogger.error("build", OPTION_MISSING, "No MAKE command defined. Please check your tools_def.txt!",
                             ExtraData="[%s]" % str(self._AutoGenObject))
 
@@ -1329,6 +1331,7 @@ ${END}\t@cd $(BUILD_DIR)\n
         MakefileTemplateDict = {
             "makefile_header"           : self._FILE_HEADER_[self._FileType],
             "makefile_path"             : os.path.join("$(BUILD_DIR)", MakefileName),
+            "make_path"                 : PlatformInfo.ToolDefinition["MAKE"]["PATH"],
             "platform_name"             : PlatformInfo.Name,
             "platform_guid"             : PlatformInfo.Guid,
             "platform_version"          : PlatformInfo.Version,
