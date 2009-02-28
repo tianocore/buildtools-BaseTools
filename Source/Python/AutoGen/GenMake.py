@@ -149,8 +149,8 @@ class BuildFile(object):
     }
 
     _MAKE_TEMPLATE_ = {
-        "nmake" :   'if exist %(file)s $(MAKE) $(MAKE_FLAGS) -f %(file)s',
-        "gmake" :   "test -e %(file)s && $(MAKE) $(MAKE_FLAGS) -f %(file)s"
+        "nmake" :   'if exist %(file)s "$(MAKE)" $(MAKE_FLAGS) -f %(file)s',
+        "gmake" :   'test -e %(file)s && "$(MAKE)" $(MAKE_FLAGS) -f %(file)s'
     }
 
     _INCLUDE_CMD_ = {
@@ -360,14 +360,14 @@ strdefs:
 # GenLibsTarget
 #
 gen_libs:
-\t${BEGIN}@$(MAKE) $(MAKE_FLAGS) -f ${dependent_library_build_directory}${separator}${makefile_name}
+\t${BEGIN}@"$(MAKE)" $(MAKE_FLAGS) -f ${dependent_library_build_directory}${separator}${makefile_name}
 \t${END}@cd $(MODULE_BUILD_DIR)
 
 #
 # Build Flash Device Image
 #
 gen_fds:
-\t@$(MAKE) $(MAKE_FLAGS) -f $(BUILD_DIR)${separator}${makefile_name} fds
+\t@"$(MAKE)" $(MAKE_FLAGS) -f $(BUILD_DIR)${separator}${makefile_name} fds
 \t@cd $(MODULE_BUILD_DIR)
 
 #
@@ -1044,14 +1044,14 @@ modules: init build_libraries build_modules
 # Build all libraries:
 #
 build_libraries:
-${BEGIN}\t@$(MAKE) $(MAKE_FLAGS) -f ${library_makefile_list} pbuild
+${BEGIN}\t@"$(MAKE)" $(MAKE_FLAGS) -f ${library_makefile_list} pbuild
 ${END}\t@cd $(BUILD_DIR)
 
 #
 # Build all modules:
 #
 build_modules:
-${BEGIN}\t@$(MAKE) $(MAKE_FLAGS) -f ${module_makefile_list} pbuild
+${BEGIN}\t@"$(MAKE)" $(MAKE_FLAGS) -f ${module_makefile_list} pbuild
 ${END}\t@cd $(BUILD_DIR)
 
 #
@@ -1229,14 +1229,14 @@ init:
 # library build target
 #
 libraries: init
-${BEGIN}\t@cd $(BUILD_DIR)${separator}${arch} && $(MAKE) $(MAKE_FLAGS) libraries
+${BEGIN}\t@cd $(BUILD_DIR)${separator}${arch} && "$(MAKE)" $(MAKE_FLAGS) libraries
 ${END}\t@cd $(BUILD_DIR)
 
 #
 # module build target
 #
 modules: init
-${BEGIN}\t@cd $(BUILD_DIR)${separator}${arch} && $(MAKE) $(MAKE_FLAGS) modules
+${BEGIN}\t@cd $(BUILD_DIR)${separator}${arch} && "$(MAKE)" $(MAKE_FLAGS) modules
 ${END}\t@cd $(BUILD_DIR)
 
 #
