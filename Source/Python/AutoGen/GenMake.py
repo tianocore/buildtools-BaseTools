@@ -19,8 +19,6 @@ import string
 import re
 import os.path as path
 
-from Common.EdkIIWorkspaceBuild import *
-from Common.EdkIIWorkspace import *
 from Common.BuildToolError import *
 from Common.Misc import *
 from Common.String import *

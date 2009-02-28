@@ -702,7 +702,7 @@ Err1:
   fclose (pInFile);
 }
 
-INT32
+int
 main (
   IN INT32             Argc, 
   IN CHAR8             **Argv

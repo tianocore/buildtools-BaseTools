@@ -19,7 +19,6 @@ from Common import EdkLogger
 
 from Common.BuildToolError import *
 from Common.DataType import *
-from Common.EdkIIWorkspace import *
 from Common.Misc import *
 from StrGather import *
 

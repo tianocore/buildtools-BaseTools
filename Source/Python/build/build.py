@@ -150,11 +150,11 @@ def CheckEnvVariable():
     PathString = os.environ["PATH"]
     ToolPath = os.path.normpath(os.path.join(os.environ["EDK_TOOLS_PATH"], 'Bin', sys.platform.title()))
 
-    if not IsToolInPath('build'):
-        os.environ['PATH'] = os.path.pathsep.join((os.environ['PATH'], ToolPath))
-
-        EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Please execute %s to set %s in environment variable: PATH!\n"
-                            % (os.path.normpath(os.path.join(PathString, 'edksetup.bat')), ToolPath))
+    #if not IsToolInPath('build'):
+    #    os.environ['PATH'] = os.path.pathsep.join((os.environ['PATH'], ToolPath))
+    #
+    #    EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Please execute %s to set %s in environment variable: PATH!\n"
+    #                        % (os.path.normpath(os.path.join(PathString, 'edksetup.bat')), ToolPath))
 
     # for macro replacement in R9 DSC/DEC/INF file
     GlobalData.gGlobalDefines["WORKSPACE"] = ""

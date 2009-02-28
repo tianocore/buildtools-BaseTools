@@ -26,14 +26,13 @@ from StrGather import *
 from BuildEngine import BuildRule
 
 from Common.BuildToolError import *
-from Common.EdkIIWorkspaceBuild import *
-from Common.EdkIIWorkspace import *
 from Common.DataType import *
 from Common.Misc import *
 from Common.String import *
 import Common.GlobalData as GlobalData
 from GenFds.FdfParser import *
 from CommonDataClass.CommonClass import SkuInfoClass
+from Workspace.BuildClassObject import *
 
 ## Regular expression for splitting Dependency Expression stirng into tokens
 gDepexTokenPattern = re.compile("(\(|\)|\w+| \S+\.inf)")
@@ -323,7 +322,7 @@ class PlatformAutoGen(AutoGen):
     #  only used by factory method __new__() to do real initialization work for an
     #  object of PlatformAutoGen
     #
-    #   @param      Workspace       EdkIIWorkspaceBuild object
+    #   @param      Workspace       WorkspaceAutoGen object
     #   @param      PlatformFile    Platform file (DSC file)
     #   @param      Target          Build target (DEBUG, RELEASE)
     #   @param      Toolchain       Name of tool chain
@@ -512,7 +511,7 @@ class PlatformAutoGen(AutoGen):
             for Def in ToolDefinition:
                 Target, Tag, Arch, Tool, Attr = Def.split("_")
                 if Target != self.BuildTarget or Tag != self.ToolChain or Arch != self.Arch:
-                    continue 
+                    continue
 
                 Value = ToolDefinition[Def]
                 # don't record the DLL
