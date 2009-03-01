@@ -951,10 +951,12 @@ class DecParser(MetaFileParser):
             elif Line.startswith('DEFINE '):
                 self._MacroParser()
                 continue
+            elif len(self._SectionType) == 0:
+                continue
 
             # section content
             self._ValueList = ['','','']
-            self._SectionParser[self._SectionType](self)
+            self._SectionParser[self._SectionType[0]](self)
             if self._ValueList == None:
                 continue
 
@@ -962,9 +964,9 @@ class DecParser(MetaFileParser):
             # Model, Value1, Value2, Value3, Arch, BelongsToItem=-1, LineBegin=-1,
             # ColumnBegin=-1, LineEnd=-1, ColumnEnd=-1, FeatureFlag='', Enabled=-1
             #
-            for Arch, ModuleType in self._Scope:
+            for Arch, ModuleType, Type in self._Scope:
                 self._LastItem = self._Store(
-                    self._SectionType,
+                    Type,
                     self._ValueList[0],
                     self._ValueList[1],
                     self._ValueList[2],
@@ -978,6 +980,60 @@ class DecParser(MetaFileParser):
                     0
                     )
         self._Done()
+
+    ## Section header parser
+    #
+    #   The section header is always in following format:
+    #
+    #       [section_name.arch<.platform|module_type>]
+    #
+    def _SectionHeaderParser(self):
+        self._Scope = []
+        self._SectionName = ''
+        self._SectionType = []
+        ArchList = set()
+        for Item in GetSplitValueList(self._CurrentLine[1:-1], TAB_COMMA_SPLIT):
+            if Item == '':
+                continue
+            ItemList = GetSplitValueList(Item, TAB_SPLIT)
+
+            # different types of PCD are permissible in one section
+            self._SectionName = ItemList[0].upper()
+            if self._SectionName in self.DataType:
+                if self.DataType[self._SectionName] not in self._SectionType:
+                    self._SectionType.append(self.DataType[self._SectionName])
+            else:
+                EdkLogger.warn("Parser", "Unrecognized section", File=self.MetaFile,
+                                Line=self._LineIndex+1, ExtraData=self._CurrentLine)
+                continue
+
+            if MODEL_PCD_FEATURE_FLAG in self._SectionType and len(self._SectionType) > 1:
+                EdkLogger.error(
+                            'Parser',
+                            FORMAT_INVALID,
+                            "%s must not be in the same section of other types of PCD" % TAB_PCDS_FEATURE_FLAG_NULL,
+                            File=self.MetaFile,
+                            Line=self._LineIndex+1,
+                            ExtraData=self._CurrentLine
+                            )
+            # S1 is always Arch
+            if len(ItemList) > 1:
+                S1 = ItemList[1].upper()
+            else:
+                S1 = 'COMMON'
+            ArchList.add(S1)
+            # S2 may be Platform or ModuleType
+            if len(ItemList) > 2:
+                S2 = ItemList[2].upper()
+            else:
+                S2 = 'COMMON'
+            if [S1, S2, self.DataType[self._SectionName]] not in self._Scope:
+                self._Scope.append([S1, S2, self.DataType[self._SectionName]])
+
+        # 'COMMON' must not be used with specific ARCHs at the same section
+        if 'COMMON' in ArchList and len(ArchList) > 1:
+            EdkLogger.error('Parser', FORMAT_INVALID, "'common' ARCH must not be used with specific ARCHs",
+                            File=self.MetaFile, Line=self._LineIndex+1, ExtraData=self._CurrentLine)
 
     ## [guids], [ppis] and [protocols] section parser
     def _GuidParser(self):
