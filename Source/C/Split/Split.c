@@ -3,8 +3,8 @@
   Split a file into two pieces at the request offset.
 
 Copyright (c)  1999-2008 Intel Corporation. All rights reserved
-This program and the accompanying materials are licensed and made available 
-under the terms and conditions of the BSD License which accompanies this 
+This program and the accompanying materials are licensed and made available
+under the terms and conditions of the BSD License which accompanies this
 distribution.  The full text of the license may be found at
 http://opensource.org/licenses/bsd-license.php
 
@@ -17,7 +17,9 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef __GNUC__
 #include <unistd.h>
+#endif
 #include <ctype.h>
 #include "ParseInf.h"
 #include "CommonLib.h"
@@ -103,35 +105,35 @@ GetSplitValue (
   UINT64 number = 0;
   CHAR8 lastCHAR = 0;
   EFI_STATUS Status = EFI_SUCCESS;
-  
+
   if (len == 0) {
     return EFI_ABORTED;
   }
-  
+
   Status = AsciiStringToUint64 (SplitValueString, FALSE, ReturnValue);
   if (!EFI_ERROR (Status)) {
     return Status;
   }
-  
+
   if (SplitValueString[0] == '0' && (SplitValueString[1] == 'x' || SplitValueString[1] == 'X')) {
     Status = AsciiStringToUint64 (SplitValueString, TRUE, ReturnValue);
     if (!EFI_ERROR (Status)) {
       return Status;
     }
   }
-        
+
   lastCHAR = (CHAR8)toupper(SplitValueString[len - 1]);
-  
+
   if (lastCHAR != 'K' && lastCHAR != 'M' && lastCHAR != 'G') {
     return STATUS_ERROR;
   }
-  
+
   for (;index < len - 1; ++index) {
     if (!isdigit(SplitValueString[index])) {
       return EFI_ABORTED;
     }
   }
-  
+
   number = atol (SplitValueString);
   if (lastCHAR == 'K')
     base = 1024;
@@ -139,9 +141,9 @@ GetSplitValue (
     base = 1024*1024;
   else
     base = 1024*1024*1024;
-  
+
   *ReturnValue = number*base;
-   
+
   return EFI_SUCCESS;
 }
 
@@ -159,7 +161,7 @@ CountVerboseLevel (
     }
     ++(*ReturnValue);
   }
-  
+
   return EFI_SUCCESS;
 }
 
@@ -171,7 +173,7 @@ CreateDir (
   CHAR8* temp = *FullFileName;
   CHAR8* start = temp;
   UINT64 index = 0;
-  
+
   for (;index < strlen(temp); ++index) {
     if (temp[index] == '\\' || temp[index] == '/') {
       temp[index] = 0;
@@ -185,7 +187,7 @@ CreateDir (
       temp[index] = '/';
   }
   }
-  
+
   return EFI_SUCCESS;
 }
 
@@ -234,18 +236,18 @@ Returns:
     Usage();
     return STATUS_ERROR;
   }
-  
+
   argc --;
   argv ++;
 
   if ((stricmp (argv[0], "-h") == 0) || (stricmp (argv[0], "--help") == 0)) {
     Usage();
-    return STATUS_SUCCESS;    
+    return STATUS_SUCCESS;
   }
 
   if (stricmp (argv[0], "--version") == 0) {
     Version();
-    return STATUS_SUCCESS;    
+    return STATUS_SUCCESS;
   }
 
   while (argc > 0) {
@@ -257,9 +259,9 @@ Returns:
       }
       argc -= 2;
       argv += 2;
-      continue; 
+      continue;
     }
-    
+
     if ((stricmp (argv[0], "-f") == 0) || (stricmp (argv[0], "--filename") == 0)) {
       InputFileName = argv[1];
       if (InputFileName == NULL) {
@@ -268,9 +270,9 @@ Returns:
       }
       argc -= 2;
       argv += 2;
-      continue; 
+      continue;
     }
-    
+
     if ((stricmp (argv[0], "-s") == 0) || (stricmp (argv[0], "--split") == 0)) {
       Status = GetSplitValue(argv[1], &SplitValue);
       if (EFI_ERROR (Status)) {
@@ -279,7 +281,7 @@ Returns:
       }
       argc -= 2;
       argv += 2;
-      continue; 
+      continue;
     }
 
     if ((stricmp (argv[0], "-o") == 0) || (stricmp (argv[0], "--firstfile") == 0)) {
@@ -289,7 +291,7 @@ Returns:
       }
       argc -= 2;
       argv += 2;
-      continue; 
+      continue;
     }
 
     if ((stricmp (argv[0], "-t") == 0) || (stricmp (argv[0], "--secondfile") == 0)) {
@@ -299,40 +301,40 @@ Returns:
       }
       argc -= 2;
       argv += 2;
-      continue; 
+      continue;
     }
 
     if ((stricmp (argv[0], "-q") == 0) || (stricmp (argv[0], "--quiet") == 0)) {
       QuietFlag = TRUE;
       argc --;
       argv ++;
-      continue; 
+      continue;
     }
-    
+
     if ((strlen(argv[0]) >= 2 && argv[0][0] == '-' && (argv[0][1] == 'v' || argv[0][1] == 'V')) || (stricmp (argv[0], "--verbose") == 0)) {
       VerboseLevel = 1;
       if (strlen(argv[0]) > 2) {
         Status = CountVerboseLevel (&argv[0][2], strlen(argv[0]) - 2, &VerboseLevel);
         if (EFI_ERROR (Status)) {
           Error (NULL, 0, 0x1003, NULL, "%s is invaild paramter!", argv[0]);
-          return STATUS_ERROR;        
+          return STATUS_ERROR;
         }
       }
-      
+
       argc --;
       argv ++;
-      continue; 
+      continue;
     }
-    
+
     if ((stricmp (argv[0], "-d") == 0) || (stricmp (argv[0], "--debug") == 0)) {
       Status = AsciiStringToUint64 (argv[1], FALSE, &DebugLevel);
       if (EFI_ERROR (Status)) {
         Error (NULL, 0, 0x1003, "Input debug level is not one valid integrator.", NULL);
-        return STATUS_ERROR;        
+        return STATUS_ERROR;
       }
       argc -= 2;
       argv += 2;
-      continue; 
+      continue;
     }
     //
     // Don't recognize the paramter.
@@ -345,7 +347,7 @@ Returns:
     Error (NULL, 0, 0x1001, "NO Input file specified.", NULL);
     return STATUS_ERROR;
   }
-  
+
   In = fopen (InputFileName, "rb");
   if (In == NULL) {
     // ("Unable to open file \"%s\"\n", InputFileName);
@@ -362,7 +364,7 @@ Returns:
     strcpy (OutName1, InputFileName);
     strcat (OutName1, "1");
     OutFileName1 = OutName1;
-    
+
   }
   if (OutFileName2 == NULL) {
     OutName2 = (CHAR8*)malloc(strlen(InputFileName) + 16);
@@ -373,7 +375,7 @@ Returns:
     strcpy (OutName2, InputFileName);
     strcat (OutName2, "2");
     OutFileName2 = OutName2;
-    
+
   }
 
   if (OutputDir != NULL) {
@@ -381,23 +383,23 @@ Returns:
     if (chdir(OutputDir) != 0) {
       Warning (NULL, 0, 0, NULL, "Change dir to OutputDir Fail.");
       return STATUS_ERROR;
-    } 
+    }
   }
-  
+
   CurrentDir = (CHAR8*)getcwd((CHAR8*)0, 0);
   if (EFI_ERROR(CreateDir(&OutFileName1))) {
       Error (OutFileName1, 0, 5, "Create Dir for File1 Fail.", NULL);
       return STATUS_ERROR;
   }
   chdir(CurrentDir);
-  
+
   if (EFI_ERROR(CreateDir(&OutFileName2))) {
       Error (OutFileName2, 0, 5, "Create Dir for File2 Fail.", NULL);
       return STATUS_ERROR;
   }
   chdir(CurrentDir);
   free(CurrentDir);
-      
+
   Out1 = fopen (OutFileName1, "wb");
   if (Out1 == NULL) {
     // ("Unable to open file \"%s\"\n", OutFileName1);
