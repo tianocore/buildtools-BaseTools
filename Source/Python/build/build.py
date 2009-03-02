@@ -130,12 +130,6 @@ def CheckEnvVariable():
     if EcpSourceDir.upper().find(WorkspaceDir.upper()) != 0:
         EdkLogger.error("build", PARAMETER_INVALID, "ECP_SOURCE is not under WORKSPACE",
                         ExtraData="WORKSPACE = %s\n    ECP_SOURCE = %s" % (WorkspaceDir, EcpSourceDir))
-    #WorkspaceDirLen = len(WorkspaceDir)
-    #if WorkspaceDir[-1] not in ['/', '\\']:
-    #    WorkspaceDirLen += 1
-    #EfiSourceDir = EfiSourceDir[WorkspaceDirLen:]
-    #EdkSourceDir = EdkSourceDir[WorkspaceDirLen:]
-    #EcpSourceDir = EcpSourceDir[WorkspaceDirLen:]
 
     # check EDK_TOOLS_PATH
     if "EDK_TOOLS_PATH" not in os.environ:
@@ -146,15 +140,6 @@ def CheckEnvVariable():
     if "PATH" not in os.environ:
         EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Environment variable not found",
                         ExtraData="PATH")
-
-    PathString = os.environ["PATH"]
-    ToolPath = os.path.normpath(os.path.join(os.environ["EDK_TOOLS_PATH"], 'Bin', sys.platform.title()))
-
-    #if not IsToolInPath('build'):
-    #    os.environ['PATH'] = os.path.pathsep.join((os.environ['PATH'], ToolPath))
-    #
-    #    EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Please execute %s to set %s in environment variable: PATH!\n"
-    #                        % (os.path.normpath(os.path.join(PathString, 'edksetup.bat')), ToolPath))
 
     # for macro replacement in R9 DSC/DEC/INF file
     GlobalData.gGlobalDefines["WORKSPACE"] = ""

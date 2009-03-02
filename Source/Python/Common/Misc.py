@@ -1175,10 +1175,9 @@ class PathClass(object):
         if self.Root:
             self.Path = os.path.normpath(os.path.join(self.Root, self.File))
             self.Root = os.path.normpath(CommonPath([self.Root, self.Path]))
-            if self.Root[-1] == os.path.sep:
-                self.File = self.Path[len(self.Root):]
-            else:
-                self.File = self.Path[len(self.Root)+1:]
+            if self.Root[-1] != os.path.sep:
+                self.Root += os.path.sep
+            self.File = self.Path[len(self.Root):]
         else:
             self.Path = os.path.normpath(self.File)
 
