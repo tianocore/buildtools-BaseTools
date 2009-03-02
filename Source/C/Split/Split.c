@@ -17,6 +17,9 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <ctype.h>
+#include "ParseInf.h"
 #include "CommonLib.h"
 #include "EfiUtilityMsgs.h"
 //
@@ -221,7 +224,6 @@ Returns:
   CHAR8         *OutName2 = NULL;
   CHAR8         *CurrentDir = NULL;
   UINT64        Index;
-  BOOLEAN       OutputDirSpecified = FALSE;
   CHAR8         CharC;
   BOOLEAN       QuietFlag = TRUE;
   UINT64        DebugLevel = 0;

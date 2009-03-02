@@ -32,11 +32,9 @@ Abstract:
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "VirtualMemory.h"
 #include "EfiUtilityMsgs.h"
-
-void
-memset (void *, char, long);
 
 unsigned int
 xtoi (char  *);
@@ -476,7 +474,7 @@ Returns:
         return (unsigned int) -1;
       }
 
-      u = u << 4 | c - (c >= 'A' ? 'A' - 10 : '0');
+      u = (u << 4) | (c - (c >= 'A' ? 'A' - 10 : '0'));
     } else {
       break;
     }
@@ -486,4 +484,5 @@ Returns:
 
   return u;
 }
+
 

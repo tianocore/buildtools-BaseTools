@@ -40,7 +40,7 @@ Abstract:
 STATIC UINT32   MaxFfsAlignment = 0;
 
 EFI_GUID  mEfiFirmwareVolumeTopFileGuid = EFI_FFS_VOLUME_TOP_FILE_GUID;
-EFI_GUID  mFileGuidArray [MAX_NUMBER_OF_FILES_IN_FV] = {0};
+EFI_GUID  mFileGuidArray [MAX_NUMBER_OF_FILES_IN_FV];
 EFI_GUID  mZeroGuid                 = {0x0, 0x0, 0x0, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}};
 EFI_GUID  mDefaultCapsuleGuid       = {0x3B6686BD, 0x0D76, 0x4030, { 0xB7, 0x0E, 0xB5, 0x51, 0x9E, 0x2F, 0xC5, 0xA0 }};
 
@@ -731,7 +731,7 @@ Returns:
   //
   // Print FileGuid to string buffer. 
   //
-  PrintGuidToBuffer (FileGuidPtr, FileGuidName, MAX_LINE_LEN, TRUE);
+  PrintGuidToBuffer (FileGuidPtr, (UINT8 *)FileGuidName, MAX_LINE_LEN, TRUE);
   
   //
   // Construct Map file Name 
@@ -812,10 +812,10 @@ Returns:
   fprintf (FvMapFile, "GUID=%s", FileGuidName);
   fprintf (FvMapFile, ")\n"); 
   
-  for (Index; Index > 0;Index --, SectionHeader ++) {
-  	if (stricmp (SectionHeader->Name, ".text") == 0) {
+  for (; Index > 0; Index --, SectionHeader ++) {
+        if (stricmp ((CHAR8 *)SectionHeader->Name, ".text") == 0) {
   		fprintf (FvMapFile, ".textbaseaddress=%08lx ",ImageBaseAddress + SectionHeader->VirtualAddress);
-  	} else if (stricmp (SectionHeader->Name, ".data") == 0) {
+  	} else if (stricmp ((CHAR8 *)SectionHeader->Name, ".data") == 0) {
   	  fprintf (FvMapFile, ".databaseaddress=%08lx ",ImageBaseAddress + SectionHeader->VirtualAddress);
   	}
   }
@@ -938,10 +938,6 @@ Returns:
   UINTN                 NumBytesRead;
   UINT32                CurrentFileAlignment;
   EFI_STATUS            Status;
-  EFI_PHYSICAL_ADDRESS  CurrentFileBaseAddress;
-  UINT8                 VtfHeaderChecksum;
-  UINT8                 VtfFileChecksum;
-  UINT8                 FileState;
   UINTN                 Index1;
   
   Index1 = 0;
@@ -1008,7 +1004,7 @@ Returns:
   //
   // Verify Ffs file
   //
-  Status = VerifyFfsFile (FileBuffer);
+  Status = VerifyFfsFile ((EFI_FFS_FILE_HEADER *)FileBuffer);
   if (EFI_ERROR (Status)) {
     free (FileBuffer);
     Error (NULL, 0, 3000, "Invalid", "%s is a FFS file.", FvInfo->FvFiles[Index]);
@@ -1865,9 +1861,9 @@ Returns:
   //
   // Initialize our "file" view of the buffer
   //
-  FvImageMemoryFile.FileImage           = FvImage;
-  FvImageMemoryFile.CurrentFilePointer  = FvImage + FvHeader->HeaderLength;
-  FvImageMemoryFile.Eof                 = FvImage + FvImageSize;
+  FvImageMemoryFile.FileImage           = (CHAR8 *)FvImage;
+  FvImageMemoryFile.CurrentFilePointer  = (CHAR8 *)FvImage + FvHeader->HeaderLength;
+  FvImageMemoryFile.Eof                 = (CHAR8 *)FvImage + FvImageSize;
 
   //
   // Initialize the FV library.
@@ -2109,7 +2105,6 @@ Returns:
   UINTN               FfsFileSize;
   UINT32              FfsAlignment;
   EFI_FFS_FILE_HEADER FfsHeader;
-  EFI_STATUS          Status;
   BOOLEAN             VtfFileFlag;
   
   VtfFileFlag = FALSE;

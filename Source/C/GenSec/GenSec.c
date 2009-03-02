@@ -22,6 +22,7 @@ Abstract:
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <Common/UefiBaseTypes.h>
 #include <Common/PiFirmwareFile.h>
@@ -31,6 +32,7 @@ Abstract:
 #include "Compress.h"
 #include "Crc32.h"
 #include "EfiUtilityMsgs.h"
+#include "ParseInf.h"
 
 //
 // GenSec Tool Information
@@ -986,7 +988,7 @@ Returns:
       InputFileName = (CHAR8 **) malloc (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *));
       if (InputFileName == NULL) {
         Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
-        return EFI_OUT_OF_RESOURCES;
+        return 1;
       }
 
       memset (InputFileName, 0, (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *)));
@@ -1001,7 +1003,7 @@ Returns:
 
       if (InputFileName == NULL) {
         Error (NULL, 0, 4001, "Resource", "memory cannot be allcoated");
-        return EFI_OUT_OF_RESOURCES;
+        return 1;
       }
 
       memset (&(InputFileName[InputFileNum]), 0, (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *)));

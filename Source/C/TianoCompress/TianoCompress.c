@@ -25,6 +25,8 @@ Abstract:
 
 #include "Compress.h"
 #include "TianoCompress.h"
+#include "EfiUtilityMsgs.h"
+#include "ParseInf.h"
 #include <stdio.h>
 #include "assert.h"
 
@@ -33,6 +35,7 @@ Abstract:
 //
 static BOOLEAN VerboseMode = FALSE;
 static BOOLEAN QuietMode = FALSE;
+#undef UINT8_MAX
 #define UINT8_MAX     0xff
 #define UINT8_BIT     8
 #define THRESHOLD     3
@@ -77,7 +80,7 @@ STATIC UINT32 mBufSiz = 0, mOutputPos, mOutputMask, mSubBitBuf, mCrc;
 STATIC UINT32 mCompSize, mOrigSize;
 
 STATIC UINT16 *mFreq, *mSortPtr, mLenCnt[17], mLeft[2 * NC - 1], mRight[2 * NC - 1], mCrcTable[UINT8_MAX + 1],
-  mCFreq[2 * NC - 1], mCTable[4096], mCCode[NC], mPFreq[2 * NP - 1], mPTCode[NPT], mTFreq[2 * NT - 1];
+  mCFreq[2 * NC - 1], mCCode[NC], mPFreq[2 * NP - 1], mPTCode[NPT], mTFreq[2 * NT - 1];
 
 STATIC NODE   mPos, mMatchPos, mAvail, *mPosition, *mParent, *mPrev, *mNext = NULL;
 
@@ -1605,7 +1608,6 @@ Returns:
 {
   UINTN   Size;
   UINTN   FileSize;
-  INTN    Index;
   FILE    *InputFile;
 
   Size = 0;
@@ -1901,7 +1903,7 @@ Returns:
     FileBuffer = (UINT8 *) malloc (InputLength);
     if (FileBuffer == NULL) {
       Error (NULL, 0, 4001, "Resource:", "Memory cannot be allocated!");
-      return EFI_OUT_OF_RESOURCES;
+      return 1;
     }
 
     Status = GetFileContents (
@@ -1935,7 +1937,7 @@ Returns:
   // First call TianoCompress to get DstSize
   //
   if (DebugMode) {
-    DebugMsg(UTILITY_NAME, 0, DebugLevel, "Encoding");
+    DebugMsg(UTILITY_NAME, 0, DebugLevel, "Encoding", NULL);
   }
   Status = TianoCompress ((UINT8 *)FileBuffer, InputLength, OutBuffer, &DstSize);
   
@@ -1948,7 +1950,7 @@ Returns:
   }
   Status = TianoCompress ((UINT8 *)FileBuffer, InputLength, OutBuffer, &DstSize);
   if (Status != EFI_SUCCESS) {
-    Error (NULL, 0, 0007, "Error compressing file");
+    Error (NULL, 0, 0007, "Error compressing file", NULL);
     goto ERROR;
   }
 
@@ -1958,7 +1960,7 @@ Returns:
   free(OutBuffer);
 
   if (DebugMode) {
-    DebugMsg(UTILITY_NAME, 0, DebugLevel, "Encoding Successful!\n");
+    DebugMsg(UTILITY_NAME, 0, DebugLevel, "Encoding Successful!\n", NULL);
   }
   if (VerboseMode) {
     VerboseMsg("Encoding successful\n");
@@ -1967,7 +1969,7 @@ Returns:
   }
   else if (DECODE) {
   if (DebugMode) {
-    DebugMsg(UTILITY_NAME, 0, DebugLevel, "Decoding\n");
+    DebugMsg(UTILITY_NAME, 0, DebugLevel, "Decoding\n", NULL);
   }
   //
   // Get Compressed file original size
@@ -1995,7 +1997,7 @@ Returns:
   free(OutBuffer);
 
   if (DebugMode) {
-    DebugMsg(UTILITY_NAME, 0, DebugLevel, "Encoding successful!\n");
+    DebugMsg(UTILITY_NAME, 0, DebugLevel, "Encoding successful!\n", NULL);
   }
   
   if (VerboseMode) {
@@ -2007,9 +2009,9 @@ Returns:
 ERROR:
   if (DebugMode) {
     if (ENCODE) {
-      DebugMsg(UTILITY_NAME, 0, DebugLevel, "Encoding Error\n");
+      DebugMsg(UTILITY_NAME, 0, DebugLevel, "Encoding Error\n", NULL);
     } else if (DECODE) {
-      DebugMsg(UTILITY_NAME, 0, DebugLevel, "Decoding Error\n");
+      DebugMsg(UTILITY_NAME, 0, DebugLevel, "Decoding Error\n", NULL);
     }
   }
   if (Scratch != NULL) {
@@ -2711,4 +2713,5 @@ Returns:
 
   return RETURN_SUCCESS;
 }
+
 

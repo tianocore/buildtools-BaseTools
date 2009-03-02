@@ -159,8 +159,8 @@ UINT32 mFvTakenSize;
 
 int
 main (
-  IN INTN   argc,
-  IN CHAR8  **argv
+  IN int   argc,
+  IN char  **argv
   )
 /*++
 
@@ -192,7 +192,7 @@ Returns:
   CHAR8                 *AddrFileName;
   CHAR8                 *MapFileName;
   CHAR8                 *InfFileImage;
-  UINTN                 InfFileSize;
+  UINT32                InfFileSize;
   CHAR8                 *OutFileName;
   CHAR8                 ValueString[_MAX_PATH];
   EFI_PHYSICAL_ADDRESS  XipBase;
@@ -414,7 +414,7 @@ Returns:
       Status = StringToGuid (argv[1], &mCapDataInfo.CapGuid);
       if (EFI_ERROR (Status)) {
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", EFI_CAPSULE_GUID_STRING, argv[1]);
-        return EFI_ABORTED;
+        return 1;
       }
       DebugMsg (NULL, 0, 9, "Capsule Guid", "%s = %s", EFI_CAPSULE_GUID_STRING, argv[1]);
       argc -= 2;
@@ -429,7 +429,7 @@ Returns:
       Status = StringToGuid (argv[1], &mCapDataInfo.CapGuid);
       if (EFI_ERROR (Status)) {
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", EFI_GUID_STRING, argv[1]);
-        return EFI_ABORTED;
+        return 1;
       }
       memcpy (&mFvDataInfo.FvFileSystemGuid, &mCapDataInfo.CapGuid, sizeof (EFI_GUID));
       DebugMsg (NULL, 0, 9, "Capsule Guid", "%s = %s", EFI_CAPSULE_GUID_STRING, argv[1]);
@@ -446,7 +446,7 @@ Returns:
       Status = StringToGuid (argv[1], &mFvDataInfo.FvNameGuid);
       if (EFI_ERROR (Status)) {
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", EFI_GUID_STRING, argv[1]);
-        return EFI_ABORTED;
+        return 1;
       }
       DebugMsg (NULL, 0, 9, "FV Name Guid", "%s = %s", EFI_FV_NAMEGUID_STRING, argv[1]);
       argc -= 2;
@@ -680,12 +680,12 @@ Returns:
     fprintf (FpFile, "\n");
     if (BtBase != 0) {
       fprintf (FpFile, EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING);
-      fprintf (FpFile, " = 0x%x\n", BtBase);
+      fprintf (FpFile, " = 0x%lx\n", BtBase);
       DebugMsg (NULL, 0, 9, "Updated boot driver base address", "%s = 0x%x", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, BtBase);
     }
     if (RtBase != 0) {
       fprintf (FpFile, EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING);
-      fprintf (FpFile, " = 0x%x\n", RtBase);
+      fprintf (FpFile, " = 0x%lx\n", RtBase);
       DebugMsg (NULL, 0, 9, "Updated runtime driver base address", "%s = 0x%x", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, RtBase);
     }
     fclose (FpFile);
