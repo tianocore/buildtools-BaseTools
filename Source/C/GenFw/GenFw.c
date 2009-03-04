@@ -202,28 +202,76 @@ Returns:
                         File will be created to store the ouput content.\n");
   fprintf (stdout, "  -e EFI_FILETYPE, --efiImage EFI_FILETYPE\n\
                         Create Efi Image. EFI_FILETYPE is one of BASE, SEC,\n\
-                        PEI_CORE, PEIM, DXE_CORE, DXE_RUNTIME_DRIVER,\n\
+                        PEI_CORE, PEIM, DXE_CORE, DXE_DRIVER, DXE_RUNTIME_DRIVER,\n\
                         DXE_SAL_DRIVER, UEFI_DRIVER, UEFI_APPLICATION, \n\
                         DXE_SMM_DRIVER, SECURITY_CORE, COMBINED_PEIM_DRIVER, \n\
                         PIC_PEIM, RELOCATABLE_PEIM, BS_DRIVER, RT_DRIVER,\n\
-                        APPLICATION, SAL_RT_DRIVER to support all module types\n");
-  fprintf (stdout, "  -c, --acpi            Create Acpi table.\n");
-  fprintf (stdout, "  -t, --terse           Create Te Image.\n");
-  fprintf (stdout, "  -u, --dump            Dump TeImage Header.\n");
-  fprintf (stdout, "  -z, --zero            Zero the Debug Data Fields in the PE input image file.\n");
-  fprintf (stdout, "  -b, --exe2bin         Convert the input EXE to the output BIN file.\n");
-  fprintf (stdout, "  -l, --stripped        Relocation info stripped from the input PE or TE image.\n");
-  fprintf (stdout, "  -r, --replace         Overwrite the input file with the output content.\n");
+                        APPLICATION, SAL_RT_DRIVER to support all module types\n\
+                        It can only be used together with --keepexceptiontable,\n\
+                        --keepzeropending, -r, -o option. It is a action option.\n\
+                        If it is combined with other action options, the later\n\
+                        input action option will override the previous one.\n");
+  fprintf (stdout, "  -c, --acpi            Create Acpi table.\n\
+                        It can't be combined with other action options\n\
+                        except for -o, -r option. It is a action option.\n\
+                        If it is combined with other action options, the later\n\
+                        input action option will override the previous one.\n");
+  fprintf (stdout, "  -t, --terse           Create Te Image.\n\
+                        It can only be used together with --keepexceptiontable,\n\
+                        --keepzeropending, -r, -o option. It is a action option.\n\
+                        If it is combined with other action options, the later\n\
+                        input action option will override the previous one.\n");
+  fprintf (stdout, "  -u, --dump            Dump TeImage Header.\n\
+                        It can't be combined with other action options\n\
+                        except for -o, -r option. It is a action option.\n\
+                        If it is combined with other action options, the later\n\
+                        input action option will override the previous one.\n");
+  fprintf (stdout, "  -z, --zero            Zero the Debug Data Fields in the PE input image file.\n\
+                        It can't be combined with other action options\n\
+                        except for -o, -r option. It is a action option.\n\
+                        If it is combined with other action options, the later\n\
+                        input action option will override the previous one.\n");
+  fprintf (stdout, "  -b, --exe2bin         Convert the input EXE to the output BIN file.\n\
+                        It can't be combined with other action options\n\
+                        except for -o, -r option. It is a action option.\n\
+                        If it is combined with other action options, the later\n\
+                        input action option will override the previous one.\n");;
+  fprintf (stdout, "  -l, --stripped        Relocation info stripped from the input PE or TE image.\n\
+                        It can't be combined with other action options\n\
+                        except for -o, -r option. It is a action option.\n\
+                        If it is combined with other action options, the later\n\
+                        input action option will override the previous one.\n");
   fprintf (stdout, "  -s timedate, --stamp timedate\n\
                         timedate format is \"yyyy-mm-dd 00:00:00\". if timedata \n\
                         is set to NOW, current system time is used. The support\n\
-                        date scope is 1970-1-1 0:0:0 ~ 2038-1-19 3:14:07\n");
-  fprintf (stdout, "  -m, --mcifile         Convert input microcode txt file to microcode bin file.\n");
-  fprintf (stdout, "  -j, --join            Combine multi microcode bin files to one file.\n");
-  fprintf (stdout, "  --keepexceptiontable  Don't clear exception table.\n");
-  fprintf (stdout, "  --keepzeropending     Don't strip zero pending of .reloc.\n");
-  fprintf (stdout, "  -a NUM, --align NUM   NUM is one HEX or DEC format alignment value.\n");
-  fprintf (stdout, "  -p NUM, --pad NUM     NUM is one HEX or DEC format padding value.\n");
+                        date scope is 1970-1-1 0:0:0 ~ 2038-1-19 3:14:07\n\
+                        It can't be combined with other action options\n\
+                        except for -o, -r option. It is a action option.\n\
+                        If it is combined with other action options, the later\n\
+                        input action option will override the previous one.\n");
+  fprintf (stdout, "  -m, --mcifile         Convert input microcode txt file to microcode bin file.\n\
+                        It can't be combined with other action options\n\
+                        except for -o option. It is a action option.\n\
+                        If it is combined with other action options, the later\n\
+                        input action option will override the previous one.\n");
+  fprintf (stdout, "  -j, --join            Combine multi microcode bin files to one file.\n\
+                        It can be specified with -a, -p, -o option.\n\
+                        No other options can be combined with it.\n\
+                        If it is combined with other action options, the later\n\
+                        input action option will override the previous one.\n");
+  fprintf (stdout, "  -a NUM, --align NUM   NUM is one HEX or DEC format alignment value.\n\
+                        This option is only used together with -j option.\n");  
+  fprintf (stdout, "  -p NUM, --pad NUM     NUM is one HEX or DEC format padding value.\n\
+                        This option is only used together with -j option.\n");
+  fprintf (stdout, "  --keepexceptiontable  Don't clear exception table.\n\
+                        This option can be used together with -e or -t.\n\
+                        It doesn't work for other options.\n");
+  fprintf (stdout, "  --keepzeropending     Don't strip zero pending of .reloc.\n\
+                        This option can be used together with -e or -t.\n\
+                        It doesn't work for other options.\n");
+  fprintf (stdout, "  -r, --replace         Overwrite the input file with the output content.\n\
+                        If more input files are specified,\n\
+                        the last input file will be as the output file.\n");
   fprintf (stdout, "  -v, --verbose         Turn on verbose output with informational messages.\n");
   fprintf (stdout, "  -q, --quiet           Disable all messages except key message and fatal error\n");
   fprintf (stdout, "  -d, --debug level     Enable debug messages, at input debug level.\n");
