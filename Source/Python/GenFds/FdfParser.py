@@ -1767,6 +1767,8 @@ class FdfParser:
         self.__GetFvAlignment(FvObj)
 
         self.__GetFvAttributes(FvObj)
+        
+        self.__GetFvNameGuid(FvObj)
 
         self.__GetAprioriSection(FvObj, FvObj.DefineVarDict.copy())
         self.__GetAprioriSection(FvObj, FvObj.DefineVarDict.copy())
@@ -1835,6 +1837,29 @@ class FdfParser:
                 raise Warning("expected TRUE/FALSE (1/0)", self.FileName, self.CurrentLineNumber)
 
             FvObj.FvAttributeDict[name] = self.__Token
+
+        return
+    
+    ## __GetFvNameGuid() method
+    #
+    #   Get FV GUID for FV
+    #
+    #   @param  self        The object pointer
+    #   @param  Obj         for whom GUID is got
+    #   @retval None
+    #
+    def __GetFvNameGuid(self, FvObj):
+
+        if not self.__IsKeyword( "FvNameGuid"):
+            return
+
+        if not self.__IsToken( "="):
+            raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+
+        if not self.__GetNextGuid():
+            raise Warning("expected FV GUID value", self.FileName, self.CurrentLineNumber)
+
+        FvObj.FvNameGuid = self.__Token
 
         return
 

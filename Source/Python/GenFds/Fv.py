@@ -197,6 +197,11 @@ class FV (FvClassObject):
                                        self.FvAlignment.strip() + \
                                        " = TRUE"                + \
                                        T_CHAR_LF)
+            
+        if self.FvNameGuid != None:
+            self.FvInfFile.writelines("EFI_FVNAME_GUID"     + \
+                                       " = %s" % self.FvNameGuid + \
+                                       T_CHAR_LF)
         #
         # Add [Files]
         #

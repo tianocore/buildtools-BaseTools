@@ -57,6 +57,7 @@ class FvClassObject:
         self.FvAlignment = None
         # FvAttributeDict[attribute] = TRUE/FALSE (1/0)
         self.FvAttributeDict = {}
+        self.FvNameGuid = None
         self.AprioriSectionList = []
         self.FfsList = []
         self.BsBaseAddress = None
