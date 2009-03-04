@@ -79,17 +79,12 @@ Abstract:
 #define FILE_FLAG_COMPRESS  0x04
 
 //
-// global variables
-//
-UINTN DebugLevel = 0;
-
-//
 // Use this linked list structure to keep track of all the filenames
 // specified on the command line.
 //
 typedef struct _FILE_LIST {
   struct _FILE_LIST *Next;
-  INT8              *FileName;
+  CHAR8             *FileName;
   UINT32            FileFlags;
   UINT32            ClassCode;
   UINT16            CodeRevision;
@@ -99,10 +94,7 @@ typedef struct _FILE_LIST {
 // Use this to track our command-line options
 //
 typedef struct {
-  INT8      OutFileName[MAX_PATH];
-  INT8      *EfiFileName;
-  INT8      *BinFileName;
-  INT8      Compress;
+  CHAR8     OutFileName[MAX_PATH];
   INT8      NoLast;
   UINT16    ClassCode;
   UINT16    PciRevision;
@@ -131,35 +123,27 @@ static OPTIONS  mOptions;
 //
 typedef struct {
   UINT16  Value;
-  char    *Name;
+  CHAR8   *Name;
 } STRING_LOOKUP;
 
 //
 // Machine Types
 //
 static STRING_LOOKUP  mMachineTypes[] = {
-  EFI_IMAGE_MACHINE_IA32,
-  "IA32",
-  EFI_IMAGE_MACHINE_IA64,
-  "IA64",
-  EFI_IMAGE_MACHINE_EBC,
-  "EBC",
-  0,
-  NULL
+  { EFI_IMAGE_MACHINE_IA32, "IA32" },
+  { EFI_IMAGE_MACHINE_IA64, "IA64" },
+  { EFI_IMAGE_MACHINE_EBC, "EBC" },
+  { 0, NULL }
 };
 
 //
 // Subsystem Types
 //
 static STRING_LOOKUP  mSubsystemTypes[] = {
-  EFI_IMAGE_SUBSYSTEM_EFI_APPLICATION,
-  "EFI application",
-  EFI_IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER,
-  "EFI boot service driver",
-  EFI_IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER,
-  "EFI runtime driver",
-  0,
-  NULL
+  { EFI_IMAGE_SUBSYSTEM_EFI_APPLICATION, "EFI application" },
+  { EFI_IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER, "EFI boot service driver" },
+  { EFI_IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER, "EFI runtime driver" },
+  { 0, NULL }
 };
 
 //

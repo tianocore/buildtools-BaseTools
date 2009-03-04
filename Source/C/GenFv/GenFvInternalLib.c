@@ -224,7 +224,7 @@ Returns:
   //
   // Read the FV Name Guid
   //
-  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_FV_NAMEGUID_STRING, 0, Value);
+  Status = FindToken (InfFile, ATTRIBUTES_SECTION_STRING, EFI_FV_NAMEGUID_STRING, 0, Value);
   if (Status == EFI_SUCCESS) {
     //
     // Get the guid value

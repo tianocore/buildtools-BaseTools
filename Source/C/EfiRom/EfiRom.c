@@ -20,8 +20,13 @@ Abstract:
 
 **/
 
+#include "EfiUtilityMsgs.h"
+#include "ParseInf.h"
 #include "EfiRom.h"
 
+UINT64  DebugLevel = 0;
+
+int
 main (
   int   Argc,
   char  *Argv[]
@@ -47,7 +52,7 @@ Returns:
 
 --*/
 {
-  INT8      *Ext;
+  CHAR8     *Ext;
   FILE      *FptrOut;
   UINT32    Status;
   FILE_LIST *FList;
@@ -135,7 +140,7 @@ Returns:
   // Now open our output file
   //
   if ((FptrOut = fopen (mOptions.OutFileName, "wb")) == NULL) {
-    Error (stdout, 0, 0001, "Error opening file", mOptions.OutFileName);
+    Error (NULL, 0, 0001, "Error opening file", "Error opening file %s", mOptions.OutFileName);
     goto BailOut;
   }
   //
@@ -157,7 +162,7 @@ Returns:
 
       Status = ProcessBinFile (FptrOut, FList, &Size);
     } else {
-      Error (stdout, 0, 2000, "Invalid parameter", "File type not specified, it must be either an EFI or binary file: %s.", FList->FileName);
+      Error (NULL, 0, 2000, "Invalid parameter", "File type not specified, it must be either an EFI or binary file: %s.", FList->FileName);
       Status = STATUS_ERROR;
     }
 
@@ -258,9 +263,9 @@ Returns:
   }
 
   fseek (InFptr, 0, SEEK_SET);
-  Buffer = (INT8 *) malloc (FileSize);
+  Buffer = (UINT8 *) malloc (FileSize);
   if (Buffer == NULL) {
-    Error (NULL, 0, 4003, "Resource", "memory cannot be allocated!", NULL);
+    Error (NULL, 0, 4003, "Resource", "memory cannot be allocated!");
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -363,7 +368,7 @@ Returns:
   // Now copy the input file contents out to the output file
   //
   if (fwrite (Buffer, FileSize, 1, OutFptr) != 1) {
-    Error (NULL, 0, 0005, "Failed to write all file bytes to output file.");
+    Error (NULL, 0, 0005, "Failed to write all file bytes to output file.", NULL);
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -492,7 +497,7 @@ Returns:
   // Allocate memory for the entire file (in case we have to compress), then
   // seek back to the beginning of the file and read it into our buffer.
   //
-  Buffer = (INT8 *) malloc (FileSize);
+  Buffer = (UINT8 *) malloc (FileSize);
   if (Buffer == NULL) {
     Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
     Status = STATUS_ERROR;
@@ -501,7 +506,7 @@ Returns:
 
   fseek (InFptr, 0, SEEK_SET);
   if (fread (Buffer, FileSize, 1, InFptr) != 1) {
-    Error (NULL, 0, 0004, "Error reading file", InFptr);
+    Error (NULL, 0, 0004, "Error reading file", "File %s", InFile->FileName);
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -514,7 +519,7 @@ Returns:
     // Allocate a buffer into which we can compress the image, compress it,
     // and use that size as the new size.
     //
-    CompressedBuffer = (INT8 *) malloc (FileSize);
+    CompressedBuffer = (UINT8 *) malloc (FileSize);
     if (CompressedBuffer == NULL) {
       Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
       Status = STATUS_ERROR;
@@ -524,7 +529,7 @@ Returns:
     CompressedFileSize  = FileSize;
     Status              = EfiCompress (Buffer, FileSize, CompressedBuffer, &CompressedFileSize);
     if (Status != STATUS_SUCCESS) {
-      Error (NULL, 0, 0007, "Error compressing file!");
+      Error (NULL, 0, 0007, "Error compressing file!", NULL);
       goto BailOut;
     }
     //
@@ -643,7 +648,7 @@ Returns:
   // Write the ROM header to the output file
   //
   if (fwrite (&RomHdr, sizeof (RomHdr), 1, OutFptr) != 1) {
-    Error (NULL, 0, 0002, "Failed to write ROM header to output file!");
+    Error (NULL, 0, 0002, "Failed to write ROM header to output file!", NULL);
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -653,7 +658,7 @@ Returns:
   //
   while (HeaderPadBytes > 0) {
     if (putc (0, OutFptr) == EOF) {
-      Error (NULL, 0, 0002, "Failed to write ROM header pad bytes to output file!");
+      Error (NULL, 0, 0002, "Failed to write ROM header pad bytes to output file!", NULL);
       Status = STATUS_ERROR;
       goto BailOut;
     }
@@ -665,13 +670,13 @@ Returns:
   //
   if (mOptions.Pci23 == 1) {
     if (fwrite (&PciDs23, sizeof (PciDs23), 1, OutFptr) != 1) {
-      Error (NULL, 0, 0002, "Failed to write PCI ROM header to output file!");
+      Error (NULL, 0, 0002, "Failed to write PCI ROM header to output file!", NULL);
       Status = STATUS_ERROR;
       goto BailOut;
     } 
   } else {
     if (fwrite (&PciDs30, sizeof (PciDs30), 1, OutFptr) != 1) {
-      Error (NULL, 0, 0002, "Failed to write PCI ROM header to output file!");
+      Error (NULL, 0, 0002, "Failed to write PCI ROM header to output file!", NULL);
       Status = STATUS_ERROR;
       goto BailOut;
     } 
@@ -685,7 +690,7 @@ Returns:
   // Now dump the input file's contents to the output file
   //
   if (fwrite (Buffer, FileSize, 1, OutFptr) != 1) {
-    Error (NULL, 0, 0002, "Failed to write all file bytes to output file!");
+    Error (NULL, 0, 0002, "Failed to write all file bytes to output file!", NULL);
     Status = STATUS_ERROR;
     goto BailOut;
   }
@@ -696,7 +701,7 @@ Returns:
   //
   while (TotalSize > 0) {
     if (putc (~0, OutFptr) == EOF) {
-      Error (NULL, 0, 2000, "Failed to write trailing pad bytes output file!");
+      Error (NULL, 0, 2000, "Failed to write trailing pad bytes output file!", NULL);
       Status = STATUS_ERROR;
       goto BailOut;
     }
@@ -769,7 +774,7 @@ Returns:
   // Read the DOS header
   //
   if (fread (&DosHeader, sizeof (DosHeader), 1, Fptr) != 1) {
-    Error (NULL, 0, 0004, "Failed to read the DOS stub from the input file!");
+    Error (NULL, 0, 0004, "Failed to read the DOS stub from the input file!", NULL);
     return STATUS_ERROR;
   }
   //
@@ -784,7 +789,7 @@ Returns:
   //
   fseek (Fptr, (long) DosHeader.e_lfanew, SEEK_SET);
   if (fread (&PESig, sizeof (PESig), 1, Fptr) != 1) {
-    Error (NULL, 0, 0004, "Failed to read PE signature bytes from input file!");
+    Error (NULL, 0, 0004, "Failed to read PE signature bytes from input file!", NULL);
     return STATUS_ERROR;
   }
   //
@@ -798,7 +803,7 @@ Returns:
   // Read the file header and stuff their MachineType
   //
   if (fread (&FileHdr, sizeof (FileHdr), 1, Fptr) != 1) {
-    Error (NULL, 0, 0004, "Failed to read PE file header from input file!");
+    Error (NULL, 0, 0004, "Failed to read PE file header from input file!", NULL);
     return STATUS_ERROR;
   }
 
@@ -808,7 +813,7 @@ Returns:
   // Read the optional header so we can get the subsystem
   //
   if (fread (&OptionalHdr, sizeof (OptionalHdr), 1, Fptr) != 1) {
-    Error (NULL, 0, 0004, "Failed to read COFF optional header from input file!");
+    Error (NULL, 0, 0004, "Failed to read COFF optional header from input file!", NULL);
     return STATUS_ERROR;
   }
 
@@ -930,7 +935,6 @@ Returns:
         // Device ID specified with -i
         // Make sure there's another parameter
         //
-        //printf("\nDevice id specified!\n");
         if (Argc > 1) {
           Options->DevId      = (UINT16) strtol (Argv[1], NULL, 16);
           Options->DevIdValid = 1;
@@ -1085,7 +1089,7 @@ Returns:
       //
       FileList = (FILE_LIST *) malloc (sizeof (FILE_LIST));
       if (FileList == NULL) {
-        Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
+        Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!", NULL);
         return STATUS_ERROR;
       }
       
@@ -1398,12 +1402,12 @@ Returns:
       //
       fprintf (stdout, "  EFI ROM header contents\n");
       if (fseek (InFptr, ImageStart, SEEK_SET)) {
-        Error (NULL, 0, 5001, "Failed to re-seek to ROM header structure!");
+        Error (NULL, 0, 5001, "Failed to re-seek to ROM header structure!", NULL);
         goto BailOut;
       }
 
       if (fread (&EfiRomHdr, sizeof (EfiRomHdr), 1, InFptr) != 1) {
-        Error (NULL, 0, 5001, "Failed to read EFI PCI ROM header from file!");
+        Error (NULL, 0, 5001, "Failed to read EFI PCI ROM header from file!", NULL);
         goto BailOut;
       }
       //
