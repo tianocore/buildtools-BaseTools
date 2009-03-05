@@ -20,6 +20,7 @@ from Common import EdkLogger
 from Common.BuildToolError import *
 from Common.DataType import *
 from Common.Misc import *
+from Common.String import StringToArray
 from StrGather import *
 
 ## PCD type string
@@ -1197,7 +1198,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
             if len(Sku.VariableName) > 0:
                 Pcd.TokenTypeList += ['PCD_TYPE_HII']
                 Pcd.InitString = 'INIT'
-                VariableNameStructure = '{' + ', '.join(Sku.VariableName.split(" ")) + ', 0x0000}'
+                VariableNameStructure = StringToArray(Sku.VariableName)
                 if VariableNameStructure not in Dict['STRING_TABLE_VALUE']:
                     Dict['STRING_TABLE_CNAME'].append(CName)
                     Dict['STRING_TABLE_GUID'].append(TokenSpaceGuid)

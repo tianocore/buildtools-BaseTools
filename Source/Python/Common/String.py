@@ -646,6 +646,16 @@ def GetHelpTextList(HelpTextClassList):
     
     return List
 
+def StringToArray(String):
+    if isinstance(String, unicode):
+        return "{%s, 0}" % ", ".join(["0x%04x" % ord(C) for C in String])
+    elif String.startswith('L"'):
+        return "{%s, 0}" % ", ".join(["0x%04x" % ord(C) for C in String[2:-1]])
+    elif String.startswith('"'):
+        return "{%s, 0}" % ", ".join(["0x%02x" % ord(C) for C in String[1:-1]])
+    else:
+        return '{%s, 0}' % ', '.join(String.split())
+
 ##
 #
 # This acts like the main() function for the script, unless it is 'import'ed into another
