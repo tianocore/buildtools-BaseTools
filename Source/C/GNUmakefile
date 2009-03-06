@@ -47,6 +47,7 @@ all: makerootdir subdirs $(MAKEROOT)/libs
 LIBRARIES = Common
 NON_BUILDABLE_APPLICATIONS = GenBootSector BootSectImage
 APPLICATIONS = \
+  BootSectImage \
   EfiLdrImage \
   EfiRom \
   GenFfs \
