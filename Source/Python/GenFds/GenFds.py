@@ -455,5 +455,8 @@ class GenFds :
     PreprocessImage = staticmethod(PreprocessImage)
 
 if __name__ == '__main__':
-    sys.exit(main())
+    r = main()
+    ## 0-127 is a safe return range, and 1 is a standard default error
+    if r < 0 or r > 127: r = 1
+    sys.exit(r)
 
