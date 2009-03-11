@@ -1170,6 +1170,10 @@ class FdfParser:
             for Pos in self.__WipeOffArea:
                 self.__ReplaceFragment(Pos[0], Pos[1])
             self.Profile.FileLinesList = ["".join(list) for list in self.Profile.FileLinesList]
+            
+            while self.__GetDefines():
+                pass
+            
             Index = 0
             while Index < len(self.Profile.FileLinesList):
                 FileLineTuple = GetRealFileLine(self.FileName, Index + 1)
@@ -1198,6 +1202,53 @@ class FdfParser:
             X.Message += ' near line %d, column %d: %s' \
                 % (FileLineTuple[1], self.CurrentOffsetWithinLine + 1, self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :].rstrip('\n').rstrip('\r'))
             raise
+
+    ## __GetDefines() method
+    #
+    #   Get Defines section contents and store its data into AllMacrosList
+    #
+    #   @param  self        The object pointer
+    #   @retval True        Successfully find a Defines
+    #   @retval False       Not able to find a Defines
+    #
+    def __GetDefines(self):
+
+        if not self.__GetNextToken():
+            return False
+
+        S = self.__Token.upper()
+        if S.startswith("[") and not S.startswith("[DEFINES"):
+            if not S.startswith("[FD.") and not S.startswith("[FV.") and not S.startswith("[CAPSULE.") \
+                and not S.startswith("[VTF.") and not S.startswith("[RULE.") and not S.startswith("[OptionRom."):
+                raise Warning("Unknown section or section appear sequence error (The correct sequence should be [DEFINES], [FD.], [FV.], [Capsule.], [VTF.], [Rule.], [OptionRom.])", self.FileName, self.CurrentLineNumber)
+            self.__UndoToken()
+            return False
+
+        self.__UndoToken()
+        if not self.__IsToken("[DEFINES", True):
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            #print 'Parsing String: %s in File %s, At line: %d, Offset Within Line: %d' \
+            #        % (self.Profile.FileLinesList[self.CurrentLineNumber - 1][self.CurrentOffsetWithinLine :], FileLineTuple[0], FileLineTuple[1], self.CurrentOffsetWithinLine)
+            raise Warning("expected [DEFINES", self.FileName, self.CurrentLineNumber)
+
+        if not self.__IsToken( "]"):
+            raise Warning("expected ']'", self.FileName, self.CurrentLineNumber)
+
+        while self.__GetNextWord():
+            Macro = self.__Token
+            
+            if not self.__IsToken("="):
+                raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+            if not self.__GetNextToken() or self.__Token.startswith('['):
+                raise Warning("expected MACRO value", self.FileName, self.CurrentLineNumber)
+            Value = self.__Token
+            FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
+            MacProfile = MacroProfile(FileLineTuple[0], FileLineTuple[1])
+            MacProfile.MacroName = Macro
+            MacProfile.MacroValue = Value
+            AllMacroList.append(MacProfile)
+
+        return False
 
     ## __GetFd() method
     #
@@ -1981,6 +2032,13 @@ class FdfParser:
             if self.__GetStringData():
                 FfsInfObj.Ui = self.__Token
 
+        if self.__IsKeyword( "USE"):
+            if not self.__IsToken( "="):
+                raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+            if not self.__GetNextToken():
+                raise Warning("expected ARCH name", self.FileName, self.CurrentLineNumber)
+            FfsInfObj.UseArch = self.__Token
+                
         if self.__GetNextToken():
             p = re.compile(r'([a-zA-Z0-9\-]+|\$\(TARGET\)|\*)_([a-zA-Z0-9\-]+|\$\(TOOL_CHAIN_TAG\)|\*)_([a-zA-Z0-9\-]+|\$\(ARCH\)|\*)')
             if p.match(self.__Token):

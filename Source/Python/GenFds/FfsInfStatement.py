@@ -283,7 +283,16 @@ class FfsInfStatement(FfsInfStatementClassObject):
                     self.TargetOverrideList.append(Target)
         else:
             ArchList = CurArchList
-
+        
+        if self.UseArch != None:
+            UseArchList = []
+            UseArchList.append(self.UseArch)
+            ArchList = list(set (UseArchList) & set (ArchList))
+            
+        if len(PlatformArchList) == 0:    
+            EdkLogger.warn("GenFds", GENFDS_ERROR, "Module %s NOT found in DSC file; Is it really a binary module?" % (self.InfFileName))
+            GenFdsGlobalVariable.InfLogger ("If it is, ignore this warning message.")
+        
         if len(ArchList) == 1:
             Arch = ArchList[0]
             return Arch

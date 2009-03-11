@@ -131,6 +131,7 @@ class FfsInfStatementClassObject(FfsClassObject):
         self.BuildNum = ''
         self.KeyStringList = []
         self.KeepReloc = None
+        self.UseArch = None
 
 ## APRIORI section data in FDF
 #
