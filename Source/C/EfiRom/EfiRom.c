@@ -84,10 +84,6 @@ Returns:
     VerboseMsg("%s tool start.\n", UTILITY_NAME);
   }
   
-  if (mOptions.FileList == NULL) {
-    Error (NULL, 0, 1002, "No input file", NULL);
-    goto BailOut;
-  }
   //
   // If dumping an image, then do that and quit
   //
@@ -335,7 +331,15 @@ Returns:
     }
   }
 
-  
+  //
+  // ReSet Option Rom size
+  //
+  if (mOptions.Pci23 == 1) {
+    PciDs23->ImageLength = (UINT16) (TotalSize / 512);
+  } else {
+    PciDs30->ImageLength = (UINT16) (TotalSize / 512);
+	}
+
   //
   // If this is the last image, then set the LAST bit unless requested not
   // to via the command-line -n argument. Otherwise, make sure you clear it.
@@ -862,8 +866,10 @@ Returns:
   UINT32    ClassCode;
   UINT32    CodeRevision;
   EFI_STATUS Status;
+  BOOLEAN    EfiRomFlag;
 
   FileFlags = 0;
+  EfiRomFlag = FALSE;
 
   //
   // Clear out the options
@@ -1085,6 +1091,12 @@ Returns:
         return STATUS_ERROR;
       }
       //
+      // Check Efi Option RomImage
+      //
+      if ((FileFlags & FILE_FLAG_EFI) != 0) {
+        EfiRomFlag = TRUE;
+      }
+      //
       // Create a new file structure
       //
       FileList = (FILE_LIST *) malloc (sizeof (FILE_LIST));
@@ -1133,17 +1145,19 @@ Returns:
   }
 
   //
-  // Make sure they specified a device ID and vendor ID
+  // For EFI OptionRom image, Make sure a device ID and vendor ID are both specified.
   //
-  if (!Options->VendIdValid) {
-    Error (NULL, 0, 2000, "Missing Vendor ID in command line", NULL);
-    return STATUS_ERROR;
-  }
-
-  if (!Options->DevIdValid) {
-    Error (NULL, 0, 2000, "Missing Device ID in command line", NULL);
-    Usage ();
-    return STATUS_ERROR;
+  if (EfiRomFlag) {
+    if (!Options->VendIdValid) {
+      Error (NULL, 0, 2000, "Missing Vendor ID in command line", NULL);
+      return STATUS_ERROR;
+    }
+  
+    if (!Options->DevIdValid) {
+      Error (NULL, 0, 2000, "Missing Device ID in command line", NULL);
+      Usage ();
+      return STATUS_ERROR;
+    }
   }
 
   return 0;
