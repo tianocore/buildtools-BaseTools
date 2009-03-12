@@ -471,17 +471,22 @@ cleanlib:
 
         # tools definitions
         ToolsDef = []
+        IncPrefix = self._INC_FLAG_[self._AutoGenObject.ToolChainFamily]
         for Tool in self._AutoGenObject.BuildOption:
             for Attr in self._AutoGenObject.BuildOption[Tool]:
+                Value = self._AutoGenObject.BuildOption[Tool][Attr]
                 if Attr == "FAMILY":
                     continue
                 elif Attr == "PATH":
-                    ToolsDef.append("%s = %s" % (Tool, self._AutoGenObject.BuildOption[Tool][Attr]))
+                    ToolsDef.append("%s = %s" % (Tool, Value))
                 else:
                     # Don't generate MAKE_FLAGS in makefile. It's put in environment variable.
                     if Tool == "MAKE":
                         continue
-                    ToolsDef.append("%s_%s = %s" % (Tool, Attr, self._AutoGenObject.BuildOption[Tool][Attr]))
+                    # Remove duplicated include path, if any
+                    if Attr == "FLAGS":
+                        Value = RemoveDupOption(Value, IncPrefix, self._AutoGenObject.IncludePathList)
+                    ToolsDef.append("%s_%s = %s" % (Tool, Attr, Value))
             ToolsDef.append("")
 
         # convert source files and binary files to build targets
@@ -505,7 +510,6 @@ cleanlib:
 
         # INC_LIST is special
         FileMacro = ""
-        IncPrefix = self._INC_FLAG_[self._AutoGenObject.ToolChainFamily]
         IncludePathList = []
         for P in  self._AutoGenObject.IncludePathList:
             IncludePathList.append(IncPrefix+self.PlaceMacro(P, self.Macros))

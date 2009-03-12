@@ -1175,9 +1175,14 @@ class PathClass(object):
         if self.Root:
             self.Path = os.path.normpath(os.path.join(self.Root, self.File))
             self.Root = os.path.normpath(CommonPath([self.Root, self.Path]))
-            if self.Root[-1] != os.path.sep:
+            # eliminate the side-effect of 'C:'
+            if self.Root[-1] == ':':
                 self.Root += os.path.sep
-            self.File = self.Path[len(self.Root):]
+            # file path should not start with path separator
+            if self.Root[-1] == os.path.sep:
+                self.File = self.Path[len(self.Root):]
+            else:
+                self.File = self.Path[len(self.Root)+1:]
         else:
             self.Path = os.path.normpath(self.File)
 
@@ -1260,7 +1265,7 @@ class PathClass(object):
             if self.SubDir:
                 self.Dir = os.path.join(RealRoot, self.SubDir)
             else:
-                self.Dir = RealRoot 
+                self.Dir = RealRoot
             self.File = RealFile
             self.Root = RealRoot
             self.Path = os.path.join(RealRoot, RealFile)

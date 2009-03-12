@@ -1,5 +1,5 @@
 ## @file
-# This file is used to define common string related functions used in parsing process 
+# This file is used to define common string related functions used in parsing process
 #
 # Copyright (c) 2007 ~ 2008, Intel Corporation
 # All rights reserved. This program and the accompanying materials
@@ -104,7 +104,7 @@ def GenInclude(String, IncludeFiles, Arch):
 # Get Library Class definition when no module type defined
 #
 # @param Lines:             The content to be parsed
-# @param Key:               Reserved 
+# @param Key:               Reserved
 # @param KeyValues:         To store data after parsing
 # @param CommentCharacter:  Comment char, used to ignore comment content
 #
@@ -126,7 +126,7 @@ def GetLibraryClassesWithModuleType(Lines, Key, KeyValues, CommentCharacter):
 # Get Dynamic Pcds
 #
 # @param Lines:             The content to be parsed
-# @param Key:               Reserved 
+# @param Key:               Reserved
 # @param KeyValues:         To store data after parsing
 # @param CommentCharacter:  Comment char, used to ignore comment content
 #
@@ -177,12 +177,12 @@ def SplitModuleType(Key):
 
 ## Replace macro in strings list
 #
-# This method replace macros used in a given string list. The macros are 
+# This method replace macros used in a given string list. The macros are
 # given in a dictionary.
-# 
+#
 # @param StringList         StringList to be processed
 # @param MacroDefinitions   The macro definitions in the form of dictionary
-# @param SelfReplacement    To decide whether replace un-defined macro to '' 
+# @param SelfReplacement    To decide whether replace un-defined macro to ''
 #
 # @retval NewList           A new string list whose macros are replaced
 #
@@ -193,14 +193,14 @@ def ReplaceMacros(StringList, MacroDefinitions={}, SelfReplacement = False):
             NewList.append(ReplaceMacro(String, MacroDefinitions, SelfReplacement))
         else:
             NewList.append(String)
-    
+
     return NewList
 
 ## Replace macro in string
 #
 # This method replace macros used in given string. The macros are given in a
 # dictionary.
-# 
+#
 # @param String             String to be processed
 # @param MacroDefinitions   The macro definitions in the form of dictionary
 # @param SelfReplacement    To decide whether replace un-defined macro to ''
@@ -242,7 +242,7 @@ def NormPath(Path, Defines = {}):
     IsRelativePath = False
     if Path:
         if Path[0] == '.':
-            IsRelativePath = True    
+            IsRelativePath = True
         #
         # Replace with Define
         #
@@ -295,7 +295,7 @@ def CleanString(Line, CommentCharacter = DataType.TAB_COMMENT_SPLIT, AllowCppSty
 # The result is saved to KeyValues
 #
 # @param Lines:             The content to be parsed
-# @param Key:               Reserved 
+# @param Key:               Reserved
 # @param KeyValues:         To store data after parsing
 # @param CommentCharacter:  Comment char, used to ignore comment content
 #
@@ -418,7 +418,7 @@ def PreCheck(FileName, FileContent, SupSectionTag):
         # Clean current line
         #
         Line = CleanString(Line)
-        
+
         #
         # Remove commented line
         #
@@ -440,7 +440,7 @@ def PreCheck(FileName, FileContent, SupSectionTag):
             #
             if not (Line.find('[') > -1 and Line.find(']') > -1):
                 EdkLogger.error("Parser", FORMAT_INVALID, Line=LineNo, File=FileName, RaiseError = EdkLogger.IsRaiseError)
-        
+
         #
         # Regenerate FileContent
         #
@@ -448,7 +448,7 @@ def PreCheck(FileName, FileContent, SupSectionTag):
 
     if IsFailed:
        EdkLogger.error("Parser", FORMAT_INVALID, Line=LineNo, File=FileName, RaiseError = EdkLogger.IsRaiseError)
-    
+
     return NewFileContent
 
 ## CheckFileType
@@ -555,7 +555,7 @@ def RaiseParserError(Line, Section, File, Format = '', LineNo = -1):
 # @param Filename:      Relative file name
 #
 # @retval string A full path
-# 
+#
 def WorkspaceFile(WorkspaceDir, Filename):
     return os.path.join(NormPath(WorkspaceDir), NormPath(Filename))
 
@@ -563,7 +563,7 @@ def WorkspaceFile(WorkspaceDir, Filename):
 #
 # Revmove '"' which startswith and endswith string
 #
-# @param String:  The string need to be splited 
+# @param String:  The string need to be splited
 #
 # @retval String: The string after removed '""'
 #
@@ -572,13 +572,13 @@ def SplitString(String):
         String = String[1:]
     if String.endswith('\"'):
         String = String[:-1]
-        
+
     return String
 
 ## Convert To Sql String
 #
 # 1. Replace "'" with "''" in each item of StringList
-# 
+#
 # @param StringList:  A list for strings to be converted
 #
 def ConvertToSqlString(StringList):
@@ -587,7 +587,7 @@ def ConvertToSqlString(StringList):
 ## Convert To Sql String
 #
 # 1. Replace "'" with "''" in the String
-# 
+#
 # @param String:  A String to be converted
 #
 def ConvertToSqlString2(String):
@@ -601,7 +601,7 @@ def RemoveBlockComment(Lines):
     IsFindBlockCode = False
     ReservedLine = ''
     NewLines = []
-    
+
     for Line in Lines:
         Line = Line.strip()
         #
@@ -617,7 +617,7 @@ def RemoveBlockComment(Lines):
         if IsFindBlockComment:
             NewLines.append('')
             continue
-        
+
         NewLines.append(Line)
     return NewLines
 
@@ -643,7 +643,7 @@ def GetHelpTextList(HelpTextClassList):
             if HelpText.String.endswith('\n'):
                 HelpText.String = HelpText.String[0: len(HelpText.String) - len('\n')]
                 List.extend(HelpText.String.split('\n'))
-    
+
     return List
 
 def StringToArray(String):
@@ -655,6 +655,25 @@ def StringToArray(String):
         return "{%s, 0}" % ", ".join(["0x%02x" % ord(C) for C in String[1:-1]])
     else:
         return '{%s, 0}' % ', '.join(String.split())
+
+def RemoveDupOption(OptionString, Which="/I", Against=None):
+    OptionList = OptionString.split()
+    ValueList = []
+    if Against:
+        ValueList += Against
+    for Index in range(len(OptionList)):
+        Opt = OptionList[Index]
+        if not Opt.startswith(Which):
+            continue
+        if len(Opt) > len(Which):
+            Val = Opt[len(Which):]
+        else:
+            Val = ""
+        if Val in ValueList:
+            OptionList[Index] = ""
+        else:
+            ValueList.append(Val)
+    return " ".join(OptionList)
 
 ##
 #
