@@ -220,9 +220,14 @@ def SaveFileOnChange(File, Content, IsBinaryFile=True):
     CreateDirectory(os.path.dirname(File))
     try:
         if GlobalData.gIsWindows:
-            from PyUtility import SaveFileToDisk
-            if not SaveFileToDisk(File, Content):
-                EdkLogger.error(None, FILE_CREATE_FAILURE, ExtraData=File)
+            try:
+                from PyUtility import SaveFileToDisk
+                if not SaveFileToDisk(File, Content):
+                    EdkLogger.error(None, FILE_CREATE_FAILURE, ExtraData=File)
+            except:
+                Fd = open(File, "wb")
+                Fd.write(Content)
+                Fd.close()
         else:
             Fd = open(File, "wb")
             Fd.write(Content)
