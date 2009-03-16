@@ -387,4 +387,16 @@ class ComponentStatementClassObject :
         self.CompSym = None
         self.CompSize = None
         self.FilePos = None
+ 
+## OptionROM data in FDF
+#
+#
+class OptionRomClassObject:
+    ## The constructor
+    #
+    #   @param  self        The object pointer
+    #
+    def __init__(self):
+        self.DriverName = None
+        self.FfsList = []
         

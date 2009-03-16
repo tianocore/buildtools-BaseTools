@@ -36,6 +36,9 @@ import RuleSimpleFile
 import EfiSection
 import Vtf
 import ComponentStatement
+import OptionRom
+import OptRomInfStatement
+import OptRomFileStatement
 
 from Common.BuildToolError import *
 from Common import EdkLogger
@@ -173,6 +176,7 @@ class FileProfile :
         self.CapsuleList = []
         self.VtfList = []
         self.RuleDict = {}
+        self.OptRomDict = {}
 
 ## The syntax parser for FDF
 #
@@ -261,6 +265,8 @@ class FdfParser:
     #   @retval False       Current File buffer position is NOT at line end
     #
     def __EndOfLine(self):
+        if self.CurrentLineNumber > len(self.Profile.FileLinesList):
+            return True
         SizeOfCurrentLine = len(self.Profile.FileLinesList[self.CurrentLineNumber - 1])
         if self.CurrentOffsetWithinLine >= SizeOfCurrentLine:
             return True
@@ -354,6 +360,7 @@ class FdfParser:
 
     def __StringToList(self):
         self.Profile.FileLinesList = [list(s) for s in self.Profile.FileLinesList]
+        self.Profile.FileLinesList[-1].append(' ')
 
     def __ReplaceMacros(self, Str, File, Line):
         MacroEnd = 0
@@ -880,6 +887,7 @@ class FdfParser:
             return False
         # Record the token start position, the position of the first non-space char.
         StartPos = self.CurrentOffsetWithinLine
+        StartLine = self.CurrentLineNumber
         while not self.__EndOfLine():
             TempChar = self.__CurrentChar()
             # Try to find the end char that is not a space and not in seperator tuple.
@@ -893,11 +901,14 @@ class FdfParser:
                 break
             else:
                 break
-        else:
-            return False
+#        else:
+#            return False
 
+        EndPos = self.CurrentOffsetWithinLine
+        if self.CurrentLineNumber != StartLine:
+            EndPos = len(self.Profile.FileLinesList[StartLine-1])
+        self.__Token = self.Profile.FileLinesList[StartLine-1][StartPos : EndPos]
         if StartPos != self.CurrentOffsetWithinLine:
-            self.__Token = self.__CurrentLine()[StartPos : self.CurrentOffsetWithinLine]
             return True
         else:
             return False
@@ -1194,6 +1205,9 @@ class FdfParser:
 
             while self.__GetRule():
                 pass
+            
+            while self.__GetOptionRom():
+                pass
 
         except Warning, X:
             self.__UndoToken()
@@ -1219,7 +1233,7 @@ class FdfParser:
         S = self.__Token.upper()
         if S.startswith("[") and not S.startswith("[DEFINES"):
             if not S.startswith("[FD.") and not S.startswith("[FV.") and not S.startswith("[CAPSULE.") \
-                and not S.startswith("[VTF.") and not S.startswith("[RULE.") and not S.startswith("[OptionRom."):
+                and not S.startswith("[VTF.") and not S.startswith("[RULE.") and not S.startswith("[OPTIONROM."):
                 raise Warning("Unknown section or section appear sequence error (The correct sequence should be [DEFINES], [FD.], [FV.], [Capsule.], [VTF.], [Rule.], [OptionRom.])", self.FileName, self.CurrentLineNumber)
             self.__UndoToken()
             return False
@@ -1266,7 +1280,7 @@ class FdfParser:
         S = self.__Token.upper()
         if S.startswith("[") and not S.startswith("[FD."):
             if not S.startswith("[FV.") and not S.startswith("[CAPSULE.") \
-                and not S.startswith("[VTF.") and not S.startswith("[RULE."):
+                and not S.startswith("[VTF.") and not S.startswith("[RULE.") and not S.startswith("[OPTIONROM."):
                 raise Warning("Unknown section", self.FileName, self.CurrentLineNumber)
             self.__UndoToken()
             return False
@@ -1313,11 +1327,11 @@ class FdfParser:
     #   @retval FdName      UI name
     #
     def __GetUiName(self):
-        FdName = ""
+        Name = ""
         if self.__GetNextWord():
-            FdName = self.__Token
+            Name = self.__Token
 
-        return FdName
+        return Name
 
     ## __GetCreateFile() method
     #
@@ -1781,8 +1795,8 @@ class FdfParser:
         S = self.__Token.upper()
         if S.startswith("[") and not S.startswith("[FV."):
             if not S.startswith("[CAPSULE.") \
-                and not S.startswith("[VTF.") and not S.startswith("[RULE."):
-                raise Warning("Unknown section or section appear sequence error (The correct sequence should be [FD.], [FV.], [Capsule.], [VTF.], [Rule.])", self.FileName, self.CurrentLineNumber)
+                and not S.startswith("[VTF.") and not S.startswith("[RULE.") and not S.startswith("[OPTIONROM."):
+                raise Warning("Unknown section or section appear sequence error (The correct sequence should be [FD.], [FV.], [Capsule.], [VTF.], [Rule.], [OptionRom.])", self.FileName, self.CurrentLineNumber)
             self.__UndoToken()
             return False
 
@@ -2038,6 +2052,7 @@ class FdfParser:
             if not self.__GetNextToken():
                 raise Warning("expected ARCH name", self.FileName, self.CurrentLineNumber)
             FfsInfObj.UseArch = self.__Token
+
                 
         if self.__GetNextToken():
             p = re.compile(r'([a-zA-Z0-9\-]+|\$\(TARGET\)|\*)_([a-zA-Z0-9\-]+|\$\(TOOL_CHAIN_TAG\)|\*)_([a-zA-Z0-9\-]+|\$\(ARCH\)|\*)')
@@ -2560,8 +2575,8 @@ class FdfParser:
 
         S = self.__Token.upper()
         if S.startswith("[") and not S.startswith("[CAPSULE."):
-            if not S.startswith("[VTF.") and not S.startswith("[RULE."):
-                raise Warning("Unknown section or section appear sequence error (The correct sequence should be [FD.], [FV.], [Capsule.], [VTF.], [Rule.])", self.FileName, self.CurrentLineNumber)
+            if not S.startswith("[VTF.") and not S.startswith("[RULE.") and not S.startswith("[OPTIONROM."):
+                raise Warning("Unknown section or section appear sequence error (The correct sequence should be [FD.], [FV.], [Capsule.], [VTF.], [Rule.], [OptionRom.])", self.FileName, self.CurrentLineNumber)
             self.__UndoToken()
             return False
 
@@ -2684,8 +2699,10 @@ class FdfParser:
 
         S = self.__Token.upper()
         if S.startswith("[") and not S.startswith("[RULE."):
-            raise Warning("Unknown section or section appear sequence error (The correct sequence should be [FD.], [FV.], [Capsule.], [VTF.], [Rule.])", self.FileName, self.CurrentLineNumber)
-
+            if not S.startswith("[OPTIONROM."):
+                raise Warning("Unknown section or section appear sequence error (The correct sequence should be [FD.], [FV.], [Capsule.], [VTF.], [Rule.], [OptionRom.])", self.FileName, self.CurrentLineNumber)
+            self.__UndoToken()
+            return False
         self.__UndoToken()
         if not self.__IsToken("[Rule.", True):
             FileLineTuple = GetRealFileLine(self.FileName, self.CurrentLineNumber)
@@ -3243,8 +3260,8 @@ class FdfParser:
 
         S = self.__Token.upper()
         if S.startswith("[") and not S.startswith("[VTF."):
-            if not S.startswith("[RULE."):
-                raise Warning("Unknown section or section appear sequence error (The correct sequence should be [FD.], [FV.], [Capsule.], [VTF.], [Rule.])", self.FileName, self.CurrentLineNumber)
+            if not S.startswith("[RULE.") and not S.startswith("[OPTIONROM."):
+                raise Warning("Unknown section or section appear sequence error (The correct sequence should be [FD.], [FV.], [Capsule.], [VTF.], [Rule.], [OptionRom.])", self.FileName, self.CurrentLineNumber)
             self.__UndoToken()
             return False
 
@@ -3420,6 +3437,163 @@ class FdfParser:
         VtfObj.ComponentStatementList.append(CompStatementObj)
         return True
 
+    ## __GetOptionRom() method
+    #
+    #   Get OptionROM section contents and store its data into OptionROM list of self.Profile
+    #
+    #   @param  self        The object pointer
+    #   @retval True        Successfully find a OptionROM
+    #   @retval False       Not able to find a OptionROM
+    #
+    def __GetOptionRom(self):
+
+        if not self.__GetNextToken():
+            return False
+
+        S = self.__Token.upper()
+        if S.startswith("[") and not S.startswith("[OPTIONROM."):
+            raise Warning("Unknown section or section appear sequence error (The correct sequence should be [FD.], [FV.], [Capsule.], [VTF.], [Rule.], [OptionRom.])", self.FileName, self.CurrentLineNumber)
+        
+        self.__UndoToken()
+        if not self.__IsToken("[OptionRom.", True):
+            raise Warning("Unknown Keyword '%s'" % self.__Token, self.FileName, self.CurrentLineNumber)
+
+        OptRomName = self.__GetUiName()
+
+        if not self.__IsToken( "]"):
+            raise Warning("expected ']'", self.FileName, self.CurrentLineNumber)
+
+        OptRomObj = OptionRom.OPTIONROM()
+        OptRomObj.DriverName = OptRomName
+        self.Profile.OptRomDict[OptRomName] = OptRomObj
+
+        while True:
+            isInf = self.__GetOptRomInfStatement(OptRomObj)
+            isFile = self.__GetOptRomFileStatement(OptRomObj)
+            if not isInf and not isFile:
+                break
+            
+        return True
+
+    ## __GetOptRomInfStatement() method
+    #
+    #   Get INF statements
+    #
+    #   @param  self        The object pointer
+    #   @param  Obj         for whom inf statement is got
+    #   @retval True        Successfully find inf statement
+    #   @retval False       Not able to find inf statement
+    #
+    def __GetOptRomInfStatement(self, Obj):
+
+        if not self.__IsKeyword( "INF"):
+            return False
+
+        ffsInf = OptRomInfStatement.OptRomInfStatement()
+        self.__GetInfOptions( ffsInf)
+
+        if not self.__GetNextToken():
+            raise Warning("expected INF file path", self.FileName, self.CurrentLineNumber)
+        ffsInf.InfFileName = self.__Token
+
+        if not ffsInf.InfFileName in self.Profile.InfList:
+            self.Profile.InfList.append(ffsInf.InfFileName)
+
+        
+        self.__GetOptRomOverrides (ffsInf)
+            
+        Obj.FfsList.append(ffsInf)
+        return True
+
+    ## __GetOptRomOverrides() method
+    #
+    #   Get overrides for OptROM INF & FILE
+    #
+    #   @param  self        The object pointer
+    #   @param  FfsInfObj   for whom overrides is got
+    #
+    def __GetOptRomOverrides(self, Obj):
+        if self.__IsToken('{'):
+            Overrides = OptionRom.OverrideAttribs()
+            if self.__IsKeyword( "PCI_VENDOR_ID"):
+                if not self.__IsToken( "="):
+                    raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+                if not self.__GetNextHexNumber():
+                    raise Warning("expected Hex vendor id", self.FileName, self.CurrentLineNumber)
+                Overrides.PciVendorId = self.__Token
+    
+            if self.__IsKeyword( "PCI_CLASS_CODE"):
+                if not self.__IsToken( "="):
+                    raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+                if not self.__GetNextHexNumber():
+                    raise Warning("expected Hex class code", self.FileName, self.CurrentLineNumber)
+                Overrides.PciClassCode = self.__Token
+    
+            if self.__IsKeyword( "PCI_DEVICE_ID"):
+                if not self.__IsToken( "="):
+                    raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+                if not self.__GetNextHexNumber():
+                    raise Warning("expected Hex device id", self.FileName, self.CurrentLineNumber)
+    
+                Overrides.PciDeviceId = self.__Token
+    
+            if self.__IsKeyword( "PCI_REVISION"):
+                if not self.__IsToken( "="):
+                    raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+                if not self.__GetNextHexNumber():
+                    raise Warning("expected Hex revision", self.FileName, self.CurrentLineNumber)
+                Overrides.PciRevision = self.__Token
+                    
+            if self.__IsKeyword( "COMPRESS"):
+                if not self.__IsToken( "="):
+                    raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+                if not self.__GetNextToken():
+                    raise Warning("expected TRUE/FALSE for compress", self.FileName, self.CurrentLineNumber)
+                
+                if self.__Token.upper() == 'TRUE':
+                    Overrides.NeedCompress = True        
+                
+            if not self.__IsToken( "}"):
+                
+                if self.__Token not in ("PCI_CLASS_CODE", "PCI_VENDOR_ID", "PCI_DEVICE_ID", "PCI_REVISION", "COMPRESS"):
+                    raise Warning("unknown attribute %s" % self.__Token, self.FileName, self.CurrentLineNumber)
+                
+                raise Warning("expected '}'", self.FileName, self.CurrentLineNumber)
+            
+            Obj.OverrideAttribs = Overrides
+            
+    ## __GetOptRomFileStatement() method
+    #
+    #   Get FILE statements
+    #
+    #   @param  self        The object pointer
+    #   @param  Obj         for whom FILE statement is got
+    #   @retval True        Successfully find FILE statement
+    #   @retval False       Not able to find FILE statement
+    #
+    def __GetOptRomFileStatement(self, Obj):
+
+        if not self.__IsKeyword( "FILE"):
+            return False
+
+        FfsFileObj = OptRomFileStatement.OptRomFileStatement()
+
+        if not self.__IsKeyword("EFI") and not self.__IsKeyword("BIN"):
+            raise Warning("expected Binary type (EFI/BIN)", self.FileName, self.CurrentLineNumber)
+        FfsFileObj.FileType = self.__Token
+
+        if not self.__GetNextToken():
+            raise Warning("expected File path", self.FileName, self.CurrentLineNumber)
+        FfsFileObj.FileName = self.__Token
+
+        if FfsFileObj.FileType == 'EFI':
+            self.__GetOptRomOverrides(FfsFileObj)
+        
+        Obj.FfsList.append(FfsFileObj)
+
+        return True
+        
+            
     ## __GetFvInFd() method
     #
     #   Get FV list contained in FD

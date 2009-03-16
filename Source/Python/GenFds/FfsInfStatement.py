@@ -53,6 +53,20 @@ class FfsInfStatement(FfsInfStatementClassObject):
     #   @param  Dict        dictionary contains macro and value pair
     #
     def __InfParse__(self, Dict = {}):
+        
+        GenFdsGlobalVariable.VerboseLogger( " Begine parsing INf file : %s" %self.InfFileName)
+
+        self.InfFileName = self.InfFileName.replace('$(WORKSPACE)', '')
+        if self.InfFileName[0] == '\\' or self.InfFileName[0] == '/' :
+            self.InfFileName = self.InfFileName[1:]
+
+        if self.InfFileName.find('$') == -1:
+            InfPath = NormPath(self.InfFileName)
+            if not os.path.exists(InfPath):
+                InfPath = GenFdsGlobalVariable.ReplaceWorkspaceMacro(InfPath)
+                if not os.path.exists(InfPath):
+                    EdkLogger.error("GenFds", GENFDS_ERROR, "Non-existant Module %s !" % (self.InfFileName))
+        
         self.CurrentArch = self.GetCurrentArch()
         #
         # Get the InfClass object
@@ -119,18 +133,6 @@ class FfsInfStatement(FfsInfStatementClassObject):
         #
         # Parse Inf file get Module related information
         #
-        GenFdsGlobalVariable.VerboseLogger( " Begine parsing INf file : %s" %self.InfFileName)
-
-        self.InfFileName = self.InfFileName.replace('$(WORKSPACE)', '')
-        if self.InfFileName[0] == '\\' or self.InfFileName[0] == '/' :
-            self.InfFileName = self.InfFileName[1:]
-
-        if self.InfFileName.find('$') == -1:
-            InfPath = NormPath(self.InfFileName)
-            if not os.path.exists(InfPath):
-                InfPath = GenFdsGlobalVariable.ReplaceWorkspaceMacro(InfPath)
-                if not os.path.exists(InfPath):
-                    EdkLogger.error("GenFds", GENFDS_ERROR, "Non-existant Module %s !" % (self.InfFileName))
 
         self.__InfParse__(Dict)
         #
@@ -402,15 +404,15 @@ class FfsInfStatement(FfsInfStatementClassObject):
             if not NoStrip:
                 FileBeforeStrip = os.path.join(self.OutputPath, ModuleName + '.reloc')
                 if not os.path.exists(FileBeforeStrip) or \
-                    (os.path.getmtime(File) > os.path.getmtime(FileBeforeStrip)):
-                    shutil.copyfile(File, FileBeforeStrip)
+                    (os.path.getmtime(GenSecInputFile) > os.path.getmtime(FileBeforeStrip)):
+                    shutil.copyfile(GenSecInputFile, FileBeforeStrip)
                 StrippedFile = os.path.join(self.OutputPath, ModuleName + '.stipped')
                 GenFdsGlobalVariable.GenerateFirmwareImage(
                                         StrippedFile,
-                                        [GenFdsGlobalVariable.MacroExtend(File, Dict, self.CurrentArch)],
+                                        [GenFdsGlobalVariable.MacroExtend(GenSecInputFile, Dict, self.CurrentArch)],
                                         Strip=True
                                         )
-                File = StrippedFile
+                GenSecInputFile = StrippedFile
 
             if SectionType == 'TE':
                 TeFile = os.path.join( self.OutputPath, self.ModuleGuid + 'Te.raw')

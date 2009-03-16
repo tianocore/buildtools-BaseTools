@@ -291,6 +291,41 @@ class GenFdsGlobalVariable:
         GenFdsGlobalVariable.CallExternalTool(Cmd, "Failed to generate firmware image")
 
     @staticmethod
+    def GenerateOptionRom(Output, EfiInput, BinaryInput, Compress=False, ClassCode=None,
+                        Revision=None, DeviceId=None, VendorId=None):
+#        if not GenFdsGlobalVariable.NeedsUpdate(Output, Input):
+#            return
+#        GenFdsGlobalVariable.DebugLogger(EdkLogger.DEBUG_5, "%s needs update because of newer %s" % (Output, Input))
+
+        Cmd = ["EfiRom"]
+        if len(EfiInput) > 0:
+            
+            if Compress:
+                Cmd += ["-ec"]
+            else:
+                Cmd += ["-e"]
+                
+            for EfiFile in EfiInput:
+                Cmd += [EfiFile]
+        
+        if len(BinaryInput) > 0:
+            Cmd += ["-b"]
+            for BinFile in BinaryInput:
+                Cmd += [BinFile]
+                        
+        if ClassCode != None:
+            Cmd += ["-I", ClassCode]
+        if Revision != None:
+            Cmd += ["-r", Revision]
+        if DeviceId != None:
+            Cmd += ["-i", DeviceId]
+        if VendorId != None:
+            Cmd += ["-f", VendorId]
+
+        Cmd += ["-o", Output]    
+        GenFdsGlobalVariable.CallExternalTool(Cmd, "Failed to generate option rom")
+
+    @staticmethod
     def GuidTool(Output, Input, ToolPath, Options=''):
         if not GenFdsGlobalVariable.NeedsUpdate(Output, Input):
             return

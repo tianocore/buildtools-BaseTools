@@ -340,6 +340,12 @@ class GenFds :
             GenFdsGlobalVariable.VerboseLogger(" Gen Capsule !")
             for CapsuleObj in GenFdsGlobalVariable.FdfParser.Profile.CapsuleList:
                 CapsuleObj.GenCapsule()
+                
+            if GenFdsGlobalVariable.FdfParser.Profile.OptRomDict != {}:
+                GenFdsGlobalVariable.VerboseLogger(" Gen Option ROM !")
+                for DriverName in GenFdsGlobalVariable.FdfParser.Profile.OptRomDict.keys():
+                    OptRomObj = GenFdsGlobalVariable.FdfParser.Profile.OptRomDict[DriverName]
+                    OptRomObj.AddToBuffer(None)
 
     ## GetFvBlockSize()
     #
