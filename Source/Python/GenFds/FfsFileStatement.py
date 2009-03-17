@@ -24,6 +24,7 @@ import subprocess
 from CommonDataClass.FdfClass import FileStatementClassObject
 from Common import EdkLogger
 from Common.BuildToolError import *
+from Common.Misc import GuidStructureStringToGuidString
 
 ## generate FFS from FILE
 #
@@ -45,6 +46,18 @@ class FileStatement (FileStatementClassObject) :
     #   @retval string      Generated FFS file name
     #
     def GenFfs(self, Dict = {}):
+        
+        if self.NameGuid != None and self.NameGuid.startswith('PCD('):
+            PcdValue = GenFdsGlobalVariable.GetPcdValue(self.NameGuid)
+            if len(PcdValue) == 0:
+                EdkLogger.error("GenFds", GENFDS_ERROR, '%s NOT defined.' \
+                            % (self.NameGuid))
+            RegistryGuidStr = GuidStructureStringToGuidString(PcdValue)
+            if len(RegistryGuidStr) == 0:
+                EdkLogger.error("GenFds", GENFDS_ERROR, 'GUID value for %s in wrong format.' \
+                            % (self.NameGuid))
+            self.NameGuid = RegistryGuidStr
+        
         OutputDir = os.path.join(GenFdsGlobalVariable.FfsDir, self.NameGuid)
         if not os.path.exists(OutputDir):
              os.makedirs(OutputDir)

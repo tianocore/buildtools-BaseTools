@@ -2097,7 +2097,16 @@ class FdfParser:
             raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
 
         if not self.__GetNextGuid():
-            raise Warning("expected File GUID", self.FileName, self.CurrentLineNumber)
+            if not self.__GetNextWord():
+                raise Warning("expected File GUID", self.FileName, self.CurrentLineNumber)
+            if self.__Token == 'PCD':
+                if not self.__IsToken( "("):
+                    raise Warning("expected '('", self.FileName, self.CurrentLineNumber)
+                PcdPair = self.__GetNextPcdName()
+                if not self.__IsToken( ")"):
+                    raise Warning("expected ')'", self.FileName, self.CurrentLineNumber)
+                self.__Token = 'PCD('+PcdPair[1]+'.'+PcdPair[0]+')'
+                
         FfsFileObj.NameGuid = self.__Token
 
         self.__GetFilePart( FfsFileObj, MacroDict.copy())
@@ -2816,7 +2825,17 @@ class FdfParser:
             raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
 
         if not self.__IsKeyword("$(NAMED_GUID)"):
-            raise Warning("expected $(NAMED_GUID)", self.FileName, self.CurrentLineNumber)
+            if not self.__GetNextWord():
+                raise Warning("expected $(NAMED_GUID)", self.FileName, self.CurrentLineNumber)
+            if self.__Token == 'PCD':
+                if not self.__IsToken( "("):
+                    raise Warning("expected '('", self.FileName, self.CurrentLineNumber)
+                PcdPair = self.__GetNextPcdName()
+                if not self.__IsToken( ")"):
+                    raise Warning("expected ')'", self.FileName, self.CurrentLineNumber)
+                self.__Token = 'PCD('+PcdPair[1]+'.'+PcdPair[0]+')'
+            
+        NameGuid = self.__Token
 
         KeepReloc = None
         if self.__IsKeyword('RELOCS_STRIPPED') or self.__IsKeyword('RELOCS_RETAINED'):
@@ -2864,6 +2883,7 @@ class FdfParser:
             # Complex file rule expected
             Rule = RuleComplexFile.RuleComplexFile()
             Rule.FvFileType = Type
+            Rule.NameGuid = NameGuid
             Rule.Alignment = AlignValue
             Rule.CheckSum = CheckSum
             Rule.Fixed = Fixed
@@ -2889,6 +2909,7 @@ class FdfParser:
             Rule = RuleSimpleFile.RuleSimpleFile()
 
             Rule.FvFileType = Type
+            Rule.NameGuid = NameGuid
             Rule.Alignment = AlignValue
             Rule.CheckSum = CheckSum
             Rule.Fixed = Fixed
@@ -2928,6 +2949,7 @@ class FdfParser:
             Rule = RuleSimpleFile.RuleSimpleFile()
             Rule.SectionType = SectionName
             Rule.FvFileType = Type
+            Rule.NameGuid = NameGuid
             Rule.Alignment = AlignValue
             Rule.CheckSum = CheckSum
             Rule.Fixed = Fixed
@@ -3083,7 +3105,21 @@ class FdfParser:
         elif self.__GetNextToken():
             if self.__Token not in ("}", "COMPAT16", "PE32", "PIC", "TE", "FV_IMAGE", "RAW", "DXE_DEPEX",\
                        "UI", "VERSION", "PEI_DEPEX", "GUID", "SMM_DEPEX"):
-                EfiSectionObj.FileName = self.__Token
+                
+                if self.__Token.startswith('PCD'):
+                    self.__UndoToken()
+                    self.__GetNextWord()
+                
+                    if self.__Token == 'PCD':
+                        if not self.__IsToken( "("):
+                            raise Warning("expected '('", self.FileName, self.CurrentLineNumber)
+                        PcdPair = self.__GetNextPcdName()
+                        if not self.__IsToken( ")"):
+                            raise Warning("expected ')'", self.FileName, self.CurrentLineNumber)
+                        self.__Token = 'PCD('+PcdPair[1]+'.'+PcdPair[0]+')'
+                        
+                EfiSectionObj.FileName = self.__Token        
+                            
             else:
                 self.__UndoToken()
         else:

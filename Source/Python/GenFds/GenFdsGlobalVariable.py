@@ -20,7 +20,7 @@ import sys
 import subprocess
 import struct
 import array
-from Common import BuildToolError
+from Common.BuildToolError import *
 from Common import EdkLogger
 from Common.Misc import SaveFileOnChange
 
@@ -420,6 +420,32 @@ class GenFdsGlobalVariable:
 
         return Str
 
+    ## GetPcdValue()
+    #
+    #   @param  PcdPattern           pattern that labels a PCD.
+    #
+    def GetPcdValue (PcdPattern):
+        if PcdPattern == None :
+            return None
+        PcdPair = PcdPattern.lstrip('PCD(').rstrip(')').strip().split('.')
+        TokenSpace = PcdPair[0]
+        TokenCName = PcdPair[1]
+        
+        PcdDict = GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'COMMON'].Pcds
+        PcdValue = ''
+        for Key in PcdDict:
+            PcdObj = PcdDict[Key]
+            if (PcdObj.TokenCName == TokenCName) and (PcdObj.TokenSpaceGuidCName == TokenSpace):
+                if PcdObj.Type != 'FixedAtBuild':
+                    EdkLogger.error("GenFds", GENFDS_ERROR, "%s is not FixedAtBuild type." % PcdPattern)
+                if PcdObj.DatumType != 'VOID*':
+                    EdkLogger.error("GenFds", GENFDS_ERROR, "%s is not VOID* datum type." % PcdPattern)
+                    
+                PcdValue = PcdObj.DefaultValue
+                break
+
+        return PcdValue
+
 
     SetDir = staticmethod(SetDir)
     ReplaceWorkspaceMacro = staticmethod(ReplaceWorkspaceMacro)
@@ -429,3 +455,4 @@ class GenFdsGlobalVariable:
     ErrorLogger = staticmethod(ErrorLogger)
     DebugLogger = staticmethod(DebugLogger)
     MacroExtend = staticmethod (MacroExtend)
+    GetPcdValue = staticmethod(GetPcdValue)

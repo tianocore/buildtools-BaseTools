@@ -441,6 +441,9 @@ class GenFds :
                 PcdValue = PcdObj.DefaultValue
                 break
         
+        if PcdValue == '':
+            return
+        
         Int64PcdValue = long(PcdValue, 0)
         if Int64PcdValue == 0 or Int64PcdValue < -1:    
             return

@@ -51,6 +51,9 @@ class EfiSection (EfiSectionClassObject):
     #   @retval tuple       (Generated file name list, section alignment)
     #
     def GenSection(self, OutputPath, ModuleName, SecNum, KeyStringList, FfsInf = None, Dict = {}) :
+        
+        if self.FileName != None and self.FileName.startswith('PCD('):
+            self.FileName = GenFdsGlobalVariable.GetPcdValue(self.FileName)
         """Prepare the parameter of GenSection"""
         if FfsInf != None :
             InfFileName = FfsInf.InfFileName

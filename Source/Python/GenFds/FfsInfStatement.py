@@ -28,6 +28,7 @@ import RuleComplexFile
 from CommonDataClass.FdfClass import FfsInfStatementClassObject
 from Common.String import *
 from Common.Misc import PathClass
+from Common.Misc import GuidStructureStringToGuidString
 from Common import EdkLogger
 from Common.BuildToolError import *
 
@@ -450,9 +451,20 @@ class FfsInfStatement(FfsInfStatementClassObject):
             InputSection.append(InputFile)
             SectionAlignments.append(Rule.Alignment)
 
+        if Rule.NameGuid != None and Rule.NameGuid.startswith('PCD('):
+            PcdValue = GenFdsGlobalVariable.GetPcdValue(Rule.NameGuid)
+            if len(PcdValue) == 0:
+                EdkLogger.error("GenFds", GENFDS_ERROR, '%s NOT defined.' \
+                            % (Rule.NameGuid))
+            RegistryGuidStr = GuidStructureStringToGuidString(PcdValue)
+            if len(RegistryGuidStr) == 0:
+                EdkLogger.error("GenFds", GENFDS_ERROR, 'GUID value for %s in wrong format.' \
+                            % (Rule.NameGuid))
+            self.ModuleGuid = RegistryGuidStr
+                
         GenFdsGlobalVariable.GenerateFfs(FfsOutput, InputSection,
                                          Ffs.Ffs.FdfFvFileTypeToFileType[Rule.FvFileType],
-                                         self.NameGuid, Fixed=Rule.Fixed,
+                                         self.ModuleGuid, Fixed=Rule.Fixed,
                                          CheckSum=Rule.CheckSum, Align=Rule.Alignment,
                                          SectionAlign=SectionAlignments
                                         )
@@ -496,6 +508,18 @@ class FfsInfStatement(FfsInfStatementClassObject):
     #   @retval string      Generated FFS file name
     #
     def __GenComplexFileFfs__(self, Rule, InputFile, Alignments):
+        
+        if Rule.NameGuid != None and Rule.NameGuid.startswith('PCD('):
+            PcdValue = GenFdsGlobalVariable.GetPcdValue(Rule.NameGuid)
+            if len(PcdValue) == 0:
+                EdkLogger.error("GenFds", GENFDS_ERROR, '%s NOT defined.' \
+                            % (Rule.NameGuid))
+            RegistryGuidStr = GuidStructureStringToGuidString(PcdValue)
+            if len(RegistryGuidStr) == 0:
+                EdkLogger.error("GenFds", GENFDS_ERROR, 'GUID value for %s in wrong format.' \
+                            % (Rule.NameGuid))
+            self.ModuleGuid = RegistryGuidStr
+        
         FfsOutput = os.path.join( self.OutputPath, self.ModuleGuid + '.ffs')
         GenFdsGlobalVariable.GenerateFfs(FfsOutput, InputFile,
                                          Ffs.Ffs.FdfFvFileTypeToFileType[Rule.FvFileType],
