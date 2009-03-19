@@ -895,7 +895,7 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
         TokenNumber = PcdTokenNumber[Pcd.TokenCName, Pcd.TokenSpaceGuidCName]
     AutoGenH.Append('\n#define %s  %d\n' % (PcdTokenName, TokenNumber))
 
-    EdkLogger.debug(EdkLogger.DEBUG_3, "Creating code for " + Pcd.TokenCName + "|" + Pcd.TokenSpaceGuidCName)
+    EdkLogger.debug(EdkLogger.DEBUG_3, "Creating code for " + Pcd.TokenCName + "." + Pcd.TokenSpaceGuidCName)
     if Pcd.Type not in gItemTypeStringDatabase:
         EdkLogger.error("build", AUTOGEN_ERROR,
                         "Unknown PCD type [%s] of PCD %s.%s" % (Pcd.Type, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
@@ -1005,7 +1005,7 @@ def CreateLibraryPcdCode(Info, AutoGenC, AutoGenH, Pcd):
     TokenSpaceGuidValue = Pcd.TokenSpaceGuidValue   #Info.GuidList[TokenSpaceGuidCName]
     if (Pcd.TokenCName, Pcd.TokenSpaceGuidCName) not in PcdTokenNumber:
         EdkLogger.error("build", AUTOGEN_ERROR,
-                        "No generated token number for %s|%s\n" % (Pcd.TokenCName, Pcd.TokenSpaceGuidCName),
+                        "No generated token number for %s.%s\n" % (Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
                         ExtraData="[%s]" % str(Info))
     TokenNumber = PcdTokenNumber[TokenCName, TokenSpaceGuidCName]
 
@@ -1328,7 +1328,7 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
         if Phase == 'DXE':
             GeneratedTokenNumber -= NumberOfPeiLocalTokens
 
-        EdkLogger.debug(EdkLogger.DEBUG_1, "PCD = %s | %s" % (CName, TokenSpaceGuidCName))
+        EdkLogger.debug(EdkLogger.DEBUG_1, "PCD = %s.%s" % (CName, TokenSpaceGuidCName))
         EdkLogger.debug(EdkLogger.DEBUG_1, "phase = %s" % Phase)
         EdkLogger.debug(EdkLogger.DEBUG_1, "GeneratedTokenNumber = %s" % str(GeneratedTokenNumber))
 

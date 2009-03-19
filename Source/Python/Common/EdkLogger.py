@@ -87,7 +87,7 @@ def debug(Level, Message, ExtraData=None):
     }
 
     if ExtraData != None:
-        LogText = _DebugMessageTemplate % TemplateDict + "\n    " + ExtraData
+        LogText = _DebugMessageTemplate % TemplateDict + "\n    %s" % ExtraData
     else:
         LogText = _DebugMessageTemplate % TemplateDict
 
@@ -137,7 +137,7 @@ def warn(ToolName, Message, File=None, Line=None, ExtraData=None):
         LogText = _WarningMessageTemplateWithoutFile % TemplateDict
 
     if ExtraData != None:
-        LogText += "\n    " + ExtraData
+        LogText += "\n    %s" % ExtraData
 
     _InfoLogger.log(WARN, LogText)
 

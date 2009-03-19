@@ -625,7 +625,7 @@ class PlatformAutoGen(AutoGen):
         NoDatumTypePcdList = set()
 
         self._GuidValue = {}
-        for F in self.Platform.Modules:
+        for F in self.Platform.Modules.keys() + self.Platform.LibraryInstances:
             M = ModuleAutoGen(self.Workspace, F, self.BuildTarget, self.ToolChain, self.Arch, self.MetaFile)
             #GuidValue.update(M.Guids)
             for PcdFromModule in M.ModulePcdList+M.LibraryPcdList:
