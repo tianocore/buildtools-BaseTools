@@ -33,7 +33,7 @@ CommonLibBinderAllocate (
   IN UINTN Size
   )
 {
-  return malloc (Size);
+  return (VOID *) malloc (Size);
 }
 
 VOID

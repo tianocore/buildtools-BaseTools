@@ -100,12 +100,12 @@ Returns:
   // What about multiline comments?
   //
 
-  Pos = strstr (String,  "//");
+  Pos = (CHAR8 *) strstr (String,  "//");
   if (Pos != NULL) {
     *Pos = '\0';
   }
 
-  Pos = strchr (String, '#');
+  Pos = (CHAR8 *) strchr (String, '#');
   if (Pos != NULL) {
     *Pos = '\0';
   }

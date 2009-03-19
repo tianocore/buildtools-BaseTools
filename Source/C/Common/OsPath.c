@@ -245,7 +245,7 @@ Returns:
   CHAR8 *Result;
   INTN    Offset;
 
-  Result = malloc (strlen (OldPath) + strlen (Peer) + 1);
+  Result = (CHAR8 *) malloc (strlen (OldPath) + strlen (Peer) + 1);
   if (Result == NULL) {
     return NULL;
   }
