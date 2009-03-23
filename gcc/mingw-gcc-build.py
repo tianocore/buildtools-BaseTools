@@ -444,6 +444,7 @@ class Builder:
             '--target=%s' % self.config.target_combo,
             '--prefix=' + prefix,
             '--with-sysroot=' + prefix,
+            '--disable-werror',
             )
         if os.path.exists('/opt/local/include/gmp.h'):
             cmd += ('--with-gmp=/opt/local',)
