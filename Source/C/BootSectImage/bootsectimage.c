@@ -16,6 +16,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 **/
 
 #include <stdio.h>
+#include <string.h>
 #include "fat.h"
 #include "mbr.h"
 #include "EfiUtilityMsgs.h"

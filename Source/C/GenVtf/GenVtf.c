@@ -29,6 +29,7 @@ Abstract:
 #include "GenVtf.h"
 #include <Guid/PiFirmwareFileSystem.h>
 #include "CommonLib.h"
+#include "EfiUtilityMsgs.h"
 
 //
 // Global variables
@@ -118,11 +119,11 @@ Returns:
 
 --*/
 {
-  CHAR8 StrPtr[40];
-  CHAR8 *Token;
-  UINTN Length;
-  UINTN Major;
-  UINTN Minor;
+  CHAR8  StrPtr[40];
+  CHAR8  *Token;
+  UINTN  Length;
+  UINT32 Major;
+  UINT32 Minor;
 
   Major = 0;
   Minor = 0;
@@ -375,7 +376,7 @@ Returns:
       } else {
         VtfInfo->PreferredSize = TRUE;
         if (AsciiStringToUint64 (*TokenStr, FALSE, &StringValue) != EFI_SUCCESS) {
-          Error (NULL, 0, 5001, "Cannot get: %s.", TokenStr);
+          Error (NULL, 0, 5001, "Parse error", "Cannot get: %s.", TokenStr);
           return ;
         }
 
@@ -444,7 +445,7 @@ Returns:
 
     if (SectionOptionFlag) {
       if (stricmp (*TokenStr, "IA32_RST_BIN") == 0) {
-        *TokenStr++;
+        TokenStr++;
         strcpy (IA32BinFile, *TokenStr);
       }
     }
@@ -810,7 +811,7 @@ Returns:
   return EFI_SUCCESS;
 }
 
-INTN
+int
 CompareItems (
   IN const VOID  *Arg1,
   IN const VOID  *Arg2
@@ -1074,13 +1075,13 @@ Returns:
     fscanf (
       Fp,
       "%s %s %s %s %s %s %s",
-      &Buff1,
-      &Buff2,
-      &OffsetStr,
-      &Buff3,
-      &Buff4,
-      &Buff5,
-      &Token
+      Buff1,
+      Buff2,
+      OffsetStr,
+      Buff3,
+      Buff4,
+      Buff5,
+      Token
       );
     if (strnicmp (Token, "SALE_ENTRY", 10) == 0) {
       break;
@@ -2280,7 +2281,11 @@ Returns:
       //
       TokenAddress += BaseAddress &~IPF_CACHE_BIT;
 
-      fprintf (DestFile, "%s | %016I64X | %s | %s%s\n", Type, TokenAddress, Section, BaseToken, Token);
+#ifdef __GNUC__
+      fprintf (DestFile, "%s | %016lX | %s | %s%s\n", Type, TokenAddress, Section, BaseToken, Token);
+#else
+       fprintf (DestFile, "%s | %016I64X | %s | %s%s\n", Type, TokenAddress, Section, BaseToken, Token);
+#endif
     }
   }
 
@@ -2423,10 +2428,10 @@ Returns:
             Enable debug messages at level #.\n");
 }
 
-EFI_STATUS
+int
 main (
-  IN  UINTN  argc,
-  IN  CHAR8  **argv
+  IN  int  argc,
+  IN  char  **argv
   )
 /*++
 
@@ -2458,13 +2463,11 @@ Returns:
   UINT64         StartAddress2;
   UINT64         FwVolSize1;
   UINT64         FwVolSize2;
-  BOOLEAN      FirstRoundO;
-  BOOLEAN      FirstRoundB;
-  BOOLEAN      FirstRoundS;
-  EFI_STATUS  Status;
-  BOOLEAN      IsIA32;
-  FILE            *VtfFP;
-  CHAR8         *OutputFileName;
+  BOOLEAN       FirstRoundO;
+  BOOLEAN       FirstRoundB;
+  BOOLEAN       FirstRoundS;
+  EFI_STATUS    Status;
+  FILE          *VtfFP;
   CHAR8         *VtfFileName;
 
   SetUtilityName (UTILITY_NAME);
@@ -2674,7 +2677,7 @@ Returns:
       SymFileName[SymFileNameLen] = '\0';
     }
     if (DebugMode) {
-      DebugMsg(UTILITY_NAME, 0, DebugLevel, SymFileName);
+      DebugMsg(UTILITY_NAME, 0, DebugLevel, SymFileName, NULL);
     }
   }
 
@@ -2682,7 +2685,7 @@ Returns:
   // Call the GenVtfImage
   //
   if (DebugMode) {
-    DebugMsg(UTILITY_NAME, 0, DebugLevel, "Start to generate the VTF image\n");
+    DebugMsg(UTILITY_NAME, 0, DebugLevel, "Start to generate the VTF image\n", NULL);
   }
   Status = GenerateVtfImage (StartAddress1, FwVolSize1, StartAddress2, FwVolSize2, VtfFP);
 
@@ -2716,7 +2719,7 @@ ERROR:
   }
 
   if (DebugMode) {
-    DebugMsg(UTILITY_NAME, 0, DebugLevel, "VTF image generated successful\n");
+    DebugMsg(UTILITY_NAME, 0, DebugLevel, "VTF image generated successful\n", NULL);
   }
 
   if (VerboseMode) {
