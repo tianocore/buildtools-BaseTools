@@ -45,8 +45,9 @@ all: makerootdir subdirs $(MAKEROOT)/libs
 	@echo Finished building BaseTools C Tools with ARCH=$(ARCH)
 
 LIBRARIES = Common
-NON_BUILDABLE_APPLICATIONS = GenBootSector BootSectImage
+# NON_BUILDABLE_APPLICATIONS = GenBootSector BootSectImage
 APPLICATIONS = \
+  GnuGenBootSector \
   BootSectImage \
   EfiLdrImage \
   EfiRom \
