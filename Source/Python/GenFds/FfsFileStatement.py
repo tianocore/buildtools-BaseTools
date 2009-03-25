@@ -24,7 +24,7 @@ import subprocess
 from CommonDataClass.FdfClass import FileStatementClassObject
 from Common import EdkLogger
 from Common.BuildToolError import *
-from Common.Misc import GuidStructureStringToGuidString
+from Common.Misc import GuidStructureByteArrayToGuidString
 
 ## generate FFS from FILE
 #
@@ -52,7 +52,9 @@ class FileStatement (FileStatementClassObject) :
             if len(PcdValue) == 0:
                 EdkLogger.error("GenFds", GENFDS_ERROR, '%s NOT defined.' \
                             % (self.NameGuid))
-            RegistryGuidStr = GuidStructureStringToGuidString(PcdValue)
+            if PcdValue.startswith('{'):
+                PcdValue = GuidStructureByteArrayToGuidString(PcdValue)
+            RegistryGuidStr = PcdValue
             if len(RegistryGuidStr) == 0:
                 EdkLogger.error("GenFds", GENFDS_ERROR, 'GUID value for %s in wrong format.' \
                             % (self.NameGuid))

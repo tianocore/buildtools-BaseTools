@@ -20,7 +20,8 @@ import sys
 import subprocess
 import struct
 import array
-from Common.BuildToolError import *
+
+from Common import BuildToolError
 from Common import EdkLogger
 from Common.Misc import SaveFileOnChange
 

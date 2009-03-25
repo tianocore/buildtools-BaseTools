@@ -82,6 +82,40 @@ def GuidStringToGuidStructureString(Guid):
     Result += '}}'
     return Result
 
+## Convert GUID structure in byte array to xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+#
+#   @param      GuidValue   The GUID value in byte array
+#
+#   @retval     string      The GUID value in xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx format
+#
+def GuidStructureByteArrayToGuidString(GuidValue):
+    guidValueString = GuidValue.lower().replace("{", "").replace("}", "").replace(" ", "").replace(";", "")
+    guidValueList = guidValueString.split(",")
+    if len(guidValueList) != 16:
+        return ''
+        #EdkLogger.error(None, None, "Invalid GUID value string %s" % GuidValue)
+    try:
+        return "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x" % (
+                int(guidValueList[3], 16),
+                int(guidValueList[2], 16),
+                int(guidValueList[1], 16),
+                int(guidValueList[0], 16),
+                int(guidValueList[5], 16),
+                int(guidValueList[4], 16),
+                int(guidValueList[7], 16),
+                int(guidValueList[6], 16),
+                int(guidValueList[8], 16),
+                int(guidValueList[9], 16),
+                int(guidValueList[10], 16),
+                int(guidValueList[11], 16),
+                int(guidValueList[12], 16),
+                int(guidValueList[13], 16),
+                int(guidValueList[14], 16),
+                int(guidValueList[15], 16)
+                )
+    except:
+        return ''
+
 ## Convert GUID string in C structure style to xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 #
 #   @param      GuidValue   The GUID value in C structure format

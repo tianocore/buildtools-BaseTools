@@ -28,7 +28,7 @@ import RuleComplexFile
 from CommonDataClass.FdfClass import FfsInfStatementClassObject
 from Common.String import *
 from Common.Misc import PathClass
-from Common.Misc import GuidStructureStringToGuidString
+from Common.Misc import GuidStructureByteArrayToGuidString
 from Common import EdkLogger
 from Common.BuildToolError import *
 
@@ -45,7 +45,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         self.TargetOverrideList = []
         self.ShadowFromInfFile = None
         self.KeepRelocFromRule = None
-
+        self.InDsc = True
     ## __InfParse() method
     #
     #   Parse inf file to get module information
@@ -73,12 +73,13 @@ class FfsInfStatement(FfsInfStatementClassObject):
         # Get the InfClass object
         #
 
-        self.InfFileName = NormPath(self.InfFileName)
-        self.InfFileName = GenFdsGlobalVariable.MacroExtend(self.InfFileName, Dict, self.CurrentArch)
-        (self.SourceDir, InfName) = os.path.split(self.InfFileName)
+        PathClassObj = PathClass(self.InfFileName, GenFdsGlobalVariable.WorkSpaceDir)
+        if PathClassObj.Validate() != 0:
+            EdkLogger.warn("GenFds", GENFDS_ERROR, "File path %s upper/lower cases NOT match the one on file system." % (self.InfFileName))
+#        (self.SourceDir, InfName) = os.path.split(self.InfFileName)
         if self.CurrentArch != None:
 
-            Inf = GenFdsGlobalVariable.WorkSpace.BuildObject[PathClass(self.InfFileName, GenFdsGlobalVariable.WorkSpaceDir), self.CurrentArch]
+            Inf = GenFdsGlobalVariable.WorkSpace.BuildObject[PathClassObj, self.CurrentArch]
             #
             # Set Ffs BaseName, MdouleGuid, ModuleType, Version, OutputPath
             #
@@ -89,21 +90,26 @@ class FfsInfStatement(FfsInfStatementClassObject):
                 self.ModuleType = Inf.ComponentType
             self.VersionString = Inf.Version
             self.BinFileList = Inf.Binaries
+            self.SourceFileList = Inf.Sources
             if self.KeepReloc == None and Inf.Shadow:
                 self.ShadowFromInfFile = Inf.Shadow
 
         else:
-            Inf = GenFdsGlobalVariable.WorkSpace.BuildObject[PathClass(self.InfFileName, GenFdsGlobalVariable.WorkSpaceDir), 'COMMON']
+            Inf = GenFdsGlobalVariable.WorkSpace.BuildObject[PathClassObj, 'COMMON']
             self.BaseName = Inf.BaseName
             self.ModuleGuid = Inf.Guid
             self.ModuleType = Inf.ModuleType
             self.VersionString = Inf.Version
             self.BinFileList = Inf.Binaries
+            self.SourceFileList = Inf.Sources
             if self.BinFileList == []:
                 EdkLogger.error("GenFds", GENFDS_ERROR,
                                 "INF %s specified in FDF could not be found in build ARCH %s!" \
                                 % (self.InfFileName, GenFdsGlobalVariable.ArchList))
-
+        
+        if len(self.SourceFileList) != 0 and not self.InDsc:
+            EdkLogger.warn("GenFds", GENFDS_ERROR, "Module %s NOT found in DSC file; Is it really a binary module?" % (self.InfFileName))
+            
         GenFdsGlobalVariable.VerboseLogger( "BaseName : %s" %self.BaseName)
         GenFdsGlobalVariable.VerboseLogger("ModuleGuid : %s" %self.ModuleGuid)
         GenFdsGlobalVariable.VerboseLogger("ModuleType : %s" %self.ModuleType)
@@ -254,6 +260,11 @@ class FfsInfStatement(FfsInfStatementClassObject):
         if PlatformDataBase != None:
             if InfFileKey in (PlatformDataBase.Modules):
                 DscArchList.append ('IPF')
+                
+        PlatformDataBase = GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'EBC']
+        if PlatformDataBase != None:
+            if InfFileKey in (PlatformDataBase.Modules):
+                DscArchList.append ('EBC')
 
         return DscArchList
 
@@ -291,11 +302,13 @@ class FfsInfStatement(FfsInfStatementClassObject):
             UseArchList = []
             UseArchList.append(self.UseArch)
             ArchList = list(set (UseArchList) & set (ArchList))
-            
-        if len(PlatformArchList) == 0:    
-            EdkLogger.warn("GenFds", GENFDS_ERROR, "Module %s NOT found in DSC file; Is it really a binary module?" % (self.InfFileName))
-            GenFdsGlobalVariable.InfLogger ("If it is, ignore this warning message.")
         
+        self.InfFileName = NormPath(self.InfFileName)
+        if len(PlatformArchList) == 0:    
+            self.InDsc = False
+            PathClassObj = PathClass(self.InfFileName, GenFdsGlobalVariable.WorkSpaceDir)
+            if PathClassObj.Validate() != 0:
+                EdkLogger.warn("GenFds", GENFDS_ERROR, "File path %s upper/lower cases NOT match the one on file system." % (self.InfFileName))
         if len(ArchList) == 1:
             Arch = ArchList[0]
             return Arch
@@ -305,7 +318,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
             else:
                 EdkLogger.error("GenFds", GENFDS_ERROR, "Module built under multiple ARCHs %s. Not able to determine which output to put into flash for Module %s !" % (str(ArchList), self.InfFileName))
         else:
-            EdkLogger.error("GenFds", GENFDS_ERROR, "Module %s appears under ARCH %s in platform %s, but current target ARCH is %s, so NO build output could be put into flash." % (self.InfFileName, str(PlatformArchList), GenFdsGlobalVariable.ActivePlatform, str(TargetArchList)))
+            EdkLogger.error("GenFds", GENFDS_ERROR, "Module %s appears under ARCH %s in platform %s, but current deduced ARCH is %s, so NO build output could be put into flash." % (self.InfFileName, str(PlatformArchList), GenFdsGlobalVariable.ActivePlatform, str(TargetArchList)))
 
     ## __GetEFIOutPutPath__() method
     #
@@ -456,7 +469,9 @@ class FfsInfStatement(FfsInfStatementClassObject):
             if len(PcdValue) == 0:
                 EdkLogger.error("GenFds", GENFDS_ERROR, '%s NOT defined.' \
                             % (Rule.NameGuid))
-            RegistryGuidStr = GuidStructureStringToGuidString(PcdValue)
+            if PcdValue.startswith('{'):
+                PcdValue = GuidStructureByteArrayToGuidString(PcdValue)
+            RegistryGuidStr = PcdValue
             if len(RegistryGuidStr) == 0:
                 EdkLogger.error("GenFds", GENFDS_ERROR, 'GUID value for %s in wrong format.' \
                             % (Rule.NameGuid))
@@ -514,7 +529,9 @@ class FfsInfStatement(FfsInfStatementClassObject):
             if len(PcdValue) == 0:
                 EdkLogger.error("GenFds", GENFDS_ERROR, '%s NOT defined.' \
                             % (Rule.NameGuid))
-            RegistryGuidStr = GuidStructureStringToGuidString(PcdValue)
+            if PcdValue.startswith('{'):
+                PcdValue = GuidStructureByteArrayToGuidString(PcdValue)
+            RegistryGuidStr = PcdValue
             if len(RegistryGuidStr) == 0:
                 EdkLogger.error("GenFds", GENFDS_ERROR, 'GUID value for %s in wrong format.' \
                             % (Rule.NameGuid))
