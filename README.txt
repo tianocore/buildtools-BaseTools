@@ -33,7 +33,8 @@ packages to build all the C BaseTools:
 
 === Python sqlite3 module ===
 On Windows, the cx_freeze will not copy the sqlite3.dll to the frozen 
-binary directory. Please copy it manually from <PythonHome>\DLLs.
+binary directory (the same directory as build.exe and GenFds.exe). 
+Please copy it manually from <PythonHome>\DLLs.
 
 The Python distributed with most recent Linux will have sqlite3 module
 built in. If not, please install sqlit3 package separately.
