@@ -237,15 +237,6 @@ class MetaFileParser(object):
                 File=self.MetaFile,
                 Line=self._LineIndex+1
                 )
-        if not self._ValueList[1].endswith("_FLAGS"):
-            EdkLogger.error(
-                'Parser',
-                FORMAT_INVALID,
-                "Only <TARGET>_<TOOLCHAIN>_<ARCH>_<TOOL>_FLAGS is allowed",
-                ExtraData=self._CurrentLine,
-                File=self.MetaFile,
-                Line=self._LineIndex+1
-                )
 
     _SectionParser  = {}
     Table           = property(_GetTable)

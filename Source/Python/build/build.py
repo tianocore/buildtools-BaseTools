@@ -801,9 +801,9 @@ class Build():
                                     ExtraData="No active platform specified in target.txt or command line! Nothing can be built.\n")
 
             self.PlatformFile = PathClass(NormFile(PlatformFile, self.WorkspaceDir), self.WorkspaceDir)
-            ErrorCode = self.PlatformFile.Validate(".dsc", False)
+            ErrorCode, ErrorInfo = self.PlatformFile.Validate(".dsc", False)
             if ErrorCode != 0:
-                EdkLogger.error("build", ErrorCode, ExtraData=str(self.PlatformFile))
+                EdkLogger.error("build", ErrorCode, ExtraData=ErrorInfo)
 
     ## Initialize build configuration
     #
@@ -811,9 +811,9 @@ class Build():
     #   command line and target.txt, then get the final build configurations.
     #
     def InitBuild(self):
-        ErrorCode = self.PlatformFile.Validate(".dsc")
+        ErrorCode, ErrorInfo = self.PlatformFile.Validate(".dsc")
         if ErrorCode != 0:
-            EdkLogger.error("build", ErrorCode, ExtraData=str(self.PlatformFile))
+            EdkLogger.error("build", ErrorCode, ExtraData=ErrorInfo)
 
         # create metafile database
         self.Db.InitDatabase()
@@ -1312,21 +1312,21 @@ def Main():
 
         if Option.ModuleFile:
             Option.ModuleFile = PathClass(Option.ModuleFile, Workspace)
-            ErrorCode = Option.ModuleFile.Validate(".inf", False)
+            ErrorCode, ErrorInfo = Option.ModuleFile.Validate(".inf", False)
             if ErrorCode != 0:
-                EdkLogger.error("build", ErrorCode, ExtraData=str(Option.ModuleFile))
+                EdkLogger.error("build", ErrorCode, ExtraData=ErrorInfo)
 
         if Option.PlatformFile != None:
             Option.PlatformFile = PathClass(Option.PlatformFile, Workspace)
-            ErrorCode = Option.PlatformFile.Validate(".dsc", False)
+            ErrorCode, ErrorInfo = Option.PlatformFile.Validate(".dsc", False)
             if ErrorCode != 0:
-                EdkLogger.error("build", ErrorCode, ExtraData=str(Option.PlatformFile))
+                EdkLogger.error("build", ErrorCode, ExtraData=ErrorInfo)
 
         if Option.FdfFile != None:
             Option.FdfFile = PathClass(Option.FdfFile, Workspace)
-            ErrorCode = Option.FdfFile.Validate(".fdf", False)
+            ErrorCode, ErrorInfo = Option.FdfFile.Validate(".fdf", False)
             if ErrorCode != 0:
-                EdkLogger.error("build", ErrorCode, ExtraData=str(Option.FdfFile))
+                EdkLogger.error("build", ErrorCode, ExtraData=ErrorInfo)
 
         MyBuild = Build(Target, Workspace, Option.PlatformFile, Option.ModuleFile,
                         Option.TargetArch, Option.ToolChain, Option.BuildTarget,

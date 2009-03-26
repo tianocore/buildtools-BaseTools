@@ -172,10 +172,10 @@ class DscBuildData(PlatformBuildClassObject):
                                     ExtraData=self._OutputDirectory)
             elif Name == TAB_DSC_DEFINES_FLASH_DEFINITION:
                 self._FlashDefinition = PathClass(NormPath(Record[1], self._Macros), GlobalData.gWorkspace)
-                ErrorCode = self._FlashDefinition.Validate('.fdf')
+                ErrorCode, ErrorInfo = self._FlashDefinition.Validate('.fdf')
                 if ErrorCode != 0:
-                    EdkLogger.error('build', ErrorCode, File=self.MetaFile, 
-                                    ExtraData=self._FlashDefinition.File, Line=Record[-1])
+                    EdkLogger.error('build', ErrorCode, File=self.MetaFile, Line=Record[-1],
+                                    ExtraData=ErrorInfo)
             elif Name == TAB_DSC_DEFINES_SUPPORTED_ARCHITECTURES:
                 self._SupArchList = GetSplitValueList(Record[1], TAB_VALUE_SPLIT)
             elif Name == TAB_DSC_DEFINES_BUILD_TARGETS:
@@ -339,9 +339,10 @@ class DscBuildData(PlatformBuildClassObject):
             LineNo = Record[6]
 
             # check the file validation
-            ErrorCode = ModuleFile.Validate('.inf')
+            ErrorCode, ErrorInfo = ModuleFile.Validate('.inf')
             if ErrorCode != 0:
-                EdkLogger.error('build', ErrorCode, File=self.MetaFile, ExtraData=str(ModuleFile), Line=LineNo)
+                EdkLogger.error('build', ErrorCode, File=self.MetaFile, Line=LineNo,
+                                ExtraData=ErrorInfo)
             # Check duplication
             if ModuleFile in self._Modules:
                 EdkLogger.error('build', FILE_DUPLICATED, File=self.MetaFile, ExtraData=str(ModuleFile), Line=LineNo)
@@ -364,9 +365,10 @@ class DscBuildData(PlatformBuildClassObject):
                 LineNo = Record[-1]
 
                 # check the file validation
-                ErrorCode = LibraryPath.Validate('.inf')
+                ErrorCode, ErrorInfo = LibraryPath.Validate('.inf')
                 if ErrorCode != 0:
-                    EdkLogger.error('build', ErrorCode, ExtraData=LibraryPath, File=self.MetaFile, Line=LineNo)
+                    EdkLogger.error('build', ErrorCode, File=self.MetaFile, Line=LineNo,
+                                    ExtraData=ErrorInfo)
 
                 if LibraryClass == '' or LibraryClass == 'NULL':
                     self._NullLibraryNumber += 1
@@ -433,13 +435,15 @@ class DscBuildData(PlatformBuildClassObject):
             RecordList = self._RawData[MODEL_EFI_LIBRARY_CLASS, self._Arch]
             Macros = {"EDK_SOURCE":GlobalData.gEcpSource, "EFI_SOURCE":GlobalData.gEfiSource}
             Macros.update(self._Macros)
-            for LibraryClass, LibraryInstance, Dummy, Arch, ModuleType, Dummy, LineNo in RecordList:
+            for Record in RecordList:
+                LibraryClass, LibraryInstance, Dummy, Arch, ModuleType, Dummy, LineNo = Record
                 LibraryClassSet.add(LibraryClass)
                 LibraryInstance = PathClass(NormPath(LibraryInstance, Macros), GlobalData.gWorkspace, Arch=self._Arch)
                 # check the file validation
-                ErrorCode = LibraryInstance.Validate('.inf')
+                ErrorCode, ErrorInfo = LibraryInstance.Validate('.inf')
                 if ErrorCode != 0:
-                    EdkLogger.error('build', ErrorCode, File=self.MetaFile, ExtraData=LibraryInstance, Line=LineNo)
+                    EdkLogger.error('build', ErrorCode, File=self.MetaFile, Line=LineNo,
+                                    ExtraData=ErrorInfo)
 
                 if ModuleType != 'COMMON' and ModuleType not in SUP_MODULE_LIST:
                     EdkLogger.error('build', OPTION_UNKNOWN, "Unknown module type [%s]" % ModuleType,
@@ -464,9 +468,10 @@ class DscBuildData(PlatformBuildClassObject):
                 File = PathClass(NormPath(Record[0], Macros), GlobalData.gWorkspace, Arch=self._Arch)
                 LineNo = Record[-1]
                 # check the file validation
-                ErrorCode = File.Validate('.inf')
+                ErrorCode, ErrorInfo = File.Validate('.inf')
                 if ErrorCode != 0:
-                    EdkLogger.error('build', ErrorCode, ExtraData=File, File=self.MetaFile, Line=LineNo)
+                    EdkLogger.error('build', ErrorCode, File=self.MetaFile, Line=LineNo,
+                                    ExtraData=ErrorInfo)
                 if File not in self._LibraryInstances:
                     self._LibraryInstances.append(File)
                 #
@@ -943,9 +948,9 @@ class DecBuildData(PackageBuildClassObject):
                 File = PathClass(NormPath(Record[0], Macros), self._PackageDir, Arch=self._Arch)
                 LineNo = Record[-1]
                 # validate the path
-                ErrorCode = File.Validate()
+                ErrorCode, ErrorInfo = File.Validate()
                 if ErrorCode != 0:
-                    EdkLogger.error('build', ErrorCode, ExtraData=File, File=self.MetaFile, Line=LineNo)
+                    EdkLogger.error('build', ErrorCode, ExtraData=ErrorInfo, File=self.MetaFile, Line=LineNo)
 
                 # avoid duplicate include path
                 if File not in self._Includes:
@@ -967,9 +972,9 @@ class DecBuildData(PackageBuildClassObject):
             for LibraryClass, File, Dummy, Arch, ID, LineNo in RecordList:
                 File = PathClass(NormPath(File, Macros), self._PackageDir, Arch=self._Arch)
                 # check the file validation
-                ErrorCode = File.Validate()
+                ErrorCode, ErrorInfo = File.Validate()
                 if ErrorCode != 0:
-                    EdkLogger.error('build', ErrorCode, ExtraData=File, File=self.MetaFile, Line=LineNo)
+                    EdkLogger.error('build', ErrorCode, ExtraData=ErrorInfo, File=self.MetaFile, Line=LineNo)
                 LibraryClassSet.add(LibraryClass)
                 LibraryClassDict[Arch, LibraryClass] = File
             self._LibraryClasses = sdict()
@@ -1318,9 +1323,9 @@ class InfBuildData(ModuleBuildClassObject):
                     Macros.update(self._Macros)
                     File = PathClass(NormPath(Value, Macros), self._ModuleDir, Arch=self._Arch)
                     # check the file validation
-                    ErrorCode = File.Validate(".dxs", CaseSensitive=False)
+                    ErrorCode, ErrorInfo = File.Validate(".dxs", CaseSensitive=False)
                     if ErrorCode != 0:
-                        EdkLogger.error('build', ErrorCode, ExtraData=File,
+                        EdkLogger.error('build', ErrorCode, ExtraData=ErrorInfo,
                                         File=self.MetaFile, Line=LineNo)
                     if self.Sources == None:
                         self._Sources = []
@@ -1527,9 +1532,9 @@ class InfBuildData(ModuleBuildClassObject):
 
                 File = PathClass(NormPath(Record[1], Macros), self._ModuleDir, '', FileType, True, self._Arch, '', Target)
                 # check the file validation
-                ErrorCode = File.Validate()
+                ErrorCode, ErrorInfo = File.Validate()
                 if ErrorCode != 0:
-                    EdkLogger.error('build', ErrorCode, ExtraData=File, File=self.MetaFile, Line=LineNo)
+                    EdkLogger.error('build', ErrorCode, ExtraData=ErrorInfo, File=self.MetaFile, Line=LineNo)
                 self._Binaries.append(File)
         return self._Binaries
 
@@ -1552,10 +1557,10 @@ class InfBuildData(ModuleBuildClassObject):
                     File = PathClass(NormPath(Record[0], Macros), self._ModuleDir, self._SourceOverridePath,
                                      '', False, self._Arch, ToolChainFamily, '', TagName, ToolCode)
                     # check the file validation
-                    ErrorCode = File.Validate(CaseSensitive=False)
+                    ErrorCode, ErrorInfo = File.Validate(CaseSensitive=False)
                     if ErrorCode != 0:
                         if File.Ext == '.h':
-                            EdkLogger.warn('build', 'Include file not found', ExtraData=File,
+                            EdkLogger.warn('build', 'Include file not found', ExtraData=ErrorInfo,
                                            File=self.MetaFile, Line=LineNo)
                             continue
                         else:
@@ -1565,9 +1570,9 @@ class InfBuildData(ModuleBuildClassObject):
                     File = PathClass(NormPath(Record[0], Macros), self._ModuleDir, '',
                                      '', False, self._Arch, ToolChainFamily, '', TagName, ToolCode)
                     # check the file validation
-                    ErrorCode = File.Validate()
+                    ErrorCode, ErrorInfo = File.Validate()
                     if ErrorCode != 0:
-                        EdkLogger.error('build', ErrorCode, ExtraData=File, File=self.MetaFile, Line=LineNo)
+                        EdkLogger.error('build', ErrorCode, ExtraData=ErrorInfo, File=self.MetaFile, Line=LineNo)
 
                 self._Sources.append(File)
         return self._Sources
@@ -1703,9 +1708,9 @@ class InfBuildData(ModuleBuildClassObject):
                 File = PathClass(NormPath(Record[0], Macros), GlobalData.gWorkspace, Arch=self._Arch)
                 LineNo = Record[-1]
                 # check the file validation
-                ErrorCode = File.Validate('.dec')
+                ErrorCode, ErrorInfo = File.Validate('.dec')
                 if ErrorCode != 0:
-                    EdkLogger.error('build', ErrorCode, ExtraData=File, File=self.MetaFile, Line=LineNo)
+                    EdkLogger.error('build', ErrorCode, ExtraData=ErrorInfo, File=self.MetaFile, Line=LineNo)
                 # parse this package now. we need it to get protocol/ppi/guid value
                 Package = self._Bdb[File, self._Arch]
                 self._Packages.append(Package)

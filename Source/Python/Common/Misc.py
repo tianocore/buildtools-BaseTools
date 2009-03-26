@@ -1289,15 +1289,18 @@ class PathClass(object):
         if GlobalData.gCaseInsensitive:
             CaseSensitive = False
         if Type and Type.lower() != self.Type:
-            return FILE_TYPE_MISMATCH
+            return FILE_TYPE_MISMATCH, '%s (expect %s but got %s)' % (self.File, Type, self.Type)
 
         RealFile, RealRoot = RealPath2(self.File, self.Root, self.AlterRoot)
         if not RealRoot and not RealFile:
-            return FILE_NOT_FOUND
+            return FILE_NOT_FOUND, self.File
 
+        ErrorCode = 0
+        ErrorInfo = ''
         if RealRoot != self.Root or RealFile != self.File:
             if CaseSensitive and (RealFile != self.File or (RealRoot != self.Root and RealRoot != self.AlterRoot)):
-                return FILE_CASE_MISMATCH
+                ErrorCode = FILE_CASE_MISMATCH
+                ErrorInfo = self.File + '\n\t' + RealFile + " [in file system]"
 
             self.SubDir, self.Name = os.path.split(RealFile)
             self.BaseName, self.Ext = os.path.splitext(self.Name)
@@ -1308,7 +1311,7 @@ class PathClass(object):
             self.File = RealFile
             self.Root = RealRoot
             self.Path = os.path.join(RealRoot, RealFile)
-        return 0
+        return ErrorCode, ErrorInfo
 
     Key = property(_GetFileKey)
 
