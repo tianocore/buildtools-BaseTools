@@ -31,22 +31,10 @@ packages to build all the C BaseTools:
 
   sudo apt-get install build-essentials uuid-dev
 
-=== Python antlr3 module ===
+=== Python sqlite3 module ===
+On Windows, the cx_freeze will not copy the sqlite3.dll to the frozen 
+binary directory. Please copy it manually from <PythonHome>\DLLs.
 
-Installation of the anltr3 python module is required to use the Python
-BaseTools code.  This module can be installed from:
-  http://www.antlr.org/download/Python/
-
-You make use of the python easy_install command to install the antlr3 module.
-To 'install' the easy_install python command:
-  On Ubuntu, install the python-setuptools package:
-    sudo apt-get install python-setuptools
-  Or, refer to this web page:
-    http://wiki.python.org/moin/EasyInstall
-
-After you have easy_install available, you can use it to install the
-antlr3 module (You may need to check http://www.antlr.org/download/Python
-to see if there is a newer version):
-  sudo easy_install \
-    http://www.antlr.org/download/Python/antlr_python_runtime-3.0.1-py2.5.egg
+The Python distributed with most recent Linux will have sqlite3 module
+built in. If not, please install sqlit3 package separately.
 
