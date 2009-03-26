@@ -54,7 +54,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
     #   @param  Dict        dictionary contains macro and value pair
     #
     def __InfParse__(self, Dict = {}):
-        
+
         GenFdsGlobalVariable.VerboseLogger( " Begine parsing INf file : %s" %self.InfFileName)
 
         self.InfFileName = self.InfFileName.replace('$(WORKSPACE)', '')
@@ -67,15 +67,16 @@ class FfsInfStatement(FfsInfStatementClassObject):
                 InfPath = GenFdsGlobalVariable.ReplaceWorkspaceMacro(InfPath)
                 if not os.path.exists(InfPath):
                     EdkLogger.error("GenFds", GENFDS_ERROR, "Non-existant Module %s !" % (self.InfFileName))
-        
+
         self.CurrentArch = self.GetCurrentArch()
         #
         # Get the InfClass object
         #
 
         PathClassObj = PathClass(self.InfFileName, GenFdsGlobalVariable.WorkSpaceDir)
-        if PathClassObj.Validate() != 0:
-            EdkLogger.warn("GenFds", GENFDS_ERROR, "File path %s upper/lower cases NOT match the one on file system." % (self.InfFileName))
+        ErrorCode, ErrorInfo = PathClassObj.Validate()
+        if ErrorCode != 0:
+            EdkLogger.error("GenFds", ErrorCode, ExtraData=ErrorInfo)
 #        (self.SourceDir, InfName) = os.path.split(self.InfFileName)
         if self.CurrentArch != None:
 
@@ -106,10 +107,10 @@ class FfsInfStatement(FfsInfStatementClassObject):
                 EdkLogger.error("GenFds", GENFDS_ERROR,
                                 "INF %s specified in FDF could not be found in build ARCH %s!" \
                                 % (self.InfFileName, GenFdsGlobalVariable.ArchList))
-        
+
         if len(self.SourceFileList) != 0 and not self.InDsc:
             EdkLogger.warn("GenFds", GENFDS_ERROR, "Module %s NOT found in DSC file; Is it really a binary module?" % (self.InfFileName))
-            
+
         GenFdsGlobalVariable.VerboseLogger( "BaseName : %s" %self.BaseName)
         GenFdsGlobalVariable.VerboseLogger("ModuleGuid : %s" %self.ModuleGuid)
         GenFdsGlobalVariable.VerboseLogger("ModuleType : %s" %self.ModuleType)
@@ -243,7 +244,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
     #   @retval list        Arch list
     #
     def __GetPlatformArchList__(self):
-        
+
         InfFileKey = os.path.normpath(os.path.join(GenFdsGlobalVariable.WorkSpaceDir, self.InfFileName))
         DscArchList = []
         PlatformDataBase = GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'IA32']
@@ -260,7 +261,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         if PlatformDataBase != None:
             if InfFileKey in (PlatformDataBase.Modules):
                 DscArchList.append ('IPF')
-                
+
         PlatformDataBase = GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'EBC']
         if PlatformDataBase != None:
             if InfFileKey in (PlatformDataBase.Modules):
@@ -276,16 +277,16 @@ class FfsInfStatement(FfsInfStatementClassObject):
     #   @retval list        Arch list
     #
     def GetCurrentArch(self) :
-        
+
         TargetArchList = GenFdsGlobalVariable.ArchList
-            
+
         PlatformArchList = self.__GetPlatformArchList__()
-        
+
         CurArchList = TargetArchList
         if PlatformArchList != []:
             CurArchList = list(set (TargetArchList) & set (PlatformArchList))
         GenFdsGlobalVariable.VerboseLogger ("Valid target architecture(s) is : " + " ".join(CurArchList))
-        
+
         ArchList = []
         if self.KeyStringList != []:
             for Key in self.KeyStringList:
@@ -297,18 +298,19 @@ class FfsInfStatement(FfsInfStatementClassObject):
                     self.TargetOverrideList.append(Target)
         else:
             ArchList = CurArchList
-        
+
         if self.UseArch != None:
             UseArchList = []
             UseArchList.append(self.UseArch)
             ArchList = list(set (UseArchList) & set (ArchList))
-        
+
         self.InfFileName = NormPath(self.InfFileName)
-        if len(PlatformArchList) == 0:    
+        if len(PlatformArchList) == 0:
             self.InDsc = False
             PathClassObj = PathClass(self.InfFileName, GenFdsGlobalVariable.WorkSpaceDir)
-            if PathClassObj.Validate() != 0:
-                EdkLogger.warn("GenFds", GENFDS_ERROR, "File path %s upper/lower cases NOT match the one on file system." % (self.InfFileName))
+            ErrorCode, ErrorInfo = PathClassObj.Validate()
+            if ErrorCode != 0:
+                EdkLogger.error("GenFds", ErrorCode, ExtraData=ErrorInfo)
         if len(ArchList) == 1:
             Arch = ArchList[0]
             return Arch
@@ -476,7 +478,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                 EdkLogger.error("GenFds", GENFDS_ERROR, 'GUID value for %s in wrong format.' \
                             % (Rule.NameGuid))
             self.ModuleGuid = RegistryGuidStr
-                
+
         GenFdsGlobalVariable.GenerateFfs(FfsOutput, InputSection,
                                          Ffs.Ffs.FdfFvFileTypeToFileType[Rule.FvFileType],
                                          self.ModuleGuid, Fixed=Rule.Fixed,
@@ -523,7 +525,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
     #   @retval string      Generated FFS file name
     #
     def __GenComplexFileFfs__(self, Rule, InputFile, Alignments):
-        
+
         if Rule.NameGuid != None and Rule.NameGuid.startswith('PCD('):
             PcdValue = GenFdsGlobalVariable.GetPcdValue(Rule.NameGuid)
             if len(PcdValue) == 0:
@@ -536,7 +538,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                 EdkLogger.error("GenFds", GENFDS_ERROR, 'GUID value for %s in wrong format.' \
                             % (Rule.NameGuid))
             self.ModuleGuid = RegistryGuidStr
-        
+
         FfsOutput = os.path.join( self.OutputPath, self.ModuleGuid + '.ffs')
         GenFdsGlobalVariable.GenerateFfs(FfsOutput, InputFile,
                                          Ffs.Ffs.FdfFvFileTypeToFileType[Rule.FvFileType],
