@@ -13,7 +13,7 @@
 
 """ This program converts EDK II MSA files into EDK II Extended INF format files """
 
-import os, re, sys, xml.dom.minidom
+import os, re, sys, fnmatch, xml.dom.minidom
 from optparse import OptionParser
 from AutoGenExterns import *
 from Common.XmlRoutines import  *             # XmlParseFile, XmlElement, XmlAttribute, XmlList, XmlElementData, XmlNode
@@ -744,24 +744,47 @@ def main():
             if (options.debug and options.verbose > 2):
                 print "PKG:", file
 
-            Spd = openSpd(os.path.join(workspace, file))
-            if (Spd == 'None'):
-                print "Could not parse the Package file:", file
-                sys.exit(1)
+            if fnmatch.fnmatch(file, "*.dec"):
+                print "parsing " + os.path.join(workspace, file)
+                PackageGuid = ""
+                PackageVersion = ""
+                try:
+                    Lines = open(os.path.join(workspace, file)).readlines()
+                except:
+                    print "Could not parse the Package file:", file
+                    sys.exit(1)
+                    
+                for Line in Lines:
+                    Line = Line.split("#")[0]
+                    Items = Line.split("=")
+                    if len(Items) != 2:
+                        continue
 
-            path = os.path.split(file)[0]
-            file = file.replace(".nspd", ".dec")
-            file = file.replace(".spd", ".dec")
+                    Key = Items[0].strip().upper()
+                    if Key == "PACKAGE_GUID":
+                        PackageGuid = Items[1].strip()
+                    if Key == "PACKAGE_VERSION":
+                        PackageVersion = Items[1].strip()
 
-            try:
-                PackageGuid = str(XmlElement(Spd, SpdHeader + "GuidValue"))
-            except:
-                pass
+            else:
+                Spd = openSpd(os.path.join(workspace, file))
+                if (Spd == 'None'):
+                    print "Could not parse the Package file:", file
+                    sys.exit(1)
 
-            try:
-                PackageVersion = str(XmlElement(Spd, SpdHeader + "Version"))
-            except:
-                pass
+                path = os.path.split(file)[0]
+                file = file.replace(".nspd", ".dec")
+                file = file.replace(".spd", ".dec")
+
+                try:
+                    PackageGuid = str(XmlElement(Spd, SpdHeader + "GuidValue"))
+                except:
+                    pass
+
+                try:
+                    PackageVersion = str(XmlElement(Spd, SpdHeader + "Version"))
+                except:
+                    pass
 
             file = file + "|" + PackageGuid + "|" + PackageVersion
             PkgDb.insert(0, file)
@@ -848,8 +871,6 @@ def main():
                     if ((len(Name) > 0) and (len(Header) > 0)):
                         line = Name + "|" + os.path.join(path, Header)
                         HeaderLocations.insert(0, str(line))
-
-            Spd.unlink()
 
     PkgList = []
     PkgListIa32 = []
@@ -2433,7 +2454,8 @@ def main():
         Output.append(UserExtensionSection)
         if (options.debug):
             print UserExtensionSection
-  
+
+    print "write file", outputFile
     if (options.autowrite):
         fo = open(outputFile, "w")
         for Section in Output[:]:
