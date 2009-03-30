@@ -193,20 +193,13 @@ def main():
         pass
 
 
-    FdbFile = ""
-    FdbPath = os.path.join(workspace, "Tools")
-    FdbPath = os.path.join(FdbPath, "Conf")
+    FdbPath = os.path.join(workspace, "Conf")
     FdbPath = os.path.join(FdbPath, "FrameworkDatabase.db")
     if os.path.exists(FdbPath):
         FdbFile = FdbPath
     else:
-        FdbPath = os.path.join(workspace, "Conf")
-        FdbPath = os.path.join(FdbPath, "FrameworkDatabase.db")
-        if os.path.exists(FdbPath):
-            FdbFile = FdbPath
-        else:
-            print "ERROR: E0001: WORKSPACE does not contain the FrameworkDatabase File.\n  Please run EdkSetup from the EDK II install directory.\n"
-            sys.exit(1)
+        print "ERROR: E0001: WORKSPACE does not contain the FrameworkDatabase File.\n  Please run EdkSetup from the EDK II install directory.\n"
+        sys.exit(1)
 
     Fdb = openDatabase(FdbFile)
     if (Fdb == 'None'):
