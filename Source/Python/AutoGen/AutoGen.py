@@ -316,6 +316,13 @@ class WorkspaceAutoGen(AutoGen):
 #  file in order to generate makefile for platform.
 #
 class PlatformAutoGen(AutoGen):
+    #
+    # Used to store all PCDs for both PEI and DXE phase, in order to generate 
+    # correct PCD database
+    # 
+    _DynaPcdList_ = []
+    _NonDynaPcdList_ = []
+
     ## The real constructor of PlatformAutoGen
     #
     #  This method is not supposed to be called by users of PlatformAutoGen. It's
@@ -618,9 +625,6 @@ class PlatformAutoGen(AutoGen):
     #  Gather dynamic PCDs list from each module and their settings from platform
     #
     def _GetPcdList(self):
-        self._NonDynamicPcdList = []
-        self._DynamicPcdList = []
-
         # for gathering error information
         NoDatumTypePcdList = set()
 
@@ -629,11 +633,6 @@ class PlatformAutoGen(AutoGen):
             M = ModuleAutoGen(self.Workspace, F, self.BuildTarget, self.ToolChain, self.Arch, self.MetaFile)
             #GuidValue.update(M.Guids)
             for PcdFromModule in M.ModulePcdList+M.LibraryPcdList:
-                # check if the setting of the PCD is found in platform
-                #if not PcdFromModule.IsOverrided:
-                #    NotFoundPcdList.add("%s [%s]" % (" | ".join(Key), F))
-                #    continue
-
                 # make sure that the "VOID*" kind of datum has MaxDatumSize set
                 if PcdFromModule.DatumType == "VOID*" and PcdFromModule.MaxDatumSize == None:
                     NoDatumTypePcdList.add("%s.%s [%s]" % (PcdFromModule.TokenSpaceGuidCName, PcdFromModule.TokenCName, F))
@@ -647,14 +646,14 @@ class PlatformAutoGen(AutoGen):
                     #
                     if M.ModuleType in ["PEIM", "PEI_CORE"]:
                         PcdFromModule.Phase = "PEI"
-                    if PcdFromModule not in self._DynamicPcdList:
-                        self._DynamicPcdList.append(PcdFromModule)
+                    if PcdFromModule not in self._DynaPcdList_:
+                        self._DynaPcdList_.append(PcdFromModule)
                     elif PcdFromModule.Phase == 'PEI':
                         # overwrite any the same PCD existing, if Phase is PEI
-                        Index = self._DynamicPcdList.index(PcdFromModule)
-                        self._DynamicPcdList[Index] = PcdFromModule
-                elif PcdFromModule not in self._NonDynamicPcdList:
-                    self._NonDynamicPcdList.append(PcdFromModule)
+                        Index = self._DynaPcdList_.index(PcdFromModule)
+                        self._DynaPcdList_[Index] = PcdFromModule
+                elif PcdFromModule not in self._NonDynaPcdList_:
+                    self._NonDynaPcdList_.append(PcdFromModule)
 
         # print out error information and break the build, if error found
         if len(NoDatumTypePcdList) > 0:
@@ -663,6 +662,8 @@ class PlatformAutoGen(AutoGen):
                             File=self.MetaFile,
                             ExtraData="\n\tPCD(s) without MaxDatumSize:\n\t\t%s\n"
                                       % NoDatumTypePcdListString)
+        self._NonDynamicPcdList = self._NonDynaPcdList_
+        self._DynamicPcdList = self._DynaPcdList_
 
     ## Get list of non-dynamic PCDs
     def _GetNonDynamicPcdList(self):
