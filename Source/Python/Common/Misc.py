@@ -326,6 +326,8 @@ class DirCache:
     # =[] operator
     def __getitem__(self, Path):
         Path = Path[len(os.path.commonprefix([Path, self._Root])):]
+        if not Path:
+            return self._Root
         if Path and Path[0] == os.path.sep:
             Path = Path[1:]
         Path = Path.upper()

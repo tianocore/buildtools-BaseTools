@@ -1301,9 +1301,15 @@ class InfBuildData(ModuleBuildClassObject):
         # Retrieve information in sections specific to R8.x modules
         #
         if self._AutoGenVersion >= 0x00010005:   # _AutoGenVersion may be None, which is less than anything
+            if not self._ModuleType:
+                EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE,
+                                "MODULE_TYPE is not given", File=self.MetaFile)
             self._BuildType = self._ModuleType.upper()
         else:
             self._BuildType = self._ComponentType.upper()
+            if not self._ComponentType:
+                EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE,
+                                "COMPONENT_TYPE is not given", File=self.MetaFile)
             if self._ComponentType in self._MODULE_TYPE_:
                 self._ModuleType = self._MODULE_TYPE_[self._ComponentType]
             if self._ComponentType == 'LIBRARY':
@@ -1564,7 +1570,6 @@ class InfBuildData(ModuleBuildClassObject):
                                            File=self.MetaFile, Line=LineNo)
                             continue
                         else:
-                            print NormPath(Record[0], Macros)
                             EdkLogger.error('build', ErrorCode, ExtraData=File, File=self.MetaFile, Line=LineNo)
                 else:
                     File = PathClass(NormPath(Record[0], Macros), self._ModuleDir, '',
