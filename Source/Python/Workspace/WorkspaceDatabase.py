@@ -1565,7 +1565,7 @@ class InfBuildData(ModuleBuildClassObject):
                     # check the file validation
                     ErrorCode, ErrorInfo = File.Validate(CaseSensitive=False)
                     if ErrorCode != 0:
-                        if File.Ext == '.h':
+                        if File.Ext.lower() == '.h':
                             EdkLogger.warn('build', 'Include file not found', ExtraData=ErrorInfo,
                                            File=self.MetaFile, Line=LineNo)
                             continue
@@ -1982,9 +1982,10 @@ class WorkspaceDatabase(object):
                 return self._CACHE_[Key]
 
             # check file type
-            if FilePath.Ext not in self._FILE_TYPE_:
+            Ext = FilePath.Ext.lower()
+            if Ext not in self._FILE_TYPE_:
                 return None
-            FileType = self._FILE_TYPE_[FilePath.Ext]
+            FileType = self._FILE_TYPE_[Ext]
             if FileType not in self._GENERATOR_:
                 return None
 
