@@ -64,6 +64,7 @@
 #   $(BIN_DIR)          Common directory for executable files
 #   $(FV_DIR)           Directory to store flash image files
 #   $(INC)              Search path of current module
+#   $(INC_LIST)         A file containing search pathes of current module
 #   $(LIBS)             Static library files of current module
 #   $(<tool>_FLAGS)     Tools flags of current module
 #   $(MODULE_NAME)      Current module name
@@ -73,9 +74,17 @@
 #   $(TARGET)           Target of current module (DEBUG/RELEASE)
 #   $(<tool>)           Path of tool
 #   $(EDK_TOOLS_PATH)   Path of build tools
-#   $(<FILE_TYPE_LIST>) File list of each file type
+#   $(<FILE_TYPES>)     File list of each file type
 #                       (Note: The macro name is derived from file type name. For example,
-#                        C-Code-File will have C_CODE_FILE_LIST macro.)
+#                        C-Code-File will have C_CODE_FILES macro.)
+#   $(<FILE_TYPES_LIST>) Macro point to a file containing list of files of a file type
+#                       (
+#                        Note: The macro and file name are derived from file type name.
+#                        For example, C-Code-File will have C_CODE_FILES_LIST macro pointing
+#                        to $(OUTPUT_DIR)/c_code_files.lst. The list file and macro name
+#                        will be generated only when this macro is used in command line.
+#                        This is intended to get over the long command line limitation.
+#                       )
 #
 #   $(CP)     copy command
 #   $(MV)     move command
@@ -193,27 +202,42 @@
         $(OUTPUT_DIR)(+)$(MODULE_NAME).lib
 
     <Command.MSFT, Command.INTEL>
-        "$(SLINK)" $(SLINK_FLAGS) /OUT:${dst} ${src}
+        "$(SLINK)" $(SLINK_FLAGS) /OUT:${dst} $(OBJECT_FILES)
 
     <Command.GCC>
-        "$(SLINK)" -cr ${dst} $(SLINK_FLAGS) ${src}
+        "$(SLINK)" -cr ${dst} $(SLINK_FLAGS) $(OBJECT_FILES)
 
 [Static-Library-File]
     <InputFile>
-        ?.lib
+        *.lib
 
     <ExtraDependency>
-        $(LIBS)
         $(MAKE_FILE)
 
     <OutputFile>
         $(DEBUG_DIR)(+)$(MODULE_NAME).dll
 
     <Command.MSFT, Command.INTEL>
-        "$(DLINK)" /OUT:${dst} $(DLINK_FLAGS) $(DLINK_SPATH) $(LIBS) ${src}
+        "$(DLINK)" /OUT:${dst} $(DLINK_FLAGS) $(DLINK_SPATH) $(STATIC_LIBRARY_FILES)
 
     <Command.GCC>
-        "$(DLINK)" -o ${dst} $(DLINK_FLAGS) -\( $(DLINK_SPATH) $(LIBS) ${src} -\) $(DLINK2_FLAGS)
+        "$(DLINK)" -o ${dst} -Map $(DEBUG_DIR)(+)$(MODULE_NAME).map $(DLINK_FLAGS) -\( $(DLINK_SPATH) $(STATIC_LIBRARY_FILES) -\) $(DLINK2_FLAGS)
+
+[Static-Library-File.USER_DEFINED]
+    <InputFile>
+        *.lib
+
+    <ExtraDependency>
+        $(MAKE_FILE)
+
+    <OutputFile>
+        $(DEBUG_DIR)(+)$(MODULE_NAME)
+
+    <Command.MSFT, Command.INTEL>
+        "$(DLINK)" $(DLINK_FLAGS) $(DLINK_SPATH) $(STATIC_LIBRARY_FILES)
+
+    <Command.GCC>
+        "$(DLINK)" $(DLINK_FLAGS) -\( $(DLINK_SPATH) $(STATIC_LIBRARY_FILES) -\) $(DLINK2_FLAGS)
 
 [Dynamic-Library-File]
     <InputFile>
@@ -318,18 +342,8 @@
         $(OUTPUT_DIR)(+)$(MODULE_NAME).bin
 
     <Command>
-        GenFw -o ${dst} -j ${src}
+        GenFw -o ${dst} -j $(MICROCODE_BINARY_FILES)
         -$(CP) ${dst} $(BIN_DIR)
-
-[Unicode-Text-File]
-    <InputFile>
-        *.uni, *.Uni, *.UNI
-
-    <OutputFile>
-        $(DEBUG_DIR)(+)AutoGen.c
-        $(DEBUG_DIR)(+)AutoGen.h
-
-    <Command>
 
 [EFI-Image-File]
     <InputFile>
@@ -339,3 +353,12 @@
 
     <Command>
 
+[Unicode-Text-File]
+    <InputFile>
+        *.uni, *.Uni, *.UNI
+
+    <OutputFile>
+        $(DEBUG_DIR)(+)AutoGen.c
+        $(DEBUG_DIR)(+)$(MODULE_NAME)StrDefs.h
+
+    <Command>
