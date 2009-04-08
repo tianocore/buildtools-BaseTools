@@ -28,6 +28,9 @@ Revision History
 
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "ParseInf.h"
 #include "CommonLib.h"
 #include "EfiUtilityMsgs.h"
 
@@ -307,7 +310,7 @@ Returns:
     //
     EfiLdrImage[i].Offset = EfiLdrHeader.FileLength;
     EfiLdrImage[i].Length = filesize;
-    strncpy (EfiLdrImage[i].FileName, InputFileNames[i], sizeof (EfiLdrImage[i].FileName) - 1);
+    strncpy ((CHAR8*) EfiLdrImage[i].FileName, InputFileNames[i], sizeof (EfiLdrImage[i].FileName) - 1);
     EfiLdrHeader.FileLength += filesize;
     EfiLdrHeader.NumberOfImages++;
   }

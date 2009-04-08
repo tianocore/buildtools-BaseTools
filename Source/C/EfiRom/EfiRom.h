@@ -45,13 +45,6 @@ Abstract:
 #define UTILITY_MINOR_VERSION 1
 
 //
-// Define some status return values
-//
-#define STATUS_SUCCESS  0
-#define STATUS_WARNING  1
-#define STATUS_ERROR    2
-
-//
 // Define the max length of a filename
 //
 #define MAX_PATH                  200

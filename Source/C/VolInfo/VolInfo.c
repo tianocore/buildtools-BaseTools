@@ -79,7 +79,7 @@ CHAR8* mUtilityFilename = NULL;
 
 EFI_STATUS
 ParseGuidBaseNameFile (
-  INT8    *FileName
+  CHAR8    *FileName
   );
 
 EFI_STATUS
@@ -104,16 +104,16 @@ DumpDepexSection (
   IN UINT32   SectionLength
   );
 
-static
-int
+STATIC
+EFI_STATUS
 ReadHeader (
   IN FILE       *InputFile,
   OUT UINT32    *FvSize,
   OUT BOOLEAN   *ErasePolarity
   );
 
-static
-int
+STATIC
+EFI_STATUS
 PrintFileInfo (
   EFI_FIRMWARE_VOLUME_HEADER  *FvImage,
   EFI_FFS_FILE_HEADER         *FileHeader,
@@ -341,7 +341,7 @@ Returns:
   // Get the first file
   //
   Key = 0;
-  Status = FvBufFindNextFile (Fv, &Key, &CurrentFile);
+  Status = FvBufFindNextFile (Fv, &Key, (VOID **) &CurrentFile);
   if (EFI_ERROR (Status)) {
     Error (NULL, 0, 0003, "error parsing FV image", "cannot find the first file in the FV image");
     return GetUtilityStatus ();
@@ -366,7 +366,7 @@ Returns:
     //
     // Get the next file
     //
-    Status = FvBufFindNextFile (Fv, &Key, &CurrentFile);
+    Status = FvBufFindNextFile (Fv, &Key, (VOID **) &CurrentFile);
     if (Status == EFI_NOT_FOUND) {
       CurrentFile = NULL;
     } else if (EFI_ERROR (Status)) {
@@ -375,7 +375,7 @@ Returns:
     }
   }
 
-  printf ("There are a total of %d files in this FV\n", NumberOfFiles);
+  printf ("There are a total of %d files in this FV\n", (int) NumberOfFiles);
 
   return EFI_SUCCESS;
 }
@@ -568,8 +568,8 @@ Returns:
   return SectionStr;
 }
 
-static
-int
+STATIC
+EFI_STATUS
 ReadHeader (
   IN FILE       *InputFile,
   OUT UINT32    *FvSize,
@@ -622,7 +622,7 @@ Returns:
   //
   // Print FV header information
   //
-  printf ("Signature:        %s (%X)\n", Signature, VolumeHeader.Signature);
+  printf ("Signature:        %s (%X)\n", (char *) Signature, VolumeHeader.Signature);
   printf ("Attributes:       %X\n", VolumeHeader.Attributes);
 
   if (VolumeHeader.Attributes & EFI_FVB2_READ_DISABLED_CAP) {
@@ -934,8 +934,8 @@ Returns:
   return EFI_SUCCESS;
 }
 
-static
-int
+STATIC
+EFI_STATUS
 PrintFileInfo (
   EFI_FIRMWARE_VOLUME_HEADER  *FvImage,
   EFI_FFS_FILE_HEADER         *FileHeader,
@@ -997,7 +997,7 @@ Returns:
   //  printf ("\n");
   //
   FileLength = GetLength (FileHeader->Size);
-  printf ("File Offset:      0x%08X\n", (UINTN) FileHeader - (UINTN) FvImage);
+  printf ("File Offset:      0x%08X\n", (unsigned) ((UINTN) FileHeader - (UINTN) FvImage));
   printf ("File Length:      0x%08X\n", FileLength);
   printf ("File Attributes:  0x%02X\n", FileHeader->Attributes);
   printf ("File State:       0x%02X\n", FileHeader->State);
@@ -1280,7 +1280,7 @@ Returns:
 
     case EFI_SECTION_VERSION:
       printf ("  Build Number:  0x%02X\n", ((EFI_VERSION_SECTION *) Ptr)->BuildNumber);
-      printf ("  Version Strg:  %s\n", ((EFI_VERSION_SECTION *) Ptr)->VersionString);
+      printf ("  Version Strg:  %s\n", (char*) ((EFI_VERSION_SECTION *) Ptr)->VersionString);
       break;
 
     case EFI_SECTION_COMPRESSION:
@@ -1402,7 +1402,7 @@ Returns:
         Status =
           PutFileImage (
             ToolInputFile,
-            SectionBuffer + ((EFI_GUID_DEFINED_SECTION *) Ptr)->DataOffset,
+            (CHAR8*) SectionBuffer + ((EFI_GUID_DEFINED_SECTION *) Ptr)->DataOffset,
             BufferLength - ((EFI_GUID_DEFINED_SECTION *) Ptr)->DataOffset
             );
 
@@ -1413,7 +1413,7 @@ Returns:
         Status =
           GetFileImage (
             ToolOutputFile,
-            &ToolOutputBuffer,
+            (CHAR8 **)&ToolOutputBuffer,
             &ToolOutputLength
             );
         remove (ToolOutputFile);
@@ -1625,8 +1625,8 @@ Returns:
   //
   GPtr = mGuidBaseNameList;
   while (GPtr != NULL) {
-    if (_stricmp (GuidStr, GPtr->Guid) == 0) {
-      printf (GPtr->BaseName);
+    if (_stricmp ((CHAR8*) GuidStr, (CHAR8*) GPtr->Guid) == 0) {
+      printf ("%s", GPtr->BaseName);
       return EFI_SUCCESS;
     }
 
@@ -1638,7 +1638,7 @@ Returns:
 
 EFI_STATUS
 ParseGuidBaseNameFile (
-  INT8    *FileName
+  CHAR8    *FileName
   )
 /*++
 
@@ -1659,7 +1659,7 @@ Returns:
 --*/
 {
   FILE              *Fptr;
-  INT8              Line[MAX_LINE_LEN];
+  CHAR8             Line[MAX_LINE_LEN];
   GUID_TO_BASENAME  *GPtr;
 
   if ((Fptr = fopen (FileName, "r")) == NULL) {
@@ -1787,21 +1787,12 @@ Returns:
   // Details Option
   //
   fprintf (stdout, "Options:\n");
-  //fprintf (stdout, "  -o FileName, --output FileName\n\
-  //          File will be created to store the ouput content.\n");
-  //fprintf (stdout, "  -v, --verbose\n\
-  //          Turn on verbose output with informational messages.\n");
-  //fprintf (stdout, "  --version\n\
-  //          Show program's version number and exit.\n");
   fprintf (stdout, "  -x xref, --xref xref\n\
             Parse basename to file-guid cross reference file(s).\n");
   fprintf (stdout, "  --offset offset\n\
             Offset of file to start processing FV at.\n");
   fprintf (stdout, "  -h, --help\n\
             Show this help message and exit.\n");
-  //fprintf (stdout, "  -q, --quiet\n\
-  //       Disable all messages except FATAL ERRORS.\n");
-  //fprintf (stdout, "  --debug [#,0-9]\n\
-  //       Enable debug messages at level #.\n");
+
 }
 

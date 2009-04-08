@@ -29,6 +29,7 @@ Abstract:
 #include <IndustryStandard/PeImage.h>
 
 #include "CommonLib.h"
+#include "ParseInf.h"
 #include "EfiUtilityMsgs.h"
 
 #define UTILITY_NAME            "GenFfs"
@@ -579,7 +580,7 @@ Returns:
         InputFileName = (CHAR8 **) malloc (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *));
         if (InputFileName == NULL) {
           Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
-          return EFI_OUT_OF_RESOURCES;
+          return STATUS_ERROR;
         }
         memset (InputFileName, 0, (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *)));
         
@@ -587,7 +588,7 @@ Returns:
         if (InputFileAlign == NULL) {
           Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
           free (InputFileName);
-          return EFI_OUT_OF_RESOURCES;
+          return STATUS_ERROR;
         }
         memset (InputFileAlign, 0, MAXIMUM_INPUT_FILE_NUM * sizeof (UINT32));
       } else if (InputFileNum % MAXIMUM_INPUT_FILE_NUM == 0) {
@@ -602,7 +603,7 @@ Returns:
         if (InputFileName == NULL) {
           Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
           free (InputFileAlign);
-          return EFI_OUT_OF_RESOURCES;
+          return STATUS_ERROR;
         }
         memset (&(InputFileName[InputFileNum]), 0, (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *)));
 
@@ -614,7 +615,7 @@ Returns:
         if (InputFileAlign == NULL) {
           Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
           free (InputFileName);
-          return EFI_OUT_OF_RESOURCES;
+          return STATUS_ERROR;
         }
         memset (&(InputFileAlign[InputFileNum]), 0, (MAXIMUM_INPUT_FILE_NUM * sizeof (UINT32)));
       }
@@ -729,10 +730,10 @@ Returns:
                 FileGuid.Data4[5],
                 FileGuid.Data4[6],
                 FileGuid.Data4[7]);
-  if (FfsAttrib & FFS_ATTRIB_FIXED != 0) {
+  if ((FfsAttrib & FFS_ATTRIB_FIXED) != 0) {
     VerboseMsg ("FFS File has the fixed file attribute");
   }
-  if (FfsAttrib & FFS_ATTRIB_CHECKSUM != 0) {
+  if ((FfsAttrib & FFS_ATTRIB_CHECKSUM) != 0) {
     VerboseMsg ("FFS File requires the checksum of the whole file");
   }
   VerboseMsg ("FFS file alignment is %s", mFfsValidAlignName[FfsAlign]);
