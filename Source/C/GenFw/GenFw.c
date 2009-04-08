@@ -244,7 +244,7 @@ Returns:
   fprintf (stdout, "  -s timedate, --stamp timedate\n\
                         timedate format is \"yyyy-mm-dd 00:00:00\". if timedata \n\
                         is set to NOW, current system time is used. The support\n\
-                        date scope is 1970-1-1 0:0:0 ~ 2038-1-19 3:14:07\n\
+                        date scope is 1970-1-1 8:0:0 ~ 2038-1-19 3:14:07\n\
                         It can't be combined with other action options\n\
                         except for -o, -r option. It is a action option.\n\
                         If it is combined with other action options, the later\n\
@@ -2424,69 +2424,104 @@ Returns:
   UINT32                           Index;
   UINT32                           DebugDirectoryEntryRva;
   UINT32                           DebugDirectoryEntryFileOffset;
+  UINT32                           ExportDirectoryEntryRva;
+  UINT32                           ExportDirectoryEntryFileOffset;
+  UINT32                           ResourceDirectoryEntryRva;
+  UINT32                           ResourceDirectoryEntryFileOffset;
   EFI_IMAGE_DOS_HEADER            *DosHdr;
   EFI_IMAGE_FILE_HEADER           *FileHdr;
   EFI_IMAGE_OPTIONAL_HEADER32     *Optional32Hdr;
   EFI_IMAGE_OPTIONAL_HEADER64     *Optional64Hdr;
   EFI_IMAGE_SECTION_HEADER        *SectionHeader;
   EFI_IMAGE_DEBUG_DIRECTORY_ENTRY *DebugEntry;
-
-  DosHdr   = (EFI_IMAGE_DOS_HEADER *)  FileBuffer;
-  FileHdr  = (EFI_IMAGE_FILE_HEADER *) (FileBuffer + DosHdr->e_lfanew + sizeof (UINT32));
-  DebugDirectoryEntryRva = 0;
+  UINT32                          *NewTimeStamp;  
 
   //
-  // Get DebugEntryTable RVA address.
+  // Init variable.
+  //
+  DebugDirectoryEntryRva    = 0;
+  ExportDirectoryEntryRva   = 0;
+  ResourceDirectoryEntryRva = 0;
+  DosHdr   = (EFI_IMAGE_DOS_HEADER *)  FileBuffer;
+  FileHdr  = (EFI_IMAGE_FILE_HEADER *) (FileBuffer + DosHdr->e_lfanew + sizeof (UINT32));
+
+  //
+  // Get Debug, Export and Resource EntryTable RVA address.
+  // Resource Directory entry need to review.
   //
   if (FileHdr->Machine == EFI_IMAGE_MACHINE_IA32) {
     Optional32Hdr = (EFI_IMAGE_OPTIONAL_HEADER32 *) ((UINT8*) FileHdr + sizeof (EFI_IMAGE_FILE_HEADER));
     SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) Optional32Hdr +  FileHdr->SizeOfOptionalHeader);
+    if (Optional32Hdr->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_EXPORT && \
+        Optional32Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXPORT].Size != 0) {
+      ExportDirectoryEntryRva = Optional32Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
+    }
+    if (Optional32Hdr->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE && \
+        Optional32Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE].Size != 0) {
+      ResourceDirectoryEntryRva = Optional32Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress;
+    }
     if (Optional32Hdr->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_DEBUG && \
         Optional32Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].Size != 0) {
       DebugDirectoryEntryRva = Optional32Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress;
-    } else {
-      //
-      // No Debug Data, nothing to do.
-      //
-      return EFI_SUCCESS;
     }
   } else {
     Optional64Hdr = (EFI_IMAGE_OPTIONAL_HEADER64 *) ((UINT8*) FileHdr + sizeof (EFI_IMAGE_FILE_HEADER));
     SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) Optional64Hdr +  FileHdr->SizeOfOptionalHeader);
+    if (Optional64Hdr->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_EXPORT && \
+        Optional64Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXPORT].Size != 0) {
+      ExportDirectoryEntryRva = Optional64Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
+    }
+    if (Optional64Hdr->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE && \
+        Optional64Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE].Size != 0) {
+      ResourceDirectoryEntryRva = Optional64Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress;
+    }
     if (Optional64Hdr->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_DEBUG && \
         Optional64Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].Size != 0) {
       DebugDirectoryEntryRva = Optional64Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress;
-    } else {
-      //
-      // No Debug Data, nothing to do.
-      //
-      return EFI_SUCCESS;
     }
   }
 
   //
-  // Get DebugEntryTable file offset.
+  // Get DirectoryEntryTable file offset.
   //
   for (Index = 0; Index < FileHdr->NumberOfSections; Index ++, SectionHeader ++) {
     if (DebugDirectoryEntryRva >= SectionHeader->VirtualAddress &&
         DebugDirectoryEntryRva < SectionHeader->VirtualAddress + SectionHeader->Misc.VirtualSize) {
         DebugDirectoryEntryFileOffset =
         DebugDirectoryEntryRva - SectionHeader->VirtualAddress + SectionHeader->PointerToRawData;
-      break;
+    }
+    if (ExportDirectoryEntryRva >= SectionHeader->VirtualAddress &&
+        ExportDirectoryEntryRva < SectionHeader->VirtualAddress + SectionHeader->Misc.VirtualSize) {
+        ExportDirectoryEntryFileOffset =
+        ExportDirectoryEntryRva - SectionHeader->VirtualAddress + SectionHeader->PointerToRawData;
+    }
+    if (ResourceDirectoryEntryRva >= SectionHeader->VirtualAddress &&
+        ResourceDirectoryEntryRva < SectionHeader->VirtualAddress + SectionHeader->Misc.VirtualSize) {
+        ResourceDirectoryEntryFileOffset =
+        ResourceDirectoryEntryRva - SectionHeader->VirtualAddress + SectionHeader->PointerToRawData;
     }
   }
 
-  if (Index >= FileHdr->NumberOfSections) {
-    Error (NULL, 0, 3000, "Invalid", "PeImage");
-    return EFI_ABORTED;
+  //
+  //Zero Debug Data and TimeStamp
+  //
+  FileHdr->TimeDateStamp = 0;
+
+  if (ExportDirectoryEntryRva != 0) {
+    NewTimeStamp  = (UINT32 *) (FileBuffer + ExportDirectoryEntryFileOffset + sizeof (UINT32));
+    *NewTimeStamp = 0;
   }
 
-  //
-  // Zero Debug Data and TimeStamp
-  //
-  DebugEntry = (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY *) (FileBuffer + DebugDirectoryEntryFileOffset);
-  DebugEntry->TimeDateStamp = 0;
-  memset (FileBuffer + DebugEntry->FileOffset, 0, DebugEntry->SizeOfData);
+  if (ResourceDirectoryEntryRva != 0) {
+    NewTimeStamp  = (UINT32 *) (FileBuffer + ResourceDirectoryEntryFileOffset + sizeof (UINT32));
+    *NewTimeStamp = 0;
+  }
+
+  if (DebugDirectoryEntryRva != 0) {
+    DebugEntry = (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY *) (FileBuffer + DebugDirectoryEntryFileOffset);
+    DebugEntry->TimeDateStamp = 0;
+    memset (FileBuffer + DebugEntry->FileOffset, 0, DebugEntry->SizeOfData);
+  }
 
   return EFI_SUCCESS;
 }
@@ -2532,7 +2567,7 @@ Returns:
   EFI_IMAGE_OPTIONAL_HEADER64     *Optional64Hdr;
   EFI_IMAGE_SECTION_HEADER        *SectionHeader;
   UINT32                          *NewTimeStamp;
-
+  
   //
   // Init variable.
   //
