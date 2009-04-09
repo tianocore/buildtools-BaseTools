@@ -21,9 +21,9 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
  */
 
 SPendingAssign::SPendingAssign (
-  IN CHAR8  *Key, 
-  IN VOID   *Addr, 
-  IN UINT32 Len, 
+  IN CHAR8  *Key,
+  IN VOID   *Addr,
+  IN UINT32 Len,
   IN UINT32 LineNo,
   IN CHAR8  *Msg
   )
@@ -68,7 +68,7 @@ SPendingAssign::~SPendingAssign (
 
 VOID
 SPendingAssign::SetAddrAndLen (
-  IN VOID   *Addr, 
+  IN VOID   *Addr,
   IN UINT32 LineNo
   )
 {
@@ -78,7 +78,7 @@ SPendingAssign::SetAddrAndLen (
 
 VOID
 SPendingAssign::AssignValue (
-  IN VOID   *Addr, 
+  IN VOID   *Addr,
   IN UINT32 Len
   )
 {
@@ -234,7 +234,7 @@ CFormPkg::Close (
 
 UINT32
 CFormPkg::Read (
-  IN CHAR8     *Buffer, 
+  IN CHAR8     *Buffer,
   IN UINT32    Size
   )
 {
@@ -1353,11 +1353,11 @@ CIfrObj::~CIfrObj (
   VOID
   )
 {
+  gCIfrRecordInfoDB.IfrRecordInfoUpdate (mRecordIdx, mLineNo, mObjBinBuf, mObjBinLen, mPkgOffset);
+
   if ((mDelayEmit == TRUE) && ((gCreateOp == TRUE))) {
     _EMIT_PENDING_OBJ ();
   }
-
-  gCIfrRecordInfoDB.IfrRecordInfoUpdate (mRecordIdx, mLineNo, mObjBinBuf, mObjBinLen, mPkgOffset);
 }
 
 /*

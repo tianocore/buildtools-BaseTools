@@ -90,7 +90,7 @@ CVfrErrorHandle::SetInputFile (
 }
 
 SVfrFileScopeRecord::SVfrFileScopeRecord (
-  IN CHAR8    *Record, 
+  IN CHAR8    *Record,
   IN UINT32   LineNum
   )
 {
@@ -131,7 +131,7 @@ SVfrFileScopeRecord::~SVfrFileScopeRecord (
 
 VOID
 CVfrErrorHandle::ParseFileScopeRecord (
-  IN CHAR8     *Record, 
+  IN CHAR8     *Record,
   IN UINT32    WholeScopeLine
   )
 {
