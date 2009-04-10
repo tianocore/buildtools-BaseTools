@@ -48,7 +48,7 @@ CVfrCompiler::IS_RUN_STATUS (
 
 VOID
 CVfrCompiler::OptionInitialization (
-  IN INT32      Argc,
+  IN INT32      Argc, 
   IN CHAR8      **Argv
   )
 {
@@ -164,7 +164,7 @@ Fail:
   if (mOptions.IncludePaths != NULL) {
     delete mOptions.IncludePaths;
     mOptions.IncludePaths                = NULL;
-  }
+  } 
   if (mOptions.CPreprocessorOptions != NULL) {
     delete mOptions.CPreprocessorOptions;
     mOptions.CPreprocessorOptions        = NULL;
@@ -328,7 +328,7 @@ CVfrCompiler::SetRecordListFileName (
 }
 
 CVfrCompiler::CVfrCompiler (
-  IN INT32      Argc,
+  IN INT32      Argc, 
   IN CHAR8      **Argv
   )
 {
@@ -361,14 +361,14 @@ CVfrCompiler::~CVfrCompiler (
   SET_RUN_STATUS(STATUS_DEAD);
 }
 
-VOID
+VOID 
 CVfrCompiler::Usage (
   VOID
   )
 {
   UINT32 Index;
   CONST  CHAR8 *Help[] = {
-    " ",
+    " ", 
     "VfrCompile version " VFR_COMPILER_VERSION VFR_COMPILER_UPDATE_TIME,
     " ",
     "Usage: VfrCompile [options] VfrFile",
@@ -417,7 +417,7 @@ CVfrCompiler::PreProcess (
   }
   fclose (pVfrFile);
 
-  CmdLen = strlen (mPreProcessCmd) + strlen (mPreProcessOpt) +
+  CmdLen = strlen (mPreProcessCmd) + strlen (mPreProcessOpt) + 
   	       strlen (mOptions.VfrFileName) + strlen (mOptions.PreprocessorOutputFileName);
   if (mOptions.CPreprocessorOptions != NULL) {
     CmdLen += strlen (mOptions.CPreprocessorOptions);
@@ -704,7 +704,7 @@ Err1:
 
 int
 main (
-  IN INT32             Argc,
+  IN INT32             Argc, 
   IN CHAR8             **Argv
   )
 {

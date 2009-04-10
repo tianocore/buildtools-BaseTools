@@ -673,7 +673,6 @@ subclassDefinition[UINT16 & SubClass] :
 vfrStatementDisableIfFormSet :
   <<
     CIfrDisableIf DIObj;
-    mConstantOnlyInExpression = TRUE;
   >>
   D:DisableIf                                       << DIObj.SetLineNo(D->getLine()); >>
   vfrStatementExpression[0] ";"                     << mConstantOnlyInExpression = FALSE; >>
@@ -896,11 +895,7 @@ vfrQuestionDataFieldName [EFI_QUESTION_ID &QId, UINT32 &Mask, CHAR8 *&VarIdStr, 
                                                        _STRCAT(&VarIdStr, "]");
                                                     >>
                                                     << mCVfrQuestionDB.GetQuestionId (NULL, VarIdStr, $QId, $Mask); >>
-  )                                                 <<
-                                                       if (mConstantOnlyInExpression) {
-                                                         _PCATCH(VFR_RETURN_CONSTANT_ONLY, LineNo);
-                                                       }
-                                                    >>
+  )
   |
   (
     SN2:StringIdentifier                            << _STRCAT (&VarIdStr, SN2->getText()); LineNo = SN2->getLine(); >>
@@ -1916,12 +1911,9 @@ vfrStatementStatListOld :
   ;
 
 vfrStatementDisableIfStat :
-  << 
-	CIfrDisableIf DIObj;
-	mConstantOnlyInExpression = TRUE; 
-  >>
+  << CIfrDisableIf DIObj; >>
   L:DisableIf                                          << DIObj.SetLineNo(L->getLine()); >>
-  vfrStatementExpression[0] ";"                        << mConstantOnlyInExpression = FALSE; >>
+  vfrStatementExpression[0] ";"
   ( vfrStatementStatList )*
   E:EndIf                                              << CRT_END_OP (E); >>
   ";"
@@ -2063,12 +2055,9 @@ vfrStatementNoSubmitIf :
   ;
 
 vfrStatementDisableIfQuest :
-  << 
-	CIfrDisableIf DIObj; 
-	mConstantOnlyInExpression = TRUE;
-  >>
+  << CIfrDisableIf DIObj; >>
   L:DisableIf                                          << DIObj.SetLineNo(L->getLine()); >>
-  vfrStatementExpression[0] ";"                        << mConstantOnlyInExpression = FALSE; >>
+  vfrStatementExpression[0] ";"
   vfrStatementQuestionOptionList
   E:EndIf                                              << CRT_END_OP (E); >>
   ;
