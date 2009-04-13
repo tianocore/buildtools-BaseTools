@@ -673,6 +673,7 @@ subclassDefinition[UINT16 & SubClass] :
 vfrStatementDisableIfFormSet :
   <<
     CIfrDisableIf DIObj;
+    mConstantOnlyInExpression = TRUE;
   >>
   D:DisableIf                                       << DIObj.SetLineNo(D->getLine()); >>
   vfrStatementExpression[0] ";"                     << mConstantOnlyInExpression = FALSE; >>
@@ -893,14 +894,22 @@ vfrQuestionDataFieldName [EFI_QUESTION_ID &QId, UINT32 &Mask, CHAR8 *&VarIdStr, 
                                                        _STRCAT(&VarIdStr, "[");
                                                        _STRCAT(&VarIdStr, I1->getText());
                                                        _STRCAT(&VarIdStr, "]");
+                                                       mCVfrQuestionDB.GetQuestionId (NULL, VarIdStr, $QId, $Mask);
+                                                       if (mConstantOnlyInExpression) {
+                                                         _PCATCH(VFR_RETURN_CONSTANT_ONLY, LineNo);
+                                                       }
                                                     >>
-                                                    << mCVfrQuestionDB.GetQuestionId (NULL, VarIdStr, $QId, $Mask); >>
   )
   |
   (
     SN2:StringIdentifier                            << _STRCAT (&VarIdStr, SN2->getText()); LineNo = SN2->getLine(); >>
     (
-      "."                                           << _STRCAT (&VarIdStr, "."); >>
+      "."                                           << 
+                                                       _STRCAT (&VarIdStr, ".");
+                                                       if (mConstantOnlyInExpression) {
+                                                         _PCATCH(VFR_RETURN_CONSTANT_ONLY, LineNo);
+                                                       }
+                                                    >>
       SF:StringIdentifier                           << _STRCAT (&VarIdStr, SF->getText()); >>
       {
         OpenBracket I2:Number CloseBracket          <<
@@ -1911,9 +1920,12 @@ vfrStatementStatListOld :
   ;
 
 vfrStatementDisableIfStat :
-  << CIfrDisableIf DIObj; >>
+  << 
+    CIfrDisableIf DIObj; 
+    mConstantOnlyInExpression = TRUE;
+  >>
   L:DisableIf                                          << DIObj.SetLineNo(L->getLine()); >>
-  vfrStatementExpression[0] ";"
+  vfrStatementExpression[0] ";"                        << mConstantOnlyInExpression = FALSE; >>
   ( vfrStatementStatList )*
   E:EndIf                                              << CRT_END_OP (E); >>
   ";"
@@ -2055,9 +2067,12 @@ vfrStatementNoSubmitIf :
   ;
 
 vfrStatementDisableIfQuest :
-  << CIfrDisableIf DIObj; >>
+  << 
+    CIfrDisableIf DIObj; 
+    mConstantOnlyInExpression = TRUE;
+  >>
   L:DisableIf                                          << DIObj.SetLineNo(L->getLine()); >>
-  vfrStatementExpression[0] ";"
+  vfrStatementExpression[0] ";"                        << mConstantOnlyInExpression = FALSE; >>
   vfrStatementQuestionOptionList
   E:EndIf                                              << CRT_END_OP (E); >>
   ;
