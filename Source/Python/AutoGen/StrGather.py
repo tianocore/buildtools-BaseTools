@@ -411,7 +411,7 @@ def GetFileList(SourceFileList, IncludeList, SkipList):
         for Dir in IncludeList:
             if not os.path.exists(Dir):
                 continue
-            File = os.path.join(Dir, File.File)
+            File = os.path.join(Dir, File.Path)
             #
             # Ignore Dir
             #
