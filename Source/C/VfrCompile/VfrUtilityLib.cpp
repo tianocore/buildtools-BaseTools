@@ -1841,7 +1841,7 @@ CVfrDataStorage::BufferVarStoreRequestElementAdd (
   CHAR8                 NewReqElt[128] = {'\0',};
   CHAR8                 *OldReqElt = NULL;
   SVfrVarStorageNode    *pNode = NULL;
-  EFI_IFR_TYPE_VALUE    Value;
+  EFI_IFR_TYPE_VALUE    Value = gZeroEfiIfrTypeValue;
 
   for (pNode = mBufferVarStoreList; pNode != NULL; pNode = pNode->mNext) {
     if (strcmp (pNode->mVarStoreName, StoreName) == NULL) {

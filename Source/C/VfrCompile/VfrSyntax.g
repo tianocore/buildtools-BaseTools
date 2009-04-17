@@ -193,6 +193,7 @@ VfrParserStart (
 #token OptionOnlyFlag("OPTIONS_ONLY")           "OPTIONS_ONLY"
 #token Class("class")                           "class"
 #token Subclass("subclass")                     "subclass"
+#token ClassGuid("classguid")                   "classguid"
 #token TypeDef("typedef")                       "typedef"
 #token Restore("restore")                       "restore"
 #token Save("save")                             "save"
@@ -462,26 +463,65 @@ guidDefinition [EFI_GUID &Guid] :
 vfrFormSetDefinition :
   <<
      EFI_GUID    Guid;
-     CIfrFormSet FSObj;
+     EFI_GUID    DefaultClassGuid = EFI_HII_PLATFORM_SETUP_FORMSET_GUID;
+     EFI_GUID    ClassGuid1, ClassGuid2, ClassGuid3;
+     UINT8       ClassGuidNum = 0;
+     CIfrFormSet *FSObj = NULL;
      UINT16      C, SC;
   >>
-  L:FormSet                                         << SET_LINE_INFO (FSObj, L); >>
-  Uuid "=" guidDefinition[Guid] ","                 <<
-                                                       FSObj.SetGuid (&Guid);
-                                                       //
-                                                       // for framework vfr to store formset guid used by varstore and efivarstore
-                                                       //
-                                                       if (mCompatibleMode) {
-                                                         memcpy (&mFormsetGuid, &Guid, sizeof (EFI_GUID));
-                                                       }
-                                                    >>
-  Title "=" "STRING_TOKEN" "\(" S1:Number "\)" ","  << FSObj.SetFormSetTitle (_STOSID(S1->getText())); >>
-  Help  "=" "STRING_TOKEN" "\(" S2:Number "\)" ","  << FSObj.SetHelp (_STOSID(S2->getText())); >>
+  L:FormSet
+  Uuid "=" guidDefinition[Guid] ","
+  Title "=" "STRING_TOKEN" "\(" S1:Number "\)" ","
+  Help  "=" "STRING_TOKEN" "\(" S2:Number "\)" ","
   {
-    FC:Class "=" classDefinition[C] ","                << {CIfrClass CObj;SET_LINE_INFO (CObj, FC); CObj.SetClass(C);} >>
+    ClassGuid "=" guidDefinition[ClassGuid1]        << ++ClassGuidNum; >>
+                  {
+                   "\|" guidDefinition[ClassGuid2]  << ++ClassGuidNum; >>
+                  }
+                  {
+                   "\|" guidDefinition[ClassGuid3]  << ++ClassGuidNum; >>
+                  }
+                  ","
+  }
+                                                    <<
+                                                      switch (ClassGuidNum) {
+                                                      case 0:
+                                                        FSObj = new CIfrFormSet(sizeof(EFI_IFR_FORM_SET));
+                                                        FSObj->SetClassGuid(&DefaultClassGuid);
+                                                        break;
+                                                      case 1:
+                                                        FSObj = new CIfrFormSet(sizeof(EFI_IFR_FORM_SET));
+                                                        FSObj->SetClassGuid(&ClassGuid1);
+                                                        break;
+                                                      case 2:
+                                                        FSObj = new CIfrFormSet(sizeof(EFI_IFR_FORM_SET) + sizeof(EFI_GUID));
+                                                        FSObj->SetClassGuid(&ClassGuid1);
+                                                        FSObj->SetClassGuid(&ClassGuid2);
+                                                        break;
+                                                      default:
+                                                        FSObj = new CIfrFormSet(sizeof(EFI_IFR_FORM_SET) + 2 * sizeof(EFI_GUID));
+                                                        FSObj->SetClassGuid(&ClassGuid1);
+                                                        FSObj->SetClassGuid(&ClassGuid2);
+                                                        FSObj->SetClassGuid(&ClassGuid3);
+                                                        break;
+                                                      }
+
+                                                      SET_LINE_INFO (*FSObj, L);
+                                                      FSObj->SetGuid (&Guid);
+                                                      //
+                                                      // for framework vfr to store formset guid used by varstore and efivarstore
+                                                      //
+                                                      if (mCompatibleMode) {
+                                                        memcpy (&mFormsetGuid, &Guid, sizeof (EFI_GUID));
+                                                      }
+                                                      FSObj->SetFormSetTitle (_STOSID(S1->getText()));
+                                                      FSObj->SetHelp (_STOSID(S2->getText()));
+                                                    >>
+  {
+    FC:Class "=" classDefinition[C] ","             << {CIfrClass CObj;SET_LINE_INFO (CObj, FC); CObj.SetClass(C);} >>
   }
   {
-    FSC:Subclass "=" subclassDefinition[SC] ","         << {CIfrSubClass SCObj; SET_LINE_INFO (SCObj, FSC); SCObj.SetSubClass(SC);} >>
+    FSC:Subclass "=" subclassDefinition[SC] ","     << {CIfrSubClass SCObj; SET_LINE_INFO (SCObj, FSC); SCObj.SetSubClass(SC);} >>
   }
                                                     <<
                                                        _DeclareStandardDefaultStorage (GET_LINENO (L));
@@ -494,7 +534,7 @@ vfrFormSetDefinition :
                                                         //
                                                         _DeclareDefaultFrameworkVarStore (GET_LINENO(E));
                                                       }
-                                                      CRT_END_OP (E);
+                                                      CRT_END_OP (E); if (FSObj != NULL) delete FSObj;
                                                     >>
   ";"
   ;
@@ -776,7 +816,7 @@ vfrStorageVarId[EFI_VARSTORE_INFO & Info, CHAR8 *&QuestVarIdStr] :
      CHAR8                 *SName       = NULL;
      CHAR8                 *TName       = NULL;
      EFI_VFR_RETURN_CODE   VfrReturnCode = VFR_RETURN_SUCCESS;
-     EFI_IFR_TYPE_VALUE    Dummy        = {0};
+     EFI_IFR_TYPE_VALUE    Dummy        = gZeroEfiIfrTypeValue;
   >>
   (
     SN1:StringIdentifier                            << SName = SN1->getText(); _STRCAT(&VarIdStr, SN1->getText()); >>
@@ -1034,7 +1074,7 @@ vfrStatementRules :
 vfrStatementDefault :
   <<
      BOOLEAN               IsExp         = FALSE;
-     EFI_IFR_TYPE_VALUE    Val;
+     EFI_IFR_TYPE_VALUE    Val = gZeroEfiIfrTypeValue;
      CIfrDefault           DObj;
      EFI_DEFAULT_ID        DefaultId     = EFI_HII_DEFAULT_CLASS_STANDARD;
      CHAR8                 *VarStoreName = NULL;
@@ -1359,7 +1399,7 @@ vfrStatementBooleanType :
 vfrStatementCheckBox :
   <<
      CIfrCheckBox       CBObj;
-     EFI_IFR_TYPE_VALUE Val;
+     EFI_IFR_TYPE_VALUE Val = gZeroEfiIfrTypeValue;
      CHAR8              *VarStoreName = NULL;
      UINT32             DataTypeSize;
   >>
@@ -2113,7 +2153,7 @@ vfrStatementOptions :
 
 vfrStatementOneOfOption :
   <<
-     EFI_IFR_TYPE_VALUE Val;
+     EFI_IFR_TYPE_VALUE Val = gZeroEfiIfrTypeValue;
      CIfrOneOfOption    OOOObj;
      CHAR8              *VarStoreName = NULL;
   >>
