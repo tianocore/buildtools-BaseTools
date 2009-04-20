@@ -1035,9 +1035,15 @@ vfrFormDefinition :
                                                         //
                                                         // Add Label for Framework Vfr
                                                         //
-                                                        CIfrLabel LObj;
-                                                        LObj.SetLineNo(E->getLine());
-                                                        LObj.SetNumber (0x0);  //add dummy label for UEFI, label number hardcode 0x0
+                                                        CIfrLabel LObj1;
+                                                        LObj1.SetLineNo(E->getLine());
+                                                        LObj1.SetNumber (0xffff);  //add end label for UEFI, label number hardcode 0xffff
+                                                        CIfrLabel LObj2;
+                                                        LObj2.SetLineNo(E->getLine());
+                                                        LObj2.SetNumber (0x0);     //add dummy label for UEFI, label number hardcode 0x0
+                                                        CIfrLabel LObj3;
+                                                        LObj3.SetLineNo(E->getLine());
+                                                        LObj3.SetNumber (0xffff);  //add end label for UEFI, label number hardcode 0xffff
                                                         //
                                                         // Declare undefined Question
                                                         //
@@ -2227,9 +2233,23 @@ oneofoptionFlagsField [UINT8 & HFlags, UINT8 & LFlags] :
   ;
 
 vfrStatementLabel :
-  << CIfrLabel LObj; >>
-  L:Label                                              << LObj.SetLineNo(L->getLine()); >>
-  N:Number                                             << LObj.SetNumber (_STOU16(N->getText())); >>
+  L:Label
+  N:Number                                             <<
+                                                          if (mCompatibleMode) {
+                                                            //
+                                                            // Add end Label for Framework Vfr
+                                                            //
+                                                            CIfrLabel LObj1;
+                                                            LObj1.SetLineNo(L->getLine());
+                                                            LObj1.SetNumber (0xffff);  //add end label for UEFI, label number hardcode 0xffff
+                                                          }
+
+                                                          {
+                                                            CIfrLabel LObj2;
+                                                            LObj2.SetLineNo(L->getLine());
+                                                            LObj2.SetNumber (_STOU16(N->getText()));
+                                                          }
+                                                       >>
   ";"
   ;
 
