@@ -2783,7 +2783,6 @@ ideqvallistExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
                                                           } else {
                                                             UINT16       Index;
                                                             CIfrEqIdList EILObj(L->getLine());
-                                                            _SAVE_OPHDR_COND (EILObj, ($ExpOpCount == 0), L->getLine());
                                                             if (QId != EFI_QUESTION_ID_INVALID) {
                                                               EILObj.SetQuestionId (QId, VarIdStr, LineNo);
                                                             }
@@ -2791,8 +2790,11 @@ ideqvallistExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
                                                             for (Index = 0; Index < ListLen; Index++) {
                                                               EILObj.SetValueList (Index, ValueList[Index]);
                                                             }
+                                                            
+                                                            EILObj.UpdateIfrBuffer();
+                                                            _SAVE_OPHDR_COND (EILObj, ($ExpOpCount == 0), L->getLine());                                                            
+                                                            
                                                             if (QId == EFI_QUESTION_ID_INVALID) {
-                                                              EILObj.UpdateIfrBuffer();
                                                               EILObj.SetQuestionId (QId, VarIdStr, LineNo);
                                                             }
                                                             $ExpOpCount++;
@@ -3117,13 +3119,7 @@ EfiVfrParser::_SAVE_OPHDR_COND (
   )
 {
   if (Cond == TRUE) {
-#if 0
-    printf ("######_SAVE_OPHDR_COND\n");
-#endif
     if (mCIfrOpHdr != NULL) {
-#if 0
-      printf ("######_SAVE_OPHDR_COND Error\n");
-#endif
       return ;
     }
     mCIfrOpHdr       = new CIfrOpHeader(OpHdr);
@@ -3136,9 +3132,6 @@ EfiVfrParser::_CLEAR_SAVED_OPHDR (
   VOID
   )
 {
-#if 0
-  printf ("######_CLEAR_SAVED_OPHDR\n");
-#endif
   mCIfrOpHdr       = NULL;
   mCIfrOpHdrLineNo = 0;
 }
@@ -3148,9 +3141,6 @@ EfiVfrParser::_SET_SAVED_OPHDR_SCOPE (
   VOID
   )
 {
-#if 0
-  printf ("#######_SET_SAVED_OPHDR_SCOPE\n");
-#endif
   if (mCIfrOpHdr != NULL) {
     mCIfrOpHdr->SetScope (1);
     return TRUE;

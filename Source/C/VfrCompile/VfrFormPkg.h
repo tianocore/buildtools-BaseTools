@@ -269,6 +269,10 @@ public:
   VOID SetScope (IN UINT8 Scope) {
     mHeader->Scope = Scope;
   }
+
+  VOID UpdateHeader (IN EFI_IFR_OP_HEADER *Header) {
+    mHeader = Header;
+  }
 };
 
 extern UINT8 gScopeCount;
@@ -1570,6 +1574,7 @@ public:
   ) {
     _EMIT_PENDING_OBJ();
     mEqIdVList = (EFI_IFR_EQ_ID_LIST *) GetObjBinAddr();
+    UpdateHeader (&mEqIdVList->Header);
   }
 
   VOID SetQuestionId (
