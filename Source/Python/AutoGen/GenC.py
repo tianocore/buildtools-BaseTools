@@ -1279,7 +1279,15 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
                                 Pcd.InitString = 'INIT'
                         except:
                             pass
-                    ValueList.append(Sku.DefaultValue)
+                    
+                    #
+                    # For UNIT64 type PCD's value, ULL should be append to avoid
+                    # warning under linux building environment.
+                    #
+                    if Pcd.DatumType == "UINT64":
+                        ValueList.append(Sku.DefaultValue + "ULL")
+                    else:
+                        ValueList.append(Sku.DefaultValue)
 
         Pcd.TokenTypeList = list(set(Pcd.TokenTypeList))
 
