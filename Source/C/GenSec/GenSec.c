@@ -71,7 +71,8 @@ STATIC CHAR8      *mSectionTypeName[] = {
   "EFI_SECTION_FREEFORM_SUBTYPE_GUID",  // 0x18
   "EFI_SECTION_RAW",                    // 0x19
   NULL,                                 // 0x1A
-  "EFI_SECTION_PEI_DEPEX"               // 0x1B
+  "EFI_SECTION_PEI_DEPEX",              // 0x1B
+  "EFI_SECTION_SMM_DEPEX"               // 0x1C
 };
 
 STATIC CHAR8      *mCompressionTypeName[]    = { "PI_NONE", "PI_STD" };

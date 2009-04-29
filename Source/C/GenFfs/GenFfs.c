@@ -47,8 +47,10 @@ STATIC CHAR8 *mFfsFileType[] = {
   "EFI_FV_FILETYPE_DRIVER",               // 0x07
   "EFI_FV_FILETYPE_COMBINED_PEIM_DRIVER", // 0x08
   "EFI_FV_FILETYPE_APPLICATION",          // 0x09
-  NULL,                                   // 0x0A - reserved
-  "EFI_FV_FILETYPE_FIRMWARE_VOLUME_IMAGE" // 0x0B
+  "EFI_FV_FILETYPE_SMM",                  // 0x0A
+  "EFI_FV_FILETYPE_FIRMWARE_VOLUME_IMAGE",// 0x0B
+  "EFI_FV_FILETYPE_COMBINED_SMM_DXE",     // 0x0C
+  "EFI_FV_FILETYPE_SMM_CORE"              // 0x0D
  };
 
 STATIC CHAR8 *mAlignName[] = {
