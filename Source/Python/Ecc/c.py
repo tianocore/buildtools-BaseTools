@@ -237,6 +237,13 @@ def GetIdentifierList():
             while Name.startswith('*'):
                 Value += ' ' + '*'
                 Name = Name.lstrip('*').strip()
+                
+        if Name.find('[') != -1:
+            LBPos = Name.find('[')
+            RBPos = Name.rfind(']')
+            Value += Name[LBPos : RBPos + 1]
+            Name = Name[0 : LBPos]
+                
         IdTd = DataClass.IdentifierClass(-1, Modifier, '', Name, Value, DataClass.MODEL_IDENTIFIER_TYPEDEF, -1, -1, td.StartPos[0],td.StartPos[1],td.EndPos[0],td.EndPos[1])
         IdList.append(IdTd)
         

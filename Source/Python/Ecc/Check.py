@@ -788,60 +788,76 @@ class Check(object):
 
     # Naming Convention Check
     def NamingConventionCheck(self):
-        self.NamingConventionCheckDefineStatement()
-        self.NamingConventionCheckTypedefStatement()
-        self.NamingConventionCheckIfndefStatement()
-        self.NamingConventionCheckPathName()
-        self.NamingConventionCheckVariableName()
-        self.NamingConventionCheckFunctionName()
-        self.NamingConventionCheckSingleCharacterVariable()
+        
+        Tuple = os.walk(EccGlobalData.gTarget)
+        IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
 
+        for Dirpath, Dirnames, Filenames in Tuple:
+            if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
+                continue
+            for F in Filenames:
+                if os.path.splitext(F)[1] in ('.h', '.c'):
+                    FullName = os.path.join(Dirpath, F)
+                    Id = c.GetTableID(FullName)
+                    if Id < 0:
+                        continue
+                    FileTable = 'Identifier' + str(Id)
+                    self.NamingConventionCheckDefineStatement(FileTable)
+                    self.NamingConventionCheckTypedefStatement(FileTable)
+                    self.NamingConventionCheckIfndefStatement(FileTable)
+                    self.NamingConventionCheckVariableName(FileTable)           
+                    self.NamingConventionCheckSingleCharacterVariable(FileTable)
+
+        self.NamingConventionCheckPathName()
+        self.NamingConventionCheckFunctionName()
+        
     # Check whether only capital letters are used for #define declarations
-    def NamingConventionCheckDefineStatement(self):
+    def NamingConventionCheckDefineStatement(self, FileTable):
         if EccGlobalData.gConfig.NamingConventionCheckDefineStatement == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking naming covention of #define statement ...")
-            for IdentifierTable in EccGlobalData.gIdentifierTableList:
-                SqlCommand = """select ID, Value from %s where Model = %s""" %(IdentifierTable, MODEL_IDENTIFIER_MACRO_DEFINE)
-                RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
-                for Record in RecordSet:
-                    Name = Record[1].strip().split()[1]
+            
+            SqlCommand = """select ID, Value from %s where Model = %s""" %(FileTable, MODEL_IDENTIFIER_MACRO_DEFINE)
+            RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
+            for Record in RecordSet:
+                Name = Record[1].strip().split()[1]
+                if Name.find('(') != -1:
                     Name = Name[0:Name.find('(')]
-                    if Name.upper() != Name:
-                        if not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_DEFINE_STATEMENT, Name):
-                            EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_DEFINE_STATEMENT, OtherMsg = "The #define name [%s] does not follow the rules" % (Name), BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
+                if Name.upper() != Name:
+                    if not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_DEFINE_STATEMENT, Name):
+                        EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_DEFINE_STATEMENT, OtherMsg = "The #define name [%s] does not follow the rules" % (Name), BelongsToTable = FileTable, BelongsToItem = Record[0])
 
     # Check whether only capital letters are used for typedef declarations
-    def NamingConventionCheckTypedefStatement(self):
+    def NamingConventionCheckTypedefStatement(self, FileTable):
         if EccGlobalData.gConfig.NamingConventionCheckTypedefStatement == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking naming covention of #typedef statement ...")
-            for IdentifierTable in EccGlobalData.gIdentifierTableList:
-                SqlCommand = """select ID, Name from %s where Model = %s""" %(IdentifierTable, MODEL_IDENTIFIER_TYPEDEF)
-                RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
-                for Record in RecordSet:
-                    Name = Record[1].strip()
-                    if Name != '' and Name != None:
-                        if Name[0] == '(':
-                            Name = Name[1:Name.find(')')]
-                        if Name.find('(') > -1:
-                            Name = Name[Name.find('(') + 1 : Name.find(')')]
-                        Name = Name.replace('WINAPI', '')
-                        Name = Name.replace('*', '').strip()
-                        if Name.upper() != Name:
-                            if not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_TYPEDEF_STATEMENT, Name):
-                                EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_TYPEDEF_STATEMENT, OtherMsg = "The #typedef name [%s] does not follow the rules" % (Name), BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
+            
+            SqlCommand = """select ID, Name from %s where Model = %s""" %(FileTable, MODEL_IDENTIFIER_TYPEDEF)
+            RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
+            for Record in RecordSet:
+                Name = Record[1].strip()
+                if Name != '' and Name != None:
+                    if Name[0] == '(':
+                        Name = Name[1:Name.find(')')]
+                    if Name.find('(') > -1:
+                        Name = Name[Name.find('(') + 1 : Name.find(')')]
+                    Name = Name.replace('WINAPI', '')
+                    Name = Name.replace('*', '').strip()
+                    if Name.upper() != Name:
+                        if not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_TYPEDEF_STATEMENT, Name):
+                            EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_TYPEDEF_STATEMENT, OtherMsg = "The #typedef name [%s] does not follow the rules" % (Name), BelongsToTable = FileTable, BelongsToItem = Record[0])
 
     # Check whether the #ifndef at the start of an include file uses both prefix and postfix underscore characters, '_'.
-    def NamingConventionCheckIfndefStatement(self):
+    def NamingConventionCheckIfndefStatement(self, FileTable):
         if EccGlobalData.gConfig.NamingConventionCheckTypedefStatement == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking naming covention of #ifndef statement ...")
-            for IdentifierTable in EccGlobalData.gIdentifierTableList:
-                SqlCommand = """select ID, Value from %s where Model = %s""" %(IdentifierTable, MODEL_IDENTIFIER_MACRO_IFNDEF)
-                RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
-                for Record in RecordSet:
-                    Name = Record[1].replace('#ifndef', '').strip()
-                    if Name[0] != '_' or Name[-1] != '_':
-                        if not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_IFNDEF_STATEMENT, Name):
-                            EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_IFNDEF_STATEMENT, OtherMsg = "The #ifndef name [%s] does not follow the rules" % (Name), BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
+            
+            SqlCommand = """select ID, Value from %s where Model = %s""" %(FileTable, MODEL_IDENTIFIER_MACRO_IFNDEF)
+            RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
+            for Record in RecordSet:
+                Name = Record[1].replace('#ifndef', '').strip()
+                if Name[0] != '_' or Name[-1] != '_':
+                    if not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_IFNDEF_STATEMENT, Name):
+                        EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_IFNDEF_STATEMENT, OtherMsg = "The #ifndef name [%s] does not follow the rules" % (Name), BelongsToTable = FileTable, BelongsToItem = Record[0])
 
     # Rule for path name, variable name and function name
     # 1. First character should be upper case
@@ -865,17 +881,17 @@ class Check(object):
     # 3. No space existence
     # 4. Global variable name must start with a 'g'
     # Check whether the variable name followed the rule
-    def NamingConventionCheckVariableName(self):
+    def NamingConventionCheckVariableName(self, FileTable):
         if EccGlobalData.gConfig.NamingConventionCheckVariableName == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking naming covention of variable name ...")
             Pattern = re.compile(r'^[A-Zgm]+\S*[a-z]\S*$')
-            for IdentifierTable in EccGlobalData.gIdentifierTableList:
-                SqlCommand = """select ID, Name from %s where Model = %s""" %(IdentifierTable, MODEL_IDENTIFIER_VARIABLE)
-                RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
-                for Record in RecordSet:
-                    if not Pattern.match(Record[1]):
-                        if not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, Record[1]):
-                            EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, OtherMsg = "The variable name [%s] does not follow the rules" % (Record[1]), BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
+            
+            SqlCommand = """select ID, Name from %s where Model = %s""" %(FileTable, MODEL_IDENTIFIER_VARIABLE)
+            RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
+            for Record in RecordSet:
+                if not Pattern.match(Record[1]):
+                    if not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, Record[1]):
+                        EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, OtherMsg = "The variable name [%s] does not follow the rules" % (Record[1]), BelongsToTable = FileTable, BelongsToItem = Record[0])
 
     # Rule for path name, variable name and function name
     # 1. First character should be upper case
@@ -894,17 +910,17 @@ class Check(object):
                         EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_FUNCTION_NAME, OtherMsg = "The function name [%s] does not follow the rules" % (Record[1]), BelongsToTable = 'Function', BelongsToItem = Record[0])
 
     # Check whether NO use short variable name with single character
-    def NamingConventionCheckSingleCharacterVariable(self):
+    def NamingConventionCheckSingleCharacterVariable(self, FileTable):
         if EccGlobalData.gConfig.NamingConventionCheckSingleCharacterVariable == '1' or EccGlobalData.gConfig.NamingConventionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking naming covention of single character variable name ...")
-            for IdentifierTable in EccGlobalData.gIdentifierTableList:
-                SqlCommand = """select ID, Name from %s where Model = %s""" %(IdentifierTable, MODEL_IDENTIFIER_VARIABLE)
-                RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
-                for Record in RecordSet:
-                    Variable = Record[1].replace('*', '')
-                    if len(Variable) == 1:
-                        if not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_SINGLE_CHARACTER_VARIABLE, Record[1]):
-                            EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_SINGLE_CHARACTER_VARIABLE, OtherMsg = "The variable name [%s] does not follow the rules" % (Record[1]), BelongsToTable = IdentifierTable, BelongsToItem = Record[0])
+            
+            SqlCommand = """select ID, Name from %s where Model = %s""" %(FileTable, MODEL_IDENTIFIER_VARIABLE)
+            RecordSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
+            for Record in RecordSet:
+                Variable = Record[1].replace('*', '')
+                if len(Variable) == 1:
+                    if not EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_SINGLE_CHARACTER_VARIABLE, Record[1]):
+                        EccGlobalData.gDb.TblReport.Insert(ERROR_NAMING_CONVENTION_CHECK_SINGLE_CHARACTER_VARIABLE, OtherMsg = "The variable name [%s] does not follow the rules" % (Record[1]), BelongsToTable = FileTable, BelongsToItem = Record[0])
 
 ##
 #
