@@ -164,7 +164,42 @@ class Ecc(object):
         EdkLogger.quiet("Generating report ...")
         EccGlobalData.gDb.TblReport.ToCSV(self.ReportFile)
         EdkLogger.quiet("Generating report done!")
-    
+        
+    def GetRealPathCase(self, path):
+        TmpPath = path.rstrip(os.sep)
+        PathParts = TmpPath.split(os.sep)
+        if len(PathParts) == 0:
+            return path
+        if len(PathParts) == 1:
+            if PathParts[0].strip().endswith(':'):
+                return PathParts[0].upper()
+            # Relative dir, list . current dir
+            Dirs = os.listdir('.')
+            for Dir in Dirs:
+                if Dir.upper() == PathParts[0].upper():
+                    return Dir
+        
+        if PathParts[0].strip().endswith(':'):
+            PathParts[0] = PathParts[0].upper()
+        ParentDir = PathParts[0]
+        RealPath = ParentDir
+        if PathParts[0] == '':
+            RealPath = os.sep
+            ParentDir = os.sep
+        
+        PathParts.remove(PathParts[0])    # need to remove the parent
+        for Part in PathParts:
+            Dirs = os.listdir(ParentDir)
+            for Dir in Dirs:
+                if Dir.upper() == Part.upper():
+                    RealPath += os.sep
+                    RealPath += Dir
+                    break
+            ParentDir += os.sep
+            ParentDir += Dir
+            
+        return RealPath
+        
     ## ParseOption
     #
     # Parse options
@@ -196,7 +231,7 @@ class Ecc(object):
             if not os.path.isdir(Options.Target):
                 EdkLogger.error("ECC", BuildToolError.OPTION_VALUE_INVALID, ExtraData="Target [%s] does NOT exist" % Options.Target)
             else:
-                EccGlobalData.gTarget = os.path.normpath(Options.Target)
+                EccGlobalData.gTarget = self.GetRealPathCase(os.path.normpath(Options.Target))
         else:
             EdkLogger.warn("Ecc", EdkLogger.ECC_ERROR, "The target source tree was not specified, using current WORKSPACE instead!")
             EccGlobalData.gTarget = os.path.normpath(os.getenv("WORKSPACE"))

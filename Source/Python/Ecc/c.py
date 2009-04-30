@@ -488,7 +488,7 @@ def CollectSourceCodeDataIntoDB(RootDir):
         if IgnoredPattern.match(dirpath.upper()):
             continue
         for f in filenames:
-            FullName = os.path.join(dirpath, f)
+            FullName = os.path.normpath(os.path.join(dirpath, f))
             if os.path.splitext(f)[1] in ('.h', '.c'):
                 EdkLogger.info("Parsing " + FullName)
                 model = f.endswith('c') and DataClass.MODEL_FILE_C or DataClass.MODEL_FILE_H
@@ -1305,7 +1305,7 @@ def CheckFuncLayoutName(FullFileName):
         if EccGlobalData.gException.IsException(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, FuncName):
             continue
         if Result[2] != 0:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Function name should appear at the start of a line', FileTable, Result[1])
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Function name [%s] should appear at the start of a line' % FuncName, FileTable, Result[1])
         ParamList = GetParamList(Result[0])
         if len(ParamList) == 0:
             continue
@@ -1332,7 +1332,7 @@ def CheckFuncLayoutName(FullFileName):
         if EccGlobalData.gException.IsException(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, FuncName):
             continue
         if Result[2] != 0:
-            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Function name should appear at the start of a line', 'Function', Result[1])
+            PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_NAME, 'Function name [%s] should appear at the start of a line' % FuncName, 'Function', Result[1])
         ParamList = GetParamList(Result[0])
         if len(ParamList) == 0:
             continue
@@ -1403,8 +1403,8 @@ def CheckFuncLayoutPrototype(FullFileName):
             DeclName = FuncDecl[1][0:LBPos].strip()
             DeclModifier = FuncDecl[0]
             if DeclName == FuncName:
-                if DiffModifier(FuncModifier, DeclModifier):
-                    PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_PROTO_TYPE, 'Function modifier different with prototype.', 'Function', FuncDef[3])
+                if DiffModifier(FuncModifier, DeclModifier) and not EccGlobalData.gException.IsException(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_PROTO_TYPE, FuncName):
+                    PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_FUNCTION_PROTO_TYPE, 'Function [%s] modifier different with prototype.' % FuncName, 'Function', FuncDef[3])
                 ParamListOfDef = GetParamList(FuncDefHeader)
                 ParamListOfDecl = GetParamList(FuncDecl[1])
                 if len(ParamListOfDef) != len(ParamListOfDecl):
