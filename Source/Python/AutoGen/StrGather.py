@@ -292,7 +292,7 @@ def CreateCFileContent(BaseName, UniObjectClass, IsCompatibleMode):
                 Index = Index + 1
             else:
                 if NumberOfUseOhterLangDef > 0:
-                    StrStringValue = WriteLine(StrStringValue, CreateArrayItem([StringSkipType, DecToHexStr(NumberOfUseOhterLangDef, 2), EFI_HII_SIBT_END]))
+                    StrStringValue = WriteLine(StrStringValue, CreateArrayItem([StringSkipType] + DecToHexList(NumberOfUseOhterLangDef, 4)))
                     NumberOfUseOhterLangDef = 0
                     ArrayLength = ArrayLength + 3
                 if Referenced and Item.Token > 0:
