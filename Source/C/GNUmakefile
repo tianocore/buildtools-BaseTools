@@ -57,6 +57,7 @@ APPLICATIONS = \
   GenPage \
   GenSec \
   GenVtf \
+  LzmaCompress \
   Split \
   TianoCompress \
   VolInfo \
