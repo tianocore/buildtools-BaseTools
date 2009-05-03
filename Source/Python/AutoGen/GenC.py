@@ -383,6 +383,28 @@ ${Function} (
 ${END}
 """)
 
+## SMM_CORE Entry Point Templates
+gSmmCoreEntryPointString = TemplateString("""
+const UINT32 _gUefiDriverRevision = 0;
+${BEGIN}
+EFI_STATUS
+${Function} (
+  IN EFI_HANDLE         ImageHandle,
+  IN EFI_SYSTEM_TABLE   *SystemTable
+  );
+
+EFI_STATUS
+EFIAPI
+ProcessModuleEntryPointList (
+  IN EFI_HANDLE         ImageHandle,
+  IN EFI_SYSTEM_TABLE   *SystemTable
+  )
+{
+  return ${Function} (ImageHandle, SystemTable);
+}
+${END}
+""")
+
 gPeimEntryPointString = [
 TemplateString("""
 GLOBAL_REMOVE_IF_UNREFERENCED const UINT32 _gPeimRevision = ${PiSpecVersion};
@@ -868,6 +890,8 @@ gModuleTypeHeaderFile = {
     "DXE_SAL_DRIVER"    :   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h", "Library/UefiDriverEntryPoint.h"],
     "UEFI_DRIVER"       :   ["Uefi.h",  "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h", "Library/UefiDriverEntryPoint.h"],
     "UEFI_APPLICATION"  :   ["Uefi.h",  "Library/BaseLib.h", "Library/DebugLib.h", "Library/UefiBootServicesTableLib.h", "Library/UefiApplicationEntryPoint.h"],
+    "SMM_DRIVER"        :   ["PiDxe.h", "Library/BaseLib.h", "Library/DebugLib.h", "Library/SmmDriverEntryPoint.h"],
+    "SMM_CORE"          :   ["PiDxe.h", "Library/DebugLib.h"],
     "USER_DEFINED"      :   [gBasicHeaderFile]
 }
 
@@ -1463,7 +1487,7 @@ def CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH):
             ConstructorPrototypeString.Append(gLibraryStructorPrototype['PEI'].Replace(Dict))
             ConstructorCallingString.Append(gLibraryStructorCall['PEI'].Replace(Dict))
         elif Lib.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER',
-                                'DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
+                                'DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION', 'SMM_DRIVER', 'SMM_CORE']:
             ConstructorPrototypeString.Append(gLibraryStructorPrototype['DXE'].Replace(Dict))
             ConstructorCallingString.Append(gLibraryStructorCall['DXE'].Replace(Dict))
 
@@ -1489,7 +1513,7 @@ def CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH):
         elif Info.ModuleType in ['PEI_CORE','PEIM']:
             AutoGenC.Append(gLibraryString['PEI'].Replace(Dict))
         elif Info.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER',
-                                 'DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
+                                 'DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION', 'SMM_DRIVER', 'SMM_CORE']:
             AutoGenC.Append(gLibraryString['DXE'].Replace(Dict))
 
 ## Create code for library destructor
@@ -1520,7 +1544,7 @@ def CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH):
             DestructorPrototypeString.Append(gLibraryStructorPrototype['PEI'].Replace(Dict))
             DestructorCallingString.Append(gLibraryStructorCall['PEI'].Replace(Dict))
         elif Lib.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER',
-                                'DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
+                                'DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION', 'SMM_DRIVER', 'SMM_CORE']:
             DestructorPrototypeString.Append(gLibraryStructorPrototype['DXE'].Replace(Dict))
             DestructorCallingString.Append(gLibraryStructorCall['DXE'].Replace(Dict))
 
@@ -1546,7 +1570,7 @@ def CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH):
         elif Info.ModuleType in ['PEI_CORE','PEIM']:
             AutoGenC.Append(gLibraryString['PEI'].Replace(Dict))
         elif Info.ModuleType in ['DXE_CORE','DXE_DRIVER','DXE_SMM_DRIVER','DXE_RUNTIME_DRIVER',
-                                 'DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION']:
+                                 'DXE_SAL_DRIVER','UEFI_DRIVER','UEFI_APPLICATION', 'SMM_DRIVER', 'SMM_CORE']:
             AutoGenC.Append(gLibraryString['DXE'].Replace(Dict))
 
 
@@ -1577,7 +1601,7 @@ def CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH):
         'EfiSpecVersion':   EfiSpecVersion
     }
 
-    if Info.ModuleType in ['PEI_CORE', 'DXE_CORE']:
+    if Info.ModuleType in ['PEI_CORE', 'DXE_CORE', 'SMM_CORE']:
         if NumEntryPoints != 1:
             EdkLogger.error(
                 "build",
@@ -1592,6 +1616,8 @@ def CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH):
     elif Info.ModuleType == 'DXE_CORE':
         AutoGenC.Append(gDxeCoreEntryPointString.Replace(Dict))
         AutoGenH.Append(gDxeCoreEntryPointPrototype.Replace(Dict))
+    elif Info.ModuleType == 'SMM_CORE':
+        AutoGenC.Append(gSmmCoreEntryPointString.Replace(Dict))
     elif Info.ModuleType == 'PEIM':
         if NumEntryPoints < 2:
             AutoGenC.Append(gPeimEntryPointString[NumEntryPoints].Replace(Dict))
@@ -1599,8 +1625,8 @@ def CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH):
             AutoGenC.Append(gPeimEntryPointString[2].Replace(Dict))
         AutoGenH.Append(gPeimEntryPointPrototype.Replace(Dict))
     elif Info.ModuleType in ['DXE_RUNTIME_DRIVER','DXE_DRIVER','DXE_SMM_DRIVER',
-                             'DXE_SAL_DRIVER','UEFI_DRIVER']:
-        if Info.ModuleType == 'DXE_SMM_DRIVER':
+                             'DXE_SAL_DRIVER','UEFI_DRIVER', 'SMM_DRIVER']:
+        if Info.ModuleType in ['DXE_SMM_DRIVER', 'SMM_DRIVER']:
             if NumEntryPoints == 0:
                 AutoGenC.Append(gDxeSmmEntryPointString[0].Replace(Dict))
             else:

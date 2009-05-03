@@ -250,6 +250,8 @@ MODULE_ENTRY_POINT = ${module_entry_point}
 ARCH_ENTRY_POINT = ${arch_entry_point}
 IMAGE_ENTRY_POINT = ${image_entry_point}
 
+${BEGIN}${module_extra_defines}
+${END}
 #
 # Build Configuration Macro Definition
 #
@@ -563,6 +565,7 @@ cleanlib:
             "module_file"               : self._AutoGenObject.MetaFile.Name,
             "module_file_base_name"     : self._AutoGenObject.MetaFile.BaseName,
             "module_relative_directory" : self._AutoGenObject.SourceDir,
+            "module_extra_defines"      : ["%s = %s" % (k, v) for k,v in self._AutoGenObject.Module.Defines.iteritems()],
 
             "architecture"              : self._AutoGenObject.Arch,
             "toolchain_tag"             : self._AutoGenObject.ToolChain,

@@ -1177,6 +1177,7 @@ class InfBuildData(ModuleBuildClassObject):
         self._ModuleUnloadImageList = None
         self._ConstructorList       = None
         self._DestructorList        = None
+        self._Defs                  = None
         self._Binaries              = None
         self._Sources               = None
         self._LibraryClasses        = None
@@ -1296,6 +1297,10 @@ class InfBuildData(ModuleBuildClassObject):
                                         "No supported family [%s]" % TokenList[0],
                                         File=self.MetaFile, Line=Record[-1])
                     self._CustomMakefile[TokenList[0]] = TokenList[1]
+            else:
+                if self._Defs == None:
+                    self._Defs = sdict()
+                self._Defs[Name] = Record[1]
 
         #
         # Retrieve information in sections specific to R8.x modules
@@ -1304,7 +1309,11 @@ class InfBuildData(ModuleBuildClassObject):
             if not self._ModuleType:
                 EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE,
                                 "MODULE_TYPE is not given", File=self.MetaFile)
-            self._BuildType = self._ModuleType.upper()
+            if self._Defs and 'PCI_DEVICE_ID' in self._Defs and 'PCI_VENDOR_ID' in self._Defs \
+               and 'PCI_CLASS_CODE' in self._Defs:
+                self._BuildType = 'UEFI_OPTIONROM'
+            else:
+                self._BuildType = self._ModuleType.upper()
         else:
             self._BuildType = self._ComponentType.upper()
             if not self._ComponentType:
@@ -1515,6 +1524,15 @@ class InfBuildData(ModuleBuildClassObject):
             if self._DestructorList == None:
                 self._DestructorList = []
         return self._DestructorList
+
+    ## Retrieve definies other than above ones
+    def _GetDefines(self):
+        if self._Defs == None:
+            if self._Header_ == None:
+                self._GetHeaderInfo()
+            if self._Defs == None:
+                self._Defs = sdict()
+        return self._Defs
 
     ## Retrieve binary files
     def _GetBinaryFiles(self):
@@ -1888,6 +1906,7 @@ class InfBuildData(ModuleBuildClassObject):
     ModuleUnloadImageList   = property(_GetUnloadImage)
     ConstructorList         = property(_GetConstructor)
     DestructorList          = property(_GetDestructor)
+    Defines                 = property(_GetDefines)
 
     Binaries                = property(_GetBinaryFiles)
     Sources                 = property(_GetSourceFiles)
