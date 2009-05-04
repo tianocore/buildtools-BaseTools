@@ -189,7 +189,7 @@ class Ecc(object):
         
         PathParts.remove(PathParts[0])    # need to remove the parent
         for Part in PathParts:
-            Dirs = os.listdir(ParentDir)
+            Dirs = os.listdir(ParentDir + os.sep)
             for Dir in Dirs:
                 if Dir.upper() == Part.upper():
                     RealPath += os.sep
