@@ -1846,7 +1846,9 @@ Returns:
           stricmp (ModuleType, "BS_DRIVER") == 0  ||
           stricmp (ModuleType, "DXE_DRIVER") == 0 ||
           stricmp (ModuleType, "DXE_SMM_DRIVER") == 0  ||
-          stricmp (ModuleType, "UEFI_DRIVER") == 0) {
+          stricmp (ModuleType, "UEFI_DRIVER") == 0 ||
+          stricmp (ModuleType, "SMM_DRIVER") == 0 ||
+          stricmp (ModuleType, "SMM_CORE") == 0) {
         Type = EFI_IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER;
         VerboseMsg ("Efi Image subsystem type is efi boot service driver.");
 
