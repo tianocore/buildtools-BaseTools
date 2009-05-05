@@ -917,7 +917,7 @@ Returns:
       // To simplify string comparisons, replace slashes with dashes
       //
       Argv[0][0] = '-';
-      
+            
       //
       // Vendor ID specified with -f
       //
@@ -925,11 +925,11 @@ Returns:
         //
         // Make sure there's another parameter
         //
-        if (Argc > 1) {
+        if ((Argc > 1) && (Argv[1][0] != '-')) {
           Options->VendId       = (UINT16) strtol (Argv[1], NULL, 16);
           Options->VendIdValid  = 1;
         } else {
-	        Error (NULL, 0, 2000, "Invalid parameter", "Missing Vendor ID with %s!", Argv[0]);
+	        Error (NULL, 0, 2000, "Invalid parameter", "Missing Vendor ID with %s option!", Argv[0]);
           Usage ();
           return STATUS_ERROR;
         }
@@ -941,11 +941,11 @@ Returns:
         // Device ID specified with -i
         // Make sure there's another parameter
         //
-        if (Argc > 1) {
+        if ((Argc > 1) && (Argv[1][0] != '-')) {
           Options->DevId      = (UINT16) strtol (Argv[1], NULL, 16);
           Options->DevIdValid = 1;
         } else {
-          Error (NULL, 0, 2000, "Invalid parameter", "Missing Device ID with %s!", Argv[0]);
+          Error (NULL, 0, 2000, "Invalid parameter", "Missing Device ID with %s option!", Argv[0]);
           Usage ();
           return STATUS_ERROR;
         }
@@ -1027,7 +1027,7 @@ Returns:
         // Class code value for the next file in the list.
         // Make sure there's another parameter
         //
-        if (Argc > 1) {
+        if ((Argc > 1) && (Argv[1][0] != '-')) {
           //
           // No error checking on the return value. Could check for LONG_MAX,
           // LONG_MIN, or 0 class code value if desired. Check range (3 bytes)
@@ -1038,8 +1038,11 @@ Returns:
             Error (NULL, 0, 2000, "Invalid parameter", "Class code %s out of range!", Argv[1]);
             return STATUS_ERROR;
           }
+          if (FileList != NULL && FileList->ClassCode == 0) {
+            FileList->ClassCode = ClassCode;
+          }
         } else {
-	        Error (NULL, 0, 2000, "Invalid parameter", "Missing class code value with %s!", Argv[0]);
+	        Error (NULL, 0, 2000, "Invalid parameter", "Missing class code value with %s option!", Argv[0]);
           Usage ();
           return STATUS_ERROR;
         }
@@ -1053,24 +1056,30 @@ Returns:
         // Make sure there's another parameter
         //
         if (Argc > 1) {
-          //
-          // No error checking on the return value. Could check for LONG_MAX,
-          // LONG_MIN, or 0 value if desired. Check range (2 bytes)
-          // at least.
-          //
-          CodeRevision = (UINT32) strtol (Argv[1], NULL, 16);
-          if (CodeRevision & 0xFFFF0000) {
-            Error (NULL, 0, 2000, "Invalid parameter", "Code revision %s out of range!", Argv[1]);
-            return STATUS_ERROR;
+          if (Argv[1][0] != '-') {
+            //
+            // No error checking on the return value. Could check for LONG_MAX,
+            // LONG_MIN, or 0 value if desired. Check range (2 bytes)
+            // at least.
+            //
+            CodeRevision = (UINT32) strtol (Argv[1], NULL, 16);
+            if (CodeRevision & 0xFFFF0000) {
+              Error (NULL, 0, 2000, "Invalid parameter", "Code revision %s out of range!", Argv[1]);
+              return STATUS_ERROR;
+            }
+
+            Argv++;
+            Argc--;
+
+            if (FileList != NULL && FileList->CodeRevision == 0) {
+              FileList->CodeRevision = (UINT16) CodeRevision;
+            }
           }
         } else {
-	        Error (NULL, 0, 2000, "Invalid parameter", "Missing code revision value with %s!", Argv[0]);
+	        Error (NULL, 0, 2000, "Invalid parameter", "Missing code revision value with %s option!", Argv[0]);
           Usage ();
           return STATUS_ERROR;
         }
-
-        Argv++;
-        Argc--;
       } else if ((stricmp (Argv[0], "-p") == 0) || (stricmp (Argv[0], "-pci23") == 0)) {
         //
         // Default layout meets PCI 3.0 specifications, specifying this flag will for a PCI 2.3 layout.
