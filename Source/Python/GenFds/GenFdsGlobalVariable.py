@@ -315,7 +315,7 @@ class GenFdsGlobalVariable:
                 Cmd += [BinFile]
                         
         if ClassCode != None:
-            Cmd += ["-I", ClassCode]
+            Cmd += ["-l", ClassCode]
         if Revision != None:
             Cmd += ["-r", Revision]
         if DeviceId != None:
