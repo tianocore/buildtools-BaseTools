@@ -46,6 +46,8 @@ class FfsInfStatement(FfsInfStatementClassObject):
         self.ShadowFromInfFile = None
         self.KeepRelocFromRule = None
         self.InDsc = True
+        self.OptRomDefs = {}
+        
     ## __InfParse() method
     #
     #   Parse inf file to get module information
@@ -77,7 +79,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         ErrorCode, ErrorInfo = PathClassObj.Validate()
         if ErrorCode != 0:
             EdkLogger.error("GenFds", ErrorCode, ExtraData=ErrorInfo)
-#        (self.SourceDir, InfName) = os.path.split(self.InfFileName)
+        
         if self.CurrentArch != None:
 
             Inf = GenFdsGlobalVariable.WorkSpace.BuildObject[PathClassObj, self.CurrentArch]
@@ -111,6 +113,9 @@ class FfsInfStatement(FfsInfStatementClassObject):
         if len(self.SourceFileList) != 0 and not self.InDsc:
             EdkLogger.warn("GenFds", GENFDS_ERROR, "Module %s NOT found in DSC file; Is it really a binary module?" % (self.InfFileName))
 
+        if Inf._Defs != None and len(Inf._Defs) > 0:
+            self.OptRomDefs.update(Inf._Defs)
+            
         GenFdsGlobalVariable.VerboseLogger( "BaseName : %s" %self.BaseName)
         GenFdsGlobalVariable.VerboseLogger("ModuleGuid : %s" %self.ModuleGuid)
         GenFdsGlobalVariable.VerboseLogger("ModuleType : %s" %self.ModuleType)
@@ -299,6 +304,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         else:
             ArchList = CurArchList
 
+        UseArchList = TargetArchList
         if self.UseArch != None:
             UseArchList = []
             UseArchList.append(self.UseArch)
@@ -320,7 +326,8 @@ class FfsInfStatement(FfsInfStatementClassObject):
             else:
                 EdkLogger.error("GenFds", GENFDS_ERROR, "Module built under multiple ARCHs %s. Not able to determine which output to put into flash for Module %s !" % (str(ArchList), self.InfFileName))
         else:
-            EdkLogger.error("GenFds", GENFDS_ERROR, "Module %s appears under ARCH %s in platform %s, but current deduced ARCH is %s, so NO build output could be put into flash." % (self.InfFileName, str(PlatformArchList), GenFdsGlobalVariable.ActivePlatform, str(TargetArchList)))
+            EdkLogger.error("GenFds", GENFDS_ERROR, "Module %s appears under ARCH %s in platform %s, but current deduced ARCH is %s, so NO build output could be put into flash." \
+                            % (self.InfFileName, str(PlatformArchList), GenFdsGlobalVariable.ActivePlatform, str(set (UseArchList) & set (TargetArchList))))
 
     ## __GetEFIOutPutPath__() method
     #

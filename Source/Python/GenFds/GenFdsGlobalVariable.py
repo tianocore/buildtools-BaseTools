@@ -359,7 +359,7 @@ class GenFdsGlobalVariable:
 
         try:
             PopenObject = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr= subprocess.PIPE)
-        except BaseException, X:
+        except Exception, X:
             EdkLogger.error("GenFds", BuildToolError.COMMAND_FAILURE, ExtraData="%s: %s" % (str(X), cmd[0]))
         (out, error) = PopenObject.communicate()
 

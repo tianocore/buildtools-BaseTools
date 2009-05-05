@@ -18,9 +18,14 @@
 import RuleSimpleFile
 import RuleComplexFile
 import Section
+import OptionRom
+import Common.GlobalData as GlobalData
 
+from Common.DataType import *
+from Common.String import *
 from FfsInfStatement import FfsInfStatement
 from GenFdsGlobalVariable import GenFdsGlobalVariable
+
 ## 
 #
 #
@@ -33,6 +38,34 @@ class OptRomInfStatement (FfsInfStatement):
         FfsInfStatement.__init__(self)
         self.OverrideAttribs = None
 
+    ## __GetOptRomParams() method
+    #
+    #   Parse inf file to get option ROM related parameters
+    #
+    #   @param  self        The object pointer
+    #
+    def __GetOptRomParams(self):
+        
+        if self.OverrideAttribs == None:
+            self.OverrideAttribs = OptionRom.OverrideAttribs()
+        
+        if self.OverrideAttribs.PciVendorId == None:
+            self.OverrideAttribs.PciVendorId = self.OptRomDefs.get ('PCI_VENDOR_ID')
+        
+        if self.OverrideAttribs.PciClassCode == None:
+            self.OverrideAttribs.PciClassCode = self.OptRomDefs.get ('PCI_CLASS_CODE')
+            
+        if self.OverrideAttribs.PciDeviceId == None:
+            self.OverrideAttribs.PciDeviceId = self.OptRomDefs.get ('PCI_DEVICE_ID')
+            
+        if self.OverrideAttribs.PciRevision == None:
+            self.OverrideAttribs.PciRevision = self.OptRomDefs.get ('PCI_REVISION')
+        
+#        InfObj = GenFdsGlobalVariable.WorkSpace.BuildObject[self.PathClassObj, self.CurrentArch]  
+#        RecordList = InfObj._RawData[MODEL_META_DATA_HEADER, InfObj._Arch, InfObj._Platform]
+#        for Record in RecordList:
+#            Record = ReplaceMacros(Record, GlobalData.gEdkGlobal, False)
+#            Name = Record[0]  
     ## GenFfs() method
     #
     #   Generate FFS
@@ -46,6 +79,7 @@ class OptRomInfStatement (FfsInfStatement):
         #
 
         self.__InfParse__()
+        self.__GetOptRomParams()
         #
         # Get the rule of how to generate Ffs file
         #
