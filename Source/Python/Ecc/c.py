@@ -1473,7 +1473,7 @@ def CheckFuncLayoutLocalVariable(FullFileName):
             if len(Result[1]) > 0:
                 PrintErrorMsg(ERROR_C_FUNCTION_LAYOUT_CHECK_NO_INIT_OF_VARIABLE, 'Variable Name: %s' % Result[0], FileTable, Result[2])
         
-def CheckMemberVariableFormat(Value, ModelId):
+def CheckMemberVariableFormat(Name, Value, FileTable, TdId, ModelId):
     ErrMsgList = []
     # Member variable format pattern.
     Pattern = re.compile(r'^[A-Z]+\S*[a-z]\S*$')
@@ -1485,6 +1485,25 @@ def CheckMemberVariableFormat(Value, ModelId):
     
     Fields = Value[LBPos + 1 : RBPos]
     Fields = StripComments(Fields).strip()
+    NestPos = Fields.find ('struct')
+    if NestPos != -1 and (NestPos + len('struct') < len(Fields)):
+        if not Fields[NestPos + len('struct') + 1].isalnum():
+            if not EccGlobalData.gException.IsException(ERROR_DECLARATION_DATA_TYPE_CHECK_NESTED_STRUCTURE, Name):
+                PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_NESTED_STRUCTURE, 'Nested struct in [%s].' % (Name), FileTable, TdId)
+            return ErrMsgList
+    NestPos = Fields.find ('union')
+    if NestPos != -1 and (NestPos + len('union') < len(Fields)):
+        if not Fields[NestPos + len('union') + 1].isalnum():
+            if not EccGlobalData.gException.IsException(ERROR_DECLARATION_DATA_TYPE_CHECK_NESTED_STRUCTURE, Name):
+                PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_NESTED_STRUCTURE, 'Nested union in [%s].' % (Name), FileTable, TdId)
+            return ErrMsgList
+    NestPos = Fields.find ('enum')
+    if NestPos != -1 and (NestPos + len('enum') < len(Fields)):
+        if not Fields[NestPos + len('enum') + 1].isalnum():
+            if not EccGlobalData.gException.IsException(ERROR_DECLARATION_DATA_TYPE_CHECK_NESTED_STRUCTURE, Name):
+                PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_NESTED_STRUCTURE, 'Nested enum in [%s].' % (Name), FileTable, TdId)
+            return ErrMsgList
+            
     if ModelId == DataClass.MODEL_IDENTIFIER_ENUMERATE:
         FieldsList = Fields.split(',')
         # deal with enum is pre-assigned a value by function call ( , , , ...)
@@ -1562,9 +1581,9 @@ def CheckDeclTypedefFormat(FullFileName, ModelId):
     ErrorType = ERROR_DECLARATION_DATA_TYPE_CHECK_ALL
     if ModelId == DataClass.MODEL_IDENTIFIER_STRUCTURE:
         ErrorType = ERROR_DECLARATION_DATA_TYPE_CHECK_STRUCTURE_DECLARATION
-    if ModelId == DataClass.MODEL_IDENTIFIER_ENUMERATE:
+    elif ModelId == DataClass.MODEL_IDENTIFIER_ENUMERATE:
         ErrorType = ERROR_DECLARATION_DATA_TYPE_CHECK_ENUMERATED_TYPE
-    if ModelId == DataClass.MODEL_IDENTIFIER_UNION:
+    elif ModelId == DataClass.MODEL_IDENTIFIER_UNION:
         ErrorType = ERROR_DECLARATION_DATA_TYPE_CHECK_UNION_TYPE
     
     SqlStatement = """ select Modifier, Name, Value, StartLine, EndLine, ID
@@ -1591,7 +1610,7 @@ def CheckDeclTypedefFormat(FullFileName, ModelId):
         if ValueModelId != ModelId:
             continue
         # Check member variable format.
-        ErrMsgList = CheckMemberVariableFormat(Value, ModelId)
+        ErrMsgList = CheckMemberVariableFormat(Name, Value, FileTable, Td[5], ModelId)
         for ErrMsg in ErrMsgList:
             if EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, Name+'.'+ErrMsg):
                 continue
@@ -1613,7 +1632,20 @@ def CheckDeclTypedefFormat(FullFileName, ModelId):
             
     for Result in ResultList:
         # Check member variable format.
-        ErrMsgList = CheckMemberVariableFormat(Result[4], ModelId)
+        Name = Result[0].strip()
+        Value = Result[4].strip()
+        if Value.startswith('enum'):
+            ValueModelId = DataClass.MODEL_IDENTIFIER_ENUMERATE
+        elif Value.startswith('struct'):
+            ValueModelId = DataClass.MODEL_IDENTIFIER_STRUCTURE
+        elif Value.startswith('union'):
+            ValueModelId = DataClass.MODEL_IDENTIFIER_UNION
+        else:
+            continue
+        
+        if ValueModelId != ModelId:
+            continue
+        ErrMsgList = CheckMemberVariableFormat(Name, Value, FileTable, Result[3], ModelId)
         for ErrMsg in ErrMsgList:
             if EccGlobalData.gException.IsException(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, Result[0]+'.'+ErrMsg):
                 continue
