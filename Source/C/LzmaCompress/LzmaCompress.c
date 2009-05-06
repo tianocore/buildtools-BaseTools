@@ -37,17 +37,27 @@ static void *SzAlloc(void *p, size_t size) { p = p; return MyAlloc(size); }
 static void SzFree(void *p, void *address) { p = p; MyFree(address); }
 static ISzAlloc g_Alloc = { SzAlloc, SzFree };
 
+static Bool mQuietMode = False;
+
+#define UTILITY_NAME "LzmaCompress"
+#define UTILITY_MAJOR_VERSION 0
+#define UTILITY_MINOR_VERSION 1
 #define INTEL_COPYRIGHT \
   "Copyright (c) 2009, Intel Corporation. All rights reserved."
 void PrintHelp(char *buffer)
 {
   strcat(buffer,
-      "\nLzmaCompress - " INTEL_COPYRIGHT "\n"
+      "\n" UTILITY_NAME " - " INTEL_COPYRIGHT "\n"
       "Based on LZMA Utility " MY_VERSION_COPYRIGHT_DATE "\n"
       "\nUsage:  LzmaCompress -e|-d [options] <inputFile>\n"
              "  -e: encode file\n"
              "  -d: decode file\n"
-             "  -o FileName, --output FileName\n"
+             "  -o FileName, --output FileName: specify the output filename\n"
+             "  -v, --verbose: increase output messages\n"
+             "  -q, --quiet: reduce output messages\n"
+             "  --debug [0-9]: set debug level\n"
+             "  --version: display the program version and exit\n"
+             "  -h, --help: display this help text\n"
              );
 }
 
@@ -68,6 +78,11 @@ int PrintErrorNumber(char *buffer, SRes val)
 int PrintUserError(char *buffer)
 {
   return PrintError(buffer, "Incorrect command");
+}
+
+void PrintVersion(char *buffer)
+{
+  sprintf (buffer, "%s Version %d.%d", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
 }
 
 #define IN_BUF_SIZE (1 << 16)
@@ -192,12 +207,12 @@ int main2(int numArgs, const char *args[], char *rs)
 {
   CFileSeqInStream inStream;
   CFileOutStream outStream;
-  char c;
   int res;
   int encodeMode;
-  Bool useOutFile = False;
+  Bool modeWasSet = False;
   const char *inputFile = NULL;
-  const char *outputFile = NULL;
+  const char *outputFile = "file.tmp";
+  int param;
 
   FileSeqInStream_CreateVTable(&inStream);
   File_Construct(&inStream.file);
@@ -211,25 +226,57 @@ int main2(int numArgs, const char *args[], char *rs)
     return 0;
   }
 
-  if (numArgs < 3 || strlen(args[1]) != 2 || args[1][0] != '-')
-    return PrintUserError(rs);
-
-  if (strcmp(args[2], "-o") == 0 || strcmp(args[2], "--output") == 0) {
-    if (numArgs != 5) {
+  for (param = 1; param < numArgs; param++) {
+    if (strcmp(args[param], "-e") == 0 || strcmp(args[param], "-d") == 0) {
+      encodeMode = (args[param][1] == 'e');
+      modeWasSet = True;
+    } else if (strcmp(args[param], "-o") == 0 ||
+               strcmp(args[param], "--output") == 0) {
+      if (numArgs < (param + 3)) {
+        return PrintUserError(rs);
+      }
+      outputFile = args[++param];
+    } else if (strcmp(args[param], "--debug") == 0) {
+      if (numArgs < (param + 3)) {
+        return PrintUserError(rs);
+      }
+      //
+      // For now we silently ignore this parameter to achieve command line
+      // parameter compatibility with other build tools.
+      //
+      param++;
+    } else if (
+                strcmp(args[param], "-h") == 0 ||
+                strcmp(args[param], "--help") == 0
+              ) {
+      PrintHelp(rs);
+      return 0;
+    } else if (
+                strcmp(args[param], "-v") == 0 ||
+                strcmp(args[param], "--verbose") == 0
+              ) {
+      //
+      // For now we silently ignore this parameter to achieve command line
+      // parameter compatibility with other build tools.
+      //
+    } else if (
+                strcmp(args[param], "-q") == 0 ||
+                strcmp(args[param], "--quiet") == 0
+              ) {
+      mQuietMode = True;
+    } else if (strcmp(args[param], "--version") == 0) {
+      PrintVersion(rs);
+      return 0;
+    } else if (param == (numArgs - 1)) {
+      inputFile = args[param];
+    } else {
       return PrintUserError(rs);
     }
-    outputFile = args[3];
-    inputFile = args[4];
-  } else {
-    if (numArgs != 3)
-      return PrintUserError(rs);
-    inputFile = args[2];
   }
 
-  c = args[1][1];
-  encodeMode = (c == 'e' || c == 'E');
-  if (!encodeMode && c != 'd' && c != 'D')
+  if ((inputFile == NULL) || !modeWasSet) {
     return PrintUserError(rs);
+  }
 
   {
     size_t t4 = sizeof(UInt32);
@@ -241,30 +288,27 @@ int main2(int numArgs, const char *args[], char *rs)
   if (InFile_Open(&inStream.file, inputFile) != 0)
     return PrintError(rs, "Can not open input file");
 
-  if (outputFile != NULL)
-  {
-    useOutFile = True;
-    if (OutFile_Open(&outStream.file, outputFile) != 0)
-      return PrintError(rs, "Can not open output file");
-  }
-  else if (encodeMode)
-    PrintUserError(rs);
+  if (OutFile_Open(&outStream.file, outputFile) != 0)
+    return PrintError(rs, "Can not open output file");
 
   if (encodeMode)
   {
     UInt64 fileSize;
     File_GetLength(&inStream.file, &fileSize);
-    printf("Encoding\n");
+    if (!mQuietMode) {
+      printf("Encoding\n");
+    }
     res = Encode(&outStream.s, &inStream.s, fileSize, rs);
   }
   else
   {
-    printf("Decoding\n");
-    res = Decode(&outStream.s, useOutFile ? &inStream.s : NULL);
+    if (!mQuietMode) {
+      printf("Decoding\n");
+    }
+    res = Decode(&outStream.s, &inStream.s);
   }
 
-  if (useOutFile)
-    File_Close(&outStream.file);
+  File_Close(&outStream.file);
   File_Close(&inStream.file);
 
   if (res != SZ_OK)
@@ -284,8 +328,10 @@ int main2(int numArgs, const char *args[], char *rs)
 
 int MY_CDECL main(int numArgs, const char *args[])
 {
-  char rs[800] = { 0 };
+  char rs[2000] = { 0 };
   int res = main2(numArgs, args, rs);
-  puts(rs);
+  if (strlen(rs) > 0) {
+    puts(rs);
+  }
   return res;
 }
