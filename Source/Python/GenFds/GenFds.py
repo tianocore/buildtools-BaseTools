@@ -52,7 +52,6 @@ __copyright__ = "Copyright (c) 2007, Intel Corporation  All rights reserved."
 def main():
     global Options
     Options = myOptionParser()
-    GlobalData.gCaseInsensitive = Options.CaseInsensitive
 
     global Workspace
     Workspace = ""
@@ -281,7 +280,6 @@ def myOptionParser():
     Parser.add_option("-t", "--tagname", action="store", type="string", dest="ToolChain", help="Using the tools: TOOL_CHAIN_TAG name to build the platform.")
     Parser.add_option("-D", "--define", action="append", type="string", dest="Macros", help="Macro: \"Name [= Value]\".")
     Parser.add_option("-s", "--specifyaddress", dest="FixedAddress", action="store_true", type=None, help="Specify driver load address.")
-    Parser.add_option("-c", "--case-insensitive", dest="CaseInsensitive", action="store_true", type=None, help="Don't check case of file name.")
     (Options, args) = Parser.parse_args()
     return Options
 
