@@ -15,7 +15,8 @@ import sys
 import traceback
 from optparse import OptionParser
 
-import Common.EdkLogger
+import Common.EdkLogger as EdkLogger
+import Common.BuildToolError as BuildToolError
 from Common.DataType import *
 
 # To Do 1.set clean, 2. add item, if the line is disabled.
@@ -103,14 +104,24 @@ class TargetTool():
                                     if self.Opt.DSCFILE == '0':
                                         Line = "%-30s = \n" % Key
                                     elif self.Opt.DSCFILE != None:
-                                        Line = "%-30s = %s\n" % (Key, self.Opt.DSCFILE)
+                                        dscFullPath = os.path.join(self.WorkSpace, self.Opt.DSCFILE)
+                                        if os.path.exists(dscFullPath):
+                                            Line = "%-30s = %s\n" % (Key, self.Opt.DSCFILE)
+                                        else:
+                                            EdkLogger.error("TagetTool", BuildToolError.FILE_NOT_FOUND, 
+                                                                   "DSC file %s does not exist!" % self.Opt.DSCFILE, RaiseError=False)
                                     else:
                                         pass
                                 elif Key == TAB_TAT_DEFINES_TOOL_CHAIN_CONF:
                                     if self.Opt.TOOL_DEFINITION_FILE == '0':
                                         Line = "%-30s = \n" % Key
                                     elif self.Opt.TOOL_DEFINITION_FILE != None:
-                                        Line = "%-30s = %s\n" % (Key, self.Opt.TOOL_DEFINITION_FILE)
+                                        tooldefFullPath = os.path.join(self.WorkSpace, self.Opt.TOOL_DEFINITION_FILE)
+                                        if os.path.exists(tooldefFullPath):
+                                            Line = "%-30s = %s\n" % (Key, self.Opt.TOOL_DEFINITION_FILE)
+                                        else:
+                                            EdkLogger.error("TagetTool", BuildToolError.FILE_NOT_FOUND, 
+                                                                   "Tooldef file %s does not exist!" % self.Opt.TOOL_DEFINITION_FILE, RaiseError=False)
                                     else:
                                         pass
                                 elif Key == TAB_TAT_DEFINES_MULTIPLE_THREAD and self.Opt.NUM != None:
@@ -147,7 +158,13 @@ class TargetTool():
                                     if self.Opt.BUILD_RULE_FILE == '0':
                                         Line = "%-30s = \n" % Key
                                     elif self.Opt.BUILD_RULE_FILE != None:
-                                        Line = "%-30s = %s\n" % (Key, self.Opt.BUILD_RULE_FILE)
+                                        buildruleFullPath = os.path.join(self.WorkSpace, self.Opt.BUILD_RULE_FILE)
+                                        if os.path.exists(buildruleFullPath):
+                                            Line = "%-30s = %s\n" % (Key, self.Opt.BUILD_RULE_FILE)
+                                        else:
+                                            EdkLogger.error("TagetTool", BuildToolError.FILE_NOT_FOUND, 
+                                                            "Build rule file %s does not exist!" % self.Opt.BUILD_RULE_FILE, RaiseError=False)
+                                            
                                     else:
                                         pass                                    
                                 else:
@@ -193,7 +210,8 @@ def MyOptionParser():
     return (opt, args)
 
 if __name__ == '__main__':
-
+    EdkLogger.Initialize()
+    EdkLogger.SetLevel(EdkLogger.QUIET)
     (opt, args) = MyOptionParser()
     if len(args) != 1 or (args[0].lower() != 'print' and args[0].lower() != 'clean' and args[0].lower() != 'set'):
         print "The number of args isn't 1 or the value of args is invalid."
@@ -221,10 +239,7 @@ if __name__ == '__main__':
             FileHandle.RWFile('#', '=', 0)
         else:
             FileHandle.RWFile('#', '=', 1)
-            
     except Exception, e:
         last_type, last_value, last_tb = sys.exc_info()
         traceback.print_exception(last_type, last_value, last_tb)
-
-
 
