@@ -36,7 +36,8 @@ class TargetTool():
             TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER               : '',
             TAB_TAT_DEFINES_TARGET                                     : [''],
             TAB_TAT_DEFINES_TOOL_CHAIN_TAG                             : [''],
-            TAB_TAT_DEFINES_TARGET_ARCH                                : ['']
+            TAB_TAT_DEFINES_TARGET_ARCH                                : [''],
+            TAB_TAT_DEFINES_BUILD_RULE_CONF                            : [''],
         }
         self.LoadTargetTxtFile(self.FileName)
 
@@ -66,7 +67,7 @@ class TargetTool():
                           or Key == TAB_TAT_DEFINES_ACTIVE_MODULE:
                             self.TargetTxtDictionary[Key] = LineList[1].replace('\\', '/').strip()
                         elif Key == TAB_TAT_DEFINES_TARGET or Key == TAB_TAT_DEFINES_TARGET_ARCH \
-                          or Key == TAB_TAT_DEFINES_TOOL_CHAIN_TAG:
+                          or Key == TAB_TAT_DEFINES_TOOL_CHAIN_TAG or Key == TAB_TAT_DEFINES_BUILD_RULE_CONF:
                             self.TargetTxtDictionary[Key] = LineList[1].split()
             f.close()
             return 0
@@ -142,6 +143,13 @@ class TargetTool():
                                         Line = "%-30s = %s\n" % (Key, self.Opt.TOOL_CHAIN_TAG)
                                     else:
                                         pass
+                                elif Key == TAB_TAT_DEFINES_BUILD_RULE_CONF:
+                                    if self.Opt.BUILD_RULE_FILE == '0':
+                                        Line = "%-30s = \n" % Key
+                                    elif self.Opt.BUILD_RULE_FILE != None:
+                                        Line = "%-30s = %s\n" % (Key, self.Opt.BUILD_RULE_FILE)
+                                    else:
+                                        pass                                    
                                 else:
                                     pass
                             fw.write(Line)
@@ -176,6 +184,8 @@ def MyOptionParser():
         help="TARGET is one of list: DEBUG, RELEASE, which replaces target.txt's TARGET definition. To specify more TARGET, please repeat this option. 0 will clear this setting in target.txt and can't combine with other value.")
     parser.add_option("-n", "--tagname", action="store", type="string", dest="TOOL_CHAIN_TAG",
         help="Specify the Tool Chain Tagname, which replaces target.txt's TOOL_CHAIN_TAG definition. 0 will clear this setting in target.txt and can't combine with other value.")
+    parser.add_option("-r", "--buildrule", action="store", type="string", dest="BUILD_RULE_FILE",
+        help="Specify the build rule configure file, which replaces target.txt's BUILD_RULE_CONF definition. If not specified, the default value Conf/build_rule.txt will be set.")
     parser.add_option("-m", "--mutlithread", action="store", type="int", dest="NUM",
         help="Specify the multi-threaded number which replace target.txt's MAX_CONCURRENT_THREAD_NUMBER. If the value is less than 2, MULTIPLE_THREAD will be disabled. If the value is larger than 1, MULTIPLE_THREAD will be enabled.")
 
