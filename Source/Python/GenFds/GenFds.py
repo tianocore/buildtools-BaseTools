@@ -78,6 +78,9 @@ def main():
         if (Options.Workspace == None):
             EdkLogger.error("GenFds", BuildToolError.OPTION_MISSING, "WORKSPACE not defined",
                             ExtraData="Please use '-w' switch to pass it or set the WORKSPACE environment variable.")
+        elif not os.path.exists(Options.Workspace):
+            EdkLogger.error("GenFds", BuildToolError.PARAMETER_INVALID, "WORKSPACE is invalid",
+                            ExtraData="Please use '-w' switch to pass it or set the WORKSPACE environment variable.")
         else:
             Workspace = Options.Workspace
             GenFdsGlobalVariable.WorkSpaceDir = Workspace
