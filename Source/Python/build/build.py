@@ -834,6 +834,13 @@ class Build():
             if self.FvList != []:
                 EdkLogger.info("No flash definition file found. FV [%s] will be ignored." % " ".join(self.FvList))
                 self.FvList = []
+        else:
+            FdfParserObj = FdfParser(str(self.Fdf))
+            FdfParserObj.ParseFile()
+            for fvname in self.FvList:
+                if fvname.upper() not in FdfParserObj.Profile.FvDict.keys():
+                    EdkLogger.error("build", OPTION_VALUE_INVALID,
+                                    "No such an FV in FDF file: %s" % fvname)
 
         #
         # Merge Arch
