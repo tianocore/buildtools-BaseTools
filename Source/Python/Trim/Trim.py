@@ -468,7 +468,10 @@ def Main():
             EdkLogger.SetLevel(CommandOptions.LogLevel + 1)
         else:
             EdkLogger.SetLevel(CommandOptions.LogLevel)
-
+    except FatalError, X:
+        return 1
+    
+    try:
         if CommandOptions.FileType == "Vfr":
             if CommandOptions.OutputFile == None:
                 CommandOptions.OutputFile = os.path.splitext(InputFile)[0] + '.iii'
