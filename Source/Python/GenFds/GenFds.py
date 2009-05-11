@@ -29,6 +29,7 @@ import RuleComplexFile
 from EfiSection import EfiSection
 import StringIO
 import Common.TargetTxtClassObject as TargetTxtClassObject
+import Common.ToolDefClassObject as ToolDefClassObject
 import Common.DataType
 import Common.GlobalData as GlobalData
 from Common import EdkLogger
@@ -192,6 +193,7 @@ def main():
             OutputDirFromCommandLine = GenFdsGlobalVariable.ReplaceWorkspaceMacro(Options.outputDir)
             for Arch in ArchList:
                 GenFdsGlobalVariable.OutputDirDict[Arch] = OutputDirFromCommandLine
+            EdkLogger.warn("GenFds", "Output directory is given explicitly, so the tool chain tag %s is ignored." % GenFdsGlobalVariable.ToolChainTag)
         else:
             for Arch in ArchList:
                 GenFdsGlobalVariable.OutputDirDict[Arch] = os.path.join(GenFdsGlobalVariable.OutputDirFromDscDict[Arch], GenFdsGlobalVariable.TargetName + '_' + GenFdsGlobalVariable.ToolChainTag)
