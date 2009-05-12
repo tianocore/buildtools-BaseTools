@@ -227,6 +227,8 @@ Returns:
                         If it is combined with other action options, the later\n\
                         input action option will override the previous one.\n");
   fprintf (stdout, "  -z, --zero            Zero the Debug Data Fields in the PE input image file.\n\
+                        It also zeros the time stamp fields.\n\
+                        This option can be used to compare the binary efi image.\n\
                         It can't be combined with other action options\n\
                         except for -o, -r option. It is a action option.\n\
                         If it is combined with other action options, the later\n\
@@ -1538,7 +1540,7 @@ Returns:
     VerboseMsg ("Convert the input EXE to the output BIN file.");
     break;
   case FW_ZERO_DEBUG_IMAGE:
-    VerboseMsg ("Zero the Debug Data Fields in input PE image.");
+    VerboseMsg ("Zero the Debug Data Fields and Time Stamp in input PE image.");
     break;
   case FW_SET_STAMP_IMAGE:
     VerboseMsg ("Set new time stamp %s in the input PE image.", TimeStamp);
