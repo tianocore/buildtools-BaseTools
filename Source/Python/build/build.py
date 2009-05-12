@@ -1183,6 +1183,14 @@ def ParseDefines(DefineList=[]):
                 DefineDict[DefineTokenList[0]] = DefineTokenList[1].strip()
     return DefineDict
 
+gParamCheck = []
+def SingleCheckCallback(option, opt_str, value, parser):
+    if option not in gParamCheck:
+        setattr(parser.values, option.dest, value)
+        gParamCheck.append(option)
+    else:
+        parser.error("Option %s only allows one instance in command line!" % option)
+
 ## Parse command line options
 #
 # Using standard Python module optparse to parse command line option of this tool.
@@ -1194,21 +1202,21 @@ def MyOptionParser():
     Parser = OptionParser(description=__copyright__,version=__version__,prog="build.exe",usage="%prog [options] [all|fds|genc|genmake|clean|cleanall|cleanlib|modules|libraries|run]")
     Parser.add_option("-a", "--arch", action="append", type="choice", choices=['IA32','X64','IPF','EBC'], dest="TargetArch",
         help="ARCHS is one of list: IA32, X64, IPF or EBC, which overrides target.txt's TARGET_ARCH definition. To specify more archs, please repeat this option.")
-    Parser.add_option("-p", "--platform", action="store", type="string", dest="PlatformFile",
+    Parser.add_option("-p", "--platform", action="callback", type="string", dest="PlatformFile", callback=SingleCheckCallback,
         help="Build the platform specified by the DSC file name argument, overriding target.txt's ACTIVE_PLATFORM definition.")
-    Parser.add_option("-m", "--module", action="store", type="string", dest="ModuleFile",
+    Parser.add_option("-m", "--module", action="callback", type="string", dest="ModuleFile", callback=SingleCheckCallback,
         help="Build the module specified by the INF file name argument.")
-    Parser.add_option("-b", "--buildtarget", action="append", type="choice", choices=['DEBUG','RELEASE'], dest="BuildTarget",
+    Parser.add_option("-b", "--buildtarget", action="callback", type="choice", choices=['DEBUG','RELEASE'], dest="BuildTarget", callback=SingleCheckCallback,
         help="BuildTarget is one of list: DEBUG, RELEASE, which overrides target.txt's TARGET definition. To specify more TARGET, please repeat this option.")
     Parser.add_option("-t", "--tagname", action="append", type="string", dest="ToolChain",
         help="Using the Tool Chain Tagname to build the platform, overriding target.txt's TOOL_CHAIN_TAG definition.")
-    Parser.add_option("-x", "--sku-id", action="store", type="string", dest="SkuId",
+    Parser.add_option("-x", "--sku-id", action="callback", type="string", dest="SkuId", callback=SingleCheckCallback,
         help="Using this name of SKU ID to build the platform, overriding SKUID_IDENTIFIER in DSC file.")
 
-    Parser.add_option("-n", action="store", type="int", dest="ThreadNumber",
+    Parser.add_option("-n", action="callback", type="int", dest="ThreadNumber", callback=SingleCheckCallback,
         help="Build the platform using multi-threaded compiler. The value overrides target.txt's MAX_CONCURRENT_THREAD_NUMBER. Less than 2 will disable multi-thread builds.")
 
-    Parser.add_option("-f", "--fdf", action="store", type="string", dest="FdfFile",
+    Parser.add_option("-f", "--fdf", action="callback", type="string", dest="FdfFile", callback=SingleCheckCallback,
         help="The name of the FDF file to use, which overrides the setting in the DSC file.")
     Parser.add_option("-r", "--rom-image", action="append", type="string", dest="RomImage", default=[],
         help="The name of FD to be generated. The name must be from [FD] section in FDF file.")

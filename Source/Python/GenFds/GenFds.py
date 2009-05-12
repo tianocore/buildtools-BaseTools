@@ -261,6 +261,14 @@ def main():
         ReturnCode = CODE_ERROR
     return ReturnCode
 
+gParamCheck = []
+def SingleCheckCallback(option, opt_str, value, parser):
+    if option not in gParamCheck:
+        setattr(parser.values, option.dest, value)
+        gParamCheck.append(option)
+    else:
+        parser.error("Option %s only allows one instance in command line!" % option)
+        
 ## Parse command line options
 #
 # Using standard Python module optparse to parse command line option of this tool.
@@ -271,18 +279,23 @@ def main():
 def myOptionParser():
     usage = "%prog [options] -f input_file -a arch_list -b build_target -p active_platform -t tool_chain_tag -D \"MacroName [= MacroValue]\""
     Parser = OptionParser(usage=usage,description=__copyright__,version="%prog " + str(versionNumber))
-    Parser.add_option("-f", "--file", dest="filename", help="Name of FDF file to convert")
+    Parser.add_option("-f", "--file", dest="filename", help="Name of FDF file to convert", action="callback", callback=SingleCheckCallback)
     Parser.add_option("-a", "--arch", dest="archList", help="comma separated list containing one or more of: IA32, X64, IPF or EBC which should be built, overrides target.txt?s TARGET_ARCH")
     Parser.add_option("-q", "--quiet", action="store_true", type=None, help="Disable all messages except FATAL ERRORS.")
     Parser.add_option("-v", "--verbose", action="store_true", type=None, help="Turn on verbose output with informational messages printed.")
     Parser.add_option("-d", "--debug", action="store", type="int", help="Enable debug messages at specified level.")
-    Parser.add_option("-p", "--platform", dest="activePlatform", help="Set the ACTIVE_PLATFORM, overrides target.txt ACTIVE_PLATFORM setting.")
-    Parser.add_option("-w", "--workspace", dest="Workspace", default=os.environ.get('WORKSPACE'), help="Set the WORKSPACE")
-    Parser.add_option("-o", "--outputDir", dest="outputDir", help="Name of Build Output directory")
+    Parser.add_option("-p", "--platform", dest="activePlatform", help="Set the ACTIVE_PLATFORM, overrides target.txt ACTIVE_PLATFORM setting.",
+                      action="callback", callback=SingleCheckCallback)
+    Parser.add_option("-w", "--workspace", dest="Workspace", default=os.environ.get('WORKSPACE'), help="Set the WORKSPACE",
+                      action="callback", callback=SingleCheckCallback)
+    Parser.add_option("-o", "--outputDir", dest="outputDir", help="Name of Build Output directory",
+                      action="callback", callback=SingleCheckCallback)
     Parser.add_option("-r", "--rom_image", dest="uiFdName", help="Build the image using the [FD] section named by FdUiName.")
     Parser.add_option("-i", "--FvImage", dest="uiFvName", help="Buld the FV image using the [FV] section named by UiFvName")
-    Parser.add_option("-b", "--buildtarget", action="store", type="choice", choices=['DEBUG','RELEASE'], dest="BuildTarget", help="Build TARGET is one of list: DEBUG, RELEASE.")
-    Parser.add_option("-t", "--tagname", action="store", type="string", dest="ToolChain", help="Using the tools: TOOL_CHAIN_TAG name to build the platform.")
+    Parser.add_option("-b", "--buildtarget", type="choice", choices=['DEBUG','RELEASE'], dest="BuildTarget", help="Build TARGET is one of list: DEBUG, RELEASE.",
+                      action="callback", callback=SingleCheckCallback)
+    Parser.add_option("-t", "--tagname", type="string", dest="ToolChain", help="Using the tools: TOOL_CHAIN_TAG name to build the platform.",
+                      action="callback", callback=SingleCheckCallback)
     Parser.add_option("-D", "--define", action="append", type="string", dest="Macros", help="Macro: \"Name [= Value]\".")
     Parser.add_option("-s", "--specifyaddress", dest="FixedAddress", action="store_true", type=None, help="Specify driver load address.")
     (Options, args) = Parser.parse_args()
