@@ -203,7 +203,7 @@ def MyOptionParser():
         help="Specify the Tool Chain Tagname, which replaces target.txt's TOOL_CHAIN_TAG definition. 0 will clear this setting in target.txt and can't combine with other value.")
     parser.add_option("-r", "--buildrule", action="store", type="string", dest="BUILD_RULE_FILE",
         help="Specify the build rule configure file, which replaces target.txt's BUILD_RULE_CONF definition. If not specified, the default value Conf/build_rule.txt will be set.")
-    parser.add_option("-m", "--mutlithread", action="store", type="int", dest="NUM",
+    parser.add_option("-m", "--multithread", action="store", type="int", dest="NUM",
         help="Specify the multi-threaded number which replace target.txt's MAX_CONCURRENT_THREAD_NUMBER. If the value is less than 2, MULTIPLE_THREAD will be disabled. If the value is larger than 1, MULTIPLE_THREAD will be enabled.")
 
     (opt, args)=parser.parse_args()
