@@ -31,14 +31,14 @@ class TargetTool():
             print "%s does not exist." % self.FileName
             sys.exit(1)
         self.TargetTxtDictionary = {
-            TAB_TAT_DEFINES_ACTIVE_PLATFORM                            : '',
-            TAB_TAT_DEFINES_TOOL_CHAIN_CONF                            : '',
-            TAB_TAT_DEFINES_MULTIPLE_THREAD                            : '',
-            TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER               : '',
-            TAB_TAT_DEFINES_TARGET                                     : [''],
-            TAB_TAT_DEFINES_TOOL_CHAIN_TAG                             : [''],
-            TAB_TAT_DEFINES_TARGET_ARCH                                : [''],
-            TAB_TAT_DEFINES_BUILD_RULE_CONF                            : [''],
+            TAB_TAT_DEFINES_ACTIVE_PLATFORM                            : None,
+            TAB_TAT_DEFINES_TOOL_CHAIN_CONF                            : None,
+            TAB_TAT_DEFINES_MULTIPLE_THREAD                            : None,
+            TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER               : None,
+            TAB_TAT_DEFINES_TARGET                                     : None,
+            TAB_TAT_DEFINES_TOOL_CHAIN_TAG                             : None,
+            TAB_TAT_DEFINES_TARGET_ARCH                                : None,
+            TAB_TAT_DEFINES_BUILD_RULE_CONF                            : None,
         }
         self.LoadTargetTxtFile(self.FileName)
 
@@ -78,17 +78,24 @@ class TargetTool():
 
     def Print(self):
         KeyList = self.TargetTxtDictionary.keys()
+        errMsg  = ''
         for Key in KeyList:
             if type(self.TargetTxtDictionary[Key]) == type([]):
                 print "%-30s = %s" % (Key, ''.join(elem + ' ' for elem in self.TargetTxtDictionary[Key]))
+            elif self.TargetTxtDictionary[Key] == None:
+                errMsg += "  Missing %s configuration information, please use TargetTool to set value!" % Key + os.linesep 
             else:
                 print "%-30s = %s" % (Key, self.TargetTxtDictionary[Key])
-
+        
+        if errMsg != '':
+            print os.linesep + 'Warning:' + os.linesep + errMsg
+            
     def RWFile(self, CommentCharacter, KeySplitCharacter, Num):
         try:
             fr = open(self.FileName, 'r')
             fw = open(os.path.normpath(os.path.join(self.WorkSpace, 'Conf\\targetnew.txt')), 'w')
 
+            existKeys = []
             for Line in fr:
                 if Line.startswith(CommentCharacter) or Line.strip() == '':
                     fw.write(Line)
@@ -97,79 +104,26 @@ class TargetTool():
                     if len(LineList) >= 2:
                         Key = LineList[0].strip()
                         if Key.startswith(CommentCharacter) == False and Key in self.TargetTxtDictionary.keys():
+                            if Key not in existKeys:
+                                existKeys.append(Key)
+                            else:
+                                print "Warning: Found duplicate key item in original configuration files!"
+                                
                             if Num == 0:
                                 Line = "%-30s = \n" % Key
                             else:
-                                if Key == TAB_TAT_DEFINES_ACTIVE_PLATFORM:
-                                    if self.Opt.DSCFILE == '0':
-                                        Line = "%-30s = \n" % Key
-                                    elif self.Opt.DSCFILE != None:
-                                        dscFullPath = os.path.join(self.WorkSpace, self.Opt.DSCFILE)
-                                        if os.path.exists(dscFullPath):
-                                            Line = "%-30s = %s\n" % (Key, self.Opt.DSCFILE)
-                                        else:
-                                            EdkLogger.error("TagetTool", BuildToolError.FILE_NOT_FOUND, 
-                                                                   "DSC file %s does not exist!" % self.Opt.DSCFILE, RaiseError=False)
-                                    else:
-                                        pass
-                                elif Key == TAB_TAT_DEFINES_TOOL_CHAIN_CONF:
-                                    if self.Opt.TOOL_DEFINITION_FILE == '0':
-                                        Line = "%-30s = \n" % Key
-                                    elif self.Opt.TOOL_DEFINITION_FILE != None:
-                                        tooldefFullPath = os.path.join(self.WorkSpace, self.Opt.TOOL_DEFINITION_FILE)
-                                        if os.path.exists(tooldefFullPath):
-                                            Line = "%-30s = %s\n" % (Key, self.Opt.TOOL_DEFINITION_FILE)
-                                        else:
-                                            EdkLogger.error("TagetTool", BuildToolError.FILE_NOT_FOUND, 
-                                                                   "Tooldef file %s does not exist!" % self.Opt.TOOL_DEFINITION_FILE, RaiseError=False)
-                                    else:
-                                        pass
-                                elif Key == TAB_TAT_DEFINES_MULTIPLE_THREAD and self.Opt.NUM != None:
-                                    if self.Opt.NUM >= 2:
-                                        Line = "%-30s = %s\n" % (Key, 'Enable')
-                                    else:
-                                        Line = "%-30s = %s\n" % (Key, 'Disable')
-                                elif Key == TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER:
-                                    if self.Opt.NUM != None:
-                                        Line = "%-30s = %s\n" % (Key, str(self.Opt.NUM))
-
-                                elif Key == TAB_TAT_DEFINES_TARGET:
-                                    if self.Opt.TARGET == ['0']:
-                                        Line = "%-30s = \n" % Key
-                                    elif self.Opt.TARGET != None:
-                                        Line = "%-30s = %s\n" % (Key, ''.join(elem + ' ' for elem in self.Opt.TARGET))
-                                    else:
-                                        pass
-                                elif Key == TAB_TAT_DEFINES_TARGET_ARCH:
-                                    if self.Opt.TARGET_ARCH == ['0']:
-                                        Line = "%-30s = \n" % Key
-                                    elif self.Opt.TARGET_ARCH != None:
-                                        Line = "%-30s = %s\n" % (Key, ''.join(elem + ' ' for elem in self.Opt.TARGET_ARCH))
-                                    else:
-                                        pass
-                                elif Key == TAB_TAT_DEFINES_TOOL_CHAIN_TAG:
-                                    if self.Opt.TOOL_CHAIN_TAG == '0':
-                                        Line = "%-30s = \n" % Key
-                                    elif self.Opt.TOOL_CHAIN_TAG != None:
-                                        Line = "%-30s = %s\n" % (Key, self.Opt.TOOL_CHAIN_TAG)
-                                    else:
-                                        pass
-                                elif Key == TAB_TAT_DEFINES_BUILD_RULE_CONF:
-                                    if self.Opt.BUILD_RULE_FILE == '0':
-                                        Line = "%-30s = \n" % Key
-                                    elif self.Opt.BUILD_RULE_FILE != None:
-                                        buildruleFullPath = os.path.join(self.WorkSpace, self.Opt.BUILD_RULE_FILE)
-                                        if os.path.exists(buildruleFullPath):
-                                            Line = "%-30s = %s\n" % (Key, self.Opt.BUILD_RULE_FILE)
-                                        else:
-                                            EdkLogger.error("TagetTool", BuildToolError.FILE_NOT_FOUND, 
-                                                            "Build rule file %s does not exist!" % self.Opt.BUILD_RULE_FILE, RaiseError=False)
-                                            
-                                    else:
-                                        pass                                    
-                                else:
-                                    pass
+                                ret = GetConfigureKeyValue(self, Key)
+                                if ret != None:
+                                    Line = ret
                             fw.write(Line)
+            for key in self.TargetTxtDictionary.keys():
+                if key not in existKeys:
+                    print "Warning: %s does not exist in original configuration file" % key
+                    Line = GetConfigureKeyValue(self, key)
+                    if Line == None:
+                        Line = "%-30s = " % key
+                    fw.write(Line)
+                
             fr.close()
             fw.close()
             os.remove(self.FileName)
@@ -179,6 +133,43 @@ class TargetTool():
             last_type, last_value, last_tb = sys.exc_info()
             traceback.print_exception(last_type, last_value, last_tb)
 
+def GetConfigureKeyValue(self, Key):
+    Line = None
+    if Key == TAB_TAT_DEFINES_ACTIVE_PLATFORM and self.Opt.DSCFILE != None:
+        dscFullPath = os.path.join(self.WorkSpace, self.Opt.DSCFILE)
+        if os.path.exists(dscFullPath):
+            Line = "%-30s = %s\n" % (Key, self.Opt.DSCFILE)
+        else:
+            EdkLogger.error("TagetTool", BuildToolError.FILE_NOT_FOUND, 
+                            "DSC file %s does not exist!" % self.Opt.DSCFILE, RaiseError=False)
+    elif Key == TAB_TAT_DEFINES_TOOL_CHAIN_CONF and self.Opt.TOOL_DEFINITION_FILE != None:
+        tooldefFullPath = os.path.join(self.WorkSpace, self.Opt.TOOL_DEFINITION_FILE)
+        if os.path.exists(tooldefFullPath):
+            Line = "%-30s = %s\n" % (Key, self.Opt.TOOL_DEFINITION_FILE)
+        else:
+            EdkLogger.error("TagetTool", BuildToolError.FILE_NOT_FOUND, 
+                            "Tooldef file %s does not exist!" % self.Opt.TOOL_DEFINITION_FILE, RaiseError=False)
+    elif Key == TAB_TAT_DEFINES_MULTIPLE_THREAD and self.Opt.NUM != None:
+        if self.Opt.NUM >= 2:
+            Line = "%-30s = %s\n" % (Key, 'Enable')
+        else:
+            Line = "%-30s = %s\n" % (Key, 'Disable')
+    elif Key == TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER and self.Opt.NUM != None:
+        Line = "%-30s = %s\n" % (Key, str(self.Opt.NUM))
+    elif Key == TAB_TAT_DEFINES_TARGET and self.Opt.TARGET != None:
+        Line = "%-30s = %s\n" % (Key, ''.join(elem + ' ' for elem in self.Opt.TARGET))
+    elif Key == TAB_TAT_DEFINES_TARGET_ARCH and self.Opt.TARGET_ARCH != None:
+        Line = "%-30s = %s\n" % (Key, ''.join(elem + ' ' for elem in self.Opt.TARGET_ARCH))
+    elif Key == TAB_TAT_DEFINES_TOOL_CHAIN_TAG and self.Opt.TOOL_CHAIN_TAG != None:
+        Line = "%-30s = %s\n" % (Key, self.Opt.TOOL_CHAIN_TAG)
+    elif Key == TAB_TAT_DEFINES_BUILD_RULE_CONF and self.Opt.BUILD_RULE_FILE != None:
+        buildruleFullPath = os.path.join(self.WorkSpace, self.Opt.BUILD_RULE_FILE)
+        if os.path.exists(buildruleFullPath):
+            Line = "%-30s = %s\n" % (Key, self.Opt.BUILD_RULE_FILE)
+        else:
+            EdkLogger.error("TagetTool", BuildToolError.FILE_NOT_FOUND, 
+                            "Build rule file %s does not exist!" % self.Opt.BUILD_RULE_FILE, RaiseError=False)
+    return Line
 
 VersionNumber = "0.01"
 __version__ = "%prog Version " + VersionNumber
