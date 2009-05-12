@@ -187,6 +187,16 @@ def SingleCheckCallback(option, opt_str, value, parser):
         gParamCheck.append(option)
     else:
         parser.error("Option %s only allows one instance in command line!" % option)
+
+def RangeCheckCallback(option, opt_str, value, parser):
+    if option not in gParamCheck:
+        gParamCheck.append(option)
+        if value < 1 or value > 8:
+            parser.error("The count of multi-thread is not in valid range of 1 ~ 8.")
+        else:
+            setattr(parser.values, option.dest, value)
+    else:
+        parser.error("Option %s only allows one instance in command line!" % option)
         
 def MyOptionParser():
     parser = OptionParser(version=__version__,prog="TargetTool.exe",usage=__usage__,description=__copyright__)
@@ -202,7 +212,7 @@ def MyOptionParser():
         help="Specify the Tool Chain Tagname, which replaces target.txt's TOOL_CHAIN_TAG definition. 0 will clear this setting in target.txt and can't combine with other value.")
     parser.add_option("-r", "--buildrule", action="callback", type="string", dest="BUILD_RULE_FILE", callback=SingleCheckCallback,
         help="Specify the build rule configure file, which replaces target.txt's BUILD_RULE_CONF definition. If not specified, the default value Conf/build_rule.txt will be set.")
-    parser.add_option("-m", "--multithread", action="callback", type="int", dest="NUM", callback=SingleCheckCallback,
+    parser.add_option("-m", "--multithread", action="callback", type="int", dest="NUM", callback=RangeCheckCallback,
         help="Specify the multi-thread number which replace target.txt's MAX_CONCURRENT_THREAD_NUMBER. If the value is less than 2, MULTIPLE_THREAD will be disabled. If the value is larger than 1, MULTIPLE_THREAD will be enabled.")
 
     (opt, args)=parser.parse_args()
