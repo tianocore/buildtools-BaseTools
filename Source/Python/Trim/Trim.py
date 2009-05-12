@@ -109,6 +109,7 @@ gIncludedAslFile = []
 # @param  Convert   If True, convert standard HEX format to MASM format
 #
 def TrimPreprocessedFile(Source, Target, Convert):
+    CreateDirectory(os.path.dirname(Target))
     try:
         f = open (Source, 'r')
     except:
@@ -193,6 +194,8 @@ def TrimPreprocessedFile(Source, Target, Convert):
 # @param  Target    File to store the trimmed content
 #
 def TrimPreprocessedVfr(Source, Target):
+    CreateDirectory(os.path.dirname(Target))
+    
     try:
         f = open (Source,'r')
     except:
@@ -291,6 +294,8 @@ def DoInclude(Source, Indent=''):
 # @param  Target    File to store the trimmed content
 #
 def TrimAslFile(Source, Target):
+    CreateDirectory(os.path.dirname(Target))
+    
     Cwd = os.getcwd()
     SourceDir = os.path.dirname(Source)
     if SourceDir == '':
