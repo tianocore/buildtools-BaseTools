@@ -1206,7 +1206,7 @@ def MyOptionParser():
         help="Build the platform specified by the DSC file name argument, overriding target.txt's ACTIVE_PLATFORM definition.")
     Parser.add_option("-m", "--module", action="callback", type="string", dest="ModuleFile", callback=SingleCheckCallback,
         help="Build the module specified by the INF file name argument.")
-    Parser.add_option("-b", "--buildtarget", action="callback", type="choice", choices=['DEBUG','RELEASE'], dest="BuildTarget", callback=SingleCheckCallback,
+    Parser.add_option("-b", "--buildtarget", action="append", type="choice", choices=['DEBUG','RELEASE'], dest="BuildTarget",
         help="BuildTarget is one of list: DEBUG, RELEASE, which overrides target.txt's TARGET definition. To specify more TARGET, please repeat this option.")
     Parser.add_option("-t", "--tagname", action="append", type="string", dest="ToolChain",
         help="Using the Tool Chain Tagname to build the platform, overriding target.txt's TOOL_CHAIN_TAG definition.")
