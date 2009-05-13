@@ -1156,12 +1156,13 @@ ZeroXdataSection (
     if (FunctionType == 1) {
       sscanf (Line, "%x:%x %xH %s", &SectionNumber, &SectionOffset, &SectionLength, SectionName);
       if (stricmp (SectionName, ".xdata") == 0) {
+        FunctionType = 2;
         break;
       }
     }
   }
 
-  if (FunctionType == 0) {
+  if (FunctionType != 2) {
     //
     // no .xdata section is found
     //
