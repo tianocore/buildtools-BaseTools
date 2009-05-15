@@ -344,7 +344,7 @@ class GenFdsGlobalVariable:
             GenFdsGlobalVariable.ErrorLogger("ToolError!  Invalid parameter type in call to CallExternalTool")
 
         if GenFdsGlobalVariable.DebugLevel != -1:
-            cmd += ('-d', str(GenFdsGlobalVariable.DebugLevel))
+            cmd += ('--debug', str(GenFdsGlobalVariable.DebugLevel))
             GenFdsGlobalVariable.InfLogger (cmd)
 
         if GenFdsGlobalVariable.VerboseMode:
