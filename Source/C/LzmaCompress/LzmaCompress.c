@@ -232,12 +232,12 @@ int main2(int numArgs, const char *args[], char *rs)
       modeWasSet = True;
     } else if (strcmp(args[param], "-o") == 0 ||
                strcmp(args[param], "--output") == 0) {
-      if (numArgs < (param + 3)) {
+      if (numArgs < (param + 2)) {
         return PrintUserError(rs);
       }
       outputFile = args[++param];
     } else if (strcmp(args[param], "--debug") == 0) {
-      if (numArgs < (param + 3)) {
+      if (numArgs < (param + 2)) {
         return PrintUserError(rs);
       }
       //
@@ -267,7 +267,7 @@ int main2(int numArgs, const char *args[], char *rs)
     } else if (strcmp(args[param], "--version") == 0) {
       PrintVersion(rs);
       return 0;
-    } else if (param == (numArgs - 1)) {
+    } else if (inputFile == NULL) {
       inputFile = args[param];
     } else {
       return PrintUserError(rs);
