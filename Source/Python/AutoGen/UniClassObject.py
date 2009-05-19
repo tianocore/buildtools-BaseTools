@@ -228,13 +228,15 @@ class UniFileClassObject(object):
             Line = Line.replace(UNICODE_WIDE_CHAR, WIDE_CHAR)
             Line = Line.replace(UNICODE_NARROW_CHAR, NARROW_CHAR)
             Line = Line.replace(UNICODE_NON_BREAKING_CHAR, NON_BREAKING_CHAR)
+
+            Line = Line.replace(u'\\\\', u'\u0006')
             Line = Line.replace(u'\\r\\n', CR + LF)
             Line = Line.replace(u'\\n', CR + LF)
             Line = Line.replace(u'\\r', CR)
             Line = Line.replace(u'\\t', u'\t')
-            Line = Line.replace(u'\\\\', u'\\')
             Line = Line.replace(u'''\"''', u'''"''')
-            Line = Line.replace(u'\t', u' ')
+            Line = Line.replace(u'\u0006', u'\\')
+            
 #           if Line.find(u'\\x'):
 #               hex = Line[Line.find(u'\\x') + 2 : Line.find(u'\\x') + 6]
 #               hex = "u'\\u" + hex + "'"
