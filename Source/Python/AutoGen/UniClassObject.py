@@ -220,6 +220,7 @@ class UniFileClassObject(object):
             #
             if Line == u'' or Line.startswith(u'//'):
                 continue
+
             Line = Line.replace(u'/langdef', u'#langdef')
             Line = Line.replace(u'/string', u'#string')
             Line = Line.replace(u'/language', u'#language')
@@ -235,6 +236,7 @@ class UniFileClassObject(object):
             Line = Line.replace(u'\\r', CR)
             Line = Line.replace(u'\\t', u'\t')
             Line = Line.replace(u'''\"''', u'''"''')
+            Line = Line.replace(u'\t', u' ')
             Line = Line.replace(u'\u0006', u'\\')
             
 #           if Line.find(u'\\x'):
