@@ -989,7 +989,11 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
         else:
             Value = "((%s)%s)" % (Pcd.DatumType, Value)
 
-        PcdValueName = '_PCD_VALUE_' + Pcd.TokenCName
+        if Pcd.Type == TAB_PCDS_PATCHABLE_IN_MODULE:
+            PcdValueName = '_PCD_PATCHABLE_VALUE_' + Pcd.TokenCName
+        else:
+            PcdValueName = '_PCD_VALUE_' + Pcd.TokenCName
+            
         if Pcd.DatumType == 'VOID*' and Value[0] == '{':
             AutoGenH.Append('#define _PCD_PATCHABLE_%s_SIZE %s\n' % (Pcd.TokenCName, Pcd.MaxDatumSize))
             AutoGenH.Append('#define %s  %s%s\n' %(PcdValueName, Type, PcdVariableName))
