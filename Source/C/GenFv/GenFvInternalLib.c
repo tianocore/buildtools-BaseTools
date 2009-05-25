@@ -354,7 +354,7 @@ Returns:
   //
   Number = 0;
   for (Number = 0; Number < MAX_NUMBER_OF_FILES_IN_FV; Number ++) {
-    if (FvInfo->FvFiles[Index][0] == '\0') {
+    if (FvInfo->FvFiles[Number][0] == '\0') {
       break;
     }
   }

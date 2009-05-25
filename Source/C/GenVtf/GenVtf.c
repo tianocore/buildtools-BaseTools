@@ -2618,12 +2618,12 @@ Returns:
     goto ERROR;
   }
 
-  if (!FirstRoundB) {
+  if (FirstRoundB) {
     Error (NULL, 0, 2000, "Invalid parameter", "No FV base address is specified");
     goto ERROR;
   }
 
-  if (!FirstRoundS) {
+  if (FirstRoundS) {
     Error (NULL, 0, 2000, "Invalid parameter", "No FV Size is specified");
     goto ERROR;
   }

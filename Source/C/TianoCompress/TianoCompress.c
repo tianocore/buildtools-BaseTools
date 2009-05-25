@@ -1708,7 +1708,7 @@ Returns:
            Turn on verbose output with informational messages.\n");
   fprintf (stdout, "  -q, --quiet\n\
            Disable all messages except key message and fatal error\n");
-  fprintf (stdout, "  -d, --debug [0-9]\n\
+  fprintf (stdout, "  --debug [0-9]\n\
            Enable debug messages, at input debug level.\n");
   fprintf (stdout, "  --version\n\
            Show program's version number and exit.\n");
