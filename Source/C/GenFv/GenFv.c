@@ -123,7 +123,8 @@ Returns:
                         It is specified together with the input file.\n");
   fprintf (stdout, "  -r Address, --baseaddr Address\n\
                         Address is the rebase start address for drivers that\n\
-                        run in Flash. It supports DEC or HEX digital format.\n");
+                        run in Flash. It supports DEC or HEX digital format.\n\
+                        If it is set to zero, no rebase action will be taken\n");
   fprintf (stdout, "  -a AddressFile, --addrfile AddressFile\n\
                         AddressFile is one file used to record boot driver base\n\
                         address and runtime driver base address. And this tool\n\
@@ -133,14 +134,13 @@ Returns:
   fprintf (stdout, "  -m logfile, --map logfile\n\
                         Logfile is the output fv map file name. if it is not\n\
                         given, the FvName.map will be the default map file name\n"); 
-  fprintf (stdout, "  -g Guid, --capguid GuidValue\n\
-                        GuidValue is one specific capsule or fv file system guid value.\n\
+  fprintf (stdout, "  -g Guid, --guid GuidValue\n\
+                        GuidValue is one specific capsule guid value\n\
+                        or fv file system guid value.\n\
                         Its format is xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n");
-  fprintf (stdout, "  --FvnameGuid\n\
-                        GuidValue is the Fv Name Guid value.\n\
+  fprintf (stdout, "  --FvNameGuid          GuidValue is the Fv Name Guid value.\n\
                         Its format is xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n");
-  fprintf (stdout, "  --capflag CapFlag\n\
-                        Capsule Reset Flag can be PersistAcrossReset,\n\
+  fprintf (stdout, "  --capflag CapFlag     Capsule Reset Flag can be PersistAcrossReset,\n\
                         or PopulateSystemTable or not set.\n");
   fprintf (stdout, "  --capheadsize HeadSize\n\
                         HeadSize is one HEX or DEC format value\n\
@@ -195,9 +195,6 @@ Returns:
   UINT32                InfFileSize;
   CHAR8                 *OutFileName;
   CHAR8                 ValueString[_MAX_PATH];
-  EFI_PHYSICAL_ADDRESS  XipBase;
-  EFI_PHYSICAL_ADDRESS  BtBase;
-  EFI_PHYSICAL_ADDRESS  RtBase;
   BOOLEAN               CapsuleFlag;
   BOOLEAN               DumpCapsule;
   MEMORY_FILE           AddrMemoryFile;
@@ -211,9 +208,6 @@ Returns:
   InfFileImage  = NULL;
   OutFileName   = NULL;
   MapFileName   = NULL;
-  XipBase       = 0;
-  BtBase        = 0;
-  RtBase        = 0;
   InfFileSize   = 0;
   CapsuleFlag   = FALSE;
   DumpCapsule   = FALSE;
@@ -295,11 +289,13 @@ Returns:
     }
 
     if ((stricmp (argv[0], "-r") == 0) || (stricmp (argv[0], "--baseaddr") == 0)) {
-      Status = AsciiStringToUint64 (argv[1], FALSE, &XipBase);
+      Status = AsciiStringToUint64 (argv[1], FALSE, &TempNumber);
       if (EFI_ERROR (Status)) {
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
         return STATUS_ERROR;        
       }
+      mFvDataInfo.BaseAddress    = TempNumber;
+      mFvDataInfo.BaseAddressSet = TRUE;
       argc -= 2;
       argv += 2;
       continue; 
@@ -309,6 +305,10 @@ Returns:
       Status = AsciiStringToUint64 (argv[1], FALSE, &TempNumber);
       if (EFI_ERROR (Status)) {
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        return STATUS_ERROR;        
+      }
+      if (TempNumber == 0) {
+        Error (NULL, 0, 1003, "Invalid option value", "Fv block size can't be be set to zero");
         return STATUS_ERROR;        
       }
       mFvDataInfo.FvBlocks[0].Length = (UINT32) TempNumber;
@@ -322,6 +322,10 @@ Returns:
       Status = AsciiStringToUint64 (argv[1], FALSE, &TempNumber);
       if (EFI_ERROR (Status)) {
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        return STATUS_ERROR;        
+      }
+      if (TempNumber == 0) {
+        Error (NULL, 0, 1003, "Invalid option value", "Fv block number can't be set to zero");
         return STATUS_ERROR;        
       }
       mFvDataInfo.FvBlocks[0].NumBlocks = (UINT32) TempNumber;
@@ -360,6 +364,11 @@ Returns:
       }
       Index ++;
       continue; 
+    }
+
+    if ((stricmp (argv[0], "-s") == 0) || (stricmp (argv[0], "--filetakensize") == 0)) {
+      Error (NULL, 0, 1003, "Invalid option", "It must be specified together with -f option to specify the file size.");
+      return STATUS_ERROR; 
     }
 
     if ((stricmp (argv[0], "-c") == 0) || (stricmp (argv[0], "--capsule") == 0)) {
@@ -414,7 +423,7 @@ Returns:
       Status = StringToGuid (argv[1], &mCapDataInfo.CapGuid);
       if (EFI_ERROR (Status)) {
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", EFI_CAPSULE_GUID_STRING, argv[1]);
-        return 1;
+        return STATUS_ERROR;
       }
       DebugMsg (NULL, 0, 9, "Capsule Guid", "%s = %s", EFI_CAPSULE_GUID_STRING, argv[1]);
       argc -= 2;
@@ -422,16 +431,17 @@ Returns:
       continue; 
     }
 
-    if (stricmp (argv[0], "-g") == 0) {
+    if ((stricmp (argv[0], "-g") == 0) || (stricmp (argv[0], "--guid") == 0)) {
       //
       // Get the Capsule or Fv Guid
       //
       Status = StringToGuid (argv[1], &mCapDataInfo.CapGuid);
       if (EFI_ERROR (Status)) {
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", EFI_GUID_STRING, argv[1]);
-        return 1;
+        return STATUS_ERROR;
       }
       memcpy (&mFvDataInfo.FvFileSystemGuid, &mCapDataInfo.CapGuid, sizeof (EFI_GUID));
+      mFvDataInfo.FvFileSystemGuidSet = TRUE;
       DebugMsg (NULL, 0, 9, "Capsule Guid", "%s = %s", EFI_CAPSULE_GUID_STRING, argv[1]);
       DebugMsg (NULL, 0, 9, "FV Guid", "%s = %s", EFI_FV_FILESYSTEMGUID_STRING, argv[1]);
       argc -= 2;
@@ -439,15 +449,16 @@ Returns:
       continue; 
     }
 
-    if (stricmp (argv[0], "--FvnameGuid") == 0) {
+    if (stricmp (argv[0], "--FvNameGuid") == 0) {
       //
       // Get Fv Name Guid
       //
       Status = StringToGuid (argv[1], &mFvDataInfo.FvNameGuid);
       if (EFI_ERROR (Status)) {
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", EFI_GUID_STRING, argv[1]);
-        return 1;
+        return STATUS_ERROR;
       }
+      mFvDataInfo.FvNameGuidSet = TRUE;
       DebugMsg (NULL, 0, 9, "FV Name Guid", "%s = %s", EFI_FV_NAMEGUID_STRING, argv[1]);
       argc -= 2;
       argv += 2;
@@ -553,11 +564,12 @@ Returns:
       //
       // Get the base address
       //
-      Status = AsciiStringToUint64 (ValueString, FALSE, &BtBase);
+      Status = AsciiStringToUint64 (ValueString, FALSE, &TempNumber);
       if (EFI_ERROR (Status)) {
         Error (NULL, 0, 2000, "Invalid parameter", "%s = %s", EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING, ValueString);
         return STATUS_ERROR;
       }
+      mFvDataInfo.BootBaseAddress = TempNumber;
       DebugMsg (NULL, 0, 9, "Boot driver base address", "%s = %s", EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING, ValueString);
     }
   
@@ -569,11 +581,12 @@ Returns:
       //
       // Get the base address
       //
-      Status = AsciiStringToUint64 (ValueString, FALSE, &RtBase);
+      Status = AsciiStringToUint64 (ValueString, FALSE, &TempNumber);
       if (EFI_ERROR (Status)) {
         Error (NULL, 0, 2000, "Invalid parameter", "%s = %s", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, ValueString);
         return STATUS_ERROR;
       }
+      mFvDataInfo.RuntimeBaseAddress = TempNumber;
       DebugMsg (NULL, 0, 9, "Runtime driver base address", "%s = %s", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, ValueString);
     }
     
@@ -643,8 +656,8 @@ Returns:
               );
   } else {
     VerboseMsg ("Create Fv image and its map file");
-    if (XipBase != 0) {
-      VerboseMsg ("FvImage Rebase Address is 0x%X", XipBase);
+    if (mFvDataInfo.BaseAddress != 0) {
+      VerboseMsg ("FvImage Rebase Address is 0x%X", mFvDataInfo.BaseAddress);
     }
     //
     // Call the GenerateFvImage to generate Fv Image
@@ -653,10 +666,7 @@ Returns:
               InfFileImage,
               InfFileSize,
               OutFileName,
-              MapFileName,
-              XipBase,
-              &BtBase,
-              &RtBase
+              MapFileName
               );
   }
 
@@ -678,15 +688,15 @@ Returns:
     }
     fprintf (FpFile, OPTIONS_SECTION_STRING);
     fprintf (FpFile, "\n");
-    if (BtBase != 0) {
+    if (mFvDataInfo.BootBaseAddress != 0) {
       fprintf (FpFile, EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING);
-      fprintf (FpFile, " = 0x%lx\n", BtBase);
-      DebugMsg (NULL, 0, 9, "Updated boot driver base address", "%s = 0x%x", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, BtBase);
+      fprintf (FpFile, " = 0x%lx\n", mFvDataInfo.BootBaseAddress);
+      DebugMsg (NULL, 0, 9, "Updated boot driver base address", "%s = 0x%x", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, mFvDataInfo.BootBaseAddress);
     }
-    if (RtBase != 0) {
+    if (mFvDataInfo.RuntimeBaseAddress != 0) {
       fprintf (FpFile, EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING);
-      fprintf (FpFile, " = 0x%lx\n", RtBase);
-      DebugMsg (NULL, 0, 9, "Updated runtime driver base address", "%s = 0x%x", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, RtBase);
+      fprintf (FpFile, " = 0x%lx\n", mFvDataInfo.RuntimeBaseAddress);
+      DebugMsg (NULL, 0, 9, "Updated runtime driver base address", "%s = 0x%x", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, mFvDataInfo.RuntimeBaseAddress);
     }
     fclose (FpFile);
   }

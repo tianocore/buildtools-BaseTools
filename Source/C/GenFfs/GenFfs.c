@@ -493,9 +493,13 @@ Returns:
 
   while (argc > 0) {
     if ((stricmp (argv[0], "-t") == 0) || (stricmp (argv[0], "--filetype") == 0)) {
+      if (argv[1] == NULL || argv[1][0] == '-') {
+        Error (NULL, 0, 1003, "Invalid option value", "file type is missing for -t option");
+        goto Finish;
+      }
       FfsFiletype = StringToType (argv[1]);
       if (FfsFiletype == EFI_FV_FILETYPE_ALL) {
-        Error (NULL, 0, 1003, "Invalid option value", "file type can't be NULL");
+        Error (NULL, 0, 1003, "Invalid option value", "%s is not a valid file type", argv[1]);
         goto Finish;
       }
       argc -= 2;
@@ -504,11 +508,11 @@ Returns:
     }
 
     if ((stricmp (argv[0], "-o") == 0) || (stricmp (argv[0], "--outputfile") == 0)) {
-      OutputFileName = argv[1];
-      if (OutputFileName == NULL) {
-        Error (NULL, 0, 1003, "Invalid option value", "Output file can't be NULL");
+      if (argv[1] == NULL || argv[1][0] == '-') {
+        Error (NULL, 0, 1003, "Invalid option value", "Output file is missing for -o option");
         goto Finish;
       }
+      OutputFileName = argv[1];
       argc -= 2;
       argv += 2;
       continue; 
@@ -540,8 +544,8 @@ Returns:
     }
 
     if ((stricmp (argv[0], "-a") == 0) || (stricmp (argv[0], "--align") == 0)) {
-      if (argv[1] == NULL) {
-        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+      if (argv[1] == NULL || argv[1][0] == '-') {
+        Error (NULL, 0, 1003, "Invalid option value", "Align value is missing for -a option");
         goto Finish;
       }
       for (Index = 0; Index < sizeof (mFfsValidAlignName) / sizeof (CHAR8 *); Index ++) {
@@ -570,8 +574,8 @@ Returns:
       //
       // Get Input file name and its alignment
       //
-      if (argv[1] == NULL) {
-        Error (NULL, 0, 1003, "Invalid option value", "input section file can't be null");
+      if (argv[1] == NULL || argv[1][0] == '-') {
+        Error (NULL, 0, 1003, "Invalid option value", "input section file is missing for -i option");
         goto Finish;
       }
 
@@ -707,12 +711,6 @@ Returns:
   if (InputFileNum == 0) {
     Error (NULL, 0, 1001, "Missing option", "Input files");
     goto Finish;
-  }
-
-  if (OutputFileName == NULL) {
-    Error (NULL, 0, 1001, "Missing option", "Output file");
-    goto Finish;
-    // OutFile = stdout;
   }
   
   //

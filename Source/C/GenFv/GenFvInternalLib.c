@@ -183,65 +183,66 @@ Returns:
 {
   CHAR8       Value[_MAX_PATH];
   UINT64      Value64;
-  UINTN       Index, Number;
+  UINTN       Index, Number, Index1;
   EFI_STATUS  Status;
-
-  //
-  // Initialize FV info
-  //
-  // memset (FvInfo, 0, sizeof (FV_INFO));
-  //
+  EFI_GUID    GuidValue;
 
   //
   // Read the FV base address
   //
-  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_FV_BASE_ADDRESS_STRING, 0, Value);
-  if (Status == EFI_SUCCESS) {
-    //
-    // Get the base address
-    //
-    Status = AsciiStringToUint64 (Value, FALSE, &Value64);
-    if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 2000, "Invalid parameter", "%s = %s", EFI_FV_BASE_ADDRESS_STRING, Value);
-      return EFI_ABORTED;
-    }
-    DebugMsg (NULL, 0, 9, "rebase address", "%s = %s", EFI_FV_BASE_ADDRESS_STRING, Value);
+  if (!mFvDataInfo.BaseAddressSet) {
+    Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_FV_BASE_ADDRESS_STRING, 0, Value);
+    if (Status == EFI_SUCCESS) {
+      //
+      // Get the base address
+      //
+      Status = AsciiStringToUint64 (Value, FALSE, &Value64);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 2000, "Invalid parameter", "%s = %s", EFI_FV_BASE_ADDRESS_STRING, Value);
+        return EFI_ABORTED;
+      }
+      DebugMsg (NULL, 0, 9, "rebase address", "%s = %s", EFI_FV_BASE_ADDRESS_STRING, Value);
 
-    FvInfo->BaseAddress = Value64;
+      FvInfo->BaseAddress = Value64;
+    }
   }
 
   //
   // Read the FV File System Guid
   //
-  Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_FV_FILESYSTEMGUID_STRING, 0, Value);
-  if (Status == EFI_SUCCESS) {
-    //
-    // Get the guid value
-    //
-    StringToGuid (Value, &FvInfo->FvFileSystemGuid);
+  if (!FvInfo->FvFileSystemGuidSet) {
+    Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_FV_FILESYSTEMGUID_STRING, 0, Value);
+    if (Status == EFI_SUCCESS) {
+      //
+      // Get the guid value
+      //
+      Status = StringToGuid (Value, &GuidValue);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 2000, "Invalid parameter", "%s = %s", EFI_FV_FILESYSTEMGUID_STRING, Value);
+        return EFI_ABORTED;
+      }
+      memcpy (&FvInfo->FvFileSystemGuid, &GuidValue, sizeof (EFI_GUID));
+      FvInfo->FvFileSystemGuidSet = TRUE;
+    }
   }
 
   //
   // Read the FV Name Guid
   //
-  Status = FindToken (InfFile, ATTRIBUTES_SECTION_STRING, EFI_FV_NAMEGUID_STRING, 0, Value);
-  if (Status == EFI_SUCCESS) {
-    //
-    // Get the guid value
-    //
-    StringToGuid (Value, &FvInfo->FvNameGuid);
-    DebugMsg (NULL, 0, 9, "FV Name Guid", "%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X", 
-                FvInfo->FvNameGuid.Data1,
-                FvInfo->FvNameGuid.Data2,
-                FvInfo->FvNameGuid.Data3,
-                FvInfo->FvNameGuid.Data4[0],
-                FvInfo->FvNameGuid.Data4[1],
-                FvInfo->FvNameGuid.Data4[2],
-                FvInfo->FvNameGuid.Data4[3],
-                FvInfo->FvNameGuid.Data4[4],
-                FvInfo->FvNameGuid.Data4[5],
-                FvInfo->FvNameGuid.Data4[6],
-                FvInfo->FvNameGuid.Data4[7]);
+  if (!FvInfo->FvNameGuidSet) {
+    Status = FindToken (InfFile, ATTRIBUTES_SECTION_STRING, EFI_FV_NAMEGUID_STRING, 0, Value);
+    if (Status == EFI_SUCCESS) {
+      //
+      // Get the guid value
+      //
+      Status = StringToGuid (Value, &GuidValue);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 2000, "Invalid parameter", "%s = %s", EFI_FV_NAMEGUID_STRING, Value);
+        return EFI_ABORTED;
+      }
+      memcpy (&FvInfo->FvNameGuid, &GuidValue, sizeof (EFI_GUID));
+      FvInfo->FvNameGuidSet = TRUE;
+    }
   }
 
   //
@@ -286,62 +287,60 @@ Returns:
   //
   // Read block maps
   //
-  Number = 0;
   for (Index = 0; Index < MAX_NUMBER_OF_FV_BLOCKS; Index++) {
-    if (FvInfo->FvBlocks[Index].Length != 0) {
-      continue;
-    }
-    //
-    // Read block size
-    //
-    Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_BLOCK_SIZE_STRING, Number, Value);
+    if (FvInfo->FvBlocks[Index].Length == 0) {
+      //
+      // Read block size
+      //
+      Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_BLOCK_SIZE_STRING, Index, Value);
 
-    if (Status == EFI_SUCCESS) {
-      //
-      // Update the size of block
-      //
-      Status = AsciiStringToUint64 (Value, FALSE, &Value64);
-      if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 2000, "Invalid parameter", "%s = %s", EFI_BLOCK_SIZE_STRING, Value);
-        return EFI_ABORTED;
-      }
+      if (Status == EFI_SUCCESS) {
+        //
+        // Update the size of block
+        //
+        Status = AsciiStringToUint64 (Value, FALSE, &Value64);
+        if (EFI_ERROR (Status)) {
+          Error (NULL, 0, 2000, "Invalid parameter", "%s = %s", EFI_BLOCK_SIZE_STRING, Value);
+          return EFI_ABORTED;
+        }
 
-      FvInfo->FvBlocks[Index].Length = (UINT32) Value64;
-      DebugMsg (NULL, 0, 9, "FV Block Size", "%s = %s", EFI_BLOCK_SIZE_STRING, Value);
-    } else {
-      //
-      // If there is no blocks size, but there is the number of block, then we have a mismatched pair
-      // and should return an error.
-      //
-      Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_NUM_BLOCKS_STRING, Number, Value);
-      if (!EFI_ERROR (Status)) {
-        Error (NULL, 0, 2000, "Invalid parameter", "both %s and %s must be specified.", EFI_NUM_BLOCKS_STRING, EFI_BLOCK_SIZE_STRING);
-        return EFI_ABORTED;
+        FvInfo->FvBlocks[Index].Length = (UINT32) Value64;
+        DebugMsg (NULL, 0, 9, "FV Block Size", "%s = %s", EFI_BLOCK_SIZE_STRING, Value);
       } else {
         //
-        // We are done
+        // If there is no blocks size, but there is the number of block, then we have a mismatched pair
+        // and should return an error.
         //
-        break;
-      }
-    }
-
-    //
-    // Read blocks number
-    //
-    Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_NUM_BLOCKS_STRING, Number++, Value);
-
-    if (Status == EFI_SUCCESS) {
-      //
-      // Update the number of blocks
-      //
-      Status = AsciiStringToUint64 (Value, FALSE, &Value64);
-      if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 2000, "Invalid parameter", "%s = %s", EFI_NUM_BLOCKS_STRING, Value);
-        return EFI_ABORTED;
+        Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_NUM_BLOCKS_STRING, Index, Value);
+        if (!EFI_ERROR (Status)) {
+          Error (NULL, 0, 2000, "Invalid parameter", "both %s and %s must be specified.", EFI_NUM_BLOCKS_STRING, EFI_BLOCK_SIZE_STRING);
+          return EFI_ABORTED;
+        } else {
+          //
+          // We are done
+          //
+          break;
+        }
       }
 
-      FvInfo->FvBlocks[Index].NumBlocks = (UINT32) Value64;
-      DebugMsg (NULL, 0, 9, "FV Block Number", "%s = %s", EFI_NUM_BLOCKS_STRING, Value);
+      //
+      // Read blocks number
+      //
+      Status = FindToken (InfFile, OPTIONS_SECTION_STRING, EFI_NUM_BLOCKS_STRING, Index, Value);
+
+      if (Status == EFI_SUCCESS) {
+        //
+        // Update the number of blocks
+        //
+        Status = AsciiStringToUint64 (Value, FALSE, &Value64);
+        if (EFI_ERROR (Status)) {
+          Error (NULL, 0, 2000, "Invalid parameter", "%s = %s", EFI_NUM_BLOCKS_STRING, Value);
+          return EFI_ABORTED;
+        }
+
+        FvInfo->FvBlocks[Index].NumBlocks = (UINT32) Value64;
+        DebugMsg (NULL, 0, 9, "FV Block Number", "%s = %s", EFI_NUM_BLOCKS_STRING, Value);
+      }
     }
   }
 
@@ -354,27 +353,30 @@ Returns:
   // Read files
   //
   Number = 0;
-  for (Index = 0; Index < MAX_NUMBER_OF_FILES_IN_FV; Index++) {
-    if (FvInfo->FvFiles[Index][0] != '\0') {
-      continue;
+  for (Number = 0; Number < MAX_NUMBER_OF_FILES_IN_FV; Number ++) {
+    if (FvInfo->FvFiles[Index][0] == '\0') {
+      break;
     }
+  }
+
+  for (Index = 0; Index < MAX_NUMBER_OF_FILES_IN_FV; Index++) {
     //
-    // Read the number of blocks
+    // Read the FFS file list
     //
-    Status = FindToken (InfFile, FILES_SECTION_STRING, EFI_FILE_NAME_STRING, Number++, Value);
+    Status = FindToken (InfFile, FILES_SECTION_STRING, EFI_FILE_NAME_STRING, Index, Value);
 
     if (Status == EFI_SUCCESS) {
       //
       // Add the file
       //
-      strcpy (FvInfo->FvFiles[Index], Value);
+      strcpy (FvInfo->FvFiles[Number + Index], Value);
       DebugMsg (NULL, 0, 9, "FV component file", "the %dth name is %s", Index, Value);
     } else {
       break;
     }
   }
 
-  if (Index == 0) {
+  if ((Index + Number) == 0) {
     Warning (NULL, 0, 0, "FV components are not specified.", NULL);
   }
 
@@ -1642,10 +1644,7 @@ GenerateFvImage (
   IN CHAR8                *InfFileImage,
   IN UINTN                InfFileSize,
   IN CHAR8                *FvFileName,
-  IN CHAR8                *MapFileName,
-  IN EFI_PHYSICAL_ADDRESS XipBaseAddress,
-  IN EFI_PHYSICAL_ADDRESS *BtBaseAddress,
-  IN EFI_PHYSICAL_ADDRESS *RtBaseAddress
+  IN CHAR8                *MapFileName
   )
 /*++
 
@@ -1659,9 +1658,6 @@ Arguments:
   InfFileSize    Size of the contents of the InfFileImage buffer.
   FvFileName     Requested name for the FV file.
   MapFileName    Fv map file to log fv driver information.
-  XipBaseAddress BaseAddress is to be rebased.
-  BtBaseAddress  Pointer to BaseAddress is to set the prefer loaded image start address for boot drivers.
-  RtBaseAddress  Pointer to BaseAddress is to set the prefer loaded image start address for runtime drivers.
 
 Returns:
 
@@ -1703,7 +1699,7 @@ Returns:
     //
     Status = ParseFvInf (&InfMemoryFile, &mFvDataInfo);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 0003, "Error parsing file", "the input INF file.");
+      Error (NULL, 0, 0003, "Error parsing file", "the input FV INF file.");
       return Status;
     }
   }
@@ -1728,18 +1724,37 @@ Returns:
   //
   // Debug message Fv File System Guid
   //
-  DebugMsg (NULL, 0, 9, "FV File System Guid", "%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X", 
-                mFvDataInfo.FvFileSystemGuid.Data1,
-                mFvDataInfo.FvFileSystemGuid.Data2,
-                mFvDataInfo.FvFileSystemGuid.Data3,
-                mFvDataInfo.FvFileSystemGuid.Data4[0],
-                mFvDataInfo.FvFileSystemGuid.Data4[1],
-                mFvDataInfo.FvFileSystemGuid.Data4[2],
-                mFvDataInfo.FvFileSystemGuid.Data4[3],
-                mFvDataInfo.FvFileSystemGuid.Data4[4],
-                mFvDataInfo.FvFileSystemGuid.Data4[5],
-                mFvDataInfo.FvFileSystemGuid.Data4[6],
-                mFvDataInfo.FvFileSystemGuid.Data4[7]);
+  if (mFvDataInfo.FvFileSystemGuidSet) {
+    DebugMsg (NULL, 0, 9, "FV File System Guid", "%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X", 
+                  mFvDataInfo.FvFileSystemGuid.Data1,
+                  mFvDataInfo.FvFileSystemGuid.Data2,
+                  mFvDataInfo.FvFileSystemGuid.Data3,
+                  mFvDataInfo.FvFileSystemGuid.Data4[0],
+                  mFvDataInfo.FvFileSystemGuid.Data4[1],
+                  mFvDataInfo.FvFileSystemGuid.Data4[2],
+                  mFvDataInfo.FvFileSystemGuid.Data4[3],
+                  mFvDataInfo.FvFileSystemGuid.Data4[4],
+                  mFvDataInfo.FvFileSystemGuid.Data4[5],
+                  mFvDataInfo.FvFileSystemGuid.Data4[6],
+                  mFvDataInfo.FvFileSystemGuid.Data4[7]);
+  }
+  //
+  // Debug message Fv Name Guid
+  //
+  if (mFvDataInfo.FvNameGuidSet) {
+      DebugMsg (NULL, 0, 9, "FV Name Guid", "%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X", 
+                  mFvDataInfo.FvNameGuid.Data1,
+                  mFvDataInfo.FvNameGuid.Data2,
+                  mFvDataInfo.FvNameGuid.Data3,
+                  mFvDataInfo.FvNameGuid.Data4[0],
+                  mFvDataInfo.FvNameGuid.Data4[1],
+                  mFvDataInfo.FvNameGuid.Data4[2],
+                  mFvDataInfo.FvNameGuid.Data4[3],
+                  mFvDataInfo.FvNameGuid.Data4[4],
+                  mFvDataInfo.FvNameGuid.Data4[5],
+                  mFvDataInfo.FvNameGuid.Data4[6],
+                  mFvDataInfo.FvNameGuid.Data4[7]);
+  }
 
   if (CompareGuid (&mFvDataInfo.FvFileSystemGuid, &mEfiFirmwareFileSystem2Guid) == 0) {
     mFvDataInfo.IsPiFvImage = TRUE;
@@ -1755,19 +1770,6 @@ Returns:
     strcat (FvMapName, ".map");
   }
   VerboseMsg ("FV Map file name is %s", FvMapName);
-  
-  //
-  // Update FvImage Base Address, XipBase not same to BtBase, RtBase address.
-  //
-  if (XipBaseAddress != 0) {
-    mFvDataInfo.BaseAddress = XipBaseAddress;
-  }
-  if (*BtBaseAddress != 0) {
-    mFvDataInfo.BootBaseAddress = *BtBaseAddress;
-  }
-  if (*RtBaseAddress != 0) {
-    mFvDataInfo.RuntimeBaseAddress = *RtBaseAddress;
-  }
 
   //
   // Calculate the FV size and Update Fv Size based on the actual FFS files.
@@ -1903,7 +1905,7 @@ Returns:
   //
   // Set PI FV extension header
   //
-  if (CompareGuid (&mFvDataInfo.FvNameGuid, &mZeroGuid) != 0) {
+  if (mFvDataInfo.FvNameGuidSet) {
     memcpy (&FvExtHeader.FvName, &mFvDataInfo.FvNameGuid, sizeof (EFI_GUID));
     FvExtHeader.ExtHeaderSize = sizeof (EFI_FIRMWARE_VOLUME_EXT_HEADER);
     AddPadFile (&FvImageMemoryFile, 8, &FvExtHeader);
@@ -2002,12 +2004,6 @@ Finish:
   if (FvMapFile != NULL) {
     fclose (FvMapFile);
   }
-
-  //
-  // Update BootAddress and RuntimeAddress
-  //
-  *BtBaseAddress = mFvDataInfo.BootBaseAddress;
-  *RtBaseAddress = mFvDataInfo.RuntimeBaseAddress;
 
   return Status;
 }

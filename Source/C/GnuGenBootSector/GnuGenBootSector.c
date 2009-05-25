@@ -25,6 +25,7 @@ Abstract:
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <Common/UefiBaseTypes.h>
 
 //
 // Utility Name
@@ -269,7 +270,7 @@ Version (
   )
 {
   printf ("%s v%d.%d -Utility to retrieve and update the boot sector or MBR.\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
-  printf ("Copyright (c) 1999-2007 Intel Corporation. All rights reserved.\n");
+  printf ("Copyright (c) 2007-2009 Intel Corporation. All rights reserved.\n");
 }
 
 
@@ -302,8 +303,12 @@ main (
   INTN           Index;
   BOOLEAN        ProcessMbr;
   ERROR_STATUS   Status;
+  EFI_STATUS     EfiStatus;
   PATH_INFO      InputPathInfo;
   PATH_INFO      OutputPathInfo;
+  UINT64         LogLevel;
+
+  SetUtilityName (UTILITY_NAME);
   
   ZeroMem(&InputPathInfo, sizeof(PATH_INFO));
   ZeroMem(&OutputPathInfo, sizeof(PATH_INFO));
@@ -323,32 +328,84 @@ main (
   // Parse command line
   //
   for (Index = 0; Index < argc; Index ++) {
-    if ((stricmp (argv[Index], "-l") == 0) || (stricmp (argv[0], "--list") == 0)) {
+    if ((stricmp (argv[Index], "-l") == 0) || (stricmp (argv[Index], "--list") == 0)) {
       ListDrive ();
       return 0;
-    }
-    else if ((stricmp (argv[Index], "-m") == 0) || (stricmp (argv[Index], "--mbr") == 0)) {
+    } else if ((stricmp (argv[Index], "-m") == 0) || (stricmp (argv[Index], "--mbr") == 0)) {
       ProcessMbr = TRUE;
-    }
-    else if ((stricmp (argv[Index], "-i") == 0) || (stricmp (argv[Index], "--input") == 0)) {
+    } else if ((stricmp (argv[Index], "-i") == 0) || (stricmp (argv[Index], "--input") == 0)) {
       InputPathInfo.Path  = argv[Index + 1];
       InputPathInfo.Input = TRUE;
+      if (InputPathInfo.Path == NULL) {
+        Error (NULL, 0, 1003, "Invalid option value", "Input file name can't be NULL");
+        return 1;
+      } 
+      if (InputPathInfo.Path[0] == '-') {
+        Error (NULL, 0, 1003, "Invalid option value", "Input file is missing");
+        return 1;       
+      }
       ++Index;
-    }
-    else if ((stricmp (argv[Index], "-o") == 0) || (stricmp (argv[Index], "--output") == 0)) {
+    } else if ((stricmp (argv[Index], "-o") == 0) || (stricmp (argv[Index], "--output") == 0)) {
       OutputPathInfo.Path  = argv[Index + 1];
       OutputPathInfo.Input = FALSE;
+      if (OutputPathInfo.Path == NULL) {
+        Error (NULL, 0, 1003, "Invalid option value", "Output file name can't be NULL");
+        return 1;
+      } 
+      if (OutputPathInfo.Path[0] == '-') {
+        Error (NULL, 0, 1003, "Invalid option value", "Output file is missing");
+        return 1;       
+      }
       ++Index;
-    }
-    else {
+    } else if ((stricmp (argv[Index], "-h") == 0) || (stricmp (argv[Index], "--help") == 0)) {
       PrintUsage ();
+      return 0;
+    } else if (stricmp (argv[Index], "--version") == 0) {
+      Version ();
+      return 0;
+    } if ((stricmp (argv[Index], "-v") == 0) || (stricmp (argv[Index], "--verbose") == 0)) {
+      continue;
+    } if ((stricmp (argv[Index], "-q") == 0) || (stricmp (argv[Index], "--quiet") == 0)) {
+      continue;
+    } else if ((stricmp (argv[Index], "-d") == 0) || (stricmp (argv[Index], "--debug") == 0)) {
+      EfiStatus = AsciiStringToUint64 (argv[Index + 1], FALSE, &LogLevel);
+      if (EFI_ERROR (EfiStatus)) {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[Index], argv[Index + 1]);
+        return 1;
+      }
+      if (LogLevel > 9) {
+        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0-9, currnt input level is %d", LogLevel);
+        return 1;
+      }
+      SetPrintLevel (LogLevel);
+      DebugMsg (NULL, 0, 9, "Debug Mode Set", "Debug Output Mode Level %s is set!", argv[Index + 1]);
+      ++Index;
+    } else {
+      //
+      // Don't recognize the parameter.
+      //
+      Error (NULL, 0, 1000, "Unknown option", "%s", argv[Index]);
       return 1;
     }
   }
+  
+  if (InputPathInfo.Path == NULL) {
+    Error (NULL, 0, 1001, "Missing options", "Input file is missing");
+    return 1;
+  }
 
+  if (OutputPathInfo.Path == NULL) {
+    Error (NULL, 0, 1001, "Missing options", "Output file is missing");
+    return 1;
+  }
+  
+  if (GetPathInfo(&InputPathInfo) != ErrorSuccess) {
+    Error (NULL, 0, 1003, "Invalid option value", "Input file can't be found.");
+    return 1;
+  }
 
-  if ((GetPathInfo(&InputPathInfo)  != ErrorSuccess) ||
-      (GetPathInfo(&OutputPathInfo) != ErrorSuccess)) {
+  if (GetPathInfo(&OutputPathInfo) != ErrorSuccess) {
+    Error (NULL, 0, 1003, "Invalid option value", "Output file can't be found.");
     return 1;
   }
   

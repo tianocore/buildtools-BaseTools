@@ -16,7 +16,6 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
-//#include "process.h"
 #include "VfrCompiler.h"
 #include "CommonLib.h"
 #include "EfiUtilityMsgs.h"
@@ -66,9 +65,15 @@ CVfrCompiler::OptionInitialization (
   mOptions.PreprocessorOutputFileName[0] = '\0';
   mOptions.VfrBaseFileName[0]            = '\0';
   mOptions.IncludePaths                  = NULL;
-  mOptions.SkipCPreprocessor             = FALSE;
+  mOptions.SkipCPreprocessor             = TRUE;
   mOptions.CPreprocessorOptions          = NULL;
   mOptions.CompatibleMode                = FALSE;
+  
+  if (Argc == 1) {
+    Usage ();
+    SET_RUN_STATUS (STATUS_DEAD);
+    return;
+  }
 
   for (Index = 1; (Index < Argc) && (Argv[Index][0] == '-'); Index++) {
     if ((stricmp(Argv[Index], "-h") == 0) || (stricmp(Argv[Index], "--help") == 0)) {
@@ -79,6 +84,8 @@ CVfrCompiler::OptionInitialization (
       mOptions.CreateRecordListFile = TRUE;
       gCIfrRecordInfoDB.TurnOn ();
     } else if (stricmp(Argv[Index], "-i") == 0) {
+      Error (NULL, 0, 1000, "Unknown option", "unrecognized option %s", Argv[Index]);
+      goto Fail;
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
         Error (NULL, 0, 1001, "Missing option", "-i missing path argument"); 
@@ -108,6 +115,8 @@ CVfrCompiler::OptionInitialization (
     } else if (stricmp(Argv[Index], "-n") == 0 || stricmp(Argv[Index], "--no-pre-processing") == 0 || stricmp(Argv[Index], "-nopp") == 0) {
       mOptions.SkipCPreprocessor = TRUE;
     } else if (stricmp(Argv[Index], "-f") == 0 || stricmp(Argv[Index], "--pre-processing-flag") == 0 || stricmp(Argv[Index], "-ppflag") == 0) {
+      Error (NULL, 0, 1000, "Unknown option", "unrecognized option %s", Argv[Index]);
+      goto Fail;
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
         Error (NULL, 0, 1001, "Missing option", "-od - missing C-preprocessor argument");
@@ -119,14 +128,12 @@ CVfrCompiler::OptionInitialization (
       mOptions.CompatibleMode = TRUE;
     } else {
       Error (NULL, 0, 1000, "Unknown option", "unrecognized option %s", Argv[Index]);
-      Usage ();
       goto Fail;
     }
   }
 
   if (Index != Argc - 1) {
     Error (NULL, 0, 1001, "Missing option", "VFR file name is not specified.");
-    Usage ();
     goto Fail;
   } else {
     strcpy (mOptions.VfrFileName, Argv[Index]);
@@ -376,15 +383,13 @@ CVfrCompiler::Usage (
     "Options:",
     "  -h, --help     prints this help",
     "  -l             create an output IFR listing file",
-    "  -i IncPath     add IncPath to the search path for VFR included files",
     "  -o DIR, --output-directory DIR",
-    "                 deposit all output files to directory OutputDir (default=cwd)",
+    "                 deposit all output files to directory OutputDir",
+    "                 default is current directory",
     "  -b, --create-ifr-package",
     "                 create an IFR HII pack file",
     "  -n, --no-pre-processing",
     "                 do not preprocessing input file",
-    "  -f, --pre-processing-flag",
-    "                 Preprocessing flags",
     "  -c, --compatible-framework",
     "                 compatible framework vfr file",
     NULL

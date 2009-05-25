@@ -524,7 +524,7 @@ Notes:
   // message for you. It has to be decimal digits too.
   //
   if (MessageCode != 0) {
-    sprintf (Line2, ": %s %04X", Type, MessageCode);
+    sprintf (Line2, ": %s %04d", Type, MessageCode);
   } else {
     sprintf (Line2, ": %s", Type);
   }

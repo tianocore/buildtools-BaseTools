@@ -2402,30 +2402,25 @@ Returns:
   //
   // Copyright declaration
   //
-  fprintf (stdout, "Copyright (c) 2007, Intel Corporation. All rights reserved.\n\n");
-
-  fprintf (stdout, "  -f  input_file\n\
-  	    input_file is name of the BS Image INF file to use.\n");
-  fprintf (stdout, "  -r  BaseAddress\n\
-            BaseAddress is the starting address of Firmware Volume where Boot Strapped Image will reside.\n");
-  fprintf (stdout, "  -s  FwVolumeSize\n\
-            FwVolumeSize is the size of Firmware Volume.\n");
+  fprintf (stdout, "Copyright (c) 2007 - 2009, Intel Corporation. All rights reserved.\n\n");
   //
   // Details Option
   //
   fprintf (stdout, "Options:\n");
-  fprintf (stdout, "  -o FileName, --output FileName\n\
-            File will be created to store the ouput content.\n");
-  fprintf (stdout, "  -v, --verbose\n\
-            Turn on verbose output with informational messages.\n");
-  fprintf (stdout, "  --version\n\
-            Show program's version number and exit.\n");
-  fprintf (stdout, "  -h, --help\n\
-            Show this help message and exit.\n");
-  fprintf (stdout, "  -q\n\
-            Disable all messages except FATAL ERRORS.\n");
-  fprintf (stdout, "  -d [#, 0-9]\n\
-            Enable debug messages at level #.\n");
+  fprintf (stdout, "  -f Input_file,   --filename Input_file\n\
+                        Input_file is name of the BS Image INF file\n");
+  fprintf (stdout, "  -r BaseAddress,  --baseaddr BaseAddress\n\
+                        BaseAddress is the starting address of Firmware Volume\n\
+                        where Boot Strapped Image will reside.\n");
+  fprintf (stdout, "  -s FwVolumeSize, --size FwVolumeSize\n\
+                        FwVolumeSize is the size of Firmware Volume.\n");
+  fprintf (stdout, "  -o FileName,     --output FileName\n\
+                        File will be created to store the ouput content.\n");
+  fprintf (stdout, "  -v, --verbose         Turn on verbose output with informational messages.\n");
+  fprintf (stdout, "  --version             Show program's version number and exit.\n");
+  fprintf (stdout, "  -h, --help            Show this help message and exit.\n");
+  fprintf (stdout, "  -q, --quiet           Disable all messages except FATAL ERRORS.\n");
+  fprintf (stdout, "  -d, --debug [#, 0-9]  Enable debug messages at level #.\n");
 }
 
 int
@@ -2496,8 +2491,7 @@ Returns:
     return 0;
   }
 
-  if ((strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0) ||
-      (strcmp(argv[1], "-?") == 0) || (strcmp(argv[1], "/?") == 0)) {
+  if ((strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0)) {
     Usage();
     return 0;
   }
@@ -2511,64 +2505,48 @@ Returns:
   // Parse the command line arguments
   //
   for (Index = 1; Index < argc; Index += 2) {
-    //
-    // Make sure argument pair begin with - or /
-    //
-    if (argv[Index][0] != '-' && argv[Index][0] != '/') {
-      Usage ();
-      Error (NULL, 0, 2000, "Invalid parameter", "Argument pair must begin with \"-\" or \"/\"!");
-      goto ERROR;
+    if ((stricmp (argv[Index], "-o") == 0) || (stricmp (argv[Index], "--output") == 0)) {
+      if (argv[Index + 1] == NULL || argv[Index + 1][0] == '-') {
+        Error (NULL, 0, 1003, "Invalid option value", "Output file is missing for -o option");
+        goto ERROR;
+      }
+      //
+      // Get the output file name
+      //
+      VTF_OUTPUT = TRUE;
+      if (FirstRoundO) {
+        //
+        // It's the first output file name
+        //
+        OutFileName1 = (CHAR8 *)argv[Index+1];
+        FirstRoundO = FALSE;
+      } else {
+        //
+        //It's the second output file name
+        //
+        OutFileName2 = (CHAR8 *)argv[Index+1];
+      }
+      continue;
     }
 
-    //
-    // Make sure argument specifier is only one letter
-    //
-    if (argv[Index][2] != 0) {
-      Usage ();
-      Error (NULL, 0, 2000, "Invalid parameter", "Unrecognized argument %s", argv[Index]);
-      goto ERROR;
+    if ((stricmp (argv[Index], "-f") == 0) || (stricmp (argv[Index], "--filename") == 0)) {
+      if (argv[Index + 1] == NULL || argv[Index + 1][0] == '-') {
+        Error (NULL, 0, 1003, "Invalid option value", "BS Image INF file is missing for -f option");
+        goto ERROR;
+      }
+      //
+      // Get the input VTF file name
+      //
+      VtfFileName = argv[Index+1];
+      VtfFP = fopen(VtfFileName, "rb");
+      if (VtfFP == NULL) {
+        Error (NULL, 0, 0001, "Error opening file", VtfFileName);
+        goto ERROR;
+      }
+      continue;
     }
-    //
-    // Determine argument to read
-    //
-    switch (argv[Index][1]) {
-
-    case 'O':
-    case 'o':
-    //
-    // Get the output file name
-    //
-    VTF_OUTPUT = TRUE;
-    if (FirstRoundO) {
-    //
-    // It's the first output file name
-    //
-    OutFileName1 = (CHAR8 *)argv[Index+1];
-    FirstRoundO = FALSE;
-    }
-    else {
-    //
-    //It's the second output file name
-    //
-    OutFileName2 = (CHAR8 *)argv[Index+1];
-    }
-    break;
-
-    case 'F':
-    case 'f':
-    //
-    // Get the input VTF file name
-    //
-    VtfFileName = argv[Index+1];
-    VtfFP = fopen(VtfFileName, "rb");
-    if (VtfFP == NULL) {
-      Error (NULL, 0, 0001, "Error opening file", VtfFileName);
-      goto ERROR;
-    }
-    break;
-
-    case 'R':
-    case 'r':
+    
+    if ((stricmp (argv[Index], "-r") == 0) || (stricmp (argv[Index], "--baseaddr") == 0)) {
       if (FirstRoundB) {
         Status      = AsciiStringToUint64 (argv[Index + 1], FALSE, &StartAddress1);
         FirstRoundB = FALSE;
@@ -2576,13 +2554,13 @@ Returns:
         Status = AsciiStringToUint64 (argv[Index + 1], FALSE, &StartAddress2);
       }
       if (Status != EFI_SUCCESS) {
-        Error (NULL, 0, 2000, "Invalid parameter", "Bad start address %s.", argv[Index + 1]);
+        Error (NULL, 0, 2000, "Invalid option value", "%s is Bad FV start address.", argv[Index + 1]);
         goto ERROR;
-      }
-      break;
+      }  
+      continue;
+    }
 
-    case 'S':
-    case 's':
+    if ((stricmp (argv[Index], "-s") == 0) || (stricmp (argv[Index], "--size") == 0)) {
       if (FirstRoundS) {
         Status      = AsciiStringToUint64 (argv[Index + 1], FALSE, &FwVolSize1);
         FirstRoundS = FALSE;
@@ -2592,29 +2570,35 @@ Returns:
       }
 
       if (Status != EFI_SUCCESS) {
-        Error (NULL, 0, 2000, "Invalid parameter", "Bad size %s.", argv[Index + 1]);
+        Error (NULL, 0, 2000, "Invalid option value", "%s is Bad FV size.", argv[Index + 1]);
         goto ERROR;
       }
-      break;
-    case 'v':
-    case 'V':
-	    //
-    	// Verbose
-    	//
+      continue;
+    }
+
+    if ((stricmp (argv[Index], "-v") == 0) || (stricmp (argv[Index], "--verbose") == 0)) {
 	    VerboseMode = TRUE;
 	    Index--;
-	    break;
-    case 'd':
+      continue;
+    }
+
+    if ((stricmp (argv[Index], "-q") == 0) || (stricmp (argv[Index], "--quiet") == 0)) {
+      QuietMode = TRUE;
+      Index--;
+      continue;
+    }
+
+    if ((stricmp (argv[Index], "-d") == 0) || (stricmp (argv[Index], "--debug") == 0)) {
       //
       // debug level specified
       //
       Status = AsciiStringToUint64(argv[Index + 1], FALSE, &DebugLevel);
       if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[Index], argv[Index + 1]);
         goto ERROR;
       }
-      if((DebugLevel > 9) || (DebugLevel < 0)) {
-        Error (NULL, 0, 2000, "Invalid parameter", "Unrecognized argument %s.", argv[Index + 1]);
+      if (DebugLevel > 9)  {
+        Error (NULL, 0, 2000, "Invalid option value", "Unrecognized argument %s.", argv[Index + 1]);
         goto ERROR;
       }
       if((DebugLevel <= 9) &&(DebugLevel >= 5)) {
@@ -2622,22 +2606,30 @@ Returns:
       } else {
         DebugMode = FALSE;
       }
-      break;
-    case 'q':
-      QuietMode = TRUE;
-      Index--;
-      break;
-    default:
-      Usage ();
-      Error (NULL, 0, 2000, "Invalid parameter", "Unrecognized argument %s.", argv[Index]);
-      goto ERROR;
-      break;
+      continue;
     }
+
+    Error (NULL, 0, 2000, "Invalid parameter", "Unrecognized argument %s.", argv[Index]);
+    goto ERROR;
   }
 
-//
-// All Parameters has been parsed, now set the message print level
-//
+  if (VtfFP == NULL) {
+    Error (NULL, 0, 2000, "Invalid parameter", "No BS Image INF file is specified");
+    goto ERROR;
+  }
+
+  if (!FirstRoundB) {
+    Error (NULL, 0, 2000, "Invalid parameter", "No FV base address is specified");
+    goto ERROR;
+  }
+
+  if (!FirstRoundS) {
+    Error (NULL, 0, 2000, "Invalid parameter", "No FV Size is specified");
+    goto ERROR;
+  }
+  //
+  // All Parameters has been parsed, now set the message print level
+  //
   if (QuietMode) {
     SetPrintLevel(40);
   } else if (VerboseMode) {

@@ -1708,7 +1708,7 @@ Returns:
            Turn on verbose output with informational messages.\n");
   fprintf (stdout, "  -q, --quiet\n\
            Disable all messages except key message and fatal error\n");
-  fprintf (stdout, "  --debug [0-9]\n\
+  fprintf (stdout, "  -d, --debug [0-9]\n\
            Enable debug messages, at input debug level.\n");
   fprintf (stdout, "  --version\n\
            Show program's version number and exit.\n");
@@ -1776,8 +1776,7 @@ Returns:
     return 0;
   }
   
-  if ((strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0) || 
-      (strcmp(argv[1], "-?") == 0) || (strcmp(argv[1], "/?") == 0)) {
+  if ((strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0)) {
     Usage();
     return 0;
   }
@@ -1790,75 +1789,78 @@ Returns:
   argc--;
   argv++;
   if (strcmp(argv[0],"-e") == 0) {
-  //
-  // encode the input file
-  //
-  ENCODE = TRUE;
-  argc--;
-  argv++;
-  }
-  else if (strcmp(argv[0], "-d") == 0) {
-  //
-  // decode the input file
-  //
-  DECODE = TRUE;
-  argc--;
-  argv++;
-  }
-  else {
-  //
-  // Error command line
-  //
-  Error (NULL, 0, 1003, "Invalid option value", "the options specified are not recognized.");
-  Usage();
-  return 1;
+    //
+    // encode the input file
+    //
+    ENCODE = TRUE;
+    argc--;
+    argv++;
+  } else if (strcmp(argv[0], "-d") == 0) {
+    //
+    // decode the input file
+    //
+    DECODE = TRUE;
+    argc--;
+    argv++;
+  } else {
+    //
+    // Error command line
+    //
+    Error (NULL, 0, 1003, "Invalid option value", "the options specified are not recognized.");
+    Usage();
+    return 1;
   }
 
   while (argc > 0) {
-   if ((strcmp(argv[0], "-v") == 0) || (stricmp(argv[0], "--verbose") == 0)) {
-    VerboseMode = TRUE;
-    argc--;
-    argv++;
-    continue;
-  }
-   if (stricmp (argv[0], "--debug") == 0) {
-     argc-=2;
-     argv++;
-     Status = AsciiStringToUint64(argv[0], FALSE, &DebugLevel);
-     if (DebugLevel > 9 || DebugLevel < 0) {
-       Error (NULL, 0 ,2000, "Invalid parameter", "Unrecognized argument %s", argv[0]);
-       goto ERROR;
-     }
-     if (DebugLevel>=5 && DebugLevel <=9){
-       DebugMode = TRUE;
-     } else {
-       DebugMode = FALSE;
-     }
-     argv++;
-     continue;
-   }
-   if ((strcmp(argv[0], "-q") == 0) || (stricmp (argv[0], "--quiet") == 0)) {
-     QuietMode = TRUE;
-     argc--;
-     argv++;
-     continue;
-   }
-   if ((strcmp(argv[0], "-o") == 0) || (stricmp (argv[0], "--output") == 0)) {
-    OutputFileName = argv[1];
-    if (OutputFileName == NULL) {
-      Error (NULL, 0, 1003, "Invalid option value", "Output File name can't be set NULL");
-      goto ERROR;
-    }   
-    argc -=2;
-    argv +=2;
-    continue; 
-   }
-   if (argv[0][0]!='-') {
-   InputFileName = argv[0];
-   argc--;
-   argv++;
-   continue;
-   }
+    if ((strcmp(argv[0], "-v") == 0) || (stricmp(argv[0], "--verbose") == 0)) {
+      VerboseMode = TRUE;
+      argc--;
+      argv++;
+      continue;
+    }
+
+    if (stricmp (argv[0], "--debug") == 0) {
+      argc-=2;
+      argv++;
+      Status = AsciiStringToUint64(argv[0], FALSE, &DebugLevel);
+      if (DebugLevel > 9) {
+        Error (NULL, 0 ,2000, "Invalid parameter", "Unrecognized argument %s", argv[0]);
+        goto ERROR;
+      }
+      if (DebugLevel>=5 && DebugLevel <=9){
+        DebugMode = TRUE;
+      } else {
+        DebugMode = FALSE;
+      }
+      argv++;
+      continue;
+    }
+
+    if ((strcmp(argv[0], "-q") == 0) || (stricmp (argv[0], "--quiet") == 0)) {
+      QuietMode = TRUE;
+      argc--;
+      argv++;
+      continue;
+    }
+
+    if ((strcmp(argv[0], "-o") == 0) || (stricmp (argv[0], "--output") == 0)) {
+      if (argv[1] == NULL || argv[1][0] == '-') {
+        Error (NULL, 0, 1003, "Invalid option value", "Output File name is missing for -o option");
+        goto ERROR;
+      }
+      OutputFileName = argv[1];
+      argc -=2;
+      argv +=2;
+      continue; 
+    }
+
+    if (argv[0][0]!='-') {
+      InputFileName = argv[0];
+      argc--;
+      argv++;
+      continue;
+    }
+
     Error (NULL, 0, 1000, "Unknown option", argv[0]);
     goto ERROR;     
   }

@@ -390,7 +390,7 @@ Returns:
   //
   // Check Guid Format strictly xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
   //
-  for (Index = 0; Index < 36; Index ++) {
+  for (Index = 0; AsciiGuidBuffer[Index] != '\0' && Index < 37; Index ++) {
     if (Index == 8 || Index == 13 || Index == 18 || Index == 23) {
       if (AsciiGuidBuffer[Index] != '-') {
         break;
@@ -406,7 +406,7 @@ Returns:
     }
   }
   
-  if (Index < 36) {
+  if (Index < 36 || AsciiGuidBuffer[36] != '\0') {
     Error (NULL, 0, 1003, "Invalid option value", "Incorrect GUID \"%s\"\n  Correct Format \"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\"", AsciiGuidBuffer);
     return EFI_ABORTED;
   }

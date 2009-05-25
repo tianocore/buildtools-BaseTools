@@ -23,7 +23,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 #define PROGRAM_NAME                       "VfrCompile"
 #define VFR_COMPILER_VERSION               " 1.95 (UEFI 2.1)"
-#define VFR_COMPILER_UPDATE_TIME           " updated on 2008/09/03"
+#define VFR_COMPILER_UPDATE_TIME           " updated on 2009/05/20"
 //
 // This is how we invoke the C preprocessor on the VFR source file
 // to resolve #defines, #includes, etc. To make C source files

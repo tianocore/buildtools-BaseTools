@@ -618,7 +618,7 @@ Returns:
     PciDs30.DeviceId  = DevId;
     PciDs30.DeviceListOffset = 0; // to be fixed
     PciDs30.Length    = (UINT16) sizeof (PCI_3_0_DATA_STRUCTURE);
-    PciDs30.Revision  = 0;
+    PciDs30.Revision  = 0x3;
     //
     // Class code and code revision from the command line (optional)
     //
@@ -860,13 +860,13 @@ Returns:
 --*/
 {
   FILE_LIST *FileList;
-
   FILE_LIST *PrevFileList;
   UINT32    FileFlags;
   UINT32    ClassCode;
   UINT32    CodeRevision;
   EFI_STATUS Status;
   BOOLEAN    EfiRomFlag;
+  UINT64     TempValue;
 
   FileFlags = 0;
   EfiRomFlag = FALSE;
@@ -897,13 +897,12 @@ Returns:
     return STATUS_ERROR;
   }
   
-  if ((strcmp(Argv[0], "-h") == 0) || (strcmp(Argv[0], "--help") == 0) ||
-      (strcmp(Argv[0], "-?") == 0) || (strcmp(Argv[0], "/?") == 0)) {
+  if ((stricmp(Argv[0], "-h") == 0) || (stricmp(Argv[0], "--help") == 0)) {
     Usage();
     return STATUS_ERROR;
   }
   
-  if ((strcmp(Argv[0], "--version") == 0)) {
+  if ((stricmp(Argv[0], "--version") == 0)) {
     Version();
     return STATUS_ERROR;
   }
@@ -912,12 +911,7 @@ Returns:
   // Process until no more arguments
   //
   while (Argc > 0) {
-    if ((Argv[0][0] == '-') || (Argv[0][0] == '/')) {
-      //
-      // To simplify string comparisons, replace slashes with dashes
-      //
-      Argv[0][0] = '-';
-            
+    if (Argv[0][0] == '-') {
       //
       // Vendor ID specified with -f
       //
@@ -925,14 +919,17 @@ Returns:
         //
         // Make sure there's another parameter
         //
-        if ((Argc > 1) && (Argv[1][0] != '-')) {
-          Options->VendId       = (UINT16) strtol (Argv[1], NULL, 16);
-          Options->VendIdValid  = 1;
-        } else {
-	        Error (NULL, 0, 2000, "Invalid parameter", "Missing Vendor ID with %s option!", Argv[0]);
-          Usage ();
-          return STATUS_ERROR;
+        Status = AsciiStringToUint64(Argv[1], FALSE, &TempValue);
+        if (EFI_ERROR (Status)) {
+          Error (NULL, 0, 2000, "Invalid option value", "%s = %s", Argv[0], Argv[1]);
+          return 1;
         }
+        if (TempValue >= 0x10000) {
+          Error (NULL, 0, 2000, "Invalid option value", "Vendor Id %s out of range!", Argv[1]);
+          return 1;
+        }
+        Options->VendId       = (UINT16) TempValue;
+        Options->VendIdValid  = 1;
 
         Argv++;
         Argc--;
@@ -941,14 +938,17 @@ Returns:
         // Device ID specified with -i
         // Make sure there's another parameter
         //
-        if ((Argc > 1) && (Argv[1][0] != '-')) {
-          Options->DevId      = (UINT16) strtol (Argv[1], NULL, 16);
-          Options->DevIdValid = 1;
-        } else {
-          Error (NULL, 0, 2000, "Invalid parameter", "Missing Device ID with %s option!", Argv[0]);
-          Usage ();
-          return STATUS_ERROR;
+        Status = AsciiStringToUint64(Argv[1], FALSE, &TempValue);
+        if (EFI_ERROR (Status)) {
+          Error (NULL, 0, 2000, "Invalid option value", "%s = %s", Argv[0], Argv[1]);
+          return 1;
         }
+        if (TempValue >= 0x10000) {
+          Error (NULL, 0, 2000, "Invalid option value", "Device Id %s out of range!", Argv[1]);
+          return 1;
+        }
+        Options->DevId      = (UINT16) TempValue;
+        Options->DevIdValid = 1;
 
         Argv++;
         Argc--;
@@ -957,17 +957,15 @@ Returns:
         // Output filename specified with -o
         // Make sure there's another parameter
         //
-        if (Argc > 1) {
-          strcpy (Options->OutFileName, Argv[1]);
-        } else {
-          Error (NULL, 0, 2000, "Invalid parameter", "Missing output file name with %s!", Argv[0]);
-          Usage ();
+        if (Argv[1] == NULL || Argv[1][0] == '-') {
+          Error (NULL, 0, 2000, "Invalid parameter", "Missing output file name with %s option!", Argv[0]);
           return STATUS_ERROR;
         }
+        strcpy (Options->OutFileName, Argv[1]);
 
         Argv++;
         Argc--;
-      } else if ((stricmp (Argv[0], "-h") == 0) || (strcmp (Argv[0], "-?") == 0)) {
+      } else if ((stricmp (Argv[0], "-h") == 0) || (stricmp (Argv[0], "--help") == 0)) {
         //
         // Help option
         //
@@ -997,10 +995,13 @@ Returns:
         //
         Options->Verbose = 1;
       } else if (stricmp (Argv[0], "--debug") == 0) {
-        Argv++;
-        Status = AsciiStringToUint64(Argv[0], FALSE, &DebugLevel);
-        if (DebugLevel > 9 || DebugLevel < 0) {
-          Error (NULL, 0, 2000, "Invalid parameter", "Unrecognized parameter %s\n", Argv[0]);
+        Status = AsciiStringToUint64(Argv[1], FALSE, &DebugLevel);
+        if (EFI_ERROR (Status)) {
+          Error (NULL, 0, 2000, "Invalid option value", "%s = %s", Argv[0], Argv[1]);
+          return 1;
+        }
+        if (DebugLevel > 9)  {
+          Error (NULL, 0, 2000, "Invalid option value", "Debug Level range is 0-9, currnt input level is %d", Argv[1]);
           return 1;
         }
         if (DebugLevel>=5 && DebugLevel<=9) {
@@ -1008,6 +1009,7 @@ Returns:
         } else {
           Options->Debug = FALSE;
         }
+        Argv++;
         Argc--;
       } else if ((stricmp (Argv[0], "--quiet") == 0) || (stricmp (Argv[0], "-q") == 0)) {
         Options->Quiet = TRUE;
@@ -1027,26 +1029,19 @@ Returns:
         // Class code value for the next file in the list.
         // Make sure there's another parameter
         //
-        if ((Argc > 1) && (Argv[1][0] != '-')) {
-          //
-          // No error checking on the return value. Could check for LONG_MAX,
-          // LONG_MIN, or 0 class code value if desired. Check range (3 bytes)
-          // at least.
-          //
-          ClassCode = (UINT32) strtol (Argv[1], NULL, 16);
-          if (ClassCode & 0xFF000000) {
-            Error (NULL, 0, 2000, "Invalid parameter", "Class code %s out of range!", Argv[1]);
-            return STATUS_ERROR;
-          }
-          if (FileList != NULL && FileList->ClassCode == 0) {
-            FileList->ClassCode = ClassCode;
-          }
-        } else {
-	        Error (NULL, 0, 2000, "Invalid parameter", "Missing class code value with %s option!", Argv[0]);
-          Usage ();
+        Status = AsciiStringToUint64(Argv[1], FALSE, &TempValue);
+        if (EFI_ERROR (Status)) {
+          Error (NULL, 0, 2000, "Invalid option value", "%s = %s", Argv[0], Argv[1]);
+          return 1;
+        }
+        ClassCode = (UINT32) TempValue;
+        if (ClassCode & 0xFF000000) {
+          Error (NULL, 0, 2000, "Invalid parameter", "Class code %s out of range!", Argv[1]);
           return STATUS_ERROR;
         }
-
+        if (FileList != NULL && FileList->ClassCode == 0) {
+          FileList->ClassCode = ClassCode;
+        }
         Argv++;
         Argc--;
       } else if ((stricmp (Argv[0], "-r") == 0) || (stricmp (Argv[0], "--Revision") == 0)) {
@@ -1055,39 +1050,28 @@ Returns:
         // file in the list.
         // Make sure there's another parameter
         //
-        if (Argc > 1) {
-          if (Argv[1][0] != '-') {
-            //
-            // No error checking on the return value. Could check for LONG_MAX,
-            // LONG_MIN, or 0 value if desired. Check range (2 bytes)
-            // at least.
-            //
-            CodeRevision = (UINT32) strtol (Argv[1], NULL, 16);
-            if (CodeRevision & 0xFFFF0000) {
-              Error (NULL, 0, 2000, "Invalid parameter", "Code revision %s out of range!", Argv[1]);
-              return STATUS_ERROR;
-            }
-
-            Argv++;
-            Argc--;
-
-            if (FileList != NULL && FileList->CodeRevision == 0) {
-              FileList->CodeRevision = (UINT16) CodeRevision;
-            }
-          }
-        } else {
-	        Error (NULL, 0, 2000, "Invalid parameter", "Missing code revision value with %s option!", Argv[0]);
-          Usage ();
+        Status = AsciiStringToUint64(Argv[1], FALSE, &TempValue);
+        if (EFI_ERROR (Status)) {
+          Error (NULL, 0, 2000, "Invalid option value", "%s = %s", Argv[0], Argv[1]);
+          return 1;
+        }
+        CodeRevision = (UINT32) TempValue;
+        if (CodeRevision & 0xFFFF0000) {
+          Error (NULL, 0, 2000, "Invalid parameter", "Code revision %s out of range!", Argv[1]);
           return STATUS_ERROR;
         }
-      } else if ((stricmp (Argv[0], "-p") == 0) || (stricmp (Argv[0], "-pci23") == 0)) {
+        if (FileList != NULL && FileList->CodeRevision == 0) {
+          FileList->CodeRevision = (UINT16) CodeRevision;
+        }
+        Argv++;
+        Argc--;
+      } else if ((stricmp (Argv[0], "-p") == 0) || (stricmp (Argv[0], "--pci23") == 0)) {
         //
         // Default layout meets PCI 3.0 specifications, specifying this flag will for a PCI 2.3 layout.
         //
-        mOptions.Pci23 = 1; 
+        mOptions.Pci23 = 1;
       } else {
         Error (NULL, 0, 2000, "Invalid parameter", "Invalid option specified: %s", Argv[0]);
-        Usage ();
         return STATUS_ERROR;
       }
     } else {
@@ -1102,7 +1086,7 @@ Returns:
       //
       // Check Efi Option RomImage
       //
-      if ((FileFlags & FILE_FLAG_EFI) != 0) {
+      if ((FileFlags & FILE_FLAG_EFI) == FILE_FLAG_EFI) {
         EfiRomFlag = TRUE;
       }
       //
@@ -1149,7 +1133,6 @@ Returns:
   //
   if (Options->FileList == NULL) {
     Error (NULL, 0, 2000, "Invalid parameter", "Missing input file name!");
-    Usage ();
     return STATUS_ERROR;
   }
 
@@ -1164,7 +1147,6 @@ Returns:
   
     if (!Options->DevIdValid) {
       Error (NULL, 0, 2000, "Missing Device ID in command line", NULL);
-      Usage ();
       return STATUS_ERROR;
     }
   }
@@ -1224,7 +1206,7 @@ Returns:
   //
   // Copyright declaration
   // 
-  fprintf (stdout, "Copyright (c) 2007, Intel Corporation. All rights reserved.\n\n");
+  fprintf (stdout, "Copyright (c) 2007 - 2009, Intel Corporation. All rights reserved.\n\n");
 
   //
   // Details Option
@@ -1240,22 +1222,20 @@ Returns:
             Legacy binary files.\n");
   fprintf (stdout, "  -l ClassCode\n\
             Hex ClassCode in the PCI data structure header.\n");
-  fprintf (stdout, "  -r Rev\n\
-            hex Revision in the PCI data structure header.\n");
-  fprintf (stdout, "  -n\n\
-            not to automatically set the LAST bit in the last file.\n");
+  fprintf (stdout, "  -r Rev    Hex Revision in the PCI data structure header.\n");
+  fprintf (stdout, "  -n        Not to automatically set the LAST bit in the last file.\n");
   fprintf (stdout, "  -f VendorId\n\
             Hex PCI Vendor ID for the device OpROM.\n");
   fprintf (stdout, "  -i DeviceId\n\
             Hex PCI Device ID for the device OpROM.\n");
   fprintf (stdout, "  -p, --pci23\n\
-            Default layout meets PCI 3.0 specifications, specifying this flag will for a PCI 2.3 layout.\n");
+            Default layout meets PCI 3.0 specifications\n\
+            specifying this flag will for a PCI 2.3 layout.\n");
   fprintf (stdout, "  -d, --dump\n\
             Dump the headers of an existing option ROM image.\n");
   fprintf (stdout, "  -v, --verbose\n\
             Turn on verbose output with informational messages.\n");
-  fprintf (stdout, "  --version\n\
-            Show program's version number and exit.\n");
+  fprintf (stdout, "  --version Show program's version number and exit.\n");
   fprintf (stdout, "  -h, --help\n\
             Show this help message and exit.\n");
   fprintf (stdout, "  -q, --quiet\n\

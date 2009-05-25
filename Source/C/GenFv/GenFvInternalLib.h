@@ -221,11 +221,14 @@ typedef struct {
 // FV and capsule information holder
 //
 typedef struct {
+  BOOLEAN                 BaseAddressSet;
   EFI_PHYSICAL_ADDRESS    BaseAddress;
   EFI_PHYSICAL_ADDRESS    BootBaseAddress;
   EFI_PHYSICAL_ADDRESS    RuntimeBaseAddress;  
   EFI_GUID                FvFileSystemGuid;
+  BOOLEAN                 FvFileSystemGuidSet;
   EFI_GUID                FvNameGuid;
+  BOOLEAN                 FvNameGuidSet;
   UINTN                   Size;
   EFI_FVB_ATTRIBUTES      FvAttributes;
   CHAR8                   FvName[_MAX_PATH];
@@ -389,10 +392,7 @@ GenerateFvImage (
   IN CHAR8                *InfFileImage,
   IN UINTN                InfFileSize,
   IN CHAR8                *FvFileName,  
-  IN CHAR8                *MapFileName,
-  IN EFI_PHYSICAL_ADDRESS XipBaseAddress,
-  IN EFI_PHYSICAL_ADDRESS *BtBaseAddress,
-  IN EFI_PHYSICAL_ADDRESS *RtBaseAddress
+  IN CHAR8                *MapFileName
   )
 /*++
 
@@ -407,9 +407,6 @@ Arguments:
   InfFileSize    Size of the contents of the InfFileImage buffer.
   FvFileName     Requested name for the FV file.
   MapFileName    Fv map file to log fv driver information.
-  XipBaseAddress BaseAddress is to be rebased.
-  BtBaseAddress  Pointer to BaseAddress is to set the prefer loaded image start address for boot drivers.
-  RtBaseAddress  Pointer to BaseAddress is to set the prefer loaded image start address for runtime drivers.
     
 Returns:
  

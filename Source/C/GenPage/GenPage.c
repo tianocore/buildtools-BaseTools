@@ -36,9 +36,6 @@ Abstract:
 #include "VirtualMemory.h"
 #include "EfiUtilityMsgs.h"
 
-unsigned int
-xtoi (char  *);
-
 #define EFI_PAGE_BASE_OFFSET_IN_LDR 0x70000
 #define EFI_PAGE_BASE_ADDRESS       (EFI_PAGE_BASE_OFFSET_IN_LDR + 0x20000)
 
@@ -94,7 +91,7 @@ Returns:
 --*/
 {
   printf ("%s v%d.%d -Utility to generate the EfiLoader image containing page table.\n", UTILITY_NAME, UTILITY_MAJOR_VERSION, UTILITY_MINOR_VERSION);
-  printf ("Copyright (c) 1999-2007 Intel Corporation. All rights reserved.\n");
+  printf ("Copyright (c) 2008 - 2009 Intel Corporation. All rights reserved.\n");
 }
 
 VOID
@@ -204,7 +201,7 @@ Return:
   return PageTable;
 }
 
-int
+INT32
 GenBinPage (
   void *BaseMemory,
   char *NoPageFileName,
@@ -292,16 +289,18 @@ main (
   char **argv
   )
 {
-  void *BaseMemory;
-  int  result;
-  char* OutputFile = NULL;
-  char* InputFile = NULL;
+  VOID        *BaseMemory;
+  INTN        result;
+  CHAR8       *OutputFile = NULL;
+  CHAR8       *InputFile = NULL;
+  EFI_STATUS  Status;
+  UINT64      LogLevel;
 
   SetUtilityName("GenPage");
 
   if (argc == 1) {
     Usage();
-    return -1;
+    return STATUS_ERROR;
   }
   
   argc --;
@@ -319,71 +318,81 @@ main (
 
   while (argc > 0) {
     if ((stricmp (argv[0], "-o") == 0) || (stricmp (argv[0], "--output") == 0)) {
-      OutputFile = argv[1];
-      if (OutputFile == NULL) {
-        Error (NULL, 0, 0x1001, "NO output file specified.", NULL);
-        return -1;
+      if (argv[1] == NULL || argv[1][0] == '-') {
+        Error (NULL, 0, 1003, "Invalid option value", "Output file is missing for -o option");
+        return STATUS_ERROR;
       }
+      OutputFile = argv[1];
       argc -= 2;
       argv += 2;
       continue; 
     }
     
     if ((stricmp (argv[0], "-b") == 0) || (stricmp (argv[0], "--baseaddr") == 0)) {
-      
-      if (argv[1] == NULL) {
-        Error (NULL, 0, 0x1001, "NO base address specified.", NULL);
+      if (argv[1] == NULL || argv[1][0] == '-') {
+        Error (NULL, 0, 1003, "Invalid option value", "Base address is missing for -b option");
         return STATUS_ERROR;
       }
-      gPageTableBaseAddress  = xtoi (argv[1]);
+      Status = AsciiStringToUint64 (argv[1], FALSE, &gPageTableBaseAddress);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 1003, "Invalid option value", "Base address is not valid intergrator");
+        return STATUS_ERROR;
+      }
       argc -= 2;
       argv += 2;
       continue; 
     }
     
     if ((stricmp (argv[0], "-f") == 0) || (stricmp (argv[0], "--offset") == 0)) {
-      if (argv[1] == NULL) {
-        Error (NULL, 0, 0x1001, "NO offset specified.", NULL);
+      if (argv[1] == NULL || argv[1][0] == '-') {
+        Error (NULL, 0, 1003, "Invalid option value", "Offset is missing for -f option");
         return STATUS_ERROR;
       }
-      gPageTableOffsetInFile  = xtoi (argv[1]);
+      Status = AsciiStringToUint64 (argv[1], FALSE, &gPageTableOffsetInFile);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 1003, "Invalid option value", "Offset is not valid intergrator");
+        return STATUS_ERROR;
+      }
       argc -= 2;
       argv += 2;
       continue; 
     }
-/*
+
     if ((stricmp (argv[0], "-q") == 0) || (stricmp (argv[0], "--quiet") == 0)) {
-      QuietFlag = TRUE;
       argc --;
       argv ++;
       continue; 
     }
     
-    if ((strlen(argv[0]) >= 2 && argv[0][0] == '-' && (argv[0][1] == 'v' || argv[0][1] == 'V')) || (stricmp (argv[0], "--verbose") == 0)) {
-      VerboseLevel = 1;
-      if (strlen(argv[0]) > 2) {
-        Status = CountVerboseLevel (&argv[0][2], strlen(argv[0]) - 2, &VerboseLevel);
-        if (EFI_ERROR (Status)) {
-          Error (NULL, 0, 0, NULL, "%s is invaild paramter!", argv[0]);
-          return STATUS_ERROR;        
-        }
-      }
-      
+    if ((stricmp (argv[0], "-v") ==0) || (stricmp (argv[0], "--verbose") == 0)) {
       argc --;
       argv ++;
       continue; 
     }
     
     if ((stricmp (argv[0], "-d") == 0) || (stricmp (argv[0], "--debug") == 0)) {
-      Status = AsciiStringToUint64 (argv[1], FALSE, &DebugLevel);
+      if (argv[1] == NULL || argv[1][0] == '-') {
+        Error (NULL, 0, 1003, "Invalid option value", "Debug Level is not specified.");
+        return STATUS_ERROR;
+      }
+      Status = AsciiStringToUint64 (argv[1], FALSE, &LogLevel);
       if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 0, "Input debug level is not one valid integrator.", NULL);
-        return STATUS_ERROR;        
+        Error (NULL, 0, 1003, "Invalid option value", "Debug Level is not valid intergrator.");
+        return STATUS_ERROR;
+      }
+      if (LogLevel > 9) {
+        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0-9, currnt input level is %d", LogLevel);
+        return STATUS_ERROR;
       }
       argc -= 2;
       argv += 2;
       continue; 
-    }*/
+    }
+
+    if (argv[0][0] == '-') {
+      Error (NULL, 0, 1000, "Unknown option", argv[0]);
+      return STATUS_ERROR;
+    }
     
     //
     // Don't recognize the paramter.
@@ -394,7 +403,7 @@ main (
   }
   
   if (InputFile == NULL) {
-    Error (NULL, 0, 0x1001, "NO Input file specified.", NULL);
+    Error (NULL, 0, 1003, "Invalid option value", "Input file is not specified");
     return STATUS_ERROR;
   }
   
@@ -408,81 +417,9 @@ main (
   //
   result = GenBinPage (BaseMemory, InputFile, OutputFile);
   if (result < 0) {
-    return 1;
+    return STATUS_ERROR;
   }
 
   return 0;
 }
-
-unsigned int
-xtoi (
-  char  *str
-  )
-/*++
-
-Routine Description:
-
-  Convert hex string to uint
-
-Arguments:
-
-  Str  -  The string
-  
-Returns:
-
---*/
-{
-  unsigned int u;
-  char         c;
-  unsigned int m;
-  
-  if (str == NULL) {
-    return 0;
-  }
-  
-  m = (unsigned int) -1 >> 4;
-  //
-  // skip preceeding white space
-  //
-  while (*str && *str == ' ') {
-    str += 1;
-  }
-  //
-  // skip preceeding zeros
-  //
-  while (*str && *str == '0') {
-    str += 1;
-  }
-  //
-  // skip preceeding white space
-  //
-  if (*str && (*str == 'x' || *str == 'X')) {
-    str += 1;
-  }
-  //
-  // convert hex digits
-  //
-  u = 0;
-  c = *(str++);
-  while (c) {
-    if (c >= 'a' && c <= 'f') {
-      c -= 'a' - 'A';
-    }
-
-    if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')) {
-      if (u > m) {
-        return (unsigned int) -1;
-      }
-
-      u = (u << 4) | (c - (c >= 'A' ? 'A' - 10 : '0'));
-    } else {
-      break;
-    }
-
-    c = *(str++);
-  }
-
-  return u;
-}
-
 

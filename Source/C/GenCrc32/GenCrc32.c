@@ -21,8 +21,10 @@ Abstract:
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "Crc32.h"
+
 #include "EfiUtilityMsgs.h"
+#include "CommonLib.h"
+#include "Crc32.h"
 
 #define UTILITY_NAME            "GenCrc32"
 #define UTILITY_MAJOR_VERSION   0
@@ -83,7 +85,7 @@ Returns:
   //
   // Copyright declaration
   // 
-  fprintf (stdout, "Copyright (c) 2007, Intel Corporation. All rights reserved.\n\n");
+  fprintf (stdout, "Copyright (c) 2007 - 2009, Intel Corporation. All rights reserved.\n\n");
 
   //
   // Details Option
@@ -144,6 +146,7 @@ Returns:
   InFile         = NULL;
   OutFile        = NULL;
   Crc32Value     = 0;
+  FileBuffer     = NULL;
 
   SetUtilityName (UTILITY_NAME);
 
@@ -171,7 +174,11 @@ Returns:
   }
 
   while (argc > 0) {
-    if ((stricmp (argv[0], "-o") == 0) || (stricmp (argv[0], "--outputfile") == 0)) {
+    if ((stricmp (argv[0], "-o") == 0) || (stricmp (argv[0], "--output") == 0)) {
+      if (argv[1] == NULL || argv[1][0] == '-') {
+        Error (NULL, 0, 1003, "Invalid option value", "Output File name is missing for -o option");
+        goto Finish;
+      }
       OutputFileName = argv[1];
       argc -= 2;
       argv += 2;
@@ -225,6 +232,11 @@ Returns:
       continue;
     }
 
+    if (argv[0][0] == '-') {
+      Error (NULL, 0, 1000, "Unknown option", argv[0]);
+      goto Finish;
+    }
+
     //
     // Get Input file file name.
     //
@@ -248,14 +260,14 @@ Returns:
   }
   
   if (InputFileName == NULL) {
-    Error (NULL, 0, 1001, "Missing option", "Input files");
+    Error (NULL, 0, 1001, "Missing option", "Input files are not specified");
     goto Finish;
   } else {
     VerboseMsg ("Input file name is %s", InputFileName);
   }
 
   if (OutputFileName == NULL) {
-    Error (NULL, 0, 1001, "Missing option", "Output file");
+    Error (NULL, 0, 1001, "Missing option", "Output file are not specified");
     goto Finish;
   } else {
     VerboseMsg ("Output file name is %s", OutputFileName);

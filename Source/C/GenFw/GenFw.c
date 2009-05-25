@@ -202,13 +202,13 @@ Returns:
                         File will be created to store the ouput content.\n");
   fprintf (stdout, "  -e EFI_FILETYPE, --efiImage EFI_FILETYPE\n\
                         Create Efi Image. EFI_FILETYPE is one of BASE, SEC,\n\
-                        PEI_CORE, PEIM, DXE_CORE, DXE_DRIVER, DXE_RUNTIME_DRIVER,\n\
-                        DXE_SAL_DRIVER, UEFI_DRIVER, UEFI_APPLICATION, \n\
+                        PEI_CORE, PEIM, DXE_CORE, DXE_DRIVER, UEFI_APPLICATION,\n\
+                        DXE_SAL_DRIVER, UEFI_DRIVER, DXE_RUNTIME_DRIVER, \n\
                         DXE_SMM_DRIVER, SECURITY_CORE, COMBINED_PEIM_DRIVER, \n\
                         PIC_PEIM, RELOCATABLE_PEIM, BS_DRIVER, RT_DRIVER,\n\
                         APPLICATION, SAL_RT_DRIVER to support all module types\n\
                         It can only be used together with --keepexceptiontable,\n\
-                        --keepzeropending, -r, -o option. It is a action option.\n\
+                        --keepzeropending, -r, -o option.It is a action option.\n\
                         If it is combined with other action options, the later\n\
                         input action option will override the previous one.\n");
   fprintf (stdout, "  -c, --acpi            Create Acpi table.\n\
@@ -218,7 +218,7 @@ Returns:
                         input action option will override the previous one.\n");
   fprintf (stdout, "  -t, --terse           Create Te Image.\n\
                         It can only be used together with --keepexceptiontable,\n\
-                        --keepzeropending, -r, -o option. It is a action option.\n\
+                        --keepzeropending, -r, -o option.It is a action option.\n\
                         If it is combined with other action options, the later\n\
                         input action option will override the previous one.\n");
   fprintf (stdout, "  -u, --dump            Dump TeImage Header.\n\
@@ -1225,6 +1225,8 @@ Returns:
   UINT32            AllignedRelocSize;
   UINT8             *FileBuffer;
   UINT32            FileLength;
+  UINT8             *OutputFileBuffer;
+  UINT32            OutputFileLength;
   RUNTIME_FUNCTION  *RuntimeFunction;
   UNWIND_INFO       *UnwindInfo;
   STATUS            Status;
@@ -1249,7 +1251,7 @@ Returns:
   //
   InputFileNum      = 0;
   InputFileName     = NULL;
-  mInImageName       = NULL;
+  mInImageName      = NULL;
   OutImageName      = NULL;
   ModuleType        = NULL;
   OutImageType      = FW_DUMMY_IMAGE;
@@ -1267,6 +1269,8 @@ Returns:
   CheckSum          = 0;
   ReplaceFlag       = FALSE;
   LogLevel          = 0;
+  OutputFileBuffer  = NULL;
+  OutputFileLength  = 0;
   KeepExceptionTableFlag = FALSE;
   KeepZeroPendingFlag    = FALSE;
 
@@ -1292,22 +1296,22 @@ Returns:
 
   while (argc > 0) {
     if ((stricmp (argv[0], "-o") == 0) || (stricmp (argv[0], "--outputfile") == 0)) {
-      OutImageName = argv[1];
-      if (OutImageName == NULL) {
-        Error (NULL, 0, 1003, "Invalid option value", "Output file name can't be NULL");
+      if (argv[1] == NULL || argv[1][0] == '-') {
+        Error (NULL, 0, 1003, "Invalid option value", "Output file name is missing for -o option");
         goto Finish;
       }
+      OutImageName = argv[1];
       argc -= 2;
       argv += 2;
       continue;
     }
 
     if ((stricmp (argv[0], "-e") == 0) || (stricmp (argv[0], "--efiImage") == 0)) {
-      ModuleType   = argv[1];
-      if (ModuleType == NULL) {
-        Error (NULL, 0, 1003, "Invalid option value", "Module Type can't be NULL");
+      if (argv[1] == NULL || argv[1][0] == '-') {
+        Error (NULL, 0, 1003, "Invalid option value", "Module Type is missing for -o option");
         goto Finish;
       }
+      ModuleType = argv[1];
       if (OutImageType != FW_TE_IMAGE) {
         OutImageType = FW_EFI_IMAGE;
       }
@@ -1360,7 +1364,11 @@ Returns:
 
     if ((stricmp (argv[0], "-s") == 0) || (stricmp (argv[0], "--stamp") == 0)) {
       OutImageType = FW_SET_STAMP_IMAGE;
-      TimeStamp    = argv[1];
+      if (argv[1] == NULL || argv[1][0] == '-') {
+        Error (NULL, 0, 1003, "Invalid option value", "time stamp is missing for -s option");
+        goto Finish;
+      }
+      TimeStamp = argv[1];
       argc -= 2;
       argv += 2;
       continue;
@@ -1455,7 +1463,11 @@ Returns:
       argv += 2;
       continue;
     }
-
+    
+    if (argv[0][0] == '-') {
+      Error (NULL, 0, 1000, "Unknown option", argv[0]);
+      goto Finish;
+    }
     //
     // Get Input file name
     //
@@ -1567,9 +1579,22 @@ Returns:
   // Open output file and Write image into the output file.
   //
   if (OutImageName != NULL) {
+    fpOut = fopen (OutImageName, "rb");
+    if (fpOut != NULL) {
+      OutputFileLength = _filelength (fileno (fpOut));
+      OutputFileBuffer = malloc (OutputFileLength);
+      if (OutputFileBuffer == NULL) {
+        Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
+        fclose (fpOut);
+        fpOut = NULL;
+        goto Finish;
+      }
+      fread (OutputFileBuffer, 1, OutputFileLength, fpOut);
+      fclose (fpOut);
+    }
     fpOut = fopen (OutImageName, "wb");
     if (!fpOut) {
-      Error (NULL, 0, 0001, "Error opening file", OutImageName);
+      Error (NULL, 0, 0001, "Error opening output file", OutImageName);
       goto Finish;
     }
     VerboseMsg ("Output file name is %s", OutImageName);
@@ -2035,7 +2060,6 @@ Returns:
   if (OutImageType == FW_SET_STAMP_IMAGE) {
     Status = SetStamp (FileBuffer, TimeStamp);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 3000, "Invalid", "SetStamp Error status is 0x%lx", (UINTN) Status);
       goto Finish;
     }
 
@@ -2397,6 +2421,16 @@ Finish:
     // Write converted data into fpOut file and close output file.
     //
     fclose (fpOut);
+    if (GetUtilityStatus () != STATUS_SUCCESS) {
+      if (OutputFileBuffer == NULL) {
+        remove (OutImageName);
+      } else {
+        fpOut = fopen (OutImageName, "wb");
+        fwrite (OutputFileBuffer, 1, OutputFileLength, fpOut);
+        fclose (fpOut);
+        free (OutputFileBuffer);
+      }
+    }
   }
 
   VerboseMsg ("%s tool done with return code is 0x%x.", UTILITY_NAME, GetUtilityStatus ());
@@ -2572,6 +2606,7 @@ Returns:
   EFI_IMAGE_OPTIONAL_HEADER64     *Optional64Hdr;
   EFI_IMAGE_SECTION_HEADER        *SectionHeader;
   UINT32                          *NewTimeStamp;
+  CHAR8                           TestChar;
   
   //
   // Init variable.
@@ -2579,7 +2614,6 @@ Returns:
   DebugDirectoryEntryRva    = 0;
   ExportDirectoryEntryRva   = 0;
   ResourceDirectoryEntryRva = 0;
-
   //
   // Get time and date that will be set.
   //
@@ -2597,6 +2631,30 @@ Returns:
     time (&newtime);
   } else {
     //
+    // Check Time Format strictly yyyy-mm-dd 00:00:00
+    //
+    for (Index = 0; TimeStamp[Index] != '\0' && Index < 20; Index ++) {
+      if (Index == 4 || Index == 7) {
+        if (TimeStamp[Index] == '-') {
+          continue;
+        }
+      } else if (Index == 13 || Index == 16) {
+        if (TimeStamp[Index] == ':') {
+          continue;
+        }
+      } else if (Index == 10 && TimeStamp[Index] == ' ') {
+        continue;
+      } else if ((TimeStamp[Index] < '0') || (TimeStamp[Index] > '9')) {
+        break;
+      }
+    }
+
+    if (Index < 19 || TimeStamp[19] != '\0') {
+      Error (NULL, 0, 1003, "Invalid option value", "Incorrect Time \"%s\"\n  Correct Format \"yyyy-mm-dd 00:00:00\"", TimeStamp);
+      return EFI_INVALID_PARAMETER;
+    }
+
+    //
     // get the date and time from TimeStamp
     //
     if (sscanf (TimeStamp, "%d-%d-%d %d:%d:%d",
@@ -2607,7 +2665,7 @@ Returns:
             &stime.tm_min,
             &stime.tm_sec
             ) != 6) {
-      Error (NULL, 0, 3000, "Invalid", "%s Invalid or unsupported datetime!", TimeStamp);
+      Error (NULL, 0, 1003, "Invalid option value", "Incorrect Tiem \"%s\"\n  Correct Format \"yyyy-mm-dd 00:00:00\"", TimeStamp);
       return EFI_INVALID_PARAMETER;
     }
 
