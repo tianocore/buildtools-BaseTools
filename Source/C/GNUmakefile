@@ -56,6 +56,7 @@ APPLICATIONS = \
   GenFw \
   GenPage \
   GenSec \
+  GenCrc32 \
   GenVtf \
   LzmaCompress \
   Split \
