@@ -331,9 +331,14 @@ main (
     if ((stricmp (argv[Index], "-l") == 0) || (stricmp (argv[Index], "--list") == 0)) {
       ListDrive ();
       return 0;
-    } else if ((stricmp (argv[Index], "-m") == 0) || (stricmp (argv[Index], "--mbr") == 0)) {
+    } 
+    
+    if ((stricmp (argv[Index], "-m") == 0) || (stricmp (argv[Index], "--mbr") == 0)) {
       ProcessMbr = TRUE;
-    } else if ((stricmp (argv[Index], "-i") == 0) || (stricmp (argv[Index], "--input") == 0)) {
+      continue;
+    }
+    
+    if ((stricmp (argv[Index], "-i") == 0) || (stricmp (argv[Index], "--input") == 0)) {
       InputPathInfo.Path  = argv[Index + 1];
       InputPathInfo.Input = TRUE;
       if (InputPathInfo.Path == NULL) {
@@ -345,7 +350,10 @@ main (
         return 1;       
       }
       ++Index;
-    } else if ((stricmp (argv[Index], "-o") == 0) || (stricmp (argv[Index], "--output") == 0)) {
+      continue;
+    }
+    
+    if ((stricmp (argv[Index], "-o") == 0) || (stricmp (argv[Index], "--output") == 0)) {
       OutputPathInfo.Path  = argv[Index + 1];
       OutputPathInfo.Input = FALSE;
       if (OutputPathInfo.Path == NULL) {
@@ -357,17 +365,28 @@ main (
         return 1;       
       }
       ++Index;
-    } else if ((stricmp (argv[Index], "-h") == 0) || (stricmp (argv[Index], "--help") == 0)) {
+      continue;
+    }
+    
+    if ((stricmp (argv[Index], "-h") == 0) || (stricmp (argv[Index], "--help") == 0)) {
       PrintUsage ();
       return 0;
-    } else if (stricmp (argv[Index], "--version") == 0) {
+    }
+    
+    if (stricmp (argv[Index], "--version") == 0) {
       Version ();
       return 0;
-    } if ((stricmp (argv[Index], "-v") == 0) || (stricmp (argv[Index], "--verbose") == 0)) {
+    } 
+    
+    if ((stricmp (argv[Index], "-v") == 0) || (stricmp (argv[Index], "--verbose") == 0)) {
       continue;
-    } if ((stricmp (argv[Index], "-q") == 0) || (stricmp (argv[Index], "--quiet") == 0)) {
+    } 
+    
+    if ((stricmp (argv[Index], "-q") == 0) || (stricmp (argv[Index], "--quiet") == 0)) {
       continue;
-    } else if ((stricmp (argv[Index], "-d") == 0) || (stricmp (argv[Index], "--debug") == 0)) {
+    } 
+    
+    if ((stricmp (argv[Index], "-d") == 0) || (stricmp (argv[Index], "--debug") == 0)) {
       EfiStatus = AsciiStringToUint64 (argv[Index + 1], FALSE, &LogLevel);
       if (EFI_ERROR (EfiStatus)) {
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[Index], argv[Index + 1]);
@@ -380,13 +399,14 @@ main (
       SetPrintLevel (LogLevel);
       DebugMsg (NULL, 0, 9, "Debug Mode Set", "Debug Output Mode Level %s is set!", argv[Index + 1]);
       ++Index;
-    } else {
-      //
-      // Don't recognize the parameter.
-      //
-      Error (NULL, 0, 1000, "Unknown option", "%s", argv[Index]);
-      return 1;
+      continue;
     }
+
+    //
+    // Don't recognize the parameter.
+    //
+    Error (NULL, 0, 1000, "Unknown option", "%s", argv[Index]);
+    return 1;
   }
   
   if (InputPathInfo.Path == NULL) {
