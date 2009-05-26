@@ -471,7 +471,7 @@ def GetStringFiles(UniFilList, SourceFileList, IncludeList, SkipList, BaseName, 
     ErrorMessage = ''
 
     if len(UniFilList) > 0:
-        Uni = UniFileClassObject(UniFilList)
+        Uni = UniFileClassObject(UniFilList, IsCompatibleMode)
     else:
         EdkLogger.error("UnicodeStringGather", AUTOGEN_ERROR, 'No unicode files given')
 

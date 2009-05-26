@@ -69,23 +69,78 @@ def UniToHexList(Uni):
         List.append('0x' + Temp[0:2])
     return List
 
-## ConvertISO639ToRFC3066
-#
-# Convert a ISO639 language name to RFC3066
-#
-# @param LangName:   LangName in ISO639
-#
-# @retval LangName:  LangName in RFC3066
-#
-def ConvertISO639ToRFC3066(LangName):
-    if LangName == 'eng':
-        LangName = 'en-US'
-    if LangName == 'fra':
-        LangName = 'fr-FR'
-    if LangName == 'spa':
-        LangName = 'es-ES'
+LangConvTable = {'eng':'en', 'fra':'fr', \
+                 'aar':'aa', 'abk':'ab', 'ave':'ae', 'afr':'af', 'aka':'ak', 'amh':'am', \
+                 'arg':'an', 'ara':'ar', 'asm':'as', 'ava':'av', 'aym':'ay', 'aze':'az', \
+                 'bak':'ba', 'bel':'be', 'bul':'bg', 'bih':'bh', 'bis':'bi', 'bam':'bm', \
+                 'ben':'bn', 'bod':'bo', 'bre':'br', 'bos':'bs', 'cat':'ca', 'che':'ce', \
+                 'cha':'ch', 'cos':'co', 'cre':'cr', 'ces':'cs', 'chu':'cu', 'chv':'cv', \
+                 'cym':'cy', 'dan':'da', 'deu':'de', 'div':'dv', 'dzo':'dz', 'ewe':'ee', \
+                 'ell':'el', 'epo':'eo', 'spa':'es', 'est':'et', 'eus':'eu', 'fas':'fa', \
+                 'ful':'ff', 'fin':'fi', 'fij':'fj', 'fao':'fo', 'fry':'fy', 'gle':'ga', \
+                 'gla':'gd', 'glg':'gl', 'grn':'gn', 'guj':'gu', 'glv':'gv', 'hau':'ha', \
+                 'heb':'he', 'hin':'hi', 'hmo':'ho', 'hrv':'hr', 'hat':'ht', 'hun':'hu', \
+                 'hye':'hy', 'her':'hz', 'ina':'ia', 'ind':'id', 'ile':'ie', 'ibo':'ig', \
+                 'iii':'ii', 'ipk':'ik', 'ido':'io', 'isl':'is', 'ita':'it', 'iku':'iu', \
+                 'jpn':'ja', 'jav':'jv', 'kat':'ka', 'kon':'kg', 'kik':'ki', 'kua':'kj', \
+                 'kaz':'kk', 'kal':'kl', 'khm':'km', 'kan':'kn', 'kor':'ko', 'kau':'kr', \
+                 'kas':'ks', 'kur':'ku', 'kom':'kv', 'cor':'kw', 'kir':'ky', 'lat':'la', \
+                 'ltz':'lb', 'lug':'lg', 'lim':'li', 'lin':'ln', 'lao':'lo', 'lit':'lt', \
+                 'lub':'lu', 'lav':'lv', 'mlg':'mg', 'mah':'mh', 'mri':'mi', 'mkd':'mk', \
+                 'mal':'ml', 'mon':'mn', 'mar':'mr', 'msa':'ms', 'mlt':'mt', 'mya':'my', \
+                 'nau':'na', 'nob':'nb', 'nde':'nd', 'nep':'ne', 'ndo':'ng', 'nld':'nl', \
+                 'nno':'nn', 'nor':'no', 'nbl':'nr', 'nav':'nv', 'nya':'ny', 'oci':'oc', \
+                 'oji':'oj', 'orm':'om', 'ori':'or', 'oss':'os', 'pan':'pa', 'pli':'pi', \
+                 'pol':'pl', 'pus':'ps', 'por':'pt', 'que':'qu', 'roh':'rm', 'run':'rn', \
+                 'ron':'ro', 'rus':'ru', 'kin':'rw', 'san':'sa', 'srd':'sc', 'snd':'sd', \
+                 'sme':'se', 'sag':'sg', 'sin':'si', 'slk':'sk', 'slv':'sl', 'smo':'sm', \
+                 'sna':'sn', 'som':'so', 'sqi':'sq', 'srp':'sr', 'ssw':'ss', 'sot':'st', \
+                 'sun':'su', 'swe':'sv', 'swa':'sw', 'tam':'ta', 'tel':'te', 'tgk':'tg', \
+                 'tha':'th', 'tir':'ti', 'tuk':'tk', 'tgl':'tl', 'tsn':'tn', 'ton':'to', \
+                 'tur':'tr', 'tso':'ts', 'tat':'tt', 'twi':'tw', 'tah':'ty', 'uig':'ug', \
+                 'ukr':'uk', 'urd':'ur', 'uzb':'uz', 'ven':'ve', 'vie':'vi', 'vol':'vo', \
+                 'wln':'wa', 'wol':'wo', 'xho':'xh', 'yid':'yi', 'yor':'yo', 'zha':'za', \
+                 'zho':'zh', 'zul':'zu'}
 
-    return LangName
+## GetLanguageCode
+#
+# Check the language code read from .UNI file and convert ISO 639-2 codes to RFC 4646 codes if appropriate
+# ISO 639-2 language codes supported in compatiblity mode
+# Both ISO 639-2 and RFC 4646 language codes supported in native mode
+#
+# @param LangName:   Language codes read from .UNI file
+#
+# @retval LangName:  Valid lanugage code in RFC 4646 format or None
+#
+def GetLanguageCode(LangName, IsCompatibleMode, File):
+    global LangConvTable
+
+    length = len(LangName)
+    if length == 3:
+        TempLangName = LangConvTable.get(LangName.lower())
+        if TempLangName != None:
+           return TempLangName
+    elif IsCompatibleMode:
+        EdkLogger.error("Unicode File Parser", FORMAT_INVALID, "Invalid ISO 639-2 language code : %s" % LangName, File)
+        return
+
+    if length == 2 or length == 3:
+        if LangName.isalpha():
+            return LangName
+    elif length == 5:
+        if LangName[0:2].isalpha() and LangName[2] == '-':
+            return LangName
+    elif length >= 6:
+        if LangName[0:2].isalpha() and LangName[2] == '-':
+            return LangName
+        if LangName[0:3].isalpha() and LangName[3] == '-':
+            return LangName
+
+    if IsCompatibleMode:
+        EdkLogger.error("Unicode File Parser", FORMAT_INVALID, "Invalid ISO 639-2 language code : %s" % LangName, File)
+    else:
+        EdkLogger.error("Unicode File Parser", FORMAT_INVALID, "Invalid RFC 4646 language code : %s" % LangName, File)
+    return
 
 ## StringDefClassObject
 #
@@ -124,11 +179,12 @@ class StringDefClassObject(object):
 # A structure for .uni file definition
 #
 class UniFileClassObject(object):
-    def __init__(self, FileList = []):
+    def __init__(self, FileList = [], IsCompatibleMode = False):
         self.FileList = FileList
         self.Token = 2
         self.LanguageDef = []                   #[ [u'LanguageIdentifier', u'PrintableName'], ... ]
         self.OrderedStringList = {}             #{ u'LanguageIdentifier' : [StringDefClassObject]  }
+        self.IsCompatibleMode = IsCompatibleMode
 
         if len(self.FileList) > 0:
             self.LoadUniFiles(FileList)
@@ -149,7 +205,7 @@ class UniFileClassObject(object):
             EdkLogger.error("Unicode File Parser", PARSER_ERROR, "Wrong language definition",
                             ExtraData="""%s\n\t*Correct format is like '#langdef eng "English"'""" % Line, File = File, Line = LineNo)
         else:
-            LangName = ConvertISO639ToRFC3066(Lang[1])
+            LangName = GetLanguageCode(Lang[1], self.IsCompatibleMode, self.File)
             LangPrintName = Lang[2][1:-1]
 
         IsLangInDef = False
@@ -185,6 +241,7 @@ class UniFileClassObject(object):
             else:
                 Language = LanguageList[IndexI].split()[0]
                 Value = LanguageList[IndexI][LanguageList[IndexI].find(u'\"') + len(u'\"') : LanguageList[IndexI].rfind(u'\"')] #.replace(u'\r\n', u'')
+                Language = GetLanguageCode(Language, self.IsCompatibleMode, self.File)
                 self.AddStringToList(Name, Language, Value)
 
     #
@@ -220,7 +277,6 @@ class UniFileClassObject(object):
             #
             if Line == u'' or Line.startswith(u'//'):
                 continue
-
             Line = Line.replace(u'/langdef', u'#langdef')
             Line = Line.replace(u'/string', u'#string')
             Line = Line.replace(u'/language', u'#language')
@@ -258,6 +314,7 @@ class UniFileClassObject(object):
     def LoadUniFile(self, File = None):
         if File == None:
             EdkLogger.error("Unicode File Parser", PARSER_ERROR, 'No unicode file is given')
+        self.File = File
         #
         # Process special char in file
         #
@@ -307,6 +364,7 @@ class UniFileClassObject(object):
                         IndexI = IndexJ
                         break
                 # Value = Value.replace(u'\r\n', u'')
+                Language = GetLanguageCode(Language, self.IsCompatibleMode, self.File)
                 self.AddStringToList(Name, Language, Value)
                 continue
 
@@ -347,7 +405,6 @@ class UniFileClassObject(object):
     # Add a string to list
     #
     def AddStringToList(self, Name, Language, Value, Token = None, Referenced = False, UseOtherLangDef = '', Index = -1):
-        Language = ConvertISO639ToRFC3066(Language)
         if Language not in self.OrderedStringList:
             self.OrderedStringList[Language] = []
 
