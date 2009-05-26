@@ -39,8 +39,8 @@ Abstract:
 #define EFI_PAGE_BASE_OFFSET_IN_LDR 0x70000
 #define EFI_PAGE_BASE_ADDRESS       (EFI_PAGE_BASE_OFFSET_IN_LDR + 0x20000)
 
-unsigned int gPageTableBaseAddress  = EFI_PAGE_BASE_ADDRESS;
-unsigned int gPageTableOffsetInFile = EFI_PAGE_BASE_OFFSET_IN_LDR;
+UINT32 gPageTableBaseAddress  = EFI_PAGE_BASE_ADDRESS;
+UINT32 gPageTableOffsetInFile = EFI_PAGE_BASE_OFFSET_IN_LDR;
 
 #define EFI_MAX_ENTRY_NUM     512
 
@@ -234,15 +234,13 @@ return:
   //
   PageFile = fopen (PageFileName, "w+b");
   if (PageFile == NULL) {
-    //fprintf (stderr, "GenBinPage: Could not open file %s\n", PageFileName);
-    Error (PageFileName, 0, 1, "File open failure", NULL);
+    Error (NoPageFileName, 0, 0x4002, "Invalid parameter option", "Output File %s open failure", PageFileName);
     return -1;
   }
 
   NoPageFile = fopen (NoPageFileName, "r+b");
   if (NoPageFile == NULL) {
-    //fprintf (stderr, "GenBinPage: Could not open file %s\n", NoPageFileName);
-    Error (NoPageFileName, 0, 1, "File open failure", NULL);
+    Error (NoPageFileName, 0, 0x4002, "Invalid parameter option", "Input File %s open failure", NoPageFileName);
     fclose (PageFile);
     return -1;
   }
@@ -254,8 +252,7 @@ return:
   FileSize = ftell (NoPageFile);
   fseek (NoPageFile, 0, SEEK_SET);
   if (FileSize > gPageTableOffsetInFile) {
-    //fprintf (stderr, "GenBinPage: file size too large - 0x%x\n", FileSize);
-    Error (NoPageFileName, 0, 0x4002, "file size too large", NULL);
+    Error (NoPageFileName, 0, 0x4002, "Invalid parameter option", "Input file size (0x%x) exceeds the Page Table Offset (0x%x)", FileSize, gPageTableOffsetInFile);
     fclose (PageFile);
     fclose (NoPageFile);
     return -1;
@@ -294,7 +291,7 @@ main (
   CHAR8       *OutputFile = NULL;
   CHAR8       *InputFile = NULL;
   EFI_STATUS  Status;
-  UINT64      LogLevel;
+  UINT64      TempValue;
 
   SetUtilityName("GenPage");
 
@@ -315,7 +312,7 @@ main (
     Version();
     return 0;    
   }
-
+  
   while (argc > 0) {
     if ((stricmp (argv[0], "-o") == 0) || (stricmp (argv[0], "--output") == 0)) {
       if (argv[1] == NULL || argv[1][0] == '-') {
@@ -333,11 +330,12 @@ main (
         Error (NULL, 0, 1003, "Invalid option value", "Base address is missing for -b option");
         return STATUS_ERROR;
       }
-      Status = AsciiStringToUint64 (argv[1], FALSE, &gPageTableBaseAddress);
+      Status = AsciiStringToUint64 (argv[1], FALSE, &TempValue);
       if (EFI_ERROR (Status)) {
         Error (NULL, 0, 1003, "Invalid option value", "Base address is not valid intergrator");
         return STATUS_ERROR;
       }
+      gPageTableBaseAddress = (UINT32) TempValue;
       argc -= 2;
       argv += 2;
       continue; 
@@ -348,11 +346,12 @@ main (
         Error (NULL, 0, 1003, "Invalid option value", "Offset is missing for -f option");
         return STATUS_ERROR;
       }
-      Status = AsciiStringToUint64 (argv[1], FALSE, &gPageTableOffsetInFile);
+      Status = AsciiStringToUint64 (argv[1], FALSE, &TempValue);
       if (EFI_ERROR (Status)) {
         Error (NULL, 0, 1003, "Invalid option value", "Offset is not valid intergrator");
         return STATUS_ERROR;
       }
+      gPageTableOffsetInFile = (UINT32) TempValue;
       argc -= 2;
       argv += 2;
       continue; 
@@ -375,13 +374,13 @@ main (
         Error (NULL, 0, 1003, "Invalid option value", "Debug Level is not specified.");
         return STATUS_ERROR;
       }
-      Status = AsciiStringToUint64 (argv[1], FALSE, &LogLevel);
+      Status = AsciiStringToUint64 (argv[1], FALSE, &TempValue);
       if (EFI_ERROR (Status)) {
         Error (NULL, 0, 1003, "Invalid option value", "Debug Level is not valid intergrator.");
         return STATUS_ERROR;
       }
-      if (LogLevel > 9) {
-        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0-9, currnt input level is %d", LogLevel);
+      if (TempValue > 9) {
+        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0-9, currnt input level is %d", TempValue);
         return STATUS_ERROR;
       }
       argc -= 2;
