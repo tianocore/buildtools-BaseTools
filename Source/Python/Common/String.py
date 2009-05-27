@@ -648,14 +648,24 @@ def GetHelpTextList(HelpTextClassList):
 
 def StringToArray(String):
     if isinstance(String, unicode):
-        return "{%s, 0}" % ", ".join(["0x%04x" % ord(C) for C in String])
+        return "{%s, 0x00, 0x00}" % ", ".join(["0x%02x, 0x00" % ord(C) for C in String])
     elif String.startswith('L"'):
-        return "{%s, 0}" % ", ".join(["0x%04x" % ord(C) for C in String[2:-1]])
+        return "{%s, 0x00, 0x00}" % ", ".join(["0x%02x, 0x00" % ord(C) for C in String[2:-1]])
     elif String.startswith('"'):
-        return "{%s, 0}" % ", ".join(["0x%02x" % ord(C) for C in String[1:-1]])
+        return "{%s, 0x00}" % ", ".join(["0x%02x" % ord(C) for C in String[1:-1]])
     else:
         return '{%s, 0}' % ', '.join(String.split())
 
+def StringArrayLength(String):
+    if isinstance(String, unicode):
+        return (len(String) + 1) * 2 + 1;
+    elif String.startswith('L"'):
+        return (len(String) - 3 + 1) * 2
+    elif String.startswith('"'):
+        return (len(String) - 2 + 1)
+    else:
+        return len(String.split()) + 1
+    
 def RemoveDupOption(OptionString, Which="/I", Against=None):
     OptionList = OptionString.split()
     ValueList = []

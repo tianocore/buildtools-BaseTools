@@ -164,7 +164,7 @@ ${BEGIN}  STRING_HEAD        ${STRING_HEAD_CNAME_DECL}_${STRING_HEAD_GUID_DECL}[
 ${END}
 ${BEGIN}  VARIABLE_HEAD      ${VARIABLE_HEAD_CNAME_DECL}_${VARIABLE_HEAD_GUID_DECL}[${VARIABLE_HEAD_NUMSKUS_DECL}];
 ${END}
-${BEGIN}  UINT16             StringTable${STRING_TABLE_INDEX}[${STRING_TABLE_LENGTH}]; /* ${STRING_TABLE_CNAME}_${STRING_TABLE_GUID} */
+${BEGIN}  UINT8              StringTable${STRING_TABLE_INDEX}[${STRING_TABLE_LENGTH}]; /* ${STRING_TABLE_CNAME}_${STRING_TABLE_GUID} */
 ${END}
   SIZE_INFO          SizeTable[${PHASE}_SIZE_TABLE_SIZE];
 ${BEGIN}  UINT16             ${INIT_CNAME_DECL_UINT16}_${INIT_GUID_DECL_UINT16}[${INIT_NUMSKUS_DECL_UINT16}];
@@ -1235,10 +1235,10 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
                     else:
                         Dict['STRING_TABLE_INDEX'].append('_%d' % StringTableIndex)
 
-                    Dict['STRING_TABLE_LENGTH'].append(len(Sku.VariableName) + 1)
+                    Dict['STRING_TABLE_LENGTH'].append((len(Sku.VariableName) - 3 + 1) * 2)
                     Dict['STRING_TABLE_VALUE'].append(VariableNameStructure)
                     StringTableIndex += 1
-                    StringTableSize += len(Sku.VariableName) + 1
+                    StringTableSize += (len(Sku.VariableName) - 3 + 1) * 2
 
                 VariableHeadStringIndex = 0
                 for Index in range(Dict['STRING_TABLE_VALUE'].index(VariableNameStructure)):
@@ -1276,14 +1276,14 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
                         else:
                             Dict['STRING_TABLE_INDEX'].append('_%d' % StringTableIndex)
                         if Sku.DefaultValue[0] == 'L':
-                            Size = (len(Sku.DefaultValue) - 3) * 2
-                            Dict['STRING_TABLE_VALUE'].append(Sku.DefaultValue)
+                            Size = (len(Sku.DefaultValue) - 3 + 1) * 2
+                            Dict['STRING_TABLE_VALUE'].append(StringToArray(Sku.DefaultValue))
                         elif Sku.DefaultValue[0] == '"':
-                            Size = len(Sku.DefaultValue) - 2
-                            Dict['STRING_TABLE_VALUE'].append(Sku.DefaultValue)
+                            Size = len(Sku.DefaultValue) - 2 + 1
+                            Dict['STRING_TABLE_VALUE'].append(StringToArray(Sku.DefaultValue))
                         elif Sku.DefaultValue[0] == '{':
                             Size = len(Sku.DefaultValue.replace(',',' ').split())
-                            Dict['STRING_TABLE_VALUE'].append('{' + Sku.DefaultValue + '}')
+                            Dict['STRING_TABLE_VALUE'].append(Sku.DefaultValue)
 
                         StringHeadOffsetList.append(str(StringTableSize))
                         Dict['SIZE_TABLE_CNAME'].append(CName)
@@ -1294,9 +1294,9 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
                             MaxDatumSize = int(Pcd.MaxDatumSize, 0)
                             if MaxDatumSize > Size:
                                 Size = MaxDatumSize
-                        Dict['STRING_TABLE_LENGTH'].append(Size / 2 + 1)
+                        Dict['STRING_TABLE_LENGTH'].append(Size)
                         StringTableIndex += 1
-                        StringTableSize += (Size / 2 + 1)
+                        StringTableSize += (Size)
                 else:
                     Pcd.TokenTypeList += ['PCD_TYPE_DATA']
                     if Sku.DefaultValue == 'TRUE':

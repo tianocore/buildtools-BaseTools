@@ -482,6 +482,35 @@ class PlatformAutoGen(AutoGen):
         self._NonDynamicPcdList = self._NonDynaPcdList_
         self._DynamicPcdList = self._DynaPcdList_
         
+        #
+        # Sort dynamic PCD list to:
+        # 1) If PCD's datum type is VOID* and value is unicode string which starts with L, the PCD item should 
+        #    try to be put header of dynamicd List
+        # 2) If PCD is HII type, the PCD item should be put after unicode type PCD
+        #
+        # The reason of sorting is make sure the unicode string is in double-byte alignment in string table.
+        #
+        UnicodePcdArray = []
+        HiiPcdArray     = []
+        OtherPcdArray   = []
+        for Pcd in self._DynamicPcdList:
+            # just pick the a value to determine whether is unicode string type
+            Sku      = Pcd.SkuInfoList[Pcd.SkuInfoList.keys()[0]]
+            PcdValue = Sku.DefaultValue
+            if Pcd.DatumType == 'VOID*' and PcdValue.startswith("L"):
+                # if found PCD which datum value is unicode string the insert to left size of UnicodeIndex
+                UnicodePcdArray.append(Pcd)
+            elif len(Sku.VariableName) > 0:
+                # if found HII type PCD then insert to right of UnicodeIndex
+                HiiPcdArray.append(Pcd)
+            else:
+                OtherPcdArray.append(Pcd)
+        del self._DynamicPcdList[:]
+        self._DynamicPcdList.extend(UnicodePcdArray)
+        self._DynamicPcdList.extend(HiiPcdArray)
+        self._DynamicPcdList.extend(OtherPcdArray)
+            
+        
     ## Return the platform build data object
     def _GetPlatform(self):
         if self._Platform == None:
