@@ -1798,7 +1798,19 @@ def CreateUnicodeStringCode(Info, AutoGenC, AutoGenH):
     else:
         CompatibleMode = False
 
-    Header, Code = GetStringFiles(Info.UnicodeFileList, SrcList, IncList, ['.uni', '.inf'], Info.Name, CompatibleMode)
+    #
+    # -s is a temporary option dedicated for building .UNI files with ISO 639-2 lanauge codes of EDK Shell in EDK2
+    #
+    if 'BUILD' in Info.BuildOption and Info.BuildOption['BUILD']['FLAGS'].find('-s') > -1:
+        if CompatibleMode:
+            EdkLogger.error("build", AUTOGEN_ERROR,
+                            "-c and -s build options should be used exclusively",
+                            ExtraData="[%s]" % str(Info))
+        ShellMode = True
+    else:
+        ShellMode = False
+
+    Header, Code = GetStringFiles(Info.UnicodeFileList, SrcList, IncList, ['.uni', '.inf'], Info.Name, CompatibleMode, ShellMode)
     AutoGenC.Append("\n//\n//Unicode String Pack Definition\n//\n")
     AutoGenC.Append(Code)
     AutoGenC.Append("\n")

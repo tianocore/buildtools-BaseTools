@@ -106,7 +106,7 @@ LangConvTable = {'eng':'en', 'fra':'fr', \
 #
 # Check the language code read from .UNI file and convert ISO 639-2 codes to RFC 4646 codes if appropriate
 # ISO 639-2 language codes supported in compatiblity mode
-# Both ISO 639-2 and RFC 4646 language codes supported in native mode
+# RFC 4646 language codes supported in native mode
 #
 # @param LangName:   Language codes read from .UNI file
 #
@@ -116,16 +116,20 @@ def GetLanguageCode(LangName, IsCompatibleMode, File):
     global LangConvTable
 
     length = len(LangName)
-    if length == 3:
-        TempLangName = LangConvTable.get(LangName.lower())
-        if TempLangName != None:
-           return TempLangName
-    elif IsCompatibleMode:
-        EdkLogger.error("Unicode File Parser", FORMAT_INVALID, "Invalid ISO 639-2 language code : %s" % LangName, File)
-        return
+    if IsCompatibleMode:
+        if length == 3 and LangName.isalpha():
+            TempLangName = LangConvTable.get(LangName.lower())
+            if TempLangName != None:
+               return TempLangName
+            return LangName
+        else:
+            EdkLogger.error("Unicode File Parser", FORMAT_INVALID, "Invalid ISO 639-2 language code : %s" % LangName, File)
 
-    if length == 2 or length == 3:
+    if length == 2:
         if LangName.isalpha():
+            return LangName
+    elif length == 3:
+        if LangName.isalpha() and LangConvTable.get(LangName.lower()) == None:
             return LangName
     elif length == 5:
         if LangName[0:2].isalpha() and LangName[2] == '-':
@@ -133,14 +137,10 @@ def GetLanguageCode(LangName, IsCompatibleMode, File):
     elif length >= 6:
         if LangName[0:2].isalpha() and LangName[2] == '-':
             return LangName
-        if LangName[0:3].isalpha() and LangName[3] == '-':
+        if LangName[0:3].isalpha() and LangConvTable.get(LangName.lower()) == None and LangName[3] == '-':
             return LangName
 
-    if IsCompatibleMode:
-        EdkLogger.error("Unicode File Parser", FORMAT_INVALID, "Invalid ISO 639-2 language code : %s" % LangName, File)
-    else:
-        EdkLogger.error("Unicode File Parser", FORMAT_INVALID, "Invalid RFC 4646 language code : %s" % LangName, File)
-    return
+    EdkLogger.error("Unicode File Parser", FORMAT_INVALID, "Invalid RFC 4646 language code : %s" % LangName, File)
 
 ## StringDefClassObject
 #

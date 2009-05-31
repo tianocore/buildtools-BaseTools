@@ -466,12 +466,18 @@ def SearchString(UniObjectClass, FileList):
 # This function is used for UEFI2.1 spec
 #
 #
-def GetStringFiles(UniFilList, SourceFileList, IncludeList, SkipList, BaseName, IsCompatibleMode = False):
+def GetStringFiles(UniFilList, SourceFileList, IncludeList, SkipList, BaseName, IsCompatibleMode = False, ShellMode = False):
     Status = True
     ErrorMessage = ''
 
     if len(UniFilList) > 0:
-        Uni = UniFileClassObject(UniFilList, IsCompatibleMode)
+        if ShellMode:
+            #
+            # support ISO 639-2 codes in .UNI files of EDK Shell
+            #
+            Uni = UniFileClassObject(UniFilList, True)
+        else:
+            Uni = UniFileClassObject(UniFilList, IsCompatibleMode)
     else:
         EdkLogger.error("UnicodeStringGather", AUTOGEN_ERROR, 'No unicode files given')
 
