@@ -23,10 +23,10 @@ from Common.DataType import *
 
 class TargetTool():
     def __init__(self, opt, args):
-        self.WorkSpace = os.getenv('WORKSPACE')
+        self.WorkSpace = os.path.normpath(os.getenv('WORKSPACE'))
         self.Opt       = opt
         self.Arg       = args[0]
-        self.FileName  = os.path.normpath(os.path.join(self.WorkSpace, 'Conf\\target.txt'))
+        self.FileName  = os.path.normpath(os.path.join(self.WorkSpace, 'Conf', 'target.txt'))
         if os.path.isfile(self.FileName) == False:
             print "%s does not exist." % self.FileName
             sys.exit(1)
@@ -221,6 +221,10 @@ def MyOptionParser():
 if __name__ == '__main__':
     EdkLogger.Initialize()
     EdkLogger.SetLevel(EdkLogger.QUIET)
+    if os.getenv('WORKSPACE') == None:
+        print "ERROR: WORKSPACE should be specified or edksetup script should be executed before run TargetTool"
+        sys.exit(1)
+        
     (opt, args) = MyOptionParser()
     if len(args) != 1 or (args[0].lower() != 'print' and args[0].lower() != 'clean' and args[0].lower() != 'set'):
         print "The number of args isn't 1 or the value of args is invalid."
