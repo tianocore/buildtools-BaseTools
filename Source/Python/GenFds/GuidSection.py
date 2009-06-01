@@ -152,6 +152,9 @@ class GuidSection(GuidSectionClassObject) :
         if self.KeyStringList == None or self.KeyStringList == []:
             Target = GenFdsGlobalVariable.TargetName
             ToolChain = GenFdsGlobalVariable.ToolChainTag
+            ToolDb = ToolDefClassObject.ToolDefDict(GenFdsGlobalVariable.WorkSpaceDir).ToolsDefTxtDatabase
+            if ToolChain not in ToolDb['TOOL_CHAIN_TAG']:
+                EdkLogger.error("GenFds", GENFDS_ERROR, "Can not find external tool because tool tag %s is not defined in tools_def.txt!" % ToolChain)
             self.KeyStringList = [Target+'_'+ToolChain+'_'+self.CurrentArchList[0]]
             for Arch in self.CurrentArchList:
                 if Target+'_'+ToolChain+'_'+Arch not in self.KeyStringList:
