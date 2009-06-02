@@ -1465,11 +1465,11 @@ Returns:
     // Update the Startup AP in the FVH header block ZeroVector region.
     //
     BytePointer   = (UINT8 *) ((UINTN) FvImage->FileImage);
-    if (FvInfo->Size == 0x10000) {
+    if (FvInfo->Size <= 0x10000) {
       BytePointer2 = m64kRecoveryStartupApDataArray;
-    } else if (FvInfo->Size == 0x20000) {
+    } else if (FvInfo->Size <= 0x20000) {
       BytePointer2 = m128kRecoveryStartupApDataArray;
-    } else if (FvInfo->Size > 0x20000) {
+    } else {
       BytePointer2 = m128kRecoveryStartupApDataArray;
       //
       // Find the position to place Ap reset vector, the offset
@@ -1507,6 +1507,10 @@ Returns:
     //
     IpiVector  = FV_IMAGES_TOP_ADDRESS - ((UINTN) FvImage->Eof - (UINTN) BytePointer);
     DebugMsg (NULL, 0, 9, "Startup AP Vector address", "IpiVector at 0x%X", IpiVector);
+    if (IpiVector & 0xFFF != 0) {
+      Error (NULL, 0, 3000, "Invalid", "Startup AP Vector address are not 4K aligned, because the FV size is not 4K aligned");
+      return EFI_ABORTED;
+    }
     IpiVector  = IpiVector >> 12;
     IpiVector  = IpiVector & 0xFF;
 
