@@ -216,7 +216,7 @@ def MyOptionParser():
         help="Specify the build rule configure file, which replaces target.txt's BUILD_RULE_CONF definition. If not specified, the default value Conf/build_rule.txt will be set.")
     parser.add_option("-m", "--multithreadnum", action="callback", type="int", dest="NUM", callback=RangeCheckCallback,
         help="Specify the multi-thread number which replace target.txt's MAX_CONCURRENT_THREAD_NUMBER. If the value is less than 2, MULTIPLE_THREAD will be disabled. If the value is larger than 1, MULTIPLE_THREAD will be enabled.")
-    parser.add_option("-e", "--enablemultithread", action="store", type="choice", choices=['TRUE', 'FALSE'], dest="ENABLE_MULTI_THREAD", 
+    parser.add_option("-e", "--enablemultithread", action="store", type="choice", choices=['Enable', 'Disable'], dest="ENABLE_MULTI_THREAD", 
         help="Specify whether enable multi-thread! If TRUE, multi-thread is enabled; If FALSE, mutli-thread is disable")
     (opt, args)=parser.parse_args()
     return (opt, args)
