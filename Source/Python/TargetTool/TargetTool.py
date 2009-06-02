@@ -156,6 +156,8 @@ def GetConfigureKeyValue(self, Key):
             Line = "%-30s = %s\n" % (Key, 'Disable')
     elif Key == TAB_TAT_DEFINES_MAX_CONCURRENT_THREAD_NUMBER and self.Opt.NUM != None:
         Line = "%-30s = %s\n" % (Key, str(self.Opt.NUM))
+    elif Key == TAB_TAT_DEFINES_MULTIPLE_THREAD and self.Opt.ENABLE_MULTI_THREAD != None:
+        Line = "%-30s = %s\n" % (Key, self.Opt.ENABLE_MULTI_THREAD)
     elif Key == TAB_TAT_DEFINES_TARGET and self.Opt.TARGET != None:
         Line = "%-30s = %s\n" % (Key, ''.join(elem + ' ' for elem in self.Opt.TARGET))
     elif Key == TAB_TAT_DEFINES_TARGET_ARCH and self.Opt.TARGET_ARCH != None:
@@ -212,9 +214,10 @@ def MyOptionParser():
         help="Specify the Tool Chain Tagname, which replaces target.txt's TOOL_CHAIN_TAG definition. 0 will clear this setting in target.txt and can't combine with other value.")
     parser.add_option("-r", "--buildrule", action="callback", type="string", dest="BUILD_RULE_FILE", callback=SingleCheckCallback,
         help="Specify the build rule configure file, which replaces target.txt's BUILD_RULE_CONF definition. If not specified, the default value Conf/build_rule.txt will be set.")
-    parser.add_option("-m", "--multithread", action="callback", type="int", dest="NUM", callback=RangeCheckCallback,
+    parser.add_option("-m", "--multithreadnum", action="callback", type="int", dest="NUM", callback=RangeCheckCallback,
         help="Specify the multi-thread number which replace target.txt's MAX_CONCURRENT_THREAD_NUMBER. If the value is less than 2, MULTIPLE_THREAD will be disabled. If the value is larger than 1, MULTIPLE_THREAD will be enabled.")
-
+    parser.add_option("-e", "--enablemultithread", action="store", type="choice", choices=['TRUE', 'FALSE'], dest="ENABLE_MULTI_THREAD", 
+        help="Specify whether enable multi-thread! If TRUE, multi-thread is enabled; If FALSE, mutli-thread is disable")
     (opt, args)=parser.parse_args()
     return (opt, args)
 
