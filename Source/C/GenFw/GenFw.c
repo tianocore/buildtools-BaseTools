@@ -122,7 +122,8 @@ STATIC CHAR8 *mInImageName;
 STATIC
 EFI_STATUS
 ZeroDebugData (
-  IN OUT UINT8   *FileBuffer
+  IN OUT UINT8   *FileBuffer,
+  BOOLEAN        ZeroDebug
   );
 
 STATIC
@@ -2038,7 +2039,7 @@ Returns:
   // Zero Debug Information of Pe Image
   //
   if (OutImageType == FW_ZERO_DEBUG_IMAGE) {
-    Status = ZeroDebugData (FileBuffer);
+    Status = ZeroDebugData (FileBuffer, TRUE);
     if (EFI_ERROR (Status)) {
       Error (NULL, 0, 3000, "Invalid", "Zero DebugData Error status is 0x%lx", (UINTN) Status);
       goto Finish;
@@ -2343,11 +2344,19 @@ Returns:
     Error (NULL, 0, 3000, "Invalid", "Magic 0x%x of PeImage %s is unknown.", PeHdr->OptionalHeader.Magic, mInImageName);
     goto Finish;
   }
-
+   
+  //
+  // Zero ExceptionTable Xdata
+  //
   if (!KeepExceptionTableFlag) {
     SectionHeader = (EFI_IMAGE_SECTION_HEADER *)(FileBuffer + DosHdr->e_lfanew + sizeof(UINT32) + sizeof (EFI_IMAGE_FILE_HEADER) + PeHdr->FileHeader.SizeOfOptionalHeader);
     ZeroXdataSection(mInImageName, FileBuffer, SectionHeader, PeHdr->FileHeader.NumberOfSections);
   }
+
+  //
+  // Zero Time/Data field
+  //
+  ZeroDebugData (FileBuffer, FALSE);
 
   if (OutImageType == FW_TE_IMAGE) {
     if ((PeHdr->FileHeader.NumberOfSections &~0xFF) || (Type &~0xFF)) {
@@ -2441,7 +2450,8 @@ Finish:
 STATIC
 EFI_STATUS
 ZeroDebugData (
-  IN OUT UINT8   *FileBuffer
+  IN OUT UINT8   *FileBuffer,
+  BOOLEAN        ZeroDebugFlag
   )
 /*++
 
@@ -2452,6 +2462,7 @@ Routine Description:
 Arguments:
 
   FileBuffer    - Pointer to PeImage.
+  ZeroDebugFlag - TRUE to zero Debug information, FALSE to only zero time/stamp
 
 Returns:
 
@@ -2502,6 +2513,10 @@ Returns:
     if (Optional32Hdr->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_DEBUG && \
         Optional32Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].Size != 0) {
       DebugDirectoryEntryRva = Optional32Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress;
+      if (ZeroDebugFlag) {
+        Optional32Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].Size = 0;
+        Optional32Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress = 0;
+      }
     }
   } else {
     Optional64Hdr = (EFI_IMAGE_OPTIONAL_HEADER64 *) ((UINT8*) FileHdr + sizeof (EFI_IMAGE_FILE_HEADER));
@@ -2517,6 +2532,10 @@ Returns:
     if (Optional64Hdr->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_DEBUG && \
         Optional64Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].Size != 0) {
       DebugDirectoryEntryRva = Optional64Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress;
+      if (ZeroDebugFlag) {
+        Optional64Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].Size = 0;
+        Optional64Hdr->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress = 0;
+      }
     }
   }
 
@@ -2559,7 +2578,10 @@ Returns:
   if (DebugDirectoryEntryRva != 0) {
     DebugEntry = (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY *) (FileBuffer + DebugDirectoryEntryFileOffset);
     DebugEntry->TimeDateStamp = 0;
-    memset (FileBuffer + DebugEntry->FileOffset, 0, DebugEntry->SizeOfData);
+    if (ZeroDebugFlag) {
+      memset (FileBuffer + DebugEntry->FileOffset, 0, DebugEntry->SizeOfData);
+      memset (DebugEntry, 0, sizeof (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY));
+    }
   }
 
   return EFI_SUCCESS;
