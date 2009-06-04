@@ -88,7 +88,7 @@ class InfHeader(ModuleHeaderClass):
         TAB_INF_DEFINES_FILE_GUID                   : "Guid",
         TAB_INF_DEFINES_MODULE_TYPE                 : "ModuleType",
         TAB_INF_DEFINES_EFI_SPECIFICATION_VERSION   : "EfiSpecificationVersion",
-        TAB_INF_DEFINES_EDK_RELEASE_VERSION         : "EdkReleaseVersion",        
+        TAB_INF_DEFINES_EDK_RELEASE_VERSION         : "EdkReleaseVersion",
         #
         # Optional Fields
         #
@@ -115,7 +115,7 @@ class InfHeader(ModuleHeaderClass):
 #        TAB_INF_DEFINES_DEFINE                      : "Define",
 #        TAB_INF_DEFINES_SPEC                        : "Specification",
 #        TAB_INF_DEFINES_CUSTOM_MAKEFILE             : "CustomMakefile",
-#        TAB_INF_DEFINES_MACRO                       : 
+#        TAB_INF_DEFINES_MACRO                       :
     }
 
     def __init__(self):
@@ -134,7 +134,7 @@ class InfHeader(ModuleHeaderClass):
 ## InfObject
 #
 # This class defined basic Inf object which is used by inheriting
-# 
+#
 # @param object:       Inherited from object class
 #
 class InfObject(object):
@@ -144,7 +144,7 @@ class InfObject(object):
 ## Inf
 #
 # This class defined the structure used in Inf object
-# 
+#
 # @param InfObject:         Inherited from InfObject class
 # @param Ffilename:         Input value for Ffilename of Inf file, default is None
 # @param IsMergeAllArches:  Input value for IsMergeAllArches
@@ -171,7 +171,7 @@ class Inf(InfObject):
         self.WorkspaceDir = WorkspaceDir
         self.SupArchList = SupArchList
         self.IsToDatabase = IsToDatabase
-        
+
         self.Cur = Database.Cur
         self.TblFile = Database.TblFile
         self.TblInf = Database.TblInf
@@ -179,29 +179,29 @@ class Inf(InfObject):
         #self.TblInf = TableInf(Database.Cur)
 
         self.KeyList = [
-            TAB_SOURCES, TAB_BUILD_OPTIONS, TAB_BINARIES, TAB_INCLUDES, TAB_GUIDS, 
-            TAB_PROTOCOLS, TAB_PPIS, TAB_LIBRARY_CLASSES, TAB_PACKAGES, TAB_LIBRARIES, 
-            TAB_INF_FIXED_PCD, TAB_INF_PATCH_PCD, TAB_INF_FEATURE_PCD, TAB_INF_PCD, 
+            TAB_SOURCES, TAB_BUILD_OPTIONS, TAB_BINARIES, TAB_INCLUDES, TAB_GUIDS,
+            TAB_PROTOCOLS, TAB_PPIS, TAB_LIBRARY_CLASSES, TAB_PACKAGES, TAB_LIBRARIES,
+            TAB_INF_FIXED_PCD, TAB_INF_PATCH_PCD, TAB_INF_FEATURE_PCD, TAB_INF_PCD,
             TAB_INF_PCD_EX, TAB_DEPEX, TAB_NMAKE, TAB_INF_DEFINES
         ]
         #
         # Upper all KEYs to ignore case sensitive when parsing
         #
         self.KeyList = map(lambda c: c.upper(), self.KeyList)
-        
+
         #
         # Init RecordSet
         #
-        self.RecordSet = {}        
+        self.RecordSet = {}
         for Key in self.KeyList:
             self.RecordSet[Section[Key]] = []
-        
+
         #
         # Load Inf file if filename is not None
         #
         if Filename != None:
             self.LoadInfFile(Filename)
-        
+
         #
         # Transfer to Module Object if IsToModule is True
         #
@@ -209,7 +209,7 @@ class Inf(InfObject):
             self.InfToModule()
 
     ## Transfer to Module Object
-    # 
+    #
     # Transfer all contents of an Inf file to a standard Module Object
     #
     def InfToModule(self):
@@ -217,57 +217,57 @@ class Inf(InfObject):
         # Init global information for the file
         #
         ContainerFile = self.Identification.FileFullPath
-        
+
         #
         # Generate Package Header
         #
         self.GenModuleHeader(ContainerFile)
-        
+
         #
         # Generate BuildOptions
         #
         self.GenBuildOptions(ContainerFile)
-        
+
         #
         # Generate Includes
         #
         self.GenIncludes(ContainerFile)
-        
+
         #
         # Generate Libraries
         #
         self.GenLibraries(ContainerFile)
-        
+
         #
         # Generate LibraryClasses
         #
         self.GenLibraryClasses(ContainerFile)
-        
+
         #
         # Generate Packages
         #
         self.GenPackages(ContainerFile)
-        
+
         #
         # Generate Nmakes
         #
         self.GenNmakes(ContainerFile)
-        
+
         #
         # Generate Pcds
         #
         self.GenPcds(ContainerFile)
-        
+
         #
         # Generate Sources
         #
         self.GenSources(ContainerFile)
-        
+
         #
         # Generate UserExtensions
         #
         self.GenUserExtensions(ContainerFile)
-        
+
         #
         # Generate Guids
         #
@@ -282,12 +282,12 @@ class Inf(InfObject):
         # Generate Ppis
         #
         self.GenGuidProtocolPpis(DataType.TAB_PPIS, ContainerFile)
-        
+
         #
         # Generate Depexes
         #
         self.GenDepexes(ContainerFile)
-        
+
         #
         # Generate Binaries
         #
@@ -312,7 +312,7 @@ class Inf(InfObject):
 
         if Arch not in self.Defines:
             self.Defines[Arch] = InfDefines()
-        GetSingleValueOfKeyFromLines(Lines, self.Defines[Arch].DefinesDictionary, 
+        GetSingleValueOfKeyFromLines(Lines, self.Defines[Arch].DefinesDictionary,
                                      TAB_COMMENT_SPLIT, TAB_EQUAL_SPLIT, False, None)
 
     ## Load Inf file
@@ -321,7 +321,7 @@ class Inf(InfObject):
     #
     # @param Filename:  Input value for filename of Inf file
     #
-    def LoadInfFile(self, Filename):     
+    def LoadInfFile(self, Filename):
         #
         # Insert a record for file
         #
@@ -329,20 +329,20 @@ class Inf(InfObject):
         self.Identification.FileFullPath = Filename
         (self.Identification.FileRelativePath, self.Identification.FileName) = os.path.split(Filename)
         self.FileID = self.TblFile.InsertFile(Filename, MODEL_FILE_INF)
-        
+
         #
         # Init InfTable
         #
         #self.TblInf.Table = "Inf%s" % self.FileID
         #self.TblInf.Create()
-        
+
         #
         # Init common datas
         #
         IfDefList, SectionItemList, CurrentSection, ArchList, ThirdList, IncludeFiles = \
         [], [], TAB_UNKNOWN, [], [], []
         LineNo = 0
-        
+
         #
         # Parse file content
         #
@@ -362,14 +362,14 @@ class Inf(InfObject):
                 IsFindBlockComment = False
             if IsFindBlockComment:
                 continue
-            
+
             #
             # Remove comments at tail and remove spaces again
             #
             Line = CleanString(Line)
             if Line == '':
                 continue
-            
+
             #
             # Find a new section tab
             # First insert previous section items
@@ -389,7 +389,7 @@ class Inf(InfObject):
                 SectionItemList = []
                 ArchList = []
                 ThirdList = []
-                
+
                 CurrentSection = ''
                 LineList = GetSplitValueList(Line[len(TAB_SECTION_START):len(Line) - len(TAB_SECTION_END)], TAB_COMMA_SPLIT)
                 for Item in LineList:
@@ -401,6 +401,8 @@ class Inf(InfObject):
                             EdkLogger.error("Parser", PARSER_ERROR, "Different section names '%s' and '%s' are found in one section definition, this is not allowed." % (CurrentSection, ItemList[0]), File=Filename, Line=LineNo, RaiseError = EdkLogger.IsRaiseError)
                     if CurrentSection.upper() not in self.KeyList:
                         RaiseParserError(Line, CurrentSection, Filename, '', LineNo)
+                        CurrentSection = TAB_UNKNOWN
+                        continue
                     ItemList.append('')
                     ItemList.append('')
                     if len(ItemList) > 5:
@@ -412,7 +414,7 @@ class Inf(InfObject):
                         ThirdList.append(ItemList[2])
 
                 continue
-            
+
             #
             # Not in any defined section
             #
@@ -426,18 +428,18 @@ class Inf(InfObject):
             SectionItemList.append([Line, LineNo])
             # End of parse
         #End of For
-        
+
         #
         # Insert items data of last section
         #
         Model = Section[CurrentSection.upper()]
         InsertSectionItemsIntoDatabase(self.TblInf, self.FileID, Filename, Model, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList, self.RecordSet)
-        
+
         #
         # Replace all DEFINE macros with its actual values
         #
         ParseDefineMacro2(self.TblInf, self.RecordSet, GlobalData.gGlobalDefines)
-    
+
     ## Show detailed information of Module
     #
     # Print all members and their values of Module class
@@ -453,7 +455,7 @@ class Inf(InfObject):
             print 'Version =', M.Header[Arch].Version
             print 'InfVersion =', M.Header[Arch].InfVersion
             print 'EfiSpecificationVersion =', M.Header[Arch].EfiSpecificationVersion
-            print 'EdkReleaseVersion =', M.Header[Arch].EdkReleaseVersion                
+            print 'EdkReleaseVersion =', M.Header[Arch].EdkReleaseVersion
             print 'ModuleType =', M.Header[Arch].ModuleType
             print 'BinaryModule =', M.Header[Arch].BinaryModule
             print 'ComponentType =', M.Header[Arch].ComponentType
@@ -542,7 +544,7 @@ class Inf(InfObject):
             SqlCommand = """update %s set Value1 = '%s', Value2 = '%s'
                             where ID = %s""" % (self.TblInf.Table, ConvertToSqlString2(Value1), ConvertToSqlString2(Value2), ID)
             self.TblInf.Exec(SqlCommand)
-        
+
         for Arch in DataType.ARCH_LIST:
             ModuleHeader = InfHeader()
             ModuleHeader.FileName = self.Identification.FileName
@@ -607,7 +609,7 @@ class Inf(InfObject):
                         RaiseParserError(Item, 'SPEC of Defines', File, 'SPEC <Word> = <Version>', D[2])
                     else:
                         ModuleHeader.Specification[CleanString(List[0])] = CleanString(List[1])
-            
+
             #
             # Get version of INF
             #
@@ -629,16 +631,16 @@ class Inf(InfObject):
                     ModuleHeader.ModuleType = gComponentType2ModuleType[ModuleHeader.ComponentType]
                 elif ModuleHeader.ComponentType != '':
                     EdkLogger.error("Parser", PARSER_ERROR, "Unsupported R8 component type [%s]" % ModuleHeader.ComponentType, ExtraData=File, RaiseError = EdkLogger.IsRaiseError)
-                
+
             self.Module.Header[Arch] = ModuleHeader
-    
-    
+
+
     ## GenBuildOptions
     #
     # Gen BuildOptions of Inf
     # [<Family>:]<ToolFlag>=Flag
     #
-    # @param ContainerFile: The Inf file full path 
+    # @param ContainerFile: The Inf file full path
     #
     def GenBuildOptions(self, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % TAB_BUILD_OPTIONS)
@@ -647,7 +649,7 @@ class Inf(InfObject):
         # Get all BuildOptions
         #
         RecordSet = self.RecordSet[MODEL_META_DATA_BUILD_OPTION]
-        
+
         #
         # Go through each arch
         #
@@ -667,14 +669,14 @@ class Inf(InfObject):
         for Key in BuildOptions.keys():
             BuildOption = BuildOptionClass(Key[0], Key[1], Key[2])
             BuildOption.SupArchList = BuildOptions[Key]
-            self.Module.BuildOptions.append(BuildOption)  
+            self.Module.BuildOptions.append(BuildOption)
 
     ## GenIncludes
     #
     # Gen Includes of Inf
-    # 
     #
-    # @param ContainerFile: The Inf file full path 
+    #
+    # @param ContainerFile: The Inf file full path
     #
     def GenIncludes(self, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % TAB_INCLUDES)
@@ -683,7 +685,7 @@ class Inf(InfObject):
         # Get all Includes
         #
         RecordSet = self.RecordSet[MODEL_EFI_INCLUDE]
-        
+
         #
         # Go through each arch
         #
@@ -697,13 +699,13 @@ class Inf(InfObject):
             Include.FilePath = NormPath(Key)
             Include.SupArchList = Includes[Key]
             self.Module.Includes.append(Include)
-        
+
     ## GenLibraries
     #
     # Gen Libraries of Inf
-    # 
     #
-    # @param ContainerFile: The Inf file full path 
+    #
+    # @param ContainerFile: The Inf file full path
     #
     def GenLibraries(self, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % TAB_LIBRARIES)
@@ -712,7 +714,7 @@ class Inf(InfObject):
         # Get all Includes
         #
         RecordSet = self.RecordSet[MODEL_EFI_LIBRARY_INSTANCE]
-        
+
         #
         # Go through each arch
         #
@@ -727,13 +729,13 @@ class Inf(InfObject):
             Library.Library = Key.rsplit('.', 1)[0]
             Library.SupArchList = Libraries[Key]
             self.Module.Libraries.append(Library)
-    
+
     ## GenLibraryClasses
     #
     # Get LibraryClass of Inf
     # <LibraryClassKeyWord>|<LibraryInstance>
     #
-    # @param ContainerFile: The Inf file full path 
+    # @param ContainerFile: The Inf file full path
     #
     def GenLibraryClasses(self, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % TAB_LIBRARY_CLASSES)
@@ -742,7 +744,7 @@ class Inf(InfObject):
         # Get all LibraryClasses
         #
         RecordSet = self.RecordSet[MODEL_EFI_LIBRARY_CLASS]
-        
+
         #
         # Go through each arch
         #
@@ -758,7 +760,7 @@ class Inf(InfObject):
                         SqlCommand = """update %s set Value1 = '%s', Value2 = '%s', Value3 = '%s'
                                         where ID = %s""" % (self.TblInf.Table, ConvertToSqlString2(LibClassName), ConvertToSqlString2(LibClassIns), ConvertToSqlString2(SupModelList), Record[3])
                         self.TblInf.Exec(SqlCommand)
-        
+
         for Key in LibraryClasses.keys():
             KeyList = Key[0].split(DataType.TAB_VALUE_SPLIT)
             LibraryClass = LibraryClassClass()
@@ -772,9 +774,9 @@ class Inf(InfObject):
     ## GenPackages
     #
     # Gen Packages of Inf
-    # 
     #
-    # @param ContainerFile: The Inf file full path 
+    #
+    # @param ContainerFile: The Inf file full path
     #
     def GenPackages(self, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % TAB_PACKAGES)
@@ -783,7 +785,7 @@ class Inf(InfObject):
         # Get all Packages
         #
         RecordSet = self.RecordSet[MODEL_META_DATA_PACKAGE]
-        
+
         #
         # Go through each arch
         #
@@ -797,7 +799,7 @@ class Inf(InfObject):
                                         where ID = %s""" % (self.TblInf.Table, ConvertToSqlString2(Package), ConvertToSqlString2(Pcd), Record[3])
                         self.TblInf.Exec(SqlCommand)
 
-                    
+
         for Key in Packages.keys():
             Package = ModulePackageDependencyClass()
             Package.FilePath = NormPath(Key[0])
@@ -808,9 +810,9 @@ class Inf(InfObject):
     ## GenNmakes
     #
     # Gen Nmakes of Inf
-    # 
     #
-    # @param ContainerFile: The Inf file full path 
+    #
+    # @param ContainerFile: The Inf file full path
     #
     def GenNmakes(self, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % TAB_NMAKE)
@@ -820,7 +822,7 @@ class Inf(InfObject):
         #
         RecordSet = self.RecordSet[MODEL_META_DATA_NMAKE]
 
-        
+
         #
         # Go through each arch
         #
@@ -828,11 +830,12 @@ class Inf(InfObject):
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON:
                     MergeArches(Nmakes, Record[0], Arch)
-                
+
         for Key in Nmakes.keys():
             List = GetSplitValueList(Key, DataType.TAB_EQUAL_SPLIT, MaxSplit=1)
             if len(List) != 2:
                 RaiseParserError(Key, 'Nmake', ContainerFile, '<MacroName> = <Value>')
+                continue
             Nmake = ModuleNmakeClass()
             Nmake.Name = List[0]
             Nmake.Value = List[1]
@@ -850,7 +853,7 @@ class Inf(InfObject):
             else:
                 ToolList = gNmakeFlagPattern.findall(Nmake.Name)
                 if len(ToolList) == 0 or len(ToolList) != 1:
-                    EdkLogger.warn("\nParser", "Don't know how to do with MACRO: %s" % Nmake.Name, 
+                    EdkLogger.warn("\nParser", "Don't know how to do with MACRO: %s" % Nmake.Name,
                                    ExtraData=ContainerFile)
                 else:
                     if ToolList[0] in gNmakeFlagName2ToolCode:
@@ -860,19 +863,19 @@ class Inf(InfObject):
                     BuildOption = BuildOptionClass("MSFT", "*_*_*_%s_FLAGS" % Tool, Nmake.Value)
                     BuildOption.SupArchList = Nmake.SupArchList
                     self.Module.BuildOptions.append(BuildOption)
-    
+
     ## GenPcds
     #
     # Gen Pcds of Inf
     # <TokenSpaceGuidCName>.<PcdCName>[|<Value>]
     #
-    # @param ContainerFile: The Dec file full path 
+    # @param ContainerFile: The Dec file full path
     #
     def GenPcds(self, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % TAB_PCDS)
         Pcds = {}
         PcdToken = {}
-        
+
         #
         # Get all Guids
         #
@@ -881,7 +884,7 @@ class Inf(InfObject):
         RecordSet3 = self.RecordSet[MODEL_PCD_FEATURE_FLAG]
         RecordSet4 = self.RecordSet[MODEL_PCD_DYNAMIC_EX]
         RecordSet5 = self.RecordSet[MODEL_PCD_DYNAMIC]
-        
+
         #
         # Go through each arch
         #
@@ -929,13 +932,13 @@ class Inf(InfObject):
             Pcd.ItemType = Key[3]
             Pcd.SupArchList = Pcds[Key]
             self.Module.PcdCodes.append(Pcd)
-    
+
     ## GenSources
     #
     # Gen Sources of Inf
     # <Filename>[|<Family>[|<TagName>[|<ToolCode>[|<PcdFeatureFlag>]]]]
     #
-    # @param ContainerFile: The Dec file full path 
+    # @param ContainerFile: The Dec file full path
     #
     def GenSources(self, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % TAB_SOURCES)
@@ -945,7 +948,7 @@ class Inf(InfObject):
         # Get all Nmakes
         #
         RecordSet = self.RecordSet[MODEL_EFI_SOURCE_FILE]
-        
+
         #
         # Go through each arch
         #
@@ -962,7 +965,7 @@ class Inf(InfObject):
         for Key in Sources.keys():
             Source = ModuleSourceFileClass(Key[0], Key[2], Key[3], Key[1], Key[4], Sources[Key])
             self.Module.Sources.append(Source)
-    
+
     ## GenUserExtensions
     #
     # Gen UserExtensions of Inf
@@ -989,7 +992,7 @@ class Inf(InfObject):
     #
     # Gen Depex of Inf
     #
-    # @param ContainerFile: The Inf file full path 
+    # @param ContainerFile: The Inf file full path
     #
     def GenDepexes(self, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % TAB_DEPEX)
@@ -998,7 +1001,7 @@ class Inf(InfObject):
         # Get all Depexes
         #
         RecordSet = self.RecordSet[MODEL_EFI_DEPEX]
-        
+
         #
         # Go through each arch
         #
@@ -1021,12 +1024,12 @@ class Inf(InfObject):
     # Gen Binary of Inf
     # <FileType>|<Filename>|<Target>[|<TokenSpaceGuidCName>.<PcdCName>]
     #
-    # @param ContainerFile: The Dec file full path 
+    # @param ContainerFile: The Dec file full path
     #
     def GenBinaries(self, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % TAB_BINARIES)
         Binaries = {}
-        
+
         #
         # Get all Guids
         #
@@ -1048,13 +1051,13 @@ class Inf(InfObject):
         for Key in Binaries.keys():
             Binary = ModuleBinaryFileClass(NormPath(Key[1]), Key[0], Key[2], Key[3], Binaries[Key])
             self.Module.Binaries.append(Binary)
-        
+
     ## GenGuids
     #
     # Gen Guids of Inf
     # <CName>=<GuidValue>
     #
-    # @param ContainerFile: The Inf file full path 
+    # @param ContainerFile: The Inf file full path
     #
     def GenGuidProtocolPpis(self, Type, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % Type)
@@ -1063,7 +1066,7 @@ class Inf(InfObject):
         # Get all Items
         #
         RecordSet = self.RecordSet[Section[Type.upper()]]
-        
+
         #
         # Go through each arch
         #
@@ -1076,7 +1079,7 @@ class Inf(InfObject):
                         SqlCommand = """update %s set Value1 = '%s', Value2 = '%s'
                                         where ID = %s""" % (self.TblInf.Table, ConvertToSqlString2(Name), ConvertToSqlString2(Value), Record[3])
                         self.TblInf.Exec(SqlCommand)
-        
+
         ListMember = None
         if Type == TAB_GUIDS:
             ListMember = self.Module.Guids
@@ -1084,7 +1087,7 @@ class Inf(InfObject):
             ListMember = self.Module.Protocols
         elif Type == TAB_PPIS:
             ListMember = self.Module.Ppis
-        
+
         for Key in Lists.keys():
             ListClass = GuidProtocolPpiCommonClass()
             ListClass.CName = Key[0]
@@ -1100,14 +1103,14 @@ class Inf(InfObject):
 if __name__ == '__main__':
     EdkLogger.Initialize()
     EdkLogger.SetLevel(EdkLogger.DEBUG_0)
-        
+
     W = os.getenv('WORKSPACE')
     F = os.path.join(W, 'MdeModulePkg/Application/HelloWorld/HelloWorld.inf')
-    
+
     Db = Database.Database('Inf.db')
     Db.InitDatabase()
-    
+
     P = Inf(os.path.normpath(F), True, True, W, Db)
     P.ShowModule()
-    
+
     Db.Close()

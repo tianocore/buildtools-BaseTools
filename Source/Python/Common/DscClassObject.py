@@ -56,7 +56,7 @@ Section = {TAB_UNKNOWN.upper() : MODEL_UNKNOWN,
 ## DscObject
 #
 # This class defined basic Dsc object which is used by inheriting
-# 
+#
 # @param object:       Inherited from object class
 #
 class DscObject(object):
@@ -66,7 +66,7 @@ class DscObject(object):
 ## Dsc
 #
 # This class defined the structure used in Dsc object
-# 
+#
 # @param DscObject:         Inherited from InfObject class
 # @param Ffilename:         Input value for Ffilename of Inf file, default is None
 # @param IsMergeAllArches:  Input value for IsMergeAllArches
@@ -110,18 +110,18 @@ class Dsc(DscObject):
             TAB_PCDS_DYNAMIC_EX_DEFAULT_NULL, TAB_PCDS_DYNAMIC_EX_HII_NULL, TAB_PCDS_DYNAMIC_EX_VPD_NULL, \
             TAB_COMPONENTS, TAB_DSC_DEFINES
         ]
-        
+
         self.PcdToken = {}
-        
+
         #
         # Upper all KEYs to ignore case sensitive when parsing
         #
         self.KeyList = map(lambda c: c.upper(), self.KeyList)
-        
+
         #
         # Init RecordSet
         #
-#        self.RecordSet = {}        
+#        self.RecordSet = {}
 #        for Key in self.KeyList:
 #            self.RecordSet[Section[Key]] = []
 
@@ -138,7 +138,7 @@ class Dsc(DscObject):
             self.DscToPlatform()
 
     ## Transfer to Platform Object
-    # 
+    #
     # Transfer all contents of an Inf file to a standard Module Object
     #
     def DscToPlatform(self):
@@ -146,32 +146,32 @@ class Dsc(DscObject):
         # Init global information for the file
         #
         ContainerFile = self.Identification.FileFullPath
-        
+
         #
         # Generate Platform Header
         #
         self.GenPlatformHeader(ContainerFile)
-        
+
         #
         # Generate BuildOptions
         #
         self.GenBuildOptions(ContainerFile)
-        
+
         #
         # Generate SkuInfos
         #
         self.GenSkuInfos(ContainerFile)
-        
+
         #
         # Generate Libraries
         #
         self.GenLibraries(ContainerFile)
-        
+
         #
         # Generate LibraryClasses
         #
         self.GenLibraryClasses(ContainerFile)
-        
+
         #
         # Generate Pcds
         #
@@ -184,12 +184,12 @@ class Dsc(DscObject):
         self.GenDynamicHiiPcds(DataType.TAB_PCDS_DYNAMIC_EX_HII, ContainerFile)
         self.GenDynamicVpdPcds(DataType.TAB_PCDS_DYNAMIC_VPD, ContainerFile)
         self.GenDynamicVpdPcds(DataType.TAB_PCDS_DYNAMIC_EX_VPD, ContainerFile)
-        
+
         #
         # Generate Components
         #
         self.GenComponents(ContainerFile)
-        
+
         #
         # Update to database
         #
@@ -203,7 +203,7 @@ class Dsc(DscObject):
     #
     # Gen Platform Header of Dsc as <Key> = <Value>
     #
-    # @param ContainerFile: The Dsc file full path 
+    # @param ContainerFile: The Dsc file full path
     #
     def GenPlatformHeader(self, ContainerFile):
         EdkLogger.debug(2, "Generate PlatformHeader ...")
@@ -223,27 +223,27 @@ class Dsc(DscObject):
             SqlCommand = """update %s set Value1 = '%s', Value2 = '%s'
                             where ID = %s""" % (self.TblDsc.Table, ConvertToSqlString2(Value1), ConvertToSqlString2(Value2), ID)
             self.TblDsc.Exec(SqlCommand)
-        
+
         #
         # Get detailed information
         #
         for Arch in DataType.ARCH_LIST:
             PlatformHeader = PlatformHeaderClass()
-            
+
             PlatformHeader.Name = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_PLATFORM_NAME, Arch, self.FileID)[0]
             PlatformHeader.Guid = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_PLATFORM_GUID, Arch, self.FileID)[0]
             PlatformHeader.Version = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_PLATFORM_VERSION, Arch, self.FileID)[0]
             PlatformHeader.FileName = self.Identification.FileName
             PlatformHeader.FullPath = self.Identification.FileFullPath
             PlatformHeader.DscSpecification = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_DSC_SPECIFICATION, Arch, self.FileID)[0]
-    
+
             PlatformHeader.SkuIdName = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_SKUID_IDENTIFIER, Arch, self.FileID)
             PlatformHeader.SupArchList = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_SUPPORTED_ARCHITECTURES, Arch, self.FileID)
             PlatformHeader.BuildTargets = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_BUILD_TARGETS, Arch, self.FileID)
             PlatformHeader.OutputDirectory = NormPath(QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_OUTPUT_DIRECTORY, Arch, self.FileID)[0])
             PlatformHeader.BuildNumber = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_BUILD_NUMBER, Arch, self.FileID)[0]
             PlatformHeader.MakefileName = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_MAKEFILE_NAME, Arch, self.FileID)[0]
-    
+
             PlatformHeader.BsBaseAddress = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_BS_BASE_ADDRESS, Arch, self.FileID)[0]
             PlatformHeader.RtBaseAddress = QueryDefinesItem(self.TblDsc, TAB_DSC_DEFINES_RT_BASE_ADDRESS, Arch, self.FileID)[0]
 
@@ -257,7 +257,7 @@ class Dsc(DscObject):
     # Gen BuildOptions of Dsc
     # [<Family>:]<ToolFlag>=Flag
     #
-    # @param ContainerFile: The Dsc file full path 
+    # @param ContainerFile: The Dsc file full path
     #
     def GenBuildOptions(self, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % TAB_BUILD_OPTIONS)
@@ -266,12 +266,12 @@ class Dsc(DscObject):
         # Get all include files
         #
         IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, MODEL_META_DATA_BUILD_OPTION, self.FileID)
-        
+
         #
         # Get all BuildOptions
         #
         RecordSet = QueryDscItem(self.TblDsc, MODEL_META_DATA_BUILD_OPTION, -1, self.FileID)
-        
+
         #
         # Go through each arch
         #
@@ -284,7 +284,7 @@ class Dsc(DscObject):
                             continue
                         (Family, ToolChain, Flag) = GetBuildOption(NewItem, Filename, -1)
                         MergeArches(BuildOptions, (Family, ToolChain, Flag), Arch)
-            
+
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON.upper():
                     (Family, ToolChain, Flag) = GetBuildOption(Record[0], ContainerFile, Record[2])
@@ -301,13 +301,13 @@ class Dsc(DscObject):
             BuildOption = BuildOptionClass(Key[0], Key[1], Key[2])
             BuildOption.SupArchList = BuildOptions[Key]
             self.Platform.BuildOptions.BuildOptionList.append(BuildOption)
-            
+
     ## GenSkuInfos
     #
     # Gen SkuInfos of Dsc
     # <Integer>|<UiName>
     #
-    # @param ContainerFile: The Dsc file full path 
+    # @param ContainerFile: The Dsc file full path
     #
     def GenSkuInfos(self, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % TAB_SKUIDS)
@@ -316,17 +316,17 @@ class Dsc(DscObject):
         # <Integer>|<UiName>
         #
         self.Platform.SkuInfos.SkuInfoList['DEFAULT'] = '0'
-        
+
         #
         # Get all include files
         #
         IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, MODEL_EFI_SKU_ID, self.FileID)
-        
+
         #
         # Get all SkuInfos
         #
         RecordSet = QueryDscItem(self.TblDsc, MODEL_EFI_SKU_ID, -1, self.FileID)
-        
+
         #
         # Go through each arch
         #
@@ -342,7 +342,7 @@ class Dsc(DscObject):
                             RaiseParserError(NewItem, TAB_SKUIDS, Filename, '<Integer>|<UiName>')
                         else:
                             self.Platform.SkuInfos.SkuInfoList[List[1]] = List[0]
-            
+
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON.upper():
                     List = GetSplitValueList(Record[0])
@@ -357,13 +357,13 @@ class Dsc(DscObject):
                             SqlCommand = """update %s set Value1 = '%s', Value2 = '%s'
                                             where ID = %s""" % (self.TblDsc.Table, ConvertToSqlString2(List[0]), ConvertToSqlString2(List[1]), Record[3])
                             self.TblDsc.Exec(SqlCommand)
-    
+
     ## GenLibraries
     #
     # Gen Libraries of Dsc
     # <PathAndFilename>
     #
-    # @param ContainerFile: The Dsc file full path 
+    # @param ContainerFile: The Dsc file full path
     #
     def GenLibraries(self, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % TAB_LIBRARIES)
@@ -372,12 +372,12 @@ class Dsc(DscObject):
         # Get all include files
         #
         IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, MODEL_EFI_LIBRARY_INSTANCE, self.FileID)
-        
+
         #
         # Get all Libraries
         #
         RecordSet = QueryDscItem(self.TblDsc, MODEL_EFI_LIBRARY_INSTANCE, -1, self.FileID)
-        
+
         #
         # Go through each arch
         #
@@ -389,11 +389,11 @@ class Dsc(DscObject):
                         if CleanString(NewItem) == '':
                             continue
                         MergeArches(Libraries, NewItem, Arch)
-            
+
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON.upper():
                     MergeArches(Libraries, Record[0], Arch)
-        
+
         for Key in Libraries.keys():
             Library = PlatformLibraryClass()
             Library.FilePath = NormPath(Key)
@@ -405,7 +405,7 @@ class Dsc(DscObject):
     # Get LibraryClasses of Dsc
     # <LibraryClassKeyWord>|<LibraryInstance>
     #
-    # @param ContainerFile: The Dsc file full path 
+    # @param ContainerFile: The Dsc file full path
     #
     def GenLibraryClasses(self, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % TAB_LIBRARY_CLASSES)
@@ -414,12 +414,12 @@ class Dsc(DscObject):
         # Get all include files
         #
         IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, MODEL_EFI_LIBRARY_CLASS, self.FileID)
-        
+
         #
         # Get all LibraryClasses
         #
         RecordSet = QueryDscItem(self.TblDsc, MODEL_EFI_LIBRARY_CLASS, -1, self.FileID)
-        
+
         #
         # Go through each arch
         #
@@ -431,7 +431,7 @@ class Dsc(DscObject):
                         if CleanString(NewItem) == '':
                             continue
                         MergeArches(LibraryClasses, GetLibraryClass([NewItem, IncludeFile[4]], Filename, self.WorkspaceDir, -1), Arch)
-            
+
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON.upper():
                     (LibClassName, LibClassIns, SupModelList) = GetLibraryClass([Record[0], Record[4]], ContainerFile, self.WorkspaceDir, Record[2])
@@ -451,7 +451,7 @@ class Dsc(DscObject):
             Library.SupModuleList = GetSplitValueList(Key[2])
             Library.SupArchList = LibraryClasses[Key]
             self.Platform.LibraryClasses.LibraryList.append(Library)
-    
+
     ## Gen Pcds
     #
     # Gen Pcd of Dsc as <PcdTokenSpaceGuidCName>.<TokenCName>|<Value>[|<Type>|<MaximumDatumSize>]
@@ -468,17 +468,17 @@ class Dsc(DscObject):
         else:
             pass
         EdkLogger.debug(2, "Generate %s ..." % Type)
-        
+
         #
         # Get all include files
         #
         IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, Model, self.FileID)
-        
+
         #
         # Get all Pcds
         #
-        RecordSet = QueryDscItem(self.TblDsc, Model, -1, self.FileID)       
-        
+        RecordSet = QueryDscItem(self.TblDsc, Model, -1, self.FileID)
+
         #
         # Go through each arch
         #
@@ -498,12 +498,12 @@ class Dsc(DscObject):
                     (TokenName, TokenGuidCName, Value, DatumType, MaxDatumSize, Type) = GetPcd(Record[0], Type, ContainerFile, Record[2])
                     MergeArches(Pcds, (TokenName, TokenGuidCName, Value, DatumType, MaxDatumSize, Type), Arch)
                     self.PcdToken[Record[3]] = (TokenGuidCName, TokenName)
-                
+
         for Key in Pcds:
             Pcd = PcdClass(Key[0], '', Key[1], Key[3], Key[4], Key[2], Key[5], [], {}, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
-    
+
     ## Gen FeatureFlagPcds
     #
     # Gen FeatureFlagPcds of Dsc file as <PcdTokenSpaceGuidCName>.<TokenCName>|TRUE/FALSE
@@ -518,17 +518,17 @@ class Dsc(DscObject):
         else:
             pass
         EdkLogger.debug(2, "Generate %s ..." % Type)
-        
+
         #
         # Get all include files
         #
         IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, Model, self.FileID)
-        
+
         #
         # Get all FeatureFlagPcds
         #
-        RecordSet = QueryDscItem(self.TblDsc, Model, -1, self.FileID)       
-        
+        RecordSet = QueryDscItem(self.TblDsc, Model, -1, self.FileID)
+
         #
         # Go through each arch
         #
@@ -553,7 +553,7 @@ class Dsc(DscObject):
             Pcd = PcdClass(Key[0], '', Key[1], '', '', Key[2], Key[3], [], {}, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
-    
+
     ## Gen DynamicDefaultPcds
     #
     # Gen DynamicDefaultPcds of Dsc as <PcdTokenSpaceGuidCName>.<TokenCName>|<Value>[|<DatumTyp>[|<MaxDatumSize>]]
@@ -571,17 +571,17 @@ class Dsc(DscObject):
         else:
             pass
         EdkLogger.debug(2, "Generate %s ..." % Type)
-        
+
         #
         # Get all include files
         #
         IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, Model, self.FileID)
-        
+
         #
         # Get all DynamicDefaultPcds
         #
-        RecordSet = QueryDscItem(self.TblDsc, Model, -1, self.FileID)       
-        
+        RecordSet = QueryDscItem(self.TblDsc, Model, -1, self.FileID)
+
         #
         # Go through each arch
         #
@@ -610,7 +610,7 @@ class Dsc(DscObject):
             Pcd = PcdClass(Key[0], '', Key[1], Key[3], Key[4], Key[2], Key[5], [], SkuInfoList, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
-    
+
     ## Gen DynamicHiiPcds
     #
     # Gen DynamicHiiPcds of Dsc as <PcdTokenSpaceGuidCName>.<TokenCName>|<String>|<VariableGuidCName>|<VariableOffset>[|<DefaultValue>[|<MaximumDatumSize>]]
@@ -628,17 +628,17 @@ class Dsc(DscObject):
         else:
             pass
         EdkLogger.debug(2, "Generate %s ..." % Type)
-        
+
         #
         # Get all include files
         #
         IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, Model, self.FileID)
-        
+
         #
         # Get all DynamicHiiPcds
         #
-        RecordSet = QueryDscItem(self.TblDsc, Model, -1, self.FileID)       
-        
+        RecordSet = QueryDscItem(self.TblDsc, Model, -1, self.FileID)
+
         #
         # Go through each arch
         #
@@ -658,7 +658,7 @@ class Dsc(DscObject):
                     (K1, K2, K3, K4, K5, K6, K7, K8) = GetDynamicHiiPcd(Record[0], Type, ContainerFile, Record[2])
                     MergeArches(Pcds,  (K1, K2, K3, K4, K5, K6, K7, K8, Record[4]), Arch)
                     self.PcdToken[Record[3]] = (K2, K1)
-        
+
         for Key in Pcds:
             (Status, SkuInfoList) = self.GenSkuInfoList(Key[8], self.Platform.SkuInfos.SkuInfoList, Key[2], Key[3], Key[4], Key[5], '', '')
             if Status == False:
@@ -685,17 +685,17 @@ class Dsc(DscObject):
         else:
             pass
         EdkLogger.debug(2, "Generate %s ..." % Type)
-        
+
         #
         # Get all include files
         #
         IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, Model, self.FileID)
-        
+
         #
         # Get all DynamicVpdPcds
         #
-        RecordSet = QueryDscItem(self.TblDsc, Model, -1, self.FileID)       
-        
+        RecordSet = QueryDscItem(self.TblDsc, Model, -1, self.FileID)
+
         #
         # Go through each arch
         #
@@ -724,9 +724,9 @@ class Dsc(DscObject):
             Pcd = PcdClass(Key[0], '', Key[1], '', Key[3], '', Key[4], [], SkuInfoList, [])
             Pcd.SupArchList = Pcds[Key]
             self.Platform.DynamicPcdBuildDefinitions.append(Pcd)
-            
-    
-    ## Get Component 
+
+
+    ## Get Component
     #
     # Get Component section defined in Dsc file
     #
@@ -734,19 +734,19 @@ class Dsc(DscObject):
     #
     # @retval PlatformModuleClass() A instance for PlatformModuleClass
     #
-    def GenComponents(self, ContainerFile):        
+    def GenComponents(self, ContainerFile):
         EdkLogger.debug(2, "Generate %s ..." % TAB_COMPONENTS)
         Components = sdict()
         #
         # Get all include files
         #
         IncludeFiles = QueryDscItem(self.TblDsc, MODEL_META_DATA_INCLUDE, MODEL_META_DATA_COMPONENT, self.FileID)
-        
+
         #
         # Get all Components
         #
-        RecordSet = QueryDscItem(self.TblDsc, MODEL_META_DATA_COMPONENT, -1, self.FileID)  
-        
+        RecordSet = QueryDscItem(self.TblDsc, MODEL_META_DATA_COMPONENT, -1, self.FileID)
+
         #
         # Go through each arch
         #
@@ -765,15 +765,15 @@ class Dsc(DscObject):
             for Record in RecordSet:
                 if Record[1] == Arch or Record[1] == TAB_ARCH_COMMON.upper():
                     Lib, Bo, Pcd = [], [], []
-                    
+
                     SubLibSet = QueryDscItem(self.TblDsc, MODEL_EFI_LIBRARY_CLASS, Record[3], self.FileID)
                     for SubLib in SubLibSet:
                         Lib.append(TAB_VALUE_SPLIT.join([SubLib[0],SubLib[4]]))
-                    
+
                     SubBoSet = QueryDscItem(self.TblDsc, MODEL_META_DATA_BUILD_OPTION, Record[3], self.FileID)
                     for SubBo in SubBoSet:
                         Bo.append(SubBo[0])
-                    
+
                     SubPcdSet1 = QueryDscItem(self.TblDsc, MODEL_PCD_FIXED_AT_BUILD, Record[3], self.FileID)
                     SubPcdSet2 = QueryDscItem(self.TblDsc, MODEL_PCD_PATCHABLE_IN_MODULE, Record[3], self.FileID)
                     SubPcdSet3 = QueryDscItem(self.TblDsc, MODEL_PCD_FEATURE_FLAG, Record[3], self.FileID)
@@ -795,8 +795,8 @@ class Dsc(DscObject):
         for Key in Components.keys():
             Key.SupArchList = Components[Key]
             self.Platform.Modules.ModuleList.append(Key)
-    
-    ## Get Component 
+
+    ## Get Component
     #
     # Get Component section defined in Dsc file
     #
@@ -834,7 +834,7 @@ class Dsc(DscObject):
             Type = Pcd[0]
             List = GetSplitValueList(Pcd[1])
             PcdId = Pcd[2]
-            
+
             TokenInfo = None
             #
             # For FeatureFlag
@@ -868,7 +868,7 @@ class Dsc(DscObject):
                 CheckPcdTokenInfo(List[0], 'Components', ContainerFile)
                 TokenInfo = GetSplitValueList(List[0], DataType.TAB_SPLIT)
                 Component.PcdBuildDefinitions.append(PcdClass(TokenInfo[1], '', TokenInfo[0], '', '', '', Type, [], {}, []))
-            
+
             #
             # Add to PcdToken
             #
@@ -914,13 +914,13 @@ class Dsc(DscObject):
     # 2. Insert a record into TblDsc
     # Value1: IncludeFilePath
     #
-    # @param LineValue:  The line of incude statement 
+    # @param LineValue:  The line of incude statement
     def ParseInclude(self, LineValue, StartLine, Table, FileID, Filename, SectionName, Model, Arch):
         EdkLogger.debug(EdkLogger.DEBUG_2, "!include statement '%s' found in section %s" % (LineValue, SectionName))
         SectionModel = Section[SectionName.upper()]
         IncludeFile = CleanString(LineValue[LineValue.upper().find(DataType.TAB_INCLUDE.upper() + ' ') + len(DataType.TAB_INCLUDE + ' ') : ])
         Table.Insert(Model, IncludeFile, '', '', Arch, SectionModel, FileID, StartLine, -1, StartLine, -1, 0)
-    
+
     ## Parse DEFINE statement
     #
     # Get DEFINE macros
@@ -934,7 +934,7 @@ class Dsc(DscObject):
         SectionModel = Section[SectionName.upper()]
         Define = GetSplitValueList(CleanString(LineValue[LineValue.upper().find(DataType.TAB_DEFINE.upper() + ' ') + len(DataType.TAB_DEFINE + ' ') : ]), TAB_EQUAL_SPLIT, 1)
         Table.Insert(Model, Define[0], Define[1], '', Arch, SectionModel, FileID, StartLine, -1, StartLine, -1, 0)
-    
+
     ## Parse Defines section
     #
     # Get one item in defines section
@@ -969,13 +969,13 @@ class Dsc(DscObject):
             # Get New Dsc item ID
             #
             DscID = self.TblDsc.GetCount() + 1
-            
+
             #
             # Pop the conditional statements which is closed
             #
             PreviousIf = IfDefList.pop()
             EdkLogger.debug(EdkLogger.DEBUG_5, 'Previous IfDef: ' + str(PreviousIf))
-            
+
             #
             # !ifdef and !ifndef
             #
@@ -1016,20 +1016,20 @@ class Dsc(DscObject):
         self.Identification.FileFullPath = Filename
         (self.Identification.FileRelativePath, self.Identification.FileName) = os.path.split(Filename)
         self.FileID = self.TblFile.InsertFile(Filename, MODEL_FILE_DSC)
-        
+
         #
         # Init DscTable
         #
         #self.TblDsc.Table = "Dsc%s" % FileID
         #self.TblDsc.Create()
-        
+
         #
         # Init common datas
         #
         IfDefList, SectionItemList, CurrentSection, ArchList, ThirdList, IncludeFiles = \
         [], [], TAB_UNKNOWN, [], [], []
         LineNo = 0
-        
+
         #
         # Parse file content
         #
@@ -1056,7 +1056,7 @@ class Dsc(DscObject):
             Line = CleanString(Line)
             if Line == '':
                 continue
-            
+
             #
             # Find a new section tab
             # First insert previous section items
@@ -1073,7 +1073,7 @@ class Dsc(DscObject):
                 SectionItemList = []
                 ArchList = []
                 ThirdList = []
-                
+
                 CurrentSection = ''
                 LineList = GetSplitValueList(Line[len(TAB_SECTION_START):len(Line) - len(TAB_SECTION_END)], TAB_COMMA_SPLIT)
                 for Item in LineList:
@@ -1085,6 +1085,8 @@ class Dsc(DscObject):
                             EdkLogger.error("Parser", PARSER_ERROR, "Different section names '%s' and '%s' are found in one section definition, this is not allowed." % (CurrentSection, ItemList[0]), File=Filename, Line=LineNo, RaiseError = EdkLogger.IsRaiseError)
                     if CurrentSection.upper() not in self.KeyList:
                         RaiseParserError(Line, CurrentSection, Filename, '', LineNo)
+                        CurrentSection = TAB_UNKNOWN
+                        continue
                     ItemList.append('')
                     ItemList.append('')
                     if len(ItemList) > 5:
@@ -1096,7 +1098,7 @@ class Dsc(DscObject):
                         ThirdList.append(ItemList[2])
 
                 continue
-            
+
             #
             # Not in any defined section
             #
@@ -1110,24 +1112,24 @@ class Dsc(DscObject):
             SectionItemList.append([Line, LineNo])
             # End of parse
         #End of For
-        
+
         #
         # Insert items data of last section
         #
         self.InsertSectionItemsIntoDatabase(self.FileID, Filename, CurrentSection, SectionItemList, ArchList, ThirdList, IfDefList)
-        
+
         #
         # Parse conditional statements
         #
         self.ParseConditionalStatement()
-        
+
         #
         # Replace all DEFINE macros with its actual values
         #
         #ParseDefineMacro2(self.TblDsc, self.RecordSet, GlobalData.gGlobalDefines)
         ParseDefineMacro(self.TblDsc, GlobalData.gGlobalDefines)
-        
-    
+
+
     ## ParseConditionalStatement
     #
     # Search all conditional statement and disable no match records
@@ -1136,11 +1138,11 @@ class Dsc(DscObject):
         #
         # Disabled all !if/!elif/!ifdef statements without DEFINE
         #
-        SqlCommand = """select A.StartLine, A.EndLine from %s as A 
+        SqlCommand = """select A.StartLine, A.EndLine from %s as A
                         where A.Model in (%s, %s, %s)
                         and A.Enabled = 0
                         and A.BelongsToFile = %s
-                        and A.Value1 not in (select B.Value1 from %s as B 
+                        and A.Value1 not in (select B.Value1 from %s as B
                                              where B.Model = %s
                                              and B.Enabled = 0
                                              and A.StartLine > B.StartLine
@@ -1160,11 +1162,11 @@ class Dsc(DscObject):
         #
         # Disabled !ifndef with DEFINE
         #
-        SqlCommand = """select A.StartLine, A.EndLine from %s as A 
+        SqlCommand = """select A.StartLine, A.EndLine from %s as A
                         where A.Model = %s
                         and A.Enabled = 0
                         and A.BelongsToFile = %s
-                        and A.Value1 in (select B.Value1 from %s as B 
+                        and A.Value1 in (select B.Value1 from %s as B
                                          where B.Model = %s
                                          and B.Enabled = 0
                                          and A.StartLine > B.StartLine
@@ -1181,7 +1183,7 @@ class Dsc(DscObject):
             SqlCommand = """Update %s set Enabled = -1 where StartLine >= %s and EndLine <= %s""" %(self.TblDsc.Table, Record[0], Record[1])
             EdkLogger.debug(4, "SqlCommand: %s" %SqlCommand)
             self.Cur.execute(SqlCommand)
-        
+
         #
         # Disabled !if, !elif and !else with un-match value
         #
@@ -1210,21 +1212,21 @@ class Dsc(DscObject):
                 continue
             if Record[0] == MODEL_META_DATA_CONDITIONAL_STATEMENT_ELSE and Record[1] in DisabledList:
                 SqlCommand = """Update %s set Enabled = -1 where StartLine >= %s and EndLine <= %s""" %(self.TblDsc.Table, Record[4], Record[5])
-                self.TblDsc.Exec(SqlCommand)         
-    
+                self.TblDsc.Exec(SqlCommand)
+
     ## Compare
     #
     # Compare two values
     # @param Value1:
     # @param CompareType:
-    # @param Value2:   
+    # @param Value2:
     #
     def Compare(self, Value1, CompareType, Value2):
         Command = """Value1 %s Value2""" %CompareType
         return eval(Command)
-    
+
     ## First time to insert records to database
-    # 
+    #
     # Insert item data of a section to database
     # @param FileID:           The ID of belonging file
     # @param Filename:         The name of belonging file
@@ -1243,15 +1245,15 @@ class Dsc(DscObject):
             Third = ThirdList[Index]
             if Arch == '':
                 Arch = TAB_ARCH_COMMON.upper()
-            
+
             Model = Section[CurrentSection.upper()]
             #Records = self.RecordSet[Model]
 
             for SectionItem in SectionItemList:
                 BelongsToItem, EndLine, EndColumn = -1, -1, -1
                 LineValue, StartLine, EndLine = SectionItem[0], SectionItem[1], SectionItem[1]
-                
-                
+
+
                 EdkLogger.debug(4, "Parsing %s ..." %LineValue)
                 #
                 # Parse '!ifdef'
@@ -1259,14 +1261,14 @@ class Dsc(DscObject):
                 if LineValue.upper().find(TAB_IF_DEF.upper()) > -1:
                     IfDefList.append((LineValue[len(TAB_IF_N_DEF):].strip(), StartLine, MODEL_META_DATA_CONDITIONAL_STATEMENT_IFDEF))
                     continue
-                
+
                 #
                 # Parse '!ifndef'
                 #
                 if LineValue.upper().find(TAB_IF_N_DEF.upper()) > -1:
                     IfDefList.append((LineValue[len(TAB_IF_N_DEF):].strip(), StartLine, MODEL_META_DATA_CONDITIONAL_STATEMENT_IFNDEF))
                     continue
-                
+
                 #
                 # Parse '!endif'
                 #
@@ -1279,7 +1281,7 @@ class Dsc(DscObject):
                 if LineValue.upper().find(TAB_IF.upper()) > -1:
                     IfDefList.append((LineValue[len(TAB_IF):].strip(), StartLine, MODEL_META_DATA_CONDITIONAL_STATEMENT_IF))
                     continue
-                
+
                 #
                 # Parse '!elseif'
                 #
@@ -1287,7 +1289,7 @@ class Dsc(DscObject):
                     self.InsertConditionalStatement(Filename, FileID, Model, IfDefList, StartLine - 1, Arch)
                     IfDefList.append((LineValue[len(TAB_ELSE_IF):].strip(), StartLine, MODEL_META_DATA_CONDITIONAL_STATEMENT_IF))
                     continue
-                
+
                 #
                 # Parse '!else'
                 #
@@ -1296,21 +1298,21 @@ class Dsc(DscObject):
                     self.InsertConditionalStatement(Filename, FileID, Model, IfDefList, StartLine, Arch)
                     IfDefList.append((Key, StartLine, MODEL_META_DATA_CONDITIONAL_STATEMENT_ELSE))
                     continue
-            
+
                 #
                 # Parse !include statement first
                 #
                 if LineValue.upper().find(DataType.TAB_INCLUDE.upper() + ' ') > -1:
                     self.ParseInclude(LineValue, StartLine, self.TblDsc, FileID, Filename, CurrentSection, MODEL_META_DATA_INCLUDE, Arch)
                     continue
-                
+
                 #
                 # And then parse DEFINE statement
                 #
                 if LineValue.upper().find(DataType.TAB_DEFINE.upper() + ' ') > -1:
                     self.ParseDefine(LineValue, StartLine, self.TblDsc, FileID, Filename, CurrentSection, MODEL_META_DATA_DEFINE, Arch)
                     continue
-                
+
                 #
                 # At last parse other sections
                 #
@@ -1322,7 +1324,7 @@ class Dsc(DscObject):
                     ID = self.TblDsc.Insert(Model, LineValue, '', '', Arch, -1, FileID, StartLine, -1, StartLine, -1, 0)
                     #Records.append([LineValue, Arch, StartLine, ID, Third])
                     continue
-            
+
             #
             # Parse COMPONENT section
             #
@@ -1346,7 +1348,7 @@ class Dsc(DscObject):
                     for Item in Component[3]:
                         Model = Section[Item[0].upper()]
                         self.TblDsc.Insert(Model, Item[1], '', '', Arch, DscItmeID, FileID, StartLine, -1, StartLine, -1, 0)
-                
+
     ## Show detailed information of Dsc
     #
     # Print all members and their values of Dsc class
@@ -1419,14 +1421,14 @@ class Dsc(DscObject):
 if __name__ == '__main__':
     EdkLogger.Initialize()
     EdkLogger.SetLevel(EdkLogger.DEBUG_0)
-    
+
     W = os.getenv('WORKSPACE')
     F = os.path.join(W, 'Nt32Pkg/Nt32Pkg.dsc')
-    
+
     Db = Database.Database('Dsc.db')
     Db.InitDatabase()
-    
+
     P = Dsc(os.path.normpath(F), True, True, W, Db)
     P.ShowPlatform()
-    
+
     Db.Close()
