@@ -648,11 +648,19 @@ def GetHelpTextList(HelpTextClassList):
 
 def StringToArray(String):
     if isinstance(String, unicode):
+        if len(unicode) ==0:
+            return "{0x00, 0x00}"
         return "{%s, 0x00, 0x00}" % ", ".join(["0x%02x, 0x00" % ord(C) for C in String])
     elif String.startswith('L"'):
-        return "{%s, 0x00, 0x00}" % ", ".join(["0x%02x, 0x00" % ord(C) for C in String[2:-1]])
+        if String == "L\"\"":
+            return "{0x00, 0x00}"
+        else:
+            return "{%s, 0x00, 0x00}" % ", ".join(["0x%02x, 0x00" % ord(C) for C in String[2:-1]])
     elif String.startswith('"'):
-        return "{%s, 0x00}" % ", ".join(["0x%02x" % ord(C) for C in String[1:-1]])
+        if String == "\"\"":
+            return "{0x00}";
+        else:
+            return "{%s, 0x00}" % ", ".join(["0x%02x" % ord(C) for C in String[1:-1]])
     else:
         return '{%s, 0}' % ', '.join(String.split())
 
