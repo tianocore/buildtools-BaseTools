@@ -217,7 +217,7 @@ def MyOptionParser():
     parser.add_option("-m", "--multithreadnum", action="callback", type="int", dest="NUM", callback=RangeCheckCallback,
         help="Specify the multi-thread number which replace target.txt's MAX_CONCURRENT_THREAD_NUMBER. If the value is less than 2, MULTIPLE_THREAD will be disabled. If the value is larger than 1, MULTIPLE_THREAD will be enabled.")
     parser.add_option("-e", "--enablemultithread", action="store", type="choice", choices=['Enable', 'Disable'], dest="ENABLE_MULTI_THREAD", 
-        help="Specify whether enable multi-thread! If TRUE, multi-thread is enabled; If FALSE, mutli-thread is disable")
+        help="Specify whether enable multi-thread! If Enable, multi-thread is enabled; If Disable, mutli-thread is disable")
     (opt, args)=parser.parse_args()
     return (opt, args)
 
