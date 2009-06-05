@@ -3,9 +3,7 @@ MAKEROOT ?= ..
 
 APPNAME = GenFw
 
-OBJECTS = GenFw.o ConvertElf.o NoElfSupport.o
-
-LINKER = $(CXX)
+OBJECTS = GenFw.o
 
 include $(MAKEROOT)/Makefiles/app.makefile
 

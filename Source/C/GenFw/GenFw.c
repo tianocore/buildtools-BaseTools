@@ -21,19 +21,41 @@ Abstract:
 
 #include "WinNtInclude.h"
 
+//
+// List of OS and CPU which support ELF to PE conversion
+//
+#if defined(unix) || defined(linux)
+#if defined (__i386__) || defined(__x86_64__)
+#define HAVE_ELF
+#endif
+#endif
 
 #ifndef __GNUC__
 #include <windows.h>
 #endif
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
+#ifdef HAVE_ELF
+#include <elf.h>
+
+#ifndef R_386_NONE
+#define R_386_NONE      0
+#endif
+
+#ifndef R_386_32
+#define R_386_32        1
+#endif
+
+#ifndef R_386_PC32
+#define R_386_PC32      2
+#endif
+
+#endif
+
 #include <Common/UefiBaseTypes.h>
-#include <Common/PeCoffLib.h>
-#include <Common/ParseInf.h>
 #include <IndustryStandard/PeImage.h>
 
 //
@@ -95,7 +117,7 @@ typedef struct {
   UINT32  Reserved[3];
 } MICROCODE_IMAGE_HEADER;
 
-CHAR8 *mInImageName;
+STATIC CHAR8 *mInImageName;
 
 STATIC
 EFI_STATUS
@@ -116,17 +138,6 @@ STATUS
 MicrocodeReadData (
   FILE          *InFptr,
   UINT32        *Data
-  );
-
-INTN
-IsElfHeader (
-  UINT8  *FileBuffer
-  );
-
-VOID
-ConvertElf (
-  UINT8  **FileBuffer,
-  UINT32 *FileLength
   );
 
 STATIC
@@ -450,6 +461,590 @@ FCopyFile (
   return STATUS_SUCCESS;
 }
 
+#ifdef HAVE_ELF
+INTN
+IsElfHeader(
+  UINT8  *FileBuffer
+)
+{
+  return (FileBuffer[EI_MAG0] == ELFMAG0
+    && FileBuffer[EI_MAG1] == ELFMAG1
+    && FileBuffer[EI_MAG2] == ELFMAG2
+    && FileBuffer[EI_MAG3] == ELFMAG3);
+}
+
+typedef Elf32_Shdr Elf_Shdr;
+typedef Elf32_Ehdr Elf_Ehdr;
+typedef Elf32_Rel Elf_Rel;
+typedef Elf32_Sym Elf_Sym;
+#define ELFCLASS ELFCLASS32
+#define ELF_R_TYPE(r) ELF32_R_TYPE(r)
+#define ELF_R_SYM(r) ELF32_R_SYM(r)
+
+//
+// Well known ELF structures.
+//
+Elf_Ehdr *Ehdr;
+Elf_Shdr *ShdrBase;
+
+//
+// PE section alignment.
+//
+const UINT32 CoffAlignment = 0x20;
+const UINT32 CoffNbrSections = 4;
+
+//
+// Current offset in coff file.
+//
+UINT32 CoffOffset;
+
+//
+// Result Coff file in memory.
+//
+UINT8 *CoffFile = NULL;
+//
+// ELF sections to offset in Coff file.
+//
+UINT32 *CoffSectionsOffset = NULL;
+
+//
+// Offset in Coff file of headers and sections.
+//
+UINT32 NtHdrOffset;
+UINT32 TableOffset;
+UINT32 TextOffset;
+UINT32 DataOffset;
+UINT32 RelocOffset;
+
+EFI_IMAGE_BASE_RELOCATION *CoffBaseRel;
+UINT16 *CoffEntryRel;
+
+UINT32
+CoffAlign(
+  UINT32 Offset
+  )
+{
+  return (Offset + CoffAlignment - 1) & ~(CoffAlignment - 1);
+}
+
+Elf_Shdr *
+GetShdrByIndex(
+  UINT32 Num
+  )
+{
+  if (Num >= Ehdr->e_shnum)
+    return NULL;
+  return (Elf_Shdr*)((UINT8*)ShdrBase + Num * Ehdr->e_shentsize);
+}
+
+INTN
+CheckElfHeader(
+  VOID
+  )
+{
+  //
+  // Note: Magic has already been tested.
+  //
+  if (Ehdr->e_ident[EI_CLASS] != ELFCLASS)
+    return 0;
+  if (Ehdr->e_ident[EI_DATA] != ELFDATA2LSB)
+    return 0;
+  if ((Ehdr->e_type != ET_EXEC) && (Ehdr->e_type != ET_DYN))
+    return 0;
+  if (Ehdr->e_machine != EM_386)
+    return 0;
+  if (Ehdr->e_version != EV_CURRENT)
+    return 0;
+
+  //
+  // Find the section header table
+  //
+  ShdrBase = (Elf_Shdr *)((UINT8 *)Ehdr + Ehdr->e_shoff);
+
+  CoffSectionsOffset = (UINT32 *)malloc(Ehdr->e_shnum * sizeof (UINT32));
+
+  memset(CoffSectionsOffset, 0, Ehdr->e_shnum * sizeof(UINT32));
+  return 1;
+}
+
+int
+IsTextShdr(
+  Elf_Shdr *Shdr
+  )
+{
+  return (Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == SHF_ALLOC;
+}
+
+int
+IsDataShdr(
+  Elf_Shdr *Shdr
+  )
+{
+  return (Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == (SHF_ALLOC | SHF_WRITE);
+}
+
+VOID
+CreateSectionHeader(
+  const CHAR8 *Name,
+  UINT32      Offset,
+  UINT32      Size,
+  UINT32      Flags
+  )
+{
+  EFI_IMAGE_SECTION_HEADER *Hdr;
+  Hdr = (EFI_IMAGE_SECTION_HEADER*)(CoffFile + TableOffset);
+
+  strcpy(Hdr->Name, Name);
+  Hdr->Misc.VirtualSize = Size;
+  Hdr->VirtualAddress = Offset;
+  Hdr->SizeOfRawData = Size;
+  Hdr->PointerToRawData = Offset;
+  Hdr->PointerToRelocations = 0;
+  Hdr->PointerToLinenumbers = 0;
+  Hdr->NumberOfRelocations = 0;
+  Hdr->NumberOfLinenumbers = 0;
+  Hdr->Characteristics = Flags;
+
+  TableOffset += sizeof (EFI_IMAGE_SECTION_HEADER);
+}
+
+VOID
+ScanSections(
+  VOID
+  )
+{
+  UINT32 i;
+  EFI_IMAGE_DOS_HEADER *DosHdr;
+  EFI_IMAGE_NT_HEADERS *NtHdr;
+  UINT32 CoffEntry = 0;
+
+  CoffOffset = 0;
+
+  //
+  // Coff file start with a DOS header.
+  //
+  CoffOffset = sizeof(EFI_IMAGE_DOS_HEADER) + 0x40;
+  NtHdrOffset = CoffOffset;
+  CoffOffset += sizeof(EFI_IMAGE_NT_HEADERS);
+  TableOffset = CoffOffset;
+  CoffOffset += CoffNbrSections * sizeof(EFI_IMAGE_SECTION_HEADER);
+
+  //
+  // First text sections.
+  //
+  CoffOffset = CoffAlign(CoffOffset);
+  TextOffset = CoffOffset;
+  for (i = 0; i < Ehdr->e_shnum; i++) {
+    Elf_Shdr *shdr = GetShdrByIndex(i);
+    if (IsTextShdr(shdr)) {
+      //
+      // Align the coff offset to meet with the alignment requirement of section
+      // itself.
+      //
+      if ((shdr->sh_addralign != 0) && (shdr->sh_addralign != 1)) {
+        CoffOffset = (CoffOffset + shdr->sh_addralign - 1) & ~(shdr->sh_addralign - 1);
+      }
+
+      /* Relocate entry.  */
+      if ((Ehdr->e_entry >= shdr->sh_addr) &&
+          (Ehdr->e_entry < shdr->sh_addr + shdr->sh_size)) {
+        CoffEntry = CoffOffset + Ehdr->e_entry - shdr->sh_addr;
+      }
+      CoffSectionsOffset[i] = CoffOffset;
+      CoffOffset += shdr->sh_size;
+    }
+  }
+  CoffOffset = CoffAlign(CoffOffset);
+
+  //
+  //  Then data sections.
+  //
+  DataOffset = CoffOffset;
+  for (i = 0; i < Ehdr->e_shnum; i++) {
+    Elf_Shdr *shdr = GetShdrByIndex(i);
+    if (IsDataShdr(shdr)) {
+      //
+      // Align the coff offset to meet with the alignment requirement of section
+      // itself.
+      //
+      if ((shdr->sh_addralign != 0) && (shdr->sh_addralign != 1)) {
+        CoffOffset = (CoffOffset + shdr->sh_addralign - 1) & ~(shdr->sh_addralign - 1);
+      }
+
+      CoffSectionsOffset[i] = CoffOffset;
+      CoffOffset += shdr->sh_size;
+    }
+  }
+  CoffOffset = CoffAlign(CoffOffset);
+
+  RelocOffset = CoffOffset;
+
+  //
+  // Allocate base Coff file.  Will be expanded later for relocations.
+  //
+  CoffFile = (UINT8 *)malloc(CoffOffset);
+  memset(CoffFile, 0, CoffOffset);
+
+  //
+  // Fill headers.
+  //
+  DosHdr = (EFI_IMAGE_DOS_HEADER *)CoffFile;
+  DosHdr->e_magic = EFI_IMAGE_DOS_SIGNATURE;
+  DosHdr->e_lfanew = NtHdrOffset;
+
+  NtHdr = (EFI_IMAGE_NT_HEADERS*)(CoffFile + NtHdrOffset);
+
+  NtHdr->Signature = EFI_IMAGE_NT_SIGNATURE;
+
+  NtHdr->FileHeader.Machine = EFI_IMAGE_MACHINE_IA32;
+  NtHdr->FileHeader.NumberOfSections = CoffNbrSections;
+  NtHdr->FileHeader.TimeDateStamp = time(NULL);
+  NtHdr->FileHeader.PointerToSymbolTable = 0;
+  NtHdr->FileHeader.NumberOfSymbols = 0;
+  NtHdr->FileHeader.SizeOfOptionalHeader = sizeof(NtHdr->OptionalHeader);
+  NtHdr->FileHeader.Characteristics = EFI_IMAGE_FILE_EXECUTABLE_IMAGE
+    | EFI_IMAGE_FILE_LINE_NUMS_STRIPPED
+    | EFI_IMAGE_FILE_LOCAL_SYMS_STRIPPED
+    | EFI_IMAGE_FILE_32BIT_MACHINE;
+
+  NtHdr->OptionalHeader.SizeOfCode = DataOffset - TextOffset;
+  NtHdr->OptionalHeader.SizeOfInitializedData = RelocOffset - DataOffset;
+  NtHdr->OptionalHeader.SizeOfUninitializedData = 0;
+  NtHdr->OptionalHeader.AddressOfEntryPoint = CoffEntry;
+
+  NtHdr->OptionalHeader.BaseOfCode = TextOffset;
+
+#if defined (MDE_CPU_IA32)
+  NtHdr->OptionalHeader.BaseOfData = DataOffset;
+  NtHdr->OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC;
+  NtHdr->FileHeader.Machine = EFI_IMAGE_MACHINE_IA32;
+#elif defined (MDE_CPU_X64)
+  NtHdr->OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC;
+  NtHdr->FileHeader.Machine = EFI_IMAGE_MACHINE_X64;
+#elif defined (MDE_CPU_IPF)
+  NtHdr->OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC;
+  NtHdr->FileHeader.Machine = EFI_IMAGE_MACHINE_IPF;
+#endif
+  NtHdr->OptionalHeader.ImageBase = 0;
+  NtHdr->OptionalHeader.SectionAlignment = CoffAlignment;
+  NtHdr->OptionalHeader.FileAlignment = CoffAlignment;
+  NtHdr->OptionalHeader.SizeOfImage = 0;
+
+  NtHdr->OptionalHeader.SizeOfHeaders = TextOffset;
+  NtHdr->OptionalHeader.NumberOfRvaAndSizes = EFI_IMAGE_NUMBER_OF_DIRECTORY_ENTRIES;
+
+  //
+  // Section headers.
+  //
+  CreateSectionHeader (".text", TextOffset, DataOffset - TextOffset,
+           EFI_IMAGE_SCN_CNT_CODE
+           | EFI_IMAGE_SCN_MEM_EXECUTE
+           | EFI_IMAGE_SCN_MEM_READ);
+  CreateSectionHeader (".data", DataOffset, RelocOffset - DataOffset,
+           EFI_IMAGE_SCN_CNT_INITIALIZED_DATA
+           | EFI_IMAGE_SCN_MEM_WRITE
+           | EFI_IMAGE_SCN_MEM_READ);
+}
+
+VOID
+WriteSections(
+  int   (*Filter)(Elf_Shdr *)
+  )
+{
+  UINT32 Idx;
+
+  //
+  // First: copy sections.
+  //
+  for (Idx = 0; Idx < Ehdr->e_shnum; Idx++) {
+    Elf_Shdr *Shdr = GetShdrByIndex(Idx);
+    if ((*Filter)(Shdr)) {
+      switch (Shdr->sh_type) {
+      case SHT_PROGBITS:
+  /* Copy.  */
+  memcpy(CoffFile + CoffSectionsOffset[Idx],
+         (UINT8*)Ehdr + Shdr->sh_offset,
+         Shdr->sh_size);
+  break;
+      case SHT_NOBITS:
+  memset(CoffFile + CoffSectionsOffset[Idx], 0, Shdr->sh_size);
+  break;
+      default:
+  //
+  //  Ignore for unkown section type.
+  //
+  VerboseMsg ("%s unknown section type %x. We directly copy this section into Coff file", mInImageName, (UINTN)Shdr->sh_type);
+  break;
+     }
+    }
+  }
+
+  //
+  // Second: apply relocations.
+  //
+  for (Idx = 0; Idx < Ehdr->e_shnum; Idx++) {
+    Elf_Shdr *RelShdr = GetShdrByIndex(Idx);
+    if (RelShdr->sh_type != SHT_REL)
+      continue;
+    Elf_Shdr *SecShdr = GetShdrByIndex(RelShdr->sh_info);
+    UINT32 SecOffset = CoffSectionsOffset[RelShdr->sh_info];
+    if (RelShdr->sh_type == SHT_REL && (*Filter)(SecShdr)) {
+      UINT32 RelIdx;
+      Elf_Shdr *SymtabShdr = GetShdrByIndex(RelShdr->sh_link);
+      UINT8 *Symtab = (UINT8*)Ehdr + SymtabShdr->sh_offset;
+
+      for (RelIdx = 0; RelIdx < RelShdr->sh_size; RelIdx += RelShdr->sh_entsize) {
+  Elf_Rel *Rel = (Elf_Rel *)((UINT8*)Ehdr + RelShdr->sh_offset + RelIdx);
+  Elf_Sym *Sym = (Elf_Sym *)
+    (Symtab + ELF_R_SYM(Rel->r_info) * SymtabShdr->sh_entsize);
+  Elf_Shdr *SymShdr;
+  UINT8 *Targ;
+
+  if (Sym->st_shndx == SHN_UNDEF
+      || Sym->st_shndx == SHN_ABS
+      || Sym->st_shndx > Ehdr->e_shnum) {
+    Error (NULL, 0, 3000, "Invalid", "%s bad symbol definition.", mInImageName);
+  }
+  SymShdr = GetShdrByIndex(Sym->st_shndx);
+
+  //
+  // Note: r_offset in a memory address.
+  //  Convert it to a pointer in the coff file.
+  //
+  Targ = CoffFile + SecOffset + (Rel->r_offset - SecShdr->sh_addr);
+
+  switch (ELF_R_TYPE(Rel->r_info)) {
+  case R_386_NONE:
+    break;
+  case R_386_32:
+    //
+    // Absolute relocation.
+    //
+    *(UINT32 *)Targ = *(UINT32 *)Targ - SymShdr->sh_addr
+      + CoffSectionsOffset[Sym->st_shndx];
+    break;
+  case R_386_PC32:
+    //
+    // Relative relocation: Symbol - Ip + Addend
+    //
+    *(UINT32 *)Targ = *(UINT32 *)Targ
+      + (CoffSectionsOffset[Sym->st_shndx] - SymShdr->sh_addr)
+      - (SecOffset - SecShdr->sh_addr);
+    break;
+  default:
+    Error (NULL, 0, 3000, "Invalid", "%s unhandled section type %x.", mInImageName, ELF_R_TYPE(Rel->r_info));
+  }
+      }
+    }
+  }
+}
+
+VOID
+CoffAddFixupEntry(
+  UINT16 Val
+  )
+{
+  *CoffEntryRel = Val;
+  CoffEntryRel++;
+  CoffBaseRel->SizeOfBlock += 2;
+  CoffOffset += 2;
+}
+
+VOID
+CoffAddFixup(
+  UINT32 Offset,
+  UINT8  Type
+  )
+{
+  if (CoffBaseRel == NULL
+      || CoffBaseRel->VirtualAddress != (Offset & ~0xfff)) {
+    if (CoffBaseRel != NULL) {
+      //
+      // Add a null entry (is it required ?)
+      //
+      CoffAddFixupEntry (0);
+      //
+      // Pad for alignment.
+      //
+      if (CoffOffset % 4 != 0)
+  CoffAddFixupEntry (0);
+    }
+
+    CoffFile = realloc
+      (CoffFile,
+       CoffOffset + sizeof(EFI_IMAGE_BASE_RELOCATION) + 2*0x1000);
+    memset(CoffFile + CoffOffset, 0,
+     sizeof(EFI_IMAGE_BASE_RELOCATION) + 2*0x1000);
+
+    CoffBaseRel = (EFI_IMAGE_BASE_RELOCATION*)(CoffFile + CoffOffset);
+    CoffBaseRel->VirtualAddress = Offset & ~0xfff;
+    CoffBaseRel->SizeOfBlock = sizeof(EFI_IMAGE_BASE_RELOCATION);
+
+    CoffEntryRel = (UINT16 *)(CoffBaseRel + 1);
+    CoffOffset += sizeof(EFI_IMAGE_BASE_RELOCATION);
+  }
+
+  //
+  // Fill the entry.
+  //
+  CoffAddFixupEntry((Type << 12) | (Offset & 0xfff));
+}
+
+VOID
+WriteRelocations(
+  VOID
+  )
+{
+  UINT32 Idx;
+  EFI_IMAGE_NT_HEADERS *NtHdr;
+  EFI_IMAGE_DATA_DIRECTORY *Dir;
+
+  for (Idx = 0; Idx < Ehdr->e_shnum; Idx++) {
+    Elf_Shdr *RelShdr = GetShdrByIndex(Idx);
+    if (RelShdr->sh_type == SHT_REL) {
+      Elf_Shdr *SecShdr = GetShdrByIndex(RelShdr->sh_info);
+      if (IsTextShdr(SecShdr) || IsDataShdr(SecShdr)) {
+  UINT32 RelIdx;
+  for (RelIdx = 0; RelIdx < RelShdr->sh_size; RelIdx += RelShdr->sh_entsize) {
+    Elf_Rel *Rel = (Elf_Rel *)
+      ((UINT8*)Ehdr + RelShdr->sh_offset + RelIdx);
+    switch (ELF_R_TYPE(Rel->r_info)) {
+    case R_386_NONE:
+    case R_386_PC32:
+      break;
+    case R_386_32:
+      CoffAddFixup(CoffSectionsOffset[RelShdr->sh_info]
+       + (Rel->r_offset - SecShdr->sh_addr),
+       EFI_IMAGE_REL_BASED_HIGHLOW);
+      break;
+    default:
+      Error (NULL, 0, 3000, "Invalid", "%s unhandled section type %x.", mInImageName, ELF_R_TYPE(Rel->r_info));
+    }
+  }
+      }
+    }
+  }
+
+  //
+  // Pad by adding empty entries.
+  //
+  while (CoffOffset & (CoffAlignment - 1)) {
+    CoffAddFixupEntry(0);
+  }
+
+  CreateSectionHeader (".reloc", RelocOffset, CoffOffset - RelocOffset,
+           EFI_IMAGE_SCN_CNT_INITIALIZED_DATA
+           | EFI_IMAGE_SCN_MEM_DISCARDABLE
+           | EFI_IMAGE_SCN_MEM_READ);
+
+  NtHdr = (EFI_IMAGE_NT_HEADERS *)(CoffFile + NtHdrOffset);
+  Dir = &NtHdr->OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC];
+  Dir->VirtualAddress = RelocOffset;
+  Dir->Size = CoffOffset - RelocOffset;
+}
+
+VOID
+WriteDebug(
+  VOID
+  )
+{
+  UINT32 Len = strlen(mInImageName) + 1;
+  UINT32 DebugOffset = CoffOffset;
+  EFI_IMAGE_NT_HEADERS *NtHdr;
+  EFI_IMAGE_DATA_DIRECTORY *DataDir;
+  EFI_IMAGE_DEBUG_DIRECTORY_ENTRY *Dir;
+  EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY *Nb10;
+
+  CoffOffset += sizeof(EFI_IMAGE_DEBUG_DIRECTORY_ENTRY)
+    + sizeof(EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY)
+    + Len;
+  CoffOffset = CoffAlign(CoffOffset);
+
+  CoffFile = realloc
+    (CoffFile, CoffOffset);
+  memset(CoffFile + DebugOffset, 0, CoffOffset - DebugOffset);
+
+  Dir = (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY*)(CoffFile + DebugOffset);
+  Dir->Type = EFI_IMAGE_DEBUG_TYPE_CODEVIEW;
+  Dir->SizeOfData = sizeof(EFI_IMAGE_DEBUG_DIRECTORY_ENTRY) + Len;
+  Dir->RVA = DebugOffset + sizeof(EFI_IMAGE_DEBUG_DIRECTORY_ENTRY);
+  Dir->FileOffset = DebugOffset + sizeof(EFI_IMAGE_DEBUG_DIRECTORY_ENTRY);
+
+  Nb10 = (EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY*)(Dir + 1);
+  Nb10->Signature = CODEVIEW_SIGNATURE_NB10;
+  strcpy ((UINT8 *)(Nb10 + 1), mInImageName);
+
+  CreateSectionHeader (".debug", DebugOffset, CoffOffset - DebugOffset,
+           EFI_IMAGE_SCN_CNT_INITIALIZED_DATA
+           | EFI_IMAGE_SCN_MEM_DISCARDABLE
+           | EFI_IMAGE_SCN_MEM_READ);
+
+  NtHdr = (EFI_IMAGE_NT_HEADERS *)(CoffFile + NtHdrOffset);
+  DataDir = &NtHdr->OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG];
+  DataDir->VirtualAddress = DebugOffset;
+  DataDir->Size = CoffOffset - DebugOffset;
+}
+
+VOID
+ConvertElf (
+  UINT8  **FileBuffer,
+  UINT32 *FileLength
+  )
+{
+  EFI_IMAGE_NT_HEADERS *NtHdr;
+
+  //
+  // Check header, read section table.
+  //
+  Ehdr = (Elf32_Ehdr*)*FileBuffer;
+  if (!CheckElfHeader())
+    return;
+
+  VerboseMsg ("Check Efl Image Header");
+  //
+  // Compute sections new address.
+  //
+  ScanSections();
+
+  VerboseMsg ("Compute sections new address.");
+
+  //
+  // Write and relocate sections.
+  //
+  WriteSections(IsTextShdr);
+  WriteSections(IsDataShdr);
+  VerboseMsg ("Write and relocate sections.");
+
+  //
+  // Translate and write relocations.
+  //
+  WriteRelocations();
+  VerboseMsg ("Translate and write relocations.");
+
+  //
+  // Write debug info.
+  //
+  WriteDebug();
+  VerboseMsg ("Write debug info.");
+
+  NtHdr = (EFI_IMAGE_NT_HEADERS *)(CoffFile + NtHdrOffset);
+  NtHdr->OptionalHeader.SizeOfImage = CoffOffset;
+
+  //
+  // Replace.
+  //
+  free(*FileBuffer);
+  *FileBuffer = CoffFile;
+  *FileLength = CoffOffset;
+
+  //
+  // Free memory space
+  //
+  if (CoffSectionsOffset != NULL) {
+    free (CoffSectionsOffset);
+  }
+}
+#endif // HAVE_ELF
 
 void
 ZeroXdataSection (
@@ -1311,10 +1906,12 @@ Returns:
   //
   // Convert EFL image to PeImage
   //
+#ifdef HAVE_ELF
   if (IsElfHeader(FileBuffer)) {
     VerboseMsg ("Convert the input ELF Image to Pe Image");
     ConvertElf(&FileBuffer, &FileLength);
   }
+#endif
 
   //
   // Remove reloc section from PE or TE image

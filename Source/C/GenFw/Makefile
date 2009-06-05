@@ -4,7 +4,7 @@ APPNAME = GenFw
 
 LIBS = $(LIB_PATH)\Common.lib
 
-OBJECTS = GenFw.obj NoElfSupport.obj
+OBJECTS = GenFw.obj
 
 #CFLAGS = $(CFLAGS) /nodefaultlib:libc.lib
 
