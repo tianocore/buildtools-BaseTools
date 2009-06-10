@@ -202,6 +202,7 @@ class Check(object):
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
+                        EdkLogger.quiet("[ENUM]" + FullName)
                         c.CheckDeclEnumTypedef(FullName)
 
     # Check whether Structure Type has a 'typedef' and the name is capital
@@ -217,6 +218,7 @@ class Check(object):
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
+                        EdkLogger.quiet("[STRUCT]" + FullName)
                         c.CheckDeclStructTypedef(FullName)
 
     # Check whether having same Structure
@@ -254,6 +256,7 @@ class Check(object):
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
+                        EdkLogger.quiet("[UNION]" + FullName)
                         c.CheckDeclUnionTypedef(FullName)
 
     # Predicate Expression Checking

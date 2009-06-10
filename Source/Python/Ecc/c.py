@@ -1616,20 +1616,8 @@ def CheckDeclTypedefFormat(FullFileName, ModelId):
                 continue
             PrintErrorMsg(ERROR_NAMING_CONVENTION_CHECK_VARIABLE_NAME, 'Member variable [%s] NOT follow naming convention.' % (Name+'.'+ErrMsg), FileTable, Td[5])
     
-    IncludeFileList = GetAllIncludeFiles(FullFileName)
-    for F in IncludeFileList:
-        FileID = GetTableID(F, ErrorMsgList)
-        if FileID < 0:
-            continue
-    
-        IncludeFileTable = 'Identifier' + str(FileID)
-        SqlStatement = """ select Modifier, Name, Value, StartLine, EndLine, ID
-                       from %s
-                       where Model = %d
-                   """ % (IncludeFileTable, DataClass.MODEL_IDENTIFIER_TYPEDEF)
-        ResultSet = Db.TblFile.Exec(SqlStatement)
-        TdList.extend(ResultSet)
-            
+    # First check in current file to see whether struct/union/enum is typedef-ed.
+    UntypedefedList = []
     for Result in ResultList:
         # Check member variable format.
         Name = Result[0].strip()
@@ -1653,6 +1641,46 @@ def CheckDeclTypedefFormat(FullFileName, ModelId):
         # Check whether it is typedefed.
         Found = False
         for Td in TdList:
+            # skip function pointer
+            if len(Td[0]) > 0:
+                continue
+            if Result[1] >= Td[3] and Td[4] >= Result[2]:
+                Found = True
+                if not Td[1].isupper():
+                    PrintErrorMsg(ErrorType, 'Typedef should be UPPER case', FileTable, Td[5])
+            if Result[0] in Td[2].split():
+                Found = True
+                if not Td[1].isupper():
+                    PrintErrorMsg(ErrorType, 'Typedef should be UPPER case', FileTable, Td[5])
+            if Found:
+                break
+        
+        if not Found:
+            UntypedefedList.append(Result)
+            continue
+    
+    if len(UntypedefedList) == 0:
+        return
+    
+    IncludeFileList = GetAllIncludeFiles(FullFileName)
+    for F in IncludeFileList:
+        FileID = GetTableID(F, ErrorMsgList)
+        if FileID < 0:
+            continue
+    
+        IncludeFileTable = 'Identifier' + str(FileID)
+        SqlStatement = """ select Modifier, Name, Value, StartLine, EndLine, ID
+                       from %s
+                       where Model = %d
+                   """ % (IncludeFileTable, DataClass.MODEL_IDENTIFIER_TYPEDEF)
+        ResultSet = Db.TblFile.Exec(SqlStatement)
+        TdList.extend(ResultSet)
+            
+    for Result in UntypedefedList:
+        
+        # Check whether it is typedefed.
+        Found = False
+        for Td in TdList:
             
             if len(Td[0]) > 0:
                 continue
@@ -1664,7 +1692,9 @@ def CheckDeclTypedefFormat(FullFileName, ModelId):
                 Found = True
                 if not Td[1].isupper():
                     PrintErrorMsg(ErrorType, 'Typedef should be UPPER case', FileTable, Td[5])
-        
+            if Found:
+                break
+                    
         if not Found:
             PrintErrorMsg(ErrorType, 'No Typedef for %s' % Result[0], FileTable, Result[3])
             continue
