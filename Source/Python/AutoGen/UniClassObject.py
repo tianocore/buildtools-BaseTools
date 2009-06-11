@@ -398,8 +398,16 @@ class UniFileClassObject(object):
     #
     def LoadUniFiles(self, FileList = []):
         if len(FileList) > 0:
-            for File in FileList:
-                self.LoadUniFile(File)
+			if len(FileList) > 1:
+				NewList = [];
+				for File in FileList:
+					NewList.append (File)
+				NewList.sort()
+				for File in NewList:
+					self.LoadUniFile(File)
+			else:
+				for File in FileList:
+					self.LoadUniFile(File)
 
     #
     # Add a string to list

@@ -1255,8 +1255,7 @@ ${BEGIN}\tGenFds -f ${fdf_file} -o $(BUILD_DIR) -t $(TOOLCHAIN) -b $(TARGET) -p 
 # run command for emulator platform only
 #
 run:
-\tcd $(BUILD_DIR)${separator}IA32
-\t.${separator}SecMain
+\tcd $(BUILD_DIR)${separator}IA32 && ".${separator}SecMain"
 \tcd $(BUILD_DIR)
 
 #
