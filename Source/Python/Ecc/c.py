@@ -1809,6 +1809,129 @@ def CheckDeclNoUseCType(FullFileName):
                 if PatternInModifier(Param.Modifier, Type):
                     PrintErrorMsg(ERROR_DECLARATION_DATA_TYPE_CHECK_NO_USE_C_TYPE, 'Parameter %s' % Param.Name, FileTable, Result[2])
             
+def CheckPredicateExpression (FullFileName):
+    ErrorMsgList = []
+    
+    FileID = GetTableID(FullFileName, ErrorMsgList)
+    if FileID < 0:
+        return ErrorMsgList
+    
+    # cache the found function return type to accelerate later checking in this file.
+    FuncReturnTypeDict = {}
+    
+    Db = GetDB()
+    FileTable = 'Identifier' + str(FileID)
+    SqlStatement = """ select Value, StartLine, ID
+                       from %s
+                       where Model = %d
+                   """ % (FileTable, DataClass.MODEL_IDENTIFIER_PREDICATE_EXPRESSION)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    if len(ResultSet) == 0:
+        return
+    PSL = []
+    for Result in ResultSet:
+        PSL.append([Result[0], Result[1], Result[2]])
+    
+    SqlStatement = """ select BodyStartLine, EndLine, Header, Modifier, ID
+                       from Function
+                       where BelongsToFile = %d
+                   """ % (FileID)
+    ResultSet = Db.TblFile.Exec(SqlStatement)
+    FL = []
+    for Result in ResultSet:
+        FL.append([Result[0], Result[1], Result[2], Result[3], Result[4]])
+    
+    p = GetFuncDeclPattern()
+    for Str in PSL:
+        FuncRecord = GetFuncContainsPE(Str[1], FL)
+        if FuncRecord == None:
+            continue
+        
+        for Exp in GetPredicateListFromPredicateExpStr(Str[0]):
+            PredInfo = SplitPredicateStr(Exp)
+            if EccGlobalData.gConfig.PredicateExpressionCheckBooleanValue == '1' and PredInfo[1] in ('==', '!=') and PredInfo[0][1] in ('TRUE', 'FALSE'):
+                PredVarStr = PredInfo[0][0].strip()
+                IsFuncCall = False
+                SearchInCache = False
+                # PredVarStr may contain '.' or '->'
+                TmpStr = PredVarStr.replace('.', '').replace('->', '')
+                if p.match(TmpStr):
+                    PredVarStr = PredVarStr[0:PredVarStr.find('(')]
+                    SearchInCache = True
+                    # Only direct function call using IsFuncCall branch. Multi-level ref. function call is considered a variable.
+                    if TmpStr.startswith(PredVarStr):    
+                        IsFuncCall = True
+                    
+                if PredVarStr.strip() in IgnoredKeywordList:
+                    continue
+                StarList = []
+                PredVarList = GetCNameList(PredVarStr, StarList)
+                # No variable found, maybe value first? like (0 == VarName)
+                if len(PredVarList) == 0:
+                    continue
+          
+                if SearchInCache:
+                    Type = FuncReturnTypeDict.get(PredVarStr)
+                    if Type != None:
+                        if Type.find('BOOLEAN') != -1:
+                            PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_BOOLEAN_VALUE, 'Predicate Expression: %s' % Exp, FileTable, Str[2])
+                        continue
+                    
+                    if PredVarStr in FuncReturnTypeDict:
+                        continue
+                
+                Type = GetVarInfo(PredVarList, FuncRecord, FullFileName, IsFuncCall, 'BOOLEAN', StarList)
+                if SearchInCache:
+                    FuncReturnTypeDict[PredVarStr] = Type
+                if Type == None:
+                    continue
+                if Type.find('BOOLEAN') != -1:
+                    PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_BOOLEAN_VALUE, 'Predicate Expression: %s' % Exp, FileTable, Str[2])
+            
+            if (EccGlobalData.gConfig.PredicateExpressionCheckNonBooleanOperator == '1' or EccGlobalData.gConfig.PredicateExpressionCheckComparisonNullType == '1') \
+               and PredInfo[1] == None:
+                PredVarStr = PredInfo[0][0].strip()
+                IsFuncCall = False
+                SearchInCache = False
+                # PredVarStr may contain '.' or '->'
+                TmpStr = PredVarStr.replace('.', '').replace('->', '')
+                if p.match(TmpStr):
+                    PredVarStr = PredVarStr[0:PredVarStr.find('(')]
+                    SearchInCache = True
+                    # Only direct function call using IsFuncCall branch. Multi-level ref. function call is considered a variable.
+                    if TmpStr.startswith(PredVarStr):    
+                        IsFuncCall = True
+                    
+                if PredVarStr.strip() in IgnoredKeywordList:
+                    continue
+                StarList = []
+                PredVarList = GetCNameList(PredVarStr, StarList)
+                # No variable found, maybe value first? like (0 == VarName)
+                if len(PredVarList) == 0:
+                    continue
+                   
+                if SearchInCache:
+                    Type = FuncReturnTypeDict.get(PredVarStr)
+                    if Type != None:
+                        if EccGlobalData.gConfig.PredicateExpressionCheckNonBooleanOperator == '1' and Type.find('BOOLEAN') == -1:
+                            PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_NO_BOOLEAN_OPERATOR, 'Predicate Expression: %s' % Exp, FileTable, Str[2])
+                        if EccGlobalData.gConfig.PredicateExpressionCheckComparisonNullType == '1' and Type.find('*') != -1:
+                            PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_COMPARISON_NULL_TYPE, 'Predicate Expression: %s' % Exp, FileTable, Str[2])            
+                        continue
+                    
+                    if PredVarStr in FuncReturnTypeDict:
+                        continue
+                    
+                Type = GetVarInfo(PredVarList, FuncRecord, FullFileName, IsFuncCall, 'BOOLEAN', StarList)
+                if SearchInCache:
+                    FuncReturnTypeDict[PredVarStr] = Type
+                if Type == None:
+                    continue
+                if EccGlobalData.gConfig.PredicateExpressionCheckNonBooleanOperator == '1' and Type.find('BOOLEAN') == -1:
+                    PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_NO_BOOLEAN_OPERATOR, 'Predicate Expression: %s' % Exp, FileTable, Str[2])
+                if EccGlobalData.gConfig.PredicateExpressionCheckComparisonNullType == '1' and Type.find('*') != -1:
+                    PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_COMPARISON_NULL_TYPE, 'Predicate Expression: %s' % Exp, FileTable, Str[2])
+
 
 def CheckPointerNullComparison(FullFileName):
     ErrorMsgList = []
