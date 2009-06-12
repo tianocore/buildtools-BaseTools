@@ -10,7 +10,7 @@ MODULES=encodings.cp437,encodings.gbk,encodings.utf_16,encodings.utf_8,encodings
 BIN_DIR=$(EDK_TOOLS_PATH)\Bin\Win32
 
 
-APPLICATIONS=$(BIN_DIR)\build.exe $(BIN_DIR)\GenFds.exe $(BIN_DIR)\Trim.exe $(BIN_DIR)\MigrationMsa2Inf.exe $(BIN_DIR)\Fpd2Dsc.exe $(BIN_DIR)\TargetTool.exe
+APPLICATIONS=$(BIN_DIR)\build.exe $(BIN_DIR)\GenFds.exe $(BIN_DIR)\Trim.exe $(BIN_DIR)\MigrationMsa2Inf.exe $(BIN_DIR)\Fpd2Dsc.exe $(BIN_DIR)\TargetTool.exe $(BIN_DIR)\spd2dec.exe $(BIN_DIR)\GenDepex.exe
 
 all: SetPythonPath $(APPLICATIONS)
 
@@ -31,6 +31,12 @@ $(BIN_DIR)\MigrationMsa2Inf.exe: $(BASE_TOOLS_PATH)\Source\Python\MigrationMsa2I
 
 $(BIN_DIR)\Fpd2Dsc.exe: $(BASE_TOOLS_PATH)\Source\Python\Fpd2Dsc\Fpd2Dsc.py
   @pushd . & @cd Fpd2Dsc & @$(FREEZE) --include-modules=$(MODULES) --install-dir=$(BIN_DIR) Fpd2Dsc.py & @popd
+
+$(BIN_DIR)\spd2dec.exe: $(BASE_TOOLS_PATH)\Source\Python\spd2dec\Spd2Dec.py
+  @pushd . & @cd Spd2Dec & @$(FREEZE) --include-modules=$(MODULES) --install-dir=$(BIN_DIR) Spd2Dec.py & @popd
+
+$(BIN_DIR)\GenDepex.exe: $(BASE_TOOLS_PATH)\Source\Python\AutoGen\GenDepex.py
+  @pushd . & @cd AutoGen & @$(FREEZE) --include-modules=$(MODULES) --install-dir=$(BIN_DIR) GenDepex.py & @popd
 
 $(BIN_DIR)\TargetTool.exe: $(BASE_TOOLS_PATH)\Source\Python\TargetTool\TargetTool.py
   @pushd . & @cd TargetTool & @$(FREEZE) --include-modules=$(MODULES) --install-dir=$(BIN_DIR) TargetTool.py & @popd
