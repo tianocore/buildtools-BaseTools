@@ -21,7 +21,10 @@ import unittest
 
 
 def TheTestSuite():
-    return unittest.TestSuite()
+    suites = []
+    import CheckPythonSyntax
+    suites.append(CheckPythonSyntax.TheTestSuite())
+    return unittest.TestSuite(suites)
 
 if __name__ == '__main__':
     allTests = TheTestSuite()

@@ -27,8 +27,8 @@ import unittest
 
 TestsDir = os.path.realpath(os.path.split(sys.argv[0])[0])
 BaseToolsDir = os.path.realpath(os.path.join(TestsDir, '..'))
-CSource = os.path.join(BaseToolsDir, 'Source', 'C')
-PythonSource = os.path.join(BaseToolsDir, 'Source', 'Python')
+CSourceDir = os.path.join(BaseToolsDir, 'Source', 'C')
+PythonSourceDir = os.path.join(BaseToolsDir, 'Source', 'Python')
 TestTempDir = os.path.join(TestsDir, 'TestTempDir')
 
 def MakeTheTestSuite(localItems):
