@@ -261,27 +261,9 @@ class Check(object):
 
     # Predicate Expression Checking
     def PredicateExpressionCheck(self):
-        if EccGlobalData.gConfig.PredicateExpressionCheckBooleanValue == '1' or EccGlobalData.gConfig.PredicateExpressionCheckNonBooleanOperator == '1' \
-           or EccGlobalData.gConfig.PredicateExpressionCheckComparisonNullType == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
-            if EccGlobalData.gConfig.PredicateExpressionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
-                EccGlobalData.gConfig.PredicateExpressionCheckBooleanValue = '1'
-                EccGlobalData.gConfig.PredicateExpressionCheckNonBooleanOperator = '1'
-                EccGlobalData.gConfig.PredicateExpressionCheckComparisonNullType = '1'
-            EdkLogger.quiet("Checking predicate expressions ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
-
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.c'):
-                        FullName = os.path.join(Dirpath, F)
-                        EdkLogger.quiet("[PredicateExpression]" + FullName)
-                        c.CheckPredicateExpression(FullName)
-#        self.PredicateExpressionCheckBooleanValue()
-#        self.PredicateExpressionCheckNonBooleanOperator()
-#        self.PredicateExpressionCheckComparisonNullType()
+        self.PredicateExpressionCheckBooleanValue()
+        self.PredicateExpressionCheckNonBooleanOperator()
+        self.PredicateExpressionCheckComparisonNullType()
 
     # Check whether Boolean values, variable type BOOLEAN not use explicit comparisons to TRUE or FALSE
     def PredicateExpressionCheckBooleanValue(self):
