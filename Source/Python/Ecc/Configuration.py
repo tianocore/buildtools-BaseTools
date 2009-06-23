@@ -229,7 +229,10 @@ class Configuration(object):
         # GotoStatementCheckAll = 0
         #
         self.SpellingCheckAll = 0
-        
+
+        # The directory listed here will not be parsed, split with ','
+        self.SkipDirList = []
+
         self.ParseConfig()
         
     def ParseConfig(self):
@@ -251,6 +254,8 @@ class Configuration(object):
                     List[1] = GetSplitValueList(List[1], TAB_COMMA_SPLIT)
                 if List[0] == 'MetaDataFileCheckPathOfGenerateFileList' and List[1] == "":
                     continue
+                if List[0] == 'SkipDirList':
+                    List[1] = GetSplitValueList(List[1], TAB_COMMA_SPLIT)
                 self.__dict__[List[0]] = List[1]
     
     def ShowMe(self):

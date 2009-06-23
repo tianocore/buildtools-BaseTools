@@ -52,7 +52,7 @@ class Check(object):
         if EccGlobalData.gConfig.CFunctionLayoutCheckReturnType == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout return type ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -67,7 +67,7 @@ class Check(object):
         if EccGlobalData.gConfig.CFunctionLayoutCheckOptionalFunctionalModifier == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout modifier ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -83,7 +83,7 @@ class Check(object):
         if EccGlobalData.gConfig.CFunctionLayoutCheckFunctionName == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout function name ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -97,7 +97,7 @@ class Check(object):
         if EccGlobalData.gConfig.CFunctionLayoutCheckFunctionPrototype == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout function prototype ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -113,7 +113,7 @@ class Check(object):
         if EccGlobalData.gConfig.CFunctionLayoutCheckFunctionBody == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout function body ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -130,7 +130,7 @@ class Check(object):
         if EccGlobalData.gConfig.CFunctionLayoutCheckNoInitOfVariable == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout local variables ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -159,7 +159,7 @@ class Check(object):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckNoUseCType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration No use C type ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -174,7 +174,7 @@ class Check(object):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckInOutModifier == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration argument modifier ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -194,7 +194,7 @@ class Check(object):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckEnumeratedType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration enum typedef ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -210,7 +210,7 @@ class Check(object):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckStructureDeclaration == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration struct typedef ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -248,7 +248,7 @@ class Check(object):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckUnionType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration union typedef ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -270,7 +270,7 @@ class Check(object):
         if EccGlobalData.gConfig.PredicateExpressionCheckBooleanValue == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking predicate expression Boolean value ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -286,7 +286,7 @@ class Check(object):
         if EccGlobalData.gConfig.PredicateExpressionCheckNonBooleanOperator == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking predicate expression Non-Boolean variable...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -301,7 +301,7 @@ class Check(object):
         if EccGlobalData.gConfig.PredicateExpressionCheckComparisonNullType == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking predicate expression NULL pointer ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -346,7 +346,7 @@ class Check(object):
         if EccGlobalData.gConfig.IncludeFileCheckIfndefStatement == '1' or EccGlobalData.gConfig.IncludeFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking header file ifndef ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -361,7 +361,7 @@ class Check(object):
         if EccGlobalData.gConfig.IncludeFileCheckData == '1' or EccGlobalData.gConfig.IncludeFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking header file data ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -384,7 +384,7 @@ class Check(object):
         if EccGlobalData.gConfig.DoxygenCheckFileHeader == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen file header ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -399,7 +399,7 @@ class Check(object):
         if EccGlobalData.gConfig.DoxygenCheckFunctionHeader == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen function header ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -420,7 +420,7 @@ class Check(object):
         if EccGlobalData.gConfig.DoxygenCheckCommentFormat == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen comment ///< ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -435,7 +435,7 @@ class Check(object):
         if EccGlobalData.gConfig.DoxygenCheckCommand == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen command ...")
             Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+            IgnoredPattern = c.GetIgnoredDirListPattern()
 
             for Dirpath, Dirnames, Filenames in Tuple:
                 if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
@@ -793,7 +793,7 @@ class Check(object):
     def NamingConventionCheck(self):
         
         Tuple = os.walk(EccGlobalData.gTarget)
-        IgnoredPattern = re.compile(r'.*[\\/](?:BUILD|CVS|\.SVN|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG)[\\/].*')
+        IgnoredPattern = c.GetIgnoredDirListPattern()
 
         for Dirpath, Dirnames, Filenames in Tuple:
             if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:

@@ -104,10 +104,11 @@ class Ecc(object):
     def BuildMetaDataFileDatabase(self):
         EdkLogger.quiet("Building database for meta data files ...")
         Op = open(EccGlobalData.gConfig.MetaDataFileCheckPathOfGenerateFileList, 'w+')
-        SkipDirs = ['CVS', '.svn', 'Build', 'EdkCompatibilityPkg', 'R8BearLakePkg', 'R8MenlowPkg', 'R8StoutlandPkg', 'R8ThurleyPkg']
+        #SkipDirs = Read from config file
+        SkipDirs = EccGlobalData.gConfig.SkipDirList
         for Root, Dirs, Files in os.walk(EccGlobalData.gTarget):
-            for Dir in SkipDirs:
-                if Dir in Dirs:
+            for Dir in Dirs:
+                if Dir.upper() in SkipDirs:
                     Dirs.remove(Dir)
 
             for File in Files:

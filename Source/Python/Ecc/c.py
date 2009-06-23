@@ -1,6 +1,7 @@
 import sys
 import os
 import re
+import string
 import CodeFragmentCollector
 import FileProfile
 from CommonDataClass import DataClass
@@ -18,7 +19,8 @@ SUDict = {}
 IgnoredKeywordList = ['EFI_ERROR']
 
 def GetIgnoredDirListPattern():
-    p = re.compile(r'.*[\\/](?:BUILD|INTELRESTRICTEDTOOLS|INTELRESTRICTEDPKG|PCCTS|CVS|.SVN|EDKCOMPATIBILITYPKG|R8BEARLAKEPKG|R8MENLOWPKG|R8STOUTLANDPKG|R8THURLEYPKG)[\\/].*')
+    DirString = string.join(EccGlobalData.gConfig.SkipDirList, '|')
+    p = re.compile(r'.*[\\/](?:%s)[\\/]?.*' % DirString)
     return p
 
 def GetFuncDeclPattern():
@@ -487,6 +489,7 @@ def CollectSourceCodeDataIntoDB(RootDir):
     for dirpath, dirnames, filenames in tuple:
         if IgnoredPattern.match(dirpath.upper()):
             continue
+
         for f in filenames:
             FullName = os.path.normpath(os.path.join(dirpath, f))
             if os.path.splitext(f)[1] in ('.h', '.c'):
