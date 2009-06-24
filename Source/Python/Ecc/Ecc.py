@@ -111,6 +111,15 @@ class Ecc(object):
                 if Dir.upper() in SkipDirs:
                     Dirs.remove(Dir)
 
+            for Dir in Dirs:
+                Dirname = os.path.join(Root, Dir)
+                if os.path.islink(Dirname):
+                    Dirname = os.path.realpath(Dirname)
+                    if os.path.isdir(Dirname):
+                        # symlinks to directories are treated as directories
+                        Dirs.remove(Dir)
+                        Dirs.append(Dirname)
+
             for File in Files:
                 if len(File) > 4 and File[-4:].upper() == ".DEC":
                     Filename = os.path.normpath(os.path.join(Root, File))

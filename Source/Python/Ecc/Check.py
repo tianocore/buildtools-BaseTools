@@ -47,16 +47,27 @@ class Check(object):
         self.FunctionLayoutCheckBody()
         self.FunctionLayoutCheckLocalVariable()
 
+    def WalkTree(self):
+        IgnoredPattern = c.GetIgnoredDirListPattern()
+        for Dirpath, Dirnames, Filenames in os.walk(EccGlobalData.gTarget):
+            for Dir in Dirnames:
+                Dirname = os.path.join(Dirpath, Dir)
+                if os.path.islink(Dirname):
+                    Dirname = os.path.realpath(Dirname)
+                    if os.path.isdir(Dirname):
+                        # symlinks to directories are treated as directories
+                        Dirnames.remove(Dir)
+                        Dirnames.append(Dirname)
+            if IgnoredPattern.match(Dirpath.upper()):
+                continue
+            yield (Dirpath, Dirnames, Filenames)
+
     # Check whether return type exists and in the first line
     def FunctionLayoutCheckReturnType(self):
         if EccGlobalData.gConfig.CFunctionLayoutCheckReturnType == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout return type ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.c', '.h'):
                         FullName = os.path.join(Dirpath, F)
@@ -66,12 +77,8 @@ class Check(object):
     def FunctionLayoutCheckModifier(self):
         if EccGlobalData.gConfig.CFunctionLayoutCheckOptionalFunctionalModifier == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout modifier ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.c', '.h'):
                         FullName = os.path.join(Dirpath, F)
@@ -82,12 +89,8 @@ class Check(object):
     def FunctionLayoutCheckName(self):
         if EccGlobalData.gConfig.CFunctionLayoutCheckFunctionName == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout function name ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.c', '.h'):
                         FullName = os.path.join(Dirpath, F)
@@ -96,12 +99,8 @@ class Check(object):
     def FunctionLayoutCheckPrototype(self):
         if EccGlobalData.gConfig.CFunctionLayoutCheckFunctionPrototype == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout function prototype ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.c'):
                         FullName = os.path.join(Dirpath, F)
@@ -112,12 +111,8 @@ class Check(object):
     def FunctionLayoutCheckBody(self):
         if EccGlobalData.gConfig.CFunctionLayoutCheckFunctionBody == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout function body ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.c'):
                         FullName = os.path.join(Dirpath, F)
@@ -129,12 +124,8 @@ class Check(object):
     def FunctionLayoutCheckLocalVariable(self):
         if EccGlobalData.gConfig.CFunctionLayoutCheckNoInitOfVariable == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout local variables ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.c'):
                         FullName = os.path.join(Dirpath, F)
@@ -158,12 +149,8 @@ class Check(object):
     def DeclCheckNoUseCType(self):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckNoUseCType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration No use C type ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
@@ -173,12 +160,8 @@ class Check(object):
     def DeclCheckInOutModifier(self):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckInOutModifier == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration argument modifier ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
@@ -193,12 +176,8 @@ class Check(object):
     def DeclCheckEnumeratedType(self):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckEnumeratedType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration enum typedef ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
@@ -209,12 +188,8 @@ class Check(object):
     def DeclCheckStructureDeclaration(self):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckStructureDeclaration == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration struct typedef ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
@@ -247,12 +222,8 @@ class Check(object):
     def DeclCheckUnionType(self):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckUnionType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration union typedef ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
@@ -269,12 +240,8 @@ class Check(object):
     def PredicateExpressionCheckBooleanValue(self):
         if EccGlobalData.gConfig.PredicateExpressionCheckBooleanValue == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking predicate expression Boolean value ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.c'):
                         FullName = os.path.join(Dirpath, F)
@@ -285,12 +252,8 @@ class Check(object):
     def PredicateExpressionCheckNonBooleanOperator(self):
         if EccGlobalData.gConfig.PredicateExpressionCheckNonBooleanOperator == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking predicate expression Non-Boolean variable...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.c'):
                         FullName = os.path.join(Dirpath, F)
@@ -300,12 +263,8 @@ class Check(object):
     def PredicateExpressionCheckComparisonNullType(self):
         if EccGlobalData.gConfig.PredicateExpressionCheckComparisonNullType == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking predicate expression NULL pointer ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.c'):
                         FullName = os.path.join(Dirpath, F)
@@ -345,12 +304,8 @@ class Check(object):
     def IncludeFileCheckIfndef(self):
         if EccGlobalData.gConfig.IncludeFileCheckIfndefStatement == '1' or EccGlobalData.gConfig.IncludeFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking header file ifndef ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.h'):
                         FullName = os.path.join(Dirpath, F)
@@ -360,12 +315,8 @@ class Check(object):
     def IncludeFileCheckData(self):
         if EccGlobalData.gConfig.IncludeFileCheckData == '1' or EccGlobalData.gConfig.IncludeFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking header file data ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.h'):
                         FullName = os.path.join(Dirpath, F)
@@ -383,12 +334,8 @@ class Check(object):
     def DoxygenCheckFileHeader(self):
         if EccGlobalData.gConfig.DoxygenCheckFileHeader == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen file header ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
@@ -398,12 +345,8 @@ class Check(object):
     def DoxygenCheckFunctionHeader(self):
         if EccGlobalData.gConfig.DoxygenCheckFunctionHeader == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen function header ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
@@ -419,12 +362,8 @@ class Check(object):
     def DoxygenCheckCommentFormat(self):
         if EccGlobalData.gConfig.DoxygenCheckCommentFormat == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen comment ///< ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
@@ -434,12 +373,8 @@ class Check(object):
     def DoxygenCheckCommand(self):
         if EccGlobalData.gConfig.DoxygenCheckCommand == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen command ...")
-            Tuple = os.walk(EccGlobalData.gTarget)
-            IgnoredPattern = c.GetIgnoredDirListPattern()
 
-            for Dirpath, Dirnames, Filenames in Tuple:
-                if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                    continue
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
                 for F in Filenames:
                     if os.path.splitext(F)[1] in ('.h', '.c'):
                         FullName = os.path.join(Dirpath, F)
@@ -791,13 +726,8 @@ class Check(object):
 
     # Naming Convention Check
     def NamingConventionCheck(self):
-        
-        Tuple = os.walk(EccGlobalData.gTarget)
-        IgnoredPattern = c.GetIgnoredDirListPattern()
 
-        for Dirpath, Dirnames, Filenames in Tuple:
-            if IgnoredPattern.match(Dirpath.upper()) or Dirpath.find('.svn') != -1:
-                continue
+        for Dirpath, Dirnames, Filenames in self.WalkTree():
             for F in Filenames:
                 if os.path.splitext(F)[1] in ('.h', '.c'):
                     FullName = os.path.join(Dirpath, F)

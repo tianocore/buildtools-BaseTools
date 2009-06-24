@@ -19,7 +19,8 @@ SUDict = {}
 IgnoredKeywordList = ['EFI_ERROR']
 
 def GetIgnoredDirListPattern():
-    DirString = string.join(EccGlobalData.gConfig.SkipDirList, '|')
+    skipList = list(EccGlobalData.gConfig.SkipDirList) + ['.svn']
+    DirString = string.join(skipList, '|')
     p = re.compile(r'.*[\\/](?:%s)[\\/]?.*' % DirString)
     return p
 
@@ -489,6 +490,15 @@ def CollectSourceCodeDataIntoDB(RootDir):
     for dirpath, dirnames, filenames in tuple:
         if IgnoredPattern.match(dirpath.upper()):
             continue
+
+        for Dir in dirnames:
+            Dirname = os.path.join(dirpath, Dir)
+            if os.path.islink(Dirname):
+                Dirname = os.path.realpath(Dirname)
+                if os.path.isdir(Dirname):
+                    # symlinks to directories are treated as directories
+                    dirnames.remove(Dir)
+                    dirnames.append(Dirname)
 
         for f in filenames:
             FullName = os.path.normpath(os.path.join(dirpath, f))
