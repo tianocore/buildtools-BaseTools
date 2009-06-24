@@ -14,7 +14,7 @@
 ##
 # Import Modules
 #
-import os, time, glob
+import os, time, glob, sys
 import Common.EdkLogger as EdkLogger
 import Database
 import EccGlobalData
@@ -43,8 +43,8 @@ class Ecc(object):
         self.VersionNumber = "0.01"
         self.Version = "%prog Version " + self.VersionNumber
         self.Copyright = "Copyright (c) 2008, Intel Corporation  All rights reserved."
-        
-        self.ConfigFile = 'config.ini'
+
+        self.InitDefaultConfigIni()
         self.OutputFile = 'output.txt'
         self.ReportFile = 'Report.csv'
         self.ExceptionFile = 'exception.xml'
@@ -76,6 +76,15 @@ class Ecc(object):
         
         # Close Database
         EccGlobalData.gDb.Close()
+
+    def InitDefaultConfigIni(self):
+        paths = map(lambda p: os.path.join(p, 'Ecc', 'config.ini'), sys.path)
+        paths = (os.path.realpath('config.ini'),) + tuple(paths)
+        for path in paths:
+            if os.path.exists(path):
+                self.ConfigFile = path
+                return
+        self.ConfigFile = 'config.ini'
 
     ## BuildDatabase
     #
