@@ -378,7 +378,8 @@ class PlatformAutoGen(AutoGen):
         self._ToolDefinitions = None
         self._ToolDefFile = None          # toolcode : tool path
         self._ToolChainFamily = None
-        self._BuildOption = None       # toolcode : option
+        self._BuildRuleFamily = None
+        self._BuildOption = None          # toolcode : option
         self._PackageList = None
         self._ModuleAutoGenList  = None
         self._LibraryAutoGenList = None
@@ -667,6 +668,19 @@ class PlatformAutoGen(AutoGen):
             else:
                 self._ToolChainFamily = ToolDefinition[TAB_TOD_DEFINES_FAMILY][self.ToolChain]
         return self._ToolChainFamily
+
+    def _GetBuildRuleFamily(self):
+        if self._BuildRuleFamily == None:
+            ToolDefinition = self.Workspace.ToolDef.ToolsDefTxtDatabase
+            if TAB_TOD_DEFINES_BUILDRULEFAMILY not in ToolDefinition \
+               or self.ToolChain not in ToolDefinition[TAB_TOD_DEFINES_BUILDRULEFAMILY] \
+               or not ToolDefinition[TAB_TOD_DEFINES_BUILDRULEFAMILY][self.ToolChain]:
+                EdkLogger.verbose("No tool chain family found in configuration for %s. Default to MSFT." \
+                                   % self.ToolChain)
+                self._BuildRuleFamily = "MSFT"
+            else:
+                self._BuildRuleFamily = ToolDefinition[TAB_TOD_DEFINES_BUILDRULEFAMILY][self.ToolChain]
+        return self._BuildRuleFamily
 
     ## Return the build options specific to this platform
     def _GetBuildOptions(self):
@@ -1148,6 +1162,7 @@ class PlatformAutoGen(AutoGen):
     ToolDefinition      = property(_GetToolDefinition)    # toolcode : tool path
     ToolDefinitionFile  = property(_GetToolDefFile)    # toolcode : lib path
     ToolChainFamily     = property(_GetToolChainFamily)
+    BuildRuleFamily     = property(_GetBuildRuleFamily)
     BuildOption         = property(_GetBuildOptions)    # toolcode : option
 
     BuildCommand        = property(_GetBuildCommand)
@@ -1200,6 +1215,7 @@ class ModuleAutoGen(AutoGen):
         self.BuildTarget = Target
         self.Arch = Arch
         self.ToolChainFamily = self.PlatformInfo.ToolChainFamily
+        self.BuildRuleFamily = self.PlatformInfo.BuildRuleFamily
 
         self.IsMakeFileCreated = False
         self.IsCodeFileCreated = False
@@ -1520,11 +1536,11 @@ class ModuleAutoGen(AutoGen):
             BuildRules = {}
             BuildRuleDatabase = self.PlatformInfo.BuildRule
             for Type in BuildRuleDatabase.FileTypeList:
-                RuleObject = BuildRuleDatabase[Type, self.BuildType, self.Arch, self.ToolChainFamily]
+                RuleObject = BuildRuleDatabase[Type, self.BuildType, self.Arch, self.BuildRuleFamily]
                 if not RuleObject:
                     # build type is always module type, but ...
                     if self.ModuleType != self.BuildType:
-                        RuleObject = BuildRuleDatabase[Type, self.ModuleType, self.Arch, self.ToolChainFamily]
+                        RuleObject = BuildRuleDatabase[Type, self.ModuleType, self.Arch, self.BuildRuleFamily]
                     if not RuleObject:
                         continue
                 RuleObject = RuleObject.Instantiate(self.Macros)

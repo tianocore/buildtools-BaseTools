@@ -129,10 +129,19 @@ class ToolDefClassObject(object):
                 if List[4] == TAB_TOD_DEFINES_FAMILY and List[2] == '*' and List[3] == '*':
                     if TAB_TOD_DEFINES_FAMILY not in self.ToolsDefTxtDatabase:
                         self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_FAMILY] = {}
+                        self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_FAMILY][List[1]] = Value
+                        self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_BUILDRULEFAMILY] = {}
+                        self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_BUILDRULEFAMILY][List[1]] = Value
                     elif List[1] not in self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_FAMILY]:
                         self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_FAMILY][List[1]] = Value
+                        self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_BUILDRULEFAMILY][List[1]] = Value
                     elif self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_FAMILY][List[1]] != Value:
                         EdkLogger.verbose("Line %d: No override allowed for the family of a tool chain: %s" % ((Index + 1), Name))
+                if List[4] == TAB_TOD_DEFINES_BUILDRULEFAMILY and List[2] == '*' and List[3] == '*':
+                    if TAB_TOD_DEFINES_BUILDRULEFAMILY not in self.ToolsDefTxtDatabase \
+                       or List[1] not in self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_FAMILY]:
+                        EdkLogger.verbose("Line %d: The family is not specified, but BuildRuleFamily is specified for the tool chain: %s" % ((Index + 1), Name))
+                    self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_BUILDRULEFAMILY][List[1]] = Value
 
         self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TARGET] = list(set(self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TARGET]))
         self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TOOL_CHAIN_TAG] = list(set(self.ToolsDefTxtDatabase[TAB_TOD_DEFINES_TOOL_CHAIN_TAG]))

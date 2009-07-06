@@ -25,6 +25,8 @@ from GenFdsGlobalVariable import GenFdsGlobalVariable
 from GenFds import GenFds
 from CommonDataClass.FdfClass import OptionRomClassObject
 from Common.Misc import SaveFileOnChange
+from Common import EdkLogger
+from Common.BuildToolError import *
 
 T_CHAR_LF = '\n'
 

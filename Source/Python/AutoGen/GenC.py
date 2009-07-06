@@ -1484,7 +1484,7 @@ def CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH):
         if len(Lib.ConstructorList) <= 0:
             continue
         Dict = {'Function':Lib.ConstructorList}
-        if Lib.ModuleType == 'BASE':
+        if Lib.ModuleType in ['BASE', 'SEC']:
             ConstructorPrototypeString.Append(gLibraryStructorPrototype['BASE'].Replace(Dict))
             ConstructorCallingString.Append(gLibraryStructorCall['BASE'].Replace(Dict))
         elif Lib.ModuleType in ['PEI_CORE','PEIM']:
@@ -1512,7 +1512,7 @@ def CreateLibraryConstructorCode(Info, AutoGenC, AutoGenH):
     if Info.IsLibrary:
         AutoGenH.Append("${BEGIN}${FunctionPrototype}${END}", Dict)
     else:
-        if Info.ModuleType == 'BASE':
+        if Info.ModuleType in ['BASE', 'SEC']:
             AutoGenC.Append(gLibraryString['BASE'].Replace(Dict))
         elif Info.ModuleType in ['PEI_CORE','PEIM']:
             AutoGenC.Append(gLibraryString['PEI'].Replace(Dict))
@@ -1541,7 +1541,7 @@ def CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH):
         if len(Lib.DestructorList) <= 0:
             continue
         Dict = {'Function':Lib.DestructorList}
-        if Lib.ModuleType == 'BASE':
+        if Lib.ModuleType in ['BASE', 'SEC']:
             DestructorPrototypeString.Append(gLibraryStructorPrototype['BASE'].Replace(Dict))
             DestructorCallingString.Append(gLibraryStructorCall['BASE'].Replace(Dict))
         elif Lib.ModuleType in ['PEI_CORE','PEIM']:
@@ -1569,7 +1569,7 @@ def CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH):
     if Info.IsLibrary:
         AutoGenH.Append("${BEGIN}${FunctionPrototype}${END}", Dict)
     else:
-        if Info.ModuleType == 'BASE':
+        if Info.ModuleType in ['BASE', 'SEC']:
             AutoGenC.Append(gLibraryString['BASE'].Replace(Dict))
         elif Info.ModuleType in ['PEI_CORE','PEIM']:
             AutoGenC.Append(gLibraryString['PEI'].Replace(Dict))
@@ -1585,7 +1585,7 @@ def CreateLibraryDestructorCode(Info, AutoGenC, AutoGenH):
 #   @param      AutoGenH    The TemplateString object for header file
 #
 def CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH):
-    if Info.IsLibrary or Info.ModuleType == "USER_DEFINED":
+    if Info.IsLibrary or Info.ModuleType in ['USER_DEFINED', 'SEC']:
         return
     #
     # Module Entry Points
@@ -1656,7 +1656,7 @@ def CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH):
 #   @param      AutoGenH    The TemplateString object for header file
 #
 def CreateModuleUnloadImageCode(Info, AutoGenC, AutoGenH):
-    if Info.IsLibrary or Info.ModuleType == "USER_DEFINED":
+    if Info.IsLibrary or Info.ModuleType in ['USER_DEFINED', 'SEC']:
         return
     #
     # Unload Image Handlers

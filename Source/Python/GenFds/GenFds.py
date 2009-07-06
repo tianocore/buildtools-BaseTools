@@ -20,7 +20,7 @@ import sys
 import os
 import linecache
 import FdfParser
-from Common import BuildToolError
+from Common.BuildToolError import *
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 from Workspace.WorkspaceDatabase import WorkspaceDatabase
 from Workspace.BuildClassObject import PcdClassObject
