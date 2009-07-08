@@ -84,7 +84,7 @@ def CheckEnvVariable():
         EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Environment variable not found",
                         ExtraData="WORKSPACE")
 
-    WorkspaceDir = os.path.normpath(os.environ["WORKSPACE"])
+    WorkspaceDir = os.path.normcase(os.path.normpath(os.environ["WORKSPACE"]))
     if not os.path.exists(WorkspaceDir):
         EdkLogger.error("build", FILE_NOT_FOUND, "WORKSPACE doesn't exist", ExtraData="%s" % WorkspaceDir)
     elif ' ' in WorkspaceDir:
@@ -101,9 +101,18 @@ def CheckEnvVariable():
     if "EDK_SOURCE" not in os.environ:
         os.environ["EDK_SOURCE"] = os.environ["ECP_SOURCE"]
 
-    EfiSourceDir = os.path.normpath(os.environ["EFI_SOURCE"])
-    EdkSourceDir = os.path.normpath(os.environ["EDK_SOURCE"])
-    EcpSourceDir = os.path.normpath(os.environ["ECP_SOURCE"])
+    #
+    # Unify case of characters on case-insensitive systems
+    #
+    EfiSourceDir = os.path.normcase(os.path.normpath(os.environ["EFI_SOURCE"]))
+    EdkSourceDir = os.path.normcase(os.path.normpath(os.environ["EDK_SOURCE"]))
+    EcpSourceDir = os.path.normcase(os.path.normpath(os.environ["ECP_SOURCE"]))
+ 
+    os.environ["EFI_SOURCE"] = EfiSourceDir
+    os.environ["EDK_SOURCE"] = EdkSourceDir
+    os.environ["ECP_SOURCE"] = EcpSourceDir
+    os.environ["EDK_TOOLS_PATH"] = os.path.normcase(os.environ["EDK_TOOLS_PATH"])
+    
     if not os.path.exists(EcpSourceDir):
         EdkLogger.verbose("ECP_SOURCE = %s doesn't exist. R8 modules could not be built." % EcpSourceDir)
     elif ' ' in EcpSourceDir:
