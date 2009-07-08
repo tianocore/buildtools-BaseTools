@@ -114,17 +114,20 @@ def CheckEnvVariable():
     os.environ["EDK_TOOLS_PATH"] = os.path.normcase(os.environ["EDK_TOOLS_PATH"])
     
     if not os.path.exists(EcpSourceDir):
-        EdkLogger.verbose("ECP_SOURCE = %s doesn't exist. R8 modules could not be built." % EcpSourceDir)
+        EdkLogger.error("build", PARAMETER_INVALID, "ECP_SOURCE does not exist",
+                        ExtraData=EcpSourceDir)
     elif ' ' in EcpSourceDir:
         EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in ECP_SOURCE path",
                         ExtraData=EcpSourceDir)
     if not os.path.exists(EdkSourceDir):
-        EdkLogger.verbose("EDK_SOURCE = %s doesn't exist. R8 modules could not be built." % EdkSourceDir)
+         EdkLogger.error("build", PARAMETER_INVALID, "EDK_SOURCE does not exist",
+                        ExtraData=EdkSourceDir)
     elif ' ' in EdkSourceDir:
         EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in EDK_SOURCE path",
                         ExtraData=EdkSourceDir)
     if not os.path.exists(EfiSourceDir):
-        EdkLogger.verbose("EFI_SOURCE = %s doesn't exist. R8 modules could not be built." % EfiSourceDir)
+         EdkLogger.error("build", PARAMETER_INVALID, "EFI_SOURCE does not exist",
+                        ExtraData=EfiSourceDir)
     elif ' ' in EfiSourceDir:
         EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "No space is allowed in EFI_SOURCE path",
                         ExtraData=EfiSourceDir)
