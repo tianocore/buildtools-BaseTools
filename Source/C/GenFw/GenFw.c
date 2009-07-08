@@ -1272,6 +1272,8 @@ Returns:
   LogLevel          = 0;
   OutputFileBuffer  = NULL;
   OutputFileLength  = 0;
+  Optional32        = NULL;
+  Optional64        = NULL;
   KeepExceptionTableFlag = FALSE;
   KeepZeroPendingFlag    = FALSE;
 
@@ -2132,7 +2134,7 @@ Returns:
   TEImageHeader.NumberOfSections = (UINT8) PeHdr->FileHeader.NumberOfSections;
   TEImageHeader.StrippedSize     = (UINT16) ((UINTN) ((UINT8 *) &(PeHdr->OptionalHeader) + PeHdr->FileHeader.SizeOfOptionalHeader) - (UINTN) FileBuffer);
   TEImageHeader.Subsystem        = (UINT8) Type;
-
+  
   //
   // Patch the PE header
   //
@@ -2343,6 +2345,20 @@ Returns:
   } else {
     Error (NULL, 0, 3000, "Invalid", "Magic 0x%x of PeImage %s is unknown.", PeHdr->OptionalHeader.Magic, mInImageName);
     goto Finish;
+  }
+  
+  if (((PeHdr->FileHeader.Characteristics & EFI_IMAGE_FILE_RELOCS_STRIPPED) == 0) && \
+    (TEImageHeader.DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress == 0) && \
+    (TEImageHeader.DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].Size == 0)) {
+    //
+    // PeImage can be loaded into memory, but it has no relocation section. 
+    // Fix TeImage Header to set VA of relocation data directory to not zero, the size is still zero.
+    //
+    if (Optional32 != NULL) {
+      TEImageHeader.DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress = Optional32->SizeOfImage - sizeof (EFI_IMAGE_BASE_RELOCATION);
+    } else if (Optional64 != NULL) {
+      TEImageHeader.DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress = Optional64->SizeOfImage - sizeof (EFI_IMAGE_BASE_RELOCATION);
+    }
   }
    
   //
