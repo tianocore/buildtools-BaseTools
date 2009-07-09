@@ -588,6 +588,7 @@ class FdfParser:
                 NotFlag = False
                 if MacroName.startswith('!'):
                     NotFlag = True
+                    MacroName = MacroName[1:]
 
                 NotDefineFlag = False
                 if CondLabel == '!ifndef':
@@ -609,21 +610,24 @@ class FdfParser:
                             pass
                         MacroValue = self.__Token
                         ConditionSatisfied = self.__EvaluateConditional(MacroName, IfList[-1][0][0] + 1, Op, MacroValue)
-                        ConditionSatisfied = NotFlag and (not ConditionSatisfied) or ConditionSatisfied
-                        BranchDetermined = ConditionSatisfied and True or False
+                        if NotFlag:
+                            ConditionSatisfied = not ConditionSatisfied
+                        BranchDetermined = ConditionSatisfied
                     else:
                         self.CurrentOffsetWithinLine -= len(self.__Token)
                         ConditionSatisfied = self.__EvaluateConditional(MacroName, IfList[-1][0][0] + 1, None, 'Bool')
-                        ConditionSatisfied = NotFlag and (not ConditionSatisfied) or ConditionSatisfied
-                        BranchDetermined = ConditionSatisfied and True or False
+                        if NotFlag:
+                            ConditionSatisfied = not ConditionSatisfied
+                        BranchDetermined = ConditionSatisfied
                     IfList[-1] = [IfList[-1][0], ConditionSatisfied, BranchDetermined]
                     if ConditionSatisfied:
                         self.__WipeOffArea.append((IfList[-1][0], (self.CurrentLineNumber - 1, self.CurrentOffsetWithinLine - 1)))
 
                 else:
                     ConditionSatisfied = self.__EvaluateConditional(MacroName, IfList[-1][0][0] + 1)
-                    ConditionSatisfied = NotDefineFlag and (not ConditionSatisfied) or ConditionSatisfied
-                    BranchDetermined = ConditionSatisfied and True or False
+                    if NotDefineFlag:
+                        ConditionSatisfied = not ConditionSatisfied
+                    BranchDetermined = ConditionSatisfied
                     IfList[-1] = [IfList[-1][0], ConditionSatisfied, BranchDetermined]
                     if ConditionSatisfied:
                         self.__WipeOffArea.append((IfStartPos, (self.CurrentLineNumber - 1, self.CurrentOffsetWithinLine - 1)))
@@ -645,6 +649,7 @@ class FdfParser:
                         NotFlag = False
                         if MacroName.startswith('!'):
                             NotFlag = True
+                            MacroName = MacroName[1:]
 
                         if not self.__GetNextOp():
                             raise Warning("expected !endif", self.FileName, self.CurrentLineNumber)
@@ -657,12 +662,14 @@ class FdfParser:
                                 pass
                             MacroValue = self.__Token
                             ConditionSatisfied = self.__EvaluateConditional(MacroName, IfList[-1][0][0] + 1, Op, MacroValue)
-                            ConditionSatisfied = NotFlag and (not ConditionSatisfied) or ConditionSatisfied
+                            if NotFlag:
+                                ConditionSatisfied = not ConditionSatisfied
 
                         else:
                             self.CurrentOffsetWithinLine -= len(self.__Token)
                             ConditionSatisfied = self.__EvaluateConditional(MacroName, IfList[-1][0][0] + 1, None, 'Bool')
-                            ConditionSatisfied = NotFlag and (not ConditionSatisfied) or ConditionSatisfied
+                            if NotFlag:
+                                ConditionSatisfied = not ConditionSatisfied
 
                         IfList[-1] = [IfList[-1][0], ConditionSatisfied, IfList[-1][2]]
 
@@ -693,7 +700,7 @@ class FdfParser:
         if Name in InputMacroDict:
             MacroValue = InputMacroDict[Name]
             if Op == None:
-                if Value == 'Bool' and Profile.MacroValue == None or MacroValue.upper() == 'FALSE':
+                if Value == 'Bool' and MacroValue == None or MacroValue.upper() == 'FALSE':
                     return False
                 return True
             elif Op == '!=':
