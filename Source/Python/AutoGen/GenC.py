@@ -986,7 +986,11 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
                         ArraySize = len(Value) + 1
                 Value = NewValue + '0 }'
             Array = '[%d]' % ArraySize
-        else:
+        #
+        # skip casting for fixed at build since it breaks ARM assembly.
+        # Long term we need PCD macros that work in assembly
+        #
+        elif Pcd.Type != TAB_PCDS_FIXED_AT_BUILD:
             Value = "((%s)%s)" % (Pcd.DatumType, Value)
 
         if Pcd.Type == TAB_PCDS_PATCHABLE_IN_MODULE:

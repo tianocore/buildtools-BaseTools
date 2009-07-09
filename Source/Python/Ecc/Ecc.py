@@ -1,7 +1,7 @@
 ## @file
 # This file is used to be the main entrance of ECC tool
 #
-# Copyright (c) 2008, Intel Corporation
+# Copyright (c) 2009, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -42,7 +42,7 @@ class Ecc(object):
         # Version and Copyright
         self.VersionNumber = "0.01"
         self.Version = "%prog Version " + self.VersionNumber
-        self.Copyright = "Copyright (c) 2008, Intel Corporation  All rights reserved."
+        self.Copyright = "Copyright (c) 2009, Intel Corporation  All rights reserved."
 
         self.InitDefaultConfigIni()
         self.OutputFile = 'output.txt'

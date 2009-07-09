@@ -40,35 +40,6 @@ gDepexTokenPattern = re.compile("(\(|\)|\w+| \S+\.inf)")
 ## Mapping Makefile type
 gMakeTypeMap = {"MSFT":"nmake", "GCC":"gmake"}
 
-## Default output flag for all tools
-gDefaultOutputFlag = "-o "
-
-## Output flags for specific tools
-gOutputFlag = {
-    ("MSFT", "CC", "OUTPUT")      :   "/Fo",
-    ("MSFT", "SLINK", "OUTPUT")   :   "/OUT:",
-    ("MSFT", "DLINK", "OUTPUT")   :   "/OUT:",
-    ("MSFT", "ASMLINK", "OUTPUT") :   "/OUT:",
-    ("MSFT", "PCH", "OUTPUT")     :   "/Fp",
-    ("MSFT", "ASM", "OUTPUT")     :   "/Fo",
-
-    ("INTEL", "CC", "OUTPUT")          :   "/Fo",
-    ("INTEL", "SLINK", "OUTPUT")       :   "/OUT:",
-    ("INTEL", "DLINK", "OUTPUT")       :   "/OUT:",
-    ("INTEL", "ASMLINK", "OUTPUT")     :   "/OUT:",
-    ("INTEL", "PCH", "OUTPUT")         :   "/Fp",
-    ("INTEL", "ASM", "OUTPUT")         :   "/Fo",
-
-    ("GCC", "CC", "OUTPUT")        :   "-o ",
-    ("GCC", "SLINK", "OUTPUT")     :   "-cr ",
-    ("GCC", "DLINK", "OUTPUT")     :   "-o ",
-    ("GCC", "ASMLINK", "OUTPUT")   :   "-o ",
-    ("GCC", "PCH", "OUTPUT")       :   "-o ",
-    ("GCC", "ASM", "OUTPUT")       :   "-o ",
-}
-
-## Flag for include file search path
-gIncludeFlag = {"MSFT" : "/I", "GCC" : "-I", "INTEL" : "-I"}
 
 ## Build rule configuration file
 gBuildRuleFile = 'Conf/build_rule.txt'

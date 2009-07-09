@@ -267,6 +267,11 @@ class FfsInfStatement(FfsInfStatementClassObject):
             if InfFileKey in (PlatformDataBase.Modules):
                 DscArchList.append ('IPF')
 
+        PlatformDataBase = GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'ARM']
+        if PlatformDataBase != None:
+            if InfFileKey in (PlatformDataBase.Modules):
+                DscArchList.append ('ARM')
+
         PlatformDataBase = GenFdsGlobalVariable.WorkSpace.BuildObject[GenFdsGlobalVariable.ActivePlatform, 'EBC']
         if PlatformDataBase != None:
             if InfFileKey in (PlatformDataBase.Modules):

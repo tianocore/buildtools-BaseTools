@@ -1,7 +1,7 @@
 ## @file
 # Store a Platform class object to an INF file.
 #
-# Copyright (c) 2007, Intel Corporation
+# Copyright (c) 2007 - 2009, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -117,7 +117,7 @@ def StorePlatformSkuIdsSection(DscFile, Platform):
 def StorePlatformBuildOptionsSection(DscFile, Platform):
     # which is from tools_def.txt
     StandardBuildTargets = ["DEBUG", "RELEASE"]
-    SupportedArches = ["COMMON", "IA32", "X64", "IPF", "EBC"]
+    SupportedArches = ["COMMON", "IA32", "X64", "IPF", "EBC", "ARM"]
     Target = TargetTxtClassObject()
     WorkSpace = os.getenv('WORKSPACE')
     Target.LoadTargetTxtFile(WorkSpace + '\\Conf\\target.txt')

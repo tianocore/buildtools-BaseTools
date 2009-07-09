@@ -156,7 +156,7 @@ class BuildFile(object):
         "gmake" :   "include"
     }
 
-    _INC_FLAG_ = {"MSFT" : "/I", "GCC" : "-I", "INTEL" : "-I"}
+    _INC_FLAG_ = {"MSFT" : "/I", "GCC" : "-I", "INTEL" : "-I", "RVCT" : "-I"}
 
     ## Constructor of BuildFile
     #

@@ -237,7 +237,7 @@ goto end
       set PYTHON_HOME=%PYTHONHOME%
     ) else (
       echo.
-      echo  !!! ERROR !!! PYTHON is required to build or execute the tools !!!
+      echo  !!! ERROR !!! PYTHON_HOME is required to build or execute the tools, please set it. !!!
       echo.
       goto end
     )

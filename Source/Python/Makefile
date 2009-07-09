@@ -82,6 +82,7 @@ $(BIN_DIR)\GenDepex.exe: $(BASE_TOOLS_PATH)\Source\Python\AutoGen\GenDepex.py $(
 $(BIN_DIR)\TargetTool.exe: $(BASE_TOOLS_PATH)\Source\Python\TargetTool\TargetTool.py $(COMMON_PYTHON)
   @pushd . & @cd TargetTool & @$(FREEZE) --include-modules=$(MODULES) --install-dir=$(BIN_DIR) TargetTool.py & @popd
 
+clean:
 cleanall:  
   @del /f /q $(BIN_DIR)\*.pyd $(BIN_DIR)\*.dll
   @for %%i in ($(APPLICATIONS)) do @del /f /q %%i

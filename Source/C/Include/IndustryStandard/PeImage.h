@@ -46,6 +46,9 @@
 #define IMAGE_FILE_MACHINE_IA64     0x0200
 #define IMAGE_FILE_MACHINE_EBC      0x0EBC
 #define IMAGE_FILE_MACHINE_X64      0x8664
+#define IMAGE_FILE_MACHINE_ARM      0x01c0  // Thumb only
+#define IMAGE_FILE_MACHINE_ARMT     0x01c2  // 32bit Mixed ARM and Thumb/Thumb 2  Little Endian
+
 //
 // Support old names for backward compatible
 //
@@ -54,6 +57,7 @@
 #define EFI_IMAGE_MACHINE_IPF       IMAGE_FILE_MACHINE_IA64  
 #define EFI_IMAGE_MACHINE_EBC       IMAGE_FILE_MACHINE_EBC  
 #define EFI_IMAGE_MACHINE_X64       IMAGE_FILE_MACHINE_X64
+#define EFI_IMAGE_MACHINE_ARMT      IMAGE_FILE_MACHINE_ARMT
 
 #define EFI_IMAGE_DOS_SIGNATURE     0x5A4D      // MZ
 #define EFI_IMAGE_OS2_SIGNATURE     0x454E      // NE

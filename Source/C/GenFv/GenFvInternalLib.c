@@ -37,6 +37,7 @@ Abstract:
 #include "PeCoffLib.h"
 #include "WinNtInclude.h"
 
+BOOLEAN mArm = FALSE;
 STATIC UINT32   MaxFfsAlignment = 0;
 
 EFI_GUID  mEfiFirmwareVolumeTopFileGuid = EFI_FFS_VOLUME_TOP_FILE_GUID;
@@ -1316,6 +1317,13 @@ Returns:
   if (EFI_ERROR (Status)) {
     Error (NULL, 0, 3000, "Invalid", "could not get the PE32 entry point for the SEC core.");
     return EFI_ABORTED;
+  }  
+    
+  if (MachineType != EFI_IMAGE_MACHINE_ARMT) {
+    //
+    // If SEC is not ARM we have nothing to do
+    //
+    return EFI_SUCCESS;
   }
   //
   // Physical address is FV base + offset of PE32 + offset of the entry point
@@ -1519,6 +1527,11 @@ Returns:
     //
     Ia32ResetAddressPtr   = (UINT32 *) ((UINTN) FvImage->Eof - 8);
     *Ia32ResetAddressPtr  = IpiVector;
+  } else if (MachineType == EFI_IMAGE_MACHINE_ARMT) {
+    //
+    // Since the ARM reset vector is in the FV Header you really don't need a
+    // Volume Top File, but if you have one for some reason don't crash...
+    //
   } else {
     Error (NULL, 0, 3000, "Invalid", "machine type=0x%X in PEI core.", (UINT32) MachineType);
     return EFI_ABORTED;
@@ -1540,6 +1553,258 @@ Returns:
   }
 
   VtfFile->State = SavedState;
+
+  return EFI_SUCCESS;
+}
+
+
+EFI_STATUS
+UpdateArmResetVectorIfNeeded (
+  IN MEMORY_FILE            *FvImage,
+  IN FV_INFO                *FvInfo
+  )
+/*++
+
+Routine Description:
+  This parses the FV looking for SEC and patches that address into the 
+  beginning of the FV header.
+
+  For ARM the reset vector is at 0x00000000 or 0xFFFF0000.
+  This would commonly map to the first entry in the ROM. 
+  ARM Exceptions:
+  Reset            +0    
+  Undefined        +4
+  SWI              +8
+  Prefetch Abort   +12
+  Data Abort       +16
+  IRQ              +20
+  FIQ              +24
+
+  We support two schemes on ARM.
+  1) Begining of the FV is the reset vector
+  2) Reset vector is data bytes FDF file and that code branches to reset vector 
+    in the beginning of the FV (fixed size offset).
+
+
+  Need to have the jump for the reset vector at location zero.
+  We also need to store the address or PEI (if it exists).
+  We stub out a return from interrupt in case the debugger 
+   is using SWI.
+  The optional entry to the common exception handler is 
+   to support full featured exception handling from ROM and is currently 
+    not support by this tool.
+
+Arguments:
+  FvImage       Memory file for the FV memory image
+  FvInfo        Information read from INF file.
+
+Returns:
+
+  EFI_SUCCESS             Function Completed successfully.
+  EFI_ABORTED             Error encountered.
+  EFI_INVALID_PARAMETER   A required parameter was NULL.
+  EFI_NOT_FOUND           PEI Core file not found.
+
+--*/
+{
+  EFI_FFS_FILE_HEADER       *PeiCoreFile;
+  EFI_FFS_FILE_HEADER       *SecCoreFile;
+  EFI_STATUS                Status;
+  EFI_FILE_SECTION_POINTER  Pe32Section;
+  UINT32                    EntryPoint;
+  UINT32                    BaseOfCode;
+  UINT16                    MachineType;
+  EFI_PHYSICAL_ADDRESS      PeiCorePhysicalAddress;
+  EFI_PHYSICAL_ADDRESS      SecCorePhysicalAddress;
+  INT32                     ResetVector[4]; // 0 - is branch relative to SEC entry point
+                                            // 1 - PEI Entry Point
+                                            // 2 - movs pc,lr for a SWI handler
+                                            // 3 - Place holder for Common Exception Handler
+
+  //
+  // Verify input parameters
+  //
+  if (FvImage == NULL || FvInfo == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
+  //
+  // Initialize FV library
+  //
+  InitializeFvLib (FvImage->FileImage, FvInfo->Size);
+
+  //
+  // Find the Sec Core
+  //
+  Status = GetFileByType (EFI_FV_FILETYPE_SECURITY_CORE, 1, &SecCoreFile);
+  if (EFI_ERROR (Status) || SecCoreFile == NULL) {
+    //
+    // Maybe hardware does SEC job and we only have PEI Core?
+    //
+
+    //
+    // Find the PEI Core. It may not exist if SEC loads DXE core directly
+    //
+    PeiCorePhysicalAddress = 0;
+    Status = GetFileByType (EFI_FV_FILETYPE_PEI_CORE, 1, &PeiCoreFile);
+    if (!EFI_ERROR (Status) && PeiCoreFile != NULL) {
+      //
+      // PEI Core found, now find PE32 or TE section
+      //
+      Status = GetSectionByType (PeiCoreFile, EFI_SECTION_PE32, 1, &Pe32Section);
+      if (Status == EFI_NOT_FOUND) {
+        Status = GetSectionByType (PeiCoreFile, EFI_SECTION_TE, 1, &Pe32Section);
+      }
+    
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 3000, "Invalid", "could not find either a PE32 or a TE section in PEI core file!");
+        return EFI_ABORTED;
+      }
+    
+      Status = GetPe32Info (
+                (VOID *) ((UINTN) Pe32Section.Pe32Section + sizeof (EFI_SECTION_PE32)),
+                &EntryPoint,
+                &BaseOfCode,
+                &MachineType
+                );
+    
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 3000, "Invalid", "could not get the PE32 entry point for the PEI core!");
+        return EFI_ABORTED;
+      }
+      //
+      // Physical address is FV base + offset of PE32 + offset of the entry point
+      //
+      PeiCorePhysicalAddress = FvInfo->BaseAddress;
+      PeiCorePhysicalAddress += (UINTN) Pe32Section.Pe32Section + sizeof (EFI_SECTION_PE32) - (UINTN) FvImage->FileImage;
+      PeiCorePhysicalAddress += EntryPoint;
+      DebugMsg (NULL, 0, 9, "PeiCore physical entry point address", "Address = 0x%X", PeiCorePhysicalAddress);
+
+      if (MachineType == EFI_IMAGE_MACHINE_ARMT) {
+        memset (ResetVector, 0, sizeof (ResetVector));
+        // Address of PEI Core, if we have one
+        ResetVector[1] = (UINT32)PeiCorePhysicalAddress;
+      }
+      
+      //
+      // Copy to the beginning of the FV 
+      //
+      memcpy ((UINT8 *) ((UINTN) FvImage->FileImage), ResetVector, sizeof (ResetVector));
+
+    }
+
+    return EFI_SUCCESS;
+  }
+  
+  //
+  // Sec Core found, now find PE32 section
+  //
+  Status = GetSectionByType (SecCoreFile, EFI_SECTION_PE32, 1, &Pe32Section);
+  if (Status == EFI_NOT_FOUND) {
+    Status = GetSectionByType (SecCoreFile, EFI_SECTION_TE, 1, &Pe32Section);
+  }
+
+  if (EFI_ERROR (Status)) {
+    Error (NULL, 0, 3000, "Invalid", "could not find a PE32 section in the SEC core file.");
+    return EFI_ABORTED;
+  }
+
+  Status = GetPe32Info (
+            (VOID *) ((UINTN) Pe32Section.Pe32Section + sizeof (EFI_SECTION_PE32)),
+            &EntryPoint,
+            &BaseOfCode,
+            &MachineType
+            );
+  if (EFI_ERROR (Status)) {
+    Error (NULL, 0, 3000, "Invalid", "could not get the PE32 entry point for the SEC core.");
+    return EFI_ABORTED;
+  }
+  
+  if (MachineType != EFI_IMAGE_MACHINE_ARMT) {
+    //
+    // If SEC is not ARM we have nothing to do
+    //
+    return EFI_SUCCESS;
+  }
+  
+  //
+  // Physical address is FV base + offset of PE32 + offset of the entry point
+  //
+  SecCorePhysicalAddress = FvInfo->BaseAddress;
+  SecCorePhysicalAddress += (UINTN) Pe32Section.Pe32Section + sizeof (EFI_SECTION_PE32) - (UINTN) FvImage->FileImage;
+  SecCorePhysicalAddress += EntryPoint;
+  DebugMsg (NULL, 0, 9, "SecCore physical entry point address", "Address = 0x%X", SecCorePhysicalAddress); 
+
+  //
+  // Find the PEI Core. It may not exist if SEC loads DXE core directly
+  //
+  PeiCorePhysicalAddress = 0;
+  Status = GetFileByType (EFI_FV_FILETYPE_PEI_CORE, 1, &PeiCoreFile);
+  if (!EFI_ERROR (Status) && PeiCoreFile != NULL) {
+    //
+    // PEI Core found, now find PE32 or TE section
+    //
+    Status = GetSectionByType (PeiCoreFile, EFI_SECTION_PE32, 1, &Pe32Section);
+    if (Status == EFI_NOT_FOUND) {
+      Status = GetSectionByType (PeiCoreFile, EFI_SECTION_TE, 1, &Pe32Section);
+    }
+  
+    if (EFI_ERROR (Status)) {
+      Error (NULL, 0, 3000, "Invalid", "could not find either a PE32 or a TE section in PEI core file!");
+      return EFI_ABORTED;
+    }
+  
+    Status = GetPe32Info (
+              (VOID *) ((UINTN) Pe32Section.Pe32Section + sizeof (EFI_SECTION_PE32)),
+              &EntryPoint,
+              &BaseOfCode,
+              &MachineType
+              );
+  
+    if (EFI_ERROR (Status)) {
+      Error (NULL, 0, 3000, "Invalid", "could not get the PE32 entry point for the PEI core!");
+      return EFI_ABORTED;
+    }
+    //
+    // Physical address is FV base + offset of PE32 + offset of the entry point
+    //
+    PeiCorePhysicalAddress = FvInfo->BaseAddress;
+    PeiCorePhysicalAddress += (UINTN) Pe32Section.Pe32Section + sizeof (EFI_SECTION_PE32) - (UINTN) FvImage->FileImage;
+    PeiCorePhysicalAddress += EntryPoint;
+    DebugMsg (NULL, 0, 9, "PeiCore physical entry point address", "Address = 0x%X", PeiCorePhysicalAddress);
+  }
+  
+  
+  // B SecEntryPoint - signed_immed_24 part +/-32MB offset
+  // on ARM, the PC is always 8 ahead, so we're not really jumping from the base address, but from base address + 8
+  ResetVector[0] = (INT32)(SecCorePhysicalAddress - FvInfo->BaseAddress - 8) >> 2;
+  
+  if (ResetVector[0] > 0x00FFFFFF) {
+    Error (NULL, 0, 3000, "Invalid", "SEC Entry point must be within 32MB of the start of the FV");
+    return EFI_ABORTED;    
+  }
+  
+  // Add opcode for an uncondional branch with no link. AKA B SecEntryPoint
+  ResetVector[0] |= 0xEA000000;
+  
+  
+  // Address of PEI Core, if we have one
+  ResetVector[1] = (UINT32)PeiCorePhysicalAddress;
+  
+  // SWI handler movs   pc,lr. Just in case a debugger uses SWI
+  ResetVector[2] = 0xE1B0F07E;
+  
+  // Place holder to support a common interrupt handler from ROM. 
+  // Currently not suppprted. For this to be used the reset vector would not be in this FV
+  // and the exception vectors would be hard coded in the ROM and just through this address 
+  // to find a common handler in the a module in the FV.
+  ResetVector[3] = 0;
+
+  //
+  // Copy to the beginning of the FV 
+  //
+  memcpy ((UINT8 *) ((UINTN) FvImage->FileImage), ResetVector, sizeof (ResetVector));
+
+  DebugMsg (NULL, 0, 9, "Update Reset vector in FV Header", NULL);
 
   return EFI_SUCCESS;
 }
@@ -1635,7 +1900,8 @@ Returns:
   //
   // Verify machine type is supported
   //
-  if (*MachineType != EFI_IMAGE_MACHINE_IA32 && *MachineType != EFI_IMAGE_MACHINE_IA64 && *MachineType != EFI_IMAGE_MACHINE_X64 && *MachineType != EFI_IMAGE_MACHINE_EBC) {
+  if (*MachineType != EFI_IMAGE_MACHINE_IA32 && *MachineType != EFI_IMAGE_MACHINE_IA64 && *MachineType != EFI_IMAGE_MACHINE_X64 && *MachineType != EFI_IMAGE_MACHINE_EBC && 
+      *MachineType != EFI_IMAGE_MACHINE_ARMT) {
     Error (NULL, 0, 3000, "Invalid", "Unrecognized machine type in the PE32 file.");
     return EFI_UNSUPPORTED;
   }
@@ -1950,22 +2216,38 @@ Returns:
       Error (NULL, 0, 4002, "Resource", "FV space is full, cannot add pad file between the last file and the VTF file.");
       goto Finish;
     }
-    //
-    // Update reset vector (SALE_ENTRY for IPF)
-    // Now for IA32 and IA64 platform, the fv which has bsf file must have the 
-    // EndAddress of 0xFFFFFFFF. Thus, only this type fv needs to update the   
-    // reset vector. If the PEI Core is found, the VTF file will probably get  
-    // corrupted by updating the entry point.                                  
-    //
-    if ((mFvDataInfo.BaseAddress + mFvDataInfo.Size) == FV_IMAGES_TOP_ADDRESS) {       
-      Status = UpdateResetVector (&FvImageMemoryFile, &mFvDataInfo, VtfFileImage);
-      if (EFI_ERROR(Status)) {                                               
-        Error (NULL, 0, 3000, "Invalid", "Could not update the reset vector.");
-        goto Finish;                                              
+    if (!mArm) {
+      //
+      // Update reset vector (SALE_ENTRY for IPF)
+      // Now for IA32 and IA64 platform, the fv which has bsf file must have the 
+      // EndAddress of 0xFFFFFFFF. Thus, only this type fv needs to update the   
+      // reset vector. If the PEI Core is found, the VTF file will probably get  
+      // corrupted by updating the entry point.                                  
+      //
+      if ((mFvDataInfo.BaseAddress + mFvDataInfo.Size) == FV_IMAGES_TOP_ADDRESS) {       
+        Status = UpdateResetVector (&FvImageMemoryFile, &mFvDataInfo, VtfFileImage);
+        if (EFI_ERROR(Status)) {                                               
+          Error (NULL, 0, 3000, "Invalid", "Could not update the reset vector.");
+          goto Finish;                                              
+        }
+        DebugMsg (NULL, 0, 9, "Update Reset vector in VTF file", NULL);
       }
-      DebugMsg (NULL, 0, 9, "Update Reset vector in VTF file", NULL);
     }
   } 
+
+  if (mArm) {
+    Status = UpdateArmResetVectorIfNeeded (&FvImageMemoryFile, &mFvDataInfo);
+    if (EFI_ERROR (Status)) {                                               
+      Error (NULL, 0, 3000, "Invalid", "Could not update the reset vector.");
+      goto Finish;                                              
+    }  
+    
+    //
+    // Update Checksum for FvHeader
+    //
+    FvHeader->Checksum = 0;
+    FvHeader->Checksum = CalculateChecksum16 ((UINT16 *) FvHeader, FvHeader->HeaderLength / sizeof (UINT16));
+  }
   
   //
   // Update FV Alignment attribute to the largest alignment of all the FFS files in the FV
@@ -2417,6 +2699,11 @@ Returns:
       Error (NULL, 0, 3000, "Invalid PeImage", "The input file is %s and the return status is %x", FileName, Status);
       return Status;
     }
+
+    if (ImageContext.Machine == EFI_IMAGE_MACHINE_ARMT) {
+      mArm = TRUE;
+    }
+
     //
     // Keep Image Context for PE image in FV
     //
@@ -2652,7 +2939,8 @@ Returns:
     //
     // Update Image Base Address
     //
-    if (PeHdr->FileHeader.Machine == EFI_IMAGE_MACHINE_IA32) {
+    if (PeHdr->FileHeader.Machine == EFI_IMAGE_MACHINE_IA32 ||
+        PeHdr->FileHeader.Machine == EFI_IMAGE_MACHINE_ARMT) {
       Optional32 = (EFI_IMAGE_OPTIONAL_HEADER32 *) &(PeHdr->OptionalHeader);
       Optional32->ImageBase     = (UINT32) NewPe32BaseAddress;
     } else if (PeHdr->FileHeader.Machine == EFI_IMAGE_MACHINE_IA64 || 
@@ -2747,6 +3035,11 @@ WritePeMap:
       Error (NULL, 0, 3000, "Invalid TeImage", "The input file is %s and the return status is %x", FileName, Status);
       return Status;
     }
+
+    if (ImageContext.Machine == EFI_IMAGE_MACHINE_ARMT) {
+      mArm = TRUE;
+    }
+
     //
     // Keep Image Context for TE image in FV
     //

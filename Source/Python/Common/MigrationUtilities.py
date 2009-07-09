@@ -360,7 +360,7 @@ def StoreTextFile(TextFile, Content):
 # The possible duplication is ensured to be removed.
 #
 # @param  Section            Section dictionary indexed by CPU architecture.
-# @param  Arch               CPU architecture: Ia32, X64, Ipf, Ebc or Common.
+# @param  Arch               CPU architecture: Ia32, X64, Ipf, ARM, Ebc or Common.
 # @param  Item               The Item to be added to section dictionary.
 #
 def AddToSection(Section, Arch, Item):
@@ -382,7 +382,7 @@ def AddToSection(Section, Arch, Item):
 # @retval Section            The string content of a section.
 #
 def GetSection(SectionName, Method, ObjectList):
-    SupportedArches = ["common", "Ia32", "X64", "Ipf", "Ebc"]
+    SupportedArches = ["common", "Ia32", "X64", "Ipf", "Ebc", "ARM"]
     SectionDict = {}
     for Object in ObjectList:
         Item = Method(Object)
