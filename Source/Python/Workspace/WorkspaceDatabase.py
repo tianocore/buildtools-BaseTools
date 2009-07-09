@@ -354,6 +354,11 @@ class DscBuildData(PlatformBuildClassObject):
             RecordList = self._RawData[MODEL_META_DATA_COMPONENT_SOURCE_OVERRIDE_PATH, self._Arch, None, ModuleId]
             if RecordList != []:
                 Module.SourceOverridePath = os.path.join(GlobalData.gWorkspace, NormPath(RecordList[0][0], Macros))
+
+                # Check if the source override path exists
+                if not os.path.isdir(Module.SourceOverridePath):
+                    EdkLogger.error('build', FILE_NOT_FOUND, Message = 'Source override path does not exist:', File=self.MetaFile, ExtraData=Module.SourceOverridePath, Line=LineNo)
+                
                 #Add to GlobalData Variables
                 GlobalData.gOverrideDir[ModuleFile.Key] = Module.SourceOverridePath
 
