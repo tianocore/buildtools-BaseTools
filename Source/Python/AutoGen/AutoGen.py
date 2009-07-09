@@ -1536,13 +1536,21 @@ class ModuleAutoGen(AutoGen):
             BuildRules = {}
             BuildRuleDatabase = self.PlatformInfo.BuildRule
             for Type in BuildRuleDatabase.FileTypeList:
+                #first try getting build rule by BuildRuleFamily
                 RuleObject = BuildRuleDatabase[Type, self.BuildType, self.Arch, self.BuildRuleFamily]
                 if not RuleObject:
                     # build type is always module type, but ...
                     if self.ModuleType != self.BuildType:
                         RuleObject = BuildRuleDatabase[Type, self.ModuleType, self.Arch, self.BuildRuleFamily]
+                #second try getting build rule by ToolChainFamily
+                if not RuleObject:
+                    RuleObject = BuildRuleDatabase[Type, self.BuildType, self.Arch, self.ToolChainFamily]
                     if not RuleObject:
-                        continue
+                        # build type is always module type, but ...
+                        if self.ModuleType != self.BuildType:
+                            RuleObject = BuildRuleDatabase[Type, self.ModuleType, self.Arch, self.ToolChainFamily]
+                if not RuleObject:
+                    continue
                 RuleObject = RuleObject.Instantiate(self.Macros)
                 BuildRules[Type] = RuleObject
                 for Ext in RuleObject.SourceFileExtList:
