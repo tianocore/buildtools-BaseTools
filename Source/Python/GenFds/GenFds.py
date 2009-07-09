@@ -83,10 +83,10 @@ def main():
             EdkLogger.error("GenFds", BuildToolError.PARAMETER_INVALID, "WORKSPACE is invalid",
                             ExtraData="Please use '-w' switch to pass it or set the WORKSPACE environment variable.")
         else:
-            Workspace = Options.Workspace
+            Workspace = os.path.normcase(Options.Workspace)
             GenFdsGlobalVariable.WorkSpaceDir = Workspace
             if 'EDK_SOURCE' in os.environ.keys():
-                GenFdsGlobalVariable.EdkSourceDir = os.environ['EDK_SOURCE']
+                GenFdsGlobalVariable.EdkSourceDir = os.path.normcase(os.environ['EDK_SOURCE'])
             if (Options.debug):
                 GenFdsGlobalVariable.VerboseLogger( "Using Workspace:" + Workspace)
         os.chdir(GenFdsGlobalVariable.WorkSpaceDir)
