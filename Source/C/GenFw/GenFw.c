@@ -583,7 +583,7 @@ ScanSections(
   //
   CoffOffset = sizeof(EFI_IMAGE_DOS_HEADER) + 0x40;
   NtHdrOffset = CoffOffset;
-  CoffOffset += sizeof(EFI_IMAGE_NT_HEADERS);
+  CoffOffset += sizeof(EFI_IMAGE_OPTIONAL_HEADER_UNION);
   TableOffset = CoffOffset;
   CoffOffset += CoffNbrSections * sizeof(EFI_IMAGE_SECTION_HEADER);
 
