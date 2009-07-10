@@ -278,55 +278,6 @@ typedef struct {
 #define EFI_IMAGE_SIZEOF_NT_OPTIONAL64_HEADER sizeof (EFI_IMAGE_NT_HEADERS64)
 
 //
-// Processor specific definition of EFI_IMAGE_OPTIONAL_HEADER so the
-// type name EFI_IMAGE_OPTIONAL_HEADER is appropriate to the build.  Same for
-// EFI_IMAGE_NT_HEADERS.  These definitions MUST be used by ALL EFI code.
-//
-#if   defined (MDE_CPU_IA32)
-
-typedef EFI_IMAGE_OPTIONAL_HEADER32     EFI_IMAGE_OPTIONAL_HEADER;
-typedef EFI_IMAGE_NT_HEADERS32          EFI_IMAGE_NT_HEADERS;
-
-#define EFI_IMAGE_NT_OPTIONAL_HDR_MAGIC EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC
-#define EFI_IMAGE_MACHINE_TYPE_SUPPORTED(Machine) \
-  (((Machine) == EFI_IMAGE_MACHINE_IA32) || ((Machine) == EFI_IMAGE_MACHINE_EBC))
-
-#elif defined (MDE_CPU_IPF)
-
-typedef EFI_IMAGE_OPTIONAL_HEADER64     EFI_IMAGE_OPTIONAL_HEADER;
-typedef EFI_IMAGE_NT_HEADERS64          EFI_IMAGE_NT_HEADERS;
-
-#define EFI_IMAGE_NT_OPTIONAL_HDR_MAGIC EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC
-#define EFI_IMAGE_MACHINE_TYPE_SUPPORTED(Machine) \
-  (((Machine) == EFI_IMAGE_MACHINE_IPF) || ((Machine) == EFI_IMAGE_MACHINE_EBC))
-
-#elif defined (MDE_CPU_X64)
-
-typedef EFI_IMAGE_OPTIONAL_HEADER64     EFI_IMAGE_OPTIONAL_HEADER;
-typedef EFI_IMAGE_NT_HEADERS64          EFI_IMAGE_NT_HEADERS;
-
-#define EFI_IMAGE_NT_OPTIONAL_HDR_MAGIC EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC
-#define EFI_IMAGE_MACHINE_TYPE_SUPPORTED(Machine) \
-  (((Machine) == EFI_IMAGE_MACHINE_X64) || ((Machine) == EFI_IMAGE_MACHINE_EBC))
-
-#elif defined (MDE_CPU_EBC)
-
-//
-// This is just to make sure you can cross compile with the EBC compiiler.
-// It does not make sense to have a PE loader coded in EBC. You need to 
-// understand the basic 
-//
-typedef EFI_IMAGE_OPTIONAL_HEADER64     EFI_IMAGE_OPTIONAL_HEADER;
-typedef EFI_IMAGE_NT_HEADERS64          EFI_IMAGE_NT_HEADERS;
-
-#define EFI_IMAGE_NT_OPTIONAL_HDR_MAGIC EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC
-#define EFI_IMAGE_MACHINE_TYPE_SUPPORTED(Machine) ((Machine) == EFI_IMAGE_MACHINE_EBC)
-
-#else
-#error Unknown Processor Type
-#endif
-
-//
 // Subsystem Values
 //
 #define EFI_IMAGE_SUBSYSTEM_UNKNOWN     0
