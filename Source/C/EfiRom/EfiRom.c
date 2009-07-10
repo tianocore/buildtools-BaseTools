@@ -764,10 +764,8 @@ Returns:
 
 --*/
 {
-  EFI_IMAGE_DOS_HEADER      DosHeader;
-  EFI_IMAGE_FILE_HEADER     FileHdr;
-  EFI_IMAGE_OPTIONAL_HEADER OptionalHdr;
-  UINT32                    PESig;
+  EFI_IMAGE_DOS_HEADER            DosHeader;
+  EFI_IMAGE_OPTIONAL_HEADER_UNION PeHdr;
 
   //
   // Position to the start of the file
@@ -792,41 +790,41 @@ Returns:
   // Position into the file and check the PE signature
   //
   fseek (Fptr, (long) DosHeader.e_lfanew, SEEK_SET);
-  if (fread (&PESig, sizeof (PESig), 1, Fptr) != 1) {
-    Error (NULL, 0, 0004, "Failed to read PE signature bytes from input file!", NULL);
+
+  //
+  // Read PE headers
+  //
+  if (fread (&PeHdr, sizeof (PeHdr), 1, Fptr) != 1) {
+    Error (NULL, 0, 0004, "Failed to read PE/COFF headers from input file!", NULL);
     return STATUS_ERROR;
   }
+
+
   //
   // Check the PE signature in the header "PE\0\0"
   //
-  if (PESig != EFI_IMAGE_NT_SIGNATURE) {
+  if (PeHdr.Pe32.Signature != EFI_IMAGE_NT_SIGNATURE) {
     Error (NULL, 0, 2000, "Invalid parameter", "Input file does not appear to be a PE32 image (signature)!");
     return STATUS_ERROR;
   }
-  //
-  // Read the file header and stuff their MachineType
-  //
-  if (fread (&FileHdr, sizeof (FileHdr), 1, Fptr) != 1) {
-    Error (NULL, 0, 0004, "Failed to read PE file header from input file!", NULL);
+
+  memcpy ((char *) MachineType, &PeHdr.Pe32.FileHeader.Machine, 2);
+
+  if (PeHdr.Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
+    *SubSystem = PeHdr.Pe32.OptionalHeader.Subsystem;
+  } else if (PeHdr.Pe32Plus.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
+    *SubSystem = PeHdr.Pe32Plus.OptionalHeader.Subsystem;
+  } else {
+    Error (NULL, 0, 2000, "Invalid parameter", "Unable to find subsystem type!");
     return STATUS_ERROR;
   }
 
-  memcpy ((char *) MachineType, &FileHdr.Machine, 2);
-
-  //
-  // Read the optional header so we can get the subsystem
-  //
-  if (fread (&OptionalHdr, sizeof (OptionalHdr), 1, Fptr) != 1) {
-    Error (NULL, 0, 0004, "Failed to read COFF optional header from input file!", NULL);
-    return STATUS_ERROR;
-  }
-
-  *SubSystem = OptionalHdr.Subsystem;
   if (mOptions.Verbose) {
     VerboseMsg("  Got subsystem = 0x%X from image\n", (int) *SubSystem);
   }
+
   //
-  // Good to go
+  // File was successfully identified as a PE32
   //
   return STATUS_SUCCESS;
 }
