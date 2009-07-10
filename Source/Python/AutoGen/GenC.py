@@ -954,6 +954,7 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
         Type = ''
         Array = ''
         Value = Pcd.DefaultValue
+        Unicode = False
         if Pcd.DatumType == 'UINT64':
             if not Value.endswith('ULL'):
                 Value += 'ULL'
@@ -967,23 +968,21 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
             if Value[0] == '{':
                 Type = '(VOID *)'
             else:
-                Unicode = False
                 if Value[0] == 'L':
                     Unicode = True
                 Value = Value.lstrip('L')   #.strip('"')
                 Value = eval(Value)         # translate escape character
                 NewValue = '{'
                 for Index in range(0,len(Value)):
-                    NewValue = NewValue + str(ord(Value[Index]) % 0x100) + ', '
                     if Unicode:
-                        NewValue = NewValue + str(ord(Value[Index]) / 0x100) + ', '
+                        NewValue = NewValue + str(ord(Value[Index]) % 0x10000) + ', '
+                    else:
+                        NewValue = NewValue + str(ord(Value[Index]) % 0x100) + ', '
                 if Unicode:
-                    if ArraySize < (len(Value)*2 + 2):
-                        ArraySize = len(Value)*2 + 2
-                    NewValue = NewValue + '0, '
-                else:
-                    if ArraySize < (len(Value) + 1):
-                        ArraySize = len(Value) + 1
+                    ArraySize = ArraySize / 2;
+
+                if ArraySize < (len(Value) + 1):
+                    ArraySize = len(Value) + 1
                 Value = NewValue + '0 }'
             Array = '[%d]' % ArraySize
         #
@@ -998,12 +997,22 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
         else:
             PcdValueName = '_PCD_VALUE_' + Pcd.TokenCName
             
-        if Pcd.DatumType == 'VOID*' and Value[0] == '{':
-            AutoGenH.Append('#define _PCD_PATCHABLE_%s_SIZE %s\n' % (Pcd.TokenCName, Pcd.MaxDatumSize))
-            AutoGenH.Append('#define %s  %s%s\n' %(PcdValueName, Type, PcdVariableName))
-            AutoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED %s UINT8 %s%s = %s;\n' % (Const, PcdVariableName, Array, Value))
-            AutoGenH.Append('extern %s UINT8 %s%s;\n' %(Const, PcdVariableName, Array))
-            AutoGenH.Append('#define %s  %s%s\n' %(GetModeName, Type, PcdVariableName))
+        if Pcd.DatumType == 'VOID*':
+            #
+            # For unicode, UINT16 array will be generated, so the alignment of unicode is guaranteed.
+            #
+            if Unicode:
+                AutoGenH.Append('#define _PCD_PATCHABLE_%s_SIZE %s\n' % (Pcd.TokenCName, Pcd.MaxDatumSize))
+                AutoGenH.Append('#define %s  %s%s\n' %(PcdValueName, Type, PcdVariableName))
+                AutoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED %s UINT16 %s%s = %s;\n' % (Const, PcdVariableName, Array, Value))
+                AutoGenH.Append('extern %s UINT16 %s%s;\n' %(Const, PcdVariableName, Array))
+                AutoGenH.Append('#define %s  %s%s\n' %(GetModeName, Type, PcdVariableName))
+            else:
+                AutoGenH.Append('#define _PCD_PATCHABLE_%s_SIZE %s\n' % (Pcd.TokenCName, Pcd.MaxDatumSize))
+                AutoGenH.Append('#define %s  %s%s\n' %(PcdValueName, Type, PcdVariableName))
+                AutoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED %s UINT8 %s%s = %s;\n' % (Const, PcdVariableName, Array, Value))
+                AutoGenH.Append('extern %s UINT8 %s%s;\n' %(Const, PcdVariableName, Array))
+                AutoGenH.Append('#define %s  %s%s\n' %(GetModeName, Type, PcdVariableName))
         elif Pcd.Type == TAB_PCDS_PATCHABLE_IN_MODULE:
             AutoGenH.Append('#define %s  %s\n' %(PcdValueName, Value))
             AutoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED volatile %s %s %s = %s;\n' %(Const, Pcd.DatumType, PcdVariableName, PcdValueName))
