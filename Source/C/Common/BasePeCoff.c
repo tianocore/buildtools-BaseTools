@@ -27,17 +27,17 @@ typedef union {
 STATIC
 RETURN_STATUS
 PeCoffLoaderGetPeHeader (
-  IN OUT PE_COFF_LOADER_IMAGE_CONTEXT  *ImageContext,
-  OUT    EFI_IMAGE_NT_HEADERS          **PeHdr,
-  OUT    EFI_TE_IMAGE_HEADER           **TeHdr
+  IN OUT PE_COFF_LOADER_IMAGE_CONTEXT    *ImageContext,
+  OUT    EFI_IMAGE_OPTIONAL_HEADER_UNION **PeHdr,
+  OUT    EFI_TE_IMAGE_HEADER             **TeHdr
   );
 
 STATIC
 RETURN_STATUS
 PeCoffLoaderCheckImageType (
-  IN OUT PE_COFF_LOADER_IMAGE_CONTEXT  *ImageContext,
-  IN     EFI_IMAGE_NT_HEADERS          *PeHdr,
-  IN     EFI_TE_IMAGE_HEADER           *TeHdr
+  IN OUT PE_COFF_LOADER_IMAGE_CONTEXT    *ImageContext,
+  IN     EFI_IMAGE_OPTIONAL_HEADER_UNION *PeHdr,
+  IN     EFI_TE_IMAGE_HEADER             *TeHdr
   );
 
 STATIC
@@ -74,9 +74,9 @@ PeCoffLoaderRelocateIpfImage (
 STATIC
 RETURN_STATUS
 PeCoffLoaderGetPeHeader (
-  IN OUT PE_COFF_LOADER_IMAGE_CONTEXT  *ImageContext,
-  OUT    EFI_IMAGE_NT_HEADERS          **PeHdr,
-  OUT    EFI_TE_IMAGE_HEADER           **TeHdr
+  IN OUT PE_COFF_LOADER_IMAGE_CONTEXT    *ImageContext,
+  OUT    EFI_IMAGE_OPTIONAL_HEADER_UNION **PeHdr,
+  OUT    EFI_TE_IMAGE_HEADER             **TeHdr
   )
 /*++
 
@@ -129,8 +129,8 @@ Returns:
   //
   // Get the PE/COFF Header pointer
   //
-  *PeHdr = (EFI_IMAGE_NT_HEADERS *) ((UINTN)ImageContext->Handle + ImageContext->PeCoffHeaderOffset);
-  if ((*PeHdr)->Signature != EFI_IMAGE_NT_SIGNATURE) {
+  *PeHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *) ((UINTN)ImageContext->Handle + ImageContext->PeCoffHeaderOffset);
+  if ((*PeHdr)->Pe32.Signature != EFI_IMAGE_NT_SIGNATURE) {
     //
     // Check the PE/COFF Header Signature. If not, then try to get a TE header
     //
@@ -148,7 +148,7 @@ STATIC
 RETURN_STATUS
 PeCoffLoaderCheckImageType (
   IN OUT PE_COFF_LOADER_IMAGE_CONTEXT          *ImageContext,
-  IN     EFI_IMAGE_NT_HEADERS                  *PeHdr,
+  IN     EFI_IMAGE_OPTIONAL_HEADER_UNION       *PeHdr,
   IN     EFI_TE_IMAGE_HEADER                   *TeHdr
   )
 /*++
@@ -177,7 +177,7 @@ Returns:
   // We support a native machine type (IA-32/Itanium-based)
   //
   if (ImageContext->IsTeImage == FALSE) {
-    ImageContext->Machine = PeHdr->FileHeader.Machine;
+    ImageContext->Machine = PeHdr->Pe32.FileHeader.Machine;
   } else {
     ImageContext->Machine = TeHdr->Machine;
   }
@@ -195,7 +195,7 @@ Returns:
       //
       ImageContext->Machine = EFI_IMAGE_MACHINE_ARMT;
       if (ImageContext->IsTeImage == FALSE) {
-        PeHdr->FileHeader.Machine = ImageContext->Machine;
+        PeHdr->Pe32.FileHeader.Machine = ImageContext->Machine;
       } else {
         TeHdr->Machine = ImageContext->Machine;
       }
@@ -213,7 +213,7 @@ Returns:
   // EFI Boot Service Drivers, EFI Runtime Drivers and EFI SAL Drivers.
   //
   if (ImageContext->IsTeImage == FALSE) {
-    ImageContext->ImageType = PeHdr->OptionalHeader.Subsystem;
+    ImageContext->ImageType = PeHdr->Pe32.OptionalHeader.Subsystem;
   } else {
     ImageContext->ImageType = (UINT16) (TeHdr->Subsystem);
   }
@@ -258,7 +258,7 @@ Returns:
 --*/
 {
   RETURN_STATUS                   Status;
-  EFI_IMAGE_NT_HEADERS            *PeHdr;
+  EFI_IMAGE_OPTIONAL_HEADER_UNION *PeHdr;
   EFI_TE_IMAGE_HEADER             *TeHdr;
   EFI_IMAGE_DATA_DIRECTORY        *DebugDirectoryEntry;
   UINTN                           Size;
@@ -295,13 +295,13 @@ Returns:
   if (RETURN_ERROR (Status)) {
     return Status;
   }
-  OptionHeader.Header = (VOID *) &(PeHdr->OptionalHeader);
+  OptionHeader.Header = (VOID *) &(PeHdr->Pe32.OptionalHeader);
 
   //
   // Retrieve the base address of the image
   //
   if (!(ImageContext->IsTeImage)) {
-    if (PeHdr->OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
+    if (PeHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
       ImageContext->ImageAddress = (PHYSICAL_ADDRESS) OptionHeader.Optional32->ImageBase;
     } else {
       ImageContext->ImageAddress = (PHYSICAL_ADDRESS) OptionHeader.Optional64->ImageBase;
@@ -332,7 +332,7 @@ Returns:
   // Look at the file header to determine if relocations have been stripped, and
   // save this info in the image context for later use.
   //
-  if ((!(ImageContext->IsTeImage)) && ((PeHdr->FileHeader.Characteristics & EFI_IMAGE_FILE_RELOCS_STRIPPED) != 0)) {
+  if ((!(ImageContext->IsTeImage)) && ((PeHdr->Pe32.FileHeader.Characteristics & EFI_IMAGE_FILE_RELOCS_STRIPPED) != 0)) {
     ImageContext->RelocationsStripped = TRUE;
   } else if ((ImageContext->IsTeImage) && (TeHdr->DataDirectory[0].Size == 0)) {
     ImageContext->RelocationsStripped = TRUE;
@@ -342,7 +342,7 @@ Returns:
 
   if (!(ImageContext->IsTeImage)) {
 
-    if (PeHdr->OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
+    if (PeHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
       ImageContext->ImageSize         = (UINT64) OptionHeader.Optional32->SizeOfImage;
       ImageContext->SectionAlignment  = OptionHeader.Optional32->SectionAlignment;
       ImageContext->SizeOfHeaders     = OptionHeader.Optional32->SizeOfHeaders;
@@ -382,10 +382,10 @@ Returns:
                                ImageContext->PeCoffHeaderOffset +
                                sizeof (UINT32) + 
                                sizeof (EFI_IMAGE_FILE_HEADER) + 
-                               PeHdr->FileHeader.SizeOfOptionalHeader
+                               PeHdr->Pe32.FileHeader.SizeOfOptionalHeader
                                );
 
-      for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index++) {
+      for (Index = 0; Index < PeHdr->Pe32.FileHeader.NumberOfSections; Index++) {
         //
         // Read section header from file
         //
@@ -588,22 +588,22 @@ Returns:
 
 --*/
 {
-  RETURN_STATUS             Status;
-  EFI_IMAGE_NT_HEADERS      *PeHdr;
-  EFI_TE_IMAGE_HEADER       *TeHdr;
-  EFI_IMAGE_DATA_DIRECTORY  *RelocDir;
-  UINT64                     Adjust;
-  EFI_IMAGE_BASE_RELOCATION *RelocBase;
-  EFI_IMAGE_BASE_RELOCATION *RelocBaseEnd;
-  UINT16                    *Reloc;
-  UINT16                    *RelocEnd;
-  CHAR8                     *Fixup;
-  CHAR8                     *FixupBase;
-  UINT16                    *F16;
-  UINT32                    *F32;
-  CHAR8                     *FixupData;
-  PHYSICAL_ADDRESS          BaseAddress;
-  UINT16                    MachineType;
+  RETURN_STATUS                         Status;
+  EFI_IMAGE_OPTIONAL_HEADER_UNION       *PeHdr;
+  EFI_TE_IMAGE_HEADER                   *TeHdr;
+  EFI_IMAGE_DATA_DIRECTORY              *RelocDir;
+  UINT64                                Adjust;
+  EFI_IMAGE_BASE_RELOCATION             *RelocBase;
+  EFI_IMAGE_BASE_RELOCATION             *RelocBaseEnd;
+  UINT16                                *Reloc;
+  UINT16                                *RelocEnd;
+  CHAR8                                 *Fixup;
+  CHAR8                                 *FixupBase;
+  UINT16                                *F16;
+  UINT32                                *F32;
+  CHAR8                                 *FixupData;
+  PHYSICAL_ADDRESS                      BaseAddress;
+  UINT16                                MachineType;
   EFI_IMAGE_OPTIONAL_HEADER_POINTER     OptionHeader;
 
   PeHdr = NULL;
@@ -631,10 +631,10 @@ Returns:
   }
 
   if (!(ImageContext->IsTeImage)) {
-    PeHdr = (EFI_IMAGE_NT_HEADERS *)((UINTN)ImageContext->ImageAddress + 
+    PeHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *)((UINTN)ImageContext->ImageAddress + 
                                             ImageContext->PeCoffHeaderOffset);
-    OptionHeader.Header = (VOID *) &(PeHdr->OptionalHeader);
-    if (PeHdr->OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
+    OptionHeader.Header = (VOID *) &(PeHdr->Pe32.OptionalHeader);
+    if (PeHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
       Adjust = (UINT64) BaseAddress - OptionHeader.Optional32->ImageBase;
       OptionHeader.Optional32->ImageBase = (UINT32) BaseAddress;
       MachineType = ImageContext->Machine;
@@ -838,7 +838,7 @@ Returns:
 --*/
 {
   RETURN_STATUS                         Status;
-  EFI_IMAGE_NT_HEADERS                  *PeHdr;
+  EFI_IMAGE_OPTIONAL_HEADER_UNION       *PeHdr;
   EFI_TE_IMAGE_HEADER                   *TeHdr;
   PE_COFF_LOADER_IMAGE_CONTEXT          CheckContext;
   EFI_IMAGE_SECTION_HEADER              *FirstSection;
@@ -923,19 +923,19 @@ Returns:
                             (VOID *) (UINTN) ImageContext->ImageAddress
                             );
 
-    PeHdr = (EFI_IMAGE_NT_HEADERS *)
+    PeHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *)
       ((UINTN)ImageContext->ImageAddress + ImageContext->PeCoffHeaderOffset);
 
-    OptionHeader.Header = (VOID *) &(PeHdr->OptionalHeader);
+    OptionHeader.Header = (VOID *) &(PeHdr->Pe32.OptionalHeader);
     
     FirstSection = (EFI_IMAGE_SECTION_HEADER *) (
                       (UINTN)ImageContext->ImageAddress +
                       ImageContext->PeCoffHeaderOffset +
                       sizeof(UINT32) + 
                       sizeof(EFI_IMAGE_FILE_HEADER) + 
-                      PeHdr->FileHeader.SizeOfOptionalHeader
+                      PeHdr->Pe32.FileHeader.SizeOfOptionalHeader
       );
-    NumberOfSections = (UINTN) (PeHdr->FileHeader.NumberOfSections);
+    NumberOfSections = (UINTN) (PeHdr->Pe32.FileHeader.NumberOfSections);
   } else {
     Status = ImageContext->ImageRead (
                             ImageContext->Handle,
@@ -1040,7 +1040,7 @@ Returns:
   if (!(ImageContext->IsTeImage)) {
     ImageContext->EntryPoint = (PHYSICAL_ADDRESS) (UINTN) PeCoffLoaderImageAddress (
                                                                 ImageContext,
-                                                                PeHdr->OptionalHeader.AddressOfEntryPoint
+                                                                PeHdr->Pe32.OptionalHeader.AddressOfEntryPoint
                                                                 );
   } else {
     ImageContext->EntryPoint =  (PHYSICAL_ADDRESS) (
@@ -1059,7 +1059,7 @@ Returns:
   // the optional header to verify a desired directory entry is there.
   //
   if (!(ImageContext->IsTeImage)) {
-    if (PeHdr->OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
+    if (PeHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
       if (OptionHeader.Optional32->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
         DirectoryEntry = (EFI_IMAGE_DATA_DIRECTORY *)
           &OptionHeader.Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC];
