@@ -570,11 +570,12 @@ ScanSections(
   VOID
   )
 {
-  UINT32 i;
-  EFI_IMAGE_DOS_HEADER *DosHdr;
-  EFI_IMAGE_NT_HEADERS *NtHdr;
-  UINT32 CoffEntry = 0;
+  UINT32                          i;
+  EFI_IMAGE_DOS_HEADER            *DosHdr;
+  EFI_IMAGE_OPTIONAL_HEADER_UNION *NtHdr;
+  UINT32                          CoffEntry;
 
+  CoffEntry = 0;
   CoffOffset = 0;
 
   //
@@ -664,58 +665,58 @@ ScanSections(
   DosHdr->e_magic = EFI_IMAGE_DOS_SIGNATURE;
   DosHdr->e_lfanew = NtHdrOffset;
 
-  NtHdr = (EFI_IMAGE_NT_HEADERS*)(CoffFile + NtHdrOffset);
+  NtHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION*)(CoffFile + NtHdrOffset);
 
-  NtHdr->Signature = EFI_IMAGE_NT_SIGNATURE;
+  NtHdr->Pe32.Signature = EFI_IMAGE_NT_SIGNATURE;
 
   switch (Ehdr->e_machine) {
   case EM_386:
-    NtHdr->FileHeader.Machine = EFI_IMAGE_MACHINE_IA32;
-    NtHdr->OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC;
+    NtHdr->Pe32.FileHeader.Machine = EFI_IMAGE_MACHINE_IA32;
+    NtHdr->Pe32.OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC;
     break;
   case EM_X86_64:
-    NtHdr->FileHeader.Machine = EFI_IMAGE_MACHINE_X64;
-    NtHdr->OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC;
+    NtHdr->Pe32.FileHeader.Machine = EFI_IMAGE_MACHINE_X64;
+    NtHdr->Pe32.OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC;
     break;
   case EM_IA_64:
-    NtHdr->FileHeader.Machine = EFI_IMAGE_MACHINE_IPF;
-    NtHdr->OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC;
+    NtHdr->Pe32.FileHeader.Machine = EFI_IMAGE_MACHINE_IPF;
+    NtHdr->Pe32.OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC;
     break;
   case EM_ARM:
-    NtHdr->FileHeader.Machine = EFI_IMAGE_MACHINE_ARMT;
-    NtHdr->OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC;
+    NtHdr->Pe32.FileHeader.Machine = EFI_IMAGE_MACHINE_ARMT;
+    NtHdr->Pe32.OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC;
     break;
   default:
     VerboseMsg ("%s unknown e_machine type. Assume IA-32", (UINTN)Ehdr->e_machine);
-    NtHdr->FileHeader.Machine = EFI_IMAGE_MACHINE_IA32;
-    NtHdr->OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC;
+    NtHdr->Pe32.FileHeader.Machine = EFI_IMAGE_MACHINE_IA32;
+    NtHdr->Pe32.OptionalHeader.Magic = EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC;
   }
 
-  NtHdr->FileHeader.NumberOfSections = CoffNbrSections;
-  NtHdr->FileHeader.TimeDateStamp = time(NULL);
-  NtHdr->FileHeader.PointerToSymbolTable = 0;
-  NtHdr->FileHeader.NumberOfSymbols = 0;
-  NtHdr->FileHeader.SizeOfOptionalHeader = sizeof(NtHdr->OptionalHeader);
-  NtHdr->FileHeader.Characteristics = EFI_IMAGE_FILE_EXECUTABLE_IMAGE
+  NtHdr->Pe32.FileHeader.NumberOfSections = CoffNbrSections;
+  NtHdr->Pe32.FileHeader.TimeDateStamp = time(NULL);
+  NtHdr->Pe32.FileHeader.PointerToSymbolTable = 0;
+  NtHdr->Pe32.FileHeader.NumberOfSymbols = 0;
+  NtHdr->Pe32.FileHeader.SizeOfOptionalHeader = sizeof(NtHdr->Pe32.OptionalHeader);
+  NtHdr->Pe32.FileHeader.Characteristics = EFI_IMAGE_FILE_EXECUTABLE_IMAGE
     | EFI_IMAGE_FILE_LINE_NUMS_STRIPPED
     | EFI_IMAGE_FILE_LOCAL_SYMS_STRIPPED
     | EFI_IMAGE_FILE_32BIT_MACHINE;
 
-  NtHdr->OptionalHeader.SizeOfCode = DataOffset - TextOffset;
-  NtHdr->OptionalHeader.SizeOfInitializedData = RelocOffset - DataOffset;
-  NtHdr->OptionalHeader.SizeOfUninitializedData = 0;
-  NtHdr->OptionalHeader.AddressOfEntryPoint = CoffEntry;
+  NtHdr->Pe32.OptionalHeader.SizeOfCode = DataOffset - TextOffset;
+  NtHdr->Pe32.OptionalHeader.SizeOfInitializedData = RelocOffset - DataOffset;
+  NtHdr->Pe32.OptionalHeader.SizeOfUninitializedData = 0;
+  NtHdr->Pe32.OptionalHeader.AddressOfEntryPoint = CoffEntry;
 
-  NtHdr->OptionalHeader.BaseOfCode = TextOffset;
+  NtHdr->Pe32.OptionalHeader.BaseOfCode = TextOffset;
 
-  NtHdr->OptionalHeader.BaseOfData = DataOffset;
-  NtHdr->OptionalHeader.ImageBase = 0;
-  NtHdr->OptionalHeader.SectionAlignment = CoffAlignment;
-  NtHdr->OptionalHeader.FileAlignment = CoffAlignment;
-  NtHdr->OptionalHeader.SizeOfImage = 0;
+  NtHdr->Pe32.OptionalHeader.BaseOfData = DataOffset;
+  NtHdr->Pe32.OptionalHeader.ImageBase = 0;
+  NtHdr->Pe32.OptionalHeader.SectionAlignment = CoffAlignment;
+  NtHdr->Pe32.OptionalHeader.FileAlignment = CoffAlignment;
+  NtHdr->Pe32.OptionalHeader.SizeOfImage = 0;
 
-  NtHdr->OptionalHeader.SizeOfHeaders = TextOffset;
-  NtHdr->OptionalHeader.NumberOfRvaAndSizes = EFI_IMAGE_NUMBER_OF_DIRECTORY_ENTRIES;
+  NtHdr->Pe32.OptionalHeader.SizeOfHeaders = TextOffset;
+  NtHdr->Pe32.OptionalHeader.NumberOfRvaAndSizes = EFI_IMAGE_NUMBER_OF_DIRECTORY_ENTRIES;
 
   //
   // Section headers.
@@ -727,7 +728,7 @@ ScanSections(
             | EFI_IMAGE_SCN_MEM_READ);
   } else {
     // Don't make a section of size 0. 
-    NtHdr->FileHeader.NumberOfSections--;
+    NtHdr->Pe32.FileHeader.NumberOfSections--;
   }
 
   if ((RelocOffset - TextOffset) > 0) {
@@ -737,7 +738,7 @@ ScanSections(
             | EFI_IMAGE_SCN_MEM_READ);
   } else {
     // Don't make a section of size 0. 
-    NtHdr->FileHeader.NumberOfSections--;
+    NtHdr->Pe32.FileHeader.NumberOfSections--;
   }
 }
 
@@ -925,19 +926,19 @@ WriteRelocations(
   VOID
   )
 {
-  UINT32                    Index;
-  EFI_IMAGE_NT_HEADERS      *NtHdr;
-  EFI_IMAGE_DATA_DIRECTORY  *Dir;
-  BOOLEAN                   FoundRelocations;
-  Elf_Dyn                   *Dyn;
-  Elf_Rel                   *Rel;
-  UINTN                     RelElementSize;
-  UINTN                     RelSize;
-  UINTN                     RelOffset;
-  UINTN                     K;
-  UINT8                     *Targ;
-  Elf32_Phdr                *DynamicSegment;
-  Elf32_Phdr                *TargetSegment;
+  UINT32                           Index;
+  EFI_IMAGE_OPTIONAL_HEADER_UNION  *NtHdr;
+  EFI_IMAGE_DATA_DIRECTORY         *Dir;
+  BOOLEAN                          FoundRelocations;
+  Elf_Dyn                          *Dyn;
+  Elf_Rel                          *Rel;
+  UINTN                            RelElementSize;
+  UINTN                            RelSize;
+  UINTN                            RelOffset;
+  UINTN                            K;
+  UINT8                            *Targ;
+  Elf32_Phdr                       *DynamicSegment;
+  Elf32_Phdr                       *TargetSegment;
 
   for (Index = 0, FoundRelocations = FALSE; Index < Ehdr->e_shnum; Index++) {
     Elf_Shdr *RelShdr = GetShdrByIndex(Index);
@@ -1055,13 +1056,13 @@ WriteRelocations(
   }
 
 
-  NtHdr = (EFI_IMAGE_NT_HEADERS *)(CoffFile + NtHdrOffset);
-  Dir = &NtHdr->OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC];
+  NtHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *)(CoffFile + NtHdrOffset);
+  Dir = &NtHdr->Pe32.OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC];
   Dir->Size = CoffOffset - RelocOffset;
   if (Dir->Size == 0) {
     // If no relocations, null out the directory entry and don't add the .reloc section
     Dir->VirtualAddress = 0;
-    NtHdr->FileHeader.NumberOfSections--;
+    NtHdr->Pe32.FileHeader.NumberOfSections--;
   } else {
     Dir->VirtualAddress = RelocOffset;
     CreateSectionHeader (".reloc", RelocOffset, CoffOffset - RelocOffset,
@@ -1077,12 +1078,15 @@ WriteDebug(
   VOID
   )
 {
-  UINT32 Len = strlen(mInImageName) + 1;
-  UINT32 DebugOffset = CoffOffset;
-  EFI_IMAGE_NT_HEADERS *NtHdr;
-  EFI_IMAGE_DATA_DIRECTORY *DataDir;
-  EFI_IMAGE_DEBUG_DIRECTORY_ENTRY *Dir;
+  UINT32                              Len;
+  UINT32                              DebugOffset;
+  EFI_IMAGE_OPTIONAL_HEADER_UNION     *NtHdr;
+  EFI_IMAGE_DATA_DIRECTORY            *DataDir;
+  EFI_IMAGE_DEBUG_DIRECTORY_ENTRY     *Dir;
   EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY *Nb10;
+
+  Len = strlen(mInImageName) + 1;
+  DebugOffset = CoffOffset;
 
   CoffOffset += sizeof(EFI_IMAGE_DEBUG_DIRECTORY_ENTRY)
     + sizeof(EFI_IMAGE_DEBUG_CODEVIEW_NB10_ENTRY)
@@ -1103,14 +1107,14 @@ WriteDebug(
   strcpy ((char *)(Nb10 + 1), mInImageName);
 
 
-  NtHdr = (EFI_IMAGE_NT_HEADERS *)(CoffFile + NtHdrOffset);
-  DataDir = &NtHdr->OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG];
+  NtHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *)(CoffFile + NtHdrOffset);
+  DataDir = &NtHdr->Pe32.OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_DEBUG];
   DataDir->VirtualAddress = DebugOffset;
   DataDir->Size = CoffOffset - DebugOffset;
   if (DataDir->Size == 0) {
     // If no debug, null out the directory entry and don't add the .debug section
     DataDir->VirtualAddress = 0;
-    NtHdr->FileHeader.NumberOfSections--;
+    NtHdr->Pe32.FileHeader.NumberOfSections--;
   } else {
     DataDir->VirtualAddress = DebugOffset;
     CreateSectionHeader (".debug", DebugOffset, CoffOffset - DebugOffset,
@@ -1127,7 +1131,7 @@ ConvertElf (
   UINT32 *FileLength
   )
 {
-  EFI_IMAGE_NT_HEADERS *NtHdr;
+  EFI_IMAGE_OPTIONAL_HEADER_UNION *NtHdr;
 
   //
   // Check header, read section table.
@@ -1163,8 +1167,8 @@ ConvertElf (
   WriteDebug();
   VerboseMsg ("Write debug info.");
 
-  NtHdr = (EFI_IMAGE_NT_HEADERS *)(CoffFile + NtHdrOffset);
-  NtHdr->OptionalHeader.SizeOfImage = CoffOffset;
+  NtHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *)(CoffFile + NtHdrOffset);
+  NtHdr->Pe32.OptionalHeader.SizeOfImage = CoffOffset;
 
   //
   // Replace.
@@ -1337,47 +1341,47 @@ Returns:
 
 --*/
 {
-  UINT32            Type;
-  UINT32            InputFileNum;
-  CHAR8             **InputFileName;
-  char              *OutImageName;
-  char              *ModuleType;
-  CHAR8             *TimeStamp;
-  UINT32            OutImageType;
-  FILE              *fpIn;
-  FILE              *fpOut;
-  FILE              *fpInOut;
-  UINT32            Data;
-  UINT32            *DataPointer;
-  UINT32            *OldDataPointer;
-  UINT32            CheckSum;
-  UINT32            Index;
-  UINT32            Index1;
-  UINT32            Index2;
-  UINT64            Temp64;
-  UINT32            MciAlignment;
-  UINT8             MciPadValue;
-  UINT32            AllignedRelocSize;
-  UINT8             *FileBuffer;
-  UINT32            FileLength;
-  UINT8             *OutputFileBuffer;
-  UINT32            OutputFileLength;
-  RUNTIME_FUNCTION  *RuntimeFunction;
-  UNWIND_INFO       *UnwindInfo;
-  STATUS            Status;
-  BOOLEAN           ReplaceFlag;
-  BOOLEAN           KeepExceptionTableFlag;
-  BOOLEAN           KeepZeroPendingFlag;
-  UINT64            LogLevel;
-  EFI_TE_IMAGE_HEADER          TEImageHeader;
-  EFI_TE_IMAGE_HEADER          *TeHdr;
-  EFI_IMAGE_SECTION_HEADER     *SectionHeader;
-  EFI_IMAGE_DOS_HEADER         *DosHdr;
-  EFI_IMAGE_NT_HEADERS         *PeHdr;
-  EFI_IMAGE_OPTIONAL_HEADER32  *Optional32;
-  EFI_IMAGE_OPTIONAL_HEADER64  *Optional64;
-  EFI_IMAGE_DOS_HEADER         BackupDosHdr;
-  MICROCODE_IMAGE_HEADER       *MciHeader;
+  UINT32                           Type;
+  UINT32                           InputFileNum;
+  CHAR8                            **InputFileName;
+  char                             *OutImageName;
+  char                             *ModuleType;
+  CHAR8                            *TimeStamp;
+  UINT32                           OutImageType;
+  FILE                             *fpIn;
+  FILE                             *fpOut;
+  FILE                             *fpInOut;
+  UINT32                           Data;
+  UINT32                           *DataPointer;
+  UINT32                           *OldDataPointer;
+  UINT32                           CheckSum;
+  UINT32                           Index;
+  UINT32                           Index1;
+  UINT32                           Index2;
+  UINT64                           Temp64;
+  UINT32                           MciAlignment;
+  UINT8                            MciPadValue;
+  UINT32                           AllignedRelocSize;
+  UINT8                            *FileBuffer;
+  UINT32                           FileLength;
+  UINT8                            *OutputFileBuffer;
+  UINT32                           OutputFileLength;
+  RUNTIME_FUNCTION                 *RuntimeFunction;
+  UNWIND_INFO                      *UnwindInfo;
+  STATUS                           Status;
+  BOOLEAN                          ReplaceFlag;
+  BOOLEAN                          KeepExceptionTableFlag;
+  BOOLEAN                          KeepZeroPendingFlag;
+  UINT64                           LogLevel;
+  EFI_TE_IMAGE_HEADER              TEImageHeader;
+  EFI_TE_IMAGE_HEADER              *TeHdr;
+  EFI_IMAGE_SECTION_HEADER         *SectionHeader;
+  EFI_IMAGE_DOS_HEADER             *DosHdr;
+  EFI_IMAGE_OPTIONAL_HEADER_UNION  *PeHdr;
+  EFI_IMAGE_OPTIONAL_HEADER32      *Optional32;
+  EFI_IMAGE_OPTIONAL_HEADER64      *Optional64;
+  EFI_IMAGE_DOS_HEADER             BackupDosHdr;
+  MICROCODE_IMAGE_HEADER           *MciHeader;
 
   SetUtilityName (UTILITY_NAME);
 
@@ -2082,21 +2086,21 @@ Returns:
       //
       DosHdr = (EFI_IMAGE_DOS_HEADER *) FileBuffer;
       if (DosHdr->e_magic != EFI_IMAGE_DOS_SIGNATURE) {
-        PeHdr = (EFI_IMAGE_NT_HEADERS *)(FileBuffer);
-        if (PeHdr->Signature != EFI_IMAGE_NT_SIGNATURE) {
+        PeHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *)(FileBuffer);
+        if (PeHdr->Pe32.Signature != EFI_IMAGE_NT_SIGNATURE) {
           Error (NULL, 0, 3000, "Invalid", "TE and DOS header signatures were not found in %s image.", mInImageName);
           goto Finish;
         }
         DosHdr = NULL;
       } else {
-        PeHdr = (EFI_IMAGE_NT_HEADERS *)(FileBuffer + DosHdr->e_lfanew);
-        if (PeHdr->Signature != EFI_IMAGE_NT_SIGNATURE) {
+        PeHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *)(FileBuffer + DosHdr->e_lfanew);
+        if (PeHdr->Pe32.Signature != EFI_IMAGE_NT_SIGNATURE) {
           Error (NULL, 0, 3000, "Invalid", "PE header signature was not found in %s image.", mInImageName);
           goto Finish;
         }
       }
-      SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->OptionalHeader) + PeHdr->FileHeader.SizeOfOptionalHeader);
-      for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index ++, SectionHeader ++) {
+      SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
+      for (Index = 0; Index < PeHdr->Pe32.FileHeader.NumberOfSections; Index ++, SectionHeader ++) {
         if (strcmp ((char *)SectionHeader->Name, ".reloc") == 0) {
           //
           // Check the reloc section is in the end of image.
@@ -2107,9 +2111,9 @@ Returns:
             //
             FileLength = FileLength - SectionHeader->SizeOfRawData;
 
-            PeHdr->FileHeader.Characteristics |= EFI_IMAGE_FILE_RELOCS_STRIPPED;
-            if (PeHdr->OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
-              Optional32 = (EFI_IMAGE_OPTIONAL_HEADER32 *)&PeHdr->OptionalHeader;
+            PeHdr->Pe32.FileHeader.Characteristics |= EFI_IMAGE_FILE_RELOCS_STRIPPED;
+            if (PeHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
+              Optional32 = (EFI_IMAGE_OPTIONAL_HEADER32 *)&PeHdr->Pe32.OptionalHeader;
               Optional32->SizeOfImage -= SectionHeader->SizeOfRawData;
               Optional32->SizeOfInitializedData -= SectionHeader->SizeOfRawData;
               if (Optional32->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
@@ -2117,8 +2121,8 @@ Returns:
                 Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC].Size = 0;
               }
             }
-            if (PeHdr->OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
-              Optional64 = (EFI_IMAGE_OPTIONAL_HEADER64 *)&PeHdr->OptionalHeader;
+            if (PeHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
+              Optional64 = (EFI_IMAGE_OPTIONAL_HEADER64 *)&PeHdr->Pe32.OptionalHeader;
               Optional64->SizeOfImage -= SectionHeader->SizeOfRawData;
               Optional64->SizeOfInitializedData -= SectionHeader->SizeOfRawData;
               if (Optional64->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
@@ -2144,32 +2148,32 @@ Returns:
   DosHdr = (EFI_IMAGE_DOS_HEADER *)FileBuffer;
   if (DosHdr->e_magic != EFI_IMAGE_DOS_SIGNATURE) {
     // NO DOS header, check for PE/COFF header
-    PeHdr = (EFI_IMAGE_NT_HEADERS *)(FileBuffer);
-    if (PeHdr->Signature != EFI_IMAGE_NT_SIGNATURE) {
+    PeHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *)(FileBuffer);
+    if (PeHdr->Pe32.Signature != EFI_IMAGE_NT_SIGNATURE) {
       Error (NULL, 0, 3000, "Invalid", "DOS header signature was not found in %s image.", mInImageName);
       goto Finish;
     }
     DosHdr = NULL;
   } else {
 
-    PeHdr = (EFI_IMAGE_NT_HEADERS *)(FileBuffer + DosHdr->e_lfanew);
-    if (PeHdr->Signature != EFI_IMAGE_NT_SIGNATURE) {
+    PeHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *)(FileBuffer + DosHdr->e_lfanew);
+    if (PeHdr->Pe32.Signature != EFI_IMAGE_NT_SIGNATURE) {
       Error (NULL, 0, 3000, "Invalid", "PE header signature was not found in %s image.", mInImageName);
       goto Finish;
     }
   }
   
-  if (PeHdr->FileHeader.Machine == IMAGE_FILE_MACHINE_ARM) {
+  if (PeHdr->Pe32.FileHeader.Machine == IMAGE_FILE_MACHINE_ARM) {
     // Some tools kick out IMAGE_FILE_MACHINE_ARM (0x1c0) vs IMAGE_FILE_MACHINE_ARMT (0x1c2)
     // so patch back to the offical UEFI value.
-    PeHdr->FileHeader.Machine = IMAGE_FILE_MACHINE_ARMT;
+    PeHdr->Pe32.FileHeader.Machine = IMAGE_FILE_MACHINE_ARMT;
   }
 
   //
   // Extract bin data from Pe image.
   //
   if (OutImageType == FW_BIN_IMAGE) {
-    if (FileLength < PeHdr->OptionalHeader.SizeOfHeaders) {
+    if (FileLength < PeHdr->Pe32.OptionalHeader.SizeOfHeaders) {
       Error (NULL, 0, 3000, "Invalid", "FileSize of %s is not a legal size.", mInImageName);
       goto Finish;
     }
@@ -2177,12 +2181,12 @@ Returns:
     // Output bin data from exe file
     //
     if (fpOut != NULL) {
-      fwrite (FileBuffer + PeHdr->OptionalHeader.SizeOfHeaders, 1, FileLength - PeHdr->OptionalHeader.SizeOfHeaders, fpOut);
+      fwrite (FileBuffer + PeHdr->Pe32.OptionalHeader.SizeOfHeaders, 1, FileLength - PeHdr->Pe32.OptionalHeader.SizeOfHeaders, fpOut);
     }
     if (fpInOut != NULL) {
-      fwrite (FileBuffer + PeHdr->OptionalHeader.SizeOfHeaders, 1, FileLength - PeHdr->OptionalHeader.SizeOfHeaders, fpInOut);
+      fwrite (FileBuffer + PeHdr->Pe32.OptionalHeader.SizeOfHeaders, 1, FileLength - PeHdr->Pe32.OptionalHeader.SizeOfHeaders, fpInOut);
     }
-    VerboseMsg ("the size of output file is %d bytes", FileLength - PeHdr->OptionalHeader.SizeOfHeaders);
+    VerboseMsg ("the size of output file is %d bytes", FileLength - PeHdr->Pe32.OptionalHeader.SizeOfHeaders);
     goto Finish;
   }
 
@@ -2229,8 +2233,8 @@ Returns:
   // Extract acpi data from pe image.
   //
   if (OutImageType == FW_ACPI_IMAGE) {
-    SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->OptionalHeader) + PeHdr->FileHeader.SizeOfOptionalHeader);
-    for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index ++, SectionHeader ++) {
+    SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
+    for (Index = 0; Index < PeHdr->Pe32.FileHeader.NumberOfSections; Index ++, SectionHeader ++) {
       if (strcmp ((char *)SectionHeader->Name, ".data") == 0 || strcmp ((char *)SectionHeader->Name, ".sdata") == 0) {
         //
         // Check Acpi Table
@@ -2281,18 +2285,18 @@ Returns:
   //
   memset (&TEImageHeader, 0, sizeof (EFI_TE_IMAGE_HEADER));
   TEImageHeader.Signature        = EFI_TE_IMAGE_HEADER_SIGNATURE;
-  TEImageHeader.Machine          = PeHdr->FileHeader.Machine;
-  TEImageHeader.NumberOfSections = (UINT8) PeHdr->FileHeader.NumberOfSections;
-  TEImageHeader.StrippedSize     = (UINT16) ((UINTN) ((UINT8 *) &(PeHdr->OptionalHeader) + PeHdr->FileHeader.SizeOfOptionalHeader) - (UINTN) FileBuffer);
+  TEImageHeader.Machine          = PeHdr->Pe32.FileHeader.Machine;
+  TEImageHeader.NumberOfSections = (UINT8) PeHdr->Pe32.FileHeader.NumberOfSections;
+  TEImageHeader.StrippedSize     = (UINT16) ((UINTN) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader) - (UINTN) FileBuffer);
   TEImageHeader.Subsystem        = (UINT8) Type;
   
   //
   // Patch the PE header
   //
-  PeHdr->OptionalHeader.Subsystem = (UINT16) Type;
+  PeHdr->Pe32.OptionalHeader.Subsystem = (UINT16) Type;
 
-  if (PeHdr->OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
-    Optional32 = (EFI_IMAGE_OPTIONAL_HEADER32 *)&PeHdr->OptionalHeader;
+  if (PeHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
+    Optional32 = (EFI_IMAGE_OPTIONAL_HEADER32 *)&PeHdr->Pe32.OptionalHeader;
     Optional32->MajorLinkerVersion          = 0;
     Optional32->MinorLinkerVersion          = 0;
     Optional32->MajorOperatingSystemVersion = 0;
@@ -2328,8 +2332,8 @@ Returns:
     if (!KeepExceptionTableFlag && Optional32->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION &&
         Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress != 0 &&
         Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size != 0) {
-      SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->OptionalHeader) + PeHdr->FileHeader.SizeOfOptionalHeader);
-      for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index++, SectionHeader++) {
+      SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
+      for (Index = 0; Index < PeHdr->Pe32.FileHeader.NumberOfSections; Index++, SectionHeader++) {
         if (SectionHeader->VirtualAddress == Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress) {
           //
           // Zero .pdata Section data
@@ -2355,8 +2359,8 @@ Returns:
     //
     if (!KeepZeroPendingFlag && Optional32->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
       if (Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC].Size != 0) {
-        SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->OptionalHeader) + PeHdr->FileHeader.SizeOfOptionalHeader);
-        for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index++, SectionHeader++) {
+        SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
+        for (Index = 0; Index < PeHdr->Pe32.FileHeader.NumberOfSections; Index++, SectionHeader++) {
           //
           // Look for the Section Header that starts as the same virtual address as the Base Relocation Data Directory
           //
@@ -2385,8 +2389,8 @@ Returns:
         }
       }
     }
-  } else if (PeHdr->OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
-    Optional64 = (EFI_IMAGE_OPTIONAL_HEADER64 *)&PeHdr->OptionalHeader;
+  } else if (PeHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
+    Optional64 = (EFI_IMAGE_OPTIONAL_HEADER64 *)&PeHdr->Pe32.OptionalHeader;
     Optional64->MajorLinkerVersion          = 0;
     Optional64->MinorLinkerVersion          = 0;
     Optional64->MajorOperatingSystemVersion = 0;
@@ -2420,12 +2424,12 @@ Returns:
     // Zero the .pdata section for X64 machine and don't check the Debug Directory is empty
     // For Itaninum and X64 Image, remove .pdata section.
     //
-    if ((!KeepExceptionTableFlag && PeHdr->FileHeader.Machine == IMAGE_FILE_MACHINE_X64) || PeHdr->FileHeader.Machine == IMAGE_FILE_MACHINE_IA64) {
+    if ((!KeepExceptionTableFlag && PeHdr->Pe32.FileHeader.Machine == IMAGE_FILE_MACHINE_X64) || PeHdr->Pe32.FileHeader.Machine == IMAGE_FILE_MACHINE_IA64) {
       if (Optional64->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION &&
           Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress != 0 &&
           Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size != 0) {
-        SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->OptionalHeader) + PeHdr->FileHeader.SizeOfOptionalHeader);
-        for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index++, SectionHeader++) {
+        SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
+        for (Index = 0; Index < PeHdr->Pe32.FileHeader.NumberOfSections; Index++, SectionHeader++) {
           if (SectionHeader->VirtualAddress == Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress) {
             //
             // Zero .pdata Section header name
@@ -2434,8 +2438,8 @@ Returns:
 
             RuntimeFunction = (RUNTIME_FUNCTION *)(FileBuffer + SectionHeader->PointerToRawData);
             for (Index1 = 0; Index1 < Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size / sizeof (RUNTIME_FUNCTION); Index1++, RuntimeFunction++) {
-              SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->OptionalHeader) + PeHdr->FileHeader.SizeOfOptionalHeader);
-              for (Index2 = 0; Index2 < PeHdr->FileHeader.NumberOfSections; Index2++, SectionHeader++) {
+              SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
+              for (Index2 = 0; Index2 < PeHdr->Pe32.FileHeader.NumberOfSections; Index2++, SectionHeader++) {
                 if (RuntimeFunction->UnwindInfoAddress > SectionHeader->VirtualAddress && RuntimeFunction->UnwindInfoAddress < (SectionHeader->VirtualAddress + SectionHeader->SizeOfRawData)) {
                   UnwindInfo = (UNWIND_INFO *)(FileBuffer + SectionHeader->PointerToRawData + (RuntimeFunction->UnwindInfoAddress - SectionHeader->VirtualAddress));
                   if (UnwindInfo->Version == 1) {
@@ -2463,8 +2467,8 @@ Returns:
     //
     if (!KeepZeroPendingFlag && Optional64->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_DEBUG) {
       if (Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC].Size != 0) {
-        SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->OptionalHeader) + PeHdr->FileHeader.SizeOfOptionalHeader);
-        for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index++, SectionHeader++) {
+        SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
+        for (Index = 0; Index < PeHdr->Pe32.FileHeader.NumberOfSections; Index++, SectionHeader++) {
           //
           // Look for the Section Header that starts as the same virtual address as the Base Relocation Data Directory
           //
@@ -2494,11 +2498,11 @@ Returns:
       }
     }
   } else {
-    Error (NULL, 0, 3000, "Invalid", "Magic 0x%x of PeImage %s is unknown.", PeHdr->OptionalHeader.Magic, mInImageName);
+    Error (NULL, 0, 3000, "Invalid", "Magic 0x%x of PeImage %s is unknown.", PeHdr->Pe32.OptionalHeader.Magic, mInImageName);
     goto Finish;
   }
   
-  if (((PeHdr->FileHeader.Characteristics & EFI_IMAGE_FILE_RELOCS_STRIPPED) == 0) && \
+  if (((PeHdr->Pe32.FileHeader.Characteristics & EFI_IMAGE_FILE_RELOCS_STRIPPED) == 0) && \
     (TEImageHeader.DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress == 0) && \
     (TEImageHeader.DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].Size == 0)) {
     //
@@ -2516,8 +2520,8 @@ Returns:
   // Zero ExceptionTable Xdata
   //
   if (!KeepExceptionTableFlag) {
-    SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->OptionalHeader) + PeHdr->FileHeader.SizeOfOptionalHeader);
-    ZeroXdataSection(mInImageName, FileBuffer, SectionHeader, PeHdr->FileHeader.NumberOfSections);
+    SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
+    ZeroXdataSection(mInImageName, FileBuffer, SectionHeader, PeHdr->Pe32.FileHeader.NumberOfSections);
   }
 
   //
@@ -2526,7 +2530,7 @@ Returns:
   ZeroDebugData (FileBuffer, FALSE);
 
   if (OutImageType == FW_TE_IMAGE) {
-    if ((PeHdr->FileHeader.NumberOfSections &~0xFF) || (Type &~0xFF)) {
+    if ((PeHdr->Pe32.FileHeader.NumberOfSections &~0xFF) || (Type &~0xFF)) {
       //
       // Pack the subsystem and NumberOfSections into 1 byte. Make sure they fit both.
       //
@@ -2534,7 +2538,7 @@ Returns:
       goto Finish;
     }
 
-    if ((PeHdr->OptionalHeader.SectionAlignment != PeHdr->OptionalHeader.FileAlignment)) {
+    if ((PeHdr->Pe32.OptionalHeader.SectionAlignment != PeHdr->Pe32.OptionalHeader.FileAlignment)) {
       //
       // TeImage has the same section alignment and file alignment.
       //
