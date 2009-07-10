@@ -710,22 +710,22 @@ Returns:
 
 --*/
 {
-  CHAR8           PeMapFileName [_MAX_PATH];
-  CHAR8           *Cptr, *Cptr2;
-  CHAR8           FileGuidName [MAX_LINE_LEN];
-  FILE            *PeMapFile;
-  CHAR8           Line [MAX_LINE_LEN];
-  CHAR8           KeyWord [MAX_LINE_LEN];
-  CHAR8                 FunctionName [MAX_LINE_LEN];
-  EFI_PHYSICAL_ADDRESS  FunctionAddress;
-  UINT32                FunctionType;
-  CHAR8                 FunctionTypeName [MAX_LINE_LEN];
-  UINT32                Index;
-  UINT32                AddressOfEntryPoint;
-  UINT32                Offset;
-  EFI_IMAGE_NT_HEADERS                  *PeHdr;
-  EFI_TE_IMAGE_HEADER                   *TEImageHeader;
-  EFI_IMAGE_SECTION_HEADER              *SectionHeader;
+  CHAR8                               PeMapFileName [_MAX_PATH];
+  CHAR8                               *Cptr, *Cptr2;
+  CHAR8                               FileGuidName [MAX_LINE_LEN];
+  FILE                                *PeMapFile;
+  CHAR8                               Line [MAX_LINE_LEN];
+  CHAR8                               KeyWord [MAX_LINE_LEN];
+  CHAR8                               FunctionName [MAX_LINE_LEN];
+  EFI_PHYSICAL_ADDRESS                FunctionAddress;
+  UINT32                              FunctionType;
+  CHAR8                               FunctionTypeName [MAX_LINE_LEN];
+  UINT32                              Index;
+  UINT32                              AddressOfEntryPoint;
+  UINT32                              Offset;
+  EFI_IMAGE_OPTIONAL_HEADER_UNION     *ImgHdr;
+  EFI_TE_IMAGE_HEADER                 *TEImageHeader;
+  EFI_IMAGE_SECTION_HEADER            *SectionHeader;
   
   //
   // Init local variable
@@ -783,16 +783,16 @@ Returns:
   // AddressOfEntryPoint and Offset in Image
   //
   if (!pImageContext->IsTeImage) {
-  	PeHdr = (EFI_IMAGE_NT_HEADERS *) ((UINT8 *) pImageContext->Handle + pImageContext->PeCoffHeaderOffset);
-  	AddressOfEntryPoint = PeHdr->OptionalHeader.AddressOfEntryPoint;
+  	ImgHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *) ((UINT8 *) pImageContext->Handle + pImageContext->PeCoffHeaderOffset);
+  	AddressOfEntryPoint = ImgHdr->Pe32.OptionalHeader.AddressOfEntryPoint;
   	Offset = 0;
     SectionHeader = (EFI_IMAGE_SECTION_HEADER *) (
-                       (UINT8 *) PeHdr +
+                       (UINT8 *) ImgHdr +
                        sizeof (UINT32) + 
                        sizeof (EFI_IMAGE_FILE_HEADER) +  
-                       PeHdr->FileHeader.SizeOfOptionalHeader
+                       ImgHdr->Pe32.FileHeader.SizeOfOptionalHeader
                        );
-    Index = PeHdr->FileHeader.NumberOfSections;
+    Index = ImgHdr->Pe32.FileHeader.NumberOfSections;
   } else {
   	TEImageHeader = (EFI_TE_IMAGE_HEADER *) pImageContext->Handle;
     AddressOfEntryPoint = TEImageHeader->AddressOfEntryPoint;
@@ -1840,9 +1840,9 @@ Returns:
 
 --*/
 {
-  EFI_IMAGE_DOS_HEADER  *DosHeader;
-  EFI_IMAGE_NT_HEADERS  *NtHeader;
-  EFI_TE_IMAGE_HEADER   *TeHeader;
+  EFI_IMAGE_DOS_HEADER             *DosHeader;
+  EFI_IMAGE_OPTIONAL_HEADER_UNION  *ImgHdr;
+  EFI_TE_IMAGE_HEADER              *TeHeader;
 
   //
   // Verify input parameters
@@ -1880,21 +1880,21 @@ Returns:
     //
     // Immediately following is the NT header.
     //
-    NtHeader = (EFI_IMAGE_NT_HEADERS *) ((UINTN) Pe32 + DosHeader->e_lfanew);
+    ImgHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *) ((UINTN) Pe32 + DosHeader->e_lfanew);
   
     //
     // Verify NT header is expected
     //
-    if (NtHeader->Signature != EFI_IMAGE_NT_SIGNATURE) {
-      Error (NULL, 0, 3000, "Invalid", "Unrecognized image signature 0x%08X.", NtHeader->Signature);
+    if (ImgHdr->Pe32.Signature != EFI_IMAGE_NT_SIGNATURE) {
+      Error (NULL, 0, 3000, "Invalid", "Unrecognized image signature 0x%08X.", ImgHdr->Pe32.Signature);
       return EFI_UNSUPPORTED;
     }
     //
     // Get output
     //
-    *EntryPoint   = NtHeader->OptionalHeader.AddressOfEntryPoint;
-    *BaseOfCode   = NtHeader->OptionalHeader.BaseOfCode;
-    *MachineType  = NtHeader->FileHeader.Machine;
+    *EntryPoint   = ImgHdr->Pe32.OptionalHeader.AddressOfEntryPoint;
+    *BaseOfCode   = ImgHdr->Pe32.OptionalHeader.BaseOfCode;
+    *MachineType  = ImgHdr->Pe32.FileHeader.Machine;
   }
 
   //
@@ -2608,9 +2608,7 @@ Returns:
   UINTN                                 Index;
   EFI_FILE_SECTION_POINTER              CurrentPe32Section;
   EFI_FFS_FILE_STATE                    SavedState;
-  EFI_IMAGE_NT_HEADERS                  *PeHdr;
-  EFI_IMAGE_OPTIONAL_HEADER32           *Optional32;
-  EFI_IMAGE_OPTIONAL_HEADER64           *Optional64;
+  EFI_IMAGE_OPTIONAL_HEADER_UNION       *ImgHdr;
   EFI_TE_IMAGE_HEADER                   *TEImageHeader;
   UINT8                                 Flags;
   UINT8                                 *MemoryImagePointer;
@@ -2626,9 +2624,7 @@ Returns:
   MemoryImagePointer = NULL;
   BaseToUpdate       = NULL;
   TEImageHeader      = NULL;
-  PeHdr              = NULL;
-  Optional32         = NULL;
-  Optional64         = NULL;
+  ImgHdr             = NULL;
   SectionHeader      = NULL;
   Cptr               = NULL;
   PeFile             = NULL;
@@ -2717,7 +2713,7 @@ Returns:
     //
     // Get PeHeader pointer
     //
-    PeHdr = (EFI_IMAGE_NT_HEADERS *)((UINTN) CurrentPe32Section.Pe32Section + sizeof (EFI_PE32_SECTION) + ImageContext.PeCoffHeaderOffset);
+    ImgHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *)((UINTN) CurrentPe32Section.Pe32Section + sizeof (EFI_PE32_SECTION) + ImageContext.PeCoffHeaderOffset);
 
     //
     // Calculate the PE32 base address, based on file type
@@ -2737,7 +2733,7 @@ Returns:
         //
         // Check if section-alignment and file-alignment match or not
         //
-        if ((PeHdr->OptionalHeader.SectionAlignment != PeHdr->OptionalHeader.FileAlignment)) {
+        if ((ImgHdr->Pe32.OptionalHeader.SectionAlignment != ImgHdr->Pe32.OptionalHeader.FileAlignment)) {
           //
           // Xip module has the same section alignment and file alignment.
           //
@@ -2807,13 +2803,13 @@ Returns:
 
       case EFI_FV_FILETYPE_DRIVER:
       case EFI_FV_FILETYPE_DXE_CORE:
-        switch (PeHdr->OptionalHeader.Subsystem) {
+        switch (ImgHdr->Pe32.OptionalHeader.Subsystem) {
           case EFI_IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER:
 						if ((Flags & REBASE_XIP_FILE) == REBASE_XIP_FILE) {
 			        //
 			        // Check if section-alignment and file-alignment match or not
 			        //
-			        if ((PeHdr->OptionalHeader.SectionAlignment != PeHdr->OptionalHeader.FileAlignment)) {
+			        if ((ImgHdr->Pe32.OptionalHeader.SectionAlignment != ImgHdr->Pe32.OptionalHeader.FileAlignment)) {
 			          //
 			          // Xip module has the same section alignment and file alignment.
 			          //
@@ -2846,7 +2842,7 @@ Returns:
 			        //
 			        // Check if section-alignment and file-alignment match or not
 			        //
-			        if ((PeHdr->OptionalHeader.SectionAlignment != PeHdr->OptionalHeader.FileAlignment)) {
+			        if ((ImgHdr->Pe32.OptionalHeader.SectionAlignment != ImgHdr->Pe32.OptionalHeader.FileAlignment)) {
 			          //
 			          // Xip module has the same section alignment and file alignment.
 			          //
@@ -2914,13 +2910,13 @@ Returns:
       // Copy Relocated data to raw image file.
       //
       SectionHeader = (EFI_IMAGE_SECTION_HEADER *) (
-                         (UINTN) PeHdr +
+                         (UINTN) ImgHdr +
                          sizeof (UINT32) + 
                          sizeof (EFI_IMAGE_FILE_HEADER) +  
-                         PeHdr->FileHeader.SizeOfOptionalHeader
+                         ImgHdr->Pe32.FileHeader.SizeOfOptionalHeader
                          );
       
-      for (Index = 0; Index < PeHdr->FileHeader.NumberOfSections; Index ++, SectionHeader ++) {
+      for (Index = 0; Index < ImgHdr->Pe32.FileHeader.NumberOfSections; Index ++, SectionHeader ++) {
         CopyMem (
           (UINT8 *) CurrentPe32Section.Pe32Section + sizeof (EFI_COMMON_SECTION_HEADER) + SectionHeader->PointerToRawData, 
           (VOID*) (UINTN) (ImageContext.ImageAddress + SectionHeader->VirtualAddress), 
@@ -2939,17 +2935,13 @@ Returns:
     //
     // Update Image Base Address
     //
-    if (PeHdr->FileHeader.Machine == EFI_IMAGE_MACHINE_IA32 ||
-        PeHdr->FileHeader.Machine == EFI_IMAGE_MACHINE_ARMT) {
-      Optional32 = (EFI_IMAGE_OPTIONAL_HEADER32 *) &(PeHdr->OptionalHeader);
-      Optional32->ImageBase     = (UINT32) NewPe32BaseAddress;
-    } else if (PeHdr->FileHeader.Machine == EFI_IMAGE_MACHINE_IA64 || 
-               PeHdr->FileHeader.Machine == EFI_IMAGE_MACHINE_X64) {
-      Optional64 = (EFI_IMAGE_OPTIONAL_HEADER64 *) &(PeHdr->OptionalHeader);
-      Optional64->ImageBase     = NewPe32BaseAddress;
+    if (ImgHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
+      ImgHdr->Pe32.OptionalHeader.ImageBase     = (UINT32) NewPe32BaseAddress;
+    } else if (ImgHdr->Pe32Plus.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
+      ImgHdr->Pe32Plus.OptionalHeader.ImageBase     = NewPe32BaseAddress;
     } else {
-      Error (NULL, 0, 3000, "Invalid", "unknown machine type %X in PE32 image %s", 
-        (UINT32) PeHdr->FileHeader.Machine,
+      Error (NULL, 0, 3000, "Invalid", "unknown PE magic signature %X in PE32 image %s",
+        (UINT32) ImgHdr->Pe32.OptionalHeader.Magic,
         FileName
         );
       return EFI_ABORTED;
