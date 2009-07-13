@@ -1318,13 +1318,7 @@ Returns:
     Error (NULL, 0, 3000, "Invalid", "could not get the PE32 entry point for the SEC core.");
     return EFI_ABORTED;
   }  
-    
-  if (MachineType != EFI_IMAGE_MACHINE_ARMT) {
-    //
-    // If SEC is not ARM we have nothing to do
-    //
-    return EFI_SUCCESS;
-  }
+
   //
   // Physical address is FV base + offset of PE32 + offset of the entry point
   //
