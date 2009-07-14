@@ -3558,51 +3558,53 @@ class FdfParser:
     def __GetOptRomOverrides(self, Obj):
         if self.__IsToken('{'):
             Overrides = OptionRom.OverrideAttribs()
-            if self.__IsKeyword( "PCI_VENDOR_ID"):
-                if not self.__IsToken( "="):
-                    raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
-                if not self.__GetNextHexNumber():
-                    raise Warning("expected Hex vendor id", self.FileName, self.CurrentLineNumber)
-                Overrides.PciVendorId = self.__Token
-    
-            if self.__IsKeyword( "PCI_CLASS_CODE"):
-                if not self.__IsToken( "="):
-                    raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
-                if not self.__GetNextHexNumber():
-                    raise Warning("expected Hex class code", self.FileName, self.CurrentLineNumber)
-                Overrides.PciClassCode = self.__Token
-    
-            if self.__IsKeyword( "PCI_DEVICE_ID"):
-                if not self.__IsToken( "="):
-                    raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
-                if not self.__GetNextHexNumber():
-                    raise Warning("expected Hex device id", self.FileName, self.CurrentLineNumber)
-    
-                Overrides.PciDeviceId = self.__Token
-    
-            if self.__IsKeyword( "PCI_REVISION"):
-                if not self.__IsToken( "="):
-                    raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
-                if not self.__GetNextHexNumber():
-                    raise Warning("expected Hex revision", self.FileName, self.CurrentLineNumber)
-                Overrides.PciRevision = self.__Token
-                    
-            if self.__IsKeyword( "COMPRESS"):
-                if not self.__IsToken( "="):
-                    raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
-                if not self.__GetNextToken():
-                    raise Warning("expected TRUE/FALSE for compress", self.FileName, self.CurrentLineNumber)
-                
-                if self.__Token.upper() == 'TRUE':
-                    Overrides.NeedCompress = True        
-                
-            if not self.__IsToken( "}"):
-                
-                if self.__Token not in ("PCI_CLASS_CODE", "PCI_VENDOR_ID", "PCI_DEVICE_ID", "PCI_REVISION", "COMPRESS"):
-                    raise Warning("unknown attribute %s" % self.__Token, self.FileName, self.CurrentLineNumber)
-                
-                raise Warning("expected '}'", self.FileName, self.CurrentLineNumber)
-            
+            while True:
+                if self.__IsKeyword( "PCI_VENDOR_ID"):
+                    if not self.__IsToken( "="):
+                        raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+                    if not self.__GetNextHexNumber():
+                        raise Warning("expected Hex vendor id", self.FileName, self.CurrentLineNumber)
+                    Overrides.PciVendorId = self.__Token
+                    continue
+
+                if self.__IsKeyword( "PCI_CLASS_CODE"):
+                    if not self.__IsToken( "="):
+                        raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+                    if not self.__GetNextHexNumber():
+                        raise Warning("expected Hex class code", self.FileName, self.CurrentLineNumber)
+                    Overrides.PciClassCode = self.__Token
+                    continue
+
+                if self.__IsKeyword( "PCI_DEVICE_ID"):
+                    if not self.__IsToken( "="):
+                        raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+                    if not self.__GetNextHexNumber():
+                        raise Warning("expected Hex device id", self.FileName, self.CurrentLineNumber)
+
+                    Overrides.PciDeviceId = self.__Token
+                    continue
+
+                if self.__IsKeyword( "PCI_REVISION"):
+                    if not self.__IsToken( "="):
+                        raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+                    if not self.__GetNextHexNumber():
+                        raise Warning("expected Hex revision", self.FileName, self.CurrentLineNumber)
+                    Overrides.PciRevision = self.__Token
+                    continue
+
+                if self.__IsKeyword( "COMPRESS"):
+                    if not self.__IsToken( "="):
+                        raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+                    if not self.__GetNextToken():
+                        raise Warning("expected TRUE/FALSE for compress", self.FileName, self.CurrentLineNumber)
+                    Overrides.NeedCompress = self.__Token.upper() == 'TRUE'
+                    continue
+
+                if self.__IsToken( "}"):
+                    break
+                else:
+                    EdkLogger.error("FdfParser", FORMAT_INVALID, File=self.FileName, Line=self.CurrentLineNumber)
+
             Obj.OverrideAttribs = Overrides
             
     ## __GetOptRomFileStatement() method
