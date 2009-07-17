@@ -131,7 +131,7 @@ pushd .
   )
   echo EDK_TOOLS_PATH      = %EDK_TOOLS_PATH%
   if defined BASE_TOOLS_PATH (
-    echo BASE_TOOLS_PATH     = %EDK_TOOLS_PATH%
+    echo BASE_TOOLS_PATH     = %BASE_TOOLS_PATH%
   )
   echo.
 
@@ -162,27 +162,40 @@ if NOT exist %WORKSPACE%\Conf\FrameworkDatabase.db (
   echo copying ... FrameworkDatabase.template to %WORKSPACE%\Conf\FrameworkDatabase.db
   copy %EDK_TOOLS_PATH%\Conf\FrameworkDatabase.template %WORKSPACE%\Conf\FrameworkDatabase.db > nul
 ) else (
+  if defined RECONFIG echo over-write ... FrameworkDatabase.template to %WORKSPACE%\Conf\FrameworkDatabase.db
   if defined RECONFIG copy /Y %EDK_TOOLS_PATH%\Conf\FrameworkDatabase.template %WORKSPACE%\Conf\FrameworkDatabase.db > nul
 )
 
 if NOT exist %WORKSPACE%\Conf\target.txt (
   echo copying ... target.template to %WORKSPACE%\Conf\target.txt
+  if NOT exist %EDK_TOOLS_PATH%\Conf\target.template (
+    echo Error: target.template is missing at folder %EDK_TOOLS_PATH%\Conf\
+  )
   copy %EDK_TOOLS_PATH%\Conf\target.template %WORKSPACE%\Conf\target.txt > nul
 ) else (
+  if defined RECONFIG echo over-write ... target.template to %WORKSPACE%\Conf\target.txt
   if defined RECONFIG copy /Y %EDK_TOOLS_PATH%\Conf\target.template %WORKSPACE%\Conf\target.txt > nul
 )
 
 if NOT exist %WORKSPACE%\Conf\tools_def.txt (
   echo copying ... tools_def.template to %WORKSPACE%\Conf\tools_def.txt
+  if NOT exist %EDK_TOOLS_PATH%\Conf\tools_def.template (
+    echo Error: tools_def.template is missing at folder %EDK_TOOLS_PATH%\Conf\
+  )
   copy %EDK_TOOLS_PATH%\Conf\tools_def.template %WORKSPACE%\Conf\tools_def.txt > nul
 ) else (
+  if defined RECONFIG echo over-write ... tools_def.template to %WORKSPACE%\Conf\tools_def.txt
   if defined RECONFIG copy /Y %EDK_TOOLS_PATH%\Conf\tools_def.template %WORKSPACE%\Conf\tools_def.txt > nul
 )
 
 if NOT exist %WORKSPACE%\Conf\build_rule.txt (
   echo copying ... build_rule.template to %WORKSPACE%\Conf\build_rule.txt
+  if NOT exist %EDK_TOOLS_PATH%\Conf\build_rule.template (
+    echo Error: build_rule.template is missing at folder %EDK_TOOLS_PATH%\Conf\
+  )
   copy %EDK_TOOLS_PATH%\Conf\build_rule.template %WORKSPACE%\Conf\build_rule.txt > nul
 ) else (
+  if defined RECONFIG echo over-write ... build_rule.template to %WORKSPACE%\Conf\build_rule.txt
   if defined RECONFIG copy /Y %EDK_TOOLS_PATH%\Conf\build_rule.template %WORKSPACE%\Conf\build_rule.txt > nul
 )
 
@@ -215,9 +228,6 @@ IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\Trim.exe" goto check_build_environment
 IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\VfrCompile.exe" goto check_build_environment
 IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\Fpd2Dsc.exe" goto check_build_environment
 IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\VolInfo.exe" goto check_build_environment
-
-@echo No build required, we're good to go
-goto end
 
 :check_build_environment
   if not defined BASE_TOOLS_PATH (
