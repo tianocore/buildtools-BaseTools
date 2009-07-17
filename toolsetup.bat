@@ -229,6 +229,9 @@ IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\VfrCompile.exe" goto check_build_enviro
 IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\Fpd2Dsc.exe" goto check_build_environment
 IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\VolInfo.exe" goto check_build_environment
 
+@echo No build required, we're good to go
+goto end
+
 :check_build_environment
   if not defined BASE_TOOLS_PATH (
      if not exist "Source\C\Makefile" (
