@@ -218,6 +218,7 @@ Returns:
   Index         = 0;
   mFvTotalSize  = 0;
   mFvTakenSize  = 0;
+  Status        = EFI_SUCCESS;
 
   SetUtilityName (UTILITY_NAME);
   
@@ -356,7 +357,7 @@ Returns:
 		        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
 		        return STATUS_ERROR;        
 		      }
-		      mFvDataInfo.SizeofFvFiles[Index] = TempNumber;
+		      mFvDataInfo.SizeofFvFiles[Index] = (UINT32) TempNumber;
 	      	DebugMsg (NULL, 0, 9, "FV component file size", "the %dth size is %s", Index + 1, argv[1]);
 	      	argc -= 2;
 	      	argv += 2;
@@ -690,12 +691,12 @@ Returns:
     fprintf (FpFile, "\n");
     if (mFvDataInfo.BootBaseAddress != 0) {
       fprintf (FpFile, EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING);
-      fprintf (FpFile, " = 0x%lx\n", mFvDataInfo.BootBaseAddress);
+      fprintf (FpFile, " = 0x%llx\n", mFvDataInfo.BootBaseAddress);
       DebugMsg (NULL, 0, 9, "Updated boot driver base address", "%s = 0x%x", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, mFvDataInfo.BootBaseAddress);
     }
     if (mFvDataInfo.RuntimeBaseAddress != 0) {
       fprintf (FpFile, EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING);
-      fprintf (FpFile, " = 0x%lx\n", mFvDataInfo.RuntimeBaseAddress);
+      fprintf (FpFile, " = 0x%llx\n", mFvDataInfo.RuntimeBaseAddress);
       DebugMsg (NULL, 0, 9, "Updated runtime driver base address", "%s = 0x%x", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, mFvDataInfo.RuntimeBaseAddress);
     }
     fclose (FpFile);

@@ -22,6 +22,7 @@ Abstract:
 #include <stdlib.h>
 #include <string.h>
 
+#include "ParseInf.h"
 #include "EfiUtilityMsgs.h"
 #include "CommonLib.h"
 #include "Crc32.h"

@@ -1732,10 +1732,13 @@ LoadGuidedSectionToolsTxt (
 {
   CHAR8* PeerFilename;
   CHAR8* Places[] = {
-    FirmwareVolumeFilename,
-    //mUtilityFilename,
+    NULL,
+    //NULL,
     };
   UINTN Index;
+
+  Places[0] = FirmwareVolumeFilename;
+  //Places[1] = mUtilityFilename;
 
   mParsedGuidedSectionTools = NULL;
 

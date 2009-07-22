@@ -26,6 +26,9 @@ Abstract:
 #include <string.h>
 #include <Common/UefiBaseTypes.h>
 
+#include "ParseInf.h"
+#include "EfiUtilityMsgs.h"
+
 //
 // Utility Name
 //
@@ -438,11 +441,9 @@ ProcessBsOrMbr (
   BYTE              DiskPartition[0x200] = {0};
   BYTE              DiskPartitionBackup[0x200] = {0};
   DWORD             BytesReturn;
-  DWORD             DbrOffset;
   INT               DrvNumOffset;
   HANDLE            InputHandle;
   HANDLE            OutputHandle;
-  BOOL              WriteToDisk;
   ERROR_STATUS      Status;
   DWORD             InputDbrOffset;
   DWORD             OutputDbrOffset;

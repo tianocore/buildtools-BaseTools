@@ -819,14 +819,14 @@ Returns:
   if (FfsAlign < Index) {
     FfsAlign = Index;
   }
-  VerboseMsg ("the alignment of the genreated FFS file is %d", mFfsValidAlign [FfsAlign + 1]);  
-  FfsFileHeader.Attributes = FfsAttrib | (FfsAlign << 3);
+  VerboseMsg ("the alignment of the generated FFS file is %d", mFfsValidAlign [FfsAlign + 1]);  
+  FfsFileHeader.Attributes = (EFI_FFS_FILE_ATTRIBUTES) (FfsAttrib | (FfsAlign << 3));
   
   //
   // Now FileSize includes the EFI_FFS_FILE_HEADER
   //
   FileSize += sizeof (EFI_FFS_FILE_HEADER);
-  VerboseMsg ("the size of the genreated FFS file is %d bytes", FileSize);
+  VerboseMsg ("the size of the generated FFS file is %d bytes", FileSize);
   FfsFileHeader.Size[0]  = (UINT8) (FileSize & 0xFF);
   FfsFileHeader.Size[1]  = (UINT8) ((FileSize & 0xFF00) >> 8);
   FfsFileHeader.Size[2]  = (UINT8) ((FileSize & 0xFF0000) >> 16);

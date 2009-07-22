@@ -739,7 +739,7 @@ Returns:
     VendorGuidSect->CommonHeader.Size[2]  = (UINT8) ((TotalLength & 0xff0000) >> 16);
     memcpy (&(VendorGuidSect->SectionDefinitionGuid), VendorGuid, sizeof (EFI_GUID));
     VendorGuidSect->Attributes  = DataAttribute;
-    VendorGuidSect->DataOffset  = sizeof (EFI_GUID_DEFINED_SECTION) + DataHeaderSize;
+    VendorGuidSect->DataOffset  = (UINT16) (sizeof (EFI_GUID_DEFINED_SECTION) + DataHeaderSize);
     DebugMsg (NULL, 0, 9, "Guided section", "Data offset is %d", VendorGuidSect->DataOffset);
   }
   VerboseMsg ("the size of the created section file is %d bytes", TotalLength);

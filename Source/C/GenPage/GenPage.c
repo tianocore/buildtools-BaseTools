@@ -35,6 +35,7 @@ Abstract:
 #include <string.h>
 #include "VirtualMemory.h"
 #include "EfiUtilityMsgs.h"
+#include "ParseInf.h"
 
 #define EFI_PAGE_BASE_OFFSET_IN_LDR 0x70000
 #define EFI_PAGE_BASE_ADDRESS       (EFI_PAGE_BASE_OFFSET_IN_LDR + 0x20000)

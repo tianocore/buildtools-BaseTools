@@ -184,7 +184,8 @@ Returns:
 {
   CHAR8       Value[_MAX_PATH];
   UINT64      Value64;
-  UINTN       Index, Number, Index1;
+  UINTN       Index;
+  UINTN       Number;
   EFI_STATUS  Status;
   EFI_GUID    GuidValue;
 
@@ -806,20 +807,20 @@ Returns:
   //
   if (ImageBaseAddress == 0) {
     fprintf (FvMapFile, "%s (dummy) (", KeyWord);
-    fprintf (FvMapFile, "BaseAddress=%08lx, ", ImageBaseAddress);
+    fprintf (FvMapFile, "BaseAddress=%08llx, ", ImageBaseAddress);
   } else {
     fprintf (FvMapFile, "%s (", KeyWord);
-    fprintf (FvMapFile, "BaseAddress=%08lx, ", ImageBaseAddress + Offset);
+    fprintf (FvMapFile, "BaseAddress=%08llx, ", ImageBaseAddress + Offset);
   }
-  fprintf (FvMapFile, "EntryPoint=%08lx, ", ImageBaseAddress + AddressOfEntryPoint);
+  fprintf (FvMapFile, "EntryPoint=%08llx, ", ImageBaseAddress + AddressOfEntryPoint);
   fprintf (FvMapFile, "GUID=%s", FileGuidName);
   fprintf (FvMapFile, ")\n"); 
   
   for (; Index > 0; Index --, SectionHeader ++) {
         if (stricmp ((CHAR8 *)SectionHeader->Name, ".text") == 0) {
-  		fprintf (FvMapFile, ".textbaseaddress=%08lx ",ImageBaseAddress + SectionHeader->VirtualAddress);
+  		fprintf (FvMapFile, ".textbaseaddress=%08llx ",ImageBaseAddress + SectionHeader->VirtualAddress);
   	} else if (stricmp ((CHAR8 *)SectionHeader->Name, ".data") == 0) {
-  	  fprintf (FvMapFile, ".databaseaddress=%08lx ",ImageBaseAddress + SectionHeader->VirtualAddress);
+  	  fprintf (FvMapFile, ".databaseaddress=%08llx ",ImageBaseAddress + SectionHeader->VirtualAddress);
   	}
   }
   fprintf (FvMapFile, "\n\n"); 
@@ -869,25 +870,25 @@ Returns:
     // Printf Function Information
     //
     if (FunctionType == 1) {
-      sscanf (Line, "%s %s %lx %s", KeyWord, FunctionName, &FunctionAddress, FunctionTypeName);
+      sscanf (Line, "%s %s %llx %s", KeyWord, FunctionName, &FunctionAddress, FunctionTypeName);
       if (FunctionTypeName [1] == '\0' && (FunctionTypeName [0] == 'f' || FunctionTypeName [0] == 'F')) {
-        fprintf (FvMapFile, "  %016lx ", ImageBaseAddress + FunctionAddress);
-        fprintf (FvMapFile, "(%08lx) F  ", FunctionAddress - Offset);
+        fprintf (FvMapFile, "  %016llx ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "(%08llx) F  ", FunctionAddress - Offset);
         fprintf (FvMapFile, "%s\n", FunctionName);
     } else {
-        fprintf (FvMapFile, "  %016lx ", ImageBaseAddress + FunctionAddress);
-        fprintf (FvMapFile, "(%08lx)    ", FunctionAddress - Offset);
+        fprintf (FvMapFile, "  %016llx ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "(%08llx)    ", FunctionAddress - Offset);
         fprintf (FvMapFile, "%s\n", FunctionName);
       }
     } else if (FunctionType == 2) {
-      sscanf (Line, "%s %s %lx %s", KeyWord, FunctionName, &FunctionAddress, FunctionTypeName);
+      sscanf (Line, "%s %s %llx %s", KeyWord, FunctionName, &FunctionAddress, FunctionTypeName);
       if (FunctionTypeName [1] == '\0' && (FunctionTypeName [0] == 'f' || FunctionTypeName [0] == 'F')) {
-        fprintf (FvMapFile, "  %016lx ", ImageBaseAddress + FunctionAddress);
-        fprintf (FvMapFile, "(%08lx) FS ", FunctionAddress - Offset);
+        fprintf (FvMapFile, "  %016llx ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "(%08llx) FS ", FunctionAddress - Offset);
         fprintf (FvMapFile, "%s\n", FunctionName);
       } else {
-        fprintf (FvMapFile, "  %016lx ", ImageBaseAddress + FunctionAddress);
-        fprintf (FvMapFile, "(%08lx)    ", FunctionAddress - Offset);
+        fprintf (FvMapFile, "  %016llx ", ImageBaseAddress + FunctionAddress);
+        fprintf (FvMapFile, "(%08llx)    ", FunctionAddress - Offset);
         fprintf (FvMapFile, "%s\n", FunctionName);
       }
     }
@@ -1448,7 +1449,7 @@ Returns:
     // 
     Ia32ResetAddressPtr  = (UINT32 *) ((UINTN) FvImage->Eof - IA32_SEC_CORE_ENTRY_OFFSET);
     
-    Ia32SecEntryOffset   = SecCorePhysicalAddress - (FV_IMAGES_TOP_ADDRESS - IA32_SEC_CORE_ENTRY_OFFSET + 2);
+    Ia32SecEntryOffset   = (INT32) (SecCorePhysicalAddress - (FV_IMAGES_TOP_ADDRESS - IA32_SEC_CORE_ENTRY_OFFSET + 2));
     if (Ia32SecEntryOffset <= -65536) {
       Error (NULL, 0, 3000, "Invalid", "The SEC EXE file size is too large, it must be less than 64K.");
       return STATUS_ERROR;
@@ -1507,9 +1508,9 @@ Returns:
     //
     // IpiVector at the 4k aligned address in the top 2 blocks in the PEI FV. 
     //
-    IpiVector  = FV_IMAGES_TOP_ADDRESS - ((UINTN) FvImage->Eof - (UINTN) BytePointer);
+    IpiVector  = (UINT32) (FV_IMAGES_TOP_ADDRESS - ((UINTN) FvImage->Eof - (UINTN) BytePointer));
     DebugMsg (NULL, 0, 9, "Startup AP Vector address", "IpiVector at 0x%X", IpiVector);
-    if (IpiVector & 0xFFF != 0) {
+    if ((IpiVector & 0xFFF) != 0) {
       Error (NULL, 0, 3000, "Invalid", "Startup AP Vector address are not 4K aligned, because the FV size is not 4K aligned");
       return EFI_ABORTED;
     }
@@ -1575,7 +1576,7 @@ Routine Description:
   FIQ              +24
 
   We support two schemes on ARM.
-  1) Begining of the FV is the reset vector
+  1) Beginning of the FV is the reset vector
   2) Reset vector is data bytes FDF file and that code branches to reset vector 
     in the beginning of the FV (fixed size offset).
 
@@ -2627,8 +2628,8 @@ Returns:
   //
   // Check XipAddress, BootAddress and RuntimeAddress
   //
-  Flags = 0;
-
+  Flags   = 0;
+  XipBase = 0;
   if (FvInfo->BaseAddress != 0) {
     Flags  |= REBASE_XIP_FILE;
     XipBase = FvInfo->BaseAddress + XipOffset;

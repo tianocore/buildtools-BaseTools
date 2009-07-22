@@ -23,6 +23,7 @@ Abstract:
 
 #ifndef __GNUC__
 #include <windows.h>
+#include <io.h>
 #endif
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,6 +44,8 @@ Abstract:
 #include <IndustryStandard/MemoryMappedConfigurationSpaceAccessTable.h>
 
 #include "CommonLib.h"
+#include "PeCoffLib.h"
+#include "ParseInf.h"
 #include "EfiUtilityMsgs.h"
 
 #include "elf_common.h"
@@ -437,7 +440,7 @@ Elf_Phdr *gPhdrBase;
 // PE section alignment.
 //
 const UINT32 CoffAlignment = 0x20;
-const UINT32 CoffNbrSections = 4;
+const UINT16 CoffNbrSections = 4;
 
 //
 // Current offset in coff file.
@@ -707,7 +710,7 @@ ScanSections(
   }
 
   NtHdr->Pe32.FileHeader.NumberOfSections = CoffNbrSections;
-  NtHdr->Pe32.FileHeader.TimeDateStamp = time(NULL);
+  NtHdr->Pe32.FileHeader.TimeDateStamp = (UINT32) time(NULL);
   NtHdr->Pe32.FileHeader.PointerToSymbolTable = 0;
   NtHdr->Pe32.FileHeader.NumberOfSymbols = 0;
   NtHdr->Pe32.FileHeader.SizeOfOptionalHeader = sizeof(NtHdr->Pe32.OptionalHeader);
@@ -918,7 +921,7 @@ CoffAddFixup(
   //
   // Fill the entry.
   //
-  CoffAddFixupEntry((Type << 12) | (Offset & 0xfff));
+  CoffAddFixupEntry((UINT16) ((Type << 12) | (Offset & 0xfff)));
 }
 
 
@@ -1218,15 +1221,16 @@ ZeroXdataSection (
   UINT32 SectionLength;
   UINT32 SectionNumber;
   CHAR8  *PdbPointer;
-  INT32  Index = 0;
+  INT32  Index;
+  UINT32 Index2;
 
-  for (Index = 0; Index < SectionTotalNumber; Index ++) {
-    if (stricmp ((char *)SectionHeader[Index].Name, ".zdata") == 0) {
+  for (Index2 = 0; Index2 < SectionTotalNumber; Index2++) {
+    if (stricmp ((char *)SectionHeader[Index2].Name, ".zdata") == 0) {
       //
       // try to zero the customized .zdata section, which is mapped to .xdata
       //
-      memset (FileBuffer + SectionHeader[Index].PointerToRawData, 0, SectionHeader[Index].SizeOfRawData);
-      DebugMsg (NULL, 0, 9, NULL, "Zero the .xdata section for PE image at Offset 0x%x and Length 0x%x", SectionHeader[Index].PointerToRawData, SectionHeader[Index].SizeOfRawData);
+      memset (FileBuffer + SectionHeader[Index2].PointerToRawData, 0, SectionHeader[Index2].SizeOfRawData);
+      DebugMsg (NULL, 0, 9, NULL, "Zero the .xdata section for PE image at Offset 0x%x and Length 0x%x", SectionHeader[Index2].PointerToRawData, SectionHeader[Index2].SizeOfRawData);
       return;
     }
   }
@@ -2291,7 +2295,7 @@ Returns:
     DosHdr->e_lfanew = BackupDosHdr.e_lfanew;
   
     for (Index = sizeof (EFI_IMAGE_DOS_HEADER); Index < (UINT32 ) DosHdr->e_lfanew; Index++) {
-      FileBuffer[Index] = DosHdr->e_cp;
+      FileBuffer[Index] = (UINT8) DosHdr->e_cp;
     }
   }
 
@@ -2813,13 +2817,13 @@ Returns:
   struct tm                       stime;
   struct tm                       *ptime;
   time_t                          newtime;
-  UINT32                           Index;
-  UINT32                           DebugDirectoryEntryRva;
-  UINT32                           DebugDirectoryEntryFileOffset;
-  UINT32                           ExportDirectoryEntryRva;
-  UINT32                           ExportDirectoryEntryFileOffset;
-  UINT32                           ResourceDirectoryEntryRva;
-  UINT32                           ResourceDirectoryEntryFileOffset;
+  UINT32                          Index;
+  UINT32                          DebugDirectoryEntryRva;
+  UINT32                          DebugDirectoryEntryFileOffset;
+  UINT32                          ExportDirectoryEntryRva;
+  UINT32                          ExportDirectoryEntryFileOffset;
+  UINT32                          ResourceDirectoryEntryRva;
+  UINT32                          ResourceDirectoryEntryFileOffset;
   EFI_IMAGE_DOS_HEADER            *DosHdr;
   EFI_IMAGE_FILE_HEADER           *FileHdr;
   EFI_IMAGE_OPTIONAL_HEADER32     *Optional32Hdr;
@@ -2830,9 +2834,12 @@ Returns:
   //
   // Init variable.
   //
-  DebugDirectoryEntryRva    = 0;
-  ExportDirectoryEntryRva   = 0;
-  ResourceDirectoryEntryRva = 0;
+  DebugDirectoryEntryRva           = 0;
+  DebugDirectoryEntryFileOffset    = 0;
+  ExportDirectoryEntryRva          = 0;
+  ExportDirectoryEntryFileOffset   = 0;
+  ResourceDirectoryEntryRva        = 0;
+  ResourceDirectoryEntryFileOffset = 0;
   //
   // Get time and date that will be set.
   //

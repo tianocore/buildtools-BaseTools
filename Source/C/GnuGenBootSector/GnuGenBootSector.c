@@ -27,6 +27,9 @@ Abstract:
 #include <string.h>
 #include <Common/UefiBaseTypes.h>
 
+#include "ParseInf.h"
+#include "EfiUtilityMsgs.h"
+
 //
 // Utility Name
 //

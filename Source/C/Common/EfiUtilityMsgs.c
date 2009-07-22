@@ -34,7 +34,7 @@ Abstract:
 //
 STATIC STATUS mStatus                 = STATUS_SUCCESS;
 STATIC CHAR8  mUtilityName[50]        = { 0 };
-STATIC UINT32 mPrintLogLevel          = INFO_LOG_LEVEL;
+STATIC UINT64 mPrintLogLevel          = INFO_LOG_LEVEL;
 STATIC CHAR8  *mSourceFileName        = NULL;
 STATIC UINT32 mSourceFileLineNum      = 0;
 STATIC UINT32 mErrorCount             = 0;
@@ -355,7 +355,7 @@ VOID
 DebugMsg (
   CHAR8   *FileName,
   UINT32  LineNumber,
-  UINT32  MsgLevel,
+  UINT64  MsgLevel,
   CHAR8   *Text,
   CHAR8   *MsgFmt,
   ...
@@ -665,7 +665,7 @@ Returns:
 
 VOID
 SetPrintLevel (
-  UINT32  LogLevel
+  UINT64  LogLevel
   )
 /*++
 

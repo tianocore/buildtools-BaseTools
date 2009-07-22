@@ -88,8 +88,8 @@ Returns:
   // If dumping an image, then do that and quit
   //
   if (mOptions.DumpOption == 1) {
-    for (FList = mOptions.FileList; FList != NULL; FList = FList->Next) {
-      if ((Ptr0 = strstr ((CONST CHAR8 *)FList->FileName, DEFAULT_OUTPUT_EXTENSION)) != NULL) {
+    if (mOptions.FileList != NULL) {
+      if ((Ptr0 = strstr ((CONST CHAR8 *) mOptions.FileList->FileName, DEFAULT_OUTPUT_EXTENSION)) != NULL) {
         DumpImage (mOptions.FileList);
         goto BailOut;
       } else {
@@ -238,7 +238,8 @@ Returns:
   UINT32                    Index;
   UINT8                     ByteCheckSum;
  
-
+  PciDs23 = NULL;
+  PciDs30 = NULL;
   Status = STATUS_SUCCESS;
 
   //
@@ -999,7 +1000,7 @@ Returns:
           return 1;
         }
         if (DebugLevel > 9)  {
-          Error (NULL, 0, 2000, "Invalid option value", "Debug Level range is 0-9, currnt input level is %d", Argv[1]);
+          Error (NULL, 0, 2000, "Invalid option value", "Debug Level range is 0-9, current input level is %d", Argv[1]);
           return 1;
         }
         if (DebugLevel>=5 && DebugLevel<=9) {
