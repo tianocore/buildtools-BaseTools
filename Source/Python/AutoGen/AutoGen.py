@@ -1062,6 +1062,7 @@ class PlatformAutoGen(AutoGen):
     def _ExpandBuildOption(self, Options):
         BuildOptions = {}
         FamilyMatch  = False
+        FamilyIsNull = True
         for Key in Options:
             Family = Key[0]
             Target, Tag, Arch, Tool, Attr = Key[1].split("_")
