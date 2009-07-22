@@ -1071,7 +1071,7 @@ class PlatformAutoGen(AutoGen):
             # if tool chain family doesn't match, skip it
             if Family != "":
                 FamilyIsNull = False
-                if self.ToolDefinition[Tool][TAB_TOD_DEFINES_BUILDRULEFAMILY] != "":
+                if self.ToolDefinition[Tool].get(TAB_TOD_DEFINES_BUILDRULEFAMILY, "") != "":
                     if Family != self.ToolDefinition[Tool][TAB_TOD_DEFINES_BUILDRULEFAMILY]:
                         continue
                 elif Family != self.ToolDefinition[Tool][TAB_TOD_DEFINES_FAMILY]:
