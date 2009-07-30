@@ -19,6 +19,13 @@ try:
 except Exception:
     from md5 import md5
 
+if sys.version_info < (2, 5):
+    #
+    # This script (and edk2 BaseTools) require Python 2.5 or newer
+    #
+    print 'Python version 2.5 or later is required.'
+    sys.exit(-1)
+
 #
 # Version and Copyright
 #
