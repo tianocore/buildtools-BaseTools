@@ -1087,7 +1087,7 @@ vfrStatementDefault :
   D:Default                                         << DObj.SetLineNo(D->getLine()); >>
   (
     (
-        vfrStatementValue ","                       << IsExp = TRUE; DObj.SetScope (1); >>
+        vfrStatementValue ","                       << IsExp = TRUE; DObj.SetScope (1); CIfrEnd EndObj1; EndObj1.SetLineNo(D->getLine()); >>
       | "=" vfrConstantValueField[_GET_CURRQEST_DATATYPE()] > [Val] ","
                                                     << DObj.SetType (_GET_CURRQEST_DATATYPE()); DObj.SetValue(Val); >>
     )
@@ -1167,7 +1167,7 @@ flagsField :
 vfrStatementValue :
   << CIfrValue VObj; >>
   V:Value                                              << VObj.SetLineNo(V->getLine()); >>
-  "=" vfrStatementExpression[0]
+  "=" vfrStatementExpression[0]                        << {CIfrEnd EndObj; EndObj.SetLineNo(V->getLine());} >>
   ;
 
 vfrStatementSubTitle :
