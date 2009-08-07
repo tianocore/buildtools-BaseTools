@@ -163,7 +163,7 @@ Returns:
     }
 
     if (mOptions.Verbose) {
-      VerboseMsg("  Output size = 0x%X\n", Size);
+      VerboseMsg("  Output size = 0x%X\n", (unsigned) Size);
     }
 
     if (Status != STATUS_SUCCESS) {
@@ -256,7 +256,7 @@ Returns:
   fseek (InFptr, 0, SEEK_END);
   FileSize = ftell (InFptr);
   if (mOptions.Verbose) {
-    VerboseMsg("  File size   = 0x%X\n", FileSize);
+    VerboseMsg("  File size   = 0x%X\n", (unsigned) FileSize);
   }
 
   fseek (InFptr, 0, SEEK_SET);
@@ -366,7 +366,7 @@ Returns:
 
   Buffer[FileSize - 1] = (UINT8) ((~ByteCheckSum) + 1);
   if (mOptions.Verbose) {
-    VerboseMsg("  Checksum = %02x\n\n", (UINT32) Buffer[FileSize - 1]);
+    VerboseMsg("  Checksum = %02x\n\n", Buffer[FileSize - 1]);
   }
 
   //
@@ -496,7 +496,7 @@ Returns:
   }
 
   if (mOptions.Verbose) {
-    VerboseMsg("  File size   = 0x%X\n", FileSize);
+    VerboseMsg("  File size   = 0x%X\n", (unsigned) FileSize);
   }
   //
   // Allocate memory for the entire file (in case we have to compress), then
@@ -541,7 +541,7 @@ Returns:
     // Now compute the size, then swap buffer pointers.
     //
     if (mOptions.Verbose) {
-      VerboseMsg("  Comp size   = 0x%X\n", CompressedFileSize);
+      VerboseMsg("  Comp size   = 0x%X\n", (unsigned) CompressedFileSize);
     }
 
     TotalSize         = CompressedFileSize + HeaderSize;
@@ -821,7 +821,7 @@ Returns:
   }
 
   if (mOptions.Verbose) {
-    VerboseMsg("  Got subsystem = 0x%X from image\n", (int) *SubSystem);
+    VerboseMsg("  Got subsystem = 0x%X from image\n", *SubSystem);
   }
 
   //
@@ -1302,10 +1302,10 @@ Returns:
     //
     // Dump the contents of the header
     //
-    fprintf (stdout, "Image %d -- Offset 0x%X\n", ImageCount, ImageStart);
+    fprintf (stdout, "Image %u -- Offset 0x%X\n", (unsigned) ImageCount, (unsigned) ImageStart);
     fprintf (stdout, "  ROM header contents\n");
-    fprintf (stdout, "    Signature              0x%04X\n", (UINT32) PciRomHdr.Signature);
-    fprintf (stdout, "    PCIR offset            0x%04X\n", (UINT32) PciRomHdr.PcirOffset);
+    fprintf (stdout, "    Signature              0x%04X\n", PciRomHdr.Signature);
+    fprintf (stdout, "    PCIR offset            0x%04X\n", PciRomHdr.PcirOffset);
     //
     // Find PCI data structure
     //
@@ -1350,11 +1350,11 @@ Returns:
     fprintf (
       stdout,
       "    Class Code             0x%06X\n",
-      (UINT32) (PciDs23.ClassCode[0] | (PciDs23.ClassCode[1] << 8) | (PciDs23.ClassCode[2] << 16))
+      (unsigned) (PciDs23.ClassCode[0] | (PciDs23.ClassCode[1] << 8) | (PciDs23.ClassCode[2] << 16))
       );
-    fprintf (stdout, "    Image size             0x%X\n", PciDs23.ImageLength * 512);
+    fprintf (stdout, "    Image size             0x%X\n", (unsigned) PciDs23.ImageLength * 512);
     fprintf (stdout, "    Code revision:         0x%04X\n", PciDs23.CodeRevision);
-    fprintf (stdout, "    Indicator              0x%02X", (UINT32) PciDs23.Indicator);
+    fprintf (stdout, "    Indicator              0x%02X", PciDs23.Indicator);
     } else {
     fprintf (
       stdout,
@@ -1368,18 +1368,18 @@ Returns:
     fprintf (stdout, "    Device ID               0x%04X\n", PciDs30.DeviceId);
     fprintf (stdout, "    Length                  0x%04X\n", PciDs30.Length);
     fprintf (stdout, "    Revision                0x%04X\n", PciDs30.Revision);
-    fprintf (stdout, "    DeviceListOffset        0x%02X\n", (UINT32) PciDs30.DeviceListOffset);    
+    fprintf (stdout, "    DeviceListOffset        0x%02X\n", PciDs30.DeviceListOffset);    
     fprintf (
       stdout,
       "    Class Code              0x%06X\n",
-      (UINT32) (PciDs30.ClassCode[0] | (PciDs30.ClassCode[1] << 8) | (PciDs30.ClassCode[2] << 16))
+      (unsigned) (PciDs30.ClassCode[0] | (PciDs30.ClassCode[1] << 8) | (PciDs30.ClassCode[2] << 16))
       );
-    fprintf (stdout, "    Image size              0x%X\n", PciDs30.ImageLength * 512);
+    fprintf (stdout, "    Image size              0x%X\n", (unsigned) PciDs30.ImageLength * 512);
     fprintf (stdout, "    Code revision:          0x%04X\n", PciDs30.CodeRevision);
-    fprintf (stdout, "    MaxRuntimeImageLength   0x%02X\n", (UINT32) PciDs30.MaxRuntimeImageLength);
-    fprintf (stdout, "    ConfigUtilityCodeHeaderOffset 0x%02X\n", (UINT32) PciDs30.ConfigUtilityCodeHeaderOffset);
-    fprintf (stdout, "    DMTFCLPEntryPointOffset 0x%02X\n", (UINT32) PciDs30.DMTFCLPEntryPointOffset);   
-    fprintf (stdout, "    Indicator               0x%02X", (UINT32) PciDs30.Indicator);    
+    fprintf (stdout, "    MaxRuntimeImageLength   0x%02X\n", PciDs30.MaxRuntimeImageLength);
+    fprintf (stdout, "    ConfigUtilityCodeHeaderOffset 0x%02X\n", PciDs30.ConfigUtilityCodeHeaderOffset);
+    fprintf (stdout, "    DMTFCLPEntryPointOffset 0x%02X\n", PciDs30.DMTFCLPEntryPointOffset);   
+    fprintf (stdout, "    Indicator               0x%02X", PciDs30.Indicator);    
     }
     //
     // Print the indicator, used to flag the last image
@@ -1393,9 +1393,9 @@ Returns:
     // Print the code type. If EFI code, then we can provide more info.
     //
     if (mOptions.Pci23 == 1) {
-      fprintf (stdout, "    Code type              0x%02X", (UINT32) PciDs23.CodeType);
+      fprintf (stdout, "    Code type              0x%02X", PciDs23.CodeType);
     } else {
-      fprintf (stdout, "    Code type               0x%02X", (UINT32) PciDs30.CodeType); 
+      fprintf (stdout, "    Code type               0x%02X", PciDs30.CodeType); 
     }
     if (PciDs23.CodeType == PCI_CODE_TYPE_EFI_IMAGE || PciDs30.CodeType == PCI_CODE_TYPE_EFI_IMAGE) {
       fprintf (stdout, "   (EFI image)\n");
@@ -1415,11 +1415,11 @@ Returns:
       //
       // Now dump more info
       //
-      fprintf (stdout, "    EFI Signature          0x%04X\n", EfiRomHdr.EfiSignature);
+      fprintf (stdout, "    EFI Signature          0x%04X\n", (unsigned) EfiRomHdr.EfiSignature);
       fprintf (
         stdout,
         "    Compression Type       0x%04X ",
-        (UINT32) EfiRomHdr.CompressionType
+        EfiRomHdr.CompressionType
         );
       if (EfiRomHdr.CompressionType == EFI_PCI_EXPANSION_ROM_HEADER_COMPRESSED) {
         fprintf (stdout, "(compressed)\n");
@@ -1442,8 +1442,8 @@ Returns:
       fprintf (
         stdout,
         "    EFI image offset       0x%04X (@0x%X)\n",
-        (UINT32) EfiRomHdr.EfiImageHeaderOffset,
-        (UINT32) (EfiRomHdr.EfiImageHeaderOffset + ImageStart)
+        EfiRomHdr.EfiImageHeaderOffset,
+        EfiRomHdr.EfiImageHeaderOffset + (unsigned) ImageStart
         );
 
     } else {

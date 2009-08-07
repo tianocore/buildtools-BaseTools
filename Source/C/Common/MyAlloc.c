@@ -121,12 +121,12 @@ MyCheck (
       "\nFile=%s, Line=%u, nSize=%u, Head=%xh, Tail=%xh\n",
       Final,
       File,
-      (UINT32)Line,
+      (unsigned)Line,
       Tmp->File,
-      (UINT32)Tmp->Line,
-      (UINT32)Tmp->Size,
-      *(UINT32 *) (Tmp->Buffer),
-      *(UINT32 *) (&Tmp->Buffer[Tmp->Size + sizeof (UINT32)])
+      (unsigned) Tmp->Line,
+      (unsigned) Tmp->Size,
+      (unsigned) *(UINT32 *) (Tmp->Buffer),
+      (unsigned) *(UINT32 *) (&Tmp->Buffer[Tmp->Size + sizeof (UINT32)])
       );
 
     exit (1);
@@ -148,10 +148,10 @@ MyCheck (
         printf (
           "File=%s, Line=%u, nSize=%u, Head=%xh, Tail=%xh\n",
           Tmp->File,
-          (UINT32)Tmp->Line,
-          (UINT32)Tmp->Size,
-          *(UINT32 *) (Tmp->Buffer),
-          *(UINT32 *) (&Tmp->Buffer[Tmp->Size + sizeof (UINT32)])
+          (unsigned) Tmp->Line,
+          (unsigned) Tmp->Size,
+          (unsigned) *(UINT32 *) (Tmp->Buffer),
+          (unsigned) *(UINT32 *) (&Tmp->Buffer[Tmp->Size + sizeof (UINT32)])
           );
       }
     }

@@ -372,7 +372,7 @@ Returns:
       // Add the file
       //
       strcpy (FvInfo->FvFiles[Number + Index], Value);
-      DebugMsg (NULL, 0, 9, "FV component file", "the %dth name is %s", Index, Value);
+      DebugMsg (NULL, 0, 9, "FV component file", "the %uth name is %s", (unsigned) Index, Value);
     } else {
       break;
     }
@@ -727,7 +727,7 @@ Returns:
   EFI_IMAGE_OPTIONAL_HEADER_UNION     *ImgHdr;
   EFI_TE_IMAGE_HEADER                 *TEImageHeader;
   EFI_IMAGE_SECTION_HEADER            *SectionHeader;
-  
+  unsigned long long                  TempLongAddress;
   //
   // Init local variable
   //
@@ -807,20 +807,20 @@ Returns:
   //
   if (ImageBaseAddress == 0) {
     fprintf (FvMapFile, "%s (dummy) (", KeyWord);
-    fprintf (FvMapFile, "BaseAddress=%08llx, ", ImageBaseAddress);
+    fprintf (FvMapFile, "BaseAddress=%08llx, ", (unsigned long long) ImageBaseAddress);
   } else {
     fprintf (FvMapFile, "%s (", KeyWord);
-    fprintf (FvMapFile, "BaseAddress=%08llx, ", ImageBaseAddress + Offset);
+    fprintf (FvMapFile, "BaseAddress=%08llx, ", (unsigned long long) (ImageBaseAddress + Offset));
   }
-  fprintf (FvMapFile, "EntryPoint=%08llx, ", ImageBaseAddress + AddressOfEntryPoint);
+  fprintf (FvMapFile, "EntryPoint=%08llx, ", (unsigned long long) (ImageBaseAddress + AddressOfEntryPoint));
   fprintf (FvMapFile, "GUID=%s", FileGuidName);
   fprintf (FvMapFile, ")\n"); 
   
   for (; Index > 0; Index --, SectionHeader ++) {
         if (stricmp ((CHAR8 *)SectionHeader->Name, ".text") == 0) {
-  		fprintf (FvMapFile, ".textbaseaddress=%08llx ",ImageBaseAddress + SectionHeader->VirtualAddress);
+  		fprintf (FvMapFile, ".textbaseaddress=%08llx ", (unsigned long long) (ImageBaseAddress + SectionHeader->VirtualAddress));
   	} else if (stricmp ((CHAR8 *)SectionHeader->Name, ".data") == 0) {
-  	  fprintf (FvMapFile, ".databaseaddress=%08llx ",ImageBaseAddress + SectionHeader->VirtualAddress);
+  	  fprintf (FvMapFile, ".databaseaddress=%08llx ", (unsigned long long) (ImageBaseAddress + SectionHeader->VirtualAddress));
   	}
   }
   fprintf (FvMapFile, "\n\n"); 
@@ -870,25 +870,27 @@ Returns:
     // Printf Function Information
     //
     if (FunctionType == 1) {
-      sscanf (Line, "%s %s %llx %s", KeyWord, FunctionName, &FunctionAddress, FunctionTypeName);
+      sscanf (Line, "%s %s %llx %s", KeyWord, FunctionName, &TempLongAddress, FunctionTypeName);
+      FunctionAddress = (UINT64) TempLongAddress;
       if (FunctionTypeName [1] == '\0' && (FunctionTypeName [0] == 'f' || FunctionTypeName [0] == 'F')) {
-        fprintf (FvMapFile, "  %016llx ", ImageBaseAddress + FunctionAddress);
-        fprintf (FvMapFile, "(%08llx) F  ", FunctionAddress - Offset);
+        fprintf (FvMapFile, "  %016llx ", (unsigned long long) (ImageBaseAddress + FunctionAddress));
+        fprintf (FvMapFile, "(%08llx) F  ", (unsigned long long) (FunctionAddress - Offset));
         fprintf (FvMapFile, "%s\n", FunctionName);
     } else {
-        fprintf (FvMapFile, "  %016llx ", ImageBaseAddress + FunctionAddress);
-        fprintf (FvMapFile, "(%08llx)    ", FunctionAddress - Offset);
+        fprintf (FvMapFile, "  %016llx ", (unsigned long long) (ImageBaseAddress + FunctionAddress));
+        fprintf (FvMapFile, "(%08llx)    ", (unsigned long long) (FunctionAddress - Offset));
         fprintf (FvMapFile, "%s\n", FunctionName);
       }
     } else if (FunctionType == 2) {
-      sscanf (Line, "%s %s %llx %s", KeyWord, FunctionName, &FunctionAddress, FunctionTypeName);
+      sscanf (Line, "%s %s %llx %s", KeyWord, FunctionName, &TempLongAddress, FunctionTypeName);
+      FunctionAddress = (UINT64) TempLongAddress;
       if (FunctionTypeName [1] == '\0' && (FunctionTypeName [0] == 'f' || FunctionTypeName [0] == 'F')) {
-        fprintf (FvMapFile, "  %016llx ", ImageBaseAddress + FunctionAddress);
-        fprintf (FvMapFile, "(%08llx) FS ", FunctionAddress - Offset);
+        fprintf (FvMapFile, "  %016llx ", (unsigned long long) (ImageBaseAddress + FunctionAddress));
+        fprintf (FvMapFile, "(%08llx) FS ", (unsigned long long) (FunctionAddress - Offset));
         fprintf (FvMapFile, "%s\n", FunctionName);
       } else {
-        fprintf (FvMapFile, "  %016llx ", ImageBaseAddress + FunctionAddress);
-        fprintf (FvMapFile, "(%08llx)    ", FunctionAddress - Offset);
+        fprintf (FvMapFile, "  %016llx ", (unsigned long long) (ImageBaseAddress + FunctionAddress));
+        fprintf (FvMapFile, "(%08llx)    ", (unsigned long long) (FunctionAddress - Offset));
         fprintf (FvMapFile, "%s\n", FunctionName);
       }
     }
@@ -1029,7 +1031,7 @@ Returns:
   //
   for (Index1 = 0; Index1 < Index; Index1 ++) {
     if (CompareGuid ((EFI_GUID *) FileBuffer, &mFileGuidArray [Index1]) == 0) {
-      Error (NULL, 0, 2000, "Invalid parameter", "the %dth file and %dth file have the same file GUID.", Index1 + 1, Index + 1);
+      Error (NULL, 0, 2000, "Invalid parameter", "the %dth file and %uth file have the same file GUID.", (unsigned) Index1 + 1, (unsigned) Index + 1);
       PrintGuid ((EFI_GUID *) FileBuffer);
       return EFI_INVALID_PARAMETER;
     }
@@ -1068,7 +1070,7 @@ Returns:
       // Sanity check. The file MUST align appropriately
       //
       if (((UINTN) *VtfFileImage + sizeof (EFI_FFS_FILE_HEADER) - (UINTN) FvImage->FileImage) % (1 << CurrentFileAlignment)) {
-        Error (NULL, 0, 3000, "Invalid", "VTF file cannot be aligned on a %d-byte boundary.", 1 << CurrentFileAlignment);
+        Error (NULL, 0, 3000, "Invalid", "VTF file cannot be aligned on a %u-byte boundary.", (unsigned) (1 << CurrentFileAlignment));
         free (FileBuffer);
         return EFI_ABORTED;
       }
@@ -1326,7 +1328,7 @@ Returns:
   SecCorePhysicalAddress = FvInfo->BaseAddress;
   SecCorePhysicalAddress += (UINTN) Pe32Section.Pe32Section + sizeof (EFI_SECTION_PE32) - (UINTN) FvImage->FileImage;
   SecCorePhysicalAddress += EntryPoint;
-  DebugMsg (NULL, 0, 9, "SecCore physical entry point address", "Address = 0x%X", SecCorePhysicalAddress); 
+  DebugMsg (NULL, 0, 9, "SecCore physical entry point address", "Address = 0x%llX", (unsigned long long) SecCorePhysicalAddress); 
 
   //
   // Find the PEI Core
@@ -1366,7 +1368,7 @@ Returns:
   PeiCorePhysicalAddress = FvInfo->BaseAddress;
   PeiCorePhysicalAddress += (UINTN) Pe32Section.Pe32Section + sizeof (EFI_SECTION_PE32) - (UINTN) FvImage->FileImage;
   PeiCorePhysicalAddress += EntryPoint;
-  DebugMsg (NULL, 0, 9, "PeiCore physical entry point address", "Address = 0x%X", PeiCorePhysicalAddress);
+  DebugMsg (NULL, 0, 9, "PeiCore physical entry point address", "Address = 0x%llX", (unsigned long long) PeiCorePhysicalAddress);
 
   if (MachineType == EFI_IMAGE_MACHINE_IA64) {
     //
@@ -1382,8 +1384,8 @@ Returns:
     //
     if (PeiCorePhysicalAddress & 0xF) {
       Error (NULL, 0, 3000, "Invalid",
-        "PEI_CORE entry point is not aligned on a 16 byte boundary, address specified is %Xh.",
-        PeiCorePhysicalAddress
+        "PEI_CORE entry point is not aligned on a 16 byte boundary, address specified is %llXh.",
+        (unsigned long long) PeiCorePhysicalAddress
         );
       return EFI_ABORTED;
     }
@@ -1412,8 +1414,8 @@ Returns:
     //
     if (SecCorePhysicalAddress & 0xF) {
       Error (NULL, 0, 3000, "Invalid",
-        "SALE_ENTRY entry point is not aligned on a 16 byte boundary, address specified is %Xh.",
-        SecCorePhysicalAddress
+        "SALE_ENTRY entry point is not aligned on a 16 byte boundary, address specified is %llXh.",
+        (unsigned long long) SecCorePhysicalAddress
         );
       return EFI_ABORTED;
     }
@@ -1462,7 +1464,7 @@ Returns:
     //
     Ia32ResetAddressPtr   = (UINT32 *) ((UINTN) FvImage->Eof - 4);
     *Ia32ResetAddressPtr  = (UINT32) (FvInfo->BaseAddress);
-    DebugMsg (NULL, 0, 9, "update BFV base address in the top FV image", "BFV base address = 0x%X.", FvInfo->BaseAddress);
+    DebugMsg (NULL, 0, 9, "update BFV base address in the top FV image", "BFV base address = 0x%llX.", (unsigned long long) FvInfo->BaseAddress);
 
     //
     // Update the Startup AP in the FVH header block ZeroVector region.
@@ -1509,7 +1511,7 @@ Returns:
     // IpiVector at the 4k aligned address in the top 2 blocks in the PEI FV. 
     //
     IpiVector  = (UINT32) (FV_IMAGES_TOP_ADDRESS - ((UINTN) FvImage->Eof - (UINTN) BytePointer));
-    DebugMsg (NULL, 0, 9, "Startup AP Vector address", "IpiVector at 0x%X", IpiVector);
+    DebugMsg (NULL, 0, 9, "Startup AP Vector address", "IpiVector at 0x%X", (unsigned) IpiVector);
     if ((IpiVector & 0xFFF) != 0) {
       Error (NULL, 0, 3000, "Invalid", "Startup AP Vector address are not 4K aligned, because the FV size is not 4K aligned");
       return EFI_ABORTED;
@@ -1528,7 +1530,7 @@ Returns:
     // Volume Top File, but if you have one for some reason don't crash...
     //
   } else {
-    Error (NULL, 0, 3000, "Invalid", "machine type=0x%X in PEI core.", (UINT32) MachineType);
+    Error (NULL, 0, 3000, "Invalid", "machine type=0x%X in PEI core.", MachineType);
     return EFI_ABORTED;
   }
 
@@ -1672,7 +1674,7 @@ Returns:
       PeiCorePhysicalAddress = FvInfo->BaseAddress;
       PeiCorePhysicalAddress += (UINTN) Pe32Section.Pe32Section + sizeof (EFI_SECTION_PE32) - (UINTN) FvImage->FileImage;
       PeiCorePhysicalAddress += EntryPoint;
-      DebugMsg (NULL, 0, 9, "PeiCore physical entry point address", "Address = 0x%X", PeiCorePhysicalAddress);
+      DebugMsg (NULL, 0, 9, "PeiCore physical entry point address", "Address = 0x%llX", (unsigned long long) PeiCorePhysicalAddress);
 
       if (MachineType == EFI_IMAGE_MACHINE_ARMT) {
         memset (ResetVector, 0, sizeof (ResetVector));
@@ -1727,7 +1729,7 @@ Returns:
   SecCorePhysicalAddress = FvInfo->BaseAddress;
   SecCorePhysicalAddress += (UINTN) Pe32Section.Pe32Section + sizeof (EFI_SECTION_PE32) - (UINTN) FvImage->FileImage;
   SecCorePhysicalAddress += EntryPoint;
-  DebugMsg (NULL, 0, 9, "SecCore physical entry point address", "Address = 0x%X", SecCorePhysicalAddress); 
+  DebugMsg (NULL, 0, 9, "SecCore physical entry point address", "Address = 0x%llX", (unsigned long long) SecCorePhysicalAddress); 
 
   //
   // Find the PEI Core. It may not exist if SEC loads DXE core directly
@@ -1765,7 +1767,7 @@ Returns:
     PeiCorePhysicalAddress = FvInfo->BaseAddress;
     PeiCorePhysicalAddress += (UINTN) Pe32Section.Pe32Section + sizeof (EFI_SECTION_PE32) - (UINTN) FvImage->FileImage;
     PeiCorePhysicalAddress += EntryPoint;
-    DebugMsg (NULL, 0, 9, "PeiCore physical entry point address", "Address = 0x%X", PeiCorePhysicalAddress);
+    DebugMsg (NULL, 0, 9, "PeiCore physical entry point address", "Address = 0x%llX", (unsigned long long) PeiCorePhysicalAddress);
   }
   
   
@@ -1881,7 +1883,7 @@ Returns:
     // Verify NT header is expected
     //
     if (ImgHdr->Pe32.Signature != EFI_IMAGE_NT_SIGNATURE) {
-      Error (NULL, 0, 3000, "Invalid", "Unrecognized image signature 0x%08X.", ImgHdr->Pe32.Signature);
+      Error (NULL, 0, 3000, "Invalid", "Unrecognized image signature 0x%08X.", (unsigned) ImgHdr->Pe32.Signature);
       return EFI_UNSUPPORTED;
     }
     //
@@ -1991,7 +1993,7 @@ Returns:
   //
   if (mFvDataInfo.FvFileSystemGuidSet) {
     DebugMsg (NULL, 0, 9, "FV File System Guid", "%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X", 
-                  mFvDataInfo.FvFileSystemGuid.Data1,
+                  (unsigned) mFvDataInfo.FvFileSystemGuid.Data1,
                   mFvDataInfo.FvFileSystemGuid.Data2,
                   mFvDataInfo.FvFileSystemGuid.Data3,
                   mFvDataInfo.FvFileSystemGuid.Data4[0],
@@ -2008,7 +2010,7 @@ Returns:
   //
   if (mFvDataInfo.FvNameGuidSet) {
       DebugMsg (NULL, 0, 9, "FV Name Guid", "%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X", 
-                  mFvDataInfo.FvNameGuid.Data1,
+                  (unsigned) mFvDataInfo.FvNameGuid.Data1,
                   mFvDataInfo.FvNameGuid.Data2,
                   mFvDataInfo.FvNameGuid.Data3,
                   mFvDataInfo.FvNameGuid.Data4[0],
@@ -2044,7 +2046,7 @@ Returns:
   if (EFI_ERROR (Status)) {
     return Status;    
   }
-  VerboseMsg ("the generated FV image size is %d bytes", mFvDataInfo.Size);
+  VerboseMsg ("the generated FV image size is %u bytes", (unsigned) mFvDataInfo.Size);
   
   //
   // support fv image and empty fv image
@@ -2156,15 +2158,15 @@ Returns:
   //
   if (mFvTotalSize != 0) {
     fprintf (FvMapFile, EFI_FV_TOTAL_SIZE_STRING);
-    fprintf (FvMapFile, " = 0x%x\n", mFvTotalSize);
+    fprintf (FvMapFile, " = 0x%x\n", (unsigned) mFvTotalSize);
   }
   if (mFvTakenSize != 0) {
     fprintf (FvMapFile, EFI_FV_TAKEN_SIZE_STRING);
-    fprintf (FvMapFile, " = 0x%x\n", mFvTakenSize);
+    fprintf (FvMapFile, " = 0x%x\n", (unsigned) mFvTakenSize);
   }
   if (mFvTotalSize != 0 && mFvTakenSize != 0) {
     fprintf (FvMapFile, EFI_FV_SPACE_SIZE_STRING);
-    fprintf (FvMapFile, " = 0x%x\n\n", mFvTotalSize - mFvTakenSize);
+    fprintf (FvMapFile, " = 0x%x\n\n", (unsigned) (mFvTotalSize - mFvTakenSize));
   }
 
   //
@@ -2491,7 +2493,7 @@ Returns:
     }
   }
   
-  DebugMsg (NULL, 0, 9, "FvImage size", "The caculated fv image size is 0x%x and the current set fv image size is 0x%x", CurrentOffset, FvInfoPtr->Size);
+  DebugMsg (NULL, 0, 9, "FvImage size", "The caculated fv image size is 0x%x and the current set fv image size is 0x%x", (unsigned) CurrentOffset, (unsigned) FvInfoPtr->Size);
   
   if (FvInfoPtr->Size == 0) { 
     //
@@ -2505,7 +2507,7 @@ Returns:
     //
     // Not invalid
     //
-    Error (NULL, 0, 3000, "Invalid", "the required fv image size 0x%x exceeds the set fv image size 0x%x", CurrentOffset, FvInfoPtr->Size);
+    Error (NULL, 0, 3000, "Invalid", "the required fv image size 0x%x exceeds the set fv image size 0x%x", (unsigned) CurrentOffset, (unsigned) FvInfoPtr->Size);
     return EFI_INVALID_PARAMETER;
   }
   
@@ -2687,7 +2689,7 @@ Returns:
     ImageContext.ImageRead  = (PE_COFF_LOADER_READ_FILE) FfsRebaseImageRead;
     Status                  = PeCoffLoaderGetImageInfo (&ImageContext);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 3000, "Invalid PeImage", "The input file is %s and the return status is %x", FileName, Status);
+      Error (NULL, 0, 3000, "Invalid PeImage", "The input file is %s and the return status is %x", FileName, (int) Status);
       return Status;
     }
 
@@ -2786,7 +2788,7 @@ Returns:
           ImageContext.Handle = PeFileBuffer;
           Status              = PeCoffLoaderGetImageInfo (&ImageContext);
           if (EFI_ERROR (Status)) {
-            Error (NULL, 0, 3000, "Invalid PeImage", "The input file is %s and the return status is %x", FileName, Status);
+            Error (NULL, 0, 3000, "Invalid PeImage", "The input file is %s and the return status is %x", FileName, (int) Status);
             return Status;
           }
           ImageContext.RelocationsStripped = FALSE;
@@ -2936,7 +2938,7 @@ Returns:
       ImgHdr->Pe32Plus.OptionalHeader.ImageBase     = NewPe32BaseAddress;
     } else {
       Error (NULL, 0, 3000, "Invalid", "unknown PE magic signature %X in PE32 image %s",
-        (UINT32) ImgHdr->Pe32.OptionalHeader.Magic,
+        ImgHdr->Pe32.OptionalHeader.Magic,
         FileName
         );
       return EFI_ABORTED;
@@ -3019,7 +3021,7 @@ WritePeMap:
     ImageContext.ImageRead  = (PE_COFF_LOADER_READ_FILE) FfsRebaseImageRead;
     Status                  = PeCoffLoaderGetImageInfo (&ImageContext);
     if (EFI_ERROR (Status)) {
-      Error (NULL, 0, 3000, "Invalid TeImage", "The input file is %s and the return status is %x", FileName, Status);
+      Error (NULL, 0, 3000, "Invalid TeImage", "The input file is %s and the return status is %x", FileName, (int) Status);
       return Status;
     }
 
@@ -3102,7 +3104,7 @@ WritePeMap:
         ImageContext.Handle = PeFileBuffer;
         Status              = PeCoffLoaderGetImageInfo (&ImageContext);
         if (EFI_ERROR (Status)) {
-          Error (NULL, 0, 3000, "Invalid TeImage", "The input file is %s and the return status is %x", FileName, Status);
+          Error (NULL, 0, 3000, "Invalid TeImage", "The input file is %s and the return status is %x", FileName, (int) Status);
           return Status;
         }
         ImageContext.RelocationsStripped = FALSE;
@@ -3404,7 +3406,7 @@ Returns:
       // Add the file
       //
       strcpy (CapInfo->CapFiles[Index], Value);
-      DebugMsg (NULL, 0, 9, "Capsule component file", "the %dth file name is %s", Index, CapInfo->CapFiles[Index]); 
+      DebugMsg (NULL, 0, 9, "Capsule component file", "the %uth file name is %s", (unsigned) Index, CapInfo->CapFiles[Index]); 
     } else {
       break;
     }
@@ -3569,7 +3571,7 @@ Returns:
   fwrite (CapBuffer, 1, CapSize, fpout);
   fclose (fpout);
   
-  VerboseMsg ("The size of the generated capsule image is %d bytes", CapSize);
+  VerboseMsg ("The size of the generated capsule image is %u bytes", (unsigned) CapSize);
 
   return EFI_SUCCESS;
 }

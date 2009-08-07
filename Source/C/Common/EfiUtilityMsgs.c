@@ -495,7 +495,7 @@ Notes:
     if (Cptr != NULL) {
       sprintf (Line, ": %s", Cptr);
       if (LineNumber != 0) {
-        sprintf (Line2, "(%d)", LineNumber);
+        sprintf (Line2, "(%u)", (unsigned) LineNumber);
         strcat (Line, Line2);
       }
     }
@@ -509,7 +509,7 @@ Notes:
       }
       sprintf (Line, "%s", Cptr);
       if (LineNumber != 0) {
-        sprintf (Line2, "(%d)", LineNumber);
+        sprintf (Line2, "(%u)", (unsigned) LineNumber);
         strcat (Line, Line2);
       }
     } else {
@@ -524,7 +524,7 @@ Notes:
   // message for you. It has to be decimal digits too.
   //
   if (MessageCode != 0) {
-    sprintf (Line2, ": %s %04d", Type, MessageCode);
+    sprintf (Line2, ": %s %04u", Type, (unsigned) MessageCode);
   } else {
     sprintf (Line2, ": %s", Type);
   }
@@ -843,7 +843,7 @@ TestUtilityMessages (
   )
 {
   CHAR8 *ArgStr = "ArgString";
-  INTN  ArgInt;
+  int   ArgInt;
 
   ArgInt  = 0x12345678;
   //

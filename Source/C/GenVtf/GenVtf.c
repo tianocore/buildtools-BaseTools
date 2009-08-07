@@ -122,8 +122,8 @@ Returns:
   CHAR8  StrPtr[40];
   CHAR8  *Token;
   UINTN  Length;
-  UINT32 Major;
-  UINT32 Minor;
+  unsigned Major;
+  unsigned Minor;
 
   Major = 0;
   Minor = 0;
@@ -347,7 +347,7 @@ Returns:
     } else if (strnicmp (*TokenStr, "COMP_TYPE", 9) == 0) {
       TokenStr++;
       if (AsciiStringToUint64 (*TokenStr, FALSE, &StringValue) != EFI_SUCCESS) {
-        Error (NULL, 0, 5001, "Cannot get: \"0x%x\".", *TokenStr);
+        Error (NULL, 0, 5001, "Cannot get: \"0x%s\".", *TokenStr);
         return ;
       }
 
@@ -2281,11 +2281,7 @@ Returns:
       //
       TokenAddress += BaseAddress &~IPF_CACHE_BIT;
 
-#ifdef __GNUC__
-      fprintf (DestFile, "%s | %016llX | %s | %s%s\n", Type, TokenAddress, Section, BaseToken, Token);
-#else
-       fprintf (DestFile, "%s | %016I64X | %s | %s%s\n", Type, TokenAddress, Section, BaseToken, Token);
-#endif
+      fprintf (DestFile, "%s | %016llX | %s | %s%s\n", Type, (unsigned long long) TokenAddress, Section, BaseToken, Token);
     }
   }
 
@@ -2701,7 +2697,7 @@ Returns:
       break;
 
     default:
-      Error (NULL, 0, 3000, "Invalid", "GenVtfImage function returned unknown status %x.",Status );
+      Error (NULL, 0, 3000, "Invalid", "GenVtfImage function returned unknown status %x.", (int) Status );
       break;
     }
   }

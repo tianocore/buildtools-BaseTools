@@ -313,7 +313,7 @@ Returns:
         return STATUS_ERROR;        
       }
       mFvDataInfo.FvBlocks[0].Length = (UINT32) TempNumber;
-      DebugMsg (NULL, 0, 9, "FV Block Size", "%s = 0x%x", EFI_BLOCK_SIZE_STRING, TempNumber);
+      DebugMsg (NULL, 0, 9, "FV Block Size", "%s = 0x%llx", EFI_BLOCK_SIZE_STRING, (unsigned long long) TempNumber);
       argc -= 2;
       argv += 2;
       continue; 
@@ -330,7 +330,7 @@ Returns:
         return STATUS_ERROR;        
       }
       mFvDataInfo.FvBlocks[0].NumBlocks = (UINT32) TempNumber;
-      DebugMsg (NULL, 0, 9, "FV Number Block", "%s = 0x%x", EFI_NUM_BLOCKS_STRING, TempNumber);
+      DebugMsg (NULL, 0, 9, "FV Number Block", "%s = 0x%llx", EFI_NUM_BLOCKS_STRING, (unsigned long long) TempNumber);
       argc -= 2;
       argv += 2;
       continue; 
@@ -342,7 +342,7 @@ Returns:
         return STATUS_ERROR;
       }
       strcpy (mFvDataInfo.FvFiles[Index], argv[1]);
-      DebugMsg (NULL, 0, 9, "FV component file", "the %dth name is %s", Index + 1, argv[1]);
+      DebugMsg (NULL, 0, 9, "FV component file", "the %uth name is %s", (unsigned) Index + 1, argv[1]);
       argc -= 2;
       argv += 2;
 
@@ -358,7 +358,7 @@ Returns:
 		        return STATUS_ERROR;        
 		      }
 		      mFvDataInfo.SizeofFvFiles[Index] = (UINT32) TempNumber;
-	      	DebugMsg (NULL, 0, 9, "FV component file size", "the %dth size is %s", Index + 1, argv[1]);
+	      	DebugMsg (NULL, 0, 9, "FV component file size", "the %uth size is %s", (unsigned) Index + 1, argv[1]);
 	      	argc -= 2;
 	      	argv += 2;
         }
@@ -389,7 +389,7 @@ Returns:
         return STATUS_ERROR;        
       }
       mCapDataInfo.HeaderSize = (UINT32) TempNumber;
-      DebugMsg (NULL, 0, 9, "Capsule Header size", "%s = 0x%x", EFI_CAPSULE_HEADER_SIZE_STRING, TempNumber);
+      DebugMsg (NULL, 0, 9, "Capsule Header size", "%s = 0x%llx", EFI_CAPSULE_HEADER_SIZE_STRING, (unsigned long long) TempNumber);
       argc -= 2;
       argv += 2;
       continue; 
@@ -507,7 +507,7 @@ Returns:
         return STATUS_ERROR;
       }
       if (LogLevel > 9) {
-        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0-9, current input level is %d", LogLevel);
+        Error (NULL, 0, 1003, "Invalid option value", "Debug Level range is 0-9, current input level is %d", (int) LogLevel);
         return STATUS_ERROR;
       }
       SetPrintLevel (LogLevel);
@@ -626,7 +626,7 @@ Returns:
     }
     fprintf (FpFile, "Capsule %s Image Header Information\n", InfFileName);
     fprintf (FpFile, "  GUID                  %08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X\n", 
-                    CapsuleHeader->CapsuleGuid.Data1,
+                    (unsigned) CapsuleHeader->CapsuleGuid.Data1,
                     (UINT32) CapsuleHeader->CapsuleGuid.Data2,
                     (UINT32) CapsuleHeader->CapsuleGuid.Data3,
                     (UINT32) CapsuleHeader->CapsuleGuid.Data4[0],
@@ -637,9 +637,9 @@ Returns:
                     (UINT32) CapsuleHeader->CapsuleGuid.Data4[5],
                     (UINT32) CapsuleHeader->CapsuleGuid.Data4[6],
                     (UINT32) CapsuleHeader->CapsuleGuid.Data4[7]);
-    fprintf (FpFile, "  Header size           0x%08X\n", CapsuleHeader->HeaderSize);
-    fprintf (FpFile, "  Flags                 0x%08X\n", CapsuleHeader->Flags);
-    fprintf (FpFile, "  Capsule image size    0x%08X\n", CapsuleHeader->CapsuleImageSize);
+    fprintf (FpFile, "  Header size           0x%08X\n", (unsigned) CapsuleHeader->HeaderSize);
+    fprintf (FpFile, "  Flags                 0x%08X\n", (unsigned) CapsuleHeader->Flags);
+    fprintf (FpFile, "  Capsule image size    0x%08X\n", (unsigned) CapsuleHeader->CapsuleImageSize);
     fclose (FpFile);
   } else if (CapsuleFlag) {
     VerboseMsg ("Create capsule image");
@@ -658,7 +658,7 @@ Returns:
   } else {
     VerboseMsg ("Create Fv image and its map file");
     if (mFvDataInfo.BaseAddress != 0) {
-      VerboseMsg ("FvImage Rebase Address is 0x%X", mFvDataInfo.BaseAddress);
+      VerboseMsg ("FvImage Rebase Address is 0x%llX", (unsigned long long) mFvDataInfo.BaseAddress);
     }
     //
     // Call the GenerateFvImage to generate Fv Image
@@ -692,20 +692,20 @@ Returns:
     if (mFvDataInfo.BootBaseAddress != 0) {
       fprintf (FpFile, EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING);
       fprintf (FpFile, " = 0x%llx\n", mFvDataInfo.BootBaseAddress);
-      DebugMsg (NULL, 0, 9, "Updated boot driver base address", "%s = 0x%x", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, mFvDataInfo.BootBaseAddress);
+      DebugMsg (NULL, 0, 9, "Updated boot driver base address", "%s = 0x%llx", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, (unsigned long long) mFvDataInfo.BootBaseAddress);
     }
     if (mFvDataInfo.RuntimeBaseAddress != 0) {
       fprintf (FpFile, EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING);
       fprintf (FpFile, " = 0x%llx\n", mFvDataInfo.RuntimeBaseAddress);
-      DebugMsg (NULL, 0, 9, "Updated runtime driver base address", "%s = 0x%x", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, mFvDataInfo.RuntimeBaseAddress);
+      DebugMsg (NULL, 0, 9, "Updated runtime driver base address", "%s = 0x%llx", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, (unsigned long long) mFvDataInfo.RuntimeBaseAddress);
     }
     fclose (FpFile);
   }
   
   if (Status == EFI_SUCCESS) {
-    DebugMsg (NULL, 0, 9, "The Total Fv Size", "%s = 0x%x", EFI_FV_TOTAL_SIZE_STRING, mFvTotalSize);
-    DebugMsg (NULL, 0, 9, "The used Fv Size", "%s = 0x%x", EFI_FV_TAKEN_SIZE_STRING, mFvTakenSize);
-    DebugMsg (NULL, 0, 9, "The space Fv size", "%s = 0x%x", EFI_FV_SPACE_SIZE_STRING, mFvTotalSize - mFvTakenSize);
+    DebugMsg (NULL, 0, 9, "The Total Fv Size", "%s = 0x%x", EFI_FV_TOTAL_SIZE_STRING, (unsigned) mFvTotalSize);
+    DebugMsg (NULL, 0, 9, "The used Fv Size", "%s = 0x%x", EFI_FV_TAKEN_SIZE_STRING, (unsigned) mFvTakenSize);
+    DebugMsg (NULL, 0, 9, "The space Fv size", "%s = 0x%x", EFI_FV_SPACE_SIZE_STRING, (unsigned) (mFvTotalSize - mFvTakenSize));
   }
 
   VerboseMsg ("%s tool done with return code is 0x%x.", UTILITY_NAME, GetUtilityStatus ());

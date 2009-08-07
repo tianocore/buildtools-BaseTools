@@ -379,10 +379,10 @@ Returns:
 --*/
 {
   INT32 Index;
-  UINT32 Data1;
-  UINT32 Data2;
-  UINT32 Data3;
-  UINT16 Data4[8];
+  unsigned Data1;
+  unsigned Data2;
+  unsigned Data3;
+  unsigned Data4[8];
 
   if (AsciiGuidBuffer == NULL || GuidBuffer == NULL) {
     return EFI_INVALID_PARAMETER;
