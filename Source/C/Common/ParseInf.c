@@ -416,7 +416,7 @@ Returns:
   //
   Index = sscanf (
             AsciiGuidBuffer,
-            "%08x-%04x-%04x-%02hx%02hx-%02hx%02hx%02hx%02hx%02hx%02hx",
+            "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
             &Data1,
             &Data2,
             &Data3,

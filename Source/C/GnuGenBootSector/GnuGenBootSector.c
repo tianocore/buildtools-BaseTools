@@ -296,10 +296,10 @@ PrintUsage (
      [-h, --help]\n");
 }
 
-INTN
+int
 main (
-  INTN  argc,
-  CHAR8 *argv[]
+  int  argc,
+  char *argv[]
   )
 {
   CHAR8          *AppName;

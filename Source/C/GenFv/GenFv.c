@@ -691,12 +691,20 @@ Returns:
     fprintf (FpFile, "\n");
     if (mFvDataInfo.BootBaseAddress != 0) {
       fprintf (FpFile, EFI_FV_BOOT_DRIVER_BASE_ADDRESS_STRING);
-      fprintf (FpFile, " = 0x%llx\n", mFvDataInfo.BootBaseAddress);
+      fprintf (
+        FpFile,
+        " = 0x%llx\n",
+        (unsigned long long)mFvDataInfo.BootBaseAddress
+        );
       DebugMsg (NULL, 0, 9, "Updated boot driver base address", "%s = 0x%llx", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, (unsigned long long) mFvDataInfo.BootBaseAddress);
     }
     if (mFvDataInfo.RuntimeBaseAddress != 0) {
       fprintf (FpFile, EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING);
-      fprintf (FpFile, " = 0x%llx\n", mFvDataInfo.RuntimeBaseAddress);
+      fprintf (
+        FpFile,
+        " = 0x%llx\n",
+        (unsigned long long)mFvDataInfo.RuntimeBaseAddress
+        );
       DebugMsg (NULL, 0, 9, "Updated runtime driver base address", "%s = 0x%llx", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, (unsigned long long) mFvDataInfo.RuntimeBaseAddress);
     }
     fclose (FpFile);
