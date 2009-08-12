@@ -324,6 +324,10 @@ Returns:
       ExpectedLength = sizeof(EFI_ACPI_3_0_FIXED_ACPI_DESCRIPTION_TABLE);
       break;
     default:
+      if (AcpiHeader->Revision > EFI_ACPI_3_0_FIXED_ACPI_DESCRIPTION_TABLE_REVISION) {
+        ExpectedLength = AcpiHeader->Length;
+        break;
+      }
       Error (NULL, 0, 3000, "Invalid", "FACP revision check failed.");
       return STATUS_ERROR;
     }
@@ -338,7 +342,10 @@ Returns:
   //
   case EFI_ACPI_3_0_FIRMWARE_ACPI_CONTROL_STRUCTURE_SIGNATURE:
     Facs = (EFI_ACPI_3_0_FIRMWARE_ACPI_CONTROL_STRUCTURE *)AcpiTable;
-    if ((Facs->Version != 0) &&
+    if (Facs->Version > EFI_ACPI_3_0_FIRMWARE_ACPI_CONTROL_STRUCTURE_VERSION) {
+      break;
+    }
+    if ((Facs->Version != EFI_ACPI_1_0_FIRMWARE_ACPI_CONTROL_STRUCTURE_VERSION) &&
         (Facs->Version != EFI_ACPI_2_0_FIRMWARE_ACPI_CONTROL_STRUCTURE_VERSION) &&
         (Facs->Version != EFI_ACPI_3_0_FIRMWARE_ACPI_CONTROL_STRUCTURE_VERSION)){
       Error (NULL, 0, 3000, "Invalid", "FACS version check failed.");
@@ -357,8 +364,7 @@ Returns:
   //
   case EFI_ACPI_3_0_DIFFERENTIATED_SYSTEM_DESCRIPTION_TABLE_SIGNATURE:
     if (AcpiHeader->Revision > EFI_ACPI_3_0_DIFFERENTIATED_SYSTEM_DESCRIPTION_TABLE_REVISION) {
-      Error (NULL, 0, 3000, "Invalid", "DSDT revision check failed.");
-      return STATUS_ERROR;
+      break;
     }
     if (AcpiHeader->Length <= sizeof(EFI_ACPI_DESCRIPTION_HEADER)) {
       Error (NULL, 0, 3000, "Invalid", "DSDT length check failed.");
@@ -370,6 +376,9 @@ Returns:
   // "APIC" Multiple APIC Description Table
   //
   case EFI_ACPI_3_0_MULTIPLE_APIC_DESCRIPTION_TABLE_SIGNATURE:
+    if (AcpiHeader->Revision > EFI_ACPI_3_0_MULTIPLE_APIC_DESCRIPTION_TABLE_REVISION) {
+      break;
+    }
     if ((AcpiHeader->Revision != EFI_ACPI_1_0_MULTIPLE_APIC_DESCRIPTION_TABLE_REVISION) &&
         (AcpiHeader->Revision != EFI_ACPI_2_0_MULTIPLE_APIC_DESCRIPTION_TABLE_REVISION) &&
         (AcpiHeader->Revision != EFI_ACPI_3_0_MULTIPLE_APIC_DESCRIPTION_TABLE_REVISION)) {
@@ -386,6 +395,9 @@ Returns:
   // "MCFG" PCI Express Memory Mapped Configuration Space Base Address Description Table
   //
   case EFI_ACPI_3_0_PCI_EXPRESS_MEMORY_MAPPED_CONFIGURATION_SPACE_BASE_ADDRESS_DESCRIPTION_TABLE_SIGNATURE:
+    if (AcpiHeader->Revision > EFI_ACPI_MEMORY_MAPPED_CONFIGURATION_SPACE_ACCESS_TABLE_REVISION) {
+      break;
+    }
     if (AcpiHeader->Revision != EFI_ACPI_MEMORY_MAPPED_CONFIGURATION_SPACE_ACCESS_TABLE_REVISION) {
       Error (NULL, 0, 3000, "Invalid", "MCFG revision check failed.");
       return STATUS_ERROR;
