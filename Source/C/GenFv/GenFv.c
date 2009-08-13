@@ -233,10 +233,10 @@ Returns:
   //
   memset (&mFvDataInfo, 0, sizeof (FV_INFO));
   memset (&mCapDataInfo, 0, sizeof (CAP_INFO)); 
-	//
-	// Set the default FvGuid
-	//
-	memcpy (&mFvDataInfo.FvFileSystemGuid, &mEfiFirmwareFileSystem2Guid, sizeof (EFI_GUID));
+  //
+  // Set the default FvGuid
+  //
+  memcpy (&mFvDataInfo.FvFileSystemGuid, &mEfiFirmwareFileSystem2Guid, sizeof (EFI_GUID));
    
   //
   // Parse command line

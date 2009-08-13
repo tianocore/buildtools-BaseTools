@@ -515,6 +515,7 @@ EFI_STATUS
 AddPadFile (
   IN OUT MEMORY_FILE  *FvImage,
   IN UINT32           DataAlignment,
+  IN VOID             *FvEnd,
   IN EFI_FIRMWARE_VOLUME_EXT_HEADER *ExtHeader
   )
 /*++
@@ -526,9 +527,10 @@ Routine Description:
 
 Arguments:
 
-  FvImage         The memory image of the FV to add it to.  The current offset
-                  must be valid.
+  FvImage         The memory image of the FV to add it to.
+                  The current offset must be valid.
   DataAlignment   The data alignment of the next FFS file.
+  FvEnd           End of the empty data in FvImage.
   ExtHeader       PI FvExtHeader Optional 
 
 Returns:
@@ -558,41 +560,13 @@ Returns:
   }
 
   //
-  // Write pad file header
-  //
-  PadFile = (EFI_FFS_FILE_HEADER *) FvImage->CurrentFilePointer;
-
-  //
-  // Verify that we have enough space for the file header
-  //
-  if (ExtHeader != NULL) {
-    if ((UINTN) (PadFile + sizeof (EFI_FFS_FILE_HEADER) + ExtHeader->ExtHeaderSize) >= (UINTN) FvImage->Eof) {
-      return EFI_OUT_OF_RESOURCES;
-    }    
-  } else {
-    if ((UINTN) (PadFile + sizeof (EFI_FFS_FILE_HEADER)) >= (UINTN) FvImage->Eof) {
-      return EFI_OUT_OF_RESOURCES;
-    }
-  }
-
-  //
-  // write PadFile FFS header with PadType, don't need to set PAD file guid in its header.
-  //
-  PadFile->Type       = EFI_FV_FILETYPE_FFS_PAD;
-  PadFile->Attributes = 0;
-
-  //
   // Calculate the pad file size
   //
   //
   // This is the earliest possible valid offset (current plus pad file header
   // plus the next file header)
   //
-  if (ExtHeader != NULL) {
-    PadFileSize = (UINTN) FvImage->CurrentFilePointer - (UINTN) FvImage->FileImage + (sizeof (EFI_FFS_FILE_HEADER) * 2) + ExtHeader->ExtHeaderSize;
-  } else {
-    PadFileSize = (UINTN) FvImage->CurrentFilePointer - (UINTN) FvImage->FileImage + (sizeof (EFI_FFS_FILE_HEADER) * 2);
-  }
+  PadFileSize = (UINTN) FvImage->CurrentFilePointer - (UINTN) FvImage->FileImage + (sizeof (EFI_FFS_FILE_HEADER) * 2);
 
   //
   // Add whatever it takes to get to the next aligned address
@@ -610,6 +584,31 @@ Returns:
   //
   PadFileSize -= (UINTN) FvImage->CurrentFilePointer - (UINTN) FvImage->FileImage;
   
+  //
+  // Append extension header size
+  //
+  if (ExtHeader != NULL) {
+    PadFileSize = PadFileSize + ExtHeader->ExtHeaderSize;
+  }
+
+  //
+  // Verify that we have enough space for the file header
+  //
+  if (((UINTN) FvImage->CurrentFilePointer + PadFileSize) > (UINTN) FvEnd) {
+    return EFI_OUT_OF_RESOURCES;
+  }
+
+  //
+  // Write pad file header
+  //
+  PadFile = (EFI_FFS_FILE_HEADER *) FvImage->CurrentFilePointer;
+
+  //
+  // Write PadFile FFS header with PadType, don't need to set PAD file guid in its header.
+  //
+  PadFile->Type       = EFI_FV_FILETYPE_FFS_PAD;
+  PadFile->Attributes = 0;
+
   //
   // Write pad file size (calculated size minus next file header size)
   //
@@ -631,25 +630,25 @@ Returns:
     (EFI_FFS_FILE_HEADER *) PadFile,
     (EFI_FIRMWARE_VOLUME_HEADER *) FvImage->FileImage
     );
-  
+
+  //
+  // Update the current FV pointer
+  //
+  FvImage->CurrentFilePointer += PadFileSize;
+
   if (ExtHeader != NULL) {
     //
     // Copy Fv Extension Header and Set Fv Extension header offset
     //
     memcpy (PadFile + 1, ExtHeader, ExtHeader->ExtHeaderSize);
     ((EFI_FIRMWARE_VOLUME_HEADER *) FvImage->FileImage)->ExtHeaderOffset = (UINT16) ((UINTN) (PadFile + 1) - (UINTN) FvImage->FileImage);
+	  //
+	  // Make next file start at QWord Boundry
+	  //
+	  while (((UINTN) FvImage->CurrentFilePointer & (EFI_FFS_FILE_HEADER_ALIGNMENT - 1)) != 0) {
+	    FvImage->CurrentFilePointer++;
+	  }
   }
-
-  //
-  // Verify that we have enough space (including the padding)
-  //
-  if (((UINTN)PadFile + PadFileSize) >= (UINTN) FvImage->Eof) {
-    return EFI_OUT_OF_RESOURCES;
-  }
-  //
-  // Update the current FV pointer
-  //
-  FvImage->CurrentFilePointer += PadFileSize;
 
   return EFI_SUCCESS;
 }
@@ -1099,7 +1098,7 @@ Returns:
   //
   // Add pad file if necessary
   //
-  Status = AddPadFile (FvImage, 1 << CurrentFileAlignment, NULL);
+  Status = AddPadFile (FvImage, 1 << CurrentFileAlignment, *VtfFileImage, NULL);
   if (EFI_ERROR (Status)) {
     Error (NULL, 0, 4002, "Resource", "FV space is full, could not add pad file for data alignment property.");
     free (FileBuffer);
@@ -1108,7 +1107,7 @@ Returns:
   //
   // Add file
   //
-  if ((FvImage->CurrentFilePointer + FileSize) < FvImage->Eof) {
+  if ((FvImage->CurrentFilePointer + FileSize) <= *VtfFileImage) {
     //
     // Rebase the PE or TE image in FileBuffer of FFS file for XIP. 
     // Rebase Bs and Rt drivers for the debug genfvmap tool.
@@ -1175,6 +1174,10 @@ Returns:
   if ((UINTN) VtfFileImage == (UINTN) FvImage->Eof || \
       ((UINTN) VtfFileImage == (UINTN) FvImage->CurrentFilePointer)) {
     return EFI_SUCCESS;
+  }
+
+  if ((UINTN) VtfFileImage < (UINTN) FvImage->CurrentFilePointer) {
+    return EFI_INVALID_PARAMETER;
   }
 
   //
@@ -1264,11 +1267,11 @@ Returns:
   UINT8                     *BytePointer2;
   UINT16                    *WordPointer;
   UINT16                    CheckSum;
+  UINT32                    IpiVector;
   UINTN                     Index;
   EFI_FFS_FILE_STATE        SavedState;
   UINT64                    FitAddress;
   FIT_TABLE                 *FitTablePtr;
-  UINT32                    IpiVector;
 
   //
   // Verify input parameters
@@ -2175,7 +2178,7 @@ Returns:
   if (mFvDataInfo.FvNameGuidSet) {
     memcpy (&FvExtHeader.FvName, &mFvDataInfo.FvNameGuid, sizeof (EFI_GUID));
     FvExtHeader.ExtHeaderSize = sizeof (EFI_FIRMWARE_VOLUME_EXT_HEADER);
-    AddPadFile (&FvImageMemoryFile, 8, &FvExtHeader);
+    AddPadFile (&FvImageMemoryFile, 4, VtfFileImage, &FvExtHeader);
     //
     // Fv Extension header change update Fv Header Check sum
     //
@@ -2385,7 +2388,9 @@ Returns:
   UINT32              FfsAlignment;
   EFI_FFS_FILE_HEADER FfsHeader;
   BOOLEAN             VtfFileFlag;
+  UINTN               VtfFileSize;
   
+  VtfFileSize = 0;
   VtfFileFlag = FALSE;
   fpin  = NULL;
   Index = 0;
@@ -2456,24 +2461,22 @@ Returns:
 	        return EFI_ABORTED;
 	      }
 	      VtfFileFlag = TRUE;
-	      //
-	      // The space between Vft File and the latest file must be able to contain 
-	      // one ffs file header in order to add one pad file.
-	      //
-	      CurrentOffset += sizeof (EFI_FFS_FILE_HEADER);
-	    }
-	    //
-	    // Get the alignment of FFS file 
-	    //
-	    ReadFfsAlignment (&FfsHeader, &FfsAlignment);
-	    FfsAlignment = 1 << FfsAlignment;
-	    //
-	    // Add Pad file
-	    //
-	    if (((CurrentOffset + sizeof (EFI_FFS_FILE_HEADER)) % FfsAlignment) != 0) {
-	      CurrentOffset = (CurrentOffset + sizeof (EFI_FFS_FILE_HEADER) * 2 + FfsAlignment - 1) & ~(FfsAlignment - 1);
-	      CurrentOffset -= sizeof (EFI_FFS_FILE_HEADER);
-	    }
+        VtfFileSize = FfsFileSize;
+        continue;
+      }
+
+      //
+      // Get the alignment of FFS file 
+      //
+      ReadFfsAlignment (&FfsHeader, &FfsAlignment);
+      FfsAlignment = 1 << FfsAlignment;
+      //
+      // Add Pad file
+      //
+      if (((CurrentOffset + sizeof (EFI_FFS_FILE_HEADER)) % FfsAlignment) != 0) {
+        CurrentOffset = (CurrentOffset + sizeof (EFI_FFS_FILE_HEADER) * 2 + FfsAlignment - 1) & ~(FfsAlignment - 1);
+        CurrentOffset -= sizeof (EFI_FFS_FILE_HEADER);
+      }
 	  }
 
     //
@@ -2492,7 +2495,7 @@ Returns:
     	CurrentOffset = (CurrentOffset + EFI_FFS_FILE_HEADER_ALIGNMENT - 1) & ~(EFI_FFS_FILE_HEADER_ALIGNMENT - 1);
     }
   }
-  
+  CurrentOffset += VtfFileSize;
   DebugMsg (NULL, 0, 9, "FvImage size", "The caculated fv image size is 0x%x and the current set fv image size is 0x%x", (unsigned) CurrentOffset, (unsigned) FvInfoPtr->Size);
   
   if (FvInfoPtr->Size == 0) { 
