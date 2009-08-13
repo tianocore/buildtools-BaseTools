@@ -623,7 +623,7 @@ Returns:
   // Print FV header information
   //
   printf ("Signature:        %s (%X)\n", (char *) Signature, (unsigned) VolumeHeader.Signature);
-  printf ("Attributes:       %X\n", VolumeHeader.Attributes);
+  printf ("Attributes:       %X\n", (unsigned) VolumeHeader.Attributes);
 
   if (VolumeHeader.Attributes & EFI_FVB2_READ_DISABLED_CAP) {
     printf ("       EFI_FVB2_READ_DISABLED_CAP\n");

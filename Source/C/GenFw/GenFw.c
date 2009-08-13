@@ -1229,9 +1229,9 @@ ZeroXdataSection (
   CHAR8  KeyWord [MAX_LINE_LEN];
   CHAR8  SectionName [MAX_LINE_LEN];
   UINT32 FunctionType = 0;
-  unsigned SectionOffset;
-  unsigned SectionLength;
-  unsigned SectionNumber;
+  unsigned SectionOffset = 0;
+  unsigned SectionLength = 0;
+  unsigned SectionNumber = 0;
   CHAR8  *PdbPointer;
   INT32  Index;
   UINT32 Index2;
@@ -3060,7 +3060,7 @@ Returns:
 {
   CHAR8  Line[MAX_LINE_LEN];
   CHAR8  *cptr;
-  unsigned ScannedData;
+  unsigned ScannedData = 0;
 
   Line[MAX_LINE_LEN - 1]  = 0;
   while (1) {

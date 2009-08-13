@@ -105,7 +105,7 @@ Returns:
 
 int
 main (
-  INT32 argc,
+  int   argc,
   CHAR8 *argv[]
   )
 /*++

@@ -627,16 +627,16 @@ Returns:
     fprintf (FpFile, "Capsule %s Image Header Information\n", InfFileName);
     fprintf (FpFile, "  GUID                  %08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X\n", 
                     (unsigned) CapsuleHeader->CapsuleGuid.Data1,
-                    (UINT32) CapsuleHeader->CapsuleGuid.Data2,
-                    (UINT32) CapsuleHeader->CapsuleGuid.Data3,
-                    (UINT32) CapsuleHeader->CapsuleGuid.Data4[0],
-                    (UINT32) CapsuleHeader->CapsuleGuid.Data4[1],
-                    (UINT32) CapsuleHeader->CapsuleGuid.Data4[2],
-                    (UINT32) CapsuleHeader->CapsuleGuid.Data4[3],
-                    (UINT32) CapsuleHeader->CapsuleGuid.Data4[4],
-                    (UINT32) CapsuleHeader->CapsuleGuid.Data4[5],
-                    (UINT32) CapsuleHeader->CapsuleGuid.Data4[6],
-                    (UINT32) CapsuleHeader->CapsuleGuid.Data4[7]);
+                    (unsigned) CapsuleHeader->CapsuleGuid.Data2,
+                    (unsigned) CapsuleHeader->CapsuleGuid.Data3,
+                    (unsigned) CapsuleHeader->CapsuleGuid.Data4[0],
+                    (unsigned) CapsuleHeader->CapsuleGuid.Data4[1],
+                    (unsigned) CapsuleHeader->CapsuleGuid.Data4[2],
+                    (unsigned) CapsuleHeader->CapsuleGuid.Data4[3],
+                    (unsigned) CapsuleHeader->CapsuleGuid.Data4[4],
+                    (unsigned) CapsuleHeader->CapsuleGuid.Data4[5],
+                    (unsigned) CapsuleHeader->CapsuleGuid.Data4[6],
+                    (unsigned) CapsuleHeader->CapsuleGuid.Data4[7]);
     fprintf (FpFile, "  Header size           0x%08X\n", (unsigned) CapsuleHeader->HeaderSize);
     fprintf (FpFile, "  Flags                 0x%08X\n", (unsigned) CapsuleHeader->Flags);
     fprintf (FpFile, "  Capsule image size    0x%08X\n", (unsigned) CapsuleHeader->CapsuleImageSize);

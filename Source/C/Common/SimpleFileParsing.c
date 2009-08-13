@@ -634,7 +634,7 @@ Returns:
   // depth.
   //
   if (mGlobals.VerboseFile) {
-    fprintf (stdout, "%*cProcessing file '%s'\n", (INT32)NestDepth * 2, ' ', SourceFile->FileName);
+    fprintf (stdout, "%*cProcessing file '%s'\n", (int)NestDepth * 2, ' ', SourceFile->FileName);
     fprintf (stdout, "Parent source file = '%s'\n", ParentSourceFile->FileName);
   }
 

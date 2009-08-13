@@ -86,7 +86,7 @@ MyCheck (
       "Invalid parameter(s).\n",
       Final,
       File,
-      (UINT32)Line
+      (unsigned)Line
       );
 
     exit (1);
@@ -98,7 +98,7 @@ MyCheck (
       "Invalid parameter.\n",
       Final,
       File,
-      (UINT32)Line
+      (unsigned)Line
       );
 
     exit (1);
@@ -141,7 +141,7 @@ MyCheck (
         "\nSome allocated items have not been freed.\n",
         Final,
         File,
-        (UINT32)Line
+        (unsigned)Line
         );
 
       for (Tmp = MyAllocData; Tmp != NULL; Tmp = Tmp->Next) {
@@ -201,9 +201,9 @@ MyAlloc (
     printf (
       "\nMyAlloc(Size=%u, File=%s, Line=%u)"
       "\nInvalid parameter(s).\n",
-      (UINT32)Size,
+      (unsigned)Size,
       File,
-      (UINT32)Line
+      (unsigned)Line
       );
 
     exit (1);
@@ -214,9 +214,9 @@ MyAlloc (
     printf (
       "\nMyAlloc(Size=%u, File=%s, Line=%u)"
       "\nInvalid parameter.\n",
-      (UINT32)Size,
+      (unsigned)Size,
       File,
-      (UINT32)Line
+      (unsigned)Line
       );
 
     exit (1);
@@ -238,9 +238,9 @@ MyAlloc (
     printf (
       "\nMyAlloc(Size=%u, File=%s, Line=%u)"
       "\nOut of memory.\n",
-      (UINT32)Size,
+      (unsigned)Size,
       File,
-      (UINT32)Line
+      (unsigned)Line
       );
 
     exit (1);
@@ -315,9 +315,9 @@ MyRealloc (
       "\nMyRealloc(Ptr=%p, Size=%u, File=%s, Line=%u)"
       "\nInvalid parameter(s).\n",
       Ptr,
-      (UINT32)Size,
+      (unsigned)Size,
       File,
-      (UINT32)Line
+      (unsigned)Line
       );
 
     exit (1);
@@ -328,9 +328,9 @@ MyRealloc (
       "\nMyRealloc(Ptr=%p, Size=%u, File=%s, Line=%u)"
       "\nInvalid parameter.\n",
       Ptr,
-      (UINT32)Size,
+      (unsigned)Size,
       File,
-      (UINT32)Line
+      (unsigned)Line
       );
 
     exit (1);
@@ -349,9 +349,9 @@ MyRealloc (
           "\nMyRealloc(Ptr=%p, Size=%u, File=%s, Line=%u)"
           "\nCould not find buffer.\n",
           Ptr,
-          (UINT32)Size,
+          (unsigned)Size,
           File,
-          (UINT32)Line
+          (unsigned)Line
           );
 
         exit (1);
@@ -421,7 +421,7 @@ MyFree (
       "\nInvalid parameter(s).\n",
       Ptr,
       File,
-      (UINT32)Line
+      (unsigned)Line
       );
 
     exit (1);
@@ -433,7 +433,7 @@ MyFree (
       "\nInvalid parameter.\n",
       Ptr,
       File,
-      (UINT32)Line
+      (unsigned)Line
       );
 
     exit (1);
@@ -453,7 +453,7 @@ MyFree (
       "\nCalled before memory allocated.\n",
       Ptr,
       File,
-      (UINT32)Line
+      (unsigned)Line
       );
 
     exit (1);
@@ -486,7 +486,7 @@ MyFree (
           "\nNot found.\n",
           Ptr,
           File,
-          (UINT32)Line
+          (unsigned)Line
           );
 
         exit (1);

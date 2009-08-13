@@ -749,7 +749,7 @@ ParseMbr (
   printf ("  1C3    End head                     %02x\n", Mbr.PartitionRecord[0].EndHead);
   printf ("  1C4    End sector                   %02x\n", Mbr.PartitionRecord[0].EndSector);
   printf ("  1C5    End cylinder                 %02x\n", Mbr.PartitionRecord[0].EndTrack);
-  printf ("  1C6    Sectors preceding partition  %08x\n", Mbr.PartitionRecord[0].StartingLBA);
+  printf ("  1C6    Sectors preceding partition  %08x\n", (unsigned) Mbr.PartitionRecord[0].StartingLBA);
   printf ("  1CA    Sectors in partition         %08x\n", (unsigned) Mbr.PartitionRecord[0].SizeInLBA);
   printf ("\n");
   printf ("Partition Table Entry #2\n");
