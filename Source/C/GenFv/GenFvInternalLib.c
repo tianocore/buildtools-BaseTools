@@ -1107,7 +1107,7 @@ Returns:
   //
   // Add file
   //
-  if ((FvImage->CurrentFilePointer + FileSize) <= *VtfFileImage) {
+  if ((UINTN) (FvImage->CurrentFilePointer + FileSize) <= (UINTN) (*VtfFileImage)) {
     //
     // Rebase the PE or TE image in FileBuffer of FFS file for XIP. 
     // Rebase Bs and Rt drivers for the debug genfvmap tool.
