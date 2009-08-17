@@ -47,9 +47,10 @@ class Capsule (CapsuleClassObject) :
     def GenCapsule(self):
         CapInfFile = self.GenCapInf()
         CapInfFile.writelines("[files]" + T_CHAR_LF)
-
+        CapFileList = []
         for CapsuleDataObj in self.CapsuleDataList :
             FileName = CapsuleDataObj.GenCapsuleSubItem()
+            CapFileList.append(FileName)
             CapInfFile.writelines("EFI_FILE_NAME = " + \
                                    FileName      + \
                                    T_CHAR_LF)
@@ -63,7 +64,8 @@ class Capsule (CapsuleClassObject) :
         GenFdsGlobalVariable.GenerateFirmwareVolume(
                                 CapOutputFile,
                                 [self.CapInfFileName],
-                                Capsule=True
+                                Capsule=True,
+                                FfsList=CapFileList
                                 )
         GenFdsGlobalVariable.SharpCounter = 0
 
