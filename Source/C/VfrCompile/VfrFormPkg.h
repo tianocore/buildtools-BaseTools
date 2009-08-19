@@ -856,7 +856,7 @@ private:
 public:
   CIfrResetButton () : CIfrObj (EFI_IFR_RESET_BUTTON_OP, (CHAR8 **)&mResetButton),
                        CIfrOpHeader (EFI_IFR_RESET_BUTTON_OP, &mResetButton->Header), 
-					   CIfrStatementHeader (&mResetButton->Question.Header) {
+					   CIfrStatementHeader (&mResetButton->Statement) {
     mResetButton->DefaultId = EFI_HII_DEFAULT_CLASS_STANDARD;
   }
 
