@@ -1066,10 +1066,8 @@ class PlatformAutoGen(AutoGen):
         for Key in Options:
             Family = Key[0]
             Target, Tag, Arch, Tool, Attr = Key[1].split("_")
-            if Tool not in self.ToolDefinition:
-                continue
             # if tool chain family doesn't match, skip it
-            if Family != "":
+            if Tool in self.ToolDefinition and Family != "":
                 FamilyIsNull = False
                 if self.ToolDefinition[Tool].get(TAB_TOD_DEFINES_BUILDRULEFAMILY, "") != "":
                     if Family != self.ToolDefinition[Tool][TAB_TOD_DEFINES_BUILDRULEFAMILY]:
@@ -1091,6 +1089,7 @@ class PlatformAutoGen(AutoGen):
         # Build Option Family has been checked, which need't to be checked again for family.
         if FamilyMatch or FamilyIsNull:
             return BuildOptions
+        
         for Key in Options:
             Family = Key[0]
             Target, Tag, Arch, Tool, Attr = Key[1].split("_")
