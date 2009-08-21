@@ -309,8 +309,8 @@ def myOptionParser():
 #
 class GenFds :
     FdfParsef = None
-    # FvName in FDF, FvBinFile name
-    FvBinDict = {}
+    # FvName, FdName, CapName in FDF, Image file name
+    ImageBinDict = {}
     OnlyGenerateThisFd = None
     OnlyGenerateThisFv = None
 
@@ -324,17 +324,17 @@ class GenFds :
     def GenFd (OutputDir, FdfParser, WorkSpace, ArchList):
         GenFdsGlobalVariable.SetDir ('', FdfParser, WorkSpace, ArchList)
 
-        GenFdsGlobalVariable.VerboseLogger("   Gen Fd  !")
+        GenFdsGlobalVariable.VerboseLogger(" Generate all Fd images and their required FV and Capsule images!")
         if GenFds.OnlyGenerateThisFd != None and GenFds.OnlyGenerateThisFd.upper() in GenFdsGlobalVariable.FdfParser.Profile.FdDict.keys():
             FdObj = GenFdsGlobalVariable.FdfParser.Profile.FdDict.get(GenFds.OnlyGenerateThisFd.upper())
             if FdObj != None:
-                FdObj.GenFd(GenFds.FvBinDict)
-        elif GenFds.OnlyGenerateThisFv == None:
+                FdObj.GenFd()
+        elif GenFds.OnlyGenerateThisFd == None:
             for FdName in GenFdsGlobalVariable.FdfParser.Profile.FdDict.keys():
                 FdObj = GenFdsGlobalVariable.FdfParser.Profile.FdDict[FdName]
-                FdObj.GenFd(GenFds.FvBinDict)
+                FdObj.GenFd()
 
-        GenFdsGlobalVariable.VerboseLogger(" Gen FV ! ")
+        GenFdsGlobalVariable.VerboseLogger("\n Generate other FV images! ")
         if GenFds.OnlyGenerateThisFv != None and GenFds.OnlyGenerateThisFv.upper() in GenFdsGlobalVariable.FdfParser.Profile.FvDict.keys():
             FvObj = GenFdsGlobalVariable.FdfParser.Profile.FvDict.get(GenFds.OnlyGenerateThisFv.upper())
             if FvObj != None:
@@ -343,7 +343,7 @@ class GenFds :
                 FvObj.AddToBuffer(Buffer, None, GenFds.GetFvBlockSize(FvObj))
                 Buffer.close()
                 return
-        elif GenFds.OnlyGenerateThisFd == None:
+        elif GenFds.OnlyGenerateThisFv == None:
             for FvName in GenFdsGlobalVariable.FdfParser.Profile.FvDict.keys():
                 Buffer = StringIO.StringIO('')
                 FvObj = GenFdsGlobalVariable.FdfParser.Profile.FvDict[FvName]
@@ -352,12 +352,14 @@ class GenFds :
                 Buffer.close()
 
         if GenFds.OnlyGenerateThisFv == None and GenFds.OnlyGenerateThisFd == None:
-            GenFdsGlobalVariable.VerboseLogger(" Gen Capsule !")
-            for CapsuleObj in GenFdsGlobalVariable.FdfParser.Profile.CapsuleList:
-                CapsuleObj.GenCapsule()
-                
+            if GenFdsGlobalVariable.FdfParser.Profile.CapsuleDict != {}:
+                GenFdsGlobalVariable.VerboseLogger("\n Generate other Capsule images!")
+                for CapsuleName in GenFdsGlobalVariable.FdfParser.Profile.CapsuleDict.keys():
+                    CapsuleObj = GenFdsGlobalVariable.FdfParser.Profile.CapsuleDict[CapsuleName]
+                    CapsuleObj.GenCapsule()
+
             if GenFdsGlobalVariable.FdfParser.Profile.OptRomDict != {}:
-                GenFdsGlobalVariable.VerboseLogger(" Gen Option ROM !")
+                GenFdsGlobalVariable.VerboseLogger("\n Generate all Option ROM!")
                 for DriverName in GenFdsGlobalVariable.FdfParser.Profile.OptRomDict.keys():
                     OptRomObj = GenFdsGlobalVariable.FdfParser.Profile.OptRomDict[DriverName]
                     OptRomObj.AddToBuffer(None)
