@@ -87,7 +87,9 @@ class MetaFileParser(object):
     ## Set parsing complete flag in both class and table
     def _Done(self):
         self._Finished = True
-        self._Table.SetEndFlag()
+        ## Do not set end flag when processing included files
+        if self._From == -1:
+            self._Table.SetEndFlag()
 
     ## Return the table containg parsed data
     #
