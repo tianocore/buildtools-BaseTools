@@ -2083,7 +2083,8 @@ RELEASE_XCODE32_*_MTOC_FLAGS = -align 0x20
 *_XCODE32_IA32_ASLPP_PATH   = gcc
 *_XCODE32_IA32_ASLDLINK_PATH  = ld
 
-*_XCODE32_IA32_DLINK_FLAGS      = -arch i386 -u _$(IMAGE_ENTRY_POINT) -e _$(IMAGE_ENTRY_POINT) -preload -segalign 0x20 -slow_stubs -pie -all_load -dead_strip -seg1addr 0x240 -read_only_relocs suppress -map $(DEST_DIR_DEBUG)/$(BASE_NAME).map
+  DEBUG_XCODE32_IA32_DLINK_FLAGS      = -arch i386 -u _$(IMAGE_ENTRY_POINT) -e _$(IMAGE_ENTRY_POINT) -preload -segalign 0x20 -slow_stubs -pie -all_load -dead_strip -seg1addr 0x240 -read_only_relocs suppress -map $(DEST_DIR_DEBUG)/$(BASE_NAME).map
+RELEASE_XCODE32_IA32_DLINK_FLAGS      = -arch i386 -u _$(IMAGE_ENTRY_POINT) -e _$(IMAGE_ENTRY_POINT) -preload -segalign 0x20 -slow_stubs -pie -all_load -dead_strip -seg1addr 0x220 -read_only_relocs suppress -map $(DEST_DIR_DEBUG)/$(BASE_NAME).map
 *_XCODE32_IA32_SLINK_FLAGS      = -static -o
   DEBUG_XCODE32_IA32_ASM_FLAGS  = -arch i386 -g
 RELEASE_XCODE32_IA32_ASM_FLAGS  = -arch i386 
@@ -2130,7 +2131,8 @@ RELEASE_XCODE32_X64_CC_FLAGS   = -arch x86_64 -Oz -combine -mms-bitfields -fshor
 *_XCODE32_ARM_ARCHCC_FLAGS    = -arch armv6 -march=armv6 -mthumb
 *_XCODE32_ARM_ARCHASM_FLAGS   = -arch armv6 
 *_XCODE32_ARM_ARCHDLINK_FLAGS = -arch armv6 
-*_*_*_PLATFORM_FLAGS =
+*_XCODE32_ARM_PLATFORM_FLAGS  =
+*_XCODE32_ARM_INTRINSIC_FLAGS = CompilerIntrinsicsLib.lib
 
 *_XCODE32_ARM_CC_PATH       = DEF(IPHONE_TOOLS)/usr/bin/gcc
 *_XCODE32_ARM_SLINK_PATH    = DEF(IPHONE_TOOLS)/usr/bin/libtool
@@ -2139,8 +2141,8 @@ RELEASE_XCODE32_X64_CC_FLAGS   = -arch x86_64 -Oz -combine -mms-bitfields -fshor
 *_XCODE32_ARM_PP_PATH       = DEF(IPHONE_TOOLS)/usr/bin/gcc
 *_XCODE32_ARM_VFRPP_PATH    = DEF(IPHONE_TOOLS)/usr/bin/gcc
 
-  DEBUG_XCODE32_ARM_DLINK_FLAGS      = $(ARCHDLINK_FLAGS) -u _$(IMAGE_ENTRY_POINT) -e _$(IMAGE_ENTRY_POINT) -preload -segalign 0x20 -slow_stubs -pie -all_load -dead_strip -seg1addr 0x220 -read_only_relocs suppress -map $(DEST_DIR_DEBUG)/$(BASE_NAME).map ENV(EDK_TOOLS_PATH)/Bin/Darwin-i386/ARM/DEBUG_XCODE32/CompilerIntrinsicsLib.lib
-RELEASE_XCODE32_ARM_DLINK_FLAGS      = $(ARCHDLINK_FLAGS) -u _$(IMAGE_ENTRY_POINT) -e _$(IMAGE_ENTRY_POINT) -preload -segalign 0x20 -slow_stubs -pie -all_load -dead_strip -seg1addr 0x220 -read_only_relocs suppress -map $(DEST_DIR_DEBUG)/$(BASE_NAME).map ENV(EDK_TOOLS_PATH)/Bin/Darwin-i386/ARM/RELEASE_XCODE32/CompilerIntrinsicsLib.lib
+  DEBUG_XCODE32_ARM_DLINK_FLAGS      = $(ARCHDLINK_FLAGS) -u _$(IMAGE_ENTRY_POINT) -e _$(IMAGE_ENTRY_POINT) -preload -segalign 0x20 -slow_stubs -pie -all_load -dead_strip -seg1addr 0x220 -read_only_relocs suppress -map $(DEST_DIR_DEBUG)/$(BASE_NAME).map ENV(EDK_TOOLS_PATH)/Bin/Darwin-i386/ARM/DEBUG_XCODE32/$(INTRINSIC_FLAGS)
+RELEASE_XCODE32_ARM_DLINK_FLAGS      = $(ARCHDLINK_FLAGS) -u _$(IMAGE_ENTRY_POINT) -e _$(IMAGE_ENTRY_POINT) -preload -segalign 0x20 -slow_stubs -pie -all_load -dead_strip -seg1addr 0x220 -read_only_relocs suppress -map $(DEST_DIR_DEBUG)/$(BASE_NAME).map ENV(EDK_TOOLS_PATH)/Bin/Darwin-i386/ARM/RELEASE_XCODE32/$(INTRINSIC_FLAGS)
 
 *_XCODE32_ARM_SLINK_FLAGS      = -static -o
 
@@ -2168,9 +2170,11 @@ RELEASE_XCODE32_ARM_CC_FLAGS   = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -mthumb-inter
 *_RVCT31_ARM_ARCHCC_FLAGS    = --thumb --cpu ARM1176JZF-S
 *_RVCT31_ARM_ARCHASM_FLAGS   = --cpu ARM1176JZF-S
 *_RVCT31_ARM_ARCHDLINK_FLAGS = 
+*_RVCT31_ARM_PLATFORM_FLAGS  =
+*_RVCT31_ARM_INTRINSIC_FLAGS = CompilerIntrinsicsLib.lib
 
-  DEBUG_RVCT31_ARM_DLINK_FLAGS     = $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_POINT)  --ro-base 0 --no_scanlib --reloc --no_exceptions --datacompressor off --strict --symbols --map --list $(DEST_DIR_DEBUG)/$(BASE_NAME).map ENV(EDK_TOOLS_PATH)/Bin/Win32/ARM/DEBUG_RVCT31/CompilerIntrinsicsLib.lib
-RELEASE_RVCT31_ARM_DLINK_FLAGS     = $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_POINT)  --ro-base 0 --no_scanlib --reloc --no_exceptions --datacompressor off --strict --symbols --map --list $(DEST_DIR_DEBUG)/$(BASE_NAME).map ENV(EDK_TOOLS_PATH)/Bin/Win32/ARM/RELEASE_RVCT31/CompilerIntrinsicsLib.lib
+  DEBUG_RVCT31_ARM_DLINK_FLAGS     = $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_POINT)  --ro-base 0 --no_scanlib --reloc --no_exceptions --datacompressor off --strict --symbols --map --list $(DEST_DIR_DEBUG)/$(BASE_NAME).map ENV(EDK_TOOLS_PATH)/Bin/Win32/ARM/DEBUG_RVCT31/$(INTRINSIC_FLAGS)
+RELEASE_RVCT31_ARM_DLINK_FLAGS     = $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_POINT)  --ro-base 0 --no_scanlib --reloc --no_exceptions --datacompressor off --strict --symbols --map --list $(DEST_DIR_DEBUG)/$(BASE_NAME).map ENV(EDK_TOOLS_PATH)/Bin/Win32/ARM/RELEASE_RVCT31/$(INTRINSIC_FLAGS)
 
 
 *_RVCT31_ARM_ASM_FLAGS       = $(ARCHASM_FLAGS) --apcs /interwork
@@ -2217,9 +2221,11 @@ RELEASE_RVCT31_ARM_CC_FLAGS  = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) --c90 -c --no_a
 *_RVCT31CYGWIN_ARM_ARCHCC_FLAGS    = --thumb --cpu ARM1176JZF-S
 *_RVCT31CYGWIN_ARM_ARCHASM_FLAGS   = --cpu ARM1176JZF-S
 *_RVCT31CYGWIN_ARM_ARCHDLINK_FLAGS = 
+*_RVCT31CYGWIN_ARM_PLATFORM_FLAGS  =
+*_RVCT31CYGWIN_ARM_INTRINSIC_FLAGS = CompilerIntrinsicsLib.lib
 
-  DEBUG_RVCT31CYGWIN_ARM_DLINK_FLAGS     = "$(DLINKPATH_FLAG)" $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_POINT)  --ro-base 0 --no_scanlib --reloc --no_exceptions --datacompressor off --strict --symbols --map --list `cygpath -m $(DEST_DIR_DEBUG)/$(BASE_NAME).map` ENV(EDK_TOOLS_PATH)/Bin/CYGWIN_NT-5.1-i686/ARM/DEBUG_RVCT31CYGWIN/CompilerIntrinsicsLib.lib
-RELEASE_RVCT31CYGWIN_ARM_DLINK_FLAGS     = "$(DLINKPATH_FLAG)" $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_POINT)  --ro-base 0 --no_scanlib --reloc --no_exceptions --datacompressor off --strict --symbols --map --list `cygpath -m $(DEST_DIR_DEBUG)/$(BASE_NAME).map` ENV(EDK_TOOLS_PATH)/Bin/CYGWIN_NT-5.1-i686/ARM/DEBUG_RVCT31CYGWIN/CompilerIntrinsicsLib.lib
+  DEBUG_RVCT31CYGWIN_ARM_DLINK_FLAGS     = "$(DLINKPATH_FLAG)" $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_POINT)  --ro-base 0 --no_scanlib --reloc --no_exceptions --datacompressor off --strict --symbols --map --list `cygpath -m $(DEST_DIR_DEBUG)/$(BASE_NAME).map` ENV(EDK_TOOLS_PATH)/Bin/CYGWIN_NT-5.1-i686/ARM/DEBUG_RVCT31CYGWIN/$(INTRINSIC_FLAGS)
+RELEASE_RVCT31CYGWIN_ARM_DLINK_FLAGS     = "$(DLINKPATH_FLAG)" $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_POINT)  --ro-base 0 --no_scanlib --reloc --no_exceptions --datacompressor off --strict --symbols --map --list `cygpath -m $(DEST_DIR_DEBUG)/$(BASE_NAME).map` ENV(EDK_TOOLS_PATH)/Bin/CYGWIN_NT-5.1-i686/ARM/DEBUG_RVCT31CYGWIN/$(INTRINSIC_FLAGS)
 
 *_RVCT31CYGWIN_ARM_ASM_FLAGS       = "$(ASMPATH_FLAG)" $(ARCHASM_FLAGS) --apcs /interwork
 *_RVCT31CYGWIN_ARM_PP_FLAGS        = "$(CCPATH_FLAG)" $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -E
@@ -2281,6 +2287,8 @@ RELEASE_RVCT31CYGWIN_ARM_CC_FLAGS  = "$(CCPATH_FLAG)" $(ARCHCC_FLAGS) $(PLATFORM
 *_ARMGCC_ARM_ARCHCC_FLAGS    = 
 *_ARMGCC_ARM_ARCHASM_FLAGS   = 
 *_ARMGCC_ARM_ARCHDLINK_FLAGS = 
+*_ARMGCC_ARM_PLATFORM_FLAGS  =
+*_ARMGCC_ARM_INTRINSIC_FLAGS = CompilerIntrinsicsLib.lib
 
   DEBUG_ARMGCC_ARM_ASM_FLAGS   = $(ARCHASM_FLAGS) -mlittle-endian -g
 RELEASE_ARMGCC_ARM_ASM_FLAGS   = $(ARCHASM_FLAGS) -mlittle-endian
