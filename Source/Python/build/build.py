@@ -705,8 +705,8 @@ class Build():
 
         self.TargetTxt      = TargetTxtClassObject()
         self.ToolDef        = ToolDefClassObject()
-        #self.Db             = WorkspaceDatabase(None, GlobalData.gGlobalDefines, self.Reparse)
-        self.Db             = WorkspaceDatabase(None, {}, self.Reparse)
+        self.Db             = WorkspaceDatabase(None, GlobalData.gGlobalDefines, self.Reparse)
+        #self.Db             = WorkspaceDatabase(None, {}, self.Reparse)
         self.BuildDatabase  = self.Db.BuildObject
         self.Platform       = None
 
@@ -1258,6 +1258,7 @@ def MyOptionParser():
                                                                                "including library instances selected, final dependency expression, "\
                                                                                "and warning messages, etc.")
     Parser.add_option("-d", "--debug", action="store", type="int", help="Enable debug messages at specified level.")
+    Parser.add_option("-D", "--define", action="append", type="string", dest="Macros", help="Macro: \"Name [= Value]\".")
 
     (Opt, Args)=Parser.parse_args()
     return (Opt, Args)
@@ -1321,7 +1322,7 @@ def Main():
             EdkLogger.error("build", OPTION_NOT_SUPPORTED, "Not supported target [%s]." % Target,
                             ExtraData="Please select one of: %s" %(' '.join(gSupportedTarget)))
 
-        # GlobalData.gGlobalDefines = ParseDefines(Option.Defines)
+        GlobalData.gGlobalDefines = ParseDefines(Option.Macros)
         #
         # Check environment variable: EDK_TOOLS_PATH, WORKSPACE, PATH
         #

@@ -16,6 +16,7 @@
 #
 import os
 import time
+import copy
 
 import Common.EdkLogger as EdkLogger
 from CommonDataClass.DataClass import *
@@ -55,7 +56,7 @@ class MetaFileParser(object):
         self._FileType = FileType
         self.MetaFile = FilePath
         self._FileDir = os.path.dirname(self.MetaFile)
-        self._Macros = {}
+        self._Macros = copy.copy(Macros)
 
         # for recursive parsing
         self._Owner = Owner
@@ -210,11 +211,14 @@ class MetaFileParser(object):
         if TokenList[0] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No macro name given",
                             ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
-        if len(TokenList) == 1:
-            self._Macros[TokenList[0]] = ''
-        else:
-            # keep the macro definition for later use
-            self._Macros[TokenList[0]] = ReplaceMacro(TokenList[1], self._Macros, False)
+
+        # Macros defined in the command line override ones defined in the meta-data file
+        if not TokenList[0] in self._Macros:
+            if len(TokenList) == 1:
+                self._Macros[TokenList[0]] = ''
+            else:
+                # keep the macro definition for later use
+                self._Macros[TokenList[0]] = ReplaceMacro(TokenList[1], self._Macros, False)
 
         return TokenList[0], self._Macros[TokenList[0]]
 

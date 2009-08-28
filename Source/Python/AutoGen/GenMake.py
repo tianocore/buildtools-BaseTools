@@ -1309,7 +1309,10 @@ ${END}\t@cd $(BUILD_DIR)\n
             FdfFileList = [PlatformInfo.FdfFile]
             # macros passed to GenFds
             for MacroName in GlobalData.gGlobalDefines:
-                MacroList.append('"%s=%s"' % (MacroName, GlobalData.gGlobalDefines[MacroName]))
+                if GlobalData.gGlobalDefines[MacroName] != "":
+                    MacroList.append('"%s=%s"' % (MacroName, GlobalData.gGlobalDefines[MacroName]))
+                else:
+                    MacroList.append('"%s"' % MacroName)
         else:
             FdfFileList = []
 

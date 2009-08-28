@@ -20,7 +20,7 @@ import sys
 import os
 import linecache
 import FdfParser
-from Common.BuildToolError import *
+import Common.BuildToolError as BuildToolError
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 from Workspace.WorkspaceDatabase import WorkspaceDatabase
 from Workspace.BuildClassObject import PcdClassObject
@@ -163,11 +163,11 @@ def main():
                     else:
                         GlobalData.gEdkGlobal[List[0].strip()] = List[1].strip()
                 else:
-                    FdfParser.InputMacroDict[List[0].strip()] = None
+                    FdfParser.InputMacroDict[List[0].strip()] = ""
 
         """call Workspace build create database"""
         os.environ["WORKSPACE"] = Workspace
-        BuildWorkSpace = WorkspaceDatabase(':memory:', GlobalData.gGlobalDefines)
+        BuildWorkSpace = WorkspaceDatabase(':memory:', FdfParser.InputMacroDict)
         BuildWorkSpace.InitDatabase()
         
         #
