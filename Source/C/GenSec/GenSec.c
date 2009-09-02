@@ -160,7 +160,8 @@ Returns:
                         EFI_SECTION_USER_INTERFACE, EFI_SECTION_VERSION,\n\
                         EFI_SECTION_FIRMWARE_VOLUME_IMAGE, EFI_SECTION_RAW,\n\
                         EFI_SECTION_FREEFORM_SUBTYPE_GUID,\n\
-                        EFI_SECTION_PEI_DEPEX. if -s option is not given, \n\
+                        EFI_SECTION_PEI_DEPEX, EFI_SECTION_SMM_DEPEX.\n\
+                        if -s option is not given, \n\
                         EFI_SECTION_ALL is default section type.\n");
   fprintf (stdout, "  -c [Type], --compress [Type]\n\
                         Compress method type can be PI_NONE or PI_STD.\n\
@@ -1087,6 +1088,8 @@ Returns:
     SectType = EFI_SECTION_TE;
   } else if (stricmp (SectionName, mSectionTypeName[EFI_SECTION_DXE_DEPEX]) == 0) {
     SectType = EFI_SECTION_DXE_DEPEX;
+  } else if (stricmp (SectionName, mSectionTypeName[EFI_SECTION_SMM_DEPEX]) == 0) {
+    SectType = EFI_SECTION_SMM_DEPEX;
   } else if (stricmp (SectionName, mSectionTypeName[EFI_SECTION_VERSION]) == 0) {
     SectType = EFI_SECTION_VERSION;
     if (VersionNumber < 0 || VersionNumber > 9999) {
