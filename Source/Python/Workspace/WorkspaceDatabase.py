@@ -1111,6 +1111,7 @@ class InfBuildData(ModuleBuildClassObject):
         "BS_DRIVER"             :   "DXE_DRIVER",
         "RT_DRIVER"             :   "DXE_RUNTIME_DRIVER",
         "SAL_RT_DRIVER"         :   "DXE_SAL_DRIVER",
+        "SMM_DRIVER"            :   "SMM_DRIVER",
     #    "BS_DRIVER"             :   "DXE_SMM_DRIVER",
     #    "BS_DRIVER"             :   "UEFI_DRIVER",
         "APPLICATION"           :   "UEFI_APPLICATION",
