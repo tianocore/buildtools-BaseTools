@@ -202,7 +202,7 @@ CVfrErrorHandle::PrintMsg (
   CHAR8                  *FileName = NULL;
   UINT32                 FileLine;
   
-  if (strnicmp ("Warning", MsgType, strlen ("Warning")) == 0) {
+  if (strncmp ("Warning", MsgType, strlen ("Warning")) == 0) {
     VerboseMsg (ErrorMsg);
     return;
   }
