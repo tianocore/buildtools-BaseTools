@@ -155,13 +155,15 @@ def main():
                 Pair.strip('"')
                 List = Pair.split('=')
                 if len(List) == 2:
-                    FdfParser.InputMacroDict[List[0].strip()] = List[1].strip()
                     if List[0].strip() == "EFI_SOURCE":
                         GlobalData.gEfiSource = List[1].strip()
+                        continue
                     elif List[0].strip() == "EDK_SOURCE":
                         GlobalData.gEdkSource = List[1].strip()
+                        continue
                     else:
                         GlobalData.gEdkGlobal[List[0].strip()] = List[1].strip()
+                        FdfParser.InputMacroDict[List[0].strip()] = List[1].strip()
                 else:
                     FdfParser.InputMacroDict[List[0].strip()] = ""
 

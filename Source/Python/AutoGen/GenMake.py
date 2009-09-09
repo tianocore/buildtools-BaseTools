@@ -1308,6 +1308,9 @@ ${END}\t@cd $(BUILD_DIR)\n
         if PlatformInfo.FdfFile != None and PlatformInfo.FdfFile != "":
             FdfFileList = [PlatformInfo.FdfFile]
             # macros passed to GenFds
+            # MacroList.append('"%s=%s"' % ("WORKSPACE", GlobalData.gWorkspace))
+            MacroList.append('"%s=%s"' % ("EFI_SOURCE", GlobalData.gEfiSource))
+            MacroList.append('"%s=%s"' % ("EDK_SOURCE", GlobalData.gEdkSource))
             for MacroName in GlobalData.gGlobalDefines:
                 if GlobalData.gGlobalDefines[MacroName] != "":
                     MacroList.append('"%s=%s"' % (MacroName, GlobalData.gGlobalDefines[MacroName]))

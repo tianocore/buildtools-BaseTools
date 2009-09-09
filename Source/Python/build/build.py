@@ -158,13 +158,6 @@ def CheckEnvVariable():
         EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE, "Environment variable not found",
                         ExtraData="PATH")
 
-    # for macro replacement in R9 DSC/DEC/INF file
-    GlobalData.gGlobalDefines["WORKSPACE"] = ""
-
-    # for macro replacement in R8 INF file
-    GlobalData.gGlobalDefines["EFI_SOURCE"] = EfiSourceDir
-    GlobalData.gGlobalDefines["EDK_SOURCE"] = EdkSourceDir
-
     GlobalData.gWorkspace = WorkspaceDir
     GlobalData.gEfiSource = EfiSourceDir
     GlobalData.gEdkSource = EdkSourceDir
