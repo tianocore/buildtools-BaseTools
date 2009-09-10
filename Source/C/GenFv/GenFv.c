@@ -141,7 +141,8 @@ Returns:
   fprintf (stdout, "  --FvNameGuid          GuidValue is the Fv Name Guid value.\n\
                         Its format is xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n");
   fprintf (stdout, "  --capflag CapFlag     Capsule Reset Flag can be PersistAcrossReset,\n\
-                        or PopulateSystemTable or not set.\n");
+                        or PopulateSystemTable or PersistAcrossResetInitiateReset or \n\
+                        PopulateSystemTableInitateReset or not set.\n");
   fprintf (stdout, "  --capheadsize HeadSize\n\
                         HeadSize is one HEX or DEC format value\n\
                         HeadSize is required by Capsule Image.\n");                        
@@ -405,14 +406,12 @@ Returns:
       }
       if (strcmp (argv[1], "PopulateSystemTable") == 0) {
         mCapDataInfo.Flags |= CAPSULE_FLAGS_PERSIST_ACROSS_RESET | CAPSULE_FLAGS_POPULATE_SYSTEM_TABLE;
-        if (strcmp (argv[1], "InitiateReset")) {
-          mCapDataInfo.Flags |= CAPSULE_FLAGS_INITIATE_RESET;
-        }
       } else if (strcmp (argv[1], "PersistAcrossReset") == 0) {
         mCapDataInfo.Flags |= CAPSULE_FLAGS_PERSIST_ACROSS_RESET;
-        if (strcmp (argv[1], "InitiateReset")) {
-          mCapDataInfo.Flags |= CAPSULE_FLAGS_INITIATE_RESET;
-        }
+      } else if (strcmp (argv[1], "PopulateSystemTableInitiateReset ") == 0) {
+        mCapDataInfo.Flags |= CAPSULE_FLAGS_PERSIST_ACROSS_RESET | CAPSULE_FLAGS_POPULATE_SYSTEM_TABLE | CAPSULE_FLAGS_INITIATE_RESET;
+      } else if (strcmp (argv[1], "PersistAcrossResetInitiateReset ") == 0) {
+        mCapDataInfo.Flags |= CAPSULE_FLAGS_PERSIST_ACROSS_RESET;
       } else {
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
         return STATUS_ERROR;
