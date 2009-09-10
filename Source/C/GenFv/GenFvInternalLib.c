@@ -3371,12 +3371,12 @@ Returns:
   if (Status == EFI_SUCCESS) {
     if (strstr (Value, "PopulateSystemTable") != NULL) {
       CapInfo->Flags |= CAPSULE_FLAGS_PERSIST_ACROSS_RESET | CAPSULE_FLAGS_POPULATE_SYSTEM_TABLE;
-      if (strstr (Value, "InitiateReset")) {
+      if (strstr (Value, "InitiateReset") != NULL) {
         CapInfo->Flags |= CAPSULE_FLAGS_INITIATE_RESET;
       }
     } else if (strstr (Value, "PersistAcrossReset") != NULL) {
       CapInfo->Flags |= CAPSULE_FLAGS_PERSIST_ACROSS_RESET; 
-      if (strstr (Value, "InitiateReset")) {
+      if (strstr (Value, "InitiateReset") != NULL) {
         CapInfo->Flags |= CAPSULE_FLAGS_INITIATE_RESET;
       }
     } else {
