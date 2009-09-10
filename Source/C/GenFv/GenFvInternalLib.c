@@ -2126,7 +2126,7 @@ Returns:
   //
   // If there is no FFS file, generate one empty FV
   //
-  if (mFvDataInfo.FvFiles[0][0] == 0) {
+  if (mFvDataInfo.FvFiles[0][0] == 0 && !mFvDataInfo.FvNameGuidSet) {
     goto WriteFile;
   }
 
