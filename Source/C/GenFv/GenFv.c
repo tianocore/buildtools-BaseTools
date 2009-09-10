@@ -1,6 +1,6 @@
 /** @file
 
-Copyright (c) 2007 - 2008, Intel Corporation                                                         
+Copyright (c) 2007 - 2009, Intel Corporation                                                         
 All rights reserved. This program and the accompanying materials                          
 are licensed and made available under the terms and conditions of the BSD License         
 which accompanies this distribution.  The full text of the license may be found at        
@@ -405,8 +405,14 @@ Returns:
       }
       if (strcmp (argv[1], "PopulateSystemTable") == 0) {
         mCapDataInfo.Flags |= CAPSULE_FLAGS_PERSIST_ACROSS_RESET | CAPSULE_FLAGS_POPULATE_SYSTEM_TABLE;
+        if (strcmp (argv[1], "InitiateReset")) {
+          mCapDataInfo.Flags |= CAPSULE_FLAGS_INITIATE_RESET;
+        }
       } else if (strcmp (argv[1], "PersistAcrossReset") == 0) {
         mCapDataInfo.Flags |= CAPSULE_FLAGS_PERSIST_ACROSS_RESET;
+        if (strcmp (argv[1], "InitiateReset")) {
+          mCapDataInfo.Flags |= CAPSULE_FLAGS_INITIATE_RESET;
+        }
       } else {
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
         return STATUS_ERROR;

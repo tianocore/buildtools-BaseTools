@@ -1,6 +1,6 @@
 /** @file
 
-Copyright (c) 2004 - 2008, Intel Corporation                                                         
+Copyright (c) 2004 - 2009, Intel Corporation                                                         
 All rights reserved. This program and the accompanying materials                          
 are licensed and made available under the terms and conditions of the BSD License         
 which accompanies this distribution.  The full text of the license may be found at        
@@ -3371,8 +3371,14 @@ Returns:
   if (Status == EFI_SUCCESS) {
     if (strstr (Value, "PopulateSystemTable") != NULL) {
       CapInfo->Flags |= CAPSULE_FLAGS_PERSIST_ACROSS_RESET | CAPSULE_FLAGS_POPULATE_SYSTEM_TABLE;
+      if (strcmp (Value, "InitiateReset")) {
+        CapInfo->Flags |= CAPSULE_FLAGS_INITIATE_RESET;
+      }
     } else if (strstr (Value, "PersistAcrossReset") != NULL) {
       CapInfo->Flags |= CAPSULE_FLAGS_PERSIST_ACROSS_RESET; 
+      if (strcmp (Value, "InitiateReset")) {
+        CapInfo->Flags |= CAPSULE_FLAGS_INITIATE_RESET;
+      }
     } else {
       Error (NULL, 0, 2000, "Invalid parameter", "invalid Flag setting for %s.", EFI_CAPSULE_FLAGS_STRING);
       return EFI_ABORTED;
