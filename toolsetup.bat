@@ -3,7 +3,7 @@
 @REM   however it may be executed directly from the BaseTools project folder
 @REM   if the file is not executed within a WORKSPACE\BaseTools folder.
 @REM
-@REM Copyright (c) 2006 - 2008, Intel Corporation.  All rights reserved.
+@REM Copyright (c) 2006 - 2009, Intel Corporation.  All rights reserved.
 @REM
 @REM This program and the accompanying materials are licensed and made available
 @REM under the terms and conditions of the BSD Licensewhich accompanies this 
@@ -229,10 +229,21 @@ IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\VfrCompile.exe" goto check_build_enviro
 IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\Fpd2Dsc.exe" goto check_build_environment
 IF NOT EXIST "%EDK_TOOLS_PATH%\Bin\Win32\VolInfo.exe" goto check_build_environment
 
-@echo No build required, we're good to go
 goto end
 
 :check_build_environment
+
+  if not defined FORCE_REBUILD (
+    echo.
+    echo Rebuilding of tools is not required.  Binaries of the latest,
+    echo tested versions of the tools have been tested and included in the
+    echo EDK II repository.
+    echo.
+    echo If you really want to build the tools, use the ForceRebuild option.
+    echo.
+    goto end
+  )
+
   if not defined BASE_TOOLS_PATH (
      if not exist "Source\C\Makefile" (
        if not exist "%EDK_TOOLS_PATH%\Source\C\Makefile" goto no_source_files
