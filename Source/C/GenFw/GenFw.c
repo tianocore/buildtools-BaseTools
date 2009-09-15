@@ -1215,141 +1215,6 @@ ConvertElf (
   }
 }
 
-void
-ZeroXdataSection (
- IN     CHAR8                 *ImageName,
- IN OUT UINT8                 *FileBuffer,
- IN EFI_IMAGE_SECTION_HEADER  *SectionHeader,
- IN     UINT32                 SectionTotalNumber
-  )
-{
-  FILE   *fpMapFile;
-  CHAR8  MapFileName[_MAX_PATH];
-  CHAR8  Line [MAX_LINE_LEN];
-  CHAR8  KeyWord [MAX_LINE_LEN];
-  CHAR8  SectionName [MAX_LINE_LEN];
-  UINT32 FunctionType = 0;
-  unsigned SectionOffset = 0;
-  unsigned SectionLength = 0;
-  unsigned SectionNumber = 0;
-  CHAR8  *PdbPointer;
-  INT32  Index;
-  UINT32 Index2;
-
-  for (Index2 = 0; Index2 < SectionTotalNumber; Index2++) {
-    if (stricmp ((char *)SectionHeader[Index2].Name, ".zdata") == 0) {
-      //
-      // try to zero the customized .zdata section, which is mapped to .xdata
-      //
-      memset (FileBuffer + SectionHeader[Index2].PointerToRawData, 0, SectionHeader[Index2].SizeOfRawData);
-      DebugMsg (NULL, 0, 9, NULL, "Zero the .xdata section for PE image at Offset 0x%x and Length 0x%x", (unsigned) SectionHeader[Index2].PointerToRawData, (unsigned) SectionHeader[Index2].SizeOfRawData);
-      return;
-    }
-  }
-  //
-  // Try to get PDB file name
-  //
-  PdbPointer = (CHAR8  *) PeCoffLoaderGetPdbPointer (FileBuffer);
-  if (PdbPointer != NULL) {
-    strcpy (MapFileName, PdbPointer);
-  } else {
-    strcpy (MapFileName, ImageName);
-  }
-
-  //
-  // Construct map file name
-  //
-  Index = strlen (MapFileName) - 1;
-  while (Index >= 0 && MapFileName[Index] != '.') {
-    Index --;
-  }
-  if (Index < 0) {
-    //
-    // don't know how to costruct map file
-    //
-    return;
-  }
-
-  //
-  // fill map file postfix
-  //
-  MapFileName[Index + 1] = 'm';
-  MapFileName[Index + 2] = 'a';
-  MapFileName[Index + 3] = 'p';
-  MapFileName[Index + 4] = '\0';
-
-  //
-  // try opening Map File
-  //
-  fpMapFile = fopen (MapFileName, "r");
-  if (fpMapFile == NULL) {
-    //
-    // Can't open Map file. Maybe it doesn't exist.
-    //
-    return;
-  }
-
-  //
-  // Output Functions information into Fv Map file
-  //
-  while (fgets (Line, MAX_LINE_LEN, fpMapFile) != NULL) {
-    //
-    // Skip blank line
-    //
-    if (Line[0] == 0x0a) {
-      if (FunctionType != 0) {
-        //
-        // read all section table data
-        //
-        FunctionType = 0;
-        break;
-      }
-      FunctionType = 0;
-      continue;
-    }
-
-    //
-    // By Start keyword
-    //
-    if (FunctionType == 0) {
-      sscanf (Line, "%s", KeyWord);
-      if (stricmp (KeyWord, "Start") == 0) {
-        //
-        // function list
-        //
-        FunctionType = 1;
-      }
-      continue;
-    }
-    //
-    // Printf Function Information
-    //
-    if (FunctionType == 1) {
-      sscanf (Line, "%x:%x %xH %s", &SectionNumber, &SectionOffset, &SectionLength, SectionName);
-      if (stricmp (SectionName, ".xdata") == 0) {
-        FunctionType = 2;
-        break;
-      }
-    }
-  }
-
-  if (FunctionType != 2) {
-    //
-    // no .xdata section is found
-    //
-    fclose (fpMapFile);
-    return;
-  }
-
-  //
-  // Zero .xdata Section data
-  //
-  memset (FileBuffer + SectionHeader[SectionNumber-1].PointerToRawData + SectionOffset, 0, SectionLength);
-  DebugMsg (NULL, 0, 9, NULL, "Zero the .xdata section for PE image at Offset 0x%x and Length 0x%x", (unsigned) SectionHeader[SectionNumber-1].PointerToRawData + SectionOffset, SectionLength);
-  fclose (fpMapFile);
-  return;
-}
-
 int
 main (
   int  argc,
@@ -2471,12 +2336,13 @@ Returns:
             for (Index1 = 0; Index1 < Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size / sizeof (RUNTIME_FUNCTION); Index1++, RuntimeFunction++) {
               SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
               for (Index2 = 0; Index2 < PeHdr->Pe32.FileHeader.NumberOfSections; Index2++, SectionHeader++) {
-                if (RuntimeFunction->UnwindInfoAddress > SectionHeader->VirtualAddress && RuntimeFunction->UnwindInfoAddress < (SectionHeader->VirtualAddress + SectionHeader->SizeOfRawData)) {
+                if (RuntimeFunction->UnwindInfoAddress >= SectionHeader->VirtualAddress && RuntimeFunction->UnwindInfoAddress < (SectionHeader->VirtualAddress + SectionHeader->SizeOfRawData)) {
                   UnwindInfo = (UNWIND_INFO *)(FileBuffer + SectionHeader->PointerToRawData + (RuntimeFunction->UnwindInfoAddress - SectionHeader->VirtualAddress));
                   if (UnwindInfo->Version == 1) {
                     memset (UnwindInfo + 1, 0, UnwindInfo->CountOfUnwindCodes * sizeof (UINT16));
                     memset (UnwindInfo, 0, sizeof (UNWIND_INFO));
                   }
+                  break;
                 }
               }
               memset (RuntimeFunction, 0, sizeof (RUNTIME_FUNCTION));
@@ -2552,7 +2418,16 @@ Returns:
   //
   if (!KeepExceptionTableFlag) {
     SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
-    ZeroXdataSection(mInImageName, FileBuffer, SectionHeader, PeHdr->Pe32.FileHeader.NumberOfSections);
+    for (Index = 0; Index < PeHdr->Pe32.FileHeader.NumberOfSections; Index++) {
+      if (stricmp ((char *)SectionHeader[Index].Name, ".xdata") == 0) {
+        //
+        // zero .xdata section
+        //
+        memset (FileBuffer + SectionHeader[Index].PointerToRawData, 0, SectionHeader[Index].SizeOfRawData);
+        DebugMsg (NULL, 0, 9, NULL, "Zero the .xdata section for PE image at Offset 0x%x and Length 0x%x", (unsigned) SectionHeader[Index].PointerToRawData, (unsigned) SectionHeader[Index].SizeOfRawData);
+        break;
+      }
+    }
   }
 
   //
