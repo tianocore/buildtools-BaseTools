@@ -2290,7 +2290,7 @@ Returns:
       //
       TokenAddress += BaseAddress &~IPF_CACHE_BIT;
 
-      fprintf (DestFile, "%s | %016LLX | ", Type, (unsigned long long) TokenAddress);
+      fprintf (DestFile, "%s | %016llX | ", Type, (unsigned long long) TokenAddress);
       fprintf (DestFile, "%s | %s\n    %s\n", Section, Token, BaseToken); 
     }
   }
