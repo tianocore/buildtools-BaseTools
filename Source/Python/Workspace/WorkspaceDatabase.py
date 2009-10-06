@@ -1889,6 +1889,7 @@ class InfBuildData(ModuleBuildClassObject):
                     Pcd.TokenValue = PcdInPackage.TokenValue
                     Pcd.DatumType = PcdInPackage.DatumType
                     Pcd.MaxDatumSize = PcdInPackage.MaxDatumSize
+                    Pcd.InfDefaultValue = Pcd.DefaultValue
                     if Pcd.DefaultValue in [None, '']:
                         Pcd.DefaultValue = PcdInPackage.DefaultValue
                     break
