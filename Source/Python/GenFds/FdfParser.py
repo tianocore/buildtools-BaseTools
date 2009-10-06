@@ -1877,6 +1877,14 @@ class FdfParser:
         
         self.__GetFvNameGuid(FvObj)
 
+        FvObj.FvExtEntryTypeValue = []
+        FvObj.FvExtEntryType = []
+        FvObj.FvExtEntryData = []
+        while True:
+            isFvExtEntry = self.__GetFvExtEntryStatement(FvObj)
+            if not isFvExtEntry:
+                break
+
         self.__GetAprioriSection(FvObj, FvObj.DefineVarDict.copy())
         self.__GetAprioriSection(FvObj, FvObj.DefineVarDict.copy())
 
@@ -1969,6 +1977,79 @@ class FdfParser:
         FvObj.FvNameGuid = self.__Token
 
         return
+
+    def __GetFvExtEntryStatement(self, FvObj):
+
+        if not self.__IsKeyword( "FV_EXT_ENTRY"):
+            return False
+
+        if not self.__IsKeyword ("TYPE"):
+            raise Warning("expected 'TYPE'", self.FileName, self.CurrentLineNumber)
+            
+        if not self.__IsToken( "="):
+            raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+
+        if not self.__GetNextHexNumber() and not self.__GetNextDecimalNumber():
+            raise Warning("expected Hex FV extension entry type value At Line ", self.FileName, self.CurrentLineNumber)
+
+        FvObj.FvExtEntryTypeValue += [self.__Token]
+
+        if not self.__IsToken( "{"):
+            raise Warning("expected '{'", self.FileName, self.CurrentLineNumber)
+
+        if not self.__IsKeyword ("FILE") and not self.__IsKeyword ("DATA"):
+            raise Warning("expected 'FILE' or 'DATA'", self.FileName, self.CurrentLineNumber)
+
+        FvObj.FvExtEntryType += [self.__Token]
+
+        if self.__Token == 'DATA':
+
+            if not self.__IsToken( "="):
+                raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+                
+            if not self.__IsToken( "{"):
+                raise Warning("expected '{'", self.FileName, self.CurrentLineNumber)
+
+            if not self.__GetNextHexNumber():
+                raise Warning("expected Hex byte", self.FileName, self.CurrentLineNumber)
+
+            if len(self.__Token) > 4:
+                raise Warning("Hex byte(must be 2 digits) too long", self.FileName, self.CurrentLineNumber)
+
+            DataString = self.__Token
+            DataString += ","
+
+            while self.__IsToken(","):
+                if not self.__GetNextHexNumber():
+                    raise Warning("Invalid Hex number", self.FileName, self.CurrentLineNumber)
+                if len(self.__Token) > 4:
+                    raise Warning("Hex byte(must be 2 digits) too long", self.FileName, self.CurrentLineNumber)
+                DataString += self.__Token
+                DataString += ","
+
+            if not self.__IsToken( "}"):
+                raise Warning("expected '}'", self.FileName, self.CurrentLineNumber)
+
+            if not self.__IsToken( "}"):
+                raise Warning("expected '}'", self.FileName, self.CurrentLineNumber)
+
+            DataString = DataString.rstrip(",")
+            FvObj.FvExtEntryData += [DataString]
+
+        if self.__Token == 'FILE':
+        
+            if not self.__IsToken( "="):
+                raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+                
+            if not self.__GetNextToken():
+                raise Warning("expected FV Extension Entry file path At Line ", self.FileName, self.CurrentLineNumber)
+                
+            FvObj.FvExtEntryData += [self.__Token]
+
+            if not self.__IsToken( "}"):
+                raise Warning("expected '}'", self.FileName, self.CurrentLineNumber)
+
+        return True
 
     ## __GetAprioriSection() method
     #

@@ -229,22 +229,11 @@ Returns:
   }
 
   //
-  // Read the FV Name Guid
+  // Read the FV Extension Header File Name
   //
-  if (!FvInfo->FvNameGuidSet) {
-    Status = FindToken (InfFile, ATTRIBUTES_SECTION_STRING, EFI_FV_NAMEGUID_STRING, 0, Value);
-    if (Status == EFI_SUCCESS) {
-      //
-      // Get the guid value
-      //
-      Status = StringToGuid (Value, &GuidValue);
-      if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 2000, "Invalid parameter", "%s = %s", EFI_FV_NAMEGUID_STRING, Value);
-        return EFI_ABORTED;
-      }
-      memcpy (&FvInfo->FvNameGuid, &GuidValue, sizeof (EFI_GUID));
-      FvInfo->FvNameGuidSet = TRUE;
-    }
+  Status = FindToken (InfFile, ATTRIBUTES_SECTION_STRING, EFI_FV_EXT_HEADER_FILE_NAME, 0, Value);
+  if (Status == EFI_SUCCESS) {
+    strcpy (FvInfo->FvExtHeaderFile, Value);
   }
 
   //
@@ -1938,19 +1927,21 @@ Returns:
 
 --*/
 {
-  EFI_STATUS                  Status;
-  MEMORY_FILE                 InfMemoryFile;
-  MEMORY_FILE                 FvImageMemoryFile;
-  UINTN                       Index;
-  EFI_FIRMWARE_VOLUME_HEADER  *FvHeader;
-  EFI_FFS_FILE_HEADER         *VtfFileImage;
-  UINT8                       *FvBufferHeader; // to make sure fvimage header 8 type alignment.
-  UINT8                       *FvImage;
-  UINTN                       FvImageSize;
-  FILE                        *FvFile;
-  CHAR8                       FvMapName [_MAX_PATH];
-  FILE                        *FvMapFile;
-  EFI_FIRMWARE_VOLUME_EXT_HEADER FvExtHeader;
+  EFI_STATUS                      Status;
+  MEMORY_FILE                     InfMemoryFile;
+  MEMORY_FILE                     FvImageMemoryFile;
+  UINTN                           Index;
+  EFI_FIRMWARE_VOLUME_HEADER      *FvHeader;
+  EFI_FFS_FILE_HEADER             *VtfFileImage;
+  UINT8                           *FvBufferHeader; // to make sure fvimage header 8 type alignment.
+  UINT8                           *FvImage;
+  UINTN                           FvImageSize;
+  FILE                            *FvFile;
+  CHAR8                           FvMapName [_MAX_PATH];
+  FILE                            *FvMapFile;
+  EFI_FIRMWARE_VOLUME_EXT_HEADER  *FvExtHeader;
+  FILE                            *FvExtHeaderFile;
+  UINTN                           FileSize;
 
   FvBufferHeader = NULL;
   FvFile         = NULL;
@@ -2008,6 +1999,55 @@ Returns:
                   mFvDataInfo.FvFileSystemGuid.Data4[6],
                   mFvDataInfo.FvFileSystemGuid.Data4[7]);
   }
+
+  //
+  // Add PI FV extension header
+  //
+  FvExtHeader = NULL;
+  if (mFvDataInfo.FvExtHeaderFile[0] != 0) {
+    //
+    // Open the FV Extension Header file
+    //
+    FvExtHeaderFile = fopen (mFvDataInfo.FvExtHeaderFile, "rb");
+
+    //
+    // Get the file size
+    //
+    FileSize = _filelength (fileno (FvExtHeaderFile));
+
+    //
+    // Allocate a buffer for the FV Extension Header
+    //
+    FvExtHeader = malloc(FileSize);
+    if (FvExtHeader == NULL) {
+      return EFI_OUT_OF_RESOURCES;
+    }
+
+    //
+    // Read the FV Extension Header
+    //
+    fread (FvExtHeader, sizeof (UINT8), FileSize, FvExtHeaderFile);
+
+    //
+    // See if there is an override for the FV Name GUID
+    //
+    if (mFvDataInfo.FvNameGuidSet) {
+      memcpy (&FvExtHeader->FvName, &mFvDataInfo.FvNameGuid, sizeof (EFI_GUID));
+    }
+    memcpy (&mFvDataInfo.FvNameGuid, &FvExtHeader->FvName, sizeof (EFI_GUID));
+    mFvDataInfo.FvNameGuidSet = TRUE;
+  } else if (mFvDataInfo.FvNameGuidSet) {
+    //
+    // Allocate a buffer for the FV Extension Header
+    //
+    FvExtHeader = malloc(sizeof (EFI_FIRMWARE_VOLUME_EXT_HEADER));
+    if (FvExtHeader == NULL) {
+      return EFI_OUT_OF_RESOURCES;
+    }
+    memcpy (&FvExtHeader->FvName, &mFvDataInfo.FvNameGuid, sizeof (EFI_GUID));
+    FvExtHeader->ExtHeaderSize = sizeof (EFI_FIRMWARE_VOLUME_EXT_HEADER);
+  }
+
   //
   // Debug message Fv Name Guid
   //
@@ -2173,12 +2213,14 @@ Returns:
   }
 
   //
-  // Set PI FV extension header
+  // Add PI FV extension header
   //
-  if (mFvDataInfo.FvNameGuidSet) {
-    memcpy (&FvExtHeader.FvName, &mFvDataInfo.FvNameGuid, sizeof (EFI_GUID));
-    FvExtHeader.ExtHeaderSize = sizeof (EFI_FIRMWARE_VOLUME_EXT_HEADER);
-    AddPadFile (&FvImageMemoryFile, 4, VtfFileImage, &FvExtHeader);
+  if (FvExtHeader != NULL) {
+    //
+    // Add FV Extended Header contents to the FV as a PAD file
+    //
+    AddPadFile (&FvImageMemoryFile, 4, VtfFileImage, FvExtHeader);
+
     //
     // Fv Extension header change update Fv Header Check sum
     //
