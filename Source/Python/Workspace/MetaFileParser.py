@@ -824,7 +824,7 @@ class DscParser(MetaFileParser):
     #   [PcdsDynamicHii]
     #
     def _PcdParser(self):
-        TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT, 1)
+        TokenList = GetSplitValueList(ReplaceMacro(self._CurrentLine, self._Macros), TAB_VALUE_SPLIT, 1)
         self._ValueList[0:1] = GetSplitValueList(TokenList[0], TAB_SPLIT)
         if len(TokenList) == 2:
             self._ValueList[2] = TokenList[1]
