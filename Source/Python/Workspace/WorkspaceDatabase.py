@@ -1198,6 +1198,7 @@ class InfBuildData(ModuleBuildClassObject):
         self._Pcds                  = None
         self._BuildOptions          = None
         self._Depex                 = None
+        self._DepexExpression       = None
         #self._SourceOverridePath    = None
 
     ## Get architecture
@@ -1824,6 +1825,25 @@ class InfBuildData(ModuleBuildClassObject):
                 self._Depex[Arch, ModuleType] = Depex[Arch, ModuleType]
         return self._Depex
 
+    ## Retrieve depedency expression
+    def _GetDepexExpression(self):
+        if self._DepexExpression == None:
+            self._DepexExpression = tdict(False, 2)
+            RecordList = self._RawData[MODEL_EFI_DEPEX, self._Arch]
+            DepexExpression = {}
+            for Record in RecordList:
+                Record = ReplaceMacros(Record, GlobalData.gEdkGlobal, False)
+                Arch = Record[3]
+                ModuleType = Record[4]
+                TokenList = Record[0].split()
+                if (Arch, ModuleType) not in DepexExpression:
+                    DepexExpression[Arch, ModuleType] = ''
+                for Token in TokenList:
+                    DepexExpression[Arch, ModuleType] = DepexExpression[Arch, ModuleType] + Token.strip() + ' '
+            for Arch, ModuleType in DepexExpression:
+                self._DepexExpression[Arch, ModuleType] = DepexExpression[Arch, ModuleType]
+        return self._DepexExpression
+
     ## Retrieve PCD for given type
     def _GetPcd(self, Type):
         Pcds = {}
@@ -1937,6 +1957,7 @@ class InfBuildData(ModuleBuildClassObject):
     Pcds                    = property(_GetPcds)
     BuildOptions            = property(_GetBuildOptions)
     Depex                   = property(_GetDepex)
+    DepexExpression         = property(_GetDepexExpression)
 
 ## Database
 #

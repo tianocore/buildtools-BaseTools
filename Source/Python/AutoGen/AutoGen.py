@@ -205,9 +205,12 @@ class WorkspaceAutoGen(AutoGen):
             Fd.write ('===============================================================================\n')
             Fd.write ('Platform Configuration Database Report\n')
             Fd.write ('===============================================================================\n')
-            Fd.write ('  *P - Platform scoped PCD override in DSC file\n')
-            Fd.write ('  *F - Platform scoped PCD override in FDF file\n')
-            Fd.write ('  *M - Module scoped PCD override in DSC file\n')
+            Fd.write ('  *P  - Platform scoped PCD override in DSC file\n')
+            Fd.write ('  *F  - Platform scoped PCD override in FDF file\n')
+            Fd.write ('  *M  - Module scoped PCD override in DSC file\n')
+            Fd.write ('  *C  - Library has a constructor\n')
+            Fd.write ('  *D  - Library has a destructor\n')
+            Fd.write ('  *CD - Library has both a constructor and a destructor\n')
             Fd.write ('===============================================================================\n')
             Fd.write ('\n')
             Fd.write ('===============================================================================\n')
@@ -329,6 +332,8 @@ class WorkspaceAutoGen(AutoGen):
               Fd.write ('MODULE: %s\n' % (F))
               Fd.write ('===============================================================================\n')
               
+              Fd.write ('PLATFORM CONFIGURATION DATABASE\n')
+              Fd.write ('-------------------------------------------------------------------------------\n')
               ModuleFirst = True
               for Key in AllPcds:
                 First = True
@@ -457,6 +462,43 @@ class WorkspaceAutoGen(AutoGen):
                           Fd.write ('    %*s = %s\n' % (MaxLen + 19, 'INF DEFAULT', InfDefaultValue))
                         if DecDefaultValue <> None and not DecMatch:
                           Fd.write ('    %*s = %s\n' % (MaxLen + 19, 'DEC DEFAULT', DecDefaultValue))
+              Fd.write ('-------------------------------------------------------------------------------\n')
+              Fd.write ('LIBRARIES\n')
+              Fd.write ('-------------------------------------------------------------------------------\n')
+              for Lib in Pa.Platform.Modules[F].M.DependentLibraryList:
+                if len(Lib.ConstructorList) > 0:
+                  if  len(Lib.DestructorList) > 0:
+                    Fd.write (' *CD')
+                  else:
+                    Fd.write (' *C ')
+                else:
+                  if  len(Lib.DestructorList) > 0:
+                    Fd.write (' *D ')
+                  else:
+                    Fd.write ('    ')
+                Fd.write (' %s\n' % (Lib))
+                for Depex in Lib.DepexExpression[Pa.Platform.Modules[F].M.Arch, Pa.Platform.Modules[F].M.ModuleType]:
+                  Fd.write ('       DEPEX = %s\n' % (Depex))
+              Fd.write ('-------------------------------------------------------------------------------\n')
+
+              Fd.write ('MODULE DEPENDENCY EXPRESSION\n')
+              if len(Pa.Platform.Modules[F].M.Module.DepexExpression[Pa.Platform.Modules[F].M.Arch, Pa.Platform.Modules[F].M.ModuleType]) == 0:
+                Fd.write ('  NONE\n')
+              else:
+                for Depex in Pa.Platform.Modules[F].M.Module.DepexExpression[Pa.Platform.Modules[F].M.Arch, Pa.Platform.Modules[F].M.ModuleType]:
+                  Fd.write ('  %s\n' % (Depex))
+              Fd.write ('-------------------------------------------------------------------------------\n')
+
+              Fd.write ('MODULE + LIBRARY DEPENDENCY EXPRESSION\n')
+              if Pa.Platform.Modules[F].M.ModuleType in Pa.Platform.Modules[F].M.DepexExpressionList:
+                if Pa.Platform.Modules[F].M.DepexExpressionList[Pa.Platform.Modules[F].M.ModuleType] == '': 
+                  Fd.write ('  NONE\n')
+                else:
+                  Fd.write ('  %s\n' % (Pa.Platform.Modules[F].M.DepexExpressionList[Pa.Platform.Modules[F].M.ModuleType]))
+              else:
+                Fd.write ('  NONE\n')
+              Fd.write ('-------------------------------------------------------------------------------\n')
+              
             Fd.close()
           except:
             EdkLogger.error(None, FILE_OPEN_FAILURE, ExtraData=self.ReportFile)
@@ -1543,6 +1585,7 @@ class ModuleAutoGen(AutoGen):
         self._ProtocolList            = None
         self._PpiList                 = None
         self._DepexList               = None
+        self._DepexExpressionList     = None
         self._BuildOption             = None
         self._BuildTargets            = None
         self._IntroBuildTargetList    = None
@@ -1745,6 +1788,46 @@ class ModuleAutoGen(AutoGen):
                 if len(DepexList) > 0:
                     EdkLogger.verbose('')
         return self._DepexList
+
+    ## Merge dependency expression
+    #
+    #   @retval     list    The token list of the dependency expression after parsed
+    #
+    def _GetDepexExpressionTokenList(self):
+        if self._DepexExpressionList == None:
+            self._DepexExpressionList = {}
+            if self.IsLibrary or TAB_DEPENDENCY_EXPRESSION_FILE in self.FileTypes:
+                return self._DepexExpressionList
+
+            if self.ModuleType == "DXE_SMM_DRIVER":
+                self._DepexExpressionList["DXE_DRIVER"] = ''
+                self._DepexExpressionList["SMM_DRIVER"] = ''
+            else:
+                self._DepexExpressionList[self.ModuleType] = ''
+
+            for ModuleType in self._DepexExpressionList:
+                DepexExpressionList = self._DepexExpressionList[ModuleType]
+                #
+                # Append depex from dependent libraries, if not "BEFORE", "AFTER" expresion
+                #
+                for M in [self.Module] + self.DependentLibraryList:
+                    Inherited = False
+                    for D in M.DepexExpression[self.Arch, ModuleType]:
+                        if DepexExpressionList != '':
+                            DepexExpressionList += ' AND '
+                        DepexExpressionList += '('
+                        DepexExpressionList += D
+                        DepexExpressionList = DepexExpressionList.rstrip('END').strip()
+                        DepexExpressionList += ')'
+                        Inherited = True
+                    if Inherited:
+                        EdkLogger.verbose("DEPEX[%s] (+%s) = %s" % (self.Name, M.BaseName, DepexExpressionList))
+                    if 'BEFORE' in DepexExpressionList or 'AFTER' in DepexExpressionList:
+                        break
+                if len(DepexExpressionList) > 0:
+                    EdkLogger.verbose('')
+                self._DepexExpressionList[ModuleType] = DepexExpressionList
+        return self._DepexExpressionList
 
     ## Return the list of specification version required for the module
     #
@@ -2230,6 +2313,7 @@ class ModuleAutoGen(AutoGen):
     ProtocolList            = property(_GetProtocolList)
     PpiList                 = property(_GetPpiList)
     DepexList               = property(_GetDepexTokenList)
+    DepexExpressionList     = property(_GetDepexExpressionTokenList)
     BuildOption             = property(_GetModuleBuildOption)
     BuildCommand            = property(_GetBuildCommand)
 
