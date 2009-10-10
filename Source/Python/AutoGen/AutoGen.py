@@ -1799,11 +1799,7 @@ class ModuleAutoGen(AutoGen):
             if self.IsLibrary or TAB_DEPENDENCY_EXPRESSION_FILE in self.FileTypes:
                 return self._DepexExpressionList
 
-            if self.ModuleType == "DXE_SMM_DRIVER":
-                self._DepexExpressionList["DXE_DRIVER"] = ''
-                self._DepexExpressionList["SMM_DRIVER"] = ''
-            else:
-                self._DepexExpressionList[self.ModuleType] = ''
+            self._DepexExpressionList[self.ModuleType] = ''
 
             for ModuleType in self._DepexExpressionList:
                 DepexExpressionList = self._DepexExpressionList[ModuleType]
