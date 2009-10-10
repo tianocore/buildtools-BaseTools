@@ -182,7 +182,7 @@ basetools_1373: Compatible: klu2
 basetools_1366: Compatible: lgao4
 
       Class_BuildTool:
-         1) Set the first framework var store name to ¡°Setup¡±
+         1) Set the first framework var store name to "Setup"
          2) Support DEFAULT and MANUFACTURING for framework CheckBox flags value
 
         Code Change :
