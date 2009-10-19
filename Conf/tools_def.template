@@ -237,7 +237,7 @@ DEFINE ARMGCC_BIN              = /
 *_VS2003_IA32_ASLCC_PATH            = DEF(VS2003_BIN)\cl.exe
 *_VS2003_IA32_ASLPP_PATH            = DEF(VS2003_BIN)\cl.exe
 *_VS2003_IA32_ASLDLINK_PATH         = DEF(VS2003_BIN)\link.exe
-
+*_VS2003_IA32_RC_PATH               = DEF(VS2003_BIN)\rc.exe
 
       *_VS2003_IA32_MAKE_FLAGS      = /nologo
       *_VS2003_IA32_APP_FLAGS       = /nologo /E /TC
@@ -263,6 +263,7 @@ RELEASE_VS2003_IA32_DLINK_FLAGS     = /NOLOGO /NODEFAULTLIB /IGNORE:4086 /OPT:RE
 *_VS2003_EBC_CC_PATH                = DEF(EBC_BIN)\iec.exe
 *_VS2003_EBC_SLINK_PATH             = DEF(EBC_BIN)\link.exe
 *_VS2003_EBC_DLINK_PATH             = DEF(EBC_BIN)\link.exe
+*_VS2003_EBC_RC_PATH                = DEF(VS2003_BIN)\rc.exe
 
 *_VS2003_EBC_MAKE_FLAGS             = /nologo
 *_VS2003_EBC_PP_FLAGS               = /nologo /E /TC /FIAutoGen.h
@@ -306,6 +307,7 @@ RELEASE_VS2003_IA32_DLINK_FLAGS     = /NOLOGO /NODEFAULTLIB /IGNORE:4086 /OPT:RE
 *_VS2003xASL_IA32_ASLCC_PATH            = DEF(VS2003_BIN)\cl.exe
 *_VS2003xASL_IA32_ASLPP_PATH            = DEF(VS2003_BIN)\cl.exe
 *_VS2003xASL_IA32_ASLDLINK_PATH         = DEF(VS2003_BIN)\link.exe
+*_VS2003xASL_IA32_RC_PATH               = DEF(VS2003_BIN)\rc.exe
 
 
       *_VS2003xASL_IA32_MAKE_FLAGS      = /nologo
@@ -332,6 +334,7 @@ RELEASE_VS2003xASL_IA32_DLINK_FLAGS     = /NOLOGO /NODEFAULTLIB /IGNORE:4086 /OP
 *_VS2003xASL_EBC_CC_PATH                = DEF(EBC_BIN)\iec.exe
 *_VS2003xASL_EBC_SLINK_PATH             = DEF(EBC_BIN)\link.exe
 *_VS2003xASL_EBC_DLINK_PATH             = DEF(EBC_BIN)\link.exe
+*_VS2003xASL_EBC_RC_PATH                = DEF(VS2003_BIN)\rc.exe
 
 *_VS2003xASL_EBC_MAKE_FLAGS             = /nologo
 *_VS2003xASL_EBC_PP_FLAGS               = /nologo /E /TC /FIAutoGen.h
@@ -352,6 +355,7 @@ RELEASE_VS2003xASL_IA32_DLINK_FLAGS     = /NOLOGO /NODEFAULTLIB /IGNORE:4086 /OP
 
 *_VS2005_*_MAKE_PATH              = DEF(VS2005_BIN)\nmake.exe
 *_VS2005_*_MAKE_FLAGS             = /nologo
+*_VS2005_*_RC_PATH                = DEF(VS2005_BIN)\rc.exe
 
 *_VS2005_*_SLINK_FLAGS            = /NOLOGO /LTCG
 *_VS2005_*_APP_FLAGS              = /nologo /E /TC
@@ -473,6 +477,7 @@ RELEASE_VS2005_IPF_DLINK_FLAGS  = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT:REF.ICF 
 
 *_VS2005xASL_*_MAKE_PATH       = DEF(VS2005_BIN)\nmake.exe
 *_VS2005xASL_*_MAKE_FLAG       = /nologo
+*_VS2005xASL_*_RC_PATH         = DEF(VS2005_BIN)\rc.exe
 
 *_VS2005xASL_*_SLINK_FLAGS     = /NOLOGO /LTCG
 *_VS2005xASL_*_APP_FLAGS       = /nologo /E /TC
@@ -594,6 +599,7 @@ RELEASE_VS2005xASL_IPF_DLINK_FLAGS  = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT:REF.
 
 *_VS2005x86_*_MAKE_PATH       = DEF(VS2005x86_BIN)\nmake.exe
 *_VS2005x86_*_MAKE_FLAGS      = /nologo
+*_VS2005x86_*_RC_PATH         = DEF(VS2005x86_BIN)\rc.exe
 
 *_VS2005x86_*_SLINK_FLAGS     = /NOLOGO /LTCG
 *_VS2005x86_*_APP_FLAGS       = /nologo /E /TC
@@ -715,6 +721,7 @@ RELEASE_VS2005x86_IPF_DLINK_FLAGS  = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT:REF.I
 
 *_VS2005x86xASL_*_MAKE_PATH       = DEF(VS2005x86_BIN)\nmake.exe
 *_VS2005x86xASL_*_MAKE_FLAGS      = /nologo
+*_VS2005x86xASL_*_RC_PATH         = DEF(VS2005x86_BIN)\rc.exe
 
 *_VS2005x86xASL_*_SLINK_FLAGS     = /NOLOGO /LTCG
 *_VS2005x86xASL_*_APP_FLAGS       = /nologo /E /TC
@@ -836,6 +843,7 @@ RELEASE_VS2005x86xASL_IPF_DLINK_FLAGS  = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT:R
 
 *_DDK3790_*_MAKE_PATH       = DEF(WINDDK_BIN32)\nmake.exe
 *_DDK3790_*_MAKE_FLAGS           = /nologo
+*_DDK3790_*_RC_PATH         = DEF(WINDDK_BIN32)\rc.exe
 
 *_DDK3790_*_PP_FLAGS             = /nologo /E /TC /FIAutoGen.h
 *_DDK3790_*_APP_FLAGS            = /nologo /E /TC
@@ -945,6 +953,7 @@ RELEASE_DDK3790_IPF_DLINK_FLAGS  = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT:REF.ICF
 
 *_DDK3790xASL_*_MAKE_PATH       = DEF(WINDDK_BIN32)\nmake.exe
 *_DDK3790xASL_*_MAKE_FLAGS           = /nologo
+*_DDK3790xASL_*_RC_PATH         = DEF(WINDDK_BIN32)\rc.exe
 
 *_DDK3790xASL_*_PP_FLAGS             = /nologo /E /TC /FIAutoGen.h
 *_DDK3790xASL_*_APP_FLAGS            = /nologo /E /TC
@@ -1104,8 +1113,10 @@ DEFINE UNIXGCC_DLINK_FLAGS_COMMON        = -nostdlib -s --pie
 *_UNIXGCC_IA32_ASLDLINK_PATH        = DEF(UNIXGCC_IA32_PETOOLS_PREFIX)ld
 *_UNIXGCC_IA32_ASM_PATH             = DEF(UNIXGCC_IA32_PETOOLS_PREFIX)gcc
 *_UNIXGCC_IA32_VFRPP_PATH           = DEF(UNIXGCC_IA32_PETOOLS_PREFIX)gcc
+*_UNIXGCC_IA32_RC_PATH              = DEF(UNIXGCC_IA32_PETOOLS_PREFIX)windres
 
 *_UNIXGCC_IA32_CC_FLAGS             = -fshort-wchar -fno-strict-aliasing -Wall -Werror -Wno-missing-braces -Wno-array-bounds -c -include AutoGen.h -m32 -malign-double -freorder-blocks -freorder-blocks-and-partition 
+*_UNIXGCC_IA32_RC_FLAGS             = -J rc -O coff
 
 ##################
 # X64 definitions
@@ -1119,8 +1130,10 @@ DEFINE UNIXGCC_DLINK_FLAGS_COMMON        = -nostdlib -s --pie
 *_UNIXGCC_X64_PP_PATH               = DEF(UNIXGCC_X64_PETOOLS_PREFIX)gcc
 *_UNIXGCC_X64_ASLPP_PATH            = DEF(UNIXGCC_X64_PETOOLS_PREFIX)gcc
 *_UNIXGCC_X64_VFRPP_PATH            = DEF(UNIXGCC_X64_PETOOLS_PREFIX)gcc
+*_UNIXGCC_X64_RC_PATH               = DEF(UNIXGCC_X64_PETOOLS_PREFIX)windres
 
 *_UNIXGCC_X64_CC_FLAGS              = -fshort-wchar -fno-strict-aliasing -Wall -Werror -Wno-missing-braces -Wno-array-bounds -c -include AutoGen.h -mno-red-zone -Wno-address
+*_UNIXGCC_X64_RC_FLAGS              = -J rc -O coff
 
 ##################
 # IPF definitions
@@ -1136,11 +1149,13 @@ DEFINE UNIXGCC_DLINK_FLAGS_COMMON        = -nostdlib -s --pie
 *_UNIXGCC_IPF_VFRPP_PATH           = DEF(UNIXGCC_IPF_PETOOLS_PREFIX)gcc
 *_UNIXGCC_IPF_OBJCOPY_PATH         = DEF(UNIXGCC_IPF_PETOOLS_PREFIX)objcopy
 *_UNIXGCC_IPF_SYMRENAME_PATH       = DEF(UNIXGCC_IPF_PETOOLS_PREFIX)objcopy
+*_UNIXGCC_IPF_RC_PATH              = DEF(UNIXGCC_IPF_PETOOLS_PREFIX)objcopy
 
 *_UNIXGCC_IPF_CC_FLAGS             = -Os -fshort-wchar -fno-strict-aliasing -Wall -Werror -Wno-missing-braces -Wno-array-bounds -c -include AutoGen.h -minline-int-divide-min-latency
 *_UNIXGCC_IPF_DLINK_FLAGS          = -nostdlib -O2 --gc-sections --dll -static --entry $(IMAGE_ENTRY_POINT) --undefined $(IMAGE_ENTRY_POINT) -Map $(DEST_DIR_DEBUG)/$(BASE_NAME).map
 *_UNIXGCC_IPF_OBJCOPY_FLAGS        = -I elf64-ia64-little -O efi-bsdrv-ia64
 *_UNIXGCC_IPF_SYMRENAME_FLAGS      = --redefine-sym memcpy=CopyMem
+*_UNIXGCC_IPF_RC_FLAGS             = -I binary -O elf64-ia64 --rename-section .data=.hii
 
 ####################################################################################
 #
@@ -1184,8 +1199,10 @@ DEFINE UNIXGCC_DLINK_FLAGS_COMMON        = -nostdlib -s --pie
 *_CYGGCC_IA32_ASLCC_PATH         = DEF(CYGWIN_BIN32)gcc
 *_CYGGCC_IA32_ASLPP_PATH         = DEF(CYGWIN_BIN32)gcc
 *_CYGGCC_IA32_ASLDLINK_PATH      = DEF(CYGWIN_BIN32)ld
+*_CYGGCC_IA32_RC_PATH            = DEF(CYGWIN_BIN32)windres
 
 *_CYGGCC_IA32_CC_FLAGS           = -Os -fshort-wchar -fno-strict-aliasing -Wall -Werror -c -include AutoGen.h
+*_CYGGCC_IA32_RC_FLAGS           = -J rc -O coff
 
 ##################
 # X64 definitions
@@ -1200,8 +1217,10 @@ DEFINE UNIXGCC_DLINK_FLAGS_COMMON        = -nostdlib -s --pie
 *_CYGGCC_X64_ASLCC_PATH          = DEF(CYGWIN_BINX64)gcc
 *_CYGGCC_X64_ASLPP_PATH          = DEF(CYGWIN_BINX64)gcc
 *_CYGGCC_X64_ASLDLINK_PATH       = DEF(CYGWIN_BINX64)ld
+*_CYGGCC_X64_RC_PATH             = DEF(CYGWIN_BINX64)windres
 
 *_CYGGCC_X64_CC_FLAGS            = -Os -fshort-wchar -fno-strict-aliasing -mno-red-zone -Wall -Werror -c -include AutoGen.h -D_EFI_P64
+*_CYGGCC_X64_RC_FLAGS            = -J rc -O coff
 
 ##################
 # IPF definitions
@@ -1217,11 +1236,13 @@ DEFINE UNIXGCC_DLINK_FLAGS_COMMON        = -nostdlib -s --pie
 *_CYGGCC_IPF_ASLPP_PATH          = DEF(CYGWIN_BINIPF)gcc
 *_CYGGCC_IPF_OBJCOPY_PATH        = DEF(CYGWIN_BINIPF)objcopy
 *_CYGGCC_IPF_SYMRENAME_PATH      = DEF(CYGWIN_BINIPF)objcopy
+*_CYGGCC_IPF_RC_PATH             = DEF(CYGWIN_BINIPF)objcopy
 
 *_CYGGCC_IPF_CC_FLAGS             = -Os -fshort-wchar -fno-strict-aliasing -Wall -Werror -Wno-missing-braces -Wno-array-bounds -c -include AutoGen.h -minline-int-divide-min-latency
 *_CYGGCC_IPF_DLINK_FLAGS          = -nostdlib -O2 --gc-sections --dll -static --entry $(IMAGE_ENTRY_POINT) --undefined $(IMAGE_ENTRY_POINT) -Map $(DEST_DIR_DEBUG)/$(BASE_NAME).map
 *_CYGGCC_IPF_OBJCOPY_FLAGS        = -I elf64-ia64-little -O efi-bsdrv-ia64
 *_CYGGCC_IPF_SYMRENAME_FLAGS      = --redefine-sym memcpy=CopyMem
+*_CYGGCC_IPF_RC_FLAGS             = -I binary -O elf64-ia64 --rename-section .data=.hii
 
 ##################
 # EBC definitions
@@ -1233,6 +1254,7 @@ DEFINE UNIXGCC_DLINK_FLAGS_COMMON        = -nostdlib -s --pie
 *_CYGGCC_EBC_DLINK_PATH    = DEF(EBC_BIN)\link.exe
 *_CYGGCC_EBC_SLINK_PATH    = DEF(EBC_BIN)\link.exe
 *_CYGGCC_EBC_VFRPP_PATH    = DEF(EBC_BIN)\iec.exe
+*_CYGGCC_EBC_RC_PATH       = DEF(VS2003_BIN)\rc.exe
 
 *_CYGGCC_EBC_CC_FLAGS           = /nologo /c /WX /W3 /FIAutoGen.h /D$(MODULE_ENTRY_POINT)=$(ARCH_ENTRY_POINT)
 *_CYGGCC_EBC_SLINK_FLAGS        = /lib /NOLOGO /MACHINE:EBC
@@ -1280,8 +1302,10 @@ DEFINE UNIXGCC_DLINK_FLAGS_COMMON        = -nostdlib -s --pie
 *_CYGGCCxASL_IA32_ASLCC_PATH         = DEF(CYGWIN_BIN32)gcc
 *_CYGGCCxASL_IA32_ASLPP_PATH         = DEF(CYGWIN_BIN32)gcc
 *_CYGGCCxASL_IA32_ASLDLINK_PATH      = DEF(CYGWIN_BIN32)ld
+*_CYGGCCxASL_IA32_RC_PATH            = DEF(CYGWIN_BIN32)windres
 
 *_CYGGCCxASL_IA32_CC_FLAGS           = -Os -fshort-wchar -fno-strict-aliasing -Wall -Werror -c -include AutoGen.h
+*_CYGGCCxASL_IA32_RC_FLAGS           = -J rc -O coff
 
 ##################
 # X64 definitions
@@ -1296,8 +1320,10 @@ DEFINE UNIXGCC_DLINK_FLAGS_COMMON        = -nostdlib -s --pie
 *_CYGGCCxASL_X64_ASLCC_PATH          = DEF(CYGWIN_BINX64)gcc
 *_CYGGCCxASL_X64_ASLPP_PATH          = DEF(CYGWIN_BINX64)gcc
 *_CYGGCCxASL_X64_ASLDLINK_PATH       = DEF(CYGWIN_BINX64)ld
+*_CYGGCCxASL_X64_RC_PATH             = DEF(CYGWIN_BINX64)windres
 
 *_CYGGCCxASL_X64_CC_FLAGS            = -Os -fshort-wchar -fno-strict-aliasing -mno-red-zone -Wall -Werror -c -include AutoGen.h -D_EFI_P64
+*_CYGGCCxASL_X64_RC_FLAGS            = -J rc -O coff
 
 ##################
 # IPF definitions
@@ -1313,11 +1339,13 @@ DEFINE UNIXGCC_DLINK_FLAGS_COMMON        = -nostdlib -s --pie
 *_CYGGCCxASL_IPF_ASLPP_PATH          = DEF(CYGWIN_BINIPF)gcc
 *_CYGGCCxASL_IPF_OBJCOPY_PATH        = DEF(CYGWIN_BINIPF)objcopy
 *_CYGGCCxASL_IPF_SYMRENAME_PATH      = DEF(CYGWIN_BINIPF)objcopy
+*_CYGGCCxASL_IPF_RC_PATH             = DEF(CYGWIN_BINIPF)objcopy
 
 *_CYGGCCxASL_IPF_CC_FLAGS             = -Os -fshort-wchar -fno-strict-aliasing -Wall -Werror -Wno-missing-braces -Wno-array-bounds -c -include AutoGen.h -minline-int-divide-min-latency
 *_CYGGCCxASL_IPF_DLINK_FLAGS          = -nostdlib -O2 --gc-sections --dll -static --entry $(IMAGE_ENTRY_POINT) --undefined $(IMAGE_ENTRY_POINT) -Map $(DEST_DIR_DEBUG)/$(BASE_NAME).map
 *_CYGGCCxASL_IPF_OBJCOPY_FLAGS        = -I elf64-ia64-little -O efi-bsdrv-ia64
 *_CYGGCCxASL_IPF_SYMRENAME_FLAGS      = --redefine-sym memcpy=CopyMem
+*_CYGGCCxASL_IPF_RC_FLAGS             = -I binary -O elf64-ia64 --rename-section .data=.hii
 
 ##################
 # EBC definitions
@@ -1329,6 +1357,7 @@ DEFINE UNIXGCC_DLINK_FLAGS_COMMON        = -nostdlib -s --pie
 *_CYGGCCxASL_EBC_DLINK_PATH    = DEF(EBC_BIN)\link.exe
 *_CYGGCCxASL_EBC_SLINK_PATH    = DEF(EBC_BIN)\link.exe
 *_CYGGCCxASL_EBC_VFRPP_PATH    = DEF(EBC_BIN)\iec.exe
+*_CYGGCCxASL_EBC_RC_PATH       = DEF(VS2003_BIN)\rc.exe
 
 *_CYGGCCxASL_EBC_CC_FLAGS           = /nologo /c /WX /W3 /FIAutoGen.h /D$(MODULE_ENTRY_POINT)=$(ARCH_ENTRY_POINT)
 *_CYGGCCxASL_EBC_SLINK_FLAGS        = /lib /NOLOGO /MACHINE:EBC
@@ -1369,6 +1398,7 @@ DEFINE UNIXGCC_DLINK_FLAGS_COMMON        = -nostdlib -s --pie
 *_ELFGCC32_IA32_ASLCC_PATH          = DEF(ELFGCC_BIN)/gcc
 *_ELFGCC32_IA32_ASLPP_PATH          = DEF(ELFGCC_BIN)/gcc
 *_ELFGCC32_IA32_ASLDLINK_PATH       = DEF(ELFGCC_BIN)/ld
+*_ELFGCC_IA32_RC_PATH               = DEF(ELFGCC_BIN)/objcopy
 
 *_ELFGCC_IA32_CC_FLAGS              = -m32 -g -fshort-wchar -fno-strict-aliasing -Wall -malign-double -c -include $(DEST_DIR_DEBUG)/AutoGen.h -DSTRING_ARRAY_NAME=$(BASE_NAME)Strings
 *_ELFGCC_IA32_SLINK_FLAGS           =
@@ -1377,6 +1407,7 @@ DEFINE UNIXGCC_DLINK_FLAGS_COMMON        = -nostdlib -s --pie
 *_ELFGCC_IA32_ASM_FLAGS             = -c -x assembler -imacros $(DEST_DIR_DEBUG)/AutoGen.h
 *_ELFGCC_IA32_PP_FLAGS              = -m32 -E -x assembler-with-cpp -include $(DEST_DIR_DEBUG)/AutoGen.h
 *_ELFGCC_IA32_VFRPP_FLAGS           = -x c -E -P -DVFRCOMPILE --include $(DEST_DIR_DEBUG)/$(MODULE_NAME)StrDefs.h
+*_ELFGCC_IA32_RC_FLAGS              = -I binary -O elf32-i386 -B i386 --rename-section .data=.hii
 
 ##################
 # X64 definitions
@@ -1390,6 +1421,7 @@ DEFINE UNIXGCC_DLINK_FLAGS_COMMON        = -nostdlib -s --pie
 *_ELFGCC_X64_PP_PATH               = DEF(ELFGCC_BIN)/gcc
 *_ELFGCC_X64_ASLPP_PATH            = DEF(ELFGCC_BIN)/gcc
 *_ELFGCC_X64_VFRPP_PATH            = DEF(ELFGCC_BIN)/gcc
+*_ELFGCC_X64_RC_PATH               = DEF(ELFGCC_BIN)/objcopy
 
 *_ELFGCC_X64_CC_FLAGS              = -Os -fshort-wchar -fno-strict-aliasing -Wall -Werror -Wno-missing-braces -Wno-address -Wno-array-bounds -c -include AutoGen.h -D_EFI_P64
 *_ELFGCC_X64_DLINK_FLAGS           = -nostdlib --shared --entry $(IMAGE_ENTRY_POINT) -u $(IMAGE_ENTRY_POINT)
@@ -1397,6 +1429,7 @@ DEFINE UNIXGCC_DLINK_FLAGS_COMMON        = -nostdlib -s --pie
 *_ELFGCC_X64_ASM_FLAGS             = -c -x assembler -imacros $(DEST_DIR_DEBUG)/AutoGen.h
 *_ELFGCC_X64_PP_FLAGS              = -E -x assembler-with-cpp -include $(DEST_DIR_DEBUG)/AutoGen.h
 *_ELFGCC_X64_VFRPP_FLAGS           = -x c -E -P -DVFRCOMPILE --include $(DEST_DIR_DEBUG)/$(MODULE_NAME)StrDefs.h
+*_ELFGCC_X64_RC_FLAGS              = -I binary -O elf64-x86-64 -B i386 --rename-section .data=.hii
 
 ##################
 # IPF definitions
@@ -1410,6 +1443,7 @@ DEFINE UNIXGCC_DLINK_FLAGS_COMMON        = -nostdlib -s --pie
 *_ELFGCC_IPF_PP_PATH              = DEF(ELFGCC_BIN)/gcc
 *_ELFGCC_IPF_ASLPP_PATH           = DEF(ELFGCC_BIN)/gcc
 *_ELFGCC_IPF_VFRPP_PATH           = DEF(ELFGCC_BIN)/gcc
+*_ELFGCC_IPF_RC_PATH              = DEF(ELFGCC_BIN)/objcopy
 
 *_ELFGCC_IPF_CC_FLAGS             = -Os -fshort-wchar -Wall -Werror -c -include AutoGen.h -D_EFI_P64
 *_ELFGCC_IPF_DLINK_FLAGS          = -nostdlib --shared --entry $(IMAGE_ENTRY_POINT) -u $(IMAGE_ENTRY_POINT)
@@ -1417,6 +1451,7 @@ DEFINE UNIXGCC_DLINK_FLAGS_COMMON        = -nostdlib -s --pie
 *_ELFGCC_IPF_ASM_FLAGS            = -c -x assembler -imacros $(DEST_DIR_DEBUG)/AutoGen.h
 *_ELFGCC_IPF_PP_FLAGS             = -E -x assembler-with-cpp -include $(DEST_DIR_DEBUG)/AutoGen.h
 *_ELFGCC_IPF_VFRPP_FLAGS          = -x c -E -P -DVFRCOMPILE --include $(DEST_DIR_DEBUG)/$(MODULE_NAME)StrDefs.h
+*_ELFGCC_IPF_RC_FLAGS             = -I binary -O elf64-ia64-little -B ia64 --rename-section .data=.hii
 
 ####################################################################################
 #
@@ -1430,6 +1465,7 @@ DEFINE UNIXGCC_DLINK_FLAGS_COMMON        = -nostdlib -s --pie
 *_ICC_*_*_FAMILY                    = INTEL
 
 *_ICC_*_MAKE_PATH                   = DEF(VS2005_BIN)\nmake.exe
+*_ICC_*_RC_PATH                     = DEF(VS2005_BIN)\rc.exe
 
 *_ICC_*_MAKE_FLAGS                       = /nologo
 *_ICC_*_VFRPP_FLAGS                      = /nologo /E /TC /DVFRCOMPILE /FI$(MODULE_NAME)StrDefs.h
@@ -1556,6 +1592,7 @@ RELEASE_ICC_IPF_DLINK_FLAGS              = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT
 *_ICCxASL_*_*_FAMILY                    = INTEL
 
 *_ICCxASL_*_MAKE_PATH                   = DEF(VS2005_BIN)\nmake.exe
+*_ICCxASL_*_RC_PATH                     = DEF(VS2005_BIN)\rc.exe
 
 *_ICCxASL_*_MAKE_FLAGS                       = /nologo
 *_ICCxASL_*_VFRPP_FLAGS                      = /nologo /E /TC /DVFRCOMPILE /FI$(MODULE_NAME)StrDefs.h
@@ -1683,6 +1720,7 @@ RELEASE_ICCxASL_IPF_DLINK_FLAGS              = /NOLOGO /NODEFAULTLIB /LTCG /DLL 
 *_ICCx86_*_*_FAMILY                    = INTEL
 
 *_ICCx86_*_MAKE_PATH                   = DEF(VS2005x86_BIN)\nmake.exe
+*_ICCx86_*_RC_PATH                     = DEF(VS2005x86_BIN)\rc.exe
 
 *_ICCx86_*_MAKE_FLAGS                       = /nologo
 *_ICCx86_*_VFRPP_FLAGS                      = /nologo /E /TC /DVFRCOMPILE /FI$(MODULE_NAME)StrDefs.h
@@ -1810,6 +1848,7 @@ RELEASE_ICCx86_IPF_DLINK_FLAGS              = /NOLOGO /NODEFAULTLIB /LTCG /DLL /
 *_ICCx86xASL_*_*_FAMILY                    = INTEL
 
 *_ICCx86xASL_*_MAKE_PATH                   = DEF(VS2005x86_BIN)\nmake.exe
+*_ICCx86xASL_*_RC_PATH                     = DEF(VS2005x86_BIN)\rc.exe
 
 *_ICCx86xASL_*_MAKE_FLAGS                       = /nologo
 *_ICCx86xASL_*_VFRPP_FLAGS                      = /nologo /E /TC /DVFRCOMPILE /FI$(MODULE_NAME)StrDefs.h
@@ -1971,6 +2010,7 @@ RELEASE_ICCx86xASL_IPF_DLINK_FLAGS              = /NOLOGO /NODEFAULTLIB /LTCG /D
 *_MYTOOLS_IA32_ASLCC_PATH           = DEF(VS2005_BIN)\cl.exe
 *_MYTOOLS_IA32_ASLPP_PATH           = DEF(VS2005_BIN)\cl.exe
 *_MYTOOLS_IA32_ASLDLINK_PATH        = DEF(VS2005_BIN)\link.exe
+*_MYTOOLS_IA32_RC_PATH              = DEF(VS2005_BIN)\rc.exe
 
   DEBUG_MYTOOLS_IA32_CC_FLAGS            = /nologo /c /WX /GS- /W4 /Gs8192 /Gy /D UNICODE /O1ib2 /GL /FIAutoGen.h /EHs-c- /GR- /GF /Zi /Gm
 RELEASE_MYTOOLS_IA32_CC_FLAGS            = /nologo /c /WX /GS- /W4 /Gs8192 /Gy /D UNICODE /O1ib2 /GL /FIAutoGen.h /EHs-c- /GR- /GF
@@ -1996,6 +2036,7 @@ RELEASE_MYTOOLS_IA32_DLINK_FLAGS         = /NOLOGO /NODEFAULTLIB /IGNORE:4086 /O
 *_MYTOOLS_X64_ASLCC_PATH            = DEF(VS2005_BINX64)\cl.exe
 *_MYTOOLS_X64_ASLPP_PATH            = DEF(VS2005_BINX64)\cl.exe
 *_MYTOOLS_X64_ASLDLINK_PATH         = DEF(VS2005_BINX64)\link.exe
+*_MYTOOLS_X64_RC_PATH               = DEF(VS2005_BIN)\rc.exe
 
   DEBUG_MYTOOLS_X64_CC_FLAGS             = /nologo /c /WX /GS- /W4 /Gs8192 /Gy /D UNICODE /O1ib2 /GL /FIAutoGen.h /EHs-c- /GR- /GF /Zi /Gm
 RELEASE_MYTOOLS_X64_CC_FLAGS             = /nologo /c /WX /GS- /W4 /Gs8192 /Gy /D UNICODE /O1ib2 /GL /FIAutoGen.h /EHs-c- /GR- /GF
@@ -2018,8 +2059,9 @@ RELEASE_MYTOOLS_X64_DLINK_FLAGS          = /NOLOGO /NODEFAULTLIB /IGNORE:4086 /O
 *_MYTOOLS_IPF_ASLCC_PATH            = DEF(WINDDK_BIN64)\cl.exe
 *_MYTOOLS_IPF_ASLPP_PATH            = DEF(WINDDK_BIN64)\cl.exe
 *_MYTOOLS_IPF_ASLDLINK_PATH         = DEF(WINDDK_BIN64)\link.exe
-      *_MYTOOLS_IPF_ASM_OUTPUT           = "-o "
+*_MYTOOLS_IPF_RC_PATH               = DEF(WINDDK_BIN32)\rc.exe
 
+      *_MYTOOLS_IPF_ASM_OUTPUT           = "-o "
   DEBUG_MYTOOLS_IPF_CC_FLAGS             = /nologo /c /WX /GS- /X /W4 /Gy /Ox /GL /FIAutoGen.h /EHs-c- /GR- /GF /Zx /QIPF_fr32 /Zi
 RELEASE_MYTOOLS_IPF_CC_FLAGS             = /nologo /c /WX /GS- /X /W4 /Gy /Ox /GL /FIAutoGen.h /EHs-c- /GR- /GF /Zx /QIPF_fr32
   DEBUG_MYTOOLS_IPF_ASM_FLAGS            = -N us -X explicit -M ilp64 -N so -W4 -d debug
@@ -2039,6 +2081,7 @@ RELEASE_MYTOOLS_IPF_DLINK_FLAGS          = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT
 *_MYTOOLS_EBC_CC_PATH               = DEF(EBC_BIN)\iec.exe
 *_MYTOOLS_EBC_SLINK_PATH            = DEF(EBC_BIN)\link.exe
 *_MYTOOLS_EBC_DLINK_PATH            = DEF(EBC_BIN)\link.exe
+*_MYTOOLS_EBC_RC_PATH               = DEF(VS2005_BIN)\rc.exe
 
 *_MYTOOLS_EBC_MAKE_FLAGS                 = /nologo
 *_MYTOOLS_EBC_PP_FLAGS                   = /nologo /E /TC /FIAutoGen.h
