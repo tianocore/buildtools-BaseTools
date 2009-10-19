@@ -1782,8 +1782,10 @@ def CreatePcdCode(Info, AutoGenC, AutoGenH):
 #   @param      Info        The ModuleAutoGen object
 #   @param      AutoGenC    The TemplateString object for C code
 #   @param      AutoGenH    The TemplateString object for header file
+#   @param      UniGenCFlag     UniString is generated into AutoGen C file when it is set to True
+#   @param      UniGenBinBuffer Buffer to store uni string package data
 #
-def CreateUnicodeStringCode(Info, AutoGenC, AutoGenH):
+def CreateUnicodeStringCode(Info, AutoGenC, AutoGenH, UniGenCFlag, UniGenBinBuffer):
     WorkingDir = os.getcwd()
     os.chdir(Info.WorkspaceDir)
 
@@ -1823,13 +1825,15 @@ def CreateUnicodeStringCode(Info, AutoGenC, AutoGenH):
     else:
         ShellMode = False
 
-    Header, Code = GetStringFiles(Info.UnicodeFileList, SrcList, IncList, ['.uni', '.inf'], Info.Name, CompatibleMode, ShellMode)
-    AutoGenC.Append("\n//\n//Unicode String Pack Definition\n//\n")
-    AutoGenC.Append(Code)
-    AutoGenC.Append("\n")
+    Header, Code = GetStringFiles(Info.UnicodeFileList, SrcList, IncList, ['.uni', '.inf'], Info.Name, CompatibleMode, ShellMode, UniGenCFlag, UniGenBinBuffer)
+    if CompatibleMode or UniGenCFlag:
+        AutoGenC.Append("\n//\n//Unicode String Pack Definition\n//\n")
+        AutoGenC.Append(Code)
+        AutoGenC.Append("\n")
     AutoGenH.Append("\n//\n//Unicode String ID\n//\n")
     AutoGenH.Append(Header)
-    AutoGenH.Append("\n#define STRING_ARRAY_NAME %sStrings\n" % Info.Name)
+    if CompatibleMode or UniGenCFlag:
+        AutoGenH.Append("\n#define STRING_ARRAY_NAME %sStrings\n" % Info.Name)
     os.chdir(WorkingDir)
 
 ## Create common code
@@ -1890,8 +1894,10 @@ def CreateFooterCode(Info, AutoGenC, AutoGenH):
 #   @param      Info        The ModuleAutoGen object
 #   @param      AutoGenC    The TemplateString object for C code
 #   @param      AutoGenH    The TemplateString object for header file
+#   @param      UniGenCFlag     UniString is generated into AutoGen C file when it is set to True
+#   @param      UniGenBinBuffer Buffer to store uni string package data
 #
-def CreateCode(Info, AutoGenC, AutoGenH, StringH):
+def CreateCode(Info, AutoGenC, AutoGenH, StringH, UniGenCFlag, UniGenBinBuffer):
     CreateHeaderCode(Info, AutoGenC, AutoGenH)
 
     if Info.AutoGenVersion >= 0x00010005:
@@ -1908,7 +1914,7 @@ def CreateCode(Info, AutoGenC, AutoGenH, StringH):
         FileName = "%sStrDefs.h" % Info.Name
         StringH.Append(gAutoGenHeaderString.Replace({'FileName':FileName}))
         StringH.Append(gAutoGenHPrologueString.Replace({'File':'STRDEFS', 'Guid':Info.Guid.replace('-','_')}))
-        CreateUnicodeStringCode(Info, AutoGenC, StringH)
+        CreateUnicodeStringCode(Info, AutoGenC, StringH, UniGenCFlag, UniGenBinBuffer)
         StringH.Append("\n#endif\n")
         AutoGenH.Append('#include "%s"\n' % FileName)
 
@@ -1920,12 +1926,13 @@ def CreateCode(Info, AutoGenC, AutoGenH, StringH):
 
 ## Create the code file
 #
-#   @param      FilePath    The path of code file
-#   @param      Content     The content of code file
+#   @param      FilePath     The path of code file
+#   @param      Content      The content of code file
+#   @param      IsBinaryFile The flag indicating if the file is binary file or not
 #
 #   @retval     True        If file content is changed or file doesn't exist
 #   @retval     False       If the file exists and the content is not changed
 #
-def Generate(FilePath, Content):
-    return SaveFileOnChange(FilePath, Content, False)
+def Generate(FilePath, Content, IsBinaryFile):
+    return SaveFileOnChange(FilePath, Content, IsBinaryFile)
 

@@ -33,6 +33,7 @@ Abstract:
 
 #include <Common/UefiBaseTypes.h>
 #include <IndustryStandard/PeImage.h>
+#include <Common/UefiInternalFormRepresentation.h>
 
 //
 // Acpi Table definition
@@ -60,6 +61,8 @@ Abstract:
 #define UTILITY_MAJOR_VERSION 0
 #define UTILITY_MINOR_VERSION 2
 
+#define HII_RESOURCE_SECTION_INDEX  1
+#define HII_RESOURCE_SECTION_NAME   "HII"
 //
 // Action for this tool.
 //
@@ -73,6 +76,7 @@ Abstract:
 #define FW_MCI_IMAGE         7
 #define FW_MERGE_IMAGE       8
 #define FW_RELOC_STRIPEED_IMAGE 9
+#define FW_HII_PACKAGE_LIST_RCIMAGE 10
 
 #define DUMP_TE_HEADER       0x11
 
@@ -99,6 +103,15 @@ typedef struct {
   UINT32  TotalSize;  // number of bytes
   UINT32  Reserved[3];
 } MICROCODE_IMAGE_HEADER;
+
+static EFI_GUID mZeroGuid = {0x0, 0x0, 0x0, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}};
+
+static const char *gHiiPackageRCFileHeader[] = {
+  "//",
+  "//  DO NOT EDIT -- auto-generated file",
+  "//",
+  NULL
+};
 
 STATIC CHAR8 *mInImageName;
 
@@ -258,6 +271,16 @@ Returns:
   fprintf (stdout, "  -r, --replace         Overwrite the input file with the output content.\n\
                         If more input files are specified,\n\
                         the last input file will be as the output file.\n");
+  fprintf (stdout, "  -g HiiPackageListGuid, --hiiguid HiiPackageListGuid\n\
+                        HiiListPackageGuidGuid is from the module guid.\n\
+                        Its format is xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n\
+                        If not specified, the first Form FormSet guid is used.\n");
+  fprintf (stdout, "  --hiipackage          Combine all input binary hii pacakges into \n\
+                        a single package list as the text resource data(RC).\n\
+                        It can't be combined with other action options\n\
+                        except for -o option. It is a action option.\n\
+                        If it is combined with other action options, the later\n\
+                        input action option will override the previous one.\n");
   fprintf (stdout, "  -v, --verbose         Turn on verbose output with informational messages.\n");
   fprintf (stdout, "  -q, --quiet           Disable all messages except key message and fatal error\n");
   fprintf (stdout, "  -d, --debug level     Enable debug messages, at input debug level.\n");
@@ -440,7 +463,7 @@ typedef Elf32_Dyn Elf_Dyn;
 #define ELFCLASS ELFCLASS32
 #define ELF_R_TYPE(r) ELF32_R_TYPE(r)
 #define ELF_R_SYM(r) ELF32_R_SYM(r)
-
+#define ELF_HII_SECTION_NAME ".hii"
 //
 // Well known ELF structures.
 //
@@ -452,7 +475,7 @@ Elf_Phdr *gPhdrBase;
 // PE section alignment.
 //
 const UINT32 CoffAlignment = 0x20;
-const UINT16 CoffNbrSections = 4;
+const UINT16 CoffNbrSections = 5;
 
 //
 // Current offset in coff file.
@@ -475,7 +498,14 @@ UINT32 NtHdrOffset;
 UINT32 TableOffset;
 UINT32 TextOffset;
 UINT32 DataOffset;
+UINT32 HiiRsrcOffset;
 UINT32 RelocOffset;
+
+//
+// HiiBinData
+//
+UINT8* HiiBinData = NULL;
+UINT32 HiiBinSize = 0;
 
 EFI_IMAGE_BASE_RELOCATION *CoffBaseRel;
 UINT16 *CoffEntryRel;
@@ -548,10 +578,27 @@ IsTextShdr(
 }
 
 int
+IsHiiRsrcShdr(
+  Elf_Shdr *Shdr
+  )
+{
+  Elf_Shdr *Namedr = GetShdrByIndex(Ehdr->e_shstrndx);
+
+  if (strcmp((CHAR8*)Ehdr + Namedr->sh_offset + Shdr->sh_name, ELF_HII_SECTION_NAME) == 0) {
+    return 1;
+  }
+
+  return 0;
+}
+
+int
 IsDataShdr(
   Elf_Shdr *Shdr
   )
 {
+  if (IsHiiRsrcShdr(Shdr)) {
+    return 0;
+  }
   return (Shdr->sh_flags & (SHF_WRITE | SHF_ALLOC)) == (SHF_ALLOC | SHF_WRITE);
 }
 
@@ -581,6 +628,128 @@ CreateSectionHeader(
 }
 
 VOID
+GetBinaryHiiData (
+  CHAR8   *RcString,
+  UINT32  Size,
+  UINT32  OffsetToFile
+  )
+{
+  unsigned  Data16;
+  UINT32  HiiBinOffset;
+  UINT32  Index;
+  EFI_IMAGE_RESOURCE_DIRECTORY        *ResourceDirectory;
+  EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY  *ResourceDirectoryEntry;
+  EFI_IMAGE_RESOURCE_DIRECTORY_STRING *ResourceDirectoryString;
+  EFI_IMAGE_RESOURCE_DATA_ENTRY       *ResourceDataEntry;
+
+  Index = 0;
+  while (Index < Size && *RcString != '\0' && *RcString != '{') {
+    RcString ++;
+    Index ++;
+  }
+  
+  if (*RcString == '\0' || Index == Size) {
+    return;
+  }
+  
+  //
+  // Skip '{' character
+  // Skip space and ',' character
+  //
+  RcString ++;
+  Index ++;
+  while (Index < Size && *RcString != '\0' && (isspace (*RcString) || *RcString == ',')){
+    RcString ++;
+    Index ++;
+  }
+
+  //
+  // '}' end character
+  //
+  if (*RcString == '}' || Index == Size) {
+    return;
+  }
+
+  HiiBinOffset = 0;
+  HiiBinSize   = 0x1000;
+  HiiBinData   = (UINT8 *) malloc (HiiBinSize);
+  if (HiiBinData == NULL) {
+    return;
+  }
+  memset (HiiBinData, 0, HiiBinSize);
+  //
+  // Fill Resource section entry
+  //
+  ResourceDirectory = (EFI_IMAGE_RESOURCE_DIRECTORY *) (HiiBinData + HiiBinOffset);
+  HiiBinOffset += sizeof (EFI_IMAGE_RESOURCE_DIRECTORY);
+  ResourceDirectory->NumberOfNamedEntries = 1;
+
+  ResourceDirectoryEntry = (EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY *) (HiiBinData + HiiBinOffset);
+  HiiBinOffset += sizeof (EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY);
+  ResourceDirectoryEntry->u1.s.NameIsString = 1;
+  ResourceDirectoryEntry->u1.s.NameOffset   = HiiBinOffset;
+
+  ResourceDirectoryString = (EFI_IMAGE_RESOURCE_DIRECTORY_STRING *) (HiiBinData + HiiBinOffset);
+  ResourceDirectoryString->Length = 3;
+  ResourceDirectoryString->String[0] =L'H';
+  ResourceDirectoryString->String[1] =L'I';
+  ResourceDirectoryString->String[2] =L'I';
+  HiiBinOffset = HiiBinOffset + sizeof (ResourceDirectoryString->Length) + ResourceDirectoryString->Length * sizeof (ResourceDirectoryString->String[0]);
+
+  ResourceDirectoryEntry->u2.OffsetToData = HiiBinOffset;
+  ResourceDataEntry = (EFI_IMAGE_RESOURCE_DATA_ENTRY *) (HiiBinData + HiiBinOffset);
+  HiiBinOffset += sizeof (EFI_IMAGE_RESOURCE_DATA_ENTRY);
+  ResourceDataEntry->OffsetToData = OffsetToFile + HiiBinOffset;
+
+  while (sscanf (RcString, "0x%X", &Data16) != EOF) {
+    //
+    // Convert the string data to the binary data.
+    //
+    *(UINT16 *)(HiiBinData + HiiBinOffset) = (UINT16) Data16;
+    HiiBinOffset += 2;
+    //
+    // Jump to the next data.
+    //
+    RcString = RcString + 2 + 4;
+    Index    = Index + 2 + 4;
+    //
+    // Skip space and ',' character
+    //
+    while (Index < Size && *RcString != '\0' && (isspace (*RcString) || *RcString == ',')){
+      RcString ++;
+      Index ++;
+    }
+    //
+    // '}' end character
+    //
+    if (*RcString == '}'|| Index == Size) {
+      break;
+    }
+    //
+    // Check BinBuffer size
+    //
+    if (HiiBinOffset >= HiiBinSize) {
+      HiiBinSize += 0x1000;
+      HiiBinData = (UINT8 *) realloc (HiiBinData, HiiBinSize);
+      //
+      // Memory allocation is failure.
+      //
+      if (HiiBinData == NULL) {
+        HiiBinSize = 0;
+        break;
+      }
+    }
+  }
+
+  if (HiiBinData != NULL) {
+    HiiBinSize = HiiBinOffset;
+    ResourceDataEntry->Size = HiiBinSize + OffsetToFile - ResourceDataEntry->OffsetToData;
+  }
+  
+  return;
+}
+
+VOID
 ScanSections(
   VOID
   )
@@ -605,11 +774,11 @@ ScanSections(
 	break;
   case EM_X86_64:
   case EM_IA_64:
-	CoffOffset += sizeof (EFI_IMAGE_NT_HEADERS64);
+    CoffOffset += sizeof (EFI_IMAGE_NT_HEADERS64);
 	break;
   default:
     VerboseMsg ("%s unknown e_machine type. Assume IA-32", (UINTN)Ehdr->e_machine);
-	CoffOffset += sizeof (EFI_IMAGE_NT_HEADERS32);
+    CoffOffset += sizeof (EFI_IMAGE_NT_HEADERS32);
 	break;
   }
 
@@ -672,12 +841,40 @@ ScanSections(
           Error (NULL, 0, 3000, "Invalid", "Unsupported section alignment.");
         }
       }
-
       CoffSectionsOffset[i] = CoffOffset;
       CoffOffset += shdr->sh_size;
     }
   }
   CoffOffset = CoffAlign(CoffOffset);
+
+  //
+  //  The HII resource sections.
+  //
+  HiiRsrcOffset = CoffOffset;
+  for (i = 0; i < Ehdr->e_shnum; i++) {
+    Elf_Shdr *shdr = GetShdrByIndex(i);
+    if (IsHiiRsrcShdr(shdr)) {
+      if ((shdr->sh_addralign != 0) && (shdr->sh_addralign != 1)) {
+        // the alignment field is valid
+        if ((shdr->sh_addr & (shdr->sh_addralign - 1)) == 0) {
+          // if the section address is aligned we must align PE/COFF 
+          CoffOffset = (CoffOffset + shdr->sh_addralign - 1) & ~(shdr->sh_addralign - 1);
+        } else if ((shdr->sh_addr % shdr->sh_addralign) != (CoffOffset % shdr->sh_addralign)) {
+          // ARM RVCT tools have behavior outside of the ELF specification to try 
+          // and make images smaller.  If sh_addr is not aligned to sh_addralign 
+          // then the section needs to preserve sh_addr MOD sh_addralign. 
+          // Normally doing nothing here works great.
+          Error (NULL, 0, 3000, "Invalid", "Unsupported section alignment.");
+        }
+      }
+      GetBinaryHiiData ((CHAR8*)Ehdr + shdr->sh_offset, shdr->sh_size, HiiRsrcOffset);
+      if (HiiBinSize != 0) {
+        CoffOffset += HiiBinSize;
+        CoffOffset = CoffAlign(CoffOffset);
+      }
+      break;
+    }
+  }
 
   RelocOffset = CoffOffset;
 
@@ -760,8 +957,8 @@ ScanSections(
     NtHdr->Pe32.FileHeader.NumberOfSections--;
   }
 
-  if ((RelocOffset - TextOffset) > 0) {
-    CreateSectionHeader (".data", DataOffset, RelocOffset - DataOffset,
+  if ((HiiRsrcOffset - DataOffset) > 0) {
+    CreateSectionHeader (".data", DataOffset, HiiRsrcOffset - DataOffset,
             EFI_IMAGE_SCN_CNT_INITIALIZED_DATA
             | EFI_IMAGE_SCN_MEM_WRITE
             | EFI_IMAGE_SCN_MEM_READ);
@@ -769,6 +966,24 @@ ScanSections(
     // Don't make a section of size 0. 
     NtHdr->Pe32.FileHeader.NumberOfSections--;
   }
+
+  if ((RelocOffset - HiiRsrcOffset) > 0) {
+    CreateSectionHeader (".rsrc", HiiRsrcOffset, RelocOffset - HiiRsrcOffset,
+            EFI_IMAGE_SCN_CNT_INITIALIZED_DATA
+            | EFI_IMAGE_SCN_MEM_READ);
+
+    NtHdr->Pe32.OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE].Size = HiiBinSize;
+    NtHdr->Pe32.OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress = HiiRsrcOffset;
+
+    memcpy(CoffFile + HiiRsrcOffset, HiiBinData, HiiBinSize);
+    free (HiiBinData);
+    HiiBinData = NULL;
+    HiiBinSize = 0;
+  } else {
+    // Don't make a section of size 0. 
+    NtHdr->Pe32.FileHeader.NumberOfSections--;
+  }
+
 }
 
 VOID
@@ -1278,6 +1493,14 @@ Returns:
   EFI_IMAGE_OPTIONAL_HEADER64      *Optional64;
   EFI_IMAGE_DOS_HEADER             BackupDosHdr;
   MICROCODE_IMAGE_HEADER           *MciHeader;
+  UINT8                            *HiiPackageListBuffer;
+  UINT8                            *HiiPackageDataPointer;
+  EFI_GUID                         HiiPackageListGuid;
+  EFI_HII_PACKAGE_LIST_HEADER      HiiPackageListHeader;
+  EFI_HII_PACKAGE_HEADER           HiiPackageHeader;
+  EFI_IFR_FORM_SET                 IfrFormSet;
+  UINT8                            NumberOfFormPacakge;
+  EFI_HII_PACKAGE_HEADER           EndPackage;
 
   SetUtilityName (UTILITY_NAME);
 
@@ -1310,6 +1533,12 @@ Returns:
   Optional64        = NULL;
   KeepExceptionTableFlag = FALSE;
   KeepZeroPendingFlag    = FALSE;
+  NumberOfFormPacakge    = 0;
+  HiiPackageListBuffer   = NULL;
+  HiiPackageDataPointer  = NULL;
+  EndPackage.Length      = sizeof (EFI_HII_PACKAGE_HEADER);
+  EndPackage.Type        = EFI_HII_PACKAGE_END;
+  memset (&HiiPackageListGuid, 0, sizeof (HiiPackageListGuid));
 
   if (argc == 1) {
     Error (NULL, 0, 1001, "Missing options", "No input options.");
@@ -1501,6 +1730,24 @@ Returns:
       continue;
     }
     
+    if ((stricmp (argv[0], "-g") == 0) || (stricmp (argv[0], "--hiiguid") == 0)) {
+      Status = StringToGuid (argv[1], &HiiPackageListGuid);
+      if (EFI_ERROR (Status)) {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        goto Finish;
+      }
+      argc -= 2;
+      argv += 2;
+      continue;
+    }
+
+    if (stricmp (argv[0], "--hiipackage") == 0) {
+      OutImageType = FW_HII_PACKAGE_LIST_RCIMAGE;
+      argc --;
+      argv ++;
+      continue;
+    }
+
     if (argv[0][0] == '-') {
       Error (NULL, 0, 1000, "Unknown option", argv[0]);
       goto Finish;
@@ -1565,6 +1812,14 @@ Returns:
   }
 
   //
+  // Combine HiiBinary packages to a single package list
+  //
+  if ((OutImageType == FW_HII_PACKAGE_LIST_RCIMAGE) && ReplaceFlag) {
+    Error (NULL, 0, 1002, "Conflicting option", "-r replace option cannot be used with --hiipackage merge files option.");
+    goto Finish;
+  }
+
+  //
   // Input image file
   //
   mInImageName = InputFileName [InputFileNum - 1];
@@ -1604,6 +1859,9 @@ Returns:
   case FW_MERGE_IMAGE:
     VerboseMsg ("Combine the input multi microcode bin files to one bin file.");
     break;
+  case FW_HII_PACKAGE_LIST_RCIMAGE:
+    VerboseMsg ("Combine the input multi hii bin packages to one text pacakge list RC file.");
+    break;
   default:
     break;
   }
@@ -1642,6 +1900,107 @@ Returns:
       Error (NULL, 0, 1001, "Missing option", "output file");
       goto Finish;
     }
+  }
+
+  //
+  // Combine multi binary HII package files to a single text package list RC file.
+  //
+  if (OutImageType == FW_HII_PACKAGE_LIST_RCIMAGE) {
+    //
+    // Get hii package list lenght
+    //
+    HiiPackageListHeader.PackageLength = sizeof (EFI_HII_PACKAGE_LIST_HEADER);
+    for (Index = 0; Index < InputFileNum; Index ++) {
+      fpIn = fopen (InputFileName [Index], "rb");
+      if (!fpIn) {
+        Error (NULL, 0, 0001, "Error opening file", InputFileName [Index]);
+        goto Finish;
+      }
+      FileLength = _filelength (fileno (fpIn));
+      fread (&HiiPackageHeader, 1, sizeof (HiiPackageHeader), fpIn);
+      if (HiiPackageHeader.Type == EFI_HII_PACKAGE_FORM) {
+        if (HiiPackageHeader.Length != FileLength) {
+          Error (NULL, 0, 3000, "Invalid", "The wrong package size is in HII package file %s", InputFileName [Index]);
+          fclose (fpIn);
+          goto Finish;
+        }
+        if (memcmp (&HiiPackageListGuid, &mZeroGuid, sizeof (EFI_GUID)) == 0) {
+          fread (&IfrFormSet, 1, sizeof (IfrFormSet), fpIn);
+          memcpy (&HiiPackageListGuid, &IfrFormSet.Guid, sizeof (EFI_GUID));
+        }
+        NumberOfFormPacakge ++;
+      }
+      HiiPackageListHeader.PackageLength += FileLength;
+      fclose (fpIn);
+    }
+    HiiPackageListHeader.PackageLength += sizeof (EndPackage);
+    //
+    // Check whether hii packages are valid
+    //
+    if (NumberOfFormPacakge > 1) {
+      Error (NULL, 0, 3000, "Invalid", "The input hii packages contains more than one hii form package");
+      goto Finish;
+    }
+    if (memcmp (&HiiPackageListGuid, &mZeroGuid, sizeof (EFI_GUID)) == 0) {
+      Error (NULL, 0, 3000, "Invalid", "HII pacakge list guid is not specified!");
+      goto Finish;
+    }
+    memcpy (&HiiPackageListHeader.PackageListGuid, &HiiPackageListGuid, sizeof (EFI_GUID));
+    //
+    // read hii packages
+    //
+    HiiPackageListBuffer = malloc (HiiPackageListHeader.PackageLength);
+    if (HiiPackageListBuffer == NULL) {
+      Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
+      goto Finish;
+    }
+    memcpy (HiiPackageListBuffer, &HiiPackageListHeader, sizeof (HiiPackageListHeader));
+    HiiPackageDataPointer = HiiPackageListBuffer + sizeof (HiiPackageListHeader);
+    for (Index = 0; Index < InputFileNum; Index ++) {
+      fpIn = fopen (InputFileName [Index], "rb");
+      if (!fpIn) {
+        Error (NULL, 0, 0001, "Error opening file", InputFileName [Index]);
+        free (HiiPackageListBuffer);
+        goto Finish;
+      }
+
+      FileLength = _filelength (fileno (fpIn));
+      fread (HiiPackageDataPointer, 1, FileLength, fpIn);
+      fclose (fpIn);
+      HiiPackageDataPointer = HiiPackageDataPointer + FileLength;
+    }
+    memcpy (HiiPackageDataPointer, &EndPackage, sizeof (EndPackage));
+    //
+    // write the hii package into the text package list rc file.
+    //
+    for (Index = 0; gHiiPackageRCFileHeader[Index] != NULL; Index++) {
+      fprintf (fpOut, "%s\n", gHiiPackageRCFileHeader[Index]);
+    }
+    fprintf (fpOut, "\n%d %s\n{", HII_RESOURCE_SECTION_INDEX, HII_RESOURCE_SECTION_NAME);
+
+    HiiPackageDataPointer = HiiPackageListBuffer;
+    for (Index = 0; Index + 2 < HiiPackageListHeader.PackageLength; Index += 2) {
+      if (Index % 16 == 0) {
+        fprintf (fpOut, "\n ");
+      }
+      fprintf (fpOut, " 0x%04X,", *(UINT16 *) HiiPackageDataPointer);
+      HiiPackageDataPointer += 2;
+    }
+    
+    if (Index % 16 == 0) {
+      fprintf (fpOut, "\n ");
+    }
+    if ((Index + 2) == HiiPackageListHeader.PackageLength) {
+      fprintf (fpOut, " 0x%04X\n}\n", *(UINT16 *) HiiPackageDataPointer);
+    }
+    if ((Index + 1) == HiiPackageListHeader.PackageLength) {
+      fprintf (fpOut, " 0x%04X\n}\n", *(UINT8 *) HiiPackageDataPointer);
+    }
+    free (HiiPackageListBuffer);
+    //
+    // Done successfully
+    //
+    goto Finish;
   }
 
   //

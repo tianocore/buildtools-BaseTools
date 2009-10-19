@@ -1321,6 +1321,9 @@ class InfBuildData(ModuleBuildClassObject):
             if self._Defs and 'PCI_DEVICE_ID' in self._Defs and 'PCI_VENDOR_ID' in self._Defs \
                and 'PCI_CLASS_CODE' in self._Defs:
                 self._BuildType = 'UEFI_OPTIONROM'
+            elif self._Defs and 'UEFI_HII_RESOURCE_SECTION' in self._Defs \
+               and self._Defs['UEFI_HII_RESOURCE_SECTION'] == 'TRUE':
+                self._BuildType = 'UEFI_HII'
             else:
                 self._BuildType = self._ModuleType.upper()
         else:

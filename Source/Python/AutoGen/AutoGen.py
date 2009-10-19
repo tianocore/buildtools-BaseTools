@@ -21,6 +21,7 @@ import copy
 import GenC
 import GenMake
 import GenDepex
+from StringIO import StringIO
 
 from StrGather import *
 from BuildEngine import BuildRule
@@ -48,6 +49,7 @@ gBuildRuleFile = 'Conf/build_rule.txt'
 gAutoGenCodeFileName = "AutoGen.c"
 gAutoGenHeaderFileName = "AutoGen.h"
 gAutoGenStringFileName = "%(module_name)sStrDefs.h"
+gAutoGenStringFormFileName = "%(module_name)sStrDefs.hpk"
 gAutoGenDepexFileName = "%(module_name)s.depex"
 gAutoGenSmmDepexFileName = "%(module_name)s.smm"
 
@@ -2030,12 +2032,17 @@ class ModuleAutoGen(AutoGen):
     #   @retval     list        The list of auto-generated file
     #
     def _GetAutoGenFileList(self):
+        UniStringAutoGenC = True
+        UniStringBinBuffer = None
+        if self.BuildType == 'UEFI_HII':
+            UniStringBinBuffer = StringIO()
+            UniStringAutoGenC = False
         if self._AutoGenFileList == None:
             self._AutoGenFileList = {}
             AutoGenC = TemplateString()
             AutoGenH = TemplateString()
             StringH = TemplateString()
-            GenC.CreateCode(self, AutoGenC, AutoGenH, StringH)
+            GenC.CreateCode(self, AutoGenC, AutoGenH, StringH, UniStringAutoGenC, UniStringBinBuffer)
             if str(AutoGenC) != "" and TAB_C_CODE_FILE in self.FileTypes:
                 AutoFile = PathClass(gAutoGenCodeFileName, self.DebugDir)
                 self._AutoGenFileList[AutoFile] = str(AutoGenC)
@@ -2048,6 +2055,13 @@ class ModuleAutoGen(AutoGen):
                 AutoFile = PathClass(gAutoGenStringFileName % {"module_name":self.Name}, self.DebugDir)
                 self._AutoGenFileList[AutoFile] = str(StringH)
                 self._ApplyBuildRule(AutoFile, TAB_UNKNOWN_FILE)
+            if UniStringBinBuffer != None and UniStringBinBuffer.getvalue() != "":
+                AutoFile = PathClass(gAutoGenStringFormFileName % {"module_name":self.Name}, self.OutputDir)
+                self._AutoGenFileList[AutoFile] = UniStringBinBuffer.getvalue()
+                AutoFile.IsBinary = True
+                self._ApplyBuildRule(AutoFile, TAB_UNKNOWN_FILE)
+            if UniStringBinBuffer != None:
+                UniStringBinBuffer.close()
         return self._AutoGenFileList
 
     ## Return the list of library modules explicitly or implicityly used by this module
@@ -2200,7 +2214,7 @@ class ModuleAutoGen(AutoGen):
         IgoredAutoGenList = []
 
         for File in self.AutoGenFileList:
-            if GenC.Generate(File.Path, self.AutoGenFileList[File]):
+            if GenC.Generate(File.Path, self.AutoGenFileList[File], File.IsBinary):
                 #Ignore R8 AutoGen.c
                 if self.AutoGenVersion < 0x00010005 and File.Name == 'AutoGen.c':
                         continue

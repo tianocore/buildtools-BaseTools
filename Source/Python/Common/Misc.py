@@ -694,6 +694,7 @@ class TemplateString(object):
     ## Constructor
     def __init__(self, Template=None):
         self.String = ''
+        self.IsBinary = False
         self._Template = Template
         self._TemplateSectionList = self._Parse(Template)
 
