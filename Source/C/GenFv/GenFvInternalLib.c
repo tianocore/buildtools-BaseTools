@@ -2004,6 +2004,7 @@ Returns:
   // Add PI FV extension header
   //
   FvExtHeader = NULL;
+  FvExtHeaderFile = NULL;
   if (mFvDataInfo.FvExtHeaderFile[0] != 0) {
     //
     // Open the FV Extension Header file
@@ -2027,6 +2028,7 @@ Returns:
     // Read the FV Extension Header
     //
     fread (FvExtHeader, sizeof (UINT8), FileSize, FvExtHeaderFile);
+    fclose (FvExtHeaderFile);
 
     //
     // See if there is an override for the FV Name GUID
@@ -2324,6 +2326,10 @@ Finish:
   if (FvBufferHeader != NULL) {
     free (FvBufferHeader);
   }
+
+  if (FvExtHeader != NULL) {
+    free (FvExtHeader);
+  }
   
   if (FvFile != NULL) {
     fclose (FvFile);
@@ -2427,11 +2433,13 @@ Returns:
   UINTN               Index;
   FILE                *fpin;
   UINTN               FfsFileSize;
+  UINTN               FvExtendHeaderSize;
   UINT32              FfsAlignment;
   EFI_FFS_FILE_HEADER FfsHeader;
   BOOLEAN             VtfFileFlag;
   UINTN               VtfFileSize;
   
+  FvExtendHeaderSize = 0;
   VtfFileSize = 0;
   VtfFileFlag = FALSE;
   fpin  = NULL;
@@ -2460,7 +2468,17 @@ Returns:
   //
   // Calculate PI extension header
   //
-  if (CompareGuid (&mFvDataInfo.FvNameGuid, &mZeroGuid) != 0) {
+  if (mFvDataInfo.FvExtHeaderFile[0] != '\0') {
+    fpin = fopen (mFvDataInfo.FvExtHeaderFile, "rb");
+    if (fpin == NULL) {
+      Error (NULL, 0, 0001, "Error opening file", mFvDataInfo.FvExtHeaderFile);
+      return EFI_ABORTED;
+    }
+    FvExtendHeaderSize = _filelength (fileno (fpin));
+    fclose (fpin);
+    CurrentOffset += sizeof (EFI_FFS_FILE_HEADER) + FvExtendHeaderSize;
+    CurrentOffset = (CurrentOffset + 7) & (~7);
+  } else if (mFvDataInfo.FvNameGuidSet && (CompareGuid (&mFvDataInfo.FvNameGuid, &mZeroGuid) != 0)) {
     CurrentOffset += sizeof (EFI_FFS_FILE_HEADER) + sizeof (EFI_FIRMWARE_VOLUME_EXT_HEADER);
     CurrentOffset = (CurrentOffset + 7) & (~7);
   }
