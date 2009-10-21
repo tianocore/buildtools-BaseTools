@@ -1109,7 +1109,8 @@ class DecParser(MetaFileParser):
         if not IsValid:
             EdkLogger.error('Parser', FORMAT_INVALID, Cause, ExtraData=self._CurrentLine,
                             File=self.MetaFile, Line=self._LineIndex+1)
-        self._ValueList[2] = TokenList[1]
+
+        self._ValueList[2] = ValueList[0].strip() + '|' + ValueList[1].strip() + '|' + ValueList[2].strip()
 
     _SectionParser = {
         MODEL_META_DATA_HEADER          :   MetaFileParser._DefineParser,
