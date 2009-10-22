@@ -62,6 +62,7 @@ OFFSET = 'offset'
 STRING = 'string'
 TO = 'to'
 STRING_TOKEN = re.compile('STRING_TOKEN *\(([A-Z0-9_]+) *\)', re.MULTILINE | re.UNICODE)
+COMPATIBLE_STRING_TOKEN = re.compile('STRING_TOKEN *\(([A-Za-z0-9_]+) *\)', re.MULTILINE | re.UNICODE)
 
 EFI_HII_ARRAY_SIZE_LENGTH = 4
 EFI_HII_PACKAGE_HEADER_LENGTH = 4
@@ -476,10 +477,11 @@ def GetFileList(SourceFileList, IncludeList, SkipList):
 #
 # @param UniObjectClass:  Input UniObjectClass
 # @param FileList:        Search path list
+# @param IsCompatibleMode Compatible Mode
 #
 # @retval UniObjectClass: UniObjectClass after searched
 #
-def SearchString(UniObjectClass, FileList):
+def SearchString(UniObjectClass, FileList, IsCompatibleMode):
     if FileList == []:
         return UniObjectClass
 
@@ -487,7 +489,10 @@ def SearchString(UniObjectClass, FileList):
         if os.path.isfile(File):
             Lines = open(File, 'r')
             for Line in Lines:
-                StringTokenList = STRING_TOKEN.findall(Line)
+                if not IsCompatibleMode:
+                    StringTokenList = STRING_TOKEN.findall(Line)
+                else:
+                    StringTokenList = COMPATIBLE_STRING_TOKEN.findall(Line)
                 for StrName in StringTokenList:
                     EdkLogger.debug(EdkLogger.DEBUG_5, "Found string identifier: " + StrName)
                     UniObjectClass.SetStringReferenced(StrName)
@@ -518,7 +523,7 @@ def GetStringFiles(UniFilList, SourceFileList, IncludeList, SkipList, BaseName, 
 
     FileList = GetFileList(SourceFileList, IncludeList, SkipList)
 
-    Uni = SearchString(Uni, FileList)
+    Uni = SearchString(Uni, FileList, IsCompatibleMode)
 
     HFile = CreateHFile(BaseName, Uni, IsCompatibleMode, UniGenCFlag)
     CFile = None
