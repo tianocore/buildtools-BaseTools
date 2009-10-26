@@ -1261,6 +1261,7 @@ Returns:
   EFI_FFS_FILE_STATE        SavedState;
   UINT64                    FitAddress;
   FIT_TABLE                 *FitTablePtr;
+  BOOLEAN                   Vtf0Detected;
 
   //
   // Verify input parameters
@@ -1281,11 +1282,32 @@ Returns:
     return EFI_INVALID_PARAMETER;
   }
 
+  if (
+      (((UINTN)FvImage->Eof - (UINTN)FvImage->FileImage) >=
+        IA32_X64_VTF_SIGNATURE_OFFSET) &&
+      (*(UINT32 *)(VOID*)((UINTN) FvImage->Eof -
+                                  IA32_X64_VTF_SIGNATURE_OFFSET) ==
+        IA32_X64_VTF0_SIGNATURE)
+     ) {
+    Vtf0Detected = TRUE;
+  } else {
+    Vtf0Detected = FALSE;
+  }
+
   //
   // Find the Sec Core
   //
   Status = GetFileByType (EFI_FV_FILETYPE_SECURITY_CORE, 1, &SecCoreFile);
   if (EFI_ERROR (Status) || SecCoreFile == NULL) {
+    if (Vtf0Detected) {
+      //
+      // If the SEC core file is not found, but the VTF-0 signature
+      // is found, we'll treat it as a VTF-0 'Volume Top File'.
+      // This means no modifications are required to the VTF.
+      //
+      return EFI_SUCCESS;
+    }
+
     Error (NULL, 0, 3000, "Invalid", "could not find the SEC core file in the FV.");
     return EFI_ABORTED;
   }
@@ -1313,6 +1335,19 @@ Returns:
     Error (NULL, 0, 3000, "Invalid", "could not get the PE32 entry point for the SEC core.");
     return EFI_ABORTED;
   }  
+
+  if (
+       Vtf0Detected &&
+       (MachineType == EFI_IMAGE_MACHINE_IA32 ||
+        MachineType == EFI_IMAGE_MACHINE_X64)
+     ) {
+    //
+    // If the SEC core code is IA32 or X64 and the VTF-0 signature
+    // is found, we'll treat it as a VTF-0 'Volume Top File'.
+    // This means no modifications are required to the VTF.
+    //
+    return EFI_SUCCESS;
+  }
 
   //
   // Physical address is FV base + offset of PE32 + offset of the entry point
@@ -1417,16 +1452,6 @@ Returns:
     SecCoreEntryAddressPtr  = (EFI_PHYSICAL_ADDRESS *) ((UINTN) FvImage->Eof - IPF_SALE_ENTRY_ADDRESS_OFFSET);
     *SecCoreEntryAddressPtr = SecCorePhysicalAddress;
 
-  } else if (
-    (MachineType == EFI_IMAGE_MACHINE_IA32 ||
-     MachineType == EFI_IMAGE_MACHINE_X64) &&
-    (((UINTN)FvImage->Eof - (UINTN)FvImage->FileImage) >= IA32_X64_VTF_SIGNATURE_OFFSET) &&
-    (*(UINT32 *)(VOID*)((UINTN) FvImage->Eof - IA32_X64_VTF_SIGNATURE_OFFSET) ==
-      IA32_X64_VTF0_SIGNATURE)
-    ) {
-    //
-    // If VTF-0 signature is found, then no modifications are needed.
-    //
   } else if (MachineType == EFI_IMAGE_MACHINE_IA32 || MachineType == EFI_IMAGE_MACHINE_X64) {
     //
     // Get the location to update
