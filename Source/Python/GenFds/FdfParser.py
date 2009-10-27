@@ -2764,15 +2764,18 @@ class FdfParser:
     #   @param  Obj         for whom token statements are got
     #
     def __GetCapsuleTokens(self, Obj):
-
-        if not self.__IsKeyword("CAPSULE_GUID"):
-            raise Warning("expected 'CAPSULE_GUID'", self.FileName, self.CurrentLineNumber)
-
-        while self.__CurrentLine().find("=") != -1:
-            NameValue = self.__CurrentLine().split("=")
-            Obj.TokensDict[NameValue[0].strip()] = NameValue[1].strip()
-            self.CurrentLineNumber += 1
-            self.CurrentOffsetWithinLine = 0
+        if not self.__GetNextToken():
+            return False
+        while self.__Token in ("CAPSULE_GUID", "CAPSULE_HEADER_SIZE", "CAPSULE_FLAGS"):
+            Name = self.__Token.strip()
+            if not self.__IsToken("="):
+                raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+            if not self.__GetNextToken():
+                raise Warning("expected capsule value", self.FileName, self.CurrentLineNumber)
+            Obj.TokensDict[Name] = self.__Token.strip()
+            if not self.__GetNextToken():
+                return False
+        self.__UndoToken()
 
     ## __GetCapsuleData() method
     #
