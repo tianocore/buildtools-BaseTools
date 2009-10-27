@@ -1055,7 +1055,7 @@ Returns:
       //
       // Calculate file checksum
       //
-      Checksum  = CalculateSum8 ((UINT8 *) FileHeader, FileLength);
+      Checksum  = CalculateSum8 ((UINT8 *) (FileHeader + 1), FileLength - sizeof (EFI_FFS_FILE_HEADER));
       Checksum  = (UINT8) (Checksum - FileHeader->State);
       if (Checksum != 0) {
         Error (NULL, 0, 0003, "error parsing FFS file", "FFS file with Guid %s has invalid file checksum", GuidBuffer);
@@ -1063,7 +1063,7 @@ Returns:
       }
     } else {
       if (FileHeader->IntegrityCheck.Checksum.File != FFS_FIXED_CHECKSUM) {
-        Error (NULL, 0, 0003, "error parsing FFS file", "FFS file with Guid %s has invalid header checksum -- not set to fixed value of 0x5A", GuidBuffer);
+        Error (NULL, 0, 0003, "error parsing FFS file", "FFS file with Guid %s has invalid header checksum -- not set to fixed value of 0xAA", GuidBuffer);
         return EFI_ABORTED;
       }
     }

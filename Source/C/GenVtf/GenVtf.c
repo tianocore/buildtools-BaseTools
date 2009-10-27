@@ -1688,7 +1688,7 @@ Returns:
   FileHeader->IntegrityCheck.Checksum.File    = 0;
   FileHeader->State                           = 0;
   FileHeader->IntegrityCheck.Checksum.Header  = CalculateChecksum8 ((UINT8 *) FileHeader, sizeof (EFI_FFS_FILE_HEADER));
-  FileHeader->IntegrityCheck.Checksum.File    = CalculateChecksum8 ((UINT8 *) FileHeader, TotalVtfSize);
+  FileHeader->IntegrityCheck.Checksum.File    = CalculateChecksum8 ((UINT8 *) (FileHeader + 1), TotalVtfSize - sizeof (EFI_FFS_FILE_HEADER));
   FileHeader->State                           = EFI_FILE_HEADER_CONSTRUCTION | EFI_FILE_HEADER_VALID | EFI_FILE_DATA_VALID;
 
   return EFI_SUCCESS;

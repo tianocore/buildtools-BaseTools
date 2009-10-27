@@ -1559,8 +1559,8 @@ Returns:
   VtfFile->State                        = 0;
   if (VtfFile->Attributes & FFS_ATTRIB_CHECKSUM) {
     VtfFile->IntegrityCheck.Checksum.File = CalculateChecksum8 (
-                                              (UINT8 *) VtfFile,
-                                              GetLength (VtfFile->Size)
+                                              (UINT8 *) (VtfFile + 1),
+                                              GetLength (VtfFile->Size) - sizeof (EFI_FFS_FILE_HEADER)
                                               );
   } else {
     VtfFile->IntegrityCheck.Checksum.File = FFS_FIXED_CHECKSUM;
@@ -2046,6 +2046,7 @@ Returns:
     //
     FvExtHeader = malloc(FileSize);
     if (FvExtHeader == NULL) {
+      fclose (FvExtHeaderFile);
       return EFI_OUT_OF_RESOURCES;
     }
 
@@ -2503,7 +2504,7 @@ Returns:
     fclose (fpin);
     CurrentOffset += sizeof (EFI_FFS_FILE_HEADER) + FvExtendHeaderSize;
     CurrentOffset = (CurrentOffset + 7) & (~7);
-  } else if (mFvDataInfo.FvNameGuidSet && (CompareGuid (&mFvDataInfo.FvNameGuid, &mZeroGuid) != 0)) {
+  } else if (mFvDataInfo.FvNameGuidSet) {
     CurrentOffset += sizeof (EFI_FFS_FILE_HEADER) + sizeof (EFI_FIRMWARE_VOLUME_EXT_HEADER);
     CurrentOffset = (CurrentOffset + 7) & (~7);
   }
@@ -3044,15 +3045,10 @@ Returns:
       SavedState  = FfsFile->State;
       FfsFile->IntegrityCheck.Checksum.File = 0;
       FfsFile->State                        = 0;
-      if (FfsFile->Attributes & FFS_ATTRIB_CHECKSUM) {
-        FfsFile->IntegrityCheck.Checksum.File = CalculateChecksum8 (
-                                                  (UINT8 *) FfsFile,
-                                                  GetLength (FfsFile->Size)
-                                                  );
-      } else {
-        FfsFile->IntegrityCheck.Checksum.File = FFS_FIXED_CHECKSUM;
-      }
-
+      FfsFile->IntegrityCheck.Checksum.File = CalculateChecksum8 (
+                                                (UINT8 *) (FfsFile + 1),
+                                                GetLength (FfsFile->Size) - sizeof (EFI_FFS_FILE_HEADER)
+                                                );
       FfsFile->State = SavedState;
     }
 
@@ -3274,15 +3270,10 @@ WritePeMap:
       SavedState  = FfsFile->State;
       FfsFile->IntegrityCheck.Checksum.File = 0;
       FfsFile->State                        = 0;
-      if (FfsFile->Attributes & FFS_ATTRIB_CHECKSUM) {
-        FfsFile->IntegrityCheck.Checksum.File = CalculateChecksum8 (
-                                                  (UINT8 *) FfsFile,
-                                                  GetLength (FfsFile->Size)
-                                                  );
-      } else {
-        FfsFile->IntegrityCheck.Checksum.File = FFS_FIXED_CHECKSUM;
-      }
-
+      FfsFile->IntegrityCheck.Checksum.File = CalculateChecksum8 (
+                                                (UINT8 *)(FfsFile + 1),
+                                                GetLength (FfsFile->Size) - sizeof (EFI_FFS_FILE_HEADER)
+                                                );
       FfsFile->State = SavedState;
     }
     //

@@ -703,7 +703,7 @@ Returns:
     // Verify file data checksum
     //
     FileLength          = GetLength (FfsHeader->Size);
-    Checksum            = CalculateSum8 ((UINT8 *) FfsHeader, FileLength);
+    Checksum            = CalculateSum8 ((UINT8 *) (FfsHeader + 1), FileLength - sizeof (EFI_FFS_FILE_HEADER));
     Checksum            = (UINT8) (Checksum - FfsHeader->State);
     if (Checksum != 0) {
       Error (NULL, 0, 0006, "invalid FFS file checksum", "Ffs file with Guid %s", FileGuidString);
@@ -712,7 +712,7 @@ Returns:
   } else {
     //
     // File does not have a checksum
-    // Verify contents are 0x5A as spec'd
+    // Verify contents are 0xAA as spec'd
     //
     if (FfsHeader->IntegrityCheck.Checksum.File != FFS_FIXED_CHECKSUM) {
       Error (NULL, 0, 0006, "invalid fixed FFS file header checksum", "Ffs file with Guid %s", FileGuidString);
