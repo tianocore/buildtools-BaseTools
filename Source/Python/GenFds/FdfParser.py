@@ -2773,15 +2773,15 @@ class FdfParser:
             if not self.__GetNextToken():
                 raise Warning("expected value", self.FileName, self.CurrentLineNumber)
             if Name == 'CAPSULE_FLAGS':
-                if not self.__Token in ("PersistAcrossReset", "PopulateSystemTable"):
-                    raise Warning("expected PersistAcrossReset or PopulateSystemTable", self.FileName, self.CurrentLineNumber)
+                if not self.__Token in ("PersistAcrossReset", "PopulateSystemTable", "InitiateReset"):
+                    raise Warning("expected PersistAcrossReset, PopulateSystemTable, or InitiateReset", self.FileName, self.CurrentLineNumber)
                 Value = self.__Token.strip()
                 while self.__IsToken(","):
                     Value += ','
                     if not self.__GetNextToken():
                         raise Warning("expected value", self.FileName, self.CurrentLineNumber)
-                    if not self.__Token in ("PersistAcrossReset", "PopulateSystemTable"):
-                        raise Warning("expected PersistAcrossReset or PopulateSystemTable", self.FileName, self.CurrentLineNumber)
+                    if not self.__Token in ("PersistAcrossReset", "PopulateSystemTable", "InitiateReset"):
+                        raise Warning("expected PersistAcrossReset, PopulateSystemTable, or InitiateReset", self.FileName, self.CurrentLineNumber)
                     Value += self.__Token.strip()
             else:
                 Value = self.__Token.strip()
