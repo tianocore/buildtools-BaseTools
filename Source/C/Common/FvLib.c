@@ -704,7 +704,7 @@ Returns:
     //
     FileLength          = GetLength (FfsHeader->Size);
     Checksum            = CalculateSum8 ((UINT8 *) (FfsHeader + 1), FileLength - sizeof (EFI_FFS_FILE_HEADER));
-    Checksum            = (UINT8) (Checksum - FfsHeader->State);
+    Checksum            = Checksum + FfsHeader->IntegrityCheck.Checksum.File;
     if (Checksum != 0) {
       Error (NULL, 0, 0006, "invalid FFS file checksum", "Ffs file with Guid %s", FileGuidString);
       return EFI_ABORTED;

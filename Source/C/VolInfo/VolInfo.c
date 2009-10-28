@@ -1060,7 +1060,7 @@ Returns:
       // Calculate file checksum
       //
       Checksum  = CalculateSum8 ((UINT8 *) (FileHeader + 1), FileLength - sizeof (EFI_FFS_FILE_HEADER));
-      Checksum  = (UINT8) (Checksum - FileHeader->State);
+      Checksum  = Checksum + FileHeader->IntegrityCheck.Checksum.File;
       if (Checksum != 0) {
         Error (NULL, 0, 0003, "error parsing FFS file", "FFS file with Guid %s has invalid file checksum", GuidBuffer);
         return EFI_ABORTED;
