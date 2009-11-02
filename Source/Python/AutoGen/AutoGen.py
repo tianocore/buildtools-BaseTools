@@ -1939,12 +1939,12 @@ class ModuleAutoGen(AutoGen):
             if Source != File:
                 CreateDirectory(Source.Dir)
 
-            if FileType in self.BuildRules:
+            if File.IsBinary and File == Source:
+                RuleObject = self.BuildRules[TAB_DEFAULT_BINARY_FILE]
+            elif FileType in self.BuildRules:
                 RuleObject = self.BuildRules[FileType]
             elif Source.Ext in self.BuildRules:
                 RuleObject = self.BuildRules[Source.Ext]
-            elif File.IsBinary and File == Source:
-                RuleObject = self.BuildRules[TAB_DEFAULT_BINARY_FILE]
             else:
                 # stop at no more rules
                 if LastTarget:
