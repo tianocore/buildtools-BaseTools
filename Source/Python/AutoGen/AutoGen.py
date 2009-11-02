@@ -51,7 +51,6 @@ gAutoGenHeaderFileName = "AutoGen.h"
 gAutoGenStringFileName = "%(module_name)sStrDefs.h"
 gAutoGenStringFormFileName = "%(module_name)sStrDefs.hpk"
 gAutoGenDepexFileName = "%(module_name)s.depex"
-gAutoGenSmmDepexFileName = "%(module_name)s.smm"
 
 ## Base class for AutoGen
 #
@@ -1761,11 +1760,7 @@ class ModuleAutoGen(AutoGen):
             if self.IsLibrary or TAB_DEPENDENCY_EXPRESSION_FILE in self.FileTypes:
                 return self._DepexList
 
-            if self.ModuleType == "DXE_SMM_DRIVER":
-                self._DepexList["DXE_DRIVER"] = []
-                self._DepexList["SMM_DRIVER"] = []
-            else:
-                self._DepexList[self.ModuleType] = []
+            self._DepexList[self.ModuleType] = []
 
             for ModuleType in self._DepexList:
                 DepexList = self._DepexList[ModuleType]
@@ -1963,7 +1958,8 @@ class ModuleAutoGen(AutoGen):
 
             # stop at STATIC_LIBRARY for library
             if self.IsLibrary and FileType == TAB_STATIC_LIBRARY:
-                self._FinalBuildTargetList.add(LastTarget)
+                if LastTarget:
+                    self._FinalBuildTargetList.add(LastTarget)
                 break
 
             Target = RuleObject.Apply(Source)
@@ -2231,10 +2227,7 @@ class ModuleAutoGen(AutoGen):
             if len(self.DepexList[ModuleType]) == 0:
                 continue
             Dpx = GenDepex.DependencyExpression(self.DepexList[ModuleType], ModuleType, True)
-            if ModuleType == 'SMM_DRIVER':
-                DpxFile = gAutoGenSmmDepexFileName % {"module_name" : self.Name}
-            else:
-                DpxFile = gAutoGenDepexFileName % {"module_name" : self.Name}
+            DpxFile = gAutoGenDepexFileName % {"module_name" : self.Name}
 
             if Dpx.Generate(path.join(self.OutputDir, DpxFile)):
                 AutoGenList.append(str(DpxFile))
