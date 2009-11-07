@@ -1094,7 +1094,12 @@ class PlatformAutoGen(AutoGen):
         # for overridding library instances with module specific setting
         PlatformModule = self.Platform.Modules[str(Module)]
 
-        # add forced library instance
+        # add forced library instances (specified under LibraryClasses sections)
+        for LibraryClass in self.Platform.LibraryClasses.GetKeys():
+            if LibraryClass.startswith("NULL"):
+                Module.LibraryClasses[LibraryClass] = self.Platform.LibraryClasses[LibraryClass]
+
+        # add forced library instances (specified in module overrides)
         for LibraryClass in PlatformModule.LibraryClasses:
             if LibraryClass.startswith("NULL"):
                 Module.LibraryClasses[LibraryClass] = PlatformModule.LibraryClasses[LibraryClass]

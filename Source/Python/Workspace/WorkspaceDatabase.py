@@ -444,6 +444,10 @@ class DscBuildData(PlatformBuildClassObject):
             Macros.update(self._Macros)
             for Record in RecordList:
                 LibraryClass, LibraryInstance, Dummy, Arch, ModuleType, Dummy, LineNo = Record
+                if LibraryClass == '' or LibraryClass == 'NULL':
+                    self._NullLibraryNumber += 1
+                    LibraryClass = 'NULL%d' % self._NullLibraryNumber
+                    EdkLogger.verbose("Found forced library for arch=%s\n\t%s [%s]" % (Arch, LibraryInstance, LibraryClass))
                 LibraryClassSet.add(LibraryClass)
                 LibraryInstance = PathClass(NormPath(LibraryInstance, Macros), GlobalData.gWorkspace, Arch=self._Arch)
                 # check the file validation
