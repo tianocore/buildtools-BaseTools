@@ -1088,6 +1088,7 @@ DEFINE GCC_PP_FLAGS                = -E -x assembler-with-cpp -include $(DEST_DI
 DEFINE GCC_VFRPP_FLAGS             = -x c -E -P -DVFRCOMPILE --include $(DEST_DIR_DEBUG)/$(MODULE_NAME)StrDefs.h
 DEFINE GCC_ASLPP_FLAGS             = -x c -E -P
 DEFINE GCC_ASLCC_FLAGS             = -x c
+DEFINE GCC_WINDRES_FLAGS           = -J rc -O coff
 
 ####################################################################################
 #
@@ -1129,7 +1130,7 @@ DEFINE GCC_ASLCC_FLAGS             = -x c
 *_UNIXGCC_IA32_RC_PATH              = DEF(UNIXGCC_IA32_PETOOLS_PREFIX)windres
 
 *_UNIXGCC_IA32_CC_FLAGS             = DEF(GCC_IA32_CC_FLAGS)
-*_UNIXGCC_IA32_RC_FLAGS             = -J rc -O coff
+*_UNIXGCC_IA32_RC_FLAGS             = DEF(GCC_WINDRES_FLAGS)
 
 ##################
 # X64 definitions
@@ -1146,7 +1147,7 @@ DEFINE GCC_ASLCC_FLAGS             = -x c
 *_UNIXGCC_X64_RC_PATH               = DEF(UNIXGCC_X64_PETOOLS_PREFIX)windres
 
 *_UNIXGCC_X64_CC_FLAGS              = DEF(GCC_X64_CC_FLAGS)
-*_UNIXGCC_X64_RC_FLAGS              = -J rc -O coff
+*_UNIXGCC_X64_RC_FLAGS              = DEF(GCC_WINDRES_FLAGS)
 
 ##################
 # IPF definitions
@@ -1213,7 +1214,7 @@ DEFINE GCC_ASLCC_FLAGS             = -x c
 *_CYGGCC_IA32_RC_PATH            = DEF(CYGWIN_BINIA32)windres
 
 *_CYGGCC_IA32_CC_FLAGS           = DEF(GCC_IA32_CC_FLAGS)
-*_CYGGCC_IA32_RC_FLAGS           = -J rc -O coff
+*_CYGGCC_IA32_RC_FLAGS           = DEF(GCC_WINDRES_FLAGS)
 
 ##################
 # X64 definitions
@@ -1231,7 +1232,7 @@ DEFINE GCC_ASLCC_FLAGS             = -x c
 *_CYGGCC_X64_RC_PATH             = DEF(CYGWIN_BINX64)windres
 
 *_CYGGCC_X64_CC_FLAGS            = DEF(GCC_X64_CC_FLAGS)
-*_CYGGCC_X64_RC_FLAGS            = -J rc -O coff
+*_CYGGCC_X64_RC_FLAGS            = DEF(GCC_WINDRES_FLAGS)
 
 ##################
 # IPF definitions
@@ -1316,7 +1317,7 @@ DEFINE GCC_ASLCC_FLAGS             = -x c
 *_CYGGCCxASL_IA32_RC_PATH            = DEF(CYGWIN_BINIA32)windres
 
 *_CYGGCCxASL_IA32_CC_FLAGS           = DEF(GCC_IA32_CC_FLAGS)
-*_CYGGCCxASL_IA32_RC_FLAGS           = -J rc -O coff
+*_CYGGCCxASL_IA32_RC_FLAGS           = DEF(GCC_WINDRES_FLAGS)
 
 ##################
 # X64 definitions
@@ -1334,7 +1335,7 @@ DEFINE GCC_ASLCC_FLAGS             = -x c
 *_CYGGCCxASL_X64_RC_PATH             = DEF(CYGWIN_BINX64)windres
 
 *_CYGGCCxASL_X64_CC_FLAGS            = DEF(GCC_X64_CC_FLAGS)
-*_CYGGCCxASL_X64_RC_FLAGS            = -J rc -O coff
+*_CYGGCCxASL_X64_RC_FLAGS            = DEF(GCC_WINDRES_FLAGS)
 
 ##################
 # IPF definitions
