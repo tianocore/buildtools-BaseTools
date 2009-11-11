@@ -547,7 +547,8 @@ vfrFormSetList :
     vfrStatementVarStoreEfi       |
     vfrStatementVarStoreNameValue |
     vfrStatementDefaultStore      |
-    vfrStatementDisableIfFormSet
+    vfrStatementDisableIfFormSet  |
+    vfrStatementSuppressIfFormSet
   )*
   ;
 
@@ -718,6 +719,21 @@ vfrStatementDisableIfFormSet :
   vfrFormSetList
   E:EndIf                                           << CRT_END_OP (E); >>
   ";"
+  ;
+
+vfrStatementSuppressIfFormSet :
+  << CIfrSuppressIf SIObj;>>
+  L:SuppressIf                                         <<
+                                                           if (mCompatibleMode) {
+                                                             _PCATCH (VFR_RETURN_UNSUPPORTED, L);
+                                                           }
+                                                           SIObj.SetLineNo(L->getLine()); 
+                                                       >>
+  { FLAGS "=" flagsField ( "\|" flagsField )* "," }
+  vfrStatementExpression[0] ";"
+  vfrFormSetList
+  E: EndIf 
+  ";"                                                  << CRT_END_OP (E); >>
   ;
 
 //*****************************************************************************
@@ -2080,10 +2096,9 @@ vfrStatementStatListOld :
 vfrStatementDisableIfStat :
   << 
     CIfrDisableIf DIObj; 
-    mConstantOnlyInExpression = TRUE;
   >>
   L:DisableIf                                          << DIObj.SetLineNo(L->getLine()); >>
-  vfrStatementExpression[0] ";"                        << mConstantOnlyInExpression = FALSE; >>
+  vfrStatementExpression[0] ";" 
   ( vfrStatementStatList )*
   E:EndIf                                              << CRT_END_OP (E); >>
   ";"
@@ -2227,10 +2242,9 @@ vfrStatementNoSubmitIf :
 vfrStatementDisableIfQuest :
   << 
     CIfrDisableIf DIObj; 
-    mConstantOnlyInExpression = TRUE;
   >>
   L:DisableIf                                          << DIObj.SetLineNo(L->getLine()); >>
-  vfrStatementExpression[0] ";"                        << mConstantOnlyInExpression = FALSE; >>
+  vfrStatementExpression[0] ";"
   vfrStatementQuestionOptionList
   E:EndIf                                              << CRT_END_OP (E); >>
   ;
