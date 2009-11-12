@@ -1772,6 +1772,24 @@ public:
   }
 };
 
+class CIfrSecurity : public CIfrObj, public CIfrOpHeader {
+private:
+  EFI_IFR_SECURITY *mSecurity;
+
+public:
+  CIfrSecurity (
+  IN UINT32 LineNo
+  ) : CIfrObj (EFI_IFR_SECURITY_OP, (CHAR8 **)&mSecurity),
+      CIfrOpHeader (EFI_IFR_SECURITY_OP, &mSecurity->Header) {
+    SetLineNo (LineNo);
+    memset (&mSecurity->Permissions, 0, sizeof (EFI_GUID));
+  }
+
+  VOID SetPermissions (IN EFI_GUID *Permissions) {
+    memcpy (&mSecurity->Permissions, Permissions, sizeof (EFI_GUID));
+  }
+};
+
 class CIfrUint8 : public CIfrObj, public CIfrOpHeader {
 private:
   EFI_IFR_UINT8 *mUint8;

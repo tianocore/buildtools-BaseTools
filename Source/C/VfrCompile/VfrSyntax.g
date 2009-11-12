@@ -1,5 +1,5 @@
 /*++
-Copyright (c) 2004 - 2008, Intel Corporation
+Copyright (c) 2004 - 2009, Intel Corporation
 All rights reserved. This program and the accompanying materials
 are licensed and made available under the terms and conditions of the BSD License
 which accompanies this distribution.  The full text of the license may be found at
@@ -2474,6 +2474,7 @@ vfrStatementInvalidSaveRestoreDefaults :
 #token RuleRef("ruleref")                       "ruleref"
 #token StringRef("stringref")                   "stringref"
 #token PushThis("pushthis")                     "pushthis"
+#token Security("security")                     "security"
 #token True("TRUE")                             "TRUE"
 #token False("FALSE")                           "FALSE"
 #token One("ONE")                               "ONE"
@@ -2699,6 +2700,7 @@ vfrExpressionBuildInFunction [UINT32 & RootLevel, UINT32 & ExpOpCount] :
   | rulerefExp[$RootLevel, $ExpOpCount]
   | stringref1Exp[$RootLevel, $ExpOpCount]
   | pushthisExp[$RootLevel, $ExpOpCount]
+  | securityExp[$RootLevel, $ExpOpCount]
   ;
 
 dupExp [UINT32 & RootLevel, UINT32 & ExpOpCount] :
@@ -2990,6 +2992,14 @@ stringref1Exp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
 
 pushthisExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   L:PushThis                                           << { CIfrThis TObj(L->getLine()); _SAVE_OPHDR_COND (TObj, ($ExpOpCount == 0), L->getLine()); $ExpOpCount++; } >>
+  ;
+
+securityExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
+  <<
+     EFI_GUID Guid;
+  >>
+  L:Security
+  "\(" guidDefinition[Guid] "\)"                       << { CIfrSecurity SObj(L->getLine()); _SAVE_OPHDR_COND (SObj, ($ExpOpCount == 0), L->getLine()); SObj.SetPermissions (&Guid); } $ExpOpCount++; >>
   ;
 
 vfrExpressionConstant[UINT32 & RootLevel, UINT32 & ExpOpCount] :
