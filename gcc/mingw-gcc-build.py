@@ -175,7 +175,7 @@ class SourceFiles:
 
     source_files_x64 = {
         'gcc': {
-            'url': 'http://gcc-ca.internet.bs/releases/' + \
+            'url': 'http://ftpmirror.gnu.org/gcc/' + \
                    'gcc-$version/gcc-$version.tar.bz2',
             'version': '4.3.0',
             'md5': '197ed8468b38db1d3481c3111691d85b',
