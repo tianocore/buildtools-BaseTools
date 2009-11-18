@@ -1089,6 +1089,7 @@ DEFINE GCC_VFRPP_FLAGS             = -x c -E -P -DVFRCOMPILE --include $(DEST_DI
 DEFINE GCC_ASLPP_FLAGS             = -x c -E -P
 DEFINE GCC_ASLCC_FLAGS             = -x c
 DEFINE GCC_WINDRES_FLAGS           = -J rc -O coff
+DEFINE GCC_IPF_RC_FLAGS            = -I binary -O elf64-ia64-little -B ia64 --rename-section .data=.hii
 
 ####################################################################################
 #
@@ -1169,7 +1170,7 @@ DEFINE GCC_WINDRES_FLAGS           = -J rc -O coff
 *_UNIXGCC_IPF_DLINK_FLAGS          = DEF(GCC_IPF_DLINK_FLAGS)
 *_UNIXGCC_IPF_OBJCOPY_FLAGS        = DEF(GCC_IPF_OBJCOPY_FLAGS)
 *_UNIXGCC_IPF_SYMRENAME_FLAGS      = DEF(GCC_IPF_SYMRENAME_FLAGS)
-*_UNIXGCC_IPF_RC_FLAGS             = -I binary -O elf64-ia64 --rename-section .data=.hii
+*_UNIXGCC_IPF_RC_FLAGS             = DEF(GCC_IPF_RC_FLAGS)
 
 ####################################################################################
 #
@@ -1254,7 +1255,7 @@ DEFINE GCC_WINDRES_FLAGS           = -J rc -O coff
 *_CYGGCC_IPF_DLINK_FLAGS          = DEF(GCC_IPF_DLINK_FLAGS)
 *_CYGGCC_IPF_OBJCOPY_FLAGS        = DEF(GCC_IPF_OBJCOPY_FLAGS)
 *_CYGGCC_IPF_SYMRENAME_FLAGS      = DEF(GCC_IPF_SYMRENAME_FLAGS)
-*_CYGGCC_IPF_RC_FLAGS             = -I binary -O elf64-ia64 --rename-section .data=.hii
+*_CYGGCC_IPF_RC_FLAGS             = DEF(GCC_IPF_RC_FLAGS)
 
 ##################
 # EBC definitions
@@ -1357,7 +1358,7 @@ DEFINE GCC_WINDRES_FLAGS           = -J rc -O coff
 *_CYGGCCxASL_IPF_DLINK_FLAGS          = DEF(GCC_IPF_DLINK_FLAGS)
 *_CYGGCCxASL_IPF_OBJCOPY_FLAGS        = DEF(GCC_IPF_OBJCOPY_FLAGS)
 *_CYGGCCxASL_IPF_SYMRENAME_FLAGS      = DEF(GCC_IPF_SYMRENAME_FLAGS)
-*_CYGGCCxASL_IPF_RC_FLAGS             = -I binary -O elf64-ia64 --rename-section .data=.hii
+*_CYGGCCxASL_IPF_RC_FLAGS             = DEF(GCC_IPF_RC_FLAGS)
 
 ##################
 # EBC definitions
