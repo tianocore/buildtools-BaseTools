@@ -1097,6 +1097,8 @@ DEFINE GCC_VFRPP_FLAGS             = -x c -E -P -DVFRCOMPILE --include $(DEST_DI
 DEFINE GCC_ASLPP_FLAGS             = -x c -E -P
 DEFINE GCC_ASLCC_FLAGS             = -x c
 DEFINE GCC_WINDRES_FLAGS           = -J rc -O coff
+DEFINE GCC_IA32_RC_FLAGS           = -I binary -O elf32-i386        -B i386 --rename-section .data=.hii
+DEFINE GCC_X64_RC_FLAGS            = -I binary -O elf64-x86-64      -B i386 --rename-section .data=.hii
 DEFINE GCC_IPF_RC_FLAGS            = -I binary -O elf64-ia64-little -B ia64 --rename-section .data=.hii
 
 ####################################################################################
@@ -1136,10 +1138,10 @@ DEFINE GCC_IPF_RC_FLAGS            = -I binary -O elf64-ia64-little -B ia64 --re
 *_UNIXGCC_IA32_ASLDLINK_PATH        = DEF(UNIXGCC_IA32_PETOOLS_PREFIX)ld
 *_UNIXGCC_IA32_ASM_PATH             = DEF(UNIXGCC_IA32_PETOOLS_PREFIX)gcc
 *_UNIXGCC_IA32_VFRPP_PATH           = DEF(UNIXGCC_IA32_PETOOLS_PREFIX)gcc
-*_UNIXGCC_IA32_RC_PATH              = DEF(UNIXGCC_IA32_PETOOLS_PREFIX)windres
+*_UNIXGCC_IA32_RC_PATH              = DEF(UNIXGCC_IA32_PETOOLS_PREFIX)objcopy
 
 *_UNIXGCC_IA32_CC_FLAGS             = DEF(GCC_IA32_CC_FLAGS)
-*_UNIXGCC_IA32_RC_FLAGS             = DEF(GCC_WINDRES_FLAGS)
+*_UNIXGCC_IA32_RC_FLAGS             = DEF(GCC_IA32_RC_FLAGS)
 
 ##################
 # X64 definitions
@@ -1153,10 +1155,10 @@ DEFINE GCC_IPF_RC_FLAGS            = -I binary -O elf64-ia64-little -B ia64 --re
 *_UNIXGCC_X64_PP_PATH               = DEF(UNIXGCC_X64_PETOOLS_PREFIX)gcc
 *_UNIXGCC_X64_ASLPP_PATH            = DEF(UNIXGCC_X64_PETOOLS_PREFIX)gcc
 *_UNIXGCC_X64_VFRPP_PATH            = DEF(UNIXGCC_X64_PETOOLS_PREFIX)gcc
-*_UNIXGCC_X64_RC_PATH               = DEF(UNIXGCC_X64_PETOOLS_PREFIX)windres
+*_UNIXGCC_X64_RC_PATH               = DEF(UNIXGCC_X64_PETOOLS_PREFIX)objcopy
 
 *_UNIXGCC_X64_CC_FLAGS              = DEF(GCC_X64_CC_FLAGS)
-*_UNIXGCC_X64_RC_FLAGS              = DEF(GCC_WINDRES_FLAGS)
+*_UNIXGCC_X64_RC_FLAGS              = DEF(GCC_X64_RC_FLAGS)
 
 ##################
 # IPF definitions
@@ -1220,10 +1222,10 @@ DEFINE GCC_IPF_RC_FLAGS            = -I binary -O elf64-ia64-little -B ia64 --re
 *_CYGGCC_IA32_ASLCC_PATH         = DEF(CYGWIN_BINIA32)gcc
 *_CYGGCC_IA32_ASLPP_PATH         = DEF(CYGWIN_BINIA32)gcc
 *_CYGGCC_IA32_ASLDLINK_PATH      = DEF(CYGWIN_BINIA32)ld
-*_CYGGCC_IA32_RC_PATH            = DEF(CYGWIN_BINIA32)windres
+*_CYGGCC_IA32_RC_PATH            = DEF(CYGWIN_BINIA32)objcopy
 
 *_CYGGCC_IA32_CC_FLAGS           = DEF(GCC_IA32_CC_FLAGS)
-*_CYGGCC_IA32_RC_FLAGS           = DEF(GCC_WINDRES_FLAGS)
+*_CYGGCC_IA32_RC_FLAGS           = DEF(GCC_IA32_RC_FLAGS)
 
 ##################
 # X64 definitions
@@ -1238,10 +1240,10 @@ DEFINE GCC_IPF_RC_FLAGS            = -I binary -O elf64-ia64-little -B ia64 --re
 *_CYGGCC_X64_ASLCC_PATH          = DEF(CYGWIN_BINX64)gcc
 *_CYGGCC_X64_ASLPP_PATH          = DEF(CYGWIN_BINX64)gcc
 *_CYGGCC_X64_ASLDLINK_PATH       = DEF(CYGWIN_BINX64)ld
-*_CYGGCC_X64_RC_PATH             = DEF(CYGWIN_BINX64)windres
+*_CYGGCC_X64_RC_PATH             = DEF(CYGWIN_BINX64)objcopy
 
 *_CYGGCC_X64_CC_FLAGS            = DEF(GCC_X64_CC_FLAGS)
-*_CYGGCC_X64_RC_FLAGS            = DEF(GCC_WINDRES_FLAGS)
+*_CYGGCC_X64_RC_FLAGS            = DEF(GCC_X64_RC_FLAGS)
 
 ##################
 # IPF definitions
@@ -1323,10 +1325,10 @@ DEFINE GCC_IPF_RC_FLAGS            = -I binary -O elf64-ia64-little -B ia64 --re
 *_CYGGCCxASL_IA32_ASLCC_PATH         = DEF(CYGWIN_BINIA32)gcc
 *_CYGGCCxASL_IA32_ASLPP_PATH         = DEF(CYGWIN_BINIA32)gcc
 *_CYGGCCxASL_IA32_ASLDLINK_PATH      = DEF(CYGWIN_BINIA32)ld
-*_CYGGCCxASL_IA32_RC_PATH            = DEF(CYGWIN_BINIA32)windres
+*_CYGGCCxASL_IA32_RC_PATH            = DEF(CYGWIN_BINIA32)objcopy
 
 *_CYGGCCxASL_IA32_CC_FLAGS           = DEF(GCC_IA32_CC_FLAGS)
-*_CYGGCCxASL_IA32_RC_FLAGS           = DEF(GCC_WINDRES_FLAGS)
+*_CYGGCCxASL_IA32_RC_FLAGS           = DEF(GCC_IA32_RC_FLAGS)
 
 ##################
 # X64 definitions
@@ -1341,10 +1343,10 @@ DEFINE GCC_IPF_RC_FLAGS            = -I binary -O elf64-ia64-little -B ia64 --re
 *_CYGGCCxASL_X64_ASLCC_PATH          = DEF(CYGWIN_BINX64)gcc
 *_CYGGCCxASL_X64_ASLPP_PATH          = DEF(CYGWIN_BINX64)gcc
 *_CYGGCCxASL_X64_ASLDLINK_PATH       = DEF(CYGWIN_BINX64)ld
-*_CYGGCCxASL_X64_RC_PATH             = DEF(CYGWIN_BINX64)windres
+*_CYGGCCxASL_X64_RC_PATH             = DEF(CYGWIN_BINX64)objcopy
 
 *_CYGGCCxASL_X64_CC_FLAGS            = DEF(GCC_X64_CC_FLAGS)
-*_CYGGCCxASL_X64_RC_FLAGS            = DEF(GCC_WINDRES_FLAGS)
+*_CYGGCCxASL_X64_RC_FLAGS            = DEF(GCC_X64_RC_FLAGS)
 
 ##################
 # IPF definitions
@@ -1428,7 +1430,7 @@ DEFINE GCC_IPF_RC_FLAGS            = -I binary -O elf64-ia64-little -B ia64 --re
 *_ELFGCC_IA32_ASM_FLAGS             = -c -x assembler -imacros $(DEST_DIR_DEBUG)/AutoGen.h
 *_ELFGCC_IA32_PP_FLAGS              = -m32 -E -x assembler-with-cpp -include $(DEST_DIR_DEBUG)/AutoGen.h
 *_ELFGCC_IA32_VFRPP_FLAGS           = -x c -E -P -DVFRCOMPILE --include $(DEST_DIR_DEBUG)/$(MODULE_NAME)StrDefs.h
-*_ELFGCC_IA32_RC_FLAGS              = -I binary -O elf32-i386 -B i386 --rename-section .data=.hii
+*_ELFGCC_IA32_RC_FLAGS              = DEF(GCC_IA32_RC_FLAGS)
 
 ##################
 # X64 definitions
@@ -1450,7 +1452,7 @@ DEFINE GCC_IPF_RC_FLAGS            = -I binary -O elf64-ia64-little -B ia64 --re
 *_ELFGCC_X64_ASM_FLAGS             = -c -x assembler -imacros $(DEST_DIR_DEBUG)/AutoGen.h
 *_ELFGCC_X64_PP_FLAGS              = -E -x assembler-with-cpp -include $(DEST_DIR_DEBUG)/AutoGen.h
 *_ELFGCC_X64_VFRPP_FLAGS           = -x c -E -P -DVFRCOMPILE --include $(DEST_DIR_DEBUG)/$(MODULE_NAME)StrDefs.h
-*_ELFGCC_X64_RC_FLAGS              = -I binary -O elf64-x86-64 -B i386 --rename-section .data=.hii
+*_ELFGCC_X64_RC_FLAGS              = DEF(GCC_X64_RC_FLAGS)
 
 ##################
 # IPF definitions
@@ -1472,7 +1474,7 @@ DEFINE GCC_IPF_RC_FLAGS            = -I binary -O elf64-ia64-little -B ia64 --re
 *_ELFGCC_IPF_ASM_FLAGS            = -c -x assembler -imacros $(DEST_DIR_DEBUG)/AutoGen.h
 *_ELFGCC_IPF_PP_FLAGS             = -E -x assembler-with-cpp -include $(DEST_DIR_DEBUG)/AutoGen.h
 *_ELFGCC_IPF_VFRPP_FLAGS          = -x c -E -P -DVFRCOMPILE --include $(DEST_DIR_DEBUG)/$(MODULE_NAME)StrDefs.h
-*_ELFGCC_IPF_RC_FLAGS             = -I binary -O elf64-ia64-little -B ia64 --rename-section .data=.hii
+*_ELFGCC_IPF_RC_FLAGS             = DEF(GCC_IPF_RC_FLAGS)
 
 ####################################################################################
 #
