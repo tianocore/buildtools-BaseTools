@@ -283,7 +283,8 @@ class FV (FvClassObject):
                 Changed = SaveFileOnChange(FvExtHeaderFileName, FvExtHeaderFile.getvalue(), True)
                 FvExtHeaderFile.close()
                 if Changed:
-                  os.remove (self.InfFileName)
+                  if os.path.exists (self.InfFileName):
+                    os.remove (self.InfFileName)
                 self.FvInfFile.writelines("EFI_FV_EXT_HEADER_FILE_NAME = "      + \
                                            FvExtHeaderFileName                  + \
                                            T_CHAR_LF)
