@@ -199,10 +199,10 @@ Returns:
   fprintf (stdout, "  -o FileName, --outputfile FileName\n\
                         File will be created to store the ouput content.\n");
   fprintf (stdout, "  -e EFI_FILETYPE, --efiImage EFI_FILETYPE\n\
-                        Create Efi Image. EFI_FILETYPE is one of BASE, SEC,\n\
+                        Create Efi Image. EFI_FILETYPE is one of BASE,SMM_CORE,\n\
                         PEI_CORE, PEIM, DXE_CORE, DXE_DRIVER, UEFI_APPLICATION,\n\
-                        DXE_SAL_DRIVER, UEFI_DRIVER, DXE_RUNTIME_DRIVER, \n\
-                        DXE_SMM_DRIVER, SECURITY_CORE, COMBINED_PEIM_DRIVER, \n\
+                        SEC, DXE_SAL_DRIVER, UEFI_DRIVER, DXE_RUNTIME_DRIVER,\n\
+                        DXE_SMM_DRIVER, SECURITY_CORE, COMBINED_PEIM_DRIVER,\n\
                         PIC_PEIM, RELOCATABLE_PEIM, BS_DRIVER, RT_DRIVER,\n\
                         APPLICATION, SAL_RT_DRIVER to support all module types\n\
                         It can only be used together with --keepexceptiontable,\n\
@@ -236,7 +236,7 @@ Returns:
                         except for -o, -r option. It is a action option.\n\
                         If it is combined with other action options, the later\n\
                         input action option will override the previous one.\n");;
-  fprintf (stdout, "  -l, --stripped        Relocation info stripped from the input PE or TE image.\n\
+  fprintf (stdout, "  -l, --stripped        Strip off the relocation info from PE or TE image.\n\
                         It can't be combined with other action options\n\
                         except for -o, -r option. It is a action option.\n\
                         If it is combined with other action options, the later\n\
@@ -273,7 +273,7 @@ Returns:
                         If more input files are specified,\n\
                         the last input file will be as the output file.\n");
   fprintf (stdout, "  -g HiiPackageListGuid, --hiiguid HiiPackageListGuid\n\
-                        HiiListPackageGuidGuid is from the module guid.\n\
+                        Guid is used to specify hii package list guid.\n\
                         Its format is xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n\
                         If not specified, the first Form FormSet guid is used.\n");
   fprintf (stdout, "  --hiipackage          Combine all input binary hii pacakges into \n\
@@ -2369,7 +2369,6 @@ Returns:
           stricmp (ModuleType, "DXE_DRIVER") == 0 ||
           stricmp (ModuleType, "DXE_SMM_DRIVER") == 0  ||
           stricmp (ModuleType, "UEFI_DRIVER") == 0 ||
-          stricmp (ModuleType, "SMM_DRIVER") == 0 ||
           stricmp (ModuleType, "SMM_CORE") == 0) {
         Type = EFI_IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER;
         VerboseMsg ("Efi Image subsystem type is efi boot service driver.");
