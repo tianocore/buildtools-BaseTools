@@ -77,6 +77,7 @@ Abstract:
 #define FW_MERGE_IMAGE       8
 #define FW_RELOC_STRIPEED_IMAGE 9
 #define FW_HII_PACKAGE_LIST_RCIMAGE 10
+#define FW_HII_PACKAGE_LIST_BINIMAGE 11
 
 #define DUMP_TE_HEADER       0x11
 
@@ -277,6 +278,12 @@ Returns:
                         If not specified, the first Form FormSet guid is used.\n");
   fprintf (stdout, "  --hiipackage          Combine all input binary hii pacakges into \n\
                         a single package list as the text resource data(RC).\n\
+                        It can't be combined with other action options\n\
+                        except for -o option. It is a action option.\n\
+                        If it is combined with other action options, the later\n\
+                        input action option will override the previous one.\n");
+  fprintf (stdout, "  --hiibinpackage       Combine all input binary hii pacakges into \n\
+                        a single package list as the binary resource section.\n\
                         It can't be combined with other action options\n\
                         except for -o option. It is a action option.\n\
                         If it is combined with other action options, the later\n\
@@ -501,12 +508,6 @@ UINT32 DataOffset;
 UINT32 HiiRsrcOffset;
 UINT32 RelocOffset;
 
-//
-// HiiBinData
-//
-UINT8* HiiBinData = NULL;
-UINT32 HiiBinSize = 0;
-
 EFI_IMAGE_BASE_RELOCATION *CoffBaseRel;
 UINT16 *CoffEntryRel;
 
@@ -628,122 +629,60 @@ CreateSectionHeader(
 }
 
 VOID
-GetBinaryHiiData (
-  CHAR8   *RcString,
-  UINT32  Size,
+SetHiiResourceHeader (
+  UINT8   *HiiBinData,
   UINT32  OffsetToFile
   )
 {
-  unsigned  Data16;
-  UINT32  HiiBinOffset;
   UINT32  Index;
   EFI_IMAGE_RESOURCE_DIRECTORY        *ResourceDirectory;
   EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY  *ResourceDirectoryEntry;
   EFI_IMAGE_RESOURCE_DIRECTORY_STRING *ResourceDirectoryString;
   EFI_IMAGE_RESOURCE_DATA_ENTRY       *ResourceDataEntry;
 
-  Index = 0;
-  while (Index < Size && *RcString != '\0' && *RcString != '{') {
-    RcString ++;
-    Index ++;
-  }
-  
-  if (*RcString == '\0' || Index == Size) {
-    return;
-  }
-  
-  //
-  // Skip '{' character
-  // Skip space and ',' character
-  //
-  RcString ++;
-  Index ++;
-  while (Index < Size && *RcString != '\0' && (isspace (*RcString) || *RcString == ',')){
-    RcString ++;
-    Index ++;
-  }
-
-  //
-  // '}' end character
-  //
-  if (*RcString == '}' || Index == Size) {
-    return;
-  }
-
-  HiiBinOffset = 0;
-  HiiBinSize   = 0x1000;
-  HiiBinData   = (UINT8 *) malloc (HiiBinSize);
-  if (HiiBinData == NULL) {
-    return;
-  }
-  memset (HiiBinData, 0, HiiBinSize);
   //
   // Fill Resource section entry
   //
-  ResourceDirectory = (EFI_IMAGE_RESOURCE_DIRECTORY *) (HiiBinData + HiiBinOffset);
-  HiiBinOffset += sizeof (EFI_IMAGE_RESOURCE_DIRECTORY);
-  ResourceDirectory->NumberOfNamedEntries = 1;
+  ResourceDirectory      = (EFI_IMAGE_RESOURCE_DIRECTORY *) (HiiBinData);
+  ResourceDirectoryEntry = (EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY *) (ResourceDirectory + 1);
+  for (Index = 0; Index < ResourceDirectory->NumberOfNamedEntries; Index ++) {
+    if (ResourceDirectoryEntry->u1.s.NameIsString) {
+      ResourceDirectoryString = (EFI_IMAGE_RESOURCE_DIRECTORY_STRING *) (HiiBinData + ResourceDirectoryEntry->u1.s.NameOffset);
 
-  ResourceDirectoryEntry = (EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY *) (HiiBinData + HiiBinOffset);
-  HiiBinOffset += sizeof (EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY);
-  ResourceDirectoryEntry->u1.s.NameIsString = 1;
-  ResourceDirectoryEntry->u1.s.NameOffset   = HiiBinOffset;
+      if (ResourceDirectoryString->Length == 3 &&
+          ResourceDirectoryString->String[0] == L'H' &&
+          ResourceDirectoryString->String[1] == L'I' &&
+          ResourceDirectoryString->String[2] == L'I') {
+        //
+        // Resource Type "HII" found
+        //
+        if (ResourceDirectoryEntry->u2.s.DataIsDirectory) {
+          //
+          // Move to next level - resource Name
+          //
+          ResourceDirectory = (EFI_IMAGE_RESOURCE_DIRECTORY *) (HiiBinData + ResourceDirectoryEntry->u2.s.OffsetToDirectory);
+          ResourceDirectoryEntry = (EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY *) (ResourceDirectory + 1);
 
-  ResourceDirectoryString = (EFI_IMAGE_RESOURCE_DIRECTORY_STRING *) (HiiBinData + HiiBinOffset);
-  ResourceDirectoryString->Length = 3;
-  ResourceDirectoryString->String[0] =L'H';
-  ResourceDirectoryString->String[1] =L'I';
-  ResourceDirectoryString->String[2] =L'I';
-  HiiBinOffset = HiiBinOffset + sizeof (ResourceDirectoryString->Length) + ResourceDirectoryString->Length * sizeof (ResourceDirectoryString->String[0]);
+          if (ResourceDirectoryEntry->u2.s.DataIsDirectory) {
+            //
+            // Move to next level - resource Language
+            //
+            ResourceDirectory = (EFI_IMAGE_RESOURCE_DIRECTORY *) (HiiBinData + ResourceDirectoryEntry->u2.s.OffsetToDirectory);
+            ResourceDirectoryEntry = (EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY *) (ResourceDirectory + 1);
+          }
+        }
 
-  ResourceDirectoryEntry->u2.OffsetToData = HiiBinOffset;
-  ResourceDataEntry = (EFI_IMAGE_RESOURCE_DATA_ENTRY *) (HiiBinData + HiiBinOffset);
-  HiiBinOffset += sizeof (EFI_IMAGE_RESOURCE_DATA_ENTRY);
-  ResourceDataEntry->OffsetToData = OffsetToFile + HiiBinOffset;
-
-  while (sscanf (RcString, "0x%X", &Data16) != EOF) {
-    //
-    // Convert the string data to the binary data.
-    //
-    *(UINT16 *)(HiiBinData + HiiBinOffset) = (UINT16) Data16;
-    HiiBinOffset += 2;
-    //
-    // Jump to the next data.
-    //
-    RcString = RcString + 2 + 4;
-    Index    = Index + 2 + 4;
-    //
-    // Skip space and ',' character
-    //
-    while (Index < Size && *RcString != '\0' && (isspace (*RcString) || *RcString == ',')){
-      RcString ++;
-      Index ++;
-    }
-    //
-    // '}' end character
-    //
-    if (*RcString == '}'|| Index == Size) {
-      break;
-    }
-    //
-    // Check BinBuffer size
-    //
-    if (HiiBinOffset >= HiiBinSize) {
-      HiiBinSize += 0x1000;
-      HiiBinData = (UINT8 *) realloc (HiiBinData, HiiBinSize);
-      //
-      // Memory allocation is failure.
-      //
-      if (HiiBinData == NULL) {
-        HiiBinSize = 0;
-        break;
+        //
+        // Now it ought to be resource Data and update its OffsetToData value 
+        //
+        if (!ResourceDirectoryEntry->u2.s.DataIsDirectory) {
+          ResourceDataEntry = (EFI_IMAGE_RESOURCE_DATA_ENTRY *) (HiiBinData + ResourceDirectoryEntry->u2.OffsetToData);
+          ResourceDataEntry->OffsetToData = ResourceDataEntry->OffsetToData + OffsetToFile;
+          break;
+        }
       }
     }
-  }
-
-  if (HiiBinData != NULL) {
-    HiiBinSize = HiiBinOffset;
-    ResourceDataEntry->Size = HiiBinSize + OffsetToFile - ResourceDataEntry->OffsetToData;
+    ResourceDirectoryEntry++;
   }
   
   return;
@@ -867,10 +806,11 @@ ScanSections(
           Error (NULL, 0, 3000, "Invalid", "Unsupported section alignment.");
         }
       }
-      GetBinaryHiiData ((CHAR8*)Ehdr + shdr->sh_offset, shdr->sh_size, HiiRsrcOffset);
-      if (HiiBinSize != 0) {
-        CoffOffset += HiiBinSize;
+      if (shdr->sh_size != 0) {
+        CoffSectionsOffset[i] = CoffOffset;
+        CoffOffset += shdr->sh_size;
         CoffOffset = CoffAlign(CoffOffset);
+        SetHiiResourceHeader ((UINT8*) Ehdr + shdr->sh_offset, HiiRsrcOffset);
       }
       break;
     }
@@ -972,13 +912,8 @@ ScanSections(
             EFI_IMAGE_SCN_CNT_INITIALIZED_DATA
             | EFI_IMAGE_SCN_MEM_READ);
 
-    NtHdr->Pe32.OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE].Size = HiiBinSize;
+    NtHdr->Pe32.OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE].Size = RelocOffset - HiiRsrcOffset;
     NtHdr->Pe32.OptionalHeader.DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress = HiiRsrcOffset;
-
-    memcpy(CoffFile + HiiRsrcOffset, HiiBinData, HiiBinSize);
-    free (HiiBinData);
-    HiiBinData = NULL;
-    HiiBinSize = 0;
   } else {
     // Don't make a section of size 0. 
     NtHdr->Pe32.FileHeader.NumberOfSections--;
@@ -1398,6 +1333,7 @@ ConvertElf (
   //
   WriteSections(IsTextShdr);
   WriteSections(IsDataShdr);
+  WriteSections(IsHiiRsrcShdr);
   VerboseMsg ("Write and relocate sections.");
 
   //
@@ -1428,6 +1364,122 @@ ConvertElf (
   if (CoffSectionsOffset != NULL) {
     free (CoffSectionsOffset);
   }
+}
+
+UINT8 *
+CreateHiiResouceSectionHeader (
+  UINT32 *pSectionHeaderSize, 
+  UINT32 HiiDataSize
+  )
+/*++
+
+Routine Description:
+
+  Create COFF resource section header
+
+Arguments:
+
+  pSectionHeaderSize - Pointer to section header size.
+  HiiDataSize        - Size of the total HII data in section.
+
+Returns:
+  The created section header buffer.
+
+--*/
+{
+  UINT32  HiiSectionHeaderSize;
+  UINT32  HiiSectionOffset;
+  UINT8   *HiiSectionHeader;
+  EFI_IMAGE_RESOURCE_DIRECTORY        *ResourceDirectory;
+  EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY  *TypeResourceDirectoryEntry;
+  EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY  *NameResourceDirectoryEntry;
+  EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY  *LanguageResourceDirectoryEntry;
+  EFI_IMAGE_RESOURCE_DIRECTORY_STRING *ResourceDirectoryString;
+  EFI_IMAGE_RESOURCE_DATA_ENTRY       *ResourceDataEntry;
+
+  //
+  // Calculate the total size for the resource header (include Type, Name and Language)
+  // then allocate memory for the resource header.
+  //
+  HiiSectionHeaderSize = 3 * (sizeof (EFI_IMAGE_RESOURCE_DIRECTORY) + sizeof (EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY)) 
+                          + 3 * (sizeof (UINT16) + 3 * sizeof (CHAR16)) 
+                          + sizeof (EFI_IMAGE_RESOURCE_DATA_ENTRY);
+  HiiSectionHeader = malloc (HiiSectionHeaderSize);
+  memset (HiiSectionHeader, 0, HiiSectionHeaderSize);
+
+  HiiSectionOffset = 0;
+  //
+  // Create Type entry 
+  //
+  ResourceDirectory = (EFI_IMAGE_RESOURCE_DIRECTORY *) (HiiSectionHeader + HiiSectionOffset);
+  HiiSectionOffset += sizeof (EFI_IMAGE_RESOURCE_DIRECTORY);
+  ResourceDirectory->NumberOfNamedEntries = 1;
+  TypeResourceDirectoryEntry = (EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY *) (HiiSectionHeader + HiiSectionOffset);
+  HiiSectionOffset += sizeof (EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY);
+  TypeResourceDirectoryEntry->u1.s.NameIsString      = 1;
+  TypeResourceDirectoryEntry->u2.s.DataIsDirectory   = 1;
+  TypeResourceDirectoryEntry->u2.s.OffsetToDirectory = HiiSectionOffset;
+  //
+  // Create Name entry
+  //
+  ResourceDirectory = (EFI_IMAGE_RESOURCE_DIRECTORY *) (HiiSectionHeader + HiiSectionOffset);
+  HiiSectionOffset += sizeof (EFI_IMAGE_RESOURCE_DIRECTORY);
+  ResourceDirectory->NumberOfNamedEntries = 1;
+  NameResourceDirectoryEntry = (EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY *) (HiiSectionHeader + HiiSectionOffset);
+  HiiSectionOffset += sizeof (EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY);
+  NameResourceDirectoryEntry->u1.s.NameIsString      = 1;
+  NameResourceDirectoryEntry->u2.s.DataIsDirectory   = 1;
+  NameResourceDirectoryEntry->u2.s.OffsetToDirectory = HiiSectionOffset;
+  //
+  // Create Language entry
+  //
+  ResourceDirectory = (EFI_IMAGE_RESOURCE_DIRECTORY *) (HiiSectionHeader + HiiSectionOffset);
+  HiiSectionOffset += sizeof (EFI_IMAGE_RESOURCE_DIRECTORY);
+  ResourceDirectory->NumberOfNamedEntries = 1;
+  LanguageResourceDirectoryEntry = (EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY *) (HiiSectionHeader + HiiSectionOffset);
+  HiiSectionOffset += sizeof (EFI_IMAGE_RESOURCE_DIRECTORY_ENTRY);
+  LanguageResourceDirectoryEntry->u1.s.NameIsString = 1;
+  //
+  // Create string entry for Type
+  //
+  TypeResourceDirectoryEntry->u1.s.NameOffset = HiiSectionOffset;
+  ResourceDirectoryString = (EFI_IMAGE_RESOURCE_DIRECTORY_STRING *) (HiiSectionHeader + HiiSectionOffset);
+  ResourceDirectoryString->Length = 3;
+  ResourceDirectoryString->String[0] = L'H';
+  ResourceDirectoryString->String[1] = L'I';
+  ResourceDirectoryString->String[2] = L'I';
+  HiiSectionOffset = HiiSectionOffset + sizeof (ResourceDirectoryString->Length) + ResourceDirectoryString->Length * sizeof (ResourceDirectoryString->String[0]);
+  //
+  // Create string entry for Name
+  //
+  NameResourceDirectoryEntry->u1.s.NameOffset = HiiSectionOffset;
+  ResourceDirectoryString = (EFI_IMAGE_RESOURCE_DIRECTORY_STRING *) (HiiSectionHeader + HiiSectionOffset);
+  ResourceDirectoryString->Length = 3;
+  ResourceDirectoryString->String[0] = L'E';
+  ResourceDirectoryString->String[1] = L'F';
+  ResourceDirectoryString->String[2] = L'I';
+  HiiSectionOffset = HiiSectionOffset + sizeof (ResourceDirectoryString->Length) + ResourceDirectoryString->Length * sizeof (ResourceDirectoryString->String[0]);
+  //
+  // Create string entry for Language
+  //
+  LanguageResourceDirectoryEntry->u1.s.NameOffset = HiiSectionOffset;
+  ResourceDirectoryString = (EFI_IMAGE_RESOURCE_DIRECTORY_STRING *) (HiiSectionHeader + HiiSectionOffset);
+  ResourceDirectoryString->Length = 3;
+  ResourceDirectoryString->String[0] = L'B';
+  ResourceDirectoryString->String[1] = L'I';
+  ResourceDirectoryString->String[2] = L'N';
+  HiiSectionOffset = HiiSectionOffset + sizeof (ResourceDirectoryString->Length) + ResourceDirectoryString->Length * sizeof (ResourceDirectoryString->String[0]);
+  //
+  // Create Leaf data
+  //
+  LanguageResourceDirectoryEntry->u2.OffsetToData = HiiSectionOffset;
+  ResourceDataEntry = (EFI_IMAGE_RESOURCE_DATA_ENTRY *) (HiiSectionHeader + HiiSectionOffset);
+  HiiSectionOffset += sizeof (EFI_IMAGE_RESOURCE_DATA_ENTRY);
+  ResourceDataEntry->OffsetToData = HiiSectionOffset;
+  ResourceDataEntry->Size = HiiDataSize;
+
+  *pSectionHeaderSize = HiiSectionHeaderSize;
+  return HiiSectionHeader;
 }
 
 int
@@ -1501,6 +1553,8 @@ Returns:
   EFI_IFR_FORM_SET                 IfrFormSet;
   UINT8                            NumberOfFormPacakge;
   EFI_HII_PACKAGE_HEADER           EndPackage;
+  UINT32                           HiiSectionHeaderSize;
+  UINT8                            *HiiSectionHeader;
 
   SetUtilityName (UTILITY_NAME);
 
@@ -1539,6 +1593,8 @@ Returns:
   EndPackage.Length      = sizeof (EFI_HII_PACKAGE_HEADER);
   EndPackage.Type        = EFI_HII_PACKAGE_END;
   memset (&HiiPackageListGuid, 0, sizeof (HiiPackageListGuid));
+  HiiSectionHeaderSize   = 0;
+  HiiSectionHeader       = NULL;
 
   if (argc == 1) {
     Error (NULL, 0, 1001, "Missing options", "No input options.");
@@ -1748,6 +1804,13 @@ Returns:
       continue;
     }
 
+    if (stricmp (argv[0], "--hiibinpackage") == 0) {
+      OutImageType = FW_HII_PACKAGE_LIST_BINIMAGE;
+      argc --;
+      argv ++;
+      continue;
+    }
+
     if (argv[0][0] == '-') {
       Error (NULL, 0, 1000, "Unknown option", argv[0]);
       goto Finish;
@@ -1819,6 +1882,11 @@ Returns:
     goto Finish;
   }
 
+  if ((OutImageType == FW_HII_PACKAGE_LIST_BINIMAGE) && ReplaceFlag) {
+    Error (NULL, 0, 1002, "Conflicting option", "-r replace option cannot be used with --hiibinpackage merge files option.");
+    goto Finish;
+  }
+
   //
   // Input image file
   //
@@ -1862,6 +1930,9 @@ Returns:
   case FW_HII_PACKAGE_LIST_RCIMAGE:
     VerboseMsg ("Combine the input multi hii bin packages to one text pacakge list RC file.");
     break;
+  case FW_HII_PACKAGE_LIST_BINIMAGE:
+    VerboseMsg ("Combine the input multi hii bin packages to one binary pacakge list file.");
+    break;
   default:
     break;
   }
@@ -1903,9 +1974,9 @@ Returns:
   }
 
   //
-  // Combine multi binary HII package files to a single text package list RC file.
+  // Combine multi binary HII package files.
   //
-  if (OutImageType == FW_HII_PACKAGE_LIST_RCIMAGE) {
+  if (OutImageType == FW_HII_PACKAGE_LIST_RCIMAGE || OutImageType == FW_HII_PACKAGE_LIST_BINIMAGE) {
     //
     // Get hii package list lenght
     //
@@ -1970,37 +2041,64 @@ Returns:
       HiiPackageDataPointer = HiiPackageDataPointer + FileLength;
     }
     memcpy (HiiPackageDataPointer, &EndPackage, sizeof (EndPackage));
+
+    //
+    // write the hii package into the binary package list file with the resource section header
+    //
+    if (OutImageType == FW_HII_PACKAGE_LIST_BINIMAGE) {
+      //
+      // Create the resource section header
+      //
+      HiiSectionHeader = CreateHiiResouceSectionHeader (&HiiSectionHeaderSize, HiiPackageListHeader.PackageLength);
+      //
+      // Wrtie section header and HiiData into File.
+      //
+      fwrite (HiiSectionHeader, 1, HiiSectionHeaderSize, fpOut);
+      fwrite (HiiPackageListBuffer, 1, HiiPackageListHeader.PackageLength, fpOut);
+      //
+      // Free allocated resources.
+      //
+      free (HiiSectionHeader);
+      free (HiiPackageListBuffer);
+      //
+      // Done successfully
+      //
+      goto Finish;
+    }
+
     //
     // write the hii package into the text package list rc file.
     //
-    for (Index = 0; gHiiPackageRCFileHeader[Index] != NULL; Index++) {
-      fprintf (fpOut, "%s\n", gHiiPackageRCFileHeader[Index]);
-    }
-    fprintf (fpOut, "\n%d %s\n{", HII_RESOURCE_SECTION_INDEX, HII_RESOURCE_SECTION_NAME);
+    if (OutImageType == FW_HII_PACKAGE_LIST_RCIMAGE) {
+      for (Index = 0; gHiiPackageRCFileHeader[Index] != NULL; Index++) {
+        fprintf (fpOut, "%s\n", gHiiPackageRCFileHeader[Index]);
+      }
+      fprintf (fpOut, "\n%d %s\n{", HII_RESOURCE_SECTION_INDEX, HII_RESOURCE_SECTION_NAME);
 
-    HiiPackageDataPointer = HiiPackageListBuffer;
-    for (Index = 0; Index + 2 < HiiPackageListHeader.PackageLength; Index += 2) {
+      HiiPackageDataPointer = HiiPackageListBuffer;
+      for (Index = 0; Index + 2 < HiiPackageListHeader.PackageLength; Index += 2) {
+        if (Index % 16 == 0) {
+          fprintf (fpOut, "\n ");
+        }
+        fprintf (fpOut, " 0x%04X,", *(UINT16 *) HiiPackageDataPointer);
+        HiiPackageDataPointer += 2;
+      }
+      
       if (Index % 16 == 0) {
         fprintf (fpOut, "\n ");
       }
-      fprintf (fpOut, " 0x%04X,", *(UINT16 *) HiiPackageDataPointer);
-      HiiPackageDataPointer += 2;
+      if ((Index + 2) == HiiPackageListHeader.PackageLength) {
+        fprintf (fpOut, " 0x%04X\n}\n", *(UINT16 *) HiiPackageDataPointer);
+      }
+      if ((Index + 1) == HiiPackageListHeader.PackageLength) {
+        fprintf (fpOut, " 0x%04X\n}\n", *(UINT8 *) HiiPackageDataPointer);
+      }
+      free (HiiPackageListBuffer);
+      //
+      // Done successfully
+      //
+      goto Finish;
     }
-    
-    if (Index % 16 == 0) {
-      fprintf (fpOut, "\n ");
-    }
-    if ((Index + 2) == HiiPackageListHeader.PackageLength) {
-      fprintf (fpOut, " 0x%04X\n}\n", *(UINT16 *) HiiPackageDataPointer);
-    }
-    if ((Index + 1) == HiiPackageListHeader.PackageLength) {
-      fprintf (fpOut, " 0x%04X\n}\n", *(UINT8 *) HiiPackageDataPointer);
-    }
-    free (HiiPackageListBuffer);
-    //
-    // Done successfully
-    //
-    goto Finish;
   }
 
   //
@@ -2771,7 +2869,37 @@ Returns:
       TEImageHeader.DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress = Optional64->SizeOfImage - sizeof (EFI_IMAGE_BASE_RELOCATION);
     }
   }
-   
+
+  //
+  // Fill HII section data
+  //
+  SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
+  for (Index = 0; Index < PeHdr->Pe32.FileHeader.NumberOfSections; Index++) {
+    if (stricmp ((char *)SectionHeader[Index].Name, ".hii") == 0) {
+      //
+      // Update resource section header offset
+      //
+      SetHiiResourceHeader ((UINT8*) FileBuffer + SectionHeader[Index].PointerToRawData, SectionHeader[Index].VirtualAddress);
+      //
+      // Update resource section name
+      //
+      strcpy((char *) SectionHeader[Index].Name, ".rsrc");
+      //
+      // Update resource data directory.
+      //
+      if (PeHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
+        Optional32 = (EFI_IMAGE_OPTIONAL_HEADER32 *)&PeHdr->Pe32.OptionalHeader;
+        Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress = SectionHeader[Index].VirtualAddress;
+        Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE].Size = SectionHeader[Index].Misc.VirtualSize;
+      } else if (PeHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
+        Optional64 = (EFI_IMAGE_OPTIONAL_HEADER64 *)&PeHdr->Pe32.OptionalHeader;
+        Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress = SectionHeader[Index].VirtualAddress;
+        Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_RESOURCE].Size = SectionHeader[Index].Misc.VirtualSize;
+      }
+      break;
+    }
+  }
+
   //
   // Zero ExceptionTable Xdata
   //
