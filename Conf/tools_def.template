@@ -94,6 +94,9 @@ DEFINE CYGWIN_BINIA32          = c:/cygwin/opt/tiano/i386-tiano-pe/i386-tiano-pe
 DEFINE CYGWIN_BINX64           = c:/cygwin/opt/tiano/x86_64-pc-mingw64/x86_64-pc-mingw64/bin/
 DEFINE CYGWIN_BINIPF           = c:/cygwin/opt/tiano/gcc/ipf/bin/ia64-pc-elf-
 
+DEFINE GCC44_IA32_PREFIX       = /usr/bin/
+#DEFINE GCC44_IA32_PREFIX       = ENV(HOME)/programs/gcc/4.4/ia32/
+
 DEFINE UNIX_IASL_BIN           = /usr/bin/iasl
 #DEFINE UNIX_IASL_BIN           = $(HOME)/programs/iasl
 DEFINE WIN_ASL_BIN_DIR         = C:\ASL
@@ -1101,6 +1104,14 @@ DEFINE GCC_IA32_RC_FLAGS           = -I binary -O elf32-i386        -B i386 --re
 DEFINE GCC_X64_RC_FLAGS            = -I binary -O elf64-x86-64      -B i386 --rename-section .data=.hii
 DEFINE GCC_IPF_RC_FLAGS            = -I binary -O elf64-ia64-little -B ia64 --rename-section .data=.hii
 
+DEFINE GCC44_ALL_CC_FLAGS            = -fshort-wchar -fno-stack-protector -fno-strict-aliasing -Wall -Werror -Wno-missing-braces -Wno-array-bounds -ffunction-sections -c -include AutoGen.h -DSTRING_ARRAY_NAME=$(BASE_NAME)Strings
+DEFINE GCC44_IA32_CC_FLAGS           = DEF(GCC44_ALL_CC_FLAGS) -m32 -malign-double -D EFI32
+DEFINE GCC44_X64_CC_FLAGS            = DEF(GCC44_ALL_CC_FLAGS) "-DEFIAPI=__attribute__((ms_abi))" -mno-red-zone -Wno-address
+DEFINE GCC44_IA32_X64_DLINK_COMMON   = -nostdlib -n -q --gc-sections
+DEFINE GCC44_IA32_X64_ASLDLINK_FLAGS = DEF(GCC44_IA32_X64_DLINK_COMMON) --entry ReferenceAcpiTable -u ReferenceAcpiTable
+DEFINE GCC44_IA32_X64_DLINK_FLAGS    = DEF(GCC44_IA32_X64_DLINK_COMMON) --entry $(IMAGE_ENTRY_POINT) -u $(IMAGE_ENTRY_POINT) -Map $(DEST_DIR_DEBUG)/$(BASE_NAME).map
+DEFINE GCC44_ASM_FLAGS               = DEF(GCC_ASM_FLAGS)
+
 ####################################################################################
 #
 # Unix GCC And Intel Linux ACPI Compiler
@@ -1181,6 +1192,47 @@ DEFINE GCC_IPF_RC_FLAGS            = -I binary -O elf64-ia64-little -B ia64 --re
 *_UNIXGCC_IPF_OBJCOPY_FLAGS        = DEF(GCC_IPF_OBJCOPY_FLAGS)
 *_UNIXGCC_IPF_SYMRENAME_FLAGS      = DEF(GCC_IPF_SYMRENAME_FLAGS)
 *_UNIXGCC_IPF_RC_FLAGS             = DEF(GCC_IPF_RC_FLAGS)
+
+
+####################################################################################
+#
+# GCC 4.4 - This configuration is used to compile under Linux to produce
+#           PE/COFF binaries using GCC 4.4.
+#
+####################################################################################
+*_GCC44_*_*_FAMILY               = GCC
+
+*_GCC44_*_MAKE_PATH                    = make
+*_GCC44_*_ASL_PATH                     = DEF(UNIX_IASL_BIN)
+
+*_GCC44_*_PP_FLAGS                     = DEF(GCC_PP_FLAGS)
+*_GCC44_*_ASLPP_FLAGS                  = DEF(GCC_ASLPP_FLAGS)
+*_GCC44_*_ASLCC_FLAGS                  = DEF(GCC_ASLCC_FLAGS)
+*_GCC44_*_VFRPP_FLAGS                  = DEF(GCC_VFRPP_FLAGS)
+*_GCC44_*_APP_FLAGS                    = 
+*_GCC44_*_ASL_FLAGS                    = DEF(IASL_FLAGS)
+*_GCC44_*_ASL_OUTFLAGS                 = DEF(IASL_OUTFLAGS)
+
+##################
+# GCC44 IA32 definitions
+##################
+*_GCC44_IA32_CC_PATH              = DEF(GCC44_IA32_PREFIX)gcc
+*_GCC44_IA32_SLINK_PATH           = DEF(GCC44_IA32_PREFIX)ar
+*_GCC44_IA32_DLINK_PATH           = DEF(GCC44_IA32_PREFIX)ld
+*_GCC44_IA32_ASLDLINK_PATH        = DEF(GCC44_IA32_PREFIX)ld
+*_GCC44_IA32_ASM_PATH             = DEF(GCC44_IA32_PREFIX)gcc
+*_GCC44_IA32_PP_PATH              = DEF(GCC44_IA32_PREFIX)gcc
+*_GCC44_IA32_VFRPP_PATH           = DEF(GCC44_IA32_PREFIX)gcc
+*_GCC44_IA32_ASLCC_PATH           = DEF(GCC44_IA32_PREFIX)gcc
+*_GCC44_IA32_ASLPP_PATH           = DEF(GCC44_IA32_PREFIX)gcc
+*_GCC44_IA32_RC_PATH              = DEF(GCC44_IA32_PREFIX)objcopy
+
+*_GCC44_IA32_ASLCC_FLAGS          = DEF(GCC_ASLCC_FLAGS) -m32
+*_GCC44_IA32_ASLDLINK_FLAGS       = DEF(GCC44_IA32_X64_ASLDLINK_FLAGS) -m elf_i386
+*_GCC44_IA32_ASM_FLAGS            = DEF(GCC44_ASM_FLAGS) -m32 --32 -march=i386
+*_GCC44_IA32_CC_FLAGS             = DEF(GCC44_IA32_CC_FLAGS)
+*_GCC44_IA32_DLINK_FLAGS          = DEF(GCC44_IA32_X64_DLINK_FLAGS) -m elf_i386 --oformat=elf32-i386
+*_GCC44_IA32_RC_FLAGS             = DEF(GCC_IA32_RC_FLAGS)
 
 ####################################################################################
 #
