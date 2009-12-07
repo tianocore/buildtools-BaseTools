@@ -1366,6 +1366,139 @@ ConvertElf (
   }
 }
 
+
+EFI_IMAGE_OPTIONAL_HEADER_UNION *
+GetPeCoffHeader (
+  void *Data
+  )
+{
+  EFI_IMAGE_DOS_HEADER             *DosHdr;
+  EFI_IMAGE_OPTIONAL_HEADER_UNION  *PeHdr;
+
+  //
+  // Read the dos & pe hdrs of the image
+  //
+  DosHdr = (EFI_IMAGE_DOS_HEADER *)Data;
+  if (DosHdr->e_magic != EFI_IMAGE_DOS_SIGNATURE) {
+    // NO DOS header, check for PE/COFF header
+    PeHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *)(Data);
+    if (PeHdr->Pe32.Signature != EFI_IMAGE_NT_SIGNATURE) {
+      return NULL;
+    }
+  } else {
+
+    PeHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *)(((UINT8 *)Data) + DosHdr->e_lfanew);
+    if (PeHdr->Pe32.Signature != EFI_IMAGE_NT_SIGNATURE) {
+      return NULL;
+    }
+  }
+  
+  return PeHdr;
+}
+
+void
+PeCoffExpandZeroFillSections (
+  UINT8  **FileBuffer,
+  UINT32 *FileLength
+  )
+{
+  EFI_IMAGE_OPTIONAL_HEADER_UNION  *PeHdr;
+  EFI_IMAGE_SECTION_HEADER         *SectionHeader;
+  UINTN                            TotalExtraSize;
+  UINTN                            ExtraSize;
+  UINT8                            *XipFile;
+  UINT32                           XipLength;
+  UINTN                            Index;
+  UINTN                            Current;
+  UINTN                            LastShift;
+
+  PeHdr = GetPeCoffHeader ((void *) *FileBuffer);
+  if (PeHdr == NULL) {
+    return;
+  }
+  
+  if (PeHdr->Pe32.OptionalHeader.SectionAlignment != PeHdr->Pe32.OptionalHeader.FileAlignment) {
+    //
+    // The only reason to expand zero fill sections is to make them compatible with XIP images.
+    // If SectionAlignment is not equal to FileAlginment then it is not an XIP type image.
+    //
+    return;
+  }
+
+  // Calculate missing space that needs to be zero filled
+  SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
+  for (Index = 0, ExtraSize = 0; Index < PeHdr->Pe32.FileHeader.NumberOfSections; Index ++, SectionHeader ++) {
+    if (SectionHeader->Misc.VirtualSize > SectionHeader->SizeOfRawData) {
+      ExtraSize += (SectionHeader->Misc.VirtualSize - SectionHeader->SizeOfRawData);
+    }
+  }
+
+  if (ExtraSize == 0) {
+    // We have a valid XIP PE/COFF image so there is nothing to do
+    return;
+  }
+
+  if (PeHdr->Pe32.FileHeader.PointerToSymbolTable != 0) {
+    // This field is obsolete and should be zero
+    PeHdr->Pe32.FileHeader.PointerToSymbolTable = 0;
+  }
+
+  //
+  // Allocate the extra space that we need to grow the image
+  //
+  XipLength = *FileLength + ExtraSize;
+  XipFile = malloc (XipLength);
+  memset (XipFile, 0xaf, XipLength);  // For debug
+  memcpy (XipFile, *FileBuffer, *FileLength);
+  free (FileBuffer);
+  
+  PeHdr = GetPeCoffHeader ((void *)XipFile);
+  if (PeHdr == NULL) {
+    return;
+  }
+  
+  // Move the sections around to make space for the zero fill
+  LastShift = 0;
+  SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
+  for (Index = 0, TotalExtraSize = 0; Index < PeHdr->Pe32.FileHeader.NumberOfSections; Index ++, SectionHeader ++) {
+    if (TotalExtraSize != 0) {
+      Current = SectionHeader->PointerToRawData;
+      SectionHeader->PointerToRawData += TotalExtraSize;
+      if (LastShift != TotalExtraSize) {
+        // Shift section down, if we have not already done it
+        memmove (XipFile + SectionHeader->PointerToRawData, XipFile + Current, XipLength - SectionHeader->PointerToRawData);
+        LastShift = TotalExtraSize;
+      }
+    }
+        
+    if (SectionHeader->Misc.VirtualSize > SectionHeader->SizeOfRawData) {
+       ExtraSize = (SectionHeader->Misc.VirtualSize - SectionHeader->SizeOfRawData);
+       if ((ExtraSize % PeHdr->Pe32.OptionalHeader.FileAlignment) != 0) {
+         ExtraSize += (PeHdr->Pe32.OptionalHeader.FileAlignment - (ExtraSize % PeHdr->Pe32.OptionalHeader.FileAlignment));
+       } 
+       TotalExtraSize += ExtraSize;
+    }
+  }
+
+  // Zero fill the new areas
+  SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
+  for (Index = 0, TotalExtraSize = 0; Index < PeHdr->Pe32.FileHeader.NumberOfSections; Index ++, SectionHeader ++) {
+    if (SectionHeader->Misc.VirtualSize > SectionHeader->SizeOfRawData) {
+
+       // Zero fill extra space
+       ExtraSize = (SectionHeader->Misc.VirtualSize - SectionHeader->SizeOfRawData);
+       memset (XipFile + SectionHeader->PointerToRawData + SectionHeader->SizeOfRawData, 0, ExtraSize);
+       
+       // Update section size
+       SectionHeader->SizeOfRawData = SectionHeader->Misc.VirtualSize;
+    }
+  }
+
+  
+  *FileLength = XipLength;
+  *FileBuffer = XipFile;
+}
+
 UINT8 *
 CreateHiiResouceSectionHeader (
   UINT32 *pSectionHeaderSize, 
@@ -2402,6 +2535,12 @@ Returns:
     VerboseMsg ("Convert the input ELF Image to Pe Image");
     ConvertElf(&FileBuffer, &FileLength);
   }
+ 
+  //
+  // Make sure File Offsets and Virtual Offsets are the same in the image so it is XIP
+  // XIP == eXecute In Place
+  //
+  PeCoffExpandZeroFillSections (&FileBuffer, &FileLength);
 
   //
   // Remove reloc section from PE or TE image
