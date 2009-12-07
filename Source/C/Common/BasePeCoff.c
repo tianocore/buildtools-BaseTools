@@ -1432,7 +1432,7 @@ PeCoffLoaderGetEntryPoint (
     } else {
       *BaseOfImage = (VOID *)(UINTN)Hdr.Pe32Plus->OptionalHeader.ImageBase;
     }
-    *EntryPoint += (UINTN)*BaseOfImage;
+    *EntryPoint = (VOID *)(UINTN)((UINTN)*EntryPoint + (UINTN)*BaseOfImage);
     return RETURN_SUCCESS;
   }
 
