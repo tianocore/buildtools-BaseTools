@@ -3577,7 +3577,7 @@ Returns:
     //
     // strip space
     //
-    for (cptr = Line; *cptr && isspace(*cptr); cptr++) {
+    for (cptr = Line; *cptr && isspace((int)*cptr); cptr++) {
     }
 
     // Skip Blank Lines and Comment Lines
@@ -3592,14 +3592,14 @@ Returns:
   // DD  XXXXXXXXX
   //  DD XXXXXXXXX
   //
-  if ((tolower(cptr[0]) == 'd') && (tolower(cptr[1]) == 'd') && isspace (cptr[2])) {
+  if ((tolower((int)cptr[0]) == 'd') && (tolower((int)cptr[1]) == 'd') && isspace ((int)cptr[2])) {
     //
     // Skip blanks and look for a hex digit
     //
     cptr += 3;
-    for (; *cptr && isspace(*cptr); cptr++) {
+    for (; *cptr && isspace((int)*cptr); cptr++) {
     }
-    if (isxdigit (*cptr)) {
+    if (isxdigit ((int)*cptr)) {
       if (sscanf (cptr, "%X", &ScannedData) != 1) {
         return STATUS_ERROR;
       }
