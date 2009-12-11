@@ -2540,7 +2540,10 @@ Returns:
   // Make sure File Offsets and Virtual Offsets are the same in the image so it is XIP
   // XIP == eXecute In Place
   //
-  PeCoffExpandZeroFillSections (&FileBuffer, &FileLength);
+  // BUGBUG: PeCoffExpandZeroFillSections appears to break building with the
+  //         UNIXGCC and CYGGCC toolchains for IA32 & X64.  Comment it until
+  //         this can be fixed.
+  //PeCoffExpandZeroFillSections (&FileBuffer, &FileLength);
 
   //
   // Remove reloc section from PE or TE image
