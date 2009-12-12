@@ -181,9 +181,9 @@ class SourceFiles:
             'md5': '197ed8468b38db1d3481c3111691d85b',
             },
         'mingw_hdr': {
-            'url': 'http://downloads.sourceforge.net/projects/' + \
-                   'mingw-w64/mingw-w64/mingw-w64-snapshot/' + \
-                   'mingw-w64-snapshot-$version.tar.bz2',
+            'url': 'http://sourceforge.net/projects/' + \
+                   'mingw-w64/files/mingw-w64/mingw-w64-snapshot/' + \
+                   'mingw-w64-snapshot-$version.tar.bz2/download',
             'extract-dir': os.path.join('trunk', 'mingw-w64-headers'),
             'version': '20090419',
             'md5': '9146ecfabaf172e4cc427b88e8d218c1',
