@@ -1140,6 +1140,7 @@ DEFINE GCC44_ASM_FLAGS               = DEF(GCC_ASM_FLAGS)
 ##################
 # IA32 definitions
 ##################
+*_UNIXGCC_IA32_OBJCOPY_PATH         = DEF(UNIXGCC_IA32_PETOOLS_PREFIX)objcopy
 *_UNIXGCC_IA32_PP_PATH              = DEF(UNIXGCC_IA32_PETOOLS_PREFIX)gcc
 *_UNIXGCC_IA32_CC_PATH              = DEF(UNIXGCC_IA32_PETOOLS_PREFIX)gcc
 *_UNIXGCC_IA32_SLINK_PATH           = DEF(UNIXGCC_IA32_PETOOLS_PREFIX)ar
@@ -1153,6 +1154,7 @@ DEFINE GCC44_ASM_FLAGS               = DEF(GCC_ASM_FLAGS)
 
 *_UNIXGCC_IA32_CC_FLAGS             = DEF(GCC_IA32_CC_FLAGS)
 *_UNIXGCC_IA32_RC_FLAGS             = DEF(GCC_IA32_RC_FLAGS)
+*_UNIXGCC_IA32_OBJCOPY_FLAGS        =
 
 ##################
 # X64 definitions
@@ -1226,6 +1228,7 @@ DEFINE GCC44_ASM_FLAGS               = DEF(GCC_ASM_FLAGS)
 *_GCC44_IA32_ASLCC_PATH           = DEF(GCC44_IA32_PREFIX)gcc
 *_GCC44_IA32_ASLPP_PATH           = DEF(GCC44_IA32_PREFIX)gcc
 *_GCC44_IA32_RC_PATH              = DEF(GCC44_IA32_PREFIX)objcopy
+*_GCC44_IA32_OBJCOPY_PATH         = DEF(GCC44_IA32_PREFIX)objcopy
 
 *_GCC44_IA32_ASLCC_FLAGS          = DEF(GCC_ASLCC_FLAGS) -m32
 *_GCC44_IA32_ASLDLINK_FLAGS       = DEF(GCC44_IA32_X64_ASLDLINK_FLAGS) -m elf_i386
@@ -1233,6 +1236,7 @@ DEFINE GCC44_ASM_FLAGS               = DEF(GCC_ASM_FLAGS)
 *_GCC44_IA32_CC_FLAGS             = DEF(GCC44_IA32_CC_FLAGS)
 *_GCC44_IA32_DLINK_FLAGS          = DEF(GCC44_IA32_X64_DLINK_FLAGS) -m elf_i386 --oformat=elf32-i386
 *_GCC44_IA32_RC_FLAGS             = DEF(GCC_IA32_RC_FLAGS)
+*_GCC44_IA32_OBJCOPY_FLAGS        =
 
 ####################################################################################
 #
@@ -1464,6 +1468,7 @@ DEFINE GCC44_ASM_FLAGS               = DEF(GCC_ASM_FLAGS)
 ##################
 # IA32 definitions
 ##################
+*_ELFGCC_IA32_OBJCOPY_PATH          = DEF(ELFGCC_BIN)/objcopy
 *_ELFGCC_IA32_CC_PATH               = DEF(ELFGCC_BIN)/gcc
 *_ELFGCC_IA32_SLINK_PATH            = DEF(ELFGCC_BIN)/ar
 *_ELFGCC_IA32_DLINK_PATH            = DEF(ELFGCC_BIN)/ld
@@ -1483,6 +1488,7 @@ DEFINE GCC44_ASM_FLAGS               = DEF(GCC_ASM_FLAGS)
 *_ELFGCC_IA32_PP_FLAGS              = -m32 -E -x assembler-with-cpp -include $(DEST_DIR_DEBUG)/AutoGen.h
 *_ELFGCC_IA32_VFRPP_FLAGS           = -x c -E -P -DVFRCOMPILE --include $(DEST_DIR_DEBUG)/$(MODULE_NAME)StrDefs.h
 *_ELFGCC_IA32_RC_FLAGS              = DEF(GCC_IA32_RC_FLAGS)
+*_ELFGCC_IA32_OBJCOPY_FLAGS         =
 
 ##################
 # X64 definitions
