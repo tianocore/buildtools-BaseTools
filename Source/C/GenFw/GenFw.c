@@ -1449,6 +1449,16 @@ PeCoffConvertImageToXip (
     }
   }
 
+  if (FirstSectionOffset < PeHdr->Pe32.OptionalHeader.SizeOfHeaders) {
+    //
+    // If one of the sections should be loaded to an offset overlapping with
+    // the executable header, then it cannot be made into an XIP image.
+    //
+    VerboseMsg ("PE/COFF conversion to XIP is impossible due to overlap");
+    VerboseMsg ("of section data with the executable header.");
+    return;
+  }
+
   if (FirstSectionOffset == *FileLength) {
     //
     // If we never found a section with a non-zero size, then we
@@ -1482,9 +1492,9 @@ PeCoffConvertImageToXip (
   memset (XipFile, 0, XipLength);
 
   //
-  // Copy all the headers over (anything before the first section data)
+  // Copy the file headers
   //
-  memcpy (XipFile, *FileBuffer, FirstSectionOffset);
+  memcpy (XipFile, *FileBuffer, PeHdr->Pe32.OptionalHeader.SizeOfHeaders);
 
   NewPeHdr = GetPeCoffHeader ((void *)XipFile);
   if (NewPeHdr == NULL) {
