@@ -1175,7 +1175,7 @@ class PlatformAutoGen(AutoGen):
             M = LibraryInstance[LibraryClassName]
             LibraryList.append(M)
             if ConsumedByList[M] == []:
-                Q.insert(0, M)
+                Q.append(M)
 
         #
         # start the  DAG algorithm
