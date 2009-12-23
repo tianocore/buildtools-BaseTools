@@ -239,7 +239,6 @@
         "$(DLINK)" -o ${dst} $(DLINK_FLAGS) -\( $(DLINK_SPATH) @$(STATIC_LIBRARY_FILES_LIST) -\) $(DLINK2_FLAGS)
         "$(OBJCOPY)" --only-keep-debug ${dst} $(DEBUG_DIR)(+)$(MODULE_NAME).pdb
         "$(OBJCOPY)" -S ${dst}
-        "$(OBJCOPY)" --add-gnu-debuglink=$(DEBUG_DIR)(+)$(MODULE_NAME).pdb ${dst}
         "$(OBJCOPY)" $(OBJCOPY_FLAGS) ${dst}
 
     <Command.RVCT>
