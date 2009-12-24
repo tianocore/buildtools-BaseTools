@@ -1005,6 +1005,10 @@ public:
     }
     return VFR_RETURN_SUCCESS;
   }
+
+  UINT8 GetDataTypeFlags() {
+    return mNumeric->Flags & EFI_IFR_NUMERIC_SIZE;
+  }
 };
 
 class CIfrOneOf : public CIfrObj, public CIfrOpHeader, public CIfrQuestionHeader, public CIfrMinMaxStepData {
@@ -1040,6 +1044,10 @@ public:
       mOneOf->Flags = LFlags | EFI_IFR_DISPLAY_UINT_DEC;
     }
     return VFR_RETURN_SUCCESS;
+  }
+
+  UINT8 GetDataTypeFlags() {
+    return mOneOf->Flags & EFI_IFR_NUMERIC_SIZE;
   }
 };
 

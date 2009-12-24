@@ -1718,7 +1718,7 @@ vfrStatementNumericType :
   vfrStatementOneOf
   ;
 
-vfrSetMinMaxStep[CIfrMinMaxStepData & MMSDObj] :
+vfrSetMinMaxStep[CIfrMinMaxStepData & MMSDObj, UINT8 DataTypeFlags] :
   <<
      UINT64 MaxU8 = 0, MinU8 = 0, StepU8 = 0;
      UINT32 MaxU4 = 0, MinU4 = 0, StepU4 = 0;
@@ -1727,7 +1727,7 @@ vfrSetMinMaxStep[CIfrMinMaxStepData & MMSDObj] :
   >>
   Minimum   "=" I:Number ","
                                                        <<
-                                                          switch (_GET_CURRQEST_DATATYPE ()) {
+                                                          switch (DataTypeFlags) {
                                                           case EFI_IFR_TYPE_NUM_SIZE_64 : MinU8 = _STOU64(I->getText()); break;
                                                           case EFI_IFR_TYPE_NUM_SIZE_32 : MinU4 = _STOU32(I->getText()); break;
                                                           case EFI_IFR_TYPE_NUM_SIZE_16 : MinU2 = _STOU16(I->getText()); break;
@@ -1736,7 +1736,7 @@ vfrSetMinMaxStep[CIfrMinMaxStepData & MMSDObj] :
                                                        >>
   Maximum   "=" A:Number ","
                                                        <<
-                                                          switch (_GET_CURRQEST_DATATYPE ()) {
+                                                          switch (DataTypeFlags) {
                                                           case EFI_IFR_TYPE_NUM_SIZE_64 : 
                                                             MaxU8 = _STOU64(A->getText()); 
                                                             if (MaxU8 < MinU8) {
@@ -1766,7 +1766,7 @@ vfrSetMinMaxStep[CIfrMinMaxStepData & MMSDObj] :
   {
     STEP    "=" S:Number ","
                                                        <<
-                                                          switch (_GET_CURRQEST_DATATYPE ()) {
+                                                          switch (DataTypeFlags) {
                                                           case EFI_IFR_TYPE_NUM_SIZE_64 : StepU8 = _STOU64(S->getText()); break;
                                                           case EFI_IFR_TYPE_NUM_SIZE_32 : StepU4 = _STOU32(S->getText()); break;
                                                           case EFI_IFR_TYPE_NUM_SIZE_16 : StepU2 = _STOU16(S->getText()); break;
@@ -1775,7 +1775,7 @@ vfrSetMinMaxStep[CIfrMinMaxStepData & MMSDObj] :
                                                        >>
   }
                                                        <<
-                                                          switch (_GET_CURRQEST_DATATYPE ()) {
+                                                          switch (DataTypeFlags) {
                                                           case EFI_IFR_TYPE_NUM_SIZE_64 : $MMSDObj.SetMinMaxStepData (MinU8, MaxU8, StepU8); break;
                                                           case EFI_IFR_TYPE_NUM_SIZE_32 : $MMSDObj.SetMinMaxStepData (MinU4, MaxU4, StepU4); break;
                                                           case EFI_IFR_TYPE_NUM_SIZE_16 : $MMSDObj.SetMinMaxStepData (MinU2, MaxU2, StepU2); break;
@@ -1801,7 +1801,7 @@ vfrStatementNumeric :
   {
     Key   "=" KN:Number ","                            << AssignQuestionKey (NObj, KN); >>
   }
-  vfrSetMinMaxStep[NObj]
+  vfrSetMinMaxStep[NObj, NObj.GetDataTypeFlags()]
   vfrStatementQuestionOptionList
   E:EndNumeric                                         << CRT_END_OP (E); >>
   ";"
@@ -1813,7 +1813,17 @@ vfrNumericFlags [CIfrNumeric & NObj, UINT32 LineNum] :
      UINT8 HFlags = 0;
   >>
   numericFlagsField[HFlags, LFlags] ( "\|" numericFlagsField[HFlags, LFlags] )*
-                                                       << _PCATCH(NObj.SetFlags (HFlags, LFlags), LineNum); >>
+                                                       <<
+                                                          //check data type flag
+                                                          EFI_VFR_VARSTORE_TYPE VarStoreType = EFI_VFR_VARSTORE_INVALID;
+                                                          VarStoreType = mCVfrDataStorage.GetVarStoreType (_GET_CURRQEST_VARTINFO().mVarStoreId);
+                                                          if (VarStoreType == EFI_VFR_VARSTORE_BUFFER || VarStoreType == EFI_VFR_VARSTORE_EFI) {
+                                                            if (_GET_CURRQEST_DATATYPE() != (LFlags & EFI_IFR_NUMERIC_SIZE)) {
+                                                              _PCATCH(VFR_RETURN_INVALID_PARAMETER, LineNum, "Numeric Flag is not same to Numeric VarData type");
+                                                            }
+                                                          }
+                                                          _PCATCH(NObj.SetFlags (HFlags, LFlags), LineNum);
+                                                       >>
   ;
 
 numericFlagsField [UINT8 & HFlags, UINT8 & LFlags] :
@@ -1843,7 +1853,7 @@ vfrStatementOneOf :
                                                        >>
   { F:FLAGS "=" vfrOneofFlagsField[OObj, F->getLine()] "," }
   {
-    vfrSetMinMaxStep[OObj]
+    vfrSetMinMaxStep[OObj, OObj.GetDataTypeFlags()]
   }
   vfrStatementQuestionOptionList
   E:EndOneOf                                           << CRT_END_OP (E); >>
@@ -1852,11 +1862,21 @@ vfrStatementOneOf :
 
 vfrOneofFlagsField [CIfrOneOf & OObj, UINT32 LineNum] :
   <<
-     UINT8 LFlags = _GET_CURRQEST_DATATYPE();
+     UINT8 LFlags = _GET_CURRQEST_DATATYPE() & EFI_IFR_NUMERIC_SIZE;
      UINT8 HFlags = 0;
   >>
   numericFlagsField[HFlags, LFlags] ( "\|" numericFlagsField[HFlags, LFlags] )*
-                                                       << _PCATCH(OObj.SetFlags (HFlags, LFlags), LineNum); >>
+                                                       <<
+                                                          //check data type flag
+                                                          EFI_VFR_VARSTORE_TYPE VarStoreType = EFI_VFR_VARSTORE_INVALID;
+                                                          VarStoreType = mCVfrDataStorage.GetVarStoreType (_GET_CURRQEST_VARTINFO().mVarStoreId);
+                                                          if (VarStoreType == EFI_VFR_VARSTORE_BUFFER || VarStoreType == EFI_VFR_VARSTORE_EFI) {
+                                                            if (_GET_CURRQEST_DATATYPE() != (LFlags & EFI_IFR_NUMERIC_SIZE)) {
+                                                              _PCATCH(VFR_RETURN_INVALID_PARAMETER, LineNum, "Numeric Flag is not same to Numeric VarData type");
+                                                            }
+                                                          }
+                                                          _PCATCH(OObj.SetFlags (HFlags, LFlags), LineNum);
+                                                       >>
   ;
 
 vfrStatementStringType :
