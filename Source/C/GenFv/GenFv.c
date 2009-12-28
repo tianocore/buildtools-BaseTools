@@ -709,6 +709,17 @@ Returns:
         );
       DebugMsg (NULL, 0, 9, "Updated runtime driver base address", "%s = 0x%llx", EFI_FV_RUNTIME_DRIVER_BASE_ADDRESS_STRING, (unsigned long long) mFvDataInfo.RuntimeBaseAddress);
     }
+    if (mFvBaseAddressNumber > 0) {
+      fprintf (FpFile, FV_BASE_ADDRESS_STRING);
+      fprintf (FpFile, "\n");
+      for (Index = 0; Index < mFvBaseAddressNumber; Index ++) {
+        fprintf (
+          FpFile,
+          "0x%llx\n",
+          (unsigned long long)mFvBaseAddress[Index]
+          );
+      }
+    }
     fclose (FpFile);
   }
   

@@ -17,14 +17,17 @@
 #
 import Ffs
 import Rule
-from GenFdsGlobalVariable import GenFdsGlobalVariable
 import os
 import StringIO
 import subprocess
+
+from GenFdsGlobalVariable import GenFdsGlobalVariable
 from CommonDataClass.FdfClass import FileStatementClassObject
 from Common import EdkLogger
 from Common.BuildToolError import *
 from Common.Misc import GuidStructureByteArrayToGuidString
+from GuidSection import GuidSection
+from FvImageSection import FvImageSection
 
 ## generate FFS from FILE
 #
@@ -45,7 +48,7 @@ class FileStatement (FileStatementClassObject) :
     #   @param  Dict        dictionary contains macro and value pair
     #   @retval string      Generated FFS file name
     #
-    def GenFfs(self, Dict = {}):
+    def GenFfs(self, Dict = {}, FvAddr=[]):
         
         if self.NameGuid != None and self.NameGuid.startswith('PCD('):
             PcdValue = GenFdsGlobalVariable.GetPcdValue(self.NameGuid)
@@ -92,6 +95,13 @@ class FileStatement (FileStatementClassObject) :
             for section in self.SectionList :
                 Index = Index + 1
                 SecIndex = '%d' %Index
+                # process the inside FvImage from FvSection or GuidSection
+                if FvAddr != []:
+                    if isinstance(section, FvImageSection):
+                        section.FvAddr = FvAddr.pop(0)
+                    elif isinstance(section, GuidSection):
+                        if section.ProcessRequired == False:
+                            section.FvAddr = FvAddr.pop(0)
                 sectList, align = section.GenSection(OutputDir, self.NameGuid, SecIndex, self.KeyStringList, None, Dict)
                 if sectList != []:
                     for sect in sectList:

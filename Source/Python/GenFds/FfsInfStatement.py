@@ -150,7 +150,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
     #   @param  Dict        dictionary contains macro and value pair
     #   @retval string      Generated FFS file name
     #
-    def GenFfs(self, Dict = {}):
+    def GenFfs(self, Dict = {}, FvAddr = []):
         #
         # Parse Inf file get Module related information
         #

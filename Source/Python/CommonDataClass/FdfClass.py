@@ -168,6 +168,7 @@ class DepexSectionClassObject (SectionClassObject):
     def __init__(self):
         self.DepexType = None
         self.Expression = None
+        self.ExpressionProcessed = False
 
 ## Compress section data in FDF
 #
@@ -231,6 +232,7 @@ class FvImageSectionClassObject (SectionClassObject):
         self.FvFileType = None
         self.FvFileName = None
         self.FvFileExtension = None
+        self.FvAddr = None
 
 ## GUIDed section data in FDF
 #
@@ -247,6 +249,7 @@ class GuidSectionClassObject (SectionClassObject) :
         self.SectionType = None
         self.ProcessRequired = False
         self.AuthStatusValid = False
+        self.FvAddr = None
 
 ## UI section data in FDF
 #
@@ -399,4 +402,4 @@ class OptionRomClassObject:
     def __init__(self):
         self.DriverName = None
         self.FfsList = []
-        
+       

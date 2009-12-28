@@ -63,7 +63,7 @@ class FV (FvClassObject):
     #
     def AddToBuffer (self, Buffer, BaseAddress=None, BlockSize= None, BlockNum=None, ErasePloarity='1', VtfDict=None, MacroDict = {}) :
 
-        if self.UiFvName.upper() + 'fv' in GenFds.ImageBinDict.keys():
+        if BaseAddress == None and self.UiFvName.upper() + 'fv' in GenFds.ImageBinDict.keys():
             return GenFds.ImageBinDict[self.UiFvName.upper() + 'fv']
         
         #
@@ -122,12 +122,39 @@ class FV (FvClassObject):
 
         FvInfoFileName = os.path.join(GenFdsGlobalVariable.FfsDir, self.UiFvName + '.inf')
         shutil.copy(GenFdsGlobalVariable.FvAddressFileName, FvInfoFileName)
+        oldtime = os.path.getmtime(FvInfoFileName)
         GenFdsGlobalVariable.GenerateFirmwareVolume(
                                 FvOutputFile,
                                 [self.InfFileName],
                                 AddressFile=FvInfoFileName,
                                 FfsList=FfsFileList
                                 )
+
+        if os.path.getmtime(FvInfoFileName) > oldtime:
+            FvAddrString = []
+            AddFileObj = open(FvInfoFileName, 'r')
+            AddrStrings = AddFileObj.readlines()
+            AddrKeyFound = False
+            for AddrString in AddrStrings:
+                if AddrKeyFound:
+                    #get base address for the inside FvImage
+                    FvAddrString.append (AddrString)
+                elif AddrString.find ("[FV_BASE_ADDRESS]") != -1:
+                    AddrKeyFound = True
+            AddFileObj.close()
+
+            if FvAddrString != []:
+                # Update Ffs again
+                for FfsFile in self.FfsList :
+                    FileName = FfsFile.GenFfs(MacroDict, FvAddr=FvAddrString)
+                
+                #Update GenFv again
+                GenFdsGlobalVariable.GenerateFirmwareVolume(
+                                        FvOutputFile,
+                                        [self.InfFileName],
+                                        AddressFile=FvInfoFileName,
+                                        FfsList=FfsFileList
+                                        )
 
         #
         # Write the Fv contents to Buffer
@@ -138,6 +165,21 @@ class FV (FvClassObject):
         GenFdsGlobalVariable.SharpCounter = 0
 
         Buffer.write(FvFileObj.read())
+        FvFileObj.seek(0)
+        # PI FvHeader is 0x48 byte
+        FvHeaderBuffer = FvFileObj.read(0x48)
+        # FV alignment position.
+        FvAlignmentValue = 1 << (ord (FvHeaderBuffer[0x2E]) & 0x1F)
+        # FvAlignmentValue is larger than or equal to 1K
+        if FvAlignmentValue >= 0x400:
+            if FvAlignmentValue >= 0x10000:
+                #The max alignment supported by FFS is 64K.
+                self.FvAlignment = "64K"
+            else:
+                self.FvAlignment = str (FvAlignmentValue / 0x400) + "K"
+        else:
+            # FvAlignmentValue is less than 1K
+            self.FvAlignment = str (FvAlignmentValue)
         FvFileObj.close()
         GenFds.ImageBinDict[self.UiFvName.upper() + 'fv'] = FvOutputFile
         return FvOutputFile

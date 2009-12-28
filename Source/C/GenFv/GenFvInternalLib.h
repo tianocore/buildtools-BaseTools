@@ -67,6 +67,7 @@ Abstract:
 #define OPTIONS_SECTION_STRING                "[options]"
 #define ATTRIBUTES_SECTION_STRING             "[attributes]"
 #define FILES_SECTION_STRING                  "[files]"
+#define FV_BASE_ADDRESS_STRING                "[FV_BASE_ADDRESS]"
 
 //
 // Options section
@@ -270,6 +271,9 @@ extern CAP_INFO   mCapDataInfo;
 extern EFI_GUID   mEfiFirmwareFileSystem2Guid;
 extern UINT32     mFvTotalSize;
 extern UINT32     mFvTakenSize;
+
+extern EFI_PHYSICAL_ADDRESS mFvBaseAddress[];
+extern UINT32               mFvBaseAddressNumber;
 //
 // Local function prototypes
 //

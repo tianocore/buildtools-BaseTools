@@ -159,6 +159,9 @@ UINT8                                   m64kRecoveryStartupApDataArray[SIZEOF_ST
 FV_INFO                     mFvDataInfo;
 CAP_INFO                    mCapDataInfo;
 
+EFI_PHYSICAL_ADDRESS mFvBaseAddress[0x10];
+UINT32               mFvBaseAddressNumber = 0;
+
 EFI_STATUS
 ParseFvInf (
   IN  MEMORY_FILE  *InfFile,
@@ -2653,6 +2656,104 @@ Returns:
 }
 
 EFI_STATUS
+GetChildFvFromFfs (
+  IN      UINT8                 FixupFlags,
+  IN      FV_INFO               *FvInfo, 
+  IN      EFI_FFS_FILE_HEADER   *FfsFile,
+  IN      UINTN                 XipOffset,
+  IN      FILE                  *FvMapFile
+  )
+/*++
+
+Routine Description:
+
+  This function gets all child FvImages in the input FfsFile, and records
+  their base address to the parent image.
+
+Arguments:
+  FvInfo            A pointer to FV_INFO struture.
+  FfsFile           A pointer to Ffs file image that may contain FvImage.
+  XipOffset         The offset address to the parent FvImage base.
+
+Returns:
+
+  EFI_SUCCESS        Base address of child Fv image is recorded.
+--*/
+{
+  EFI_STATUS                          Status;
+  UINTN                               Index;
+  EFI_FILE_SECTION_POINTER            SubFvSection;
+  EFI_FFS_FILE_STATE                  SavedState;
+  EFI_FFS_FILE_HEADER                 *SubFfsFile;
+  EFI_FFS_FILE_HEADER                 *NextFfsFile;
+  EFI_FIRMWARE_VOLUME_HEADER          *SavedFvHeader;
+  UINT32                              SavedFvSize;
+  EFI_FIRMWARE_VOLUME_HEADER          *SubFvImageHeader;
+  CHAR8                               SubFfsName[PRINTED_GUID_BUFFER_SIZE];
+  EFI_PHYSICAL_ADDRESS                SubFvBaseAddress;
+
+  ZeroMem (SubFfsName, PRINTED_GUID_BUFFER_SIZE);
+  GetFvHeader (&SavedFvHeader, &SavedFvSize);
+
+  for (Index = 1;; Index++) {
+    //
+    // Find FV section 
+    //
+    Status = GetSectionByType (FfsFile, EFI_SECTION_FIRMWARE_VOLUME_IMAGE, Index, &SubFvSection);
+    if (EFI_ERROR (Status)) {
+      break;
+    }
+    SubFvImageHeader = (EFI_FIRMWARE_VOLUME_HEADER *) ((UINT8 *) SubFvSection.FVImageSection + sizeof (EFI_FIRMWARE_VOLUME_IMAGE_SECTION));
+    if ((FixupFlags & REBASE_XIP_FILE) == REBASE_XIP_FILE) {
+      //
+      // Rebase on Flash
+      //
+      SubFvBaseAddress = FvInfo->BaseAddress + (UINTN) SubFvImageHeader - (UINTN) FfsFile + XipOffset;
+      mFvBaseAddress[mFvBaseAddressNumber ++ ] = SubFvBaseAddress;
+    } else {
+      //
+      // Rebase on Memory
+      //
+      InitializeFvLib (SubFvImageHeader, (UINT32) SubFvImageHeader->FvLength);
+      //
+      // Go through FFS in this insided FvImage one by one.
+      //
+      SubFfsFile = NULL;
+      while (TRUE) {
+        GetNextFile (SubFfsFile, &NextFfsFile);
+        if (NextFfsFile == NULL) {
+          break;
+        }
+        SubFfsFile = NextFfsFile;
+        //
+        // Use FFS GUID as its File Name.
+        //
+        PrintGuidToBuffer (&SubFfsFile->Name, SubFfsName, PRINTED_GUID_BUFFER_SIZE, TRUE);
+        FfsRebase (FvInfo, SubFfsName, SubFfsFile, (UINTN) SubFfsFile - (UINTN) FfsFile + XipOffset, FvMapFile);
+      }
+    }
+  }
+
+  //
+  // Now update file checksum
+  //
+  if (((FixupFlags & REBASE_XIP_FILE) == 0) && (FfsFile->Attributes & FFS_ATTRIB_CHECKSUM)) {
+    SavedState  = FfsFile->State;
+    FfsFile->IntegrityCheck.Checksum.File = 0;
+    FfsFile->State                        = 0;
+    FfsFile->IntegrityCheck.Checksum.File = CalculateChecksum8 (
+      (UINT8 *)(FfsFile + 1),
+      GetLength (FfsFile->Size) - sizeof (EFI_FFS_FILE_HEADER)
+      );
+    FfsFile->State = SavedState;
+  }
+
+  InitializeFvLib (SavedFvHeader, SavedFvSize);
+
+  return EFI_SUCCESS;
+}
+
+EFI_STATUS
 FfsRebase ( 
   IN OUT  FV_INFO               *FvInfo, 
   IN      CHAR8                 *FileName,           
@@ -2748,6 +2849,17 @@ Returns:
     case EFI_FV_FILETYPE_COMBINED_PEIM_DRIVER:
     case EFI_FV_FILETYPE_DRIVER:
     case EFI_FV_FILETYPE_DXE_CORE:
+      break;
+    case EFI_FV_FILETYPE_FIRMWARE_VOLUME_IMAGE:
+      //
+      // Rebase the inside FvImage.
+      //
+      if (Flags != 0) {
+        GetChildFvFromFfs (Flags, FvInfo, FfsFile, XipOffset, FvMapFile);
+      }
+      //
+      // Search PE/TE section in FV sectin.
+      //
       break;
     default:
       return EFI_SUCCESS;
@@ -3069,7 +3181,8 @@ WritePeMap:
   if (FfsFile->Type != EFI_FV_FILETYPE_SECURITY_CORE &&
       FfsFile->Type != EFI_FV_FILETYPE_PEI_CORE &&
       FfsFile->Type != EFI_FV_FILETYPE_PEIM &&
-      FfsFile->Type != EFI_FV_FILETYPE_COMBINED_PEIM_DRIVER
+      FfsFile->Type != EFI_FV_FILETYPE_COMBINED_PEIM_DRIVER &&
+      FfsFile->Type != EFI_FV_FILETYPE_FIRMWARE_VOLUME_IMAGE
       ) {
     //
     // Only Peim code may have a TE section

@@ -154,7 +154,7 @@ class GenFdsGlobalVariable:
 
     @staticmethod
     def GenerateSection(Output, Input, Type=None, CompressionType=None, Guid=None,
-                        GuidHdrLen=None, GuidAttr=None, Ui=None, Ver=None):
+                        GuidHdrLen=None, GuidAttr=None, Ui=None, Ver=None, InputAlign=None):
         if not GenFdsGlobalVariable.NeedsUpdate(Output, Input):
             return
         GenFdsGlobalVariable.DebugLogger(EdkLogger.DEBUG_5, "%s needs update because of newer %s" % (Output, Input))
@@ -170,6 +170,10 @@ class GenFdsGlobalVariable:
             Cmd += ["-l", GuidHdrLen]
         if GuidAttr not in [None, '']:
             Cmd += ["-r", GuidAttr]
+        if InputAlign != None:
+            #Section Align is only for dummy section without section type
+            for SecAlign in InputAlign:
+                Cmd += ["--sectionalign", SecAlign]
 
         if Ui not in [None, '']:
             #Cmd += ["-n", '"' + Ui + '"']
@@ -193,6 +197,15 @@ class GenFdsGlobalVariable:
             Cmd += ["-o", Output]
             Cmd += Input
             GenFdsGlobalVariable.CallExternalTool(Cmd, "Failed to generate section")
+
+    @staticmethod
+    def GetAlignment (AlignString):
+        if AlignString == None:
+            return 0
+        if AlignString in ("1K", "2K", "4K", "8K", "16K", "32K", "64K"):
+            return int (AlignString.rstrip('K')) * 1024
+        else:
+            return int (AlignString)
 
     @staticmethod
     def GenerateFfs(Output, Input, Type, Guid, Fixed=False, CheckSum=False, Align=None,
