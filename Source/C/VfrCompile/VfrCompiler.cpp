@@ -84,8 +84,6 @@ CVfrCompiler::OptionInitialization (
       mOptions.CreateRecordListFile = TRUE;
       gCIfrRecordInfoDB.TurnOn ();
     } else if (stricmp(Argv[Index], "-i") == 0) {
-      Error (NULL, 0, 1000, "Unknown option", "unrecognized option %s", Argv[Index]);
-      goto Fail;
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
         Error (NULL, 0, 1001, "Missing option", "-i missing path argument"); 
@@ -115,8 +113,6 @@ CVfrCompiler::OptionInitialization (
     } else if (stricmp(Argv[Index], "-n") == 0 || stricmp(Argv[Index], "--no-pre-processing") == 0 || stricmp(Argv[Index], "-nopp") == 0) {
       mOptions.SkipCPreprocessor = TRUE;
     } else if (stricmp(Argv[Index], "-f") == 0 || stricmp(Argv[Index], "--pre-processing-flag") == 0 || stricmp(Argv[Index], "-ppflag") == 0) {
-      Error (NULL, 0, 1000, "Unknown option", "unrecognized option %s", Argv[Index]);
-      goto Fail;
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
         Error (NULL, 0, 1001, "Missing option", "-od - missing C-preprocessor argument");

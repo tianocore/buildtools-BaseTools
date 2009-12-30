@@ -1340,7 +1340,7 @@ CIFROBJ_DEBUG_PRINT (
 
 #endif
 
-bool gCreateOp = TRUE;
+BOOLEAN gCreateOp = TRUE;
 
 CIfrObj::CIfrObj (
   IN  UINT8   OpCode,

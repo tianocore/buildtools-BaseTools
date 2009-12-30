@@ -628,7 +628,7 @@ vfrStatementVarStoreLinear :
                                                        _PCATCH(mCVfrDataStorage.GetVarStoreId(StoreName, &VarStoreId), SN);
                                                        VSObj.SetVarStoreId (VarStoreId);
                                                        _PCATCH(gCVfrVarDataTypeDB.GetDataTypeSize(TypeName, &Size), LineNum);
-                                                       VSObj.SetSize (Size);
+                                                       VSObj.SetSize ((UINT16) Size);
                                                        VSObj.SetName (SN->getText());
                                                     >>
   ";"
@@ -1268,8 +1268,8 @@ vfrStatementCrossReference :
 vfrStatementGoto :
   <<
      UINT8               RefType = 1;
-     EFI_STRING_ID       DevPath;
-     EFI_GUID            FSId;
+     EFI_STRING_ID       DevPath = EFI_STRING_ID_INVALID;
+     EFI_GUID            FSId = {0, {0,}};
      EFI_FORM_ID         FId;
      EFI_QUESTION_ID     QId    = EFI_QUESTION_ID_INVALID;
      UINT32              BitMask;
@@ -2937,8 +2937,8 @@ ideqvallistExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
 questionref13Exp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   <<
      UINT8           Type = 0x1;
-     EFI_STRING_ID   DevPath;
-     EFI_GUID        Guid;
+     EFI_STRING_ID   DevPath = EFI_STRING_ID_INVALID;
+     EFI_GUID        Guid = {0, {0, }};
      EFI_QUESTION_ID QId = EFI_QUESTION_ID_INVALID;
      UINT32          BitMask;
      CHAR8           *QName = NULL;
@@ -3381,7 +3381,7 @@ EfiVfrParser::_PCATCH (
   IN EFI_VFR_RETURN_CODE ReturnCode
   )
 {
-  mParserStatus += gCVfrErrorHandle.HandleError (ReturnCode);
+  mParserStatus = mParserStatus + gCVfrErrorHandle.HandleError (ReturnCode);
 }
 
 VOID
@@ -3390,7 +3390,7 @@ EfiVfrParser::_PCATCH (
   IN ANTLRTokenPtr       Tok
   )
 {
-  mParserStatus += gCVfrErrorHandle.HandleError (ReturnCode, Tok->getLine(), Tok->getText());
+  mParserStatus = mParserStatus + gCVfrErrorHandle.HandleError (ReturnCode, Tok->getLine(), Tok->getText());
 }
 
 VOID
@@ -3399,7 +3399,7 @@ EfiVfrParser::_PCATCH (
   IN UINT32              LineNum
   )
 {
-  mParserStatus += gCVfrErrorHandle.HandleError (ReturnCode, LineNum);
+  mParserStatus = mParserStatus + gCVfrErrorHandle.HandleError (ReturnCode, LineNum);
 }
 
 VOID
@@ -3409,7 +3409,7 @@ EfiVfrParser::_PCATCH (
   IN CHAR8               *ErrorMsg
   )
 {
-  mParserStatus += gCVfrErrorHandle.HandleError (ReturnCode, LineNum, ErrorMsg);
+  mParserStatus = mParserStatus + gCVfrErrorHandle.HandleError (ReturnCode, LineNum, ErrorMsg);
 }
 
 VOID
@@ -3686,7 +3686,7 @@ EfiVfrParser::_DeclareDefaultFrameworkVarStore (
     CIfrVarStore      VSObj;
     VSObj.SetLineNo (LineNo);
     VSObj.SetVarStoreId (0x1); //the first and only one Buffer Var Store
-    VSObj.SetSize (TypeSize);
+    VSObj.SetSize ((UINT16) TypeSize);
     //VSObj.SetName (gCVfrVarDataTypeDB.mFirstNewDataTypeName);
     VSObj.SetName ("Setup");
     VSObj.SetGuid (&mFormsetGuid);
@@ -3703,7 +3703,7 @@ EfiVfrParser::_DeclareDefaultFrameworkVarStore (
         CIfrVarStore      VSObj;
         VSObj.SetLineNo (LineNo);
         VSObj.SetVarStoreId (pNode->mVarStoreId);
-        VSObj.SetSize (pNode->mStorageInfo.mDataType->mTotalSize);
+        VSObj.SetSize ((UINT16) pNode->mStorageInfo.mDataType->mTotalSize);
         if (FirstNode) {
           VSObj.SetName ("Setup");
           FirstNode = FALSE;
@@ -3764,7 +3764,7 @@ EfiVfrParser::_DeclareDefaultLinearVarStore (
     mCVfrDataStorage.GetVarStoreId(TypeNameList[Index], &VarStoreId);
     VSObj.SetVarStoreId (VarStoreId);
     gCVfrVarDataTypeDB.GetDataTypeSize(TypeNameList[Index], &Size);
-    VSObj.SetSize (Size);
+    VSObj.SetSize ((UINT16) Size);
     VSObj.SetName (TypeNameList[Index]);
     VSObj.SetGuid (&mFormsetGuid);
   }
@@ -3789,7 +3789,7 @@ EfiVfrParser::_DeclareDefaultLinearVarStore (
     mCVfrDataStorage.GetVarStoreId("Date", &VarStoreId);
     VSObj.SetVarStoreId (VarStoreId);
     gCVfrVarDataTypeDB.GetDataTypeSize("EFI_HII_DATE", &Size);
-    VSObj.SetSize (Size);
+    VSObj.SetSize ((UINT16) Size);
     VSObj.SetName ("Date");
     VSObj.SetGuid (&mFormsetGuid);
   }
@@ -3810,7 +3810,7 @@ EfiVfrParser::_DeclareDefaultLinearVarStore (
     mCVfrDataStorage.GetVarStoreId("Time", &VarStoreId);
     VSObj.SetVarStoreId (VarStoreId);
     gCVfrVarDataTypeDB.GetDataTypeSize("EFI_HII_TIME", &Size);
-    VSObj.SetSize (Size);
+    VSObj.SetSize ((UINT16) Size);
     VSObj.SetName ("Time");
     VSObj.SetGuid (&mFormsetGuid);
   }

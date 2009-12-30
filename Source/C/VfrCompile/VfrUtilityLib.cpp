@@ -287,7 +287,7 @@ CVfrBufferConfig::Write (
   switch (Mode) {
   case 'a' : // add
     if (Select (Name, Id) != 0) {
-      if ((pItem = new SConfigItem (Name, Id, Type, Offset, Width, Value)) == NULL) {
+      if ((pItem = new SConfigItem (Name, Id, Type, Offset, (UINT16) Width, Value)) == NULL) {
         return 2;
       }
       if (mItemListHead == NULL) {
@@ -1127,7 +1127,7 @@ CVfrVarDataTypeDB::GetDataFieldInfo (
     CHECK_ERROR_RETURN(GetTypeField (FName, pType, pField), VFR_RETURN_SUCCESS);
     pType  = pField->mFieldType;
     CHECK_ERROR_RETURN(GetFieldOffset (pField, ArrayIdx, Tmp), VFR_RETURN_SUCCESS);
-    Offset += Tmp;
+    Offset = (UINT16) (Offset + Tmp);
     Type   = GetFieldWidth (pField);
     Size   = GetFieldSize (pField, ArrayIdx);
   }
@@ -1386,6 +1386,7 @@ CVfrDataStorage::GetFreeVarStoreId (
   //
   // Assign the different ID range for the different type VarStore to support Framework Vfr
   //
+  Index = 0;
   if ((!VfrCompatibleMode) || (VarType == EFI_VFR_VARSTORE_BUFFER)) {
     Index = 0;
   } else if (VarType == EFI_VFR_VARSTORE_EFI) {
@@ -1838,8 +1839,6 @@ CVfrDataStorage::BufferVarStoreRequestElementAdd (
   IN EFI_VARSTORE_INFO &Info
   )
 {
-  CHAR8                 NewReqElt[128] = {'\0',};
-  CHAR8                 *OldReqElt = NULL;
   SVfrVarStorageNode    *pNode = NULL;
   EFI_IFR_TYPE_VALUE    Value = gZeroEfiIfrTypeValue;
 
@@ -2022,85 +2021,6 @@ CVfrDefaultStore::GetDefaultId (
   }
 
   return VFR_RETURN_UNDEFINED;
-}
-
-STATIC
-EFI_VFR_RETURN_CODE
-AltCfgItemPrintToBuffer (
-  IN CHAR8              *NewAltCfg, 
-  IN EFI_VARSTORE_INFO  Info, 
-  IN UINT8              Type,
-  IN EFI_IFR_TYPE_VALUE Value
-  )
-{
-  UINT32 Index;
-  UINT8  *BufChar = NULL;
-  UINT32 Count    = 0;
-
-  if (NewAltCfg != NULL) {
-    Count = sprintf (
-              NewAltCfg,
-              "&OFFSET=%x&WIDTH=%x&VALUE=",
-              Info.mInfo.mVarOffset,
-              Info.mVarTotalSize
-              );
-    NewAltCfg += Count;
-
-    switch (Type) {
-    case EFI_IFR_TYPE_NUM_SIZE_8 :
-      Count = sprintf (NewAltCfg, "%x", Value.u8);
-      NewAltCfg += Count;
-      break;
-    case EFI_IFR_TYPE_NUM_SIZE_16 :
-      Count = sprintf (NewAltCfg, "%x", Value.u16);
-      NewAltCfg += Count;
-      break;
-    case EFI_IFR_TYPE_NUM_SIZE_32 :
-      Count = sprintf (NewAltCfg, "%x", Value.u32);
-      NewAltCfg += Count;
-      break;
-    case EFI_IFR_TYPE_NUM_SIZE_64 :
-      Count = sprintf (NewAltCfg, "%x", Value.u64);
-      NewAltCfg += Count;
-      break;
-    case EFI_IFR_TYPE_BOOLEAN :
-      Count = sprintf (NewAltCfg, "%x", Value.b);
-      NewAltCfg += Count;
-      break;
-    case EFI_IFR_TYPE_TIME :
-#if 1
-      Count = sprintf (NewAltCfg, "%x", *((UINT32 *)(&Value.time)));
-      NewAltCfg += Count;
-#else
-      BufChar = (UINT8 *)&Value.time;
-      for (Index = 0; Index < sizeof(EFI_HII_TIME); Index++) {
-        Count = sprintf (NewAltCfg, "%02x", (UINT8)BufChar[Index]);
-        NewAltCfg += Count;
-      }
-#endif
-      break;
-    case EFI_IFR_TYPE_DATE :
-#if 1
-      Count = sprintf (NewAltCfg, "%x", *((UINT32 *)(&Value.date)));
-      NewAltCfg += Count;
-#else
-      BufChar = (UINT8 *)&Value.date;
-      for (Index = 0; Index < sizeof(EFI_HII_DATE); Index++) {
-        Count = sprintf (NewAltCfg, "%02x", (UINT8)BufChar[Index]);
-        NewAltCfg += Count;
-      }
-#endif
-      break;
-    case EFI_IFR_TYPE_STRING :
-      Count = sprintf (NewAltCfg, "%x", Value.string);
-      NewAltCfg += Count;
-      break;
-    case EFI_IFR_TYPE_OTHER :
-      return VFR_RETURN_UNSUPPORTED;
-	}
-  }
-
-  return VFR_RETURN_FATAL_ERROR;
 }
 
 EFI_VFR_RETURN_CODE

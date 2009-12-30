@@ -195,11 +195,11 @@ extern CIfrRecordInfoDB gCIfrRecordInfoDB;
 /*
  * The definition of CIfrObj
  */
-extern bool  gCreateOp;
+extern BOOLEAN  gCreateOp;
 
 class CIfrObj {
 private:
-  bool    mDelayEmit;
+  BOOLEAN mDelayEmit;
 
   CHAR8   *mObjBinBuf;
   UINT8   mObjBinLen;
@@ -227,7 +227,7 @@ public:
 
   inline bool ExpendObjBin (IN UINT8 Size) {
     if ((mDelayEmit == TRUE) && ((mObjBinLen + Size) > mObjBinLen)) {
-      mObjBinLen += Size;
+      mObjBinLen = mObjBinLen + Size;
       return TRUE;
     } else {
       return FALSE;
@@ -248,7 +248,7 @@ public:
 
   VOID IncLength (UINT8 Size) {
     if ((mHeader->Length + Size) > mHeader->Length) {
-      mHeader->Length += Size;
+      mHeader->Length = mHeader->Length + Size;
     }
   }
 
@@ -696,7 +696,7 @@ public:
     UINT8 Len;
 
     if (Name != NULL) {
-      Len = strlen (Name);
+      Len = (UINT8) strlen (Name);
       if (Len != 0) {
         if (ExpendObjBin (Len) == TRUE) {
           IncLength (Len);

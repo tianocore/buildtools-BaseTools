@@ -135,7 +135,6 @@ CVfrErrorHandle::ParseFileScopeRecord (
   IN UINT32    WholeScopeLine
   )
 {
-  CHAR8               *FullPathName = NULL;
   SVfrFileScopeRecord *pNode        = NULL;
 
   if (Record == NULL) {
