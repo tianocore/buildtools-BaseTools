@@ -1269,7 +1269,7 @@ vfrStatementGoto :
   <<
      UINT8               RefType = 1;
      EFI_STRING_ID       DevPath = EFI_STRING_ID_INVALID;
-     EFI_GUID            FSId = {0, {0,}};
+     EFI_GUID            FSId = {0,};
      EFI_FORM_ID         FId;
      EFI_QUESTION_ID     QId    = EFI_QUESTION_ID_INVALID;
      UINT32              BitMask;
@@ -2938,7 +2938,7 @@ questionref13Exp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   <<
      UINT8           Type = 0x1;
      EFI_STRING_ID   DevPath = EFI_STRING_ID_INVALID;
-     EFI_GUID        Guid = {0, {0, }};
+     EFI_GUID        Guid = {0,};
      EFI_QUESTION_ID QId = EFI_QUESTION_ID_INVALID;
      UINT32          BitMask;
      CHAR8           *QName = NULL;
