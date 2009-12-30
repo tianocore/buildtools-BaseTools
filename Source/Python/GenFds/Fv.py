@@ -221,6 +221,10 @@ class FV (FvClassObject):
                                       ' 0x%X' %BlockNum    + \
                                       T_CHAR_LF)
         else:
+            if self.BlockSizeList == []:
+                #set default block size is 1
+                self.FvInfFile.writelines("EFI_BLOCK_SIZE  = 0x1" + T_CHAR_LF)
+            
             for BlockSize in self.BlockSizeList :
                 if BlockSize[0] != None:
                     self.FvInfFile.writelines("EFI_BLOCK_SIZE  = "  + \

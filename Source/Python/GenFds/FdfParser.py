@@ -1312,8 +1312,7 @@ class FdfParser:
         if not Status:
             raise Warning("FD name error", self.FileName, self.CurrentLineNumber)
 
-        if not self.__GetTokenStatements(FdObj):
-            return False
+        self.__GetTokenStatements(FdObj)
 
         self.__GetDefineStatements(FdObj)
 
@@ -1368,8 +1367,6 @@ class FdfParser:
     #
     #   @param  self        The object pointer
     #   @param  Obj         for whom token statement is got
-    #   @retval True        Successfully find a token statement
-    #   @retval False       Not able to find a token statement
     #
     def __GetTokenStatements(self, Obj):
         if not self.__IsKeyword( "BaseAddress"):
@@ -1419,8 +1416,7 @@ class FdfParser:
 
         Obj.ErasePolarity = self.__Token
 
-        Status = self.__GetBlockStatements(Obj)
-        return Status
+        self.__GetBlockStatements(Obj)
 
     ## __GetAddressStatements() method
     #
@@ -1459,17 +1455,20 @@ class FdfParser:
     #
     #   @param  self        The object pointer
     #   @param  Obj         for whom block statement is got
-    #   @retval True        Successfully find
-    #   @retval False       Not able to find
     #
     def __GetBlockStatements(self, Obj):
 
         if not self.__GetBlockStatement(Obj):
-            raise Warning("expected block statement", self.FileName, self.CurrentLineNumber)
+            #set default block size is 1
+            Obj.BlockSizeList.append((1, Obj.Size, None))
+            return
 
         while self.__GetBlockStatement(Obj):
             pass
-        return True
+        
+        for Item in Obj.BlockSizeList:
+            if Item[0] == None or Item[1] == None:
+                raise Warning("expected block statement for Fd Section", self.FileName, self.CurrentLineNumber)
 
     ## __GetBlockStatement() method
     #

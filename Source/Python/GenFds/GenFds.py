@@ -372,7 +372,7 @@ class GenFds :
     #   @retval int             Block size value
     #
     def GetFvBlockSize(FvObj):
-        DefaultBlockSize = 0x10000
+        DefaultBlockSize = 0x1
         FdObj = None
         if GenFds.OnlyGenerateThisFd != None and GenFds.OnlyGenerateThisFd.upper() in GenFdsGlobalVariable.FdfParser.Profile.FdDict.keys():
             FdObj = GenFdsGlobalVariable.FdfParser.Profile.FdDict[GenFds.OnlyGenerateThisFd.upper()]
