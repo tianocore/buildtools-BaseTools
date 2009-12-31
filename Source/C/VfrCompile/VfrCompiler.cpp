@@ -24,9 +24,19 @@ PACKAGE_DATA  gCBuffer;
 PACKAGE_DATA  gRBuffer;
 
 VOID 
-CVfrCompiler::DebugError () {
-  Error (NULL, 0, 0001, "Error parsing vfr file", " %s", mOptions.VfrFileName);
-  //_asm int 3;
+CVfrCompiler::DebugError (
+  IN CHAR8         *FileName,
+  IN UINT32        LineNumber,
+  IN UINT32        MessageCode,
+  IN CONST CHAR8   *Text,
+  IN CONST CHAR8   *MsgFmt,
+  ...
+  ) 
+{
+  va_list List;
+  va_start (List, MsgFmt);
+  PrintMessage ((CHAR8 *) "ERROR", FileName, LineNumber, MessageCode, (CHAR8 *) Text, (CHAR8 *) MsgFmt, List);
+  va_end (List);
 }
 
 VOID
@@ -53,7 +63,7 @@ CVfrCompiler::OptionInitialization (
 {
   INT32         Index;
   
-  SetUtilityName (PROGRAM_NAME);
+  SetUtilityName ((CHAR8*) PROGRAM_NAME);
 
   mOptions.VfrFileName[0]                = '\0';
   mOptions.RecordListFile[0]             = '\0';
@@ -86,7 +96,7 @@ CVfrCompiler::OptionInitialization (
     } else if (stricmp(Argv[Index], "-i") == 0) {
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
-        Error (NULL, 0, 1001, "Missing option", "-i missing path argument"); 
+        DebugError (NULL, 0, 1001, "Missing option", "-i missing path argument"); 
         goto Fail;
       }
 
@@ -94,7 +104,7 @@ CVfrCompiler::OptionInitialization (
     } else if (stricmp(Argv[Index], "-o") == 0 || stricmp(Argv[Index], "--output-directory") == 0 || stricmp(Argv[Index], "-od") == 0) {
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
-        Error (NULL, 0, 1001, "Missing option", "-o missing output directory name");
+        DebugError (NULL, 0, 1001, "Missing option", "-o missing output directory name");
         goto Fail;
       }
       strcpy (mOptions.OutputDirectory, Argv[Index]);
@@ -107,7 +117,7 @@ CVfrCompiler::OptionInitialization (
           strcat (mOptions.OutputDirectory, "\\");
         }
       }
-      DebugMsg (NULL, 0, 9, "Output Directory", mOptions.OutputDirectory);
+      DebugMsg (NULL, 0, 9, (CHAR8 *) "Output Directory", mOptions.OutputDirectory);
     } else if (stricmp(Argv[Index], "-b") == 0 || stricmp(Argv[Index], "--create-ifr-package") == 0 || stricmp(Argv[Index], "-ibin") == 0) {
       mOptions.CreateIfrPkgFile = TRUE;
     } else if (stricmp(Argv[Index], "-n") == 0 || stricmp(Argv[Index], "--no-pre-processing") == 0 || stricmp(Argv[Index], "-nopp") == 0) {
@@ -115,7 +125,7 @@ CVfrCompiler::OptionInitialization (
     } else if (stricmp(Argv[Index], "-f") == 0 || stricmp(Argv[Index], "--pre-processing-flag") == 0 || stricmp(Argv[Index], "-ppflag") == 0) {
       Index++;
       if ((Index >= Argc) || (Argv[Index][0] == '-')) {
-        Error (NULL, 0, 1001, "Missing option", "-od - missing C-preprocessor argument");
+        DebugError (NULL, 0, 1001, "Missing option", "-od - missing C-preprocessor argument");
         goto Fail;
       }
 
@@ -123,13 +133,13 @@ CVfrCompiler::OptionInitialization (
     } else if (stricmp(Argv[Index], "-c") == 0 || stricmp(Argv[Index], "--compatible-framework") == 0) {
       mOptions.CompatibleMode = TRUE;
     } else {
-      Error (NULL, 0, 1000, "Unknown option", "unrecognized option %s", Argv[Index]);
+      DebugError (NULL, 0, 1000, "Unknown option", "unrecognized option %s", Argv[Index]);
       goto Fail;
     }
   }
 
   if (Index != Argc - 1) {
-    Error (NULL, 0, 1001, "Missing option", "VFR file name is not specified.");
+    DebugError (NULL, 0, 1001, "Missing option", "VFR file name is not specified.");
     goto Fail;
   } else {
     strcpy (mOptions.VfrFileName, Argv[Index]);
@@ -188,7 +198,7 @@ CVfrCompiler::AppendIncludePath (
   }
   IncludePaths = new CHAR8[Len];
   if (IncludePaths == NULL) {
-    Error (NULL, 0, 4001, "Resource: memory can't be allocated", NULL);
+    DebugError (NULL, 0, 4001, "Resource: memory can't be allocated", NULL);
     return;
   }
   IncludePaths[0] = '\0';
@@ -217,7 +227,7 @@ CVfrCompiler::AppendCPreprocessorOptions (
   }
   Opt = new CHAR8[Len];
   if (Opt == NULL) {
-    Error (NULL, 0, 4001, "Resource: memory can't be allocated", NULL);
+    DebugError (NULL, 0, 4001, "Resource: memory can't be allocated", NULL);
     return;
   }
   Opt[0] = 0;
@@ -335,8 +345,8 @@ CVfrCompiler::CVfrCompiler (
   IN CHAR8      **Argv
   )
 {
-  mPreProcessCmd = PREPROCESSOR_COMMAND;
-  mPreProcessOpt = PREPROCESSOR_OPTIONS;
+  mPreProcessCmd = (CHAR8 *) PREPROCESSOR_COMMAND;
+  mPreProcessOpt = (CHAR8 *) PREPROCESSOR_OPTIONS;
 
   OptionInitialization(Argc, Argv);
 
@@ -413,7 +423,7 @@ CVfrCompiler::PreProcess (
   }
 
   if ((pVfrFile = fopen (mOptions.VfrFileName, "r")) == NULL) {
-    Error (NULL, 0, 0001, "Error opening the input VFR file", mOptions.VfrFileName);
+    DebugError (NULL, 0, 0001, "Error opening the input VFR file", mOptions.VfrFileName);
     goto Fail;
   }
   fclose (pVfrFile);
@@ -429,7 +439,7 @@ CVfrCompiler::PreProcess (
 
   PreProcessCmd = new CHAR8[CmdLen + 10];
   if (PreProcessCmd == NULL) {
-    Error (NULL, 0, 4001, "Resource: memory can't be allocated", NULL);
+    DebugError (NULL, 0, 4001, "Resource: memory can't be allocated", NULL);
     goto Fail;
   }
   strcpy (PreProcessCmd, mPreProcessCmd), strcat (PreProcessCmd, " ");
@@ -444,7 +454,7 @@ CVfrCompiler::PreProcess (
   strcat (PreProcessCmd, mOptions.PreprocessorOutputFileName);
 
   if (system (PreProcessCmd) != 0) {
-    Error (NULL, 0, 0003, "Error parsing file", "failed to spawn C preprocessor on VFR file %s\n", PreProcessCmd);
+    DebugError (NULL, 0, 0003, "Error parsing file", "failed to spawn C preprocessor on VFR file %s\n", PreProcessCmd);
     goto Fail;
   }
 
@@ -480,7 +490,7 @@ CVfrCompiler::Compile (
   gCVfrErrorHandle.SetInputFile (InFileName);
 
   if ((pInFile = fopen (InFileName, "r")) == NULL) {
-    Error (NULL, 0, 0001, "Error opening the input file", InFileName);
+    DebugError (NULL, 0, 0001, "Error opening the input file", InFileName);
     goto Fail;
   }
 
@@ -500,7 +510,7 @@ CVfrCompiler::Compile (
 
 Fail:
   if (!IS_RUN_STATUS(STATUS_DEAD)) {
-    Error (NULL, 0, 0003, "Error parsing", "compile error in file %s", InFileName);
+    DebugError (NULL, 0, 0003, "Error parsing", "compile error in file %s", InFileName);
     SET_RUN_STATUS (STATUS_FAILED);
   }
   if (pInFile != NULL) {
@@ -530,7 +540,7 @@ CVfrCompiler::AdjustBin (
   if (gCBuffer.Buffer != NULL && gRBuffer.Buffer != NULL) {
     UINT32 Index;
     if (gCBuffer.Size != gRBuffer.Size) {
-      Error (NULL, 0, 0001, "Error parsing vfr file", " %s. FormBinary Size 0x%X is not same to RecordBuffer Size 0x%X", mOptions.VfrFileName, gCBuffer.Size, gRBuffer.Size);
+      DebugError (NULL, 0, 0001, "Error parsing vfr file", " %s. FormBinary Size 0x%X is not same to RecordBuffer Size 0x%X", mOptions.VfrFileName, gCBuffer.Size, gRBuffer.Size);
     }
     for (Index = 0; Index < gCBuffer.Size; Index ++) {
       if (gCBuffer.Buffer[Index] != gRBuffer.Buffer[Index]) {
@@ -538,13 +548,13 @@ CVfrCompiler::AdjustBin (
       }
     }
     if (Index != gCBuffer.Size) {
-      Error (NULL, 0, 0001, "Error parsing vfr file", " %s. the 0x%X byte is different between Form and Record", mOptions.VfrFileName, Index);
+      DebugError (NULL, 0, 0001, "Error parsing vfr file", " %s. the 0x%X byte is different between Form and Record", mOptions.VfrFileName, Index);
     }
-    DebugMsg (NULL, 0, 9, "IFR Buffer", "Form Buffer same to Record Buffer and Size is 0x%X", Index);
+    DebugMsg (NULL, 0, 9, (CHAR8 *) "IFR Buffer", (CHAR8 *) "Form Buffer same to Record Buffer and Size is 0x%X", Index);
   } else if (gCBuffer.Buffer == NULL && gRBuffer.Buffer == NULL) {
     //ok
   } else {
-    Error (NULL, 0, 0001, "Error parsing vfr file", " %s.Buffer not allocated.", mOptions.VfrFileName);
+    DebugError (NULL, 0, 0001, "Error parsing vfr file", " %s.Buffer not allocated.", mOptions.VfrFileName);
   }
 
   //
@@ -584,7 +594,7 @@ CVfrCompiler::GenBinary (
 
   if (mOptions.CreateIfrPkgFile == TRUE) {
     if ((pFile = fopen (mOptions.PkgOutputFileName, "wb")) == NULL) {
-      Error (NULL, 0, 0001, "Error opening file", mOptions.PkgOutputFileName);
+      DebugError (NULL, 0, 0001, "Error opening file", mOptions.PkgOutputFileName);
       goto Fail;
     }
     if (gCFormPkg.BuildPkg (pFile, &gRBuffer) != VFR_RETURN_SUCCESS) {
@@ -627,7 +637,7 @@ CVfrCompiler::GenCFile (
   
   if (!mOptions.CreateIfrPkgFile || mOptions.CompatibleMode) {
     if ((pFile = fopen (mOptions.COutputFileName, "w")) == NULL) {
-      Error (NULL, 0, 0001, "Error opening output C file", mOptions.COutputFileName);
+      DebugError (NULL, 0, 0001, "Error opening output C file", mOptions.COutputFileName);
       goto Fail;
     }
 
@@ -674,12 +684,12 @@ CVfrCompiler::GenRecordListFile (
     }
 
     if ((pInFile = fopen (InFileName, "r")) == NULL) {
-      Error (NULL, 0, 0001, "Error opening the input VFR preprocessor output file", InFileName);
+      DebugError (NULL, 0, 0001, "Error opening the input VFR preprocessor output file", InFileName);
       return;
     }
 
     if ((pOutFile = fopen (mOptions.RecordListFile, "w")) == NULL) {
-      Error (NULL, 0, 0001, "Error opening the record list file", mOptions.RecordListFile);
+      DebugError (NULL, 0, 0001, "Error opening the record list file", mOptions.RecordListFile);
       goto Err1;
     }
 
@@ -738,4 +748,5 @@ main (
 
   return GetUtilityStatus ();
 }
+
 

@@ -20,11 +20,11 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 VOID
 CVfrBinaryOutput::WriteLine (
-  IN FILE   *pFile,
-  IN UINT32 LineBytes,
-  IN CHAR8  *LineHeader,
-  IN CHAR8  *BlkBuf,
-  IN UINT32 BlkSize
+  IN FILE         *pFile,
+  IN UINT32       LineBytes,
+  IN CONST CHAR8  *LineHeader,
+  IN CHAR8        *BlkBuf,
+  IN UINT32       BlkSize
   )
 {
   UINT32    Index;
@@ -43,11 +43,11 @@ CVfrBinaryOutput::WriteLine (
 
 VOID
 CVfrBinaryOutput::WriteEnd (
-  IN FILE   *pFile,
-  IN UINT32 LineBytes,
-  IN CHAR8  *LineHeader,
-  IN CHAR8  *BlkBuf,
-  IN UINT32 BlkSize
+  IN FILE         *pFile,
+  IN UINT32       LineBytes,
+  IN CONST CHAR8  *LineHeader,
+  IN CHAR8        *BlkBuf,
+  IN UINT32       BlkSize
   )
 {
   UINT32    Index;
@@ -455,7 +455,7 @@ CVfrBufferConfig::~CVfrBufferConfig (
 CVfrBufferConfig gCVfrBufferConfig;
 
 static struct {
-  CHAR8  *mTypeName;
+  CONST CHAR8  *mTypeName;
   UINT8  mType;
   UINT32 mSize;
   UINT32 mAlign;
@@ -744,20 +744,20 @@ CVfrVarDataTypeDB::InternalTypesListInit (
         SVfrDataField *pDayField   = new SVfrDataField;
 
         strcpy (pYearField->mFieldName, "Year");
-        GetDataType ("UINT8", &pYearField->mFieldType);
+        GetDataType ((CHAR8 *)"UINT16", &pYearField->mFieldType);
         pYearField->mOffset      = 0;
         pYearField->mNext        = pMonthField;
         pYearField->mArrayNum    = 0;
 
         strcpy (pMonthField->mFieldName, "Month");
-        GetDataType ("UINT8", &pMonthField->mFieldType);
-        pMonthField->mOffset     = 1;
+        GetDataType ((CHAR8 *)"UINT8", &pMonthField->mFieldType);
+        pMonthField->mOffset     = 2;
         pMonthField->mNext       = pDayField;
         pMonthField->mArrayNum   = 0;
 
         strcpy (pDayField->mFieldName, "Day");
-        GetDataType ("UINT8", &pDayField->mFieldType);
-        pDayField->mOffset       = 2;
+        GetDataType ((CHAR8 *)"UINT8", &pDayField->mFieldType);
+        pDayField->mOffset       = 3;
         pDayField->mNext         = NULL;
         pDayField->mArrayNum     = 0;
 
@@ -768,19 +768,19 @@ CVfrVarDataTypeDB::InternalTypesListInit (
         SVfrDataField *pSecondsField = new SVfrDataField;
 
         strcpy (pHoursField->mFieldName, "Hours");
-        GetDataType ("UINT8", &pHoursField->mFieldType);
+        GetDataType ((CHAR8 *)"UINT8", &pHoursField->mFieldType);
         pHoursField->mOffset     = 0;
         pHoursField->mNext       = pMinutesField;
         pHoursField->mArrayNum   = 0;
 
         strcpy (pMinutesField->mFieldName, "Minutes");
-        GetDataType ("UINT8", &pMinutesField->mFieldType);
+        GetDataType ((CHAR8 *)"UINT8", &pMinutesField->mFieldType);
         pMinutesField->mOffset   = 1;
         pMinutesField->mNext     = pSecondsField;
         pMinutesField->mArrayNum = 0;
 
         strcpy (pSecondsField->mFieldName, "Seconds");
-        GetDataType ("UINT8", &pSecondsField->mFieldType);
+        GetDataType ((CHAR8 *)"UINT8", &pSecondsField->mFieldType);
         pSecondsField->mOffset   = 2;
         pSecondsField->mNext     = NULL;
         pSecondsField->mArrayNum = 0;
@@ -853,7 +853,7 @@ CVfrVarDataTypeDB::Pack (
 
   if (Action & VFR_PACK_SHOW) {
     sprintf (Msg, "value of pragma pack(show) == %d", mPackAlign);
-    gCVfrErrorHandle.PrintMsg (LineNum, "", "Warning", Msg);
+    gCVfrErrorHandle.PrintMsg (LineNum, NULL, "Warning", Msg);
   }
 
   if (Action & VFR_PACK_PUSH) {
@@ -870,7 +870,7 @@ CVfrVarDataTypeDB::Pack (
     SVfrPackStackNode *pNode = NULL;
 
     if (mPackStack == NULL) {
-      gCVfrErrorHandle.PrintMsg (LineNum, "", "Error", "#pragma pack(pop...) : more pops than pushes");
+      gCVfrErrorHandle.PrintMsg (LineNum, NULL, "Error", "#pragma pack(pop...) : more pops than pushes");
     }
 
     for (pNode = mPackStack; pNode != NULL; pNode = pNode->mNext) {
@@ -884,7 +884,7 @@ CVfrVarDataTypeDB::Pack (
   if (Action & VFR_PACK_ASSIGN) {
     PackAlign = (Number > 1) ? Number + Number % 2 : Number;
     if ((PackAlign == 0) || (PackAlign > 16)) {
-      gCVfrErrorHandle.PrintMsg (LineNum, "", "Error", "expected pragma parameter to be '1', '2', '4', '8', or '16'");
+      gCVfrErrorHandle.PrintMsg (LineNum, NULL, "Error", "expected pragma parameter to be '1', '2', '4', '8', or '16'");
     } else {
       mPackAlign = PackAlign;
     }
@@ -1843,7 +1843,7 @@ CVfrDataStorage::BufferVarStoreRequestElementAdd (
   EFI_IFR_TYPE_VALUE    Value = gZeroEfiIfrTypeValue;
 
   for (pNode = mBufferVarStoreList; pNode != NULL; pNode = pNode->mNext) {
-    if (strcmp (pNode->mVarStoreName, StoreName) == NULL) {
+    if (strcmp (pNode->mVarStoreName, StoreName) == 0) {
       break;
     }
   }
@@ -2796,4 +2796,5 @@ CVfrQuestionDB::FindQuestion (
 BOOLEAN  VfrCompatibleMode = FALSE;
 
 CVfrVarDataTypeDB gCVfrVarDataTypeDB;
+
 

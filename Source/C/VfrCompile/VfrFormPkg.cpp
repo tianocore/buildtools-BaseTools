@@ -25,7 +25,7 @@ SPendingAssign::SPendingAssign (
   IN VOID   *Addr, 
   IN UINT32 Len, 
   IN UINT32 LineNo,
-  IN CHAR8  *Msg
+  IN CONST CHAR8  *Msg
   )
 {
   mKey    = NULL;
@@ -352,11 +352,11 @@ CFormPkg::BuildPkg (
 
 VOID
 CFormPkg::_WRITE_PKG_LINE (
-  IN FILE   *pFile,
-  IN UINT32 LineBytes,
-  IN CHAR8  *LineHeader,
-  IN CHAR8  *BlkBuf,
-  IN UINT32 BlkSize
+  IN FILE         *pFile,
+  IN UINT32       LineBytes,
+  IN CONST CHAR8  *LineHeader,
+  IN CHAR8        *BlkBuf,
+  IN UINT32       BlkSize
   )
 {
   UINT32    Index;
@@ -375,11 +375,11 @@ CFormPkg::_WRITE_PKG_LINE (
 
 VOID
 CFormPkg::_WRITE_PKG_END (
-  IN FILE   *pFile,
-  IN UINT32 LineBytes,
-  IN CHAR8  *LineHeader,
-  IN CHAR8  *BlkBuf,
-  IN UINT32 BlkSize
+  IN FILE         *pFile,
+  IN UINT32       LineBytes,
+  IN CONST CHAR8  *LineHeader,
+  IN CHAR8        *BlkBuf,
+  IN UINT32       BlkSize
   )
 {
   UINT32    Index;
@@ -483,7 +483,7 @@ CFormPkg::AssignPending (
   IN VOID   *ValAddr, 
   IN UINT32 ValLen,
   IN UINT32 LineNo,
-  IN CHAR8  *Msg
+  IN CONST CHAR8  *Msg
   )
 {
   SPendingAssign *pNew;

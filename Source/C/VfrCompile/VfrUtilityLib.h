@@ -36,8 +36,8 @@ extern BOOLEAN  VfrCompatibleMode;
 
 class CVfrBinaryOutput {
 public:
-  virtual VOID WriteLine (IN FILE *, IN UINT32, IN CHAR8 *, IN CHAR8 *, IN UINT32);
-  virtual VOID WriteEnd (IN FILE *, IN UINT32, IN CHAR8 *, IN CHAR8 *, IN UINT32);
+  virtual VOID WriteLine (IN FILE *, IN UINT32, IN CONST CHAR8 *, IN CHAR8 *, IN UINT32);
+  virtual VOID WriteEnd (IN FILE *, IN UINT32, IN CONST CHAR8 *, IN CHAR8 *, IN UINT32);
 };
 
 UINT32

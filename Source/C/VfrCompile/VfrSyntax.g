@@ -335,82 +335,89 @@ vfrDataStructFields :
 
 dataStructField64 :
   << UINT32 ArrayNum = 0; >>
-  "UINT64"
+  D:"UINT64"
   N:StringIdentifier
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
   }
-  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "UINT64", ArrayNum), N); >>
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), D->getText(), ArrayNum), N); >>
   ;
 
 dataStructField32 :
   << UINT32 ArrayNum = 0; >>
-  "UINT32"
+  D:"UINT32"
   N:StringIdentifier
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
   }
-  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "UINT32", ArrayNum), N); >>
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), D->getText(), ArrayNum), N); >>
   ;
 
 dataStructField16 :
-  << UINT32 ArrayNum = 0; >>
-  ("UINT16" | "CHAR16")
+  << 
+    UINT32 ArrayNum = 0; 
+    CHAR8  *TypeName = NULL;
+  >>
+  (
+    D:"UINT16"                                      << TypeName = D->getText();>>
+   | 
+    C:"CHAR16"                                      << TypeName = C->getText();>>
+  )
   N:StringIdentifier
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
   }
-  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "UINT16", ArrayNum), N); >>
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), TypeName, ArrayNum), N); >>
   ;
 
 dataStructField8 :
   << UINT32 ArrayNum = 0; >>
-  "UINT8"
+  D:"UINT8"
   N:StringIdentifier
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
   }
-  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "UINT8", ArrayNum), N); >>
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), D->getText(), ArrayNum), N); >>
   ;
 
 dataStructFieldBool :
   << UINT32 ArrayNum = 0; >>
-  "BOOLEAN"
+  D:"BOOLEAN"
   N:StringIdentifier
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
   }
-  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "BOOLEAN", ArrayNum), N); >>
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), D->getText(), ArrayNum), N); >>
   ;
 
 dataStructFieldString :
   << UINT32 ArrayNum = 0; >>
-  "EFI_STRING_ID"
+  D:"EFI_STRING_ID"
   N:StringIdentifier
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
   }
-  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "EFI_STRING_ID", ArrayNum), N); >>
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), D->getText(), ArrayNum), N); >>
   ;
 
 dataStructFieldDate :
   << UINT32 ArrayNum = 0; >>
-  "EFI_HII_DATE"
+  D:"EFI_HII_DATE"
   N:StringIdentifier
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
   }
-  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "EFI_HII_DATE", ArrayNum), N); >>
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), D->getText(), ArrayNum), N); >>
   ;
 
 dataStructFieldTime :
   << UINT32 ArrayNum = 0; >>
-  "EFI_HII_TIME"
+  D:"EFI_HII_TIME"
   N:StringIdentifier
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
   }
-  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), "EFI_HII_TIME", ArrayNum), N); >>
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), D->getText(), ArrayNum), N); >>
   ;
 
 dataStructFieldUser :
@@ -586,12 +593,13 @@ vfrStatementVarStoreLinear :
   V:Varstore                                        << VSObj.SetLineNo(V->getLine()); >>
   (
       TN:StringIdentifier ","                       << TypeName = TN->getText(); LineNum = TN->getLine(); >>
-    | U8:"UINT8" ","                                << TypeName = "UINT8"; LineNum = U8->getLine(); >>
-    | U16:"UINT16" ","                              << TypeName = "UINT16"; LineNum = U16->getLine(); >>
-    | U32:"UINT32" ","                              << TypeName = "UINT32"; LineNum = U32->getLine(); >>
-    | U64:"UINT64" ","                              << TypeName = "UINT64"; LineNum = U64->getLine(); >>
-    | D:"EFI_HII_DATE" ","                          << TypeName = "EFI_HII_DATE"; LineNum = D->getLine(); >>
-    | T:"EFI_HII_TIME" ","                          << TypeName = "EFI_HII_TIME"; LineNum = T->getLine(); >>
+    | U8:"UINT8" ","                                << TypeName = U8->getText(); LineNum = U8->getLine(); >>
+    | U16:"UINT16" ","                              << TypeName = U16->getText(); LineNum = U16->getLine(); >>
+    | C16:"CHAR16" ","                              << TypeName = C16->getText(); LineNum = C16->getLine(); >>
+    | U32:"UINT32" ","                              << TypeName = U32->getText(); LineNum = U32->getLine(); >>
+    | U64:"UINT64" ","                              << TypeName = U64->getText(); LineNum = U64->getLine(); >>
+    | D:"EFI_HII_DATE" ","                          << TypeName = D->getText(); LineNum = D->getLine(); >>
+    | T:"EFI_HII_TIME" ","                          << TypeName = T->getText(); LineNum = T->getLine(); >>
   )
   { Key "=" FID:Number ","                          << // Key is used to assign Varid in Framework VFR but no use in UEFI2.1 VFR
                                                        if (mCompatibleMode) {
@@ -3210,11 +3218,11 @@ private:
   UINT32              _GET_CURRQEST_ARRAY_SIZE();
 
 public:
-  VOID                _PCATCH (IN INTN, IN INTN, IN ANTLRTokenPtr, IN CHAR8 *);
+  VOID                _PCATCH (IN INTN, IN INTN, IN ANTLRTokenPtr, IN CONST CHAR8 *);
   VOID                _PCATCH (IN EFI_VFR_RETURN_CODE);
   VOID                _PCATCH (IN EFI_VFR_RETURN_CODE, IN ANTLRTokenPtr);
   VOID                _PCATCH (IN EFI_VFR_RETURN_CODE, IN UINT32);
-  VOID                _PCATCH (IN EFI_VFR_RETURN_CODE, IN UINT32, IN CHAR8 *);
+  VOID                _PCATCH (IN EFI_VFR_RETURN_CODE, IN UINT32, IN CONST CHAR8 *);
 
   VOID                syn     (ANTLRAbstractToken  *, ANTLRChar *, SetWordType *, ANTLRTokenType, INT32);
 
@@ -3231,7 +3239,7 @@ public:
   EFI_FORM_ID         _STOFID (IN CHAR8 *);
   EFI_QUESTION_ID     _STOQID (IN CHAR8 *);
 
-  VOID                _STRCAT (IN OUT CHAR8 **, IN CHAR8 *);
+  VOID                _STRCAT (IN OUT CHAR8 **, IN CONST CHAR8 *);
 
   VOID                _DeclareDefaultLinearVarStore (IN UINT32);
   VOID                _DeclareStandardDefaultStorage (IN UINT32);
@@ -3367,7 +3375,7 @@ EfiVfrParser::_PCATCH (
   IN INTN                ReturnCode,
   IN INTN                ExpectCode,
   IN ANTLRTokenPtr       Tok,
-  IN CHAR8               *ErrorMsg
+  IN CONST CHAR8         *ErrorMsg
   )
 {
   if (ReturnCode != ExpectCode) {
@@ -3406,10 +3414,10 @@ VOID
 EfiVfrParser::_PCATCH (
   IN EFI_VFR_RETURN_CODE ReturnCode,
   IN UINT32              LineNum,
-  IN CHAR8               *ErrorMsg
+  IN CONST CHAR8         *ErrorMsg
   )
 {
-  mParserStatus = mParserStatus + gCVfrErrorHandle.HandleError (ReturnCode, LineNum, ErrorMsg);
+  mParserStatus = mParserStatus + gCVfrErrorHandle.HandleError (ReturnCode, LineNum, (CHAR8 *) ErrorMsg);
 }
 
 VOID
@@ -3638,7 +3646,7 @@ EfiVfrParser::_STOQID (
 VOID
 EfiVfrParser::_STRCAT (
   IN OUT CHAR8 **Dest,
-  IN CHAR8     *Src
+  IN CONST CHAR8 *Src
   )
 {
   CHAR8   *NewStr;
@@ -3674,6 +3682,7 @@ EfiVfrParser::_DeclareDefaultFrameworkVarStore (
   SVfrVarStorageNode    *pNode;
   UINT32                TypeSize;
   BOOLEAN               FirstNode;
+  CONST CHAR8           VarName[] = "Setup";
 
   FirstNode = TRUE;
   pNode = mCVfrDataStorage.GetBufferVarStoreList();
@@ -3688,7 +3697,7 @@ EfiVfrParser::_DeclareDefaultFrameworkVarStore (
     VSObj.SetVarStoreId (0x1); //the first and only one Buffer Var Store
     VSObj.SetSize ((UINT16) TypeSize);
     //VSObj.SetName (gCVfrVarDataTypeDB.mFirstNewDataTypeName);
-    VSObj.SetName ("Setup");
+    VSObj.SetName ((CHAR8 *) VarName);
     VSObj.SetGuid (&mFormsetGuid);
 #ifdef VFREXP_DEBUG
     printf ("Create the default VarStoreName is %s\n", gCVfrVarDataTypeDB.mFirstNewDataTypeName);
@@ -3705,7 +3714,7 @@ EfiVfrParser::_DeclareDefaultFrameworkVarStore (
         VSObj.SetVarStoreId (pNode->mVarStoreId);
         VSObj.SetSize ((UINT16) pNode->mStorageInfo.mDataType->mTotalSize);
         if (FirstNode) {
-          VSObj.SetName ("Setup");
+          VSObj.SetName ((CHAR8 *) VarName);
           FirstNode = FALSE;
         } else {
           VSObj.SetName (pNode->mVarStoreName);
@@ -3745,6 +3754,10 @@ EfiVfrParser::_DeclareDefaultLinearVarStore (
   UINT32            Index;
   CHAR8             **TypeNameList;
   UINT32            ListSize;
+  CONST CHAR8       DateName[] = "Date";
+  CONST CHAR8       TimeName[] = "Time";
+  CONST CHAR8       DateType[] = "EFI_HII_DATE";
+  CONST CHAR8       TimeType[] = "EFI_HII_TIME";
 
   gCVfrVarDataTypeDB.GetUserDefinedTypeNameList (&TypeNameList, &ListSize);
 
@@ -3773,45 +3786,45 @@ EfiVfrParser::_DeclareDefaultLinearVarStore (
 // not required to declare Date and Time VarStore,
 // because code to support old format Data and Time
 //
-  if (gCVfrVarDataTypeDB.IsTypeNameDefined ("Date") == FALSE) {
+  if (gCVfrVarDataTypeDB.IsTypeNameDefined ((CHAR8 *) DateName) == FALSE) {
     UINT32            Size;
     EFI_VARSTORE_ID   VarStoreId;
     CIfrVarStore      VSObj;
 
     VSObj.SetLineNo (LineNo);
     mCVfrDataStorage.DeclareBufferVarStore (
-                       "Date",
+                       (CHAR8 *) DateName,
                        &mFormsetGuid,
                        &gCVfrVarDataTypeDB,
-                       "EFI_HII_DATE",
+                       (CHAR8 *) DateType,
                        EFI_VARSTORE_ID_INVALID
                        );
-    mCVfrDataStorage.GetVarStoreId("Date", &VarStoreId);
+    mCVfrDataStorage.GetVarStoreId((CHAR8 *) DateName, &VarStoreId);
     VSObj.SetVarStoreId (VarStoreId);
-    gCVfrVarDataTypeDB.GetDataTypeSize("EFI_HII_DATE", &Size);
+    gCVfrVarDataTypeDB.GetDataTypeSize((CHAR8 *) DateType, &Size);
     VSObj.SetSize ((UINT16) Size);
-    VSObj.SetName ("Date");
+    VSObj.SetName ((CHAR8 *) DateName);
     VSObj.SetGuid (&mFormsetGuid);
   }
 
-  if (gCVfrVarDataTypeDB.IsTypeNameDefined ("Time") == FALSE) {
+  if (gCVfrVarDataTypeDB.IsTypeNameDefined ((CHAR8 *) TimeName) == FALSE) {
     UINT32            Size;
     EFI_VARSTORE_ID   VarStoreId;
     CIfrVarStore      VSObj;
 
     VSObj.SetLineNo (LineNo);
     mCVfrDataStorage.DeclareBufferVarStore (
-                       "Time",
+                       (CHAR8 *) TimeName,
                        &mFormsetGuid,
                        &gCVfrVarDataTypeDB,
-                       "EFI_HII_TIME",
+                       (CHAR8 *) TimeType,
                        EFI_VARSTORE_ID_INVALID
                        );
-    mCVfrDataStorage.GetVarStoreId("Time", &VarStoreId);
+    mCVfrDataStorage.GetVarStoreId((CHAR8 *) TimeName, &VarStoreId);
     VSObj.SetVarStoreId (VarStoreId);
-    gCVfrVarDataTypeDB.GetDataTypeSize("EFI_HII_TIME", &Size);
+    gCVfrVarDataTypeDB.GetDataTypeSize((CHAR8 *) TimeType, &Size);
     VSObj.SetSize ((UINT16) Size);
-    VSObj.SetName ("Time");
+    VSObj.SetName ((CHAR8 *) TimeName);
     VSObj.SetGuid (&mFormsetGuid);
   }
 }
@@ -3826,7 +3839,7 @@ EfiVfrParser::_DeclareStandardDefaultStorage (
   //
   CIfrDefaultStore DSObj;
 
-  mCVfrDefaultStore.RegisterDefaultStore (DSObj.GetObjBinAddr(), "Standard Defaults", EFI_STRING_ID_INVALID, EFI_HII_DEFAULT_CLASS_STANDARD);
+  mCVfrDefaultStore.RegisterDefaultStore (DSObj.GetObjBinAddr(), (CHAR8 *) "Standard Defaults", EFI_STRING_ID_INVALID, EFI_HII_DEFAULT_CLASS_STANDARD);
   DSObj.SetLineNo (LineNo);
   DSObj.SetDefaultName (EFI_STRING_ID_INVALID);
   DSObj.SetDefaultId (EFI_HII_DEFAULT_CLASS_STANDARD);
@@ -3836,7 +3849,7 @@ EfiVfrParser::_DeclareStandardDefaultStorage (
   //
   CIfrDefaultStore DSObjMF;
 
-  mCVfrDefaultStore.RegisterDefaultStore (DSObjMF.GetObjBinAddr(), "Standard ManuFacturing", EFI_STRING_ID_INVALID, EFI_HII_DEFAULT_CLASS_MANUFACTURING);
+  mCVfrDefaultStore.RegisterDefaultStore (DSObjMF.GetObjBinAddr(), (CHAR8 *) "Standard ManuFacturing", EFI_STRING_ID_INVALID, EFI_HII_DEFAULT_CLASS_MANUFACTURING);
   DSObjMF.SetLineNo (LineNo);
   DSObjMF.SetDefaultName (EFI_STRING_ID_INVALID);
   DSObjMF.SetDefaultId (EFI_HII_DEFAULT_CLASS_MANUFACTURING);

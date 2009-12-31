@@ -2728,7 +2728,7 @@ Returns:
         //
         // Use FFS GUID as its File Name.
         //
-        PrintGuidToBuffer (&SubFfsFile->Name, SubFfsName, PRINTED_GUID_BUFFER_SIZE, TRUE);
+        PrintGuidToBuffer (&SubFfsFile->Name, (UINT8 *) SubFfsName, PRINTED_GUID_BUFFER_SIZE, TRUE);
         FfsRebase (FvInfo, SubFfsName, SubFfsFile, (UINTN) SubFfsFile - (UINTN) FfsFile + XipOffset, FvMapFile);
       }
     }

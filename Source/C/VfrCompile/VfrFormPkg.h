@@ -81,7 +81,7 @@ struct SPendingAssign {
   CHAR8                   *mMsg;
   struct SPendingAssign   *mNext;
 
-  SPendingAssign (IN CHAR8 *, IN VOID *, IN UINT32, IN UINT32, IN CHAR8 *);
+  SPendingAssign (IN CHAR8 *, IN VOID *, IN UINT32, IN UINT32, IN CONST CHAR8 *);
   ~SPendingAssign ();
 
   VOID   SetAddrAndLen (IN VOID *, IN UINT32);
@@ -108,8 +108,8 @@ private:
 
   UINT32              mPkgLength;
 
-  VOID                _WRITE_PKG_LINE (IN FILE *, IN UINT32 , IN CHAR8 *, IN CHAR8 *, IN UINT32);
-  VOID                _WRITE_PKG_END (IN FILE *, IN UINT32 , IN CHAR8 *, IN CHAR8 *, IN UINT32);
+  VOID                _WRITE_PKG_LINE (IN FILE *, IN UINT32 , IN CONST CHAR8 *, IN CHAR8 *, IN UINT32);
+  VOID                _WRITE_PKG_END (IN FILE *, IN UINT32 , IN CONST CHAR8 *, IN CHAR8 *, IN UINT32);
 
 private:
   SPendingAssign      *PendingAssignList;
@@ -131,7 +131,7 @@ public:
   EFI_VFR_RETURN_CODE GenCFile (IN CHAR8 *, IN FILE *, IN PACKAGE_DATA *PkgData = NULL);
 
 public:
-  EFI_VFR_RETURN_CODE AssignPending (IN CHAR8 *, IN VOID *, IN UINT32, IN UINT32, IN CHAR8 *Msg = NULL);
+  EFI_VFR_RETURN_CODE AssignPending (IN CHAR8 *, IN VOID *, IN UINT32, IN UINT32, IN CONST CHAR8 *Msg = NULL);
   VOID                DoPendingAssign (IN CHAR8 *, IN VOID *, IN UINT32);
   bool                HavePendingUnassigned (VOID);
   VOID                PendingAssignPrintAll (VOID);
