@@ -2426,6 +2426,8 @@ class FdfParser:
 
         AlignValue = None
         if self.__GetAlignment():
+            if self.__Token not in ("Auto", "8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
+                raise Warning("Incorrect alignment '%s'" % self.__Token, self.FileName, self.CurrentLineNumber)
             AlignValue = self.__Token
 
         BuildNum = None
@@ -2439,6 +2441,8 @@ class FdfParser:
             BuildNum = self.__Token
 
         if self.__IsKeyword( "VERSION"):
+            if AlignValue == 'Auto':
+                raise Warning("Auto alignment can only be used in PE32 or TE section ", self.FileName, self.CurrentLineNumber)
             if not self.__IsToken( "="):
                 raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
             if not self.__GetNextToken():
@@ -2451,8 +2455,10 @@ class FdfParser:
             else:
                 VerSectionObj.FileName = self.__Token
             Obj.SectionList.append(VerSectionObj)
-
+            
         elif self.__IsKeyword( "UI"):
+            if AlignValue == 'Auto':
+                raise Warning("Auto alignment can only be used in PE32 or TE section ", self.FileName, self.CurrentLineNumber)
             if not self.__IsToken( "="):
                 raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
             if not self.__GetNextToken():
@@ -2466,6 +2472,8 @@ class FdfParser:
             Obj.SectionList.append(UiSectionObj)
 
         elif self.__IsKeyword( "FV_IMAGE"):
+            if AlignValue == 'Auto':
+                raise Warning("Auto alignment can only be used in PE32 or TE section ", self.FileName, self.CurrentLineNumber)
             if not self.__IsToken( "="):
                 raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
             if not self.__GetNextToken():
@@ -2507,6 +2515,8 @@ class FdfParser:
             Obj.SectionList.append(FvImageSectionObj)
 
         elif self.__IsKeyword("PEI_DEPEX_EXP") or self.__IsKeyword("DXE_DEPEX_EXP") or self.__IsKeyword("SMM_DEPEX_EXP"):
+            if AlignValue == 'Auto':
+                raise Warning("Auto alignment can only be used in PE32 or TE section ", self.FileName, self.CurrentLineNumber)
             DepexSectionObj = DepexSection.DepexSection()
             DepexSectionObj.Alignment = AlignValue
             DepexSectionObj.DepexType = self.__Token
@@ -2522,7 +2532,6 @@ class FdfParser:
             Obj.SectionList.append(DepexSectionObj)
 
         else:
-
             if not self.__GetNextWord():
                 raise Warning("expected section type", self.FileName, self.CurrentLineNumber)
 
@@ -2534,6 +2543,9 @@ class FdfParser:
             if self.__Token not in ("COMPAT16", "PE32", "PIC", "TE", "FV_IMAGE", "RAW", "DXE_DEPEX",\
                                "UI", "VERSION", "PEI_DEPEX", "SUBTYPE_GUID", "SMM_DEPEX"):
                 raise Warning("Unknown section type '%s'" % self.__Token, self.FileName, self.CurrentLineNumber)
+            if AlignValue == 'Auto'and (not self.__Token == 'PE32') and (not self.__Token == 'TE'):
+                raise Warning("Auto alignment can only be used in PE32 or TE section ", self.FileName, self.CurrentLineNumber)
+
             # DataSection
             DataSectionObj = DataSection.DataSection()
             DataSectionObj.Alignment = AlignValue
@@ -2683,6 +2695,8 @@ class FdfParser:
 
         AlignValue = None
         if self.__GetAlignment():
+            if self.__Token not in ("8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
+                raise Warning("Incorrect alignment '%s'" % self.__Token, self.FileName, self.CurrentLineNumber)
             AlignValue = self.__Token
 
         if not self.__GetCglSection(FfsFileObj, AlignValue):
@@ -3012,9 +3026,11 @@ class FdfParser:
 
         AlignValue = ""
         if self.__GetAlignment():
-            if self.__Token not in ("8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
+            if self.__Token not in ("Auto", "8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
                 raise Warning("Incorrect alignment '%s'" % self.__Token, self.FileName, self.CurrentLineNumber)
-            AlignValue = self.__Token
+            #For FFS, Auto is default option same to ""
+            if not self.__Token == "Auto":
+                AlignValue = self.__Token
 
         if self.__IsToken("{"):
             # Complex file rule expected
@@ -3039,24 +3055,6 @@ class FdfParser:
 
             return Rule
 
-        elif self.__IsToken("|"):
-            # Ext rule expected
-            Ext = self.__GetFileExtension()
-
-            Rule = RuleSimpleFile.RuleSimpleFile()
-
-            Rule.FvFileType = Type
-            Rule.NameGuid = NameGuid
-            Rule.Alignment = AlignValue
-            Rule.CheckSum = CheckSum
-            Rule.Fixed = Fixed
-            Rule.FileExtension = Ext
-            Rule.KeyStringList = KeyStringList
-            if KeepReloc != None:
-                Rule.KeepReloc = KeepReloc
-
-            return Rule
-
         else:
             # Simple file rule expected
             if not self.__GetNextWord():
@@ -3075,12 +3073,18 @@ class FdfParser:
             if self.__IsKeyword("CheckSum", True):
                 CheckSum = True
 
+            SectAlignment = ""
             if self.__GetAlignment():
-                if self.__Token not in ("8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
+                if self.__Token not in ("Auto", "8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
                     raise Warning("Incorrect alignment '%s'" % self.__Token, self.FileName, self.CurrentLineNumber)
-                AlignValue = self.__Token
+                if self.__Token == 'Auto' and (not SectionName == 'PE32') and (not SectionName == 'TE'):
+                    raise Warning("Auto alignment can only be used in PE32 or TE section ", self.FileName, self.CurrentLineNumber)
+                SectAlignment = self.__Token
 
-            if not self.__GetNextToken():
+            Ext = None
+            if self.__IsToken('|'):
+                Ext = self.__GetFileExtension()
+            elif not self.__GetNextToken():
                 raise Warning("expected File name", self.FileName, self.CurrentLineNumber)
 
             Rule = RuleSimpleFile.RuleSimpleFile()
@@ -3088,12 +3092,14 @@ class FdfParser:
             Rule.FvFileType = Type
             Rule.NameGuid = NameGuid
             Rule.Alignment = AlignValue
+            Rule.SectAlignment = SectAlignment
             Rule.CheckSum = CheckSum
             Rule.Fixed = Fixed
-            Rule.FileName = self.__Token
             Rule.KeyStringList = KeyStringList
             if KeepReloc != None:
                 Rule.KeepReloc = KeepReloc
+            Rule.FileExtension = Ext
+            Rule.FileName = self.__Token
             return Rule
 
     ## __GetEfiSection() method
@@ -3146,14 +3152,6 @@ class FdfParser:
                 if not self.__IsKeyword("FV"):
                     raise Warning("expected 'FV'", self.FileName, self.CurrentLineNumber)
                 FvImageSectionObj.FvFileType = self.__Token
-
-                if self.__GetAlignment():
-                    if self.__Token not in ("8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
-                        raise Warning("Incorrect alignment '%s'" % self.__Token, self.FileName, self.CurrentLineNumber)
-                    FvImageSectionObj.Alignment = self.__Token
-
-                if self.__IsKeyword("FV"):
-                    FvImageSectionObj.FvFileType = self.__Token
 
                 if self.__GetAlignment():
                     if self.__Token not in ("8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
@@ -3223,6 +3221,10 @@ class FdfParser:
                 EfiSectionObj.BuildNum = self.__Token
 
         if self.__GetAlignment():
+            if self.__Token not in ("Auto", "8", "16", "32", "64", "128", "512", "1K", "4K", "32K" ,"64K"):
+                raise Warning("Incorrect alignment '%s'" % self.__Token, self.FileName, self.CurrentLineNumber)
+            if self.__Token == 'Auto' and (not SectionName == 'PE32') and (not SectionName == 'TE'):
+                raise Warning("Auto alignment can only be used in PE32 or TE section ", self.FileName, self.CurrentLineNumber)
             EfiSectionObj.Alignment = self.__Token
 
         if self.__IsKeyword('RELOCS_STRIPPED') or self.__IsKeyword('RELOCS_RETAINED'):

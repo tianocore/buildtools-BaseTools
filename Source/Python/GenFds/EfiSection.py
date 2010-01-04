@@ -15,6 +15,7 @@
 ##
 # Import Modules
 #
+from struct import *
 import Section
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import subprocess
@@ -78,6 +79,12 @@ class EfiSection (EfiSectionClassObject):
         FileList = []
         if Filename != None:
             Filename = GenFdsGlobalVariable.MacroExtend(Filename, Dict)
+            # check if the path is absolute or relative
+            if os.path.isabs(Filename):
+                Filename = os.path.normpath(Filename)
+            else:
+                Filename = os.path.normpath(os.path.join(FfsInf.EfiOutputPath, Filename))
+
             if not self.Optional:
                 FileList.append(Filename)
             elif os.path.exists(Filename):
@@ -121,7 +128,6 @@ class EfiSection (EfiSectionClassObject):
                     f = open(File, 'r')
                     VerString = f.read()
                     f.close()
-#                    VerTuple = ('-n', '"' + VerString + '"')
                     BuildNum = VerString
                     if BuildNum != None and BuildNum != '':
                         BuildNumTuple = ('-j', BuildNum)
@@ -131,11 +137,6 @@ class EfiSection (EfiSectionClassObject):
                     OutputFileList.append(OutputFile)
 
             else:
-#                if StringData != None and len(StringData) > 0:
-#                    VerTuple = ('-n', '"' + StringData + '"')
-#                else:
-#                    VerTuple = tuple()
-#                VerString = ' ' + ' '.join(VerTuple)
                 BuildNum = StringData
                 if BuildNum != None and BuildNum != '':
                     BuildNumTuple = ('-j', BuildNum)
@@ -221,6 +222,31 @@ class EfiSection (EfiSectionClassObject):
                     Num = '%s.%d' %(SecNum , Index)
                     OutputFile = os.path.join( OutputPath, ModuleName + 'SEC' + Num + Ffs.SectionSuffix.get(SectionType))
                     File = GenFdsGlobalVariable.MacroExtend(File, Dict)
+                    
+                    #Get PE Section alignment when align is set to AUTO
+                    if self.Alignment == 'Auto' and (SectionType == 'PE32' or SectionType == 'TE'):
+                        FileObj = open (File,'r+b')
+                        #DOS signature should be 'MZ'
+                        DosSig = FileObj.read(0x2)
+                        if DosSig == 'MZ':
+                            #Get Offset of PE header
+                            FileObj.seek (0x3c)
+                            OffsetString = FileObj.read(0x4)
+                            OffsetValue = unpack ('l', OffsetString)
+                            #PE signature should be 'PE\0\0'
+                            FileObj.seek (OffsetValue[0])
+                            PeSig = FileObj.read(0x4)
+                            if PeSig == 'PE\0\0':
+                                #Get section alignment from PE header
+                                FileObj.seek (OffsetValue[0] + 0x38)
+                                PeAlignString = FileObj.read(0x4)
+                                PeAlignValue  = unpack ('l', PeAlignString)
+                                if PeAlignValue[0] < 0x400:
+                                    self.Alignment = str (PeAlignValue[0])
+                                else:
+                                    self.Alignment = str (PeAlignValue[0] / 0x400) + 'K'
+                        FileObj.close()
+
                     if File[(len(File)-4):] == '.efi':
                         MapFile = File.replace('.efi', '.map')
                         if os.path.exists(MapFile):
@@ -237,24 +263,25 @@ class EfiSection (EfiSectionClassObject):
                         StrippedFile = os.path.join(OutputPath, ModuleName + '.stripped')
                         GenFdsGlobalVariable.GenerateFirmwareImage(
                                                 StrippedFile,
-                                                [GenFdsGlobalVariable.MacroExtend(File, Dict)],
+                                                [File],
                                                 Strip=True
                                                 )
                         File = StrippedFile
+                    
                     """For TE Section call GenFw to generate TE image"""
 
                     if SectionType == 'TE':
                         TeFile = os.path.join( OutputPath, ModuleName + 'Te.raw')
                         GenFdsGlobalVariable.GenerateFirmwareImage(
                                                 TeFile,
-                                                [GenFdsGlobalVariable.MacroExtend(File, Dict)],
+                                                [File],
                                                 Type='te'
                                                 )
                         File = TeFile
 
                     """Call GenSection"""
                     GenFdsGlobalVariable.GenerateSection(OutputFile,
-                                                         [GenFdsGlobalVariable.MacroExtend(File)],
+                                                         [File],
                                                          Section.Section.SectionType.get (SectionType)
                                                          )
                     OutputFileList.append(OutputFile)

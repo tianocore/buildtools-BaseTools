@@ -293,6 +293,7 @@ class RuleClassObject :
         self.NameGuid = None
         self.Fixed = False
         self.Alignment = None
+        self.SectAlignment = None
         self.CheckSum = False
         self.FvFileType = None       # for Ffs File Type
         self.KeyStringList = []

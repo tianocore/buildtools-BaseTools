@@ -393,8 +393,13 @@ class FfsInfStatement(FfsInfStatementClassObject):
         #
         FileList = []
         OutputFileList = []
+        GenSecInputFile = None
         if Rule.FileName != None:
             GenSecInputFile = self.__ExtendMacro__(Rule.FileName)
+            if os.path.isabs(GenSecInputFile):
+                GenSecInputFile = os.path.normpath(GenSecInputFile)
+            else:
+                GenSecInputFile = os.path.normpath(os.path.join(self.EfiOutputPath, GenSecInputFile))
         else:
             FileList, IsSect = Section.Section.GetFileList(self, '', Rule.FileExtension)
 
@@ -429,6 +434,31 @@ class FfsInfStatement(FfsInfStatementClassObject):
                               Ffs.Ffs.SectionSuffix[SectionType] + 'SEC' + SecNum
                 Index = Index + 1
                 OutputFile = os.path.join(self.OutputPath, GenSecOutputFile)
+                File = GenFdsGlobalVariable.MacroExtend(File, Dict, self.CurrentArch)
+
+                #Get PE Section alignment when align is set to AUTO
+                if self.Alignment == 'Auto' and (SectionType == 'PE32' or SectionType == 'TE'):
+                    FileObj = open (File,'r+b')
+                    #DOS signature should be 'MZ'
+                    DosSig = FileObj.read(0x2)
+                    if DosSig == 'MZ':
+                        #Get Offset of PE header
+                        FileObj.seek (0x3c)
+                        OffsetString = FileObj.read(0x4)
+                        OffsetValue = unpack ('l', OffsetString)
+                        #PE signature should be 'PE\0\0'
+                        FileObj.seek (OffsetValue[0])
+                        PeSig = FileObj.read(0x4)
+                        if PeSig == 'PE\0\0':
+                            #Get section alignment from PE header
+                            FileObj.seek (OffsetValue[0] + 0x38)
+                            PeAlignString = FileObj.read(0x4)
+                            PeAlignValue  = unpack ('l', PeAlignString)
+                            if PeAlignValue[0] < 0x400:
+                                self.Alignment = str (PeAlignValue[0])
+                            else:
+                                self.Alignment = str (PeAlignValue[0] / 0x400) + 'K'
+                    FileObj.close()
 
                 if not NoStrip:
                     FileBeforeStrip = os.path.join(self.OutputPath, ModuleName + '.reloc')
@@ -438,7 +468,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                     StrippedFile = os.path.join(self.OutputPath, ModuleName + '.stipped')
                     GenFdsGlobalVariable.GenerateFirmwareImage(
                                             StrippedFile,
-                                            [GenFdsGlobalVariable.MacroExtend(File, Dict, self.CurrentArch)],
+                                            [File],
                                             Strip=True
                                             )
                     File = StrippedFile
@@ -447,7 +477,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                     TeFile = os.path.join( self.OutputPath, self.ModuleGuid + 'Te.raw')
                     GenFdsGlobalVariable.GenerateFirmwareImage(
                                             TeFile,
-                                            [GenFdsGlobalVariable.MacroExtend(File, Dict, self.CurrentArch)],
+                                            [File],
                                             Type='te'
                                             )
                     File = TeFile
@@ -459,6 +489,31 @@ class FfsInfStatement(FfsInfStatementClassObject):
             GenSecOutputFile= self.__ExtendMacro__(Rule.NameGuid) + \
                               Ffs.Ffs.SectionSuffix[SectionType] + 'SEC' + SecNum
             OutputFile = os.path.join(self.OutputPath, GenSecOutputFile)
+            GenSecInputFile = GenFdsGlobalVariable.MacroExtend(GenSecInputFile, Dict, self.CurrentArch)
+
+            #Get PE Section alignment when align is set to AUTO
+            if self.Alignment == 'Auto' and (SectionType == 'PE32' or SectionType == 'TE'):
+                FileObj = open (GenSecInputFile,'r+b')
+                #DOS signature should be 'MZ'
+                DosSig = FileObj.read(0x2)
+                if DosSig == 'MZ':
+                    #Get Offset of PE header
+                    FileObj.seek (0x3c)
+                    OffsetString = FileObj.read(0x4)
+                    OffsetValue = unpack ('l', OffsetString)
+                    #PE signature should be 'PE\0\0'
+                    FileObj.seek (OffsetValue[0])
+                    PeSig = FileObj.read(0x4)
+                    if PeSig == 'PE\0\0':
+                        #Get section alignment from PE header
+                        FileObj.seek (OffsetValue[0] + 0x38)
+                        PeAlignString = FileObj.read(0x4)
+                        PeAlignValue  = unpack ('l', PeAlignString)
+                        if PeAlignValue[0] < 0x400:
+                            self.Alignment = str (PeAlignValue[0])
+                        else:
+                            self.Alignment = str (PeAlignValue[0] / 0x400) + 'K'
+                FileObj.close()
 
             if not NoStrip:
                 FileBeforeStrip = os.path.join(self.OutputPath, ModuleName + '.reloc')
@@ -468,7 +523,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                 StrippedFile = os.path.join(self.OutputPath, ModuleName + '.stipped')
                 GenFdsGlobalVariable.GenerateFirmwareImage(
                                         StrippedFile,
-                                        [GenFdsGlobalVariable.MacroExtend(GenSecInputFile, Dict, self.CurrentArch)],
+                                        [GenSecInputFile],
                                         Strip=True
                                         )
                 GenSecInputFile = StrippedFile
@@ -477,7 +532,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
                 TeFile = os.path.join( self.OutputPath, self.ModuleGuid + 'Te.raw')
                 GenFdsGlobalVariable.GenerateFirmwareImage(
                                         TeFile,
-                                        [GenFdsGlobalVariable.MacroExtend(File, Dict, self.CurrentArch)],
+                                        [GenSecInputFile],
                                         Type='te'
                                         )
                 GenSecInputFile = TeFile
@@ -507,7 +562,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         SectionAlignments = []
         for InputFile in InputFileList:
             InputSection.append(InputFile)
-            SectionAlignments.append(Rule.Alignment)
+            SectionAlignments.append(Rule.SectAlignment)
 
         if Rule.NameGuid != None and Rule.NameGuid.startswith('PCD('):
             PcdValue = GenFdsGlobalVariable.GetPcdValue(Rule.NameGuid)
