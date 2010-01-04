@@ -1223,7 +1223,7 @@ Returns:
       //
       // NONE attribute, clear attribute value.
       //
-      SectGuidAttribute = 0;
+      SectGuidAttribute = SectGuidAttribute & ~EFI_GUIDED_SECTION_NONE;
     }
     VerboseMsg ("Vendor Guid is %08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X", 
                 (unsigned) VendorGuid.Data1,

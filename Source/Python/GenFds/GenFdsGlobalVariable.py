@@ -168,8 +168,10 @@ class GenFdsGlobalVariable:
             Cmd += ["-g", Guid]
         if GuidHdrLen not in [None, '']:
             Cmd += ["-l", GuidHdrLen]
-        if GuidAttr not in [None, '']:
-            Cmd += ["-r", GuidAttr]
+        if GuidAttr != None:
+            #Add each guided attribute
+            for Attr in GuidAttr:
+                Cmd += ["-r", Attr]
         if InputAlign != None:
             #Section Align is only for dummy section without section type
             for SecAlign in InputAlign:
