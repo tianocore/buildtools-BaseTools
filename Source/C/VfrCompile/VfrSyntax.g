@@ -356,18 +356,13 @@ dataStructField32 :
 dataStructField16 :
   << 
     UINT32 ArrayNum = 0; 
-    CHAR8  *TypeName = NULL;
   >>
-  (
-    D:"UINT16"                                      << TypeName = D->getText();>>
-   | 
-    C:"CHAR16"                                      << TypeName = C->getText();>>
-  )
+  ("UINT16" | "CHAR16")
   N:StringIdentifier
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
   }
-  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), TypeName, ArrayNum), N); >>
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), (CHAR8 *) "UINT16", ArrayNum), N); >>
   ;
 
 dataStructField8 :
@@ -595,7 +590,7 @@ vfrStatementVarStoreLinear :
       TN:StringIdentifier ","                       << TypeName = TN->getText(); LineNum = TN->getLine(); >>
     | U8:"UINT8" ","                                << TypeName = U8->getText(); LineNum = U8->getLine(); >>
     | U16:"UINT16" ","                              << TypeName = U16->getText(); LineNum = U16->getLine(); >>
-    | C16:"CHAR16" ","                              << TypeName = C16->getText(); LineNum = C16->getLine(); >>
+    | C16:"CHAR16" ","                              << TypeName = (CHAR8 *) "UINT16"; LineNum = C16->getLine(); >>
     | U32:"UINT32" ","                              << TypeName = U32->getText(); LineNum = U32->getLine(); >>
     | U64:"UINT64" ","                              << TypeName = U64->getText(); LineNum = U64->getLine(); >>
     | D:"EFI_HII_DATE" ","                          << TypeName = D->getText(); LineNum = D->getLine(); >>
