@@ -424,6 +424,9 @@
     <InputFile>
         *.mcb
 
+    <ExtraDependency>
+        $(MAKE_FILE)
+
     <OutputFile>
         $(OUTPUT_DIR)(+)$(MODULE_NAME).bin
 
