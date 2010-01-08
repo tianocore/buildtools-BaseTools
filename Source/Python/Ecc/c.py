@@ -742,7 +742,7 @@ def SplitPredicateByOp(Str, Op, IsFuncCalling = False):
             return [Name]
         
         Name = Str[0:Index + IndexInRemainingStr].strip()
-        Value = Str[Index+IndexInRemainingStr+len(Op):].strip()
+        Value = Str[Index+IndexInRemainingStr+len(Op):].strip().strip(')')
         return [Name, Value]
     
     TmpStr = Str.rstrip(';').rstrip(')')
@@ -759,6 +759,8 @@ def SplitPredicateByOp(Str, Op, IsFuncCalling = False):
         TmpStr = Str[0:Index - 1]
 
 def SplitPredicateStr(Str):
+    
+    Str = Str.lstrip('(')
     IsFuncCalling = False
     p = GetFuncDeclPattern()
     TmpStr = Str.replace('.', '').replace('->', '')
