@@ -1,7 +1,7 @@
 ## @file
 # process FFS generation from INF statement
 #
-#  Copyright (c) 2007, Intel Corporation
+#  Copyright (c) 2007 - 2010, Intel Corporation
 #
 #  All rights reserved. This program and the accompanying materials
 #  are licensed and made available under the terms and conditions of the BSD License
@@ -31,6 +31,8 @@ from Common.Misc import PathClass
 from Common.Misc import GuidStructureByteArrayToGuidString
 from Common import EdkLogger
 from Common.BuildToolError import *
+from GuidSection import GuidSection
+from FvImageSection import FvImageSection
 
 ## generate FFS from INF
 #
@@ -146,11 +148,13 @@ class FfsInfStatement(FfsInfStatementClassObject):
     #
     #   Generate FFS
     #
-    #   @param  self        The object pointer
-    #   @param  Dict        dictionary contains macro and value pair
-    #   @retval string      Generated FFS file name
+    #   @param  self         The object pointer
+    #   @param  Dict         dictionary contains macro and value pair
+    #   @param  FvChildAddr  Array of the inside FvImage base address
+    #   @param  FvParentAddr Parent Fv base address
+    #   @retval string       Generated FFS file name
     #
-    def GenFfs(self, Dict = {}, FvAddr = []):
+    def GenFfs(self, Dict = {}, FvChildAddr = [], FvParentAddr=None):
         #
         # Parse Inf file get Module related information
         #
@@ -184,7 +188,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         # For Rule has ComplexFile
         #
         elif isinstance(Rule, RuleComplexFile.RuleComplexFile):
-            InputSectList, InputSectAlignments = self.__GenComplexFileSection__(Rule)
+            InputSectList, InputSectAlignments = self.__GenComplexFileSection__(Rule, FvChildAddr, FvParentAddr)
             FfsOutput = self.__GenComplexFileFfs__(Rule, InputSectList, InputSectAlignments)
 
             return FfsOutput
@@ -589,11 +593,13 @@ class FfsInfStatement(FfsInfStatementClassObject):
     #
     #   Generate section by sections in Rule
     #
-    #   @param  self        The object pointer
-    #   @param  Rule        The rule object used to generate section
-    #   @retval string      File name of the generated section file
+    #   @param  self         The object pointer
+    #   @param  Rule         The rule object used to generate section
+    #   @param  FvChildAddr  Array of the inside FvImage base address
+    #   @param  FvParentAddr Parent Fv base address
+    #   @retval string       File name of the generated section file
     #
-    def __GenComplexFileSection__(self, Rule):
+    def __GenComplexFileSection__(self, Rule, FvChildAddr, FvParentAddr):
         if self.ModuleType in ('SEC', 'PEI_CORE', 'PEIM'):
             if Rule.KeepReloc != None:
                 self.KeepRelocFromRule = Rule.KeepReloc
@@ -615,6 +621,17 @@ class FfsInfStatement(FfsInfStatementClassObject):
             if self.ModuleType == 'DXE_SMM_DRIVER' and self.PiSpecVersion < 0x0001000A:
                 if Sect.SectionType == 'SMM_DEPEX':
                     EdkLogger.error("GenFds", FORMAT_NOT_SUPPORTED, "Framework SMM module doesn't support SMM_DEPEX section type", File=self.InfFileName)
+            #
+            # process the inside FvImage from FvSection or GuidSection
+            #
+            if FvChildAddr != []:
+                if isinstance(Sect, FvImageSection):
+                    Sect.FvAddr = FvChildAddr.pop(0)
+                elif isinstance(Sect, GuidSection):
+                    Sect.FvAddr = FvChildAddr
+            if FvParentAddr != None and isinstance(Sect, GuidSection):
+                Sect.FvParentAddr = FvParentAddr
+            
             if Rule.KeyStringList != []:
                 SectList, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, SecIndex, Rule.KeyStringList, self)
             else :

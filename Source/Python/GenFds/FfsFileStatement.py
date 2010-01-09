@@ -1,7 +1,7 @@
 ## @file
 # process FFS generation from FILE statement
 #
-#  Copyright (c) 2007, Intel Corporation
+#  Copyright (c) 2007 - 2010, Intel Corporation
 #
 #  All rights reserved. This program and the accompanying materials
 #  are licensed and made available under the terms and conditions of the BSD License
@@ -44,11 +44,13 @@ class FileStatement (FileStatementClassObject) :
     #
     #   Generate FFS
     #
-    #   @param  self        The object pointer
-    #   @param  Dict        dictionary contains macro and value pair
-    #   @retval string      Generated FFS file name
+    #   @param  self         The object pointer
+    #   @param  Dict         dictionary contains macro and value pair
+    #   @param  FvChildAddr  Array of the inside FvImage base address
+    #   @param  FvParentAddr Parent Fv base address
+    #   @retval string       Generated FFS file name
     #
-    def GenFfs(self, Dict = {}, FvAddr=[]):
+    def GenFfs(self, Dict = {}, FvChildAddr=[], FvParentAddr=None):
         
         if self.NameGuid != None and self.NameGuid.startswith('PCD('):
             PcdValue = GenFdsGlobalVariable.GetPcdValue(self.NameGuid)
@@ -96,12 +98,14 @@ class FileStatement (FileStatementClassObject) :
                 Index = Index + 1
                 SecIndex = '%d' %Index
                 # process the inside FvImage from FvSection or GuidSection
-                if FvAddr != []:
+                if FvChildAddr != []:
                     if isinstance(section, FvImageSection):
-                        section.FvAddr = FvAddr.pop(0)
+                        section.FvAddr = FvChildAddr.pop(0)
                     elif isinstance(section, GuidSection):
-                        if section.ProcessRequired == False:
-                            section.FvAddr = FvAddr.pop(0)
+                        section.FvAddr = FvChildAddr
+                if FvParentAddr != None and isinstance(section, GuidSection):
+                    section.FvParentAddr = FvParentAddr
+
                 sectList, align = section.GenSection(OutputDir, self.NameGuid, SecIndex, self.KeyStringList, None, Dict)
                 if sectList != []:
                     for sect in sectList:

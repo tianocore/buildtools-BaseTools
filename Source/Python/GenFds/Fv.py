@@ -1,7 +1,7 @@
 ## @file
 # process FV generation
 #
-#  Copyright (c) 2007, Intel Corporation
+#  Copyright (c) 2007 - 2010, Intel Corporation
 #
 #  All rights reserved. This program and the accompanying materials
 #  are licensed and made available under the terms and conditions of the BSD License
@@ -103,7 +103,7 @@ class FV (FvClassObject):
 
         # Process Modules in FfsList
         for FfsFile in self.FfsList :
-            FileName = FfsFile.GenFfs(MacroDict)
+            FileName = FfsFile.GenFfs(MacroDict, FvParentAddr=BaseAddress)
             FfsFileList.append(FileName)
             self.FvInfFile.writelines("EFI_FILE_NAME = " + \
                                        FileName          + \
@@ -131,22 +131,22 @@ class FV (FvClassObject):
                                 )
 
         if os.path.getmtime(FvInfoFileName) > oldtime:
-            FvAddrString = []
+            FvChildAddr = []
             AddFileObj = open(FvInfoFileName, 'r')
             AddrStrings = AddFileObj.readlines()
             AddrKeyFound = False
             for AddrString in AddrStrings:
                 if AddrKeyFound:
                     #get base address for the inside FvImage
-                    FvAddrString.append (AddrString)
+                    FvChildAddr.append (AddrString)
                 elif AddrString.find ("[FV_BASE_ADDRESS]") != -1:
                     AddrKeyFound = True
             AddFileObj.close()
 
-            if FvAddrString != []:
+            if FvChildAddr != []:
                 # Update Ffs again
                 for FfsFile in self.FfsList :
-                    FileName = FfsFile.GenFfs(MacroDict, FvAddr=FvAddrString)
+                    FileName = FfsFile.GenFfs(MacroDict, FvChildAddr, BaseAddress)
                 
                 #Update GenFv again
                 GenFdsGlobalVariable.GenerateFirmwareVolume(

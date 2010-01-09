@@ -1,7 +1,7 @@
 ## @file
 # classes represent data in FDF
 #
-#  Copyright (c) 2007, Intel Corporation
+#  Copyright (c) 2007 - 2010, Intel Corporation
 #
 #  All rights reserved. This program and the accompanying materials
 #  are licensed and made available under the terms and conditions of the BSD License
@@ -249,7 +249,9 @@ class GuidSectionClassObject (SectionClassObject) :
         self.SectionType = None
         self.ProcessRequired = False
         self.AuthStatusValid = False
-        self.FvAddr = None
+        self.FvAddr = []
+        self.FvParentAddr = None
+        self.IncludeFvSection = False
 
 ## UI section data in FDF
 #

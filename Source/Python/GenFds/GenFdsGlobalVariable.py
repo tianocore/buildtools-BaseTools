@@ -1,7 +1,7 @@
 ## @file
 # Global variables for GenFds
 #
-#  Copyright (c) 2007, Intel Corporation
+#  Copyright (c) 2007 - 2010, Intel Corporation
 #
 #  All rights reserved. This program and the accompanying materials
 #  are licensed and made available under the terms and conditions of the BSD License
@@ -346,18 +346,19 @@ class GenFdsGlobalVariable:
         GenFdsGlobalVariable.CallExternalTool(Cmd, "Failed to generate option rom")
 
     @staticmethod
-    def GuidTool(Output, Input, ToolPath, Options=''):
+    def GuidTool(Output, Input, ToolPath, Options='', returnValue=[]):
         if not GenFdsGlobalVariable.NeedsUpdate(Output, Input):
             return
         GenFdsGlobalVariable.DebugLogger(EdkLogger.DEBUG_5, "%s needs update because of newer %s" % (Output, Input))
 
-        Cmd = [ToolPath, Options]
+        Cmd = [ToolPath, ]
+        Cmd += Options.split(' ')
         Cmd += ["-o", Output]
         Cmd += Input
 
-        GenFdsGlobalVariable.CallExternalTool(Cmd, "Failed to call " + ToolPath)
+        GenFdsGlobalVariable.CallExternalTool(Cmd, "Failed to call " + ToolPath, returnValue)
 
-    def CallExternalTool (cmd, errorMess):
+    def CallExternalTool (cmd, errorMess, returnValue=[]):
 
         if type(cmd) not in (tuple, list):
             GenFdsGlobalVariable.ErrorLogger("ToolError!  Invalid parameter type in call to CallExternalTool")
@@ -384,6 +385,10 @@ class GenFdsGlobalVariable:
 
         while PopenObject.returncode == None :
             PopenObject.wait()
+        if returnValue != [] and returnValue[0] != 0:
+            #get command return value
+            returnValue[0] = PopenObject.returncode
+            return
         if PopenObject.returncode != 0 or GenFdsGlobalVariable.VerboseMode or GenFdsGlobalVariable.DebugLevel != -1:
             GenFdsGlobalVariable.InfLogger ("Return Value = %d" %PopenObject.returncode)
             GenFdsGlobalVariable.InfLogger (out)
