@@ -719,8 +719,8 @@ Err1:
 
 int
 main (
-  IN INT32             Argc, 
-  IN CHAR8             **Argv
+  IN int             Argc, 
+  IN char            **Argv
   )
 {
   COMPILER_RUN_STATUS  Status;
