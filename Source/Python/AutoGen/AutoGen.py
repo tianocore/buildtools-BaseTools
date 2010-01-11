@@ -1,7 +1,7 @@
 ## @file
 # Generate AutoGen.h, AutoGen.c and *.depex files
 #
-# Copyright (c) 2007 - 2009, Intel Corporation
+# Copyright (c) 2007 - 2010, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -138,8 +138,7 @@ class WorkspaceAutoGen(AutoGen):
     #   @param  SkuId                   SKU id from command line
     #
     def _Init(self, WorkspaceDir, ActivePlatform, Target, Toolchain, ArchList, MetaFileDb,
-              BuildConfig, ToolDefinition, FlashDefinitionFile='', Fds=[], Fvs=[], SkuId='', 
-              ReportFile=None, ReportType=None):
+              BuildConfig, ToolDefinition, FlashDefinitionFile='', Fds=[], Fvs=[], SkuId=''):
         self.MetaFile       = ActivePlatform.MetaFile
         self.WorkspaceDir   = WorkspaceDir
         self.Platform       = ActivePlatform
@@ -147,8 +146,6 @@ class WorkspaceAutoGen(AutoGen):
         self.ToolChain      = Toolchain
         self.ArchList       = ArchList
         self.SkuId          = SkuId
-        self.ReportFile     = ReportFile
-        self.ReportType     = ReportType
 
         self.BuildDatabase  = MetaFileDb
         self.TargetTxt      = BuildConfig
@@ -167,10 +164,12 @@ class WorkspaceAutoGen(AutoGen):
             Fdf.ParseFile()
             PcdSet = Fdf.Profile.PcdDict
             ModuleList = Fdf.Profile.InfList
+            self.FdfProfile = Fdf.Profile
         else:
             PcdSet = {}
             ModuleList = []
-
+            self.FdfProfile = None
+        
         # apply SKU and inject PCDs from Flash Definition file
         for Arch in self.ArchList:
             Platform = self.BuildDatabase[self.MetaFile, Arch]
@@ -185,325 +184,6 @@ class WorkspaceAutoGen(AutoGen):
             Pa.CollectPlatformDynamicPcds()
             self.AutoGenObjectList.append(Pa)
 
-        AllPcds = {}
-        MaxLen = 0
-        for Pcd in Pa._DynaPcdList_ + Pa._NonDynaPcdList_:
-          if Pcd.TokenSpaceGuidCName not in AllPcds:
-            AllPcds[Pcd.TokenSpaceGuidCName] = {}
-          if Pcd.Type not in AllPcds[Pcd.TokenSpaceGuidCName]:
-            AllPcds[Pcd.TokenSpaceGuidCName][Pcd.Type] = []
-          AllPcds[Pcd.TokenSpaceGuidCName][Pcd.Type] += [Pcd]
-          if len(Pcd.TokenCName) > MaxLen:
-            MaxLen = len(Pcd.TokenCName)
-
-        if self.ReportFile <> None:
-          try:
-            if os.path.exists(self.ReportFile):
-              os.remove(self.ReportFile)
-
-            Fd = open(self.ReportFile, "w")
-       
-            Fd.write ('===============================================================================\n')
-            Fd.write ('Platform Configuration Database Report\n')
-            Fd.write ('===============================================================================\n')
-            Fd.write ('  *P  - Platform scoped PCD override in DSC file\n')
-            Fd.write ('  *F  - Platform scoped PCD override in FDF file\n')
-            Fd.write ('  *M  - Module scoped PCD override in DSC file\n')
-            Fd.write ('  *C  - Library has a constructor\n')
-            Fd.write ('  *D  - Library has a destructor\n')
-            Fd.write ('  *CD - Library has both a constructor and a destructor\n')
-            Fd.write ('===============================================================================\n')
-            Fd.write ('\n')
-            Fd.write ('===============================================================================\n')
-            Fd.write ('PLATFORM: %s\n' % (ActivePlatform.MetaFile))
-            Fd.write ('===============================================================================\n')
-            for Key in AllPcds:
-              Fd.write ('%s\n' % (Key))
-              for Type in AllPcds[Key]:
-                TypeName = ''
-                DecType = Type
-                if Type == 'FixedAtBuild':
-                  TypeName = 'FIXED'
-                if Type == 'PatchableInModule':
-                  TypeName = 'PATCH'
-                if Type == 'FeatureFlag':
-                  TypeName = 'FLAG'
-                if Type == 'Dynamic':
-                  TypeName = 'DYN'
-                if Type == 'DynamicHii':
-                  TypeName = 'DYNHII'
-                  DecType = 'Dynamic'
-                if Type == 'DynamicVpd':
-                  TypeName = 'DYNVPD'
-                  DecType = 'Dynamic'
-                if Type == 'DynamicEx':
-                  TypeName = 'DEX'
-                  DecType = 'Dynamic'
-                if Type == 'DynamicExHii':
-                  TypeName = 'DEXHII'
-                  DecType = 'Dynamic'
-                if Type == 'DynamicExVpd':
-                  TypeName = 'DEXVPD'
-                  DecType = 'Dynamic'
-                for Pcd in AllPcds[Key][Type]:
-                
-                  DecDefaultValue = None
-                  for F in Pa.Platform.Modules.keys():
-                    for Package in Pa.Platform.Modules[F].M.Module.Packages:
-                      if (Pcd.TokenCName, Pcd.TokenSpaceGuidCName, DecType) in Package.Pcds:
-                        if DecDefaultValue == None:
-                          DecDefaultValue = Package.Pcds[Pcd.TokenCName, Pcd.TokenSpaceGuidCName, DecType].DefaultValue
-
-                  DscDefaultValue = None
-                  if (Pcd.TokenCName, Pcd.TokenSpaceGuidCName) in self.BuildDatabase.WorkspaceDb.PlatformList[0].Pcds:
-                    DscDefaultValue = self.BuildDatabase.WorkspaceDb.PlatformList[0].Pcds[(Pcd.TokenCName, Pcd.TokenSpaceGuidCName)].DefaultValue
-
-                  if Pcd.DatumType in ('UINT8', 'UINT16', 'UINT32', 'UINT64'):
-                    if Pcd.DefaultValue.strip()[0:2].upper() == '0X':
-                      PcdDefaultValueNumber = int(Pcd.DefaultValue.strip(), 16)
-                    else:
-                      PcdDefaultValueNumber = int(Pcd.DefaultValue.strip())
-                  
-                    if DecDefaultValue == None:
-                      DecMatch = True
-                    else:
-                      if DecDefaultValue.strip()[0:2].upper() == '0X':
-                        DecDefaultValueNumber = int(DecDefaultValue.strip(), 16)
-                      else:
-                        DecDefaultValueNumber = int(DecDefaultValue.strip())
-                      DecMatch = (DecDefaultValueNumber == PcdDefaultValueNumber)
-                      
-                    if DscDefaultValue == None:
-                      DscMatch = True
-                    else:
-                      if DscDefaultValue.strip()[0:2].upper() == '0X':
-                        DscDefaultValueNumber = int(DscDefaultValue.strip(), 16)
-                      else:
-                        DscDefaultValueNumber = int(DscDefaultValue.strip())
-                      DscMatch = (DscDefaultValueNumber == PcdDefaultValueNumber)
-                  else:
-                    if DecDefaultValue == None:
-                      DecMatch = True
-                    else:
-                      DecMatch = (DecDefaultValue == Pcd.DefaultValue)
-                      
-                    if DscDefaultValue == None:
-                      DscMatch = True
-                    else:
-                      DscMatch = (DscDefaultValue == Pcd.DefaultValue)
-     
-                  if DecMatch:
-                    Fd.write ('    %-*s: %6s %10s = %-22s\n' % (MaxLen + 2, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', Pcd.DefaultValue))
-                  else:
-                    if DscMatch:
-                      if (Pcd.TokenCName, Key) in PcdSet:
-                        Fd.write (' *F %-*s: %6s %10s = %-22s\n' % (MaxLen + 2, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', Pcd.DefaultValue))
-                      else:
-                        Fd.write (' *P %-*s: %6s %10s = %-22s\n' % (MaxLen + 2, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', Pcd.DefaultValue))
-
-                  for F in Pa.Platform.Modules.keys():
-                    for ModulePcd in Pa.Platform.Modules[F].M.ModulePcdList + Pa.Platform.Modules[F].M.LibraryPcdList:
-                      if ModulePcd.TokenSpaceGuidCName <> Pcd.TokenSpaceGuidCName:
-                        continue
-                      if ModulePcd.TokenCName <> Pcd.TokenCName:
-                        continue
-                      if Pcd.DatumType in ('UINT8', 'UINT16', 'UINT32', 'UINT64'):
-                        if ModulePcd.DefaultValue.strip()[0:2].upper() == '0X':
-                          ModulePcdDefaultValueNumber = int(ModulePcd.DefaultValue.strip(), 16)
-                        else:
-                          ModulePcdDefaultValueNumber = int(ModulePcd.DefaultValue.strip())
-                        Match = (ModulePcdDefaultValueNumber == PcdDefaultValueNumber)
-                      else:
-                        Match = (ModulePcd.DefaultValue == Pcd.DefaultValue)
-                      if Match:
-                        continue
-                      Fd.write (' *M %*s = %s\n' % (MaxLen + 21, str(F).split('\\')[-1], ModulePcd.DefaultValue))
-                      
-                  if not DecMatch and DscMatch and DecDefaultValue <> None:
-                    Fd.write ('    %*s = %s\n' % (MaxLen + 21, 'DEC DEFAULT', DecDefaultValue))
-                      
-              Fd.write ('\n')
-
-            Fd.write ('===============================================================================\n')
-            Fd.write ('===============================================================================\n')
-            
-            for F in Pa.Platform.Modules.keys():
-              Fd.write ('\n')
-              Fd.write ('===============================================================================\n')
-              Fd.write ('MODULE: %s\n' % (F))
-              Fd.write ('===============================================================================\n')
-              
-              Fd.write ('PLATFORM CONFIGURATION DATABASE\n')
-              Fd.write ('-------------------------------------------------------------------------------\n')
-              ModuleFirst = True
-              for Key in AllPcds:
-                First = True
-                for Type in AllPcds[Key]:
-                  TypeName = ''
-                  DecType = Type
-                  if Type == 'FixedAtBuild':
-                    TypeName = 'FIXED'
-                  if Type == 'PatchableInModule':
-                    TypeName = 'PATCH'
-                  if Type == 'FeatureFlag':
-                    TypeName = 'FLAG'
-                  if Type == 'Dynamic':
-                    TypeName = 'DYN'
-                  if Type == 'DynamicHii':
-                    TypeName = 'DYNHII'
-                    DecType = 'Dynamic'
-                  if Type == 'DynamicVpd':
-                    TypeName = 'DYNVPD'
-                    DecType = 'Dynamic'
-                  if Type == 'DynamicEx':
-                    TypeName = 'DEX'
-                    DecType = 'Dynamic'
-                  if Type == 'DynamicExHii':
-                    TypeName = 'DEXHII'
-                    DecType = 'Dynamic'
-                  if Type == 'DynamicExVpd':
-                    TypeName = 'DEXVPD'
-                    DecType = 'Dynamic'
-                  for Pcd in AllPcds[Key][Type]:
-                    for ModulePcd in Pa.Platform.Modules[F].M.ModulePcdList + Pa.Platform.Modules[F].M.LibraryPcdList:
-                      if ModulePcd.TokenSpaceGuidCName <> Pcd.TokenSpaceGuidCName:
-                        continue
-                      if ModulePcd.TokenCName <> Pcd.TokenCName:
-                        continue
-                      if ModulePcd.Type <> Pcd.Type:
-                        continue
-                      if First:
-                        if ModuleFirst:
-                          ModuleFirst = False
-                        else:
-                          Fd.write ('\n')
-                        Fd.write ('%s\n' % (Key))
-                        First = False
-
-                      InfDefaultValue = ModulePcd.InfDefaultValue
-                      if InfDefaultValue == '':
-                        InfDefaultValue = None
-
-                      DecDefaultValue = None
-                      for Package in Pa.Platform.Modules[F].M.Module.Packages:
-                        if (Pcd.TokenCName, Pcd.TokenSpaceGuidCName, DecType) in Package.Pcds:
-                          if DecDefaultValue == None:
-                            DecDefaultValue = Package.Pcds[Pcd.TokenCName, Pcd.TokenSpaceGuidCName, DecType].DefaultValue
-
-                      DscDefaultValue = None
-                      if (Pcd.TokenCName, Pcd.TokenSpaceGuidCName) in self.BuildDatabase.WorkspaceDb.PlatformList[0].Pcds:
-                        DscDefaultValue = self.BuildDatabase.WorkspaceDb.PlatformList[0].Pcds[(Pcd.TokenCName, Pcd.TokenSpaceGuidCName)].DefaultValue
-
-                      DscModuleOverrideDefaultValue = None
-                      if F in self.BuildDatabase.WorkspaceDb.PlatformList[0].Modules:
-                        if (Pcd.TokenCName, Pcd.TokenSpaceGuidCName) in self.BuildDatabase.WorkspaceDb.PlatformList[0].Modules[F].Pcds:
-                          DscModuleOverrideDefaultValue = self.BuildDatabase.WorkspaceDb.PlatformList[0].Modules[F].Pcds[(Pcd.TokenCName, Pcd.TokenSpaceGuidCName)].DefaultValue
-                      
-                      if Pcd.DatumType in ('UINT8', 'UINT16', 'UINT32', 'UINT64'):
-                        if ModulePcd.DefaultValue.strip()[0:2].upper() == '0X':
-                          ModulePcdDefaultValueNumber = int(ModulePcd.DefaultValue.strip(), 16)
-                        else:
-                          ModulePcdDefaultValueNumber = int(ModulePcd.DefaultValue.strip())
-                          
-                        if DecDefaultValue == None:
-                          DecMatch = True
-                        else:
-                          if DecDefaultValue.strip()[0:2].upper() == '0X':
-                            DecDefaultValueNumber = int(DecDefaultValue.strip(), 16)
-                          else:
-                            DecDefaultValueNumber = int(DecDefaultValue.strip())
-                          DecMatch = (DecDefaultValueNumber == ModulePcdDefaultValueNumber)
-                          
-                        if InfDefaultValue == None:
-                          InfMatch = True
-                        else:
-                          if InfDefaultValue.strip()[0:2].upper() == '0X':
-                            InfDefaultValueNumber = int(InfDefaultValue.strip(), 16)
-                          else:
-                            InfDefaultValueNumber = int(InfDefaultValue.strip())
-                          InfMatch = (InfDefaultValueNumber == ModulePcdDefaultValueNumber)
-
-                        if DscDefaultValue == None:
-                          DscMatch = True
-                        else:
-                          if DscDefaultValue.strip()[0:2].upper() == '0X':
-                            DscDefaultValueNumber = int(DscDefaultValue.strip(), 16)
-                          else:
-                            DscDefaultValueNumber = int(DscDefaultValue.strip())
-                          DscMatch = (DscDefaultValueNumber == ModulePcdDefaultValueNumber)
-                      else:
-                        if DecDefaultValue == None:
-                          DecMatch = True
-                        else:
-                          DecMatch = (DecDefaultValue == ModulePcd.DefaultValue)
-                          
-                        if InfDefaultValue == None:
-                          InfMatch = True
-                        else:
-                          InfMatch = (InfDefaultValue == ModulePcd.DefaultValue)
-                          
-                        if DscDefaultValue == None:
-                          DscMatch = True
-                        else:
-                          DscMatch = (DscDefaultValue == ModulePcd.DefaultValue)
-                          
-                      if DecMatch and InfMatch:
-                        Fd.write ('    %-*s: %6s %10s = %-22s\n' % (MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', ModulePcd.DefaultValue))
-                      else:
-                        if DscMatch and DscModuleOverrideDefaultValue == None:
-                          if (Pcd.TokenCName, Key) in PcdSet:
-                            Fd.write (' *F %-*s: %6s %10s = %-22s\n' % (MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', ModulePcd.DefaultValue))
-                          else:
-                            Fd.write (' *P %-*s: %6s %10s = %-22s\n' % (MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', ModulePcd.DefaultValue))
-                        else:
-                          Fd.write (' *M %-*s: %6s %10s = %-22s\n' % (MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', ModulePcd.DefaultValue))
-                          if DscDefaultValue <> None:
-                            Fd.write ('    %*s = %s\n' % (MaxLen + 19, 'DSC DEFAULT', DscDefaultValue))
-                        if InfDefaultValue <> None:
-                          Fd.write ('    %*s = %s\n' % (MaxLen + 19, 'INF DEFAULT', InfDefaultValue))
-                        if DecDefaultValue <> None and not DecMatch:
-                          Fd.write ('    %*s = %s\n' % (MaxLen + 19, 'DEC DEFAULT', DecDefaultValue))
-              Fd.write ('-------------------------------------------------------------------------------\n')
-              Fd.write ('LIBRARIES\n')
-              Fd.write ('-------------------------------------------------------------------------------\n')
-              for Lib in Pa.Platform.Modules[F].M.DependentLibraryList:
-                if len(Lib.ConstructorList) > 0:
-                  if  len(Lib.DestructorList) > 0:
-                    Fd.write (' *CD')
-                  else:
-                    Fd.write (' *C ')
-                else:
-                  if  len(Lib.DestructorList) > 0:
-                    Fd.write (' *D ')
-                  else:
-                    Fd.write ('    ')
-                Fd.write (' %s\n' % (Lib))
-                for Depex in Lib.DepexExpression[Pa.Platform.Modules[F].M.Arch, Pa.Platform.Modules[F].M.ModuleType]:
-                  Fd.write ('       DEPEX = %s\n' % (Depex))
-              Fd.write ('-------------------------------------------------------------------------------\n')
-
-              Fd.write ('MODULE DEPENDENCY EXPRESSION\n')
-              if len(Pa.Platform.Modules[F].M.Module.DepexExpression[Pa.Platform.Modules[F].M.Arch, Pa.Platform.Modules[F].M.ModuleType]) == 0:
-                Fd.write ('  NONE\n')
-              else:
-                for Depex in Pa.Platform.Modules[F].M.Module.DepexExpression[Pa.Platform.Modules[F].M.Arch, Pa.Platform.Modules[F].M.ModuleType]:
-                  Fd.write ('  %s\n' % (Depex))
-              Fd.write ('-------------------------------------------------------------------------------\n')
-
-              Fd.write ('MODULE + LIBRARY DEPENDENCY EXPRESSION\n')
-              if Pa.Platform.Modules[F].M.ModuleType in Pa.Platform.Modules[F].M.DepexExpressionList:
-                if Pa.Platform.Modules[F].M.DepexExpressionList[Pa.Platform.Modules[F].M.ModuleType] == '': 
-                  Fd.write ('  NONE\n')
-                else:
-                  Fd.write ('  %s\n' % (Pa.Platform.Modules[F].M.DepexExpressionList[Pa.Platform.Modules[F].M.ModuleType]))
-              else:
-                Fd.write ('  NONE\n')
-              Fd.write ('-------------------------------------------------------------------------------\n')
-              
-            Fd.close()
-          except:
-            EdkLogger.error(None, FILE_OPEN_FAILURE, ExtraData=self.ReportFile)
-                  
         self._BuildDir = None
         self._FvDir = None
         self._MakeFileDir = None
@@ -647,6 +327,7 @@ class PlatformAutoGen(AutoGen):
         self.SourceOverrideDir = None
         self.FdTargetList = self.Workspace.FdTargetList
         self.FvTargetList = self.Workspace.FvTargetList
+        self.AllPcdList = []
 
         # flag indicating if the makefile/C-code file has been created or not
         self.IsMakeFileCreated  = False
@@ -779,6 +460,7 @@ class PlatformAutoGen(AutoGen):
                                       % NoDatumTypePcdListString)
         self._NonDynamicPcdList = self._NonDynaPcdList_
         self._DynamicPcdList = self._DynaPcdList_
+        self.AllPcdList = self._NonDynamicPcdList + self._DynamicPcdList
         
         #
         # Sort dynamic PCD list to:

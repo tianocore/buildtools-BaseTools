@@ -1,7 +1,7 @@
 ## @file
 # build a platform or a module
 #
-#  Copyright (c) 2007, Intel Corporation
+#  Copyright (c) 2007 - 2010, Intel Corporation
 #
 #  All rights reserved. This program and the accompanying materials
 #  are licensed and made available under the terms and conditions of the BSD License
@@ -35,13 +35,15 @@ from AutoGen.AutoGen import *
 from Common.BuildToolError import *
 from Workspace.WorkspaceDatabase import *
 
+from BuildReport import BuildReport
+
 import Common.EdkLogger
 import Common.GlobalData as GlobalData
 
 # Version and Copyright
 VersionNumber = "0.5"
 __version__ = "%prog Version " + VersionNumber
-__copyright__ = "Copyright (c) 2007, Intel Corporation  All rights reserved."
+__copyright__ = "Copyright (c) 2007 - 2010, Intel Corporation  All rights reserved."
 
 ## standard targets of build command
 gSupportedTarget = ['all', 'genc', 'genmake', 'modules', 'libraries', 'fds', 'clean', 'cleanall', 'cleanlib', 'run']
@@ -696,12 +698,7 @@ class Build():
         self.Reparse        = Reparse
         self.SkuId          = SkuId
         self.SpawnMode      = True
-        self.ReportFile     = ReportFile
-        if ReportType == None:
-          self.ReportType   = ['ALL']
-        else:
-          self.ReportType   = ReportType
-
+        self.BuildReport    = BuildReport(ReportFile, ReportType)
         self.TargetTxt      = TargetTxtClassObject()
         self.ToolDef        = ToolDefClassObject()
         self.Db             = WorkspaceDatabase(None, GlobalData.gGlobalDefines, self.Reparse)
@@ -960,10 +957,9 @@ class Build():
                         self.Fdf,
                         self.FdList,
                         self.FvList,
-                        self.SkuId,
-                        self.ReportFile,
-                        self.ReportType
+                        self.SkuId
                         )
+                self.BuildReport.AddPlatformReport(Wa)
                 self.Progress.Stop("done!")
                 self._Build(self.Target, Wa)
 
@@ -988,10 +984,9 @@ class Build():
                         self.Fdf,
                         self.FdList,
                         self.FvList,
-                        self.SkuId,
-                        self.ReportFile,
-                        self.ReportType
+                        self.SkuId
                         )
+                self.BuildReport.AddPlatformReport(Wa)
                 Wa.CreateMakeFile(False)
                 self.Progress.Stop("done!")
                 MaList = []
@@ -1028,10 +1023,9 @@ class Build():
                         self.Fdf,
                         self.FdList,
                         self.FvList,
-                        self.SkuId,
-                        self.ReportFile,
-                        self.ReportType
+                        self.SkuId
                         )
+                self.BuildReport.AddPlatformReport(Wa)
                 Wa.CreateMakeFile(False)
 
                 # multi-thread exit flag
@@ -1266,8 +1260,8 @@ def MyOptionParser():
     Parser.add_option("-D", "--define", action="append", type="string", dest="Macros", help="Macro: \"Name [= Value]\".")
 
     Parser.add_option("-y", "--report-file", action="store", dest="ReportFile", help="Create/overwrite the report to the specified filename.")
-    Parser.add_option("-Y", "--report-type", action="append", type="choice", choices=['ALL','PCD',], dest="ReportType",
-        help="Flags that control the type of build report to generate.  Must be one of: [ALL, PCD].  To specify more than one flag, repeat this option on the command line.")
+    Parser.add_option("-Y", "--report-type", action="append", type="choice", choices=['ALL','PCD','LIBRARY','FLASH','DEPEX','BUILD_FLAGS','PREDICTION'], dest="ReportType",
+        help="Flags that control the type of build report to generate.  Must be one of: [ALL, PCD, LIBRARY, FLASH, DEPEX, BUILD_FLAGS, PREDICTION].  To specify more than one flag, repeat this option on the command line.")
 
     (Opt, Args)=Parser.parse_args()
     return (Opt, Args)
@@ -1423,9 +1417,6 @@ def Main():
     finally:
         Utils.Progressor.Abort()
 
-    if MyBuild != None:
-        MyBuild.Db.Close()
-
     if ReturnCode == 0:
         Conclusion = "Done"
     elif ReturnCode == ABORT_ERROR:
@@ -1434,6 +1425,9 @@ def Main():
         Conclusion = "Failed"
     FinishTime = time.time()
     BuildDuration = time.strftime("%M:%S", time.gmtime(int(round(FinishTime - StartTime))))
+    if MyBuild != None:
+        MyBuild.BuildReport.GenerateReport(BuildDuration)
+        MyBuild.Db.Close()
     EdkLogger.SetLevel(EdkLogger.QUIET)
     EdkLogger.quiet("\n- %s -\n%s [%s]" % (Conclusion, time.strftime("%H:%M:%S, %b.%d %Y", time.localtime()), BuildDuration))
 
