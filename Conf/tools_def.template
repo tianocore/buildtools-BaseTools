@@ -2250,7 +2250,7 @@ RELEASE_XCODE32_X64_ASM_FLAGS  = -arch x86_64
 RELEASE_XCODE32_X64_CC_FLAGS   = -arch x86_64 -Oz -combine -mms-bitfields -fshort-wchar -fno-strict-aliasing -Wall -Werror -Wno-missing-braces -Wno-address  -fomit-frame-pointer -static  -c -include AutoGen.h -fno-stack-protector
 
 ##################
-# ARM definitions - still a work in progress (Assumes iPhone SDK installed)
+# ARM definitions - (Assumes iPhone SDK installed on Snow Leopard)
 ##################
 
 *_XCODE32_ARM_ARCHCC_FLAGS    = -arch armv6 -march=armv6 -mthumb
@@ -2260,7 +2260,7 @@ RELEASE_XCODE32_X64_CC_FLAGS   = -arch x86_64 -Oz -combine -mms-bitfields -fshor
 
 *_XCODE32_ARM_CC_PATH       = DEF(IPHONE_TOOLS)/usr/bin/gcc
 *_XCODE32_ARM_SLINK_PATH    = DEF(IPHONE_TOOLS)/usr/bin/libtool
-*_XCODE32_ARM_DLINK_PATH    = DEF(IPHONE_TOOLS)/usr/bin/ld
+*_XCODE32_ARM_DLINK_PATH    = ld
 *_XCODE32_ARM_ASM_PATH      = DEF(IPHONE_TOOLS)/usr/bin/as
 *_XCODE32_ARM_PP_PATH       = DEF(IPHONE_TOOLS)/usr/bin/gcc
 *_XCODE32_ARM_VFRPP_PATH    = DEF(IPHONE_TOOLS)/usr/bin/gcc
