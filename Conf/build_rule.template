@@ -238,7 +238,6 @@
     <Command.GCC>
         "$(DLINK)" -o ${dst} $(DLINK_FLAGS) -\( $(DLINK_SPATH) @$(STATIC_LIBRARY_FILES_LIST) -\) $(DLINK2_FLAGS)
         "$(OBJCOPY)" --only-keep-debug ${dst} $(DEBUG_DIR)(+)$(MODULE_NAME).pdb
-        "$(OBJCOPY)" -S ${dst}
         "$(OBJCOPY)" $(OBJCOPY_FLAGS) ${dst}
 
     <Command.RVCT>
