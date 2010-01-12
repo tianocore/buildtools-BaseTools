@@ -1,7 +1,7 @@
 ## @file
 # generate flash image
 #
-#  Copyright (c) 2007, Intel Corporation
+#  Copyright (c) 2007 - 2010, Intel Corporation
 #
 #  All rights reserved. This program and the accompanying materials
 #  are licensed and made available under the terms and conditions of the BSD License
@@ -237,7 +237,10 @@ def main():
             GenFds.PreprocessImage(BuildWorkSpace, GenFdsGlobalVariable.ActivePlatform)
         """Call GenFds"""
         GenFds.GenFd('', FdfParserObj, BuildWorkSpace, ArchList)
-        
+
+        """Generate GUID cross reference file"""
+        GenFds.GenerateGuidXRefFile(BuildWorkSpace)
+
         """Display FV space info."""
         GenFds.DisplayFvSpaceInfo(FdfParserObj)
         
@@ -476,11 +479,20 @@ class GenFds :
             ModuleObj = BuildDb.BuildObject[Key, 'COMMON']
             print ModuleObj.BaseName + ' ' + ModuleObj.ModuleType
 
+    def GenerateGuidXRefFile(BuildDb):
+        GuidXRefFileName = os.path.join(GenFdsGlobalVariable.FvDir, "Guid.xref")
+        GuidXRefFile = open(GuidXRefFileName, "w+")
+        for Module in BuildDb.ModuleList:
+            GuidXRefFile.write("%s %s\n" % (Module.Guid, Module.BaseName))
+        GuidXRefFile.close()
+        GenFdsGlobalVariable.InfLogger("GUID cross reference file saved to %s\n" % GuidXRefFileName)
+        
     ##Define GenFd as static function
     GenFd = staticmethod(GenFd)
     GetFvBlockSize = staticmethod(GetFvBlockSize)
     DisplayFvSpaceInfo = staticmethod(DisplayFvSpaceInfo)
     PreprocessImage = staticmethod(PreprocessImage)
+    GenerateGuidXRefFile = staticmethod(GenerateGuidXRefFile)
 
 if __name__ == '__main__':
     r = main()
