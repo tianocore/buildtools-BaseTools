@@ -183,10 +183,10 @@ class SourceFiles:
         'mingw_hdr': {
             'url': 'http://sourceforge.net/projects/' + \
                    'mingw-w64/files/mingw-w64/mingw-w64-snapshot/' + \
-                   'mingw-w64-snapshot-$version.tar.bz2/download',
+                   'mingw-w64-trunk-snapshot-$version.tar.bz2/download',
             'extract-dir': os.path.join('trunk', 'mingw-w64-headers'),
-            'version': '20090419',
-            'md5': '9146ecfabaf172e4cc427b88e8d218c1',
+            'version': '20091222',
+            'md5': 'fbcf282d1a05df121088d775e02095d6',
             },
         }
 
@@ -261,7 +261,7 @@ class SourceFiles:
                     self.dots = 0
                     local_file = os.path.join(self.config.src_dir, fdata['filename'])
                     url = fdata['url']
-	            print 'Downloading %s:' % fname,
+	            print 'Downloading %s:' % fname, url
                     if retries > 0:
                         print '(retry)',
                     sys.stdout.flush()
@@ -312,8 +312,8 @@ class SourceFiles:
                     print '[KeyboardInterrupt]'
                     return False
 
-                except:
-                    pass
+                except Exception, e:
+                    print e
 
             if not completed: return False
 
