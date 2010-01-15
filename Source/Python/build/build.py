@@ -24,6 +24,7 @@ import platform
 import traceback
 import types
 if sys.platform == "win32":
+    import subprocess
     from _subprocess import CreateProcess
 
 from threading import *
@@ -226,7 +227,7 @@ class WinPopen(Popen):
         """Execute program (MS Windows version)"""
 
         if not isinstance(args, types.StringTypes):
-            args = list2cmdline(args)
+            args = subprocess.list2cmdline(args)
 
             # Start the process
             try:
