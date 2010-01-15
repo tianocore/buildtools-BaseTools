@@ -223,7 +223,7 @@ class WinPopen(Popen):
                        p2cread, p2cwrite,
                        c2pread, c2pwrite,
                        errread, errwrite):
-            """Execute program (MS Windows version)"""
+        """Execute program (MS Windows version)"""
 
         if not isinstance(args, types.StringTypes):
             args = list2cmdline(args)
