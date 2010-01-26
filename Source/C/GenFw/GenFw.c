@@ -1,6 +1,6 @@
 /** @file
 
-Copyright (c) 2004 - 2009, Intel Corporation
+Copyright (c) 2004 - 2010, Intel Corporation
 All rights reserved. This program and the accompanying materials
 are licensed and made available under the terms and conditions of the BSD License
 which accompanies this distribution.  The full text of the license may be found at
@@ -115,6 +115,12 @@ static const char *gHiiPackageRCFileHeader[] = {
 };
 
 STATIC CHAR8 *mInImageName;
+
+//
+// Module image information
+//
+STATIC UINT32 mImageTimeStamp = 0;
+STATIC UINT32 mImageSize = 0;
 
 STATIC
 EFI_STATUS
@@ -860,6 +866,7 @@ ScanSections(
 
   NtHdr->Pe32.FileHeader.NumberOfSections = CoffNbrSections;
   NtHdr->Pe32.FileHeader.TimeDateStamp = (UINT32) time(NULL);
+  mImageTimeStamp = NtHdr->Pe32.FileHeader.TimeDateStamp;
   NtHdr->Pe32.FileHeader.PointerToSymbolTable = 0;
   NtHdr->Pe32.FileHeader.NumberOfSymbols = 0;
   NtHdr->Pe32.FileHeader.SizeOfOptionalHeader = sizeof(NtHdr->Pe32.OptionalHeader);
@@ -1712,6 +1719,9 @@ Returns:
   EFI_HII_PACKAGE_HEADER           EndPackage;
   UINT32                           HiiSectionHeaderSize;
   UINT8                            *HiiSectionHeader;
+  FILE                             *ReportFile;
+  CHAR8                            *ReportFileName;
+  UINTN                            FileLen;
 
   SetUtilityName (UTILITY_NAME);
 
@@ -3128,6 +3138,7 @@ WriteFile:
     fwrite (FileBuffer, 1, FileLength, fpInOut);
   }
   VerboseMsg ("the size of output file is %u bytes", (unsigned) FileLength);
+  mImageSize = FileLength;
 
 Finish:
   if (fpInOut != NULL) {
@@ -3168,6 +3179,24 @@ Finish:
     }
   }
 
+  //
+  // Write module size and time stamp to report file.
+  //
+  FileLen = strlen (OutImageName);
+  if (FileLen >= 4 && strcmp (OutImageName + (FileLen - 4), ".efi") == 0) {
+    ReportFileName = (CHAR8 *) malloc (FileLen + 1);
+    if (ReportFileName != NULL) {
+      strcpy (ReportFileName, OutImageName);
+      strcpy (ReportFileName + (FileLen - 4), ".txt"); 
+      ReportFile = fopen (ReportFileName, "w+");
+      if (ReportFile != NULL) {
+        fprintf (ReportFile, "MODULE_SIZE = %u\n", (unsigned) mImageSize);
+        fprintf (ReportFile, "TIME_STAMP = %u\n", (unsigned) mImageTimeStamp);
+        fclose(ReportFile);
+      }
+      free (ReportFileName);
+    }
+  }
   VerboseMsg ("%s tool done with return code is 0x%x.", UTILITY_NAME, GetUtilityStatus ());
 
   return GetUtilityStatus ();
@@ -3302,7 +3331,7 @@ Returns:
   //Zero Debug Data and TimeStamp
   //
   FileHdr->TimeDateStamp = 0;
-
+  mImageTimeStamp = 0;
   if (ExportDirectoryEntryFileOffset != 0) {
     NewTimeStamp  = (UINT32 *) (FileBuffer + ExportDirectoryEntryFileOffset + sizeof (UINT32));
     *NewTimeStamp = 0;
@@ -3316,6 +3345,7 @@ Returns:
   if (DebugDirectoryEntryFileOffset != 0) {
     DebugEntry = (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY *) (FileBuffer + DebugDirectoryEntryFileOffset);
     DebugEntry->TimeDateStamp = 0;
+    mImageTimeStamp = 0;
     if (ZeroDebugFlag) {
       memset (FileBuffer + DebugEntry->FileOffset, 0, DebugEntry->SizeOfData);
       memset (DebugEntry, 0, sizeof (EFI_IMAGE_DEBUG_DIRECTORY_ENTRY));
@@ -3542,7 +3572,7 @@ Returns:
   // Set new stamp
   //
   FileHdr->TimeDateStamp = (UINT32) newtime;
-
+  mImageTimeStamp = (UINT32) newtime;
   if (ExportDirectoryEntryRva != 0) {
     NewTimeStamp  = (UINT32 *) (FileBuffer + ExportDirectoryEntryFileOffset + sizeof (UINT32));
     *NewTimeStamp = (UINT32) newtime;

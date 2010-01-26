@@ -20,7 +20,10 @@ import os
 import re
 import platform
 import textwrap
+from datetime import datetime
 from Common import EdkLogger
+from Common.Misc import GuidStructureByteArrayToGuidString
+from Common.InfClassObject import gComponentType2ModuleType
 from Common.BuildToolError import FILE_OPEN_FAILURE
 from Common.BuildToolError import FILE_WRITE_FAILURE
 
@@ -31,6 +34,10 @@ gDxsDependencyPattern = re.compile(r"DEPENDENCY_START(.+)DEPENDENCY_END", re.DOT
 ## Pattern to find total FV total size, occupied size in flash report intermediate file
 gFvTotalSizePattern = re.compile(r"EFI_FV_TOTAL_SIZE = (0x[0-9a-fA-F]+)")
 gFvTakenSizePattern = re.compile(r"EFI_FV_TAKEN_SIZE = (0x[0-9a-fA-F]+)")
+
+## Pattern to find module size and time stamp in module summary report intermediate file  
+gModuleSizePattern = re.compile(r"MODULE_SIZE = (\d+)")
+gTimeStampPattern  = re.compile(r"TIME_STAMP = (\d+)") 
 
 ## Pattern to find GUID value in flash description files
 gPcdGuidPattern = re.compile(r"PCD\((\w+)[.](\w+)\)")
@@ -59,6 +66,21 @@ gPcdTypeMap = {
   'DynamicEx'        : ('DEX',    'Dynamic'),
   'DynamicExHii'     : ('DEXHII', 'Dynamic'),
   'DynamicExVpd'     : ('DEXVPD', 'Dynamic'),
+  }
+
+## The look up table to map module type to driver type
+gDriverTypeMap = {
+  'SEC'               : '0x3 (SECURITY_CORE)',
+  'PEI_CORE'          : '0x4 (PEI_CORE)',
+  'PEIM'              : '0x6 (PEIM)',
+  'DXE_CORE'          : '0x5 (DXE_CORE)',
+  'DXE_DRIVER'        : '0x7 (DRIVER)',
+  'DXE_SAL_DRIVER'    : '0x7 (DRIVER)',
+  'DXE_SMM_DRIVER'    : '0x7 (DRIVER)',
+  'DXE_RUNTIME_DRIVER': '0x7 (DRIVER)',
+  'UEFI_DRIVER'       : '0x7 (DRIVER)',
+  'UEFI_APPLICATION'  : '0x9 (APPLICATION)',
+  'SMM_CORE'          : '0xD (SMM_CORE)',
   }
 
 ##
@@ -286,7 +308,8 @@ class BuildFlagsReport(object):
             FileWrite(File, "%s = %s" % (Tool, self.BuildFlags[Tool]), True)
         
         FileWrite(File, gSubSectionEnd)
-                       
+
+
 ##
 # Reports individual module information
 #
@@ -311,14 +334,19 @@ class ModuleReport(object):
         self.ModuleInfPath = M.MetaFile.File
         self.FileGuid = M.Guid
         self.Size = 0
-        self.BuildTimeStamp = ""
+        self.BuildTimeStamp = None
         self.DriverType = ""
+        ModuleType = M.ModuleType
+        if not ModuleType:
+            ModuleType = gComponentType2ModuleType.get(M.ComponentType, "")
+        self.DriverType = gDriverTypeMap.get(ModuleType, "")
         self.UefiSpecVersion = M.Module.Specification.get("UEFI_SPECIFICATION_VERSION", "")
         self.PiSpecVersion = M.Module.Specification.get("PI_SPECIFICATION_VERSION", "")
         self.PciDeviceId = M.Module.Defines.get("PCI_DEVICE_ID", "")
         self.PciVendorId = M.Module.Defines.get("PCI_VENDOR_ID", "")
         self.PciClassCode = M.Module.Defines.get("PCI_CLASS_CODE", "")
   
+        self._BuildDir = M.BuildDir
         self.ModulePcdSet = {}
         self.ModuleDscOverridePcds = {}
         if "PCD" in ReportType:
@@ -346,6 +374,7 @@ class ModuleReport(object):
         
         if "BUILD_FLAGS" in ReportType:
             self.BuildFlagsReport = BuildFlagsReport(M)
+        
     
     ##
     # Generate report for module information
@@ -361,12 +390,26 @@ class ModuleReport(object):
     def GenerateReport(self, File, GlobalPcdReport, ReportType):
         FileWrite(File, gSectionStart)
         
+        FwReportFileName = os.path.join(self._BuildDir, "DEBUG", self.ModuleName + ".txt")
+        if os.path.isfile(FwReportFileName):
+            try:
+                FileContents = open(FwReportFileName).read()
+                Match = gModuleSizePattern.search(FileContents)
+                if Match:
+                    self.Size = int(Match.group(1))
+                
+                Match = gTimeStampPattern.search(FileContents)
+                if Match:
+                    self.BuildTimeStamp = datetime.utcfromtimestamp(int(Match.group(1)))
+            except IOError:
+                EdkLogger.warn(None, "Fail to read report file", FwReportFileName)
+            
         FileWrite(File, "Module Summary")
         FileWrite(File, "Module Name:          %s" % self.ModuleName)
         FileWrite(File, "Module INF Path:      %s" % self.ModuleInfPath)
         FileWrite(File, "File GUID:            %s" % self.FileGuid)
         if self.Size:
-            FileWrite(File, "Size:                 %s" % self.Size)
+            FileWrite(File, "Size:                 0x%X (%.2fK)" % (self.Size, self.Size / 1024.0))
         if self.BuildTimeStamp:
             FileWrite(File, "Build Time Stamp:     %s" % self.BuildTimeStamp)
         if self.DriverType:
@@ -598,6 +641,285 @@ class PcdReport(object):
 
 
 ##
+# Reports FD region information
+#
+# This class reports the FD subsection in the build report file.
+# It collects region information of platform flash device. 
+# If the region is a firmware volume, it lists the set of modules
+# and its space information; otherwise, it only lists its region name,
+# base address and size in its sub-section header.
+# If there are nesting FVs, the nested FVs will list immediate after
+# this FD region subsection
+#
+class FdRegionReport(object):
+    ##
+    # Discover all the nested FV name list.
+    #
+    # This is an internal worker function to discover the all the nested FV information
+    # in the parent firmware volume. It uses deep first search algorithm recursively to
+    # find all the FV list name and append them to the list.
+    #
+    # @param self            The object pointer
+    # @param FvName          The name of current firmware file system
+    # @param Wa              Workspace context information
+    #
+    def _DiscoverNestedFvList(self, FvName, Wa):
+        for Ffs in Wa.FdfProfile.FvDict[FvName.upper()].FfsList:
+            for Section in Ffs.SectionList:
+                try:
+                    for FvSection in Section.SectionList:
+                        if FvSection.FvName in self.FvList:
+                            continue
+                        self._GuidsDb[Ffs.NameGuid.upper()] = FvSection.FvName
+                        self.FvList.append(FvSection.FvName)
+                        self.FvInfo[FvSection.FvName] = ("Nested FV", 0, 0)
+                        self._DiscoverNestedFvList(FvSection.FvName, Wa)
+                except AttributeError:
+                    pass
+    
+    ##
+    # Constructor function for class FdRegionReport
+    #
+    # This constructor function generates FdRegionReport object for a specified FdRegion. 
+    # If the FdRegion is a firmware volume, it will recursively find all its nested Firmware
+    # volume list. This function also collects GUID map in order to dump module identification
+    # in the final report.
+    #
+    # @param self:           The object pointer
+    # @param FdRegion        The current FdRegion object
+    # @param Wa              Workspace context information
+    #
+    def __init__(self, FdRegion, Wa):
+        self.Type = FdRegion.RegionType
+        self.BaseAddress = FdRegion.Offset
+        self.Size = FdRegion.Size
+        self.FvList = []
+        self.FvInfo = {}
+        self._GuidsDb = {}
+        self._FvDir = Wa.FvDir
+
+        #
+        # If the input FdRegion is not a firmware volume,
+        # we are done. 
+        #
+        if self.Type != "FV":
+            return
+        
+        #
+        # Find all nested FVs in the FdRegion
+        #
+        for FvName in FdRegion.RegionDataList:
+            if FvName in self.FvList:
+                continue
+            self.FvList.append(FvName)
+            self.FvInfo[FvName] = ("Fd Region", self.BaseAddress, self.Size)
+            self._DiscoverNestedFvList(FvName, Wa)
+
+        PlatformPcds = {}
+        for Pa in Wa.AutoGenObjectList:
+            PackageList = []
+            for ModuleKey in Pa.Platform.Modules:
+                #
+                # Collect PCD DEC default value.
+                #   
+                Module = Pa.Platform.Modules[ModuleKey]
+                for Package in Module.M.Module.Packages:
+                    if Package not in PackageList:
+                        PackageList.append(Package)
+                
+            for Package in PackageList:
+                for (TokenCName, TokenSpaceGuidCName, DecType) in Package.Pcds:
+                    DecDefaultValue = Package.Pcds[TokenCName, TokenSpaceGuidCName, DecType].DefaultValue
+                    PlatformPcds[(TokenCName, TokenSpaceGuidCName)] = DecDefaultValue
+        
+        #
+        # Collect PCDs defined in DSC common section
+        #
+        for Platform in Wa.BuildDatabase.WorkspaceDb.PlatformList:
+            for (TokenCName, TokenSpaceGuidCName) in Platform.Pcds:
+                DscDefaultValue = Platform.Pcds[(TokenCName, TokenSpaceGuidCName)].DefaultValue
+                PlatformPcds[(TokenCName, TokenSpaceGuidCName)] = DscDefaultValue
+        
+        #
+        # Add PEI and DXE a priori files GUIDs defined in PI specification.
+        #
+        self._GuidsDb["1B45CC0A-156A-428A-AF62-49864DA0E6E6"] = "PEI Apriori"
+        self._GuidsDb["FC510EE7-FFDC-11D4-BD41-0080C73C8881"] = "DXE Apriori" 
+        #
+        # Add ACPI table storage file
+        #
+        self._GuidsDb["7E374E25-8E01-4FEE-87F2-390C23C606CD"] = "ACPI table storage"
+        #
+        # Collect the GUID map in the FV firmware volume
+        #
+        for FvName in self.FvList:
+            for Ffs in Wa.FdfProfile.FvDict[FvName.upper()].FfsList:
+                try:
+                    #
+                    # Collect GUID, module mapping from INF file
+                    #
+                    InfFileName = Ffs.InfFileName
+                    try:
+                        FileGuid = ""
+                        ModuleName = ""
+                        InfPath = os.path.join(Wa.WorkspaceDir, InfFileName)
+                        for Line in open(InfPath):
+                            ItemList = Line.split("#")[0].split("=")
+                            if len(ItemList) == 2:
+                                Key   = ItemList[0].strip().upper()
+                                Value = ItemList[1].strip()
+                                if Key == "FILE_GUID":
+                                    FileGuid = Value.upper()
+                                if Key == "BASE_NAME":
+                                    ModuleName = Value
+                        if FileGuid:
+                            self._GuidsDb[FileGuid] = "%s (%s)" % (ModuleName, InfPath)
+                    except IOError:
+                        EdkLogger.warn(None, "Cannot open file to read", InfPath)
+                except AttributeError:
+                    try:
+                        #
+                        # collect GUID map for binary EFI file in FDF file.
+                        #
+                        Guid = Ffs.NameGuid.upper()
+                        Match = gPcdGuidPattern.match(Ffs.NameGuid)
+                        if Match:
+                            PcdTokenspace = Match.group(1)
+                            PcdToken = Match.group(2)
+                            if (PcdToken, PcdTokenspace) in PlatformPcds:
+                                GuidValue = PlatformPcds[(PcdToken, PcdTokenspace)]
+                                Guid = GuidStructureByteArrayToGuidString(GuidValue).upper()
+
+                        for Section in Ffs.SectionList:
+                            try:
+                                ModuleSectFile = os.path.join(Wa.WorkspaceDir, Section.SectFileName)
+                                self._GuidsDb[Guid] = ModuleSectFile
+                            except AttributeError:
+                                pass
+                    except AttributeError:
+                        pass
+        
+    
+    ##
+    # Internal worker function to generate report for the FD region
+    #
+    # This internal worker function to generate report for the FD region.
+    # It the type is firmware volume, it lists offset and module identification. 
+    #
+    # @param self            The object pointer
+    # @param File            The file object for report
+    # @param Title           The title for the FD subsection 
+    # @param BaseAddress     The base address for the FD region
+    # @param Size            The size of the FD region
+    # @param FvName          The FV name if the FD region is a firmware volume
+    #
+    def _GenerateReport(self, File, Title, Type, BaseAddress, Size=0, FvName=None):
+        FileWrite(File, gSubSectionStart)
+        FileWrite(File, Title)
+        FileWrite(File, "Type:               %s" % Type)
+        FileWrite(File, "Base Address:       0x%X" % BaseAddress)
+        
+        if self.Type == "FV":
+            FvTotalSize = 0
+            FvTakenSize = 0
+            FvFreeSize  = 0
+            FvReportFileName = os.path.join(self._FvDir, FvName + ".fv.txt")
+            try:
+                #
+                # Collect size info in the firmware volume.
+                #
+                FvReport = open(FvReportFileName).read()
+                Match = gFvTotalSizePattern.search(FvReport)
+                if Match:
+                    FvTotalSize = int(Match.group(1), 16)
+                Match = gFvTakenSizePattern.search(FvReport)
+                if Match:
+                    FvTakenSize = int(Match.group(1), 16)
+                FvFreeSize = FvTotalSize - FvTakenSize 
+                #
+                # Write size information to the report file.
+                #
+                FileWrite(File, "Size:               0x%X (%.0fK)" % (FvTotalSize, FvTotalSize / 1024.0))
+                FileWrite(File, "Fv Name:            %s (%.1f%% Full)" % (FvName, FvTakenSize * 100.0 / FvTotalSize))
+                FileWrite(File, "Occupied Size:      0x%X (%.0fK)" % (FvTakenSize, FvTakenSize / 1024.0))
+                FileWrite(File, "Free Size:          0x%X (%.0fK)" % (FvFreeSize, FvFreeSize / 1024.0))
+                FileWrite(File, "Offset     Module")
+                FileWrite(File, gSubSectionSep)
+                #
+                # Write module offset and module identification to the report file.
+                #
+                for Match in gOffsetGuidPattern.finditer(FvReport):
+                    Guid = Match.group(2).upper()
+                    Offset = int(Match.group(1), 16)
+                    FileWrite (File, "0x%07X %s" % (Offset, self._GuidsDb.get(Guid, Guid)))
+            except IOError:
+                EdkLogger.warn(None, "Fail to read report file", FvReportFileName)
+        else:
+            FileWrite(File, "Size:               0x%X (%.0fK)" % (Size, Size / 1024.0))
+        FileWrite(File, gSubSectionEnd)
+
+    ##
+    # Generate report for the FD region
+    #
+    # This function generates report for the FD region. 
+    #
+    # @param self            The object pointer
+    # @param File            The file object for report
+    #
+    def GenerateReport(self, File):
+        if (len(self.FvList) > 0):
+            for FvItem in self.FvList:
+                Info = self.FvInfo[FvItem]
+                self._GenerateReport(File, Info[0], "FV", Info[1], Info[2], FvItem)
+        else:
+            self._GenerateReport(File, "FD Region", self.Type, self.BaseAddress, self.Size)    
+            
+##
+# Reports FD information
+#
+# This class reports the FD section in the build report file.
+# It collects flash device information for a platform. 
+#
+class FdReport(object):
+    ##
+    # Constructor function for class FdReport
+    #
+    # This constructor function generates FdReport object for a specified
+    # firmware device. 
+    #
+    # @param self            The object pointer
+    # @param Fd              The current Firmware device object
+    # @param Wa              Workspace context information
+    #
+    def __init__(self, Fd, Wa):
+        self.FdName = Fd.FdUiName
+        self.BaseAddress = Fd.BaseAddress
+        self.Size = Fd.Size
+        self.FdRegionList = [FdRegionReport(FdRegion, Wa) for FdRegion in Fd.RegionList]
+
+    ##
+    # Generate report for the firmware device.
+    #
+    # This function generates report for the firmware device. 
+    #
+    # @param self            The object pointer
+    # @param File            The file object for report
+    #
+    def GenerateReport(self, File):
+        FileWrite(File, gSectionStart)
+        FileWrite(File, "Firmware Device (FD)")
+        FileWrite(File, "FD Name:            %s" % self.FdName)
+        FileWrite(File, "Base Address:       0x%s" % self.BaseAddress)
+        FileWrite(File, "Size:               0x%X (%.0fK)" % (self.Size, self.Size / 1024.0))
+        if len(self.FdRegionList) > 0:
+            FileWrite(File, gSectionSep)
+            for FdRegionItem in self.FdRegionList:
+                FdRegionItem.GenerateReport(File)
+        
+        FileWrite(File, gSectionEnd)
+
+    
+##
 # Reports platform information
 #
 # This class reports the whole platform information 
@@ -627,6 +949,11 @@ class PlatformReport(object):
         if "PCD" in ReportType:
             self.PcdReport = PcdReport(Wa)
 
+        self.FdReportList = []
+        if "FLASH" in ReportType and Wa.FdfProfile:
+            for Fd in Wa.FdfProfile.FdDict:
+                self.FdReportList.append(FdReport(Wa.FdfProfile.FdDict[Fd], Wa))
+                
         self.ModuleReportList = []
         for Pa in Wa.AutoGenObjectList:
             for ModuleKey in Pa.Platform.Modules:
@@ -665,7 +992,10 @@ class PlatformReport(object):
         if "PCD" in ReportType:
             self.PcdReport.GenerateReport(File, None, {})
             
-       
+        if "FLASH" in ReportType:
+            for FdReportListItem in self.FdReportList:
+                FdReportListItem.GenerateReport(File)
+        
         for ModuleReportItem in self.ModuleReportList:
             ModuleReportItem.GenerateReport(File, self.PcdReport, ReportType)
         

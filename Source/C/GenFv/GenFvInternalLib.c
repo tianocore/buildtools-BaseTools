@@ -1,6 +1,6 @@
 /** @file
 
-Copyright (c) 2004 - 2009, Intel Corporation                                                         
+Copyright (c) 2004 - 2010, Intel Corporation                                                         
 All rights reserved. This program and the accompanying materials                          
 are licensed and made available under the terms and conditions of the BSD License         
 which accompanies this distribution.  The full text of the license may be found at        
@@ -901,7 +901,8 @@ AddFile (
   IN FV_INFO                  *FvInfo,
   IN UINTN                    Index,
   IN OUT EFI_FFS_FILE_HEADER  **VtfFileImage,
-  IN FILE                     *FvMapFile  
+  IN FILE                     *FvMapFile,
+  IN FILE                     *FvReportFile
   )
 /*++
 
@@ -919,6 +920,7 @@ Arguments:
   VtfFileImage  A pointer to the VTF file within the FvImage.  If this is equal
                 to the end of the FvImage then no VTF previously found.
   FvMapFile     Pointer to FvMap File
+  FvReportFile  Pointer to FvReport File
 
 Returns:
 
@@ -936,6 +938,7 @@ Returns:
   UINT32                CurrentFileAlignment;
   EFI_STATUS            Status;
   UINTN                 Index1;
+  UINT8                 FileGuidString[PRINTED_GUID_BUFFER_SIZE];
   
   Index1 = 0;
   //
@@ -1109,6 +1112,8 @@ Returns:
     // Copy the file
     //
     memcpy (FvImage->CurrentFilePointer, FileBuffer, FileSize);
+    PrintGuidToBuffer ((EFI_GUID *) FileBuffer, FileGuidString, sizeof (FileGuidString), TRUE); 
+    fprintf (FvReportFile, "0x%08x %s\n", (unsigned) (FvImage->CurrentFilePointer - FvImage->FileImage), FileGuidString);
     FvImage->CurrentFilePointer += FileSize;
   } else {
     Error (NULL, 0, 4002, "Resource", "FV space is full, cannot add file %s.", FvInfo->FvFiles[Index]);
@@ -1970,10 +1975,13 @@ Returns:
   EFI_FIRMWARE_VOLUME_EXT_HEADER  *FvExtHeader;
   FILE                            *FvExtHeaderFile;
   UINTN                           FileSize;
+  CHAR8                           FvReportName[_MAX_PATH];
+  FILE                            *FvReportFile;
 
   FvBufferHeader = NULL;
   FvFile         = NULL;
   FvMapFile      = NULL;
+  FvReportFile   = NULL;
 
   if (InfFileImage != NULL) {
     //
@@ -2113,6 +2121,12 @@ Returns:
   VerboseMsg ("FV Map file name is %s", FvMapName);
 
   //
+  // FvReport file to log the FV information in one Fvimage
+  //
+  strcpy (FvReportName, FvFileName);
+  strcat (FvReportName, ".txt");
+
+  //
   // Calculate the FV size and Update Fv Size based on the actual FFS files.
   // And Update mFvDataInfo data.
   //
@@ -2228,6 +2242,14 @@ Returns:
   }
   
   //
+  // Open FvReport file
+  //
+  FvReportFile = fopen(FvReportName, "w");
+  if (FvReportFile == NULL) {
+    Error (NULL, 0, 0001, "Error opening file", FvReportFile);
+    return EFI_ABORTED;
+  }
+  //
   // record FV size information into FvMap file.
   //
   if (mFvTotalSize != 0) {
@@ -2242,6 +2264,12 @@ Returns:
     fprintf (FvMapFile, EFI_FV_SPACE_SIZE_STRING);
     fprintf (FvMapFile, " = 0x%x\n\n", (unsigned) (mFvTotalSize - mFvTakenSize));
   }
+
+  //
+  // record FV size information to FvReportFile.
+  //
+  fprintf (FvReportFile, "%s = 0x%x\n", EFI_FV_TOTAL_SIZE_STRING, (unsigned) mFvTotalSize);
+  fprintf (FvReportFile, "%s = 0x%x\n", EFI_FV_TAKEN_SIZE_STRING, (unsigned) mFvTakenSize);
 
   //
   // Add PI FV extension header
@@ -2266,7 +2294,7 @@ Returns:
     //
     // Add the file
     //
-    Status = AddFile (&FvImageMemoryFile, &mFvDataInfo, Index, &VtfFileImage, FvMapFile);
+    Status = AddFile (&FvImageMemoryFile, &mFvDataInfo, Index, &VtfFileImage, FvMapFile, FvReportFile);
 
     //
     // Exit if error detected while adding the file
@@ -2368,6 +2396,9 @@ Finish:
     fclose (FvMapFile);
   }
 
+  if (FvReportFile != NULL) {
+    fclose (FvReportFile);
+  }
   return Status;
 }
 
