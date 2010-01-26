@@ -53,6 +53,7 @@ class Eot(object):
         self.SourceFileList = None
         self.IncludeDirList = None
         self.DecFileList = None
+        self.GuidList = None
         self.LogFile = None
 
         # Parse the options and args
@@ -63,6 +64,9 @@ class Eot(object):
 
         # Generate guid list of dec file list
         self.ParseDecFile(self.DecFileList)
+        
+        # Generate guid list from GUID list file
+        self.ParseGuidList(self.GuidList)
 
         # Init Eot database
         EotGlobalData.gDb = Database.Database(Database.DATABASE_PATH)
@@ -120,6 +124,22 @@ class Eot(object):
                         if len(list) == 2:
                             EotGlobalData.gGuidDict[list[0].strip()] = GuidStructureStringToGuidString(list[1].strip())
 
+    
+    ## ParseGuidList() method
+    #
+    #  Parse Guid list and get all GUID names with GUID values as {GuidName : GuidValue}
+    #  The Dict is stored in EotGlobalData.gGuidDict
+    #
+    #  @param self: The object pointer
+    #  @param GuidList: A list of all GUID and its value
+    #
+    def ParseGuidList(self, GuidList):
+        Path = os.path.join(EotGlobalData.gWORKSPACE, GuidList)
+        if os.path.isfile(Path):
+            for Line in open(Path):
+                (GuidName, GuidValue) = Line.split()
+                EotGlobalData.gGuidDict[GuidName] = GuidValue
+            
     ## ConvertLogFile() method
     #
     #  Parse a real running log file to get real dispatch order
@@ -525,6 +545,9 @@ class Eot(object):
 
         if Options.DecFileList:
             self.DecFileList = Options.DecFileList
+        
+        if Options.GuidList:
+            self.GuidList = Options.GuidList
 
         if Options.LogFile:
             self.LogFile = Options.LogFile
@@ -574,6 +597,8 @@ class Eot(object):
             help="Specify include dir list by a file")
         Parser.add_option("-e", "--dec files", action="store", type="string", dest="DecFileList",
             help="Specify dec file list by a file")
+        Parser.add_option("-g", "--guid list", action="store", type="string", dest="GuidList",
+            help="Specify guid file list by a file")
         Parser.add_option("-l", "--log filename", action="store", type="string", dest="LogFile",
             help="Specify real execution log file")
 
