@@ -82,6 +82,21 @@ gImportCodePatterns = [
     ],
 
     [
+        re.compile('#include\s+EFI_GUID_DEFINITION\s*\(FirmwareFileSystem\)', re.MULTILINE),
+        '#include EFI_GUID_DEFINITION (FirmwareFileSystem)\n#include EFI_GUID_DEFINITION (FirmwareFileSystem2)'
+    ],
+
+    [
+        re.compile('gEfiFirmwareFileSystemGuid', re.MULTILINE),
+        'gEfiFirmwareFileSystem2Guid'
+    ],
+
+    [
+        re.compile('EFI_FVH_REVISION', re.MULTILINE),
+        'EFI_FVH_PI_REVISION'
+    ],
+
+    [
         re.compile("(\s*)\S*CreateEvent\s*\([\s\n]*EFI_EVENT_SIGNAL_READY_TO_BOOT[^,]*,((?:[^;]+\n)+)(\s*\));", re.MULTILINE),
         '\\1EfiCreateEventReadyToBoot (\\2\\3;'
     ],
