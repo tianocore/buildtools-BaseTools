@@ -1,7 +1,7 @@
 ## @file
 # This file is used to be the main entrance of EOT tool
 #
-# Copyright (c) 2008 ~ 2010, Intel Corporation
+# Copyright (c) 2008 - 2010, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -225,7 +225,7 @@ class Eot(object):
     #
     #  @param self: The object pointer
     #
-    def GenerateReport(Self):
+    def GenerateReport(self):
         EdkLogger.quiet("Generating report file ... ")
         Rep = Report('Report.html', EotGlobalData.gFV)
         Rep.GenerateReport()

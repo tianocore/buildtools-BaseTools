@@ -1,7 +1,7 @@
 ## @file
 # preprocess source file
 #
-#  Copyright (c) 2007 ~ 2010, Intel Corporation
+#  Copyright (c) 2007 - 2010, Intel Corporation
 #
 #  All rights reserved. This program and the accompanying materials
 #  are licensed and made available under the terms and conditions of the BSD License
@@ -75,10 +75,10 @@ def GetTypedefFuncPointerPattern():
 #
 #  Get global database instance
 #
-#  @return EccGlobalData.gDb:    the global database instance
+#  @return EotGlobalData.gDb:    the global database instance
 #
 def GetDB():
-    return EccGlobalData.gDb
+    return EotGlobalData.gDb
 
 ## PrintErrorMsg() method
 #
