@@ -94,6 +94,18 @@ def main():
         if (Options.filename):
             FdfFilename = Options.filename
             FdfFilename = GenFdsGlobalVariable.ReplaceWorkspaceMacro(FdfFilename)
+
+            if FdfFilename[0:2] == '..':
+                FdfFilename = os.path.realpath(FdfFilename)
+            if not os.path.isabs (FdfFilename):
+                FdfFilename = os.path.join(GenFdsGlobalVariable.WorkSpaceDir, FdfFilename)
+            if not os.path.exists(FdfFilename):
+                EdkLogger.error("GenFds", FILE_NOT_FOUND, ExtraData=FdfFilename)
+            if os.path.normcase (FdfFilename).find(Workspace) != 0:
+                EdkLogger.error("GenFds", FILE_NOT_FOUND, "FdfFile doesn't exist in Workspace!")
+
+            GenFdsGlobalVariable.FdfFile = FdfFilename
+            GenFdsGlobalVariable.FdfFileTimeStamp = os.path.getmtime(FdfFilename)
         else:
             EdkLogger.error("GenFds", OPTION_MISSING, "Missing FDF filename")
 
@@ -107,16 +119,6 @@ def main():
         else:
             EdkLogger.error("GenFds", OPTION_MISSING, "Missing tool chain tag")
 
-        if FdfFilename[0:2] == '..':
-            FdfFilename = os.path.realpath(FdfFilename)
-        if FdfFilename[1] != ':':
-            FdfFilename = os.path.join(GenFdsGlobalVariable.WorkSpaceDir, FdfFilename)
-
-        if not os.path.exists(FdfFilename):
-            EdkLogger.error("GenFds", FILE_NOT_FOUND, ExtraData=FdfFilename)
-        GenFdsGlobalVariable.FdfFile = FdfFilename
-        GenFdsGlobalVariable.FdfFileTimeStamp = os.path.getmtime(FdfFilename)
-
         if (Options.activePlatform):
             ActivePlatform = Options.activePlatform
             ActivePlatform = GenFdsGlobalVariable.ReplaceWorkspaceMacro(ActivePlatform)
@@ -124,22 +126,22 @@ def main():
             if ActivePlatform[0:2] == '..':
                 ActivePlatform = os.path.realpath(ActivePlatform)
 
-            if ActivePlatform[1] != ':':
+            if not os.path.isabs (ActivePlatform):
                 ActivePlatform = os.path.join(GenFdsGlobalVariable.WorkSpaceDir, ActivePlatform)
 
             if not os.path.exists(ActivePlatform)  :
                 EdkLogger.error("GenFds", FILE_NOT_FOUND, "ActivePlatform doesn't exist!")
 
-            if ActivePlatform.find(Workspace) == -1:
+            if os.path.normcase (ActivePlatform).find(Workspace) != 0:
                 EdkLogger.error("GenFds", FILE_NOT_FOUND, "ActivePlatform doesn't exist in Workspace!")
 
-            ActivePlatform = ActivePlatform.replace(Workspace, '')
+            ActivePlatform = ActivePlatform[len(Workspace):]
             if len(ActivePlatform) > 0 :
                 if ActivePlatform[0] == '\\' or ActivePlatform[0] == '/':
                     ActivePlatform = ActivePlatform[1:]
             else:
                 EdkLogger.error("GenFds", FILE_NOT_FOUND, "ActivePlatform doesn't exist!")
-        else :
+        else:
             EdkLogger.error("GenFds", OPTION_MISSING, "Missing active platform")
 
         GenFdsGlobalVariable.ActivePlatform = PathClass(NormPath(ActivePlatform), Workspace)
@@ -193,6 +195,10 @@ def main():
 
         if (Options.outputDir):
             OutputDirFromCommandLine = GenFdsGlobalVariable.ReplaceWorkspaceMacro(Options.outputDir)
+            if not os.path.isabs (Options.outputDir):
+                Options.outputDir = os.path.join(GenFdsGlobalVariable.WorkSpaceDir, Options.outputDir)
+            if os.path.normcase (Options.outputDir).find(Workspace) != 0:
+                EdkLogger.error("GenFds", FILE_NOT_FOUND, "OutputDir doesn't exist in Workspace!")
             for Arch in ArchList:
                 GenFdsGlobalVariable.OutputDirDict[Arch] = OutputDirFromCommandLine
         else:
