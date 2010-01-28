@@ -78,6 +78,8 @@ Abstract:
 #define FW_RELOC_STRIPEED_IMAGE 9
 #define FW_HII_PACKAGE_LIST_RCIMAGE 10
 #define FW_HII_PACKAGE_LIST_BINIMAGE 11
+#define FW_REBASE_IMAGE      12
+#define FW_SET_ADDRESS_IMAGE 13
 
 #define DUMP_TE_HEADER       0x11
 
@@ -196,7 +198,7 @@ Returns:
   //
   // Copyright declaration
   //
-  fprintf (stdout, "Copyright (c) 2007, Intel Corporation. All rights reserved.\n\n");
+  fprintf (stdout, "Copyright (c) 2007 - 2010, Intel Corporation. All rights reserved.\n\n");
 
   //
   // Details Option
@@ -292,6 +294,18 @@ Returns:
                         a single package list as the binary resource section.\n\
                         It can't be combined with other action options\n\
                         except for -o option. It is a action option.\n\
+                        If it is combined with other action options, the later\n\
+                        input action option will override the previous one.\n");
+  fprintf (stdout, "  --rebase NewAddress   Rebase image to new base address. New address \n\
+                        is also set to the first none code section header.\n\
+                        It can't be combined with other action options\n\
+                        except for -o or -r option. It is a action option.\n\
+                        If it is combined with other action options, the later\n\
+                        input action option will override the previous one.\n");
+  fprintf (stdout, "  --address NewAddress  Set new address into the first none code \n\
+                        section header of the input image.\n\
+                        It can't be combined with other action options\n\
+                        except for -o or -r option. It is a action option.\n\
                         If it is combined with other action options, the later\n\
                         input action option will override the previous one.\n");
   fprintf (stdout, "  -v, --verbose         Turn on verbose output with informational messages.\n");
@@ -1646,6 +1660,257 @@ Returns:
   return HiiSectionHeader;
 }
 
+EFI_STATUS
+RebaseImageRead (
+  IN     VOID    *FileHandle,
+  IN     UINTN   FileOffset,
+  IN OUT UINT32  *ReadSize,
+  OUT    VOID    *Buffer
+  )
+/*++
+
+Routine Description:
+
+  Support routine for the PE/COFF Loader that reads a buffer from a PE/COFF file
+
+Arguments:
+
+  FileHandle - The handle to the PE/COFF file
+
+  FileOffset - The offset, in bytes, into the file to read
+
+  ReadSize   - The number of bytes to read from the file starting at FileOffset
+
+  Buffer     - A pointer to the buffer to read the data into.
+
+Returns:
+
+  EFI_SUCCESS - ReadSize bytes of data were read into Buffer from the PE/COFF file starting at FileOffset
+
+--*/
+{
+  CHAR8   *Destination8;
+  CHAR8   *Source8;
+  UINT32  Length;
+
+  Destination8  = Buffer;
+  Source8       = (CHAR8 *) ((UINTN) FileHandle + FileOffset);
+  Length        = *ReadSize;
+  while (Length--) {
+    *(Destination8++) = *(Source8++);
+  }
+
+  return EFI_SUCCESS;
+}
+
+EFI_STATUS
+SetAddressToSectionHeader (
+  IN     CHAR8   *FileName,
+  IN OUT UINT8   *FileBuffer,
+  IN     UINT64  NewPe32BaseAddress
+  )
+/*++
+
+Routine Description:
+
+  Set new base address into the section header of PeImage
+
+Arguments:
+
+  FileName           - Name of file
+  FileBuffer         - Pointer to PeImage.
+  NewPe32BaseAddress - New Base Address for PE image.
+
+Returns:
+
+  EFI_SUCCESS          Set new base address into this image successfully.
+
+--*/
+{
+  EFI_STATUS                            Status;
+  PE_COFF_LOADER_IMAGE_CONTEXT          ImageContext;
+  UINTN                                 Index;
+  EFI_IMAGE_OPTIONAL_HEADER_UNION       *ImgHdr;
+  EFI_IMAGE_SECTION_HEADER              *SectionHeader;
+
+  //
+  // Initialize context
+  //
+  memset (&ImageContext, 0, sizeof (ImageContext));
+  ImageContext.Handle     = (VOID *) FileBuffer;
+  ImageContext.ImageRead  = (PE_COFF_LOADER_READ_FILE) RebaseImageRead;
+  Status                  = PeCoffLoaderGetImageInfo (&ImageContext);
+  if (EFI_ERROR (Status)) {
+    Error (NULL, 0, 3000, "Invalid", "The input PeImage %s is not valid", FileName);
+    return Status;
+  }
+
+  if (ImageContext.RelocationsStripped) {
+    Error (NULL, 0, 3000, "Invalid", "The input PeImage %s has no relocation to be fixed up", FileName);
+    return Status;    
+  }
+
+  //
+  // Get PeHeader pointer
+  //
+  ImgHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *)(FileBuffer + ImageContext.PeCoffHeaderOffset);
+
+  //
+  // Get section header list
+  //
+  SectionHeader = (EFI_IMAGE_SECTION_HEADER *) (
+    (UINTN) ImgHdr +
+    sizeof (UINT32) + 
+    sizeof (EFI_IMAGE_FILE_HEADER) +  
+    ImgHdr->Pe32.FileHeader.SizeOfOptionalHeader
+    );
+
+  //
+  // Set base address into the first section header that doesn't point to code section.
+  //
+  for (Index = 0; Index < ImgHdr->Pe32.FileHeader.NumberOfSections; Index ++, SectionHeader ++) {
+    if ((SectionHeader->Characteristics & EFI_IMAGE_SCN_CNT_CODE) == 0) {
+      *(UINT64 *) &SectionHeader->PointerToRelocations = NewPe32BaseAddress;
+      break;
+    }
+  }
+
+  //
+  // No available section header is found.
+  //
+  if (Index == ImgHdr->Pe32.FileHeader.NumberOfSections) {
+    return EFI_NOT_FOUND;
+  }
+  
+  //
+  // BaseAddress is set to section header.
+  //
+  return EFI_SUCCESS;
+}
+
+EFI_STATUS
+RebaseImage (
+  IN     CHAR8   *FileName,
+  IN OUT UINT8   *FileBuffer,
+  IN     UINT64  NewPe32BaseAddress
+  )
+/*++
+
+Routine Description:
+
+  Set new base address into PeImage, and fix up PeImage based on new address.
+
+Arguments:
+
+  FileName           - Name of file
+  FileBuffer         - Pointer to PeImage.
+  NewPe32BaseAddress - New Base Address for PE image.
+
+Returns:
+
+  EFI_INVALID_PARAMETER   - BaseAddress is not valid.
+  EFI_SUCCESS             - Update PeImage is correctly.
+
+--*/
+{
+  EFI_STATUS                            Status;
+  PE_COFF_LOADER_IMAGE_CONTEXT          ImageContext;
+  UINTN                                 Index;
+  EFI_IMAGE_OPTIONAL_HEADER_UNION       *ImgHdr;
+  UINT8                                 *MemoryImagePointer;
+  EFI_IMAGE_SECTION_HEADER              *SectionHeader;
+
+  //
+  // Initialize context
+  //
+  memset (&ImageContext, 0, sizeof (ImageContext));
+  ImageContext.Handle     = (VOID *) FileBuffer;
+  ImageContext.ImageRead  = (PE_COFF_LOADER_READ_FILE) RebaseImageRead;
+  Status                  = PeCoffLoaderGetImageInfo (&ImageContext);
+  if (EFI_ERROR (Status)) {
+    Error (NULL, 0, 3000, "Invalid", "The input PeImage %s is not valid", FileName);
+    return Status;
+  }
+
+  if (ImageContext.RelocationsStripped) {
+    Error (NULL, 0, 3000, "Invalid", "The input PeImage %s has no relocation to be fixed up", FileName);
+    return Status;    
+  }
+
+  //
+  // Get PeHeader pointer
+  //
+  ImgHdr = (EFI_IMAGE_OPTIONAL_HEADER_UNION *)(FileBuffer + ImageContext.PeCoffHeaderOffset);
+
+  //
+  // Load and Relocate Image Data
+  //
+  MemoryImagePointer = (UINT8 *) malloc ((UINTN) ImageContext.ImageSize + ImageContext.SectionAlignment);
+  if (MemoryImagePointer == NULL) {
+    Error (NULL, 0, 4001, "Resource", "memory cannot be allocated on rebase of %s", FileName);
+    return EFI_OUT_OF_RESOURCES;
+  }
+  memset ((VOID *) MemoryImagePointer, 0, (UINTN) ImageContext.ImageSize + ImageContext.SectionAlignment);
+  ImageContext.ImageAddress = ((UINTN) MemoryImagePointer + ImageContext.SectionAlignment - 1) & (~((INT64)ImageContext.SectionAlignment - 1));
+
+  Status =  PeCoffLoaderLoadImage (&ImageContext);
+  if (EFI_ERROR (Status)) {
+    Error (NULL, 0, 3000, "Invalid", "LocateImage() call failed on rebase of %s", FileName);
+    free ((VOID *) MemoryImagePointer);
+    return Status;
+  }
+
+  ImageContext.DestinationAddress = NewPe32BaseAddress;
+  Status                          = PeCoffLoaderRelocateImage (&ImageContext);
+  if (EFI_ERROR (Status)) {
+    Error (NULL, 0, 3000, "Invalid", "RelocateImage() call failed on rebase of %s", FileName);
+    free ((VOID *) MemoryImagePointer);
+    return Status;
+  }
+
+  //
+  // Copy Relocated data to raw image file.
+  //
+  SectionHeader = (EFI_IMAGE_SECTION_HEADER *) (
+    (UINTN) ImgHdr +
+    sizeof (UINT32) + 
+    sizeof (EFI_IMAGE_FILE_HEADER) +  
+    ImgHdr->Pe32.FileHeader.SizeOfOptionalHeader
+    );
+
+  for (Index = 0; Index < ImgHdr->Pe32.FileHeader.NumberOfSections; Index ++, SectionHeader ++) {
+    CopyMem (
+      FileBuffer + SectionHeader->PointerToRawData, 
+      (VOID*) (UINTN) (ImageContext.ImageAddress + SectionHeader->VirtualAddress), 
+      SectionHeader->SizeOfRawData
+      );
+  }
+
+  free ((VOID *) MemoryImagePointer);
+
+  //
+  // Update Image Base Address
+  //
+  if ((ImgHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) && (ImgHdr->Pe32.FileHeader.Machine != IMAGE_FILE_MACHINE_IA64)) {
+    ImgHdr->Pe32.OptionalHeader.ImageBase = (UINT32) NewPe32BaseAddress;
+  } else if (ImgHdr->Pe32Plus.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
+    ImgHdr->Pe32Plus.OptionalHeader.ImageBase = NewPe32BaseAddress;
+  } else {
+    Error (NULL, 0, 3000, "Invalid", "unknown PE magic signature %X in PE32 image %s",
+      ImgHdr->Pe32.OptionalHeader.Magic,
+      FileName
+      );
+    return EFI_ABORTED;
+  }
+
+  //
+  // Set new base address into section header
+  //
+  Status = SetAddressToSectionHeader (FileName, FileBuffer, NewPe32BaseAddress);
+
+  return Status;
+}
+
 int
 main (
   int  argc,
@@ -1693,6 +1958,8 @@ Returns:
   UINT32                           FileLength;
   UINT8                            *OutputFileBuffer;
   UINT32                           OutputFileLength;
+  UINT8                            *InputFileBuffer;
+  UINT32                           InputFileLength;
   RUNTIME_FUNCTION                 *RuntimeFunction;
   UNWIND_INFO                      *UnwindInfo;
   STATUS                           Status;
@@ -1719,6 +1986,8 @@ Returns:
   EFI_HII_PACKAGE_HEADER           EndPackage;
   UINT32                           HiiSectionHeaderSize;
   UINT8                            *HiiSectionHeader;
+  UINT64                           NewBaseAddress;
+  BOOLEAN                          NegativeAddr;
   FILE                             *ReportFile;
   CHAR8                            *ReportFileName;
   UINTN                            FileLen;
@@ -1728,6 +1997,7 @@ Returns:
   //
   // Assign to fix compile warning
   //
+  FileLen           = 0;
   InputFileNum      = 0;
   InputFileName     = NULL;
   mInImageName      = NULL;
@@ -1750,6 +2020,8 @@ Returns:
   LogLevel          = 0;
   OutputFileBuffer  = NULL;
   OutputFileLength  = 0;
+  InputFileBuffer   = NULL;
+  InputFileLength   = 0;
   Optional32        = NULL;
   Optional64        = NULL;
   KeepExceptionTableFlag = FALSE;
@@ -1762,6 +2034,8 @@ Returns:
   memset (&HiiPackageListGuid, 0, sizeof (HiiPackageListGuid));
   HiiSectionHeaderSize   = 0;
   HiiSectionHeader       = NULL;
+  NewBaseAddress         = 0;
+  NegativeAddr           = FALSE;
 
   if (argc == 1) {
     Error (NULL, 0, 1001, "Missing options", "No input options.");
@@ -1909,6 +2183,44 @@ Returns:
       continue;
     }
 
+    if ((stricmp (argv[0], "--rebase") == 0)) {
+      if (argv[1][0] == '-') {
+        NegativeAddr = TRUE;
+        Status = AsciiStringToUint64 (argv[1] + 1, FALSE, &Temp64);
+      } else {
+        NegativeAddr = FALSE;
+        Status = AsciiStringToUint64 (argv[1], FALSE, &Temp64);
+      }
+      if (Status != EFI_SUCCESS) {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        goto Finish;
+      }
+      OutImageType = FW_REBASE_IMAGE;
+      NewBaseAddress = (UINT64) Temp64;
+      argc -= 2;
+      argv += 2;
+      continue;
+    }
+
+    if ((stricmp (argv[0], "--address") == 0)) {
+      if (argv[1][0] == '-') {
+        NegativeAddr = TRUE;
+        Status = AsciiStringToUint64 (argv[1] + 1, FALSE, &Temp64);
+      } else {
+        NegativeAddr = FALSE;
+        Status = AsciiStringToUint64 (argv[1], FALSE, &Temp64);
+      }
+      if (Status != EFI_SUCCESS) {
+        Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
+        goto Finish;
+      }
+      OutImageType = FW_SET_ADDRESS_IMAGE;
+      NewBaseAddress = (UINT64) Temp64;
+      argc -= 2;
+      argv += 2;
+      continue;
+    }
+
     if ((stricmp (argv[0], "-p") == 0) || (stricmp (argv[0], "--pad") == 0)) {
       if (AsciiStringToUint64 (argv[1], FALSE, &Temp64) != EFI_SUCCESS) {
         Error (NULL, 0, 1003, "Invalid option value", "%s = %s", argv[0], argv[1]);
@@ -1952,7 +2264,7 @@ Returns:
       argv += 2;
       continue;
     }
-    
+
     if ((stricmp (argv[0], "-g") == 0) || (stricmp (argv[0], "--hiiguid") == 0)) {
       Status = StringToGuid (argv[1], &HiiPackageListGuid);
       if (EFI_ERROR (Status)) {
@@ -1998,9 +2310,9 @@ Returns:
       // InputFileName buffer too small, need to realloc
       //
       InputFileName = (CHAR8 **) realloc (
-                                  InputFileName,
-                                  (InputFileNum + MAXIMUM_INPUT_FILE_NUM) * sizeof (CHAR8 *)
-                                  );
+        InputFileName,
+        (InputFileNum + MAXIMUM_INPUT_FILE_NUM) * sizeof (CHAR8 *)
+        );
 
       if (InputFileName == NULL) {
         Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
@@ -2100,6 +2412,12 @@ Returns:
   case FW_HII_PACKAGE_LIST_BINIMAGE:
     VerboseMsg ("Combine the input multi hii bin packages to one binary pacakge list file.");
     break;
+  case FW_REBASE_IMAGE:
+    VerboseMsg ("Rebase the input image to new base address.");
+    break;
+  case FW_SET_ADDRESS_IMAGE:
+    VerboseMsg ("Set the preferred address into the section header of the input image");
+    break;
   default:
     break;
   }
@@ -2124,33 +2442,52 @@ Returns:
       }
       fread (OutputFileBuffer, 1, OutputFileLength, fpOut);
       fclose (fpOut);
-    }
-    fpOut = fopen (OutImageName, "wb");
-    if (!fpOut) {
-      Error (NULL, 0, 0001, "Error opening output file", OutImageName);
-      goto Finish;
+      fpOut = NULL;
     }
     VerboseMsg ("Output file name is %s", OutImageName);
-  } else if (!ReplaceFlag) {
-    if (OutImageType == DUMP_TE_HEADER) {
-      fpOut = stdout;
-    } else {
-      Error (NULL, 0, 1001, "Missing option", "output file");
-      goto Finish;
-    }
+  } else if (!ReplaceFlag && OutImageType != DUMP_TE_HEADER) {
+    Error (NULL, 0, 1001, "Missing option", "output file");
+    goto Finish;
   }
+
+  //
+  // Open input file and read file data into file buffer.
+  //
+  fpIn = fopen (mInImageName, "rb");
+  if (fpIn == NULL) {
+    Error (NULL, 0, 0001, "Error opening file", mInImageName);
+    goto Finish;
+  }
+  InputFileLength = _filelength (fileno (fpIn));
+  InputFileBuffer = malloc (InputFileLength);
+  if (InputFileBuffer == NULL) {
+    Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
+    fclose (fpIn);
+    goto Finish;
+  }
+  fread (InputFileBuffer, 1, InputFileLength, fpIn);
+  fclose (fpIn);
+  DebugMsg (NULL, 0, 9, "input file info", "the input file size is %u bytes", (unsigned) InputFileLength);
 
   //
   // Combine multi binary HII package files.
   //
   if (OutImageType == FW_HII_PACKAGE_LIST_RCIMAGE || OutImageType == FW_HII_PACKAGE_LIST_BINIMAGE) {
     //
+    // Open output file handle.
+    //
+    fpOut = fopen (OutImageName, "wb");
+    if (!fpOut) {
+      Error (NULL, 0, 0001, "Error opening output file", OutImageName);
+      goto Finish;
+    }
+    //
     // Get hii package list lenght
     //
     HiiPackageListHeader.PackageLength = sizeof (EFI_HII_PACKAGE_LIST_HEADER);
     for (Index = 0; Index < InputFileNum; Index ++) {
       fpIn = fopen (InputFileName [Index], "rb");
-      if (!fpIn) {
+      if (fpIn == NULL) {
         Error (NULL, 0, 0001, "Error opening file", InputFileName [Index]);
         goto Finish;
       }
@@ -2196,7 +2533,7 @@ Returns:
     HiiPackageDataPointer = HiiPackageListBuffer + sizeof (HiiPackageListHeader);
     for (Index = 0; Index < InputFileNum; Index ++) {
       fpIn = fopen (InputFileName [Index], "rb");
-      if (!fpIn) {
+      if (fpIn == NULL) {
         Error (NULL, 0, 0001, "Error opening file", InputFileName [Index]);
         free (HiiPackageListBuffer);
         goto Finish;
@@ -2250,7 +2587,7 @@ Returns:
         fprintf (fpOut, " 0x%04X,", *(UINT16 *) HiiPackageDataPointer);
         HiiPackageDataPointer += 2;
       }
-      
+
       if (Index % 16 == 0) {
         fprintf (fpOut, "\n ");
       }
@@ -2272,6 +2609,14 @@ Returns:
   // Combine MciBinary files to one file
   //
   if (OutImageType == FW_MERGE_IMAGE) {
+    //
+    // Open output file handle.
+    //
+    fpOut = fopen (OutImageName, "wb");
+    if (!fpOut) {
+      Error (NULL, 0, 0001, "Error opening output file", OutImageName);
+      goto Finish;
+    }
     for (Index = 0; Index < InputFileNum; Index ++) {
       fpIn = fopen (InputFileName [Index], "rb");
       if (!fpIn) {
@@ -2316,7 +2661,7 @@ Returns:
   //
   if (OutImageType == FW_MCI_IMAGE) {
     fpIn = fopen (mInImageName, "r");
-    if (!fpIn) {
+    if (fpIn == NULL) {
       Error (NULL, 0, 0001, "Error opening file", mInImageName);
       goto Finish;
     }
@@ -2410,63 +2755,21 @@ Returns:
     //
     // Open the output file and write the buffer contents
     //
-    if (fpOut != NULL) {
-      if (fwrite (FileBuffer, FileLength, 1, fpOut) != 1) {
-        Error (NULL, 0, 0002, "Error writing file", OutImageName);
-        goto Finish;
-      }
-    }
-
-    if (ReplaceFlag) {
-      fpInOut = fopen (mInImageName, "wb");
-      if (fpInOut != NULL) {
-        Error (NULL, 0, 0001, "Error opening file", mInImageName);
-        goto Finish;
-      }
-      if (fwrite (FileBuffer, FileLength, 1, fpInOut) != 1) {
-        Error (NULL, 0, 0002, "Error writing file", mInImageName);
-        goto Finish;
-      }
-    }
     VerboseMsg ("the size of output file is %u bytes", (unsigned) FileLength);
-    //
-    //  Convert Mci.TXT to Mci.bin file successfully
-    //
-    goto Finish;
+    goto WriteFile;
   }
 
   //
   // Open input file and read file data into file buffer.
   //
-  fpIn = fopen (mInImageName, "rb");
-  if (!fpIn) {
-    Error (NULL, 0, 0001, "Error opening file", mInImageName);
-    goto Finish;
-  }
-
-  FileLength = _filelength (fileno (fpIn));
+  FileLength = InputFileLength;
   FileBuffer = malloc (FileLength);
   if (FileBuffer == NULL) {
     Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
-    fclose (fpIn);
     goto Finish;
   }
+  memcpy (FileBuffer, InputFileBuffer, InputFileLength);
 
-  fread (FileBuffer, 1, FileLength, fpIn);
-  fclose (fpIn);
-
-  DebugMsg (NULL, 0, 9, "input file info", "the input file size is %u bytes", (unsigned) FileLength);
-
-  //
-  // Replace file
-  //
-  if (ReplaceFlag) {
-    fpInOut = fopen (mInImageName, "wb");
-    if (!fpInOut) {
-      Error (NULL, 0, 0001, "Error opening file", mInImageName);
-      goto Finish;
-    }
-  }
   //
   // Dump TeImage Header into output file.
   //
@@ -2475,6 +2778,26 @@ Returns:
     if (TEImageHeader.Signature != EFI_TE_IMAGE_HEADER_SIGNATURE) {
       Error (NULL, 0, 3000, "Invalid", "TE header signature of file %s is not correct.", mInImageName);
       goto Finish;
+    }
+    //
+    // Open the output file handle.
+    //
+    if (ReplaceFlag) {
+      fpInOut = fopen (mInImageName, "wb");
+      if (fpInOut == NULL) {
+        Error (NULL, 0, 0001, "Error opening file", mInImageName);
+        goto Finish;
+      }
+    } else {
+      if (OutImageName != NULL) {
+        fpOut = fopen (OutImageName, "wb");
+      } else {
+        fpOut = stdout;
+      }
+      if (fpOut == NULL) {
+        Error (NULL, 0, 0001, "Error opening output file", OutImageName);
+        goto Finish;
+      }
     }
     if (fpInOut != NULL) {
       fprintf (fpInOut, "Dump of file %s\n\n", mInImageName);
@@ -2489,7 +2812,6 @@ Returns:
       fprintf (fpInOut, "%17X [%8X] RVA [size] of Base Relocation Directory\n", (unsigned) TEImageHeader.DataDirectory[0].VirtualAddress, (unsigned) TEImageHeader.DataDirectory[0].Size);
       fprintf (fpInOut, "%17X [%8X] RVA [size] of Debug Directory\n", (unsigned) TEImageHeader.DataDirectory[1].VirtualAddress, (unsigned) TEImageHeader.DataDirectory[1].Size);
     }
-
     if (fpOut != NULL) {
       fprintf (fpOut, "Dump of file %s\n\n", mInImageName);
       fprintf (fpOut, "TE IMAGE HEADER VALUES\n");
@@ -2524,36 +2846,36 @@ Returns:
       }
     } else {
       if (stricmp (ModuleType, "BASE") == 0 ||
-          stricmp (ModuleType, "SEC") == 0 ||
-          stricmp (ModuleType, "SECURITY_CORE") == 0 ||
-          stricmp (ModuleType, "PEI_CORE") == 0 ||
-          stricmp (ModuleType, "PEIM") == 0 ||
-          stricmp (ModuleType, "COMBINED_PEIM_DRIVER") == 0 ||
-          stricmp (ModuleType, "PIC_PEIM") == 0 ||
-          stricmp (ModuleType, "RELOCATABLE_PEIM") == 0 ||
-          stricmp (ModuleType, "DXE_CORE") == 0 ||
-          stricmp (ModuleType, "BS_DRIVER") == 0  ||
-          stricmp (ModuleType, "DXE_DRIVER") == 0 ||
-          stricmp (ModuleType, "DXE_SMM_DRIVER") == 0  ||
-          stricmp (ModuleType, "UEFI_DRIVER") == 0 ||
-          stricmp (ModuleType, "SMM_CORE") == 0) {
-        Type = EFI_IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER;
-        VerboseMsg ("Efi Image subsystem type is efi boot service driver.");
+        stricmp (ModuleType, "SEC") == 0 ||
+        stricmp (ModuleType, "SECURITY_CORE") == 0 ||
+        stricmp (ModuleType, "PEI_CORE") == 0 ||
+        stricmp (ModuleType, "PEIM") == 0 ||
+        stricmp (ModuleType, "COMBINED_PEIM_DRIVER") == 0 ||
+        stricmp (ModuleType, "PIC_PEIM") == 0 ||
+        stricmp (ModuleType, "RELOCATABLE_PEIM") == 0 ||
+        stricmp (ModuleType, "DXE_CORE") == 0 ||
+        stricmp (ModuleType, "BS_DRIVER") == 0  ||
+        stricmp (ModuleType, "DXE_DRIVER") == 0 ||
+        stricmp (ModuleType, "DXE_SMM_DRIVER") == 0  ||
+        stricmp (ModuleType, "UEFI_DRIVER") == 0 ||
+        stricmp (ModuleType, "SMM_CORE") == 0) {
+          Type = EFI_IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER;
+          VerboseMsg ("Efi Image subsystem type is efi boot service driver.");
 
       } else if (stricmp (ModuleType, "UEFI_APPLICATION") == 0 ||
-                 stricmp (ModuleType, "APPLICATION") == 0) {
-        Type = EFI_IMAGE_SUBSYSTEM_EFI_APPLICATION;
-        VerboseMsg ("Efi Image subsystem type is efi application.");
+        stricmp (ModuleType, "APPLICATION") == 0) {
+          Type = EFI_IMAGE_SUBSYSTEM_EFI_APPLICATION;
+          VerboseMsg ("Efi Image subsystem type is efi application.");
 
       } else if (stricmp (ModuleType, "DXE_RUNTIME_DRIVER") == 0 ||
-                 stricmp (ModuleType, "RT_DRIVER") == 0) {
-        Type = EFI_IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER;
-        VerboseMsg ("Efi Image subsystem type is efi runtime driver.");
+        stricmp (ModuleType, "RT_DRIVER") == 0) {
+          Type = EFI_IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER;
+          VerboseMsg ("Efi Image subsystem type is efi runtime driver.");
 
       } else if (stricmp (ModuleType, "DXE_SAL_DRIVER") == 0 ||
-                 stricmp (ModuleType, "SAL_RT_DRIVER") == 0) {
-        Type = EFI_IMAGE_SUBSYSTEM_SAL_RUNTIME_DRIVER;
-        VerboseMsg ("Efi Image subsystem type is efi sal runtime driver.");
+        stricmp (ModuleType, "SAL_RT_DRIVER") == 0) {
+          Type = EFI_IMAGE_SUBSYSTEM_SAL_RUNTIME_DRIVER;
+          VerboseMsg ("Efi Image subsystem type is efi sal runtime driver.");
 
       } else {
         Error (NULL, 0, 1003, "Invalid option value", "EFI_FILETYPE = %s", ModuleType);
@@ -2569,7 +2891,7 @@ Returns:
     VerboseMsg ("Convert the input ELF Image to Pe Image");
     ConvertElf(&FileBuffer, &FileLength);
   }
- 
+
   //
   // Make sure File Offsets and Virtual Offsets are the same in the image so it is XIP
   // XIP == eXecute In Place
@@ -2593,15 +2915,15 @@ Returns:
           //
           if ((SectionHeader->PointerToRawData + SectionHeader->SizeOfRawData) ==
             (FileLength + TeHdr->StrippedSize - sizeof (EFI_TE_IMAGE_HEADER))) {
-            //
-            // Remove .reloc section and update TeImage Header
-            //
-            FileLength = FileLength - SectionHeader->SizeOfRawData;
-            SectionHeader->SizeOfRawData = 0;
-            SectionHeader->Misc.VirtualSize = 0;
-            TeHdr->DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress = 0;
-            TeHdr->DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].Size           = 0;
-            break;
+              //
+              // Remove .reloc section and update TeImage Header
+              //
+              FileLength = FileLength - SectionHeader->SizeOfRawData;
+              SectionHeader->SizeOfRawData = 0;
+              SectionHeader->Misc.VirtualSize = 0;
+              TeHdr->DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress = 0;
+              TeHdr->DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].Size           = 0;
+              break;
           }
         }
       }
@@ -2687,11 +3009,48 @@ Returns:
       goto Finish;
     }
   }
-  
+
   if (PeHdr->Pe32.FileHeader.Machine == IMAGE_FILE_MACHINE_ARM) {
     // Some tools kick out IMAGE_FILE_MACHINE_ARM (0x1c0) vs IMAGE_FILE_MACHINE_ARMT (0x1c2)
     // so patch back to the offical UEFI value.
     PeHdr->Pe32.FileHeader.Machine = IMAGE_FILE_MACHINE_ARMT;
+  }
+
+  //
+  // Set new base address into image
+  //
+  if (OutImageType == FW_REBASE_IMAGE || OutImageType == FW_SET_ADDRESS_IMAGE) {
+    if ((PeHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) && (PeHdr->Pe32.FileHeader.Machine != IMAGE_FILE_MACHINE_IA64)) {
+      if (NewBaseAddress >= 0x100000000ULL) {
+        Error (NULL, 0, 3000, "Invalid", "New base address is larger than 4G for 32bit PE image");
+        goto Finish;
+      }
+    }
+    
+    if (NegativeAddr) {
+      //
+      // Set Base Address to a negative value.
+      //
+      NewBaseAddress = (UINT64) (0 - NewBaseAddress);
+    }
+    if (OutImageType == FW_REBASE_IMAGE) {
+      Status = RebaseImage (mInImageName, FileBuffer, NewBaseAddress);
+    } else {
+      Status = SetAddressToSectionHeader (mInImageName, FileBuffer, NewBaseAddress);
+    }
+    if (EFI_ERROR (Status)) {
+      if (NegativeAddr) {
+        Error (NULL, 0, 3000, "Invalid", "Rebase/Set Image %s to Base address -0x%llx can't success", mInImageName, 0 - NewBaseAddress);
+      } else {
+        Error (NULL, 0, 3000, "Invalid", "Rebase/Set Image %s to Base address 0x%llx can't success", mInImageName, NewBaseAddress);
+      }
+      goto Finish;
+    }
+
+    //
+    // Write file
+    //
+    goto WriteFile;
   }
 
   //
@@ -2705,14 +3064,10 @@ Returns:
     //
     // Output bin data from exe file
     //
-    if (fpOut != NULL) {
-      fwrite (FileBuffer + PeHdr->Pe32.OptionalHeader.SizeOfHeaders, 1, FileLength - PeHdr->Pe32.OptionalHeader.SizeOfHeaders, fpOut);
-    }
-    if (fpInOut != NULL) {
-      fwrite (FileBuffer + PeHdr->Pe32.OptionalHeader.SizeOfHeaders, 1, FileLength - PeHdr->Pe32.OptionalHeader.SizeOfHeaders, fpInOut);
-    }
-    VerboseMsg ("the size of output file is %u bytes", (unsigned) (FileLength - PeHdr->Pe32.OptionalHeader.SizeOfHeaders));
-    goto Finish;
+    FileLength = FileLength - PeHdr->Pe32.OptionalHeader.SizeOfHeaders;
+    memcpy (FileBuffer, FileBuffer + PeHdr->Pe32.OptionalHeader.SizeOfHeaders, FileLength);
+    VerboseMsg ("the size of output file is %u bytes", (unsigned) FileLength);
+    goto WriteFile;
   }
 
   //
@@ -2725,14 +3080,11 @@ Returns:
       goto Finish;
     }
 
-    if (fpOut != NULL) {
-      fwrite (FileBuffer, 1, FileLength, fpOut);
-    }
-    if (fpInOut != NULL) {
-      fwrite (FileBuffer, 1, FileLength, fpInOut);
-    }
+    //
+    // Write the updated Image
+    //
     VerboseMsg ("the size of output file is %u bytes", (unsigned) FileLength);
-    goto Finish;
+    goto WriteFile;
   }
 
   //
@@ -2744,14 +3096,11 @@ Returns:
       goto Finish;
     }
 
-    if (fpOut != NULL) {
-      fwrite (FileBuffer, 1, FileLength, fpOut);
-    }
-    if (fpInOut != NULL) {
-      fwrite (FileBuffer, 1, FileLength, fpInOut);
-    }
+    //
+    // Write the updated Image
+    //
     VerboseMsg ("the size of output file is %u bytes", (unsigned) FileLength);
-    goto Finish;
+    goto WriteFile;
   }
 
   //
@@ -2778,14 +3127,9 @@ Returns:
         //
         // Output Apci data to file
         //
-        if (fpOut != NULL) {
-          fwrite (FileBuffer + SectionHeader->PointerToRawData, 1, FileLength, fpOut);
-        }
-        if (fpInOut != NULL) {
-          fwrite (FileBuffer + SectionHeader->PointerToRawData, 1, FileLength, fpInOut);
-        }
+        memcpy (FileBuffer, FileBuffer + SectionHeader->PointerToRawData, FileLength);
         VerboseMsg ("the size of output file is %u bytes", (unsigned) FileLength);
-        goto Finish;
+        goto WriteFile;
       }
     }
     Error (NULL, 0, 3000, "Invalid", "failed to get ACPI table from %s.", mInImageName);
@@ -2799,7 +3143,7 @@ Returns:
     memset (DosHdr, 0, sizeof (EFI_IMAGE_DOS_HEADER));
     DosHdr->e_magic  = BackupDosHdr.e_magic;
     DosHdr->e_lfanew = BackupDosHdr.e_lfanew;
-  
+
     for (Index = sizeof (EFI_IMAGE_DOS_HEADER); Index < (UINT32 ) DosHdr->e_lfanew; Index++) {
       FileBuffer[Index] = (UINT8) DosHdr->e_cp;
     }
@@ -2814,7 +3158,7 @@ Returns:
   TEImageHeader.NumberOfSections = (UINT8) PeHdr->Pe32.FileHeader.NumberOfSections;
   TEImageHeader.StrippedSize     = (UINT16) ((UINTN) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader) - (UINTN) FileBuffer);
   TEImageHeader.Subsystem        = (UINT8) Type;
-  
+
   //
   // Patch the PE header
   //
@@ -2855,28 +3199,28 @@ Returns:
     // Zero .pdata section data.
     //
     if (!KeepExceptionTableFlag && Optional32->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION &&
-        Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress != 0 &&
-        Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size != 0) {
-      SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
-      for (Index = 0; Index < PeHdr->Pe32.FileHeader.NumberOfSections; Index++, SectionHeader++) {
-        if (SectionHeader->VirtualAddress == Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress) {
-          //
-          // Zero .pdata Section data
-          //
-          memset (FileBuffer + SectionHeader->PointerToRawData, 0, SectionHeader->SizeOfRawData);
-          //
-          // Zero .pdata Section header name
-          //
-          memset (SectionHeader->Name, 0, sizeof (SectionHeader->Name));
-          //
-          // Zero Execption Table
-          //
-          Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress = 0;
-          Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size           = 0;
-          DebugMsg (NULL, 0, 9, "Zero the .pdata section for PE image", NULL);
-          break;
+      Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress != 0 &&
+      Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size != 0) {
+        SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
+        for (Index = 0; Index < PeHdr->Pe32.FileHeader.NumberOfSections; Index++, SectionHeader++) {
+          if (SectionHeader->VirtualAddress == Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress) {
+            //
+            // Zero .pdata Section data
+            //
+            memset (FileBuffer + SectionHeader->PointerToRawData, 0, SectionHeader->SizeOfRawData);
+            //
+            // Zero .pdata Section header name
+            //
+            memset (SectionHeader->Name, 0, sizeof (SectionHeader->Name));
+            //
+            // Zero Execption Table
+            //
+            Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress = 0;
+            Optional32->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size           = 0;
+            DebugMsg (NULL, 0, 9, "Zero the .pdata section for PE image", NULL);
+            break;
+          }
         }
-      }
     }
 
     //
@@ -2951,40 +3295,40 @@ Returns:
     //
     if ((!KeepExceptionTableFlag && PeHdr->Pe32.FileHeader.Machine == IMAGE_FILE_MACHINE_X64) || PeHdr->Pe32.FileHeader.Machine == IMAGE_FILE_MACHINE_IA64) {
       if (Optional64->NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION &&
-          Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress != 0 &&
-          Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size != 0) {
-        SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
-        for (Index = 0; Index < PeHdr->Pe32.FileHeader.NumberOfSections; Index++, SectionHeader++) {
-          if (SectionHeader->VirtualAddress == Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress) {
-            //
-            // Zero .pdata Section header name
-            //
-            memset (SectionHeader->Name, 0, sizeof (SectionHeader->Name));
+        Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress != 0 &&
+        Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size != 0) {
+          SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
+          for (Index = 0; Index < PeHdr->Pe32.FileHeader.NumberOfSections; Index++, SectionHeader++) {
+            if (SectionHeader->VirtualAddress == Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress) {
+              //
+              // Zero .pdata Section header name
+              //
+              memset (SectionHeader->Name, 0, sizeof (SectionHeader->Name));
 
-            RuntimeFunction = (RUNTIME_FUNCTION *)(FileBuffer + SectionHeader->PointerToRawData);
-            for (Index1 = 0; Index1 < Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size / sizeof (RUNTIME_FUNCTION); Index1++, RuntimeFunction++) {
-              SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
-              for (Index2 = 0; Index2 < PeHdr->Pe32.FileHeader.NumberOfSections; Index2++, SectionHeader++) {
-                if (RuntimeFunction->UnwindInfoAddress >= SectionHeader->VirtualAddress && RuntimeFunction->UnwindInfoAddress < (SectionHeader->VirtualAddress + SectionHeader->SizeOfRawData)) {
-                  UnwindInfo = (UNWIND_INFO *)(FileBuffer + SectionHeader->PointerToRawData + (RuntimeFunction->UnwindInfoAddress - SectionHeader->VirtualAddress));
-                  if (UnwindInfo->Version == 1) {
-                    memset (UnwindInfo + 1, 0, UnwindInfo->CountOfUnwindCodes * sizeof (UINT16));
-                    memset (UnwindInfo, 0, sizeof (UNWIND_INFO));
+              RuntimeFunction = (RUNTIME_FUNCTION *)(FileBuffer + SectionHeader->PointerToRawData);
+              for (Index1 = 0; Index1 < Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size / sizeof (RUNTIME_FUNCTION); Index1++, RuntimeFunction++) {
+                SectionHeader = (EFI_IMAGE_SECTION_HEADER *) ((UINT8 *) &(PeHdr->Pe32.OptionalHeader) + PeHdr->Pe32.FileHeader.SizeOfOptionalHeader);
+                for (Index2 = 0; Index2 < PeHdr->Pe32.FileHeader.NumberOfSections; Index2++, SectionHeader++) {
+                  if (RuntimeFunction->UnwindInfoAddress >= SectionHeader->VirtualAddress && RuntimeFunction->UnwindInfoAddress < (SectionHeader->VirtualAddress + SectionHeader->SizeOfRawData)) {
+                    UnwindInfo = (UNWIND_INFO *)(FileBuffer + SectionHeader->PointerToRawData + (RuntimeFunction->UnwindInfoAddress - SectionHeader->VirtualAddress));
+                    if (UnwindInfo->Version == 1) {
+                      memset (UnwindInfo + 1, 0, UnwindInfo->CountOfUnwindCodes * sizeof (UINT16));
+                      memset (UnwindInfo, 0, sizeof (UNWIND_INFO));
+                    }
+                    break;
                   }
-                  break;
                 }
+                memset (RuntimeFunction, 0, sizeof (RUNTIME_FUNCTION));
               }
-              memset (RuntimeFunction, 0, sizeof (RUNTIME_FUNCTION));
+              //
+              // Zero Execption Table
+              //
+              Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size = 0;
+              Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress = 0;
+              DebugMsg (NULL, 0, 9, "Zero the .pdata section if the machine type is X64 for PE32+ image", NULL);
+              break;
             }
-            //
-            // Zero Execption Table
-            //
-            Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size = 0;
-            Optional64->DataDirectory[EFI_IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress = 0;
-            DebugMsg (NULL, 0, 9, "Zero the .pdata section if the machine type is X64 for PE32+ image", NULL);
-            break;
           }
-        }
       }
     }
 
@@ -3027,19 +3371,19 @@ Returns:
     Error (NULL, 0, 3000, "Invalid", "Magic 0x%x of PeImage %s is unknown.", PeHdr->Pe32.OptionalHeader.Magic, mInImageName);
     goto Finish;
   }
-  
+
   if (((PeHdr->Pe32.FileHeader.Characteristics & EFI_IMAGE_FILE_RELOCS_STRIPPED) == 0) && \
     (TEImageHeader.DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress == 0) && \
     (TEImageHeader.DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].Size == 0)) {
-    //
-    // PeImage can be loaded into memory, but it has no relocation section. 
-    // Fix TeImage Header to set VA of relocation data directory to not zero, the size is still zero.
-    //
-    if (Optional32 != NULL) {
-      TEImageHeader.DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress = Optional32->SizeOfImage - sizeof (EFI_IMAGE_BASE_RELOCATION);
-    } else if (Optional64 != NULL) {
-      TEImageHeader.DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress = Optional64->SizeOfImage - sizeof (EFI_IMAGE_BASE_RELOCATION);
-    }
+      //
+      // PeImage can be loaded into memory, but it has no relocation section. 
+      // Fix TeImage Header to set VA of relocation data directory to not zero, the size is still zero.
+      //
+      if (Optional32 != NULL) {
+        TEImageHeader.DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress = Optional32->SizeOfImage - sizeof (EFI_IMAGE_BASE_RELOCATION);
+      } else if (Optional64 != NULL) {
+        TEImageHeader.DataDirectory[EFI_TE_IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress = Optional64->SizeOfImage - sizeof (EFI_IMAGE_BASE_RELOCATION);
+      }
   }
 
   //
@@ -3112,41 +3456,54 @@ Returns:
     }
 
     DebugMsg (NULL, 0, 9, "TeImage Header Info", "Machine type is %X, Number of sections is %X, Stripped size is %X, EntryPoint is %X, BaseOfCode is %X, ImageBase is %llX",
-              TEImageHeader.Machine, TEImageHeader.NumberOfSections, TEImageHeader.StrippedSize, (unsigned) TEImageHeader.AddressOfEntryPoint, (unsigned) TEImageHeader.BaseOfCode, (unsigned long long) TEImageHeader.ImageBase);
+      TEImageHeader.Machine, TEImageHeader.NumberOfSections, TEImageHeader.StrippedSize, (unsigned) TEImageHeader.AddressOfEntryPoint, (unsigned) TEImageHeader.BaseOfCode, (unsigned long long) TEImageHeader.ImageBase);
     //
     // Update Image to TeImage
     //
-    if (fpOut != NULL) {
-      fwrite (&TEImageHeader, 1, sizeof (EFI_TE_IMAGE_HEADER), fpOut);
-      fwrite (FileBuffer + TEImageHeader.StrippedSize, 1, FileLength - TEImageHeader.StrippedSize, fpOut);
-    }
-    if (fpInOut != NULL) {
-      fwrite (&TEImageHeader, 1, sizeof (EFI_TE_IMAGE_HEADER), fpInOut);
-      fwrite (FileBuffer + TEImageHeader.StrippedSize, 1, FileLength - TEImageHeader.StrippedSize, fpInOut);
-    }
-    VerboseMsg ("the size of output file is %u bytes", (unsigned) (FileLength - TEImageHeader.StrippedSize));
-    goto Finish;
+    FileLength = FileLength - TEImageHeader.StrippedSize;
+    memcpy (FileBuffer + sizeof (EFI_TE_IMAGE_HEADER), FileBuffer + TEImageHeader.StrippedSize, FileLength);
+    FileLength = FileLength + sizeof (EFI_TE_IMAGE_HEADER);
+    memcpy (FileBuffer, &TEImageHeader, sizeof (EFI_TE_IMAGE_HEADER));
+    VerboseMsg ("the size of output file is %u bytes", (unsigned) (FileLength));
   }
+
 WriteFile:
   //
-  // Update Image to EfiImage
+  // Update Image to EfiImage or TE image
   //
-  if (fpOut != NULL) {
-    fwrite (FileBuffer, 1, FileLength, fpOut);
+  if (ReplaceFlag) {
+    if ((FileLength != InputFileLength) || (memcmp (FileBuffer, InputFileBuffer, FileLength) != 0)) {
+      //
+      // Update File when File is changed.
+      //
+      fpInOut = fopen (mInImageName, "wb");
+      if (fpInOut == NULL) {
+        Error (NULL, 0, 0001, "Error opening file", mInImageName);
+        goto Finish;
+      }
+      fwrite (FileBuffer, 1, FileLength, fpInOut);
+      VerboseMsg ("the size of output file is %u bytes", (unsigned) FileLength);
+    }
+  } else {
+    if ((FileLength != OutputFileLength) || (memcmp (FileBuffer, OutputFileBuffer, FileLength) != 0)) {
+      fpOut = fopen (OutImageName, "wb");
+      if (fpOut == NULL) {
+        Error (NULL, 0, 0001, "Error opening output file", OutImageName);
+        goto Finish;
+      }
+      fwrite (FileBuffer, 1, FileLength, fpOut);
+      VerboseMsg ("the size of output file is %u bytes", (unsigned) FileLength);
+    }
   }
-  if (fpInOut != NULL) {
-    fwrite (FileBuffer, 1, FileLength, fpInOut);
-  }
-  VerboseMsg ("the size of output file is %u bytes", (unsigned) FileLength);
   mImageSize = FileLength;
 
 Finish:
   if (fpInOut != NULL) {
     if (GetUtilityStatus () != STATUS_SUCCESS) {
       //
-      // when file updates failed, original file is still recoveried.
+      // when file updates failed, original file is still recovered.
       //
-      fwrite (FileBuffer, 1, FileLength, fpInOut);
+      fwrite (InputFileBuffer, 1, InputFileLength, fpInOut);
     }
     //
     // Write converted data into fpInOut file and close input file.
@@ -3174,15 +3531,24 @@ Finish:
         fpOut = fopen (OutImageName, "wb");
         fwrite (OutputFileBuffer, 1, OutputFileLength, fpOut);
         fclose (fpOut);
-        free (OutputFileBuffer);
       }
     }
+  }
+  
+  if (InputFileBuffer != NULL) {
+    free (InputFileBuffer);
+  }
+
+  if (OutputFileBuffer != NULL) {
+    free (OutputFileBuffer);
   }
 
   //
   // Write module size and time stamp to report file.
   //
-  FileLen = strlen (OutImageName);
+  if (OutImageName != NULL) {
+    FileLen = strlen (OutImageName);
+  }
   if (FileLen >= 4 && strcmp (OutImageName + (FileLen - 4), ".efi") == 0) {
     ReportFileName = (CHAR8 *) malloc (FileLen + 1);
     if (ReportFileName != NULL) {
