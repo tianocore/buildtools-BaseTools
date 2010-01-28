@@ -961,9 +961,46 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
         Array = ''
         Value = Pcd.DefaultValue
         Unicode = False
-        if Pcd.DatumType == 'UINT64':
-            if not Value.endswith('ULL'):
-                Value += 'ULL'
+        ValueNumber = 0
+        if Pcd.DatumType in ['UINT64', 'UINT32', 'UINT16', 'UINT8']:
+            if Value.upper().startswith('0X'):
+                ValueNumber = int (Value, 16)
+            else:
+                ValueNumber = int (Value)
+            if Pcd.DatumType == 'UINT64':
+                if abs (ValueNumber) >= 0x10000000000000000:
+                    EdkLogger.error("build", AUTOGEN_ERROR,
+                                    "Too large PCD value for datum type [%s] of PCD %s.%s" % (Pcd.DatumType, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
+                                    ExtraData="[%s]" % str(Info))
+                if ValueNumber < 0:
+                    ValueNumber = 0x10000000000000000 + ValueNumber
+                    Value = str (ValueNumber)
+                if not Value.endswith('ULL'):
+                    Value += 'ULL'
+            elif Pcd.DatumType == 'UINT32':
+                if abs (ValueNumber) >= 0x100000000:
+                    EdkLogger.error("build", AUTOGEN_ERROR,
+                                    "Too large PCD value for datum type [%s] of PCD %s.%s" % (Pcd.DatumType, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
+                                    ExtraData="[%s]" % str(Info))
+                if ValueNumber < 0:
+                    ValueNumber = 0x100000000 + ValueNumber
+                    Value = str (ValueNumber)
+            elif Pcd.DatumType == 'UINT16':
+                if abs (ValueNumber) >= 0x10000:
+                    EdkLogger.error("build", AUTOGEN_ERROR,
+                                    "Too large PCD value for datum type [%s] of PCD %s.%s" % (Pcd.DatumType, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
+                                    ExtraData="[%s]" % str(Info))
+                if ValueNumber < 0:
+                    ValueNumber = 0x10000 + ValueNumber
+                    Value = str (ValueNumber)
+            elif Pcd.DatumType == 'UINT8':
+                if abs (ValueNumber) >= 0x100:
+                    EdkLogger.error("build", AUTOGEN_ERROR,
+                                    "Too large PCD value for datum type [%s] of PCD %s.%s" % (Pcd.DatumType, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
+                                    ExtraData="[%s]" % str(Info))
+                if ValueNumber < 0:
+                    ValueNumber = 0x100 + ValueNumber
+                    Value = str (ValueNumber)
         if Pcd.DatumType == 'VOID*':
             if Pcd.MaxDatumSize == None or Pcd.MaxDatumSize == '':
                 EdkLogger.error("build", AUTOGEN_ERROR,
@@ -1021,7 +1058,7 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
                 AutoGenH.Append('#define %s  %s%s\n' %(GetModeName, Type, PcdVariableName))
         elif Pcd.Type == TAB_PCDS_PATCHABLE_IN_MODULE:
             AutoGenH.Append('#define %s  %s\n' %(PcdValueName, Value))
-            AutoGenC.Append('GLOBAL_REMOVE_IF_UNREFERENCED volatile %s %s %s = %s;\n' %(Const, Pcd.DatumType, PcdVariableName, PcdValueName))
+            AutoGenC.Append('volatile %s %s %s = %s;\n' %(Const, Pcd.DatumType, PcdVariableName, PcdValueName))
             AutoGenH.Append('extern volatile %s  %s  %s%s;\n' % (Const, Pcd.DatumType, PcdVariableName, Array))
             AutoGenH.Append('#define %s  %s%s\n' % (GetModeName, Type, PcdVariableName))
         else:

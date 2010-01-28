@@ -355,6 +355,8 @@ class PlatformAutoGen(AutoGen):
         self._ToolChainFamily = None
         self._BuildRuleFamily = None
         self._BuildOption = None          # toolcode : option
+        self._EdkBuildOption = None       # edktoolcode : option
+        self._EdkIIBuildOption = None     # edkiitoolcode : option
         self._PackageList = None
         self._ModuleAutoGenList  = None
         self._LibraryAutoGenList = None
@@ -661,11 +663,23 @@ class PlatformAutoGen(AutoGen):
                 self._BuildRuleFamily = ToolDefinition[TAB_TOD_DEFINES_BUILDRULEFAMILY][self.ToolChain]
         return self._BuildRuleFamily
 
-    ## Return the build options specific to this platform
+    ## Return the build options specific for all modules in this platform
     def _GetBuildOptions(self):
         if self._BuildOption == None:
             self._BuildOption = self._ExpandBuildOption(self.Platform.BuildOptions)
         return self._BuildOption
+
+    ## Return the build options specific for EDK modules in this platform
+    def _GetEdkBuildOptions(self):
+        if self._EdkBuildOption == None:
+            self._EdkBuildOption = self._ExpandBuildOption(self.Platform.BuildOptions, EDK_NAME)
+        return self._EdkBuildOption
+
+    ## Return the build options specific for EDKII modules in this platform
+    def _GetEdkIIBuildOptions(self):
+        if self._EdkIIBuildOption == None:
+            self._EdkIIBuildOption = self._ExpandBuildOption(self.Platform.BuildOptions, EDKII_NAME)
+        return self._EdkIIBuildOption
 
     ## Parse build_rule.txt in $(WORKSPACE)/Conf/build_rule.txt
     #
@@ -1072,11 +1086,18 @@ class PlatformAutoGen(AutoGen):
     #
     #   @retval options     Options expanded
     #
-    def _ExpandBuildOption(self, Options):
+    def _ExpandBuildOption(self, Options, ModuleStyle=None):
         BuildOptions = {}
         FamilyMatch  = False
         FamilyIsNull = True
         for Key in Options:
+            if ModuleStyle != None and len (Key) > 2:
+                # Check Module style is EDK or EDKII.
+                # Only append build option for the matched style module.
+                if ModuleStyle == EDK_NAME and Key[2] != EDK_NAME:
+                    continue
+                elif ModuleStyle == EDKII_NAME and Key[2] != EDKII_NAME:
+                    continue
             Family = Key[0]
             Target, Tag, Arch, Tool, Attr = Key[1].split("_")
             # if tool chain family doesn't match, skip it
@@ -1104,6 +1125,13 @@ class PlatformAutoGen(AutoGen):
             return BuildOptions
         
         for Key in Options:
+            if ModuleStyle != None and len (Key) > 2:
+                # Check Module style is EDK or EDKII.
+                # Only append build option for the matched style module.
+                if ModuleStyle == EDK_NAME and Key[2] != EDK_NAME:
+                    continue
+                elif ModuleStyle == EDKII_NAME and Key[2] != EDKII_NAME:
+                    continue
             Family = Key[0]
             Target, Tag, Arch, Tool, Attr = Key[1].split("_")
             # if tool chain family doesn't match, skip it
@@ -1133,7 +1161,11 @@ class PlatformAutoGen(AutoGen):
     #   @retval options     The options appended with build options in platform
     #
     def ApplyBuildOption(self, Module):
-        PlatformOptions = self.BuildOption
+        # Get the different options for the different style module
+        if Module.AutoGenVersion < 0x00010005:
+            PlatformOptions = self.EdkBuildOption
+        else:
+            PlatformOptions = self.EdkIIBuildOption
         ModuleOptions = self._ExpandBuildOption(Module.BuildOptions)
         if Module in self.Platform.Modules:
             PlatformModule = self.Platform.Modules[str(Module)]
@@ -1181,6 +1213,8 @@ class PlatformAutoGen(AutoGen):
     ToolChainFamily     = property(_GetToolChainFamily)
     BuildRuleFamily     = property(_GetBuildRuleFamily)
     BuildOption         = property(_GetBuildOptions)    # toolcode : option
+    EdkBuildOption      = property(_GetEdkBuildOptions)   # edktoolcode : option
+    EdkIIBuildOption    = property(_GetEdkIIBuildOptions) # edkiitoolcode : option
 
     BuildCommand        = property(_GetBuildCommand)
     BuildRule           = property(_GetBuildRule)
