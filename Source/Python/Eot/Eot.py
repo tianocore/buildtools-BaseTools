@@ -41,24 +41,44 @@ class Eot(object):
     #
     #   @param  self:      The object pointer
     #
-    def __init__(self):
+    def __init__(self, CommandLineOption=True, IsInit=True, SourceFileList=None, \
+                 IncludeDirList=None, DecFileList=None, GuidList=None, LogFile=None,
+                 FvFileList="", MapFileList="", Report='Report.html'):
         # Version and Copyright
-        self.VersionNumber = "0.01"
+        self.VersionNumber = "0.02"
         self.Version = "%prog Version " + self.VersionNumber
-        self.Copyright = "Copyright (c) 2008, Intel Corporation  All rights reserved."
-        self.Report = 'Report.html'
+        self.Copyright = "Copyright (c) 2008 - 2010, Intel Corporation  All rights reserved."
+        self.Report = Report
 
-        self.IsInit = True
-
-        self.SourceFileList = None
-        self.IncludeDirList = None
-        self.DecFileList = None
-        self.GuidList = None
-        self.LogFile = None
-
+        self.IsInit = IsInit
+        self.SourceFileList = SourceFileList
+        self.IncludeDirList = IncludeDirList
+        self.DecFileList = DecFileList
+        self.GuidList = GuidList
+        self.LogFile = LogFile
+        self.FvFileList = FvFileList
+        self.MapFileList = MapFileList
+        
         # Parse the options and args
-        self.ParseOption()
+        if CommandLineOption:
+            self.ParseOption()
 
+        if self.FvFileList:
+            for FvFile in GetSplitValueList(self.FvFileList, ' '):
+                FvFile = os.path.normpath(FvFile)
+                if not os.path.isfile(FvFile):
+                    EdkLogger.error("Eot", EdkLogger.EOT_ERROR, "Can not find file %s " % FvFile)
+                EotGlobalData.gFV_FILE.append(FvFile)
+        else:
+            EdkLogger.error("Eot", EdkLogger.EOT_ERROR, "The fv file list of target platform was not specified")
+
+        if self.MapFileList:
+            for MapFile in GetSplitValueList(self.MapFileList, ' '):
+                MapFile = os.path.normpath(MapFile)
+                if not os.path.isfile(MapFile):
+                    EdkLogger.error("Eot", EdkLogger.EOT_ERROR, "Can not find file %s " % MapFile)
+                EotGlobalData.gMAP_FILE.append(MapFile)
+                
         # Generate source file list
         self.GenerateSourceFileList(self.SourceFileList, self.IncludeDirList)
 
@@ -522,20 +542,10 @@ class Eot(object):
         self.SetLogLevel(Options)
 
         if Options.FvFileList:
-            for FvFile in GetSplitValueList(Options.FvFileList, ' '):
-                FvFile = os.path.normpath(FvFile)
-                if not os.path.isfile(FvFile):
-                    EdkLogger.error("Eot", EdkLogger.EOT_ERROR, "Can not find file %s " % FvFile)
-                EotGlobalData.gFV_FILE.append(FvFile)
-        else:
-            EdkLogger.error("Eot", EdkLogger.EOT_ERROR, "The fv file list of target platform was not specified")
-
+            self.FvFileList = Options.FvFileList
+ 
         if Options.MapFileList:
-            for MapFile in GetSplitValueList(Options.MapFileList, ' '):
-                MapFile = os.path.normpath(MapFile)
-                if not os.path.isfile(MapFile):
-                    EdkLogger.error("Eot", EdkLogger.EOT_ERROR, "Can not find file %s " % MapFile)
-                EotGlobalData.gMAP_FILE.append(MapFile)
+            self.MapFileList = Options.FvMapFileList
 
         if Options.SourceFileList:
             self.SourceFileList = Options.SourceFileList
