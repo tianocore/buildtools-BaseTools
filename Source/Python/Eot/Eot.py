@@ -59,6 +59,26 @@ class Eot(object):
         self.FvFileList = FvFileList
         self.MapFileList = MapFileList
         
+        # Check workspace environment
+        if "EFI_SOURCE" not in os.environ:
+            if "EDK_SOURCE" not in os.environ:
+                pass
+            else:
+                EotGlobalData.gEDK_SOURCE = os.path.normpath(os.getenv("EDK_SOURCE"))
+        else:
+            EotGlobalData.gEFI_SOURCE = os.path.normpath(os.getenv("EFI_SOURCE"))
+            EotGlobalData.gEDK_SOURCE = os.path.join(EotGlobalData.gEFI_SOURCE, 'Edk')
+
+        if "WORKSPACE" not in os.environ:
+            EdkLogger.error("EOT", BuildToolError.ATTRIBUTE_NOT_AVAILABLE, "Environment variable not found",
+                            ExtraData="WORKSPACE")
+        else:
+            EotGlobalData.gWORKSPACE = os.path.normpath(os.getenv("WORKSPACE"))
+
+        EotGlobalData.gMACRO['WORKSPACE'] = EotGlobalData.gWORKSPACE
+        EotGlobalData.gMACRO['EFI_SOURCE'] = EotGlobalData.gEFI_SOURCE
+        EotGlobalData.gMACRO['EDK_SOURCE'] = EotGlobalData.gEDK_SOURCE
+
         # Parse the options and args
         if CommandLineOption:
             self.ParseOption()
@@ -170,6 +190,8 @@ class Eot(object):
     #
     def ConvertLogFile(self, LogFile):
         newline = []
+        lfr = None
+        lfw = None
         if LogFile:
             lfr = open(LogFile, 'rb')
             lfw = open(LogFile + '.new', 'wb')
@@ -518,25 +540,6 @@ class Eot(object):
     #
     def ParseOption(self):
         (Options, Target) = self.EotOptionParser()
-        # Check workspace envirnoment
-        if "EFI_SOURCE" not in os.environ:
-            if "EDK_SOURCE" not in os.environ:
-                pass
-            else:
-                EotGlobalData.gEDK_SOURCE = os.path.normpath(os.getenv("EDK_SOURCE"))
-        else:
-            EotGlobalData.gEFI_SOURCE = os.path.normpath(os.getenv("EFI_SOURCE"))
-            EotGlobalData.gEDK_SOURCE = os.path.join(EotGlobalData.gEFI_SOURCE, 'Edk')
-
-        if "WORKSPACE" not in os.environ:
-            EdkLogger.error("EOT", BuildToolError.ATTRIBUTE_NOT_AVAILABLE, "Environment variable not found",
-                            ExtraData="WORKSPACE")
-        else:
-            EotGlobalData.gWORKSPACE = os.path.normpath(os.getenv("WORKSPACE"))
-
-        EotGlobalData.gMACRO['WORKSPACE'] = EotGlobalData.gWORKSPACE
-        EotGlobalData.gMACRO['EFI_SOURCE'] = EotGlobalData.gEFI_SOURCE
-        EotGlobalData.gMACRO['EDK_SOURCE'] = EotGlobalData.gEDK_SOURCE
 
         # Set log level
         self.SetLogLevel(Options)
