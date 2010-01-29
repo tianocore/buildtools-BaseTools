@@ -1020,6 +1020,7 @@ class BuildReport(object):
     def __init__(self, ReportFile, ReportType):
         self.ReportFile = ReportFile
         if ReportFile:
+            self.ReportList = []
             self.ReportType = []
             if ReportType == None or "ALL" in ReportType:
                 self.ReportType = ["PCD", "LIBRARY", "BUILD_FLAGS", "DEPEX", "FLASH", "PREDICTION"]
