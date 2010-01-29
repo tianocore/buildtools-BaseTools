@@ -245,11 +245,11 @@ def main():
         GenFds.GenFd('', FdfParserObj, BuildWorkSpace, ArchList)
 
         """Generate GUID cross reference file"""
-        GenFds.GenerateGuidXRefFile(BuildWorkSpace)
+        GenFds.GenerateGuidXRefFile(BuildWorkSpace, ArchList)
 
         """Display FV space info."""
         GenFds.DisplayFvSpaceInfo(FdfParserObj)
-        
+
     except FdfParser.Warning, X:
         EdkLogger.error(X.ToolName, FORMAT_INVALID, File=X.FileName, Line=X.LineNumber, ExtraData=X.Message, RaiseError = False)
         ReturnCode = FORMAT_INVALID
@@ -361,7 +361,7 @@ class GenFds :
                 # Get FV base Address
                 FvObj.AddToBuffer(Buffer, None, GenFds.GetFvBlockSize(FvObj))
                 Buffer.close()
-
+        
         if GenFds.OnlyGenerateThisFv == None and GenFds.OnlyGenerateThisFd == None:
             if GenFdsGlobalVariable.FdfParser.Profile.CapsuleDict != {}:
                 GenFdsGlobalVariable.VerboseLogger("\n Generate other Capsule images!")
@@ -485,11 +485,14 @@ class GenFds :
             ModuleObj = BuildDb.BuildObject[Key, 'COMMON']
             print ModuleObj.BaseName + ' ' + ModuleObj.ModuleType
 
-    def GenerateGuidXRefFile(BuildDb):
+    def GenerateGuidXRefFile(BuildDb, ArchList):
         GuidXRefFileName = os.path.join(GenFdsGlobalVariable.FvDir, "Guid.xref")
         GuidXRefFile = open(GuidXRefFileName, "w+")
-        for Module in BuildDb.ModuleList:
-            GuidXRefFile.write("%s %s\n" % (Module.Guid, Module.BaseName))
+        for Arch in ArchList:
+            PlatformDataBase = BuildDb.BuildObject[GenFdsGlobalVariable.ActivePlatform, Arch]
+            for ModuleFile in PlatformDataBase.Modules:
+                Module = BuildDb.BuildObject[ModuleFile, Arch]
+                GuidXRefFile.write("%s %s\n" % (Module.Guid, Module.BaseName))
         GuidXRefFile.close()
         GenFdsGlobalVariable.InfLogger("GUID cross reference file saved to %s\n" % GuidXRefFileName)
         
