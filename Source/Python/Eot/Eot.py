@@ -43,7 +43,7 @@ class Eot(object):
     #
     def __init__(self, CommandLineOption=True, IsInit=True, SourceFileList=None, \
                  IncludeDirList=None, DecFileList=None, GuidList=None, LogFile=None,
-                 FvFileList="", MapFileList="", Report='Report.html'):
+                 FvFileList="", MapFileList="", Report='Report.html', Dispatch=None):
         # Version and Copyright
         self.VersionNumber = "0.02"
         self.Version = "%prog Version " + self.VersionNumber
@@ -58,6 +58,7 @@ class Eot(object):
         self.LogFile = LogFile
         self.FvFileList = FvFileList
         self.MapFileList = MapFileList
+        self.Dispatch = Dispatch
         
         # Check workspace environment
         if "EFI_SOURCE" not in os.environ:
@@ -289,7 +290,7 @@ class Eot(object):
     #
     def GenerateReport(self):
         EdkLogger.quiet("Generating report file ... ")
-        Rep = Report('Report.html', EotGlobalData.gFV)
+        Rep = Report(self.Report, EotGlobalData.gFV, self.Dispatch)
         Rep.GenerateReport()
 
     ## LoadMapInfo() method

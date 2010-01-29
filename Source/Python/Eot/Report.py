@@ -30,9 +30,12 @@ class Report(object):
     #  @param  ReportName: name of the report
     #  @param  FvObj: FV object after parsing FV images
     #
-    def __init__(self, ReportName = 'Report.html', FvObj = None):
+    def __init__(self, ReportName = 'Report.html', FvObj = None, DispatchName=None):
         self.ReportName = ReportName
         self.Op = open(ReportName, 'w+')
+        self.DispatchList = None
+        if DispatchName:
+            self.DispatchList = open(DispatchName, 'w+')
         self.FvObj = FvObj
         self.FfsIndex = 0
         self.PpiIndex = 0
@@ -230,7 +233,7 @@ class Report(object):
     #
     def GenerateFfs(self, FfsObj):
         self.FfsIndex = self.FfsIndex + 1
-        if FfsObj != None and FfsObj.Type in [0x03, 0x04, 0x05, 0x06, 0x07, 0x08]:
+        if FfsObj != None and FfsObj.Type in [0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0xA]:
             FfsGuid = FfsObj.Guid
             FfsOffset = FfsObj._OFF_
             FfsName = 'Unknonw Ffs Name'
@@ -260,7 +263,7 @@ class Report(object):
                             and Model = %s""" % (FfsGuid, 5001, 1011)
             RecordSet = EotGlobalData.gDb.TblReport.Exec(SqlCommand)
             if RecordSet != []:
-                FfsPath = RecordSet[0][0].replace(EotGlobalData.gMACRO['WORKSPACE'], '.')
+                FfsPath = RecordSet[0][0]
 
             Content = """  <tr>
       <tr class='styleFfs' id='FfsHeader%s'>
@@ -272,7 +275,13 @@ class Report(object):
       </tr>
       <tr id='Ffs%s' style='display:none;'>
         <td colspan="4"><table width="100%%"  border="1">""" % (self.FfsIndex, self.FfsIndex, self.FfsIndex, FfsPath, FfsName, FfsGuid, FfsOffset, FfsType, self.FfsIndex)
-
+            
+            if self.DispatchList:
+                if FfsObj.Type in [0x04, 0x06]:
+                    self.DispatchList.write("%s %s %s %s\n" % (FfsGuid, "P", FfsName, FfsPath))
+                if FfsObj.Type in [0x05, 0x07, 0x08, 0x0A]:
+                    self.DispatchList.write("%s %s %s %s\n" % (FfsGuid, "D", FfsName, FfsPath))
+               
             self.WriteLn(Content)
 
             EotGlobalData.gOP_DISPATCH_ORDER.write('%s\n' %FfsName)

@@ -23,9 +23,11 @@ import textwrap
 from datetime import datetime
 from Common import EdkLogger
 from Common.Misc import GuidStructureByteArrayToGuidString
+from Common.Misc import GuidStructureStringToGuidString
 from Common.InfClassObject import gComponentType2ModuleType
 from Common.BuildToolError import FILE_OPEN_FAILURE
 from Common.BuildToolError import FILE_WRITE_FAILURE
+from Eot.Eot import Eot
 
 
 ## Pattern to extract contents in EDK DXS files
@@ -44,6 +46,17 @@ gPcdGuidPattern = re.compile(r"PCD\((\w+)[.](\w+)\)")
 
 ## Pattern to collect offset, GUID value pair in the flash report intermediate file 
 gOffsetGuidPattern = re.compile(r"(0x[0-9A-Fa-f]+) ([-A-Fa-f0-9]+)")
+
+## Pattern to find module base address and entry point in fixed flash map file
+gModulePattern = r"\n\w+\s*\(([^,]+),\s*BaseAddress=%(Address)s,\s*EntryPoint=%(Address)s\)\s*\(GUID=([-0-9A-Fa-f]+)[^)]*\)"
+gMapFileItemPattern = re.compile(gModulePattern % {"Address" : "(-?0[xX][0-9A-Fa-f]+)"})
+
+## Pattern to find all module referenced header files in source files
+gIncludePattern  = re.compile(r'#include\s*["<]([^">]+)[">]')
+gIncludePattern2 = re.compile(r"#include\s+EFI_([A-Z_]+)\s*[(]\s*(\w+)\s*[)]")
+
+## Pattern to find the entry point for EDK module using EDKII Glue library
+gGlueLibEntryPoint = re.compile(r"__EDKII_GLUE_MODULE_ENTRY_POINT__\s*=\s*(\w+)")
 
 ## Tags for section start, end and separator
 gSectionStart = ">" + "=" * 118 + "<"
@@ -98,7 +111,52 @@ def FileWrite(File, String, Wrapper=False):
         String = textwrap.fill(String, 120)
     File.write(String + "\n")
 
-
+##
+# Find all the header file that the module source directly includes.
+#
+# This function scans source code to find all header files the module may
+# include. This is not accurate but very effective to find all the header
+# file the module might include with #include statement. 
+#
+# @Source                    The source file name
+# @IncludePathList           The list of include path to find the source file.
+# @IncludeFiles              The dictionary of current found include files.
+#
+def FindIncludeFiles(Source, IncludePathList, IncludeFiles):
+    FileContents = open(Source).read()
+    #
+    # Find header files with pattern #include "XXX.h" or #include <XXX.h>
+    #
+    for Match in gIncludePattern.finditer(FileContents):
+        FileName = Match.group(1).strip()
+        for Dir in [os.path.dirname(Source)] + IncludePathList:
+            FullFileName = os.path.normpath(os.path.join(Dir, FileName))
+            if os.path.exists(FullFileName):
+                IncludeFiles[FullFileName.lower().replace("\\", "/")] = FullFileName
+                break
+    
+    #
+    # Find header files with pattern like #include EFI_PPI_CONSUMER(XXX)
+    #
+    for Match in gIncludePattern2.finditer(FileContents):
+        Key = Match.group(2)
+        Type = Match.group(1)
+        if "ARCH_PROTOCOL" in Type:
+            FileName = "ArchProtocol/%(Key)s/%(Key)s.h" % {"Key" : Key}
+        elif "PROTOCOL" in Type:
+            FileName = "Protocol/%(Key)s/%(Key)s.h" % {"Key" : Key}
+        elif "PPI" in Type:
+            FileName = "Ppi/%(Key)s/%(Key)s.h" % {"Key" : Key}
+        elif "GUID" in Type:
+            FileName = "Guid/%(Key)s/%(Key)s.h" % {"Key" : Key}
+        else:
+            continue
+        for Dir in IncludePathList:
+            FullFileName = os.path.normpath(os.path.join(Dir, FileName))
+            if os.path.exists(FullFileName):
+                IncludeFiles[FullFileName.lower().replace("\\", "/")] = FullFileName
+                break
+            
 ##
 # Reports library information
 #
@@ -387,7 +445,7 @@ class ModuleReport(object):
     # @param GlobalPcdReport The platform global PCD class object
     # @param ReportType      The kind of report items in the final report file
     #
-    def GenerateReport(self, File, GlobalPcdReport, ReportType):
+    def GenerateReport(self, File, GlobalPcdReport, GlobalPredictionReport, ReportType):
         FileWrite(File, gSectionStart)
         
         FwReportFileName = os.path.join(self._BuildDir, "DEBUG", self.ModuleName + ".txt")
@@ -438,7 +496,10 @@ class ModuleReport(object):
         
         if "BUILD_FLAGS" in ReportType:
             self.BuildFlagsReport.GenerateReport(File)
-        
+
+        if "PREDICTION" in ReportType:
+            GlobalPredictionReport.GenerateReport(File, self.FileGuid)
+    
         FileWrite(File, gSectionEnd)
 
 ##
@@ -640,7 +701,274 @@ class PcdReport(object):
             FileWrite(File, gSubSectionEnd)     
 
 
+
 ##
+# Reports platform and module Prediction information
+#
+# This class reports the platform execution order prediction section and
+# module load fixed address prediction subsection in the build report file.
+#    
+class PredictionReport(object):
+    ##
+    # Constructor function for class PredictionReport
+    #
+    # This constructor function generates PredictionReport object for the platform. 
+    #
+    # @param self:           The object pointer
+    # @param Wa              Workspace context information
+    #
+    def __init__(self, Wa):
+        self._MapFileName = os.path.join(Wa.BuildDir, Wa.Name + ".map")
+        self._MapFileParsed = False
+        self._EotToolInvoked = False
+        self._FvDir = Wa.FvDir
+        
+        self.FixedMapDict = {}
+        self.ItemList = []
+        self.MaxLen = 0
+       
+        self._SourceFileList = os.path.join(Wa.BuildDir, Wa.Name + "_SourceFileList.txt")
+        SourceList = open(self._SourceFileList, "w+")
+        
+        self._FfsEntryPoint = {}
+        
+        #
+        # Collect all platform reference source files and write to the an intermediate file
+        # for EOT tool to parse.
+        #
+        GuidMap = {}
+        for Pa in Wa.AutoGenObjectList:
+            for Module in Pa.LibraryAutoGenList + Pa.ModuleAutoGenList:
+                #
+                # Add module referenced source files
+                #
+                SourceList.write(str(Module) + "\n")
+                IncludeList = {}
+                for Source in Module.SourceFileList:
+                    if os.path.splitext(str(Source))[1].lower() == ".c":
+                        SourceList.write("  " + str(Source) + "\n")
+                        FindIncludeFiles(Source.Path, Module.IncludePathList, IncludeList)
+                for IncludeFile in IncludeList.values():
+                    SourceList.write("  " + IncludeFile + "\n")
+ 
+                for Guid in Module.PpiList:
+                    GuidMap[Guid] = GuidStructureStringToGuidString(Module.PpiList[Guid])
+                for Guid in Module.ProtocolList:
+                    GuidMap[Guid] = GuidStructureStringToGuidString(Module.ProtocolList[Guid])
+                for Guid in Module.GuidList:
+                    GuidMap[Guid] = GuidStructureStringToGuidString(Module.GuidList[Guid])
+        
+                if Module.Guid and not Module.IsLibrary:
+                    EntryPoint = " ".join(Module.Module.ModuleEntryPointList)
+                    if int(str(Module.AutoGenVersion), 0) >= 0x00010005:
+                        RealEntryPoint = "_ModuleEntryPoint"
+                    else:
+                        RealEntryPoint = EntryPoint
+                        if EntryPoint == "_ModuleEntryPoint":
+                            CCFlags = Module.BuildOption.get("CC", {}).get("FLAGS", "")
+                            Match = gGlueLibEntryPoint.search(CCFlags)
+                            if Match:
+                                EntryPoint = Match.group(1)
+                                
+                    self._FfsEntryPoint[Module.Guid.upper()] = (EntryPoint, RealEntryPoint)
+                         
+        SourceList.close()         
+        
+        #
+        # Write platform referenced GUID list as the input of EOT tool
+        # to calculate module dependency GUID 
+        #
+        self._GuidList = os.path.join(Wa.BuildDir, Wa.Name + "_GuidList.txt")
+        GuidList = open(self._GuidList, "w+")
+        for Guid in GuidMap:
+            GuidList.write("%s %s\n" % (Guid, GuidMap[Guid]))
+        GuidList.close()
+    
+        #
+        # Collect platform firmware volume list as the input of EOT.
+        #
+        self._FvList = [] 
+        for Fd in Wa.FdfProfile.FdDict:
+            for FdRegion in Wa.FdfProfile.FdDict[Fd].RegionList:
+                if FdRegion.RegionType != "FV":
+                    continue
+                for FvName in FdRegion.RegionDataList:
+                    if FvName in self._FvList:
+                        continue
+                    self._FvList.append(FvName)
+                    for Ffs in Wa.FdfProfile.FvDict[FvName.upper()].FfsList:
+                        for Section in Ffs.SectionList:
+                            try:
+                                for FvSection in Section.SectionList:
+                                    if FvSection.FvName in self._FvList:
+                                        continue
+                                    self._FvList.append(FvSection.FvName)
+                            except AttributeError:
+                                pass
+        
+
+        self._Dispatch = os.path.join(Wa.BuildDir, Wa.Name + "_Dispatch.log")
+
+    ##
+    # Parse platform fixed address map files
+    #
+    # This function parses the platform final fixed address map file to get
+    # the database of predicted fixed address for module image base, entry point
+    # etc. 
+    #
+    # @param self:           The object pointer
+    #  
+    def _ParseMapFile(self):
+        if self._MapFileParsed:
+            return
+        self._MapFileParsed = True
+        if os.path.isfile(self._MapFileName):
+            try:
+                FileContents = open(self._MapFileName).read()
+                for Match in gMapFileItemPattern.finditer(FileContents):
+                    AddressType = Match.group(1)
+                    BaseAddress = Match.group(2)
+                    EntryPoint = Match.group(3)
+                    Guid = Match.group(4).upper()
+                    List = self.FixedMapDict.setdefault(Guid, [])
+                    List.append((AddressType, BaseAddress, "*I"))
+                    List.append((AddressType, EntryPoint, "*E"))
+            except:
+                EdkLogger.warn(None, "Cannot open file to read", self._MapFileName)
+    
+    ##
+    # Invokes EOT tool to get the predicted the execution order.
+    #
+    # This function invokes EOT tool to calculate the predicted dispatch order
+    #
+    # @param self:           The object pointer
+    #  
+    def _InvokeEotTool(self):
+        if self._EotToolInvoked:
+            return
+        
+        self._EotToolInvoked = True        
+        FvFileList = []
+        for FvName in self._FvList:
+            FvFile = os.path.join(self._FvDir, FvName + ".Fv")
+            if os.path.isfile(FvFile):
+                FvFileList.append(FvFile)
+       
+        #
+        # Invoke EOT tool
+        #
+        Eot(CommandLineOption=False, SourceFileList=self._SourceFileList, GuidList=self._GuidList,
+            FvFileList=' '.join(FvFileList), Dispatch=self._Dispatch, IsInit=True)
+        
+        #
+        # Parse the output of EOT tool
+        #
+        for Line in open(self._Dispatch):
+            (Guid, Phase, FfsName, FilePath) = Line.split()
+            Symbol = self._FfsEntryPoint.get(Guid, [FfsName, ""])[0]
+            if len(Symbol) > self.MaxLen:
+                self.MaxLen = len(Symbol)
+            self.ItemList.append((Phase, Symbol, FilePath))
+    
+    ##
+    # Generate platform execution order report
+    #
+    # This function generates the predicted module execution order.
+    #
+    # @param self            The object pointer
+    # @param File            The file object for report
+    #
+    def _GenerateExecutionOrderReport(self, File):
+        FileWrite(File, gSectionStart)
+        FileWrite(File, "Execution Order Prediction")
+        FileWrite(File, "*P PEI phase")
+        FileWrite(File, "*D DXE phase")
+        FileWrite(File, "*E Module INF entry point name")
+        FileWrite(File, "*N Module notification function name")
+        
+        FileWrite(File, "Type %-*s %s" % (self.MaxLen, "Symbol", "Module INF Path"))
+        FileWrite(File, gSectionSep)
+        for Item in self.ItemList:
+            FileWrite(File, "*%sE  %-*s %s" % (Item[0], self.MaxLen, Item[1], Item[2]))
+            
+        FileWrite(File, gSectionStart)
+    
+    ##
+    # Generate Fixed Address report.
+    #
+    # This function generate the predicted fixed address report for a module
+    # specified by Guid.
+    #
+    # @param self            The object pointer
+    # @param File            The file object for report
+    # @param Guid            The module Guid value.
+    # @param NotifyList      The list of all notify function in a module
+    #
+    def _GenerateFixedAddressReport(self, File, Guid, NotifyList):
+        FixedAddressList = self.FixedMapDict.get(Guid)
+        if not FixedAddressList:
+            return
+        
+        FileWrite(File, gSubSectionStart)
+        FileWrite(File, "Fixed Address Prediction")
+        FileWrite(File, "*I  Image Loading Address")
+        FileWrite(File, "*E  Entry Point Address")
+        FileWrite(File, "*N  Notification Function Address")
+        FileWrite(File, "*F  Flash Address")
+        FileWrite(File, "*M  Memory Address")
+        FileWrite(File, "*S  SMM RAM Address")
+        FileWrite(File, "TOM Top of Memory")
+        
+        FileWrite(File, "Type Address           Name")
+        FileWrite(File, gSubSectionSep)
+        for Item in FixedAddressList:
+            Type = Item[0]
+            Value = Item[1]
+            Symbol = Item[2]
+            if Symbol == "*I":
+                Name = "(Image Base)"
+            elif Symbol == "*E":
+                Name = self._FfsEntryPoint.get(Guid, ["", "_ModuleEntryPoint"])[1]
+            elif Symbol in NotifyList:
+                Name = Symbol
+                Symbol = "*N"
+            else:
+                continue
+            
+            if "Flash" in Type:
+                Symbol += "F"
+            elif "Memory" in Type:
+                Symbol += "M"
+            else:
+                Symbol += "S"
+            
+            if Value[0] == "-":
+                Value = "TOM" + Value 
+
+            FileWrite(File, "%s  %-16s  %s" % (Symbol, Value, Name))
+
+    ##
+    # Generate report for the prediction part
+    #
+    # This function generate the predicted fixed address report for a module or
+    # predicted module execution order for a platform. 
+    # If the input Guid is None, then, it generates the predicted module execution order;
+    # otherwise it generated the module fixed loading address for the module specified by
+    # Guid.
+    #
+    # @param self            The object pointer
+    # @param File            The file object for report
+    # @param Guid            The module Guid value.
+    #
+    def GenerateReport(self, File, Guid):
+        self._ParseMapFile()
+        self._InvokeEotTool()
+        if Guid:
+            self._GenerateFixedAddressReport(File, Guid.upper(), [])
+        else:
+            self._GenerateExecutionOrderReport(File)
+
+##        
 # Reports FD region information
 #
 # This class reports the FD subsection in the build report file.
@@ -918,6 +1246,7 @@ class FdReport(object):
         
         FileWrite(File, gSectionEnd)
 
+
     
 ##
 # Reports platform information
@@ -953,7 +1282,11 @@ class PlatformReport(object):
         if "FLASH" in ReportType and Wa.FdfProfile:
             for Fd in Wa.FdfProfile.FdDict:
                 self.FdReportList.append(FdReport(Wa.FdfProfile.FdDict[Fd], Wa))
-                
+        
+        self.PredictionReport = None        
+        if "PREDICTION" in ReportType:
+            self.PredictionReport = PredictionReport(Wa)
+        
         self.ModuleReportList = []
         for Pa in Wa.AutoGenObjectList:
             for ModuleKey in Pa.Platform.Modules:
@@ -965,6 +1298,8 @@ class PlatformReport(object):
                     DscOverridePcds = {}
                 self.ModuleReportList.append(ModuleReport(Pa.Platform.Modules[ModuleKey].M, DscOverridePcds, ReportType))
  
+
+        
     ##
     # Generate report for the whole platform.
     #
@@ -997,8 +1332,10 @@ class PlatformReport(object):
                 FdReportListItem.GenerateReport(File)
         
         for ModuleReportItem in self.ModuleReportList:
-            ModuleReportItem.GenerateReport(File, self.PcdReport, ReportType)
+            ModuleReportItem.GenerateReport(File, self.PcdReport, self.PredictionReport, ReportType)
         
+        if "PREDICTION" in ReportType:
+            self.PredictionReport.GenerateReport(File, None)
 
 ## BuildReport class
 #
