@@ -968,39 +968,43 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
             else:
                 ValueNumber = int (Value)
             if Pcd.DatumType == 'UINT64':
-                if abs (ValueNumber) >= 0x10000000000000000:
+                if ValueNumber < 0:
+                    EdkLogger.error("build", AUTOGEN_ERROR,
+                                    "PCD can't be set to negative value for datum type [%s] of PCD %s.%s" % (Pcd.DatumType, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
+                                    ExtraData="[%s]" % str(Info))
+                elif ValueNumber >= 0x10000000000000000:
                     EdkLogger.error("build", AUTOGEN_ERROR,
                                     "Too large PCD value for datum type [%s] of PCD %s.%s" % (Pcd.DatumType, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
                                     ExtraData="[%s]" % str(Info))
-                if ValueNumber < 0:
-                    ValueNumber = 0x10000000000000000 + ValueNumber
-                    Value = str (ValueNumber)
                 if not Value.endswith('ULL'):
                     Value += 'ULL'
             elif Pcd.DatumType == 'UINT32':
-                if abs (ValueNumber) >= 0x100000000:
+                if ValueNumber < 0:
+                    EdkLogger.error("build", AUTOGEN_ERROR,
+                                    "PCD can't be set to negative value for datum type [%s] of PCD %s.%s" % (Pcd.DatumType, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
+                                    ExtraData="[%s]" % str(Info))
+                elif ValueNumber >= 0x100000000:
                     EdkLogger.error("build", AUTOGEN_ERROR,
                                     "Too large PCD value for datum type [%s] of PCD %s.%s" % (Pcd.DatumType, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
                                     ExtraData="[%s]" % str(Info))
-                if ValueNumber < 0:
-                    ValueNumber = 0x100000000 + ValueNumber
-                    Value = str (ValueNumber)
             elif Pcd.DatumType == 'UINT16':
-                if abs (ValueNumber) >= 0x10000:
+                if ValueNumber < 0:
+                    EdkLogger.error("build", AUTOGEN_ERROR,
+                                    "PCD can't be set to negative value for datum type [%s] of PCD %s.%s" % (Pcd.DatumType, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
+                                    ExtraData="[%s]" % str(Info))
+                elif ValueNumber >= 0x10000:
                     EdkLogger.error("build", AUTOGEN_ERROR,
                                     "Too large PCD value for datum type [%s] of PCD %s.%s" % (Pcd.DatumType, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
                                     ExtraData="[%s]" % str(Info))
-                if ValueNumber < 0:
-                    ValueNumber = 0x10000 + ValueNumber
-                    Value = str (ValueNumber)
             elif Pcd.DatumType == 'UINT8':
-                if abs (ValueNumber) >= 0x100:
+                if ValueNumber < 0:
+                    EdkLogger.error("build", AUTOGEN_ERROR,
+                                    "PCD can't be set to negative value for datum type [%s] of PCD %s.%s" % (Pcd.DatumType, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
+                                    ExtraData="[%s]" % str(Info))
+                elif ValueNumber >= 0x100:
                     EdkLogger.error("build", AUTOGEN_ERROR,
                                     "Too large PCD value for datum type [%s] of PCD %s.%s" % (Pcd.DatumType, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
                                     ExtraData="[%s]" % str(Info))
-                if ValueNumber < 0:
-                    ValueNumber = 0x100 + ValueNumber
-                    Value = str (ValueNumber)
         if Pcd.DatumType == 'VOID*':
             if Pcd.MaxDatumSize == None or Pcd.MaxDatumSize == '':
                 EdkLogger.error("build", AUTOGEN_ERROR,
