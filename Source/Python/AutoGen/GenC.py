@@ -963,10 +963,15 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
         Unicode = False
         ValueNumber = 0
         if Pcd.DatumType in ['UINT64', 'UINT32', 'UINT16', 'UINT8']:
-            if Value.upper().startswith('0X'):
-                ValueNumber = int (Value, 16)
-            else:
-                ValueNumber = int (Value)
+            try:
+                if Value.upper().startswith('0X'):
+                    ValueNumber = int (Value, 16)
+                else:
+                    ValueNumber = int (Value)
+            except:
+                EdkLogger.error("build", AUTOGEN_ERROR,
+                                "PCD value is not valid dec or hex number for datum type [%s] of PCD %s.%s" % (Pcd.DatumType, Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
+                                ExtraData="[%s]" % str(Info))
             if Pcd.DatumType == 'UINT64':
                 if ValueNumber < 0:
                     EdkLogger.error("build", AUTOGEN_ERROR,
