@@ -522,7 +522,10 @@ class PcdReport(object):
     def __init__(self, Wa):
         self.AllPcds = {}
         self.MaxLen = 0
-        self.FdfPcdSet = Wa.FdfProfile.PcdDict
+        if Wa.FdfProfile:
+            self.FdfPcdSet = Wa.FdfProfile.PcdDict
+        else:
+            self.FdfPcdSet = {}
 
         self.DecPcdDefault = {}
         self.ModulePcdOverride = {}
