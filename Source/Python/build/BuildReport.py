@@ -109,7 +109,7 @@ gDriverTypeMap = {
 def FileWrite(File, String, Wrapper=False):
     if Wrapper:
         String = textwrap.fill(String, 120)
-    File.write(String + "\n")
+    File.write(String + "\r\n")
 
 ##
 # Find all the header file that the module source directly includes.
@@ -725,41 +725,37 @@ class PredictionReport(object):
         self._MapFileParsed = False
         self._EotToolInvoked = False
         self._FvDir = Wa.FvDir
-        
+        self._EotDir = Wa.BuildDir
+        self._FfsEntryPoint = {}
+        self._GuidMap = {}
+        self._SourceList = []
         self.FixedMapDict = {}
         self.ItemList = []
         self.MaxLen = 0
        
-        self._SourceFileList = os.path.join(Wa.BuildDir, Wa.Name + "_SourceFileList.txt")
-        SourceList = open(self._SourceFileList, "w+")
-        
-        self._FfsEntryPoint = {}
-        
         #
-        # Collect all platform reference source files and write to the an intermediate file
-        # for EOT tool to parse.
+        # Collect all platform reference source files and GUID C Name
         #
-        GuidMap = {}
         for Pa in Wa.AutoGenObjectList:
             for Module in Pa.LibraryAutoGenList + Pa.ModuleAutoGenList:
                 #
                 # Add module referenced source files
                 #
-                SourceList.write(str(Module) + "\n")
+                self._SourceList.append(str(Module))
                 IncludeList = {}
                 for Source in Module.SourceFileList:
                     if os.path.splitext(str(Source))[1].lower() == ".c":
-                        SourceList.write("  " + str(Source) + "\n")
+                        self._SourceList.append("  " + str(Source))
                         FindIncludeFiles(Source.Path, Module.IncludePathList, IncludeList)
                 for IncludeFile in IncludeList.values():
-                    SourceList.write("  " + IncludeFile + "\n")
+                    self._SourceList.append("  " + IncludeFile)
  
                 for Guid in Module.PpiList:
-                    GuidMap[Guid] = GuidStructureStringToGuidString(Module.PpiList[Guid])
+                    self._GuidMap[Guid] = GuidStructureStringToGuidString(Module.PpiList[Guid])
                 for Guid in Module.ProtocolList:
-                    GuidMap[Guid] = GuidStructureStringToGuidString(Module.ProtocolList[Guid])
+                    self._GuidMap[Guid] = GuidStructureStringToGuidString(Module.ProtocolList[Guid])
                 for Guid in Module.GuidList:
-                    GuidMap[Guid] = GuidStructureStringToGuidString(Module.GuidList[Guid])
+                    self._GuidMap[Guid] = GuidStructureStringToGuidString(Module.GuidList[Guid])
         
                 if Module.Guid and not Module.IsLibrary:
                     EntryPoint = " ".join(Module.Module.ModuleEntryPointList)
@@ -775,42 +771,30 @@ class PredictionReport(object):
                                 
                     self._FfsEntryPoint[Module.Guid.upper()] = (EntryPoint, RealEntryPoint)
                          
-        SourceList.close()         
-        
-        #
-        # Write platform referenced GUID list as the input of EOT tool
-        # to calculate module dependency GUID 
-        #
-        self._GuidList = os.path.join(Wa.BuildDir, Wa.Name + "_GuidList.txt")
-        GuidList = open(self._GuidList, "w+")
-        for Guid in GuidMap:
-            GuidList.write("%s %s\n" % (Guid, GuidMap[Guid]))
-        GuidList.close()
-    
+  
         #
         # Collect platform firmware volume list as the input of EOT.
         #
-        self._FvList = [] 
-        for Fd in Wa.FdfProfile.FdDict:
-            for FdRegion in Wa.FdfProfile.FdDict[Fd].RegionList:
-                if FdRegion.RegionType != "FV":
-                    continue
-                for FvName in FdRegion.RegionDataList:
-                    if FvName in self._FvList:
+        self._FvList = []
+        if Wa.FdfProfile: 
+            for Fd in Wa.FdfProfile.FdDict:
+                for FdRegion in Wa.FdfProfile.FdDict[Fd].RegionList:
+                    if FdRegion.RegionType != "FV":
                         continue
-                    self._FvList.append(FvName)
-                    for Ffs in Wa.FdfProfile.FvDict[FvName.upper()].FfsList:
-                        for Section in Ffs.SectionList:
-                            try:
-                                for FvSection in Section.SectionList:
-                                    if FvSection.FvName in self._FvList:
-                                        continue
-                                    self._FvList.append(FvSection.FvName)
-                            except AttributeError:
-                                pass
+                    for FvName in FdRegion.RegionDataList:
+                        if FvName in self._FvList:
+                            continue
+                        self._FvList.append(FvName)
+                        for Ffs in Wa.FdfProfile.FvDict[FvName.upper()].FfsList:
+                            for Section in Ffs.SectionList:
+                                try:
+                                    for FvSection in Section.SectionList:
+                                        if FvSection.FvName in self._FvList:
+                                            continue
+                                        self._FvList.append(FvSection.FvName)
+                                except AttributeError:
+                                    pass
         
-
-        self._Dispatch = os.path.join(Wa.BuildDir, Wa.Name + "_Dispatch.log")
 
     ##
     # Parse platform fixed address map files
@@ -858,21 +842,44 @@ class PredictionReport(object):
                 FvFileList.append(FvFile)
        
         #
-        # Invoke EOT tool
+        # Write source file list and GUID file list to an intermediate file
+        # as the input for EOT tool and dispatch List as the output file
+        # from EOT tool.
         #
-        Eot(CommandLineOption=False, SourceFileList=self._SourceFileList, GuidList=self._GuidList,
-            FvFileList=' '.join(FvFileList), Dispatch=self._Dispatch, IsInit=True)
+        SourceList = os.path.join(self._EotDir, "SourceFile.txt")
+        GuidList = os.path.join(self._EotDir, "GuidList.txt")
+        DispatchList = os.path.join(self._EotDir, "Dispatch.txt")
         
-        #
-        # Parse the output of EOT tool
-        #
-        for Line in open(self._Dispatch):
-            (Guid, Phase, FfsName, FilePath) = Line.split()
-            Symbol = self._FfsEntryPoint.get(Guid, [FfsName, ""])[0]
-            if len(Symbol) > self.MaxLen:
-                self.MaxLen = len(Symbol)
-            self.ItemList.append((Phase, Symbol, FilePath))
-    
+        TempFile = open(SourceList, "w+")
+        for Item in self._SourceList:
+            FileWrite(TempFile, Item)
+        TempFile.close()
+        TempFile = open(GuidList, "w+")
+        for Key in self._GuidMap:
+            FileWrite(TempFile, "%s %s" % (Key, self._GuidMap[Key]))
+        TempFile.close()
+        
+        try:
+            #
+            # Invoke EOT tool
+            #
+            Eot(CommandLineOption=False, SourceFileList=SourceList, GuidList=GuidList,
+                    FvFileList=' '.join(FvFileList), Dispatch=DispatchList, IsInit=True)
+                
+            #
+            # Parse the output of EOT tool
+            #
+            for Line in open(DispatchList):
+                (Guid, Phase, FfsName, FilePath) = Line.split()
+                Symbol = self._FfsEntryPoint.get(Guid, [FfsName, ""])[0]
+                if len(Symbol) > self.MaxLen:
+                    self.MaxLen = len(Symbol)
+                self.ItemList.append((Phase, Symbol, FilePath))
+        except:
+            EdkLogger.warn(None,  "Failed to generate execution order prediction report, \
+                                  for some error occurred in executing EOT.") 
+
+   
     ##
     # Generate platform execution order report
     #
@@ -1080,6 +1087,12 @@ class FdRegionReport(object):
         # Add ACPI table storage file
         #
         self._GuidsDb["7E374E25-8E01-4FEE-87F2-390C23C606CD"] = "ACPI table storage"
+        
+        for Pa in Wa.AutoGenObjectList:
+            for ModuleKey in Pa.Platform.Modules:
+                M = Pa.Platform.Modules[ModuleKey].M
+                self._GuidsDb[M.Guid.upper()] = "%s (%s)" % (M.Module.BaseName, M.MetaFile.File)
+
         #
         # Collect the GUID map in the FV firmware volume
         #
@@ -1087,48 +1100,24 @@ class FdRegionReport(object):
             for Ffs in Wa.FdfProfile.FvDict[FvName.upper()].FfsList:
                 try:
                     #
-                    # Collect GUID, module mapping from INF file
+                    # collect GUID map for binary EFI file in FDF file.
                     #
-                    InfFileName = Ffs.InfFileName
-                    try:
-                        FileGuid = ""
-                        ModuleName = ""
-                        InfPath = os.path.join(Wa.WorkspaceDir, InfFileName)
-                        for Line in open(InfPath):
-                            ItemList = Line.split("#")[0].split("=")
-                            if len(ItemList) == 2:
-                                Key   = ItemList[0].strip().upper()
-                                Value = ItemList[1].strip()
-                                if Key == "FILE_GUID":
-                                    FileGuid = Value.upper()
-                                if Key == "BASE_NAME":
-                                    ModuleName = Value
-                        if FileGuid:
-                            self._GuidsDb[FileGuid] = "%s (%s)" % (ModuleName, InfPath)
-                    except IOError:
-                        EdkLogger.warn(None, "Cannot open file to read", InfPath)
+                    Guid = Ffs.NameGuid.upper()
+                    Match = gPcdGuidPattern.match(Ffs.NameGuid)
+                    if Match:
+                        PcdTokenspace = Match.group(1)
+                        PcdToken = Match.group(2)
+                        if (PcdToken, PcdTokenspace) in PlatformPcds:
+                            GuidValue = PlatformPcds[(PcdToken, PcdTokenspace)]
+                            Guid = GuidStructureByteArrayToGuidString(GuidValue).upper()
+                    for Section in Ffs.SectionList:
+                        try:
+                            ModuleSectFile = os.path.join(Wa.WorkspaceDir, Section.SectFileName)
+                            self._GuidsDb[Guid] = ModuleSectFile
+                        except AttributeError:
+                            pass
                 except AttributeError:
-                    try:
-                        #
-                        # collect GUID map for binary EFI file in FDF file.
-                        #
-                        Guid = Ffs.NameGuid.upper()
-                        Match = gPcdGuidPattern.match(Ffs.NameGuid)
-                        if Match:
-                            PcdTokenspace = Match.group(1)
-                            PcdToken = Match.group(2)
-                            if (PcdToken, PcdTokenspace) in PlatformPcds:
-                                GuidValue = PlatformPcds[(PcdToken, PcdTokenspace)]
-                                Guid = GuidStructureByteArrayToGuidString(GuidValue).upper()
-
-                        for Section in Ffs.SectionList:
-                            try:
-                                ModuleSectFile = os.path.join(Wa.WorkspaceDir, Section.SectFileName)
-                                self._GuidsDb[Guid] = ModuleSectFile
-                            except AttributeError:
-                                pass
-                    except AttributeError:
-                        pass
+                    pass
         
     
     ##
