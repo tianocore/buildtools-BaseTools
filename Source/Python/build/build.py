@@ -22,10 +22,6 @@ import glob
 import time
 import platform
 import traceback
-import types
-if sys.platform == "win32":
-    import subprocess
-    from _subprocess import CreateProcess
 
 from threading import *
 from optparse import OptionParser
@@ -217,43 +213,6 @@ def ReadMessage(From, To, ExitFlag):
         if ExitFlag.isSet():
             break
 
-class WinPopen(Popen):
-    def _execute_child(self, args, executable, preexec_fn, close_fds,
-                       cwd, env, universal_newlines,
-                       startupinfo, creationflags, shell,
-                       p2cread, p2cwrite,
-                       c2pread, c2pwrite,
-                       errread, errwrite):
-        """Execute program (MS Windows version)"""
-
-        if not isinstance(args, types.StringTypes):
-            args = subprocess.list2cmdline(args)
-
-            # Start the process
-            try:
-                hp, ht, pid, tid = CreateProcess(executable, args,
-                                         None, None,
-                                         0,
-                                         creationflags,
-                                         env,
-                                         cwd,
-                                         None)
-            except IOError, e:
-                raise WindowsError(*e.args)
-
-            # Retain the process handle, but close the thread handle
-            self._child_created = True
-            self._handle = hp
-            self.pid = pid
-            ht.Close()
-
-            if p2cread is not None:
-                p2cread.Close()
-            if c2pwrite is not None:
-                c2pwrite.Close()
-            if errwrite is not None:
-                errwrite.Close()
-
 ## Launch an external program
 #
 # This method will call subprocess.Popen to execute an external program with
@@ -273,10 +232,7 @@ def LaunchCommand(Command, WorkingDir):
     EndOfProcedure = None
     try:
         # launch the command
-        if sys.platform == "win32":
-          Proc = WinPopen(Command, stdout=PIPE, stderr=PIPE, env=os.environ, cwd=WorkingDir, bufsize=-1)
-        else:
-          Proc = Popen(Command, stdout=PIPE, stderr=PIPE, env=os.environ, cwd=WorkingDir, bufsize=-1)
+        Proc = Popen(Command, stdout=PIPE, stderr=PIPE, env=os.environ, cwd=WorkingDir, bufsize=-1)
 
         # launch two threads to read the STDOUT and STDERR
         EndOfProcedure = Event()
