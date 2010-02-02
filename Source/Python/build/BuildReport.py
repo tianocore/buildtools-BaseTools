@@ -27,7 +27,6 @@ from Common.Misc import GuidStructureStringToGuidString
 from Common.InfClassObject import gComponentType2ModuleType
 from Common.BuildToolError import FILE_OPEN_FAILURE
 from Common.BuildToolError import FILE_WRITE_FAILURE
-from Eot.Eot import Eot
 
 
 ## Pattern to extract contents in EDK DXS files
@@ -860,6 +859,7 @@ class PredictionReport(object):
         TempFile.close()
         
         try:
+            from Eot.Eot import Eot
             #
             # Invoke EOT tool
             #
