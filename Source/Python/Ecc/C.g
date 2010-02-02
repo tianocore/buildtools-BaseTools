@@ -238,6 +238,7 @@ type_qualifier
 	| 'EFIAPI'
 	| 'EFI_BOOTSERVICE'
 	| 'EFI_RUNTIMESERVICE'
+	| 'PACKED'
 	;
 
 declarator
