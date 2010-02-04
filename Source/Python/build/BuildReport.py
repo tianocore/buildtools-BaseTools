@@ -1,8 +1,8 @@
 ## @file
 # Routines for generating build report.
-# 
+#
 # This module contains the functionality to generate build report after
-# build all target completes successfully. 
+# build all target completes successfully.
 #
 # Copyright (c) 2010, Intel Corporation
 # All rights reserved. This program and the accompanying materials
@@ -36,14 +36,14 @@ gDxsDependencyPattern = re.compile(r"DEPENDENCY_START(.+)DEPENDENCY_END", re.DOT
 gFvTotalSizePattern = re.compile(r"EFI_FV_TOTAL_SIZE = (0x[0-9a-fA-F]+)")
 gFvTakenSizePattern = re.compile(r"EFI_FV_TAKEN_SIZE = (0x[0-9a-fA-F]+)")
 
-## Pattern to find module size and time stamp in module summary report intermediate file  
+## Pattern to find module size and time stamp in module summary report intermediate file
 gModuleSizePattern = re.compile(r"MODULE_SIZE = (\d+)")
-gTimeStampPattern  = re.compile(r"TIME_STAMP = (\d+)") 
+gTimeStampPattern  = re.compile(r"TIME_STAMP = (\d+)")
 
 ## Pattern to find GUID value in flash description files
 gPcdGuidPattern = re.compile(r"PCD\((\w+)[.](\w+)\)")
 
-## Pattern to collect offset, GUID value pair in the flash report intermediate file 
+## Pattern to collect offset, GUID value pair in the flash report intermediate file
 gOffsetGuidPattern = re.compile(r"(0x[0-9A-Fa-f]+) ([-A-Fa-f0-9]+)")
 
 ## Pattern to find module base address and entry point in fixed flash map file
@@ -98,9 +98,9 @@ gDriverTypeMap = {
 
 ##
 # Writes a string to the file object.
-# 
-# This function writes a string to the file object and a new line is appended 
-# afterwards. It may optionally wraps the string for better readability.   
+#
+# This function writes a string to the file object and a new line is appended
+# afterwards. It may optionally wraps the string for better readability.
 #
 # @File                      The file object to write
 # @String                    The string to be written to the file
@@ -116,7 +116,7 @@ def FileWrite(File, String, Wrapper=False):
 #
 # This function scans source code to find all header files the module may
 # include. This is not accurate but very effective to find all the header
-# file the module might include with #include statement. 
+# file the module might include with #include statement.
 #
 # @Source                    The source file name
 # @IncludePathList           The list of include path to find the source file.
@@ -134,7 +134,7 @@ def FindIncludeFiles(Source, IncludePathList, IncludeFiles):
             if os.path.exists(FullFileName):
                 IncludeFiles[FullFileName.lower().replace("\\", "/")] = FullFileName
                 break
-    
+
     #
     # Find header files with pattern like #include EFI_PPI_CONSUMER(XXX)
     #
@@ -156,17 +156,17 @@ def FindIncludeFiles(Source, IncludePathList, IncludeFiles):
             if os.path.exists(FullFileName):
                 IncludeFiles[FullFileName.lower().replace("\\", "/")] = FullFileName
                 break
-            
+
 ##
 # Reports library information
 #
 # This class reports the module library subsection in the build report file.
-#     
+#
 class LibraryReport(object):
     ##
     # Constructor function for class LibraryReport
     #
-    # This constructor function generates LibraryReport object for 
+    # This constructor function generates LibraryReport object for
     # a module.
     #
     # @param self            The object pointer
@@ -178,7 +178,7 @@ class LibraryReport(object):
             self._EdkIIModule = True
         else:
             self._EdkIIModule = False
-               
+
         for Lib in M.DependentLibraryList:
             LibInfPath = str(Lib)
             LibClassList = Lib.LibraryClass[0].LibraryClass
@@ -186,13 +186,13 @@ class LibraryReport(object):
             LibDesstructorList = Lib.DestructorList
             LibDepexList = Lib.DepexExpression[M.Arch, M.ModuleType]
             self.LibraryList.append((LibInfPath, LibClassList, LibConstructorList, LibDesstructorList, LibDepexList))
-    
+
     ##
     # Generate report for module library information
     #
     # This function generates report for the module library.
     # If the module is EDKII style one, the additional library class, library
-    # constructor/destructor and dependency expression may also be reported.  
+    # constructor/destructor and dependency expression may also be reported.
     #
     # @param self            The object pointer
     # @param File            The file object for report
@@ -205,7 +205,7 @@ class LibraryReport(object):
             for LibraryItem in self.LibraryList:
                 LibInfPath = LibraryItem[0]
                 FileWrite(File, LibInfPath)
-                
+
                 #
                 # Report library class, library constructor and destructor for
                 # EDKII style module.
@@ -226,19 +226,19 @@ class LibraryReport(object):
                         FileWrite(File, "{%s: %s}" % (LibClass, EdkIILibInfo))
                     else:
                         FileWrite(File, "{%s}" % LibClass)
-        
+
         FileWrite(File, gSubSectionEnd)
 
 ##
 # Reports dependency expression information
 #
 # This class reports the module dependency expression subsection in the build report file.
-#             
+#
 class DepexReport(object):
     ##
     # Constructor function for class DepexReport
     #
-    # This constructor function generates DepexReport object for 
+    # This constructor function generates DepexReport object for
     # a module. If the module source contains the DXS file (usually EDK
     # style module), it uses the dependency in DXS file; otherwise,
     # it uses the dependency expression from its own INF [Depex] section
@@ -260,11 +260,11 @@ class DepexReport(object):
             self.ModuleDepex = " ".join(M.Module.DepexExpression[M.Arch, M.ModuleType])
             if not self.ModuleDepex:
                 self.ModuleDepex = "TRUE"
-            
+
             LibDepexList = []
             for Lib in M.DependentLibraryList:
                 LibDepex = " ".join(Lib.DepexExpression[M.Arch, M.ModuleType]).strip()
-                if LibDepex != "":                         
+                if LibDepex != "":
                     if " " in LibDepex:
                         LibDepex = "(" + LibDepex + ")"
                     LibDepexList.append(LibDepex)
@@ -272,7 +272,7 @@ class DepexReport(object):
             if not self.LibraryDepex:
                 self.LibraryDepex = "(None)"
             self.Source = "INF"
-    
+
     ##
     # Generate report for module dependency expression information
     #
@@ -284,7 +284,7 @@ class DepexReport(object):
     def GenerateReport(self, File):
         FileWrite(File, gSubSectionStart)
         FileWrite(File, "Dependency Expression (DEPEX) from %s" % self.Source)
-        
+
         if self.Source == "INF":
             FileWrite(File, "%s" % self.Depex, True)
             FileWrite(File, gSubSectionSep)
@@ -298,13 +298,13 @@ class DepexReport(object):
 # Reports dependency expression information
 #
 # This class reports the module build flags subsection in the build report file.
-#                     
+#
 class BuildFlagsReport(object):
     ##
     # Constructor function for class BuildFlagsReport
     #
-    # This constructor function generates BuildFlagsReport object for 
-    # a module. It reports the build tool chain tag and all relevant 
+    # This constructor function generates BuildFlagsReport object for
+    # a module. It reports the build tool chain tag and all relevant
     # build flags to build the module.
     #
     # @param self            The object pointer
@@ -314,7 +314,7 @@ class BuildFlagsReport(object):
         BuildOptions = {}
         #
         # Add build flags according to source file extension so that
-        # irrelevant ones can be filtered out. 
+        # irrelevant ones can be filtered out.
         #
         for Source in M.SourceFileList:
             Ext = os.path.splitext(Source.File)[1].lower()
@@ -340,7 +340,7 @@ class BuildFlagsReport(object):
                 BuildOptions["ASMLINK"] = 1
             BuildOptions["SLINK"] = 1
             BuildOptions["DLINK"] = 1
-        
+
         #
         # Save module build flags.
         #
@@ -364,23 +364,23 @@ class BuildFlagsReport(object):
         for Tool in self.BuildFlags:
             FileWrite(File, gSubSectionSep)
             FileWrite(File, "%s = %s" % (Tool, self.BuildFlags[Tool]), True)
-        
+
         FileWrite(File, gSubSectionEnd)
 
 
 ##
 # Reports individual module information
 #
-# This class reports the module section in the build report file. 
+# This class reports the module section in the build report file.
 # It comprises of module summary, module PCD, library, dependency expression,
-# build flags sections.  
-#        
+# build flags sections.
+#
 class ModuleReport(object):
     ##
     # Constructor function for class ModuleReport
     #
-    # This constructor function generates ModuleReport object for 
-    # a separate module in a platform build.  
+    # This constructor function generates ModuleReport object for
+    # a separate module in a platform build.
     #
     # @param self            The object pointer
     # @param M               Module context information
@@ -410,7 +410,7 @@ class ModuleReport(object):
         self.PciDeviceId = M.Module.Defines.get("PCI_DEVICE_ID", "")
         self.PciVendorId = M.Module.Defines.get("PCI_VENDOR_ID", "")
         self.PciClassCode = M.Module.Defines.get("PCI_CLASS_CODE", "")
-  
+
         self._BuildDir = M.BuildDir
         self.ModulePcdSet = {}
         self.ModuleDscOverridePcds = {}
@@ -421,26 +421,26 @@ class ModuleReport(object):
             #
             for Pcd in M.ModulePcdList + M.LibraryPcdList:
                 self.ModulePcdSet.setdefault((Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Pcd.Type), Pcd.InfDefaultValue)
-            
+
             #
             # Collect module DSC override PCD set for report
             #
             for (PcdTokenCName, PcdTokenSpaceGuidCName) in DscOverridePcds:
                 Pcd = DscOverridePcds[(PcdTokenCName, PcdTokenSpaceGuidCName)]
                 self.ModuleDscOverridePcds.setdefault((PcdTokenCName, PcdTokenSpaceGuidCName), Pcd.DefaultValue)
-        
+
         self.LibraryReport = None
         if "LIBRARY" in ReportType:
             self.LibraryReport = LibraryReport(M)
-        
+
         self.DepexReport = None
         if "DEPEX" in ReportType:
             self.DepexReport = DepexReport(M)
-        
+
         if "BUILD_FLAGS" in ReportType:
             self.BuildFlagsReport = BuildFlagsReport(M)
-        
-    
+
+
     ##
     # Generate report for module information
     #
@@ -454,7 +454,7 @@ class ModuleReport(object):
     #
     def GenerateReport(self, File, GlobalPcdReport, GlobalPredictionReport, ReportType):
         FileWrite(File, gSectionStart)
-        
+
         FwReportFileName = os.path.join(self._BuildDir, "DEBUG", self.ModuleName + ".txt")
         if os.path.isfile(FwReportFileName):
             try:
@@ -462,13 +462,13 @@ class ModuleReport(object):
                 Match = gModuleSizePattern.search(FileContents)
                 if Match:
                     self.Size = int(Match.group(1))
-                
+
                 Match = gTimeStampPattern.search(FileContents)
                 if Match:
                     self.BuildTimeStamp = datetime.fromtimestamp(int(Match.group(1)))
             except IOError:
                 EdkLogger.warn(None, "Fail to read report file", FwReportFileName)
-            
+
         FileWrite(File, "Module Summary")
         FileWrite(File, "Module Name:          %s" % self.ModuleName)
         FileWrite(File, "Module INF Path:      %s" % self.ModuleInfPath)
@@ -489,24 +489,24 @@ class ModuleReport(object):
             FileWrite(File, "PCI Vendor ID:        %s" % self.PciVendorId)
         if self.PciClassCode:
             FileWrite(File, "PCI Class Code:       %s" % self.PciClassCode)
-        
-        FileWrite(File, gSectionSep)   
-        
+
+        FileWrite(File, gSectionSep)
+
         if "PCD" in ReportType:
             GlobalPcdReport.GenerateReport(File, self.ModulePcdSet, self.ModuleDscOverridePcds)
-        
+
         if "LIBRARY" in ReportType:
             self.LibraryReport.GenerateReport(File)
-        
+
         if "DEPEX" in ReportType:
             self.DepexReport.GenerateReport(File)
-        
+
         if "BUILD_FLAGS" in ReportType:
             self.BuildFlagsReport.GenerateReport(File)
 
         if "PREDICTION" in ReportType:
             GlobalPredictionReport.GenerateReport(File, self.FileGuid)
-    
+
         FileWrite(File, gSectionEnd)
 
 ##
@@ -514,7 +514,7 @@ class ModuleReport(object):
 #
 # This class reports the platform PCD section and module PCD subsection
 # in the build report file.
-#     
+#
 class PcdReport(object):
     ##
     # Constructor function for class PcdReport
@@ -547,11 +547,11 @@ class PcdReport(object):
                     PcdList.append(Pcd)
                 if len(Pcd.TokenCName) > self.MaxLen:
                     self.MaxLen = len(Pcd.TokenCName)
-            
+
             for ModuleKey in Pa.Platform.Modules:
                 #
                 # Collect PCD DEC default value.
-                #   
+                #
                 Module = Pa.Platform.Modules[ModuleKey]
                 for Package in Module.M.Module.Packages:
                     for (TokenCName, TokenSpaceGuidCName, DecType) in Package.Pcds:
@@ -575,7 +575,7 @@ class PcdReport(object):
             for (TokenCName, TokenSpaceGuidCName) in Platform.Pcds:
                 DscDefaultValue = Platform.Pcds[(TokenCName, TokenSpaceGuidCName)].DefaultValue
                 self.DscPcdDefault[(TokenCName, TokenSpaceGuidCName)] = DscDefaultValue
-    
+
     ##
     # Generate report for PCD information
     #
@@ -636,7 +636,7 @@ class PcdReport(object):
                     DecDefaultValue = self.DecPcdDefault.get((Pcd.TokenCName, Pcd.TokenSpaceGuidCName, DecType))
                     DscDefaultValue = self.DscPcdDefault.get((Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
                     DscModuleOverrideValue = DscOverridePcds.get((Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
-                          
+
                     if Pcd.DatumType in ('UINT8', 'UINT16', 'UINT32', 'UINT64'):
                         PcdDefaultValueNumber = int(Pcd.DefaultValue.strip(), 0)
                         if DecDefaultValue == None:
@@ -644,13 +644,13 @@ class PcdReport(object):
                         else:
                             DecDefaultValueNumber = int(DecDefaultValue.strip(), 0)
                             DecMatch = (DecDefaultValueNumber == PcdDefaultValueNumber)
-                  
+
                         if InfDefaultValue == None:
                             InfMatch = True
                         else:
                             InfDefaultValueNumber = int(InfDefaultValue.strip(), 0)
                             InfMatch = (InfDefaultValueNumber == PcdDefaultValueNumber)
-                                
+
                         if DscDefaultValue == None:
                             DscMatch = True
                         else:
@@ -661,20 +661,20 @@ class PcdReport(object):
                             DecMatch = True
                         else:
                             DecMatch = (DecDefaultValue == Pcd.DefaultValue)
-                  
+
                         if InfDefaultValue == None:
                             InfMatch = True
                         else:
                             InfMatch = (InfDefaultValue == Pcd.DefaultValue)
-                            
+
                         if DscDefaultValue == None:
                             DscMatch = True
                         else:
                             DscMatch = (DscDefaultValue == Pcd.DefaultValue)
-                    
+
                     #
                     # Report PCD item according to their override relationship
-                    #        
+                    #
                     if DecMatch and InfMatch:
                         FileWrite(File, '    %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', Pcd.DefaultValue))
                     else:
@@ -687,10 +687,10 @@ class PcdReport(object):
                             FileWrite(File, ' *M %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', Pcd.DefaultValue))
                             if DscDefaultValue != None:
                                 FileWrite(File, '    %*s = %s' % (self.MaxLen + 19, 'DSC DEFAULT', DscDefaultValue))
-                        
+
                         if InfDefaultValue != None:
                             FileWrite(File, '    %*s = %s' % (self.MaxLen + 19, 'INF DEFAULT', InfDefaultValue))
-                        
+
                         if DecDefaultValue != None and not DecMatch:
                             FileWrite(File, '    %*s = %s' % (self.MaxLen + 19, 'DEC DEFAULT', DecDefaultValue))
 
@@ -704,11 +704,11 @@ class PcdReport(object):
                             if Match:
                                 continue
                             FileWrite(File, ' *M %-*s = %s' % (self.MaxLen + 19, ModulePath, ModuleDefault))
-        
+
         if ModulePcdSet == None:
             FileWrite(File, gSectionEnd)
         else:
-            FileWrite(File, gSubSectionEnd)     
+            FileWrite(File, gSubSectionEnd)
 
 
 
@@ -717,12 +717,12 @@ class PcdReport(object):
 #
 # This class reports the platform execution order prediction section and
 # module load fixed address prediction subsection in the build report file.
-#    
+#
 class PredictionReport(object):
     ##
     # Constructor function for class PredictionReport
     #
-    # This constructor function generates PredictionReport object for the platform. 
+    # This constructor function generates PredictionReport object for the platform.
     #
     # @param self:           The object pointer
     # @param Wa              Workspace context information
@@ -739,7 +739,7 @@ class PredictionReport(object):
         self.FixedMapDict = {}
         self.ItemList = []
         self.MaxLen = 0
-       
+
         #
         # Collect all platform reference source files and GUID C Name
         #
@@ -756,14 +756,14 @@ class PredictionReport(object):
                         FindIncludeFiles(Source.Path, Module.IncludePathList, IncludeList)
                 for IncludeFile in IncludeList.values():
                     self._SourceList.append("  " + IncludeFile)
- 
+
                 for Guid in Module.PpiList:
                     self._GuidMap[Guid] = GuidStructureStringToGuidString(Module.PpiList[Guid])
                 for Guid in Module.ProtocolList:
                     self._GuidMap[Guid] = GuidStructureStringToGuidString(Module.ProtocolList[Guid])
                 for Guid in Module.GuidList:
                     self._GuidMap[Guid] = GuidStructureStringToGuidString(Module.GuidList[Guid])
-        
+
                 if Module.Guid and not Module.IsLibrary:
                     EntryPoint = " ".join(Module.Module.ModuleEntryPointList)
                     if int(str(Module.AutoGenVersion), 0) >= 0x00010005:
@@ -775,15 +775,15 @@ class PredictionReport(object):
                             Match = gGlueLibEntryPoint.search(CCFlags)
                             if Match:
                                 EntryPoint = Match.group(1)
-                                
+
                     self._FfsEntryPoint[Module.Guid.upper()] = (EntryPoint, RealEntryPoint)
-                         
-  
+
+
         #
         # Collect platform firmware volume list as the input of EOT.
         #
         self._FvList = []
-        if Wa.FdfProfile: 
+        if Wa.FdfProfile:
             for Fd in Wa.FdfProfile.FdDict:
                 for FdRegion in Wa.FdfProfile.FdDict[Fd].RegionList:
                     if FdRegion.RegionType != "FV":
@@ -801,17 +801,17 @@ class PredictionReport(object):
                                         self._FvList.append(FvSection.FvName)
                                 except AttributeError:
                                     pass
-        
+
 
     ##
     # Parse platform fixed address map files
     #
     # This function parses the platform final fixed address map file to get
     # the database of predicted fixed address for module image base, entry point
-    # etc. 
+    # etc.
     #
     # @param self:           The object pointer
-    #  
+    #
     def _ParseMapFile(self):
         if self._MapFileParsed:
             return
@@ -829,25 +829,25 @@ class PredictionReport(object):
                     List.append((AddressType, EntryPoint, "*E"))
             except:
                 EdkLogger.warn(None, "Cannot open file to read", self._MapFileName)
-    
+
     ##
     # Invokes EOT tool to get the predicted the execution order.
     #
     # This function invokes EOT tool to calculate the predicted dispatch order
     #
     # @param self:           The object pointer
-    #  
+    #
     def _InvokeEotTool(self):
         if self._EotToolInvoked:
             return
-        
-        self._EotToolInvoked = True        
+
+        self._EotToolInvoked = True
         FvFileList = []
         for FvName in self._FvList:
             FvFile = os.path.join(self._FvDir, FvName + ".Fv")
             if os.path.isfile(FvFile):
                 FvFileList.append(FvFile)
-       
+
         #
         # Write source file list and GUID file list to an intermediate file
         # as the input for EOT tool and dispatch List as the output file
@@ -856,7 +856,7 @@ class PredictionReport(object):
         SourceList = os.path.join(self._EotDir, "SourceFile.txt")
         GuidList = os.path.join(self._EotDir, "GuidList.txt")
         DispatchList = os.path.join(self._EotDir, "Dispatch.txt")
-        
+
         TempFile = open(SourceList, "w+")
         for Item in self._SourceList:
             FileWrite(TempFile, Item)
@@ -865,7 +865,7 @@ class PredictionReport(object):
         for Key in self._GuidMap:
             FileWrite(TempFile, "%s %s" % (Key, self._GuidMap[Key]))
         TempFile.close()
-        
+
         try:
             from Eot.Eot import Eot
             #
@@ -873,7 +873,7 @@ class PredictionReport(object):
             #
             Eot(CommandLineOption=False, SourceFileList=SourceList, GuidList=GuidList,
                 FvFileList=' '.join(FvFileList), Dispatch=DispatchList, IsInit=True)
-                
+
             #
             # Parse the output of EOT tool
             #
@@ -884,9 +884,9 @@ class PredictionReport(object):
                     self.MaxLen = len(Symbol)
                 self.ItemList.append((Phase, Symbol, FilePath))
         except:
-            EdkLogger.warn(None, "Failed to generate execution order prediction report, for some error occurred in executing EOT.") 
+            EdkLogger.warn(None, "Failed to generate execution order prediction report, for some error occurred in executing EOT.")
 
-   
+
     ##
     # Generate platform execution order report
     #
@@ -902,14 +902,14 @@ class PredictionReport(object):
         FileWrite(File, "*D DXE phase")
         FileWrite(File, "*E Module INF entry point name")
         FileWrite(File, "*N Module notification function name")
-        
+
         FileWrite(File, "Type %-*s %s" % (self.MaxLen, "Symbol", "Module INF Path"))
         FileWrite(File, gSectionSep)
         for Item in self.ItemList:
             FileWrite(File, "*%sE  %-*s %s" % (Item[0], self.MaxLen, Item[1], Item[2]))
-            
+
         FileWrite(File, gSectionStart)
-    
+
     ##
     # Generate Fixed Address report.
     #
@@ -925,7 +925,7 @@ class PredictionReport(object):
         FixedAddressList = self.FixedMapDict.get(Guid)
         if not FixedAddressList:
             return
-        
+
         FileWrite(File, gSubSectionStart)
         FileWrite(File, "Fixed Address Prediction")
         FileWrite(File, "*I  Image Loading Address")
@@ -935,7 +935,7 @@ class PredictionReport(object):
         FileWrite(File, "*M  Memory Address")
         FileWrite(File, "*S  SMM RAM Address")
         FileWrite(File, "TOM Top of Memory")
-        
+
         FileWrite(File, "Type Address           Name")
         FileWrite(File, gSubSectionSep)
         for Item in FixedAddressList:
@@ -951,16 +951,16 @@ class PredictionReport(object):
                 Symbol = "*N"
             else:
                 continue
-            
+
             if "Flash" in Type:
                 Symbol += "F"
             elif "Memory" in Type:
                 Symbol += "M"
             else:
                 Symbol += "S"
-            
+
             if Value[0] == "-":
-                Value = "TOM" + Value 
+                Value = "TOM" + Value
 
             FileWrite(File, "%s  %-16s  %s" % (Symbol, Value, Name))
 
@@ -968,7 +968,7 @@ class PredictionReport(object):
     # Generate report for the prediction part
     #
     # This function generate the predicted fixed address report for a module or
-    # predicted module execution order for a platform. 
+    # predicted module execution order for a platform.
     # If the input Guid is None, then, it generates the predicted module execution order;
     # otherwise it generated the module fixed loading address for the module specified by
     # Guid.
@@ -985,11 +985,11 @@ class PredictionReport(object):
         else:
             self._GenerateExecutionOrderReport(File)
 
-##        
+##
 # Reports FD region information
 #
 # This class reports the FD subsection in the build report file.
-# It collects region information of platform flash device. 
+# It collects region information of platform flash device.
 # If the region is a firmware volume, it lists the set of modules
 # and its space information; otherwise, it only lists its region name,
 # base address and size in its sub-section header.
@@ -1021,11 +1021,11 @@ class FdRegionReport(object):
                         self._DiscoverNestedFvList(FvSection.FvName, Wa)
                 except AttributeError:
                     pass
-    
+
     ##
     # Constructor function for class FdRegionReport
     #
-    # This constructor function generates FdRegionReport object for a specified FdRegion. 
+    # This constructor function generates FdRegionReport object for a specified FdRegion.
     # If the FdRegion is a firmware volume, it will recursively find all its nested Firmware
     # volume list. This function also collects GUID map in order to dump module identification
     # in the final report.
@@ -1045,11 +1045,11 @@ class FdRegionReport(object):
 
         #
         # If the input FdRegion is not a firmware volume,
-        # we are done. 
+        # we are done.
         #
         if self.Type != "FV":
             return
-        
+
         #
         # Find all nested FVs in the FdRegion
         #
@@ -1066,17 +1066,17 @@ class FdRegionReport(object):
             for ModuleKey in Pa.Platform.Modules:
                 #
                 # Collect PCD DEC default value.
-                #   
+                #
                 Module = Pa.Platform.Modules[ModuleKey]
                 for Package in Module.M.Module.Packages:
                     if Package not in PackageList:
                         PackageList.append(Package)
-                
+
             for Package in PackageList:
                 for (TokenCName, TokenSpaceGuidCName, DecType) in Package.Pcds:
                     DecDefaultValue = Package.Pcds[TokenCName, TokenSpaceGuidCName, DecType].DefaultValue
                     PlatformPcds[(TokenCName, TokenSpaceGuidCName)] = DecDefaultValue
-        
+
         #
         # Collect PCDs defined in DSC common section
         #
@@ -1084,17 +1084,17 @@ class FdRegionReport(object):
             for (TokenCName, TokenSpaceGuidCName) in Platform.Pcds:
                 DscDefaultValue = Platform.Pcds[(TokenCName, TokenSpaceGuidCName)].DefaultValue
                 PlatformPcds[(TokenCName, TokenSpaceGuidCName)] = DscDefaultValue
-        
+
         #
         # Add PEI and DXE a priori files GUIDs defined in PI specification.
         #
         self._GuidsDb["1B45CC0A-156A-428A-AF62-49864DA0E6E6"] = "PEI Apriori"
-        self._GuidsDb["FC510EE7-FFDC-11D4-BD41-0080C73C8881"] = "DXE Apriori" 
+        self._GuidsDb["FC510EE7-FFDC-11D4-BD41-0080C73C8881"] = "DXE Apriori"
         #
         # Add ACPI table storage file
         #
         self._GuidsDb["7E374E25-8E01-4FEE-87F2-390C23C606CD"] = "ACPI table storage"
-        
+
         for Pa in Wa.AutoGenObjectList:
             for ModuleKey in Pa.Platform.Modules:
                 M = Pa.Platform.Modules[ModuleKey].M
@@ -1126,17 +1126,17 @@ class FdRegionReport(object):
                             pass
                 except AttributeError:
                     pass
-        
-    
+
+
     ##
     # Internal worker function to generate report for the FD region
     #
     # This internal worker function to generate report for the FD region.
-    # It the type is firmware volume, it lists offset and module identification. 
+    # It the type is firmware volume, it lists offset and module identification.
     #
     # @param self            The object pointer
     # @param File            The file object for report
-    # @param Title           The title for the FD subsection 
+    # @param Title           The title for the FD subsection
     # @param BaseAddress     The base address for the FD region
     # @param Size            The size of the FD region
     # @param FvName          The FV name if the FD region is a firmware volume
@@ -1146,7 +1146,7 @@ class FdRegionReport(object):
         FileWrite(File, Title)
         FileWrite(File, "Type:               %s" % Type)
         FileWrite(File, "Base Address:       0x%X" % BaseAddress)
-        
+
         if self.Type == "FV":
             FvTotalSize = 0
             FvTakenSize = 0
@@ -1163,7 +1163,7 @@ class FdRegionReport(object):
                 Match = gFvTakenSizePattern.search(FvReport)
                 if Match:
                     FvTakenSize = int(Match.group(1), 16)
-                FvFreeSize = FvTotalSize - FvTakenSize 
+                FvFreeSize = FvTotalSize - FvTakenSize
                 #
                 # Write size information to the report file.
                 #
@@ -1189,7 +1189,7 @@ class FdRegionReport(object):
     ##
     # Generate report for the FD region
     #
-    # This function generates report for the FD region. 
+    # This function generates report for the FD region.
     #
     # @param self            The object pointer
     # @param File            The file object for report
@@ -1200,20 +1200,20 @@ class FdRegionReport(object):
                 Info = self.FvInfo[FvItem]
                 self._GenerateReport(File, Info[0], "FV", Info[1], Info[2], FvItem)
         else:
-            self._GenerateReport(File, "FD Region", self.Type, self.BaseAddress, self.Size)    
-            
+            self._GenerateReport(File, "FD Region", self.Type, self.BaseAddress, self.Size)
+
 ##
 # Reports FD information
 #
 # This class reports the FD section in the build report file.
-# It collects flash device information for a platform. 
+# It collects flash device information for a platform.
 #
 class FdReport(object):
     ##
     # Constructor function for class FdReport
     #
     # This constructor function generates FdReport object for a specified
-    # firmware device. 
+    # firmware device.
     #
     # @param self            The object pointer
     # @param Fd              The current Firmware device object
@@ -1228,7 +1228,7 @@ class FdReport(object):
     ##
     # Generate report for the firmware device.
     #
-    # This function generates report for the firmware device. 
+    # This function generates report for the firmware device.
     #
     # @param self            The object pointer
     # @param File            The file object for report
@@ -1237,22 +1237,22 @@ class FdReport(object):
         FileWrite(File, gSectionStart)
         FileWrite(File, "Firmware Device (FD)")
         FileWrite(File, "FD Name:            %s" % self.FdName)
-        FileWrite(File, "Base Address:       0x%s" % self.BaseAddress)
+        FileWrite(File, "Base Address:       %s" % self.BaseAddress)
         FileWrite(File, "Size:               0x%X (%.0fK)" % (self.Size, self.Size / 1024.0))
         if len(self.FdRegionList) > 0:
             FileWrite(File, gSectionSep)
             for FdRegionItem in self.FdRegionList:
                 FdRegionItem.GenerateReport(File)
-        
+
         FileWrite(File, gSectionEnd)
 
 
-    
+
 ##
 # Reports platform information
 #
-# This class reports the whole platform information 
-#     
+# This class reports the whole platform information
+#
 class PlatformReport(object):
     ##
     # Constructor function for class PlatformReport
@@ -1273,7 +1273,7 @@ class PlatformReport(object):
         self.Target = Wa.BuildTarget
         self.OutputPath = os.path.join(Wa.WorkspaceDir, Wa.OutputDir)
         self.BuildEnvironment = platform.platform()
-        
+
         self.PcdReport = None
         if "PCD" in ReportType:
             self.PcdReport = PcdReport(Wa)
@@ -1282,11 +1282,11 @@ class PlatformReport(object):
         if "FLASH" in ReportType and Wa.FdfProfile:
             for Fd in Wa.FdfProfile.FdDict:
                 self.FdReportList.append(FdReport(Wa.FdfProfile.FdDict[Fd], Wa))
-        
-        self.PredictionReport = None        
+
+        self.PredictionReport = None
         if "PREDICTION" in ReportType:
             self.PredictionReport = PredictionReport(Wa)
-        
+
         self.ModuleReportList = []
         for Pa in Wa.AutoGenObjectList:
             for ModuleKey in Pa.Platform.Modules:
@@ -1297,14 +1297,14 @@ class PlatformReport(object):
                 else:
                     DscOverridePcds = {}
                 self.ModuleReportList.append(ModuleReport(Pa.Platform.Modules[ModuleKey].M, DscOverridePcds, ReportType))
- 
 
-        
+
+
     ##
     # Generate report for the whole platform.
     #
     # This function generates report for platform information.
-    # It comprises of platform summary, global PCD, flash and 
+    # It comprises of platform summary, global PCD, flash and
     # module list sections.
     #
     # @param self            The object pointer
@@ -1323,24 +1323,24 @@ class PlatformReport(object):
         FileWrite(File, "Build Environment:    %s" % self.BuildEnvironment)
         FileWrite(File, "Build Duration:       %s" % BuildDuration)
         FileWrite(File, "Report Content:       %s" % ", ".join(ReportType))
- 
+
         if "PCD" in ReportType:
             self.PcdReport.GenerateReport(File, None, {})
-            
+
         if "FLASH" in ReportType:
             for FdReportListItem in self.FdReportList:
                 FdReportListItem.GenerateReport(File)
-        
+
         for ModuleReportItem in self.ModuleReportList:
             ModuleReportItem.GenerateReport(File, self.PcdReport, self.PredictionReport, ReportType)
-        
+
         if "PREDICTION" in ReportType:
             self.PredictionReport.GenerateReport(File, None)
 
 ## BuildReport class
 #
 #  This base class contain the routines to collect data and then
-#  applies certain format to the output report 
+#  applies certain format to the output report
 #
 class BuildReport(object):
     ##
@@ -1367,7 +1367,7 @@ class BuildReport(object):
                 for ReportTypeItem in ReportType:
                     if ReportTypeItem not in self.ReportType:
                         self.ReportType.append(ReportTypeItem)
-    
+
     ##
     # Adds platform report to the list
     #
@@ -1375,7 +1375,7 @@ class BuildReport(object):
     #
     # @param self            The object pointer
     # @param Wa              Workspace context information
-    #           
+    #
     def AddPlatformReport(self, Wa):
         if self.ReportFile:
             self.ReportList.append(PlatformReport(Wa, self.ReportType))
@@ -1388,7 +1388,7 @@ class BuildReport(object):
     #
     # @param self            The object pointer
     # @param BuildDuration   The total time to build the modules
-    # 
+    #
     def GenerateReport(self, BuildDuration):
         if self.ReportFile:
             try:
@@ -1397,11 +1397,11 @@ class BuildReport(object):
                 EdkLogger.error(None, FILE_OPEN_FAILURE, ExtraData=self.ReportFile)
             try:
                 for Report in self.ReportList:
-                    Report.GenerateReport(File, BuildDuration, self.ReportType) 
+                    Report.GenerateReport(File, BuildDuration, self.ReportType)
             except IOError:
                 EdkLogger.error(None, FILE_WRITE_FAILURE, ExtraData=self.ReportFile)
             File.close()
-        
+
 # This acts like the main() function for the script, unless it is 'import'ed into another script.
 if __name__ == '__main__':
     pass
