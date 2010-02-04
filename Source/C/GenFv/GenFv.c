@@ -637,6 +637,7 @@ Returns:
         (unsigned long long)mFvBaseAddress[Index]
         );
     }
+    fflush (FpFile);
     fclose (FpFile);
   }
   

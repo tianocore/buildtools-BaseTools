@@ -122,7 +122,9 @@ class FV (FvClassObject):
 
         FvInfoFileName = os.path.join(GenFdsGlobalVariable.FfsDir, self.UiFvName + '.inf')
         shutil.copy(GenFdsGlobalVariable.FvAddressFileName, FvInfoFileName)
-        oldtime = os.path.getmtime(FvInfoFileName)
+        OrigFvInfo = None
+        if os.path.exists (FvInfoFileName):
+            OrigFvInfo = open(FvInfoFileName, 'r').read()
         GenFdsGlobalVariable.GenerateFirmwareVolume(
                                 FvOutputFile,
                                 [self.InfFileName],
@@ -130,7 +132,10 @@ class FV (FvClassObject):
                                 FfsList=FfsFileList
                                 )
 
-        if os.path.getmtime(FvInfoFileName) > oldtime:
+        NewFvInfo = None
+        if os.path.exists (FvInfoFileName):
+            NewFvInfo = open(FvInfoFileName, 'r').read()
+        if NewFvInfo != None and NewFvInfo != OrigFvInfo:
             FvChildAddr = []
             AddFileObj = open(FvInfoFileName, 'r')
             AddrStrings = AddFileObj.readlines()

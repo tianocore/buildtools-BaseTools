@@ -198,7 +198,7 @@ class GuidSection(GuidSectionClassObject) :
                 BufferIn  = FileHandleIn.read()
                 FileHandleOut.seek(0)
                 BufferOut = FileHandleOut.read()
-                if BufferIn in BufferOut[TempFileSize - InputFileSize:]:
+                if BufferIn == BufferOut[TempFileSize - InputFileSize:]:
                     HeaderLength = str(TempFileSize - InputFileSize)
             #auto sec guided attribute with process required
             if HeaderLength == None:

@@ -2380,14 +2380,17 @@ Finish:
   }
   
   if (FvFile != NULL) {
+    fflush (FvFile);
     fclose (FvFile);
   }
   
   if (FvMapFile != NULL) {
+    fflush (FvMapFile);
     fclose (FvMapFile);
   }
 
   if (FvReportFile != NULL) {
+    fflush (FvReportFile);
     fclose (FvReportFile);
   }
   return Status;
