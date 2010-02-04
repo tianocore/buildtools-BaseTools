@@ -719,6 +719,7 @@ Returns:
   EFI_TE_IMAGE_HEADER                 *TEImageHeader;
   EFI_IMAGE_SECTION_HEADER            *SectionHeader;
   unsigned long long                  TempLongAddress;
+  
   //
   // Init local variable
   //
@@ -798,23 +799,23 @@ Returns:
   //
   if (ImageBaseAddress == 0) {
     fprintf (FvMapFile, "%s (dummy) (", KeyWord);
-    fprintf (FvMapFile, "BaseAddress=%08llx, ", (unsigned long long) ImageBaseAddress);
+    fprintf (FvMapFile, "BaseAddress=%010llx, ", (unsigned long long) ImageBaseAddress);
   } else {
-    fprintf (FvMapFile, "%s (", KeyWord);
-    fprintf (FvMapFile, "BaseAddress=%08llx, ", (unsigned long long) (ImageBaseAddress + Offset));
+    fprintf (FvMapFile, "%s (Fixed Flash Address, ", KeyWord);
+    fprintf (FvMapFile, "BaseAddress=0x%010llx, ", (unsigned long long) (ImageBaseAddress + Offset));
   }
-  fprintf (FvMapFile, "EntryPoint=%08llx, ", (unsigned long long) (ImageBaseAddress + AddressOfEntryPoint));
-  fprintf (FvMapFile, "GUID=%s", FileGuidName);
+  fprintf (FvMapFile, "EntryPoint=0x%010llx", (unsigned long long) (ImageBaseAddress + AddressOfEntryPoint));
   fprintf (FvMapFile, ")\n"); 
   
+  fprintf (FvMapFile, "(GUID=%s", FileGuidName);
   for (; Index > 0; Index --, SectionHeader ++) {
         if (stricmp ((CHAR8 *)SectionHeader->Name, ".text") == 0) {
-  		fprintf (FvMapFile, ".textbaseaddress=%08llx ", (unsigned long long) (ImageBaseAddress + SectionHeader->VirtualAddress));
+  		fprintf (FvMapFile, " .textbaseaddress=0x%010llx", (unsigned long long) (ImageBaseAddress + SectionHeader->VirtualAddress));
   	} else if (stricmp ((CHAR8 *)SectionHeader->Name, ".data") == 0) {
-  	  fprintf (FvMapFile, ".databaseaddress=%08llx ", (unsigned long long) (ImageBaseAddress + SectionHeader->VirtualAddress));
+  	  fprintf (FvMapFile, " .databaseaddress=0x%010llx", (unsigned long long) (ImageBaseAddress + SectionHeader->VirtualAddress));
   	}
   }
-  fprintf (FvMapFile, "\n\n"); 
+  fprintf (FvMapFile, ")\n\n"); 
    
   //
   // Open PeMapFile
@@ -864,24 +865,14 @@ Returns:
       sscanf (Line, "%s %s %llx %s", KeyWord, FunctionName, &TempLongAddress, FunctionTypeName);
       FunctionAddress = (UINT64) TempLongAddress;
       if (FunctionTypeName [1] == '\0' && (FunctionTypeName [0] == 'f' || FunctionTypeName [0] == 'F')) {
-        fprintf (FvMapFile, "  %016llx ", (unsigned long long) (ImageBaseAddress + FunctionAddress));
-        fprintf (FvMapFile, "(%08llx) F  ", (unsigned long long) (FunctionAddress - Offset));
-        fprintf (FvMapFile, "%s\n", FunctionName);
-    } else {
-        fprintf (FvMapFile, "  %016llx ", (unsigned long long) (ImageBaseAddress + FunctionAddress));
-        fprintf (FvMapFile, "(%08llx)    ", (unsigned long long) (FunctionAddress - Offset));
+        fprintf (FvMapFile, "  0x%010llx    ", (unsigned long long) (ImageBaseAddress + FunctionAddress));
         fprintf (FvMapFile, "%s\n", FunctionName);
       }
     } else if (FunctionType == 2) {
       sscanf (Line, "%s %s %llx %s", KeyWord, FunctionName, &TempLongAddress, FunctionTypeName);
       FunctionAddress = (UINT64) TempLongAddress;
       if (FunctionTypeName [1] == '\0' && (FunctionTypeName [0] == 'f' || FunctionTypeName [0] == 'F')) {
-        fprintf (FvMapFile, "  %016llx ", (unsigned long long) (ImageBaseAddress + FunctionAddress));
-        fprintf (FvMapFile, "(%08llx) FS ", (unsigned long long) (FunctionAddress - Offset));
-        fprintf (FvMapFile, "%s\n", FunctionName);
-      } else {
-        fprintf (FvMapFile, "  %016llx ", (unsigned long long) (ImageBaseAddress + FunctionAddress));
-        fprintf (FvMapFile, "(%08llx)    ", (unsigned long long) (FunctionAddress - Offset));
+        fprintf (FvMapFile, "  0x%010llx    ", (unsigned long long) (ImageBaseAddress + FunctionAddress));
         fprintf (FvMapFile, "%s\n", FunctionName);
       }
     }
@@ -2688,11 +2679,9 @@ Returns:
 
 EFI_STATUS
 GetChildFvFromFfs (
-  IN      UINT8                 FixupFlags,
   IN      FV_INFO               *FvInfo, 
   IN      EFI_FFS_FILE_HEADER   *FfsFile,
-  IN      UINTN                 XipOffset,
-  IN      FILE                  *FvMapFile
+  IN      UINTN                 XipOffset
   )
 /*++
 
@@ -2714,17 +2703,8 @@ Returns:
   EFI_STATUS                          Status;
   UINTN                               Index;
   EFI_FILE_SECTION_POINTER            SubFvSection;
-  EFI_FFS_FILE_STATE                  SavedState;
-  EFI_FFS_FILE_HEADER                 *SubFfsFile;
-  EFI_FFS_FILE_HEADER                 *NextFfsFile;
-  EFI_FIRMWARE_VOLUME_HEADER          *SavedFvHeader;
-  UINT32                              SavedFvSize;
   EFI_FIRMWARE_VOLUME_HEADER          *SubFvImageHeader;
-  CHAR8                               SubFfsName[PRINTED_GUID_BUFFER_SIZE];
   EFI_PHYSICAL_ADDRESS                SubFvBaseAddress;
-
-  ZeroMem (SubFfsName, PRINTED_GUID_BUFFER_SIZE);
-  GetFvHeader (&SavedFvHeader, &SavedFvSize);
 
   for (Index = 1;; Index++) {
     //
@@ -2735,51 +2715,12 @@ Returns:
       break;
     }
     SubFvImageHeader = (EFI_FIRMWARE_VOLUME_HEADER *) ((UINT8 *) SubFvSection.FVImageSection + sizeof (EFI_FIRMWARE_VOLUME_IMAGE_SECTION));
-    if ((FixupFlags & REBASE_XIP_FILE) == REBASE_XIP_FILE) {
-      //
-      // Rebase on Flash
-      //
-      SubFvBaseAddress = FvInfo->BaseAddress + (UINTN) SubFvImageHeader - (UINTN) FfsFile + XipOffset;
-      mFvBaseAddress[mFvBaseAddressNumber ++ ] = SubFvBaseAddress;
-    } else {
-      //
-      // Rebase on Memory
-      //
-      InitializeFvLib (SubFvImageHeader, (UINT32) SubFvImageHeader->FvLength);
-      //
-      // Go through FFS in this insided FvImage one by one.
-      //
-      SubFfsFile = NULL;
-      while (TRUE) {
-        GetNextFile (SubFfsFile, &NextFfsFile);
-        if (NextFfsFile == NULL) {
-          break;
-        }
-        SubFfsFile = NextFfsFile;
-        //
-        // Use FFS GUID as its File Name.
-        //
-        PrintGuidToBuffer (&SubFfsFile->Name, (UINT8 *) SubFfsName, PRINTED_GUID_BUFFER_SIZE, TRUE);
-        FfsRebase (FvInfo, SubFfsName, SubFfsFile, (UINTN) SubFfsFile - (UINTN) FfsFile + XipOffset, FvMapFile);
-      }
-    }
+    //
+    // Rebase on Flash
+    //
+    SubFvBaseAddress = FvInfo->BaseAddress + (UINTN) SubFvImageHeader - (UINTN) FfsFile + XipOffset;
+    mFvBaseAddress[mFvBaseAddressNumber ++ ] = SubFvBaseAddress;
   }
-
-  //
-  // Now update file checksum
-  //
-  if (((FixupFlags & REBASE_XIP_FILE) == 0) && (FfsFile->Attributes & FFS_ATTRIB_CHECKSUM)) {
-    SavedState  = FfsFile->State;
-    FfsFile->IntegrityCheck.Checksum.File = 0;
-    FfsFile->State                        = 0;
-    FfsFile->IntegrityCheck.Checksum.File = CalculateChecksum8 (
-      (UINT8 *)(FfsFile + 1),
-      GetLength (FfsFile->Size) - sizeof (EFI_FFS_FILE_HEADER)
-      );
-    FfsFile->State = SavedState;
-  }
-
-  InitializeFvLib (SavedFvHeader, SavedFvSize);
 
   return EFI_SUCCESS;
 }
@@ -2828,7 +2769,6 @@ Returns:
   EFI_FFS_FILE_STATE                    SavedState;
   EFI_IMAGE_OPTIONAL_HEADER_UNION       *ImgHdr;
   EFI_TE_IMAGE_HEADER                   *TEImageHeader;
-  UINT8                                 Flags;
   UINT8                                 *MemoryImagePointer;
   EFI_IMAGE_SECTION_HEADER              *SectionHeader;
   CHAR8                                 PeFileName [_MAX_PATH];
@@ -2849,26 +2789,12 @@ Returns:
   PeFileBuffer       = NULL;
 
   //
-  // Check XipAddress, BootAddress and RuntimeAddress
+  // Don't need to relocate image when BaseAddress is not set.
   //
-  Flags   = 0;
-  XipBase = 0;
-  if (FvInfo->BaseAddress != 0) {
-    Flags  |= REBASE_XIP_FILE;
-    XipBase = FvInfo->BaseAddress + XipOffset;
+  if (FvInfo->BaseAddress == 0) {
+    return EFI_SUCCESS;
   }
-  if (FvInfo->BootBaseAddress != 0) {
-    Flags  |= REBASE_BOOTTIME_FILE;
-  }
-  if (FvInfo->RuntimeBaseAddress != 0) {
-    Flags  |= REBASE_RUNTIME_FILE;
-  }
-
-  //
-  //  Don't Rebase this FFS.
-  //  Only copy the original map file into the FvMap file 
-  //  for the image that is not required to be relocated.
-  //
+  XipBase = FvInfo->BaseAddress + XipOffset;
 
   //
   // We only process files potentially containing PE32 sections.
@@ -2885,9 +2811,8 @@ Returns:
       //
       // Rebase the inside FvImage.
       //
-      if (Flags != 0) {
-        GetChildFvFromFfs (Flags, FvInfo, FfsFile, XipOffset, FvMapFile);
-      }
+      GetChildFvFromFfs (FvInfo, FfsFile, XipOffset);
+
       //
       // Search PE/TE section in FV sectin.
       //
@@ -2952,13 +2877,6 @@ Returns:
       case EFI_FV_FILETYPE_PEI_CORE:
       case EFI_FV_FILETYPE_PEIM:
       case EFI_FV_FILETYPE_COMBINED_PEIM_DRIVER:
-        if ((Flags & REBASE_XIP_FILE) == 0) {
-          //
-          // We aren't relocating XIP code, so skip it.
-          //
-          goto WritePeMap;
-        }
-        
         //
         // Check if section-alignment and file-alignment match or not
         //
@@ -3032,70 +2950,18 @@ Returns:
 
       case EFI_FV_FILETYPE_DRIVER:
       case EFI_FV_FILETYPE_DXE_CORE:
-        switch (ImgHdr->Pe32.OptionalHeader.Subsystem) {
-          case EFI_IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER:
-						if ((Flags & REBASE_XIP_FILE) == REBASE_XIP_FILE) {
-			        //
-			        // Check if section-alignment and file-alignment match or not
-			        //
-			        if ((ImgHdr->Pe32.OptionalHeader.SectionAlignment != ImgHdr->Pe32.OptionalHeader.FileAlignment)) {
-			          //
-			          // Xip module has the same section alignment and file alignment.
-			          //
-			          Error (NULL, 0, 3000, "Invalid", "Section-Alignment and File-Alignment do not match : %s.", FileName);
-			          return EFI_ABORTED;
-			        }
-			        NewPe32BaseAddress = XipBase + (UINTN) CurrentPe32Section.Pe32Section + sizeof (EFI_PE32_SECTION) - (UINTN)FfsFile;
-			        BaseToUpdate = &XipBase;	          	
-	          } else if ((Flags & REBASE_RUNTIME_FILE) == REBASE_RUNTIME_FILE) {
-	            //
-	            // make sure image base address at the section alignment
-	            //
-	            FvInfo->RuntimeBaseAddress = (FvInfo->RuntimeBaseAddress - ImageContext.ImageSize) & (~(ImageContext.SectionAlignment - 1));
-	            FvInfo->RuntimeBaseAddress = FvInfo->RuntimeBaseAddress & (~(EFI_PAGE_SIZE - 1));
-	            NewPe32BaseAddress = FvInfo->RuntimeBaseAddress;
-	            BaseToUpdate = &(FvInfo->RuntimeBaseAddress);
-	          } else {
-              //
-              // RT drivers aren't supposed to be relocated
-              //
-              goto WritePeMap;
-            }
-            break;
-
-          default:
-            //
-            // We treat all other subsystems the same as BS_DRIVER
-            //
-						if ((Flags & REBASE_XIP_FILE) == REBASE_XIP_FILE) {
-			        //
-			        // Check if section-alignment and file-alignment match or not
-			        //
-			        if ((ImgHdr->Pe32.OptionalHeader.SectionAlignment != ImgHdr->Pe32.OptionalHeader.FileAlignment)) {
-			          //
-			          // Xip module has the same section alignment and file alignment.
-			          //
-			          Error (NULL, 0, 3000, "Invalid", "Section-Alignment and File-Alignment do not match : %s.", FileName);
-			          return EFI_ABORTED;
-			        }
-			        NewPe32BaseAddress = XipBase + (UINTN) CurrentPe32Section.Pe32Section + sizeof (EFI_PE32_SECTION) - (UINTN)FfsFile;
-			        BaseToUpdate = &XipBase;	          	
-	          } else if ((Flags & REBASE_BOOTTIME_FILE) == REBASE_BOOTTIME_FILE) {
-	            //
-	            // make sure image base address at the Section and Page alignment
-	            //
-	            FvInfo->BootBaseAddress = (FvInfo->BootBaseAddress - ImageContext.ImageSize) & (~(ImageContext.SectionAlignment - 1));
-	            FvInfo->BootBaseAddress = FvInfo->BootBaseAddress & (~(EFI_PAGE_SIZE - 1));
-	            NewPe32BaseAddress = FvInfo->BootBaseAddress;
-	            BaseToUpdate = &(FvInfo->BootBaseAddress);
-	          } else {
-              //
-              // Skip all BS_DRIVER's
-              //
-              goto WritePeMap;
-            }
-            break;
+        //
+        // Check if section-alignment and file-alignment match or not
+        //
+        if ((ImgHdr->Pe32.OptionalHeader.SectionAlignment != ImgHdr->Pe32.OptionalHeader.FileAlignment)) {
+          //
+          // Xip module has the same section alignment and file alignment.
+          //
+          Error (NULL, 0, 3000, "Invalid", "Section-Alignment and File-Alignment do not match : %s.", FileName);
+          return EFI_ABORTED;
         }
+        NewPe32BaseAddress = XipBase + (UINTN) CurrentPe32Section.Pe32Section + sizeof (EFI_PE32_SECTION) - (UINTN)FfsFile;
+        BaseToUpdate = &XipBase;	          	
         break;
 
       default:
@@ -3106,68 +2972,74 @@ Returns:
     }
     
     //
+    // Relocation doesn't exist
+    //
+    if (ImageContext.RelocationsStripped) {
+      Warning (NULL, 0, 0, "Invalid", "The file %s has no .reloc section.", FileName);
+      continue;
+    }
+
+    //
     // Relocation exist and rebase
     //
-    if (!ImageContext.RelocationsStripped) {  
-      //
-      // Load and Relocate Image Data
-      //
-      MemoryImagePointer = (UINT8 *) malloc ((UINTN) ImageContext.ImageSize + ImageContext.SectionAlignment);
-      if (MemoryImagePointer == NULL) {
-        Error (NULL, 0, 4001, "Resource", "memory cannot be allocated on rebase of %s", FileName);
-        return EFI_OUT_OF_RESOURCES;
-      }
-      memset ((VOID *) MemoryImagePointer, 0, (UINTN) ImageContext.ImageSize + ImageContext.SectionAlignment);
-      ImageContext.ImageAddress = ((UINTN) MemoryImagePointer + ImageContext.SectionAlignment - 1) & (~((INT64)ImageContext.SectionAlignment - 1));
-      
-      Status =  PeCoffLoaderLoadImage (&ImageContext);
-      if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 3000, "Invalid", "LocateImage() call failed on rebase of %s", FileName);
-        free ((VOID *) MemoryImagePointer);
-        return Status;
-      }
-           
-      ImageContext.DestinationAddress = NewPe32BaseAddress;
-      Status                          = PeCoffLoaderRelocateImage (&ImageContext);
-      if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 3000, "Invalid", "RelocateImage() call failed on rebase of %s", FileName);
-        free ((VOID *) MemoryImagePointer);
-        return Status;
-      }
-
-      //
-      // Copy Relocated data to raw image file.
-      //
-      SectionHeader = (EFI_IMAGE_SECTION_HEADER *) (
-                         (UINTN) ImgHdr +
-                         sizeof (UINT32) + 
-                         sizeof (EFI_IMAGE_FILE_HEADER) +  
-                         ImgHdr->Pe32.FileHeader.SizeOfOptionalHeader
-                         );
-      
-      for (Index = 0; Index < ImgHdr->Pe32.FileHeader.NumberOfSections; Index ++, SectionHeader ++) {
-        CopyMem (
-          (UINT8 *) CurrentPe32Section.Pe32Section + sizeof (EFI_COMMON_SECTION_HEADER) + SectionHeader->PointerToRawData, 
-          (VOID*) (UINTN) (ImageContext.ImageAddress + SectionHeader->VirtualAddress), 
-          SectionHeader->SizeOfRawData
-          );
-      }
-  
+    //
+    // Load and Relocate Image Data
+    //
+    MemoryImagePointer = (UINT8 *) malloc ((UINTN) ImageContext.ImageSize + ImageContext.SectionAlignment);
+    if (MemoryImagePointer == NULL) {
+      Error (NULL, 0, 4001, "Resource", "memory cannot be allocated on rebase of %s", FileName);
+      return EFI_OUT_OF_RESOURCES;
+    }
+    memset ((VOID *) MemoryImagePointer, 0, (UINTN) ImageContext.ImageSize + ImageContext.SectionAlignment);
+    ImageContext.ImageAddress = ((UINTN) MemoryImagePointer + ImageContext.SectionAlignment - 1) & (~((INT64)ImageContext.SectionAlignment - 1));
+    
+    Status =  PeCoffLoaderLoadImage (&ImageContext);
+    if (EFI_ERROR (Status)) {
+      Error (NULL, 0, 3000, "Invalid", "LocateImage() call failed on rebase of %s", FileName);
       free ((VOID *) MemoryImagePointer);
-      MemoryImagePointer = NULL;
-      if (PeFileBuffer != NULL) {
-        free (PeFileBuffer);
-        PeFileBuffer = NULL;
-      }
+      return Status;
+    }
+         
+    ImageContext.DestinationAddress = NewPe32BaseAddress;
+    Status                          = PeCoffLoaderRelocateImage (&ImageContext);
+    if (EFI_ERROR (Status)) {
+      Error (NULL, 0, 3000, "Invalid", "RelocateImage() call failed on rebase of %s", FileName);
+      free ((VOID *) MemoryImagePointer);
+      return Status;
+    }
+
+    //
+    // Copy Relocated data to raw image file.
+    //
+    SectionHeader = (EFI_IMAGE_SECTION_HEADER *) (
+                       (UINTN) ImgHdr +
+                       sizeof (UINT32) + 
+                       sizeof (EFI_IMAGE_FILE_HEADER) +  
+                       ImgHdr->Pe32.FileHeader.SizeOfOptionalHeader
+                       );
+    
+    for (Index = 0; Index < ImgHdr->Pe32.FileHeader.NumberOfSections; Index ++, SectionHeader ++) {
+      CopyMem (
+        (UINT8 *) CurrentPe32Section.Pe32Section + sizeof (EFI_COMMON_SECTION_HEADER) + SectionHeader->PointerToRawData, 
+        (VOID*) (UINTN) (ImageContext.ImageAddress + SectionHeader->VirtualAddress), 
+        SectionHeader->SizeOfRawData
+        );
+    }
+
+    free ((VOID *) MemoryImagePointer);
+    MemoryImagePointer = NULL;
+    if (PeFileBuffer != NULL) {
+      free (PeFileBuffer);
+      PeFileBuffer = NULL;
     }
     
     //
     // Update Image Base Address
     //
     if (ImgHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
-      ImgHdr->Pe32.OptionalHeader.ImageBase     = (UINT32) NewPe32BaseAddress;
+      ImgHdr->Pe32.OptionalHeader.ImageBase = (UINT32) NewPe32BaseAddress;
     } else if (ImgHdr->Pe32Plus.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
-      ImgHdr->Pe32Plus.OptionalHeader.ImageBase     = NewPe32BaseAddress;
+      ImgHdr->Pe32Plus.OptionalHeader.ImageBase = NewPe32BaseAddress;
     } else {
       Error (NULL, 0, 3000, "Invalid", "unknown PE magic signature %X in PE32 image %s",
         ImgHdr->Pe32.OptionalHeader.Magic,
@@ -3175,11 +3047,6 @@ Returns:
         );
       return EFI_ABORTED;
     }
-
-    //
-    // Update BASE address by add one page size.
-    //
-    *BaseToUpdate -= EFI_PAGE_SIZE;
 
     //
     // Now update file checksum
@@ -3198,7 +3065,7 @@ Returns:
     //
     // Get this module function address from ModulePeMapFile and add them into FvMap file
     //
-WritePeMap:
+
     //
     // Default use FileName as map file path
     //
@@ -3266,13 +3133,6 @@ WritePeMap:
     // Get File PdbPointer
     //
     PdbPointer = PeCoffLoaderGetPdbPointer (ImageContext.Handle);
-    
-    if ((Flags & REBASE_XIP_FILE) == 0) {
-      //
-      // For none XIP PEIM module, their map info also are collected.
-      //
-      goto WriteTeMap;
-    }
 
     //
     // Set new rebased address.
@@ -3283,7 +3143,7 @@ WritePeMap:
     //
     // if reloc is stripped, try to get the original efi image to get reloc info.
     //
-    if (ImageContext.RelocationsStripped == TRUE) {
+    if (ImageContext.RelocationsStripped) {
       //
       // Construct the original efi file name 
       //
@@ -3338,68 +3198,73 @@ WritePeMap:
         ImageContext.RelocationsStripped = FALSE;
       }
     }
+    //
+    // Relocation doesn't exist
+    //
+    if (ImageContext.RelocationsStripped) {
+      Warning (NULL, 0, 0, "Invalid", "The file %s has no .reloc section.", FileName);
+      continue;
+    }
 
     //
     // Relocation exist and rebase
     //
-    if (!ImageContext.RelocationsStripped) {
-      //
-      // Load and Relocate Image Data
-      //
-      MemoryImagePointer = (UINT8 *) malloc ((UINTN) ImageContext.ImageSize + ImageContext.SectionAlignment);
-      if (MemoryImagePointer == NULL) {
-        Error (NULL, 0, 4001, "Resource", "memory cannot be allocated on rebase of %s", FileName);
-        return EFI_OUT_OF_RESOURCES;
-      }
-      memset ((VOID *) MemoryImagePointer, 0, (UINTN) ImageContext.ImageSize + ImageContext.SectionAlignment);
-      ImageContext.ImageAddress = ((UINTN) MemoryImagePointer + ImageContext.SectionAlignment - 1) & (~(ImageContext.SectionAlignment - 1));
-  
-      Status =  PeCoffLoaderLoadImage (&ImageContext);
-      if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 3000, "Invalid", "LocateImage() call failed on rebase of %s", FileName);
-        free ((VOID *) MemoryImagePointer);
-        return Status;
-      }
-      //
-      // Reloacate TeImage
-      // 
-      ImageContext.DestinationAddress = NewPe32BaseAddress;
-      Status                          = PeCoffLoaderRelocateImage (&ImageContext);
-      if (EFI_ERROR (Status)) {
-        Error (NULL, 0, 3000, "Invalid", "RelocateImage() call failed on rebase of TE image %s", FileName);
-        free ((VOID *) MemoryImagePointer);
-        return Status;
-      }
-      
-      //
-      // Copy the relocated image into raw image file.
-      //
-      SectionHeader = (EFI_IMAGE_SECTION_HEADER *) (TEImageHeader + 1);
-      for (Index = 0; Index < TEImageHeader->NumberOfSections; Index ++, SectionHeader ++) {
-        if (!ImageContext.IsTeImage) {
-          CopyMem (
-            (UINT8 *) TEImageHeader + sizeof (EFI_TE_IMAGE_HEADER) - TEImageHeader->StrippedSize + SectionHeader->PointerToRawData, 
-            (VOID*) (UINTN) (ImageContext.ImageAddress + SectionHeader->VirtualAddress), 
-            SectionHeader->SizeOfRawData
-            );
-        } else {
-          CopyMem (
-            (UINT8 *) TEImageHeader + sizeof (EFI_TE_IMAGE_HEADER) - TEImageHeader->StrippedSize + SectionHeader->PointerToRawData, 
-            (VOID*) (UINTN) (ImageContext.ImageAddress + sizeof (EFI_TE_IMAGE_HEADER) - TEImageHeader->StrippedSize + SectionHeader->VirtualAddress), 
-            SectionHeader->SizeOfRawData
-            );
-        }
-      }
-      
-      //
-      // Free the allocated memory resource
-      //
+    //
+    // Load and Relocate Image Data
+    //
+    MemoryImagePointer = (UINT8 *) malloc ((UINTN) ImageContext.ImageSize + ImageContext.SectionAlignment);
+    if (MemoryImagePointer == NULL) {
+      Error (NULL, 0, 4001, "Resource", "memory cannot be allocated on rebase of %s", FileName);
+      return EFI_OUT_OF_RESOURCES;
+    }
+    memset ((VOID *) MemoryImagePointer, 0, (UINTN) ImageContext.ImageSize + ImageContext.SectionAlignment);
+    ImageContext.ImageAddress = ((UINTN) MemoryImagePointer + ImageContext.SectionAlignment - 1) & (~(ImageContext.SectionAlignment - 1));
+
+    Status =  PeCoffLoaderLoadImage (&ImageContext);
+    if (EFI_ERROR (Status)) {
+      Error (NULL, 0, 3000, "Invalid", "LocateImage() call failed on rebase of %s", FileName);
       free ((VOID *) MemoryImagePointer);
-      MemoryImagePointer = NULL;
-      if (PeFileBuffer != NULL) {
-        free (PeFileBuffer);
-        PeFileBuffer = NULL;
+      return Status;
+    }
+    //
+    // Reloacate TeImage
+    // 
+    ImageContext.DestinationAddress = NewPe32BaseAddress;
+    Status                          = PeCoffLoaderRelocateImage (&ImageContext);
+    if (EFI_ERROR (Status)) {
+      Error (NULL, 0, 3000, "Invalid", "RelocateImage() call failed on rebase of TE image %s", FileName);
+      free ((VOID *) MemoryImagePointer);
+      return Status;
+    }
+    
+    //
+    // Copy the relocated image into raw image file.
+    //
+    SectionHeader = (EFI_IMAGE_SECTION_HEADER *) (TEImageHeader + 1);
+    for (Index = 0; Index < TEImageHeader->NumberOfSections; Index ++, SectionHeader ++) {
+      if (!ImageContext.IsTeImage) {
+        CopyMem (
+          (UINT8 *) TEImageHeader + sizeof (EFI_TE_IMAGE_HEADER) - TEImageHeader->StrippedSize + SectionHeader->PointerToRawData, 
+          (VOID*) (UINTN) (ImageContext.ImageAddress + SectionHeader->VirtualAddress), 
+          SectionHeader->SizeOfRawData
+          );
+      } else {
+        CopyMem (
+          (UINT8 *) TEImageHeader + sizeof (EFI_TE_IMAGE_HEADER) - TEImageHeader->StrippedSize + SectionHeader->PointerToRawData, 
+          (VOID*) (UINTN) (ImageContext.ImageAddress + sizeof (EFI_TE_IMAGE_HEADER) - TEImageHeader->StrippedSize + SectionHeader->VirtualAddress), 
+          SectionHeader->SizeOfRawData
+          );
       }
+    }
+    
+    //
+    // Free the allocated memory resource
+    //
+    free ((VOID *) MemoryImagePointer);
+    MemoryImagePointer = NULL;
+    if (PeFileBuffer != NULL) {
+      free (PeFileBuffer);
+      PeFileBuffer = NULL;
     }
     
     //
@@ -3423,7 +3288,7 @@ WritePeMap:
     //
     // Get this module function address from ModulePeMapFile and add them into FvMap file
     //
-WriteTeMap:
+
     //
     // Default use FileName as map file path
     //
