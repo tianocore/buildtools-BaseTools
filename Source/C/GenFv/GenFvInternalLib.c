@@ -2237,7 +2237,7 @@ Returns:
   //
   FvReportFile = fopen(FvReportName, "w");
   if (FvReportFile == NULL) {
-    Error (NULL, 0, 0001, "Error opening file", FvReportFile);
+    Error (NULL, 0, 0001, "Error opening file", FvReportName);
     return EFI_ABORTED;
   }
   //
