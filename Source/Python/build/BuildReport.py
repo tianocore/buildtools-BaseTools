@@ -93,6 +93,7 @@ gDriverTypeMap = {
   'UEFI_DRIVER'       : '0x7 (DRIVER)',
   'UEFI_APPLICATION'  : '0x9 (APPLICATION)',
   'SMM_CORE'          : '0xD (SMM_CORE)',
+  'SMM_DRIVER'        : '0xA (SMM)', # Extension of module type to support PI 1.1 SMM drivers
   }
 
 ##
@@ -396,6 +397,13 @@ class ModuleReport(object):
         ModuleType = M.ModuleType
         if not ModuleType:
             ModuleType = gComponentType2ModuleType.get(M.ComponentType, "")
+        #
+        # If a module complies to PI 1.1, promote Module type to "SMM_DRIVER"
+        #
+        if ModuleType == "DXE_SMM_DRIVER":
+            PiSpec =  M.Module.Specification.get("PI_SPECIFICATION_VERSION", "0x00010000")
+            if int(PiSpec, 0) >= 0x0001000A:
+                ModuleType = "SMM_DRIVER"
         self.DriverType = gDriverTypeMap.get(ModuleType, "")
         self.UefiSpecVersion = M.Module.Specification.get("UEFI_SPECIFICATION_VERSION", "")
         self.PiSpecVersion = M.Module.Specification.get("PI_SPECIFICATION_VERSION", "")
@@ -457,7 +465,7 @@ class ModuleReport(object):
                 
                 Match = gTimeStampPattern.search(FileContents)
                 if Match:
-                    self.BuildTimeStamp = datetime.utcfromtimestamp(int(Match.group(1)))
+                    self.BuildTimeStamp = datetime.fromtimestamp(int(Match.group(1)))
             except IOError:
                 EdkLogger.warn(None, "Fail to read report file", FwReportFileName)
             
@@ -864,7 +872,7 @@ class PredictionReport(object):
             # Invoke EOT tool
             #
             Eot(CommandLineOption=False, SourceFileList=SourceList, GuidList=GuidList,
-                    FvFileList=' '.join(FvFileList), Dispatch=DispatchList, IsInit=True)
+                FvFileList=' '.join(FvFileList), Dispatch=DispatchList, IsInit=True)
                 
             #
             # Parse the output of EOT tool
@@ -876,8 +884,7 @@ class PredictionReport(object):
                     self.MaxLen = len(Symbol)
                 self.ItemList.append((Phase, Symbol, FilePath))
         except:
-            EdkLogger.warn(None,  "Failed to generate execution order prediction report, \
-                                  for some error occurred in executing EOT.") 
+            EdkLogger.warn(None, "Failed to generate execution order prediction report, for some error occurred in executing EOT.") 
 
    
     ##
@@ -1091,7 +1098,8 @@ class FdRegionReport(object):
         for Pa in Wa.AutoGenObjectList:
             for ModuleKey in Pa.Platform.Modules:
                 M = Pa.Platform.Modules[ModuleKey].M
-                self._GuidsDb[M.Guid.upper()] = "%s (%s)" % (M.Module.BaseName, M.MetaFile.File)
+                InfPath = os.path.join(Wa.WorkspaceDir, M.MetaFile.File)
+                self._GuidsDb[M.Guid.upper()] = "%s (%s)" % (M.Module.BaseName, InfPath)
 
         #
         # Collect the GUID map in the FV firmware volume
@@ -1351,7 +1359,9 @@ class BuildReport(object):
         if ReportFile:
             self.ReportList = []
             self.ReportType = []
-            if ReportType == None or "ALL" in ReportType:
+            if ReportType == None:
+                self.ReportType = ["PCD", "LIBRARY", "BUILD_FLAGS", "DEPEX", "FLASH"]
+            elif "ALL" in ReportType:
                 self.ReportType = ["PCD", "LIBRARY", "BUILD_FLAGS", "DEPEX", "FLASH", "PREDICTION"]
             else:
                 for ReportTypeItem in ReportType:
