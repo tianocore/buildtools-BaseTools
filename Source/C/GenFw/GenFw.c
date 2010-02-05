@@ -252,7 +252,9 @@ Returns:
   fprintf (stdout, "  -s timedate, --stamp timedate\n\
                         timedate format is \"yyyy-mm-dd 00:00:00\". if timedata \n\
                         is set to NOW, current system time is used. The support\n\
-                        date scope is 1970-1-1 8:0:0 ~ 2038-1-19 3:14:07\n\
+                        date scope is 1970-01-01 00+timezone:00:00\n\
+                        ~ 2038-01-19 03+timezone:14:07\n\
+                        The scope is adjusted according to the different zones.\n\
                         It can't be combined with other action options\n\
                         except for -o, -r option. It is a action option.\n\
                         If it is combined with other action options, the later\n\
