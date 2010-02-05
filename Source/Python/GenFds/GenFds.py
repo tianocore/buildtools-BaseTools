@@ -39,7 +39,7 @@ from Common.Misc import DirCache,PathClass
 ## Version and Copyright
 versionNumber = "1.0"
 __version__ = "%prog Version " + versionNumber
-__copyright__ = "Copyright (c) 2007, Intel Corporation  All rights reserved."
+__copyright__ = "Copyright (c) 2007 - 2010, Intel Corporation  All rights reserved."
 
 ## Tool entrance method
 #
@@ -494,7 +494,7 @@ class GenFds :
                 Module = BuildDb.BuildObject[ModuleFile, Arch]
                 GuidXRefFile.write("%s %s\n" % (Module.Guid, Module.BaseName))
         GuidXRefFile.close()
-        GenFdsGlobalVariable.InfLogger("GUID cross reference file saved to %s\n" % GuidXRefFileName)
+        GenFdsGlobalVariable.InfLogger("\nGUID cross reference file saved to %s" % GuidXRefFileName)
         
     ##Define GenFd as static function
     GenFd = staticmethod(GenFd)

@@ -25,6 +25,7 @@ from CommonDataClass.FdfClass import EfiSectionClassObject
 import shutil
 from Common import EdkLogger
 from Common.BuildToolError import *
+from Common.Misc import PeImageClass
 
 ## generate rule section
 #
@@ -225,27 +226,11 @@ class EfiSection (EfiSectionClassObject):
                     
                     #Get PE Section alignment when align is set to AUTO
                     if self.Alignment == 'Auto' and (SectionType == 'PE32' or SectionType == 'TE'):
-                        FileObj = open (File,'r+b')
-                        #DOS signature should be 'MZ'
-                        DosSig = FileObj.read(0x2)
-                        if DosSig == 'MZ':
-                            #Get Offset of PE header
-                            FileObj.seek (0x3c)
-                            OffsetString = FileObj.read(0x4)
-                            OffsetValue = unpack ('l', OffsetString)
-                            #PE signature should be 'PE\0\0'
-                            FileObj.seek (OffsetValue[0])
-                            PeSig = FileObj.read(0x4)
-                            if PeSig == 'PE\0\0':
-                                #Get section alignment from PE header
-                                FileObj.seek (OffsetValue[0] + 0x38)
-                                PeAlignString = FileObj.read(0x4)
-                                PeAlignValue  = unpack ('l', PeAlignString)
-                                if PeAlignValue[0] < 0x400:
-                                    self.Alignment = str (PeAlignValue[0])
-                                else:
-                                    self.Alignment = str (PeAlignValue[0] / 0x400) + 'K'
-                        FileObj.close()
+                        ImageObj = PeImageClass (File)
+                        if ImageObj.SectionAlignment < 0x400:
+                            self.Alignment = str (ImageObj.SectionAlignment)
+                        else:
+                            self.Alignment = str (ImageObj.SectionAlignment / 0x400) + 'K'
 
                     if File[(len(File)-4):] == '.efi':
                         MapFile = File.replace('.efi', '.map')
