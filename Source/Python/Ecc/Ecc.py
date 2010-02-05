@@ -43,7 +43,7 @@ class Ecc(object):
         # Version and Copyright
         self.VersionNumber = "0.01"
         self.Version = "%prog Version " + self.VersionNumber
-        self.Copyright = "Copyright (c) 2009, Intel Corporation  All rights reserved."
+        self.Copyright = "Copyright (c) 2009 - 2010, Intel Corporation  All rights reserved."
 
         self.InitDefaultConfigIni()
         self.OutputFile = 'output.txt'

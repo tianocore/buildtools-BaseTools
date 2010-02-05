@@ -1,7 +1,7 @@
 ## @file
 # Trim files preprocessed by compiler
 #
-# Copyright (c) 2007, Intel Corporation
+# Copyright (c) 2007 - 2010, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -28,7 +28,7 @@ import Common.EdkLogger as EdkLogger
 # Version and Copyright
 __version_number__ = "0.10"
 __version__ = "%prog Version " + __version_number__
-__copyright__ = "Copyright (c) 2007-2008, Intel Corporation. All rights reserved."
+__copyright__ = "Copyright (c) 2007-2010, Intel Corporation. All rights reserved."
 
 ## Regular expression for matching Line Control directive like "#line xxx"
 gLineControlDirective = re.compile('^\s*#(?:line)?\s+([0-9]+)\s+"*([^"]*)"')
