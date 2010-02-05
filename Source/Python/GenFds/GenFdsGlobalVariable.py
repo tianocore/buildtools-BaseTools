@@ -154,7 +154,7 @@ class GenFdsGlobalVariable:
 
     @staticmethod
     def GenerateSection(Output, Input, Type=None, CompressionType=None, Guid=None,
-                        GuidHdrLen=None, GuidAttr=None, Ui=None, Ver=None, InputAlign=None):
+                        GuidHdrLen=None, GuidAttr=[], Ui=None, Ver=None, InputAlign=None):
         if not GenFdsGlobalVariable.NeedsUpdate(Output, Input):
             return
         GenFdsGlobalVariable.DebugLogger(EdkLogger.DEBUG_5, "%s needs update because of newer %s" % (Output, Input))
@@ -168,7 +168,7 @@ class GenFdsGlobalVariable:
             Cmd += ["-g", Guid]
         if GuidHdrLen not in [None, '']:
             Cmd += ["-l", GuidHdrLen]
-        if GuidAttr != None:
+        if len(GuidAttr) != 0:
             #Add each guided attribute
             for Attr in GuidAttr:
                 Cmd += ["-r", Attr]
