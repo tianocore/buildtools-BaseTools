@@ -2993,8 +2993,19 @@ rulerefExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
 //   stringref (STR_FORM_SET_TITLE)
 //
 stringref1Exp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
+  <<
+    EFI_STRING_ID RefStringId = EFI_STRING_ID_INVALID;
+  >>
   L:StringRef
-  "\(" S:Number "\)"                                   << { CIfrStringRef1 SR1Obj(L->getLine()); _SAVE_OPHDR_COND (SR1Obj, ($ExpOpCount == 0), L->getLine()); SR1Obj.SetStringId (_STOSID(S->getText())); $ExpOpCount++; } >>
+  "\("
+      ( 
+        "STRING_TOKEN"
+        "\(" 
+          S:Number << RefStringId = _STOSID(S->getText()); >>
+        "\)"
+        | I:Number << RefStringId = _STOSID(I->getText()); >>
+      )
+  "\)" << { CIfrStringRef1 SR1Obj(L->getLine()); _SAVE_OPHDR_COND (SR1Obj, ($ExpOpCount == 0), L->getLine()); SR1Obj.SetStringId (RefStringId); $ExpOpCount++; } >>
   ;
 
 pushthisExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
