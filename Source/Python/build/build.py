@@ -663,6 +663,7 @@ class PeImageInfo():
         self.BaseName         = BaseName
         self.Guid             = Guid
         self.OutpuDir         = OutpuDir
+        ImageClass.Size       = (ImageClass.Size / 0x1000 + 1) * 0x1000
         self.Image            = ImageClass
 
 ## The class implementing the EDK2 build process
