@@ -848,6 +848,8 @@ class PredictionReport(object):
             if os.path.isfile(FvFile):
                 FvFileList.append(FvFile)
 
+        if len(FvFileList) == 0:
+            return
         #
         # Write source file list and GUID file list to an intermediate file
         # as the input for EOT tool and dispatch List as the output file
@@ -896,6 +898,8 @@ class PredictionReport(object):
     # @param File            The file object for report
     #
     def _GenerateExecutionOrderReport(self, File):
+        if len(self.ItemList) == 0:
+            return
         FileWrite(File, gSectionStart)
         FileWrite(File, "Execution Order Prediction")
         FileWrite(File, "*P PEI phase")
