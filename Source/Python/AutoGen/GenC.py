@@ -1,7 +1,7 @@
 ## @file
 # Routines for generating AutoGen.h and AutoGen.c
 #
-# Copyright (c) 2007, Intel Corporation
+# Copyright (c) 2007 - 2010, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -875,13 +875,6 @@ ${FunctionCall}${END}
 }
 """),
 }
-
-gSpecificationString = TemplateString("""
-${BEGIN}
-#undef ${SpecificationName}
-#define ${SpecificationName} ${SpecificationValue}
-${END}
-""")
 
 gBasicHeaderFile = "Base.h"
 
@@ -1899,9 +1892,6 @@ def CreateHeaderCode(Info, AutoGenC, AutoGenH):
     # header file Prologue
     AutoGenH.Append(gAutoGenHPrologueString.Replace({'File':'AUTOGENH','Guid':Info.Guid.replace('-','_')}))
     if Info.AutoGenVersion >= 0x00010005:
-        # specification macros
-        AutoGenH.Append(gSpecificationString.Replace({'SpecificationName':Info.Specification.keys(),
-                                                      'SpecificationValue':Info.Specification.values()}))
         # header files includes
         AutoGenH.Append("#include <%s>\n" % gBasicHeaderFile)
         if Info.ModuleType in gModuleTypeHeaderFile \
