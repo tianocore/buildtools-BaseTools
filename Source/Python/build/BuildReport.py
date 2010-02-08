@@ -480,7 +480,7 @@ class ModuleReport(object):
         if self.DriverType:
             FileWrite(File, "Driver Type:          %s" % self.DriverType)
         if self.UefiSpecVersion:
-            FileWrite(File, "UEFI Spec Version:    %s" % self.DriverType)
+            FileWrite(File, "UEFI Spec Version:    %s" % self.UefiSpecVersion)
         if self.PiSpecVersion:
             FileWrite(File, "PI Spec Version:      %s" % self.PiSpecVersion)
         if self.PciDeviceId:
