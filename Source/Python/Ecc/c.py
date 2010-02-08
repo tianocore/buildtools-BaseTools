@@ -1,3 +1,16 @@
+## @file
+# This file is used to be the c coding style checking of ECC tool
+#
+# Copyright (c) 2009 - 2010, Intel Corporation
+# All rights reserved. This program and the accompanying materials
+# are licensed and made available under the terms and conditions of the BSD License
+# which accompanies this distribution.  The full text of the license may be found at
+# http://opensource.org/licenses/bsd-license.php
+#
+# THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+# WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+
 import sys
 import os
 import re
@@ -1221,6 +1234,16 @@ def GetVarInfo(PredVarList, FuncRecord, FullFileName, IsFuncCall = False, Target
                 Type = GetRealType(Type, TypedefDict, TargetType)
                 return Type
 
+def GetTypeFromArray(Type, Var):
+    Count = Var.count('[')
+    
+    while Count > 0:
+        Type = Type.strip()
+        Type = Type.rstrip('*')
+        Count = Count - 1
+
+    return Type
+
 def CheckFuncLayoutReturnType(FullFileName):
     ErrorMsgList = []
     
@@ -1933,6 +1956,7 @@ def CheckPointerNullComparison(FullFileName):
                     FuncReturnTypeDict[PredVarStr] = Type
                 if Type == None:
                     continue
+                Type = GetTypeFromArray(Type, PredVarStr)
                 if Type.find('*') != -1:
                     PrintErrorMsg(ERROR_PREDICATE_EXPRESSION_CHECK_COMPARISON_NULL_TYPE, 'Predicate Expression: %s' % Exp, FileTable, Str[2])
 
