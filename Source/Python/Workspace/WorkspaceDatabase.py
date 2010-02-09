@@ -1,7 +1,7 @@
 ## @file
 # This file is used to create a database used by build tool
 #
-# Copyright (c) 2008 - 2009, Intel Corporation
+# Copyright (c) 2008 - 2010, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -1276,10 +1276,10 @@ class InfBuildData(ModuleBuildClassObject):
             if Name in self:
                 self[Name] = Record[1]
             # some special items in [Defines] section need special treatment
-            elif Name == 'EFI_SPECIFICATION_VERSION':
+            elif Name in ('EFI_SPECIFICATION_VERSION', 'UEFI_SPECIFICATION_VERSION'):
                 if self._Specification == None:
                     self._Specification = sdict()
-                self._Specification[Name] = Record[1]
+                self._Specification['UEFI_SPECIFICATION_VERSION'] = Record[1]
             elif Name == 'EDK_RELEASE_VERSION':
                 if self._Specification == None:
                     self._Specification = sdict()

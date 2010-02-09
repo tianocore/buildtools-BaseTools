@@ -453,7 +453,7 @@ ${END}
 
 gSmmCoreEntryPointString = TemplateString("""
 ${BEGIN}
-const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
+const UINT32 _gUefiDriverRevision = ${UefiSpecVersion};
 const UINT32 _gDxeRevision = ${PiSpecVersion};
 
 EFI_STATUS
@@ -482,7 +482,7 @@ ${END}
 
 gDxeSmmEntryPointString = [
 TemplateString("""
-const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
+const UINT32 _gUefiDriverRevision = ${UefiSpecVersion};
 const UINT32 _gDxeRevision = ${PiSpecVersion};
 
 EFI_STATUS
@@ -497,7 +497,7 @@ ProcessModuleEntryPointList (
 }
 """),
 TemplateString("""
-const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
+const UINT32 _gUefiDriverRevision = ${UefiSpecVersion};
 const UINT32 _gDxeRevision = ${PiSpecVersion};
 
 static BASE_LIBRARY_JUMP_BUFFER  mJumpContext;
@@ -550,7 +550,7 @@ ${END}
 
 gUefiDriverEntryPointString = [
 TemplateString("""
-const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
+const UINT32 _gUefiDriverRevision = ${UefiSpecVersion};
 const UINT32 _gDxeRevision = ${PiSpecVersion};
 
 EFI_STATUS
@@ -564,7 +564,7 @@ ProcessModuleEntryPointList (
 }
 """),
 TemplateString("""
-const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
+const UINT32 _gUefiDriverRevision = ${UefiSpecVersion};
 const UINT32 _gDxeRevision = ${PiSpecVersion};
 
 ${BEGIN}
@@ -592,7 +592,7 @@ ExitDriver (
 }
 """),
 TemplateString("""
-const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
+const UINT32 _gUefiDriverRevision = ${UefiSpecVersion};
 const UINT32 _gDxeRevision = ${PiSpecVersion};
 
 EFI_STATUS
@@ -645,7 +645,7 @@ ${END}
 
 gUefiApplicationEntryPointString = [
 TemplateString("""
-const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
+const UINT32 _gUefiDriverRevision = ${UefiSpecVersion};
 
 EFI_STATUS
 EFIAPI
@@ -658,7 +658,7 @@ ProcessModuleEntryPointList (
 }
 """),
 TemplateString("""
-const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
+const UINT32 _gUefiDriverRevision = ${UefiSpecVersion};
 
 ${BEGIN}
 EFI_STATUS
@@ -685,7 +685,7 @@ ExitDriver (
 }
 """),
 TemplateString("""
-const UINT32 _gUefiDriverRevision = ${EfiSpecVersion};
+const UINT32 _gUefiDriverRevision = ${UefiSpecVersion};
 
 EFI_STATUS
 EFIAPI
@@ -1653,14 +1653,14 @@ def CreateModuleEntryPointCode(Info, AutoGenC, AutoGenH):
         PiSpecVersion = Info.Module.Specification['PI_SPECIFICATION_VERSION']
     else:
         PiSpecVersion = 0
-    if 'EFI_SPECIFICATION_VERSION' in Info.Module.Specification:
-        EfiSpecVersion = Info.Module.Specification['EFI_SPECIFICATION_VERSION']
+    if 'UEFI_SPECIFICATION_VERSION' in Info.Module.Specification:
+        UefiSpecVersion = Info.Module.Specification['UEFI_SPECIFICATION_VERSION']
     else:
-        EfiSpecVersion = 0
+        UefiSpecVersion = 0
     Dict = {
-        'Function'      :   Info.Module.ModuleEntryPointList,
-        'PiSpecVersion' :   PiSpecVersion,
-        'EfiSpecVersion':   EfiSpecVersion
+        'Function'       :   Info.Module.ModuleEntryPointList,
+        'PiSpecVersion'  :   PiSpecVersion,
+        'UefiSpecVersion':   UefiSpecVersion
     }
 
     if Info.ModuleType in ['PEI_CORE', 'DXE_CORE', 'SMM_CORE']:
