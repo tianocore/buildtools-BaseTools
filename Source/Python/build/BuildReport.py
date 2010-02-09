@@ -525,7 +525,6 @@ class PcdReport(object):
         else:
             self.FdfPcdSet = {}
 
-        self.DecPcdDefault = {}
         self.ModulePcdOverride = {}
         for Pa in Wa.AutoGenObjectList:
             #
@@ -539,15 +538,7 @@ class PcdReport(object):
                 if len(Pcd.TokenCName) > self.MaxLen:
                     self.MaxLen = len(Pcd.TokenCName)
 
-            for ModuleKey in Pa.Platform.Modules:
-                #
-                # Collect PCD DEC default value.
-                #
-                Module = Pa.Platform.Modules[ModuleKey]
-                for Package in Module.M.Module.Packages:
-                    for (TokenCName, TokenSpaceGuidCName, DecType) in Package.Pcds:
-                        DecDefaultValue = Package.Pcds[TokenCName, TokenSpaceGuidCName, DecType].DefaultValue
-                        self.DecPcdDefault.setdefault((TokenCName, TokenSpaceGuidCName, DecType), DecDefaultValue)
+            for Module in Pa.Platform.Modules.values():
                 #
                 # Collect module override PCDs
                 #
@@ -558,6 +549,15 @@ class PcdReport(object):
                     ModulePath = os.path.basename(Module.M.MetaFile.File)
                     self.ModulePcdOverride.setdefault((TokenCName, TokenSpaceGuid), {})[ModulePath] = ModuleDefault
 
+
+        #
+        # Collect PCD DEC default value.
+        #
+        self.DecPcdDefault = {}
+        for Package in Wa.BuildDatabase.WorkspaceDb.PackageList:
+            for (TokenCName, TokenSpaceGuidCName, DecType) in Package.Pcds:
+                DecDefaultValue = Package.Pcds[TokenCName, TokenSpaceGuidCName, DecType].DefaultValue
+                self.DecPcdDefault.setdefault((TokenCName, TokenSpaceGuidCName, DecType), DecDefaultValue)
         #
         # Collect PCDs defined in DSC common section
         #
@@ -614,9 +614,10 @@ class PcdReport(object):
                     #
                     DecDefaultValue = self.DecPcdDefault.get((Pcd.TokenCName, Pcd.TokenSpaceGuidCName, DecType))
                     DscDefaultValue = self.DscPcdDefault.get((Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
+                    DscDefaultValue = self.FdfPcdSet.get((Pcd.TokenCName, Key), DscDefaultValue)
                     InfDefaultValue = None
-                    PcdValue = DecDefaultValue
                     
+                    PcdValue = DecDefaultValue
                     if DscDefaultValue:
                         PcdValue = DscDefaultValue
                     if ModulePcdSet != None:
@@ -671,15 +672,15 @@ class PcdReport(object):
                     # Report PCD item according to their override relationship
                     #
                     if DecMatch and InfMatch:
-                        FileWrite(File, '    %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', Pcd.DefaultValue))
+                        FileWrite(File, '    %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', PcdValue))
                     else:
                         if DscMatch:
                             if (Pcd.TokenCName, Key) in self.FdfPcdSet:
-                                FileWrite(File, ' *F %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', Pcd.DefaultValue))
+                                FileWrite(File, ' *F %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', PcdValue))
                             else:
-                                FileWrite(File, ' *P %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', Pcd.DefaultValue))
+                                FileWrite(File, ' *P %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', PcdValue))
                         else:
-                            FileWrite(File, ' *M %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', Pcd.DefaultValue))
+                            FileWrite(File, ' *M %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', PcdValue))
                     
                     if TypeName in ('DYNHII', 'DEXHII', 'DYNVPD', 'DEXVPD'):
                         for SkuInfo in Pcd.SkuInfoList.values():
