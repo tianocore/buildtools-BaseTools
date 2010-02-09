@@ -256,7 +256,7 @@ class DepexReport(object):
                     self.Source = "DXS"
                     break
         else:
-            self.Depex = M.DepexExpressionList[M.ModuleType]
+            self.Depex = M.DepexExpressionList.get(M.ModuleType, "")
             self.ModuleDepex = " ".join(M.Module.DepexExpression[M.Arch, M.ModuleType])
             if not self.ModuleDepex:
                 self.ModuleDepex = "TRUE"
@@ -384,10 +384,9 @@ class ModuleReport(object):
     #
     # @param self            The object pointer
     # @param M               Module context information
-    # @param DscOverridePcds Module DSC override PCD information
     # @param ReportType      The kind of report items in the final report file
     #
-    def __init__(self, M, DscOverridePcds, ReportType):
+    def __init__(self, M, ReportType):
         self.ModuleName = M.Module.BaseName
         self.ModuleInfPath = M.MetaFile.File
         self.FileGuid = M.Guid
@@ -413,21 +412,13 @@ class ModuleReport(object):
 
         self._BuildDir = M.BuildDir
         self.ModulePcdSet = {}
-        self.ModuleDscOverridePcds = {}
         if "PCD" in ReportType:
             #
             # Collect all module used PCD set: module INF referenced directly or indirectly.
             # It also saves module INF default values of them in case they exist.
             #
             for Pcd in M.ModulePcdList + M.LibraryPcdList:
-                self.ModulePcdSet.setdefault((Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Pcd.Type), Pcd.InfDefaultValue)
-
-            #
-            # Collect module DSC override PCD set for report
-            #
-            for (PcdTokenCName, PcdTokenSpaceGuidCName) in DscOverridePcds:
-                Pcd = DscOverridePcds[(PcdTokenCName, PcdTokenSpaceGuidCName)]
-                self.ModuleDscOverridePcds.setdefault((PcdTokenCName, PcdTokenSpaceGuidCName), Pcd.DefaultValue)
+                self.ModulePcdSet.setdefault((Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Pcd.Type), (Pcd.InfDefaultValue, Pcd.DefaultValue))
 
         self.LibraryReport = None
         if "LIBRARY" in ReportType:
@@ -493,7 +484,7 @@ class ModuleReport(object):
         FileWrite(File, gSectionSep)
 
         if "PCD" in ReportType:
-            GlobalPcdReport.GenerateReport(File, self.ModulePcdSet, self.ModuleDscOverridePcds)
+            GlobalPcdReport.GenerateReport(File, self.ModulePcdSet)
 
         if "LIBRARY" in ReportType:
             self.LibraryReport.GenerateReport(File)
@@ -565,7 +556,7 @@ class PcdReport(object):
                     TokenSpaceGuid = ModulePcd.TokenSpaceGuidCName
                     ModuleDefault = ModulePcd.DefaultValue
                     ModulePath = os.path.basename(Module.M.MetaFile.File)
-                    self.ModulePcdOverride.setdefault((TokenCName, TokenSpaceGuid), []).append((ModuleDefault, ModulePath))
+                    self.ModulePcdOverride.setdefault((TokenCName, TokenSpaceGuid), {})[ModulePath] = ModuleDefault
 
         #
         # Collect PCDs defined in DSC common section
@@ -588,7 +579,7 @@ class PcdReport(object):
     #                        platform PCD report
     # @param DscOverridePcds Module DSC override PCDs set
     #
-    def GenerateReport(self, File, ModulePcdSet, DscOverridePcds):
+    def GenerateReport(self, File, ModulePcdSet):
         if ModulePcdSet == None:
             #
             # For platform global PCD section
@@ -621,11 +612,17 @@ class PcdReport(object):
                     #
                     # Get PCD default value and their override relationship
                     #
+                    DecDefaultValue = self.DecPcdDefault.get((Pcd.TokenCName, Pcd.TokenSpaceGuidCName, DecType))
+                    DscDefaultValue = self.DscPcdDefault.get((Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
                     InfDefaultValue = None
+                    PcdValue = DecDefaultValue
+                    
+                    if DscDefaultValue:
+                        PcdValue = DscDefaultValue
                     if ModulePcdSet != None:
                         if (Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Type) not in ModulePcdSet:
                             continue
-                        InfDefault = ModulePcdSet[Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Type]
+                        InfDefault, PcdValue = ModulePcdSet[Pcd.TokenCName, Pcd.TokenSpaceGuidCName, Type]
                         if InfDefault == "":
                             InfDefault = None
                     if First:
@@ -633,44 +630,42 @@ class PcdReport(object):
                             FileWrite(File, "")
                         FileWrite(File, Key)
                         First = False
-                    DecDefaultValue = self.DecPcdDefault.get((Pcd.TokenCName, Pcd.TokenSpaceGuidCName, DecType))
-                    DscDefaultValue = self.DscPcdDefault.get((Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
-                    DscModuleOverrideValue = DscOverridePcds.get((Pcd.TokenCName, Pcd.TokenSpaceGuidCName))
+
 
                     if Pcd.DatumType in ('UINT8', 'UINT16', 'UINT32', 'UINT64'):
-                        PcdDefaultValueNumber = int(Pcd.DefaultValue.strip(), 0)
+                        PcdValueNumber = int(PcdValue.strip(), 0)
                         if DecDefaultValue == None:
                             DecMatch = True
                         else:
                             DecDefaultValueNumber = int(DecDefaultValue.strip(), 0)
-                            DecMatch = (DecDefaultValueNumber == PcdDefaultValueNumber)
+                            DecMatch = (DecDefaultValueNumber == PcdValueNumber)
 
                         if InfDefaultValue == None:
                             InfMatch = True
                         else:
                             InfDefaultValueNumber = int(InfDefaultValue.strip(), 0)
-                            InfMatch = (InfDefaultValueNumber == PcdDefaultValueNumber)
+                            InfMatch = (InfDefaultValueNumber == PcdValueNumber)
 
                         if DscDefaultValue == None:
                             DscMatch = True
                         else:
                             DscDefaultValueNumber = int(DscDefaultValue.strip(), 0)
-                            DscMatch = (DscDefaultValueNumber == PcdDefaultValueNumber)
+                            DscMatch = (DscDefaultValueNumber == PcdValueNumber)
                     else:
                         if DecDefaultValue == None:
                             DecMatch = True
                         else:
-                            DecMatch = (DecDefaultValue == Pcd.DefaultValue)
+                            DecMatch = (DecDefaultValue == PcdValue)
 
                         if InfDefaultValue == None:
                             InfMatch = True
                         else:
-                            InfMatch = (InfDefaultValue == Pcd.DefaultValue)
+                            InfMatch = (InfDefaultValue == PcdValue)
 
                         if DscDefaultValue == None:
                             DscMatch = True
                         else:
-                            DscMatch = (DscDefaultValue == Pcd.DefaultValue)
+                            DscMatch = (DscDefaultValue == PcdValue)
 
                     #
                     # Report PCD item according to their override relationship
@@ -678,29 +673,39 @@ class PcdReport(object):
                     if DecMatch and InfMatch:
                         FileWrite(File, '    %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', Pcd.DefaultValue))
                     else:
-                        if DscMatch and DscModuleOverrideValue == None:
+                        if DscMatch:
                             if (Pcd.TokenCName, Key) in self.FdfPcdSet:
                                 FileWrite(File, ' *F %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', Pcd.DefaultValue))
                             else:
                                 FileWrite(File, ' *P %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', Pcd.DefaultValue))
                         else:
                             FileWrite(File, ' *M %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', Pcd.DefaultValue))
-                            if DscDefaultValue != None:
-                                FileWrite(File, '    %*s = %s' % (self.MaxLen + 19, 'DSC DEFAULT', DscDefaultValue))
+                    
+                    if TypeName in ('DYNHII', 'DEXHII', 'DYNVPD', 'DEXVPD'):
+                        for SkuInfo in Pcd.SkuInfoList.values():
+                            if TypeName in ('DYNHII', 'DEXHII'):
+                                FileWrite(File, '%*s: %s: %s' % (self.MaxLen + 4, SkuInfo.VariableGuid, SkuInfo.VariableName, SkuInfo.VariableOffset))        
+                            else:
+                                FileWrite(File, '%*s' % (self.MaxLen + 4, SkuInfo.VpdOffset))
+                               
+                    if not DscMatch and DscDefaultValue != None:
+                        FileWrite(File, '    %*s = %s' % (self.MaxLen + 19, 'DSC DEFAULT', DscDefaultValue))
 
-                        if InfDefaultValue != None:
-                            FileWrite(File, '    %*s = %s' % (self.MaxLen + 19, 'INF DEFAULT', InfDefaultValue))
+                    if not InfMatch and InfDefaultValue != None:
+                        FileWrite(File, '    %*s = %s' % (self.MaxLen + 19, 'INF DEFAULT', InfDefaultValue))
 
-                        if DecDefaultValue != None and not DecMatch:
-                            FileWrite(File, '    %*s = %s' % (self.MaxLen + 19, 'DEC DEFAULT', DecDefaultValue))
+                    if not DecMatch and DecDefaultValue != None:
+                        FileWrite(File, '    %*s = %s' % (self.MaxLen + 19, 'DEC DEFAULT', DecDefaultValue))
 
                     if ModulePcdSet == None:
-                        for (ModuleDefault, ModulePath) in self.ModulePcdOverride.get((Pcd.TokenCName, Pcd.TokenSpaceGuidCName), []):
+                        ModuleOverride = self.ModulePcdOverride.get((Pcd.TokenCName, Pcd.TokenSpaceGuidCName), {})
+                        for ModulePath in ModuleOverride:
+                            ModuleDefault = ModuleOverride[ModulePath]
                             if Pcd.DatumType in ('UINT8', 'UINT16', 'UINT32', 'UINT64'):
                                 ModulePcdDefaultValueNumber = int(ModuleDefault.strip(), 0)
-                                Match = (ModulePcdDefaultValueNumber == PcdDefaultValueNumber)
+                                Match = (ModulePcdDefaultValueNumber == PcdValueNumber)
                             else:
-                                Match = (ModuleDefault == Pcd.DefaultValue)
+                                Match = (ModuleDefault == PcdValue)
                             if Match:
                                 continue
                             FileWrite(File, ' *M %-*s = %s' % (self.MaxLen + 19, ModulePath, ModuleDefault))
@@ -1294,13 +1299,7 @@ class PlatformReport(object):
         self.ModuleReportList = []
         for Pa in Wa.AutoGenObjectList:
             for ModuleKey in Pa.Platform.Modules:
-                for Platform in Wa.BuildDatabase.WorkspaceDb.PlatformList:
-                    if ModuleKey in Platform.Modules:
-                        DscOverridePcds = Platform.Modules[ModuleKey].Pcds
-                        break
-                else:
-                    DscOverridePcds = {}
-                self.ModuleReportList.append(ModuleReport(Pa.Platform.Modules[ModuleKey].M, DscOverridePcds, ReportType))
+                self.ModuleReportList.append(ModuleReport(Pa.Platform.Modules[ModuleKey].M, ReportType))
 
 
 
@@ -1329,7 +1328,7 @@ class PlatformReport(object):
         FileWrite(File, "Report Content:       %s" % ", ".join(ReportType))
 
         if "PCD" in ReportType:
-            self.PcdReport.GenerateReport(File, None, {})
+            self.PcdReport.GenerateReport(File, None)
 
         if "FLASH" in ReportType:
             for FdReportListItem in self.FdReportList:
