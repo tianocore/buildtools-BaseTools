@@ -653,18 +653,19 @@ class PeImageInfo():
     #
     # Constructor will load all required image information.
     #
-    #   @param  FileName          The full file path of image. 
-    #   @param  Size              The required memory size of image.
-    #   @param  EntryPointOffset  The entry point offset to image base.
+    #   @param  BaseName          The full file path of image. 
     #   @param  Guid              The GUID for image.
+    #   @param  Arch              Arch of this image.
     #   @param  OutpuDir          The output directory for image.
+    #   @param  ImageClass        PeImage Information
     #
-    def __init__(self, BaseName, Guid, OutpuDir, ImageClass):
+    def __init__(self, BaseName, Guid, Arch, OutpuDir, ImageClass):
         self.BaseName         = BaseName
         self.Guid             = Guid
+        self.Arch             = Arch
         self.OutpuDir         = OutpuDir
-        ImageClass.Size       = (ImageClass.Size / 0x1000 + 1) * 0x1000
         self.Image            = ImageClass
+        self.Image.Size       = (self.Image.Size / 0x1000 + 1) * 0x1000
 
 ## The class implementing the EDK2 build process
 #
@@ -876,7 +877,9 @@ class Build():
             except:
                 EdkLogger.error("build", PARAMETER_INVALID, "FIX_LOAD_TOP_MEMORY_ADDRESS %s is not valid dec or hex string" % (LoadFixAddressString))
             if self.LoadFixAddress < 0:
-                EdkLogger.error("build", PARAMETER_INVALID, "FIX_LOAD_TOP_MEMORY_ADDRESS can't be set to negative value %s" % (LoadFixAddressString))
+                EdkLogger.error("build", PARAMETER_INVALID, "FIX_LOAD_TOP_MEMORY_ADDRESS is set to the invalid negative value %s" % (LoadFixAddressString))
+            if self.LoadFixAddress != 0xFFFFFFFFFFFFFFFF and self.LoadFixAddress % 0x1000 != 0:
+                EdkLogger.error("build", PARAMETER_INVALID, "FIX_LOAD_TOP_MEMORY_ADDRESS is set to the invalid unaligned 4K value %s" % (LoadFixAddressString))
 
         if self.SkuId == None or self.SkuId == '':
             self.SkuId = self.Platform.SkuName
@@ -1007,14 +1010,44 @@ class Build():
                 #
                 LaunchCommand(["GenFw", "--address", str(BaseAddress), "-r", ModuleInfo.Image.FileName], ModuleInfo.OutpuDir)
             #
+            # Collect funtion address from Map file
+            #
+            ImageMapTable = ModuleInfo.Image.FileName.replace('.efi', '.map')
+            FunctionList = []
+            if os.path.exists(ImageMapTable):
+                OrigImageBaseAddress = 0
+                ImageMap = open (ImageMapTable, 'r')
+                for LinStr in ImageMap:
+                    if len (LinStr.strip()) == 0:
+                        continue
+                    #
+                    # Get the preferred address set on link time.
+                    #
+                    if LinStr.find ('Preferred load address is') != -1:
+                        StrList = LinStr.split()
+                        OrigImageBaseAddress = int (StrList[len(StrList) - 1], 16)
+
+                    StrList = LinStr.split()
+                    if len (StrList) > 4:
+                        if StrList[3] == 'f' or StrList[3] =='F':
+                            Name = StrList[1]
+                            RelativeAddress = int (StrList[2], 16) - OrigImageBaseAddress
+                            FunctionList.append ((Name, RelativeAddress))
+                            if ModuleInfo.Arch == 'IPF' and Name.endswith('_ModuleEntryPoint'):
+                                #
+                                # Get the real entry point address for IPF image.
+                                #
+                                ModuleInfo.Image.EntryPoint = RelativeAddress
+                ImageMap.close()
+            #
             # Add general information.
             #
             if ModeIsSmm:
-                MapBuffer.write('\n\n%s (Fix SMRAM Offset,   BaseAddress=0x%010X,  EntryPoint=0x%010X)\n' % (ModuleName, BaseAddress, BaseAddress + ModuleInfo.Image.EntryPoint))
+                MapBuffer.write('\n\n%s (Fixed SMRAM Offset,   BaseAddress=0x%010X,  EntryPoint=0x%010X)\n' % (ModuleName, BaseAddress, BaseAddress + ModuleInfo.Image.EntryPoint))
             elif AddrIsOffset:
-                MapBuffer.write('\n\n%s (Fix Memory Offset,  BaseAddress=-0x%010X, EntryPoint=-0x%010X)\n' % (ModuleName, 0 - BaseAddress, 0 - (BaseAddress + ModuleInfo.Image.EntryPoint)))
+                MapBuffer.write('\n\n%s (Fixed Memory Offset,  BaseAddress=-0x%010X, EntryPoint=-0x%010X)\n' % (ModuleName, 0 - BaseAddress, 0 - (BaseAddress + ModuleInfo.Image.EntryPoint)))
             else:
-                MapBuffer.write('\n\n%s (Fix Memory Address, BaseAddress=0x%010X,  EntryPoint=0x%010X)\n' % (ModuleName, BaseAddress, BaseAddress + ModuleInfo.Image.EntryPoint))
+                MapBuffer.write('\n\n%s (Fixed Memory Address, BaseAddress=0x%010X,  EntryPoint=0x%010X)\n' % (ModuleName, BaseAddress, BaseAddress + ModuleInfo.Image.EntryPoint))
             #
             # Add guid and general seciton section.
             #
@@ -1023,7 +1056,7 @@ class Build():
             for SectionHeader in ModuleInfo.Image.SectionHeaderList:
                 if SectionHeader[0] == '.text':
                     TextSectionAddress = SectionHeader[1]
-                elif SectionHeader[1] == '.data':
+                elif SectionHeader[0] in ['.data', '.sdata']:
                     DataSectionAddress = SectionHeader[1]
             if AddrIsOffset:
                 MapBuffer.write('(GUID=%s, .textbaseaddress=-0x%010X, .databaseaddress=-0x%010X)\n\n' % (ModuleInfo.Guid, 0 - (BaseAddress + TextSectionAddress), 0 - (BaseAddress + DataSectionAddress))) 
@@ -1032,20 +1065,11 @@ class Build():
             #
             # Add funtion address
             #
-            ImageMapTable = ModuleInfo.Image.FileName.replace('.efi', '.map')
-            if not os.path.exists(ImageMapTable):
-                continue
-            ImageMap = open (ImageMapTable, 'r')
-            for LinStr in ImageMap:
-                if len (LinStr.strip()) == 0:
-                    continue
-                StrList = LinStr.split()
-                if len (StrList) > 4:
-                    if StrList[3] == 'f' or StrList[3] =='F':
-                        if AddrIsOffset:
-                            MapBuffer.write('  -0x%010X    %s\n' % (0 - (BaseAddress + int (StrList[2], 16)), StrList[1]))
-                        else:
-                            MapBuffer.write('  0x%010X    %s\n' % (BaseAddress + int (StrList[2], 16), StrList[1]))
+            for Function in FunctionList:
+                if AddrIsOffset:
+                    MapBuffer.write('  -0x%010X    %s\n' % (0 - (BaseAddress + Function[1]), Function[0]))
+                else:
+                    MapBuffer.write('  0x%010X    %s\n' % (BaseAddress + Function[1], Function[0]))
             ImageMap.close()
 
             #
@@ -1087,6 +1111,9 @@ class Build():
         RtSize  = 0
         # reserve 4K size in SMRAM to make SMM module address not from 0.
         SmmSize = 0x1000
+        IsIpfPlatform = False
+        if 'IPF' in self.ArchList:
+            IsIpfPlatform = True
         for Module in ModuleList:
             GlobalData.gProcessingFile = "%s [%s, %s, %s]" % (Module.MetaFile, Module.Arch, Module.ToolChain, Module.BuildTarget)
             
@@ -1100,19 +1127,22 @@ class Build():
                     ImageClass = PeImageClass (OutputImageFile)
                     if not ImageClass.IsValid:
                         EdkLogger.error("build", FILE_PARSE_FAILURE, ExtraData=ImageClass.ErrorInfo)
-                    ImageInfo = PeImageInfo(Module.Name, Module.Guid, Module.OutputDir, ImageClass)
+                    ImageInfo = PeImageInfo(Module.Name, Module.Guid, Module.Arch, Module.OutputDir, ImageClass)
                     if Module.ModuleType in ['PEI_CORE', 'PEIM', 'COMBINED_PEIM_DRIVER','PIC_PEIM', 'RELOCATABLE_PEIM', 'DXE_CORE']:
                         PeiModuleList[Module.MetaFile] = ImageInfo
-                        PeiSize += ImageClass.Size
+                        PeiSize += ImageInfo.Image.Size
                     elif Module.ModuleType in ['BS_DRIVER', 'DXE_DRIVER', 'UEFI_DRIVER']:
                         BtModuleList[Module.MetaFile] = ImageInfo
-                        BtSize += ImageClass.Size
+                        BtSize += ImageInfo.Image.Size
                     elif Module.ModuleType in ['DXE_RUNTIME_DRIVER', 'RT_DRIVER', 'DXE_SAL_DRIVER', 'SAL_RT_DRIVER']:
                         RtModuleList[Module.MetaFile] = ImageInfo
-                        RtSize += ImageClass.Size
+                        #IPF runtime driver needs to be at 2 page alignment.
+                        if IsIpfPlatform and ImageInfo.Image.Size % 0x2000 != 0:
+                            ImageInfo.Image.Size = (ImageInfo.Image.Size / 0x2000 + 1) * 0x2000
+                        RtSize += ImageInfo.Image.Size
                     elif Module.ModuleType in ['SMM_CORE', 'DXE_SMM_DRIVER']:
                         SmmModuleList[Module.MetaFile] = ImageInfo
-                        SmmSize += ImageClass.Size
+                        SmmSize += ImageInfo.Image.Size
                         if Module.ModuleType == 'DXE_SMM_DRIVER':
                             PiSpecVersion = 0
                             if 'PI_SPECIFICATION_VERSION' in Module.Module.Specification:
@@ -1120,7 +1150,7 @@ class Build():
                             # for PI specification < PI1.1, DXE_SMM_DRIVER also runs as BOOT time driver.
                             if PiSpecVersion < 0x0001000A:
                                 BtModuleList[Module.MetaFile] = ImageInfo
-                                BtSize += ImageClass.Size
+                                BtSize += ImageInfo.Image.Size
                     break
             #
             # EFI image is final target.
@@ -1147,6 +1177,22 @@ class Build():
                 PatchEfiImageList.append (OutputImageFile)
         
         #
+        # Get Top Memory address
+        #
+        ReservedRuntimeMemorySize = 0
+        TopMemoryAddress = 0
+        if self.LoadFixAddress == 0xFFFFFFFFFFFFFFFF:
+            TopMemoryAddress = 0
+        else:
+            TopMemoryAddress = self.LoadFixAddress
+            if TopMemoryAddress < RtSize + BtSize + PeiSize:
+                EdkLogger.error("build", PARAMETER_INVALID, "FIX_LOAD_TOP_MEMORY_ADDRESS is too low to load driver")
+            # Make IPF runtime driver at 2 page alignment.
+            if IsIpfPlatform:
+                ReservedRuntimeMemorySize = TopMemoryAddress % 0x2000
+                RtSize = RtSize + ReservedRuntimeMemorySize
+
+        #
         # Patch FixAddress related PCDs into EFI image
         #
         for EfiImage in PatchEfiImageList: 
@@ -1168,29 +1214,20 @@ class Build():
                     ReturnValue, ErrorInfo = PatchBinaryFile (EfiImage, PcdInfo[1], TAB_PCDS_PATCHABLE_LOAD_FIX_ADDRESS_DXE_PAGE_SIZE_DATA_TYPE, str (BtSize/0x1000))
                 elif PcdInfo[0] == TAB_PCDS_PATCHABLE_LOAD_FIX_ADDRESS_RUNTIME_PAGE_SIZE:
                     ReturnValue, ErrorInfo = PatchBinaryFile (EfiImage, PcdInfo[1], TAB_PCDS_PATCHABLE_LOAD_FIX_ADDRESS_RUNTIME_PAGE_SIZE_DATA_TYPE, str (RtSize/0x1000))
-                elif PcdInfo[0] == TAB_PCDS_PATCHABLE_LOAD_FIX_ADDRESS_SMM_PAGE_SIZE:
+                elif PcdInfo[0] == TAB_PCDS_PATCHABLE_LOAD_FIX_ADDRESS_SMM_PAGE_SIZE and len (SmmModuleList) > 0:
                     ReturnValue, ErrorInfo = PatchBinaryFile (EfiImage, PcdInfo[1], TAB_PCDS_PATCHABLE_LOAD_FIX_ADDRESS_SMM_PAGE_SIZE_DATA_TYPE, str (SmmSize/0x1000))
                 if ReturnValue != 0:
                     EdkLogger.error("build", PARAMETER_INVALID, "Patch PCD value failed", ExtraData=ErrorInfo)
-        #
-        # Get Top Memory address
-        #
-        TopMemoryAddress = 0
-        if self.LoadFixAddress == 0xFFFFFFFFFFFFFFFF:
-            TopMemoryAddress = 0
-        else:
-            TopMemoryAddress = self.LoadFixAddress
-            if TopMemoryAddress < RtSize + BtSize + PeiSize:
-                EdkLogger.error("build", PARAMETER_INVALID, "TopMemoryAddress is too low to load driver")
         
         MapBuffer.write('PEI_CODE_PAGE_NUMBER      = 0x%x\n' % (PeiSize/0x1000))
         MapBuffer.write('BOOT_CODE_PAGE_NUMBER     = 0x%x\n' % (BtSize/0x1000))
         MapBuffer.write('RUNTIME_CODE_PAGE_NUMBER  = 0x%x\n' % (RtSize/0x1000))
-        MapBuffer.write('SMM_CODE_PAGE_NUMBER      = 0x%x\n' % (SmmSize/0x1000))
+        if len (SmmModuleList) > 0:
+            MapBuffer.write('SMM_CODE_PAGE_NUMBER      = 0x%x\n' % (SmmSize/0x1000))
         
         PeiBaseAddr = TopMemoryAddress - RtSize - BtSize
         BtBaseAddr  = TopMemoryAddress - RtSize
-        RtBaseAddr  = TopMemoryAddress
+        RtBaseAddr  = TopMemoryAddress - ReservedRuntimeMemorySize
 
         self._RebaseModule (MapBuffer, PeiBaseAddr, PeiModuleList, TopMemoryAddress == 0)
         self._RebaseModule (MapBuffer, BtBaseAddr, BtModuleList, TopMemoryAddress == 0)
@@ -1245,7 +1282,7 @@ class Build():
                         # Check whether the set fix address is above 4G for 32bit image.
                         #
                         if (Arch == 'IA32' or Arch == 'ARM') and self.LoadFixAddress != 0xFFFFFFFFFFFFFFFF and self.LoadFixAddress >= 0x100000000:
-                            EdkLogger.error("build", PARAMETER_INVALID, "FIX_LOAD_TOP_MEMORY_ADDRESS can't be set to larger than 4G for the platorm with IA32 arch modules")
+                            EdkLogger.error("build", PARAMETER_INVALID, "FIX_LOAD_TOP_MEMORY_ADDRESS can't be set to larger than or equal to 4G for the platorm with IA32 or ARM arch modules")
                     #
                     # Get Module List
                     #
@@ -1405,7 +1442,7 @@ class Build():
                         # Check whether the set fix address is above 4G for 32bit image.
                         #
                         if (Arch == 'IA32' or Arch == 'ARM') and self.LoadFixAddress != 0xFFFFFFFFFFFFFFFF and self.LoadFixAddress >= 0x100000000:
-                            EdkLogger.error("build", PARAMETER_INVALID, "FIX_LOAD_TOP_MEMORY_ADDRESS can't be set to larger than 4G for the platorm with IA32 arch modules")
+                            EdkLogger.error("build", PARAMETER_INVALID, "FIX_LOAD_TOP_MEMORY_ADDRESS can't be set to larger than or equal to 4G for the platorm with IA32 or ARM arch modules")
                     #
                     # Get Module List
                     #
