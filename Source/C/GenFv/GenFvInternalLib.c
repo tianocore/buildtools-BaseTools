@@ -719,6 +719,10 @@ Returns:
   EFI_TE_IMAGE_HEADER                 *TEImageHeader;
   EFI_IMAGE_SECTION_HEADER            *SectionHeader;
   unsigned long long                  TempLongAddress;
+  UINT32                              TextVirtualAddress;
+  UINT32                              DataVirtualAddress;
+  EFI_PHYSICAL_ADDRESS                LinkTimeBaseAddress;
+
   
   //
   // Init local variable
@@ -793,7 +797,7 @@ Returns:
     SectionHeader = (EFI_IMAGE_SECTION_HEADER *) (TEImageHeader + 1);
     Index = TEImageHeader->NumberOfSections;
   }
-  
+
   //
   // module information output
   //
@@ -808,14 +812,20 @@ Returns:
   fprintf (FvMapFile, ")\n"); 
   
   fprintf (FvMapFile, "(GUID=%s", FileGuidName);
+  TextVirtualAddress = 0;
+  DataVirtualAddress = 0;
   for (; Index > 0; Index --, SectionHeader ++) {
-        if (stricmp ((CHAR8 *)SectionHeader->Name, ".text") == 0) {
-  		fprintf (FvMapFile, " .textbaseaddress=0x%010llx", (unsigned long long) (ImageBaseAddress + SectionHeader->VirtualAddress));
+    if (stricmp ((CHAR8 *)SectionHeader->Name, ".text") == 0) {
+  		TextVirtualAddress = SectionHeader->VirtualAddress;
   	} else if (stricmp ((CHAR8 *)SectionHeader->Name, ".data") == 0) {
-  	  fprintf (FvMapFile, " .databaseaddress=0x%010llx", (unsigned long long) (ImageBaseAddress + SectionHeader->VirtualAddress));
+  	  DataVirtualAddress = SectionHeader->VirtualAddress;
+  	} else if (stricmp ((CHAR8 *)SectionHeader->Name, ".sdata") == 0) {
+  	  DataVirtualAddress = SectionHeader->VirtualAddress;
   	}
   }
-  fprintf (FvMapFile, ")\n\n"); 
+  fprintf (FvMapFile, " .textbaseaddress=0x%010llx", (unsigned long long) (ImageBaseAddress + TextVirtualAddress));
+  fprintf (FvMapFile, " .databaseaddress=0x%010llx", (unsigned long long) (ImageBaseAddress + DataVirtualAddress));
+  fprintf (FvMapFile, ")\n\n");
    
   //
   // Open PeMapFile
@@ -830,6 +840,7 @@ Returns:
   //
   // Output Functions information into Fv Map file
   //
+  LinkTimeBaseAddress = 0;
   while (fgets (Line, MAX_LINE_LEN, PeMapFile) != NULL) {
     //
     // Skip blank line
@@ -855,6 +866,9 @@ Returns:
         //
         FunctionType = 2;
         fgets (Line, MAX_LINE_LEN, PeMapFile);
+      } else if (stricmp (KeyWord, "Preferred") ==0) {
+        sscanf (Line + strlen (" Preferred load address is"), "%llx", &TempLongAddress);
+        LinkTimeBaseAddress = (UINT64) TempLongAddress;
       }
       continue;
     }
@@ -865,14 +879,14 @@ Returns:
       sscanf (Line, "%s %s %llx %s", KeyWord, FunctionName, &TempLongAddress, FunctionTypeName);
       FunctionAddress = (UINT64) TempLongAddress;
       if (FunctionTypeName [1] == '\0' && (FunctionTypeName [0] == 'f' || FunctionTypeName [0] == 'F')) {
-        fprintf (FvMapFile, "  0x%010llx    ", (unsigned long long) (ImageBaseAddress + FunctionAddress));
+        fprintf (FvMapFile, "  0x%010llx    ", (unsigned long long) (ImageBaseAddress + FunctionAddress - LinkTimeBaseAddress));
         fprintf (FvMapFile, "%s\n", FunctionName);
       }
     } else if (FunctionType == 2) {
       sscanf (Line, "%s %s %llx %s", KeyWord, FunctionName, &TempLongAddress, FunctionTypeName);
       FunctionAddress = (UINT64) TempLongAddress;
       if (FunctionTypeName [1] == '\0' && (FunctionTypeName [0] == 'f' || FunctionTypeName [0] == 'F')) {
-        fprintf (FvMapFile, "  0x%010llx    ", (unsigned long long) (ImageBaseAddress + FunctionAddress));
+        fprintf (FvMapFile, "  0x%010llx    ", (unsigned long long) (ImageBaseAddress + FunctionAddress - LinkTimeBaseAddress));
         fprintf (FvMapFile, "%s\n", FunctionName);
       }
     }
