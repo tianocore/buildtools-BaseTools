@@ -1363,6 +1363,14 @@ class BuildReport(object):
     # @param ReportType      The kind of report items in the final report file
     #
     def __init__(self, ReportFile, ReportType):
+        #
+        # @attention Temporarily turn on the report feature unconditionally for
+        #            code coverage on different platform build validations.
+        #            This should be removed after the verification is over 
+        #
+        if not ReportFile:
+            ReportFile = "Report.txt"
+            
         self.ReportFile = ReportFile
         if ReportFile:
             self.ReportList = []
