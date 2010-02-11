@@ -298,8 +298,9 @@ class Check(object):
             for Key in RecordDict:
                 if len(RecordDict[Key]) > 1:
                     for Item in RecordDict[Key]:
-                        if not EccGlobalData.gException.IsException(ERROR_INCLUDE_FILE_CHECK_NAME, Item[1]):
-                            EccGlobalData.gDb.TblReport.Insert(ERROR_INCLUDE_FILE_CHECK_NAME, OtherMsg = "The file name for [%s] is duplicate" % (Item[1]), BelongsToTable = 'File', BelongsToItem = Item[0])
+                        Path = Item[1].replace(EccGlobalData.gWorkspace, '')
+                        if not EccGlobalData.gException.IsException(ERROR_INCLUDE_FILE_CHECK_NAME, Path):
+                            EccGlobalData.gDb.TblReport.Insert(ERROR_INCLUDE_FILE_CHECK_NAME, OtherMsg = "The file name for [%s] is duplicate" % Path, BelongsToTable = 'File', BelongsToItem = Item[0])
 
     # Check whether all include file contents is guarded by a #ifndef statement.
     def IncludeFileCheckIfndef(self):
@@ -665,7 +666,7 @@ class Check(object):
                 for Tbl in TableSet:
                     TblName = 'Identifier' + str(Tbl[0])
                     SqlCommand = """
-                                 select Name, ID from %s where value like '%%%s%%' and Model = %s
+                                 select Name, ID from %s where value like '%s' and Model = %s
                                  """ % (TblName, PcdName, MODEL_IDENTIFIER_FUNCTION_CALLING)
                     RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
                     TblNumber = TblName.replace('Identifier', '')
