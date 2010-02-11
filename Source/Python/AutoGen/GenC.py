@@ -501,7 +501,7 @@ const UINT32 _gUefiDriverRevision = ${UefiSpecVersion};
 const UINT32 _gDxeRevision = ${PiSpecVersion};
 
 static BASE_LIBRARY_JUMP_BUFFER  mJumpContext;
-static EFI_STATUS  mDriverEntryPointStatus = EFI_LOAD_ERROR;
+static EFI_STATUS  mDriverEntryPointStatus;
 
 VOID
 EFIAPI
@@ -522,8 +522,9 @@ ProcessModuleEntryPointList (
   IN EFI_HANDLE        ImageHandle,
   IN EFI_SYSTEM_TABLE  *SystemTable
   )
-
 {
+  mDriverEntryPointStatus = EFI_LOAD_ERROR;
+
 ${BEGIN}
   if (SetJump (&mJumpContext) == 0) {
     ExitDriver (${Function} (ImageHandle, SystemTable));
@@ -595,14 +596,17 @@ TemplateString("""
 const UINT32 _gUefiDriverRevision = ${UefiSpecVersion};
 const UINT32 _gDxeRevision = ${PiSpecVersion};
 
+static BASE_LIBRARY_JUMP_BUFFER  mJumpContext;
+static EFI_STATUS  mDriverEntryPointStatus;
+
 EFI_STATUS
 EFIAPI
 ProcessModuleEntryPointList (
   IN EFI_HANDLE        ImageHandle,
   IN EFI_SYSTEM_TABLE  *SystemTable
   )
-
 {
+  mDriverEntryPointStatus = EFI_LOAD_ERROR;
   ${BEGIN}
   if (SetJump (&mJumpContext) == 0) {
     ExitDriver (${Function} (ImageHandle, SystemTable));
@@ -611,9 +615,6 @@ ProcessModuleEntryPointList (
   ${END}
   return mDriverEntryPointStatus;
 }
-
-static BASE_LIBRARY_JUMP_BUFFER  mJumpContext;
-static EFI_STATUS  mDriverEntryPointStatus = EFI_LOAD_ERROR;
 
 VOID
 EFIAPI
