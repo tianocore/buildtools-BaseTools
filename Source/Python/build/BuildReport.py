@@ -1186,10 +1186,14 @@ class FdRegionReport(object):
                 #
                 # Write module offset and module identification to the report file.
                 #
+                OffsetInfo = {}
                 for Match in gOffsetGuidPattern.finditer(FvReport):
                     Guid = Match.group(2).upper()
-                    Offset = int(Match.group(1), 16)
-                    FileWrite (File, "0x%07X %s" % (Offset, self._GuidsDb.get(Guid, Guid)))
+                    OffsetInfo[Match.group(1)] = self._GuidsDb.get(Guid, Guid)
+                OffsetList = OffsetInfo.keys()
+                OffsetList.sort()
+                for Offset in OffsetList:
+                    FileWrite (File, "%s %s" % (Offset, OffsetInfo[Offset]))
             except IOError:
                 EdkLogger.warn(None, "Fail to read report file", FvReportFileName)
         else:

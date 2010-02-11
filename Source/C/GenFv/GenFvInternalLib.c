@@ -1082,6 +1082,10 @@ Returns:
       // copy VTF File
       //
       memcpy (*VtfFileImage, FileBuffer, FileSize);
+      
+      PrintGuidToBuffer ((EFI_GUID *) FileBuffer, FileGuidString, sizeof (FileGuidString), TRUE); 
+      fprintf (FvReportFile, "0x%08X %s\n", (unsigned) ((UINT8 *)(*VtfFileImage) - FvImage->FileImage), FileGuidString);
+
       free (FileBuffer);
       DebugMsg (NULL, 0, 9, "Add VTF FFS file in FV image", NULL);
       return EFI_SUCCESS;
@@ -1118,7 +1122,7 @@ Returns:
     //
     memcpy (FvImage->CurrentFilePointer, FileBuffer, FileSize);
     PrintGuidToBuffer ((EFI_GUID *) FileBuffer, FileGuidString, sizeof (FileGuidString), TRUE); 
-    fprintf (FvReportFile, "0x%08x %s\n", (unsigned) (FvImage->CurrentFilePointer - FvImage->FileImage), FileGuidString);
+    fprintf (FvReportFile, "0x%08X %s\n", (unsigned) (FvImage->CurrentFilePointer - FvImage->FileImage), FileGuidString);
     FvImage->CurrentFilePointer += FileSize;
   } else {
     Error (NULL, 0, 4002, "Resource", "FV space is full, cannot add file %s.", FvInfo->FvFiles[Index]);
