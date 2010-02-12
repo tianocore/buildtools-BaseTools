@@ -1414,7 +1414,7 @@ class BuildReport(object):
             try:
                 for Report in self.ReportList:
                     Report.GenerateReport(File, BuildDuration, self.ReportType)
-                EdkLogger.quiet("Report successfully saved to %s" % os.path.abspath(self.ReportFile))
+                EdkLogger.info("Report successfully saved to %s" % os.path.abspath(self.ReportFile))
             except IOError:
                 EdkLogger.error(None, FILE_WRITE_FAILURE, ExtraData=self.ReportFile)
             File.close()
