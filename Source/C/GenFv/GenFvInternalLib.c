@@ -1084,7 +1084,7 @@ Returns:
       memcpy (*VtfFileImage, FileBuffer, FileSize);
       
       PrintGuidToBuffer ((EFI_GUID *) FileBuffer, FileGuidString, sizeof (FileGuidString), TRUE); 
-      fprintf (FvReportFile, "0x%08X %s\n", (unsigned) (((UINT8 *)*VtfFileImage) - (UINTN)FvImage->FileImage), FileGuidString);
+      fprintf (FvReportFile, "0x%08X %s\n", (unsigned)(UINTN) (((UINT8 *)*VtfFileImage) - (UINTN)FvImage->FileImage), FileGuidString);
 
       free (FileBuffer);
       DebugMsg (NULL, 0, 9, "Add VTF FFS file in FV image", NULL);
