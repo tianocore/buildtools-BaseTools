@@ -2712,9 +2712,9 @@ RELEASE_XCODE32_X64_CC_FLAGS   = -arch x86_64 -Oz -combine -mms-bitfields -fshor
 # ARM definitions - (Assumes iPhone SDK installed on Snow Leopard)
 ##################
 
-*_XCODE32_ARM_ARCHCC_FLAGS    = -arch armv6 -march=armv6 -mthumb
-*_XCODE32_ARM_ARCHASM_FLAGS   = -arch armv6 
-*_XCODE32_ARM_ARCHDLINK_FLAGS = -arch armv6 
+*_XCODE32_ARM_ARCHCC_FLAGS    = -arch armv7 -march=armv7 -mthumb
+*_XCODE32_ARM_ARCHASM_FLAGS   = -arch armv7 
+*_XCODE32_ARM_ARCHDLINK_FLAGS = -arch armv7 
 *_XCODE32_ARM_PLATFORM_FLAGS  =
 
 *_XCODE32_ARM_CC_PATH       = DEF(IPHONE_TOOLS)/usr/bin/gcc
