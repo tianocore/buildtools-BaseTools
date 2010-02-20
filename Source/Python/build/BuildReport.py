@@ -1071,22 +1071,14 @@ class FdRegionReport(object):
             self._DiscoverNestedFvList(FvName, Wa)
 
         PlatformPcds = {}
-        for Pa in Wa.AutoGenObjectList:
-            PackageList = []
-            for ModuleKey in Pa.Platform.Modules:
-                #
-                # Collect PCD DEC default value.
-                #
-                Module = Pa.Platform.Modules[ModuleKey]
-                for Package in Module.M.Module.Packages:
-                    if Package not in PackageList:
-                        PackageList.append(Package)
-
-            for Package in PackageList:
-                for (TokenCName, TokenSpaceGuidCName, DecType) in Package.Pcds:
-                    DecDefaultValue = Package.Pcds[TokenCName, TokenSpaceGuidCName, DecType].DefaultValue
-                    PlatformPcds[(TokenCName, TokenSpaceGuidCName)] = DecDefaultValue
-
+        
+        #
+        # Collect PCDs declared in DEC files.
+        #
+        for Package in Wa.BuildDatabase.WorkspaceDb.PackageList:
+            for (TokenCName, TokenSpaceGuidCName, DecType) in Package.Pcds:
+                DecDefaultValue = Package.Pcds[TokenCName, TokenSpaceGuidCName, DecType].DefaultValue
+                PlatformPcds[(TokenCName, TokenSpaceGuidCName)] = DecDefaultValue
         #
         # Collect PCDs defined in DSC common section
         #
