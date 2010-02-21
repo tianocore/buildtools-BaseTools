@@ -1394,7 +1394,7 @@ class BuildReport(object):
     #
     def AddPlatformReport(self, Wa):
         if self.ReportFile:
-            self.ReportList.append(PlatformReport(Wa, self.ReportType))
+            self.ReportList.append(Wa)
 
     ##
     # Generates the final report.
@@ -1412,8 +1412,8 @@ class BuildReport(object):
             except IOError:
                 EdkLogger.error(None, FILE_OPEN_FAILURE, ExtraData=self.ReportFile)
             try:
-                for Report in self.ReportList:
-                    Report.GenerateReport(File, BuildDuration, self.ReportType)
+                for Wa in self.ReportList:
+                    PlatformReport(Wa, self.ReportType).GenerateReport(File, BuildDuration, self.ReportType)
                 EdkLogger.info("Report successfully saved to %s" % os.path.abspath(self.ReportFile))
             except IOError:
                 EdkLogger.error(None, FILE_WRITE_FAILURE, ExtraData=self.ReportFile)
