@@ -248,6 +248,13 @@ class DepexReport(object):
     # @param M               Module context information
     #
     def __init__(self, M):
+        self.Depex = ""
+        ModuleType = M.ModuleType
+        if not ModuleType:
+            ModuleType = gComponentType2ModuleType.get(M.ComponentType, "")
+        if ModuleType in ["SEC", "PEI_CORE", "DXE_CORE"]:
+            return
+      
         for Source in M.SourceFileList:
             if os.path.splitext(Source.Path)[1].lower() == ".dxs":
                 Match = gDxsDependencyPattern.search(open(Source.Path).read())
@@ -259,15 +266,13 @@ class DepexReport(object):
             self.Depex = M.DepexExpressionList.get(M.ModuleType, "")
             self.ModuleDepex = " ".join(M.Module.DepexExpression[M.Arch, M.ModuleType])
             if not self.ModuleDepex:
-                self.ModuleDepex = "TRUE"
+                self.ModuleDepex = "(None)"
 
             LibDepexList = []
             for Lib in M.DependentLibraryList:
                 LibDepex = " ".join(Lib.DepexExpression[M.Arch, M.ModuleType]).strip()
                 if LibDepex != "":
-                    if " " in LibDepex:
-                        LibDepex = "(" + LibDepex + ")"
-                    LibDepexList.append(LibDepex)
+                    LibDepexList.append("(" + LibDepex + ")")
             self.LibraryDepex = " AND ".join(LibDepexList)
             if not self.LibraryDepex:
                 self.LibraryDepex = "(None)"
@@ -282,6 +287,9 @@ class DepexReport(object):
     # @param File            The file object for report
     #
     def GenerateReport(self, File):
+        if not self.Depex:
+            return
+                
         FileWrite(File, gSubSectionStart)
         FileWrite(File, "Dependency Expression (DEPEX) from %s" % self.Source)
 
