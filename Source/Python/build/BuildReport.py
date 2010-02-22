@@ -222,7 +222,7 @@ class LibraryReport(object):
                     LibDestructor = " ".join(LibraryItem[3])
                     if LibDestructor:
                         EdkIILibInfo += " D = " + LibConstructor
-                    LibDepex = " ".join(LibraryItem[3])
+                    LibDepex = " ".join(LibraryItem[4])
                     if LibDepex:
                         EdkIILibInfo += " Depex = " + LibDepex
                     if EdkIILibInfo:
