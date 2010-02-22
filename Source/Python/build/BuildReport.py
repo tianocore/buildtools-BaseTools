@@ -20,6 +20,8 @@ import os
 import re
 import platform
 import textwrap
+import traceback
+import sys
 from datetime import datetime
 from Common import EdkLogger
 from Common.Misc import GuidStructureByteArrayToGuidString
@@ -27,6 +29,7 @@ from Common.Misc import GuidStructureStringToGuidString
 from Common.InfClassObject import gComponentType2ModuleType
 from Common.BuildToolError import FILE_OPEN_FAILURE
 from Common.BuildToolError import FILE_WRITE_FAILURE
+from Common.BuildToolError import CODE_ERROR
 
 
 ## Pattern to extract contents in EDK DXS files
@@ -1414,9 +1417,12 @@ class BuildReport(object):
             try:
                 for Wa in self.ReportList:
                     PlatformReport(Wa, self.ReportType).GenerateReport(File, BuildDuration, self.ReportType)
-                EdkLogger.info("Report successfully saved to %s" % os.path.abspath(self.ReportFile))
+                EdkLogger.quiet("Report successfully saved to %s" % os.path.abspath(self.ReportFile))
             except IOError:
                 EdkLogger.error(None, FILE_WRITE_FAILURE, ExtraData=self.ReportFile)
+            except:
+                EdkLogger.error("BuildReport", CODE_ERROR, "Unknown fatal error when generating build report", ExtraData=self.ReportFile)
+                EdkLogger.quiet("(Python %s on %s\n%s)" % (platform.python_version(), sys.platform, traceback.format_exc()))
             File.close()
 
 # This acts like the main() function for the script, unless it is 'import'ed into another script.
