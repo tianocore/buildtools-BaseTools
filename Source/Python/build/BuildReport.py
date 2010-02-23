@@ -50,7 +50,7 @@ gPcdGuidPattern = re.compile(r"PCD\((\w+)[.](\w+)\)")
 gOffsetGuidPattern = re.compile(r"(0x[0-9A-Fa-f]+) ([-A-Fa-f0-9]+)")
 
 ## Pattern to find module base address and entry point in fixed flash map file
-gModulePattern = r"\n\w+\s*\(([^,]+),\s*BaseAddress=%(Address)s,\s*EntryPoint=%(Address)s\)\s*\(GUID=([-0-9A-Fa-f]+)[^)]*\)"
+gModulePattern = r"\n[-\w]+\s*\(([^,]+),\s*BaseAddress=%(Address)s,\s*EntryPoint=%(Address)s\)\s*\(GUID=([-0-9A-Fa-f]+)[^)]*\)"
 gMapFileItemPattern = re.compile(gModulePattern % {"Address" : "(-?0[xX][0-9A-Fa-f]+)"})
 
 ## Pattern to find all module referenced header files in source files
@@ -506,7 +506,7 @@ class ModuleReport(object):
         if "BUILD_FLAGS" in ReportType:
             self.BuildFlagsReport.GenerateReport(File)
 
-        if "PREDICTION" in ReportType:
+        if "FIXED_ADDRESS" in ReportType and self.FileGuid:
             GlobalPredictionReport.GenerateReport(File, self.FileGuid)
 
         FileWrite(File, gSectionEnd)
@@ -915,6 +915,7 @@ class PredictionReport(object):
     # @param File            The file object for report
     #
     def _GenerateExecutionOrderReport(self, File):
+        self._InvokeEotTool()
         if len(self.ItemList) == 0:
             return
         FileWrite(File, gSectionStart)
@@ -943,6 +944,7 @@ class PredictionReport(object):
     # @param NotifyList      The list of all notify function in a module
     #
     def _GenerateFixedAddressReport(self, File, Guid, NotifyList):
+        self._ParseMapFile()
         FixedAddressList = self.FixedMapDict.get(Guid)
         if not FixedAddressList:
             return
@@ -954,7 +956,7 @@ class PredictionReport(object):
         FileWrite(File, "*N  Notification Function Address")
         FileWrite(File, "*F  Flash Address")
         FileWrite(File, "*M  Memory Address")
-        FileWrite(File, "*S  SMM RAM Address")
+        FileWrite(File, "*S  SMM RAM Offset")
         FileWrite(File, "TOM Top of Memory")
 
         FileWrite(File, "Type Address           Name")
@@ -999,8 +1001,6 @@ class PredictionReport(object):
     # @param Guid            The module Guid value.
     #
     def GenerateReport(self, File, Guid):
-        self._ParseMapFile()
-        self._InvokeEotTool()
         if Guid:
             self._GenerateFixedAddressReport(File, Guid.upper(), [])
         else:
@@ -1301,7 +1301,7 @@ class PlatformReport(object):
                 self.FdReportList.append(FdReport(Wa.FdfProfile.FdDict[Fd], Wa))
 
         self.PredictionReport = None
-        if "PREDICTION" in ReportType:
+        if "FIXED_ADDRESS" in ReportType or "EXECUTION_ORDER" in ReportType:
             self.PredictionReport = PredictionReport(Wa)
 
         self.ModuleReportList = []
@@ -1345,7 +1345,7 @@ class PlatformReport(object):
         for ModuleReportItem in self.ModuleReportList:
             ModuleReportItem.GenerateReport(File, self.PcdReport, self.PredictionReport, ReportType)
 
-        if "PREDICTION" in ReportType:
+        if "EXECUTION_ORDER" in ReportType:
             self.PredictionReport.GenerateReport(File, None)
 
 ## BuildReport class
@@ -1378,14 +1378,9 @@ class BuildReport(object):
         if ReportFile:
             self.ReportList = []
             self.ReportType = []
-            if ReportType == None:
-                self.ReportType = ["PCD", "LIBRARY", "BUILD_FLAGS", "DEPEX", "FLASH"]
-            elif "ALL" in ReportType:
-                self.ReportType = ["PCD", "LIBRARY", "BUILD_FLAGS", "DEPEX", "FLASH", "PREDICTION"]
-            else:
-                for ReportTypeItem in ReportType:
-                    if ReportTypeItem not in self.ReportType:
-                        self.ReportType.append(ReportTypeItem)
+            for ReportTypeItem in ReportType:
+                if ReportTypeItem not in self.ReportType:
+                    self.ReportType.append(ReportTypeItem)
 
     ##
     # Adds platform report to the list

@@ -1646,8 +1646,10 @@ def MyOptionParser():
     Parser.add_option("-D", "--define", action="append", type="string", dest="Macros", help="Macro: \"Name [= Value]\".")
 
     Parser.add_option("-y", "--report-file", action="store", dest="ReportFile", help="Create/overwrite the report to the specified filename.")
-    Parser.add_option("-Y", "--report-type", action="append", type="choice", choices=['ALL','PCD','LIBRARY','FLASH','DEPEX','BUILD_FLAGS','PREDICTION'], dest="ReportType",
-        help="Flags that control the type of build report to generate.  Must be one of: [ALL, PCD, LIBRARY, FLASH, DEPEX, BUILD_FLAGS, PREDICTION].  To specify more than one flag, repeat this option on the command line.")
+    Parser.add_option("-Y", "--report-type", action="append", type="choice", choices=['PCD','LIBRARY','FLASH','DEPEX','BUILD_FLAGS','FIXED_ADDRESS', 'EXECUTION_ORDER'],
+        dest="ReportType", default=["PCD", "LIBRARY", "BUILD_FLAGS", "DEPEX", "FLASH", "FIXED_ADDRESS"],
+        help="Flags that control the type of build report to generate.  Must be one of: [PCD, LIBRARY, FLASH, DEPEX, BUILD_FLAGS, FIXED_ADDRESS, EXECUTION_ORDER].  "\
+             "To specify more than one flag, repeat this option on the command line and the default flag set is [PCD, LIBRARY, FLASH, DEPEX, BUILD_FLAGS, FIXED_ADDRESS]")
 
     (Opt, Args)=Parser.parse_args()
     return (Opt, Args)
