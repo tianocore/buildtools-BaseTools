@@ -1355,6 +1355,42 @@ class Build():
                                     (', '.join(self.ArchList), self.Platform),
                                 ExtraData=self.ModuleFile
                                 )
+                # Create MAP file when Load Fix Address is enabled.
+                if self.LoadFixAddress != 0 and self.Target == "fds" and self.Fdf != '':
+                    for Arch in self.ArchList:
+                        #
+                        # Check whether the set fix address is above 4G for 32bit image.
+                        #
+                        if (Arch == 'IA32' or Arch == 'ARM') and self.LoadFixAddress != 0xFFFFFFFFFFFFFFFF and self.LoadFixAddress >= 0x100000000:
+                            EdkLogger.error("build", PARAMETER_INVALID, "FIX_LOAD_TOP_MEMORY_ADDRESS can't be set to larger than or equal to 4G for the platorm with IA32 or ARM arch modules")
+                    #
+                    # Get Module List
+                    #
+                    ModuleList = []
+                    for Pa in Wa.AutoGenObjectList:
+                        for Ma in Pa.ModuleAutoGenList:
+                            if Ma == None:
+                                continue
+                            if not Ma.IsLibrary:
+                                ModuleList.append (Ma)
+
+                    MapBuffer = StringIO('')
+                    #
+                    # Rebase module to the preferred memory address before GenFds
+                    #
+                    self._CollectModuleMapBuffer(MapBuffer, ModuleList)
+                    #
+                    # create FDS again for the updated EFI image
+                    #
+                    self._Build("fds", Wa)
+                    #
+                    # Create MAP file for all platform FVs after GenFds.
+                    #
+                    self._CollectFvMapBuffer(MapBuffer, Wa)
+                    #
+                    # Save MAP buffer into MAP file.
+                    #
+                    self._SaveMapFile (MapBuffer, Wa)
 
     ## Build a platform in multi-thread mode
     #
