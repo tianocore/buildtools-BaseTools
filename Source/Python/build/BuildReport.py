@@ -897,12 +897,15 @@ class PredictionReport(object):
             # Parse the output of EOT tool
             #
             for Line in open(DispatchList):
+                if len(Line.split()) < 4:
+                    continue
                 (Guid, Phase, FfsName, FilePath) = Line.split()
                 Symbol = self._FfsEntryPoint.get(Guid, [FfsName, ""])[0]
                 if len(Symbol) > self.MaxLen:
                     self.MaxLen = len(Symbol)
                 self.ItemList.append((Phase, Symbol, FilePath))
         except:
+            EdkLogger.quiet("(Python %s on %s\n%s)" % (platform.python_version(), sys.platform, traceback.format_exc()))
             EdkLogger.warn(None, "Failed to generate execution order prediction report, for some error occurred in executing EOT.")
 
 
@@ -1366,14 +1369,6 @@ class BuildReport(object):
     # @param ReportType      The kind of report items in the final report file
     #
     def __init__(self, ReportFile, ReportType):
-        #
-        # @attention Temporarily turn on the report feature unconditionally for
-        #            code coverage on different platform build validations.
-        #            This should be removed after the verification is over 
-        #
-        if not ReportFile:
-            ReportFile = "Report.txt"
-            
         self.ReportFile = ReportFile
         if ReportFile:
             self.ReportList = []
