@@ -1563,9 +1563,9 @@ DEFINE GCC_IA32_RC_FLAGS           = -I binary -O elf32-i386        -B i386 --re
 DEFINE GCC_X64_RC_FLAGS            = -I binary -O elf64-x86-64      -B i386 --rename-section .data=.hii
 DEFINE GCC_IPF_RC_FLAGS            = -I binary -O elf64-ia64-little -B ia64 --rename-section .data=.hii
 
-DEFINE GCC44_ALL_CC_FLAGS            = -fshort-wchar -fno-stack-protector -fno-strict-aliasing -Wall -Werror -Wno-missing-braces -Wno-array-bounds -ffunction-sections -c -include AutoGen.h -DSTRING_ARRAY_NAME=$(BASE_NAME)Strings
+DEFINE GCC44_ALL_CC_FLAGS            = -fshort-wchar -fno-stack-protector -fno-strict-aliasing -Wall -Werror -Wno-missing-braces -Wno-array-bounds -ffunction-sections -fdata-sections -c -include AutoGen.h -DSTRING_ARRAY_NAME=$(BASE_NAME)Strings
 DEFINE GCC44_IA32_CC_FLAGS           = DEF(GCC44_ALL_CC_FLAGS) -m32 -malign-double -D EFI32
-DEFINE GCC44_X64_CC_FLAGS            = DEF(GCC44_ALL_CC_FLAGS) "-DEFIAPI=__attribute__((ms_abi))" -mno-red-zone -Wno-address
+DEFINE GCC44_X64_CC_FLAGS            = DEF(GCC44_ALL_CC_FLAGS) -m64 "-DEFIAPI=__attribute__((ms_abi))" -mno-red-zone -Wno-address
 DEFINE GCC44_IA32_X64_DLINK_COMMON   = -nostdlib -n -q --gc-sections
 DEFINE GCC44_IA32_X64_ASLDLINK_FLAGS = DEF(GCC44_IA32_X64_DLINK_COMMON) --entry ReferenceAcpiTable -u ReferenceAcpiTable
 DEFINE GCC44_IA32_X64_DLINK_FLAGS    = DEF(GCC44_IA32_X64_DLINK_COMMON) --entry $(IMAGE_ENTRY_POINT) -u $(IMAGE_ENTRY_POINT) -Map $(DEST_DIR_DEBUG)/$(BASE_NAME).map
@@ -1687,15 +1687,14 @@ DEFINE GCC44_ASM_FLAGS               = DEF(GCC_ASM_FLAGS)
 *_GCC44_IA32_ASLCC_PATH           = DEF(GCC44_IA32_PREFIX)gcc
 *_GCC44_IA32_ASLPP_PATH           = DEF(GCC44_IA32_PREFIX)gcc
 *_GCC44_IA32_RC_PATH              = DEF(GCC44_IA32_PREFIX)objcopy
-*_GCC44_IA32_OBJCOPY_PATH         = DEF(GCC44_IA32_PREFIX)objcopy
 
 *_GCC44_IA32_ASLCC_FLAGS          = DEF(GCC_ASLCC_FLAGS) -m32
 *_GCC44_IA32_ASLDLINK_FLAGS       = DEF(GCC44_IA32_X64_ASLDLINK_FLAGS) -m elf_i386
 *_GCC44_IA32_ASM_FLAGS            = DEF(GCC44_ASM_FLAGS) -m32 --32 -march=i386
-*_GCC44_IA32_CC_FLAGS             = DEF(GCC44_IA32_CC_FLAGS)
+*_GCC44_IA32_CC_FLAGS             = DEF(GCC44_IA32_CC_FLAGS) -Os
 *_GCC44_IA32_DLINK_FLAGS          = DEF(GCC44_IA32_X64_DLINK_FLAGS) -m elf_i386 --oformat=elf32-i386
 *_GCC44_IA32_RC_FLAGS             = DEF(GCC_IA32_RC_FLAGS)
-*_GCC44_IA32_OBJCOPY_FLAGS        =
+
 
 ####################################################################################
 #
