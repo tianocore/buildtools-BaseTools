@@ -1373,10 +1373,12 @@ class BuildReport(object):
         if ReportFile:
             self.ReportList = []
             self.ReportType = []
-            for ReportTypeItem in ReportType:
-                if ReportTypeItem not in self.ReportType:
-                    self.ReportType.append(ReportTypeItem)
-
+            if ReportType: 
+                for ReportTypeItem in ReportType:
+                    if ReportTypeItem not in self.ReportType:
+                        self.ReportType.append(ReportTypeItem)
+            else:
+                self.ReportType = ["PCD", "LIBRARY", "BUILD_FLAGS", "DEPEX", "FLASH", "FIXED_ADDRESS"]
     ##
     # Adds platform report to the list
     #
