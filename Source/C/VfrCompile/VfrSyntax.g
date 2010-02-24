@@ -131,6 +131,9 @@ VfrParserStart (
 #token EndList("endlist")                       "endlist"
 #token EndForm("endform")                       "endform"
 #token Form("form")                             "form"
+#token FormMap("formmap")                       "formmap"
+#token MapTitle("maptitle")                     "maptitle"
+#token MapGuid("mapguid")                       "mapguid"
 #token Subtitle("subtitle")                     "subtitle"
 #token Help("help")                             "help"
 #token Text("text")                             "text"
@@ -214,6 +217,8 @@ VfrParserStart (
 #token Rule("rule")                             "rule"
 #token EndRule("endrule")                       "endrule"
 #token Value("value")                           "value"
+#token Read("read")                             "read"
+#token Write("write")                           "write"
 #token ResetButton("resetbutton")               "resetbutton"
 #token EndResetButton("endresetbutton")         "endresetbutton"
 #token DefaultStore("defaultstore")             "defaultstore"
@@ -250,7 +255,8 @@ VfrParserStart (
 
 vfrProgram > [UINT8 Return] :
   <<
-     mParserStatus = 0;
+     mParserStatus   = 0;
+     mCIfrOpHdrIndex = 0;
      mConstantOnlyInExpression = FALSE;
   >>
   (
@@ -488,23 +494,25 @@ vfrFormSetDefinition :
                                                     <<
                                                       switch (ClassGuidNum) {
                                                       case 0:
-                                                        FSObj = new CIfrFormSet(sizeof(EFI_IFR_FORM_SET));
+                                                        FSObj = new CIfrFormSet(sizeof(EFI_IFR_FORM_SET) + sizeof(EFI_GUID));
                                                         FSObj->SetClassGuid(&DefaultClassGuid);
                                                         break;
                                                       case 1:
-                                                        FSObj = new CIfrFormSet(sizeof(EFI_IFR_FORM_SET));
+                                                        FSObj = new CIfrFormSet(sizeof(EFI_IFR_FORM_SET) + ClassGuidNum * sizeof(EFI_GUID));
                                                         FSObj->SetClassGuid(&ClassGuid1);
                                                         break;
                                                       case 2:
-                                                        FSObj = new CIfrFormSet(sizeof(EFI_IFR_FORM_SET) + sizeof(EFI_GUID));
+                                                        FSObj = new CIfrFormSet(sizeof(EFI_IFR_FORM_SET) + ClassGuidNum * sizeof(EFI_GUID));
                                                         FSObj->SetClassGuid(&ClassGuid1);
                                                         FSObj->SetClassGuid(&ClassGuid2);
                                                         break;
-                                                      default:
-                                                        FSObj = new CIfrFormSet(sizeof(EFI_IFR_FORM_SET) + 2 * sizeof(EFI_GUID));
+                                                      case 3:
+                                                        FSObj = new CIfrFormSet(sizeof(EFI_IFR_FORM_SET) + ClassGuidNum * sizeof(EFI_GUID));
                                                         FSObj->SetClassGuid(&ClassGuid1);
                                                         FSObj->SetClassGuid(&ClassGuid2);
                                                         FSObj->SetClassGuid(&ClassGuid3);
+                                                        break;
+                                                      default:
                                                         break;
                                                       }
 
@@ -544,6 +552,7 @@ vfrFormSetDefinition :
 vfrFormSetList :
   (
     vfrFormDefinition             |
+    vfrFormMapDefinition          |
     vfrStatementImage             |
     vfrStatementVarStoreLinear    |
     vfrStatementVarStoreEfi       |
@@ -774,11 +783,11 @@ vfrQuestionHeader[CIfrQuestionHeader & QHObj, EFI_QUESION_TYPE QType = QUESTION_
                                                          mCVfrQuestionDB.RegisterQuestion (QName, VarIdStr, QId);
                                                          break;
                                                        case QUESTION_DATE:
-                                                       mCVfrQuestionDB.RegisterNewDateQuestion (QName, VarIdStr, QId);
-                                                       break;
+                                                         mCVfrQuestionDB.RegisterNewDateQuestion (QName, VarIdStr, QId);
+                                                         break;
                                                        case QUESTION_TIME:
-                                                       mCVfrQuestionDB.RegisterNewTimeQuestion (QName, VarIdStr, QId);
-                                                       break;
+                                                         mCVfrQuestionDB.RegisterNewTimeQuestion (QName, VarIdStr, QId);
+                                                         break;
                                                        default:
                                                        _PCATCH(VFR_RETURN_FATAL_ERROR);
                                                        }
@@ -823,7 +832,7 @@ questionheaderFlagsField[UINT8 & Flags] :
   | LateCheckFlag
   ;
 
-vfrStorageVarId[EFI_VARSTORE_INFO & Info, CHAR8 *&QuestVarIdStr] :
+vfrStorageVarId[EFI_VARSTORE_INFO & Info, CHAR8 *&QuestVarIdStr, BOOLEAN CheckFlag = TRUE] :
   <<
      UINT32                Idx;
      UINT32                LineNo;
@@ -856,9 +865,11 @@ vfrStorageVarId[EFI_VARSTORE_INFO & Info, CHAR8 *&QuestVarIdStr] :
                                                                              );
                                                           VfrReturnCode = mCVfrDataStorage.GetVarStoreType (SName, VarStoreType);
                                                        }
-                                                       _PCATCH(VfrReturnCode, SN1);
-                                                       _PCATCH(mCVfrDataStorage.GetVarStoreId (SName, &$Info.mVarStoreId), SN1);
-                                                       _PCATCH(mCVfrDataStorage.GetNameVarStoreInfo (&$Info, Idx), SN1);
+                                                       if (CheckFlag || VfrReturnCode == VFR_RETURN_SUCCESS) {
+                                                         _PCATCH(VfrReturnCode, SN1);
+                                                         _PCATCH(mCVfrDataStorage.GetVarStoreId (SName, &$Info.mVarStoreId), SN1);
+                                                         _PCATCH(mCVfrDataStorage.GetNameVarStoreInfo (&$Info, Idx), SN1);
+                                                       }
                                                     >>
   )
   |
@@ -877,17 +888,21 @@ vfrStorageVarId[EFI_VARSTORE_INFO & Info, CHAR8 *&QuestVarIdStr] :
                                                                              );
                                                           VfrReturnCode = mCVfrDataStorage.GetVarStoreType (SName, VarStoreType);
                                                        }
-                                                       _PCATCH(VfrReturnCode, SN2);
-                                                       _PCATCH(mCVfrDataStorage.GetVarStoreId (SName, &$Info.mVarStoreId), SN2);
-                                                       if (VarStoreType == EFI_VFR_VARSTORE_BUFFER) {
-                                                         _PCATCH(mCVfrDataStorage.GetBufferVarStoreDataTypeName(SName, &TName), SN2);
-                                                         _STRCAT(&VarStr, TName);
+                                                       if (CheckFlag || VfrReturnCode == VFR_RETURN_SUCCESS) {
+                                                         _PCATCH(VfrReturnCode, SN2);
+                                                         _PCATCH(mCVfrDataStorage.GetVarStoreId (SName, &$Info.mVarStoreId), SN2);
+                                                         if (VarStoreType == EFI_VFR_VARSTORE_BUFFER) {
+                                                           _PCATCH(mCVfrDataStorage.GetBufferVarStoreDataTypeName(SName, &TName), SN2);
+                                                           _STRCAT(&VarStr, TName);
+                                                         }
                                                        }
                                                     >>
 
     (
       "."                                           <<
-                                                       _PCATCH(((VarStoreType != EFI_VFR_VARSTORE_BUFFER) ? VFR_RETURN_EFIVARSTORE_USE_ERROR : VFR_RETURN_SUCCESS), SN2);
+                                                       if (CheckFlag || VfrReturnCode == VFR_RETURN_SUCCESS) {
+                                                         _PCATCH(((VarStoreType != EFI_VFR_VARSTORE_BUFFER) ? VFR_RETURN_EFIVARSTORE_USE_ERROR : VFR_RETURN_SUCCESS), SN2);
+                                                       }
                                                        _STRCAT(&VarIdStr, "."); _STRCAT(&VarStr, ".");
                                                     >>
       SF:StringIdentifier                           << _STRCAT(&VarIdStr, SF->getText()); _STRCAT(&VarStr, SF->getText()); >>
@@ -1082,6 +1097,33 @@ vfrFormDefinition :
   ";"
   ;
 
+vfrFormMapDefinition :
+  << 
+    CIfrFormMap *FMapObj = NULL;
+    UINT32      FormMapMethodNumber = 0;
+    EFI_GUID    Guid;
+  >>
+  F:FormMap                                         << FMapObj = new CIfrFormMap(); FMapObj->SetLineNo(F->getLine()); >>
+  FormId "=" S1:Number ","                          << _PCATCH(FMapObj->SetFormId (_STOFID(S1->getText())), S1); >>
+  (
+    MapTitle "=" "STRING_TOKEN" "\(" S2:Number "\)" ";"
+    MapGuid  "=" guidDefinition[Guid] ";"           << FMapObj->SetFormMapMethod (_STOFID(S2->getText()), &Guid); FormMapMethodNumber ++; >>
+  )*                                                << if (FormMapMethodNumber == 0) {_PCATCH (VFR_RETURN_INVALID_PARAMETER, F->getLine(), "No MapMethod is set for FormMap!");} delete FMapObj;>>
+  (
+    vfrStatementImage                        |
+    vfrStatementLocked                       |
+    vfrStatementRules                        |
+    vfrStatementDefault                      |
+    vfrStatementStat                         |
+    vfrStatementQuestions                    |
+    vfrStatementConditional                  |
+    vfrStatementLabel                        |
+    vfrStatementBanner
+  )*
+  E:EndForm                                         << CRT_END_OP (E); >>
+  ";"
+  ;
+
 vfrStatementRules :
   << CIfrRule RObj; >>
   R:Rule                                            << RObj.SetLineNo(R->getLine()); >>
@@ -1195,6 +1237,18 @@ vfrStatementValue :
   << CIfrValue VObj; >>
   V:Value                                              << VObj.SetLineNo(V->getLine()); >>
   "=" vfrStatementExpression[0]                        << {CIfrEnd EndObj; EndObj.SetLineNo(V->getLine());} >>
+  ;
+
+vfrStatementRead :
+  << CIfrRead RObj; >>
+  R:Read                                               << RObj.SetLineNo(R->getLine()); >>
+  vfrStatementExpression[0] ";" 
+  ;
+
+vfrStatementWrite :
+  << CIfrWrite WObj; >>
+  W:Write                                              << WObj.SetLineNo(W->getLine()); >>
+  vfrStatementExpression[0] ";" 
   ;
 
 vfrStatementSubTitle :
@@ -2049,6 +2103,8 @@ vfrStatementQuestionOptionTag :
   vfrStatementGrayOutIfQuest    |
   vfrStatementValue             |
   vfrStatementDefault           |
+  vfrStatementRead              |
+  vfrStatementWrite             |
   vfrStatementOptions
   ;
 
@@ -2482,6 +2538,7 @@ vfrStatementInvalidSaveRestoreDefaults :
 #token StringRef("stringref")                   "stringref"
 #token PushThis("pushthis")                     "pushthis"
 #token Security("security")                     "security"
+#token Get("get")                               "get"
 #token True("TRUE")                             "TRUE"
 #token False("FALSE")                           "FALSE"
 #token One("ONE")                               "ONE"
@@ -2493,6 +2550,7 @@ vfrStatementInvalidSaveRestoreDefaults :
 #token AND("AND")                               "AND"
 #token OR("OR")                                 "OR"
 #token NOT("NOT")                               "NOT"
+#token Set("set")                               "set"
 #token BitWiseNot("~")                          "\~"
 #token BoolVal("boolval")                       "boolval"
 #token StringVal("stringval")                   "stringval"
@@ -2503,12 +2561,13 @@ vfrStatementInvalidSaveRestoreDefaults :
 #token Catenate("catenate")                     "catenate"
 #token QuestionRefVal("questionrefval")         "questionrefval"
 #token StringRefVal("stringrefval")             "stringrefval"
+#token Map("map")                               "map"
 
 //
 // Root expression extension function called by other function.
 //
 vfrStatementExpression [UINT32 RootLevel, UINT32 ExpOpCount = 0] :
-  << if ($RootLevel == 0) {_CLEAR_SAVED_OPHDR ();} >>
+  << if ($RootLevel == 0) {mCIfrOpHdrIndex ++; if (mCIfrOpHdrIndex >= MAX_IFR_EXPRESSION_DEPTH) _PCATCH (VFR_RETURN_INVALID_PARAMETER, 0, "The depth of expression exceeds the max supported level 8!"); _CLEAR_SAVED_OPHDR ();} >>
   andTerm[$RootLevel, $ExpOpCount]
   (
     L:OR andTerm[$RootLevel, $ExpOpCount]              << $ExpOpCount++; CIfrOr OObj(L->getLine()); >>
@@ -2520,10 +2579,14 @@ vfrStatementExpression [UINT32 RootLevel, UINT32 ExpOpCount = 0] :
                                                           if ($ExpOpCount > 1 && $RootLevel == 0) {
                                                             if (_SET_SAVED_OPHDR_SCOPE()) {
                                                               CIfrEnd EObj;
-                                                              if (mCIfrOpHdrLineNo != 0) {
-                                                                EObj.SetLineNo (mCIfrOpHdrLineNo);
+                                                              if (mCIfrOpHdrLineNo[mCIfrOpHdrIndex] != 0) {
+                                                                EObj.SetLineNo (mCIfrOpHdrLineNo[mCIfrOpHdrIndex]);
                                                               }
                                                             }
+                                                          }
+                                                          
+                                                          if ($RootLevel == 0) {
+                                                            mCIfrOpHdrIndex --;
                                                           }
                                                        >>
   ;
@@ -2667,6 +2730,7 @@ atomTerm [UINT32 & RootLevel, UINT32 & ExpOpCount]:
   | vfrExpressionConstant[$RootLevel, $ExpOpCount]
   | vfrExpressionUnaryOp[$RootLevel, $ExpOpCount]
   | vfrExpressionTernaryOp[$RootLevel, $ExpOpCount]
+  | vfrExpressionMap[$RootLevel, $ExpOpCount]
   | (
       L:NOT
       atomTerm[$RootLevel, $ExpOpCount]                 << { CIfrNot NObj(L->getLine()); $ExpOpCount++; } >>
@@ -2708,6 +2772,7 @@ vfrExpressionBuildInFunction [UINT32 & RootLevel, UINT32 & ExpOpCount] :
   | stringref1Exp[$RootLevel, $ExpOpCount]
   | pushthisExp[$RootLevel, $ExpOpCount]
   | securityExp[$RootLevel, $ExpOpCount]
+  | getExp[$RootLevel, $ExpOpCount]
   ;
 
 dupExp [UINT32 & RootLevel, UINT32 & ExpOpCount] :
@@ -3020,6 +3085,84 @@ securityExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   "\(" guidDefinition[Guid] "\)"                       << { CIfrSecurity SObj(L->getLine()); _SAVE_OPHDR_COND (SObj, ($ExpOpCount == 0), L->getLine()); SObj.SetPermissions (&Guid); } $ExpOpCount++; >>
   ;
 
+numericVarStoreType [UINT8 & VarType] :
+    "NUMERIC_SIZE_1"                                   << $VarType = EFI_IFR_NUMERIC_SIZE_1; >>
+  | "NUMERIC_SIZE_2"                                   << $VarType = EFI_IFR_NUMERIC_SIZE_2; >>
+  | "NUMERIC_SIZE_4"                                   << $VarType = EFI_IFR_NUMERIC_SIZE_4; >>
+  | "NUMERIC_SIZE_8"                                   << $VarType = EFI_IFR_NUMERIC_SIZE_8; >>
+  ;
+
+getExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
+  <<
+     EFI_VARSTORE_INFO Info;
+     CHAR8             *VarIdStr = NULL;
+     EFI_QUESTION_ID   QId = EFI_QUESTION_ID_INVALID;
+     UINT32            Mask = 0;
+     EFI_QUESION_TYPE  QType = QUESTION_NORMAL;
+     UINT8             VarType = EFI_IFR_TYPE_UNDEFINED;
+     UINT32            VarSize = 0;
+     Info.mVarStoreId = 0;
+  >>
+  L:Get
+  "\(" 
+      vfrStorageVarId[Info, VarIdStr, FALSE]
+      {"\|" FLAGS "=" numericVarStoreType [VarType] }
+  "\)"                                                 << 
+                                                          {
+                                                            if (Info.mVarStoreId == 0) {
+                                                              // support Date/Time question
+                                                              mCVfrQuestionDB.GetQuestionId (NULL, VarIdStr, QId, Mask, &QType);
+                                                              if (QId == EFI_QUESTION_ID_INVALID || Mask == 0 || QType == QUESTION_NORMAL) {
+                                                                _PCATCH(VFR_RETURN_UNSUPPORTED, L->getLine(), "Get/Set opcode can't get the enough varstore information");
+                                                              }
+                                                              if (QType == QUESTION_DATE) {
+                                                                Info.mVarType = EFI_IFR_TYPE_DATE;
+                                                              } else if (QType == QUESTION_TIME) {
+                                                                Info.mVarType = EFI_IFR_TYPE_TIME;
+                                                              }
+                                                              switch (Mask) {
+                                                              case DATE_YEAR_BITMASK:
+                                                                Info.mInfo.mVarOffset = 0;
+                                                                break;
+                                                              case DATE_DAY_BITMASK:
+                                                                Info.mInfo.mVarOffset = 3;
+                                                                break;
+                                                              case TIME_HOUR_BITMASK:
+                                                                Info.mInfo.mVarOffset = 0;
+                                                                break;
+                                                              case TIME_MINUTE_BITMASK:
+                                                                Info.mInfo.mVarOffset = 1;
+                                                                break;
+                                                              case TIME_SECOND_BITMASK:
+                                                                Info.mInfo.mVarOffset = 2;
+                                                                break;
+                                                              default:
+                                                                _PCATCH(VFR_RETURN_UNSUPPORTED, L->getLine(), "Get/Set opcode can't get the enough varstore information");
+                                                                break;
+                                                              }
+                                                            } else {
+                                                              if ((mCVfrDataStorage.GetVarStoreType(Info.mVarStoreId) == EFI_VFR_VARSTORE_NAME) && (VarType == EFI_IFR_TYPE_UNDEFINED)) {
+                                                                _PCATCH(VFR_RETURN_UNSUPPORTED, L->getLine(), "Get/Set opcode don't support name string");
+                                                              }
+                                                              if (VarType != EFI_IFR_TYPE_UNDEFINED) {
+                                                                Info.mVarType = VarType;
+                                                                _PCATCH(gCVfrVarDataTypeDB.GetDataTypeSize (Info.mVarType, &VarSize), L->getLine(), "Get/Set opcode can't get var type size");
+                                                                Info.mVarTotalSize = VarSize;
+                                                              }
+                                                              _PCATCH(gCVfrVarDataTypeDB.GetDataTypeSize (Info.mVarType, &VarSize), L->getLine(), "Get/Set opcode can't get var type size");
+                                                              if (VarSize != Info.mVarTotalSize) {
+                                                                _PCATCH(VFR_RETURN_UNSUPPORTED, L->getLine(), "Get/Set opcode don't support data array");
+                                                              }
+                                                            }
+                                                            CIfrGet GObj(L->getLine()); 
+                                                            _SAVE_OPHDR_COND (GObj, ($ExpOpCount == 0), L->getLine()); 
+                                                            GObj.SetVarInfo (&Info); 
+                                                            delete VarIdStr; 
+                                                            $ExpOpCount++;
+                                                          }
+                                                       >>
+  ;
+
 vfrExpressionConstant[UINT32 & RootLevel, UINT32 & ExpOpCount] :
     L1:True                                            << CIfrTrue TObj(L1->getLine()); _SAVE_OPHDR_COND (TObj, ($ExpOpCount == 0), L1->getLine()); $ExpOpCount++; >>
   | L2:False                                           << CIfrFalse FObj(L2->getLine()); _SAVE_OPHDR_COND (FObj, ($ExpOpCount == 0), L2->getLine()); $ExpOpCount++; >>
@@ -3040,6 +3183,7 @@ vfrExpressionUnaryOp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   | unintExp[$RootLevel, $ExpOpCount]
   | toupperExp[$RootLevel, $ExpOpCount]
   | tolwerExp[$RootLevel, $ExpOpCount]
+  | setExp[$RootLevel, $ExpOpCount]
   ;
 
 lengthExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
@@ -3098,6 +3242,78 @@ tolwerExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   L:ToLower
   "\(" vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount] "\)"
                                                        << { CIfrToLower TLObj(L->getLine()); $ExpOpCount++; } >>
+  ;
+
+setExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
+  <<
+     EFI_VARSTORE_INFO Info;
+     CHAR8             *VarIdStr = NULL;
+     EFI_QUESTION_ID   QId = EFI_QUESTION_ID_INVALID;
+     UINT32            Mask = 0;
+     EFI_QUESION_TYPE  QType = QUESTION_NORMAL;
+     UINT8             VarType = EFI_IFR_TYPE_UNDEFINED;
+     UINT32            VarSize = 0;
+     Info.mVarStoreId = 0;
+  >>
+  L:Set
+  "\("
+     vfrStorageVarId[Info, VarIdStr, FALSE]
+     {"\|" FLAG "=" numericVarStoreType [VarType] }
+     "," vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount] 
+  "\)"
+                                                       << 
+                                                          {
+                                                            if (Info.mVarStoreId == 0) {
+                                                              // support Date/Time question
+                                                              mCVfrQuestionDB.GetQuestionId (NULL, VarIdStr, QId, Mask, &QType);
+                                                              if (QId == EFI_QUESTION_ID_INVALID || Mask == 0 || QType == QUESTION_NORMAL) {
+                                                                _PCATCH(VFR_RETURN_UNSUPPORTED, L->getLine(), "Get/Set opcode can't get the enough varstore information");
+                                                              }
+                                                              if (QType == QUESTION_DATE) {
+                                                                Info.mVarType = EFI_IFR_TYPE_DATE;
+                                                              } else if (QType == QUESTION_TIME) {
+                                                                Info.mVarType = EFI_IFR_TYPE_TIME;
+                                                              }
+                                                              switch (Mask) {
+                                                              case DATE_YEAR_BITMASK:
+                                                                Info.mInfo.mVarOffset = 0;
+                                                                break;
+                                                              case DATE_DAY_BITMASK:
+                                                                Info.mInfo.mVarOffset = 3;
+                                                                break;
+                                                              case TIME_HOUR_BITMASK:
+                                                                Info.mInfo.mVarOffset = 0;
+                                                                break;
+                                                              case TIME_MINUTE_BITMASK:
+                                                                Info.mInfo.mVarOffset = 1;
+                                                                break;
+                                                              case TIME_SECOND_BITMASK:
+                                                                Info.mInfo.mVarOffset = 2;
+                                                                break;
+                                                              default:
+                                                                _PCATCH(VFR_RETURN_UNSUPPORTED, L->getLine(), "Get/Set opcode can't get the enough varstore information");
+                                                                break;
+                                                              }
+                                                            } else {
+                                                              if ((mCVfrDataStorage.GetVarStoreType(Info.mVarStoreId) == EFI_VFR_VARSTORE_NAME) && (VarType == EFI_IFR_TYPE_UNDEFINED)) {
+                                                                _PCATCH(VFR_RETURN_UNSUPPORTED, L->getLine(), "Get/Set opcode don't support name string");
+                                                              }
+                                                              if (VarType != EFI_IFR_TYPE_UNDEFINED) {
+                                                                Info.mVarType = VarType;
+                                                                _PCATCH(gCVfrVarDataTypeDB.GetDataTypeSize (Info.mVarType, &VarSize), L->getLine(), "Get/Set opcode can't get var type size");
+                                                                Info.mVarTotalSize = VarSize;
+                                                              }
+                                                              _PCATCH(gCVfrVarDataTypeDB.GetDataTypeSize (Info.mVarType, &VarSize), L->getLine(), "Get/Set opcode can't get var type size");
+                                                              if (VarSize != Info.mVarTotalSize) {
+                                                                _PCATCH(VFR_RETURN_UNSUPPORTED, L->getLine(), "Get/Set opcode don't support data array");
+                                                              }
+                                                            }
+                                                            CIfrSet TSObj(L->getLine()); 
+                                                            TSObj.SetVarInfo (&Info); 
+                                                            delete VarIdStr; 
+                                                            $ExpOpCount++;
+                                                          }
+                                                       >>
   ;
 
 vfrExpressionTernaryOp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
@@ -3175,6 +3391,20 @@ spanExp[UINT32 & RootLevel, UINT32 & ExpOpCount] :
   "\)"                                                 << { CIfrSpan SObj(S->getLine()); SObj.SetFlags(Flags); $ExpOpCount++; } >>
   ;
 
+vfrExpressionMap [UINT32 & RootLevel, UINT32 & ExpOpCount]:
+  L:Map                                                   
+  "\(" 
+  vfrStatementExpressionSub[$RootLevel + 1, $ExpOpCount]  
+  ":"                                                     << { CIfrMap MObj(L->getLine()); } >>
+  (
+    vfrStatementExpression[0]
+    ","
+    vfrStatementExpression[0]
+    ";"
+  ) *
+  E:"\)"                                                  << { CIfrEnd EObj; EObj.SetLineNo(E->getLine()); $ExpOpCount++; } >>
+  ;
+
 spanFlags [UINT8 & Flags] :
     N:Number                                           << $Flags |= _STOU8(N->getText()); >>
   | "LAST_NON_MATCH"                                   << $Flags |= 0x00; >>
@@ -3199,8 +3429,9 @@ private:
   CVfrQuestionDB      mCVfrQuestionDB;
   CVfrRulesDB         mCVfrRulesDB;
 
-  CIfrOpHeader        *mCIfrOpHdr;
-  UINT32              mCIfrOpHdrLineNo;
+  CIfrOpHeader *      mCIfrOpHdr[MAX_IFR_EXPRESSION_DEPTH];
+  UINT32              mCIfrOpHdrLineNo[MAX_IFR_EXPRESSION_DEPTH];
+  UINT8               mCIfrOpHdrIndex;
   VOID                _SAVE_OPHDR_COND (IN CIfrOpHeader &, IN BOOLEAN, UINT32 LineNo = 0);
   VOID                _CLEAR_SAVED_OPHDR (VOID);
   BOOLEAN             _SET_SAVED_OPHDR_SCOPE (VOID);
@@ -3273,11 +3504,11 @@ EfiVfrParser::_SAVE_OPHDR_COND (
   )
 {
   if (Cond == TRUE) {
-    if (mCIfrOpHdr != NULL) {
+    if (mCIfrOpHdr[mCIfrOpHdrIndex] != NULL) {
       return ;
     }
-    mCIfrOpHdr       = new CIfrOpHeader(OpHdr);
-    mCIfrOpHdrLineNo = LineNo;
+    mCIfrOpHdr[mCIfrOpHdrIndex]       = new CIfrOpHeader(OpHdr);
+    mCIfrOpHdrLineNo[mCIfrOpHdrIndex] = LineNo;
   }
 }
 
@@ -3286,8 +3517,8 @@ EfiVfrParser::_CLEAR_SAVED_OPHDR (
   VOID
   )
 {
-  mCIfrOpHdr       = NULL;
-  mCIfrOpHdrLineNo = 0;
+  mCIfrOpHdr[mCIfrOpHdrIndex]       = NULL;
+  mCIfrOpHdrLineNo[mCIfrOpHdrIndex] = 0;
 }
 
 BOOLEAN
@@ -3295,10 +3526,11 @@ EfiVfrParser::_SET_SAVED_OPHDR_SCOPE (
   VOID
   )
 {
-  if (mCIfrOpHdr != NULL) {
-    mCIfrOpHdr->SetScope (1);
+  if (mCIfrOpHdr[mCIfrOpHdrIndex] != NULL) {
+    mCIfrOpHdr[mCIfrOpHdrIndex]->SetScope (1);
     return TRUE;
   }
+
   //
   // IfrOpHdr is not set, FALSE is return.
   //

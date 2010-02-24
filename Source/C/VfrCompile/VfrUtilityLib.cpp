@@ -2260,6 +2260,7 @@ SVfrQuestionNode::SVfrQuestionNode (
   mQuestionId = EFI_QUESTION_ID_INVALID;
   mBitMask    = BitMask;
   mNext       = NULL;
+  mQtype      = QUESTION_NORMAL;
 
   if (Name == NULL) {
     mName = new CHAR8[strlen ("$DEFAULT") + 1];
@@ -2429,6 +2430,9 @@ CVfrQuestionDB::RegisterOldDateQuestion (
   pNode[0]->mQuestionId = QuestionId;
   pNode[1]->mQuestionId = QuestionId;
   pNode[2]->mQuestionId = QuestionId;
+  pNode[0]->mQtype      = QUESTION_DATE;
+  pNode[1]->mQtype      = QUESTION_DATE;
+  pNode[2]->mQtype      = QUESTION_DATE;
   pNode[0]->mNext       = pNode[1];
   pNode[1]->mNext       = pNode[2];
   pNode[2]->mNext       = mQuestionList;
@@ -2505,6 +2509,9 @@ CVfrQuestionDB::RegisterNewDateQuestion (
   pNode[0]->mQuestionId = QuestionId;
   pNode[1]->mQuestionId = QuestionId;
   pNode[2]->mQuestionId = QuestionId;
+  pNode[0]->mQtype      = QUESTION_DATE;
+  pNode[1]->mQtype      = QUESTION_DATE;
+  pNode[2]->mQtype      = QUESTION_DATE;
   pNode[0]->mNext       = pNode[1];
   pNode[1]->mNext       = pNode[2];
   pNode[2]->mNext       = mQuestionList;
@@ -2571,6 +2578,9 @@ CVfrQuestionDB::RegisterOldTimeQuestion (
   pNode[0]->mQuestionId = QuestionId;
   pNode[1]->mQuestionId = QuestionId;
   pNode[2]->mQuestionId = QuestionId;
+  pNode[0]->mQtype      = QUESTION_TIME;
+  pNode[1]->mQtype      = QUESTION_TIME;
+  pNode[2]->mQtype      = QUESTION_TIME;
   pNode[0]->mNext       = pNode[1];
   pNode[1]->mNext       = pNode[2];
   pNode[2]->mNext       = mQuestionList;
@@ -2647,6 +2657,9 @@ CVfrQuestionDB::RegisterNewTimeQuestion (
   pNode[0]->mQuestionId = QuestionId;
   pNode[1]->mQuestionId = QuestionId;
   pNode[2]->mQuestionId = QuestionId;
+  pNode[0]->mQtype      = QUESTION_TIME;
+  pNode[1]->mQtype      = QUESTION_TIME;
+  pNode[2]->mQtype      = QUESTION_TIME;
   pNode[0]->mNext       = pNode[1];
   pNode[1]->mNext       = pNode[2];
   pNode[2]->mNext       = mQuestionList;
@@ -2720,13 +2733,17 @@ CVfrQuestionDB::GetQuestionId (
   IN  CHAR8             *Name,
   IN  CHAR8             *VarIdStr,
   OUT EFI_QUESTION_ID   &QuestionId,
-  OUT UINT32            &BitMask
+  OUT UINT32            &BitMask,
+  OUT EFI_QUESION_TYPE  *QType
   )
 {
   SVfrQuestionNode *pNode;
 
   QuestionId = EFI_QUESTION_ID_INVALID;
   BitMask    = 0x00000000;
+  if (QType != NULL) {
+    *QType = QUESTION_NORMAL;
+  }
 
   if ((Name == NULL) && (VarIdStr == NULL)) {
     return ;
@@ -2747,6 +2764,9 @@ CVfrQuestionDB::GetQuestionId (
 
     QuestionId = pNode->mQuestionId;
     BitMask    = pNode->mBitMask;
+    if (QType != NULL) {
+      *QType     = pNode->mQtype;
+    }
     break;
   }
 
