@@ -23,6 +23,7 @@ from ParserWarning import Warning
 # Profile contents of a file
 PPDirectiveList = []
 AssignmentExpressionList = []
+PredicateExpressionList = []
 FunctionDefinitionList = []
 VariableDeclarationList = []
 EnumerationDefinitionList = []

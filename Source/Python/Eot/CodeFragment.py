@@ -13,6 +13,24 @@
 #
 
 
+## The description of comment contents and start & end position
+#
+#
+class Comment :
+    ## The constructor
+    #
+    #   @param  self        The object pointer
+    #   @param  Str         The message to record
+    #   @param  Begin       The start position tuple.
+    #   @param  End         The end position tuple.
+    #   @param  CommentType The type of comment (T_COMMENT_TWO_SLASH or T_COMMENT_SLASH_STAR).
+    #
+    def __init__(self, Str, Begin, End, CommentType):
+        self.Content = Str
+        self.StartPos = Begin
+        self.EndPos = End
+        self.Type = CommentType
+
 ## The description of preprocess directives and start & end position
 #
 #
@@ -44,6 +62,22 @@ class AssignmentExpression :
         self.Name = Lvalue
         self.Operator = Op
         self.Value = Exp
+        self.StartPos = Begin
+        self.EndPos = End
+
+## The description of predicate expression and start & end position
+#
+#
+class PredicateExpression :
+    ## The constructor
+    #
+    #   @param  self        The object pointer
+    #   @param  Str         The message to record
+    #   @param  Begin       The start position tuple.
+    #   @param  End         The end position tuple.
+    #
+    def __init__(self, Str, Begin, End):
+        self.Content = Str
         self.StartPos = Begin
         self.EndPos = End
 
