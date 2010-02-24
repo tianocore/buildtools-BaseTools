@@ -37,6 +37,10 @@ DEFINE VS2008x86_DLL    = C:\Program Files (x86)\Microsoft Visual Studio 9.0\Com
 DEFINE VS2008x86_BINX64 = DEF(VS2008x86_BIN)\x86_amd64
 DEFINE VS2008x86_BIN64  = DEF(VS2008x86_BIN)\x86_ia64
 
+DEFINE WINSDK_VERSION   = v6.0A
+DEFINE WINSDK_BIN       = c:\Program Files\Microsoft SDKs\Windows\DEF(WINSDK_VERSION)\bin
+DEFINE WINSDKx86_BIN    = c:\Program Files (x86)\Microsoft SDKs\Windows\DEF(WINSDK_VERSION)\bin
+
 # These defines are needed for certain Microsoft Visual Studio tools that
 # are used by other toolchains.  An example is that ICC on Windows normally
 # uses Microsoft's nmake.exe.
@@ -880,7 +884,7 @@ RELEASE_VS2005x86xASL_IPF_DLINK_FLAGS  = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT:R
 
 *_VS2008_*_MAKE_PATH              = DEF(VS2008_BIN)\nmake.exe
 *_VS2008_*_MAKE_FLAGS             = /nologo
-*_VS2008_*_RC_PATH                = DEF(VS2008_BIN)\rc.exe
+*_VS2008_*_RC_PATH                = DEF(WINSDK_BIN)\rc.exe
 
 *_VS2008_*_SLINK_FLAGS            = /NOLOGO /LTCG
 *_VS2008_*_APP_FLAGS              = /nologo /E /TC
@@ -1002,7 +1006,7 @@ RELEASE_VS2008_IPF_DLINK_FLAGS  = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT:REF.ICF 
 
 *_VS2008xASL_*_MAKE_PATH       = DEF(VS2008_BIN)\nmake.exe
 *_VS2008xASL_*_MAKE_FLAG       = /nologo
-*_VS2008xASL_*_RC_PATH         = DEF(VS2008_BIN)\rc.exe
+*_VS2008xASL_*_RC_PATH         = DEF(WINSDK_BIN)\rc.exe
 
 *_VS2008xASL_*_SLINK_FLAGS     = /NOLOGO /LTCG
 *_VS2008xASL_*_APP_FLAGS       = /nologo /E /TC
@@ -1121,7 +1125,8 @@ RELEASE_VS2008xASL_IPF_DLINK_FLAGS  = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT:REF.
 *_VS2008x86_*_*_FAMILY        = MSFT
 
 *_VS2008x86_*_MAKE_PATH       = DEF(VS2008x86_BIN)\nmake.exe
-
+*_VS2008xASL_*_MAKE_FLAG       = /nologo
+*_VS2008xASL_*_RC_PATH         = DEF(WINSDKx86_BIN)\rc.exe
 
 *_VS2008x86_*_MAKE_FLAGS      = /nologo
 *_VS2008x86_*_SLINK_FLAGS     = /NOLOGO /LTCG
@@ -1220,7 +1225,8 @@ RELEASE_VS2008x86_IPF_DLINK_FLAGS  = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT:REF,I
 *_VS2008x86xASL_*_*_FAMILY        = MSFT
 
 *_VS2008x86xASL_*_MAKE_PATH       = DEF(VS2008x86_BIN)\nmake.exe
-
+*_VS2008xASL_*_MAKE_FLAG       = /nologo
+*_VS2008xASL_*_RC_PATH         = DEF(WINSDKx86_BIN)\rc.exe
 
 *_VS2008x86xASL_*_MAKE_FLAGS      = /nologo
 *_VS2008x86xASL_*_SLINK_FLAGS     = /NOLOGO /LTCG
