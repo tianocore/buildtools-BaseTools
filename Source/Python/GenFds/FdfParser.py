@@ -40,6 +40,7 @@ import OptionRom
 import OptRomInfStatement
 import OptRomFileStatement
 
+from GenFdsGlobalVariable import GenFdsGlobalVariable
 from Common.BuildToolError import *
 from Common import EdkLogger
 
@@ -172,6 +173,7 @@ class FileProfile :
         self.InfList = []
 
         self.FdDict = {}
+        self.FdNameNotSet = False
         self.FvDict = {}
         self.CapsuleDict = {}
         self.VtfList = []
@@ -1300,7 +1302,16 @@ class FdfParser:
             raise Warning("expected [FD.]", self.FileName, self.CurrentLineNumber)
 
         FdName = self.__GetUiName()
+        if FdName == "":
+            if len (self.Profile.FdDict) == 0:
+                FdName = GenFdsGlobalVariable.PlatformName
+                self.Profile.FdNameNotSet = True
+            else:
+                raise Warning("expected FdName in [FD.] section", self.FileName, self.CurrentLineNumber)
         self.CurrentFdName = FdName.upper()
+        
+        if self.CurrentFdName in self.Profile.FdDict:
+            raise Warning("Unexpected the same FD name", self.FileName, self.CurrentLineNumber)
 
         if not self.__IsToken( "]"):
             raise Warning("expected ']'", self.FileName, self.CurrentLineNumber)
@@ -1308,6 +1319,10 @@ class FdfParser:
         FdObj = Fd.FD()
         FdObj.FdUiName = self.CurrentFdName
         self.Profile.FdDict[self.CurrentFdName] = FdObj
+
+        if len (self.Profile.FdDict) > 1 and self.Profile.FdNameNotSet:
+            raise Warning("expected all FDs have their name", self.FileName, self.CurrentLineNumber)
+
         Status = self.__GetCreateFile(FdObj)
         if not Status:
             raise Warning("FD name error", self.FileName, self.CurrentLineNumber)
@@ -1495,7 +1510,7 @@ class FdfParser:
             PcdPair = self.__GetNextPcdName()
             BlockSizePcd = PcdPair
             self.Profile.PcdDict[PcdPair] = BlockSize
-        BlockSize = long(self.__Token, 0)
+        BlockSize = long(BlockSize, 0)
 
         BlockNumber = None
         if self.__IsKeyword( "NumBlocks"):
@@ -2111,9 +2126,6 @@ class FdfParser:
         if not self.__GetNextToken():
             raise Warning("expected INF file path", self.FileName, self.CurrentLineNumber)
         ffsInf.InfFileName = self.__Token
-
-#        if ffsInf.InfFileName.find('$') >= 0:
-#            ffsInf.InfFileName = GenFdsGlobalVariable.GenFdsGlobalVariable.MacroExtend(ffsInf.InfFileName, MacroDict)
 
         if not ffsInf.InfFileName in self.Profile.InfList:
             self.Profile.InfList.append(ffsInf.InfFileName)

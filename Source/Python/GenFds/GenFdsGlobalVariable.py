@@ -54,6 +54,7 @@ class GenFdsGlobalVariable:
     FdfFile = ''
     FdfFileTimeStamp = 0
     FixedLoadAddress = False
+    PlatformName = ''
 
     SectionHeader = struct.Struct("3B 1B")
 
