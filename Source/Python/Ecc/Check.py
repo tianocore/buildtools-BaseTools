@@ -299,6 +299,8 @@ class Check(object):
                 if len(RecordDict[Key]) > 1:
                     for Item in RecordDict[Key]:
                         Path = Item[1].replace(EccGlobalData.gWorkspace, '')
+                        if Path.startswith('\\') or Path.startswith('/'):
+                            Path = Path[1:]
                         if not EccGlobalData.gException.IsException(ERROR_INCLUDE_FILE_CHECK_NAME, Path):
                             EccGlobalData.gDb.TblReport.Insert(ERROR_INCLUDE_FILE_CHECK_NAME, OtherMsg = "The file name for [%s] is duplicate" % Path, BelongsToTable = 'File', BelongsToItem = Item[0])
 
@@ -529,7 +531,7 @@ class Check(object):
         if EccGlobalData.gConfig.MetaDataFileCheckPcdDuplicate == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking for duplicate PCDs defined in both DSC and FDF files ...")
             SqlCommand = """
-                         select A.ID, A.Value2, B.ID, B.Value2 from Dsc as A, Fdf as B
+                         select A.ID, A.Value2, A.BelongsToFile, B.ID, B.Value2, B.BelongsToFile from Dsc as A, Fdf as B
                          where A.Model >= %s and A.Model < %s
                          and B.Model >= %s and B.Model < %s
                          and A.Value2 = B.Value2
@@ -539,10 +541,17 @@ class Check(object):
                          """% (MODEL_PCD, MODEL_META_DATA_HEADER, MODEL_PCD, MODEL_META_DATA_HEADER)
             RecordSet = EccGlobalData.gDb.TblDsc.Exec(SqlCommand)
             for Record in RecordSet:
+                SqlCommand1 = """select Name from File where ID = %s""" %Record[2]
+                SqlCommand2 = """select Name from File where ID = %s""" %Record[5]
+                DscFileName = os.path.splitext(EccGlobalData.gDb.TblDsc.Exec(SqlCommand1)[0][0])[0]
+                FdfFileName = os.path.splitext(EccGlobalData.gDb.TblDsc.Exec(SqlCommand2)[0][0])[0]
+                print DscFileName, 111, FdfFileName
+                if DscFileName != FdfFileName:
+                    continue
                 if not EccGlobalData.gException.IsException(ERROR_META_DATA_FILE_CHECK_PCD_DUPLICATE, Record[1]):
                     EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_DUPLICATE, OtherMsg = "The PCD [%s] is defined in both FDF file and DSC file" % (Record[1]), BelongsToTable = 'Dsc', BelongsToItem = Record[0])
                 if not EccGlobalData.gException.IsException(ERROR_META_DATA_FILE_CHECK_PCD_DUPLICATE, Record[3]):
-                    EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_DUPLICATE, OtherMsg = "The PCD [%s] is defined in both FDF file and DSC file" % (Record[3]), BelongsToTable = 'Fdf', BelongsToItem = Record[2])
+                    EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_PCD_DUPLICATE, OtherMsg = "The PCD [%s] is defined in both FDF file and DSC file" % (Record[4]), BelongsToTable = 'Fdf', BelongsToItem = Record[3])
 
             EdkLogger.quiet("Checking for duplicate PCDs defined in DEC files ...")
             SqlCommand = """
@@ -728,20 +737,26 @@ class Check(object):
 
     # Naming Convention Check
     def NamingConventionCheck(self):
-
-        for Dirpath, Dirnames, Filenames in self.WalkTree():
-            for F in Filenames:
-                if os.path.splitext(F)[1] in ('.h', '.c'):
-                    FullName = os.path.join(Dirpath, F)
-                    Id = c.GetTableID(FullName)
-                    if Id < 0:
-                        continue
-                    FileTable = 'Identifier' + str(Id)
-                    self.NamingConventionCheckDefineStatement(FileTable)
-                    self.NamingConventionCheckTypedefStatement(FileTable)
-                    self.NamingConventionCheckIfndefStatement(FileTable)
-                    self.NamingConventionCheckVariableName(FileTable)
-                    self.NamingConventionCheckSingleCharacterVariable(FileTable)
+        if EccGlobalData.gConfig.NamingConventionCheckDefineStatement == '1' \
+        or EccGlobalData.gConfig.NamingConventionCheckTypedefStatement == '1' \
+        or EccGlobalData.gConfig.NamingConventionCheckIfndefStatement == '1' \
+        or EccGlobalData.gConfig.NamingConventionCheckVariableName == '1' \
+        or EccGlobalData.gConfig.NamingConventionCheckSingleCharacterVariable == '1' \
+        or EccGlobalData.gConfig.NamingConventionCheckAll == '1'\
+        or EccGlobalData.gConfig.CheckAll == '1':
+            for Dirpath, Dirnames, Filenames in self.WalkTree():
+                for F in Filenames:
+                    if os.path.splitext(F)[1] in ('.h', '.c'):
+                        FullName = os.path.join(Dirpath, F)
+                        Id = c.GetTableID(FullName)
+                        if Id < 0:
+                            continue
+                        FileTable = 'Identifier' + str(Id)
+                        self.NamingConventionCheckDefineStatement(FileTable)
+                        self.NamingConventionCheckTypedefStatement(FileTable)
+                        self.NamingConventionCheckIfndefStatement(FileTable)
+                        self.NamingConventionCheckVariableName(FileTable)
+                        self.NamingConventionCheckSingleCharacterVariable(FileTable)
 
         self.NamingConventionCheckPathName()
         self.NamingConventionCheckFunctionName()
