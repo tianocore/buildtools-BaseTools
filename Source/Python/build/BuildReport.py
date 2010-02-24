@@ -1327,7 +1327,7 @@ class PlatformReport(object):
         FileWrite(File, "Platform Summary")
         FileWrite(File, "Platform Name:        %s" % self.PlatformName)
         FileWrite(File, "Platform DSC Path:    %s" % self.PlatformDscPath)
-        FileWrite(File, "Platform DSC Path:    %s" % self.Architectures)
+        FileWrite(File, "Architectures:        %s" % self.Architectures)
         FileWrite(File, "Tool Chain:           %s" % self.ToolChain)
         FileWrite(File, "Target:               %s" % self.Target)
         FileWrite(File, "Output Path:          %s" % self.OutputPath)
