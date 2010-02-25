@@ -6,7 +6,7 @@
 #   http://mingw-w64.svn.sourceforge.net/viewvc/mingw-w64/trunk/mingw-w64-doc/
 #     howto-build/mingw-w64-howto-build.txt?revision=216&view=markup
 #
-# Copyright (c) 2009 - 2010, Intel Corporation
+# Copyright (c) 2008 - 2010, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.    The full text of the license may be found at
@@ -42,7 +42,7 @@ if sys.version_info < (2, 5):
 #
 VersionNumber = "0.01"
 __version__ = "%prog Version " + VersionNumber
-__copyright__ = "Copyright (c) 2008, Intel Corporation.  All rights reserved."
+__copyright__ = "Copyright (c) 2008 - 2010, Intel Corporation.  All rights reserved."
 
 class Config:
     """class Config
@@ -179,7 +179,7 @@ class SourceFiles:
         'binutils': {
             'url': 'http://www.kernel.org/pub/linux/devel/binutils/' + \
                    'binutils-$version.tar.bz2',
-            'version': '2.20.51.0.1',
+            'version': '2.20.51.0.5',
             'md5': '6d2de7cdf7a8389e70b124e3d73b4d37',
             },
         }
