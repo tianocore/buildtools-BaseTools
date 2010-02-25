@@ -93,6 +93,18 @@ class Config:
             help = "Prefix to install binutils/gcc into"
             )
         Parser.add_option(
+            "--skip-binutils",
+            action = "store_true", dest = "skip_binutils",
+            default = False,
+            help = "Will skip building binutils"
+            )
+        Parser.add_option(
+            "--skip-gcc",
+            action = "store_true", dest = "skip_gcc",
+            default = False,
+            help = "Will skip building GCC"
+            )
+        Parser.add_option(
             "--symlinks",
             action = "store", type = "string", dest = "symlinks",
             default = os.path.join(self.base_dir, 'symlinks'),
@@ -127,13 +139,25 @@ class Config:
         self.symlinks = os.path.realpath(os.path.expanduser(self.options.symlinks))
 
     def IsConfigOk(self):
-                
+
+        building = []
+        if not self.options.skip_binutils:
+            building.append('binutils')
+        if not self.options.skip_gcc:
+            building.append('gcc')
+        if len(building) == 0:
+            print "Nothing will be built!"
+            print
+            print "Please try using --help and then change the configuration."
+            return False
+
         print "Current directory:"
         print "   ", self.base_dir
         print "Sources download/extraction:", self.Relative(self.src_dir)
         print "Build directory            :", self.Relative(self.build_dir)
         print "Prefix (install) directory :", self.Relative(self.prefix)
         print "Create symlinks directory  :", self.Relative(self.symlinks)
+        print "Building                   :", ', '.join(building)
         print
         answer = raw_input("Is this configuration ok? (default = no): ")
         if (answer.lower() not in ('y', 'yes')):
@@ -174,6 +198,13 @@ class SourceFiles:
     def __init__(self, config):
         self.config = config
         self.source_files = self.source_files[config.arch]
+
+        if config.options.skip_binutils:
+            del self.source_files['binutils']
+
+        if config.options.skip_gcc:
+            del self.source_files['gcc']
+            del self.source_files['mingw_hdr']
 
     source_files_common = {
         'binutils': {
@@ -405,10 +436,12 @@ class Builder:
         self.config = config
 
     def Build(self):
-        self.BuildModule('binutils')
-        self.CopyIncludeDirectory()
-        self.BuildModule('gcc')
-        self.MakeSymLinks()
+        if not self.config.options.skip_binutils:
+            self.BuildModule('binutils')
+        if not self.config.options.skip_gcc:
+            self.CopyIncludeDirectory()
+            self.BuildModule('gcc')
+            self.MakeSymLinks()
 
     def IsBuildStepComplete(self, step):
         return \
