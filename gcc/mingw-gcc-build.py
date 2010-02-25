@@ -179,8 +179,8 @@ class SourceFiles:
         'binutils': {
             'url': 'http://www.kernel.org/pub/linux/devel/binutils/' + \
                    'binutils-$version.tar.bz2',
-            'version': '2.18.50.0.5',
-            'md5': 'daee18dbbf0a6ccfc186141bee18bf62',
+            'version': '2.20.51.0.1',
+            'md5': '6d2de7cdf7a8389e70b124e3d73b4d37',
             },
         }
 
