@@ -646,6 +646,16 @@ Returns:
   switch (SectCompSubType) {
   case EFI_NOT_COMPRESSED:
     CompressedLength = InputLength;
+    //
+    // Copy file buffer to the none compressed data.
+    //
+    OutputBuffer = malloc (CompressedLength + sizeof (EFI_COMPRESSION_SECTION));
+    if (OutputBuffer == NULL) {
+      free (FileBuffer);
+      return EFI_OUT_OF_RESOURCES;
+    }
+    memcpy (OutputBuffer + sizeof (EFI_COMPRESSION_SECTION), FileBuffer, CompressedLength);
+    FileBuffer = OutputBuffer;
     break;
 
   case EFI_STANDARD_COMPRESSION:
