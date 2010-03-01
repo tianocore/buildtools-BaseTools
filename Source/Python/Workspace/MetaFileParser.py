@@ -1,7 +1,7 @@
 ## @file
 # This file is used to parse meta files
 #
-# Copyright (c) 2008, Intel Corporation
+# Copyright (c) 2008 - 2010, Intel Corporation
 # All rights reserved. This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -40,6 +40,28 @@ class MetaFileParser(object):
     # data type (file content) for specific file type
     DataType = {}
 
+    # Parser objects used to implement singleton
+    MetaFiles = {}
+
+    ## Factory method
+    #
+    # One file, one parser object. This factory method makes sure that there's
+    # only one object constructed for one meta file.
+    #
+    #   @param  Class           class object of real AutoGen class
+    #                           (InfParser, DecParser or DscParser)
+    #   @param  FilePath        The path of meta file
+    #   @param  *args           The specific class related parameters
+    #   @param  **kwargs        The specific class related dict parameters
+    #
+    def __new__(Class, FilePath, *args, **kwargs):
+        if FilePath in Class.MetaFiles:
+            return Class.MetaFiles[FilePath]
+        else:
+            ParserObject = super(MetaFileParser, Class).__new__(Class)
+            Class.MetaFiles[FilePath] = ParserObject
+            return ParserObject
+
     ## Constructor of MetaFileParser
     #
     #  Initialize object of MetaFileParser
@@ -52,6 +74,9 @@ class MetaFileParser(object):
     #   @param      From            ID from which the data comes (for !INCLUDE directive)
     #
     def __init__(self, FilePath, FileType, Table, Macros=None, Owner=-1, From=-1):
+        # prevent re-initialization
+        if hasattr(self, "_Table"):
+            return
         self._Table = Table
         self._FileType = FileType
         self.MetaFile = FilePath
@@ -596,7 +621,9 @@ class DscParser(MetaFileParser):
                 continue
             self._CurrentLine = Line
             self._LineIndex = Index
-
+            if self._InSubsection and self._Owner == -1:
+                self._Owner = self._LastItem
+            
             # section header
             if Line[0] == TAB_SECTION_START and Line[-1] == TAB_SECTION_END:
                 self._SectionHeaderParser()
@@ -644,8 +671,6 @@ class DscParser(MetaFileParser):
             if self._InSubsection:
                 SectionType = self._SubsectionType
                 SectionName = self._SubsectionName
-                if self._Owner == -1:
-                    self._Owner = self._LastItem
             else:
                 SectionType = self._SectionType
                 SectionName = self._SectionName
