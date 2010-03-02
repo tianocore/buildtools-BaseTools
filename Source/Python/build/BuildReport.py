@@ -667,31 +667,31 @@ class PcdReport(object):
                         if DecDefaultValue == None:
                             DecMatch = True
                         else:
-                            DecMatch = (DecDefaultValue == PcdValue)
+                            DecMatch = (DecDefaultValue.strip() == PcdValue.strip())
 
                         if InfDefaultValue == None:
                             InfMatch = True
                         else:
-                            InfMatch = (InfDefaultValue == PcdValue)
+                            InfMatch = (InfDefaultValue.strip() == PcdValue.strip())
 
                         if DscDefaultValue == None:
                             DscMatch = True
                         else:
-                            DscMatch = (DscDefaultValue == PcdValue)
+                            DscMatch = (DscDefaultValue.strip() == PcdValue.strip())
 
                     #
                     # Report PCD item according to their override relationship
                     #
                     if DecMatch and InfMatch:
-                        FileWrite(File, '    %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', PcdValue))
+                        FileWrite(File, '    %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', PcdValue.strip()))
                     else:
                         if DscMatch:
                             if (Pcd.TokenCName, Key) in self.FdfPcdSet:
-                                FileWrite(File, ' *F %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', PcdValue))
+                                FileWrite(File, ' *F %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', PcdValue.strip()))
                             else:
-                                FileWrite(File, ' *P %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', PcdValue))
+                                FileWrite(File, ' *P %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', PcdValue.strip()))
                         else:
-                            FileWrite(File, ' *M %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', PcdValue))
+                            FileWrite(File, ' *M %-*s: %6s %10s = %-22s' % (self.MaxLen, Pcd.TokenCName, TypeName, '('+Pcd.DatumType+')', PcdValue.strip()))
                     
                     if TypeName in ('DYNHII', 'DEXHII', 'DYNVPD', 'DEXVPD'):
                         for SkuInfo in Pcd.SkuInfoList.values():
@@ -701,13 +701,13 @@ class PcdReport(object):
                                 FileWrite(File, '%*s' % (self.MaxLen + 4, SkuInfo.VpdOffset))
                                
                     if not DscMatch and DscDefaultValue != None:
-                        FileWrite(File, '    %*s = %s' % (self.MaxLen + 19, 'DSC DEFAULT', DscDefaultValue))
+                        FileWrite(File, '    %*s = %s' % (self.MaxLen + 19, 'DSC DEFAULT', DscDefaultValue.strip()))
 
                     if not InfMatch and InfDefaultValue != None:
-                        FileWrite(File, '    %*s = %s' % (self.MaxLen + 19, 'INF DEFAULT', InfDefaultValue))
+                        FileWrite(File, '    %*s = %s' % (self.MaxLen + 19, 'INF DEFAULT', InfDefaultValue.strip()))
 
                     if not DecMatch and DecDefaultValue != None:
-                        FileWrite(File, '    %*s = %s' % (self.MaxLen + 19, 'DEC DEFAULT', DecDefaultValue))
+                        FileWrite(File, '    %*s = %s' % (self.MaxLen + 19, 'DEC DEFAULT', DecDefaultValue.strip()))
 
                     if ModulePcdSet == None:
                         ModuleOverride = self.ModulePcdOverride.get((Pcd.TokenCName, Pcd.TokenSpaceGuidCName), {})
@@ -717,10 +717,10 @@ class PcdReport(object):
                                 ModulePcdDefaultValueNumber = int(ModuleDefault.strip(), 0)
                                 Match = (ModulePcdDefaultValueNumber == PcdValueNumber)
                             else:
-                                Match = (ModuleDefault == PcdValue)
+                                Match = (ModuleDefault.strip() == PcdValue.strip())
                             if Match:
                                 continue
-                            FileWrite(File, ' *M %-*s = %s' % (self.MaxLen + 19, ModulePath, ModuleDefault))
+                            FileWrite(File, ' *M %-*s = %s' % (self.MaxLen + 19, ModulePath, ModuleDefault.strip()))
 
         if ModulePcdSet == None:
             FileWrite(File, gSectionEnd)
