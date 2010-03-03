@@ -1336,7 +1336,6 @@ class Build():
                         self.FvList,
                         self.SkuId
                         )
-                self.BuildReport.AddPlatformReport(Wa)
                 Wa.CreateMakeFile(False)
                 self.Progress.Stop("done!")
                 MaList = []
@@ -1345,6 +1344,8 @@ class Build():
                     if Ma == None: continue
                     MaList.append(Ma)
                     self._Build(self.Target, Ma)
+
+                self.BuildReport.AddPlatformReport(Wa, MaList)
                 if MaList == []:
                     EdkLogger.error(
                                 'build',

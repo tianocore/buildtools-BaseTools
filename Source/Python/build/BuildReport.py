@@ -1283,8 +1283,9 @@ class PlatformReport(object):
     #
     # @param self            The object pointer
     # @param Wa              Workspace context information
+    # @param MaList          The list of modules in the platform build
     #
-    def __init__(self, Wa, ReportType):
+    def __init__(self, Wa, MaList, ReportType):
         self._WorkspaceDir = Wa.WorkspaceDir
         self.PlatformName = Wa.Name
         self.PlatformDscPath = Wa.Platform
@@ -1299,7 +1300,7 @@ class PlatformReport(object):
             self.PcdReport = PcdReport(Wa)
 
         self.FdReportList = []
-        if "FLASH" in ReportType and Wa.FdfProfile:
+        if "FLASH" in ReportType and Wa.FdfProfile and MaList == None:
             for Fd in Wa.FdfProfile.FdDict:
                 self.FdReportList.append(FdReport(Wa.FdfProfile.FdDict[Fd], Wa))
 
@@ -1308,9 +1309,13 @@ class PlatformReport(object):
             self.PredictionReport = PredictionReport(Wa)
 
         self.ModuleReportList = []
-        for Pa in Wa.AutoGenObjectList:
-            for ModuleKey in Pa.Platform.Modules:
-                self.ModuleReportList.append(ModuleReport(Pa.Platform.Modules[ModuleKey].M, ReportType))
+        if MaList != None:
+            for Ma in MaList:
+                self.ModuleReportList.append(ModuleReport(Ma, ReportType))
+        else:
+            for Pa in Wa.AutoGenObjectList:
+                for ModuleKey in Pa.Platform.Modules:
+                    self.ModuleReportList.append(ModuleReport(Pa.Platform.Modules[ModuleKey].M, ReportType))
 
 
 
@@ -1386,10 +1391,11 @@ class BuildReport(object):
     #
     # @param self            The object pointer
     # @param Wa              Workspace context information
+    # @param MaList          The list of modules in the platform build
     #
-    def AddPlatformReport(self, Wa):
+    def AddPlatformReport(self, Wa, MaList=None):
         if self.ReportFile:
-            self.ReportList.append(Wa)
+            self.ReportList.append((Wa, MaList))
 
     ##
     # Generates the final report.
@@ -1407,8 +1413,8 @@ class BuildReport(object):
             except IOError:
                 EdkLogger.error(None, FILE_OPEN_FAILURE, ExtraData=self.ReportFile)
             try:
-                for Wa in self.ReportList:
-                    PlatformReport(Wa, self.ReportType).GenerateReport(File, BuildDuration, self.ReportType)
+                for (Wa, MaList) in self.ReportList:
+                    PlatformReport(Wa, MaList, self.ReportType).GenerateReport(File, BuildDuration, self.ReportType)
                 EdkLogger.quiet("Report successfully saved to %s" % os.path.abspath(self.ReportFile))
             except IOError:
                 EdkLogger.error(None, FILE_WRITE_FAILURE, ExtraData=self.ReportFile)
