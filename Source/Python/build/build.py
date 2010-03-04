@@ -738,6 +738,16 @@ class Build():
         # parse target.txt, tools_def.txt, and platform file
         #self.RestoreBuildData()
         self.LoadConfiguration()
+        
+        #
+        # @attention Treat $(TARGET) in meta data files as special macro when it has only one build target.
+        # This is not a complete support for $(TARGET) macro as it can only support one build target in ONE
+        # invocation of build command. However, it should cover the frequent usage model that $(TARGET) macro
+        # is used in DSC files to specify different libraries & PCD setting for debug/release build.
+        #
+        if len(self.BuildTargetList) == 1:
+            self.Db._GlobalMacros.setdefault("TARGET", self.BuildTargetList[0])
+        
         self.InitBuild()
 
         # print current build environment and configuration
