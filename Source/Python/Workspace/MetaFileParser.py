@@ -799,13 +799,24 @@ class DscParser(MetaFileParser):
             else:
                 self._Enabled = len(self._Eval)
 
-    ## Evaludate the value of expression in "if/ifdef/ifndef" directives
+    ## Evaluate the Token for its value; for now only macros are supported.
+    def _EvaluateToken(self, TokenName, Expression):
+        if TokenName.startswith("$(") and TokenName.endswith(")"):
+            Name = TokenName[2:-1]
+            return self._Macros.get(Name)
+        else:
+            EdkLogger.error('Parser', FORMAT_INVALID, "Unknown operand '%(Token)s', "
+                            "please use '$(%(Token)s)' if '%(Token)s' is a macro" % {"Token" : TokenName},
+                            File=self.MetaFile, Line=self._LineIndex+1, ExtraData=Expression)
+    
+    ## Evaluate the value of expression in "if/ifdef/ifndef" directives
     def _Evaluate(self, Expression):
         TokenList = Expression.split()
         TokenNumber = len(TokenList)
         # one operand, guess it's just a macro name
         if TokenNumber == 1:
-            return TokenList[0] in self._Macros
+            TokenValue =  self._EvaluateToken(TokenList[0], Expression)
+            return TokenValue != None
         # two operands, suppose it's "!xxx" format
         elif TokenNumber == 2:
             Op = TokenList[0]
@@ -819,8 +830,8 @@ class DscParser(MetaFileParser):
             return self._OP_[Op](Value)
         # three operands
         elif TokenNumber == 3:
-            Name = TokenList[0]
-            if Name not in self._Macros:
+            TokenValue = self._EvaluateToken(TokenList[0], Expression)
+            if TokenValue == None:
                 return False
             Value = TokenList[2]
             if Value[0] in ["'", '"'] and Value[-1] in ["'", '"']:
@@ -829,7 +840,7 @@ class DscParser(MetaFileParser):
             if Op not in self._OP_:
                 EdkLogger.error('Parser', FORMAT_INVALID, "Unsupported operator [%s]" % Op, File=self.MetaFile,
                                 Line=self._LineIndex+1, ExtraData=Expression)
-            return self._OP_[Op](self._Macros[Name], Value)
+            return self._OP_[Op](TokenValue, Value)
         else:
             EdkLogger.error('Parser', FORMAT_INVALID, File=self.MetaFile, Line=self._LineIndex+1,
                             ExtraData=Expression)
