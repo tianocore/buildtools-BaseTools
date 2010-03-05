@@ -1374,6 +1374,10 @@ class BuildReport(object):
     # @param ReportType      The kind of report items in the final report file
     #
     def __init__(self, ReportFile, ReportType):
+        # @attention Temporarily turn on the build report feature for debug and diagnose purpose.
+        if ReportFile == None:
+            ReportFile = "Report.txt"
+        
         self.ReportFile = ReportFile
         if ReportFile:
             self.ReportList = []
@@ -1422,6 +1426,12 @@ class BuildReport(object):
                 EdkLogger.error("BuildReport", CODE_ERROR, "Unknown fatal error when generating build report", ExtraData=self.ReportFile, RaiseError=False)
                 EdkLogger.quiet("(Python %s on %s\n%s)" % (platform.python_version(), sys.platform, traceback.format_exc()))
             File.close()
+            
+            # @attention Temporarily dump the context of report file so it can be caught in build log for debug
+            #            and diagnose purpose.
+            EdkLogger.quiet("==================Dump Report Start===================================")
+            EdkLogger.quiet(open(self.ReportFile).read())
+            EdkLogger.quiet("==================Dump Report End=====================================")    
 
 # This acts like the main() function for the script, unless it is 'import'ed into another script.
 if __name__ == '__main__':
