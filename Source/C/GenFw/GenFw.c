@@ -3467,6 +3467,27 @@ Returns:
     FileLength = FileLength + sizeof (EFI_TE_IMAGE_HEADER);
     memcpy (FileBuffer, &TEImageHeader, sizeof (EFI_TE_IMAGE_HEADER));
     VerboseMsg ("the size of output file is %u bytes", (unsigned) (FileLength));
+  } else {
+
+    //
+    // Following codes are to fix the objcopy's issue:
+    // objcopy in binutil 2.50.18 will set PE image's charactices to "RELOC_STRIPPED" if image has no ".reloc" section
+    // It cause issue for EFI image which has no ".reloc" sections.
+    // Following codes will be removed when objcopy in binutil fix this problem for PE image.
+    //
+    if ((PeHdr->Pe32.FileHeader.Characteristics & EFI_IMAGE_FILE_RELOCS_STRIPPED) != 0) {
+      if (PeHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
+        Optional32 = (EFI_IMAGE_OPTIONAL_HEADER32 *)&PeHdr->Pe32.OptionalHeader;
+        if (Optional32->ImageBase == 0) {
+          PeHdr->Pe32.FileHeader.Characteristics &= ~EFI_IMAGE_FILE_RELOCS_STRIPPED;
+        }
+      } else if (PeHdr->Pe32.OptionalHeader.Magic == EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
+        Optional64 = (EFI_IMAGE_OPTIONAL_HEADER64 *)&PeHdr->Pe32.OptionalHeader;
+        if (Optional64->ImageBase == 0) {
+          PeHdr->Pe32.FileHeader.Characteristics &= ~EFI_IMAGE_FILE_RELOCS_STRIPPED;
+        }
+      }
+    }
   }
 
 WriteFile:
