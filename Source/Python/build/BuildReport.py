@@ -255,7 +255,8 @@ class DepexReport(object):
         ModuleType = M.ModuleType
         if not ModuleType:
             ModuleType = gComponentType2ModuleType.get(M.ComponentType, "")
-        if ModuleType in ["SEC", "PEI_CORE", "DXE_CORE"]:
+
+        if ModuleType in ["SEC", "PEI_CORE", "DXE_CORE", "SMM_CORE", "UEFI_APPLICATION"]:
             return
       
         for Source in M.SourceFileList:
