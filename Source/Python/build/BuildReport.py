@@ -221,7 +221,7 @@ class LibraryReport(object):
                         EdkIILibInfo += " C = " + LibConstructor
                     LibDestructor = " ".join(LibraryItem[3])
                     if LibDestructor:
-                        EdkIILibInfo += " D = " + LibConstructor
+                        EdkIILibInfo += " D = " + LibDestructor
                     LibDepex = " ".join(LibraryItem[4])
                     if LibDepex:
                         EdkIILibInfo += " Depex = " + LibDepex
@@ -404,17 +404,18 @@ class ModuleReport(object):
         self.Size = 0
         self.BuildTimeStamp = None
         self.DriverType = ""
-        ModuleType = M.ModuleType
-        if not ModuleType:
-            ModuleType = gComponentType2ModuleType.get(M.ComponentType, "")
-        #
-        # If a module complies to PI 1.1, promote Module type to "SMM_DRIVER"
-        #
-        if ModuleType == "DXE_SMM_DRIVER":
-            PiSpec =  M.Module.Specification.get("PI_SPECIFICATION_VERSION", "0x00010000")
-            if int(PiSpec, 0) >= 0x0001000A:
-                ModuleType = "SMM_DRIVER"
-        self.DriverType = gDriverTypeMap.get(ModuleType, "")
+        if not M.IsLibrary:
+            ModuleType = M.ModuleType
+            if not ModuleType:
+                ModuleType = gComponentType2ModuleType.get(M.ComponentType, "")
+            #
+            # If a module complies to PI 1.1, promote Module type to "SMM_DRIVER"
+            #
+            if ModuleType == "DXE_SMM_DRIVER":
+                PiSpec =  M.Module.Specification.get("PI_SPECIFICATION_VERSION", "0x00010000")
+                if int(PiSpec, 0) >= 0x0001000A:
+                    ModuleType = "SMM_DRIVER"
+            self.DriverType = gDriverTypeMap.get(ModuleType, "0x2 (FREE_FORM)")
         self.UefiSpecVersion = M.Module.Specification.get("UEFI_SPECIFICATION_VERSION", "")
         self.PiSpecVersion = M.Module.Specification.get("PI_SPECIFICATION_VERSION", "")
         self.PciDeviceId = M.Module.Defines.get("PCI_DEVICE_ID", "")
@@ -1310,9 +1311,11 @@ class PlatformReport(object):
 
         self.ModuleReportList = []
         if MaList != None:
+            self._IsModuleBuild = True
             for Ma in MaList:
                 self.ModuleReportList.append(ModuleReport(Ma, ReportType))
         else:
+            self._IsModuleBuild = False
             for Pa in Wa.AutoGenObjectList:
                 for ModuleKey in Pa.Platform.Modules:
                     self.ModuleReportList.append(ModuleReport(Pa.Platform.Modules[ModuleKey].M, ReportType))
@@ -1343,18 +1346,20 @@ class PlatformReport(object):
         FileWrite(File, "Build Duration:       %s" % BuildDuration)
         FileWrite(File, "Report Content:       %s" % ", ".join(ReportType))
 
-        if "PCD" in ReportType:
-            self.PcdReport.GenerateReport(File, None)
-
-        if "FLASH" in ReportType:
-            for FdReportListItem in self.FdReportList:
-                FdReportListItem.GenerateReport(File)
+        if not self._IsModuleBuild:
+            if "PCD" in ReportType:
+                self.PcdReport.GenerateReport(File, None)
+    
+            if "FLASH" in ReportType:
+                for FdReportListItem in self.FdReportList:
+                    FdReportListItem.GenerateReport(File)
 
         for ModuleReportItem in self.ModuleReportList:
             ModuleReportItem.GenerateReport(File, self.PcdReport, self.PredictionReport, ReportType)
 
-        if "EXECUTION_ORDER" in ReportType:
-            self.PredictionReport.GenerateReport(File, None)
+        if not self._IsModuleBuild:
+            if "EXECUTION_ORDER" in ReportType:
+                self.PredictionReport.GenerateReport(File, None)
 
 ## BuildReport class
 #
