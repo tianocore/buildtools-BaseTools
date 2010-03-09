@@ -24,6 +24,8 @@ Abstract:
 #ifndef __GNUC__
 #include <windows.h>
 #include <io.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #endif
 #include <stdio.h>
 #include <stdlib.h>
@@ -1993,6 +1995,9 @@ Returns:
   FILE                             *ReportFile;
   CHAR8                            *ReportFileName;
   UINTN                            FileLen;
+  time_t                           InputFileTime;
+  time_t                           OutputFileTime;
+  struct stat                      Stat_Buf;
 
   SetUtilityName (UTILITY_NAME);
 
@@ -2038,6 +2043,8 @@ Returns:
   HiiSectionHeader       = NULL;
   NewBaseAddress         = 0;
   NegativeAddr           = FALSE;
+  InputFileTime          = 0;
+  OutputFileTime         = 0;
 
   if (argc == 1) {
     Error (NULL, 0, 1001, "Missing options", "No input options.");
@@ -2434,6 +2441,14 @@ Returns:
   if (OutImageName != NULL) {
     fpOut = fopen (OutImageName, "rb");
     if (fpOut != NULL) {
+      //
+      // Get Output file time stamp
+      //
+      fstat(fileno (fpOut), &Stat_Buf);
+      OutputFileTime = Stat_Buf.st_mtime;
+      //
+      // Get Output file data
+      //
       OutputFileLength = _filelength (fileno (fpOut));
       OutputFileBuffer = malloc (OutputFileLength);
       if (OutputFileBuffer == NULL) {
@@ -2460,6 +2475,14 @@ Returns:
     Error (NULL, 0, 0001, "Error opening file", mInImageName);
     goto Finish;
   }
+  //
+  // Get Iutput file time stamp
+  //
+  fstat(fileno (fpIn), &Stat_Buf);
+  InputFileTime = Stat_Buf.st_mtime;
+  //
+  // Get Input file data
+  //
   InputFileLength = _filelength (fileno (fpIn));
   InputFileBuffer = malloc (InputFileLength);
   if (InputFileBuffer == NULL) {
@@ -3508,7 +3531,10 @@ WriteFile:
       VerboseMsg ("the size of output file is %u bytes", (unsigned) FileLength);
     }
   } else {
-    if ((FileLength != OutputFileLength) || (memcmp (FileBuffer, OutputFileBuffer, FileLength) != 0)) {
+    if ((OutputFileTime < InputFileTime) || (FileLength != OutputFileLength) || (memcmp (FileBuffer, OutputFileBuffer, FileLength) != 0)) {
+      //
+      // Update File when File is changed or File is old.
+      //
       fpOut = fopen (OutImageName, "wb");
       if (fpOut == NULL) {
         Error (NULL, 0, 0001, "Error opening output file", OutImageName);
