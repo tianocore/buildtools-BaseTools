@@ -1143,6 +1143,7 @@ WriteRelocations(
   UINT8                            *Targ;
   Elf32_Phdr                       *DynamicSegment;
   Elf32_Phdr                       *TargetSegment;
+  static int                       ErrorCount = 0;
 
   for (Index = 0, FoundRelocations = FALSE; Index < Ehdr->e_shnum; Index++) {
     Elf_Shdr *RelShdr = GetShdrByIndex(Index);
@@ -1166,7 +1167,7 @@ WriteRelocations(
               EFI_IMAGE_REL_BASED_HIGHLOW);
               break;
             default:
-              Error (NULL, 0, 3000, "Invalid", "%s unhandled section type %x.", mInImageName, (unsigned) ELF_R_TYPE(Rel->r_info));
+              Error (NULL, 0, 3000, "Invalid", "%s unkown relocation %x.", mInImageName, (unsigned) ELF_R_TYPE(Rel->r_info));
             }
           } else if (Ehdr->e_machine == EM_ARM) {
             switch (ELF32_R_TYPE(Rel->r_info)) {
@@ -1182,8 +1183,17 @@ WriteRelocations(
                 EFI_IMAGE_REL_BASED_HIGHLOW
                 );
               break;
+              
+            case R_ARM_CALL:
+            case R_ARM_THM_MOVW_ABS_NC:
+            case R_ARM_THM_MOVT_ABS:
+              if (ErrorCount++ == 0) {
+                Error (NULL, 0, 3000, "Invalid", "www.codesourcery.com ELF relocations not yet implemented!!!! Bad Image", mInImageName);
+              }
+              break;
+
             default:
-              Error (NULL, 0, 3000, "Invalid", "%s unhandled section type %x.", mInImageName, (unsigned) ELF32_R_TYPE(Rel->r_info));
+              Error (NULL, 0, 3000, "Invalid", "%s unkown relocation %x.", mInImageName, (unsigned) ELF32_R_TYPE(Rel->r_info));
             }
           } else {
             Error (NULL, 0, 3000, "Not Supported", "This tool does not support relocations for ELF with e_machine %u (processor type).", (unsigned) Ehdr->e_machine);
