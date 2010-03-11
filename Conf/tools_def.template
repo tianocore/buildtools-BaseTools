@@ -1749,6 +1749,7 @@ DEFINE GCC44_ASM_FLAGS               = DEF(GCC_ASM_FLAGS)
 
 *_CYGGCC_IA32_CC_FLAGS           = DEF(GCC_IA32_CC_FLAGS)
 *_CYGGCC_IA32_RC_FLAGS           = DEF(GCC_IA32_RC_FLAGS)
+*_CYGGCC_IA32_OBJCOPY_FLAGS      =
 
 ##################
 # X64 definitions
@@ -1768,6 +1769,7 @@ DEFINE GCC44_ASM_FLAGS               = DEF(GCC_ASM_FLAGS)
 
 *_CYGGCC_X64_CC_FLAGS            = DEF(GCC_X64_CC_FLAGS)
 *_CYGGCC_X64_RC_FLAGS            = DEF(GCC_X64_RC_FLAGS)
+*_CYGGCC_X64_OBJCOPY_FLAGS       =
 
 ##################
 # IPF definitions
