@@ -1322,11 +1322,12 @@ class Build():
                         # Rebase module to the preferred memory address before GenFds
                         #
                         self._CollectModuleMapBuffer(MapBuffer, ModuleList)
+                        if self.Fdf != '':
+                            #
+                            # create FDS again for the updated EFI image
+                            #
+                            self._Build("fds", Wa)
                     if self.Fdf != '':
-                        #
-                        # create FDS again for the updated EFI image
-                        #
-                        self._Build("fds", Wa)
                         #
                         # Create MAP file for all platform FVs after GenFds.
                         #
@@ -1521,13 +1522,11 @@ class Build():
                     if self.LoadFixAddress != 0:
                         self._CollectModuleMapBuffer(MapBuffer, ModuleList)
 
-                # Generate FD image if there's a FDF file found
-                if self.Fdf != '' and self.Target in ["", "all", "fds"]:
-                    LaunchCommand(Wa.BuildCommand + ["fds"], Wa.MakeFileDir)
-
-                # Create MAP file for all platform FV after GenFds
-                if self.Target in ["", "all", "fds"]:
                     if self.Fdf != '':
+                        #
+                        # Generate FD image if there's a FDF file found
+                        #
+                        LaunchCommand(Wa.BuildCommand + ["fds"], Wa.MakeFileDir)
                         #
                         # Create MAP file for all platform FVs after GenFds.
                         #
