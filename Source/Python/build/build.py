@@ -1269,7 +1269,9 @@ class Build():
         #
         # Save address map into MAP file.
         #
-        SaveFileOnChange(MapFilePath, MapBuffer.getvalue(), False)
+        MapFile = open(MapFilePath, "wb")
+        MapFile.write(MapBuffer.getvalue())
+        MapFile.close()
         MapBuffer.close()
         if self.LoadFixAddress != 0:
             sys.stdout.write ("\nLoad Module At Fix Address Map file saved to %s\n" %(MapFilePath))
