@@ -704,7 +704,7 @@ class Build():
                  BuildTarget, FlashDefinition, FdList=[], FvList=[],
                  MakefileType="nmake", SilentMode=False, ThreadNumber=2,
                  SkipAutoGen=False, Reparse=False, SkuId=None, 
-                 ReportFile=None, ReportType=None):
+                 ReportFile=None, ReportType=None, UniFlag=None):
 
         self.WorkspaceDir = WorkspaceDir
         self.Target         = Target
@@ -731,6 +731,7 @@ class Build():
         self.BuildDatabase  = self.Db.BuildObject
         self.Platform       = None
         self.LoadFixAddress = 0
+        self.UniFlag        = UniFlag
 
         # print dot charater during doing some time-consuming work
         self.Progress = Utils.Progressor()
@@ -1291,7 +1292,8 @@ class Build():
                         self.Fdf,
                         self.FdList,
                         self.FvList,
-                        self.SkuId
+                        self.SkuId,
+                        self.UniFlag
                         )
                 self.BuildReport.AddPlatformReport(Wa)
                 self.Progress.Stop("done!")
@@ -1358,7 +1360,8 @@ class Build():
                         self.Fdf,
                         self.FdList,
                         self.FvList,
-                        self.SkuId
+                        self.SkuId,
+                        self.UniFlag
                         )
                 Wa.CreateMakeFile(False)
                 self.Progress.Stop("done!")
@@ -1435,7 +1438,8 @@ class Build():
                         self.Fdf,
                         self.FdList,
                         self.FvList,
-                        self.SkuId
+                        self.SkuId,
+                        self.UniFlag
                         )
                 self.BuildReport.AddPlatformReport(Wa)
                 Wa.CreateMakeFile(False)
@@ -1710,6 +1714,10 @@ def MyOptionParser():
     Parser.add_option("-Y", "--report-type", action="append", type="choice", choices=['PCD','LIBRARY','FLASH','DEPEX','BUILD_FLAGS','FIXED_ADDRESS', 'EXECUTION_ORDER'], dest="ReportType", default=[],
         help="Flags that control the type of build report to generate.  Must be one of: [PCD, LIBRARY, FLASH, DEPEX, BUILD_FLAGS, FIXED_ADDRESS, EXECUTION_ORDER].  "\
              "To specify more than one flag, repeat this option on the command line and the default flag set is [PCD, LIBRARY, FLASH, DEPEX, BUILD_FLAGS, FIXED_ADDRESS]")
+    Parser.add_option("-F", "--flag", action="store", type="string", dest="Flag",
+        help="Specify the specific option to parse EDK UNI file. Must be one of: [-c, -s]. -c is for EDK framework UNI file, and -s is for EDK UEFI UNI file. "\
+             "This option can also be specified by setting *_*_*_BUILD_FLAGS in [BuildOptions] section of platform DSC. If they are both specified, this value "\
+             "will override the setting in [BuildOptions] section of platform DSC.")
 
     (Opt, Args)=Parser.parse_args()
     return (Opt, Args)
@@ -1821,12 +1829,15 @@ def Main():
             if ErrorCode != 0:
                 EdkLogger.error("build", ErrorCode, ExtraData=ErrorInfo)
 
+        if Option.Flag != None and Option.Flag not in ['-c', '-s']:
+            EdkLogger.error("build", OPTION_VALUE_INVALID, "UNI flag must be one of -c or -s")
+
         MyBuild = Build(Target, Workspace, Option.PlatformFile, Option.ModuleFile,
                         Option.TargetArch, Option.ToolChain, Option.BuildTarget,
                         Option.FdfFile, Option.RomImage, Option.FvImage,
                         None, Option.SilentMode, Option.ThreadNumber,
                         Option.SkipAutoGen, Option.Reparse, Option.SkuId, 
-                        Option.ReportFile, Option.ReportType)
+                        Option.ReportFile, Option.ReportType, Option.Flag)
         MyBuild.Launch()
         #MyBuild.DumpBuildData()
     except FatalError, X:
