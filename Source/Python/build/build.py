@@ -656,14 +656,16 @@ class PeImageInfo():
     #   @param  BaseName          The full file path of image. 
     #   @param  Guid              The GUID for image.
     #   @param  Arch              Arch of this image.
-    #   @param  OutpuDir          The output directory for image.
+    #   @param  OutputDir         The output directory for image.
+    #   @param  DebugDir          The debug directory for image.
     #   @param  ImageClass        PeImage Information
     #
-    def __init__(self, BaseName, Guid, Arch, OutpuDir, ImageClass):
+    def __init__(self, BaseName, Guid, Arch, OutputDir, DebugDir, ImageClass):
         self.BaseName         = BaseName
         self.Guid             = Guid
         self.Arch             = Arch
-        self.OutpuDir         = OutpuDir
+        self.OutputDir        = OutputDir
+        self.DebugDir         = DebugDir
         self.Image            = ImageClass
         self.Image.Size       = (self.Image.Size / 0x1000 + 1) * 0x1000
 
@@ -1008,22 +1010,26 @@ class Build():
             sys.stdout.flush()
             ModuleInfo = ModuleList[InfFile]
             ModuleName = ModuleInfo.BaseName
+            ModuleOutputImage = ModuleInfo.Image.FileName
+            ModuleDebugImage  = os.path.join(ModuleInfo.DebugDir, ModuleInfo.BaseName + '.efi')
             ## for SMM module in SMRAM, the SMRAM will be allocated from base to top.
             if not ModeIsSmm:
                 BaseAddress = BaseAddress - ModuleInfo.Image.Size
                 #
                 # Update Image to new BaseAddress by GenFw tool
                 #
-                LaunchCommand(["GenFw", "--rebase", str(BaseAddress), "-r", ModuleInfo.Image.FileName], ModuleInfo.OutpuDir)
+                LaunchCommand(["GenFw", "--rebase", str(BaseAddress), "-r", ModuleOutputImage], ModuleInfo.OutputDir)
+                LaunchCommand(["GenFw", "--rebase", str(BaseAddress), "-r", ModuleDebugImage],  ModuleInfo.DebugDir)
             else:
                 #
                 # Set new address to the section header only for SMM driver.
                 #
-                LaunchCommand(["GenFw", "--address", str(BaseAddress), "-r", ModuleInfo.Image.FileName], ModuleInfo.OutpuDir)
+                LaunchCommand(["GenFw", "--address", str(BaseAddress), "-r", ModuleOutputImage], ModuleInfo.OutputDir)
+                LaunchCommand(["GenFw", "--address", str(BaseAddress), "-r", ModuleDebugImage],  ModuleInfo.DebugDir)
             #
             # Collect funtion address from Map file
             #
-            ImageMapTable = ModuleInfo.Image.FileName.replace('.efi', '.map')
+            ImageMapTable = ModuleOutputImage.replace('.efi', '.map')
             FunctionList = []
             if os.path.exists(ImageMapTable):
                 OrigImageBaseAddress = 0
@@ -1070,9 +1076,13 @@ class Build():
                 elif SectionHeader[0] in ['.data', '.sdata']:
                     DataSectionAddress = SectionHeader[1]
             if AddrIsOffset:
-                MapBuffer.write('(GUID=%s, .textbaseaddress=-0x%010X, .databaseaddress=-0x%010X)\n\n' % (ModuleInfo.Guid, 0 - (BaseAddress + TextSectionAddress), 0 - (BaseAddress + DataSectionAddress))) 
+                MapBuffer.write('(GUID=%s, .textbaseaddress=-0x%010X, .databaseaddress=-0x%010X)\n' % (ModuleInfo.Guid, 0 - (BaseAddress + TextSectionAddress), 0 - (BaseAddress + DataSectionAddress))) 
             else:
-                MapBuffer.write('(GUID=%s, .textbaseaddress=0x%010X, .databaseaddress=0x%010X)\n\n' % (ModuleInfo.Guid, BaseAddress + TextSectionAddress, BaseAddress + DataSectionAddress)) 
+                MapBuffer.write('(GUID=%s, .textbaseaddress=0x%010X, .databaseaddress=0x%010X)\n' % (ModuleInfo.Guid, BaseAddress + TextSectionAddress, BaseAddress + DataSectionAddress)) 
+            #
+            # Add debug image full path.
+            #
+            MapBuffer.write('(IMAGE=%s)\n\n' % (ModuleDebugImage))
             #
             # Add funtion address
             #
@@ -1095,6 +1105,7 @@ class Build():
         if self.Fdf != '':
             # First get the XIP base address for FV map file.
             GuidPattern = re.compile("[-a-fA-F0-9]+")
+            GuidName = re.compile("\(GUID=[-a-fA-F0-9]+")
             for FvName in Wa.FdfProfile.FvDict.keys():
                 FvMapBuffer = os.path.join(Wa.FvDir, FvName + '.Fv.map')
                 if not os.path.exists(FvMapBuffer):
@@ -1115,6 +1126,15 @@ class Build():
                         if GuidString.upper() in ModuleList:
                             Line = Line.replace(GuidString, ModuleList[GuidString.upper()].Name)
                     MapBuffer.write('%s' % (Line))
+                    #
+                    # Add the debug image full path.
+                    #
+                    MatchGuid = GuidName.match(Line)
+                    if MatchGuid != None:
+                        GuidString = MatchGuid.group().split("=")[1]
+                        if GuidString.upper() in ModuleList:
+                            MapBuffer.write('(IMAGE=%s)\n' % (os.path.join(ModuleList[GuidString.upper()].DebugDir, ModuleList[GuidString.upper()].Name + '.efi')))
+
                 FvMap.close()
 
     ## Collect MAP information of all modules
@@ -1149,7 +1169,7 @@ class Build():
                     ImageClass = PeImageClass (OutputImageFile)
                     if not ImageClass.IsValid:
                         EdkLogger.error("build", FILE_PARSE_FAILURE, ExtraData=ImageClass.ErrorInfo)
-                    ImageInfo = PeImageInfo(Module.Name, Module.Guid, Module.Arch, Module.OutputDir, ImageClass)
+                    ImageInfo = PeImageInfo(Module.Name, Module.Guid, Module.Arch, Module.OutputDir, Module.DebugDir, ImageClass)
                     if Module.ModuleType in ['PEI_CORE', 'PEIM', 'COMBINED_PEIM_DRIVER','PIC_PEIM', 'RELOCATABLE_PEIM', 'DXE_CORE']:
                         PeiModuleList[Module.MetaFile] = ImageInfo
                         PeiSize += ImageInfo.Image.Size
