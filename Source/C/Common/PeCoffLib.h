@@ -144,4 +144,38 @@ PeCoffLoaderGetEntryPoint (
   )
 ;
 
+//
+// These functions are used by the ARM PE/COFF relocation code and by
+// the ELF to PE/COFF converter so that is why they are public
+//
+
+/**
+  Pass in a pointer to an ARM MOVT or MOVW immediate instruciton and 
+  return the immediate data encoded in the instruction
+
+  @param  Instruction   Pointer to ARM MOVT or MOVW immediate instruction
+
+  @return Immediate address encoded in the instruction
+
+**/
+UINT16
+ThumbMovtImmediateAddress (
+  IN UINT16 *Instruction
+  );
+
+/**
+  Update an ARM MOVT or MOVW immediate instruction immediate data.
+
+  @param  Instruction   Pointer to ARM MOVT or MOVW immediate instruction
+  @param  Address       New addres to patch into the instruction
+
+**/
+VOID
+ThumbMovtImmediatePatch (
+  IN OUT UINT16 *Instruction,
+  IN     UINT16 Address
+  );
+
+
+
 #endif

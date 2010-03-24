@@ -71,6 +71,14 @@ PeCoffLoaderRelocateIpfImage (
   IN UINT64      Adjust
   );
 
+RETURN_STATUS
+PeCoffLoaderRelocateArmImage (
+  IN UINT16      **Reloc,
+  IN OUT CHAR8   *Fixup,
+  IN OUT CHAR8   **FixupData,
+  IN UINT64      Adjust
+  );
+
 STATIC
 RETURN_STATUS
 PeCoffLoaderGetPeHeader (
@@ -777,8 +785,10 @@ Returns:
       default:
         switch (MachineType) {
         case EFI_IMAGE_MACHINE_IA32:
-        case EFI_IMAGE_MACHINE_ARMT:
           Status = PeCoffLoaderRelocateIa32Image (Reloc, Fixup, &FixupData, Adjust);
+          break;
+        case EFI_IMAGE_MACHINE_ARMT:
+          Status = PeCoffLoaderRelocateArmImage (&Reloc, Fixup, &FixupData, Adjust);
           break;
         case EFI_IMAGE_MACHINE_X64:
           Status = PeCoffLoaderRelocateX64Image (Reloc, Fixup, &FixupData, Adjust);
