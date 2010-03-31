@@ -1294,10 +1294,11 @@ WriteRelocations (
         for (K = 0; K < RelSize; K += RelElementSize) {
 
           if (DynamicSegment->p_paddr == 0) {
-            // This seems to be how it works on armcc???? Have the email in to find out?
+            // Older versions of the ARM ELF (SWS ESPC 0003 B-02) specification define DT_REL
+            // as an offset in the dynamic segment. p_paddr is defined to be zero for ARM tools
             Rel = (Elf32_Rel *) ((UINT8 *) Ehdr + DynamicSegment->p_offset + RelOffset + K);
           } else {
-            // This is how it reads in the ELF specification
+            // This is how it reads in the generic ELF specification
             Rel = (Elf32_Rel *) ((UINT8 *) Ehdr + RelOffset + K);
           }
 
