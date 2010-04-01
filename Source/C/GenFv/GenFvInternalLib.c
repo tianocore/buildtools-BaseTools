@@ -809,6 +809,10 @@ Returns:
   }
 
   if (FfsFile->Type != EFI_FV_FILETYPE_SECURITY_CORE && pImageContext->Machine == EFI_IMAGE_MACHINE_IA64) {
+    //
+    // Process IPF PLABEL to get the real address after the image has been rebased. 
+    // PLABEL structure is got by AddressOfEntryPoint offset to ImageBuffer stored in pImageContext->Handle.
+    //
     fprintf (FvMapFile, "EntryPoint=0x%010llx", (unsigned long long) (*(UINT64 *)((UINTN) pImageContext->Handle + (UINTN) AddressOfEntryPoint)));
   } else {
     fprintf (FvMapFile, "EntryPoint=0x%010llx", (unsigned long long) (ImageBaseAddress + AddressOfEntryPoint));
