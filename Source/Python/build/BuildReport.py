@@ -22,6 +22,7 @@ import platform
 import textwrap
 import traceback
 import sys
+import time
 from datetime import datetime
 from Common import EdkLogger
 from Common.Misc import GuidStructureByteArrayToGuidString
@@ -889,12 +890,17 @@ class PredictionReport(object):
 
         try:
             from Eot.Eot import Eot
+
             #
-            # Invoke EOT tool
+            # Invoke EOT tool and echo its runtime performance
             #
+            EotStartTime = time.time()
             Eot(CommandLineOption=False, SourceFileList=SourceList, GuidList=GuidList,
                 FvFileList=' '.join(FvFileList), Dispatch=DispatchList, IsInit=True)
-
+            EotEndTime = time.time()
+            EotDuration = time.strftime("%H:%M:%S", time.gmtime(int(round(EotEndTime - EotStartTime))))
+            EdkLogger.quiet("EOT run time: %s\n" % EotDuration)
+            
             #
             # Parse the output of EOT tool
             #
