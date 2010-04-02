@@ -453,8 +453,7 @@ def SearchPpiCallFunction(Identifier, SourceFileID, SourceFileFullPath, ItemMode
         if NewRecordSet:
             NewRecord = NewRecordSet[0][0]
             VariableValueList = NewRecord.split('},')
-            if len(VariableValueList) > Index:
-                VariableValue = VariableValueList[Index]
+            for VariableValue in VariableValueList[Index:]:
                 NewVariableValueList = VariableValue.split(',')
                 if len(NewVariableValueList) > 1:
                     NewVariableValue = NewVariableValueList[1].strip()
