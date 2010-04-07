@@ -125,6 +125,8 @@ def GetLanguageCode(LangName, IsCompatibleMode, File):
         else:
             EdkLogger.error("Unicode File Parser", FORMAT_INVALID, "Invalid ISO 639-2 language code : %s" % LangName, File)
 
+    if (LangName[0] == 'X' or LangName[0] == 'x') and LangName[1] == '-':
+        return LangName
     if length == 2:
         if LangName.isalpha():
             return LangName
@@ -196,14 +198,14 @@ class UniFileClassObject(object):
         Lang = Line.split(u"//")[0].split()
         if len(Lang) != 3:
             try:
-                FileIn = codecs.open(File, mode='rb', encoding='utf-16').read()
+                FileIn = codecs.open(File.Path, mode='rb', encoding='utf-16').read()
             except UnicodeError, X:
                 EdkLogger.error("build", FILE_READ_FAILURE, "File read failure: %s" % str(X), ExtraData=File);
             except:
                 EdkLogger.error("build", FILE_OPEN_FAILURE, ExtraData=File);
             LineNo = GetLineNo(FileIn, Line, False)
             EdkLogger.error("Unicode File Parser", PARSER_ERROR, "Wrong language definition",
-                            ExtraData="""%s\n\t*Correct format is like '#langdef eng "English"'""" % Line, File = File, Line = LineNo)
+                            ExtraData="""%s\n\t*Correct format is like '#langdef en-US "English"'""" % Line, File = File, Line = LineNo)
         else:
             LangName = GetLanguageCode(Lang[1], self.IsCompatibleMode, self.File)
             LangPrintName = Lang[2][1:-1]
