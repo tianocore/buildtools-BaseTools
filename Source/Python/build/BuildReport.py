@@ -766,6 +766,13 @@ class PredictionReport(object):
         for Pa in Wa.AutoGenObjectList:
             for Module in Pa.LibraryAutoGenList + Pa.ModuleAutoGenList:
                 #
+                # BASE typed modules are EFI agnostic, so we need not scan
+                # their source code to find PPI/Protocol produce or consume
+                # information.
+                #
+                if Module.ModuleType == "BASE":
+                    continue
+                #
                 # Add module referenced source files
                 #
                 self._SourceList.append(str(Module))
