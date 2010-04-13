@@ -353,9 +353,12 @@ def GetFunctionList():
 def CreateCCodeDB(FileNameList):
     FileObjList = []
     ParseErrorFileList = []
-
+    ParsedFiles = {}
     for FullName in FileNameList:
         if os.path.splitext(FullName)[1] in ('.h', '.c'):
+            if FullName.lower() in ParsedFiles:
+                continue
+            ParsedFiles[FullName.lower()] = 1
             EdkLogger.info("Parsing " + FullName)
             model = FullName.endswith('c') and DataClass.MODEL_FILE_C or DataClass.MODEL_FILE_H
             collector = CodeFragmentCollector.CodeFragmentCollector(FullName)
