@@ -15,6 +15,7 @@
 # Import Modules
 #
 import os, codecs, re
+import distutils.util
 import Common.EdkLogger as EdkLogger
 from Common.BuildToolError import *
 from Common.String import GetLineNo
@@ -195,7 +196,7 @@ class UniFileClassObject(object):
     # Get Language definition
     #
     def GetLangDef(self, File, Line):
-        Lang = Line.split(u"//")[0].split()
+        Lang = distutils.util.split_quoted((Line.split(u"//")[0]))
         if len(Lang) != 3:
             try:
                 FileIn = codecs.open(File.Path, mode='rb', encoding='utf-16').read()
@@ -208,7 +209,7 @@ class UniFileClassObject(object):
                             ExtraData="""%s\n\t*Correct format is like '#langdef en-US "English"'""" % Line, File = File, Line = LineNo)
         else:
             LangName = GetLanguageCode(Lang[1], self.IsCompatibleMode, self.File)
-            LangPrintName = Lang[2][1:-1]
+            LangPrintName = Lang[2]
 
         IsLangInDef = False
         for Item in self.LanguageDef:
