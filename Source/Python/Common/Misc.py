@@ -1322,7 +1322,12 @@ class PathClass(object):
 
         RealFile, RealRoot = RealPath2(self.File, self.Root, self.AlterRoot)
         if not RealRoot and not RealFile:
-            return FILE_NOT_FOUND, self.File
+            RealFile = self.File
+            if self.AlterRoot:
+                RealFile = os.path.join(self.AlterRoot, self.File)
+            elif self.Root:
+                RealFile = os.path.join(self.Root, self.File)
+            return FILE_NOT_FOUND, os.path.join(self.AlterRoot, RealFile)
 
         ErrorCode = 0
         ErrorInfo = ''
