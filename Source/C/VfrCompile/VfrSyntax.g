@@ -2057,7 +2057,7 @@ vfrStatementTime :
     (
       vfrQuestionHeader[TObj, QUESTION_TIME] ","
     { F:FLAGS "=" vfrTimeFlags[TObj, F->getLine()] "," }
-      vfrStatementDefault
+      vfrStatementQuestionOptionList
     )
     |
     (
