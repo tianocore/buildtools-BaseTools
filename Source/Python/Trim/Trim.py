@@ -294,6 +294,7 @@ def DoInclude(Source, Indent=''):
         CurrentIndent = Indent + Result[0][0]
         IncludedFile = Result[0][1]
         NewFileContent.extend(DoInclude(IncludedFile, CurrentIndent))
+        NewFileContent.append("\n")
 
     gIncludedAslFile.pop()
     F.close()
