@@ -15,7 +15,7 @@ MAKEROOT ?= ..
 
 APPNAME = GenFw
 
-OBJECTS = GenFw.o
+OBJECTS = GenFw.o ElfConvert.o Elf32Convert.o Elf64Convert.o
 
 include $(MAKEROOT)/Makefiles/app.makefile
 
