@@ -4,7 +4,7 @@
 
   @bug Fix text - doc as defined in MSFT EFI specification.
 
-  Copyright (c) 2006 - 2008, Intel Corporation  All rights reserved.
+  Copyright (c) 2006 - 2008, Intel Corporation. All rights reserved.<BR>
 
   This program and the accompanying materials are licensed and made available
   under the terms and conditions of the BSD License which accompanies this
