@@ -291,7 +291,7 @@ ScanSections64 (
         // the alignment field is valid
         if ((shdr->sh_addr & (shdr->sh_addralign - 1)) == 0) {
           // if the section address is aligned we must align PE/COFF
-          mCoffOffset = (mCoffOffset + shdr->sh_addralign - 1) & ~(shdr->sh_addralign - 1);
+          mCoffOffset = (UINT32) ((mCoffOffset + shdr->sh_addralign - 1) & ~(shdr->sh_addralign - 1));
         } else if ((shdr->sh_addr % shdr->sh_addralign) != (mCoffOffset % shdr->sh_addralign)) {
           // ARM RVCT tools have behavior outside of the ELF specification to try
           // and make images smaller.  If sh_addr is not aligned to sh_addralign
@@ -304,10 +304,10 @@ ScanSections64 (
       /* Relocate entry.  */
       if ((mEhdr->e_entry >= shdr->sh_addr) &&
           (mEhdr->e_entry < shdr->sh_addr + shdr->sh_size)) {
-        CoffEntry = mCoffOffset + mEhdr->e_entry - shdr->sh_addr;
+        CoffEntry = (UINT32) (mCoffOffset + mEhdr->e_entry - shdr->sh_addr);
       }
       mCoffSectionsOffset[i] = mCoffOffset;
-      mCoffOffset += shdr->sh_size;
+      mCoffOffset += (UINT32) shdr->sh_size;
     }
   }
 
@@ -326,7 +326,7 @@ ScanSections64 (
         // the alignment field is valid
         if ((shdr->sh_addr & (shdr->sh_addralign - 1)) == 0) {
           // if the section address is aligned we must align PE/COFF
-          mCoffOffset = (mCoffOffset + shdr->sh_addralign - 1) & ~(shdr->sh_addralign - 1);
+          mCoffOffset = (UINT32) ((mCoffOffset + shdr->sh_addralign - 1) & ~(shdr->sh_addralign - 1));
         } else if ((shdr->sh_addr % shdr->sh_addralign) != (mCoffOffset % shdr->sh_addralign)) {
           // ARM RVCT tools have behavior outside of the ELF specification to try
           // and make images smaller.  If sh_addr is not aligned to sh_addralign
@@ -336,7 +336,7 @@ ScanSections64 (
         }
       }
       mCoffSectionsOffset[i] = mCoffOffset;
-      mCoffOffset += shdr->sh_size;
+      mCoffOffset += (UINT32) shdr->sh_size;
     }
   }
   mCoffOffset = CoffAlign(mCoffOffset);
@@ -352,7 +352,7 @@ ScanSections64 (
         // the alignment field is valid
         if ((shdr->sh_addr & (shdr->sh_addralign - 1)) == 0) {
           // if the section address is aligned we must align PE/COFF
-          mCoffOffset = (mCoffOffset + shdr->sh_addralign - 1) & ~(shdr->sh_addralign - 1);
+          mCoffOffset = (UINT32) ((mCoffOffset + shdr->sh_addralign - 1) & ~(shdr->sh_addralign - 1));
         } else if ((shdr->sh_addr % shdr->sh_addralign) != (mCoffOffset % shdr->sh_addralign)) {
           // ARM RVCT tools have behavior outside of the ELF specification to try
           // and make images smaller.  If sh_addr is not aligned to sh_addralign
@@ -363,7 +363,7 @@ ScanSections64 (
       }
       if (shdr->sh_size != 0) {
         mCoffSectionsOffset[i] = mCoffOffset;
-        mCoffOffset += shdr->sh_size;
+        mCoffOffset += (UINT32) shdr->sh_size;
         mCoffOffset = CoffAlign(mCoffOffset);
         SetHiiResourceHeader ((UINT8*) mEhdr + shdr->sh_offset, mHiiRsrcOffset);
       }
@@ -507,11 +507,11 @@ WriteSections64 (
         /* Copy.  */
         memcpy(mCoffFile + mCoffSectionsOffset[Idx],
               (UINT8*)mEhdr + Shdr->sh_offset,
-              Shdr->sh_size);
+              (size_t) Shdr->sh_size);
         break;
 
       case SHT_NOBITS:
-        memset(mCoffFile + mCoffSectionsOffset[Idx], 0, Shdr->sh_size);
+        memset(mCoffFile + mCoffSectionsOffset[Idx], 0, (size_t) Shdr->sh_size);
         break;
 
       default:
@@ -536,10 +536,10 @@ WriteSections64 (
     SecShdr = GetShdrByIndex(RelShdr->sh_info);
     SecOffset = mCoffSectionsOffset[RelShdr->sh_info];
     if (RelShdr->sh_type == SHT_RELA && (*Filter)(SecShdr)) {
-      UINT32 RelIdx;
+      UINT64 RelIdx;
       Elf_Shdr *SymtabShdr = GetShdrByIndex(RelShdr->sh_link);
       UINT8 *Symtab = (UINT8*)mEhdr + SymtabShdr->sh_offset;
-      for (RelIdx = 0; RelIdx < RelShdr->sh_size; RelIdx += RelShdr->sh_entsize) {
+      for (RelIdx = 0; RelIdx < RelShdr->sh_size; RelIdx += (UINT32) RelShdr->sh_entsize) {
         Elf_Rela *Rel = (Elf_Rela *)((UINT8*)mEhdr + RelShdr->sh_offset + RelIdx);
         Elf_Sym  *Sym = (Elf_Sym *)(Symtab + ELF_R_SYM(Rel->r_info) * SymtabShdr->sh_entsize);
         Elf_Shdr *SymShdr;
@@ -597,9 +597,9 @@ WriteSections64 (
             VerboseMsg ("Offset: 0x%08X, Addend: 0x%08X", 
               (UINT32)(SecOffset + (Rel->r_offset - SecShdr->sh_addr)), 
               *(UINT32 *)Targ);
-            *(UINT32 *)Targ = *(UINT32 *)Targ
+            *(UINT32 *)Targ = (UINT32) (*(UINT32 *)Targ
               + (mCoffSectionsOffset[Sym->st_shndx] - SymShdr->sh_addr)
-              - (SecOffset - SecShdr->sh_addr);
+              - (SecOffset - SecShdr->sh_addr));
             VerboseMsg ("Relocation:  0x%08X", *(UINT32 *)Targ);
             break;
           default:
@@ -635,7 +635,7 @@ WriteRelocations64 (
     if ((RelShdr->sh_type == SHT_REL) || (RelShdr->sh_type == SHT_RELA)) {
       Elf_Shdr *SecShdr = GetShdrByIndex (RelShdr->sh_info);
       if (IsTextShdr(SecShdr) || IsDataShdr(SecShdr)) {
-        UINT32 RelIdx;
+        UINT64 RelIdx;
 
         SymtabShdr = GetShdrByIndex (RelShdr->sh_link);
         Symtab = (UINT8*)mEhdr + SymtabShdr->sh_offset;
@@ -655,17 +655,19 @@ WriteRelocations64 (
             case R_X86_64_64:
               VerboseMsg ("EFI_IMAGE_REL_BASED_DIR64 Offset: 0x%08X", 
                 mCoffSectionsOffset[RelShdr->sh_info] + (Rel->r_offset - SecShdr->sh_addr));
-              CoffAddFixup(mCoffSectionsOffset[RelShdr->sh_info]
-              + (Rel->r_offset - SecShdr->sh_addr),
-              EFI_IMAGE_REL_BASED_DIR64);
+              CoffAddFixup(
+                (UINT32) ((UINT64) mCoffSectionsOffset[RelShdr->sh_info]
+                + (Rel->r_offset - SecShdr->sh_addr)),
+                EFI_IMAGE_REL_BASED_DIR64);
               break;
             case R_X86_64_32S:
             case R_X86_64_32:
               VerboseMsg ("EFI_IMAGE_REL_BASED_HIGHLOW Offset: 0x%08X", 
                 mCoffSectionsOffset[RelShdr->sh_info] + (Rel->r_offset - SecShdr->sh_addr));
-              CoffAddFixup(mCoffSectionsOffset[RelShdr->sh_info]
-              + (Rel->r_offset - SecShdr->sh_addr),
-              EFI_IMAGE_REL_BASED_HIGHLOW);
+              CoffAddFixup(
+                (UINT32) ((UINT64) mCoffSectionsOffset[RelShdr->sh_info]
+                + (Rel->r_offset - SecShdr->sh_addr)),
+                EFI_IMAGE_REL_BASED_HIGHLOW);
               break;
             default:
               Error (NULL, 0, 3000, "Invalid", "%s unsupported ELF EM_X86_64 relocation 0x%x.", mInImageName, (unsigned) ELF_R_TYPE(Rel->r_info));
