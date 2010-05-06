@@ -579,7 +579,8 @@ class PcdReport(object):
         for Platform in Wa.BuildDatabase.WorkspaceDb.PlatformList:
             for (TokenCName, TokenSpaceGuidCName) in Platform.Pcds:
                 DscDefaultValue = Platform.Pcds[(TokenCName, TokenSpaceGuidCName)].DefaultValue
-                self.DscPcdDefault[(TokenCName, TokenSpaceGuidCName)] = DscDefaultValue
+                if DscDefaultValue:
+                    self.DscPcdDefault[(TokenCName, TokenSpaceGuidCName)] = DscDefaultValue
 
     ##
     # Generate report for PCD information
