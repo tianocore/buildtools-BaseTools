@@ -227,8 +227,8 @@ class SourceFiles:
                    'mingw-w64/files/mingw-w64/mingw-w64-snapshot/' + \
                    'mingw-w64-v1.0-snapshot-$version.tar.bz2/download',
             'extract-dir': os.path.join('mingw-w64-v1.0-$version', 'mingw-w64-headers'),
-            'version': '20100223',
-            'md5': '700b9f54e740b1b962c8a3a0f52b7c04',
+            'version': '20100427',
+            'md5': '1fe68f486bba8995f6a5cf0ed06c80f3',
             },
         }
 
