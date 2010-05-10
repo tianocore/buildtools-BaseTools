@@ -24,11 +24,12 @@ import traceback
 import sys
 import time
 from datetime import datetime
+from StringIO import StringIO
 from Common import EdkLogger
+from Common.Misc import SaveFileOnChange
 from Common.Misc import GuidStructureByteArrayToGuidString
 from Common.Misc import GuidStructureStringToGuidString
 from Common.InfClassObject import gComponentType2ModuleType
-from Common.BuildToolError import FILE_OPEN_FAILURE
 from Common.BuildToolError import FILE_WRITE_FAILURE
 from Common.BuildToolError import CODE_ERROR
 
@@ -1429,13 +1430,11 @@ class BuildReport(object):
     def GenerateReport(self, BuildDuration):
         if self.ReportFile:
             try:
-                File = open(self.ReportFile, "w+")
-            except IOError:
-                EdkLogger.error(None, FILE_OPEN_FAILURE, ExtraData=self.ReportFile)
-            try:
+                File = StringIO('')
                 for (Wa, MaList) in self.ReportList:
                     PlatformReport(Wa, MaList, self.ReportType).GenerateReport(File, BuildDuration, self.ReportType)
-                EdkLogger.quiet("Report successfully saved to %s" % os.path.abspath(self.ReportFile))
+                SaveFileOnChange(self.ReportFile, File.getvalue(), False)
+                EdkLogger.quiet("Build report can be found at %s" % os.path.abspath(self.ReportFile))
             except IOError:
                 EdkLogger.error(None, FILE_WRITE_FAILURE, ExtraData=self.ReportFile)
             except:
