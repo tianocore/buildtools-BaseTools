@@ -1953,8 +1953,10 @@ class ModuleAutoGen(AutoGen):
             return
 
         for ModuleType in self.DepexList:
-            if len(self.DepexList[ModuleType]) == 0:
+            # Ignore empty [depex] section or [depex] section for "USER_DEFINED" module
+            if len(self.DepexList[ModuleType]) == 0 or ModuleType == "USER_DEFINED":
                 continue
+
             Dpx = GenDepex.DependencyExpression(self.DepexList[ModuleType], ModuleType, True)
             DpxFile = gAutoGenDepexFileName % {"module_name" : self.Name}
 
