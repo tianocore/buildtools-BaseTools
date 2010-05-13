@@ -105,7 +105,7 @@ class TableReport(Table):
                 IsCorrected = Record[5]
                 SqlCommand = ''
                 if BelongsToTable == 'File':
-                    SqlCommand = """select 0, FullPath from %s where ID = %s
+                    SqlCommand = """select 1, FullPath from %s where ID = %s
                              """ % (BelongsToTable, BelongsToItem)
                 else:
                     SqlCommand = """select A.StartLine, B.FullPath from %s as A, File as B

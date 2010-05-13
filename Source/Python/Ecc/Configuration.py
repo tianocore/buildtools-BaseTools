@@ -222,7 +222,9 @@ class Configuration(object):
         self.MetaDataFileCheckModuleFileNoUse = 1
         # Check whether the PCD is correctly used in C function via its type
         self.MetaDataFileCheckPcdType = 1
-        
+        # Check whether there are FILE_GUID duplication among different INF files
+        self.MetaDataFileCheckModuleFileGuidDuplication = 1
+
         #
         # The check points in this section are reserved
         #
