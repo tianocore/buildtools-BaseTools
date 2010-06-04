@@ -235,8 +235,8 @@ class SourceFiles:
     source_files_ia32 = {
         'gcc': source_files_x64['gcc'],
         'mingw_hdr': {
-            'url': 'http://sourceforge.net/projects/' + \
-                   'mingw/files/MinGW%20Runtime/' + \
+            'url': 'http://sourceforge.net/projects/mingw/files/MinGW/' + \
+                   'BaseSystem/RuntimeLibrary/MinGW-RT/' + \
                    'mingwrt-$version/' + \
                    'mingwrt-$version-mingw32-src.tar.gz/download',
             'extract-dir': 'mingwrt-$version-mingw32',
