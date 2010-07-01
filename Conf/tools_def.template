@@ -195,6 +195,7 @@ DEFINE SOURCERY_CYGWIN_TOOLS = /cygdrive/c/Program Files/CodeSourcery/Sourcery G
 #   VS2008                 - win32 - Microsoft Visual Studio 2008 Team Suite with Intel ASL
 #   DDK3790                - win32 - Microsoft Windows DDK 3790.1830, Intel EBC, Intel ASL
 #   UNIXGCC                - UNIX GCC, No EBC, Intel ASL
+#   GCC44                  - Linux - GCC 4.4 (Native), No EBC, Intel ASL
 #   ELFGCC                 - Linux ELF GCC, No EBC, Intel ASL
 #   CYGGCC                 - win32 - CygWin GCC, Intel EBC, Intel ASL
 #   ICC                    - win32 - Intel C Compiler V9.1, Intel EBC, Intel ASL
