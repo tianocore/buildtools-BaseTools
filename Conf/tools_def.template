@@ -3332,17 +3332,17 @@ RELEASE_XCODE32_ARM_CC_FLAGS   = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -mthumb-inter
 *_RVCT31_ARM_ARCHDLINK_FLAGS = 
 *_RVCT31_ARM_PLATFORM_FLAGS  =
 
-  DEBUG_RVCT31_ARM_DLINK_FLAGS     = $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_POINT)  --ro-base 0 --no_scanlib --reloc --no_exceptions --datacompressor off --strict --symbols --map --list $(DEST_DIR_DEBUG)/$(BASE_NAME).map 
-RELEASE_RVCT31_ARM_DLINK_FLAGS     = $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_POINT)  --ro-base 0 --no_scanlib --reloc --no_exceptions --datacompressor off --strict --symbols --map --list $(DEST_DIR_DEBUG)/$(BASE_NAME).map 
+  DEBUG_RVCT31_ARM_DLINK_FLAGS     = $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_POINT)  --ro-base 0 --no_scanlib --reloc --no_exceptions --datacompressor off --strict --symbols --map --list $(DEST_DIR_DEBUG)/$(BASE_NAME).map --diag_style=ide
+RELEASE_RVCT31_ARM_DLINK_FLAGS     = $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_POINT)  --ro-base 0 --no_scanlib --reloc --no_exceptions --datacompressor off --strict --symbols --map --list $(DEST_DIR_DEBUG)/$(BASE_NAME).map --diag_style=ide
 
 
-*_RVCT31_ARM_ASM_FLAGS       = $(ARCHASM_FLAGS) --apcs /interwork
-*_RVCT31_ARM_PP_FLAGS        = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -E
+*_RVCT31_ARM_ASM_FLAGS       = $(ARCHASM_FLAGS) --apcs /interwork --diag_style=ide
+*_RVCT31_ARM_PP_FLAGS        = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -E --diag_style=ide
 *_RVCT31_ARM_VFRPP_FLAGS     = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -E  -DVFRCOMPILE --preinclude $(DEST_DIR_DEBUG)/$(MODULE_NAME)StrDefs.h
 *_RVCT31_ARM_MAKE_PATH       = nmake
-*_RVCT31_ARM_SLINK_FLAGS     = --partial -o
-  DEBUG_RVCT31_ARM_CC_FLAGS  = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) --c90 -g -Ospace -c --no_autoinline --asm --gnu --apcs /interwork --signed_chars --no_unaligned_access --split_sections --enum_is_int --preinclude AutoGen.h --diag_warning 167
-RELEASE_RVCT31_ARM_CC_FLAGS  = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) --c90    -Ospace -c --no_autoinline --asm --gnu --apcs /interwork --signed_chars --no_unaligned_access --split_sections --enum_is_int --preinclude AutoGen.h --diag_warning 167
+*_RVCT31_ARM_SLINK_FLAGS     = --partial --diag_style=ide -o 
+  DEBUG_RVCT31_ARM_CC_FLAGS  = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) --c90 -g -Ospace -c --no_autoinline --asm --gnu --apcs /interwork --signed_chars --no_unaligned_access --split_sections --enum_is_int --preinclude AutoGen.h --diag_warning 167 --diag_style=ide
+RELEASE_RVCT31_ARM_CC_FLAGS  = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) --c90    -Ospace -c --no_autoinline --asm --gnu --apcs /interwork --signed_chars --no_unaligned_access --split_sections --enum_is_int --preinclude AutoGen.h --diag_warning 167 --diag_style=ide
 
 ##################
 # ARM definitions
@@ -3382,16 +3382,16 @@ RELEASE_RVCT31_ARM_CC_FLAGS  = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) --c90    -Ospac
 *_RVCT31CYGWIN_ARM_ARCHDLINK_FLAGS = 
 *_RVCT31CYGWIN_ARM_PLATFORM_FLAGS  =
 
-  DEBUG_RVCT31CYGWIN_ARM_DLINK_FLAGS     = "$(DLINKPATH_FLAG)" $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_POINT)  --ro-base 0 --no_scanlib --reloc --no_exceptions --datacompressor off --strict --symbols --map --list `cygpath -m $(DEST_DIR_DEBUG)/$(BASE_NAME).map` 
-RELEASE_RVCT31CYGWIN_ARM_DLINK_FLAGS     = "$(DLINKPATH_FLAG)" $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_POINT)  --ro-base 0 --no_scanlib --reloc --no_exceptions --datacompressor off --strict --symbols --map --list `cygpath -m $(DEST_DIR_DEBUG)/$(BASE_NAME).map` 
+  DEBUG_RVCT31CYGWIN_ARM_DLINK_FLAGS     = "$(DLINKPATH_FLAG)" $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_POINT)  --ro-base 0 --no_scanlib --reloc --no_exceptions --datacompressor off --strict --symbols --map --list `cygpath -m $(DEST_DIR_DEBUG)/$(BASE_NAME).map` --diag_style=ide
+RELEASE_RVCT31CYGWIN_ARM_DLINK_FLAGS     = "$(DLINKPATH_FLAG)" $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_POINT)  --ro-base 0 --no_scanlib --reloc --no_exceptions --datacompressor off --strict --symbols --map --list `cygpath -m $(DEST_DIR_DEBUG)/$(BASE_NAME).map` --diag_style=ide
 
-*_RVCT31CYGWIN_ARM_ASM_FLAGS       = "$(ASMPATH_FLAG)" $(ARCHASM_FLAGS) --apcs /interwork
-*_RVCT31CYGWIN_ARM_PP_FLAGS        = "$(CCPATH_FLAG)" $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -E
+*_RVCT31CYGWIN_ARM_ASM_FLAGS       = "$(ASMPATH_FLAG)" $(ARCHASM_FLAGS) --apcs /interwork --diag_style=ide
+*_RVCT31CYGWIN_ARM_PP_FLAGS        = "$(CCPATH_FLAG)" $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -E --diag_style=ide
 *_RVCT31CYGWIN_ARM_VFRPP_FLAGS     = "$(CCPATH_FLAG)" $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -E  -DVFRCOMPILE --preinclude `cygpath -m $(DEST_DIR_DEBUG)/$(MODULE_NAME)StrDefs.h`
 *_RVCT31CYGWIN_ARM_MAKE_PATH       = make
-*_RVCT31CYGWIN_ARM_SLINK_FLAGS     = "$(SLINKPATH_FLAG)" --partial -o
-  DEBUG_RVCT31CYGWIN_ARM_CC_FLAGS  = "$(CCPATH_FLAG)" $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) --c90 -c -g -Ospace --no_autoinline --asm --gnu --apcs /interwork --signed_chars --no_unaligned_access --split_sections --preinclude AutoGen.h --diag_warning 167
-RELEASE_RVCT31CYGWIN_ARM_CC_FLAGS  = "$(CCPATH_FLAG)" $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) --c90 -c    -Ospace --no_autoinline --asm --gnu --apcs /interwork --signed_chars --no_unaligned_access --split_sections --preinclude AutoGen.h --diag_warning 167
+*_RVCT31CYGWIN_ARM_SLINK_FLAGS     = "$(SLINKPATH_FLAG)" --partial --diag_style=ide -o 
+  DEBUG_RVCT31CYGWIN_ARM_CC_FLAGS  = "$(CCPATH_FLAG)" $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) --c90 -c -g -Ospace --no_autoinline --asm --gnu --apcs /interwork --signed_chars --no_unaligned_access --split_sections --preinclude AutoGen.h --diag_warning 167 --diag_style=ide
+RELEASE_RVCT31CYGWIN_ARM_CC_FLAGS  = "$(CCPATH_FLAG)" $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) --c90 -c    -Ospace --no_autoinline --asm --gnu --apcs /interwork --signed_chars --no_unaligned_access --split_sections --preinclude AutoGen.h --diag_warning 167 --diag_style=ide
 
 ##################
 # ARM definitions
