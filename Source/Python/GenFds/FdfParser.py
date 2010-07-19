@@ -2149,10 +2149,11 @@ class FdfParser:
         if not self.__GetNextToken():
             raise Warning("expected INF file path", self.FileName, self.CurrentLineNumber)
         ffsInf.InfFileName = self.__Token
-        #do case sensitive check for file path
-        ErrorCode, ErrorInfo = PathClass(NormPath(ffsInf.InfFileName), GenFdsGlobalVariable.WorkSpaceDir).Validate()
-        if ErrorCode != 0:
-            EdkLogger.error("GenFds", ErrorCode, ExtraData=ErrorInfo)
+        if ffsInf.InfFileName.replace('$(WORKSPACE)', '').find('$') == -1:
+            #do case sensitive check for file path
+            ErrorCode, ErrorInfo = PathClass(NormPath(ffsInf.InfFileName), GenFdsGlobalVariable.WorkSpaceDir).Validate()
+            if ErrorCode != 0:
+                EdkLogger.error("GenFds", ErrorCode, ExtraData=ErrorInfo)
 
         if not ffsInf.InfFileName in self.Profile.InfList:
             self.Profile.InfList.append(ffsInf.InfFileName)
@@ -2360,10 +2361,11 @@ class FdfParser:
             self.__GetSectionData( FfsFileObj, MacroDict)
         else:
             FfsFileObj.FileName = self.__Token
-            #do case sensitive check for file path
-            ErrorCode, ErrorInfo = PathClass(NormPath(FfsFileObj.FileName), GenFdsGlobalVariable.WorkSpaceDir).Validate()
-            if ErrorCode != 0:
-                EdkLogger.error("GenFds", ErrorCode, ExtraData=ErrorInfo)
+            if FfsFileObj.FileName.replace('$(WORKSPACE)', '').find('$') == -1:
+                #do case sensitive check for file path
+                ErrorCode, ErrorInfo = PathClass(NormPath(FfsFileObj.FileName), GenFdsGlobalVariable.WorkSpaceDir).Validate()
+                if ErrorCode != 0:
+                    EdkLogger.error("GenFds", ErrorCode, ExtraData=ErrorInfo)
 
         if not self.__IsToken( "}"):
             raise Warning("expected '}'", self.FileName, self.CurrentLineNumber)
@@ -2609,10 +2611,11 @@ class FdfParser:
                 if not self.__GetNextToken():
                     raise Warning("expected section file path", self.FileName, self.CurrentLineNumber)
                 DataSectionObj.SectFileName = self.__Token
-                #do case sensitive check for file path
-                ErrorCode, ErrorInfo = PathClass(NormPath(DataSectionObj.SectFileName), GenFdsGlobalVariable.WorkSpaceDir).Validate()
-                if ErrorCode != 0:
-                    EdkLogger.error("GenFds", ErrorCode, ExtraData=ErrorInfo)
+                if DataSectionObj.SectFileName.replace('$(WORKSPACE)', '').find('$') == -1:
+                    #do case sensitive check for file path
+                    ErrorCode, ErrorInfo = PathClass(NormPath(DataSectionObj.SectFileName), GenFdsGlobalVariable.WorkSpaceDir).Validate()
+                    if ErrorCode != 0:
+                        EdkLogger.error("GenFds", ErrorCode, ExtraData=ErrorInfo)
             else:
                 if not self.__GetCglSection(DataSectionObj):
                     return False
