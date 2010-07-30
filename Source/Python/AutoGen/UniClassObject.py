@@ -182,13 +182,13 @@ class StringDefClassObject(object):
 # A structure for .uni file definition
 #
 class UniFileClassObject(object):
-    def __init__(self, FileList = [], IsCompatibleMode = False):
+    def __init__(self, FileList = [], IsCompatibleMode = False, IncludePathList = []):
         self.FileList = FileList
         self.Token = 2
         self.LanguageDef = []                   #[ [u'LanguageIdentifier', u'PrintableName'], ... ]
         self.OrderedStringList = {}             #{ u'LanguageIdentifier' : [StringDefClassObject]  }
         self.IsCompatibleMode = IsCompatibleMode
-
+        self.IncludePathList = IncludePathList
         if len(self.FileList) > 0:
             self.LoadUniFiles(FileList)
 
@@ -266,7 +266,6 @@ class UniFileClassObject(object):
         if not os.path.exists(File.Path) or not os.path.isfile(File.Path):
             EdkLogger.error("Unicode File Parser", FILE_NOT_FOUND, ExtraData=File.Path)
 
-        Dir = File.Dir
         try:
             FileIn = codecs.open(File.Path, mode='rb', encoding='utf-16').readlines()
         except UnicodeError, X:
@@ -309,7 +308,13 @@ class UniFileClassObject(object):
 
             IncList = gIncludePattern.findall(Line)
             if len(IncList) == 1:
-                Lines.extend(self.PreProcess(PathClass(str(IncList[0]), Dir)))
+                for Dir in [File.Dir] + self.IncludePathList:
+                    IncFile = PathClass(str(IncList[0]), Dir)
+                    if os.path.isfile(IncFile.Path):
+                        Lines.extend(self.PreProcess(IncFile))
+                        break
+                else:
+                    EdkLogger.error("Unicode File Parser", FILE_NOT_FOUND, Message="Cannot find include file", ExtraData=str(IncList[0]))
                 continue
 
             Lines.append(Line)

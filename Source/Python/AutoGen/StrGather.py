@@ -1,4 +1,4 @@
-# Copyright (c) 2007, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2007 - 2010, Intel Corporation. All rights reserved.<BR>
 # This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -506,7 +506,7 @@ def SearchString(UniObjectClass, FileList, IsCompatibleMode):
 # This function is used for UEFI2.1 spec
 #
 #
-def GetStringFiles(UniFilList, SourceFileList, IncludeList, SkipList, BaseName, IsCompatibleMode = False, ShellMode = False, UniGenCFlag = True, UniGenBinBuffer = None):
+def GetStringFiles(UniFilList, SourceFileList, IncludeList, IncludePathList, SkipList, BaseName, IsCompatibleMode = False, ShellMode = False, UniGenCFlag = True, UniGenBinBuffer = None):
     Status = True
     ErrorMessage = ''
 
@@ -515,9 +515,9 @@ def GetStringFiles(UniFilList, SourceFileList, IncludeList, SkipList, BaseName, 
             #
             # support ISO 639-2 codes in .UNI files of EDK Shell
             #
-            Uni = UniFileClassObject(UniFilList, True)
+            Uni = UniFileClassObject(UniFilList, True, IncludePathList)
         else:
-            Uni = UniFileClassObject(UniFilList, IsCompatibleMode)
+            Uni = UniFileClassObject(UniFilList, IsCompatibleMode, IncludePathList)
     else:
         EdkLogger.error("UnicodeStringGather", AUTOGEN_ERROR, 'No unicode files given')
 
