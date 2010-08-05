@@ -3501,3 +3501,8 @@ RELEASE_ARMGCC_ARM_CC_FLAGS = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -mfpu=fpa -mlitt
 *_*_*_TIANO_PATH         = TianoCompress
 *_*_*_TIANO_GUID         = A31280AD-481E-41B6-95E8-127F4C984779
 
+##################
+# BPDG tool definitions
+##################
+*_*_*_VPDTOOL_PATH         = BPDG
+*_*_*_VPDTOOL_GUID         = 8C3D856A-9BE6-468E-850A-24F7A8D38E08

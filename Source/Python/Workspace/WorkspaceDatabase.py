@@ -18,6 +18,7 @@ import sqlite3
 import os
 import os.path
 import pickle
+import uuid
 
 import Common.EdkLogger as EdkLogger
 import Common.GlobalData as GlobalData
@@ -135,6 +136,7 @@ class DscBuildData(PlatformBuildClassObject):
         self._Pcds              = None
         self._BuildOptions      = None
         self._LoadFixAddress    = None
+        self._VpdToolGuid       = None
 
     ## Get architecture
     def _GetArch(self):
@@ -188,6 +190,17 @@ class DscBuildData(PlatformBuildClassObject):
                     self._SkuName = Record[1]
             elif Name == TAB_FIX_LOAD_TOP_MEMORY_ADDRESS:
                 self._LoadFixAddress = Record[1]
+            elif Name == TAB_DSC_DEFINES_VPD_TOOL_GUID:
+                #
+                # try to convert GUID to a real UUID value to see whether the GUID is format 
+                # for VPD_TOOL_GUID is correct.
+                #
+                try:
+                    uuid.UUID(Record[1])
+                except:
+                    EdkLogger.error("build", FORMAT_INVALID, "Invalid GUID format for VPD_TOOL_GUID", File=self.MetaFile)
+                self._VpdToolGuid = Record[1]
+                    
         # set _Header to non-None in order to avoid database re-querying
         self._Header = 'DUMMY'
 
@@ -321,6 +334,15 @@ class DscBuildData(PlatformBuildClassObject):
                 self._LoadFixAddress = ''
         return self._LoadFixAddress
 
+    ## Retrieve the GUID string for VPD tool
+    def _GetVpdToolGuid(self):
+        if self._VpdToolGuid == None:
+            if self._Header == None:
+                self._GetHeaderInfo()
+            if self._VpdToolGuid == None:
+                self._VpdToolGuid = ''
+        return self._VpdToolGuid
+    
     ## Retrieve [SkuIds] section information
     def _GetSkuIds(self):
         if self._SkuIds == None:
@@ -418,6 +440,7 @@ class DscBuildData(PlatformBuildClassObject):
                             '',
                             MaxDatumSize,
                             {},
+                            False,
                             None
                             )
                     Module.Pcds[PcdCName, TokenSpaceGuid] = Pcd
@@ -576,6 +599,7 @@ class DscBuildData(PlatformBuildClassObject):
                                                 '',
                                                 MaxDatumSize,
                                                 {},
+                                                False,
                                                 None
                                                 )
         return Pcds
@@ -619,6 +643,7 @@ class DscBuildData(PlatformBuildClassObject):
                                                 '',
                                                 MaxDatumSize,
                                                 {self.SkuName : SkuInfo},
+                                                False,
                                                 None
                                                 )
         return Pcds
@@ -661,6 +686,7 @@ class DscBuildData(PlatformBuildClassObject):
                                                 '',
                                                 '',
                                                 {self.SkuName : SkuInfo},
+                                                False,
                                                 None
                                                 )
         return Pcds
@@ -704,6 +730,7 @@ class DscBuildData(PlatformBuildClassObject):
                                                 '',
                                                 MaxDatumSize,
                                                 {self.SkuName : SkuInfo},
+                                                False,
                                                 None
                                                 )
         return Pcds
@@ -733,7 +760,7 @@ class DscBuildData(PlatformBuildClassObject):
     #
     def AddPcd(self, Name, Guid, Value):
         if (Name, Guid) not in self.Pcds:
-            self.Pcds[Name, Guid] = PcdClassObject(Name, Guid, '', '', '', '', '', {}, None)
+            self.Pcds[Name, Guid] = PcdClassObject(Name, Guid, '', '', '', '', '', {}, False, None)
         self.Pcds[Name, Guid].DefaultValue = Value
 
     Arch                = property(_GetArch, _SetArch)
@@ -752,7 +779,7 @@ class DscBuildData(PlatformBuildClassObject):
     BsBaseAddress       = property(_GetBsBaseAddress)
     RtBaseAddress       = property(_GetRtBaseAddress)
     LoadFixAddress      = property(_GetLoadFixAddress)
-
+    VpdToolGuid         = property(_GetVpdToolGuid)
     SkuIds              = property(_GetSkuIds)
     Modules             = property(_GetModules)
     LibraryInstances    = property(_GetLibraryInstances)
@@ -1063,6 +1090,7 @@ class DecBuildData(PackageBuildClassObject):
                                                                             TokenNumber,
                                                                             '',
                                                                             {},
+                                                                            False,
                                                                             None
                                                                             )
         return Pcds
@@ -1914,6 +1942,7 @@ class InfBuildData(ModuleBuildClassObject):
                     '',
                     '',
                     {},
+                    False,
                     self.Guids[TokenSpaceGuid]
                     )
 
