@@ -2310,7 +2310,7 @@ def CheckFileHeaderDoxygenComments(FullFileName):
 
     for Result in ResultSet:
         CommentStr = Result[0]
-        if not CommentStr.startswith('/** @file'):
+        if '/** @file' not in CommentStr:
             PrintErrorMsg(ERROR_DOXYGEN_CHECK_FILE_HEADER, 'File header comment should begin with ""/** @file""', FileTable, Result[1])
         if not CommentStr.endswith('**/'):
             PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'File header comment should end with **/', FileTable, Result[1])
