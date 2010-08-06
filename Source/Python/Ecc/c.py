@@ -2301,21 +2301,32 @@ def CheckFileHeaderDoxygenComments(FullFileName):
     FileTable = 'Identifier' + str(FileID)
     SqlStatement = """ select Value, ID
                        from %s
-                       where Model = %d and StartLine = 1 and StartColumn = 0
+                       where Model = %d and (StartLine = 1 or StartLine = 7 or StartLine = 8) and StartColumn = 0
                    """ % (FileTable, DataClass.MODEL_IDENTIFIER_COMMENT)
     ResultSet = Db.TblFile.Exec(SqlStatement)
     if len(ResultSet) == 0:
         PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'No Comment appear at the very beginning of file.', 'File', FileID)
         return ErrorMsgList
 
+    IsFoundError1 = True
+    IsFoundError2 = True
+    IsFoundError3 = True
     for Result in ResultSet:
-        CommentStr = Result[0]
-        if '/** @file' not in CommentStr:
-            PrintErrorMsg(ERROR_DOXYGEN_CHECK_FILE_HEADER, 'File header comment should begin with ""/** @file""', FileTable, Result[1])
-        if not CommentStr.endswith('**/'):
-            PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'File header comment should end with **/', FileTable, Result[1])
-        if CommentStr.find('.') == -1:
-            PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMENT_DESCRIPTION, 'Comment description should end with period \'.\'', FileTable, Result[1])
+        CommentStr = Result[0].strip()
+        ID = Result[1]
+        if CommentStr.startswith('/** @file'):
+            IsFoundError1 = False
+        if CommentStr.endswith('**/'):
+            IsFoundError2 = False
+        if CommentStr.find('.') != -1:
+            IsFoundError3 = False
+
+    if IsFoundError1:
+        PrintErrorMsg(ERROR_DOXYGEN_CHECK_FILE_HEADER, 'File header comment should begin with ""/** @file""', FileTable, ID)
+    if IsFoundError2:
+        PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'File header comment should end with **/', FileTable, ID)
+    if IsFoundError3:
+        PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMENT_DESCRIPTION, 'Comment description should end with period \'.\'', FileTable, ID)
 
 def CheckFuncHeaderDoxygenComments(FullFileName):
     ErrorMsgList = []
