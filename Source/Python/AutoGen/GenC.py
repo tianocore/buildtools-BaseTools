@@ -1262,10 +1262,11 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
         VariableHeadValueList = []
         Pcd.InitString = 'UNINIT'
 
-        if Pcd.Type in ["DynamicVpd", "DynamicExVpd"]:
-            Pcd.TokenTypeList = ['PCD_TYPE_VPD']
-        elif Pcd.DatumType == 'VOID*':
-            Pcd.TokenTypeList = ['PCD_TYPE_STRING']
+        if Pcd.DatumType == 'VOID*':
+            if Pcd.Type not in ["DynamicVpd", "DynamicExVpd"]:
+                Pcd.TokenTypeList = ['PCD_TYPE_STRING']
+            else:
+                Pcd.TokenTypeList = []
         elif Pcd.DatumType == 'BOOLEAN':
             Pcd.TokenTypeList = ['PCD_DATUM_TYPE_UINT8']
         else:

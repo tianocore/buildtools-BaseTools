@@ -770,10 +770,14 @@ class PlatformAutoGen(AutoGen):
 
     ## Get list of non-dynamic PCDs
     def _GetNonDynamicPcdList(self):
+        if self._NonDynamicPcdList == None:
+            self.CollectPlatformDynamicPcds()
         return self._NonDynamicPcdList
 
     ## Get list of dynamic PCDs
     def _GetDynamicPcdList(self):
+        if self._DynamicPcdList == None:
+            self.CollectPlatformDynamicPcds()
         return self._DynamicPcdList
 
     ## Generate Token Number for all PCD

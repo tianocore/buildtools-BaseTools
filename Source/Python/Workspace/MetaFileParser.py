@@ -564,6 +564,7 @@ class DscParser(MetaFileParser):
 
     # sections which allow "!include" directive
     _IncludeAllowedSection = [
+        TAB_COMMON_DEFINES.upper(),
         TAB_LIBRARIES.upper(),
         TAB_LIBRARY_CLASSES.upper(),
         TAB_SKUIDS.upper(),
@@ -781,6 +782,7 @@ class DscParser(MetaFileParser):
             self._SectionType = Parser._SectionType
             self._Scope       = Parser._Scope
             self._Enabled     = Parser._Enabled
+            self._Macros.update(Parser._Macros)
         else:
             if DirectiveName in ["!IF", "!IFDEF", "!IFNDEF"]:
                 # evaluate the expression
@@ -965,6 +967,7 @@ class DecParser(MetaFileParser):
     #
     def __init__(self, FilePath, FileType, Table, Macro=None):
         MetaFileParser.__init__(self, FilePath, FileType, Table, Macro, -1)
+        self._Comments = []
 
     ## Parser starter
     def Start(self):
@@ -975,27 +978,34 @@ class DecParser(MetaFileParser):
             EdkLogger.error("Parser", FILE_READ_FAILURE, ExtraData=self.MetaFile)
 
         for Index in range(0, len(self._Content)):
-            Line = CleanString(self._Content[Index])
+            Line, Comment = CleanString2(self._Content[Index])
+            self._CurrentLine = Line
+            self._LineIndex = Index
+
+            # save comment for later use
+            if Comment:
+                self._Comments.append((Comment, self._LineIndex+1))
             # skip empty line
             if Line == '':
                 continue
-            self._CurrentLine = Line
-            self._LineIndex = Index
 
             # section header
             if Line[0] == TAB_SECTION_START and Line[-1] == TAB_SECTION_END:
                 self._SectionHeaderParser()
+                self._Comments = []
                 continue
             elif Line.startswith('DEFINE '):
                 self._MacroParser()
                 continue
             elif len(self._SectionType) == 0:
+                self._Comments = []
                 continue
 
             # section content
             self._ValueList = ['','','']
             self._SectionParser[self._SectionType[0]](self)
             if self._ValueList == None:
+                self._Comments = []
                 continue
 
             #
@@ -1017,6 +1027,22 @@ class DecParser(MetaFileParser):
                     -1,
                     0
                     )
+                for Comment, LineNo in self._Comments:
+                    self._Store(
+                        MODEL_META_DATA_COMMENT,
+                        Comment,
+                        self._ValueList[0],
+                        self._ValueList[1],
+                        Arch,
+                        ModuleType,
+                        self._LastItem,
+                        LineNo,
+                        -1,
+                        LineNo,
+                        -1,
+                        0
+                        )
+            self._Comments = []
         self._Done()
 
     ## Section header parser
