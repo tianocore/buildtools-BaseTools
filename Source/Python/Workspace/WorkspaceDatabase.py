@@ -717,16 +717,26 @@ class DscBuildData(PlatformBuildClassObject):
             if Setting == None:
                 continue
             TokenList = Setting.split(TAB_VALUE_SPLIT)
-            ValueList[0:len(TokenList)] = TokenList
-            VpdOffset, MaxDatumSize = ValueList
-
+            # The TokenList have optional data, process flow will base on it's length
+            if len(TokenList) == 1:
+                VpdOffset = TokenList[0]
+                MaxDatumSize, PcdValue = None, ''                
+            elif len(TokenList) == 2:
+                VpdOffset, MaxDatumSize = TokenList[0:len(TokenList)]
+                PcdValue = ''
+            elif len(TokenList) == 3:
+                VpdOffset, MaxDatumSize, PcdValue = TokenList[0:len(TokenList)]
+            # Error format of vpd definition 
+            else:
+                EdkLogger.error("build", FORMAT_INVALID, "Error format of VPD pcd definition.", File=self.MetaFile)
+                
             SkuInfo = SkuInfoClass(self.SkuName, self.SkuIds[self.SkuName], '', '', '', '', VpdOffset)
             Pcds[PcdCName, TokenSpaceGuid] = PcdClassObject(
                                                 PcdCName,
                                                 TokenSpaceGuid,
                                                 self._PCD_TYPE_STRING_[Type],
                                                 '',
-                                                '',
+                                                PcdValue,
                                                 '',
                                                 MaxDatumSize,
                                                 {self.SkuName : SkuInfo},
