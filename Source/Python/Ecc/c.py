@@ -2324,9 +2324,9 @@ def CheckFileHeaderDoxygenComments(FullFileName):
     if IsFoundError1:
         PrintErrorMsg(ERROR_DOXYGEN_CHECK_FILE_HEADER, 'File header comment should begin with ""/** @file""', FileTable, ID)
     if IsFoundError2:
-        PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'File header comment should end with **/', FileTable, ID)
+        PrintErrorMsg(ERROR_HEADER_CHECK_FILE, 'File header comment should end with ""**/""', FileTable, ID)
     if IsFoundError3:
-        PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMENT_DESCRIPTION, 'Comment description should end with period \'.\'', FileTable, ID)
+        PrintErrorMsg(ERROR_DOXYGEN_CHECK_COMMENT_DESCRIPTION, 'Comment description should end with period "".""', FileTable, ID)
 
 def CheckFuncHeaderDoxygenComments(FullFileName):
     ErrorMsgList = []

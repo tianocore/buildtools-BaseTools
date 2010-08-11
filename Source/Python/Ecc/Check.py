@@ -347,13 +347,14 @@ class Check(object):
                         MsgList = c.CheckFileHeaderDoxygenComments(FullName)
                     elif Ext in ('.inf', '.dec', '.dsc', '.fdf'):
                         FullName = os.path.join(Dirpath, F)
-                        if not open(FullName).read().startswith('## @file'):
+                        op = open(FullName).readlines()
+                        if not op[0].startswith('## @file') and op[6].startswith('## @file') and op[7].startswith('## @file'):
                             SqlStatement = """ select ID from File where FullPath like '%s'""" % FullName
                             ResultSet = EccGlobalData.gDb.TblFile.Exec(SqlStatement)
                             for Result in ResultSet:
                                 Msg = 'INF/DEC/DSC/FDF file header comment should begin with ""## @file""'
                                 EccGlobalData.gDb.TblReport.Insert(ERROR_DOXYGEN_CHECK_FILE_HEADER, Msg, "File", Result[0])
-                                        
+
 
     # Check whether the function headers are followed Doxygen special documentation blocks in section 2.3.5
     def DoxygenCheckFunctionHeader(self):
@@ -714,7 +715,7 @@ class Check(object):
             if Path.startswith('\\') or Path.startswith('/'):
                 Path = Path[1:]
         return Path
-    
+
     # Check whether two module INFs under one workspace has the same FILE_GUID value
     def MetaDataFileCheckModuleFileGuidDuplication(self):
         if EccGlobalData.gConfig.MetaDataFileCheckModuleFileGuidDuplication == '1' or EccGlobalData.gConfig.MetaDataFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
@@ -733,7 +734,7 @@ class Check(object):
                     if not EccGlobalData.gException.IsException(ERROR_META_DATA_FILE_CHECK_MODULE_FILE_GUID_DUPLICATION, InfPath1):
                         Msg = "The FILE_GUID of INF file [%s] is duplicated with that of %s" % (InfPath1, InfPath2)
                         EccGlobalData.gDb.TblReport.Insert(ERROR_META_DATA_FILE_CHECK_MODULE_FILE_GUID_DUPLICATION, OtherMsg = Msg, BelongsToTable = Table.Table, BelongsToItem = Record[0])
-        
+
 
     # Check whether these is duplicate Guid/Ppi/Protocol name
     def CheckGuidProtocolPpi(self, ErrorID, Model, Table):
