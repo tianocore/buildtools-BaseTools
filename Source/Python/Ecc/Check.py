@@ -30,6 +30,7 @@ class Check(object):
 
     # Check all required checkpoints
     def Check(self):
+        self.GeneralCheck()
         self.MetaDataFileCheck()
         self.DoxygenCheck()
         self.IncludeFileCheck()
@@ -37,6 +38,30 @@ class Check(object):
         self.DeclAndDataTypeCheck()
         self.FunctionLayoutCheck()
         self.NamingConventionCheck()
+
+    # General Checking
+    def GeneralCheck(self):
+        self.GeneralCheckNonAcsii()
+
+    # Check whether file has non ACSII char
+    def GeneralCheckNonAcsii(self):
+        if EccGlobalData.gConfig.GeneralCheckNonAcsii == '1' or EccGlobalData.gConfig.GeneralCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
+            EdkLogger.quiet("Checking Non-ACSII char in file ...")
+            BinaryExtList = ['EXE', 'EFI', 'FV', 'ROM', 'DLL', 'COM', 'BMP', 'GIF', 'PYD', 'CMP', 'BIN', 'JPG', 'UNI', 'RAW', 'COM2', 'LIB', 'DEPEX']
+            SqlCommand = """select ID, FullPath, ExtName from File"""
+            RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
+            for Record in RecordSet:
+                if Record[2].upper() not in BinaryExtList:
+                    op = open(Record[1]).readlines()
+                    IndexOfLine = 0
+                    for Line in op:
+                        IndexOfLine += 1
+                        IndexOfChar = 0
+                        for Char in Line:
+                            IndexOfChar += 1
+                            if ord(Char) > 126:
+                                OtherMsg = "File %s has Non-ASCII char at line %s column %s" %(Record[1], IndexOfLine, IndexOfChar)
+                                EccGlobalData.gDb.TblReport.Insert(ERROR_GENERAL_CHECK_NON_ACSII, OtherMsg = OtherMsg, BelongsToTable = 'File', BelongsToItem = Record[0])
 
     # C Function Layout Checking
     def FunctionLayoutCheck(self):

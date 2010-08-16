@@ -514,7 +514,9 @@ def CollectSourceCodeDataIntoDB(RootDir):
                     dirnames.append(Dirname)
 
         for f in filenames:
+            collector = None
             FullName = os.path.normpath(os.path.join(dirpath, f))
+            model = DataClass.MODEL_FILE_OTHERS
             if os.path.splitext(f)[1] in ('.h', '.c'):
                 EdkLogger.info("Parsing " + FullName)
                 model = f.endswith('c') and DataClass.MODEL_FILE_C or DataClass.MODEL_FILE_H
@@ -526,12 +528,13 @@ def CollectSourceCodeDataIntoDB(RootDir):
                     collector.CleanFileProfileBuffer()
                     collector.ParseFileWithClearedPPDirective()
 #                collector.PrintFragments()
-                BaseName = os.path.basename(f)
-                DirName = os.path.dirname(FullName)
-                Ext = os.path.splitext(f)[1].lstrip('.')
-                ModifiedTime = os.path.getmtime(FullName)
-                FileObj = DataClass.FileClass(-1, BaseName, Ext, DirName, FullName, model, ModifiedTime, GetFunctionList(), GetIdentifierList(), [])
-                FileObjList.append(FileObj)
+            BaseName = os.path.basename(f)
+            DirName = os.path.dirname(FullName)
+            Ext = os.path.splitext(f)[1].lstrip('.')
+            ModifiedTime = os.path.getmtime(FullName)
+            FileObj = DataClass.FileClass(-1, BaseName, Ext, DirName, FullName, model, ModifiedTime, GetFunctionList(), GetIdentifierList(), [])
+            FileObjList.append(FileObj)
+            if collector:
                 collector.CleanFileProfileBuffer()
 
     if len(ParseErrorFileList) > 0:
