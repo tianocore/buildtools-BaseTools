@@ -3482,6 +3482,12 @@ RELEASE_ARMGCC_ARM_CC_FLAGS = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -mfpu=fpa -mlitt
 *_*_*_OPTROM_FLAGS                  = -e
 
 ##################
+# GenFw tool definitions
+##################
+*_*_*_GENFW_PATH                   = GenFw
+*_*_*_GENFW_FLAGS                  = 
+
+##################
 # Asl Compiler definitions
 ##################
 *_*_*_ASLCC_FLAGS                  = /GL- /Y- /TC /Dmain=ReferenceAcpiTable
