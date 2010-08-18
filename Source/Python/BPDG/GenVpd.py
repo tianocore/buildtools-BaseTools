@@ -335,6 +335,20 @@ class GenVPD :
         #
         self.PcdUnknownOffsetList.sort(lambda x,y: cmp(x.PcdBinSize, y.PcdBinSize))
         
+        #
+        # Process all Offset value are "*"
+        #
+        if (len(self.PcdFixedOffsetSizeList) == 0) and (len(self.PcdUnknownOffsetList) != 0) :
+            # The offset start from 0
+            NowOffset = 0
+            for Pcd in self.PcdUnknownOffsetList :                
+                Pcd.PcdBinOffset = NowOffset
+                Pcd.PcdOffset    = str(hex(Pcd.PcdBinOffset))
+                NowOffset       += Pcd.PcdBinSize
+                
+            self.PcdFixedOffsetSizeList = self.PcdUnknownOffsetList
+            return
+                         
         # Check the offset of VPD type pcd's offset start from 0.    
         if self.PcdFixedOffsetSizeList[0].PcdBinOffset  != 0 :
             EdkLogger.warn("BPDG", "The offset of VPD type pcd should start with 0, please check it.",
