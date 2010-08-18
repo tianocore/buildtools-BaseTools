@@ -1970,7 +1970,7 @@ class InfBuildData(ModuleBuildClassObject):
                 #   "FixedAtBuild", "PatchableInModule", "FeatureFlag", "Dynamic", "DynamicEx"
                 #
                 PcdType = self._PCD_TYPE_STRING_[Type]
-                if Type in [MODEL_PCD_DYNAMIC, MODEL_PCD_DYNAMIC_EX]:
+                if Type == MODEL_PCD_DYNAMIC:
                     Pcd.Pending = True
                     for T in ["FixedAtBuild", "PatchableInModule", "FeatureFlag", "Dynamic", "DynamicEx"]:
                         if (PcdCName, TokenSpaceGuid, T) in Package.Pcds:
