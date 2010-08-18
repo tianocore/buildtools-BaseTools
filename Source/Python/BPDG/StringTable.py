@@ -45,12 +45,12 @@ MAP_FILE_COMMENT_TEMPLATE = \
 
 
 
-LBL_BPDG_LONG_UNI           = (u"Intel Binary Product Data Generation (BPDG) Application")
+LBL_BPDG_LONG_UNI           = (u"Intel(r) Binary Product Data Generation Tool (Intel(r) BPDG)")
 LBL_BPDG_VERSION            = (u"0.1")
 LBL_BPDG_USAGE              = \
 (
 """
-Usage: bpdg options -o Filename.bin -m Filename.map Filename.txt
+BPDG options -o Filename.bin -m Filename.map Filename.txt
 Intel(r) Binary Product Data Generation Tool (Intel(r) BPDG)
 Copyright (c) 2010 Intel Corporation All Rights Reserved.
 

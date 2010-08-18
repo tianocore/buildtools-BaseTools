@@ -44,11 +44,12 @@ VERSION            = st.LBL_BPDG_VERSION
 #
 def main():
     global Options, Args
+    
+    # Initialize log system
+    EdkLogger.Initialize()          
     Options, Args = myOptionParser()
     
     ReturnCode = 0
-    # Initialize log system
-    EdkLogger.Initialize()  
     
     if Options.opt_slient:
         EdkLogger.SetLevel(EdkLogger.ERROR)
@@ -56,24 +57,24 @@ def main():
         EdkLogger.SetLevel(EdkLogger.VERBOSE)
     elif Options.opt_quiet:
         EdkLogger.SetLevel(EdkLogger.QUIET)
-    elif Options.opt_debug != None:
-        EdkLogger.SetLevel(Options.opt_debug + 1) 
+    elif Options.debug_level != None:
+        EdkLogger.SetLevel(Options.debug_level + 1) 
     else:
         EdkLogger.SetLevel(EdkLogger.INFO)
                   
-    if Options.opt_vpd_filename == None:
-        EdkLogger.error("bpdg", ATTRIBUTE_NOT_AVAILABLE, "Please use the -o option to specify the file name for the VPD binary file")  
-    if Options.opt_map_file == None:
-        EdkLogger.error("bpdg", ATTRIBUTE_NOT_AVAILABLE, "Please use the -m option to specify the file name for the mapping file")  
+    if Options.vpd_filename == None:
+        EdkLogger.error("BPDG", ATTRIBUTE_NOT_AVAILABLE, "Please use the -o option to specify the file name for the VPD binary file")  
+    if Options.filename == None:
+        EdkLogger.error("BPDG", ATTRIBUTE_NOT_AVAILABLE, "Please use the -m option to specify the file name for the mapping file")  
 
     Force = False
     if Options.opt_force != None:
         Force = True
 
     if (Args[0] != None) :
-        startBPDG(Args[0], Options.opt_map_file, Options.opt_vpd_filename, Force)
+        startBPDG(Args[0], Options.filename, Options.vpd_filename, Force)
     else :
-        EdkLogger.error("bpdg", ATTRIBUTE_NOT_AVAILABLE, "Please specify the file which contain the VPD pcd info.",
+        EdkLogger.error("BPDG", ATTRIBUTE_NOT_AVAILABLE, "Please specify the file which contain the VPD pcd info.",
                         None)         
     
     return ReturnCode
@@ -83,11 +84,11 @@ def myOptionParser():
     # Process command line firstly.
     #
     parser = OptionParser(version="%s - Version %s\n" % (PROJECT_NAME, VERSION),
-                          description=PROJECT_NAME,
-                          prog='bpdg',
+                          description='',
+                          prog='BPDG',
                           usage=st.LBL_BPDG_USAGE
                           )
-    parser.add_option('-d', '--debug', action='store', type="int", dest='opt_debug',
+    parser.add_option('-d', '--debug', action='store', type="int", dest='debug_level',
                       help=st.MSG_OPTION_DEBUG_LEVEL)
     parser.add_option('-v', '--verbose', action='store_true', dest='opt_verbose',
                       help=st.MSG_OPTION_VERBOSE)
@@ -95,16 +96,17 @@ def myOptionParser():
                       help=st.MSG_OPTION_SILENT)
     parser.add_option('-q', '--quiet', action='store_true', dest='opt_quiet', default=False,
                       help=st.MSG_OPTION_QUIET)
-    parser.add_option('-o', '--vpd-filename', action='store', dest='opt_vpd_filename',
+    parser.add_option('-o', '--vpd-filename', action='store', dest='vpd_filename',
                       help=st.MSG_OPTION_VPD_FILENAME)
-    parser.add_option('-m', '--map-filename', action='store', dest='opt_map_file',
+    parser.add_option('-m', '--map-filename', action='store', dest='filename',
                       help=st.MSG_OPTION_MAP_FILENAME)   
     parser.add_option('-f', '--force', action='store_true', dest='opt_force',
                       help=st.MSG_OPTION_FORCE)     
     
     (options, args) = parser.parse_args()
     if len(args) == 0:
-        print parser.usage
+        EdkLogger.info("Please specify the filename.txt file which contain the VPD pcd info!")
+        EdkLogger.info(parser.usage)
         sys.exit(1)
     return options, args
     
@@ -126,7 +128,7 @@ def startBPDG(InputFileName, MapFileName, VpdFileName, Force):
     GenVPD.FixVpdOffset()
     GenVPD.GenerateVpdFile(MapFileName, VpdFileName)
     
-    EdkLogger.info("- Done! -")    
+    EdkLogger.info("- Vpd pcd fixed done! -")    
 
 if __name__ == '__main__':
     r = main()

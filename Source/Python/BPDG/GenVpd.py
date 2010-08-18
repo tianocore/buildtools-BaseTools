@@ -1,4 +1,6 @@
 ## @file
+#  This file include GenVpd class for fix the Vpd type PCD offset, and PcdEntry for describe
+#  and process each entry of vpd type PCD.
 #
 #  Copyright (c) 2010, Intel Corporation. All rights reserved.<BR>
 #
@@ -37,6 +39,15 @@ class PcdEntry:
         self.PcdBinOffset   = PcdBinOffset
         self.PcdBinSize     = PcdBinSize
         
+        if self.PcdValue == '' :
+            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, "Invalid PCD format, no Value specified!")
+                         
+        if self.PcdOffset == '' :
+            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, "Invalid PCD format, no Offset specified!")
+            
+        if self.PcdSize == '' :
+            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, "Invalid PCD format, no PcdSize specified!")  
+                   
         self._GenOffsetValue ()
         
     def _IsBoolean(self, ValueString):
@@ -52,7 +63,7 @@ class PcdEntry:
                 try:
                     self.PcdBinOffset = int(self.PcdOffset, 16)
                 except:
-                    EdkLogger.error("bpdg", BuildToolError.FORMAT_INVALID, 
+                    EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
                                     "Invalid offset value %s for PCD %s" % (self.PcdOffset, self.PcdCName))                                  
         
     def _PackBooleanValue(self, ValueString):
@@ -63,7 +74,7 @@ class PcdEntry:
                 
     def _PackIntValue(self, IntValue, Size):
         if Size not in _FORMAT_CHAR.keys():
-            EdkLogger.error("bpdg", BuildToolError.FORMAT_INVALID, 
+            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
                             "Invalid size %d for PCD in integer datum size." % Size)        
         self.PcdValue =  pack(_FORMAT_CHAR[Size], IntValue)
         
@@ -75,7 +86,7 @@ class PcdEntry:
         elif ValueString.startswith('"') and ValueString.endswith('"'):
             self._PackString(ValueString, Size)
         else:
-            EdkLogger.error("bpdg", BuildToolError.FORMAT_INVALID, 
+            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
                             "Invalid VOID* type PCD value %s" % ValueString) 
                    
     def _PackString(self, ValueString, Size):
@@ -85,7 +96,7 @@ class PcdEntry:
         
         ValueString = ValueString[1:-1]
         if len(ValueString) + 1 > Size:
-            EdkLogger.error("bpdg", BuildToolError.RESOURCE_OVERFLOW, 
+            EdkLogger.error("BPDG", BuildToolError.RESOURCE_OVERFLOW, 
                             "PCD value string %s is exceed to size %d" % (ValueString, Size))
         self.PcdValue=  pack('%ds' % Size, ValueString)
         
@@ -99,7 +110,7 @@ class PcdEntry:
         ValueList = [item.strip() for item in ValueList]
         
         if len(ValueList) > Size:
-            EdkLogger.error("bpdg", BuildToolError.RESOURCE_OVERFLOW, 
+            EdkLogger.error("BPDG", BuildToolError.RESOURCE_OVERFLOW, 
                             "The byte array %s is too large for size %d" % (ValueString, Size))
         
         ReturnArray = array.array('B')
@@ -111,7 +122,7 @@ class PcdEntry:
                 try:
                     Value = int(ValueList[Index], 16)
                 except:
-                    EdkLogger.error("bpdg", BuildToolError.FORMAT_INVALID, 
+                    EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
                                     "The value item %s in byte array %s is an invalid HEX value." % \
                                     (ValueList[Index], ValueString))
             else:
@@ -119,12 +130,12 @@ class PcdEntry:
                 try:
                     Value = int(ValueList[Index], 10)
                 except:
-                    EdkLogger.error("bpdg", BuildToolError.FORMAT_INVALID,
+                    EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID,
                                     "The value item %s in byte array %s is an invalid DECIMAL value." % \
                                     (ValueList[Index], ValueString))
             
             if Value > 255:
-                EdkLogger.error("bpdg", BuildToolError.FORMAT_INVALID, 
+                EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
                                 "The value item %s in byte array %s do not in range 0 ~ 0xFF" %\
                                 (ValueList[Index], ValueString))
              
@@ -146,7 +157,7 @@ class PcdEntry:
         UnicodeString = UnicodeString[2:-1]
         
         if (len(UnicodeString) + 1) * 2 > Size:
-            EdkLogger.error("bpdg", BuildToolError.RESOURCE_OVERFLOW,
+            EdkLogger.error("BPDG", BuildToolError.RESOURCE_OVERFLOW,
                             "The size of unicode string %s is too larger for size %s" % \
                             (UnicodeString, Size))
             
@@ -156,7 +167,7 @@ class PcdEntry:
                 ReturnArray.append(ord(Value))
                 ReturnArray.append(0)
             except:
-                EdkLogger.error("bpdg", BuildToolError.FORMAT_INVALID, 
+                EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
                                 "Invalid unicode character %s in unicode string %s" % \
                                 (Value, UnicodeString))
                 
@@ -184,16 +195,15 @@ class GenVPD :
         self.PcdFixedOffsetSizeList  = []
         self.PcdUnknownOffsetList    = []
         try:
-            print InputFileName
             fInputfile = open(InputFileName, "r", 0)
             try:
                 self.FileLinesList = fInputfile.readlines()
             except:
-                EdkLogger.error("bpdg", BuildToolError.FILE_READ_FAILURE, "File read failed for %s" %InputFileName,None)
+                EdkLogger.error("BPDG", BuildToolError.FILE_READ_FAILURE, "File read failed for %s" %InputFileName,None)
             finally:
                 fInputfile.close()
         except:
-            EdkLogger.error("bpdg", BuildToolError.FILE_OPEN_FAILURE, "File open failed for %s" %InputFileName,None)
+            EdkLogger.error("BPDG", BuildToolError.FILE_OPEN_FAILURE, "File open failed for %s" %InputFileName,None)
     
     ##
     # Parser the input file which is generated by the build tool. Convert the value of each pcd's 
@@ -233,7 +243,7 @@ class GenVPD :
         # Report warning messages to user's.
         # 
         if len(self.FileLinesList) == 0 :
-            EdkLogger.warn('bpdg', BuildToolError.RESOURCE_NOT_AVAILABLE, 
+            EdkLogger.warn('BPDG', BuildToolError.RESOURCE_NOT_AVAILABLE, 
                            "There are no VPD type pcds defined in DSC file, Please check it.")
                       
         # Process the pcds one by one base on the pcd's value and size
@@ -245,8 +255,8 @@ class GenVPD :
                 PCD.PcdCName     = PCD.PcdCName.strip(' ')
                 PCD.PcdOffset    = PCD.PcdOffset.strip(' ')
                 PCD.PcdSize      = PCD.PcdSize.strip(' ')
-                PCD.PcdValue     = PCD.PcdValue.strip(' ')             
-                
+                PCD.PcdValue     = PCD.PcdValue.strip(' ')               
+                                      
                 #
                 # Store the original pcd value.
                 # This information will be useful while generate the output map file.
@@ -264,7 +274,7 @@ class GenVPD :
                         PackSize = int(PCD.PcdSize, 16)
                         PCD.PcdBinSize = PackSize
                     except:
-                        EdkLogger.error("bpdg", BuildToolError.FORMAT_INVALID, "Invalid PCD size value %s" % PCD.PcdSize)
+                        EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, "Invalid PCD size value %s" % PCD.PcdSize)
                     
                 if PCD._IsBoolean(PCD.PcdValue):
                     PCD._PackBooleanValue(PCD.PcdValue)
@@ -327,7 +337,7 @@ class GenVPD :
         
         # Check the offset of VPD type pcd's offset start from 0.    
         if self.PcdFixedOffsetSizeList[0].PcdBinOffset  != 0 :
-            EdkLogger.warn("bpdg", "The offset of VPD type pcd should start with 0, please check it.",
+            EdkLogger.warn("BPDG", "The offset of VPD type pcd should start with 0, please check it.",
                             None)  
             
         # Judge whether the offset in fixed pcd offset list is overlapped or not.
@@ -338,19 +348,19 @@ class GenVPD :
             PcdNext = self.PcdFixedOffsetSizeList[count+1]
             # Two pcd's offset is same            
             if PcdNow.PcdBinOffset == PcdNext.PcdBinOffset :
-                EdkLogger.error("bpdg", BuildToolError.ATTRIBUTE_GET_FAILURE, 
+                EdkLogger.error("BPDG", BuildToolError.ATTRIBUTE_GET_FAILURE, 
                                 "The offset of %s is same with %s" % (PcdNow.PcdCName, PcdNext.PcdCName),
                                 None)
             
             # Overlapped   
             if PcdNow.PcdBinOffset + PcdNow.PcdBinSize > PcdNext.PcdBinOffset :
-                EdkLogger.error("bpdg", BuildToolError.ATTRIBUTE_GET_FAILURE, 
+                EdkLogger.error("BPDG", BuildToolError.ATTRIBUTE_GET_FAILURE, 
                                 "The offset of %s is overlapped with %s" % (PcdNow.PcdCName, PcdNext.PcdCName),
                                 None)
                 
             # Has free space, raise a warning message   
             if PcdNow.PcdBinOffset + PcdNow.PcdBinSize < PcdNext.PcdBinOffset :
-                EdkLogger.warn("bpdg", BuildToolError.ATTRIBUTE_GET_FAILURE, 
+                EdkLogger.warn("BPDG", BuildToolError.ATTRIBUTE_GET_FAILURE, 
                                "The offsets have free space of between %s and %s" % (PcdNow.PcdCName, PcdNext.PcdCName),
                                 None)
             count += 1
@@ -417,7 +427,7 @@ class GenVPD :
                 FixOffsetSizeListCount += 1
             # Usually it will not enter into this thunk, if so, means it overlapped. 
             else :
-                EdkLogger.error("bpdg", BuildToolError.ATTRIBUTE_NOT_AVAILABLE, 
+                EdkLogger.error("BPDG", BuildToolError.ATTRIBUTE_NOT_AVAILABLE, 
                                 "The offset value definition has overlapped at pcd: %s, it's offset is: %s" %(eachFixedPcd.PcdCName, eachFixedPcd.PcdOffset),
                                 None)
                 FixOffsetSizeListCount += 1
@@ -451,13 +461,13 @@ class GenVPD :
             fVpdFile  = open (BinFileName, "wb", 0)               
         except:
             # Open failed
-            EdkLogger.error("bpdg", BuildToolError.FILE_OPEN_FAILURE, "File open failed for %s" %self.VpdFileName,None)
+            EdkLogger.error("BPDG", BuildToolError.FILE_OPEN_FAILURE, "File open failed for %s" %self.VpdFileName,None)
         
         try :
             fMapFile  = open (MapFileName, "w", 0)
         except:
             # Open failed
-            EdkLogger.error("bpdg", BuildToolError.FILE_OPEN_FAILURE, "File open failed for %s" %self.MapFileName,None)
+            EdkLogger.error("BPDG", BuildToolError.FILE_OPEN_FAILURE, "File open failed for %s" %self.MapFileName,None)
         
         # Use a instance of StringIO to cache data
         fStringIO = StringIO.StringIO('') 
@@ -466,14 +476,14 @@ class GenVPD :
         try :
             fMapFile.write (st.MAP_FILE_COMMENT_TEMPLATE + "\n")
         except:
-            EdkLogger.error("bpdg", BuildToolError.FILE_WRITE_FAILURE, "Write data to file %s failed, please check whether the file been locked or using by other applications." %self.MapFileName,None)  
+            EdkLogger.error("BPDG", BuildToolError.FILE_WRITE_FAILURE, "Write data to file %s failed, please check whether the file been locked or using by other applications." %self.MapFileName,None)  
                   
         for eachPcd in self.PcdFixedOffsetSizeList  :
             # write map file
             try :
                 fMapFile.write("%s | %s | %s | %s  \n" % (eachPcd.PcdCName, eachPcd.PcdOffset, eachPcd.PcdSize,eachPcd.PcdUnpackValue))
             except:
-                EdkLogger.error("bpdg", BuildToolError.FILE_WRITE_FAILURE, "Write data to file %s failed, please check whether the file been locked or using by other applications." %self.MapFileName,None)                                                                      
+                EdkLogger.error("BPDG", BuildToolError.FILE_WRITE_FAILURE, "Write data to file %s failed, please check whether the file been locked or using by other applications." %self.MapFileName,None)                                                                      
                          
             # Write Vpd binary file
             fStringIO.seek (eachPcd.PcdBinOffset)          
@@ -486,7 +496,7 @@ class GenVPD :
         try :  
             fVpdFile.write (fStringIO.getvalue())
         except:
-            EdkLogger.error("bpdg", BuildToolError.FILE_WRITE_FAILURE, "Write data to file %s failed, please check whether the file been locked or using by other applications." %self.VpdFileName,None)
+            EdkLogger.error("BPDG", BuildToolError.FILE_WRITE_FAILURE, "Write data to file %s failed, please check whether the file been locked or using by other applications." %self.VpdFileName,None)
         
         fStringIO.close ()
         fVpdFile.close ()
