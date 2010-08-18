@@ -237,6 +237,9 @@ class Configuration(object):
         # The directory listed here will not be parsed, split with ','
         self.SkipDirList = []
 
+        # A list for binary file ext name
+        self.BinaryExtList = []
+
         self.ParseConfig()
 
     def ParseConfig(self):
@@ -259,6 +262,8 @@ class Configuration(object):
                 if List[0] == 'MetaDataFileCheckPathOfGenerateFileList' and List[1] == "":
                     continue
                 if List[0] == 'SkipDirList':
+                    List[1] = GetSplitValueList(List[1], TAB_COMMA_SPLIT)
+                if List[0] == 'BinaryExtList':
                     List[1] = GetSplitValueList(List[1], TAB_COMMA_SPLIT)
                 self.__dict__[List[0]] = List[1]
 

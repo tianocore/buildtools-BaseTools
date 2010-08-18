@@ -47,11 +47,10 @@ class Check(object):
     def GeneralCheckNonAcsii(self):
         if EccGlobalData.gConfig.GeneralCheckNonAcsii == '1' or EccGlobalData.gConfig.GeneralCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Non-ACSII char in file ...")
-            BinaryExtList = ['EXE', 'EFI', 'FV', 'ROM', 'DLL', 'COM', 'BMP', 'GIF', 'PYD', 'CMP', 'BIN', 'JPG', 'UNI', 'RAW', 'COM2', 'LIB', 'DEPEX']
             SqlCommand = """select ID, FullPath, ExtName from File"""
             RecordSet = EccGlobalData.gDb.TblInf.Exec(SqlCommand)
             for Record in RecordSet:
-                if Record[2].upper() not in BinaryExtList:
+                if Record[2].upper() not in EccGlobalData.gConfig.BinaryExtList:
                     op = open(Record[1]).readlines()
                     IndexOfLine = 0
                     for Line in op:
