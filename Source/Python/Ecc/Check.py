@@ -91,22 +91,26 @@ class Check(object):
         if EccGlobalData.gConfig.CFunctionLayoutCheckReturnType == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout return type ...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.c', '.h'):
-                        FullName = os.path.join(Dirpath, F)
-                        c.CheckFuncLayoutReturnType(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.c', '.h'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        c.CheckFuncLayoutReturnType(FullName)
+            for FullName in EccGlobalData.gCFileList + EccGlobalData.gHFileList:
+                c.CheckFuncLayoutReturnType(FullName)
 
     # Check whether any optional functional modifiers exist and next to the return type
     def FunctionLayoutCheckModifier(self):
         if EccGlobalData.gConfig.CFunctionLayoutCheckOptionalFunctionalModifier == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout modifier ...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.c', '.h'):
-                        FullName = os.path.join(Dirpath, F)
-                        c.CheckFuncLayoutModifier(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.c', '.h'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        c.CheckFuncLayoutModifier(FullName)
+            for FullName in EccGlobalData.gCFileList + EccGlobalData.gHFileList:
+                c.CheckFuncLayoutModifier(FullName)
 
     # Check whether the next line contains the function name, left justified, followed by the beginning of the parameter list
     # Check whether the closing parenthesis is on its own line and also indented two spaces
@@ -114,33 +118,41 @@ class Check(object):
         if EccGlobalData.gConfig.CFunctionLayoutCheckFunctionName == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout function name ...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.c', '.h'):
-                        FullName = os.path.join(Dirpath, F)
-                        c.CheckFuncLayoutName(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.c', '.h'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        c.CheckFuncLayoutName(FullName)
+            for FullName in EccGlobalData.gCFileList + EccGlobalData.gHFileList:
+                c.CheckFuncLayoutName(FullName)
+
     # Check whether the function prototypes in include files have the same form as function definitions
     def FunctionLayoutCheckPrototype(self):
         if EccGlobalData.gConfig.CFunctionLayoutCheckFunctionPrototype == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout function prototype ...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.c'):
-                        FullName = os.path.join(Dirpath, F)
-                        EdkLogger.quiet("[PROTOTYPE]" + FullName)
-                        c.CheckFuncLayoutPrototype(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.c'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        EdkLogger.quiet("[PROTOTYPE]" + FullName)
+#                        c.CheckFuncLayoutPrototype(FullName)
+            for FullName in EccGlobalData.gCFileList:
+                EdkLogger.quiet("[PROTOTYPE]" + FullName)
+                c.CheckFuncLayoutPrototype(FullName)
 
     # Check whether the body of a function is contained by open and close braces that must be in the first column
     def FunctionLayoutCheckBody(self):
         if EccGlobalData.gConfig.CFunctionLayoutCheckFunctionBody == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout function body ...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.c'):
-                        FullName = os.path.join(Dirpath, F)
-                        c.CheckFuncLayoutBody(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.c'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        c.CheckFuncLayoutBody(FullName)
+            for FullName in EccGlobalData.gCFileList:
+                c.CheckFuncLayoutBody(FullName)
 
     # Check whether the data declarations is the first code in a module.
     # self.CFunctionLayoutCheckDataDeclaration = 1
@@ -149,11 +161,14 @@ class Check(object):
         if EccGlobalData.gConfig.CFunctionLayoutCheckNoInitOfVariable == '1' or EccGlobalData.gConfig.CFunctionLayoutCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking function layout local variables ...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.c'):
-                        FullName = os.path.join(Dirpath, F)
-                        c.CheckFuncLayoutLocalVariable(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.c'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        c.CheckFuncLayoutLocalVariable(FullName)
+
+            for FullName in EccGlobalData.gCFileList:
+                c.CheckFuncLayoutLocalVariable(FullName)
 
     # Check whether no use of STATIC for functions
     # self.CFunctionLayoutCheckNoStatic = 1
@@ -174,22 +189,26 @@ class Check(object):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckNoUseCType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration No use C type ...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.h', '.c'):
-                        FullName = os.path.join(Dirpath, F)
-                        c.CheckDeclNoUseCType(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.h', '.c'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        c.CheckDeclNoUseCType(FullName)
+            for FullName in EccGlobalData.gCFileList + EccGlobalData.gHFileList:
+                c.CheckDeclNoUseCType(FullName)
 
     # Check whether the modifiers IN, OUT, OPTIONAL, and UNALIGNED are used only to qualify arguments to a function and should not appear in a data type declaration
     def DeclCheckInOutModifier(self):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckInOutModifier == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration argument modifier ...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.h', '.c'):
-                        FullName = os.path.join(Dirpath, F)
-                        c.CheckDeclArgModifier(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.h', '.c'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        c.CheckDeclArgModifier(FullName)
+            for FullName in EccGlobalData.gCFileList + EccGlobalData.gHFileList:
+                c.CheckDeclArgModifier(FullName)
 
     # Check whether the EFIAPI modifier should be used at the entry of drivers, events, and member functions of protocols
     def DeclCheckEFIAPIModifier(self):
@@ -201,24 +220,30 @@ class Check(object):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckEnumeratedType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration enum typedef ...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.h', '.c'):
-                        FullName = os.path.join(Dirpath, F)
-                        EdkLogger.quiet("[ENUM]" + FullName)
-                        c.CheckDeclEnumTypedef(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.h', '.c'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        EdkLogger.quiet("[ENUM]" + FullName)
+#                        c.CheckDeclEnumTypedef(FullName)
+            for FullName in EccGlobalData.gCFileList + EccGlobalData.gHFileList:
+                EdkLogger.quiet("[ENUM]" + FullName)
+                c.CheckDeclEnumTypedef(FullName)
 
     # Check whether Structure Type has a 'typedef' and the name is capital
     def DeclCheckStructureDeclaration(self):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckStructureDeclaration == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration struct typedef ...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.h', '.c'):
-                        FullName = os.path.join(Dirpath, F)
-                        EdkLogger.quiet("[STRUCT]" + FullName)
-                        c.CheckDeclStructTypedef(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.h', '.c'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        EdkLogger.quiet("[STRUCT]" + FullName)
+#                        c.CheckDeclStructTypedef(FullName)
+            for FullName in EccGlobalData.gCFileList + EccGlobalData.gHFileList:
+                EdkLogger.quiet("[STRUCT]" + FullName)
+                c.CheckDeclStructTypedef(FullName)
 
     # Check whether having same Structure
     def DeclCheckSameStructure(self):
@@ -247,12 +272,15 @@ class Check(object):
         if EccGlobalData.gConfig.DeclarationDataTypeCheckUnionType == '1' or EccGlobalData.gConfig.DeclarationDataTypeCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Declaration union typedef ...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.h', '.c'):
-                        FullName = os.path.join(Dirpath, F)
-                        EdkLogger.quiet("[UNION]" + FullName)
-                        c.CheckDeclUnionTypedef(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.h', '.c'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        EdkLogger.quiet("[UNION]" + FullName)
+#                        c.CheckDeclUnionTypedef(FullName)
+            for FullName in EccGlobalData.gCFileList + EccGlobalData.gHFileList:
+                EdkLogger.quiet("[UNION]" + FullName)
+                c.CheckDeclUnionTypedef(FullName)
 
     # Predicate Expression Checking
     def PredicateExpressionCheck(self):
@@ -265,35 +293,46 @@ class Check(object):
         if EccGlobalData.gConfig.PredicateExpressionCheckBooleanValue == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking predicate expression Boolean value ...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.c'):
-                        FullName = os.path.join(Dirpath, F)
-                        EdkLogger.quiet("[BOOLEAN]" + FullName)
-                        c.CheckBooleanValueComparison(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.c'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        EdkLogger.quiet("[BOOLEAN]" + FullName)
+#                        c.CheckBooleanValueComparison(FullName)
+            for FullName in EccGlobalData.gCFileList:
+                EdkLogger.quiet("[BOOLEAN]" + FullName)
+                c.CheckBooleanValueComparison(FullName)
 
     # Check whether Non-Boolean comparisons use a compare operator (==, !=, >, < >=, <=).
     def PredicateExpressionCheckNonBooleanOperator(self):
         if EccGlobalData.gConfig.PredicateExpressionCheckNonBooleanOperator == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking predicate expression Non-Boolean variable...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.c'):
-                        FullName = os.path.join(Dirpath, F)
-                        EdkLogger.quiet("[NON-BOOLEAN]" + FullName)
-                        c.CheckNonBooleanValueComparison(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.c'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        EdkLogger.quiet("[NON-BOOLEAN]" + FullName)
+#                        c.CheckNonBooleanValueComparison(FullName)
+            for FullName in EccGlobalData.gCFileList:
+                EdkLogger.quiet("[NON-BOOLEAN]" + FullName)
+                c.CheckNonBooleanValueComparison(FullName)
+
     # Check whether a comparison of any pointer to zero must be done via the NULL type
     def PredicateExpressionCheckComparisonNullType(self):
         if EccGlobalData.gConfig.PredicateExpressionCheckComparisonNullType == '1' or EccGlobalData.gConfig.PredicateExpressionCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking predicate expression NULL pointer ...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.c'):
-                        FullName = os.path.join(Dirpath, F)
-                        EdkLogger.quiet("[POINTER]" + FullName)
-                        c.CheckPointerNullComparison(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.c'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        EdkLogger.quiet("[POINTER]" + FullName)
+#                        c.CheckPointerNullComparison(FullName)
+            for FullName in EccGlobalData.gCFileList:
+                EdkLogger.quiet("[POINTER]" + FullName)
+                c.CheckPointerNullComparison(FullName)
+
     # Include file checking
     def IncludeFileCheck(self):
         self.IncludeFileCheckIfndef()
@@ -333,22 +372,26 @@ class Check(object):
         if EccGlobalData.gConfig.IncludeFileCheckIfndefStatement == '1' or EccGlobalData.gConfig.IncludeFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking header file ifndef ...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.h'):
-                        FullName = os.path.join(Dirpath, F)
-                        MsgList = c.CheckHeaderFileIfndef(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.h'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        MsgList = c.CheckHeaderFileIfndef(FullName)
+            for FullName in EccGlobalData.gHFileList:
+                MsgList = c.CheckHeaderFileIfndef(FullName)
 
     # Check whether include files NOT contain code or define data variables
     def IncludeFileCheckData(self):
         if EccGlobalData.gConfig.IncludeFileCheckData == '1' or EccGlobalData.gConfig.IncludeFileCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking header file data ...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.h'):
-                        FullName = os.path.join(Dirpath, F)
-                        MsgList = c.CheckHeaderFileData(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.h'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        MsgList = c.CheckHeaderFileData(FullName)
+            for FullName in EccGlobalData.gHFileList:
+                MsgList = c.CheckHeaderFileData(FullName)
 
     # Doxygen document checking
     def DoxygenCheck(self):
@@ -385,11 +428,14 @@ class Check(object):
         if EccGlobalData.gConfig.DoxygenCheckFunctionHeader == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen function header ...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.h', '.c'):
-                        FullName = os.path.join(Dirpath, F)
-                        MsgList = c.CheckFuncHeaderDoxygenComments(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.h', '.c'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        MsgList = c.CheckFuncHeaderDoxygenComments(FullName)
+            for FullName in EccGlobalData.gCFileList + EccGlobalData.gHFileList:
+                MsgList = c.CheckFuncHeaderDoxygenComments(FullName)
+
 
     # Check whether the first line of text in a comment block is a brief description of the element being documented.
     # The brief description must end with a period.
@@ -402,22 +448,26 @@ class Check(object):
         if EccGlobalData.gConfig.DoxygenCheckCommentFormat == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen comment ///< ...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.h', '.c'):
-                        FullName = os.path.join(Dirpath, F)
-                        MsgList = c.CheckDoxygenTripleForwardSlash(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.h', '.c'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        MsgList = c.CheckDoxygenTripleForwardSlash(FullName)
+            for FullName in EccGlobalData.gCFileList + EccGlobalData.gHFileList:
+                MsgList = c.CheckDoxygenTripleForwardSlash(FullName)
 
     # Check whether only Doxygen commands allowed to mark the code are @bug and @todo.
     def DoxygenCheckCommand(self):
         if EccGlobalData.gConfig.DoxygenCheckCommand == '1' or EccGlobalData.gConfig.DoxygenCheckAll == '1' or EccGlobalData.gConfig.CheckAll == '1':
             EdkLogger.quiet("Checking Doxygen command ...")
 
-            for Dirpath, Dirnames, Filenames in self.WalkTree():
-                for F in Filenames:
-                    if os.path.splitext(F)[1] in ('.h', '.c'):
-                        FullName = os.path.join(Dirpath, F)
-                        MsgList = c.CheckDoxygenCommand(FullName)
+#            for Dirpath, Dirnames, Filenames in self.WalkTree():
+#                for F in Filenames:
+#                    if os.path.splitext(F)[1] in ('.h', '.c'):
+#                        FullName = os.path.join(Dirpath, F)
+#                        MsgList = c.CheckDoxygenCommand(FullName)
+            for FullName in EccGlobalData.gCFileList + EccGlobalData.gHFileList:
+                MsgList = c.CheckDoxygenCommand(FullName)
 
     # Meta-Data File Processing Checking
     def MetaDataFileCheck(self):
@@ -581,7 +631,6 @@ class Check(object):
                 SqlCommand2 = """select Name from File where ID = %s""" %Record[5]
                 DscFileName = os.path.splitext(EccGlobalData.gDb.TblDsc.Exec(SqlCommand1)[0][0])[0]
                 FdfFileName = os.path.splitext(EccGlobalData.gDb.TblDsc.Exec(SqlCommand2)[0][0])[0]
-                print DscFileName, 111, FdfFileName
                 if DscFileName != FdfFileName:
                     continue
                 if not EccGlobalData.gException.IsException(ERROR_META_DATA_FILE_CHECK_PCD_DUPLICATE, Record[1]):
@@ -705,8 +754,8 @@ class Check(object):
                 SqlCommand = """
                              select ID from File where FullPath in
                             (select B.Path || '\\' || A.Value1 from INF as A, File as B where A.Model = %s and A.BelongsToFile = %s
-                             and B.ID = %s)
-                             """ %(MODEL_EFI_SOURCE_FILE, BelongsToFile, BelongsToFile)
+                             and B.ID = %s and (B.Model = %s or B.Model = %s))
+                             """ %(MODEL_EFI_SOURCE_FILE, BelongsToFile, BelongsToFile, MODEL_FILE_C, MODEL_FILE_H)
                 TableSet = EccGlobalData.gDb.TblFile.Exec(SqlCommand)
                 for Tbl in TableSet:
                     TblName = 'Identifier' + str(Tbl[0])

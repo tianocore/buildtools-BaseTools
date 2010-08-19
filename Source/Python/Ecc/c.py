@@ -555,7 +555,6 @@ def GetTableID(FullFileName, ErrorMsgList = None):
                        from File
                        where FullPath like '%s'
                    """ % FullFileName
-
     ResultSet = Db.TblFile.Exec(SqlStatement)
 
     FileID = -1
