@@ -19,6 +19,7 @@ import time
 import copy
 
 import Common.EdkLogger as EdkLogger
+import Common.GlobalData as GlobalData
 from CommonDataClass.DataClass import *
 from Common.DataType import *
 from Common.String import *
@@ -82,6 +83,7 @@ class MetaFileParser(object):
         self.MetaFile = FilePath
         self._FileDir = os.path.dirname(self.MetaFile)
         self._Macros = copy.copy(Macros)
+        self._Macros["WORKSPACE"] = os.environ["WORKSPACE"]
 
         # for recursive parsing
         self._Owner = Owner
@@ -490,7 +492,12 @@ class InfParser(MetaFileParser):
     ## [FixedPcd], [FeaturePcd], [PatchPcd], [Pcd] and [PcdEx] sections parser
     def _PcdParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_VALUE_SPLIT, 1)
-        self._ValueList[0:1] = GetSplitValueList(TokenList[0], TAB_SPLIT)
+        ValueList = GetSplitValueList(TokenList[0], TAB_SPLIT)
+        if len(ValueList) != 2:
+            EdkLogger.error('Parser', FORMAT_INVALID, "Illegal token space GUID and PCD name format",
+                            ExtraData=self._CurrentLine + " (<TokenSpaceGuidCName>.<PcdCName>)",
+                            File=self.MetaFile, Line=self._LineIndex+1)
+        self._ValueList[0:1] = ValueList
         if len(TokenList) > 1:
             self._ValueList[2] = TokenList[1]
         if self._ValueList[0] == '' or self._ValueList[1] == '':
@@ -649,7 +656,11 @@ class DscParser(MetaFileParser):
                 continue
             # file private macros
             elif Line.upper().startswith('DEFINE '):
-                self._MacroParser()
+                (Name, Value) = self._MacroParser()
+                # Make the defined macro in DSC [Defines] section also
+                # available for FDF file.
+                if self._SectionName == TAB_COMMON_DEFINES.upper():
+                    GlobalData.gGlobalDefines.setdefault(Name, Value)
                 continue
             elif Line.upper().startswith('EDK_GLOBAL '):
                 (Name, Value) = self._MacroParser()
@@ -716,6 +727,8 @@ class DscParser(MetaFileParser):
         if TokenList[0] in ['FLASH_DEFINITION', 'OUTPUT_DIRECTORY']:
             TokenList[1] = NormPath(TokenList[1], self._Macros)
         self._ValueList[0:len(TokenList)] = TokenList
+        # Treat elements in the [defines] section as global macros for FDF file.
+        GlobalData.gGlobalDefines.setdefault(TokenList[0], TokenList[1])
 
     ## <subsection_header> parser
     def _SubsectionHeaderParser(self):

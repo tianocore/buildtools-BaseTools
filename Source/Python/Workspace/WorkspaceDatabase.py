@@ -830,6 +830,7 @@ class DecBuildData(PackageBuildClassObject):
         TAB_DEC_DEFINES_PACKAGE_NAME                : "_PackageName",
         TAB_DEC_DEFINES_PACKAGE_GUID                : "_Guid",
         TAB_DEC_DEFINES_PACKAGE_VERSION             : "_Version",
+        TAB_DEC_DEFINES_PKG_UNI_FILE                : "_PkgUniFile",
     }
 
 
@@ -871,6 +872,7 @@ class DecBuildData(PackageBuildClassObject):
         self._PackageName       = None
         self._Guid              = None
         self._Version           = None
+        self._PkgUniFile        = None
         self._Protocols         = None
         self._Ppis              = None
         self._Guids             = None
