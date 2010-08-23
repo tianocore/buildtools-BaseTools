@@ -496,10 +496,11 @@ class PlatformAutoGen(AutoGen):
                 OtherPcdArray.append(Pcd)
                 
             if Pcd.Type in [TAB_PCDS_DYNAMIC_VPD, TAB_PCDS_DYNAMIC_EX_VPD]:
-                VpdFile.Add(Pcd, Sku.VpdOffset)
-                # if the offset of a VPD is *, then it need to be fixed up by third party tool.
-                if not NeedProcessVpdMapFile and Sku.VpdOffset == "*":
-                    NeedProcessVpdMapFile = True
+                if not (self.Platform.VpdToolGuid == None or self.Platform.VpdToolGuid == ''):
+                    VpdFile.Add(Pcd, Sku.VpdOffset)
+                    # if the offset of a VPD is *, then it need to be fixed up by third party tool.
+                    if not NeedProcessVpdMapFile and Sku.VpdOffset == "*":
+                        NeedProcessVpdMapFile = True
                 
         if (self.Platform.FlashDefinition == None or self.Platform.FlashDefinition == '') and \
            VpdFile.GetCount() != 0:
