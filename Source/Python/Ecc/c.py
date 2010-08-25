@@ -542,7 +542,8 @@ def CollectSourceCodeDataIntoDB(RootDir):
 
     Db = GetDB()
     for file in FileObjList:
-        Db.InsertOneFile(file)
+        if file.ExtName.upper() not in ['INF', 'DEC', 'DSC', 'FDF']:
+            Db.InsertOneFile(file)
 
     Db.UpdateIdentifierBelongsToFunction()
 
@@ -569,6 +570,8 @@ def GetTableID(FullFileName, ErrorMsgList = None):
     return FileID
 
 def GetIncludeFileList(FullFileName):
+    if os.path.splitext(FullFileName)[1].upper() not in ('.H'):
+        return []
     IFList = IncludeFileListDict.get(FullFileName)
     if IFList != None:
         return IFList
