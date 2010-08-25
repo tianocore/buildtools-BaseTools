@@ -100,6 +100,10 @@ class DscBuildData(PlatformBuildClassObject):
         RecordList = self._RawData[MODEL_META_DATA_DEFINE, self._Arch]
         for Record in RecordList:
             GlobalData.gEdkGlobal[Record[0]] = Record[1]
+        
+        RecordList = self._RawData[MODEL_META_DATA_GLOBAL_DEFINE, self._Arch]
+        for Record in RecordList:
+            GlobalData.gGlobalDefines[Record[0]] = Record[1]
 
     ## XXX[key] = value
     def __setitem__(self, key, value):

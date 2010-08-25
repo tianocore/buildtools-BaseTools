@@ -19,7 +19,6 @@ import time
 import copy
 
 import Common.EdkLogger as EdkLogger
-import Common.GlobalData as GlobalData
 from CommonDataClass.DataClass import *
 from Common.DataType import *
 from Common.String import *
@@ -660,7 +659,21 @@ class DscParser(MetaFileParser):
                 # Make the defined macro in DSC [Defines] section also
                 # available for FDF file.
                 if self._SectionName == TAB_COMMON_DEFINES.upper():
-                    GlobalData.gGlobalDefines.setdefault(Name, Value)
+                    self._LastItem = self._Store(
+                    MODEL_META_DATA_GLOBAL_DEFINE,
+                    Name,
+                    Value,
+                    '',
+                    'COMMON',
+                    'COMMON',
+                    self._Owner,
+                    self._From,
+                    self._LineIndex+1,
+                    -1,
+                    self._LineIndex+1,
+                    -1,
+                    self._Enabled
+                    )
                 continue
             elif Line.upper().startswith('EDK_GLOBAL '):
                 (Name, Value) = self._MacroParser()
@@ -728,7 +741,21 @@ class DscParser(MetaFileParser):
             TokenList[1] = NormPath(TokenList[1], self._Macros)
         self._ValueList[0:len(TokenList)] = TokenList
         # Treat elements in the [defines] section as global macros for FDF file.
-        GlobalData.gGlobalDefines.setdefault(TokenList[0], TokenList[1])
+        self._LastItem = self._Store(
+                            MODEL_META_DATA_GLOBAL_DEFINE,
+                            TokenList[0],
+                            TokenList[1],
+                            '',
+                            'COMMON',
+                            'COMMON',
+                            self._Owner,
+                            self._From,
+                            self._LineIndex+1,
+                            -1,
+                            self._LineIndex+1,
+                            -1,
+                            self._Enabled
+                            )
 
     ## <subsection_header> parser
     def _SubsectionHeaderParser(self):
