@@ -86,8 +86,8 @@ DEFINE ICC11_ASM32x86     = C:\Program Files (x86)\Intel\Compiler\DEF(ICC11_VERS
 
 DEFINE ICC11_BINX64       = C:\Program Files\Intel\Compiler\DEF(ICC11_VERSION)\DEF(ICC11_BUILD)\bin\ia32_intel64
 DEFINE ICC11_ASMX64       = C:\Program Files\Intel\Compiler\DEF(ICC11_VERSION)\DEF(ICC11_BUILD)\bin\ia32_intel64
-DEFINE ICC11_BINX64x86    = C:\Program Files (x86)\Intel\Compiler\DEF(ICC11_VERSION)\DEF(ICC11_BUILD)\bin\ia32_intel64
-DEFINE ICC11_ASMX64x86    = C:\Program Files (x86)\Intel\Compiler\DEF(ICC11_VERSION)\DEF(ICC11_BUILD)\bin\ia32_intel64
+DEFINE ICC11_BINX64x86    = C:\Program Files (x86)\Intel\Compiler\DEF(ICC11_VERSION)\DEF(ICC11_BUILD)\bin\intel64
+DEFINE ICC11_ASMX64x86    = C:\Program Files (x86)\Intel\Compiler\DEF(ICC11_VERSION)\DEF(ICC11_BUILD)\bin\intel64
 
 DEFINE ICC11_BIN64        = C:\Program Files\Intel\Compiler\DEF(ICC11_VERSION)\DEF(ICC11_BUILD)\bin\ia32_ia64
 DEFINE ICC11_BIN64x86     = C:\Program Files (x86)\Intel\Compiler\DEF(ICC11_VERSION)\DEF(ICC11_BUILD)\bin\ia32_ia64
