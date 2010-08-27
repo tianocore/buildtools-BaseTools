@@ -215,7 +215,7 @@ def CallExtenalBPDGTool(ToolPath, VpdFilePath, VpdFileName):
     assert VpdFilePath != None and os.path.exists(VpdFilePath), "Invalid parameter VpdFileName"
     
     OutputDir = os.path.dirname(VpdFilePath)
-    if (VpdFileName == None) :
+    if (VpdFileName == None or VpdFileName == "") :
         FileName = os.path.basename(VpdFilePath)
         BaseName, ext = os.path.splitext(FileName)
         OutputMapFileName = os.path.join(OutputDir, "%s.map" % BaseName)
