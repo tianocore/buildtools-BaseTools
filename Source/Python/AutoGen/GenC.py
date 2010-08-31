@@ -1028,7 +1028,9 @@ def CreateModulePcdCode(Info, AutoGenC, AutoGenH, Pcd):
                     ArraySize = ArraySize / 2;
 
                 if ArraySize < (len(Value) + 1):
-                    ArraySize = len(Value) + 1
+                    EdkLogger.error("build", AUTOGEN_ERROR,
+                                    "The maximum size of VOID* type PCD '%s.%s' is less than its actual size occupied." % (Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
+                                    ExtraData="[%s]" % str(Info))
                 Value = NewValue + '0 }'
             Array = '[%d]' % ArraySize
         #
@@ -1365,8 +1367,11 @@ def CreatePcdDatabasePhaseSpecificAutoGen (Platform, Phase):
                     Dict['SIZE_TABLE_MAXIMUM_LENGTH'].append(Pcd.MaxDatumSize)
                     if Pcd.MaxDatumSize != '':
                         MaxDatumSize = int(Pcd.MaxDatumSize, 0)
-                        if MaxDatumSize > Size:
-                            Size = MaxDatumSize
+                        if MaxDatumSize < Size:
+                            EdkLogger.error("build", AUTOGEN_ERROR,
+                                            "The maximum size of VOID* type PCD '%s.%s' is less than its actual size occupied." % (Pcd.TokenSpaceGuidCName, Pcd.TokenCName),
+                                            ExtraData="[%s]" % str(Platform))
+                        Size = MaxDatumSize
                     Dict['STRING_TABLE_LENGTH'].append(Size)
                     StringTableIndex += 1
                     StringTableSize += (Size)
