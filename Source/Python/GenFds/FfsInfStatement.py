@@ -80,7 +80,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         #
 
         PathClassObj = PathClass(self.InfFileName, GenFdsGlobalVariable.WorkSpaceDir)
-        ErrorCode, ErrorInfo = PathClassObj.Validate()
+        ErrorCode, ErrorInfo = PathClassObj.Validate(".inf")
         if ErrorCode != 0:
             EdkLogger.error("GenFds", ErrorCode, ExtraData=ErrorInfo)
         
