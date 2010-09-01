@@ -22,6 +22,8 @@
 #
 import os
 import sys
+import encodings.ascii
+
 from optparse import OptionParser
 from encodings import gbk
 from Common import EdkLogger

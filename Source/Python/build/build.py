@@ -23,6 +23,7 @@ import glob
 import time
 import platform
 import traceback
+import encodings.ascii 
 
 from struct import *
 from threading import *
