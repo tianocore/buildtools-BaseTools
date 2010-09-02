@@ -735,6 +735,12 @@ class DscBuildData(PlatformBuildClassObject):
                 continue
             TokenList = Setting.split(TAB_VALUE_SPLIT)
             ValueList[0:len(TokenList)] = TokenList
+            #
+            # For the VOID* type, it can have optional data of MaxDatumSize and InitialValue
+            # For the Integer & Boolean type, the optional data can only be InitialValue.
+            # At this point, we put all the data into the PcdClssObject for we don't know the PCD's datumtype
+            # until the DEC parser has been called.
+            # 
             VpdOffset, MaxDatumSize, InitialValue = ValueList
 
             SkuInfo = SkuInfoClass(self.SkuName, self.SkuIds[self.SkuName], '', '', '', '', VpdOffset, InitialValue)
@@ -805,7 +811,7 @@ class DscBuildData(PlatformBuildClassObject):
     Pcds                = property(_GetPcds)
     BuildOptions        = property(_GetBuildOptions)
 
-## Platform build information from DSC file
+## Platform build information from DEC file
 #
 #  This class is used to retrieve information stored in database and convert them
 # into PackageBuildClassObject form for easier use for AutoGen.
@@ -2043,7 +2049,7 @@ class InfBuildData(ModuleBuildClassObject):
 
 ## Database
 #
-#   This class defined the build databse for all modules, packages and platform.
+#   This class defined the build database for all modules, packages and platform.
 # It will call corresponding parser for the given file if it cannot find it in
 # the database.
 #

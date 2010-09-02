@@ -127,12 +127,15 @@ class VpdInfoFile:
         try:
             # write file header
             fd.write(FILE_COMMENT_TEMPLATE)
-        
+
             # write each of PCD in VPD type
             for Pcd in self._VpdArray.keys():
                 for Offset in self._VpdArray[Pcd]:
-                    fd.write("%s.%s|%s|%s|%s  \n" % (Pcd.TokenSpaceGuidCName, Pcd.TokenCName, str(Offset).strip(),
-                                                         str(Pcd.MaxDatumSize).strip(), str(Pcd.DefaultValue).strip()))
+                    PcdValue = str(Pcd.SkuInfoList[Pcd.SkuInfoList.keys()[0]].DefaultValue).strip()
+                    if PcdValue == "" :
+                        PcdValue  = Pcd.DefaultValue
+                        
+                    fd.write("%s.%s|%s|%s|%s  \n" % (Pcd.TokenSpaceGuidCName, Pcd.TokenCName, str(Offset).strip(), str(Pcd.MaxDatumSize).strip(),PcdValue))
         except:
             EdkLogger.error("VpdInfoFile",
                             BuildToolError.FILE_WRITE_FAILURE,
