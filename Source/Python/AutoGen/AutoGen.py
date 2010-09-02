@@ -504,7 +504,8 @@ class PlatformAutoGen(AutoGen):
                         #
                         if (Pcd.DatumType.strip() != "VOID*" and Pcd.DatumType.strip() != "VOID *"):
                             if Sku.DefaultValue == '':
-                                Sku.DefaultValue = Pcd.MaxDatumSize                                                
+                                Pcd.SkuInfoList[Pcd.SkuInfoList.keys()[0]].DefaultValue = Pcd.MaxDatumSize
+                                Pcd.MaxDatumSize = None                                                
                         
                         VpdFile.Add(Pcd, Sku.VpdOffset)
                         # if the offset of a VPD is *, then it need to be fixed up by third party tool.

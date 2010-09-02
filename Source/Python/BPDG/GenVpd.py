@@ -29,24 +29,29 @@ _FORMAT_CHAR = {1: 'B',
                 }
 
 class PcdEntry:
-    def __init__(self, PcdCName, PcdOffset, PcdSize, PcdValue, PcdUnpackValue=None, 
+    def __init__(self, PcdCName, PcdOffset, PcdSize, PcdValue, Lineno=None, FileName=None, PcdUnpackValue=None, 
                  PcdBinOffset=None, PcdBinSize=None):
         self.PcdCName       = PcdCName.strip()
         self.PcdOffset      = PcdOffset.strip()
         self.PcdSize        = PcdSize.strip()
         self.PcdValue       = PcdValue.strip()
+        self.Lineno         = Lineno.strip()
+        self.FileName       = FileName.strip()
         self.PcdUnpackValue = PcdUnpackValue
         self.PcdBinOffset   = PcdBinOffset
         self.PcdBinSize     = PcdBinSize
         
         if self.PcdValue == '' :
-            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, "Invalid PCD format, no Value specified!")
+            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
+                            "Invalid PCD format(Name: %s File: %s line: %s) , no Value specified!" %(self.PcdCName, self.FileName, self.Lineno))
                          
         if self.PcdOffset == '' :
-            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, "Invalid PCD format, no Offset specified!")
+            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
+                            "Invalid PCD format(Name: %s File: %s Line: %s) , no Offset specified!" %(self.PcdCName, self.FileName, self.Lineno))
             
         if self.PcdSize == '' :
-            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, "Invalid PCD format, no PcdSize specified!")  
+            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
+                            "Invalid PCD format(Name: %s File: %s Line: %s), no PcdSize specified!" %(self.PcdCName, self.FileName, self.Lineno))  
                    
         self._GenOffsetValue ()
         
@@ -64,7 +69,7 @@ class PcdEntry:
                     self.PcdBinOffset = int(self.PcdOffset, 16)
                 except:
                     EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
-                                    "Invalid offset value %s for PCD %s" % (self.PcdOffset, self.PcdCName))                                  
+                                    "Invalid offset value %s for PCD %s (File: %s Line: %s)" % (self.PcdOffset, self.PcdCName, self.FileName, self.Lineno))                                  
         
     def _PackBooleanValue(self, ValueString):
         if ValueString.upper() == "TRUE":
@@ -75,7 +80,7 @@ class PcdEntry:
     def _PackIntValue(self, IntValue, Size):
         if Size not in _FORMAT_CHAR.keys():
             EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
-                            "Invalid size %d for PCD in integer datum size." % Size)        
+                            "Invalid size %d for PCD %s in integer datum size(File: %s Line: %s)." % (Size, self.PcdCName, self.FileName, self.Lineno))        
         self.PcdValue =  pack(_FORMAT_CHAR[Size], IntValue)
         
     def _PackPtrValue(self, ValueString, Size):
@@ -87,22 +92,28 @@ class PcdEntry:
             self._PackString(ValueString, Size)
         else:
             EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
-                            "Invalid VOID* type PCD value %s" % ValueString) 
+                            "Invalid VOID* type PCD %s value %s (File: %s Line: %s)" % (self.PcdCName, ValueString, self.FileName, self.Lineno)) 
                    
     def _PackString(self, ValueString, Size):
-        assert Size > 0, "Invalid parameter Size!"
-        assert ValueString != "", "Invalid parameter ValueString"
-        assert len(ValueString) >= 2, 'An ASCII string at least contains two "'
+        if (Size < 0):
+            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
+                            "Invalid parameter Size %s of PCD %s!(File: %s Line: %s)" % (self.PcdBinSize, self.PcdCName, self.FileName, self.Lineno))
+        if (ValueString == ""):
+            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, "Invalid parameter ValueString %s of PCD %s!(File: %s Line: %s)" % (self.PcdUnpackValue, self.PcdCName, self.FileName, self.Lineno))        
+        if (len(ValueString) < 2):
+            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, "For PCD: %s ,ASCII string %s at least contains two!(File: %s Line: %s)" % (self.PcdCName, self.PcdUnpackValue, self.FileName, self.Lineno))
         
         ValueString = ValueString[1:-1]
         if len(ValueString) + 1 > Size:
             EdkLogger.error("BPDG", BuildToolError.RESOURCE_OVERFLOW, 
-                            "PCD value string %s is exceed to size %d" % (ValueString, Size))
+                            "PCD value string %s is exceed to size %d(File: %s Line: %s)" % (ValueString, Size, self.FileName, self.Lineno))
         self.PcdValue=  pack('%ds' % Size, ValueString)
         
     def _PackByteArray(self, ValueString, Size):
-        assert Size > 0, "Invalid parameter Size!"
-        assert ValueString != "", "Invalid parameter ValueString"
+        if (Size < 0):        
+            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, "Invalid parameter Size %s of PCD %s!(File: %s Line: %s)" % (self.PcdBinSize, self.PcdCName, self.FileName, self.Lineno))
+        if (ValueString == ""):
+            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, "Invalid parameter ValueString %s of PCD %s!(File: %s Line: %s)" % (self.PcdUnpackValue, self.PcdCName, self.FileName, self.Lineno)) 
         
         ValueString = ValueString.strip()
         ValueString = ValueString.lstrip('{').strip('}')
@@ -111,7 +122,7 @@ class PcdEntry:
         
         if len(ValueList) > Size:
             EdkLogger.error("BPDG", BuildToolError.RESOURCE_OVERFLOW, 
-                            "The byte array %s is too large for size %d" % (ValueString, Size))
+                            "The byte array %s is too large for size %d(File: %s Line: %s)" % (ValueString, Size, self.FileName, self.Lineno))
         
         ReturnArray = array.array('B')
         
@@ -123,21 +134,21 @@ class PcdEntry:
                     Value = int(ValueList[Index], 16)
                 except:
                     EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
-                                    "The value item %s in byte array %s is an invalid HEX value." % \
-                                    (ValueList[Index], ValueString))
+                                    "The value item %s in byte array %s is an invalid HEX value.(File: %s Line: %s)" % \
+                                    (ValueList[Index], ValueString, self.FileName, self.Lineno))
             else:
                 # translate decimal value
                 try:
                     Value = int(ValueList[Index], 10)
                 except:
                     EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID,
-                                    "The value item %s in byte array %s is an invalid DECIMAL value." % \
-                                    (ValueList[Index], ValueString))
+                                    "The value item %s in byte array %s is an invalid DECIMAL value.(File: %s Line: %s)" % \
+                                    (ValueList[Index], ValueString, self.FileName, self.Lineno))
             
             if Value > 255:
                 EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
-                                "The value item %s in byte array %s do not in range 0 ~ 0xFF" %\
-                                (ValueList[Index], ValueString))
+                                "The value item %s in byte array %s do not in range 0 ~ 0xFF(File: %s Line: %s)" %\
+                                (ValueList[Index], ValueString, self.FileName, self.Lineno))
              
             ReturnArray.append(Value)
             
@@ -151,15 +162,19 @@ class PcdEntry:
     #  A unicode string for a PCD should be in format as  L"".
     #
     def _PackUnicode(self, UnicodeString, Size):
-        assert Size > 0, "Invalid parameter Size"
-        assert len(UnicodeString) >= 3, "Invalid parameter UnicodeString"
+        if (Size < 0):        
+            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, "Invalid parameter Size %s of PCD %s!(File: %s Line: %s)" %\
+                             (self.PcdBinSize, self.PcdCName, self.FileName, self.Lineno))
+        if (len(UnicodeString) < 3):
+            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, "For PCD: %s ,ASCII string %s at least contains two!(File: %s Line: %s)" %\
+                            (self.PcdCName, self.PcdUnpackValue, self.FileName, self.Lineno))
         
         UnicodeString = UnicodeString[2:-1]
         
         if (len(UnicodeString) + 1) * 2 > Size:
             EdkLogger.error("BPDG", BuildToolError.RESOURCE_OVERFLOW,
-                            "The size of unicode string %s is too larger for size %s" % \
-                            (UnicodeString, Size))
+                            "The size of unicode string %s is too larger for size %s(File: %s Line: %s)" % \
+                            (UnicodeString, Size, self.FileName, self.Lineno))
             
         ReturnArray = array.array('B')
         for Value in UnicodeString:
@@ -168,8 +183,8 @@ class PcdEntry:
                 ReturnArray.append(0)
             except:
                 EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
-                                "Invalid unicode character %s in unicode string %s" % \
-                                (Value, UnicodeString))
+                                "Invalid unicode character %s in unicode string %s(File: %s Line: %s)" % \
+                                (Value, UnicodeString, self.FileName, self.Lineno))
                 
         for Index in range(len(UnicodeString) * 2, Size):
             ReturnArray.append(0)
@@ -219,6 +234,8 @@ class GenVPD :
             # Skip the comment line
             if (not line.startswith("#")) and len(line) > 1 :              
                 self.FileLinesList[count] = line.split('|')
+                # Store the line number
+                self.FileLinesList[count].append(str(count+1))
             elif len(line) <= 1 :
                 # Set the blank line to "None"
                 self.FileLinesList[count] = None
@@ -250,12 +267,13 @@ class GenVPD :
         count = 0
         for line in self.FileLinesList:        
             if line != None :
-                PCD = PcdEntry(line[0], line[1], line[2], line[3])   
+                PCD = PcdEntry(line[0], line[1], line[2], line[3], line[4], self.InputFileName)   
                 # Strip the space char
                 PCD.PcdCName     = PCD.PcdCName.strip(' ')
                 PCD.PcdOffset    = PCD.PcdOffset.strip(' ')
                 PCD.PcdSize      = PCD.PcdSize.strip(' ')
                 PCD.PcdValue     = PCD.PcdValue.strip(' ')               
+                PCD.Lineno       = PCD.Lineno.strip(' ')
                                       
                 #
                 # Store the original pcd value.
@@ -274,7 +292,7 @@ class GenVPD :
                         PackSize = int(PCD.PcdSize, 16)
                         PCD.PcdBinSize = PackSize
                     except:
-                        EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, "Invalid PCD size value %s" % PCD.PcdSize)
+                        EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, "Invalid PCD size value %s at file: %s line: %s" % (PCD.PcdSize, self.InputFileName, PCD.Lineno))
                     
                 if PCD._IsBoolean(PCD.PcdValue):
                     PCD._PackBooleanValue(PCD.PcdValue)
@@ -363,19 +381,22 @@ class GenVPD :
             # Two pcd's offset is same            
             if PcdNow.PcdBinOffset == PcdNext.PcdBinOffset :
                 EdkLogger.error("BPDG", BuildToolError.ATTRIBUTE_GET_FAILURE, 
-                                "The offset of %s is same with %s" % (PcdNow.PcdCName, PcdNext.PcdCName),
+                                "The offset of %s at line: %s is same with %s at line: %s in file %s" %\
+                                (PcdNow.PcdCName, PcdNow.Lineno, PcdNext.PcdCName, PcdNext.Lineno, PcdNext.FileName),
                                 None)
             
             # Overlapped   
             if PcdNow.PcdBinOffset + PcdNow.PcdBinSize > PcdNext.PcdBinOffset :
                 EdkLogger.error("BPDG", BuildToolError.ATTRIBUTE_GET_FAILURE, 
-                                "The offset of %s is overlapped with %s" % (PcdNow.PcdCName, PcdNext.PcdCName),
+                                "The offset of %s at line: %s is overlapped with %s at line: %s in file %s" %\
+                                (PcdNow.PcdCName, PcdNow.Lineno, PcdNext.PcdCName, PcdNext.Lineno, PcdNext.FileName),
                                 None)
                 
             # Has free space, raise a warning message   
             if PcdNow.PcdBinOffset + PcdNow.PcdBinSize < PcdNext.PcdBinOffset :
                 EdkLogger.warn("BPDG", BuildToolError.ATTRIBUTE_GET_FAILURE, 
-                               "The offsets have free space of between %s and %s" % (PcdNow.PcdCName, PcdNext.PcdCName),
+                               "The offsets have free space of between %s at line: %s and %s at line: %s in file %s" %\
+                               (PcdNow.PcdCName, PcdNow.Lineno, PcdNext.PcdCName, PcdNext.Lineno, PcdNext.FileName),
                                 None)
             count += 1
                              
@@ -442,7 +463,8 @@ class GenVPD :
             # Usually it will not enter into this thunk, if so, means it overlapped. 
             else :
                 EdkLogger.error("BPDG", BuildToolError.ATTRIBUTE_NOT_AVAILABLE, 
-                                "The offset value definition has overlapped at pcd: %s, it's offset is: %s" %(eachFixedPcd.PcdCName, eachFixedPcd.PcdOffset),
+                                "The offset value definition has overlapped at pcd: %s, it's offset is: %s, in file: %s line: %s" %\
+                                (eachFixedPcd.PcdCName, eachFixedPcd.PcdOffset, eachFixedPcd.InputFileName, eachFixedPcd.Lineno),
                                 None)
                 FixOffsetSizeListCount += 1
         

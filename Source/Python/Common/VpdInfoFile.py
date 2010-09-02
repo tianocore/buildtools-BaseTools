@@ -85,17 +85,22 @@ class VpdInfoFile:
     #  @param offset integer value for VPD's offset in specific SKU.
     #
     def Add(self, Vpd, Offset):
-        assert Vpd != None, "Invalid VPD PCD entry."
-        assert Offset >= 0 or Offset == "*", "Invalid offset parameter: %s." % Offset
+        if (Vpd == None):
+            EdkLogger.error("VpdInfoFile", BuildToolError.ATTRIBUTE_UNKNOWN_ERROR, "Invalid VPD PCD entry.")
+        
+        if not (Offset >= 0 or Offset == "*"):
+            EdkLogger.error("VpdInfoFile", BuildToolError.PARAMETER_INVALID, "Invalid offset parameter: %s." % Offset)
         
         if Vpd.DatumType == "VOID*":
             if Vpd.MaxDatumSize <= 0:
-                assert False, "Invalid max datum size for VPD PCD %s.%s" % (Vpd.TokenSpaceGuidCName, Vpd.TokenCName)
+                EdkLogger.error("VpdInfoFile", BuildToolError.PARAMETER_INVALID, 
+                                "Invalid max datum size for VPD PCD %s.%s" % (Vpd.TokenSpaceGuidCName, Vpd.TokenCName))
         elif Vpd.DatumType in ["BOOLEAN", "UINT8", "UINT16", "UINT32", "UINT64"]: 
             if Vpd.MaxDatumSize == None or Vpd.MaxDatumSize == "":
                 Vpd.MaxDatumSize = VpdInfoFile._MAX_SIZE_TYPE[Vpd.DatumType]
         else:
-            assert False, "Invalid DatumType %s for VPD PCD %s.%s" % (Vpd.DatumType, Vpd.TokenSpaceGuidCName, Vpd.TokenCName)
+            EdkLogger.error("VpdInfoFile", BuildToolError.PARAMETER_INVALID,  
+                            "Invalid DatumType %s for VPD PCD %s.%s" % (Vpd.DatumType, Vpd.TokenSpaceGuidCName, Vpd.TokenCName))
             
         if Vpd not in self._VpdArray.keys():
             #
@@ -115,8 +120,9 @@ class VpdInfoFile:
     #  If 
     #  @param FilePath        The given file path which would hold VPD information
     def Write(self, FilePath):
-        assert FilePath != None or len(FilePath) != 0, "Invalid parameter FilePath: %s." % FilePath
-        
+        if not (FilePath != None or len(FilePath) != 0):
+            EdkLogger.error("VpdInfoFile", BuildToolError.PARAMETER_INVALID,  
+                            "Invalid parameter FilePath: %s." % FilePath)        
         try:
             fd = open(FilePath, "w")
         except:

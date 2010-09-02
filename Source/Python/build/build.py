@@ -736,7 +736,7 @@ class Build():
         self.LoadFixAddress = 0
         self.UniFlag        = UniFlag
 
-        # print dot charater during doing some time-consuming work
+        # print dot character during doing some time-consuming work
         self.Progress = Utils.Progressor()
 
         # parse target.txt, tools_def.txt, and platform file
@@ -1268,9 +1268,9 @@ class Build():
         if len (SmmModuleList) > 0:
             MapBuffer.write('SMM_CODE_PAGE_NUMBER      = 0x%x\n' % (SmmSize/0x1000))
         
-        PeiBaseAddr = TopMemoryAddress - RtSize - BtSize
+        PeiBaseAddr = TopMemoryAddress - RtSize - BtSize 
         BtBaseAddr  = TopMemoryAddress - RtSize
-        RtBaseAddr  = TopMemoryAddress - ReservedRuntimeMemorySize
+        RtBaseAddr  = TopMemoryAddress - ReservedRuntimeMemorySize 
 
         self._RebaseModule (MapBuffer, PeiBaseAddr, PeiModuleList, TopMemoryAddress == 0)
         self._RebaseModule (MapBuffer, BtBaseAddr, BtModuleList, TopMemoryAddress == 0)
