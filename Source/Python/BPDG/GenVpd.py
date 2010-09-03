@@ -73,15 +73,27 @@ class PcdEntry:
         
     def _PackBooleanValue(self, ValueString):
         if ValueString.upper() == "TRUE":
-            self.PcdValue =  pack(_FORMAT_CHAR[1], 1)
+            try:    
+                self.PcdValue =  pack(_FORMAT_CHAR[1], 1)
+            except:
+                EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
+                                "Invalid size or value for PCD %s to pack(File: %s Line: %s)." % (self.PcdCName, self.FileName, self.Lineno))                 
         else:
-            self.PcdValue =  pack(_FORMAT_CHAR[1], 0)
-                
+            try:
+                self.PcdValue =  pack(_FORMAT_CHAR[1], 0)
+            except:
+                EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
+                                "Invalid size or value for PCD %s to pack(File: %s Line: %s)." % (self.PcdCName, self.FileName, self.Lineno))      
+                               
     def _PackIntValue(self, IntValue, Size):
         if Size not in _FORMAT_CHAR.keys():
             EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
                             "Invalid size %d for PCD %s in integer datum size(File: %s Line: %s)." % (Size, self.PcdCName, self.FileName, self.Lineno))        
-        self.PcdValue =  pack(_FORMAT_CHAR[Size], IntValue)
+        try:
+            self.PcdValue =  pack(_FORMAT_CHAR[Size], IntValue)
+        except:
+            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
+                            "Invalid size or value for PCD %s to pack(File: %s Line: %s)." % (self.PcdCName, self.FileName, self.Lineno))                
         
     def _PackPtrValue(self, ValueString, Size):
         if ValueString.startswith('L"'):
@@ -107,7 +119,11 @@ class PcdEntry:
         if len(ValueString) + 1 > Size:
             EdkLogger.error("BPDG", BuildToolError.RESOURCE_OVERFLOW, 
                             "PCD value string %s is exceed to size %d(File: %s Line: %s)" % (ValueString, Size, self.FileName, self.Lineno))
-        self.PcdValue=  pack('%ds' % Size, ValueString)
+        try:
+            self.PcdValue=  pack('%ds' % Size, ValueString)
+        except:
+            EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, 
+                            "Invalid size or value for PCD %s to pack(File: %s Line: %s)." % (self.PcdCName, self.FileName, self.Lineno))                  
         
     def _PackByteArray(self, ValueString, Size):
         if (Size < 0):        
