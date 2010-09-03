@@ -1074,6 +1074,10 @@ class PlatformAutoGen(AutoGen):
         if FromPcd != None:
             if ToPcd.Pending and FromPcd.Type not in [None, '']:
                 ToPcd.Type = FromPcd.Type
+            elif (ToPcd.Type not in [None, '']) and (FromPcd.Type not in [None, ''])\
+                and (ToPcd.Type != FromPcd.Type) and (ToPcd.Type in FromPcd.Type):
+                if ToPcd.Type.strip() == "DynamicEx":
+                    ToPcd.Type = FromPcd.Type             
             elif ToPcd.Type not in [None, ''] and FromPcd.Type not in [None, ''] \
                 and ToPcd.Type != FromPcd.Type:
                 EdkLogger.error("build", OPTION_CONFLICT, "Mismatched PCD type",
