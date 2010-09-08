@@ -53,9 +53,7 @@ def main():
     
     ReturnCode = 0
     
-    if Options.opt_slient:
-        EdkLogger.SetLevel(EdkLogger.ERROR)
-    elif Options.opt_verbose:
+    if Options.opt_verbose:
         EdkLogger.SetLevel(EdkLogger.VERBOSE)
     elif Options.opt_quiet:
         EdkLogger.SetLevel(EdkLogger.QUIET)
@@ -64,7 +62,7 @@ def main():
     else:
         EdkLogger.SetLevel(EdkLogger.INFO)
                   
-    if Options.vpd_filename == None:
+    if Options.bin_filename == None:
         EdkLogger.error("BPDG", ATTRIBUTE_NOT_AVAILABLE, "Please use the -o option to specify the file name for the VPD binary file")  
     if Options.filename == None:
         EdkLogger.error("BPDG", ATTRIBUTE_NOT_AVAILABLE, "Please use the -m option to specify the file name for the mapping file")  
@@ -74,7 +72,7 @@ def main():
         Force = True
 
     if (Args[0] != None) :
-        startBPDG(Args[0], Options.filename, Options.vpd_filename, Force)
+        startBPDG(Args[0], Options.filename, Options.bin_filename, Force)
     else :
         EdkLogger.error("BPDG", ATTRIBUTE_NOT_AVAILABLE, "Please specify the file which contain the VPD pcd info.",
                         None)         
@@ -94,11 +92,9 @@ def myOptionParser():
                       help=st.MSG_OPTION_DEBUG_LEVEL)
     parser.add_option('-v', '--verbose', action='store_true', dest='opt_verbose',
                       help=st.MSG_OPTION_VERBOSE)
-    parser.add_option('-s', '--silent', action='store_true', dest='opt_slient', default=False,
-                      help=st.MSG_OPTION_SILENT)
     parser.add_option('-q', '--quiet', action='store_true', dest='opt_quiet', default=False,
                       help=st.MSG_OPTION_QUIET)
-    parser.add_option('-o', '--vpd-filename', action='store', dest='vpd_filename',
+    parser.add_option('-o', '--vpd-filename', action='store', dest='bin_filename',
                       help=st.MSG_OPTION_VPD_FILENAME)
     parser.add_option('-m', '--map-filename', action='store', dest='filename',
                       help=st.MSG_OPTION_MAP_FILENAME)   

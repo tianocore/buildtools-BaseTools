@@ -55,9 +55,13 @@ class PcdEntry:
                    
         self._GenOffsetValue ()
         
-    def _IsBoolean(self, ValueString):
-        if ValueString.upper() in ["TRUE", "FALSE"]:
-            return True
+    def _IsBoolean(self, ValueString, Size):
+        if (Size == "1"):
+            if ValueString.upper() in ["TRUE", "FALSE"]:
+                return True
+            elif ValueString in ["0", "1", "0x0", "0x1", "0x00", "0x01"]:
+                return True 
+        
         return False
     
     def _GenOffsetValue(self):
@@ -72,7 +76,7 @@ class PcdEntry:
                                     "Invalid offset value %s for PCD %s (File: %s Line: %s)" % (self.PcdOffset, self.PcdCName, self.FileName, self.Lineno))                                  
         
     def _PackBooleanValue(self, ValueString):
-        if ValueString.upper() == "TRUE":
+        if ValueString.upper() == "TRUE" or ValueString in ["1", "0x1", "0x01"]:
             try:    
                 self.PcdValue =  pack(_FORMAT_CHAR[1], 1)
             except:
@@ -310,7 +314,7 @@ class GenVPD :
                     except:
                         EdkLogger.error("BPDG", BuildToolError.FORMAT_INVALID, "Invalid PCD size value %s at file: %s line: %s" % (PCD.PcdSize, self.InputFileName, PCD.Lineno))
                     
-                if PCD._IsBoolean(PCD.PcdValue):
+                if PCD._IsBoolean(PCD.PcdValue, PCD.PcdSize):
                     PCD._PackBooleanValue(PCD.PcdValue)
                     self.FileLinesList[count] = PCD
                     count += 1
