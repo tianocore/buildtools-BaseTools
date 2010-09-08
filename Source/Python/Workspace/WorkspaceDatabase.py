@@ -141,7 +141,6 @@ class DscBuildData(PlatformBuildClassObject):
         self._BuildOptions      = None
         self._LoadFixAddress    = None
         self._VpdToolGuid       = None
-        self._VpdFileName       = None
 
     ## Get architecture
     def _GetArch(self):
@@ -204,9 +203,7 @@ class DscBuildData(PlatformBuildClassObject):
                     uuid.UUID(Record[1])
                 except:
                     EdkLogger.error("build", FORMAT_INVALID, "Invalid GUID format for VPD_TOOL_GUID", File=self.MetaFile)
-                self._VpdToolGuid = Record[1]               
-            elif Name == TAB_DSC_DEFINES_VPD_FILENAME:
-                self._VpdFileName = Record[1]       
+                self._VpdToolGuid = Record[1]                   
         # set _Header to non-None in order to avoid database re-querying
         self._Header = 'DUMMY'
 
@@ -350,16 +347,7 @@ class DscBuildData(PlatformBuildClassObject):
             if self._VpdToolGuid == None:
                 self._VpdToolGuid = ''
         return self._VpdToolGuid
-  
-    ## Retrieve the VPD file Name, this is optional in DSC file
-    def _GetVpdFileName(self):
-        if self._VpdFileName == None:
-            if self._Header == None:
-                self._GetHeaderInfo()
-            if self._VpdFileName == None:
-                self._VpdFileName = ''
-        return self._VpdFileName  
-    
+      
     ## Retrieve [SkuIds] section information
     def _GetSkuIds(self):
         if self._SkuIds == None:
@@ -802,8 +790,7 @@ class DscBuildData(PlatformBuildClassObject):
     BsBaseAddress       = property(_GetBsBaseAddress)
     RtBaseAddress       = property(_GetRtBaseAddress)
     LoadFixAddress      = property(_GetLoadFixAddress)
-    VpdToolGuid         = property(_GetVpdToolGuid)
-    VpdFileName         = property(_GetVpdFileName)    
+    VpdToolGuid         = property(_GetVpdToolGuid)   
     SkuIds              = property(_GetSkuIds)
     Modules             = property(_GetModules)
     LibraryInstances    = property(_GetLibraryInstances)
