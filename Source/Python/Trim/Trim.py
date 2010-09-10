@@ -40,6 +40,8 @@ gPragmaPattern = re.compile("^\s*#pragma\s+pack", re.MULTILINE)
 gHexNumberPattern = re.compile("0[xX]([0-9a-fA-F]+)")
 ## Regular expression for matching "Include ()" in asl file
 gAslIncludePattern = re.compile("^(\s*)[iI]nclude\s*\(\"?([^\"\(\)]+)\"\)", re.MULTILINE)
+## Regular expression for matching constant with 'ULL' and 'UL', 'LL', 'L' postfix
+gLongNumberPattern = re.compile("(0[xX][0-9a-fA-F]+|[0-9]+)U?LL", re.MULTILINE)
 ## Patterns used to convert EDK conventions to EDK2 ECP conventions
 gImportCodePatterns = [
     [
@@ -118,7 +120,7 @@ gIncludedAslFile = []
 # @param  Target    File to store the trimmed content
 # @param  Convert   If True, convert standard HEX format to MASM format
 #
-def TrimPreprocessedFile(Source, Target, Convert):
+def TrimPreprocessedFile(Source, Target, ConvertHex, TrimLong):
     CreateDirectory(os.path.dirname(Target))
     try:
         f = open (Source, 'r')
@@ -164,8 +166,10 @@ def TrimPreprocessedFile(Source, Target, Convert):
                               % (LineIndexOfOriginalFile + 1))
 
         # convert HEX number format if indicated
-        if Convert:
+        if ConvertHex:
             Line = gHexNumberPattern.sub(r"0\1h", Line)
+        if TrimLong:
+            Line = gLongNumberPattern.sub(r"\1", Line)
 
         if LineNumber != None:
             EdkLogger.verbose("Got line directive: line=%d" % LineNumber)
@@ -437,6 +441,9 @@ def Options():
         make_option("-c", "--convert-hex", dest="ConvertHex", action="store_true",
                           help="Convert standard hex format (0xabcd) to MASM format (abcdh)"),
 
+        make_option("-l", "--trim-long", dest="TrimLong", action="store_true",
+                          help="Remove postfix of long number"),
+
         make_option("-o", "--output", dest="OutputFile",
                           help="File to store the trimmed content"),
         make_option("-v", "--verbose", dest="LogLevel", action="store_const", const=EdkLogger.VERBOSE,
@@ -501,7 +508,7 @@ def Main():
         else :
             if CommandOptions.OutputFile == None:
                 CommandOptions.OutputFile = os.path.splitext(InputFile)[0] + '.iii'
-            TrimPreprocessedFile(InputFile, CommandOptions.OutputFile, CommandOptions.ConvertHex)
+            TrimPreprocessedFile(InputFile, CommandOptions.OutputFile, CommandOptions.ConvertHex, CommandOptions.TrimLong)
     except FatalError, X:
         import platform
         import traceback
