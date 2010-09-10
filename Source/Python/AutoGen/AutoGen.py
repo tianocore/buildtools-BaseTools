@@ -544,9 +544,18 @@ class PlatformAutoGen(AutoGen):
                                     DecPcdEntry = eachDec.Pcds[DecPcd]
                                     if (DecPcdEntry.TokenSpaceGuidCName == DscPcdEntry.TokenSpaceGuidCName) and \
                                        (DecPcdEntry.TokenCName == DscPcdEntry.TokenCName):
+                                        # Print warning message to let the developer make a determine.
+                                        EdkLogger.warn("build", "Unreferenced vpd pcd used!",
+                                                        File=self.MetaFile, \
+                                                        ExtraData = "PCD: %s.%s used in the DSC file %s is unreferenced." \
+                                                        %(DscPcdEntry.TokenSpaceGuidCName, DscPcdEntry.TokenCName, self.Platform.MetaFile.Path))  
+                                                                              
                                         DscPcdEntry.DatumType    = DecPcdEntry.DatumType
                                         DscPcdEntry.DefaultValue = DecPcdEntry.DefaultValue
-                                        Sku.DefaultValue         = DecPcdEntry.DefaultValue                                                                    
+                                        # Only fix the value while no value provided in DSC file.
+                                        if (Sku.DefaultValue == "" or Sku.DefaultValue==None):
+                                            DscPcdEntry.SkuInfoList[DscPcdEntry.SkuInfoList.keys()[0]].DefaultValue = DecPcdEntry.DefaultValue
+                                                                                                                
                                                        
                             VpdFile.Add(DscPcdEntry, Sku.VpdOffset)
                             # if the offset of a VPD is *, then it need to be fixed up by third party tool.
