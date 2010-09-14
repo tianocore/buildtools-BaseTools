@@ -2132,14 +2132,6 @@ class ModuleAutoGen(AutoGen):
                         self._ApplyBuildRule(Lib.Target, TAB_UNKNOWN_FILE)
         return self._LibraryAutoGenList
 
-    ## Return build command string
-    #
-    #   @retval     string  Build command string
-    #
-    def _GetBuildCommand(self):
-        return self.PlatformInfo.BuildCommand
-
-
     Module          = property(_GetModule)
     Name            = property(_GetBaseName)
     Guid            = property(_GetGuid)
