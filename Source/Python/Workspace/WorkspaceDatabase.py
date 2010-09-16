@@ -1317,18 +1317,16 @@ class InfBuildData(ModuleBuildClassObject):
             if Name in self:
                 self[Name] = Record[1]
             # some special items in [Defines] section need special treatment
-            elif Name in ('EFI_SPECIFICATION_VERSION', 'UEFI_SPECIFICATION_VERSION'):
+            elif Name in ('EFI_SPECIFICATION_VERSION', 'UEFI_SPECIFICATION_VERSION', 'EDK_RELEASE_VERSION', 'PI_SPECIFICATION_VERSION'):
+                if Name in ('EFI_SPECIFICATION_VERSION', 'UEFI_SPECIFICATION_VERSION'):
+                    Name = 'UEFI_SPECIFICATION_VERSION'
                 if self._Specification == None:
                     self._Specification = sdict()
-                self._Specification['UEFI_SPECIFICATION_VERSION'] = Record[1]
-            elif Name == 'EDK_RELEASE_VERSION':
-                if self._Specification == None:
-                    self._Specification = sdict()
-                self._Specification[Name] = Record[1]
-            elif Name == 'PI_SPECIFICATION_VERSION':
-                if self._Specification == None:
-                    self._Specification = sdict()
-                self._Specification[Name] = Record[1]
+                self._Specification[Name] = GetHexVerValue(Record[1])
+                if self._Specification[Name] == None:
+                    EdkLogger.error("build", FORMAT_NOT_SUPPORTED,
+                                    "'%s' format is not supported for %s" % (Record[1], Name),
+                                    File=self.MetaFile, Line=Record[-1])
             elif Name == 'LIBRARY_CLASS':
                 if self._LibraryClass == None:
                     self._LibraryClass = []

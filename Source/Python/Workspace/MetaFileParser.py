@@ -474,11 +474,11 @@ class InfParser(MetaFileParser):
     def _DefineParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
         self._ValueList[0:len(TokenList)] = TokenList
-        self._Macros[TokenList[0]] = ReplaceMacro(TokenList[1], self._Macros, False)
         if self._ValueList[1] == '':
             EdkLogger.error('Parser', FORMAT_INVALID, "No value specified",
                             ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
-
+        self._Macros[TokenList[0]] = ReplaceMacro(TokenList[1], self._Macros, False)
+        
     ## [nmake] section parser (R8.x style only)
     def _NmakeParser(self):
         TokenList = GetSplitValueList(self._CurrentLine, TAB_EQUAL_SPLIT, 1)
