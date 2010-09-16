@@ -655,6 +655,11 @@ class DscParser(MetaFileParser):
                 continue
             # file private macros
             elif Line.upper().startswith('DEFINE '):
+                if self._Enabled < 0:
+                    # Do not parse the macro and add it to self._Macros dictionary if directives
+                    # statement is evaluated to false.
+                    continue
+                
                 (Name, Value) = self._MacroParser()
                 # Make the defined macro in DSC [Defines] section also
                 # available for FDF file.
@@ -676,6 +681,11 @@ class DscParser(MetaFileParser):
                     )
                 continue
             elif Line.upper().startswith('EDK_GLOBAL '):
+                if self._Enabled < 0:
+                    # Do not parse the macro and add it to self._Macros dictionary
+                    # if previous directives statement is evaluated to false.
+                    continue
+                
                 (Name, Value) = self._MacroParser()
                 for Arch, ModuleType in self._Scope:
                     self._LastItem = self._Store(
