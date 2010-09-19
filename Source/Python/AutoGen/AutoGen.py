@@ -1713,12 +1713,12 @@ class ModuleAutoGen(AutoGen):
             self._SourceFileList = []
             for F in self.Module.Sources:
                 # match tool chain
-                if F.TagName != "" and F.TagName != self.ToolChain:
+                if F.TagName not in ("", "*", self.ToolChain):
                     EdkLogger.debug(EdkLogger.DEBUG_9, "The toolchain [%s] for processing file [%s] is found, "
                                     "but [%s] is needed" % (F.TagName, str(F), self.ToolChain))
                     continue
                 # match tool chain family
-                if F.ToolChainFamily != "" and F.ToolChainFamily != self.ToolChainFamily:
+                if F.ToolChainFamily not in ("", "*", self.ToolChainFamily):
                     EdkLogger.debug(
                                 EdkLogger.DEBUG_0,
                                 "The file [%s] must be built by tools of [%s], " \

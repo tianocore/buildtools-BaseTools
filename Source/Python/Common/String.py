@@ -24,7 +24,7 @@ from GlobalData import *
 from BuildToolError import *
 
 gHexVerPatt = re.compile('0x[a-f0-9]{4}[a-f0-9]{4}$',re.IGNORECASE)
-gHumanReadableVerPatt = re.compile('([1-9][0-9]*|0)\.[0-9]{1,2}$')
+gHumanReadableVerPatt = re.compile(r'([1-9][0-9]*|0)\.[0-9]{1,2}$')
 
 ## GetSplitValueList
 #
@@ -386,7 +386,10 @@ def GetDefineValue(String, Key, CommentCharacter):
 #
 # @param VerString:         The version string to be parsed
 #
-# @retval:                  If VerString is ill-formated string, return None, else return the Hex format version  
+#
+# @retval:      If VerString is incorrectly formatted, return "None" which will break the build.
+#               If VerString is correctly formatted, return a Hex value of the Version Number (0xmmmmnnnn)
+#                   where mmmm is the major number and nnnn is the adjusted minor number.
 #
 def GetHexVerValue(VerString):
     VerString = CleanString(VerString)
