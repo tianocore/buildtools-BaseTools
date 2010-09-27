@@ -18,22 +18,22 @@ DEFINE VS2003_BIN       = C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7
 DEFINE VS2003_DLL       = C:\Program Files\Microsoft Visual Studio .NET 2003\Common7\IDE
 
 DEFINE VS2005_BIN       = C:\Program Files\Microsoft Visual Studio 8\Vc\bin
-DEFINE VS2005_DLL       = C:\Program Files\Microsoft Visual Studio 8\Common7\IDE
+DEFINE VS2005_DLL       = C:\Program Files\Microsoft Visual Studio 8\Common7\IDE;DEF(VS2005_BIN)
 DEFINE VS2005_BINX64    = C:\Program Files\Microsoft Visual Studio 8\Vc\bin\x86_amd64
 DEFINE VS2005_BIN64     = C:\Program Files\Microsoft Visual Studio 8\Vc\bin\x86_ia64
 
 DEFINE VS2005x86_BIN    = C:\Program Files (x86)\Microsoft Visual Studio 8\Vc\bin
-DEFINE VS2005x86_DLL    = C:\Program Files (x86)\Microsoft Visual Studio 8\Common7\IDE
+DEFINE VS2005x86_DLL    = C:\Program Files (x86)\Microsoft Visual Studio 8\Common7\IDE;DEF(VS2005x86_BIN)
 DEFINE VS2005x86_BINX64 = DEF(VS2005x86_BIN)\x86_amd64
 DEFINE VS2005x86_BIN64  = DEF(VS2005x86_BIN)\x86_ia64
 
 DEFINE VS2008_BIN      = C:\Program Files\Microsoft Visual Studio 9.0\Vc\bin
-DEFINE VS2008_DLL      = C:\Program Files\Microsoft Visual Studio 9.0\Common7\IDE
+DEFINE VS2008_DLL      = C:\Program Files\Microsoft Visual Studio 9.0\Common7\IDE;DEF(VS2008_BIN)
 DEFINE VS2008_BINX64   = DEF(VS2008_BIN)\x86_amd64
 DEFINE VS2008_BIN64    = DEF(VS2008_BIN)\x86_ia64
 
 DEFINE VS2008x86_BIN    = C:\Program Files (x86)\Microsoft Visual Studio 9.0\Vc\bin
-DEFINE VS2008x86_DLL    = C:\Program Files (x86)\Microsoft Visual Studio 9.0\Common7\IDE
+DEFINE VS2008x86_DLL    = C:\Program Files (x86)\Microsoft Visual Studio 9.0\Common7\IDE;DEF(VS2008x86_BIN)
 DEFINE VS2008x86_BINX64 = DEF(VS2008x86_BIN)\x86_amd64
 DEFINE VS2008x86_BIN64  = DEF(VS2008x86_BIN)\x86_ia64
 
