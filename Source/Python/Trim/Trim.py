@@ -40,6 +40,8 @@ gPragmaPattern = re.compile("^\s*#pragma\s+pack", re.MULTILINE)
 gHexNumberPattern = re.compile("0[xX]([0-9a-fA-F]+)")
 ## Regular expression for matching "Include ()" in asl file
 gAslIncludePattern = re.compile("^(\s*)[iI]nclude\s*\(\"?([^\"\(\)]+)\"\)", re.MULTILINE)
+## Regular expression for matching C style #include "XXX.asl" in asl file
+gAslCIncludePattern = re.compile(r'^(\s*)#include\s*[<"]\s*([-\\/\w.]+)\s*[>"]', re.MULTILINE)
 ## Regular expression for matching constant with 'ULL' and 'UL', 'LL', 'L' postfix
 gLongNumberPattern = re.compile("(0[xX][0-9a-fA-F]+|[0-9]+)U?LL", re.MULTILINE)
 ## Patterns used to convert EDK conventions to EDK2 ECP conventions
@@ -288,8 +290,10 @@ def DoInclude(Source, Indent=''):
     for Line in F:
         Result = gAslIncludePattern.findall(Line)
         if len(Result) == 0:
-            NewFileContent.append("%s%s" % (Indent, Line))
-            continue
+            Result = gAslCIncludePattern.findall(Line)
+            if len(Result) == 0 or os.path.splitext(Result[0][1])[1].lower() not in [".asl", ".asi"]:
+                NewFileContent.append("%s%s" % (Indent, Line))
+                continue
         CurrentIndent = Indent + Result[0][0]
         IncludedFile = Result[0][1]
         NewFileContent.extend(DoInclude(IncludedFile, CurrentIndent))
@@ -318,6 +322,11 @@ def TrimAslFile(Source, Target):
     os.chdir(SourceDir)
     Lines = DoInclude(Source)
     os.chdir(Cwd)
+
+    #
+    # Undef MIN and MAX to avoid collision in ASL source code
+    #
+    Lines.insert(0, "#undef MIN\n#undef MAX\n")
 
     # save all lines trimmed
     try:
