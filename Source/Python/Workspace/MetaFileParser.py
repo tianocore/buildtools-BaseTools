@@ -812,8 +812,8 @@ class DscParser(MetaFileParser):
             if not self._SectionName in self._IncludeAllowedSection:
                 EdkLogger.error("Parser", FORMAT_INVALID, File=self.MetaFile, Line=self._LineIndex+1,
                                 ExtraData="'!include' is not allowed under section [%s]" % self._SectionName)
-            # the included file must be relative to the parsing file
-            IncludedFile = os.path.join(self._FileDir, NormPath(self._ValueList[1], self._Macros))
+            # the included file must be relative to workspace
+            IncludedFile = os.path.join(os.environ["WORKSPACE"], NormPath(self._ValueList[1], self._Macros))
             Parser = DscParser(IncludedFile, self._FileType, self._Table, self._Macros, From=self._LastItem)
             # set the parser status with current status
             Parser._SectionName = self._SectionName
