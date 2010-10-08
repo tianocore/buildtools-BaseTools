@@ -343,13 +343,13 @@
         $(MAKE_FILE)
 
     <Command.MSFT, Command.INTEL>
-        Trim --asl-file -o $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i ${src}
+        Trim --asl-file -o $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i -i $(INC_LIST) ${src}
         "$(ASLPP)" $(ASLPP_FLAGS) $(INC) /I${s_path} $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i > $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.iii
         Trim --source-code -l -o $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.iiii $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.iii 
         "$(ASL)" $(ASL_FLAGS) $(ASL_OUTFLAGS)${dst} $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.iiii
 
     <Command.GCC>
-        Trim --asl-file -o $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i ${src}
+        Trim --asl-file -o $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i -i $(INC_LIST) ${src}
         "$(ASLPP)" $(ASLPP_FLAGS) $(INC) -I${s_path} $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.i > $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.iii
         "$(ASL)" $(ASL_FLAGS) $(ASL_OUTFLAGS)${dst} $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.iii
 
