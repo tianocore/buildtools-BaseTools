@@ -162,6 +162,10 @@ class WorkspaceAutoGen(AutoGen):
 
         # parse FDF file to get PCDs in it, if any
         if self.FdfFile != None and self.FdfFile != '':
+            #
+            # Make global macros available when parsing FDF file
+            #
+            InputMacroDict.update(self.BuildDatabase.WorkspaceDb._GlobalMacros)
             Fdf = FdfParser(self.FdfFile.Path)
             Fdf.ParseFile()
             PcdSet = Fdf.Profile.PcdDict
