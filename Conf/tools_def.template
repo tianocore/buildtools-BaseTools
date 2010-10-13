@@ -55,7 +55,7 @@ DEFINE WINDDK_BIN32     = C:\WINDDK\3790.1830\bin\x86
 DEFINE WINDDK_BINX64    = C:\WINDDK\3790.1830\bin\win64\x86\amd64
 DEFINE WINDDK_BIN64     = C:\WINDDK\3790.1830\bin\win64\x86
 
-# NOTE: The Intel C++ Compiler for Windows requires one of the Microsoft C compiler 
+# NOTE: The Intel C++ Compiler for Windows requires one of the Microsoft C compiler
 #        tool chains for the linker and nmake commands.
 #        This configuration assumes a Windows 2003 Server DDK installation.
 DEFINE ICC_VERSION      = 9.1
@@ -75,7 +75,7 @@ DEFINE ICC_BIN64x86     = C:\Program Files (x86)\Intel\Compiler\C++\DEF(ICC_VERS
 
 
 # Note: The Intel C++ Compiler 11.1 uses different installation path from previous versions
-#       We use "ICC11" tag for ICC 11.1 while "ICC" tag is dedicated for eariler versions 
+#       We use "ICC11" tag for ICC 11.1 while "ICC" tag is dedicated for eariler versions
 #
 DEFINE ICC11_VERSION      = 11.1
 DEFINE ICC11_BUILD        = 065
@@ -348,7 +348,7 @@ RELEASE_VS2003_IA32_DLINK_FLAGS     = /NOLOGO /NODEFAULTLIB /IGNORE:4086 /OPT:RE
 # ASL definitions
 ##################
 *_VS2003xASL_*_ASL_PATH                 = DEF(WIN_ASL_BIN)
-*_VS2003xASL_*_ASL_FLAGS                = 
+*_VS2003xASL_*_ASL_FLAGS                =
 *_VS2003xASL_*_ASL_OUTFLAGS             = DEF(MS_ASL_OUTFLAGS)
 *_VS2003xASL_*_ASLCC_FLAGS              = DEF(MSFT_ASLCC_FLAGS)
 *_VS2003xASL_*_ASLPP_FLAGS              = DEF(MSFT_ASLPP_FLAGS)
@@ -552,7 +552,7 @@ RELEASE_VS2005_IPF_DLINK_FLAGS  = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT:REF,ICF 
 # ASL definitions
 ##################
 *_VS2005xASL_*_ASL_PATH        = DEF(WIN_ASL_BIN)
-*_VS2005xASL_*_ASL_FLAGS       = 
+*_VS2005xASL_*_ASL_FLAGS       =
 *_VS2005xASL_*_ASL_OUTFLAGS    = DEF(MS_ASL_OUTFLAGS)
 *_VS2005xASL_*_ASLCC_FLAGS     = DEF(MSFT_ASLCC_FLAGS)
 *_VS2005xASL_*_ASLPP_FLAGS     = DEF(MSFT_ASLPP_FLAGS)
@@ -796,7 +796,7 @@ RELEASE_VS2005x86_IPF_DLINK_FLAGS  = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT:REF,I
 # ASL definitions
 ##################
 *_VS2005x86xASL_*_ASL_PATH        = DEF(WIN_ASL_BIN)
-*_VS2005x86xASL_*_ASL_FLAGS       = 
+*_VS2005x86xASL_*_ASL_FLAGS       =
 *_VS2005x86xASL_*_ASL_OUTFLAGS    = DEF(MS_ASL_OUTFLAGS)
 *_VS2005x86xASL_*_ASLCC_FLAGS     = DEF(MSFT_ASLCC_FLAGS)
 *_VS2005x86xASL_*_ASLPP_FLAGS     = DEF(MSFT_ASLPP_FLAGS)
@@ -1042,7 +1042,7 @@ RELEASE_VS2008_IPF_DLINK_FLAGS  = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT:REF,ICF 
 # ASL definitions
 ##################
 *_VS2008xASL_*_ASL_PATH        = DEF(WIN_ASL_BIN)
-*_VS2008xASL_*_ASL_FLAGS       = 
+*_VS2008xASL_*_ASL_FLAGS       =
 *_VS2008xASL_*_ASL_OUTFLAGS    = DEF(MS_ASL_OUTFLAGS)
 *_VS2008xASL_*_ASLCC_FLAGS     = DEF(MSFT_ASLCC_FLAGS)
 *_VS2008xASL_*_ASLPP_FLAGS     = DEF(MSFT_ASLPP_FLAGS)
@@ -1189,9 +1189,9 @@ RELEASE_VS2008xASL_IPF_DLINK_FLAGS  = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT:REF,
       *_VS2008x86_IA32_MAKE_FLAGS  = /nologo
   DEBUG_VS2008x86_IA32_CC_FLAGS    = /nologo /c /WX /GS- /W4 /Gs32768 /D UNICODE /O1ib2 /GL /FIAutoGen.h /EHs-c- /GR- /GF /Gy /Zi /Gm
 RELEASE_VS2008x86_IA32_CC_FLAGS    = /nologo /c /WX /GS- /W4 /Gs32768 /D UNICODE /O1ib2 /GL /FIAutoGen.h /EHs-c- /GR- /GF
-  DEBUG_VS2008x86_IA32_ASM_FLAGS   = /nologo /c /WX /W3 /Cx /coff /Zd /Zi  
+  DEBUG_VS2008x86_IA32_ASM_FLAGS   = /nologo /c /WX /W3 /Cx /coff /Zd /Zi
 RELEASE_VS2008x86_IA32_ASM_FLAGS   = /nologo /c /WX /W3 /Cx /coff /Zd
-  DEBUG_VS2008x86_IA32_DLINK_FLAGS = /NOLOGO /NODEFAULTLIB /IGNORE:4086 /OPT:REF /OPT:ICF=10 /MAP /ALIGN:32 /MACHINE:I386 /LTCG /DLL /ENTRY:$(IMAGE_ENTRY_POINT) /SUBSYSTEM:CONSOLE /SAFESEH:NO /BASE:0 /DRIVER /DEBUG   
+  DEBUG_VS2008x86_IA32_DLINK_FLAGS = /NOLOGO /NODEFAULTLIB /IGNORE:4086 /OPT:REF /OPT:ICF=10 /MAP /ALIGN:32 /MACHINE:I386 /LTCG /DLL /ENTRY:$(IMAGE_ENTRY_POINT) /SUBSYSTEM:CONSOLE /SAFESEH:NO /BASE:0 /DRIVER /DEBUG
 RELEASE_VS2008x86_IA32_DLINK_FLAGS = /NOLOGO /NODEFAULTLIB /IGNORE:4086 /OPT:REF /OPT:ICF=10 /MAP /ALIGN:32 /MACHINE:I386 /LTCG /DLL /ENTRY:$(IMAGE_ENTRY_POINT) /SUBSYSTEM:CONSOLE /SAFESEH:NO /BASE:0 /DRIVER /MERGE:.data=.text /MERGE:.rdata=.text
 
 ##################
@@ -1210,7 +1210,7 @@ RELEASE_VS2008x86_IA32_DLINK_FLAGS = /NOLOGO /NODEFAULTLIB /IGNORE:4086 /OPT:REF
 *_VS2008x86_X64_DLINK_PATH    = DEF(VS2008x86_BINX64)\link.exe
 *_VS2008x86_X64_ASLDLINK_PATH = DEF(VS2008x86_BINX64)\link.exe
 
-  DEBUG_VS2008x86_X64_CC_FLAGS     = /nologo /c /WX /GS- /X /W4 /Gs32768 /D UNICODE /O1ib2s /GL /Gy /FIAutoGen.h /EHs-c- /GR- /GF /Zi /Gm 
+  DEBUG_VS2008x86_X64_CC_FLAGS     = /nologo /c /WX /GS- /X /W4 /Gs32768 /D UNICODE /O1ib2s /GL /Gy /FIAutoGen.h /EHs-c- /GR- /GF /Zi /Gm
 RELEASE_VS2008x86_X64_CC_FLAGS     = /nologo /c /WX /GS- /X /W4 /Gs32768 /D UNICODE /O1ib2s /GL /Gy /FIAutoGen.h /EHs-c- /GR- /GF
   DEBUG_VS2008x86_X64_ASM_FLAGS    = /nologo /c /WX /W3 /Cx /Zd /Zi
 RELEASE_VS2008x86_X64_ASM_FLAGS    = /nologo /c /WX /W3 /Cx /Zd
@@ -1289,9 +1289,9 @@ RELEASE_VS2008x86_IPF_DLINK_FLAGS  = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT:REF,I
       *_VS2008x86xASL_IA32_MAKE_FLAGS  = /nologo
   DEBUG_VS2008x86xASL_IA32_CC_FLAGS    = /nologo /c /WX /GS- /W4 /Gs32768 /D UNICODE /O1ib2 /GL /FIAutoGen.h /EHs-c- /GR- /GF /Gy /Zi /Gm
 RELEASE_VS2008x86xASL_IA32_CC_FLAGS    = /nologo /c /WX /GS- /W4 /Gs32768 /D UNICODE /O1ib2 /GL /FIAutoGen.h /EHs-c- /GR- /GF
-  DEBUG_VS2008x86xASL_IA32_ASM_FLAGS   = /nologo /c /WX /W3 /Cx /coff /Zd /Zi  
+  DEBUG_VS2008x86xASL_IA32_ASM_FLAGS   = /nologo /c /WX /W3 /Cx /coff /Zd /Zi
 RELEASE_VS2008x86xASL_IA32_ASM_FLAGS   = /nologo /c /WX /W3 /Cx /coff /Zd
-  DEBUG_VS2008x86xASL_IA32_DLINK_FLAGS = /NOLOGO /NODEFAULTLIB /IGNORE:4086 /OPT:REF /OPT:ICF=10 /MAP /ALIGN:32 /MACHINE:I386 /LTCG /DLL /ENTRY:$(IMAGE_ENTRY_POINT) /SUBSYSTEM:CONSOLE /SAFESEH:NO /BASE:0 /DRIVER /DEBUG   
+  DEBUG_VS2008x86xASL_IA32_DLINK_FLAGS = /NOLOGO /NODEFAULTLIB /IGNORE:4086 /OPT:REF /OPT:ICF=10 /MAP /ALIGN:32 /MACHINE:I386 /LTCG /DLL /ENTRY:$(IMAGE_ENTRY_POINT) /SUBSYSTEM:CONSOLE /SAFESEH:NO /BASE:0 /DRIVER /DEBUG
 RELEASE_VS2008x86xASL_IA32_DLINK_FLAGS = /NOLOGO /NODEFAULTLIB /IGNORE:4086 /OPT:REF /OPT:ICF=10 /MAP /ALIGN:32 /MACHINE:I386 /LTCG /DLL /ENTRY:$(IMAGE_ENTRY_POINT) /SUBSYSTEM:CONSOLE /SAFESEH:NO /BASE:0 /DRIVER /MERGE:.data=.text /MERGE:.rdata=.text
 
 ##################
@@ -1310,7 +1310,7 @@ RELEASE_VS2008x86xASL_IA32_DLINK_FLAGS = /NOLOGO /NODEFAULTLIB /IGNORE:4086 /OPT
 *_VS2008x86xASL_X64_DLINK_PATH    = DEF(VS2008x86_BINX64)\link.exe
 *_VS2008x86xASL_X64_ASLDLINK_PATH = DEF(VS2008x86_BINX64)\link.exe
 
-  DEBUG_VS2008x86xASL_X64_CC_FLAGS     = /nologo /c /WX /GS- /X /W4 /Gs32768 /D UNICODE /O1ib2s /GL /Gy /FIAutoGen.h /EHs-c- /GR- /GF /Zi /Gm 
+  DEBUG_VS2008x86xASL_X64_CC_FLAGS     = /nologo /c /WX /GS- /X /W4 /Gs32768 /D UNICODE /O1ib2s /GL /Gy /FIAutoGen.h /EHs-c- /GR- /GF /Zi /Gm
 RELEASE_VS2008x86xASL_X64_CC_FLAGS     = /nologo /c /WX /GS- /X /W4 /Gs32768 /D UNICODE /O1ib2s /GL /Gy /FIAutoGen.h /EHs-c- /GR- /GF
   DEBUG_VS2008x86xASL_X64_ASM_FLAGS    = /nologo /c /WX /W3 /Cx /Zd /Zi
 RELEASE_VS2008x86xASL_X64_ASM_FLAGS    = /nologo /c /WX /W3 /Cx /Zd
@@ -1476,7 +1476,7 @@ RELEASE_DDK3790_IPF_DLINK_FLAGS  = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT:REF,ICF
 # ASL definitions
 ##################
 *_DDK3790xASL_*_ASL_PATH        = DEF(WIN_ASL_BIN)
-*_DDK3790xASL_*_ASL_FLAGS       = 
+*_DDK3790xASL_*_ASL_FLAGS       =
 *_DDK3790xASL_*_ASL_OUTFLAGS    = DEF(MS_ASL_OUTFLAGS)
 *_DDK3790xASL_*_ASLCC_FLAGS     = DEF(MSFT_ASLCC_FLAGS)
 *_DDK3790xASL_*_ASLPP_FLAGS     = DEF(MSFT_ASLPP_FLAGS)
@@ -1594,7 +1594,7 @@ DEFINE GCC_IPF_RC_FLAGS            = -I binary -O elf64-ia64-little -B ia64 --re
 
 DEFINE GCC44_ALL_CC_FLAGS            = -g -fshort-wchar -fno-stack-protector -fno-strict-aliasing -Wall -Werror -Wno-missing-braces -Wno-array-bounds -ffunction-sections -fdata-sections -c -include AutoGen.h -DSTRING_ARRAY_NAME=$(BASE_NAME)Strings
 DEFINE GCC44_IA32_CC_FLAGS           = DEF(GCC44_ALL_CC_FLAGS) -m32 -malign-double -D EFI32
-DEFINE GCC44_X64_CC_FLAGS            = DEF(GCC44_ALL_CC_FLAGS) -m64 "-DEFIAPI=__attribute__((ms_abi))" -DNO_BUILTIN_VA_FUNCS -mno-red-zone -Wno-address
+DEFINE GCC44_X64_CC_FLAGS            = DEF(GCC44_ALL_CC_FLAGS) -m64 "-DEFIAPI=__attribute__((ms_abi))" -DNO_BUILTIN_VA_FUNCS -mno-red-zone -Wno-address -mcmodel=large
 DEFINE GCC44_IA32_X64_DLINK_COMMON   = -nostdlib -n -q --gc-sections
 DEFINE GCC44_IA32_X64_ASLDLINK_FLAGS = DEF(GCC44_IA32_X64_DLINK_COMMON) --entry ReferenceAcpiTable -u ReferenceAcpiTable
 DEFINE GCC44_IA32_X64_DLINK_FLAGS    = DEF(GCC44_IA32_X64_DLINK_COMMON) --entry $(IMAGE_ENTRY_POINT) -u $(IMAGE_ENTRY_POINT) -Map $(DEST_DIR_DEBUG)/$(BASE_NAME).map
@@ -1622,7 +1622,7 @@ DEFINE GCC44_ASM_FLAGS               = DEF(GCC_ASM_FLAGS)
 *_UNIXGCC_*_ASLPP_FLAGS                  = DEF(GCC_ASLPP_FLAGS)
 *_UNIXGCC_*_ASLCC_FLAGS                  = DEF(GCC_ASLCC_FLAGS)
 *_UNIXGCC_*_VFRPP_FLAGS                  = DEF(GCC_VFRPP_FLAGS)
-*_UNIXGCC_*_APP_FLAGS                    = 
+*_UNIXGCC_*_APP_FLAGS                    =
 *_UNIXGCC_*_ASL_FLAGS                    = DEF(IASL_FLAGS)
 *_UNIXGCC_*_ASL_OUTFLAGS                 = DEF(IASL_OUTFLAGS)
 
@@ -1702,7 +1702,7 @@ DEFINE GCC44_ASM_FLAGS               = DEF(GCC_ASM_FLAGS)
 *_GCC44_*_ASLPP_FLAGS                  = DEF(GCC_ASLPP_FLAGS)
 *_GCC44_*_ASLCC_FLAGS                  = DEF(GCC_ASLCC_FLAGS)
 *_GCC44_*_VFRPP_FLAGS                  = DEF(GCC_VFRPP_FLAGS)
-*_GCC44_*_APP_FLAGS                    = 
+*_GCC44_*_APP_FLAGS                    =
 *_GCC44_*_ASL_FLAGS                    = DEF(IASL_FLAGS)
 *_GCC44_*_ASL_OUTFLAGS                 = DEF(IASL_OUTFLAGS)
 
@@ -1744,7 +1744,7 @@ DEFINE GCC44_ASM_FLAGS               = DEF(GCC_ASM_FLAGS)
 *_GCC44_X64_ASLCC_FLAGS          = DEF(GCC_ASLCC_FLAGS) -m64
 *_GCC44_X64_ASLDLINK_FLAGS       = DEF(GCC44_IA32_X64_ASLDLINK_FLAGS) -m elf_x86_64
 *_GCC44_X64_ASM_FLAGS            = DEF(GCC44_ASM_FLAGS) -m64 --64 -melf_x86_64
-*_GCC44_X64_CC_FLAGS             = DEF(GCC44_X64_CC_FLAGS) -Os
+*_GCC44_X64_CC_FLAGS             = DEF(GCC44_X64_CC_FLAGS)
 *_GCC44_X64_DLINK_FLAGS          = DEF(GCC44_X64_DLINK_FLAGS)
 *_GCC44_X64_RC_FLAGS             = DEF(GCC_X64_RC_FLAGS)
 
@@ -1767,12 +1767,12 @@ DEFINE GCC44_ASM_FLAGS               = DEF(GCC_ASM_FLAGS)
 *_CYGGCC_IA32_ASLDLINK_FLAGS            = DEF(GCC_IA32_X64_ASLDLINK_FLAGS)
 *_CYGGCC_X64_ASLDLINK_FLAGS             = DEF(GCC_IA32_X64_ASLDLINK_FLAGS)
 *_CYGGCC_*_MAKE_FLAGS                   = /nologo
-*_CYGGCC_*_ASM_FLAGS                    = DEF(GCC_ASM_FLAGS)                             
+*_CYGGCC_*_ASM_FLAGS                    = DEF(GCC_ASM_FLAGS)
 *_CYGGCC_*_PP_FLAGS                     = DEF(GCC_PP_FLAGS)
 *_CYGGCC_*_ASLPP_FLAGS                  = DEF(GCC_ASLPP_FLAGS)
 *_CYGGCC_*_ASLCC_FLAGS                  = DEF(GCC_ASLCC_FLAGS)
 *_CYGGCC_*_VFRPP_FLAGS                  = DEF(GCC_VFRPP_FLAGS)
-*_CYGGCC_*_APP_FLAGS                    = 
+*_CYGGCC_*_APP_FLAGS                    =
 *_CYGGCC_*_ASL_FLAGS                    = DEF(DEFAULT_WIN_ASL_FLAGS)
 *_CYGGCC_*_ASL_OUTFLAGS                 = DEF(DEFAULT_WIN_ASL_OUTFLAGS)
 
@@ -1877,7 +1877,7 @@ DEFINE GCC44_ASM_FLAGS               = DEF(GCC_ASM_FLAGS)
 # ASL definitions
 ##################
 *_CYGGCCxASL_*_ASL_PATH        = DEF(WIN_ASL_BIN)
-*_CYGGCCxASL_*_ASL_FLAGS       = 
+*_CYGGCCxASL_*_ASL_FLAGS       =
 *_CYGGCCxASL_*_ASL_OUTFLAGS    = DEF(MS_ASL_OUTFLAGS)
 *_CYGGCCxASL_*_ASLCC_FLAGS     = DEF(MSFT_ASLCC_FLAGS)
 *_CYGGCCxASL_*_ASLPP_FLAGS     = DEF(MSFT_ASLPP_FLAGS)
@@ -3225,7 +3225,7 @@ RELEASE_MYTOOLS_IPF_DLINK_FLAGS          = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT
 *_XCODE32_*_MTOC_PATH        = /usr/local/bin/mtoc
 
   DEBUG_XCODE32_*_MTOC_FLAGS = -align 0x20 -d $(DEBUG_DIR)/$(MODULE_NAME).dll
-RELEASE_XCODE32_*_MTOC_FLAGS = -align 0x20 
+RELEASE_XCODE32_*_MTOC_FLAGS = -align 0x20
 
 ##################
 # IA32 definitions
@@ -3245,7 +3245,7 @@ RELEASE_XCODE32_*_MTOC_FLAGS = -align 0x20
 RELEASE_XCODE32_IA32_DLINK_FLAGS      = -arch i386 -u _$(IMAGE_ENTRY_POINT) -e _$(IMAGE_ENTRY_POINT) -preload -segalign 0x20  -pie -all_load -dead_strip -seg1addr 0x220 -read_only_relocs suppress -map $(DEST_DIR_DEBUG)/$(BASE_NAME).map
 *_XCODE32_IA32_SLINK_FLAGS      = -static -o
   DEBUG_XCODE32_IA32_ASM_FLAGS  = -arch i386 -g
-RELEASE_XCODE32_IA32_ASM_FLAGS  = -arch i386 
+RELEASE_XCODE32_IA32_ASM_FLAGS  = -arch i386
 *_XCODE32_IA32_PP_FLAGS         = -arch i386 -E -x assembler-with-cpp -include $(DEST_DIR_DEBUG)/AutoGen.h
 *_XCODE32_IA32_VFRPP_FLAGS      = -arch i386 -x c -E -P -DVFRCOMPILE --include $(DEST_DIR_DEBUG)/$(MODULE_NAME)StrDefs.h
   DEBUG_XCODE32_IA32_CC_FLAGS   = -arch i386 -save-temps -g -O0 -combine -mms-bitfields  -fshort-wchar -fno-strict-aliasing -Wall -Werror -Wno-missing-braces  -c -include AutoGen.h -mdynamic-no-pic -fno-stack-protector
@@ -3253,11 +3253,11 @@ RELEASE_XCODE32_IA32_CC_FLAGS   = -arch i386 -Oz -combine -mms-bitfields  -fshor
 
 *_XCODE32_IA32_ASLCC_FLAGS      = -arch i386 -x c -save-temps -g -O0 -mms-bitfields -fshort-wchar -fno-strict-aliasing -Wall -Werror -Wno-missing-braces -c -include AutoGen.h -mdynamic-no-pic
 *_XCODE32_IA32_ASLDLINK_FLAGS   = -arch i386 -e _main -preload -segalign 0x20  -pie -seg1addr 0x220 -read_only_relocs suppress -map $(DEST_DIR_DEBUG)/$(BASE_NAME).map
-*_XCODE32_IA32_ASLPP_FLAGS      = -arch i386 -x c -E 
+*_XCODE32_IA32_ASLPP_FLAGS      = -arch i386 -x c -E
 *_XCODE32_IA32_ASL_FLAGS        =
 
 ##################
-# X64 definitions - still a work in progress. This tool chain does not produce 
+# X64 definitions - still a work in progress. This tool chain does not produce
 # the correct ABI, it is just used to compile the code....
 ##################
 *_XCODE32_X64_CC_PATH       = gcc-4.2
@@ -3275,7 +3275,7 @@ RELEASE_XCODE32_IA32_CC_FLAGS   = -arch i386 -Oz -combine -mms-bitfields  -fshor
 *_XCODE32_X64_SLINK_FLAGS      = -static -o
 
   DEBUG_XCODE32_X64_ASM_FLAGS  = -arch x86_64 -g
-RELEASE_XCODE32_X64_ASM_FLAGS  = -arch x86_64 
+RELEASE_XCODE32_X64_ASM_FLAGS  = -arch x86_64
 *_XCODE32_X64_PP_FLAGS         = -arch x86_64 -E -x assembler-with-cpp -include $(DEST_DIR_DEBUG)/AutoGen.h
 *_XCODE32_X64_VFRPP_FLAGS      = -arch x86_64 -x c -E -P -DVFRCOMPILE --include $(DEST_DIR_DEBUG)/$(MODULE_NAME)StrDefs.h
 
@@ -3287,8 +3287,8 @@ RELEASE_XCODE32_X64_CC_FLAGS   = -arch x86_64 -Oz -combine -mms-bitfields -fshor
 ##################
 
 *_XCODE32_ARM_ARCHCC_FLAGS    = -arch armv7 -march=armv7 -mthumb
-*_XCODE32_ARM_ARCHASM_FLAGS   = -arch armv7 
-*_XCODE32_ARM_ARCHDLINK_FLAGS = -arch armv7 
+*_XCODE32_ARM_ARCHASM_FLAGS   = -arch armv7
+*_XCODE32_ARM_ARCHDLINK_FLAGS = -arch armv7
 *_XCODE32_ARM_PLATFORM_FLAGS  =
 
 *_XCODE32_ARM_CC_PATH       = DEF(IPHONE_TOOLS)/usr/bin/gcc
@@ -3298,13 +3298,13 @@ RELEASE_XCODE32_X64_CC_FLAGS   = -arch x86_64 -Oz -combine -mms-bitfields -fshor
 *_XCODE32_ARM_PP_PATH       = DEF(IPHONE_TOOLS)/usr/bin/gcc
 *_XCODE32_ARM_VFRPP_PATH    = DEF(IPHONE_TOOLS)/usr/bin/gcc
 
-  DEBUG_XCODE32_ARM_DLINK_FLAGS      = $(ARCHDLINK_FLAGS) -u _$(IMAGE_ENTRY_POINT) -e _$(IMAGE_ENTRY_POINT) -preload -segalign 0x20  -pie -all_load -dead_strip -seg1addr 0x220 -read_only_relocs suppress -map $(DEST_DIR_DEBUG)/$(BASE_NAME).map 
-RELEASE_XCODE32_ARM_DLINK_FLAGS      = $(ARCHDLINK_FLAGS) -u _$(IMAGE_ENTRY_POINT) -e _$(IMAGE_ENTRY_POINT) -preload -segalign 0x20  -pie -all_load -dead_strip -seg1addr 0x220 -read_only_relocs suppress -map $(DEST_DIR_DEBUG)/$(BASE_NAME).map 
+  DEBUG_XCODE32_ARM_DLINK_FLAGS      = $(ARCHDLINK_FLAGS) -u _$(IMAGE_ENTRY_POINT) -e _$(IMAGE_ENTRY_POINT) -preload -segalign 0x20  -pie -all_load -dead_strip -seg1addr 0x220 -read_only_relocs suppress -map $(DEST_DIR_DEBUG)/$(BASE_NAME).map
+RELEASE_XCODE32_ARM_DLINK_FLAGS      = $(ARCHDLINK_FLAGS) -u _$(IMAGE_ENTRY_POINT) -e _$(IMAGE_ENTRY_POINT) -preload -segalign 0x20  -pie -all_load -dead_strip -seg1addr 0x220 -read_only_relocs suppress -map $(DEST_DIR_DEBUG)/$(BASE_NAME).map
 
 *_XCODE32_ARM_SLINK_FLAGS      = -static -o
 
   DEBUG_XCODE32_ARM_ASM_FLAGS  = $(ARCHASM_FLAGS) -g
-RELEASE_XCODE32_ARM_ASM_FLAGS  = $(ARCHASM_FLAGS) 
+RELEASE_XCODE32_ARM_ASM_FLAGS  = $(ARCHASM_FLAGS)
 *_XCODE32_ARM_PP_FLAGS         = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -E -x assembler-with-cpp -include $(DEST_DIR_DEBUG)/AutoGen.h
 *_XCODE32_ARM_VFRPP_FLAGS      = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -x c -E -P -DVFRCOMPILE --include $(DEST_DIR_DEBUG)/$(MODULE_NAME)StrDefs.h
 
@@ -3326,7 +3326,7 @@ RELEASE_XCODE32_ARM_CC_FLAGS   = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -mthumb-inter
 #
 *_RVCT31_ARM_ARCHCC_FLAGS    = --thumb --cpu 7-A
 *_RVCT31_ARM_ARCHASM_FLAGS   = --cpu 7-A
-*_RVCT31_ARM_ARCHDLINK_FLAGS = 
+*_RVCT31_ARM_ARCHDLINK_FLAGS =
 *_RVCT31_ARM_PLATFORM_FLAGS  =
 
   DEBUG_RVCT31_ARM_DLINK_FLAGS     = $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_POINT)  --ro-base 0 --no_scanlib --reloc --no_exceptions --datacompressor off --strict --symbols --map --list $(DEST_DIR_DEBUG)/$(BASE_NAME).map --diag_style=ide
@@ -3337,7 +3337,7 @@ RELEASE_RVCT31_ARM_DLINK_FLAGS     = $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_PO
 *_RVCT31_ARM_PP_FLAGS        = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -E --diag_style=ide
 *_RVCT31_ARM_VFRPP_FLAGS     = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -E  -DVFRCOMPILE --preinclude $(DEST_DIR_DEBUG)/$(MODULE_NAME)StrDefs.h
 *_RVCT31_ARM_MAKE_PATH       = nmake
-*_RVCT31_ARM_SLINK_FLAGS     = --partial --diag_style=ide -o 
+*_RVCT31_ARM_SLINK_FLAGS     = --partial --diag_style=ide -o
   DEBUG_RVCT31_ARM_CC_FLAGS  = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) --c90 -g -Ospace -c --no_autoinline --asm --gnu --apcs /interwork --signed_chars --no_unaligned_access --split_sections --enum_is_int --preinclude AutoGen.h --diag_warning 167 --diag_style=ide
 RELEASE_RVCT31_ARM_CC_FLAGS  = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) --c90    -Ospace -c --no_autoinline --asm --gnu --apcs /interwork --signed_chars --no_unaligned_access --split_sections --enum_is_int --preinclude AutoGen.h --diag_warning 167 --diag_style=ide
 
@@ -3376,7 +3376,7 @@ RELEASE_RVCT31_ARM_CC_FLAGS  = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) --c90    -Ospac
 #
 *_RVCT31CYGWIN_ARM_ARCHCC_FLAGS    = --thumb --cpu 7-A
 *_RVCT31CYGWIN_ARM_ARCHASM_FLAGS   = --cpu 7-A
-*_RVCT31CYGWIN_ARM_ARCHDLINK_FLAGS = 
+*_RVCT31CYGWIN_ARM_ARCHDLINK_FLAGS =
 *_RVCT31CYGWIN_ARM_PLATFORM_FLAGS  =
 
   DEBUG_RVCT31CYGWIN_ARM_DLINK_FLAGS     = "$(DLINKPATH_FLAG)" $(ARCHDLINK_FLAGS) --entry $(IMAGE_ENTRY_POINT)  --ro-base 0 --no_scanlib --reloc --no_exceptions --datacompressor off --strict --symbols --map --list `cygpath -m $(DEST_DIR_DEBUG)/$(BASE_NAME).map` --diag_style=ide
@@ -3386,7 +3386,7 @@ RELEASE_RVCT31CYGWIN_ARM_DLINK_FLAGS     = "$(DLINKPATH_FLAG)" $(ARCHDLINK_FLAGS
 *_RVCT31CYGWIN_ARM_PP_FLAGS        = "$(CCPATH_FLAG)" $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -E --diag_style=ide
 *_RVCT31CYGWIN_ARM_VFRPP_FLAGS     = "$(CCPATH_FLAG)" $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -E  -DVFRCOMPILE --preinclude `cygpath -m $(DEST_DIR_DEBUG)/$(MODULE_NAME)StrDefs.h`
 *_RVCT31CYGWIN_ARM_MAKE_PATH       = make
-*_RVCT31CYGWIN_ARM_SLINK_FLAGS     = "$(SLINKPATH_FLAG)" --partial --diag_style=ide -o 
+*_RVCT31CYGWIN_ARM_SLINK_FLAGS     = "$(SLINKPATH_FLAG)" --partial --diag_style=ide -o
   DEBUG_RVCT31CYGWIN_ARM_CC_FLAGS  = "$(CCPATH_FLAG)" $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) --c90 -c -g -Ospace --no_autoinline --asm --gnu --apcs /interwork --signed_chars --no_unaligned_access --split_sections --preinclude AutoGen.h --diag_warning 167 --diag_style=ide
 RELEASE_RVCT31CYGWIN_ARM_CC_FLAGS  = "$(CCPATH_FLAG)" $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) --c90 -c    -Ospace --no_autoinline --asm --gnu --apcs /interwork --signed_chars --no_unaligned_access --split_sections --preinclude AutoGen.h --diag_warning 167 --diag_style=ide
 
@@ -3418,7 +3418,7 @@ RELEASE_RVCT31CYGWIN_ARM_CC_FLAGS  = "$(CCPATH_FLAG)" $(ARCHCC_FLAGS) $(PLATFORM
 # ASL definitions
 ##################
 *_ARMGCC_*_ASL_PATH                     = DEF(UNIX_IASL_BIN)
-*_ARMGCC_*_ASL_FLAGS                    = DEF(IASL_FLAGS) 
+*_ARMGCC_*_ASL_FLAGS                    = DEF(IASL_FLAGS)
 *_ARMGCC_*_ASL_OUTFLAGS                 = DEF(IASL_OUTFLAGS)
 *_ARMGCC_*_ASLPP_FLAGS                  = -x c -E -P
 *_ARMGCC_*_ASLCC_FLAGS                  = -x c
@@ -3442,9 +3442,9 @@ RELEASE_RVCT31CYGWIN_ARM_CC_FLAGS  = "$(CCPATH_FLAG)" $(ARCHCC_FLAGS) $(PLATFORM
 #
 # Use default values, or override in DSC file
 #
-*_ARMGCC_ARM_ARCHCC_FLAGS    = -march=armv7-a -mthumb 
+*_ARMGCC_ARM_ARCHCC_FLAGS    = -march=armv7-a -mthumb
 *_ARMGCC_ARM_ARCHASM_FLAGS   = -march=armv7-a
-*_ARMGCC_ARM_ARCHDLINK_FLAGS = 
+*_ARMGCC_ARM_ARCHDLINK_FLAGS =
 *_ARMGCC_ARM_PLATFORM_FLAGS  = -march=armv7-a
 
   DEBUG_ARMGCC_ARM_ASM_FLAGS   = $(ARCHASM_FLAGS) -mlittle-endian -g
@@ -3485,7 +3485,7 @@ RELEASE_ARMGCC_ARM_CC_FLAGS = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -mfpu=fpa -mlitt
 # GenFw tool definitions
 ##################
 *_*_*_GENFW_PATH                   = GenFw
-*_*_*_GENFW_FLAGS                  = 
+*_*_*_GENFW_FLAGS                  =
 
 ##################
 # Asl Compiler definitions
