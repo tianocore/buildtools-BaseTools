@@ -1172,7 +1172,7 @@ def ParseConsoleLog(Filename):
 #
 def CheckPcdDatum(Type, Value):
     if Type == "VOID*":
-        if not ((Value.startswith('L"') or Value.startswith('"') and Value.endswith('"'))
+        if not (((Value.startswith('L"') or Value.startswith('"')) and Value.endswith('"'))
                 or (Value.startswith('{') and Value.endswith('}'))
                ):
             return False, "Invalid value [%s] of type [%s]; must be in the form of {...} for array"\
