@@ -565,9 +565,9 @@ class FdfParser:
         self.Rewind()
 
     
-    ## PreprocessIncludeFile() method
+    ## PreprocessConditionalStatement() method
     #
-    #   Preprocess file contents, replace !include statements with file contents.
+    #   Preprocess conditional statement.
     #   In the end, rewind the file buffer pointer to the beginning
     #
     #   @param  self        The object pointer
@@ -1264,6 +1264,12 @@ class FdfParser:
             raise Warning("expected ']'", self.FileName, self.CurrentLineNumber)
 
         while self.__GetNextWord():
+            # handle the SET statement
+            if self.__Token == 'SET':
+                self.__UndoToken()
+                self.__GetSetStatement(None)
+                continue
+            
             Macro = self.__Token
             
             if not self.__IsToken("="):
@@ -1508,7 +1514,7 @@ class FdfParser:
             raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
 
         if not self.__GetNextHexNumber() and not self.__GetNextDecimalNumber():
-            raise Warning("expected Hex block size", self.FileName, self.CurrentLineNumber)
+            raise Warning("expected Hex or Integer block size", self.FileName, self.CurrentLineNumber)
 
         BlockSize = self.__Token
         BlockSizePcd = None
@@ -1609,7 +1615,8 @@ class FdfParser:
                     raise Warning("expected '}'", self.FileName, self.CurrentLineNumber)
                 Value += self.__SkippedChars
 
-            Obj.SetVarDict[PcdPair] = Value
+            if Obj:
+                Obj.SetVarDict[PcdPair] = Value
             self.Profile.PcdDict[PcdPair] = Value
             return True
 
