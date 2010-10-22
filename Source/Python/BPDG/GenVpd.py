@@ -17,6 +17,7 @@ import os
 import StringIO
 import StringTable as st
 import array
+import re
 
 from struct import *
 import Common.EdkLogger as EdkLogger
@@ -338,8 +339,27 @@ class GenVPD :
             line = line.rstrip(os.linesep)
                        
             # Skip the comment line
-            if (not line.startswith("#")) and len(line) > 1 :              
-                self.FileLinesList[count] = line.split('|')
+            if (not line.startswith("#")) and len(line) > 1 :
+                #
+                # Enhanced for support "|" character in the string.
+                #
+                ValueList = ['', '', '', '']    
+                
+                ValueRe  = re.compile(r'\s*L?\".*\|.*\"\s*$')
+                PtrValue = ValueRe.findall(line)
+                
+                ValueUpdateFlag = False
+                
+                if len(PtrValue) >= 1:
+                    line = re.sub(ValueRe, '', line)
+                    ValueUpdateFlag = True   
+            
+                TokenList = line.split('|')
+                ValueList[0:len(TokenList)] = TokenList
+                
+                if ValueUpdateFlag:
+                    ValueList[3] = PtrValue[0]                              
+                self.FileLinesList[count] = ValueList
                 # Store the line number
                 self.FileLinesList[count].append(str(count+1))
             elif len(line) <= 1 :

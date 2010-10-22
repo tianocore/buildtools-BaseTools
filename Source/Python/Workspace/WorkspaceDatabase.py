@@ -588,13 +588,10 @@ class DscBuildData(PlatformBuildClassObject):
             PcdDict[Arch, PcdCName, TokenSpaceGuid] = Setting
         # Remove redundant PCD candidates
         for PcdCName, TokenSpaceGuid in PcdSet:
-            ValueList = ['', '', '']
             Setting = PcdDict[self._Arch, PcdCName, TokenSpaceGuid]
             if Setting == None:
                 continue
-            TokenList = Setting.split(TAB_VALUE_SPLIT)
-            ValueList[0:len(TokenList)] = TokenList
-            PcdValue, DatumType, MaxDatumSize = ValueList
+            PcdValue, DatumType, MaxDatumSize = AnalyzePcdData(Setting)
             Pcds[PcdCName, TokenSpaceGuid] = PcdClassObject(
                                                 PcdCName,
                                                 TokenSpaceGuid,
@@ -630,14 +627,12 @@ class DscBuildData(PlatformBuildClassObject):
             PcdDict[Arch, SkuName, PcdCName, TokenSpaceGuid] = Setting
         # Remove redundant PCD candidates, per the ARCH and SKU
         for PcdCName, TokenSpaceGuid in PcdSet:
-            ValueList = ['', '', '']
             Setting = PcdDict[self._Arch, self.SkuName, PcdCName, TokenSpaceGuid]
             if Setting == None:
                 continue
-            TokenList = Setting.split(TAB_VALUE_SPLIT)
-            ValueList[0:len(TokenList)] = TokenList
-            PcdValue, DatumType, MaxDatumSize = ValueList
-
+                      
+            PcdValue, DatumType, MaxDatumSize = AnalyzePcdData(Setting)
+                
             SkuInfo = SkuInfoClass(self.SkuName, self.SkuIds[self.SkuName], '', '', '', '', '', PcdValue)
             Pcds[PcdCName, TokenSpaceGuid] = PcdClassObject(
                                                 PcdCName,
@@ -674,13 +669,10 @@ class DscBuildData(PlatformBuildClassObject):
             PcdDict[Arch, SkuName, PcdCName, TokenSpaceGuid] = Setting
         # Remove redundant PCD candidates, per the ARCH and SKU
         for PcdCName, TokenSpaceGuid in PcdSet:
-            ValueList = ['', '', '', '']
             Setting = PcdDict[self._Arch, self.SkuName, PcdCName, TokenSpaceGuid]
             if Setting == None:
                 continue
-            TokenList = Setting.split(TAB_VALUE_SPLIT)
-            ValueList[0:len(TokenList)] = TokenList
-            VariableName, VariableGuid, VariableOffset, DefaultValue = ValueList
+            VariableName, VariableGuid, VariableOffset, DefaultValue = AnalyzeHiiPcdData(Setting)
             SkuInfo = SkuInfoClass(self.SkuName, self.SkuIds[self.SkuName], VariableName, VariableGuid, VariableOffset, DefaultValue)
             Pcds[PcdCName, TokenSpaceGuid] = PcdClassObject(
                                                 PcdCName,
@@ -717,19 +709,16 @@ class DscBuildData(PlatformBuildClassObject):
             PcdDict[Arch, SkuName, PcdCName, TokenSpaceGuid] = Setting
         # Remove redundant PCD candidates, per the ARCH and SKU
         for PcdCName, TokenSpaceGuid in PcdSet:
-            ValueList = ['', '', '']
             Setting = PcdDict[self._Arch, self.SkuName, PcdCName, TokenSpaceGuid]
             if Setting == None:
                 continue
-            TokenList = Setting.split(TAB_VALUE_SPLIT)
-            ValueList[0:len(TokenList)] = TokenList
             #
             # For the VOID* type, it can have optional data of MaxDatumSize and InitialValue
             # For the Integer & Boolean type, the optional data can only be InitialValue.
             # At this point, we put all the data into the PcdClssObject for we don't know the PCD's datumtype
             # until the DEC parser has been called.
             # 
-            VpdOffset, MaxDatumSize, InitialValue = ValueList
+            VpdOffset, MaxDatumSize, InitialValue = AnalyzeVpdPcdData(Setting)
 
             SkuInfo = SkuInfoClass(self.SkuName, self.SkuIds[self.SkuName], '', '', '', '', VpdOffset, InitialValue)
             Pcds[PcdCName, TokenSpaceGuid] = PcdClassObject(
@@ -1083,7 +1072,6 @@ class DecBuildData(PackageBuildClassObject):
             PcdSet.add((PcdCName, TokenSpaceGuid))
 
         for PcdCName, TokenSpaceGuid in PcdSet:
-            ValueList = ['', '', '']
             #
             # limit the ARCH to self._Arch, if no self._Arch found, tdict
             # will automatically turn to 'common' ARCH and try again
@@ -1091,9 +1079,9 @@ class DecBuildData(PackageBuildClassObject):
             Setting = PcdDict[self._Arch, PcdCName, TokenSpaceGuid]
             if Setting == None:
                 continue
-            TokenList = Setting.split(TAB_VALUE_SPLIT)
-            ValueList[0:len(TokenList)] = TokenList
-            DefaultValue, DatumType, TokenNumber = ValueList
+
+            DefaultValue, DatumType, TokenNumber = AnalyzePcdData(Setting)
+                                       
             Pcds[PcdCName, TokenSpaceGuid, self._PCD_TYPE_STRING_[Type]] = PcdClassObject(
                                                                             PcdCName,
                                                                             TokenSpaceGuid,
@@ -1937,12 +1925,10 @@ class InfBuildData(ModuleBuildClassObject):
 
         # resolve PCD type, value, datum info, etc. by getting its definition from package
         for PcdCName, TokenSpaceGuid in PcdSet:
-            ValueList = ['', '']
             Setting, LineNo = PcdDict[self._Arch, self.Platform, PcdCName, TokenSpaceGuid]
             if Setting == None:
                 continue
-            TokenList = Setting.split(TAB_VALUE_SPLIT)
-            ValueList[0:len(TokenList)] = TokenList
+            ValueList = AnalyzePcdData(Setting)
             DefaultValue = ValueList[0]
             Pcd = PcdClassObject(
                     PcdCName,
@@ -1980,6 +1966,35 @@ class InfBuildData(ModuleBuildClassObject):
                     PcdInPackage = Package.Pcds[PcdCName, TokenSpaceGuid, PcdType]
                     Pcd.Type = PcdType
                     Pcd.TokenValue = PcdInPackage.TokenValue
+                    
+                    if len(Pcd.TokenValue) != 10:
+                        EdkLogger.error(
+                                    'build',
+                                    FORMAT_INVALID,
+                                    "The length of TokenValue [%s] of PCD [%s.%s] in [%s] is invalid:" % (Pcd.TokenValue, TokenSpaceGuid, PcdCName, str(Package)),
+                                    File =self.MetaFile, Line=LineNo,
+                                    ExtraData=None
+                                    )
+                    if Pcd.TokenValue.startswith("0x") or Pcd.TokenValue.startswith("0X"):
+                        try:
+                            int (Pcd.TokenValue, 16)
+                        except:
+                            EdkLogger.error(
+                                    'build',
+                                    FORMAT_INVALID,
+                                    "The format of TokenValue [%s] of PCD [%s.%s] in [%s] is invalid:" % (Pcd.TokenValue, TokenSpaceGuid, PcdCName, str(Package)),
+                                    File =self.MetaFile, Line=LineNo,
+                                    ExtraData=None
+                                    )
+                    else:
+                        EdkLogger.error(
+                                    'build',
+                                    FORMAT_INVALID,
+                                    "The format of TokenValue [%s] of PCD [%s.%s] in [%s] is invalid: should start with \"0X\" or \"0x\""% (Pcd.TokenValue, TokenSpaceGuid, PcdCName, str(Package)),
+                                    File =self.MetaFile, Line=LineNo,
+                                    ExtraData=None
+                                    )
+                    
                     Pcd.DatumType = PcdInPackage.DatumType
                     Pcd.MaxDatumSize = PcdInPackage.MaxDatumSize
                     Pcd.InfDefaultValue = Pcd.DefaultValue
@@ -1989,12 +2004,13 @@ class InfBuildData(ModuleBuildClassObject):
             else:
                 EdkLogger.error(
                             'build',
-                            PARSER_ERROR,
+                            FORMAT_INVALID,
                             "PCD [%s.%s] in [%s] is not found in dependent packages:" % (TokenSpaceGuid, PcdCName, self.MetaFile),
                             File =self.MetaFile, Line=LineNo,
                             ExtraData="\t%s" % '\n\t'.join([str(P) for P in self.Packages])
                             )
             Pcds[PcdCName, TokenSpaceGuid] = Pcd
+
         return Pcds
 
     Arch                    = property(_GetArch, _SetArch)
