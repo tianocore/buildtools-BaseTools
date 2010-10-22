@@ -1966,15 +1966,6 @@ class InfBuildData(ModuleBuildClassObject):
                     PcdInPackage = Package.Pcds[PcdCName, TokenSpaceGuid, PcdType]
                     Pcd.Type = PcdType
                     Pcd.TokenValue = PcdInPackage.TokenValue
-                    
-                    if len(Pcd.TokenValue) != 10:
-                        EdkLogger.error(
-                                    'build',
-                                    FORMAT_INVALID,
-                                    "The length of TokenValue [%s] of PCD [%s.%s] in [%s] is invalid:" % (Pcd.TokenValue, TokenSpaceGuid, PcdCName, str(Package)),
-                                    File =self.MetaFile, Line=LineNo,
-                                    ExtraData=None
-                                    )
                     if Pcd.TokenValue.startswith("0x") or Pcd.TokenValue.startswith("0X"):
                         try:
                             int (Pcd.TokenValue, 16)
