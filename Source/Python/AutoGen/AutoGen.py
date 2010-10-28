@@ -306,7 +306,27 @@ class PlatformAutoGen(AutoGen):
     # 
     _DynaPcdList_ = []
     _NonDynaPcdList_ = []
-
+    
+    #
+    # The priority list while override build option 
+    #
+    PrioList = {"0x11111"  : 16,     #  TARGET_TOOLCHAIN_ARCH_COMMANDTYPE_ATTRIBUTE (Highest)
+                "0x01111"  : 15,     #  ******_TOOLCHAIN_ARCH_COMMANDTYPE_ATTRIBUTE
+                "0x10111"  : 14,     #  TARGET_*********_ARCH_COMMANDTYPE_ATTRIBUTE
+                "0x00111"  : 13,     #  ******_*********_ARCH_COMMANDTYPE_ATTRIBUTE 
+                "0x11011"  : 12,     #  TARGET_TOOLCHAIN_****_COMMANDTYPE_ATTRIBUTE
+                "0x01011"  : 11,     #  ******_TOOLCHAIN_****_COMMANDTYPE_ATTRIBUTE
+                "0x10011"  : 10,     #  TARGET_*********_****_COMMANDTYPE_ATTRIBUTE
+                "0x00011"  : 9,      #  ******_*********_****_COMMANDTYPE_ATTRIBUTE
+                "0x11101"  : 8,      #  TARGET_TOOLCHAIN_ARCH_***********_ATTRIBUTE
+                "0x01101"  : 7,      #  ******_TOOLCHAIN_ARCH_***********_ATTRIBUTE
+                "0x10101"  : 6,      #  TARGET_*********_ARCH_***********_ATTRIBUTE
+                "0x00101"  : 5,      #  ******_*********_ARCH_***********_ATTRIBUTE
+                "0x11001"  : 4,      #  TARGET_TOOLCHAIN_****_***********_ATTRIBUTE
+                "0x01001"  : 3,      #  ******_TOOLCHAIN_****_***********_ATTRIBUTE
+                "0x10001"  : 2,      #  TARGET_*********_****_***********_ATTRIBUTE
+                "0x00001"  : 1}      #  ******_*********_****_***********_ATTRIBUTE (Lowest)
+    
     ## The real constructor of PlatformAutoGen
     #
     #  This method is not supposed to be called by users of PlatformAutoGen. It's
@@ -614,7 +634,7 @@ class PlatformAutoGen(AutoGen):
                             # just pick the a value to determine whether is unicode string type
                             Sku = Pcd.SkuInfoList[Pcd.SkuInfoList.keys()[0]]                        
                             if Sku.VpdOffset == "*":
-                                    Sku.VpdOffset = VpdFile.GetOffset(Pcd)[0]
+                                Sku.VpdOffset = VpdFile.GetOffset(Pcd)[0]
                     else:
                         EdkLogger.error("build", FILE_READ_FAILURE, "Can not find VPD map file %s to fix up VPD offset." % VpdMapFilePath)
             
@@ -693,7 +713,7 @@ class PlatformAutoGen(AutoGen):
                 if "FLAGS" in self.ToolDefinition["MAKE"]:
                     NewOption = self.ToolDefinition["MAKE"]["FLAGS"].strip()
                     if NewOption != '':
-                      self._BuildCommand += SplitOption(NewOption)
+                        self._BuildCommand += SplitOption(NewOption)
         return self._BuildCommand
 
     ## Get tool chain definition
@@ -1220,16 +1240,86 @@ class PlatformAutoGen(AutoGen):
                     EdkLogger.verbose("\t" + LibraryName + " : " + str(Library) + ' ' + str(type(Library)))
         return LibraryList
 
+    ## Calculate the priority value of the build option
+    #
+    # @param    Key    Build option definition contain: TARGET_TOOLCHAIN_ARCH_COMMANDTYPE_ATTRIBUTE
+    #
+    # @retval   Value  Priority value based on the priority list.
+    #
+    def CalculatePriorityValue(self, Key):
+        Target, ToolChain, Arch, CommandType, Attr = Key.split('_')       
+        PriorityValue = 0x11111          
+        if Target == "*":
+            PriorityValue &= 0x01111
+        if ToolChain == "*":
+            PriorityValue &= 0x10111
+        if Arch == "*":
+            PriorityValue &= 0x11011
+        if CommandType == "*":
+            PriorityValue &= 0x11101
+        if Attr == "*":
+            PriorityValue &= 0x11110
+        
+        return self.PrioList["0x%0.5x"%PriorityValue]
+                                    
+
     ## Expand * in build option key
     #
     #   @param  Options     Options to be expanded
     #
     #   @retval options     Options expanded
-    #
+    #      
     def _ExpandBuildOption(self, Options, ModuleStyle=None):
         BuildOptions = {}
         FamilyMatch  = False
         FamilyIsNull = True
+                
+        OverrideList = {}
+        #
+        # Construct a list contain the build options which need override.
+        #
+        for Key in Options:
+            #
+            # Key[0] -- tool family
+            # Key[1] -- TARGET_TOOLCHAIN_ARCH_COMMANDTYPE_ATTRIBUTE
+            #
+            if Key[0] == self.BuildRuleFamily :
+                Target, ToolChain, Arch, CommandType, Attr = Key[1].split('_')
+                if Target == self.BuildTarget or Target == "*":
+                    if ToolChain == self.ToolChain or ToolChain == "*":
+                        if Arch == self.Arch or Arch == "*":
+                            if Options[Key].startswith("="):
+                                if OverrideList.get(Key[1]) != None:                                                
+                                    OverrideList.pop(Key[1])
+                                OverrideList[Key[1]] = Options[Key]
+        
+        #
+        # Use the highest priority value. 
+        #
+        if (len(OverrideList) >= 2):
+            KeyList   = OverrideList.keys()
+            for Index in range(len(KeyList)):
+                NowKey      = KeyList[Index]
+                Target1, ToolChain1, Arch1, CommandType1, Attr1 = NowKey.split("_")
+                for Index1 in range(len(KeyList) - Index - 1):
+                    NextKey = KeyList[Index1 + Index + 1]
+                    #
+                    # Compare two Key, if one is included by another, choose the higher priority one
+                    #                    
+                    Target2, ToolChain2, Arch2, CommandType2, Attr2 = NextKey.split("_")
+                    if Target1 == Target2 or Target1 == "*" or Target2 == "*":
+                        if ToolChain1 == ToolChain2 or ToolChain1 == "*" or ToolChain2 == "*":
+                            if Arch1 == Arch2 or Arch1 == "*" or Arch2 == "*":
+                                if CommandType1 == CommandType2 or CommandType1 == "*" or CommandType2 == "*":
+                                    if Attr1 == Attr2 or Attr1 == "*" or Attr2 == "*":
+                                        if self.CalculatePriorityValue(NowKey) > self.CalculatePriorityValue(NextKey):
+                                            if Options.get((self.BuildRuleFamily, NextKey)) != None:  
+                                                Options.pop((self.BuildRuleFamily, NextKey))
+                                        else:
+                                            if Options.get((self.BuildRuleFamily, NowKey)) != None: 
+                                                Options.pop((self.BuildRuleFamily, NowKey))
+                                                           
+        
         for Key in Options:
             if ModuleStyle != None and len (Key) > 2:
                 # Check Module style is EDK or EDKII.
