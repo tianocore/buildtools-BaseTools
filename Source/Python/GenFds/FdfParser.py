@@ -1495,7 +1495,7 @@ class FdfParser:
         
         for Item in Obj.BlockSizeList:
             if Item[0] == None or Item[1] == None:
-                raise Warning("expected block statement for Fd Section", self.FileName, self.CurrentLineNumber)
+                raise Warning("expected block statement", self.FileName, self.CurrentLineNumber)
 
     ## __GetBlockStatement() method
     #
@@ -1911,7 +1911,8 @@ class FdfParser:
 
         self.__GetAddressStatements(FvObj)
 
-        self.__GetBlockStatement(FvObj)
+        while self.__GetBlockStatement(FvObj):
+            pass
 
         self.__GetSetStatements(FvObj)
 
