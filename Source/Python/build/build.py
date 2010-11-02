@@ -999,7 +999,7 @@ class Build():
                 EdkLogger.error("build", FILE_DELETE_FAILURE, ExtraData=str(X))
         return True
 
-    ## Rebase module image and Get function address for the inpug module list.
+    ## Rebase module image and Get function address for the input module list.
     #
     def _RebaseModule (self, MapBuffer, BaseAddress, ModuleList, AddrIsOffset = True, ModeIsSmm = False):
         if ModeIsSmm:

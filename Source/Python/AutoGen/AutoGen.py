@@ -189,7 +189,12 @@ class WorkspaceAutoGen(AutoGen):
             #
             Pa.CollectPlatformDynamicPcds()
             self.AutoGenObjectList.append(Pa)
-
+        
+        #
+        # Check PCDs token value conflict in each DEC file.
+        #
+        self._CheckAllPcdsTokenValueConflict()
+        
         self._BuildDir = None
         self._FvDir = None
         self._MakeFileDir = None
@@ -248,6 +253,54 @@ class WorkspaceAutoGen(AutoGen):
             # BuildCommand should be all the same. So just get one from platform AutoGen
             self._BuildCommand = self.AutoGenObjectList[0].BuildCommand
         return self._BuildCommand
+    
+    ## Check the PCDs token value conflict in each DEC file.
+    #
+    # Will cause build break and raise error message while two PCDs conflict.
+    # 
+    # @return  None
+    #
+    def _CheckAllPcdsTokenValueConflict(self):
+        if len(self.BuildDatabase.WorkspaceDb.PackageList) >= 1:
+            for Package in self.BuildDatabase.WorkspaceDb.PackageList:
+                PcdList = Package.Pcds.values()
+                PcdList.sort(lambda x, y: cmp(x.TokenValue, y.TokenValue)) 
+                Count = 0
+                while (Count < len(PcdList) - 1) :
+                    Item = PcdList[Count]
+                    ItemNext = PcdList[Count + 1]
+                    #
+                    # Make sure in the same token space the TokenValue should be unique
+                    #
+                    if (Item.TokenValue == ItemNext.TokenValue) and (Item.TokenSpaceGuidCName == ItemNext.TokenSpaceGuidCName) and (Item.TokenCName != ItemNext.TokenCName):
+                        EdkLogger.error(
+                                    'build',
+                                    FORMAT_INVALID,
+                                    "The TokenValue [%s] of PCD [%s.%s] is conflict with: [%s.%s] in %s"\
+                                    % (Item.TokenValue, Item.TokenSpaceGuidCName, Item.TokenCName, ItemNext.TokenSpaceGuidCName, ItemNext.TokenCName, Package),
+                                    ExtraData=None
+                                    )
+                    Count += 1
+                
+                PcdList = Package.Pcds.values()
+                PcdList.sort(lambda x, y: cmp("%s.%s"%(x.TokenSpaceGuidCName, x.TokenCName), "%s.%s"%(y.TokenSpaceGuidCName, y.TokenCName)))
+                Count = 0
+                while (Count < len(PcdList) - 1) :
+                    Item = PcdList[Count]
+                    ItemNext = PcdList[Count + 1]                
+                    #
+                    # Check PCDs with same TokenSpaceGuidCName.TokenCName have same token value as well.
+                    #
+                    if (Item.TokenSpaceGuidCName == ItemNext.TokenSpaceGuidCName) and (Item.TokenCName == ItemNext.TokenCName) and (Item.TokenValue != ItemNext.TokenValue):
+                        EdkLogger.error(
+                                    'build',
+                                    FORMAT_INVALID,
+                                    "The TokenValue [%s] of PCD [%s.%s] in %s defined in two places should be same as well."\
+                                    % (Item.TokenValue, Item.TokenSpaceGuidCName, Item.TokenCName, Package),
+                                    ExtraData=None
+                                    )
+                    Count += 1
+                                      
 
     ## Create makefile for the platform and modules in it
     #

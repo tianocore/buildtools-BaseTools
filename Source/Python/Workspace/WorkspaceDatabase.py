@@ -1966,7 +1966,30 @@ class InfBuildData(ModuleBuildClassObject):
                     PcdInPackage = Package.Pcds[PcdCName, TokenSpaceGuid, PcdType]
                     Pcd.Type = PcdType
                     Pcd.TokenValue = PcdInPackage.TokenValue
+                    
+                    #
+                    # Check whether the token value exist or not.
+                    #
+                    if Pcd.TokenValue == None or Pcd.TokenValue == "":
+                        EdkLogger.error(
+                                'build',
+                                FORMAT_INVALID,
+                                "No TokenValue for PCD [%s.%s] in [%s]!" % (Pcd.TokenValue, TokenSpaceGuid, PcdCName, str(Package)),
+                                File =self.MetaFile, Line=LineNo,
+                                ExtraData=None
+                                )                        
+                    #
+                    # Check hexadecimal token value length and format.
+                    #
                     if Pcd.TokenValue.startswith("0x") or Pcd.TokenValue.startswith("0X"):
+                        if len(Pcd.TokenValue) < 3 or len(Pcd.TokenValue) > 10:
+                            EdkLogger.error(
+                                    'build',
+                                    FORMAT_INVALID,
+                                    "The format of TokenValue [%s] of PCD [%s.%s] in [%s] is invalid:" % (Pcd.TokenValue, TokenSpaceGuid, PcdCName, str(Package)),
+                                    File =self.MetaFile, Line=LineNo,
+                                    ExtraData=None
+                                    )                          
                         try:
                             int (Pcd.TokenValue, 16)
                         except:
@@ -1977,14 +2000,29 @@ class InfBuildData(ModuleBuildClassObject):
                                     File =self.MetaFile, Line=LineNo,
                                     ExtraData=None
                                     )
+                            
+                    #
+                    # Check decimal token value length and format.
+                    #                            
                     else:
-                        EdkLogger.error(
-                                    'build',
-                                    FORMAT_INVALID,
-                                    "The format of TokenValue [%s] of PCD [%s.%s] in [%s] is invalid: should start with \"0X\" or \"0x\""% (Pcd.TokenValue, TokenSpaceGuid, PcdCName, str(Package)),
-                                    File =self.MetaFile, Line=LineNo,
-                                    ExtraData=None
-                                    )
+                        try:
+                            TokenValueInt = int (Pcd.TokenValue, 10)
+                            if (TokenValueInt < 0 or TokenValueInt > 4294967295):
+                                EdkLogger.error(
+                                            'build',
+                                            FORMAT_INVALID,
+                                            "The format of TokenValue [%s] of PCD [%s.%s] in [%s] is invalid, as a decimal it should between: 0 - 4294967295!"% (Pcd.TokenValue, TokenSpaceGuid, PcdCName, str(Package)),
+                                            File =self.MetaFile, Line=LineNo,
+                                            ExtraData=None
+                                            )                                
+                        except:
+                            EdkLogger.error(
+                                        'build',
+                                        FORMAT_INVALID,
+                                        "The format of TokenValue [%s] of PCD [%s.%s] in [%s] is invalid, it should be hexadecimal or decimal!"% (Pcd.TokenValue, TokenSpaceGuid, PcdCName, str(Package)),
+                                        File =self.MetaFile, Line=LineNo,
+                                        ExtraData=None
+                                        )
                     
                     Pcd.DatumType = PcdInPackage.DatumType
                     Pcd.MaxDatumSize = PcdInPackage.MaxDatumSize
