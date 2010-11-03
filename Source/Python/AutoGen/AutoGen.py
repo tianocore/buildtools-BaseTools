@@ -272,14 +272,35 @@ class WorkspaceAutoGen(AutoGen):
                     #
                     # Make sure in the same token space the TokenValue should be unique
                     #
-                    if (Item.TokenValue == ItemNext.TokenValue) and (Item.TokenSpaceGuidCName == ItemNext.TokenSpaceGuidCName) and (Item.TokenCName != ItemNext.TokenCName):
-                        EdkLogger.error(
-                                    'build',
-                                    FORMAT_INVALID,
-                                    "The TokenValue [%s] of PCD [%s.%s] is conflict with: [%s.%s] in %s"\
-                                    % (Item.TokenValue, Item.TokenSpaceGuidCName, Item.TokenCName, ItemNext.TokenSpaceGuidCName, ItemNext.TokenCName, Package),
-                                    ExtraData=None
-                                    )
+                    if (Item.TokenValue == ItemNext.TokenValue):
+                        SameTokenValuePcdList = []
+                        SameTokenValuePcdList.append(Item)
+                        SameTokenValuePcdList.append(ItemNext)
+                        RemainPcdListLength = len(PcdList) - Count - 2
+                        for ValueSameCount in range(RemainPcdListLength):
+                            if PcdList[len(PcdList) - RemainPcdListLength + ValueSameCount].TokenValue == Item.TokenValue:
+                                SameTokenValuePcdList.append(PcdList[len(PcdList) - RemainPcdListLength + ValueSameCount])
+                            else:
+                                break;
+                        #
+                        # Sort same token value PCD list with TokenGuid and TokenCName
+                        #
+                        SameTokenValuePcdList.sort(lambda x, y: cmp("%s.%s"%(x.TokenSpaceGuidCName, x.TokenCName), "%s.%s"%(y.TokenSpaceGuidCName, y.TokenCName))) 
+                        SameTokenValuePcdListCount = 0     
+                        while (SameTokenValuePcdListCount < len(SameTokenValuePcdList) - 1):
+                            TemListItem     = SameTokenValuePcdList[SameTokenValuePcdListCount]
+                            TemListItemNext = SameTokenValuePcdList[SameTokenValuePcdListCount + 1] 
+                                                                                                      
+                            if (TemListItem.TokenSpaceGuidCName == TemListItemNext.TokenSpaceGuidCName) and (TemListItem.TokenCName != TemListItemNext.TokenCName):
+                                EdkLogger.error(
+                                            'build',
+                                            FORMAT_INVALID,
+                                            "The TokenValue [%s] of PCD [%s.%s] is conflict with: [%s.%s] in %s"\
+                                            % (TemListItem.TokenValue, TemListItem.TokenSpaceGuidCName, TemListItem.TokenCName, TemListItemNext.TokenSpaceGuidCName, TemListItemNext.TokenCName, Package),
+                                            ExtraData=None
+                                            )
+                            SameTokenValuePcdListCount += 1
+                        Count += SameTokenValuePcdListCount
                     Count += 1
                 
                 PcdList = Package.Pcds.values()

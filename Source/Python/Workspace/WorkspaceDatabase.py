@@ -1974,7 +1974,7 @@ class InfBuildData(ModuleBuildClassObject):
                         EdkLogger.error(
                                 'build',
                                 FORMAT_INVALID,
-                                "No TokenValue for PCD [%s.%s] in [%s]!" % (Pcd.TokenValue, TokenSpaceGuid, PcdCName, str(Package)),
+                                "No TokenValue for PCD [%s.%s] in [%s]!" % (TokenSpaceGuid, PcdCName, str(Package)),
                                 File =self.MetaFile, Line=LineNo,
                                 ExtraData=None
                                 )                        
