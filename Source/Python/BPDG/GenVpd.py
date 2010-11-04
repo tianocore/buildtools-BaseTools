@@ -544,10 +544,8 @@ class GenVPD :
                 if lenOfUnfixedList != 0 :
                     countOfUnfixedList = 0
                     while(countOfUnfixedList < lenOfUnfixedList) :                   
-                        #needFixPcdCName, needFixPcdOffset, needFixPcdSize, needFixPcdValue, needFixUnpackValue = self.PcdUnknownOffsetList[countOfUnfixedList][0:6]
                         eachUnfixedPcd      = self.PcdUnknownOffsetList[countOfUnfixedList]
                         needFixPcdSize      = eachUnfixedPcd.PcdBinSize
-                        needFixPcdOffset    = eachUnfixedPcd.PcdOffset
                         # Not been fixed
                         if eachUnfixedPcd.PcdOffset == '*' :
                             # The offset un-fixed pcd can write into this free space
@@ -566,18 +564,16 @@ class GenVPD :
                                 FixOffsetSizeListCount  += 1
                                 
                                 # Decrease the un-fixed pcd offset list's length
-                                countOfUnfixedList      += 1
                                 lenOfUnfixedList        -= 1
                                 
                                 # Modify the last offset value 
-                                LastOffset              += needFixPcdSize
-                                continue                            
+                                LastOffset              += needFixPcdSize                            
                             else :
-                                # It can not insert into those two pcds, need to check stiil has other space can store it.
+                                # It can not insert into those two pcds, need to check still has other space can store it.
+                                LastOffset             = NowOffset + self.PcdFixedOffsetSizeList[FixOffsetSizeListCount].PcdBinSize
                                 FixOffsetSizeListCount += 1
-                                break                   
-                        else :
-                            continue
+                                break
+                                                                                 
                 # Set the FixOffsetSizeListCount = lenOfList for quit the loop
                 else :
                     FixOffsetSizeListCount = lenOfList                    
