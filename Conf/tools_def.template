@@ -153,11 +153,11 @@ DEFINE DEFAULT_WIN_ASL_OUTFLAGS = DEF(IASL_OUTFLAGS)
 #DEFINE DEFAULT_WIN_ASL_OUTFLAGS = DEF(MS_ASL_OUTFLAGS)
 
 DEFINE MSFT_ASLPP_FLAGS        = /nologo /E /C /FIAutoGen.h
-DEFINE MSFT_ASLCC_FLAGS        = /GL- /Y- /TC /Dmain=ReferenceAcpiTable
+DEFINE MSFT_ASLCC_FLAGS        = /nologo /c /FIAutoGen.h /TC /Dmain=ReferenceAcpiTable
 DEFINE MSFT_ASLDLINK_FLAGS     = /NODEFAULTLIB /ENTRY:ReferenceAcpiTable /SUBSYSTEM:EFI_BOOT_SERVICE_DRIVER
 
 DEFINE ICC_WIN_ASLPP_FLAGS     = /nologo /E /C /FIAutoGen.h
-DEFINE ICC_WIN_ASLCC_FLAGS     = /Y- /TC /WX- /Od /Dmain=ReferenceAcpiTable
+DEFINE ICC_WIN_ASLCC_FLAGS     = /nologo /c /FIAutoGen.h /TC /Dmain=ReferenceAcpiTable
 DEFINE ICC_WIN_ASLDLINK_FLAGS  = /NODEFAULTLIB /ENTRY:ReferenceAcpiTable /SUBSYSTEM:EFI_BOOT_SERVICE_DRIVER /NODEFAULTLIB:libmmt /NODEFAULTLIB:libirc
 
 DEFINE IPHONE_TOOLS            = /Developer/Platforms/iPhoneOS.platform/Developer
@@ -3563,7 +3563,7 @@ RELEASE_ARMGCC_ARM_CC_FLAGS = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -mfpu=fpa -mlitt
 ##################
 # Asl Compiler definitions
 ##################
-*_*_*_ASLCC_FLAGS                  = /GL- /Y- /TC /Dmain=ReferenceAcpiTable
+*_*_*_ASLCC_FLAGS                  = /nologo /c /FIAutoGen.h /TC /Dmain=ReferenceAcpiTable
 *_*_*_ASLDLINK_FLAGS               = /NODEFAULTLIB /ENTRY:ReferenceAcpiTable /SUBSYSTEM:EFI_BOOT_SERVICE_DRIVER
 *_*_*_ASLPP_FLAGS                  = /nologo /EP /C
 *_*_*_ASL_FLAGS                    =
