@@ -74,6 +74,8 @@ class DscBuildData(PlatformBuildClassObject):
         TAB_DSC_DEFINES_MAKEFILE_NAME           :   "_MakefileName",
         TAB_DSC_DEFINES_BS_BASE_ADDRESS         :   "_BsBaseAddress",
         TAB_DSC_DEFINES_RT_BASE_ADDRESS         :   "_RtBaseAddress",
+        #TAB_DSC_DEFINES_RFC_LANGUAGES           :   "_RFCLanguages",
+        #TAB_DSC_DEFINES_ISO_LANGUAGES           :   "_ISOLanguages",
     }
 
     # used to compose dummy library class name for those forced library instances
@@ -140,6 +142,8 @@ class DscBuildData(PlatformBuildClassObject):
         self._Pcds              = None
         self._BuildOptions      = None
         self._LoadFixAddress    = None
+        self._RFCLanguages      = None
+        self._ISOLanguages      = None
         self._VpdToolGuid       = None
 
     ## Get architecture
@@ -194,6 +198,35 @@ class DscBuildData(PlatformBuildClassObject):
                     self._SkuName = Record[1]
             elif Name == TAB_FIX_LOAD_TOP_MEMORY_ADDRESS:
                 self._LoadFixAddress = Record[1]
+            elif Name == TAB_DSC_DEFINES_RFC_LANGUAGES:
+                if not Record[1] or Record[1][0] != '"' or Record[1][-1] != '"' or len(Record[1]) == 1:
+                    EdkLogger.error('build', FORMAT_NOT_SUPPORTED, 'language code for RFC_LANGUAGES must have double quotes around it, for example: RFC_LANGUAGES = "en-us;zh-hans"',
+                                    File=self.MetaFile, Line=Record[-1])
+                LanguageCodes = Record[1][1:-1]
+                if not LanguageCodes:
+                    EdkLogger.error('build', FORMAT_NOT_SUPPORTED, 'one or more RFC4646 format language code must be provided for RFC_LANGUAGES statement',
+                                    File=self.MetaFile, Line=Record[-1])                
+                LanguageList = GetSplitValueList(LanguageCodes, TAB_SEMI_COLON_SPLIT)
+                # check whether there is empty entries in the list
+                if None in LanguageList:
+                    EdkLogger.error('build', FORMAT_NOT_SUPPORTED, 'one or more empty language code is in RFC_LANGUAGES statement',
+                                    File=self.MetaFile, Line=Record[-1])                      
+                self._RFCLanguages = LanguageList
+            elif Name == TAB_DSC_DEFINES_ISO_LANGUAGES:
+                if not Record[1] or Record[1][0] != '"' or Record[1][-1] != '"' or len(Record[1]) == 1:
+                    EdkLogger.error('build', FORMAT_NOT_SUPPORTED, 'language code for ISO_LANGUAGES must have double quotes around it, for example: ISO_LANGUAGES = "engchn"',
+                                    File=self.MetaFile, Line=Record[-1])
+                LanguageCodes = Record[1][1:-1]
+                if not LanguageCodes:
+                    EdkLogger.error('build', FORMAT_NOT_SUPPORTED, 'one or more ISO639-2 format language code must be provided for ISO_LANGUAGES statement',
+                                    File=self.MetaFile, Line=Record[-1])                    
+                if len(LanguageCodes)%3:
+                    EdkLogger.error('build', FORMAT_NOT_SUPPORTED, 'bad ISO639-2 format for ISO_LANGUAGES',
+                                    File=self.MetaFile, Line=Record[-1])
+                LanguageList = []
+                for i in range(0, len(LanguageCodes), 3):
+                    LanguageList.append(LanguageCodes[i:i+3])
+                self._ISOLanguages = LanguageList               
             elif Name == TAB_DSC_DEFINES_VPD_TOOL_GUID:
                 #
                 # try to convert GUID to a real UUID value to see whether the GUID is format 
@@ -338,6 +371,24 @@ class DscBuildData(PlatformBuildClassObject):
             if self._LoadFixAddress == None:
                 self._LoadFixAddress = ''
         return self._LoadFixAddress
+
+    ## Retrieve RFCLanguage filter
+    def _GetRFCLanguages(self):
+        if self._RFCLanguages == None:
+            if self._Header == None:
+                self._GetHeaderInfo()
+            if self._RFCLanguages == None:
+                self._RFCLanguages = []
+        return self._RFCLanguages
+
+    ## Retrieve ISOLanguage filter
+    def _GetISOLanguages(self):
+        if self._ISOLanguages == None:
+            if self._Header == None:
+                self._GetHeaderInfo()
+            if self._ISOLanguages == None:
+                self._ISOLanguages = []
+        return self._ISOLanguages
 
     ## Retrieve the GUID string for VPD tool
     def _GetVpdToolGuid(self):
@@ -779,6 +830,8 @@ class DscBuildData(PlatformBuildClassObject):
     BsBaseAddress       = property(_GetBsBaseAddress)
     RtBaseAddress       = property(_GetRtBaseAddress)
     LoadFixAddress      = property(_GetLoadFixAddress)
+    RFCLanguages        = property(_GetRFCLanguages)
+    ISOLanguages        = property(_GetISOLanguages)
     VpdToolGuid         = property(_GetVpdToolGuid)   
     SkuIds              = property(_GetSkuIds)
     Modules             = property(_GetModules)
