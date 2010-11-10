@@ -45,10 +45,10 @@ DEFINE WINSDKx86_BIN    = c:\Program Files (x86)\Microsoft SDKs\Windows\DEF(WINS
 # are used by other toolchains.  An example is that ICC on Windows normally
 # uses Microsoft's nmake.exe.
 
-# Some MS_VS_BIN options: DEF(VS2003_BIN), DEF(VS2005_BIN), DEF(VS2005x86_BIN)
-DEFINE MS_VS_BIN   = DEF(VS2005_BIN)
-# Some MS_VS_DLL options: DEF(VS2003_DLL), DEF(VS2005_DLL), DEF(VS2005x86_DLL)
-DEFINE MS_VS_DLL   = DEF(VS2005_DLL)
+# Some MS_VS_BIN options: DEF(VS2003_BIN), DEF(VS2005_BIN), DEF(VS2005x86_BIN), DEF(VS2008_BIN), DEF(VS2008x86_BIN)
+DEFINE MS_VS_BIN   = DEF(VS2008_BIN)
+# Some MS_VS_DLL options: DEF(VS2003_DLL), DEF(VS2005_DLL), DEF(VS2005x86_DLL), DEF(VS2008_BIN), DEF(VS2008x86_BIN)
+DEFINE MS_VS_DLL   = DEF(VS2008_DLL)
 
 DEFINE WINDDK_BIN16     = C:\WINDDK\3790.1830\bin\bin16
 DEFINE WINDDK_BIN32     = C:\WINDDK\3790.1830\bin\x86
@@ -78,7 +78,7 @@ DEFINE ICC_BIN64x86     = C:\Program Files (x86)\Intel\Compiler\C++\DEF(ICC_VERS
 #       We use "ICC11" tag for ICC 11.1 while "ICC" tag is dedicated for eariler versions
 #
 DEFINE ICC11_VERSION      = 11.1
-DEFINE ICC11_BUILD        = 065
+DEFINE ICC11_BUILD        = 067
 DEFINE ICC11_BIN32        = C:\Program Files\Intel\Compiler\DEF(ICC11_VERSION)\DEF(ICC11_BUILD)\bin\ia32
 DEFINE ICC11_ASM32        = C:\Program Files\Intel\Compiler\DEF(ICC11_VERSION)\DEF(ICC11_BUILD)\bin\ia32
 DEFINE ICC11_BIN32x86     = C:\Program Files (x86)\Intel\Compiler\DEF(ICC11_VERSION)\DEF(ICC11_BUILD)\bin\ia32
