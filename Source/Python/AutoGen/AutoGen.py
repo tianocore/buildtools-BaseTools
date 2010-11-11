@@ -575,12 +575,12 @@ class PlatformAutoGen(AutoGen):
         UnicodePcdArray = []
         HiiPcdArray     = []
         OtherPcdArray   = []
+        VpdPcdDict      = {}
         VpdFile               = VpdInfoFile.VpdInfoFile()
         NeedProcessVpdMapFile = False                    
         
         if (self.Workspace.ArchList[-1] == self.Arch): 
             for Pcd in self._DynamicPcdList:
-
                 # just pick the a value to determine whether is unicode string type
                 Sku      = Pcd.SkuInfoList[Pcd.SkuInfoList.keys()[0]]
                 Sku.VpdOffset = Sku.VpdOffset.strip()
@@ -594,32 +594,47 @@ class PlatformAutoGen(AutoGen):
                     HiiPcdArray.append(Pcd)
                 else:
                     OtherPcdArray.append(Pcd)
-                    
                 if Pcd.Type in [TAB_PCDS_DYNAMIC_VPD, TAB_PCDS_DYNAMIC_EX_VPD]:
-                    if not (self.Platform.VpdToolGuid == None or self.Platform.VpdToolGuid == ''):
-                        #
-                        # Fix the optional data of VPD PCD.
-                        #
-                        if (Pcd.DatumType.strip() != "VOID*"):
-                            if Sku.DefaultValue == '':
-                                Pcd.SkuInfoList[Pcd.SkuInfoList.keys()[0]].DefaultValue = Pcd.MaxDatumSize
-                                Pcd.MaxDatumSize = None
-                            else:
-                                EdkLogger.error("build", AUTOGEN_ERROR, "PCD setting error",
-                                                File=self.MetaFile,
-                                                ExtraData="\n\tPCD: %s.%s format incorrect in DSC: %s\n\t\t\n"
-                                                          % (Pcd.TokenSpaceGuidCName, Pcd.TokenCName, self.Platform.MetaFile.Path))                                                                            
-                        
-                        VpdFile.Add(Pcd, Sku.VpdOffset)
-                        # if the offset of a VPD is *, then it need to be fixed up by third party tool.
-                        if not NeedProcessVpdMapFile and Sku.VpdOffset == "*":
-                            NeedProcessVpdMapFile = True
+                    VpdPcdDict[(Pcd.TokenCName, Pcd.TokenSpaceGuidCName)] = Pcd                   
+            
+            PlatformPcds = self.Platform.Pcds.keys()
+            PlatformPcds.sort()            
+            #
+            # Add VPD type PCD into VpdFile and determine whether the VPD PCD need to be fixed up.
+            #
+            for PcdKey in PlatformPcds:
+                Pcd           = self.Platform.Pcds[PcdKey]                            
+                if Pcd.Type in [TAB_PCDS_DYNAMIC_VPD, TAB_PCDS_DYNAMIC_EX_VPD]:
+                    Pcd           = VpdPcdDict[PcdKey]
+                    Sku           = Pcd.SkuInfoList[Pcd.SkuInfoList.keys()[0]]
+                    Sku.VpdOffset = Sku.VpdOffset.strip()                
+                    #
+                    # Fix the optional data of VPD PCD.
+                    #
+                    if (Pcd.DatumType.strip() != "VOID*"):
+                        if Sku.DefaultValue == '':
+                            Pcd.SkuInfoList[Pcd.SkuInfoList.keys()[0]].DefaultValue = Pcd.MaxDatumSize
+                            Pcd.MaxDatumSize = None
+                        else:
+                            EdkLogger.error("build", AUTOGEN_ERROR, "PCD setting error",
+                                            File=self.MetaFile,
+                                            ExtraData="\n\tPCD: %s.%s format incorrect in DSC: %s\n\t\t\n"
+                                                      % (Pcd.TokenSpaceGuidCName, Pcd.TokenCName, self.Platform.MetaFile.Path))                                                                            
+                    
+                    VpdFile.Add(Pcd, Sku.VpdOffset)
+                    # if the offset of a VPD is *, then it need to be fixed up by third party tool.
+                    if not NeedProcessVpdMapFile and Sku.VpdOffset == "*":
+                        NeedProcessVpdMapFile = True
+                        if self.Platform.VpdToolGuid == None or self.Platform.VpdToolGuid == '':
+                            EdkLogger.error("Build", FILE_NOT_FOUND, \
+                                            "Fail to find third-party BPDG tool to process VPD PCDs. BPDG Guid tool need to be defined in tools_def.txt and VPD_TOOL_GUID need to be provided in DSC file.")
+                            
                                    
             #
             # Fix the PCDs define in VPD PCD section that never referenced by module.
             # An example is PCD for signature usage.
-            #              
-            for DscPcd in self.Platform.Pcds:
+            #            
+            for DscPcd in PlatformPcds:
                 DscPcdEntry = self.Platform.Pcds[DscPcd]
                 if DscPcdEntry.Type in [TAB_PCDS_DYNAMIC_VPD, TAB_PCDS_DYNAMIC_EX_VPD]:
                     if not (self.Platform.VpdToolGuid == None or self.Platform.VpdToolGuid == ''):

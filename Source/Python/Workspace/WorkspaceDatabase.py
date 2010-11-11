@@ -670,14 +670,14 @@ class DscBuildData(PlatformBuildClassObject):
         # PCD settings for certain ARCH and SKU
         #
         PcdDict = tdict(True, 4)
-        PcdSet = set()
+        PcdList = []
         # Find out all possible PCD candidates for self._Arch
         RecordList = self._RawData[Type, self._Arch]
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
-            PcdSet.add((PcdCName, TokenSpaceGuid))
+            PcdList.append((PcdCName, TokenSpaceGuid))
             PcdDict[Arch, SkuName, PcdCName, TokenSpaceGuid] = Setting
         # Remove redundant PCD candidates, per the ARCH and SKU
-        for PcdCName, TokenSpaceGuid in PcdSet:
+        for PcdCName, TokenSpaceGuid in PcdList:
             Setting = PcdDict[self._Arch, self.SkuName, PcdCName, TokenSpaceGuid]
             if Setting == None:
                 continue
@@ -752,14 +752,14 @@ class DscBuildData(PlatformBuildClassObject):
         # PCD settings for certain ARCH and SKU
         #
         PcdDict = tdict(True, 4)
-        PcdSet = set()
+        PcdList = []
         # Find out all possible PCD candidates for self._Arch
         RecordList = self._RawData[Type, self._Arch]
         for TokenSpaceGuid, PcdCName, Setting, Arch, SkuName, Dummy3, Dummy4 in RecordList:
-            PcdSet.add((PcdCName, TokenSpaceGuid))
+            PcdList.append((PcdCName, TokenSpaceGuid))
             PcdDict[Arch, SkuName, PcdCName, TokenSpaceGuid] = Setting
         # Remove redundant PCD candidates, per the ARCH and SKU
-        for PcdCName, TokenSpaceGuid in PcdSet:
+        for PcdCName, TokenSpaceGuid in PcdList:
             Setting = PcdDict[self._Arch, self.SkuName, PcdCName, TokenSpaceGuid]
             if Setting == None:
                 continue
@@ -1961,11 +1961,11 @@ class InfBuildData(ModuleBuildClassObject):
     def _GetPcd(self, Type):
         Pcds = {}
         PcdDict = tdict(True, 4)
-        PcdSet = set()
+        PcdList = []
         RecordList = self._RawData[Type, self._Arch, self._Platform]
         for TokenSpaceGuid, PcdCName, Setting, Arch, Platform, Dummy1, LineNo in RecordList:
             PcdDict[Arch, Platform, PcdCName, TokenSpaceGuid] = (Setting, LineNo)
-            PcdSet.add((PcdCName, TokenSpaceGuid))
+            PcdList.append((PcdCName, TokenSpaceGuid))
             # get the guid value
             if TokenSpaceGuid not in self.Guids:
                 Value = GuidValue(TokenSpaceGuid, self.Packages)
@@ -1977,7 +1977,7 @@ class InfBuildData(ModuleBuildClassObject):
                 self.Guids[TokenSpaceGuid] = Value
 
         # resolve PCD type, value, datum info, etc. by getting its definition from package
-        for PcdCName, TokenSpaceGuid in PcdSet:
+        for PcdCName, TokenSpaceGuid in PcdList:
             Setting, LineNo = PcdDict[self._Arch, self.Platform, PcdCName, TokenSpaceGuid]
             if Setting == None:
                 continue
