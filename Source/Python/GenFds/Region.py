@@ -1,7 +1,7 @@
 ## @file
 # process FD Region generation
 #
-#  Copyright (c) 2007, Intel Corporation. All rights reserved.<BR>
+#  Copyright (c) 2007 - 2010, Intel Corporation. All rights reserved.<BR>
 #
 #  This program and the accompanying materials
 #  are licensed and made available under the terms and conditions of the BSD License
@@ -319,6 +319,12 @@ class Region(RegionClassObject):
         if FvObj.BlockSizeList == []:
             FvObj.BlockSizeList = ExpectedList
         else:
+            # first check whether FvObj.BlockSizeList items have only "BlockSize" or "NumBlocks",
+            # if so, use ExpectedList
+            for Item in FvObj.BlockSizeList:
+                if Item[0] == None or Item[1] == None:
+                    FvObj.BlockSizeList = ExpectedList
+                    break
             # make sure region size is no smaller than the summed block size in FV
             Sum = 0
             for Item in FvObj.BlockSizeList:
