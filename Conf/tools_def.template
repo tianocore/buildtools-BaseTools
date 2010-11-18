@@ -1157,7 +1157,7 @@ RELEASE_VS2008xASL_IPF_DLINK_FLAGS  = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT:REF,
 
 *_VS2008x86_*_MAKE_PATH       = DEF(VS2008x86_BIN)\nmake.exe
 *_VS2008x86_*_MAKE_FLAG       = /nologo
-*_VS2008x86_*_RC_PATH         = DEF(WINSDKx86_BIN)\rc.exe
+*_VS2008x86_*_RC_PATH         = DEF(WINSDK_BIN)\rc.exe
 
 *_VS2008x86_*_MAKE_FLAGS      = /nologo
 *_VS2008x86_*_SLINK_FLAGS     = /NOLOGO /LTCG
@@ -1276,7 +1276,7 @@ RELEASE_VS2008x86_IPF_DLINK_FLAGS  = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT:REF,I
 
 *_VS2008x86xASL_*_MAKE_PATH       = DEF(VS2008x86_BIN)\nmake.exe
 *_VS2008x86xASL_*_MAKE_FLAG       = /nologo
-*_VS2008x86xASL_*_RC_PATH         = DEF(WINSDKx86_BIN)\rc.exe
+*_VS2008x86xASL_*_RC_PATH         = DEF(WINSDK_BIN)\rc.exe
 
 *_VS2008x86xASL_*_MAKE_FLAGS      = /nologo
 *_VS2008x86xASL_*_SLINK_FLAGS     = /NOLOGO /LTCG
@@ -2688,7 +2688,7 @@ RELEASE_ICCx86xASL_IPF_DLINK_FLAGS              = /NOLOGO /NODEFAULTLIB /LTCG /D
 *_ICC11_*_*_FAMILY                    = INTEL
 
 *_ICC11_*_MAKE_PATH                   = DEF(MS_VS_BIN)\nmake.exe
-*_ICC11_*_RC_PATH                     = DEF(MS_VS_BIN)\rc.exe
+*_ICC11_*_RC_PATH                     = DEF(WINSDK_BIN)\rc.exe
 
 *_ICC11_*_MAKE_FLAGS                       = /nologo
 *_ICC11_*_VFRPP_FLAGS                      = /nologo /E /TC /DVFRCOMPILE /FI$(MODULE_NAME)StrDefs.h
@@ -2817,7 +2817,7 @@ RELEASE_ICC11_IPF_DLINK_FLAGS              = /NOLOGO /NODEFAULTLIB /LTCG /DLL /O
 *_ICC11xASL_*_*_FAMILY                    = INTEL
 
 *_ICC11xASL_*_MAKE_PATH                   = DEF(MS_VS_BIN)\nmake.exe
-*_ICC11xASL_*_RC_PATH                     = DEF(MS_VS_BIN)\rc.exe
+*_ICC11xASL_*_RC_PATH                     = DEF(WINSDK_BIN)\rc.exe
 
 *_ICC11xASL_*_MAKE_FLAGS                       = /nologo
 *_ICC11xASL_*_VFRPP_FLAGS                      = /nologo /E /TC /DVFRCOMPILE /FI$(MODULE_NAME)StrDefs.h
@@ -2947,7 +2947,7 @@ RELEASE_ICC11xASL_IPF_DLINK_FLAGS              = /NOLOGO /NODEFAULTLIB /LTCG /DL
 *_ICC11x86_*_*_FAMILY                    = INTEL
 
 *_ICC11x86_*_MAKE_PATH                   = DEF(MS_VSx86_BIN)\nmake.exe
-*_ICC11x86_*_RC_PATH                     = DEF(MS_VSx86_BIN)\rc.exe
+*_ICC11x86_*_RC_PATH                     = DEF(WINSDK_BIN)\rc.exe
 
 *_ICC11x86_*_MAKE_FLAGS                       = /nologo
 *_ICC11x86_*_VFRPP_FLAGS                      = /nologo /E /TC /DVFRCOMPILE /FI$(MODULE_NAME)StrDefs.h
@@ -3077,7 +3077,7 @@ RELEASE_ICC11x86_IPF_DLINK_FLAGS              = /NOLOGO /NODEFAULTLIB /LTCG /DLL
 *_ICC11x86xASL_*_*_FAMILY                    = INTEL
 
 *_ICC11x86xASL_*_MAKE_PATH                   = DEF(MS_VSx86_BIN)\nmake.exe
-*_ICC11x86xASL_*_RC_PATH                     = DEF(MS_VSx86_BIN)\rc.exe
+*_ICC11x86xASL_*_RC_PATH                     = DEF(WINSDK_BIN)\rc.exe
 
 *_ICC11x86xASL_*_MAKE_FLAGS                       = /nologo
 *_ICC11x86xASL_*_VFRPP_FLAGS                      = /nologo /E /TC /DVFRCOMPILE /FI$(MODULE_NAME)StrDefs.h
@@ -3310,7 +3310,7 @@ RELEASE_MYTOOLS_IPF_DLINK_FLAGS          = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT
 *_MYTOOLS_EBC_CC_PATH               = DEF(EBC_BIN)\iec.exe
 *_MYTOOLS_EBC_SLINK_PATH            = DEF(EBC_BIN)\link.exe
 *_MYTOOLS_EBC_DLINK_PATH            = DEF(EBC_BIN)\link.exe
-*_MYTOOLS_EBC_RC_PATH               = DEF(VS2008_BIN)\rc.exe
+*_MYTOOLS_EBC_RC_PATH               = DEF(WINSDK_BIN)\rc.exe
 
 *_MYTOOLS_EBC_MAKE_FLAGS                 = /nologo
 *_MYTOOLS_EBC_PP_FLAGS                   = /nologo /E /TC /FIAutoGen.h
