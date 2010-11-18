@@ -2176,7 +2176,7 @@ DEFINE GCC45_ASM_FLAGS               = DEF(GCC44_ASM_FLAGS)
 *_ICC_*_*_FAMILY                    = INTEL
 
 *_ICC_*_MAKE_PATH                   = DEF(MS_VS_BIN)\nmake.exe
-*_ICC_*_RC_PATH                     = DEF(MS_VS_BIN)\rc.exe
+*_ICC_*_RC_PATH                     = DEF(WINSDK_BIN)\rc.exe
 
 *_ICC_*_MAKE_FLAGS                       = /nologo
 *_ICC_*_VFRPP_FLAGS                      = /nologo /E /TC /DVFRCOMPILE /FI$(MODULE_NAME)StrDefs.h
@@ -2303,7 +2303,7 @@ RELEASE_ICC_IPF_DLINK_FLAGS              = /NOLOGO /NODEFAULTLIB /LTCG /DLL /OPT
 *_ICCxASL_*_*_FAMILY                    = INTEL
 
 *_ICCxASL_*_MAKE_PATH                   = DEF(MS_VS_BIN)\nmake.exe
-*_ICCxASL_*_RC_PATH                     = DEF(MS_VS_BIN)\rc.exe
+*_ICCxASL_*_RC_PATH                     = DEF(WINSDK_BIN)\rc.exe
 
 *_ICCxASL_*_MAKE_FLAGS                       = /nologo
 *_ICCxASL_*_VFRPP_FLAGS                      = /nologo /E /TC /DVFRCOMPILE /FI$(MODULE_NAME)StrDefs.h
@@ -2431,7 +2431,7 @@ RELEASE_ICCxASL_IPF_DLINK_FLAGS              = /NOLOGO /NODEFAULTLIB /LTCG /DLL 
 *_ICCx86_*_*_FAMILY                    = INTEL
 
 *_ICCx86_*_MAKE_PATH                   = DEF(MS_VSx86_BIN)\nmake.exe
-*_ICCx86_*_RC_PATH                     = DEF(MS_VSx86_BIN)\rc.exe
+*_ICCx86_*_RC_PATH                     = DEF(WINSDK_BIN)\rc.exe
 
 *_ICCx86_*_MAKE_FLAGS                       = /nologo
 *_ICCx86_*_VFRPP_FLAGS                      = /nologo /E /TC /DVFRCOMPILE /FI$(MODULE_NAME)StrDefs.h
@@ -2559,7 +2559,7 @@ RELEASE_ICCx86_IPF_DLINK_FLAGS              = /NOLOGO /NODEFAULTLIB /LTCG /DLL /
 *_ICCx86xASL_*_*_FAMILY                    = INTEL
 
 *_ICCx86xASL_*_MAKE_PATH                   = DEF(MS_VSx86_BIN)\nmake.exe
-*_ICCx86xASL_*_RC_PATH                     = DEF(MS_VSx86_BIN)\rc.exe
+*_ICCx86xASL_*_RC_PATH                     = DEF(WINSDK_BIN)\rc.exe
 
 *_ICCx86xASL_*_MAKE_FLAGS                       = /nologo
 *_ICCx86xASL_*_VFRPP_FLAGS                      = /nologo /E /TC /DVFRCOMPILE /FI$(MODULE_NAME)StrDefs.h
