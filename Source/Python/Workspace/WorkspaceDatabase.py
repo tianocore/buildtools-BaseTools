@@ -1425,6 +1425,16 @@ class InfBuildData(ModuleBuildClassObject):
             if not self._ModuleType:
                 EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE,
                                 "MODULE_TYPE is not given", File=self.MetaFile)
+            if self._ModuleType not in SUP_MODULE_LIST:
+                RecordList = self._RawData[MODEL_META_DATA_HEADER, self._Arch, self._Platform]
+                for Record in RecordList:
+                    Name = Record[0]
+                    if Name == "MODULE_TYPE":
+                        LineNo = Record[6]
+                        break
+                EdkLogger.error("build", FORMAT_NOT_SUPPORTED,
+                                "MODULE_TYPE %s is not supported for EDK II, valid values are:\n %s" % (self._ModuleType,' '.join(l for l in SUP_MODULE_LIST)), 
+                                File=self.MetaFile, Line=LineNo)             
             if (self._Specification == None) or (not 'PI_SPECIFICATION_VERSION' in self._Specification) or (self._Specification['PI_SPECIFICATION_VERSION'] < 0x0001000A):
                 if self._ModuleType == SUP_MODULE_SMM_CORE:
                     EdkLogger.error("build", FORMAT_NOT_SUPPORTED, "SMM_CORE module type can't be used in the module with PI_SPECIFICATION_VERSION less than 0x0001000A", File=self.MetaFile)                
