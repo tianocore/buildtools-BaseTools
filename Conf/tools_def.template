@@ -3527,14 +3527,10 @@ RELEASE_ARMGCC_ARM_ASM_FLAGS   = $(ARCHASM_FLAGS) -mlittle-endian
 *_ARMGCC_ARM_VFRPP_FLAGS = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS)  -x c -E -P -DVFRCOMPILE --include $(DEST_DIR_DEBUG)/$(MODULE_NAME)StrDefs.h
 
 *_ARMGCC_ARM_SLINK_FLAGS =  -rc
-*_ARMGCC_ARM_DLINK_FLAGS =  $(ARCHDLINK_FLAGS)  --oformat=elf32-littlearm -nostdlib -u $(IMAGE_ENTRY_POINT) -e $(IMAGE_ENTRY_POINT) -Map $(DEST_DIR_DEBUG)/$(BASE_NAME).map
-#
-# Had to remove --emit-relocs to get compile working. Images don't work correctly (linked at 0, no relocations)
-# --emit-relocs
-#
+*_ARMGCC_ARM_DLINK_FLAGS =  $(ARCHDLINK_FLAGS)  --oformat=elf32-littlearm --emit-relocs -nostdlib -u $(IMAGE_ENTRY_POINT) -e $(IMAGE_ENTRY_POINT) -Map $(DEST_DIR_DEBUG)/$(BASE_NAME).map
 
-  DEBUG_ARMGCC_ARM_CC_FLAGS = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -mfpu=fpa -mlittle-endian -g -O2 -mabi=aapcs -mapcs -fno-short-enums -save-temps -combine -fsigned-char -fshort-wchar -fno-strict-aliasing -ffunction-sections -fdata-sections -Wall -Werror -Wno-missing-braces -fomit-frame-pointer -c -include AutoGen.h
-RELEASE_ARMGCC_ARM_CC_FLAGS = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -mfpu=fpa -mlittle-endian    -O2 -mabi=aapcs -mapcs -fno-short-enums -save-temps -combine -fsigned-char -fshort-wchar -fno-strict-aliasing -ffunction-sections -fdata-sections -Wall -Werror -Wno-missing-braces -fomit-frame-pointer -c -include AutoGen.h
+  DEBUG_ARMGCC_ARM_CC_FLAGS = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -mlittle-endian -g -O0 -mabi=aapcs -mapcs -fno-short-enums -save-temps -combine -fsigned-char -fshort-wchar -fno-strict-aliasing -ffunction-sections -fdata-sections -Wall -Werror -Wno-missing-braces -fomit-frame-pointer -c -include AutoGen.h
+RELEASE_ARMGCC_ARM_CC_FLAGS = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -mlittle-endian    -Os -mabi=aapcs -mapcs -fno-short-enums -save-temps -combine -fsigned-char -fshort-wchar -fno-strict-aliasing -ffunction-sections -fdata-sections -Wall -Werror -Wno-missing-braces -fomit-frame-pointer -c -include AutoGen.h
 
 #################
 # ASM 16 linker defintions
