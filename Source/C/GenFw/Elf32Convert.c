@@ -704,6 +704,8 @@ WriteSections32 (
   return TRUE;
 }
 
+UINTN gMovwOffset = 0;
+
 STATIC
 VOID
 WriteRelocations32 (
@@ -812,19 +814,18 @@ WriteRelocations32 (
               CoffAddFixup (
                 mCoffSectionsOffset[RelShdr->sh_info]
                 + (Rel->r_offset - SecShdr->sh_addr),
-                EFI_IMAGE_REL_BASED_ARM_THUMB_MOVW
+                EFI_IMAGE_REL_BASED_ARM_MOV32T
                 );
+
+              // PE/COFF treats MOVW/MOVT relocation as single 64-bit instruction
+              // Track this address so we can log an error for unsupported sequence of MOVW/MOVT
+              gMovwOffset = mCoffSectionsOffset[RelShdr->sh_info] + (Rel->r_offset - SecShdr->sh_addr);
               break;
 
             case R_ARM_THM_MOVT_ABS:
-              CoffAddFixup (
-                mCoffSectionsOffset[RelShdr->sh_info]
-                + (Rel->r_offset - SecShdr->sh_addr),
-                EFI_IMAGE_REL_BASED_ARM_THUMB_MOVT
-                );
-
-              // The relocation entry needs to contain the lower 16-bits so we can do math
-              CoffAddFixupEntry ((UINT16)(Sym->st_value - SymShdr->sh_addr + mCoffSectionsOffset[Sym->st_shndx]));
+              if ((gMovwOffset + 4) !=  (mCoffSectionsOffset[RelShdr->sh_info] + (Rel->r_offset - SecShdr->sh_addr))) {
+                Error (NULL, 0, 3000, "Not Supported", "PE/COFF requires MOVW+MOVT instruction sequence %x +4 != %x.", gMovwOffset, mCoffSectionsOffset[RelShdr->sh_info] + (Rel->r_offset - SecShdr->sh_addr));
+              }
               break;
 
             case R_ARM_ABS32:
