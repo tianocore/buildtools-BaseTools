@@ -18,6 +18,8 @@
 import Rule
 import os
 import shutil
+import StringIO
+from struct import *
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import Ffs
 import subprocess
@@ -583,6 +585,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         SectFiles = []
         SectAlignments = []
         Index = 1
+        HasGneratedFlag = False
         for Sect in Rule.SectionList:
             SecIndex = '%d' %Index
             SectList  = []
@@ -613,6 +616,51 @@ class FfsInfStatement(FfsInfStatementClassObject):
                 SectList, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, SecIndex, Rule.KeyStringList, self)
             else :
                 SectList, Align = Sect.GenSection(self.OutputPath , self.ModuleGuid, SecIndex, self.KeyStringList, self)
+            
+            if not HasGneratedFlag:
+                UniVfrOffsetFileSection = ""    
+                ModuleFileName = os.path.join(GenFdsGlobalVariable.WorkSpaceDir, self.InfFileName)
+                InfData = GenFdsGlobalVariable.WorkSpace.BuildObject[PathClass(ModuleFileName), self.CurrentArch]
+                #
+                # Search the source list in InfData to find if there are .vfr file exist.
+                #
+                VfrUniBaseName = {}
+                VfrUniOffsetList = []
+                for SourceFile in InfData.Sources:
+                    if SourceFile.Type.upper() == ".VFR" :
+                        #
+                        # search the .map file to find the offset of vfr binary in the PE32+/TE file. 
+                        #
+                        VfrUniBaseName[SourceFile.BaseName] = (SourceFile.BaseName + "Bin")
+                    if SourceFile.Type.upper() == ".UNI" :
+                        #
+                        # search the .map file to find the offset of Uni strings binary in the PE32+/TE file. 
+                        #
+                        VfrUniBaseName["UniOffsetName"] = (self.BaseName + "Strings")
+                    
+                
+                if len(VfrUniBaseName) > 0:
+                    VfrUniOffsetList = self.__GetBuildOutputMapFileVfrUniInfo(VfrUniBaseName)
+                    #
+                    # Generate the Raw data of raw section
+                    #
+                    os.path.join( self.OutputPath, self.BaseName + '.offset')
+                    UniVfrOffsetFileName    =  os.path.join( self.OutputPath, self.BaseName + '.offset')
+                    UniVfrOffsetFileSection =  os.path.join( self.OutputPath, self.BaseName + 'Offset' + '.raw')
+                    
+                    self.__GenUniVfrOffsetFile (VfrUniOffsetList, UniVfrOffsetFileName)
+                    
+                    UniVfrOffsetFileNameList = []
+                    UniVfrOffsetFileNameList.append(UniVfrOffsetFileName)
+                    """Call GenSection"""
+                    GenFdsGlobalVariable.GenerateSection(UniVfrOffsetFileSection,
+                                                         UniVfrOffsetFileNameList,
+                                                         "EFI_SECTION_RAW"
+                                                         )
+                    os.remove(UniVfrOffsetFileName)         
+                    SectList.append(UniVfrOffsetFileSection)
+                    HasGneratedFlag = True
+                
             for SecName in  SectList :
                 SectFiles.append(SecName)
                 SectAlignments.append(Align)
@@ -672,3 +720,98 @@ class FfsInfStatement(FfsInfStatementClassObject):
             result += ('-a', Rule.Alignment)
 
         return result
+ 
+    ## __GetBuildOutputMapFileVfrUniInfo() method
+    #
+    #   Find the offset of UNI/INF object offset in the EFI image file.
+    #
+    #   @param  self                  The object pointer
+    #   @param  VfrUniBaseName        A name list contain the UNI/INF object name.
+    #   @retval RetValue              A list contain offset of UNI/INF object.
+    #    
+    def __GetBuildOutputMapFileVfrUniInfo(self, VfrUniBaseName):
+        
+        RetValue = []
+        
+        MapFileName = self.EfiOutputPath + "\\" +self.BaseName + ".map"
+        try:
+            fInputfile = open(MapFileName, "r", 0)
+            try:
+                FileLinesList = fInputfile.readlines()
+            except:
+                EdkLogger.error("GenFds", FILE_READ_FAILURE, "File read failed for %s" %MapFileName,None)
+            finally:
+                fInputfile.close()
+        except:
+            EdkLogger.error("GenFds", FILE_OPEN_FAILURE, "File open failed for %s" %MapFileName,None)
+        
+        for eachLine in FileLinesList:
+            for eachName in VfrUniBaseName.values():
+                if eachLine.find(eachName) != -1:
+                    eachLine = eachLine.strip()
+                    Element  = eachLine.split()
+                    RetValue.append((eachName, Element[2]))
+        
+        return RetValue
+    
+    ## __GenUniVfrOffsetFile() method
+    #
+    #   Generate the offset file for the module which contain VFR or UNI file.
+    #
+    #   @param  self                    The object pointer
+    #   @param  VfrUniOffsetList        A list contain the VFR/UNI offsets in the EFI image file.
+    #   @param  UniVfrOffsetFileName    The output offset file name.
+    #
+    def __GenUniVfrOffsetFile(self, VfrUniOffsetList, UniVfrOffsetFileName):
+        
+        try:
+            fInputfile = open(UniVfrOffsetFileName, "wb+", 0)
+        except:
+            EdkLogger.error("GenFds", FILE_OPEN_FAILURE, "File open failed for %s" %UniVfrOffsetFileName,None)
+            
+        # Use a instance of StringIO to cache data
+        fStringIO = StringIO.StringIO('')  
+        
+        for Item in VfrUniOffsetList:
+            if (Item[0].find("Strings") != -1):
+                #
+                # UNI offset in image.
+                # GUID + Offset
+                # { 0x8913c5e0, 0x33f6, 0x4d86, { 0x9b, 0xf1, 0x43, 0xef, 0x89, 0xfc, 0x6, 0x66 } }
+                #
+                UniGuid = [0xe0, 0xc5, 0x13, 0x89, 0xf6, 0x33, 0x86, 0x4d, 0x9b, 0xf1, 0x43, 0xef, 0x89, 0xfc, 0x6, 0x66]
+                UniGuid = [chr(ItemGuid) for ItemGuid in UniGuid]
+                fStringIO.write(''.join(UniGuid))            
+                UniValue = pack ('Q', int (Item[1], 16))
+                fStringIO.write (UniValue)
+            else:
+                #
+                # VFR binary offset in image.
+                # GUID + Offset
+                # { 0xd0bc7cb4, 0x6a47, 0x495f, { 0xaa, 0x11, 0x71, 0x7, 0x46, 0xda, 0x6, 0xa2 } };
+                #
+                VfrGuid = [0xb4, 0x7c, 0xbc, 0xd0, 0x47, 0x6a, 0x5f, 0x49, 0xaa, 0x11, 0x71, 0x7, 0x46, 0xda, 0x6, 0xa2]
+                VfrGuid = [chr(ItemGuid) for ItemGuid in VfrGuid]
+                fStringIO.write(''.join(VfrGuid))                   
+                type (Item[1]) 
+                VfrValue = pack ('Q', int (Item[1], 16))
+                fStringIO.write (VfrValue)
+            
+        #
+        # write data into file.
+        #
+        try :  
+            fInputfile.write (fStringIO.getvalue())
+        except:
+            EdkLogger.error("GenFds", FILE_WRITE_FAILURE, "Write data to file %s failed, please check whether the file been locked or using by other applications." %UniVfrOffsetFileName,None)
+        
+        fStringIO.close ()
+        fInputfile.close ()
+        
+                
+                    
+            
+            
+        
+                                
+        
