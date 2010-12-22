@@ -733,7 +733,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         
         RetValue = []
         
-        MapFileName = self.EfiOutputPath + "\\" +self.BaseName + ".map"
+        MapFileName = os.path.join(self.EfiOutputPath, self.BaseName + ".map")
         try:
             fInputfile = open(MapFileName, "r", 0)
             try:
