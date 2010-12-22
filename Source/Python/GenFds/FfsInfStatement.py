@@ -19,6 +19,7 @@ import Rule
 import os
 import shutil
 import StringIO
+import platform
 from struct import *
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import Ffs
@@ -747,10 +748,17 @@ class FfsInfStatement(FfsInfStatementClassObject):
         
         for eachLine in FileLinesList:
             for eachName in VfrUniBaseName.values():
-                if eachLine.find(eachName) != -1:
-                    eachLine = eachLine.strip()
-                    Element  = eachLine.split()
-                    RetValue.append((eachName, Element[2]))
+                if platform.system() == "Windows":
+                    if eachLine.find(eachName) != -1:
+                        eachLine = eachLine.strip()
+                        Element  = eachLine.split()
+                        RetValue.append((eachName, Element[2]))
+                elif platform.system() == "Linux":
+                    if eachLine.find(eachName) != -1:
+                        eachLine = eachLine.strip()
+                        Element  = eachLine.split()
+                        if (len(Element) == 2) and Element[0].startswith("0x"):
+                            RetValue.append((eachName, Element[0]))
         
         return RetValue
     
