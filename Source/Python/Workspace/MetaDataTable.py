@@ -147,6 +147,9 @@ class Table(object):
             return False
         return True
 
+    def GetAll(self):
+        return self.Exec("select * from %s where ID > 0 order by ID" % (self.Table))
+
 ## TableFile
 #
 # This class defined a table used for file
@@ -198,19 +201,15 @@ class TableFile(Table):
     #
     # @retval FileID:       The ID after record is inserted
     #
-    def InsertFile(self, FileFullPath, Model):
-        (Filepath, Name) = os.path.split(FileFullPath)
-        (Root, Ext) = os.path.splitext(FileFullPath)
-        TimeStamp = os.stat(FileFullPath)[8]
-        File = FileClass(-1, Name, Ext, Filepath, FileFullPath, Model, '', [], [], [])
+    def InsertFile(self, File, Model):
         return self.Insert(
-            Name,
-            Ext,
-            Filepath,
-            FileFullPath,
-            Model,
-            TimeStamp
-            )
+                        File.Name,
+                        File.Ext,
+                        File.Dir,
+                        File.Path,
+                        Model,
+                        File.TimeStamp
+                        )
 
     ## Get ID of a given file
     #
@@ -218,8 +217,8 @@ class TableFile(Table):
     #
     #   @retval ID          ID value of given file in the table
     #
-    def GetFileId(self, FilePath):
-        QueryScript = "select ID from %s where FullPath = '%s'" % (self.Table, FilePath)
+    def GetFileId(self, File):
+        QueryScript = "select ID from %s where FullPath = '%s'" % (self.Table, str(File))
         RecordList = self.Exec(QueryScript)
         if len(RecordList) == 0:
             return None

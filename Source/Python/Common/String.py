@@ -210,9 +210,9 @@ def ReplaceMacros(StringList, MacroDefinitions={}, SelfReplacement = False):
 #
 # @retval string            The string whose macros are replaced
 #
-def ReplaceMacro(String, MacroDefinitions={}, SelfReplacement = False):
+def ReplaceMacro(String, MacroDefinitions={}, SelfReplacement=False, RaiseError=False):
     LastString = String
-    while MacroDefinitions:
+    while String and MacroDefinitions:
         MacroUsed = gMacroPattern.findall(String)
         # no macro found in String, stop replacing
         if len(MacroUsed) == 0:
@@ -220,6 +220,8 @@ def ReplaceMacro(String, MacroDefinitions={}, SelfReplacement = False):
 
         for Macro in MacroUsed:
             if Macro not in MacroDefinitions:
+                if RaiseError:
+                    raise Exception("%s not defined" % Macro)
                 if SelfReplacement:
                     String = String.replace("$(%s)" % Macro, '')
                 continue

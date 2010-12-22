@@ -22,9 +22,11 @@ gEcpSource = "EdkCompatibilityPkg"
 
 gOptions = None
 gCaseInsensitive = False
-gGlobalDefines = {}
 gAllFiles = None
 
+gGlobalDefines = {}
+gPlatformDefines = {}
+gCommandLineDefines = {}
 gEdkGlobal = {}
 gOverrideDir = {}
 

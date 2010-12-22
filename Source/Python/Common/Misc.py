@@ -156,7 +156,7 @@ def GuidStructureStringToGuidValueName(GuidValue):
     guidValueString = GuidValue.lower().replace("{", "").replace("}", "").replace(" ", "")
     guidValueList = guidValueString.split(",")
     if len(guidValueList) != 11:
-        EdkLogger.error(None, None, "Invalid GUID value string %s" % GuidValue)
+        EdkLogger.error(None, FORMAT_INVALID, "Invalid GUID value string [%s]" % GuidValue)
     return "%08x_%04x_%04x_%02x%02x_%02x%02x%02x%02x%02x%02x" % (
             int(guidValueList[0], 16),
             int(guidValueList[1], 16),
@@ -1402,6 +1402,9 @@ class PathClass(object):
             self._Key = self.Path.upper()   # + self.ToolChainFamily + self.TagName + self.ToolCode + self.Target
         return self._Key
 
+    def _GetTimeStamp(self):
+        return os.stat(self.Path)[8]
+
     def Validate(self, Type='', CaseSensitive=True):
         if GlobalData.gCaseInsensitive:
             CaseSensitive = False
@@ -1436,6 +1439,7 @@ class PathClass(object):
         return ErrorCode, ErrorInfo
 
     Key = property(_GetFileKey)
+    TimeStamp = property(_GetTimeStamp)
 
 ## Parse PE image to get the required PE informaion.
 #
