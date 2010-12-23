@@ -154,11 +154,11 @@ DEFINE DEFAULT_WIN_ASL_OUTFLAGS = DEF(IASL_OUTFLAGS)
 
 DEFINE MSFT_ASLPP_FLAGS        = /nologo /E /C /FIAutoGen.h
 DEFINE MSFT_ASLCC_FLAGS        = /nologo /c /FIAutoGen.h /TC /Dmain=ReferenceAcpiTable
-DEFINE MSFT_ASLDLINK_FLAGS     = /NODEFAULTLIB /ENTRY:ReferenceAcpiTable /SUBSYSTEM:EFI_BOOT_SERVICE_DRIVER
+DEFINE MSFT_ASLDLINK_FLAGS     = /NODEFAULTLIB /ENTRY:ReferenceAcpiTable /SUBSYSTEM:CONSOLE
 
 DEFINE ICC_WIN_ASLPP_FLAGS     = /nologo /E /C /FIAutoGen.h
 DEFINE ICC_WIN_ASLCC_FLAGS     = /nologo /c /FIAutoGen.h /TC /Dmain=ReferenceAcpiTable
-DEFINE ICC_WIN_ASLDLINK_FLAGS  = /NODEFAULTLIB /ENTRY:ReferenceAcpiTable /SUBSYSTEM:EFI_BOOT_SERVICE_DRIVER /NODEFAULTLIB:libmmt /NODEFAULTLIB:libirc
+DEFINE ICC_WIN_ASLDLINK_FLAGS  = /NODEFAULTLIB /ENTRY:ReferenceAcpiTable /SUBSYSTEM:CONSOLE /NODEFAULTLIB:libmmt /NODEFAULTLIB:libirc
 
 DEFINE IPHONE_TOOLS            = /Developer/Platforms/iPhoneOS.platform/Developer
 DEFINE RVCT31_TOOLS_PATH       = c:/Program Files/ARM/RVCT/Programs/3.1/569/win_32-pentium
@@ -3560,7 +3560,7 @@ RELEASE_ARMGCC_ARM_CC_FLAGS = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -mlittle-endian 
 # Asl Compiler definitions
 ##################
 *_*_*_ASLCC_FLAGS                  = /nologo /c /FIAutoGen.h /TC /Dmain=ReferenceAcpiTable
-*_*_*_ASLDLINK_FLAGS               = /NODEFAULTLIB /ENTRY:ReferenceAcpiTable /SUBSYSTEM:EFI_BOOT_SERVICE_DRIVER
+*_*_*_ASLDLINK_FLAGS               = /NODEFAULTLIB /ENTRY:ReferenceAcpiTable /SUBSYSTEM:CONSOLE
 *_*_*_ASLPP_FLAGS                  = /nologo /EP /C
 *_*_*_ASL_FLAGS                    =
 
