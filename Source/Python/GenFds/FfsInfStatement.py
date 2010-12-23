@@ -19,7 +19,6 @@ import Rule
 import os
 import shutil
 import StringIO
-import platform
 from struct import *
 from GenFdsGlobalVariable import GenFdsGlobalVariable
 import Ffs
@@ -746,19 +745,30 @@ class FfsInfStatement(FfsInfStatementClassObject):
         except:
             EdkLogger.error("GenFds", FILE_OPEN_FAILURE, "File open failed for %s" %MapFileName,None)
         
+        IsHex = False
         for eachLine in FileLinesList:
             for eachName in VfrUniBaseName.values():
-                if platform.system() == "Windows":
-                    if eachLine.find(eachName) != -1:
-                        eachLine = eachLine.strip()
-                        Element  = eachLine.split()
-                        RetValue.append((eachName, Element[2]))
-                elif platform.system() == "Linux":
-                    if eachLine.find(eachName) != -1:
-                        eachLine = eachLine.strip()
-                        Element  = eachLine.split()
-                        if (len(Element) == 2) and Element[0].startswith("0x"):
-                            RetValue.append((eachName, Element[0]))
+                if eachLine.find(eachName) != -1:
+                    eachLine = eachLine.strip()
+                    Element  = eachLine.split()
+                    #
+                    # MSFT/ICC/EBC map file
+                    #
+                    if (len(Element) == 4):
+                        try:
+                            int (Element[2], 16)
+                            IsHex = True
+                        except:
+                            IsHex = False
+                    
+                        if IsHex:
+                            RetValue.append((eachName, Element[2]))
+                            IsHex = False
+                    #
+                    # GCC map file
+                    #
+                    elif (len(Element) == 2) and Element[0].startswith("0x"):
+                        RetValue.append((eachName, Element[0]))
         
         return RetValue
     
