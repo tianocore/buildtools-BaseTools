@@ -1,6 +1,6 @@
 /** @file
 
-Copyright (c) 2004 - 2010, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2004 - 2011, Intel Corporation. All rights reserved.<BR>
 This program and the accompanying materials
 are licensed and made available under the terms and conditions of the BSD License
 which accompanies this distribution.  The full text of the license may be found at
@@ -2230,7 +2230,7 @@ Returns:
     // Output bin data from exe file
     //
     FileLength = FileLength - PeHdr->Pe32.OptionalHeader.SizeOfHeaders;
-    memcpy (FileBuffer, FileBuffer + PeHdr->Pe32.OptionalHeader.SizeOfHeaders, FileLength);
+    memmove (FileBuffer, FileBuffer + PeHdr->Pe32.OptionalHeader.SizeOfHeaders, FileLength);
     VerboseMsg ("the size of output file is %u bytes", (unsigned) FileLength);
     goto WriteFile;
   }
@@ -2292,7 +2292,7 @@ Returns:
         //
         // Output Apci data to file
         //
-        memcpy (FileBuffer, FileBuffer + SectionHeader->PointerToRawData, FileLength);
+        memmove (FileBuffer, FileBuffer + SectionHeader->PointerToRawData, FileLength);
         VerboseMsg ("the size of output file is %u bytes", (unsigned) FileLength);
         goto WriteFile;
       }
@@ -2622,7 +2622,7 @@ Returns:
     // Update Image to TeImage
     //
     FileLength = FileLength - TEImageHeader.StrippedSize;
-    memcpy (FileBuffer + sizeof (EFI_TE_IMAGE_HEADER), FileBuffer + TEImageHeader.StrippedSize, FileLength);
+    memmove (FileBuffer + sizeof (EFI_TE_IMAGE_HEADER), FileBuffer + TEImageHeader.StrippedSize, FileLength);
     FileLength = FileLength + sizeof (EFI_TE_IMAGE_HEADER);
     memcpy (FileBuffer, &TEImageHeader, sizeof (EFI_TE_IMAGE_HEADER));
     VerboseMsg ("the size of output file is %u bytes", (unsigned) (FileLength));
