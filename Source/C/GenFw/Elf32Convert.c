@@ -1,6 +1,6 @@
 /** @file
 
-Copyright (c) 2010, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2010 - 2011, Intel Corporation. All rights reserved.<BR>
 
 This program and the accompanying materials are licensed and made available
 under the terms and conditions of the BSD License which accompanies this
@@ -263,6 +263,7 @@ ScanSections32 (
   EFI_IMAGE_DOS_HEADER            *DosHdr;
   EFI_IMAGE_OPTIONAL_HEADER_UNION *NtHdr;
   UINT32                          CoffEntry;
+  UINT32                          SectionCount;
 
   CoffEntry = 0;
   mCoffOffset = 0;
@@ -291,6 +292,7 @@ ScanSections32 (
   //
   mCoffOffset = CoffAlign(mCoffOffset);
   mTextOffset = mCoffOffset;
+  SectionCount = 0;
   for (i = 0; i < mEhdr->e_shnum; i++) {
     Elf_Shdr *shdr = GetShdrByIndex(i);
     if (IsTextShdr(shdr)) {
@@ -315,6 +317,7 @@ ScanSections32 (
       }
       mCoffSectionsOffset[i] = mCoffOffset;
       mCoffOffset += shdr->sh_size;
+      SectionCount ++;
     }
   }
 
@@ -322,10 +325,15 @@ ScanSections32 (
     mCoffOffset = CoffAlign(mCoffOffset);
   }
 
+  if (SectionCount > 1 && mOutImageType == FW_EFI_IMAGE) {
+    Warning (NULL, 0, 0, NULL, "Mulitple sections in %s are merged into 1 text section. Source level debug might not work correctly.", mInImageName);
+  }
+
   //
   //  Then data sections.
   //
   mDataOffset = mCoffOffset;
+  SectionCount = 0;
   for (i = 0; i < mEhdr->e_shnum; i++) {
     Elf_Shdr *shdr = GetShdrByIndex(i);
     if (IsDataShdr(shdr)) {
@@ -344,9 +352,14 @@ ScanSections32 (
       }
       mCoffSectionsOffset[i] = mCoffOffset;
       mCoffOffset += shdr->sh_size;
+      SectionCount ++;
     }
   }
   mCoffOffset = CoffAlign(mCoffOffset);
+
+  if (SectionCount > 1 && mOutImageType == FW_EFI_IMAGE) {
+    Warning (NULL, 0, 0, NULL, "Mulitple sections in %s are merged into 1 data section. Source level debug might not work correctly.", mInImageName);
+  }
 
   //
   //  The HII resource sections.

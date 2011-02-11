@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2006 - 2010, Intel Corporation. All rights reserved.<BR>
+#  Copyright (c) 2006 - 2011, Intel Corporation. All rights reserved.<BR>
 #  Portions copyright (c) 2008 - 2009, Apple Inc. All rights reserved.<BR>
 #
 #  This program and the accompanying materials
@@ -1598,10 +1598,10 @@ DEFINE GCC_IPF_RC_FLAGS            = -I binary -O elf64-ia64-little -B ia64 --re
 DEFINE GCC44_ALL_CC_FLAGS            = -g -fshort-wchar -fno-stack-protector -fno-strict-aliasing -Wall -Werror -Wno-missing-braces -Wno-array-bounds -ffunction-sections -fdata-sections -c -include AutoGen.h -DSTRING_ARRAY_NAME=$(BASE_NAME)Strings
 DEFINE GCC44_IA32_CC_FLAGS           = DEF(GCC44_ALL_CC_FLAGS) -m32 -malign-double -D EFI32
 DEFINE GCC44_X64_CC_FLAGS            = DEF(GCC44_ALL_CC_FLAGS) -m64 "-DEFIAPI=__attribute__((ms_abi))" -DNO_BUILTIN_VA_FUNCS -mno-red-zone -Wno-address -mcmodel=large
-DEFINE GCC44_IA32_X64_DLINK_COMMON   = -nostdlib -n -q --gc-sections
+DEFINE GCC44_IA32_X64_DLINK_COMMON   = -nostdlib -n -q --gc-sections --script=$(EDK_TOOLS_PATH)/Scripts/gcc4.4-ld-script
 DEFINE GCC44_IA32_X64_ASLDLINK_FLAGS = DEF(GCC44_IA32_X64_DLINK_COMMON) --entry ReferenceAcpiTable -u ReferenceAcpiTable
 DEFINE GCC44_IA32_X64_DLINK_FLAGS    = DEF(GCC44_IA32_X64_DLINK_COMMON) --entry $(IMAGE_ENTRY_POINT) -u $(IMAGE_ENTRY_POINT) -Map $(DEST_DIR_DEBUG)/$(BASE_NAME).map
-DEFINE GCC44_X64_DLINK_FLAGS         = DEF(GCC44_IA32_X64_DLINK_FLAGS)  -melf_x86_64 --oformat=elf64-x86-64 --script=$(EDK_TOOLS_PATH)/Scripts/gcc4.4-ld-script
+DEFINE GCC44_X64_DLINK_FLAGS         = DEF(GCC44_IA32_X64_DLINK_FLAGS)  -melf_x86_64 --oformat=elf64-x86-64
 DEFINE GCC44_ASM_FLAGS               = DEF(GCC_ASM_FLAGS)
 
 DEFINE GCC45_IA32_CC_FLAGS           = DEF(GCC44_IA32_CC_FLAGS)
@@ -1720,6 +1720,7 @@ DEFINE GCC45_ASM_FLAGS               = DEF(GCC44_ASM_FLAGS)
 ##################
 # GCC44 IA32 definitions
 ##################
+*_GCC44_IA32_OBJCOPY_PATH         = DEF(GCC44_IA32_PREFIX)objcopy
 *_GCC44_IA32_CC_PATH              = DEF(GCC44_IA32_PREFIX)gcc
 *_GCC44_IA32_SLINK_PATH           = DEF(GCC44_IA32_PREFIX)ar
 *_GCC44_IA32_DLINK_PATH           = DEF(GCC44_IA32_PREFIX)ld
@@ -1737,10 +1738,12 @@ DEFINE GCC45_ASM_FLAGS               = DEF(GCC44_ASM_FLAGS)
 *_GCC44_IA32_CC_FLAGS             = DEF(GCC44_IA32_CC_FLAGS) -Os
 *_GCC44_IA32_DLINK_FLAGS          = DEF(GCC44_IA32_X64_DLINK_FLAGS) -m elf_i386 --oformat=elf32-i386
 *_GCC44_IA32_RC_FLAGS             = DEF(GCC_IA32_RC_FLAGS)
+*_GCC44_IA32_OBJCOPY_FLAGS        = 
 
 ##################
 # GCC44 X64 definitions
 ##################
+*_GCC44_X64_OBJCOPY_PATH         = DEF(GCC44_X64_PREFIX)objcopy
 *_GCC44_X64_CC_PATH              = DEF(GCC44_X64_PREFIX)gcc
 *_GCC44_X64_SLINK_PATH           = DEF(GCC44_X64_PREFIX)ar
 *_GCC44_X64_DLINK_PATH           = DEF(GCC44_X64_PREFIX)ld
@@ -1758,7 +1761,7 @@ DEFINE GCC45_ASM_FLAGS               = DEF(GCC44_ASM_FLAGS)
 *_GCC44_X64_CC_FLAGS             = DEF(GCC44_X64_CC_FLAGS)
 *_GCC44_X64_DLINK_FLAGS          = DEF(GCC44_X64_DLINK_FLAGS)
 *_GCC44_X64_RC_FLAGS             = DEF(GCC_X64_RC_FLAGS)
-
+*_GCC44_X64_OBJCOPY_FLAGS        = 
 
 ####################################################################################
 #
@@ -1782,6 +1785,7 @@ DEFINE GCC45_ASM_FLAGS               = DEF(GCC44_ASM_FLAGS)
 ##################
 # GCC45 IA32 definitions
 ##################
+*_GCC45_IA32_OBJCOPY_PATH         = DEF(GCC45_IA32_PREFIX)objcopy
 *_GCC45_IA32_CC_PATH              = DEF(GCC45_IA32_PREFIX)gcc
 *_GCC45_IA32_SLINK_PATH           = DEF(GCC45_IA32_PREFIX)ar
 *_GCC45_IA32_DLINK_PATH           = DEF(GCC45_IA32_PREFIX)ld
@@ -1799,10 +1803,12 @@ DEFINE GCC45_ASM_FLAGS               = DEF(GCC44_ASM_FLAGS)
 *_GCC45_IA32_CC_FLAGS             = DEF(GCC45_IA32_CC_FLAGS) -Os
 *_GCC45_IA32_DLINK_FLAGS          = DEF(GCC45_IA32_X64_DLINK_FLAGS) -m elf_i386 --oformat=elf32-i386
 *_GCC45_IA32_RC_FLAGS             = DEF(GCC_IA32_RC_FLAGS)
+*_GCC45_IA32_OBJCOPY_FLAGS        = 
 
 ##################
 # GCC45 X64 definitions
 ##################
+*_GCC45_X64_OBJCOPY_PATH         = DEF(GCC45_X64_PREFIX)objcopy
 *_GCC45_X64_CC_PATH              = DEF(GCC45_X64_PREFIX)gcc
 *_GCC45_X64_SLINK_PATH           = DEF(GCC45_X64_PREFIX)ar
 *_GCC45_X64_DLINK_PATH           = DEF(GCC45_X64_PREFIX)ld
@@ -1820,7 +1826,7 @@ DEFINE GCC45_ASM_FLAGS               = DEF(GCC44_ASM_FLAGS)
 *_GCC45_X64_CC_FLAGS             = DEF(GCC45_X64_CC_FLAGS)
 *_GCC45_X64_DLINK_FLAGS          = DEF(GCC45_X64_DLINK_FLAGS)
 *_GCC45_X64_RC_FLAGS             = DEF(GCC_X64_RC_FLAGS)
-
+*_GCC45_X64_OBJCOPY_FLAGS        = 
 
 ####################################################################################
 #
