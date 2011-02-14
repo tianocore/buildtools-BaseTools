@@ -316,16 +316,17 @@ class UniFileClassObject(object):
             FindFlag = Line.find(u'//')
             if FindFlag != -1:
                 Line = Line.replace(Line[FindFlag:], u' ')
-                Line = Line + FileIn[LineCount]
-                FileIn[LineCount-1] = Line
-                FileIn[LineCount] = os.linesep
-                LineCount -= 1
-                for Index in xrange (LineCount + 1, len (FileIn) - 1):
-                    if (Index == len(FileIn) -1):
-                        FileIn[Index] = os.linesep
-                    else:
-                        FileIn[Index] = FileIn[Index + 1]
-                continue
+                if FileIn[LineCount].strip().startswith('#language'):
+                    Line = Line + FileIn[LineCount]
+                    FileIn[LineCount-1] = Line
+                    FileIn[LineCount] = os.linesep
+                    LineCount -= 1
+                    for Index in xrange (LineCount + 1, len (FileIn) - 1):
+                        if (Index == len(FileIn) -1):
+                            FileIn[Index] = os.linesep
+                        else:
+                            FileIn[Index] = FileIn[Index + 1]
+                    continue
                               
             Line = Line.replace(u'/langdef', u'#langdef')
             Line = Line.replace(u'/string', u'#string')
