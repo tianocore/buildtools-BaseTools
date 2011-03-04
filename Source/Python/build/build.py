@@ -102,7 +102,8 @@ def CheckEnvVariable():
     #
     # Check EFI_SOURCE (R8 build convention). EDK_SOURCE will always point to ECP
     #
-    os.environ["ECP_SOURCE"] = os.path.join(WorkspaceDir, GlobalData.gEdkCompatibilityPkg)
+    if "ECP_SOURCE" not in os.environ:
+        os.environ["ECP_SOURCE"] = os.path.join(WorkspaceDir, GlobalData.gEdkCompatibilityPkg)
     if "EFI_SOURCE" not in os.environ:
         os.environ["EFI_SOURCE"] = os.environ["ECP_SOURCE"]
     if "EDK_SOURCE" not in os.environ:
