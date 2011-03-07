@@ -40,7 +40,37 @@ gHumanReadableVerPatt = re.compile(r'([1-9][0-9]*|0)\.[0-9]{1,2}$')
 # @retval list() A list for splitted string
 #
 def GetSplitValueList(String, SplitTag = DataType.TAB_VALUE_SPLIT, MaxSplit = -1):
-    return map(lambda l: l.strip(), String.split(SplitTag, MaxSplit))
+    ValueList = []
+    Last = 0
+    Escaped = False
+    InString = False
+    for Index in range(0, len(String)):
+        Char = String[Index]
+
+        if not Escaped:
+            # Found a splitter not in a string, split it
+            if not InString and Char == SplitTag:
+                ValueList.append(String[Last:Index].strip())
+                Last = Index+1
+                if MaxSplit > 0 and len(ValueList) >= MaxSplit:
+                    break
+
+            if Char == '\\' and InString:
+                Escaped = True
+            elif Char == '"':
+                if not InString:
+                    InString = True
+                else:
+                    InString = False
+        else:
+            Escaped = False
+
+    if Last < len(String):
+        ValueList.append(String[Last:].strip())
+    elif Last == len(String):
+        ValueList.append('')
+
+    return ValueList
 
 ## MergeArches
 #
