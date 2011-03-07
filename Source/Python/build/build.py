@@ -1606,6 +1606,11 @@ def ParseDefines(DefineList=[]):
     if DefineList != None:
         for Define in DefineList:
             DefineTokenList = Define.split("=", 1)
+            if not GlobalData.gMacroNamePattern.match(DefineTokenList[0]):
+                EdkLogger.error('build', FORMAT_INVALID,
+                                "The macro name must be in the pattern [A-Z][A-Z0-9_]*",
+                                ExtraData=DefineTokenList[0])
+                
             if len(DefineTokenList) == 1:
                 DefineDict[DefineTokenList[0]] = ""
             else:

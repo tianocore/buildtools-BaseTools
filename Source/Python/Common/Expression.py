@@ -12,35 +12,47 @@
 
 ## Import Modules
 #
-import sys
-import os
 import re
-import traceback
 
-class EvaluationException(Exception):
-    pass
-
-class BadExpression(EvaluationException):
-    pass
-
-class SymbolNotFound(EvaluationException):
-    pass
+from CommonDataClass.Exceptions import *
+from Common.GlobalData import *
 
 # Constants
 TRUE    = 1
 FALSE   = 0
+true    = 1
+false   = 0
 
 class ValueExpression(object):
     #
     # Pattern to match $(MACRO) or gTokenSpaceGuid.gPcdCName
     #
-    SymbolPattern = re.compile("(\$\([A-Z_][A-Z0-9_]*\)|\$\(\w+\.\w+\)|\w+\.\w+)")
-
-    # Wide string pattern in C
-    WideStringPattern = re.compile('(\W|\A)L"')
+    SymbolPattern = re.compile("("
+                                 "\$\([A-Z][A-Z0-9_]*\)|\$\(\w+\.\w+\)|\w+\.\w+|"
+                                 "&&|\|\||!(?!=)|"
+                                 "(?<=\W)AND(?=\W)|(?<=\W)OR(?=\W)|(?<=\W)NOT(?=\W)|(?<=\W)XOR(?=\W)|"
+                                 "(?<=\W)EQ(?=\W)|(?<=\W)NE(?=\W)|(?<=\W)GT(?=\W)|(?<=\W)LT(?=\W)|(?<=\W)GE(?=\W)|(?<=\W)LE(?=\W)"
+                               ")")
 
     # Data array pattern
     DataArrayPattern = re.compile('^\{([^{}]*)\}$')
+
+    # Logical operator mapping
+    LogicalOperators = {
+        '&&' : ' and ',
+        '||' : ' or ',
+        '!'  : ' not ',
+        'AND': 'and',
+        'OR' : 'or',
+        'NOT': 'not',
+        'XOR': '^',
+        'EQ' : '==',
+        'NE' : '!=',
+        'GT' : '>',
+        'LT' : '<',
+        'GE' : '>=',
+        'LE' : '<=',
+    }
 
     ## Constructor
     #
@@ -51,6 +63,8 @@ class ValueExpression(object):
         self._Expression = Expression
         self._SymbolTable = SymbolTable
         self._Value = None
+        # To support C-style and AND/OR/NOT/XOR/EQ/NE/GT/LT/GE/LE logical operators
+        self._SymbolTable.update(self.LogicalOperators)
 
     def __str__(self):
         return self._Expression
@@ -72,7 +86,7 @@ class ValueExpression(object):
             except SymbolNotFound, Excpt:
                 raise
             except Exception, Excpt:
-                raise BadExpression(str(Excpt))
+                raise BadExpression("syntax error")
         return self._Value
 
     def _IsString(self):
@@ -104,36 +118,38 @@ class ValueExpression(object):
     def _Replace(self):
         Expression = self._Expression
         while True:
-            Symbols = {}
+            Symbols = []
             for SymbolMatch in self.SymbolPattern.finditer(Expression):
                 # The enclosed $() will be removed
                 Symbol = SymbolMatch.group(0)
                 if Symbol.startswith('$('):
                     Symbol = Symbol[2:-1]
-                Symbols[Symbol] = SymbolMatch
+                Symbols.append((Symbol, SymbolMatch))
 
             if not Symbols:
                 break
 
             ExpressionParts = []
             Last = 0
-            for Symbol in Symbols:
+            for Symbol,SymbolMatch in Symbols:
                 if Symbol not in self._SymbolTable:
                     raise SymbolNotFound(Symbol)
     
-                SymbolMatch = Symbols[Symbol]
                 ExpressionParts.append(self._Expression[Last:SymbolMatch.start()])
                 ExpressionParts.append(self._SymbolTable[Symbol])
                 Last = SymbolMatch.end()
     
             ExpressionParts.append(self._Expression[Last:])
             Expression = ''.join(ExpressionParts)
+            if Expression == self._Expression:
+                # Nothing is replaced?
+                break
         # 
         # Since we use python interpreter to do the evaluation, we have to convert
         # all unicode strings in the expression to python way, as the last step
         # of macro replacement
         #
-        return self.WideStringPattern.sub('\\1u"', Expression)
+        return gWideStringPattern.sub('\\1u"', Expression)
 
 if __name__ == '__main__':
     pass

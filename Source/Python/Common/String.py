@@ -22,6 +22,7 @@ import EdkLogger as EdkLogger
 
 from GlobalData import *
 from BuildToolError import *
+from CommonDataClass.Exceptions import *
 
 gHexVerPatt = re.compile('0x[a-f0-9]{4}[a-f0-9]{4}$',re.IGNORECASE)
 gHumanReadableVerPatt = re.compile(r'([1-9][0-9]*|0)\.[0-9]{1,2}$')
@@ -213,7 +214,7 @@ def ReplaceMacros(StringList, MacroDefinitions={}, SelfReplacement = False):
 def ReplaceMacro(String, MacroDefinitions={}, SelfReplacement=False, RaiseError=False):
     LastString = String
     while String and MacroDefinitions:
-        MacroUsed = gMacroPattern.findall(String)
+        MacroUsed = gMacroRefPattern.findall(String)
         # no macro found in String, stop replacing
         if len(MacroUsed) == 0:
             break
@@ -221,7 +222,7 @@ def ReplaceMacro(String, MacroDefinitions={}, SelfReplacement=False, RaiseError=
         for Macro in MacroUsed:
             if Macro not in MacroDefinitions:
                 if RaiseError:
-                    raise Exception("%s not defined" % Macro)
+                    raise SymbolNotFound("%s not defined" % Macro)
                 if SelfReplacement:
                     String = String.replace("$(%s)" % Macro, '')
                 continue

@@ -27,10 +27,9 @@ from Common.DataType import *
 from Common.String import *
 from Common.Misc import GuidStructureStringToGuidString, CheckPcdDatum, PathClass, AnalyzePcdData
 from Common.Expression import *
+from CommonDataClass.Exceptions import *
 
 from MetaFileTable import MetaFileStorage
-
-gMacroDefPattern = re.compile("^(DEFINE|EDK_GLOBAL)[ \t]+")
 
 ## A decorator used to parse macro definition
 def ParseMacro(Parser):
@@ -47,14 +46,17 @@ def ParseMacro(Parser):
             EdkLogger.error('Parser', FORMAT_INVALID, "No macro name given",
                             ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
         if len(TokenList) < 2:
-            EdkLogger.error('Parser', FORMAT_INVALID, "No macro value given",
-                            ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
+            TokenList.append('')
 
         Type = Match.group(1)
         Name, Value = TokenList
         # Global macros can be only defined via environment variable
         if Name in GlobalData.gGlobalDefines:
             EdkLogger.error('Parser', FORMAT_INVALID, "%s can only be defined via environment variable" % Name,
+                            ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
+        # Only upper case letters, digit and '_' are allowed
+        if not gMacroNamePattern.match(Name):
+            EdkLogger.error('Parser', FORMAT_INVALID, "The macro name must be in the pattern [A-Z][A-Z0-9_]*",
                             ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
 
         self._ItemType = self.DataType[Type]
@@ -701,8 +703,6 @@ class DscParser(MetaFileParser):
 
     ## Parser starter
     def Start(self):
-        self._Symbols.update(self._Macros)
-
         Content = ''
         try:
             Content = open(str(self.MetaFile), 'r').readlines()
@@ -724,7 +724,7 @@ class DscParser(MetaFileParser):
             if Line[0] == TAB_SECTION_START and Line[-1] == TAB_SECTION_END:
                 self._SectionType = MODEL_META_DATA_SECTION_HEADER
             # subsection ending
-            elif Line[0] == '}':
+            elif Line[0] == '}' and self._InSubsection:
                 self._InSubsection = False
                 self._SubsectionType = MODEL_UNKNOWN
                 self._SubsectionName = ''
@@ -788,12 +788,6 @@ class DscParser(MetaFileParser):
 
     ## Directive statement parser
     def _DirectiveParser(self):
-        if self._From > 0:
-            EdkLogger.error('Parser', FORMAT_INVALID,
-                            "No directive allowed in included file",
-                            ExtraData=self._CurrentLine, File=self.MetaFile, 
-                            Line=self._LineIndex+1)
-
         self._ValueList = ['','','']
         TokenList = GetSplitValueList(self._CurrentLine, ' ', 1)
         self._ValueList[0:len(TokenList)] = TokenList
@@ -831,6 +825,11 @@ class DscParser(MetaFileParser):
                                 File=self.MetaFile, Line=self._LineIndex+1,
                                 ExtraData=self._CurrentLine)
             self._DirectiveStack.append((ItemType, self._LineIndex+1, self._CurrentLine))
+        elif self._From > 0:
+            EdkLogger.error('Parser', FORMAT_INVALID,
+                            "No '!include' allowed in included file",
+                            ExtraData=self._CurrentLine, File=self.MetaFile, 
+                            Line=self._LineIndex+1)
 
         #
         # Model, Value1, Value2, Value3, Arch, ModuleType, BelongsToItem=-1, BelongsToFile=-1,
@@ -1042,14 +1041,19 @@ class DscParser(MetaFileParser):
                 # Only catch expression evalution error here. We need to report
                 # the precise number of line on which the error occured
                 #
-                EdkLogger.error('Parser', FORMAT_INVALID, "Invalid expression",
-                                File=self._FileWithError, ExtraData=str(Excpt), 
+                EdkLogger.error('Parser', FORMAT_INVALID, "Invalid expression: %s" % str(Excpt),
+                                File=self._FileWithError, ExtraData=' '.join(self._ValueList), 
+                                Line=self._LineIndex+1)
+            except MacroException, Excpt:
+                EdkLogger.error('Parser', FORMAT_INVALID, str(Excpt),
+                                File=self._FileWithError, ExtraData=' '.join(self._ValueList), 
                                 Line=self._LineIndex+1)
 
             if self._ValueList == None:
                 continue 
 
             NewOwner = self._IdMapping.get(Owner, -1)
+            self._Enabled = int((not self._DirectiveEvalStack) or (False not in self._DirectiveEvalStack))
             self._LastItem = self._Store(
                                 self._ItemType,
                                 self._ValueList[0],
@@ -1063,7 +1067,7 @@ class DscParser(MetaFileParser):
                                 -1,
                                 self._LineIndex+1,
                                 -1,
-                                int((not self._DirectiveEvalStack) or (False not in self._DirectiveEvalStack))
+                                self._Enabled
                                 )
             self._IdMapping[Id] = self._LastItem
 
@@ -1114,6 +1118,9 @@ class DscParser(MetaFileParser):
             self._Symbols[Name] = Value
 
     def __ProcessDefine(self):
+        if not self._Enabled:
+            return
+
         Type, Name, Value = self._ValueList
         Value = ReplaceMacro(Value, self._Macros, False)
         if self._ItemType == MODEL_META_DATA_DEFINE:
@@ -1164,6 +1171,7 @@ class DscParser(MetaFileParser):
                 Directive = self._DirectiveStack.pop()
                 if Directive in [MODEL_META_DATA_CONDITIONAL_STATEMENT_IF,
                                  MODEL_META_DATA_CONDITIONAL_STATEMENT_IFDEF,
+                                 MODEL_META_DATA_CONDITIONAL_STATEMENT_ELSE,
                                  MODEL_META_DATA_CONDITIONAL_STATEMENT_IFNDEF]:
                     break
         elif self._ItemType == MODEL_META_DATA_INCLUDE:
@@ -1212,7 +1220,7 @@ class DscParser(MetaFileParser):
         self._ValueList[1] = ReplaceMacro(self._ValueList[1], self._Macros, RaiseError=True)
 
     def __ProcessPcd(self):
-        self._ValueList[2] = ReplaceMacro(self._ValueList[2], self._Macros)
+        self._ValueList[2] = str(ValueExpression(self._ValueList[2], self._Macros)())
 
     def __ProcessComponent(self):
         self._ValueList[0] = ReplaceMacro(self._ValueList[0], self._Macros)
