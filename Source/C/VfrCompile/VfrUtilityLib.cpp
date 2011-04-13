@@ -622,6 +622,9 @@ CVfrVarDataTypeDB::ExtractFieldNameAndArrary (
     if (*VarStr == ']') {
       VarStr++;
     }
+    if (*VarStr == '.') {
+      VarStr++;
+    }
     return VFR_RETURN_SUCCESS;
   case ']':
     return VFR_RETURN_DATA_STRING_ERROR;
