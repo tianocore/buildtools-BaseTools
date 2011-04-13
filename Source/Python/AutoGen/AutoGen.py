@@ -1,7 +1,7 @@
 ## @file
 # Generate AutoGen.h, AutoGen.c and *.depex files
 #
-# Copyright (c) 2007 - 2010, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2007 - 2011, Intel Corporation. All rights reserved.<BR>
 # This program and the accompanying materials
 # are licensed and made available under the terms and conditions of the BSD License
 # which accompanies this distribution.  The full text of the license may be found at
@@ -52,6 +52,39 @@ gAutoGenHeaderFileName = "AutoGen.h"
 gAutoGenStringFileName = "%(module_name)sStrDefs.h"
 gAutoGenStringFormFileName = "%(module_name)sStrDefs.hpk"
 gAutoGenDepexFileName = "%(module_name)s.depex"
+
+#
+# Template string to generic AsBuilt INF
+#
+gAsBuiltInfHeaderString = TemplateString("""## @file
+# ${module_name}
+#
+# DO NOT EDIT
+# FILE auto-generated Binary INF
+#
+##
+
+[Defines]
+  INF_VERSION                = 0x00010016
+  BASE_NAME                  = ${module_name}
+  FILE_GUID                  = ${module_guid}
+  MODULE_TYPE                = ${module_module_type}
+  VERSION_STRING             = ${module_version_string}${BEGIN}
+  UEFI_SPECIFICATION_VERSION = ${module_uefi_specification_version}${END}${BEGIN}
+  PI_SPECIFICATION_VERSION   = ${module_pi_specification_version}${END}
+
+[Packages]${BEGIN}
+  ${package_item}${END}
+
+[Binaries.${module_arch}]${BEGIN}
+  ${binary_item}${END}
+
+[PcdEx]${BEGIN}
+  ${pcd_item}${END}
+
+## @AsBuilt${BEGIN}
+##   ${flags_item}${END}
+""")
 
 ## Base class for AutoGen
 #
@@ -540,6 +573,7 @@ class PlatformAutoGen(AutoGen):
                 Ma = ModuleAutoGen(self.Workspace, ModuleFile, self.BuildTarget,
                                    self.ToolChain, self.Arch, self.MetaFile)
                 Ma.CreateMakeFile(True)
+                Ma.CreateAsBuiltInf()
 
         # no need to create makefile for the platform more than once
         if self.IsMakeFileCreated:
@@ -1642,6 +1676,8 @@ class ModuleAutoGen(AutoGen):
 
         self.IsMakeFileCreated = False
         self.IsCodeFileCreated = False
+        self.IsAsBuiltInfCreated = False
+        self.DepexGenerated = False
 
         self.BuildDatabase = self.Workspace.BuildDatabase
 
@@ -2260,6 +2296,107 @@ class ModuleAutoGen(AutoGen):
                         self._IncludePathList.append(str(Inc))
         return self._IncludePathList
 
+    ## Create AsBuilt INF file the module
+    #
+    def CreateAsBuiltInf(self):
+        if self.IsAsBuiltInfCreated:
+            return
+            
+        # Skip the following code for EDK I inf
+        if self.AutoGenVersion < 0x00010005:
+            return
+            
+        # Skip the following code for libraries
+        if self.IsLibrary:
+            return
+            
+        # Skip the following code for modules with no source files
+        if self.SourceFileList == None or self.SourceFileList == []:
+            return
+
+        # Skip the following code for modules without any binary files
+        if self.BinaryFileList <> None and self.BinaryFileList <> []:
+            return
+            
+        ### TODO: How to handles mixed source and binary modules
+
+        # Find all DynamicEx PCDs used by this module and dependent libraries
+        # Also find all packages that the DynamicEx PCDs depend on
+        Pcds = []
+        Packages = []        
+        for Pcd in self.ModulePcdList + self.LibraryPcdList:
+          if Pcd.Type in GenC.gDynamicExPcd:
+            if Pcd not in Pcds:
+              Pcds += [Pcd]
+            for Package in self.DerivedPackageList:
+              if Package not in Packages:
+                if (Pcd.TokenCName, Pcd.TokenSpaceGuidCName, 'DynamicEx') in Package.Pcds:
+                  Packages += [Package]
+                elif (Pcd.TokenCName, Pcd.TokenSpaceGuidCName, 'Dynamic') in Package.Pcds:
+                  Packages += [Package]
+
+        ModuleType = self.ModuleType
+        if ModuleType == 'UEFI_DRIVER' and self.DepexGenerated:
+          ModuleType = 'DXE_DRIVER'
+
+        AsBuiltInfDict = {
+          'module_name'                       : self.Name,
+          'module_guid'                       : self.Guid,
+          'module_module_type'                : ModuleType,
+          'module_version_string'             : self.Version,
+          'module_uefi_specification_version' : [],
+          'module_pi_specification_version'   : [],
+          'module_arch'                       : self.Arch,
+          'package_item'                      : ['%s' % (Package.MetaFile.File.replace('\\','/')) for Package in Packages],
+          'binary_item'                       : [],
+          'pcd_item'                          : [],
+          'flags_item'                        : []
+        }
+
+        if 'UEFI_SPECIFICATION_VERSION' in self.Specification:
+          AsBuiltInfDict['module_uefi_specification_version'] += [self.Specification['UEFI_SPECIFICATION_VERSION']]
+        if 'PI_SPECIFICATION_VERSION' in self.Specification:
+          AsBuiltInfDict['module_pi_specification_version'] += [self.Specification['PI_SPECIFICATION_VERSION']]
+
+        OutputDir = self.OutputDir.replace('\\','/').strip('/')
+        if self.ModuleType in ['BASE', 'USER_DEFINED']:
+          for Item in self.CodaTargetList:
+            File = Item.Target.Path.replace('\\','/').strip('/').replace(OutputDir,'').strip('/')
+            if Item.Target.Ext.lower() == '.aml': 
+              AsBuiltInfDict['binary_item'] += ['ASL|' + File]
+            elif Item.Target.Ext.lower() == '.acpi': 
+              AsBuiltInfDict['binary_item'] += ['ACPI|' + File]
+            else:
+              AsBuiltInfDict['binary_item'] += ['BIN|' + File]
+        else:
+          for Item in self.CodaTargetList:
+            File = Item.Target.Path.replace('\\','/').strip('/').replace(OutputDir,'').strip('/')
+            if Item.Target.Ext.lower() == '.efi': 
+              AsBuiltInfDict['binary_item'] += ['PE32|' + self.Name + '.efi']
+            else:
+              AsBuiltInfDict['binary_item'] += ['BIN|' + File]
+          if self.DepexGenerated:
+            if self.ModuleType in ['PEIM']:
+              AsBuiltInfDict['binary_item'] += ['PEI_DEPEX|' + self.Name + '.depex']
+            if self.ModuleType in ['DXE_DRIVER','DXE_RUNTIME_DRIVER','DXE_SAL_DRIVER','UEFI_DRIVER']:
+              AsBuiltInfDict['binary_item'] += ['DXE_DEPEX|' + self.Name + '.depex']
+            if self.ModuleType in ['DXE_SMM_DRIVER']:
+              AsBuiltInfDict['binary_item'] += ['SMM_DEPEX|' + self.Name + '.depex']
+
+        for Pcd in Pcds:
+          AsBuiltInfDict['pcd_item'] += [Pcd.TokenSpaceGuidCName + '.' + Pcd.TokenCName]
+         
+        for Item in self.BuildOption:
+          if 'FLAGS' in self.BuildOption[Item]:
+            AsBuiltInfDict['flags_item'] += ['%s:%s_%s_%s_%s_FLAGS = %s' % (self.ToolChainFamily, self.BuildTarget, self.ToolChain, self.Arch, Item, self.BuildOption[Item]['FLAGS'].strip())]
+        
+        AsBuiltInf = TemplateString()
+        AsBuiltInf.Append(gAsBuiltInfHeaderString.Replace(AsBuiltInfDict))
+        
+        SaveFileOnChange(os.path.join(self.OutputDir, self.Name + '.inf'), str(AsBuiltInf), False)
+        
+        self.IsAsBuiltInfCreated = True
+        
     ## Create makefile for the module and its dependent libraries
     #
     #   @param      CreateLibraryMakeFile   Flag indicating if or not the makefiles of
@@ -2323,6 +2460,9 @@ class ModuleAutoGen(AutoGen):
 
             Dpx = GenDepex.DependencyExpression(self.DepexList[ModuleType], ModuleType, True)
             DpxFile = gAutoGenDepexFileName % {"module_name" : self.Name}
+
+            if len(Dpx.PostfixNotation) <> 0:
+              self.DepexGenerated = True
 
             if Dpx.Generate(path.join(self.OutputDir, DpxFile)):
                 AutoGenList.append(str(DpxFile))

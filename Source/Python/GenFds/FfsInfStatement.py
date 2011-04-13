@@ -1,7 +1,7 @@
 ## @file
 # process FFS generation from INF statement
 #
-#  Copyright (c) 2007 - 2010, Intel Corporation. All rights reserved.<BR>
+#  Copyright (c) 2007 - 2011, Intel Corporation. All rights reserved.<BR>
 #
 #  This program and the accompanying materials
 #  are licensed and made available under the terms and conditions of the BSD License
@@ -52,7 +52,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         self.KeepRelocFromRule = None
         self.InDsc = True
         self.OptRomDefs = {}
-        self.PiSpecVersion = 0
+        self.PiSpecVersion = '0x00000000'
         
     ## __InfParse() method
     #
@@ -123,7 +123,7 @@ class FfsInfStatement(FfsInfStatementClassObject):
         if len(self.SourceFileList) != 0 and not self.InDsc:
             EdkLogger.warn("GenFds", GENFDS_ERROR, "Module %s NOT found in DSC file; Is it really a binary module?" % (self.InfFileName))
 
-        if self.ModuleType == 'SMM_CORE' and self.PiSpecVersion < 0x0001000A:
+        if self.ModuleType == 'SMM_CORE' and int(self.PiSpecVersion, 16) < 0x0001000A:
             EdkLogger.error("GenFds", FORMAT_NOT_SUPPORTED, "SMM_CORE module type can't be used in the module with PI_SPECIFICATION_VERSION less than 0x0001000A", File=self.InfFileName)      
 
         if Inf._Defs != None and len(Inf._Defs) > 0:
@@ -179,13 +179,13 @@ class FfsInfStatement(FfsInfStatementClassObject):
         #
         # Convert Fv File Type for PI1.1 SMM driver.
         #
-        if self.ModuleType == 'DXE_SMM_DRIVER' and self.PiSpecVersion >= 0x0001000A:
+        if self.ModuleType == 'DXE_SMM_DRIVER' and int(self.PiSpecVersion, 16) >= 0x0001000A:
             if Rule.FvFileType == 'DRIVER':
                 Rule.FvFileType = 'SMM'
         #
         # Framework SMM Driver has no SMM FV file type
         #
-        if self.ModuleType == 'DXE_SMM_DRIVER' and self.PiSpecVersion < 0x0001000A:
+        if self.ModuleType == 'DXE_SMM_DRIVER' and int(self.PiSpecVersion, 16) < 0x0001000A:
             if Rule.FvFileType == 'SMM' or Rule.FvFileType == 'SMM_CORE':
                 EdkLogger.error("GenFds", FORMAT_NOT_SUPPORTED, "Framework SMM module doesn't support SMM or SMM_CORE FV file type", File=self.InfFileName)
         #
@@ -423,13 +423,13 @@ class FfsInfStatement(FfsInfStatementClassObject):
         #
         # Convert Fv Section Type for PI1.1 SMM driver.
         #
-        if self.ModuleType == 'DXE_SMM_DRIVER' and self.PiSpecVersion >= 0x0001000A:
+        if self.ModuleType == 'DXE_SMM_DRIVER' and int(self.PiSpecVersion, 16) >= 0x0001000A:
             if SectionType == 'DXE_DEPEX':
                 SectionType = 'SMM_DEPEX'
         #
         # Framework SMM Driver has no SMM_DEPEX section type
         #
-        if self.ModuleType == 'DXE_SMM_DRIVER' and self.PiSpecVersion < 0x0001000A:
+        if self.ModuleType == 'DXE_SMM_DRIVER' and int(self.PiSpecVersion, 16) < 0x0001000A:
             if SectionType == 'SMM_DEPEX':
                 EdkLogger.error("GenFds", FORMAT_NOT_SUPPORTED, "Framework SMM module doesn't support SMM_DEPEX section type", File=self.InfFileName)
         NoStrip = True
@@ -592,13 +592,13 @@ class FfsInfStatement(FfsInfStatementClassObject):
             #
             # Convert Fv Section Type for PI1.1 SMM driver.
             #
-            if self.ModuleType == 'DXE_SMM_DRIVER' and self.PiSpecVersion >= 0x0001000A:
+            if self.ModuleType == 'DXE_SMM_DRIVER' and int(self.PiSpecVersion, 16) >= 0x0001000A:
                 if Sect.SectionType == 'DXE_DEPEX':
                     Sect.SectionType = 'SMM_DEPEX'
             #
             # Framework SMM Driver has no SMM_DEPEX section type
             #
-            if self.ModuleType == 'DXE_SMM_DRIVER' and self.PiSpecVersion < 0x0001000A:
+            if self.ModuleType == 'DXE_SMM_DRIVER' and int(self.PiSpecVersion, 16) < 0x0001000A:
                 if Sect.SectionType == 'SMM_DEPEX':
                     EdkLogger.error("GenFds", FORMAT_NOT_SUPPORTED, "Framework SMM module doesn't support SMM_DEPEX section type", File=self.InfFileName)
             #
