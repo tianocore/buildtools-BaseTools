@@ -1,7 +1,7 @@
 ## @file
 # build a platform or a module
 #
-#  Copyright (c) 2007 - 2010, Intel Corporation. All rights reserved.<BR>
+#  Copyright (c) 2007 - 2011, Intel Corporation. All rights reserved.<BR>
 #
 #  This program and the accompanying materials
 #  are licensed and made available under the terms and conditions of the BSD License
@@ -885,6 +885,7 @@ class Build():
             if not self.SkipAutoGen or Target == 'genmake':
                 self.Progress.Start("Generating makefile")
                 AutoGenObject.CreateMakeFile(CreateDepsMakeFile)
+                AutoGenObject.CreateAsBuiltInf()
                 self.Progress.Stop("done!")
             if Target == "genmake":
                 return True
@@ -1102,11 +1103,11 @@ class Build():
                         SmmModuleList[Module.MetaFile] = ImageInfo
                         SmmSize += ImageInfo.Image.Size
                         if Module.ModuleType == 'DXE_SMM_DRIVER':
-                            PiSpecVersion = 0
+                            PiSpecVersion = '0x00000000'
                             if 'PI_SPECIFICATION_VERSION' in Module.Module.Specification:
                                 PiSpecVersion = Module.Module.Specification['PI_SPECIFICATION_VERSION']
                             # for PI specification < PI1.1, DXE_SMM_DRIVER also runs as BOOT time driver.
-                            if PiSpecVersion < 0x0001000A:
+                            if int(PiSpecVersion, 16) < 0x0001000A:
                                 BtModuleList[Module.MetaFile] = ImageInfo
                                 BtSize += ImageInfo.Image.Size
                     break
@@ -1417,6 +1418,7 @@ class Build():
 
                             if not self.SkipAutoGen or self.Target == 'genmake':
                                 Ma.CreateMakeFile(True)
+                                Ma.CreateAsBuiltInf()
                             if self.Target == "genmake":
                                 continue
                         self.Progress.Stop("done!")
