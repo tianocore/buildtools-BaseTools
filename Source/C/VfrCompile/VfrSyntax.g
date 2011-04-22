@@ -675,7 +675,7 @@ vfrExtensionData[UINT8 *DataBuff, UINT32 Size, CHAR8 *TypeName, UINT32 TypeSize,
               _STRCAT(&TFName, TypeName);
             }
           >>
-    {("." FN:StringIdentifier
+    ("." FN:StringIdentifier
           <<
             if (IsStruct == TRUE) {
               _STRCAT(&TFName, ".");
@@ -692,9 +692,7 @@ vfrExtensionData[UINT8 *DataBuff, UINT32 Size, CHAR8 *TypeName, UINT32 TypeSize,
               }
             >>
         }
-      )*
-    }
-
+    )*
     "=" RD:Number
           <<
             if (IsStruct == FALSE) {
@@ -1311,7 +1309,8 @@ vfrFormMapDefinition :
     vfrStatementQuestions                    |
     vfrStatementConditional                  |
     vfrStatementLabel                        |
-    vfrStatementBanner
+    vfrStatementBanner                       |
+    vfrStatementExtension
   )*
   E:EndForm                                         << CRT_END_OP (E); >>
   ";"
@@ -2369,6 +2368,7 @@ vfrStatementStatList :
   vfrStatementQuestions                   |
   vfrStatementConditionalNew              |
   vfrStatementLabel                       |
+  vfrStatementExtension                   |
   // Just for framework vfr compatibility
   vfrStatementInvalid
   ;
