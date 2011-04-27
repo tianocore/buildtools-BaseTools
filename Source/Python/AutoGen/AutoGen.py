@@ -2069,6 +2069,9 @@ class ModuleAutoGen(AutoGen):
                 CreateDirectory(Source.Dir)
 
             if File.IsBinary and File == Source and self._BinaryFileList != None and File in self._BinaryFileList:
+                # Skip all files that are not binary libraries
+                if not self.IsLibrary:
+                    continue            
                 RuleObject = self.BuildRules[TAB_DEFAULT_BINARY_FILE]
             elif FileType in self.BuildRules:
                 RuleObject = self.BuildRules[FileType]
