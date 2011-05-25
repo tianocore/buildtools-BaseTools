@@ -136,7 +136,7 @@ Returns:
 
   sscanf (
     StrPtr,
-    "%02d%02d",
+    "%02x%02x",
     &Major,
     &Minor
     );
