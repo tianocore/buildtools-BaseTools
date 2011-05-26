@@ -983,7 +983,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 								</xs:documentation>
 							</xs:annotation>
 						</xs:attribute>
-						<xs:attribute name="Identifier" type="xs:string" use="optional">
+						<xs:attribute name="Identifier" type="xs:string" use="required">
 							<xs:annotation>
 								<xs:documentation xml:lang="en-us"> This can be used to
 									differentiate multiple sections with a grouping. </xs:documentation>
@@ -2329,7 +2329,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 									would use the same UserId. </xs:documentation>
 							</xs:annotation>
 						</xs:attribute>
-						<xs:attribute name="Identifier" type="xs:string" use="optional">
+						<xs:attribute name="Identifier" type="xs:string" use="required">
 							<xs:annotation>
 								<xs:documentation xml:lang="en-us"> This can be any string used to
 									differentiate or identify this section from other UserExtensions
