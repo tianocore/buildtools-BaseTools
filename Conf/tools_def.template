@@ -3641,6 +3641,12 @@ RELEASE_ARMGCC_ARM_CC_FLAGS = $(ARCHCC_FLAGS) $(PLATFORM_FLAGS) -mlittle-endian 
 *_*_*_ASL_FLAGS                    =
 
 ##################
+# GenCrc32 tool definitions
+##################
+*_*_*_CRC32_PATH          = GenCrc32
+*_*_*_CRC32_GUID          = FC1BCDB0-7D31-49AA-936A-A4600D9DD083
+
+##################
 # LzmaCompress tool definitions
 ##################
 *_*_*_LZMA_PATH          = LzmaCompress
