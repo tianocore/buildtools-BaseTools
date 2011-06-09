@@ -1492,6 +1492,21 @@ public:
   }
 };
 
+class CIfrRefreshId : public CIfrObj, public CIfrOpHeader {
+private:
+  EFI_IFR_REFRESH_ID *mRefreshId;
+
+public:
+  CIfrRefreshId () : CIfrObj (EFI_IFR_REFRESH_ID_OP, (CHAR8 **)&mRefreshId),
+      CIfrOpHeader (EFI_IFR_REFRESH_ID_OP, &mRefreshId->Header) {
+    memset (&mRefreshId->RefreshEventGroupId, 0, sizeof (EFI_GUID));
+  }
+
+  VOID SetRefreshEventGroutId (IN EFI_GUID *RefreshEventGroupId) {
+    memcpy (&mRefreshId->RefreshEventGroupId, RefreshEventGroupId, sizeof (EFI_GUID));
+  }
+};
+
 class CIfrVarStoreDevice : public CIfrObj, public CIfrOpHeader {
 private:
   EFI_IFR_VARSTORE_DEVICE *mVarStoreDevice;

@@ -2342,7 +2342,8 @@ vfrStatementQuestionTag :
   vfrStatementDisableIfQuest    |
   vfrStatementRefresh           |
   vfrStatementVarstoreDevice    |
-  vfrStatementExtension
+  vfrStatementExtension         |
+  vfrStatementRefreshEvent
   ;
 
 vfrStatementQuestionTagList :
@@ -2554,6 +2555,15 @@ vfrStatementRefresh :
   << CIfrRefresh RObj; >>
   L:Refresh                                            << RObj.SetLineNo(L->getLine()); >>
   Interval "=" I:Number                                << RObj.SetRefreshInterval (_STOU8(I->getText())); >>
+  ;
+
+vfrStatementRefreshEvent :
+  <<
+    CIfrRefreshId RiObj;
+    EFI_GUID      Guid;
+  >>
+  L:RefreshGuid                                        << RiObj.SetLineNo(L->getLine()); >>
+  "="  guidDefinition[Guid] ","                        << RiObj.SetRefreshEventGroutId (&Guid);  >>
   ;
 
 vfrStatementVarstoreDevice :
@@ -2824,6 +2834,7 @@ vfrStatementInvalidSaveRestoreDefaults :
 #token QuestionRefVal("questionrefval")         "questionrefval"
 #token StringRefVal("stringrefval")             "stringrefval"
 #token Map("map")                               "map"
+#token RefreshGuid("refreshguid")               "refreshguid"
 
 //
 // Root expression extension function called by other function.
