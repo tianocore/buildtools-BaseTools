@@ -1621,6 +1621,8 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
                                                   <xs:enumeration value="PEI_DEPEX"/>
                                                   <xs:enumeration value="DXE_DEPEX"/>
                                                   <xs:enumeration value="SMM_DEPEX"/>
+                                                  <xs:enumeration value="COMPAT16"/>
+                                                  <xs:enumeration value="DISPOSABLE"/>
                                                   <xs:enumeration value="TE"/>
                                                   <xs:enumeration value="VER"/>
                                                   <xs:enumeration value="UI"/>
