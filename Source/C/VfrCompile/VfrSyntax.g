@@ -341,6 +341,7 @@ vfrDataStructFields :
      dataStructFieldString |
      dataStructFieldDate   |
      dataStructFieldTime   |
+     dataStructFieldRef    |
      dataStructFieldUser
   )*
   ;
@@ -420,6 +421,16 @@ dataStructFieldDate :
 dataStructFieldTime :
   << UINT32 ArrayNum = 0; >>
   D:"EFI_HII_TIME"
+  N:StringIdentifier
+  {
+    OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
+  }
+  ";"                                               << _PCATCH(gCVfrVarDataTypeDB.DataTypeAddField (N->getText(), D->getText(), ArrayNum), N); >>
+  ;
+
+dataStructFieldRef :
+  << UINT32 ArrayNum = 0; >>
+  D:"EFI_HII_REF"
   N:StringIdentifier
   {
     OpenBracket I:Number CloseBracket               << ArrayNum = _STOU32(I->getText()); >>
@@ -603,7 +614,9 @@ vfrStatementExtension:
                                                       << TypeName = D->getText(); LineNum = D->getLine(); IsStruct = TRUE;>>
       | T:"EFI_HII_TIME" {OpenBracket AN8:Number CloseBracket <<ArrayNum = _STOU32(AN8->getText());>>}
                                                       << TypeName = T->getText(); LineNum = T->getLine(); IsStruct = TRUE;>>
-      | TN:StringIdentifier {OpenBracket AN9:Number CloseBracket <<ArrayNum = _STOU32(AN9->getText());>>}
+      | R:"EFI_HII_REF" {OpenBracket AN9:Number CloseBracket <<ArrayNum = _STOU32(AN9->getText());>>}
+                                                      << TypeName = R->getText(); LineNum = R->getLine(); IsStruct = TRUE;>>                                                
+      | TN:StringIdentifier {OpenBracket AN10:Number CloseBracket <<ArrayNum = _STOU32(AN10->getText());>>}
                                                       << TypeName = TN->getText(); LineNum = TN->getLine(); IsStruct = TRUE;>>
     )
                                                       <<
@@ -795,6 +808,7 @@ vfrStatementVarStoreLinear :
     | U64:"UINT64" ","                              << TypeName = U64->getText(); LineNum = U64->getLine(); >>
     | D:"EFI_HII_DATE" ","                          << TypeName = D->getText(); LineNum = D->getLine(); >>
     | T:"EFI_HII_TIME" ","                          << TypeName = T->getText(); LineNum = T->getLine(); >>
+    | R:"EFI_HII_REF" ","                           << TypeName = R->getText(); LineNum = R->getLine(); >>
   )
   { Key "=" FID:Number ","                          << // Key is used to assign Varid in Framework VFR but no use in UEFI2.1 VFR
                                                        if (mCompatibleMode) {
@@ -979,39 +993,31 @@ vfrQuestionHeader[CIfrQuestionHeader & QHObj, EFI_QUESION_TYPE QType = QUESTION_
                                                        case QUESTION_TIME:
                                                          mCVfrQuestionDB.RegisterNewTimeQuestion (QName, VarIdStr, QId);
                                                          break;
+                                                       case QUESTION_REF:
+                                                         //
+                                                         // VarIdStr != NULL stand for question with storagae.
+                                                         //
+                                                         if (VarIdStr != NULL) {
+                                                           mCVfrQuestionDB.RegisterRefQuestion (QName, VarIdStr, QId);
+                                                         } else {
+                                                           mCVfrQuestionDB.RegisterQuestion (QName, NULL, QId);
+                                                         }
+                                                         break;
                                                        default:
                                                        _PCATCH(VFR_RETURN_FATAL_ERROR);
                                                        }
                                                        $QHObj.SetQuestionId (QId);
-                                                       $QHObj.SetVarStoreInfo (&Info);
+                                                       if (VarIdStr != NULL) {
+                                                        $QHObj.SetVarStoreInfo (&Info);
+                                                       }
                                                     >>
   vfrStatementHeader[&$QHObj]
-                                                    << _SAVE_CURRQEST_VARINFO (Info); >>
-                                                    << if (VarIdStr != NULL) delete VarIdStr; >>
-  ;
-
-vfrQuestionHeaderWithNoStorage[CIfrQuestionHeader *QHObj] :
-  <<
-     EFI_QUESTION_ID   QId = EFI_QUESTION_ID_INVALID;
-     CHAR8             *QName = NULL;
-  >>
-  {
-    Name "=" QN:StringIdentifier ","                <<
-                                                       QName = QN->getText();
-                                                       _PCATCH(mCVfrQuestionDB.FindQuestion (QName), VFR_RETURN_UNDEFINED, QN, "has already been used please used anther name");
+                                                    << 
+                                                       if (VarIdStr != NULL) {
+                                                         delete VarIdStr; 
+                                                         _SAVE_CURRQEST_VARINFO (Info);
+                                                       }
                                                     >>
-  }
-  {
-    QuestionId "=" ID:Number ","                    <<
-                                                       QId = _STOQID(ID->getText());
-                                                       _PCATCH(mCVfrQuestionDB.FindQuestion (QId), VFR_RETURN_UNDEFINED, ID, "redefined quesiont ID");
-                                                    >>
-  }
-                                                    <<
-                                                       mCVfrQuestionDB.RegisterQuestion (QName, NULL, QId);
-                                                       $QHObj->SetQuestionId (QId);
-                                                    >>
-  vfrStatementHeader[$QHObj]
   ;
 
 questionheaderFlagsField[UINT8 & Flags] :
@@ -1061,6 +1067,8 @@ vfrStorageVarId[EFI_VARSTORE_INFO & Info, CHAR8 *&QuestVarIdStr, BOOLEAN CheckFl
                                                          _PCATCH(mCVfrDataStorage.GetVarStoreId (SName, &$Info.mVarStoreId), SN1);
                                                          _PCATCH(mCVfrDataStorage.GetNameVarStoreInfo (&$Info, Idx), SN1);
                                                        }
+
+                                                       QuestVarIdStr = VarIdStr;
                                                     >>
   )
   |
@@ -1195,6 +1203,9 @@ vfrQuestionDataFieldName [EFI_QUESTION_ID &QId, UINT32 &Mask, CHAR8 *&VarIdStr, 
   ;
 
 vfrConstantValueField[UINT8 Type] > [EFI_IFR_TYPE_VALUE Value] :
+  <<
+    EFI_GUID Guid;
+  >>
     N1:Number                                       <<
                                                        switch ($Type) {
                                                        case EFI_IFR_TYPE_NUM_SIZE_8 :
@@ -1217,6 +1228,7 @@ vfrConstantValueField[UINT8 Type] > [EFI_IFR_TYPE_VALUE Value] :
                                                        break;
                                                        case EFI_IFR_TYPE_TIME :
                                                        case EFI_IFR_TYPE_DATE :
+                                                       case EFI_IFR_TYPE_REF  :
                                                        default :
                                                        break;
                                                        }
@@ -1228,6 +1240,8 @@ vfrConstantValueField[UINT8 Type] > [EFI_IFR_TYPE_VALUE Value] :
   | Z:Zero                                          << $Value.u8     = _STOU8(Z->getText()); >>
   | HOUR:Number ":" MINUTE:Number ":" SECOND:Number << $Value.time   = _STOT(HOUR->getText(), MINUTE->getText(), SECOND->getText()); >>
   | YEAR:Number "/" MONTH:Number "/" DAY:Number     << $Value.date   = _STOD(YEAR->getText(), MONTH->getText(), DAY->getText()); >>
+  | QI:Number";" FI:Number";" guidDefinition[Guid] ";" "STRING_TOKEN" "\(" DP:Number "\)" 
+                                                    << $Value.ref    = _STOR(QI->getText(), FI->getText(), &Guid, DP->getText()); >>
   | "STRING_TOKEN" "\(" S1:Number "\)"              << $Value.string = _STOSID(S1->getText()); >>
   ;
 
@@ -1519,7 +1533,7 @@ vfrStatementCrossReference :
 
 vfrStatementGoto :
   <<
-     UINT8               RefType = 1;
+     UINT8               RefType = 5;
      EFI_STRING_ID       DevPath = EFI_STRING_ID_INVALID;
      EFI_GUID            FSId = {0,};
      EFI_FORM_ID         FId;
@@ -1530,6 +1544,7 @@ vfrStatementGoto :
      CIfrRef2            *R2Obj = NULL;
      CIfrRef3            *R3Obj = NULL;
      CIfrRef4            *R4Obj = NULL;
+     CIfrRef5            *R5Obj = NULL;
   >>
   G:Goto
   (
@@ -1572,9 +1587,19 @@ vfrStatementGoto :
                                                           FId = _STOFID(F4->getText());
                                                        >>
     )
+    |
+    (
+    )
   )
                                                        <<
                                                           switch (RefType) {
+                                                          case 5:
+                                                            {
+                                                              R5Obj = new CIfrRef5;
+                                                              QHObj = R5Obj;
+                                                              R5Obj->SetLineNo(G->getLine());
+                                                              break;
+                                                            }
                                                           case 4:
                                                             {
                                                               R4Obj = new CIfrRef4;
@@ -1616,13 +1641,13 @@ vfrStatementGoto :
                                                           default: break;
                                                           }
                                                        >>
-  vfrQuestionHeaderWithNoStorage[QHObj]
+  vfrQuestionHeader[*QHObj, QUESTION_REF]
   { "," vfrStatementStatTagList }
   { "," F:FLAGS  "=" vfrGotoFlags[QHObj, F->getLine()] }
   {
     "," Key "=" KN:Number                              << AssignQuestionKey (*QHObj, KN); >>
   }
-  ";"                                                  << if (R1Obj != NULL) {delete R1Obj;} if (R2Obj != NULL) {delete R2Obj;} if (R3Obj != NULL) {delete R3Obj;} if (R4Obj != NULL) {delete R4Obj;} >>
+  ";"                                                  << if (R1Obj != NULL) {delete R1Obj;} if (R2Obj != NULL) {delete R2Obj;} if (R3Obj != NULL) {delete R3Obj;} if (R4Obj != NULL) {delete R4Obj;} if (R5Obj != NULL) {delete R5Obj;}>>
   ;
 
 vfrGotoFlags [CIfrQuestionHeader *QHObj, UINT32 LineNum] :
@@ -1795,7 +1820,7 @@ checkboxFlagsField[UINT8 & LFlags, UINT8 & HFlags] :
 vfrStatementAction :
   << CIfrAction AObj; >>
   L:Action                                             << AObj.SetLineNo(L->getLine()); >>
-  vfrQuestionHeaderWithNoStorage[&AObj] ","
+  vfrQuestionHeader[AObj] ","
   { F:FLAGS "=" vfrActionFlags[AObj, F->getLine()] "," }
   Config "=" "STRING_TOKEN" "\(" S:Number "\)" ","     << AObj.SetQuestionConfig (_STOSID(S->getText())); >>
   vfrStatementQuestionTagList
@@ -3744,6 +3769,7 @@ public:
   UINT64              _STOU64 (IN CHAR8 *);
   EFI_HII_DATE        _STOD   (IN CHAR8 *, IN CHAR8 *, IN CHAR8 *);
   EFI_HII_TIME        _STOT   (IN CHAR8 *, IN CHAR8 *, IN CHAR8 *);
+  EFI_HII_REF         _STOR   (IN CHAR8 *, IN CHAR8 *, IN EFI_GUID *, IN CHAR8 *);
 
   EFI_STRING_ID       _STOSID (IN CHAR8 *);
   EFI_FORM_ID         _STOFID (IN CHAR8 *);
@@ -4180,6 +4206,25 @@ EfiVfrParser::_STRCAT (
   strcat (NewStr, Src);
 
   *Dest = NewStr;
+}
+
+EFI_HII_REF
+EfiVfrParser::_STOR (
+  IN CHAR8    *QuestionId,
+  IN CHAR8    *FormId,
+  IN EFI_GUID *FormSetGuid,
+  IN CHAR8    *DevicePath
+  )
+{
+  EFI_HII_REF Ref;
+  UINT32      Index;
+
+  memcpy (&Ref.FormSetGuid, FormSetGuid, sizeof (EFI_GUID));
+  Ref.QuestionId  = _STOQID (QuestionId);
+  Ref.FormId      = _STOFID (FormId);
+  Ref.DevicePath  = _STOSID (DevicePath);
+
+  return Ref;
 }
 
 //

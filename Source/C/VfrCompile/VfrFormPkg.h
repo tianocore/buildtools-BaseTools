@@ -1054,8 +1054,8 @@ private:
   EFI_IFR_REF4 *mRef4;
 
 public:
-  CIfrRef4 () : CIfrObj (EFI_IFR_REF_OP, (CHAR8 **)&mRef4, sizeof(EFI_IFR_REF3)),
-               CIfrOpHeader (EFI_IFR_REF_OP, &mRef4->Header, sizeof (EFI_IFR_REF3)), 
+  CIfrRef4 () : CIfrObj (EFI_IFR_REF_OP, (CHAR8 **)&mRef4, sizeof(EFI_IFR_REF4)),
+               CIfrOpHeader (EFI_IFR_REF_OP, &mRef4->Header, sizeof(EFI_IFR_REF4)), 
                CIfrQuestionHeader (&mRef4->Question) {
     mRef4->FormId     = 0;
     mRef4->QuestionId = EFI_QUESTION_ID_INVALID;
@@ -1077,6 +1077,17 @@ public:
 
   VOID SetDevicePath (IN EFI_STRING_ID DevicePath) {
     mRef4->DevicePath = DevicePath;
+  }
+};
+
+class CIfrRef5 : public CIfrObj, public CIfrOpHeader, public CIfrQuestionHeader {
+private:
+  EFI_IFR_REF5 *mRef5;
+
+public:
+  CIfrRef5 () : CIfrObj (EFI_IFR_REF_OP, (CHAR8 **)&mRef5, sizeof (EFI_IFR_REF5)),
+              CIfrOpHeader (EFI_IFR_REF_OP, &mRef5->Header, sizeof (EFI_IFR_REF5)), 
+              CIfrQuestionHeader (&mRef5->Question) {
   }
 };
 

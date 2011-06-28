@@ -43,6 +43,7 @@ typedef enum {
   QUESTION_NORMAL,
   QUESTION_DATE,
   QUESTION_TIME,
+  QUESTION_REF,
 } EFI_QUESION_TYPE;
 
 typedef enum {

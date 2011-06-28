@@ -575,6 +575,13 @@ typedef struct {
   UINT8  Day;
 } EFI_HII_DATE;
 
+typedef struct {
+  EFI_QUESTION_ID QuestionId;
+  EFI_FORM_ID     FormId;
+  EFI_GUID        FormSetGuid;
+  EFI_STRING_ID   DevicePath;
+} EFI_HII_REF;
+
 typedef union {
   UINT8           u8;
   UINT16          u16;
@@ -584,6 +591,7 @@ typedef union {
   EFI_HII_TIME    time;
   EFI_HII_DATE    date;
   EFI_STRING_ID   string;
+  EFI_HII_REF     ref;
 } EFI_IFR_TYPE_VALUE;
 
 #define EFI_IFR_FORM_OP                0x01
@@ -850,6 +858,11 @@ typedef struct _EFI_IFR_REF4 {
   EFI_STRING_ID            DevicePath;
 } EFI_IFR_REF4;
 
+typedef struct _EFI_IFR_REF5 {
+  EFI_IFR_OP_HEADER        Header;
+  EFI_IFR_QUESTION_HEADER  Question;
+} EFI_IFR_REF5;
+
 typedef struct _EFI_IFR_RESET_BUTTON {
   EFI_IFR_OP_HEADER        Header;
   EFI_IFR_STATEMENT_HEADER Statement;
@@ -1029,6 +1042,7 @@ typedef struct _EFI_IFR_ONE_OF_OPTION {
 #define EFI_IFR_TYPE_UNDEFINED         0x09
 #define EFI_IFR_TYPE_ACTION            0x0A
 #define EFI_IFR_TYPE_BUFFER            0x0B
+#define EFI_IFR_TYPE_REF               0x0C
 
 #define EFI_IFR_OPTION_DEFAULT         0x10
 #define EFI_IFR_OPTION_DEFAULT_MFG     0x20

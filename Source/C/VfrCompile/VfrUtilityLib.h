@@ -359,6 +359,7 @@ public:
   VOID                RegisterNewDateQuestion (IN CHAR8 *, IN CHAR8 *, IN OUT EFI_QUESTION_ID &);
   VOID                RegisterOldTimeQuestion (IN CHAR8 *, IN CHAR8 *, IN CHAR8 *, IN OUT EFI_QUESTION_ID &);
   VOID                RegisterNewTimeQuestion (IN CHAR8 *, IN CHAR8 *, IN OUT EFI_QUESTION_ID &);
+  VOID                RegisterRefQuestion (IN CHAR8 *, IN CHAR8 *, IN OUT EFI_QUESTION_ID &);  
   EFI_VFR_RETURN_CODE UpdateQuestionId (IN EFI_QUESTION_ID, IN EFI_QUESTION_ID);
   VOID                GetQuestionId (IN CHAR8 *, IN CHAR8 *, OUT EFI_QUESTION_ID &, OUT UINT32 &, OUT EFI_QUESION_TYPE *QType = NULL);
   EFI_VFR_RETURN_CODE FindQuestion (IN EFI_QUESTION_ID);

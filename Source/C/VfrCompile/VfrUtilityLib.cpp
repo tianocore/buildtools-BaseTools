@@ -468,6 +468,7 @@ static struct {
   {"EFI_HII_DATE",  EFI_IFR_TYPE_DATE,        sizeof (EFI_HII_DATE), sizeof (UINT16)},
   {"EFI_STRING_ID", EFI_IFR_TYPE_STRING,      sizeof (EFI_STRING_ID),sizeof (EFI_STRING_ID)},
   {"EFI_HII_TIME",  EFI_IFR_TYPE_TIME,        sizeof (EFI_HII_TIME), sizeof (UINT8)},
+  {"EFI_HII_REF",   EFI_IFR_TYPE_REF,         sizeof (EFI_HII_REF),  sizeof (EFI_GUID)},
   {NULL,            EFI_IFR_TYPE_OTHER,       0,                     0}
 };
 
@@ -789,6 +790,37 @@ CVfrVarDataTypeDB::InternalTypesListInit (
         pSecondsField->mArrayNum = 0;
 
         New->mMembers            = pHoursField;
+      } else if (strcmp (gInternalTypesTable[Index].mTypeName, "EFI_HII_REF") == 0) {
+        SVfrDataField *pQuestionIdField   = new SVfrDataField;
+        SVfrDataField *pFormIdField       = new SVfrDataField;
+        SVfrDataField *pFormSetGuidField  = new SVfrDataField;
+        SVfrDataField *pDevicePathField   = new SVfrDataField;
+
+        strcpy (pQuestionIdField->mFieldName, "QuestionId");
+        GetDataType ((CHAR8 *)"UINT16", &pQuestionIdField->mFieldType);
+        pQuestionIdField->mOffset     = 0;
+        pQuestionIdField->mNext       = pFormIdField;
+        pQuestionIdField->mArrayNum   = 0;
+
+        strcpy (pFormIdField->mFieldName, "FormId");
+        GetDataType ((CHAR8 *)"UINT16", &pFormIdField->mFieldType);
+        pFormIdField->mOffset   = 2;
+        pFormIdField->mNext     = pFormSetGuidField;
+        pFormIdField->mArrayNum = 0;
+
+        strcpy (pFormSetGuidField->mFieldName, "FormSetGuid");
+        GetDataType ((CHAR8 *)"EFI_GUID", &pFormSetGuidField->mFieldType);
+        pFormSetGuidField->mOffset   = 4;
+        pFormSetGuidField->mNext     = pDevicePathField;
+        pFormSetGuidField->mArrayNum = 0;
+
+        strcpy (pDevicePathField->mFieldName, "DevicePath");
+        GetDataType ((CHAR8 *)"EFI_STRING_ID", &pDevicePathField->mFieldType);
+        pDevicePathField->mOffset   = 20;
+        pDevicePathField->mNext     = NULL;
+        pDevicePathField->mArrayNum = 0;
+
+        New->mMembers            = pQuestionIdField;
       } else {
         New->mMembers            = NULL;
       }
@@ -2760,6 +2792,100 @@ CVfrQuestionDB::RegisterNewTimeQuestion (
 
 Err:
   for (Index = 0; Index < 3; Index++) {
+    if (pNode[Index] != NULL) {
+      delete pNode[Index];
+    }
+
+    if (VarIdStr[Index] != NULL) {
+      delete VarIdStr[Index];
+    }
+  }
+}
+
+VOID 
+CVfrQuestionDB::RegisterRefQuestion (
+  IN     CHAR8           *Name,
+  IN     CHAR8           *BaseVarId,
+  IN OUT EFI_QUESTION_ID &QuestionId
+  )
+{
+  SVfrQuestionNode     *pNode[4] = {NULL, };
+  UINT32               Len;
+  CHAR8                *VarIdStr[4] = {NULL, };
+  CHAR8                 Index;
+
+  if (BaseVarId == NULL) {
+    return;
+  }
+
+  Len = strlen (BaseVarId);
+
+  VarIdStr[0] = new CHAR8[Len + strlen (".QuestionId") + 1];
+  if (VarIdStr[0] != NULL) {
+    strcpy (VarIdStr[0], BaseVarId);
+    strcat (VarIdStr[0], ".QuestionId");
+  }
+  VarIdStr[1] = new CHAR8[Len + strlen (".FormId") + 1];
+  if (VarIdStr[1] != NULL) {
+    strcpy (VarIdStr[1], BaseVarId);
+    strcat (VarIdStr[1], ".FormId");
+  }
+  VarIdStr[2] = new CHAR8[Len + strlen (".FormSetGuid") + 1];
+  if (VarIdStr[2] != NULL) {
+    strcpy (VarIdStr[2], BaseVarId);
+    strcat (VarIdStr[2], ".FormSetGuid");
+  }
+  VarIdStr[3] = new CHAR8[Len + strlen (".DevicePath") + 1];
+  if (VarIdStr[3] != NULL) {
+    strcpy (VarIdStr[3], BaseVarId);
+    strcat (VarIdStr[3], ".DevicePath");
+  }
+
+  if ((pNode[0] = new SVfrQuestionNode (Name, VarIdStr[0])) == NULL) {
+    goto Err;
+  }
+  if ((pNode[1] = new SVfrQuestionNode (Name, VarIdStr[1])) == NULL) {
+    goto Err;
+  }
+  if ((pNode[2] = new SVfrQuestionNode (Name, VarIdStr[2])) == NULL) {
+    goto Err;
+  }
+  if ((pNode[3] = new SVfrQuestionNode (Name, VarIdStr[3])) == NULL) {
+    goto Err;
+  }
+
+  if (QuestionId == EFI_QUESTION_ID_INVALID) {
+    QuestionId = GetFreeQuestionId ();
+  } else {
+    if (ChekQuestionIdFree (QuestionId) == FALSE) {
+      goto Err;
+    }
+    MarkQuestionIdUsed (QuestionId);
+  }
+
+  pNode[0]->mQuestionId = QuestionId;
+  pNode[1]->mQuestionId = QuestionId;
+  pNode[2]->mQuestionId = QuestionId;
+  pNode[3]->mQuestionId = QuestionId;  
+  pNode[0]->mQtype      = QUESTION_REF;
+  pNode[1]->mQtype      = QUESTION_REF;
+  pNode[2]->mQtype      = QUESTION_REF;
+  pNode[3]->mQtype      = QUESTION_REF;  
+  pNode[0]->mNext       = pNode[1];
+  pNode[1]->mNext       = pNode[2];
+  pNode[2]->mNext       = pNode[3];
+  pNode[3]->mNext       = mQuestionList;  
+  mQuestionList         = pNode[0];
+
+  gCFormPkg.DoPendingAssign (VarIdStr[0], (VOID *)&QuestionId, sizeof(EFI_QUESTION_ID));
+  gCFormPkg.DoPendingAssign (VarIdStr[1], (VOID *)&QuestionId, sizeof(EFI_QUESTION_ID));
+  gCFormPkg.DoPendingAssign (VarIdStr[2], (VOID *)&QuestionId, sizeof(EFI_QUESTION_ID));
+  gCFormPkg.DoPendingAssign (VarIdStr[3], (VOID *)&QuestionId, sizeof(EFI_QUESTION_ID));
+
+  return;
+
+  Err:
+  for (Index = 0; Index < 4; Index++) {
     if (pNode[Index] != NULL) {
       delete pNode[Index];
     }
