@@ -1,5 +1,5 @@
 {\rtf1\ansi\ansicpg1252\deff0\deflang1033\deflangfe1033\deftab360{\fonttbl{\f0\fswiss\fprq2\fcharset0 Verdana;}{\f1\froman\fprq2\fcharset0 Times New Roman;}{\f2\fmodern\fprq1\fcharset0 Courier New;}{\f3\froman\fprq2\fcharset2 Symbol;}{\f4\fnil\fcharset0 Verdana;}{\f5\fnil\fprq2\fcharset2 Wingdings;}}
-{\colortbl ;\red8\green96\blue168;\red0\green0\blue0;\red128\green0\blue0;\red0\green0\blue255;}
+{\colortbl ;\red8\green96\blue168;\red0\green0\blue0;\red128\green0\blue0;\red79\green129\blue189;\red192\green80\blue77;\red0\green0\blue255;}
 {\stylesheet{ Normal;}{\s1 heading 1;}{\s2 heading 2;}}
 {\*\generator Msftedit 5.41.21.2509;}\viewkind4\uc1\pard\keep\keepn\nowidctlpar\s2\li-1440\sb400\sa60\sl-340\slmult0\cf1\b\f0\fs28 Name\par
 \pard\nowidctlpar\sb200\cf2\b0\fs18 UPT.EXE (Intel\'ae UEFI Packaging Tool (Intel\'ae UEFIUPT)) - create, install or remove a UEFI Distribution Package.\f1\par
@@ -12,23 +12,36 @@ upt [-v|-q|-d DEBUG_LEVEL|-s] [-f] [-x] \endash c DistFile \endash t DistInfo [-
 upt [-v|-q|-d DEBUG_LEVEL|-s] [-f] [-x] \endash c DistFile \endash t DistInfo [-p DEC_File]+\par
 upt [-v|-q|-d DEBUG_LEVEL|-s] [-f] [-x] \endash c DistFile \endash t DistInfo [-m INF_File]+ [-p DEC_File]+\par
 upt [-v|-q|-d DEBUG_LEVEL|-s] [-f|-n] [-x] \endash i DistFile\par
-upt [-v|-q|-d DEBUG_LEVEL|-s] [f] [-x] \endash r DistFile\par
-\pard\nowidctlpar\sb200\cf2\f1\fs18\par
+upt [-v|-q|-d DEBUG_LEVEL|-s] [f] [-x] \endash r DistFile\cf2\f1\fs18\par
 \pard\keep\keepn\nowidctlpar\s2\li-1440\sb400\sa60\sl-340\slmult0\cf1\b\f0\fs28 Description\par
 \pard\nowidctlpar\sb200\cf2\b0\fs18 Intel\'ae UEFIPT is used to create, install or remove a UEFI Distribution Package.\f1\par
 \f0 A \ldblquote package information data\rdblquote  file (\rdblquote .ini\rdblquote ) comprised of a \ldblquote Distribution header\rdblquote  (required), and optional \ldblquote Miscellaneous File Header, and/or \ldblquote Tools Header\rdblquote  is required to create a distribution package. Instructions on how to create a package information file and its required content may be found in the Intel\'ae UEFI Packaging Tool (Intel\'ae UEFIPT) Quick Start guide. \f1\par
 \pard\sb200\f0 When entered on the command line, file locations are relative to the program execution path set in the OS environment variable \cf3\f2 WORKSPACE\cf2\f1 .\par
 \f0 Intel UEFIPT provides development environment support for the EDK II development tree.\f1\par
-\f0 The working directory for the EDK II build tree (containing distribution packages) is defined as a first level folder from the root directory for drive C. For example:\par
+\pard\li720\sb200\cf4\b\f0 Windows Development Workstations\cf2\par
+\b0 The working directory for the EDK II build tree (containing distribution packages) is defined as a first level folder from the root directory for drive C. For example:\par
 \pard\sb200\qc\cf3\f2 C:\\EDKII>\par
-\pard\sb200\cf2\f0 In this example, the OS environment variable WORKSPACE is set to the working directory for EDK II development. For example:\par
+\pard\li720\sb200\cf2\f0 In this example, the OS environment variable WORKSPACE is set to the working directory for EDK II development. For example:\par
 \pard\sb200\qc\cf3\f2 C:\\>set WORKSPACE=C:\\EDKII\par
+\pard\li720\sb200\cf4\b\f0 Windows 7 Development Workstations\par
+\cf2\b0 For Windows 7 users, it is recommended that you use the \cf5 subst \cf2 command, keeping your edk2 downloads in your home directory. Windows 7 only allows administrators to create folders in the root directory. If you can remember to always open the cmd.exe using "run as administrator ...", the directions above can be used. Otherwise, if you sources are located in a directory path such as the following:\par
+\pard\sb200\qc\cf3\f2 C:\\Users\\myname\\Documents\\Work\\edk2>\par
+subst z: C:\\Users\\myname\\Documents\\Work\\edk2\par
+\pard\li720\sb200\cf2\f0 Then set the OS environment variable WORKSPACE to the newly created drive:\par
+\pard\sb200\qc\cf3\f2 C:\\>cd z:\par
+z:\par
+z:\\>set WORKSPACE=z:\\\par
+\pard\nowidctlpar\li720\sb200\cf4\b\f0 Linux and OS/X Development Workstations\par
+\pard\li720\sb200\cf2\b0 The working directory for the EDK II build tree (containing distribution packages) is defined as a first level folder from your home directory. For example:\par
+\pard\sb200\qc\cf3\f2 [/home/myname/edk2] # \par
+\pard\li720\sb200\cf2\f0 In this example, the OS environment variable WORKSPACE is set to the working directory for EDK II development. For example:\par
+\pard\sb200\qc\cf3\f2 [/home/myname/edk2] # export WORKSPACE=/home/myname/edk2\par
 \pard\nowidctlpar\sb200\cf2\f0 The OS environment variable\cf0\fs24  \cf3\f2\fs18 WORKSPACE\cf0\f0\fs24  \cf2\fs18 is now set to the EDKII WORKSPACE\f1\par
 \f0 To create a distribution package:\f1\par
 \b\f0 >upt -c test.dist -p MdePkg/MdePkg.dec -t Package_Information_Data_File.ini\par
 \pard\nowidctlpar\fi-360\li720\sb200\b0\f3\'b7\tab\f0\ldblquote test.dist\rdblquote  is the target distribution package that will be generated. If a destination path is not supplied, the test.dist will be created in the same directory as that in which Intel UEFIPT resides\f1\par
 \f3\'b7\tab\f0\ldblquote MdePkg/MdePkg.dec\rdblquote  is the path to and the source file used to generate the distribution package, \f1\par
-\f3\'b7\tab\f0\ldblquote Package_Information_Data_File.ini\rdblquote  is the file which specifies the information not included in \ldblquote MdePkg/MdePkg.dec\rdblquote  but is required by the packaging specification. If a source path for the Package_Information_Data_File.ini is not provided, it must be located in the same directory as that in which Intel UEFIPT resides.\f1\par
+\f3\'b7\tab\f0\ldblquote Package_Information_Data_File.ini\rdblquote  is the file which specifies the information not included in \ldblquote MdePkg/MdePkg.dec\rdblquote  but is required by the packaging specification. If a source path for the Package_Information_Data_File.ini is not provided, it must be located in the same directory as that in which Intel UEFIPT resides, $(WORKSPACE)/BaseTools/Bin/Win32 or %WORKSPACE%\\BaseTools\\Bin\\Win32.\f1\par
 \pard\nowidctlpar\sb200\b\f0 UPT User Extensions\par
 \b0 User extensions are provided so meta\f1 -\f0 data files can be created which provide functionality identical to the original meta-data. Details about user extensions are located in the Intel\'ae UEFIPT Quick Start Guide. \f1\par
 \pard\keep\keepn\nowidctlpar\s2\li-1440\sb400\sa60\sl-340\slmult0\cf1\b\f0\fs28 Options\par
@@ -65,6 +78,7 @@ upt [-v|-q|-d DEBUG_LEVEL|-s] [f] [-x] \endash r DistFile\par
 \pard\keep\keepn\nowidctlpar\s2\li-1440\sb400\sa60\sl-340\slmult0\cf1\b\f0\fs28 Examples\f1\par
 \pard\nowidctlpar\cf2\b0\f4\fs18 In the examples below, the "\\" character is used to indicate line extension. On Microsoft* Windows based workstations, the command-line must appear on a single line, while under Linux and OS/X, the shell will correctly handle the "\\" line extension character and the command can appear on separate lines.\par
 All EDK II tools allow the user to specify a forward slash "/" character in directory names on the command-line.\par
+The command-line prompt in the following Intel UEFIPT examples is ">"; command-line prompt character may vary based on the operating system.\par
 \pard\nowidctlpar\fi-360\li720\sb200\f0 1.\tab Option \ldblquote  \b -c, --create\b0\rdblquote  \f5\'e0\f0  create a distribution package\f1\par
 \pard\nowidctlpar\li360\sb200\f0 The command showing the proper syntax used to create a distribution package\f1 .\par
 \par
@@ -76,7 +90,7 @@ All EDK II tools allow the user to specify a forward slash "/" character in dire
 \par
 \trowd\trgaph108\trleft-108\trqc\trbrdrl\brdrs\brdrw10 \trbrdrt\brdrs\brdrw10 \trbrdrr\brdrs\brdrw10 \trbrdrb\brdrs\brdrw10 \trpaddl108\trpaddr108\trpaddfl3\trpaddfr3
 \cellx6012\pard\intbl\keep\nowidctlpar\sb60\cf3\f2\fs16 >upt -\endash create=test.dist --dec-filename=MdePkg/MdePkg.dec \\\par
-\pard\intbl      --template=Package_Information_Data_File.ini\f1\cell\row\pard\nowidctlpar\fi-360\li795\sb200\cf2\f3\fs18\'b7\tab\f0  \ldblquote\cf3\f2\fs16 test.dist\cf2\f0\fs18\rdblquote  is the target distribution package file to be generated, \par
+\pard\intbl\sl276\slmult1      --template=Package_Information_Data_File.ini\f1\cell\row\pard\nowidctlpar\fi-360\li795\sb200\cf2\f3\fs18\'b7\tab\f0  \ldblquote\cf3\f2\fs16 test.dist\cf2\f0\fs18\rdblquote  is the target distribution package file to be generated, \par
 \f3\'b7\tab\f0\ldblquote\cf3\f2\fs16 MdePkg/MdePkg.dec\cf2\f0\fs18\rdblquote  is the path and source used to generate the distribution package, \par
 \f3\'b7\tab\f0\ldblquote\cf3\f2\fs16 Package_Information_Data_File.ini\cf2\f0\fs18\rdblquote  is the file which specifies the information not included in \ldblquote\cf3\f2\fs16 MdePkg/MdePkg.dec\cf2\f0\fs18\rdblquote  but is required by the packaging specification\par
 \pard\nowidctlpar\sb200\f1\par
@@ -98,22 +112,43 @@ All EDK II tools allow the user to specify a forward slash "/" character in dire
 \f3\'b7\tab\f0\ldblquote\cf3\f2\fs16 Package_Information_Data_File.ini\cf2\f0\fs18\rdblquote  is the file which specifies the information not included in \ldblquote\cf3\f2\fs16 AcpiPlatformDxe.inf\cf2\f0\fs18  \rdblquote  but is required by the packaging specification\par
 \pard\nowidctlpar\sb200\f1\par
 \pard\nowidctlpar\fi-360\li720\sb200\f0 3.\tab Option \ldblquote\b\f1 -\f0 i, --install\b0\rdblquote  \f5\'e0\f0  install a UEFI package file\par
-\pard\nowidctlpar\sb200 File locations are relative to the program execution path set in the OS environment variable WORKSPACE. WORKSPACE is set to the working directory for the EDK II development tree (containing distribution packages). The working directory of the EDKII development tree is a first level folder from the root directory for drive C. For example:\par
-\pard\nowidctlpar\sb200\qc\cf3\f2\fs16 C:\\EDKII>\par
-\pard\nowidctlpar\sb200\cf2\f0\fs18 In this example, the OS environment variable WORKSPACE is set to the working directory for EDK II. For example:\par
-\pard\nowidctlpar\sb200\qc\cf3\f2\fs16 C:\\>set WORKSPACE=C:\\EDKII\par
-\pard\nowidctlpar\sb200\cf2\f0\fs18 The OS environment variable WORKSPACE is now set to the EDKII WORKSPACE\f1 .\par
+\pard\nowidctlpar\sb200 File locations are relative to the program execution path set in the OS environment variable WORKSPACE. WORKSPACE is set to the working directory for the EDK II development tree (containing distribution packages).\par
+\pard\nowidctlpar\li720\sb200\cf4\b Windows Development Workstations\par
+\cf2\b0 The working directory of the EDKII development tree is a first level folder from the root directory for drive C. For example:\par
+\pard\nowidctlpar\li720\sb200\qc\cf3\f2\fs16 C:\\EDKII>\par
+\pard\nowidctlpar\li720\sb200\cf2\f0\fs18 In this example, the OS environment variable WORKSPACE is set to the working directory for EDK II. For example:\par
+\pard\nowidctlpar\li720\sb200\qc\cf3\f2\fs16 C:\\>set WORKSPACE=C:\\EDKII\par
+\pard\li720\sb200\cf4\b\f0\fs18 Windows 7 Development Workstations\par
+\cf2\b0 For Windows 7 users, it is recommended that you use the subst command, keeping your edk2 downloads in your home directory. Windows 7 only allows administrators to create folders in the root directory. If you can remember to always open the cmd.exe using "run as administrator ...", the directions above can be used. Otherwise, if you sources are located in a directory path such as the following:\par
+\pard\sb200\qc\cf3\f2 C:\\Users\\myname\\Documents\\Work\\edk2>\par
+subst z: C:\\Users\\myname\\Documents\\Work\\edk2\par
+\pard\li720\sb200\cf2\f0 Then set the OS environment variable WORKSPACE to the newly created drive:\par
+\pard\sb200\qc\cf3\f2 C:\\>cd z:\par
+z:\par
+z:\\>set WORKSPACE=z:\\\par
+\pard\nowidctlpar\li720\sb200\cf4\b\f0 Linux and OS/X Development Workstations\par
+\pard\li720\sb200\cf2\b0 The working directory for the EDK II build tree (containing distribution packages) is defined as a first level folder from your home directory. For example:\par
+\pard\sb200\qc\cf3\f2 [/home/myname/edk2] # \par
+\pard\li720\sb200\cf2\f0 In this example, the OS environment variable WORKSPACE is set to the working directory for EDK II development. For example:\par
+\pard\sb200\qc\cf3\f2 [/home/myname/edk2] # export WORKSPACE=/home/myname/edk2\par
+\pard\nowidctlpar\sb200\cf2\f0 The OS environment variable WORKSPACE is now set to the EDKII WORKSPACE\f1 .\par
 \f0 Copy the distribution package file to the location to which the OS variable \ldblquote WORKSPACE\rdblquote  has been defined. For example:\par
-\cf3\f2\fs16 >copy test.dist c:\\EDKII\par
-\cf2\f0\fs18 Execute the UPT command to install the distribution package. For example:\par
+\pard\nowidctlpar\li720\sb200\cf4 Windows Development Workstations\cf2\par
+\pard\nowidctlpar\li1440\sb200\cf3\f2\fs16 >copy test.dist %WORKSPACE%\par
+\pard\nowidctlpar\li720\sb200\cf4\f0\fs18 Linux and OS/X Development Workstations\par
+\pard\nowidctlpar\li1440\sb200\cf3\f2\fs16 # cp test.dist $WORKSPACE%\cf2\f0\fs18\par
+\pard\nowidctlpar\sb200 Execute the UPT command to install the distribution package. For example:\par
 \cf3\f2\fs16 >UPT \endash i test.dist\par
 \cf2\f0\fs18 The extended version of the command:\f1\par
 \cf3\f2\fs16 >UPT \endash -install=test.dist\par
 \cf2\f0\fs18 If the distribution package target folder is already present (for example, MdePkg already exists), Intel UEFIPT will inform you that the specified target already exists and will prompt you to enter another location. If no additional locations are required, pressing [ENTER] will exit the tool. The following is an output display example:\f1\par
-\par
+\cf4 Windows Development Workstations\cf2\par
 \trowd\trgaph108\trleft-108\trqc\trbrdrl\brdrs\brdrw10 \trbrdrt\brdrs\brdrw10 \trbrdrr\brdrs\brdrw10 \trbrdrb\brdrs\brdrw10 \trpaddl108\trpaddr108\trpaddfl3\trpaddfr3
 \clbrdrl\brdrw10\brdrs\clbrdrt\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\clbrdrb\brdrw10\brdrs \cellx7470\pard\intbl\nowidctlpar\sb200\f2\fs16 C:\\EDKII>upt \endash i test.dist\line Unzipping and parsing distribution package XML file\'85\line\line Dist.content -> C:\\EDKII\\dist.content\line Installing package \'85 MdePkg Version 1.02\line This directory already exists: MdePkg.\line Please select another location. Press [Enter] with no input to quit:\line\par
-\cf3 MyDistributionPackageSource\\\cf2\cell\row\pard\nowidctlpar\sb200\f1\fs18\par
+\cf3 MyDistributionPackageSource\\\cf2\cell\row\pard\nowidctlpar\sb200\cf4\f1\fs18 Linux and OS/X Development Workstations\cf2\par
+\trowd\trgaph108\trleft-108\trqc\trbrdrl\brdrs\brdrw10 \trbrdrt\brdrs\brdrw10 \trbrdrr\brdrs\brdrw10 \trbrdrb\brdrs\brdrw10 \trpaddl108\trpaddr108\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw10\brdrs\clbrdrt\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\clbrdrb\brdrw10\brdrs \cellx7470\pard\intbl\nowidctlpar\sb200\f2\fs16 # upt \endash i test.dist\line Unzipping and parsing distribution package XML file\'85\line\line Dist.content -> /home/myname/edk2/dist.content\line Installing package \'85 MdePkg Version 1.02\line This directory already exists: MdePkg.\line Please select another location. Press [Enter] with no input to quit:\line\par
+\cf3 MyDistributionPackageSource/\cf2\cell\row\pard\nowidctlpar\sb200\f1\fs18\par
 \pard\nowidctlpar\fi-360\li720\sb200\f0 4.\tab Option \ldblquote -r, --remove\rdblquote  \f5\'e0\f0  remove a UEFI package file\f1\par
 \pard\nowidctlpar\sb200\cf3\f2\fs16 >upt -r test.dist\par
 \cf2\f0\fs18 The extended version of the command:\f1\par
@@ -124,19 +159,22 @@ All EDK II tools allow the user to specify a forward slash "/" character in dire
 \pard\sb200\cf2\f0\fs18 The extended version of the command:\f1\par
 \pard\nowidctlpar\sb200\cf3\f2\fs16 upt \endash install=test.dist --custom-path\par
 \pard\sb200\cf2\f0\fs18 You will be presented with a display similar to the following:\par
-\par
+\pard\nowidctlpar\sb200\cf4\f1 Windows Development Workstations\cf2\f0\par
 \trowd\trgaph108\trleft-108\trbrdrl\brdrs\brdrw10 \trbrdrt\brdrs\brdrw10 \trbrdrr\brdrs\brdrw10 \trbrdrb\brdrs\brdrw10 \trpaddl108\trpaddr108\trpaddfl3\trpaddfr3
 \clbrdrl\brdrw10\brdrs\clbrdrt\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\clbrdrb\brdrw10\brdrs \cellx8748\pard\intbl\nowidctlpar\sb200\cf0\f2\fs16 C:\\EDKII\fs22 >upt \endash i test.dist \endash n\line\cf2\fs16 Unzipping and parsing distribution package XML file\'85\line dist.pkg  -> c:\\EDKII\\dist.pkg\line\line Dist.content -> C:\\EDKII\\dist.content\line Installing package \'85 MdePkg Version 1.02\line Please select package location. Press [Enter] with no input to quit:\line\cf0\fs22\par
-\pard\intbl\sb200\cf3\fs16 MyDistributionPackageSource\\\cf2\f1\fs18\cell\row\pard\sb200\par
+\pard\intbl\sb200\cf3\fs16 MyDistributionPackageSource\\\cf2\f1\fs18\cell\row\pard\nowidctlpar\sb200\cf4 Linux and OS/X Development Workstations\cf2\par
+\trowd\trgaph108\trleft-108\trbrdrl\brdrs\brdrw10 \trbrdrt\brdrs\brdrw10 \trbrdrr\brdrs\brdrw10 \trbrdrb\brdrs\brdrw10 \trpaddl108\trpaddr108\trpaddfl3\trpaddfr3
+\clbrdrl\brdrw10\brdrs\clbrdrt\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\clbrdrb\brdrw10\brdrs \cellx8748\pard\intbl\nowidctlpar\sb200\cf0\f2\fs16 # \fs22 upt \endash i test.dist \endash n\line\cf2\fs16 Unzipping and parsing distribution package XML file\'85\line dist.pkg  -> /home/myname/edk2/dist.pkg\line\line Dist.content -> /home/myname/edk2/dist.content\line Installing package \'85 MdePkg Version 1.02\line Please select package location. Press [Enter] with no input to quit:\line\cf0\fs22\par
+\pard\intbl\sb200\cf3\fs16 MyDistributionPackageSource/\cf2\f1\fs18\cell\row\pard\sb200\par
 \f0 6.\tab Option \ldblquote -x, --free-lock\rdblquote  \f5\'e0\f0 instructs the Intel\'ae UEFIPT to unconditionally free the lock on the UPT database before any UPT operations are executed.\f1\par
 \f0 Background: While executing, the Intel UEFIPT locks the UPT database. This precludes any other instance of Intel UEFIPT from executing. If Intel UEFIPT should be stopped for some reason (for example, you press CTRL+C) the UPT database will remain locked. The \ldblquote -x, --free-lock\rdblquote  option is used to skip the lock check.\f1\par
-\cf3\f2\fs16 upt -i test.dist \endash x\par
+\cf3\f2\fs16 >upt -i test.dist \endash x\par
 \cf2\f0\fs18 The extended version of the command:\f1\par
-\cf3\f2\fs16 upt \endash install=test.dist \endash -free-lock\par
+\cf3\f2\fs16 >upt \endash install=test.dist \endash -free-lock\par
 \cf2\f0\fs18 If the UPT database is locked, you will be presented with a display similar to the following:\f1\par
 \par
 \trowd\trgaph108\trleft-108\trbrdrl\brdrs\brdrw10 \trbrdrt\brdrs\brdrw10 \trbrdrr\brdrs\brdrw10 \trbrdrb\brdrs\brdrw10 \trpaddl108\trpaddr108\trpaddfl3\trpaddfr3
-\clbrdrl\brdrw10\brdrs\clbrdrt\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\clbrdrb\brdrw10\brdrs \cellx8748\pard\intbl\sb200\f2\fs16 C:\\EDKII\cf0\fs18 >upt \endash c test28.dist \endash p MdePkg/MdePkg.dec \endash t Package_Information_Data_File.ini\line\line upt\'85\line  : error D003: UPT is already running. Only one instance is allowed\line\cf2\f1\cell\row\pard\sb200\par
+\clbrdrl\brdrw10\brdrs\clbrdrt\brdrw10\brdrs\clbrdrr\brdrw10\brdrs\clbrdrb\brdrw10\brdrs \cellx8748\pard\intbl\sb200\cf0\f2 >upt \endash c test28.dist \endash p MdePkg/MdePkg.dec \endash t Package_Information_Data_File.ini\line\line upt\'85\line  : error D003: UPT is already running. Only one instance is allowed\line\cf2\f1\cell\row\pard\sb200 NOTE: Error message format varies based on the Development Workstation operating system.\par
 \pard\keep\keepn\nowidctlpar\s2\li-1440\sb400\sa60\sl-340\slmult0\cf1\b\f0\fs28 Bugs\par
 \pard\nowidctlpar\sb200\cf2\b0\fs18 During stress testing under Microsoft* Windows 7 with anti-virus software enabled, the tool failed after successfully completing 400 create package operations\par
 An EDK II binary module that uses binary file types of UNI_VER, UNI_UI, LIB and UEFI_APP cannot be distributed using the standard features, however the contents may be distributed using MiscellaneousFiles portion of the UPT.\par
@@ -144,15 +182,16 @@ When installing a UEFI Distribution Package generated by other tools that allow 
 If an EDK II Meta-data file is incorrectly formatted, information from the header comment block, such as copyright and license may be lost.\par
 Manually removing or renaming a directory tree that was installed by the Intel UEFIPT will not allow using the Intel UEFIPT for other operations.\f1\par
 \pard\keep\keepn\nowidctlpar\s2\li-1440\sb400\sa60\sl-340\slmult0\cf1\b\f0\fs28 Files\par
-\pard\nowidctlpar\sb200\cf2\b0\fs18 $(WORKSPACE)\\BaseTools\\Conf\f1\\\f0 Sample_Distribution_Information_Data.ini\f1\par
-\f0 Intel\'ae UEFI Packaging Tool (Intel\'ae UEFIPT) Quick Start guide\par
-The Distribution Package (.dist) for install and create, along with the Package Information Data File (.ini) are not required to be in the EDK II WORKSPACE. All other files are required to be in the workspace. (The Distribution Package file name used during removal is in the WORKSPACE/Conf directory tree, placed there during package installation by the tool.)\par
+\pard\nowidctlpar\sb200\cf2\b0\fs18 Windows: %WORKSPACE%\\BaseTools\\Conf\f1\\\f0 Empty_Package_Information_Data_File.ini\par
+Linux & OS/X: $(WORKSPACE)/BaseTools/Conf/Empty_Package_Information_Data_File.ini\f1\par
+\f0 Intel\'ae UEFI Packaging Tool (Intel\'ae UEFIPT) Quick Start guide ({\field{\*\fldinst{HYPERLINK "www.tianocore.org"}}{\fldrslt{\ul\cf6 www.tianocore.org}}}\f0\fs18 , edk2/Documents)\par
+The Distribution Package (.dist) for install and create, along with the Package Information Data File (.ini) are not required to be in the EDK II WORKSPACE. All other files are required to be in the directory tree pointed to by the system environment variable: WORKSPACE. (The Distribution Package file name used during removal is in the $(WORKSPACE)/Conf directory tree, placed there during package installation by the tool.)\par
 \pard\keep\keepn\nowidctlpar\s2\li-1440\sb400\sa60\sl-340\slmult0\cf1\b\fs28 See also\par
 \pard\nowidctlpar\sb200\cf2\b0\fs18 None\par
 \pard\keep\keepn\nowidctlpar\s2\li-1440\sb400\sa60\sl-340\slmult0\cf1\b\fs28 License\par
 \pard\nowidctlpar\cf2\b0\fs18 Copyright\'a9 2011 Intel Corporation. All rights reserved\f1 .\par
-\f0 This program and the accompanying materials are licensed and made available under the terms and conditions of the BSD License which accompanies this distribution.  The full text of the license may be found at:\f1\line\pard\f0  \cf0{\field{\*\fldinst{HYPERLINK "http://opensource.org/licenses/bsd-license.php"}}{\fldrslt{\ul\cf4 http://opensource.org/licenses/bsd-license.php}}}\cf2\f0\fs18  \f1\par
+\f0 This program and the accompanying materials are licensed and made available under the terms and conditions of the BSD License which accompanies this distribution.  The full text of the license may be found at:\f1\line\pard\f0  \cf0{\field{\*\fldinst{HYPERLINK "http://opensource.org/licenses/bsd-license.php"}}{\fldrslt{\ul\cf6 http://opensource.org/licenses/bsd-license.php}}}\cf2\f0\fs18  \f1\par
 \pard\nowidctlpar\line\f0 THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.\par
-\fs16 Revision 1.4, 29 June 2011\f1\par
+\fs16 Revision 1.4, 30 June 2011\f1\par
 }
  
