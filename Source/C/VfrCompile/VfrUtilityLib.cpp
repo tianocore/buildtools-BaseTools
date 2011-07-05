@@ -648,6 +648,20 @@ CVfrVarDataTypeDB::GetTypeField (
   }
 
   for (pField = Type->mMembers; pField != NULL; pField = pField->mNext) {
+    //
+    // For type EFI_IFR_TYPE_TIME, because field name is not correctly wrote,
+    // add code to adjust it.
+    //
+    if (Type->mType == EFI_IFR_TYPE_TIME) {
+      if (strcmp (FName, "Hour") == 0) {
+        FName = "Hours";
+      } else if (strcmp (FName, "Minute") == 0) {
+        FName = "Minuts";
+      } else if (strcmp (FName, "Second") == 0) {
+        FName = "Seconds";
+      }
+    }
+
     if (strcmp (pField->mFieldName, FName) == 0) {
       Field = pField;
       return VFR_RETURN_SUCCESS;
