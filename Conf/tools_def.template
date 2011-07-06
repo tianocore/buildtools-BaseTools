@@ -164,7 +164,6 @@ DEFINE IPHONE_TOOLS            = /Developer/Platforms/iPhoneOS.platform/Develope
 DEFINE RVCT31_TOOLS_PATH       = c:/Program Files/ARM/RVCT/Programs/3.1/569/win_32-pentium
 DEFINE RVCT31CYGWIN_TOOLS_PATH = /cygdrive/c/Program Files/ARM/RVCT/Programs/3.1/569/win_32-pentium
 
-DEFINE SOURCERY_TOOLS        = c:/Program Files/CodeSourcery/Sourcery G++ Lite/bin
 DEFINE SOURCERY_CYGWIN_TOOLS = /cygdrive/c/Program Files/CodeSourcery/Sourcery G++ Lite/bin
 
 #
@@ -3560,7 +3559,7 @@ RELEASE_RVCT31CYGWIN_ARM_CC_FLAGS  = "$(CCPATH_FLAG)" $(ARCHCC_FLAGS) $(PLATFORM
 *_ARMGCC_*_*_FAMILY          = GCC
 *_ARMGCC_*_*_BUILDRULEFAMILY = ARMGCC
 
-*_ARMGCC_*_MAKE_PATH         = DEF(SOURCERY_TOOLS)/cs-make
+*_ARMGCC_*_MAKE_PATH         = make
 *_ARMGCC_*_MAKE_FLAGS        = --no-print-directory
 
 ##################
@@ -3577,16 +3576,16 @@ RELEASE_RVCT31CYGWIN_ARM_CC_FLAGS  = "$(CCPATH_FLAG)" $(ARCHCC_FLAGS) $(PLATFORM
 # ARM definitions
 ##################
 
-*_ARMGCC_ARM_ASLCC_PATH      = DEF(SOURCERY_TOOLS)/arm-none-eabi-gcc
-*_ARMGCC_ARM_ASLDLINK_PATH   = DEF(SOURCERY_TOOLS)/arm-none-eabi-ld
-*_ARMGCC_ARM_ASLPP_PATH      = DEF(SOURCERY_TOOLS)/arm-none-eabi-gcc
+*_ARMGCC_ARM_ASLCC_PATH      = ENV(ARMGCC_TOOLS_PATH)arm-none-eabi-gcc
+*_ARMGCC_ARM_ASLDLINK_PATH   = ENV(ARMGCC_TOOLS_PATH)arm-none-eabi-ld
+*_ARMGCC_ARM_ASLPP_PATH      = ENV(ARMGCC_TOOLS_PATH)arm-none-eabi-gcc
 
-*_ARMGCC_ARM_CC_PATH         = DEF(SOURCERY_TOOLS)/arm-none-eabi-gcc
-*_ARMGCC_ARM_SLINK_PATH      = DEF(SOURCERY_TOOLS)/arm-none-eabi-ar
-*_ARMGCC_ARM_DLINK_PATH      = DEF(SOURCERY_TOOLS)/arm-none-eabi-ld
-*_ARMGCC_ARM_ASM_PATH        = DEF(SOURCERY_TOOLS)/arm-none-eabi-as
-*_ARMGCC_ARM_PP_PATH         = DEF(SOURCERY_TOOLS)/arm-none-eabi-gcc
-*_ARMGCC_ARM_VFRPP_PATH      = DEF(SOURCERY_TOOLS)/arm-none-eabi-gcc
+*_ARMGCC_ARM_CC_PATH         = ENV(ARMGCC_TOOLS_PATH)arm-none-eabi-gcc
+*_ARMGCC_ARM_SLINK_PATH      = ENV(ARMGCC_TOOLS_PATH)arm-none-eabi-ar
+*_ARMGCC_ARM_DLINK_PATH      = ENV(ARMGCC_TOOLS_PATH)arm-none-eabi-ld
+*_ARMGCC_ARM_ASM_PATH        = ENV(ARMGCC_TOOLS_PATH)arm-none-eabi-as
+*_ARMGCC_ARM_PP_PATH         = ENV(ARMGCC_TOOLS_PATH)arm-none-eabi-gcc
+*_ARMGCC_ARM_VFRPP_PATH      = ENV(ARMGCC_TOOLS_PATH)arm-none-eabi-gcc
 
 #
 # Use default values, or override in DSC file
