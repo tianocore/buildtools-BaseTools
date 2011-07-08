@@ -1853,14 +1853,19 @@ def Main():
     else:
         Conclusion = "Failed"
     FinishTime = time.time()
-    BuildDuration = time.strftime("%M:%S", time.gmtime(int(round(FinishTime - StartTime))))
+    BuildDuration = time.gmtime(int(round(FinishTime - StartTime)))
+    BuildDurationStr = ""
+    if BuildDuration.tm_yday > 1:
+        BuildDurationStr = time.strftime("%H:%M:%S", BuildDuration) + ", %d day(s)"%(BuildDuration.tm_yday - 1)
+    else:
+        BuildDurationStr = time.strftime("%H:%M:%S", BuildDuration)
     if MyBuild != None:
-        MyBuild.BuildReport.GenerateReport(BuildDuration)
+        MyBuild.BuildReport.GenerateReport(BuildDurationStr)
         MyBuild.Db.Close()
     EdkLogger.SetLevel(EdkLogger.QUIET)
     EdkLogger.quiet("\n- %s -" % Conclusion)
     EdkLogger.quiet(time.strftime("Build end time: %H:%M:%S, %b.%d %Y", time.localtime()))
-    EdkLogger.quiet("Build total time: %s\n" % BuildDuration)
+    EdkLogger.quiet("Build total time: %s\n" % BuildDurationStr)
     return ReturnCode
 
 if __name__ == '__main__':
