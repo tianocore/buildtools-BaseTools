@@ -2166,9 +2166,8 @@ class ModuleAutoGen(AutoGen):
     #
     def _GetAutoGenFileList(self):
         UniStringAutoGenC = True
-        UniStringBinBuffer = None
+        UniStringBinBuffer = StringIO()
         if self.BuildType == 'UEFI_HII':
-            UniStringBinBuffer = StringIO()
             UniStringAutoGenC = False
         if self._AutoGenFileList == None:
             self._AutoGenFileList = {}

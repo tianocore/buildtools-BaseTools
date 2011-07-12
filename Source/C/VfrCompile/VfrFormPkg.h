@@ -144,7 +144,8 @@ public:
     );
 };
 
-extern CFormPkg gCFormPkg;
+extern CFormPkg       gCFormPkg;
+extern CVfrStringDB   gCVfrStringDB;
 
 struct SIfrRecord {
   UINT32     mLineNo;
@@ -233,6 +234,15 @@ public:
       return FALSE;
     }
   }
+
+  inline bool ShrinkObjBin (IN UINT8 Size) {
+    if ((mDelayEmit == TRUE) && (mObjBinLen > Size)) {
+      mObjBinLen -= Size;
+      return TRUE;
+    } else {
+      return FALSE;
+    }
+  }
 };
 
 /*
@@ -254,7 +264,7 @@ public:
 
   VOID DecLength (UINT8 Size) {
     if (mHeader->Length >= Size) {
-      mHeader -= Size;
+      mHeader->Length -= Size;
     }
   }
 
@@ -755,10 +765,12 @@ private:
   EFI_IFR_VARSTORE_EFI *mVarStoreEfi;
 
 public:
-  CIfrVarStoreEfi () : CIfrObj (EFI_IFR_VARSTORE_EFI_OP, (CHAR8 **)&mVarStoreEfi), 
+  CIfrVarStoreEfi () : CIfrObj (EFI_IFR_VARSTORE_EFI_OP, (CHAR8 **)&mVarStoreEfi, sizeof (EFI_IFR_VARSTORE_EFI), TRUE),
                       CIfrOpHeader (EFI_IFR_VARSTORE_EFI_OP, &mVarStoreEfi->Header) {
     mVarStoreEfi->VarStoreId = EFI_VAROFFSET_INVALID;
+    mVarStoreEfi->Size       = 0;
     memset (&mVarStoreEfi->Guid, 0, sizeof (EFI_GUID));
+    mVarStoreEfi->Name[0]    = '\0';
   }
 
   VOID SetGuid (IN EFI_GUID *Guid) {
@@ -771,6 +783,36 @@ public:
 
   VOID SetAttributes (IN UINT32 Attributes) {
     mVarStoreEfi->Attributes = Attributes;
+  }
+  VOID SetSize (IN UINT16 Size) {
+    mVarStoreEfi->Size = Size;
+  }
+
+  VOID SetName (IN CHAR8 *Name) {
+    UINT8 Len;
+
+    if (Name != NULL) {
+      Len = (UINT8) strlen (Name);
+      if (Len != 0) {
+        if (ExpendObjBin (Len) == TRUE) {
+          IncLength (Len);
+          strcpy ((CHAR8 *)(mVarStoreEfi->Name), Name);
+        }
+      }
+    }
+  }
+
+  VOID SetBinaryLength (IN UINT16 Size) {
+    UINT16 Len;
+
+    Len = sizeof (EFI_IFR_VARSTORE_EFI);
+    if (Size > Len) {
+      ExpendObjBin(Size - Len);
+      IncLength(Size - Len);
+    } else {
+      ShrinkObjBin(Len - Size);
+      DecLength(Len - Size);
+    }
   }
 };
 

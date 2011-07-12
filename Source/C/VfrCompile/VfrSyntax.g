@@ -853,22 +853,102 @@ vfrStatementVarStoreLinear :
 
 vfrStatementVarStoreEfi :
   <<
+     BOOLEAN         IsUEFI23EfiVarstore = TRUE;
      EFI_GUID        Guid;
      CIfrVarStoreEfi VSEObj;
-     EFI_VARSTORE_ID VarStoreId;
+     EFI_VARSTORE_ID VarStoreId = EFI_VARSTORE_ID_INVALID;
      UINT32          Attr = 0;
+     UINT32          Size;
+     CHAR8           *TypeName;
+     UINT32          LineNum;
+     CHAR8           *StoreName = NULL;
   >>
   E:Efivarstore                                     << VSEObj.SetLineNo(E->getLine()); >>
-  SN:StringIdentifier ","
+  (
+      TN:StringIdentifier ","                       << TypeName = TN->getText(); LineNum = TN->getLine(); >>
+    | U8:"UINT8" ","                                << TypeName = U8->getText(); LineNum = U8->getLine(); >>
+    | U16:"UINT16" ","                              << TypeName = U16->getText(); LineNum = U16->getLine(); >>
+    | C16:"CHAR16" ","                              << TypeName = (CHAR8 *) "UINT16"; LineNum = C16->getLine(); >>
+    | U32:"UINT32" ","                              << TypeName = U32->getText(); LineNum = U32->getLine(); >>
+    | U64:"UINT64" ","                              << TypeName = U64->getText(); LineNum = U64->getLine(); >>
+    | D:"EFI_HII_DATE" ","                          << TypeName = D->getText(); LineNum = D->getLine(); >>
+    | T:"EFI_HII_TIME" ","                          << TypeName = T->getText(); LineNum = T->getLine(); >>
+    | R:"EFI_HII_REF" ","                           << TypeName = R->getText(); LineNum = R->getLine(); >>    
+  )
+  {
+    VarId "=" ID:Number ","                         <<
+                                                       _PCATCH(
+                                                         (INTN)(VarStoreId = _STOU16(ID->getText())) != 0,
+                                                         (INTN)TRUE,
+                                                         ID,
+                                                         "varid 0 is not allowed."
+                                                         );
+                                                    >>
+  }
   Attribute "=" vfrVarStoreEfiAttr[Attr] ( "\|" vfrVarStoreEfiAttr[Attr] )* ","
                                                     << VSEObj.SetAttributes (Attr); >>
-  Name "=" "STRING_TOKEN" "\(" VN:Number "\)" ","
-  VarSize "=" N:Number ","
-  Uuid "=" guidDefinition[Guid]                     << mCVfrDataStorage.DeclareEfiVarStore (SN->getText(), &Guid, _STOSID(VN->getText()), _STOU32(N->getText())); >>
-                                                    <<
-                                                       VSEObj.SetGuid (&Guid);
-                                                       _PCATCH(mCVfrDataStorage.GetVarStoreId(SN->getText(), &VarStoreId), SN);
+
+  (
+    Name    "=" SN:StringIdentifier ","             << StoreName = SN->getText();   >>
+   |
+    Name    "=" "STRING_TOKEN" "\(" VN:Number "\)" ","  
+    VarSize "=" N:Number ","                        << 
+                                                       IsUEFI23EfiVarstore = FALSE;
+                                                       gCVfrStringDB.GetVarStoreNameFormStringId(_STOSID(VN->getText()), &StoreName);
+                                                       if (StoreName == NULL) {
+                                                         _PCATCH (VFR_RETURN_UNSUPPORTED, VN->getLine(), "Can't get varstore name for this StringId!");
+                                                       }
+                                                       Size = _STOU32(N->getText());
+                                                       switch (Size) {
+                                                       case 1:
+                                                        TypeName = (CHAR8 *) "UINT8";
+                                                        break;
+                                                       case 2:
+                                                        TypeName = (CHAR8 *) "UINT16";
+                                                        break;
+                                                       case 4:
+                                                        TypeName = (CHAR8 *) "UINT32";
+                                                        break;
+                                                       case 8:
+                                                        TypeName = (CHAR8 *) "UINT64";
+                                                        break; 
+                                                       default:
+                                                        _PCATCH (VFR_RETURN_UNSUPPORTED, N);
+                                                        break;
+                                                       }
+                                                    >>
+  )
+
+  Uuid "=" guidDefinition[Guid]                     << 
+                                                       if (IsUEFI23EfiVarstore) {
+                                                       _PCATCH(mCVfrDataStorage.DeclareBufferVarStore (
+                                                                                  StoreName,
+                                                                                  &Guid,
+                                                                                  &gCVfrVarDataTypeDB,
+                                                                                  TypeName,
+                                                                                  VarStoreId
+                                                                                  ), LineNum);                                                        
+                                                         _PCATCH(mCVfrDataStorage.GetVarStoreId(StoreName, &VarStoreId), SN);
+                                                         _PCATCH(gCVfrVarDataTypeDB.GetDataTypeSize(TypeName, &Size), LineNum);
+                                                       } else {
+                                                        _PCATCH(mCVfrDataStorage.DeclareBufferVarStore (
+                                                                                  TN->getText(),
+                                                                                  &Guid,
+                                                                                  &gCVfrVarDataTypeDB,
+                                                                                  TypeName,
+                                                                                  VarStoreId
+                                                                                  ), LineNum);                                                      
+                                                         _PCATCH(mCVfrDataStorage.GetVarStoreId(TN->getText(), &VarStoreId), VN);
+                                                         _PCATCH(gCVfrVarDataTypeDB.GetDataTypeSize(TypeName, &Size), N->getLine());
+                                                       }
+                                                       VSEObj.SetGuid (&Guid);                                                       
                                                        VSEObj.SetVarStoreId (VarStoreId);
+                                                       
+                                                       VSEObj.SetSize ((UINT16) Size);
+                                                       VSEObj.SetName (StoreName);
+                                                       if (IsUEFI23EfiVarstore == FALSE && StoreName != NULL) {
+                                                         delete StoreName; 
+                                                       }
                                                     >>
   ";"
   ;
@@ -1547,7 +1627,7 @@ vfrStatementGoto :
      CIfrRef5            *R5Obj = NULL;
   >>
   G:Goto
-  (
+  {
     (
       DevicePath "=" "STRING_TOKEN" "\(" P:Number "\)" ","
       FormSetGuid "=" guidDefinition[FSId] ","
@@ -1587,10 +1667,7 @@ vfrStatementGoto :
                                                           FId = _STOFID(F4->getText());
                                                        >>
     )
-    |
-    (
-    )
-  )
+  }
                                                        <<
                                                           switch (RefType) {
                                                           case 5:
@@ -4294,6 +4371,9 @@ EfiVfrParser::_DeclareDefaultFrameworkVarStore (
       VSEObj.SetAttributes (0x00000002); //hardcode EFI_VARIABLE_BOOTSERVICE_ACCESS attribute
       VSEObj.SetGuid (&pNode->mGuid);
       VSEObj.SetVarStoreId (pNode->mVarStoreId);
+      // Generate old efi varstore storage structure for compatiable with old "VarEqVal" opcode,
+      // which is 3 bytes less than new structure define in UEFI Spec 2.3.1.
+      VSEObj.SetBinaryLength (sizeof (EFI_IFR_VARSTORE_EFI) - 3);
 #ifdef VFREXP_DEBUG
       printf ("undefined Efi VarStoreName is %s and Id is 0x%x\n", pNode->mVarStoreName, pNode->mVarStoreId);
 #endif

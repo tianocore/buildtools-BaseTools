@@ -22,6 +22,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 
 PACKAGE_DATA  gCBuffer;
 PACKAGE_DATA  gRBuffer;
+CVfrStringDB  gCVfrStringDB;
 
 VOID 
 CVfrCompiler::DebugError (
@@ -132,6 +133,14 @@ CVfrCompiler::OptionInitialization (
       AppendCPreprocessorOptions (Argv[Index]);
     } else if (stricmp(Argv[Index], "-c") == 0 || stricmp(Argv[Index], "--compatible-framework") == 0) {
       mOptions.CompatibleMode = TRUE;
+    } else if (stricmp(Argv[Index], "-s") == 0|| stricmp(Argv[Index], "--string-db") == 0) {
+      Index++;
+      if ((Index >= Argc) || (Argv[Index][0] == '-')) {
+        DebugError (NULL, 0, 1001, "Missing option", "-s missing input string file name");
+        goto Fail;
+      }
+      gCVfrStringDB.SetStringFileName(Argv[Index]);
+      DebugMsg (NULL, 0, 9, (CHAR8 *) "Input string file path", Argv[Index]);
     } else {
       DebugError (NULL, 0, 1000, "Unknown option", "unrecognized option %s", Argv[Index]);
       goto Fail;
@@ -399,6 +408,8 @@ CVfrCompiler::Usage (
     "                 do not preprocessing input file",
     "  -c, --compatible-framework",
     "                 compatible framework vfr file",
+    "  -s, --string-db",
+    "                 input uni string package file",
     NULL
     };
   for (Index = 0; Help[Index] != NULL; Index++) {

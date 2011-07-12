@@ -424,4 +424,36 @@ public:
   UINT8 GetRuleId (IN CHAR8 *);
 };
 
+class CVfrStringDB {
+private:
+  CHAR8   *mStringFileName;
+
+  EFI_STATUS FindStringBlock (
+    IN  CHAR8            *StringData,
+    IN  EFI_STRING_ID    StringId,
+    OUT UINTN            *StringTextOffset,
+    OUT UINT8            *BlockType
+    );
+
+  EFI_STATUS GetUnicodeStringTextOrSize (
+    OUT EFI_STRING       StringDest, OPTIONAL
+    IN  CHAR8            *StringSrc,
+    IN  OUT UINTN        *BufferSize
+    );
+
+public:
+  CVfrStringDB ();
+  ~CVfrStringDB ();
+
+  VOID SetStringFileName (
+    IN CHAR8 *StringFileName
+    );
+
+  VOID GetVarStoreNameFormStringId (
+    IN EFI_STRING_ID StringId,
+    OUT CHAR8        **VarStoreName
+    );
+
+};
+
 #endif
