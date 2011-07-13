@@ -3420,14 +3420,14 @@ CVfrStringDB::GetUnicodeStringTextOrSize (
   UINTN  StringSize;
   CHAR16 *StringPtr;
 
-  StringSize = (wcslen ((wchar_t*)StringSrc) + 1 ) *  sizeof (CHAR16);
+  StringSize = (wcslen ((wchar_t*)StringSrc) + 1 ) * sizeof (CHAR16);
   if (*BufferSize < StringSize) {
     *BufferSize = StringSize;
     return EFI_BUFFER_TOO_SMALL;
   }
 
   if (StringDest != NULL) {
-    wcscpy ((wchar_t*)StringDest, (wchar_t*)StringSrc);
+    memcpy (StringDest, StringSrc, StringSize);
   }
 
   *BufferSize = StringSize;
