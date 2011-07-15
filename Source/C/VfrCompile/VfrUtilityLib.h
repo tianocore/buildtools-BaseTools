@@ -431,14 +431,14 @@ private:
   EFI_STATUS FindStringBlock (
     IN  CHAR8            *StringData,
     IN  EFI_STRING_ID    StringId,
-    OUT UINTN            *StringTextOffset,
+    OUT UINT32           *StringTextOffset,
     OUT UINT8            *BlockType
     );
 
   EFI_STATUS GetUnicodeStringTextOrSize (
     OUT EFI_STRING       StringDest, OPTIONAL
     IN  CHAR8            *StringSrc,
-    IN  OUT UINTN        *BufferSize
+    IN  OUT UINT32       *BufferSize
     );
 
 public:

@@ -3182,22 +3182,22 @@ EFI_STATUS
 CVfrStringDB::FindStringBlock (
   IN  CHAR8                           *StringData,
   IN  EFI_STRING_ID                   StringId,
-  OUT UINTN                           *StringTextOffset,
+  OUT UINT32                          *StringTextOffset,
   OUT UINT8                           *BlockType
   )
 {
   CHAR8                                *BlockHdr;
   EFI_STRING_ID                        CurrentStringId;
-  UINTN                                BlockSize;
-  UINTN                                Index;
+  UINT32                               BlockSize;
+  UINT32                               Index;
   CHAR8                                *StringTextPtr;
-  UINTN                                Offset;
+  UINT32                               Offset;
   UINT16                               StringCount;
   UINT16                               SkipCount;
   UINT8                                Length8;
   EFI_HII_SIBT_EXT2_BLOCK              Ext2;
   UINT32                               Length32;
-  UINTN                                StringSize;
+  UINT32                               StringSize;
   
   CurrentStringId = 1;
 
@@ -3414,10 +3414,10 @@ EFI_STATUS
 CVfrStringDB::GetUnicodeStringTextOrSize (
   OUT EFI_STRING       StringDest, OPTIONAL
   IN  CHAR8            *StringSrc,
-  IN  OUT UINTN        *BufferSize
+  IN  OUT UINT32       *BufferSize
   )
 {
-  UINTN  StringSize;
+  UINT32 StringSize;
   CHAR16 *StringPtr;
 
   StringSize = sizeof (CHAR16);
