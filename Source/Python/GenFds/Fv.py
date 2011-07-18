@@ -46,7 +46,8 @@ class FV (FvClassObject):
         self.InfFileName = None
         self.FvAddressFileName = None
         self.CapsuleName = None
-
+        self.FvBaseAddress = None
+        
     ## AddToBuffer()
     #
     #   Generate Fv and add it to the Buffer
@@ -81,9 +82,12 @@ class FV (FvClassObject):
                             elif RegionData.upper() + 'fv' in GenFds.ImageBinDict.keys():
                                 continue
                             elif self.UiFvName.upper() == RegionData.upper():
-                               GenFdsGlobalVariable.ErrorLogger("Capsule %s in FD region can't contain a FV %s in FD region." % (self.CapsuleName, self.UiFvName.upper()))
+                                GenFdsGlobalVariable.ErrorLogger("Capsule %s in FD region can't contain a FV %s in FD region." % (self.CapsuleName, self.UiFvName.upper()))
 
         GenFdsGlobalVariable.InfLogger( "\nGenerating %s FV" %self.UiFvName)
+        
+        if self.FvBaseAddress != None:
+            BaseAddress = self.FvBaseAddress
 
         self.__InitializeInf__(BaseAddress, BlockSize, BlockNum, ErasePloarity, VtfDict)
         #
