@@ -3067,82 +3067,84 @@ CVfrStringDB::SetStringFileName(IN CHAR8 *StringFileName)
   mStringFileName[FileLen - 1] = '\0';
 }
 
-VOID
+CHAR8 *
 CVfrStringDB::GetVarStoreNameFormStringId (
-  IN EFI_STRING_ID StringId,
-  OUT CHAR8        **VarStoreName
+  IN EFI_STRING_ID StringId
   )
 {
   FILE        *pInFile    = NULL;
   UINT32      NameOffset;
   UINT32      Length;
-  CHAR8       *StringPtr;
+  UINT8       *StringPtr;
   CHAR8       *StringName;
   CHAR16      *UnicodeString;
+  CHAR8       *VarStoreName = NULL;
   CHAR8       *DestTmp;
+  UINT8       *Current;
   EFI_STATUS  Status;
   CHAR8       LineBuf[EFI_IFR_MAX_LENGTH];
   UINT8       BlockType;
-  EFI_HII_STRING_PACKAGE_HDR PkgHeader;
-  
-  if (VarStoreName == NULL) {
-    return;
-  }
-
-  *VarStoreName = NULL;
+  EFI_HII_STRING_PACKAGE_HDR *PkgHeader;
   
   if (mStringFileName == '\0' ) {
-    return;
+    return NULL;
   }
 
-  if ((pInFile = fopen (mStringFileName, "r")) == NULL) {
-    return;
+  if ((pInFile = fopen (mStringFileName, "rb")) == NULL) {
+    return NULL;
   }
 
   //
-  // fgets will add "\0" at the end of the string, so need to add one byte extra buffer.
+  // Get file length.
   //
-  while (fgets ((char *)(&PkgHeader), sizeof (EFI_HII_STRING_PACKAGE_HDR), pInFile) != NULL) {
-   
-    if (PkgHeader.Header.Type != EFI_HII_PACKAGE_STRINGS) {
-      fclose (pInFile);
-      return;
-    }
+  fseek (pInFile, 0, SEEK_END);
+  Length = ftell (pInFile);
+  fseek (pInFile, 0, SEEK_SET);
 
-    Length = PkgHeader.HdrSize - sizeof (EFI_HII_STRING_PACKAGE_HDR) + 1 + 1;
-    if (fgets (LineBuf, Length, pInFile) == NULL) {
-      fclose (pInFile);
-      return;
-    }
-    
-    Length = PkgHeader.Header.Length - PkgHeader.HdrSize + 1;
-    StringPtr = new CHAR8[Length];
-    if (StringPtr == NULL) {
-      fclose (pInFile);
-    }
-    
-    if (fgets (StringPtr, Length, pInFile) == NULL ) {
-      fclose (pInFile);
-      return;
-    }
+  //
+  // Get file data.
+  //
+  StringPtr = new UINT8[Length];
+  if (StringPtr == NULL) {
+    fclose (pInFile);
+    return NULL;
+  }
+  fread ((char *)StringPtr, sizeof (UINT8), Length, pInFile);
+  fclose (pInFile);
 
-    if (strcmp (LineBuf, "en-US") == 0) {
-      //
-      // Skip the data that the language is not english.
-      //   
+  PkgHeader = (EFI_HII_STRING_PACKAGE_HDR *) StringPtr;
+  //
+  // Check the String package.
+  //
+  if (PkgHeader->Header.Type != EFI_HII_PACKAGE_STRINGS) {
+    delete StringPtr;
+    return NULL;
+  }
+
+  //
+  // Search the language, only search the "en-US".
+  //
+  Current = StringPtr;
+  while (strcmp (PkgHeader->Language, "en-US") != 0) {
+    Current += PkgHeader->Header.Length;
+    PkgHeader = (EFI_HII_STRING_PACKAGE_HDR *) Current;
+    //
+    // If can't find "en-US" string package, just return the first string package.
+    //
+    if (Current - StringPtr >= Length) {
+      Current = StringPtr;
       break;
     }
-    delete StringPtr;
   }
 
+  Current += PkgHeader->HdrSize;
   //
   // Find the string block according the stringId.
   //
-  Status = FindStringBlock(StringPtr, StringId, &NameOffset, &BlockType);
+  Status = FindStringBlock(Current, StringId, &NameOffset, &BlockType);
   if (Status != EFI_SUCCESS) {
     delete StringPtr;
-    fclose (pInFile);
-    return;
+    return NULL;
   }
 
   //
@@ -3153,18 +3155,18 @@ CVfrStringDB::GetVarStoreNameFormStringId (
   case EFI_HII_SIBT_STRING_SCSU_FONT:
   case EFI_HII_SIBT_STRINGS_SCSU:
   case EFI_HII_SIBT_STRINGS_SCSU_FONT:
-    StringName = StringPtr + NameOffset;
-    *VarStoreName = new CHAR8[strlen(StringName) + 1];
-    strcpy (*VarStoreName, StringName);
+    StringName = (CHAR8*)(Current + NameOffset);
+    VarStoreName = new CHAR8[strlen(StringName) + 1];
+    strcpy (VarStoreName, StringName);
     break;
   case EFI_HII_SIBT_STRING_UCS2:
   case EFI_HII_SIBT_STRING_UCS2_FONT:
   case EFI_HII_SIBT_STRINGS_UCS2:
   case EFI_HII_SIBT_STRINGS_UCS2_FONT:
-    UnicodeString = (CHAR16*)(StringPtr + NameOffset);
-    Status = GetUnicodeStringTextOrSize (NULL, (CHAR8*)UnicodeString, &Length) ;
+    UnicodeString = (CHAR16*)(Current + NameOffset);
+    Length = GetUnicodeStringTextSize ((UINT8*)UnicodeString) ;
     DestTmp = new CHAR8[Length / 2 + 1];
-    *VarStoreName = DestTmp;
+    VarStoreName = DestTmp;
     while (*UnicodeString != '\0') {
       *(DestTmp++) = (CHAR8) *(UnicodeString++);
     }
@@ -3175,22 +3177,23 @@ CVfrStringDB::GetVarStoreNameFormStringId (
   }
 
   delete StringPtr;
-  fclose (pInFile);
+
+  return VarStoreName;
 }
 
 EFI_STATUS
 CVfrStringDB::FindStringBlock (
-  IN  CHAR8                           *StringData,
+  IN  UINT8                           *StringData,
   IN  EFI_STRING_ID                   StringId,
   OUT UINT32                          *StringTextOffset,
   OUT UINT8                           *BlockType
   )
 {
-  CHAR8                                *BlockHdr;
+  UINT8                                *BlockHdr;
   EFI_STRING_ID                        CurrentStringId;
   UINT32                               BlockSize;
   UINT32                               Index;
-  CHAR8                                *StringTextPtr;
+  UINT8                                *StringTextPtr;
   UINT32                               Offset;
   UINT16                               StringCount;
   UINT16                               SkipCount;
@@ -3198,7 +3201,7 @@ CVfrStringDB::FindStringBlock (
   EFI_HII_SIBT_EXT2_BLOCK              Ext2;
   UINT32                               Length32;
   UINT32                               StringSize;
-  
+
   CurrentStringId = 1;
 
   //
@@ -3268,7 +3271,7 @@ CVfrStringDB::FindStringBlock (
       // Use StringSize to store the size of the specified string, including the NULL
       // terminator.
       //
-      GetUnicodeStringTextOrSize (NULL, StringTextPtr, &StringSize);
+      StringSize = GetUnicodeStringTextSize (StringTextPtr);
       BlockSize += Offset + StringSize;
       CurrentStringId++;
       break;
@@ -3280,7 +3283,7 @@ CVfrStringDB::FindStringBlock (
       // Use StrSize to store the size of the specified string, including the NULL
       // terminator.
       //
-      GetUnicodeStringTextOrSize (NULL, StringTextPtr, &StringSize);
+      StringSize = GetUnicodeStringTextSize (StringTextPtr);
       BlockSize += Offset + StringSize;
       CurrentStringId++;
       break;
@@ -3291,7 +3294,7 @@ CVfrStringDB::FindStringBlock (
       BlockSize += Offset;
       memcpy (&StringCount, BlockHdr + sizeof (EFI_HII_STRING_BLOCK), sizeof (UINT16));
       for (Index = 0; Index < StringCount; Index++) {
-        GetUnicodeStringTextOrSize (NULL, StringTextPtr, &StringSize);
+        StringSize = GetUnicodeStringTextSize (StringTextPtr);
         BlockSize += StringSize;
         if (CurrentStringId == StringId) {
           *BlockType        = *BlockHdr;
@@ -3313,7 +3316,7 @@ CVfrStringDB::FindStringBlock (
         sizeof (UINT16)
         );
       for (Index = 0; Index < StringCount; Index++) {
-        GetUnicodeStringTextOrSize (NULL, StringTextPtr, &StringSize);
+        StringSize = GetUnicodeStringTextSize (StringTextPtr);
         BlockSize += StringSize;
         if (CurrentStringId == StringId) {
           *BlockType        = *BlockHdr;
@@ -3410,11 +3413,9 @@ CVfrStringDB::FindStringBlock (
   return EFI_NOT_FOUND;
 }
 
-EFI_STATUS
-CVfrStringDB::GetUnicodeStringTextOrSize (
-  OUT EFI_STRING       StringDest, OPTIONAL
-  IN  CHAR8            *StringSrc,
-  IN  OUT UINT32       *BufferSize
+UINT32
+CVfrStringDB::GetUnicodeStringTextSize (
+  IN  UINT8            *StringSrc
   )
 {
   UINT32 StringSize;
@@ -3426,17 +3427,7 @@ CVfrStringDB::GetUnicodeStringTextOrSize (
     StringSize += sizeof (CHAR16);
   }
 
-  if (*BufferSize < StringSize) {
-    *BufferSize = StringSize;
-    return EFI_BUFFER_TOO_SMALL;
-  }
-
-  if (StringDest != NULL) {
-    memcpy (StringDest, StringSrc, StringSize);
-  }
-
-  *BufferSize = StringSize;
-  return EFI_SUCCESS;
+  return StringSize;
 }
 
 BOOLEAN  VfrCompatibleMode = FALSE;

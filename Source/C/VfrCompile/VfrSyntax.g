@@ -894,7 +894,7 @@ vfrStatementVarStoreEfi :
     Name    "=" "STRING_TOKEN" "\(" VN:Number "\)" ","  
     VarSize "=" N:Number ","                        << 
                                                        IsUEFI23EfiVarstore = FALSE;
-                                                       gCVfrStringDB.GetVarStoreNameFormStringId(_STOSID(VN->getText()), &StoreName);
+                                                       StoreName = gCVfrStringDB.GetVarStoreNameFormStringId(_STOSID(VN->getText()));
                                                        if (StoreName == NULL) {
                                                          _PCATCH (VFR_RETURN_UNSUPPORTED, VN->getLine(), "Can't get varstore name for this StringId!");
                                                        }

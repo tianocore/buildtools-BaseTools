@@ -175,7 +175,7 @@ private:
   VOID RegisterNewType (IN SVfrDataType *);
 
   EFI_VFR_RETURN_CODE ExtractStructTypeName (IN CHAR8 *&, OUT CHAR8 *);
-  EFI_VFR_RETURN_CODE GetTypeField (IN CHAR8 *, IN SVfrDataType *, IN SVfrDataField *&);
+  EFI_VFR_RETURN_CODE GetTypeField (IN CONST CHAR8 *, IN SVfrDataType *, IN SVfrDataField *&);
   EFI_VFR_RETURN_CODE GetFieldOffset (IN SVfrDataField *, IN UINT32, OUT UINT32 &);
   UINT8               GetFieldWidth (IN SVfrDataField *);
   UINT32              GetFieldSize (IN SVfrDataField *, IN UINT32);
@@ -429,16 +429,14 @@ private:
   CHAR8   *mStringFileName;
 
   EFI_STATUS FindStringBlock (
-    IN  CHAR8            *StringData,
+    IN  UINT8            *StringData,
     IN  EFI_STRING_ID    StringId,
     OUT UINT32           *StringTextOffset,
     OUT UINT8            *BlockType
     );
 
-  EFI_STATUS GetUnicodeStringTextOrSize (
-    OUT EFI_STRING       StringDest, OPTIONAL
-    IN  CHAR8            *StringSrc,
-    IN  OUT UINT32       *BufferSize
+  UINT32 GetUnicodeStringTextSize (
+    IN  UINT8            *StringSrc
     );
 
 public:
@@ -449,9 +447,8 @@ public:
     IN CHAR8 *StringFileName
     );
 
-  VOID GetVarStoreNameFormStringId (
-    IN EFI_STRING_ID StringId,
-    OUT CHAR8        **VarStoreName
+  CHAR8 * GetVarStoreNameFormStringId (
+    IN EFI_STRING_ID StringId
     );
 
 };
