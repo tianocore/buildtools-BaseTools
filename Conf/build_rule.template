@@ -417,6 +417,8 @@
         $(OUTPUT_DIR)(+)${s_base}.com
 
     <Command.MSFT, Command.INTEL>
+        "$(PP)" $(PP_FLAGS) $(INC) ${src} > ${d_path}(+)${s_base}.i
+        Trim --source-code --convert-hex -o ${d_path}(+)${s_base}.iii ${d_path}(+)${s_base}.i
         cd $(OUTPUT_DIR)(+)${s_dir}
         "$(ASM16)" /nologo /c /omf $(INC) /Fo$(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.obj ${src}
         "$(ASMLINK)" $(ASMLINK_FLAGS) $(OUTPUT_DIR)(+)${s_dir}(+)${s_base}.obj,${dst},,,,
