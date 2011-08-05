@@ -1242,13 +1242,13 @@ class Build():
                 
                 # Create MAP file when Load Fix Address is enabled.
                 if self.Target in ["", "all", "fds"]:
-                    for Arch in wa.ArchList:
+                    for Arch in Wa.ArchList:
                         GlobalData.gGlobalDefines['ARCH'] = Arch
                         #
                         # Check whether the set fix address is above 4G for 32bit image.
                         #
                         if (Arch == 'IA32' or Arch == 'ARM') and self.LoadFixAddress != 0xFFFFFFFFFFFFFFFF and self.LoadFixAddress >= 0x100000000:
-                            EdkLogger.error("build", PARAMETER_INVALID, "FIX_LOAD_TOP_MEMORY_ADDRESS can't be set to larger than or equal to 4G for the platorm with IA32 or ARM arch modules")
+                            EdkLogger.error("build", PARAMETER_INVALID, "FIX_LOAD_TOP_MEMORY_ADDRESS can't be set to larger than or equal to 4G for the platform with IA32 or ARM arch modules")
                     #
                     # Get Module List
                     #
@@ -1805,8 +1805,8 @@ def Main():
         if MyBuild != None:
             # for multi-thread build exits safely
             MyBuild.Relinquish()
-        if Option != None and Option.debug != None:
-            EdkLogger.quiet("(Python %s on %s) " % (platform.python_version(), sys.platform) + traceback.format_exc())
+        #if Option != None and Option.debug != None:
+        EdkLogger.quiet("(Python %s on %s) " % (platform.python_version(), sys.platform) + traceback.format_exc())
         ReturnCode = X.args[0]
     except Warning, X:
         # error from Fdf parser

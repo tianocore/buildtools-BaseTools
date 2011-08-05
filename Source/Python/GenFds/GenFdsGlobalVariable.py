@@ -459,17 +459,21 @@ class GenFdsGlobalVariable:
 
         PcdValue = ''
         for Platform in GenFdsGlobalVariable.WorkSpace.PlatformList:
-            PcdDict = Platform.Pcds
-            for Key in PcdDict:
-                PcdObj = PcdDict[Key]
-                if (PcdObj.TokenCName == TokenCName) and (PcdObj.TokenSpaceGuidCName == TokenSpace):
-                    if PcdObj.Type != 'FixedAtBuild':
-                        EdkLogger.error("GenFds", GENFDS_ERROR, "%s is not FixedAtBuild type." % PcdPattern)
-                    if PcdObj.DatumType != 'VOID*':
-                        EdkLogger.error("GenFds", GENFDS_ERROR, "%s is not VOID* datum type." % PcdPattern)
-                        
-                    PcdValue = PcdObj.DefaultValue
-                    return PcdValue
+            #
+            # Only process platform which match current build option.
+            #
+            if Platform.MetaFile == GenFdsGlobalVariable.ActivePlatform:
+                PcdDict = Platform.Pcds
+                for Key in PcdDict:
+                    PcdObj = PcdDict[Key]
+                    if (PcdObj.TokenCName == TokenCName) and (PcdObj.TokenSpaceGuidCName == TokenSpace):
+                        if PcdObj.Type != 'FixedAtBuild':
+                            EdkLogger.error("GenFds", GENFDS_ERROR, "%s is not FixedAtBuild type." % PcdPattern)
+                        if PcdObj.DatumType != 'VOID*':
+                            EdkLogger.error("GenFds", GENFDS_ERROR, "%s is not VOID* datum type." % PcdPattern)
+                            
+                        PcdValue = PcdObj.DefaultValue
+                        return PcdValue
 
         for Package in GenFdsGlobalVariable.WorkSpace.PackageList:
             PcdDict = Package.Pcds
