@@ -327,10 +327,10 @@ class FdfParser:
     #
     def __GetOneChar(self):
         if self.CurrentOffsetWithinLine == len(self.Profile.FileLinesList[self.CurrentLineNumber - 1]) - 1:
-                self.CurrentLineNumber += 1
-                self.CurrentOffsetWithinLine = 0
+            self.CurrentLineNumber += 1
+            self.CurrentOffsetWithinLine = 0
         else:
-                self.CurrentOffsetWithinLine += 1
+            self.CurrentOffsetWithinLine += 1
 
     ## __CurrentChar() method
     #
@@ -574,7 +574,16 @@ class FdfParser:
                 self.Profile.FileLinesList[IncludeLine - 1] = ''.join(TempList)
 
         self.Rewind()
-
+        
+    def __GetIfListCurrentItemStat(self, IfList):
+        if len(IfList) == 0:
+            return True
+        
+        for Item in IfList:
+            if Item[1] == False:
+                return False
+        
+        return True
     
     ## PreprocessConditionalStatement() method
     #
@@ -589,28 +598,29 @@ class FdfParser:
         RegionLayoutLine = 0
         while self.__GetNextToken():
             if self.__Token == 'DEFINE':
-                DefineLine = self.CurrentLineNumber - 1
-                DefineOffset = self.CurrentOffsetWithinLine - len('DEFINE')
-                if not self.__GetNextToken():
-                    raise Warning("expected Macro name", self.FileName, self.CurrentLineNumber)
-                Macro = self.__Token
-                if not self.__IsToken( "="):
-                    raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
-
-                if not self.__GetNextToken():
-                    raise Warning("expected value", self.FileName, self.CurrentLineNumber)
-
-                if self.__GetStringData():
-                    pass
-                Value = self.__Token
-                if not Macro in InputMacroDict:
-                    FileLineTuple = GetRealFileLine(self.FileName, DefineLine + 1)
-                    MacProfile = MacroProfile(FileLineTuple[0], FileLineTuple[1])
-                    MacProfile.MacroName = Macro
-                    MacProfile.MacroValue = Value
-                    AllMacroList.append(MacProfile)
-                    InputMacroDict[MacProfile.MacroName] = MacProfile.MacroValue
-                self.__WipeOffArea.append(((DefineLine, DefineOffset), (self.CurrentLineNumber - 1, self.CurrentOffsetWithinLine - 1)))
+                if self.__GetIfListCurrentItemStat(IfList): 
+                    DefineLine = self.CurrentLineNumber - 1
+                    DefineOffset = self.CurrentOffsetWithinLine - len('DEFINE')
+                    if not self.__GetNextToken():
+                        raise Warning("expected Macro name", self.FileName, self.CurrentLineNumber)
+                    Macro = self.__Token
+                    if not self.__IsToken( "="):
+                        raise Warning("expected '='", self.FileName, self.CurrentLineNumber)
+    
+                    if not self.__GetNextToken():
+                        raise Warning("expected value", self.FileName, self.CurrentLineNumber)
+    
+                    if self.__GetStringData():
+                        pass
+                    Value = self.__Token
+                    if not Macro in InputMacroDict:
+                        FileLineTuple = GetRealFileLine(self.FileName, DefineLine + 1)
+                        MacProfile = MacroProfile(FileLineTuple[0], FileLineTuple[1])
+                        MacProfile.MacroName = Macro
+                        MacProfile.MacroValue = Value
+                        AllMacroList.append(MacProfile)
+                        InputMacroDict[MacProfile.MacroName] = MacProfile.MacroValue
+                    self.__WipeOffArea.append(((DefineLine, DefineOffset), (self.CurrentLineNumber - 1, self.CurrentOffsetWithinLine - 1)))
             elif self.__Token == 'SET':
                 PcdPair = self.__GetNextPcdName()
                 PcdName = "%s.%s" % (PcdPair[1], PcdPair[0])
