@@ -269,12 +269,63 @@ class WorkspaceAutoGen(AutoGen):
         #
         self._CheckAllPcdsTokenValueConflict()
         
+        #
+        # Check PCD type and definition between DSC and DEC
+        #
+        self._CheckPcdDefineAndType()
+        
         self._BuildDir = None
         self._FvDir = None
         self._MakeFileDir = None
         self._BuildCommand = None
 
         return True
+
+    def _CheckPcdDefineAndType(self):
+        PcdTypeList = [
+            "FixedAtBuild", "PatchableInModule", "FeatureFlag",
+            "Dynamic", #"DynamicHii", "DynamicVpd",
+            "DynamicEx", # "DynamicExHii", "DynamicExVpd"
+        ]
+
+        for Pa in self.AutoGenObjectList:
+            # Key of DSC's Pcds dictionary is PcdCName, TokenSpaceGuid
+            for Pcd in Pa.Platform.Pcds:
+                PcdType = Pa.Platform.Pcds[Pcd].Type
+                
+                # If no PCD type, this PCD comes from FDF 
+                if not PcdType:
+                    continue
+                
+                # Try to remove Hii and Vpd suffix
+                if PcdType.startswith("DynamicEx"):
+                    PcdType = "DynamicEx"
+                elif PcdType.startswith("Dynamic"):
+                    PcdType = "Dynamic"
+    
+                for Package in Pa.PackageList:
+                    # Key of DEC's Pcds dictionary is PcdCName, TokenSpaceGuid, PcdType
+                    if (Pcd[0], Pcd[1], PcdType) in Package.Pcds:
+                        break
+                    for Type in PcdTypeList:
+                        if (Pcd[0], Pcd[1], Type) in Package.Pcds:
+                            EdkLogger.error(
+                                'build',
+                                FORMAT_INVALID,
+                                "Type [%s] of PCD [%s.%s] in DSC file doesn't match the type [%s] defined in DEC file." \
+                                % (Pa.Platform.Pcds[Pcd].Type, Pcd[1], Pcd[0], Type),
+                                ExtraData=None
+                            )
+                            return
+                else:
+                    EdkLogger.error(
+                        'build',
+                        FORMAT_INVALID,
+                        "This Pcd is not defined in DEC files: [%s.%s]." \
+                        % (Pcd[1], Pcd[0]),
+                        ExtraData=None
+                    )
+                    return
 
     def __repr__(self):
         return "%s [%s]" % (self.MetaFile, ", ".join(self.ArchList))
