@@ -136,7 +136,7 @@ def InstallNewFile(WorkspaceDir, File):
 def UnZipDp(WorkspaceDir, Options, DataBase):
     ContentZipFile = None
     Logger.Quiet(ST.MSG_UZIP_PARSE_XML)
-    DpPkgFileName = os.path.normpath(os.path.join(WorkspaceDir, Options.PackageFile))
+    DpPkgFileName = Options.PackageFile
     DistFile = PackageFile(DpPkgFileName)
     
     DpDescFileName, ContentFileName = GetDPFile(DistFile.GetZipFile())

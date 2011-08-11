@@ -543,6 +543,8 @@ ERR_INSTALL_FILE_FROM_EMPTY_CONTENT = _("Error file to be installed is not found
 ERR_INSTALL_FILE_DEC_FILE_ERROR = _("Could not obtain the TokenSpaceGuidCName and the PcdCName from the DEC files "
 "that the package depends on for this pcd entry: TokenValue: %s Token: %s")
 ERR_NOT_SUPPORTED_SA_MODULE = _("Stand-alone module distribution does not allow EDK 1 INF")
+ERR_INSTALL_DIST_NOT_FOUND               = \
+_("Distribution file to be installed is not found in current working directory or workspace: %s")
 
 #
 # Expression error message

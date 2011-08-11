@@ -178,6 +178,27 @@ def Main():
         elif Opt.PackFileToInstall:
             if not Opt.PackFileToInstall.endswith('.dist'):
                 Logger.Error("InstallPkg", FILE_TYPE_MISMATCH, ExtraData=ST.ERR_DIST_EXT_ERROR % Opt.PackFileToInstall)
+            
+            #
+            # check file existence, if not absolute path, then try current working directory, then $(WORKSPACE) 
+            #
+            Existed = True
+            if os.path.isabs(Opt.PackFileToInstall):
+                if not (os.path.exists(Opt.PackFileToInstall) and os.path.isfile(Opt.PackFileToInstall)):
+                    Existed = False
+            else:
+                AbsPath = os.path.normpath(os.path.join(os.getcwd(), Opt.PackFileToInstall))
+                if not (os.path.exists(AbsPath) and os.path.isfile(AbsPath)):
+                    AbsPath = os.path.normpath(os.path.join(WorkspaceDir, Opt.PackFileToInstall))
+                    if not (os.path.exists(AbsPath) and os.path.isfile(AbsPath)):
+                        Existed = False
+                
+                if Existed:
+                    Opt.PackFileToInstall = AbsPath
+            
+            if not Existed:
+                Logger.Error("InstallPkg", FILE_NOT_FOUND, ST.ERR_INSTALL_DIST_NOT_FOUND % Opt.PackFileToInstall)
+
             setattr(Opt, 'PackageFile', Opt.PackFileToInstall)
             RunModule = InstallPkg.Main
 
