@@ -1320,6 +1320,11 @@ ${END}\t@cd $(BUILD_DIR)\n
                     MacroList.append('"%s=%s"' % (MacroName, GlobalData.gGlobalDefines[MacroName]))
                 else:
                     MacroList.append('"%s"' % MacroName)
+            for MacroName in GlobalData.gCommandLineDefines:
+                if GlobalData.gCommandLineDefines[MacroName] != "":
+                    MacroList.append('"%s=%s"' % (MacroName, GlobalData.gCommandLineDefines[MacroName]))
+                else:
+                    MacroList.append('"%s"' % MacroName)                
         else:
             FdfFileList = []
 
