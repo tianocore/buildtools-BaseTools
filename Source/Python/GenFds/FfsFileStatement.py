@@ -67,7 +67,7 @@ class FileStatement (FileStatementClassObject) :
         
         OutputDir = os.path.join(GenFdsGlobalVariable.FfsDir, self.NameGuid)
         if not os.path.exists(OutputDir):
-             os.makedirs(OutputDir)
+            os.makedirs(OutputDir)
 
         Dict.update(self.DefineVarDict)
         SectionAlignments = None

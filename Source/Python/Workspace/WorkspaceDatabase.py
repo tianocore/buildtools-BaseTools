@@ -1482,11 +1482,11 @@ class InfBuildData(ModuleBuildClassObject):
                 self._BuildType = 'UEFI_HII'
             else:
                 self._BuildType = self._ModuleType.upper()
-        else:
-            self._BuildType = self._ComponentType.upper()
+        else:  
             if not self._ComponentType:
                 EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE,
                                 "COMPONENT_TYPE is not given", File=self.MetaFile)
+            self._BuildType = self._ComponentType.upper()                
             if self._ComponentType in self._MODULE_TYPE_:
                 self._ModuleType = self._MODULE_TYPE_[self._ComponentType]
             if self._ComponentType == 'LIBRARY':
@@ -1942,8 +1942,8 @@ class InfBuildData(ModuleBuildClassObject):
             
             # If the module has only Binaries and no Sources, then ignore [Depex] 
             if self.Sources == None or self.Sources == []:
-              if self.Binaries <> None and self.Binaries <> []:
-                return self._Depex
+                if self.Binaries != None and self.Binaries != []:
+                    return self._Depex
                 
             # PEIM and DXE drivers must have a valid [Depex] section
             if len(self.LibraryClass) == 0 and len(RecordList) == 0:
@@ -2331,6 +2331,7 @@ class WorkspaceDatabase(object):
         # create table for internal uses
         self.TblDataModel = TableDataModel(self.Cur)
         self.TblFile = TableFile(self.Cur)
+        self.Platform = None
 
         # conversion object for build or file format conversion purpose
         self.BuildObject = WorkspaceDatabase.BuildObjectFactory(self)
@@ -2428,12 +2429,27 @@ determine whether database file is out of date!\n")
 
 
     ## Summarize all packages in the database
-    def _GetPackageList(self):
-        PackageList = []
-        for Module in self.ModuleList:
-            for Package in Module.Packages:
+    def GetPackageList(self, Platform, Arch, TargetName, ToolChainTag):
+        self.Platform = Platform
+        PackageList =[]
+        Pa = self.BuildObject[self.Platform, 'COMMON']
+        #
+        # Get Package related to Modules
+        #
+        for Module in Pa.Modules:
+            ModuleObj = self.BuildObject[Module, Arch, TargetName, ToolChainTag]
+            for Package in ModuleObj.Packages:
                 if Package not in PackageList:
                     PackageList.append(Package)
+        #
+        # Get Packages related to Libraries
+        #
+        for Lib in Pa.LibraryInstances:
+            LibObj = self.BuildObject[Lib, Arch, TargetName, ToolChainTag]
+            for Package in LibObj.Packages:
+                if Package not in PackageList:
+                    PackageList.append(Package)            
+        
         return PackageList
 
     ## Summarize all platforms in the database
@@ -2448,21 +2464,7 @@ determine whether database file is out of date!\n")
                 PlatformList.append(Platform)
         return PlatformList
 
-    ## Summarize all modules in the database
-    def _GetModuleList(self):
-        ModuleList = []
-        for ModuleFile in self.TblFile.GetFileList(MODEL_FILE_INF):
-            try:
-                Module = self.BuildObject[PathClass(ModuleFile), 'COMMON']
-            except:
-                Module = None
-            if Module != None:
-                ModuleList.append(Module)
-        return ModuleList
-
     PlatformList = property(_GetPlatformList)
-    PackageList = property(_GetPackageList)
-    ModuleList = property(_GetModuleList)
 
 ##
 #

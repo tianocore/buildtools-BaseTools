@@ -155,7 +155,7 @@ class AutoGen(object):
 class WorkspaceAutoGen(AutoGen):
     ## Real constructor of WorkspaceAutoGen
     #
-    # This method behaves the same as __init__ except that it needs explict invoke
+    # This method behaves the same as __init__ except that it needs explicit invoke
     # (in super class's __new__ method)
     #
     #   @param  WorkspaceDir            Root directory of workspace
@@ -386,8 +386,8 @@ class WorkspaceAutoGen(AutoGen):
     # @return  None
     #
     def _CheckAllPcdsTokenValueConflict(self):
-        if len(self.BuildDatabase.WorkspaceDb.PackageList) >= 1:
-            for Package in self.BuildDatabase.WorkspaceDb.PackageList:
+        for Pa in self.AutoGenObjectList:
+            for Package in Pa.PackageList:
                 PcdList = Package.Pcds.values()
                 PcdList.sort(lambda x, y: cmp(x.TokenValue, y.TokenValue)) 
                 Count = 0

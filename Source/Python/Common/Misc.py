@@ -1465,7 +1465,7 @@ class PeImageClass():
         self.SectionHeaderList = []
         self.ErrorInfo = ''
         try:
-             PeObject = open(PeFile, 'rb')
+            PeObject = open(PeFile, 'rb')
         except:
             self.ErrorInfo = self.FileName + ' can not be found\n'
             return

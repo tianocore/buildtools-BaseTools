@@ -140,6 +140,10 @@ class Table(object):
 
     def SetEndFlag(self):
         self.Exec("insert into %s values(%s)" % (self.Table, self._DUMMY_))
+        #
+        # Need to execution commit for table data changed.
+        #
+        self.Cur.connection.commit()
 
     def IsIntegral(self):
         Result = self.Exec("select min(ID) from %s" % (self.Table))
