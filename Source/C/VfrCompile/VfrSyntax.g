@@ -51,11 +51,12 @@ public:
 UINT8
 VfrParserStart (
   IN FILE *File,
-  IN BOOLEAN CompatibleMode
+  IN INPUT_INFO_TO_SYNTAX *InputInfo
   )
 {
   ParserBlackBox<CVfrDLGLexer, EfiVfrParser, ANTLRToken> VfrParser(File);
-  VfrParser.parser()->SetCompatibleMode (CompatibleMode);
+  VfrParser.parser()->SetCompatibleMode (InputInfo->CompatibleMode);
+  VfrParser.parser()->SetOverrideClassGuid (InputInfo->OverrideClassGuid);
   return VfrParser.parser()->vfrProgram();
 }
 >>
@@ -509,19 +510,42 @@ vfrFormSetDefinition :
                   ","
   }
                                                     <<
+                                                      if (mOverrideClassGuid != NULL && ClassGuidNum >= 3) {
+                                                        _PCATCH (VFR_RETURN_INVALID_PARAMETER, L->getLine(), "Already has 3 class guids, can't add extra class guid!");
+                                                      }
                                                       switch (ClassGuidNum) {
                                                       case 0:
-                                                        FSObj = new CIfrFormSet(sizeof(EFI_IFR_FORM_SET) + sizeof(EFI_GUID));
+                                                        if (mOverrideClassGuid != NULL) {
+                                                          ClassGuidNum = 2;
+                                                        } else {
+                                                          ClassGuidNum = 1;
+                                                        }
+                                                        FSObj = new CIfrFormSet(sizeof(EFI_IFR_FORM_SET) + ClassGuidNum * sizeof(EFI_GUID));
                                                         FSObj->SetClassGuid(&DefaultClassGuid);
+                                                        if (mOverrideClassGuid != NULL) {
+                                                          FSObj->SetClassGuid(mOverrideClassGuid);
+                                                        }
                                                         break;
                                                       case 1:
+                                                        if (mOverrideClassGuid != NULL) {
+                                                          ClassGuidNum ++;
+                                                        }
                                                         FSObj = new CIfrFormSet(sizeof(EFI_IFR_FORM_SET) + ClassGuidNum * sizeof(EFI_GUID));
                                                         FSObj->SetClassGuid(&ClassGuid1);
+                                                        if (mOverrideClassGuid != NULL) {
+                                                          FSObj->SetClassGuid(mOverrideClassGuid);
+                                                        }
                                                         break;
                                                       case 2:
+                                                        if (mOverrideClassGuid != NULL) {
+                                                          ClassGuidNum ++;
+                                                        }
                                                         FSObj = new CIfrFormSet(sizeof(EFI_IFR_FORM_SET) + ClassGuidNum * sizeof(EFI_GUID));
                                                         FSObj->SetClassGuid(&ClassGuid1);
                                                         FSObj->SetClassGuid(&ClassGuid2);
+                                                        if (mOverrideClassGuid != NULL) {
+                                                          FSObj->SetClassGuid(mOverrideClassGuid);
+                                                        }
                                                         break;
                                                       case 3:
                                                         FSObj = new CIfrFormSet(sizeof(EFI_IFR_FORM_SET) + ClassGuidNum * sizeof(EFI_GUID));
@@ -3813,6 +3837,7 @@ private:
 
 
   EFI_VARSTORE_INFO   mCurrQestVarInfo;
+  EFI_GUID            *mOverrideClassGuid;
 
 //
 // For framework vfr compatibility
@@ -3864,6 +3889,7 @@ public:
   VOID                IdEqValDoSpecial      (IN UINT32 &, IN UINT32, IN EFI_QUESTION_ID, IN CHAR8 *, IN UINT32, IN UINT16, IN EFI_COMPARE_TYPE);
   VOID                IdEqIdDoSpecial       (IN UINT32 &, IN UINT32, IN EFI_QUESTION_ID, IN CHAR8 *, IN UINT32, IN EFI_QUESTION_ID, IN CHAR8 *, IN UINT32, IN EFI_COMPARE_TYPE);
   VOID                IdEqListDoSpecial     (IN UINT32 &, IN UINT32, IN EFI_QUESTION_ID, IN CHAR8 *, IN UINT32, IN UINT16, IN UINT16 *);
+  VOID                SetOverrideClassGuid  (IN EFI_GUID *);
 //
 // For framework vfr compatibility
 //
@@ -4670,6 +4696,12 @@ EfiVfrParser::IdEqListDoSpecial (
     CIfrOr OObj (LineNo);
     ExpOpCount++;
   }
+}
+
+VOID 
+EfiVfrParser::SetOverrideClassGuid (IN EFI_GUID *OverrideClassGuid)
+{
+  mOverrideClassGuid = OverrideClassGuid;
 }
 
 //

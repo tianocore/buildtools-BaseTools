@@ -96,6 +96,11 @@ struct SBufferNode {
   struct SBufferNode *mNext;
 };
 
+typedef struct {
+  BOOLEAN  CompatibleMode;
+  EFI_GUID *OverrideClassGuid;
+} INPUT_INFO_TO_SYNTAX;
+
 class CFormPkg {
 private:
   UINT32              mBufferSize;

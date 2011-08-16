@@ -20,6 +20,7 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 #include "EfiVfr.h"
 #include "VfrFormPkg.h"
 #include "VfrUtilityLib.h"
+#include "ParseInf.h"
 
 #define PROGRAM_NAME                       "VfrCompile"
 #define VFR_COMPILER_VERSION               " 2.00 (UEFI 2.3.1)"
@@ -54,6 +55,8 @@ typedef struct {
   bool    SkipCPreprocessor;
   CHAR8   *CPreprocessorOptions;
   BOOLEAN CompatibleMode;
+  BOOLEAN HasOverrideClassGuid;
+  EFI_GUID OverrideClassGuid;
 } OPTIONS;
 
 typedef enum {

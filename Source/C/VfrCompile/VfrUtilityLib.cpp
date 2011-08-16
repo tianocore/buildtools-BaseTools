@@ -636,7 +636,7 @@ CVfrVarDataTypeDB::ExtractFieldNameAndArrary (
 
 EFI_VFR_RETURN_CODE
 CVfrVarDataTypeDB::GetTypeField (
-  IN  CHAR8          *FName,
+  IN  CONST CHAR8   *FName,
   IN  SVfrDataType  *Type,
   OUT SVfrDataField *&Field
   )
