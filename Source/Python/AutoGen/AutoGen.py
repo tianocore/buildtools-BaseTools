@@ -169,10 +169,17 @@ class WorkspaceAutoGen(AutoGen):
     #   @param  FlashDefinitionFile     File of flash definition
     #   @param  Fds                     FD list to be generated
     #   @param  Fvs                     FV list to be generated
+    #   @param  Caps                    Capsule list to be generated
     #   @param  SkuId                   SKU id from command line
     #
     def _Init(self, WorkspaceDir, ActivePlatform, Target, Toolchain, ArchList, MetaFileDb,
-              BuildConfig, ToolDefinition, FlashDefinitionFile='', Fds=[], Fvs=[], SkuId='', UniFlag=None):
+              BuildConfig, ToolDefinition, FlashDefinitionFile='', Fds=None, Fvs=None, Caps=None, SkuId='', UniFlag=None):
+        if Fds is None:
+            Fds = []
+        if Fvs is None:
+            Fvs = []
+        if Caps is None:
+            Caps = []
         self.BuildDatabase  = MetaFileDb
         self.MetaFile       = ActivePlatform
         self.WorkspaceDir   = WorkspaceDir
@@ -188,6 +195,7 @@ class WorkspaceAutoGen(AutoGen):
         self.FdfFile        = FlashDefinitionFile
         self.FdTargetList   = Fds
         self.FvTargetList   = Fvs
+        self.CapTargetList  = Caps
         self.AutoGenObjectList = []
 
         # there's many relative directory operations, so ...
@@ -249,6 +257,9 @@ class WorkspaceAutoGen(AutoGen):
             if self.FvTargetList:
                 EdkLogger.info("No flash definition file found. FV [%s] will be ignored." % " ".join(self.FvTargetList))
                 self.FvTargetList = []
+            if self.CapTargetList:
+                EdkLogger.info("No flash definition file found. Capsule [%s] will be ignored." % " ".join(self.CapTargetList))
+                self.CapTargetList = []
         
         # apply SKU and inject PCDs from Flash Definition file
         for Arch in self.ArchList:

@@ -712,6 +712,7 @@ class Build():
         self.Fdf            = BuildOptions.FdfFile
         self.FdList         = BuildOptions.RomImage
         self.FvList         = BuildOptions.FvImage
+        self.CapList        = BuildOptions.CapName
         self.SilentMode     = BuildOptions.SilentMode
         self.ThreadNumber   = BuildOptions.ThreadNumber
         self.SkipAutoGen    = BuildOptions.SkipAutoGen
@@ -1231,6 +1232,7 @@ class Build():
                         self.Fdf,
                         self.FdList,
                         self.FvList,
+                        self.CapList,
                         self.SkuId,
                         self.UniFlag
                         )
@@ -1304,6 +1306,7 @@ class Build():
                         self.Fdf,
                         self.FdList,
                         self.FvList,
+                        self.CapList,
                         self.SkuId,
                         self.UniFlag
                         )
@@ -1387,6 +1390,7 @@ class Build():
                         self.Fdf,
                         self.FdList,
                         self.FvList,
+                        self.CapList,
                         self.SkuId,
                         self.UniFlag
                         )
@@ -1510,6 +1514,7 @@ class Build():
                         self.Fdf,
                         self.FdList,
                         self.FvList,
+                        self.CapList,
                         self.SkuId,
                         self.UniFlag
                         )
@@ -1658,7 +1663,8 @@ def MyOptionParser():
         help="The name of FD to be generated. The name must be from [FD] section in FDF file.")
     Parser.add_option("-i", "--fv-image", action="append", type="string", dest="FvImage", default=[],
         help="The name of FV to be generated. The name must be from [FV] section in FDF file.")
-
+    Parser.add_option("-C", "--capsule-image", action="append", type="string", dest="CapName", default=[],
+        help="The name of Capsule to be generated. The name must be from [Capsule] section in FDF file.")
     Parser.add_option("-u", "--skip-autogen", action="store_true", dest="SkipAutoGen", help="Skip AutoGen step.")
     Parser.add_option("-e", "--re-parse", action="store_true", dest="Reparse", help="Re-parse all meta-data files.")
 
