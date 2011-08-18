@@ -422,8 +422,9 @@ CVfrCompiler::Usage (
     "                 compatible framework vfr file",
     "  -s, --string-db",
     "                 input uni string package file",
-    "  -g, --guid Guid",
-    "                  default class guid input,Its format is xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    "  -g, --guid",
+    "                 override class guid input",
+    "                 format is xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
     NULL
     };
   for (Index = 0; Help[Index] != NULL; Index++) {
