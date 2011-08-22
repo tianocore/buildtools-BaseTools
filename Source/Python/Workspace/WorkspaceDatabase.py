@@ -1464,7 +1464,7 @@ class InfBuildData(ModuleBuildClassObject):
             if self._ModuleType not in SUP_MODULE_LIST:
                 RecordList = self._RawData[MODEL_META_DATA_HEADER, self._Arch, self._Platform]
                 for Record in RecordList:
-                    Name = Record[0]
+                    Name = Record[1]
                     if Name == "MODULE_TYPE":
                         LineNo = Record[6]
                         break
