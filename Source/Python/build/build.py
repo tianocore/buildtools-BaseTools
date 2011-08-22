@@ -912,6 +912,11 @@ class Build():
             try:
                 #os.rmdir(AutoGenObject.BuildDir)
                 RemoveDirectory(AutoGenObject.BuildDir, True)
+                #
+                # First should close DB.
+                #
+                self.Db.Close()
+                RemoveDirectory(gBuildCacheDir, True)
             except WindowsError, X:
                 EdkLogger.error("build", FILE_DELETE_FAILURE, ExtraData=str(X))
         return True

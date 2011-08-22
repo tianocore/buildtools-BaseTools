@@ -2303,6 +2303,7 @@ class WorkspaceDatabase(object):
     # @prarm RenewDb=False      Create new database file if it's already there
     #
     def __init__(self, DbPath, RenewDb=False):
+        self._DbClosedFlag = False
         if not DbPath:
             DbPath = os.path.normpath(os.path.join(GlobalData.gWorkspace, self._DB_PATH_))
 
@@ -2423,10 +2424,11 @@ determine whether database file is out of date!\n")
     # Close the connection and cursor
     #
     def Close(self):
-        self.Conn.commit()
-        self.Cur.close()
-        self.Conn.close()
-
+        if not self._DbClosedFlag:
+            self.Conn.commit()
+            self.Cur.close()
+            self.Conn.close()
+            self._DbClosedFlag = True
 
     ## Summarize all packages in the database
     def GetPackageList(self, Platform, Arch, TargetName, ToolChainTag):
