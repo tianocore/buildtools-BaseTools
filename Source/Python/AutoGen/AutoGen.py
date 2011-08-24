@@ -299,6 +299,8 @@ class WorkspaceAutoGen(AutoGen):
             "DynamicEx", # "DynamicExHii", "DynamicExVpd"
         ]
 
+        # This dict store PCDs which are not used by any modules with specified arches
+        UnusedPcd = sdict()
         for Pa in self.AutoGenObjectList:
             # Key of DSC's Pcds dictionary is PcdCName, TokenSpaceGuid
             for Pcd in Pa.Platform.Pcds:
@@ -329,14 +331,16 @@ class WorkspaceAutoGen(AutoGen):
                             )
                             return
                 else:
-                    EdkLogger.error(
-                        'build',
-                        FORMAT_INVALID,
-                        "This Pcd is not defined in DEC files: [%s.%s]." \
-                        % (Pcd[1], Pcd[0]),
-                        ExtraData=None
-                    )
-                    return
+                    UnusedPcd.setdefault(Pcd, []).append(Pa.Arch)
+
+        for Pcd in UnusedPcd:
+            EdkLogger.warn(
+                'build',
+                "The PCD was not specified by any INF module in the platform for the given architecture.\n"
+                "\tPCD: [%s.%s]\n\tPlatform: [%s]\n\tArch: %s"
+                % (Pcd[1], Pcd[0], os.path.basename(str(self.MetaFile)), str(UnusedPcd[Pcd])),
+                ExtraData=None
+            )
 
     def __repr__(self):
         return "%s [%s]" % (self.MetaFile, ", ".join(self.ArchList))
