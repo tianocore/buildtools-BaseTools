@@ -184,16 +184,17 @@ class DepexParser(object):
     #
     def __init__(self, Wa):
         self._GuidDb = {}
-        for Package in Wa.BuildDatabase.WorkspaceDb.PackageList:
-            for Protocol in Package.Protocols:
-                GuidValue = GuidStructureStringToGuidString(Package.Protocols[Protocol])
-                self._GuidDb[GuidValue.upper()] = Protocol
-            for Ppi in Package.Ppis:
-                GuidValue = GuidStructureStringToGuidString(Package.Ppis[Ppi])
-                self._GuidDb[GuidValue.upper()] = Ppi
-            for Guid in Package.Guids:
-                GuidValue = GuidStructureStringToGuidString(Package.Guids[Guid])
-                self._GuidDb[GuidValue.upper()] = Guid
+        for Pa in Wa.AutoGenObjectList:
+            for Package in Pa.PackageList:        
+                for Protocol in Package.Protocols:
+                    GuidValue = GuidStructureStringToGuidString(Package.Protocols[Protocol])
+                    self._GuidDb[GuidValue.upper()] = Protocol
+                for Ppi in Package.Ppis:
+                    GuidValue = GuidStructureStringToGuidString(Package.Ppis[Ppi])
+                    self._GuidDb[GuidValue.upper()] = Ppi
+                for Guid in Package.Guids:
+                    GuidValue = GuidStructureStringToGuidString(Package.Guids[Guid])
+                    self._GuidDb[GuidValue.upper()] = Guid
     
     ##
     # Parse the binary dependency expression files.
@@ -641,10 +642,11 @@ class PcdReport(object):
         # Collect PCD DEC default value.
         #
         self.DecPcdDefault = {}
-        for Package in Wa.BuildDatabase.WorkspaceDb.PackageList:
-            for (TokenCName, TokenSpaceGuidCName, DecType) in Package.Pcds:
-                DecDefaultValue = Package.Pcds[TokenCName, TokenSpaceGuidCName, DecType].DefaultValue
-                self.DecPcdDefault.setdefault((TokenCName, TokenSpaceGuidCName, DecType), DecDefaultValue)
+        for Pa in Wa.AutoGenObjectList:
+            for Package in Pa.PackageList:
+                for (TokenCName, TokenSpaceGuidCName, DecType) in Package.Pcds:
+                    DecDefaultValue = Package.Pcds[TokenCName, TokenSpaceGuidCName, DecType].DefaultValue
+                    self.DecPcdDefault.setdefault((TokenCName, TokenSpaceGuidCName, DecType), DecDefaultValue)
         #
         # Collect PCDs defined in DSC common section
         #
@@ -1174,14 +1176,14 @@ class FdRegionReport(object):
             self._DiscoverNestedFvList(FvName, Wa)
 
         PlatformPcds = {}
-        
         #
         # Collect PCDs declared in DEC files.
-        #
-        for Package in Wa.BuildDatabase.WorkspaceDb.PackageList:
-            for (TokenCName, TokenSpaceGuidCName, DecType) in Package.Pcds:
-                DecDefaultValue = Package.Pcds[TokenCName, TokenSpaceGuidCName, DecType].DefaultValue
-                PlatformPcds[(TokenCName, TokenSpaceGuidCName)] = DecDefaultValue
+        #        
+        for Pa in Wa.AutoGenObjectList:
+            for Package in Pa.PackageList:
+                for (TokenCName, TokenSpaceGuidCName, DecType) in Package.Pcds:
+                    DecDefaultValue = Package.Pcds[TokenCName, TokenSpaceGuidCName, DecType].DefaultValue
+                    PlatformPcds[(TokenCName, TokenSpaceGuidCName)] = DecDefaultValue
         #
         # Collect PCDs defined in DSC common section
         #
