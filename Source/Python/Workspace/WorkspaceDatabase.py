@@ -1224,6 +1224,7 @@ class InfBuildData(ModuleBuildClassObject):
         TAB_INF_DEFINES_COMPONENT_TYPE              : "_ComponentType",
         TAB_INF_DEFINES_MAKEFILE_NAME               : "_MakefileName",
         #TAB_INF_DEFINES_CUSTOM_MAKEFILE             : "_CustomMakefile",
+        TAB_INF_DEFINES_DPX_SOURCE                  :"_DxsFile",
         TAB_INF_DEFINES_VERSION_NUMBER              : "_Version",
         TAB_INF_DEFINES_VERSION_STRING              : "_Version",
         TAB_INF_DEFINES_VERSION                     : "_Version",
@@ -1305,6 +1306,7 @@ class InfBuildData(ModuleBuildClassObject):
         self._Header_               = None
         self._AutoGenVersion        = None
         self._BaseName              = None
+        self._DxsFile               = None
         self._ModuleType            = None
         self._ComponentType         = None
         self._BuildType             = None
@@ -1482,6 +1484,17 @@ class InfBuildData(ModuleBuildClassObject):
                 self._BuildType = 'UEFI_HII'
             else:
                 self._BuildType = self._ModuleType.upper()
+            
+            if self._DxsFile:
+                File = PathClass(NormPath(self._DxsFile), self._ModuleDir, Arch=self._Arch)
+                # check the file validation
+                ErrorCode, ErrorInfo = File.Validate(".dxs", CaseSensitive=False)
+                if ErrorCode != 0:
+                    EdkLogger.error('build', ErrorCode, ExtraData=ErrorInfo,
+                                    File=self.MetaFile, Line=LineNo)
+                if self.Sources == None:
+                    self._Sources = []
+                self._Sources.append(File)
         else:  
             if not self._ComponentType:
                 EdkLogger.error("build", ATTRIBUTE_NOT_AVAILABLE,
@@ -1564,6 +1577,15 @@ class InfBuildData(ModuleBuildClassObject):
             if self._BaseName == None:
                 EdkLogger.error('build', ATTRIBUTE_NOT_AVAILABLE, "No BASE_NAME name", File=self.MetaFile)
         return self._BaseName
+
+    ## Retrieve DxsFile
+    def _GetDxsFile(self):
+        if self._DxsFile == None:
+            if self._Header_ == None:
+                self._GetHeaderInfo()
+            if self._DxsFile == None:
+                self._DxsFile = ''
+        return self._DxsFile
 
     ## Retrieve MODULE_TYPE
     def _GetModuleType(self):
@@ -1934,7 +1956,7 @@ class InfBuildData(ModuleBuildClassObject):
                     self._BuildOptions[ToolChainFamily, ToolChain] = OptionString + " " + Option
         return self._BuildOptions
 
-    ## Retrieve depedency expression
+    ## Retrieve dependency expression
     def _GetDepex(self):
         if self._Depex == None:
             self._Depex = tdict(False, 2)
@@ -2166,7 +2188,8 @@ class InfBuildData(ModuleBuildClassObject):
     ConstructorList         = property(_GetConstructor)
     DestructorList          = property(_GetDestructor)
     Defines                 = property(_GetDefines)
-
+    DxsFile                 = property(_GetDxsFile)
+    
     Binaries                = property(_GetBinaryFiles)
     Sources                 = property(_GetSourceFiles)
     LibraryClasses          = property(_GetLibraryClassUses)

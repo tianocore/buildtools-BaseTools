@@ -1838,6 +1838,10 @@ class ModuleAutoGen(AutoGen):
     def _GetBaseName(self):
         return self.Module.BaseName
 
+    ## Return the module DxsFile if exist
+    def _GetDxsFile(self):
+        return self.Module.DxsFile
+
     ## Return the module SourceOverridePath
     def _GetSourceOverridePath(self):
         return self.Module.SourceOverridePath
@@ -1957,7 +1961,7 @@ class ModuleAutoGen(AutoGen):
     def _GetDepexTokenList(self):
         if self._DepexList == None:
             self._DepexList = {}
-            if self.IsLibrary or TAB_DEPENDENCY_EXPRESSION_FILE in self.FileTypes:
+            if self.DxsFile or self.IsLibrary or TAB_DEPENDENCY_EXPRESSION_FILE in self.FileTypes:
                 return self._DepexList
 
             self._DepexList[self.ModuleType] = []
@@ -1993,7 +1997,7 @@ class ModuleAutoGen(AutoGen):
     def _GetDepexExpressionTokenList(self):
         if self._DepexExpressionList == None:
             self._DepexExpressionList = {}
-            if self.IsLibrary or TAB_DEPENDENCY_EXPRESSION_FILE in self.FileTypes:
+            if self.DxsFile or self.IsLibrary or TAB_DEPENDENCY_EXPRESSION_FILE in self.FileTypes:
                 return self._DepexExpressionList
 
             self._DepexExpressionList[self.ModuleType] = ''
@@ -2197,7 +2201,7 @@ class ModuleAutoGen(AutoGen):
             self._BuildTargets = {}
             self._FileTypes = {}
 
-        #TRICK: call _GetSourceFileList to apply build rule for binary files
+        #TRICK: call _GetSourceFileList to apply build rule for source files
         if self.SourceFileList:
             pass
 
@@ -2616,6 +2620,7 @@ class ModuleAutoGen(AutoGen):
     ProtocolList            = property(_GetProtocolList)
     PpiList                 = property(_GetPpiList)
     DepexList               = property(_GetDepexTokenList)
+    DxsFile                 = property(_GetDxsFile)
     DepexExpressionList     = property(_GetDepexExpressionTokenList)
     BuildOption             = property(_GetModuleBuildOption)
     BuildCommand            = property(_GetBuildCommand)
