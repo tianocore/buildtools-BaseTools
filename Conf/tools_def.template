@@ -197,34 +197,268 @@ DEFINE CLANG_BIN = /usr/bin/
 #
 # Supported Tool Chains
 # =====================
-#   VS2003                 - win32 - Microsoft Visual Studio .NET 2003, Intel EBC, Intel ASL
-#   VS2005                 - win32 - Microsoft Visual Studio 2005 Team Suite Edition, Intel EBC, Intel ASL (also compatible with VS 2005 Express, Standard, and Pro)
-#   VS2008                 - win32 - Microsoft Visual Studio 2008 Team Suite with Intel ASL
-#   DDK3790                - win32 - Microsoft Windows DDK 3790.1830, Intel EBC, Intel ASL
-#   UNIXGCC                - UNIX GCC, No EBC, Intel ASL
-#   GCC44                  - Linux - GCC 4.4 (Native), No EBC, Intel ASL
-#   ELFGCC                 - Linux ELF GCC, No EBC, Intel ASL
-#   CYGGCC                 - win32 - CygWin GCC, Intel EBC, Intel ASL
-#   ICC                    - win32 - Intel C Compiler V9.1, Intel EBC, Intel ASL
-#   ICC11                  - win32 - Intel C Compiler V11.1, Intel EBC, Intel ASL
-#   MYTOOLS                - win32 - VS2008 for IA32/X64, WINDDK 3790.1830 for IPF, Intel EBC, Intel ASL
-#   VS2003xASL             - win32 - Microsoft Visual Studio .NET 2003, Intel EBC, Microsoft ASL
-#   VS2005xASL             - win32 - Microsoft Visual Studio 2005 Team Suite Edition, Intel EBC, Microsoft ASL
-#   VS2008xASL             - win32 - Microsoft Visual Studio 2008 Team Suite with Microsoft ASL
-#   DDK3790xASL            - win32 - Microsoft Windows DDK 3790.1830, Intel EBC, Microsoft ASL
-#   CYGGCCxASL             - win32 - CygWin GCC, Intel EBC, Microsoft ASL
-#   ICCxASL                - win32 - Intel C Compiler V9.1, Intel EBC, Microsoft ASL
-#   ICC11xASL              - win32 - Intel C Compiler V11.1, Intel EBC, Microsoft ASL
-#   VS2005x86              - win64 - Microsoft Visual Studio 2005 Team Suite Edition (x86), Intel EBC, Intel ASL (also compatible with VS 2005 Express, Standard, and Pro)
-#   VS2008x86              - win64 - Microsoft Visual Studio 2008 (x86) w/ Intel ASL
-#   ICCx86                 - win64 - Intel C Compiler V9.1 (x86), Intel EBC, Intel ASL
-#   ICC11x86               - win64 - Intel C Compiler V11.1 (x86), Intel EBC, Intel ASL
-#   VS2005x86xASL          - win64 - Microsoft Visual Studio 2005 Team Suite Edition (x86), Intel EBC, Microsoft ASL (also compatible with VS 2005 Express, Standard, and Pro)
-#   VS2008x86xASL          - win64 - Microsoft Visual Studio 2008 (x86) w/ Microsoft ASL
-#   ICCx86xASL             - win64 - Intel C Compiler V9.1 (x86), Intel EBC, Microsoft ASL
-#   ICC11x86xASL           - win64 - Intel C Compiler V11.1 (x86), Intel EBC, Microsoft ASL
-#   CYGGCCx86              - win64 - CygWin GCC (x86), Intel EBC (x86), Intel ASL
-#   CYGGCCx86xASL          - win64 - CygWin GCC (x86), Intel EBC (x86), Microsoft ASL
+#   VS2003      -win32-  Requires:
+#                             Microsoft Visual Studio .NET 2003
+#                             Microsoft Windows Server 2003 Driver Development Kit (Microsoft WINDDK) version 3790.1830
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler (iasl.exe) v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php
+#   VS2005      -win32-  Requires:
+#                             Microsoft Visual Studio 2005 Team Suite Edition
+#                             Microsoft Windows Server 2003 Driver Development Kit (Microsoft WINDDK) version 3790.1830
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler (iasl.exe) v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php
+#   VS2008      -win32-  Requires:
+#                             Microsoft Visual Studio 2008 Team Suite Edition
+#                             Microsoft Windows Server 2003 Driver Development Kit (Microsoft WINDDK) version 3790.1830
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler (iasl.exe) v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php
+#   DDK3790     -win32-  Requires:
+#                             Microsoft Windows Server 2003 Driver Development Kit (Microsoft WINDDK) version 3790.1830
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler (iasl.exe) v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php
+#   UNIXGCC     -UNIX-   Requires:
+#                             GCC 4.3.0
+#                             binutils 2.20.51.0.5
+#                        Optional:
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php
+#   GCC44       -Linux-  Requires:
+#                             GCC 4.4 (Native)
+#                        Optional:
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php
+#   ELFGCC      -Linux-  Requires:
+#                             GCC(this tool chain uses whatever version of gcc and binutils that is installed in /usr/bin)
+#                        Optional:
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php
+#   CYGGCC      -win32-  Requires:
+#                             CygWin, GCC 4.3.0, binutils 2.20.51.0.5
+#                             Microsoft Visual Studio 2005 or 2008
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler (iasl.exe) v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php
+#   ICC         -win32-  Requires:
+#                             Intel C Compiler V9.1
+#                        Dependencies:
+#                             Microsoft Visual Studio 2005 or 2008
+#                             Microsoft Windows Server 2003 Driver Development Kit (Microsoft WINDDK) 
+#                             version 3790.1830 for X64 target architectures
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler (iasl.exe) v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php
+#   ICC11       -win32-  Requires:
+#                             Intel C Compiler V11.1
+#                        Dependencies:
+#                             Microsoft Visual Studio 2005 or 2008
+#                             Microsoft Windows Server 2003 Driver Development Kit (Microsoft WINDDK) 
+#                             version 3790.1830 for X64 target architectures
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler (iasl.exe) v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php
+#   MYTOOLS     -win32-  Requires:
+#                             Microsoft Visual Studio 2008 for IA32/X64
+#                             Microsoft Windows Server 2003 Driver Development Kit (Microsoft WINDDK) version 3790.1830 for IPF
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler (iasl.exe) v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php
+#   VS2003xASL  -win32-  Requires:
+#                             Microsoft Visual Studio .NET 2003
+#                             Microsoft Windows Server 2003 Driver Development Kit (Microsoft WINDDK) version 3790.1830
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Microsoft ASL ACPI Compiler (asl.exe) v4.0.0 from
+#                               http://download.microsoft.com/download/2/c/1/2c16c7e0-96c1-40f5-81fc-3e4bf7b65496/microsoft_asl_compiler-v4-0-0.msi
+#   VS2005xASL  -win32-  Requires:
+#                             Microsoft Visual Studio 2005 Team Suite Edition
+#                             Microsoft Windows Server 2003 Driver Development Kit (Microsoft WINDDK) version 3790.1830
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Microsoft ASL ACPI Compiler (asl.exe) v4.0.0 from
+#                               http://download.microsoft.com/download/2/c/1/2c16c7e0-96c1-40f5-81fc-3e4bf7b65496/microsoft_asl_compiler-v4-0-0.msi
+#   VS2008xASL  -win32-  Requires:
+#                             Microsoft Visual Studio 2008 Team Suite
+#                             Microsoft Windows Server 2003 Driver Development Kit (Microsoft WINDDK) version 3790.1830
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Microsoft ASL ACPI Compiler (asl.exe) v4.0.0 from
+#                               http://download.microsoft.com/download/2/c/1/2c16c7e0-96c1-40f5-81fc-3e4bf7b65496/microsoft_asl_compiler-v4-0-0.msi
+#   DDK3790xASL -win32-  Requires:
+#                             Microsoft Windows Server 2003 Driver Development Kit (Microsoft WINDDK) version 3790.1830
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Microsoft ASL ACPI Compiler (asl.exe) v4.0.0 from
+#                               http://download.microsoft.com/download/2/c/1/2c16c7e0-96c1-40f5-81fc-3e4bf7b65496/microsoft_asl_compiler-v4-0-0.msi
+#   CYGGCCxASL  -win32-  Requires:
+#                             CygWin, GCC 4.3.0, binutils 2.20.51.0.5
+#                             Microsoft Visual Studio 2005 or 2008
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Microsoft ASL ACPI Compiler (asl.exe) v4.0.0 from
+#                               http://download.microsoft.com/download/2/c/1/2c16c7e0-96c1-40f5-81fc-3e4bf7b65496/microsoft_asl_compiler-v4-0-0.msi
+#   ICCxASL     -win32-  Requires:
+#                             Intel C Compiler V9.1
+#                        Dependencies:
+#                             Microsoft Visual Studio 2005 or 2008
+#                             Microsoft Windows Server 2003 Driver Development Kit (Microsoft WINDDK) 
+#                             version 3790.1830 for X64 target architectures
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Microsoft ASL ACPI Compiler (asl.exe) v4.0.0 from
+#                               http://download.microsoft.com/download/2/c/1/2c16c7e0-96c1-40f5-81fc-3e4bf7b65496/microsoft_asl_compiler-v4-0-0.msi
+#   ICC11xASL   -win32-  Requires:
+#                             Intel C Compiler V11.1
+#                        Dependencies:
+#                             Microsoft Visual Studio 2005 or 2008
+#                             Microsoft Windows Server 2003 Driver Development Kit (Microsoft WINDDK) 
+#                             version 3790.1830 for X64 target architectures
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Microsoft ASL ACPI Compiler (asl.exe) v4.0.0 from
+#                               http://download.microsoft.com/download/2/c/1/2c16c7e0-96c1-40f5-81fc-3e4bf7b65496/microsoft_asl_compiler-v4-0-0.msi
+#   VS2005x86   -win64-  Requires:
+#                             Microsoft Visual Studio 2005 Team Suite Edition (x86)
+#                             Microsoft Windows Server 2003 Driver Development Kit (Microsoft WINDDK) version 3790.1830
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler (iasl.exe) v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php 
+#   VS2008x86   -win64-  Requires:
+#                             Microsoft Visual Studio 2008 (x86)
+#                             Microsoft Windows Server 2003 Driver Development Kit (Microsoft WINDDK) version 3790.1830
+#                        Optional:
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler (iasl.exe) v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php 
+#   ICCx86      -win64-  Requires:
+#                             Intel C Compiler V9.1(x86)
+#                        Dependencies:
+#                             Microsoft Visual Studio 2005 or 2008
+#                             Microsoft Windows Server 2003 Driver Development Kit 
+#                             (Microsoft WINDDK) version 3790.1830 for X64 target architectures
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler (iasl.exe) v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php 
+#   ICC11x86    -win64-  Requires:
+#                             Intel C Compiler V11.1(x86)
+#                        Dependencies:
+#                             Microsoft Visual Studio 2005 or 2008
+#                             Microsoft Windows Server 2003 Driver Development Kit 
+#                             (Microsoft WINDDK) version 3790.1830 for X64 target architectures
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler (iasl.exe) v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php 
+#  VS2005x86xASL -win64- Requires:
+#                             Microsoft Visual Studio 2005 Team Suite Edition (x86)
+#                             Microsoft Windows Server 2003 Driver Development Kit(Microsoft WINDDK) version 3790.1830 
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Microsoft ASL ACPI Compiler (asl.exe) v4.0.0 from
+#                               http://download.microsoft.com/download/2/c/1/2c16c7e0-96c1-40f5-81fc-3e4bf7b65496/microsoft_asl_compiler-v4-0-0.msi
+#  VS2008x86xASL -win64- Requires:
+#                             Microsoft Visual Studio 2008 (x86)
+#                             Microsoft Windows Server 2003 Driver Development Kit(Microsoft WINDDK) version 3790.1830 
+#                        Optional:
+#                             Required to build platforms or ACPI tables:
+#                               Microsoft ASL ACPI Compiler (asl.exe) v4.0.0 from
+#                               http://download.microsoft.com/download/2/c/1/2c16c7e0-96c1-40f5-81fc-3e4bf7b65496/microsoft_asl_compiler-v4-0-0.msi
+#   ICCx86xASL  -win64-  Requires:
+#                             Intel C Compiler V9.1 (x86)
+#                        Dependencies:
+#                             Microsoft Visual Studio 2005 or 2008
+#                             Microsoft Windows Server 2003 Driver Development Kit
+#                             (Microsoft WINDDK) version 3790.1830 for X64 target architectures
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Microsoft ASL ACPI Compiler (asl.exe) v4.0.0 from
+#                               http://download.microsoft.com/download/2/c/1/2c16c7e0-96c1-40f5-81fc-3e4bf7b65496/microsoft_asl_compiler-v4-0-0.msi
+#   ICC11x86xASL -win64- Requires:
+#                             Intel C Compiler V11.1 (x86)
+#                        Dependencies:
+#                             Microsoft Visual Studio 2005 or 2008
+#                             Microsoft Windows Server 2003 Driver Development Kit
+#                             (Microsoft WINDDK) version 3790.1830 for X64 target architectures
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Microsoft ASL ACPI Compiler (asl.exe) v4.0.0 from
+#                               http://download.microsoft.com/download/2/c/1/2c16c7e0-96c1-40f5-81fc-3e4bf7b65496/microsoft_asl_compiler-v4-0-0.msi
+#   CYGGCCx86   -win64-  Requires:
+#                             CygWin, GCC 4.3.0, binutils 2.20.51.0.5
+#                             Microsoft Visual Studio 2005 or 2008
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Intel(r) ACPI Compiler (iasl.exe) v20101013 from
+#                               http://www.acpica.org/downloads/previous_releases.php 
+#  CYGGCCx86xASL -win64- Requires:
+#                             CygWin, GCC 4.3.0, binutils 2.20.51.0.5
+#                             Microsoft Visual Studio 2005 or 2008
+#                        Optional:
+#                             Required to build EBC drivers:
+#                               Intel(r) Compiler for Efi Byte Code (Intel(r) EBC Compiler)
+#                             Required to build platforms or ACPI tables:
+#                               Microsoft ASL ACPI Compiler (asl.exe) v4.0.0 from
+#                               http://download.microsoft.com/download/2/c/1/2c16c7e0-96c1-40f5-81fc-3e4bf7b65496/microsoft_asl_compiler-v4-0-0.msi
 # * Commented out - All versions of VS2005 use the same standard install directory
 #
 ####################################################################################
@@ -2646,9 +2880,9 @@ RELEASE_ICCx86xASL_IPF_DLINK_FLAGS              = /NOLOGO /NODEFAULTLIB /LTCG /D
 ####################################################################################
 #
 # Intel(R) C++ Compiler Version 11.1
-#   IA32 - Intel(R) C++ Compiler for applications running on IA32         (Version 11.1 Build 065 Package ID: w_cproc_p_11.1.065_ia32)
-#   X64  - Intel(R) C++ Compiler for applications running on Intel(R) 64  (Version 11.1 Build 065 Package ID: w_cproc_p_11.1.065_intel64)
-#   IPF  - Intel(R) C++ Compiler for applications running on IA-64        (Version 11.1 Build 065 Package ID: w_cproc_p_11.1.065_ia64)
+#   IA32 - Intel(R) C++ Compiler for applications running on IA32         (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_ia32)
+#   X64  - Intel(R) C++ Compiler for applications running on Intel(R) 64  (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_intel64)
+#   IPF  - Intel(R) C++ Compiler for applications running on IA-64        (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_ia64)
 #   ASL  - Intel ACPI Source Language Compiler
 #
 ####################################################################################
@@ -2775,9 +3009,9 @@ RELEASE_ICC11_IPF_DLINK_FLAGS              = /NOLOGO /NODEFAULTLIB /LTCG /DLL /O
 #
 # Intel(R) C++ Compiler Version 11.1
 #
-#   IA32 - Intel(R) C++ Compiler for applications running on IA32         (Version 11.1 Build 065 Package ID: w_cproc_p_11.1.065_ia32)
-#   X64  - Intel(R) C++ Compiler for applications running on Intel(R) 64  (Version 11.1 Build 065 Package ID: w_cproc_p_11.1.065_intel64)
-#   IPF  - Intel(R) C++ Compiler for applications running on IA-64        (Version 11.1 Build 065 Package ID: w_cproc_p_11.1.065_ia64)
+#   IA32 - Intel(R) C++ Compiler for applications running on IA32         (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_ia32)
+#   X64  - Intel(R) C++ Compiler for applications running on Intel(R) 64  (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_intel64)
+#   IPF  - Intel(R) C++ Compiler for applications running on IA-64        (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_ia64)
 #   ASL  - Microsoft ACPI Source Language Compiler
 #
 ####################################################################################
@@ -2905,9 +3139,9 @@ RELEASE_ICC11xASL_IPF_DLINK_FLAGS              = /NOLOGO /NODEFAULTLIB /LTCG /DL
 #
 # Intel(R) C++ Compiler Version 11.1 x86 (32-bit on 64-bit OS)
 #
-#   IA32 - Intel(R) C++ Compiler for applications running on IA32         (Version 11.1 Build 065 Package ID: w_cproc_p_11.1.065_ia32)
-#   X64  - Intel(R) C++ Compiler for applications running on Intel(R) 64  (Version 11.1 Build 065 Package ID: w_cproc_p_11.1.065_intel64)
-#   IPF  - Intel(R) C++ Compiler for applications running on IA-64        (Version 11.1 Build 065 Package ID: w_cproc_p_11.1.065_ia64)
+#   IA32 - Intel(R) C++ Compiler for applications running on IA32         (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_ia32)
+#   X64  - Intel(R) C++ Compiler for applications running on Intel(R) 64  (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_intel64)
+#   IPF  - Intel(R) C++ Compiler for applications running on IA-64        (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_ia64)
 #   ASL  - Intel ACPI Source Language Compiler
 #
 ####################################################################################
@@ -3035,9 +3269,9 @@ RELEASE_ICC11x86_IPF_DLINK_FLAGS              = /NOLOGO /NODEFAULTLIB /LTCG /DLL
 #
 # Intel(R) C++ Compiler Version 11.1 x86 (32-bit on 64-bit OS)
 #
-#   IA32 - Intel(R) C++ Compiler for applications running on IA32         (Version 11.1 Build 065 Package ID: w_cproc_p_11.1.065_ia32)
-#   X64  - Intel(R) C++ Compiler for applications running on Intel(R) 64  (Version 11.1 Build 065 Package ID: w_cproc_p_11.1.065_intel64)
-#   IPF  - Intel(R) C++ Compiler for applications running on IA-64        (Version 11.1 Build 065 Package ID: w_cproc_p_11.1.065_ia64)
+#   IA32 - Intel(R) C++ Compiler for applications running on IA32         (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_ia32)
+#   X64  - Intel(R) C++ Compiler for applications running on Intel(R) 64  (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_intel64)
+#   IPF  - Intel(R) C++ Compiler for applications running on IA-64        (Version 11.1 Build 067 Package ID: w_cproc_p_11.1.067_ia64)
 #   ASL  - Microsoft ACPI Source Language Compiler
 #
 ####################################################################################
