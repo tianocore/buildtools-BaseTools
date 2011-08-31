@@ -313,7 +313,7 @@ def myOptionParser():
     Parser.add_option("-r", "--rom_image", dest="uiFdName", help="Build the image using the [FD] section named by FdUiName.")
     Parser.add_option("-i", "--FvImage", dest="uiFvName", help="Build the FV image using the [FV] section named by UiFvName")
     Parser.add_option("-C", "--CapsuleImage", dest="uiCapName", help="Build the Capsule image using the [Capsule] section named by UiCapName")
-    Parser.add_option("-b", "--buildtarget", type="choice", choices=['DEBUG','RELEASE'], dest="BuildTarget", help="Build TARGET is one of list: DEBUG, RELEASE.",
+    Parser.add_option("-b", "--buildtarget", type="choice", choices=['DEBUG','RELEASE', 'NOOPT'], dest="BuildTarget", help="Build TARGET is one of list: DEBUG, RELEASE, NOOPT.",
                       action="callback", callback=SingleCheckCallback)
     Parser.add_option("-t", "--tagname", type="string", dest="ToolChain", help="Using the tools: TOOL_CHAIN_TAG name to build the platform.",
                       action="callback", callback=SingleCheckCallback)

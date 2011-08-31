@@ -307,7 +307,7 @@ class DscBuildData(PlatformBuildClassObject):
             if self._Header == None:
                 self._GetHeaderInfo()
             if self._BuildTargets == None:
-                self._BuildTargets = ['DEBUG', 'RELEASE']
+                self._BuildTargets = ['DEBUG', 'RELEASE', 'NOOPT']
         return self._BuildTargets
 
     ## Retrieve SKUID_IDENTIFIER
