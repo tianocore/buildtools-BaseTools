@@ -36,9 +36,10 @@ from Common import EdkLogger
 from Common.String import *
 from Common.Misc import DirCache,PathClass
 from Common.Misc import SaveFileOnChange
+from Common.BuildVersion import gBUILD_VERSION
 
 ## Version and Copyright
-versionNumber = "1.0"
+versionNumber = "1.0" + ' ' + gBUILD_VERSION
 __version__ = "%prog Version " + versionNumber
 __copyright__ = "Copyright (c) 2007 - 2010, Intel Corporation  All rights reserved."
 

@@ -172,10 +172,11 @@ Returns:
   //
   // Print utility header
   //
-  printf ("%s Tiano Firmware Volume FFS image info.  Version %d.%d, %s\n",
+  printf ("%s Tiano Firmware Volume FFS image info.  Version %d.%d %s, %s\n",
     UTILITY_NAME,
     UTILITY_MAJOR_VERSION,
     UTILITY_MINOR_VERSION,
+    __BUILD_VERSION,
     __DATE__
     );
 

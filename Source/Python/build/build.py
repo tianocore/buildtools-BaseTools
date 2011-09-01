@@ -34,6 +34,7 @@ from Common import Misc as Utils
 from Common.TargetTxtClassObject import *
 from Common.ToolDefClassObject import *
 from Common.DataType import *
+from Common.BuildVersion import gBUILD_VERSION
 from AutoGen.AutoGen import *
 from Common.BuildToolError import *
 from Workspace.WorkspaceDatabase import *
@@ -46,7 +47,7 @@ import Common.EdkLogger
 import Common.GlobalData as GlobalData
 
 # Version and Copyright
-VersionNumber = "0.5"
+VersionNumber = "0.5" + ' ' + gBUILD_VERSION
 __version__ = "%prog Version " + VersionNumber
 __copyright__ = "Copyright (c) 2007 - 2010, Intel Corporation  All rights reserved."
 
