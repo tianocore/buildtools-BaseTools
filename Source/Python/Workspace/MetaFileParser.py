@@ -669,6 +669,25 @@ class DscParser(MetaFileParser):
         TAB_END_IF.upper()                          :   MODEL_META_DATA_CONDITIONAL_STATEMENT_ENDIF,
     }
 
+    # Valid names in define section
+    DefineKeywords = [
+        "DSC_SPECIFICATION",
+        "PLATFORM_NAME",
+        "PLATFORM_GUID",
+        "PLATFORM_VERSION",
+        "SKUID_IDENTIFIER",
+        "SUPPORTED_ARCHITECTURES",
+        "BUILD_TARGETS",
+        "OUTPUT_DIRECTORY",
+        "FLASH_DEFINITION",
+        "BUILD_NUMBER",
+        "RFC_LANGUAGES",
+        "ISO_LANGUAGES",
+        "TIME_STAMP_FILE",
+        "VPD_TOOL_GUID",
+        "FIX_LOAD_TOP_MEMORY_ADDRESS"
+    ]
+
     SymbolPattern = ValueExpression.SymbolPattern
 
     ## Constructor of DscParser
@@ -863,6 +882,9 @@ class DscParser(MetaFileParser):
                             ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
         if not self._ValueList[2]:
             EdkLogger.error('Parser', FORMAT_INVALID, "No value specified",
+                            ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
+        if not self._ValueList[1] in self.DefineKeywords:
+            EdkLogger.error('Parser', FORMAT_INVALID, "Unknown name: %s" % self._ValueList[1],
                             ExtraData=self._CurrentLine, File=self.MetaFile, Line=self._LineIndex+1)
         self._Defines[self._ValueList[1]] = self._ValueList[2]
         self._ItemType = self.DataType[TAB_DSC_DEFINES.upper()]
